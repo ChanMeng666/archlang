@@ -739,9 +739,13 @@ person steps off at, seeded at the run's width, and the rooms the doors reach ar
 walkable from the arrival rooms — the same rooms `W_ROOM_UNREACHABLE` starts from. Its doors
 onto a balcony start no walk, and each balcony is a way through on its own: a room whose only
 door opens onto one balcony is not reached by stepping out onto another (the access graph
-`describe().access` counts from, lint's reachability and the walk all read it so). The
+`describe().access` counts from, lint's reachability and the walk all read it so). Balconies
+whose shapes overlap or share a run of edge (one balcony round a corner drawn as two) are one
+way through. This is the graph `access.rooms[]` is counted on; `access.edges[]` still lists each
+balcony door with the one `exterior` end, as on every other storey. The
 `--overlay circulation` drawing is walked from the same runs, so on such a storey it draws what
-`levels[i].circulation` reports.
+`levels[i].circulation` reports. (Drawing one storey alone with `toScene` cannot know which runs
+arrive on it, so its overlay is walked as a storey with no shaft: draw from `compile().pages`.)
 `levels[i].circulation` carries the run's id as `entranceId`, and
 `W_PATH_TOO_NARROW`/`W_CIRCUITOUS_PATH` measure that floor as they measure a ground floor. A
 storey with a door from the ground walks from its doors, whatever shafts land there.
@@ -764,6 +768,9 @@ from its two stops' `dir` ("which way this run travels from THIS storey"): `dir 
 ends is an up escalator, which nobody arrives on the lower storey by, and `dir down` at both is
 a down one, which nobody arrives on the upper storey by. Drawn the stair way (`up` below,
 `down` above), the direction is not said, and the escalator is read both ways, as a stair is.
+The same direction holds for which storeys are reached at all (`vertical.reachable_levels`, the
+rooms `W_ROOM_UNREACHABLE` starts from): a storey only a down escalator joins to the floor below
+is not reached, and `W_NO_ENTRANCE` says the escalator carries people only away from it.
 When there are arrival sides both below and
 above (the storey is reachable from either independently), or the neighbouring stop is a
 different kind of run, the walk starts in front of the run's own entry edge(s) instead.

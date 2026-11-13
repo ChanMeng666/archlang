@@ -21,7 +21,15 @@ import type { Point } from "./ast.js";
 import type { CompileOptions } from "./types.js";
 import { segmentsOfWall, wallFaceProbes, type WallLike, type WallSegment } from "./geometry.js";
 import { mergedLength, overlap1d, type BBox } from "./geometry/rect.js";
-import { collinearOverlapLength, pointInPolygon, polygonEdges, rectRing, VERTEX_EPS } from "./geometry/polygon.js";
+import {
+  collinearOverlapLength,
+  pointInPolygon,
+  polygonEdges,
+  polygonsOverlap,
+  rectRing,
+  ringsAdjacent,
+  VERTEX_EPS,
+} from "./geometry/polygon.js";
 import { arcAngleOffset, fullCircleArc } from "./geometry/arc.js";
 import { bestPaths, type Digraph } from "./algebra/paths.js";
 import { BOOLEAN, MAX_MIN, MIN_PLUS } from "./algebra/semiring.js";
@@ -623,16 +631,36 @@ export function separateBalconies(edges: readonly AccessEdge[], ir: ResolvedPlan
   if (balconies.length === 0) return edges;
   const rooms = ir.elements.filter((e): e is RRoom => e.kind === "room");
   const doors = new Map(ir.elements.filter((e): e is RDoor => e.kind === "door").map((d) => [d.id, d]));
+  // Balconies whose shapes overlap or share a run of edge are one slab to walk across (a balcony
+  // wrapping a corner drawn as two): union-find over the pairs, each group named by its first.
+  const parent = balconies.map((_, i) => i);
+  const find = (i: number): number => {
+    while (parent[i] !== i) i = parent[i]!;
+    return i;
+  };
+  const rings = balconies.map((b) => rectRing({ x: b.at.x, y: b.at.y, w: b.size.w, h: b.size.h }));
+  for (let i = 0; i < balconies.length; i++)
+    for (let j = i + 1; j < balconies.length; j++)
+      if (ringsAdjacent(rings[i]!, rings[j]!, BALCONY_TOUCH_MM) || polygonsOverlap(rings[i]!, rings[j]!)) {
+        const a = find(i);
+        const b = find(j);
+        if (a !== b) parent[Math.max(a, b)] = Math.min(a, b);
+      }
+  const groupOf = new Map(balconies.map((b, i) => [b.id, balconies[find(i)]!.id]));
   let out: AccessEdge[] | null = null;
   edges.forEach((e, i) => {
     const d = e.exterior ? doors.get(e.doorId) : undefined;
     const b = d ? balconyOfDoor(d, rooms, balconies) : undefined;
     if (!b) return;
+    const node = balconyNode(groupOf.get(b.id)!);
     out ??= [...edges];
-    out[i] = { ...e, between: e.between.map((n) => (n === EXTERIOR_NODE ? balconyNode(b.id) : n)) as [string, string] };
+    out[i] = { ...e, between: e.between.map((n) => (n === EXTERIOR_NODE ? node : n)) as [string, string] };
   });
   return out ?? edges;
 }
+
+/** How near two balconies' edges must lie (mm) to be one slab ({@link separateBalconies}). */
+const BALCONY_TOUCH_MM = 1;
 
 /**
  * Is a storey GROUNDED for {@link import("./vertical.js").verticalReach} purposes — does

@@ -769,4 +769,60 @@ describe("an escalator carries one way when both its stops say so (M.4)", () => 
       ["e_dn", ["top"]],
     ]);
   });
+
+  // RM1.3b review: a storey that only a DOWN escalator joins to the floor below is not reached, and
+  // describe(), the building's reachable levels and lint all say so.
+  const DOWN_ONLY = `plan "Down escalator only" {
+  units mm
+  level 1 {
+    wall id=shell exterior thickness 200 { (0,0) (10000,0) (10000,8000) (0,8000) close }
+    room id=hall at (0,0) size 10000x8000 label "Hall" uses hall entry
+    door id=front on shell at 3000 width 1200
+    escalator id=e at (3000,2000) size 1200x4000 dir down
+  }
+  level 2 {
+    wall id=shell exterior thickness 200 { (0,0) (10000,0) (10000,8000) (0,8000) close }
+    wall id=hw partition thickness 100 { (6000,0) (6000,8000) }
+    room id=gal at (0,0) size 6000x8000 label "Gallery" uses hall circulation
+    room id=office at (6000,0) size 4000x8000 label "Office" uses office
+    door id=d_off on hw at 4000 width 1000 swing into office
+    escalator id=e at (3000,2000) size 1200x4000 dir down
+  }
+}`;
+
+  it("a storey only a down escalator reaches is unreachable in describe(), the vertical report and lint alike", () => {
+    const s = describePlan(DOWN_ONLY);
+    expect(s.vertical?.reachable_levels).toEqual([1]);
+    expect(s.levels![1]!.access.rooms.map((r) => r.reachable)).toEqual([false, false]);
+    expect(s.levels![1]!.circulation).toBeNull();
+    const up = lint(DOWN_ONLY).filter((d) => d.level === 2 && d.code === "W_NO_ENTRANCE");
+    expect(up.map((d) => d.message)).toEqual([
+      "Level 2 has no exterior door or opening of its own, and the escalator that stops here only carries people away from it: both its stops write `dir down`.",
+    ]);
+    // Drawn as an up escalator (UP at both stops) the storey is reached, by it.
+    const upward = DOWN_ONLY.replaceAll("dir down", "dir up");
+    expect(describePlan(upward).vertical?.reachable_levels).toEqual([1, 2]);
+    expect(lint(upward).filter((d) => d.code === "W_NO_ENTRANCE")).toEqual([]);
+  });
+});
+
+describe("balconies that touch are one way through (RM1.3b review)", () => {
+  it("a balcony wrapping the corner, drawn as two, still joins the rooms that open onto it", () => {
+    // Bedroom A opens onto `balA` (north), the study onto `balC` (east); the two share an edge.
+    const src = balconies("own", false)
+      .replace(
+        "outdoor id=balB balcony at (3000,6000) size 5000x1500",
+        "outdoor id=balC balcony at (8000,-1500) size 1500x7500",
+      )
+      .replace(
+        "door id=dy on shell at 16500 width 900 swing into y",
+        "door id=dy on shell at 12500 width 900 swing into y",
+      );
+    expect(level(src, 2).access.rooms.map((r) => [r.id, r.reachable])).toEqual([
+      ["landing", true],
+      ["beda", true],
+      ["y", true],
+    ]);
+    expect(lint(src).filter((d) => d.level === 2 && d.code === "W_ROOM_UNREACHABLE")).toEqual([]);
+  });
 });

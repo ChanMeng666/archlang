@@ -772,6 +772,10 @@ export function planTheme(ir: ResolvedPlan, opts: CompileOptions, runtime: Runti
  * range. This function applies neither: a caller who draws a resolved IR directly
  * (`toScene(resolve(ast).ir)`) takes that budget on, and 500 escalators at the tread cap
  * drawn this way make 1.1 million nodes and about 240 MB. Use `compile().scene`.
+ *
+ * One storey of a building, drawn alone, cannot know which stairs or lifts arrive on it, so its
+ * `--overlay circulation` is walked as a storey no shaft reaches; `compile().pages` passes each
+ * page the building's arriving runs (M.4), and is the page `describe()` measures.
  */
 export function toScene(plan: ResolvedPlan, opts: CompileOptions = {}, runtime: Runtime = BUILTIN_RUNTIME): Scene {
   return drawScene(plan, opts, runtime, undefined);
