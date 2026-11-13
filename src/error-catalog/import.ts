@@ -8,6 +8,7 @@
 import { MAX_IMPORT_LEVELS } from "../import/limits.js";
 import { MODULE_CAP_BYTES } from "../input-limit.js";
 import { defineEntries, e, w } from "./entry.js";
+import { pure } from "../pure.js";
 
 export const IMPORT_ENTRIES = defineEntries({
   E_IMPORT_BAD_SPEC: e(
@@ -36,9 +37,12 @@ export const IMPORT_ENTRIES = defineEntries({
   ),
   E_IMPORT_LIMIT: e(
     "A file given to `archlang import` needs more work to convert than any plan does.",
-    "Converting an OpenPlan3D plan finds its rooms the way OpenPlan3D does, by comparing every wall with every other wall on a floor, so the work grows with the square of a floor's walls. It is counted, as the evaluator's work is (`E_STEP_LIMIT`), and past the same budget of 5,000,000 steps the import stops with nothing written. A floor of a few thousand walls reaches it; a house has tens. A file of more than " +
-      String(MAX_IMPORT_LEVELS) +
-      " storeys is refused the same way before any storey is built: each storey is a whole drawing.",
+    pure(
+      () =>
+        "Converting an OpenPlan3D plan finds its rooms the way OpenPlan3D does, by comparing every wall with every other wall on a floor, so the work grows with the square of a floor's walls. It is counted, as the evaluator's work is (`E_STEP_LIMIT`), and past the same budget of 5,000,000 steps the import stops with nothing written. A floor of a few thousand walls reaches it; a house has tens. A file of more than " +
+        String(MAX_IMPORT_LEVELS) +
+        " storeys is refused the same way before any storey is built: each storey is a whole drawing.",
+    ),
     "Split the plan into several files, a floor or a wing each, and import them one by one.",
     "archlang import --from openplan3d huge.json   # error: one floor with 100,000 walls",
   ),
@@ -74,9 +78,12 @@ export const IMPORT_ENTRIES = defineEntries({
   ),
   E_IMPORT_TOO_LARGE: e(
     "An imported module is larger than the CLI reads.",
-    "The `archlang` CLI reads an imported `.arch` module of at most " +
-      String(MODULE_CAP_BYTES) +
-      " bytes (`MODULE_CAP_BYTES`) and refuses a larger file without reading it. No plan library comes near it; the cap stops an `import` from pulling a huge file into memory.",
+    pure(
+      () =>
+        "The `archlang` CLI reads an imported `.arch` module of at most " +
+        String(MODULE_CAP_BYTES) +
+        " bytes (`MODULE_CAP_BYTES`) and refuses a larger file without reading it. No plan library comes near it; the cap stops an `import` from pulling a huge file into memory.",
+    ),
     "Split the module into several smaller `.arch` files and import each.",
     'import "huge.arch" as h   # error: the module is larger than the cap',
   ),

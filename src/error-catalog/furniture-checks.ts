@@ -7,6 +7,7 @@
 
 import { CANONICAL_FIXTURES } from "../elements/fixtures-glyphs.js";
 import { defineEntries, w } from "./entry.js";
+import { pure } from "../pure.js";
 import { fixtureSpec } from "../fixtures-catalog.js";
 
 /**
@@ -34,9 +35,12 @@ export const FURNITURE_CHECKS_ENTRIES = defineEntries({
   ),
   W_FIXTURE_BACK_TO_ROOM: w(
     "A fixture stands against a wall but faces the wrong way.",
-    "A fixture whose symbol has a distinct back — a plumbed one (a WC's cistern, a basin's tap, a counter's nosing) or a piece of furniture that simply has a front (a bed's headboard, a wardrobe's door line, a bookshelf's open face) — is touching a wall, but its back is turned to the room instead of to that wall: the drawing shows the WC's tank, or the headboard, sticking into the floor space. Position right, quarter-turn wrong: fixture symbols are drawn with their back on the TOP edge, so `rotate` is what aims them (0 = back to the north, 90 = east, 180 = south, 270 = west). A rotation-symmetric symbol (a shower tray, a round stool) never trips this, nor does arranged seating whose back to the room is a legitimate layout. A fixture that touches no wall at all is `W_FIXTURE_FLOATING` instead — and only where the piece genuinely needs one for services, which furniture does not. A piece that touches a wall only with a side or an end its catalogued footprint rules out as a back, its drawn front off the wall too (a bed lengthwise along a wall, a wardrobe end-on to one), is a layout, not a back to the room, and is not judged; a piece whose front is on a wall is, and so is a plumbed or vented fixture or a wall-mounted one (the catalogue's `wallMounted` families: " +
-      familiesWith("wallMounted") +
-      "), because its back must reach any wall it touches.",
+    pure(
+      () =>
+        "A fixture whose symbol has a distinct back — a plumbed one (a WC's cistern, a basin's tap, a counter's nosing) or a piece of furniture that simply has a front (a bed's headboard, a wardrobe's door line, a bookshelf's open face) — is touching a wall, but its back is turned to the room instead of to that wall: the drawing shows the WC's tank, or the headboard, sticking into the floor space. Position right, quarter-turn wrong: fixture symbols are drawn with their back on the TOP edge, so `rotate` is what aims them (0 = back to the north, 90 = east, 180 = south, 270 = west). A rotation-symmetric symbol (a shower tray, a round stool) never trips this, nor does arranged seating whose back to the room is a legitimate layout. A fixture that touches no wall at all is `W_FIXTURE_FLOATING` instead — and only where the piece genuinely needs one for services, which furniture does not. A piece that touches a wall only with a side or an end its catalogued footprint rules out as a back, its drawn front off the wall too (a bed lengthwise along a wall, a wardrobe end-on to one), is a layout, not a back to the room, and is not judged; a piece whose front is on a wall is, and so is a plumbed or vented fixture or a wall-mounted one (the catalogue's `wallMounted` families: " +
+        familiesWith("wallMounted") +
+        "), because its back must reach any wall it touches.",
+    ),
     "Get the plan `size` right first, then the `rotate`. `size` is W×H in plan axes, and a fixture's catalogued depth runs AWAY from the wall it backs onto, so the size decides which walls it can back onto: a WC (400 along × 700 deep) is `size 400x700` against a north or south wall and `size 700x400` against an east or west one. With the size right, add the `rotate` that puts the back on the walled edge (0 = back to the north, 90 = east, 180 = south, 270 = west); the machine-applicable fix inserts it when exactly one walled edge fits the size. Or let it be derived: `in <room> anchor <edge>` derives the rotation once the size fits that edge, and `against wall <id>` takes `size` as along×depth and derives both. A `rotate` on a size the wrong way round silences this warning but draws the symbol squashed. A square size, or a family whose catalogued footprint is square (`counter`, `stove`), can back onto any edge.",
     "furniture wc at (5200,5200) size 400x700   # warning: south wall behind it, cistern facing north",
   ),
@@ -78,9 +82,12 @@ export const FURNITURE_CHECKS_ENTRIES = defineEntries({
   ),
   W_FURNITURE_OVER_WINDOW: w(
     "A tall unit stands in front of a window, or a low piece against a floor-length one.",
-    "A tall unit (the catalogue's `tall` families: " +
-      familiesWith("tall") +
-      ") has a footprint that overlaps a window's span on its straight host wall, within the ruleset's `fixtureWallTolMm` (300 mm) of the wall's centreline on either side: it stands against the wall, across the glass, blocking the window's light and view. Measured from the drawn footprint and the window's span, never from bounding boxes. A window whose sill is at or above 2100 mm (a door head) is a high window over full-height storage and is not judged; a window on a curved wall is not measured (a `curved-window-host` coverage skip). A window with `sill 0` has no sill to stand a low unit under, so any other piece at the cut plane warns too when it overlaps that span and stands on the wall's face (not a rug or an overhead piece, and not a cooking surface, which is `W_HOB_UNDER_WINDOW`'s). A window with no `sill` clause takes the 900 mm default and is not read this way.",
+    pure(
+      () =>
+        "A tall unit (the catalogue's `tall` families: " +
+        familiesWith("tall") +
+        ") has a footprint that overlaps a window's span on its straight host wall, within the ruleset's `fixtureWallTolMm` (300 mm) of the wall's centreline on either side: it stands against the wall, across the glass, blocking the window's light and view. Measured from the drawn footprint and the window's span, never from bounding boxes. A window whose sill is at or above 2100 mm (a door head) is a high window over full-height storage and is not judged; a window on a curved wall is not measured (a `curved-window-host` coverage skip). A window with `sill 0` has no sill to stand a low unit under, so any other piece at the cut plane warns too when it overlaps that span and stands on the wall's face (not a rug or an overhead piece, and not a cooking surface, which is `W_HOB_UNDER_WINDOW`'s). A window with no `sill` clause takes the 900 mm default and is not read this way.",
+    ),
     "Slide the unit along the wall clear of the window's span (the hint gives the shorter slide), move the window, or stand a unit no higher than the sill there instead: a worktop, a chest of drawers or a washer goes under a window, a fridge or a wardrobe beside it.",
     "wall id=w exterior thickness 200 { (0,0) (4000,0) }\nwindow at (2000,0) width 1200 wall w\nfurniture fridge at (1700,100) size 600x650   # lint: in front of 600 mm of the window",
   ),
@@ -98,9 +105,12 @@ export const FURNITURE_CHECKS_ENTRIES = defineEntries({
   ),
   W_FOOTPRINT_TRANSPOSED: w(
     "A piece is drawn turned a quarter: its long side is on the wrong axis.",
-    "A piece's symbol is drawn back-on-top in a frame `size` gives (its two sides swapped under `rotate 90` or `270`; along × depth for `against`), and this frame has its long side where the catalogue footprint has its short one, by at least 5:4 (`4 × long ≥ 5 × short`, exact). A `sofa_l` (2600 × 1600, wider than deep) written `size 900x2400` with no `rotate` draws a thin L one seat deep, its long side become its depth; a `bed` (1500 × 2000, deeper than wide) written `size 1900x700` draws a bed lying across its own length, its long side along its back. Judged only for the families that come in one shape, which the catalogue marks `fixedAspect`: " +
-      familiesWith("fixedAspect") +
-      ". A chaise longue is not: its back is at a short end or along a long side, by model. A family sold in both shapes (a wardrobe, a filing cabinet, a locker, a shed, a sink, a desk) is never judged, nor is a piece with no catalogued footprint (a plain `sofa`).",
+    pure(
+      () =>
+        "A piece's symbol is drawn back-on-top in a frame `size` gives (its two sides swapped under `rotate 90` or `270`; along × depth for `against`), and this frame has its long side where the catalogue footprint has its short one, by at least 5:4 (`4 × long ≥ 5 × short`, exact). A `sofa_l` (2600 × 1600, wider than deep) written `size 900x2400` with no `rotate` draws a thin L one seat deep, its long side become its depth; a `bed` (1500 × 2000, deeper than wide) written `size 1900x700` draws a bed lying across its own length, its long side along its back. Judged only for the families that come in one shape, which the catalogue marks `fixedAspect`: " +
+        familiesWith("fixedAspect") +
+        ". A chaise longue is not: its back is at a short end or along a long side, by model. A family sold in both shapes (a wardrobe, a filing cabinet, a locker, a shed, a sink, a desk) is never judged, nor is a piece with no catalogued footprint (a plain `sofa`).",
+    ),
     "Swap the two sides of `size`, or keep it and turn the symbol a quarter (add 90 to `rotate` or take 90 from it, whichever puts its back where it belongs; an `against` piece takes its turn from the wall, so only the swap applies there, and a piece meant side-on to a wall, a crib or a treadmill with its long side along it, is placed `at (x,y)` or `in <room> anchor <edge> flush` with a `rotate` instead; the hint gives the numbers). When `size` is one literal (`900x2400`) and the swapped size, as drawn on the plan's grid, is exactly the catalogue footprint, a fix swaps it; it is `maybe-incorrect` (`archlang fix --unsafe`), because the swap changes which floor the piece covers.",
     'room id=lounge at (0,0) size 5000x4000 label "Lounge"\nfurniture sofa_l at (500,500) size 900x2400   # lint: a sofa_l is 2600 wide and 1600 deep; this one is drawn 900 wide and 2400 deep',
   ),

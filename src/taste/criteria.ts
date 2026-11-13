@@ -32,6 +32,7 @@ import { type CompassLetter, FACINGS, oppositeLetter, type SiteFacts } from "../
 import { fmtRatio, lattice, meanPermyriad, ONE, type Ratio, ramp } from "./arith.js";
 import { adviceOf } from "./advice.js";
 import { MAX_EVIDENCE, type TasteEvidence, type TasteSkip, type TasteSkipReason } from "./report.js";
+import { pure } from "../pure.js";
 
 /** One storey as taste reads it: its `describe()` summary and its resolved IR. */
 export interface TasteStorey {
@@ -561,7 +562,9 @@ const levelOf = (s: TasteStorey): { level?: number } => (s.level !== undefined ?
 
 /** The words a bedroom's defining piece is written with (`bed` and its `or` words), from the
  *  table `finish` furnishes from (`src/lint/defining.ts`). */
-const BED_WORDS: ReadonlySet<string> = new Set(definingItems("bedroom").flatMap((i) => [i.category, ...(i.or ?? [])]));
+const BED_WORDS: ReadonlySet<string> = pure(
+  () => new Set(definingItems("bedroom").flatMap((i) => [i.category, ...(i.or ?? [])])),
+);
 
 /**
  * Kitchen-zoned categories R6 does not judge: a bare work surface. The catalogue zones `counter`
@@ -1199,7 +1202,7 @@ const R15: TasteCriterionDef = {
 /** 15 m² in centi-square-metres: R16 judges side rooms smaller than this (design §3). */
 const R16_SMALL_ROOM_CM2 = 1500n;
 /** 600 mm on the lattice: the corner allowance when the host wall is thinner. */
-const R16_CORNER = lattice(600);
+const R16_CORNER = /* @__PURE__ */ lattice(600);
 
 /**
  * R16 · corner doors. Per door joining two rooms, per side room whose centreline area is under
@@ -1345,7 +1348,7 @@ const R16: TasteCriterionDef = {
 // ---------------------------------------------------------------------------
 
 /** 100 mm on the lattice: two lines this close are one axis (single linkage). */
-const R17_GAP = lattice(100);
+const R17_GAP = /* @__PURE__ */ lattice(100);
 
 /**
  * The fewest counted rooms R17 judges. `n` rectangles tiling an `a × b` grid need at least

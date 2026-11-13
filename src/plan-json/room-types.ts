@@ -103,7 +103,7 @@ const USE_PRIORITY: readonly UseKind[] = [
  * map back to `bedroom`; `Balcony` has no direct ArchLang use so it maps to `utility`;
  * `Room` (the fallback) maps to `null` (no `uses` tag emitted).
  */
-export const ROOM_TYPE_TO_USE: Readonly<Record<RoomType, UseKind | null>> = Object.freeze({
+export const ROOM_TYPE_TO_USE: Readonly<Record<RoomType, UseKind | null>> = /* @__PURE__ */ Object.freeze({
   LivingRoom: "living",
   MasterRoom: "bedroom",
   Kitchen: "kitchen",
