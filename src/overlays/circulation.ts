@@ -11,7 +11,7 @@
  * so every backend serializes it with no changes.
  */
 
-import { buildDoorAccessGraph, DEFAULT_TOL, openRunsOf, roomBox } from "../analyze.js";
+import { buildDoorAccessGraph, DEFAULT_TOL, openRunsOf, outdoorsOf, roomBox } from "../analyze.js";
 import { arrivalAccess, entranceInputs } from "../analyze/entrance.js";
 import { computeCirculationOverlay } from "../analyze/circulation-overlay.js";
 import { walkedFromShafts } from "../analyze/circulation.js";
@@ -45,9 +45,10 @@ export function circulationOverlayNodes(
   // does, it is walked from the runs that arrive, exactly as `describe().circulation` is: its
   // balcony doors are no entrance (`walkedFromShafts`, PS0.3), so `garden-house`'s upper floor
   // is drawn from its stair, and a storey with no exterior door at all is drawn rather than empty.
+  // A door onto water joins nothing (`outdoorsOf`, backlog 4.5), as in every other access graph.
   const access = walkedFromShafts(
     arrivalAccess(
-      buildDoorAccessGraph(rooms, doors, DEFAULT_TOL, undefined, openings, openRunsOf(ir, DEFAULT_TOL)),
+      buildDoorAccessGraph(rooms, doors, DEFAULT_TOL, undefined, openings, openRunsOf(ir, DEFAULT_TOL), outdoorsOf(ir)),
       entranceInputs(ir, new Map(rooms.map((r) => [r.id, roomBox(r)]))),
     ),
     arrivals,

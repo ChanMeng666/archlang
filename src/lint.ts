@@ -17,6 +17,7 @@
  */
 
 import { resolvePlan, roomUses } from "./analyze.js";
+import { memoRoomNetAreaMm2, storeyNetAreaBands, withNetAreaBudget } from "./analyze/net-area-memo.js";
 import type { ResolvedPlan, RRoom } from "./ir.js";
 import type { Diagnostic, Span } from "./diagnostics.js";
 import { type BuildingContext, buildLintContext, type LintLayer, type LintStage } from "./lint/context.js";
@@ -139,14 +140,47 @@ function lintRun(
   if (bad.length > 0) return { diagnostics: bad, coverage: null, layers: LINT_CODE_LAYERS };
   const { ir, levels } = resolvePlan(source, opts);
   if (!ir) return { diagnostics: [], coverage: null, layers: LINT_CODE_LAYERS };
+  return lintResolved(ir, levels, rules, work);
+}
 
+/**
+ * {@link lintOne} under the storey's own net-area total (U.22, `net-area-memo.ts`), as
+ * `describe()` summarises and `compile()` draws each storey. A ruleset that reads net floor asks
+ * only some rooms' net areas, so they are first measured as `describe()` measures them, every
+ * room in element order: a room's figure is then the one `describe().rooms[]` reports, even past
+ * the total (the rule reads the drawn area where the figure is omitted, and says why).
+ */
+function lintStorey(
+  ir: ResolvedPlan,
+  rules: LintRuleset,
+  building: BuildingContext | undefined,
+  notes: SkipNote[],
+  work: LintWork,
+  level?: number,
+): Diagnostic[] {
+  return withNetAreaBudget(() => {
+    if (rules.roomAreaMeasure === "net") {
+      const bands = storeyNetAreaBands(ir.walls);
+      for (const e of ir.elements) if (e.kind === "room") memoRoomNetAreaMm2(e as RRoom, bands);
+    }
+    return lintOne(ir, rules, building, notes, work, level);
+  });
+}
+
+/** {@link lintRun} over a resolved plan, each storey under its net-area total. */
+function lintResolved(
+  ir: ResolvedPlan,
+  levels: ReturnType<typeof resolvePlan>["levels"],
+  rules: LintRuleset,
+  work: LintWork,
+): { diagnostics: Diagnostic[]; coverage: LintCoverage | null; layers: Readonly<Record<string, LintLayer>> } {
   const notes: SkipNote[] = [];
   const unclassified: LintUnclassifiedRoom[] = [];
   const storeys = lintStoreys(ir, levels, rules.tolMm);
   if (levels.length > 0) {
     const out = storeys.flatMap((st) => {
       unclassified.push(...unclassifiedRooms(st.ir, st.level));
-      return lintOne(st.ir, rules, st.building, notes, work, st.level).map((d) => ({ ...d, level: st.level }));
+      return lintStorey(st.ir, rules, st.building, notes, work, st.level).map((d) => ({ ...d, level: st.level }));
     });
     return {
       diagnostics: reconcileSharedFixes(out, levels),
@@ -156,7 +190,7 @@ function lintRun(
   }
   unclassified.push(...unclassifiedRooms(ir));
   return {
-    diagnostics: reconcileSharedFixes(lintOne(ir, rules, storeys[0]!.building, notes, work), [{ ir }]),
+    diagnostics: reconcileSharedFixes(lintStorey(ir, rules, storeys[0]!.building, notes, work), [{ ir }]),
     coverage: foldCoverage(LINT_RULES, notes, unclassified, 1),
     layers: LINT_CODE_LAYERS,
   };

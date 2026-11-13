@@ -974,7 +974,12 @@ ${stairBlock(here, "down")}
     expect(up.circulation!.rooms.map((r) => r.walkDistanceMm)).toEqual([latticeWalk(s, head, w, h)]);
     // The flight's own width crosses the head, whatever the box's extent is.
     expect(up.circulation!.rooms[0]!.bottleneckClearWidthMm).toBe(
-      head === "left" || head === "right" ? s.pieces[s.pieces.length - 1]![3] : s.pieces[s.pieces.length - 1]![2],
+      // …and the stair's written `width` when the flight's footprint is wider (RM1.3b: the width a
+      // person passes, as `runWidth` reads it).
+      Math.min(
+        s.width,
+        head === "left" || head === "right" ? s.pieces[s.pieces.length - 1]![3] : s.pieces[s.pieces.length - 1]![2],
+      ),
     );
     // The lattice stands at the origin, and a walk does not know where the plan is: every piece
     // moves into the grid's frame with the room, or the walk is measured round a stair elsewhere.
@@ -1015,7 +1020,12 @@ ${stairBlock(s, "down")}
     expect(mid.circulation!.entranceId).toBe("s");
     expect(mid.circulation!.rooms.map((r) => r.walkDistanceMm)).toEqual([latticeWalk(s, head, w, h, s.tails[0])]);
     expect(mid.circulation!.rooms[0]!.bottleneckClearWidthMm).toBe(
-      head === "left" || head === "right" ? s.pieces[s.pieces.length - 1]![3] : s.pieces[s.pieces.length - 1]![2],
+      // …and the stair's written `width` when the flight's footprint is wider (RM1.3b: the width a
+      // person passes, as `runWidth` reads it).
+      Math.min(
+        s.width,
+        head === "left" || head === "right" ? s.pieces[s.pieces.length - 1]![3] : s.pieces[s.pieces.length - 1]![2],
+      ),
     );
     // The flight stepped off moves into the grid's frame with the plan, as the pieces do.
     const away = bareMiddle(moved(s, 1500, 700), w, h)

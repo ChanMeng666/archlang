@@ -105,10 +105,10 @@ const BASELINE: [string, string][] = [
   ["411fd77e07ded87ca0555dae3f1abb713057a7b63b5e86e712e3a05e2d4fb02a", "examples/courtyard-house.arch"],
   ["fcb5a98c9bf892177daef2174831cb56be4314d6c9ac66526b1046cd6618438b", "examples/furnished-flat.arch"],
   ["4090de73163a56b3319477311f2a1d38126aa4861359e38193f897b364e58ef5", "examples/gallery-l.arch"],
-  ["b7c960f520ac96d773e04122a60c0356bdf24dfca4e812f3c2bb662c4d493deb", "examples/garden-house.arch"], // RM1.3b overlay, see ./byte-identity-baseline.ts
+  ["dd673d716d63453bf194883d4ca7edef8edbea5317348c18c4c89b576ff3e55e", "examples/garden-house.arch"], // RM1.3b, see ./byte-identity-baseline.ts; RM1.3b overlay, see ./byte-identity-baseline.ts
   ["cc9a04a46e7d09a69aa3f45e3aa9625b66cb8bbc7814658c9aa1f3a5591b891a", "examples/garden-loft.arch"],
   ["6544b4c8a8dd7e8a419f1beb6ab9e3daed19bc6a972a2bb493e361dc29f05b02", "examples/hexagon-pavilion.arch"],
-  ["0b683efa013f7814307162d97cb706adb9a9630f90b9c9aa61faf9681b85879e", "examples/hillside-villa.arch"], // RM1.3b overlay, see ./byte-identity-baseline.ts
+  ["6a0a352945fcf1daa0b22aaefad2aa4d5471d0f3d2312577c2b86896a5119c35", "examples/hillside-villa.arch"], // RM1.3b, see ./byte-identity-baseline.ts; RM1.3b overlay, see ./byte-identity-baseline.ts
   ["943cb8dbb7c0438d4f7d62160dafba83a6861b912a5c8cbf70db47e11ec80be7", "examples/imports.arch"],
   ["eba7e921a8695d44326f95ebdb9e22c7b4a9fa5cb311b81055e6359e0cdeafd5", "examples/knob-flat.arch"],
   ["312c51d435f0c106b693ccd6c13a1cebb5c41b3217647e4202eef05101f058a1", "examples/laneway-house.arch"],

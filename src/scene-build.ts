@@ -57,6 +57,7 @@ import { circulationOverlayNodes } from "./overlays/circulation.js";
 import { captionForPlan } from "./describe.js";
 import type { RoomBox } from "./analyze.js";
 import { pointInRoomBox, roomBox } from "./analyze.js";
+import { withNetAreaBudget } from "./analyze/net-area-memo.js";
 import { DEFAULT_THEME, THEMES, mergeTheme, sanitizeTheme, derivePoche } from "./theme.js";
 import type { Theme } from "./theme.js";
 
@@ -796,6 +797,20 @@ export function drawScene(
   /** The runs this storey is reached by, for the circulation overlay alone (`compile()` reads
    *  them off the whole building when that overlay is asked for; M.4). Nothing else reads them. */
   arrivals: readonly ArrivingRun[] = [],
+): Scene {
+  // One net-area total per storey drawn (U.22, `src/analyze/net-area-memo.ts`), fresh whoever
+  // draws it: a Scene is a function of its storey alone, so the Scene memo `lint()` reads can
+  // never hold a schedule other than the one a fresh drawing would.
+  return withNetAreaBudget(() => drawStorey(plan, opts, runtime, work, arrivals));
+}
+
+/** {@link drawScene} under its net-area total. */
+function drawStorey(
+  plan: ResolvedPlan,
+  opts: CompileOptions,
+  runtime: Runtime,
+  work: CompileWork | undefined,
+  arrivals: readonly ArrivingRun[],
 ): Scene {
   // The storey as drawn (B3a): every wall, a `status demolish` one included, which is lowered in
   // a call of its own and drawn dashed (B3b). What the sheet MEASURES (the room schedule's net

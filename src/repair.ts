@@ -68,6 +68,7 @@ import {
   backedEdgeList,
   backEdgeForRotate,
   buildDoorAccessGraph,
+  outdoorsOf,
   type AnalyzeOptions,
   DEFAULT_TOL,
   FIXTURE_WALL_TOL_MM,
@@ -1585,7 +1586,15 @@ function repairStorey(
   const openingEls = ir.elements.filter((e): e is ROpening => e.kind === "opening");
   // Walked from the ways a person arrives by, as `describe().circulation` is (U.1).
   const access = arrivalAccess(
-    buildDoorAccessGraph(roomEls, doors, DEFAULT_TOL, undefined, openingEls, openRunsOf(ir, DEFAULT_TOL)),
+    buildDoorAccessGraph(
+      roomEls,
+      doors,
+      DEFAULT_TOL,
+      undefined,
+      openingEls,
+      openRunsOf(ir, DEFAULT_TOL),
+      outdoorsOf(ir),
+    ),
     entranceInputs(ir, new Map(roomEls.map((r) => [r.id, roomBox(r)]))),
   );
   // Furniture NOT under repair's control (against-wall / scripted / expression-placed)

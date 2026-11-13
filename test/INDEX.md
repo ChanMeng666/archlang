@@ -5,7 +5,7 @@
 Where the tests of a `src` module are, and what each test file is for. Generated; `npm run check:drift`
 fails when it is stale. How to add a test: `docs/testing.md` § 4.
 
-503 test files in `test/`, 280 `src` modules, 107 modules no test imports.
+505 test files in `test/`, 280 `src` modules, 106 modules no test imports.
 
 ## `src` module → tests that import it
 
@@ -16,7 +16,7 @@ Nearest first, then by name; `(+n)` is the rest. Test names are `test/<name>.tes
 - `src/algebra/d4.ts` (5) — `d4`, `describe-depends`, `equivariance-corpus`, `keep`, `symmetry`
 - `src/algebra/paths.ts` (1) — `path-algebra`
 - `src/algebra/semiring.ts` (2) — `path-algebra`, `semiring`
-- `src/analyze.ts` (92) — `access-policy`, `annotation-collisions`, `annotation-small-rooms`, `between-face-probes`, `block-stair-landing`, `block-stair-lint`, `block-stair-shaft`, `block-stair-winders` (+84)
+- `src/analyze.ts` (93) — `access-policy`, `annotation-collisions`, `annotation-small-rooms`, `between-face-probes`, `block-stair-landing`, `block-stair-lint`, `block-stair-shaft`, `block-stair-winders` (+85)
 - `src/analyze/circulation-overlay.ts` (43) — `circulation-concave`, `nav-grid-residual`, `block-stair-frames`, `block-stair-landing`, `block-stair-lint`, `circulation-entrances`, `corner-window`, `describe-centreline-at` (+35)
 - `src/analyze/circulation.ts` (54) — `carve-inward-walk`, `circulation-room-bottlenecks`, `circulation-translation`, `equivariance-corpus`, `far-seed-pinch`, `lint-attribution-budget`, `lint-fix-texts`, `lint-space-enclosure` (+46)
 - `src/analyze/contacts.ts` (1) — `impact-contacts`
@@ -24,12 +24,13 @@ Nearest first, then by name; `(+n)` is the rest. Test names are `test/<name>.tes
 - `src/analyze/entrance.ts` (2) — `main-entrance`, `reachability-blind-spots`
 - `src/analyze/grid.ts` (1) — `path-algebra`
 - `src/analyze/gross-area.ts` (2) — `brief-bound-caption`, `brief-bound`
-- `src/analyze/net-area.ts` (4) — `describe-quantities`, `net-area-once`, `net-area-oracle-corpus`, `net-area`
+- `src/analyze/net-area-memo.ts` (1) — `net-area-budget`
+- `src/analyze/net-area.ts` (5) — `describe-quantities`, `net-area-budget`, `net-area-once`, `net-area-oracle-corpus`, `net-area`
 - `src/analyze/occupancy.ts` (2) — `nav-grid-scale`, `polygon-rooms`
 - `src/analyze/quantities.ts` (1) — `describe-quantities`
 - `src/analyze/symmetry.ts` (1) — `rect-ring`
 - `src/analyze/wall-faces.ts` (2) — `lint-space-enclosure`, `wall-status`
-- `src/ast.ts` (112) — `arc-radius-exact`, `band`, `circulation-concave`, `circulation-translation`, `closed-vocabularies`, `corner-window`, `cursor-exhaustive`, `d4` (+104)
+- `src/ast.ts` (113) — `arc-radius-exact`, `band`, `circulation-concave`, `circulation-translation`, `closed-vocabularies`, `corner-window`, `cursor-exhaustive`, `d4` (+105)
 - `src/attach.ts` (1) — `attach`
 - `src/axes.ts` (1) — `axes`
 - `src/backends/ascii.ts` (10) — `axes`, `fence`, `furniture-curves-backends`, `opening`, `outdoor`, `room-floor`, `scene-path-prim`, `schedule` (+2)
@@ -73,7 +74,7 @@ Nearest first, then by name; `(+n)` is the rest. Test names are `test/<name>.tes
 - `src/elements/glyphs-misc.ts` (1) — `glyphs-misc`
 - `src/elements/glyphs-outdoor.ts` (1) — `glyphs-outdoor`
 - `src/elements/index.ts` (1) — `elements`
-- `src/elements/outdoor.ts` (2) — `label-placement-oracle`, `label-placement`
+- `src/elements/outdoor.ts` (3) — `ground-walkability`, `label-placement-oracle`, `label-placement`
 - `src/elements/roof.ts` (3) — `label-placement-oracle`, `roof`, `v129-cross`
 - `src/elements/room.ts` (4) — `label-placement`, `net-area-stamp`, `rect-label-anchor`, `room-floor`
 - `src/elements/section.ts` (1) — `section`
@@ -115,11 +116,11 @@ Nearest first, then by name; `(+n)` is the rest. Test names are `test/<name>.tes
 - `src/impact.ts` (2) — `rectilinear-doors`, `rectilinear-rooms`
 - `src/import.ts` (31) — `block-stair-byte-identity`, `corner-window-byte-identity`, `dim-thickness-callout`, `drawing-budget`, `floor-materials-byte-identity`, `furniture-relations`, `gaps-byte-identity`, `keep` (+23)
 - `src/import/limits.ts` (1) — `openplan3d-malformed`
-- `src/index.ts` (379) — `acc-metadata`, `access-graph`, `access-policy`, `accessible-svg`, `agent-gallery`, `alias-match`, `anchors`, `annotate` (+371)
+- `src/index.ts` (381) — `acc-metadata`, `access-graph`, `access-policy`, `accessible-svg`, `agent-gallery`, `alias-match`, `anchors`, `annotate` (+373)
 - `src/input-limit.ts` (2) — `import-rooted`, `workspace-seams`
 - `src/intent-concepts.ts` (2) — `vocabulary-living-dining`, `vocabulary-matcher-oracle`
 - `src/intent.ts` (1) — `site`
-- `src/ir.ts` (168) — `access-policy`, `arc-radius-exact`, `attach`, `axes`, `between-face-probes`, `block-stair-byte-identity`, `block-stair-frames`, `block-stair-winders` (+160)
+- `src/ir.ts` (169) — `access-policy`, `arc-radius-exact`, `attach`, `axes`, `between-face-probes`, `block-stair-byte-identity`, `block-stair-frames`, `block-stair-winders` (+161)
 - `src/label-fit.ts` (1) — `label-fit`
 - `src/label-placement.ts` (3) — `label-placement-oracle`, `label-placement`, `label-wrap`
 - `src/lexer.ts` (8) — `diagnostics-volume`, `diagnostics`, `expr`, `imperial-input`, `model-range`, `parser-recovery-metric`, `stage-cache`, `unit-suffix`
@@ -161,7 +162,7 @@ Nearest first, then by name; `(+n)` is the rest. Test names are `test/<name>.tes
 - `src/room-tiling.ts` (7) — `rectilinear-doors`, `rectilinear-rooms-byte-identity`, `rectilinear-rooms`, `rectilinear-sides`, `wall-between-around`, `walls-from-rooms-clauses`, `walls-from-rooms`
 - `src/scene-build.ts` (23) — `annotation-collisions`, `annotation-small-rooms`, `export-dxf`, `export-font-cjk`, `export-pdf`, `furniture-curves-backends`, `furniture-rotate`, `glyph-chirality` (+15)
 - `src/scene-memo.ts` (1) — `scene-memo`
-- `src/scene.ts` (57) — `arc-radius-exact`, `axes`, `band`, `bbox-derived-position`, `block-stair`, `corner-window`, `dim-stagger`, `dim-thickness-callout` (+49)
+- `src/scene.ts` (58) — `arc-radius-exact`, `axes`, `band`, `bbox-derived-position`, `block-stair`, `corner-window`, `dim-stagger`, `dim-thickness-callout` (+50)
 - `src/segment-select.ts` (1) — `segment-select`
 - `src/share.ts` (1) — `share-codec`
 - `src/sheet-tables.ts` (3) — `sheet-annotations`, `sheet`, `wall-status-drawing`
@@ -409,6 +410,7 @@ The first sentence of each file's header comment.
 - `test/grid-index.test.ts` — GridIndex; room-overlap grid ≡ O(n²) (T3.7); room-overlap listing cap; GridIndex extreme extents; overlapIndex ≡ a full scan.
 - `test/grid-overlap-hint.test.ts` — `W_ROOM_OVERLAP` names the grid when the grid can be the cause (issue #405).
 - `test/gridsnap.test.ts` — grid-snap rounding.
+- `test/ground-walkability.test.ts` — a door onto water is no way in or out; a deck or paving drawn over the water keeps it one (backlog 4.5).
 - `test/height-byte-identity.test.ts` — The byte-identity law for the **vertical datum layer**.
 - `test/huge-coordinates.test.ts` — huge finite coordinates never throw; the same shapes at the edge of the modelling range are drawn and measured; huge on one axis, thin on the other (nav and occ…
 - `test/impact-contacts.test.ts` — Contact dependency (plan-soundness card PS4.5): an authored wall or a furniture piece written at fixed coordinates that lies ON a rectangular room's edge records that contact in `describe --facts depends` (`elements[]...
@@ -506,6 +508,7 @@ The first sentence of each file's header comment.
 - `test/mutants-sampler.test.ts` — The nightly mutant sampler (`scripts/mutants.mjs`, nightly.yml `mutants`, report-only): each operator rewrites a synthetic source the way its header says, the PRNG and the sample are fixed by the seed, the allow-list...
 - `test/nav-grid-residual.test.ts` — G.11 — the nav grid's walls agree with the drawn walls; C.1 — a wall thinner than a cell still blocks (the centreline cover).
 - `test/nav-grid-scale.test.ts` — nav-grid resolution scales with plan area; a large plan can tell a narrow route from a wide one; a fixture across part of a wide threshold narrows it, never sea…
+- `test/net-area-budget.test.ts` — U.22 / PS0.15: net internal area is held to a total per storey read (`MAX_NET_PLAN_WORK`, `src/analyze/net-area-memo.ts`), not only to a per-room cap.
 - `test/net-area-once.test.ts` — net internal area — once per room per compile on a `schedule rooms` plan.
 - `test/net-area-oracle-corpus.test.ts` — NET internal area over the whole corpus (examples, fixtures, recovery plans, eval goldens, fidelity plans and faults; the docs gallery is left out, `agent-gallery.test.ts` owns it): the closed-form figure agrees with...
 - `test/net-area-stamp.test.ts` — `schedule rooms net`: the room stamp prints the schedule's NET AREA figure, named.
@@ -704,7 +707,6 @@ module); adding a test that imports it removes it from this list.
 - `src/analyze/depends.ts`
 - `src/analyze/keep-facts.ts`
 - `src/analyze/nav-grid.ts`
-- `src/analyze/net-area-memo.ts`
 - `src/analyze/open-shell.ts`
 - `src/analyze/rooms.ts`
 - `src/analyze/syntax.ts`

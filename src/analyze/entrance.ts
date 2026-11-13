@@ -234,6 +234,7 @@ export function storeyHasEntranceCandidate(ir: ResolvedPlan, tolMm: number): boo
     undefined,
     [...inp.openings],
     openRunsOf(ir, tolMm),
+    inp.outdoors,
   );
   return entranceCandidates(graph, inp).length > 0;
 }

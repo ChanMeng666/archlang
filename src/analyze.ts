@@ -12,8 +12,9 @@ import { parse } from "./parser.js";
 import { link } from "./import.js";
 import { resolveAll } from "./ir.js";
 import type { ResolvedLevel, ResolvedPlan, RDoor, ROutdoor, RRoom, ROpening } from "./ir.js";
-import type { PlanNode, UseKind } from "./ast.js";
+import type { OutdoorKind, PlanNode, UseKind } from "./ast.js";
 import { BUILTIN_REGISTRY, createRegistry } from "./registry.js";
+import { groundWalkable, outdoorRing } from "./elements/outdoor.js";
 import { NULL_WORLD } from "./world.js";
 import type { Diagnostic } from "./diagnostics.js";
 import { capDiagnostics } from "./diagnostics.js";
@@ -239,6 +240,9 @@ export interface AccessEdge {
    *  (half a thickness past each face) between probes just inside the jambs
    *  ({@link JAMB_PROBE_INSET_MM}). Absent when no face straddles. */
   straddles?: string[];
+  /** The ground a connector to the outside opens onto when no one can walk on it (`water`,
+   *  backlog 4.5): the edge then joins nothing, its outside end `""`. Absent otherwise. */
+  onto?: OutdoorKind;
 }
 
 /** A room as a node, with its reachability facts from the building entrance(s). */
@@ -325,14 +329,22 @@ export function connectorEdges(
   tol: number,
   clearAllowanceMm: number,
   policy: AmbiguityPolicy = "probe",
+  /** The storey's `outdoor` surfaces: a connector to the outside that opens onto ground no one
+   *  walks on joins nothing ({@link unwalkableGroundAt}, backlog 4.5). Append-only: omitted,
+   *  every connector to the outside joins the exterior, as before. */
+  outdoors: readonly ROutdoor[] = [],
 ): AccessEdge[] {
   return connectors.map((c) => {
     const { between, ambiguous, straddles } = connectorConnection(c, roomRects, tol, policy);
-    const exterior = between.includes(EXTERIOR_NODE);
+    const onto = between.includes(EXTERIOR_NODE) ? unwalkableGroundAt(c, roomRects, outdoors) : undefined;
+    // A door onto a pond leads nowhere a person can go: its outside end is no node at all, so the
+    // edge joins nothing (the `""` end every reader already skips), and `onto` says why.
+    const ends = onto ? between.map((n) => (n === EXTERIOR_NODE ? "" : n)) : between;
+    const exterior = ends.includes(EXTERIOR_NODE);
     return {
       doorId: c.id,
       kind: c.kind,
-      between: [between[0] ?? "", between[1] ?? ""] as [string, string],
+      between: [ends[0] ?? "", ends[1] ?? ""] as [string, string],
       nominalWidth: c.width,
       estimatedClearWidth: connectorClearWidth(c.kind, c.width, clearAllowanceMm, leavesOf(c)),
       ...(c.host?.category !== undefined ? { hostCategory: c.host.category } : {}),
@@ -340,9 +352,42 @@ export function connectorEdges(
       exterior,
       ambiguous,
       ...(straddles ? { straddles } : {}),
+      ...(onto ? { onto } : {}),
     };
   });
 }
+
+/**
+ * The ground connector `c` opens onto when no one can walk there (backlog 4.5), or `undefined`.
+ * Probed one host-wall thickness off its centre on the side with no room, the probe
+ * {@link doorFacesBalcony} reads (the shape, never a box). The TOPMOST surface at that point
+ * decides, the last of `outdoors` (element order, which is draw order: a later surface is painted
+ * over an earlier one) whose shape holds it: a pond drawn inside a lawn after it is water there,
+ * and a `deck` or `paving` drawn over the water after it (a bridge, stepping stones) keeps the
+ * door a way out. `outdoors` must be in element order. A connector with no host, or whose probe
+ * cannot tell the outward side, is left as it was.
+ */
+export function unwalkableGroundAt(
+  c: Pick<AccessConnector, "host" | "at">,
+  roomRects: ReadonlyMap<string, RoomBox>,
+  outdoors: readonly ROutdoor[],
+): OutdoorKind | undefined {
+  if (!c.host || !outdoors.some((o) => !groundWalkable(o.surface))) return undefined;
+  const { plus, minus } = wallFaceProbes(c.host, c.at, Math.max(c.host.thickness, 1));
+  const boxes = [...roomRects.values()];
+  const onPlus = boxes.some((b) => pointInRoomBox(plus, b));
+  const onMinus = boxes.some((b) => pointInRoomBox(minus, b));
+  if (onPlus === onMinus) return undefined;
+  const p = onPlus ? minus : plus;
+  let top: ROutdoor | undefined;
+  for (let i = outdoors.length - 1; i >= 0 && !top; i--)
+    if (pointInPolygon(p.x, p.y, outdoorRing(outdoors[i]!))) top = outdoors[i];
+  return top && !groundWalkable(top.surface) ? top.surface : undefined;
+}
+
+/** The `outdoor` surfaces of one resolved storey, for {@link connectorEdges}. */
+export const outdoorsOf = (ir: ResolvedPlan): ROutdoor[] =>
+  ir.elements.filter((e): e is ROutdoor => e.kind === "outdoor");
 
 /** Does the edge join two spaces: two endpoints, and not ambiguous? */
 const joins = (e: AccessEdge): boolean => !e.ambiguous && e.between[0] !== "" && e.between[1] !== "";
@@ -431,11 +476,21 @@ export function buildDoorAccessGraph(
   clearAllowanceMm: number = DEFAULT_CLEAR_ALLOWANCE_MM,
   openings: ROpening[] = [],
   openRuns: readonly AccessConnector[] = [],
+  /** The storey's `outdoor` surfaces ({@link outdoorsOf}): a door onto water joins nothing
+   *  (backlog 4.5). Append-only. */
+  outdoors: readonly ROutdoor[] = [],
 ): AccessGraph {
   const roomRects = new Map<string, RoomBox>(rooms.map((r) => [r.id, roomBox(r)]));
   // Doors and cased openings are both connectors, doors first; then the runs a demolished wall
   // leaves open ({@link openRunsOf}, B3a), last, so a plan without one has the edges it had.
-  const edges = connectorEdges(roomRects, [...doors, ...openings, ...openRuns], tol, clearAllowanceMm, "probe");
+  const edges = connectorEdges(
+    roomRects,
+    [...doors, ...openings, ...openRuns],
+    tol,
+    clearAllowanceMm,
+    "probe",
+    outdoors,
+  );
   return accessGraphOf(
     rooms.map((r) => r.id),
     edges,
@@ -607,9 +662,7 @@ export function balconyOfDoor(
   const onMinus = rooms.some((r) => pointInRoomBox(minus, roomBox(r)));
   if (onPlus === onMinus) return undefined;
   const outward = onPlus ? minus : plus;
-  return balconies.find((b) =>
-    pointInPolygon(outward.x, outward.y, b.poly ?? rectRing({ x: b.at.x, y: b.at.y, w: b.size.w, h: b.size.h })),
-  );
+  return balconies.find((b) => pointInPolygon(outward.x, outward.y, outdoorRing(b)));
 }
 
 /** The node one `outdoor balcony` stands for in a graph that walks THROUGH the outside
@@ -721,7 +774,7 @@ export function storeyGrounded(ir: ResolvedPlan, tol: number): boolean {
   const doors = ir.elements.filter((e): e is RDoor => e.kind === "door");
   const openings = ir.elements.filter((e): e is ROpening => e.kind === "opening");
   const outdoors = ir.elements.filter((e): e is ROutdoor => e.kind === "outdoor");
-  const graph = buildDoorAccessGraph(rooms, doors, tol, undefined, openings, openRunsOf(ir, tol));
+  const graph = buildDoorAccessGraph(rooms, doors, tol, undefined, openings, openRunsOf(ir, tol), outdoors);
   return levelIsGrounded(graph, rooms, doors, outdoors);
 }
 
@@ -738,7 +791,14 @@ export function storeyRoomReach(ir: ResolvedPlan, tol: number): (seeds: StoreySe
   const doors = ir.elements.filter((e): e is RDoor => e.kind === "door");
   const openings = ir.elements.filter((e): e is ROpening => e.kind === "opening");
   const roomRects = new Map<string, RoomBox>(rooms.map((r) => [r.id, roomBox(r)]));
-  const edges = connectorEdges(roomRects, [...doors, ...openings], tol, DEFAULT_CLEAR_ALLOWANCE_MM, "probe");
+  const edges = connectorEdges(
+    roomRects,
+    [...doors, ...openings],
+    tol,
+    DEFAULT_CLEAR_ALLOWANCE_MM,
+    "probe",
+    outdoorsOf(ir),
+  );
   const g = accessDigraph(
     rooms.map((r) => r.id),
     edges,

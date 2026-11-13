@@ -23,6 +23,7 @@
  * about the plan, which is true of them.
  */
 
+import type { AccessEdge } from "../../analyze.js";
 import type { Diagnostic } from "../../diagnostics.js";
 import { capFirst } from "../../naming.js";
 import {
@@ -146,6 +147,21 @@ function storeyGap(ctx: LintContext, level: number): Gap {
   };
 }
 
+/**
+ * A plan (or storey `level`) whose only doors to the outside open onto water with nothing walkable
+ * drawn over them (`AccessEdge.onto`, backlog 4.5): the doors are there, and lead nowhere a person
+ * can go. Ids in the hint only.
+ */
+function waterGap(water: readonly AccessEdge[], level: number | undefined): Gap {
+  const where = level === undefined ? "The plan's" : `Level ${level}'s`;
+  const what = water.length === 1 ? "only door to the outside opens" : `${water.length} doors to the outside all open`;
+  const ids = water.map((e) => `\`${e.doorId}\``).join(", ");
+  return {
+    message: `${where} ${what} onto water, so there is no way into the building${level === undefined ? "" : " on this storey"}.`,
+    hint: `${ids} ${water.length === 1 ? "opens" : "open"} onto an \`outdoor water\` surface with nothing walkable drawn over it at the door: draw a \`deck\` or \`paving\` over the water there (a bridge), or move the water. Or: ${ADD_DOOR}`,
+  };
+}
+
 export const noEntrance: LintRule = {
   name: "no-entrance",
   family: "reachability",
@@ -157,7 +173,15 @@ export const noEntrance: LintRule = {
     const reachedByShaft = building.arrivalRooms.length > 0;
     if (rooms.length > 0 && !access().hasEntrance && !reachedByShaft) {
       const named = (building.storeyCount ?? 1) > 1 && ir.level !== undefined;
-      const gap = named ? storeyGap(ctx, ir.level!) : NO_WAY_IN;
+      // A door to the outside that opens onto water exists, and leads nowhere (backlog 4.5): say so
+      // rather than deny the door. A storey with no such door reads exactly as before.
+      const water = access().edges.filter((e) => e.onto !== undefined);
+      const gap =
+        water.length > 0
+          ? waterGap(water, named ? ir.level : undefined)
+          : named
+            ? storeyGap(ctx, ir.level!)
+            : NO_WAY_IN;
       return [{ severity: "warning", code: "W_NO_ENTRANCE", message: gap.message, hints: [gap.hint] }];
     }
     return [];
