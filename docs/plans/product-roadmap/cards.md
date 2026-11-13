@@ -100,7 +100,7 @@
 
 现象：库的 `explain("constructor")` 抛 `TypeError`（CLI 先拒绝了这个名字，所以只有库露出）。内容：对自有键做守卫。证明：`explain` 对 `constructor`、`__proto__`、`toString` 返回未知码的结果而不抛。不许：改已知码的输出文字。
 
-### RM0.7d · 其他被打包器因不纯而保留的顶层值（2026-11-12 加，出自 #727） — `todo` · 未估 · opus · 依赖无（线下）
+### RM0.7d · 其他被打包器因不纯而保留的顶层值（2026-11-12 加，出自 #727） — `done` · #747（`3f585759`）· 未估 · opus · 依赖无（线下）
 
 现象：除已处理的以外，还有顶层值（例如 `STAIR_SAFETY_CODES`）因打包器认为有副作用而留在只编译的包里。内容：逐个量；在只编译的包里是死代码的，标纯。证明：前后路径大小贴进 PR，`compile()` 输出语料逐字节不变。不许：不先量就标纯；给有副作用的值标纯。
 
@@ -631,9 +631,9 @@ CRF5（楼梯井同时报两条警告）若在同一 PR 碰到，一并去重。
 
 不许：第 1 条加默认 W；第 2 条加 `risers` 之类新语法；在 `message` 里引条文号；第 2 条用 `S-secondary` 的数。
 
-### RM1.2c · "Desk Nook" 不触发任何规则（2026-11-14 加，出自 #733） — `todo` · 未估 · opus · 依赖无（线下）
+### RM1.2c · "Desk Nook" 不触发任何规则（2026-11-14 加，出自 #733） — 已裁定（RM-D35，`README.md` §6.8），`todo` · 未估 · opus · 依赖无（线下）
 
-现象：标签 "Desk Nook" 不报任何东西。内容：先要协调者裁定，二选一：词表加一行并改 `DEFINING.office`，或加"标签点名一件家具"的规则。证明：裁定后按 §0。不许：未裁定就改词表。
+现象：标签 "Desk Nook" 不报任何东西。**已裁定（RM-D35，`README.md` §6.8，受托）：** 加一条新的 W 规则"标签点名了房间没有的家具"：房间标签含某个 `CATALOG` 家族名或别名、而房间里没有该家族的夹具时触发。不加词表行，`DEFINING.office` 不动。证明：§0 规则卡门禁（夹具对加留出对，`message` 不引条文号），并量编译器路径字节。不许：加词表行；改 `DEFINING.office`。
 
 ### RM1.2d · `arch fmt` 总是打印 `north up`（2026-11-14 加，出自 #738） — `todo` · 未估 · opus · 依赖无（线下）
 
@@ -652,15 +652,15 @@ CRF5（楼梯井同时报两条警告）若在同一 PR 碰到，一并去重。
 5. 第三份 `rectOfPiece` 重复辅助函数，合并。
 证明：每条一条测试或一处文字对账。不许：加新语法。
 
-### RM1.2g · winder 与 3D 不一致（2026-11-14 加，出自 #736） — `todo` · 未估 · opus · 依赖无（线下；需先裁定）
+### RM1.2g · winder 与 3D 不一致（2026-11-14 加，出自 #736） — 已裁定（RM-D36，`README.md` §6.8），`todo` · 未估 · opus · 依赖无（线下）
 
-现象：规则数每一条 winder 线（不设上限），而 `archlang-3d` 把 winder 平台只建成一级；`winders 8` 让 2D 规则沉默，3D 却爬约 306 mm 的级高。裁定二选一：像 TOO_STEEP 封顶 goings 那样给 winder 级高封顶，或在 3D 里建 winder 台阶。不许：未裁定就改。
+现象：规则数每一条 winder 线（不设上限），而 `archlang-3d` 把 winder 平台只建成一级；`winders 8` 让 2D 规则沉默，3D 却爬约 306 mm 的级高。**已裁定（RM-D36，`README.md` §6.8，受托）：** `archlang-3d` 把 winder 平台建成 n 级渐缩台阶，使 3D 与 2D 图一致；2D 的 `W_STAIR_RISER_TOO_HIGH` 仍不设上限（winder 多出 n−1 级）。证明：3D 里 `winders 8` 的爬升等于规则读到的级高；2D 规则输出不变。不许：给 2D 规则封顶。
 
 ### RM1.2h · ST.1 残余：三个示例没写高度（2026-11-14 加，出自 #736） — `todo` · 未估 · sonnet · 依赖无（线下）
 
 现象：townhouse、garden-house、hillside-villa 在默认 3000 层高上画出的隐含级高为 250/250/273 mm，但没写 `height`，规则跳过。内容：决定写高度（逐个列 digest 变化）还是保持。不许：为过规则而改梯段。
 
-### RM8.8b · RM8.8 的余项（2026-11-14 加，出自 #737） — `todo` · 未估 · opus · 依赖 #737 合并
+### RM8.8b · RM8.8 的余项（2026-11-14 加，出自 #737） — `todo` · 未估 · opus · 依赖 #737（已合并，`35ed277f`）
 
 1. 若还有路径，"悬空"判定仍依赖按类别的账本行。
 2. 网格在细长平面不是线性的（一排 400 间 → 36.9 次测试/探针），多顶点多边形房间也不是（2880 顶点 → 565 次测试/探针，1117 ms）：改非方形格与精确的三角形/格重叠。
@@ -673,6 +673,27 @@ CRF5（楼梯井同时报两条警告）若在同一 PR 碰到，一并去重。
 ### 更正：CHANGELOG 1.60.0 的 A-ANNO 措辞（2026-11-14 加，已核对） — `todo` · 线下
 
 条目说剖切符号画在 `A-ANNO`、`A-ANNO-TEXT`。核对 `src/elements/section.ts` 与 `src/scene.ts`（`annotations` 层映射到 `A-ANNO`，`labels` 层才是 `A-ANNO-TEXT`）：剖切线、看向线与名字文字都在 `annotations` 层，**全部落在 `A-ANNO`，没有 `A-ANNO-TEXT`**，措辞有误。下一版发布说明里更正。
+
+### RM8.7b · PDF 导出与图例不显示新材质的地面浅色（2026-11-14 加，出自 #744 评审 N2） — `todo` · 未估 · opus · 依赖无（线下）
+
+现象：地面 `timber`、`carpeting`、`stone` 与室外 `sand`、`soil` 的 `rendered` 浅色只进了房间填充，PDF 导出与图例不显示它们。内容：让两处读同一个来源。证明：每种新材质一条 PDF/图例测试。不许：另设一份颜色表。
+
+### RM0.7e · `pure()` 机制的守卫测试与误用检查（2026-11-14 加，出自 #747） — `todo` · 未估 · sonnet · 依赖无（线下）
+
+内容：(1) 守卫测试：只编译的 chunk 必须仍然丢掉 `pure()` 包着的值（rolldown 认 `@__NO_SIDE_EFFECTS__` 箭头函数，esbuild 只在同模块 const 上认）；(2) 一条检查，拒绝 `pure()` 的实参里有副作用。证明：故意去掉标注时守卫先红。不许：对有副作用的值标纯。
+
+### RM0.7f · 核心 chunk 拆分：约 65 KB 只被惰性路径用到的代码还在编译器 chunk 里（2026-11-14 加，出自 #747） — `todo` · 未估 · opus · 依赖无（线下）
+
+内容：先量（每块占多少），把只被惰性路径可达的代码移出编译器 chunk，再一次性重取预算。证明：前后路径大小贴进 PR，`compile()` 输出语料逐字节不变。不许：不先量就动；抬 `compilerPathBudget`。
+
+### RM1.3d · RM1.3b 的余项（2026-11-14 加，出自 #742–#746） — `todo` · 未估 · opus · 依赖无（线下）
+
+1. 扶梯的 `reachable_levels` 进 `describe`。
+2. 花园小径算可走。
+3. Plan JSON 带室外地面。
+4. 工料的墙面不受净面积预算计量。
+5. `W_ROOM_VIA_PRIVATE` 的支配点缺口。
+证明：每条一条测试。不许：未量就改 digest 表；每个移动的钉值都要带理由。
 
 ### 发布 1.61.0 · 约 01-05 · 1 日
 
@@ -774,7 +795,7 @@ CR9：OAS 导入 + OpenPlan3D 导出，建在 RM3.1 上；只在 OpenPlan3D 导�
 
 不许：输出里带坐标以外的"建议"；给 diff 配色主题。
 
-### RM1.3b · 可达性盲点第二批 — `todo` · 4 日 · opus · 依赖 RM1.3a
+### RM1.3b · 可达性盲点第二批 — `done` · #742、#746、#743、#745（`7b2ec476`）· 4 日 · opus · 依赖 RM1.3a
 
 4.5（草坪、水面当可走 → `outdoor` 地面种类决定可走性）、M.4（竖井到达层的叠加与行进方向）、U.22/PS0.15（`describe()` 步数预算与净面积项的二次复杂度）、PS0.6（`suggest` 经卧室给房间连门）。**2026-11-11 加（RM1.3a 执行者的发现）：** `accessibility-advisory` 下瓶颈是楼梯梯段本身时，`W_PATH_TOO_NARROW` 不指名任何门，hint 却说加宽最窄的门或洞口；它应当说瓶颈是梯段。
 
@@ -850,7 +871,7 @@ bobsch-io 在 #362–#370、#405 里明说未做的项（排序依据就是这�
 
 **词表卡的 spec 成本**（RM8.7、RM8.9 共用，2026-11-11 对 `scripts/gen-llm-spec.ts` 核过）：`spec.llm.md` 今天 29,856 UTF-16 单位，`test/llm-spec-drift.test.ts` 要求 `< 30_000`，余量 143。`room` 行用 `FLOOR_MATERIALS.join("|")` 列出地面词，`outdoor` 行用 `OUTDOOR_KINDS.join("|")` 列出地面种类，所以每个新词花"词长 + 1"。家族词只有一条路进 spec：`furniture` 行的 `SIZE_OPTIONAL_FIXTURES`（`CANONICAL_FIXTURES` 中有目录占地的，用 `/` 连接），所以**只有带目录占地的 canonical 家族**花"词长 + 1"，别名和没有占地的家族花 0。RM8.7 按暂定名的六个词花 39 单位；RM8.9 的十二个家族若都带占地，按平均词长约 9–10 计约 120 单位。两张合起来超过余量，所以 PS7.9 的目标要先算进它们。
 
-### RM8.7 · 地面材质 — `todo` · 4 日（主会话估） · opus · 依赖 PS7.9、冻结期的 `visual-language.md`（地面一节）与 `plan-json-scope.md` · `[语法：词表]`
+### RM8.7 · 地面材质 — `done` · #744（`c81b0eca`）· 4 日（主会话估） · opus · 依赖 PS7.9、冻结期的 `visual-language.md`（地面一节）与 `plan-json-scope.md` · `[语法：词表]`
 
 **依赖补充（2026-11-12）：** PS7.9 已满足；本卡再依赖 RM0.7（编译器路径预算）：词表字会让 `KEYWORDS` 与 spec 变大。**`rendered` 地面浅色已裁定（RM-D28，`README.md` §6.6）：** 批准，条件是图案线对地面浅色的对比不低于 2.0:1；设计稿草案的三个色值只有 1.66–1.87:1，要另调一组更浅的地面色，一条测试守下限；只在 `rendered` 下，其他主题字节不变；ADR 0023 已加修订。
 
@@ -868,7 +889,7 @@ bobsch-io 在 #362–#370、#405 里明说未做的项（排序依据就是这�
 
 **`plan-json-scope.md` 已写（2026-11-11）：** `design/plan-json-scope.md` §4 定下"3D 读 `floor`"：走第三条路，3D 经 `resolvePlan` 读已经公开的 `RRoom.floor`（`RRoom` 是 ADR 0031 公开的元素类型，`floor` 不是下划线字段），不新增导出，也不依赖 RM3.1；所以本卡对 `plan-json-scope.md` 的依赖已满足（仍依赖 PS7.9 与 `visual-language.md`）。上面"经核心新增的加性公开导出取数"一句按此读。
 
-### RM8.8 · 接触阴影与环境遮蔽 — `todo` · 3 日（主会话估） · opus · 依赖冻结期的 `visual-language.md`（阴影一节）
+### RM8.8 · 接触阴影与环境遮蔽 — `done` · #737（`35ed277f`）· 3 日（主会话估） · opus · 依赖冻结期的 `visual-language.md`（阴影一节）
 
 RM-D23 已获所有者批准（2026-11-11）。backlog VA.5："Revisit only with a cheaper technique (baked contact shadows) and a frame-time budget." V9 的阴影图在 SwiftShader 上多约 55% 帧时间，超过当时约 30% 的预算（`mount.ts` 灯光处的注释）。
 - 由几何确定性烘焙的地面接触阴影，和墙脚、墙角的环境遮蔽；不用实时阴影图。放进 Mesh3D 与 GLB 还是只在查看器里，按设计稿。
