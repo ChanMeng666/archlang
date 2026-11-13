@@ -1609,6 +1609,10 @@ export interface PlanNode {
    *  resolved (`deriveCeilings`, `src/datum.ts`). Never parsed. */
   _storey?: { ownHeight: boolean };
   north: NorthDir;
+  /** Byte span of the plan's `north` statement (`north <dir>`, `north … hidden`), the last one written;
+   *  absent when it writes none, and the sheet's arrow then takes the default `up` (read by the
+   *  `validate --stage drafting` hint, RM1.2a). Nothing draws, describes or lints from it. */
+  northSpan?: Span;
   /** The sheet marks the plan hides (`north … hidden`, `scale … hidden`, `title hidden`). Absent unless written. */
   hide?: ChromeHide;
   /**

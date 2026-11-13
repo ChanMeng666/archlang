@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - The 3D preview (`@chanmeng666/archlang-3d`) draws soft contact shadows along the foot of the walls, up their inside corners and round the standing furniture, baked from the geometry (no shadow map). They are the viewer's: the GLB is unchanged, and the limits line under every 3D view now says "the ground and the soft contact shadows are the viewer's". The plan drawing has no shadows and is unchanged.
+- `validate --stage drafting` now says when a plan writes no `north`. A plan without `north` still draws a north arrow, pointing up the page, so `next` is an `info` item with no code: the sheet's arrow assumes the top of the page is north; write `north <dir>` to say which way it is, or `north hidden` to draw no arrow. It ranks after every tier that gates and above taste, so `next` names it until it is answered, and the drafting stage is not clean until then. It is no diagnostic: `compile()`, `lint()`, plain `validate`, `ok`, the exit code and the summary are unchanged. A plan that writes any `north` (`north … hidden` included) gets nothing, and `arch fmt` always writes `north up`, which answers it. The parse records where `north` is written (`PlanNode.northSpan`); nothing draws, describes or lints from it.
 
 ## [1.60.0] - 2026-11-12
 

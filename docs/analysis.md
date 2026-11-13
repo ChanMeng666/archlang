@@ -1640,6 +1640,7 @@ emission order wins:
 | `profile` | a warning only the named lint profile raises | `--profile <name>` |
 | `taste` | the lowest-scoring assessable taste criterion below 1 | `--taste <profile>` |
 | `info` | an informational compile-channel warning (`W_GRID_SNAPPED`: the drawing already is what it draws) | always |
+| `info` | the north hint: the plan writes no `north` (code `null`, see Stages below); it ranks after `profile`, above `taste` and the warning above | `--stage drafting` |
 
 One exception holds inside the `validity` tier: a door-swing shortfall that comes first yields to the first stair-safety warning or to a finding of an earlier authoring stage (`validate --stage`), so a WC door 85 mm short is not named before a stair with no landing.
 
@@ -1662,7 +1663,7 @@ archlang validate plan.arch --json --taste generic
 `hint` is the diagnostic's first hint, else its catalogued `fix`; for an intent violation it is
 the correction prompt `--feedback` prints; for taste it names the criterion, its score and its
 source. `code` is the taste criterion's `A_*` advice code in the taste tier, and `null` for a
-`--graph` mismatch. `level` and `file` appear when the diagnostic carries them.
+`--graph` mismatch and for the north hint. `level` and `file` appear when the diagnostic carries them.
 
 Compile-channel warnings come right after errors because they are upstream causes: a door that
 did not land on its wall (`W_DOOR_OFF_WALL`) reads to lint as a room with no door, and the fix
@@ -1701,8 +1702,8 @@ gives the staged `{ satisfied, total }`. Taste is a `next` tier only at `draftin
 check only from `openings` on. `summary` starts with the stage and ends with how many later-stage
 findings are held back (`stage rooms: 1 warning in 1 code: W_ROOM_TOO_SMALL ×1 (10 later-stage
 findings held back)`). An `at_stage` block (`{ stage, held_back, clean }`) comes before `keeps`
-and `next`. `clean` is true when no tier of `next` but taste has an item left: that is the moment
-to advance (or advance with the remaining findings accepted, and say so). A finding's stage is the
+and `next`. `clean` is true when no tier of `next` but taste has an item left and the north hint
+is not outstanding: that is the moment to advance (or advance with the remaining findings accepted, and say so). A finding's stage is the
 earliest stage at which its check can be judged, whether it reads elements or their absence:
 `W_NO_ENTRANCE` reports a missing door, so it belongs to `openings`. A later stage can still add
 or re-raise an earlier stage's finding: walls take the clear width a room's size was drawn to, a
@@ -1710,6 +1711,17 @@ bed makes a bedroom a double, furniture pinches a walk. So clean at a stage is n
 each later stage's view shows the earlier stages' codes again. Lint codes take their stage from their rule (`LintRule.stage`, required).
 Compile warnings take theirs from their family, an intent assertion from its predicate, and a
 `keep` from what it measures.
+
+At `drafting`, a plan that writes no `north` statement still draws a north arrow, pointing up the
+page, so `next` says what the sheet assumes: an `info` item with code `null`, "The plan writes no
+`north`, so the sheet's north arrow assumes the top of the page is north." Its hint is to write
+`north <dir>` (or a bearing) or `north hidden`. It is no diagnostic: `compile()`, `lint()`, plain
+`validate`, `ok`, the exit code and the summary never see it. It ranks after every tier that gates
+(`error` to `profile`) and above `taste` and the `info` warnings, so `next` names it for as long
+as it is outstanding, and the stage is not clean until it is answered. On this last stage the
+stderr stage line calls it informational rather than asking to fix it before advancing. Any
+written `north`, `north hidden` included, answers it, and `archlang fmt` always writes `north up`, so
+a formatted plan never gets it.
 
 Without `--stage`, nothing changes but one key: every `validate --json` diagnostic and intent
 violation ends with its `stage`. `lint --json` and `lint()` are untouched. In the library:
