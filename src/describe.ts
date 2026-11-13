@@ -41,7 +41,7 @@ import type { PlanNode, Point } from "./ast.js";
 import type { CeilingFacts } from "./datum.js";
 import { polygonArea, polygonBounds } from "./geometry/polygon.js";
 import { voidPieces } from "./elements/void.js";
-import { storeyNetAreaBands } from "./analyze/net-area-memo.js";
+import { storeyNetAreaBands, withNetAreaBudget } from "./analyze/net-area-memo.js";
 import { grossInternalArea } from "./analyze/gross-area.js";
 import { openShells } from "./analyze/open-shell.js";
 import { WALL_STATUSES, type WallStatus } from "./grammar/tokens.js";
@@ -883,7 +883,8 @@ export function describeWithAutoIds(
     for (const e of ir.elements) if (e.kind === "room" && (e as RRoom)._idAuthored !== true) autoRoomIds.add(e.id);
   const statements = plan && opts.facts?.includes("depends") ? indexStatements(plan) : undefined;
   return {
-    summary: summarizeResolved(ir, diagnostics, levels, opts, statements, plan),
+    // One net-area total for the whole summary, opened after the resolution (U.22).
+    summary: withNetAreaBudget(() => summarizeResolved(ir, diagnostics, levels, opts, statements, plan)),
     autoRoomIds,
     fabric: diffFabricOf(ir),
   };

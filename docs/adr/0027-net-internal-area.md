@@ -72,7 +72,7 @@ its angle through `Math.atan2`, which is not exactly rounded across engines, so 
 by a curved band may differ in the last ulps between platforms, far below the 0.01 m² it is
 printed to.
 
-The figure is **omitted** (no `net_area_m2` on the room) rather than approximated in three named
+The figure is **omitted** (no `net_area_m2` on the room) rather than approximated in four named
 cases:
 
 - The room's box meets more than `MAX_NET_CURVES` (2,000) room and band edges. The pair loop
@@ -85,6 +85,12 @@ cases:
 - The boundary integral is not finite, or falls outside `[−ε, area + ε]` with
   `ε = 10⁻⁹ · area + 10⁻³ mm²`. That is the signature of a configuration the split did not
   resolve. No shipped room triggers it.
+- The call has spent its total (added for backlog U.22). One `describe()`, one `lint()` and each
+  storey `compile()` draws share one meter of `MAX_NET_PLAN_WORK` (40,000,000) units, charged
+  each room's counts (its split's pair tests, then its walk) before the work they pay for, rooms
+  in element order, storeys in level order. Past it the meter closes: that room and every later
+  one in the call omit the figure. A memo hit charges what the miss charged, so the answer never
+  depends on what ran before. No shipped plan's `describe()` charges more than 275,000.
 
 When any room's figure is omitted, `totals.net_floor_area_m2` is omitted too (never a sum over
 a subset), and so are the room schedule's net subtotal and TOTAL. The omitted cell is drawn `-`,

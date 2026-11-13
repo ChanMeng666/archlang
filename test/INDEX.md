@@ -5,7 +5,7 @@
 Where the tests of a `src` module are, and what each test file is for. Generated; `npm run check:drift`
 fails when it is stale. How to add a test: `docs/testing.md` § 4.
 
-502 test files in `test/`, 279 `src` modules, 106 modules no test imports.
+503 test files in `test/`, 279 `src` modules, 105 modules no test imports.
 
 ## `src` module → tests that import it
 
@@ -16,7 +16,7 @@ Nearest first, then by name; `(+n)` is the rest. Test names are `test/<name>.tes
 - `src/algebra/d4.ts` (5) — `d4`, `describe-depends`, `equivariance-corpus`, `keep`, `symmetry`
 - `src/algebra/paths.ts` (1) — `path-algebra`
 - `src/algebra/semiring.ts` (2) — `path-algebra`, `semiring`
-- `src/analyze.ts` (92) — `access-policy`, `annotation-collisions`, `annotation-small-rooms`, `between-face-probes`, `block-stair-landing`, `block-stair-lint`, `block-stair-shaft`, `block-stair-winders` (+84)
+- `src/analyze.ts` (93) — `access-policy`, `annotation-collisions`, `annotation-small-rooms`, `between-face-probes`, `block-stair-landing`, `block-stair-lint`, `block-stair-shaft`, `block-stair-winders` (+85)
 - `src/analyze/circulation-overlay.ts` (43) — `circulation-concave`, `nav-grid-residual`, `block-stair-frames`, `block-stair-landing`, `block-stair-lint`, `circulation-entrances`, `corner-window`, `describe-centreline-at` (+35)
 - `src/analyze/circulation.ts` (54) — `carve-inward-walk`, `circulation-room-bottlenecks`, `circulation-translation`, `equivariance-corpus`, `far-seed-pinch`, `lint-attribution-budget`, `lint-fix-texts`, `lint-space-enclosure` (+46)
 - `src/analyze/contacts.ts` (1) — `impact-contacts`
@@ -24,7 +24,8 @@ Nearest first, then by name; `(+n)` is the rest. Test names are `test/<name>.tes
 - `src/analyze/entrance.ts` (2) — `main-entrance`, `reachability-blind-spots`
 - `src/analyze/grid.ts` (1) — `path-algebra`
 - `src/analyze/gross-area.ts` (2) — `brief-bound-caption`, `brief-bound`
-- `src/analyze/net-area.ts` (4) — `describe-quantities`, `net-area-once`, `net-area-oracle-corpus`, `net-area`
+- `src/analyze/net-area-memo.ts` (1) — `net-area-budget`
+- `src/analyze/net-area.ts` (5) — `describe-quantities`, `net-area-budget`, `net-area-once`, `net-area-oracle-corpus`, `net-area`
 - `src/analyze/occupancy.ts` (2) — `nav-grid-scale`, `polygon-rooms`
 - `src/analyze/quantities.ts` (1) — `describe-quantities`
 - `src/analyze/symmetry.ts` (1) — `rect-ring`
@@ -115,11 +116,11 @@ Nearest first, then by name; `(+n)` is the rest. Test names are `test/<name>.tes
 - `src/impact.ts` (2) — `rectilinear-doors`, `rectilinear-rooms`
 - `src/import.ts` (30) — `block-stair-byte-identity`, `corner-window-byte-identity`, `dim-thickness-callout`, `drawing-budget`, `furniture-relations`, `gaps-byte-identity`, `keep`, `opening-host-on-edge` (+22)
 - `src/import/limits.ts` (1) — `openplan3d-malformed`
-- `src/index.ts` (378) — `acc-metadata`, `access-graph`, `access-policy`, `accessible-svg`, `agent-gallery`, `alias-match`, `anchors`, `annotate` (+370)
+- `src/index.ts` (379) — `acc-metadata`, `access-graph`, `access-policy`, `accessible-svg`, `agent-gallery`, `alias-match`, `anchors`, `annotate` (+371)
 - `src/input-limit.ts` (2) — `import-rooted`, `workspace-seams`
 - `src/intent-concepts.ts` (2) — `vocabulary-living-dining`, `vocabulary-matcher-oracle`
 - `src/intent.ts` (1) — `site`
-- `src/ir.ts` (167) — `access-policy`, `arc-radius-exact`, `attach`, `axes`, `between-face-probes`, `block-stair-byte-identity`, `block-stair-frames`, `block-stair-winders` (+159)
+- `src/ir.ts` (168) — `access-policy`, `arc-radius-exact`, `attach`, `axes`, `between-face-probes`, `block-stair-byte-identity`, `block-stair-frames`, `block-stair-winders` (+160)
 - `src/label-fit.ts` (1) — `label-fit`
 - `src/label-placement.ts` (3) — `label-placement-oracle`, `label-placement`, `label-wrap`
 - `src/lexer.ts` (8) — `diagnostics-volume`, `diagnostics`, `expr`, `imperial-input`, `model-range`, `parser-recovery-metric`, `stage-cache`, `unit-suffix`
@@ -505,6 +506,7 @@ The first sentence of each file's header comment.
 - `test/mutants-sampler.test.ts` — The nightly mutant sampler (`scripts/mutants.mjs`, nightly.yml `mutants`, report-only): each operator rewrites a synthetic source the way its header says, the PRNG and the sample are fixed by the seed, the allow-list...
 - `test/nav-grid-residual.test.ts` — G.11 — the nav grid's walls agree with the drawn walls; C.1 — a wall thinner than a cell still blocks (the centreline cover).
 - `test/nav-grid-scale.test.ts` — nav-grid resolution scales with plan area; a large plan can tell a narrow route from a wide one; a fixture across part of a wide threshold narrows it, never sea…
+- `test/net-area-budget.test.ts` — U.22 / PS0.15: net internal area is held to a per-call total (`MAX_NET_PLAN_WORK`, `src/analyze/net-area-memo.ts`), not only to a per-room cap.
 - `test/net-area-once.test.ts` — net internal area — once per room per compile on a `schedule rooms` plan.
 - `test/net-area-oracle-corpus.test.ts` — NET internal area over the whole corpus (examples, fixtures, recovery plans, eval goldens, fidelity plans and faults; the docs gallery is left out, `agent-gallery.test.ts` owns it): the closed-form figure agrees with...
 - `test/net-area-stamp.test.ts` — `schedule rooms net`: the room stamp prints the schedule's NET AREA figure, named.
@@ -703,7 +705,6 @@ module); adding a test that imports it removes it from this list.
 - `src/analyze/depends.ts`
 - `src/analyze/keep-facts.ts`
 - `src/analyze/nav-grid.ts`
-- `src/analyze/net-area-memo.ts`
 - `src/analyze/open-shell.ts`
 - `src/analyze/rooms.ts`
 - `src/analyze/syntax.ts`

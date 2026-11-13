@@ -17,6 +17,7 @@
  */
 
 import { resolvePlan, roomUses } from "./analyze.js";
+import { memoRoomNetAreaMm2, storeyNetAreaBands, withNetAreaBudget } from "./analyze/net-area-memo.js";
 import type { ResolvedPlan, RRoom } from "./ir.js";
 import type { Diagnostic, Span } from "./diagnostics.js";
 import { type BuildingContext, buildLintContext, type LintLayer, type LintStage } from "./lint/context.js";
@@ -136,6 +137,27 @@ function lintRun(
   if (bad.length > 0) return { diagnostics: bad, coverage: null, layers: LINT_CODE_LAYERS };
   const { ir, levels } = resolvePlan(source, opts);
   if (!ir) return { diagnostics: [], coverage: null, layers: LINT_CODE_LAYERS };
+  // One net-area total for the whole run, opened after the resolution (U.22).
+  return withNetAreaBudget(() => lintResolved(ir, levels, rules, work));
+}
+
+/** {@link lintRun} over a resolved plan, under its net-area total. */
+function lintResolved(
+  ir: ResolvedPlan,
+  levels: ReturnType<typeof resolvePlan>["levels"],
+  rules: LintRuleset,
+  work: LintWork,
+): { diagnostics: Diagnostic[]; coverage: LintCoverage | null; layers: Readonly<Record<string, LintLayer>> } {
+  // A ruleset that reads net floor asks only some rooms' net areas, so under the total they are
+  // first measured as `describe()` measures them: every storey in level order, every room in
+  // element order. A room's figure is then the one `describe().rooms[]` reports, even past the
+  // total (the rule reads the drawn area where the figure is omitted, and says so).
+  if (rules.roomAreaMeasure === "net") {
+    for (const st of levels.length > 0 ? levels : [{ ir }]) {
+      const bands = storeyNetAreaBands(st.ir.walls);
+      for (const e of st.ir.elements) if (e.kind === "room") memoRoomNetAreaMm2(e as RRoom, bands);
+    }
+  }
 
   const notes: SkipNote[] = [];
   const unclassified: LintUnclassifiedRoom[] = [];
