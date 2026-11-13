@@ -11,7 +11,7 @@
  * so every backend serializes it with no changes.
  */
 
-import { buildDoorAccessGraph, DEFAULT_TOL, openRunsOf, roomBox } from "../analyze.js";
+import { buildDoorAccessGraph, DEFAULT_TOL, openRunsOf, outdoorsOf, roomBox } from "../analyze.js";
 import { arrivalAccess, entranceInputs } from "../analyze/entrance.js";
 import { computeCirculationOverlay } from "../analyze/circulation-overlay.js";
 import { verticalsOf } from "../vertical.js";
@@ -37,7 +37,7 @@ export function circulationOverlayNodes(ir: ResolvedPlan, theme: Theme, sizes: R
   // reaches that has a balcony door (`garden-house`'s upper floor) it still walks from that door,
   // where `describe().circulation` walks from the stair (PS0.3): a known gap, not yet closed.
   const access = arrivalAccess(
-    buildDoorAccessGraph(rooms, doors, DEFAULT_TOL, undefined, openings, openRunsOf(ir, DEFAULT_TOL)),
+    buildDoorAccessGraph(rooms, doors, DEFAULT_TOL, undefined, openings, openRunsOf(ir, DEFAULT_TOL), outdoorsOf(ir)),
     entranceInputs(ir, new Map(rooms.map((r) => [r.id, roomBox(r)]))),
   );
   const overlay = computeCirculationOverlay(

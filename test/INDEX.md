@@ -5,7 +5,7 @@
 Where the tests of a `src` module are, and what each test file is for. Generated; `npm run check:drift`
 fails when it is stale. How to add a test: `docs/testing.md` § 4.
 
-502 test files in `test/`, 279 `src` modules, 106 modules no test imports.
+503 test files in `test/`, 279 `src` modules, 106 modules no test imports.
 
 ## `src` module → tests that import it
 
@@ -29,7 +29,7 @@ Nearest first, then by name; `(+n)` is the rest. Test names are `test/<name>.tes
 - `src/analyze/quantities.ts` (1) — `describe-quantities`
 - `src/analyze/symmetry.ts` (1) — `rect-ring`
 - `src/analyze/wall-faces.ts` (2) — `lint-space-enclosure`, `wall-status`
-- `src/ast.ts` (111) — `arc-radius-exact`, `band`, `circulation-concave`, `circulation-translation`, `closed-vocabularies`, `corner-window`, `cursor-exhaustive`, `d4` (+103)
+- `src/ast.ts` (112) — `arc-radius-exact`, `band`, `circulation-concave`, `circulation-translation`, `closed-vocabularies`, `corner-window`, `cursor-exhaustive`, `d4` (+104)
 - `src/attach.ts` (1) — `attach`
 - `src/axes.ts` (1) — `axes`
 - `src/backends/ascii.ts` (10) — `axes`, `fence`, `furniture-curves-backends`, `opening`, `outdoor`, `room-floor`, `scene-path-prim`, `schedule` (+2)
@@ -73,7 +73,7 @@ Nearest first, then by name; `(+n)` is the rest. Test names are `test/<name>.tes
 - `src/elements/glyphs-misc.ts` (1) — `glyphs-misc`
 - `src/elements/glyphs-outdoor.ts` (1) — `glyphs-outdoor`
 - `src/elements/index.ts` (1) — `elements`
-- `src/elements/outdoor.ts` (2) — `label-placement-oracle`, `label-placement`
+- `src/elements/outdoor.ts` (3) — `ground-walkability`, `label-placement-oracle`, `label-placement`
 - `src/elements/roof.ts` (3) — `label-placement-oracle`, `roof`, `v129-cross`
 - `src/elements/room.ts` (4) — `label-placement`, `net-area-stamp`, `rect-label-anchor`, `room-floor`
 - `src/elements/section.ts` (1) — `section`
@@ -115,7 +115,7 @@ Nearest first, then by name; `(+n)` is the rest. Test names are `test/<name>.tes
 - `src/impact.ts` (2) — `rectilinear-doors`, `rectilinear-rooms`
 - `src/import.ts` (30) — `block-stair-byte-identity`, `corner-window-byte-identity`, `dim-thickness-callout`, `drawing-budget`, `furniture-relations`, `gaps-byte-identity`, `keep`, `opening-host-on-edge` (+22)
 - `src/import/limits.ts` (1) — `openplan3d-malformed`
-- `src/index.ts` (378) — `acc-metadata`, `access-graph`, `access-policy`, `accessible-svg`, `agent-gallery`, `alias-match`, `anchors`, `annotate` (+370)
+- `src/index.ts` (379) — `acc-metadata`, `access-graph`, `access-policy`, `accessible-svg`, `agent-gallery`, `alias-match`, `anchors`, `annotate` (+371)
 - `src/input-limit.ts` (2) — `import-rooted`, `workspace-seams`
 - `src/intent-concepts.ts` (2) — `vocabulary-living-dining`, `vocabulary-matcher-oracle`
 - `src/intent.ts` (1) — `site`
@@ -408,6 +408,7 @@ The first sentence of each file's header comment.
 - `test/grid-index.test.ts` — GridIndex; room-overlap grid ≡ O(n²) (T3.7); room-overlap listing cap; GridIndex extreme extents; overlapIndex ≡ a full scan.
 - `test/grid-overlap-hint.test.ts` — `W_ROOM_OVERLAP` names the grid when the grid can be the cause (issue #405).
 - `test/gridsnap.test.ts` — grid-snap rounding.
+- `test/ground-walkability.test.ts` — a door onto water is no way in or out; a deck or paving drawn over the water keeps it one (backlog 4.5).
 - `test/height-byte-identity.test.ts` — The byte-identity law for the **vertical datum layer**.
 - `test/huge-coordinates.test.ts` — huge finite coordinates never throw; the same shapes at the edge of the modelling range are drawn and measured; huge on one axis, thin on the other (nav and occ…
 - `test/impact-contacts.test.ts` — Contact dependency (plan-soundness card PS4.5): an authored wall or a furniture piece written at fixed coordinates that lies ON a rectangular room's edge records that contact in `describe --facts depends` (`elements[]...

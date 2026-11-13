@@ -15,10 +15,13 @@
  *    area is reported separately, in `describe().outdoor[]` and `totals.outdoor_area_m2`,
  *    and never mixed in.
  *  - **Not a wall or an obstacle.** It obstructs nothing. It contributes nothing to the
- *    nav grid, to the circulation flood fill, or to any clearance rule. You can walk on a
- *    lawn; a v1 that decided otherwise for `water` would have to decide it for a pond
- *    with a bridge next, so the whole question is deferred by name rather
- *    than half-answered.
+ *    nav grid, to the circulation flood fill, or to any clearance rule. What it does decide
+ *    is whether a door to the outside leads anywhere (backlog 4.5): the kind says whether
+ *    the ground can be walked on (`groundWalkable`, every kind but `water`), and a door whose
+ *    outside lies on water with no walkable surface drawn over it (a `deck` bridge, paving
+ *    stepping stones) is no way in or out, so its access edge joins nothing
+ *    (`unwalkableGroundAt`, `src/analyze.ts`). The garden itself is not walked: the nav grid
+ *    models the inside of the building only.
  *  - **It IS part of the drawing.** It joins {@link ElementDef.bounds}, so a plan's page
  *    (and, on a `paper` plan, its auto-fit scale) contains the ground. That is exactly
  *    what a `roof` already does, and the consequence is the same and is pinned by test: a
@@ -118,36 +121,44 @@ export function outdoorRing(o: ROutdoor): Point[] {
 }
 
 /**
- * Per-kind rendering data: which hatch material fills it, which theme tint sits under
- * that, and which CAD layer it lands on.
+ * Per-kind data: which hatch material fills it, which theme tint sits under that, which CAD
+ * layer it lands on, and whether a person can walk on it.
  *
  * One table, so nothing anywhere else switches on a kind. `material: null` means "no
- * hatch" — `balcony` only.
+ * hatch" — `balcony` only. `walkable: false` is `water` alone (backlog 4.5): a lawn, a planting
+ * bed, gravel and every paved or decked surface can be stepped on. It is read by the access
+ * graph only, for what a door opens onto ({@link groundWalkable}); it draws nothing.
  */
 interface GroundSpec {
   material: string | null;
   tint: "lawn" | "water" | "paving";
   layer: string;
+  walkable: boolean;
 }
 
 const GROUND: Readonly<Record<OutdoorKind, GroundSpec>> = {
-  lawn: { material: "grass", tint: "lawn", layer: PLANTING_LAYER },
-  planting: { material: "planting", tint: "lawn", layer: PLANTING_LAYER },
-  paving: { material: "paving", tint: "paving", layer: SITE_LAYER },
-  deck: { material: "deck", tint: "paving", layer: SITE_LAYER },
-  gravel: { material: "gravel", tint: "paving", layer: SITE_LAYER },
-  water: { material: "water", tint: "water", layer: SITE_LAYER },
-  driveway: { material: "tarmac", tint: "paving", layer: SITE_LAYER },
+  lawn: { material: "grass", tint: "lawn", layer: PLANTING_LAYER, walkable: true },
+  planting: { material: "planting", tint: "lawn", layer: PLANTING_LAYER, walkable: true },
+  paving: { material: "paving", tint: "paving", layer: SITE_LAYER, walkable: true },
+  deck: { material: "deck", tint: "paving", layer: SITE_LAYER, walkable: true },
+  gravel: { material: "gravel", tint: "paving", layer: SITE_LAYER, walkable: true },
+  water: { material: "water", tint: "water", layer: SITE_LAYER, walkable: false },
+  driveway: { material: "tarmac", tint: "paving", layer: SITE_LAYER, walkable: true },
   // A patio IS paved — same surface, a different word for where it sits — so it shares
   // the pattern rather than getting a near-duplicate of it. One legend row covers both,
   // which is correct: the legend names materials, not places.
-  patio: { material: "paving", tint: "paving", layer: SITE_LAYER },
-  balcony: { material: null, tint: "paving", layer: BALCONY_LAYER },
+  patio: { material: "paving", tint: "paving", layer: SITE_LAYER, walkable: true },
+  balcony: { material: null, tint: "paving", layer: BALCONY_LAYER, walkable: true },
 };
 
 /** The hatch material a kind fills with, or null when it takes none. */
 export function groundMaterial(kind: OutdoorKind): string | null {
   return GROUND[kind].material;
+}
+
+/** Can a person walk on this kind of ground? Only `water` says no (backlog 4.5). */
+export function groundWalkable(kind: OutdoorKind): boolean {
+  return GROUND[kind].walkable;
 }
 
 /**
