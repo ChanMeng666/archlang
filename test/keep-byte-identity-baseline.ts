@@ -10,7 +10,7 @@
  * PR legitimately moves a hashed output (never keep code), the table is re-taken by the generator, the
  * reason recorded below and the moved files listed in that commit's message.
  *
- * Taken: RM8.5 review: examples/courtyard-family.arch source changed (deeper garage, unclassified gym), on 14458fac
+ * Taken: RM1.2a item 2 on origin/main 8b77d5c4: two new defect-corpus files (missing-defining-contents/desk-nook-no-desk pair); no existing row moved
  */
 
 /** `[path from the repository root, SHA-256 of the payload, evaluation steps]`, sorted by root. */
@@ -850,6 +850,16 @@ export const KEEP_WEAK_BASELINE: readonly (readonly [string, string, number])[] 
     "test/defect-corpus/missing-defining-contents/bedroom-no-bed.clean.arch",
     "7503e71ca53ed0ee4b706b50a8f635208bba9750304c17ad1871c35b7ba8753c",
     166,
+  ],
+  [
+    "test/defect-corpus/missing-defining-contents/desk-nook-no-desk.arch",
+    "4895e9e05ebdec2dcb6368789a18d218d4bfd26c251684cd080c54b7c56b7d04",
+    152,
+  ],
+  [
+    "test/defect-corpus/missing-defining-contents/desk-nook-no-desk.clean.arch",
+    "df89ebf6227d81a4faa8170f7e7533a49c87ba4bc1c13695a9f99cc87bb631d4",
+    168,
   ],
   [
     "test/defect-corpus/missing-defining-contents/dining-no-table.arch",
