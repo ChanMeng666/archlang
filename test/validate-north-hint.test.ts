@@ -4,8 +4,9 @@
  * assumes page-up is north. A plan with no `north` still draws an arrow (the default `up`), so
  * nothing is missing from the drawing; the hint says what it assumes. It is no diagnostic: not in
  * `compile()`, `lint()` or plain `validate`, and it moves neither `ok`, the exit code nor the
- * summary. A plan that writes any `north` (`north … hidden` too) gets nothing, and any other `next`
- * item ranks above it.
+ * summary. A plan that writes any `north` (`north … hidden` too) gets nothing. It ranks after every
+ * tier that gates (error to profile) and above `taste` and `info` (ruled 2026-11-13), so `next`
+ * carries it for as long as it is outstanding, and the stage is not clean until it is answered.
  */
 
 import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
@@ -86,11 +87,37 @@ describe("validate --stage drafting: the north hint", () => {
     expect(out.next).toBeNull();
   });
 
-  it("ranks below every other item: a lint warning comes first", () => {
+  it("ranks below the tiers that gate: a profile warning comes first", () => {
     // An 800 mm door under accessibility-advisory's 850 mm is a profile item, which ranks above.
     const f = file("narrow.arch", studio(null).replace("width 900", "width 800"));
     const out = run([f, "--stage", "drafting", "--profile", "accessibility-advisory"]).out;
     expect(out.next?.tier).toBe("profile");
+  });
+
+  it("ranks above taste: --taste names the same item, and the stage is not clean either way", () => {
+    const f = file("taste.arch", studio(null));
+    const plain = run([f, "--stage", "drafting"]).out;
+    const taste = run([f, "--stage", "drafting", "--taste", "generic"]).out;
+    expect(taste.next).toEqual(plain.next);
+    expect(taste.next?.message).toBe(MESSAGE);
+    expect(plain.at_stage?.clean).toBe(false);
+    expect(taste.at_stage?.clean).toBe(false);
+    // The premise: this studio has a taste item (its one window faces north), so the hint outranks it.
+    const told = run([file("taste-told.arch", studio("north up")), "--stage", "drafting", "--taste", "generic"]).out;
+    expect(told.next?.tier).toBe("taste");
+    expect(told.at_stage?.clean).toBe(true);
+  });
+
+  it("a --graph mismatch (intent tier, it gates) ranks above it; a matching graph leaves the hint", () => {
+    const f = file("graph.arch", studio(null));
+    const bad = run([f, "--stage", "drafting", "--graph", file("bad.json", JSON.stringify({ living: ["bed"] }))]);
+    expect(bad.exit).toBe(2);
+    expect(bad.out.next?.tier).toBe("intent");
+    expect(bad.out.at_stage?.clean).toBe(false);
+    const good = run([f, "--stage", "drafting", "--graph", file("good.json", JSON.stringify({ r: [] }))]);
+    expect(good.exit).toBe(0);
+    expect(good.out.next?.message).toBe(MESSAGE);
+    expect(good.out.at_stage?.clean).toBe(false);
   });
 
   it("with --intent too (the checks path), the same item", () => {
@@ -110,6 +137,9 @@ describe("validate --stage drafting: the north hint", () => {
     const r = await runArch(["validate", file("none3.arch", studio(null)), "--stage", "drafting"]);
     expect(r.status).toBe(0);
     expect(r.stderr).toContain(`next (info): ${MESSAGE}`);
+    // The last stage: nothing to advance to, so the stage line never says "before advancing".
+    expect(r.stderr).toContain("(stage drafting is the last: the north hint is informational;");
+    expect(r.stderr).not.toContain("before advancing");
     expect(r.stdout).toContain("✓ ok");
   });
 });

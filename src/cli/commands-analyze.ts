@@ -725,7 +725,7 @@ interface Staged {
     stage: AuthoringStage;
     held: number;
     clean: boolean;
-    /** The north hint is all that is left (RM1.2a); read by the human stage line only, never in JSON. */
+    /** The north hint is `next` (RM1.2a); read by the human stage line only, never in JSON. */
     north?: boolean;
     intent?: { satisfied: number; total: number };
   };
@@ -756,9 +756,8 @@ function stageLine(at: NonNullable<Staged["at"]>): string {
   const after = AUTHORING_STAGES[AUTHORING_STAGES.indexOf(at.stage) + 1];
   const held = at.held ? `; ${plural(at.held, "later-stage finding")} held back` : "";
   if (!at.clean && after === undefined && at.north) {
-    // The last stage, held only by the north hint (perhaps under a taste item ranked above it):
-    // there is nothing to advance to, and the hint is informational.
-    return `  (stage ${at.stage} is the last: it is clean once the plan says which way north is, with \`north <dir>\` or \`north hidden\`)`;
+    // The last stage, held by the north hint: there is nothing to advance to, and it is informational.
+    return `  (stage ${at.stage} is the last: the north hint is informational; write \`north <dir>\` or \`north hidden\` to answer it)`;
   }
   if (!at.clean) return `  (stage ${at.stage}: fix what it shows before advancing${held})`;
   return after === undefined
@@ -769,8 +768,9 @@ function stageLine(at: NonNullable<Staged["at"]>): string {
 /**
  * The drafting stage's north hint (product roadmap RM1.2a). At `--stage drafting`, a plan that
  * writes no `north` statement has one `info` item for `next`: a plan with none still draws a north
- * arrow, pointing up the page, so the item says what the sheet assumes. It ranks where the `info`
- * tier ranks, last (after taste, and after a `W_GRID_SNAPPED`, emitted before it). It is no
+ * arrow, pointing up the page, so the item says what the sheet assumes. It ranks after every tier
+ * that gates (error to profile) and above `taste` and the compile-channel `info` warnings
+ * (`W_GRID_SNAPPED`), so `next` carries it for as long as it is outstanding. It is no
  * diagnostic, so `ok`, the exit code and the summary never move; but it keeps the stage from being
  * clean until it is answered, whatever ranks above it (a taste item included, though taste never
  * gates). A plan that writes any `north` (`north … hidden` too) gets nothing, and `arch fmt` always
@@ -788,15 +788,20 @@ const NORTH_HINT: NextItem = {
   hint: "Write `north up` (or `down`, `left`, `right`, or a bearing in degrees) to say which way north is, or `north hidden` to draw no arrow.",
 };
 
-/** `next` with the north hint in the `info` tier's place: only when no tier has anything left. */
-const draftingNext = (found: NextItem | null, unstated: boolean): NextItem | null =>
-  found === null && unstated ? NORTH_HINT : found;
+/** `next`, with the north hint ranked after the tiers that gate and above taste and `info`. */
+function draftingNext(input: NextInput, unstated: boolean): NextItem | null {
+  const found = nextDiagnostic(input);
+  if (!unstated) return found;
+  const { taste: _taste, ...rest } = input;
+  const gating = nextDiagnostic(rest);
+  return gating === null || gating.tier === "info" ? NORTH_HINT : found;
+}
 
-/** The stage block at `--stage`: clean when no tier of `next` but taste has an item left and no
- *  north hint is outstanding; `north` when that hint is the only thing left (the stage line). */
+/** The stage block at `--stage`: clean when no tier of `next` but taste has an item left and the
+ *  north hint is not outstanding; `north` when the hint is `next` (read by the stage line). */
 function stageAt(stage: AuthoringStage, held: number, input: NextInput, unstated: boolean) {
-  const clean = isClean(input);
-  return { stage, held, clean: clean && !unstated, north: clean && unstated };
+  const north = draftingNext(input, unstated) === NORTH_HINT;
+  return { stage, held, clean: isClean(input) && !north, north };
 }
 
 /** A stage is clean when no tier of `next` but taste has an item left (taste never gates). */
@@ -893,7 +898,7 @@ export function cmdValidate(args: Args, io: CliIo): number {
     // `--stage`: the report, `next` and `ok` read the stage's view; errors always stay.
     const view = atStage(stage, diags, nextInput, kindOf);
     const unstated = northUnstated(stage, resolved.plan);
-    const next = draftingNext(nextDiagnostic(view.input), unstated);
+    const next = draftingNext(view.input, unstated);
     const at = stageAt(stage, view.held, view.input, unstated);
     return report(io, source, view.diagnostics, args, filter, undefined, next, keeps, {
       stageOf,
@@ -1064,11 +1069,7 @@ function reportWithChecks(
   const shown = active ? applyDiagFilter(diags, filter) : diags;
   // Weighs everything, like `ok`: a display filter never changes what comes next.
   const next = draftingNext(
-    nextDiagnostic({
-      ...nextInput,
-      ...(intentResult ? { intent: intentResult } : {}),
-      ...(graph ? { graph } : {}),
-    }),
+    { ...nextInput, ...(intentResult ? { intent: intentResult } : {}), ...(graph ? { graph } : {}) },
     northUnstated(stages.stage, stages.plan),
   );
 
