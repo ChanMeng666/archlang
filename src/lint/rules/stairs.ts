@@ -84,6 +84,7 @@ import {
   roomOfVertical,
   runAxis,
   tailEdge,
+  winderTreads,
 } from "../../vertical.js";
 import { openingClauseOf, wallRef } from "../../wall-ref.js";
 import { rectToArc } from "../clearance-measure.js";
@@ -1111,7 +1112,8 @@ export const stairTooSteep: LintRule = {
           ...ctx.at(v),
           message: `${capitalise(stairName(v, ctx))} is too steep: its flights' ${mm(run)} mm run must climb the ${mm(rise)} mm storey, and ${atMost} ${need.risers} risers, ${need.goings} goings and ${landingWords(v, ctx.rules.stairMinGoingMm)}, each ${winding(v)}going at least ${going} mm, but the flights hold only ${short.held.join(" + ")} whole goings, which makes ${risers} risers of ${limitMm(rise / risers)} (${owed === 1 ? "1 going" : `${owed} goings`} short).`,
           hints: [
-            `Lengthen ${owed === 1 ? `one flight of \`${v.id}\` ${each[0]}` : `${owed} flights of \`${v.id}\`, ${each.join(" and ")}`} on every storey it is drawn on (each flight's \`size\`), or correct the storey \`height\` if it is wrong; the ${limits} from the lint profile (\`--profile\`).`,
+            steepAndRiserHint(v, ctx, rise, limits) ??
+              `Lengthen ${owed === 1 ? `one flight of \`${v.id}\` ${each[0]}` : `${owed} flights of \`${v.id}\`, ${each.join(" and ")}`} on every storey it is drawn on (each flight's \`size\`), or correct the storey \`height\` if it is wrong; the ${limits} from the lint profile (\`--profile\`).`,
           ],
         });
         continue;
@@ -1125,9 +1127,10 @@ export const stairTooSteep: LintRule = {
           ? `${capitalise(stairName(v, ctx))} is too steep: its flights' ${mm(run)} mm run must climb the ${mm(rise)} mm storey, and ${atMost} ${need.risers} risers, ${need.goings} goings and ${landingWords(v, ctx.rules.stairMinGoingMm)}, each ${winding(v)}going at least ${going} mm, so ${m.required} mm of flights (${m.short} mm short).`
           : `${capitalise(stairName(v, ctx))} is too steep: its ${mm(run)} mm run must climb the ${mm(rise)} mm storey, and ${atMost} ${need.risers} risers and ${need.goings} goings of at least ${going} mm, a ${m.required} mm run (${m.short} mm short).`,
         hints: [
-          isBlockStair(v)
-            ? `Lengthen the flights of \`${v.id}\` to at least ${m.required} mm between them on every storey it is drawn on (each flight's \`size\`), or correct the storey \`height\` if it is wrong; the ${limits} from the lint profile (\`--profile\`).`
-            : `Lengthen \`${v.id}\` along its flight to at least ${m.required} mm on every storey it is drawn on (its \`size\`), or correct the storey \`height\` if it is wrong, or draw it as one block stair, \`stair dir up width … { flight … landing … flight … }\`, where a landing replaces one going; flights drawn as separate stairs are still each judged against the whole storey; the ${limits} from the lint profile (\`--profile\`).`,
+          steepAndRiserHint(v, ctx, rise, limits) ??
+            (isBlockStair(v)
+              ? `Lengthen the flights of \`${v.id}\` to at least ${m.required} mm between them on every storey it is drawn on (each flight's \`size\`), or correct the storey \`height\` if it is wrong; the ${limits} from the lint profile (\`--profile\`).`
+              : `Lengthen \`${v.id}\` along its flight to at least ${m.required} mm on every storey it is drawn on (its \`size\`), or correct the storey \`height\` if it is wrong, or draw it as one block stair, \`stair dir up width … { flight … landing … flight … }\`, where a landing replaces one going; flights drawn as separate stairs are still each judged against the whole storey; the ${limits} from the lint profile (\`--profile\`).`),
         ],
       });
     }
@@ -1141,9 +1144,30 @@ export const stairTooSteep: LintRule = {
  *  ({@link treadCount} of the flight's run), which the 3D preview builds its treads on. */
 export const drawnTreads = (v: RStair): number[] => flightsOf(v).map((f) => treadCount(flightRun(f)));
 
-/** The risers `v`'s drawn treads climb on: one per tread, and one at each flight's head, where the
- *  last riser lands on the landing or the floor above (the 3D preview's `stairRisers`). */
-export const drawnRisers = (v: RStair): number => drawnTreads(v).reduce((n, t) => n + t + 1, 0);
+const rectOfPiece = (p: { at: Point; size: { w: number; h: number } }): BBox => ({
+  x: p.at.x,
+  y: p.at.y,
+  w: p.size.w,
+  h: p.size.h,
+});
+
+/** The tapered steps a block stair's winder landings draw beyond the one step a level landing is:
+ *  one per line {@link winderTreads} draws across a landing, as the plan's glyph draws them (a
+ *  landing of `winders n` beside both its flights draws n − 1, splitting it into n steps). */
+export function winderRisers(v: RStair): number {
+  if (!isBlockStair(v)) return 0;
+  const flights = flightsOf(v);
+  return v.landings.reduce(
+    (n, l, i) => n + winderTreads(l, rectOfPiece(flights[i]!), rectOfPiece(flights[i + 1]!)).length,
+    0,
+  );
+}
+
+/** The risers `v`'s drawing climbs on: one per tread, one at each flight's head, where the last
+ *  riser lands on the landing or the floor above, and one per winder line ({@link winderRisers}).
+ *  On a stair with no winders this is the 3D preview's `stairRisers`; the 3D preview builds a winder
+ *  landing as one level box, so it climbs such a stair on fewer, higher risers than the drawing. */
+export const drawnRisers = (v: RStair): number => drawnTreads(v).reduce((n, t) => n + t + 1, 0) + winderRisers(v);
 
 /** Where {@link DEFAULT_RULESET}'s `stairDrawnMaxRiseMm` comes from, as the hint names it. The
  *  provenance table (`src/lint/provenance.ts`) is not on the compile path, so the words are held
@@ -1162,14 +1186,19 @@ function reportedTooSteep(v: RStair, rise: number, rules: StairLimits): boolean 
 
 /**
  * The fewest risers no higher than `max` that climb `rise`: one `ceil` and the float-dust
- * correction {@link minimumRun} makes.
+ * correction {@link minimumRun} makes. The rule's one predicate: a stair is reported when it draws
+ * fewer risers than this, and the hint lengthens it to this many, so the two can never disagree.
  */
-function fewestRisers(rise: number, max: number): number {
+export function fewestRisers(rise: number, max: number): number {
   let n = Math.max(1, Math.ceil(rise / max));
   if (n > 1 && (n - 1) * max >= rise) n -= 1;
   else if (n * max < rise) n += 1;
   return n;
 }
+
+/** Does `v` draw too few risers for `rise` at `max` a riser? ({@link fewestRisers}) */
+export const drawsTooFewRisers = (v: RStair, rise: number, max: number): boolean =>
+  drawnRisers(v) < fewestRisers(rise, max);
 
 /** The shortest run (mm) on which a flight draws `t` treads, as the plan resolves it: (t − ½)
  *  goings (where {@link treadCount} rounds up to `t`), rounded up to the plan's `grid`, so the
@@ -1179,46 +1208,127 @@ function runForTreads(t: number, grid: number): number {
   return grid > 0 ? Math.ceil(run / grid) * grid : run;
 }
 
+/** One piece of a stair as written: where it stands and its size. */
+interface PieceAt {
+  at: Point;
+  size: { w: number; h: number };
+}
+
+/** One flight to redraw: `flight` counts from 1 in climbing order (always 1 on a straight stair). */
+export interface Redrawn {
+  flight: number;
+  from: PieceAt;
+  to: PieceAt;
+}
+
 /**
- * The flights to lengthen so `v` draws `more` treads more, each from its run to the run it needs,
- * in climbing order (`flight` counts from 1). Each tread goes to the flight whose next tread costs
- * the least run, the first on a tie. `null` when more treads are asked than {@link MAX_RISER_TRIES}
- * (a caller's ruleset with next to no riser) or a run would leave the modelling range: the hint then
- * names no length.
+ * The end of flight `i` of `v` that is free to grow: a flight is lengthened away from the landing
+ * it meets, so it keeps meeting it. On a block stair's last flight that is
+ * its head; on a first flight, its foot. A flight with a landing at each end cannot grow without
+ * moving the stair's other pieces, so it is not offered (`null`). A straight stair grows at its
+ * bottom or right edge, so only its `size` changes, as the earlier hint asked.
  */
-function lengthenFor(
+function freeEdge(v: RStair, flights: readonly RStair[], i: number): Side | null {
+  if (!isBlockStair(v)) return runAxis(v) === "y" ? "bottom" : "right";
+  const foot = tailEdge(flights[i]!);
+  if (i === flights.length - 1) return oppositeSide(foot);
+  return i === 0 ? foot : null;
+}
+
+/** `p` lengthened by `d` mm along its run, at edge `e`: the far edge stays where it is. */
+function grown(p: PieceAt, axis: "x" | "y", e: Side, d: number): PieceAt {
+  const size = axis === "y" ? { w: p.size.w, h: p.size.h + d } : { w: p.size.w + d, h: p.size.h };
+  const at = e === "top" ? { x: p.at.x, y: p.at.y - d } : e === "left" ? { x: p.at.x - d, y: p.at.y } : p.at;
+  return { at, size };
+}
+
+/** `v` with its flights drawn at `pieces`, in climbing order: what the stair would be once redrawn. */
+function withFlights(v: RStair, pieces: readonly PieceAt[]): RStair {
+  if (!isBlockStair(v)) return { ...v, at: pieces[0]!.at, size: pieces[0]!.size };
+  return { ...v, flights: v.flights.map((f, i) => ({ ...f, at: pieces[i]!.at, size: pieces[i]!.size })) };
+}
+
+/**
+ * How to redraw `v` so it draws at least `risers` risers and, when `steep` is given, so
+ * `W_STAIR_TOO_STEEP` passes it too: one tread at a time, each to the free flight
+ * ({@link freeEdge}) whose next tread costs the least run, the first on a tie, every flight
+ * lengthened away from its landing. `null` when no flight can grow, when more passes are asked than
+ * {@link MAX_RISER_TRIES} allows (a caller's ruleset with next to no riser), or when a length would
+ * leave the modelling range: the hint then names no length.
+ */
+export function redrawFor(
   v: RStair,
-  more: number,
+  risers: number,
   grid: number,
-): { pieces: Array<{ flight: number; from: number; to: number }>; treads: number } | null {
-  if (more > MAX_RISER_TRIES) return null;
-  const from = flightsOf(v).map(flightRun);
-  const runs = [...from];
+  steep?: { rise: number; rules: StairLimits },
+): { redrawn: Redrawn[]; treads: number; risers: number } | null {
+  const flights = flightsOf(v);
+  const from: PieceAt[] = flights.map((f) => ({ at: f.at, size: f.size }));
+  const pieces = [...from];
+  const runs = flights.map(flightRun);
   const treads = runs.map(treadCount);
-  const total = (): number => treads.reduce((n, t) => n + t, 0);
-  const want = total() + more;
-  // Each pass adds at least one tread (a coarse grid can add more), so `more` passes are enough.
-  for (let k = 0; k < more && total() < want; k++) {
-    let best = 0;
+  const edges = flights.map((_, i) => freeEdge(v, flights, i));
+  const now = (): RStair => withFlights(v, pieces);
+  const done = (): boolean =>
+    drawnRisers(now()) >= risers && (steep === undefined || !reportedTooSteep(now(), steep.rise, steep.rules));
+  for (let k = 0; !done(); k++) {
+    if (k >= MAX_RISER_TRIES) return null;
+    let best = -1;
     const cost = (i: number): number => runForTreads(treads[i]! + 1, grid) - runs[i]!;
-    for (let i = 1; i < runs.length; i++) if (cost(i) < cost(best)) best = i;
-    runs[best] = runForTreads(treads[best]! + 1, grid);
-    treads[best] = treadCount(runs[best]!);
+    for (let i = 0; i < runs.length; i++) if (edges[i] !== null && (best < 0 || cost(i) < cost(best))) best = i;
+    if (best < 0) return null;
+    const to = runForTreads(treads[best]! + 1, grid);
+    if (!(to <= MODEL_RANGE_MM)) return null;
+    pieces[best] = grown(from[best]!, runAxis(flights[best]!), edges[best]!, to - flightRun(flights[best]!));
+    runs[best] = to;
+    treads[best] = treadCount(to);
   }
-  if (runs.some((r) => !(r <= MODEL_RANGE_MM))) return null;
-  const pieces = runs.flatMap((to, i) => (to === from[i] ? [] : [{ flight: i + 1, from: from[i]!, to }]));
-  return { pieces, treads: total() };
+  const redrawn = pieces.flatMap((to, i) =>
+    runs[i] === flightRun(flights[i]!) ? [] : [{ flight: i + 1, from: from[i]!, to }],
+  );
+  return { redrawn, treads: treads.reduce((n, t) => n + t, 0), risers: drawnRisers(now()) };
+}
+
+const pieceText = (p: PieceAt): string => `at (${mm(p.at.x)},${mm(p.at.y)}) size ${mm(p.size.w)}x${mm(p.size.h)}`;
+
+/** The redrawing as the hint quotes it: every statement to change, as it is and as it becomes, so
+ *  pasting it is the whole fix (a flight lengthened toward the floor it stands on moves its `at`). */
+function redrawText(v: RStair, redrawn: readonly Redrawn[]): string {
+  if (!isBlockStair(v)) {
+    const r = redrawn[0]!;
+    const moved = r.to.at.x !== r.from.at.x || r.to.at.y !== r.from.at.y;
+    return `Redraw \`${v.id}\` from \`${moved ? pieceText(r.from) : `size ${mm(r.from.size.w)}x${mm(r.from.size.h)}`}\` to \`${moved ? pieceText(r.to) : `size ${mm(r.to.size.w)}x${mm(r.to.size.h)}`}\``;
+  }
+  return `Redraw ${redrawn.map((r) => `flight ${r.flight} of \`${v.id}\` from \`flight ${pieceText(r.from)}\` to \`flight ${pieceText(r.to)}\``).join(", and ")}`;
+}
+
+/** Where the riser limit's run comes from, in the words both rules' hints use. */
+const NOMINAL_GOING = `the drawing draws one tread for every ${TREAD_GOING_MM} mm of a flight's run (its nominal going, whatever the storey)`;
+
+/**
+ * The hint `W_STAIR_TOO_STEEP` gives a stair whose drawing also draws too few risers
+ * ({@link drawsTooFewRisers}): one redrawing that satisfies both rules, so pasting it never raises
+ * the other with a longer ask (ruled on PR #736). `null` when the riser rule is off, does not bind,
+ * or no redrawing is found; the caller then keeps its own hint.
+ */
+export function steepAndRiserHint(v: RStair, ctx: LintContext, rise: number, limits: string): string | null {
+  const max = ctx.rules.stairDrawnMaxRiseMm;
+  if (max === null || !(max > 0) || !drawsTooFewRisers(v, rise, max)) return null;
+  const plan = redrawFor(v, fewestRisers(rise, max), ctx.ir.grid, { rise, rules: ctx.rules });
+  if (plan === null || plan.redrawn.length === 0) return null;
+  return `${redrawText(v, plan.redrawn)} on every storey it is drawn on, so it draws ${plan.treads} treads and climbs on ${plan.risers} risers of ${limitMm(rise / plan.risers)}: that meets the going limit and the riser the drawing implies too (${NOMINAL_GOING}, and the ruleset's \`stairDrawnMaxRiseMm\` is ${limitMm(max)}); or correct the storey \`height\` if it is wrong; the ${limits} from the lint profile (\`--profile\`).`;
 }
 
 /**
  * The riser a stair's drawing implies, against its storey (product roadmap RM1.2a, backlog ST.1).
  * The plan draws each flight with {@link treadCount} treads, a nominal {@link TREAD_GOING_MM} mm
  * going whatever the storey, and the 3D preview climbs the storey on those treads, so the drawing
- * itself states a riser: the storey height over {@link drawnRisers}. Above `stairDrawnMaxRiseMm` it
- * is reported. `W_STAIR_TOO_STEEP` judges the run against the shortest run that climbs the storey,
- * never the treads drawn, so a run it passes can still draw too few treads (`examples/two-storey`
- * drew 10 on its 2900 mm flight: 11 risers of 245 mm). A stair `W_STAIR_TOO_STEEP` reports is left
- * to it: lengthening the flight answers both, and one stair gets one warning.
+ * itself states a riser: the storey height over {@link drawnRisers}, winder lines counted. Fewer
+ * risers than {@link fewestRisers} at `stairDrawnMaxRiseMm` is reported. `W_STAIR_TOO_STEEP` judges
+ * the run against the shortest run that climbs the storey, never the treads drawn, so a run it
+ * passes can still draw too few treads (`examples/two-storey` drew 10 on its 2900 mm flight: 11
+ * risers of 245 mm). A stair `W_STAIR_TOO_STEEP` reports is left to it, and its hint then quotes
+ * the redrawing that answers both ({@link steepAndRiserHint}): one stair gets one warning.
  *
  * Judged as `W_STAIR_TOO_STEEP` is judged: a `dir up` flight, on the storey it climbs from, where
  * the plan authors a height (otherwise the coverage report says the stair checks skipped it). The
@@ -1244,33 +1354,36 @@ export const stairRiserTooHigh: LintRule = {
     if (!(rise > 0)) return [];
     const out: Diagnostic[] = [];
     for (const v of ups) {
+      if (!drawsTooFewRisers(v, rise, max)) continue;
+      if (stairLimitsValid(ctx.rules) && reportedTooSteep(v, rise, ctx.rules)) continue;
       const treads = drawnTreads(v);
       const risers = drawnRisers(v);
-      if (rise / risers <= max) continue;
-      if (stairLimitsValid(ctx.rules) && reportedTooSteep(v, rise, ctx.rules)) continue;
+      const winders = winderRisers(v);
       const drawn = treads.reduce((n, t) => n + t, 0);
       const need = fewestRisers(rise, max);
       const run = runLength(v);
       const block = isBlockStair(v);
+      const counted = block
+        ? winders > 0
+          ? `one per tread, one at each flight's head and ${winders} across its winders`
+          : "one per tread and one at each flight's head"
+        : "one per tread and one at the flight's head";
       const what = block
-        ? `draws ${treads.join(" + ")} treads on its flights' ${mm(run)} mm run, so it climbs the ${mm(rise)} mm storey on ${risers} risers (one per tread and one at each flight's head)`
-        : `draws ${drawn} treads on its ${mm(run)} mm run, so it climbs the ${mm(rise)} mm storey on ${risers} risers (one per tread and one at the flight's head)`;
+        ? `draws ${treads.join(" + ")} treads on its flights' ${mm(run)} mm run, so it climbs the ${mm(rise)} mm storey on ${risers} risers (${counted})`
+        : `draws ${drawn} treads on its ${mm(run)} mm run, so it climbs the ${mm(rise)} mm storey on ${risers} risers (${counted})`;
+      const why = `${NOMINAL_GOING}, and at ${limitMm(max)} a riser the storey takes ${need} risers`;
       const limit = `the ruleset's \`stairDrawnMaxRiseMm\` (by default 220 mm: ${DRAWN_RISE_SOURCE})`;
-      const plan = lengthenFor(v, need - risers, ctx.ir.grid);
-      const after = plan === null ? 0 : plan.treads + treads.length;
-      const so = `so ${block ? "they draw" : "it draws"} ${plan?.treads ?? 0} treads and ${block ? "climb" : "climbs"} on ${after} risers of ${limitMm(rise / Math.max(1, after))}`;
-      const lengthen =
-        plan === null
+      const plan = redrawFor(v, need, ctx.ir.grid);
+      const fix =
+        plan === null || plan.redrawn.length === 0
           ? `Lengthen ${block ? `the flights of \`${v.id}\`` : `\`${v.id}\` along its flight`} on every storey it is drawn on (every ${TREAD_GOING_MM} mm of a flight's run draws one more tread), or correct the storey \`height\` if it is wrong`
-          : block
-            ? `Lengthen ${plan.pieces.map((p) => `flight ${p.flight} of \`${v.id}\` from ${mm(p.from)} mm to ${mm(p.to)} mm`).join(" and ")} on every storey it is drawn on (each flight's \`size\`), ${so}, or correct the storey \`height\` if it is wrong`
-            : `Lengthen \`${v.id}\` along its flight from ${mm(plan.pieces[0]!.from)} mm to ${mm(plan.pieces[0]!.to)} mm on every storey it is drawn on (its \`size\`), ${so}, or correct the storey \`height\` if it is wrong`;
+          : `${redrawText(v, plan.redrawn)} on every storey it is drawn on, so it draws ${plan.treads} treads and climbs on ${plan.risers} risers of ${limitMm(rise / plan.risers)}, or correct the storey \`height\` if it is wrong`;
       out.push({
         severity: "warning",
         code: "W_STAIR_RISER_TOO_HIGH",
         ...ctx.at(v),
-        message: `${capitalise(stairName(v, ctx))} ${what} of ${limitMm(rise / risers)}, above ${limitMm(max)}.`,
-        hints: [`${lengthen}; the limit is ${limit}.`],
+        message: `${capitalise(stairName(v, ctx))} ${what} of ${limitMm(rise / risers)}, above ${limitMm(max)}: ${why}.`,
+        hints: [`${fix}; the limit is ${limit}.`],
       });
     }
     return out;
