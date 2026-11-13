@@ -130,7 +130,13 @@ export type LintSkipReason =
    *  meter, so it adds each surface's cost up first (`polygonsOverlapCost`,
    *  `src/geometry/polygon.ts`): past the step budget, the surfaces that no longer fit, in source
    *  order, are not judged. */
-  | "outdoor-budget";
+  | "outdoor-budget"
+  /** A net-area ruleset judged the room on its drawn area: its own net-area measurement was refused
+   *  (`MAX_NET_CURVES`, `MAX_NET_PROBE_WORK` or the consistency guard, `src/analyze/net-area.ts`). */
+  | "net-area-cap"
+  /** A net-area ruleset judged the room on its drawn area: the storey's net-area total was spent on
+   *  the rooms before it (`MAX_NET_PLAN_WORK`, `src/analyze/net-area-memo.ts`, U.22). */
+  | "net-area-budget";
 
 /** What each family checks, as the human coverage line names it. */
 export const FAMILY_NOUN: Readonly<Record<LintFamily, string>> = {
@@ -182,6 +188,8 @@ export const SKIP_WHY: Readonly<Record<LintSkipReason, string>> = {
   "wide-wc-pan": "a WC in an accessible room is too wide for a side wall to stand within the figure",
   "outdoor-budget":
     "some ground surfaces and rooms have too many vertices to compare, so those surfaces are not judged",
+  "net-area-cap": "the room's net area could not be measured, so its drawn area was read",
+  "net-area-budget": "the storey's net-area work was spent on the rooms before it, so its drawn area was read",
 };
 
 /**
