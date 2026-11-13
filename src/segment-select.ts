@@ -31,14 +31,18 @@ import type { DatumAccess } from "./opening-relation.js";
 import type { ParseCtx } from "./registry.js";
 import { COMPASS_DATUM_ALIASES, edgeOfRoom, splitDatum } from "./room-datums.js";
 import type { SideWord } from "./room-tiling.js";
+import { pure } from "./pure.js";
 
 /** The four compass words a selector takes, in the order the reference lists them. */
 export const SEGMENT_COMPASS_WORDS = ["north", "south", "east", "west"] as const;
 type Compass = (typeof SEGMENT_COMPASS_WORDS)[number];
 
 /** A selector's written text, whole: what Plan JSON accepts back in `segment_select`. */
-export const SEGMENT_SELECT_RE = new RegExp(
-  `^(?:${SEGMENT_COMPASS_WORDS.join("|")}|containing [A-Za-z_][A-Za-z0-9_]*(?:\\.[A-Za-z_][A-Za-z0-9_]*)+)$`,
+export const SEGMENT_SELECT_RE = pure(
+  () =>
+    new RegExp(
+      `^(?:${SEGMENT_COMPASS_WORDS.join("|")}|containing [A-Za-z_][A-Za-z0-9_]*(?:\\.[A-Za-z_][A-Za-z0-9_]*)+)$`,
+    ),
 );
 
 /**
