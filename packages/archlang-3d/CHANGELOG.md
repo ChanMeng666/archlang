@@ -4,6 +4,16 @@
 
 ### Added
 
+- A room's floor is laid in the finish its plan's author wrote (`room … floor <word>`, product-roadmap
+  card RM8.7), read off the core's public `RRoom.floor` into Scene3D's new optional `Floor.pattern`;
+  only a room with no `floor` word takes the default by its `uses` (`floorFinish`), ledgered as
+  before (`floor-finish-default`). Five finishes join `FLOOR_FINISHES`, after the first three so a
+  GLB's material names keep their order: `carpeting` (the palette's wool), `stone` (its stone),
+  `deck` (its oak), `paving` (the colour an `outdoor paving` is built in) and `concrete`. The
+  `outdoor` kinds `sand` (a pale buff, `SITE_PALETTE.sand`) and `soil` (the palette's soil) are
+  built in their own colours, ledgered per kind (`outdoor-colour-3d`). New exports:
+  `FLOOR_WORD_FINISH`, `wordFinish`. A plan that writes no `floor` word builds the same Mesh3D and
+  GLB as before.
 - The replay draws soft contact shadows (product-roadmap card RM8.8): translucent black bands
   baked once from the geometry when the replay is mounted, never a shadow map. Along the foot of
   each storey's walls and columns (their outline, a fan of the 16-gon at each outside corner, the

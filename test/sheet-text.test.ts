@@ -21,7 +21,7 @@ import {
 } from "../src/index.js";
 import { FIXTURE_CATEGORIES } from "../src/elements/fixtures-glyphs.js";
 import { DOOR_KINDS, WINDOW_KINDS } from "../src/grammar/tokens.js";
-import { GROUND_MATERIALS, KNOWN_MATERIALS } from "../src/hatches.js";
+import { FLOOR_PATTERNS, GROUND_MATERIALS, KNOWN_MATERIALS } from "../src/hatches.js";
 import { fmt2, drawnDecimal, plainDecimal } from "../src/num-format.js";
 import { MAX_SHEET_WORD, PLAIN_SHEET_TEXT, SHEET_WORDS, sheetText, sheetTextKeys } from "../src/sheet-text.js";
 import { inkWidth } from "../src/text-metrics.js";
@@ -101,8 +101,33 @@ suite("sheet text: the keys", () => {
 
   it("each kind, material and fixture category is its own key", () => {
     const keys = new Set(sheetTextKeys());
-    for (const k of [...DOOR_KINDS, ...WINDOW_KINDS, ...KNOWN_MATERIALS, ...GROUND_MATERIALS, ...FIXTURE_CATEGORIES])
+    for (const k of [
+      ...DOOR_KINDS,
+      ...WINDOW_KINDS,
+      ...KNOWN_MATERIALS,
+      ...GROUND_MATERIALS,
+      ...FLOOR_PATTERNS,
+      ...FIXTURE_CATEGORIES,
+    ])
       expect(keys.has(k), k).toBe(true);
+  });
+
+  it("the words of card RM8.7 are keys: a floor-only pattern and a new ground rename their legend rows", () => {
+    // Before the card `timber` was no key (`E_PARSE`); a mistyped key's did-you-mean may now name a new
+    // word. Both are what the byte-identity law's third form and its `mistyped` guard stand for.
+    const body = (sheet: string) =>
+      inPlan(
+        `  legend\n${sheet}  room id=a at (0,0) size 3000x3000 floor timber\n  outdoor sand at (4000,0) size 2000x2000`,
+      );
+    expect(parseErrors(body(`${block('timber "Holz"', 'sand "Sand"')}\n`))).toEqual([]);
+    const rows = compile(
+      body(`${block('timber "Holz"', 'sand "Strand"')}\n`),
+    ).scene!.chrome!.tables?.legend?.entries.map((e) => e.name);
+    expect(rows).toContain("Holz");
+    expect(rows).toContain("Strand");
+    expect(parseErrors(inPlan(block('sandd "x"')))[0]!.message).toMatch(
+      /Unknown sheet text key "sandd" — did you mean "sand"\?/,
+    );
   });
 
   it("no caption key shares a word with the vocabularies: one word, one meaning", () => {
@@ -111,6 +136,7 @@ suite("sheet text: the keys", () => {
       ...WINDOW_KINDS,
       ...KNOWN_MATERIALS,
       ...GROUND_MATERIALS,
+      ...FLOOR_PATTERNS,
       ...FIXTURE_CATEGORIES,
     ]);
     expect(Object.keys(SHEET_WORDS).filter((k) => vocabulary.has(k))).toEqual([]);
