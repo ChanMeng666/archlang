@@ -28,9 +28,9 @@ https://github.com/ChanMeng666/archlang/actions/runs/43401422470, job 1318049678
 where the key-frame comparison failed on exactly these; they replace the first round's pins
 (`00da9331…`, `19ae655b…`, `cb958a5c…`, `8dfc1009…`, `41c5d43c…`, `2e3e8476…`, `cbc6464d…`, run
 43164173487), which moved with the review's fixes (a rug receives instead of casting, each band on
-the highest face under it, a fixed depth offset, mitred joints). The first round's hashes rendered
-identically on Windows 11 x64 by the test's own calls (`replayHtml`, `renderReplay`, 480 × 270),
-which is why the `win32` entry stays. With `shadows: false` in the payload the viewer draws main's
+the highest face under it, a fixed depth offset, mitred joints). The test's own calls
+(`replayHtml`, `renderReplay`, 480 × 270, run from a script) on Windows 11 x64 with the same
+Chromium build render all 19 pinned hashes identically, so the `win32` entry stays. With `shadows: false` in the payload the viewer draws main's
 frames byte for byte (24 frames of three plans at 1600 × 900 compared locally; the frame-budget
 test asserts the same frame with and without the shadows where no band shows).
 
