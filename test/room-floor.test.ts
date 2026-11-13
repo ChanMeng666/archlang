@@ -14,7 +14,7 @@ import { renderAscii } from "../src/backends/ascii.js";
 import { FLOOR_MATERIALS, FLOOR_PATTERNS, floorHatch, hatchId, hatchPattern, KNOWN_MATERIALS } from "../src/hatches.js";
 import type { RRoom } from "../src/ir.js";
 import type { RenderSizes, SceneNode } from "../src/scene.js";
-import { DEFAULT_THEME, mergeTheme, THEMES } from "../src/theme.js";
+import { DEFAULT_THEME, mergeTheme, THEMES, type Theme } from "../src/theme.js";
 import { parseHexColor } from "../src/elements/glyph-lib.js";
 
 const plan = (body: string): string => `plan "F" {\n  units mm\n  ${body}\n}\n`;
@@ -324,16 +324,17 @@ suite("under `rendered`, a floor-only word washes its room (card RM8.7, RM-D28)"
   });
 
   it("washes nothing under any other theme, nor an older word under `rendered`", () => {
-    for (const [name, theme] of [
-      ["default", ""],
-      ...Object.keys(THEMES)
-        .filter((t) => t !== "rendered")
-        .map((t) => [t, `theme ${t}\n  `]),
-    ]) {
-      for (const word of FLOOR_PATTERNS) {
-        const t = mergeTheme(name === "default" ? {} : THEMES[name]);
-        expect(floorFill(room3(theme!, ` floor ${word}`)), `${word} under ${name}`).toBe(t.roomFill);
-      }
+    const others: [string, string, Theme][] = [
+      ["default", "", mergeTheme()],
+      ...Object.entries(THEMES)
+        .filter(([t]) => t !== "rendered")
+        .map(([t, layer]): [string, string, Theme] => [t, `theme ${t}\n  `, mergeTheme(layer)]),
+    ];
+    expect(others.length).toBeGreaterThan(4);
+    for (const [name, theme, t] of others) {
+      expect(t.materialTints, name).toBeUndefined();
+      for (const word of FLOOR_PATTERNS)
+        expect(floorFill(room3(theme, ` floor ${word}`)), `${word} under ${name}`).toBe(t.roomFill);
     }
     for (const word of FLOOR_MATERIALS.filter((w) => !(FLOOR_PATTERNS as readonly string[]).includes(w)))
       expect(floorFill(room3("theme rendered\n  ", ` floor ${word}`)), word).toBe(rendered.roomFill);
