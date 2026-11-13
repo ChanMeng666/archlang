@@ -84,6 +84,22 @@ describe("npm tarball (npm pack --dry-run)", () => {
     expect(paths.filter((p) => p.startsWith("dist/error-catalog"))).toEqual([]);
   });
 
+  it("keeps dist/compile-path.js and its map out of the tarball, and every chunk the package imports in", () => {
+    // A build entry for the repository's playground alone (card RM0.7f, tsup.config.ts): it holds
+    // only imports and exports, no `exports` entry names it and nothing imports it. The chunks it
+    // imports are imported by dist/index.js too, so they ship; npm's list names them only after a
+    // build, so the second half checks the built files when there are any.
+    const pkg = JSON.parse(readFileSync(resolve("package.json"), "utf8")) as { files: string[] };
+    expect(pkg.files).toContain("!dist/compile-path.js");
+    expect(pkg.files).toContain("!dist/compile-path.js.map");
+    expect(paths.filter((p) => p.startsWith("dist/compile-path"))).toEqual([]);
+    for (const entry of ["dist/index.js", "dist/cli.js", "dist/share.js"].filter((p) => paths.includes(p))) {
+      const text = readFileSync(resolve(entry), "utf8");
+      for (const m of text.matchAll(/^import\s(?:[^;]*?from\s*)?"\.\/(chunk-[\w-]+\.js)";?$/gm))
+        expect(paths, `${entry} imports dist/${m[1]}, which must ship`).toContain(`dist/${m[1]}`);
+    }
+  });
+
   it("ships the whole CHANGELOG.md, byte for byte", () => {
     // Not a trimmed copy: a bump that skips several minors needs every entry between.
     const entry = files.find((f) => f.path === "CHANGELOG.md");

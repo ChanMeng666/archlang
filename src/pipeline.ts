@@ -3,7 +3,7 @@
  *
  * Extracted verbatim from `src/index.ts` (WP: one compile pipeline for `compile()`
  * and the `reroll` twin-compile proof) so there is exactly one implementation of
- * "what does this source compile to" — `index.ts`'s `compile()` wraps
+ * "what does this source compile to" — `compile()` (`compile.ts`, re-exported by `index.ts`) wraps
  * {@link compileUncached} with its memoization cache and stays the public surface;
  * `reroll.ts`'s proof obligation calls this SAME function (with `noCache: true`)
  * instead of re-deriving the pipeline, so the two can never drift apart.

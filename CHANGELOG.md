@@ -17,6 +17,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - The playground's bundler (rolldown) no longer keeps the core's CLI manifest, JSON schemas, keyword table or stage tables in a bundle that never reads them (card RM0.7d): the top-level values it could not prove side-effect-free are marked so (`src/pure.ts`). The playground's compiler path is about 3.2 KB gzip smaller. Every value is built as before, and the published types are unchanged.
+- The built core is split by what the playground's compiler chunk serves (card RM0.7f): a build entry, `src/compile-path.ts` (not a package export, not in the tarball), names `compile`, `describe`, `describeLevel`, `lint` and `THEMES`, so `dist/index.js` now imports the chunks that reach them and a chunk holding the rest (`finish`, `repair`, `toDxf`, `planToJson`, `validateIntent`, `completion` and the like). The playground's compiler path and its embed path are each about 41.7 KB gzip smaller; that code loads with the header actions, edit mode and takeoff. `compile()` moved from `src/index.ts` to `src/compile.ts` unchanged, and every `pure(() => …)` call also carries `/* @__PURE__ */`. The exports, their behaviour and the published types are unchanged.
 
 ### Fixed
 

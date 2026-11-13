@@ -53,7 +53,7 @@ export const LINT_CODE_LAYERS: Readonly<Record<string, LintLayer>> = Object.free
  * that declares it: its one stage, or its entry for that code. Built once from `LINT_RULES`, in
  * rule order; frozen. `lint()` never reads it; `validate --stage` does.
  */
-export const LINT_CODE_STAGES: Readonly<Record<string, LintStage>> = pure(() =>
+export const LINT_CODE_STAGES: Readonly<Record<string, LintStage>> = /* @__PURE__ */ pure(() =>
   Object.freeze(
     Object.fromEntries(
       LINT_RULES.flatMap((r) =>

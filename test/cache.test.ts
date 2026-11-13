@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import { compile, clearCache } from "../src/index.js";
 
 /**
- * src/index.ts holds a bounded memo cache: CACHE_MAX = 64 entries, FIFO
+ * src/compile.ts holds a bounded memo cache: CACHE_MAX = 64 entries, FIFO
  * eviction (delete the oldest-inserted key once full). A cache *hit* returns
  * the very same CompileResult object reference, so object identity (`toBe`)
  * lets us observe hits vs. misses without exposing cache internals.
