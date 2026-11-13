@@ -38,7 +38,7 @@ import type { LintContext, LintRule } from "../context.js";
 import { capFirst } from "../../naming.js";
 import { DEFAULT_RULESET, DOUBLE_BED_MIN_WIDTH_MM, type LintRuleset } from "../ruleset.js";
 import { innerFaceOfRoomEdge } from "../../fixture-orientation.js";
-import { memoRoomNetAreaMm2, storeyNetAreaBands } from "../../analyze/net-area-memo.js";
+import { memoRoomNetAreaMm2, netAreaOmission, storeyNetAreaBands } from "../../analyze/net-area-memo.js";
 import { itemWords, pasteSet, roomDefiningItems } from "../defining.js";
 import type { PasteFailure } from "../fixture-paste.js";
 
@@ -61,11 +61,21 @@ export function netAreaM2(ctx: LintContext, r: RRoom): number | undefined {
   return mm2 === undefined ? undefined : Math.round((mm2 / 1_000_000) * 100) / 100;
 }
 
+/** Why a room's net area is omitted under the storey's meter (`netAreaOmission`), or `null`. */
+export function netAreaOmissionOf(ctx: LintContext, r: RRoom): "budget" | "cap" | null {
+  return netAreaOmission(r, storeyNetAreaBands(ctx.ir.walls));
+}
+
 /** The `W_ROOM_TOO_SMALL` hint when a net-area ruleset falls back to the drawn area: the net area
  *  is omitted past the edge or probe-work caps, or when the integral fails its consistency guard
  *  (`"inconsistent"`, `netAreaDetail` in `src/analyze/net-area.ts`). */
 const GROSS_AREA_HINT =
   "gross-area: this room's net area could not be measured (too much wall geometry for the net-area budget, or walls crossing it in a way the exact measure cannot settle), so its drawn area, to the wall centrelines, was read instead; the clause measures net floor.";
+
+/** The same fallback when the storey's net-area total (U.22), not this room, refused the figure:
+ *  the rooms before it in the storey used up the count of work its net areas may cost. */
+const GROSS_AREA_BUDGET_HINT =
+  "gross-area: this room's net area was not measured because the net-area work this storey may cost (a count, `MAX_NET_PLAN_WORK`) was spent on the rooms before it, so its drawn area, to the wall centrelines, was read instead; the clause measures net floor.";
 
 /**
  * Does any window serve the room? The one window-attribution fact the daylight rules read
@@ -478,6 +488,9 @@ export const perRoomRules: LintRule = {
       // the drawn area stands in, said in a hint, only where the net area is omitted.
       const byNet = rules.roomAreaMeasure === "net" && floor !== null && floor.use !== null;
       const net = byNet ? netAreaM2(ctx, r) : undefined;
+      // Where the net area is omitted, the coverage report says why: the storey's total or the room's own cap.
+      const omitted = byNet && net === undefined ? netAreaOmissionOf(ctx, r) : null;
+      if (omitted !== null) ctx.skip(omitted === "budget" ? "net-area-budget" : "net-area-cap", r);
       const a = net ?? areaM2(r);
       if (floor !== null && a < floor.m2) {
         const noun = floor.double
@@ -503,7 +516,9 @@ export const perRoomRules: LintRule = {
               ? ["Increase its `size`, or merge it into an adjacent space."]
               : [
                   ...(source !== undefined ? [source] : []),
-                  ...(byNet && net === undefined ? [GROSS_AREA_HINT] : []),
+                  ...(byNet && net === undefined
+                    ? [omitted === "budget" ? GROSS_AREA_BUDGET_HINT : GROSS_AREA_HINT]
+                    : []),
                   "Increase its `size`, or merge it into an adjacent space.",
                   floor.double
                     ? DOUBLE_HINT

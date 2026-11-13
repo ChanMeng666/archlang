@@ -5,8 +5,9 @@ import { beforeEach, describe as suite, expect, it, vi } from "vitest";
 
 /**
  * Net internal area is computed once per storey and once per room per compile
- * (`src/analyze/net-area-memo.ts`), however many paths read it: the resolver's margin-table
- * rows, the drawn ROOM SCHEDULE, and `describe()`'s `rooms[]` and `schedule[]`. Counted at the
+ * (`src/analyze/net-area-memo.ts`), however many paths read it: the drawn ROOM SCHEDULE and
+ * `describe()`'s `rooms[]` and `schedule[]` (the resolver's margin-table row count measures
+ * none, U.22). Counted at the
  * core's module boundary; the numbers themselves are held by the byte-identity laws.
  */
 const calls = { bands: 0, rooms: 0 };

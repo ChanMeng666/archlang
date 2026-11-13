@@ -35,14 +35,16 @@ import type { GridBox } from "../geometry/grid-index.js";
 import { segmentsOfWall } from "../geometry.js";
 import type { RDoor, ResolvedPlan, RRoom, RWall, RWindow } from "../ir.js";
 import { fmt0 } from "../num-format.js";
-import { memoRoomNetAreaMm2, storeyNetAreaBands } from "./net-area-memo.js";
+import { memoRoomNetAreaMm2, meteredRoomFigure, storeyNetAreaBands, withNetAreaBudget } from "./net-area-memo.js";
 import {
   boxesMeet,
   type Curve,
   curvesOfLoop,
   MAX_NET_CURVES,
   MAX_NET_PROBE_WORK,
+  type NetAreaAdmit,
   type NetAreaBand,
+  netAreaPairWork,
   netAreaProbeWork,
   pieceCount,
   regionBoundary,
@@ -192,9 +194,11 @@ function curvesLength(curves: readonly Curve[]): number {
 
 /**
  * The perimeter (mm) of a room's net floor — the room less every wall band — or `undefined` when
- * it is omitted under net area's own caps ({@link MAX_NET_CURVES}, {@link MAX_NET_PROBE_WORK}).
+ * it is omitted under net area's own caps ({@link MAX_NET_CURVES}, {@link MAX_NET_PROBE_WORK}) or
+ * refused by `admit`, a caller's per-call total, offered each count before the work it pays for
+ * as `netAreaDetail` offers them (U.22).
  */
-export function roomNetPerimeter(r: RRoom, bands: readonly NetAreaBand[]): number | undefined {
+export function roomNetPerimeter(r: RRoom, bands: readonly NetAreaBand[], admit?: NetAreaAdmit): number | undefined {
   const region = roomRegion(r);
   if (!(region.gross > 0)) return 0;
   const near = bands.filter((b) => boxesMeet(b.box, region.box, 0));
@@ -206,10 +210,12 @@ export function roomNetPerimeter(r: RRoom, bands: readonly NetAreaBand[]): numbe
     );
   const curves: Curve[] = [...region.curves, ...near.flatMap((b) => b.loops.flatMap(curvesOfLoop))];
   if (curves.length > MAX_NET_CURVES) return undefined;
+  if (admit && !admit(netAreaPairWork(curves.length))) return undefined;
   const splits = splitCurves(curves);
   const bandEdges = near.reduce((n, b) => n + b.loops.reduce((m, l) => m + l.length, 0), 0);
-  if (netAreaProbeWork(pieceCount(splits), near.length + bandEdges, region.insideCost) > MAX_NET_PROBE_WORK)
-    return undefined;
+  const work = netAreaProbeWork(pieceCount(splits), near.length + bandEdges, region.insideCost);
+  if (work > MAX_NET_PROBE_WORK) return undefined;
+  if (admit && !admit(work)) return undefined;
   let len = 0;
   regionBoundary(
     curves,
@@ -257,12 +263,21 @@ export function quantityFacts(ir: ResolvedPlan, wastePct?: number): QuantityFact
       ...(faces.ok && heights ? { face_area_before_openings_m2: r2(c.area / 1_000_000) } : {}),
     }));
 
-  // Rooms: the same rooms, bands and rounding `describe().rooms[]` reads.
+  // Rooms: the same rooms, bands and rounding `describe().rooms[]` reads, under the storey's own
+  // net-area total (U.22): every room's area first, in element order, as `rooms[]` is decided,
+  // so the two omit the same rooms; the net perimeters take what is left.
   const bands = storeyNetAreaBands(ir.walls);
   const roomEls = ir.elements.filter((e): e is RRoom => e.kind === "room");
-  const rooms: RoomQuantity[] = roomEls.map((r) => {
-    const net = memoRoomNetAreaMm2(r, bands);
-    const per = roomNetPerimeter(r, bands);
+  const [nets, pers] = withNetAreaBudget(() => {
+    const a = roomEls.map((r) => memoRoomNetAreaMm2(r, bands));
+    const p = roomEls.map((r) =>
+      meteredRoomFigure(r, bands, "perimeter", (admit) => roomNetPerimeter(r, bands, admit)),
+    );
+    return [a, p] as const;
+  });
+  const rooms: RoomQuantity[] = roomEls.map((r, i) => {
+    const net = nets[i];
+    const per = pers[i];
     return {
       id: r.id,
       perimeter_centreline_mm: mm(curvesLength(roomRegion(r).curves)),

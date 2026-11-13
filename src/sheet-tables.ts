@@ -148,16 +148,20 @@ export function roomSchedule(
   zones?: readonly ZoneRef[],
   // Optional because this is public API that predates net area. Without the walls nothing
   // is known about what stands on the floor, so no row carries `net_area_m2` and there is
-  // no net total — omitted, never assumed equal to `area_m2`. Every caller in this
-  // repository passes the storey's walls.
+  // no net total — omitted, never assumed equal to `area_m2`. Every caller that draws or
+  // reports the figures passes the storey's walls; the sheet fit's row count (`planTableRows`)
+  // passes none, since no net area changes how many rows the table has.
   walls?: readonly BandWall[],
 ): RoomSchedule {
   const grouped = groupRoomsByZone(rooms, zones);
   const ordered = grouped ? grouped.flatMap((g) => g.rooms) : rooms;
   const width = Math.max(2, String(ordered.length).length);
   const bands = walls ? storeyNetAreaBands(walls) : null;
+  // Measured in element order, before the zones reorder the rows: under a per-call net-area total
+  // (U.22, `net-area-memo.ts`) the rooms are charged in the order `describe().rooms[]` reads them.
+  const netOf = new Map<RRoom, number | undefined>(bands ? rooms.map((r) => [r, memoRoomNetAreaMm2(r, bands)]) : []);
   const rows: ScheduleRow[] = ordered.map((r, i) => {
-    const net = bands ? memoRoomNetAreaMm2(r, bands) : undefined;
+    const net = netOf.get(r);
     return {
       no: String(i + 1).padStart(width, "0"),
       id: r.id,
@@ -723,7 +727,9 @@ export function planTableRows(input: {
   // The storey as drawn (B3b): a `status demolish` wall draws no poché, and adds the legend's
   // `demolished` row — exactly the inputs `toScene` builds the legend from.
   const standing = input.walls.filter((w) => w.status !== "demolish");
-  const schedule = input.schedule === "rooms" ? roomSchedule(input.rooms, input.zones, standing) : null;
+  // The schedule's rows, counted without measuring a net area (no walls): the row count never
+  // depended on one, and the sheet fit runs in `resolve()`, under no net-area total (U.22).
+  const schedule = input.schedule === "rooms" ? roomSchedule(input.rooms, input.zones) : null;
   const legend = input.legend
     ? legendEntries(
         hatchesUsed(standing, groundMaterialsUsed(input.outdoor ?? []), floorMaterialsUsed(input.rooms)),

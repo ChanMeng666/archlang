@@ -32,7 +32,8 @@
  * or cannot be afforded: when the room's box meets more than {@link MAX_NET_CURVES} band and
  * room edges (the split is quadratic in them), when the walk over the split's pieces would
  * cost more than {@link MAX_NET_PROBE_WORK} (a count charged before it runs: a ring of
- * hundreds of vertices crossed by hundreds of walls), or when the boundary integral comes
+ * hundreds of vertices crossed by hundreds of walls), when the caller's per-call total refuses
+ * a count ({@link NetAreaAdmit}, `net-area-memo.ts`, U.22), or when the boundary integral comes
  * out outside `[−ε, area + ε]` or not finite — a sign that a configuration defeated the
  * split. A caller then omits the field and every total that would include it.
  *
@@ -159,7 +160,8 @@ export type NetAreaDetail =
   | {
       ok: false;
       gross: number;
-      reason: "too-many-edges" | "too-much-work" | "inconsistent";
+      /** `plan-budget`: the caller's per-call total ({@link NetAreaAdmit}) refused a charge. */
+      reason: "too-many-edges" | "too-much-work" | "inconsistent" | "plan-budget";
       curves: number;
       /** The probe work charged ({@link netAreaProbeWork}); absent when refused before it was counted. */
       work?: number;
@@ -169,8 +171,12 @@ export type NetAreaDetail =
  * The room's net internal area in mm² (see the module header), or `undefined` when it is
  * omitted. Never more than the room's own area and never negative when present.
  */
-export function roomNetAreaMm2(r: NetAreaRoom, bands: readonly NetAreaBand[]): number | undefined {
-  const d = netAreaDetail(r, bands);
+export function roomNetAreaMm2(
+  r: NetAreaRoom,
+  bands: readonly NetAreaBand[],
+  admit?: NetAreaAdmit,
+): number | undefined {
+  const d = netAreaDetail(r, bands, admit);
   if (!d.ok) return undefined;
   // `covered` is checked to lie in [−ε, gross + ε] (see `netAreaDetail`); the clamp only
   // removes that ε of float noise so `net <= area` holds to the last bit.
@@ -505,7 +511,7 @@ export function regionBoundary(
  * Measure `room ∩ ⋃ bands` for one room. `covered` is the boundary integral, unclamped;
  * `ok: false` names why the figure is omitted.
  */
-export function netAreaDetail(r: NetAreaRoom, bands: readonly NetAreaBand[]): NetAreaDetail {
+export function netAreaDetail(r: NetAreaRoom, bands: readonly NetAreaBand[], admit?: NetAreaAdmit): NetAreaDetail {
   // The room as a region: its own boundary curves and its own inside test.
   const { curves: roomCurves, inside: inRoom, insideCost, box: roomBox, gross } = roomRegion(r);
   if (!(gross > 0)) return { ok: true, gross: Math.max(0, gross), covered: 0, curves: 0, work: 0 };
@@ -525,11 +531,15 @@ export function netAreaDetail(r: NetAreaRoom, bands: readonly NetAreaBand[]): Ne
   if (curves.length > MAX_NET_CURVES) return { ok: false, gross, reason: "too-many-edges", curves: curves.length };
 
   // The split is held under MAX_NET_CURVES² pair tests; the walk over its pieces is charged
-  // here, as a count, before it runs.
+  // here, as a count, before it runs. With `admit` (a caller's per-call total, U.22) each count
+  // is offered to it first, before the work it pays for: the split's pair tests, then the walk.
+  if (admit && !admit(netAreaPairWork(curves.length)))
+    return { ok: false, gross, reason: "plan-budget", curves: curves.length };
   const splits = splitCurves(curves);
   const bandEdges = near.reduce((n, b) => n + b.loops.reduce((m, l) => m + l.length, 0), 0);
   const work = netAreaProbeWork(pieceCount(splits), near.length + bandEdges, insideCost);
   if (work > MAX_NET_PROBE_WORK) return { ok: false, gross, reason: "too-much-work", curves: curves.length, work };
+  if (admit && !admit(work)) return { ok: false, gross, reason: "plan-budget", curves: curves.length, work };
 
   const covered = regionBoundary(curves, inS, { x: roomBox.minX, y: roomBox.minY }, undefined, splits);
 
@@ -556,6 +566,21 @@ export const MAX_NET_PROBE_WORK = 20_000_000;
 export function netAreaProbeWork(pieces: number, bandCost: number, insideCost: number): number {
   return 2 * pieces * (bandCost + insideCost);
 }
+
+/**
+ * The pair tests {@link splitCurves} makes over `curves` curves (every curve against every
+ * later one): the split's count, charged before it runs.
+ */
+export function netAreaPairWork(curves: number): number {
+  return (curves * (curves - 1)) / 2;
+}
+
+/**
+ * A caller's per-call total (U.22, `src/analyze/net-area-memo.ts`). Offered each count of one
+ * room's measurement BEFORE the work it pays for (the split's pair tests, then the walk's probe
+ * work), it answers whether that work may run; a refusal omits the figure (`plan-budget`).
+ */
+export type NetAreaAdmit = (units: number) => boolean;
 
 /** A stable key for an interned point (the interner returns one object per position). */
 function keyOf(p: Point): string {
