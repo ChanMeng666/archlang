@@ -195,6 +195,28 @@ describe("contact shadows (card RM8.8)", () => {
     expect([...ys]).toEqual([rugTop + CONTACT_SHADOW.liftMm * 1000]);
   });
 
+  it("a hung piece is told by its own node, so a standing piece of the same id on another storey still casts (review S-A)", () => {
+    // Ids are unique per storey only: the ledger's per-piece rows name no storey, so reading them
+    // once took the sofa on level 2 for the television hung on level 1.
+    const box = (id: string) => `wall id=${id} exterior thickness 200 { (0,0) (4000,0) (4000,3000) (0,3000) close }`;
+    const src = `plan "t" { units mm grid 50
+      level 1 { ${box("w1")} furniture id=x tv at (1500,200) size 1200x100 }
+      level 2 { ${box("w2")} furniture id=x sofa at (1000,1000) size 2000x900 }
+    }`;
+    const world = makeVirtualWorld({});
+    const r = adaptPlan(src, { world });
+    if (!r.ok) throw new Error(r.refusal.code);
+    const mesh = buildMesh(r.scene);
+    expect(mesh.nodes.filter((n) => n.extras.hung === true).map((n) => n.key)).toEqual(["L1/furniture:x"]);
+    const p = replayPayload(mesh, { title: "t", svg: compile(src, { world }).svg });
+    const by = new Map(p.nodes.map((n) => [n.key, n] as const));
+    expect(by.get("L1/furniture:x")?.band).toBeUndefined();
+    expect(by.get("L2/furniture:x")?.band).toBeGreaterThan(0);
+    const s = contactShadows(p.nodes, p.ground);
+    expect(s.counts.furniture).toBe(1);
+    expect(s.casters.some((c) => c[0] === "L2/furniture:x")).toBe(true);
+  });
+
   it("a band fades in over the last quarter of its caster's rise, by ease, and not before", () => {
     const ev = { riseFrom: 0.6, riseTo: 0.7 };
     expect(contactFade(ev, 0.6)).toBe(0);

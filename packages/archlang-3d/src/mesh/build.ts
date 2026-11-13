@@ -948,6 +948,10 @@ function levelNodes(
       asset,
       ...(f.room ? { room: f.room } : {}),
       ...(parts && f.mirror ? { mirror: true } : {}),
+      // Hung on the wall, not standing (`isHung`): a fact of the piece as built, so a reader (the
+      // replay's contact shadows, card RM8.8) needs neither the T0 tables nor the ledger, whose
+      // per-piece rows name no storey. Absent on a standing piece.
+      ...(parts && family && isHung(family) ? { hung: true } : {}),
     });
   });
 

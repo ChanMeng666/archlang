@@ -203,9 +203,10 @@ export function replayPayload(mesh: Mesh3D, opts: ReplayOptions): ReplayPayload 
  * stringers as a wall `CONTACT_SHADOW.stairThicknessMm` thick. A hung piece casts none; a standing
  * one lower than its band (a rug) casts none either and is `flat`, so its top receives the others'.
  *
- * What a piece hangs from and a fence's post come from the Mesh3D's own ledger (`castFacts`), never
- * from the mesh stage's tables: so the `./browser` entry carries neither the T0 generators nor the
- * site code that reads the core (`test/browser-safety.test.ts`).
+ * Whether a piece is hung comes from its own node (`extras.hung`, written by the mesh builder), and a
+ * fence's post from the Mesh3D's ledger (`castFacts`: one row a style, the same on every storey),
+ * never from the mesh stage's tables: so the `./browser` entry carries neither the T0 generators nor
+ * the site code that reads the core (`test/browser-safety.test.ts`).
  */
 function bandOf(n: MeshNode, positions: readonly number[], facts: CastFacts): { band?: number; flat?: true } {
   if (positions.length === 0) return {};
@@ -230,8 +231,7 @@ function bandOf(n: MeshNode, positions: readonly number[], facts: CastFacts): { 
   }
   if (n.kind === "column") return { band: contactBandMm(CONTACT_SHADOW.wall, side()) };
   if (n.kind === "furniture") {
-    const t0 = String(n.extras.asset ?? "").startsWith("t0:");
-    if ((t0 && facts.hungCategories.has(String(n.extras.category))) || facts.hungIds.has(n.id)) return {};
+    if (n.extras.hung === true) return {};
     const band = contactBandMm(CONTACT_SHADOW.furniture, side());
     let lo = Infinity;
     let hi = -Infinity;
@@ -253,23 +253,15 @@ function bandOf(n: MeshNode, positions: readonly number[], facts: CastFacts): { 
 
 /** What `bandOf` reads from a Mesh3D's ledger. */
 interface CastFacts {
-  /** Categories hung by their underside (`furniture-mount-default`, written for a T0 family). */
-  hungCategories: Set<string>;
-  /** Pieces hung by their top (`furniture-mount-from-top`, one row a piece). */
-  hungIds: Set<string>;
   /** Each fence style's post, mm (`fence-profile-default`). */
   fencePosts: Map<string, number>;
 }
 
 function castFacts(mesh: Mesh3D): CastFacts {
-  const facts: CastFacts = { hungCategories: new Set(), hungIds: new Set(), fencePosts: new Map() };
+  const facts: CastFacts = { fencePosts: new Map() };
   const inParens = (field: string): string | undefined => /^[a-z_]+\((.+)\)$/.exec(field)?.[1];
   for (const a of mesh.assumptions) {
-    if (a.rule === "furniture-mount-default") {
-      const category = inParens(a.field);
-      if (category !== undefined) facts.hungCategories.add(category);
-    } else if (a.rule === "furniture-mount-from-top" && a.id !== undefined) facts.hungIds.add(a.id);
-    else if (a.rule === "fence-profile-default") {
+    if (a.rule === "fence-profile-default") {
       const style = inParens(a.field);
       const post = (a.value as { post_mm?: unknown } | undefined)?.post_mm;
       if (style !== undefined && typeof post === "number") facts.fencePosts.set(style, post);

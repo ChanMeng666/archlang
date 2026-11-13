@@ -30,14 +30,17 @@
  * hang it in the air there.
  *
  * What the outline is and is not: where casters overlap (a column set into a wall) the summed edges
- * are not their union's outline. A stretch is banded only when the point 1 mm out from its middle
- * lies in no caster's bottom face, so no band runs inside another caster and the outside is not
- * banded twice; a stretch only partly inside another caster keeps or loses its whole band by that
- * one point.
+ * are not their union's outline. Each stretch is cut where another node's bottom face begins or ends
+ * along it, and a piece is banded only when the point 1 mm out from its middle lies in no caster's
+ * bottom face, so no band runs inside another caster and the outside is not banded twice. Within one
+ * piece that point decides for the whole piece.
  *
  * Exactness: Mesh3D coordinates are integer micrometres, every test of a side is exact (`det`), every
  * key is built from integers and every list is sorted before it is read, so the bands depend on no
- * triangle order and no `Map` iteration order. A length is the square root of an exact integer sum
+ * triangle order and no `Map` iteration order. The one exception is where an overlap cuts a stretch:
+ * those places come from plain floating-point products and quotients, the same on every run and
+ * engine (IEEE arithmetic, no transcendental), but not exact as `det` is, and rounded to whole
+ * micrometres. A length is the square root of an exact integer sum
  * (never `Math.hypot`, whose last bit an engine may choose), and every offset is rounded to whole
  * micrometres with -0 made 0. Receivers and casters are looked up through a uniform grid, so the work
  * is the probes times the faces in one cell, not times every face of the storey.
