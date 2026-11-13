@@ -1720,7 +1720,7 @@ page, so `next` says what the sheet assumes: an `info` item with code `null`, "T
 (`error` to `profile`) and above `taste` and the `info` warnings, so `next` names it for as long
 as it is outstanding, and the stage is not clean until it is answered. On this last stage the
 stderr stage line calls it informational rather than asking to fix it before advancing. Any
-written `north`, `north hidden` included, answers it, and `arch fmt` always writes `north up`, so
+written `north`, `north hidden` included, answers it, and `archlang fmt` always writes `north up`, so
 a formatted plan never gets it.
 
 Without `--stage`, nothing changes but one key: every `validate --json` diagnostic and intent
