@@ -69,3 +69,47 @@ describe("a door onto water is no way in or out (backlog 4.5)", () => {
     expect(describePlan(src).access.entrances).toEqual(["dp"]);
   });
 });
+
+/** The same house with the garden room's door opening onto `surfaces`, drawn in this order. */
+const drawn = (surfaces: readonly string[]): string => `plan "Order" {
+  units mm
+  wall id=shell exterior thickness 200 { (0,0) (8000,0) (8000,5000) (0,5000) close }
+  room id=garden at (0,0) size 8000x5000 label "Garden room" uses living
+  ${surfaces.join("\n  ")}
+  door id=dp on shell at 15000 width 900 swing into garden
+}`;
+const LAWN = "outdoor id=garden_lawn lawn at (-5000,5000) size 18000x10000";
+const POND = "outdoor id=pond water at (3000,5000) size 6000x3000";
+const DECK = "outdoor id=bridge deck at (5500,5000) size 1000x3000";
+const opensOnto = (surfaces: readonly string[]) =>
+  describePlan(drawn(surfaces)).access.edges.find((e) => e.doorId === "dp")!.onto ?? "walkable";
+
+describe("the topmost surface at the door decides (draw order, backlog 4.5)", () => {
+  it("a pond drawn inside a lawn after it is water there (docs/language-reference.md's garden)", () => {
+    expect(opensOnto([LAWN, POND])).toBe("water");
+  });
+  it("a lawn drawn over the pond after it is walked on", () => {
+    expect(opensOnto([POND, LAWN])).toBe("walkable");
+  });
+  it("a deck drawn over the water after it is a bridge; drawn under it, the water covers it", () => {
+    expect(opensOnto([POND, DECK])).toBe("walkable");
+    expect(opensOnto([DECK, POND])).toBe("water");
+    expect(opensOnto([LAWN, POND, DECK])).toBe("walkable");
+  });
+});
+
+describe("W_NO_ENTRANCE when the only doors open onto water (backlog 4.5)", () => {
+  it("names the door and says it opens onto water, not that there is none", () => {
+    const [d] = lint(pond({ front: false })).filter((x) => x.code === "W_NO_ENTRANCE");
+    expect(d!.message).toBe(
+      "The plan's only door to the outside opens onto water, so there is no way into the building.",
+    );
+    expect(d!.hints![0]).toMatch(/^`dp` opens onto an `outdoor water` surface/);
+  });
+  it("a plan with no door to the outside keeps its sentence byte for byte", () => {
+    const none = pond({ front: false }).replace("  door id=dp on shell at 15000 width 900 swing into garden\n", "");
+    const [d] = lint(none).filter((x) => x.code === "W_NO_ENTRANCE");
+    expect(d!.message).toBe("The plan has no exterior door or opening — there is no way into the building.");
+    expect(d!.hints).toEqual(["Add a `door` (or a cased `opening`) on an `exterior` wall."]);
+  });
+});

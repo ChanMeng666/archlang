@@ -14,7 +14,7 @@ import { resolveAll } from "./ir.js";
 import type { ResolvedLevel, ResolvedPlan, RDoor, ROutdoor, RRoom, ROpening } from "./ir.js";
 import type { OutdoorKind, PlanNode, UseKind } from "./ast.js";
 import { BUILTIN_REGISTRY, createRegistry } from "./registry.js";
-import { groundWalkable } from "./elements/outdoor.js";
+import { groundWalkable, outdoorRing } from "./elements/outdoor.js";
 import { NULL_WORLD } from "./world.js";
 import type { Diagnostic } from "./diagnostics.js";
 import { capDiagnostics } from "./diagnostics.js";
@@ -22,7 +22,7 @@ import type { Point } from "./ast.js";
 import type { CompileOptions } from "./types.js";
 import { segmentsOfWall, wallFaceProbes, type WallLike, type WallSegment } from "./geometry.js";
 import { mergedLength, overlap1d, type BBox } from "./geometry/rect.js";
-import { collinearOverlapLength, pointInPolygon, polygonEdges, rectRing, VERTEX_EPS } from "./geometry/polygon.js";
+import { collinearOverlapLength, pointInPolygon, polygonEdges, VERTEX_EPS } from "./geometry/polygon.js";
 import { arcAngleOffset, fullCircleArc } from "./geometry/arc.js";
 import { bestPaths, type Digraph } from "./algebra/paths.js";
 import { BOOLEAN, MAX_MIN, MIN_PLUS } from "./algebra/semiring.js";
@@ -352,10 +352,12 @@ export function connectorEdges(
 /**
  * The ground connector `c` opens onto when no one can walk there (backlog 4.5), or `undefined`.
  * Probed one host-wall thickness off its centre on the side with no room, the probe
- * {@link doorFacesBalcony} reads (the shape, never a box): the point must lie on a surface whose
- * kind is not walkable (`water`, `groundWalkable`) and on no walkable one, so a `deck` or
- * `paving` drawn over the water (a bridge, stepping stones) keeps the door a way out. A
- * connector with no host, or whose probe cannot tell the outward side, is left as it was.
+ * {@link doorFacesBalcony} reads (the shape, never a box). The TOPMOST surface at that point
+ * decides, the last of `outdoors` (element order, which is draw order: a later surface is painted
+ * over an earlier one) whose shape holds it: a pond drawn inside a lawn after it is water there,
+ * and a `deck` or `paving` drawn over the water after it (a bridge, stepping stones) keeps the
+ * door a way out. `outdoors` must be in element order. A connector with no host, or whose probe
+ * cannot tell the outward side, is left as it was.
  */
 export function unwalkableGroundAt(
   c: Pick<AccessConnector, "host" | "at">,
@@ -369,11 +371,10 @@ export function unwalkableGroundAt(
   const onMinus = boxes.some((b) => pointInRoomBox(minus, b));
   if (onPlus === onMinus) return undefined;
   const p = onPlus ? minus : plus;
-  const under = outdoors.filter((o) =>
-    pointInPolygon(p.x, p.y, o.poly ?? rectRing({ x: o.at.x, y: o.at.y, w: o.size.w, h: o.size.h })),
-  );
-  if (under.some((o) => groundWalkable(o.surface))) return undefined;
-  return under.find((o) => !groundWalkable(o.surface))?.surface;
+  let top: ROutdoor | undefined;
+  for (let i = outdoors.length - 1; i >= 0 && !top; i--)
+    if (pointInPolygon(p.x, p.y, outdoorRing(outdoors[i]!))) top = outdoors[i];
+  return top && !groundWalkable(top.surface) ? top.surface : undefined;
 }
 
 /** The `outdoor` surfaces of one resolved storey, for {@link connectorEdges}. */
@@ -641,9 +642,7 @@ export function doorFacesBalcony(
   const onMinus = rooms.some((r) => pointInRoomBox(minus, roomBox(r)));
   if (onPlus === onMinus) return false;
   const outward = onPlus ? minus : plus;
-  return balconies.some((b) =>
-    pointInPolygon(outward.x, outward.y, b.poly ?? rectRing({ x: b.at.x, y: b.at.y, w: b.size.w, h: b.size.h })),
-  );
+  return balconies.some((b) => pointInPolygon(outward.x, outward.y, outdoorRing(b)));
 }
 
 /**
