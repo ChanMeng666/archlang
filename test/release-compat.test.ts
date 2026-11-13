@@ -470,6 +470,17 @@ describe("release compatibility: the comparisons are not vacuous", () => {
       "removed property /rooms",
     ]);
 
+    const id = (o: unknown, n: unknown) =>
+      compat
+        .compareJsonSchemas(o, n, { surface: "plan-schema", name: "plan.schema.json" })
+        .map((f) => `${f.kind} ${f.path}`);
+    expect(id({ $id: "https://x/a.json" }, { $id: "https://x/b.json" })).toEqual(["changed $id /$id"]);
+    expect(id({ $id: "https://x/a.json" }, {})).toEqual(["changed $id /$id"]);
+    expect(id({ $id: "https://x/a.json" }, { $id: "https://x/a.json" })).toEqual([]);
+    expect(id({}, { $id: "https://x/a.json" })).toEqual([]);
+    // A property that is itself named `$id` (the intent schema has one) is not the root's identity.
+    expect(id({ properties: { $id: { type: "string" } } }, { properties: { $id: { type: "string" } } })).toEqual([]);
+
     expect(compat.compareErrorCodes(["E_A", "W_B", "E_C"], ["E_A", "E_C", "E_D"])).toEqual([
       { surface: "error-codes", kind: "removed code", name: "W_B" },
     ]);

@@ -318,7 +318,7 @@ sites:
 
 | Header | Value | Why |
 |--------|-------|-----|
-| `Access-Control-Allow-Origin` | `*` | The JSON Schemas are published under their canonical `$id` URLs (`https://archlang.uk/plan.schema.json` is what `src/plan-json.ts` writes into every Plan JSON document), and `llms.txt` advertises the whole root as machine-fetchable. Dropping CORS silently breaks any browser-context validator or agent. On the playground it matters too: `embed.html` is designed to be framed by other sites, and it is the target of every `#z=` permalink the README and docs emit. |
+| `Access-Control-Allow-Origin` | `*` | The JSON Schemas are published under their canonical `$id` URLs (`https://archlang.uk/plan.schema.json` is the `schema` URL the MCP `compile` tool returns with `format: "json"`; `planToJson` itself writes no `$id`), and `llms.txt` advertises the whole root as machine-fetchable. Dropping CORS silently breaks any browser-context validator or agent. On the playground it matters too: `embed.html` is designed to be framed by other sites, and it is the target of every `#z=` permalink the README and docs emit. |
 | `Content-Disposition` | `inline` | Without it a `text/markdown` response is offered as a **download** instead of shown, which defeats the append-`.md` convention entirely. |
 | `Strict-Transport-Security` | `max-age=63072000` | Browsers hold Vercel's two-year max-age today; matching it keeps the header refreshing instead of silently expiring in 2028. `includeSubDomains` is deliberately **absent**, exactly as Vercel sent it — turning it on would newly bind every subdomain of `archlang.uk`. |
 
