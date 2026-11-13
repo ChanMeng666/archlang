@@ -534,7 +534,7 @@ function reachOver(
   for (let pass = 0; pass < levels.length + 1; pass++) {
     let grew = false;
     for (const c of connections) {
-      const travel = c.kind === "escalator" ? escalatorTravels(levels, c) : null;
+      const travel = escalatorTravels(levels, c);
       if (travel) {
         // An escalator that carries one way (M.4): each pair of stops, only in its direction.
         for (const [i, stop] of c.stops.entries()) {
@@ -671,7 +671,7 @@ function roomAwareReach(
         }
         continue;
       }
-      const travel = c.kind === "escalator" ? escalatorTravels(levels, c) : null;
+      const travel = escalatorTravels(levels, c);
       if (travel) {
         // An escalator that carries one way (M.4): each pair of stops, only in its direction.
         for (const [i, stop] of c.stops.entries()) {

@@ -1834,8 +1834,9 @@
  * move 16 rows each (the multi-storey examples and fixtures, the stair-safety pairs and
  * `inline:stair-arrival`), and `gaps-`, `sheet-text-` and `void-rail-byte-identity` a 17th, their
  * own `inline:every-table` (a two-storey plan); with the OLD overlay SVGs put back into the new
- * payload all 17 reproduce their old digests. No other table hashes the overlay. Each re-pinned row carries
- * `RM1.3b overlay` beside it.
+ * payload all 17 reproduce their old digests. `floor-materials-byte-identity` (a ninth
+ * `stairLawDigest` table, added on `main` since) moves the same 16 rows, re-pinned after merging
+ * c81b0eca. No other table hashes the overlay. Each re-pinned row carries `RM1.3b overlay` beside it.
  */
 
 /** SHA-256 over every storey's SVG + `describe()` + `lint()`, measured on `f4548db`. */
