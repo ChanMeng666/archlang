@@ -496,7 +496,7 @@ describe("suggestTopology — the wall a door is put on, and what it opens throu
       for (const file of walkFiles(dir)) {
         const src = readFileSync(file, "utf8");
         for (const s of suggestTopology(src)) {
-          const fault = (c: string) => c === s.code || (s.code === "W_ROOM_UNREACHABLE" && c === "W_ROOM_DISCONNECTED");
+          const fault = (c: string | undefined) => c === s.code || (s.code === "W_ROOM_UNREACHABLE" && c === "W_ROOM_DISCONNECTED");
           const before = lint(src).filter((d) => fault(d.code)).length;
           const i = src.lastIndexOf("}");
           const after = lint(`${src.slice(0, i)}  ${s.candidates[0]!.insertText}\n${src.slice(i)}`).filter((d) =>

@@ -296,14 +296,14 @@ Totals: 395 modules in 34 directories.
 | `site.ts` | 282 | 12 | The orientation layer: the `site` block's derived direction NAMES, and the one page→compass conversion every consumer of a facing reads. | none |
 | `stages.ts` | 358 | 6 | The authoring stages (plan-soundness PS7.1): the order in which a plan's decisions are taken, lowest frequency first, and which findings mean anything at each. | none |
 | `statement-print.ts` | 408 | 11 | Text printers for the LEAF (non-block) statement kinds — the element statements and the `set …` settings line. This is the one place `format.ts`'s pretty-printer, an element's own `resolve()` (a lint fix's replacement text) and Plan… | none |
-| `suggest.ts` | 591 | 2 | `suggestTopology(source)` — topology repair suggestions as DATA, never applied. | none |
+| `suggest.ts` | 619 | 2 | `suggestTopology(source)` — topology repair suggestions as DATA, never applied. | none |
 | `text-layout.ts` | 170 | 12 | Line breaking for a drawn name, and where each line of a multi-line text is drawn. | none |
 | `text-metrics.ts` | 151 | 18 | The closed-form text widths in the tree: {@link textWidth}, the one shared estimate, and {@link inkWidth}, from the advances of the two faces a label is drawn in, for a test a label stands right up against. | none |
 | `text-safe.ts` | 63 | 7 | Output-text safety — the single place a string that came from user source is made safe to embed in a **container format**. | none |
 | `theme.ts` | 488 | 52 | Theme: colours, line-weight, and font for the rendered drawing. | none |
 | `types.ts` | 203 | 12 | Public types for the ArchLang compiler. | none |
 | `unified-diff.ts` | 120 | 1 | A tiny, zero-dependency line-based unified diff (LCS backtrack + hunk grouping). | none |
-| `vertical.ts` | 843 | 42 | **Vertical circulation** as facts: the one place the shared semantics of `stair`, `elevator` and `escalator` live, so the three element modules, the nav grid, `lint` and `describe()` can never disagree about them. | none |
+| `vertical.ts` | 843 | 43 | **Vertical circulation** as facts: the one place the shared semantics of `stair`, `elevator` and `escalator` live, so the three element modules, the nav grid, `lint` and `describe()` can never disagree about them. | none |
 | `vocabulary.ts` | 459 | 15 | Closed-vocabulary, token-bounded label matching — the one place ArchLang turns a free-text room label into a controlled classification. | none |
 | `wall-lowering.ts` | 428 | 9 | **The one wall-lowering path** — a set of resolved walls to the Scene nodes that draw them: one poché fill per material group, and ONE outline for the whole set. | none |
 | `wall-ref.ts` | 114 | 19 | How a diagnostic, a hint, a fix or a suggestion names a wall (ADR 0028 §3, "Addressing"). | none |
@@ -334,7 +334,7 @@ Totals: 395 modules in 34 directories.
 | `grid.ts` | 27 | 3 | The 4-neighbourhood of a row-major cell grid, shared by the nav grid (`circulation.ts`) and the occupancy grid (`occupancy.ts`). | none |
 | `gross-area.ts` | 252 | 7 | **Gross internal area** (GIA) — the floor enclosed by the exterior walls' inner faces (`describe().totals.gross_internal_area_m2`, plan-soundness PS4.4). | none |
 | `keep-facts.ts` | 715 | 2 | `describe --facts depends` for keeps (ADR 0033; plan-soundness PS4.3b, design §5, R5, R16): `depends.keeps[]`, one row per accepted keep, read from the declarations alone. | none |
-| `nav-grid.ts` | 1953 | 5 | The whole-plan navigation grid circulation walks on, and the walking primitives its two readers (the facts in `circulation.ts`, the overlay in `circulation-overlay.ts`) share, moved verbatim from `src/analyze/circulation.ts`: the cell… | none |
+| `nav-grid.ts` | 1955 | 5 | The whole-plan navigation grid circulation walks on, and the walking primitives its two readers (the facts in `circulation.ts`, the overlay in `circulation-overlay.ts`) share, moved verbatim from `src/analyze/circulation.ts`: the cell… | none |
 | `net-area-memo.ts` | 90 | 6 | Net internal area, computed once per storey and once per room (ADR 0027's figures, unchanged). | none |
 | `net-area.ts` | 563 | 10 | **Net internal area** — the part of a room's floor that no wall stands on (`describe().rooms[].net_area_m2`; the rule and why: `docs/adr/0027-net-internal-area.md`). | none |
 | `occupancy.ts` | 238 | 4 | Room circulation as a fact: can a person actually step through a room's door and reach its floor, or do furniture, fixtures and door swings seal it off? | none |
@@ -421,7 +421,7 @@ Totals: 395 modules in 34 directories.
 | `roof.ts` | 383 | 6 | `roof overhang <mm> [wall <id>]` — or `roof polygon (x,y) (x,y) (x,y) …` — the eaves projection line. | none |
 | `room.ts` | 745 | 9 | `room [id=] (at (x,y) \| DIR ref [align E] [gap n]) size WxH [label "…"]` or `room [id=] polygon (x,y) (x,y) (x,y) … [label "…" [at (x,y)]]` or `room [id=] circle at (cx,cy) radius R [label "…"]` — floor fill + label + computed area. The… | none |
 | `section.ts` | 256 | 2 | `section <id\|int> (x,y)->(x,y) look <compass>` — a section mark on the plan (RM6.1, design `docs/plans/product-roadmap/design/slab-and-section.md` §2): where a section cuts the building and which way it looks, drawn as GB/T 50001 and ISO… | none |
-| `stair.ts` | 471 | 2 | `stair [id=] at (x,y) size WxH dir up\|down [width <mm>]` — a straight flight of stairs drawn as the conventional plan symbol. Or the block form (issue #362), `stair [id=] dir up\|down width <mm> { flight … landing … flight … }`: one stair… | charges the step meter |
+| `stair.ts` | 481 | 2 | `stair [id=] at (x,y) size WxH dir up\|down [width <mm>]` — a straight flight of stairs drawn as the conventional plan symbol. Or the block form (issue #362), `stair [id=] dir up\|down width <mm> { flight … landing … flight … }`: one stair… | charges the step meter |
 | `vertical-glyphs.ts` | 463 | 10 | Plan symbols for the vertical-circulation elements (`stair`, `elevator`, `escalator`). | none |
 | `void.ts` | 435 | 9 | `void [id=] (at (x,y) size WxH \| polygon (x,y) …) [rail <edges>]` — a hole in this storey's floor plate. | charges the step meter |
 | `wall.ts` | 486 | 3 | `wall <category> thickness N { (x,y)… [close] }` — poché fill + crisp faces. | none |
@@ -499,7 +499,7 @@ Totals: 395 modules in 34 directories.
 | `sheet.ts` | 248 | 2 | The sheet, decided in `resolve()`: the two extents a fit is measured on, the storey as drawn ({@link drawnView}), the `paper` + scale resolved into a {@link ResolvedSheet}, and its reports (`W_SCALE_OVERFLOW`, `W_DRAWING_OVERFLOW`, and… | none |
 | `side-tables.ts` | 140 | 1 | What one resolution keeps beside its {@link ResolvedPlan}, never on it: the frozen datum tables, the `place`d instances' bodies, the evaluation steps spent and the keep state. Each is a `WeakMap` keyed by the IR object, so no… | none |
 | `silent-accepts.ts` | 113 | 5 | Warnings for what the resolver used to accept without a word (product-roadmap RM1.4): a length that reads as metres (`W_LENGTH_IN_METRES`) and a written size or door position that `grid` moved (`W_GRID_SNAPPED`). Both are warnings only… | none |
-| `types.ts` | 1088 | 6 | The resolved IR's types: every `R*` element interface, {@link ResolvedElement}, {@link ResolvedPlan}, and what a resolution returns ({@link ResolvedLevel}, {@link PlanResolution}). | none |
+| `types.ts` | 1091 | 6 | The resolved IR's types: every `R*` element interface, {@link ResolvedElement}, {@link ResolvedPlan}, and what a resolution returns ({@link ResolvedLevel}, {@link PlanResolution}). | none |
 
 ## `src/lint/`
 
@@ -524,7 +524,7 @@ Totals: 395 modules in 34 directories.
 | --- | ---: | ---: | --- | --- |
 | `alias-match.ts` | 93 | 1 | `W_ALIAS_MATCH` — advisory: a room's use was inferred from a non-canonical alias. | none |
 | `annotations.ts` | 636 | 2 | Annotation collisions on the drawn sheet (plan-soundness PS2.12): two drafting advisories that read the drawing itself, never the plan's facts, so `describe()`, Plan JSON and the SVG are untouched by them. | none |
-| `circulation-facts.ts` | 1011 | 3 | Circulation quality as advisory warnings, built on the circulation nav-grid facts (ADR 0008): a walk that squeezes below a passable width (`W_PATH_TOO_NARROW`), or that wanders far from a straight line (`W_CIRCUITOUS_PATH`). Facts →… | none |
+| `circulation-facts.ts` | 1073 | 3 | Circulation quality as advisory warnings, built on the circulation nav-grid facts (ADR 0008): a walk that squeezes below a passable width (`W_PATH_TOO_NARROW`), or that wanders far from a straight line (`W_CIRCUITOUS_PATH`). Facts →… | none |
 | `circulation.ts` | 40 | 1 | Circulation: a room whose doorways can't reach a usable patch of clear floor — technically reachable (it has a door) but so packed that you can't step in. A grid flood-fill fact (see analyze/occupancy.ts); only fires when there *is*… | none |
 | `clearances.ts` | 464 | 2 | The clearance family of plan-soundness PS2.11, beyond the seat check: a WC whose centreline stands too near a side obstacle (PS2.11a) and a tall unit standing in front of a window (PS2.11b). Both measure the drawn shapes — a fixture's… | none |
 | `dims.ts` | 614 | 3 | Annotation-quality advisories over the plan's HAND-WRITTEN dimensions: `W_DIM_INSIDE` (a dimension line landing inside the building) and `W_DIM_OVERLAP` (two dimensions drawn on top of each other). Both are advisory with a… | none |

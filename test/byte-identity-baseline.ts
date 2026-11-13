@@ -1823,7 +1823,8 @@
  * even the widest arriving run is narrower than `minPathClearWidthMm`, no door widening can clear
  * any walk there, so the rule (rightly) names no door; its hint used to say "widen the tightest
  * door/opening" all the same. Now a room whose reading IS the run's width (every door on its way
- * clearing the minimum) says the bottleneck is the stair, and its hint quotes the `size` that clears it; a room
+ * clearing the minimum, and its walk re-measured with the run widened clearing it) says the bottleneck is
+ * the stair, and its hint quotes the clause that clears it; a room
  * behind a narrower door as well keeps the door hint and adds the stair's. Only the accessibility
  * profile (900 mm) meets such a storey in the corpus. Swept per payload against `origin/main`
  * 911f209b over 473 corpus files (every storey's SVG and overlay SVG, `compile().diagnostics`,

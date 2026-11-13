@@ -10,7 +10,7 @@
  * PR legitimately moves a hashed output (never keep code), the table is re-taken by the generator, the
  * reason recorded below and the moved files listed in that commit's message.
  *
- * Taken: RM1.3b on feat/rm1.3b-suggest-and-hint (base 35ed277f): W_PATH_TOO_NARROW under accessibility-advisory names the narrow stair a storey is reached by, which validate --json's next reads; only the upper storeys of plans reached by an 800 mm flight move, and every step count is unchanged
+ * Taken: RM1.3b (#743) on feat/rm1.3b-suggest-and-hint after merging origin/main c81b0eca: the 16 rows that move are the plans emitting W_PATH_TOO_NARROW under the default ruleset, whose validate --json carries that code's catalogue fix text, which gained a sentence; every step count is unchanged
  */
 
 /** `[path from the repository root, SHA-256 of the payload, evaluation steps]`, sorted by root. */
