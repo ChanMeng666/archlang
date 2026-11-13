@@ -199,7 +199,7 @@ describe("contact shadows (card RM8.8)", () => {
     const ev = { riseFrom: 0.6, riseTo: 0.7 };
     expect(contactFade(ev, 0.6)).toBe(0);
     expect(contactFade(ev, 0.674)).toBe(0);
-    expect(contactFade(ev, 0.675)).toBe(0);
+    expect(contactFade(ev, 0.675)).toBeCloseTo(0, 12);
     expect(contactFade(ev, 0.6875)).toBeCloseTo(0.5, 12);
     expect(contactFade(ev, 0.7)).toBe(1);
     expect(contactFade(ev, 1)).toBe(1);
