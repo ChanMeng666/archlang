@@ -15,6 +15,7 @@ import { SEGMENT_SELECT_RE } from "../segment-select.js";
 import { PAPER_ORIENTATIONS, PAPER_SIZES } from "../sheet.js";
 import { ROOM_TYPES } from "./room-types.js";
 import { OPENING_KIND_ENUM } from "./from-json.js";
+import { pure } from "../pure.js";
 
 const POINT_SCHEMA = {
   type: "object",
@@ -27,7 +28,7 @@ const POINT_SCHEMA = {
 } as const;
 
 /** A wall vertex: {@link POINT_SCHEMA} plus the `arc` of the edge arriving at it. */
-const WALL_POINT_SCHEMA = {
+const WALL_POINT_SCHEMA = pure(() => ({
   type: "object",
   additionalProperties: false,
   required: ["x", "y"],
@@ -49,7 +50,7 @@ const WALL_POINT_SCHEMA = {
       },
     },
   },
-} as const;
+}));
 
 /** {@link InstanceMark}: the `instance` key every row schema accepts. */
 const INSTANCE_MARKER = {
@@ -63,7 +64,7 @@ const INSTANCE_MARKER = {
  * This object is the single source of truth: `scripts/gen-plan-schema.ts` writes it to
  * `schemas/plan.schema.json` and a drift test regenerates it in-memory to compare.
  */
-export const PLAN_JSON_SCHEMA = {
+export const PLAN_JSON_SCHEMA = pure(() => ({
   $schema: "https://json-schema.org/draft/2020-12/schema",
   $id: "https://archlang.uk/plan.schema.json",
   title: "ArchLang Plan",
@@ -561,4 +562,4 @@ export const PLAN_JSON_SCHEMA = {
       additionalProperties: { type: "array", items: { type: "string" } },
     },
   },
-} as const;
+}));

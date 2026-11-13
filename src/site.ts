@@ -37,6 +37,7 @@ import type { RenderSizes, SceneNode } from "./scene.js";
 import { weightWidth } from "./scene.js";
 import type { Theme } from "./theme.js";
 import { actOnLetter, D4_HALF_TURN, LETTERS_CW, toCompass as d4ToCompass } from "./algebra/d4.js";
+import { pure } from "./pure.js";
 
 /** A TRUE compass facing, the spelling every machine surface uses. */
 export type CompassLetter = "N" | "S" | "E" | "W";
@@ -44,7 +45,7 @@ export type CompassLetter = "N" | "S" | "E" | "W";
 /** The four letters in CLOCKWISE order from the top — the index space `toCompass` turns in.
  *  A copy of D4's `LETTERS_CW` (`src/algebra/d4.ts`), so a consumer holding this array
  *  cannot reach the group's own table. */
-export const FACINGS: readonly CompassLetter[] = [...LETTERS_CW];
+export const FACINGS: readonly CompassLetter[] = pure(() => [...LETTERS_CW]);
 
 /** Source spells a WORD, every machine surface keeps the LETTER. The one mapping, applied
  *  at the IR→facts boundary so nothing downstream ever sees a word. */

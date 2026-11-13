@@ -40,6 +40,7 @@
 
 import type { KeepNode, KeepRef } from "./ast.js";
 import type { Diagnostic } from "./diagnostics.js";
+import { pure } from "./pure.js";
 import type { IntentCheckResult, Predicate } from "./intent.js";
 import type { ResolvedElement } from "./ir.js";
 import type { KeepResult } from "./keep.js";
@@ -50,8 +51,8 @@ import type { NextInput } from "./next.js";
 export const AUTHORING_STAGES = ["brief", "rooms", "walls", "openings", "fixtures", "drafting"] as const;
 export type AuthoringStage = (typeof AUTHORING_STAGES)[number];
 
-const RANK: Readonly<Record<AuthoringStage, number>> = Object.freeze(
-  Object.fromEntries(AUTHORING_STAGES.map((s, i) => [s, i] as const)) as Record<AuthoringStage, number>,
+const RANK: Readonly<Record<AuthoringStage, number>> = pure(() =>
+  Object.freeze(Object.fromEntries(AUTHORING_STAGES.map((s, i) => [s, i] as const)) as Record<AuthoringStage, number>),
 );
 
 /** Whether `s` is a stage name. */
@@ -67,7 +68,7 @@ const later = (a: AuthoringStage, b: AuthoringStage): AuthoringStage => (RANK[a]
  * The compile-channel warnings (`compile()`'s, not `lint()`'s), each by what it is about. Every
  * catalogued `W_*` code no lint rule declares is listed (`test/stages.test.ts`).
  */
-export const COMPILE_WARNING_STAGES: Readonly<Record<string, AuthoringStage>> = Object.freeze({
+export const COMPILE_WARNING_STAGES: Readonly<Record<string, AuthoringStage>> = /* @__PURE__ */ Object.freeze({
   // The language itself.
   W_EMPTY_PLAN: "brief",
   W_IMPORT_EMPTY_FILE: "brief",
@@ -125,7 +126,7 @@ export const COMPILE_WARNING_STAGES: Readonly<Record<string, AuthoringStage>> = 
  * this table only answers for a bare code. `E_INTENT_UNMEASURED` comes from a room dimension
  * (`rooms`) or the gross internal area (`walls`), so the bare code answers `rooms`.
  */
-export const INTENT_CODE_STAGES: Readonly<Record<string, AuthoringStage>> = Object.freeze({
+export const INTENT_CODE_STAGES: Readonly<Record<string, AuthoringStage>> = /* @__PURE__ */ Object.freeze({
   E_INTENT_ROOM_COUNT: "rooms",
   E_INTENT_ROOM_MISSING: "rooms",
   E_INTENT_ROOM_AREA: "rooms",
@@ -197,25 +198,26 @@ export function predicateStage(p: Predicate): AuthoringStage {
 export const GRAPH_STAGE: AuthoringStage = "openings";
 
 /** The stage of a resolved element's kind: the stage at which it is placed. */
-export const ELEMENT_KIND_STAGES: Readonly<Record<ResolvedElement["kind"], AuthoringStage>> = Object.freeze({
-  room: "rooms",
-  stair: "rooms",
-  elevator: "rooms",
-  escalator: "rooms",
-  void: "rooms",
-  outdoor: "rooms",
-  wall: "walls",
-  walls: "walls",
-  column: "walls",
-  roof: "walls",
-  fence: "walls",
-  door: "openings",
-  window: "openings",
-  opening: "openings",
-  furniture: "fixtures",
-  dim: "drafting",
-  section: "drafting",
-});
+export const ELEMENT_KIND_STAGES: Readonly<Record<ResolvedElement["kind"], AuthoringStage>> =
+  /* @__PURE__ */ Object.freeze({
+    room: "rooms",
+    stair: "rooms",
+    elevator: "rooms",
+    escalator: "rooms",
+    void: "rooms",
+    outdoor: "rooms",
+    wall: "walls",
+    walls: "walls",
+    column: "walls",
+    roof: "walls",
+    fence: "walls",
+    door: "openings",
+    window: "openings",
+    opening: "openings",
+    furniture: "fixtures",
+    dim: "drafting",
+    section: "drafting",
+  });
 
 /** What {@link keepStage} needs: the kind of the element an id names, if any. */
 export type KindOf = (id: string) => ResolvedElement["kind"] | undefined;

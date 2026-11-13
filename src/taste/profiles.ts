@@ -41,11 +41,11 @@ export const TASTE_PROFILES: Readonly<Record<string, TasteProfile>> = Object.fre
  */
 export const TASTE_PROFILE_SOURCES: Readonly<
   Record<string, Readonly<Record<string, { source: string; verified: "V" | "S" }>>>
-> = Object.freeze({
-  "cn-residential-advisory": Object.freeze({
+> = /* @__PURE__ */ Object.freeze({
+  "cn-residential-advisory": /* @__PURE__ */ Object.freeze({
     R7: { source: "GB 50096-2011 7.1.5 (window-to-floor area ratio at least 1/7)", verified: "V" as const },
   }),
 });
 
 /** The names `taste()` accepts, in a stable order. */
-export const TASTE_PROFILE_NAMES: readonly string[] = Object.keys(TASTE_PROFILES);
+export const TASTE_PROFILE_NAMES: readonly string[] = /* @__PURE__ */ Object.keys(TASTE_PROFILES);

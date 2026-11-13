@@ -670,16 +670,16 @@ export const LINT_PROFILES: Readonly<Record<string, Partial<LintRuleset>>> = Obj
  * ruleset fields when their rule lands, as R10's side clearance did (`wcSideClearanceMm`,
  * PS2.11a). Design: `archlang-lab/plans/plan-soundness/research/2026-10-24-ps5-taste-design.md` §5.
  */
-export const DEFERRED_PROFILE_NUMBERS = Object.freeze({
+export const DEFERRED_PROFILE_NUMBERS = /* @__PURE__ */ Object.freeze({
   /** R10, `us`: 21 in (533 mm) clear in front of a WC (IRC R307.1) [S, `prior-art.md` §3.3; clause
    *  number from the design's §5 table]. Its side figure, 15 in (381 mm, P2705.1), is
    *  `us-residential-advisory`'s `wcSideClearanceMm`. */
-  usWc: Object.freeze({ clearInFrontMm: 533 }),
+  usWc: /* @__PURE__ */ Object.freeze({ clearInFrontMm: 533 }),
   /** R37, `us`: an emergency escape and rescue opening at least 20 in (508 mm) clear wide and
    *  24 in (610 mm) clear high, its sill at most 44 in (1118 mm) above the floor, and at least
    *  5.7 ft² (0.53 m²) net clear, or 5.0 ft² (0.46 m²) at grade (IRC R310) [S, `prior-art.md`
    *  §3.2]. A failure only, never a pass. */
-  usEscape: Object.freeze({
+  usEscape: /* @__PURE__ */ Object.freeze({
     minClearWidthMm: 508,
     minClearHeightMm: 610,
     maxSillMm: 1118,
@@ -688,7 +688,7 @@ export const DEFERRED_PROFILE_NUMBERS = Object.freeze({
   }),
   /** R37, `uk`: an escape window at least 0.33 m² clear and 450 × 450 mm, its openable part at
    *  most 1100 mm above the floor (Approved Document B 2.10) [S, `prior-art.md` §3.3]. */
-  ukEscape: Object.freeze({ minClearM2: 0.33, minClearSideMm: 450, maxOpenableHeightMm: 1100 }),
+  ukEscape: /* @__PURE__ */ Object.freeze({ minClearM2: 0.33, minClearSideMm: 450, maxOpenableHeightMm: 1100 }),
 });
 
 /**
