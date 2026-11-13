@@ -20,7 +20,7 @@
 import type { Span } from "./diagnostics.js";
 import { DOOR_KINDS, WINDOW_KINDS } from "./grammar/tokens.js";
 import { FIXTURE_CATEGORIES } from "./elements/fixtures-glyphs.js";
-import { GROUND_MATERIALS, KNOWN_MATERIALS } from "./hatches.js";
+import { FLOOR_PATTERNS, GROUND_MATERIALS, KNOWN_MATERIALS } from "./hatches.js";
 import { type DecimalMark, drawnDecimal, fmt2, plainDecimal } from "./num-format.js";
 import { plainText } from "./text-safe.js";
 
@@ -83,6 +83,7 @@ const vocabularyKeys = (): readonly string[] => [
   ...WINDOW_KINDS,
   ...KNOWN_MATERIALS,
   ...GROUND_MATERIALS,
+  ...FLOOR_PATTERNS,
   ...FIXTURE_CATEGORIES,
 ];
 

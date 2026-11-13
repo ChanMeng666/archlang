@@ -1,7 +1,7 @@
 /**
  * `outdoor [id=] <kind> (at (x,y) size WxH | polygon (x,y) …) [label "…"] [rail <edges>]`
  * — a ground surface OUTSIDE the building: lawn, planting, paving, deck, gravel, water,
- * driveway, patio, balcony.
+ * driveway, patio, balcony, sand, soil.
  *
  * ## What it is, and what it deliberately is NOT
  *
@@ -143,6 +143,11 @@ const GROUND: Readonly<Record<OutdoorKind, GroundSpec>> = {
   // which is correct: the legend names materials, not places.
   patio: { material: "paving", tint: "paving", layer: SITE_LAYER },
   balcony: { material: null, tint: "paving", layer: BALCONY_LAYER },
+  // Card RM8.7. Sand is a hard-landscape surface (a beach, a play area), so it sits on the site
+  // layer; bare soil is a bed not yet planted, so it sits with the planting. Both take the warm
+  // grey `paving` tint: bare earth is not the green of `lawn`.
+  sand: { material: "sand", tint: "paving", layer: SITE_LAYER },
+  soil: { material: "soil", tint: "paving", layer: PLANTING_LAYER },
 };
 
 /** The hatch material a kind fills with, or null when it takes none. */

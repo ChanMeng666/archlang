@@ -317,6 +317,8 @@ export const KEYWORDS = {
     "driveway",
     "patio",
     "balcony",
+    "sand",
+    "soil",
     "picket",
     "panel",
     "post",
@@ -578,8 +580,13 @@ export const RULES = {
  * or a binding may spell any of them, so a tool that renames ids away from the keywords (the
  * OpenPlan3D importer) leaves these three be, and its output stays what it was before them.
  * `test/section.test.ts` holds each to `KEYWORDS`.
+ *
+ * The two `outdoor` kinds RM8.7 added, `sand` and `soil`, are enum values read only after
+ * `outdoor` (and the closed set refuses any other word there), so they are no reserved words either:
+ * an importer keeps an id spelled `sand` or `soil` as it did before them
+ * (`test/import-openplan3d.test.ts`). The three floor words of RM8.7 are not keywords at all.
  */
-export const UNRESERVED_KEYWORDS: readonly string[] = ["section", "slab", "look"];
+export const UNRESERVED_KEYWORDS: readonly string[] = ["section", "slab", "look", "sand", "soil"];
 
 /**
  * Keywords that begin a plan-body statement (settings + declarations + control

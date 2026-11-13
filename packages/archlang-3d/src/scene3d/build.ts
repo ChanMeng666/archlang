@@ -102,7 +102,14 @@ function floorOf(r: RRoom, tol: number): Floor {
   // A circle first: the core also carries it as a fixed 48-gon `poly` for the drawing, and the
   // exact circle is what the chord tolerance discretises.
   const outer = r.circle ? circleRing(r.circle.c, r.circle.r, tol) : (r.poly ?? rectRing(r.at, r.size));
-  return { id: r.id, source: source(r), polygon: polygon(outer), ...(r.uses?.length ? { uses: [...r.uses] } : {}) };
+  return {
+    id: r.id,
+    source: source(r),
+    polygon: polygon(outer),
+    ...(r.uses?.length ? { uses: [...r.uses] } : {}),
+    // The author's `floor` word (card RM8.7): a public, non-underscore field of `RRoom` (ADR 0031).
+    ...(r.floor !== undefined ? { pattern: r.floor } : {}),
+  };
 }
 
 /**

@@ -100,7 +100,19 @@ describe("GLB over the corpus (§9.2 criteria 1 and 3)", () => {
 
   it("the site (card RM8.3): each outdoor kind's and fence style's fixture passes S1–S4, glTF-Validator 0/0", async () => {
     const dir = join(PKG, "test", "fixtures", "outdoor");
-    const names = ["lawn", "planting", "paving", "deck", "gravel", "water", "driveway", "patio", "balcony"]
+    const names = [
+      "lawn",
+      "planting",
+      "paving",
+      "deck",
+      "gravel",
+      "water",
+      "driveway",
+      "patio",
+      "balcony",
+      "sand",
+      "soil",
+    ]
       .map((k) => `ground-${k}`)
       .concat(["picket", "panel", "post"].map((s) => `fence-${s}`))
       // The edge cases of review R1: overlaps, degenerate fences, an upper storey.
