@@ -296,7 +296,7 @@ const BASELINE: [string, string][] = [
   ["08e21d460b8bb892a2c38b503081e8e51b3dc3c161075b30e12cbec3694950a6", "inline:stair-arrival"], // RM1.3b overlay, see ./byte-identity-baseline.ts
   ["e6eed958e1d4cea68f7981fce9964af4b5a26fa3d09ad3eafebb0992ce5cb727", "inline:stair-refusals"],
   ["57879436768cab2c738430d6586f0e88de6cb79c178799a011c9d09f73e553df", "inline:stair-parse-refusals"],
-  ["8d7f88735fa076c8f5a55135c402613be1a877985145ffd0cc197994e666859d", "examples/turning-stair.arch"],
+  ["bd06382fb0fcf1ec51fb327660e64f102090830aed2dc7f49b1f11f22f982747", "examples/turning-stair.arch"], // RM1.3b overlay, see ./byte-identity-baseline.ts
   ["0545c17080e7f460aacef3ed290df0f1d0ae9dd91403dacfbc1f5108bfcf2fe3", "inline:floor-words-as-names"],
   ["8d3b15bc029b1499bac84456b2c464f72b6a42c059a22875841f2a0338236588", "inline:floor-old-words-rendered"],
   ["ef4ef5ebdea707d29660779fea0c833215642abb2905346baa5cfd11a8a43bff", "inline:outdoor-old-kinds-rendered"],

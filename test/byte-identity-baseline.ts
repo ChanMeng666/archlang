@@ -1836,7 +1836,9 @@
  * own `inline:every-table` (a two-storey plan); with the OLD overlay SVGs put back into the new
  * payload all 17 reproduce their old digests. `floor-materials-byte-identity` (a ninth
  * `stairLawDigest` table, added on `main` since) moves the same 16 rows, re-pinned after merging
- * c81b0eca. No other table hashes the overlay. Each re-pinned row carries `RM1.3b overlay` beside it.
+ * c81b0eca, and its one row of its own, `examples/turning-stair.arch` (`8d7f8873…` to `bd06382f…`;
+ * one of the 29 files whose overlay the sweep saw move, and with `main` 3f585759's overlay put back
+ * it reproduces `8d7f8873…`). No other table hashes the overlay. Each re-pinned row carries `RM1.3b overlay` beside it.
  */
 
 /** SHA-256 over every storey's SVG + `describe()` + `lint()`, measured on `f4548db`. */
