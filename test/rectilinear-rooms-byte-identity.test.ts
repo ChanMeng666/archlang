@@ -154,7 +154,7 @@ const BASELINE: [string, string][] = [
   ["ffa5f189efd9d7fbaa321a32a24e7942a74be753b443a73bd78b8ea382cbbfe5", "test/fixtures/off-path-bypass.arch"], // RM1.4: the unknown-furniture search is charged to the step meter (+29 steps: `cabinet`, 234 -> 263) (was 947c91d4)
   ["f6031de45dc54fe15b0c22019de5123543e6aade443518347c48d3373892c9bd", "test/fixtures/schedule-sheet.arch"],
   ["2f0c4e2b63425468b46263ab7a6581dfd15bd12fadc36db828f97f6fc079a17c", "test/fixtures/star30.arch"], // #367, see test/byte-identity-baseline.ts
-  ["d18ee640a384daea8f4eb7f45f69e5d919c4a5f6e02df5393a3e6bdc175711ca", "test/fixtures/storeys-eaves-overflow.arch"], // H10: +12 ring scan, +0 overlap; RM1.3a, see ./byte-identity-baseline.ts; RM1.2a, see ./byte-identity-baseline.ts
+  ["c45486c0536253c14938bc22dde4acd09a96d481c850624c6354ba3a8c5809a3", "test/fixtures/storeys-eaves-overflow.arch"], // H10: +12 ring scan, +0 overlap; RM1.3a, see ./byte-identity-baseline.ts; RM1.2a, see ./byte-identity-baseline.ts; RM1.2a review, see ./byte-identity-baseline.ts
   // was 5c3ce8b3. D27: this plan's stair stands in no wall, so `bounds()` reaching its break line widens the
   // drawing 156 mm. Only the SVG, the Scene and the overlay moved: with the old ones put back the old digest returns.
   ["d1fe5439746f56e5b976a260257aaeb1b9cb2bacb5a9ee3a197222d66b00f6e2", "test/fixtures/zones-levels.arch"],

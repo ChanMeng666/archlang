@@ -1220,6 +1220,8 @@ export interface Redrawn {
   flight: number;
   from: PieceAt;
   to: PieceAt;
+  /** The flight's run before and after (mm). */
+  run: { from: number; to: number };
 }
 
 /**
@@ -1285,7 +1287,9 @@ export function redrawFor(
     treads[best] = treadCount(to);
   }
   const redrawn = pieces.flatMap((to, i) =>
-    runs[i] === flightRun(flights[i]!) ? [] : [{ flight: i + 1, from: from[i]!, to }],
+    runs[i] === flightRun(flights[i]!)
+      ? []
+      : [{ flight: i + 1, from: from[i]!, to, run: { from: flightRun(flights[i]!), to: runs[i]! } }],
   );
   return { redrawn, treads: treads.reduce((n, t) => n + t, 0), risers: drawnRisers(now()) };
 }
@@ -1293,8 +1297,16 @@ export function redrawFor(
 const pieceText = (p: PieceAt): string => `at (${mm(p.at.x)},${mm(p.at.y)}) size ${mm(p.size.w)}x${mm(p.size.h)}`;
 
 /** The redrawing as the hint quotes it: every statement to change, as it is and as it becomes, so
- *  pasting it is the whole fix (a flight lengthened toward the floor it stands on moves its `at`). */
+ *  pasting it is the whole fix (a flight lengthened toward the floor it stands on moves its `at`).
+ *  A stair inside a `place` is written in its component's frame, not the plan's, so its statements
+ *  cannot be quoted from the resolved plan: the hint names each flight's run instead. */
 function redrawText(v: RStair, redrawn: readonly Redrawn[]): string {
+  if (v._instance !== undefined) {
+    const runs = redrawn.map((r) => `from ${mm(r.run.from)} mm to ${mm(r.run.to)} mm`);
+    return isBlockStair(v)
+      ? `Lengthen ${redrawn.map((r, i) => `flight ${r.flight} of \`${v.id}\` ${runs[i]}`).join(" and ")} (each away from its landing, in the component placed as \`${v._instance}\`)`
+      : `Lengthen \`${v.id}\` along its flight ${runs[0]} (its \`size\`, in the component placed as \`${v._instance}\`)`;
+  }
   if (!isBlockStair(v)) {
     const r = redrawn[0]!;
     const moved = r.to.at.x !== r.from.at.x || r.to.at.y !== r.from.at.y;

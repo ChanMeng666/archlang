@@ -1796,6 +1796,26 @@
  * `keep-byte-identity-baseline.ts` was re-taken by its generator: the two examples and
  * `5-townhouse` moved, the pair was added, and every step count is unchanged. Each re-pinned row carries
  * `RM1.2a` beside it.
+ *
+ * ### RM1.2a review round (PR #736): `lint()` text only
+ *
+ * Case (1), deliberate. The review changed what two rules say, never whether they report or what
+ * anything draws: the riser message now names the drawing's 280 mm nominal going and the riser
+ * count the limit asks; the riser hint quotes each flight statement to redraw (a stair inside a
+ * `place` names its runs instead); and `W_STAIR_TOO_STEEP`'s hint, where the drawn riser binds too,
+ * opens with one redrawing long enough for both. A winder line now counts as a riser, which changes
+ * no row's verdict here. Swept per payload against the branch's previous head (427 corpus files,
+ * every storey's SVG, `compile().diagnostics`, `describe()` and `lint()` under the default ruleset and
+ * every profile): `lint()` moved on `test/fixtures/storeys-eaves-overflow.arch`, the riser-too-high
+ * case, `test/defect-corpus/stair-safety/stair-too-steep.arch` (its 2860 mm would draw 11 risers of
+ * 273 mm: the hint now asks 3500 mm), `test/recovery-corpus/two-storey.arch` (2640 becomes 3250 mm)
+ * and the six `5-townhouse` runs; nothing else moved. Re-pinned by each table's own method: the eight
+ * `stairLawDigest` tables and `block-stair-winders-byte-identity` re-measured with their own digest
+ * bodies after reproducing every unmoved row (102 and 18), and equal to CI's received values where
+ * CI received them (the two `place`d winders rows moved after that run, with the placed wording);
+ * K1 by its generator; the rest from CI run 43406736360's received values: `double-door`,
+ * `wall-status`, `open-crossing`, `while-byte-identity-baseline.ts` and `rectilinear-rooms` 1 each,
+ * `import-module-lets` 2. Each carries `RM1.2a review` beside it.
  */
 
 /** SHA-256 over every storey's SVG + `describe()` + `lint()`, measured on `f4548db`. */

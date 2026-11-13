@@ -593,7 +593,7 @@ const BASELINE: [string, string][] = [
   ["test/fixtures/off-path-bypass.arch", "81ef92c32f98bc41635428f477b2cf7e59adea520e60892b5e39aa48fcbcaecf"], // new fixture, see header; PS2.11e, see header
   ["test/fixtures/schedule-sheet.arch", "15dc29228ea12dae7240ad843567f88218c5a57bd8838ea950b1a5792c2579a5"], // re-measured, see header; PS2.29: message text only, same code, same span
   ["test/fixtures/star30.arch", "5104211cdd3733a56e18d141c68db6a097b679e484b1b18897e7637dd05d0bbb"], // new fixture, see header; #367, see test/byte-identity-baseline.ts
-  ["test/fixtures/storeys-eaves-overflow.arch", "c9134635c92f677689b08442f0f4d08c6dc23fc10c4a6af37ec4930da3b19f40"], // new fixture (PS2.77), see header; RM1.3a, see ./byte-identity-baseline.ts; RM1.2a, see ./byte-identity-baseline.ts
+  ["test/fixtures/storeys-eaves-overflow.arch", "51a639bc42529f5f51f8a9a45a0441d450aa9426be6e2e1f92b16267866a0b27"], // new fixture (PS2.77), see header; RM1.3a, see ./byte-identity-baseline.ts; RM1.2a, see ./byte-identity-baseline.ts; RM1.2a review, see ./byte-identity-baseline.ts
   // was 05693d9e. D27: this plan's stair stands in no wall, so `bounds()` reaching its break line widens the
   // drawing 156 mm. Only the SVG, the Scene and the overlay moved: with the old ones put back the old digest returns.
   ["test/fixtures/zones-levels.arch", "543c732b812f10c5f40822c085740e4a3c7093add2f9c2663cff28396c4192e7"], // re-measured for PS2.4, see header
@@ -606,7 +606,7 @@ const BASELINE: [string, string][] = [
   ["test/recovery-corpus/terrace-row.arch", "776d912f42b22e335c57392e9edb02c9207b20c53c6c6db0c118484a68cda4d0"],
   // Re-measured 2026-10-18 (PS0.7): a copy of `examples/themed.arch`, the same cause and value.
   ["test/recovery-corpus/themed.arch", "ad274a10c13b1aa035e3e32fed8b6aecc0b0d6a1b2e5112008a647f5fde638e3"], // PS2.11e, see header
-  ["test/recovery-corpus/two-storey.arch", "9b63c2cc4721eb92597ade4a8c1dd611aadadbcc0b180b0b322c0b877c1581cc"], // re-measured for S2 (#362): `W_STAIR_TOO_STEEP`'s hint reworded, nothing else; was 2102a710477b9a23e3eb5a99256840119629b128297515d9603ec459c800ff99; RM1.3a, see ./byte-identity-baseline.ts
+  ["test/recovery-corpus/two-storey.arch", "6c2c38a332bc10cd4574d21cc2bf8432dc2b804ad936cadb8ceea742692ceed2"], // re-measured for S2 (#362): `W_STAIR_TOO_STEEP`'s hint reworded, nothing else; was 2102a710477b9a23e3eb5a99256840119629b128297515d9603ec459c800ff99; RM1.3a, see ./byte-identity-baseline.ts; RM1.2a review, see ./byte-identity-baseline.ts
   ["eval/goldens/accessible-bath.arch", "d92fb8bf1dafde517a579409ff32602a06687a29149d3c2e7e1de69bd4cc4fce"],
   ["eval/goldens/accessible-flat.arch", "3809f58573d9685eb190389ae026bdbafa161dd57bdbf109a90048f4bb3e802a"],
   ["eval/goldens/against-wall-bath.arch", "731d8f1fc40ba19a5f431d54a643f236d70e4ae92aca19368cea2a38f29d734e"], // PS2.11e, see header

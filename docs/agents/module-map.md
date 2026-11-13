@@ -541,7 +541,7 @@ Totals: 393 modules in 34 directories.
 | `reachability.ts` | 107 | 1 | Room-graph reachability: builds the room-connectivity graph from doors/openings (rooms + the literal "exterior") once, then — per room, in source order — emits W_BATH_VIA_BEDROOM and W_ROOM_UNREACHABLE, preserving the historical… | none |
 | `room-contents.ts` | 279 | 1 | Room-contents advisories (plan-soundness PS2.8, PS2.9): a habitable room with no window, and a furnished room missing the piece that defines it. Both read a room's use from {@link roomUses} (its `uses`, else its label through… | none |
 | `site.ts` | 115 | 1 | `W_ROOM_NOT_EQUATOR_FACING` — the site layer's one advisory rule. | none |
-| `stairs.ts` | 1552 | 7 | Stair safety (plan-soundness PS2.11e, the stair bullets, and PS2.34): a door swinging over a flight or its landing, a flight with no landing at its foot or head, a doorway onto a flight's side, a void where a flight arrives, a flight too… | none |
+| `stairs.ts` | 1565 | 7 | Stair safety (plan-soundness PS2.11e, the stair bullets, and PS2.34): a door swinging over a flight or its landing, a flight with no landing at its foot or head, a doorway onto a flight's side, a void where a flight arrives, a flight too… | none |
 | `vertical.ts` | 207 | 2 | `W_STAIR_UNMATCHED` — a run of vertical circulation that connects nothing. | none |
 
 ## `src/overlays/`

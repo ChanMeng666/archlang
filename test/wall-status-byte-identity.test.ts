@@ -77,7 +77,7 @@ const BASELINE: [string, string][] = [
   ["test/fixtures/off-path-bypass.arch", "81ef92c32f98bc41635428f477b2cf7e59adea520e60892b5e39aa48fcbcaecf"],
   ["test/fixtures/schedule-sheet.arch", "15dc29228ea12dae7240ad843567f88218c5a57bd8838ea950b1a5792c2579a5"],
   ["test/fixtures/star30.arch", "5104211cdd3733a56e18d141c68db6a097b679e484b1b18897e7637dd05d0bbb"], // #367, see test/byte-identity-baseline.ts
-  ["test/fixtures/storeys-eaves-overflow.arch", "c9134635c92f677689b08442f0f4d08c6dc23fc10c4a6af37ec4930da3b19f40"], // RM1.3a, see ./byte-identity-baseline.ts; RM1.2a, see ./byte-identity-baseline.ts
+  ["test/fixtures/storeys-eaves-overflow.arch", "51a639bc42529f5f51f8a9a45a0441d450aa9426be6e2e1f92b16267866a0b27"], // RM1.3a, see ./byte-identity-baseline.ts; RM1.2a, see ./byte-identity-baseline.ts; RM1.2a review, see ./byte-identity-baseline.ts
   // was 05693d9e. D27: this plan's stair stands in no wall, so `bounds()` reaching its break line widens the
   // drawing 156 mm. Only the SVG, the Scene and the overlay moved: with the old ones put back the old digest returns.
   ["test/fixtures/zones-levels.arch", "543c732b812f10c5f40822c085740e4a3c7093add2f9c2663cff28396c4192e7"],

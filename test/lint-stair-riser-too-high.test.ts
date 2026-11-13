@@ -23,6 +23,8 @@ import { resolveRuleset } from "../src/lint/ruleset.js";
 import { DRAWN_RISE_SOURCE, drawnRisers, drawnTreads, fewestRisers, winderRisers } from "../src/lint/rules/stairs.js";
 import type { RStair } from "../src/ir.js";
 import { EXAMPLES_WORLD } from "./helpers/d4-oracle.js";
+import { winderLawRows } from "./helpers/block-stair-winders-law.js";
+import { ROOT } from "./helpers/rectilinear-rooms-law.js";
 
 const CODE = "W_STAIR_RISER_TOO_HIGH";
 const of = (src: string, opts: Parameters<typeof lint>[1] = {}): Diagnostic[] =>
@@ -242,6 +244,17 @@ suite("PR #736's review", () => {
     const fixed = pasteHint(src, d!.hints![0]!);
     expect(errors(fixed)).toEqual([]);
     expect(stairWarnings(fixed)).toEqual([]);
+  });
+
+  it("S3: a stair inside a `place` is written in its component's frame, so the hint names runs, not statements", () => {
+    const rows = new Map(winderLawRows(ROOT));
+    for (const name of ["quarter-turn placed mirror x", "quarter-turn placed rotate 90"]) {
+      const [d] = lint(rows.get(name)!).filter((x) => x.code === "W_STAIR_TOO_STEEP");
+      expect(d!.hints![0], name).toMatch(
+        /^Lengthen flight 1 of `a\.s` from 1000 mm to 1260 mm and flight 2 of `a\.s` from 1400 mm to 1540 mm \(each away from its landing, in the component placed as `a`\) on every storey/,
+      );
+      expect(d!.hints![0], name).not.toContain("at (");
+    }
   });
 
   it("S4: where both hold, one W_STAIR_TOO_STEEP whose redrawing answers both; pasted, nothing asks again", () => {
