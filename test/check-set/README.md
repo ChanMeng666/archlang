@@ -38,7 +38,13 @@ number its finding cites (the `rule` field of `lint --json`), or by none.
   `V` (the official text was read) or `S-full` (the full text was read in a third-party copy). On
   these plans the default ruleset does not report the case's code, and these numbers stay out of it: they apply only
   under the profile. `us-residential-advisory` has no case, because each of its numbers was read
-  second-hand (`S-secondary`).
+  second-hand (`S-secondary`). A finding must cite its case's key in `rule`, except in a row
+  marked `"joint": true`: there the key holds the code together with another number (a stair's
+  pitch limit with its riser limit), so lint cites neither, and the test proves both that the key
+  decides the case and that the finding cites nothing.
+
+A case's column is only as good as the citations: a finding that cites no number is in the default
+column, even if its rule reads a `convention` number it does not cite.
 
 The profiles are advisory. A plan that passes them has not been shown to comply with any code or
 standard.

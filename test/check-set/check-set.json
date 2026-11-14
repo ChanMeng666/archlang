@@ -447,6 +447,7 @@
       "profile": "uk-residential-advisory",
       "expect": "W_STAIR_TOO_STEEP",
       "rule": "stairMaxPitchRatio",
+      "joint": true,
       "plan": "cross-jurisdiction/uk-stair-pitch.arch",
       "twin": "cross-jurisdiction/uk-stair-pitch.clean.arch"
     }

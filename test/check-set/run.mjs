@@ -32,8 +32,9 @@ export function loadCases(dir = HERE) {
  * Why `row` fails on these two `lint --json` documents, one line each; `[]` when it passes. The
  * plan must report `row.expect` and no error. When `row.rule` names a key, each reported
  * `row.expect` must carry a `rule` citing that key under `row.profile`: a finding with no `rule`
- * fails, so a CLI too old to cite one cannot pass such a case. The twin must report no error and
- * no `row.expect`.
+ * fails, so a CLI too old to cite one cannot pass such a case. The one exception is a row marked
+ * `joint`: its code is held by two ruleset numbers at once, so lint cites neither (RM1.6b), and a
+ * finding with no `rule` passes. The twin must report no error and no `row.expect`.
  */
 export function judge(row, plan, twin) {
   const out = [];
@@ -44,7 +45,7 @@ export function judge(row, plan, twin) {
   for (const d of hits) {
     if (row.rule === null) continue;
     if (!d.rule) {
-      out.push(`${row.expect} cites no ruleset number, not ${row.rule}`);
+      if (!row.joint) out.push(`${row.expect} cites no ruleset number, not ${row.rule}`);
       continue;
     }
     if (d.rule.key !== row.rule) out.push(`${row.expect} cites ${d.rule.key}, not ${row.rule}`);

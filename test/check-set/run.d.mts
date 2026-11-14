@@ -11,6 +11,9 @@ export interface CheckCase {
   expect: string;
   /** The ruleset key that decides the case (opt-in and cross-jurisdiction columns); `null` in the default column. */
   rule: string | null;
+  /** Cross-jurisdiction only: the code is held by `rule` and another number at once, so its
+   *  finding cites neither (RM1.6b) and passes with no `rule`. Absent: the finding must cite `rule`. */
+  joint?: boolean;
   plan: string;
   twin: string;
   planPath: string;
@@ -23,5 +26,9 @@ export interface LintDoc {
 }
 
 export function loadCases(dir?: string): CheckCase[];
-export function judge(row: Pick<CheckCase, "expect" | "rule" | "profile">, plan: LintDoc, twin: LintDoc): string[];
+export function judge(
+  row: Pick<CheckCase, "expect" | "rule" | "profile" | "joint">,
+  plan: LintDoc,
+  twin: LintDoc,
+): string[];
 export function main(argv: readonly string[]): Promise<number>;

@@ -30,7 +30,9 @@ import { type CheckCase, judge, type LintDoc, loadCases } from "./check-set/run.
  *   decides it. That key's row in the provenance table is `V` or `S-full`, the profile itself sets
  *   it to a value the default does not have (so the column never puts a rule in the default
  *   ruleset), the default ruleset does not report the case, the profile's `V` and `S-full` numbers
- *   alone do, and they no longer do without that key.
+ *   alone do, and they no longer do without that key. A row marked `joint` is one whose code that
+ *   key holds together with another number, so its finding cites no key (RM1.6b); the test holds the
+ *   mark to the finding both ways.
  */
 
 const HERE = dirname(fileURLToPath(import.meta.url));
@@ -69,6 +71,8 @@ describe("the manifest", () => {
         expect(LINT_PROFILE_NAMES, c.id).toContain(c.profile);
         expect(typeof c.rule, c.id).toBe("string");
       }
+      // `joint` is a cross-jurisdiction row's alone, and only ever `true` (absent means cited).
+      if ("joint" in c) expect([c.column, c.joint], c.id).toEqual(["cross-jurisdiction", true]);
     }
   });
 
@@ -102,6 +106,11 @@ describe("every case passes", () => {
     const bare = { code: "W_X", severity: "warning" };
     expect(judge(row, doc(bare), doc())).toEqual(["W_X cites no ruleset number, not k"]);
     expect(judge({ expect: "W_X", rule: null, profile: null }, doc(bare), doc())).toEqual([]);
+    // A joint row (its code held by two numbers, so lint cites neither) passes on that finding, and
+    // still fails on a citation of the wrong key.
+    const joint = { ...row, joint: true };
+    expect(judge(joint, doc(bare), doc())).toEqual([]);
+    expect(judge(joint, doc({ ...hit, rule: { key: "j", profile: "p" } }), doc())).toEqual(["W_X cites j, not k"]);
     expect(judge(row, doc(), doc())).toEqual(["the plan does not report W_X"]);
     expect(judge(row, doc(hit), doc(hit))).toEqual(["the twin reports W_X"]);
     expect(judge(row, doc(hit, { code: "E_PARSE", severity: "error" }), doc())).toEqual([
@@ -223,6 +232,16 @@ describe("the cross-jurisdiction column uses only V and S-full numbers, under a 
       expect(codes(plan, { ruleset: strongRows(profile) }).has(row.expect), "the strong numbers report it").toBe(true);
       expect(codes(twin, { ruleset: strongRows(profile) }).has(row.expect), "nor its twin").toBe(false);
       expect(codes(plan, { ruleset: strongRows(profile, key) }).has(row.expect), `not without ${key}`).toBe(false);
+      // `joint` is proved, not trusted: the line above shows the key decides the case, and under the
+      // profile the finding carries no `rule` (held by two numbers, lint cites neither, RM1.6b). The
+      // converse holds too: a row whose finding does cite a key may not be marked joint, so a flag
+      // goes stale the moment lint starts to cite.
+      const hits = lintReport(plan, { profile }).diagnostics.filter((d) => d.code === row.expect);
+      expect(hits.length).toBeGreaterThan(0);
+      expect(
+        hits.map((d) => d.rule === undefined),
+        row.joint ? "a joint row's finding cites no key" : "a row not marked joint has a finding that cites its key",
+      ).toEqual(hits.map(() => row.joint === true));
     });
   }
 });
