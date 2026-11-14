@@ -1,0 +1,454 @@
+{
+  "cases": [
+    {
+      "id": "clearances/accessible-wc-pan-far",
+      "column": "default",
+      "profile": null,
+      "expect": "W_ACCESSIBLE_WC_SIDE_WALL",
+      "rule": null,
+      "plan": "../defect-corpus/clearances/accessible-wc-pan-far.arch",
+      "twin": "../defect-corpus/clearances/accessible-wc-pan-far.clean.arch"
+    },
+    {
+      "id": "annotation-collisions/label-over-bed",
+      "column": "default",
+      "profile": null,
+      "expect": "W_ANNOTATION_OVERLAP",
+      "rule": null,
+      "plan": "../defect-corpus/annotation-collisions/label-over-bed.arch",
+      "twin": "../defect-corpus/annotation-collisions/label-over-bed.clean.arch"
+    },
+    {
+      "id": "circulation-privacy/bath-via-bedroom",
+      "column": "default",
+      "profile": null,
+      "expect": "W_BATH_VIA_BEDROOM",
+      "rule": null,
+      "plan": "../defect-corpus/circulation-privacy/bath-via-bedroom.arch",
+      "twin": "../defect-corpus/circulation-privacy/bath-via-bedroom.clean.arch"
+    },
+    {
+      "id": "daylight/bedroom-no-window",
+      "column": "default",
+      "profile": null,
+      "expect": "W_BEDROOM_NO_WINDOW",
+      "rule": null,
+      "plan": "../defect-corpus/daylight/bedroom-no-window.arch",
+      "twin": "../defect-corpus/daylight/bedroom-no-window.clean.arch"
+    },
+    {
+      "id": "space-not-enclosed/fa-no-wall-living-bedrooms",
+      "column": "default",
+      "profile": null,
+      "expect": "W_BOUNDARY_NO_WALL",
+      "rule": null,
+      "plan": "../defect-corpus/space-not-enclosed/fa-no-wall-living-bedrooms.arch",
+      "twin": "../defect-corpus/space-not-enclosed/fa-no-wall-living-bedrooms.clean.arch"
+    },
+    {
+      "id": "openings-ignore-walls/door-on-exterior-tee",
+      "column": "default",
+      "profile": null,
+      "expect": "W_CONNECTOR_AMBIGUOUS",
+      "rule": null,
+      "plan": "../defect-corpus/openings-ignore-walls/door-on-exterior-tee.arch",
+      "twin": "../defect-corpus/openings-ignore-walls/door-on-exterior-tee.clean.arch"
+    },
+    {
+      "id": "annotation-collisions/dim-text-lies",
+      "column": "default",
+      "profile": null,
+      "expect": "W_DIM_TEXT_MISMATCH",
+      "rule": null,
+      "plan": "../defect-corpus/annotation-collisions/dim-text-lies.arch",
+      "twin": "../defect-corpus/annotation-collisions/dim-text-lies.clean.arch"
+    },
+    {
+      "id": "clearances/bed-before-door-face",
+      "column": "default",
+      "profile": null,
+      "expect": "W_DOORWAY_BLOCKED",
+      "rule": null,
+      "plan": "../defect-corpus/clearances/bed-before-door-face.arch",
+      "twin": "../defect-corpus/clearances/bed-before-door-face.clean.arch"
+    },
+    {
+      "id": "openings-ignore-walls/door-near-l-corner",
+      "column": "default",
+      "profile": null,
+      "expect": "W_DOOR_NEAR_CORNER",
+      "rule": null,
+      "plan": "../defect-corpus/openings-ignore-walls/door-near-l-corner.arch",
+      "twin": "../defect-corpus/openings-ignore-walls/door-near-l-corner.clean.arch"
+    },
+    {
+      "id": "circulation-privacy/entry-into-bedroom",
+      "column": "default",
+      "profile": null,
+      "expect": "W_ENTRANCE_INTO_PRIVATE",
+      "rule": null,
+      "plan": "../defect-corpus/circulation-privacy/entry-into-bedroom.arch",
+      "twin": "../defect-corpus/circulation-privacy/entry-into-bedroom.clean.arch"
+    },
+    {
+      "id": "space-not-enclosed/exterior-ring-open",
+      "column": "default",
+      "profile": null,
+      "expect": "W_EXTERIOR_RING_OPEN",
+      "rule": null,
+      "plan": "../defect-corpus/space-not-enclosed/exterior-ring-open.arch",
+      "twin": "../defect-corpus/space-not-enclosed/exterior-ring-open.clean.arch"
+    },
+    {
+      "id": "space-not-enclosed/bow-strip-unassigned",
+      "column": "default",
+      "profile": null,
+      "expect": "W_FLOOR_UNASSIGNED",
+      "rule": null,
+      "plan": "../defect-corpus/space-not-enclosed/bow-strip-unassigned.arch",
+      "twin": "../defect-corpus/space-not-enclosed/bow-strip-unassigned.clean.arch"
+    },
+    {
+      "id": "clearances/sofa-l-transposed",
+      "column": "default",
+      "profile": null,
+      "expect": "W_FOOTPRINT_TRANSPOSED",
+      "rule": null,
+      "plan": "../defect-corpus/clearances/sofa-l-transposed.arch",
+      "twin": "../defect-corpus/clearances/sofa-l-transposed.clean.arch"
+    },
+    {
+      "id": "stair-safety/furniture-on-flight",
+      "column": "default",
+      "profile": null,
+      "expect": "W_FURNITURE_ON_STAIR",
+      "rule": null,
+      "plan": "../defect-corpus/stair-safety/furniture-on-flight.arch",
+      "twin": "../defect-corpus/stair-safety/furniture-on-flight.clean.arch"
+    },
+    {
+      "id": "clearances/fridge-over-window-end",
+      "column": "default",
+      "profile": null,
+      "expect": "W_FURNITURE_OVER_WINDOW",
+      "rule": null,
+      "plan": "../defect-corpus/clearances/fridge-over-window-end.arch",
+      "twin": "../defect-corpus/clearances/fridge-over-window-end.clean.arch"
+    },
+    {
+      "id": "clearances/garage-door-undersized",
+      "column": "default",
+      "profile": null,
+      "expect": "W_GARAGE_OPENING_UNDERSIZED",
+      "rule": null,
+      "plan": "../defect-corpus/clearances/garage-door-undersized.arch",
+      "twin": "../defect-corpus/clearances/garage-door-undersized.clean.arch"
+    },
+    {
+      "id": "clearances/garage-too-shallow",
+      "column": "default",
+      "profile": null,
+      "expect": "W_GARAGE_TOO_NARROW",
+      "rule": null,
+      "plan": "../defect-corpus/clearances/garage-too-shallow.arch",
+      "twin": "../defect-corpus/clearances/garage-too-shallow.clean.arch"
+    },
+    {
+      "id": "daylight/accessible-living-no-window",
+      "column": "default",
+      "profile": null,
+      "expect": "W_HABITABLE_NO_WINDOW",
+      "rule": null,
+      "plan": "../defect-corpus/daylight/accessible-living-no-window.arch",
+      "twin": "../defect-corpus/daylight/accessible-living-no-window.clean.arch"
+    },
+    {
+      "id": "clearances/hob-against-fridge",
+      "column": "default",
+      "profile": null,
+      "expect": "W_HOB_FRIDGE_GAP",
+      "rule": null,
+      "plan": "../defect-corpus/clearances/hob-against-fridge.arch",
+      "twin": "../defect-corpus/clearances/hob-against-fridge.clean.arch"
+    },
+    {
+      "id": "clearances/hob-under-window",
+      "column": "default",
+      "profile": null,
+      "expect": "W_HOB_UNDER_WINDOW",
+      "rule": null,
+      "plan": "../defect-corpus/clearances/hob-under-window.arch",
+      "twin": "../defect-corpus/clearances/hob-under-window.clean.arch"
+    },
+    {
+      "id": "clearances/leaf-across-doorway",
+      "column": "default",
+      "profile": null,
+      "expect": "W_LEAF_ACROSS_DOORWAY",
+      "rule": null,
+      "plan": "../defect-corpus/clearances/leaf-across-doorway.arch",
+      "twin": "../defect-corpus/clearances/leaf-across-doorway.clean.arch"
+    },
+    {
+      "id": "openings-ignore-walls/door-fills-gap",
+      "column": "default",
+      "profile": null,
+      "expect": "W_OPENING_AT_JUNCTION",
+      "rule": null,
+      "plan": "../defect-corpus/openings-ignore-walls/door-fills-gap.arch",
+      "twin": "../defect-corpus/openings-ignore-walls/door-fills-gap.clean.arch"
+    },
+    {
+      "id": "openings-ignore-walls/bifold-overlaps-window",
+      "column": "default",
+      "profile": null,
+      "expect": "W_OPENING_OVERLAP",
+      "rule": null,
+      "plan": "../defect-corpus/openings-ignore-walls/bifold-overlaps-window.arch",
+      "twin": "../defect-corpus/openings-ignore-walls/bifold-overlaps-window.clean.arch"
+    },
+    {
+      "id": "clearances/bed-blocks-alcove",
+      "column": "default",
+      "profile": null,
+      "expect": "W_PATH_TOO_NARROW",
+      "rule": null,
+      "plan": "../defect-corpus/clearances/bed-blocks-alcove.arch",
+      "twin": "../defect-corpus/clearances/bed-blocks-alcove.clean.arch"
+    },
+    {
+      "id": "missing-defining-contents/bath-no-shower",
+      "column": "default",
+      "profile": null,
+      "expect": "W_ROOM_MISSING_DEFINING",
+      "rule": null,
+      "plan": "../defect-corpus/missing-defining-contents/bath-no-shower.arch",
+      "twin": "../defect-corpus/missing-defining-contents/bath-no-shower.clean.arch"
+    },
+    {
+      "id": "space-not-enclosed/bath-open-side",
+      "column": "default",
+      "profile": null,
+      "expect": "W_ROOM_NOT_ENCLOSED",
+      "rule": null,
+      "plan": "../defect-corpus/space-not-enclosed/bath-open-side.arch",
+      "twin": "../defect-corpus/space-not-enclosed/bath-open-side.clean.arch"
+    },
+    {
+      "id": "space-not-enclosed/room-past-shell",
+      "column": "default",
+      "profile": null,
+      "expect": "W_ROOM_OUTSIDE_SHELL",
+      "rule": null,
+      "plan": "../defect-corpus/space-not-enclosed/room-past-shell.arch",
+      "twin": "../defect-corpus/space-not-enclosed/room-past-shell.clean.arch"
+    },
+    {
+      "id": "circulation-privacy/bedroom-via-bedroom",
+      "column": "default",
+      "profile": null,
+      "expect": "W_ROOM_VIA_PRIVATE",
+      "rule": null,
+      "plan": "../defect-corpus/circulation-privacy/bedroom-via-bedroom.arch",
+      "twin": "../defect-corpus/circulation-privacy/bedroom-via-bedroom.clean.arch"
+    },
+    {
+      "id": "clearances/seat-facing-away",
+      "column": "default",
+      "profile": null,
+      "expect": "W_SEAT_FACING_AWAY",
+      "rule": null,
+      "plan": "../defect-corpus/clearances/seat-facing-away.arch",
+      "twin": "../defect-corpus/clearances/seat-facing-away.clean.arch"
+    },
+    {
+      "id": "stair-safety/shaft-footprint-mismatch",
+      "column": "default",
+      "profile": null,
+      "expect": "W_SHAFT_FOOTPRINT_MISMATCH",
+      "rule": null,
+      "plan": "../defect-corpus/stair-safety/shaft-footprint-mismatch.arch",
+      "twin": "../defect-corpus/stair-safety/shaft-footprint-mismatch.clean.arch"
+    },
+    {
+      "id": "stair-safety/void-at-stair-head",
+      "column": "default",
+      "profile": null,
+      "expect": "W_STAIR_HEAD_VOID",
+      "rule": null,
+      "plan": "../defect-corpus/stair-safety/void-at-stair-head.arch",
+      "twin": "../defect-corpus/stair-safety/void-at-stair-head.clean.arch"
+    },
+    {
+      "id": "stair-safety/foot-against-partition",
+      "column": "default",
+      "profile": null,
+      "expect": "W_STAIR_NO_LANDING",
+      "rule": null,
+      "plan": "../defect-corpus/stair-safety/foot-against-partition.arch",
+      "twin": "../defect-corpus/stair-safety/foot-against-partition.clean.arch"
+    },
+    {
+      "id": "stair-safety/riser-too-high",
+      "column": "default",
+      "profile": null,
+      "expect": "W_STAIR_RISER_TOO_HIGH",
+      "rule": null,
+      "plan": "../defect-corpus/stair-safety/riser-too-high.arch",
+      "twin": "../defect-corpus/stair-safety/riser-too-high.clean.arch"
+    },
+    {
+      "id": "stair-safety/door-onto-flank",
+      "column": "default",
+      "profile": null,
+      "expect": "W_STAIR_SIDE_ENTRY",
+      "rule": null,
+      "plan": "../defect-corpus/stair-safety/door-onto-flank.arch",
+      "twin": "../defect-corpus/stair-safety/door-onto-flank.clean.arch"
+    },
+    {
+      "id": "stair-safety/stair-too-steep",
+      "column": "default",
+      "profile": null,
+      "expect": "W_STAIR_TOO_STEEP",
+      "rule": null,
+      "plan": "../defect-corpus/stair-safety/stair-too-steep.arch",
+      "twin": "../defect-corpus/stair-safety/stair-too-steep.clean.arch"
+    },
+    {
+      "id": "clearances/fridge-in-swing",
+      "column": "default",
+      "profile": null,
+      "expect": "W_SWING_OBSTRUCTED",
+      "rule": null,
+      "plan": "../defect-corpus/clearances/fridge-in-swing.arch",
+      "twin": "../defect-corpus/clearances/fridge-in-swing.clean.arch"
+    },
+    {
+      "id": "stair-safety/swing-at-stair-foot",
+      "column": "default",
+      "profile": null,
+      "expect": "W_SWING_OVER_STAIR",
+      "rule": null,
+      "plan": "../defect-corpus/stair-safety/swing-at-stair-foot.arch",
+      "twin": "../defect-corpus/stair-safety/swing-at-stair-foot.clean.arch"
+    },
+    {
+      "id": "annotation-collisions/title-overflow",
+      "column": "default",
+      "profile": null,
+      "expect": "W_TITLE_OVERFLOW",
+      "rule": null,
+      "plan": "../defect-corpus/annotation-collisions/title-overflow.arch",
+      "twin": "../defect-corpus/annotation-collisions/title-overflow.clean.arch"
+    },
+    {
+      "id": "space-not-enclosed/wall-end-short-derived",
+      "column": "default",
+      "profile": null,
+      "expect": "W_WALL_END_SHORT",
+      "rule": null,
+      "plan": "../defect-corpus/space-not-enclosed/wall-end-short-derived.arch",
+      "twin": "../defect-corpus/space-not-enclosed/wall-end-short-derived.clean.arch"
+    },
+    {
+      "id": "clearances/wc-centre-to-basin",
+      "column": "default",
+      "profile": null,
+      "expect": "W_WC_SIDE_CLEARANCE",
+      "rule": null,
+      "plan": "../defect-corpus/clearances/wc-centre-to-basin.arch",
+      "twin": "../defect-corpus/clearances/wc-centre-to-basin.clean.arch"
+    },
+    {
+      "id": "circulation-privacy/bath-door-off-kitchen",
+      "column": "default",
+      "profile": null,
+      "expect": "W_WET_ROOM_DOOR",
+      "rule": null,
+      "plan": "../defect-corpus/circulation-privacy/bath-door-off-kitchen.arch",
+      "twin": "../defect-corpus/circulation-privacy/bath-door-off-kitchen.clean.arch"
+    },
+    {
+      "id": "cross-jurisdiction/access-exit-approach",
+      "column": "cross-jurisdiction",
+      "profile": "accessibility-advisory",
+      "expect": "W_EXIT_APPROACH_BLOCKED",
+      "rule": "exitApproachMm",
+      "plan": "cross-jurisdiction/access-exit-approach.arch",
+      "twin": "cross-jurisdiction/access-exit-approach.clean.arch"
+    },
+    {
+      "id": "cross-jurisdiction/access-wc-side-clearance",
+      "column": "cross-jurisdiction",
+      "profile": "accessibility-advisory",
+      "expect": "W_WC_SIDE_CLEARANCE",
+      "rule": "wcSideClearanceMm",
+      "plan": "cross-jurisdiction/access-wc-side-clearance.arch",
+      "twin": "cross-jurisdiction/access-wc-side-clearance.clean.arch"
+    },
+    {
+      "id": "cross-jurisdiction/cn-double-bedroom-small",
+      "column": "cross-jurisdiction",
+      "profile": "cn-residential-advisory",
+      "expect": "W_ROOM_TOO_SMALL",
+      "rule": "minDoubleBedroomAreaM2",
+      "plan": "cross-jurisdiction/cn-double-bedroom-small.arch",
+      "twin": "cross-jurisdiction/cn-double-bedroom-small.clean.arch"
+    },
+    {
+      "id": "cross-jurisdiction/cn-entry-passage-narrow",
+      "column": "cross-jurisdiction",
+      "profile": "cn-residential-advisory",
+      "expect": "W_ROOM_TOO_NARROW",
+      "rule": "minEntryPassageWidthMm",
+      "plan": "cross-jurisdiction/cn-entry-passage-narrow.arch",
+      "twin": "cross-jurisdiction/cn-entry-passage-narrow.clean.arch"
+    },
+    {
+      "id": "cross-jurisdiction/cn-living-room-small",
+      "column": "cross-jurisdiction",
+      "profile": "cn-residential-advisory",
+      "expect": "W_ROOM_TOO_SMALL",
+      "rule": "minRoomAreaByUseM2.living",
+      "plan": "cross-jurisdiction/cn-living-room-small.arch",
+      "twin": "cross-jurisdiction/cn-living-room-small.clean.arch"
+    },
+    {
+      "id": "cross-jurisdiction/uk-double-bedroom-narrow",
+      "column": "cross-jurisdiction",
+      "profile": "uk-residential-advisory",
+      "expect": "W_ROOM_TOO_NARROW",
+      "rule": "minMainDoubleBedroomShortSideMm",
+      "plan": "cross-jurisdiction/uk-double-bedroom-narrow.arch",
+      "twin": "cross-jurisdiction/uk-double-bedroom-narrow.clean.arch"
+    },
+    {
+      "id": "cross-jurisdiction/uk-garage-depth",
+      "column": "cross-jurisdiction",
+      "profile": "uk-residential-advisory",
+      "expect": "W_GARAGE_TOO_NARROW",
+      "rule": "garageDepthMm",
+      "plan": "cross-jurisdiction/uk-garage-depth.arch",
+      "twin": "cross-jurisdiction/uk-garage-depth.clean.arch"
+    },
+    {
+      "id": "cross-jurisdiction/uk-single-bedroom-narrow",
+      "column": "cross-jurisdiction",
+      "profile": "uk-residential-advisory",
+      "expect": "W_ROOM_TOO_NARROW",
+      "rule": "minRoomShortSideByUseMm.bedroom",
+      "plan": "cross-jurisdiction/uk-single-bedroom-narrow.arch",
+      "twin": "cross-jurisdiction/uk-single-bedroom-narrow.clean.arch"
+    },
+    {
+      "id": "cross-jurisdiction/uk-stair-pitch",
+      "column": "cross-jurisdiction",
+      "profile": "uk-residential-advisory",
+      "expect": "W_STAIR_TOO_STEEP",
+      "rule": "stairMaxPitchRatio",
+      "plan": "cross-jurisdiction/uk-stair-pitch.arch",
+      "twin": "cross-jurisdiction/uk-stair-pitch.clean.arch"
+    }
+  ]
+}

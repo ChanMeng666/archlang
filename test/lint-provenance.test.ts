@@ -464,7 +464,17 @@ describe("rule provenance — off the compile path", () => {
     const importers = [...core, ...playground].filter(
       (f) => f !== "src/lint/provenance.ts" && IMPORTS_PROVENANCE.test(readFileSync(join(ROOT, f), "utf8")),
     );
-    expect(importers.sort()).toEqual(["src/cli/commands-analyze.ts", "src/index.ts"]);
+    // CR10: `lintReport` (`src/lint/report.ts`) is `arch lint --json` as data, `rule` included, so
+    // it reads the table; it is held off the compile path one hop further below.
+    expect(importers.sort()).toEqual(["src/cli/commands-analyze.ts", "src/index.ts", "src/lint/report.ts"]);
+    // The report is read by the entry (a re-export the playground never calls) and the CLI alone:
+    // no module of the compile path, lint() included, and no playground module reaches it.
+    const IMPORTS_REPORT = /(?:\bfrom\s*|\bimport\s*\(\s*)["'`][^"'`]*\blint\/report(?:\.[mc]?[jt]s)?["'`]/;
+    const reportImporters = [...core, ...playground].filter(
+      (f) => f !== "src/lint/report.ts" && IMPORTS_REPORT.test(readFileSync(join(ROOT, f), "utf8")),
+    );
+    expect(reportImporters.sort()).toEqual(["src/cli/commands-analyze.ts", "src/index.ts"]);
+    for (const f of playground) expect(readFileSync(join(ROOT, f), "utf8"), f).not.toMatch(/\blintReport\b/);
     // The entry carries the resolver and nothing else of the table.
     const entry = readFileSync(join(ROOT, "src/index.ts"), "utf8")
       .split("\n")

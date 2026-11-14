@@ -15,7 +15,7 @@ import {
   registerTools,
   TOOL_ANNOTATIONS,
 } from "../../mcp/src/tools.js";
-import { MCP_PER_PERIOD, RATE_PERIOD_SECONDS, SOURCE_CAP_BYTES, SVG_PER_PERIOD } from "./limits.js";
+import { CHECK_PER_PERIOD, MCP_PER_PERIOD, RATE_PERIOD_SECONDS, SOURCE_CAP_BYTES, SVG_PER_PERIOD } from "./limits.js";
 
 /** What the Worker serves that it cannot read at run time (it has no filesystem): bundled at build. */
 export interface HostedAssets {
@@ -55,8 +55,9 @@ export function readMe(origin: string): string {
     `- Any tool argument (a source, \`plan_json\`, an intent) larger than ${SOURCE_CAP_BYTES / 1024} KB is refused with \`E_INPUT_TOO_LARGE\` before anything is compiled, and an address that sends more than ${MCP_PER_PERIOD} requests to /mcp (or ${SVG_PER_PERIOD} new images) in ${RATE_PERIOD_SECONDS} s gets \`E_RATE_LIMITED\`. The CLI and the npm server have neither limit.`,
     '- `compile` with format "png" is not available here; format "svg" is.',
     `- An image URL for a plan: call \`link\`, take the text after \`#z=\` in its \`embed\` URL, and GET ${origin}/svg/<that text>. It answers \`image/svg+xml\`, the same bytes \`compile\` returns, fresh for five minutes: when the compiler changes, the drawing at that URL follows it. Its \`Content-Location\` names the pinned copy, \`/v/<render version>/svg/<payload>\`, which keeps the same bytes and may be cached until the next release of this server; after that it redirects to the unpinned URL. Unlike a playground link, whose plan stays in the \`#\` fragment and never reaches a server, an /svg/ URL sends the plan to this server in its path.`,
+    `- A plan checked without MCP: POST it to ${origin}/check, as \`{ "source": "...", "profile": "..." }\` with \`content-type: application/json\` or as the plain body (\`?profile=\` and \`?strict=1\` in the query). It answers the JSON \`archlang lint <file> --json\` prints for that plan, with the same caps, and ${CHECK_PER_PERIOD} requests in ${RATE_PERIOD_SECONDS} s per address. Imports are not read (each is \`E_IMPORT_NOT_FOUND\`). The public check set runs against it: \`node test/check-set/run.mjs --url ${origin}/check\` in the repository.`,
     `- Hosts that support MCP Apps show \`compile\` results in a viewer (pan and zoom, plus the lint findings); every other host gets the same result as text.`,
-    "- The server keeps no source and no request body, and logs neither. It stores only the rendered SVG of each /svg/ URL, in Cloudflare's edge cache. Each MCP call is counted by its method and tool name, from fixed lists; nothing else is recorded.",
+    "- The server keeps no source and no request body, and logs neither. It stores only the rendered SVG of each /svg/ URL, in Cloudflare's edge cache. Each MCP call is counted by its method and tool name, and each /check by its profile name, from fixed lists; nothing else is recorded.",
   ].join("\n");
 }
 

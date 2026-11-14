@@ -1,0 +1,16 @@
+# A single bedroom 2050 mm wide between its wall faces (2200 drawn, less the shell's 100 and the
+# partition's 50), under the 2150 mm the Nationally Described Space Standard (2015) 10(c) gives a
+# single bedroom's width. Its clear floor, about 9.2 m2, passes 10(c)'s 7.5 m2. The default ruleset
+# asks no room a width. This case and its twin are listed in ../check-set.json.
+plan "Narrow single bedroom" {
+  units mm
+  grid 50
+  wall id=shell exterior thickness 200 { (0,0) (3800,0) (3800,4700) (0,4700) close }
+  wall id=w_mid partition thickness 100 { (2200,0) (2200,4700) }
+  room id=r_bed at (0,0) size 2200x4700 label "Bedroom" uses bedroom
+  room id=r_hall at (2200,0) size 1600x4700 label "Hall" uses hall
+  door id=d_entry at (3000,4700) width 900 wall shell
+  door id=d_bed at (2200,3500) width 800 wall w_mid swing into r_bed
+  window at (1100,0) width 1200 wall shell
+  furniture id=f_bed bed at (200,300) size 900x2000
+}

@@ -1,0 +1,14 @@
+# The twin of uk-single-bedroom-narrow.arch: the bedroom is 2350 mm wide between its wall faces
+# (2500 drawn), over the 2150 mm of the Nationally Described Space Standard (2015) 10(c).
+plan "Single bedroom wide enough" {
+  units mm
+  grid 50
+  wall id=shell exterior thickness 200 { (0,0) (4100,0) (4100,4700) (0,4700) close }
+  wall id=w_mid partition thickness 100 { (2500,0) (2500,4700) }
+  room id=r_bed at (0,0) size 2500x4700 label "Bedroom" uses bedroom
+  room id=r_hall at (2500,0) size 1600x4700 label "Hall" uses hall
+  door id=d_entry at (3300,4700) width 900 wall shell
+  door id=d_bed at (2500,3500) width 800 wall w_mid swing into r_bed
+  window at (1250,0) width 1200 wall shell
+  furniture id=f_bed bed at (200,300) size 900x2000
+}

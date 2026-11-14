@@ -1,0 +1,17 @@
+# A WC whose centreline (y 1980) stands 420 mm from the south wall's inner face (y 2400): over the
+# default ruleset's 400 mm (Approved Document M (2015), M4(2) Diagram 2.5), under the 450 mm of
+# Approved Document M (2015, 2016 corrections), M4(3) Diagrams 3.11 and 3.16, that
+# accessibility-advisory takes. This case and its twin are listed in ../check-set.json.
+plan "WC 420 mm from its side wall" {
+  units mm
+  grid 10
+  wall id=shell exterior thickness 200 { (0,0) (6000,0) (6000,2500) (0,2500) close }
+  wall id=w_mid partition thickness 100 { (2000,0) (2000,2500) }
+  room id=r_bath at (0,0) size 2000x2500 label "Bathroom" uses bath
+  room id=r_living at (2000,0) size 4000x2500 label "Living Room" uses living
+  door id=d_entry at (4000,2500) width 900 wall shell
+  door id=d_bath at (2000,1250) width 900 wall w_mid swing into r_living
+  window at (4000,0) width 1500 wall shell
+  furniture wc against wall shell segment 3 offset 520 in r_bath
+  furniture basin against wall shell segment 3 offset 1500 in r_bath
+}

@@ -44,3 +44,8 @@ export const RATE_PERIOD_SECONDS = 60;
 export const MCP_PER_PERIOD = 600;
 /** `/svg/` cache MISSES per address per period (a hit compiles nothing and is not counted). */
 export const SVG_PER_PERIOD = 3000;
+/**
+ * `POST /check` requests per address per period: one lint each, the same work as a `/mcp` `lint`
+ * call, so the same ceiling. The public check set's runner sends two per case.
+ */
+export const CHECK_PER_PERIOD = 600;

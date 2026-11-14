@@ -20,7 +20,7 @@ Every module, not only the entry, is in the sibling [`module-map.md`](module-map
 The total counts every name the checker sees as exported, including those pulled in by
 `export type * from "./ast.js"`; a count of the names written in `index.ts`' export statements is lower.
 
-Totals: 642 exports (224 values, 418 types), 406 flagged (72 values).
+Totals: 645 exports (225 values, 420 types), 408 flagged (72 values).
 
 ## `src/algebra/d4.ts`
 
@@ -675,7 +675,7 @@ Totals: 642 exports (224 values, 418 types), 406 flagged (72 values).
 | `LINT_CODE_STAGES` | value | `test` |
 | `lint` | value | `dataset`, `eval`, `packages/archlang-3d`, `packages/mcp`, `playground`, `scripts`, `src/cli`, `test` |
 | `lintCoverage` | value | `test` |
-| `lintWithCoverage` | value | `src/cli`, `test` |
+| `lintWithCoverage` | value | `test` |
 
 ## `src/lint/clearance-facts.ts`
 
@@ -720,13 +720,21 @@ Totals: 642 exports (224 values, 418 types), 406 flagged (72 values).
 | --- | --- | --- |
 | `diagnosticRule` | value | `test` |
 
+## `src/lint/report.ts`
+
+| Export | Kind | In-repo consumers |
+| --- | --- | --- |
+| `LintReport` | type | none |
+| `LintReportOptions` | type | none |
+| `lintReport` | value | `packages/mcp-worker`, `test` |
+
 ## `src/lint/ruleset.ts`
 
 | Export | Kind | In-repo consumers |
 | --- | --- | --- |
 | `DEFAULT_RULESET` | value | `test` |
 | `LINT_PROFILES` | value | `test` |
-| `LINT_PROFILE_NAMES` | value | `packages/mcp`, `playground`, `src/cli`, `test` |
+| `LINT_PROFILE_NAMES` | value | `packages/mcp`, `packages/mcp-worker`, `playground`, `src/cli`, `test` |
 | `LintOptions` | type | `playground` |
 | `LintRuleset` | type | `test` |
 
