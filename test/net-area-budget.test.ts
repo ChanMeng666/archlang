@@ -15,6 +15,7 @@ import { clearCache, compile, describe as describePlan, lint, lintCoverage, room
 import { resolvePlan } from "../src/analyze.js";
 import { MAX_NET_PROBE_WORK, netAreaBands, netAreaDetail, netAreaPairWork } from "../src/analyze/net-area.js";
 import { MAX_NET_PLAN_WORK, takeNetAreaUses } from "../src/analyze/net-area-memo.js";
+import { roomNetPerimeter, wallFaceLengths } from "../src/analyze/quantities.js";
 import type { RRoom } from "../src/ir.js";
 import type { Scene } from "../src/scene.js";
 
@@ -161,6 +162,44 @@ suite("net area: one total per storey read (U.22, PS0.15)", () => {
       [1, false],
       [2, true],
     ]);
+  });
+
+  it("the takeoff's wall faces are charged to the storey's total, after every room (RM1.3d)", () => {
+    // One comb leaves room: the faces are measured, and the quantities meter is charged the
+    // comb's area, its net perimeter and the faces' own counts (pair tests, then the walk), each
+    // recorded here by handing the same functions a counting admit.
+    const one = combs(1);
+    const { ir } = resolvePlan(one);
+    const bands = netAreaBands(ir!.walls);
+    const comb = ir!.elements.find((e): e is RRoom => e.kind === "room")!;
+    const count = (log: number[]) => (u: number) => {
+      log.push(u);
+      return true;
+    };
+    const perimeter: number[] = [];
+    const faces: number[] = [];
+    expect(roomNetPerimeter(comb, bands, count(perimeter))).toBeGreaterThan(0);
+    expect(wallFaceLengths(ir!.walls, count(faces)).ok).toBe(true);
+    expect(faces).toHaveLength(2);
+    const sum = (xs: number[]) => xs.reduce((a, b) => a + b, 0);
+    takeNetAreaUses();
+    const q1 = describePlan(one, { facts: ["quantities"] }).quantities!;
+    expect(q1.faces_omitted).toBeUndefined();
+    expect(q1.walls.every((w) => w.length_face_mm !== undefined)).toBe(true);
+    expect(takeNetAreaUses()).toContainEqual({
+      used: PAIRS + PER_ROOM.work + sum(perimeter) + sum(faces),
+      closed: false,
+    });
+
+    // Three combs: the third comb's area closes the meter, so the faces, asked last, are refused,
+    // and the rooms keep exactly the figures `rooms[]` reports.
+    clearCache();
+    const s3 = describePlan(combs(3), { facts: ["quantities"] });
+    const q3 = s3.quantities!;
+    expect(q3.faces_omitted).toBe("plan-budget");
+    expect(q3.walls.map((w) => w.length_face_mm)).toEqual(q3.walls.map(() => undefined));
+    expect(q3.rooms.map((r) => r.area_net_m2 !== undefined)).toEqual([true, true, false]);
+    expect(s3.rooms.map((r) => r.net_area_m2 !== undefined)).toEqual([true, true, false]);
   });
 
   it("the corpus's heaviest plans stay far inside the total (counts pinned when written)", () => {

@@ -25,7 +25,10 @@
  * `net-area.ts` ({@link regionBoundary}), every crossing in closed form, no sampling and no bounding
  * box in a figure. Past {@link MAX_FACE_CURVES} band edges, or {@link MAX_NET_PROBE_WORK} counted
  * probe work, a storey's face lengths are omitted with a reason; a room's net perimeter past the
- * per-room caps is omitted (its key absent). Pure, synchronous, deterministic; reads only.
+ * per-room caps is omitted (its key absent). Both are charged to the storey's net-area total
+ * (`MAX_NET_PLAN_WORK`, `net-area-memo.ts`) after every room's area, the faces last; past it a
+ * perimeter is omitted and the faces read `faces_omitted: "plan-budget"` (RM1.3d). Pure,
+ * synchronous, deterministic; reads only.
  */
 
 import type { Point } from "../ast.js";
@@ -35,7 +38,13 @@ import type { GridBox } from "../geometry/grid-index.js";
 import { segmentsOfWall } from "../geometry.js";
 import type { RDoor, ResolvedPlan, RRoom, RWall, RWindow } from "../ir.js";
 import { fmt0 } from "../num-format.js";
-import { memoRoomNetAreaMm2, meteredRoomFigure, storeyNetAreaBands, withNetAreaBudget } from "./net-area-memo.js";
+import {
+  memoRoomNetAreaMm2,
+  meteredRoomFigure,
+  storeyFigureAdmit,
+  storeyNetAreaBands,
+  withNetAreaBudget,
+} from "./net-area-memo.js";
 import {
   boxesMeet,
   type Curve,
@@ -103,7 +112,7 @@ export interface QuantityFacts {
   /** Per wall category, sorted by category name. */
   walls: WallQuantity[];
   /** Why no `length_face_mm` is reported on this storey; absent when the faces are measured. */
-  faces_omitted?: "too-many-edges" | "too-much-work";
+  faces_omitted?: "too-many-edges" | "too-much-work" | "plan-budget";
   /** Per room, in source order. */
   rooms: RoomQuantity[];
   /** `totals.net_floor_area_m2`; absent when that is. */
@@ -137,7 +146,8 @@ export function wallCentrelineLength(w: RWall): number {
  */
 export function wallFaceLengths(
   walls: readonly RWall[],
-): { ok: true; byWall: number[] } | { ok: false; reason: "too-many-edges" | "too-much-work" } {
+  admit?: NetAreaAdmit,
+): { ok: true; byWall: number[] } | { ok: false; reason: "too-many-edges" | "too-much-work" | "plan-budget" } {
   const intern = new PointInterner();
   const bands: Array<{ loops: EdgeLoop[]; box: GridBox }> = [];
   const curves: Curve[] = [];
@@ -164,10 +174,14 @@ export function wallFaceLengths(
   const byWall = walls.map(() => 0);
   if (curves.length === 0) return { ok: true, byWall };
   if (curves.length > MAX_FACE_CURVES) return { ok: false, reason: "too-many-edges" };
+  // The caller's total (the storey's net-area meter, RM1.3d) is offered each count before the
+  // work it pays for, as a room's net perimeter offers them: the split's pair tests, then the walk.
+  if (admit && !admit(netAreaPairWork(curves.length))) return { ok: false, reason: "plan-budget" };
   const splits = splitCurves(curves);
   // Every probe may ask every band (its box, then its edges); charged before the walk.
-  if (netAreaProbeWork(pieceCount(splits), bands.length + curves.length, 0) > MAX_NET_PROBE_WORK)
-    return { ok: false, reason: "too-much-work" };
+  const work = netAreaProbeWork(pieceCount(splits), bands.length + curves.length, 0);
+  if (work > MAX_NET_PROBE_WORK) return { ok: false, reason: "too-much-work" };
+  if (admit && !admit(work)) return { ok: false, reason: "plan-budget" };
   const inSolid = (p: Point): boolean =>
     bands.some(
       (b) =>
@@ -239,8 +253,21 @@ export function withWaste(floorM2: number, pct: number): number {
 
 /** One storey's quantities. `wastePct`, when given, is a finite, non-negative percentage. */
 export function quantityFacts(ir: ResolvedPlan, wastePct?: number): QuantityFacts {
+  // Rooms: the same rooms, bands and rounding `describe().rooms[]` reads, under the storey's own
+  // net-area total (U.22): every room's area first, in element order, as `rooms[]` is decided,
+  // so the two omit the same rooms; the net perimeters take what is left, then the wall faces
+  // (RM1.3d), last, so they can never take a room's share.
+  const bands = storeyNetAreaBands(ir.walls);
+  const roomEls = ir.elements.filter((e): e is RRoom => e.kind === "room");
+  const [nets, pers, faces] = withNetAreaBudget(() => {
+    const a = roomEls.map((r) => memoRoomNetAreaMm2(r, bands));
+    const p = roomEls.map((r) =>
+      meteredRoomFigure(r, bands, "perimeter", (admit) => roomNetPerimeter(r, bands, admit)),
+    );
+    return [a, p, wallFaceLengths(ir.walls, storeyFigureAdmit())] as const;
+  });
+
   // Walls by category.
-  const faces = wallFaceLengths(ir.walls);
   const heights = ir._heightsAuthored === true;
   const cats = new Map<string, { count: number; centre: number; face: number; area: number }>();
   ir.walls.forEach((w, i) => {
@@ -263,18 +290,6 @@ export function quantityFacts(ir: ResolvedPlan, wastePct?: number): QuantityFact
       ...(faces.ok && heights ? { face_area_before_openings_m2: r2(c.area / 1_000_000) } : {}),
     }));
 
-  // Rooms: the same rooms, bands and rounding `describe().rooms[]` reads, under the storey's own
-  // net-area total (U.22): every room's area first, in element order, as `rooms[]` is decided,
-  // so the two omit the same rooms; the net perimeters take what is left.
-  const bands = storeyNetAreaBands(ir.walls);
-  const roomEls = ir.elements.filter((e): e is RRoom => e.kind === "room");
-  const [nets, pers] = withNetAreaBudget(() => {
-    const a = roomEls.map((r) => memoRoomNetAreaMm2(r, bands));
-    const p = roomEls.map((r) =>
-      meteredRoomFigure(r, bands, "perimeter", (admit) => roomNetPerimeter(r, bands, admit)),
-    );
-    return [a, p] as const;
-  });
   const rooms: RoomQuantity[] = roomEls.map((r, i) => {
     const net = nets[i];
     const per = pers[i];

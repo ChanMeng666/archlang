@@ -31,7 +31,9 @@
  * The meter is per storey, and every reader opens one per storey and asks the rooms in element
  * order first: `describe()` per storey summary (`summarize`, so the top level repeating the lowest
  * storey decides alike) and per storey's quantities (areas first, then the net perimeters), `lint()`
- * per storey (`lintStorey`), and `compile()` per storey drawn (`drawScene`). So a storey's
+ * per storey (`lintStorey`), and `compile()` per storey drawn (`drawScene`). The quantities read
+ * charges the storey's wall face lengths to the same meter, after every room's figures, so the walls
+ * can never take a room's share ({@link storeyFigureAdmit}, RM1.3d). So a storey's
  * `describe()` figures, its drawn ROOM SCHEDULE and lint's net reading omit the same rooms, on a
  * storey of any building, and a figure never depends on what another storey holds.
  *
@@ -195,6 +197,16 @@ export function meteredRoomFigure(
   });
   m.decided.set(key, { value, byBudget: refused });
   return value;
+}
+
+/**
+ * The active meter's admit, for a storey-level figure read once per meter (the takeoff's wall face
+ * lengths, RM1.3d): each count is offered BEFORE the work it pays for, and a refusal closes the
+ * meter as a room's does. `undefined` outside any meter, so such a read is held to no total.
+ */
+export function storeyFigureAdmit(): NetAreaAdmit | undefined {
+  const m = meter;
+  return m === null ? undefined : (u) => admitTo(m, u);
 }
 
 /** {@link netAreaBands}, once per distinct set of walls. */
