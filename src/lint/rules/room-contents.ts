@@ -339,13 +339,16 @@ const PIECE_WORDS: readonly (readonly [string, string[]])[] = /* @__PURE__ */ CA
   .map((c) => [c, wordsOf(c)] as [string, string[]])
   .sort((a, b) => b[1].length - a[1].length);
 
-/** Every catalogue word of each family (its name and its aliases), as runs of words. */
-const FAMILY_WORDS: ReadonlyMap<string, readonly string[][]> = /* @__PURE__ */ (() => {
-  const m = new Map<string, string[][]>();
-  for (const c of CATALOG_CATEGORIES) m.set(familyOf(c), [...(m.get(familyOf(c)) ?? []), wordsOf(c)]);
-  return m;
-})();
-const familyWords = (family: string): readonly string[][] => FAMILY_WORDS.get(family) ?? [wordsOf(family)];
+/**
+ * The words that take a piece OUT of a label (ruling RM-D35a): a label also says what a room does
+ * not hold, held once, or will hold later ("Bedroom (no TV)", "Lounge without Piano", "Store
+ * (ex-Piano Room)", "Study (future Piano)", "Bedroom (TV-free)", "Lounge (TV removed)"). A short
+ * closed list of English grammar, not vocabulary: the determiner, preposition and prefixes of absence
+ * and time that stand BEFORE a noun, and the two words that say it AFTER the noun. A piece next to
+ * one is never read, so the warning cannot claim a piece the label says is not there.
+ */
+const NOT_BEFORE: ReadonlySet<string> = new Set(["no", "without", "ex", "future"]);
+const NOT_AFTER: ReadonlySet<string> = new Set(["free", "removed"]);
 
 /** One label word against one catalogue word: the same, or, for the run's last word, its regular
  *  plural ("Lockers", "Benches"). */
@@ -389,22 +392,34 @@ function unnumbered(words: readonly Said[]): Said[] {
  * "Pavilion", "Desk 2" and a café's "Serving Counter" name the room itself, as the thing it is or
  * the place round it. A number after the head ("Nook 2") is not one.
  *
- * Ruling RM-D35a reads three more forms, each a list of pieces with no head of its own: the words
- * after `with` ("Lounge with Piano", "Room with Desk"), the words inside parentheses ("Utility
- * (Washer)", "Snug (TV)"), and a modifier run joined by `and` or `&` ("Piano and Desk Room": every
- * word before the head is read). A label of names written `a / b` has a head in each name
- * ("Counter / servery" names two rooms), unless the last name has words before its head: then the
- * names before it share that head ("Washer / Dryer Closet" is a closet for both).
+ * Ruling RM-D35a reads more forms. A modifier run joined by `and` or `&` is read word by word
+ * ("Piano and Desk Room", "Piano & Desk Room": every word before the head). A label of names written
+ * `a / b` has a head in each name ("Counter / servery" names two rooms), unless the last name has
+ * words before its head: then the names before it share that head ("Washer / Dryer Closet" is a
+ * closet for both). The words after `with` and inside parentheses are lists of pieces ("Lounge with
+ * Piano", "Utility (Washer)", "Room with Desk and TV"): each noun phrase of the list (split at
+ * `and`, `or`, `with`, `&`, a comma) names the piece its LAST word ends, so "Room with Swing Door"
+ * and "Lounge with Picture Window" name a door and a window, not a swing or a picture. A word next
+ * to a negation ({@link NOT_BEFORE}, {@link NOT_AFTER}) is never read: "Bedroom (no TV)",
+ * "Kitchen (with Fridge, no Island)" names a fridge and no island.
  */
 export function labelPieceWords(label: string): NamedPiece[] {
   const out: NamedPiece[] = [];
-  const read = (words: readonly Said[], end: number): void => {
+  // `end`: a run must end before that word (a name's head), or, `atEnd`, end exactly at it (the
+  // last word of a list's noun phrase).
+  const read = (words: readonly Said[], end: number, atEnd: boolean): void => {
     for (let i = 0; i < end; ) {
       const hit = PIECE_WORDS.find(([, run]) =>
         run.every((w, k) => sameWord(words[i + k]?.low, w, k === run.length - 1)),
       );
       const n = hit?.[1].length ?? 1;
-      if (hit && i + n <= end && !out.some((p) => familyOf(p.word) === familyOf(hit[0])))
+      const negated = NOT_BEFORE.has(words[i - 1]?.low ?? "") || NOT_AFTER.has(words[i + n]?.low ?? "");
+      if (
+        hit &&
+        (atEnd ? i + n === end : i + n <= end) &&
+        !negated &&
+        !out.some((p) => familyOf(p.word) === familyOf(hit[0]))
+      )
         out.push({
           word: hit[0],
           said: words
@@ -426,12 +441,13 @@ export function labelPieceWords(label: string): NamedPiece[] {
   const shared = (names[names.length - 1]?.length ?? 0) >= 2;
   for (let k = 0; k < names.length; k++) {
     const words = names[k]!;
-    read(words, shared && k < names.length - 1 ? words.length : words.length - 1);
+    read(words, shared && k < names.length - 1 ? words.length : words.length - 1, false);
   }
-  for (const list of [...afterWith, ...lists]) {
-    const words = saidOf(list);
-    read(words, words.length);
-  }
+  for (const list of [...afterWith, ...lists])
+    for (const phrase of list.split(/[,;&+/]|(?:^|[^\p{L}\p{N}])(?:and|or|with)(?=[^\p{L}\p{N}]|$)/iu)) {
+      const words = unnumbered(saidOf(phrase));
+      read(words, words.length, true);
+    }
   return out;
 }
 
@@ -447,18 +463,24 @@ const asSaid = (said: string): string =>
     .join(" ");
 
 /**
- * Do the pieces `held` stand for the piece `word` names: one of them is of its family or does its
- * job (its own family, or the one the catalogue says it `serves`, as `W_ROOM_MISSING_DEFINING` reads
- * a held piece), or is a more specific piece named after it, a catalogue word of one of their
- * families holding a word of its family whole ("TV" is held by a `tv_unit`, "Bike" by a
- * `bike_rack`, "Table" by a `dining_table`, "Chair" by an `office_chair`)?
+ * Do the pieces `held` stand for the piece the catalogue word `word` names (the word the label said,
+ * its plural folded): one of them is of its family or does its job (its own family, or the one the
+ * catalogue says it `serves`, as `W_ROOM_MISSING_DEFINING` reads a held piece), or is a more
+ * specific piece named after that word? Only the held piece's OWN word is read, never its family's
+ * aliases, and only the label's word, never its family's: a held compound longer than the word
+ * counts when it begins with it, a piece made for it ("TV" is held by a `tv_unit`, "Bike" by a
+ * `bike_rack`), or, when the word is its family's own name, when it ends with it, a kind of it
+ * ("Table" by a `dining_table`, "Chair" by an `office_chair`). An alias names its family's piece, so
+ * a compound ending in one is not a kind of it: a "Tub Bath" is not held by a `hot_tub`.
  */
 function standsFor(held: readonly string[], word: string): boolean {
   const family = familyOf(word);
-  const families = held.flatMap(servedBy);
-  if (families.includes(family)) return true;
-  const runs = [...held.map(wordsOf), ...families.flatMap(familyWords)];
-  return familyWords(family).some((w) => runs.some((run) => runIn(w, run)));
+  if (held.flatMap(servedBy).includes(family)) return true;
+  const said = wordsOf(word);
+  const at = (run: readonly string[], from: number): boolean => said.every((w, k) => run[from + k] === w);
+  return held
+    .map(wordsOf)
+    .some((run) => run.length > said.length && (at(run, 0) || (word === family && at(run, run.length - said.length))));
 }
 
 /** The furniture category a pasted statement places (`furniture <category> …`). */

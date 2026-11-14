@@ -286,16 +286,67 @@ suite("W_LABEL_PIECE_MISSING", () => {
   it("counts a more specific piece named after the label's word: a TV unit for a TV, a bike rack for a bike", () => {
     for (const [label, piece] of [
       ["TV Room", "tv_unit at (1000,1000) size 1800x450"],
+      ["TV Corner", "tv_unit at (1000,1000) size 1800x450"],
       ["Bike Store", "bike_rack at (1000,1000) size 1800x600"],
-      ["Bicycle Store", "bike_rack at (1000,1000) size 1800x600"],
       ["Table Corner", "dining_table at (1000,1000) size 1600x900"],
       ["Chair Corner", "office_chair at (1000,1000) size 500x500"],
-      ["Lamp Corner", "floor_lamp at (1000,1000) size 400x400"],
-    ] as const)
+    ] as const) {
+      // Each label fires without the piece, so the row is not vacuous.
+      expect(of(labelled(label)), label).toHaveLength(1);
       expect(of(labelled(label, `  furniture ${piece}`)), label).toEqual([]);
+    }
     // Not the other way round, and not a piece that shares no word with it.
     expect(of(labelled("Coffee Table Corner", "  furniture side_table at (1000,1000) size 500x500"))).toHaveLength(1);
     expect(of(labelled("TV Room", "  furniture sofa at (1000,1000) size 2000x900"))).toHaveLength(1);
+    // Only the word the label said, never another word of its family: "Bicycle" is not in `bike_rack`.
+    expect(of(labelled("Bicycle Store", "  furniture bike_rack at (1000,1000) size 1800x600"))).toHaveLength(1);
+  });
+
+  it("reads only the held piece's own word: a hot tub or a laundry sink is no bathtub", () => {
+    // A WC, a basin and a shower: the bath is defined, so W_ROOM_MISSING_DEFINING is silent and
+    // the tub is this rule's to read.
+    const wet = [
+      "  furniture wc at (200,200) size 400x700 in r",
+      "  furniture basin at (800,200) size 500x400 in r",
+      "  furniture shower at (3000,200) size 900x900 in r",
+    ];
+    for (const label of ["Tub Bath", "Bathtub Room"])
+      for (const piece of [
+        "laundry_sink at (2000,2300) size 600x500 in r", // its family holds the alias `laundry_tub`
+        "hot_tub at (1500,1200) size 1500x1500 in r", // its own word ends in "tub", an alias of bathtub
+      ])
+        expect(of(labelled(label, ...wet, `  furniture ${piece}`)), `${label} + ${piece}`).toHaveLength(1);
+    expect(of(labelled("Tub Bath", ...wet, "  furniture bathtub at (2000,2100) size 1700x700 in r"))).toEqual([]);
+  });
+
+  it("never reads a piece the label negates (RM-D35a)", () => {
+    for (const label of [
+      "Bedroom (no TV)",
+      "Lounge with no TV",
+      "Bedroom (TV-free)",
+      "Lounge (TV removed)",
+      "Study (future Piano)",
+      "Store (ex-Piano Room)",
+      "Lounge without Piano",
+      "No TV Room",
+      "Ex-Piano Room",
+    ]) {
+      expect(labelPieces(label), label).toEqual([]);
+      expect(of(labelled(label)), label).toEqual([]);
+    }
+    // The negation takes only the piece next to it.
+    expect(labelPieces("Kitchen (with Fridge, no Island)")).toEqual(["fridge"]);
+    expect(labelPieces("Lounge (Piano, no TV)")).toEqual(["piano"]);
+  });
+
+  it("reads a `with` or parenthesised phrase by its last word: a swing door is a door (RM-D35a)", () => {
+    for (const label of ["Room with Swing Door", "Lounge with Picture Window", "Bedroom (Picture Window)"]) {
+      expect(labelPieces(label), label).toEqual([]);
+      expect(of(labelled(label)), label).toEqual([]);
+    }
+    expect(labelPieces("Deck with Hot Tub")).toEqual(["hot_tub"]);
+    expect(labelPieces("Lounge with Coffee Table and Piano")).toEqual(["coffee_table", "piano"]);
+    expect(labelPieces("Room with Desk 2")).toEqual(["desk"]);
   });
 
   it("keeps the label's own spelling of the piece, lower-casing only a title-case word", () => {
