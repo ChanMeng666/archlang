@@ -1,0 +1,14 @@
+# The twin of cn-double-bedroom-small.arch: the double bedroom is about 10.1 m2 clear (3150 by 3200 mm
+# between its wall faces), over the 9 m2 of GB 50096-2011 5.2.1.
+plan "Double bedroom large enough" {
+  units mm
+  grid 50
+  wall id=shell exterior thickness 200 { (0,0) (4900,0) (4900,3400) (0,3400) close }
+  wall id=w_mid partition thickness 100 { (3300,0) (3300,3400) }
+  room id=r_bed at (0,0) size 3300x3400 label "Bedroom" uses bedroom
+  room id=r_hall at (3300,0) size 1600x3400 label "Hall" uses hall
+  door id=d_entry at (4100,3400) width 900 wall shell
+  door id=d_bed at (3300,2600) width 800 wall w_mid swing into r_bed
+  window at (1650,0) width 1200 wall shell
+  furniture id=f_bed double_bed at (200,200) size 1500x2000
+}

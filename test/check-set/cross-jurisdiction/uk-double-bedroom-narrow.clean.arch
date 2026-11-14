@@ -1,0 +1,14 @@
+# The twin of uk-double-bedroom-narrow.arch: the double bedroom is 2800 mm wide between its wall
+# faces (2950 drawn), over the 2750 mm of the Nationally Described Space Standard (2015) 10(e).
+plan "Main double bedroom wide enough" {
+  units mm
+  grid 50
+  wall id=shell exterior thickness 200 { (0,0) (4550,0) (4550,5200) (0,5200) close }
+  wall id=w_mid partition thickness 100 { (2950,0) (2950,5200) }
+  room id=r_bed at (0,0) size 2950x5200 label "Bedroom" uses bedroom
+  room id=r_hall at (2950,0) size 1600x5200 label "Hall" uses hall
+  door id=d_entry at (3750,5200) width 900 wall shell
+  door id=d_bed at (2950,4000) width 800 wall w_mid swing into r_bed
+  window at (1450,0) width 1200 wall shell
+  furniture id=f_bed double_bed at (700,300) size 1500x2000
+}

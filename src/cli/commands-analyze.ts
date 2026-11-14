@@ -13,7 +13,6 @@ import {
   describeLevel,
   DESCRIBE_FACTS,
   lint,
-  lintWithCoverage,
   LINT_PROFILE_NAMES,
   ERROR_CODES,
   diagnosticToJson,
@@ -70,6 +69,8 @@ import type { PlanNode } from "../ast.js";
 import { coverageLine } from "../lint/coverage.js";
 // Where each ruleset number comes from (internal: only `lint --rules` reads it, never the compile path).
 import { diagnosticRule, type EffectiveRule, effectiveRuleset } from "../lint/provenance.js";
+// What `lint` reports for a source, shared with the hosted `POST /check` (card CR10).
+import { lintFindings, withThemeWord } from "../lint/report.js";
 
 /**
  * `lint --json` and `validate --json` attach each warning's ruleset number and its provenance
@@ -81,7 +82,6 @@ const WITH_RULE = { rule: diagnosticRule } as const;
 // The zero-dep levenshtein behind every "did you mean" hint the CLI prints.
 import { closest } from "../expr.js";
 import { parse } from "../parser.js";
-import { unknownThemeDiagnostic } from "../pipeline.js";
 import { CLI_NAME } from "../manifest.js";
 import {
   type Args,
@@ -1245,21 +1245,6 @@ function printTaste(io: CliIo, r: TasteReport): void {
   }
 }
 
-/**
- * `before`, then `W_UNKNOWN_THEME` when the plan's `theme <name>` is no built-in theme, then
- * `after` (RM1.4b). `compile()` raises it with the call's registered themes; the CLI registers
- * none, so `validate` and `lint` hold the name to `THEMES` alone, and `validate --strict` fails
- * on `theme Rendered` as `compile --json` reports it. The library's `describe()` and `lint()` do
- * not raise it (a host may register the name at compile). A plan that names a built-in theme, or
- * none, gets back the very arrays it passed.
- */
-function withThemeWord(source: string, before: Diagnostic[], after: Diagnostic[] = []): Diagnostic[] {
-  const { plan } = parse(source);
-  const d = plan ? unknownThemeDiagnostic(plan, undefined) : undefined;
-  if (!d) return after.length === 0 ? before : [...before, ...after];
-  return [...before, d, ...after];
-}
-
 export function cmdLint(args: Args, io: CliIo): number {
   // An unknown profile is a bad-usage error like every other one: `error: …` on stderr,
   // exit 3, with a did-you-mean and the real profile names from LINT_PROFILE_NAMES (this
@@ -1275,20 +1260,10 @@ export function cmdLint(args: Args, io: CliIo): number {
   if (isCheckError(filter)) return filter.exit;
   return withSource(io, args, (source, input) => {
     const world = makeNodeWorld(baseDirOf(io, input));
-    // Surface fatal errors too (lint() is silent on an unresolvable plan).
-    // Render-free: resolvePlan carries every diagnostic compile() would.
-    const { diagnostics } = resolvePlan(source, { world });
-    const errs = diagnostics.filter((d) => d.severity === "error");
-    if (errs.length) return report(io, source, errs, args, filter);
-    // One run of the rules gives the diagnostics `lint()` returns and the coverage report.
-    const linted = lintWithCoverage(source, { world, profile: args.profile });
-    // RM1.4 review: a furniture word near a catalogued kind is compile()'s, but it is the same
-    // kind of finding as the lint rule `W_ALIAS_MATCH`, so `lint --strict` fails on it as on that
-    // one. Then a theme name the drawing cannot select (RM1.4b). Both are listed before the lint
-    // findings, in the order `validate` lists them.
-    const furniture = diagnostics.filter((d) => d.code === "W_UNKNOWN_FURNITURE");
-    const diags = withThemeWord(source, furniture, linted.diagnostics);
-    return report(io, source, diags, args, filter, linted.coverage ?? undefined);
+    // The resolve errors alone, or the compile's furniture and theme words then lint()'s warnings,
+    // with the coverage report of the same run: the one list `POST /check` reports too (CR10).
+    const { diagnostics: diags, coverage } = lintFindings(source, { world, profile: args.profile });
+    return report(io, source, diags, args, filter, coverage);
   });
 }
 

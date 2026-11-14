@@ -1,0 +1,10 @@
+# The twin of cn-living-room-small.arch: the living room is about 11.6 m2 clear (3400 by 3400 mm
+# between its wall faces), over the 10 m2 of GB 50096-2011 5.2.2.
+plan "Living room large enough" {
+  units mm
+  grid 50
+  wall id=shell exterior thickness 200 { (0,0) (3600,0) (3600,3600) (0,3600) close }
+  room id=r_living at (0,0) size 3600x3600 label "Living Room" uses living
+  door id=d_entry at (1800,3600) width 900 wall shell
+  window at (1800,0) width 1500 wall shell
+}

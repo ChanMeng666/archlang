@@ -1,0 +1,14 @@
+# An exterior door that swings out (the inside is its push side) with a sofa 1000 mm inside the
+# wall's inside face (y 2900 against the face at 3900), across x 600-3000 of the door's 2400-3600
+# span: beyond the default ruleset's 914 mm, within the 1220 mm front approach of the 2010 ADA
+# Standards for Accessible Design, Table 404.2.4.1 (push side), that accessibility-advisory takes.
+# This case and its twin are listed in ../check-set.json.
+plan "Exit approach within 1220 mm" {
+  units mm
+  grid 50
+  wall id=shell exterior thickness 200 { (0,0) (6000,0) (6000,4000) (0,4000) close }
+  room id=r_wait at (0,0) size 6000x4000 label "Waiting" uses entry
+  door id=d_main at (3000,4000) width 1200 wall shell swing outward
+  window at (3000,0) width 1500 wall shell
+  furniture id=f_sofa sofa at (600,2000) size 2400x900 label "Sofa"
+}

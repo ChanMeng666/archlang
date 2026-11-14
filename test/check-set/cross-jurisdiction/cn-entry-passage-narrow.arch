@@ -1,0 +1,14 @@
+# An entry passage 1050 mm wide between its wall faces (1200 drawn, less the shell's 100 and the
+# partition's 50), under the 1200 mm GB 50096-2011 5.7.1 gives the passage at a home's entrance. The
+# default ruleset asks no room a width. This case and its twin are listed in ../check-set.json.
+plan "Narrow entry passage" {
+  units mm
+  grid 50
+  wall id=shell exterior thickness 200 { (0,0) (5200,0) (5200,4000) (0,4000) close }
+  wall id=w_mid partition thickness 100 { (1200,0) (1200,4000) }
+  room id=r_entry at (0,0) size 1200x4000 label "Entry" uses entry
+  room id=r_living at (1200,0) size 4000x4000 label "Living Room" uses living
+  door id=d_entry at (600,4000) width 800 wall shell
+  door id=d_living at (1200,1500) width 900 wall w_mid swing into r_living
+  window at (3200,0) width 1500 wall shell
+}

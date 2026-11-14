@@ -1,0 +1,11 @@
+# The twin of access-exit-approach.arch: the sofa stands 1300 mm inside the wall's inside face
+# (y 2600), beyond the 1220 mm front approach of the 2010 ADA Standards, Table 404.2.4.1.
+plan "Exit approach clear" {
+  units mm
+  grid 50
+  wall id=shell exterior thickness 200 { (0,0) (6000,0) (6000,4000) (0,4000) close }
+  room id=r_wait at (0,0) size 6000x4000 label "Waiting" uses entry
+  door id=d_main at (3000,4000) width 1200 wall shell swing outward
+  window at (3000,0) width 1500 wall shell
+  furniture id=f_sofa sofa at (600,1700) size 2400x900 label "Sofa"
+}

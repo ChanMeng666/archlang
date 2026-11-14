@@ -1,0 +1,15 @@
+# A double bedroom (its bed is a double_bed) of about 7.3 m2 clear (2650 by 2750 mm between its wall
+# faces; 8.4 m2 drawn), under the 9 m2 GB 50096-2011 5.2.1 gives a double bedroom. The default
+# ruleset sets no double-bedroom area. This case and its twin are listed in ../check-set.json.
+plan "Small double bedroom" {
+  units mm
+  grid 50
+  wall id=shell exterior thickness 200 { (0,0) (4400,0) (4400,3000) (0,3000) close }
+  wall id=w_mid partition thickness 100 { (2800,0) (2800,3000) }
+  room id=r_bed at (0,0) size 2800x3000 label "Bedroom" uses bedroom
+  room id=r_hall at (2800,0) size 1600x3000 label "Hall" uses hall
+  door id=d_entry at (3600,3000) width 900 wall shell
+  door id=d_bed at (2800,2200) width 800 wall w_mid swing into r_bed
+  window at (1400,0) width 1200 wall shell
+  furniture id=f_bed double_bed at (200,200) size 1500x2000
+}

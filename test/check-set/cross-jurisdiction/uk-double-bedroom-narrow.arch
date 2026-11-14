@@ -1,0 +1,17 @@
+# The home's only double bedroom (its bed is a double_bed) is 2600 mm wide between its wall faces
+# (2750 drawn): over the 2550 mm the Nationally Described Space Standard (2015) 10(e) gives any double
+# bedroom, under the 2750 mm 10(e) gives one double bedroom of every home. Its clear floor, 13 m2,
+# passes 10(d)'s 11.5 m2. The default ruleset asks no room a width. This case and its twin are listed
+# in ../check-set.json.
+plan "Narrow main double bedroom" {
+  units mm
+  grid 50
+  wall id=shell exterior thickness 200 { (0,0) (4350,0) (4350,5200) (0,5200) close }
+  wall id=w_mid partition thickness 100 { (2750,0) (2750,5200) }
+  room id=r_bed at (0,0) size 2750x5200 label "Bedroom" uses bedroom
+  room id=r_hall at (2750,0) size 1600x5200 label "Hall" uses hall
+  door id=d_entry at (3550,5200) width 900 wall shell
+  door id=d_bed at (2750,4000) width 800 wall w_mid swing into r_bed
+  window at (1350,0) width 1200 wall shell
+  furniture id=f_bed double_bed at (500,300) size 1500x2000
+}
