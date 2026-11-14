@@ -525,6 +525,9 @@ export type {
   Opening,
   ROpening,
   RStair,
+  // A block stair's flight or landing, the first parameter of `winderTreads` (ADR 0031,
+  // amendment 2026-11-14).
+  RStairPiece,
   RElevator,
   REscalator,
   RRoof,

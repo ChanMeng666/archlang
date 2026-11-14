@@ -149,3 +149,27 @@ element). The flights, their entry edges and the landings were already public (`
 `RStairFlight.tail`, `RStair.landings`, and `entryEdges` for a straight stair). Proof of no output
 change: the corpus digest (every storey's SVG, `describe()`, `lint()` and `compile().diagnostics`)
 over `examples/` and `test/fixtures/` is byte-identical before and after.
+
+## Amendment 2026-11-14: the winder tread lines (card RM1.2g)
+
+The 3D preview builds a `winders <n>` landing as its `n` tapered treads, and they must be cut on the
+lines the plan draws across the landing. Those `n - 1` lines come from `winderTreads(landing,
+before, after)` (`src/vertical.ts`), which the stair glyph and `W_STAIR_RISER_TOO_HIGH` already
+call. It was not exported, so the consumer read the lines off `toScene(ir, { annotate: true })`:
+drawing a whole storey from a `resolvePlan` IR that never passed the drawing budget, for a few
+lines. **Export `winderTreads`** as a plain re-export, and **`RStairPiece`**, the one type its
+signature reaches that was not yet nameable from the root (a type-only export; `BBox` and `Point`
+already were). The import graph of `compile()` does not change: the module is already loaded by
+the stair element.
+
+Unlike the earlier amendments, the body gains one guard. The export is pure, but a caller can pass
+any `winders`, and the loop runs `n - 1` times, so it now returns `[]` unless `winders` is a whole
+number from 2 to `MAX_WINDERS`: at most `MAX_WINDERS - 1` lines, whatever the input. The resolver
+already admits exactly that range (`winderRefusal` in `src/elements/stair.ts` refuses any other
+count as `E_STAIR_PIECES`), so no resolved plan reaches the guard. `MAX_WINDERS` moved from
+`src/elements/stair.ts` to `src/vertical.ts`, beside the function, with its value (8) unchanged;
+the stair element imports it from there. Proof of no output change: the corpus digest (every
+storey's SVG, `describe()`, `lint()` and `compile().diagnostics`) over `examples/`,
+`test/fixtures/`, the 3D stress plans and winder plans at every count, two heights and four
+placements is byte-identical before and after; of the `explain()` texts only
+`W_STAIR_RISER_TOO_HIGH`'s moves, which no longer says the 3D preview builds a winder landing level.

@@ -898,10 +898,12 @@ export const MAX_WINDERS = 8;
  * landing. Equal angles give equal goings on any walking line that turns round that corner. `[]`
  * for a level landing. Geometry only: no tread is checked against any going here.
  *
- * Public (card RM1.2g): the 3D preview cuts a winder landing's tapered treads on these lines, the
- * ones the plan's glyph draws, per stair and without drawing the storey. Pure and bounded: `[]`
- * unless `winders` is a whole number from 2 to {@link MAX_WINDERS} (the resolver admits no other),
- * so it returns at most `MAX_WINDERS - 1` lines whatever a caller passes.
+ * Public from the package root (ADR 0031, amendment 2026-11-14; card RM1.2g): the 3D preview cuts
+ * a winder landing's tapered treads on these lines, the ones the plan's glyph draws, per stair and
+ * without drawing the storey. `(landing: RStairPiece, before: BBox, after: BBox) => [Point,
+ * Point][]`, pure and bounded: `[]` unless `winders` is a whole number from 2 to
+ * {@link MAX_WINDERS} (the resolver admits no other), so at most `MAX_WINDERS - 1` lines whatever a
+ * caller passes; a change to the lines is a change to every winder stair's drawing.
  */
 export function winderTreads(landing: RStairPiece, before: BBox, after: BBox): Array<[Point, Point]> {
   const n = landing.winders;

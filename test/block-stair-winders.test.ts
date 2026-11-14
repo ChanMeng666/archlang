@@ -10,10 +10,19 @@
  */
 
 import { describe, expect, it } from "vitest";
-import { compile, describe as describePlan, type Diagnostic, format, lint } from "../src/index.js";
+import {
+  compile,
+  describe as describePlan,
+  type Diagnostic,
+  format,
+  lint,
+  type RStairPiece,
+  winderTreads as rootWinderTreads,
+} from "../src/index.js";
 import { resolvePlan } from "../src/analyze.js";
+import type { BBox } from "../src/geometry/rect.js";
 import type { RStair } from "../src/ir.js";
-import { verticalsOf } from "../src/vertical.js";
+import { MAX_WINDERS, verticalsOf, winderTreads } from "../src/vertical.js";
 import {
   CLEAR_L,
   hallBody,
@@ -227,5 +236,36 @@ describe("winders are part of the block a shaft compares", () => {
     const w = mismatch(shaft("3", "4"));
     expect(w).toHaveLength(1);
     expect(w[0]!.message).toContain("the landing is 3 winders there and 4 winders here");
+  });
+});
+
+// ADR 0031, amendment 2026-11-14 (card RM1.2g): `winderTreads` is public, so it must stay bounded
+// whatever a caller passes, not only for the counts the resolver admits (2 to MAX_WINDERS).
+describe("winderTreads, the public export, is bounded", () => {
+  const [before, landing, after] = L_STAIR.pieces.map(([x, y, w, h]) => ({ x, y, w, h })) as [BBox, BBox, BBox];
+  const piece = (winders: number): RStairPiece => ({
+    at: { x: landing.x, y: landing.y },
+    size: { w: landing.w, h: landing.h },
+    winders,
+  });
+
+  it("is the function the glyph and the riser rule call", () => {
+    expect(rootWinderTreads).toBe(winderTreads);
+    expect(MAX_WINDERS).toBe(8);
+  });
+
+  it.each([9, 1, 2.5, Number.NaN, 0, -2, 1e9, Number.POSITIVE_INFINITY])("draws no line for `winders` %s", (n) => {
+    expect(rootWinderTreads(piece(n), before, after)).toEqual([]);
+  });
+
+  it("draws n - 1 lines from the inner corner for every whole n from 2 to 8, so at most 7", () => {
+    for (let n = 2; n <= MAX_WINDERS; n++) {
+      const lines = rootWinderTreads(piece(n), before, after);
+      expect(lines, `winders ${n}`).toHaveLength(n - 1);
+      for (const [a] of lines) expect(a, `winders ${n}`).toEqual({ x: 1500, y: 1100 });
+    }
+    expect(rootWinderTreads(piece(8), before, after).length).toBeLessThanOrEqual(7);
+    // A level landing draws none.
+    expect(rootWinderTreads({ at: piece(2).at, size: piece(2).size }, before, after)).toEqual([]);
   });
 });

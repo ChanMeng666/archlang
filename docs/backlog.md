@@ -1774,14 +1774,7 @@ not move (the `block-stair-winders-byte-identity` law pins every plan without th
 contributor offered to do it. **Gate:** the winders law green; the digest of every winders fixture
 listed before and after in the PR; a plan without `winders` byte-identical.
 
-### ST.3 · `archlang-3d` builds a winder landing as a level landing — `todo`
-
-The 3D package ignores `describe().verticals[].landings[].winders` and builds the landing flat, so
-the preview climbs the storey in fewer, taller risers than the plan draws (the plan shows `n`
-treads fanning from the inner corner). Fan `n` wedge-shaped treads from the inner corner in
-`packages/archlang-3d`, each rising one riser, so the 3D keeps the plan's treads (the X3 ruling).
-Core untouched. **Gate:** `check:3d`; the mesh/GLB pins move only for the winders fixture; a plan
-without `winders` byte-identical in every 3D output.
+- ST.3 · `archlang-3d` builds a winder landing as a level landing — done by RM1.2g (#751) → archived (lab)
 
 ## 3D asset and surface residue (public-surfaces 3D cards X4b, X6, V2, 2026-11-06)
 

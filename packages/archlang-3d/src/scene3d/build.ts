@@ -24,6 +24,7 @@ import {
   type RRoof,
   type RRoom,
   type RStair,
+  type RStairPiece,
   type RVoid,
   type RWindow,
 } from "@chanmeng666/archlang";
@@ -216,10 +217,7 @@ const stairOf = (s: RStair, ledger: Assumption[]): Stair => ({
 /** A straight line the core draws (mm, plan axes). */
 type Segment = readonly [Point, Point];
 
-/** A block stair's rectangle (a flight or a landing), as the core resolves it. */
-type StairPiece = NonNullable<RStair["landings"]>[number];
-
-const rectOf = (p: StairPiece): { x: number; y: number; w: number; h: number } => ({
+const rectOf = (p: RStairPiece): { x: number; y: number; w: number; h: number } => ({
   x: p.at.x,
   y: p.at.y,
   w: p.size.w,
@@ -237,9 +235,9 @@ const rectOf = (p: StairPiece): { x: number; y: number; w: number; h: number } =
 function winderRings(
   id: string,
   i: number,
-  l: StairPiece,
-  before: StairPiece | undefined,
-  after: StairPiece | undefined,
+  l: RStairPiece,
+  before: RStairPiece | undefined,
+  after: RStairPiece | undefined,
   ledger: Assumption[],
 ): Pt[][] | undefined {
   if (l.winders === undefined) return undefined;
@@ -274,7 +272,7 @@ const NEAR_MM = 1e-6;
  * landing, and where the lines are not exactly `n - 1` from one such corner: that landing is then
  * built level ({@link winderRings} ledgers it). Exported for its test only (`test/stair.test.ts`).
  */
-export function treadRings(l: StairPiece, before: StairPiece, lines: readonly Segment[]): Pt[][] | undefined {
+export function treadRings(l: RStairPiece, before: RStairPiece, lines: readonly Segment[]): Pt[][] | undefined {
   const n = l.winders;
   if (n === undefined) return undefined;
   const near = (a: number, b: number): boolean => Math.abs(a - b) <= NEAR_MM;
