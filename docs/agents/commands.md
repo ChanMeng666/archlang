@@ -145,15 +145,15 @@ Minutes, a full run measured 2026-10-27 (PR #290 at 2ed9d70e, `gh run view 40416
 | Job (CI's check name) | Runs | Min |
 |---|---|---|
 | `changes` (Changed paths) | classifies the PR's paths (not a required check) | < 0.1 |
-| `node-18-tests`, `node-20-tests` (Node 18 tests 1/3 … 3/3, Node 20 tests 1/3 … 3/3) | push and merge queue only (job-level skip on a PR): `vitest run --shard=N/3`; shard 3 first runs typecheck, `lint:ci`, `check:drift` and, after the tests, `eval:ci` | not yet measured (unsharded: 20.7, 19.9) |
-| `build` (Node 18, Node 20) | aggregator over its version's shard job: green with a job-summary line on a PR, else requires the shards' `success` | not yet measured |
+| `node-18-tests`, `node-20-tests` (Node 18 tests 1/3 … 3/3, Node 20 tests 1/3 … 3/3) | push and merge queue only (job-level skip on a PR): `vitest run --shard=N/3`; shard 3 first runs typecheck, `lint:ci`, `check:drift` and, after the tests, `eval:ci` | Node 18: 9.2, 9.9, 8.7; Node 20: 8.5, 7.3, 7.9 (red-proof run 43538960462; unsharded: 20.7, 19.9) |
+| `build` (Node 18, Node 20) | aggregator over its version's shard job: green with a job-summary line on a PR, else requires the shards' `success` | 0.1 |
 | `node-22-checks` (Node 22 checks) | typecheck, `lint:ci`, `check:drift`, `eval:ci` | 0.7 |
-| `node-22-tests` (Node 22 tests 1/5 … 5/5) | `vitest run --shard=N/5` | not yet measured at 5 (at 3: 5.8, 4.8, 9.6) |
+| `node-22-tests` (Node 22 tests 1/5 … 5/5) | `vitest run --shard=N/5` | 5.7, 4.8, 5.0, 4.4, 4.7 (run 43538929281) |
 | `changelog` (CHANGELOG under [Unreleased]) | PR and merge queue, record-only PRs too: `scripts/check-changelog-unreleased.mjs HEAD^1` (every added CHANGELOG line under `[Unreleased]` or under the `## [x.y.z]` heading a release PR adds, no released line deleted). A deliberate edit of released history carries the PR label `changelog-exempt` (then `--exempt`: reported, not refused); label, then re-run the job. Not a required check; `node-22` requires its success (on a PR and in the queue) | not yet measured |
 | `node-22` (Node 22) | gates on `node-22-checks`, `node-22-tests` and, on a PR or in the queue, `changelog`; on a record-only PR, runs the docs leg | < 0.2 |
 | `builds` (Workspace builds) | `build`, `typecheck:all`, all five workspace builds (docs, playground, MCP shim, hosted MCP Worker, VS Code), MCP `check-dist-resources.mjs`, VS Code bundle tests, `check:test-wiring`, `check:dxf` with ezdxf in a virtualenv (each only here) | 2.0 |
-| `windows-tests` (Windows tests 1/3 … 3/3) | push and merge queue only (job-level skip on a PR), on windows-latest: `vitest run --shard=N/3` at the runner's default line endings, shard 3 then `check:drift` (no `eval:ci`) | not yet measured (unsharded: 21.1) |
-| `windows` (Windows (tests + drift)) | aggregator over `windows-tests`, on ubuntu: green with a job-summary line on a PR, else requires the shards' `success` | not yet measured |
+| `windows-tests` (Windows tests 1/3 … 3/3) | push and merge queue only (job-level skip on a PR), on windows-latest: `vitest run --shard=N/3` at the runner's default line endings, shard 3 then `check:drift` (no `eval:ci`) | 11.5, 10.0, 8.9 (red-proof run 43538960462; unsharded: 21.1) |
+| `windows` (Windows (tests + drift)) | aggregator over `windows-tests`, on ubuntu: green with a job-summary line on a PR, else requires the shards' `success` | 0.1 |
 | `e2e-playground-chromium` (Playground E2E chromium 1/2, 2/2) | every playground spec in Chromium, `--shard=N/2` (Playwright splits by test count, not duration), then `Flaky tests` | 3.0, 5.1 (run 43535706255) |
 | `e2e-playground-engines` (Playground E2E engines) | the `@engines` specs in Firefox and WebKit, then `Flaky tests` | 2.8 (run 43535706255) |
 | `e2e-playground` (Playground E2E (Playwright)) | aggregator: requires `success` of both jobs above | 0.1 (run 43535706255) |

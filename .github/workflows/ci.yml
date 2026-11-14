@@ -119,10 +119,11 @@ jobs:
   # The Node 18 leg, in three shards. Its `if` is FULL_LEG (see the header): true on every
   # push and merge_group, and on a PR only if `changes` failed (`!cancelled()` lets it run
   # then), so an ordinary PR skips the whole job and starts no runner. Shard 3 also runs
-  # typecheck, lint, drift and the eval, once for the leg. Shard 3, not 1: test/sequencer.ts
-  # gives every file recorded at 0 s to the lightest shard, which is shard 1 (126 files at 3
-  # shards), so shard 1's real wall clock already exceeds its recorded load; the last shard
-  # takes no zero-cost file while the table's ties stand. `node-20-tests` is the same job
+  # typecheck, lint, drift and the eval, once for the leg (about 0.4 min). Shard 3, not 1:
+  # test/sequencer.ts gives all 126 files recorded at 0 s to whichever shard is lightest when
+  # they come up, shard 1 on this tree, and their real cost is not 0. That is a reading, not a
+  # guarantee: one added file can move the whole group (TP2's red proof moved it to shard 3).
+  # `node-20-tests` is the same job
   # on Node 20; two job ids, not one matrix, so each `Node <n>` aggregator below reads only
   # its own shards' result (a matrix job's result combines every leg).
   node-18-tests:
