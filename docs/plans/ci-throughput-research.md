@@ -449,6 +449,12 @@ reopen triggers above name (syncs per merged PR, P90 open → merge, job queue t
 merge-caused incidents), and writes the numbers under this section; the guardrails are
 § 7's `main` red rate and revert rate, and a rise in either means the time was moved, not saved.
 
+**First readings (2026-11-14, one run each, not medians):** TP1 merged as #754 and TP2 as #755. PR run
+43535706255: 7.3 min wall clock (Chromium shards 3.0 and 5.1, engines 2.8; the pole is now Docs E2E and a Node 22
+shard at 6.0). First `main` push run after #755, 43541609209: **12.8 min** (median 28.1 before), every job queued
+4 s or less. Its pole is each main-only leg's shard 1 (Windows 12.5, Node 18 12.2, against 5.8–6.0 for shard 2):
+`test/sequencer.ts` puts every file recorded at 0 s in one shard, card TP6. TP5 replaces these with medians.
+
 ## 11. Sources
 
 - Anthropic: [test impact analysis](https://claude.com/resources/articles/agentic-coding-is-straining-ci-heres-how-we-scaled-test-impact-analysis-at-anthropic) · [Redesigning source control](https://www.anthropic.com/research/redesigning-source-control) · [Claude Code code review](https://claude.dev/blog/solving-code-review-at-anthropic/)
