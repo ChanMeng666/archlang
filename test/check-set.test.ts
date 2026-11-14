@@ -7,7 +7,7 @@ import { describe, expect, it } from "vitest";
 import { type LintRuleset, LINT_PROFILE_NAMES, LINT_PROFILES, lint, lintReport } from "../src/index.js";
 import { effectiveRuleset, RULE_PROVENANCE, type VerificationGrade } from "../src/lint/provenance.js";
 import { isTable } from "../src/lint/rule-ref.js";
-import { type CheckCase, judge, loadCases } from "./check-set/run.mjs";
+import { type CheckCase, judge, type LintDoc, loadCases } from "./check-set/run.mjs";
 
 /**
  * The public check set (`test/check-set/`, card CR10 of `docs/plans/product-roadmap/cards.md`): its
@@ -83,7 +83,7 @@ describe("every case passes", () => {
 
   it("the judge fails a case on each thing it checks", () => {
     const row = { expect: "W_X", rule: "k", profile: "p" };
-    const doc = (...ds: object[]) => ({ diagnostics: ds });
+    const doc = (...ds: LintDoc["diagnostics"][number][]): LintDoc => ({ diagnostics: ds });
     const hit = { code: "W_X", severity: "warning" };
     expect(judge(row, doc(hit), doc())).toEqual([]);
     expect(judge(row, doc(), doc())).toEqual(["the plan does not report W_X"]);
