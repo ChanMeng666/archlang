@@ -209,7 +209,22 @@ describe("`overhead` — the frontal-clearance rule needs nothing, and here is w
     // projector: overhead, but off the slab rather than the fabric). At that point the
     // clearance rule needs its own `isOverhead` arm, and it will be reachable enough to test.
     const overheadCats = CATALOG_CATEGORIES.filter((c) => isOverhead(c));
-    expect(overheadCats).toEqual(["upper_cabinet", "wall_cabinet", "mirror", "range_hood"]);
+    expect(overheadCats).toEqual([
+      "upper_cabinet",
+      "wall_cabinet",
+      "mirror",
+      "range_hood",
+      // The new-families batch (RM8.9): the indoor air-conditioning unit and the picture, each hung
+      // off its wall on the mirror's precedent.
+      "wall_ac",
+      "split_ac",
+      "air_conditioner",
+      "ac_indoor",
+      "wall_art",
+      "artwork",
+      "painting",
+      "picture",
+    ]);
     for (const c of overheadCats) expect(requiresWall(c), c).toBe(true);
   });
 

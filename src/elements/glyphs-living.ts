@@ -1273,7 +1273,8 @@ export function drawFoldingScreen(r: Rect, g: GlyphCtx): SceneNode[] {
   for (let k = 0; k <= n; k++) top.push({ x: r.x + (r.w * k) / n, y: k % 2 === 0 ? r.y : r.y + r.h - th });
   const under = top.map((p) => ({ x: p.x, y: p.y + th })).reverse();
   g.poly([...top, ...under], g.body);
-  for (let k = 1; k < n; k++) g.dot({ x: top[k]!.x, y: top[k]!.y + th / 2 }, th * 0.45, g.basin);
+  const hinge = Math.min(th * 0.45, (r.w / n) * 0.5);
+  for (let k = 1; k < n; k++) g.dot({ x: top[k]!.x, y: top[k]!.y + th / 2 }, hinge, g.basin);
   return g.nodes;
 }
 

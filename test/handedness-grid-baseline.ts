@@ -410,4 +410,22 @@ export const GRID_ON_MAIN: Readonly<Record<string, "all" | "none" | readonly str
   server_rack: "none",
   hospital_bed: "none",
   workstation: "none",
+  // The new-families batch (product-roadmap RM8.9): measured on the branch that added them with the
+  // same `--grid` survey and key — every cell symmetric. They pin the new symbols as unhanded.
+  wall_ac: "none",
+  condenser: "none",
+  chest_freezer: "none",
+  wine_fridge: "none",
+  display_cabinet: "none",
+  folding_screen: "none",
+  daybed: "none",
+  pool: "none",
+  garden_gate: "none",
+  gazebo: "none",
+  greenhouse: "none",
+  wall_art: "none",
+  climber: "none",
+  bamboo: "none",
+  potted_tree: "none",
+  stepping_stones: "none",
 };

@@ -822,7 +822,7 @@ export function drawWallAc(r: Rect, g: GlyphCtx): SceneNode[] {
  * hub. The fan is drawn centred (a real unit's is often to one side, which would make the symbol
  * handed), so the symbol is its own mirror image; the coil line says which side is the back.
  *
- * Prim count: 7.
+ * Prim count: 8.
  */
 export function drawCondenser(r: Rect, g: GlyphCtx): SceneNode[] {
   const s = shortSide(r);
