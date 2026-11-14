@@ -131,10 +131,11 @@ describe("npm tarball (npm pack --dry-run)", () => {
     expect(targets.map((t) => t.replace(/^\.\//, ""))).toContain("dist/cli/link.js");
     expect(paths.filter((p) => p.startsWith("dist/compile-path"))).toEqual([]);
     // After a build (locally; CI's suite runs without one), npm's own list: every chunk the
-    // package's entries import ships.
-    for (const entry of ["dist/index.js", "dist/cli.js", "dist/share.js", "dist/cli/link.js"].filter((p) =>
-      paths.includes(p),
-    )) {
+    // package's entries (the `.js` targets above, read from package.json) import ships.
+    const builtEntries = [...new Set(targets.map((t) => t.replace(/^\.\//, "")))].filter(
+      (p) => p.endsWith(".js") && paths.includes(p),
+    );
+    for (const entry of builtEntries) {
       const text = readFileSync(resolve(entry), "utf8");
       for (const m of text.matchAll(/^import\s(?:[^;]*?from\s*)?"((?:\.\.?\/)+chunk-[\w-]+\.js)";?$/gm)) {
         const file = posix.normalize(posix.join(posix.dirname(entry), m[1] as string));
