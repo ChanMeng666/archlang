@@ -35,11 +35,14 @@
   RM1.2g, ruling RM-D36), where it was one level landing: the stair now climbs the risers the plan
   draws and `W_STAIR_RISER_TOO_HIGH` reads, `n - 1` more than on a level landing (`winders 8` up
   2750 mm: 16 risers of 171.875 mm, where it climbed 9 of about 306 mm). The treads are cut on the
-  lines the core's own drawing draws across the landing (`toScene` with `annotate`, a public export),
-  never re-derived; Scene3D's `StairLanding` gains an optional `winders` (each tread's plan ring, in
-  climbing order), and `stairRisers(flights, landings?)` counts them. A landing's open edge takes a
-  rail stepped with the treads, and the mesh ledgers each such landing (`stair-winders-from-drawing`).
-  A plan with no `winders` builds the same Scene3D, Mesh3D and GLB as before.
+  lines the plan's glyph draws across the landing, the core's new public `winderTreads`, read per
+  stair (no storey is drawn for them), never re-derived; Scene3D's `StairLanding` gains an optional
+  `winders` (each tread's plan ring, in climbing order), and `stairRisers(flights, landings?)` counts
+  them. A landing's open edge takes a rail stepped with the treads, and the mesh ledgers each such
+  landing (`stair-winders-from-drawing`) and its closed risers (`stair-winders-solid`). On a core
+  without `winderTreads`, a `winders` landing is built level as before and ledgered
+  (`stair-winders-not-read`). A plan with no `winders` builds the same Scene3D, Mesh3D and GLB as
+  before.
 
 ## [0.7.0] - 2026-11-12
 

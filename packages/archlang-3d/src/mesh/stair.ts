@@ -39,9 +39,12 @@ export function stairRisers(
   );
 }
 
-/** The plan rings a landing is built over, in climbing order: its tapered treads, or its rectangle. */
+/**
+ * The plan rings a landing is built over, in climbing order: its tapered treads, or its rectangle.
+ * An empty `winders` is a level landing, as {@link stairRisers} counts it.
+ */
 function landingSteps(l: StairLanding): Pt[][] {
-  return l.winders ?? [rect(l.at[0], l.at[1], l.at[0] + l.size.w, l.at[1] + l.size.h).outer];
+  return l.winders?.length ? l.winders : [rect(l.at[0], l.at[1], l.at[0] + l.size.w, l.at[1] + l.size.h).outer];
 }
 
 /** A stair's solids, how many risers it climbs, and the height each landing stands at. */
@@ -459,7 +462,7 @@ export function stairDetail(stair: Stair, z0: number, rise: number, solidAt: (p:
       const top = riserTop(climbed);
       base = top;
       const box: Box2 = [landing.at[0], landing.at[1], landing.at[0] + landing.size.w, landing.at[1] + landing.size.h];
-      if (landing.winders) {
+      if (landing.winders?.length) {
         // Card RM1.2g: each tapered tread a solid from the floor, as a level landing is, one riser
         // above the last; the next flight starts from the last of them.
         const steps = landing.winders.map((ring, j) => ({ ring, top: riserTop(climbed + j) }));

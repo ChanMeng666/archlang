@@ -526,17 +526,29 @@ function levelNodes(
       rule: "stair-risers-from-treads",
     });
     // Card RM1.2g: a winder landing is built as the tapered treads the plan's lines cut it into, one
-    // riser each (counted in `risers` above): derived from the drawing, never assumed.
+    // riser each (counted in `risers` above): derived from the drawing, never assumed. Each tread is
+    // solid down to the floor, as a level landing is, so its risers are closed, not the flights'
+    // open ones (`risers_form` below).
     (s.landings ?? []).forEach((l, k) => {
-      if (l.winders)
-        ledger.push({
-          kind: "stair",
-          id: s.id,
-          field: `winders(landing ${k + 1})`,
-          value: l.winders.length,
-          provenance: "derived",
-          rule: "stair-winders-from-drawing",
-        });
+      if (l.winders?.length)
+        ledger.push(
+          {
+            kind: "stair",
+            id: s.id,
+            field: `winders(landing ${k + 1})`,
+            value: l.winders.length,
+            provenance: "derived",
+            rule: "stair-winders-from-drawing",
+          },
+          {
+            kind: "stair",
+            id: s.id,
+            field: `risers_form(landing ${k + 1})`,
+            value: "solid",
+            provenance: "default",
+            rule: "stair-winders-solid",
+          },
+        );
     });
     // Its parts' sizes, each a share of its own riser, going and width (card RM8.6, design
     // `visual-language.md` §2.3), and what each probed edge met: the stair's own facts, per stair.

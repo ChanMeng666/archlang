@@ -161,7 +161,7 @@ export interface StairLanding {
   /**
    * A `winders <n>` landing (core 1.58.0, card RM1.2g): its `n` tapered treads in climbing order,
    * each its plan ring, cut out of the landing by the `n - 1` lines the core's own drawing draws
-   * across it (`toScene`), never re-derived. Each is one riser above the last, so the stair climbs
+   * across it (`winderTreads`), never re-derived. Each is one riser above the last, so the stair climbs
    * `n - 1` more risers than on a level landing, as the plan's `W_STAIR_RISER_TOO_HIGH` counts them.
    * Absent on a level landing.
    */
