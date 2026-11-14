@@ -185,9 +185,24 @@ const cornerReported = (ctx: LintContext, o: OnRun): boolean =>
 const junctionsFor = (ctx: LintContext, o: OnRun, js: readonly Junction[]): Junction[] =>
   cornerReported(ctx, o) ? js.filter((j) => j.corner === null) : [...js];
 
-/** The nib an opening of this host needs: `max(minJunctionNibMm, host thickness × ratio)`. */
-const nibNeed = (ctx: LintContext, seg: WallSegment): number =>
-  Math.max(ctx.rules.minJunctionNibMm, seg.thickness * ctx.rules.junctionNibThicknessRatio);
+/**
+ * The nib an opening of this host needs, `max(minJunctionNibMm, host thickness × ratio)`, and the
+ * ruleset key of the limb that set it (RM1.6b; a tie names the fixed nib). Each limb is read once.
+ */
+function nibOf(
+  ctx: LintContext,
+  seg: WallSegment,
+): { need: number; key: "minJunctionNibMm" | "junctionNibThicknessRatio" } {
+  const fixed = ctx.rules.minJunctionNibMm;
+  const byThickness = seg.thickness * ctx.rules.junctionNibThicknessRatio;
+  return {
+    need: Math.max(fixed, byThickness),
+    key: fixed >= byThickness ? "minJunctionNibMm" : "junctionNibThicknessRatio",
+  };
+}
+
+/** The nib an opening of this host needs: {@link nibOf}'s `need`. */
+const nibNeed = (ctx: LintContext, seg: WallSegment): number => nibOf(ctx, seg).need;
 
 // ─── naming ────────────────────────────────────────────────────────────────────────────
 
@@ -544,7 +559,7 @@ export const openingAtJunction: LintRule = {
       const corner = o.el.kind === "window" ? o.el._corner : undefined;
       const mine = junctionsFor(ctx, o, js).filter((j) => !corner || !sameSeg(j.wall, corner.other));
       if (mine.length === 0) continue;
-      const need = nibNeed(ctx, o.seg);
+      const { need, key: nibKey } = nibOf(ctx, o.seg);
       // A cased opening whose jamb lands FLUSH on a meeting wall's face uses that face as its
       // jamb: there is no sliver of wall to carry anything, because there is no wall there at
       // all (a hall that opens its full width into a room). A door's frame, or a window's,
@@ -640,9 +655,8 @@ export const openingAtJunction: LintRule = {
         ],
       };
       // RM1.6b: a jamb short of the nib is the ruleset's limb that set `need`; a wall standing
-      // inside the span is a fact of the geometry, which no number drives. `need` is `nibNeed`'s
-      // max of the two limbs; a tie names the fixed nib.
-      const nibKey = need === ctx.rules.minJunctionNibMm ? "minJunctionNibMm" : "junctionNibThicknessRatio";
+      // inside the span is a fact of the geometry, which no number drives. `nibKey` is the limb
+      // `nibOf` took `need` from, read with it, so citing adds no ruleset read.
       out.push(inside.length === 0 ? cite(ctx.rules, nibKey, diag) : diag);
     }
     return out;
