@@ -64,7 +64,7 @@ Totals: 396 modules in 34 directories.
 
 | Module | Lines | Importers | Summary | Budget |
 | --- | ---: | ---: | --- | --- |
-| `build.ts` | 1218 | 4 | Scene3D → Mesh3D (archlang-3d M1a, card A2). Every solid is a closed prism over a Scene3D polygon (`extrude.ts`); no boolean is computed here, because the core's joinery already gave each wall its owned pieces with the openings removed… | none |
+| `build.ts` | 1210 | 4 | Scene3D → Mesh3D (archlang-3d M1a, card A2). Every solid is a closed prism over a Scene3D polygon (`extrude.ts`); no boolean is computed here, because the core's joinery already gave each wall its owned pieces with the openings removed… | none |
 | `c16.ts` | 25 | 2 | The 16-gon's exact table, shared by the T0 generators (`t0.ts`: round sections) and the contact shadows' corner fans (`replay/shadows.ts`, card RM8.8). Pure, browser-safe, no import. | none |
 | `extrude.ts` | 364 | 7 | Prisms: a plan polygon (with holes) between two heights → one closed triangle shell, in the exporters' axes (X = plan x, Y = up, Z = plan y), integer micrometres. Caps are triangulated with earcut (ISC), which adds no vertex, so the caps… | none |
 | `openings.ts` | 917 | 2 | The trim of a doorway and a window (product-roadmap card RM8.6; design `docs/plans/product-roadmap/design/visual-language.md` §2.1, §2.2), as parts of the opening's node, every size a clamped share of the host wall's thickness `t`… | none |
@@ -74,7 +74,7 @@ Totals: 396 modules in 34 directories.
 | `t0-kit.ts` | 344 | 5 | The T0 kit (visual-assets V2, V5, V6): the part type every generator returns and the few helpers the generators share, kept apart from `t0.ts` so the batch modules (`t0-living.ts`, `t0-utility.ts`) and `t0.ts` itself read them without an… | none |
 | `t0-living.ts` | 959 | 1 | T0 batch V5 (visual-assets): living, bedroom, dining and office. Each family is declared once with every fact the mesh builder and the ledger read (`T0Family`); `t0.ts` merges the batch into its tables. Local frame, units and the clip to… | none |
 | `t0-office.ts` | 429 | 1 | T0 batch V7 (visual-assets), office and commercial: the meeting table, the reception desk, the filing cabinet, the locker, the pool table and the treadmill. Declared like V5 (`t0-living.ts`); local frame, units and the clip: `t0.ts`. Back… | none |
-| `t0-outdoor.ts` | 1465 | 1 | T0 batch V7 (visual-assets), the site: planting, garden furniture, the things parked on a driveway, the terrace and lawn pieces and the small standing objects a survey records. Declared like V5 (`t0-living.ts`); local frame, units and the… | none |
+| `t0-outdoor.ts` | 1468 | 1 | T0 batch V7 (visual-assets), the site: planting, garden furniture, the things parked on a driveway, the terrace and lawn pieces and the small standing objects a survey records. Declared like V5 (`t0-living.ts`); local frame, units and the… | none |
 | `t0-utility.ts` | 492 | 1 | T0 batch V6 (visual-assets): kitchen, bath and utility. Declared like V5 (`t0-living.ts`); local frame, units and the clip: `t0.ts`. Back is −z (the wall a service stands against), front +z. | none |
 | `t0.ts` | 661 | 4 | T0 parametric furniture (archlang-3d plan §4.4, §5.1–5.3; card A2b; visual-assets V1–V3, V5–V7): pure generators that build a piece from a few parts, fitted EXACTLY to the plan's footprint. The twelve families laneway-house uses are here… | none |
 | `types.ts` | 64 | 14 | Mesh3D v0: the ONE triangulation the viewer and the GLB both read (archlang-3d amendment v0.7; principle 1 of the preview-and-remodel programme). Built from a Scene3D alone, deterministically: same Scene3D, same bytes. | none |
@@ -412,7 +412,7 @@ Totals: 396 modules in 34 directories.
 | `glyph-lib.ts` | 917 | 34 | The drawing vocabulary every fixture glyph is built from. | none |
 | `glyphs-bath.ts` | 370 | 2 | Bathroom plan symbols: the WC, the basin, the shower tray, the tub, the bidet, the urinal and the mirror. | none |
 | `glyphs-bedroom.ts` | 459 | 2 | Bedroom plan symbols — the bed and what stands beside it. | none |
-| `glyphs-kitchen.ts` | 881 | 2 | Kitchen and utility plan symbols: the sink run, the worktop, the hob, the fridge, the built-in appliances and the overhead cabinet. | none |
+| `glyphs-kitchen.ts` | 885 | 2 | Kitchen and utility plan symbols: the sink run, the worktop, the hob, the fridge, the built-in appliances and the overhead cabinet. | none |
 | `glyphs-living.ts` | 1313 | 4 | Living- and dining-room plan symbols: seating, tables and the media wall. | none |
 | `glyphs-misc.ts` | 901 | 2 | The remaining plan symbols: the workspace pieces, the two that belong to no room at all (a plant, a parked car), and the one that belongs outdoors (a sun lounger). | none |
 | `glyphs-outdoor.ts` | 1439 | 2 | The OUTDOOR plan symbols: what a site plan draws once the drawing leaves the building — planting, garden furniture, the things parked on a driveway, and the small standing objects (a bin, a mailbox, a charge point) a survey records. | none |

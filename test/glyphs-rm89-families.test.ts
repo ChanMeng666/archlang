@@ -390,9 +390,9 @@ describe("RM8.9 families — no hand, and the symmetric ones D4-invariant", () =
       2, 4, 8,
     ]);
     // Stepping stones: one per 1.2 widths of run, at least two, at most twenty-four.
-    expect([n("stepping_stones", 600, 600), n("stepping_stones", 3600, 500), n("stepping_stones", 90000, 500)]).toEqual([
-      2, 6, 24,
-    ]);
+    expect([n("stepping_stones", 600, 600), n("stepping_stones", 3600, 500), n("stepping_stones", 90000, 500)]).toEqual(
+      [2, 6, 24],
+    );
     // Bamboo: two rows of culms, one per 0.35 widths, one to ten a row.
     expect([n("bamboo", 600, 600), n("bamboo", 90000, 600)]).toEqual([7, 21]);
   });

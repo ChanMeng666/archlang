@@ -839,7 +839,11 @@ export function drawCondenser(r: Rect, g: GlyphCtx): SceneNode[] {
     [-1, 1],
     [1, 1],
   ] as const) {
-    g.seg({ x: fan.x + sx * d * 0.22, y: fan.y + sy * d * 0.22 }, { x: fan.x + sx * d, y: fan.y + sy * d }, "extraThin");
+    g.seg(
+      { x: fan.x + sx * d * 0.22, y: fan.y + sy * d * 0.22 },
+      { x: fan.x + sx * d, y: fan.y + sy * d },
+      "extraThin",
+    );
   }
   g.dot(fan, rad * 0.16, g.fillFor(g.material?.secondary));
   return g.nodes;

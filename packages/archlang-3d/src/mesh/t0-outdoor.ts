@@ -1215,7 +1215,10 @@ export const T0_OUTDOOR: Readonly<Record<string, T0Family>> = {
       const r = s * 0.03;
       const d = Math.min(10, e / 2);
       return [
-        P("stone", -hw, hw, -hd, hd, 0, 50, { radius: s * 0.06, holes: [{ x0: -hw + e, x1: hw - e, z0: -hd + e, z1: hd - e, radius: r }] }),
+        P("stone", -hw, hw, -hd, hd, 0, 50, {
+          radius: s * 0.06,
+          holes: [{ x0: -hw + e, x1: hw - e, z0: -hd + e, z1: hd - e, radius: r }],
+        }),
         P("water", -hw + e - d, hw - e + d, -hd + e - d, hd - e + d, 0, 20, { radius: r + d }),
       ];
     },

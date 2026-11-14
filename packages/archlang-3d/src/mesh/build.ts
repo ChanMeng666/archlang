@@ -81,15 +81,7 @@ import {
   outdoorColour,
   tintOf,
 } from "./outdoor.js";
-import {
-  isHung,
-  T0_DEFAULTS,
-  T0_HEIGHT_MM,
-  T0_HUNG_FROM_TOP,
-  T0_MATERIALS,
-  T0_MOUNT_MM,
-  t0Shells,
-} from "./t0.js";
+import { isHung, T0_DEFAULTS, T0_HEIGHT_MM, T0_HUNG_FROM_TOP, T0_MATERIALS, T0_MOUNT_MM, t0Shells } from "./t0.js";
 import type { Mesh3D, MeshNode, NodeKind, Shell, Stage } from "./types.js";
 
 const MM = 1000;
