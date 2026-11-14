@@ -254,11 +254,12 @@ suite("rendered theme — fills only, and the line work still leads", () => {
     }
   });
 
-  /** Families that stay unfilled under every theme. The three overhead pieces are dashed above the
-   *  cut plane (ADR 0023 d4), so a tint would hide the piece below; the rug is an underlay that
-   *  would hide what the furniture pass draws before it and the datum axes on the pass below (see
-   *  the rug case in the next suite). Listed in family order. */
-  const UNFILLED: string[] = ["upper_cabinet", "rug", "pergola", "range_hood"];
+  /** Families that stay unfilled under every theme. The four overhead pieces drawn as an outline
+   *  (upper cabinet, pergola, range hood, wall AC) are dashed above the cut plane (ADR 0023 d4), so
+   *  a tint would hide the piece below; the rug is an underlay that would hide what the furniture
+   *  pass draws before it and the datum axes on the pass below (see the rug case in the next
+   *  suite). Listed in family order. */
+  const UNFILLED: string[] = ["upper_cabinet", "rug", "pergola", "range_hood", "wall_ac"];
 
   /** Every node with its fill blanked, so two drawings can be compared for all but their fills. */
   const shape = (nodes: SceneNode[]): string =>
