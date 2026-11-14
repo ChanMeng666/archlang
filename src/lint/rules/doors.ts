@@ -818,7 +818,9 @@ export const leafAcrossDoorway: LintRule = {
         if (leaves[bi]!.some((sb) => swingsCollide(sa, sb, rules.swingClearanceMm))) continue;
         const hit = leafOverApproach(sa, b, depth);
         if (!hit) continue;
-        const need = Math.min(b.width, rules.minDoorWidthMm);
+        // Read once: the width limb below, and which key the warning names.
+        const minDoor = rules.minDoorWidthMm;
+        const need = Math.min(b.width, minDoor);
         if (hit.free >= need) continue;
         const shared = ea.between.find((id) => {
           const box = roomRects.get(id);
@@ -871,7 +873,7 @@ export const leafAcrossDoorway: LintRule = {
         // the width is the ruleset's `minDoorWidthMm` unless the doorway is narrower. A doorway
         // narrower than that needs only its own width, so the depth is the one number that decided
         // it, and is cited; otherwise two ruleset numbers held it at once, and none is cited.
-        out.push(b.width < rules.minDoorWidthMm ? cite(rules, "doorwayLandingMm", diag) : diag);
+        out.push(b.width < minDoor ? cite(rules, "doorwayLandingMm", diag) : diag);
       }
     }
     return out;

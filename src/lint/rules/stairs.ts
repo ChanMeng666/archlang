@@ -861,7 +861,9 @@ export const stairSideEntry: LintRule = {
           // Beside the flight at all, and is a usable doorway left past either end of it?
           if (Math.min(c1, hi) - Math.max(c0, lo) <= VERTEX_EPS) continue;
           const past = Math.max(0, Math.min(c1, lo) - c0, c1 - Math.max(c0, hi));
-          if (past + VERTEX_EPS >= Math.min(ctx.rules.minDoorWidthMm, c.width)) continue;
+          // Read once: the width limb here, and which key the warning names below.
+          const minDoor = ctx.rules.minDoorWidthMm;
+          if (past + VERTEX_EPS >= Math.min(minDoor, c.width)) continue;
           const [flo, fhi, line] = axis === "y" ? [r.x, r.x + r.w, host.a.x] : [r.y, r.y + r.h, host.a.y];
           const half = host.thickness / 2;
           let gap: number;
@@ -887,7 +889,7 @@ export const stairSideEntry: LintRule = {
           // `minPathClearWidthMm`. A doorway narrower than `minDoorWidthMm` is held only to its own
           // width there, so the gap's number is the one that decided it, and is cited; otherwise
           // two ruleset numbers held it at once, and none is cited.
-          out.push(c.width < ctx.rules.minDoorWidthMm ? cite(ctx.rules, "minPathClearWidthMm", diag) : diag);
+          out.push(c.width < minDoor ? cite(ctx.rules, "minPathClearWidthMm", diag) : diag);
           break;
         }
       }
