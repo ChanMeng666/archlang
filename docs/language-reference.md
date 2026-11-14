@@ -2677,8 +2677,9 @@ Both halves matter, and both are invisible from the syntax:
 
 - **Not a room.** A ground surface never appears in `describe().rooms`, in
   `totals.floor_area_m2`, in the drawn `schedule rooms` table, in the access graph, in
-  `input_graph`, in the circulation model or in [Plan JSON](../schemas/plan.schema.json).
-  A terrace is not floor area, and quietly adding the garden to a dwelling's floor figure
+  `input_graph`, in the circulation model or in the `rooms` of
+  [Plan JSON](../schemas/plan.schema.json), which carries it in a key of its own, `outdoor`
+  (and a `fence` in `fences`). A terrace is not floor area, and quietly adding the garden to a dwelling's floor figure
   would be wrong in the one number every consumer trusts. Its own area is reported
   separately (below), and a reader who wants plot coverage adds the two having decided
   that is what it means. It is also what makes a [`door garage`](#door-kinds-v1-25) come

@@ -8,7 +8,18 @@
  * the step meter.
  */
 
-import { ARC_DIRS, AUTO_DIMS_MODES, COMPASS_DIRECTIONS, FURNITURE_ANCHORS, HEMISPHERES, USE_KINDS } from "../ast.js";
+import {
+  ARC_DIRS,
+  AUTO_DIMS_MODES,
+  COMPASS_DIRECTIONS,
+  FENCE_STYLES,
+  FURNITURE_ANCHORS,
+  HEMISPHERES,
+  OUTDOOR_KINDS,
+  RAIL_EDGES,
+  USE_KINDS,
+} from "../ast.js";
+import { FLOOR_MATERIALS } from "../hatches.js";
 import { DOOR_ENUMS, DOOR_KINDS, DOOR_SWING_BUILDING, WALL_STATUSES, WINDOW_KINDS } from "../grammar/tokens.js";
 import { MAX_HEIGHT } from "../datum.js";
 import { SEGMENT_SELECT_RE } from "../segment-select.js";
@@ -158,6 +169,11 @@ export const PLAN_JSON_SCHEMA = /* @__PURE__ */ pure(() => ({
             // of a closed value set inside a document that DESCRIBES the set is the drift
             // `check:drift` cannot see.
             items: { enum: [...USE_KINDS] },
+          },
+          floor: {
+            enum: [...FLOOR_MATERIALS],
+            description:
+              "`floor <pattern>`: the hatch the room's floor is drawn with. A drawing fact: no area, use or rule reads it. Omitted when not written.",
           },
           x: { type: "number", description: "Top-left corner X in millimetres." },
           y: { type: "number", description: "Top-left corner Y in millimetres." },
@@ -481,6 +497,65 @@ export const PLAN_JSON_SCHEMA = /* @__PURE__ */ pure(() => ({
         },
       },
     },
+    outdoor: {
+      type: "array",
+      description:
+        "Ground surfaces outside the building (`outdoor`): lawn, paving, deck, water, a balcony. NOT rooms: they are in no `rooms` row, no area total and no `edges`/`input_graph` fact, and they obstruct nothing. A rectangle (x/y/width/height) or an explicit `polygon` ring. Omitted when the plan has none.",
+      items: {
+        type: "object",
+        additionalProperties: false,
+        required: ["kind"],
+        anyOf: [{ required: ["x", "y", "width", "height"] }, { required: ["polygon"] }],
+        properties: {
+          instance: INSTANCE_MARKER,
+          id: { type: "string", description: "Unique surface id." },
+          kind: {
+            enum: [...OUTDOOR_KINDS],
+            description: "Which ground surface: decides the hatch, the tint and the CAD layer.",
+          },
+          x: { type: "number", description: "Top-left corner X in millimetres (a polygon's bounding box on output)." },
+          y: { type: "number", description: "Top-left corner Y in millimetres (a polygon's bounding box on output)." },
+          width: { type: "number", description: "Width in millimetres." },
+          height: { type: "number", description: "Height in millimetres (a plan extent, not a vertical height)." },
+          polygon: {
+            type: "array",
+            minItems: 3,
+            description:
+              "An implicitly-closed simple ring of >=3 vertices instead of the rectangle; replaces x/y/width/height on input. Not on a `balcony`, which is rectangle-only.",
+            items: POINT_SCHEMA,
+          },
+          label: { type: "string", description: "Printed name, drawn with the area beneath it." },
+          rail: {
+            type: "array",
+            description:
+              "`rail <edges>` as written, on a `balcony` only: on output the sides it rails (an empty array is `rail none`); on input `all` and `none` are accepted too. Omitted when the rail is derived (every edge with no wall behind it), which the way back derives again.",
+            items: { enum: [...RAIL_EDGES] },
+          },
+        },
+      },
+    },
+    fences: {
+      type: "array",
+      description:
+        "Fence runs on the ground (`fence`): straight polylines. NOT walls: a fence hosts no opening and is in no `walls` row. Omitted when the plan has none.",
+      items: {
+        type: "object",
+        additionalProperties: false,
+        required: ["points"],
+        properties: {
+          instance: INSTANCE_MARKER,
+          id: { type: "string", description: "Unique fence id." },
+          style: { enum: [...FENCE_STYLES], description: "How it draws. Defaults to `picket`." },
+          points: {
+            type: "array",
+            minItems: 2,
+            description: "Polyline vertices in order, straight runs only.",
+            items: POINT_SCHEMA,
+          },
+          closed: { type: "boolean", description: "Whether the run closes back to its first vertex." },
+        },
+      },
+    },
     components: {
       type: "array",
       description:
@@ -504,6 +579,8 @@ export const PLAN_JSON_SCHEMA = /* @__PURE__ */ pure(() => ({
               furniture: { $ref: "#/properties/furniture" },
               dims: { $ref: "#/properties/dims" },
               columns: { $ref: "#/properties/columns" },
+              outdoor: { $ref: "#/properties/outdoor" },
+              fences: { $ref: "#/properties/fences" },
             },
           },
         },

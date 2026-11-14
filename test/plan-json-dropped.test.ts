@@ -42,8 +42,10 @@ const ONE_LINE: Array<[Exclude<PlanJsonDroppedClause, "keep" | "level">, string]
   ["escalator", "escalator id=e at (5000,0) size 1000x4000 dir up"],
   ["roof", "roof polygon (0,0) (4000,0) (4000,3000)"],
   ["void", "void id=v at (500,500) size 1000x1000"],
-  ["outdoor", "outdoor id=o lawn at (5000,0) size 2000x2000"],
-  ["fence", "fence id=f picket { (5000,0) (7000,0) }"],
+  // `outdoor` and `fence` travel since RM3.1; what does not is their order against a room, a piece.
+  ["outdoor order", "outdoor id=o lawn at (5000,0) size 2000x2000\n  room id=r2 at (9000,0) size 1000x1000"],
+  ["fence order", "fence id=f picket { (5000,0) (7000,0) }\n  furniture id=b bed at (5500,0) size 1000x2000"],
+  ["place", "component bay() { column id=k at (0,0) size 300x300 }\n  place bay() as a at (5000,0)"],
   ["zone", 'zone west "West" { room id=z at (5000,0) size 2000x2000 }'],
   ["axes", "axes { x at 0, 4000 y at 0 }"],
   ["site boundary", "site { street south boundary (0,0) (5000,0) (5000,4000) }"],
@@ -156,7 +158,11 @@ describe("every clause is reported on the plan that has it, and alone", () => {
   place bay() as b at (2000,0)
 }
 `;
-    expect(planToJson(source).dropped).toEqual([{ clause: "stair", count: 2, ids: ["a.s", "b.s"] }]);
+    // And the `place`s themselves (RM3.1): the document holds their rows, flattened, not them.
+    expect(planToJson(source).dropped).toEqual([
+      { clause: "stair", count: 2, ids: ["a.s", "b.s"] },
+      { clause: "place", count: 2, ids: ["a", "b"] },
+    ]);
   });
 });
 
@@ -328,7 +334,19 @@ describe("the report over the corpus", () => {
 
 describe("the list cannot fall behind the language", () => {
   /** The element kinds `resolvedToJson` writes a row or a statement for. */
-  const PROJECTED = ["wall", "room", "door", "window", "opening", "furniture", "dim", "column", "walls"];
+  const PROJECTED = [
+    "wall",
+    "room",
+    "door",
+    "window",
+    "opening",
+    "furniture",
+    "dim",
+    "column",
+    "walls",
+    "outdoor",
+    "fence",
+  ];
 
   it("every element kind is projected or reported", () => {
     const kinds = BUILTIN_DEFS.map((d) => d.kind).sort();

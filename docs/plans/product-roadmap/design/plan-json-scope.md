@@ -2,6 +2,8 @@
 
 **状态：** 草案，2026-11-11 写成，基线 `main@6059e52a`。对应卡 RM3.1 前半与后半（`../cards.md` 阶段 D），以及 RM8.7 的"3D 读 `floor`"。本稿只写设计，不改代码；`file:line` 在基线上读过，动手前重新确认。
 
+**落地（RM3.1 前半）：** 范围表的现行版本在 `test/tables/plan-json-scope.ts`（`test/plan-json-roundtrip-law.test.ts` 把它与 `dropped` 能报的词双向对齐）；下文 §2 是设计时的快照。与本稿不同的三处：`outdoor`、`fence` 是"部分"，因为文档把它们排在房间、家具与柱之后，写在前面的会报 `outdoor order`、`fence order`；`place` 报 `place`；`PlanJsonDroppedClause` 保留 `floor`、`outdoor`、`fence` 三个词（公开类型只增），只是不再报。
+
 **一句话：** 下表逐个顶层语句与元素子句，写出 Plan JSON 今天是"往返"、"按结果承载"、"部分"还是"丢弃"，每个"丢弃"都已由 `dropped` 报出；RM3.1 前半把 `outdoor`、`fence`、`floor` 三项搬进范围，3D 读作者写的 `floor` 不走 Plan JSON，而走 `resolvePlan` 已经公开的 `RRoom.floor`。
 
 ## 1. 今天的事实

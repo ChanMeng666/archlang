@@ -85,8 +85,7 @@ describe("element facets (src/elements/facets.ts)", () => {
       "escalator",
       "roof",
       "void",
-      "outdoor",
-      "fence",
+      // RM3.1 (PS0.21): `outdoor` and `fence` are projected, in `outdoor[]` and `fences[]`.
       // RM6.1: Plan JSON has no field for a section mark; an export lists it under `dropped`.
       "section",
     ]);

@@ -304,15 +304,16 @@ describe("outdoor — the separation from `room` is total", () => {
     expect(sched(withGround)).toEqual(sched(bare));
   });
 
-  it("does not change ONE BYTE of `planToJson`", () => {
-    // The strongest available form of "the schemas are unchanged": a projection that had
-    // learned about `outdoor` would differ here, and `schemas/plan.schema.json` is
-    // generated from the same `PLAN_JSON_SCHEMA` the projection is written against.
+  it("adds only its own `outdoor` key to `planToJson`, and not one byte elsewhere", () => {
+    // Plan JSON carries the ground since RM3.1 (PS0.21) in a key of its own; it is still no
+    // room, no area and no access fact, so with that key taken out the document is unchanged.
     const a = planToJson(bare);
     const b = planToJson(withGround);
     expect(a.diagnostics.filter((d) => d.severity === "error")).toEqual([]);
     expect(b.diagnostics.filter((d) => d.severity === "error")).toEqual([]);
-    expect(JSON.stringify(b.json)).toBe(JSON.stringify(a.json));
+    expect(b.json?.outdoor).toHaveLength(2);
+    const { outdoor: _ground, ...rest } = b.json!;
+    expect(JSON.stringify(rest)).toBe(JSON.stringify(a.json));
   });
 
   it("the `outdoor` key itself is absent from a plan that declares none", () => {

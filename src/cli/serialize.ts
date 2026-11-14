@@ -135,25 +135,36 @@ async function serialize(
 /** The bytes `-f json` writes: one Plan-JSON document, two-space indented, newline-terminated. */
 const planJsonText = (json: PlanJson): string => `${JSON.stringify(json, null, 2)}\n`;
 
+/** The clauses an older release reported and Plan JSON now carries (RM3.1): never reported, so no note. */
+type CarriedClause = "floor" | "outdoor" | "fence";
+
 /** The note's words for one dropped clause: what the format lacks, the thing counted, its plural. */
-export const DROPPED_WORDS: Record<Exclude<PlanJsonDroppedClause, "keep">, [string, string, string]> = {
+export const DROPPED_WORDS: Record<Exclude<PlanJsonDroppedClause, "keep" | CarriedClause>, [string, string, string]> = {
   "poche hatch": ["hatch scale or angle on `poche` walls", "wall's hatch setting", "walls' hatch settings"],
   circle: ["circular rooms", "circular room", "circular rooms"],
   "label at": ["room label positions", "`label … at` position", "`label … at` positions"],
-  floor: ["room floors", "room `floor`", "room `floor`s"],
   "column order": [
     "order between columns and furniture",
     "column written before furniture",
     "columns written before furniture",
+  ],
+  "outdoor order": [
+    "order between rooms and outdoor surfaces",
+    "outdoor surface written before a room",
+    "outdoor surfaces written before a room",
+  ],
+  "fence order": [
+    "order between fences and furniture or columns",
+    "fence written before furniture or a column",
+    "fences written before furniture or a column",
   ],
   stair: ["stairs", "stair", "stairs"],
   elevator: ["elevators", "elevator", "elevators"],
   escalator: ["escalators", "escalator", "escalators"],
   roof: ["roofs", "roof", "roofs"],
   void: ["voids", "void", "voids"],
-  outdoor: ["outdoor surfaces", "outdoor surface", "outdoor surfaces"],
-  fence: ["fences", "fence", "fences"],
   section: ["section marks", "section mark", "section marks"],
+  place: ["placed instances", "`place`d instance", "`place`d instances"],
   zone: ["zones", "zone", "zones"],
   level: ["level numbers or names", "level", "levels"],
   axes: ["axes", "axis", "axes"],
@@ -184,7 +195,7 @@ const idList = (ids: string[]): string =>
 function droppedNotes(rows: PlanJsonDropped[]): string[] {
   const clauses = [...new Set(rows.map((r) => r.clause))];
   return clauses.flatMap((clause) => {
-    if (clause === "keep") return [];
+    if (clause === "keep" || clause === "floor" || clause === "outdoor" || clause === "fence") return [];
     const of = rows.filter((r) => r.clause === clause);
     const count = of.reduce((n, r) => n + r.count, 0);
     const ids = [...new Set(of.flatMap((r) => r.ids ?? []))];

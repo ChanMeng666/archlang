@@ -49,13 +49,11 @@ export const CANNOT_ROUND_TRIP: Record<string, { because: string; proof: RegExp 
   "tiny-house.arch": { because: "`roof` is deliberately absent from the projection", proof: /^\s*roof\b/m },
   "bungalow.arch": { because: "`roof`; and the sheet layer — `schedule`", proof: /^\s*roof\b/m },
   "courtyard-house.arch": { because: "`roof`; and the sheet layer + `zone`", proof: /^\s*roof\b/m },
-  // `walls from rooms` and its polygon hall DO travel; the `outdoor patio` that covers the
-  // courtyard hole does not, so the plan that comes back has an uncovered hole and refuses
-  // (`E_ROOMS_NOT_TILING`, then every opening `E_OPENING_NO_SHARED_WALL`). `dropped` names it,
-  // and it is the one entry of {@link UNRESOLVED_WAY_BACK}.
+  // `walls from rooms`, its polygon hall and (since RM3.1) the `outdoor patio` that covers the
+  // courtyard hole all travel, so the way back resolves; what is lost is the sheet layer.
   "courtyard-family.arch": {
-    because: "`outdoor` (the courtyard cover `walls from rooms` needs); and the sheet layer, a room's `label … at`",
-    proof: /^\s*outdoor\b/m,
+    because: "sheet layer — `schedule` + `legend`; and a room's `label … at`",
+    proof: /^\s*schedule\b/m,
   },
   // --- storeys and composition -----------------------------------------------------
   "two-storey.arch": {
@@ -71,8 +69,9 @@ export const CANNOT_ROUND_TRIP: Record<string, { because: string; proof: RegExp 
     because: "`level` — each storey projects alone and draws differently from its sheet; also `roof`/`stair`",
     proof: /^\s*level\b/m,
   },
+  // Its `outdoor`s and `fence`s travel since RM3.1; the rest does not.
   "garden-house.arch": {
-    because: "`level`, `outdoor`/`fence`/`roof`, `site … boundary` and the sheet layer",
+    because: "`level`, `roof`, `site … boundary` and the sheet layer",
     proof: /^\s*level\b/m,
   },
   "hillside-villa.arch": {
@@ -110,9 +109,19 @@ export const CANNOT_ROUND_TRIP: Record<string, { because: string; proof: RegExp 
 
 /**
  * The shipped examples whose JSON way back does not even resolve: the source `planFromJson` writes
- * fails to compile, because Plan JSON drops the `outdoor` cover `walls from rooms` needs round a
- * courtyard hole. Pinned exactly (`plan-json.test.ts` derives the set and compares; the CLI suite
+ * fails to compile. Pinned exactly (`plan-json.test.ts` derives the set and compares; the CLI suite
  * gives these their own outcome, "the way back does not compile"). Every name here is also a
- * {@link CANNOT_ROUND_TRIP} gap. Carrying `outdoor` in Plan JSON would empty this list.
+ * {@link CANNOT_ROUND_TRIP} gap. Its one entry was `courtyard-family.arch`, whose `outdoor` cover of
+ * a courtyard hole `walls from rooms` needs; RM3.1 carries `outdoor`, which emptied it.
  */
-export const UNRESOLVED_WAY_BACK: readonly string[] = ["courtyard-family.arch"];
+export const UNRESOLVED_WAY_BACK: readonly string[] = [];
+
+/**
+ * Gaps of the library suite that the CLI path closes. The library projects with no World, so
+ * `import` cannot resolve; the CLI resolves it through its file World before projecting, so the
+ * JSON it writes is the flat, imported geometry and compiles back to the same drawing. Shared by
+ * the CLI suite and the round-trip law (`plan-json-roundtrip-law.test.ts`).
+ */
+export const CLI_CLOSES: Record<string, string> = {
+  "imports.arch": "the CLI resolves `import` through its file World, so the projection is flat",
+};

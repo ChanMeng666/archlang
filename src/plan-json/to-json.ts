@@ -19,6 +19,8 @@ import type {
   RColumn,
   RWall,
   RWallsFromRooms,
+  ROutdoor,
+  RFence,
   ResolvedPlan,
   ResolvedElement,
 } from "../ir.js";
@@ -57,6 +59,8 @@ import type {
   FurnitureJson,
   DimJson,
   ColumnJson,
+  OutdoorJson,
+  FenceJson,
   TitleJson,
   EdgeJson,
   PlanBodyJson,
@@ -177,6 +181,9 @@ export function resolvedToJson(ir: ResolvedPlan, tol: number = DEFAULT_TOL, carr
       // Explicit authored uses only — an untagged room omits `uses` (its room_type is
       // still derived above), so round-trip regeneration stays byte-identical.
       ...(r.uses && r.uses.length > 0 ? { uses: [...r.uses] } : {}),
+      // As written (RM3.1): the key exists only on a room that writes `floor`, so every other
+      // payload is unchanged.
+      ...(r.floor !== undefined ? { floor: r.floor } : {}),
       x: r.at.x,
       y: r.at.y,
       width: r.size.w,
@@ -269,9 +276,11 @@ export function resolvedToJson(ir: ResolvedPlan, tol: number = DEFAULT_TOL, carr
       }
       // The vertical datum, under the one gate. `sill` is a window's alone — a
       // door's and a cased opening's sill is the floor, and emitting `sill: 0` for them
-      // would round-trip into a clause the grammar does not offer.
+      // would round-trip into a clause the grammar does not offer. And only the sill the
+      // statement wrote (J16): a default sill written back would come home authored
+      // (`_sillAuthored`, which a lint rule reads), while left out it is the same default again.
       if (heights) {
-        if (e.kind === "window") base.sill = e.sill;
+        if (e.kind === "window" && e._sillAuthored) base.sill = e.sill;
         base.head = e.head;
       }
       return { ...base, ...mark(e) };
@@ -347,6 +356,34 @@ export function resolvedToJson(ir: ResolvedPlan, tol: number = DEFAULT_TOL, carr
     ...mark(c),
   }));
 
+  // The ground (RM3.1, PS0.21): each surface as written, in source order. The resolved extent
+  // stands beside a polygon's ring, as on a room; a balcony's rail only when the source wrote
+  // the clause (`railDerived` is the resolver's word for a rail it derived from the walls).
+  const outdoor: OutdoorJson[] = ir.elements
+    .filter((e): e is ROutdoor => e.kind === "outdoor")
+    .map((o) => ({
+      id: o.id,
+      kind: o.surface,
+      x: o.at.x,
+      y: o.at.y,
+      width: o.size.w,
+      height: o.size.h,
+      ...(o.poly ? { polygon: o.poly.map((pt) => ({ x: pt.x, y: pt.y })) } : {}),
+      ...(o.label !== undefined ? { label: o.label } : {}),
+      ...(o.rail !== undefined && !o.railDerived ? { rail: [...o.rail] } : {}),
+      ...mark(o),
+    }));
+
+  const fences: FenceJson[] = ir.elements
+    .filter((e): e is RFence => e.kind === "fence")
+    .map((f) => ({
+      id: f.id,
+      style: f.style,
+      points: f.points.map((p) => ({ x: p.x, y: p.y })),
+      closed: f.closed,
+      ...mark(f),
+    }));
+
   const roomTypes: RoomType[] = [];
   for (const rm of rooms) if (!roomTypes.includes(rm.room_type)) roomTypes.push(rm.room_type);
   const totalArea = r2(rooms.reduce((s, rm) => s + (rm.area ?? 0), 0));
@@ -379,6 +416,9 @@ export function resolvedToJson(ir: ResolvedPlan, tol: number = DEFAULT_TOL, carr
     furniture,
     ...(dims.length > 0 ? { dims } : {}),
     ...(columns.length > 0 ? { columns } : {}),
+    // Emitted only when the plan has one, so every other payload is unchanged (RM3.1).
+    ...(outdoor.length > 0 ? { outdoor } : {}),
+    ...(fences.length > 0 ? { fences } : {}),
     ...(carried ? { components: carried.components, instances: carried.instances } : {}),
     ...(ir.title ? { title: titleToJson(ir.title) } : {}),
     edges: buildEdges(access),
@@ -411,6 +451,10 @@ export const UNPROJECTED_KINDS: readonly KindsWith<"unprojected">[] = kindsWith(
 /**
  * A clause of a plan that its Plan JSON does not carry, spelled as the language spells it. `circle`
  * is the one that changes shape: the document keeps the 48-gon.
+ *
+ * `floor`, `outdoor` and `fence` are carried since RM3.1 and never reported now; they stay members
+ * because this public union is append-only (the release-compat gate's `public-types`,
+ * `GOVERNANCE.md` § Compatibility), so a reader's `switch` over an older report still compiles.
  */
 export type PlanJsonDroppedClause =
   | "keep"
@@ -418,8 +462,13 @@ export type PlanJsonDroppedClause =
   | "circle"
   | "label at"
   | "floor"
+  | "outdoor"
+  | "fence"
   | "column order"
+  | "outdoor order"
+  | "fence order"
   | (typeof UNPROJECTED_KINDS)[number]
+  | "place"
   | "zone"
   | "level"
   | "axes"
@@ -452,7 +501,7 @@ export interface PlanJsonDropped {
 }
 
 /** What one storey holds and its document cannot carry. `level` is absent on a single-storey plan. */
-function droppedFromStorey(storey: ResolvedPlan, level: number | undefined): PlanJsonDropped[] {
+function droppedFromStorey(storey: ResolvedPlan, level: number | undefined, carried: boolean): PlanJsonDropped[] {
   const rows: PlanJsonDropped[] = [];
   const on = level !== undefined ? { level } : {};
   const add = (clause: PlanJsonDroppedClause, count: number, ids: string[]): void => {
@@ -473,18 +522,32 @@ function droppedFromStorey(storey: ResolvedPlan, level: number | undefined): Pla
   add("circle", circles.length, circles);
   const anchored = rooms.filter((r) => r.labelAt !== undefined).map((r) => r.id);
   add("label at", anchored.length, anchored);
-  const floored = rooms.filter((r) => r.floor !== undefined).map((r) => r.id);
-  add("floor", floored.length, floored);
   // The document holds furniture and columns in two arrays, furniture first, and they draw on one
   // pass, so a column written before a piece comes back after it: the same shapes, in another order.
   const lastPiece = elements.map((e) => e.kind).lastIndexOf("furniture");
   const early = elements.filter((e, i) => e.kind === "column" && i < lastPiece).map((e) => e.id);
   add("column order", early.length, early);
+  // The same for the ground (RM3.1): `outdoor` comes back after every room (the two share the
+  // `floor` and `labels` passes), and `fence` after every piece and column (the `furniture` pass).
+  const kinds = elements.map((e) => e.kind);
+  const lastRoom = kinds.lastIndexOf("room");
+  const earlyGround = elements.filter((e, i) => e.kind === "outdoor" && i < lastRoom).map((e) => e.id);
+  add("outdoor order", earlyGround.length, earlyGround);
+  const lastFixed = Math.max(kinds.lastIndexOf("furniture"), kinds.lastIndexOf("column"));
+  const earlyFences = elements.filter((e, i) => e.kind === "fence" && i < lastFixed).map((e) => e.id);
+  add("fence order", earlyFences.length, earlyFences);
   for (const kind of UNPROJECTED_KINDS) {
     // Named as the author names them: the id, or a kind's own name (a `section` mark's `A`).
     const nameOf = BUILTIN_REGISTRY.byKind.get(kind)?.nameOf;
     const ids = elements.filter((e) => e.kind === kind).map((e) => nameOf?.(e) ?? e.id);
     add(kind, ids.length, ids);
+  }
+  // A `place` the document does not carry as `components`/`instances` (PS3.9) is exported
+  // flattened, its rows under dotted ids that no source can declare, so the composition does not
+  // come back (RM3.1: dropped until `place` round-trips).
+  if (!carried) {
+    const placed = (storey.instances ?? []).map((p) => p.name);
+    add("place", placed.length, placed);
   }
   const zones = (storey.zones ?? []).filter((z) => !z.instance).map((z) => z.path);
   add("zone", zones.length, zones);
@@ -561,8 +624,9 @@ export interface PlanJsonPage {
  * {@link PlanJsonDropped} per clause, the keeps among them, over the whole plan; a row held by one
  * storey says which, so a caller exporting one storey keeps that storey's rows and the plan-wide
  * ones. Absent when nothing was dropped. What the document restates in another form is not
- * dropped: a loop is exported as what it made, a `place`d element by its plan coordinates, a
- * relational position by its result.
+ * dropped: a loop is exported as what it made, a relational position by its result. A `place`d
+ * element is exported by its plan coordinates under its dotted id, and the `place` itself is
+ * reported (`place`), unless the storey carries it as `components`/`instances`.
  */
 export function planToJson(
   source: string,
@@ -576,6 +640,16 @@ export function planToJson(
 } {
   const { ir, diagnostics, levels } = resolvePlan(source, opts);
   if (!ir) return { diagnostics };
+  // A storey whose `place`d component derives its walls carries its components and instances
+  // (PS3.9): the statement sits in the component's body, never the walls it derives (ADR 0028
+  // §3). What that record cannot carry is refused, naming the instance, never dropped.
+  const carriedOf = new Map<ResolvedPlan, CarriedInstances | undefined>();
+  for (const s of levels.length > 0 ? [ir, ...levels.map((l) => l.ir)] : [ir]) {
+    if (carriedOf.has(s)) continue;
+    const c = carryInstances(s);
+    if (c && "refusal" in c) return { diagnostics: [...diagnostics, c.refusal] };
+    carriedOf.set(s, c);
+  }
   const keeps = keepResultsOf(ir, levels);
   const rows: PlanJsonDropped[] = [
     ...(keeps ? [{ clause: "keep" as const, count: keeps.length }] : []),
@@ -587,9 +661,9 @@ export function planToJson(
             text: `level ${num(l.level)}${l.name !== undefined ? ` ${q(l.name)}` : ""}${ceilingText(l.ir._ceiling)}`,
             level: l.level,
           },
-          ...droppedFromStorey(l.ir, l.level),
+          ...droppedFromStorey(l.ir, l.level, carriedOf.get(l.ir) !== undefined),
         ])
-      : droppedFromStorey(ir, undefined)),
+      : droppedFromStorey(ir, undefined, carriedOf.get(ir) !== undefined)),
     // A single-storey plan's `height … clear <mm>` (RM-D17): no field carries it yet (RM3.1).
     ...(levels.length === 0 && ir._ceiling?.source === "authored"
       ? [{ clause: "clear height" as const, count: 1, text: `clear ${num(ir._ceiling.clearHeight!)}` }]
@@ -597,16 +671,6 @@ export function planToJson(
     ...droppedFromPlan(ir),
   ];
   const dropped = { ...(keeps ? { droppedKeeps: keeps.length } : {}), ...(rows.length > 0 ? { dropped: rows } : {}) };
-  // A storey whose `place`d component derives its walls carries its components and instances
-  // (PS3.9): the statement sits in the component's body, never the walls it derives (ADR 0028
-  // §3). What that record cannot carry is refused, naming the instance, never dropped.
-  const carriedOf = new Map<ResolvedPlan, CarriedInstances | undefined>();
-  for (const s of levels.length > 0 ? [ir, ...levels.map((l) => l.ir)] : [ir]) {
-    if (carriedOf.has(s)) continue;
-    const c = carryInstances(s);
-    if (c && "refusal" in c) return { diagnostics: [...diagnostics, c.refusal] };
-    carriedOf.set(s, c);
-  }
   const project = (s: ResolvedPlan): PlanJson => resolvedToJson(s, DEFAULT_TOL, carriedOf.get(s));
   if (levels.length === 0) return { json: project(ir), diagnostics, ...dropped };
   const pages = levels.map((l) => ({
@@ -697,5 +761,7 @@ function bodyJson(ir: ResolvedPlan, local: readonly ResolvedElement[]): PlanBody
     furniture: j.furniture,
     ...(j.dims ? { dims: j.dims } : {}),
     ...(j.columns ? { columns: j.columns } : {}),
+    ...(j.outdoor ? { outdoor: j.outdoor } : {}),
+    ...(j.fences ? { fences: j.fences } : {}),
   };
 }
