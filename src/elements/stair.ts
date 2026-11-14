@@ -36,7 +36,7 @@ import type { SceneNode } from "../scene.js";
 import type { RStair, RStairFlight, RStairPiece } from "../ir.js";
 import { rectCorners } from "../geometry.js";
 import { fmt3 } from "../num-format.js";
-import { flightAxis, flightsOf, isBlockStair, piecesOf, tailEdge } from "../vertical.js";
+import { flightAxis, flightsOf, isBlockStair, MAX_WINDERS, piecesOf, tailEdge } from "../vertical.js";
 import { breakLineEnds, runTooLong, runTreads, stairGlyph } from "./vertical-glyphs.js";
 
 /** Parse the mandatory `dir up|down` clause shared by `stair` and `escalator`. */
@@ -223,9 +223,6 @@ function climbFlights(
 function bandHeld(c: Contact, centre: number, width: number): boolean {
   return c.lo - VERTEX_EPS <= centre - width / 2 && centre + width / 2 <= c.hi + VERTEX_EPS;
 }
-
-/** The most tapered steps one quarter turn takes: more would leave treads with no going at all. */
-export const MAX_WINDERS = 8;
 
 /**
  * Why landing `n` (1-based among the landings) cannot be divided into `count` winders, or null. A

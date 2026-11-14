@@ -20,7 +20,7 @@ Every module, not only the entry, is in the sibling [`module-map.md`](module-map
 The total counts every name the checker sees as exported, including those pulled in by
 `export type * from "./ast.js"`; a count of the names written in `index.ts`' export statements is lower.
 
-Totals: 636 exports (222 values, 414 types), 404 flagged (73 values).
+Totals: 637 exports (223 values, 414 types), 404 flagged (73 values).
 
 ## `src/algebra/d4.ts`
 
@@ -1093,6 +1093,7 @@ Totals: 636 exports (222 values, 414 types), 404 flagged (73 values).
 | `verticalConnections` | value | `test` |
 | `verticalReach` | value | `test` |
 | `verticalsOf` | value | `test` |
+| `winderTreads` | value | `packages/archlang-3d` |
 
 ## `src/view/camera.ts`
 

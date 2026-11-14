@@ -77,7 +77,8 @@ export { reroll } from "./reroll.js";
 export type { RerollOptions, RerollSuggestion } from "./reroll.js";
 // Vertical circulation: the shared semantics of `stair`/`elevator`/`escalator` —
 // which end a run is entered from, what it does to the nav grid, and (the part that only
-// exists across storeys) which shafts join which `level` blocks. Pure, zero-dep.
+// exists across storeys) which shafts join which `level` blocks, and the lines a winder landing
+// is drawn with (`winderTreads`, which the 3D preview cuts its tapered treads on). Pure, zero-dep.
 export {
   entryEdges,
   flightAxis,
@@ -86,6 +87,7 @@ export {
   verticalReach,
   verticalsOf,
   VERTICAL_KINDS,
+  winderTreads,
 } from "./vertical.js";
 export type { RectEdge } from "./fixture-orientation.js";
 export type {
