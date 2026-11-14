@@ -1325,7 +1325,7 @@ export function drawGazebo(r: Rect, g: GlyphCtx): SceneNode[] {
 /**
  * A greenhouse (a glasshouse): the frame of its walls, the glass inside the frame, and, DASHED
  * because the roof is above the cut plane, the ridge along its own long axis and the glazing bars
- * across it (one per 0.45 short sides of length, `[2, 16]` bays). Mirror-symmetric along and
+ * across it (one per 0.45 short sides of length, `[2, 8]` bays). Mirror-symmetric along and
  * across; a run of bays, so neither `symmetric` nor `directional`.
  *
  * Prim count: `2 + bays`.
@@ -1336,7 +1336,7 @@ export function drawGreenhouse(r: Rect, g: GlyphCtx): SceneNode[] {
   const { long: L, short: S } = axes(r);
   const f = Math.max(0, Math.min(L, S) * 0.04);
   g.seg(axisPt(r, f, 0), axisPt(r, L - f, 0), "extraThin", true);
-  const bays = clampCount(L / (S * 0.45), 2, 16);
+  const bays = clampCount(L / (S * 0.45), 2, 8);
   for (let i = 1; i < bays; i++) {
     const a = (L * i) / bays;
     g.seg(axisPt(r, a, f - S / 2), axisPt(r, a, S / 2 - f), "extraThin", true);
@@ -1381,7 +1381,8 @@ export function drawClimber(r: Rect, g: GlyphCtx): SceneNode[] {
 
 /**
  * A bamboo clump: one stadium in the lawn tint along its own long axis, and the culms in it seen
- * end on, two rows of rings (one per 0.35 short sides of length, `[1, 12]` a row). A run, so
+ * end on, two rows of rings (one per 0.35 short sides of length, `[1, 10]` a row, as
+ * `packages/archlang-3d` builds its culms). A run, so
  * neither `symmetric` nor `directional`, and its own mirror image along and across.
  *
  * Prim count: `1 + 2 × culms`.
@@ -1389,7 +1390,7 @@ export function drawClimber(r: Rect, g: GlyphCtx): SceneNode[] {
 export function drawBamboo(r: Rect, g: GlyphCtx): SceneNode[] {
   g.path(roundedRectPath(r, shortSide(r) / 2), g.fillFor(g.material?.primary, g.theme.lawn));
   const { long: L, short: S } = axes(r);
-  const n = clampCount(L / (S * 0.35), 1, 12);
+  const n = clampCount(L / (S * 0.35), 1, 10);
   const rho = Math.max(0, Math.min(S * 0.08, (L / n) * 0.3));
   for (let i = 0; i < n; i++) {
     const a = L / 2 + (L * (2 * i + 1 - n)) / (2 * n);

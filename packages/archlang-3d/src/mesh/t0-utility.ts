@@ -417,4 +417,76 @@ export const T0_UTILITY: Readonly<Record<string, T0Family>> = {
       ];
     },
   },
+
+  // ── the new-families batch (product-roadmap RM8.9) ──
+  wall_ac: {
+    names: ["wall_ac", "split_ac", "air_conditioner", "ac_indoor"],
+    heightMm: 2400,
+    mountMm: 2100,
+    materials: ["appliance"],
+    gen(W, D) {
+      const [hw, hd] = [W / 2, D / 2];
+      // `drawWallAc`: hung with its underside at a door head (2100 mm), the casing against the wall
+      // with its rounded top, and the louvre along its front underside.
+      return [
+        P("appliance", -hw, hw, -hd, hd - D * 0.1, 2130, 2400, { axis: "x", radius: Math.min(D * 0.3, 60) }),
+        P("appliance", -hw + W * 0.04, hw - W * 0.04, hd - D * 0.12, hd, 2100, 2160, {
+          axis: "x",
+          radius: Math.min(D * 0.05, 20),
+        }),
+      ];
+    },
+  },
+  condenser: {
+    names: ["condenser", "ac_outdoor", "outdoor_unit", "heat_pump"],
+    heightMm: 700,
+    materials: ["metal", "appliance"],
+    gen(W, D) {
+      const [hw, hd] = [W / 2, D / 2];
+      // `drawCondenser`: the casing on two feet, the coil along its back and the fan grille on its
+      // top, centred across the width at 0.56 of the depth from the back, as the plan draws it.
+      const rf = Math.min(W * 0.4, D * 0.38);
+      const zc = -hd + D * 0.56;
+      return [
+        ...pair(P("metal", -hw + W * 0.08, -hw + W * 0.2, -hd + D * 0.1, hd - D * 0.1, 0, 40)),
+        P("appliance", -hw, hw, -hd + D * 0.04, hd, 40, 690, { radius: Math.min(W, D) * 0.04 }),
+        P("metal", -hw + W * 0.03, hw - W * 0.03, -hd, -hd + D * 0.06, 60, 660),
+        P("metal", -rf, rf, zc - rf, zc + rf, 690, 700, { round: true }),
+      ];
+    },
+  },
+  chest_freezer: {
+    names: ["chest_freezer"],
+    heightMm: 850,
+    materials: ["metal", "appliance"],
+    gen(W, D) {
+      const [hw, hd] = [W / 2, D / 2];
+      const s = Math.min(W, D);
+      // `drawChestFreezer`: the cabinet on its recessed plinth, the lid over it, and the handle on
+      // the lid's front edge.
+      const hc = Math.min(W * 0.16, s * 0.3);
+      return [
+        P("appliance", -hw + W * 0.02, hw - W * 0.02, -hd + D * 0.02, hd - D * 0.05, 0, 60),
+        P("appliance", -hw, hw, -hd, hd - D * 0.03, 60, 800, { radius: s * 0.04 }),
+        P("appliance", -hw, hw, -hd, hd - D * 0.01, 800, 850, { radius: s * 0.05 }),
+        P("metal", -hc, hc, hd - D * 0.03, hd, 760, 795, { axis: "x", round: true }),
+      ];
+    },
+  },
+  wine_fridge: {
+    names: ["wine_fridge", "wine_cooler"],
+    heightMm: 850,
+    materials: ["metal", "glass", "appliance"],
+    gen(W, D) {
+      const [hw, hd] = [W / 2, D / 2];
+      // `drawWineFridge`: built in under a worktop, the cabinet, its glass door across the front and
+      // the handle bar along the door's top.
+      return [
+        P("appliance", -hw + W * 0.02, hw - W * 0.02, -hd, hd - D * 0.06, 0, 80),
+        P("appliance", -hw, hw, -hd, hd - D * 0.04, 80, 850, { radius: 4 }),
+        P("glass", -hw + W * 0.04, hw - W * 0.04, hd - D * 0.04, hd - D * 0.015, 100, 830, { axis: "z", radius: 6 }),
+        P("metal", -W * 0.3, W * 0.3, hd - D * 0.015, hd, 770, 800, { axis: "x", round: true }),
+      ];
+    },
+  },
 };

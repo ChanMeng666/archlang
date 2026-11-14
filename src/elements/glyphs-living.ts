@@ -1260,15 +1260,15 @@ export function drawDisplayCabinet(r: Rect, g: GlyphCtx): SceneNode[] {
 /**
  * A folding screen (a room divider): its panels zig-zag across the footprint, an even number of
  * them (two to eight, about one per 1.1 depths of length), so both ends and the middle hinge stand
- * on the back line and the zig-zag is its own mirror image. One band in the body tone, of a
- * seventh of the depth, with a hinge at every fold. Neither `symmetric` nor `directional`: it is
+ * on the back line and the zig-zag is its own mirror image. One band in the body tone, 9/64 of the
+ * depth (as `packages/archlang-3d` builds its panels), with a hinge at every fold. Neither `symmetric` nor `directional`: it is
  * not the same from the front and the back, and it is moved about, not installed.
  *
  * Prim count: `1 + (panels − 1)`.
  */
 export function drawFoldingScreen(r: Rect, g: GlyphCtx): SceneNode[] {
   const n = 2 * clampCount(r.w / (2.2 * r.h), 1, 4);
-  const th = r.h * 0.14;
+  const th = r.h * (9 / 64);
   const top: Point[] = [];
   for (let k = 0; k <= n; k++) top.push({ x: r.x + (r.w * k) / n, y: k % 2 === 0 ? r.y : r.y + r.h - th });
   const under = top.map((p) => ({ x: p.x, y: p.y + th })).reverse();
