@@ -965,6 +965,15 @@ MF-D1（`../math-foundations/README.md` §6.1 第 3 条）要求 MF-D11 在本�
 6. `droppedFromStorey` 用 `BUILTIN_REGISTRY` 做 `nameOf`，没用平面自己的注册表或 `KIND_FACETS`。内容：改用后者。
 证明：每件各一条测试；字节恒等律不变。不许：顺手改别的。
 
+### ST.2 · 块式楼梯可在带 `winders` 的四分之一转平台上结束 — `todo` · 未估 · opus · 依赖无 · **外部邀请（gerontec，#532）**
+
+**决策记录（RM-D38，2026-11-14，`README.md` §6.10）：** 块式楼梯可在设有 `winders` 的四分之一转平台上结束，取最后一个 winder 的后缘作为到达边（1.60.0 今天 `E_STAIR_PIECES` 报 'must end on a flight'）。不使用此特性的平面保持字节恒等。外部贡献者 gerontec（#533 作者）受邀为此特性开 PR。夹具：`gerontec/archlang-section` 仓库的 `example/haus_winders.arch`（MIT 许可），移除其中 560 mm 的替代梯段后使用。
+
+内容：扩展楼梯到达判定，允许块式楼梯以带 `winders` 的平台作为终点。核心取最后一个 winder 的后缘作为到达边。Lint 无需新概念，因为 `winderGoings` 已将 winders 计入 goings 数。
+
+证明：使用 `haus_winders.arch` 的最小夹具（移除替代梯段）编译通过，`E_STAIR_PIECES` 不再报错；不使用此特性的平面 SVG、`describe()`、`lint()`、诊断字节恒等（字节恒等律）。
+
+不许：改变不使用此特性的图的任何输出；改变 winders 的绘制或几何；修改 `winderGoings` 的计数规则。
 
 ### RM3.3 · mask 导入 — `todo` · 3 日 · opus · **触发：第二个独立来源带样本**
 
