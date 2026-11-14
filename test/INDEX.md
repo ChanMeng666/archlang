@@ -5,7 +5,7 @@
 Where the tests of a `src` module are, and what each test file is for. Generated; `npm run check:drift`
 fails when it is stale. How to add a test: `docs/testing.md` § 4.
 
-505 test files in `test/`, 280 `src` modules, 106 modules no test imports.
+506 test files in `test/`, 280 `src` modules, 106 modules no test imports.
 
 ## `src` module → tests that import it
 
@@ -641,6 +641,7 @@ The first sentence of each file's header comment.
 - `test/swing-exact.test.ts` — 6.12 — an overlap with no sampled point in it collides; a separating gap is never contact; the superset law: every collision the old sampler found is still a co…
 - `test/swing.test.ts` — doorSwing; sectorIntersectsRect; swingsCollide; largestPerimeterGap.
 - `test/symmetry.test.ts` — `describe(src, { facts: ["symmetry"] })` — the plan's symmetry group per layer, and its repeated rooms.
+- `test/sync-main.test.ts` — scripts/sync-main.mjs: merge origin/main, script the record and generated-artifact conflicts, triage the review.
 - `test/syntax.test.ts` — `describe(src, { facts: ["syntax"] })` — space syntax (Hillier & Hanson 1984) on the access graph.
 - `test/task-skills.test.ts` — The skills under `skills/<name>/SKILL.md`: the umbrella skill `archlang` and the task skills beside it.
 - `test/taste-budget.test.ts` — The taste budget is a COUNT set by measurement (ADR 0032; design §2.4), the way the step budget was (ADR 0022, second addendum §3): `TASTE_BUDGET` is at least 1,000 times the largest charge one `taste()` call makes ov...
