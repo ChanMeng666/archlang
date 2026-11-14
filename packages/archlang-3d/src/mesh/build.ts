@@ -82,7 +82,7 @@ import {
   outdoorColour,
   tintOf,
 } from "./outdoor.js";
-import { isHung, T0_HEIGHT_MM, T0_HUNG_FROM_TOP, T0_MATERIALS, T0_MOUNT_MM, t0Shells } from "./t0.js";
+import { isHung, T0_DEFAULTS, T0_HEIGHT_MM, T0_HUNG_FROM_TOP, T0_MATERIALS, T0_MOUNT_MM, t0Shells } from "./t0.js";
 import type { Mesh3D, MeshNode, NodeKind, Shell, Stage } from "./types.js";
 
 const MM = 1000;
@@ -905,6 +905,16 @@ function levelNodes(
           value: mount,
           provenance: "default",
           rule: "furniture-mount-default",
+        });
+      }
+      // A further default the family is built with (`T0_DEFAULTS`: a pool's water at grade, RM8.9).
+      for (const d of family ? (T0_DEFAULTS[family] ?? []) : []) {
+        ledger.push({
+          kind: "furniture",
+          field: `${d.field}(${f.category})`,
+          value: d.value,
+          provenance: "default",
+          rule: d.rule,
         });
       }
       // Its parts' materials (visual-assets V1): a property of the family, never of a label.

@@ -87,6 +87,13 @@ export const SPECIMEN_SIZE: Readonly<Record<string, readonly [number, number]>> 
   palm: [2000, 2000],
   boulder: [1000, 800],
   workstation: [1600, 1600],
+  folding_screen: [1800, 450],
+  pool: [3000, 2000],
+  garden_gate: [1800, 900],
+  gazebo: [3000, 3000],
+  greenhouse: [3000, 2000],
+  potted_tree: [1000, 1000],
+  stepping_stones: [2400, 500],
 };
 
 /** One family's specimen: its plan source and the model rectangle to crop the drawing to. */

@@ -143,10 +143,12 @@ const ASPECTS: readonly (readonly [number, number])[] = [
 ];
 
 describe("V8 families — in the vocabulary", () => {
-  it("are the last twenty families, contiguous and in order, aliases with them", () => {
-    expect(CANONICAL_FIXTURES.slice(-FAMILIES.length)).toEqual([...FAMILIES]);
+  it("are the twenty families after the first 83, contiguous and in order, aliases with them", () => {
+    // Positional, not "the last twenty": the table is append-only and later batches (RM8.9) follow.
+    expect(CANONICAL_FIXTURES.slice(83, 83 + FAMILIES.length)).toEqual([...FAMILIES]);
     const tail = FAMILIES.flatMap((f) => [f, ...(ALIASES[f] ?? [])]);
-    expect(FIXTURE_CATEGORIES.slice(-tail.length)).toEqual(tail);
+    const from = FIXTURE_CATEGORIES.indexOf(FAMILIES[0]);
+    expect(FIXTURE_CATEGORIES.slice(from, from + tail.length)).toEqual(tail);
     for (const w of tail) expect(canonicalFixture(w), w).toBe(FAMILIES.find((f) => f === w || ALIASES[f]?.includes(w)));
   });
 
