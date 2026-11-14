@@ -667,3 +667,58 @@ describe("W_WET_ROOM_DOOR onto an open-plan kitchen (review round 2 of PR #203)"
     );
   });
 });
+
+describe("W_ROOM_VIA_PRIVATE walks a balcony as the reachability rule does (RM1.3d)", () => {
+  // Upper storey, reached by stair `st` into the landing. Bedroom A and the study both open onto
+  // one balcony on the east facade, and the study has no other door: its only way is landing,
+  // bedroom A, the balcony, the study.
+  const plan = (studyDoors: string) => `plan "Balcony behind a bedroom" {
+  units mm
+  level 1 "Ground" {
+    wall id=shell exterior thickness 200 { (0,0) (8000,0) (8000,6000) (0,6000) close }
+    wall id=hw partition thickness 100 { (3000,0) (3000,6000) }
+    room id=hall at (0,0) size 3000x6000 label "Hall" uses hall
+    room id=living at (3000,0) size 5000x6000 label "Living" uses living
+    door id=front on shell at 23000 width 1000 swing into hall
+    door id=dl on hw at 3000 width 900 swing into living
+    stair id=st at (200,1000) size 1000x3000 dir up
+  }
+  level 2 "Upper" {
+    wall id=shell exterior thickness 200 { (0,0) (8000,0) (8000,6000) (0,6000) close }
+    wall id=hw partition thickness 100 { (3000,0) (3000,6000) }
+    wall id=hm partition thickness 100 { (3000,3000) (8000,3000) }
+    room id=landing at (0,0) size 3000x6000 label "Landing" uses hall circulation
+    room id=beda at (3000,0) size 5000x3000 label "Bedroom A" uses bedroom
+    room id=y at (3000,3000) size 5000x3000 label "Study" uses office
+    door id=da on hw at 1500 width 900 swing into beda
+    outdoor id=bal balcony at (8000,0) size 1500x6000
+    door id=dba on shell at 9500 width 900 swing into beda
+    door id=dy on shell at 12500 width 900 swing into y${studyDoors}
+    stair id=st at (200,1000) size 1000x3000 dir down
+  }
+}`;
+  const upper = (src: string) => lint(src).filter((d) => d.level === 2 && d.code === "W_ROOM_VIA_PRIVATE");
+
+  it("a study reached only across a bedroom's balcony is reached through that bedroom", () => {
+    const src = plan("");
+    // describe() and the reachability rule walk the balcony: the study is reached, at depth 4.
+    const access = describePlan(src).levels![1]!.access.rooms;
+    expect(access.map((r) => [r.id, r.reachable, r.depthFromEntrance])).toEqual([
+      ["landing", true, 1],
+      ["beda", true, 2],
+      ["y", true, 4],
+    ]);
+    expect(lint(src).filter((d) => d.level === 2 && d.code === "W_ROOM_UNREACHABLE")).toEqual([]);
+    // Before RM1.3d this rule's walk never crossed the outside, so it found no route to the study
+    // at all and said nothing.
+    expect(upper(src).map((d) => d.message)).toEqual([
+      '"Study" is reached only through "Bedroom A" (access depth 4). A route through a bedroom takes away ' +
+        "that room's privacy (Ching's pass-through rule, Alexander pattern 131; ResPlan: about 0.03 % of " +
+        "16,317 dwellings reach a room this way).",
+    ]);
+  });
+
+  it("a door from the landing into the study clears it", () => {
+    expect(upper(plan("\n    door id=dly on hw at 4500 width 900 swing into y"))).toEqual([]);
+  });
+});

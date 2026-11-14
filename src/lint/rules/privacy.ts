@@ -185,7 +185,8 @@ function connectorBetween(edges: readonly AccessEdge[], a: string, b: string): s
  * Door hops from the given sources (`[room, hops]`), never entering a node `avoid` names and
  * never walking THROUGH {@link EXTERIOR_NODE}: the ways in are the sources themselves (a room
  * with a door to the ground is 1, so is a room a shaft lands in), and the one exterior node
- * every door to the outside shares, balcony doors included, must not join two rooms.
+ * every door to the outside shares, balcony doors included, must not join two rooms. A balcony's
+ * own node (`separateBalconies`, a storey a shaft arrives on) is not that node: it is walked across.
  */
 function hops(
   g: Digraph<string, AccessEdge>,
@@ -335,12 +336,16 @@ function kitchenNearDoor(ctx: LintContext, doorId: string, to: RRoom): { mm: num
 function factsOf(ctx: LintContext): Facts {
   const { rooms, roomRects, building, access } = ctx;
   const all = access().edges;
+  const arrivals = building.arrivalRooms.filter((id) => roomRects.has(id));
+  // Walked as `reachability.ts` walks it (RM1.3d): where a shaft arrives, the storey's doors to the
+  // outside open onto balconies, and each balcony is its own node, walked across (out of one room,
+  // in at another, `separateBalconies`). So a room reached only across a balcony from a bedroom is
+  // reached through that bedroom. Elsewhere the one exterior node is never walked through (`hops`).
   const g = accessDigraph(
     rooms.map((r) => r.id),
-    all,
+    arrivals.length === 0 ? all : separateBalconies(all, ctx.ir),
   );
   const edges = all.filter(joins);
-  const arrivals = building.arrivalRooms.filter((id) => roomRects.has(id));
   const uses = new Map<string, Set<UseKind>>(rooms.map((r) => [r.id, roomUses(r)]));
   const priv = new Map<string, PrivateKind>();
   for (const r of rooms) {
@@ -447,7 +452,9 @@ function shorten(items: readonly string[], rest: (n: number) => string): string[
  * a known limit of the single-removal test, not a judgement that the plan is sound.
  *
  * The ways in are the doors to the ground and the shaft arrivals; a door onto an `outdoor
- * balcony` is not one, so it cannot hide a route through a bedroom. When the front door itself
+ * balcony` is not one, so it cannot hide a route through a bedroom. On a storey a shaft arrives on,
+ * a balcony is walked across as the reachability rule walks it (each its own node), so a room
+ * reached only across a bedroom's balcony is reached through that bedroom. When the front door itself
  * opens into the private room, `W_ENTRANCE_INTO_PRIVATE` reports that one fault and the rooms
  * behind it are not reported again. On a plan that reads as non-residential that rule declines
  * (PS2.18), so the rooms behind such a door are reported here instead.
@@ -480,14 +487,10 @@ export const roomViaPrivate: LintRule = {
     const doms = privateDominators(ctx, f);
     if (doms.size === 0) return out;
     // W_BATH_VIA_BEDROOM's own question, asked exactly as `reachability.ts` asks it: where a shaft
-    // arrives, the outside is walked through (one node per balcony), never started from.
+    // arrives, the outside is walked through (one node per balcony, as `f.g` is built), never
+    // started from.
     const exterior = f.arrivals.length === 0;
-    const walk = exterior
-      ? f.g
-      : accessDigraph(
-          ctx.rooms.map((r) => r.id),
-          separateBalconies(ctx.access().edges, ctx.ir),
-        );
+    const walk = f.g;
     const reachAll = reachFrom(walk, { extraSources: f.arrivals, exterior });
     const reachNoBed = reachFrom(walk, {
       extraSources: f.arrivals,
