@@ -67,6 +67,7 @@ import {
   standingJunctionSpans,
 } from "../../opening-junctions.js";
 import { relationalClause } from "../../opening-relation.js";
+import { cite } from "../rule-ref.js";
 
 /** Float dust on whole-millimetre geometry. */
 const EPS = 1e-6;
@@ -625,7 +626,7 @@ export const openingAtJunction: LintRule = {
               ? "Accept it if the meeting wall is a screen that stops short of the opening's head."
               : null
           : "Accept it if the frame is meant to be fixed into the meeting wall itself (a flush corner detail).";
-      out.push({
+      const diag: Diagnostic = {
         severity: "warning",
         code: "W_OPENING_AT_JUNCTION",
         ...ctx.at(o.el),
@@ -637,7 +638,14 @@ export const openingAtJunction: LintRule = {
           ...(accept ? [accept] : []),
           idHint(ctx, o.el),
         ],
-      });
+      };
+      // RM1.6b: a jamb short of the nib is the ruleset's limb that set `need`; a wall standing
+      // inside the span is a fact of the geometry, which no number drives.
+      const nibKey =
+        ctx.rules.minJunctionNibMm >= o.seg.thickness * ctx.rules.junctionNibThicknessRatio
+          ? "minJunctionNibMm"
+          : "junctionNibThicknessRatio";
+      out.push(inside.length === 0 ? cite(ctx.rules, nibKey, diag) : diag);
     }
     return out;
   },
@@ -723,13 +731,15 @@ export const openingOverlap: LintRule = {
               ]),
           `This ${kL} is "${later.el.id}"; the ${kE} is "${earlier.el.id}"; both are on ${wallRef(ctx.ir.walls, later.seg)}.`,
         ];
-        out.push({
+        const diag: Diagnostic = {
           severity: "warning",
           code: "W_OPENING_OVERLAP",
           ...ctx.at(later.el),
           message: `${cap(nameL)} ${overlap > EPS ? "overlaps" : "almost meets"} ${nameE} on ${wallPhrase(later.seg)} — ${fact}. ${reason}`,
           hints,
-        });
+        };
+        // A pier under a mullion is the ruleset's `minMullionMm`; an overlap is geometry alone.
+        out.push(overlap > EPS ? diag : cite(ctx.rules, "minMullionMm", diag));
       }
     }
     return out;

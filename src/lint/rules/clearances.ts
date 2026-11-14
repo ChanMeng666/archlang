@@ -38,6 +38,7 @@ import type { LintContext, LintRule } from "../context.js";
 import { placementClear } from "../fixture-paste.js";
 import { deficitMm, mm } from "../measure.js";
 import { VERTEX_EPS } from "../../geometry/polygon.js";
+import { cite } from "../rule-ref.js";
 
 /**
  * The subject of a message: "The fridge in Kitchen" when the piece's room has a label, else
@@ -106,13 +107,13 @@ export const wcSideClearance: LintRule = {
       const by = near.m.by!;
       const o = obstaclePhrase(by, ctx);
       const d = deficitMm(need, m.half + near.m.measured);
-      out.push({
+      out.push(cite(ctx.rules, "wcSideClearanceMm", {
         severity: "warning",
         code: "W_WC_SIDE_CLEARANCE",
         ...ctx.at(f),
         message: `${subject(f, wcName(f), ctx)} has its centreline ${d.available} mm from ${o.prose} beside it; a WC needs ${d.required} mm to each side (${d.short} mm short).`,
         hints: [wcHint(f, m, near, need, world, ctx, o.hint, by.kind === "furniture")],
-      });
+      }));
     }
     return out;
   },
@@ -192,7 +193,7 @@ export const accessibleWcSideWall: LintRule = {
       const name = subject(f, wcName(f), ctx);
       const figure = `the ruleset's \`wcAccessibleSideWallMaxMm\` is ${mm(max)} mm, centreline to a side wall's face`;
       if (far === null) {
-        out.push({
+        out.push(cite(ctx.rules, "wcAccessibleSideWallMaxMm", {
           severity: "warning",
           code: "W_ACCESSIBLE_WC_SIDE_WALL",
           ...ctx.at(f),
@@ -200,13 +201,13 @@ export const accessibleWcSideWall: LintRule = {
           hints: [
             `"${f.id}" has no wall beside it (${figure}): move it into a corner, its centreline ${mm(max)} mm or less from the side wall.`,
           ],
-        });
+        }));
         continue;
       }
       // Rounded up, so the message never prints a wall at the figure as too far.
       const at = Math.ceil(m.half + far.measured - VERTEX_EPS);
       const wall = obstaclePhrase(far.by, ctx);
-      out.push({
+      out.push(cite(ctx.rules, "wcAccessibleSideWallMaxMm", {
         severity: "warning",
         code: "W_ACCESSIBLE_WC_SIDE_WALL",
         ...ctx.at(f),
@@ -214,7 +215,7 @@ export const accessibleWcSideWall: LintRule = {
         hints: [
           `"${f.id}"'s centreline is ${mm(at)} mm from ${wall.hint} (${figure}): slide it at least ${mm(at - max)} mm along its back wall toward ${wall.hint}, its centreline no nearer that wall than \`wcSideClearanceMm\`.`,
         ],
-      });
+      }));
     }
     return out;
   },
@@ -442,7 +443,7 @@ export const hobFridgeGap: LintRule = {
       const by = near.piece;
       const d = deficitMm(need, near.gap);
       const byName = by.label ?? by.category;
-      out.push({
+      out.push(cite(ctx.rules, "hobLandingMm", {
         severity: "warning",
         code: "W_HOB_FRIDGE_GAP",
         ...ctx.at(f),
@@ -450,7 +451,7 @@ export const hobFridgeGap: LintRule = {
         hints: [
           `${capFirst(pieceRef(f, ctx))} is ${d.available} mm from ${pieceRef(by, ctx)} (the ruleset's \`hobLandingMm\` is ${d.required} mm): move one of them ${d.short} mm further along the run and put a worktop in the gap, or stand the ${byName} at the far end of the run.`,
         ],
-      });
+      }));
     }
     return out;
   },

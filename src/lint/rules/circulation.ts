@@ -10,6 +10,7 @@ import { computeRoomClearances } from "../../analyze/occupancy.js";
 import type { Diagnostic } from "../../diagnostics.js";
 import { capFirst } from "../../naming.js";
 import type { LintContext, LintRule } from "../context.js";
+import { cite } from "../rule-ref.js";
 
 export const roomNoClearPath: LintRule = {
   name: "room-no-clear-path",
@@ -26,13 +27,13 @@ export const roomNoClearPath: LintRule = {
         rc.totalClearAreaM2 >= rules.minClearAreaM2
       ) {
         const r = rooms.find((x) => x.id === rc.roomId)!;
-        out.push({
+        out.push(cite(rules, "minClearAreaM2", {
           severity: "warning",
           code: "W_ROOM_NO_CLEAR_PATH",
           ...at(r),
           message: `${capFirst(nameOf(r, "room"))} can't be entered — furniture and door swings seal off the floor by its door (only ${rc.reachableClearAreaM2} m² reachable).`,
           hints: ["Move or shrink the pieces nearest the door so there's a continuous walkable path into the room."],
-        });
+        }));
       }
     }
     return out;

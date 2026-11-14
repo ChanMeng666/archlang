@@ -55,6 +55,7 @@ import type { LintContext, LintRule } from "../context.js";
 import { openingClauseById } from "../../wall-ref.js";
 import { mm, shortfall } from "../measure.js";
 import { passableDoorWidthMm } from "./doors.js";
+import { cite } from "../rule-ref.js";
 
 const modelCache = new WeakMap<LintContext, CirculationModel | null>();
 const nearestCache = new WeakMap<LintContext, CirculationModel | null>();
@@ -1043,6 +1044,8 @@ export const pathTooNarrow: LintRule = {
         hints: narrowRemedies(min, null, ctx),
       });
     }
+    // RM1.6b: every pinch here is measured against the one minimum.
+    for (const d of out) cite(ctx.rules, "minPathClearWidthMm", d);
     return out;
   },
 };
@@ -1076,7 +1079,7 @@ export const circuitousPath: LintRule = {
       // (a stair arrival) is just "the entrance".
       const door = ctx.connectors.find((c) => c.id === entrance);
       const from = door ? `the entrance (${openingName(ctx, door)})` : "the entrance";
-      out.push({
+      out.push(cite(ctx.rules, "maxDetourRatio", {
         severity: "warning",
         code: "W_CIRCUITOUS_PATH",
         ...at(r),
@@ -1085,7 +1088,7 @@ export const circuitousPath: LintRule = {
           "Add a more direct connection — a door or a hall — so the room isn't reached the long way round.",
           `The entrance it is measured from is \`${entrance}\`.`,
         ],
-      });
+      }));
     }
     return out;
   },

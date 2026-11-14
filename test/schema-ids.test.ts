@@ -3,6 +3,7 @@
 import { describe, expect, it } from "vitest";
 import { readFileSync } from "node:fs";
 import { GENERATORS } from "../scripts/generators.js";
+import { LINT_RULES_SCHEMA_DRAFT } from "../src/lint/provenance.js";
 
 /** The one hand-written published schema; the rest come from the generator table. */
 const SCENE3D_SCHEMA = "packages/archlang-3d/src/scene3d/scene3d.schema.json";
@@ -37,6 +38,14 @@ describe("published schema $id", () => {
       if (legacy !== undefined) expect(id, f).toBe(legacy);
       else expect(id, f).toMatch(NEW_ID);
     }
+  });
+
+  // A schema the source holds but publishes as no file yet still names itself in the versioned form
+  // (RM1.6b: `lint --rules --json` prints this `$id` in its `schema.id`).
+  it("the lint-rules draft, which no generator writes yet, carries the versioned form at v0", () => {
+    expect(files.some((f) => f.includes("lint-rules"))).toBe(false);
+    expect(LINT_RULES_SCHEMA_DRAFT.$id).toMatch(NEW_ID);
+    expect(LINT_RULES_SCHEMA_DRAFT.$id).toBe("https://archlang.uk/schemas/lint-rules/v0.schema.json");
   });
 
   it("the versioned form accepts a nested path and rejects a flat or foreign one", () => {

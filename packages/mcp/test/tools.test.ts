@@ -97,6 +97,32 @@ describe("lint tool", () => {
     expect(strict.length).toBeGreaterThan(0);
   });
 
+  it("a warning a ruleset number drives names it in `rule`, with its provenance; others carry none (RM1.6b)", async () => {
+    const client = await connect();
+    const out = await call(client, "lint", { source: NARROW_DOOR, profile: "accessibility-advisory" });
+    const door = (out.diagnostics as Array<Record<string, unknown>>).find((d) => d.code === "W_DOOR_CLEARANCE")!;
+    expect(door.rule).toEqual({
+      profile: "accessibility-advisory",
+      key: "minDoorWidthMm",
+      value: 850,
+      units: "mm",
+      from: "accessibility-advisory",
+      verification: "convention",
+      document: null,
+      clause: null,
+      edition: null,
+      note: expect.any(String),
+    });
+    // The same key through `validate`, which reports the profile's warnings.
+    const v = await call(client, "validate", { source: NARROW_DOOR, profile: "accessibility-advisory" });
+    const vd = (v.diagnostics as Array<Record<string, unknown>>).find((d) => d.code === "W_DOOR_CLEARANCE")!;
+    expect(vd.rule).toEqual(door.rule);
+    // `W_ROOM_DISCONNECTED` reads no ruleset number.
+    const tiny = (await call(client, "lint", { source: TINY })).diagnostics as Array<Record<string, unknown>>;
+    const disconnected = tiny.find((d) => d.code === "W_ROOM_DISCONNECTED")!;
+    expect(disconnected).not.toHaveProperty("rule");
+  });
+
   it("an unknown profile falls back to the default ruleset rather than failing", async () => {
     const out = await call(await connect(), "lint", { source: NARROW_DOOR, profile: "no-such-profile" });
     expect(out.ok).toBe(true);

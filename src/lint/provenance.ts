@@ -22,6 +22,10 @@
  * what `null` means for that key. Advisory, never compliance (ADR 0005).
  */
 
+import type { DiagnosticRuleJson } from "../diagnostic-json.js";
+import type { Diagnostic } from "../diagnostics.js";
+import { pure } from "../pure.js";
+import { isTable, ruleRefOf, valueAt } from "./rule-ref.js";
 import { DEFAULT_RULESET, LINT_PROFILES, type LintRuleset, resolveRuleset } from "./ruleset.js";
 
 /** The five verification grades, strongest first. */
@@ -83,11 +87,11 @@ const adm = (clause: string | null, edition = "2015"): RuleSource => ({
   edition,
   verification: "V",
 });
-const admHall: RuleSource = {
+const admHall: RuleSource = pure(() => ({
   ...adm(null),
   verification: "S-secondary",
   note: "the hall width of a category M4(2) dwelling, clause not named; second-hand: guidance summaries (designingbuildings.co.uk, LABC), not the Approved Document's text",
-};
+}));
 const adk = (clause: string): RuleSource => ({
   document: "Approved Document K",
   clause,
@@ -130,9 +134,9 @@ const which = (): RuleSource => ({
 
 // A row whose value is `null` says in its note what `null` means for that key: the text output
 // prints it beside the value (`test/lint-provenance.test.ts` holds every null row to a note).
-const NO_STORE_AREA = conv("exempt, no floor: GB 50096-2011 sets no area for a store or a laundry");
-const NO_PASSAGE_AREA = conv("exempt, no floor: a passage is judged by its width, never its area");
-const OFF = conv("off by default; a profile sets it");
+const NO_STORE_AREA = pure(() => conv("exempt, no floor: GB 50096-2011 sets no area for a store or a laundry"));
+const NO_PASSAGE_AREA = pure(() => conv("exempt, no floor: a passage is judged by its width, never its area"));
+const OFF = pure(() => conv("off by default; a profile sets it"));
 /** IRC R304, as read: a forum quote of the 2012 text (`prior-art.md` §3.2, `design-taste.md` §2.5). */
 const R304_NOTE = "second-hand: a forum quote of the 2012 text (thebuildingcodeforum.com); the 2021 text was not read";
 const R311_6_NOTE = "second-hand, the source not named in the research record; the ICC text was not read";
@@ -141,7 +145,7 @@ const R311_7_NOTE = 'read in jurisdiction handouts (e.g. Placer County "Resident
 const P2705_NOTE = "read in trade articles (supplyht.com, hunker.com), not the ICC text";
 
 /** The provenance of every number of {@link DEFAULT_RULESET}, in its key order. */
-const DEFAULTS: Readonly<Record<string, RuleProvenance>> = {
+const DEFAULTS: Readonly<Record<string, RuleProvenance>> = pure(() => ({
   minRoomAreaM2: CONVENTION,
   minDoorWidthMm: CONVENTION,
   tolMm: CONVENTION,
@@ -217,10 +221,10 @@ const DEFAULTS: Readonly<Record<string, RuleProvenance>> = {
   bedMinLengthMm: which(),
   bedMinWidthMm: which(),
   wallGapMm: CONVENTION,
-};
+}));
 
 /** The provenance of every number each built-in profile SETS. */
-const PROFILES: Readonly<Record<string, Readonly<Record<string, RuleProvenance>>>> = {
+const PROFILES: Readonly<Record<string, Readonly<Record<string, RuleProvenance>>>> = pure(() => ({
   "residential-basic": {
     assumeDwelling: conv("the profile judges every plan as a dwelling, as its name asserts"),
   },
@@ -302,16 +306,13 @@ const PROFILES: Readonly<Record<string, Readonly<Record<string, RuleProvenance>>
     stairMinGoingMm: irc("R311.7.5.2", R311_7_NOTE),
     exitApproachMm: irc("R311.3", R311_3_NOTE),
   },
-};
+}));
 
 /** The parallel table: the default ruleset's rows, and each profile's rows for the keys it sets. */
 export const RULE_PROVENANCE: {
   readonly defaults: Readonly<Record<string, RuleProvenance>>;
   readonly profiles: Readonly<Record<string, Readonly<Record<string, RuleProvenance>>>>;
 } = { defaults: DEFAULTS, profiles: PROFILES };
-
-/** A ruleset field whose value is a per-use table (an object), not a scalar. */
-const isTable = (v: unknown): v is Readonly<Record<string, unknown>> => typeof v === "object" && v !== null;
 
 /**
  * The provenance keys of a (partial) ruleset, in its own key order: each scalar field, and each
@@ -321,15 +322,6 @@ export function rulesetKeys(rules: Partial<LintRuleset>): string[] {
   return Object.entries(rules).flatMap(([key, v]) =>
     isTable(v) ? Object.keys(v).map((use) => `${key}.${use}`) : [key],
   );
-}
-
-/** The value at a provenance key of a ruleset (`undefined` when it has none). */
-function valueAt(rules: Partial<LintRuleset>, key: string): unknown {
-  const dot = key.indexOf(".");
-  const r = rules as Readonly<Record<string, unknown>>;
-  if (dot < 0) return r[key];
-  const table = r[key.slice(0, dot)];
-  return isTable(table) ? table[key.slice(dot + 1)] : undefined;
 }
 
 /** A key's unit, read from the field name's suffix (`…Mm`, `…M2`, `…Ratio`); `null` for a word or a flag. */
@@ -359,8 +351,9 @@ export interface EffectiveRule {
 
 /** The `lint --rules --json` document. Its JSON schema is {@link LINT_RULES_SCHEMA_DRAFT}. */
 export interface EffectiveRuleset {
-  /** The schema is a draft: it has no `$id` yet, and the shape may still change. */
-  schema: { status: "draft"; id: null };
+  /** The schema is a draft (`v0`, `GOVERNANCE.md` § Compatibility and deprecation, rule 4): the
+   *  shape may still change, and each change is a CHANGELOG line. `id` is its `$id`. */
+  schema: { status: "draft"; id: typeof LINT_RULES_SCHEMA_ID };
   profile: string | null;
   advisory: string;
   rules: EffectiveRule[];
@@ -400,10 +393,32 @@ export function effectiveRuleset(profile?: string): EffectiveRuleset {
     const from = value === valueAt(DEFAULT_RULESET, key) ? "default" : "cascade";
     return rowOf(key, value, from, DEFAULTS[key]!);
   });
-  return { schema: { status: "draft", id: null }, profile: profile ?? null, advisory: RULES_ADVISORY, rules: rows };
+  return {
+    schema: { status: "draft", id: LINT_RULES_SCHEMA_ID },
+    profile: profile ?? null,
+    advisory: RULES_ADVISORY,
+    rules: rows,
+  };
 }
 
-const sourceSchema = {
+/**
+ * A lint diagnostic's `rule` (card RM1.6b): the ruleset number `d` was raised against, as its row
+ * of {@link effectiveRuleset}, after the built-in profile the run used, for the `rule` option of
+ * `diagnosticToJson`; `undefined` when no ruleset number drives `d`. Read it where `lint()` ran:
+ * the reference is kept beside the diagnostic (`rule-ref.ts`), so a copy of `d`, a
+ * `structuredClone` or a `postMessage` has none. A number the caller's own `ruleset` option
+ * set, not the default or the profile, is not one this table describes, and gets no `rule`.
+ * Pure.
+ */
+export function diagnosticRule(d: Diagnostic): DiagnosticRuleJson | undefined {
+  const ref = ruleRefOf(d);
+  if (!ref) return undefined;
+  const row = effectiveRuleset(ref.profile ?? undefined).rules.find((r) => r.key === ref.key);
+  if (!row || row.value !== ref.value) return undefined;
+  return { profile: ref.profile, ...row };
+}
+
+const sourceSchema = pure(() => ({
   type: "object",
   additionalProperties: false,
   required: ["document", "clause", "edition", "verification"],
@@ -414,15 +429,23 @@ const sourceSchema = {
     verification: { enum: VERIFICATION_GRADES.filter((g) => g !== "convention") },
     note: { type: "string" },
   },
-} as const;
+}));
 
 /**
- * The JSON schema of {@link EffectiveRuleset}, a DRAFT: it carries no `$id` yet and is not published
- * as a file. The policy is decided in `GOVERNANCE.md`; the draft takes
- * `https://archlang.uk/schemas/lint-rules/v0.schema.json` with RM1.6b. The enums are read from the source ({@link VERIFICATION_GRADES}).
+ * The `$id` of {@link LINT_RULES_SCHEMA_DRAFT}: `v0`, a draft (`GOVERNANCE.md` § Compatibility and
+ * deprecation, rules 4 and 5; the schema-policy design §2.2). It took this `$id` with RM1.6b and stays
+ * `v0`: moving to `v1` is its own declaration, made once the shape has shipped (design §2.2: "after
+ * RM1.6b lands"), and from then on additive only. The file is not published at this URL yet.
  */
-export const LINT_RULES_SCHEMA_DRAFT = {
+export const LINT_RULES_SCHEMA_ID = "https://archlang.uk/schemas/lint-rules/v0.schema.json";
+
+/**
+ * The JSON schema of {@link EffectiveRuleset}, a DRAFT (`v0`, `$id` {@link LINT_RULES_SCHEMA_ID}),
+ * not published as a file. The enums are read from the source ({@link VERIFICATION_GRADES}).
+ */
+export const LINT_RULES_SCHEMA_DRAFT = pure(() => ({
   $schema: "https://json-schema.org/draft/2020-12/schema",
+  $id: LINT_RULES_SCHEMA_ID,
   title: "ArchLang lint ruleset with provenance (draft)",
   description: `The output of \`lint --rules --json\`. ${RULES_ADVISORY}`,
   type: "object",
@@ -433,7 +456,7 @@ export const LINT_RULES_SCHEMA_DRAFT = {
       type: "object",
       additionalProperties: false,
       required: ["status", "id"],
-      properties: { status: { const: "draft" }, id: { type: "null" } },
+      properties: { status: { const: "draft" }, id: { const: LINT_RULES_SCHEMA_ID } },
     },
     profile: { type: ["string", "null"] },
     advisory: { type: "string" },
@@ -458,4 +481,4 @@ export const LINT_RULES_SCHEMA_DRAFT = {
       },
     },
   },
-} as const;
+}));

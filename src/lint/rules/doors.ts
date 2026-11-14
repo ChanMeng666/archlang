@@ -42,6 +42,7 @@ import { entranceInputs, entranceWays } from "../../analyze/entrance.js";
 import { solidFurniture } from "../../fixtures-catalog.js";
 import { isServiceCounter } from "../clearance-measure.js";
 import { approachGapMm, deficitMm, distPointToRect, mm, shortfall } from "../measure.js";
+import { cite } from "../rule-ref.js";
 
 /**
  * A door whose swing arc is blocked by furniture or another door's swing.
@@ -126,7 +127,7 @@ export const swingObstructed: LintRule = {
       const derived = d.host !== null && isDerivedWall(ir.walls, d.host);
       const place = d._relation ? relationText(d._relation) : derived ? "at (x,y)" : "on <wall> at <pos>";
       const placeWidth = d._relation ? mm(d.width) : "<mm>";
-      out.push({
+      const diag: Diagnostic = {
         severity: "warning",
         code: "W_SWING_OBSTRUCTED",
         ...at(d),
@@ -155,7 +156,9 @@ export const swingObstructed: LintRule = {
           ...(otherDoor === null ? [] : [`The door whose swing it meets is \`${otherDoor.id}\`.`]),
         ],
         ...(flipClears ? fixesFrom(doorHingeFlipFix(d, flipped)) : {}),
-      });
+      };
+      // RM1.6b: a clearance of 0 asks nothing of the ruleset: the leaf meets the piece itself.
+      out.push(clr > 0 ? cite(rules, "swingClearanceMm", diag) : diag);
     }
     return out;
   },
@@ -290,7 +293,7 @@ export const doorwayBlocked: LintRule = {
       if (!hit) continue;
       const { blocker, depth, gap, short } = hit;
       const gn = blocker.label ?? blocker.category;
-      out.push({
+      out.push(cite(ctx.rules, "doorwayLandingMm", {
         severity: "warning",
         code: "W_DOORWAY_BLOCKED",
         ...ctx.at(d),
@@ -300,7 +303,7 @@ export const doorwayBlocked: LintRule = {
           `Or shrink it by ${mm(short)} mm on the axis facing the door, so it stops ${mm(depth)} mm short of the opening.`,
           `Or move the door along its wall (\`on <wall> at <pos>\`) so its landing misses "${gn}".`,
         ],
-      });
+      }));
     }
     // Cased openings after every door, so a plan's door diagnostics keep their order.
     for (const o of ctx.openings) {
@@ -315,7 +318,7 @@ export const doorwayBlocked: LintRule = {
       const gn = blocker.label ?? blocker.category;
       const ref = blocker._idAuthored === true ? `"${blocker.id}"` : `"${gn}"`;
       const name = openingName(ctx, o);
-      out.push({
+      out.push(cite(ctx.rules, "doorwayLandingMm", {
         severity: "warning",
         code: "W_DOORWAY_BLOCKED",
         ...ctx.at(o),
@@ -327,7 +330,7 @@ export const doorwayBlocked: LintRule = {
             ? "The opening is derived by `open between` and spans the rooms' shared edge, so the piece is what moves."
             : `Or move the opening along its wall (\`on <wall> at <pos>\`) so its landing misses ${ref}.`,
         ],
-      });
+      }));
     }
     return out;
   },
@@ -352,7 +355,7 @@ function wideOpeningBlocked(o: ROpening, ctx: LintContext): Diagnostic | null {
   const others = block.inside.length - 1;
   const name = openingName(ctx, o);
   const short = shortfall(DOORWAY_WIDTH_MM, block.stretch);
-  return {
+  return cite(ctx.rules, "doorwayLandingMm", {
     severity: "warning",
     code: "W_DOORWAY_BLOCKED",
     ...ctx.at(o),
@@ -363,7 +366,7 @@ function wideOpeningBlocked(o: ROpening, ctx: LintContext): Diagnostic | null {
         ? "The opening is derived by `open between` and spans the rooms' shared edge, so the pieces are what move."
         : `Or widen the opening, or move it along its wall (\`on <wall> at <pos>\`), so a ${mm(DOORWAY_WIDTH_MM)} mm stretch of it misses ${ref}.`,
     ],
-  };
+  });
 }
 
 /**
@@ -416,7 +419,7 @@ export const pocketRun: LintRule = {
       // Only offer the reverse when it is PROVED to work — never as a guess.
       const reversed = side === "left" ? "right" : "left";
       const reverseFits = pocketRunMm(d, seg, openings, reversed) >= need;
-      out.push({
+      const diag: Diagnostic = {
         severity: "warning",
         code: "W_POCKET_RUN",
         ...at(d),
@@ -428,7 +431,9 @@ export const pocketRun: LintRule = {
           "Narrowing the door is not offered as a fix: it rewrites the width you asked for to satisfy the check, and would head toward `W_DOOR_CLEARANCE`.",
         ],
         ...(reverseFits ? fixesFrom(pocketRunFix(d, reversed)) : {}),
-      });
+      };
+      // The ruleset's clearance is the number only where it, not the 5 % of the width, sets the run.
+      out.push(rules.pocketRunClearanceMm >= d.width * POCKET_RUN_RATIO ? cite(rules, "pocketRunClearanceMm", diag) : diag);
     }
     return out;
   },
@@ -491,32 +496,32 @@ export const doorClearance: LintRule = {
       const leaf = activeLeafWidth(d);
       if (leaf >= rules.minDoorWidthMm) continue;
       if (d.doorKind === "glazed_sliding") {
-        out.push({
+        out.push(cite(rules, "minDoorWidthMm", {
           severity: "warning",
           code: "W_DOOR_CLEARANCE",
           ...at(d),
           message: `Door is a glazed sliding door that leaves ${mm(leaf)} mm to walk through (under the ${rules.minDoorWidthMm} mm minimum nominal width): one panel of two moves.`,
           hints: [`Widen it to at least ${mm(2 * rules.minDoorWidthMm)} mm, two ${rules.minDoorWidthMm} mm panels.`],
-        });
+        }));
         continue;
       }
       if (d.doorKind === "double") {
-        out.push({
+        out.push(cite(rules, "minDoorWidthMm", {
           severity: "warning",
           code: "W_DOOR_CLEARANCE",
           ...at(d),
           message: `Door is a double door whose leaves are each ${mm(leaf)} mm wide (under the ${rules.minDoorWidthMm} mm minimum nominal width): a person passes through one leaf.`,
           hints: [`Widen it to at least ${mm(2 * rules.minDoorWidthMm)} mm, two ${rules.minDoorWidthMm} mm leaves.`],
-        });
+        }));
         continue;
       }
-      out.push({
+      out.push(cite(rules, "minDoorWidthMm", {
         severity: "warning",
         code: "W_DOOR_CLEARANCE",
         ...at(d),
         message: `Door is ${d.width} mm wide (under the ${rules.minDoorWidthMm} mm minimum nominal width).`,
         hints: [`Widen it to at least ${rules.minDoorWidthMm} mm.`],
-      });
+      }));
     }
     return out;
   },
@@ -595,7 +600,7 @@ export const doorNearCorner: LintRule = {
       const worst = tightestCorner(d, seg, wallSegs, need);
       if (!worst) continue;
       const short = shortfall(need, worst.have);
-      out.push({
+      out.push(cite(rules, "minCornerNibRatio", {
         severity: "warning",
         code: "W_DOOR_NEAR_CORNER",
         ...at(d),
@@ -615,7 +620,7 @@ export const doorNearCorner: LintRule = {
             : `Or lengthen wall "${seg.wallId}" past the door, so the corner moves away from the jamb instead.`,
           "Narrowing the leaf would also close the gap and is deliberately NOT offered as a fix: rewriting the width you asked for to satisfy a checker is constraint laundering, and it heads toward `W_DOOR_CLEARANCE`.",
         ],
-      });
+      }));
     }
     return out;
   },
@@ -831,7 +836,7 @@ export const leafAcrossDoorway: LintRule = {
         const refA = a._idAuthored === true ? `door "${a.id}"` : toAh;
         const refB = b._idAuthored === true ? `door "${b.id}"` : toBh;
         warned.add(`${a.id}|${b.id}`);
-        out.push({
+        const diag: Diagnostic = {
           severity: "warning",
           code: "W_LEAF_ACROSS_DOORWAY",
           ...at(a),
@@ -846,7 +851,9 @@ export const leafAcrossDoorway: LintRule = {
             `Or move ${refA} or ${refB} along its wall until the open leaf stands at least ${mm(depth)} mm clear of the doorway's face, or beside it.`,
             `Or make ${refA} a \`sliding\` or \`pocket\` door, which parks no leaf in the room.`,
           ],
-        });
+        };
+        // The ruleset's door width is the number only where it, not the doorway's own width, is needed.
+        out.push(rules.minDoorWidthMm <= b.width ? cite(rules, "minDoorWidthMm", diag) : diag);
       }
     }
     return out;
@@ -1010,7 +1017,7 @@ export const leafTooWide: LintRule = {
         kind === "double"
           ? `a double door whose leaves are each ${mm(leaf)} mm wide`
           : `one hinged leaf ${mm(leaf)} mm wide`;
-      out.push({
+      out.push(cite(ctx.rules, "maxHingedLeafMm", {
         severity: "warning",
         code: "W_LEAF_TOO_WIDE",
         ...ctx.at(d),
@@ -1020,7 +1027,7 @@ export const leafTooWide: LintRule = {
             ? `Narrow ${ref} to ${mm(atMost(2 * max))} mm or less (\`width ${mm(atMost(2 * max))}\`), or keep the width and make it a \`sliding\` or \`bifold\` door, or a cased \`opening\` if it needs no door.`
             : `Make ${ref} a pair of leaves, \`door double … width ${mm(d.width)}\` (each leaf ${mm(d.width / 2)} mm${d.width / 2 > max ? `, still over ${mm(max)}: narrow it to ${mm(atMost(2 * max))} mm or less too` : ""}), or narrow it to ${mm(atMost(max))} mm or less, or make it a \`sliding\` or \`bifold\` door, or a cased \`opening\` if it needs no door.`,
         ],
-      });
+      }));
     }
     return out;
   },
@@ -1159,7 +1166,8 @@ export const exitApproachBlocked: LintRule = {
       const name = openingName(ctx, d);
       const doorRef = d._idAuthored === true ? `door "${d.id}"` : name;
       const short = shortfall(depth, gap);
-      out.push({
+      // The pull side's own key only where it set a different depth (a strip's depth is one of the two).
+      out.push(cite(ctx.rules, depth === push ? "exitApproachMm" : "exitApproachPullMm", {
         severity: "warning",
         code: "W_EXIT_APPROACH_BLOCKED",
         ...ctx.at(d),
@@ -1169,7 +1177,7 @@ export const exitApproachBlocked: LintRule = {
           `Or move ${doorRef} along its wall (\`on <wall> at <pos>\`) so the floor in front of it is clear.`,
           `The ${mm(depth)} mm is the clear landing inside an exterior door: the International Residential Code R311.3's 36 in (914 mm) by default; under \`accessibility-advisory\`, the 2010 ADA Standards' Table 404.2.4.1 front approach, 1220 mm on the push side and 1525 mm on the pull side.`,
         ],
-      });
+      }));
     }
     return out;
   },

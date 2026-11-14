@@ -306,10 +306,12 @@ describe("lint --rules", () => {
     }
   });
 
-  it("the schema is a draft: no $id, and the export says so", async () => {
-    expect("$id" in LINT_RULES_SCHEMA_DRAFT).toBe(false);
+  // RM1.6b gave the draft its `$id` (`v0`, GOVERNANCE.md § Compatibility and deprecation, rules 4
+  // and 5), so the export names it; before, `id` was `null`. A move to `v1` is its own declaration.
+  it("the schema is a v0 draft: its $id is the versioned lint-rules URL, and the export says so", async () => {
+    expect(LINT_RULES_SCHEMA_DRAFT.$id).toBe("https://archlang.uk/schemas/lint-rules/v0.schema.json");
     const doc = JSON.parse((await runArch(["lint", "--rules", "--json"])).stdout);
-    expect(doc.schema).toEqual({ status: "draft", id: null });
+    expect(doc.schema).toEqual({ status: "draft", id: "https://archlang.uk/schemas/lint-rules/v0.schema.json" });
     expect(doc.advisory).toMatch(/not compliance/);
   });
 
@@ -432,8 +434,10 @@ const IMPORTS_PROVENANCE = /(?:\bfrom\s*|\bimport\s*\(\s*)["'`][^"'`]*\bprovenan
 
 describe("rule provenance — off the compile path", () => {
   // The table is text the browser bundle must not carry (the playground's startup budget), and
-  // lint() must not learn it (its return value is pinned by the byte-identity laws). Only the CLI
-  // imports it.
+  // lint() must not learn it (its return value is pinned by the byte-identity laws). The CLI
+  // imports it, and the package entry re-exports `diagnosticRule` alone (RM1.6b: the MCP shim's
+  // `rule`, which reads the package entry only). The table's values are `pure`, so a bundle that
+  // never calls it drops them: the playground's compiler-path budget measures that.
   it("the import matcher sees both forms", () => {
     expect(IMPORTS_PROVENANCE.test('import { x } from "../lint/provenance.js";')).toBe(true);
     expect(IMPORTS_PROVENANCE.test('const m = await import("./lint/provenance.js");')).toBe(true);
@@ -441,7 +445,7 @@ describe("rule provenance — off the compile path", () => {
     expect(IMPORTS_PROVENANCE.test('import { x } from "../lint/ruleset.js";')).toBe(false);
   });
 
-  it("no module of src/ outside src/cli/, and none of playground/src/, imports src/lint/provenance.ts", () => {
+  it("no module of src/ outside src/cli/ but the entry's one re-export, and none of playground/src/, imports src/lint/provenance.ts", () => {
     const core = sourceFiles(join(ROOT, "src"));
     const playground = sourceFiles(join(ROOT, "playground", "src"));
     expect(core.length).toBeGreaterThan(100);
@@ -449,6 +453,20 @@ describe("rule provenance — off the compile path", () => {
     const importers = [...core, ...playground].filter(
       (f) => f !== "src/lint/provenance.ts" && IMPORTS_PROVENANCE.test(readFileSync(join(ROOT, f), "utf8")),
     );
-    expect(importers).toEqual(["src/cli/commands-analyze.ts"]);
+    expect(importers.sort()).toEqual(["src/cli/commands-analyze.ts", "src/index.ts"]);
+    // The entry carries the resolver and nothing else of the table.
+    const entry = readFileSync(join(ROOT, "src/index.ts"), "utf8")
+      .split("\n")
+      .filter((l) => IMPORTS_PROVENANCE.test(l));
+    expect(entry).toEqual(['export { diagnosticRule } from "./lint/provenance.js";']);
+    // lint() and the projection never import it: the reference beside a diagnostic is `rule-ref.ts`.
+    for (const f of ["src/lint.ts", "src/lint/rule-ref.ts", "src/diagnostic-json.ts"])
+      expect(IMPORTS_PROVENANCE.test(readFileSync(join(ROOT, f), "utf8")), f).toBe(false);
+  });
+
+  it("every table value is built through `pure`, so an unused export costs a bundle nothing", () => {
+    const src = readFileSync(join(ROOT, "src/lint/provenance.ts"), "utf8");
+    for (const name of ["DEFAULTS", "PROFILES", "admHall", "NO_STORE_AREA", "NO_PASSAGE_AREA", "OFF", "sourceSchema", "LINT_RULES_SCHEMA_DRAFT"])
+      expect(src, name).toMatch(new RegExp(`const ${name}(?::[^=]+)? = pure\\(`));
   });
 });

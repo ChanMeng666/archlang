@@ -78,6 +78,7 @@ import type { LintContext, LintRule } from "../context.js";
 import { capFirst } from "../../naming.js";
 import type { EnclosureBudgetCap } from "../coverage.js";
 import { mm } from "../measure.js";
+import { cite } from "../rule-ref.js";
 
 /** Uses that make an open-plan pair: two rooms each with one of these need no wall between them. */
 const OPEN_PLAN: ReadonlySet<string> = new Set(["kitchen", "dining", "living"]);
@@ -519,7 +520,7 @@ export const boundaryNoWall: LintRule = {
             : `The boundary between ${na} and ${nb} is open for ${mm(gapLen)} mm (${runWords(g0, g1).replace(/^on the line /, "")}), wider than a ${mm(max)} mm doorway: they meet along ${mm(run.len)} mm ${runWords(run.p, run.q)}, and that stretch has no wall, door or opening. ${reason("that stretch")}`;
         const thick = run.sep > EPS ? run.sep : Number.isFinite(thinnest) ? thinnest : DEFAULT_PARTITION_MM;
         const stmt = `wall partition thickness ${mm(thick)} { (${mm(g0.x)},${mm(g0.y)}) (${mm(g1.x)},${mm(g1.y)}) }`;
-        out.push({
+        out.push(cite(ctx.rules, "maxBoundaryGapMm", {
           severity: "warning",
           code: "W_BOUNDARY_NO_WALL",
           ...ctx.at(b),
@@ -530,7 +531,7 @@ export const boundaryNoWall: LintRule = {
             `Accept it if the boundary is closed by something the plan does not draw (a fixed screen, a balustrade, a level change).`,
             `The rooms are "${a.id}" and "${b.id}".`,
           ],
-        });
+        }));
       }
     }
     return out;
@@ -692,7 +693,8 @@ export const floorUnassigned: LintRule = {
           : ctx.rooms.length + (walls[0] ? ctx.ir.walls.indexOf(walls[0]) : ctx.ir.walls.length);
       found.push({
         key: [siteKey, -Math.round(c.unassigned), -Math.round(c.area)],
-        d: {
+        // RM1.6b: the cover ratio the message quotes (the unassigned-area floor only keeps slivers out).
+        d: cite(ctx.rules, "minFaceCoverRatio", {
           severity: "warning",
           code: "W_FLOOR_UNASSIGNED",
           ...(site ? ctx.at(site) : {}),
@@ -705,7 +707,7 @@ export const floorUnassigned: LintRule = {
             "Accept it if the floor is a sealed void: then draw it as a `void`, so the plan says so.",
             ...(idHint ? [`${idHint}.`] : []),
           ],
-        },
+        }),
       });
     }
     found.sort((p, q) => p.key[0] - q.key[0] || p.key[1] - q.key[1] || p.key[2] - q.key[2]);
@@ -739,7 +741,7 @@ export const roomOutsideShell: LintRule = {
       if (o.inFaces < MIN_INSIDE_SHARE * o.gross) continue;
       const m2 = fmt2(Math.round(o.area / 10_000) / 100);
       const depth = o.depth >= 0.5 ? `, up to ${mm(o.depth)} mm past their outer face` : "";
-      out.push({
+      out.push(cite(ctx.rules, "minOutsideShellM2", {
         severity: "warning",
         code: "W_ROOM_OUTSIDE_SHELL",
         ...ctx.at(r),
@@ -749,7 +751,7 @@ export const roomOutsideShell: LintRule = {
           "If that part is meant to be outside (a terrace, a balcony, a porch), it is not a room: draw it as an `outdoor` surface instead and keep the room inside the walls.",
           `The room is "${r.id}".`,
         ],
-      });
+      }));
     }
     return out;
   },
@@ -882,7 +884,7 @@ export const wallEndShort: LintRule = {
       const mine = ctx.wallSegs.find((s) => s.wallId === w.id && s.index === seg);
       if (!mine) continue;
       const ids = [w, other].filter((x) => x._idAuthored === true).map((x) => `"${x.id}"`);
-      out.push({
+      out.push(cite(ctx.rules, "wallGapMm", {
         severity: "warning",
         code: "W_WALL_END_SHORT",
         ...ctx.at(w),
@@ -891,7 +893,7 @@ export const wallEndShort: LintRule = {
           `Extend the end of the ${wallKindWords(w.category)} to the face of the ${wallKindWords(other.category)}, or into it so they join; if the slit is a real opening, draw a door or an \`opening\` there instead.`,
           ...(ids.length > 0 ? [`The walls are ${ids.join(" and ")}.`] : []),
         ],
-      });
+      }));
     }
     return out;
   },
