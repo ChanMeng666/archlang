@@ -25,7 +25,7 @@ The MCP server is for hosts without a shell, and for people who prefer to instal
 ## Install the floor plan MCP server
 
 One-click install links. Each opens the host, which shows the server's configuration before it adds
-anything.
+anything. (A root `.mcp.json` is provided for detection by MCP directories.)
 
 | Server | VS Code | VS Code Insiders | Cursor |
 | --- | --- | --- | --- |
