@@ -22,7 +22,8 @@ import { OUTDOOR_KINDS } from "../src/ast.js";
 import { pointInPolygon } from "../src/geometry/polygon.js";
 import { FLOOR_PATTERNS, GROUND_MATERIALS, hatchPattern, hatchTileMm } from "../src/hatches.js";
 import { EXTRA_THIN_RATIO } from "../src/scene.js";
-import { DEFAULT_THEME } from "../src/theme.js";
+import { DEFAULT_THEME, mergeTheme, THEMES } from "../src/theme.js";
+import { groundMaterial, groundTintUnder, OUTDOOR_LAYERS } from "../src/elements/outdoor.js";
 
 const plan = (body: string): string => `plan "Ground" {\n  units mm\n${body}\n}\n`;
 
@@ -571,6 +572,76 @@ describe("outdoor — refuses rather than approximating", () => {
       expect(dxfText, kind).toContain(dxf);
       expect(dxfText, kind).toContain(layer);
     }
+  });
+
+  // Card RM8.7b: the legend swatch is drawn on the tint the surface is, read off the same `GROUND` row.
+  const legendPlan = (pre: string, body: string) =>
+    plan(`${pre}  paper A2 landscape\n  scale 1:100\n  legend\n${BOX}\n${ROOM}\n${body}`);
+  /** The legend swatch of `material` and the node drawn just before it (its tint, when it has one). */
+  const swatchOf = (src: string, material: string) => {
+    const { scene, svg } = compile(src, { noCache: true });
+    const nodes = scene!.nodes;
+    const i = nodes.findIndex((n) => n.layer === "annotations" && n.prim.t === "hatch" && n.prim.material === material);
+    const surface = nodes.find(
+      (n) => n.layer === "floor" && OUTDOOR_LAYERS.includes(n.layerName ?? "") && n.prim.t === "polygon",
+    );
+    return { svg, nodes, swatch: nodes[i], under: i > 0 ? nodes[i - 1] : undefined, surface };
+  };
+
+  it("only `sand` and `soil` keep their tint in a stand-in, and every theme gives it (the GROUND table pins it)", () => {
+    const keeping = OUTDOOR_KINDS.filter((k) => {
+      const m = groundMaterial(k);
+      return m !== null && groundTintUnder(DEFAULT_THEME, m) !== undefined;
+    });
+    expect(keeping).toEqual(["sand", "soil"]);
+    for (const [name, layer] of Object.entries(THEMES)) {
+      const t = mergeTheme(layer);
+      for (const k of keeping) expect(groundTintUnder(t, groundMaterial(k)!), `${k} under ${name}`).toBe(t.paving);
+    }
+    expect(groundTintUnder(DEFAULT_THEME, "poche"), "a wall material is no ground").toBeUndefined();
+  });
+
+  for (const kind of ["sand", "soil"] as const) {
+    it(`${kind}: its legend swatch is drawn on the surface's tint, under \`rendered\` and the default`, () => {
+      for (const [pre, theme] of [
+        ["  theme rendered\n", mergeTheme(THEMES.rendered)],
+        ["", DEFAULT_THEME],
+      ] as const) {
+        const src = legendPlan(pre, `  outdoor ${kind} at (0,6000) size 4000x3000`);
+        const { nodes, swatch, under, surface } = swatchOf(src, groundMaterial(kind)!);
+        const tint = groundTintUnder(theme, groundMaterial(kind)!);
+        expect(tint, kind).toBe(theme.paving);
+        expect(swatch, `${kind} has a legend row`).toBeDefined();
+        // The SVG plan paints that tint under the pattern under this theme too.
+        expect(surface?.paint.fill, "the swatch's tint is the surface's own").toBe(tint);
+        // The swatch's frame takes the tint and is drawn under the pattern.
+        expect(under?.layer).toBe("annotations");
+        expect(under?.prim.t).toBe("polygon");
+        expect(under?.paint.fill).toBe(tint);
+        expect(under?.paint.stroke).toBe(theme.annotation);
+        const box = swatch!.prim.t === "hatch" ? swatch!.prim.region[0] : [];
+        expect(under!.prim.t === "polygon" && under!.prim.pts).toEqual(box);
+        // One loop on the swatch's box, so a DXF gets the frame once, not a fill-only copy under it.
+        const onBox = nodes.filter((n) => n.prim.t === "polygon" && JSON.stringify(n.prim.pts) === JSON.stringify(box));
+        expect(onBox).toHaveLength(1);
+      }
+    });
+  }
+
+  it("an older kind's swatch draws no tint under it (byte identity), and `style outdoor` tints the swatch too", () => {
+    for (const kind of ["lawn", "paving", "gravel"] as const) {
+      const { swatch, under } = swatchOf(
+        legendPlan("  theme rendered\n", `  outdoor ${kind} at (0,6000) size 4000x3000`),
+        groundMaterial(kind)!,
+      );
+      expect(swatch, kind).toBeDefined();
+      expect(under?.prim.t, kind).not.toBe("polygon");
+      expect(groundTintUnder(mergeTheme(THEMES.rendered), groundMaterial(kind)!), kind).toBeUndefined();
+    }
+    const styled = legendPlan('  style outdoor { fill: "#e8e0d0" }\n', "  outdoor sand at (0,6000) size 4000x3000");
+    const { under, surface } = swatchOf(styled, "sand");
+    expect(surface?.paint.fill).toBe("#e8e0d0");
+    expect(under?.paint.fill).toBe("#e8e0d0");
   });
 });
 

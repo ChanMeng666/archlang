@@ -73,6 +73,12 @@ import { parse } from "../src/parser.js";
 import { toScene } from "../src/scene-build.js";
 import { toPdf } from "../src/export/pdf.js";
 import { EXTRA_THIN_RATIO } from "../src/scene.js";
+import { OUTDOOR_KINDS } from "../src/ast.js";
+import { FLOOR_MATERIALS, FLOOR_PATTERNS, GROUND_MATERIALS, isFloorPattern } from "../src/hatches.js";
+import { FLOOR_TINT_MATERIAL, roomFloorFill } from "../src/elements/room.js";
+import { groundMaterial, groundTintUnder } from "../src/elements/outdoor.js";
+import { tintUnderPattern } from "../src/sheet-tables.js";
+import { DEFAULT_THEME, mergeTheme, THEMES, type Theme } from "../src/theme.js";
 
 async function hasPdfkit(): Promise<boolean> {
   try {
@@ -645,6 +651,140 @@ describe("PDF export", () => {
       expect((path.match(/ m\n/g) ?? []).length, "one moveto per poche loop").toBe(loops);
       // `f`, the NONZERO fill — an even-odd `f*` would punch the wall's own outline out.
       expect(ops.slice(at + poche.length)).toMatch(/^\nf\n/);
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // Card RM8.7b: a flat poché fill used to cover the `rendered` floor wash of the three floor-only
+  // words and the ground tint of `sand` and `soil`, on the plan and in the legend swatch alike.
+
+  describe("the floor wash and the ground tint under the five newer patterns (card RM8.7b)", () => {
+    const RENDERED = mergeTheme(THEMES.rendered);
+    const both = (t: Theme) => ({ room: t, outdoor: t });
+    const ALL = [...new Set<string>([...FLOOR_MATERIALS, ...GROUND_MATERIALS])];
+    /** The patterns whose stand-ins show a colour under `t`, read from the drawing's own sources. */
+    const showing = (t: Theme) => ALL.filter((m) => tintUnderPattern(m, both(t)) !== undefined).sort();
+    const FIVE = showing(RENDERED);
+
+    it("are the five words of card RM8.7 under `rendered`, and only the grounds elsewhere", () => {
+      expect(FIVE).toEqual(["carpeting", "sand", "soil", "stone", "timber"]);
+      // Every word `roomFloorFill` washes is among them, so a sixth washed word cannot drift.
+      for (const word of Object.keys(FLOOR_TINT_MATERIAL)) expect(FIVE, word).toContain(word);
+      // The floor half needs a real wash (ADR 0023's 2026-11-12 amendment: `rendered` only); the
+      // ground half is the tint `outdoor` paints under its pattern in every theme.
+      expect(showing(DEFAULT_THEME)).toEqual(["sand", "soil"]);
+      for (const [name, layer] of Object.entries(THEMES)) {
+        if (name !== "rendered") expect(showing(mergeTheme(layer)), name).toEqual(["sand", "soil"]);
+      }
+    });
+
+    const sheet = (body: string, theme = "  theme rendered\n") =>
+      `plan "T" {\n${theme}  paper A2 landscape\n  scale 1:100\n  legend\n` +
+      `  wall exterior thickness 200 { (0,0) (8000,0) (8000,5000) (0,5000) close }\n${body}\n}`;
+    /** A plan that writes `material` (a floor word, or the kind filling with it), and the same plan without it. */
+    const pair = (material: string, theme?: string): [string, string] => {
+      if (isFloorPattern(material)) {
+        const room = (floor: string) => `  room id=a at (0,0) size 8000x5000 label "A"${floor}`;
+        return [sheet(room(` floor ${material}`), theme), sheet(room(""), theme)];
+      }
+      const kind = OUTDOOR_KINDS.find((k) => groundMaterial(k) === material)!;
+      const room = `  room id=a at (0,0) size 8000x5000 label "A"`;
+      return [sheet(`${room}\n  outdoor ${kind} at (0,6000) size 4000x3000`, theme), sheet(room, theme)];
+    };
+    const fills = (ops: string, hex: string) => ops.split(`${rgbOp(hex)} scn`).length - 1;
+
+    for (const material of FIVE) {
+      it(`${material}: the PDF paints its tint, on the plan and in the legend, with no poché over it`, async () => {
+        const [withIt, without] = pair(material).map(planOf) as [ReturnType<typeof planOf>, ReturnType<typeof planOf>];
+        const theme = withIt.theme;
+        // The tint, from the source the drawing reads: the room's `roomFloorFill`, the ground's tint.
+        const tint = isFloorPattern(material) ? roomFloorFill(theme, material) : groundTintUnder(theme, material)!;
+        expect(tintUnderPattern(material, both(theme))).toBe(tint);
+        if (isFloorPattern(material))
+          expect(tint, "under `rendered` a floor-only word's tint is its wash").not.toBe(theme.roomFill);
+        // Non-vacuity: the plan draws the pattern on the plan and in its legend swatch.
+        const hatches = withIt.nodes.filter((n) => n.prim.t === "hatch" && n.prim.material === material);
+        expect(hatches.map((n) => n.layer === "annotations")).toEqual([false, true]);
+
+        const ops = pageOps(await toPdf(withIt));
+        const base = pageOps(await toPdf(without));
+        expect(fills(base, tint), "the plan without the word has no such tint").toBe(0);
+        expect(fills(ops, tint), "the tint is painted twice: the plan's surface and the legend swatch").toBe(2);
+        expect(fills(ops, theme.pocheBase), "the pattern adds no flat poché fill over its tint").toBe(
+          fills(base, theme.pocheBase),
+        );
+      });
+    }
+
+    it("the older words, and a floor-only word with no wash, keep their flat poché fill (byte identity)", async () => {
+      const room = `  room id=a at (0,0) size 8000x5000 label "A"`;
+      const cases: [string, string | undefined][] = [
+        [`${room} floor tile`, undefined],
+        [`${room}\n  outdoor lawn at (0,6000) size 4000x3000`, undefined],
+        // No wash outside `rendered`: a `timber` room stays a poché-filled pattern, as on `main`,
+        // never a room with nothing on it.
+        ...FLOOR_PATTERNS.map((w): [string, string] => [`${room} floor ${w}`, ""]),
+        ...FLOOR_PATTERNS.map((w): [string, string] => [`${room} floor ${w}`, "  theme blueprint\n"]),
+      ];
+      for (const [body, theme] of cases) {
+        const withIt = planOf(sheet(body, theme));
+        const without = planOf(sheet(room, theme));
+        const poche = withIt.theme.pocheBase;
+        // One on the plan, one in its legend swatch, as on `main`.
+        expect(fills(pageOps(await toPdf(withIt)), poche), `${theme} ${body}`).toBe(
+          fills(pageOps(await toPdf(without)), poche) + 2,
+        );
+      }
+    });
+
+    it("sand and soil show their tint under the default theme too", async () => {
+      for (const material of ["sand", "soil"]) {
+        const [withIt, without] = pair(material, "").map(planOf) as [
+          ReturnType<typeof planOf>,
+          ReturnType<typeof planOf>,
+        ];
+        const tint = groundTintUnder(withIt.theme, material)!;
+        expect(tint).toBe(DEFAULT_THEME.paving);
+        // The SVG plan draws that tint under the pattern in the default theme: the stand-in shows what is there.
+        const surface = withIt.nodes.find(
+          (n) => n.layer === "floor" && n.prim.t === "polygon" && n.paint.fill === tint,
+        );
+        expect(surface, `${material} draws its tint on the plan`).toBeDefined();
+        const ops = pageOps(await toPdf(withIt));
+        const base = pageOps(await toPdf(without));
+        expect(fills(ops, tint) - fills(base, tint), material).toBe(2);
+        expect(fills(ops, withIt.theme.pocheBase), material).toBe(fills(base, withIt.theme.pocheBase));
+      }
+    });
+
+    it("a stroked hatch of one of them keeps its stroke and drops only its fill", async () => {
+      // No built-in element strokes a hatch, but a Scene is public input (an extension element's
+      // nodes, a hand-built Scene), so the branch is driven here by one hand-made node.
+      const s = planOf(sheet(`  room id=a at (0,0) size 8000x5000 label "A"`));
+      const ring = [
+        { x: 0, y: 6000 },
+        { x: 4000, y: 6000 },
+        { x: 4000, y: 9000 },
+        { x: 0, y: 9000 },
+      ];
+      const stroked = (fill: string): typeof s => ({
+        ...s,
+        nodes: [
+          ...s.nodes,
+          {
+            layer: "floor",
+            prim: { t: "hatch", region: [ring], material: "sand", scale: 1, angle: 0 },
+            paint: { fill, stroke: "#123456", width: 10 },
+          },
+        ],
+      });
+      const ops = pageOps(await toPdf(stroked("url(#hatch-sand)")));
+      const base = pageOps(await toPdf(s));
+      expect(ops, "the stroke is drawn").toContain(`${rgbOp("#123456")} SCN`);
+      expect(fills(ops, s.theme.pocheBase), "no poché fill for it").toBe(fills(base, s.theme.pocheBase));
+      // A solid fill is the extension's own colour, not a pattern: it is drawn as given.
+      const solid = pageOps(await toPdf(stroked("#abcdef")));
+      expect(fills(solid, "#abcdef")).toBe(1);
     });
   });
 });

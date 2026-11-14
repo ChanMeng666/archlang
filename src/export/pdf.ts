@@ -23,7 +23,9 @@
  * moves into the Scene in a later phase. Hatch patterns are SVG-specific, so
  * poché regions fill with the solid poché base colour in PDF: a `hatch` is the same
  * multi-loop nonzero path a `region` is, so both share one `case` in {@link drawNode}
- * and `fillColor` collapses the `url(#…)` pattern ref to {@link Theme.pocheBase}.
+ * and `fillColor` collapses the `url(#…)` pattern ref to {@link Theme.pocheBase}. A pattern
+ * whose colour underneath shows instead (`tintUnderPattern`, `src/sheet-tables.ts`: a floor's
+ * `rendered` wash, a `sand` or `soil` ground's tint) draws no fill, so that colour shows.
  * The `wallFill` layer is exactly one `hatch` primitive, so a switch with no `hatch`
  * case draws every wall hollow; the `default` below is an exhaustiveness guard so a
  * new `ScenePrim` cannot be dropped that silent way.
@@ -51,6 +53,7 @@ import { textLines } from "../text-layout.js";
 import { northBearingDeg } from "../algebra/d4.js";
 import { BUNDLED_FONT_FAMILY, bundledFontPath, glyphDiagnostics, planFonts } from "../backends/font.js";
 import type { Diagnostic } from "../diagnostics.js";
+import { tintUnderPattern } from "../sheet-tables.js";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
@@ -197,10 +200,20 @@ function drawNode(doc: any, node: SceneNode, theme: Theme, ctx: TextCtx): void {
     // no equivalent of, and `fillColor` already collapses that to the solid poché base.
     // So they share one path rather than growing a second copy of `regionPath`.
     case "region":
-    case "hatch":
+    case "hatch": {
+      // Except a pattern whose colour underneath a stand-in shows instead (`tintUnderPattern`,
+      // card RM8.7b: a room's `rendered` wash, a `sand` or `soil` ground's tint): the poché-base
+      // flat fill would cover it, so the pattern's fill is dropped, its stroke (if any) kept, and
+      // with no stroke nothing is drawn. Every other pattern keeps its poché-base fill.
+      const shows =
+        prim.t === "hatch" &&
+        paint.fill?.startsWith("url(") === true &&
+        tintUnderPattern(prim.material, { room: theme, outdoor: theme }) !== undefined;
+      if (shows && (!paint.stroke || paint.stroke === "none")) break;
       doc.path(regionPath(prim.t === "region" ? prim.loops : prim.region));
-      applyPaint(doc, paint, theme);
+      applyPaint(doc, shows ? { ...paint, fill: "none" } : paint, theme);
       break;
+    }
     case "path":
       doc.path(loopsPath(prim.loops));
       applyPaint(doc, paint, theme);

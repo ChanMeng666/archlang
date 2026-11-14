@@ -91,6 +91,18 @@ export function roomFloorFill(theme: Theme, floor: FloorMaterial | undefined): s
       .padStart(2, "0");
   return `#${hex(0)}${hex(1)}${hex(2)}`;
 }
+
+/**
+ * The wash a room floored in `floor` really takes under `theme`, or `undefined` when it takes none:
+ * {@link roomFloorFill} where that differs from `roomFill`. Only then may a flat stand-in for the
+ * floor's pattern show the room's colour instead of its pattern (card RM8.7b: the PDF and the legend
+ * swatch); with no wash (every theme but `rendered`, an older word) they draw it as they always did.
+ */
+export function floorWash(theme: Theme, floor: string): string | undefined {
+  if (!isFloorMaterial(floor)) return undefined;
+  const fill = roomFloorFill(theme, floor);
+  return fill === theme.roomFill ? undefined : fill;
+}
 const REL_ALIGN_SET: ReadonlySet<string> = new Set<RelAlign>(REL_ALIGNS);
 const USE_SET: ReadonlySet<string> = new Set<UseKind>(USE_KINDS);
 
