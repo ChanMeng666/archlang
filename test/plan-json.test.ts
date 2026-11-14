@@ -375,7 +375,9 @@ describe("plan-json — derived furniture positions", () => {
     for (const name of UNRESOLVED_WAY_BACK) {
       expect(CANNOT_ROUND_TRIP, `${name} must be a listed gap`).toHaveProperty([name]);
       const src = readFileSync(`examples/${name}`, "utf8");
-      expect(planToJson(src).dropped ?? [], `${name} must report what it lost`).not.toEqual([]);
+      // `auto id` is reported by most plans, so it cannot stand for what this one lost.
+      const lost = (planToJson(src).dropped ?? []).filter((d) => d.clause !== "auto id");
+      expect(lost, `${name} must report what it lost`).not.toEqual([]);
     }
   });
 });

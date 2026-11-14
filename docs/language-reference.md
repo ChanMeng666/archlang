@@ -1365,7 +1365,7 @@ falls back to one chosen by its `uses` only when it has none. (`carpet` is the `
 of furniture; the fitted floor is `carpeting`.)
 
 A floor is a drawing fact: `describe()` and `lint()` read the plan as if it were not there, and Plan
-JSON lists it in `dropped`. A word that is not one of the seven draws no pattern and raises
+JSON carries it as `rooms[].floor`. A word that is not one of the seven draws no pattern and raises
 `W_UNKNOWN_MATERIAL`, a compile warning that `describe --json` and `validate` report and `lint()` does not.
 
 **Where the name goes.** By default at the room's own centre — the rectangle's, the
@@ -3392,9 +3392,10 @@ carries it), `text` (the clause in words) and `level` (the storey that holds it;
 only that storey's rows and the plan-wide ones are reported; keeps are plan-wide, so every
 storey's keeps are reported on each `--level` export).
 
-A wall's `arc` and the `paper` are carried, and a document still says `version: 1`: the format only
-grows. A core older than the one that added them reads such a document without a word, as the chord
-and with no sheet, because it ignores keys it does not know.
+A wall's `arc`, the `paper`, the ground (`outdoor[]`), the fences (`fences[]`) and a room's
+`floor` are carried, and a document still says `version: 1`: the format only grows. A core older
+than the one that added them reads such a document without a word, as the chord, with no sheet and
+no ground, because it ignores keys it does not know.
 
 | `clause` | What leaves |
 |---|---|
@@ -3403,7 +3404,11 @@ and with no sheet, because it ignores keys it does not know.
 | `circle` | a circular room: the document keeps its 48-sided polygon |
 | `label at` | a room's `label … at` position |
 | `column order` | a `column` written before a `furniture`: the document lists them after, so the same shapes draw in another order |
-| `stair`, `elevator`, `escalator`, `roof`, `void`, `outdoor`, `fence` | the whole element |
+| `outdoor order` | an `outdoor` written before a `room`: the document lists the ground after the rooms |
+| `fence order` | a `fence` written before a `furniture` or a `column`: the document lists the fences after them |
+| `auto id` | that an id was made by the resolver, not written: the document writes every id, so ids the plan did not write come back as written ids |
+| `place` | a `place`d instance, exported flattened (one carried as `components`/`instances` is not reported) |
+| `stair`, `elevator`, `escalator`, `roof`, `void`, `section` | the whole element |
 | `zone` | a `zone` block (its contents are exported) |
 | `level` | a storey's number and name: each storey is its own document |
 | `axes`, `site boundary`, `schedule rooms`, `schedule openings`, `legend`, `notes` | the statement |

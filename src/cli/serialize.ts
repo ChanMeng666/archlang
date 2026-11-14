@@ -158,7 +158,8 @@ export const DROPPED_WORDS: Record<Exclude<PlanJsonDroppedClause, "keep" | Carri
     "fence written before furniture or a column",
     "fences written before furniture or a column",
   ],
-  "auto id": ["ids the plan did not write", "auto id", "auto ids"],
+  // `droppedNotes` words this one's note itself: the ids are carried, their being unwritten is not.
+  "auto id": ["record that an id was not written", "auto id", "auto ids"],
   stair: ["stairs", "stair", "stairs"],
   elevator: ["elevators", "elevator", "elevators"],
   escalator: ["escalators", "escalator", "escalators"],
@@ -212,12 +213,15 @@ function droppedNotes(rows: PlanJsonDropped[]): string[] {
     const [lacks, one, many] = DROPPED_WORDS[clause];
     const counted = `${fmt3(count)} ${count === 1 ? one : many}`;
     const named = ids.length > 0 ? `: ${idList(ids)}` : "";
+    // The document does carry the ids; what it cannot say is that the resolver made them.
+    if (clause === "auto id")
+      return [
+        `note: Plan JSON writes every id, so ids the plan did not write come back as written ids; this export writes ${counted}${named} (the .arch source still leaves ${count === 1 ? "it" : "them"} unwritten)`,
+      ];
     const told =
       clause === "circle"
         ? `writes ${counted} as ${count === 1 ? "a 48-sided polygon" : "48-sided polygons"}${named}`
-        : clause === "auto id"
-          ? `writes ${counted} as ${count === 1 ? "a written id" : "written ids"}${named}`
-          : `leaves out ${texts.length > 0 ? texts.join(", ") : `${counted}${named}`}`;
+        : `leaves out ${texts.length > 0 ? texts.join(", ") : `${counted}${named}`}`;
     return [
       `note: Plan JSON carries no ${lacks}; this export ${told} (the .arch source still holds ${count === 1 ? "it" : "them"})`,
     ];

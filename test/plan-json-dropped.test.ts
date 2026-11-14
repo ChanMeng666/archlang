@@ -98,8 +98,11 @@ describe("every clause is reported on the plan that has it, and alone", () => {
     expect(clauses(r.dropped)).toEqual([clause]);
     const rendered = await renderArtifact(source, "json", ARGS, ".", "all");
     expect(rendered.notes).toHaveLength(1);
+    // `auto id` has words of its own: the document carries the ids, not that they were unwritten.
     expect(rendered.notes?.[0]).toMatch(
-      /^note: Plan JSON carries no .+; this export .+ \(the \.arch source still holds (it|them)\)$/,
+      clause === "auto id"
+        ? /^note: Plan JSON writes every id, so ids the plan did not write come back as written ids; this export writes 1 auto id: .+ \(the \.arch source still leaves it unwritten\)$/
+        : /^note: Plan JSON carries no .+; this export .+ \(the \.arch source still holds (it|them)\)$/,
     );
   });
 
@@ -327,8 +330,11 @@ describe("the report over the corpus", () => {
    */
   const GAPS = Object.keys(CANNOT_ROUND_TRIP).filter((n) => n !== "imports.arch");
 
-  it("every example that does not come back the same reports something", () => {
-    expect(GAPS.filter((name) => report(name).dropped === undefined)).toEqual([]);
+  // Something other than `auto id`, which most plans report: a gap that stops reporting its real
+  // loss must fail here.
+  it("every example that does not come back the same reports something besides `auto id`", () => {
+    const real = (name: string) => (report(name).dropped ?? []).filter((r) => r.clause !== "auto id");
+    expect(GAPS.filter((name) => real(name).length === 0)).toEqual([]);
   });
 
   // An example that comes back the same may still write an id the plan did not (`auto id`,
