@@ -69,7 +69,15 @@ import type { PlanNode } from "../ast.js";
 // The one human line of the lint coverage report (internal: only `lint` prints it).
 import { coverageLine } from "../lint/coverage.js";
 // Where each ruleset number comes from (internal: only `lint --rules` reads it, never the compile path).
-import { type EffectiveRule, effectiveRuleset } from "../lint/provenance.js";
+import { diagnosticRule, type EffectiveRule, effectiveRuleset } from "../lint/provenance.js";
+
+/**
+ * `lint --json` and `validate --json` attach each warning's ruleset number and its provenance
+ * (`rule`, card RM1.6b). `report` and `reportWithChecks` read the diagnostics `lint()` returned in
+ * this process, so the reference it keeps beside each one is still there. A compile diagnostic
+ * has none and gets no `rule`.
+ */
+const WITH_RULE = { rule: diagnosticRule } as const;
 // The zero-dep levenshtein behind every "did you mean" hint the CLI prints.
 import { closest } from "../expr.js";
 import { parse } from "../parser.js";
@@ -683,7 +691,7 @@ function report(
       ok,
       strict: args.strict ?? false,
       ...(active ? { filtered: true, total_diagnostics: diags.length } : {}),
-      diagnostics: shown.map((d) => withStage(diagnosticToJson(source, d), staged?.stageOf(d))),
+      diagnostics: shown.map((d) => withStage(diagnosticToJson(source, d, WITH_RULE), staged?.stageOf(d))),
       ...(coverage ? { coverage } : {}),
       // PS7.1: only under `--stage`, before `keeps` and `next`.
       ...(staged?.at ? { at_stage: atStageJson(staged.at) } : {}),
@@ -1081,7 +1089,7 @@ function reportWithChecks(
       ok,
       strict: args.strict ?? false,
       ...(active ? { filtered: true, total_diagnostics: diags.length } : {}),
-      diagnostics: shown.map((d) => withStage(diagnosticToJson(source, d), stages.stageOf(d))),
+      diagnostics: shown.map((d) => withStage(diagnosticToJson(source, d, WITH_RULE), stages.stageOf(d))),
     };
     if (graph) {
       o.graph = {

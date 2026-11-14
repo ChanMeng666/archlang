@@ -20,7 +20,7 @@ Every module, not only the entry, is in the sibling [`module-map.md`](module-map
 The total counts every name the checker sees as exported, including those pulled in by
 `export type * from "./ast.js"`; a count of the names written in `index.ts`' export statements is lower.
 
-Totals: 638 exports (223 values, 415 types), 404 flagged (73 values).
+Totals: 642 exports (224 values, 418 types), 406 flagged (72 values).
 
 ## `src/algebra/d4.ts`
 
@@ -339,7 +339,10 @@ Totals: 638 exports (223 values, 415 types), 404 flagged (73 values).
 | Export | Kind | In-repo consumers |
 | --- | --- | --- |
 | `DiagnosticJson` | type | `dataset`, `playground` |
+| `DiagnosticJsonOptions` | type | none |
+| `DiagnosticRuleJson` | type | none |
 | `FixSuggestionJson` | type | none |
+| `RuleSourceJson` | type | none |
 | `diagnosticToJson` | value | `dataset`, `eval`, `packages/mcp`, `packages/mcp-worker`, `playground`, `src/cli`, `test` |
 
 ## `src/diagnostics.ts`
@@ -711,6 +714,12 @@ Totals: 638 exports (223 values, 415 types), 404 flagged (73 values).
 | `LintSkipReason` | type | none |
 | `LintUnclassifiedRoom` | type | none |
 
+## `src/lint/provenance.ts`
+
+| Export | Kind | In-repo consumers |
+| --- | --- | --- |
+| `diagnosticRule` | value | `test` |
+
 ## `src/lint/ruleset.ts`
 
 | Export | Kind | In-repo consumers |
@@ -993,7 +1002,7 @@ Totals: 638 exports (223 values, 415 types), 404 flagged (73 values).
 | `atStage` | value | none |
 | `codeStage` | value | `test` |
 | `diagnosticStage` | value | none |
-| `isAuthoringStage` | value | none |
+| `isAuthoringStage` | value | `test` |
 | `keepStage` | value | `test` |
 | `kindsOf` | value | none |
 | `predicateStage` | value | none |

@@ -91,6 +91,7 @@ import { rectToArc } from "../clearance-measure.js";
 import { judgesAsDwelling, type LintContext, type LintRule } from "../context.js";
 import { openingName, wallPhrase } from "../element-phrases.js";
 import { deficitMm, mm } from "../measure.js";
+import { cite } from "../rule-ref.js";
 import { MODEL_RANGE_MM } from "../../num-format.js";
 import { sameBlock } from "./vertical.js";
 
@@ -860,7 +861,9 @@ export const stairSideEntry: LintRule = {
           // Beside the flight at all, and is a usable doorway left past either end of it?
           if (Math.min(c1, hi) - Math.max(c0, lo) <= VERTEX_EPS) continue;
           const past = Math.max(0, Math.min(c1, lo) - c0, c1 - Math.max(c0, hi));
-          if (past + VERTEX_EPS >= Math.min(ctx.rules.minDoorWidthMm, c.width)) continue;
+          // Read once: the width limb here, and which key the warning names below.
+          const minDoor = ctx.rules.minDoorWidthMm;
+          if (past + VERTEX_EPS >= Math.min(minDoor, c.width)) continue;
           const [flo, fhi, line] = axis === "y" ? [r.x, r.x + r.w, host.a.x] : [r.y, r.y + r.h, host.a.y];
           const half = host.thickness / 2;
           let gap: number;
@@ -872,7 +875,7 @@ export const stairSideEntry: LintRule = {
           const m = deficitMm(min, gap);
           const kind = c.kind === "door" ? "door" : "opening";
           const ref = connectorRef(ctx, c);
-          out.push({
+          const diag: Diagnostic = {
             severity: "warning",
             code: "W_STAIR_SIDE_ENTRY",
             ...ctx.at(c),
@@ -880,7 +883,13 @@ export const stairSideEntry: LintRule = {
             hints: [
               `Move ${ref.startsWith("`") ? `the ${kind} ${ref}` : ref} along its wall past the end of \`${v.id}\`, or move the stair so at least ${m.required} mm stand between the doorway and the flight.`,
             ],
-          });
+          };
+          // RM1.6b: the warning needs BOTH too little doorway past the flight's ends (under the
+          // smaller of `minDoorWidthMm` and the doorway's own width) and a gap to the flight under
+          // `minPathClearWidthMm`. A doorway narrower than `minDoorWidthMm` is held only to its own
+          // width there, so the gap's number is the one that decided it, and is cited; otherwise
+          // two ruleset numbers held it at once, and none is cited.
+          out.push(c.width < minDoor ? cite(ctx.rules, "minPathClearWidthMm", diag) : diag);
           break;
         }
       }
@@ -1391,13 +1400,15 @@ export const stairRiserTooHigh: LintRule = {
         plan === null || plan.redrawn.length === 0
           ? `Lengthen ${block ? `the flights of \`${v.id}\`` : `\`${v.id}\` along its flight`} on every storey it is drawn on (every ${TREAD_GOING_MM} mm of a flight's run draws one more tread), or correct the storey \`height\` if it is wrong`
           : `${redrawText(v, plan.redrawn)} on every storey it is drawn on, so it draws ${plan.treads} treads and climbs on ${plan.risers} risers of ${limitMm(rise / plan.risers)}, or correct the storey \`height\` if it is wrong`;
-      out.push({
-        severity: "warning",
-        code: "W_STAIR_RISER_TOO_HIGH",
-        ...ctx.at(v),
-        message: `${capitalise(stairName(v, ctx))} ${what} of ${limitMm(rise / risers)}, above ${limitMm(max)}: ${why}.`,
-        hints: [`${fix}; the limit is ${limit}.`],
-      });
+      out.push(
+        cite(ctx.rules, "stairDrawnMaxRiseMm", {
+          severity: "warning",
+          code: "W_STAIR_RISER_TOO_HIGH",
+          ...ctx.at(v),
+          message: `${capitalise(stairName(v, ctx))} ${what} of ${limitMm(rise / risers)}, above ${limitMm(max)}: ${why}.`,
+          hints: [`${fix}; the limit is ${limit}.`],
+        }),
+      );
     }
     return out;
   },

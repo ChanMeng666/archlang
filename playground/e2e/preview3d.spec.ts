@@ -1870,6 +1870,24 @@ test.describe("startup chunks", () => {
       const text = readFileSync(join(DIST, file), "utf8");
       for (const [m] of markers) expect(text, `${file} carries 3D, editor or PDF code ("${m}")`).not.toContain(m);
     }
+    // The lint provenance table (`src/lint/provenance.ts`, card RM1.6b) is read only by the CLI and
+    // the MCP tools (`diagnosticRule`, `lint --rules`): the playground never attaches a `rule`, so no
+    // built file of it carries the table. Its first leak rode the lazy chunk at +3,868 B gzip, inside
+    // the first-use budget's headroom, so a size gate cannot see it come back; these strings can.
+    // Each is written only in that table (a hint quotes neither), checked there first, so a renamed
+    // document or `$id` fails here instead of passing vacuously.
+    const provenanceSrc = readFileSync(
+      join(dirname(fileURLToPath(import.meta.url)), "..", "..", "src", "lint", "provenance.ts"),
+      "utf8",
+    );
+    const PROVENANCE = ["Nationally Described Space Standard", "lint-rules/v0"];
+    for (const m of PROVENANCE)
+      expect(provenanceSrc, `the provenance sentinel "${m}" is in src/lint/provenance.ts`).toContain(m);
+    for (const f of assets) {
+      const text = readFileSync(join(DIST, "assets", f), "utf8");
+      for (const m of PROVENANCE)
+        expect(text, `assets/${f} carries the lint provenance table ("${m}")`).not.toContain(m);
+    }
 
     const gz = (file: string) => gzipSync(readFileSync(join(DIST, file))).length;
     const size = (files: string[]) => files.reduce((a, f) => a + gz(f), 0);

@@ -56,6 +56,7 @@ import { fmt0, fmt2 } from "../../num-format.js";
 import { judgesAsDwelling, type LintContext, type LintRule } from "../context.js";
 import { openingClauseById } from "../../wall-ref.js";
 import { capFirst } from "../../naming.js";
+import { cite } from "../rule-ref.js";
 
 /** Uses that make a room one people pass through by design. */
 const PUBLIC_USES: ReadonlySet<UseKind> = new Set<UseKind>([
@@ -697,7 +698,7 @@ export const wetRoomDoor: LintRule = {
         const toName = quoted(ctx, to, useWord);
         const moves = movesOnto(ctx, f, w, wBox, new Set([to.id]), order, tol, e.doorId);
         const way = `${e.kind === "door" ? "a door" : "an opening"} ${mm(e.nominalWidth)} mm wide`;
-        out.push({
+        const diag: Diagnostic = {
           severity: "warning",
           code: "W_WET_ROOM_DOOR",
           ...ctx.at(w),
@@ -728,7 +729,10 @@ export const wetRoomDoor: LintRule = {
             `Accept if the plan follows a code that allows it, or ${hq(ctx, to)} is the only room the ${noun} can ` +
               "open from. The warning is advisory.",
           ],
-        });
+        };
+        // RM1.6b: a kitchen measured from the doorway is held to the ruleset's distance; a dining
+        // room, or a kitchen with no measure, is the door's adjacency alone.
+        out.push(near ? cite(ctx.rules, "wetDoorKitchenProximityMm", diag) : diag);
       }
 
       // 3. A passage: two or more connectors joining two different rooms outside a private suite.

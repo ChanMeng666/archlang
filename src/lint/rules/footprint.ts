@@ -23,6 +23,7 @@ import type { RFurniture } from "../../ir.js";
 import type { LintContext, LintRule } from "../context.js";
 import { DEFAULT_RULESET } from "../ruleset.js";
 import { mm } from "../measure.js";
+import { cite } from "../rule-ref.js";
 import { inRoomPhrase } from "./furniture-relations.js";
 
 /**
@@ -187,7 +188,9 @@ export const bedUndersized: LintRule = {
       const length = Math.max(f.size.w, f.size.h);
       const width = Math.min(f.size.w, f.size.h);
       const short: string[] = [];
+      const keys: Array<"bedMinLengthMm" | "bedMinWidthMm"> = [];
       if (minLength !== null && length < minLength) {
+        keys.push("bedMinLengthMm");
         const of =
           minLength === DEFAULT_RULESET.bedMinLengthMm
             ? "the shortest standard bed (a UK single, 90 × 190 cm; Which? UK bed sizes)"
@@ -195,6 +198,7 @@ export const bedUndersized: LintRule = {
         short.push(`${mm(length)} mm long, under the ${mm(minLength)} mm of ${of}: ${mm(minLength - length)} mm short`);
       }
       if (minWidth !== null && width < minWidth) {
+        keys.push("bedMinWidthMm");
         const of =
           minWidth === DEFAULT_RULESET.bedMinWidthMm
             ? "the narrowest standard bed (a UK small single, 75 × 190 cm; Which? UK bed sizes)"
@@ -207,7 +211,7 @@ export const bedUndersized: LintRule = {
         minLength !== null ? `${mm(minLength)} mm long` : "",
         minWidth !== null ? `${mm(minWidth)} mm wide` : "",
       ].filter((s) => s !== "");
-      out.push({
+      const diag: Diagnostic = {
         severity: "warning",
         code: "W_BED_UNDERSIZED",
         ...ctx.at(f),
@@ -215,7 +219,9 @@ export const bedUndersized: LintRule = {
         hints: [
           `Draw the ${name}${inRoomPhrase(f, ctx, true)} at least ${want.join(" and ")}, moving what it was cut to clear. A piece that is not a bed (an examination couch) has no catalogue family yet; the warning stands until it does.`,
         ],
-      });
+      };
+      // RM1.6b: `rule` names one number; a bed short both ways is held to two, and names neither.
+      out.push(keys.length === 1 ? cite(ctx.rules, keys[0]!, diag) : diag);
     }
     return out;
   },

@@ -67,6 +67,7 @@ import {
   standingJunctionSpans,
 } from "../../opening-junctions.js";
 import { relationalClause } from "../../opening-relation.js";
+import { cite } from "../rule-ref.js";
 
 /** Float dust on whole-millimetre geometry. */
 const EPS = 1e-6;
@@ -184,9 +185,24 @@ const cornerReported = (ctx: LintContext, o: OnRun): boolean =>
 const junctionsFor = (ctx: LintContext, o: OnRun, js: readonly Junction[]): Junction[] =>
   cornerReported(ctx, o) ? js.filter((j) => j.corner === null) : [...js];
 
-/** The nib an opening of this host needs: `max(minJunctionNibMm, host thickness × ratio)`. */
-const nibNeed = (ctx: LintContext, seg: WallSegment): number =>
-  Math.max(ctx.rules.minJunctionNibMm, seg.thickness * ctx.rules.junctionNibThicknessRatio);
+/**
+ * The nib an opening of this host needs, `max(minJunctionNibMm, host thickness × ratio)`, and the
+ * ruleset key of the limb that set it (RM1.6b; a tie names the fixed nib). Each limb is read once.
+ */
+function nibOf(
+  ctx: LintContext,
+  seg: WallSegment,
+): { need: number; key: "minJunctionNibMm" | "junctionNibThicknessRatio" } {
+  const fixed = ctx.rules.minJunctionNibMm;
+  const byThickness = seg.thickness * ctx.rules.junctionNibThicknessRatio;
+  return {
+    need: Math.max(fixed, byThickness),
+    key: fixed >= byThickness ? "minJunctionNibMm" : "junctionNibThicknessRatio",
+  };
+}
+
+/** The nib an opening of this host needs: {@link nibOf}'s `need`. */
+const nibNeed = (ctx: LintContext, seg: WallSegment): number => nibOf(ctx, seg).need;
 
 // ─── naming ────────────────────────────────────────────────────────────────────────────
 
@@ -543,7 +559,7 @@ export const openingAtJunction: LintRule = {
       const corner = o.el.kind === "window" ? o.el._corner : undefined;
       const mine = junctionsFor(ctx, o, js).filter((j) => !corner || !sameSeg(j.wall, corner.other));
       if (mine.length === 0) continue;
-      const need = nibNeed(ctx, o.seg);
+      const { need, key: nibKey } = nibOf(ctx, o.seg);
       // A cased opening whose jamb lands FLUSH on a meeting wall's face uses that face as its
       // jamb: there is no sliver of wall to carry anything, because there is no wall there at
       // all (a hall that opens its full width into a room). A door's frame, or a window's,
@@ -625,7 +641,7 @@ export const openingAtJunction: LintRule = {
               ? "Accept it if the meeting wall is a screen that stops short of the opening's head."
               : null
           : "Accept it if the frame is meant to be fixed into the meeting wall itself (a flush corner detail).";
-      out.push({
+      const diag: Diagnostic = {
         severity: "warning",
         code: "W_OPENING_AT_JUNCTION",
         ...ctx.at(o.el),
@@ -637,7 +653,11 @@ export const openingAtJunction: LintRule = {
           ...(accept ? [accept] : []),
           idHint(ctx, o.el),
         ],
-      });
+      };
+      // RM1.6b: a jamb short of the nib is the ruleset's limb that set `need`; a wall standing
+      // inside the span is a fact of the geometry, which no number drives. `nibKey` is the limb
+      // `nibOf` took `need` from, read with it, so citing adds no ruleset read.
+      out.push(inside.length === 0 ? cite(ctx.rules, nibKey, diag) : diag);
     }
     return out;
   },
@@ -723,13 +743,15 @@ export const openingOverlap: LintRule = {
               ]),
           `This ${kL} is "${later.el.id}"; the ${kE} is "${earlier.el.id}"; both are on ${wallRef(ctx.ir.walls, later.seg)}.`,
         ];
-        out.push({
+        const diag: Diagnostic = {
           severity: "warning",
           code: "W_OPENING_OVERLAP",
           ...ctx.at(later.el),
           message: `${cap(nameL)} ${overlap > EPS ? "overlaps" : "almost meets"} ${nameE} on ${wallPhrase(later.seg)} — ${fact}. ${reason}`,
           hints,
-        });
+        };
+        // A pier under a mullion is the ruleset's `minMullionMm`; an overlap is geometry alone.
+        out.push(overlap > EPS ? diag : cite(ctx.rules, "minMullionMm", diag));
       }
     }
     return out;
@@ -904,6 +926,11 @@ export const connectorAmbiguous: LintRule = {
           : []),
         `The ${word} is "${c.id}" on ${wallRef(ctx.ir.walls, c.host)}${straddled.length ? `; its span covers rooms ${straddled.map((x) => `"${x}"`).join(", ")}` : ""}.`,
       ];
+      // RM1.6b: no `rule`. The `ambiguous` reading is the access graph's, a fact of the geometry
+      // that no ruleset number drives. On a straddle, `minStraddleCoverMm` (or the host's
+      // thickness × `junctionNibThicknessRatio`) only says how much of a room's span counts as
+      // being in it, a floor that keeps slivers out, like the tolerances, which carry no `rule`;
+      // what the warning reports is that two rooms share one side, not a short measure.
       out.push({
         severity: "warning",
         code: "W_CONNECTOR_AMBIGUOUS",

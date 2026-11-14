@@ -1,10 +1,17 @@
-/** rule provenance — every ruleset key has a row, grades match the source tags; lint --rules exports the effective ruleset; off the compile path. */
+/** rule provenance — every ruleset key has a row, grades match the source tags; lint --rules exports the effective ruleset; off the compile path; a diagnostic's rule (RM1.6b). */
 
 import { readdirSync, readFileSync, statSync } from "node:fs";
-import { join, relative } from "node:path";
+import { dirname, join, relative } from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
-import { DEFAULT_RULESET, LINT_PROFILE_NAMES, LINT_PROFILES } from "../src/index.js";
+import {
+  DEFAULT_RULESET,
+  diagnosticRule,
+  diagnosticToJson,
+  lint,
+  LINT_PROFILE_NAMES,
+  LINT_PROFILES,
+} from "../src/index.js";
 import {
   LINT_RULES_SCHEMA_DRAFT,
   RULE_PROVENANCE,
@@ -16,6 +23,7 @@ import {
 } from "../src/lint/provenance.js";
 import { resolveRuleset } from "../src/lint/ruleset.js";
 import { runArch } from "./helpers/cli.js";
+import { worldFor } from "./helpers/world.js";
 
 const ROOT = join(fileURLToPath(new URL(".", import.meta.url)), "..");
 
@@ -306,10 +314,12 @@ describe("lint --rules", () => {
     }
   });
 
-  it("the schema is a draft: no $id, and the export says so", async () => {
-    expect("$id" in LINT_RULES_SCHEMA_DRAFT).toBe(false);
+  // RM1.6b gave the draft its `$id` (`v0`, GOVERNANCE.md § Compatibility and deprecation, rules 4
+  // and 5), so the export names it; before, `id` was `null`. A move to `v1` is its own declaration.
+  it("the schema is a v0 draft: its $id is the versioned lint-rules URL, and the export says so", async () => {
+    expect(LINT_RULES_SCHEMA_DRAFT.$id).toBe("https://archlang.uk/schemas/lint-rules/v0.schema.json");
     const doc = JSON.parse((await runArch(["lint", "--rules", "--json"])).stdout);
-    expect(doc.schema).toEqual({ status: "draft", id: null });
+    expect(doc.schema).toEqual({ status: "draft", id: "https://archlang.uk/schemas/lint-rules/v0.schema.json" });
     expect(doc.advisory).toMatch(/not compliance/);
   });
 
@@ -432,8 +442,13 @@ const IMPORTS_PROVENANCE = /(?:\bfrom\s*|\bimport\s*\(\s*)["'`][^"'`]*\bprovenan
 
 describe("rule provenance — off the compile path", () => {
   // The table is text the browser bundle must not carry (the playground's startup budget), and
-  // lint() must not learn it (its return value is pinned by the byte-identity laws). Only the CLI
-  // imports it.
+  // lint() must not learn it (its return value is pinned by the byte-identity laws). The CLI
+  // imports it, and the package entry re-exports `diagnosticRule` alone (RM1.6b: the MCP shim's
+  // `rule`, which reads the package entry only). The table's values are `pure`, so a bundle that
+  // never calls it drops them. A size budget cannot see the table come back (its leak was +3,868 B
+  // gzip, inside the first-use headroom), so the playground's startup-chunks e2e
+  // (`playground/e2e/preview3d.spec.ts`) fails on any built asset carrying one of the
+  // PROVENANCE_SENTINELS below; that bundle check, not a budget, is what replaced the stricter pin.
   it("the import matcher sees both forms", () => {
     expect(IMPORTS_PROVENANCE.test('import { x } from "../lint/provenance.js";')).toBe(true);
     expect(IMPORTS_PROVENANCE.test('const m = await import("./lint/provenance.js");')).toBe(true);
@@ -441,7 +456,7 @@ describe("rule provenance — off the compile path", () => {
     expect(IMPORTS_PROVENANCE.test('import { x } from "../lint/ruleset.js";')).toBe(false);
   });
 
-  it("no module of src/ outside src/cli/, and none of playground/src/, imports src/lint/provenance.ts", () => {
+  it("no module of src/ outside src/cli/ but the entry's one re-export, and none of playground/src/, imports src/lint/provenance.ts", () => {
     const core = sourceFiles(join(ROOT, "src"));
     const playground = sourceFiles(join(ROOT, "playground", "src"));
     expect(core.length).toBeGreaterThan(100);
@@ -449,6 +464,339 @@ describe("rule provenance — off the compile path", () => {
     const importers = [...core, ...playground].filter(
       (f) => f !== "src/lint/provenance.ts" && IMPORTS_PROVENANCE.test(readFileSync(join(ROOT, f), "utf8")),
     );
-    expect(importers).toEqual(["src/cli/commands-analyze.ts"]);
+    expect(importers.sort()).toEqual(["src/cli/commands-analyze.ts", "src/index.ts"]);
+    // The entry carries the resolver and nothing else of the table.
+    const entry = readFileSync(join(ROOT, "src/index.ts"), "utf8")
+      .split("\n")
+      .filter((l) => IMPORTS_PROVENANCE.test(l));
+    expect(entry).toEqual(['export { diagnosticRule } from "./lint/provenance.js";']);
+    // lint() and the projection never import it: the reference beside a diagnostic is `rule-ref.ts`.
+    for (const f of ["src/lint.ts", "src/lint/rule-ref.ts", "src/diagnostic-json.ts"])
+      expect(IMPORTS_PROVENANCE.test(readFileSync(join(ROOT, f), "utf8")), f).toBe(false);
   });
+
+  // The call site carries `@__PURE__` too: `pure` is declared in another chunk of `dist/`, and the
+  // playground's bundler reads `pure`'s own mark only within one file (measured on RM1.6b's build).
+  it("every table value is a marked `pure` call, so an unused export costs a bundle nothing", () => {
+    const src = readFileSync(join(ROOT, "src/lint/provenance.ts"), "utf8");
+    const names = ["DEFAULTS", "PROFILES", "admHall", "NO_STORE_AREA", "NO_PASSAGE_AREA", "OFF", "sourceSchema"];
+    for (const name of [...names, "LINT_RULES_SCHEMA_DRAFT"])
+      expect(src, name).toMatch(new RegExp(`const ${name}(?::[^=]+)? = /\\* @__PURE__ \\*/ pure\\(`));
+  });
+
+  // The bundle check's strings, the same two as `playground/e2e/preview3d.spec.ts`'s PROVENANCE:
+  // code only the table holds, so finding one in a built asset means the table is there. A comment
+  // elsewhere is fine (a minifier drops it); code is not, or the e2e would fail on a legitimate hint.
+  it("the playground's bundle sentinels are code only in the provenance table", () => {
+    const PROVENANCE_SENTINELS = ["Nationally Described Space Standard", "lint-rules/v0"];
+    const spec = readFileSync(join(ROOT, "playground/e2e/preview3d.spec.ts"), "utf8");
+    expect(spec).toContain(`const PROVENANCE = ${JSON.stringify(PROVENANCE_SENTINELS).replace(/,/g, ", ")};`);
+    const table = readFileSync(join(ROOT, "src/lint/provenance.ts"), "utf8");
+    const comment = /^\s*(?:\/\/|\/?\*)/;
+    for (const m of PROVENANCE_SENTINELS) {
+      expect(table, m).toContain(m);
+      const elsewhere = [...sourceFiles(join(ROOT, "src")), ...sourceFiles(join(ROOT, "playground", "src"))]
+        .filter((f) => f !== "src/lint/provenance.ts")
+        .flatMap((f) =>
+          readFileSync(join(ROOT, f), "utf8")
+            .split("\n")
+            .filter((l) => l.includes(m) && !comment.test(l))
+            .map((l) => `${f}: ${l.trim()}`),
+        );
+      expect(elsewhere, m).toEqual([]);
+    }
+  });
+});
+
+/** One 2.25 m² room with no use of its own: under the default ruleset's 4 m² generic floor. */
+const TINY_ROOM = `plan "Small" {
+  wall exterior thickness 200 { (0,0) (1500,0) (1500,1500) (0,1500) close }
+  room id=a at (0,0) size 1500x1500 label "Den"
+  door id=d0 at (750,1500) width 800 wall exterior hinge left swing in
+}
+`;
+
+/**
+ * Card RM1.6b: a lint diagnostic names the ruleset number it was raised against (`rule`), read
+ * where `lint()` ran and attached by `diagnosticToJson`'s third argument. The rule names its key
+ * where it pushes the warning, so one code from several keys names the right one.
+ */
+describe("diagnostic rule (RM1.6b)", () => {
+  const twoBed = readFileSync(join(ROOT, "examples/two-bed.arch"), "utf8");
+
+  it("reverse test: W_ROOM_TOO_SMALL from minDoubleBedroomAreaM2 names that key, not the code's per-use floor", () => {
+    const ds = lint(twoBed, { profile: "uk-residential-advisory" }).filter((d) => d.code === "W_ROOM_TOO_SMALL");
+    expect(ds.length).toBe(1);
+    expect(ds[0]!.message).toMatch(/the floor for a double bedroom/);
+    const rule = diagnosticRule(ds[0]!)!;
+    expect(rule.key).toBe("minDoubleBedroomAreaM2");
+    // What a lookup by code and room use would have named: a different key, and a different number.
+    expect(rule.key).not.toBe("minRoomAreaByUseM2.bedroom");
+    expect(LINT_PROFILES["uk-residential-advisory"]!.minRoomAreaByUseM2?.bedroom).not.toBe(rule.value);
+    expect(rule).toEqual({
+      profile: "uk-residential-advisory",
+      key: "minDoubleBedroomAreaM2",
+      value: 11.5,
+      units: "m2",
+      from: "uk-residential-advisory",
+      verification: "V",
+      document: "Nationally Described Space Standard",
+      clause: "10(d)",
+      edition: "2015",
+    });
+    // The row is the one `lint --rules --profile uk-residential-advisory` prints, after `profile`.
+    const row = effectiveRuleset("uk-residential-advisory").rules.find((r) => r.key === rule.key);
+    expect({ profile: "uk-residential-advisory", ...row }).toEqual(rule);
+  });
+
+  it("the default ruleset's generic floor names minRoomAreaM2, with no profile", () => {
+    const [d] = lint(TINY_ROOM).filter((x) => x.code === "W_ROOM_TOO_SMALL");
+    expect(diagnosticRule(d!)).toMatchObject({ profile: null, key: "minRoomAreaM2", value: 4, from: "default" });
+  });
+
+  it("a diagnostic no ruleset number drives has no rule", () => {
+    const ds = lint(TINY_ROOM);
+    for (const code of ["W_HABITABLE_NO_WINDOW", "W_ALIAS_MATCH"]) {
+      const d = ds.find((x) => x.code === code);
+      expect(d, code).toBeDefined();
+      expect(diagnosticRule(d!), code).toBeUndefined();
+      expect(diagnosticToJson(TINY_ROOM, d!, { rule: diagnosticRule }), code).not.toHaveProperty("rule");
+    }
+  });
+
+  it("lint() and its JSON.stringify are unchanged: the reference sits beside each diagnostic, never on it", () => {
+    for (const d of lint(twoBed, { profile: "uk-residential-advisory" })) {
+      expect(Object.getOwnPropertySymbols(d)).toEqual([]);
+      expect(JSON.stringify(d)).not.toMatch(/minDoubleBedroomAreaM2|"rule"/);
+      // The two-argument projection is the canonical shape; the option only appends `rule`, last.
+      const plain = diagnosticToJson(twoBed, d);
+      const ruled = diagnosticToJson(twoBed, d, { rule: diagnosticRule });
+      expect(plain).not.toHaveProperty("rule");
+      expect(diagnosticToJson(twoBed, d, {})).toEqual(plain);
+      expect(Object.keys(ruled)).toEqual([...Object.keys(plain), "rule"]);
+    }
+  });
+
+  it("a copy or a structuredClone of a diagnostic carries no reference (resolve it where lint() ran)", () => {
+    const [d] = lint(twoBed, { profile: "uk-residential-advisory" }).filter((x) => x.code === "W_ROOM_TOO_SMALL");
+    expect(diagnosticRule(d!)).toBeDefined();
+    expect(diagnosticRule(structuredClone(d!))).toBeUndefined();
+    expect(diagnosticRule({ ...d! })).toBeUndefined();
+  });
+
+  it("a number the caller's own ruleset sets is not the table's, and gets no rule", () => {
+    const [d] = lint(TINY_ROOM, { ruleset: { minRoomAreaM2: 3 } }).filter((x) => x.code === "W_ROOM_TOO_SMALL");
+    expect(d).toBeDefined();
+    expect(diagnosticRule(d!)).toBeUndefined();
+  });
+
+  it("lint --json carries the rule", async () => {
+    const r = await runArch(["lint", "examples/two-bed.arch", "--profile", "uk-residential-advisory", "--json"]);
+    expect(r.status).toBe(0);
+    const [d] = JSON.parse(r.stdout).diagnostics;
+    expect(d.rule).toMatchObject({ key: "minDoubleBedroomAreaM2", value: 11.5, verification: "V", clause: "10(d)" });
+  });
+});
+
+/**
+ * Which key a rule names, as a table (card RM1.6b, review m2): for each named file and each
+ * ruleset lint() runs it under (no profile, then every built-in one), the key every warning of a
+ * code names, or `null` for a warning that fires with no `rule`. A string is the key under all six
+ * rulesets, each of which raises it; an object lists the rulesets that raise it. A file's row holds
+ * every code that names a key under some ruleset, so a new citation here shows up, and the codes
+ * listed `null` on purpose: held to two ruleset numbers at once (`W_FLOOR_UNASSIGNED`, a doorway as
+ * wide as `minDoorWidthMm` under `W_LEAF_ACROSS_DOORWAY` and `W_STAIR_SIDE_ENTRY`,
+ * `W_STAIR_TOO_STEEP`) or driven by no number (`W_CONNECTOR_AMBIGUOUS`; `W_OPENING_AT_JUNCTION`
+ * with a wall inside the span). Other codes that never name a key are not listed.
+ *
+ * The files are a small cover of the corpus's 34 (code, key) pairs, chosen for cost (each runs in
+ * tens of milliseconds); `two-bed.arch`'s reverse test is above. Taken from a probe of the corpus
+ * at RM1.6b's round 1; why a row is `null` is in a comment where its rule pushes the warning.
+ */
+type KeyRow = string | null | Readonly<Record<string, string | null>>;
+const RULE_KEY_TABLE: Readonly<Record<string, Readonly<Record<string, KeyRow>>>> = {
+  "test/defect-corpus/clearances/bed-blocks-alcove.clean.arch": {
+    W_PATH_TOO_NARROW: { "accessibility-advisory": "minPathClearWidthMm" },
+    W_ROOM_TOO_NARROW: {
+      "uk-residential-advisory": "minMainDoubleBedroomShortSideMm",
+      "us-residential-advisory": "minRoomShortSideByUseMm.bedroom",
+    },
+    W_ROOM_TOO_SMALL: {
+      "cn-residential-advisory": "minDoubleBedroomAreaM2",
+      "uk-residential-advisory": "minDoubleBedroomAreaM2",
+    },
+  },
+  "eval/goldens/dims-auto-cottage.arch": {
+    W_DOORWAY_BLOCKED: "doorwayLandingMm",
+    W_DOOR_CLEARANCE: { "accessibility-advisory": "minDoorWidthMm" },
+    W_PATH_TOO_NARROW: { "accessibility-advisory": "minPathClearWidthMm" },
+    W_ROOM_TOO_SMALL: {
+      "uk-residential-advisory": "minRoomAreaByUseM2.bedroom",
+      "us-residential-advisory": "minRoomAreaByUseM2.bedroom",
+    },
+  },
+  "test/defect-corpus/clearances/seat-facing-away.clean.arch": {
+    W_EXIT_APPROACH_BLOCKED: { "accessibility-advisory": "exitApproachPullMm" },
+    W_PATH_TOO_NARROW: { "accessibility-advisory": "minPathClearWidthMm" },
+  },
+  "test/defect-corpus/clearances/exit-approach-blocked.arch": {
+    W_EXIT_APPROACH_BLOCKED: "exitApproachMm",
+  },
+  "test/defect-corpus/openings-ignore-walls/door-jamb-50-from-tee.arch": {
+    W_DOOR_CLEARANCE: { "accessibility-advisory": "minDoorWidthMm" },
+    W_OPENING_AT_JUNCTION: "minJunctionNibMm",
+    W_PATH_TOO_NARROW: { "accessibility-advisory": "minPathClearWidthMm" },
+  },
+  "test/recovery-corpus/terrace-row.arch": {
+    W_DOOR_CLEARANCE: { "accessibility-advisory": "minDoorWidthMm" },
+    W_HOB_FRIDGE_GAP: "hobLandingMm",
+    W_OPENING_AT_JUNCTION: "junctionNibThicknessRatio",
+    W_PATH_TOO_NARROW: { "accessibility-advisory": "minPathClearWidthMm" },
+    W_WC_SIDE_CLEARANCE: "wcSideClearanceMm",
+  },
+  "test/defect-corpus/clearances/leaf-across-doorway.arch": {
+    W_DOOR_CLEARANCE: { "accessibility-advisory": "minDoorWidthMm" },
+    W_LEAF_ACROSS_DOORWAY: {
+      default: null,
+      "residential-basic": null,
+      "accessibility-advisory": "doorwayLandingMm",
+      "cn-residential-advisory": null,
+      "uk-residential-advisory": null,
+      "us-residential-advisory": null,
+    },
+    W_PATH_TOO_NARROW: { "accessibility-advisory": "minPathClearWidthMm" },
+  },
+  "test/defect-corpus/stair-safety/door-onto-flank.arch": {
+    W_DOOR_CLEARANCE: { "accessibility-advisory": "minDoorWidthMm" },
+    W_PATH_TOO_NARROW: { "accessibility-advisory": "minPathClearWidthMm" },
+    W_STAIR_SIDE_ENTRY: {
+      default: null,
+      "residential-basic": null,
+      "accessibility-advisory": "minPathClearWidthMm",
+      "cn-residential-advisory": null,
+      "uk-residential-advisory": null,
+      "us-residential-advisory": null,
+    },
+  },
+  "test/defect-corpus/clearances/hob-against-fridge.arch": {
+    W_DOOR_CLEARANCE: { "accessibility-advisory": "minDoorWidthMm" },
+    W_HOB_FRIDGE_GAP: "hobLandingMm",
+    W_PATH_TOO_NARROW: { "accessibility-advisory": "minPathClearWidthMm" },
+    W_ROOM_TOO_NARROW: { "us-residential-advisory": "minRoomShortSideByUseMm.living" },
+    W_ROOM_TOO_SMALL: { "cn-residential-advisory": "minRoomAreaByUseM2.living" },
+  },
+  "eval/goldens/two-bed-hall.arch": {
+    W_DOOR_CLEARANCE: { "accessibility-advisory": "minDoorWidthMm" },
+    W_PATH_TOO_NARROW: { "accessibility-advisory": "minPathClearWidthMm" },
+    W_ROOM_TOO_NARROW: {
+      "cn-residential-advisory": "minPathClearWidthByUseMm.bedroom",
+      "us-residential-advisory": "minRoomShortSideByUseMm.hall",
+    },
+  },
+  "examples/relational.arch": {
+    W_DOORWAY_BLOCKED: { "accessibility-advisory": "doorwayLandingMm" },
+    W_DOOR_CLEARANCE: { "accessibility-advisory": "minDoorWidthMm" },
+    W_PATH_TOO_NARROW: { "accessibility-advisory": "minPathClearWidthMm" },
+    W_ROOM_TOO_NARROW: {
+      "cn-residential-advisory": "minEntryPassageWidthMm",
+      "uk-residential-advisory": "minMainDoubleBedroomShortSideMm",
+    },
+    W_ROOM_TOO_SMALL: { "uk-residential-advisory": "minDoubleBedroomAreaM2" },
+  },
+  "test/defect-corpus/space-not-enclosed/bath-open-side.arch": {
+    W_BOUNDARY_NO_WALL: "maxBoundaryGapMm",
+    W_DOOR_CLEARANCE: { "accessibility-advisory": "minDoorWidthMm" },
+    W_PATH_TOO_NARROW: { "accessibility-advisory": "minPathClearWidthMm" },
+    W_ROOM_NOT_ENCLOSED: "maxUnenclosedMm",
+    W_ROOM_TOO_SMALL: { "accessibility-advisory": "minRoomAreaM2" },
+    W_SWING_OBSTRUCTED: {
+      default: null,
+      "residential-basic": null,
+      "accessibility-advisory": "swingClearanceMm",
+      "cn-residential-advisory": null,
+      "uk-residential-advisory": null,
+      "us-residential-advisory": null,
+    },
+  },
+  "test/defect-corpus/space-not-enclosed/round-snug-unassigned.arch": {
+    W_FLOOR_UNASSIGNED: null,
+    W_PATH_TOO_NARROW: { "accessibility-advisory": "minPathClearWidthMm" },
+    W_ROOM_TOO_SMALL: {
+      "accessibility-advisory": "minRoomAreaM2",
+      "cn-residential-advisory": "minRoomAreaByUseM2.living",
+      "us-residential-advisory": "minRoomAreaByUseM2.living",
+    },
+  },
+  "test/defect-corpus/openings-ignore-walls/door-on-exterior-tee.arch": {
+    W_CONNECTOR_AMBIGUOUS: null,
+    W_DOOR_CLEARANCE: { "accessibility-advisory": "minDoorWidthMm" },
+    W_OPENING_AT_JUNCTION: null,
+    W_PATH_TOO_NARROW: { "accessibility-advisory": "minPathClearWidthMm" },
+  },
+  "test/defect-corpus/stair-safety/stair-too-steep.arch": {
+    W_DOOR_CLEARANCE: { "accessibility-advisory": "minDoorWidthMm" },
+    W_PATH_TOO_NARROW: { "accessibility-advisory": "minPathClearWidthMm" },
+    W_ROOM_TOO_SMALL: { "accessibility-advisory": "minRoomAreaM2" },
+    W_STAIR_TOO_STEEP: null,
+  },
+};
+
+describe("diagnostic rule (RM1.6b): the key table", () => {
+  const RULESETS: Array<string | undefined> = [undefined, ...LINT_PROFILE_NAMES];
+  const name = (p: string | undefined): string => p ?? "default";
+
+  it("covers both exit-approach depths and both nib limbs, and the six rulesets", () => {
+    const keys = new Set(
+      Object.values(RULE_KEY_TABLE).flatMap((row) =>
+        Object.values(row).flatMap((v) => (v === null ? [] : typeof v === "string" ? [v] : Object.values(v))),
+      ),
+    );
+    for (const k of ["exitApproachMm", "exitApproachPullMm", "minJunctionNibMm", "junctionNibThicknessRatio"])
+      expect(keys.has(k), k).toBe(true);
+    expect(RULESETS.map(name)).toEqual([
+      "default",
+      "residential-basic",
+      "accessibility-advisory",
+      "cn-residential-advisory",
+      "uk-residential-advisory",
+      "us-residential-advisory",
+    ]);
+  });
+
+  for (const [file, want] of Object.entries(RULE_KEY_TABLE)) {
+    it(file, () => {
+      const src = readFileSync(join(ROOT, file), "utf8");
+      const world = worldFor(dirname(join(ROOT, file)));
+      // code → ruleset → the keys its warnings name ("-" for none), joined when they differ.
+      const seen = new Map<string, Map<string, string>>();
+      for (const p of RULESETS) {
+        const per = new Map<string, Set<string>>();
+        for (const d of lint(src, { world, profile: p })) {
+          const code = d.code ?? "(no code)";
+          const s = per.get(code) ?? new Set<string>();
+          s.add(diagnosticRule(d)?.key ?? "-");
+          per.set(code, s);
+        }
+        for (const [code, s] of per) {
+          const m = seen.get(code) ?? new Map<string, string>();
+          m.set(name(p), [...s].sort().join(" + "));
+          seen.set(code, m);
+        }
+      }
+      const got: Record<string, KeyRow> = {};
+      for (const [code, m] of [...seen].sort(([a], [b]) => (a < b ? -1 : 1))) {
+        const cited = [...m.values()].some((v) => v !== "-");
+        if (!cited && !(code in want)) continue;
+        const vals = new Set(m.values());
+        const one = m.size === RULESETS.length && vals.size === 1 ? [...vals][0]! : undefined;
+        got[code] =
+          one !== undefined
+            ? one === "-"
+              ? null
+              : one
+            : Object.fromEntries([...m].map(([p, v]) => [p, v === "-" ? null : v]));
+      }
+      expect(got).toEqual(want);
+    });
+  }
 });

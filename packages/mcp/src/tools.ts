@@ -68,7 +68,9 @@ export const PNG_NEEDS_NEWER_CORE =
 export const JSON_PAGES_NEED_NEWER_CORE =
   "per-storey Plan JSON needs an @chanmeng666/archlang whose planToJson returns `pages`; the installed core projects only the lowest storey: upgrade it";
 
-const newerCore = coreNamespace as Partial<Pick<typeof coreNamespace, "PNG_PREVIEW_WIDTH" | "isOptionalDepError">>;
+const newerCore = coreNamespace as Partial<
+  Pick<typeof coreNamespace, "PNG_PREVIEW_WIDTH" | "isOptionalDepError" | "diagnosticRule">
+>;
 
 /** What the `link` tool reports when the installed core cannot provide the `./link` subpath. */
 export interface LinkUnavailable {
@@ -157,6 +159,13 @@ const echoName = (name: string): string => (name.length > ECHO_NAME_MAX ? `${nam
 
 const errorCount = (ds: Diagnostic[]): number => ds.filter((d) => d.severity === "error").length;
 const toJson = (source: string, ds: Diagnostic[]) => ds.map((d) => diagnosticToJson(source, d));
+/**
+ * `lint` and `validate` attach each warning's ruleset number and its provenance (`rule`, card
+ * RM1.6b), read from the diagnostics `lint()` returned in this call. On a core without
+ * `diagnosticRule` the option is empty and the warnings carry no `rule`, as before.
+ */
+const WITH_RULE = { rule: newerCore.diagnosticRule };
+const toJsonWithRule = (source: string, ds: Diagnostic[]) => ds.map((d) => diagnosticToJson(source, d, WITH_RULE));
 
 /** The agent-facing projection of one intent violation. The predicate objects are dropped
  *  on purpose — a band's `maxM2` can be `Infinity`, which `JSON.stringify` would null. */
@@ -563,7 +572,7 @@ export function registerTools(server: McpServer, opts: ToolOptions): void {
       },
     },
     hashingSource(async ({ source, profile }) =>
-      json({ ok: true, diagnostics: toJson(source, lint(source, { profile })) }),
+      json({ ok: true, diagnostics: toJsonWithRule(source, lint(source, { profile })) }),
     ),
   );
 
@@ -667,7 +676,7 @@ export function registerTools(server: McpServer, opts: ToolOptions): void {
       return json({
         ok,
         strict: strict ?? false,
-        diagnostics: toJson(source, all),
+        diagnostics: toJsonWithRule(source, all),
         ...(graph ? { graph: graphReport } : {}),
         ...(intentBlock ? { intent: intentBlock } : {}),
         // Last, as `validate --json` puts it: the item to fix first, or null.

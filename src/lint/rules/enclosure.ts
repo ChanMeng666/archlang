@@ -78,6 +78,7 @@ import type { LintContext, LintRule } from "../context.js";
 import { capFirst } from "../../naming.js";
 import type { EnclosureBudgetCap } from "../coverage.js";
 import { mm } from "../measure.js";
+import { cite } from "../rule-ref.js";
 
 /** Uses that make an open-plan pair: two rooms each with one of these need no wall between them. */
 const OPEN_PLAN: ReadonlySet<string> = new Set(["kitchen", "dining", "living"]);
@@ -519,18 +520,20 @@ export const boundaryNoWall: LintRule = {
             : `The boundary between ${na} and ${nb} is open for ${mm(gapLen)} mm (${runWords(g0, g1).replace(/^on the line /, "")}), wider than a ${mm(max)} mm doorway: they meet along ${mm(run.len)} mm ${runWords(run.p, run.q)}, and that stretch has no wall, door or opening. ${reason("that stretch")}`;
         const thick = run.sep > EPS ? run.sep : Number.isFinite(thinnest) ? thinnest : DEFAULT_PARTITION_MM;
         const stmt = `wall partition thickness ${mm(thick)} { (${mm(g0.x)},${mm(g0.y)}) (${mm(g1.x)},${mm(g1.y)}) }`;
-        out.push({
-          severity: "warning",
-          code: "W_BOUNDARY_NO_WALL",
-          ...ctx.at(b),
-          message,
-          hints: [
-            `Draw the missing partition, e.g. \`${stmt}\`, and put a \`door\` in it if the two rooms should connect.`,
-            `If they are one space by design, draw that wall with a cased \`opening\` across the gap, so the plan says how they join.`,
-            `Accept it if the boundary is closed by something the plan does not draw (a fixed screen, a balustrade, a level change).`,
-            `The rooms are "${a.id}" and "${b.id}".`,
-          ],
-        });
+        out.push(
+          cite(ctx.rules, "maxBoundaryGapMm", {
+            severity: "warning",
+            code: "W_BOUNDARY_NO_WALL",
+            ...ctx.at(b),
+            message,
+            hints: [
+              `Draw the missing partition, e.g. \`${stmt}\`, and put a \`door\` in it if the two rooms should connect.`,
+              `If they are one space by design, draw that wall with a cased \`opening\` across the gap, so the plan says how they join.`,
+              `Accept it if the boundary is closed by something the plan does not draw (a fixed screen, a balustrade, a level change).`,
+              `The rooms are "${a.id}" and "${b.id}".`,
+            ],
+          }),
+        );
       }
     }
     return out;
@@ -692,6 +695,9 @@ export const floorUnassigned: LintRule = {
           : ctx.rooms.length + (walls[0] ? ctx.ir.walls.indexOf(walls[0]) : ctx.ir.walls.length);
       found.push({
         key: [siteKey, -Math.round(c.unassigned), -Math.round(c.area)],
+        // RM1.6b: no `rule`. The warning needs BOTH the cover ratio under `minFaceCoverRatio` and
+        // the unassigned floor at least `minUnassignedM2`, and raising either one silences it, so
+        // two ruleset numbers hold every warning at once and neither alone decided it.
         d: {
           severity: "warning",
           code: "W_FLOOR_UNASSIGNED",
@@ -739,17 +745,19 @@ export const roomOutsideShell: LintRule = {
       if (o.inFaces < MIN_INSIDE_SHARE * o.gross) continue;
       const m2 = fmt2(Math.round(o.area / 10_000) / 100);
       const depth = o.depth >= 0.5 ? `, up to ${mm(o.depth)} mm past their outer face` : "";
-      out.push({
-        severity: "warning",
-        code: "W_ROOM_OUTSIDE_SHELL",
-        ...ctx.at(r),
-        message: `${capFirst(ctx.nameOf(r, "room"))} has ${m2} m² of its floor outside the building's walls${depth}. A room drawn past the outside wall has floor no wall encloses, usually a room resized or moved while its walls stayed put.`,
-        hints: [
-          `Bring "${ctx.labelOf(r)}" back inside the walls (resize or move it so its edge meets the outside wall), or move the outside wall out to the room's edge.`,
-          "If that part is meant to be outside (a terrace, a balcony, a porch), it is not a room: draw it as an `outdoor` surface instead and keep the room inside the walls.",
-          `The room is "${r.id}".`,
-        ],
-      });
+      out.push(
+        cite(ctx.rules, "minOutsideShellM2", {
+          severity: "warning",
+          code: "W_ROOM_OUTSIDE_SHELL",
+          ...ctx.at(r),
+          message: `${capFirst(ctx.nameOf(r, "room"))} has ${m2} m² of its floor outside the building's walls${depth}. A room drawn past the outside wall has floor no wall encloses, usually a room resized or moved while its walls stayed put.`,
+          hints: [
+            `Bring "${ctx.labelOf(r)}" back inside the walls (resize or move it so its edge meets the outside wall), or move the outside wall out to the room's edge.`,
+            "If that part is meant to be outside (a terrace, a balcony, a porch), it is not a room: draw it as an `outdoor` surface instead and keep the room inside the walls.",
+            `The room is "${r.id}".`,
+          ],
+        }),
+      );
     }
     return out;
   },
@@ -882,16 +890,18 @@ export const wallEndShort: LintRule = {
       const mine = ctx.wallSegs.find((s) => s.wallId === w.id && s.index === seg);
       if (!mine) continue;
       const ids = [w, other].filter((x) => x._idAuthored === true).map((x) => `"${x.id}"`);
-      out.push({
-        severity: "warning",
-        code: "W_WALL_END_SHORT",
-        ...ctx.at(w),
-        message: `${capFirst(aKind(w.category))} ${wallLineWords(mine)} ends ${mm(gap)} mm short of ${aKind(other.category)} ${wallLineWords(target)}${level}, as drawn. The two do not meet, so the plan shows a slit of ${mm(gap)} mm between them and the walls do not close.`,
-        hints: [
-          `Extend the end of the ${wallKindWords(w.category)} to the face of the ${wallKindWords(other.category)}, or into it so they join; if the slit is a real opening, draw a door or an \`opening\` there instead.`,
-          ...(ids.length > 0 ? [`The walls are ${ids.join(" and ")}.`] : []),
-        ],
-      });
+      out.push(
+        cite(ctx.rules, "wallGapMm", {
+          severity: "warning",
+          code: "W_WALL_END_SHORT",
+          ...ctx.at(w),
+          message: `${capFirst(aKind(w.category))} ${wallLineWords(mine)} ends ${mm(gap)} mm short of ${aKind(other.category)} ${wallLineWords(target)}${level}, as drawn. The two do not meet, so the plan shows a slit of ${mm(gap)} mm between them and the walls do not close.`,
+          hints: [
+            `Extend the end of the ${wallKindWords(w.category)} to the face of the ${wallKindWords(other.category)}, or into it so they join; if the slit is a real opening, draw a door or an \`opening\` there instead.`,
+            ...(ids.length > 0 ? [`The walls are ${ids.join(" and ")}.`] : []),
+          ],
+        }),
+      );
     }
     return out;
   },
