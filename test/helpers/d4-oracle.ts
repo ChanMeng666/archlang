@@ -469,6 +469,9 @@ export const RULE_CLASS: Readonly<Record<string, RuleClass>> = {
   // RM1.2a: each flight's run along its own axis (`_tail` through `place`) and the storey height, a
   // scalar; no compass, no sheet.
   "stair-riser-too-high": "invariant",
+  // RM1.2c: a room's label against the pieces whose footprint centre is on its floor, read off the
+  // room's shape; no compass, no sheet.
+  "label-piece-missing": "invariant",
 };
 
 /**

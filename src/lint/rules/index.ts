@@ -44,7 +44,7 @@ import { connectorAmbiguous, openingAtJunction, openingOverlap } from "./opening
 import { perRoomRules } from "./per-room.js";
 import { entranceIntoPrivate, roomViaPrivate, wetRoomDoor } from "./privacy.js";
 import { reachability } from "./reachability.js";
-import { habitableNoWindow, roomMissingDefining } from "./room-contents.js";
+import { habitableNoWindow, labelPieceMissing, roomMissingDefining } from "./room-contents.js";
 import { balconyNoDoor, outdoorOverlapsRoom } from "./outdoor.js";
 import { roomNotEquatorFacing } from "./site.js";
 import { shaftFootprintMismatch, stairUnmatched } from "./vertical.js";
@@ -205,6 +205,9 @@ export const LINT_RULES: readonly LintRule[] = [
   // The riser a stair's drawn treads climb on, against its storey (product roadmap RM1.2a, backlog
   // ST.1). Appended LAST, so no existing diagnostic moves within the array.
   stairRiserTooHigh,
+  // A room whose label names a catalogued piece it does not hold (product roadmap RM1.2c, ruling
+  // RM-D35). Appended LAST, so no existing diagnostic moves within the array.
+  labelPieceMissing,
 ];
 
 export type { LintContext, LintRule } from "../context.js";

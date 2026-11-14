@@ -73,6 +73,7 @@ export const DECIDED: Record<AuthoringStage, string[]> = {
     "W_FURN_CLEAR_SIDES",
     "W_HOB_FRIDGE_GAP",
     "W_HOB_UNDER_WINDOW",
+    "W_LABEL_PIECE_MISSING",
     "W_ROOM_MISSING_DEFINING",
     "W_ROOM_NO_CLEAR_PATH",
     "W_ROOM_NO_FIXTURE",

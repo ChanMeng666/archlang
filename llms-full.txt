@@ -871,7 +871,7 @@ from a file or stdin (`-`). This CLI is the primary agent interface; an optional
 ## 4. Diagnostic catalog
 
 Every diagnostic carries a stable code and a `fix`. Look one up with `archlang explain <CODE>`.
-**166 errors** (abort rendering) · **102 warnings** (advisory; `validate --strict` fails on them too).
+**166 errors** (abort rendering) · **103 warnings** (advisory; `validate --strict` fails on them too).
 
 ### Errors
 
@@ -1096,6 +1096,7 @@ Every diagnostic carries a stable code and a `fix`. Look one up with `archlang e
 - `W_IMPORT_DROPPED` — Part of an imported plan has no ArchLang form and was left out. **Fix:** Read the report (`--json`). Add what matters by hand in the `.arch` file (a `furniture` piece, a `dim`, a stair), or accept the loss: none of these changes the walls, rooms and openings the checks read.
 - `W_IMPORT_EMPTY_FILE` — Whole-file import binds an empty component. **Fix:** Draw in the module's plan body, or import one of its named components with `import "<file>": <name>`.
 - `W_KEEP_VIOLATED` — A hard keep does not hold. **Fix:** Edit the source so the keep holds (move what it names, or derive it from the rooms so it follows them), or remove the keep if the relation no longer applies. There is no machine fix: which side follows is a design decision.
+- `W_LABEL_PIECE_MISSING` — A room's label names a piece the room does not hold. **Fix:** Add the piece; the hint quotes statements checked together, clear of the room's walls, doors and furniture, when they fit. If the room is not meant to hold it, change the label. There is no machine fix: where the piece goes is a design decision.
 - `W_LEAF_ACROSS_DOORWAY` — A door's open leaf parks across another doorway's approach. **Fix:** Hang the leaf on its other jamb (flip its `hinge`; the hint says when that clears the doorway), open it to the other side of its wall (flip its `swing`), move either door along its wall until the open leaf stands at least the approach depth clear of the doorway's face or beside it, or make it a `sliding` or `pocket` door. There is no machine-applicable fix: which door moves or turns is a design decision.
 - `W_LEAF_TOO_WIDE` — A swinging door leaf is wider than a door is made. **Fix:** Make it a pair of leaves, `door double … width <mm>` (each leaf half the width; narrow a double door wider than twice the figure too), or narrow it, or make it a `sliding` or `bifold` door, or a cased `opening` if it needs no door. There is no machine-applicable fix: which the doorway becomes is a design decision.
 - `W_LENGTH_IN_METRES` — A length reads as metres where millimetres are the unit. **Fix:** Write the length in millimetres; the hint gives the clause times 1000.
