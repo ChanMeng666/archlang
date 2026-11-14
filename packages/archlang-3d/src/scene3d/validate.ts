@@ -148,7 +148,7 @@ const LEVEL_COLLECTIONS: Record<string, Check> = {
           }),
           1,
         ),
-        landings: array(object({ at: pt, size: sized("w", "h") })),
+        landings: array(object({ at: pt, size: sized("w", "h") }, { winders: array(ring, 2) })),
       },
     ),
   ),

@@ -40,7 +40,8 @@
  *   (on the floor finish, or hung at its family's mount), each part's shell carrying its material
  *   slot (`materials.ts`), else a grey box on the floor finish, its height a per-family default;
  * - stair (card X3; in its parts since card RM8.6, `stairDetail`): tread boards with open risers and
- *   solid landings (`stair:<id>`), two stringers a flight (`stair:<id>:stringer`) and a balustrade
+ *   solid landings (`stair:<id>`; a `winders` landing as its tapered treads, one riser each, card
+ *   RM1.2g), two stringers a flight (`stair:<id>:stringer`) and a balustrade
  *   on each edge with no wall past it (`stair:<id>:rail`), on the floor finish of the storey it
  *   climbs from, up to the next storey's floor finish (`stair.ts`): a `dir up` stair climbs from its own storey; a `dir down`
  *   one is the same stair seen from above when the storey below holds a `dir up` stair of its id
@@ -523,6 +524,31 @@ function levelNodes(
       value: solid.risers,
       provenance: "derived",
       rule: "stair-risers-from-treads",
+    });
+    // Card RM1.2g: a winder landing is built as the tapered treads the plan's lines cut it into, one
+    // riser each (counted in `risers` above): derived from the drawing, never assumed. Each tread is
+    // solid down to the floor, as a level landing is, so its risers are closed, not the flights'
+    // open ones (`risers_form` below).
+    (s.landings ?? []).forEach((l, k) => {
+      if (l.winders?.length)
+        ledger.push(
+          {
+            kind: "stair",
+            id: s.id,
+            field: `winders(landing ${k + 1})`,
+            value: l.winders.length,
+            provenance: "derived",
+            rule: "stair-winders-from-drawing",
+          },
+          {
+            kind: "stair",
+            id: s.id,
+            field: `risers_form(landing ${k + 1})`,
+            value: "solid",
+            provenance: "default",
+            rule: "stair-winders-solid",
+          },
+        );
     });
     // Its parts' sizes, each a share of its own riser, going and width (card RM8.6, design
     // `visual-language.md` §2.3), and what each probed edge met: the stair's own facts, per stair.

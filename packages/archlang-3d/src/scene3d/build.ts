@@ -24,6 +24,7 @@ import {
   type RRoof,
   type RRoom,
   type RStair,
+  type RStairPiece,
   type RVoid,
   type RWindow,
 } from "@chanmeng666/archlang";
@@ -181,7 +182,7 @@ const OPPOSITE: Readonly<Record<Side, Side>> = { top: "bottom", bottom: "top", l
  * it), so the treads stand on the drawing's tread lines. `undefined` when the core does not export
  * `treadCount` (a core before the amendment of 2026-11-06 to ADR 0031): no stair is built then.
  */
-function stairPieces(s: RStair): Pick<Stair, "flights" | "landings"> | undefined {
+function stairPieces(s: RStair, ledger: Assumption[]): Pick<Stair, "flights" | "landings"> | undefined {
   const treadCount = (core as Partial<typeof core>).treadCount;
   if (typeof treadCount !== "function") return undefined;
   const flight = (at: Point, size: { w: number; h: number }, tail: Side): StairFlight => ({
@@ -191,23 +192,143 @@ function stairPieces(s: RStair): Pick<Stair, "flights" | "landings"> | undefined
     treads: treadCount(tail === "top" || tail === "bottom" ? size.h : size.w),
   });
   if (s.flights && s.landings) {
+    const flights = s.flights;
     return {
-      flights: s.flights.map((f) => flight(f.at, f.size, f.tail)),
-      landings: s.landings.map((l) => ({ at: umPoint(l.at), size: { w: um(l.size.w), h: um(l.size.h) } })),
+      flights: flights.map((f) => flight(f.at, f.size, f.tail)),
+      landings: s.landings.map((l, i) => {
+        const winders = winderRings(s.id, i, l, flights[i], flights[i + 1], ledger);
+        return { at: umPoint(l.at), size: { w: um(l.size.w), h: um(l.size.h) }, ...(winders ? { winders } : {}) };
+      }),
     };
   }
   const tail = entryEdges(s)[0];
   return tail ? { flights: [flight(s.at, s.size, tail)], landings: [] } : undefined;
 }
 
-const stairOf = (s: RStair): Stair => ({
+const stairOf = (s: RStair, ledger: Assumption[]): Stair => ({
   id: s.id,
   source: source(s),
   box: box(s),
   dir: s.dir,
   width: um(s.width),
-  ...stairPieces(s),
+  ...stairPieces(s, ledger),
 });
+
+/** A straight line the core draws (mm, plan axes). */
+type Segment = readonly [Point, Point];
+
+const rectOf = (p: RStairPiece): { x: number; y: number; w: number; h: number } => ({
+  x: p.at.x,
+  y: p.at.y,
+  w: p.size.w,
+  h: p.size.h,
+});
+
+/**
+ * Landing `i` of stair `id` as its tapered treads (card RM1.2g), between the flights `before` and
+ * `after` it, cut on the lines the plan's glyph draws across it: the core's own `winderTreads` (a
+ * public export, pure and bounded, at most `MAX_WINDERS - 1` lines; no storey is drawn for them).
+ * `undefined` on a level landing. A `winders` landing whose lines this cannot read (a core without
+ * `winderTreads`, or lines that are not `n - 1` from one inner corner) is built level and ledgered
+ * `stair-winders-not-read`, so the preview never quietly drops the steps the plan states.
+ */
+function winderRings(
+  id: string,
+  i: number,
+  l: RStairPiece,
+  before: RStairPiece | undefined,
+  after: RStairPiece | undefined,
+  ledger: Assumption[],
+): Pt[][] | undefined {
+  if (l.winders === undefined) return undefined;
+  const lines = (core as Partial<typeof core>).winderTreads;
+  const rings =
+    typeof lines === "function" && before && after
+      ? treadRings(l, before, lines(l, rectOf(before), rectOf(after)))
+      : undefined;
+  if (!rings)
+    ledger.push({
+      kind: "stair",
+      id,
+      field: `winders(landing ${i + 1})`,
+      value: "level",
+      provenance: "default",
+      rule: "stair-winders-not-read",
+    });
+  return rings;
+}
+
+/** How near two drawn coordinates (mm) must be to be one: the drawing computes both from the same numbers. */
+const NEAR_MM = 1e-6;
+
+/**
+ * The tapered treads of a `winders <n>` landing (card RM1.2g), in climbing order, each its plan
+ * ring (µm), cut out of the landing by the lines the core draws across it (`winderTreads`), never
+ * re-derived: those `n - 1` lines fan from the landing's inner corner, the corner of the side the
+ * flight `before` stands against (the side the climb enters by), to the two sides that corner does
+ * not lie on. Ordered by their angle from the entry side, tread `k` is the corner, the end of line
+ * `k - 1` (of the entry side for the first), the landing's far corner when the two ends lie on
+ * different sides, and the end of line `k` (of the exit side for the last). `undefined` on a level
+ * landing, and where the lines are not exactly `n - 1` from one such corner: that landing is then
+ * built level ({@link winderRings} ledgers it). Exported for its test only (`test/stair.test.ts`).
+ */
+export function treadRings(l: RStairPiece, before: RStairPiece, lines: readonly Segment[]): Pt[][] | undefined {
+  const n = l.winders;
+  if (n === undefined) return undefined;
+  const near = (a: number, b: number): boolean => Math.abs(a - b) <= NEAR_MM;
+  const [x0, y0] = [l.at.x, l.at.y];
+  const [x1, y1] = [x0 + l.size.w, y0 + l.size.h];
+  const inside = (p: Point): boolean =>
+    p.x >= x0 - NEAR_MM && p.x <= x1 + NEAR_MM && p.y >= y0 - NEAR_MM && p.y <= y1 + NEAR_MM;
+  const [bx0, by0, bx1, by1] = [before.at.x, before.at.y, before.at.x + before.size.w, before.at.y + before.size.h];
+  /** Whether the flight before stands against the side from `(ax, ay)` to `(bx, by)` (one axis fixed). */
+  const against = (ax: number, ay: number, bx: number, by: number): boolean =>
+    ay === by
+      ? (near(by0, ay) || near(by1, ay)) && bx0 < Math.max(ax, bx) - NEAR_MM && bx1 > Math.min(ax, bx) + NEAR_MM
+      : (near(bx0, ax) || near(bx1, ax)) && by0 < Math.max(ay, by) - NEAR_MM && by1 > Math.min(ay, by) + NEAR_MM;
+  const fans = (
+    [
+      [x0, y0],
+      [x1, y0],
+      [x1, y1],
+      [x0, y1],
+    ] as const
+  ).flatMap(([cx, cy]) => {
+    // The sides this corner does not lie on: `x = ox` and `y = oy`.
+    const [ox, oy] = [near(cx, x0) ? x1 : x0, near(cy, y0) ? y1 : y0];
+    // The entry side through it: along x (the side `y = cy`) or along y (`x = cx`), or neither.
+    const alongX = against(cx, cy, ox, cy);
+    if (!alongX && !against(cx, cy, cx, oy)) return [];
+    const ends = lines.flatMap(([a, b]): Point[] => {
+      for (const [p, q] of [
+        [a, b],
+        [b, a],
+      ] as const)
+        if (near(p.x, cx) && near(p.y, cy) && inside(q) && (near(q.x, ox) || near(q.y, oy))) return [q];
+      return [];
+    });
+    return ends.length === n - 1 ? [{ c: { x: cx, y: cy }, ox, oy, alongX, ends }] : [];
+  });
+  const fan = fans[0];
+  if (fans.length !== 1 || !fan) return undefined;
+  const { c, ox, oy, alongX } = fan;
+  const entry: Point = alongX ? { x: ox, y: c.y } : { x: c.x, y: oy };
+  const exit: Point = alongX ? { x: c.x, y: oy } : { x: ox, y: c.y };
+  const [ux, uy] = [entry.x - c.x, entry.y - c.y];
+  /** The angle at the corner from the entry side to `p`, within the quarter turn. */
+  const angle = (p: Point): number => {
+    const [vx, vy] = [p.x - c.x, p.y - c.y];
+    return Math.atan2(Math.abs(ux * vy - uy * vx), ux * vx + uy * vy);
+  };
+  const ends = [entry, ...[...fan.ends].sort((a, b) => angle(a) - angle(b)), exit];
+  const onX = (p: Point): boolean => near(p.x, ox);
+  const onY = (p: Point): boolean => near(p.y, oy);
+  return Array.from({ length: n }, (_, k) => {
+    const [a, b] = [ends[k] as Point, ends[k + 1] as Point];
+    const far = !(onX(a) && onX(b)) && !(onY(a) && onY(b));
+    return [c, a, ...(far ? [{ x: ox, y: oy }] : []), b].map(umPoint);
+  });
+}
 
 /** One storey's walls and openings, through the core's joinery. */
 function wallsAndOpenings(
@@ -403,7 +524,7 @@ function levelOf(s: Storey, ledger: Assumption[], tol: number, mirrored: Readonl
     ...(demolished.length > 0 ? { demolished } : {}),
     openings,
     furniture: of("furniture").map((f) => furnitureOf(f, mirrored, ledger)),
-    stairs: of("stair").map(stairOf),
+    stairs: of("stair").map((st) => stairOf(st, ledger)),
     // A core `void … polygon` (an L) carries the rectangles its hole is made of (`parts`): each is
     // one box, ids `<id>#<k>` (unique per collection), `source` still naming the void.
     voids: of("void").flatMap((v) =>
