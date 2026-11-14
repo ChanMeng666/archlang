@@ -20,7 +20,7 @@ Every module, not only the entry, is in the sibling [`module-map.md`](module-map
 The total counts every name the checker sees as exported, including those pulled in by
 `export type * from "./ast.js"`; a count of the names written in `index.ts`' export statements is lower.
 
-Totals: 640 exports (223 values, 417 types), 407 flagged (73 values).
+Totals: 642 exports (224 values, 418 types), 407 flagged (73 values).
 
 ## `src/algebra/d4.ts`
 
@@ -649,6 +649,7 @@ Totals: 640 exports (223 values, 417 types), 407 flagged (73 values).
 | `RRoom` | type | `packages/archlang-3d`, `test` |
 | `RSection` | type | none |
 | `RStair` | type | `packages/archlang-3d` |
+| `RStairPiece` | type | `packages/archlang-3d`, `test` |
 | `RVoid` | type | `packages/archlang-3d` |
 | `RWall` | type | `packages/archlang-3d` |
 | `RWindow` | type | `packages/archlang-3d`, `test` |
@@ -1102,6 +1103,7 @@ Totals: 640 exports (223 values, 417 types), 407 flagged (73 values).
 | `verticalConnections` | value | `test` |
 | `verticalReach` | value | `test` |
 | `verticalsOf` | value | `test` |
+| `winderTreads` | value | `packages/archlang-3d`, `test` |
 
 ## `src/view/camera.ts`
 

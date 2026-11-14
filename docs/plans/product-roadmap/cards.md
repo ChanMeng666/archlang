@@ -990,13 +990,25 @@ A.6/A.7（CLI `--accessible --annotate` 与 MCP 对应参数）、A.1（`dims au
 
 不挡也不被任何产品卡挡。**不是第三个执行者：** TP 卡在核心车道两张卡之间占用核心执行者的位置（RM-D22 的两个执行者不变），一次一张。TP1、TP2 是 high 层级（脚本与工作流），评审后由协调者判断合并。
 
-### TP1 · `npm run sync:main`：同步 `main` 时机械地解掉记录与生成物冲突 — `doing`（2026-11-14 派出） · 1 日 · opus · 依赖无
+### TP1 · `npm run sync:main`：同步 `main` 时机械地解掉记录与生成物冲突 — `done` · #754（`700f64c2`，2026-11-14） · 1 日 · opus · 依赖无
 
 `scripts/sync-main.mjs`：合并 `origin/main`；生成物（`.claude/hooks/generated-artifacts.json` 的列表）取 `main` 一侧再 `gen:all`；`CHANGELOG.md` 三方 union 合并，再跑 `scripts/check-changelog-unreleased.mjs`；其余冲突停下交给代理（`--continue` 续跑）；`--push` 推送。最后打印**重新红队的重点**（不是"可以不红队"：`ci-throughput.md` §2 第 3 条不变，同步后的头总要重新红队，见 `docs/agents/gotchas.md` 里 `doorSwing()` 的一条）：两边都改过的文件、手解的文件、main 带进来且与 PR 改动的文件有直接 import 关系的文件、main 一侧改过的导出函数名（红队在 PR 里查它们的调用处）。所有 `--name-only` 都带 `--no-renames`；低层级路径（`scripts/risk-tier.mjs` 的分类）不进重点。`docs/agents/commands.md` § Merging a PR 改为用它。证明：纯函数的单测 + 一次手工同步的输出贴在 PR 里。不许：`git add -A`；把生成物列表或层级规则抄进脚本。
 
-### TP2 · Playground E2E 拆三个 job；Node 18、Node 20、Windows 在 `main` 上各分三片 — `todo` · 1 日 · opus · 依赖无（与 TP1 不同文件，TP1 合并后再派）
+**As built（#754，两轮红队）：** 生成物的 `partial` 按文件标（`scripts/generators.ts`；只改标记区段的 `gen:doors`、`gen:docs-headers` 的输出与 `plugin.json` 遇冲突交给代理），并有静态扫描的守卫测试；`CHANGELOG.md` 先 `--diff3`，两边改了同一条旧条目就交给代理，否则 union；重点清单另列"main 改了函数体的导出"（从 `-U0` 的 hunk 头读，`doorSwing()` 那一类）；推送失败也先打印重点；`--continue` 记住 `--push` 与 `--changelog-exempt`。它在自己的 PR 上与 #755 上都用过：#754 合并前的那次同步列出 `package.json` 重叠和 `test/schema-ids.test.ts` 的 import 关联，红队据此核过。余项见 TP1b。
+
+### TP1b · `sync:main` 的余项（2026-11-14 加，出自 #754 的评审） — `todo` · 未估 · sonnet · 依赖无（线下）
+
+(a) 重点清单的 import 关联看不到被删除或改名的模块（`scripts/nearest-tests.mjs` 只解析存在的文件）：main 删了 PR 引用的模块，或反过来，要列出来（CI 的 typecheck 会挡住，所以是线下）。(b) `test/sync-main.test.ts` 在 Windows 上约 22 s（每例 30 s 超时）；若 `Windows tests` 的某一片因它变成长杆，把集成用例并成更少的仓库。
+
+### TP2 · Playground E2E 拆三个 job；Node 18、Node 20、Windows 在 `main` 上各分三片 — `done` · #755（`eccc3c2c`，2026-11-14） · 1 日 · opus · 依赖无
 
 Playground：Chromium `--shard=1/2`、`2/2` 两个 job，Firefox 与 WebKit 的 `@engines` 一个 job，聚合 job 保留必需检查名 `Playground E2E (Playwright)`（照 `Node 22` 聚合 job 的写法：`always()`，按 needs 的结果判，记录类 PR 照常绿）；每个 job 各自的 flaky 报告与失败时的产物名。主线三条腿：测试分三片（`vitest --shard`，`test/sequencer.ts` 按时长分），typecheck、lint、drift、eval 只在第 1 片跑；聚合 job 保留 `Node 18`、`Node 20`、`Windows (tests + drift)` 三个名字；在 PR 上分片 job 在 job 级跳过（不起 runner），**例外照旧：`changes` 失败时 PR 上也全跑**（`ci.yml` 现有的 fail-open）；`merge_group` 与 push 跑全部。`docs/agents/commands.md` § CI 的作业表、`ci.yml` 顶部注释同步改。证明：本 PR 的一次代码运行（各 job 时长）与合并后第一次 push 运行的墙钟**和各 job 的排队时间**（push 的峰值并行约 21 个 job，超过 Free 的 20 个并发上限，`../ci-throughput-research.md` §4.1）；预期 PR 约 9 → 6.5 分钟，push 约 28 → 11 分钟（估算）。不许：改必需检查的名字或分支保护。
+
+**量到的（各一次运行，不是中位数；TP5 取中位数）：** PR run 43535706255 墙钟 7.3 分钟（Chromium 两片 3.0、5.1，engines 2.8；长杆变成 Docs E2E 与 Node 22 的一片，都是 6.0）；合并后第一次 push run 43541609209 墙钟 **12.8 分钟**（之前中位 28.1），各 job 排队最多 4 s。红的证明：草稿 #757（未合并、已关）让 `changes` 失败并放一个只在 Node 18 上红的测试，run 43538960462 里只有 `Node 18 tests 3/3` 与 `Node 18` 红，`Node 20`、`Windows (tests + drift)`、`Playground E2E (Playwright)` 绿，九片都跑了。push 上的长杆是各腿的第 1 片（Windows 12.5、Node 18 12.2，而第 2 片 5.8–6.0）：见 TP6。
+
+### TP6 · `test/sequencer.ts` 给记录为 0 秒的文件一个最小成本（2026-11-14 加，出自 #755） — `todo` · 0.5 日 · sonnet · 依赖无
+
+`assignShards` 把 `test/.durations.json` 里记为 0 秒的约 126 个文件全放进同一片（零成本不推动负载），多一个文件整组就换片（#755 的执行者与红队都复现了：279/155/156 → 153/156/282）。push run 43541609209 里各腿第 1 片约是第 2 片的两倍。内容：未记录或 0 秒的文件按一个下限（例如已记录文件时长的中位数，或 1 s）计入，并给 `assignShards` 加单测（覆盖、无重复、零成本文件分散）。证明：本地用 `DurationSequencer.shard()` 对 N=3 与 N=5 打印各片的文件数与估计秒数，合并后一次 push run 的各片时长。不许：手改 `.durations.json` 的数值。
 
 ### TP3 · E2E flaky 记账 — `todo` · 0.5 日 · sonnet · 依赖 TP2（线下）
 

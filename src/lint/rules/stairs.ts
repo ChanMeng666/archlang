@@ -1173,8 +1173,8 @@ export function winderRisers(v: RStair): number {
 
 /** The risers `v`'s drawing climbs on: one per tread, one at each flight's head, where the last
  *  riser lands on the landing or the floor above, and one per winder line ({@link winderRisers}).
- *  On a stair with no winders this is the 3D preview's `stairRisers`; the 3D preview builds a winder
- *  landing as one level box, so it climbs such a stair on fewer, higher risers than the drawing. */
+ *  This is the 3D preview's `stairRisers`, which builds a winder landing as its tapered steps, one
+ *  riser each, cut on these same lines. */
 export const drawnRisers = (v: RStair): number => drawnTreads(v).reduce((n, t) => n + t + 1, 0) + winderRisers(v);
 
 /** Where {@link DEFAULT_RULESET}'s `stairDrawnMaxRiseMm` comes from, as the hint names it. The

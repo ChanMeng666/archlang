@@ -9,7 +9,7 @@
  * flight's centreline; it is built once per climb; and its balustrade stands on the edges the probe
  * finds open, mirrored with the plan.
  */
-import { entryEdges, type RStair, resolvePlan, treadCount } from "@chanmeng666/archlang";
+import { compile, entryEdges, lint, type RStair, resolvePlan, treadCount } from "@chanmeng666/archlang";
 import { describe, expect, it } from "vitest";
 import {
   adaptPlan,
@@ -20,7 +20,9 @@ import {
   stairDetail,
   stairRisers,
   stairSolid,
+  validateScene3D,
 } from "../src/index.js";
+import type { Pt, StairFlight, StairLanding } from "../src/scene3d/types.js";
 import { openEdges, signedVolume } from "../src/node.js";
 import { EXAMPLES_LIST, WORLD } from "./corpus.js";
 
@@ -562,5 +564,320 @@ describe("determinism", () => {
       const b = JSON.stringify(all(buildMesh(adapted(src).scene)));
       expect(a, n).toBe(b);
     }
+  });
+});
+
+// Product-roadmap card RM1.2g (ruling RM-D36): a `winders <n>` landing is built as the n tapered
+// treads the plan's drawing cuts it into, one riser each, so the 3D preview climbs the risers
+// `W_STAIR_RISER_TOO_HIGH` reads (each line drawn across the landing is a riser, PR #736), not one
+// level landing. The expectations are read off the core (its `lint()` message, its drawn lines),
+// never off the adapter that read them.
+describe("a winder landing (card RM1.2g)", () => {
+  /** The quarter turn of PR #736's review: flights of 1100 and 880 mm, a 1000 × 1000 landing. */
+  const winderPlan = (winders: string, height = 2750) => `plan "L" {
+  units mm
+  height ${height}
+  wall id=shell exterior thickness 200 { (0,0) (6000,0) (6000,6000) (0,6000) close }
+  room id=hall at (0,0) size 6000x6000 label "Hall" uses hall
+  door at (3000,6000) width 900 wall shell
+  stair id=s dir up width 1000 {
+    flight at (1500,1100) size 1000x1100
+    landing at (1500,100) size 1000x1000${winders}
+    flight at (620,100) size 880x1000
+  }
+}`;
+  const RISER = "W_STAIR_RISER_TOO_HIGH";
+  /**
+   * The riser count and riser (mm) the 2D rule reads, from its own message: its limit lowered so it
+   * speaks, and `W_STAIR_TOO_STEEP`'s raised so it never takes the stair first (a stair that rule
+   * reports is not reported again). The count the message states depends on neither limit.
+   */
+  function ruleReads(src: string): { risers: number; riserMm: number } {
+    const ruleset = { stairDrawnMaxRiseMm: 100, stairMaxRiseMm: 1000, stairMinGoingMm: 1 };
+    const d = lint(src, { ruleset }).find((x) => x.code === RISER);
+    const m = d?.message.match(/on (\d+) risers \([^)]*\) of (?:about )?(\d+(?:\.\d+)?) mm/);
+    expect(m, d?.message).toBeTruthy();
+    return { risers: Number(m?.[1]), riserMm: Number(m?.[2]) };
+  }
+  const src8 = winderPlan(" winders 8");
+  const r8 = adapted(src8);
+  const m8 = buildMesh(r8.scene);
+  const node8 = stairNodes(m8)[0] as MeshNode;
+  const landing8 = r8.scene.levels[0]?.stairs[0]?.landings?.[0];
+  /** Each of a stair node's shells' top (µm), in climbing order. */
+  const tops = (n: MeshNode): number[] => n.shells.map((sh) => extent([sh])[4]);
+
+  it("`winders 8`: the 3D preview climbs on the risers the 2D rule reads, each step its riser", () => {
+    // The default rule is silent on this stair (2750 / 16 = 171.875 mm is under 220): unchanged.
+    expect(lint(src8).filter((x) => x.code === RISER)).toEqual([]);
+    const { risers, riserMm } = ruleReads(src8);
+    // 4 + 3 treads, a head riser per flight and 7 lines across the landing: the rule's own count.
+    expect(risers).toBe(16);
+    expect(node8.extras.risers).toBe(risers);
+    expect(m8.assumptions.find((a) => a.rule === "stair-risers-from-treads")?.value).toBe(risers);
+    const rise = 2750 * MM;
+    // Every tread top (4 + 8 + 3 of them) one riser above the last, from the floor finish to a riser
+    // under the floor above: the climb per step is the rule's riser, in whole micrometres.
+    const t = tops(node8);
+    expect(t).toEqual(Array.from({ length: risers - 1 }, (_, k) => FINISH + Math.round((rise * (k + 1)) / risers)));
+    const climbs = t.map((x, k) => x - (k === 0 ? FINISH : (t[k - 1] as number)));
+    for (const c of climbs) {
+      expect(Number.isInteger(c)).toBe(true);
+      expect(Math.abs(c - rise / risers)).toBeLessThanOrEqual(1);
+      expect(Math.abs(c / MM - riserMm)).toBeLessThan(0.5);
+    }
+    // Before this card the landing was one level box: 9 risers of about 306 mm.
+    expect(stairRisers(r8.scene.levels[0]?.stairs[0]?.flights ?? [])).toBe(9);
+  });
+
+  it("builds n tread solids over the landing, closed, outward and in whole micrometres", () => {
+    expect(landing8?.winders).toHaveLength(8);
+    // Shells in climbing order: flight 1's 4 treads, the 8 winders, flight 2's 3 treads.
+    expect(node8.shells).toHaveLength(4 + 8 + 3);
+    const [lx0, ly0] = landing8?.at ?? [0, 0];
+    const [lx1, ly1] = [lx0 + (landing8?.size.w ?? 0), ly0 + (landing8?.size.h ?? 0)];
+    for (const sh of node8.shells.slice(4, 12)) {
+      const [x0, y0, z0, x1, , z1] = extent([sh]);
+      // Each stands on the floor finish, inside the landing (glTF X is plan x, Z plan y).
+      expect(y0).toBe(FINISH);
+      expect([x0 >= lx0, x1 <= lx1, z0 >= ly0, z1 <= ly1]).toEqual([true, true, true, true]);
+    }
+    for (const node of m8.nodes.filter((x) => x.kind === "stair"))
+      for (const sh of node.shells) {
+        expect(openEdges(sh), node.key).toBe(0);
+        expect(signedVolume(sh), node.key).toBeGreaterThan(0);
+        expect(
+          sh.positions.every((p) => Number.isInteger(p)),
+          node.key,
+        ).toBe(true);
+      }
+    // The treads tile the landing: their plan areas add up to its area (µm², each vertex rounded once).
+    const area = (ring: readonly Pt[]): number =>
+      Math.abs(
+        ring.reduce((a, p, i) => {
+          const q = ring[(i + 1) % ring.length] as Pt;
+          return a + p[0] * q[1] - q[0] * p[1];
+        }, 0),
+      ) / 2;
+    const whole = (lx1 - lx0) * (ly1 - ly0);
+    const total = (landing8?.winders ?? []).reduce((a, r) => a + area(r), 0);
+    expect(Math.abs(total - whole) / whole).toBeLessThan(1e-6);
+    expect(
+      m8.assumptions.filter((a) => a.rule === "stair-winders-from-drawing").map((a) => [a.field, a.value]),
+    ).toEqual([["winders(landing 1)", 8]]);
+    expect(validateScene3D(JSON.parse(JSON.stringify(r8.scene)))).toEqual([]);
+  });
+
+  it("cuts the treads on the lines the drawing draws across the landing, never on a re-derived fan", () => {
+    // The plan's own lines on the stair layer from the landing's inner corner, (1500, 1100).
+    const corner = { x: (landing8?.at[0] ?? 0) / MM, y: ((landing8?.at[1] ?? 0) + (landing8?.size.h ?? 0)) / MM };
+    const drawn = (compile(src8, { noCache: true }).scene?.nodes ?? [])
+      .filter((n) => n.layerName === "A-FLOR-STRS")
+      .flatMap((n) => (n.prim.t === "line" ? [[n.prim.a, n.prim.b] as const] : []))
+      .filter(([a]) => a.x === corner.x && a.y === corner.y)
+      .map(([, b]) => `${Math.round(b.x * MM)},${Math.round(b.y * MM)}`);
+    expect(drawn).toHaveLength(7);
+    // Each pair of neighbouring treads shares one edge from the inner corner: one drawn line.
+    const rings = landing8?.winders ?? [];
+    const c = `${corner.x * MM},${corner.y * MM}`;
+    const shared = rings.slice(1).map((r, k) => {
+      const prev = new Set((rings[k] ?? []).map((p) => `${p[0]},${p[1]}`));
+      return r.map((p) => `${p[0]},${p[1]}`).filter((p) => prev.has(p) && p !== c);
+    });
+    expect(shared.map((s) => s.length)).toEqual(Array(7).fill(1));
+    expect(shared.flat().sort()).toEqual([...drawn].sort());
+  });
+
+  it("every count of winders climbs the rule's risers; a level landing is one step, as before", () => {
+    for (const n of [2, 3, 4, 5, 6, 7, 8]) {
+      const src = winderPlan(` winders ${n}`, 4000);
+      const node = stairNodes(buildMesh(adapted(src).scene))[0] as MeshNode;
+      expect(node.extras.risers, `winders ${n}`).toBe(ruleReads(src).risers);
+      expect(node.shells, `winders ${n}`).toHaveLength(4 + n + 3);
+    }
+    const level = winderPlan("", 4000);
+    const node = stairNodes(buildMesh(adapted(level).scene))[0] as MeshNode;
+    expect([node.extras.risers, ruleReads(level).risers, node.shells.length]).toEqual([9, 9, 4 + 1 + 3]);
+    expect(adapted(level).scene.levels[0]?.stairs[0]?.landings?.[0]).not.toHaveProperty("winders");
+    // `stairRisers` counts n - 1 more on each winder landing, and none on a level one.
+    const ring: Pt[] = [
+      [0, 0],
+      [1, 0],
+      [1, 1],
+    ];
+    const flights = [{ treads: 4 }, { treads: 3 }];
+    expect(stairRisers(flights, [{ winders: Array.from({ length: 8 }, () => ring) }])).toBe(16);
+    expect(stairRisers(flights, [{}])).toBe(9);
+  });
+
+  it("a mirrored plan builds the mirrored winders (`place … mirror x`): no hand is gained", () => {
+    const kit = (place: string) => `plan "m" { units mm height 2750
+      wall id=shell exterior thickness 200 { (0,0) (6000,0) (6000,6000) (0,6000) close }
+      room id=hall at (0,0) size 6000x6000 label "Hall" uses hall
+      door at (3000,6000) width 900 wall shell
+      component k() { stair id=s dir up width 1000 {
+        flight at (1500,1100) size 1000x1100
+        landing at (1500,100) size 1000x1000 winders 5
+        flight at (620,100) size 880x1000
+      } }
+      ${place} }`;
+    const a = buildMesh(adapted(kit("place k() as a at (0,0)")).scene);
+    const b = buildMesh(adapted(kit("place k() as a at (6000,0) mirror x")).scene);
+    const points = (m: typeof a, flip: boolean): string[] =>
+      [
+        ...new Set(
+          (m.nodes.find((n) => n.key === "L1/stair:a.s")?.shells ?? []).flatMap((s) =>
+            Array.from({ length: s.positions.length / 3 }, (_, k) => {
+              const x = s.positions[3 * k] as number;
+              return `${flip ? 6_000_000 - x : x},${s.positions[3 * k + 1]},${s.positions[3 * k + 2]}`;
+            }),
+          ),
+        ),
+      ].sort();
+    expect(points(a, false).length).toBeGreaterThan(0);
+    expect(points(b, true)).toEqual(points(a, false));
+  });
+
+  /** The same quarter turn placed by a component, `place k() as a <place>`, its landing `winders <n>`. */
+  const placed = (place: string, n: number) => `plan "p" { units mm height 2750
+      wall id=shell exterior thickness 200 { (0,0) (6000,0) (6000,6000) (0,6000) close }
+      room id=hall at (0,0) size 6000x6000 label "Hall" uses hall
+      door at (3000,6000) width 900 wall shell
+      component k() { stair id=s dir up width 1000 {
+        flight at (1500,1100) size 1000x1100
+        landing at (1500,100) size 1000x1000 winders ${n}
+        flight at (620,100) size 880x1000
+      } }
+      place k() as a ${place} }`;
+  /** Within a micrometre: a ring's vertices and the landing's corners are each rounded once. */
+  const near = (p: Pt, q: Pt): boolean => Math.abs(p[0] - q[0]) <= 1 && Math.abs(p[1] - q[1]) <= 1;
+  const holds = (ring: readonly Pt[], pts: readonly Pt[]): boolean => pts.every((q) => ring.some((p) => near(p, q)));
+  /** The side of landing `l` that flight `f` stands against, as its two end points (µm). */
+  function sideOf(l: StairLanding, f: StairFlight): Pt[] {
+    const [x0, y0, x1, y1] = [l.at[0], l.at[1], l.at[0] + l.size.w, l.at[1] + l.size.h];
+    const [a0, b0, a1, b1] = [f.at[0], f.at[1], f.at[0] + f.size.w, f.at[1] + f.size.h];
+    const on = (u: number, v: number): boolean => Math.abs(u - v) <= 1;
+    if (on(b0, y1))
+      return [
+        [x0, y1],
+        [x1, y1],
+      ];
+    if (on(b1, y0))
+      return [
+        [x0, y0],
+        [x1, y0],
+      ];
+    if (on(a1, x0))
+      return [
+        [x0, y0],
+        [x0, y1],
+      ];
+    if (on(a0, x1))
+      return [
+        [x1, y0],
+        [x1, y1],
+      ];
+    return [];
+  }
+
+  // Review M1 (PR #751): the treads run from the side the climb enters by to the side it leaves by,
+  // whichever way the plan turns the stair. Under `rotate 90` the entry side runs along plan y, the
+  // reading the plain plan and `mirror y` never take.
+  it.each([
+    ["at (0,0)", "x"],
+    ["at (0,6000) mirror y", "x"],
+    ["at (6000,0) rotate 90", "y"],
+  ] as const)(
+    "winder 1 holds the whole entry side and winder n the whole exit side (`place k() %s`)",
+    (place, along) => {
+      for (const n of [2, 5, 8]) {
+        const what = `${place}, winders ${n}`;
+        const src = placed(place, n);
+        const scene = adapted(src).scene;
+        const st = scene.levels[0]?.stairs[0];
+        const [f1, f2] = st?.flights ?? [];
+        const l = st?.landings?.[0];
+        if (!f1 || !f2 || !l) throw new Error(`${what}: no turning stair`);
+        const rings = l.winders ?? [];
+        expect(rings, what).toHaveLength(n);
+        const [entry, exit] = [sideOf(l, f1), sideOf(l, f2)];
+        expect([entry.length, exit.length], what).toEqual([2, 2]);
+        // The entry side runs along the axis this case expects.
+        const [e0, e1] = entry as [Pt, Pt];
+        expect(along === "x" ? Math.abs(e0[1] - e1[1]) <= 1 : Math.abs(e0[0] - e1[0]) <= 1, what).toBe(true);
+        const corner = entry.find((p) => exit.some((q) => near(p, q)));
+        if (!corner) throw new Error(`${what}: the entry and exit sides share no corner`);
+        const entryFar = entry.find((p) => !near(p, corner)) as Pt;
+        const exitFar = exit.find((p) => !near(p, corner)) as Pt;
+        // Winder 1 holds the whole entry side and none of the exit side past the corner; winder n the
+        // reverse. Swapping entry and exit turns both red.
+        expect([holds(rings[0] ?? [], entry), holds(rings[0] ?? [], [exitFar])], what).toEqual([true, false]);
+        expect([holds(rings[n - 1] ?? [], exit), holds(rings[n - 1] ?? [], [entryFar])], what).toEqual([true, false]);
+        // Every tread fans from that corner, and neighbours share one edge from it: a line the drawing draws.
+        for (const r of rings) expect(near(r[0] as Pt, corner), what).toBe(true);
+        const drawn = (compile(src, { noCache: true }).scene?.nodes ?? [])
+          .filter((x) => x.layerName === "A-FLOR-STRS")
+          .flatMap((x) => (x.prim.t === "line" ? [[x.prim.a, x.prim.b] as const] : []))
+          .filter(([a]) => near([a.x * MM, a.y * MM], corner))
+          .map(([, b]): Pt => [b.x * MM, b.y * MM]);
+        expect(drawn, what).toHaveLength(n - 1);
+        rings.slice(1).forEach((r, k) => {
+          const shared = r.filter((p) => !near(p, corner) && (rings[k] ?? []).some((q) => near(p, q)));
+          expect(shared, `${what}: treads ${k + 1} and ${k + 2}`).toHaveLength(1);
+          expect(near(shared[0] as Pt, drawn[k] as Pt), `${what}: line ${k + 1}`).toBe(true);
+        });
+        // And the stair climbs the risers the 2D rule reads.
+        const node = stairNodes(buildMesh(scene))[0] as MeshNode;
+        expect(node.extras.risers, what).toBe(ruleReads(src).risers);
+        expect(node.shells, what).toHaveLength(4 + n + 3);
+      }
+    },
+  );
+
+  // Review m2: an empty `winders` is a level landing everywhere it is read, as `stairRisers` counts it.
+  it("an empty `winders` builds a level landing, in `stairSolid` and `stairDetail` alike", () => {
+    const level = adapted(winderPlan("")).scene;
+    const empty: Scene3D = JSON.parse(JSON.stringify(level));
+    const landing = empty.levels[0]?.stairs[0]?.landings?.[0];
+    if (!landing) throw new Error("no landing");
+    landing.winders = [];
+    const [a, b] = [level.levels[0]?.stairs[0], empty.levels[0]?.stairs[0]];
+    if (!a || !b) throw new Error("no stair");
+    expect(stairRisers(b.flights ?? [], b.landings)).toBe(stairRisers(a.flights ?? [], a.landings));
+    expect(stairSolid(b, FINISH, 2750 * MM)).toEqual(stairSolid(a, FINISH, 2750 * MM));
+    // The mesh (built through `stairDetail`) and its ledger: byte for byte the level landing's.
+    expect(JSON.stringify(buildMesh(empty))).toBe(JSON.stringify(buildMesh(level)));
+  });
+
+  // Review m3: the landing's open edge takes a rail that steps up with the treads meeting it.
+  it("the open edge of a winder landing takes a rail stepped one riser a tread", () => {
+    const sides = m8.assumptions.filter((a) => a.id === "s" && a.rule === "stair-balustrade-side");
+    // Right of the landing (x = 2500 mm) is the open hall; the wall stands past its top.
+    expect(sides.find((a) => a.field === "side(landing 1, right)")?.value).toBe("open");
+    const x1 = (landing8?.at[0] ?? 0) + (landing8?.size.w ?? 0);
+    const railW = STAIR_DETAIL.rail * MM;
+    // The rail's bars along that edge: inside it, `railW` wide and `railW` deep.
+    const bars = (partsOf(m8, node8.key, "rail")?.shells ?? [])
+      .map((sh) => extent([sh]))
+      .filter(([bx0, by0, , bx1, by1]) => bx0 === x1 - railW && bx1 === x1 && by1 - by0 === railW);
+    const barTops = [...new Set(bars.map((b) => b[4]))].sort((p, q) => p - q);
+    // n = 8 from the corner (1500, 1100): treads 1 to 4 meet the right edge, 5 to 8 the top.
+    expect(barTops).toHaveLength(4);
+    const winderTops = tops(node8).slice(4, 12);
+    for (const t of barTops) expect(winderTops).toContain(t - STAIR_DETAIL.landingRailHeight * MM);
+    const riser = (2750 * MM) / 16;
+    const steps = barTops.slice(1).map((t, k) => Math.abs(t - (barTops[k] as number) - riser));
+    for (const d of steps) expect(d).toBeLessThanOrEqual(1);
+  });
+
+  // Review m4: a winder tread is solid down to the floor, so its risers are closed; the flights' stay open.
+  it("ledgers a winder landing's risers as solid, not the flights' open ones", () => {
+    const rows = m8.assumptions.filter((a) => a.id === "s" && a.field.startsWith("risers_form"));
+    expect(rows.map((a) => [a.field, a.value, a.rule])).toEqual([
+      ["risers_form(landing 1)", "solid", "stair-winders-solid"],
+      ["risers_form", "open", "stair-open-riser"],
+    ]);
+    const level = buildMesh(adapted(winderPlan("")).scene).assumptions.filter((a) => a.rule === "stair-winders-solid");
+    expect(level).toEqual([]);
   });
 });

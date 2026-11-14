@@ -98,7 +98,7 @@
 
 **核心车道：** CR11a（`GOVERNANCE.md`，RM-D30）→ RM1.6b → CR10 → RM3.1。随时可做的小卡：RM1.2c（RM-D35：新 W 规则，量字节）、RM1.2g（RM-D36：`archlang-3d` 建 winder 台阶）、RM1.1a（首次接触复测，量 1.60.0，`§6` 的表）。线下，有余量才做：RM0.7b、RM0.7c、RM0.7e、RM0.7f、RM1.2d–RM1.2f、RM1.2h、RM1.3d、RM1.4c、RM8.1e、RM5.1b、RM0.6、RM7.4、RM1.6c、RM6.1b–RM6.1d、RM8.6c，以及 CHANGELOG 1.60.0 的 `A-ANNO` 措辞更正（见 `cards.md`）。
 
-**CI 吞吐（第 9 轨，RM-D37，2026-11-14 加；不是第三条车道）：** TP 卡在核心车道两张卡之间占用核心执行者（RM-D22 不变）。TP1（`sync:main`，已派出）→ TP2（Playground E2E 拆三个 job、主线三条腿分片）→ TP5（两者合并 7 天后复测）。TP3 在 TP2 之后的空档里做；TP4 等触发。卡在 `cards.md` 第 9 轨。
+**CI 吞吐（第 9 轨，RM-D37，2026-11-14 加；不是第三条车道）：** TP 卡在核心车道两张卡之间占用核心执行者（RM-D22 不变）。TP1（#754）与 TP2（#755）已合并：`npm run sync:main -- --push` 是同步的做法；`main` 的 push 运行 28 → 12.8 分钟，PR 约 9 → 7.3（各一次运行）。下一张 TP6（测试分片的零成本文件），再 TP5（2026-11-21 之后、两者合并满 7 天的合并后复测）。TP3、TP1b 在空档里做；TP4 等触发。卡在 `cards.md` 第 9 轨。
 
 **发布：** 1.61.0 要所有者对那一次的决定（没有决定就不切；`README.md` §3 的约 01-05 只是参考）。2026-12-01 所有者亲自发 Show HN，那之前 `main` 保持绿。RM5.4（#603）在 Show HN 之后。
 
@@ -136,7 +136,7 @@
 
 - 串行合并：required checks 是 strict 的，一个 PR 合并后其余都会 `BEHIND`。按层级（`node scripts/risk-tier.mjs`；`docs/agents/commands.md` § Merging a PR）：low 在 CI 绿后合；medium 另要一次新上下文评审；high 还要主会话的判断（所有者 2026-11-09 的长期批准）。每个 PR 至多两轮红队。
 - 队列做法：逐个"更新分支 → 等新头上的全部检查 → 用完整 40 位 SHA `--match-head-commit` 合并"，不删除任何东西。2026-11-11 用的脚本是 `mq.sh`（`D:\.claude-scratch\2026-11-11\mq\mq.sh`，从主检出运行，`state.txt` 作锁；同一脚本的副本在 `D:\github_repository\claude-kept\2026-11-10-archlang-roadmap-v2\mq.sh`）。
-- `main` 动过生成文件（`test/INDEX.md`、`docs/agents/module-map.md` 等）时，冲突的分支不用 `gh pr update-branch`，也不手解：在本地合并 `main`，`npm run gen:all`，提交、推送，再钉新头（`docs/agents/gotchas.md` § PRs & CI）。TP1 合并后改用 `npm run sync:main -- --push`；同步后的头仍然每次重新红队，它打印的重点清单随红队的简报一起给（RM-D37）。
+- `main` 动过生成文件（`test/INDEX.md`、`docs/agents/module-map.md` 等）时，冲突的分支不用 `gh pr update-branch`，也不手解：在本地合并 `main`，`npm run gen:all`，提交、推送，再钉新头（`docs/agents/gotchas.md` § PRs & CI）。自 TP1（#754）起改用 `npm run sync:main -- --push`；同步后的头仍然每次重新红队，它打印的重点清单随红队的简报一起给（RM-D37；`docs/agents/commands.md` § Merging a PR）。
 - **记录少开 PR（RM-D37，P0-4）：** 默认一场会话结束时合成一个 `docs(plans)` 记录 PR；记录也可以随它所记录的代码 PR 一起走。每多一个 PR，就多一条会 `BEHIND` 的分支。
 - **一次只同步一个（RM-D37）：** 几个 PR 同时 `BEHIND` 时，只同步下一个要合的（最早评审过、CI 绿的那个），其余等它合并；每次同步都起一次完整的 CI，全同步只有一次不白跑。
 - 3D 回放的改动：除了终帧与海报，还要比对升墙中途的帧（`cards.md` §0）。关键帧从 CI 打印的哈希重钉，`check-3d` 红着不合并（`.claude/rules/archlang-3d.md`）。
