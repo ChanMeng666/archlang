@@ -155,6 +155,9 @@ coordinator's own notes (merging, registries, browser and social automation, the
   first version showed a see-through slot in laneway's replay at 6.80 s, and its key frames and posters were
   clean (only laneway's `tilted` key frame is taken mid-rise). Compare frames taken during the rise, not only
   the last one, before calling a replay change done.
+- **`compile()` and its memo moved from `src/index.ts` to `src/compile.ts` (RM0.7f).** The parked
+  `origin/feat/remove-view` drops `opts.view` from its cache key in `index.ts`: on a rebase, move that
+  edit into `compile.ts` and diff the moved body.
 
 ## Tooling & process
 

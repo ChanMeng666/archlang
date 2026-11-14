@@ -1598,7 +1598,7 @@ type Marked = Window & { __preview3d?: Handle & { __old?: boolean } };
  * makes on its first use (main.ts: the compiler, the examples and samples, the header actions),
  * from the files embed.html names, nor, but for the editor itself, from the editor's chunk.
  *
- * Four size gates, all on SUMS of gzip sizes, never per chunk (a per-chunk ±1 % fired on ordinary
+ * Five size gates, all on SUMS of gzip sizes, never per chunk (a per-chunk ±1 % fired on ordinary
  * core growth, a re-bless hazard that teaches re-blessing; a sum is indifferent to the bundler
  * renaming or re-splitting chunks):
  *
@@ -1609,6 +1609,12 @@ type Marked = Window & { __preview3d?: Handle & { __old?: boolean } };
  *   was set.
  * - `embedPathBudget`: what embed.html's script and preloads reach (the embed imports the core
  *   statically). A hard ceiling, set the same way.
+ * - `firstUsePathBudget` (card RM0.7f): that compiler path and the header actions with what they
+ *   import, the JS a first use has loaded before its first render (main.ts `up` awaits the actions
+ *   first, and the idle import warms them). The actions' chunk imports the core's lazy chunk
+ *   (finish, repair, the exports, …, split out of the compiler chunk), so this is the gate a leak
+ *   into that chunk trips, as `compilerPathBudget` did before the split. A hard ceiling, set the
+ *   same way.
  * - `growthBudget` (20,000 B): that compiler path, against the baseline. The 3D
  *   chunk is ~150,500 B gzip (three.js and the package, measured at A8), so a leak of even an eighth
  *   of it trips the gate, while ordinary core growth (hundreds of bytes per feature) takes dozens of
@@ -1628,6 +1634,7 @@ test.describe("startup chunks", () => {
       viewBudget: number;
       compilerPathBudget: number;
       embedPathBudget: number;
+      firstUsePathBudget: number;
       growthBudget: number;
       gzip: Record<string, number>;
       compilerGzip: Record<string, number>;
@@ -1740,6 +1747,11 @@ test.describe("startup chunks", () => {
     for (const file of viewPath)
       expect(inWorker, `the compile worker does not import the view path's ${file}`).not.toContain(file);
     const booted = reach([...compilerPath, ...boot]);
+    // What a first use has loaded before its first render (card RM0.7f): the compiler path and the
+    // header actions' walk, which takes in the core's lazy chunk.
+    const actionsChunk = boot.find((f) => /^assets\/actions-[\w-]+\.js$/.test(f)) as string;
+    expect(actionsChunk, "the boot imports name the header actions' chunk").toBeDefined();
+    const firstUsePath = reach([...compilerPath, actionsChunk]);
 
     // The embed (embed.html, the iframe other pages show): it imports the core statically
     // (embed.ts), so it walks into the compiler the way index.html's preload does.
@@ -1794,6 +1806,11 @@ test.describe("startup chunks", () => {
       embedTotal,
       `the embed path is ${embedTotal} B gzip (budget ${baseline.embedPathBudget} B): ${embedPath.join(", ")}`,
     ).toBeLessThanOrEqual(baseline.embedPathBudget);
+    const firstUseTotal = size(firstUsePath);
+    expect(
+      firstUseTotal,
+      `the first use's path is ${firstUseTotal} B gzip (budget ${baseline.firstUsePathBudget} B): ${firstUsePath.join(", ")}`,
+    ).toBeLessThanOrEqual(baseline.firstUsePathBudget);
     const sum = (r: Record<string, number>) => Object.values(r).reduce((a, b) => a + b, 0);
     const base = sum(baseline.gzip) + sum(baseline.compilerGzip);
     expect(

@@ -5,7 +5,7 @@
 Where the tests of a `src` module are, and what each test file is for. Generated; `npm run check:drift`
 fails when it is stale. How to add a test: `docs/testing.md` § 4.
 
-505 test files in `test/`, 282 `src` modules, 108 modules no test imports.
+505 test files in `test/`, 282 `src` modules, 107 modules no test imports.
 
 ## `src` module → tests that import it
 
@@ -51,6 +51,7 @@ Nearest first, then by name; `(+n)` is the rest. Test names are `test/<name>.tes
 - `src/cli/serialize.ts` (7) — `cli-batch`, `cli-plan-json-roundtrip`, `element-facets`, `plan-json-arcs-paper`, `plan-json-dropped`, `plan-json-instances`, `walls-from-rooms`
 - `src/cli/source-hash.ts` (1) — `cli-expected-hash`
 - `src/cli/summary.ts` (1) — `lint-summary`
+- `src/compile.ts` (1) — `cache`
 - `src/context-size.ts` (1) — `context-size`
 - `src/cursor.ts` (3) — `block-stair`, `cursor-exhaustive`, `reroll-findrun-oracle`
 - `src/datum.ts` (11) — `access-policy`, `cursor-exhaustive`, `describe-depends`, `diff-laws`, `emit-opening-oracle`, `equivariance-fuzz`, `fix-printer`, `fuzz` (+3)
@@ -720,7 +721,6 @@ module); adding a test that imports it removes it from this list.
 - `src/command-name.ts`
 - `src/compile-path.ts`
 - `src/compile-work.ts`
-- `src/compile.ts`
 - `src/context-levels.ts`
 - `src/describe/adjacency.ts`
 - `src/describe/fabric.ts`

@@ -219,15 +219,19 @@ test.describe("boot without JavaScript", { tag: "@prod" }, () => {
   });
 });
 
-/** Every request for the compiler's chunk or the example sources' (card MP5). */
+/**
+ * Every request for the compiler's chunk, the example sources' (card MP5) or the header actions',
+ * which the idle import warms with the core's lazy chunk they import (card RM0.7f).
+ */
 function watchCompiler(page: Page): string[] {
   const seen: string[] = [];
   page.on("request", (r) => {
-    if (/\/assets\/(?:compiler|examples)-[^/]+\.js(?:\?.*)?$/.test(r.url())) seen.push(r.url());
+    if (/\/assets\/(?:compiler|examples|actions)-[^/]+\.js(?:\?.*)?$/.test(r.url())) seen.push(r.url());
   });
   return seen;
 }
 const COMPILER_CHUNK = /\/assets\/compiler-[^/]+\.js(?:\?.*)?$/;
+const ACTIONS_CHUNK = /\/assets\/actions-[^/]+\.js(?:\?.*)?$/;
 
 /** Emulate a connection (`navigator.connection`, the Network Information API main.ts reads). */
 async function emulateConnection(page: Page, connection: { saveData: boolean; effectiveType: string }) {
@@ -261,7 +265,7 @@ test.describe("boot without compiling (card MP5)", { tag: "@prod" }, () => {
       await expect(page.locator(".pz-stage svg")).toBeVisible();
       // Well past the idle load's timeout (main.ts `IDLE_TIMEOUT_MS`, 4 s): it never came.
       await page.waitForTimeout(5000);
-      expect(seen, "no compiler or example chunk before a use").toEqual([]);
+      expect(seen, "no compiler, example or actions chunk before a use").toEqual([]);
       await expect(page.locator("html[data-booting]")).toHaveCount(1);
       await expect(page.locator("#status")).not.toHaveClass(/\b(show|busy|err)\b/);
     });
@@ -284,6 +288,12 @@ test.describe("boot without compiling (card MP5)", { tag: "@prod" }, () => {
     expect(
       seen.some((u) => COMPILER_CHUNK.test(u)),
       "the idle import fetched the compiler",
+    ).toBe(true);
+    // …and the header actions, with the core's lazy chunk they import (card RM0.7f), so the first
+    // use after an idle visit renders without waiting on them.
+    expect(
+      seen.some((u) => ACTIONS_CHUNK.test(u)),
+      "the idle import fetched the header actions",
     ).toBe(true);
     // Imported, not compiled: the drawing on screen is still the element built into the page.
     await page.waitForTimeout(500);

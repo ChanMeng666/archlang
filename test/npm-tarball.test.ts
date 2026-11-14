@@ -21,7 +21,7 @@
 
 import { spawnSync } from "node:child_process";
 import { readFileSync } from "node:fs";
-import { resolve } from "node:path";
+import { posix, resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 
 interface PackEntry {
@@ -84,19 +84,62 @@ describe("npm tarball (npm pack --dry-run)", () => {
     expect(paths.filter((p) => p.startsWith("dist/error-catalog"))).toEqual([]);
   });
 
-  it("keeps dist/compile-path.js and its map out of the tarball, and every chunk the package imports in", () => {
+  it("keeps dist/compile-path.js and its map out of the tarball, and nothing the package loads", () => {
     // A build entry for the repository's playground alone (card RM0.7f, tsup.config.ts): it holds
-    // only imports and exports, no `exports` entry names it and nothing imports it. The chunks it
-    // imports are imported by dist/index.js too, so they ship; npm's list names them only after a
-    // build, so the second half checks the built files when there are any.
-    const pkg = JSON.parse(readFileSync(resolve("package.json"), "utf8")) as { files: string[] };
-    expect(pkg.files).toContain("!dist/compile-path.js");
-    expect(pkg.files).toContain("!dist/compile-path.js.map");
+    // only imports and exports, no `exports` entry names it and nothing imports it. Its chunks are
+    // imported by dist/index.js too, so they must ship. Checked from the sources, which this suite
+    // can read without a build: the `files` negations are exactly the two playground-only builds,
+    // so none can drop a chunk; and every file package.json points a consumer at is built by a
+    // tsup entry and excluded by no negation.
+    const pkg = JSON.parse(readFileSync(resolve("package.json"), "utf8")) as {
+      files: string[];
+      exports: Record<string, { types: string; import: string }>;
+      bin: Record<string, string>;
+      main: string;
+      types: string;
+    };
+    const negations = pkg.files.filter((f) => f.startsWith("!"));
+    expect(negations.sort()).toEqual(
+      [
+        "!dist/compile-path.js",
+        "!dist/compile-path.js.map",
+        "!dist/error-catalog.js",
+        "!dist/error-catalog.js.map",
+      ].sort(),
+    );
+    const tsup = readFileSync(resolve("tsup.config.ts"), "utf8");
+    const list = (re: RegExp) => [...(re.exec(tsup)?.[1] ?? "").matchAll(/"([^"]+)"/g)].map((m) => m[1] as string);
+    const entries = list(/\n {2}entry: \[([^\]]*)\]/);
+    const dtsEntries = list(/\n {2}dts: \{ entry: \[([^\]]*)\]/);
+    expect(entries).toContain("src/compile-path.ts");
+    expect(dtsEntries, "no declaration file for the build-only entry").not.toContain("src/compile-path.ts");
+    // `./dist/cli/link.js` ← `src/cli/link.ts`, `./dist/index.d.ts` ← a dts entry `src/index.ts`.
+    const source = (target: string) => target.replace(/^\.?\/?dist\//, "src/").replace(/(\.d)?\.js$|\.d\.ts$/, ".ts");
+    const targets = [
+      ...Object.values(pkg.exports).flatMap((e) => [e.import, e.types]),
+      ...Object.values(pkg.bin),
+      pkg.main,
+      pkg.types,
+    ];
+    for (const target of targets) {
+      const rel = target.replace(/^\.\//, "");
+      expect(rel, `${target} is under dist/`).toMatch(/^dist\//);
+      expect(negations, `${target} is not excluded from the tarball`).not.toContain(`!${rel}`);
+      const from = target.endsWith(".d.ts") ? dtsEntries : entries;
+      expect(from, `${target} is built by a tsup entry`).toContain(source(target));
+    }
+    expect(targets.map((t) => t.replace(/^\.\//, ""))).toContain("dist/cli/link.js");
     expect(paths.filter((p) => p.startsWith("dist/compile-path"))).toEqual([]);
-    for (const entry of ["dist/index.js", "dist/cli.js", "dist/share.js"].filter((p) => paths.includes(p))) {
+    // After a build (locally; CI's suite runs without one), npm's own list: every chunk the
+    // package's entries import ships.
+    for (const entry of ["dist/index.js", "dist/cli.js", "dist/share.js", "dist/cli/link.js"].filter((p) =>
+      paths.includes(p),
+    )) {
       const text = readFileSync(resolve(entry), "utf8");
-      for (const m of text.matchAll(/^import\s(?:[^;]*?from\s*)?"\.\/(chunk-[\w-]+\.js)";?$/gm))
-        expect(paths, `${entry} imports dist/${m[1]}, which must ship`).toContain(`dist/${m[1]}`);
+      for (const m of text.matchAll(/^import\s(?:[^;]*?from\s*)?"((?:\.\.?\/)+chunk-[\w-]+\.js)";?$/gm)) {
+        const file = posix.normalize(posix.join(posix.dirname(entry), m[1] as string));
+        expect(paths, `${entry} imports ${file}, which must ship`).toContain(file);
+      }
     }
   });
 
