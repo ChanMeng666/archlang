@@ -5,7 +5,7 @@
 Where the tests of a `src` module are, and what each test file is for. Generated; `npm run check:drift`
 fails when it is stale. How to add a test: `docs/testing.md` § 4.
 
-510 test files in `test/`, 282 `src` modules, 106 modules no test imports.
+510 test files in `test/`, 282 `src` modules, 105 modules no test imports.
 
 ## `src` module → tests that import it
 
@@ -97,6 +97,7 @@ Nearest first, then by name; `(+n)` is the rest. Test names are `test/<name>.tes
 - `src/fixtures-catalog.ts` (33) — `catalogue-images`, `equivariance-corpus`, `export-dxf-blocks`, `finish-furnish`, `fixture-classifier-drift`, `fixture-orientation`, `furniture-mirror`, `glyph-chirality` (+25)
 - `src/format.ts` (58) — `axes`, `dim-faces`, `fence`, `furniture-against`, `furniture-lint`, `furniture-rotate`, `opening`, `openings-between` (+50)
 - `src/frame.ts` (44) — `compose-assoc`, `d4`, `equivariance-corpus`, `equivariance-fuzz`, `equivariance-scene`, `frame`, `furniture-mirror`, `symmetry` (+36)
+- `src/furnish-table.ts` (1) — `lint-label-piece-missing`
 - `src/furnish.ts` (7) — `finish-furnish`, `finish-levels`, `finish`, `fuzz`, `keep`, `lint-furniture-on-stair`, `lint-hint-paste`
 - `src/furniture-relation.ts` (2) — `furniture-relations`, `rect-ring`
 - `src/geometry.ts` (27) — `band`, `circle-enclosure`, `curves`, `dim-thickness-callout`, `doors`, `double-door-byte-identity`, `equivariance-corpus`, `frame` (+19)
@@ -761,7 +762,6 @@ module); adding a test that imports it removes it from this list.
 - `src/error-catalog/site.ts`
 - `src/error-catalog/vertical.ts`
 - `src/error-catalog/walls.ts`
-- `src/furnish-table.ts`
 - `src/hash.ts`
 - `src/id-spans.ts`
 - `src/identity.ts`

@@ -9,7 +9,8 @@ import { readFileSync } from "node:fs";
 import { describe as suite, expect, it } from "vitest";
 import { compile, type Diagnostic, ERROR_CATALOG, lint } from "../src/index.js";
 import { FIXTURE_CATEGORIES } from "../src/elements/fixtures-glyphs.js";
-import { CATALOG_CATEGORIES } from "../src/fixtures-catalog.js";
+import { CATALOG_CATEGORIES, fixtureSpec } from "../src/fixtures-catalog.js";
+import { familyOf } from "../src/furnish-table.js";
 import { labelPieces, ROOM_NAMING_PIECES } from "../src/lint/rules/room-contents.js";
 import { FALLBACK_USE_VOCABULARY, normalizeLabel, USE_VOCABULARY } from "../src/vocabulary.js";
 
@@ -96,20 +97,57 @@ suite("W_LABEL_PIECE_MISSING", () => {
   });
 
   it("never reads the label's head noun, its last word, in each name a `/` separates: the room is that thing", () => {
-    for (const label of [
-      "Desk",
-      "Desks",
-      "Pavilion",
-      "Garden Shed",
-      "Serving Counter",
-      "Counter / servery",
-      "Coffee Table",
-    ])
+    for (const label of ["Desk", "Desks", "Desk 2", "Serving Counter", "Counter / servery", "Coffee Table"])
       expect(labelPieces(label), label).toEqual([]);
     expect(labelPieces("Desk Nook 2")).toEqual(["desk"]);
-    expect(labelPieces("Piano / Desk Nook")).toEqual(["desk"]);
-    expect(of(labelled("Pavilion"))).toEqual([]);
     expect(of(labelled("Desk Nook 2"))).toHaveLength(1);
+    // RM-D35a: names before a last name with words before its head share that head.
+    expect(labelPieces("Piano / Desk Nook")).toEqual(["piano", "desk"]);
+    expect(labelPieces("Washer / Dryer Closet")).toEqual(["washer", "dryer"]);
+  });
+
+  it("reads the words after `with` and inside parentheses as pieces, with no head of their own (RM-D35a)", () => {
+    expect(labelPieces("Lounge with Piano")).toEqual(["piano"]);
+    expect(labelPieces("Room with Desk and TV")).toEqual(["desk", "tv"]);
+    expect(labelPieces("Utility (Washer)")).toEqual(["washer"]);
+    expect(labelPieces("Snug (TV)")).toEqual(["tv"]);
+    expect(labelPieces("Piano & Desk Room")).toEqual(["piano", "desk"]);
+    // `with` only as a word: "Withy Store" names nothing, and "Lounge with" names no piece.
+    expect(labelPieces("Withy Store")).toEqual([]);
+    expect(labelPieces("Lounge with")).toEqual([]);
+    for (const label of ["Lounge with Piano", "Room with Desk", "Utility (Washer)", "Snug (TV)"])
+      expect(of(labelled(label)), label).toHaveLength(1);
+    expect(of(labelled("Snug (TV)", "  furniture tv in r anchor top flush size 1200x100"))).toEqual([]);
+  });
+
+  it("never reads a word of a family the catalogue marks a place: the label names where the room is (RM-D35a)", () => {
+    const places = CATALOG_CATEGORIES.filter((c) => fixtureSpec(c)?.place === true);
+    // Every word of a family carries it, or none does.
+    for (const c of CATALOG_CATEGORIES)
+      expect(fixtureSpec(c)?.place === true, c).toBe(fixtureSpec(familyOf(c))?.place === true);
+    expect([...new Set(places.map(familyOf))]).toEqual([
+      "tree",
+      "conifer",
+      "shrub",
+      "hedge",
+      "pergola",
+      "shed",
+      "palm",
+      "flower_bed",
+      "boulder",
+      "raised_bed",
+      "pool",
+      "gazebo",
+      "greenhouse",
+      "climber",
+      "bamboo",
+      "stepping_stones",
+    ]);
+    for (const w of places) expect(labelPieces(`${w} corner`), w).toEqual([]);
+    for (const label of ["Pool House", "Palm Court", "Rock Garden", "Tree House Deck", "Pavilion", "Garden Shed"])
+      expect(of(labelled(label)), label).toEqual([]);
+    // A piece that only shares a word with one is still read: a pool table is not a pool.
+    expect(labelPieces("Pool Table Room")).toEqual(["pool_table"]);
   });
 
   it("never reads a catalogue word that the use vocabularies read as the room's own name", () => {
@@ -211,5 +249,78 @@ suite("W_LABEL_PIECE_MISSING", () => {
     // An empty room is no rule's report but this one's.
     expect(lint(labelled("Dining Table Area")).map((d) => d.code)).toContain(CODE);
     expect(lint(labelled("Dining Table Area")).map((d) => d.code)).not.toContain("W_ROOM_MISSING_DEFINING");
+  });
+
+  it("leaves a piece to W_ROOM_MISSING_DEFINING only when that rule reports it: a shower does a bath's job, not a tub's", () => {
+    const wet = ["  furniture wc at (200,200) size 400x700 in r", "  furniture basin at (800,200) size 500x400 in r"];
+    const shower = "  furniture shower at (3000,200) size 900x900 in r";
+    // A shower: the bath is defined (none of bathtub | shower is missing), so the tub is this rule's.
+    const [d] = of(labelled("Tub Bath", ...wet, shower));
+    expect(d!.message).toBe('Room "Tub Bath" holds no tub, though its label names one.');
+    expect(d!.hints![0]).toContain("`furniture bathtub ");
+    expect(d!.hints![0]).not.toContain("shower");
+    // No shower and no tub: W_ROOM_MISSING_DEFINING reports the bathtub, so this rule says nothing.
+    const codes = lint(labelled("Tub Bath", ...wet)).map((x) => x.code);
+    expect(codes).toContain("W_ROOM_MISSING_DEFINING");
+    expect(codes).not.toContain(CODE);
+    expect(of(labelled("Tub Bath", ...wet, "  furniture bathtub at (2300,200) size 1700x700 in r"))).toEqual([]);
+  });
+
+  it("is silent where W_ROOM_NO_FIXTURE reports the room and its hint already places the piece", () => {
+    // An empty "Tub Bath": W_ROOM_NO_FIXTURE's hint places a bathtub.
+    const tub = lint(labelled("Tub Bath"));
+    expect(tub.map((x) => x.code)).toContain("W_ROOM_NO_FIXTURE");
+    expect(tub.find((x) => x.code === "W_ROOM_NO_FIXTURE")!.hints![0]).toContain("`furniture bathtub ");
+    expect(tub.map((x) => x.code)).not.toContain(CODE);
+    // An empty "Island Kitchen": that hint places a sink, a stove and a counter, never an island.
+    const island = lint(labelled("Island Kitchen"));
+    expect(island.find((x) => x.code === "W_ROOM_NO_FIXTURE")!.hints![0]).not.toContain("island");
+    expect(island.filter((x) => x.code === CODE).map((x) => x.message)).toEqual([
+      'Room "Island Kitchen" holds no island, though its label names one.',
+    ]);
+    // A kitchen holding a chair only: still W_ROOM_NO_FIXTURE's, whose hint places the counter.
+    const chair = "  furniture chair at (500,500) size 450x450 in r";
+    expect(lint(labelled("Kitchen Counter Area", chair)).map((x) => x.code)).not.toContain(CODE);
+  });
+
+  it("counts a more specific piece named after the label's word: a TV unit for a TV, a bike rack for a bike", () => {
+    for (const [label, piece] of [
+      ["TV Room", "tv_unit at (1000,1000) size 1800x450"],
+      ["Bike Store", "bike_rack at (1000,1000) size 1800x600"],
+      ["Bicycle Store", "bike_rack at (1000,1000) size 1800x600"],
+      ["Table Corner", "dining_table at (1000,1000) size 1600x900"],
+      ["Chair Corner", "office_chair at (1000,1000) size 500x500"],
+      ["Lamp Corner", "floor_lamp at (1000,1000) size 400x400"],
+    ] as const)
+      expect(of(labelled(label, `  furniture ${piece}`)), label).toEqual([]);
+    // Not the other way round, and not a piece that shares no word with it.
+    expect(of(labelled("Coffee Table Corner", "  furniture side_table at (1000,1000) size 500x500"))).toHaveLength(1);
+    expect(of(labelled("TV Room", "  furniture sofa at (1000,1000) size 2000x900"))).toHaveLength(1);
+  });
+
+  it("keeps the label's own spelling of the piece, lower-casing only a title-case word", () => {
+    expect(of(labelled("TV Room"))[0]!.message).toBe('Room "TV Room" holds no TV, though its label names one.');
+    expect(of(labelled("Coffee Table Corner"))[0]!.message).toBe(
+      'Room "Coffee Table Corner" holds no coffee table, though its label names one.',
+    );
+    expect(of(labelled("desk_nook"))[0]!.message).toBe('Room "desk_nook" holds no desk, though its label names one.');
+  });
+
+  it("in an empty room, also places the room's defining pieces, so pasting raises nothing new (both profiles)", () => {
+    const src = plan(SHELL, "  window at (2000,0) width 1200 wall shell", room("Desk Bedroom"));
+    for (const profile of [undefined, "accessibility-advisory"] as const) {
+      const o = profile ? { profile } : {};
+      const [d] = lint(src, o).filter((x) => x.code === CODE);
+      expect(d!.message).toBe('Room "Desk Bedroom" holds no desk, though its label names one.');
+      expect(d!.hints![0]).toMatch(/^Add it, with the bed that makes it a bedroom \(nothing to import\), e\.g\. /);
+      const fixed = pasted(src, d!);
+      const before = lint(src, o).map((x) => x.code);
+      const after = lint(fixed, o).map((x) => x.code);
+      expect(
+        after.filter((c) => !before.includes(c)),
+        profile ?? "default",
+      ).toEqual([]);
+      expect(after, profile ?? "default").not.toContain(CODE);
+    }
   });
 });
