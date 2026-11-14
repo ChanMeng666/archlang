@@ -1,10 +1,10 @@
 /**
- * On a core with no `winderTreads` at all (the package's peer range is `^1.57.0`; the export is
- * ADR 0031's amendment of 2026-11-14), a `winders` landing is built level and ledgered
- * `stair-winders-not-read` (card RM1.2g, PR #751 review). The mock stands for that older core: every
- * export is the core's own except `winderTreads`, which is `undefined`, as it reads off an older
- * core's namespace (vitest refuses a read of an export a mock leaves out, so it is set, not dropped).
- * A module mock, so this case lives in its own file.
+ * On a core with no `winderTreads` at all (the export is ADR 0031's amendment of 2026-11-14, in core
+ * 1.61.0, the package's peer floor; the read stays feature-detected), a `winders` landing is built
+ * level and ledgered `stair-winders-not-read` (card RM1.2g, PR #751 review). The mock stands for
+ * that older core: every export is the core's own except `winderTreads`, which is `undefined`, as
+ * it reads off an older core's namespace (vitest refuses a read of an export a mock leaves out, so
+ * it is set, not dropped). A module mock, so this case lives in its own file.
  */
 import { describe, expect, it, vi } from "vitest";
 import { adaptPlan, buildMesh } from "../src/index.js";

@@ -14,6 +14,15 @@ are documented here. The format is based on
 
 ## [Unreleased]
 
+## [0.49.0] - 2026-11-14
+
+### Changed
+
+- **Rebundled the core at `@chanmeng666/archlang@1.61.0`**: the new warning `W_STAIR_RISER_TOO_HIGH`
+  in the editor's diagnostics; the new floor words (`timber`, `carpeting`, `stone`) and `outdoor`
+  kinds (`sand`, `soil`) check without an error, and the sixteen new fixture families complete
+  after `furniture`.
+
 ## [0.48.0] - 2026-11-12
 
 ### Changed

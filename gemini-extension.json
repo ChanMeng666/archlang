@@ -1,6 +1,6 @@
 {
   "name": "archlang",
-  "version": "1.60.0",
+  "version": "1.61.0",
   "description": "Floor plans as code. Your AI writes ArchLang; the compiler draws a precise, dimensioned plan and tells it what's wrong.",
   "contextFileName": "integrations/copilot/copilot-instructions.md",
   "mcpServers": {

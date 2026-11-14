@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+## [0.8.0] - 2026-11-14
+
+The core peer range rises to `^1.61.0` (`MIN_CORE`): the winder treads below are cut on the core's `winderTreads`, new in core 1.61.0, as the stairs read `treadCount` from 1.57.0. The read stays feature-detected, so a core below the floor still builds every plan, a `winders` landing level (`stair-winders-not-read`). The sixteen new families' generators and the new floor and ground finishes come into use only with a core that knows their words, 1.61.0; an older core never hands them a piece.
+
 ### Added
 
 - The package's own warnings are shown where the replay is (product-roadmap card RM8.10, ruling
