@@ -1168,7 +1168,11 @@ function drawStorey(
   // geometry each backend still redraws). Lowered AFTER any sheet re-anchoring above, so
   // they are drawn wherever the final chrome layout put them; like the overlays below,
   // they are outside the dimension reach and shift nothing.
-  if (chrome.tables) for (const pushed of sheetTableNodes(chrome.tables, theme, sizes, wording)) nodes.push(pushed);
+  if (chrome.tables) {
+    // A legend swatch's tint is read with the theme its element is drawn with (`SwatchThemes`).
+    const swatchThemes = { room: ctxFor("room").theme, outdoor: ctxFor("outdoor").theme };
+    for (const pushed of sheetTableNodes(chrome.tables, theme, sizes, wording, swatchThemes)) nodes.push(pushed);
+  }
 
   // Opt-in diagnostic overlays (ADR 0008): appended AFTER all nodes and after chrome
   // layout, so the default Scene (no overlays) is byte-identical and the overlay never

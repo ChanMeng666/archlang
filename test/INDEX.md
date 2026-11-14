@@ -30,7 +30,7 @@ Nearest first, then by name; `(+n)` is the rest. Test names are `test/<name>.tes
 - `src/analyze/quantities.ts` (1) — `describe-quantities`
 - `src/analyze/symmetry.ts` (1) — `rect-ring`
 - `src/analyze/wall-faces.ts` (2) — `lint-space-enclosure`, `wall-status`
-- `src/ast.ts` (114) — `arc-radius-exact`, `band`, `circulation-concave`, `circulation-translation`, `closed-vocabularies`, `corner-window`, `cursor-exhaustive`, `d4` (+106)
+- `src/ast.ts` (115) — `arc-radius-exact`, `band`, `circulation-concave`, `circulation-translation`, `closed-vocabularies`, `corner-window`, `cursor-exhaustive`, `d4` (+107)
 - `src/attach.ts` (1) — `attach`
 - `src/axes.ts` (1) — `axes`
 - `src/backends/ascii.ts` (10) — `axes`, `fence`, `furniture-curves-backends`, `opening`, `outdoor`, `room-floor`, `scene-path-prim`, `schedule` (+2)
@@ -75,9 +75,9 @@ Nearest first, then by name; `(+n)` is the rest. Test names are `test/<name>.tes
 - `src/elements/glyphs-misc.ts` (1) — `glyphs-misc`
 - `src/elements/glyphs-outdoor.ts` (1) — `glyphs-outdoor`
 - `src/elements/index.ts` (1) — `elements`
-- `src/elements/outdoor.ts` (3) — `ground-walkability`, `label-placement-oracle`, `label-placement`
+- `src/elements/outdoor.ts` (5) — `export-pdf`, `ground-walkability`, `label-placement-oracle`, `label-placement`, `outdoor`
 - `src/elements/roof.ts` (3) — `label-placement-oracle`, `roof`, `v129-cross`
-- `src/elements/room.ts` (4) — `label-placement`, `net-area-stamp`, `rect-label-anchor`, `room-floor`
+- `src/elements/room.ts` (5) — `export-pdf`, `label-placement`, `net-area-stamp`, `rect-label-anchor`, `room-floor`
 - `src/elements/section.ts` (1) — `section`
 - `src/elements/vertical-glyphs.ts` (5) — `diagnostics-volume`, `drawing-budget`, `export-dxf-blocks`, `model-range`, `vertical`
 - `src/elements/void.ts` (3) — `v129-cross`, `void-rail`, `void`
@@ -114,7 +114,7 @@ Nearest first, then by name; `(+n)` is the rest. Test names are `test/<name>.tes
 - `src/geometry/rect.ts` (10) — `between-face-probes`, `block-stair-winders`, `finish-furnish`, `finish-levels`, `label-placement-oracle`, `label-wrap`, `lint-clearances-kitchen-doors`, `lint-measure` (+2)
 - `src/geometry/union.ts` (3) — `band`, `joinery-oracle`, `union`
 - `src/grammar/tokens.ts` (32) — `arch-highlight`, `block-stair-lint`, `closed-vocabularies`, `corner-window`, `door-enums`, `doors`, `element-facets`, `element-keyword-drift` (+24)
-- `src/hatches.ts` (7) — `floor-materials-byte-identity`, `joinery-split-oracle`, `joinery-split`, `model-range`, `outdoor`, `room-floor`, `sheet-text`
+- `src/hatches.ts` (8) — `export-pdf`, `floor-materials-byte-identity`, `joinery-split-oracle`, `joinery-split`, `model-range`, `outdoor`, `room-floor`, `sheet-text`
 - `src/impact.ts` (2) — `rectilinear-doors`, `rectilinear-rooms`
 - `src/import.ts` (31) — `block-stair-byte-identity`, `corner-window-byte-identity`, `dim-thickness-callout`, `drawing-budget`, `floor-materials-byte-identity`, `furniture-relations`, `gaps-byte-identity`, `keep` (+23)
 - `src/import/limits.ts` (1) — `openplan3d-malformed`
@@ -168,7 +168,7 @@ Nearest first, then by name; `(+n)` is the rest. Test names are `test/<name>.tes
 - `src/scene.ts` (59) — `arc-radius-exact`, `axes`, `band`, `bbox-derived-position`, `block-stair`, `corner-window`, `dim-stagger`, `dim-thickness-callout` (+51)
 - `src/segment-select.ts` (1) — `segment-select`
 - `src/share.ts` (1) — `share-codec`
-- `src/sheet-tables.ts` (3) — `sheet-annotations`, `sheet`, `wall-status-drawing`
+- `src/sheet-tables.ts` (4) — `export-pdf`, `sheet-annotations`, `sheet`, `wall-status-drawing`
 - `src/sheet-text.ts` (1) — `sheet-text`
 - `src/sheet.ts` (10) — `chrome-hidden`, `closed-vocabularies`, `dim-stagger`, `dim-thickness-callout`, `dims-ground`, `finish`, `label-fit`, `model-range` (+2)
 - `src/site.ts` (2) — `site`, `wall-face-probe`
@@ -179,7 +179,7 @@ Nearest first, then by name; `(+n)` is the rest. Test names are `test/<name>.tes
 - `src/taste/index.ts` (2) — `taste-budget`, `taste`
 - `src/text-layout.ts` (5) — `escape-fuzz`, `label-placement-oracle`, `label-wrap`, `text-layout`, `text-metrics`
 - `src/text-metrics.ts` (6) — `dim-stagger`, `dim-thickness-callout`, `label-placement`, `sheet-text`, `text-layout`, `text-metrics`
-- `src/theme.ts` (19) — `element-facets`, `equivariance-scene`, `format`, `furniture-mirror`, `glyph-chirality`, `glyph-dispatch-table`, `glyph-lib`, `glyphs-batch2` (+11)
+- `src/theme.ts` (20) — `element-facets`, `equivariance-scene`, `export-pdf`, `format`, `furniture-mirror`, `glyph-chirality`, `glyph-dispatch-table`, `glyph-lib` (+12)
 - `src/types.ts` (9) — `datum`, `doors`, `element-cap`, `fixture-orientation`, `furniture-flush`, `furniture-lint`, `garage`, `keep` (+1)
 - `src/vertical.ts` (51) — `block-stair-frames`, `block-stair-shaft`, `block-stair-winders`, `block-stair`, `circulation-concave`, `circulation-translation`, `element-facets`, `equivariance-corpus` (+43)
 - `src/view/camera.ts` (5) — `iso-camera`, `iso-mixed-heights`, `iso-painter-order`, `iso-projection`, `iso-sort`
