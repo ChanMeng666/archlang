@@ -45,15 +45,23 @@ jobs:
   #
   # Code PRs drop the redundant legs (G in docs/plans/ci-throughput.md).
   #
-  # Node 18, Node 20 and Windows guard their steps on FULL_LEG: true on every push, and on
-  # a PR only if `changes` failed (the same fail-open as FULL_CI). On a PR they report
-  # green with a job-summary line and run nothing. Their breaks surface after the merge,
-  # in the push run on `main` and in nightly's `full-matrix`; `/release-check` reads both.
+  # Node 18, Node 20 and Windows run on FULL_LEG: true on every push and merge_group, and on
+  # a PR only if `changes` failed (the same fail-open as FULL_CI). Each runs its suite in
+  # three shards (`node-18-tests`, `node-20-tests`, `windows-tests`), skipped at JOB level
+  # when FULL_LEG is false, so an ordinary PR starts no runner for them; shard 1 also runs
+  # the leg's non-test checks. Their required names (`Node 18`, `Node 20`, `Windows (tests
+  # + drift)`) are aggregators over the shards: on a PR they report green with a
+  # job-summary line. Their breaks surface after the merge, in the push run on `main` and
+  # in nightly's `full-matrix`; `/release-check` reads both.
   #
   # Node 22 is an aggregator: its check gates on `node-22-checks` (typecheck, lint, drift,
   # eval) and on the five `node-22-tests` shards, on PRs and pushes alike, and it also
   # carries the docs leg. A push therefore still runs the whole suite on Node 22, split
   # across the shards: `vitest --shard` puts every test file in exactly one shard.
+  #
+  # Playground E2E is an aggregator too, over two Chromium shards and one Firefox+WebKit
+  # job (`e2e-playground-chromium`, `e2e-playground-engines`). Those keep the FULL_CI step
+  # guards of every other gating job, so a record-only PR reports them green, unrun.
   # ---------------------------------------------------------------------------
   changes:
     name: Changed paths
@@ -108,28 +116,26 @@ jobs:
             echo "Push: every leg runs in full." >> "$GITHUB_STEP_SUMMARY"
           fi
 
-  build:
-    name: Node ${{ matrix.node }}
+  # The Node 18 leg, in three shards. Its `if` is FULL_LEG (see the header): true on every
+  # push and merge_group, and on a PR only if `changes` failed (`!cancelled()` lets it run
+  # then), so an ordinary PR skips the whole job and starts no runner. Shard 1 also runs
+  # typecheck, lint, drift and the eval, once for the leg. `node-20-tests` is the same job
+  # on Node 20; two job ids, not one matrix, so each `Node <n>` aggregator below reads only
+  # its own shards' result (a matrix job's result combines every leg).
+  node-18-tests:
+    name: Node ${{ matrix.node }} tests ${{ matrix.shard }}/3
     runs-on: ubuntu-latest
     needs: changes
-    # Runs even if `changes` failed: FULL_LEG then reads as true and every step runs.
-    if: ${{ !cancelled() }}
-    env:
-      FULL_LEG: ${{ github.event_name != 'pull_request' || needs.changes.result != 'success' }}
+    if: ${{ !cancelled() && (github.event_name != 'pull_request' || needs.changes.result != 'success') }}
     strategy:
       fail-fast: false
       matrix:
-        node: [18, 20]
+        node: [18]
+        shard: [1, 2, 3]
     steps:
-      - name: Main-only leg, nothing to run on this PR
-        if: env.FULL_LEG != 'true'
-        run: echo "Node ${{ matrix.node }} runs on every push to main and nightly, not on PRs." | tee -a "$GITHUB_STEP_SUMMARY"
-
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        if: env.FULL_LEG == 'true'
 
       - name: Set up Node.js ${{ matrix.node }}
-        if: env.FULL_LEG == 'true'
         uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: ${{ matrix.node }}
@@ -137,30 +143,106 @@ jobs:
           cache: npm
 
       - name: Install dependencies
-        if: env.FULL_LEG == 'true'
         run: npm ci
 
       - name: Type-check
-        if: env.FULL_LEG == 'true'
+        if: matrix.shard == 1
         run: npm run typecheck
 
       - name: Lint & format (Biome)
-        if: env.FULL_LEG == 'true'
+        if: matrix.shard == 1
         run: npm run lint:ci
 
       - name: Generated artifacts are in sync
-        if: env.FULL_LEG == 'true'
+        if: matrix.shard == 1
         run: npm run check:drift
 
       # Coverage no longer runs here: it moved to nightly.yml's `coverage` job, where it
       # is still report-only. Every leg runs the plain suite, the pass/fail signal.
+      # `--shard` balances by recorded duration (test/sequencer.ts), as on Node 22.
       - name: Test
-        if: env.FULL_LEG == 'true'
-        run: npm test
+        run: npx vitest run --shard=${{ matrix.shard }}/3
 
       - name: Authorability eval (offline golden regression guard)
-        if: env.FULL_LEG == 'true'
+        if: matrix.shard == 1
         run: npm run eval:ci
+
+  # `node-18-tests` on Node 20, step for step.
+  node-20-tests:
+    name: Node ${{ matrix.node }} tests ${{ matrix.shard }}/3
+    runs-on: ubuntu-latest
+    needs: changes
+    if: ${{ !cancelled() && (github.event_name != 'pull_request' || needs.changes.result != 'success') }}
+    strategy:
+      fail-fast: false
+      matrix:
+        node: [20]
+        shard: [1, 2, 3]
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Set up Node.js ${{ matrix.node }}
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: ${{ matrix.node }}
+          check-latest: true
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Type-check
+        if: matrix.shard == 1
+        run: npm run typecheck
+
+      - name: Lint & format (Biome)
+        if: matrix.shard == 1
+        run: npm run lint:ci
+
+      - name: Generated artifacts are in sync
+        if: matrix.shard == 1
+        run: npm run check:drift
+
+      - name: Test
+        run: npx vitest run --shard=${{ matrix.shard }}/3
+
+      - name: Authorability eval (offline golden regression guard)
+        if: matrix.shard == 1
+        run: npm run eval:ci
+
+  # The required `Node 18` and `Node 20` checks, one matrix leg each, over that version's
+  # shard job. On a PR (FULL_LEG false: the shards were skipped by design) it reports green
+  # with a job-summary line; otherwise the shards must have succeeded, so a shard that
+  # failed, was cancelled or was skipped turns it red. `always()`, not `!cancelled()`, as
+  # for `Node 22`: a job skipped by its `if` satisfies a required check. Both legs wait for
+  # both shard jobs (one `needs` list per job), but each reads only its own.
+  build:
+    name: Node ${{ matrix.node }}
+    runs-on: ubuntu-latest
+    needs: [changes, node-18-tests, node-20-tests]
+    if: ${{ always() }}
+    env:
+      FULL_LEG: ${{ github.event_name != 'pull_request' || needs.changes.result != 'success' }}
+    strategy:
+      fail-fast: false
+      matrix:
+        node: [18, 20]
+    steps:
+      - name: Every Node ${{ matrix.node }} shard gave the expected result
+        if: always()
+        env:
+          SHARDS: ${{ matrix.node == 18 && needs.node-18-tests.result || needs.node-20-tests.result }}
+          NODE: ${{ matrix.node }}
+        run: |
+          if [ "$FULL_LEG" != "true" ]; then
+            echo "Node $NODE runs on every push to main and nightly, not on PRs." | tee -a "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+          echo "Node $NODE tests (three shards): $SHARDS. Expected: success." | tee -a "$GITHUB_STEP_SUMMARY"
+          if [ "$SHARDS" != "success" ]; then
+            echo "::error::A Node $NODE shard did not succeed ($SHARDS)."
+            exit 1
+          fi
 
   # The non-test half of the Node 22 leg. A record-only PR skips the whole job, and the
   # `Node 22` aggregator below expects exactly that skip; neither name here is required.
@@ -450,13 +532,17 @@ jobs:
 
       # (appended by later workstreams)
 
-  windows:
-    name: Windows (tests + drift)
+  # The Windows leg, in three shards, skipped at job level like `node-18-tests` (FULL_LEG).
+  # Shard 1 also runs `check:drift`, the generators' line-endings and path-handling proof.
+  windows-tests:
+    name: Windows tests ${{ matrix.shard }}/3
     runs-on: windows-latest
     needs: changes
-    if: ${{ !cancelled() }}
-    env:
-      FULL_LEG: ${{ github.event_name != 'pull_request' || needs.changes.result != 'success' }}
+    if: ${{ !cancelled() && (github.event_name != 'pull_request' || needs.changes.result != 'success') }}
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3]
     # Determinism is a core invariant, and the whole toolchain is developed on
     # Windows — but CI only ever proved it on Linux. This leg catches the two
     # things that actually differ: line endings (a golden/snapshot mismatch) and
@@ -473,16 +559,9 @@ jobs:
     # Off the PR path (see `changes`): the owner's local gate runs the full suite on
     # Windows before a PR, so this leg confirms that on `main` and nightly.
     steps:
-      - name: Main-only leg, nothing to run on this PR
-        if: env.FULL_LEG != 'true'
-        shell: bash
-        run: echo "Windows runs on every push to main and nightly, not on PRs." | tee -a "$GITHUB_STEP_SUMMARY"
-
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        if: env.FULL_LEG == 'true'
 
       - name: Set up Node.js
-        if: env.FULL_LEG == 'true'
         uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: 22
@@ -490,16 +569,40 @@ jobs:
           cache: npm
 
       - name: Install dependencies
-        if: env.FULL_LEG == 'true'
         run: npm ci
 
       - name: Test
-        if: env.FULL_LEG == 'true'
-        run: npm test
+        run: npx vitest run --shard=${{ matrix.shard }}/3
 
       - name: Generated artifacts are in sync
-        if: env.FULL_LEG == 'true'
+        if: matrix.shard == 1
         run: npm run check:drift
+
+  # The required `Windows (tests + drift)` check, over `windows-tests`, as `Node 18` is over
+  # its shards: green with a job-summary line on a PR, else the shards must have succeeded.
+  # It only reads results, so it runs on Linux.
+  windows:
+    name: Windows (tests + drift)
+    runs-on: ubuntu-latest
+    needs: [changes, windows-tests]
+    if: ${{ always() }}
+    env:
+      FULL_LEG: ${{ github.event_name != 'pull_request' || needs.changes.result != 'success' }}
+    steps:
+      - name: Every Windows shard gave the expected result
+        if: always()
+        env:
+          SHARDS: ${{ needs.windows-tests.result }}
+        run: |
+          if [ "$FULL_LEG" != "true" ]; then
+            echo "Windows runs on every push to main and nightly, not on PRs." | tee -a "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+          echo "Windows tests (three shards): $SHARDS. Expected: success." | tee -a "$GITHUB_STEP_SUMMARY"
+          if [ "$SHARDS" != "success" ]; then
+            echo "::error::A Windows shard did not succeed ($SHARDS)."
+            exit 1
+          fi
 
   bench:
     name: Benchmark (informational)
@@ -561,13 +664,19 @@ jobs:
               await github.rest.issues.createComment({ owner, repo, issue_number, body: payload });
             }
 
-  e2e-playground:
-    name: Playground E2E (Playwright)
+  # Every Playwright spec in Chromium, in two shards (`--shard` splits the chromium project's
+  # tests). The required name is the `e2e-playground` aggregator's, below.
+  e2e-playground-chromium:
+    name: Playground E2E chromium ${{ matrix.shard }}/2
     runs-on: ubuntu-latest
     needs: changes
     if: ${{ !cancelled() }}
     env:
       FULL_CI: ${{ needs.changes.outputs.code != 'false' }}
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2]
     # The unit suite proves the playground's pure logic and `builds` proves it
     # COMPILES — neither ever opens the page. This job drives the real built
     # bundle in a real Chromium: boot, edit, apply a diagnostic fix, download
@@ -626,8 +735,8 @@ jobs:
         id: pw-cache
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
-          # Chromium's own folders only: Firefox and WebKit have their cache below, and a save of
-          # the whole folder would hold them twice.
+          # Chromium's own folders only: Firefox and WebKit have their cache in
+          # `e2e-playground-engines`, and a save of the whole folder would hold them twice.
           path: |
             ~/.cache/ms-playwright/chromium-*
             ~/.cache/ms-playwright/chromium_headless_shell-*
@@ -651,15 +760,76 @@ jobs:
 
       - name: Run E2E specs
         if: env.FULL_CI == 'true'
-        run: npx playwright test -c playground --project chromium
+        run: npx playwright test -c playground --project chromium --shard=${{ matrix.shard }}/2
 
-      # Firefox and WebKit run only the specs tagged `@engines` (playground/playwright.config.ts,
-      # card MP10): what each engine does after a failed compiler load. Their browsers are cached
-      # apart from Chromium's, by the same version key; the system deps install on every run, as
-      # Chromium's do. `!cancelled()`: they run after a red Chromium step too, so one run reports
-      # every engine.
+      # A retry keeps the step above green; this one reads its JSON report and annotates every case
+      # that passed only on the retry. Warning only here; nightly's e2e-prod fails on one.
+      - name: Flaky tests
+        if: ${{ always() && env.FULL_CI == 'true' }}
+        run: node scripts/playwright-flaky.mjs playground/test-results/results.json
+
+      - name: Upload Playwright report
+        if: failure()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: playwright-report-chromium-${{ matrix.shard }}
+          path: |
+            playground/playwright-report
+            playground/test-results
+          retention-days: 7
+          if-no-files-found: ignore
+
+  # Firefox and WebKit run only the specs tagged `@engines` (playground/playwright.config.ts,
+  # card MP10): what each engine does after a failed compiler load. A job of its own, beside the
+  # Chromium shards rather than after them, so one run still reports every engine. It needs no
+  # Chromium: those two projects drive their own browsers, and `vite preview` serves the page.
+  e2e-playground-engines:
+    name: Playground E2E engines
+    runs-on: ubuntu-latest
+    needs: changes
+    if: ${{ !cancelled() }}
+    env:
+      FULL_CI: ${{ needs.changes.outputs.code != 'false' }}
+    steps:
+      - name: Record-only change, nothing to run on this leg
+        if: env.FULL_CI != 'true'
+        run: echo "Record-only change; see the Node 22 docs leg."
+
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        if: env.FULL_CI == 'true'
+
+      - name: Set up Node.js
+        if: env.FULL_CI == 'true'
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 22
+          check-latest: true
+          cache: npm
+
+      - name: Install dependencies
+        if: env.FULL_CI == 'true'
+        run: npm ci
+
+      # The same two builds as `e2e-playground-chromium`: `vite preview` only serves playground/dist/.
+      - name: Build core
+        if: env.FULL_CI == 'true'
+        run: npm run build
+
+      - name: Build playground
+        if: env.FULL_CI == 'true'
+        run: npm run playground:build:only
+
+      - name: Resolve Playwright version
+        if: env.FULL_CI == 'true'
+        id: pw
+        run: |
+          version=$(node -p "require('@playwright/test/package.json').version")
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+
+      # Their browsers are cached apart from Chromium's, by the same version key; the system deps
+      # install on every run, as Chromium's do.
       - name: Cache Firefox and WebKit
-        if: env.FULL_CI == 'true' && !cancelled()
+        if: env.FULL_CI == 'true'
         id: pw-cache-engines
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
@@ -669,16 +839,17 @@ jobs:
           key: playwright-engines-${{ runner.os }}-${{ steps.pw.outputs.version }}
 
       - name: Install Firefox and WebKit (browsers + system deps)
-        if: env.FULL_CI == 'true' && !cancelled() && steps.pw-cache-engines.outputs.cache-hit != 'true'
+        if: env.FULL_CI == 'true' && steps.pw-cache-engines.outputs.cache-hit != 'true'
         run: npx playwright install --with-deps firefox webkit
 
       - name: Install Firefox and WebKit system deps only (cached browsers)
-        if: env.FULL_CI == 'true' && !cancelled() && steps.pw-cache-engines.outputs.cache-hit == 'true'
+        if: env.FULL_CI == 'true' && steps.pw-cache-engines.outputs.cache-hit == 'true'
         run: npx playwright install-deps firefox webkit
 
-      # Its own report and results folders, so a red Chromium run's report and traces survive.
+      # Its own report and results folders (the ones .gitignore names), as when both runs shared a
+      # job: a local run of both keeps Chromium's report and traces.
       - name: Run the @engines specs in Firefox and WebKit
-        if: env.FULL_CI == 'true' && !cancelled()
+        if: env.FULL_CI == 'true'
         env:
           PLAYWRIGHT_HTML_OUTPUT_DIR: ${{ github.workspace }}/playground/playwright-report-engines
           PLAYWRIGHT_HTML_REPORT: ${{ github.workspace }}/playground/playwright-report-engines
@@ -688,28 +859,45 @@ jobs:
           npx playwright test -c playground --project firefox --project webkit
           --output ${{ github.workspace }}/playground/test-results-engines
 
-      # A retry keeps both Playwright steps green; this one reads their JSON reports (Chromium's and
-      # the engines run's, each in its own file) and annotates every case that passed only on the
-      # retry. Warning only here; nightly's e2e-prod fails on one.
+      # A retry keeps the step above green; this one reads its JSON report and annotates every case
+      # that passed only on the retry. Warning only here; nightly's e2e-prod fails on one.
       - name: Flaky tests
         if: ${{ always() && env.FULL_CI == 'true' }}
-        run: >-
-          node scripts/playwright-flaky.mjs
-          playground/test-results/results.json
-          playground/test-results-engines/results.json
+        run: node scripts/playwright-flaky.mjs playground/test-results-engines/results.json
 
       - name: Upload Playwright report
         if: failure()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
-          name: playwright-report
+          name: playwright-report-engines
           path: |
-            playground/playwright-report
-            playground/test-results
             playground/playwright-report-engines
             playground/test-results-engines
           retention-days: 7
           if-no-files-found: ignore
+
+  # The required `Playground E2E (Playwright)` check, over the two Chromium shards and the
+  # engines job. Both keep FULL_CI step guards, so they succeed on a record-only PR too and this
+  # always requires `success` of both. `always()`, not `!cancelled()`, as for `Node 22`: a job
+  # skipped by its `if` satisfies a required check, so a cancelled run must not leave this one
+  # skipped.
+  e2e-playground:
+    name: Playground E2E (Playwright)
+    runs-on: ubuntu-latest
+    needs: [changes, e2e-playground-chromium, e2e-playground-engines]
+    if: ${{ always() }}
+    steps:
+      - name: Every Playground E2E job passed
+        if: always()
+        env:
+          CHROMIUM: ${{ needs.e2e-playground-chromium.result }}
+          ENGINES: ${{ needs.e2e-playground-engines.result }}
+        run: |
+          echo "Playground E2E chromium (two shards): $CHROMIUM. Engines: $ENGINES. Expected: success." | tee -a "$GITHUB_STEP_SUMMARY"
+          if [ "$CHROMIUM" != "success" ] || [ "$ENGINES" != "success" ]; then
+            echo "::error::A Playground E2E job did not succeed."
+            exit 1
+          fi
 
   check-3d:
     name: 3D package (check:3d)
