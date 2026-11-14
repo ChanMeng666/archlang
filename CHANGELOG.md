@@ -16,6 +16,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- `GOVERNANCE.md` now states the compatibility and deprecation policy for schemas, language forms and exports (card CR11a, ruling RM-D30): additive only within a major version, a breaking change is a new `$id`, deprecation lasts at least one minor, `v0` marks drafts, and new schemas live at `https://archlang.uk/schemas/<name>/v<major>.schema.json`. The two existing `$id` values do not change. The release compatibility gate now also fails a changed or dropped root `$id` on a gated schema that carries one (today `plan-schema`; waive it with `BREAKING: plan-schema: /$id`). The intent schema is guarded by its pin test, and the Scene3D schema is not gated yet. No output of the compiler changes.
 - The playground's bundler (rolldown) no longer keeps the core's CLI manifest, JSON schemas, keyword table or stage tables in a bundle that never reads them (card RM0.7d): the top-level values it could not prove side-effect-free are marked so (`src/pure.ts`). The playground's compiler path is about 3.2 KB gzip smaller. Every value is built as before, and the published types are unchanged.
 
 ### Fixed

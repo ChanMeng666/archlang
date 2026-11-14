@@ -5,7 +5,7 @@
 Where the tests of a `src` module are, and what each test file is for. Generated; `npm run check:drift`
 fails when it is stale. How to add a test: `docs/testing.md` § 4.
 
-505 test files in `test/`, 280 `src` modules, 106 modules no test imports.
+506 test files in `test/`, 280 `src` modules, 106 modules no test imports.
 
 ## `src` module → tests that import it
 
@@ -602,6 +602,7 @@ The first sentence of each file's header comment.
 - `test/scene-path-prim.test.ts` — The `path` Scene primitive reaches every backend.
 - `test/scene.test.ts` — Scene IR.
 - `test/schedule.test.ts` — sheet tables — a plan that opts out is byte-identical; schedule — derived rows (numbering, names, areas); legend — derived closed-form from what the drawing pai…
+- `test/schema-ids.test.ts` — Every published JSON schema file carries a well-formed `$id` (GOVERNANCE.md: Compatibility and deprecation).
 - `test/section.test.ts` — `section <id|int> (x,y)->(x,y) look <compass>` (RM6.1, design `slab-and-section.md` §2): what `describe().sections` reports and where the mark draws, the four refusals, the words as names, the printer, and Plan JSON's...
 - `test/security.test.ts` — SVG output is XSS-safe.
 - `test/segment-select-digests.test.ts` — The segment-selector digest table (plan card PS3.5): SHA-256 over SVG, `describe()`, `lint()` and `compile().diagnostics` of every storey of each plan in `test/tables/segment-select-plans.ts`, pinned in its own commit...

@@ -973,7 +973,7 @@ export function compareTypeSurfaces(oldS, newS) {
 const asSet = (v) => new Set(Array.isArray(v) ? v : v === undefined ? [] : [v]);
 const show = (v) => JSON.stringify(v);
 
-/** Additive-only diff of two JSON schemas; `name` labels the findings. */
+/** Additive-only diff of two JSON schemas (the root `$id` included); `name` labels the findings. */
 export function compareJsonSchemas(oldS, newS, { surface, name, path = "" }) {
   const out = [];
   const walk = (o, n, p) => {
@@ -981,6 +981,10 @@ export function compareJsonSchemas(oldS, newS, { surface, name, path = "" }) {
     if (!n || typeof n !== "object") {
       out.push({ surface, kind: "removed schema", name, path: p || "/", old: show(o) });
       return;
+    }
+    // The root's `$id` is its identity (a public URL, GOVERNANCE.md): a changed or dropped one is a new schema.
+    if (p === path && typeof o.$id === "string" && o.$id !== n.$id) {
+      out.push({ surface, kind: "changed $id", name, path: `${p}/$id`, old: show(o.$id), new: show(n.$id) });
     }
     if (o.type !== undefined) {
       const nt = asSet(n.type);
