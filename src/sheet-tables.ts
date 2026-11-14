@@ -36,10 +36,18 @@ import type { Point } from "./ast.js";
 import type { Bounds } from "./geometry.js";
 import type { BandWall } from "./geometry/band.js";
 import type { HatchSpec } from "./hatches.js";
-import { floorMaterialsUsed, groundSwatchFrame, hatchesUsed, hatchId } from "./hatches.js";
+import {
+  floorMaterialsUsed,
+  groundSwatchFrame,
+  hatchesUsed,
+  hatchId,
+  isFloorPattern,
+  keepsTintUnder,
+} from "./hatches.js";
 import type { ROutdoor, RFurniture, RRoom } from "./ir.js";
 import { WINDOW_KINDS, type WindowKind } from "./grammar/tokens.js";
-import { groundMaterialsUsed } from "./elements/outdoor.js";
+import { groundMaterialsUsed, groundTintOf } from "./elements/outdoor.js";
+import { roomFloorFill } from "./elements/room.js";
 import { doorSwatch } from "./elements/door-panels.js";
 import { windowSwatch } from "./elements/window.js";
 import { weightWidth } from "./scene.js";
@@ -1183,8 +1191,35 @@ function groupedScheduleNodes(
   d.text({ x: netX, y: totalTop + rowH / 2 }, areaCell(t.net_total_m2), fs, netCol.align, { weight: BOLD });
 }
 
+/**
+ * The themes the elements a legend swatch stands for are drawn in: a `style room { … }` or
+ * `style outdoor { … }` block gives rooms or grounds a theme of their own (`scene-build.ts`), and a
+ * swatch's tint is read with the very theme its element is painted with.
+ */
+export interface SwatchThemes {
+  room: Theme;
+  outdoor: Theme;
+}
+
+/**
+ * The tint a material swatch is drawn on (card RM8.7b), or `undefined` for none: for a pattern that
+ * keeps the tint under it (`keepsTintUnder`), the colour its element paints first, read from that
+ * element's own source: `roomFloorFill` for a floor-only pattern (under `rendered` the floor wash),
+ * `groundTintOf` for a ground. Every other swatch draws its pattern alone, as before.
+ */
+function swatchTint(material: string, themes: SwatchThemes): string | undefined {
+  if (!keepsTintUnder(material)) return undefined;
+  return isFloorPattern(material) ? roomFloorFill(themes.room, material) : groundTintOf(themes.outdoor, material);
+}
+
 /** The LEGEND table's primitives — each row a real swatch beside its name. */
-function legendNodes(t: LegendTableBox, theme: Theme, sizes: RenderSizes, out: SceneNode[]): void {
+function legendNodes(
+  t: LegendTableBox,
+  theme: Theme,
+  sizes: RenderSizes,
+  out: SceneNode[],
+  themes: SwatchThemes,
+): void {
   const d = drawer(theme, sizes, out);
   const { x0, y0, w, h, rowH, fs, pad, swatchW } = t;
   d.frame(x0, y0, w, h);
@@ -1206,6 +1241,10 @@ function legendNodes(t: LegendTableBox, theme: Theme, sizes: RenderSizes, out: S
       // the pattern's own marks (`groundSwatchFrame`); a wall material keeps the drawing's
       // anchoring, byte for byte.
       const frame = groundSwatchFrame(hp, sizes.hatchGap, { x: box.x + box.w / 2, y: box.y + box.h / 2 });
+      // Under the pattern, the tint its element is drawn on, as the plan paints it (`swatchTint`).
+      const tint = swatchTint(hp.material, themes);
+      if (tint !== undefined)
+        out.push({ layer: "annotations", prim: { t: "polygon", pts: rectRing(box) }, paint: { fill: tint } });
       out.push({
         layer: "annotations",
         prim: {
@@ -1301,11 +1340,12 @@ export function sheetTableNodes(
   theme: Theme,
   sizes: RenderSizes,
   text: SheetText = PLAIN_SHEET_TEXT,
+  swatchThemes: SwatchThemes = { room: theme, outdoor: theme },
 ): SceneNode[] {
   const out: SceneNode[] = [];
   if (t.schedule) scheduleNodes(t.schedule, theme, sizes, text, out);
   if (t.openings) openingTableNodes(t.openings, theme, sizes, out);
-  if (t.legend) legendNodes(t.legend, theme, sizes, out);
+  if (t.legend) legendNodes(t.legend, theme, sizes, out, swatchThemes);
   if (t.notes) notesNodes(t.notes, theme, sizes, out);
   return out;
 }

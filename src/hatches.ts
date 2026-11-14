@@ -186,6 +186,8 @@ interface HatchMeta {
   /** Predefined DXF HATCH pattern name (group code 2), recognized by CAD apps. */
   dxfPattern: string;
   build: HatchDef;
+  /** The flat stand-ins keep the tint under the pattern ({@link keepsTintUnder}). */
+  keepsTint?: true;
 }
 
 /** `patternTransform="rotate(...)"` for a pattern's natural + user angle (omitted at 0°). */
@@ -636,6 +638,7 @@ const META: Record<string, HatchMeta> = {
   sand: {
     natural: 0,
     dxfPattern: "AR-SAND",
+    keepsTint: true,
     build: (id, c) => {
       const w = c.gap * 2 * c.scale;
       const hl = hairline(c);
@@ -656,6 +659,7 @@ const META: Record<string, HatchMeta> = {
   soil: {
     natural: 0,
     dxfPattern: "EARTH",
+    keepsTint: true,
     build: (id, c) => {
       const s = c.gap * 1.2 * c.scale;
       const seg = (x1: number, y1: number, x2: number, y2: number): string =>
@@ -692,6 +696,7 @@ const META: Record<string, HatchMeta> = {
   timber: {
     natural: 45,
     dxfPattern: "AR-HBONE",
+    keepsTint: true,
     build: (id, c) => {
       const a = c.gap * 0.5 * c.scale;
       const d = herringboneBlocks()
@@ -710,6 +715,7 @@ const META: Record<string, HatchMeta> = {
   carpeting: {
     natural: 0,
     dxfPattern: "CROSS",
+    keepsTint: true,
     build: (id, c) => {
       const w = c.gap * 0.8 * c.scale;
       return (
@@ -726,6 +732,7 @@ const META: Record<string, HatchMeta> = {
   stone: {
     natural: 0,
     dxfPattern: "AR-RSHKE",
+    keepsTint: true,
     build: (id, c) => {
       const m = c.gap * c.scale;
       const w = m * 5;
@@ -772,6 +779,22 @@ export function isKnownMaterial(name: string): name is Material {
 /** Predefined DXF HATCH pattern name for a material (assumed known). */
 export function dxfPatternName(material: string): string {
   return META[material]!.dxfPattern;
+}
+
+/**
+ * Whether the two flat stand-ins for this pattern keep the tint its element paints under it (card
+ * RM8.7b): the PDF, which has no pattern and so paints a hatch as one colour, draws nothing for it,
+ * and a legend swatch draws that tint under the pattern. The tint is the element's own: the room's
+ * `roomFloorFill` (under `rendered` the floor wash) or the ground's theme tint; this module holds
+ * no colour.
+ *
+ * True for the five patterns of card RM8.7 (`sand`, `soil`, `timber`, `carpeting`, `stone`) and no
+ * other. Every pattern but a wall's paints no base, so every ground and floor pattern could take it;
+ * the older ones do not, because the PDF flattens them to `pocheBase` and their legend swatches
+ * draw no tint on `main`, and moving them would move every plan with an older ground or floor word.
+ */
+export function keepsTintUnder(material: string): boolean {
+  return Object.hasOwn(META, material) && META[material]!.keepsTint === true;
 }
 
 /** Whether a material is a solid (unpatterned) fill — drives the DXF solid flag. */

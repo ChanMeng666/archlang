@@ -379,6 +379,60 @@ suite("under `rendered`, a floor-only word washes its room (card RM8.7, RM-D28)"
       expect(noSpans(lint(floored)), word).toEqual(noSpans(lint(plain)));
     }
   });
+
+  // Card RM8.7b: the legend swatch is drawn on the wash the room is, from the same `roomFloorFill`.
+  const legendPlan = (pre: string, floor: string) =>
+    plan(
+      `${pre}paper A2 landscape\n  scale 1:100\n  legend\n  room id=a at (0,0) size 4000x3000 label "A" uses living${floor}`,
+    );
+  /** The legend swatch of `material` and the node drawn just before it (its tint, when it has one). */
+  const swatchOf = (src: string, material: string) => {
+    const { scene, svg } = compile(src, { noCache: true });
+    const nodes = scene!.nodes;
+    const i = nodes.findIndex((n) => n.layer === "annotations" && n.prim.t === "hatch" && n.prim.material === material);
+    return { svg, nodes, swatch: nodes[i], under: i > 0 ? nodes[i - 1] : undefined };
+  };
+
+  for (const word of FLOOR_PATTERNS) {
+    it(`${word}: its legend swatch is drawn on the room's wash`, () => {
+      const wash = roomFloorFill(rendered, word);
+      expect(wash, "a wash, not the plain floor").not.toBe(rendered.roomFill);
+      const src = legendPlan("theme rendered\n  ", ` floor ${word}`);
+      const { svg, swatch, under } = swatchOf(src, word);
+      expect(swatch, `${word} has a legend row`).toBeDefined();
+      expect(under?.layer).toBe("annotations");
+      expect(under?.prim.t).toBe("polygon");
+      expect(under?.paint.fill, "the swatch's tint is the room's own").toBe(floorFill(src));
+      expect(under?.paint.fill).toBe(wash);
+      // The tint fills the swatch's own box, and nothing else.
+      expect(under!.prim.t === "polygon" && under!.prim.pts).toEqual(
+        swatch!.prim.t === "hatch" && swatch!.prim.region[0],
+      );
+      // In the SVG: the room's floor and the swatch, the only two shapes in the wash.
+      expect(svg.split(`fill="${wash}"`).length - 1).toBe(2);
+    });
+  }
+
+  it("an older word's swatch, and any swatch under a theme without tints, draws no wash", () => {
+    // `tile` under `rendered`: no tint polygon under its swatch, as on `main` (byte identity).
+    const tile = swatchOf(legendPlan("theme rendered\n  ", " floor tile"), "tile");
+    expect(tile.swatch).toBeDefined();
+    expect(tile.under?.prim.t).not.toBe("polygon");
+    // Under the default theme a floor-only word's swatch is drawn on `roomFill`: what the room is.
+    for (const word of FLOOR_PATTERNS) {
+      const { under } = swatchOf(legendPlan("", ` floor ${word}`), word);
+      expect(under?.prim.t, word).toBe("polygon");
+      expect(under?.paint.fill, word).toBe(DEFAULT_THEME.roomFill);
+    }
+  });
+
+  it("a `style room` block's room colour washes the swatch as it washes the room", () => {
+    const src = legendPlan('theme rendered\n  style room { fill: "#f4f8fc" }\n  ', " floor stone");
+    const { under } = swatchOf(src, "stone");
+    const room = floorFill(src);
+    expect(room, "the styled room is washed from its own colour").not.toBe(roomFloorFill(rendered, "stone"));
+    expect(under?.paint.fill).toBe(room);
+  });
 });
 
 suite("the floor-only patterns (card RM8.7)", () => {

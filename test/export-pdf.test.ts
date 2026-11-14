@@ -73,6 +73,10 @@ import { parse } from "../src/parser.js";
 import { toScene } from "../src/scene-build.js";
 import { toPdf } from "../src/export/pdf.js";
 import { EXTRA_THIN_RATIO } from "../src/scene.js";
+import { OUTDOOR_KINDS } from "../src/ast.js";
+import { FLOOR_PATTERNS, GROUND_MATERIALS, isFloorPattern, keepsTintUnder } from "../src/hatches.js";
+import { roomFloorFill } from "../src/elements/room.js";
+import { groundMaterial, groundTintOf } from "../src/elements/outdoor.js";
 
 async function hasPdfkit(): Promise<boolean> {
   try {
@@ -645,6 +649,69 @@ describe("PDF export", () => {
       expect((path.match(/ m\n/g) ?? []).length, "one moveto per poche loop").toBe(loops);
       // `f`, the NONZERO fill — an even-odd `f*` would punch the wall's own outline out.
       expect(ops.slice(at + poche.length)).toMatch(/^\nf\n/);
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // Card RM8.7b: the five patterns of card RM8.7 keep the tint under them. Their flat poché
+  // fill used to cover the floor wash (`rendered`) and the ground tint, on the plan and in the
+  // legend swatch alike.
+
+  describe("the floor wash and the ground tint under the five newer patterns (card RM8.7b)", () => {
+    /** The five, derived from the pattern table, and pinned to the card's list. */
+    const FIVE = [...FLOOR_PATTERNS, ...GROUND_MATERIALS].filter(keepsTintUnder);
+    it("are exactly the five words of card RM8.7", () => {
+      expect([...FIVE].sort()).toEqual(["carpeting", "sand", "soil", "stone", "timber"]);
+    });
+
+    const sheet = (body: string) =>
+      `plan "T" {\n  theme rendered\n  paper A2 landscape\n  scale 1:100\n  legend\n` +
+      `  wall exterior thickness 200 { (0,0) (8000,0) (8000,5000) (0,5000) close }\n${body}\n}`;
+    /** A plan that writes `material` (a floor word, or the kind filling with it), and the same plan without it. */
+    const pair = (material: string): [string, string] => {
+      if (isFloorPattern(material)) {
+        const room = (floor: string) => `  room id=a at (0,0) size 8000x5000 label "A"${floor}`;
+        return [sheet(room(` floor ${material}`)), sheet(room(""))];
+      }
+      const kind = OUTDOOR_KINDS.find((k) => groundMaterial(k) === material)!;
+      const room = `  room id=a at (0,0) size 8000x5000 label "A"`;
+      return [sheet(`${room}\n  outdoor ${kind} at (0,6000) size 4000x3000`), sheet(room)];
+    };
+    const fills = (ops: string, hex: string) => ops.split(`${rgbOp(hex)} scn`).length - 1;
+
+    for (const material of FIVE) {
+      it(`${material}: the PDF paints its tint, on the plan and in the legend, with no poché over it`, async () => {
+        const [withIt, without] = pair(material).map(planOf) as [ReturnType<typeof planOf>, ReturnType<typeof planOf>];
+        const theme = withIt.theme;
+        // The tint, from the source the drawing reads: the room's `roomFloorFill`, the ground's tint.
+        const tint = isFloorPattern(material) ? roomFloorFill(theme, material) : groundTintOf(theme, material)!;
+        if (isFloorPattern(material))
+          expect(tint, "under `rendered` a floor-only word's tint is its wash").not.toBe(theme.roomFill);
+        // Non-vacuity: the plan draws the pattern on the plan and in its legend swatch.
+        const hatches = withIt.nodes.filter((n) => n.prim.t === "hatch" && n.prim.material === material);
+        expect(hatches.map((n) => n.layer === "annotations")).toEqual([false, true]);
+
+        const ops = pageOps(await toPdf(withIt));
+        const base = pageOps(await toPdf(without));
+        expect(fills(base, tint), "the plan without the word has no such tint").toBe(0);
+        expect(fills(ops, tint), "the tint is painted twice: the plan's surface and the legend swatch").toBe(2);
+        expect(fills(ops, theme.pocheBase), "the pattern adds no flat poché fill over its tint").toBe(
+          fills(base, theme.pocheBase),
+        );
+      });
+    }
+
+    it("the older words keep their flat poché fill (byte identity)", async () => {
+      for (const body of [
+        `  room id=a at (0,0) size 8000x5000 label "A" floor tile`,
+        `  room id=a at (0,0) size 8000x5000 label "A"\n  outdoor lawn at (0,6000) size 4000x3000`,
+      ]) {
+        const withIt = planOf(sheet(body));
+        const without = planOf(sheet(`  room id=a at (0,0) size 8000x5000 label "A"`));
+        const poche = withIt.theme.pocheBase;
+        // One on the plan, one in its legend swatch, as on `main`.
+        expect(fills(pageOps(await toPdf(withIt)), poche), body).toBe(fills(pageOps(await toPdf(without)), poche) + 2);
+      }
     });
   });
 });

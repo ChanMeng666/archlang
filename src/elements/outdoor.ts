@@ -67,6 +67,7 @@ import { PLAIN_SHEET_TEXT } from "../sheet-text.js";
 import type { SceneNode } from "../scene.js";
 import { weightWidth } from "../scene.js";
 import type { ROutdoor, RWall } from "../ir.js";
+import type { Theme } from "../theme.js";
 import { distPointToWallSegment, rectCorners, segmentsOfWall } from "../geometry.js";
 import {
   effectiveVertices,
@@ -159,6 +160,23 @@ const GROUND: Readonly<Record<OutdoorKind, GroundSpec>> = {
 /** The hatch material a kind fills with, or null when it takes none. */
 export function groundMaterial(kind: OutdoorKind): string | null {
   return GROUND[kind].material;
+}
+
+/**
+ * The tint a surface filled with the hatch `material` is drawn on, read off {@link GROUND} (what
+ * `render` paints first): `theme[tint]` of the kinds that fill with it, or `undefined` when no kind
+ * does or two of them disagree. The legend swatch reads it (card RM8.7b), so a swatch shows the
+ * colour the surface has without a second table of tints.
+ */
+export function groundTintOf(theme: Theme, material: string): string | undefined {
+  let tint: GroundSpec["tint"] | undefined;
+  for (const kind of OUTDOOR_KINDS) {
+    const spec = GROUND[kind];
+    if (spec.material !== material) continue;
+    if (tint !== undefined && tint !== spec.tint) return undefined;
+    tint = spec.tint;
+  }
+  return tint === undefined ? undefined : theme[tint];
 }
 
 /** Can a person walk on this kind of ground? Only `water` says no (backlog 4.5). */
