@@ -1745,7 +1745,7 @@
   position: absolute;
   left: 50%;
   top: 50%;
-  z-index: 3;
+  z-index: 5;
   transform: translate(-50%, -50%);
   display: flex;
   flex-direction: column;
@@ -1786,6 +1786,41 @@
   color: var(--ink);
   text-align: center;
 }
+/* The package's own warnings of the shown view (card RM8.10, preview3d.ts): the lint row's amber
+   left rule on paper, never dimmed like the controls. It rides 10px above the foot's measured height
+   (--p3d-foot-h, preview3d.ts: the foot wraps on a phone, its buttons are 44px on a coarse pointer),
+   is at most 40% of the stage (the stage is a size container) and, under the coach mark (z-index 5),
+   lets drags through to the canvas unless its text overflows (data-scroll: then it scrolls). */
+.p3d-notice {
+  position: absolute;
+  z-index: 3;
+  left: 10px;
+  bottom: calc(14px + var(--p3d-foot) + var(--p3d-foot-h, 28px) + 10px);
+  display: grid;
+  gap: 4px;
+  max-width: min(520px, calc(100% - 20px));
+  max-height: 40cqh;
+  overflow-y: auto;
+  pointer-events: none;
+}
+.p3d-notice[data-scroll] {
+  pointer-events: auto;
+}
+.p3d-notice p {
+  margin: 0;
+  padding: 6px 10px;
+  border: 1px solid var(--hairline);
+  border-left: 3px solid var(--warn-ink);
+  border-radius: 3px;
+  background: color-mix(in srgb, var(--warn-ink) 6%, var(--paper-panel));
+  font-size: 12px;
+  color: var(--ink);
+}
+.p3d-notice code {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--warn-ink);
+}
 /* The WebGL context was lost (ruling MP-D3, preview3d.ts): a press draws the view again. Over
    everything on the stage, centred, touch-sized. */
 .p3d-lost {
@@ -1813,6 +1848,7 @@
 [hidden].p3d-canvas,
 [hidden].p3d-float,
 [hidden].p3d-message,
+[hidden].p3d-notice,
 [hidden].p3d-btn,
 [hidden].p3d-lost {
   display: none;

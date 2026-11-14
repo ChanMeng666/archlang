@@ -1,6 +1,15 @@
 import { readFileSync } from "node:fs";
 import { expect, test, type Locator, type Page } from "@playwright/test";
-import { BROKEN_PLAN, embedHash, gotoEdit, setEditorSource, shareHash, waitFor3d, waitForPlan } from "./fixtures.js";
+import {
+  BROKEN_PLAN,
+  embedHash,
+  gotoEdit,
+  JOINT_ON_BOTH,
+  setEditorSource,
+  shareHash,
+  waitFor3d,
+  waitForPlan,
+} from "./fixtures.js";
 
 /** Townhouse, the three-storey example: the widest storey chip (L1 L2 L3) on the stage. */
 const TOWNHOUSE = readFileSync(new URL("../../examples/townhouse.arch", import.meta.url), "utf8").replace(
@@ -414,6 +423,46 @@ test.describe("phone layout", () => {
         // Over the 3D preview the chip is at its widest: All, L1, L2, L3.
         await expect(page.locator("#storeys .lv-btn")).toHaveText(["All", "L1", "L2", "L3"]);
         await check(`${mode} mode, 3D`, ["#preview3d .p3d-top", ".stage-switch", "#preview3d .p3d-stage > .knobs"]);
+      }
+    });
+  }
+
+  // Card RM8.10: the 3D warnings sit above the foot's real height (it wraps at 360 px; its buttons
+  // are 44 px on a coarse pointer), stay inside the stage at most 40% of its height tall, and share
+  // no pixel with the foot or the top-right group, in view mode and in edit mode.
+  for (const [width, height] of [
+    [360, 780],
+    [390, 844],
+  ] as const) {
+    test(`the 3D warnings overlap neither the foot nor the top group at ${width}x${height}, in either mode`, async ({
+      page,
+    }) => {
+      await page.setViewportSize({ width, height });
+      for (const mode of ["view", "edit"] as const) {
+        await page.goto("about:blank");
+        await page.goto(`/${await shareHash(JOINT_ON_BOTH)}${mode === "edit" ? "&edit" : ""}`);
+        await waitForPlan(page);
+        if (mode === "edit") await page.locator('.mview[data-mview="3d"]').tap();
+        else await page.locator("#view3d").tap();
+        const notice = page.locator("#preview3d .p3d-notice");
+        await expect(notice).toBeVisible();
+        await expect(notice.locator("p")).toHaveCount(2);
+        const [n, foot, top, stage] = await Promise.all([
+          notice.boundingBox(),
+          page.locator("#preview3d .p3d-foot").boundingBox(),
+          page.locator("#preview3d .p3d-top").boundingBox(),
+          page.locator("#preview3d .p3d-stage").boundingBox(),
+        ]);
+        const where = `${mode} mode, ${width}px`;
+        expect(foot, `the foot (${where})`).toBeTruthy();
+        expect(top, `the top group (${where})`).toBeTruthy();
+        expect(overlaps(n!, foot!), `the warnings overlap the foot (${where})`).toBe(false);
+        expect(overlaps(n!, top!), `the warnings overlap the top group (${where})`).toBe(false);
+        expect(n!.x, `inside the stage, left (${where})`).toBeGreaterThanOrEqual(stage!.x);
+        expect(n!.x + n!.width, `inside the stage, right (${where})`).toBeLessThanOrEqual(
+          stage!.x + stage!.width + 0.5,
+        );
+        expect(n!.height, `at most 40% of the stage (${where})`).toBeLessThanOrEqual(stage!.height * 0.4 + 1);
       }
     });
   }

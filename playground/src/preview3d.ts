@@ -60,6 +60,7 @@ import { compile } from "archlang";
 import { storeysOf, viewMesh } from "@chanmeng666/archlang-3d";
 import {
   mountReplay,
+  noticeLevelLabel,
   PREVIEW_ABOUT_URL,
   PREVIEW_LABEL,
   PREVIEW_LEAD,
@@ -352,6 +353,15 @@ export function mountPreview3d(host: HTMLElement): Preview3d {
     coachTimer = window.setTimeout(fadeCoach, COACH_MS);
   };
 
+  // The package's own warnings of the shown view (card RM8.10), each as the warning words it:
+  // always on, never dimmed. Hidden when there are none, and with a refusal. A polite live region,
+  // and the canvas's description while it shows (below).
+  const notices = document.createElement("div");
+  notices.className = "p3d-notice";
+  notices.id = "p3d-notice";
+  notices.setAttribute("role", "status");
+  notices.hidden = true;
+
   const message = document.createElement("p");
   message.className = "p3d-message";
   message.setAttribute("role", "status");
@@ -361,8 +371,26 @@ export function mountPreview3d(host: HTMLElement): Preview3d {
   const lostBtn = btn(LOST_TEXT, "p3d-lost");
   lostBtn.hidden = true;
 
-  stage.append(canvas, coach, top, scrub, foot, message, lostBtn);
+  stage.append(canvas, coach, top, scrub, foot, notices, message, lostBtn);
   host.append(stage);
+
+  // The notice rides above the foot's real height (it wraps on a phone and its buttons are 44 px on
+  // a coarse pointer, so no fixed offset is right) and stays under 40% of the stage (CSS). It lets
+  // drags through to the canvas (pointer-events: none) unless its text overflows: then it scrolls,
+  // so it takes pointer events and a tab stop (`data-scroll`).
+  const fitNotice = (): void => {
+    stage.style.setProperty("--p3d-foot-h", `${foot.offsetHeight}px`);
+    const over = !notices.hidden && notices.scrollHeight > notices.clientHeight + 1;
+    notices.toggleAttribute("data-scroll", over);
+    if (over) notices.tabIndex = 0;
+    else notices.removeAttribute("tabindex");
+  };
+  if (typeof ResizeObserver === "function") {
+    const watch = new ResizeObserver(fitNotice);
+    watch.observe(stage);
+    watch.observe(foot);
+    watch.observe(notices);
+  }
 
   let handle: ReplayHandle | undefined;
   /** What the mounted replay (or the refusal showing) was built from. */
@@ -518,6 +546,7 @@ export function mountPreview3d(host: HTMLElement): Preview3d {
     play.hidden = true;
     scrub.hidden = true;
     coach.hidden = true;
+    notices.hidden = true;
     clearLost();
     message.hidden = false;
     message.textContent = `No 3D preview: ${text}`;
@@ -549,6 +578,21 @@ export function mountPreview3d(host: HTMLElement): Preview3d {
       const mesh = mesh3d(r.scene);
       const levels = storeysOf(mesh);
       const index = level === null || levels.length < 2 ? -1 : levels.indexOf(level);
+      // The warnings of the storey shown (all of them in the combined view), with their own words.
+      const shown = r.warnings.filter((w) => index < 0 || w.level === level);
+      // The combined view of several storeys says which storey each warning is about.
+      const withLevel = index < 0 && levels.length > 1;
+      notices.replaceChildren(
+        ...shown.map((w) => {
+          const p = document.createElement("p");
+          const code = document.createElement("code");
+          code.textContent = w.code;
+          p.append(...(withLevel ? [`${noticeLevelLabel(w.level)} `] : []), code, ` ${w.message}`);
+          return p;
+        }),
+      );
+      notices.hidden = shown.length === 0;
+      fitNotice();
       const svg = index < 0 ? drawn.svg : drawn.pages?.find((pg) => pg.level === level)?.svg;
       if (!svg) {
         refuse(`the core drew no page for storey L${level}.`);
@@ -579,7 +623,7 @@ export function mountPreview3d(host: HTMLElement): Preview3d {
           ? [viewToolbar(next.view, { buttonClass: "p3d-btn", hintId: "p3d-hint", compact: true, storeys: false })]
           : []),
       );
-      canvas.setAttribute("aria-describedby", "p3d-hint");
+      canvas.setAttribute("aria-describedby", shown.length > 0 ? "p3d-hint p3d-notice" : "p3d-hint");
       const which = index < 0 ? (levels.length > 1 ? "all storeys" : "") : `storey L${level}`;
       canvas.setAttribute(
         "aria-label",
