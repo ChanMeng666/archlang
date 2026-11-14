@@ -8,7 +8,8 @@
   RM-D32): `replayHtml` takes `notices` (`{ code, message }[]`, new types `ReplayNotice` and
   `ReplayHtmlOptions`) and writes each under the replay as plain text, the warning's own `message`
   and never a second copy of it; `archlang3d` passes the warnings of the view it writes
-  (`W3D_MIXED_HEIGHT_JOINT`, `W3D_FLOOR_OVERLAP`). The playground's 3D tab shows the same for the
+  (`W3D_MIXED_HEIGHT_JOINT`, `W3D_FLOOR_OVERLAP`); the combined view of a plan of several storeys puts the
+  warning's storey first (`L2 ·`, new browser export `noticeLevelLabel`). The playground's 3D tab shows the same for the
   storey in view. The geometry is unchanged, and the payload, Mesh3D, GLB and key frames are
   identical with or without a notice; a replay with no notices is byte for byte as before.
 - A room's floor is laid in the finish its plan's author wrote (`room … floor <word>`, product-roadmap

@@ -1745,7 +1745,7 @@
   position: absolute;
   left: 50%;
   top: 50%;
-  z-index: 3;
+  z-index: 5;
   transform: translate(-50%, -50%);
   display: flex;
   flex-direction: column;
@@ -1787,15 +1787,24 @@
   text-align: center;
 }
 /* The package's own warnings of the shown view (card RM8.10, preview3d.ts): the lint row's amber
-   left rule on paper, above the bottom-left controls, never dimmed like them. */
+   left rule on paper, never dimmed like the controls. It rides 10px above the foot's measured height
+   (--p3d-foot-h, preview3d.ts: the foot wraps on a phone, its buttons are 44px on a coarse pointer),
+   is at most 40% of the stage (the stage is a size container) and, under the coach mark (z-index 5),
+   lets drags through to the canvas unless its text overflows (data-scroll: then it scrolls). */
 .p3d-notice {
   position: absolute;
   z-index: 3;
   left: 10px;
-  bottom: calc(52px + var(--p3d-foot));
+  bottom: calc(14px + var(--p3d-foot) + var(--p3d-foot-h, 28px) + 10px);
   display: grid;
   gap: 4px;
   max-width: min(520px, calc(100% - 20px));
+  max-height: 40cqh;
+  overflow-y: auto;
+  pointer-events: none;
+}
+.p3d-notice[data-scroll] {
+  pointer-events: auto;
 }
 .p3d-notice p {
   margin: 0;

@@ -35,7 +35,7 @@ import {
 } from "../src/index.js";
 import { cameraPosition } from "../src/replay/camera.js";
 import { PREVIEW_LABEL, PREVIEW_LEAD, PREVIEW_LIMITS, replayHtml, replayPayload } from "../src/node.js";
-import { EXAMPLES_LIST, WORLD } from "./corpus.js";
+import { EXAMPLE_FILES, EXAMPLES_LIST, WORLD } from "./corpus.js";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const meshOf = (name: string) => {
@@ -485,15 +485,29 @@ describe("replay HTML", () => {
     expect(payloadOf(html), "frames, events and nodes are the same with or without the notice").toBe(payloadOf(bare));
   }, 60_000);
 
-  it("no published example raises a mixed-height joint, and a replay with no notices is byte for byte the bare one", async () => {
-    for (const [name, src] of EXAMPLES_LIST) {
+  it("no published example raises any W3D_* warning, and a replay with no notices is byte for byte the bare one", async () => {
+    // Every examples/**/*.arch, subfolders too. A component library under lib/ may not stand alone
+    // (refused); a top-level example never is, and the count of plans checked has a floor, so a run
+    // where every plan is refused fails instead of passing on nothing.
+    let checked = 0;
+    const refused: string[] = [];
+    for (const [name, src] of Object.entries(EXAMPLE_FILES)) {
       const r = adaptPlan(src, { world: WORLD });
-      if (!r.ok) continue;
+      if (!r.ok) {
+        refused.push(name);
+        continue;
+      }
+      checked++;
       expect(
-        r.warnings.filter((w) => w.code === "W3D_MIXED_HEIGHT_JOINT"),
+        r.warnings.map((w) => w.code),
         name,
       ).toEqual([]);
     }
+    expect(
+      refused.filter((n) => !n.includes("/")),
+      "top-level examples refused",
+    ).toEqual([]);
+    expect(checked).toBeGreaterThanOrEqual(38);
     const { src, mesh } = meshOf("laneway-house.arch");
     const svg = compile(src, { world: WORLD }).svg;
     expect(await replayHtml(mesh, { title: "L", svg, notices: [] })).toBe(await replayHtml(mesh, { title: "L", svg }));

@@ -10,10 +10,18 @@ import { createRequire } from "node:module";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import type { Mesh3D } from "../mesh/types.js";
-import { PREVIEW_LABEL, PREVIEW_LIMITS, type ReplayOptions, replayPayload } from "./payload.js";
+import { noticeLevelLabel, PREVIEW_LABEL, PREVIEW_LIMITS, type ReplayOptions, replayPayload } from "./payload.js";
 import { VIEW_CONTROLS_LABEL } from "./view-dom.js";
 
-export { PREVIEW_ABOUT_URL, PREVIEW_LABEL, PREVIEW_LEAD, PREVIEW_LIMITS, replayPayload, viewBoxOf } from "./payload.js";
+export {
+  noticeLevelLabel,
+  PREVIEW_ABOUT_URL,
+  PREVIEW_LABEL,
+  PREVIEW_LEAD,
+  PREVIEW_LIMITS,
+  replayPayload,
+  viewBoxOf,
+} from "./payload.js";
 export type { ReplayOptions } from "./payload.js";
 
 /**
@@ -23,6 +31,8 @@ export type { ReplayOptions } from "./payload.js";
 export interface ReplayNotice {
   code: string;
   message: string;
+  /** The warning's storey, set in the combined view of a plan of several storeys: written as `L2 ·` first. */
+  level?: number;
 }
 
 export interface ReplayHtmlOptions extends ReplayOptions {
@@ -132,7 +142,7 @@ canvas:focus-visible{outline:2px solid ${fg};outline-offset:2px}
     notices.length > 0
       ? `
 <div class="archlang-notices" role="note">
-${notices.map((n) => `<p><code>${escapeHtml(n.code)}</code> ${escapeHtml(n.message)}</p>`).join("\n")}
+${notices.map((n) => `<p>${n.level === undefined ? "" : `${noticeLevelLabel(n.level)} `}<code>${escapeHtml(n.code)}</code> ${escapeHtml(n.message)}</p>`).join("\n")}
 </div>`
       : ""
   }

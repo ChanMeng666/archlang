@@ -154,7 +154,12 @@ async function view(args: Args): Promise<number> {
   const noticesOf = (view: ReplayView) =>
     r.warnings
       .filter((w) => view === "all" || w.level === storeys[view - 1])
-      .map((w) => ({ code: w.code, message: w.message }));
+      // The combined view of several storeys says which storey each is about.
+      .map((w) => ({
+        code: w.code,
+        message: w.message,
+        ...(view === "all" && storeys.length > 1 ? { level: w.level } : {}),
+      }));
   const htmlOf = (view: ReplayView): Promise<string> =>
     replayHtml(viewMesh(mesh, view), {
       title: r.scene.meta.name,
