@@ -20,7 +20,7 @@ Every module, not only the entry, is in the sibling [`module-map.md`](module-map
 The total counts every name the checker sees as exported, including those pulled in by
 `export type * from "./ast.js"`; a count of the names written in `index.ts`' export statements is lower.
 
-Totals: 642 exports (224 values, 418 types), 407 flagged (73 values).
+Totals: 642 exports (224 values, 418 types), 406 flagged (72 values).
 
 ## `src/algebra/d4.ts`
 
@@ -1002,7 +1002,7 @@ Totals: 642 exports (224 values, 418 types), 407 flagged (73 values).
 | `atStage` | value | none |
 | `codeStage` | value | `test` |
 | `diagnosticStage` | value | none |
-| `isAuthoringStage` | value | none |
+| `isAuthoringStage` | value | `test` |
 | `keepStage` | value | `test` |
 | `kindsOf` | value | none |
 | `predicateStage` | value | none |
