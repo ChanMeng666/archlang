@@ -36,6 +36,7 @@ export interface Doors {
       plugin: string[];
       skills: { command: string; url: string };
       mcpConfig: unknown;
+      mcpJsonNote?: string;
     };
     vscode: { label: string; marketplace: string; openVsx: string };
     playground: { label: string; url: string; note: string };
@@ -94,15 +95,10 @@ function bullet(d: Doors, key: string, compact: boolean): string {
  */
 function agentPromptDoor(d: Doors): string {
   const a = d.doors.agent;
-  return [
-    `**${a.label}:** paste this prompt.`,
-    "",
-    "```text",
-    ...d.agentPrompt,
-    "```",
-    "",
-    `Or add the MCP server: \`${a.claudeCodeHttp}\` (locally, \`${a.claudeCodeLocal}\`). The skills are listed on [skills.sh](${a.skills.url}).`,
-  ].join("\n");
+  const mcpLine = a.mcpJsonNote
+    ? `Or add the MCP server: \`${a.claudeCodeHttp}\` (locally, \`${a.claudeCodeLocal}\`). The skills are listed on [skills.sh](${a.skills.url}). (${a.mcpJsonNote})`
+    : `Or add the MCP server: \`${a.claudeCodeHttp}\` (locally, \`${a.claudeCodeLocal}\`). The skills are listed on [skills.sh](${a.skills.url}).`;
+  return [`**${a.label}:** paste this prompt.`, "", "```text", ...d.agentPrompt, "```", "", mcpLine].join("\n");
 }
 
 export function renderDoorsBlock(d: Doors, orderKey: string): string {

@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "archlang": {
+      "command": "npx",
+      "args": ["-y", "@chanmeng666/archlang-mcp"]
+    }
+  }
+}
