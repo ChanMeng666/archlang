@@ -181,6 +181,15 @@
       "twin": "../defect-corpus/clearances/hob-under-window.clean.arch"
     },
     {
+      "id": "missing-defining-contents/desk-nook-no-desk",
+      "column": "default",
+      "profile": null,
+      "expect": "W_LABEL_PIECE_MISSING",
+      "rule": null,
+      "plan": "../defect-corpus/missing-defining-contents/desk-nook-no-desk.arch",
+      "twin": "../defect-corpus/missing-defining-contents/desk-nook-no-desk.clean.arch"
+    },
+    {
       "id": "clearances/leaf-across-doorway",
       "column": "default",
       "profile": null,
