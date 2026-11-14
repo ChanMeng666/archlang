@@ -177,7 +177,7 @@ const OUT_FLAG: ManifestFlag = {
   description:
     "output file, or '-' for stdout; a missing directory is created (default: the input path with the format's extension)",
 };
-const FMT_FLAG: ManifestFlag = pure(() => ({
+const FMT_FLAG: ManifestFlag = /* @__PURE__ */ pure(() => ({
   flag: "--format",
   alias: "-f",
   arg: `<${EXPORT_FORMATS.map((f) => f.id).join("|")}>`,
@@ -277,7 +277,7 @@ const BRIEF_FLAG: ManifestFlag = {
   arg: "<intent.json>",
   description: "the intent JSON to measure satisfaction against (this or --taste)",
 };
-const TASTE_FLAG: ManifestFlag = pure(() => ({
+const TASTE_FLAG: ManifestFlag = /* @__PURE__ */ pure(() => ({
   flag: "--taste",
   arg: `<${TASTE_PROFILE_NAMES.join("|")}>`,
   description:
@@ -329,14 +329,14 @@ const ZONE_FLAG: ManifestFlag = {
  * `--facts <fact[,fact…]>` — opt-in DERIVED facts `describe()` computes only on request, so
  * the default payload stays byte-identical. The names are `DESCRIBE_FACTS`, never retyped.
  */
-const FACTS_FLAG: ManifestFlag = pure(() => ({
+const FACTS_FLAG: ManifestFlag = /* @__PURE__ */ pure(() => ({
   flag: "--facts",
   arg: `<${DESCRIBE_FACTS.join("|")}[,…]>`,
   description:
     "also compute these opt-in facts: `symmetry` (the plan's symmetry group per layer — shell, rooms, full — and its repeated rooms), `syntax` (space-syntax depth, mean depth, RA, integration and control on the access graph), `depends` (per element, the ids it derives from and the `let`/parameter names it reads) and `clearances` (what each clearance rule measured, per storey under the default ruleset: a WC's sides, a tall unit's and a hob's cover of a window, a hob's nearest tall unit, a doorway's clear width and approach, a stair's run and landings) and `quantities` (per storey, geometry only: wall length per category on the centreline and on the faces, room perimeters on the centreline and net, the net floor area, door and window counts by kind and width, wall face areas when the plan authors heights); absent by default",
 }));
 /** `--waste <pct>`: a parameter the author passes, never a default (preview-and-remodel D9). */
-const WASTE_FLAG: ManifestFlag = pure(() => ({
+const WASTE_FLAG: ManifestFlag = /* @__PURE__ */ pure(() => ({
   flag: "--waste",
   arg: "<pct>",
   description: `with the \`quantities\` fact, also report \`floor_area_with_waste_m2\` = the net floor area × (1 + pct/100), pct from 0 to ${MAX_WASTE_PCT}; absent unless given`,
@@ -358,13 +358,13 @@ const SEVERITY_FLAG: ManifestFlag = {
   arg: "<error|warning>",
   description: "show only diagnostics of this severity — a DISPLAY filter, like --code (never changes the exit code)",
 };
-const SECTION_FLAG: ManifestFlag = pure(() => ({
+const SECTION_FLAG: ManifestFlag = /* @__PURE__ */ pure(() => ({
   flag: "--section",
   arg: "<spec|workflow|cli|errors>",
   description: `print only one section of the bundle instead of all ${CONTEXT_BUNDLE_KB.total} KB of it (spec = the language, ${CONTEXT_BUNDLE_KB.spec} KB; workflow = the agent loop, ${CONTEXT_BUNDLE_KB.workflow} KB; cli = every command, ${CONTEXT_BUNDLE_KB.cli} KB; errors = the diagnostic catalog, ${CONTEXT_BUNDLE_KB.errors} KB)`,
 }));
 
-const CONTEXT_LEVEL_FLAG: ManifestFlag = pure(() => ({
+const CONTEXT_LEVEL_FLAG: ManifestFlag = /* @__PURE__ */ pure(() => ({
   flag: "--level",
   arg: `<${CONTEXT_LEVELS.join("|")}>`,
   description: `starter = one screen (at most ${STARTER_MAX_UNITS} characters) for a small model: the lead example, the statements a plan needs, the loop and the five commonest errors; full = the whole ${CONTEXT_BUNDLE_KB.total} KB bundle (default, unchanged)`,
@@ -392,7 +392,7 @@ const VIEW_FLAG: ManifestFlag = {
  * edit. The option wins over the source's `theme` directive key by key (`planTheme`,
  * `src/scene-build.ts`); a key the named theme does not set keeps the source's value.
  */
-const THEME_FLAG: ManifestFlag = pure(() => ({
+const THEME_FLAG: ManifestFlag = /* @__PURE__ */ pure(() => ({
   flag: "--theme",
   arg: `<${Object.keys(THEMES).join("|")}>`,
   description:
@@ -428,7 +428,7 @@ const COMPILE_FLAGS: ManifestFlag[] = [
 ];
 
 /** {@link COMPILE_FLAGS} plus `--view`, which `watch` deliberately does not take. */
-const COMPILE_ONLY_FLAGS: ManifestFlag[] = pure(() => [...COMPILE_FLAGS, VIEW_FLAG]);
+const COMPILE_ONLY_FLAGS: ManifestFlag[] = /* @__PURE__ */ pure(() => [...COMPILE_FLAGS, VIEW_FLAG]);
 
 /**
  * The command table. Keys MUST cover exactly the verbs the CLI's `main()`
@@ -436,7 +436,7 @@ const COMPILE_ONLY_FLAGS: ManifestFlag[] = pure(() => [...COMPILE_FLAGS, VIEW_FL
  * command's `flags` must be EXACTLY the flags its `cmd*` function honors — the
  * two are checked against each other, and an undeclared flag is rejected at parse.
  */
-const COMMANDS: ManifestCommand[] = pure(() => [
+const COMMANDS: ManifestCommand[] = /* @__PURE__ */ pure(() => [
   {
     name: "compile",
     summary: "render a plan to SVG/DXF/TXT/PDF/PNG, or to Plan JSON",

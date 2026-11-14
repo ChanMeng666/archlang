@@ -35,7 +35,7 @@ export const FURNITURE_CHECKS_ENTRIES = defineEntries({
   ),
   W_FIXTURE_BACK_TO_ROOM: w(
     "A fixture stands against a wall but faces the wrong way.",
-    pure(
+    /* @__PURE__ */ pure(
       () =>
         "A fixture whose symbol has a distinct back — a plumbed one (a WC's cistern, a basin's tap, a counter's nosing) or a piece of furniture that simply has a front (a bed's headboard, a wardrobe's door line, a bookshelf's open face) — is touching a wall, but its back is turned to the room instead of to that wall: the drawing shows the WC's tank, or the headboard, sticking into the floor space. Position right, quarter-turn wrong: fixture symbols are drawn with their back on the TOP edge, so `rotate` is what aims them (0 = back to the north, 90 = east, 180 = south, 270 = west). A rotation-symmetric symbol (a shower tray, a round stool) never trips this, nor does arranged seating whose back to the room is a legitimate layout. A fixture that touches no wall at all is `W_FIXTURE_FLOATING` instead — and only where the piece genuinely needs one for services, which furniture does not. A piece that touches a wall only with a side or an end its catalogued footprint rules out as a back, its drawn front off the wall too (a bed lengthwise along a wall, a wardrobe end-on to one), is a layout, not a back to the room, and is not judged; a piece whose front is on a wall is, and so is a plumbed or vented fixture or a wall-mounted one (the catalogue's `wallMounted` families: " +
         familiesWith("wallMounted") +
@@ -82,7 +82,7 @@ export const FURNITURE_CHECKS_ENTRIES = defineEntries({
   ),
   W_FURNITURE_OVER_WINDOW: w(
     "A tall unit stands in front of a window, or a low piece against a floor-length one.",
-    pure(
+    /* @__PURE__ */ pure(
       () =>
         "A tall unit (the catalogue's `tall` families: " +
         familiesWith("tall") +
@@ -105,7 +105,7 @@ export const FURNITURE_CHECKS_ENTRIES = defineEntries({
   ),
   W_FOOTPRINT_TRANSPOSED: w(
     "A piece is drawn turned a quarter: its long side is on the wrong axis.",
-    pure(
+    /* @__PURE__ */ pure(
       () =>
         "A piece's symbol is drawn back-on-top in a frame `size` gives (its two sides swapped under `rotate 90` or `270`; along × depth for `against`), and this frame has its long side where the catalogue footprint has its short one, by at least 5:4 (`4 × long ≥ 5 × short`, exact). A `sofa_l` (2600 × 1600, wider than deep) written `size 900x2400` with no `rotate` draws a thin L one seat deep, its long side become its depth; a `bed` (1500 × 2000, deeper than wide) written `size 1900x700` draws a bed lying across its own length, its long side along its back. Judged only for the families that come in one shape, which the catalogue marks `fixedAspect`: " +
         familiesWith("fixedAspect") +

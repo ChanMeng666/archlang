@@ -7,9 +7,12 @@ import { coreFiles } from "./scripts/core-files.mjs";
 const CORE_DIST = `${resolve(__dirname, "../dist").replace(/\\/g, "/")}/`;
 /** The view path's door to it (src/compiler.ts), which belongs in the same chunk. */
 const CORE_DOOR = resolve(__dirname, "src/compiler.ts").replace(/\\/g, "/");
-// The built core's files (scripts/core-files.mjs): `index.js` and the chunks it imports. Not every
-// file under dist/: `cli/review.js` (the Checks overlay's review sheet, card P6) and the chunk
-// holding its code are reached only by a lazy import, so they stay out of the `compiler` chunk.
+// The built core's files (scripts/core-files.mjs): `index.js` and the chunks `compile-path.js`
+// imports (src/compile-path.ts, card RM0.7f: compile, describe, describeLevel, lint, THEMES). Not
+// every file under dist/: the chunks only the rest of `index.js` reaches (`finish`, `repair`,
+// `toDxf`, `planToJson`, `validateIntent`, `completion`, …), `cli/review.js` (the Checks overlay's
+// review sheet, card P6) and the chunk holding its code are reached only by lazy imports, so they
+// stay out of the `compiler` chunk and land in the lazy chunks that use them.
 const CORE_FILES = coreFiles(
   (rel) => readFileSync(CORE_DIST + rel, "utf8"),
   (rel) => existsSync(CORE_DIST + rel),
@@ -147,7 +150,8 @@ export default defineConfig({
       // so Rolldown doesn't try to bundle native binaries it can't parse.
       external: [/^node:/, "@resvg/resvg-js", "pdfkit", "clipper2-wasm"],
       output: {
-        // The built core in one chunk, `compiler`, whichever page or lazy chunk reaches it:
+        // The built core's compile path in one chunk, `compiler`, whichever page or lazy chunk
+        // reaches it (the rest of the core goes with the lazy chunks that use it, card RM0.7f):
         // the startup chunk stays the view path alone (e2e/startup-chunks.baseline.json).
         // Vite's dynamic-import helper is shared by the startup chunk and the core (whose
         // optional Node backends are lazy imports), so it gets a chunk of its own first:

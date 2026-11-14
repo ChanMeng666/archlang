@@ -172,7 +172,7 @@ const commentText = (s: string): string => s.replace(/[\r\n]+/g, " ");
 
 // The contextual keywords RM6.1 added and the two ground kinds RM8.7 added are no reserved words
 // (`UNRESERVED_KEYWORDS`), so an id may keep them.
-const RESERVED = pure(
+const RESERVED = /* @__PURE__ */ pure(
   () => new Set<string>((Object.values(KEYWORDS).flat() as string[]).filter((w) => !UNRESERVED_KEYWORDS.includes(w))),
 );
 const MAX_ID = 64;
