@@ -50,7 +50,10 @@ suite("W_LABEL_PIECE_MISSING", () => {
       const src = labelled(label);
       const [d] = of(src);
       const fixed = pasted(src, d!);
-      expect(compile(fixed).diagnostics.filter((x) => x.severity === "error"), label).toEqual([]);
+      expect(
+        compile(fixed).diagnostics.filter((x) => x.severity === "error"),
+        label,
+      ).toEqual([]);
       expect(of(fixed), label).toEqual([]);
     }
     expect(of(labelled("Desk Nook", "  furniture desk in r anchor top flush size 1200x600"))).toEqual([]);
@@ -64,7 +67,10 @@ suite("W_LABEL_PIECE_MISSING", () => {
       const fixed = pasted(src, d!);
       const before = lint(src, o).map((x) => x.code);
       const after = lint(fixed, o).map((x) => x.code);
-      expect(after.filter((c) => !before.includes(c)), profile ?? "default").toEqual([]);
+      expect(
+        after.filter((c) => !before.includes(c)),
+        profile ?? "default",
+      ).toEqual([]);
       expect(after, profile ?? "default").not.toContain(CODE);
     }
   });
@@ -90,7 +96,15 @@ suite("W_LABEL_PIECE_MISSING", () => {
   });
 
   it("never reads the label's head noun, its last word, in each name a `/` separates: the room is that thing", () => {
-    for (const label of ["Desk", "Desks", "Pavilion", "Garden Shed", "Serving Counter", "Counter / servery", "Coffee Table"])
+    for (const label of [
+      "Desk",
+      "Desks",
+      "Pavilion",
+      "Garden Shed",
+      "Serving Counter",
+      "Counter / servery",
+      "Coffee Table",
+    ])
       expect(labelPieces(label), label).toEqual([]);
     expect(labelPieces("Desk Nook 2")).toEqual(["desk"]);
     expect(labelPieces("Piano / Desk Nook")).toEqual(["desk"]);
@@ -123,7 +137,15 @@ suite("W_LABEL_PIECE_MISSING", () => {
       ...ROOM_NAMING_PIECES,
     ]);
     for (const w of ROOM_NAMING_PIECES) expect(labelPieces(`${w} corner`), w).toEqual([]);
-    for (const label of ["Bed 2 Suite", "Shower Room", "Plant Room", "Car Port", "Boiler Cupboard", "Pantry Store", "Water Closet"])
+    for (const label of [
+      "Bed 2 Suite",
+      "Shower Room",
+      "Plant Room",
+      "Car Port",
+      "Boiler Cupboard",
+      "Pantry Store",
+      "Water Closet",
+    ])
       expect(of(labelled(label)), label).toEqual([]);
     // The catalogue's explanation names the same words, in the same order.
     const said = ERROR_CATALOG[CODE]!.cause;
@@ -137,7 +159,9 @@ suite("W_LABEL_PIECE_MISSING", () => {
     expect(of(labelled("Sofa Corner", "  furniture couch in r anchor top flush size 2000x900"))).toEqual([]);
     // A piece that does another's job counts for it: a reception desk serves a desk.
     expect(of(labelled("Desk Nook", "  furniture reception_desk in r anchor top flush size 2400x900"))).toEqual([]);
-    expect(of(labelled("Couch Corner"))[0]!.message).toBe('Room "Couch Corner" holds no couch, though its label names one.');
+    expect(of(labelled("Couch Corner"))[0]!.message).toBe(
+      'Room "Couch Corner" holds no couch, though its label names one.',
+    );
   });
 
   it("names every piece missing, and quotes a size only where the catalogue or the furnish table has one", () => {
@@ -148,9 +172,9 @@ suite("W_LABEL_PIECE_MISSING", () => {
       "Add `furniture piano at (x,y) size … in r`: the catalogue gives it no default size.",
       "If `r` is not meant to hold them, change its label, which says it does.",
     ]);
-    expect(of(labelled("Piano and Desk Room", "  furniture desk in r anchor top flush size 1200x600"))[0]!.message).toBe(
-      'Room "Piano and Desk Room" holds no piano, though its label names one.',
-    );
+    expect(
+      of(labelled("Piano and Desk Room", "  furniture desk in r anchor top flush size 1200x600"))[0]!.message,
+    ).toBe('Room "Piano and Desk Room" holds no piano, though its label names one.');
   });
 
   it("finds the piece by the room's shape, never its bounding box", () => {

@@ -287,7 +287,10 @@ export const roomMissingDefining: LintRule = {
 
 /** A text's lower-case words: its `normalizeLabel` form, split at anything not a letter or a digit
  *  ("Piano, Desk and TV" is four words and an "and"). */
-const wordsOf = (s: string): string[] => normalizeLabel(s).split(/[^\p{L}\p{N}]+/u).filter(Boolean);
+const wordsOf = (s: string): string[] =>
+  normalizeLabel(s)
+    .split(/[^\p{L}\p{N}]+/u)
+    .filter(Boolean);
 
 /** Does the word run `a` stand, word for word and in order, inside the run `b`? */
 function runIn(a: readonly string[], b: readonly string[]): boolean {
@@ -314,7 +317,9 @@ export const ROOM_NAMING_PIECES: readonly string[] = /* @__PURE__ */ (() => {
  *  catalogue order among runs of one length). */
 const PIECE_WORDS: readonly (readonly [string, string[]])[] = /* @__PURE__ */ CATALOG_CATEGORIES.filter(
   (c) => !ROOM_NAMING_PIECES.includes(c),
-).map((c) => [c, wordsOf(c)] as [string, string[]]).sort((a, b) => b[1].length - a[1].length);
+)
+  .map((c) => [c, wordsOf(c)] as [string, string[]])
+  .sort((a, b) => b[1].length - a[1].length);
 
 /** One label word against one catalogue word: the same, or, for the run's last word, its regular
  *  plural ("Lockers", "Benches"). */
@@ -388,22 +393,31 @@ export const labelPieceMissing: LintRule = {
             .find((i) => i?.category === familyOf(w)) ?? { category: w, required: true, place: "wall" },
       );
       const sized = items.filter((i) => (i.sizes?.length ?? 0) > 0 || defaultFootprint(i.category) !== null);
-      const unsized = items.filter((i) => !sized.includes(i)).map((i) => `\`furniture ${i.category} at (x,y) size … in ${r.id}\``);
+      const unsized = items
+        .filter((i) => !sized.includes(i))
+        .map((i) => `\`furniture ${i.category} at (x,y) size … in ${r.id}\``);
       const paste = sized.length > 0 ? pasteSet(ctx, r, sized) : null;
       const hints =
         paste === null
           ? []
           : "stmts" in paste
-            ? [`Add ${sized.length === 1 ? "it" : "them"} (nothing to import), e.g. ${paste.stmts.map((s) => `\`${s}\``).join(" and ")}.`]
+            ? [
+                `Add ${sized.length === 1 ? "it" : "them"} (nothing to import), e.g. ${paste.stmts.map((s) => `\`${s}\``).join(" and ")}.`,
+              ]
             : [`Add \`furniture ${paste.item.category} in ${r.id} …\`; ${pasteFailureWhy(ctx, paste.failure)}.`];
       if (unsized.length > 0)
-        hints.push(`Add ${unsized.join(" and ")}: the catalogue gives ${unsized.length === 1 ? "it" : "them"} no default size.`);
+        hints.push(
+          `Add ${unsized.join(" and ")}: the catalogue gives ${unsized.length === 1 ? "it" : "them"} no default size.`,
+        );
       out.push({
         severity: "warning",
         code: "W_LABEL_PIECE_MISSING",
         ...ctx.at(r),
         message: `${capFirst(ctx.nameOf(r, "room"))} holds ${one ? nos[0] : `${nos.slice(0, -1).join(", ")} and ${nos[nos.length - 1]}`}, though its label names ${one ? "one" : "them"}.`,
-        hints: [...hints, `If \`${r.id}\` is not meant to hold ${one ? "one" : "them"}, change its label, which says it does.`],
+        hints: [
+          ...hints,
+          `If \`${r.id}\` is not meant to hold ${one ? "one" : "them"}, change its label, which says it does.`,
+        ],
       });
     }
     return out;
