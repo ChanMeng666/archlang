@@ -107,8 +107,10 @@ other event it requires the shards' `success`. Shard 3 also runs the leg's non-t
 `Node 22` is an aggregator over `Node 22 checks` and the shards `Node 22 tests 1/5` to `5/5`, and
 fails if one of them failed, was cancelled, or was skipped when `changes` did not call the PR a
 record. A push to `main` runs every leg, each suite split across its shards. A failed `changes` job
-runs every leg on a PR too. A push run peaks at about 21 parallel jobs, one over the Free plan's 20
-concurrent jobs, so a few queue briefly.
+runs every leg on a PR too. A push run peaks at about 23 parallel jobs counting CodeQL's two
+`Analyze` legs, over the Free plan's 20 concurrent jobs, and the PR runs that strict status checks
+re-trigger when `main` moves (`gh pr update-branch`) share that limit, so some jobs queue: an
+estimate until TP5 measures the queue time.
 
 **Playground E2E** is an aggregator too (`Playground E2E (Playwright)`), over two Chromium shards
 (`Playground E2E chromium 1/2`, `2/2`: the chromium project with `--shard=N/2`) and one job
@@ -141,9 +143,9 @@ Minutes, a full run measured 2026-10-27 (PR #290 at 2ed9d70e, `gh run view 40416
 | `builds` (Workspace builds) | `build`, `typecheck:all`, all five workspace builds (docs, playground, MCP shim, hosted MCP Worker, VS Code), MCP `check-dist-resources.mjs`, VS Code bundle tests, `check:test-wiring`, `check:dxf` with ezdxf in a virtualenv (each only here) | 2.0 |
 | `windows-tests` (Windows tests 1/3 … 3/3) | push and merge queue only (job-level skip on a PR), on windows-latest: `vitest run --shard=N/3` at the runner's default line endings, shard 3 then `check:drift` (no `eval:ci`) | not yet measured (unsharded: 21.1) |
 | `windows` (Windows (tests + drift)) | aggregator over `windows-tests`, on ubuntu: green with a job-summary line on a PR, else requires the shards' `success` | not yet measured |
-| `e2e-playground-chromium` (Playground E2E chromium 1/2, 2/2) | every playground spec in Chromium, `--shard=N/2`, then `Flaky tests` | not yet measured |
-| `e2e-playground-engines` (Playground E2E engines) | the `@engines` specs in Firefox and WebKit, then `Flaky tests` | not yet measured |
-| `e2e-playground` (Playground E2E (Playwright)) | aggregator: requires `success` of both jobs above | not yet measured |
+| `e2e-playground-chromium` (Playground E2E chromium 1/2, 2/2) | every playground spec in Chromium, `--shard=N/2` (Playwright splits by test count, not duration), then `Flaky tests` | 3.0, 5.1 (run 43535706255) |
+| `e2e-playground-engines` (Playground E2E engines) | the `@engines` specs in Firefox and WebKit, then `Flaky tests` | 2.8 (run 43535706255) |
+| `e2e-playground` (Playground E2E (Playwright)) | aggregator: requires `success` of both jobs above | 0.1 (run 43535706255) |
 | `e2e-docs` | Playwright against the built docs site | 4.7 |
 | `check-3d` (3D package (check:3d)) | `npm run check:3d` on Linux: `packages/archlang-3d`'s heavy tests (GLB through glTF-Validator, determinism over the corpus, CLI exit codes, the tarball through `npm pack`, the replay in Playwright's Chromium on SwiftShader with ffmpeg, the key-frame pixel baseline pinned to this job's Chromium); browsers in `PLAYWRIGHT_BROWSERS_PATH`, cached by the `playwright-core` version; required | 2.0 (PR #336, browser cache cold) |
 | `bench` | informational PR-head vs merge-base timings, two runs each (order B H H B), ratios and a noise floor in the job summary (+ a PR comment on same-repo PRs); never gates (the gate is `test/work-counts.test.ts`); skipped on a record-only PR | 2.8 |
