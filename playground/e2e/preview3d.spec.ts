@@ -10,6 +10,10 @@ import { srcFromHash } from "../src/share.js";
 import {
   BROKEN_PLAN,
   chooseLink,
+  JOINT_MESSAGE,
+  JOINT_ON_BOTH,
+  JOINT_ON_STOREY_1,
+  JOINT_PLAN,
   openMore,
   openShare,
   pickPlan,
@@ -428,6 +432,83 @@ test.describe("3D preview tab follows the editor", () => {
     await expect(message).toContainText("No 3D preview: The drawing is estimated at");
     await expect(message).not.toContainText("viewBox");
     expect(errors).toEqual([]);
+  });
+
+  test("a mixed-height joint's warning is shown over the stage, in the warning's words (card RM8.10)", async ({
+    page,
+  }) => {
+    // "a T of two heights" (packages/archlang-3d/test/wall-lines.test.ts): the lower stem owns part of
+    // the taller wall's footprint, so the taller wall is notched. Shown, never patched (ADR 0030 d5).
+    const errors: string[] = [];
+    page.on("pageerror", (e) => errors.push(e.message));
+    await page.goto(`/${await shareHash(JOINT_PLAN)}&edit`);
+    await expect(page.locator("#editor .cm-content")).toBeVisible();
+    await page.locator("#tab-preview3d").click();
+    const notice = page.locator("#preview3d .p3d-notice");
+    const canvas = page.locator("#preview3d canvas");
+    await expect(notice).toBeVisible();
+    await expect(notice.locator("code")).toHaveText("W3D_MIXED_HEIGHT_JOINT");
+    // One storey: the warning's own words, no storey in front of them.
+    await expect(notice.locator("p")).toHaveText(`W3D_MIXED_HEIGHT_JOINT ${JOINT_MESSAGE}`);
+    await expect(notice).toHaveAttribute("role", "status");
+    // It describes the canvas while it shows.
+    await expect(canvas).toHaveAttribute("aria-describedby", "p3d-hint p3d-notice");
+    // It is not dimmed like the floating controls: no ancestor up to the stage has an opacity under 1
+    // (a notice put inside `.p3d-float` would read 0.62 here and fail).
+    const opacities = await notice.evaluate((el) => {
+      const out: number[] = [];
+      for (let n: Element | null = el; n && !n.classList.contains("p3d-stage"); n = n.parentElement)
+        out.push(Number(getComputedStyle(n).opacity));
+      return out;
+    });
+    expect(opacities, "the notice and its ancestors up to the stage").toEqual(opacities.map(() => 1));
+    await expect(canvas).toBeVisible();
+    expect(errors).toEqual([]);
+
+    // A plan with no such joint shows none, and the canvas's description is the hint alone again.
+    await setEditorSource(page, SIMPLE_PLAN);
+    await expect(notice).toBeHidden();
+    await expect(canvas).toHaveAttribute("aria-describedby", "p3d-hint");
+
+    // The warning comes back with the plan, and a refused plan takes it away with the canvas.
+    await setEditorSource(page, JOINT_PLAN);
+    await expect(notice).toBeVisible();
+    await setEditorSource(page, BROKEN_PLAN);
+    await expect(page.locator("#preview3d .p3d-message")).toContainText("No 3D preview:");
+    await expect(notice).toBeHidden();
+  });
+
+  test("on a plan of several storeys the combined view names each warning's storey; a storey shows only its own", async ({
+    page,
+  }) => {
+    const notice = page.locator("#preview3d .p3d-notice");
+    const storey = (n: number) => page.locator("#storeys button", { hasText: `L${n}` });
+    // The joint on storey 1 only.
+    await page.goto(`/${await shareHash(JOINT_ON_STOREY_1)}&edit`);
+    await expect(page.locator("#editor .cm-content")).toBeVisible();
+    await page.locator("#tab-preview3d").click();
+    await expect(page.locator("#preview3d")).toHaveAttribute("data-view", "all");
+    await expect(notice.locator("p")).toHaveText([`L1 · W3D_MIXED_HEIGHT_JOINT ${JOINT_MESSAGE}`]);
+    await storey(2).click();
+    await expect(page.locator("#preview3d")).toHaveAttribute("data-view", "L2");
+    await expect(notice).toBeHidden();
+    await expect(page.locator("#preview3d canvas")).toHaveAttribute("aria-describedby", "p3d-hint");
+    await storey(1).click();
+    await expect(page.locator("#preview3d")).toHaveAttribute("data-view", "L1");
+    await expect(notice.locator("p")).toHaveText([`W3D_MIXED_HEIGHT_JOINT ${JOINT_MESSAGE}`]);
+
+    // The joint on both: two lines in the combined view, one in each storey.
+    await page.goto("about:blank");
+    await page.goto(`/${await shareHash(JOINT_ON_BOTH)}&edit`);
+    await expect(page.locator("#editor .cm-content")).toBeVisible();
+    await page.locator("#tab-preview3d").click();
+    await expect(notice.locator("p")).toHaveText([
+      `L1 · W3D_MIXED_HEIGHT_JOINT ${JOINT_MESSAGE}`,
+      `L2 · W3D_MIXED_HEIGHT_JOINT ${JOINT_MESSAGE}`,
+    ]);
+    await storey(2).click();
+    await expect(page.locator("#preview3d")).toHaveAttribute("data-view", "L2");
+    await expect(notice.locator("p")).toHaveText([`W3D_MIXED_HEIGHT_JOINT ${JOINT_MESSAGE}`]);
   });
 });
 

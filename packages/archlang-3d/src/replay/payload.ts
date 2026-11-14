@@ -113,6 +113,14 @@ export const PREVIEW_LIMITS =
 /** The page that says what the 3D preview shows and does not (the docs site's `/3d`). */
 export const PREVIEW_ABOUT_URL = "https://archlang.uk/3d";
 
+/**
+ * The words that tell which storey a notice is about in the combined view (card RM8.10): `L2 ·`.
+ * One function for the replay HTML and the playground, from the warning's own `level`.
+ */
+export function noticeLevelLabel(level: number): string {
+  return `L${level} ·`;
+}
+
 export interface ReplayOptions {
   title: string;
   /**

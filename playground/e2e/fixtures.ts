@@ -32,6 +32,34 @@ export const ARC_RADIUS_ERROR_PLAN = `plan "E2E" {
   wall exterior thickness 150 { (0,0) arc (4000,0) radius 100 }
 }`;
 
+/**
+ * "A T of two heights" (packages/archlang-3d/test/wall-lines.test.ts): the lower stem `s` owns part of
+ * the taller wall `t`'s footprint, so the 3D package warns `W3D_MIXED_HEIGHT_JOINT` (card RM8.10).
+ * Two storeys: the joint is on storey 1 only (`JOINT_ON_BOTH`: on both).
+ */
+const JOINT_STOREY = (level: number, name: string): string => `  level ${level} "${name}" {
+    wall id=s partition thickness 150 height 2000 { (3000,0) (3000,3000) }
+    wall id=t partition thickness 150 { (0,3000) (6000,3000) }
+  }
+`;
+const PLAIN_STOREY = `  level 2 "First" {
+    wall id=u partition thickness 150 { (3000,0) (3000,3000) }
+    wall id=v partition thickness 150 { (0,3000) (6000,3000) }
+  }
+`;
+export const JOINT_PLAN = `plan "TH" {
+  units mm
+  height 3000
+  wall id=s partition thickness 150 height 2000 { (3000,0) (3000,3000) }
+  wall id=t partition thickness 150 { (0,3000) (6000,3000) }
+}
+`;
+export const JOINT_ON_STOREY_1 = `plan "TS" {\n  units mm\n  height 3000\n${JOINT_STOREY(1, "Ground")}${PLAIN_STOREY}}\n`;
+export const JOINT_ON_BOTH = `plan "TB" {\n  units mm\n  height 3000\n${JOINT_STOREY(1, "Ground")}${JOINT_STOREY(2, "First")}}\n`;
+/** The warning's own words for those plans (the walls are `s` 2000 mm and `t` 3000 mm in each). */
+export const JOINT_MESSAGE =
+  "Wall s (2000 mm high) owns 22500 mm² of the taller wall t's footprint (3000 mm), so the taller wall is notched where they meet.";
+
 /** Source that cannot parse at all — no fix, no render. */
 export const BROKEN_PLAN = `plan "E2E" {\n  units mm\n  romo at (0,0) size 4000x3000\n}`;
 

@@ -25,6 +25,7 @@ export {
   PREVIEW_ABOUT_URL,
   PREVIEW_LABEL,
   PREVIEW_LEAD,
+  noticeLevelLabel,
   PREVIEW_LIMITS,
   replayPayload,
   viewBoxOf,
