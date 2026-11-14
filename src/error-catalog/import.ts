@@ -37,7 +37,7 @@ export const IMPORT_ENTRIES = defineEntries({
   ),
   E_IMPORT_LIMIT: e(
     "A file given to `archlang import` needs more work to convert than any plan does.",
-    pure(
+    /* @__PURE__ */ pure(
       () =>
         "Converting an OpenPlan3D plan finds its rooms the way OpenPlan3D does, by comparing every wall with every other wall on a floor, so the work grows with the square of a floor's walls. It is counted, as the evaluator's work is (`E_STEP_LIMIT`), and past the same budget of 5,000,000 steps the import stops with nothing written. A floor of a few thousand walls reaches it; a house has tens. A file of more than " +
         String(MAX_IMPORT_LEVELS) +
@@ -78,7 +78,7 @@ export const IMPORT_ENTRIES = defineEntries({
   ),
   E_IMPORT_TOO_LARGE: e(
     "An imported module is larger than the CLI reads.",
-    pure(
+    /* @__PURE__ */ pure(
       () =>
         "The `archlang` CLI reads an imported `.arch` module of at most " +
         String(MODULE_CAP_BYTES) +

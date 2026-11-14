@@ -1396,7 +1396,7 @@ export function intentFromJson(value: unknown): { intent: Intent | null; errors:
  * the area BAND CONVENTIONS and the room-count DISCIPLINE. `additionalProperties: false`
  * throughout, mirroring `intentFromJson`.
  */
-export const INTENT_JSON_SCHEMA = pure(() => ({
+export const INTENT_JSON_SCHEMA = /* @__PURE__ */ pure(() => ({
   $schema: "https://json-schema.org/draft/2020-12/schema",
   $id: "https://archlang.uk/intent.schema.json",
   title: "ArchLang Intent",
