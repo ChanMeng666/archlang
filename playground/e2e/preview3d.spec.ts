@@ -1888,13 +1888,12 @@ test.describe("startup chunks", () => {
       for (const m of PROVENANCE)
         expect(text, `assets/${f} carries the lint provenance table ("${m}")`).not.toContain(m);
     }
-    // The `pure()` guard (card RM0.7e; `test/pure-guard.test.ts` checks the marks in the source, this
-    // checks the built files). A value `/* @__PURE__ */ pure(() => ...)` wraps and no startup code
-    // reads must be dropped from every built file, in whatever chunk its declaration landed
-    // (rolldown honours `@__NO_SIDE_EFFECTS__` on the declaration only in the caller's own chunk, so
-    // the call-site mark is what holds). The two JSON Schemas are such values (`INTENT_JSON_SCHEMA`,
-    // `PLAN_JSON_SCHEMA`): the playground reads neither, so a string only they write must be in no
-    // asset. Each is checked in its source first, so a renamed `$id` fails here, not vacuously.
+    // A tree-shake regression net, NOT the `pure()` guard (that is `test/pure-guard.test.ts` for the
+    // marks in the source and `playground/test/pure-bundle.test.ts` for what rolldown does with
+    // them, red-first). The two JSON Schemas (`INTENT_JSON_SCHEMA`, `PLAN_JSON_SCHEMA`) are read by
+    // no startup code, so a string only they write must be in no built asset. Measured: rolldown
+    // drops them even with the `pure()` marks removed, so this proves nothing about the marks. Each
+    // string is checked in its source first, so a renamed `$id` fails here, not vacuously.
     const PURE_DROPPED: [string, string][] = [
       ["src/intent.ts", "https://archlang.uk/intent.schema.json"],
       ["src/plan-json/schema.ts", "https://archlang.uk/plan.schema.json"],
