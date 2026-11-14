@@ -117,6 +117,7 @@
     "check:quick": "node scripts/check-quick.mjs",
     "digest:engines": "tsx scripts/engine-digests.ts",
     "check:test-wiring": "node scripts/check-test-wiring.mjs",
+    "sync:main": "node scripts/sync-main.mjs",
     "check:3d": "npm -w packages/archlang-3d run e2e",
     "check:dxf": "tsx scripts/check-dxf.ts",
     "lint:ci": "biome ci .",

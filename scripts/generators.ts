@@ -18,8 +18,10 @@ export const GENERATED_ARTIFACTS_JSON = ".claude/hooks/generated-artifacts.json"
 /**
  * Each generator with the exact files it writes (verified against every
  * `scripts/gen-*.ts` `writeFileSync`). Order is load-bearing: spec, then llms, then cli.
+ * `partial`: the generator rewrites only a marked region of each file and the rest is written by
+ * hand, so a merge conflict in one is a real conflict (`scripts/sync-main.mjs` never takes a side).
  */
-export const GENERATORS: readonly { script: string; artifacts: readonly string[] }[] = [
+export const GENERATORS: readonly { script: string; artifacts: readonly string[]; partial?: true }[] = [
   {
     script: "gen:grammars",
     artifacts: [
@@ -48,7 +50,7 @@ export const GENERATORS: readonly { script: string; artifacts: readonly string[]
   { script: "gen:example-svgs", artifacts: [...README_SVGS.map(svgPath), ...VIEW_SVGS.map((v) => v.dest)] },
   { script: "gen:plugin", artifacts: [...pluginSkillFiles().map((f) => f.dest), PLUGIN_MANIFEST] },
   // The per-route `.md` Content-Type rules, derived from the PAGES + SITE_PAGES tables in docs-site/sync-docs.mjs.
-  { script: "gen:docs-headers", artifacts: ["docs-site/public/_headers"] },
+  { script: "gen:docs-headers", artifacts: ["docs-site/public/_headers"], partial: true },
   // The topmost-`todo` finder for the /loop driver, derived from the `### ` headings of docs/backlog.md.
   { script: "gen:backlog-index", artifacts: ["docs/backlog-index.md"] },
   // Which tests import each src module and what each test file is for, derived from the imports and the test headers.
@@ -56,7 +58,7 @@ export const GENERATORS: readonly { script: string; artifacts: readonly string[]
   { script: "gen:agent-manifests", artifacts: allOutputs() },
   // The `<arch-plan>` element the docs site serves, built by packages/web-component/scripts/build.ts.
   { script: "gen:arch-plan", artifacts: ["docs-site/public/arch-plan.js"] },
-  { script: "gen:doors", artifacts: DOORS_SURFACES.map((s) => s.file) },
+  { script: "gen:doors", artifacts: DOORS_SURFACES.map((s) => s.file), partial: true },
   // The `archlang://capabilities` MCP resource, from the tool registry, the CLI manifest and EXPORT_FORMATS.
   { script: "gen:mcp-capabilities", artifacts: ["packages/mcp/capabilities.md"] },
   // The public-surface map: every export of `src/index.ts`, its declaring module and in-repo consumers.

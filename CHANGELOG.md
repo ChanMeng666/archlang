@@ -17,6 +17,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - The playground's bundler (rolldown) no longer keeps the core's CLI manifest, JSON schemas, keyword table or stage tables in a bundle that never reads them (card RM0.7d): the top-level values it could not prove side-effect-free are marked so (`src/pure.ts`). The playground's compiler path is about 3.2 KB gzip smaller. Every value is built as before, and the published types are unchanged.
+- Tooling: `npm run sync:main` (`scripts/sync-main.mjs`, card CT1) merges `origin/main` into a pull request's branch for a contributor. A conflict in a generated file takes `main`'s side and is regenerated with `gen:all`, and a `CHANGELOG.md` conflict keeps both sides' lines, which must stay under `[Unreleased]`. Any other conflict stops the script for the contributor to resolve (`-- --continue` resumes). It then reports whether the pull request's review still holds: yes when no file outside the generated ones and `CHANGELOG.md` was changed by both the pull request and `main`, and no conflict was resolved by hand. The script is not part of the published package.
 
 ### Fixed
 
