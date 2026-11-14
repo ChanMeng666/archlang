@@ -196,6 +196,19 @@ export interface FixtureSpec {
    * wrong way round, and so is a climber's trellis. Set on exactly those seven families.
    */
   wallMounted?: boolean;
+  /**
+   * The family is a **place or a part of the landscape**, not a piece a room holds: a pool, a
+   * tree, a rock, a gazebo, a shed. Read only by `W_LABEL_PIECE_MISSING` (product roadmap RM1.2c,
+   * ruling RM-D35a, `src/lint/rules/room-contents.ts`): a label word naming one names where the
+   * room is or what stands round it ("Palm Court", "Rock Garden", "Pool House"), not a piece it
+   * lacks. Nothing draws, measures or furnishes it. Set on every word of sixteen families: the
+   * planting (`tree`, `conifer`, `shrub`, `hedge`, `palm`, `bamboo`, `climber`, `flower_bed`,
+   * `raised_bed`), the ground (`boulder`, `stepping_stones`) and the garden's places and buildings
+   * (`pool`, `gazebo`, `greenhouse`, `shed`, `pergola`). Deliberately NOT a place: `potted_tree`
+   * (an indoor piece), and the play, dining and street pieces a garden holds (a `sandpit`, a
+   * `bbq`, a `bike_rack`), which a label names as a piece.
+   */
+  place?: boolean;
 }
 
 /** A room zone a fixture can satisfy (see {@link FixtureSpec.zones}). */
@@ -479,15 +492,15 @@ const CATALOG: Readonly<Record<string, FixtureSpec>> = Object.freeze({
 
   // Planting — each canopy is one closed outline filled with the lawn tint, so the ground hatch
   // under it is painted out and the crown reads as one mass.
-  tree: { requiresWall: false, symmetric: true },
-  deciduous_tree: { requiresWall: false, symmetric: true },
-  conifer: { requiresWall: false, symmetric: true },
-  pine: { requiresWall: false, symmetric: true },
-  shrub: { requiresWall: false, symmetric: true },
-  bush: { requiresWall: false, symmetric: true },
+  tree: { requiresWall: false, symmetric: true, place: true },
+  deciduous_tree: { requiresWall: false, symmetric: true, place: true },
+  conifer: { requiresWall: false, symmetric: true, place: true },
+  pine: { requiresWall: false, symmetric: true, place: true },
+  shrub: { requiresWall: false, symmetric: true, place: true },
+  bush: { requiresWall: false, symmetric: true, place: true },
   // A run rather than a specimen, so it is the one plant with a footprint: 2 m of hedge
   // 600 mm deep is the length a `for` loop or an `against wall` clause repeats.
-  hedge: { requiresWall: false, footprint: { along: 2000, depth: 600 } },
+  hedge: { requiresWall: false, footprint: { along: 2000, depth: 600 }, place: true },
 
   // Garden furniture.
   bbq: { requiresWall: false, directional: true, clearanceMm: 900, footprint: { along: 1200, depth: 600 } },
@@ -525,12 +538,12 @@ const CATALOG: Readonly<Record<string, FixtureSpec>> = Object.freeze({
   mailbox: { requiresWall: false, directional: true, footprint: { along: 400, depth: 300 } },
   letterbox: { requiresWall: false, directional: true, footprint: { along: 400, depth: 300 } },
   ev_charger: { requiresWall: false, directional: true, wallMounted: true, footprint: { along: 400, depth: 300 } },
-  pergola: { requiresWall: false, symmetric: true },
+  pergola: { requiresWall: false, symmetric: true, place: true },
   sandpit: { requiresWall: false, symmetric: true },
   sandbox: { requiresWall: false, symmetric: true },
   fire_pit: { requiresWall: false, symmetric: true },
-  shed: { requiresWall: false, directional: true, footprint: { along: 2400, depth: 1800 } },
-  garden_shed: { requiresWall: false, directional: true, footprint: { along: 2400, depth: 1800 } },
+  shed: { requiresWall: false, directional: true, footprint: { along: 2400, depth: 1800 }, place: true },
+  garden_shed: { requiresWall: false, directional: true, footprint: { along: 2400, depth: 1800 }, place: true },
   clothesline: { requiresWall: false },
   washing_line: { requiresWall: false },
 
@@ -788,12 +801,12 @@ const CATALOG: Readonly<Record<string, FixtureSpec>> = Object.freeze({
   },
 
   // Outdoor: planting, then the play and street furniture.
-  palm: { requiresWall: false, symmetric: true },
-  palm_tree: { requiresWall: false, symmetric: true },
-  flower_bed: { requiresWall: false, footprint: { along: 2000, depth: 800 } },
-  planting_bed: { requiresWall: false, footprint: { along: 2000, depth: 800 } },
-  boulder: { requiresWall: false },
-  rock: { requiresWall: false },
+  palm: { requiresWall: false, symmetric: true, place: true },
+  palm_tree: { requiresWall: false, symmetric: true, place: true },
+  flower_bed: { requiresWall: false, footprint: { along: 2000, depth: 800 }, place: true },
+  planting_bed: { requiresWall: false, footprint: { along: 2000, depth: 800 }, place: true },
+  boulder: { requiresWall: false, place: true },
+  rock: { requiresWall: false, place: true },
   picnic_table: { requiresWall: false, footprint: { along: 1800, depth: 1500 } },
   // fixedAspect: a chute you slide down: always longer than wide.
   slide: { requiresWall: false, fixedAspect: true, directional: true, footprint: { along: 800, depth: 3000 } },
@@ -806,8 +819,8 @@ const CATALOG: Readonly<Record<string, FixtureSpec>> = Object.freeze({
   bollard: { requiresWall: false, symmetric: true, footprint: { along: 200, depth: 200 } },
   bike_rack: { requiresWall: false, footprint: { along: 2000, depth: 800 } },
   cycle_stand: { requiresWall: false, footprint: { along: 2000, depth: 800 } },
-  raised_bed: { requiresWall: false, footprint: { along: 2400, depth: 1200 } },
-  vegetable_bed: { requiresWall: false, footprint: { along: 2400, depth: 1200 } },
+  raised_bed: { requiresWall: false, footprint: { along: 2400, depth: 1200 }, place: true },
+  vegetable_bed: { requiresWall: false, footprint: { along: 2400, depth: 1200 }, place: true },
 
   // Office & care.
   // fixedAspect: a board is a thin band along its wall, always far wider than deep.
@@ -938,29 +951,36 @@ const CATALOG: Readonly<Record<string, FixtureSpec>> = Object.freeze({
   },
 
   // The garden.
-  pool: { requiresWall: false, symmetric: true },
-  swimming_pool: { requiresWall: false, symmetric: true },
-  plunge_pool: { requiresWall: false, symmetric: true },
+  pool: { requiresWall: false, symmetric: true, place: true },
+  swimming_pool: { requiresWall: false, symmetric: true, place: true },
+  plunge_pool: { requiresWall: false, symmetric: true, place: true },
   garden_gate: { requiresWall: false },
   yard_gate: { requiresWall: false },
-  gazebo: { requiresWall: false, symmetric: true },
-  pavilion: { requiresWall: false, symmetric: true },
-  garden_pavilion: { requiresWall: false, symmetric: true },
-  greenhouse: { requiresWall: false },
-  glasshouse: { requiresWall: false },
+  gazebo: { requiresWall: false, symmetric: true, place: true },
+  pavilion: { requiresWall: false, symmetric: true, place: true },
+  garden_pavilion: { requiresWall: false, symmetric: true, place: true },
+  greenhouse: { requiresWall: false, place: true },
+  glasshouse: { requiresWall: false, place: true },
 
   // Planting (RM-D29).
-  climber: { requiresWall: false, directional: true, wallMounted: true, footprint: { along: 1200, depth: 300 } },
+  climber: {
+    requiresWall: false,
+    directional: true,
+    wallMounted: true,
+    footprint: { along: 1200, depth: 300 },
+    place: true,
+  },
   climbing_plant: {
     requiresWall: false,
     directional: true,
     wallMounted: true,
     footprint: { along: 1200, depth: 300 },
+    place: true,
   },
-  bamboo: { requiresWall: false, footprint: { along: 2000, depth: 600 } },
+  bamboo: { requiresWall: false, footprint: { along: 2000, depth: 600 }, place: true },
   potted_tree: { requiresWall: false, symmetric: true },
   indoor_tree: { requiresWall: false, symmetric: true },
-  stepping_stones: { requiresWall: false },
+  stepping_stones: { requiresWall: false, place: true },
 });
 
 /** All catalogued categories (aliases included), in declaration order. */

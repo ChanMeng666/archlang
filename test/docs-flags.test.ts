@@ -64,6 +64,7 @@ const DOCS = [
   ".claude/commands/verify-loop.md",
   ".claude/commands/release-check.md",
   "llms-install.md",
+  "test/check-set/README.md",
 ];
 
 /** command name (and alias) → every flag + alias it accepts, incl. the global ones. */

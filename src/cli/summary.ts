@@ -3,8 +3,10 @@
  * the codes, first in the text report and first key of the JSON, so a reader who cuts the
  * output short (`head -c`, a 200-byte tool preview) still learns how much there is to fix.
  *
- * A pure function of the diagnostics alone. It lives in the CLI layer on purpose: `lint()` and
- * `compile()` return exactly what they returned before, so no corpus digest moves.
+ * A pure function of the diagnostics alone, with no Node API, so the core may import it:
+ * `lintReport` (`src/lint/report.ts`, card CR10) opens its document with it, as the CLI does.
+ * `lint()` and `compile()` never call it and return exactly what they returned before, so no
+ * corpus digest moves.
  */
 
 import { ERROR_CODES } from "../error-catalog.js";

@@ -73,6 +73,7 @@ was added.
 | `POST /mcp` | Streamable-HTTP MCP, stateless (no sign-in, no session), the npm server's tools plus `read_me` |
 | `GET /svg/<payload>` | the `#z=` payload compiled to `image/svg+xml`, `max-age=300` + `ETag`; `Content-Location` names the pinned copy |
 | `GET /v/<render version>/svg/<payload>` | the same drawing pinned to one compiler, the only `immutable` path; an older version 302s to `/svg/` |
+| `POST /check` | a plan linted: the document `arch lint --json` prints for it (`{ source, profile?, strict? }` as JSON, or the plain body); the public check set's hosted runner (`test/check-set/`) |
 | `GET /` | the `read_me` text |
 
 - **Reached at `https://mcp.archlang.uk`** (custom domain attached in the dashboard) and at
@@ -85,7 +86,7 @@ was added.
   and per-request CPU limit, unlike the sites. ADR 0026 has the per-tool measurement and why it
   points at Workers Paid. A request that runs out of CPU fails with the platform's 5xx; inputs that
   are merely large are refused first, by bytes, with `E_INPUT_TOO_LARGE`, and an address over its
-  rate with `E_RATE_LIMITED` (600 `/mcp` or 3000 `/svg/` misses a minute: an abuse guard set high
+  rate with `E_RATE_LIMITED` (600 `/mcp`, 600 `/check` or 3000 `/svg/` misses a minute: an abuse guard set high
   because connector platforms call from shared egress addresses). The spend bound is
   `limits.cpu_ms` (5 s of CPU per request) plus a billing notification set before announcing it.
 - **It needs Workers Paid before it reaches `main`.** `limits` is supported only on the Standard
@@ -94,7 +95,8 @@ was added.
 - **It logs nothing and keeps no source.** Workers Logs (`observability`) is off and the code logs
   nothing, because a `/svg/` path is a whole plan. It stores only rendered SVGs in the edge cache,
   keyed by render version. One Analytics Engine data point per MCP message (dataset
-  `archlang_mcp`) holds the method and the tool name, each from a fixed list, nothing else.
+  `archlang_mcp`) holds the method and the tool name, and one per `/check` holds `check` and the profile name, each
+  from a fixed list, nothing else.
 - **Build:** `npm run mcp-worker:build` (the core first, then one bundled module,
   `packages/mcp-worker/dist/worker.js`). Locally: `wrangler dev --local --port <port>` from
   `packages/mcp-worker`, never `wrangler deploy`.
