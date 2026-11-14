@@ -23,9 +23,9 @@
  * moves into the Scene in a later phase. Hatch patterns are SVG-specific, so
  * poché regions fill with the solid poché base colour in PDF: a `hatch` is the same
  * multi-loop nonzero path a `region` is, so both share one `case` in {@link drawNode}
- * and `fillColor` collapses the `url(#…)` pattern ref to {@link Theme.pocheBase}. The five
- * patterns that keep the tint under them (`keepsTintUnder`, `src/hatches.ts`) draw no fill,
- * so the floor wash or ground tint their element painted first shows instead.
+ * and `fillColor` collapses the `url(#…)` pattern ref to {@link Theme.pocheBase}. A pattern
+ * whose colour underneath shows instead (`tintUnderPattern`, `src/sheet-tables.ts`: a floor's
+ * `rendered` wash, a `sand` or `soil` ground's tint) draws no fill, so that colour shows.
  * The `wallFill` layer is exactly one `hatch` primitive, so a switch with no `hatch`
  * case draws every wall hollow; the `default` below is an exhaustiveness guard so a
  * new `ScenePrim` cannot be dropped that silent way.
@@ -53,7 +53,7 @@ import { textLines } from "../text-layout.js";
 import { northBearingDeg } from "../algebra/d4.js";
 import { BUNDLED_FONT_FAMILY, bundledFontPath, glyphDiagnostics, planFonts } from "../backends/font.js";
 import type { Diagnostic } from "../diagnostics.js";
-import { keepsTintUnder } from "../hatches.js";
+import { tintUnderPattern } from "../sheet-tables.js";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
@@ -201,18 +201,17 @@ function drawNode(doc: any, node: SceneNode, theme: Theme, ctx: TextCtx): void {
     // So they share one path rather than growing a second copy of `regionPath`.
     case "region":
     case "hatch": {
-      // Except a pattern that keeps the tint under it (`keepsTintUnder`, card RM8.7b): its flat
-      // fill would cover the colour its element painted first (a room's `roomFloorFill`, under
-      // `rendered` the floor wash; a ground's tint), so its fill is dropped and, with no stroke,
-      // nothing is drawn. The older ground and floor patterns keep their poché-base fill.
-      if (prim.t === "hatch" && keepsTintUnder(prim.material)) {
-        if (!paint.stroke || paint.stroke === "none") break;
-        doc.path(regionPath(prim.region));
-        applyPaint(doc, { ...paint, fill: "none" }, theme);
-        break;
-      }
+      // Except a pattern whose colour underneath a stand-in shows instead (`tintUnderPattern`,
+      // card RM8.7b: a room's `rendered` wash, a `sand` or `soil` ground's tint): the poché-base
+      // flat fill would cover it, so the pattern's fill is dropped, its stroke (if any) kept, and
+      // with no stroke nothing is drawn. Every other pattern keeps its poché-base fill.
+      const shows =
+        prim.t === "hatch" &&
+        paint.fill?.startsWith("url(") === true &&
+        tintUnderPattern(prim.material, { room: theme, outdoor: theme }) !== undefined;
+      if (shows && (!paint.stroke || paint.stroke === "none")) break;
       doc.path(regionPath(prim.t === "region" ? prim.loops : prim.region));
-      applyPaint(doc, paint, theme);
+      applyPaint(doc, shows ? { ...paint, fill: "none" } : paint, theme);
       break;
     }
     case "path":

@@ -166,7 +166,7 @@ Nearest first, then by name; `(+n)` is the rest. Test names are `test/<name>.tes
 - `src/scene.ts` (59) — `arc-radius-exact`, `axes`, `band`, `bbox-derived-position`, `block-stair`, `corner-window`, `dim-stagger`, `dim-thickness-callout` (+51)
 - `src/segment-select.ts` (1) — `segment-select`
 - `src/share.ts` (1) — `share-codec`
-- `src/sheet-tables.ts` (3) — `sheet-annotations`, `sheet`, `wall-status-drawing`
+- `src/sheet-tables.ts` (4) — `export-pdf`, `sheet-annotations`, `sheet`, `wall-status-drawing`
 - `src/sheet-text.ts` (1) — `sheet-text`
 - `src/sheet.ts` (10) — `chrome-hidden`, `closed-vocabularies`, `dim-stagger`, `dim-thickness-callout`, `dims-ground`, `finish`, `label-fit`, `model-range` (+2)
 - `src/site.ts` (2) — `site`, `wall-face-probe`
@@ -177,7 +177,7 @@ Nearest first, then by name; `(+n)` is the rest. Test names are `test/<name>.tes
 - `src/taste/index.ts` (2) — `taste-budget`, `taste`
 - `src/text-layout.ts` (5) — `escape-fuzz`, `label-placement-oracle`, `label-wrap`, `text-layout`, `text-metrics`
 - `src/text-metrics.ts` (6) — `dim-stagger`, `dim-thickness-callout`, `label-placement`, `sheet-text`, `text-layout`, `text-metrics`
-- `src/theme.ts` (19) — `element-facets`, `equivariance-scene`, `format`, `furniture-mirror`, `glyph-chirality`, `glyph-dispatch-table`, `glyph-lib`, `glyphs-batch2` (+11)
+- `src/theme.ts` (20) — `element-facets`, `equivariance-scene`, `export-pdf`, `format`, `furniture-mirror`, `glyph-chirality`, `glyph-dispatch-table`, `glyph-lib` (+12)
 - `src/types.ts` (9) — `datum`, `doors`, `element-cap`, `fixture-orientation`, `furniture-flush`, `furniture-lint`, `garage`, `keep` (+1)
 - `src/vertical.ts` (51) — `block-stair-frames`, `block-stair-shaft`, `block-stair-winders`, `block-stair`, `circulation-concave`, `circulation-translation`, `element-facets`, `equivariance-corpus` (+43)
 - `src/view/camera.ts` (5) — `iso-camera`, `iso-mixed-heights`, `iso-painter-order`, `iso-projection`, `iso-sort`

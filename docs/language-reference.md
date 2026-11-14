@@ -1353,15 +1353,14 @@ a real `HATCH` and earns one [`legend`](#sheet-tables--room-schedule--legend) ro
 `sheet text` can rename (`deck "Parkett"`). It runs with the sheet, so boards do not turn with a
 `place`, as a wall's hatch does not. `tile` and `concrete` paint no background here, so a tiled room
 does not take a wall's tint, and their legend row reads `tile floor`, apart from a wall's `tile`. A PDF has no pattern fills, so it draws a floor pattern as one flat
-colour: the four older words in the wall's poché base, as an older `outdoor` kind's pattern is, and
-`timber`, `carpeting` and `stone` not at all, so the room's own colour shows (as `sand` and `soil`
-show their ground tint). A `timber`, `carpeting` or `stone` legend swatch is drawn on the room's
-colour, as a `sand` or `soil` swatch is on its ground tint.
+colour, the wall's poché base, as it does an `outdoor` kind's pattern; the exceptions are a washed
+floor (below) and `sand` and `soil`, whose pattern it leaves out so the colour under it shows.
 
 Under `theme rendered` a `timber`, `carpeting` or `stone` room is also washed in a pale tint of its
 material (wood, wool, stone: a third of the way from the room colour to the tint its furniture takes),
 pale enough that the pattern still reads against it at 2:1 or more; the four older words take no wash,
-and no other theme draws one. The PDF and the legend swatch show the wash too. The 3D preview lays a room in the finish its `floor` word names, and
+and no other theme draws one. The PDF shows the wash in place of the pattern, and the word's legend
+swatch is drawn on it. The 3D preview lays a room in the finish its `floor` word names, and
 falls back to one chosen by its `uses` only when it has none. (`carpet` is the `rug` family, a piece
 of furniture; the fitted floor is `carpeting`.)
 

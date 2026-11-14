@@ -36,18 +36,11 @@ import type { Point } from "./ast.js";
 import type { Bounds } from "./geometry.js";
 import type { BandWall } from "./geometry/band.js";
 import type { HatchSpec } from "./hatches.js";
-import {
-  floorMaterialsUsed,
-  groundSwatchFrame,
-  hatchesUsed,
-  hatchId,
-  isFloorPattern,
-  keepsTintUnder,
-} from "./hatches.js";
+import { floorMaterialsUsed, groundSwatchFrame, hatchesUsed, hatchId } from "./hatches.js";
 import type { ROutdoor, RFurniture, RRoom } from "./ir.js";
 import { WINDOW_KINDS, type WindowKind } from "./grammar/tokens.js";
-import { groundMaterialsUsed, groundTintOf } from "./elements/outdoor.js";
-import { roomFloorFill } from "./elements/room.js";
+import { groundMaterialsUsed, groundTintUnder } from "./elements/outdoor.js";
+import { floorWash } from "./elements/room.js";
 import { doorSwatch } from "./elements/door-panels.js";
 import { windowSwatch } from "./elements/window.js";
 import { weightWidth } from "./scene.js";
@@ -966,15 +959,15 @@ function drawer(theme: Theme, sizes: RenderSizes, out: SceneNode[]) {
   const ink = theme.annotation;
   const muted = theme.annotationMuted;
   return {
-    /** The table frame (a closed loop — one DXF polyline, one SVG polygon). */
-    frame(x0: number, y0: number, w: number, h: number): void {
+    /** The table frame (a closed loop — one DXF polyline, one SVG polygon), filled when given a `fill`. */
+    frame(x0: number, y0: number, w: number, h: number, fill = "none"): void {
       out.push({
         layer: "annotations",
         prim: {
           t: "polygon",
           pts: rectRing({ x: x0, y: y0, w: w, h: h }),
         },
-        paint: { fill: "none", stroke: ink, width: sizes.thin },
+        paint: { fill, stroke: ink, width: sizes.thin },
         lineWeight: "thin",
       });
     },
@@ -1202,14 +1195,16 @@ export interface SwatchThemes {
 }
 
 /**
- * The tint a material swatch is drawn on (card RM8.7b), or `undefined` for none: for a pattern that
- * keeps the tint under it (`keepsTintUnder`), the colour its element paints first, read from that
- * element's own source: `roomFloorFill` for a floor-only pattern (under `rendered` the floor wash),
- * `groundTintOf` for a ground. Every other swatch draws its pattern alone, as before.
+ * The colour a flat stand-in for the pattern `material` shows instead of the pattern (card RM8.7b),
+ * or `undefined` to draw it as before. Read from the element that paints the colour under the
+ * pattern, never from a table here: a room's real wash (`floorWash`: under `rendered`, the three
+ * floor-only words) or a ground's tint where its kind keeps it (`groundTintUnder`: `sand` and
+ * `soil`, under every theme). Two stand-ins read it: the legend swatch, drawn on that colour, and
+ * the PDF (`src/export/pdf.ts`), which has no pattern fills and so draws no fill for the pattern
+ * rather than flattening it to `pocheBase` over the colour.
  */
-function swatchTint(material: string, themes: SwatchThemes): string | undefined {
-  if (!keepsTintUnder(material)) return undefined;
-  return isFloorPattern(material) ? roomFloorFill(themes.room, material) : groundTintOf(themes.outdoor, material);
+export function tintUnderPattern(material: string, themes: SwatchThemes): string | undefined {
+  return floorWash(themes.room, material) ?? groundTintUnder(themes.outdoor, material);
 }
 
 /** The LEGEND table's primitives — each row a real swatch beside its name. */
@@ -1241,10 +1236,10 @@ function legendNodes(
       // the pattern's own marks (`groundSwatchFrame`); a wall material keeps the drawing's
       // anchoring, byte for byte.
       const frame = groundSwatchFrame(hp, sizes.hatchGap, { x: box.x + box.w / 2, y: box.y + box.h / 2 });
-      // Under the pattern, the tint its element is drawn on, as the plan paints it (`swatchTint`).
-      const tint = swatchTint(hp.material, themes);
-      if (tint !== undefined)
-        out.push({ layer: "annotations", prim: { t: "polygon", pts: rectRing(box) }, paint: { fill: tint } });
+      // Under the pattern, the colour its element is drawn on (`tintUnderPattern`): the swatch's
+      // frame takes it as its fill and is drawn first, so the swatch stays one loop in a DXF.
+      const tint = tintUnderPattern(hp.material, themes);
+      if (tint !== undefined) d.frame(box.x, box.y, box.w, box.h, tint);
       out.push({
         layer: "annotations",
         prim: {
@@ -1257,7 +1252,7 @@ function legendNodes(
         },
         paint: { fill: `url(#${hatchId(hp)})`, fillRule: "nonzero" },
       });
-      d.frame(box.x, box.y, box.w, box.h);
+      if (tint === undefined) d.frame(box.x, box.y, box.w, box.h);
     } else if (e.kind === "fixture" && e.category) {
       // The real plan symbol, drawn into the swatch box and re-tagged onto the annotation
       // pass — so the legend can never drift from what the drawing actually paints.

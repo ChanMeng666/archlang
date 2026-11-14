@@ -23,7 +23,7 @@ import { pointInPolygon } from "../src/geometry/polygon.js";
 import { FLOOR_PATTERNS, GROUND_MATERIALS, hatchPattern, hatchTileMm } from "../src/hatches.js";
 import { EXTRA_THIN_RATIO } from "../src/scene.js";
 import { DEFAULT_THEME, mergeTheme, THEMES } from "../src/theme.js";
-import { groundMaterial, groundTintOf, OUTDOOR_LAYERS } from "../src/elements/outdoor.js";
+import { groundMaterial, groundTintUnder, OUTDOOR_LAYERS } from "../src/elements/outdoor.js";
 
 const plan = (body: string): string => `plan "Ground" {\n  units mm\n${body}\n}\n`;
 
@@ -585,8 +585,21 @@ describe("outdoor — refuses rather than approximating", () => {
     const surface = nodes.find(
       (n) => n.layer === "floor" && OUTDOOR_LAYERS.includes(n.layerName ?? "") && n.prim.t === "polygon",
     );
-    return { svg, swatch: nodes[i], under: i > 0 ? nodes[i - 1] : undefined, surface };
+    return { svg, nodes, swatch: nodes[i], under: i > 0 ? nodes[i - 1] : undefined, surface };
   };
+
+  it("only `sand` and `soil` keep their tint in a stand-in, and every theme gives it (the GROUND table pins it)", () => {
+    const keeping = OUTDOOR_KINDS.filter((k) => {
+      const m = groundMaterial(k);
+      return m !== null && groundTintUnder(DEFAULT_THEME, m) !== undefined;
+    });
+    expect(keeping).toEqual(["sand", "soil"]);
+    for (const [name, layer] of Object.entries(THEMES)) {
+      const t = mergeTheme(layer);
+      for (const k of keeping) expect(groundTintUnder(t, groundMaterial(k)!), `${k} under ${name}`).toBe(t.paving);
+    }
+    expect(groundTintUnder(DEFAULT_THEME, "poche"), "a wall material is no ground").toBeUndefined();
+  });
 
   for (const kind of ["sand", "soil"] as const) {
     it(`${kind}: its legend swatch is drawn on the surface's tint, under \`rendered\` and the default`, () => {
@@ -595,17 +608,22 @@ describe("outdoor — refuses rather than approximating", () => {
         ["", DEFAULT_THEME],
       ] as const) {
         const src = legendPlan(pre, `  outdoor ${kind} at (0,6000) size 4000x3000`);
-        const { swatch, under, surface } = swatchOf(src, groundMaterial(kind)!);
-        const tint = groundTintOf(theme, groundMaterial(kind)!);
+        const { nodes, swatch, under, surface } = swatchOf(src, groundMaterial(kind)!);
+        const tint = groundTintUnder(theme, groundMaterial(kind)!);
         expect(tint, kind).toBe(theme.paving);
         expect(swatch, `${kind} has a legend row`).toBeDefined();
+        // The SVG plan paints that tint under the pattern under this theme too.
+        expect(surface?.paint.fill, "the swatch's tint is the surface's own").toBe(tint);
+        // The swatch's frame takes the tint and is drawn under the pattern.
         expect(under?.layer).toBe("annotations");
         expect(under?.prim.t).toBe("polygon");
-        expect(under?.paint.fill, "the swatch's tint is the surface's own").toBe(surface?.paint.fill);
         expect(under?.paint.fill).toBe(tint);
-        expect(under!.prim.t === "polygon" && under!.prim.pts).toEqual(
-          swatch!.prim.t === "hatch" && swatch!.prim.region[0],
-        );
+        expect(under?.paint.stroke).toBe(theme.annotation);
+        const box = swatch!.prim.t === "hatch" ? swatch!.prim.region[0] : [];
+        expect(under!.prim.t === "polygon" && under!.prim.pts).toEqual(box);
+        // One loop on the swatch's box, so a DXF gets the frame once, not a fill-only copy under it.
+        const onBox = nodes.filter((n) => n.prim.t === "polygon" && JSON.stringify(n.prim.pts) === JSON.stringify(box));
+        expect(onBox).toHaveLength(1);
       }
     });
   }
@@ -618,6 +636,7 @@ describe("outdoor — refuses rather than approximating", () => {
       );
       expect(swatch, kind).toBeDefined();
       expect(under?.prim.t, kind).not.toBe("polygon");
+      expect(groundTintUnder(mergeTheme(THEMES.rendered), groundMaterial(kind)!), kind).toBeUndefined();
     }
     const styled = legendPlan('  style outdoor { fill: "#e8e0d0" }\n', "  outdoor sand at (0,6000) size 4000x3000");
     const { under, surface } = swatchOf(styled, "sand");

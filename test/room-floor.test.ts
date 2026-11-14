@@ -8,7 +8,7 @@
 
 import { describe as suite, expect, it } from "vitest";
 import { compile, describe, format, lint, planToJson } from "../src/index.js";
-import { FLOOR_TINT_MATERIAL, FLOOR_TINT_MIX, room, roomFloorFill } from "../src/elements/room.js";
+import { FLOOR_TINT_MATERIAL, FLOOR_TINT_MIX, floorWash, room, roomFloorFill } from "../src/elements/room.js";
 import { toDxf } from "../src/export/dxf.js";
 import { renderAscii } from "../src/backends/ascii.js";
 import { FLOOR_MATERIALS, FLOOR_PATTERNS, floorHatch, hatchId, hatchPattern, KNOWN_MATERIALS } from "../src/hatches.js";
@@ -385,25 +385,29 @@ suite("under `rendered`, a floor-only word washes its room (card RM8.7, RM-D28)"
     plan(
       `${pre}paper A2 landscape\n  scale 1:100\n  legend\n  room id=a at (0,0) size 4000x3000 label "A" uses living${floor}`,
     );
-  /** The legend swatch of `material` and the node drawn just before it (its tint, when it has one). */
+  /** The legend swatch of `material` and the nodes drawn just before and after it. */
   const swatchOf = (src: string, material: string) => {
     const { scene, svg } = compile(src, { noCache: true });
     const nodes = scene!.nodes;
     const i = nodes.findIndex((n) => n.layer === "annotations" && n.prim.t === "hatch" && n.prim.material === material);
-    return { svg, nodes, swatch: nodes[i], under: i > 0 ? nodes[i - 1] : undefined };
+    return { svg, nodes, swatch: nodes[i], under: i > 0 ? nodes[i - 1] : undefined, after: nodes[i + 1] };
   };
 
   for (const word of FLOOR_PATTERNS) {
     it(`${word}: its legend swatch is drawn on the room's wash`, () => {
       const wash = roomFloorFill(rendered, word);
       expect(wash, "a wash, not the plain floor").not.toBe(rendered.roomFill);
+      expect(floorWash(rendered, word)).toBe(wash);
       const src = legendPlan("theme rendered\n  ", ` floor ${word}`);
-      const { svg, swatch, under } = swatchOf(src, word);
+      const { svg, swatch, under, after } = swatchOf(src, word);
       expect(swatch, `${word} has a legend row`).toBeDefined();
+      // The swatch's frame takes the wash and is drawn under the pattern: one loop, not two.
       expect(under?.layer).toBe("annotations");
       expect(under?.prim.t).toBe("polygon");
       expect(under?.paint.fill, "the swatch's tint is the room's own").toBe(floorFill(src));
       expect(under?.paint.fill).toBe(wash);
+      expect(under?.paint.stroke).toBe(rendered.annotation);
+      expect(after?.prim.t, "no second frame over the pattern").not.toBe("polygon");
       // The tint fills the swatch's own box, and nothing else.
       expect(under!.prim.t === "polygon" && under!.prim.pts).toEqual(
         swatch!.prim.t === "hatch" && swatch!.prim.region[0],
@@ -413,16 +417,25 @@ suite("under `rendered`, a floor-only word washes its room (card RM8.7, RM-D28)"
     });
   }
 
-  it("an older word's swatch, and any swatch under a theme without tints, draws no wash", () => {
-    // `tile` under `rendered`: no tint polygon under its swatch, as on `main` (byte identity).
-    const tile = swatchOf(legendPlan("theme rendered\n  ", " floor tile"), "tile");
-    expect(tile.swatch).toBeDefined();
-    expect(tile.under?.prim.t).not.toBe("polygon");
-    // Under the default theme a floor-only word's swatch is drawn on `roomFill`: what the room is.
-    for (const word of FLOOR_PATTERNS) {
-      const { under } = swatchOf(legendPlan("", ` floor ${word}`), word);
-      expect(under?.prim.t, word).toBe("polygon");
-      expect(under?.paint.fill, word).toBe(DEFAULT_THEME.roomFill);
+  it("with no wash (an older word, or any theme but `rendered`) a swatch is drawn as on `main`: pattern, then frame", () => {
+    const asBefore = (src: string, word: string, where: string): void => {
+      const { swatch, under, after } = swatchOf(src, word);
+      expect(swatch, where).toBeDefined();
+      expect(under?.prim.t, `${where}: nothing drawn under the pattern`).not.toBe("polygon");
+      expect(after?.prim.t, `${where}: the frame over it`).toBe("polygon");
+      expect(after?.paint.fill, where).toBe("none");
+    };
+    asBefore(legendPlan("theme rendered\n  ", " floor tile"), "tile", "tile under rendered");
+    for (const [name, pre, t] of [
+      ["default", "", DEFAULT_THEME] as const,
+      ...Object.keys(THEMES)
+        .filter((n) => n !== "rendered")
+        .map((n) => [n, `theme ${n}\n  `, mergeTheme(THEMES[n])] as const),
+    ]) {
+      for (const word of FLOOR_PATTERNS) {
+        expect(floorWash(t, word), `${word} under ${name}`).toBeUndefined();
+        asBefore(legendPlan(pre, ` floor ${word}`), word, `${word} under ${name}`);
+      }
     }
   });
 
