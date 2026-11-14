@@ -115,6 +115,8 @@ jobs:
           else
             echo "Push: every leg runs in full." >> "$GITHUB_STEP_SUMMARY"
           fi
+          # TP2 RED PROOF (throwaway, never merged): fail `changes` so the fail-open path runs every shard.
+          exit 1
 
   # The Node 18 leg, in three shards. Its `if` is FULL_LEG (see the header): true on every
   # push and merge_group, and on a PR only if `changes` failed (`!cancelled()` lets it run

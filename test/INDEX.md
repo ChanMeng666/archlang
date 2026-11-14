@@ -5,7 +5,7 @@
 Where the tests of a `src` module are, and what each test file is for. Generated; `npm run check:drift`
 fails when it is stale. How to add a test: `docs/testing.md` § 4.
 
-507 test files in `test/`, 282 `src` modules, 107 modules no test imports.
+508 test files in `test/`, 282 `src` modules, 107 modules no test imports.
 
 ## `src` module → tests that import it
 
@@ -700,6 +700,7 @@ The first sentence of each file's header comment.
 - `test/workspace-seams.test.ts` — Boundary: a workspace reaches the core (or another workspace) only through a declared package name, except at the seams listed in ALLOW (`workspace-seams.allow.ts`).
 - `test/world.test.ts` — T4.2 — World seam.
 - `test/zones.test.ts` — zone — byte identity (a zone draws nothing and moves nothing); zone — declared membership and nesting paths; zone — inside `level` blocks; zone — the grouped RO…
+- `test/zz-tp2-red-proof.test.ts` — Throwaway red proof for TP2 (never merged): fails only on Node 18, so exactly one Node 18 shard goes red.
 
 ## `src` modules no test imports
 
