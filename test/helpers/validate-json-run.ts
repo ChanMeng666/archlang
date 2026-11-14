@@ -42,12 +42,36 @@ export const withoutStageKeys = (stdout: string): string =>
   stdout.replace(/,\n +"stage": "(?:brief|rooms|walls|openings|fixtures|drafting)"(?=\n +\})/g, "");
 
 /**
+ * `stdout` without the `"rule": { … }` object RM1.6b adds to a lint warning raised against a
+ * ruleset number, byte for byte: the key, its value and the comma before it. Run AFTER
+ * {@link withoutStageKeys}, so `rule` is the last key of its diagnostic. The closing brace is the
+ * first line indented exactly as the key (a nested `also` entry closes deeper), found by
+ * `indexOf`, never a lazy regex over compiler output.
+ */
+export function withoutRuleKeys(stdout: string): string {
+  let out = "";
+  let from = 0;
+  for (;;) {
+    const at = stdout.indexOf('"rule": {\n', from);
+    if (at < 0) return out + stdout.slice(from);
+    const lineStart = stdout.lastIndexOf("\n", at) + 1;
+    const indent = stdout.slice(lineStart, at);
+    const close = stdout.indexOf(`\n${indent}}`, at);
+    // `,\n` + indent before the key: the comma ends the previous key's line.
+    if (!/^ +$/.test(indent) || close < 0 || stdout.slice(lineStart - 2, lineStart) !== ",\n")
+      throw new Error(`withoutRuleKeys: an unexpected "rule" at byte ${at}`);
+    out += stdout.slice(from, lineStart - 2);
+    from = close + 1 + indent.length + 1;
+  }
+}
+
+/**
  * What the digest laws that hash `validate --json` (`keep-byte-identity` K1, `keep-digests` K3)
  * measure: the output without the keys added after their pins (PS7.6's `summary`, PS7.1's
- * `stage`), so no pin is re-blessed. Each key is covered where it belongs: `./lint-summary.test.ts`
- * and `./stages.test.ts`.
+ * `stage`, RM1.6b's `rule`), so no pin is re-blessed. Each key is covered where it belongs:
+ * `./lint-summary.test.ts`, `./stages.test.ts` and `./lint-provenance.test.ts`.
  */
-export const validateDigestView = (stdout: string): string => withoutStageKeys(withoutSummary(stdout));
+export const validateDigestView = (stdout: string): string => withoutRuleKeys(withoutStageKeys(withoutSummary(stdout)));
 
 /** Run `validate <argv…>` in-process; return its exit code and everything it wrote to stdout. */
 export function runValidate(argv: string[]): { exit: number; stdout: string } {

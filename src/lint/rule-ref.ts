@@ -29,7 +29,14 @@ export interface RuleRef {
   profile: string | null;
 }
 
-const REFS = new WeakMap<Diagnostic, RuleRef>();
+/** What a citation keeps: the run's ruleset itself, read only when the reference is asked for. */
+interface Entry {
+  readonly key: string;
+  readonly rules: LintRuleset;
+  profile: string | null;
+}
+
+const REFS = new WeakMap<Diagnostic, Entry>();
 
 /** A ruleset field whose value is a per-use table (an object), not a scalar. */
 export const isTable = (v: unknown): v is Readonly<Record<string, unknown>> => typeof v === "object" && v !== null;
@@ -43,15 +50,22 @@ export function valueAt(rules: Partial<LintRuleset>, key: string): unknown {
   return isTable(table) ? table[key.slice(dot + 1)] : undefined;
 }
 
-/** Record that `d` was raised against `rules`' number at `key`; returns `d`, unchanged. */
+/**
+ * Record that `d` was raised against `rules`' number at `key`; returns `d`, unchanged. It reads
+ * nothing of `rules` here: the value is read when the reference is asked for ({@link ruleRefOf}),
+ * so citing adds no ruleset read to a rule's check (`test/lint-exterior-ring.test.ts` counts the
+ * reads of `wallGapMm` to prove its slit scan runs once).
+ */
 export function cite(rules: LintRuleset, key: RuleKey, d: Diagnostic): Diagnostic {
-  REFS.set(d, { key, value: (valueAt(rules, key) ?? null) as RuleRef["value"], profile: null });
+  REFS.set(d, { key, rules, profile: null });
   return d;
 }
 
 /** The ruleset number `d` was raised against, when a rule cited one. */
 export function ruleRefOf(d: Diagnostic): RuleRef | undefined {
-  return REFS.get(d);
+  const e = REFS.get(d);
+  if (!e) return undefined;
+  return { key: e.key, value: (valueAt(e.rules, e.key) ?? null) as RuleRef["value"], profile: e.profile };
 }
 
 /** `to`, a copy of `from`, carrying `from`'s reference. Returns `to`. */
