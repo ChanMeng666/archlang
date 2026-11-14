@@ -18,10 +18,17 @@ export const GENERATED_ARTIFACTS_JSON = ".claude/hooks/generated-artifacts.json"
 /**
  * Each generator with the exact files it writes (verified against every
  * `scripts/gen-*.ts` `writeFileSync`). Order is load-bearing: spec, then llms, then cli.
- * `partial`: the generator rewrites only a marked region of each file and the rest is written by
- * hand, so a merge conflict in one is a real conflict (`scripts/sync-main.mjs` never takes a side).
+ * `partial`: the artifacts the generator does not write whole — it rewrites only a marked region or
+ * a few derived fields of a file that is otherwise written by hand — so a merge conflict in one is a
+ * real conflict (`scripts/sync-main.mjs` never takes a side). `true` means every artifact of the row,
+ * a list names some of them. `test/sync-main.test.ts` pins the list and fails when a generator reads
+ * one of its own artifacts without marking it here.
  */
-export const GENERATORS: readonly { script: string; artifacts: readonly string[]; partial?: true }[] = [
+export const GENERATORS: readonly {
+  script: string;
+  artifacts: readonly string[];
+  partial?: true | readonly string[];
+}[] = [
   {
     script: "gen:grammars",
     artifacts: [
@@ -48,7 +55,13 @@ export const GENERATORS: readonly { script: string; artifacts: readonly string[]
   // Imported, never retyped: the curated README drawing list lives in the generator, so a
   // name added there is drift-gated here with no second edit (and cannot be forgotten).
   { script: "gen:example-svgs", artifacts: [...README_SVGS.map(svgPath), ...VIEW_SVGS.map((v) => v.dest)] },
-  { script: "gen:plugin", artifacts: [...pluginSkillFiles().map((f) => f.dest), PLUGIN_MANIFEST] },
+  // The skill copies are whole files; the manifest keeps its hand-written fields and gets only
+  // `version` and the MCP pin rewritten (`pluginManifest()`).
+  {
+    script: "gen:plugin",
+    artifacts: [...pluginSkillFiles().map((f) => f.dest), PLUGIN_MANIFEST],
+    partial: [PLUGIN_MANIFEST],
+  },
   // The per-route `.md` Content-Type rules, derived from the PAGES + SITE_PAGES tables in docs-site/sync-docs.mjs.
   { script: "gen:docs-headers", artifacts: ["docs-site/public/_headers"], partial: true },
   // The topmost-`todo` finder for the /loop driver, derived from the `### ` headings of docs/backlog.md.

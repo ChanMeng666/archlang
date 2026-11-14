@@ -65,6 +65,7 @@
     ".claude/hooks/generated-artifacts.json": "gen:generated-artifacts"
   },
   "partial": [
+    "plugins/archlang/.claude-plugin/plugin.json",
     "docs-site/public/_headers",
     "README.md",
     "packages/mcp/README.md",

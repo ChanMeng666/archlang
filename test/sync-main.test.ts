@@ -1,22 +1,40 @@
 /** scripts/sync-main.mjs: merge origin/main, script the record and generated-artifact conflicts, focus the re-review. */
 
 import { execFileSync } from "node:child_process";
-import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
-import { tmpdir } from "node:os";
+import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
 import { afterEach, describe, expect, it } from "vitest";
+import { renderGeneratedArtifacts } from "../scripts/gen-generated-artifacts.js";
 // @ts-expect-error — a zero-dep .mjs script with no type declarations.
 import * as syncMain from "../scripts/sync-main.mjs";
+import { selfReadArtifacts } from "./helpers/self-read-artifacts.js";
+import { mkTmp } from "./helpers/tmp.js";
 
-const { artifactSets, changedExports, classifyUnmerged, focusFiles, importLinked, main, parseArgs, reportLines } =
-  syncMain;
+const {
+  artifactSets,
+  changedExports,
+  classifyUnmerged,
+  conflictLines,
+  continueHint,
+  diff3EditsBase,
+  focusFiles,
+  importLinked,
+  main,
+  parseArgs,
+  reportLines,
+  scriptableSets,
+} = syncMain;
 
 /**
- * The pure parts (classification, the re-review focus) on literal inputs, then the whole script in
- * process against throwaway git repositories in `mkdtemp`: a local `origin` whose `main` moved, a clone
- * on a PR branch, and a fake `.claude/hooks/generated-artifacts.json`. No network and no `gen:all`
- * (`--no-gen`, or a fake regenerator passed in).
+ * The pure parts (classification, the re-review focus) on literal inputs; the partial-artifact list of
+ * the real generator table and the guard that keeps it complete; then the whole script in process
+ * against throwaway git repositories (`mkTmp`): a local `origin` whose `main` moved, a clone on a PR
+ * branch, and a fake `.claude/hooks/generated-artifacts.json`. No network and no `gen:all` (`--no-gen`,
+ * or a fake regenerator passed in).
  */
+
+const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
 
 const JSON_TEXT = JSON.stringify({
   artifacts: { "gen/out.txt": "gen:x", "README.md": "gen:doors", ".claude/hooks/generated-artifacts.json": "gen:y" },
@@ -34,6 +52,18 @@ describe("pure parts", () => {
     expect(both.artifacts.has("gen/out.txt")).toBe(true);
   });
 
+  it("scripts an artifact only when both sides call it a whole-file artifact", () => {
+    const theirs = JSON.stringify({ artifacts: { "gen/out.txt": "gen:x", "gen/new.txt": "gen:z" }, partial: [] });
+    const s = scriptableSets(JSON_TEXT, theirs);
+    expect(classifyUnmerged("gen/out.txt", s)).toBe("generated");
+    // An artifact only main knows of is the branch's hand-written file of that name.
+    expect(classifyUnmerged("gen/new.txt", s)).toBe("conflict");
+    // Partial on either side is partial.
+    expect(
+      classifyUnmerged("README.md", scriptableSets(JSON_TEXT, JSON_TEXT.replace(',"partial":["README.md"]', ""))),
+    ).toBe("conflict");
+  });
+
   it("classifies each unmerged path", () => {
     expect(classifyUnmerged("gen/out.txt", sets)).toBe("generated");
     expect(classifyUnmerged("CHANGELOG.md", sets)).toBe("changelog");
@@ -43,6 +73,23 @@ describe("pure parts", () => {
     // CHANGELOG.md deleted on one side (no stage 2 or 3) is not a union merge.
     expect(classifyUnmerged("CHANGELOG.md", sets, [1, 3])).toBe("conflict");
     expect(classifyUnmerged("CHANGELOG.md", sets, [2, 3])).toBe("changelog");
+  });
+
+  it("a diff3 hunk with base lines is two edits of one entry; an empty base is two insertions", () => {
+    const hunk = (base: string[]) =>
+      [
+        "head",
+        "<<<<<<< ours",
+        "- ours",
+        ...(base.length ? ["||||||| base", ...base] : ["||||||| base"]),
+        "=======",
+        "- theirs",
+        ">>>>>>> theirs",
+        "tail",
+      ].join("\n");
+    expect(diff3EditsBase(hunk([]))).toBe(false);
+    expect(diff3EditsBase(hunk(["- the entry both sides reworded"]))).toBe(true);
+    expect(diff3EditsBase("no conflict at all\n")).toBe(false);
   });
 
   it("overlap: files both sides changed, minus records, whole-file artifacts and low-tier paths", () => {
@@ -104,11 +151,33 @@ describe("pure parts", () => {
       "+export class Thing {}",
       "",
     ].join("\n");
-    expect(changedExports(diff, (f: string) => f === "src/context-size.ts")).toEqual([
-      "scripts/x.mjs: Thing",
-      "src/b.ts: fresh",
-      "src/b.ts: old",
-    ]);
+    expect(changedExports(diff, (f: string) => f === "src/context-size.ts")).toEqual({
+      declarations: ["scripts/x.mjs: Thing", "src/b.ts: fresh", "src/b.ts: old"],
+      bodies: [],
+    });
+  });
+
+  it("changed exports: a body-only change is read from the hunk header (the c2978a47 shape)", () => {
+    // c2978a47 changed `doorSwing`'s body and not its `export` line; `git diff -U0` names the function
+    // only in the hunk header's context.
+    const diff = [
+      "diff --git a/src/geometry.ts b/src/geometry.ts",
+      "--- a/src/geometry.ts",
+      "+++ b/src/geometry.ts",
+      "@@ -537 +537,3 @@ export function doorSwing(d: RDoor): Swing | null {",
+      "-  const r = d.width;",
+      "+  const r = leafWidth(d);",
+      "@@ -566,0 +571 @@ function doorRec(d: RDoor): Rec<Point> {",
+      "+  rec.push(x);",
+      "@@ -126 +126 @@ export const ELEMENT_GRAMMAR: Record<string, string> = {",
+      '-  door: "a",',
+      '+  door: "b",',
+      "",
+    ].join("\n");
+    expect(changedExports(diff)).toEqual({
+      declarations: [],
+      bodies: ["src/geometry.ts: ELEMENT_GRAMMAR", "src/geometry.ts: doorSwing"],
+    });
   });
 
   it("the report is a focus block for the red team, never a verdict", () => {
@@ -121,6 +190,7 @@ describe("pure parts", () => {
         hand: ["src/h.ts"],
         importLinked: [{ file: "src/dep.ts", via: [{ file: "src/pr.ts", how: "imported by" }] }],
         changedExports: ["src/dep.ts: f"],
+        changedExportBodies: ["src/dep.ts: g"],
       },
     });
     expect(lines).toEqual([
@@ -131,11 +201,22 @@ describe("pure parts", () => {
       "    src/h.ts",
       "  import-linked (main changed; one import from a PR file):",
       "    src/dep.ts (imported by src/pr.ts)",
-      "  exports main changed (grep their callers in the PR):",
+      "  export declarations main added/removed (grep their callers in the PR):",
       "    src/dep.ts: f",
+      "  exports whose body main changed (grep their callers in the PR):",
+      "    src/dep.ts: g",
       `head: ${"f".repeat(40)}`,
     ]);
     expect(lines.join("\n")).not.toMatch(/carries/);
+  });
+
+  it("stop hints echo the flags the sync was started with; a partial artifact gets its own advice", () => {
+    const hint = continueHint(parseArgs(["--push", "--no-gen", "--changelog-exempt"]));
+    expect(hint).toBe("npm run sync:main -- --continue --push --no-gen --changelog-exempt");
+    const lines = conflictLines(["README.md", "src/a.ts"], new Set(["README.md"]), hint).join("\n");
+    expect(lines).toContain("README.md (only its marked region is generated; the rest is hand-written.");
+    expect(lines).toContain("git checkout --ours -- <file>");
+    expect(lines).toContain(`then \`${hint}\``);
   });
 
   it("parses the flags and refuses an unknown one", () => {
@@ -147,6 +228,40 @@ describe("pure parts", () => {
       exempt: false,
     });
     expect(() => parseArgs(["--force"])).toThrow(/unknown argument --force/);
+  });
+});
+
+describe("partial artifacts in the real generator table", () => {
+  const partial = (JSON.parse(renderGeneratedArtifacts()) as { partial: string[] }).partial;
+
+  it("are the files a generator rewrites only in part (pinned)", () => {
+    expect(partial).toEqual([
+      "plugins/archlang/.claude-plugin/plugin.json",
+      "docs-site/public/_headers",
+      "README.md",
+      "packages/mcp/README.md",
+      "editors/vscode/README.md",
+      "llms.txt",
+    ]);
+  });
+
+  /** Read by their own generator only to compare with the new rendering; written whole. */
+  const READ_TO_COMPARE: Record<string, string> = {
+    "src/context-size.ts": "gen:llms reads it to decide whether the measured size moved, then writes it whole",
+  };
+
+  it("a generator that reads its own artifact marks it partial, and nothing else is marked", () => {
+    const selfRead = selfReadArtifacts(ROOT);
+    const unmarked = selfRead.filter((a) => !partial.includes(a) && READ_TO_COMPARE[a] === undefined);
+    expect(unmarked, "mark these `partial` in scripts/generators.ts, or list them in READ_TO_COMPARE").toEqual([]);
+    expect(
+      partial.filter((a) => !selfRead.includes(a)),
+      "marked partial but no generator reads them",
+    ).toEqual([]);
+    expect(
+      Object.keys(READ_TO_COMPARE).filter((a) => !selfRead.includes(a)),
+      "stale READ_TO_COMPARE",
+    ).toEqual([]);
   });
 });
 
@@ -169,14 +284,14 @@ const CHANGELOG_BASE = [
 
 const roots: string[] = [];
 afterEach(() => {
-  for (const r of roots.splice(0)) rmSync(r, { recursive: true, force: true });
+  for (const r of roots.splice(0)) rmSync(r, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 });
 });
 
 type Files = Record<string, string>;
 
 /** `origin` (on `main`) with `base`, and a clone `work` on branch `feat`. */
 function setup(base: Files) {
-  const root = mkdtempSync(join(tmpdir(), "archlang-sync-main-"));
+  const root = mkTmp("archlang-sync-main-");
   roots.push(root);
   const origin = join(root, "origin");
   const work = join(root, "work");
@@ -189,10 +304,11 @@ function setup(base: Files) {
       ["user.name", "sync-main"],
       ["commit.gpgsign", "false"],
       ["core.hooksPath", join(root, "no-hooks")],
+      // No background gc or maintenance holding files open while afterEach removes the directory.
+      ["gc.auto", "0"],
+      ["maintenance.auto", "false"],
     ];
-    for (const [k, v] of config) {
-      git(cwd, "config", k, v);
-    }
+    for (const [k, v] of config) git(cwd, "config", k, v);
   };
   const write = (cwd: string, files: Files) => {
     for (const [p, text] of Object.entries(files)) {
@@ -226,7 +342,8 @@ function setup(base: Files) {
     });
     return { code, out: lines.out, err: lines.err, json: () => JSON.parse(lines.out.join("\n")) };
   };
-  return { origin, work, git, write, commit, run };
+  const remoteHead = (branch: string) => git(origin, "rev-parse", "-q", "--verify", `refs/heads/${branch}`);
+  return { root, origin, work, git, write, commit, run, remoteHead };
 }
 
 const BASE: Files = {
@@ -243,13 +360,13 @@ const BASE: Files = {
 };
 
 const withEntry = (entry: string, text = CHANGELOG_BASE) => text.replace("- base entry\n", `- base entry\n${entry}\n`);
+const ends = (one: string, five: string) => `${one}\ntwo\nthree\nfour\n${five}\n`;
 
 // Each case spawns about 40 git processes: well under a second on Linux, 2–5 s on Windows, where the
 // default 5 s timeout would be too close (the main-only Windows leg runs this file).
 describe("sync:main on a throwaway repository", { timeout: 30_000 }, () => {
-  it("scripts a CHANGELOG and a generated-file conflict, commits, and lists the re-review focus", () => {
+  it("scripts a CHANGELOG and a generated-file conflict, commits, lists the focus, then pushes", () => {
     const r = setup(BASE);
-    const ends = (one: string, five: string) => `${one}\ntwo\nthree\nfour\n${five}\n`;
     r.commit(
       r.work,
       {
@@ -268,14 +385,14 @@ describe("sync:main on a throwaway repository", { timeout: 30_000 }, () => {
         "CHANGELOG.md": withEntry("- main entry"),
         "gen/out.txt": "count 3\n",
         "src/b.txt": "B\n",
-        "src/dep.ts": "export function fresh() {\n  return 1;\n}\nexport const old = fresh;\n",
+        "src/dep.ts": "export function fresh() {\n  return 2;\n}\nexport const old = fresh;\n",
         "src/shared.txt": ends("one", "FIVE"),
         "docs/plans/notes.md": ends("one", "FIVE"),
       },
       "main",
     );
     const oldHead = r.git(r.work, "rev-parse", "HEAD");
-    const res = r.run(["--no-gen", "--json"]);
+    const res = r.run(["--no-gen", "--json", "--push"]);
     expect(res.code, res.err.join("\n")).toBe(0);
     const j = res.json();
     // The low-tier docs/plans file merged cleanly from both sides and is no focus; src/shared.txt is.
@@ -283,6 +400,7 @@ describe("sync:main on a throwaway repository", { timeout: 30_000 }, () => {
       upToDate: false,
       oldHead,
       hand: [],
+      pushed: true,
       focus: {
         overlap: ["src/shared.txt"],
         hand: [],
@@ -294,6 +412,7 @@ describe("sync:main on a throwaway repository", { timeout: 30_000 }, () => {
     expect([...j.scripted].sort()).toEqual(["CHANGELOG.md", "gen/out.txt"]);
     expect(j.head).toMatch(/^[0-9a-f]{40}$/);
     expect(r.git(r.work, "rev-parse", "HEAD")).toBe(j.head);
+    expect(r.remoteHead("feat")).toBe(j.head);
     expect(r.git(r.work, "log", "-1", "--format=%P").split(" ")).toHaveLength(2);
     expect(r.git(r.work, "status", "--porcelain", "--untracked-files=no")).toBe("");
     const changelog = readFileSync(join(r.work, "CHANGELOG.md"), "utf8");
@@ -301,30 +420,53 @@ describe("sync:main on a throwaway repository", { timeout: 30_000 }, () => {
     expect(changelog).toContain("- main entry\n");
     expect(readFileSync(join(r.work, "gen/out.txt"), "utf8")).toBe("count 3\n");
     expect(r.git(r.work, "log", "-1", "--format=%s")).toBe("Merge remote-tracking branch 'origin/main' into feat");
-    // Nothing to merge on a second run.
-    const again = r.run(["--no-gen", "--json"]);
+    // Nothing to merge on a second run: no focus without a merge, and no push of what the remote has.
+    const again = r.run(["--no-gen", "--json", "--push"]);
     expect(again.code).toBe(0);
-    expect(again.json()).toMatchObject({ upToDate: true, head: j.head });
+    expect(again.json()).toEqual({
+      upToDate: true,
+      head: j.head,
+      oldHead: j.head,
+      scripted: [],
+      hand: [],
+      pushed: false,
+      focus: null,
+    });
+    expect(again.err.join("\n")).toContain("not pushed (already up to date)");
   });
 
-  it("text mode ends with the focus block and the new head's full SHA", () => {
+  it("text mode ends with the focus block and the new head's full SHA; a failed push still prints it", () => {
     const r = setup(BASE);
     r.commit(r.work, { "src/a.txt": "A\n" }, "pr");
     r.commit(r.origin, { "src/b.txt": "B\n" }, "main");
-    const res = r.run(["--no-gen"]);
-    expect(res.code, res.err.join("\n")).toBe(0);
+    r.git(r.work, "remote", "set-url", "--push", "origin", join(r.root, "no-such-remote"));
+    const res = r.run(["--no-gen", "--push"]);
+    expect(res.code).toBe(1);
     const head = r.git(r.work, "rev-parse", "HEAD");
     expect(res.out.slice(1)).toEqual([
       `re-review focus (red-team the merged head ${head}; start here):`,
       "  overlap (both the PR and main changed): none",
       "  hand-resolved conflicts: none",
       "  import-linked (main changed; one import from a PR file): none",
-      "  exports main changed (grep their callers in the PR): none",
+      "  export declarations main added/removed (grep their callers in the PR): none",
+      "  exports whose body main changed (grep their callers in the PR): none",
       `head: ${head}`,
     ]);
+    expect(res.err.join("\n")).toContain("git push failed");
+    expect(res.err.join("\n")).toContain(`the merge is committed (${head}) but not pushed`);
   });
 
-  it("stops on a real conflict (and on a region-only artifact), then --continue records it as hand-resolved", () => {
+  it("a rename counts both paths (--no-renames): main's edit of the old path overlaps the PR", () => {
+    const r = setup(BASE);
+    r.git(r.work, "mv", "src/shared.txt", "src/moved.txt");
+    r.git(r.work, "commit", "-q", "-m", "pr: rename");
+    r.commit(r.origin, { "src/shared.txt": ends("one", "FIVE") }, "main");
+    const res = r.run(["--no-gen", "--json"]);
+    expect(res.code, res.err.join("\n")).toBe(0);
+    expect(res.json().focus.overlap).toEqual(["src/shared.txt"]);
+  });
+
+  it("stops on real conflicts, then --continue keeps --push, stages only artifacts, records the hand files", () => {
     const r = setup(BASE);
     r.commit(
       r.work,
@@ -337,11 +479,12 @@ describe("sync:main on a throwaway repository", { timeout: 30_000 }, () => {
       "main",
     );
     const oldHead = r.git(r.work, "rev-parse", "HEAD");
-    const stop = r.run(["--no-gen"]);
+    const stop = r.run(["--no-gen", "--push"]);
     expect(stop.code).toBe(2);
-    expect(stop.err.join("\n")).toContain("  README.md");
-    expect(stop.err.join("\n")).toContain("  src/a.txt");
-    expect(stop.err.join("\n")).toContain("then `npm run sync:main -- --continue`");
+    const said = stop.err.join("\n");
+    expect(said).toContain("  README.md (only its marked region is generated");
+    expect(said).toContain("  src/a.txt");
+    expect(said).toContain("then `npm run sync:main -- --continue --push --no-gen`");
     expect(r.git(r.work, "rev-parse", "-q", "--verify", "MERGE_HEAD")).toMatch(/^[0-9a-f]{40}$/);
     expect(r.git(r.work, "diff", "--name-only", "--diff-filter=U").split("\n")).toEqual(["README.md", "src/a.txt"]);
     // The generated file was already taken from main and staged.
@@ -351,31 +494,74 @@ describe("sync:main on a throwaway repository", { timeout: 30_000 }, () => {
     r.git(r.work, "add", "README.md", "src/a.txt");
     expect(r.run(["--continue", "--no-gen"]).code).toBe(2);
 
-    r.write(r.work, { "src/a.txt": "both\n", "README.md": "# Readme\n\nboth texts\n" });
+    r.write(r.work, { "src/a.txt": "both\n", "README.md": "# Readme\n\nboth texts\n", "notes.txt": "untracked\n" });
     r.git(r.work, "add", "README.md", "src/a.txt");
     let regenerated = 0;
     const fakeGen = (root: string) => {
       regenerated++;
       writeFileSync(join(root, "gen/out.txt"), "regenerated\n");
+      writeFileSync(join(root, "stray.txt"), "a file no generator owns\n");
       return true;
     };
+    // --push is not repeated: the sync was started with it.
     const res = r.run(["--continue", "--json"], fakeGen);
     expect(res.code, res.err.join("\n")).toBe(0);
     expect(regenerated).toBe(1);
-    expect(res.json()).toMatchObject({
+    const j = res.json();
+    expect(j).toMatchObject({
       upToDate: false,
       oldHead,
       scripted: ["gen/out.txt"],
       hand: ["README.md", "src/a.txt"],
+      pushed: true,
       focus: {
         overlap: ["README.md", "src/a.txt"],
         hand: ["README.md", "src/a.txt"],
         importLinked: [],
         changedExports: [],
+        changedExportBodies: [],
       },
     });
+    expect(r.remoteHead("feat")).toBe(j.head);
     expect(r.git(r.work, "show", "HEAD:gen/out.txt")).toBe("regenerated");
-    expect(r.git(r.work, "status", "--porcelain", "--untracked-files=no")).toBe("");
+    // Never `git add -A`: the regenerator's stray file is reported and left out of the commit, and an
+    // untracked file from before the regeneration is not even reported.
+    expect(r.git(r.work, "ls-tree", "--name-only", "HEAD")).not.toContain("stray.txt");
+    expect(existsSync(join(r.work, "stray.txt"))).toBe(true);
+    const strayLine = res.err.find((l) => l.includes("not generated artifacts")) ?? "";
+    expect(strayLine).toContain("stray.txt");
+    expect(strayLine).not.toContain("notes.txt");
+  });
+
+  it("a CHANGELOG entry both sides edited is a hand conflict; an artifact only main knows of is too", () => {
+    const r = setup(BASE);
+    r.commit(
+      r.work,
+      {
+        "CHANGELOG.md": CHANGELOG_BASE.replace("- base entry", "- base entry, reworded by the PR"),
+        "gen/new.txt": "mine\n",
+      },
+      "pr",
+    );
+    const json = JSON.stringify({
+      ...JSON.parse(JSON_TEXT),
+      artifacts: { ...JSON.parse(JSON_TEXT).artifacts, "gen/new.txt": "gen:z" },
+    });
+    r.commit(
+      r.origin,
+      {
+        "CHANGELOG.md": CHANGELOG_BASE.replace("- base entry", "- base entry, reworded on main"),
+        "gen/new.txt": "generated\n",
+        ".claude/hooks/generated-artifacts.json": json,
+      },
+      "main",
+    );
+    const res = r.run(["--no-gen"]);
+    expect(res.code).toBe(2);
+    const said = res.err.join("\n");
+    expect(said).toContain("  CHANGELOG.md");
+    expect(said).toContain("  gen/new.txt");
+    expect(said).not.toContain("resolved CHANGELOG.md");
   });
 
   it("a branch entry the merge leaves inside a just-released section stops the sync, uncommitted", () => {
@@ -387,6 +573,7 @@ describe("sync:main on a throwaway repository", { timeout: 30_000 }, () => {
     const res = r.run(["--no-gen"]);
     expect(res.code).toBe(2);
     expect(res.err.join("\n")).toContain('added under "## [1.1.0] - 2026-02-01": - branch entry');
+    expect(res.err.join("\n")).toContain("--changelog-exempt");
     expect(r.git(r.work, "rev-parse", "HEAD")).toBe(oldHead);
     expect(r.git(r.work, "rev-parse", "-q", "--verify", "MERGE_HEAD")).toMatch(/^[0-9a-f]{40}$/);
     // Moving the line under [Unreleased] and continuing commits it; CHANGELOG is records, not a hand conflict.
@@ -399,7 +586,7 @@ describe("sync:main on a throwaway repository", { timeout: 30_000 }, () => {
     expect(done.json()).toMatchObject({
       oldHead,
       hand: [],
-      focus: { overlap: [], hand: [], importLinked: [], changedExports: [] },
+      focus: { overlap: [], hand: [], importLinked: [], changedExports: [], changedExportBodies: [] },
     });
   });
 

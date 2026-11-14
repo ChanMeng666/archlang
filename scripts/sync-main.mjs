@@ -9,50 +9,57 @@
  * merge of a generated file is not the generator's output (`docs/agents/gotchas.md` § PRs & CI).
  *
  *   npm run sync:main [-- --push] [--no-gen] [--json] [--changelog-exempt]
- *   npm run sync:main -- --continue [--push] [--no-gen] [--json]
+ *   npm run sync:main -- --continue [--push] [--no-gen] [--json] [--changelog-exempt]
  *
  * Steps:
  *   1. Refuse unless the branch is not `main`, no merge is in progress and no tracked file has a change
  *      (untracked files are ignored: a worktree's state notes are untracked, and git refuses on its own
  *      when one would be overwritten).
  *   2. `git fetch origin main`; record OLD_HEAD and BASE (`git merge-base HEAD origin/main`). Already an
- *      ancestor: "up to date", exit 0.
- *   3. `git merge --no-ff --no-commit origin/main`; each unmerged path is classified
- *      ({@link classifyUnmerged}): a generated artifact (a key of `.artifacts` in
- *      `.claude/hooks/generated-artifacts.json`, read from both sides, never retyped) takes main's side
- *      and is regenerated in step 4; `CHANGELOG.md` is union-merged from its three index stages; anything
- *      else, and an artifact whose generator writes only a marked region (`.partial`), is a real
- *      conflict: the merge is left in progress, the files are printed, exit 2. Fix them, `git add` them,
- *      then `--continue`.
+ *      ancestor: "up to date", exit 0 (with `--push`, the branch is pushed only if the remote's differs).
+ *   3. `git merge --no-ff --no-commit origin/main`; each unmerged path is classified ({@link classifyUnmerged}):
+ *      - a generated artifact takes main's side and is regenerated in step 4, but only when it is a
+ *        whole-file artifact on BOTH sides (a key of `.artifacts` in `.claude/hooks/generated-artifacts.json`
+ *        at OLD_HEAD and at main's tip, listed in neither side's `.partial`; read, never retyped);
+ *      - `CHANGELOG.md` is union-merged from its three index stages, unless a diff3 merge shows both
+ *        sides editing the same existing lines ({@link diff3EditsBase}): that is a hand conflict;
+ *      - anything else is a real conflict, a `.partial` artifact included (its generator owns only a
+ *        marked region; the rest is hand-written). The merge is left in progress, the files are printed,
+ *        exit 2. Fix them, `git add` them, then `--continue`.
  *   4. `npm run gen:all` (not with `--no-gen`), then stage only the generated artifacts it changed.
  *   5. The `CHANGELOG.md` rule of `scripts/check-changelog-unreleased.mjs` (every added line under
  *      `[Unreleased]`): its own {@link changelogVerdict}, on the STAGED merge against main's tip. Running
  *      that script before the commit would diff `origin/main...HEAD`, and HEAD is still the pre-merge
  *      branch, so it would never see what the merge did; after the commit `origin/main...HEAD` is the same
  *      diff as this one (main's tip is then the merge base). A violation leaves the merge uncommitted, exit 2.
- *   6. `git commit --no-edit` (git's merge message); `git push origin <branch>` only with `--push`.
- *   7. The re-review focus ({@link focusFiles}, {@link importLinked}, {@link changedExports}). The merged head
- *      is always red-teamed again: a clean merge with no shared file can still break the PR (a function
- *      main changed, called from a file only the PR touched). The block says where to look first:
- *      (a) overlap, files both the PR (BASE..OLD_HEAD) and main (BASE..main) changed; (b) the conflicts
- *      resolved by hand; (c) code main changed that a PR-changed file imports or is imported by (one
- *      level, the import reading of `scripts/nearest-tests.mjs`); (d) the `export function|const|class`
- *      lines main's side added or removed in `.ts`/`.mjs` files, so the red team greps their callers in
- *      the PR. Generated artifacts (whole-file ones), `CHANGELOG.md` and low-tier paths
- *      (`classify()` of `scripts/risk-tier.mjs`) are left out. Every `--name-only` diff is `--no-renames`,
- *      so a rename counts both paths.
+ *   6. `git commit --no-edit` (git's merge message).
+ *   7. The re-review focus. The merged head is always red-teamed again: a clean merge with no shared
+ *      file can still break the PR (a function main changed, called from a file only the PR touched).
+ *      The block says where to look first: (a) overlap, files both the PR (BASE..OLD_HEAD) and main
+ *      (BASE..main) changed ({@link focusFiles}); (b) the conflicts resolved by hand; (c) code main changed
+ *      that a PR-changed file imports or is imported by, one level, by the import reading of
+ *      `scripts/nearest-tests.mjs` ({@link importLinked}); (d) in `.ts`/`.mjs` files, the export
+ *      declarations main's side added or removed, and the exports whose body it changed, read from the
+ *      hunk headers of a `-U0` diff ({@link changedExports}), so the red team greps their callers in the
+ *      PR. Whole-file artifacts, `CHANGELOG.md` and low-tier paths (`classify()` of
+ *      `scripts/risk-tier.mjs`) are left out. Every `--name-only` diff is `--no-renames`, so a rename
+ *      counts both paths.
+ *   8. `git push origin <branch>` only with `--push`, after the focus is computed: a failed push still
+ *      prints it, then exits 1.
  *
- * Which files were resolved by hand is persisted in `sync-main.json` under the git dir
- * (`git rev-parse --git-path`, so each worktree has its own), written when the merge starts and removed
- * after the commit. Recomputing it at `--continue` from "the staged file differs from both parents" would
- * also count every file git merged cleanly from two sides, and the union-merged `CHANGELOG.md`, so the
- * list is recorded where it is known instead. If the record is missing, `--continue` falls back to that
- * recomputation (more files, never fewer) and says so.
+ * The state of a merge in progress is persisted in `sync-main.json` under the git dir
+ * (`git rev-parse --git-path`, so each worktree has its own): OLD_HEAD, BASE, main's tip, the scripted
+ * and hand-resolved files, `--push` and `--changelog-exempt` (which `--continue` honours). It is written
+ * as soon as the merge has started, with every unmerged path counted as hand-resolved until the script
+ * has resolved it, and removed after the commit. Recomputing the hand-resolved list at `--continue` from
+ * "the staged file differs from both parents" would count every file git merged cleanly from two sides and
+ * would miss a conflict resolved to exactly one side's text, so it is recorded where it is known. If the
+ * record is gone, `--continue` falls back to that recomputation and says what it can miss.
  *
- * `--json` prints `{ upToDate, head, oldHead, scripted, hand, focus: { overlap, hand, importLinked,
- * changedExports } }` on stdout (`hand`: every conflict resolved by hand; `focus.hand`: those not low tier);
- * progress goes to stderr. Exit codes: 0 done, 2 stopped for an agent, 1 error. Zero dependencies, plain
- * Node.
+ * `--json` prints `{ upToDate, head, oldHead, scripted, hand, pushed, focus }` on stdout, `focus` being
+ * `{ overlap, hand, importLinked, changedExports, changedExportBodies }`, or `null` when nothing was merged
+ * (`hand`: every conflict resolved by hand; `focus.hand`: those not low tier). Progress goes to stderr.
+ * Exit codes: 0 done, 2 stopped for an agent, 1 error. Zero dependencies, plain Node.
  */
 import { spawnSync } from "node:child_process";
 import { existsSync, mkdtempSync, readFileSync, realpathSync, rmSync, unlinkSync, writeFileSync } from "node:fs";
@@ -71,39 +78,85 @@ const REMOTE = "origin";
 const REMOTE_MAIN = `${REMOTE}/${MAIN}`;
 const CONFLICT_MARK = /^(<{7}|>{7})( |$)/m;
 
+/** One text of `.claude/hooks/generated-artifacts.json` as `{ artifacts, partial }` sets; empty if absent or bad. */
+function parseArtifacts(text) {
+  const artifacts = new Set();
+  const partial = new Set();
+  if (typeof text !== "string" || text === "") return { artifacts, partial };
+  let doc;
+  try {
+    doc = JSON.parse(text);
+  } catch {
+    return { artifacts, partial };
+  }
+  for (const p of Object.keys(doc?.artifacts ?? {})) artifacts.add(p);
+  for (const p of Array.isArray(doc?.partial) ? doc.partial : []) partial.add(p);
+  return { artifacts, partial };
+}
+
 /**
- * The generated artifacts named by one or more texts of `.claude/hooks/generated-artifacts.json` (each
- * side of the merge has its own): `{ artifacts, partial }` as sets, the union over the texts. A text that
- * is missing or does not parse adds nothing.
+ * The generated artifacts named by one or more texts of `.claude/hooks/generated-artifacts.json`:
+ * `{ artifacts, partial }` as sets, the union over the texts. Used to leave artifacts out of the focus.
  */
 export function artifactSets(texts) {
   const artifacts = new Set();
   const partial = new Set();
   for (const text of texts) {
-    if (typeof text !== "string" || text === "") continue;
-    let doc;
-    try {
-      doc = JSON.parse(text);
-    } catch {
-      continue;
-    }
-    for (const p of Object.keys(doc?.artifacts ?? {})) artifacts.add(p);
-    for (const p of Array.isArray(doc?.partial) ? doc.partial : []) partial.add(p);
+    const one = parseArtifacts(text);
+    for (const p of one.artifacts) artifacts.add(p);
+    for (const p of one.partial) partial.add(p);
   }
   return { artifacts, partial };
 }
 
 /**
+ * The artifacts a conflict may be scripted for: an artifact on BOTH sides (`ours` = OLD_HEAD's JSON,
+ * `theirs` = main's), and `partial` on either side. A file one side does not call generated is the other
+ * side's hand-written file, so taking main's text for it could drop real work.
+ */
+export function scriptableSets(ours, theirs) {
+  const a = parseArtifacts(ours);
+  const b = parseArtifacts(theirs);
+  return {
+    artifacts: new Set([...a.artifacts].filter((p) => b.artifacts.has(p))),
+    partial: new Set([...a.partial, ...b.partial]),
+  };
+}
+
+/**
  * How an unmerged path is resolved: `"generated"` (take main's side; the generator rewrites it),
- * `"changelog"` (union of the three stages) or `"conflict"` (an agent resolves it). An artifact whose
- * generator owns only a marked region is a conflict: taking main's side would drop the branch's hand
- * edits outside the region. A `CHANGELOG.md` missing its ours or theirs stage (deleted on one side) is
- * a conflict too.
+ * `"changelog"` (union of the three stages) or `"conflict"` (an agent resolves it). `sets` comes from
+ * {@link scriptableSets}. An artifact whose generator owns only a marked region is a conflict: taking
+ * main's side would drop the branch's hand edits outside the region. A `CHANGELOG.md` missing its ours or
+ * theirs stage (deleted on one side) is a conflict too.
  */
 export function classifyUnmerged(path, { artifacts, partial }, stages = [1, 2, 3]) {
   if (path === CHANGELOG) return stages.includes(2) && stages.includes(3) ? "changelog" : "conflict";
   if (artifacts.has(path) && !partial.has(path)) return "generated";
   return "conflict";
+}
+
+/**
+ * Whether a `git merge-file --diff3 -p` result has a conflict hunk whose base section is not empty: both
+ * sides changed the same existing lines (an entry edited on one side and reworded on the other, or a
+ * heading moved by a release), which a union would turn into a duplicated or garbled record. Two sides
+ * that only insert at one place leave the base section empty, and the union keeps both.
+ */
+export function diff3EditsBase(text) {
+  let section = null;
+  let baseLines = 0;
+  for (const line of text.replace(/\r\n/g, "\n").split("\n")) {
+    if (line.startsWith("<<<<<<<")) {
+      section = "ours";
+      baseLines = 0;
+    } else if (section === "ours" && line.startsWith("|||||||")) section = "base";
+    else if ((section === "ours" || section === "base") && line.startsWith("=======")) {
+      if (section === "base" && baseLines > 0) return true;
+      section = "theirs";
+    } else if (section === "theirs" && line.startsWith(">>>>>>>")) section = null;
+    else if (section === "base") baseLines++;
+  }
+  return false;
 }
 
 const uniqSorted = (xs) => [...new Set(xs)].sort();
@@ -148,16 +201,20 @@ export function importLinked({ prFiles, mainFiles, importsOf, sets = {} }) {
   return linked;
 }
 
-const EXPORT_LINE =
-  /^[+-](?![+-])\s*export\s+(?:default\s+)?(?:declare\s+)?(?:async\s+)?(?:function\s*\*?\s*|const\s+|let\s+|class\s+)([A-Za-z_$][\w$]*)/;
+const EXPORT_DECL =
+  /^\s*export\s+(?:default\s+)?(?:declare\s+)?(?:async\s+)?(?:function\s*\*?\s*|const\s+|let\s+|class\s+)([A-Za-z_$][\w$]*)/;
+const HUNK = /^@@ -\d+(?:,\d+)? \+\d+(?:,\d+)? @@ ?(.*)$/;
 
 /**
- * Focus (d): from a `git diff BASE main` of TS and `.mjs` files, every exported function, const or class
- * whose `export` line main's side added or removed, as sorted `"<file>: <name>"`. Files `skip(file)`
- * names (whole-file artifacts) are left out.
+ * Focus (d), from a `git diff -U0 BASE main` of TS and `.mjs` files, as sorted `"<file>: <name>"` lists:
+ * `declarations`, every exported function, const or class whose `export` line main's side added or
+ * removed; `bodies`, every export named in a hunk header's context (git's function-name line: the
+ * nearest line above the hunk that starts a declaration), that is an export whose body main changed
+ * without touching its `export` line. Files `skip(file)` names (whole-file artifacts) are left out.
  */
 export function changedExports(diff, skip = () => false) {
-  const found = [];
+  const declarations = [];
+  const bodies = [];
   let file = null;
   for (const line of diff.replace(/\r\n/g, "\n").split("\n")) {
     const header = /^diff --git a\/.+ b\/(.+)$/.exec(line);
@@ -166,10 +223,18 @@ export function changedExports(diff, skip = () => false) {
       continue;
     }
     if (file === null || skip(file)) continue;
-    const m = EXPORT_LINE.exec(line);
-    if (m) found.push(`${file}: ${m[1]}`);
+    const hunk = HUNK.exec(line);
+    if (hunk) {
+      const m = EXPORT_DECL.exec(hunk[1]);
+      if (m) bodies.push(`${file}: ${m[1]}`);
+      continue;
+    }
+    if ((line[0] === "+" || line[0] === "-") && line[1] !== line[0]) {
+      const m = EXPORT_DECL.exec(line.slice(1));
+      if (m) declarations.push(`${file}: ${m[1]}`);
+    }
   }
-  return uniqSorted(found);
+  return { declarations: uniqSorted(declarations), bodies: uniqSorted(bodies) };
 }
 
 /** The flags; an unknown one throws. */
@@ -185,11 +250,44 @@ export function parseArgs(argv) {
   };
 }
 
-/** The lines of the final report (text mode); `focus` is `{ overlap, hand, importLinked, changedExports }`. */
-export function reportLines({ head, scripted, regenerated: regen = [], focus }) {
+/** The command that resumes a stopped sync, with the flags it was started with. */
+export function continueHint({ push, gen, json, exempt }) {
+  const flags = [
+    "--continue",
+    push ? "--push" : "",
+    gen ? "" : "--no-gen",
+    json ? "--json" : "",
+    exempt ? "--changelog-exempt" : "",
+  ];
+  return `npm run sync:main -- ${flags.filter(Boolean).join(" ")}`;
+}
+
+/**
+ * The stop lines for real conflicts. A `.partial` artifact gets its own advice: only its marked region
+ * is generated, and the Edit/Write tools refuse the file (hook rule `generated-edit`,
+ * `.claude/hooks/local-gate.mjs`), so it is resolved from the shell.
+ */
+export function conflictLines(hand, partial, hint) {
+  const lines = ["real conflicts, an agent resolves them:"];
+  for (const f of hand) {
+    if (!partial.has(f)) lines.push(`  ${f}`);
+    else {
+      lines.push(
+        `  ${f} (only its marked region is generated; the rest is hand-written. The Edit/Write tools refuse it:`,
+        "    take one side with `git checkout --ours -- <file>` or `--theirs`, re-apply the other side's hand edits",
+        "    from the shell (`git show :2:<file>` / `:3:<file>` print each side), leave the marked region to gen:all)",
+      );
+    }
+  }
+  lines.push(`resolve these, \`git add\` them, then \`${hint}\``);
+  return lines;
+}
+
+/** The lines of the final report (text mode). */
+export function reportLines({ head, scripted, regenerated = [], focus }) {
   const out = [];
   if (scripted.length > 0) out.push(`scripted: ${scripted.join(", ")}`);
-  if (regen.length > 0) out.push(`regenerated: ${regen.join(", ")}`);
+  if (regenerated.length > 0) out.push(`regenerated: ${regenerated.join(", ")}`);
   out.push(`re-review focus (red-team the merged head ${head}; start here):`);
   const section = (title, items) => {
     out.push(`  ${title}:${items.length === 0 ? " none" : ""}`);
@@ -201,7 +299,8 @@ export function reportLines({ head, scripted, regenerated: regen = [], focus }) 
     "import-linked (main changed; one import from a PR file)",
     focus.importLinked.map(({ file, via }) => `${file} (${via.map((v) => `${v.how} ${v.file}`).join(", ")})`),
   );
-  section("exports main changed (grep their callers in the PR)", focus.changedExports);
+  section("export declarations main added/removed (grep their callers in the PR)", focus.changedExports);
+  section("exports whose body main changed (grep their callers in the PR)", focus.changedExportBodies);
   out.push(`head: ${head}`);
   return out;
 }
@@ -249,10 +348,10 @@ export function main(argv, opts = {}) {
   }
   const log = (l) => err(`sync:main: ${l}`);
 
-  const run = (cmd, cmdArgs, { cwd, input, ok = [0] } = {}) => {
-    const r = spawnSync(cmd, cmdArgs, { cwd, input, maxBuffer: 1 << 28 });
+  const run = (cmd, cmdArgs, { cwd, ok = [0] } = {}) => {
+    const r = spawnSync(cmd, cmdArgs, { cwd, maxBuffer: 1 << 28 });
     if (r.error) throw new Error(`${cmd} ${cmdArgs.join(" ")}: ${r.error.message}`);
-    if (!ok.includes(r.status)) {
+    if (ok !== "any" && !ok.includes(r.status)) {
       throw new Error(`${cmd} ${cmdArgs.join(" ")} exited ${r.status}: ${r.stderr.toString().trim()}`);
     }
     return r;
@@ -268,8 +367,8 @@ export function main(argv, opts = {}) {
   const showText = (spec) => show(spec)?.toString("utf8") ?? null;
   const names = (...gitArgs) => split0(git(...gitArgs, "-z"));
   const unmerged = () => names("diff", "--name-only", "--no-renames", "--diff-filter=U");
-  /** `CHANGELOG.md` merged as the union of ours and theirs over the base (stage 1; empty when absent). */
-  const unionMerge = (path) => {
+  /** Run `git merge-file <mode> -p ours base theirs` over the three index stages of `path` (empty when absent). */
+  const mergeStages = (path, mode) => {
     const dir = mkdtempSync(join(tmpdir(), "sync-main-"));
     try {
       const files = {};
@@ -281,9 +380,12 @@ export function main(argv, opts = {}) {
         files[name] = join(dir, name);
         writeFileSync(files[name], show(`:${stage}:${path}`) ?? Buffer.alloc(0));
       }
-      return run("git", ["merge-file", "--union", "-p", files.ours, files.base, files.theirs], { cwd: root }).stdout;
+      // The exit code is the number of conflicts (or 255 on an error, which `ok` refuses).
+      const r = run("git", ["merge-file", mode, "-p", files.ours, files.base, files.theirs], { cwd: root, ok: "any" });
+      if (r.status < 0 || r.status > 127) throw new Error(`git merge-file ${mode} failed: ${r.stderr.toString()}`);
+      return r.stdout;
     } finally {
-      rmSync(dir, { recursive: true, force: true });
+      rmSync(dir, { recursive: true, force: true, maxRetries: 3 });
     }
   };
 
@@ -291,13 +393,22 @@ export function main(argv, opts = {}) {
     root = git("rev-parse", "--show-toplevel");
     // Relative to `root` (every git call runs there) in a plain checkout, absolute in a linked worktree.
     const gitPath = git("rev-parse", "--git-path", STATE);
-    const resolvedState = isAbsolute(gitPath) ? gitPath : join(root, gitPath);
+    const statePath = isAbsolute(gitPath) ? gitPath : join(root, gitPath);
+    const saveState = (s) => writeFileSync(statePath, `${JSON.stringify(s, null, 2)}\n`);
     const branch = gitRaw(["symbolic-ref", "-q", "--short", "HEAD"], { ok: [0, 1] })
       .stdout.toString()
       .trim();
     if (branch === "") throw new Stop(1, ["refusing: HEAD is detached; check out the PR branch"]);
     if (branch === MAIN) throw new Stop(1, [`refusing: on ${MAIN}; run it on a PR branch`]);
     const merging = gitOk("rev-parse", "-q", "--verify", "MERGE_HEAD");
+    /** Push the branch; false (with the reason logged) when the push fails. */
+    const push = () => {
+      log(`pushing ${branch}`);
+      const r = gitRaw(["push", "-q", REMOTE, branch], { ok: "any" });
+      if (r.status === 0) return true;
+      log(`git push failed (${r.status}): ${r.stderr.toString().trim()}`);
+      return false;
+    };
 
     let state;
     if (!args.resume) {
@@ -310,14 +421,21 @@ export function main(argv, opts = {}) {
       const oldHead = git("rev-parse", "HEAD");
       const mainHead = git("rev-parse", REMOTE_MAIN);
       if (gitOk("merge-base", "--is-ancestor", mainHead, oldHead)) {
+        let pushed = false;
+        let pushFailed = false;
+        if (args.push) {
+          const remote = git("ls-remote", REMOTE, `refs/heads/${branch}`).split(/\s+/)[0] ?? "";
+          if (remote === oldHead) log("not pushed (already up to date)");
+          else if (push()) pushed = true;
+          else pushFailed = true;
+        }
         if (args.json) {
-          const focus = { overlap: [], hand: [], importLinked: [], changedExports: [] };
-          out(JSON.stringify({ upToDate: true, head: oldHead, oldHead, scripted: [], hand: [], focus }));
+          out(JSON.stringify({ upToDate: true, head: oldHead, oldHead, scripted: [], hand: [], pushed, focus: null }));
         } else {
           out(`up to date: ${branch} already contains ${REMOTE_MAIN} (${mainHead})`);
           out(`head: ${oldHead}`);
         }
-        return 0;
+        return pushFailed ? 1 : 0;
       }
       const base = git("merge-base", oldHead, mainHead);
       log(`merging ${REMOTE_MAIN} (${mainHead}) into ${branch} (${oldHead})`);
@@ -328,16 +446,31 @@ export function main(argv, opts = {}) {
       }
       if (git("rev-parse", "MERGE_HEAD") !== mainHead)
         throw new Error(`${REMOTE_MAIN} moved during the merge; abort and rerun`);
-      const sets = artifactSets([showText(`${oldHead}:${ARTIFACTS_JSON}`), showText(`${mainHead}:${ARTIFACTS_JSON}`)]);
+      const paths = unmerged();
+      // Recorded before any conflict is touched: until the loop resolves one, it counts as hand-resolved.
+      state = {
+        branch,
+        oldHead,
+        base,
+        mainHead,
+        scripted: [],
+        hand: [...paths],
+        push: args.push,
+        exempt: args.exempt,
+        recorded: true,
+      };
+      saveState(state);
+      const sets = scriptableSets(showText(`${oldHead}:${ARTIFACTS_JSON}`), showText(`${mainHead}:${ARTIFACTS_JSON}`));
       const scripted = [];
       const hand = [];
-      for (const path of unmerged()) {
+      for (const path of paths) {
         const stages = [
           ...new Set(
             split0(git("ls-files", "-u", "-z", "--", path)).map((l) => Number(l.split("\t")[0].split(" ")[2])),
           ),
         ];
-        const kind = classifyUnmerged(path, sets, stages);
+        let kind = classifyUnmerged(path, sets, stages);
+        if (kind === "changelog" && diff3EditsBase(mergeStages(path, "--diff3").toString("utf8"))) kind = "conflict";
         if (kind === "generated") {
           if (stages.includes(3)) {
             git("checkout", "--theirs", "--", path);
@@ -347,23 +480,17 @@ export function main(argv, opts = {}) {
           }
           scripted.push(path);
         } else if (kind === "changelog") {
-          writeFileSync(join(root, path), unionMerge(path));
+          writeFileSync(join(root, path), mergeStages(path, "--union"));
           git("add", "--", path);
           scripted.push(path);
         } else {
           hand.push(path);
         }
       }
-      state = { branch, oldHead, base, mainHead, scripted, hand, recorded: true };
-      writeFileSync(resolvedState, `${JSON.stringify(state, null, 2)}\n`);
+      state = { ...state, scripted, hand };
+      saveState(state);
       for (const f of scripted) log(`resolved ${f} (${f === CHANGELOG ? "union of both sides" : "main's side"})`);
-      if (hand.length > 0) {
-        throw new Stop(2, [
-          "real conflicts, an agent resolves them:",
-          ...hand.map((f) => `  ${f}`),
-          "resolve these, `git add` them, then `npm run sync:main -- --continue`",
-        ]);
-      }
+      if (hand.length > 0) throw new Stop(2, conflictLines(hand, sets.partial, continueHint(args)));
     } else {
       if (!merging) throw new Stop(1, ["--continue: no merge in progress (no MERGE_HEAD)"]);
       const left = unmerged();
@@ -380,9 +507,9 @@ export function main(argv, opts = {}) {
       const oldHead = git("rev-parse", "HEAD");
       const mainHead = git("rev-parse", "MERGE_HEAD");
       let saved = null;
-      if (existsSync(resolvedState)) {
+      if (existsSync(statePath)) {
         try {
-          saved = JSON.parse(readFileSync(resolvedState, "utf8"));
+          saved = JSON.parse(readFileSync(statePath, "utf8"));
         } catch {
           saved = null;
         }
@@ -390,15 +517,17 @@ export function main(argv, opts = {}) {
       if (saved && saved.oldHead === oldHead && saved.mainHead === mainHead) {
         state = saved;
       } else {
-        // No usable record: every staged file that differs from both parents, minus the scripted kinds.
-        const sets = artifactSets([
+        const sets = scriptableSets(
           showText(`${oldHead}:${ARTIFACTS_JSON}`),
           showText(`${mainHead}:${ARTIFACTS_JSON}`),
-        ]);
+        );
         const fromOurs = new Set(names("diff", "--cached", "--name-only", "--no-renames", oldHead));
         const both = names("diff", "--cached", "--name-only", "--no-renames", mainHead).filter((f) => fromOurs.has(f));
         const hand = both.filter((f) => classifyUnmerged(f, sets) === "conflict");
-        log(`no record of this merge in ${STATE}; counting as hand-resolved every file that differs from both parents`);
+        log(
+          `no record of this merge in ${STATE}; counting as hand-resolved every file that differs from both ` +
+            "parents (a conflict resolved to exactly one side's text is missed: name it to the red team)",
+        );
         state = {
           branch,
           oldHead,
@@ -406,10 +535,14 @@ export function main(argv, opts = {}) {
           mainHead,
           scripted: [],
           hand,
+          push: false,
+          exempt: false,
           recorded: false,
         };
-        writeFileSync(resolvedState, `${JSON.stringify(state, null, 2)}\n`);
+        saveState(state);
       }
+      // The flags the sync was started with hold for its --continue too.
+      args = { ...args, push: args.push || Boolean(state.push), exempt: args.exempt || Boolean(state.exempt) };
       const marked = state.hand.filter((f) => {
         const blob = show(`:${f}`);
         return blob !== null && CONFLICT_MARK.test(blob.toString("utf8"));
@@ -422,16 +555,16 @@ export function main(argv, opts = {}) {
     // ---- 4. regenerate ----
     const regenerated = [];
     if (args.gen) {
+      const untrackedBefore = new Set(names("ls-files", "-o", "--exclude-standard"));
       log("npm run gen:all");
-      if (!runGen(root)) throw new Error("npm run gen:all failed; fix it, then `npm run sync:main -- --continue`");
+      if (!runGen(root)) throw new Error(`npm run gen:all failed; fix it, then \`${continueHint(args)}\``);
       const sets = artifactSets([
         showText(`${state.oldHead}:${ARTIFACTS_JSON}`),
         showText(`${state.mainHead}:${ARTIFACTS_JSON}`),
         existsSync(join(root, ARTIFACTS_JSON)) ? readFileSync(join(root, ARTIFACTS_JSON), "utf8") : null,
       ]);
-      const changed = [
-        ...new Set([...names("diff", "--name-only", "--no-renames"), ...names("ls-files", "-o", "--exclude-standard")]),
-      ];
+      const newUntracked = names("ls-files", "-o", "--exclude-standard").filter((f) => !untrackedBefore.has(f));
+      const changed = uniqSorted([...names("diff", "--name-only", "--no-renames"), ...newUntracked]);
       for (const f of changed) if (sets.artifacts.has(f)) regenerated.push(f);
       if (regenerated.length > 0) git("add", "--", ...regenerated);
       const stray = changed.filter((f) => !sets.artifacts.has(f));
@@ -457,19 +590,16 @@ export function main(argv, opts = {}) {
       throw new Stop(2, [
         ...cl.out,
         "the merge is left uncommitted: move the branch's lines under `## [Unreleased]`, `git add CHANGELOG.md`,",
-        "then `npm run sync:main -- --continue`",
+        `then \`${continueHint(args)}\`. A deliberate edit of released history (the PR is labelled`,
+        "`changelog-exempt`) passes with `--changelog-exempt` instead.",
       ]);
     }
     for (const l of cl.out) log(l);
 
-    // ---- 6. commit (and push) ----
+    // ---- 6. commit ----
     git("commit", "-q", "--no-edit");
-    if (existsSync(resolvedState)) unlinkSync(resolvedState);
+    if (existsSync(statePath)) unlinkSync(statePath);
     const head = git("rev-parse", "HEAD");
-    if (args.push) {
-      log(`pushing ${branch}`);
-      git("push", "-q", REMOTE, branch);
-    }
 
     // ---- 7. the re-review focus ----
     const prFiles = names("diff", "--name-only", "--no-renames", state.base, state.oldHead);
@@ -503,11 +633,16 @@ export function main(argv, opts = {}) {
       "*.mts",
       "*.mjs",
     ]).stdout.toString("utf8");
+    const exportsChanged = changedExports(exportsDiff, (f) => isRegenerated(f, sets));
     const focus = {
       ...focusFiles({ prFiles, mainFiles, hand: state.hand, sets }),
       importLinked: importLinked({ prFiles, mainFiles, importsOf, sets }),
-      changedExports: changedExports(exportsDiff, (f) => isRegenerated(f, sets)),
+      changedExports: exportsChanged.declarations,
+      changedExportBodies: exportsChanged.bodies,
     };
+
+    // ---- 8. push, after the focus exists: a failed push still reports it ----
+    const pushed = args.push ? push() : false;
     if (args.json) {
       out(
         JSON.stringify({
@@ -516,12 +651,17 @@ export function main(argv, opts = {}) {
           oldHead: state.oldHead,
           scripted: state.scripted,
           hand: uniqSorted(state.hand),
+          pushed,
           focus: focusJson(focus),
         }),
       );
     } else {
       out(`merged ${REMOTE_MAIN} (${state.mainHead}) into ${state.branch} (was ${state.oldHead})`);
       for (const l of reportLines({ head, scripted: state.scripted, regenerated, focus })) out(l);
+    }
+    if (args.push && !pushed) {
+      log(`the merge is committed (${head}) but not pushed; push it with \`git push ${REMOTE} ${branch}\``);
+      return 1;
     }
     return 0;
   } catch (e) {

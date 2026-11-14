@@ -15,17 +15,22 @@ const ROOT = resolve(fileURLToPath(new URL(".", import.meta.url)), "..");
 
 /**
  * The JSON text: `{ "comment": …, "artifacts": { "<path>": "<gen:script>" }, "partial": ["<path>"] }`,
- * in table order. `partial` lists the artifacts whose generator rewrites only a marked region (the rest
- * is hand-written); `scripts/sync-main.mjs` treats a merge conflict in one as a real conflict.
+ * in table order. `partial` lists the artifacts the generator does not write whole (a marked region or a
+ * few derived fields; the rest is hand-written); `scripts/sync-main.mjs` treats a merge conflict in one as
+ * a real conflict.
  */
 export function renderGeneratedArtifacts(): string {
   const artifacts: Record<string, string> = {};
   const partial: string[] = [];
-  for (const { script, artifacts: paths, partial: regionOnly } of GENERATORS) {
+  for (const { script, artifacts: paths, partial: marked } of GENERATORS) {
+    if (marked !== undefined && marked !== true) {
+      for (const p of marked)
+        if (!paths.includes(p)) throw new Error(`${script} marks ${p} partial but does not write it`);
+    }
     for (const p of paths) {
       if (artifacts[p] !== undefined) throw new Error(`${p} is written by both ${artifacts[p]} and ${script}`);
       artifacts[p] = script;
-      if (regionOnly) partial.push(p);
+      if (marked === true || marked?.includes(p)) partial.push(p);
     }
   }
   const doc = {

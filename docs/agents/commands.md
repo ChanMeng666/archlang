@@ -23,15 +23,16 @@
   `packages/*/test/`, `editors/vscode/test/`. `check:test-wiring` fails on a test outside it.
 - `*:build:only` scripts skip the core rebuild; `npm run build` must have run.
 - `npm run sync:main` (`scripts/sync-main.mjs`) merges `origin/main` into the current PR branch: generated
-  artifacts take `main`'s side and are regenerated (`--no-gen` skips `gen:all`), `CHANGELOG.md` is
-  union-merged and must keep the branch's lines under `[Unreleased]`, any other conflict (and an artifact
-  whose generator owns only a marked region, `partial` in `scripts/generators.ts`) stops with exit 2 for
-  an agent, who resolves, `git add`s, and runs `-- --continue`. It commits with git's merge message,
-  pushes only with `--push`, and ends with the re-review focus for the red team (files both sides
-  changed, conflicts resolved by hand, code `main` changed one import away from a PR file, exports
-  `main` changed; generated artifacts, `CHANGELOG.md` and low-tier paths left out) and the new head's
-  full SHA; `--json` prints the same as one object. The focus says where to look first, never that the
-  review can be skipped.
+  artifacts (whole-file ones on both sides) take `main`'s side and are regenerated (`--no-gen` skips
+  `gen:all`), `CHANGELOG.md` is union-merged and must keep the branch's lines under `[Unreleased]`. Any
+  other conflict stops with exit 2 for an agent, who resolves, `git add`s, and runs `-- --continue` (which
+  keeps `--push` and `--changelog-exempt`). That includes a file its generator writes only in part
+  (`partial` in `scripts/generators.ts`) and a `CHANGELOG.md` entry both sides edited. It commits with git's
+  merge message, prints the re-review focus for the red team (files both sides changed, conflicts
+  resolved by hand, code `main` changed one import away from a PR file, export declarations `main` added
+  or removed and exports whose body it changed; generated artifacts, `CHANGELOG.md` and low-tier paths
+  left out) and the new head's full SHA, then pushes only with `--push`; `--json` prints the same as one
+  object. The focus says where to look first, never that the review can be skipped.
 - `e2e:playground` / `e2e:docs` run Playwright against the BUILT site. `E2E_BASE_URL=<origin>` drops
   the preview server and drives that origin instead (nightly uses it with `--grep @prod`).
 - `eval:ci` is the offline authorability gate: it scores the committed goldens (rewriting the
@@ -167,17 +168,18 @@ Auto-merge (option A of `docs/plans/ci-throughput.md`); nothing waits for CI or 
    worktree (never `gh pr update-branch`: GitHub's textual merge stales generated artifacts). If it
    stops (exit 2), resolve the listed files, then `--continue`. It takes `main`'s side of a generated
    artifact and runs `gen:all`, union-merges `CHANGELOG.md` and checks its lines sit under
-   `[Unreleased]`, and stops on anything else (`scripts/sync-main.mjs`). Wait for CI on the new head,
-   then `gh pr merge <n> --merge --match-head-commit <new full 40-character sha>`: a merge commit (a squash
-   or rebase re-creates allowlisted gitleaks lines) once the required checks pass; the branch is
-   deleted. A later push voids the pin: re-review, re-run step 2.
+   `[Unreleased]`, and stops on anything else (`scripts/sync-main.mjs`). Then, in this order: wait for
+   CI on the new head; red-team the merged head with the focus block `sync:main` printed (step 4); post
+   `reviewed <new full sha>`; merge with `gh pr merge <n> --merge --match-head-commit <new full
+   40-character sha>`: a merge commit (a squash or rebase re-creates allowlisted gitleaks lines) once the
+   required checks pass; the branch is deleted. A later push voids the pin: re-review, re-run step 2.
 3. PRs touching the same records (`CHANGELOG.md` `[Unreleased]`, handoff, cards) are STACKED: the next
    branches from the previous PR's head and, once that merges, runs `npm run sync:main -- --push`;
-   the coordinator re-pins. Independent PRs run in parallel.
+   then re-review (step 4), then the coordinator re-pins. Independent PRs run in parallel.
 4. A PR that merged `main` after its review is red-teamed again on the merged head (#280/#283), every
    time: a clean merge with no shared file can still break it. The red team's brief includes the
    re-review focus block `sync:main` printed (overlap, hand-resolved conflicts, import-linked files,
-   exports `main` changed).
+   export declarations `main` added or removed, exports whose body `main` changed).
 5. When several PRs are BEHIND at once, sync only the next one to merge (oldest reviewed, green); the
    rest wait until it merges — each sync starts a full CI run, and syncing them all wastes every run
    but one.
