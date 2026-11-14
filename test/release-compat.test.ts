@@ -470,6 +470,21 @@ describe("release compatibility: the comparisons are not vacuous", () => {
       "removed property /rooms",
     ]);
 
+    const id = (o: unknown, n: unknown) =>
+      compat
+        .compareJsonSchemas(o, n, { surface: "plan-schema", name: "plan.schema.json" })
+        .map((f) => `${f.kind} ${f.path}`);
+    expect(id({ $id: "https://x/a.json" }, { $id: "https://x/b.json" })).toEqual(["changed $id /$id"]);
+    expect(id({ $id: "https://x/a.json" }, {})).toEqual(["changed $id /$id"]);
+    expect(id({ $id: "https://x/a.json" }, { $id: "https://x/a.json" })).toEqual([]);
+    expect(id({}, { $id: "https://x/a.json" })).toEqual([]);
+    // Only the root's `$id` is its identity: a nested one (a `$defs` entry's) changing is no finding.
+    expect(id({ $defs: { a: { $id: "https://x/a.json" } } }, { $defs: { a: { $id: "https://x/b.json" } } })).toEqual(
+      [],
+    );
+    // Nor is a property that is itself named `$id` (the intent schema has one).
+    expect(id({ properties: { $id: { type: "string" } } }, { properties: { $id: { type: "string" } } })).toEqual([]);
+
     expect(compat.compareErrorCodes(["E_A", "W_B", "E_C"], ["E_A", "E_C", "E_D"])).toEqual([
       { surface: "error-codes", kind: "removed code", name: "W_B" },
     ]);
@@ -505,5 +520,21 @@ describe("release compatibility: the comparisons are not vacuous", () => {
     expect(accepted.map((a) => a.name)).toEqual(["goneExport", "compileThing", "W_B", "W_C"]);
     // `Mode` and `run` appear only in prose, and the `(all)` for mcp-schemas is an old release's.
     expect(failures.map((f) => f.name)).toEqual(["Mode", "run"]);
+  });
+
+  it("`BREAKING: plan-schema: /$id` waives a changed root $id and nothing else", () => {
+    const changed = {
+      surface: "plan-schema",
+      kind: "changed $id",
+      name: "plan.schema.json",
+      path: "/$id",
+    } satisfies Finding;
+    const other = { surface: "plan-schema", kind: "removed property", name: "plan.schema.json", path: "/rooms" };
+    const { failures, accepted } = compat.applyOverrides(
+      [changed, other],
+      ["BREAKING: plan-schema: /$id — the schema moved to v2"],
+    );
+    expect(accepted.map((a) => a.kind)).toEqual(["changed $id"]);
+    expect(failures.map((f) => f.path)).toEqual(["/rooms"]);
   });
 });

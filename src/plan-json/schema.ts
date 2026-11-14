@@ -28,7 +28,7 @@ const POINT_SCHEMA = {
 } as const;
 
 /** A wall vertex: {@link POINT_SCHEMA} plus the `arc` of the edge arriving at it. */
-const WALL_POINT_SCHEMA = pure(() => ({
+const WALL_POINT_SCHEMA = /* @__PURE__ */ pure(() => ({
   type: "object",
   additionalProperties: false,
   required: ["x", "y"],
@@ -64,7 +64,7 @@ const INSTANCE_MARKER = {
  * This object is the single source of truth: `scripts/gen-plan-schema.ts` writes it to
  * `schemas/plan.schema.json` and a drift test regenerates it in-memory to compare.
  */
-export const PLAN_JSON_SCHEMA = pure(() => ({
+export const PLAN_JSON_SCHEMA = /* @__PURE__ */ pure(() => ({
   $schema: "https://json-schema.org/draft/2020-12/schema",
   $id: "https://archlang.uk/plan.schema.json",
   title: "ArchLang Plan",

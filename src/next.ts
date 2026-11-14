@@ -90,7 +90,7 @@ export const INFO_CODES: ReadonlySet<string> = new Set(["W_GRID_SNAPPED"]);
 export const SWING_SHORTFALL_CODES: ReadonlySet<string> = new Set(["W_SWING_OBSTRUCTED"]);
 
 /** The stair-safety codes: every code a `stairs`-family lint rule declares, read off the rules. */
-export const STAIR_SAFETY_CODES: ReadonlySet<string> = pure(
+export const STAIR_SAFETY_CODES: ReadonlySet<string> = /* @__PURE__ */ pure(
   () => new Set(LINT_RULES.filter((r) => r.family === "stairs").flatMap((r) => r.codes)),
 );
 

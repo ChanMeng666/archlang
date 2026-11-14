@@ -38,7 +38,7 @@ export const SEGMENT_COMPASS_WORDS = ["north", "south", "east", "west"] as const
 type Compass = (typeof SEGMENT_COMPASS_WORDS)[number];
 
 /** A selector's written text, whole: what Plan JSON accepts back in `segment_select`. */
-export const SEGMENT_SELECT_RE = pure(
+export const SEGMENT_SELECT_RE = /* @__PURE__ */ pure(
   () =>
     new RegExp(
       `^(?:${SEGMENT_COMPASS_WORDS.join("|")}|containing [A-Za-z_][A-Za-z0-9_]*(?:\\.[A-Za-z_][A-Za-z0-9_]*)+)$`,
