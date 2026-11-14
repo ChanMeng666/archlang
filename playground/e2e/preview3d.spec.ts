@@ -1888,6 +1888,26 @@ test.describe("startup chunks", () => {
       for (const m of PROVENANCE)
         expect(text, `assets/${f} carries the lint provenance table ("${m}")`).not.toContain(m);
     }
+    // The `pure()` guard (card RM0.7e; `test/pure-guard.test.ts` checks the marks in the source, this
+    // checks the built files). A value `/* @__PURE__ */ pure(() => ...)` wraps and no startup code
+    // reads must be dropped from every built file, in whatever chunk its declaration landed
+    // (rolldown honours `@__NO_SIDE_EFFECTS__` on the declaration only in the caller's own chunk, so
+    // the call-site mark is what holds). The two JSON Schemas are such values (`INTENT_JSON_SCHEMA`,
+    // `PLAN_JSON_SCHEMA`): the playground reads neither, so a string only they write must be in no
+    // asset. Each is checked in its source first, so a renamed `$id` fails here, not vacuously.
+    const PURE_DROPPED: [string, string][] = [
+      ["src/intent.ts", "https://archlang.uk/intent.schema.json"],
+      ["src/plan-json/schema.ts", "https://archlang.uk/plan.schema.json"],
+    ];
+    for (const [file, m] of PURE_DROPPED) {
+      const src = readFileSync(join(dirname(fileURLToPath(import.meta.url)), "..", "..", file), "utf8");
+      expect(src, `the pure() sentinel "${m}" is in ${file}`).toContain(m);
+      for (const f of assets)
+        expect(
+          readFileSync(join(DIST, "assets", f), "utf8"),
+          `assets/${f} carries a value pure() wraps ("${m}" from ${file}), which the playground never reads`,
+        ).not.toContain(m);
+    }
 
     const gz = (file: string) => gzipSync(readFileSync(join(DIST, file))).length;
     const size = (files: string[]) => files.reduce((a, f) => a + gz(f), 0);
