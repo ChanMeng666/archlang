@@ -695,8 +695,10 @@ export const floorUnassigned: LintRule = {
           : ctx.rooms.length + (walls[0] ? ctx.ir.walls.indexOf(walls[0]) : ctx.ir.walls.length);
       found.push({
         key: [siteKey, -Math.round(c.unassigned), -Math.round(c.area)],
-        // RM1.6b: the cover ratio the message quotes (the unassigned-area floor only keeps slivers out).
-        d: cite(ctx.rules, "minFaceCoverRatio", {
+        // RM1.6b: no `rule`. The warning needs BOTH the cover ratio under `minFaceCoverRatio` and
+        // the unassigned floor at least `minUnassignedM2`, and raising either one silences it, so
+        // two ruleset numbers hold every warning at once and neither alone decided it.
+        d: {
           severity: "warning",
           code: "W_FLOOR_UNASSIGNED",
           ...(site ? ctx.at(site) : {}),
@@ -709,7 +711,7 @@ export const floorUnassigned: LintRule = {
             "Accept it if the floor is a sealed void: then draw it as a `void`, so the plan says so.",
             ...(idHint ? [`${idHint}.`] : []),
           ],
-        }),
+        },
       });
     }
     found.sort((p, q) => p.key[0] - q.key[0] || p.key[1] - q.key[1] || p.key[2] - q.key[2]);

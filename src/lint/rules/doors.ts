@@ -866,8 +866,12 @@ export const leafAcrossDoorway: LintRule = {
             `Or make ${refA} a \`sliding\` or \`pocket\` door, which parks no leaf in the room.`,
           ],
         };
-        // The ruleset's door width is the number only where it, not the doorway's own width, is needed.
-        out.push(rules.minDoorWidthMm <= b.width ? cite(rules, "minDoorWidthMm", diag) : diag);
+        // RM1.6b: the warning needs BOTH the approach depth (`doorwayLandingMm`, which puts the leaf
+        // in front of the doorway) and the clear width (`need`). The depth is always the ruleset's;
+        // the width is the ruleset's `minDoorWidthMm` unless the doorway is narrower. A doorway
+        // narrower than that needs only its own width, so the depth is the one number that decided
+        // it, and is cited; otherwise two ruleset numbers held it at once, and none is cited.
+        out.push(b.width < rules.minDoorWidthMm ? cite(rules, "doorwayLandingMm", diag) : diag);
       }
     }
     return out;

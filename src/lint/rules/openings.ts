@@ -640,11 +640,9 @@ export const openingAtJunction: LintRule = {
         ],
       };
       // RM1.6b: a jamb short of the nib is the ruleset's limb that set `need`; a wall standing
-      // inside the span is a fact of the geometry, which no number drives.
-      const nibKey =
-        ctx.rules.minJunctionNibMm >= o.seg.thickness * ctx.rules.junctionNibThicknessRatio
-          ? "minJunctionNibMm"
-          : "junctionNibThicknessRatio";
+      // inside the span is a fact of the geometry, which no number drives. `need` is `nibNeed`'s
+      // max of the two limbs; a tie names the fixed nib.
+      const nibKey = need === ctx.rules.minJunctionNibMm ? "minJunctionNibMm" : "junctionNibThicknessRatio";
       out.push(inside.length === 0 ? cite(ctx.rules, nibKey, diag) : diag);
     }
     return out;
@@ -914,6 +912,11 @@ export const connectorAmbiguous: LintRule = {
           : []),
         `The ${word} is "${c.id}" on ${wallRef(ctx.ir.walls, c.host)}${straddled.length ? `; its span covers rooms ${straddled.map((x) => `"${x}"`).join(", ")}` : ""}.`,
       ];
+      // RM1.6b: no `rule`. The `ambiguous` reading is the access graph's, a fact of the geometry
+      // that no ruleset number drives. On a straddle, `minStraddleCoverMm` (or the host's
+      // thickness × `junctionNibThicknessRatio`) only says how much of a room's span counts as
+      // being in it, a floor that keeps slivers out, like the tolerances, which carry no `rule`;
+      // what the warning reports is that two rooms share one side, not a short measure.
       out.push({
         severity: "warning",
         code: "W_CONNECTOR_AMBIGUOUS",

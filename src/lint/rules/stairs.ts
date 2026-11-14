@@ -873,17 +873,21 @@ export const stairSideEntry: LintRule = {
           const m = deficitMm(min, gap);
           const kind = c.kind === "door" ? "door" : "opening";
           const ref = connectorRef(ctx, c);
-          out.push(
-            cite(ctx.rules, "minPathClearWidthMm", {
-              severity: "warning",
-              code: "W_STAIR_SIDE_ENTRY",
-              ...ctx.at(c),
-              message: `${capitalise(openingName(ctx, c))} opens onto the side of ${stairName(v, ctx)}, ${m.available} mm from the flight: less than the ${m.required} mm a person needs to step through and turn, and a flight is entered at its foot or head, from a landing.`,
-              hints: [
-                `Move ${ref.startsWith("`") ? `the ${kind} ${ref}` : ref} along its wall past the end of \`${v.id}\`, or move the stair so at least ${m.required} mm stand between the doorway and the flight.`,
-              ],
-            }),
-          );
+          const diag: Diagnostic = {
+            severity: "warning",
+            code: "W_STAIR_SIDE_ENTRY",
+            ...ctx.at(c),
+            message: `${capitalise(openingName(ctx, c))} opens onto the side of ${stairName(v, ctx)}, ${m.available} mm from the flight: less than the ${m.required} mm a person needs to step through and turn, and a flight is entered at its foot or head, from a landing.`,
+            hints: [
+              `Move ${ref.startsWith("`") ? `the ${kind} ${ref}` : ref} along its wall past the end of \`${v.id}\`, or move the stair so at least ${m.required} mm stand between the doorway and the flight.`,
+            ],
+          };
+          // RM1.6b: the warning needs BOTH too little doorway past the flight's ends (under the
+          // smaller of `minDoorWidthMm` and the doorway's own width) and a gap to the flight under
+          // `minPathClearWidthMm`. A doorway narrower than `minDoorWidthMm` is held only to its own
+          // width there, so the gap's number is the one that decided it, and is cited; otherwise
+          // two ruleset numbers held it at once, and none is cited.
+          out.push(c.width < ctx.rules.minDoorWidthMm ? cite(ctx.rules, "minPathClearWidthMm", diag) : diag);
           break;
         }
       }
