@@ -21,7 +21,7 @@ the real parser), `planToJson` (a resolved plan out, with output-only facts) and
   fails on a hand edit), never the file.
 - **The release-compat gate reads the schema**: `plan-schema` in `scripts/compat-check.mjs`, run in the
   suite by `test/release-compat.test.ts` against the last published core, additive-only. A removal
-  needs a `BREAKING: plan-schema: item` line under `[Unreleased]` and a major.
+  needs a `BREAKING: plan-schema: item` line under `[Unreleased]` and a major; so does a changed root `$id` (item `/$id`; policy in `GOVERNANCE.md`).
 - **The round-trip law.** For a non-scripting, grouped plan, `planFromJson(planToJson(src))` compiles to
   byte-identical SVG (`test/plan-json.test.ts`; the CLI half `test/cli-plan-json-roundtrip.test.ts`). A
   shipped example that cannot round-trip is named in `CANNOT_ROUND_TRIP` (`test/tables/plan-json-gaps.ts`)

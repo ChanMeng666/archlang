@@ -417,9 +417,9 @@ const sourceSchema = {
 } as const;
 
 /**
- * The JSON schema of {@link EffectiveRuleset}, a DRAFT: it carries no `$id`, because how a schema
- * is named, versioned and deprecated is not decided yet, and it is not published as a file. The
- * enums are read from the source ({@link VERIFICATION_GRADES}).
+ * The JSON schema of {@link EffectiveRuleset}, a DRAFT: it carries no `$id` yet and is not published
+ * as a file. The policy is decided in `GOVERNANCE.md`; the draft takes
+ * `https://archlang.uk/schemas/lint-rules/v0.schema.json` with RM1.6b. The enums are read from the source ({@link VERIFICATION_GRADES}).
  */
 export const LINT_RULES_SCHEMA_DRAFT = {
   $schema: "https://json-schema.org/draft/2020-12/schema",
