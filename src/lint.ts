@@ -24,6 +24,7 @@ import { type BuildingContext, buildLintContext, type LintLayer, type LintStage 
 import { foldCoverage, type LintCoverage, type LintUnclassifiedRoom, type SkipNote } from "./lint/coverage.js";
 import { ONCE_PER_PLACEMENT_CODES } from "./lint/rules/dims.js";
 import { LINT_RULES } from "./lint/rules/index.js";
+import { carryRule, stampRuleProfile } from "./lint/rule-ref.js";
 import { LINT_PROFILES, type LintOptions, type LintRuleset, resolveRuleset, validateRuleset } from "./lint/ruleset.js";
 import { lintStoreys } from "./lint/storeys.js";
 import { type LintWork, newLintWork } from "./lint/work.js";
@@ -140,7 +141,13 @@ function lintRun(
   if (bad.length > 0) return { diagnostics: bad, coverage: null, layers: LINT_CODE_LAYERS };
   const { ir, levels } = resolvePlan(source, opts);
   if (!ir) return { diagnostics: [], coverage: null, layers: LINT_CODE_LAYERS };
-  return lintResolved(ir, levels, rules, work);
+  const out = lintResolved(ir, levels, rules, work);
+  // RM1.6b: the ruleset numbers the rules cited name the built-in profile they came from.
+  stampRuleProfile(
+    out.diagnostics,
+    opts.profile !== undefined && Object.hasOwn(LINT_PROFILES, opts.profile) ? opts.profile : null,
+  );
+  return out;
 }
 
 /**
@@ -180,7 +187,9 @@ function lintResolved(
   if (levels.length > 0) {
     const out = storeys.flatMap((st) => {
       unclassified.push(...unclassifiedRooms(st.ir, st.level));
-      return lintStorey(st.ir, rules, st.building, notes, work, st.level).map((d) => ({ ...d, level: st.level }));
+      return lintStorey(st.ir, rules, st.building, notes, work, st.level).map((d) =>
+        carryRule(d, { ...d, level: st.level }),
+      );
     });
     return {
       diagnostics: reconcileSharedFixes(out, levels),
@@ -287,7 +296,7 @@ export function reconcileSharedFixes(diags: Diagnostic[], storeys: readonly Lint
     const withFix = idx.filter((i) => diags[i]!.fixes?.length).length;
     const agree = withFix === idx.length && idx.every((i) => editsOf(diags[i]!) === editsOf(first));
     if (allRaise && agree) {
-      for (const i of idx.slice(1)) out[i] = withoutFixes(diags[i]!);
+      for (const i of idx.slice(1)) out[i] = carryRule(diags[i]!, withoutFixes(diags[i]!));
       continue;
     }
     const why = !allRaise
@@ -298,7 +307,7 @@ export function reconcileSharedFixes(diags: Diagnostic[], storeys: readonly Lint
     const hint = `This statement is shared by ${s.placements.size} placed instances (${s.ids.join(", ")}), and ${why}, so no fix is offered: one edit to the shared source cannot be right for all of them. Edit it by hand, or give the instances their own statements.`;
     for (const i of idx) {
       const d = withoutFixes(diags[i]!);
-      out[i] = { ...d, hints: [...(d.hints ?? []), hint] };
+      out[i] = carryRule(diags[i]!, { ...d, hints: [...(d.hints ?? []), hint] });
     }
   }
   return out;
@@ -360,5 +369,5 @@ function lintOne(
  */
 function withFixProvenance(d: Diagnostic): Diagnostic {
   if (d.file === undefined || !d.fixes) return d;
-  return { ...d, fixes: d.fixes.map((f) => ({ ...f, file: d.file })) };
+  return carryRule(d, { ...d, fixes: d.fixes.map((f) => ({ ...f, file: d.file })) });
 }

@@ -57,7 +57,17 @@ export { formatDiagnostic, offsetToLineCol } from "./diagnostics.js";
 // the canonical shape the CLI's `--json` output emits, exposed for programmatic
 // consumers (playground, LSP embedders, SDK users).
 export { diagnosticToJson } from "./diagnostic-json.js";
-export type { DiagnosticJson, FixSuggestionJson } from "./diagnostic-json.js";
+export type {
+  DiagnosticJson,
+  DiagnosticJsonOptions,
+  DiagnosticRuleJson,
+  FixSuggestionJson,
+  RuleSourceJson,
+} from "./diagnostic-json.js";
+// RM1.6b: the ruleset number a lint warning was raised against, with its provenance, for
+// `diagnosticToJson(source, d, { rule: diagnosticRule })`. Read where `lint()` ran. The table's
+// values are `pure`, so a bundle that never calls it (the playground) drops them.
+export { diagnosticRule } from "./lint/provenance.js";
 // A host's refusals (`E_INPUT_TOO_LARGE`, `E_RATE_LIMITED`), checked BEFORE compiling; compile() never calls them.
 export { inputTooLarge, rateLimited, utf8ByteLength } from "./input-limit.js";
 // Machine-applicable fixes: the `Diagnostic.fixes` model + a deterministic,

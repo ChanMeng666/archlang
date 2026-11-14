@@ -752,7 +752,7 @@ export function resolveRuleset(profile: Partial<LintRuleset> = {}, ruleset: Part
 /** The ruleset keys typed `number | null`: `null` turns their rule off. */
 type NullableKey = { [K in keyof LintRuleset]: null extends LintRuleset[K] ? K : never }[keyof LintRuleset];
 /** The ruleset keys that hold a per-use table (every key not typed as a scalar). */
-type TableKey = {
+export type TableKey = {
   [K in keyof LintRuleset]: LintRuleset[K] extends string | number | boolean | null ? never : K;
 }[keyof LintRuleset];
 

@@ -37,6 +37,7 @@ import type { RDoor, RRoom } from "../../ir.js";
 import type { LintContext, LintRule } from "../context.js";
 import { capFirst } from "../../naming.js";
 import { DEFAULT_RULESET, DOUBLE_BED_MIN_WIDTH_MM, type LintRuleset } from "../ruleset.js";
+import { cite, type RuleKey } from "../rule-ref.js";
 import { innerFaceOfRoomEdge } from "../../fixture-orientation.js";
 import { memoRoomNetAreaMm2, netAreaOmission, storeyNetAreaBands } from "../../analyze/net-area-memo.js";
 import { itemWords, pasteSet, roomDefiningItems } from "../defining.js";
@@ -300,6 +301,8 @@ interface WidthAsk {
   mm: number;
   /** The noun phrase after "the profile asks of": `a double bedroom`, `a passage to "Bed 2"`. */
   of: string;
+  /** The ruleset key `mm` was read from (RM1.6b). */
+  key: RuleKey;
 }
 
 /** Does the ruleset ask any room a width (PS5.2)? Off under the default ruleset. */
@@ -333,33 +336,44 @@ function widthAsk(
   const cands: WidthAsk[] = [];
   for (const u of uses) {
     const mm = rules.minRoomShortSideByUseMm[u];
-    if (mm !== undefined) cands.push({ mm, of: USE_WIDTH_NOUN[u] ?? `a room used as ${u}` });
+    if (mm !== undefined)
+      cands.push({ mm, of: USE_WIDTH_NOUN[u] ?? `a room used as ${u}`, key: `minRoomShortSideByUseMm.${u}` });
   }
   if (uses.has("bedroom") && beds === "double") {
     if (r.id === mainDouble && rules.minMainDoubleBedroomShortSideMm !== null)
       cands.push({
         mm: rules.minMainDoubleBedroomShortSideMm,
         of: "one double bedroom of every home (none here is that wide)",
+        key: "minMainDoubleBedroomShortSideMm",
       });
     else if (rules.minDoubleBedroomShortSideMm !== null)
-      cands.push({ mm: rules.minDoubleBedroomShortSideMm, of: "a double bedroom" });
+      cands.push({ mm: rules.minDoubleBedroomShortSideMm, of: "a double bedroom", key: "minDoubleBedroomShortSideMm" });
   }
   const byUse = rules.minPathClearWidthByUseMm;
   const entry = rules.minEntryPassageWidthMm;
   if (isCirculation(r) && (entry !== null || Object.keys(byUse).length > 0)) {
     const edges = ctx.access().edges.filter((e) => !e.ambiguous && e.between.includes(r.id));
     if (entry !== null && (uses.has("entry") || edges.some((e) => e.between.includes(EXTERIOR_NODE))))
-      cands.push({ mm: entry, of: "an entry passage" });
+      cands.push({ mm: entry, of: "an entry passage", key: "minEntryPassageWidthMm" });
     const byId = new Map(ctx.rooms.map((x) => [x.id, x]));
     for (const e of edges) {
       const other = byId.get(e.between[0] === r.id ? e.between[1] : e.between[0]);
       if (!other || other.id === r.id) continue;
       let best: number | undefined;
+      let bestUse: UseKind | undefined;
       for (const u of roomUses(other)) {
         const mm = byUse[u];
-        if (mm !== undefined && (best === undefined || mm > best)) best = mm;
+        if (mm !== undefined && (best === undefined || mm > best)) {
+          best = mm;
+          bestUse = u;
+        }
       }
-      if (best !== undefined) cands.push({ mm: best, of: `a passage that leads to ${ctx.nameOf(other)}` });
+      if (best !== undefined)
+        cands.push({
+          mm: best,
+          of: `a passage that leads to ${ctx.nameOf(other)}`,
+          key: `minPathClearWidthByUseMm.${bestUse!}`,
+        });
     }
   }
   let out: WidthAsk | null = null;
@@ -503,28 +517,36 @@ export const perRoomRules: LintRule = {
           floor.use !== null && floor.m2 === DEFAULT_RULESET.minRoomAreaByUseM2[floor.use]
             ? USE_FLOOR_SOURCE[floor.use]
             : undefined;
-        out.push({
-          severity: "warning",
-          code: "W_ROOM_TOO_SMALL",
-          ...at(r),
-          message:
-            floor.use === null
-              ? `${capFirst(nameOf(r, "room"))} is only ${a} m² (under ${rules.minRoomAreaM2} m²).`
-              : `${capFirst(nameOf(r, "room"))} is only ${a} m²${net !== undefined ? " of net floor" : ""} (under ${fmt2(floor.m2)} m², the floor for ${noun}).`,
-          hints:
-            floor.use === null
-              ? ["Increase its `size`, or merge it into an adjacent space."]
-              : [
-                  ...(source !== undefined ? [source] : []),
-                  ...(byNet && net === undefined
-                    ? [omitted === "budget" ? GROSS_AREA_BUDGET_HINT : GROSS_AREA_HINT]
-                    : []),
-                  "Increase its `size`, or merge it into an adjacent space.",
-                  floor.double
-                    ? DOUBLE_HINT
-                    : `If \`${r.id}\` is not ${noun}, say what it is with \`uses …\`: a room's use is read from its \`uses\`, or from its label when it has none.`,
-                ],
-        });
+        // RM1.6b: the key the floor came from, chosen here (a lookup by code could not tell them apart).
+        const key = floor.double
+          ? "minDoubleBedroomAreaM2"
+          : floor.use === null
+            ? "minRoomAreaM2"
+            : (`minRoomAreaByUseM2.${floor.use}` as const);
+        out.push(
+          cite(rules, key, {
+            severity: "warning",
+            code: "W_ROOM_TOO_SMALL",
+            ...at(r),
+            message:
+              floor.use === null
+                ? `${capFirst(nameOf(r, "room"))} is only ${a} m² (under ${rules.minRoomAreaM2} m²).`
+                : `${capFirst(nameOf(r, "room"))} is only ${a} m²${net !== undefined ? " of net floor" : ""} (under ${fmt2(floor.m2)} m², the floor for ${noun}).`,
+            hints:
+              floor.use === null
+                ? ["Increase its `size`, or merge it into an adjacent space."]
+                : [
+                    ...(source !== undefined ? [source] : []),
+                    ...(byNet && net === undefined
+                      ? [omitted === "budget" ? GROSS_AREA_BUDGET_HINT : GROSS_AREA_HINT]
+                      : []),
+                    "Increase its `size`, or merge it into an adjacent space.",
+                    floor.double
+                      ? DOUBLE_HINT
+                      : `If \`${r.id}\` is not ${noun}, say what it is with \`uses …\`: a room's use is read from its \`uses\`, or from its label when it has none.`,
+                  ],
+          }),
+        );
       }
 
       // No door or opening on its perimeter, so it can't be entered (a run a demolished wall
@@ -566,13 +588,17 @@ export const perRoomRules: LintRule = {
             ? largestPerimeterGapRing(r.poly, ir.walls, rules.tolMm, segs)
             : largestPerimeterGap(rect, ir.walls, rules.tolMm, segs);
         if (gap > rules.maxUnenclosedMm) {
-          out.push({
-            severity: "warning",
-            code: "W_ROOM_NOT_ENCLOSED",
-            ...at(r),
-            message: `${capFirst(nameOf(r, "bathroom"))} is not fully enclosed (~${Math.round(gap)} mm of its perimeter has no wall).`,
-            hints: ["Extend the partition so the room is walled on all sides — a door or window in the wall is fine."],
-          });
+          out.push(
+            cite(rules, "maxUnenclosedMm", {
+              severity: "warning",
+              code: "W_ROOM_NOT_ENCLOSED",
+              ...at(r),
+              message: `${capFirst(nameOf(r, "bathroom"))} is not fully enclosed (~${Math.round(gap)} mm of its perimeter has no wall).`,
+              hints: [
+                "Extend the partition so the room is walled on all sides — a door or window in the wall is fine.",
+              ],
+            }),
+          );
         }
       }
 
@@ -634,17 +660,19 @@ export const perRoomRules: LintRule = {
         if (have === null) ctx.skip("non-rectangular-room", r);
         else if (have < ask.mm) {
           const d = deficitMm(ask.mm, have);
-          out.push({
-            severity: "warning",
-            code: "W_ROOM_TOO_NARROW",
-            ...at(r),
-            message: `${capFirst(nameOf(r, "room"))} is ${d.available} mm wide between its wall faces, under the ${d.required} mm the profile asks of ${ask.of} — ${d.short} mm short.`,
-            hints: [
-              `Widen its short side until ${d.required} mm stand clear between the walls' inner faces (the drawn size runs to the wall centrelines, so add half of each wall's thickness).`,
-              ...(ask.of === "a double bedroom" || ask.of.startsWith("one double bedroom") ? [DOUBLE_HINT] : []),
-              ...(ask.of === "an entry passage" ? [ENTRY_HINT] : []),
-            ],
-          });
+          out.push(
+            cite(rules, ask.key, {
+              severity: "warning",
+              code: "W_ROOM_TOO_NARROW",
+              ...at(r),
+              message: `${capFirst(nameOf(r, "room"))} is ${d.available} mm wide between its wall faces, under the ${d.required} mm the profile asks of ${ask.of} — ${d.short} mm short.`,
+              hints: [
+                `Widen its short side until ${d.required} mm stand clear between the walls' inner faces (the drawn size runs to the wall centrelines, so add half of each wall's thickness).`,
+                ...(ask.of === "a double bedroom" || ask.of.startsWith("one double bedroom") ? [DOUBLE_HINT] : []),
+                ...(ask.of === "an entry passage" ? [ENTRY_HINT] : []),
+              ],
+            }),
+          );
         }
       }
 
@@ -659,16 +687,18 @@ export const perRoomRules: LintRule = {
         else if (depth.mm < depthNeed) {
           const d = deficitMm(depthNeed, depth.mm);
           const source = GARAGE_DEPTH_SOURCE[depthNeed];
-          out.push({
-            severity: "warning",
-            code: "W_GARAGE_TOO_NARROW",
-            ...at(r),
-            message: `${capFirst(nameOf(r, "garage"))} is ${d.available} mm deep from its vehicle door, between its wall faces, under the ${d.required} mm of clear depth a parked car needs — ${d.short} mm short.`,
-            hints: [
-              ...(source !== undefined ? [source] : []),
-              `Lengthen \`${r.id}\` along the line of its vehicle door${depth.door._idAuthored === true ? ` \`${depth.door.id}\`` : ""} until ${d.required} mm stand clear between the walls' inner faces (the drawn size runs to the wall centrelines, so add half of each wall's thickness), or drop the \`uses garage\` tag if it is not one.`,
-            ],
-          });
+          out.push(
+            cite(rules, "garageDepthMm", {
+              severity: "warning",
+              code: "W_GARAGE_TOO_NARROW",
+              ...at(r),
+              message: `${capFirst(nameOf(r, "garage"))} is ${d.available} mm deep from its vehicle door, between its wall faces, under the ${d.required} mm of clear depth a parked car needs — ${d.short} mm short.`,
+              hints: [
+                ...(source !== undefined ? [source] : []),
+                `Lengthen \`${r.id}\` along the line of its vehicle door${depth.door._idAuthored === true ? ` \`${depth.door.id}\`` : ""} until ${d.required} mm stand clear between the walls' inner faces (the drawn size runs to the wall centrelines, so add half of each wall's thickness), or drop the \`uses garage\` tag if it is not one.`,
+              ],
+            }),
+          );
         }
       }
 
