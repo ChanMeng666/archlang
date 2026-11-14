@@ -244,7 +244,9 @@ const BASE: Files = {
 
 const withEntry = (entry: string, text = CHANGELOG_BASE) => text.replace("- base entry\n", `- base entry\n${entry}\n`);
 
-describe("sync:main on a throwaway repository", () => {
+// Each case spawns about 40 git processes: well under a second on Linux, 2–5 s on Windows, where the
+// default 5 s timeout would be too close (the main-only Windows leg runs this file).
+describe("sync:main on a throwaway repository", { timeout: 30_000 }, () => {
   it("scripts a CHANGELOG and a generated-file conflict, commits, and lists the re-review focus", () => {
     const r = setup(BASE);
     const ends = (one: string, five: string) => `${one}\ntwo\nthree\nfour\n${five}\n`;
