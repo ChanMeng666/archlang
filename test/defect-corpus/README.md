@@ -78,6 +78,7 @@ Two classes from `evidence.md` §3 have no cases, because no core lint rule can 
 | `W_ENTRANCE_INTO_PRIVATE` | PS2.7 |
 | `W_HABITABLE_NO_WINDOW` | PS2.8 |
 | `W_ROOM_MISSING_DEFINING` | PS2.9 |
+| `W_LABEL_PIECE_MISSING` | product-roadmap RM1.2c (rulings RM-D35, RM-D35a) |
 | `W_DIM_TEXT_MISMATCH` | PS2.10 |
 | `W_WC_SIDE_CLEARANCE` | PS2.11a |
 | `W_FURNITURE_OVER_WINDOW` | PS2.11b |
@@ -169,12 +170,11 @@ label, whether the text is a room label or a `dims auto` number.
   and the door into the hall does not outrank it; declaring the street names the front door and both
   rooms are reported. Each `fact` gives the warning lint raised before only when that door was made a
   window.
-- `missing-defining-contents/desk-nook-no-desk` (product-roadmap RM1.2a, a label with no object) is
-  `todo` and has no code of its own: no rule reports it. "Desk Nook" reads no use (no row of
-  `src/vocabulary.ts` holds "desk" or "nook"), so lint's coverage names the room as skipped
-  (`no-uses`); and a room that wrote `uses office` would still be silent, because `DEFINING.office`
-  (`src/lint/defining.ts`) is `none` on purpose. Reporting it needs a ruling on one of those two,
-  not a new rule.
+- `missing-defining-contents/desk-nook-no-desk` (product-roadmap RM1.2a, a label with no object) landed
+  `todo`: "Desk Nook" reads no use (no row of `src/vocabulary.ts` holds "desk" or "nook"), and
+  `DEFINING.office` (`src/lint/defining.ts`) is `none` on purpose. Ruling RM-D35 kept both and added
+  a rule instead: `W_LABEL_PIECE_MISSING` (RM1.2c) reads the catalogued piece a label names, so the
+  case now expects that code and is `done`.
 
 ## Adding a case
 
