@@ -479,7 +479,9 @@ describe("release compatibility: the comparisons are not vacuous", () => {
     expect(id({ $id: "https://x/a.json" }, { $id: "https://x/a.json" })).toEqual([]);
     expect(id({}, { $id: "https://x/a.json" })).toEqual([]);
     // Only the root's `$id` is its identity: a nested one (a `$defs` entry's) changing is no finding.
-    expect(id({ $defs: { a: { $id: "https://x/a.json" } } }, { $defs: { a: { $id: "https://x/b.json" } } })).toEqual([]);
+    expect(id({ $defs: { a: { $id: "https://x/a.json" } } }, { $defs: { a: { $id: "https://x/b.json" } } })).toEqual(
+      [],
+    );
     // Nor is a property that is itself named `$id` (the intent schema has one).
     expect(id({ properties: { $id: { type: "string" } } }, { properties: { $id: { type: "string" } } })).toEqual([]);
 
