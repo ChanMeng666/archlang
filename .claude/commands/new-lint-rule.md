@@ -31,6 +31,8 @@ lists. The list comes from commit `974d9981` (`W_FURNITURE_ON_VOID`).
    per-stage counts in `test/stages.test.ts`. Red without it: `test/lint-rule-order.test.ts`
    (stage rows), `test/stages.test.ts` (decided table and counts).
 8. **Tests for the rule itself**: a `test/lint-<name>.test.ts` with a firing case and a clean case.
+   A defect-corpus case marked `done` for a new code needs its row in `test/check-set/check-set.json`
+   (the public check set); `test/check-set.test.ts` names the row, or says why the code is left out.
 9. **Not derivable, check by hand** (no test lists them for you): a threshold the rule reads goes in
    `src/lint/ruleset.ts` (it names thresholds, not rules); a rule that reads furniture sets
    `readsFurniture` (`test/lint-hint-paste.test.ts`); `test/defect-corpus/README.md` lists a case

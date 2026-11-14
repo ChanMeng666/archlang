@@ -1,0 +1,12 @@
+# A garage 5500 mm deep between its wall faces along its vehicle door's axis (5700 drawn, less two
+# 100 mm half-walls): over the default ruleset's 5000 mm parking bay (Buckinghamshire Council, Parking
+# guidance for new developments, 2022, section 8 Table 9), under the 6000 mm Monmouthshire County
+# Council's SPG Domestic Garages (2013) gives a single garage. This case and its twin are listed in
+# ../check-set.json.
+plan "Garage short of 6 m" {
+  units mm
+  grid 50
+  wall id=shell exterior thickness 200 { (0,0) (5700,0) (5700,3800) (0,3800) close }
+  room id=r_gar at (0,0) size 5700x3800 label "Garage" uses garage
+  door id=d_car garage at (0,1900) width 2400 wall shell
+}

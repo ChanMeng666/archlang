@@ -26,6 +26,7 @@ import {
 } from "../src/app.js";
 import {
   BODY_CAP_BYTES,
+  CHECK_PER_PERIOD,
   MCP_PER_PERIOD,
   MCP_PAYLOAD_CAP_CHARS,
   RATE_PERIOD_SECONDS,
@@ -654,6 +655,7 @@ describe("configuration laws", () => {
     expect(byName).toEqual({
       RATE_MCP: { limit: MCP_PER_PERIOD, period: RATE_PERIOD_SECONDS },
       RATE_SVG: { limit: SVG_PER_PERIOD, period: RATE_PERIOD_SECONDS },
+      RATE_CHECK: { limit: CHECK_PER_PERIOD, period: RATE_PERIOD_SECONDS },
     });
   });
 });

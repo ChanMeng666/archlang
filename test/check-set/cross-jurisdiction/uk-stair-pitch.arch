@@ -1,0 +1,26 @@
+# A 2500 mm flight up a 2600 mm storey. Approved Document K (2013) Table 1.1 (a private stair: risers
+# of at most 220 mm, goings of at least 220 mm, a pitch of at most 42 degrees) needs a run of about
+# 2647 mm: 12 risers of about 217 mm, and goings of about 241 mm to keep the pitch. The default
+# ruleset has no pitch cap; its least run, 11 goings of 220 mm, is 2420 mm. This case and its twin
+# are listed in ../check-set.json.
+plan "Stair steeper than 42 degrees" {
+  units mm
+  grid 50
+  height 2600
+  level 1 "Ground floor" {
+    wall id=shell exterior thickness 200 { (0,0) (6000,0) (6000,4000) (0,4000) close }
+    room id=hall at (0,0) size 6000x4000 label "Hall" uses hall
+    door id=front at (3000,4000) width 1000 wall shell
+    window at (3000,0) width 1500 wall shell
+    stair id=stair at (1000,500) size 2500x900 dir up
+  }
+  level 2 "First floor" {
+    wall id=shell exterior thickness 200 { (0,0) (6000,0) (6000,4000) (0,4000) close }
+    wall id=w_s partition thickness 100 { (5000,0) (5000,4000) }
+    room id=landing at (0,0) size 5000x4000 label "Landing" uses circulation
+    room id=store at (5000,0) size 1000x4000 label "Store" uses storage
+    door id=d_store at (5000,650) width 800 wall w_s swing into store
+    window at (3000,0) width 1500 wall shell
+    stair id=stair at (1000,500) size 2500x900 dir down
+  }
+}
