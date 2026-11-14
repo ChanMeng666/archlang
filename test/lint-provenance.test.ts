@@ -1,10 +1,17 @@
-/** rule provenance — every ruleset key has a row, grades match the source tags; lint --rules exports the effective ruleset; off the compile path. */
+/** rule provenance — every ruleset key has a row, grades match the source tags; lint --rules exports the effective ruleset; off the compile path; a diagnostic's rule (RM1.6b). */
 
 import { readdirSync, readFileSync, statSync } from "node:fs";
 import { join, relative } from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
-import { DEFAULT_RULESET, LINT_PROFILE_NAMES, LINT_PROFILES } from "../src/index.js";
+import {
+  DEFAULT_RULESET,
+  diagnosticRule,
+  diagnosticToJson,
+  lint,
+  LINT_PROFILE_NAMES,
+  LINT_PROFILES,
+} from "../src/index.js";
 import {
   LINT_RULES_SCHEMA_DRAFT,
   RULE_PROVENANCE,
@@ -468,5 +475,95 @@ describe("rule provenance — off the compile path", () => {
     const src = readFileSync(join(ROOT, "src/lint/provenance.ts"), "utf8");
     for (const name of ["DEFAULTS", "PROFILES", "admHall", "NO_STORE_AREA", "NO_PASSAGE_AREA", "OFF", "sourceSchema", "LINT_RULES_SCHEMA_DRAFT"])
       expect(src, name).toMatch(new RegExp(`const ${name}(?::[^=]+)? = pure\\(`));
+  });
+});
+
+/** One 2.25 m² room with no use of its own: under the default ruleset's 4 m² generic floor. */
+const TINY_ROOM = `plan "Small" {
+  wall exterior thickness 200 { (0,0) (1500,0) (1500,1500) (0,1500) close }
+  room id=a at (0,0) size 1500x1500 label "Den"
+  door id=d0 at (750,1500) width 800 wall exterior hinge left swing in
+}
+`;
+
+/**
+ * Card RM1.6b: a lint diagnostic names the ruleset number it was raised against (`rule`), read
+ * where `lint()` ran and attached by `diagnosticToJson`'s third argument. The rule names its key
+ * where it pushes the warning, so one code from several keys names the right one.
+ */
+describe("diagnostic rule (RM1.6b)", () => {
+  const twoBed = readFileSync(join(ROOT, "examples/two-bed.arch"), "utf8");
+
+  it("reverse test: W_ROOM_TOO_SMALL from minDoubleBedroomAreaM2 names that key, not the code's per-use floor", () => {
+    const ds = lint(twoBed, { profile: "uk-residential-advisory" }).filter((d) => d.code === "W_ROOM_TOO_SMALL");
+    expect(ds.length).toBe(1);
+    expect(ds[0]!.message).toMatch(/the floor for a double bedroom/);
+    const rule = diagnosticRule(ds[0]!)!;
+    expect(rule.key).toBe("minDoubleBedroomAreaM2");
+    // What a lookup by code and room use would have named: a different key, and a different number.
+    expect(rule.key).not.toBe("minRoomAreaByUseM2.bedroom");
+    expect(LINT_PROFILES["uk-residential-advisory"]!.minRoomAreaByUseM2?.bedroom).not.toBe(rule.value);
+    expect(rule).toEqual({
+      profile: "uk-residential-advisory",
+      key: "minDoubleBedroomAreaM2",
+      value: 11.5,
+      units: "m2",
+      from: "uk-residential-advisory",
+      verification: "V",
+      document: "Nationally Described Space Standard",
+      clause: "10(d)",
+      edition: "2015",
+    });
+    // The row is the one `lint --rules --profile uk-residential-advisory` prints, after `profile`.
+    const row = effectiveRuleset("uk-residential-advisory").rules.find((r) => r.key === rule.key);
+    expect({ profile: "uk-residential-advisory", ...row }).toEqual(rule);
+  });
+
+  it("the default ruleset's generic floor names minRoomAreaM2, with no profile", () => {
+    const [d] = lint(TINY_ROOM).filter((x) => x.code === "W_ROOM_TOO_SMALL");
+    expect(diagnosticRule(d!)).toMatchObject({ profile: null, key: "minRoomAreaM2", value: 4, from: "default" });
+  });
+
+  it("a diagnostic no ruleset number drives has no rule", () => {
+    const ds = lint(TINY_ROOM);
+    for (const code of ["W_HABITABLE_NO_WINDOW", "W_ALIAS_MATCH"]) {
+      const d = ds.find((x) => x.code === code);
+      expect(d, code).toBeDefined();
+      expect(diagnosticRule(d!), code).toBeUndefined();
+      expect(diagnosticToJson(TINY_ROOM, d!, { rule: diagnosticRule }), code).not.toHaveProperty("rule");
+    }
+  });
+
+  it("lint() and its JSON.stringify are unchanged: the reference sits beside each diagnostic, never on it", () => {
+    for (const d of lint(twoBed, { profile: "uk-residential-advisory" })) {
+      expect(Object.getOwnPropertySymbols(d)).toEqual([]);
+      expect(JSON.stringify(d)).not.toMatch(/minDoubleBedroomAreaM2|"rule"/);
+      // The two-argument projection is the canonical shape; the option only appends `rule`, last.
+      const plain = diagnosticToJson(twoBed, d);
+      const ruled = diagnosticToJson(twoBed, d, { rule: diagnosticRule });
+      expect(plain).not.toHaveProperty("rule");
+      expect(diagnosticToJson(twoBed, d, {})).toEqual(plain);
+      expect(Object.keys(ruled)).toEqual([...Object.keys(plain), "rule"]);
+    }
+  });
+
+  it("a copy or a structuredClone of a diagnostic carries no reference (resolve it where lint() ran)", () => {
+    const [d] = lint(twoBed, { profile: "uk-residential-advisory" }).filter((x) => x.code === "W_ROOM_TOO_SMALL");
+    expect(diagnosticRule(d!)).toBeDefined();
+    expect(diagnosticRule(structuredClone(d!))).toBeUndefined();
+    expect(diagnosticRule({ ...d! })).toBeUndefined();
+  });
+
+  it("a number the caller's own ruleset sets is not the table's, and gets no rule", () => {
+    const [d] = lint(TINY_ROOM, { ruleset: { minRoomAreaM2: 3 } }).filter((x) => x.code === "W_ROOM_TOO_SMALL");
+    expect(d).toBeDefined();
+    expect(diagnosticRule(d!)).toBeUndefined();
+  });
+
+  it("lint --json carries the rule", async () => {
+    const r = await runArch(["lint", "examples/two-bed.arch", "--profile", "uk-residential-advisory", "--json"]);
+    expect(r.status).toBe(0);
+    const [d] = JSON.parse(r.stdout).diagnostics;
+    expect(d.rule).toMatchObject({ key: "minDoubleBedroomAreaM2", value: 11.5, verification: "V", clause: "10(d)" });
   });
 });

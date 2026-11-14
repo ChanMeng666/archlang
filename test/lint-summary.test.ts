@@ -8,7 +8,7 @@ import { cmdLint, cmdValidate } from "../src/cli/commands-analyze.js";
 import { type CliIo, nodeIo, parseArgs } from "../src/cli/io.js";
 import { diagnosticsSummary, validateSummary } from "../src/cli/summary.js";
 import { ERROR_CODES } from "../src/error-catalog.js";
-import { diagnosticToJson, lint } from "../src/index.js";
+import { diagnosticRule, diagnosticToJson, lint } from "../src/index.js";
 import type { Diagnostic } from "../src/index.js";
 import { validateJsonFiles, withoutSummary } from "./helpers/validate-json-run.js";
 import { runArch } from "./helpers/cli.js";
@@ -134,17 +134,28 @@ describe.each([
 });
 
 describe("the diagnostics are what lint() returns", () => {
+  // RM1.6b: `lint --json` opts into `rule` (`diagnosticToJson`'s third argument), the ruleset number
+  // a warning was raised against. Without it every key is the two-argument projection's, in order.
   it("lint --json: every diagnostic equals lint()'s, byte for byte, over the corpus", () => {
     let checked = 0;
+    let ruled = 0;
     for (const f of validateJsonFiles()) {
       const j = JSON.parse(runIn(cmdLint, [f, "--json"]).stdout) as { diagnostics: Diagnostic[] };
       // A plan that does not compile reports its errors instead; the library's lint() is silent.
       if (j.diagnostics.some((d) => d.severity === "error")) continue;
       const src = readFileSync(f, "utf8");
-      expect(JSON.stringify(j.diagnostics), f).toBe(JSON.stringify(lint(src).map((d) => diagnosticToJson(src, d))));
+      const ds = lint(src);
+      expect(JSON.stringify(j.diagnostics), f).toBe(
+        JSON.stringify(ds.map((d) => diagnosticToJson(src, d, { rule: diagnosticRule }))),
+      );
+      const withoutRule = (j.diagnostics as unknown as Array<Record<string, unknown>>).map(({ rule: _r, ...rest }) => rest);
+      expect(JSON.stringify(withoutRule), f).toBe(JSON.stringify(ds.map((d) => diagnosticToJson(src, d))));
+      ruled += (j.diagnostics as unknown as Array<Record<string, unknown>>).filter((d) => d.rule !== undefined).length;
       checked++;
     }
     expect(checked).toBeGreaterThan(150);
+    // Not vacuous: the corpus raises warnings a ruleset number drives under the default ruleset.
+    expect(ruled).toBeGreaterThan(0);
   }, 600_000);
 });
 
