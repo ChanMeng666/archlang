@@ -8,17 +8,30 @@ compile with no error. The cases are listed in [`check-set.json`](check-set.json
 
 These are fixtures the rules were written against. A case that passes says a rule reports the
 defect it was written for and stays quiet on the fixed plan. It does not say how many of the
-defects in a plan someone else wrote lint will find, and the check set gives no such figure.
+defects in a plan someone else wrote lint will find. On 1.60.0, six briefs produced plans with
+57 defects; the final lint reported 8 of them (and 1 in part).
 
-## The two columns
+## The three columns
 
-- **default**: the default ruleset, no profile. One case per lint code that the
+Every number a rule reads has a grade in the provenance table: `V` (the official text was read),
+`S-full` (the full text was read in a third-party copy), `S-secondary` (a paraphrase, summary or
+handout), `M` (a magazine) or `convention` (ArchLang's own threshold, citing no document).
+`arch lint --rules --json` prints each number with its source and grade. A case is decided by the
+number its finding cites (the `rule` field of `lint --json`), or by none.
+
+| Column | Decided by | Run |
+|---|---|---|
+| default | a `V` or `S-full` number, or no number | always |
+| cross-jurisdiction | a `V` or `S-full` number a built-in profile sets | always |
+| opt-in | a `convention`, `S-secondary` or `M` number | only with `--opt-in` |
+
+- **default** and **opt-in**: the default ruleset, no profile. One case per lint code that the
   [defect corpus](../defect-corpus/README.md) reports, taken from the corpus, not copied: the
   first case of that code, in path order, that still reports it when every number of the default
-  ruleset whose source is only a paraphrase (`S-secondary`) or a magazine (`M`) is turned off. A
-  code whose every case rests on such a number is left out, for now `W_BED_UNDERSIZED`,
-  `W_EXIT_APPROACH_BLOCKED` and `W_LEAF_TOO_WIDE`. `arch lint --rules --json` prints each number
-  with its source and grade.
+  ruleset graded `S-secondary` or `M` is turned off. A code whose every case rests on such a
+  number is left out, for now `W_BED_UNDERSIZED`, `W_EXIT_APPROACH_BLOCKED` and `W_LEAF_TOO_WIDE`.
+  A case whose finding cites a number graded `convention`, `S-secondary` or `M` is in the opt-in
+  column and names that number's key; every other case is in the default column.
 - **cross-jurisdiction**: plans in [`cross-jurisdiction/`](cross-jurisdiction/), each run under one
   built-in profile (`uk-residential-advisory`, `cn-residential-advisory` or
   `accessibility-advisory`), each naming the ruleset key that decides it. Every such key is graded
@@ -30,24 +43,27 @@ defects in a plan someone else wrote lint will find, and the check set gives no 
 The profiles are advisory. A plan that passes them has not been shown to comply with any code or
 standard.
 
-`test/check-set.test.ts` judges every case, and holds both columns to their sources: the default
-column to the defect corpus and the provenance table (`src/lint/provenance.ts`), the
-cross-jurisdiction column to that table's grades.
+`test/check-set.test.ts` judges every case, and holds each column to its sources: the default and
+opt-in columns to the defect corpus and the grade of the number each finding cites, the
+cross-jurisdiction column to the provenance table's (`src/lint/provenance.ts`) grades.
 
 ## Run it
 
 From a checkout of this repository, with Node 18 or later:
 
 ```sh
+npm ci && npm run build
+node test/check-set/run.mjs --arch "node dist/cli.js"    # the CLI built from this checkout
+node test/check-set/run.mjs --arch "node dist/cli.js" --opt-in   # every column
 node test/check-set/run.mjs                              # npx -y @chanmeng666/archlang lint ...
-node test/check-set/run.mjs --arch "npx archlang"        # a CLI installed in this folder
 node test/check-set/run.mjs --url https://mcp.archlang.uk/check
 ```
 
 Each case prints `ok` or `FAIL` with the reason, and the exit code is 1 when any case fails. The
-runner reads each plan's `archlang lint <file> --json [--profile <name>]` document, so it runs
-against any CLI version that prints one. The cases follow the rules on `main`: check out the tag of
-the release you install to judge that release.
+runner reads each plan's `archlang lint <file> --json [--profile <name>]` document. The cases
+follow the rules of the checkout they come from, so the CLI built from that same checkout is the
+one they judge. A released CLI (the default, or `--url`) can fail a case whose rule changed after
+that release, and a CLI whose findings carry no `rule` fails every case that names its deciding key.
 
 `POST /check` answers the same document the CLI prints for the same plan. Send the plan as
 `{ "source": "...", "profile": "...", "strict": false }` with `content-type: application/json`, or as
@@ -62,7 +78,8 @@ and answers a limited number of requests per address each minute.
 
 ## In a GitHub workflow
 
-A job that runs the check set and goes red when a case fails:
+A job that runs the check set and goes red when a case fails. It builds the CLI from the same
+checkout the cases come from, so the two never disagree on a rule:
 
 ```yaml
 name: ArchLang public check set
@@ -79,12 +96,15 @@ jobs:
         with:
           node-version: 22
           check-latest: true
-      - run: npm install --no-save @chanmeng666/archlang
-      - run: node archlang/test/check-set/run.mjs --arch "npx archlang"
+      - run: npm ci && npm run build
+        working-directory: archlang
+      - run: node test/check-set/run.mjs --arch "node dist/cli.js"
+        working-directory: archlang
 ```
 
-For a plan of your own, the same CLI is the gate: `npx archlang lint plan.arch --json --strict`
-exits 2 when the plan has an error or a warning.
+For a plan of your own, the CLI is the gate:
+`npx -y @chanmeng666/archlang lint plan.arch --json --strict` exits 2 when the plan has an error
+or a warning.
 
 ## What lint does not check
 
@@ -103,8 +123,8 @@ are skipped, and the `coverage` block of `lint --json` names each skip with its 
 
 ## Adding a case
 
-A default case comes from the defect corpus: add the pair there (its README says how), and
-`test/check-set.test.ts` names the row `check-set.json` needs. A cross-jurisdiction case is a new
+A default or opt-in case comes from the defect corpus: add the pair there (its README says how),
+and `test/check-set.test.ts` names the row `check-set.json` needs, its column included. A cross-jurisdiction case is a new
 pair in `cross-jurisdiction/` and a row naming its profile, its code and the key that decides it.
 The key must be graded `V` or `S-full` for that profile and set by the profile itself, and the test
 checks that the default ruleset does not report the code on the plan, that the profile's `V` and `S-full`

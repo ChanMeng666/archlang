@@ -236,7 +236,7 @@ The first sentence of each file's header comment.
 - `test/catalogue-images.test.ts` — The symbol catalogue's pictures (product-roadmap card RM8.5): every fixture family has its generated image in `docs-site/public/catalogue/` (its 2D symbol and, in the same picture, its 3D preview, by `scripts/specimen...
 - `test/changelog-unreleased.test.ts` — CHANGELOG lines land under Unreleased, no released line is deleted, and a release PR is exempt.
 - `test/check-quick-workspaces.test.ts` — `check:quick` and `typecheck:all` name the same workspaces.
-- `test/check-set.test.ts` — public check set: every case judged; both columns derived from their sources.
+- `test/check-set.test.ts` — public check set: every case judged; each column derived from its sources.
 - `test/chrome-hidden.test.ts` — `north … hidden`, `scale … hidden`, `title hidden` (issue #405): the mark goes, the fact stays.
 - `test/circle-enclosure.test.ts` — W_ROOM_NOT_ENCLOSED on a circle room enclosed by arc walls; straight walls never back a circle room (documented); the verdict is D4-equivariant under `place`.
 - `test/circulation-concave.test.ts` — circulation — a concave room's routing anchor is on the room, not on its notch lip.

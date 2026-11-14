@@ -1,4 +1,4 @@
-/** public check set: every case judged; both columns derived from their sources. */
+/** public check set: every case judged; each column derived from its sources. */
 
 import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
 import { dirname, join } from "node:path";
@@ -13,15 +13,19 @@ import { type CheckCase, judge, type LintDoc, loadCases } from "./check-set/run.
  * The public check set (`test/check-set/`, card CR10 of `docs/plans/product-roadmap/cards.md`): its
  * cases are listed in `check-set.json`, and each one is a plan that must report one code and a twin
  * that must not. This file judges every case with the runner's own {@link judge} against
- * `lintReport`, the document `arch lint --json` and the hosted `POST /check` print, and holds both
- * columns of the manifest to what they are derived from:
+ * `lintReport`, the document `arch lint --json` and the hosted `POST /check` print, and holds each
+ * column of the manifest to what it is derived from:
  *
- * - **default**: one case per code the defect corpus (`test/defect-corpus/`) reports as `done`,
- *   the first such case in path order whose code still fires when every number of the default
- *   ruleset graded `S-secondary` or `M` in the provenance table (`src/lint/provenance.ts`) is turned
- *   off (`null`; a number that cannot be `null` set to 0, its no-minimum value). A code no case
- *   reports that way is left out: its report rests on a number only a paraphrase or a magazine gives
- *   (product-roadmap README principle 10: only `V` and `S-full` numbers go into a public fixture).
+ * - **default** and **opt-in**: one case per code the defect corpus (`test/defect-corpus/`) reports
+ *   as `done`, the first such case in path order whose code still fires when every number of the
+ *   default ruleset graded `S-secondary` or `M` in the provenance table (`src/lint/provenance.ts`) is
+ *   turned off (`null`; a number that cannot be `null` set to 0, its no-minimum value). A code no
+ *   case reports that way is left out: its report rests on a number only a paraphrase or a magazine
+ *   gives. Then the number that decides the case is the one its finding cites (`rule`, RM1.6b): a
+ *   case whose finding cites a number graded `convention`, `S-secondary` or `M` is in the opt-in
+ *   column and names that key; one whose finding cites a `V` or `S-full` number, or none, is in the
+ *   default column (product-roadmap README principle 10: only `V` and `S-full` numbers go into a
+ *   public fixture).
  * - **cross-jurisdiction**: each case runs under a built-in profile and names the ruleset key that
  *   decides it. That key's row in the provenance table is `V` or `S-full`, the profile itself sets
  *   it to a value the default does not have (so the column never puts a rule in the default
@@ -35,6 +39,9 @@ const STRONG: readonly VerificationGrade[] = ["V", "S-full"];
 
 const CASES: CheckCase[] = loadCases();
 const DEFAULT_ROWS = CASES.filter((c) => c.column === "default");
+const OPT_IN_ROWS = CASES.filter((c) => c.column === "opt-in");
+/** The default and opt-in rows, both taken from the defect corpus, in manifest (code) order. */
+const CORPUS_ROWS = CASES.filter((c) => c.column !== "cross-jurisdiction");
 const CROSS_ROWS = CASES.filter((c) => c.column === "cross-jurisdiction");
 const read = (p: string) => readFileSync(p, "utf8");
 const codes = (src: string, opts: Parameters<typeof lint>[1] = {}) => new Set(lint(src, opts).map((d) => d.code));
@@ -44,17 +51,21 @@ const EMPTY = 'plan "Empty" {\n}\n';
 const refused = (ruleset: Partial<LintRuleset>) => lint(EMPTY, { ruleset }).some((d) => d.code === "E_RULESET_VALUE");
 
 describe("the manifest", () => {
-  it("lists distinct cases, each a plan and its twin on disk, in one of the two columns", () => {
+  it("lists distinct cases, each a plan and its twin on disk, in one of the three columns", () => {
     expect(new Set(CASES.map((c) => c.id)).size).toBe(CASES.length);
     expect(DEFAULT_ROWS.length).toBeGreaterThan(0);
+    expect(OPT_IN_ROWS.length).toBeGreaterThan(0);
     expect(CROSS_ROWS.length).toBeGreaterThan(0);
-    expect(DEFAULT_ROWS.length + CROSS_ROWS.length).toBe(CASES.length);
+    expect(DEFAULT_ROWS.length + OPT_IN_ROWS.length + CROSS_ROWS.length).toBe(CASES.length);
     for (const c of CASES) {
       expect(existsSync(c.planPath), c.plan).toBe(true);
       expect(c.twin, c.id).toBe(c.plan.replace(/\.arch$/, ".clean.arch"));
       expect(existsSync(c.twinPath), c.twin).toBe(true);
       if (c.column === "default") expect([c.profile, c.rule], c.id).toEqual([null, null]);
-      else {
+      else if (c.column === "opt-in") {
+        expect(c.profile, c.id).toBeNull();
+        expect(typeof c.rule, c.id).toBe("string");
+      } else {
         expect(LINT_PROFILE_NAMES, c.id).toContain(c.profile);
         expect(typeof c.rule, c.id).toBe("string");
       }
@@ -84,8 +95,13 @@ describe("every case passes", () => {
   it("the judge fails a case on each thing it checks", () => {
     const row = { expect: "W_X", rule: "k", profile: "p" };
     const doc = (...ds: LintDoc["diagnostics"][number][]): LintDoc => ({ diagnostics: ds });
-    const hit = { code: "W_X", severity: "warning" };
+    const hit = { code: "W_X", severity: "warning", rule: { key: "k", profile: "p" } };
     expect(judge(row, doc(hit), doc())).toEqual([]);
+    // A row that names its deciding key fails on a finding that cites none (a CLI older than RM1.6b),
+    // and a default row, which names none, passes on it.
+    const bare = { code: "W_X", severity: "warning" };
+    expect(judge(row, doc(bare), doc())).toEqual(["W_X cites no ruleset number, not k"]);
+    expect(judge({ expect: "W_X", rule: null, profile: null }, doc(bare), doc())).toEqual([]);
     expect(judge(row, doc(), doc())).toEqual(["the plan does not report W_X"]);
     expect(judge(row, doc(hit), doc(hit))).toEqual(["the twin reports W_X"]);
     expect(judge(row, doc(hit, { code: "E_PARSE", severity: "error" }), doc())).toEqual([
@@ -101,7 +117,7 @@ describe("every case passes", () => {
   });
 });
 
-describe("the default column is derived from the defect corpus", () => {
+describe("the default and opt-in columns are derived from the defect corpus", () => {
   /** Every number of the default ruleset that only a paraphrase or a magazine gives, turned off. */
   const weakKeys = Object.entries(RULE_PROVENANCE.defaults)
     .filter(([, p]) => p.verification === "S-secondary" || p.verification === "M")
@@ -135,15 +151,36 @@ describe("the default column is derived from the defect corpus", () => {
         } else left.add(code);
       }
     }
+    /** The keys graded below `V`/`S-full` that the pick's findings of its code cite (RM1.6b `rule`). */
+    const citedWeak = (id: string, code: string): string[] => [
+      ...new Set(
+        lintReport(read(join(CORPUS, `${id}.arch`)))
+          .diagnostics.filter((d) => d.code === code && d.rule && !STRONG.includes(d.rule.verification))
+          .map((d) => d.rule!.key),
+      ),
+    ];
     const derived = [...picks]
       .sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0))
-      .map(([code, id]) => ({ id, expect: code, plan: `../defect-corpus/${id}.arch` }));
+      .map(([code, id]) => {
+        const weak = citedWeak(id, code);
+        expect(weak.length, `${id} cites one weak key at most`).toBeLessThanOrEqual(1);
+        return {
+          id,
+          column: weak.length ? "opt-in" : "default",
+          expect: code,
+          rule: weak[0] ?? null,
+          plan: `../defect-corpus/${id}.arch`,
+        };
+      });
     expect(
-      DEFAULT_ROWS.map((r) => ({ id: r.id, expect: r.expect, plan: r.plan })),
-      "test/check-set/check-set.json's default rows, in code order: add, drop or move the row this names",
+      CORPUS_ROWS.map((r) => ({ id: r.id, column: r.column, expect: r.expect, rule: r.rule, plan: r.plan })),
+      "test/check-set/check-set.json's default and opt-in rows, in code order: add, drop, move or re-column the row this names",
     ).toEqual(derived);
     // The codes left out, each because every case of it rests on a weak number (printed for the PR).
-    console.log(`check set: ${derived.length} default cases; left out (weak numbers only): ${[...left].join(", ")}`);
+    const optIn = derived.filter((r) => r.column === "opt-in").length;
+    console.log(
+      `check set: ${derived.length - optIn} default and ${optIn} opt-in cases; left out (weak numbers only): ${[...left].join(", ")}`,
+    );
   }, 60_000);
 });
 

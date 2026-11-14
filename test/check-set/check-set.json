@@ -38,10 +38,10 @@
     },
     {
       "id": "space-not-enclosed/fa-no-wall-living-bedrooms",
-      "column": "default",
+      "column": "opt-in",
       "profile": null,
       "expect": "W_BOUNDARY_NO_WALL",
-      "rule": null,
+      "rule": "maxBoundaryGapMm",
       "plan": "../defect-corpus/space-not-enclosed/fa-no-wall-living-bedrooms.arch",
       "twin": "../defect-corpus/space-not-enclosed/fa-no-wall-living-bedrooms.clean.arch"
     },
@@ -65,19 +65,19 @@
     },
     {
       "id": "clearances/bed-before-door-face",
-      "column": "default",
+      "column": "opt-in",
       "profile": null,
       "expect": "W_DOORWAY_BLOCKED",
-      "rule": null,
+      "rule": "doorwayLandingMm",
       "plan": "../defect-corpus/clearances/bed-before-door-face.arch",
       "twin": "../defect-corpus/clearances/bed-before-door-face.clean.arch"
     },
     {
       "id": "openings-ignore-walls/door-near-l-corner",
-      "column": "default",
+      "column": "opt-in",
       "profile": null,
       "expect": "W_DOOR_NEAR_CORNER",
-      "rule": null,
+      "rule": "minCornerNibRatio",
       "plan": "../defect-corpus/openings-ignore-walls/door-near-l-corner.arch",
       "twin": "../defect-corpus/openings-ignore-walls/door-near-l-corner.clean.arch"
     },
@@ -191,10 +191,10 @@
     },
     {
       "id": "openings-ignore-walls/door-fills-gap",
-      "column": "default",
+      "column": "opt-in",
       "profile": null,
       "expect": "W_OPENING_AT_JUNCTION",
-      "rule": null,
+      "rule": "minJunctionNibMm",
       "plan": "../defect-corpus/openings-ignore-walls/door-fills-gap.arch",
       "twin": "../defect-corpus/openings-ignore-walls/door-fills-gap.clean.arch"
     },
@@ -209,10 +209,10 @@
     },
     {
       "id": "clearances/bed-blocks-alcove",
-      "column": "default",
+      "column": "opt-in",
       "profile": null,
       "expect": "W_PATH_TOO_NARROW",
-      "rule": null,
+      "rule": "minPathClearWidthMm",
       "plan": "../defect-corpus/clearances/bed-blocks-alcove.arch",
       "twin": "../defect-corpus/clearances/bed-blocks-alcove.clean.arch"
     },
@@ -227,19 +227,19 @@
     },
     {
       "id": "space-not-enclosed/bath-open-side",
-      "column": "default",
+      "column": "opt-in",
       "profile": null,
       "expect": "W_ROOM_NOT_ENCLOSED",
-      "rule": null,
+      "rule": "maxUnenclosedMm",
       "plan": "../defect-corpus/space-not-enclosed/bath-open-side.arch",
       "twin": "../defect-corpus/space-not-enclosed/bath-open-side.clean.arch"
     },
     {
       "id": "space-not-enclosed/room-past-shell",
-      "column": "default",
+      "column": "opt-in",
       "profile": null,
       "expect": "W_ROOM_OUTSIDE_SHELL",
-      "rule": null,
+      "rule": "minOutsideShellM2",
       "plan": "../defect-corpus/space-not-enclosed/room-past-shell.arch",
       "twin": "../defect-corpus/space-not-enclosed/room-past-shell.clean.arch"
     },
@@ -344,10 +344,10 @@
     },
     {
       "id": "space-not-enclosed/wall-end-short-derived",
-      "column": "default",
+      "column": "opt-in",
       "profile": null,
       "expect": "W_WALL_END_SHORT",
-      "rule": null,
+      "rule": "wallGapMm",
       "plan": "../defect-corpus/space-not-enclosed/wall-end-short-derived.arch",
       "twin": "../defect-corpus/space-not-enclosed/wall-end-short-derived.clean.arch"
     },

@@ -3,12 +3,13 @@
 /** One case of `check-set.json`, with its two paths resolved against the folder. */
 export interface CheckCase {
   id: string;
-  column: "default" | "cross-jurisdiction";
+  /** `opt-in`: decided by a number graded `convention`, `S-secondary` or `M`; run with `--opt-in`. */
+  column: "default" | "opt-in" | "cross-jurisdiction";
   /** The built-in lint profile the case runs under; `null`: the default ruleset. */
   profile: string | null;
   /** The code the plan must report and the twin must not. */
   expect: string;
-  /** The ruleset key that decides the case (cross-jurisdiction column); `null` in the default column. */
+  /** The ruleset key that decides the case (opt-in and cross-jurisdiction columns); `null` in the default column. */
   rule: string | null;
   plan: string;
   twin: string;

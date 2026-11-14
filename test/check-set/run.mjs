@@ -3,11 +3,14 @@
  * The public check set's runner (card CR10). It runs every case of `check-set.json` through
  * `archlang lint --json` and judges each one pass or fail: the plan must report the case's code
  * and compile with no error, and its twin must not report that code. Exit 0 when every case
- * passes, 1 when one fails, 3 on bad usage. Zero dependencies; Node 18 or later.
+ * passes, 1 when one fails, 3 on bad usage. Zero dependencies; Node 18 or later. It runs the
+ * default and cross-jurisdiction columns; `--opt-in` adds the opt-in column, the cases a number
+ * graded `convention`, `S-secondary` or `M` decides.
  *
  *   node test/check-set/run.mjs                              # npx -y @chanmeng666/archlang lint
  *   node test/check-set/run.mjs --arch "npx archlang"        # an installed CLI
  *   node test/check-set/run.mjs --url https://mcp.archlang.uk/check   # the hosted POST /check
+ *   node test/check-set/run.mjs --opt-in                     # every column
  *
  * `test/check-set.test.ts` judges the cases with {@link judge} against the core's `lintReport`,
  * the document both the CLI and `POST /check` print.
@@ -27,8 +30,10 @@ export function loadCases(dir = HERE) {
 
 /**
  * Why `row` fails on these two `lint --json` documents, one line each; `[]` when it passes. The
- * plan must report `row.expect` and no error; when a reported `row.expect` carries a `rule`, its
- * key is `row.rule` and its profile `row.profile`. The twin must report no error and no `row.expect`.
+ * plan must report `row.expect` and no error. When `row.rule` names a key, each reported
+ * `row.expect` must carry a `rule` citing that key under `row.profile`: a finding with no `rule`
+ * fails, so a CLI too old to cite one cannot pass such a case. The twin must report no error and
+ * no `row.expect`.
  */
 export function judge(row, plan, twin) {
   const out = [];
@@ -37,7 +42,11 @@ export function judge(row, plan, twin) {
   if (errors(plan).length) out.push(`the plan does not compile: ${errors(plan).join(", ")}`);
   if (hits.length === 0) out.push(`the plan does not report ${row.expect}`);
   for (const d of hits) {
-    if (!d.rule || row.rule === null) continue;
+    if (row.rule === null) continue;
+    if (!d.rule) {
+      out.push(`${row.expect} cites no ruleset number, not ${row.rule}`);
+      continue;
+    }
     if (d.rule.key !== row.rule) out.push(`${row.expect} cites ${d.rule.key}, not ${row.rule}`);
     if (d.rule.profile !== row.profile) out.push(`${row.expect} cites profile ${d.rule.profile}, not ${row.profile}`);
   }
@@ -79,16 +88,18 @@ async function viaUrl(url, file, profile) {
 export async function main(argv) {
   let arch = "npx -y @chanmeng666/archlang";
   let url;
+  let optIn = false;
   for (let i = 0; i < argv.length; i++) {
     if (argv[i] === "--arch" && argv[i + 1]) arch = argv[++i];
     else if (argv[i] === "--url" && argv[i + 1]) url = argv[++i];
+    else if (argv[i] === "--opt-in") optIn = true;
     else {
-      process.stderr.write(`usage: run.mjs [--arch "<command>"] [--url <POST /check URL>]\n`);
+      process.stderr.write(`usage: run.mjs [--arch "<command>"] [--url <POST /check URL>] [--opt-in]\n`);
       return 3;
     }
   }
   const lintOf = (file, profile) => (url ? viaUrl(url, file, profile) : viaCli(arch, file, profile));
-  const cases = loadCases();
+  const cases = loadCases().filter((c) => optIn || c.column !== "opt-in");
   let failed = 0;
   for (const row of cases) {
     const why = judge(row, await lintOf(row.planPath, row.profile), await lintOf(row.twinPath, row.profile));
