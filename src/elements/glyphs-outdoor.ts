@@ -1307,12 +1307,16 @@ export function drawGardenGate(r: Rect, g: GlyphCtx): SceneNode[] {
  * posts the cut does pass through, solid. The roof is part of the piece's own drawing, not a
  * `roof` element. Everything is about one centre, so the symbol is `symmetric`.
  *
+ * Only the posts are filled. The roof and the deck are outlines, as a `pergola` is: the table and
+ * chairs that stand in a gazebo are drawn as their own pieces, and an opaque deck would hide them
+ * or not depending on source order.
+ *
  * Prim count: 10.
  */
 export function drawGazebo(r: Rect, g: GlyphCtx): SceneNode[] {
   dashedPoly(g, rectPoly(r), "none");
   const s = Math.max(0, shortSide(r));
-  g.path(roundedRectPath(insetRect(r, 0.1), s * 0.02), g.body, "extraThin");
+  g.path(roundedRectPath(insetRect(r, 0.1), s * 0.02), "none", "extraThin");
   const c = centerOf(r);
   for (const p of rectRing(r)) g.seg(c, p, "extraThin", true);
   const half = s * 0.025;
@@ -1328,11 +1332,15 @@ export function drawGazebo(r: Rect, g: GlyphCtx): SceneNode[] {
  * across it (one per 0.45 short sides of length, `[2, 8]` bays). Mirror-symmetric along and
  * across; a run of bays, so neither `symmetric` nor `directional`.
  *
+ * The frame and the glass are outlines, unfilled, as a `pergola` is: the benches and pots inside
+ * a greenhouse are drawn as their own pieces, and opaque glass would hide them or not depending on
+ * source order.
+ *
  * Prim count: `2 + bays`.
  */
 export function drawGreenhouse(r: Rect, g: GlyphCtx): SceneNode[] {
-  g.poly(rectPoly(r), g.body);
-  g.poly(rectPoly(insetRect(r, 0.04)), g.basin, "extraThin");
+  g.poly(rectPoly(r), "none");
+  g.poly(rectPoly(insetRect(r, 0.04)), "none", "extraThin");
   const { long: L, short: S } = axes(r);
   const f = Math.max(0, Math.min(L, S) * 0.04);
   g.seg(axisPt(r, f, 0), axisPt(r, L - f, 0), "extraThin", true);

@@ -182,15 +182,17 @@ describe("RM8.9 families — in the vocabulary", () => {
 });
 
 describe("RM8.9 families — the drawing language", () => {
-  it("draw the outline first, a closed shape in the thin pen, filled unless it is above the cut plane", () => {
+  it("draw the outline first, a closed shape in the thin pen, filled unless it is above the cut plane or holds furniture", () => {
     for (const f of FAMILIES) {
       const first = glyph(f)[0]!;
       expect(["path", "polygon", "circle"], f).toContain(first.prim.t);
       expect(first.lineWeight, f).toBe("thin");
     }
     const unfilled = FAMILIES.filter((f) => glyph(f)[0]!.paint.fill === "none");
-    expect(unfilled).toEqual(["wall_ac", "gazebo"]);
-    for (const f of unfilled) expect(glyph(f)[0]!.lineType, f).toBe("dashed");
+    expect(unfilled).toEqual(["wall_ac", "gazebo", "greenhouse", "wall_art"]);
+    // The hung pieces and the gazebo's roof are above the cut plane, so dashed; a greenhouse's
+    // walls are cut, so its outline is solid — it is unfilled for what stands inside it.
+    for (const f of unfilled) expect(glyph(f)[0]!.lineType, f).toBe(f === "greenhouse" ? undefined : "dashed");
   });
 
   it("paint on the furniture layer at the two glyph pens only, paint.width agreeing; detail in the fine pen", () => {
@@ -411,19 +413,19 @@ describe("RM8.9 families — under `rendered`, each part takes its own material"
     expect(fills("display_cabinet").slice(0, 2)).toEqual([tints.wood, tints.glass]);
   });
 
-  it("the living room: a daybed's mattress, a screen's frame and hinges, a picture's canvas", () => {
+  it("the living room: a daybed's mattress, a screen's frame and hinges; a picture stays unfilled", () => {
     expect(fills("daybed")[0]).toBe(tints.fabric);
     expect(fills("daybed").at(-1)).toBe(tints.cushion);
     expect(fills("folding_screen")[0]).toBe(tints.wood);
     expect(fills("folding_screen")[1]).toBe(tints.fabric);
-    expect(fills("wall_art")).toEqual([tints.wood, tints.paint]);
+    expect(fills("wall_art")).toEqual(["none", "none"]);
   });
 
   it("the garden and the planting", () => {
     expect(fills("pool").slice(0, 2)).toEqual([tints.stone, tints.water]);
     expect(fills("garden_gate")[0]).toBe(tints.wood);
-    expect(fills("gazebo")[1]).toBe(tints.wood);
-    expect(fills("greenhouse").slice(0, 2)).toEqual([tints.metal, tints.glass]);
+    expect(fills("gazebo").slice(0, 2)).toEqual(["none", "none"]);
+    expect(fills("greenhouse").slice(0, 2)).toEqual(["none", "none"]);
     expect(fills("climber").slice(0, 2)).toEqual([tints.foliage, tints.wood]);
     expect(fills("bamboo")[0]).toBe(tints.foliage);
     expect(fills("potted_tree").slice(0, 2)).toEqual([tints.foliage, tints.ceramic]);

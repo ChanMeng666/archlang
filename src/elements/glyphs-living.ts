@@ -1301,13 +1301,14 @@ export function drawDaybed(r: Rect, g: GlyphCtx): SceneNode[] {
 
 /**
  * A picture on a wall (a painting, an artwork): the frame and the canvas inside it. It hangs above
- * the cut plane, so both are DASHED, as a wall cabinet is; the frame is the outline, the canvas a
- * third of the depth in from it. Mirror-symmetric.
+ * the cut plane, so both are DASHED and unfilled, for the reason `upper_cabinet` is: present, not
+ * cut, and the sofa or sideboard under it has to read through. The frame is the outline, the
+ * canvas a third of the depth in from it. Mirror-symmetric.
  *
  * Prim count: 2.
  */
 export function drawWallArt(r: Rect, g: GlyphCtx): SceneNode[] {
-  dashedPoly(g, rectPoly(r), g.body);
-  dashedPoly(g, rectPoly(insetRect(r, 0.3)), g.fillFor(g.material?.secondary, g.blank), "extraThin");
+  dashedPoly(g, rectPoly(r), "none");
+  dashedPoly(g, rectPoly(insetRect(r, 0.3)), "none", "extraThin");
   return g.nodes;
 }
