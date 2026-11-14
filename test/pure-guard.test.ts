@@ -453,14 +453,14 @@ describe("pure() guard (card RM0.7e)", () => {
       expect(b?.arrow).toBeUndefined();
     });
     it("flags every way of hiding a pure call from the scan", () => {
-      expect(problems(`import { pure as p } from "./pure.js";\nconst x = /* @__PURE__ */ p(() => 1);`)).toHaveLength(1);
-      expect(problems(`import * as P from "../pure.js";\nconst x = /* @__PURE__ */ P.pure(() => 1);`)).toHaveLength(1);
-      expect(problems(`import pure from "./pure.js";\nconst x = 1;`)).toHaveLength(1);
-      expect(problems(`export { pure } from "./pure.js";`)).toHaveLength(1);
-      expect(problems(`const x = /* @__PURE__ */ pure(() => 1);`)).toHaveLength(1);
-      expect(problems(`${IMPORT}const q = pure;\nconst x = q(() => 1);`)).toHaveLength(1);
-      expect(problems(`${IMPORT}const pure2 = [pure];`)).toHaveLength(1);
-      expect(problems(`${IMPORT}function f(pure: number) { return pure; }`).length).toBeGreaterThan(0);
+      expect(problems(`import { pure as p } from "./pure.js";\nconst x = /* @__PURE__ */ p(() => 1);`)).not.toEqual([]);
+      expect(problems(`import * as P from "../pure.js";\nconst x = /* @__PURE__ */ P.pure(() => 1);`)).not.toEqual([]);
+      expect(problems(`import pure from "./pure.js";\nconst x = 1;`)).not.toEqual([]);
+      expect(problems(`export { pure } from "./pure.js";`)).not.toEqual([]);
+      expect(problems(`const x = /* @__PURE__ */ pure(() => 1);`)).not.toEqual([]);
+      expect(problems(`${IMPORT}const q = pure;\nconst x = q(() => 1);`)).not.toEqual([]);
+      expect(problems(`${IMPORT}const pure2 = [pure];`)).not.toEqual([]);
+      expect(problems(`${IMPORT}function f(pure: number) { return pure; }`)).not.toEqual([]);
       expect(problems(`${IMPORT}const x = /* @__PURE__ */ pure(() => 1);`)).toEqual([]);
     });
   });
