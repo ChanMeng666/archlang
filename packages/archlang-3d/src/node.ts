@@ -15,7 +15,7 @@ export {
   viewBoxOf,
   viewerScript,
 } from "./replay/html.js";
-export type { ReplayOptions } from "./replay/html.js";
+export type { ReplayHtmlOptions, ReplayNotice, ReplayOptions } from "./replay/html.js";
 export { replayFacts } from "./replay/facts.js";
 export type { FactsOptions } from "./replay/facts.js";
 export { stripAt } from "./replay/strip.js";

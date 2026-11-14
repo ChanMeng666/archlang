@@ -4,6 +4,14 @@
 
 ### Added
 
+- The package's own warnings are shown where the replay is (product-roadmap card RM8.10, ruling
+  RM-D32): `replayHtml` takes `notices` (`{ code, message }[]`, new types `ReplayNotice` and
+  `ReplayHtmlOptions`) and writes each under the replay as plain text, the warning's own `message`
+  and never a second copy of it; `archlang3d` passes the warnings of the view it writes
+  (`W3D_MIXED_HEIGHT_JOINT`, `W3D_FLOOR_OVERLAP`); the combined view of a plan of several storeys puts the
+  warning's storey first (`L2 ·`, new browser export `noticeLevelLabel`). The playground's 3D tab shows the same for the
+  storey in view. The geometry is unchanged, and the payload, Mesh3D, GLB and key frames are
+  identical with or without a notice; a replay with no notices is byte for byte as before.
 - T0 generators for the core's sixteen new fixture families (product-roadmap card RM8.9), so none
   is a grey box: `wall_ac` (hung with its underside at 2100 mm), `condenser`, `chest_freezer`,
   `wine_fridge`, `display_cabinet`, `folding_screen` (its even count of panels, as the plan draws),
