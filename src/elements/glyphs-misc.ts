@@ -874,3 +874,28 @@ export function drawWorkstation(r: Rect, g: GlyphCtx): SceneNode[] {
   }
   return g.nodes;
 }
+
+// ---------------------------------------------------------------------------
+// ── the new-families batch (product-roadmap RM8.9) ──
+
+/**
+ * A potted tree for indoors (a fiddle-leaf fig, an olive in a tub): the crown scalloped into
+ * sixteen lobes, alternately full and short as the `tree`'s are, in the planting tint, the pot
+ * seen through it (the family's secondary material, ceramic), four branches on the diagonals and
+ * the trunk. It is what `plant` is not: a plant is a 1.1 m pot plant, this one stands about 2 m.
+ * Every mark is on the D4 bearings or about the centre, so the symbol is `symmetric`.
+ *
+ * Prim count: 7.
+ */
+export function drawPottedTree(r: Rect, g: GlyphCtx): SceneNode[] {
+  const c = centerOf(r);
+  const rad = Math.max(0, shortSide(r) * 0.48);
+  g.path(
+    scallopPath(c, 16, rad * 0.82, (j) => (j % 2 === 0 ? rad : rad * 0.92)),
+    g.fillFor(g.material?.primary, g.theme.lawn),
+  );
+  g.dot(c, rad * 0.3, g.basin);
+  for (let i = 0; i < 4; i++) g.seg(polar(c, rad * 0.3, 45 + i * 90), polar(c, rad * 0.62, 45 + i * 90), "extraThin");
+  g.dot(c, rad * 0.07, undefined, "thin");
+  return g.nodes;
+}

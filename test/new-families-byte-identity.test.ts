@@ -42,7 +42,12 @@ import { join, relative } from "node:path";
 import { describe as suite, expect, it } from "vitest";
 import { compile, describe, lint } from "../src/index.js";
 import { makeNodeWorld } from "../src/cli/io.js";
-import { CANONICAL_FIXTURES, FIXTURE_CATEGORIES, hasFixtureGlyph } from "../src/elements/fixtures-glyphs.js";
+import {
+  CANONICAL_FIXTURES,
+  canonicalFixture,
+  FIXTURE_CATEGORIES,
+  hasFixtureGlyph,
+} from "../src/elements/fixtures-glyphs.js";
 import { THEMES } from "../src/theme.js";
 import type { World } from "../src/world.js";
 import { ROOT } from "./helpers/rectilinear-rooms-law.js";
@@ -60,10 +65,36 @@ const API: FamiliesLawApi = { compile, describe, lint, rendered: THEMES.rendered
 const ROWS = familiesLawRows(ROOT, CANONICAL_FIXTURES);
 const worldOf = (dir: string | undefined): World | undefined => (dir ? makeNodeWorld(dir) : undefined);
 
-/** Every word of the tranche: the families after the first {@link FAMILIES_BEFORE}, aliases included. */
-const NEW_WORDS: readonly string[] = FIXTURE_CATEGORIES.slice(
-  FIXTURE_CATEGORIES.indexOf(CANONICAL_FIXTURES[FAMILIES_BEFORE]!),
-);
+/**
+ * The tranche's twenty families, frozen by name. The table is append-only (its order is the
+ * legend's), so they are rows 84–103 for good; a later batch appended after them (RM8.9) is not
+ * this law's, and carries its own (`test/rm89-families-byte-identity.test.ts`).
+ */
+const TRANCHE: readonly string[] = [
+  "floor_lamp",
+  "side_table",
+  "console_table",
+  "ottoman",
+  "bean_bag",
+  "pantry",
+  "towel_rail",
+  "palm",
+  "flower_bed",
+  "boulder",
+  "picnic_table",
+  "slide",
+  "bollard",
+  "bike_rack",
+  "raised_bed",
+  "whiteboard",
+  "printer",
+  "server_rack",
+  "hospital_bed",
+  "workstation",
+];
+
+/** Every word of the tranche: the twenty families' words, aliases included, and no other. */
+const NEW_WORDS: readonly string[] = FIXTURE_CATEGORIES.filter((w) => TRANCHE.includes(canonicalFixture(w)!));
 
 /** Measured at `8233acc4` (see the header): `[digest, row]`. */
 const BASELINE: [string, string][] = [
@@ -126,7 +157,10 @@ function shippedSources(dir: string): string[] {
 
 suite("visual-assets families — byte-identity law", () => {
   it("names exactly the twenty families appended after the earlier ones, aliases included", () => {
-    expect(CANONICAL_FIXTURES.length).toBe(FAMILIES_BEFORE + 20);
+    // Was `CANONICAL_FIXTURES.length === FAMILIES_BEFORE + 20`, which a later append broke; the
+    // twenty are now held by name at their rows, a stronger claim than a count (RM8.9).
+    expect(CANONICAL_FIXTURES.slice(FAMILIES_BEFORE, FAMILIES_BEFORE + TRANCHE.length)).toEqual(TRANCHE);
+    expect(TRANCHE).toHaveLength(20);
     expect(NEW_WORDS[0]).toBe("floor_lamp");
     expect(NEW_WORDS.at(-1)).toBe("desk_pod");
     for (const w of NEW_WORDS) expect(hasFixtureGlyph(w), w).toBe(true);

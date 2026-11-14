@@ -119,7 +119,7 @@ furniture wardrobe against bed.right clear front 600
 
 ## The symbol catalogue
 
-A hundred and three families, a hundred and sixty-three names with the aliases, and **every one
+A hundred and nineteen families, two hundred and two names with the aliases, and **every one
 of them draws**.
 The tables below are grouped by the room the pieces belong to.
 
@@ -203,6 +203,10 @@ not, because a mirror over a console table does not make a room a bathroom.
 | `microwave` | <img src="../docs-site/public/catalogue/microwave.png" width="240" height="90" loading="lazy" alt="microwave: its plan symbol, and the 3D preview of the same source"> | carcass, the door frame and its glass window over the left three-quarters, and the keypad strip with three buttons on the right | 500 × 400 | derived | |
 | `bar_counter` | <img src="../docs-site/public/catalogue/bar_counter.png" width="240" height="90" loading="lazy" alt="bar_counter: its plan symbol, and the 3D preview of the same source"> | the worktop over the back of the footprint, the overhang line, and **1.2 stool seats per counter-depth of run**, one to eight | 1800 × 600 | derived | |
 | `pantry` · `tall_cabinet` · `larder` | <img src="../docs-site/public/catalogue/pantry.png" width="240" height="90" loading="lazy" alt="pantry: its plan symbol, and the 3D preview of the same source"> | carcass, the door-front line, a door per 0.9 depths of width (one to four) with a centred pull, and the **tall-unit cross** — two diagonals over the carcass, the drafting mark for joinery that rises to the ceiling | 600 × 600 | derived | |
+| `wall_ac` · `split_ac` · `air_conditioner` · `ac_indoor` | <img src="../docs-site/public/catalogue/wall_ac.png" width="240" height="90" loading="lazy" alt="wall_ac: its plan symbol, and the 3D preview of the same source"> | the indoor unit of a split air conditioner, hung above the cut plane and so drawn **entirely dashed**: the casing, the filter line behind, the louvre and the air outlet along its front | 900 × 250 | derived | ✓ |
+| `condenser` · `ac_outdoor` · `outdoor_unit` · `heat_pump` | <img src="../docs-site/public/catalogue/condenser.png" width="240" height="90" loading="lazy" alt="condenser: its plan symbol, and the 3D preview of the same source"> | the outdoor unit: the casing, the coil face along its back, and the fan grille **centred** in it — a ring, four guard spokes and the hub | 850 × 350 | derived |  |
+| `chest_freezer` | <img src="../docs-site/public/catalogue/chest_freezer.png" width="240" height="90" loading="lazy" alt="chest_freezer: its plan symbol, and the 3D preview of the same source"> | the cabinet, its lid inset from it, the hinge line along the back, and the lid's handle on the front edge | 1100 × 650 | derived |  |
+| `wine_fridge` · `wine_cooler` | <img src="../docs-site/public/catalogue/wine_fridge.png" width="240" height="90" loading="lazy" alt="wine_fridge: its plan symbol, and the 3D preview of the same source"> | an under-counter cooler: the top, the **glass door** along the front with its handle bar, and three bottle shelves **dashed** under the top | 600 × 600 | derived |  |
 
 `washer` and `dryer` are the same box at the same size and stand side by side in most
 utility rooms, so they are drawn to differ by *shape*: a glyph carries no text, so a
@@ -288,6 +292,10 @@ pen.
 | `bean_bag` | <img src="../docs-site/public/catalogue/bean_bag.png" width="240" height="90" loading="lazy" alt="bean_bag: its plan symbol, and the 3D preview of the same source"> | a soft, nearly round sack, the raised **back as a crescent**, and the hollow a body sits in | — | free | |
 | `rug` · `carpet` | <img src="../docs-site/public/catalogue/rug.png" width="240" height="90" loading="lazy" alt="rug: its plan symbol, and the 3D preview of the same source"> | a woven body with a border band inside it and a fringe off each short end (all four on a square rug) — unfilled, and the **only symbol drawn entirely in the detail pen** | — | symmetric | |
 | `piano` · `grand_piano` | <img src="../docs-site/public/catalogue/piano.png" width="240" height="90" loading="lazy" alt="piano: its plan symbol, and the 3D preview of the same source"> | a **grand**: the keyboard across the back, the straight bass side down the right, a round tail, the concave bent side and the treble shoulder (tangent arcs throughout) with the lid line inside; a bench in front of the keys when the footprint is at least 1.3 widths deep | — | free | |
+| `display_cabinet` · `vitrine` · `curio_cabinet` | <img src="../docs-site/public/catalogue/display_cabinet.png" width="240" height="90" loading="lazy" alt="display_cabinet: its plan symbol, and the 3D preview of the same source"> | a tall carcass, the **glass** showing what is inside, the door-front line, the split between its pair of doors and a pull each side of it | 1000 × 400 | derived |  |
+| `folding_screen` · `room_divider` · `privacy_screen` | <img src="../docs-site/public/catalogue/folding_screen.png" width="240" height="90" loading="lazy" alt="folding_screen: its plan symbol, and the 3D preview of the same source"> | the panels **zig-zagging** across the footprint, an even number of them (two to eight) so both ends stand on the back line, with a hinge at every fold | — | free |  |
+| `daybed` · `day_bed` | <img src="../docs-site/public/catalogue/daybed.png" width="240" height="90" loading="lazy" alt="daybed: its plan symbol, and the 3D preview of the same source"> | a bed-sized seat closed on three sides — the back along the wall side and an arm at each end — with its mattress between them | 2000 × 900 | free |  |
+| `wall_art` · `artwork` · `painting` · `picture` | <img src="../docs-site/public/catalogue/wall_art.png" width="240" height="90" loading="lazy" alt="wall_art: its plan symbol, and the 3D preview of the same source"> | a picture on a wall, above the cut plane and so **dashed** and unfilled, so the piece under it shows through: the frame and the canvas inside it | 900 × 50 | derived | ✓ |
 
 `sofa`, `armchair`, `chair`, `bench`, `sofa_l`, `loveseat` and `chaise` are deliberately
 **free**: seating is arranged, not installed, so ArchLang neither derives a rotation for them
@@ -322,7 +330,7 @@ twin. So a reflecting instance frame hands the glyph its own chirality instead, 
 mirror image. Turn it with `rotate` where a quarter-turn is what you want; reach for
 `place … mirror` when you want the mirror-image piece.
 
-**Handedness is DERIVED from the drawing, not declared per family.** Sixteen of the 103
+**Handedness is DERIVED from the drawing, not declared per family.** Sixteen of the 119
 shipped families have no vertical mirror axis (`bed`, `desk`, `bathtub`, `island`, `washer`,
 `microwave`, `mirror`, `chaise`, `reception_desk`, `piano`, `sofa_l`,
 `bicycle`, `motorcycle`, `mailbox`, `ev_charger`, `double_bed`) at their catalogued
@@ -368,6 +376,7 @@ which is how it goes on a drawing anyway.
 | `printer` · `copier` | <img src="../docs-site/public/catalogue/printer.png" width="240" height="90" loading="lazy" alt="printer: its plan symbol, and the 3D preview of the same source"> | the machine, the scanner lid with its hinge line at the back, the paper exit, and the **control panel** with its display at the front | 600 × 650 | derived | |
 | `server_rack` | <img src="../docs-site/public/catalogue/server_rack.png" width="240" height="90" loading="lazy" alt="server_rack: its plan symbol, and the 3D preview of the same source"> | a run of cabinets (one per 0.6 depths of width, one to eight), each with its rear and front door lines, its two mounting rails **dashed** behind the doors, and a handle on the front | 600 × 1000 | derived | |
 | `workstation` · `desk_pod` | <img src="../docs-site/public/catalogue/workstation.png" width="240" height="90" loading="lazy" alt="workstation: its plan symbol, and the 3D preview of the same source"> | two rows of desks **back to back** with the privacy screen between them, the desk splits, a monitor on each desk, and the `dining_table` chairs tucked under them — one to four a side | — | free | |
+| `potted_tree` · `indoor_tree` | <img src="../docs-site/public/catalogue/potted_tree.png" width="240" height="90" loading="lazy" alt="potted_tree: its plan symbol, and the 3D preview of the same source"> | a tree in a tub for indoors: a crown of sixteen lobes in the planting tint, the pot seen through it, four branches on the diagonals and the trunk — about 2 m tall where a `plant` is 1.1 m | — | symmetric |  |
 
 A `sun_lounger` is aimed at the sun, and ArchLang has no sun model — the `site` layer names an
 aspect, not a daylight measurement — so nothing here derives which way it points and nothing
@@ -389,7 +398,7 @@ like every other symbol's depth, so `rotate 90` parks it across a garage.
 
 ### Outdoor
 
-Twenty-nine families for what a site plan draws once the drawing leaves the building. They
+Thirty-six families for what a site plan draws once the drawing leaves the building. They
 live in their own module (`src/elements/glyphs-outdoor.ts`), drawn in the indoor symbols' line
 language (outline in the symbol ink, detail in the fine pen, true curves), and follow one rule
 the indoor tables do not: **planting is a canopy that masks the ground** — the tree, the
@@ -428,6 +437,13 @@ the ground hatch under them is painted out and the crown reads as one mass.
 | `bollard` | <img src="../docs-site/public/catalogue/bollard.png" width="240" height="90" loading="lazy" alt="bollard: its plan symbol, and the 3D preview of the same source"> | the post from above: its body, the cap's chamfer ring and its centre | 200 × 200 | symmetric | |
 | `bike_rack` · `cycle_stand` | <img src="../docs-site/public/catalogue/bike_rack.png" width="240" height="90" loading="lazy" alt="bike_rack: its plan symbol, and the 3D preview of the same source"> | a row of Sheffield **hoops** across the run, one per short side of run (one to ten), each with a base plate at both feet | 2000 × 800 | free | |
 | `raised_bed` · `vegetable_bed` | <img src="../docs-site/public/catalogue/raised_bed.png" width="240" height="90" loading="lazy" alt="raised_bed: its plan symbol, and the 3D preview of the same source"> | the timber frame with a **post in each corner**, the soil, and two rows of seedlings along its long axis | 2400 × 1200 | free | |
+| `pool` · `swimming_pool` · `plunge_pool` | <img src="../docs-site/public/catalogue/pool.png" width="240" height="90" loading="lazy" alt="pool: its plan symbol, and the 3D preview of the same source"> | a pool as **one object**: the coping, the water inside it and the tile line under the water's edge | — | symmetric |  |
+| `garden_gate` · `yard_gate` | <img src="../docs-site/public/catalogue/garden_gate.png" width="240" height="90" loading="lazy" alt="garden_gate: its plan symbol, and the 3D preview of the same source"> | a pair of leaves closed along the back edge, the joint where they meet, a post at each end, and each leaf's swing into the footprint | — | free |  |
+| `gazebo` · `pavilion` · `garden_pavilion` | <img src="../docs-site/public/catalogue/gazebo.png" width="240" height="90" loading="lazy" alt="gazebo: its plan symbol, and the 3D preview of the same source"> | the roof **dashed** with its four hips to the apex, the deck under it as an outline (the furniture in it reads through), and four **solid** posts | — | symmetric |  |
+| `greenhouse` · `glasshouse` | <img src="../docs-site/public/catalogue/greenhouse.png" width="240" height="90" loading="lazy" alt="greenhouse: its plan symbol, and the 3D preview of the same source"> | the frame of its walls and the glass inside it, as unfilled outlines (the benches and pots in it read through), and — **dashed**, above the cut plane — the ridge along its own long axis and the glazing bars across it | — | free |  |
+| `climber` · `climbing_plant` | <img src="../docs-site/public/catalogue/climber.png" width="240" height="90" loading="lazy" alt="climber: its plan symbol, and the 3D preview of the same source"> | a climbing plant on its trellis: the foliage in the lawn tint, scalloped along its front, the trellis rail on the wall edge and the stems into the leaves | 1200 × 300 | derived |  |
+| `bamboo` | <img src="../docs-site/public/catalogue/bamboo.png" width="240" height="90" loading="lazy" alt="bamboo: its plan symbol, and the 3D preview of the same source"> | a clump along its own long axis in the lawn tint, with two rows of culms seen end on | 2000 × 600 | free |  |
+| `stepping_stones` | <img src="../docs-site/public/catalogue/stepping_stones.png" width="240" height="90" loading="lazy" alt="stepping_stones: its plan symbol, and the 3D preview of the same source"> | a path of flat stones along its own long axis, one per 1.2 widths of run (two to twenty-four), the gaps between them equal | — | free |  |
 
 **Nothing out here carries `requiresWall`, and that is a decision.** The flag means services —
 supply, waste, venting, or hanging off a wall by definition — and
@@ -449,15 +465,28 @@ them carry the lawn tint.
 
 The **dashed** marks follow one convention every time — *above the cut plane or hidden*, the
 rule `upper_cabinet` follows indoors and the one `roof` and `void` ship: the `pergola`'s frame
-and rafters (its posts are cut, so they are solid), the `shed`'s roof ridge, and the `hedge`'s
-stem line under its foliage.
+and rafters (its posts are cut, so they are solid), the `shed`'s roof ridge, the `gazebo`'s roof
+and hips, the `greenhouse`'s ridge and glazing bars, and the `hedge`'s stem line under its foliage.
 
-The six `directional` kinds (`bbq`, `bin`, `mailbox`, `ev_charger`, `shed`, `slide`) are the ones
-you would write `against wall` or `anchor` about, and they carry a footprint, as do the runs
-(`hedge`, `flower_bed`, `raised_bed`, `bike_rack`), the `picnic_table` and the `bollard` — so
+The seven `directional` kinds (`bbq`, `bin`, `mailbox`, `ev_charger`, `shed`, `slide`, `climber`)
+are the ones you would write `against wall` or `anchor` about, and they carry a footprint, as do
+the runs (`hedge`, `flower_bed`, `raised_bed`, `bike_rack`, `bamboo`), the `picnic_table` and the
+`bollard` — so
 `furniture shed against wall fence` needs no `size`.
 `outdoor_chair` is deliberately **free**, for the reason every other seat in the catalogue is:
 seating is arranged, not installed.
+
+**A `garden_gate` is a piece, not a door in a fence.** A `fence` takes no `door`, and the bare word
+`gate` is kept for a gate in a fence line, which the language defers by name. Write the fence as two
+runs with a gap between them, and stand the gate in the gap with `at` and `rotate`; its depth is the
+leaves' swing. Like every piece, it is not part of the access graph.
+
+**A `pool` is an object with its coping, not a ground surface**: an `outdoor water` region is still
+the water surface it was. In the 3D preview the water is a slab at grade inside the coping, never
+dug below it (the ground is drawn at floor level and would hide it), and the 3D ledger says so.
+The `gazebo`'s roof is part of the piece's own drawing and its own 3D geometry, not a `roof`
+element. A `climber` is the seventh wall-mounted kind: its trellis is fixed to the wall by its
+back, so standing it end-on to a wall is flagged as the wrong way round, as a radiator would be.
 
 ## How a symbol is drawn
 

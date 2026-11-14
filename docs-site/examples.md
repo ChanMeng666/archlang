@@ -217,7 +217,7 @@ door that opens toward a named room (`swing into`), and furniture anchored insid
 _A two-bedroom flat furnished with dozens of drawn fixture symbols._
 
 **7 rooms, 90.72 m², 6 doors, 6 windows** on an 8.4 × 10.8 m footprint — and **39 pieces
-across 38 of the 103 catalogued furniture families**, which is what it is here for. Every
+across 38 of the 119 catalogued furniture families**, which is what it is here for. Every
 other example draws a fixture or two in passing; this one exercises all five *indoor*
 symbol domains at once: a fitted kitchen run with an island and a dashed
 [overhead cabinet](/furniture#how-a-symbol-is-drawn), a plumbed bathroom, two furnished

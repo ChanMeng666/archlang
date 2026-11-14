@@ -270,8 +270,8 @@ describe("V3 generators", () => {
     });
   }
 
-  it("hangs the wall cabinet, the hood, the mirror, the urinal, the towel rail and the whiteboard by their underside at every size", () => {
-    for (const family of ["upper_cabinet", "range_hood", "mirror", "urinal", "towel_rail", "whiteboard"]) {
+  it("hangs the wall cabinet, the hood, the mirror, the urinal, the towel rail, the whiteboard and the wall AC unit by their underside at every size", () => {
+    for (const family of ["upper_cabinet", "range_hood", "mirror", "urinal", "towel_rail", "whiteboard", "wall_ac"]) {
       for (const [W, D] of sizes) {
         const ys = (t0LocalParts(family, W, D) ?? []).map((p) => p.y0);
         expect(Math.min(...ys), `${family} ${W}x${D}`).toBe(T0_MOUNT_MM[family]);
@@ -281,16 +281,40 @@ describe("V3 generators", () => {
     // The core's two new `wallMounted` families (PR #462): a ladder rail 200 mm off the floor, a
     // board hung from 900 mm (`drawWhiteboard`: "from about 900 mm to about 2000 mm").
     expect([T0_MOUNT_MM.towel_rail, T0_MOUNT_MM.whiteboard]).toEqual([200, 900]);
+    // RM8.9: the indoor AC unit's underside at a door head (`DOOR_HEAD`, 2100 mm), above the openings.
+    expect(T0_MOUNT_MM.wall_ac).toBe(2100);
   });
 
   it("hangs a television by its top, 16:9 from its width, at most 760 mm tall", () => {
-    expect([...T0_HUNG_FROM_TOP]).toEqual(["tv"]);
+    // RM8.9 adds the picture, hung the same way (its own test below).
+    expect([...T0_HUNG_FROM_TOP]).toEqual(["tv", "wall_art"]);
     expect(T0_MOUNT_MM).not.toHaveProperty("tv");
     for (const W of [700, 1000, 1200, 1351, 1352, 1600, 2400]) {
       const ys = (t0LocalParts("tv", W, 80) ?? []).map((p) => p.y0);
       const ph = Math.min(W * 0.5625, 760);
       expect(Math.min(...ys), `tv ${W}`).toBeCloseTo((T0_HEIGHT_MM.tv as number) - ph, 9);
     }
+  });
+
+  it("hangs a picture by its top at 1900 mm, three quarters as tall as it is wide, 300 to 1000 mm (RM8.9)", () => {
+    expect(T0_MOUNT_MM).not.toHaveProperty("wall_art");
+    expect(T0_HEIGHT_MM.wall_art).toBe(1900);
+    for (const W of [200, 400, 900, 1333, 1334, 2000]) {
+      const ys = (t0LocalParts("wall_art", W, 50) ?? []).map((p) => p.y0);
+      expect(Math.min(...ys), `wall_art ${W}`).toBeCloseTo(1900 - Math.min(Math.max(W * 0.75, 300), 1000), 9);
+    }
+  });
+
+  it("builds a pool's water at grade inside its coping, never dug, and ledgers it (RM8.9)", () => {
+    const r = adaptPlan(
+      `plan "t" { units mm grid 50 wall id=w exterior thickness 200 { (0,0) (6000,0) (6000,4000) (0,4000) close } room id=r at (0,0) size 6000x4000 label "R" furniture pool at (7000,0) size 4000x2500 furniture pool at (7000,3000) size 3000x2000 }`,
+      { world: WORLD },
+    );
+    if (!r.ok) throw new Error(r.refusal.code);
+    const a = buildMesh(r.scene).assumptions.filter((x) => x.rule === "pool-water-at-grade");
+    expect(a.map((x) => [x.field, x.value])).toEqual([["water_mm(pool)", 20]]);
+    const water = (t0LocalParts("pool", 4000, 2500) ?? []).filter((p) => p.mat === "water");
+    expect(water.map((p) => [p.y0, p.y1])).toEqual([[0, 20]]);
   });
 
   it("ledgers a 1000 mm television's own underside, as built (red-team S2, PR #461)", () => {
@@ -597,6 +621,25 @@ describe("V5, V6: the catalogue's names", () => {
       "server_rack",
       "hospital_bed",
       "workstation",
+    ],
+    // The sixteen families of product-roadmap RM8.9, built in the same card (V-D6).
+    "RM8.9": [
+      "wall_ac",
+      "condenser",
+      "chest_freezer",
+      "wine_fridge",
+      "display_cabinet",
+      "folding_screen",
+      "daybed",
+      "pool",
+      "garden_gate",
+      "gazebo",
+      "greenhouse",
+      "wall_art",
+      "climber",
+      "bamboo",
+      "potted_tree",
+      "stepping_stones",
     ],
   };
   for (const [card, families] of Object.entries(BATCHES)) {

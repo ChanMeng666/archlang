@@ -238,8 +238,9 @@ export const OPENPLAN3D_CATALOG_SIZES: Readonly<Record<string, readonly [number,
 
 /**
  * The OpenPlan3D catalogue ids that are the same object as one ArchLang fixture family (its
- * canonical name). Everything else — lights, curtains, wall art, 2D electrical symbols, pools,
- * lawns, paths, fences, the `stairs` and `imported_object` previews — has no family and is dropped.
+ * canonical name). Everything else is dropped: lights, curtains, 2D electrical symbols, lawns,
+ * paths, fences and the `stairs` and `imported_object` previews have no family; wall art and pools
+ * do (`wall_art`, `pool`) but are not mapped from OpenPlan3D yet.
  */
 export const OPENPLAN3D_TO_FAMILY: Readonly<Record<string, string>> = {
   sofa: "sofa",

@@ -10,7 +10,8 @@
  * grid or any clearance rule. A gate is a real thing and it is deferred BY NAME
  * rather than approximated by letting a `door` host onto a fence —
  * which would drag a fence into the room-connectivity graph and make a garden a room's
- * neighbour.
+ * neighbour. Until then a gate is the `garden_gate` fixture family, stood in a gap left between
+ * two fence runs; the bare word `gate` is kept for the fence clause.
  *
  * What it does do is draw and measure: `describe().fences[]` reports each run's length
  * and whether it closes, and it joins {@link ElementDef.bounds} so the page contains it.

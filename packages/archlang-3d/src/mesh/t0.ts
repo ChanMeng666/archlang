@@ -133,6 +133,9 @@ export const T0_MOUNT_MM: Readonly<Record<string, number>> = batchTable((f) => f
  */
 export const T0_HUNG_FROM_TOP: ReadonlySet<string> = new Set(Object.keys(batchTable((f) => f.hungFromTop)));
 
+/** Each family's further ledgered defaults (`T0Family.defaults`): a pool's water at grade. */
+export const T0_DEFAULTS: Readonly<Record<string, NonNullable<T0Family["defaults"]>>> = batchTable((f) => f.defaults);
+
 /** Whether a family hangs on the wall (by its underside or by its top) rather than standing. */
 export const isHung = (family: string): boolean => family in T0_MOUNT_MM || T0_HUNG_FROM_TOP.has(family);
 

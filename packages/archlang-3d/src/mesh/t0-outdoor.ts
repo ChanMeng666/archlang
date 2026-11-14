@@ -1198,7 +1198,179 @@ export const T0_OUTDOOR: Readonly<Record<string, T0Family>> = {
       ];
     },
   },
+
+  // ── the new-families batch (product-roadmap RM8.9) ──
+  pool: {
+    names: ["pool", "swimming_pool", "plunge_pool"],
+    heightMm: 50,
+    materials: ["stone", "water"],
+    // The ground is the viewer's, drawn at floor level, so a pool dug below it would be hidden: the
+    // water is a slab at grade inside the coping, never excavated (visual-language.md § 4.1).
+    defaults: [{ field: "water_mm", value: 20, rule: "pool-water-at-grade" }],
+    gen(W, D) {
+      const [hw, hd] = [W / 2, D / 2];
+      const s = Math.min(W, D);
+      // `drawPool`: the coping, 0.08 of the short side wide and 50 mm high, round the water.
+      const e = s * 0.08;
+      const r = s * 0.03;
+      const d = Math.min(10, e / 2);
+      return [
+        P("stone", -hw, hw, -hd, hd, 0, 50, {
+          radius: s * 0.06,
+          holes: [{ x0: -hw + e, x1: hw - e, z0: -hd + e, z1: hd - e, radius: r }],
+        }),
+        P("water", -hw + e - d, hw - e + d, -hd + e - d, hd - e + d, 0, 20, { radius: r + d }),
+      ];
+    },
+  },
+  garden_gate: {
+    names: ["garden_gate", "yard_gate"],
+    heightMm: 1200,
+    materials: ["wood", "stone"],
+    gen(W, D) {
+      const [hw, hd] = [W / 2, D / 2];
+      // `drawGardenGate`: a post at each end of the back edge, the two leaves closed between them,
+      // and under the leaves' swing (the footprint's depth) a 10 mm threshold pad, so the gate's
+      // opening reads on the ground as the plan's arcs do.
+      const t = Math.min(D * 0.12, W * 0.04);
+      return [
+        P("stone", -hw, hw, -hd, hd, 0, 10),
+        ...pair(P("wood", -hw, -hw + t, -hd, -hd + t, 0, 1200)),
+        ...span(2, hw - t, Math.min(W * 0.01, 10)).map(([a, b]) =>
+          P("wood", a, b, -hd + t * 0.2, -hd + t * 0.8, 60, 1100),
+        ),
+      ];
+    },
+  },
+  gazebo: {
+    names: ["gazebo", "pavilion", "garden_pavilion"],
+    heightMm: 3000,
+    materials: ["wood", "wood_dark"],
+    gen(W, D) {
+      const [hw, hd] = [W / 2, D / 2];
+      const s = Math.min(W, D);
+      // `drawGazebo`: the deck 0.1 of the short side in, four posts at 0.14 to the ring beam at
+      // 2400 mm, and the hipped roof over the whole footprint, one lofted part to its apex (its
+      // own geometry, not a `roof` element; 3D pitched roofs are backlog 3D.4).
+      const [px, pz, h] = [hw - s * 0.14, hd - s * 0.14, s * 0.025];
+      return [
+        P("wood", -hw + s * 0.1, hw - s * 0.1, -hd + s * 0.1, hd - s * 0.1, 0, 150, { radius: s * 0.02 }),
+        ...[-pz, pz].flatMap((z) => pair(P("wood", -px - h, -px + h, z - h, z + h, 150, 2400))),
+        P("wood", -hw, hw, -hd, hd, 2400, 2460),
+        P("wood_dark", -hw, hw, -hd, hd, 2460, 3000, { loft: GAZEBO_ROOF }),
+      ];
+    },
+  },
+  greenhouse: {
+    names: ["greenhouse", "glasshouse"],
+    heightMm: 2400,
+    materials: ["metal", "glass"],
+    gen(W, D) {
+      const fr = longFrame(W, D);
+      const { L, S, part, ends, sides } = fr;
+      const [hw, hd] = [W / 2, D / 2];
+      // `drawGreenhouse`: glass walls to the 1800 mm eaves in a frame 0.04 of the short side, the
+      // gable roof along its own long axis (a profile across it, extruded along), the ridge cap,
+      // and a mullion on each long wall between the plan's bays (`[2, 8]`, one per 0.45 widths).
+      const f = Math.min(L, S) * 0.04;
+      const bays = clamp(Math.round(L / (S * 0.45)), 2, 8);
+      const mw = Math.min(f / 2, 15);
+      const mullions = Array.from({ length: bays - 1 }, (_, i) => (L * (2 * (i + 1) - bays)) / (2 * bays));
+      return [
+        P("glass", -hw + f, hw - f, -hd + f, hd - f, 0, 1800),
+        ...ends(part("metal", -L / 2, -L / 2 + f, -S / 2, -S / 2 + f, 0, 1800)).flatMap(sides),
+        ...mullions.flatMap((a) => sides(part("metal", a - mw, a + mw, -S / 2, -S / 2 + f, 0, 1800))),
+        P("metal", -hw, hw, -hd, hd, 1800, 1840),
+        part("glass", -L / 2, L / 2, -S / 2, S / 2, 1840, 2400, { profile: GABLE }, "along"),
+        part("metal", -L / 2, L / 2, -Math.min(S * 0.01, 15), Math.min(S * 0.01, 15), 2380, 2400),
+      ];
+    },
+  },
+  climber: {
+    names: ["climber", "climbing_plant"],
+    heightMm: 2400,
+    materials: ["wood", "foliage"],
+    gen(W, D) {
+      const [hw, hd] = [W / 2, D / 2];
+      // `drawClimber`: the trellis on the wall edge (its posts and three rails, 0.14 of the depth)
+      // and the foliage grown over it out to the front, from the ground to the trellis's top.
+      const rail = D * 0.14;
+      return [
+        ...pair(P("wood", -hw, -hw + Math.min(W * 0.03, 40), -hd, -hd + rail, 0, 2400)),
+        ...[600, 1300, 2000].map((y) => P("wood", -hw, hw, -hd, -hd + rail * 0.5, y, y + 30)),
+        P("foliage", -hw, hw, -hd + rail * 0.5, hd, 150, 2350, { radius: Math.min(D * 0.4, 200) }),
+      ];
+    },
+  },
+  bamboo: {
+    names: ["bamboo"],
+    heightMm: 4000,
+    materials: ["wood", "foliage"],
+    gen(W, D) {
+      const fr = longFrame(W, D);
+      const { L, S, part, sides } = fr;
+      // `drawBamboo`: the culms of the plan's two rows (one per 0.35 short sides, `[1, 10]` a row,
+      // at ±0.18 of the width) rising into one lofted crown over the clump.
+      const n = clamp(Math.round(L / (S * 0.35)), 1, 10);
+      const rho = Math.min(S * 0.08, (L / n) * 0.3);
+      const culms = Array.from({ length: n }, (_, i) => (L * (2 * i + 1 - n)) / (2 * n)).flatMap((a) =>
+        sides(part("wood", a - rho, a + rho, S * 0.18 - rho, S * 0.18 + rho, 0, 3400, { round: true })),
+      );
+      return [...culms, P("foliage", -W / 2, W / 2, -D / 2, D / 2, 1600, 4000, { round: true, loft: BAMBOO_CROWN })];
+    },
+  },
+  potted_tree: {
+    names: ["potted_tree", "indoor_tree"],
+    heightMm: 2000,
+    materials: ["ceramic", "foliage", "bark"],
+    gen(W, D) {
+      const [rx, rz] = [W / 2, D / 2];
+      const rt = clamp(Math.min(W, D) * 0.03, 10, 50);
+      // `drawPottedTree`: the pot at 0.3 of the crown with its rim, the trunk rising from it into
+      // the crown, which is the tree's (`CROWN`) from 1 m to the top.
+      return [
+        P("ceramic", -rx * 0.3, rx * 0.3, -rz * 0.3, rz * 0.3, 0, 440, { round: true }),
+        P("ceramic", -rx * 0.33, rx * 0.33, -rz * 0.33, rz * 0.33, 420, 470, { round: true }),
+        P("bark", -rt, rt, -rt, rt, 440, 1300, { round: true }),
+        ...dome("foliage", 0, 0, rx, rz, 1000, 2000, CROWN),
+      ];
+    },
+  },
+  stepping_stones: {
+    names: ["stepping_stones"],
+    heightMm: 30,
+    materials: ["stone"],
+    gen(W, D) {
+      const { L, S, part } = longFrame(W, D);
+      // `drawSteppingStones`: the plan's stones by the same count and gap (one per 1.2 widths,
+      // `[2, 24]`, the gaps a quarter of the pitch), each a 30 mm slab across the whole width.
+      const n = clamp(Math.round(L / (1.2 * S)), 2, 24);
+      return span(n, L / 2, (L / n) * 0.25).map(([a0, a1]) =>
+        part("stone", a0, a1, -S / 2, S / 2, 0, 30, { radius: Math.min(a1 - a0, S) * 0.35 }),
+      );
+    },
+  },
 };
+
+/** The gazebo's hipped roof: a fascia at full size (8% of its rise), then the hips to a 4% apex. */
+const GAZEBO_ROOF: DomeTable = [
+  [0.08, 1],
+  [1, 0.04],
+];
+
+/** A greenhouse's gable across its long axis (u across, v up): the ridge on the centre line. */
+const GABLE: ReadonlyArray<readonly [number, number]> = [
+  [0, 0],
+  [1, 0],
+  [0.5, 1],
+];
+
+/** A bamboo clump's crown over its culms: full at its foot, narrowing to the top (a loft table). */
+const BAMBOO_CROWN: DomeTable = [
+  [0.3, 1],
+  [0.8, 0.8],
+  [1, 0.4],
+];
 
 /** 16 directions at k × 22.5°: (cos, sin), written out (no engine's `Math.cos` reaches a coordinate). */
 const DIR16: ReadonlyArray<readonly [number, number]> = [

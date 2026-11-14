@@ -1231,3 +1231,84 @@ export function drawBeanBag(r: Rect, g: GlyphCtx): SceneNode[] {
   g.path(ovalPath(r.x + r.w / 2, r.y + r.h * 0.64, r.w * 0.27, r.h * 0.2), g.basin, "extraThin");
   return g.nodes;
 }
+
+// ---------------------------------------------------------------------------
+// ── the new-families batch (product-roadmap RM8.9) ──
+
+/**
+ * A display cabinet (a vitrine): the carcass, the glass that shows what is inside it, the
+ * door-front line near the front, the split between its pair of doors and a pull each side of it.
+ * Tall joinery cut by the plane, so solid; the pulls and the door line are on the front, which is
+ * what the catalogue's `directional` rests on, and each pull is the other's mirror image.
+ *
+ * Prim count: 6.
+ */
+export function drawDisplayCabinet(r: Rect, g: GlyphCtx): SceneNode[] {
+  g.poly(rectPoly(r), g.body);
+  const f = short(r) * 0.1;
+  const frontY = r.y + r.h * 0.88;
+  g.poly(rectPoly({ x: r.x + f, y: r.y + f, w: r.w - 2 * f, h: r.h * 0.8 - f }), g.basin, "extraThin");
+  g.seg({ x: r.x, y: frontY }, { x: r.x + r.w, y: frontY }, "extraThin");
+  const c = centerOf(r);
+  g.seg({ x: c.x, y: frontY }, { x: c.x, y: r.y + r.h }, "extraThin");
+  const k = Math.min(r.h * 0.025, r.w * 0.015);
+  const d = r.w * 0.04;
+  for (const x of [c.x - d, c.x + d]) g.dot({ x, y: r.y + r.h * 0.94 }, k);
+  return g.nodes;
+}
+
+/**
+ * A folding screen (a room divider): its panels zig-zag across the footprint, an even number of
+ * them (two to eight, about one per 1.1 depths of length), so both ends and the middle hinge stand
+ * on the back line and the zig-zag is its own mirror image. One band in the body tone, 9/64 of the
+ * depth (as `packages/archlang-3d` builds its panels), with a hinge at every fold. Neither `symmetric` nor `directional`: it is
+ * not the same from the front and the back, and it is moved about, not installed.
+ *
+ * Prim count: `1 + (panels − 1)`.
+ */
+export function drawFoldingScreen(r: Rect, g: GlyphCtx): SceneNode[] {
+  const n = 2 * clampCount(r.w / (2.2 * r.h), 1, 4);
+  const th = r.h * (9 / 64);
+  const top: Point[] = [];
+  for (let k = 0; k <= n; k++) top.push({ x: r.x + (r.w * k) / n, y: k % 2 === 0 ? r.y : r.y + r.h - th });
+  const under = top.map((p) => ({ x: p.x, y: p.y + th })).reverse();
+  g.poly([...top, ...under], g.body);
+  const hinge = Math.min(th * 0.45, (r.w / n) * 0.5);
+  for (let k = 1; k < n; k++) g.dot({ x: top[k]!.x, y: top[k]!.y + th / 2 }, hinge, g.basin);
+  return g.nodes;
+}
+
+/**
+ * A daybed: a bed-sized seat with a back along the wall side and an arm at each end, three sides
+ * closed, and its mattress between them. Seating, so neither `directional` nor handed: its two
+ * arms are each other's mirror image.
+ *
+ * Prim count: 5.
+ */
+export function drawDaybed(r: Rect, g: GlyphCtx): SceneNode[] {
+  const s = short(r);
+  g.path(roundedRectPath(r, s * 0.05), g.body);
+  const back = r.h * 0.2;
+  const arm = Math.min(r.w * 0.07, r.h * 0.2);
+  g.path(roundedRectPath({ x: r.x, y: r.y, w: r.w, h: back }, back * 0.4), g.body, "extraThin");
+  g.path(roundedRectPath({ x: r.x, y: r.y, w: arm, h: r.h }, arm * 0.4), g.body, "extraThin");
+  g.path(roundedRectPath({ x: r.x + r.w - arm, y: r.y, w: arm, h: r.h }, arm * 0.4), g.body, "extraThin");
+  const gap = s * 0.02;
+  const mat = { x: r.x + arm + gap, y: r.y + back + gap, w: r.w - 2 * (arm + gap), h: r.h - back - 2 * gap };
+  g.path(roundedRectPath(mat, s * 0.04), g.basin, "extraThin");
+  return g.nodes;
+}
+
+/**
+ * A picture on a wall (a painting, an artwork): the frame and the canvas inside it. It hangs above
+ * the cut plane, so both are DASHED and unfilled, for the reason `upper_cabinet` is: present, not
+ * cut, and the sofa or sideboard under it has to read through. The frame is the outline, the
+ * canvas a third of the depth in from it. Mirror-symmetric.
+ *
+ * Prim count: 2.
+ */
+export function drawWallArt(r: Rect, g: GlyphCtx): SceneNode[] {
+  dashedPoly(g, rectPoly(r), "none");
+  dashedPoly(g, rectPoly(insetRect(r, 0.3)), "none", "extraThin");
+  return g.nodes;
+}

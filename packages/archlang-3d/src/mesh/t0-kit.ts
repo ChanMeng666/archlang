@@ -78,6 +78,12 @@ export interface T0Family {
    * the generator is mirror-symmetric, so a reflection of it changes nothing.
    */
   handed?: true | ((W: number, D: number) => boolean);
+  /**
+   * A further default of the family the model is built with, ledgered per category beside its
+   * height (`furniture-height-t0`): a pool's water level at grade (product-roadmap RM8.9). Most
+   * families have none.
+   */
+  defaults?: ReadonlyArray<{ readonly field: string; readonly value: number; readonly rule: string }>;
   gen: (W: number, D: number) => Part[];
 }
 
