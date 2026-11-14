@@ -22,6 +22,17 @@
 - CI runs `npm test`, the vitest include list in `vitest.config.ts` — `test/`, `playground/test/`,
   `packages/*/test/`, `editors/vscode/test/`. `check:test-wiring` fails on a test outside it.
 - `*:build:only` scripts skip the core rebuild; `npm run build` must have run.
+- `npm run sync:main` (`scripts/sync-main.mjs`) merges `origin/main` into the current PR branch: generated
+  artifacts (whole-file ones on both sides) take `main`'s side and are regenerated (`--no-gen` skips
+  `gen:all`), `CHANGELOG.md` is union-merged and must keep the branch's lines under `[Unreleased]`. Any
+  other conflict stops with exit 2 for an agent, who resolves, `git add`s, and runs `-- --continue` (which
+  keeps `--push` and `--changelog-exempt`). That includes a file its generator writes only in part
+  (`partial` in `scripts/generators.ts`) and a `CHANGELOG.md` entry both sides edited. It commits with git's
+  merge message, prints the re-review focus for the red team (files both sides changed, conflicts
+  resolved by hand, code `main` changed one import away from a PR file, export declarations `main` added
+  or removed and exports whose body it changed; generated artifacts, `CHANGELOG.md` and low-tier paths
+  left out) and the new head's full SHA, then pushes only with `--push`; `--json` prints the same as one
+  object. The focus says where to look first, never that the review can be skipped.
 - `e2e:playground` / `e2e:docs` run Playwright against the BUILT site. `E2E_BASE_URL=<origin>` drops
   the preview server and drives that origin instead (nightly uses it with `--grep @prod`).
 - `eval:ci` is the offline authorability gate: it scores the committed goldens (rewriting the
@@ -172,18 +183,26 @@ Auto-merge (option A of `docs/plans/ci-throughput.md`); nothing waits for CI or 
    safe (the owner's standing approval of 2026-11-09: "判断是否能够合并，如果能，那就自动合并"). An executor
    never merges its own PR. The decision to release, paid eval and the npmjs account stay owner-only.
 1. Review the diff as soon as the PR opens, never after CI; post `reviewed <full sha>` on the PR.
-2. When GitHub reports the PR behind (`mergeStateStatus: BEHIND`), `gh pr update-branch <n>` (or, when
-   `main` moved a generated file since the branch, merge `main` locally and `npm run gen:all`: GitHub's
-   textual merge stales `test/INDEX.md`'s count), wait for CI on the new head, re-read what the update brought in (`git diff <old-head> <new-head> -- .
-   ':!test/INDEX.md' ':!docs/agents/module-map.md'` must be empty apart from the merge), then
-   `gh pr merge <n> --merge --match-head-commit <new full 40-character sha>`: a merge commit (a squash
-   or rebase re-creates allowlisted gitleaks lines) once the required checks pass; the branch is
-   deleted. A later push voids the pin: re-review, re-run step 2.
+2. When the PR is BEHIND (`mergeStateStatus: BEHIND`): `npm run sync:main -- --push` in the PR's
+   worktree (never `gh pr update-branch`: GitHub's textual merge stales generated artifacts). If it
+   stops (exit 2), resolve the listed files, then `--continue`. It takes `main`'s side of a generated
+   artifact and runs `gen:all`, union-merges `CHANGELOG.md` and checks its lines sit under
+   `[Unreleased]`, and stops on anything else (`scripts/sync-main.mjs`). Then, in this order: wait for
+   CI on the new head; red-team the merged head with the focus block `sync:main` printed (step 4); post
+   `reviewed <new full sha>`; merge with `gh pr merge <n> --merge --match-head-commit <new full
+   40-character sha>`: a merge commit (a squash or rebase re-creates allowlisted gitleaks lines) once the
+   required checks pass; the branch is deleted. A later push voids the pin: re-review, re-run step 2.
 3. PRs touching the same records (`CHANGELOG.md` `[Unreleased]`, handoff, cards) are STACKED: the next
-   branches from the previous PR's head and, once that merges, runs `gh pr update-branch <n>` (or
-   merges `main`); the coordinator re-pins. Independent PRs run in parallel.
-4. A PR that merged `main` after its review is red-teamed again on the merged head (#280/#283).
-5. Unlink a worktree's `node_modules` junction before removing the worktree.
+   branches from the previous PR's head and, once that merges, runs `npm run sync:main -- --push`;
+   then re-review (step 4), then the coordinator re-pins. Independent PRs run in parallel.
+4. A PR that merged `main` after its review is red-teamed again on the merged head (#280/#283), every
+   time: a clean merge with no shared file can still break it. The red team's brief includes the
+   re-review focus block `sync:main` printed (overlap, hand-resolved conflicts, import-linked files,
+   export declarations `main` added or removed, exports whose body `main` changed).
+5. When several PRs are BEHIND at once, sync only the next one to merge (oldest reviewed, green); the
+   rest wait until it merges — each sync starts a full CI run, and syncing them all wastes every run
+   but one.
+6. Unlink a worktree's `node_modules` junction before removing the worktree.
 
 `codeql.yml` `analyze` gates too (and runs weekly). `nightly.yml`: `prod-smoke`
 (`scripts/smoke.mjs`), `audit` (report-only), `secrets` (gitleaks over full history),

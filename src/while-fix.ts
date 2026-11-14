@@ -13,7 +13,7 @@
  * of `compile()` a second, hidden compile for every `while` whether or not anyone wanted
  * the fix.
  *
- * So the proof lives ENTIRELY OUTSIDE `compile()` now. `compile()` (`src/index.ts`) only
+ * So the proof lives ENTIRELY OUTSIDE `compile()` now. `compile()` (`src/compile.ts`) only
  * ever emits the two advisory warnings, from `src/while-deprecation.ts`, never a fix.
  * {@link proveWhileFixes} is a separate, opt-in entry point — today, the only caller is
  * `arch fix` (`src/cli/commands-author.ts`) — that:

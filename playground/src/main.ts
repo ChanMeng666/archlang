@@ -104,6 +104,19 @@ const loadJobs = (): Promise<Jobs> =>
   }));
 let jobs: Jobs | undefined;
 let compiler: CompileClient | undefined;
+/**
+ * The header actions (actions.ts), mounted by `up` before its first render. Their chunk imports the
+ * core's lazy chunk statically (finish, repair, format, the exports: card RM0.7f split it out of the
+ * compiler chunk), so the idle import warms it too, and a first use after an idle visit waits on
+ * neither. A failed load is forgotten.
+ */
+type Actions = typeof import("./actions.js");
+let actionsP: Promise<Actions> | undefined;
+const loadActions = (): Promise<Actions> =>
+  (actionsP ??= import("./actions.js").catch((err: unknown) => {
+    actionsP = undefined;
+    throw err;
+  }));
 
 const root = document.documentElement;
 const preview = document.getElementById("preview")!;
@@ -1296,7 +1309,7 @@ async function start({ sharedSrc, tooLarge, savedSrc, built }: Choice): Promise<
   // Header actions: format, finish, repair, embed, copy link, snapshots, download, and the
   // pane divider. Their code reads the compiler, so it loads with it; until it is mounted
   // their buttons are disabled in index.html.
-  const { mountActions } = await import("./actions.js");
+  const { mountActions } = await loadActions();
   actions = mountActions({
     getSource: currentSource,
     loadSource,
@@ -1355,7 +1368,8 @@ async function start({ sharedSrc, tooLarge, savedSrc, built }: Choice): Promise<
 
 /**
  * The idle import (ruling MP-D4): once the page has loaded and the browser has time to spare, fetch
- * and run the compiler's and the example sources' modules, so the first use finds them in, and add
+ * and run the compiler's, the example sources' and the header actions' modules (the actions with the
+ * core's lazy chunk they import, card RM0.7f), so the first use finds them in, and add
  * the gallery's samples group (data from the examples chunk), and nothing more: no compile, no
  * describe, no render, the built-in drawing stays the element it is.
  * The first use compiles (`up`). Never under Save-Data or on a 2g connection, where a visit pays
@@ -1372,7 +1386,7 @@ function importWhenIdle() {
     .connection;
   if (connection?.saveData === true || /^(?:slow-)?2g$/.test(connection?.effectiveType ?? "")) return;
   const warm = () =>
-    void Promise.all([loadCore(), loadExamples(), loadJobs()]).then(
+    void Promise.all([loadCore(), loadExamples(), loadJobs(), loadActions()]).then(
       ([, examples]) => {
         // The gallery's samples group is data, not a compile: it joins the gallery now, as at boot.
         fillGallery(examples);

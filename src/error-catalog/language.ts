@@ -91,7 +91,7 @@ export const LANGUAGE_ENTRIES = defineEntries({
     "A number is too large to be finite.",
     "A numeric literal, the result of an arithmetic operation (`+ - * / %`), or a quantity the resolver derives from finite dimensions (an element's extent, a room's area, the plan's total area) is beyond what a floating-point number can hold, so it would be infinite. The check is per operation: an overflowing intermediate is refused even if a later `min()` would have clamped it. A literal or arithmetic result is replaced by 0 so the rest of the plan still resolves and reports; an element whose derived quantity overflows is diagnosed at its element and dropped from the plan, so nothing downstream measures it.",
     "Use a realistic dimension. A plan is measured in millimetres, and a value above about 1e300 is never a building.",
-    pure(() => `let k = 1${"0".repeat(60)}\nlet x = k * k * k * k * k * k   # error: 1e360 overflows`),
+    /* @__PURE__ */ pure(() => `let k = 1${"0".repeat(60)}\nlet x = k * k * k * k * k * k   # error: 1e360 overflows`),
   ),
   E_PARSE: e(
     "The source could not be read: its SHAPE is wrong.",
