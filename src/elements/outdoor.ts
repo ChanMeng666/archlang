@@ -67,6 +67,7 @@ import { PLAIN_SHEET_TEXT } from "../sheet-text.js";
 import type { SceneNode } from "../scene.js";
 import { weightWidth } from "../scene.js";
 import type { ROutdoor, RWall } from "../ir.js";
+import type { Theme } from "../theme.js";
 import { distPointToWallSegment, rectCorners, segmentsOfWall } from "../geometry.js";
 import {
   effectiveVertices,
@@ -134,6 +135,13 @@ interface GroundSpec {
   tint: "lawn" | "water" | "paving";
   layer: string;
   walkable: boolean;
+  /**
+   * The flat stand-ins for its pattern (a PDF fill, a legend swatch) show the tint instead of
+   * covering it or leaving it out ({@link groundTintUnder}, card RM8.7b). Only the two kinds card
+   * RM8.7 added: an older kind keeps the stand-ins it has on `main` (poché base in a PDF, no tint
+   * under its swatch), which a later card may change for all of them at once.
+   */
+  keepsTint?: true;
 }
 
 const GROUND: Readonly<Record<OutdoorKind, GroundSpec>> = {
@@ -152,13 +160,31 @@ const GROUND: Readonly<Record<OutdoorKind, GroundSpec>> = {
   // Card RM8.7. Sand is a hard-landscape surface (a beach, a play area), so it sits on the site
   // layer; bare soil is a bed not yet planted, so it sits with the planting. Both take the warm
   // grey `paving` tint: bare earth is not the green of `lawn`. Both are walked on.
-  sand: { material: "sand", tint: "paving", layer: SITE_LAYER, walkable: true },
-  soil: { material: "soil", tint: "paving", layer: PLANTING_LAYER, walkable: true },
+  sand: { material: "sand", tint: "paving", layer: SITE_LAYER, walkable: true, keepsTint: true },
+  soil: { material: "soil", tint: "paving", layer: PLANTING_LAYER, walkable: true, keepsTint: true },
 };
 
 /** The hatch material a kind fills with, or null when it takes none. */
 export function groundMaterial(kind: OutdoorKind): string | null {
   return GROUND[kind].material;
+}
+
+/**
+ * The tint a flat stand-in for the ground pattern `material` shows (card RM8.7b: the PDF and the
+ * legend swatch), read off {@link GROUND}: `theme[tint]`, the colour `render` paints under the
+ * pattern, of the kinds that fill with it, when every one of them keeps it
+ * ({@link GroundSpec.keepsTint}); `undefined` when no kind fills with it, one does not keep it, or two
+ * disagree on the tint. `render` paints that tint under every theme, so this holds under every theme.
+ */
+export function groundTintUnder(theme: Theme, material: string): string | undefined {
+  let tint: GroundSpec["tint"] | undefined;
+  for (const kind of OUTDOOR_KINDS) {
+    const spec = GROUND[kind];
+    if (spec.material !== material) continue;
+    if (spec.keepsTint !== true || (tint !== undefined && tint !== spec.tint)) return undefined;
+    tint = spec.tint;
+  }
+  return tint === undefined ? undefined : theme[tint];
 }
 
 /** Can a person walk on this kind of ground? Only `water` says no (backlog 4.5). */

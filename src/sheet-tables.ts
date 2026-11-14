@@ -39,7 +39,8 @@ import type { HatchSpec } from "./hatches.js";
 import { floorMaterialsUsed, groundSwatchFrame, hatchesUsed, hatchId } from "./hatches.js";
 import type { ROutdoor, RFurniture, RRoom } from "./ir.js";
 import { WINDOW_KINDS, type WindowKind } from "./grammar/tokens.js";
-import { groundMaterialsUsed } from "./elements/outdoor.js";
+import { groundMaterialsUsed, groundTintUnder } from "./elements/outdoor.js";
+import { floorWash } from "./elements/room.js";
 import { doorSwatch } from "./elements/door-panels.js";
 import { windowSwatch } from "./elements/window.js";
 import { weightWidth } from "./scene.js";
@@ -958,15 +959,15 @@ function drawer(theme: Theme, sizes: RenderSizes, out: SceneNode[]) {
   const ink = theme.annotation;
   const muted = theme.annotationMuted;
   return {
-    /** The table frame (a closed loop — one DXF polyline, one SVG polygon). */
-    frame(x0: number, y0: number, w: number, h: number): void {
+    /** The table frame (a closed loop — one DXF polyline, one SVG polygon), filled when given a `fill`. */
+    frame(x0: number, y0: number, w: number, h: number, fill = "none"): void {
       out.push({
         layer: "annotations",
         prim: {
           t: "polygon",
           pts: rectRing({ x: x0, y: y0, w: w, h: h }),
         },
-        paint: { fill: "none", stroke: ink, width: sizes.thin },
+        paint: { fill, stroke: ink, width: sizes.thin },
         lineWeight: "thin",
       });
     },
@@ -1183,8 +1184,37 @@ function groupedScheduleNodes(
   d.text({ x: netX, y: totalTop + rowH / 2 }, areaCell(t.net_total_m2), fs, netCol.align, { weight: BOLD });
 }
 
+/**
+ * The themes the elements a legend swatch stands for are drawn in: a `style room { … }` or
+ * `style outdoor { … }` block gives rooms or grounds a theme of their own (`scene-build.ts`), and a
+ * swatch's tint is read with the very theme its element is painted with.
+ */
+export interface SwatchThemes {
+  room: Theme;
+  outdoor: Theme;
+}
+
+/**
+ * The colour a flat stand-in for the pattern `material` shows instead of the pattern (card RM8.7b),
+ * or `undefined` to draw it as before. Read from the element that paints the colour under the
+ * pattern, never from a table here: a room's real wash (`floorWash`: under `rendered`, the three
+ * floor-only words) or a ground's tint where its kind keeps it (`groundTintUnder`: `sand` and
+ * `soil`, under every theme). Two stand-ins read it: the legend swatch, drawn on that colour, and
+ * the PDF (`src/export/pdf.ts`), which has no pattern fills and so draws no fill for the pattern
+ * rather than flattening it to `pocheBase` over the colour.
+ */
+export function tintUnderPattern(material: string, themes: SwatchThemes): string | undefined {
+  return floorWash(themes.room, material) ?? groundTintUnder(themes.outdoor, material);
+}
+
 /** The LEGEND table's primitives — each row a real swatch beside its name. */
-function legendNodes(t: LegendTableBox, theme: Theme, sizes: RenderSizes, out: SceneNode[]): void {
+function legendNodes(
+  t: LegendTableBox,
+  theme: Theme,
+  sizes: RenderSizes,
+  out: SceneNode[],
+  themes: SwatchThemes,
+): void {
   const d = drawer(theme, sizes, out);
   const { x0, y0, w, h, rowH, fs, pad, swatchW } = t;
   d.frame(x0, y0, w, h);
@@ -1206,6 +1236,10 @@ function legendNodes(t: LegendTableBox, theme: Theme, sizes: RenderSizes, out: S
       // the pattern's own marks (`groundSwatchFrame`); a wall material keeps the drawing's
       // anchoring, byte for byte.
       const frame = groundSwatchFrame(hp, sizes.hatchGap, { x: box.x + box.w / 2, y: box.y + box.h / 2 });
+      // Under the pattern, the colour its element is drawn on (`tintUnderPattern`): the swatch's
+      // frame takes it as its fill and is drawn first, so the swatch stays one loop in a DXF.
+      const tint = tintUnderPattern(hp.material, themes);
+      if (tint !== undefined) d.frame(box.x, box.y, box.w, box.h, tint);
       out.push({
         layer: "annotations",
         prim: {
@@ -1218,7 +1252,7 @@ function legendNodes(t: LegendTableBox, theme: Theme, sizes: RenderSizes, out: S
         },
         paint: { fill: `url(#${hatchId(hp)})`, fillRule: "nonzero" },
       });
-      d.frame(box.x, box.y, box.w, box.h);
+      if (tint === undefined) d.frame(box.x, box.y, box.w, box.h);
     } else if (e.kind === "fixture" && e.category) {
       // The real plan symbol, drawn into the swatch box and re-tagged onto the annotation
       // pass — so the legend can never drift from what the drawing actually paints.
@@ -1301,11 +1335,12 @@ export function sheetTableNodes(
   theme: Theme,
   sizes: RenderSizes,
   text: SheetText = PLAIN_SHEET_TEXT,
+  swatchThemes: SwatchThemes = { room: theme, outdoor: theme },
 ): SceneNode[] {
   const out: SceneNode[] = [];
   if (t.schedule) scheduleNodes(t.schedule, theme, sizes, text, out);
   if (t.openings) openingTableNodes(t.openings, theme, sizes, out);
-  if (t.legend) legendNodes(t.legend, theme, sizes, out);
+  if (t.legend) legendNodes(t.legend, theme, sizes, out, swatchThemes);
   if (t.notes) notesNodes(t.notes, theme, sizes, out);
   return out;
 }
