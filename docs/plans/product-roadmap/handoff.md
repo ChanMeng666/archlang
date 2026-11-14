@@ -98,7 +98,7 @@
 
 **核心车道：** CR11a（`GOVERNANCE.md`，RM-D30）→ RM1.6b → CR10 → RM3.1。随时可做的小卡：RM1.2c（RM-D35：新 W 规则，量字节）、RM1.2g（RM-D36：`archlang-3d` 建 winder 台阶）、RM1.1a（首次接触复测，量 1.60.0，`§6` 的表）。线下，有余量才做：RM0.7b、RM0.7c、RM0.7e、RM0.7f、RM1.2d–RM1.2f、RM1.2h、RM1.3d、RM1.4c、RM8.1e、RM5.1b、RM0.6、RM7.4、RM1.6c、RM6.1b–RM6.1d、RM8.6c，以及 CHANGELOG 1.60.0 的 `A-ANNO` 措辞更正（见 `cards.md`）。
 
-**CI 车道（第 9 轨，RM-D37，2026-11-14 加）：** CT1（`sync:main`，已派出）→ CT2（Playground E2E 拆三个 job、主线三条腿分片）→ CT5（两者合并 7 天后复测）。CT3 在 CT2 之后的空档里做；CT4 等触发。卡在 `cards.md` 第 9 轨。
+**CI 吞吐（第 9 轨，RM-D37，2026-11-14 加；不是第三条车道）：** TP 卡在核心车道两张卡之间占用核心执行者（RM-D22 不变）。TP1（`sync:main`，已派出）→ TP2（Playground E2E 拆三个 job、主线三条腿分片）→ TP5（两者合并 7 天后复测）。TP3 在 TP2 之后的空档里做；TP4 等触发。卡在 `cards.md` 第 9 轨。
 
 **发布：** 1.61.0 要所有者对那一次的决定（没有决定就不切；`README.md` §3 的约 01-05 只是参考）。2026-12-01 所有者亲自发 Show HN，那之前 `main` 保持绿。RM5.4（#603）在 Show HN 之后。
 
@@ -124,7 +124,7 @@
 - 决定 1.61.0 是否、何时发布（1.59.0 见 §1.4；1.60.0 已发布，见 §1.2）；#603 已由 RM-D34 裁定：现在不合并，2026-12-01 之后 RM5.4 迁移，#603 保持打开。决定之后 tag 与发布链由代理跑，只在 OTP/2FA、登录、账号或令牌的创建、条款与声明的确认、本机文件选择器处停下。
 - 2026-12-01 亲自发 Show HN。
 - **OpenAI 插件目录的提交**（1.60.0 已于 2026-11-13 由所有者本人提交并发布，见 §1.2；以后每次提交仍要所有者的话，代理准备到 Submit 之前）以及需要接受条款或声明的提交，以及 Cloudflare 控制台的改动（`docs/seo.md` § 8）。
-- **2026-11-12 的受托裁定（所有者说"请你帮我做出最佳决策"，只对那一次；一句话可推翻；`README.md` §6.6）：** RM-D28 `rendered` 地面浅色，批准，条件是图案线对比不低于 2.0:1（草案色值只有 1.66–1.87:1，要另调更浅的一组；ADR 0023 已加修订）；RM-D29 绿植四个全批准（并入 RM8.9，十六个）；RM-D30 CR11a 的 schema 政策与命名空间照 `design/schema-policy.md` §3 采纳（现有两个 `$id` 不改）；RM-D31 PS0.18 关闭（`78e0b7f9`）；RM-D32 RM8.10 选 (a)（显示警告，不改几何），卡已改写、不再等裁定。**仍然不能代裁、仍是所有者的：** OpenAI 插件目录的每次提交（要接受条款；代理准备到最后一步）、`README.md` §6 的较早一批（RM5.4 的主版本升级 #603、MF-D3(b)、backlog D.7、M.9、M.8、M.14、3.1(b)、仓库根 `.mcp.json`（CI throughput 的 E 与 F 已由 2026-11-14 的 RM-D37 裁定不做，`README.md` §6.9）、VA.3），以及 RM1.3c（6.11，双开门）先要一次设计裁定。
+- **2026-11-12 的受托裁定（所有者说"请你帮我做出最佳决策"，只对那一次；一句话可推翻；`README.md` §6.6）：** RM-D28 `rendered` 地面浅色，批准，条件是图案线对比不低于 2.0:1（草案色值只有 1.66–1.87:1，要另调更浅的一组；ADR 0023 已加修订）；RM-D29 绿植四个全批准（并入 RM8.9，十六个）；RM-D30 CR11a 的 schema 政策与命名空间照 `design/schema-policy.md` §3 采纳（现有两个 `$id` 不改）；RM-D31 PS0.18 关闭（`78e0b7f9`）；RM-D32 RM8.10 选 (a)（显示警告，不改几何），卡已改写、不再等裁定。**仍然不能代裁、仍是所有者的：** OpenAI 插件目录的每次提交（要接受条款；代理准备到最后一步）、`README.md` §6 的较早一批（RM5.4 的主版本升级 #603、MF-D3(b)、backlog D.7、M.9、M.8、M.14、3.1(b)、仓库根 `.mcp.json`；CI throughput 的 E 与 F 已不在此列（2026-11-14 的 RM-D37 裁定不做，`README.md` §6.9）、VA.3），以及 RM1.3c（6.11，双开门）先要一次设计裁定。
 - **2026-11-14 的受托裁定（所有者说"请你帮我做出最佳决策"，只对那一次；一句话可推翻；`README.md` §6.8）：** RM-D35（RM1.2c）新 W 规则"标签点名了房间没有的家具"，不加词表行，`DEFINING.office` 不动；RM-D36（RM1.2g）`archlang-3d` 把 winder 建成 n 级渐缩台阶，2D 的 `W_STAIR_RISER_TOO_HIGH` 不封顶。#603：RM-D34 不变。
 - **协调者本场的裁定（2026-11-12…14，可推翻）：** 最上层绘制的地面决定可走性（#746）；预算内被省略的平面有自己的覆盖/跳过原因（#742）；扶梯方向取停靠点的 `dir`，`planting` 算可走（#745）。更早且已记录的：品味等变律重述（罗盘读者是 R12，主入口由街道选定时另有 R3 与分区）、指北针提示排在 taste 之前、winder 多出 n−1 级。
 - **仍是所有者的（2026-11-13 约 22:45Z）：** 1.61.0 的发布决定；2026-12-01 Show HN；OpenAI 插件目录的每次提交（要接受条款；代理准备到 Submit 之前）；Docker 的 docker/mcp-registry#6704 等 Docker 合并（`source.commit` 为 `6d18d137`）；#603 的主版本升级在 Show HN 之后；关 #544（代理也可以关，那是所有者在 #532 的线程）。
@@ -136,8 +136,8 @@
 
 - 串行合并：required checks 是 strict 的，一个 PR 合并后其余都会 `BEHIND`。按层级（`node scripts/risk-tier.mjs`；`docs/agents/commands.md` § Merging a PR）：low 在 CI 绿后合；medium 另要一次新上下文评审；high 还要主会话的判断（所有者 2026-11-09 的长期批准）。每个 PR 至多两轮红队。
 - 队列做法：逐个"更新分支 → 等新头上的全部检查 → 用完整 40 位 SHA `--match-head-commit` 合并"，不删除任何东西。2026-11-11 用的脚本是 `mq.sh`（`D:\.claude-scratch\2026-11-11\mq\mq.sh`，从主检出运行，`state.txt` 作锁；同一脚本的副本在 `D:\github_repository\claude-kept\2026-11-10-archlang-roadmap-v2\mq.sh`）。
-- `main` 动过生成文件（`test/INDEX.md`、`docs/agents/module-map.md` 等）时，冲突的分支不用 `gh pr update-branch`，也不手解：在本地合并 `main`，`npm run gen:all`，提交、推送，再钉新头（`docs/agents/gotchas.md` § PRs & CI）。CT1 合并后改用 `npm run sync:main -- --push`，它也打印同步后要不要重新红队（RM-D37）。
-- **记录不单开 PR（RM-D37，P0-4）：** `docs(plans)` 的记录随它所记录的代码 PR 一起走；做不到时，一场会话结束时合成一个记录 PR。每多一个 PR，就多一条会 `BEHIND` 的分支。
+- `main` 动过生成文件（`test/INDEX.md`、`docs/agents/module-map.md` 等）时，冲突的分支不用 `gh pr update-branch`，也不手解：在本地合并 `main`，`npm run gen:all`，提交、推送，再钉新头（`docs/agents/gotchas.md` § PRs & CI）。TP1 合并后改用 `npm run sync:main -- --push`；同步后的头仍然每次重新红队，它打印的重点清单随红队的简报一起给（RM-D37）。
+- **记录少开 PR（RM-D37，P0-4）：** 默认一场会话结束时合成一个 `docs(plans)` 记录 PR；记录也可以随它所记录的代码 PR 一起走。每多一个 PR，就多一条会 `BEHIND` 的分支。
 - **一次只同步一个（RM-D37）：** 几个 PR 同时 `BEHIND` 时，只同步下一个要合的（最早评审过、CI 绿的那个），其余等它合并；每次同步都起一次完整的 CI，全同步只有一次不白跑。
 - 3D 回放的改动：除了终帧与海报，还要比对升墙中途的帧（`cards.md` §0）。关键帧从 CI 打印的哈希重钉，`check-3d` 红着不合并（`.claude/rules/archlang-3d.md`）。
 - 执行者可能长时间等待时，先写状态文件；机器忙时小改动先提交，报告"门禁未跑"（`cards.md` §0；`docs/agents/orchestration.md`）。本地跑不了指定的 vitest 文件（门禁钩子挡住），以 CI 为准；不用自制的替身代替 vitest。

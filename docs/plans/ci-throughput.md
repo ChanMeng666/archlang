@@ -1,7 +1,7 @@
 # CI throughput: options for the owner
 
 Status: A, B, C, D live 2026-10-27 (B/C/D by PR #290); G approved by the owner 2026-10-31 (PR #385).
-Follow-up research, 2026-11-12: `ci-throughput-research.md` (measured cost of the strict up-to-date rule and the conflict hot spots). Its § 10 (RM-D37, 2026-11-14) declines E and F: CI on the merged tree stays strict's job, and CT1's `sync:main` resolves the CHANGELOG conflicts F was for.
+Follow-up research, 2026-11-12: `ci-throughput-research.md` (measured cost of the strict up-to-date rule and the conflict hot spots). Its § 10 (RM-D37, 2026-11-14) declines E and F: CI on the merged tree stays strict's job, and TP1's `sync:main` resolves the CHANGELOG conflicts F was for. The three laws in § 2 are unchanged.
 Every option changes a workflow or a repository setting, and the owner decides which to take. Job map and per-job minutes: `docs/agents/commands.md` § CI.
 
 ## 1. What is measured
@@ -33,7 +33,8 @@ one's green CI and merge, about 43 minutes each.
    `reviewed <sha>` comment (`docs/agents/commands.md` § Merging a PR).
 2. CI is the full gate. A narrowing may skip only work that cannot be affected by the change.
 3. After `main` is merged into a PR, the red team reads the merged head, and that head is the one
-   pinned.
+   pinned. (RM-D37, 2026-11-14, keeps this unchanged: `npm run sync:main`, card TP1, hands the red team
+   a focus list; it never waives the read.)
 
 ## 3. Options, in the recommended order
 

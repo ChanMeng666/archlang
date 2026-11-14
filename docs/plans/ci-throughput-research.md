@@ -1,9 +1,11 @@
 # CI throughput research: what slows the PR cycle now, and what to do about it
 
 Research follow-up to `ci-throughput.md`. Written 2026-11-12 (Pacific/Auckland, NZDT), from data read-only
-against `main` at `213e7393` (2026-11-12 17:44 NZDT, PR #732). § 1–9 are the research as written.
+against `main` at `213e7393` (2026-11-12 17:44 NZDT, PR #732). § 0–9 are the research as written; where
+§ 0 calls E and F open owner decisions or suggests a next step, § 10 supersedes it.
 **Decided 2026-11-14 (§ 10, RM-D37):** the owner delegated every item to the coordinator; § 10 records each
-verdict, its reason and the trigger that would reopen it. The cards are CT1–CT5 in `product-roadmap/cards.md`.
+verdict, its reason and the trigger that would reopen it. The cards are TP1–TP5 in `product-roadmap/cards.md`
+(track 9).
 
 ## 0. For the agent picking this up
 
@@ -13,8 +15,8 @@ verdict, its reason and the trigger that would reopen it. The cards are CT1–CT
   `changes`); `.claude/hooks/generated-artifacts.json`; `scripts/check-quick.mjs` and `scripts/nearest-tests.mjs`.
 - **Relation to `ci-throughput.md`:** that plan shortened one CI run (A–D, G live). This one measures what
   is left. Its main finding is that the cost has moved from one run's length to serialisation: options
-  **E** (merge queue) and **F** (changelog fragments), still open owner decisions in `docs/backlog.md`,
-  are now the bottleneck. It adds new items too (a sync-main script, the strict rule, E2E shards, sharded
+  **E** (merge queue) and **F** (changelog fragments), then open owner decisions (declined 2026-11-14,
+  § 10), are now the bottleneck. It adds new items too (a sync-main script, the strict rule, E2E shards, sharded
   main-only legs, affected tests, auto-revert).
 - **Verified (measured, reproducible with § 9):** every number in § 4 that has no "estimate" beside it.
 - **Estimates:** every "expected effect" in § 5 and the job-hours-per-day figure in § 4.1. They are
@@ -22,8 +24,9 @@ verdict, its reason and the trigger that would reopen it. The cards are CT1–CT
 - **Caveats:** the before/after comparison for the strict rule (§ 4.3) covers only 3 days after the switch,
   and other changes happened in the same window, so it shows a direction, not a cause. The flaky rate is
   understated, because Playwright retries hide E2E flakes.
-- **Suggested next step:** P0-1 (the sync-main script) and P0-3 (E2E shards, splitting `finish.test.ts`)
-  need no rule change. Then ask the owner about P0-2 (strict) and P1-1 (organization plus merge queue).
+- **Next step:** superseded by § 10 (RM-D37) and the TP cards; this line is kept as written: "P0-1 (the
+  sync-main script) and P0-3 (E2E shards, splitting `finish.test.ts`) need no rule change. Then ask the
+  owner about P0-2 (strict) and P1-1 (organization plus merge queue)."
 - **Data window:** `ci.yml` runs 2026-11-05 00:33 → 2026-11-12 17:53 NZDT; PRs: all 688 (#1 to #734);
   git history: `origin/main` since 2026-10-29. `main` has moved since (1.60.0, #735), so refresh with § 9
   before acting on any number.
@@ -409,37 +412,41 @@ sentence. No iron law and no AGENTS.md hard rule changes. Re-measured before dec
 
 - Since the strict rule (2026-11-10 04:00 NZDT): 81 PR merges came with 111 sync merges into branches,
   **1.37 syncs per merged PR** (0.90 over the two weeks of § 4.4). The cost the research found is growing.
-- PR CI since 2026-11-12: median 9.1 min over 48 successful runs; `main` push 28.1 min over 22.
-- Job queue time, 25 runs since 2026-11-12: at most 10 s. **Runners are not scarce** (public repo, free
+- PR CI, successful runs created since 2026-11-12 00:00 UTC (the latest 100 runs of `ci.yml`): median 9.1 min
+  over 48; `main` push 28.1 min over 22.
+- Job queue time, the 25 latest completed runs in that window: at most 10 s. **Runners are not scarce** (public repo, free
   minutes), so the lever is wall clock and coordinator turns, not compute.
-- Six recent code-PR runs: Playground E2E 7.1–10.8 min (Chromium specs 5–6 min, then Firefox and WebKit
-  2.5–3.5 min in the same job, in series); Docs E2E 4.6–7.9; `check:3d` 4.6–6.3; the slowest Node 22
-  shard 5.1–6.3. Setup (checkout, `npm ci`, builds, cached browsers) is about 1 min a job.
+- Six recent code-PR runs, median (range) in minutes: Playground E2E 8.7 (7.1–10.8; Chromium specs 5–6 min,
+  then Firefox and WebKit 2.5–3.5 min in the same job, in series); Docs E2E 5.9 (4.6–7.9); `check:3d`
+  5.6 (4.6–6.3); the slowest Node 22 shard 5.7 (5.1–6.3). Setup (checkout, `npm ci`, builds, cached
+  browsers) is about 1 min a job.
 
 ### 10.1 Verdicts
 
 | Item | Verdict | Why | Reopen when |
 |---|---|---|---|
-| P0-1 sync-main script | **Take: CT1.** Node, not bash (the coordinator runs on Windows); also prints the review triage of P1-4 | Removes about half the hand resolutions; `gh pr update-branch` stales generated artifacts (gotchas § PRs & CI) | |
-| P0-2 turn strict off | **Decline: strict stays.** | It went on 2026-11-10 because two pairs of green PRs merged blind and broke `main` (EH3.7, `engineering-health/README.md`); `main` must stay green until Show HN. Its cost is extra CI runs, which are free here, and coordinator turns, which CT1 and the one-sync-at-a-time rule cut | after CT1 and CT2, syncs per merged PR stay above 1.0, or P90 open → merge above 4 h, over 7 days of merges (CT5) |
-| P0-3 E2E shards, split `finish.test.ts` | **Take the Playground half: CT2.** Chromium in two shards and Firefox/WebKit in a job of their own, behind an aggregator that keeps the required name. **Decline the `finish.test.ts` split and the Docs E2E shard for now** | Playground is the only job above 7 min; after the split the next poles (Docs E2E, `check:3d`, a Node 22 shard) are all 5–6.5 min, so cutting one of them alone moves nothing | a Node 22 shard or Docs E2E is the pole by more than 1 min after CT2 |
-| P0-4 fold records-only PRs | **Take as a working rule** (`product-roadmap/handoff.md` § 5): a `docs(plans)` record rides in the code PR it records, or one records PR at a session's end | Each extra PR is one more branch that goes BEHIND | |
-| P1-1 organization + merge queue (option E) | **Decline.** Also declined: a third-party queue (Mergify and the like) | Moving the repo breaks what is bound to the owner `ChanMeng666`: the MCP registry name `io.github.chanmeng666/…` published by GitHub OIDC (`release.yml`), npm trusted publishing and `repository.url` "byte-for-byte" (`.claude/rules/release-and-packages.md`; npmjs is owner-only), and every listing in `docs/seo.md` § 8. A third-party app would hold write access to a repo whose `main` deploys both sites. At about 25 merges a day a scripted, one-at-a-time sync gives the queue's guarantee (CI on the merged tree) | GitHub offers merge queues to user-owned repos, or CT5's trigger fires and CT1–CT3 cannot fix it |
-| P1-2 changelog fragments (option F) | **Decline.** | CT1's union merge plus `scripts/check-changelog-unreleased.mjs` resolves the 98 CHANGELOG conflicts without amending the AGENTS.md rule "release narrative lives only in `CHANGELOG.md`" | `check-changelog-unreleased` refuses a union-merged entry more than twice in a month |
-| P1-3 shard the main-only legs | **Take: CT2.** Node 18, Node 20 and Windows three ways each; on a PR the shards skip at job level, so no runner starts for them | `main` 28 → about 11 min (estimate: 22–26 min of tests / 3 + about 1.5 min setup, Windows the slowest). With strict on, a red `main` blocks every PR's sync, so it must show sooner; deploys come sooner too | |
-| P1-4 automate "does this sync need a re-review" | **Take, inside CT1.** Law 3 of `ci-throughput.md` § 2 narrows: the merged head is red-teamed again only when the sync brought in a file the PR also changed (generated artifacts and `CHANGELOG.md` aside) or a conflict an agent resolved by hand; otherwise the coordinator posts `reviewed <new sha> (sync carried …)` and re-pins | CI still runs on the merged head (strict), which is what catches semantic interaction; the reviewer's reading of the PR's own lines is unchanged when no file overlaps | a carried review lets a defect through that the overlap check should have flagged |
-| P2-1 affected tests on PRs | **Decline now.** | It narrows law 2 to save compute, and compute is free and unqueued here; the PR wall clock is set by E2E and `check:3d`, not the suite | median job queue time above 1 min, or the suite becomes the PR pole after CT2 |
-| P2-2 auto-revert | **Defer: CT4** (off the line) | With strict, `main` goes red only on the main-only legs; a revert PR opened with `GITHUB_TOKEN` starts no CI, so it needs an App or a token the owner creates | `main` red more than twice a week, or red for more than 2 h once |
-| P2-3 flaky accounting | **Take: CT3** (small, off the line) | Playwright retries hide E2E flakes; the hidden rate is not measured | |
+| P0-1 sync-main script | **Take: TP1.** Node, not bash (the coordinator runs on Windows); also prints the re-review focus of P1-4 | Removes about half the hand resolutions; `gh pr update-branch` stales generated artifacts (gotchas § PRs & CI) | |
+| P0-2 turn strict off | **Decline: strict stays.** | It went on 2026-11-10 because two pairs of green PRs merged blind and broke `main` (EH3.7, `engineering-health/README.md`); `main` must stay green until Show HN. Its cost is extra CI runs, which are free here, and coordinator turns, which TP1 and the one-sync-at-a-time rule cut | after TP1 and TP2, syncs per merged PR stay above 1.0, or P90 open → merge above 4 h, over 7 days of merges (TP5 measures both) |
+| P0-3 E2E shards, split `finish.test.ts` | **Take the Playground half: TP2.** Chromium in two shards and Firefox/WebKit in a job of their own, behind an aggregator that keeps the required name. **Decline the `finish.test.ts` split and the Docs E2E shard for now** | Playground's median is 8.7 min; the next three (Docs E2E, `check:3d`, the slowest Node 22 shard) have medians of 5.6–5.9, so after the split cutting one of them alone moves nothing | one of those three has a median more than 1 min above the other two after TP2 |
+| P0-4 fold records-only PRs | **Take as a working rule** (`product-roadmap/handoff.md` § 5): the default is one records PR at a session's end; a record may ride in the code PR it records | Each extra PR is one more branch that goes BEHIND. TP1 leaves low-tier paths out of the re-review focus, so a ridden record adds nothing to the red team's reading | |
+| P1-1 organization + merge queue (option E) | **Decline.** Also declined: a third-party queue (Mergify and the like) | Moving the repo breaks what is bound to the owner `ChanMeng666`: the MCP registry name `io.github.ChanMeng666/archlang-mcp` (`packages/mcp/server.json`) published by GitHub OIDC (`release.yml`), npm trusted publishing and `repository.url` "byte-for-byte" (`.claude/rules/release-and-packages.md`; npmjs is owner-only), and every listing in `docs/seo.md` § 8. A third-party app would hold write access to a repo whose `main` deploys both sites. At about 19 merges a day (81 in 4.3 days since strict) a scripted, one-at-a-time sync gives the queue's guarantee (CI on the merged tree) | GitHub offers merge queues to user-owned repos, or the P0-2 row's trigger fires and TP1–TP3 cannot fix it |
+| P1-2 changelog fragments (option F) | **Decline.** | TP1's union merge plus `scripts/check-changelog-unreleased.mjs` resolves the 98 CHANGELOG conflicts without amending the AGENTS.md rule "release narrative lives only in `CHANGELOG.md`" | `check-changelog-unreleased` refuses a union-merged entry more than twice in a month |
+| P1-3 shard the main-only legs | **Take: TP2.** Node 18, Node 20 and Windows three ways each; on a PR the shards skip at job level, so no runner starts for them (except when `changes` failed, the existing fail-open) | `main` 28 → about 11 min (estimate: 22–26 min of tests / 3 + about 1.5 min setup, Windows the slowest). With strict on, a red `main` blocks every PR's sync, so it must show sooner; deploys come sooner too. Cost: a push run peaks at about 21 parallel jobs, over the Free plan's 20 (§ 4.1), so TP2's proof reports job queue time | median job queue time above 1 min after TP2 |
+| P1-4 automate "does this sync need a re-review" | **Take as a focus aid, inside TP1; law 3 of `ci-throughput.md` § 2 is unchanged.** After every sync the merged head is red-teamed again; `sync:main` hands the red team a focus list: files both sides changed, hand-resolved files, files `main` brought in that a PR-changed file imports (or is imported by), and exports `main` changed, whose callers the red team greps in the PR. Renames count both paths (`--no-renames`); low-tier paths are left out | A file-overlap test cannot see the case law 3 exists for: a PR calling `doorSwing()` while a parallel PR changed it, with no shared file, a clean merge and a green suite (`docs/agents/gotchas.md` § PRs & CI). A focused read is cheaper; skipping it is not safe | |
+| P2-1 affected tests on PRs | **Decline now.** | It narrows law 2 to save compute, and compute is free and unqueued here; the PR wall clock is set by E2E and `check:3d`, not the suite | median job queue time above 1 min, or the suite becomes the PR pole after TP2 |
+| P2-2 auto-revert | **Defer: TP4** (off the line) | A red `main` is often not a merge's fault: on 2026-11-11 it was red for about 7 h on the apt "Install Chromium system deps" step, which a revert would not have fixed. The one merge-caused incident since strict (#703's `toReversed` on Node 18, fixed by #708) was on a main-only leg. A revert PR opened with `GITHUB_TOKEN` starts no CI, so it needs an App or a token the owner creates | merge-caused incidents (TP4 counts them: not a re-run pass, not a setup step) exceed two a week for two weeks, or one keeps `main` red for more than 2 h |
+| P2-3 flaky accounting | **Take: TP3** (small, off the line) | Playwright retries hide E2E flakes; the hidden rate is not measured | |
 | P2-4 Vitest `isolate: false` | **Decline.** | The suite leans on per-file isolation (memoised parse stage, module state); verifying 544 files one by one costs more than the ~17% Linear saw, and the suite is not the pole | the suite becomes the pole and `isolate` is the cheapest lever left |
 | Bazel / Nx / Turborepo caching, custom VCS, paid runners | **Decline**, as § 5 recommends | | |
 
 ### 10.2 Expected effect and how it is checked (estimates)
 
 PR CI 9.1 → about 6.5 min (the pole moves to Docs E2E, `check:3d` and the Node 22 shards); `main` push
-28 → about 11 min; about half the hand resolutions scripted; most re-red-team rounds after a sync skipped;
-fewer wasted CI runs, because only the next PR to merge is synced. CT5 re-reads § 7's table with § 9's
-commands after 7 days of merges on CT1 and CT2 and writes the numbers under this section; the guardrails are
+28 → about 11 min; about half the hand resolutions scripted; re-red-team rounds after a sync narrower (a
+focus list, not a full re-read); fewer wasted CI runs, because only the next PR to merge is synced. TP5
+re-reads § 7's table with § 9's commands after 7 days of merges on TP1 and TP2, adds the measures the
+reopen triggers above name (syncs per merged PR, P90 open → merge, job queue time, changelog refusals,
+merge-caused incidents), and writes the numbers under this section; the guardrails are
 § 7's `main` red rate and revert rate, and a rise in either means the time was moved, not saved.
 
 ## 11. Sources
