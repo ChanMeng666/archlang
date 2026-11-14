@@ -6,16 +6,10 @@ import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 // @ts-expect-error — a zero-dep .mjs script with no type declarations.
-import {
-  artifactSets,
-  changedExports,
-  classifyUnmerged,
-  focusFiles,
-  importLinked,
-  main,
-  parseArgs,
-  reportLines,
-} from "../scripts/sync-main.mjs";
+import * as syncMain from "../scripts/sync-main.mjs";
+
+const { artifactSets, changedExports, classifyUnmerged, focusFiles, importLinked, main, parseArgs, reportLines } =
+  syncMain;
 
 /**
  * The pure parts (classification, the re-review focus) on literal inputs, then the whole script in
