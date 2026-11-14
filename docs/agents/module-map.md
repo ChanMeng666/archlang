@@ -64,13 +64,13 @@ Totals: 396 modules in 34 directories.
 
 | Module | Lines | Importers | Summary | Budget |
 | --- | ---: | ---: | --- | --- |
-| `build.ts` | 1200 | 4 | Scene3D → Mesh3D (archlang-3d M1a, card A2). Every solid is a closed prism over a Scene3D polygon (`extrude.ts`); no boolean is computed here, because the core's joinery already gave each wall its owned pieces with the openings removed… | none |
+| `build.ts` | 1214 | 4 | Scene3D → Mesh3D (archlang-3d M1a, card A2). Every solid is a closed prism over a Scene3D polygon (`extrude.ts`); no boolean is computed here, because the core's joinery already gave each wall its owned pieces with the openings removed… | none |
 | `c16.ts` | 25 | 2 | The 16-gon's exact table, shared by the T0 generators (`t0.ts`: round sections) and the contact shadows' corner fans (`replay/shadows.ts`, card RM8.8). Pure, browser-safe, no import. | none |
 | `extrude.ts` | 364 | 7 | Prisms: a plan polygon (with holes) between two heights → one closed triangle shell, in the exporters' axes (X = plan x, Y = up, Z = plan y), integer micrometres. Caps are triangulated with earcut (ISC), which adds no vertex, so the caps… | none |
 | `openings.ts` | 917 | 2 | The trim of a doorway and a window (product-roadmap card RM8.6; design `docs/plans/product-roadmap/design/visual-language.md` §2.1, §2.2), as parts of the opening's node, every size a clamped share of the host wall's thickness `t`… | none |
 | `outdoor.ts` | 182 | 2 | The site in 3D (product-roadmap card RM8.3, backlog VA.2): each `outdoor` surface a thin slab and each `fence` a low-poly solid per style, built from the Scene3D's `outdoor` and `fences` (the core's `ROutdoor` and `RFence`, read as they… | none |
 | `slab.ts` | 195 | 2 | The storey slab's plan region (archlang-3d plan §4.2; card A2b): the rooms ∪ the wall outline, before the voids are cut. The wall outline (its outer rings, holes dropped) already covers every room the walls enclose; what a room adds is… | none |
-| `stair.ts` | 528 | 2 | A stair as stepped solids (card X3, `stairSolid`) and in its parts (card RM8.6, `stairDetail`: what the mesh builds), from the Scene3D's flights and landings, which are the core's own (`scene3d/build.ts`): nothing here re-derives a stair… | none |
+| `stair.ts` | 586 | 2 | A stair as stepped solids (card X3, `stairSolid`) and in its parts (card RM8.6, `stairDetail`: what the mesh builds), from the Scene3D's flights and landings, which are the core's own (`scene3d/build.ts`): nothing here re-derives a stair… | none |
 | `t0-kit.ts` | 338 | 5 | The T0 kit (visual-assets V2, V5, V6): the part type every generator returns and the few helpers the generators share, kept apart from `t0.ts` so the batch modules (`t0-living.ts`, `t0-utility.ts`) and `t0.ts` itself read them without an… | none |
 | `t0-living.ts` | 857 | 1 | T0 batch V5 (visual-assets): living, bedroom, dining and office. Each family is declared once with every fact the mesh builder and the ledger read (`T0Family`); `t0.ts` merges the batch into its tables. Local frame, units and the clip to… | none |
 | `t0-office.ts` | 429 | 1 | T0 batch V7 (visual-assets), office and commercial: the meeting table, the reception desk, the filing cabinet, the locker, the pool table and the treadmill. Declared like V5 (`t0-living.ts`); local frame, units and the clip: `t0.ts`. Back… | none |
@@ -103,9 +103,9 @@ Totals: 396 modules in 34 directories.
 
 | Module | Lines | Importers | Summary | Budget |
 | --- | ---: | ---: | --- | --- |
-| `build.ts` | 449 | 7 | Resolved storeys → Scene3D v0. A mapping of the core's resolved facts into micrometres and plan-aligned records: no geometry is built here beyond the core's own (wall ownership through `joinWallSet`; arcs tessellated to a chord tolerance… | none |
+| `build.ts` | 556 | 7 | Resolved storeys → Scene3D v0. A mapping of the core's resolved facts into micrometres and plan-aligned records: no geometry is built here beyond the core's own (wall ownership through `joinWallSet`; arcs tessellated to a chord tolerance… | none |
 | `overlap.ts` | 132 | 5 | V-GEO-05 (archlang-3d plan §4.2, §8.1; card A2b): rooms whose floors overlap by more than 1 cm² would draw two coplanar floor finishes that fight in depth. Each such pair is reported (`W3D_FLOOR_OVERLAP`; the core warns `W_ROOM_OVERLAP`… | none |
-| `types.ts` | 237 | 15 | Scene3D v0: a renderer-independent, plan-aligned 2.5D scene read off a resolved plan (archlang-3d plan §3.5, appendix A). Plan axes: x right, y DOWN; z up. Every length is an integer number of micrometres ({@link Um}); handedness is… | none |
+| `types.ts` | 245 | 16 | Scene3D v0: a renderer-independent, plan-aligned 2.5D scene read off a resolved plan (archlang-3d plan §3.5, appendix A). Plan axes: x right, y DOWN; z up. Every length is an integer number of micrometres ({@link Um}); handedness is… | none |
 | `validate.ts` | 226 | 2 | The Scene3D v0 validator: zero dependencies, so it runs in the browser bundle. It checks what `scene3d.schema.json` states (shapes, integer micrometres, enums, no unknown keys) and what a JSON Schema cannot (ids unique per collection and… | none |
 
 ## `packages/archlang-3d/src/walls/`
