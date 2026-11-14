@@ -22,6 +22,17 @@
 - CI runs `npm test`, the vitest include list in `vitest.config.ts` — `test/`, `playground/test/`,
   `packages/*/test/`, `editors/vscode/test/`. `check:test-wiring` fails on a test outside it.
 - `*:build:only` scripts skip the core rebuild; `npm run build` must have run.
+- `npm run sync:main` (`scripts/sync-main.mjs`) merges `origin/main` into the current PR branch: generated
+  artifacts (whole-file ones on both sides) take `main`'s side and are regenerated (`--no-gen` skips
+  `gen:all`), `CHANGELOG.md` is union-merged and must keep the branch's lines under `[Unreleased]`. Any
+  other conflict stops with exit 2 for an agent, who resolves, `git add`s, and runs `-- --continue` (which
+  keeps `--push` and `--changelog-exempt`). That includes a file its generator writes only in part
+  (`partial` in `scripts/generators.ts`) and a `CHANGELOG.md` entry both sides edited. It commits with git's
+  merge message, prints the re-review focus for the red team (files both sides changed, conflicts
+  resolved by hand, code `main` changed one import away from a PR file, export declarations `main` added
+  or removed and exports whose body it changed; generated artifacts, `CHANGELOG.md` and low-tier paths
+  left out) and the new head's full SHA, then pushes only with `--push`; `--json` prints the same as one
+  object. The focus says where to look first, never that the review can be skipped.
 - `e2e:playground` / `e2e:docs` run Playwright against the BUILT site. `E2E_BASE_URL=<origin>` drops
   the preview server and drives that origin instead (nightly uses it with `--grep @prod`).
 - `eval:ci` is the offline authorability gate: it scores the committed goldens (rewriting the
@@ -99,11 +110,25 @@ that compile every `arch` fence of every Markdown page, `npm-tarball`) and `docs
 joins the docs leg's list in `ci.yml`, or the record leaves the filter.
 
 **Code PRs.** Node 18, Node 20 and Windows report green with a job-summary line and run nothing: they
-run on every push to `main` and in nightly's `full-matrix`. Node 22 runs: `Node 22` is an aggregator
-over `Node 22 checks` and the shards `Node 22 tests 1/3` to `3/3`, and fails if one of them failed,
-was cancelled, or was skipped when `changes` did not call the PR a record. A push to `main` runs
-every leg, the suite on Node 22 split across those shards. A failed `changes` job runs every leg on
-a PR too.
+run on every push to `main`, in the merge queue and in nightly's `full-matrix`. Each is an aggregator
+on ubuntu over its own three-shard job (`Node 18 tests 1/3` to `3/3`, the same for Node 20,
+`Windows tests 1/3` to `3/3`), which on a PR is skipped at job level, so no runner starts; on any
+other event it requires the shards' `success`. Shard 3 also runs the leg's non-test checks
+(typecheck, `lint:ci`, `check:drift`, `eval:ci` on Linux; `check:drift` on Windows). Node 22 runs:
+`Node 22` is an aggregator over `Node 22 checks` and the shards `Node 22 tests 1/5` to `5/5`, and
+fails if one of them failed, was cancelled, or was skipped when `changes` did not call the PR a
+record. A push to `main` runs every leg, each suite split across its shards. A failed `changes` job
+runs every leg on a PR too. A push run peaks at about 23 parallel jobs counting CodeQL's two
+`Analyze` legs, over the Free plan's 20 concurrent jobs, and the PR runs that strict status checks
+re-trigger when `main` moves (each `npm run sync:main -- --push`) share that limit, so some jobs queue: an
+estimate until TP5 measures the queue time.
+
+**Playground E2E** is an aggregator too (`Playground E2E (Playwright)`), over two Chromium shards
+(`Playground E2E chromium 1/2`, `2/2`: the chromium project with `--shard=N/2`) and one job
+for the `@engines` specs in Firefox and WebKit (`Playground E2E engines`). Each has its own `Flaky
+tests` step and its own report artifact on failure (`playwright-report-chromium-<n>`,
+`playwright-report-engines`); the aggregator requires `success` of both, which a record-only PR
+gives with every step skipped.
 
 **Shard balance.** `test/sequencer.ts` splits the shards by the seconds per file in `test/.durations.json`; nightly's `full-matrix` job (the `Test ubuntu-latest / Node 22` leg) uploads a fresh table as the `test-durations` artifact. Refresh with `gh run download <nightly run id> -n test-durations -D <dir> && node scripts/gen-test-durations.mjs <dir>/test-durations.json` (it merges: rows for files in the artifact are replaced, rows for deleted files dropped), after a nightly whose shard walls differ by more than 1.5× or about once a month.
 
@@ -120,14 +145,19 @@ Minutes, a full run measured 2026-10-27 (PR #290 at 2ed9d70e, `gh run view 40416
 | Job (CI's check name) | Runs | Min |
 |---|---|---|
 | `changes` (Changed paths) | classifies the PR's paths (not a required check) | < 0.1 |
-| `build` (Node 18, Node 20) | push only: typecheck, `lint:ci`, `check:drift`, `npm test`, `eval:ci` | 20.7, 19.9 |
+| `node-18-tests`, `node-20-tests` (Node 18 tests 1/3 … 3/3, Node 20 tests 1/3 … 3/3) | push and merge queue only (job-level skip on a PR): `vitest run --shard=N/3`; shard 3 first runs typecheck, `lint:ci`, `check:drift` and, after the tests, `eval:ci` | Node 18: 9.2, 9.9, 8.7; Node 20: 8.5, 7.3, 7.9 (red-proof run 43538960462; unsharded: 20.7, 19.9) |
+| `build` (Node 18, Node 20) | aggregator over its version's shard job: green with a job-summary line on a PR, else requires the shards' `success` | 0.1 |
 | `node-22-checks` (Node 22 checks) | typecheck, `lint:ci`, `check:drift`, `eval:ci` | 0.7 |
-| `node-22-tests` (Node 22 tests 1/3, 2/3, 3/3) | `vitest run --shard=N/3` | 5.8, 4.8, 9.6 |
+| `node-22-tests` (Node 22 tests 1/5 … 5/5) | `vitest run --shard=N/5` | 5.7, 4.8, 5.0, 4.4, 4.7 (run 43538929281) |
 | `changelog` (CHANGELOG under [Unreleased]) | PR and merge queue, record-only PRs too: `scripts/check-changelog-unreleased.mjs HEAD^1` (every added CHANGELOG line under `[Unreleased]` or under the `## [x.y.z]` heading a release PR adds, no released line deleted). A deliberate edit of released history carries the PR label `changelog-exempt` (then `--exempt`: reported, not refused); label, then re-run the job. Not a required check; `node-22` requires its success (on a PR and in the queue) | not yet measured |
 | `node-22` (Node 22) | gates on `node-22-checks`, `node-22-tests` and, on a PR or in the queue, `changelog`; on a record-only PR, runs the docs leg | < 0.2 |
 | `builds` (Workspace builds) | `build`, `typecheck:all`, all five workspace builds (docs, playground, MCP shim, hosted MCP Worker, VS Code), MCP `check-dist-resources.mjs`, VS Code bundle tests, `check:test-wiring`, `check:dxf` with ezdxf in a virtualenv (each only here) | 2.0 |
-| `windows` | push only: `npm test` + `check:drift` at the runner's default line endings (no `eval:ci`) | 21.1 |
-| `e2e-playground`, `e2e-docs` | Playwright against the built sites | 4.7, 4.7 |
+| `windows-tests` (Windows tests 1/3 … 3/3) | push and merge queue only (job-level skip on a PR), on windows-latest: `vitest run --shard=N/3` at the runner's default line endings, shard 3 then `check:drift` (no `eval:ci`) | 11.5, 10.0, 8.9 (red-proof run 43538960462; unsharded: 21.1) |
+| `windows` (Windows (tests + drift)) | aggregator over `windows-tests`, on ubuntu: green with a job-summary line on a PR, else requires the shards' `success` | 0.1 |
+| `e2e-playground-chromium` (Playground E2E chromium 1/2, 2/2) | every playground spec in Chromium, `--shard=N/2` (Playwright splits by test count, not duration), then `Flaky tests` | 3.0, 5.1 (run 43535706255) |
+| `e2e-playground-engines` (Playground E2E engines) | the `@engines` specs in Firefox and WebKit, then `Flaky tests` | 2.8 (run 43535706255) |
+| `e2e-playground` (Playground E2E (Playwright)) | aggregator: requires `success` of both jobs above | 0.1 (run 43535706255) |
+| `e2e-docs` | Playwright against the built docs site | 4.7 |
 | `check-3d` (3D package (check:3d)) | `npm run check:3d` on Linux: `packages/archlang-3d`'s heavy tests (GLB through glTF-Validator, determinism over the corpus, CLI exit codes, the tarball through `npm pack`, the replay in Playwright's Chromium on SwiftShader with ffmpeg, the key-frame pixel baseline pinned to this job's Chromium); browsers in `PLAYWRIGHT_BROWSERS_PATH`, cached by the `playwright-core` version; required | 2.0 (PR #336, browser cache cold) |
 | `bench` | informational PR-head vs merge-base timings, two runs each (order B H H B), ratios and a noise floor in the job summary (+ a PR comment on same-repo PRs); never gates (the gate is `test/work-counts.test.ts`); skipped on a record-only PR | 2.8 |
 
@@ -153,18 +183,26 @@ Auto-merge (option A of `docs/plans/ci-throughput.md`); nothing waits for CI or 
    safe (the owner's standing approval of 2026-11-09: "判断是否能够合并，如果能，那就自动合并"). An executor
    never merges its own PR. The decision to release, paid eval and the npmjs account stay owner-only.
 1. Review the diff as soon as the PR opens, never after CI; post `reviewed <full sha>` on the PR.
-2. When GitHub reports the PR behind (`mergeStateStatus: BEHIND`), `gh pr update-branch <n>` (or, when
-   `main` moved a generated file since the branch, merge `main` locally and `npm run gen:all`: GitHub's
-   textual merge stales `test/INDEX.md`'s count), wait for CI on the new head, re-read what the update brought in (`git diff <old-head> <new-head> -- .
-   ':!test/INDEX.md' ':!docs/agents/module-map.md'` must be empty apart from the merge), then
-   `gh pr merge <n> --merge --match-head-commit <new full 40-character sha>`: a merge commit (a squash
-   or rebase re-creates allowlisted gitleaks lines) once the required checks pass; the branch is
-   deleted. A later push voids the pin: re-review, re-run step 2.
+2. When the PR is BEHIND (`mergeStateStatus: BEHIND`): `npm run sync:main -- --push` in the PR's
+   worktree (never `gh pr update-branch`: GitHub's textual merge stales generated artifacts). If it
+   stops (exit 2), resolve the listed files, then `--continue`. It takes `main`'s side of a generated
+   artifact and runs `gen:all`, union-merges `CHANGELOG.md` and checks its lines sit under
+   `[Unreleased]`, and stops on anything else (`scripts/sync-main.mjs`). Then, in this order: wait for
+   CI on the new head; red-team the merged head with the focus block `sync:main` printed (step 4); post
+   `reviewed <new full sha>`; merge with `gh pr merge <n> --merge --match-head-commit <new full
+   40-character sha>`: a merge commit (a squash or rebase re-creates allowlisted gitleaks lines) once the
+   required checks pass; the branch is deleted. A later push voids the pin: re-review, re-run step 2.
 3. PRs touching the same records (`CHANGELOG.md` `[Unreleased]`, handoff, cards) are STACKED: the next
-   branches from the previous PR's head and, once that merges, runs `gh pr update-branch <n>` (or
-   merges `main`); the coordinator re-pins. Independent PRs run in parallel.
-4. A PR that merged `main` after its review is red-teamed again on the merged head (#280/#283).
-5. Unlink a worktree's `node_modules` junction before removing the worktree.
+   branches from the previous PR's head and, once that merges, runs `npm run sync:main -- --push`;
+   then re-review (step 4), then the coordinator re-pins. Independent PRs run in parallel.
+4. A PR that merged `main` after its review is red-teamed again on the merged head (#280/#283), every
+   time: a clean merge with no shared file can still break it. The red team's brief includes the
+   re-review focus block `sync:main` printed (overlap, hand-resolved conflicts, import-linked files,
+   export declarations `main` added or removed, exports whose body `main` changed).
+5. When several PRs are BEHIND at once, sync only the next one to merge (oldest reviewed, green); the
+   rest wait until it merges — each sync starts a full CI run, and syncing them all wastes every run
+   but one.
+6. Unlink a worktree's `node_modules` junction before removing the worktree.
 
 `codeql.yml` `analyze` gates too (and runs weekly). `nightly.yml`: `prod-smoke`
 (`scripts/smoke.mjs`), `audit` (report-only), `secrets` (gitleaks over full history),
