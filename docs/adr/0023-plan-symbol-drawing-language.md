@@ -124,8 +124,10 @@ for the default**.
   included: it is moved ahead of the furniture (`renderOrder`), but not ahead of what the same
   pass draws before the first piece (a column, a stair, a void, a fence), nor of the datum axes
   on the pass below, and the Scene has no translucent fill, so any tint would hide them. An
-  overhead piece drawn dashed above the cut plane (an upper cabinet, a range hood, a pergola)
-  stays unfilled too, so the piece below it shows.
+  overhead piece drawn dashed above the cut plane (an upper cabinet, a range hood, a pergola, a
+  wall AC unit, a picture on a wall) stays unfilled too, so the piece below it shows; so do a
+  gazebo and a greenhouse, drawn as outlines because the furniture standing in them is drawn as
+  its own pieces.
 - **What does not change.** Decisions 1 to 6 hold: tints are fills, never strokes; outline and
   detail tones are unchanged (the outline ink is still the derived symbol ink, decision 6), and
   the outline ink keeps at least 3:1 contrast on every tint, measured. No shadow, no hatch on a

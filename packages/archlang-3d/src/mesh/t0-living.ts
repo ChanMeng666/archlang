@@ -854,4 +854,106 @@ export const T0_LIVING: Readonly<Record<string, T0Family>> = {
       ];
     },
   },
+
+  // ── the new-families batch (product-roadmap RM8.9) ──
+  display_cabinet: {
+    names: ["display_cabinet", "vitrine", "curio_cabinet"],
+    heightMm: 1900,
+    materials: ["wood", "metal", "glass"],
+    gen(W, D) {
+      const [hw, hd] = [W / 2, D / 2];
+      // `drawDisplayCabinet`: a tall carcass, its back and sides, two glass shelves, the pair of
+      // glass doors across the front and a pull each side of their meeting stiles.
+      const side = W * 0.04;
+      const k = Math.min(W * 0.01, 8);
+      return [
+        P("wood", -hw + W * 0.02, hw - W * 0.02, -hd, hd - D * 0.04, 0, 80),
+        P("wood", -hw, hw, -hd, hd, 80, 120),
+        P("wood", -hw, hw, -hd, -hd + D * 0.06, 120, 1860),
+        ...pair(P("wood", -hw, -hw + side, -hd, hd, 120, 1860)),
+        P("wood", -hw, hw, -hd, hd, 1860, 1900),
+        ...[700, 1250].map((y) => P("glass", -hw + side, hw - side, -hd + D * 0.06, hd - D * 0.06, y, y + 10)),
+        ...span(2, hw - side, 4).map(([a, b]) => P("glass", a, b, hd - D * 0.05, hd - D * 0.02, 130, 1850)),
+        ...pair(P("metal", -W * 0.04 - k, -W * 0.04 + k, hd - D * 0.02, hd, 900, 1100)),
+      ];
+    },
+  },
+  folding_screen: {
+    names: ["folding_screen", "room_divider", "privacy_screen"],
+    heightMm: 1700,
+    materials: ["wood", "fabric"],
+    gen(W, D) {
+      // `drawFoldingScreen`: the same even count of panels, zig-zagging from the back line at both
+      // ends to the front and back, each 9/64 of the depth thick in plan; a fabric field in a timber
+      // frame (a foot rail and a top rail), every panel of the zig-zag its partner's reflection.
+      const n = 2 * clamp(Math.round(W / (2.2 * D)), 1, 4);
+      return span(n, W / 2, 0).flatMap(([a, b], k) => {
+        const zig = k % 2 === 0 ? SCREEN_PANEL : SCREEN_PANEL_BACK;
+        const at = (mat: "wood" | "fabric", y0: number, y1: number): Part =>
+          P(mat, a, b, -D / 2, D / 2, y0, y1, { profile: zig });
+        return [at("wood", 0, 120), at("fabric", 120, 1600), at("wood", 1600, 1700)];
+      });
+    },
+  },
+  daybed: {
+    names: ["daybed", "day_bed"],
+    heightMm: 750,
+    materials: ["wood_dark", "fabric", "cushion"],
+    gen(W, D) {
+      const [hw, hd] = [W / 2, D / 2];
+      const s = Math.min(W, D);
+      // `drawDaybed`: the upholstered base on four legs, the back along the wall side and an arm at
+      // each end (the plan's 0.2 of the depth and its arm width), the mattress between them.
+      const back = D * 0.2;
+      const arm = Math.min(W * 0.07, D * 0.2);
+      const [c, leg] = [s * 0.04, s * 0.05];
+      const g = s * 0.02;
+      return [
+        ...[-hd + c, hd - c - leg].flatMap((z) => pair(P("wood_dark", -hw + c, -hw + c + leg, z, z + leg, 0, 100))),
+        P("fabric", -hw, hw, -hd, hd, 100, 400, { radius: s * 0.03 }),
+        P("fabric", -hw, hw, -hd, -hd + back, 400, 750, { axis: "x", radius: Math.min(back * 0.4, 60) }),
+        ...pair(P("fabric", -hw, -hw + arm, -hd, hd, 400, 650, { axis: "z", radius: Math.min(arm * 0.4, 60) })),
+        P("cushion", -hw + arm + g, hw - arm - g, -hd + back + g, hd - g, 400, 520, { radius: s * 0.04 }),
+      ];
+    },
+  },
+  wall_art: {
+    names: ["wall_art", "artwork", "painting", "picture"],
+    heightMm: 1900,
+    hungFromTop: true,
+    materials: ["wood", "paint"],
+    gen(W, D) {
+      const [hw, hd, H] = [W / 2, D / 2, 1900];
+      // `drawWallArt`: hung by its top at 1900 mm, the picture three quarters as tall as it is wide
+      // (300 to 1000 mm), its frame round the canvas and a board behind both against the wall.
+      const ph = clamp(W * 0.75, 300, 1000);
+      const fw = Math.min(W * 0.06, ph * 0.08);
+      const zf = hd - D * 0.4;
+      return [
+        P("wood", -hw, hw, -hd, zf, H - ph, H),
+        P("paint", -hw + fw, hw - fw, zf, hd - D * 0.1, H - ph + fw, H - fw),
+        P("wood", -hw, hw, zf, hd, H - fw, H),
+        P("wood", -hw, hw, zf, hd, H - ph, H - ph + fw),
+        ...pair(P("wood", -hw, -hw + fw, zf, hd, H - ph + fw, H - fw)),
+      ];
+    },
+  },
 };
+
+/** A folding screen's panel in plan (u along the width, v from the back), 9/64 of the depth thick:
+ *  from the back line at its left to the front at its right. Multiples of 1/64, so its reflection
+ *  ({@link SCREEN_PANEL_BACK}, the next panel's) is exact. */
+const SCREEN_PANEL: ReadonlyArray<readonly [number, number]> = [
+  [0, 0],
+  [1, 55 / 64],
+  [1, 1],
+  [0, 9 / 64],
+];
+
+/** {@link SCREEN_PANEL} reflected across its width: from the front at its left back to the back line. */
+const SCREEN_PANEL_BACK: ReadonlyArray<readonly [number, number]> = [
+  [1, 9 / 64],
+  [0, 1],
+  [0, 55 / 64],
+  [1, 0],
+];

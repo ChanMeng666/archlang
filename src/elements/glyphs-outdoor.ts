@@ -1250,3 +1250,198 @@ export function drawRaisedBed(r: Rect, g: GlyphCtx): SceneNode[] {
   }
   return g.nodes;
 }
+
+// ---------------------------------------------------------------------------
+// ── the new-families batch (product-roadmap RM8.9) ──
+
+/**
+ * A pool (a swimming or plunge pool) as one object: the coping, the water inside it and the tile
+ * line under the water's edge. It is an object on the site, not a ground surface: `outdoor water`
+ * stays the water surface it was. Rounded rectangles about one centre, so the symbol maps onto
+ * itself under every quarter-turn and mirror of a square (`symmetric`).
+ *
+ * Prim count: 3.
+ */
+export function drawPool(r: Rect, g: GlyphCtx): SceneNode[] {
+  const s = Math.max(0, shortSide(r));
+  g.path(roundedRectPath(r, s * 0.06), g.body);
+  g.path(roundedRectPath(insetRect(r, 0.08), s * 0.03), g.basin, "extraThin");
+  g.path(roundedRectPath(insetRect(r, 0.13), s * 0.02), "none", "extraThin");
+  return g.nodes;
+}
+
+/**
+ * A garden gate: a pair of leaves, closed, along the back edge, the joint where they meet, a post
+ * at each end, and each leaf's swing into the footprint, whose depth is the swing's radius. It
+ * stands in a gap left between two `fence` runs; it is its own family, not a `door` hosted on a
+ * fence (`src/elements/fence.ts`). The right leaf, its post and its swing are the left ones
+ * reflected, so the symbol is its own mirror image.
+ *
+ * Prim count: 6.
+ */
+export function drawGardenGate(r: Rect, g: GlyphCtx): SceneNode[] {
+  const t = Math.max(0, Math.min(r.h * 0.12, r.w * 0.04));
+  g.poly(rectPoly({ x: r.x, y: r.y, w: r.w, h: t }), g.body);
+  const c = centerOf(r);
+  g.seg({ x: c.x, y: r.y }, { x: c.x, y: r.y + t }, "extraThin");
+  g.poly(rectPoly({ x: r.x, y: r.y, w: t, h: t }), g.ink);
+  g.nodes.push(mirroredTwin(g.nodes.at(-1)!, r, true));
+  const rho = Math.max(0, Math.min(r.w / 2, r.h - t));
+  const hinge = { x: r.x, y: r.y + t };
+  const swing: PathLoop = {
+    start: hinge,
+    edges: [
+      { t: "line", to: { x: r.x + rho, y: hinge.y } },
+      { t: "arc", to: { x: r.x, y: hinge.y + rho }, center: hinge, r: rho, sweep: 1 },
+      { t: "line", to: hinge },
+    ],
+  };
+  g.path(swing, "none", "extraThin");
+  g.nodes.push(mirroredTwin(g.nodes.at(-1)!, r, true));
+  return g.nodes;
+}
+
+/**
+ * A gazebo (a garden pavilion): its roof, DASHED (above the cut plane, as a `pergola`'s frame is),
+ * with the four hips running out from the apex to the corners, the deck under it, and the four
+ * posts the cut does pass through, solid. The roof is part of the piece's own drawing, not a
+ * `roof` element. Everything is about one centre, so the symbol is `symmetric`.
+ *
+ * Only the posts are filled. The roof and the deck are outlines, as a `pergola` is: the table and
+ * chairs that stand in a gazebo are drawn as their own pieces, and an opaque deck would hide them
+ * or not depending on source order.
+ *
+ * Prim count: 10.
+ */
+export function drawGazebo(r: Rect, g: GlyphCtx): SceneNode[] {
+  dashedPoly(g, rectPoly(r), "none");
+  const s = Math.max(0, shortSide(r));
+  g.path(roundedRectPath(insetRect(r, 0.1), s * 0.02), "none", "extraThin");
+  const c = centerOf(r);
+  for (const p of rectRing(r)) g.seg(c, p, "extraThin", true);
+  const half = s * 0.025;
+  for (const p of rectRing(insetRect(r, 0.14))) {
+    g.poly(rectPoly({ x: p.x - half, y: p.y - half, w: 2 * half, h: 2 * half }), g.ink);
+  }
+  return g.nodes;
+}
+
+/**
+ * A greenhouse (a glasshouse): the frame of its walls, the glass inside the frame, and, DASHED
+ * because the roof is above the cut plane, the ridge along its own long axis and the glazing bars
+ * across it (one per 0.45 short sides of length, `[2, 8]` bays). Mirror-symmetric along and
+ * across; a run of bays, so neither `symmetric` nor `directional`.
+ *
+ * The frame and the glass are outlines, unfilled, as a `pergola` is: the benches and pots inside
+ * a greenhouse are drawn as their own pieces, and opaque glass would hide them or not depending on
+ * source order.
+ *
+ * Prim count: `2 + bays`.
+ */
+export function drawGreenhouse(r: Rect, g: GlyphCtx): SceneNode[] {
+  g.poly(rectPoly(r), "none");
+  g.poly(rectPoly(insetRect(r, 0.04)), "none", "extraThin");
+  const { long: L, short: S } = axes(r);
+  const f = Math.max(0, Math.min(L, S) * 0.04);
+  g.seg(axisPt(r, f, 0), axisPt(r, L - f, 0), "extraThin", true);
+  const bays = clampCount(L / (S * 0.45), 2, 8);
+  for (let i = 1; i < bays; i++) {
+    const a = (L * i) / bays;
+    g.seg(axisPt(r, a, f - S / 2), axisPt(r, a, S / 2 - f), "extraThin", true);
+  }
+  return g.nodes;
+}
+
+/**
+ * A climber (a climbing plant) on its trellis against a wall: the foliage, one closed outline in
+ * the lawn tint scalloped along its front, the trellis rail along the wall edge, and the stems
+ * running from the rail into the leaves (one per 1.5 depths of length, `[1, 16]`). The rail is on
+ * the back (top) edge, which is what the catalogue's `wallMounted` and `directional` rest on.
+ *
+ * Prim count: `2 + stems`.
+ */
+export function drawClimber(r: Rect, g: GlyphCtx): SceneNode[] {
+  const n = clampCount(r.w / (1.2 * r.h), 1, 24);
+  const lobe = Math.max(0, Math.min(r.h * 0.25, r.w / n / 2));
+  const yf = r.y + r.h - lobe;
+  const start = { x: r.x, y: r.y };
+  const edges: PathEdge[] = [
+    { t: "line", to: { x: r.x + r.w, y: r.y } },
+    { t: "line", to: { x: r.x + r.w, y: yf } },
+  ];
+  let cur: Point = { x: r.x + r.w, y: yf };
+  for (let i = n - 1; i >= 0; i--) {
+    const to = { x: r.x + (r.w * i) / n, y: yf };
+    edges.push(...bulgeArc(cur, to, lobe));
+    cur = to;
+  }
+  edges.push({ t: "line", to: start });
+  g.path({ start, edges }, g.fillFor(g.material?.primary, g.theme.lawn));
+  const rail = r.h * 0.14;
+  g.poly(rectPoly({ x: r.x, y: r.y, w: r.w, h: rail }), g.fillFor(g.material?.secondary), "extraThin");
+  const m = clampCount(r.w / (1.5 * r.h), 1, 16);
+  for (let i = 0; i < m; i++) {
+    const x = r.x + (r.w * (2 * i + 1)) / (2 * m);
+    g.seg({ x, y: r.y + rail }, { x, y: r.y + r.h * 0.6 }, "extraThin");
+  }
+  return g.nodes;
+}
+
+/**
+ * A bamboo clump: one stadium in the lawn tint along its own long axis, and the culms in it seen
+ * end on, two rows of rings (one per 0.35 short sides of length, `[1, 10]` a row, as
+ * `packages/archlang-3d` builds its culms). A run, so
+ * neither `symmetric` nor `directional`, and its own mirror image along and across.
+ *
+ * Prim count: `1 + 2 × culms`.
+ */
+export function drawBamboo(r: Rect, g: GlyphCtx): SceneNode[] {
+  g.path(roundedRectPath(r, shortSide(r) / 2), g.fillFor(g.material?.primary, g.theme.lawn));
+  const { long: L, short: S } = axes(r);
+  const n = clampCount(L / (S * 0.35), 1, 10);
+  const rho = Math.max(0, Math.min(S * 0.08, (L / n) * 0.3));
+  for (let i = 0; i < n; i++) {
+    const a = L / 2 + (L * (2 * i + 1 - n)) / (2 * n);
+    for (const b of [-S * 0.18, S * 0.18]) g.ring(axisPt(r, a, b), rho, "extraThin");
+  }
+  return g.nodes;
+}
+
+/** The share of a stepping-stone path's pitch left as the gap between two stones. */
+const STONE_GAP = 0.25;
+
+/**
+ * The stones of a stepping-stone path along a run `L` long: `[a0, a1]` along it, one per 1.2 short
+ * sides of length, `[2, 24]`, the first and last at the run's ends and the gaps equal (a quarter of
+ * the pitch). Built from both ends inward, so stone `n − 1 − k` is stone `k` reflected end for end;
+ * `packages/archlang-3d` lays its slabs by the same count and gap.
+ */
+function steppingStones(L: number, S: number): Array<[number, number]> {
+  const n = clampCount(L / (1.2 * S), 2, 24);
+  const gap = (L / n) * STONE_GAP;
+  const each = (L - (n - 1) * gap) / n;
+  const out: Array<[number, number]> = new Array(n);
+  for (let k = 0; k < Math.floor(n / 2); k++) {
+    const a = k * (each + gap);
+    out[k] = [a, a + each];
+    out[n - 1 - k] = [L - (a + each), L - a];
+  }
+  if (n % 2 === 1) out[(n - 1) / 2] = [(L - each) / 2, (L + each) / 2];
+  return out;
+}
+
+/**
+ * Stepping stones: a path of flat stones along the footprint's own long axis, each a rounded slab
+ * across the whole width, the gaps between them equal ({@link steppingStones}). Every stone is
+ * outline; mirror-symmetric along and across, a run, so neither `symmetric` nor `directional`.
+ *
+ * Prim count: `stones`, two to twenty-four.
+ */
+export function drawSteppingStones(r: Rect, g: GlyphCtx): SceneNode[] {
+  const { long: L, short: S } = axes(r);
+  for (const [a0, a1] of steppingStones(Math.max(0, L), Math.max(0, S))) {
+    const stone = axisRect(r, a0, a1, -S / 2, S / 2);
+    g.path(roundedRectPath(stone, shortSide(stone) * 0.35), g.body);
+  }
+  return g.nodes;
+}

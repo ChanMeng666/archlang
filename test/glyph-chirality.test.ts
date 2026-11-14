@@ -467,6 +467,24 @@ const HANDED_ON_MAIN: Readonly<Record<string, string>> = {
   server_rack: "... ... ... ... ... ... ...",
   hospital_bed: "... ... ... ... ... ... ...",
   workstation: "... ... ... ... ... ... ...",
+  // The new-families batch (product-roadmap RM8.9): measured on the branch that added them, with
+  // the same survey and key; every cell is symmetric, so the rule below holds them unhanded.
+  wall_ac: "... ... ... ... ... ... ...",
+  condenser: "... ... ... ... ... ... ...",
+  chest_freezer: "... ... ... ... ... ... ...",
+  wine_fridge: "... ... ... ... ... ... ...",
+  display_cabinet: "... ... ... ... ... ... ...",
+  folding_screen: "... ... ... ... ... ... ...",
+  daybed: "... ... ... ... ... ... ...",
+  pool: "... ... ... ... ... ... ...",
+  garden_gate: "... ... ... ... ... ... ...",
+  gazebo: "... ... ... ... ... ... ...",
+  greenhouse: "... ... ... ... ... ... ...",
+  wall_art: "... ... ... ... ... ... ...",
+  climber: "... ... ... ... ... ... ...",
+  bamboo: "... ... ... ... ... ... ...",
+  potted_tree: "... ... ... ... ... ... ...",
+  stepping_stones: "... ... ... ... ... ... ...",
 };
 
 /**

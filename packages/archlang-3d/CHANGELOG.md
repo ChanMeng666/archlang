@@ -4,6 +4,17 @@
 
 ### Added
 
+- T0 generators for the core's sixteen new fixture families (product-roadmap card RM8.9), so none
+  is a grey box: `wall_ac` (hung with its underside at 2100 mm), `condenser`, `chest_freezer`,
+  `wine_fridge`, `display_cabinet`, `folding_screen` (its even count of panels, as the plan draws),
+  `daybed`, `pool` (the water a slab at grade inside the coping, never dug: the ground is the
+  viewer's, at floor level; ledgered `pool-water-at-grade`), `garden_gate`, `gazebo` (a lofted
+  hipped roof), `greenhouse` (a gable extruded along its long axis), `wall_art` (hung by its top at
+  1900 mm, three quarters as tall as it is wide, 300 to 1000 mm, its underside ledgered per piece),
+  `climber`, `bamboo`, `potted_tree` and `stepping_stones` (the plan's count of stones). Every one is
+  mirror-symmetric, with its height, mount and materials ledgered; a family may now ledger a further
+  default (`T0Family.defaults`, `T0_DEFAULTS`). A plan that names none of the new words builds the
+  same Mesh3D and GLB as before.
 - A room's floor is laid in the finish its plan's author wrote (`room … floor <word>`, product-roadmap
   card RM8.7), read off the core's public `RRoom.floor` into Scene3D's new optional `Floor.pattern`;
   only a room with no `floor` word takes the default by its `uses` (`floorFinish`), ledgered as
