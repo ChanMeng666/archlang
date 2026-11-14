@@ -174,7 +174,7 @@ describe("the diagnostics are what lint() returns", () => {
       expect(j.diagnostics.length, f).toBeGreaterThanOrEqual(ds.length);
       for (const d of j.diagnostics) {
         expect(Object.keys(d).at(-1), f).toBe("stage");
-        expect(isAuthoringStage(d.stage), `${f}: stage ${String(d.stage)}`).toBe(true);
+        expect(typeof d.stage === "string" && isAuthoringStage(d.stage), `${f}: stage ${String(d.stage)}`).toBe(true);
       }
       const tail = j.diagnostics.slice(j.diagnostics.length - ds.length).map(({ stage: _s, ...rest }) => rest);
       expect(JSON.stringify(tail), f).toBe(
