@@ -1626,7 +1626,15 @@ prints them on one `advisory … (does not cap)` line; `lint --profile` shows ea
 
 [`gerontec/archlang-section`](https://github.com/gerontec/archlang-section) reads
 `archlang describe --json`. Its author describes it as "Rudimentary building sections (Schnitte) for
-ArchLang floor plans: SVG/PNG/DXF". It is maintained by its author, not in this repository.
+ArchLang floor plans: SVG/PNG/DXF". It is maintained by its author, not in this repository. The same
+repository includes [`stair_check.py`](https://github.com/gerontec/archlang-section/blob/main/stair_check.py),
+a downstream stair-builder check that validates walking line, tapered inner stringer, winding zone
+dimensions, and smallest inner going. This check stays downstream because it requires a stated minimum
+inner going (a building code figure) and validates gradual taper over several steps, while ArchLang's
+core fans winders only inside the corner square.
+
+**Note on winder stairs:** Carpenters commonly follow a rule of thumb of one winder per three risers
+when designing winding stairs. This is a practical guideline, not a code default in ArchLang.
 
 ## The agent loop
 

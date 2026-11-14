@@ -508,6 +508,15 @@
 |---|---|---|---|
 | RM-D37 | CI 吞吐研究的 P0–P2 各项，以及 backlog 里一直等所有者的 CI throughput E（merge queue）与 F（changelog 碎片） | **做：** P0-1 同步脚本（TP1，含 P1-4：给重新红队的重点清单）、P0-3 的 Playground 一半与 P1-3 主线三条腿分片（TP2）、P0-4（工作规则，`handoff.md` §5）、P2-3（TP3）。**暂缓：** P2-2 自动回滚（TP4）。**不做：** P0-2 关 strict、E（迁到组织 + merge queue，也不用第三方队列）、F、P2-1、P2-4、`finish.test.ts` 拆分与 Docs E2E 分片（各自的重开条件见 §10）。`ci-throughput.md` §2 的三条律都不变：同步后的头仍然每次重新红队，TP1 只给出重点 | 瓶颈是串行同步，不是 runner：strict 之后每个合并的 PR 平均同步 1.37 次，排队时间最多 10 秒。迁组织会断掉绑在 `ChanMeng666` 上的 MCP registry 名字、npm 可信发布与各处上架；F 的冲突由 TP1 的 union 合并解掉，不必改规则；按文件重叠跳过复审挡不住 `doorSwing()` 那一类事故 |
 
+### 6.10 楼梯规则裁定（2026-11-14，#532）
+
+基于 issue #532 中维护者与 gerontec 的讨论（2026-11-13），记录两项关于楼梯 winder 平台的裁定。
+
+| # | 问题 | 裁定 | 理由 |
+|---|---|---|---|
+| RM-D38 | block stair 能否在带 winders 的 quarter-turn landing 上终止（今天 1.60.0 报 `E_STAIR_PIECES` "must end on a flight"） | **允许。** 一个 block stair 可以在带 `winders` 的 quarter-turn landing 上终止，取最后一个 winder 的后缘作为到达边缘。`winderGoings` 已经把 winders 当作级数而非地面，所以 lint 不需要新的想法。不使用这个特性的平面保持字节恒等。**添加 roadmap 卡 ST.2**（阶段 F 候选）：gerontec（#533 的作者）被邀请提 PR；夹具：`gerontec/archlang-section` 的 `example/haus_winders.arch`（MIT 许可），去掉 560 mm 的替代梯段。按 roadmap 的排序规则放置，不重新排序其他卡 | 真实案例：在 #532 的房屋中，winders 在楼梯井终止：顶部 winder 的后缘就是楼板的边缘，因此到达楼面是最后一个"踏步"，没有上层梯段。在单户住宅中，quarter-turn stair 经常以这种方式到达，所以值得允许在带 `winders` 的 landing 上终止，取最后一个 winder 的后缘作为到达边缘。goings 积分（`winderGoings`）已经把 winders 当作级数而不是地面，所以 lint 方面似乎已经准备好了 |
+| RM-D39 | gerontec 的 stair-builder winder 检查（`stair_check.py`，在 `gerontec/archlang-section`：walking line、tapered inner stringer、winding zone ≥ 1.5 × arc、smallest inner going）是否纳入核心 | **不纳入核心。** 理由有二：(1) 其警告需要一个规定的最小内侧 going（一个标准数字，核心避开这类标准，与 #533 评审同一立场：仅几何）。(2) 它检查跨若干级的渐变锥度，而核心仅在拐角方形内扇形 winders。**它留在下游。** 如果核心获得渐变锥度或一种在不引入标准数字的情况下检查用户声明的最小值的方法，重新讨论。**在 docs 中添加一行**，将 `stair_check.py` 作为下游检查链接，放在现有的 archlang-section 下游读者列表旁边（如果存在此类列表）。**另记**：木匠的经验法则是每三个立管一个 winder（15 个立管，1000 mm 楼梯上 4-5 个 winders），作为可能的 docs 示例注释（无代码默认值） | gerontec 提议的检查需要一个声明的内侧 going 最小值，那是标准数字，核心保持在外（与 #533 中持有的同一立场）。它检查跨若干级的锥度，而核心仅在拐角方形内扇形 winders，所以核心会检查它不画的楼梯。宁愿将 `stair_check.py` 从 docs 链接为下游检查，放在 section 工具旁边。如果核心曾经画出渐变锥度，在这里重新讨论 |
+
 ---
 
 ## 7. 与已有计划的关系
