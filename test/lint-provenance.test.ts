@@ -471,10 +471,13 @@ describe("rule provenance — off the compile path", () => {
       expect(IMPORTS_PROVENANCE.test(readFileSync(join(ROOT, f), "utf8")), f).toBe(false);
   });
 
-  it("every table value is built through `pure`, so an unused export costs a bundle nothing", () => {
+  // The call site carries `@__PURE__` too: `pure` is declared in another chunk of `dist/`, and the
+  // playground's bundler reads `pure`'s own mark only within one file (measured on RM1.6b's build).
+  it("every table value is a marked `pure` call, so an unused export costs a bundle nothing", () => {
     const src = readFileSync(join(ROOT, "src/lint/provenance.ts"), "utf8");
-    for (const name of ["DEFAULTS", "PROFILES", "admHall", "NO_STORE_AREA", "NO_PASSAGE_AREA", "OFF", "sourceSchema", "LINT_RULES_SCHEMA_DRAFT"])
-      expect(src, name).toMatch(new RegExp(`const ${name}(?::[^=]+)? = pure\\(`));
+    const names = ["DEFAULTS", "PROFILES", "admHall", "NO_STORE_AREA", "NO_PASSAGE_AREA", "OFF", "sourceSchema"];
+    for (const name of [...names, "LINT_RULES_SCHEMA_DRAFT"])
+      expect(src, name).toMatch(new RegExp(`const ${name}(?::[^=]+)? = /\\* @__PURE__ \\*/ pure\\(`));
   });
 });
 

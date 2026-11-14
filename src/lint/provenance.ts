@@ -87,7 +87,7 @@ const adm = (clause: string | null, edition = "2015"): RuleSource => ({
   edition,
   verification: "V",
 });
-const admHall: RuleSource = pure(() => ({
+const admHall: RuleSource = /* @__PURE__ */ pure(() => ({
   ...adm(null),
   verification: "S-secondary",
   note: "the hall width of a category M4(2) dwelling, clause not named; second-hand: guidance summaries (designingbuildings.co.uk, LABC), not the Approved Document's text",
@@ -134,9 +134,9 @@ const which = (): RuleSource => ({
 
 // A row whose value is `null` says in its note what `null` means for that key: the text output
 // prints it beside the value (`test/lint-provenance.test.ts` holds every null row to a note).
-const NO_STORE_AREA = pure(() => conv("exempt, no floor: GB 50096-2011 sets no area for a store or a laundry"));
-const NO_PASSAGE_AREA = pure(() => conv("exempt, no floor: a passage is judged by its width, never its area"));
-const OFF = pure(() => conv("off by default; a profile sets it"));
+const NO_STORE_AREA = /* @__PURE__ */ pure(() => conv("exempt, no floor: GB 50096-2011 sets no area for a store or a laundry"));
+const NO_PASSAGE_AREA = /* @__PURE__ */ pure(() => conv("exempt, no floor: a passage is judged by its width, never its area"));
+const OFF = /* @__PURE__ */ pure(() => conv("off by default; a profile sets it"));
 /** IRC R304, as read: a forum quote of the 2012 text (`prior-art.md` §3.2, `design-taste.md` §2.5). */
 const R304_NOTE = "second-hand: a forum quote of the 2012 text (thebuildingcodeforum.com); the 2021 text was not read";
 const R311_6_NOTE = "second-hand, the source not named in the research record; the ICC text was not read";
@@ -145,7 +145,7 @@ const R311_7_NOTE = 'read in jurisdiction handouts (e.g. Placer County "Resident
 const P2705_NOTE = "read in trade articles (supplyht.com, hunker.com), not the ICC text";
 
 /** The provenance of every number of {@link DEFAULT_RULESET}, in its key order. */
-const DEFAULTS: Readonly<Record<string, RuleProvenance>> = pure(() => ({
+const DEFAULTS: Readonly<Record<string, RuleProvenance>> = /* @__PURE__ */ pure(() => ({
   minRoomAreaM2: CONVENTION,
   minDoorWidthMm: CONVENTION,
   tolMm: CONVENTION,
@@ -224,7 +224,7 @@ const DEFAULTS: Readonly<Record<string, RuleProvenance>> = pure(() => ({
 }));
 
 /** The provenance of every number each built-in profile SETS. */
-const PROFILES: Readonly<Record<string, Readonly<Record<string, RuleProvenance>>>> = pure(() => ({
+const PROFILES: Readonly<Record<string, Readonly<Record<string, RuleProvenance>>>> = /* @__PURE__ */ pure(() => ({
   "residential-basic": {
     assumeDwelling: conv("the profile judges every plan as a dwelling, as its name asserts"),
   },
@@ -418,7 +418,7 @@ export function diagnosticRule(d: Diagnostic): DiagnosticRuleJson | undefined {
   return { profile: ref.profile, ...row };
 }
 
-const sourceSchema = pure(() => ({
+const sourceSchema = /* @__PURE__ */ pure(() => ({
   type: "object",
   additionalProperties: false,
   required: ["document", "clause", "edition", "verification"],
@@ -443,7 +443,7 @@ export const LINT_RULES_SCHEMA_ID = "https://archlang.uk/schemas/lint-rules/v0.s
  * The JSON schema of {@link EffectiveRuleset}, a DRAFT (`v0`, `$id` {@link LINT_RULES_SCHEMA_ID}),
  * not published as a file. The enums are read from the source ({@link VERIFICATION_GRADES}).
  */
-export const LINT_RULES_SCHEMA_DRAFT = pure(() => ({
+export const LINT_RULES_SCHEMA_DRAFT = /* @__PURE__ */ pure(() => ({
   $schema: "https://json-schema.org/draft/2020-12/schema",
   $id: LINT_RULES_SCHEMA_ID,
   title: "ArchLang lint ruleset with provenance (draft)",
