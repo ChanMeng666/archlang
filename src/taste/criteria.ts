@@ -562,7 +562,7 @@ const levelOf = (s: TasteStorey): { level?: number } => (s.level !== undefined ?
 
 /** The words a bedroom's defining piece is written with (`bed` and its `or` words), from the
  *  table `finish` furnishes from (`src/lint/defining.ts`). */
-const BED_WORDS: ReadonlySet<string> = pure(
+const BED_WORDS: ReadonlySet<string> = /* @__PURE__ */ pure(
   () => new Set(definingItems("bedroom").flatMap((i) => [i.category, ...(i.or ?? [])])),
 );
 

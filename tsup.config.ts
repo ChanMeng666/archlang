@@ -22,7 +22,12 @@ export default defineConfig({
   // lands in a small chunk that `dist/share.js`, `dist/cli/link.js` and `dist/cli.js` share (the
   // Node encoder imports the edit flag from it); `dist/index.js` imports none of it, so it stays
   // out of the compiler chunk the playground splits off.
-  entry: ["src/index.ts", "src/cli.ts", "src/cli/link.ts", "src/cli/review.ts", "src/share.ts"],
+  // `src/compile-path.ts` (card RM0.7f) names what the playground's compiler chunk serves; as an
+  // entry of its own it splits the shared code in two, the chunks it reaches and the chunks only
+  // the rest of `dist/index.js` reaches, so the playground's `compiler` group can take the first
+  // and leave the rest (`finish`, `repair`, `toDxf`, …) to the lazy chunks that use it. Its own
+  // file holds only imports and exports; it is not a package export and not in the npm tarball.
+  entry: ["src/index.ts", "src/cli.ts", "src/cli/link.ts", "src/cli/review.ts", "src/share.ts", "src/compile-path.ts"],
   format: ["esm"],
   dts: { entry: ["src/index.ts", "src/cli.ts", "src/cli/link.ts", "src/share.ts"] },
   clean: true,

@@ -269,6 +269,12 @@ Totals: 636 exports (222 values, 414 types), 404 flagged (73 values).
 | `renderPng` | value | `packages/archlang-3d`, `packages/mcp`, `src/cli`, `test` |
 | `renderPngFromSvg` | value | `scripts`, `src/cli` |
 
+## `src/compile.ts`
+
+| Export | Kind | In-repo consumers |
+| --- | --- | --- |
+| `compile` | value | `bench`, `dataset`, `docs-site`, `editors`, `eval`, `packages/archlang-3d`, `packages/mcp`, `packages/mcp-worker`, `packages/web-component`, `playground`, `scripts`, `src`, `src/cli`, `test`, `tools` |
+
 ## `src/datum.ts`
 
 | Export | Kind | In-repo consumers |
@@ -565,7 +571,6 @@ Totals: 636 exports (222 values, 414 types), 404 flagged (73 values).
 | Export | Kind | In-repo consumers |
 | --- | --- | --- |
 | `clearCache` | value | `test` |
-| `compile` | value | `bench`, `dataset`, `docs-site`, `editors`, `eval`, `packages/archlang-3d`, `packages/mcp`, `packages/mcp-worker`, `packages/web-component`, `playground`, `scripts`, `src`, `src/cli`, `test`, `tools` |
 
 ## `src/input-limit.ts`
 

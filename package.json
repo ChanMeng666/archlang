@@ -56,6 +56,8 @@
     "dist",
     "!dist/error-catalog.js",
     "!dist/error-catalog.js.map",
+    "!dist/compile-path.js",
+    "!dist/compile-path.js.map",
     "examples",
     "spec.llm.md",
     "llms-full.txt",

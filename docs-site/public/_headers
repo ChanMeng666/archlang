@@ -8,8 +8,8 @@
 # Vercel set all three of these implicitly on every response. Cloudflare sets none.
 #
 #   Access-Control-Allow-Origin — the JSON Schemas are published under their
-#     canonical $id URLs (https://archlang.uk/plan.schema.json is what
-#     src/plan-json.ts writes into every Plan JSON document), and llms.txt
+#     canonical $id URLs (https://archlang.uk/plan.schema.json is the
+#     `schema` URL the MCP compile tool returns with format "json"; planToJson writes no $id), and llms.txt
 #     advertises the whole root as machine-fetchable. Dropping CORS silently
 #     breaks any browser-context validator or agent. NO TEST IN THIS REPO WOULD
 #     CATCH IT: scripts/smoke.mjs is Node fetch and Playwright's `request`
