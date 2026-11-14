@@ -81,12 +81,14 @@ The E2E suites (CI runs both) serve the built output, so build first — e.g.
 server (that is how the nightly workflow re-runs the read-only `@prod` subset against production).
 
 **What PR CI runs.** `ci.yml` gates a PR on Node 22 (typecheck, lint, drift, eval and the test
-suite in three shards), a **builds** job (all four workspaces compile, `typecheck:all`, the MCP
-baked-resource freshness check, the VS Code bundle tests) and the two **Playwright E2E** jobs, plus
-an informational benchmark comment that never gates. Node 18, Node 20 and **Windows** (tests + drift
-at the runner's default line endings) keep their checks but report green without running on a PR;
-they run on every push to `main` and nightly, so run the suite locally if your change is sensitive to
-Node version or platform. `codeql.yml` adds static security analysis on the same events. A separate
+suite in five shards), a **builds** job (all four workspaces compile, `typecheck:all`, the MCP
+baked-resource freshness check, the VS Code bundle tests) and the **Playwright E2E** jobs (the
+playground in three: two Chromium shards and one Firefox + WebKit job, behind one
+`Playground E2E (Playwright)` check; and the docs site), plus an informational benchmark comment
+that never gates. Node 18, Node 20 and **Windows** (tests + drift at the runner's default line
+endings) keep their checks but report green without running on a PR; they run, each in three
+shards, on every push to `main` and nightly, so run the suite locally if your change is sensitive
+to Node version or platform. `codeql.yml` adds static security analysis on the same events. A separate
 `nightly.yml` runs production smoke, a report-only dependency audit, a full-history secret scan, the
 OS×Node matrix, report-only coverage and the read-only E2E subset against the live sites.
 

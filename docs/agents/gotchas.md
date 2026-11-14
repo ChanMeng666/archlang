@@ -90,8 +90,9 @@ coordinator's own notes (merging, registries, browser and social automation, the
   those records are recounted only at a stage end, never per PR.
 - **`gh pr update-branch` stales the generated artifacts.** GitHub's textual merge of `test/INDEX.md`
   (its header count) and `docs/agents/module-map.md` is not the generator's output, so the updated head
-  fails `check:drift`/`test-index` (#669, 2026-11-10). When `main` moved a generated file since the branch,
-  merge `main` locally, run `npm run gen:all`, commit, push, re-pin (`commands.md` § Merging a PR).
+  fails `check:drift`/`test-index` (#669, 2026-11-10). Sync with `npm run sync:main -- --push` in the PR's
+  worktree instead: it merges `main` locally, regenerates, commits and pushes; then re-review, then
+  re-pin (`commands.md` § Merging a PR).
 - **The PR-scale fuzz passes while the nightly's `FC_SCALE=10` fails.** A seeded property replays the same
   first runs, so a counterexample at run 494+ only ever appears in `fuzz-deep` (#664). Download its
   `fuzz-deep-report.json`, reproduce with a `tsx` probe, then card the real defect; never widen the seed.
