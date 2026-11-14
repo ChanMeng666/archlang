@@ -153,7 +153,7 @@ function noFixtureHint(ctx: LintContext, r: RRoom): string {
   // lacking its defining piece, which `W_ROOM_MISSING_DEFINING` reports — a hint that trades
   // one warning for another.
   const items = roomDefiningItems(r);
-  const paste = pasteSet(ctx, r, items);
+  const paste = noFixturePaste(ctx, r);
   const named = items
     .map((i) =>
       itemWords(i)
@@ -165,6 +165,24 @@ function noFixtureHint(ctx: LintContext, r: RRoom): string {
     return `Place the fixtures that make it a ${noun(r)} (nothing to import) — e.g. ${paste.stmts.map((s) => `\`${s}\``).join(" and ")}.`;
   const fp = paste.footprint;
   return `Place the fixtures that make it a ${noun(r)} (nothing to import), ${named}: a \`${paste.item.category}\`${fp ? ` (${fmt2(fp.along)} along a wall, ${fmt2(fp.depth)} deep)` : ""} does not fit, because ${pasteFailureWhy(ctx, paste.failure)}.`;
+}
+
+/** The `W_ROOM_NO_FIXTURE` hint's {@link pasteSet} of a room, taken once per lint context and
+ *  room, so `W_LABEL_PIECE_MISSING` reads what that hint pastes without verifying (and charging)
+ *  the same set again. */
+const NO_FIXTURE_PASTE = new WeakMap<LintContext, Map<string, ReturnType<typeof pasteSet>>>();
+export function noFixturePaste(ctx: LintContext, r: RRoom): ReturnType<typeof pasteSet> {
+  let byRoom = NO_FIXTURE_PASTE.get(ctx);
+  if (byRoom === undefined) {
+    byRoom = new Map();
+    NO_FIXTURE_PASTE.set(ctx, byRoom);
+  }
+  let paste = byRoom.get(r.id);
+  if (paste === undefined) {
+    paste = pasteSet(ctx, r, roomDefiningItems(r));
+    byRoom.set(r.id, paste);
+  }
+  return paste;
 }
 
 /** What a wet room or kitchen is called in the `W_ROOM_NO_FIXTURE` hint. */

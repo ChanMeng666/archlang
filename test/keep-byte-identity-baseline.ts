@@ -10,7 +10,7 @@
  * PR legitimately moves a hashed output (never keep code), the table is re-taken by the generator, the
  * reason recorded below and the moved files listed in that commit's message.
  *
- * Taken: RM1.3b (#743) on feat/rm1.3b-suggest-and-hint after merging origin/main c81b0eca: the 16 rows that move are the plans emitting W_PATH_TOO_NARROW under the default ruleset, whose validate --json carries that code's catalogue fix text, which gained a sentence; every step count is unchanged
+ * Taken: RM1.2c (W_LABEL_PIECE_MISSING) on feat/rm1.2c-label-names-piece from origin/main f05df528: the one row that moves is test/defect-corpus/missing-defining-contents/desk-nook-no-desk.arch, whose lint() and validate --json gain the new warning (its header now says expect W_LABEL_PIECE_MISSING, status done, which moves no hashed output); with the rule taken out of LINT_RULES the row reproduces main on both the old and the new source; every step count is unchanged
  */
 
 /** `[path from the repository root, SHA-256 of the payload, evaluation steps]`, sorted by root. */
@@ -853,7 +853,7 @@ export const KEEP_WEAK_BASELINE: readonly (readonly [string, string, number])[] 
   ],
   [
     "test/defect-corpus/missing-defining-contents/desk-nook-no-desk.arch",
-    "4895e9e05ebdec2dcb6368789a18d218d4bfd26c251684cd080c54b7c56b7d04",
+    "90a7c2324631446886194c32933f9be60489df70f2257d17d3053beb17abca83",
     152,
   ],
   [

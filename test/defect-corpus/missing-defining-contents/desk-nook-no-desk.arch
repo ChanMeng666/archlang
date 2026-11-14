@@ -1,10 +1,10 @@
 # class: missing-defining-contents
 # origin: product-roadmap evidence.md section 1 (a label with no object: the "desk nook" of the Opus first-contact test; reduced)
-# expect: W_ROOM_MISSING_DEFINING
-# status: todo
+# expect: W_LABEL_PIECE_MISSING
+# status: done
 # fact: r_nook is labelled "Desk Nook" and holds a bookshelf and no desk. The label reads no use
-#   (describe: uses []; lint coverage skips the room as no-uses), and `uses office` would not
-#   report it either (DEFINING.office is `none`: a study can be a reading room with no desk)
+#   (describe: uses []; lint coverage skips the room as no-uses), so W_ROOM_MISSING_DEFINING cannot
+#   report it (DEFINING.office is `none` anyway); the label names a desk, a catalogued piece
 plan "Desk nook without a desk" {
   units mm
   grid 50

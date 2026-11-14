@@ -5,7 +5,7 @@
 Where the tests of a `src` module are, and what each test file is for. Generated; `npm run check:drift`
 fails when it is stale. How to add a test: `docs/testing.md` § 4.
 
-509 test files in `test/`, 283 `src` modules, 108 modules no test imports.
+510 test files in `test/`, 283 `src` modules, 106 modules no test imports.
 
 ## `src` module → tests that import it
 
@@ -64,7 +64,7 @@ Nearest first, then by name; `(+n)` is the rest. Test names are `test/<name>.tes
 - `src/elements/dim.ts` (1) — `annotation-collisions`
 - `src/elements/door.ts` (1) — `window-kinds`
 - `src/elements/facets.ts` (1) — `element-facets`
-- `src/elements/fixtures-glyphs.ts` (23) — `catalogue-images`, `cli-manifest`, `drawing-budget`, `equivariance-scene`, `finish-furnish`, `fixture-classifier-drift`, `furniture-mirror`, `glyph-chirality` (+15)
+- `src/elements/fixtures-glyphs.ts` (24) — `catalogue-images`, `cli-manifest`, `drawing-budget`, `equivariance-scene`, `finish-furnish`, `fixture-classifier-drift`, `furniture-mirror`, `glyph-chirality` (+16)
 - `src/elements/furniture.ts` (11) — `furniture-relations`, `furniture-rotate`, `glyph-chirality`, `glyph-lib`, `glyphs-kitchen`, `glyphs-living`, `glyphs-misc`, `glyphs-new-families` (+3)
 - `src/elements/glyph-chirality.ts` (12) — `furniture-mirror`, `glyph-chirality`, `glyph-lib`, `glyphs-bath`, `glyphs-bedroom`, `glyphs-kitchen`, `glyphs-living`, `glyphs-misc` (+4)
 - `src/elements/glyph-lib.ts` (18) — `doors`, `equivariance-scene`, `furniture-mirror`, `glyph-chirality`, `glyph-lib`, `glyphs-batch2`, `glyphs-bath`, `glyphs-bedroom` (+10)
@@ -94,9 +94,10 @@ Nearest first, then by name; `(+n)` is the rest. Test names are `test/<name>.tes
 - `src/fix-apply.ts` (1) — `fix-apply`
 - `src/fix-producers.ts` (2) — `emit-opening-oracle`, `fix-printer`
 - `src/fixture-orientation.ts` (2) — `fixture-orientation`, `rectilinear-sides`
-- `src/fixtures-catalog.ts` (32) — `catalogue-images`, `equivariance-corpus`, `export-dxf-blocks`, `finish-furnish`, `fixture-classifier-drift`, `fixture-orientation`, `furniture-mirror`, `glyph-chirality` (+24)
+- `src/fixtures-catalog.ts` (33) — `catalogue-images`, `equivariance-corpus`, `export-dxf-blocks`, `finish-furnish`, `fixture-classifier-drift`, `fixture-orientation`, `furniture-mirror`, `glyph-chirality` (+25)
 - `src/format.ts` (58) — `axes`, `dim-faces`, `fence`, `furniture-against`, `furniture-lint`, `furniture-rotate`, `opening`, `openings-between` (+50)
 - `src/frame.ts` (44) — `compose-assoc`, `d4`, `equivariance-corpus`, `equivariance-fuzz`, `equivariance-scene`, `frame`, `furniture-mirror`, `symmetry` (+36)
+- `src/furnish-table.ts` (1) — `lint-label-piece-missing`
 - `src/furnish.ts` (7) — `finish-furnish`, `finish-levels`, `finish`, `fuzz`, `keep`, `lint-furniture-on-stair`, `lint-hint-paste`
 - `src/furniture-relation.ts` (2) — `furniture-relations`, `rect-ring`
 - `src/geometry.ts` (27) — `band`, `circle-enclosure`, `curves`, `dim-thickness-callout`, `doors`, `double-door-byte-identity`, `equivariance-corpus`, `frame` (+19)
@@ -117,7 +118,7 @@ Nearest first, then by name; `(+n)` is the rest. Test names are `test/<name>.tes
 - `src/impact.ts` (2) — `rectilinear-doors`, `rectilinear-rooms`
 - `src/import.ts` (31) — `block-stair-byte-identity`, `corner-window-byte-identity`, `dim-thickness-callout`, `drawing-budget`, `floor-materials-byte-identity`, `furniture-relations`, `gaps-byte-identity`, `keep` (+23)
 - `src/import/limits.ts` (1) — `openplan3d-malformed`
-- `src/index.ts` (383) — `acc-metadata`, `access-graph`, `access-policy`, `accessible-svg`, `agent-gallery`, `alias-match`, `anchors`, `annotate` (+375)
+- `src/index.ts` (384) — `acc-metadata`, `access-graph`, `access-policy`, `accessible-svg`, `agent-gallery`, `alias-match`, `anchors`, `annotate` (+376)
 - `src/input-limit.ts` (2) — `import-rooted`, `workspace-seams`
 - `src/intent-concepts.ts` (2) — `vocabulary-living-dining`, `vocabulary-matcher-oracle`
 - `src/intent.ts` (1) — `site`
@@ -141,6 +142,7 @@ Nearest first, then by name; `(+n)` is the rest. Test names are `test/<name>.tes
 - `src/lint/rules/enclosure.ts` (3) — `lint-exterior-ring`, `lint-index-superset`, `wall-closure-measure`
 - `src/lint/rules/index.ts` (12) — `block-stair-landing`, `block-stair-lint`, `error-catalog-families`, `lint-back-to-room-side-on`, `lint-clearances-kitchen-doors`, `lint-clearances-wc-window`, `lint-exterior-ring`, `lint-fix-texts` (+4)
 - `src/lint/rules/per-room.ts` (2) — `fixture-classifier-drift`, `lint-fix-texts`
+- `src/lint/rules/room-contents.ts` (1) — `lint-label-piece-missing`
 - `src/lint/rules/stairs.ts` (4) — `block-stair-landing`, `block-stair-lint`, `lint-stair-riser-too-high`, `lint-stairs`
 - `src/lint/ruleset.ts` (15) — `block-stair-landing`, `block-stair-lint`, `block-stair-shaft`, `block-stair`, `circle-enclosure`, `lint-clearances-kitchen-doors`, `lint-clearances-wc-window`, `lint-exterior-ring` (+7)
 - `src/lint/storeys.ts` (5) — `block-stair-landing`, `block-stair-lint`, `block-stair-shaft`, `block-stair`, `lint-index-superset`
@@ -183,7 +185,7 @@ Nearest first, then by name; `(+n)` is the rest. Test names are `test/<name>.tes
 - `src/view/camera.ts` (5) — `iso-camera`, `iso-mixed-heights`, `iso-painter-order`, `iso-projection`, `iso-sort`
 - `src/view/extrude.ts` (4) — `iso-mixed-heights`, `iso-painter-order`, `iso-projection`, `iso-sort`
 - `src/view/paint.ts` (4) — `iso-cli`, `iso-mixed-heights`, `iso-painter-order`, `iso-sort`
-- `src/vocabulary.ts` (7) — `alias-match`, `garage`, `grid-index`, `room-overlap-oracle`, `vocabulary-fallback`, `vocabulary-living-dining`, `vocabulary-matcher-oracle`
+- `src/vocabulary.ts` (8) — `alias-match`, `garage`, `grid-index`, `lint-label-piece-missing`, `room-overlap-oracle`, `vocabulary-fallback`, `vocabulary-living-dining`, `vocabulary-matcher-oracle`
 - `src/wall-lowering.ts` (2) — `joinery-split`, `open-crossing`
 - `src/wall-ref.ts` (2) — `rectilinear-rooms`, `walls-from-rooms`
 - `src/while-fix.ts` (1) — `while-fix`
@@ -476,6 +478,7 @@ The first sentence of each file's header comment.
 - `test/lint-furniture-on-void.test.ts` — CR2 group D: `W_FURNITURE_ON_VOID`, a piece standing on a void, a lift shaft or an escalator of its own storey, and `finish` keeping a single-storey plan's pieces off a void (it used to read voids only on a plan of `l...
 - `test/lint-hint-paste.test.ts` — A quoted fixture hint never warns when pasted (plan-soundness PS2.17, PR #216 review rounds 2 and 3).
 - `test/lint-index-superset.test.ts` — The lint rules' spatial filters drop nothing a full scan would measure (engineering-health EH2.10).
+- `test/lint-label-piece-missing.test.ts` — Product roadmap RM1.2c (ruling RM-D35): `W_LABEL_PIECE_MISSING`, a room whose label names a catalogued piece it does not hold ("Desk Nook" with no desk).
 - `test/lint-layers.test.ts` — Every lint rule declares its soundness LAYER and the codes it may emit (ADR 0032).
 - `test/lint-measure.test.ts` — mm — millimetre rounding into diagnostic prose; shortfall — how far `required` exceeds `available`; deficitMm — a requirement, an availability and a shortfall t…
 - `test/lint-messages-id-free.test.ts` — no message over the corpus quotes an internal id (PS2.22, PS2.29); makeNaming — what an unlabelled room is called (src/naming.ts); the storey is named only on a…
@@ -759,7 +762,6 @@ module); adding a test that imports it removes it from this list.
 - `src/error-catalog/site.ts`
 - `src/error-catalog/vertical.ts`
 - `src/error-catalog/walls.ts`
-- `src/furnish-table.ts`
 - `src/hash.ts`
 - `src/id-spans.ts`
 - `src/identity.ts`
@@ -790,7 +792,6 @@ module); adding a test that imports it removes it from this list.
 - `src/lint/rules/outdoor.ts`
 - `src/lint/rules/privacy.ts`
 - `src/lint/rules/reachability.ts`
-- `src/lint/rules/room-contents.ts`
 - `src/lint/rules/site.ts`
 - `src/lint/rules/vertical.ts`
 - `src/lint/work.ts`
