@@ -873,15 +873,17 @@ export const stairSideEntry: LintRule = {
           const m = deficitMm(min, gap);
           const kind = c.kind === "door" ? "door" : "opening";
           const ref = connectorRef(ctx, c);
-          out.push(cite(ctx.rules, "minPathClearWidthMm", {
-            severity: "warning",
-            code: "W_STAIR_SIDE_ENTRY",
-            ...ctx.at(c),
-            message: `${capitalise(openingName(ctx, c))} opens onto the side of ${stairName(v, ctx)}, ${m.available} mm from the flight: less than the ${m.required} mm a person needs to step through and turn, and a flight is entered at its foot or head, from a landing.`,
-            hints: [
-              `Move ${ref.startsWith("`") ? `the ${kind} ${ref}` : ref} along its wall past the end of \`${v.id}\`, or move the stair so at least ${m.required} mm stand between the doorway and the flight.`,
-            ],
-          }));
+          out.push(
+            cite(ctx.rules, "minPathClearWidthMm", {
+              severity: "warning",
+              code: "W_STAIR_SIDE_ENTRY",
+              ...ctx.at(c),
+              message: `${capitalise(openingName(ctx, c))} opens onto the side of ${stairName(v, ctx)}, ${m.available} mm from the flight: less than the ${m.required} mm a person needs to step through and turn, and a flight is entered at its foot or head, from a landing.`,
+              hints: [
+                `Move ${ref.startsWith("`") ? `the ${kind} ${ref}` : ref} along its wall past the end of \`${v.id}\`, or move the stair so at least ${m.required} mm stand between the doorway and the flight.`,
+              ],
+            }),
+          );
           break;
         }
       }
@@ -1392,13 +1394,15 @@ export const stairRiserTooHigh: LintRule = {
         plan === null || plan.redrawn.length === 0
           ? `Lengthen ${block ? `the flights of \`${v.id}\`` : `\`${v.id}\` along its flight`} on every storey it is drawn on (every ${TREAD_GOING_MM} mm of a flight's run draws one more tread), or correct the storey \`height\` if it is wrong`
           : `${redrawText(v, plan.redrawn)} on every storey it is drawn on, so it draws ${plan.treads} treads and climbs on ${plan.risers} risers of ${limitMm(rise / plan.risers)}, or correct the storey \`height\` if it is wrong`;
-      out.push(cite(ctx.rules, "stairDrawnMaxRiseMm", {
-        severity: "warning",
-        code: "W_STAIR_RISER_TOO_HIGH",
-        ...ctx.at(v),
-        message: `${capitalise(stairName(v, ctx))} ${what} of ${limitMm(rise / risers)}, above ${limitMm(max)}: ${why}.`,
-        hints: [`${fix}; the limit is ${limit}.`],
-      }));
+      out.push(
+        cite(ctx.rules, "stairDrawnMaxRiseMm", {
+          severity: "warning",
+          code: "W_STAIR_RISER_TOO_HIGH",
+          ...ctx.at(v),
+          message: `${capitalise(stairName(v, ctx))} ${what} of ${limitMm(rise / risers)}, above ${limitMm(max)}: ${why}.`,
+          hints: [`${fix}; the limit is ${limit}.`],
+        }),
+      );
     }
     return out;
   },

@@ -148,7 +148,9 @@ describe("the diagnostics are what lint() returns", () => {
       expect(JSON.stringify(j.diagnostics), f).toBe(
         JSON.stringify(ds.map((d) => diagnosticToJson(src, d, { rule: diagnosticRule }))),
       );
-      const withoutRule = (j.diagnostics as unknown as Array<Record<string, unknown>>).map(({ rule: _r, ...rest }) => rest);
+      const withoutRule = (j.diagnostics as unknown as Array<Record<string, unknown>>).map(
+        ({ rule: _r, ...rest }) => rest,
+      );
       expect(JSON.stringify(withoutRule), f).toBe(JSON.stringify(ds.map((d) => diagnosticToJson(src, d))));
       ruled += (j.diagnostics as unknown as Array<Record<string, unknown>>).filter((d) => d.rule !== undefined).length;
       checked++;

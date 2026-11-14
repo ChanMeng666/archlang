@@ -134,8 +134,12 @@ const which = (): RuleSource => ({
 
 // A row whose value is `null` says in its note what `null` means for that key: the text output
 // prints it beside the value (`test/lint-provenance.test.ts` holds every null row to a note).
-const NO_STORE_AREA = /* @__PURE__ */ pure(() => conv("exempt, no floor: GB 50096-2011 sets no area for a store or a laundry"));
-const NO_PASSAGE_AREA = /* @__PURE__ */ pure(() => conv("exempt, no floor: a passage is judged by its width, never its area"));
+const NO_STORE_AREA = /* @__PURE__ */ pure(() =>
+  conv("exempt, no floor: GB 50096-2011 sets no area for a store or a laundry"),
+);
+const NO_PASSAGE_AREA = /* @__PURE__ */ pure(() =>
+  conv("exempt, no floor: a passage is judged by its width, never its area"),
+);
 const OFF = /* @__PURE__ */ pure(() => conv("off by default; a profile sets it"));
 /** IRC R304, as read: a forum quote of the 2012 text (`prior-art.md` §3.2, `design-taste.md` §2.5). */
 const R304_NOTE = "second-hand: a forum quote of the 2012 text (thebuildingcodeforum.com); the 2021 text was not read";

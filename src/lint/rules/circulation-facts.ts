@@ -1079,16 +1079,18 @@ export const circuitousPath: LintRule = {
       // (a stair arrival) is just "the entrance".
       const door = ctx.connectors.find((c) => c.id === entrance);
       const from = door ? `the entrance (${openingName(ctx, door)})` : "the entrance";
-      out.push(cite(ctx.rules, "maxDetourRatio", {
-        severity: "warning",
-        code: "W_CIRCUITOUS_PATH",
-        ...at(r),
-        message: `The walk from ${from} to ${nameOf(r)} is ${rc.detourRatio}× the straight-line distance from that entrance (over ${max}×).`,
-        hints: [
-          "Add a more direct connection — a door or a hall — so the room isn't reached the long way round.",
-          `The entrance it is measured from is \`${entrance}\`.`,
-        ],
-      }));
+      out.push(
+        cite(ctx.rules, "maxDetourRatio", {
+          severity: "warning",
+          code: "W_CIRCUITOUS_PATH",
+          ...at(r),
+          message: `The walk from ${from} to ${nameOf(r)} is ${rc.detourRatio}× the straight-line distance from that entrance (over ${max}×).`,
+          hints: [
+            "Add a more direct connection — a door or a hall — so the room isn't reached the long way round.",
+            `The entrance it is measured from is \`${entrance}\`.`,
+          ],
+        }),
+      );
     }
     return out;
   },

@@ -143,7 +143,10 @@ function lintRun(
   if (!ir) return { diagnostics: [], coverage: null, layers: LINT_CODE_LAYERS };
   const out = lintResolved(ir, levels, rules, work);
   // RM1.6b: the ruleset numbers the rules cited name the built-in profile they came from.
-  stampRuleProfile(out.diagnostics, opts.profile !== undefined && Object.hasOwn(LINT_PROFILES, opts.profile) ? opts.profile : null);
+  stampRuleProfile(
+    out.diagnostics,
+    opts.profile !== undefined && Object.hasOwn(LINT_PROFILES, opts.profile) ? opts.profile : null,
+  );
   return out;
 }
 
@@ -184,7 +187,9 @@ function lintResolved(
   if (levels.length > 0) {
     const out = storeys.flatMap((st) => {
       unclassified.push(...unclassifiedRooms(st.ir, st.level));
-      return lintStorey(st.ir, rules, st.building, notes, work, st.level).map((d) => carryRule(d, { ...d, level: st.level }));
+      return lintStorey(st.ir, rules, st.building, notes, work, st.level).map((d) =>
+        carryRule(d, { ...d, level: st.level }),
+      );
     });
     return {
       diagnostics: reconcileSharedFixes(out, levels),
