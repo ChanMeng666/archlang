@@ -17,7 +17,7 @@ file; no pitched roofs or balcony railings yet, and no sections, elevations or B
 npm install @chanmeng666/archlang-3d @chanmeng666/archlang
 ```
 
-Needs Node 20 or newer. The core, `@chanmeng666/archlang`, is a peer dependency at `^1.57.0`. To
+Needs Node 20 or newer. The core, `@chanmeng666/archlang`, is a peer dependency at `^1.61.0`. To
 follow along, take a plan from the examples the core ships:
 
 ```sh

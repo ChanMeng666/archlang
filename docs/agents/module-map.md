@@ -37,7 +37,7 @@ Totals: 399 modules in 34 directories.
 
 | Module | Lines | Importers | Summary | Budget |
 | --- | ---: | ---: | --- | --- |
-| `adapt.ts` | 131 | 5 | `.arch` source → Scene3D, or a NAMED refusal. The one input path is the core's `resolvePlan(source, { world })` (ADR 0031): parse → link → resolve, so imported and placed content is present. A plan the core does not resolve, or one with… | none |
+| `adapt.ts` | 132 | 5 | `.arch` source → Scene3D, or a NAMED refusal. The one input path is the core's `resolvePlan(source, { world })` (ADR 0031): parse → link → resolve, so imported and placed content is present. A plan the core does not resolve, or one with… | none |
 
 ## `packages/archlang-3d/src/check/`
 

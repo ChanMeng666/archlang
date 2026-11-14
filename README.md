@@ -32,7 +32,7 @@ Just looking? [Open the playground](https://playground.archlang.uk) — no insta
 Starting from a photo or PDF? Read https://archlang.uk/from-an-image. To change one room without moving the others, use `impact --lock` (https://archlang.uk/edit-one-room).
 ```
 
-Or add the MCP server: `claude mcp add --transport http archlang https://mcp.archlang.uk/mcp` (locally, `claude mcp add archlang -- npx -y @chanmeng666/archlang-mcp`). The skills are listed on [skills.sh](https://skills.sh/ChanMeng666/archlang).
+Or add the MCP server: `claude mcp add --transport http archlang https://mcp.archlang.uk/mcp` (locally, `claude mcp add archlang -- npx -y @chanmeng666/archlang-mcp`). The skills are listed on [skills.sh](https://skills.sh/ChanMeng666/archlang). (A root `.mcp.json` file is provided for MCP directory detection.)
 
 - **ChatGPT, no install:** [ArchLang app in ChatGPT](https://chatgpt.com/plugins/plugin_asdk_app_6acf8381cca08191bfb3eb7305fb6970), then ask, for example: "Draw a two-bedroom flat of about 75 m² as an ArchLang plan, and check it."
 - **claude.ai, no install:** add `https://mcp.archlang.uk/mcp` as a custom connector ([the steps](https://archlang.uk/start#door-claudeai))
