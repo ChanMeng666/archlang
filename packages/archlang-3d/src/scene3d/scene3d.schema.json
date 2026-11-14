@@ -566,6 +566,14 @@
                     "$ref": "#/$defs/um"
                   }
                 }
+              },
+              "winders": {
+                "type": "array",
+                "minItems": 2,
+                "description": "A winders landing's tapered treads in climbing order, each its plan ring, cut by the lines the core's drawing draws across it; absent on a level landing.",
+                "items": {
+                  "$ref": "#/$defs/ring"
+                }
               }
             }
           }

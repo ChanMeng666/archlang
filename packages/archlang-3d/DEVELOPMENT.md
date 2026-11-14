@@ -35,7 +35,8 @@ const mesh = r.ok ? buildMesh(r.scene) : null; // closed, outward-wound shells; 
   site (planting, garden, vehicles, terrace, small standing objects) in `t0-outdoor.ts`, office
   and commercial in `t0-office.ts`, the shared part kit in `t0-kit.ts`: every catalogued family)
   and a grey box for a word outside the catalogue, stairs (`stair.ts`, `stairDetail`: tread boards
-  with open risers, two stringers a flight, each landing a box, a balustrade on each edge with no
+  with open risers, two stringers a flight, each landing a box (a `winders` landing its tapered
+  treads, one riser each, cut on the core's `winderTreads` lines), a balustrade on each edge with no
   wall past it, from the Scene3D's `flights` and `landings`, which carry the core's
   `treadCount`; built once per climb, on the storey it climbs from), a hidden flat roof, and the site (`outdoor.ts`:
   each `outdoor` surface a 50 mm slab at its storey's floor level, coloured from the core's theme;
