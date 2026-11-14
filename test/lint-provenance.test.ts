@@ -772,9 +772,10 @@ describe("diagnostic rule (RM1.6b): the key table", () => {
       for (const p of RULESETS) {
         const per = new Map<string, Set<string>>();
         for (const d of lint(src, { world, profile: p })) {
-          const s = per.get(d.code) ?? new Set<string>();
+          const code = d.code ?? "(no code)";
+          const s = per.get(code) ?? new Set<string>();
           s.add(diagnosticRule(d)?.key ?? "-");
-          per.set(d.code, s);
+          per.set(code, s);
         }
         for (const [code, s] of per) {
           const m = seen.get(code) ?? new Map<string, string>();
