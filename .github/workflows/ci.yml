@@ -48,7 +48,7 @@ jobs:
   # Node 18, Node 20 and Windows run on FULL_LEG: true on every push and merge_group, and on
   # a PR only if `changes` failed (the same fail-open as FULL_CI). Each runs its suite in
   # three shards (`node-18-tests`, `node-20-tests`, `windows-tests`), skipped at JOB level
-  # when FULL_LEG is false, so an ordinary PR starts no runner for them; shard 1 also runs
+  # when FULL_LEG is false, so an ordinary PR starts no runner for them; shard 3 also runs
   # the leg's non-test checks. Their required names (`Node 18`, `Node 20`, `Windows (tests
   # + drift)`) are aggregators over the shards: on a PR they report green with a
   # job-summary line. Their breaks surface after the merge, in the push run on `main` and
@@ -118,8 +118,11 @@ jobs:
 
   # The Node 18 leg, in three shards. Its `if` is FULL_LEG (see the header): true on every
   # push and merge_group, and on a PR only if `changes` failed (`!cancelled()` lets it run
-  # then), so an ordinary PR skips the whole job and starts no runner. Shard 1 also runs
-  # typecheck, lint, drift and the eval, once for the leg. `node-20-tests` is the same job
+  # then), so an ordinary PR skips the whole job and starts no runner. Shard 3 also runs
+  # typecheck, lint, drift and the eval, once for the leg. Shard 3, not 1: test/sequencer.ts
+  # gives every file recorded at 0 s to the lightest shard, which is shard 1 (126 files at 3
+  # shards), so shard 1's real wall clock already exceeds its recorded load; the last shard
+  # takes no zero-cost file while the table's ties stand. `node-20-tests` is the same job
   # on Node 20; two job ids, not one matrix, so each `Node <n>` aggregator below reads only
   # its own shards' result (a matrix job's result combines every leg).
   node-18-tests:
@@ -146,15 +149,15 @@ jobs:
         run: npm ci
 
       - name: Type-check
-        if: matrix.shard == 1
+        if: matrix.shard == 3
         run: npm run typecheck
 
       - name: Lint & format (Biome)
-        if: matrix.shard == 1
+        if: matrix.shard == 3
         run: npm run lint:ci
 
       - name: Generated artifacts are in sync
-        if: matrix.shard == 1
+        if: matrix.shard == 3
         run: npm run check:drift
 
       # Coverage no longer runs here: it moved to nightly.yml's `coverage` job, where it
@@ -164,7 +167,7 @@ jobs:
         run: npx vitest run --shard=${{ matrix.shard }}/3
 
       - name: Authorability eval (offline golden regression guard)
-        if: matrix.shard == 1
+        if: matrix.shard == 3
         run: npm run eval:ci
 
   # `node-18-tests` on Node 20, step for step.
@@ -192,22 +195,22 @@ jobs:
         run: npm ci
 
       - name: Type-check
-        if: matrix.shard == 1
+        if: matrix.shard == 3
         run: npm run typecheck
 
       - name: Lint & format (Biome)
-        if: matrix.shard == 1
+        if: matrix.shard == 3
         run: npm run lint:ci
 
       - name: Generated artifacts are in sync
-        if: matrix.shard == 1
+        if: matrix.shard == 3
         run: npm run check:drift
 
       - name: Test
         run: npx vitest run --shard=${{ matrix.shard }}/3
 
       - name: Authorability eval (offline golden regression guard)
-        if: matrix.shard == 1
+        if: matrix.shard == 3
         run: npm run eval:ci
 
   # The required `Node 18` and `Node 20` checks, one matrix leg each, over that version's
@@ -533,7 +536,8 @@ jobs:
       # (appended by later workstreams)
 
   # The Windows leg, in three shards, skipped at job level like `node-18-tests` (FULL_LEG).
-  # Shard 1 also runs `check:drift`, the generators' line-endings and path-handling proof.
+  # Shard 3 also runs `check:drift`, the generators' line-endings and path-handling proof
+  # (shard 3, not 1, for the reason given at `node-18-tests`).
   windows-tests:
     name: Windows tests ${{ matrix.shard }}/3
     runs-on: windows-latest
@@ -556,8 +560,9 @@ jobs:
     # `eval:ci` and the benchmark are Linux-only on purpose: the eval is already
     # covered by the Linux legs above and bench timings are runner-dependent.
     #
-    # Off the PR path (see `changes`): the owner's local gate runs the full suite on
-    # Windows before a PR, so this leg confirms that on `main` and nightly.
+    # Off the PR path (see `changes`): the local gate is `check:quick` (changed files, their
+    # nearest tests), not the full suite, so a Windows-only break first shows on `main`
+    # (the push run) and in nightly.
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
@@ -575,7 +580,7 @@ jobs:
         run: npx vitest run --shard=${{ matrix.shard }}/3
 
       - name: Generated artifacts are in sync
-        if: matrix.shard == 1
+        if: matrix.shard == 3
         run: npm run check:drift
 
   # The required `Windows (tests + drift)` check, over `windows-tests`, as `Node 18` is over
@@ -853,7 +858,6 @@ jobs:
         env:
           PLAYWRIGHT_HTML_OUTPUT_DIR: ${{ github.workspace }}/playground/playwright-report-engines
           PLAYWRIGHT_HTML_REPORT: ${{ github.workspace }}/playground/playwright-report-engines
-          # Its own JSON file too, or this run would overwrite the Chromium run's.
           PLAYWRIGHT_JSON_OUTPUT_NAME: ${{ github.workspace }}/playground/test-results-engines/results.json
         run: >-
           npx playwright test -c playground --project firefox --project webkit

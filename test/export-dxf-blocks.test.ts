@@ -553,7 +553,8 @@ suite("the wiring", () => {
   const ci = readFileSync(".github/workflows/ci.yml", "utf8");
 
   it("the reader check runs in a gating job, from a pinned reader", () => {
-    const builds = ci.slice(ci.indexOf("  builds:\n"), ci.indexOf("  windows:\n"));
+    // `windows-tests` is the job right after `builds`, so the slice is `builds` alone.
+    const builds = ci.slice(ci.indexOf("  builds:\n"), ci.indexOf("  windows-tests:\n"));
     expect(builds).toContain("npm run check:dxf");
     expect(builds).toContain("e2e/requirements.txt");
     const pins = readFileSync("e2e/requirements.txt", "utf8")
