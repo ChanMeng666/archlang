@@ -361,7 +361,7 @@
 
 **发布决定：** 1.59.0 的发布已由所有者 2026-11-11 决定（协调者转述原话"我同意发布"）；代理在约 11-21 的切点跑发布链含 tag，见 `handoff.md` §1.4。1.61.0 仍要所有者的决定；1.60.0 已由受托裁定 RM-D33（§6.7）决定。（RM-D27 之后：11-21 是参考日期；1.59.0 的决定不变，切点由协调者按线上卡的实际进度定。1.60.0 起的每一次发布，日期仍是提给所有者的建议，没有所有者对那一次的决定就不切。）
 
-已在 backlog 顶部的：M.8、M.9、M.14、D.7、3.1(b)、CI 吞吐 E/F，仍等所有者。O.10 列的 #119、#121 与后继的 #206–#208 都已关闭；RM0.1 核对过，唯一还开着的主版本升级是 #603（RM-D19 已裁），所以 O.10 已关闭。
+已在 backlog 顶部的：M.8、M.9、M.14、D.7、3.1(b)，仍等所有者（CI 吞吐 E/F 已由 RM-D37 裁定不做，§6.9）。O.10 列的 #119、#121 与后继的 #206–#208 都已关闭；RM0.1 核对过，唯一还开着的主版本升级是 #603（RM-D19 已裁），所以 O.10 已关闭。
 
 本计划提出的 Q1–Q7，所有者 2026-11-06 说"请你帮我做出最佳决策"，以下为**受托裁定（RM-D1…D8）**；所有者同日复核后说"我全部同意"，自此为所有者裁定。它们不改任何铁律；涉及 growth 仓库的记录在 growth PR #56。
 
@@ -500,6 +500,14 @@
 
 **#603：** RM-D34 不变（2026-12-01 Show HN 之后由 RM5.4 迁移，#603 保持打开）。
 
+### 6.9 受托裁定：CI 吞吐（RM-D37，2026-11-14）
+
+所有者 2026-11-14 就 `../ci-throughput-research.md` 说"里面每一项都要你来定，或者排进路线图"。只对这份研究、这一次；所有者一句话可推翻。不改任何铁律，也不改 AGENTS.md 的硬规则。逐项裁定、理由与重开条件在 `../ci-throughput-research.md` §10。
+
+| # | 问题 | 裁定（2026-11-14，受托） | 理由 |
+|---|---|---|---|
+| RM-D37 | CI 吞吐研究的 P0–P2 各项，以及 backlog 里一直等所有者的 CI throughput E（merge queue）与 F（changelog 碎片） | **做：** P0-1 同步脚本（TP1，含 P1-4：给重新红队的重点清单）、P0-3 的 Playground 一半与 P1-3 主线三条腿分片（TP2）、P0-4（工作规则，`handoff.md` §5）、P2-3（TP3）。**暂缓：** P2-2 自动回滚（TP4）。**不做：** P0-2 关 strict、E（迁到组织 + merge queue，也不用第三方队列）、F、P2-1、P2-4、`finish.test.ts` 拆分与 Docs E2E 分片（各自的重开条件见 §10）。`ci-throughput.md` §2 的三条律都不变：同步后的头仍然每次重新红队，TP1 只给出重点 | 瓶颈是串行同步，不是 runner：strict 之后每个合并的 PR 平均同步 1.37 次，排队时间最多 10 秒。迁组织会断掉绑在 `ChanMeng666` 上的 MCP registry 名字、npm 可信发布与各处上架；F 的冲突由 TP1 的 union 合并解掉，不必改规则；按文件重叠跳过复审挡不住 `doorSwing()` 那一类事故 |
+
 ---
 
 ## 7. 与已有计划的关系
@@ -512,7 +520,7 @@ RM-D15（所有者 2026-11-11 批准）之后，下面各条成立。其他计�
 - **drawing-set**：搁置。门不变（D3）。DS11 是否并入 RM6.1，由 `slab-and-section.md` 定。
 - **plan-soundness**：作为计划搁置；卡留作规则池，按首次接触复测的证据取用；PS7.9 在本计划排期；§7 第 7 行与 PS6.1 仍 parked。
 - **preview-and-remodel**：搁置，门不变（wave 4、6 等 N10，不早于 11-27 读）。J16–J18 的残留已拆进 RM1.5a、RM4.2 和 RM3.1 的范围表。
-- **public-surfaces、playground-minimal、playground-mobile-perf、visual-assets、ci-throughput**：按 RM-D15 关闭。**engineering-health、archlang-3d**：已关闭或已归档（`docs/plans/README.md`），不在 RM-D15 的名单里；3D 能力的节奏交给 `packages/archlang-3d` 的维护。残留：VA.1–VA.5、PG.1–PG.3 与 CI throughput 的待裁行在 `docs/backlog.md`（VA.1、VA.2、VA.4、VA.5 自 2026-11-11 由第 8 轨的卡承接，见下）；MP7 仍记在 `../playground-mobile-perf/README.md` §5（deferred）；engineering-health 的在 `../engineering-health/closing-audit.md` §1。
+- **public-surfaces、playground-minimal、playground-mobile-perf、visual-assets、ci-throughput**：按 RM-D15 关闭。**engineering-health、archlang-3d**：已关闭或已归档（`docs/plans/README.md`），不在 RM-D15 的名单里；3D 能力的节奏交给 `packages/archlang-3d` 的维护。残留：VA.1–VA.5、PG.1–PG.3 在 `docs/backlog.md`（CI throughput 的待裁行已由 RM-D37 裁定并移除，§6.9）（VA.1、VA.2、VA.4、VA.5 自 2026-11-11 由第 8 轨的卡承接，见下）；MP7 仍记在 `../playground-mobile-perf/README.md` §5（deferred）；engineering-health 的在 `../engineering-health/closing-audit.md` §1。
 - **geo-seo**：运营节奏，不是开发队列；下次面板 2026-12-01 与 Show HN 同日，建议挪到 12-02。
 - **第 8 轨（2026-11-11）与其他卡、backlog 的关系：**
   - RM5.2 的 `--theme`（VA.4）移到 RM8.4；RM5.2 其余不变。
