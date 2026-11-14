@@ -587,9 +587,14 @@ describe("a winder landing (card RM1.2g)", () => {
   }
 }`;
   const RISER = "W_STAIR_RISER_TOO_HIGH";
-  /** The riser count and riser (mm) the 2D rule reads, from its own message (its limit lowered so it speaks). */
+  /**
+   * The riser count and riser (mm) the 2D rule reads, from its own message: its limit lowered so it
+   * speaks, and `W_STAIR_TOO_STEEP`'s raised so it never takes the stair first (a stair that rule
+   * reports is not reported again). The count the message states depends on neither limit.
+   */
   function ruleReads(src: string): { risers: number; riserMm: number } {
-    const d = lint(src, { ruleset: { stairDrawnMaxRiseMm: 100 } }).find((x) => x.code === RISER);
+    const ruleset = { stairDrawnMaxRiseMm: 100, stairMaxRiseMm: 1000, stairMinGoingMm: 1 };
+    const d = lint(src, { ruleset }).find((x) => x.code === RISER);
     const m = d?.message.match(/on (\d+) risers \([^)]*\) of (?:about )?(\d+(?:\.\d+)?) mm/);
     expect(m, d?.message).toBeTruthy();
     return { risers: Number(m?.[1]), riserMm: Number(m?.[2]) };
