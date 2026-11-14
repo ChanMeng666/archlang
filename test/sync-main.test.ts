@@ -1,4 +1,4 @@
-/** scripts/sync-main.mjs: merge origin/main, script the record and generated-artifact conflicts, triage the review. */
+/** scripts/sync-main.mjs: merge origin/main, script the record and generated-artifact conflicts, focus the re-review. */
 
 import { execFileSync } from "node:child_process";
 import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
@@ -6,10 +6,19 @@ import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 // @ts-expect-error — a zero-dep .mjs script with no type declarations.
-import { artifactSets, classifyUnmerged, main, parseArgs, triage } from "../scripts/sync-main.mjs";
+import {
+  artifactSets,
+  changedExports,
+  classifyUnmerged,
+  focusFiles,
+  importLinked,
+  main,
+  parseArgs,
+  reportLines,
+} from "../scripts/sync-main.mjs";
 
 /**
- * The pure parts (classification, the review verdict) on literal inputs, then the whole script in
+ * The pure parts (classification, the re-review focus) on literal inputs, then the whole script in
  * process against throwaway git repositories in `mkdtemp`: a local `origin` whose `main` moved, a clone
  * on a PR branch, and a fake `.claude/hooks/generated-artifacts.json`. No network and no `gen:all`
  * (`--no-gen`, or a fake regenerator passed in).
@@ -42,31 +51,97 @@ describe("pure parts", () => {
     expect(classifyUnmerged("CHANGELOG.md", sets, [2, 3])).toBe("changelog");
   });
 
-  it("the review carries when nothing overlaps and nothing was resolved by hand", () => {
-    const v = triage({
-      prFiles: ["src/a.ts", "CHANGELOG.md", "gen/out.txt"],
-      mainFiles: ["src/b.ts", "CHANGELOG.md", "gen/out.txt"],
-      hand: [],
-      artifacts: sets.artifacts,
+  it("overlap: files both sides changed, minus records, whole-file artifacts and low-tier paths", () => {
+    const shared = ["CHANGELOG.md", "gen/out.txt", "README.md", "docs/plans/x.md", ".claude/rules/y.md", "src/c.ts"];
+    const f = focusFiles({
+      prFiles: ["src/a.ts", ...shared],
+      mainFiles: ["src/z.ts", ...shared],
+      hand: ["src/h.ts", "docs/plans/x.md", "src/c.ts"],
+      sets,
     });
-    expect(v).toEqual({ overlap: [], hand: [], reasons: [], reviewCarries: true });
+    // README.md is a region-only artifact: its hand-written part is reviewed, so it stays.
+    expect(f).toEqual({ overlap: ["README.md", "src/c.ts"], hand: ["src/c.ts", "src/h.ts"] });
+    expect(focusFiles({ prFiles: ["src/a.ts"], mainFiles: ["src/b.ts"], sets })).toEqual({ overlap: [], hand: [] });
   });
 
-  it("overlap and hand resolution each need a re-review, with the reason", () => {
-    const v = triage({
-      prFiles: ["src/a.ts", "src/c.ts"],
-      mainFiles: ["src/c.ts", "src/a.ts", "src/z.ts"],
-      hand: ["src/a.ts", "src/h.ts"],
-      artifacts: sets.artifacts,
-    });
-    expect(v.reviewCarries).toBe(false);
-    expect(v.overlap).toEqual(["src/a.ts", "src/c.ts"]);
-    expect(v.hand).toEqual(["src/a.ts", "src/h.ts"]);
-    expect(v.reasons).toEqual([
-      { file: "src/a.ts", why: "overlap: the PR and main both changed it; hand-resolved conflict" },
-      { file: "src/c.ts", why: "overlap: the PR and main both changed it" },
-      { file: "src/h.ts", why: "hand-resolved conflict" },
+  it("import-linked: code main changed that a PR file imports or is imported by, one level", () => {
+    const graph: Record<string, string[]> = {
+      "src/pr.ts": ["src/dep.ts"],
+      "src/user.ts": ["src/pr.ts"],
+      "src/far.ts": ["src/user.ts"],
+      "src/both.ts": ["src/dep.ts"],
+    };
+    const importsOf = (f: string) => graph[f] ?? [];
+    expect(
+      importLinked({
+        prFiles: ["src/pr.ts", "src/both.ts", "docs/plans/p.md"],
+        mainFiles: ["src/dep.ts", "src/user.ts", "src/far.ts", "src/both.ts", "docs/x.md", "gen/out.txt"],
+        importsOf,
+        sets,
+      }),
+    ).toEqual([
+      {
+        file: "src/dep.ts",
+        via: [
+          { file: "src/both.ts", how: "imported by" },
+          { file: "src/pr.ts", how: "imported by" },
+        ],
+      },
+      { file: "src/user.ts", via: [{ file: "src/pr.ts", how: "imports" }] },
     ]);
+  });
+
+  it("changed exports: export lines main's side added or removed, per file, artifacts skipped", () => {
+    const diff = [
+      "diff --git a/src/b.ts b/src/b.ts",
+      "--- a/src/b.ts",
+      "+++ b/src/b.ts",
+      "@@ -1 +1,2 @@",
+      "-export function old(x: number) {",
+      "+export async function fresh(x: number) {",
+      "+export const old = fresh;",
+      "+  const inner = 1;",
+      "diff --git a/src/context-size.ts b/src/context-size.ts",
+      "@@ -1 +1 @@",
+      "-export const CONTEXT_BYTES = 1;",
+      "+export const CONTEXT_BYTES = 2;",
+      "diff --git a/scripts/x.mjs b/scripts/x.mjs",
+      "@@ -0,0 +1 @@",
+      "+export class Thing {}",
+      "",
+    ].join("\n");
+    expect(changedExports(diff, (f: string) => f === "src/context-size.ts")).toEqual([
+      "scripts/x.mjs: Thing",
+      "src/b.ts: fresh",
+      "src/b.ts: old",
+    ]);
+  });
+
+  it("the report is a focus block for the red team, never a verdict", () => {
+    const lines = reportLines({
+      head: "f".repeat(40),
+      scripted: ["CHANGELOG.md"],
+      regenerated: [],
+      focus: {
+        overlap: [],
+        hand: ["src/h.ts"],
+        importLinked: [{ file: "src/dep.ts", via: [{ file: "src/pr.ts", how: "imported by" }] }],
+        changedExports: ["src/dep.ts: f"],
+      },
+    });
+    expect(lines).toEqual([
+      "scripted: CHANGELOG.md",
+      `re-review focus (red-team the merged head ${"f".repeat(40)}; start here):`,
+      "  overlap (both the PR and main changed): none",
+      "  hand-resolved conflicts:",
+      "    src/h.ts",
+      "  import-linked (main changed; one import from a PR file):",
+      "    src/dep.ts (imported by src/pr.ts)",
+      "  exports main changed (grep their callers in the PR):",
+      "    src/dep.ts: f",
+      `head: ${"f".repeat(40)}`,
+    ]);
+    expect(lines.join("\n")).not.toMatch(/carries/);
   });
 
   it("parses the flags and refuses an unknown one", () => {
@@ -114,13 +189,14 @@ function setup(base: Files) {
   const git = (cwd: string, ...args: string[]) =>
     execFileSync("git", args, { cwd, encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] }).trim();
   const configure = (cwd: string) => {
-    for (const [k, v] of [
+    const config: [string, string][] = [
       ["core.autocrlf", "false"],
       ["user.email", "sync-main@example.invalid"],
       ["user.name", "sync-main"],
       ["commit.gpgsign", "false"],
       ["core.hooksPath", join(root, "no-hooks")],
-    ]) {
+    ];
+    for (const [k, v] of config) {
       git(cwd, "config", k, v);
     }
   };
@@ -166,28 +242,59 @@ const BASE: Files = {
   "README.md": "# Readme\n\nhand text\n",
   "src/a.txt": "a\n",
   "src/b.txt": "b\n",
+  "src/pr.ts": 'import { old } from "./dep.js";\nexport const pr = old;\n',
+  "src/dep.ts": "export function old() {\n  return 1;\n}\n",
+  "src/shared.txt": "one\ntwo\nthree\nfour\nfive\n",
+  "docs/plans/notes.md": "one\ntwo\nthree\nfour\nfive\n",
 };
 
 const withEntry = (entry: string, text = CHANGELOG_BASE) => text.replace("- base entry\n", `- base entry\n${entry}\n`);
 
 describe("sync:main on a throwaway repository", () => {
-  it("scripts a CHANGELOG and a generated-file conflict, commits, and the review carries", () => {
+  it("scripts a CHANGELOG and a generated-file conflict, commits, and lists the re-review focus", () => {
     const r = setup(BASE);
+    const ends = (one: string, five: string) => `${one}\ntwo\nthree\nfour\n${five}\n`;
     r.commit(
       r.work,
-      { "CHANGELOG.md": withEntry("- branch entry"), "gen/out.txt": "count 2\n", "src/a.txt": "A\n" },
+      {
+        "CHANGELOG.md": withEntry("- branch entry"),
+        "gen/out.txt": "count 2\n",
+        "src/a.txt": "A\n",
+        "src/pr.ts": 'import { old } from "./dep.js";\nexport const pr = old;\nexport const pr2 = pr;\n',
+        "src/shared.txt": ends("ONE", "five"),
+        "docs/plans/notes.md": ends("ONE", "five"),
+      },
       "pr",
     );
     r.commit(
       r.origin,
-      { "CHANGELOG.md": withEntry("- main entry"), "gen/out.txt": "count 3\n", "src/b.txt": "B\n" },
+      {
+        "CHANGELOG.md": withEntry("- main entry"),
+        "gen/out.txt": "count 3\n",
+        "src/b.txt": "B\n",
+        "src/dep.ts": "export function fresh() {\n  return 1;\n}\nexport const old = fresh;\n",
+        "src/shared.txt": ends("one", "FIVE"),
+        "docs/plans/notes.md": ends("one", "FIVE"),
+      },
       "main",
     );
     const oldHead = r.git(r.work, "rev-parse", "HEAD");
     const res = r.run(["--no-gen", "--json"]);
     expect(res.code, res.err.join("\n")).toBe(0);
     const j = res.json();
-    expect(j).toMatchObject({ upToDate: false, oldHead, hand: [], overlap: [], reviewCarries: true });
+    // The low-tier docs/plans file merged cleanly from both sides and is no focus; src/shared.txt is.
+    expect(j).toMatchObject({
+      upToDate: false,
+      oldHead,
+      hand: [],
+      focus: {
+        overlap: ["src/shared.txt"],
+        hand: [],
+        importLinked: ["src/dep.ts"],
+        changedExports: ["src/dep.ts: fresh", "src/dep.ts: old"],
+      },
+    });
+    expect(j).not.toHaveProperty("reviewCarries");
     expect([...j.scripted].sort()).toEqual(["CHANGELOG.md", "gen/out.txt"]);
     expect(j.head).toMatch(/^[0-9a-f]{40}$/);
     expect(r.git(r.work, "rev-parse", "HEAD")).toBe(j.head);
@@ -197,10 +304,28 @@ describe("sync:main on a throwaway repository", () => {
     expect(changelog).toContain("- branch entry\n");
     expect(changelog).toContain("- main entry\n");
     expect(readFileSync(join(r.work, "gen/out.txt"), "utf8")).toBe("count 3\n");
+    expect(r.git(r.work, "log", "-1", "--format=%s")).toBe("Merge remote-tracking branch 'origin/main' into feat");
     // Nothing to merge on a second run.
     const again = r.run(["--no-gen", "--json"]);
     expect(again.code).toBe(0);
-    expect(again.json()).toMatchObject({ upToDate: true, head: j.head, reviewCarries: true });
+    expect(again.json()).toMatchObject({ upToDate: true, head: j.head });
+  });
+
+  it("text mode ends with the focus block and the new head's full SHA", () => {
+    const r = setup(BASE);
+    r.commit(r.work, { "src/a.txt": "A\n" }, "pr");
+    r.commit(r.origin, { "src/b.txt": "B\n" }, "main");
+    const res = r.run(["--no-gen"]);
+    expect(res.code, res.err.join("\n")).toBe(0);
+    const head = r.git(r.work, "rev-parse", "HEAD");
+    expect(res.out.slice(1)).toEqual([
+      `re-review focus (red-team the merged head ${head}; start here):`,
+      "  overlap (both the PR and main changed): none",
+      "  hand-resolved conflicts: none",
+      "  import-linked (main changed; one import from a PR file): none",
+      "  exports main changed (grep their callers in the PR): none",
+      `head: ${head}`,
+    ]);
   });
 
   it("stops on a real conflict (and on a region-only artifact), then --continue records it as hand-resolved", () => {
@@ -246,8 +371,12 @@ describe("sync:main on a throwaway repository", () => {
       oldHead,
       scripted: ["gen/out.txt"],
       hand: ["README.md", "src/a.txt"],
-      overlap: ["README.md", "src/a.txt"],
-      reviewCarries: false,
+      focus: {
+        overlap: ["README.md", "src/a.txt"],
+        hand: ["README.md", "src/a.txt"],
+        importLinked: [],
+        changedExports: [],
+      },
     });
     expect(r.git(r.work, "show", "HEAD:gen/out.txt")).toBe("regenerated");
     expect(r.git(r.work, "status", "--porcelain", "--untracked-files=no")).toBe("");
@@ -271,7 +400,11 @@ describe("sync:main on a throwaway repository", () => {
     r.git(r.work, "add", "CHANGELOG.md");
     const done = r.run(["--continue", "--no-gen", "--json"]);
     expect(done.code, done.err.join("\n")).toBe(0);
-    expect(done.json()).toMatchObject({ oldHead, hand: [], overlap: [], reviewCarries: true });
+    expect(done.json()).toMatchObject({
+      oldHead,
+      hand: [],
+      focus: { overlap: [], hand: [], importLinked: [], changedExports: [] },
+    });
   });
 
   it("refuses on main, with tracked changes, or with --continue and no merge", () => {

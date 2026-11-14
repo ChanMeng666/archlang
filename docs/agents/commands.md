@@ -27,8 +27,11 @@
   union-merged and must keep the branch's lines under `[Unreleased]`, any other conflict (and an artifact
   whose generator owns only a marked region, `partial` in `scripts/generators.ts`) stops with exit 2 for
   an agent, who resolves, `git add`s, and runs `-- --continue`. It commits with git's merge message,
-  pushes only with `--push`, and ends with the review triage (`review carries: yes` or `re-review
-  needed:`) and the new head's full SHA; `--json` prints the same as one object.
+  pushes only with `--push`, and ends with the re-review focus for the red team (files both sides
+  changed, conflicts resolved by hand, code `main` changed one import away from a PR file, exports
+  `main` changed; generated artifacts, `CHANGELOG.md` and low-tier paths left out) and the new head's
+  full SHA; `--json` prints the same as one object. The focus says where to look first, never that the
+  review can be skipped.
 - `e2e:playground` / `e2e:docs` run Playwright against the BUILT site. `E2E_BASE_URL=<origin>` drops
   the preview server and drives that origin instead (nightly uses it with `--grep @prod`).
 - `eval:ci` is the offline authorability gate: it scores the committed goldens (rewriting the
@@ -171,10 +174,10 @@ Auto-merge (option A of `docs/plans/ci-throughput.md`); nothing waits for CI or 
 3. PRs touching the same records (`CHANGELOG.md` `[Unreleased]`, handoff, cards) are STACKED: the next
    branches from the previous PR's head and, once that merges, runs `npm run sync:main -- --push`;
    the coordinator re-pins. Independent PRs run in parallel.
-4. Re-red-team the merged head (#280/#283) only when `sync:main` printed `re-review needed` (a file both
-   the PR and `main` changed, generated artifacts and `CHANGELOG.md` aside, or a conflict resolved by
-   hand). When it printed `review carries: yes`, post `reviewed <new sha> (sync carried: no overlap with
-   main's changes)` and re-pin.
+4. A PR that merged `main` after its review is red-teamed again on the merged head (#280/#283), every
+   time: a clean merge with no shared file can still break it. The red team's brief includes the
+   re-review focus block `sync:main` printed (overlap, hand-resolved conflicts, import-linked files,
+   exports `main` changed).
 5. When several PRs are BEHIND at once, sync only the next one to merge (oldest reviewed, green); the
    rest wait until it merges — each sync starts a full CI run, and syncing them all wastes every run
    but one.

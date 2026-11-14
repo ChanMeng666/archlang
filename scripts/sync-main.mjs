@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
  * `npm run sync:main` — merge `origin/main` into the current PR branch, resolve the conflicts that
- * need no judgement, and say whether the PR's review still holds.
+ * need no judgement, and tell the red team where to look on the merged head.
  *
  * Why: since required checks became strict (2026-11-10) a PR is synced about 1.4 times before it
  * merges, and half of the hand-resolved merges touched only `CHANGELOG.md` and generated artifacts
@@ -31,9 +31,16 @@
  *      branch, so it would never see what the merge did; after the commit `origin/main...HEAD` is the same
  *      diff as this one (main's tip is then the merge base). A violation leaves the merge uncommitted, exit 2.
  *   6. `git commit --no-edit` (git's merge message); `git push origin <branch>` only with `--push`.
- *   7. Review triage ({@link triage}): the files both the PR (BASE..OLD_HEAD) and main (BASE..main) changed,
- *      minus generated artifacts and `CHANGELOG.md`, plus the conflicts resolved by hand. Both empty:
- *      `review carries: yes`; otherwise `re-review needed:` with each file and why.
+ *   7. The re-review focus ({@link focusFiles}, {@link importLinked}, {@link changedExports}). The merged head
+ *      is always red-teamed again: a clean merge with no shared file can still break the PR (a function
+ *      main changed, called from a file only the PR touched). The block says where to look first:
+ *      (a) overlap, files both the PR (BASE..OLD_HEAD) and main (BASE..main) changed; (b) the conflicts
+ *      resolved by hand; (c) code main changed that a PR-changed file imports or is imported by (one
+ *      level, the import reading of `scripts/nearest-tests.mjs`); (d) the `export function|const|class`
+ *      lines main's side added or removed in `.ts`/`.mjs` files, so the red team greps their callers in
+ *      the PR. Generated artifacts (whole-file ones), `CHANGELOG.md` and low-tier paths
+ *      (`classify()` of `scripts/risk-tier.mjs`) are left out. Every `--name-only` diff is `--no-renames`,
+ *      so a rename counts both paths.
  *
  * Which files were resolved by hand is persisted in `sync-main.json` under the git dir
  * (`git rev-parse --git-path`, so each worktree has its own), written when the merge starts and removed
@@ -42,8 +49,10 @@
  * list is recorded where it is known instead. If the record is missing, `--continue` falls back to that
  * recomputation (more files, never fewer) and says so.
  *
- * `--json` prints `{ upToDate, head, oldHead, scripted, hand, overlap, reviewCarries }` on stdout; progress
- * goes to stderr. Exit codes: 0 done, 2 stopped for an agent, 1 error. Zero dependencies, plain Node.
+ * `--json` prints `{ upToDate, head, oldHead, scripted, hand, focus: { overlap, hand, importLinked,
+ * changedExports } }` on stdout (`hand`: every conflict resolved by hand; `focus.hand`: those not low tier);
+ * progress goes to stderr. Exit codes: 0 done, 2 stopped for an agent, 1 error. Zero dependencies, plain
+ * Node.
  */
 import { spawnSync } from "node:child_process";
 import { existsSync, mkdtempSync, readFileSync, realpathSync, rmSync, unlinkSync, writeFileSync } from "node:fs";
@@ -51,6 +60,8 @@ import { tmpdir } from "node:os";
 import { isAbsolute, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { changelogVerdict } from "./check-changelog-unreleased.mjs";
+import { CODE, resolveSpec, SPEC } from "./nearest-tests.mjs";
+import { classify } from "./risk-tier.mjs";
 
 export const ARTIFACTS_JSON = ".claude/hooks/generated-artifacts.json";
 export const CHANGELOG = "CHANGELOG.md";
@@ -95,24 +106,70 @@ export function classifyUnmerged(path, { artifacts, partial }, stages = [1, 2, 3
   return "conflict";
 }
 
+const uniqSorted = (xs) => [...new Set(xs)].sort();
+/** A path the risk tiers call low (internal prose): never a re-review focus. */
+const isLowTier = (f) => classify([f]).tier === "low";
+/** A whole-file generated artifact: regenerated, so neither side's text is reviewed. */
+const isRegenerated = (f, { artifacts = new Set(), partial = new Set() }) => artifacts.has(f) && !partial.has(f);
+
 /**
- * The review verdict for a sync. `prFiles` = what the PR changed (BASE..OLD_HEAD), `mainFiles` = what
- * main brought in (BASE..main), `hand` = conflicts an agent resolved. Overlap ignores generated artifacts
- * (regenerated, never reviewed by hand) and `CHANGELOG.md` (records). Returns
- * `{ overlap, hand, reasons, reviewCarries }`; `reasons` is one `{ file, why }` per file, sorted.
+ * Focus (a) and (b). `prFiles` = what the PR changed (BASE..OLD_HEAD), `mainFiles` = what main brought in
+ * (BASE..main), `hand` = conflicts an agent resolved, `sets` = {@link artifactSets}. Overlap leaves out
+ * whole-file artifacts, `CHANGELOG.md` and low-tier paths; `hand` leaves out low-tier paths. Both sorted.
  */
-export function triage({ prFiles, mainFiles, hand = [], artifacts = new Set() }) {
+export function focusFiles({ prFiles, mainFiles, hand = [], sets = {} }) {
   const main = new Set(mainFiles);
-  const overlap = [...new Set(prFiles)].filter((f) => main.has(f) && f !== CHANGELOG && !artifacts.has(f)).sort();
-  const handSorted = [...new Set(hand)].sort();
-  const files = [...new Set([...overlap, ...handSorted])].sort();
-  const reasons = files.map((file) => {
-    const why = [];
-    if (overlap.includes(file)) why.push("overlap: the PR and main both changed it");
-    if (handSorted.includes(file)) why.push("hand-resolved conflict");
-    return { file, why: why.join("; ") };
-  });
-  return { overlap, hand: handSorted, reasons, reviewCarries: files.length === 0 };
+  const overlap = uniqSorted(prFiles).filter(
+    (f) => main.has(f) && f !== CHANGELOG && !isRegenerated(f, sets) && !isLowTier(f),
+  );
+  return { overlap, hand: uniqSorted(hand).filter((f) => !isLowTier(f)) };
+}
+
+/**
+ * Focus (c): code files main changed and the PR did not, that a PR-changed code file imports or is
+ * imported by, one level. `importsOf(file)` gives the repository paths a file imports (on the merged
+ * head). Returns `[{ file, via: [{ file, how: "imports" | "imported by" }] }]`, sorted by file; `how`
+ * says what the main-side file does to the PR file.
+ */
+export function importLinked({ prFiles, mainFiles, importsOf, sets = {} }) {
+  const pr = uniqSorted(prFiles).filter((f) => CODE.test(f));
+  const prSet = new Set(pr);
+  const linked = [];
+  for (const m of uniqSorted(mainFiles)) {
+    if (prSet.has(m) || !CODE.test(m) || isRegenerated(m, sets) || isLowTier(m)) continue;
+    const mImports = new Set(importsOf(m));
+    const via = [];
+    for (const p of pr) {
+      if (mImports.has(p)) via.push({ file: p, how: "imports" });
+      else if (importsOf(p).includes(m)) via.push({ file: p, how: "imported by" });
+    }
+    if (via.length > 0) linked.push({ file: m, via });
+  }
+  return linked;
+}
+
+const EXPORT_LINE =
+  /^[+-](?![+-])\s*export\s+(?:default\s+)?(?:declare\s+)?(?:async\s+)?(?:function\s*\*?\s*|const\s+|let\s+|class\s+)([A-Za-z_$][\w$]*)/;
+
+/**
+ * Focus (d): from a `git diff BASE main` of TS and `.mjs` files, every exported function, const or class
+ * whose `export` line main's side added or removed, as sorted `"<file>: <name>"`. Files `skip(file)`
+ * names (whole-file artifacts) are left out.
+ */
+export function changedExports(diff, skip = () => false) {
+  const found = [];
+  let file = null;
+  for (const line of diff.replace(/\r\n/g, "\n").split("\n")) {
+    const header = /^diff --git a\/.+ b\/(.+)$/.exec(line);
+    if (header) {
+      file = header[1];
+      continue;
+    }
+    if (file === null || skip(file)) continue;
+    const m = EXPORT_LINE.exec(line);
+    if (m) found.push(`${file}: ${m[1]}`);
+  }
+  return uniqSorted(found);
 }
 
 /** The flags; an unknown one throws. */
@@ -128,18 +185,30 @@ export function parseArgs(argv) {
   };
 }
 
-/** The lines of the final report (text mode). */
-export function reportLines({ head, scripted, regenerated, verdict }) {
+/** The lines of the final report (text mode); `focus` is `{ overlap, hand, importLinked, changedExports }`. */
+export function reportLines({ head, scripted, regenerated: regen = [], focus }) {
   const out = [];
   if (scripted.length > 0) out.push(`scripted: ${scripted.join(", ")}`);
-  if (regenerated.length > 0) out.push(`regenerated: ${regenerated.join(", ")}`);
-  if (verdict.reviewCarries) out.push("review carries: yes");
-  else {
-    out.push("re-review needed:");
-    for (const { file, why } of verdict.reasons) out.push(`  ${file} (${why})`);
-  }
+  if (regen.length > 0) out.push(`regenerated: ${regen.join(", ")}`);
+  out.push(`re-review focus (red-team the merged head ${head}; start here):`);
+  const section = (title, items) => {
+    out.push(`  ${title}:${items.length === 0 ? " none" : ""}`);
+    for (const i of items) out.push(`    ${i}`);
+  };
+  section("overlap (both the PR and main changed)", focus.overlap);
+  section("hand-resolved conflicts", focus.hand);
+  section(
+    "import-linked (main changed; one import from a PR file)",
+    focus.importLinked.map(({ file, via }) => `${file} (${via.map((v) => `${v.how} ${v.file}`).join(", ")})`),
+  );
+  section("exports main changed (grep their callers in the PR)", focus.changedExports);
   out.push(`head: ${head}`);
   return out;
+}
+
+/** The `--json` object's `focus`: the import-linked entries as file names. */
+export function focusJson(focus) {
+  return { ...focus, importLinked: focus.importLinked.map((l) => l.file) };
 }
 
 class Stop extends Error {
@@ -198,7 +267,7 @@ export function main(argv, opts = {}) {
   };
   const showText = (spec) => show(spec)?.toString("utf8") ?? null;
   const names = (...gitArgs) => split0(git(...gitArgs, "-z"));
-  const unmerged = () => names("diff", "--name-only", "--diff-filter=U");
+  const unmerged = () => names("diff", "--name-only", "--no-renames", "--diff-filter=U");
   /** `CHANGELOG.md` merged as the union of ours and theirs over the base (stage 1; empty when absent). */
   const unionMerge = (path) => {
     const dir = mkdtempSync(join(tmpdir(), "sync-main-"));
@@ -241,19 +310,9 @@ export function main(argv, opts = {}) {
       const oldHead = git("rev-parse", "HEAD");
       const mainHead = git("rev-parse", REMOTE_MAIN);
       if (gitOk("merge-base", "--is-ancestor", mainHead, oldHead)) {
-        const verdict = triage({ prFiles: [], mainFiles: [] });
         if (args.json) {
-          out(
-            JSON.stringify({
-              upToDate: true,
-              head: oldHead,
-              oldHead,
-              scripted: [],
-              hand: [],
-              overlap: [],
-              reviewCarries: verdict.reviewCarries,
-            }),
-          );
+          const focus = { overlap: [], hand: [], importLinked: [], changedExports: [] };
+          out(JSON.stringify({ upToDate: true, head: oldHead, oldHead, scripted: [], hand: [], focus }));
         } else {
           out(`up to date: ${branch} already contains ${REMOTE_MAIN} (${mainHead})`);
           out(`head: ${oldHead}`);
@@ -311,7 +370,7 @@ export function main(argv, opts = {}) {
       if (left.length > 0) {
         throw new Stop(2, ["--continue: still unmerged; resolve and `git add` them:", ...left.map((f) => `  ${f}`)]);
       }
-      const unstaged = names("diff", "--name-only");
+      const unstaged = names("diff", "--name-only", "--no-renames");
       if (unstaged.length > 0) {
         throw new Stop(2, [
           "--continue: unstaged changes; `git add` (or restore) them:",
@@ -370,7 +429,9 @@ export function main(argv, opts = {}) {
         showText(`${state.mainHead}:${ARTIFACTS_JSON}`),
         existsSync(join(root, ARTIFACTS_JSON)) ? readFileSync(join(root, ARTIFACTS_JSON), "utf8") : null,
       ]);
-      const changed = [...new Set([...names("diff", "--name-only"), ...names("ls-files", "-o", "--exclude-standard")])];
+      const changed = [
+        ...new Set([...names("diff", "--name-only", "--no-renames"), ...names("ls-files", "-o", "--exclude-standard")]),
+      ];
       for (const f of changed) if (sets.artifacts.has(f)) regenerated.push(f);
       if (regenerated.length > 0) git("add", "--", ...regenerated);
       const stray = changed.filter((f) => !sets.artifacts.has(f));
@@ -410,11 +471,43 @@ export function main(argv, opts = {}) {
       git("push", "-q", REMOTE, branch);
     }
 
-    // ---- 7. review triage ----
+    // ---- 7. the re-review focus ----
     const prFiles = names("diff", "--name-only", "--no-renames", state.base, state.oldHead);
     const mainFiles = names("diff", "--name-only", "--no-renames", state.base, state.mainHead);
     const sets = artifactSets([showText(`${head}:${ARTIFACTS_JSON}`), showText(`${state.oldHead}:${ARTIFACTS_JSON}`)]);
-    const verdict = triage({ prFiles, mainFiles, hand: state.hand, artifacts: sets.artifacts });
+    const importCache = new Map();
+    /** The repository paths `file` imports on the merged head (the working tree, just committed). */
+    const importsOf = (file) => {
+      if (!importCache.has(file)) {
+        let found = [];
+        const abs = join(root, file);
+        if (CODE.test(file) && existsSync(abs)) {
+          const text = readFileSync(abs, "utf8");
+          found = [...text.matchAll(SPEC)].map((m) => resolveSpec(root, file, m[1])).filter((p) => p !== null);
+        }
+        importCache.set(file, found);
+      }
+      return importCache.get(file);
+    };
+    const exportsDiff = gitRaw([
+      "diff",
+      "--no-color",
+      "--no-ext-diff",
+      "--no-renames",
+      "-U0",
+      state.base,
+      state.mainHead,
+      "--",
+      "*.ts",
+      "*.tsx",
+      "*.mts",
+      "*.mjs",
+    ]).stdout.toString("utf8");
+    const focus = {
+      ...focusFiles({ prFiles, mainFiles, hand: state.hand, sets }),
+      importLinked: importLinked({ prFiles, mainFiles, importsOf, sets }),
+      changedExports: changedExports(exportsDiff, (f) => isRegenerated(f, sets)),
+    };
     if (args.json) {
       out(
         JSON.stringify({
@@ -422,14 +515,13 @@ export function main(argv, opts = {}) {
           head,
           oldHead: state.oldHead,
           scripted: state.scripted,
-          hand: verdict.hand,
-          overlap: verdict.overlap,
-          reviewCarries: verdict.reviewCarries,
+          hand: uniqSorted(state.hand),
+          focus: focusJson(focus),
         }),
       );
     } else {
       out(`merged ${REMOTE_MAIN} (${state.mainHead}) into ${state.branch} (was ${state.oldHead})`);
-      for (const l of reportLines({ head, scripted: state.scripted, regenerated, verdict })) out(l);
+      for (const l of reportLines({ head, scripted: state.scripted, regenerated, focus })) out(l);
     }
     return 0;
   } catch (e) {
