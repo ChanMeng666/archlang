@@ -1,0 +1,13 @@
+# The twin of cn-entry-passage-narrow.arch: the entry passage is 1350 mm wide between its wall faces
+# (1500 drawn), over the 1200 mm of GB 50096-2011 5.7.1.
+plan "Entry passage wide enough" {
+  units mm
+  grid 50
+  wall id=shell exterior thickness 200 { (0,0) (5500,0) (5500,4000) (0,4000) close }
+  wall id=w_mid partition thickness 100 { (1500,0) (1500,4000) }
+  room id=r_entry at (0,0) size 1500x4000 label "Entry" uses entry
+  room id=r_living at (1500,0) size 4000x4000 label "Living Room" uses living
+  door id=d_entry at (750,4000) width 800 wall shell
+  door id=d_living at (1500,1500) width 900 wall w_mid swing into r_living
+  window at (3500,0) width 1500 wall shell
+}

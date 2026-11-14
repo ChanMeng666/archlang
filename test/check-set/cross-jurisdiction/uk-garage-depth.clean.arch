@@ -1,0 +1,9 @@
+# The twin of uk-garage-depth.arch: the garage is 6100 mm deep between its wall faces (6300 drawn),
+# over the 6000 mm of Monmouthshire County Council's SPG Domestic Garages (2013).
+plan "Garage 6 m deep" {
+  units mm
+  grid 50
+  wall id=shell exterior thickness 200 { (0,0) (6300,0) (6300,3800) (0,3800) close }
+  room id=r_gar at (0,0) size 6300x3800 label "Garage" uses garage
+  door id=d_car garage at (0,1900) width 2400 wall shell
+}

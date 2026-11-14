@@ -381,6 +381,10 @@ export type {
   LintUnclassifiedRoom,
   EnclosureBudgetCap,
 } from "./lint.js";
+// The `arch lint --json` document as data (CR10): the hosted `POST /check` returns it, and a
+// test holds it to the CLI's stdout. Never read by `compile()`.
+export { lintReport } from "./lint/report.js";
+export type { LintReport, LintReportOptions } from "./lint/report.js";
 // Each lint code's soundness layer (ADR 0032): validity or drafting, read off its rule.
 export { LINT_CODE_LAYERS } from "./lint.js";
 export type { LintLayer } from "./lint.js";
