@@ -290,13 +290,18 @@ describe("the CLI", () => {
     expect(r.stderr).toBe("");
   });
 
+  // A plan that names every id: `examples/studio.arch` leaves its walls and windows unnamed, which
+  // is the `auto id` report since RM3.1 (review M1).
   it("a plan that drops nothing has no key, no note and the bytes it always had", async () => {
-    const source = readFileSync("examples/studio.arch", "utf8");
-    const { json } = planToJson(source, { world: makeNodeWorld("examples") });
-    const text = await compileCli(["examples/studio.arch", "-f", "json", "-o", "-"]);
+    const source = planWith("door id=d at (2000,3000) width 900 wall exterior hinge left swing in");
+    const file = join(dir, "named.arch");
+    writeFileSync(file, source);
+    const { json, dropped } = planToJson(source);
+    expect(dropped).toBeUndefined();
+    const text = await compileCli([file, "-f", "json", "-o", "-"]);
     expect(text.stderr).toBe("");
     expect(text.stdout).toBe(`${JSON.stringify(json, null, 2)}\n`);
-    const env = await compileCli(["examples/studio.arch", "-f", "json", "--json"]);
+    const env = await compileCli([file, "-f", "json", "--json"]);
     expect(env.stderr).toBe("");
     expect("dropped" in JSON.parse(env.stdout)).toBe(false);
   });
