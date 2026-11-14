@@ -40,6 +40,8 @@ import {
 } from "./glyphs-bath.js";
 import {
   drawBarCounter,
+  drawChestFreezer,
+  drawCondenser,
   drawCounter,
   drawDishwasher,
   drawDryer,
@@ -53,8 +55,10 @@ import {
   drawRangeHood,
   drawStove,
   drawUpperCabinet,
+  drawWallAc,
   drawWasher,
   drawWaterHeater,
+  drawWineFridge,
 } from "./glyphs-kitchen.js";
 import {
   drawBed,
@@ -76,9 +80,12 @@ import {
   drawCoatRack,
   drawCoffeeTable,
   drawConsoleTable,
+  drawDaybed,
   drawDiningTable,
+  drawDisplayCabinet,
   drawFireplace,
   drawFloorLamp,
+  drawFoldingScreen,
   drawLoveseat,
   drawOttoman,
   drawPiano,
@@ -93,6 +100,7 @@ import {
   drawTable,
   drawTv,
   drawTvUnit,
+  drawWallArt,
 } from "./glyphs-living.js";
 import {
   drawBookshelf,
@@ -104,6 +112,7 @@ import {
   drawOfficeChair,
   drawPlant,
   drawPoolTable,
+  drawPottedTree,
   drawPrinter,
   drawReceptionDesk,
   drawServerRack,
@@ -113,17 +122,22 @@ import {
   drawWorkstation,
 } from "./glyphs-misc.js";
 import {
+  drawBamboo,
   drawBbq,
   drawBicycle,
   drawBikeRack,
   drawBin,
   drawBollard,
   drawBoulder,
+  drawClimber,
   drawClothesline,
   drawConifer,
   drawEvCharger,
   drawFirePit,
   drawFlowerBed,
+  drawGardenGate,
+  drawGazebo,
+  drawGreenhouse,
   drawHedge,
   drawHotTub,
   drawMailbox,
@@ -133,11 +147,13 @@ import {
   drawPalm,
   drawPergola,
   drawPicnicTable,
+  drawPool,
   drawRaisedBed,
   drawSandpit,
   drawShed,
   drawShrub,
   drawSlide,
+  drawSteppingStones,
   drawSwing,
   drawTrampoline,
   drawTree,
@@ -294,6 +310,28 @@ const FIXTURE_FAMILIES = [
   ["server_rack"],
   ["hospital_bed"],
   ["workstation", "desk_pod"],
+  // ── the new-families batch (product-roadmap RM8.9) ──
+  // Sixteen families appended, at the END again, because this table's order IS the legend's order:
+  // the twelve of the card (cooling, cold storage and display, the living room, the garden), then
+  // the four planting families of RM-D29. `freezer` is not an alias of `chest_freezer` (an upright
+  // freezer looks like a fridge), nor `gate` of `garden_gate` (a gate in a fence line is a later
+  // `fence` clause's word), nor `screen` of `folding_screen` (it is a material's name).
+  ["wall_ac", "split_ac", "air_conditioner", "ac_indoor"],
+  ["condenser", "ac_outdoor", "outdoor_unit", "heat_pump"],
+  ["chest_freezer"],
+  ["wine_fridge", "wine_cooler"],
+  ["display_cabinet", "vitrine", "curio_cabinet"],
+  ["folding_screen", "room_divider", "privacy_screen"],
+  ["daybed", "day_bed"],
+  ["pool", "swimming_pool", "plunge_pool"],
+  ["garden_gate", "yard_gate"],
+  ["gazebo", "pavilion", "garden_pavilion"],
+  ["greenhouse", "glasshouse"],
+  ["wall_art", "artwork", "painting", "picture"],
+  ["climber", "climbing_plant"],
+  ["bamboo"],
+  ["potted_tree", "indoor_tree"],
+  ["stepping_stones"],
 ] as const satisfies readonly (readonly [string, ...string[]])[];
 
 /** The canonical name of a family: the first word of a {@link FIXTURE_FAMILIES} row. */
@@ -519,6 +557,23 @@ export const FIXTURE_FAMILY_MATERIALS: Readonly<Record<string, FamilyMaterials>>
   server_rack: M("metal"),
   hospital_bed: M("metal", "linen"),
   workstation: M("wood", "fabric"),
+  // ── the new-families batch (RM8.9) ──
+  wall_ac: M("appliance"),
+  condenser: M("appliance", "metal"),
+  chest_freezer: M("appliance"),
+  wine_fridge: M("appliance", "glass"),
+  display_cabinet: M("wood", "glass"),
+  folding_screen: M("wood", "fabric"),
+  daybed: M("fabric", "cushion"),
+  pool: M("stone", "water"),
+  garden_gate: M("wood"),
+  gazebo: M("wood"),
+  greenhouse: M("metal", "glass"),
+  wall_art: M("wood", "paint"),
+  climber: M("foliage", "wood"),
+  bamboo: M("foliage"),
+  potted_tree: M("foliage", "ceramic"),
+  stepping_stones: M("stone"),
 });
 
 /** The materials of `category`'s family (an alias resolves through its family), or `undefined`
@@ -643,6 +698,22 @@ const DRAW_BY_FAMILY: Readonly<Record<CanonicalFamily, DrawFn>> = {
   server_rack: drawServerRack,
   hospital_bed: drawHospitalBed,
   workstation: drawWorkstation,
+  wall_ac: drawWallAc,
+  condenser: drawCondenser,
+  chest_freezer: drawChestFreezer,
+  wine_fridge: drawWineFridge,
+  display_cabinet: drawDisplayCabinet,
+  folding_screen: drawFoldingScreen,
+  daybed: drawDaybed,
+  pool: drawPool,
+  garden_gate: drawGardenGate,
+  gazebo: drawGazebo,
+  greenhouse: drawGreenhouse,
+  wall_art: drawWallArt,
+  climber: drawClimber,
+  bamboo: drawBamboo,
+  potted_tree: drawPottedTree,
+  stepping_stones: drawSteppingStones,
 };
 
 /**

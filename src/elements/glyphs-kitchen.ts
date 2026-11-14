@@ -791,3 +791,91 @@ export function drawPantry(r: Rect, g: GlyphCtx): SceneNode[] {
   }
   return g.nodes;
 }
+
+// ---------------------------------------------------------------------------
+// ── the new-families batch (product-roadmap RM8.9) ──
+
+/**
+ * A split air-conditioner's indoor unit, hung high on its wall: the casing, the louvre line along
+ * its front, the air outlet between the louvre and the front face, and the filter line behind.
+ *
+ * It hangs above the cut plane (its underside is about a door head), so it is drawn DASHED and
+ * unfilled, for the reason `upper_cabinet` is: present, not cut, and whatever stands under it has
+ * to read through. The back is the wall edge (top), the louvre and the outlet are on the front,
+ * which is what the catalogue's `directional` rests on. Mirror-symmetric across its width.
+ *
+ * Prim count: 4.
+ */
+export function drawWallAc(r: Rect, g: GlyphCtx): SceneNode[] {
+  dashedPoly(g, rectPoly(r), "none");
+  across(g, r, r.y + r.h * 0.62, "extraThin", true);
+  const inset = Math.min(r.w * 0.08, r.h * 0.4);
+  const y = r.y + r.h * 0.82;
+  g.seg({ x: r.x + inset, y }, { x: r.x + r.w - inset, y }, "extraThin", true);
+  across(g, r, r.y + r.h * 0.18, "extraThin", true);
+  return g.nodes;
+}
+
+/**
+ * A condenser (an air conditioner's outdoor unit, a heat pump): the casing, the coil face along
+ * its back, and the fan grille in the middle — a ring, four guard spokes on the diagonals and the
+ * hub. The fan is drawn centred (a real unit's is often to one side, which would make the symbol
+ * handed), so the symbol is its own mirror image; the coil line says which side is the back.
+ *
+ * Prim count: 7.
+ */
+export function drawCondenser(r: Rect, g: GlyphCtx): SceneNode[] {
+  const s = shortSide(r);
+  g.path(roundedRectPath(r, s * 0.04), g.body);
+  across(g, r, r.y + r.h * 0.12);
+  const c = centerOf(r);
+  const fan = { x: c.x, y: r.y + r.h * 0.56 };
+  const rad = Math.max(0, Math.min(r.w * 0.4, r.h * 0.38));
+  g.ring(fan, rad, "extraThin");
+  const d = rad * Math.SQRT1_2;
+  for (const [sx, sy] of [
+    [-1, -1],
+    [1, -1],
+    [-1, 1],
+    [1, 1],
+  ] as const) {
+    g.seg({ x: fan.x + sx * d * 0.22, y: fan.y + sy * d * 0.22 }, { x: fan.x + sx * d, y: fan.y + sy * d }, "extraThin");
+  }
+  g.dot(fan, rad * 0.16, g.fillFor(g.material?.secondary));
+  return g.nodes;
+}
+
+/**
+ * A chest freezer: the cabinet, its lid inset from it, the hinge line along the back, and the
+ * lid's handle on the front edge. The handle is what says which side the lid lifts from.
+ *
+ * Prim count: 4.
+ */
+export function drawChestFreezer(r: Rect, g: GlyphCtx): SceneNode[] {
+  const s = shortSide(r);
+  g.path(roundedRectPath(r, s * 0.05), g.body);
+  g.path(roundedRectPath(insetRect(r, 0.05), s * 0.03), g.body, "extraThin");
+  across(g, r, r.y + r.h * 0.12);
+  const hw = Math.min(r.w * 0.16, s * 0.3);
+  const hh = Math.min(r.h * 0.025, s * 0.025);
+  const c = centerOf(r);
+  const hy = r.y + r.h * 0.9;
+  g.path(roundedRectPath({ x: c.x - hw, y: hy - hh, w: 2 * hw, h: 2 * hh }, hh), g.blank, "extraThin");
+  return g.nodes;
+}
+
+/**
+ * A wine cooler, built in under a worktop: the cabinet top, the glass door along its front with
+ * its handle bar, and the three bottle shelves inside, dashed because the top hides them.
+ *
+ * Prim count: 6.
+ */
+export function drawWineFridge(r: Rect, g: GlyphCtx): SceneNode[] {
+  g.path(roundedRectPath(r, shortSide(r) * 0.02), g.body);
+  g.poly(rectPoly({ x: r.x, y: r.y + r.h * 0.86, w: r.w, h: r.h * 0.12 }), g.basin, "extraThin");
+  const c = centerOf(r);
+  const hw = r.w * 0.3;
+  g.seg({ x: c.x - hw, y: r.y + r.h * 0.92 }, { x: c.x + hw, y: r.y + r.h * 0.92 }, "thin");
+  for (const f of [0.28, 0.48, 0.68]) across(g, r, r.y + r.h * f, "extraThin", true);
+  return g.nodes;
+}

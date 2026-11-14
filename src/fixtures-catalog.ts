@@ -134,7 +134,8 @@ export interface FixtureSpec {
    *     parameters, and there is no per-call-site exemption for them to disagree about.
    *   - `W_FURN_CLEARANCE` needs nothing added. An overhead piece is above a fixture's frontal
    *     use-space rather than in it, so it should never be the thing blocking one — and today
-   *     it never is, because all three overhead families are also {@link requiresWall} and that
+   *     it never is, because every overhead family (five since RM8.9's wall unit and picture) is also
+   *     {@link requiresWall} and that
    *     rule already skips every services fixture as an obstruction. A second, currently
    *     unreachable arm would be untested code. **Revisit the moment an overhead family is NOT
    *     wall-requiring** — a ceiling pendant or a projector hangs off the slab, not the fabric,
@@ -145,7 +146,7 @@ export interface FixtureSpec {
    *
    * ## Not the same set as "draws dashed"
    *
-   * Four shipped symbols draw a dashed outline and only three families carry this flag. A bunk
+   * More shipped symbols draw a dashed outline than there are families carrying this flag. A bunk
    * bed's upper deck and a vanity's mirror band are dashed BITS of a piece that stands on the
    * floor; the piece itself is at the cut plane and collides with everything a bed or a chest
    * of drawers would. The flag is about the whole fixture, not about a line in its symbol.
@@ -164,7 +165,8 @@ export interface FixtureSpec {
    * The catalogue holds no heights, so the set is stated family by family rather than read off a
    * number: the fridge (a fridge-freezer stands about 1800–2000 mm), the wardrobe (built to the
    * door head), the bookcase (`bookshelf`, `bookcase`), the locker (a full-height bank), the
-   * pantry (a larder cupboard, drawn with the tall-unit cross) and the server rack (a 42U cabinet).
+   * pantry (a larder cupboard, drawn with the tall-unit cross), the server rack (a 42U cabinet) and
+   * the display cabinet (a vitrine).
    * Deliberately NOT tall: the bare word `shelf`, though it shares the bookshelf's symbol (low open
    * shelving under a sill is ordinary, and the word says nothing of height); the dresser and
    * chest of drawers, the filing cabinet (a two- or four-drawer unit often
@@ -191,7 +193,7 @@ export interface FixtureSpec {
    * `W_FIXTURE_BACK_TO_ROOM` (plan-soundness PS2.50), which declines a piece standing side-on or
    * end-on to a wall, a layout for a bed or a wardrobe, but not for one of these: a radiator, a
    * fireplace, a TV, an EV charger, a towel rail or a whiteboard touching a wall with its end is the
-   * wrong way round. Set on exactly those six families.
+   * wrong way round, and so is a climber's trellis. Set on exactly those seven families.
    */
   wallMounted?: boolean;
 }
@@ -830,6 +832,135 @@ const CATALOG: Readonly<Record<string, FixtureSpec>> = Object.freeze({
   // `serves: "desk"`, as the reception desk does: an office furnished with a pod has its desks.
   workstation: { requiresWall: false, serves: "desk" },
   desk_pod: { requiresWall: false, serves: "desk" },
+
+  // -------------------------------------------------------------------------
+  // ── the new-families batch (product-roadmap RM8.9) ──
+  //
+  // Sixteen families (`docs/plans/product-roadmap/design/visual-language.md` § 4.1, § 4.3). Three
+  // choices are worth naming.
+  //
+  // ## Two of them hang above the cut plane, on the mirror's precedent
+  //
+  // The indoor air-conditioning unit and a picture are `requiresWall` and `overhead`, as the mirror
+  // is: each hangs off its wall by definition and above the plane a plan is cut at, so the drawing
+  // dashes it and `W_FURNITURE_OVERLAP` does not set it against what stands under it. Both are thin
+  // bands along their wall, so `fixedAspect`, and both have a front (`directional`).
+  //
+  // ## The climber is `wallMounted`; nothing else here is
+  //
+  // A trellis is fixed to its wall by its back whenever it touches one, needing no services there:
+  // the seventh `wallMounted` family. The condenser, the freezer, the wine cooler and the display
+  // cabinet each have a front (`directional`); the display cabinet stands to about a door head, so it
+  // is `tall` and blocks a window's glass. No family here carries a `clearanceMm`, for the reason the
+  // V8 tranche gives none.
+  //
+  // ## Seven carry no footprint
+  //
+  // A folding screen, a pool, a garden gate, a gazebo, a greenhouse, a potted tree and stepping
+  // stones come in no one size, so `size` is required for them. The pool, the gazebo and the potted
+  // tree are drawn D4-invariant (`symmetric`); the gate's depth is its leaves' swing.
+
+  // Cooling, cold storage and display.
+  // fixedAspect: a wall unit is a long, shallow casing along its wall, always far wider than deep.
+  wall_ac: {
+    requiresWall: true,
+    fixedAspect: true,
+    overhead: true,
+    directional: true,
+    footprint: { along: 900, depth: 250 },
+  },
+  split_ac: {
+    requiresWall: true,
+    fixedAspect: true,
+    overhead: true,
+    directional: true,
+    footprint: { along: 900, depth: 250 },
+  },
+  air_conditioner: {
+    requiresWall: true,
+    fixedAspect: true,
+    overhead: true,
+    directional: true,
+    footprint: { along: 900, depth: 250 },
+  },
+  ac_indoor: {
+    requiresWall: true,
+    fixedAspect: true,
+    overhead: true,
+    directional: true,
+    footprint: { along: 900, depth: 250 },
+  },
+  condenser: { requiresWall: false, directional: true, footprint: { along: 850, depth: 350 } },
+  ac_outdoor: { requiresWall: false, directional: true, footprint: { along: 850, depth: 350 } },
+  outdoor_unit: { requiresWall: false, directional: true, footprint: { along: 850, depth: 350 } },
+  heat_pump: { requiresWall: false, directional: true, footprint: { along: 850, depth: 350 } },
+  chest_freezer: { requiresWall: false, directional: true, footprint: { along: 1100, depth: 650 } },
+  wine_fridge: { requiresWall: false, directional: true, footprint: { along: 600, depth: 600 } },
+  wine_cooler: { requiresWall: false, directional: true, footprint: { along: 600, depth: 600 } },
+  display_cabinet: { requiresWall: false, directional: true, tall: true, footprint: { along: 1000, depth: 400 } },
+  vitrine: { requiresWall: false, directional: true, tall: true, footprint: { along: 1000, depth: 400 } },
+  curio_cabinet: { requiresWall: false, directional: true, tall: true, footprint: { along: 1000, depth: 400 } },
+
+  // The living room.
+  folding_screen: { requiresWall: false },
+  room_divider: { requiresWall: false },
+  privacy_screen: { requiresWall: false },
+  daybed: { requiresWall: false, footprint: { along: 2000, depth: 900 } },
+  day_bed: { requiresWall: false, footprint: { along: 2000, depth: 900 } },
+  // fixedAspect: a picture is a thin band along its wall, always far wider than deep.
+  wall_art: {
+    requiresWall: true,
+    fixedAspect: true,
+    overhead: true,
+    directional: true,
+    footprint: { along: 900, depth: 50 },
+  },
+  artwork: {
+    requiresWall: true,
+    fixedAspect: true,
+    overhead: true,
+    directional: true,
+    footprint: { along: 900, depth: 50 },
+  },
+  painting: {
+    requiresWall: true,
+    fixedAspect: true,
+    overhead: true,
+    directional: true,
+    footprint: { along: 900, depth: 50 },
+  },
+  picture: {
+    requiresWall: true,
+    fixedAspect: true,
+    overhead: true,
+    directional: true,
+    footprint: { along: 900, depth: 50 },
+  },
+
+  // The garden.
+  pool: { requiresWall: false, symmetric: true },
+  swimming_pool: { requiresWall: false, symmetric: true },
+  plunge_pool: { requiresWall: false, symmetric: true },
+  garden_gate: { requiresWall: false },
+  yard_gate: { requiresWall: false },
+  gazebo: { requiresWall: false, symmetric: true },
+  pavilion: { requiresWall: false, symmetric: true },
+  garden_pavilion: { requiresWall: false, symmetric: true },
+  greenhouse: { requiresWall: false },
+  glasshouse: { requiresWall: false },
+
+  // Planting (RM-D29).
+  climber: { requiresWall: false, directional: true, wallMounted: true, footprint: { along: 1200, depth: 300 } },
+  climbing_plant: {
+    requiresWall: false,
+    directional: true,
+    wallMounted: true,
+    footprint: { along: 1200, depth: 300 },
+  },
+  bamboo: { requiresWall: false, footprint: { along: 2000, depth: 600 } },
+  potted_tree: { requiresWall: false, symmetric: true },
+  indoor_tree: { requiresWall: false, symmetric: true },
+  stepping_stones: { requiresWall: false },
 });
 
 /** All catalogued categories (aliases included), in declaration order. */
