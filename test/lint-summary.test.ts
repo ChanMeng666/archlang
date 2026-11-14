@@ -8,7 +8,7 @@ import { cmdLint, cmdValidate } from "../src/cli/commands-analyze.js";
 import { type CliIo, nodeIo, parseArgs } from "../src/cli/io.js";
 import { diagnosticsSummary, validateSummary } from "../src/cli/summary.js";
 import { ERROR_CODES } from "../src/error-catalog.js";
-import { diagnosticRule, diagnosticToJson, lint } from "../src/index.js";
+import { diagnosticRule, diagnosticToJson, isAuthoringStage, lint } from "../src/index.js";
 import type { Diagnostic } from "../src/index.js";
 import { validateJsonFiles, withoutSummary } from "./helpers/validate-json-run.js";
 import { runArch } from "./helpers/cli.js";
@@ -157,6 +157,34 @@ describe("the diagnostics are what lint() returns", () => {
     }
     expect(checked).toBeGreaterThan(150);
     // Not vacuous: the corpus raises warnings a ruleset number drives under the default ruleset.
+    expect(ruled).toBeGreaterThan(0);
+  }, 600_000);
+
+  // `validate --json` prints compile()'s diagnostics, then lint()'s, each with its `rule` and a
+  // `stage` appended last (PS7.1). The K1/K3 digest view strips `rule` (`validateDigestView`), so
+  // this is the test that holds it: the lint tail, `stage` aside, is the three-argument projection.
+  it("validate --json: the lint diagnostics equal lint()'s with their rule, then a stage, over the corpus", () => {
+    let checked = 0;
+    let ruled = 0;
+    for (const f of validateJsonFiles()) {
+      const j = JSON.parse(runIn(cmdValidate, [f, "--json"]).stdout) as { diagnostics: Record<string, unknown>[] };
+      if (j.diagnostics.some((d) => d.severity === "error")) continue;
+      const src = readFileSync(f, "utf8");
+      const ds = lint(src);
+      expect(j.diagnostics.length, f).toBeGreaterThanOrEqual(ds.length);
+      for (const d of j.diagnostics) {
+        expect(Object.keys(d).at(-1), f).toBe("stage");
+        expect(isAuthoringStage(d.stage), `${f}: stage ${String(d.stage)}`).toBe(true);
+      }
+      const tail = j.diagnostics.slice(j.diagnostics.length - ds.length).map(({ stage: _s, ...rest }) => rest);
+      expect(JSON.stringify(tail), f).toBe(
+        JSON.stringify(ds.map((d) => diagnosticToJson(src, d, { rule: diagnosticRule }))),
+      );
+      ruled += tail.filter((d) => d.rule !== undefined && d.severity === "warning").length;
+      checked++;
+    }
+    expect(checked).toBeGreaterThan(150);
+    // Not vacuous: at least one warning carries the ruleset number it was raised against.
     expect(ruled).toBeGreaterThan(0);
   }, 600_000);
 });

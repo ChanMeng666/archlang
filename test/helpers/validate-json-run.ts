@@ -68,8 +68,11 @@ export function withoutRuleKeys(stdout: string): string {
 /**
  * What the digest laws that hash `validate --json` (`keep-byte-identity` K1, `keep-digests` K3)
  * measure: the output without the keys added after their pins (PS7.6's `summary`, PS7.1's
- * `stage`, RM1.6b's `rule`), so no pin is re-blessed. Each key is covered where it belongs:
- * `./lint-summary.test.ts`, `./stages.test.ts` and `./lint-provenance.test.ts`.
+ * `stage`, RM1.6b's `rule`), so no pin is re-blessed. `summary` is held by `../lint-summary.test.ts`
+ * (the corpus, cut at 200 bytes); `rule` and `stage` in `validate --json` by its corpus test "the
+ * lint diagnostics equal lint()'s with their rule, then a stage", which compares every lint
+ * diagnostic with `diagnosticToJson(src, d, { rule: diagnosticRule })` and needs a warning to carry
+ * a `rule`.
  */
 export const validateDigestView = (stdout: string): string => withoutRuleKeys(withoutStageKeys(withoutSummary(stdout)));
 
