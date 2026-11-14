@@ -50,7 +50,6 @@ is to be started until its question is answered; the entry named holds the evide
 | M.9 | Should grid snap and `fmt2` round half away from zero, so a mirror image snaps alike? It moves output. |
 | M.14 | Should a roof's acute corner be bevelled or miter-limited, and at what limit? |
 | D.7 | One hairline for the whole sheet? The title block's rules would move in every example. |
-| CI throughput | Which of `docs/plans/ci-throughput.md`'s options (repo auto-merge and branch protection, a concurrency group, path-filtered legs, coverage off the PR path, a merge queue, changelog fragments) to take? Repo settings are the owner's. |
 
 ---
 

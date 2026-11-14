@@ -986,6 +986,32 @@ A.6/A.7（CLI `--accessible --annotate` 与 MCP 对应参数）、A.1（`dims au
 
 ---
 
+## 第 9 轨 · CI 吞吐（RM-D37，2026-11-14 加；出处与重开条件见 `../ci-throughput-research.md` §10）
+
+不挡也不被任何产品卡挡。**不是第三个执行者：** TP 卡在核心车道两张卡之间占用核心执行者的位置（RM-D22 的两个执行者不变），一次一张。TP1、TP2 是 high 层级（脚本与工作流），评审后由协调者判断合并。
+
+### TP1 · `npm run sync:main`：同步 `main` 时机械地解掉记录与生成物冲突 — `doing`（2026-11-14 派出） · 1 日 · opus · 依赖无
+
+`scripts/sync-main.mjs`：合并 `origin/main`；生成物（`.claude/hooks/generated-artifacts.json` 的列表）取 `main` 一侧再 `gen:all`；`CHANGELOG.md` 三方 union 合并，再跑 `scripts/check-changelog-unreleased.mjs`；其余冲突停下交给代理（`--continue` 续跑）；`--push` 推送。最后打印**重新红队的重点**（不是"可以不红队"：`ci-throughput.md` §2 第 3 条不变，同步后的头总要重新红队，见 `docs/agents/gotchas.md` 里 `doorSwing()` 的一条）：两边都改过的文件、手解的文件、main 带进来且与 PR 改动的文件有直接 import 关系的文件、main 一侧改过的导出函数名（红队在 PR 里查它们的调用处）。所有 `--name-only` 都带 `--no-renames`；低层级路径（`scripts/risk-tier.mjs` 的分类）不进重点。`docs/agents/commands.md` § Merging a PR 改为用它。证明：纯函数的单测 + 一次手工同步的输出贴在 PR 里。不许：`git add -A`；把生成物列表或层级规则抄进脚本。
+
+### TP2 · Playground E2E 拆三个 job；Node 18、Node 20、Windows 在 `main` 上各分三片 — `todo` · 1 日 · opus · 依赖无（与 TP1 不同文件，TP1 合并后再派）
+
+Playground：Chromium `--shard=1/2`、`2/2` 两个 job，Firefox 与 WebKit 的 `@engines` 一个 job，聚合 job 保留必需检查名 `Playground E2E (Playwright)`（照 `Node 22` 聚合 job 的写法：`always()`，按 needs 的结果判，记录类 PR 照常绿）；每个 job 各自的 flaky 报告与失败时的产物名。主线三条腿：测试分三片（`vitest --shard`，`test/sequencer.ts` 按时长分），typecheck、lint、drift、eval 只在第 1 片跑；聚合 job 保留 `Node 18`、`Node 20`、`Windows (tests + drift)` 三个名字；在 PR 上分片 job 在 job 级跳过（不起 runner），**例外照旧：`changes` 失败时 PR 上也全跑**（`ci.yml` 现有的 fail-open）；`merge_group` 与 push 跑全部。`docs/agents/commands.md` § CI 的作业表、`ci.yml` 顶部注释同步改。证明：本 PR 的一次代码运行（各 job 时长）与合并后第一次 push 运行的墙钟**和各 job 的排队时间**（push 的峰值并行约 21 个 job，超过 Free 的 20 个并发上限，`../ci-throughput-research.md` §4.1）；预期 PR 约 9 → 6.5 分钟，push 约 28 → 11 分钟（估算）。不许：改必需检查的名字或分支保护。
+
+### TP3 · E2E flaky 记账 — `todo` · 0.5 日 · sonnet · 依赖 TP2（线下）
+
+`scripts/playwright-flaky.mjs` 的结果在每次 E2E 运行上传为产物；夜间汇总近 14 天，一个用例在 14 天里重试才过 ≥3 次就开 issue（标签 `flaky`），附运行链接。证明：用一个重试才过的 JSON 夹具测汇总逻辑。不许：用重试或调大超时把它压掉。
+
+### TP4 · `main` 因合并而红时自动开回滚 PR — `todo`（暂缓） · 1 日 · opus · 依赖所有者建一个 GitHub App 或细粒度令牌（`GITHUB_TOKEN` 开的 PR 不触发 CI）（线下）
+
+只数**合并造成的事故**：重跑能过的、或红在安装步骤（如 apt 的 "Install Chromium system deps"）的不算。基线：2026-11-10 → 11-14 一起（#703 带进 Node 18 上的 `toReversed`，#701、#706 的推送也红在它上面，#705 报警、#708 修复）；同期 11-11 红在 apt 安装步骤上约 7 小时的那次不算。触发（`../ci-throughput-research.md` §10）：连续两周每周超过两起，或一起事故让 `main` 红超过 2 小时。触发前不做；自动回滚只对"上一次绿到这次红之间只有一个合并"的情形。
+
+### TP5 · 复测 — `todo` · 0.5 日 · sonnet · 依赖 TP1、TP2 合并后又过了 7 天的合并
+
+照 `../ci-throughput-research.md` §9 的命令重取 §7 的表，**另加** §10.1 各重开条件要的量：每个合并的 PR 同步几次、P90 开 → 合、job 排队时间中位数、`check-changelog-unreleased` 拒掉 union 合并条目的次数、合并造成的 `main` 事故数（TP4 的数法）、每个 job 的中位时长。写在 §10.2 下面；触发了哪一行就记进本节新的一张卡。
+
+---
+
 ## 等待触发（不排期）
 
 | 卡 | 触发 |
