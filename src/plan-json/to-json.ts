@@ -467,6 +467,7 @@ export type PlanJsonDroppedClause =
   | "column order"
   | "outdoor order"
   | "fence order"
+  | "auto id"
   | (typeof UNPROJECTED_KINDS)[number]
   | "place"
   | "zone"
@@ -500,6 +501,12 @@ export interface PlanJsonDropped {
   level?: number;
 }
 
+/**
+ * The kinds whose resolved element says whether its id was written (`_idAuthored`), which the
+ * document cannot: every row's id is written back as `id=…` (the `auto id` row).
+ */
+const ID_AUTHORED_KINDS: ReadonlySet<string> = /* @__PURE__ */ new Set(["wall", "room", "door", "window", "furniture"]);
+
 /** What one storey holds and its document cannot carry. `level` is absent on a single-storey plan. */
 function droppedFromStorey(storey: ResolvedPlan, level: number | undefined, carried: boolean): PlanJsonDropped[] {
   const rows: PlanJsonDropped[] = [];
@@ -527,8 +534,14 @@ function droppedFromStorey(storey: ResolvedPlan, level: number | undefined, carr
   const lastPiece = elements.map((e) => e.kind).lastIndexOf("furniture");
   const early = elements.filter((e, i) => e.kind === "column" && i < lastPiece).map((e) => e.id);
   add("column order", early.length, early);
-  // The same for the ground (RM3.1): `outdoor` comes back after every room (the two share the
-  // `floor` and `labels` passes), and `fence` after every piece and column (the `furniture` pass).
+  // The same for the ground (RM3.1). The document writes the rooms, then `outdoor`, then the
+  // furniture, the columns and the fences, and the scene keeps source order within a pass. An
+  // `outdoor` shares the `floor` and `labels` passes with the rooms, so one written before a room
+  // comes back after it; a fence shares the `furniture` pass with the pieces and columns, so one
+  // written before them comes back after them. A balcony's rail is on the `furniture` pass too,
+  // but in its own CAD layer (`A-FLOR-BALC`), whose group the SVG opens at the balcony's tint on
+  // the `floor` pass, before any piece's: its order against a piece or a fence moves no byte
+  // (pinned by `test/plan-json-roundtrip-law.test.ts`), so it is not reported.
   const kinds = elements.map((e) => e.kind);
   const lastRoom = kinds.lastIndexOf("room");
   const earlyGround = elements.filter((e, i) => e.kind === "outdoor" && i < lastRoom).map((e) => e.id);
@@ -536,6 +549,17 @@ function droppedFromStorey(storey: ResolvedPlan, level: number | undefined, carr
   const lastFixed = Math.max(kinds.lastIndexOf("furniture"), kinds.lastIndexOf("column"));
   const earlyFences = elements.filter((e, i) => e.kind === "fence" && i < lastFixed).map((e) => e.id);
   add("fence order", earlyFences.length, earlyFences);
+  // Every row's `id` is written as `id=…`, so an element whose id the resolver made up comes back
+  // with an authored one (`_idAuthored`, which a lint hint reads to name an element by its id).
+  const autoIds = elements
+    .filter(
+      (e) =>
+        ID_AUTHORED_KINDS.has(e.kind) &&
+        (e as { _derived?: unknown })._derived === undefined &&
+        (e as { _idAuthored?: boolean })._idAuthored !== true,
+    )
+    .map((e) => e.id);
+  add("auto id", autoIds.length, autoIds);
   for (const kind of UNPROJECTED_KINDS) {
     // Named as the author names them: the id, or a kind's own name (a `section` mark's `A`).
     const nameOf = BUILTIN_REGISTRY.byKind.get(kind)?.nameOf;

@@ -46,6 +46,7 @@ const ONE_LINE: Array<[Exclude<PlanJsonDroppedClause, "keep" | "level">, string]
   ["outdoor order", "outdoor id=o lawn at (5000,0) size 2000x2000\n  room id=r2 at (9000,0) size 1000x1000"],
   ["fence order", "fence id=f picket { (5000,0) (7000,0) }\n  furniture id=b bed at (5500,0) size 1000x2000"],
   ["place", "component bay() { column id=k at (0,0) size 300x300 }\n  place bay() as a at (5000,0)"],
+  ["auto id", "furniture bed at (5500,0) size 1000x2000"],
   ["zone", 'zone west "West" { room id=z at (5000,0) size 2000x2000 }'],
   ["axes", "axes { x at 0, 4000 y at 0 }"],
   ["site boundary", "site { street south boundary (0,0) (5000,0) (5000,4000) }"],
@@ -325,10 +326,13 @@ describe("the report over the corpus", () => {
     expect(GAPS.filter((name) => report(name).dropped === undefined)).toEqual([]);
   });
 
-  it("every example that does come back the same reports nothing", () => {
+  // An example that comes back the same may still write an id the plan did not (`auto id`,
+  // RM3.1 review M1): a lost fact that no in-scope example's drawing, facts or lint shows.
+  it("every example that does come back the same reports nothing but `auto id`", () => {
     const same = EXAMPLES.filter((n) => !GAPS.includes(n));
     expect(same.length).toBeGreaterThanOrEqual(8);
-    expect(same.filter((name) => report(name).dropped !== undefined)).toEqual([]);
+    const other = (name: string) => (report(name).dropped ?? []).filter((r) => r.clause !== "auto id");
+    expect(same.filter((name) => other(name).length > 0)).toEqual([]);
   });
 });
 
