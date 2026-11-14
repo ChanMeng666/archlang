@@ -51,7 +51,7 @@ import type { NextInput } from "./next.js";
 export const AUTHORING_STAGES = ["brief", "rooms", "walls", "openings", "fixtures", "drafting"] as const;
 export type AuthoringStage = (typeof AUTHORING_STAGES)[number];
 
-const RANK: Readonly<Record<AuthoringStage, number>> = pure(() =>
+const RANK: Readonly<Record<AuthoringStage, number>> = /* @__PURE__ */ pure(() =>
   Object.freeze(Object.fromEntries(AUTHORING_STAGES.map((s, i) => [s, i] as const)) as Record<AuthoringStage, number>),
 );
 

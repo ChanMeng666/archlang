@@ -5,7 +5,7 @@
 Where the tests of a `src` module are, and what each test file is for. Generated; `npm run check:drift`
 fails when it is stale. How to add a test: `docs/testing.md` § 4.
 
-505 test files in `test/`, 280 `src` modules, 106 modules no test imports.
+507 test files in `test/`, 282 `src` modules, 107 modules no test imports.
 
 ## `src` module → tests that import it
 
@@ -51,6 +51,7 @@ Nearest first, then by name; `(+n)` is the rest. Test names are `test/<name>.tes
 - `src/cli/serialize.ts` (7) — `cli-batch`, `cli-plan-json-roundtrip`, `element-facets`, `plan-json-arcs-paper`, `plan-json-dropped`, `plan-json-instances`, `walls-from-rooms`
 - `src/cli/source-hash.ts` (1) — `cli-expected-hash`
 - `src/cli/summary.ts` (1) — `lint-summary`
+- `src/compile.ts` (1) — `cache`
 - `src/context-size.ts` (1) — `context-size`
 - `src/cursor.ts` (3) — `block-stair`, `cursor-exhaustive`, `reroll-findrun-oracle`
 - `src/datum.ts` (11) — `access-policy`, `cursor-exhaustive`, `describe-depends`, `diff-laws`, `emit-opening-oracle`, `equivariance-fuzz`, `fix-printer`, `fuzz` (+3)
@@ -602,6 +603,7 @@ The first sentence of each file's header comment.
 - `test/scene-path-prim.test.ts` — The `path` Scene primitive reaches every backend.
 - `test/scene.test.ts` — Scene IR.
 - `test/schedule.test.ts` — sheet tables — a plan that opts out is byte-identical; schedule — derived rows (numbering, names, areas); legend — derived closed-form from what the drawing pai…
+- `test/schema-ids.test.ts` — Every published JSON schema file carries a well-formed `$id` (GOVERNANCE.md: Compatibility and deprecation).
 - `test/section.test.ts` — `section <id|int> (x,y)->(x,y) look <compass>` (RM6.1, design `slab-and-section.md` §2): what `describe().sections` reports and where the mark draws, the four refusals, the words as names, the printer, and Plan JSON's...
 - `test/security.test.ts` — SVG output is XSS-safe.
 - `test/segment-select-digests.test.ts` — The segment-selector digest table (plan card PS3.5): SHA-256 over SVG, `describe()`, `lint()` and `compile().diagnostics` of every storey of each plan in `test/tables/segment-select-plans.ts`, pinned in its own commit...
@@ -641,6 +643,7 @@ The first sentence of each file's header comment.
 - `test/swing-exact.test.ts` — 6.12 — an overlap with no sampled point in it collides; a separating gap is never contact; the superset law: every collision the old sampler found is still a co…
 - `test/swing.test.ts` — doorSwing; sectorIntersectsRect; swingsCollide; largestPerimeterGap.
 - `test/symmetry.test.ts` — `describe(src, { facts: ["symmetry"] })` — the plan's symmetry group per layer, and its repeated rooms.
+- `test/sync-main.test.ts` — scripts/sync-main.mjs: merge origin/main, script the record and generated-artifact conflicts, focus the re-review.
 - `test/syntax.test.ts` — `describe(src, { facts: ["syntax"] })` — space syntax (Hillier & Hanson 1984) on the access graph.
 - `test/task-skills.test.ts` — The skills under `skills/<name>/SKILL.md`: the umbrella skill `archlang` and the task skills beside it.
 - `test/taste-budget.test.ts` — The taste budget is a COUNT set by measurement (ADR 0032; design §2.4), the way the step budget was (ADR 0022, second addendum §3): `TASTE_BUDGET` is at least 1,000 times the largest charge one `taste()` call makes ov...
@@ -718,6 +721,7 @@ module); adding a test that imports it removes it from this list.
 - `src/cli/commands-import.ts`
 - `src/cli/commands-share.ts`
 - `src/command-name.ts`
+- `src/compile-path.ts`
 - `src/compile-work.ts`
 - `src/context-levels.ts`
 - `src/describe/adjacency.ts`

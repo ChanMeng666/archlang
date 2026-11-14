@@ -29,7 +29,8 @@ source (.arch)
   └─ src/backends/       svg (default) · png (optional resvg) · ascii · error-svg
   └─ src/export/         dxf · pdf (optional pdfkit)
   └─ src/pipeline.ts     compileUncached(): the one parse→link→resolve→render pipeline
-  └─ src/index.ts        compile() wraps it with the memo cache; the public surface (plus the
+  └─ src/compile.ts      compile() wraps it with the memo cache
+  └─ src/index.ts        the public surface (plus the
                          Node-only `/link` subpath, src/cli/link.ts: share links, zlib)
 ```
 

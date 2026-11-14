@@ -164,14 +164,14 @@ function reqPoint(v: unknown, path: string, val: Validator): PointJson | null {
  */
 const USE_SET: ReadonlySet<string> = /* @__PURE__ */ new Set<string>(USE_KINDS);
 const ROOM_TYPE_SET: ReadonlySet<string> = /* @__PURE__ */ new Set<string>(ROOM_TYPES);
-const OPENING_KINDS: ReadonlySet<string> = pure(() => new Set(kindsWith("opening")));
+const OPENING_KINDS: ReadonlySet<string> = /* @__PURE__ */ pure(() => new Set(kindsWith("opening")));
 /**
  * The schema's `openings[].kind` enum: the table's `opening` kinds, typed by the same derivation
  * (the release-compat gate reads the non-exported `KindsWith` alias as its literals, so this
  * compares equal to the literal tuple an earlier release published). `test/element-facets.test.ts`
  * holds this, the `OpeningJson.kind` union and the table equal.
  */
-export const OPENING_KIND_ENUM: readonly KindsWith<"opening">[] = pure(() => [...kindsWith("opening")]);
+export const OPENING_KIND_ENUM: readonly KindsWith<"opening">[] = /* @__PURE__ */ pure(() => [...kindsWith("opening")]);
 
 /**
  * Validate `json` against the plan shape (no throw). Returns the value cast to

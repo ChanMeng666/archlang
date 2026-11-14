@@ -8,6 +8,13 @@
  * `@__NO_SIDE_EFFECTS__` whose argument is an arrow can be dropped whole when its result is unused;
  * the playground's bundler (rolldown) drops it.
  *
+ * Write every call as `/* @__PURE__ *\/ pure(() => value)`. Since card RM0.7f the built core is
+ * split in chunks (`src/compile-path.ts`), so a call can sit in a different built file from this
+ * declaration, and rolldown (1.2.15, measured) honours `@__NO_SIDE_EFFECTS__` on an imported
+ * function only while the call lands in the same output chunk as the declaration: a call in a lazy
+ * chunk was kept, with everything it reads. The mark on the call itself holds in every chunk and
+ * every bundler; the arrow argument has no effect of its own, so the whole call goes.
+ *
  * Use it only where the initializer reads and allocates, never where it writes to anything that
  * outlives it (a registry, a cache, a global). Where one call with side-effect-free arguments is
  * the whole initializer (`Object.freeze({ … })`, `new Set(xs)`, `Object.keys(o)`), a

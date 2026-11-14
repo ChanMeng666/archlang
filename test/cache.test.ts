@@ -1,10 +1,13 @@
 /** compile cache — hits & eviction. */
 
 import { describe, expect, it } from "vitest";
-import { compile, clearCache } from "../src/index.js";
+// `compile` from its own module (card RM0.7f), so an edit there maps to this test; `clearCache`
+// stays in the barrel, which empties the compile memo with the per-stage ones.
+import { compile } from "../src/compile.js";
+import { clearCache } from "../src/index.js";
 
 /**
- * src/index.ts holds a bounded memo cache: CACHE_MAX = 64 entries, FIFO
+ * src/compile.ts holds a bounded memo cache: CACHE_MAX = 64 entries, FIFO
  * eviction (delete the oldest-inserted key once full). A cache *hit* returns
  * the very same CompileResult object reference, so object identity (`toBe`)
  * lets us observe hits vs. misses without exposing cache internals.
