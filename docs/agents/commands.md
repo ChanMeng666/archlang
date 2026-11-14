@@ -120,7 +120,7 @@ fails if one of them failed, was cancelled, or was skipped when `changes` did no
 record. A push to `main` runs every leg, each suite split across its shards. A failed `changes` job
 runs every leg on a PR too. A push run peaks at about 23 parallel jobs counting CodeQL's two
 `Analyze` legs, over the Free plan's 20 concurrent jobs, and the PR runs that strict status checks
-re-trigger when `main` moves (`gh pr update-branch`) share that limit, so some jobs queue: an
+re-trigger when `main` moves (each `npm run sync:main -- --push`) share that limit, so some jobs queue: an
 estimate until TP5 measures the queue time.
 
 **Playground E2E** is an aggregator too (`Playground E2E (Playwright)`), over two Chromium shards
