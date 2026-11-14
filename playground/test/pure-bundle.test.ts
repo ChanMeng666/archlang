@@ -31,7 +31,19 @@ const CALL_MARK = "/* @__PURE__ */ ";
 
 // rolldown is the playground's bundler (Vite 8); under CI a missing one is a failure, never a skip.
 type Rolldown = typeof import("rolldown");
+/** rolldown's `engines`: `^20.19 || >=22.12`. Node 18 (a leg on main and nightly) cannot load it. */
+function nodeSupportsRolldown(version: string): boolean {
+  const [major = 0, minor = 0] = version.split(".").map(Number);
+  return (major === 20 && minor >= 19) || (major === 21 ? false : major === 22 ? minor >= 12 : major > 22);
+}
+
 async function load(skip: () => void): Promise<Rolldown> {
+  if (!nodeSupportsRolldown(process.versions.node)) {
+    // Even under CI: the package does not support this Node, so there is nothing to guard here.
+    console.warn(`pure-bundle skipped: rolldown needs Node ^20.19 || >=22.12; this is ${process.versions.node}`);
+    skip();
+    throw new Error("unsupported Node");
+  }
   try {
     return await import("rolldown");
   } catch (e) {
