@@ -150,6 +150,11 @@ async function view(args: Args): Promise<number> {
     const f = replayFacts(source, { world, storeys, view });
     return f ? { facts: f } : {};
   };
+  // The package's own warnings of the shown view, as the replay writes them (card RM8.10).
+  const noticesOf = (view: ReplayView) =>
+    r.warnings
+      .filter((w) => view === "all" || w.level === storeys[view - 1])
+      .map((w) => ({ code: w.code, message: w.message }));
   const htmlOf = (view: ReplayView): Promise<string> =>
     replayHtml(viewMesh(mesh, view), {
       title: r.scene.meta.name,
@@ -159,6 +164,7 @@ async function view(args: Args): Promise<number> {
       seconds: args.seconds,
       theme: args.theme,
       ...facts(view),
+      notices: noticesOf(view),
     });
   const html = await htmlOf(args.storey);
   try {

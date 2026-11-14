@@ -454,6 +454,51 @@ describe("replay HTML", () => {
     expect(html.length).toBeLessThan(3_000_000);
   }, 60_000);
 
+  // Card RM8.10: the package's own warning, written in the file under the replay (RM-D32 a: shown,
+  // never patched). "a T of two heights" is the fixture of test/wall-lines.test.ts.
+  const T_OF_TWO_HEIGHTS = `plan "TH" {\n  units mm\n  height 3000\n  wall id=s partition thickness 150 height 2000 { (3000,0) (3000,3000) }\n  wall id=t partition thickness 150 { (0,3000) (6000,3000) }\n}\n`;
+  const payloadOf = (html: string): string => {
+    const open = '<script type="application/json" id="archlang-replay-payload">';
+    const start = html.indexOf(open) + open.length;
+    return html.slice(start, html.indexOf("</script>", start));
+  };
+
+  it("a mixed-height joint's warning is in the file, with the warning's own words and code; the payload is untouched", async () => {
+    const r = adaptPlan(T_OF_TWO_HEIGHTS);
+    if (!r.ok) throw new Error(r.refusal.code);
+    const joint = r.warnings.filter((w) => w.code === "W3D_MIXED_HEIGHT_JOINT");
+    expect(joint).toHaveLength(1);
+    const mesh = buildMesh(r.scene);
+    const svg = compile(T_OF_TWO_HEIGHTS).svg;
+    const bare = await replayHtml(mesh, { title: "TH", svg });
+    const html = await replayHtml(mesh, {
+      title: "TH",
+      svg,
+      notices: joint.map((w) => ({ code: w.code, message: w.message })),
+    });
+    const message = (joint[0] as { message: string }).message;
+    expect(message).toContain("Wall s (2000 mm high)");
+    // The message is the warning's, HTML-escaped only; none of the markup around it is the payload's.
+    expect(html).toContain(`<p><code>W3D_MIXED_HEIGHT_JOINT</code> ${message.replace(/&/g, "&amp;")}</p>`);
+    expect(bare).not.toContain("W3D_MIXED_HEIGHT_JOINT");
+    expect(payloadOf(html)).not.toBe("");
+    expect(payloadOf(html), "frames, events and nodes are the same with or without the notice").toBe(payloadOf(bare));
+  }, 60_000);
+
+  it("no published example raises a mixed-height joint, and a replay with no notices is byte for byte the bare one", async () => {
+    for (const [name, src] of EXAMPLES_LIST) {
+      const r = adaptPlan(src, { world: WORLD });
+      if (!r.ok) continue;
+      expect(
+        r.warnings.filter((w) => w.code === "W3D_MIXED_HEIGHT_JOINT"),
+        name,
+      ).toEqual([]);
+    }
+    const { src, mesh } = meshOf("laneway-house.arch");
+    const svg = compile(src, { world: WORLD }).svg;
+    expect(await replayHtml(mesh, { title: "L", svg, notices: [] })).toBe(await replayHtml(mesh, { title: "L", svg }));
+  }, 60_000);
+
   it("the viewer's own code reads no clock and no random source (three.js's object UUIDs never reach a frame)", () => {
     const viewer = readFileSync(join(HERE, "../src/replay/viewer.ts"), "utf8").replace(
       /\/\*[\s\S]*?\*\/|\/\/.*$/gm,

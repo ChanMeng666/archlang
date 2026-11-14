@@ -352,6 +352,13 @@ export function mountPreview3d(host: HTMLElement): Preview3d {
     coachTimer = window.setTimeout(fadeCoach, COACH_MS);
   };
 
+  // The package's own warnings of the shown view (card RM8.10), each as the warning words it:
+  // always on, never dimmed. Hidden when there are none, and with a refusal.
+  const notices = document.createElement("div");
+  notices.className = "p3d-notice";
+  notices.setAttribute("role", "note");
+  notices.hidden = true;
+
   const message = document.createElement("p");
   message.className = "p3d-message";
   message.setAttribute("role", "status");
@@ -361,7 +368,7 @@ export function mountPreview3d(host: HTMLElement): Preview3d {
   const lostBtn = btn(LOST_TEXT, "p3d-lost");
   lostBtn.hidden = true;
 
-  stage.append(canvas, coach, top, scrub, foot, message, lostBtn);
+  stage.append(canvas, coach, top, scrub, foot, notices, message, lostBtn);
   host.append(stage);
 
   let handle: ReplayHandle | undefined;
@@ -518,6 +525,7 @@ export function mountPreview3d(host: HTMLElement): Preview3d {
     play.hidden = true;
     scrub.hidden = true;
     coach.hidden = true;
+    notices.hidden = true;
     clearLost();
     message.hidden = false;
     message.textContent = `No 3D preview: ${text}`;
@@ -549,6 +557,18 @@ export function mountPreview3d(host: HTMLElement): Preview3d {
       const mesh = mesh3d(r.scene);
       const levels = storeysOf(mesh);
       const index = level === null || levels.length < 2 ? -1 : levels.indexOf(level);
+      // The warnings of the storey shown (all of them in the combined view), with their own words.
+      const shown = r.warnings.filter((w) => index < 0 || w.level === level);
+      notices.replaceChildren(
+        ...shown.map((w) => {
+          const p = document.createElement("p");
+          const code = document.createElement("code");
+          code.textContent = w.code;
+          p.append(code, ` ${w.message}`);
+          return p;
+        }),
+      );
+      notices.hidden = shown.length === 0;
       const svg = index < 0 ? drawn.svg : drawn.pages?.find((pg) => pg.level === level)?.svg;
       if (!svg) {
         refuse(`the core drew no page for storey L${level}.`);

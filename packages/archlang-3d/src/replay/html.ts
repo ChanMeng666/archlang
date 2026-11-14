@@ -16,6 +16,24 @@ import { VIEW_CONTROLS_LABEL } from "./view-dom.js";
 export { PREVIEW_ABOUT_URL, PREVIEW_LABEL, PREVIEW_LEAD, PREVIEW_LIMITS, replayPayload, viewBoxOf } from "./payload.js";
 export type { ReplayOptions } from "./payload.js";
 
+/**
+ * One of the package's own warnings (`adaptPlan(...).warnings`) as the page shows it: the code and
+ * the warning's own `message`, verbatim (card RM8.10; never a second copy of the words).
+ */
+export interface ReplayNotice {
+  code: string;
+  message: string;
+}
+
+export interface ReplayHtmlOptions extends ReplayOptions {
+  /**
+   * Warnings of the shown view, written under the replay as plain text (visible without the
+   * script). Not part of the payload: the frames, the event table and the key frames are the same
+   * with or without them. Absent or empty: nothing is written and the file is byte-identical.
+   */
+  notices?: readonly ReplayNotice[];
+}
+
 const HERE = dirname(fileURLToPath(import.meta.url));
 const require = createRequire(import.meta.url);
 
@@ -59,8 +77,10 @@ const escapeHtml = (s: string): string =>
   s.replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c] as string);
 
 /** A replay of `mesh` as one self-contained HTML document. */
-export async function replayHtml(mesh: Mesh3D, opts: ReplayOptions): Promise<string> {
-  const payload = replayPayload(mesh, opts);
+export async function replayHtml(mesh: Mesh3D, opts: ReplayHtmlOptions): Promise<string> {
+  const { notices: given, ...payloadOpts } = opts;
+  const notices = given ?? [];
+  const payload = replayPayload(mesh, payloadOpts);
   // `</` never appears inside the inline JSON or script (it would close the element).
   const json = JSON.stringify(payload).replace(/</g, "\\u003c");
   const script = (await viewerScript()).replace(/<\/script/gi, "<\\/script");
@@ -90,7 +110,14 @@ canvas:focus-visible{outline:2px solid ${fg};outline-offset:2px}
 .archlang-views button{font:inherit;font-size:13px;padding:2px 10px;border:1px solid ${fg};border-radius:4px;background:transparent;color:${fg};cursor:pointer}
 .archlang-views button[aria-pressed=true]{background:${fg};color:${bg}}
 .archlang-views-storeys{display:inline-flex;align-items:center;gap:4px;margin-left:8px}
-.archlang-views-hint{flex-basis:100%;text-align:center;font-size:12px;opacity:.8}
+.archlang-views-hint{flex-basis:100%;text-align:center;font-size:12px;opacity:.8}${
+    notices.length > 0
+      ? `
+.archlang-notices{display:grid;gap:4px;width:min(720px,90vw)}
+.archlang-notices p{opacity:1;padding:6px 10px;border-left:3px solid #b45309;background:rgba(180,83,9,.08)}
+.archlang-notices code{font-size:11.5px;margin-right:6px}`
+      : ""
+  }
 </style>
 </head>
 <body>
@@ -101,7 +128,14 @@ canvas:focus-visible{outline:2px solid ${fg};outline-offset:2px}
   }
 </div>
 <input id="archlang-replay-t" type="range" min="0" max="1" step="0.001" value="0" aria-label="Replay position">
-<div id="archlang-replay-views"></div>
+<div id="archlang-replay-views"></div>${
+    notices.length > 0
+      ? `
+<div class="archlang-notices" role="note">
+${notices.map((n) => `<p><code>${escapeHtml(n.code)}</code> ${escapeHtml(n.message)}</p>`).join("\n")}
+</div>`
+      : ""
+  }
 <p>${escapeHtml(PREVIEW_LABEL)}</p>
 <p>${escapeHtml(PREVIEW_LIMITS)}</p>
 </main>

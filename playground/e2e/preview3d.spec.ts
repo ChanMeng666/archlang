@@ -429,6 +429,39 @@ test.describe("3D preview tab follows the editor", () => {
     await expect(message).not.toContainText("viewBox");
     expect(errors).toEqual([]);
   });
+
+  test("a mixed-height joint's warning is shown over the stage, in the warning's words (card RM8.10)", async ({
+    page,
+  }) => {
+    // "a T of two heights" (packages/archlang-3d/test/wall-lines.test.ts): the lower stem owns part of
+    // the taller wall's footprint, so the taller wall is notched. Shown, never patched (ADR 0030 d5).
+    const tOfTwoHeights = `plan "TH" {
+  units mm
+  height 3000
+  wall id=s partition thickness 150 height 2000 { (3000,0) (3000,3000) }
+  wall id=t partition thickness 150 { (0,3000) (6000,3000) }
+}
+`;
+    const errors: string[] = [];
+    page.on("pageerror", (e) => errors.push(e.message));
+    await page.goto(`/${await shareHash(tOfTwoHeights)}&edit`);
+    await expect(page.locator("#editor .cm-content")).toBeVisible();
+    await page.locator("#tab-preview3d").click();
+    const notice = page.locator("#preview3d .p3d-notice");
+    await expect(notice).toBeVisible();
+    await expect(notice.locator("code")).toHaveText("W3D_MIXED_HEIGHT_JOINT");
+    await expect(notice).toContainText(
+      "Wall s (2000 mm high) owns 22500 mm² of the taller wall t's footprint (3000 mm), so the taller wall is notched where they meet.",
+    );
+    // It is not dimmed like the floating controls, and the canvas still draws.
+    await expect(notice).toHaveCSS("opacity", "1");
+    await expect(page.locator("#preview3d canvas")).toBeVisible();
+    expect(errors).toEqual([]);
+
+    // A plan with no such joint shows none.
+    await setEditorSource(page, SIMPLE_PLAN);
+    await expect(notice).toBeHidden();
+  });
 });
 
 type Viewed = Window & {

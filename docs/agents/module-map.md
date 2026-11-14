@@ -52,7 +52,7 @@ Totals: 398 modules in 34 directories.
 | `commands.ts` | 393 | 4 | `archlang3d build \| check \| manifest \| schema \| doctor` (card A4; archlang-3d plan §7). Flags are parsed from `manifest.ts`'s table, so a flag works exactly when the manifest lists it. Exit codes as the core's (ADR 0015, plan §7.3): 0 ok… | none |
 | `main.ts` | 13 | 0 | `archlang3d`'s entry: runs `run.ts`'s command and sets the exit code (usage and codes there). | none |
 | `manifest.ts` | 167 | 3 | `archlang3d manifest --json` (archlang-3d plan §7.4): the CLI as data, the same shape as the core's `archlang manifest --json` (`name, invoke, version, description, exitCodes, globalFlags, commands[{name, summary, flags, input, output… | none |
-| `run.ts` | 249 | 6 | `archlang3d` (cards A3, A4; archlang-3d plan §7): `build`, `check`, `manifest`, `schema` and `doctor` live in `commands.ts` (their flags in `manifest.ts`); `view` is here: | none |
+| `run.ts` | 255 | 6 | `archlang3d` (cards A3, A4; archlang-3d plan §7): `build`, `check`, `manifest`, `schema` and `doctor` live in `commands.ts` (their flags in `manifest.ts`); `view` is here: | none |
 
 ## `packages/archlang-3d/src/glb/`
 
@@ -85,7 +85,7 @@ Totals: 398 modules in 34 directories.
 | --- | ---: | ---: | --- | --- |
 | `camera.ts` | 394 | 6 | The replay's end camera as plain maths (card A3, look notes round 1): the viewer and the tests read the same functions, so "the end frame fills the canvas" is a property a test can check without a browser. Millimetres, the exporters' axes… | none |
 | `facts.ts` | 57 | 3 | The metrics strip's numbers (card G4), read from the core's public `describe()` and `lint()` for the same source the replay was built from: nothing is measured here and nothing is guessed. The strip itself (`strip.ts`) is browser-safe and… | none |
-| `html.ts` | 113 | 4 | The single-file replay HTML (card A3): the viewer and the pinned three.js as one inline script (`viewer-bundle.ts`; browser target, nothing loaded from a network), the mesh, the event table and the core's own SVG as an inline JSON… | none |
+| `html.ts` | 147 | 4 | The single-file replay HTML (card A3): the viewer and the pinned three.js as one inline script (`viewer-bundle.ts`; browser target, nothing loaded from a network), the mesh, the event table and the core's own SVG as an inline JSON… | none |
 | `mount.ts` | 1074 | 6 | The replay's renderer (card A3), browser-only: `mountReplay(canvas, payload)` draws the frame at replay time `t` into `canvas`, synchronously, and hashes the composed frame (plan §6.5). Two hosts use it: the single-file replay HTML… | none |
 | `payload.ts` | 292 | 11 | The replay's data (card A3), browser-safe: `replayPayload(mesh, opts)` is what a replay carries for `mesh`, whether the single-file HTML inlines it (`html.ts`, Node) or the playground's 3D preview tab builds it in the browser (card A5)… | none |
 | `shadows.ts` | 706 | 3 | The replay's soft contact shadows (product-roadmap card RM8.8; design `docs/plans/product-roadmap/design/visual-language.md` §1), browser-safe and pure: flat bands of translucent black, baked once from the replay's nodes when the replay… | none |
@@ -184,7 +184,7 @@ Totals: 398 modules in 34 directories.
 | `pan-zoom.ts` | 199 | 5 | Pan / zoom / fit for the SVG preview — a tiny zero-dependency controller. | none |
 | `plan3d.ts` | 21 | 4 | The 3D preview's one way from a plan's source to its Mesh3D (card X5), apart from the DOM so a Node test runs it exactly as the page does (`playground/test/glb-export.test.ts`): what the 3D preview shows and what Download GLB writes both… | none |
 | `preview.ts` | 109 | 1 | The SVG preview: the pan/zoom controller, the SVG-into-stage display, the floating toolbar (zoom / fit / fullscreen and the Paths layer; copying and downloading the drawing are Share → Export since card PG4, ruling PG-D5), and the… | none |
-| `preview3d.ts` | 777 | 1 | The "3D preview" output tab (card A5). Loaded on first open only (`main.ts` imports this module dynamically), so three.js and the separate archlang-3d package never reach the startup chunks. | none |
+| `preview3d.ts` | 797 | 1 | The "3D preview" output tab (card A5). Loaded on first open only (`main.ts` imports this module dynamically), so three.js and the separate archlang-3d package never reach the startup chunks. | none |
 | `raster-export.ts` | 92 | 2 | Client-side rasterization + download helpers shared by the preview (copy PNG) and the multi-format download (PNG/PDF). The core's PNG/PDF backends are Node-only, so the playground rasterizes the SVG through a <canvas> instead. | none |
 | `room-card.ts` | 140 | 1 | The room's facts card: a click on a room in the drawing opens it in the drawing's top-left corner, with the room's area, size, use, neighbours and openings, all describe()'s (room-facts.ts). In edit mode it also offers "Jump to source"… | none |
 | `room-facts.ts` | 123 | 4 | The words the drawing's facts are said in: the facts line under it, the hover tooltip and the room's facts card. Pure (no DOM): every figure is describe()'s, read off the summary, never measured here and never typed. An area says which… | none |
