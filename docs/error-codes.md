@@ -5,7 +5,7 @@
 Every diagnostic carries a stable code. Look one up with `arch explain <CODE>`
 (e.g. `arch explain E_ROOM_SIZE`). Errors abort rendering; warnings do not.
 
-**166 errors** · **102 warnings**
+**166 errors** · **103 warnings**
 
 | Code | Severity | Summary |
 | --- | --- | --- |
@@ -227,6 +227,7 @@ Every diagnostic carries a stable code. Look one up with `arch explain <CODE>`
 | [`W_IMPORT_DROPPED`](#w_import_dropped) | warning | Part of an imported plan has no ArchLang form and was left out. |
 | [`W_IMPORT_EMPTY_FILE`](#w_import_empty_file) | warning | Whole-file import binds an empty component. |
 | [`W_KEEP_VIOLATED`](#w_keep_violated) | warning | A hard keep does not hold. |
+| [`W_LABEL_PIECE_MISSING`](#w_label_piece_missing) | warning | A room's label names a piece the room does not hold. |
 | [`W_LEAF_ACROSS_DOORWAY`](#w_leaf_across_doorway) | warning | A door's open leaf parks across another doorway's approach. |
 | [`W_LEAF_TOO_WIDE`](#w_leaf_too_wide) | warning | A swinging door leaf is wider than a door is made. |
 | [`W_LENGTH_IN_METRES`](#w_length_in_metres) | warning | A length reads as metres where millimetres are the unit. |
@@ -3083,6 +3084,18 @@ plan "K" {
   room id=a at (0,0) size 3000x3000
   keep fixed a.left at 100   # warning: the left edge is at 0, 100 mm left of where the keep holds it
 }
+```
+
+## W_LABEL_PIECE_MISSING
+
+*warning* — A room's label names a piece the room does not hold.
+
+**Cause.** The label contains the name of a catalogued piece (a family name or an alias, such as "desk" in "Desk Nook" or "piano" in "Piano Room"), and no piece in the room is of that family or does its job (a `reception_desk` does a desk's). Words match whole, never inside another word ("Bedroom" names no bed), in any case, a word of several words ("coffee table") only as consecutive words, and a regular plural counts ("Lockers Area"). Two kinds of word name the room itself, not a piece in it, and are never read. One is a word the use vocabulary reads as the room's own name: `wc`, `toilet`, `bath`, `shower`, `bed`, `wardrobe`, `closet`, `plant`, `car`, `boiler`, `pantry` and `larder` ("Bed 2" is a bedroom, "Plant Room" a plant room). The other is the label's head noun, its last word, numbers aside, in each name a `/` separates: "Desk Nook" is a nook that holds a desk, but "Pavilion", "Garden Shed" and "Serving Counter" name the room as the thing it is or the place round it. A piece counts when its footprint centre is on the room's floor, on the room's own storey. A room with no label is not read, and a piece that defines the room's use, in a furnished room, is left to `W_ROOM_MISSING_DEFINING`.
+
+**Fix.** Add the piece; the hint quotes statements checked together, clear of the room's walls, doors and furniture, when they fit. If the room is not meant to hold it, change the label. There is no machine fix: where the piece goes is a design decision.
+
+```arch static
+room id=r_nook at (0,0) size 2500x4000 label "Desk Nook"   # lint: no desk in the room
 ```
 
 ## W_LEAF_ACROSS_DOORWAY

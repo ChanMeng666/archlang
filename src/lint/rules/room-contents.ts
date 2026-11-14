@@ -1,9 +1,10 @@
 /**
  * Room-contents advisories (plan-soundness PS2.8, PS2.9): a habitable room with no window, and
- * a furnished room missing the piece that defines it. Both read a room's use from
+ * a furnished room missing the piece that defines it; and (product roadmap RM1.2c) a room whose
+ * label names a catalogued piece it does not hold. The first two read a room's use from
  * {@link roomUses} (its `uses`, else its label through `src/vocabulary.ts`); a room with no
  * classified use is skipped and declared through `ctx.skip` (the lint coverage report is where
- * an unclassified room shows, not a guess in these rules). Neither reads `site` or any other storey.
+ * an unclassified room shows, not a guess in these rules). None reads `site` or any other storey.
  */
 
 import {
@@ -18,13 +19,15 @@ import {
 } from "../../analyze.js";
 import type { UseKind } from "../../ast.js";
 import type { Diagnostic } from "../../diagnostics.js";
+import { CATALOG_CATEGORIES, defaultFootprint } from "../../fixtures-catalog.js";
 import type { FurnishItem } from "../../furnish-table.js";
-import { familyOf, servedBy } from "../../furnish-table.js";
+import { FURNISH_TABLE, familyOf, servedBy } from "../../furnish-table.js";
 import { distPointToWallSegment } from "../../geometry.js";
 import type { RFurniture, RRoom } from "../../ir.js";
 import { fmt2 } from "../../num-format.js";
+import { FALLBACK_USE_VOCABULARY, normalizeLabel, USE_VOCABULARY } from "../../vocabulary.js";
 import { judgesAsDwelling, type LintContext, type LintRule } from "../context.js";
-import { definingItems, itemWords, pasteSet, useNoun, washItems } from "../defining.js";
+import { definingItems, itemWords, pasteSet, roomDefiningItems, useNoun, washItems } from "../defining.js";
 import { capFirst } from "../../naming.js";
 import { areaM2, lacksZoneFixture, pasteFailureWhy, roomHasWindow } from "./per-room.js";
 
@@ -272,6 +275,135 @@ export const roomMissingDefining: LintRule = {
           add,
           `If \`${r.id}\` is not ${wash ? `a ${useNoun(washUse!)}` : nouns}, say what it is with \`uses …\`: a room's use is read from its \`uses\`, or from its label when it has none.`,
         ],
+      });
+    }
+    return out;
+  },
+};
+
+// ---------------------------------------------------------------------------
+// W_LABEL_PIECE_MISSING
+// ---------------------------------------------------------------------------
+
+/** A text's lower-case words: its `normalizeLabel` form, split at anything not a letter or a digit
+ *  ("Piano, Desk and TV" is four words and an "and"). */
+const wordsOf = (s: string): string[] => normalizeLabel(s).split(/[^\p{L}\p{N}]+/u).filter(Boolean);
+
+/** Does the word run `a` stand, word for word and in order, inside the run `b`? */
+function runIn(a: readonly string[], b: readonly string[]): boolean {
+  for (let i = 0; i + a.length <= b.length; i++) if (a.every((w, k) => b[i + k] === w)) return true;
+  return false;
+}
+
+/**
+ * The catalogue words a label uses to name the ROOM, not a piece in it: each whose words stand
+ * inside a word of the use vocabularies (`USE_VOCABULARY`, `FALLBACK_USE_VOCABULARY`,
+ * `src/vocabulary.ts`), which read a room's use from its label. "Bed 2" is a bedroom and "Shower"
+ * a shower room, "Pantry" and "Wardrobe" are stores, "Plant" and "Boiler" a utility room and "Car
+ * port" a garage. Derived from those tables, never listed here: a word added to them is excluded
+ * with it. `W_LABEL_PIECE_MISSING` never reads them.
+ */
+export const ROOM_NAMING_PIECES: readonly string[] = /* @__PURE__ */ (() => {
+  const room = [...Object.values(USE_VOCABULARY), ...Object.values(FALLBACK_USE_VOCABULARY)].flatMap(
+    (v: { canonical: readonly string[]; aliases: readonly string[] }) => [...v.canonical, ...v.aliases].map(wordsOf),
+  );
+  return CATALOG_CATEGORIES.filter((c) => room.some((w) => runIn(wordsOf(c), w)));
+})();
+
+/** Every other catalogue word as its run of words, the longest runs first (a stable sort, so
+ *  catalogue order among runs of one length). */
+const PIECE_WORDS: readonly (readonly [string, string[]])[] = /* @__PURE__ */ CATALOG_CATEGORIES.filter(
+  (c) => !ROOM_NAMING_PIECES.includes(c),
+).map((c) => [c, wordsOf(c)] as [string, string[]]).sort((a, b) => b[1].length - a[1].length);
+
+/** One label word against one catalogue word: the same, or, for the run's last word, its regular
+ *  plural ("Lockers", "Benches"). */
+const sameWord = (said: string | undefined, w: string, last: boolean): boolean =>
+  said === w || (last && (said === `${w}s` || (/(s|x|z|ch|sh)$/.test(w) && said === `${w}es`)));
+
+/**
+ * The catalogue words a room label names as pieces the room holds, in the label's order, one per
+ * family: whole words only, never a part of one ("Bedroom" names no bed, "Bathroom" no bath), in
+ * any case. A word run of several words ("coffee table") matches only as consecutive words, and at
+ * each place the longest run wins ("Dining Table" is a dining table, not a table).
+ *
+ * Two readings give a word to the ROOM, not to a piece in it, and are never read:
+ * {@link ROOM_NAMING_PIECES}, and the label's head noun. An English head noun comes last (as
+ * `namesOpenAir` reads a label, `src/vocabulary.ts`): "Desk Nook" is a nook, so its desk is a piece it
+ * holds, but "Pavilion", "Garden Shed" and a café's "Serving Counter" name the room itself, as the
+ * thing it is or the place round it. A label of names written `a / b` ("Counter / servery") has a
+ * head in each name. A number after the head ("Nook 2") is not one.
+ */
+export function labelPieces(label: string): string[] {
+  const out: string[] = [];
+  for (const name of label.split("/")) {
+    const said = wordsOf(name);
+    let head = said.length;
+    while (head > 0 && /^\p{N}+$/u.test(said[head - 1]!)) head--;
+    for (let i = 0; i < head; ) {
+      const hit = PIECE_WORDS.find(([, run]) => run.every((w, k) => sameWord(said[i + k], w, k === run.length - 1)));
+      const n = hit?.[1].length ?? 1;
+      if (hit && i + n < head && !out.some((w) => familyOf(w) === familyOf(hit[0]))) out.push(hit[0]);
+      i += n;
+    }
+  }
+  return out;
+}
+
+/**
+ * `W_LABEL_PIECE_MISSING` (product roadmap RM1.2c, ruling RM-D35): a room whose label names a
+ * catalogued piece ({@link labelPieces}) that no piece in the room is, or does the job of (its own
+ * family, or the one the catalogue says it `serves`, as `W_ROOM_MISSING_DEFINING` reads a held
+ * piece). A piece is in the room when its footprint centre is on the room's floor, read off the
+ * room's shape ({@link heldIn}), on the room's own storey. A room with no label is not read: an id
+ * is a handle, not a claim. A piece that defines the room's use, in a room that holds furniture, is
+ * left to `W_ROOM_MISSING_DEFINING` and `W_ROOM_NO_FIXTURE` (one warning for one missing piece).
+ * The hint quotes checked statements that place the pieces, as `W_ROOM_MISSING_DEFINING`'s does.
+ */
+export const labelPieceMissing: LintRule = {
+  name: "label-piece-missing",
+  family: "contents",
+  layer: "validity",
+  stage: "fixtures",
+  codes: ["W_LABEL_PIECE_MISSING"],
+  check(ctx: LintContext): Diagnostic[] {
+    const out: Diagnostic[] = [];
+    for (const r of ctx.rooms) {
+      if (!r.label) continue;
+      const named = labelPieces(r.label);
+      if (named.length === 0) continue;
+      const held = heldIn(ctx, r);
+      const has = new Set(held.flatMap((f) => servedBy(f.category)));
+      const defines = held.length > 0 ? roomDefiningItems(r).flatMap(itemWords).map(familyOf) : [];
+      const lack = named.filter((w) => !has.has(familyOf(w)) && !defines.includes(familyOf(w)));
+      if (lack.length === 0) continue;
+      const nos = lack.map((w) => `no ${spoken(w)}`);
+      const one = lack.length === 1;
+      // Each piece as the furnish table writes it (its sizes), else as the catalogue does; the ones
+      // with no footprint to try are named, not placed: their size is the author's to give.
+      const items = lack.map(
+        (w): FurnishItem =>
+          Object.values(FURNISH_TABLE)
+            .flat()
+            .find((i) => i?.category === familyOf(w)) ?? { category: w, required: true, place: "wall" },
+      );
+      const sized = items.filter((i) => (i.sizes?.length ?? 0) > 0 || defaultFootprint(i.category) !== null);
+      const unsized = items.filter((i) => !sized.includes(i)).map((i) => `\`furniture ${i.category} at (x,y) size … in ${r.id}\``);
+      const paste = sized.length > 0 ? pasteSet(ctx, r, sized) : null;
+      const hints =
+        paste === null
+          ? []
+          : "stmts" in paste
+            ? [`Add ${sized.length === 1 ? "it" : "them"} (nothing to import), e.g. ${paste.stmts.map((s) => `\`${s}\``).join(" and ")}.`]
+            : [`Add \`furniture ${paste.item.category} in ${r.id} …\`; ${pasteFailureWhy(ctx, paste.failure)}.`];
+      if (unsized.length > 0)
+        hints.push(`Add ${unsized.join(" and ")}: the catalogue gives ${unsized.length === 1 ? "it" : "them"} no default size.`);
+      out.push({
+        severity: "warning",
+        code: "W_LABEL_PIECE_MISSING",
+        ...ctx.at(r),
+        message: `${capFirst(ctx.nameOf(r, "room"))} holds ${one ? nos[0] : `${nos.slice(0, -1).join(", ")} and ${nos[nos.length - 1]}`}, though its label names ${one ? "one" : "them"}.`,
+        hints: [...hints, `If \`${r.id}\` is not meant to hold ${one ? "one" : "them"}, change its label, which says it does.`],
       });
     }
     return out;

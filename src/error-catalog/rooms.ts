@@ -134,4 +134,10 @@ export const ROOMS_ENTRIES = defineEntries({
     "Add the missing piece; the hint quotes statements checked together, clear of the room's walls, doors and furniture, when they fit. If the room is not what its use says, change its `uses`. There is no machine fix: where the piece goes is a design decision.",
     'room id=r_bed at (0,0) size 4000x4000 label "Bedroom 2" uses bedroom\nfurniture wardrobe in r_bed anchor top flush size 1800x600   # lint: furnished, but no bed',
   ),
+  W_LABEL_PIECE_MISSING: w(
+    "A room's label names a piece the room does not hold.",
+    'The label contains the name of a catalogued piece (a family name or an alias, such as "desk" in "Desk Nook" or "piano" in "Piano Room"), and no piece in the room is of that family or does its job (a `reception_desk` does a desk\'s). Words match whole, never inside another word ("Bedroom" names no bed), in any case, a word of several words ("coffee table") only as consecutive words, and a regular plural counts ("Lockers Area"). Two kinds of word name the room itself, not a piece in it, and are never read. One is a word the use vocabulary reads as the room\'s own name: `wc`, `toilet`, `bath`, `shower`, `bed`, `wardrobe`, `closet`, `plant`, `car`, `boiler`, `pantry` and `larder` ("Bed 2" is a bedroom, "Plant Room" a plant room). The other is the label\'s head noun, its last word, numbers aside, in each name a `/` separates: "Desk Nook" is a nook that holds a desk, but "Pavilion", "Garden Shed" and "Serving Counter" name the room as the thing it is or the place round it. A piece counts when its footprint centre is on the room\'s floor, on the room\'s own storey. A room with no label is not read, and a piece that defines the room\'s use, in a furnished room, is left to `W_ROOM_MISSING_DEFINING`.',
+    "Add the piece; the hint quotes statements checked together, clear of the room's walls, doors and furniture, when they fit. If the room is not meant to hold it, change the label. There is no machine fix: where the piece goes is a design decision.",
+    'room id=r_nook at (0,0) size 2500x4000 label "Desk Nook"   # lint: no desk in the room',
+  ),
 });
