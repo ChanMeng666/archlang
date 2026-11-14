@@ -267,7 +267,7 @@ Totals: 399 modules in 34 directories.
 | `label-placement.ts` | 750 | 7 | Obstacle-aware relocation of room labels — a **post-pass over the lowered Scene**. | none |
 | `layout.ts` | 249 | 1 | Relational placement (T6.2) — the optional layout seam. | none |
 | `lexer.ts` | 611 | 23 | Hand-written lexer for ArchLang. Zero dependencies; tracks line/col. | none |
-| `lint.ts` | 368 | 31 | `lint(source)` — architectural soundness rules, as diagnostics. | none |
+| `lint.ts` | 373 | 31 | `lint(source)` — architectural soundness rules, as diagnostics. | none |
 | `lock.ts` | 197 | 2 | The lock check (preview-and-remodel card B1, decision D6): `impact(before, after, { lock })` and `arch impact --against old.arch --lock <id,…>`. A lock names elements that must not change between two versions of a plan; it is checked… | none |
 | `lsp.ts` | 684 | 3 | Pure language-services core for the ArchLang LSP (T5.3). | none |
 | `manifest.ts` | 1254 | 19 | CLI capability manifest — the whole `archlang` API surface as one structured document, so an AI agent can discover commands, flags, formats, elements, lint profiles, error codes, and fixture categories in a single `archlang manifest… | none |
@@ -516,7 +516,7 @@ Totals: 399 modules in 34 directories.
 | `element-phrases.ts` | 96 | 6 | How a lint MESSAGE names a wall or a door, window or opening (PS2.29: a message never quotes an id). A wall is named by its kind and the line it runs on ("the exterior wall at y 0"), a connector by the rooms it joins ("the door between… | none |
 | `fixture-paste.ts` | 254 | 5 | A pasteable fixture statement for an empty wet room or kitchen (`W_ROOM_NO_FIXTURE`'s hint), placed from the room's own shape and CHECKED before it is quoted. | none |
 | `measure.ts` | 95 | 19 | The measured half of an advisory placement warning: **required, available, shortfall**. | none |
-| `provenance.ts` | 484 | 5 | Where each lint ruleset number comes from, as data: a table parallel to {@link DEFAULT_RULESET} and {@link LINT_PROFILES}, keyed by profile and ruleset key, with the document, clause, edition and verification grade of every number.… | none |
+| `provenance.ts` | 488 | 5 | Where each lint ruleset number comes from, as data: a table parallel to {@link DEFAULT_RULESET} and {@link LINT_PROFILES}, keyed by profile and ruleset key, with the document, clause, edition and verification grade of every number.… | none |
 | `rule-ref.ts` | 70 | 12 | Which ruleset number a lint diagnostic was raised against (card RM1.6b), kept BESIDE the diagnostic in a `WeakMap`, never on it: `lint()` returns the same objects, with the same keys, and `JSON.stringify(lint(src))` is unchanged. A rule… | none |
 | `ruleset.ts` | 879 | 24 | The lint ruleset: tunable thresholds, named advisory profiles, and the options type. Split from `lint.ts` so individual rule modules (`./rules/*.ts`) can import the types without a cycle through the `lint()` entry point; `lint.ts`… | none |
 | `storeys.ts` | 118 | 8 | The storeys `lint()` reads and the building fact each is read with: the per-storey {@link BuildingContext} of a multi-storey plan ({@link buildingContexts}) and the plan's dwelling reading (PS2.18). Stated once here so every reader of a… | none |
@@ -528,12 +528,12 @@ Totals: 399 modules in 34 directories.
 | --- | ---: | ---: | --- | --- |
 | `alias-match.ts` | 93 | 1 | `W_ALIAS_MATCH` — advisory: a room's use was inferred from a non-canonical alias. | none |
 | `annotations.ts` | 636 | 2 | Annotation collisions on the drawn sheet (plan-soundness PS2.12): two drafting advisories that read the drawing itself, never the plan's facts, so `describe()`, Plan JSON and the SVG are untouched by them. | none |
-| `circulation-facts.ts` | 1095 | 3 | Circulation quality as advisory warnings, built on the circulation nav-grid facts (ADR 0008): a walk that squeezes below a passable width (`W_PATH_TOO_NARROW`), or that wanders far from a straight line (`W_CIRCUITOUS_PATH`). Facts →… | none |
-| `circulation.ts` | 41 | 1 | Circulation: a room whose doorways can't reach a usable patch of clear floor — technically reachable (it has a door) but so packed that you can't step in. A grid flood-fill fact (see analyze/occupancy.ts); only fires when there *is*… | none |
-| `clearances.ts` | 465 | 2 | The clearance family of plan-soundness PS2.11, beyond the seat check: a WC whose centreline stands too near a side obstacle (PS2.11a) and a tall unit standing in front of a window (PS2.11b). Both measure the drawn shapes — a fixture's… | none |
+| `circulation-facts.ts` | 1097 | 3 | Circulation quality as advisory warnings, built on the circulation nav-grid facts (ADR 0008): a walk that squeezes below a passable width (`W_PATH_TOO_NARROW`), or that wanders far from a straight line (`W_CIRCUITOUS_PATH`). Facts →… | none |
+| `circulation.ts` | 43 | 1 | Circulation: a room whose doorways can't reach a usable patch of clear floor — technically reachable (it has a door) but so packed that you can't step in. A grid flood-fill fact (see analyze/occupancy.ts); only fires when there *is*… | none |
+| `clearances.ts` | 473 | 2 | The clearance family of plan-soundness PS2.11, beyond the seat check: a WC whose centreline stands too near a side obstacle (PS2.11a) and a tall unit standing in front of a window (PS2.11b). Both measure the drawn shapes — a fixture's… | none |
 | `dims.ts` | 614 | 3 | Annotation-quality advisories over the plan's HAND-WRITTEN dimensions: `W_DIM_INSIDE` (a dimension line landing inside the building) and `W_DIM_OVERLAP` (two dimensions drawn on top of each other). Both are advisory with a… | none |
-| `doors.ts` | 1184 | 7 | Door rules: obstructed swing arcs, blocked walk-through landings, sub-passable widths, a pocket panel with nowhere to go, and a jamb that leaves too little wall at a corner — in that (pinned) order via `rules/index.ts`. | none |
-| `enclosure.ts` | 1055 | 4 | Space-enclosure rules (plan-soundness PS2.4): floor the walls and the rooms disagree about. | none |
+| `doors.ts` | 1202 | 7 | Door rules: obstructed swing arcs, blocked walk-through landings, sub-passable widths, a pocket panel with nowhere to go, and a jamb that leaves too little wall at a corner — in that (pinned) order via `rules/index.ts`. | none |
+| `enclosure.ts` | 1061 | 4 | Space-enclosure rules (plan-soundness PS2.4): floor the walls and the rooms disagree about. | none |
 | `entrance.ts` | 189 | 1 | The building has rooms but no way in. | none |
 | `floor-gaps.ts` | 99 | 2 | Floor a piece cannot stand on: a storey's own `void`s, lift shafts and escalators (CR2 group D). | none |
 | `footprint.ts` | 228 | 1 | `W_FOOTPRINT_TRANSPOSED` (plan-soundness PS2.11c): a piece of a family that comes in one shape, written with its two sides the wrong way round, so its symbol draws turned a quarter and stretched (`sofa_l … size 900x2400` with no `rotate`… | none |
@@ -542,12 +542,12 @@ Totals: 399 modules in 34 directories.
 | `index.ts` | 210 | 14 | The ordered rule list `lint()` folds over. ORDER IS CONTRACT: the emitted diagnostic array is pinned by tests and diffed by agents, so append new rules where they belong in the reading order rather than re-sorting. | none |
 | `openings.ts` | 927 | 1 | Opening rules: an opening and the walls around it (plan-soundness PS2.1–PS2.3). | none |
 | `outdoor.ts` | 283 | 1 | Ground-surface soundness — two advisory rules over `outdoor`. | none |
-| `per-room.ts` | 765 | 4 | The per-room checks, run as one order-preserving composite: for each room (in source order) TOO_SMALL → DISCONNECTED → NO_WINDOW → NOT_ENCLOSED → NO_FIXTURE → GARAGE_TOO_NARROW → ROOM_TOO_NARROW → GARAGE_TOO_NARROW's depth finding… | none |
+| `per-room.ts` | 775 | 4 | The per-room checks, run as one order-preserving composite: for each room (in source order) TOO_SMALL → DISCONNECTED → NO_WINDOW → NOT_ENCLOSED → NO_FIXTURE → GARAGE_TOO_NARROW → ROOM_TOO_NARROW → GARAGE_TOO_NARROW's depth finding… | none |
 | `privacy.ts` | 974 | 1 | Circulation and privacy: three advisory rules that read the access graph (`describe().access`, the same `"probe"` graph `reachability.ts` walks). | none |
 | `reachability.ts` | 117 | 1 | Room-graph reachability: builds the room-connectivity graph from doors/openings (rooms + the literal "exterior") once, then — per room, in source order — emits W_BATH_VIA_BEDROOM and W_ROOM_UNREACHABLE, preserving the historical… | none |
 | `room-contents.ts` | 279 | 1 | Room-contents advisories (plan-soundness PS2.8, PS2.9): a habitable room with no window, and a furnished room missing the piece that defines it. Both read a room's use from {@link roomUses} (its `uses`, else its label through… | none |
 | `site.ts` | 115 | 1 | `W_ROOM_NOT_EQUATOR_FACING` — the site layer's one advisory rule. | none |
-| `stairs.ts` | 1566 | 7 | Stair safety (plan-soundness PS2.11e, the stair bullets, and PS2.34): a door swinging over a flight or its landing, a flight with no landing at its foot or head, a doorway onto a flight's side, a void where a flight arrives, a flight too… | none |
+| `stairs.ts` | 1570 | 7 | Stair safety (plan-soundness PS2.11e, the stair bullets, and PS2.34): a door swinging over a flight or its landing, a flight with no landing at its foot or head, a doorway onto a flight's side, a void where a flight arrives, a flight too… | none |
 | `vertical.ts` | 207 | 2 | `W_STAIR_UNMATCHED` — a run of vertical circulation that connects nothing. | none |
 
 ## `src/overlays/`
