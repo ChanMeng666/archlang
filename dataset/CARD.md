@@ -28,6 +28,7 @@ configs:
       - split: one_shot
         path:
           - model-authoring.jsonl
+          - model-authoring-fable.jsonl
 ---
 
 # ArchLang Repair Trajectories
@@ -151,7 +152,7 @@ Anyone who uses these rows is responsible for complying with Anthropic's terms t
 config records how models author ArchLang one-shot and how the deterministic tools respond to
 what they wrote; it is not offered as SFT, fine-tuning or training data.
 
-**What is in it.** One generated data file, from repository commit
+**What is in it.** Two generated data files, both from repository commit
 `2a210589fa2624c22bd0869d8e8c59bd5ed2da34`, `archlang_version` `1.62.0`, brief seed `20261115`,
 uploaded unmodified:
 
@@ -160,6 +161,12 @@ uploaded unmodified:
   `f424599f9fa1ceb0d32a0a66731877f4df942cf0140b144c183ec663f875295b`.
 - `model-authoring-report.json`: its report. SHA-256
   `895b7ea4ddca303ff5095558bc8af3328abd4f8414c85cf44da711d725346760`.
+- `model-authoring-fable.jsonl`: 200 rows, `claude-fable-5-2` only. **It covers only the first 200
+  of the 390 briefs** (generated with `--briefs 200`; those brief lines are byte-identical to the
+  first 200 of the other file), with the same generator, commit, version, seed, deduplication and
+  healing. SHA-256 `feb7f9121890b3d53d830cd5ce1d5c98df4324ccdd5b06cbf7822cfc7797d383`.
+- `model-authoring-fable-report.json`: its report. SHA-256
+  `42b9505408fbd1f14bbd70a88c1246005f853dd8a8d789a738090959aa19e4cb`.
 
 Verdict counts per model (from the report; `valid` and `sound` are defined under *Fields*; `l0` is
 the raw reply, `final` is after `arch fix` then `arch repair`):
@@ -169,6 +176,7 @@ the raw reply, `final` is after `arch fix` then `arch repair`):
 | `claude-haiku-5-5` | 390 | 347 | 252 | 347 | 253 |
 | `claude-sonnet-5-5` | 390 | 387 | 351 | 387 | 353 |
 | `claude-opus-5-5` | 390 | 389 | 247 | 389 | 247 |
+| `claude-fable-5-2` | 200 (first 200 briefs only) | 200 | 194 | 200 | 194 |
 
 **How the rows were made.**
 
@@ -360,8 +368,8 @@ docs site's `/llms-full.txt`.
   section), which reduces overlap but is not a proof for the model replies.
 - **Sizes.** Approximately 1,200 `repair` rows and 400 `authoring` rows; exact counts, per-family
   and per-fault-class breakdowns, and rejection tallies are in the accompanying `report.json`.
-  The `model-authoring` config holds at most one row per brief per model (1170 rows); its counts
-  are in `model-authoring-report.json`.
+  The `model-authoring` config holds at most one row per brief per model (1170 rows in the first file, 200 in the second); its counts
+  are in the two report files.
 
 ## Why publish this
 

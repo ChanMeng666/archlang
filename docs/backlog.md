@@ -1861,6 +1861,21 @@ room's refusal (`a WxH piece there leaves the floor`) quotes the size as resolve
 footprint laid along an edge, not the catalogue's along × depth. (1) and (2) are in
 `docs/furniture.md` § three placement modes; change one only with its byte-identity rows.
 
+## Live-eval baseline gap (RM-D51, 2026-11-16)
+
+### EV.1 · Diagnose the gpt-5.5 intent gap against the July baseline before re-baselining — `todo`
+
+At `2a210589` (after CO-1 and CO-2) gpt-5.5 scored valid 22/22/18 and intent 10/9/7 of 26 over
+three runs (`eval/live-runs/2026-11-authorability-remeasure.md`), against the July baseline's valid
+23 and intent 14 (one run, `eval/live-baseline.json`). RM-D51 keeps the July baseline until the gap
+is explained or accepted; moving it down to the new numbers could hide a regression. Offline, no
+API spend: download the per-brief tables of the gpt-5.5 run artifacts (`gh run download <id>` for
+runs 43727485853, 43727489713, 43727493307) and set them against July's per-brief record if one
+exists in the repo (if none does, say so). Then, on the median of 3 runs, re-baseline once the gap
+is explained or accepted (an owner-visible change to `eval/live-baseline.json`).
+**Gate:** a per-brief table of which briefs lost intent and why, stated as observed (prompt change,
+judge, model drift), with no claim beyond the data and none about loop gain.
+
 ## Site chrome (found while fixing the nav overflow, 2026-09-20)
 
 ### N.1 · The nav row needs 1152px, and the hamburger persists until then (a WANT, not a bug) — `todo`

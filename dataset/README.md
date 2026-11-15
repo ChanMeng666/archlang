@@ -243,6 +243,8 @@ Notes:
   ```bash
   hf upload ChanMeng666/archlang-repair-trajectories dataset/out/model-authoring/model-authoring.jsonl model-authoring.jsonl --repo-type dataset
   hf upload ChanMeng666/archlang-repair-trajectories dataset/out/model-authoring/model-authoring-report.json model-authoring-report.json --repo-type dataset
+  hf upload ChanMeng666/archlang-repair-trajectories dataset/out/model-authoring-fable/model-authoring.jsonl model-authoring-fable.jsonl --repo-type dataset
+  hf upload ChanMeng666/archlang-repair-trajectories dataset/out/model-authoring-fable/model-authoring-report.json model-authoring-fable-report.json --repo-type dataset
   hf upload ChanMeng666/archlang-repair-trajectories dataset/CARD.md README.md --repo-type dataset
   ```
 
