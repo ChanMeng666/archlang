@@ -1,6 +1,7 @@
 # Live fidelity run, 2026-11-15: four Claude models (RM-D46)
 
-A dated, aggregate-only record of the owner-approved `npm run eval:fidelity-live` runs
+A dated, aggregate-only record of the `npm run eval:fidelity-live` runs, the P3 part of the
+owner's in-chat approval of 2026-11-15 for the promotional-credit measurement programme
 (product-roadmap RM-D46): four models, k = 5 trials on each of the 6 briefs in
 `eval/corpus-fidelity.json`, 30 calls per model, one process per model. Billed to the Anthropic
 promotional credit. Raw replies are not published.
@@ -12,7 +13,8 @@ scorecard. Fidelity v1; the prompt, parser, scoring and corpus are unchanged.
 ## Setup
 
 - Provider `anthropic`, provider-default sampling (no temperature, so trials are samples, not
-  copies); seeds 20260711 to 20260715 per brief.
+  copies). The seeds (20260711 to 20260715 per trial) are record labels only: the Anthropic API
+  has no `seed`, so none is sent (`eval/live-author.ts`).
 - Commit `ab37b3ef` (before CO-1), working tree clean, all four runs `complete`, no failed or
   skipped call (30 scored per model).
 - Run window 2026-11-15 10:02 to 10:27 UTC; per-model budget caps 2 / 6 / 12 / 22 usd (haiku /

@@ -1,14 +1,22 @@
 # Live eval runs, 2026-11-15: authorability re-measure around CO-1 and CO-2
 
-A dated, aggregate-only record of owner-authorised `eval:live` runs (Claude 5.x locally, gpt-5.5
-through GitHub Actions) on the 26-brief corpus, taken before and after two parser changes:
-CO-1 (PR #790: trailing furniture clauses in any order, `id=` after the category) and CO-2
-(PR #809: catalogued footprints under `at`/`in`). Billed to the Anthropic promotional credit and
-the OpenAI budget. Raw model replies and per-brief tables are not published.
+A dated, aggregate-only record of `eval:live` runs (Claude 5.x locally, gpt-5.5 through GitHub
+Actions) on the 26-brief corpus, taken before and after two changes: CO-1 (PR #790: furniture,
+room, door, window, opening and outdoor clauses in any order, `id=` after the category) and CO-2
+(PR #809: catalogued footprints under `at`/`in`). The runs were the P1 repeat runs and the P2
+gpt-5.5 re-measure of the owner's in-chat approval of 2026-11-15 for the promotional-credit
+measurement programme (P3 fidelity is in `2026-11-fidelity.md`, under RM-D46). Raw model replies
+and per-brief tables are not published.
+
+**Each before/after pair differs in the compiler AND in the author prompt** (`spec.llm.md`, the
+system prompt `eval/run.ts` reads). CO-1's spec rule 6 went from "`id=` after the category is a
+parse error" to permitting it, plus a sentence that trailing clauses may come in any order. CO-2's
+went from "`against` may omit size" to "any placement may omit size". The differences below cannot
+be split between the two.
 
 **`eval/live-baseline.json` is NOT updated by these runs.** It stays the July record
-(`gpt-5.5-2026-04-23`, seed `20260711`, valid 23, intent 14, sound 3 of 26); changing it needs an
-owner decision. Nothing here is a baseline.
+(`gpt-5.5-2026-04-23`, seed `20260711`, valid 23, intent 14, sound 3 of 26; same run's L1 intent
+18/26); changing it needs an owner decision. Nothing here is a baseline.
 
 ## Setup
 
@@ -28,20 +36,26 @@ owner decision. Nothing here is a baseline.
 | P2 after CO-1 | 2026-11-15 | `ca02caed` | gpt-5.5-2026-04-23 | none recorded |
 | P2 after CO-1 + CO-2 | 2026-11-15 | `2a210589` | gpt-5.5-2026-04-23 | none recorded |
 
-Fable skipped 1 brief in each of runs 1 and 3 before (8 usd cap): its "before" n is 25 / 26 / 25 =
-76. After (10 usd cap) it skipped none (n = 78). Skipped briefs are excluded from the denominators.
-One Fable call before ended on `max_tokens`; no other call in either group was truncated.
+Fable skipped 1 brief (`sized-office-mix`) in each of runs 1 and 3 before (8 usd cap): its "before"
+n is 25 / 26 / 25 = 76. After (10 usd cap) it skipped none (n = 78). Skipped briefs are excluded
+from the denominators. One Fable call before ended on `max_tokens`; no other call in either group
+was truncated.
 
 ### P1 after: provenance
 
-The run started at `ca02caed`. Around 02:30 local (UTC+13), another session fast-forwarded the
-primary checkout to `6e144178` mid-run. Between the two commits `src/` differs by one comment line
-in `src/finish.ts`; `spec.llm.md` and the eval files are unchanged. Every P1-after run therefore
-measured the same compiler and the same prompt.
+The run started at `ca02caed`. At 02:41:29 local (UTC+13, from the reflog), another session
+fast-forwarded the primary checkout to `6e144178` (commit time 02:39:45), mid-run. Between the two
+commits `src/` differs by one comment line in `src/finish.ts`, and `spec.llm.md` is unchanged;
+nothing `eval/run.ts` reads changed (`eval/README.md`, the `l2*.ts` files and the T3 record did).
+Every P1-after run therefore measured the same compiler and the same prompt. The next
+fast-forward, to `2a210589` (with CO-2), was at 04:00:43, 33 s after the last run ended at
+04:00:10.
 
 ## P1: Claude 5.x, per run (L0 valid / intent / sound of 26; L1 in brackets)
 
 Per run, runs 1 / 2 / 3. L1 valid equals L0 valid in every run; the bracket is L1 intent / L1 sound.
+Fable before: runs 1 and 3 have 25 briefs, so its before valid, intent and sound are out of
+25 / 26 / 25.
 
 | Model | Phase | Valid | Intent | Sound | [L1 intent / sound] |
 | --- | --- | --- | --- | --- | --- |
@@ -51,37 +65,44 @@ Per run, runs 1 / 2 / 3. L1 valid equals L0 valid in every run; the bracket is L
 | sonnet-5-5 | after | 22, 24, 23 | 13, 18, 18 | 1, 2, 4 | [18/2, 19/2, 19/5] |
 | opus-5-5 | before | 24, 21, 23 | 17, 15, 16 | 2, 3, 2 | [20/2, 17/3, 20/2] |
 | opus-5-5 | after | 24, 25, 24 | 15, 14, 18 | 1, 1, 2 | [18/1, 20/1, 19/2] |
-| fable-5-2 | before | 22/25, 24/26, 21/25 | 20, 23, 18 | 5, 3, 3 | [20/5, 23/3, 19/4] |
+| fable-5-2 | before | 22/25, 24/26, 21/25 | 20/25, 23/26, 18/25 | 5/25, 3/26, 3/25 | [20/5, 23/3, 19/4] |
 | fable-5-2 | after | 26, 26, 26 | 23, 24, 24 | 5, 5, 5 | [23/5, 24/5, 24/5] |
 
 ## P1: summed counts with Wilson 95 % intervals
 
+Intervals are outward-rounded whole percents, as `eval/run.ts` prints them.
+
 | Model | Phase | n | Valid | Intent | Sound | L1 intent |
 | --- | --- | --- | --- | --- | --- | --- |
-| haiku-5-5 | before | 78 | 45 (47-68 %) | 23 (21-40 %) | 5 (3-14 %) | 38 (38-60 %) |
-| haiku-5-5 | after | 78 | 47 (49-70 %) | 24 (22-42 %) | 4 (2-12 %) | 40 (40-62 %) |
-| sonnet-5-5 | before | 78 | 53 (57-77 %) | 47 (49-70 %) | 5 (3-14 %) | 49 (52-73 %) |
-| sonnet-5-5 | after | 78 | 69 (80-94 %) | 49 (52-73 %) | 7 (4-17 %) | 56 (61-81 %) |
-| opus-5-5 | before | 78 | 68 (78-93 %) | 48 (50-72 %) | 7 (4-17 %) | 57 (62-82 %) |
-| opus-5-5 | after | 78 | 73 (86-97 %) | 47 (49-70 %) | 4 (2-12 %) | 57 (62-82 %) |
-| fable-5-2 | before | 76 | 67 (79-94 %) | 61 (70-88 %) | 11 (8-24 %) | 62 (71-89 %) |
-| fable-5-2 | after | 78 | 78 (95-100 %) | 71 (83-96 %) | 15 (12-29 %) | 71 (83-96 %) |
+| haiku-5-5 | before | 78 | 45 (46-69 %) | 23 (20-41 %) | 5 (2-15 %) | 38 (37-60 %) |
+| haiku-5-5 | after | 78 | 47 (49-71 %) | 24 (21-42 %) | 4 (2-13 %) | 40 (40-63 %) |
+| sonnet-5-5 | before | 78 | 53 (56-78 %) | 47 (49-71 %) | 5 (2-15 %) | 49 (51-73 %) |
+| sonnet-5-5 | after | 78 | 69 (79-94 %) | 49 (51-73 %) | 7 (4-18 %) | 56 (60-81 %) |
+| opus-5-5 | before | 78 | 68 (77-93 %) | 48 (50-72 %) | 7 (4-18 %) | 57 (62-82 %) |
+| opus-5-5 | after | 78 | 73 (85-98 %) | 47 (49-71 %) | 4 (2-13 %) | 57 (62-82 %) |
+| fable-5-2 | before | 76 | 67 (79-94 %) | 61 (69-88 %) | 11 (8-25 %) | 62 (71-89 %) |
+| fable-5-2 | after | 78 | 78 (95-100 %) | 71 (82-96 %) | 15 (12-30 %) | 71 (82-96 %) |
 
 L1 sound sums, before / after: haiku 6 / 4, sonnet 5 / 9, opus 7 / 4, fable 12 / 15. L1 valid sums
 equal the L0 valid sums. Each call is treated as a Bernoulli trial; the 3 runs of one brief are not
 independent, so the intervals understate brief-level uncertainty.
 
-### Clause-order errors (compile notes, summed over 3 runs)
+### Compile notes by class (summed over 3 runs)
 
-Counted in the result files as `Unknown statement ...` plus `Expected "at" but found ...` notes
-(the CO-1 class), and the separate `needs a size WxH` notes (the CO-2 class).
+Counted in the result files. "Order notes" are `Unknown statement ...` plus `Expected "at" but
+found ...`; before CO-1 they were all `label` / `size` (P1) and `label` / `size` / `clear` (P2),
+after it none is `label` / `size` / `clear`. The size column counts the literal note ``needs a `size
+WxH` ``.
 
-| Model | CO-1 class before | CO-1 class after | `needs a size` before | `needs a size` after |
+| Model | Order notes before | Order notes after (none label/size/clear) | `needs a size` before | `needs a size` after |
 | --- | --- | --- | --- | --- |
 | haiku-5-5 | 50 | 0 | 1 | 0 |
 | sonnet-5-5 | 66 | 2 | 5 | 9 |
 | opus-5-5 | 2 | 2 | 3 | 0 |
 | fable-5-2 | 11 | 0 | 0 | 0 |
+
+The residual notes after CO-1 are other statements: in P1 `offset`, `at` and `double`, in P2
+`offset`. Opus has 2 before and 2 after, so its count did not change.
 
 Discrepancy with the running log: `findings.md` gives 43 for Haiku before; the result files hold 43
 `Unknown statement` notes plus 7 `Expected "at"` notes, so 50 is used here. The other seven figures
@@ -106,32 +127,36 @@ notes: none.
 
 | Group | n | Valid | Intent | Sound | L1 intent | L1 sound |
 | --- | --- | --- | --- | --- | --- | --- |
-| before | 78 | 34 (33-55 %) | 15 (12-29 %) | 0 (0-5 %) | 19 (16-35 %) | 1 (0-7 %) |
-| after CO-1 | 78 | 32 (31-52 %) | 16 (13-31 %) | 3 (1-11 %) | 21 (18-38 %) | 3 (1-11 %) |
-| after CO-1 + CO-2 | 78 | 62 (69-87 %) | 26 (24-44 %) | 1 (0-7 %) | 43 (44-66 %) | 1 (0-7 %) |
+| before | 78 | 34 (33-55 %) | 15 (12-30 %) | 0 (0-5 %) | 19 (16-35 %) | 1 (0-7 %) |
+| after CO-1 | 78 | 32 (30-53 %) | 16 (13-31 %) | 3 (1-11 %) | 21 (18-38 %) | 3 (1-11 %) |
+| after CO-1 + CO-2 | 78 | 62 (69-87 %) | 26 (23-45 %) | 1 (0-7 %) | 43 (44-66 %) | 1 (0-7 %) |
 
-Against the July baseline (valid 23/26, intent 14/26, sound 3/26, one run): the per-run valid
-counts were 11 to 12 before, 8 to 12 after CO-1, and 18 to 22 after CO-1 + CO-2; the per-run intent
-counts were 5, 4 to 7 and 7 to 10 (L1: 5 to 8, 6 to 8, 12 to 16). The July run and these differ in
-commit, prompt and day, and the baseline is one run; this record states the gap without explaining
-it.
+Against the July baseline (valid 23/26, intent 14/26, sound 3/26, one run; same run's L1 intent
+18/26): the per-run valid counts were 11 to 12 before, 8 to 12 after CO-1, and 18 to 22 after
+CO-1 + CO-2; the per-run L0 intent counts were 5, 4 to 7 and 7 to 10 (L1 intent: 5 to 8, 6 to 8,
+12 to 16). The July run and these differ in commit, prompt and day, and the baseline is one run;
+this record states the gap without explaining it.
 
 ## Causal note
 
-The before-to-after differences are observed differences across commits, not isolated effects. Each
-cell is 3 runs of 26 briefs (n = 78; Fable before 76), the runs of a brief are not independent, and
-the intervals above overlap for most before/after pairs. No significance is claimed.
+The before-to-after differences are observed differences across commits (compiler and prompt
+together), not isolated effects. Each cell is 3 runs of 26 briefs (n = 78; Fable before 76), the
+runs of a brief are not independent, and the intervals above overlap for most before/after pairs.
+No significance is claimed.
 
-- The clause-order notes fell to zero for Haiku and Fable and to 2 for Sonnet and Opus after CO-1
-  (P1), and from 70 `Unknown statement` notes to 4 for gpt-5.5 (P2). The `needs a size` notes
-  fell from 111 to 0 for gpt-5.5 after CO-2. The CO-1 and CO-2 changes are the only language
-  changes known to sit between those commits; the other commits on the way were not audited here.
-- Valid moved most where the error class was frequent: Sonnet 53 to 69 of 78, Fable 67 of 76 to
-  78 of 78, gpt-5.5 34 to 32 (after CO-1 only; its size errors surfaced once the clause errors
-  parsed) and then to 62 after CO-2. Haiku moved 45 to 47 and Opus 68 to 73.
-- Intent barely moved for the Claude models (Haiku 23 to 24, Sonnet 47 to 49, Opus 48 to 47,
-  Fable 61/76 to 71/78). Plans that now compile still miss the brief or hit geometry errors.
-- Sonnet's 9 `needs a size` notes after CO-1 are the CO-2 class; #809 merged after that run.
+- Order notes fell to zero for Haiku and Fable and to 2 for Sonnet and Opus after CO-1 (P1;
+  Opus was 2 before as well), and from 70 `Unknown statement` notes to 4 for gpt-5.5 (P2). The
+  `needs a size` notes fell from 111 to 0 for gpt-5.5 after CO-2. The only `src/` commits between
+  the phases are CO-1 and CO-2.
+- Valid sums, before to after CO-1: Haiku 45 to 47, Sonnet 53 to 69, Opus 68 to 73 (each of 78),
+  Fable 67 of 76 to 78 of 78. Fable's pair is confounded: the cap went from 8 to 10 usd,
+  `sized-office-mix` was skipped twice before, and one call before was truncated. gpt-5.5: 34 to
+  32 after CO-1 only, then 62 after CO-2.
+- gpt-5.5's `needs a size` notes rose from 10 / 34 / 26 per run before to 44 / 32 / 35 after CO-1,
+  and the briefs carrying such a note from 23 to 37 of 78. That is consistent with the
+  clause-order errors having masked the size errors; this record does not test it.
+- Intent sums, before to after CO-1: Haiku 23 to 24, Sonnet 47 to 49, Opus 48 to 47, Fable 61 of 76
+  to 71 of 78. Only Fable's moved.
 
 This record makes no statement about loop gain, and the T3 record
 (`2026-11-t3-result.md`) is the only statement of that result.
