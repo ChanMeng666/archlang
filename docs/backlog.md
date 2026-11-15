@@ -1762,7 +1762,22 @@ riser the drawing implies, where the plan authors a height. **Gate:** the implie
 example, hand-derived in the test; a plan with no `height` unchanged; the byte-identity law over
 the corpus for `describe()` if a fact is added, and the lint's own corpus findings listed in the PR.
 
-- ST.2 · The walking line over a winder landing is drawn as a chord but credited as an arc — done → archived (lab)
+### ST.2 · Winder walking line drawn as the credited arc: done by #821, waiting to be archived — `note`
+
+PR #533 (winders on a quarter-turn landing, preview-and-remodel D46) credits a winder landing with
+`min(n, floor(arc / going))` goings, where `arc` is the quarter arc of radius `width / 2` round the
+inner corner (about 0.785 × width). The glyph (`src/elements/vertical-glyphs.ts`) still draws the
+walking line across that landing as one straight chord (about 0.707 × width), so the drawing and
+the lint read two different lengths. Lint never reads the drawing, so this is a drawing change:
+draw the arc. It moves the SVG of plans that write `winders` only; `describe()` and `lint()` do
+not move (the `block-stair-winders-byte-identity` law pins every plan without the clause). The
+contributor offered to do it. **Gate:** the winders law green; the digest of every winders fixture
+listed before and after in the PR; a plan without `winders` byte-identical.
+**Done by #821.** The arc is drawn as a `<path>`. It is also a room-label obstacle where the chord
+was not (`src/label-placement.ts` boxes an arc), so a label near a winder landing's inner corner can
+place differently, and the drafting-layer `W_ANNOTATION_OVERLAP` with it. No shipped example writes
+`winders`.
+
 - ST.3 · `archlang-3d` builds a winder landing as a level landing — done by RM1.2g (#751) → archived (lab)
 
 ## 3D asset and surface residue (public-surfaces 3D cards X4b, X6, V2, 2026-11-06)
