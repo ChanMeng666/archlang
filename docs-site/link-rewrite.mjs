@@ -47,8 +47,55 @@ function stripTags(s) {
   return out;
 }
 
-/** The visible text of a markdown heading: links reduced to their text, tags and emphasis dropped. */
-const headingText = (h) => stripTags(h.replace(/!?\[([^\]]*)\]\([^)]*\)/g, "$1")).replace(/[`*]/g, "");
+/** Prose outside code spans: links reduced to their text, inline tags and emphasis dropped. */
+const proseText = (s) => stripTags(s.replace(/!?\[([^\]]*)\]\([^)]*\)/g, "$1")).replace(/[`*]/g, "");
+
+/**
+ * The visible text of a markdown heading, as markdown-it-anchor reads it in VitePress 1.6.4 (the
+ * `text` and `code_inline` tokens): a code span keeps its content verbatim (`<arch-plan>` stays,
+ * so it slugs to `arch-plan`), with one surrounding space stripped as CommonMark does; outside code
+ * spans links keep their text and inline tags and emphasis are dropped. A backtick run with no
+ * closing run of the same length is literal text.
+ */
+function headingText(h) {
+  let out = "";
+  let i = 0;
+  let prose = "";
+  while (i < h.length) {
+    if (h[i] !== "`") {
+      prose += h[i++];
+      continue;
+    }
+    let n = i;
+    while (n < h.length && h[n] === "`") n++;
+    const run = h.slice(i, n);
+    let close = -1;
+    for (let j = n; j < h.length; ) {
+      if (h[j] !== "`") {
+        j++;
+        continue;
+      }
+      let k = j;
+      while (k < h.length && h[k] === "`") k++;
+      if (k - j === run.length) {
+        close = j;
+        break;
+      }
+      j = k;
+    }
+    if (close < 0) {
+      prose += run;
+      i = n;
+      continue;
+    }
+    let code = h.slice(n, close);
+    if (code.length > 1 && code.startsWith(" ") && code.endsWith(" ") && code.trim()) code = code.slice(1, -1);
+    out += proseText(prose) + code;
+    prose = "";
+    i = close + run.length;
+  }
+  return out + proseText(prose);
+}
 
 /** GitHub's anchor for a heading text (what the canonical docs' fragments are written in). */
 const githubSlug = (text) =>
@@ -58,42 +105,103 @@ const githubSlug = (text) =>
     .replace(/ /g, "-");
 
 /**
- * One step of a fenced-code scan: the fence still open after `line` (`null` for none) and whether
- * `line` is itself a fence marker. A fence opens on a run of >= 3 backticks or tildes and closes
- * only on a bare run of the SAME character at least as long (CommonMark; the rule
- * `test/docs-fences.test.ts` states), so a ```` ```` ```` block quoting a ```` ``` ```` fence is
- * one block, not two.
+ * One step of a fenced-code scan: the fence still open after `line` (`null` for none), whether
+ * `line` is itself a fence marker, and an opener's trimmed info string. The ONE fence rule: the
+ * rewriter and the docs tests (`docs-fences`, `docs-site-links`, `plan-constructs`) all import it.
+ * CommonMark's: a fence marker is a run of >= 3 backticks or tildes indented at most 3 spaces (4+
+ * is indented code); a backtick opener's info string holds no backtick (```` ``` a`b ```` is
+ * inline code, not a fence); a fence closes only on a bare run of the SAME character at least as
+ * long, so a ```` ```` ```` block quoting a ```` ``` ```` fence is one block, not two.
+ * @param {string | null} open
+ * @param {string} line
+ * @returns {{ open: string | null, marker: boolean, info?: string }}
  */
 export function fenceStep(open, line) {
-  const f = /^\s*(`{3,}|~{3,})(.*)$/.exec(line);
-  if (open === null) return f ? { open: f[1], marker: true } : { open: null, marker: false };
+  const f = /^ {0,3}(`{3,}|~{3,})(.*)$/.exec(line.replace(/\r$/, ""));
+  if (open === null) {
+    if (!f || (f[1][0] === "`" && f[2].includes("`"))) return { open: null, marker: false };
+    return { open: f[1], marker: true, info: f[2].trim() };
+  }
   if (f && f[1][0] === open[0] && f[1].length >= open.length && !f[2].trim()) return { open: null, marker: true };
   return { open, marker: false };
 }
 
 /**
- * The headings of a markdown source as `{ vp, gh }` id pairs: the id VitePress gives each (its
- * `slugify`, which KEEPS an em dash GitHub drops) and the GitHub anchor, with each one's duplicates
- * numbered `-1`, `-2`, ... by both. Fenced code is skipped.
+ * The lines of a markdown source that are neither fenced code nor an HTML comment block, each with
+ * its 0-based index. A line that starts (after <= 3 spaces) with `<!--` opens a comment block that
+ * runs to the line holding `-->` (markdown-it's HTML block type 2), so a `#` line inside one is no
+ * heading.
+ * @param {string} markdown
+ * @returns {Array<[string, number]>}
  */
-export function headingIds(markdown) {
+function proseLines(markdown) {
   const out = [];
-  const seenVp = new Map();
-  const seenGh = new Map();
-  const uniq = (seen, base) => {
-    const n = seen.get(base) ?? 0;
-    seen.set(base, n + 1);
-    return n === 0 ? base : `${base}-${n}`;
-  };
   let fence = null;
-  for (const line of markdown.split("\n")) {
+  let inComment = false;
+  const lines = markdown.split("\n");
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i].replace(/\r$/, "");
+    if (inComment) {
+      if (line.includes("-->")) inComment = false;
+      continue;
+    }
     const step = fenceStep(fence, line);
     const inside = fence !== null || step.marker;
     fence = step.open;
-    const h = inside ? null : /^#{1,6}\s+(.*?)\s*#*\s*$/.exec(line);
+    if (inside) continue;
+    const open = /^ {0,3}<!--/.exec(line);
+    if (open) {
+      if (!line.slice(open[0].length).includes("-->")) inComment = true;
+      continue;
+    }
+    out.push([line, i]);
+  }
+  return out;
+}
+
+/**
+ * The headings of a markdown source as `{ vp, gh }` id pairs: the id VitePress 1.6.4 gives each
+ * and the GitHub anchor. The ONE heading-id rule: the rewriter and the docs tests import it.
+ *
+ * - ATX headings (`#`..`######` after <= 3 spaces) outside fenced code and HTML comment blocks
+ *   (`proseLines`); a closing `#` run counts only after a space.
+ * - `vp` is `slug` (VitePress's `slugify` unless a test hands in the one read from VitePress
+ *   itself) of the heading text (`headingText`: a code span verbatim, so `` `<arch-plan>` `` keeps
+ *   its tag name; tags dropped only outside code spans), which KEEPS an em dash GitHub drops.
+ *   `test/docs-site-links.test.ts` checks every published page's ids against VitePress's own
+ *   markdown parser. A heading ending in an
+ *   attribute block (`## Title {#custom-id}`, `{#a .b}`, `{.b}`) loses the block from its text, as
+ *   markdown-it-attrs strips it; an `#id` in the block IS the id, as markdown-it-anchor keeps an
+ *   explicit one. GitHub knows no attribute block, so `gh` slugs the whole text (`title-custom-id`).
+ * - A repeat is suffixed `-1`, `-2`, ... until free, in one registry per spelling that the explicit
+ *   ids share, so a later heading slugged to an explicit id is suffixed. An explicit id that repeats
+ *   an earlier id is kept as written (VitePress refuses to build such a page).
+ * @param {string} markdown
+ * @param {(s: string) => string} [slug]
+ * @returns {Array<{ vp: string, gh: string }>}
+ */
+export function headingIds(markdown, slug = slugify) {
+  const out = [];
+  const seenVp = new Set();
+  const seenGh = new Set();
+  const uniq = (seen, base) => {
+    let id = base;
+    for (let n = 1; seen.has(id); n++) id = `${base}-${n}`;
+    seen.add(id);
+    return id;
+  };
+  for (const [line] of proseLines(markdown)) {
+    const h = /^ {0,3}#{1,6}[ \t]+(.*?)(?:[ \t]+#+)?[ \t]*$/.exec(line);
     if (!h) continue;
-    const text = headingText(h[1]);
-    out.push({ vp: uniq(seenVp, slugify(text)), gh: uniq(seenGh, githubSlug(text)) });
+    const attrs = /[ \t]*\{([^{}]*)\}$/.exec(h[1]);
+    const custom = attrs ? /(?:^|\s)#([^\s#.{}]+)/.exec(attrs[1])?.[1] : undefined;
+    const gh = uniq(seenGh, githubSlug(headingText(h[1])));
+    let vp;
+    if (custom !== undefined) {
+      vp = custom;
+      seenVp.add(custom);
+    } else vp = uniq(seenVp, slug(headingText(attrs ? h[1].slice(0, attrs.index) : h[1])));
+    out.push({ vp, gh });
   }
   return out;
 }

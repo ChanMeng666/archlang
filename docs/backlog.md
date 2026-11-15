@@ -1725,7 +1725,7 @@ unchanged.
 Left by the reviews of those PRs (review-cost cap). WS.1 and WS.2 fail only on input the docs do
 not yet hold; WS.3 and WS.4 are true of the live site today.
 
-### WS.1 · Four copies of the fence rule, none quite CommonMark — `todo`
+### WS.1 · Four copies of the fence rule, none quite CommonMark: done by #825, waiting to be archived — `note`
 
 `fenceStep` (`docs-site/link-rewrite.mjs`), the link scan in `test/docs-site-links.test.ts`,
 `fences()` in `test/docs-fences.test.ts` (the live-fence gate) and `headingIds` in
@@ -1736,7 +1736,7 @@ one exported rule (`^ {0,3}`, the info-string check) that the rewriter and all t
 **Gate:** unit cases for an indented ```` ``` ```` and for ```` ``` a`b ````; the rewritten output of every
 docs page unchanged; `docs-fences` still finds the same live fences.
 
-### WS.2 · The rewriter's heading ids skip neither HTML comments nor `{#id}` — `todo`
+### WS.2 · The rewriter's heading ids skip neither HTML comments nor `{#id}`: done by #825, waiting to be archived — `note`
 
 `headingIds` in `docs-site/link-rewrite.mjs` treats a `#` line inside `<!-- … -->` as a heading
 and slugs `## Title {#custom-id}` from its whole text, while the test's copy
@@ -1747,6 +1747,10 @@ red). The rewriter's heading pattern also allows no leading spaces where the tes
 `^ {0,3}`. Port the test's rules (and share them, with WS.1). An attribute block holding more than
 an id (`{#a .b}`) and an explicit id that repeats an earlier slug are the corner cases to pin.
 **Gate:** unit cases for each; rewritten output over the docs unchanged.
+
+**Done by #825.** The shared heading text keeps a code span verbatim (`` `<arch-plan>` ``), as
+VitePress does; `test/docs-site-links.test.ts` checks every published page's heading ids against
+VitePress's own markdown parser.
 
 ### WS.3 · Example-page `lastmod` misses some of what the page shows — `todo`
 

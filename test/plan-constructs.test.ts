@@ -17,6 +17,8 @@ import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { compile } from "../src/index.js";
+// @ts-expect-error plain .mjs module without declarations
+import { headingIds as sharedHeadingIds } from "../docs-site/link-rewrite.mjs";
 
 // @ts-expect-error — the root typecheck has no allowJs, so it has no declarations for it.
 const constructs = (await import("../playground/scripts/plan-constructs.mjs")) as {
@@ -58,56 +60,12 @@ function vitepressSlugify(): ((s: string) => string) | null {
 }
 
 /**
- * Every heading id of a Markdown page as VitePress publishes it: ATX headings outside fenced code
- * and outside HTML comment blocks, the text of their inline content (code spans keep their text,
- * links their label), slugged, and a repeat suffixed `-1`, `-2` … as markdown-it-anchor does.
- *
- * - A fence opens on a run of >= 3 backticks or tildes and closes only on a bare run of the SAME
- *   character at least as long (the rule `test/docs-fences.test.ts` states).
- * - A line that starts (after <= 3 spaces) with `<!--` opens an HTML comment block, which runs to
- *   the line holding `-->` (markdown-it's HTML block type 2): a `#` line inside it is no heading.
- * - A heading ending in an attribute block with `#id` (`## Title {#custom-id}`) keeps that id, as
- *   markdown-it-attrs sets it and markdown-it-anchor keeps it; the explicit id takes its place in
- *   the same slug registry, so a later heading slugged to it is suffixed.
+ * Every heading id of a Markdown page as VitePress publishes it, by the one heading-id rule the
+ * site's link rewriter uses (`headingIds` in `docs-site/link-rewrite.mjs`: fences, HTML comment
+ * blocks, `{#id}` attribute blocks, `-1` suffixes), slugged here by VitePress's own `slugify`.
  */
 function headingIds(md: string, slugify: (s: string) => string): Set<string> {
-  const ids = new Set<string>();
-  let fence: string | null = null;
-  let inComment = false;
-  for (const line of md.replace(/\r\n/g, "\n").split("\n")) {
-    if (inComment) {
-      if (line.includes("-->")) inComment = false;
-      continue;
-    }
-    const f = /^ {0,3}(`{3,}|~{3,})(.*)$/.exec(line);
-    if (fence === null && f) {
-      fence = f[1]!;
-      continue;
-    }
-    if (fence !== null) {
-      if (f && f[1]![0] === fence[0] && f[1]!.length >= fence.length && !f[2]!.trim()) fence = null;
-      continue;
-    }
-    const open = /^ {0,3}<!--/.exec(line);
-    if (open) {
-      if (!line.slice(open[0].length).includes("-->")) inComment = true;
-      continue;
-    }
-    const h = /^ {0,3}#{1,6}[ \t]+(.*?)(?:[ \t]+#+)?[ \t]*$/.exec(line);
-    if (!h) continue;
-    const attrs = /[ \t]*\{([^{}]*)\}$/.exec(h[1]!);
-    const custom = attrs ? /(?:^|\s)#([^\s#.{}]+)/.exec(attrs[1]!)?.[1] : undefined;
-    if (custom !== undefined) {
-      ids.add(custom);
-      continue;
-    }
-    const text = h[1]!.replace(/`([^`]*)`/g, "$1").replace(/\[([^\]]*)\]\([^)]*\)/g, "$1");
-    const base = slugify(text);
-    let id = base;
-    for (let n = 1; ids.has(id); n++) id = `${base}-${n}`;
-    ids.add(id);
-  }
-  return ids;
+  return new Set((sharedHeadingIds(md, slugify) as Array<{ vp: string }>).map((h) => h.vp));
 }
 
 describe("every construct anchor is a heading of the language reference", () => {
