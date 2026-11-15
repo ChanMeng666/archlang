@@ -281,16 +281,13 @@ describe("roof — every backend serializes it", () => {
     expect(() => renderAscii(toScene(resolvePlan(parse(SRC).plan!).ir))).not.toThrow();
   });
 
-  it(
+  // A missing optional dep is a visible skip locally and a broken install in CI (the body
+  // throws there), so this case never passes having asserted nothing. The PDF module itself
+  // is still imported inside the case; only the pdfkit probe moved to collection time.
+  it.skipIf(!HAS_PDFKIT && !process.env.CI)(
     "PDF export draws it",
     async () => {
-      if (!HAS_PDFKIT) {
-        // A missing optional dep is a broken install in CI, and a visible skip locally —
-        // the `test/export-pdf.test.ts` gate shape, so this can never pass having asserted
-        // nothing.
-        if (process.env.CI) throw new Error("optional dep pdfkit missing in CI — the install step is broken");
-        return;
-      }
+      if (!HAS_PDFKIT) throw new Error("optional dep pdfkit missing in CI — the install step is broken");
       const { toPdf } = await import("../src/export/pdf.js");
       const bytes = await toPdf(toScene(resolvePlan(parse(SRC).plan!).ir));
       expect(bytes.byteLength).toBeGreaterThan(1000);
