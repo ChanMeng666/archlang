@@ -19,7 +19,7 @@
  * If the loop's delta over the control is ≤ 0, that is the finding — the caller prints it
  * verbatim (roadmap T3: "if ≤ 0, print exactly that").
  *
- * T3 status: one owner-ratified live run (ratified 2026-11-15, not yet run), within the
+ * T3 status: one owner-ratified live run (ratified 2026-11-15; ran 2026-11-15; record: eval/live-runs/2026-11-t3-result.md), within the
  * bounds in `docs/agents/iron-laws.md`. No loop-gain claim and no claim of its absence: the
  * run's published record (`eval/live-runs/`) is the only statement of the result, and any
  * other claim, either way, needs an owner decision. This module is the protocol; it decides

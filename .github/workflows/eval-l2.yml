@@ -1,6 +1,6 @@
 # ─────────────────────────────────────────────────────────────────────────────────────
 # DO NOT DISPATCH, EVER. T3 (this experiment) has exactly ONE owner-ratified live run
-# (ratified 2026-11-15, not yet run), superseding the 2026-07-12 decline for that run only.
+# (ratified 2026-11-15; ran 2026-11-15; record: eval/live-runs/2026-11-t3-result.md), superseding the 2026-07-12 decline for that run only.
 # Its bounds are in docs/agents/iron-laws.md: models claude-sonnet-5-5 and claude-haiku-5-5,
 # provider anthropic, run locally with `npm run eval:l2` (the harness refuses any other
 # provider or model); analysis and decision rule pre-registered before the run in

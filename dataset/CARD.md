@@ -152,9 +152,9 @@ method.
 
 **3. No feedback-loop claim.** Whether a diagnostic-feedback loop beats equal-token-budget
 resampling has not been measured for ArchLang. One live run of that experiment was ratified by
-the project owner on 2026-11-15 and has not yet run; its analysis will be pre-registered before
+the project owner on 2026-11-15 and ran that day; its analysis was pre-registered before
 the run (`eval/live-runs/2026-11-t3-preregistration.md` in the main repository) and its record
-published in `eval/live-runs/`. This dataset and card make no claim that such a loop helps or does
+is published in `eval/live-runs/2026-11-t3-result.md`. This dataset and card make no claim that such a loop helps or does
 not help, before or after that run: the published record is the only statement of the result.
 The run adds no rows to this dataset. Only structural facts are stated.
 

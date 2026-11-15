@@ -6,7 +6,7 @@
  * corpus for `--trials` repetitions, producing `eval/results.l2.<model>.{json,md}` (one pair
  * per model, so a second model never overwrites the first).
  *
- * T3 status: ONE owner-ratified live run (ratified 2026-11-15, not yet run), within the
+ * T3 status: ONE owner-ratified live run (ratified 2026-11-15; ran 2026-11-15; record: eval/live-runs/2026-11-t3-result.md), within the
  * bounds in `docs/agents/iron-laws.md`: provider anthropic; claude-sonnet-5-5 and
  * claude-haiku-5-5; analysis and decision rule pre-registered before the run in
  * `eval/live-runs/2026-11-t3-preregistration.md`; the record published in `eval/live-runs/`

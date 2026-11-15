@@ -217,9 +217,9 @@ onto which — is exactly what v1.13's loop tools (`archlang fix`, `archlang sug
 `archlang validate --graph`) exist to repair after the fact, not something a single generation
 pass is expected to nail. Whether iterating with those tools beats simply resampling the
 same generator under an equal token budget is **unmeasured**. The owner ratified one live run
-of that experiment on 2026-11-15 (not yet run); its analysis will be pre-registered before the
-run in `eval/live-runs/2026-11-t3-preregistration.md`, and its record published in
-`eval/live-runs/`. Nothing here claims the answer either way: the published record is the only
+of that experiment on 2026-11-15, and it ran that day; its analysis was pre-registered before the
+run in `eval/live-runs/2026-11-t3-preregistration.md`, and its record is published in
+`eval/live-runs/2026-11-t3-result.md`. Nothing here claims the answer either way: the published record is the only
 statement of the result, and any other claim needs an owner decision. The run does not change
 this channel: these checks report and score the miss, but they never fail the gate
 (`gate: false`, permanently).
