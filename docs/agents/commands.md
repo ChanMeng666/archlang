@@ -30,8 +30,9 @@
 - CI runs `npm run check:drift`, separate from `check` (`check:quick` runs it too). `gen:all` orders `gen:spec`
   before `gen:llms` before `gen:cli` (the CLI reference states the bundle size `gen:llms`
   measures). Run `gen:example-svgs` after any rendering change.
-- CI runs `npm test`, the vitest include list in `vitest.config.ts` — `test/`, `playground/test/`,
-  `packages/*/test/`, `editors/vscode/test/`. `check:test-wiring` fails on a test outside it.
+- CI runs the vitest include list in `vitest.config.ts` — `test/`, `playground/test/`, `packages/*/test/`,
+  `editors/vscode/test/` — in shards, `--shard=N/7` on Node 22 and `N/5` on the main-only legs; only
+  CI's nightly `full-matrix` runs `npm test`. `check:test-wiring` fails on a test outside it.
 - `*:build:only` scripts skip the core rebuild; `npm run build` must have run.
 - `npm run sync:main` (`scripts/sync-main.mjs`) merges `origin/main` into the current PR branch: generated
   artifacts (whole-file ones on both sides) take `main`'s side and are regenerated (`--no-gen` skips
