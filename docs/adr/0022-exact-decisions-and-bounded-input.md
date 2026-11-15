@@ -212,6 +212,9 @@ equivalence oracle holding the old implementation verbatim (`test/reroll-findrun
   rectilinear rings moved by 0.01 in the SVG.
 - **A corrected standard deviation in `eval/l2*.ts`.** That code is reference only and its live
   experiment is permanently declined; a source-normalising hash for the dataset had no reason.
+  (2026-11-15: the owner has since ratified one live run of that experiment; see
+  `docs/agents/iron-laws.md`. Its pre-registration states which σ it reads; the code's
+  population σ is unchanged.)
 - **A modular-coordination lint.** `grid` already snaps by construction; without one the lint
   would have to guess the module, choosing for the author ([ADR 0005](0005-no-invisible-architect.md)).
 - **Linear programming, total unimodularity or Bellman–Ford in `arch repair`.** Its constraints

@@ -7,10 +7,26 @@ listed in the stage report (`docs/plans/plan-soundness/README.md` D18).
 
 ## Eval & dataset
 
-- **T3 (the diagnostic-loop live experiment) is permanently declined.** Never trigger `eval-l2.yml`
-  live, never re-propose it, never claim a model-loop gain or its absence. L3–L5 stay unbuilt; the
-  intent channel's adjacency/reachability assertions stay advisory (`gate: false`); `eval/l2*.ts` is
-  reference only.
+- **T3 (the diagnostic-loop live experiment) has one owner-ratified run, ratified 2026-11-15 and
+  not yet run.** The owner ratified in words "同意开启 T3，仅此一次，按上面的边界执行" (open T3,
+  this once only, within the bounds below; product-roadmap RM-D45). That supersedes the 2026-07-12
+  permanent decline for exactly one live run of `eval/l2-run.ts`, billed to an Anthropic
+  promotional credit. Its bounds:
+  - one run only, on `claude-sonnet-5-5` and `claude-haiku-5-5` (provider `anthropic`, run
+    locally; the harness refuses any other provider or model); `eval-l2.yml` is never dispatched;
+  - the analysis and the decision rule will be pre-registered before the run, in
+    `eval/live-runs/2026-11-t3-preregistration.md`;
+  - the result is published in `eval/live-runs/` whatever it shows;
+  - until it is published, no loop-gain claim and no claim of its absence. The published record
+    is the only statement of the result; any other claim, either way, needs an owner decision;
+  - the dataset gains no multi-turn model-repair trajectories;
+  - unchanged: the eval corpus is a public fixture, never held-out; the dataset canary is never
+    regenerated; the seed-`20260712` dataset bytes stay untouched.
+
+  Outside that one run nothing reopens. Never re-propose a second T3 run, a re-run or another
+  model. L3–L5 stay unbuilt permanently, and the intent channel's adjacency/reachability
+  assertions stay advisory (`gate: false`) permanently: the T4 gating-promotion hook stays closed.
+  Never re-propose either. `eval/l2*.ts` is reference only outside that run.
 - **T6 (area-syntax sugar) is parked**: no `area` token and no `m2` unit suffix unless one of the
   frozen G2 reversal triggers fires (archived as `research/2026-07-g2-verdict.md` in the
   archcanvas-growth docs archive). Area ships only as an intent-channel assertion.

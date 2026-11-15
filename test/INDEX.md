@@ -5,7 +5,7 @@
 Where the tests of a `src` module are, and what each test file is for. Generated; `npm run check:drift`
 fails when it is stale. How to add a test: `docs/testing.md` § 4.
 
-515 test files in `test/`, 284 `src` modules, 106 modules no test imports.
+516 test files in `test/`, 284 `src` modules, 106 modules no test imports.
 
 ## `src` module → tests that import it
 
@@ -455,6 +455,7 @@ The first sentence of each file's header comment.
 - `test/keep-digests.test.ts` — K3 of the `keep` byte-identity law (ADR 0033 decision 7; PS4.3 design §7): SHA-256 over each keep-corpus plan's keep rows in every surface that carries them — `describe().keeps`, `compile().diagnostics` and `validate...
 - `test/keep-impact-depends.test.ts` — PS4.3b (ADR 0033; design `archlang-lab/plans/plan-soundness/research/2026-10-26-ps43-keep-design.md` §5, §6, §9, R15, R16; card PS4.11): `arch impact`'s `keeps` section, `describe --facts depends`' `depends.keeps[]`,...
 - `test/keep.test.ts` — `keep` (ADR 0033; plan-soundness PS4.3a; design `archlang-lab/plans/plan-soundness/research/2026-10-26-ps43-keep-design.md`): the worked widening drill of design §9 reproduced through the CLI, each form's holds ⇔ resi...
+- `test/l2-run.test.ts` — The L2 live harness (`eval/l2-run.ts`), offline: the T3 bounds preflight, the provider adapters, retries, partial briefs, the JSON record and the scorecard (fetch mocked, no network, no key).
 - `test/l2.test.ts` — runLoopArm — the diagnostic feedback loop; runControlArm — equal-budget i.i.d.
 - `test/label-fit.test.ts` — A room's label that does not fit shrinks (`fitLabels`, `src/label-fit.ts`).
 - `test/label-placement-oracle.test.ts` — The label-relocation pass (`relocateLabels`, `src/label-placement.ts`) against the form it replaced, kept here VERBATIM as the oracle and compared BIT FOR BIT (`docs/backlog.md` M.19, M.15).
