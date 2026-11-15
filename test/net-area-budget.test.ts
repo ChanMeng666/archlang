@@ -215,4 +215,24 @@ suite("net area: one total per storey read (U.22, PS0.15)", () => {
       expect(used * 100).toBeLessThan(MAX_NET_PLAN_WORK);
     }
   });
+
+  it("the takeoff's meter (areas, net perimeters, wall faces) stays far inside the total too (RM1.3d)", () => {
+    // `describe()` with quantities finishes two meters per storey: the summary's (as above), then
+    // the quantities read's, which is also charged every net perimeter and the wall faces. Measured
+    // when written over the same corpus directories: star30 is the maximum (729,052 units, of which
+    // the faces are 184,620), and `examples/clinic.arch` the largest shipped example (443,028).
+    const PINNED: Record<string, [number, number]> = {
+      "test/fixtures/star30.arch": [272_216, 729_052],
+      "examples/clinic.arch": [182_976, 443_028],
+    };
+    for (const [file, [summary, takeoff]] of Object.entries(PINNED)) {
+      takeNetAreaUses();
+      describePlan(readFileSync(file, "utf8"), { facts: ["quantities"] });
+      expect(takeNetAreaUses()).toEqual([
+        { used: summary, closed: false },
+        { used: takeoff, closed: false },
+      ]);
+      expect(takeoff * 50).toBeLessThan(MAX_NET_PLAN_WORK);
+    }
+  });
 });

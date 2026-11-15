@@ -721,4 +721,86 @@ describe("W_ROOM_VIA_PRIVATE walks a balcony as the reachability rule does (RM1.
   it("a door from the landing into the study clears it", () => {
     expect(upper(plan("\n    door id=dly on hw at 4500 width 900 swing into y"))).toEqual([]);
   });
+
+  // RM1.3d review: the walk is shared with W_WET_ROOM_DOOR, whose passage sub-case stays silent
+  // where W_ROOM_VIA_PRIVATE reports the room behind the wet room. So walking the balcony can turn
+  // one warning into the other: here a bathroom stands between the landing and the study, and the
+  // study also opens onto the balcony, which the sitting room may open onto too.
+  const bathBetween = (sittingOntoBalcony: boolean) => `plan "Bath between landing and study" {
+  units mm
+  level 1 "Ground" {
+    wall id=shell exterior thickness 200 { (0,0) (8000,0) (8000,6000) (0,6000) close }
+    wall id=hw partition thickness 100 { (3000,0) (3000,6000) }
+    room id=hall at (0,0) size 3000x6000 label "Hall" uses hall
+    room id=living at (3000,0) size 5000x6000 label "Living" uses living
+    door id=front on shell at 23000 width 1000 swing into hall
+    door id=dl on hw at 3000 width 900 swing into living
+    stair id=st at (200,1000) size 1000x3000 dir up
+  }
+  level 2 "Upper" {
+    wall id=shell exterior thickness 200 { (0,0) (8000,0) (8000,6000) (0,6000) close }
+    wall id=hw partition thickness 100 { (3000,0) (3000,6000) }
+    wall id=hm partition thickness 100 { (3000,3000) (8000,3000) }
+    wall id=hb partition thickness 100 { (5000,3000) (5000,6000) }
+    room id=landing at (0,0) size 3000x6000 label "Landing" uses hall circulation
+    room id=lv at (3000,0) size 5000x3000 label "Sitting Room" uses living
+    room id=bath at (3000,3000) size 2000x3000 label "Bathroom" uses bath
+    room id=y at (5000,3000) size 3000x3000 label "Study" uses office
+    door id=dlv on hw at 1500 width 900 swing into lv
+    door id=dbath on hw at 4500 width 800 swing into bath
+    door id=dby on hb at 1500 width 800 swing into y
+    outdoor id=bal balcony at (8000,0) size 1500x6000${sittingOntoBalcony ? "\n    door id=dlb on shell at 9500 width 900 swing into lv" : ""}
+    door id=dy on shell at 12500 width 900 swing into y
+    stair id=st at (200,1000) size 1000x3000 dir down
+  }
+}`;
+  const privacyCodes = (src: string) =>
+    lint(src)
+      .filter((d) => d.level === 2 && (d.code === "W_ROOM_VIA_PRIVATE" || d.code === "W_WET_ROOM_DOOR"))
+      .map((d) => [d.code, d.message.slice(0, d.message.indexOf("."))]);
+
+  it("a second way to the study, across the balcony, turns W_ROOM_VIA_PRIVATE into the bathroom's passage warning", () => {
+    // Before RM1.3d the walk never crossed the balcony, so the study read reached only through the
+    // bathroom and the passage sub-case stayed silent, with or without the sitting room's door.
+    expect(privacyCodes(bathBetween(true))).toEqual([
+      [
+        "W_WET_ROOM_DOOR",
+        '"Bathroom" is a passage: its 2 connectors join "Landing" and "Study", so the way between "Landing" and "Study" runs through a bathroom',
+      ],
+    ]);
+  });
+
+  it("with no door from the sitting room onto the balcony, the study is reached only through the bathroom, as before", () => {
+    expect(privacyCodes(bathBetween(false))).toEqual([
+      ["W_ROOM_VIA_PRIVATE", '"Study" is reached only through "Bathroom" (access depth 3)'],
+    ]);
+  });
+});
+
+describe("a storey with a door from the ground walks no balcony (RM1.3d review)", () => {
+  it("a study opening only onto a bedroom's balcony: the access depths and lint are as before", () => {
+    // One storey, a front door into the hall: the walk starts outside, so the balcony door is a way
+    // in of the study's own (depth 1), and the privacy rule's walk never crosses it. Pinned as
+    // measured on main before RM1.3d, where they read the same.
+    const src = `plan "Grounded storey with a bedroom balcony" {
+  units mm
+  wall id=shell exterior thickness 200 { (0,0) (8000,0) (8000,6000) (0,6000) close }
+  wall id=hw partition thickness 100 { (3000,0) (3000,6000) }
+  wall id=hm partition thickness 100 { (3000,3000) (8000,3000) }
+  room id=hall at (0,0) size 3000x6000 label "Hall" uses hall
+  room id=beda at (3000,0) size 5000x3000 label "Bedroom A" uses bedroom
+  room id=y at (3000,3000) size 5000x3000 label "Study" uses office
+  door id=front on shell at 23000 width 1000 swing into hall
+  door id=da on hw at 1500 width 900 swing into beda
+  outdoor id=bal balcony at (8000,0) size 1500x6000
+  door id=dba on shell at 9500 width 900 swing into beda
+  door id=dy on shell at 12500 width 900 swing into y
+}`;
+    expect(describePlan(src).access.rooms.map((r) => [r.id, r.reachable, r.depthFromEntrance])).toEqual([
+      ["hall", true, 1],
+      ["beda", true, 2],
+      ["y", true, 1],
+    ]);
+    expect(lint(src).map((d) => d.code)).toEqual(["W_BEDROOM_NO_WINDOW"]);
+  });
 });
