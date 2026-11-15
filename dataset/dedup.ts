@@ -95,9 +95,10 @@ export interface Fingerprint {
 
 /** Fingerprint a plan via `describe()`. Sizes rounded to 0.5 m²; rooms sorted so the
  *  multiset compares order-independently; edges an undirected sorted set. `baseDir`
- *  lets a golden's relative imports resolve. */
-export function fingerprint(source: string, baseDir: string = REPO_ROOT): Fingerprint {
-  const s = describe(source, { world: fsWorld(baseDir) });
+ *  lets a golden's relative imports resolve; `null` gives `describe()` no World at all, so an
+ *  untrusted source (a model reply) reads no file. */
+export function fingerprint(source: string, baseDir: string | null = REPO_ROOT): Fingerprint {
+  const s = describe(source, baseDir === null ? {} : { world: fsWorld(baseDir) });
   const rooms = s.rooms
     .map((r) => ({ label: normLabel(r.label ?? r.id), area: Math.round(r.area_m2 * 2) / 2 }))
     .sort((a, b) => a.label.localeCompare(b.label) || a.area - b.area);
@@ -183,8 +184,8 @@ export function textReject(brief: string, holdout: HoldoutIndex): RejectResult {
 }
 
 /** Reject a plan whose structural fingerprint matches (exactly or nearly) any holdout
- *  golden. `baseDir` is where the source's own imports (if any) resolve from. */
-export function structReject(source: string, holdout: HoldoutIndex, baseDir: string = REPO_ROOT): RejectResult {
+ *  golden. `baseDir` is where the source's own imports (if any) resolve from; `null` reads none. */
+export function structReject(source: string, holdout: HoldoutIndex, baseDir: string | null = REPO_ROOT): RejectResult {
   const fp = fingerprint(source, baseDir);
   const exact = exactKey(fp);
   for (const h of holdout.fingerprints) {

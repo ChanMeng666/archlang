@@ -38,8 +38,14 @@ export interface BriefSet {
   rejections: Record<string, number>;
 }
 
-/** Build `count` briefs from `seed`, rejecting look-alikes of every corpus in `corpora`. */
-export function buildBriefSet(seed: number, count: number, corpora: Corpora): BriefSet {
+/** Build `count` briefs from `seed`, rejecting look-alikes of every corpus in `corpora`.
+ *  `maxAttempts` caps the candidates drawn (tests use it to pin the candidate list). */
+export function buildBriefSet(
+  seed: number,
+  count: number,
+  corpora: Corpora,
+  maxAttempts: number = count * 40 + 100,
+): BriefSet {
   const entries: ManifestEntry[] = [];
   const rejections = new Map<string, number>();
   const bump = (k: string): void => {
@@ -47,7 +53,6 @@ export function buildBriefSet(seed: number, count: number, corpora: Corpora): Br
   };
   const intra = new IntraDedup();
   const briefs = new Set<string>();
-  const maxAttempts = count * 40 + 100;
   let k = 0;
   for (; entries.length < count && k < maxAttempts; k++) {
     const rowSeed = splitmix32(seed, k);
@@ -100,9 +105,12 @@ export function buildBriefSet(seed: number, count: number, corpora: Corpora): Br
     requested: count,
     attempts: k,
     entries,
-    rejections: Object.fromEntries([...rejections.entries()].sort((a, b) => a[0].localeCompare(b[0]))),
+    rejections: Object.fromEntries([...rejections.entries()].sort((a, b) => byCodeUnit(a[0], b[0]))),
   };
 }
+
+/** A locale-independent string order (UTF-16 code units), so output never depends on the host. */
+export const byCodeUnit = (a: string, b: string): number => (a < b ? -1 : a > b ? 1 : 0);
 
 /** The manifest as JSONL (one entry per line, trailing newline). */
 export function manifestJsonl(entries: ManifestEntry[]): string {

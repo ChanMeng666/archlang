@@ -294,10 +294,13 @@ vdescribe("d. self-verification — a sample of rows re-verifies from scratch", 
 /**
  * e. The MODEL-AUTHORING config (`dataset/model-authoring/`): its briefs use a seed of their own
  * and must stay disjoint from both eval corpora AND from the published `repair` / `authoring`
- * splits, through the same `textReject` / `structReject` checks. The CLI checks against the full
- * published splits (regenerated at the pinned seed); here the published index is the full
- * `authoring` split plus the first rows of `repair` (the generator is sequential, so a smaller
- * run is a byte prefix of the published one), to keep CI fast.
+ * splits, through the same `textReject` / `structReject` checks. The CLI checks against the files
+ * actually uploaded to Hugging Face (downloaded, SHA-256-pinned by
+ * `dataset/model-authoring/published.json`; generated with ArchLang 1.15.0, so not byte-equal to
+ * a regeneration today). CI cannot download them, so here the published index is an in-repo
+ * regeneration at the pinned seed: the full `authoring` split plus the first 40 `repair` rows (the
+ * generator is sequential, so a smaller run is a prefix of a full one). This proves the gates
+ * work; it is not the check against the published bytes.
  */
 vdescribe("e. model-authoring config — briefs disjoint from both eval corpora and the published splits", () => {
   const published = generateAll({ repairRows: 40, authoringRows: DEFAULT_AUTHORING_ROWS, seed: DEFAULT_SEED });

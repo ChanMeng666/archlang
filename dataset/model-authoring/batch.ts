@@ -102,6 +102,9 @@ export async function retrieveBatch(fetchImpl: FetchLike, apiKey: string, id: st
 export async function downloadResults(fetchImpl: FetchLike, apiKey: string, info: BatchInfo): Promise<string> {
   if (info.processing_status !== "ended") throw new Error(`batch ${info.id} has not ended`);
   const url = info.results_url ?? `${API_BASE}/v1/messages/batches/${encodeURIComponent(info.id)}/results`;
+  // The key travels in the header, so a results URL on any other origin is refused outright.
+  if (new URL(url).origin !== new URL(API_BASE).origin)
+    throw new Error(`batch ${info.id}: results_url is not on ${API_BASE}; refusing to send the key there`);
   const res = await fetchImpl(url, { method: "GET", headers: headers(apiKey, false) });
   return bodyOrThrow(res, `results of batch ${info.id}`);
 }

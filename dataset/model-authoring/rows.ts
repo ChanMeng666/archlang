@@ -64,6 +64,30 @@ export function extractArch(text: string): string {
   return text.trim();
 }
 
+/**
+ * Every fenced block in a reply, whatever its info string (```` ```arch ````, ```` ```json ````, a
+ * bare ```` ``` ````): the body between an opening fence line and the next ```` ``` ````. Used by the
+ * leak gate, which checks every block, not only the one {@link extractArch} takes. Linear.
+ */
+export function fencedBlocks(text: string): string[] {
+  const out: string[] = [];
+  let from = 0;
+  for (;;) {
+    const i = text.indexOf("```", from);
+    if (i === -1) return out;
+    const eol = text.indexOf("\n", i + 3);
+    if (eol === -1) return out;
+    if (text.slice(i + 3, eol).includes("`")) {
+      from = i + 1; // a longer backtick run: look again one place on
+      continue;
+    }
+    const end = text.indexOf("```", eol + 1);
+    if (end === -1) return out;
+    out.push(text.slice(eol + 1, end));
+    from = end + 3;
+  }
+}
+
 /** The `.arch` source a row records: the canary comment line, then the extracted reply. */
 export const rowSource = (reply: string): string => `${CANARY_COMMENT}\n${extractArch(reply)}\n`;
 
@@ -89,6 +113,9 @@ export interface RowContext {
   batchId: string;
   systemPromptSha256: string;
   archlangVersion: string;
+  /** The repository commit `submit` ran at, and whether its working tree had uncommitted changes. */
+  gitCommit: string;
+  gitDirty: boolean;
 }
 
 const diagsJson = (source: string): DiagnosticJson[] => [
@@ -169,7 +196,13 @@ export function deriveRow(entry: ManifestEntry, line: ResultLine, ctx: RowContex
     id: `${entry.brief_id}--${ctx.model}`,
     canary: CANARY,
     archlang_version: ctx.archlangVersion,
-    generator: { name: GENERATOR_NAME, version: GENERATOR_VERSION, seed: entry.seed },
+    generator: {
+      name: GENERATOR_NAME,
+      version: GENERATOR_VERSION,
+      seed: entry.seed,
+      commit: ctx.gitCommit,
+      tree_dirty: ctx.gitDirty,
+    },
     brief_id: entry.brief_id,
     brief: entry.brief,
     brief_params: entry.brief_params,
@@ -196,7 +229,7 @@ export function deriveRow(entry: ManifestEntry, line: ResultLine, ctx: RowContex
 
 /** The inputs a row stores, recovered so {@link verifyRow} can rebuild it. */
 function inputsOf(row: Record<string, unknown>): { entry: ManifestEntry; line: ResultLine; ctx: RowContext } {
-  const gen = row.generator as { seed: number };
+  const gen = row.generator as { seed: number; commit: string; tree_dirty: boolean };
   return {
     entry: {
       brief_id: row.brief_id as string,
@@ -223,14 +256,18 @@ function inputsOf(row: Record<string, unknown>): { entry: ManifestEntry; line: R
       batchId: row.batch_id as string,
       systemPromptSha256: row.system_prompt_sha256 as string,
       archlangVersion: row.archlang_version as string,
+      gitCommit: gen.commit,
+      gitDirty: gen.tree_dirty,
     },
   };
 }
 
 /**
  * Re-derive a row from the brief, the raw reply and the ids it stores, with the CURRENT
- * compiler, and compare the serialization byte for byte. Only meaningful when the current
- * compiler is the row's pinned `archlang_version`; a mismatch is reported, not replayed.
+ * compiler, and compare the serialization byte for byte. Pass the row as PARSED from its JSONL
+ * line (as `build` does, and as a consumer would), so the check covers the stored bytes. Only
+ * meaningful when the current compiler is the row's pinned `archlang_version`; a mismatch is
+ * reported, not replayed.
  */
 export function verifyRow(row: Record<string, unknown>, currentVersion: string): { ok: boolean; reason?: string } {
   if (row.archlang_version !== currentVersion)
