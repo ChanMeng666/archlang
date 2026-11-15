@@ -191,7 +191,8 @@ because the legend lists the furniture. Each stage is then run once more on the 
 result a stage would edit again is not returned, and the source comes back untouched.
 `--only furnish` and `--only sheet` run one stage.
 
-**11. Laws, each pinned by test** (`test/finish-furnish.test.ts`, `test/finish.test.ts`,
+**11. Laws, each pinned by test** (`test/finish-furnish.test.ts`,
+`test/finish-furnish-laws.test.ts`, `test/finish-furnish-bounds.test.ts`, `test/finish.test.ts`,
 `test/fuzz.test.ts`):
 
 | Law | Statement |

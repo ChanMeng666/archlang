@@ -21,8 +21,8 @@
  *      `--max` caps exactly that list: the branch's own changed test files, the directory-scanning
  *      guards and the import-distance tests, together and in that order. It does NOT cap the extras, three
  *      kinds of test the import graph ranks too far away, each under its own cap: the source-tree
- *      scanners a changed `src/`, `scripts/`, `eval/`, `test/` or `.claude/` file wakes (`treeGuards`; at
- *      within 15 recorded seconds, 30 files at most), the tests named after a changed module (`namedTests`; at
+ *      scanners a changed `src/`, `scripts/`, `eval/`, `test/` or `.claude/` file wakes (`treeGuards`;
+ *      within 15 recorded seconds and 30 files at most), the tests named after a changed module (`namedTests`; at
  *      most 5 files and 10 recorded seconds) and, for a change under `src/`, the cheapest reachable tests
  *      that pin their output over the examples corpus (`corpusPins`; within `--pins` recorded seconds).
  *      All of it is in `scripts/gate-select.mjs`.

@@ -10,7 +10,7 @@ say what it enforces; this file does not inventory them.
 
 | Command | Notes |
 |---|---|
-| `npm run check:quick` | the local pre-push check: Biome, the typecheck the changes need, `check:drift` and the nearest tests (by import distance, `--max` 20) for the files the branch changed. Under a minute; not merge evidence |
+| `npm run check:quick` | the local pre-push check: Biome, the typecheck the changes need, `check:drift` and the nearest tests (by import distance, `--max` 20) for the files the branch changed, plus extras outside `--max`, each under its own cap: the source-tree scanners a change wakes, the tests named after a changed module and the cheapest corpus pins (`--pins`; `docs/agents/commands.md` § Non-obvious scripts). Under a minute; not merge evidence |
 | `npm run check` | typecheck (`src/` only) + Biome + `check:test-wiring` + `npm test`. CI's floor; not run locally |
 | `npm run check:drift` | every generator re-run and byte-compared. Separate from `check`; its own CI gate |
 | `npm run typecheck:all` | the only typecheck of `test/`, `eval/`, `dataset/`, `scripts/`, `bench/` and the workspaces. `npm run build` first |
@@ -22,8 +22,10 @@ say what it enforces; this file does not inventory them.
 | `npm run test:coverage` | report-only v8 coverage over `src/`; no thresholds, nothing fails on a number. Runs nightly (`nightly.yml` `coverage`), not on PRs |
 | Nightly mutants (report-only): `node scripts/mutants.mjs` | a seeded sample of mutation sites (40 a night, seed the UTC date) in `src/num-format.ts` and `src/expr.ts`, each run against its nearest tests (`nightly.yml` `mutants`; the operators and verdicts are in the script's header; `--dry-run` lists the sample and runs nothing). A survivor becomes either a new test or an allow-list row with a reason (`test/mutants.allow.json`); never gates merge. It rewrites the target files in place, restores them byte for byte, and refuses a target with uncommitted changes; it starts no run past `--budget-minutes` (85 nightly) and rewrites its report after every mutant, so a cancelled night keeps its verdicts |
 
-Locally: `check:quick`, plus `docs:build` for `docs/*.md`; then push. CI runs `check`, `check:drift`,
-`typecheck:all`, every platform and the E2E, and the PR's CI green is the only merge evidence.
+Locally: `check:quick`, plus `docs:build` for `docs/*.md`; then push. CI never runs the `check`
+script itself: it runs its parts, `check:drift`, `typecheck:all` and the E2E on Node 22; Node 18,
+Node 20 and Windows run on train PRs, unproven pushes to `main` and nightly. The PR's CI green is
+the only merge evidence.
 
 **PR** (`ci.yml`, `codeql.yml`) and **nightly** (`nightly.yml`): the job map is in
 [`docs/agents/commands.md`](agents/commands.md). Red in nightly's `e2e-prod` means production is
@@ -124,6 +126,8 @@ table literal. Record the measured tree and the patch in the baseline's header.
   forms, persisted state or typing). Follow each spec file's stated tagging rule. A `@prod` case
   that depends on a third party (the real jsDelivr core in `docs-site/e2e/arch-plan.spec.ts`) also
   skips unless `E2E_PROD=1`, which the nightly e2e-prod job sets; run it by hand after a release.
+- **A new Playwright spec** (playground or docs site) goes in exactly one shard's `specs` list in
+  `ci.yml`; `test/e2e-shards.test.ts` fails otherwise.
 - **Docs are scanned too**: every tracked `.md` by `docs-table-pipes`; published pages by
   `docs-fences`; the `DOCS` list in `docs-flags.test.ts` for `arch …` flags. Publishing a page means
   adding it to `sync-docs.mjs`'s `PAGES`, which also enrols it in the smoke test and the docs E2E.

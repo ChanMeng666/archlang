@@ -53,8 +53,9 @@ jobs:
   # when FULL_LEG is false, so an ordinary PR starts no runner for them; the last shard also runs
   # the leg's non-test checks. Their required names (`Node 18`, `Node 20`, `Windows (tests
   # + drift)`) are aggregators over the shards: on an ordinary PR they report green with a
-  # job-summary line. Their breaks surface after the merge, in the push run on `main` and
-  # in nightly's `full-matrix`; `/release-check` reads both.
+  # job-summary line. A train PR runs them before the merge; an ordinary PR's breaks surface
+  # after it, in the push run on `main` (a proven push skips them) and in nightly's
+  # `full-matrix`; `/release-check` reads both.
   #
   # A proven push skips everything (`scripts/ci-proven.mjs`, whose header lists the conditions).
   # On a push to `main` only, `changes` sets `proven` when the pushed commit M is a two-parent
@@ -648,9 +649,10 @@ jobs:
     # `eval:ci` and the benchmark are Linux-only on purpose: the eval is already
     # covered by the Linux legs above and bench timings are runner-dependent.
     #
-    # Off the PR path (see `changes`): the local gate is `check:quick` (changed files, their
-    # nearest tests), not the full suite, so a Windows-only break first shows on `main`
-    # (the push run) and in nightly.
+    # Off the ordinary PR path (see `changes`): the local gate is `check:quick` (changed files,
+    # their nearest tests), not the full suite, so a Windows-only break first shows on a train
+    # PR, or for an ordinary PR's merge on `main` (the push run; a proven push skips it) and in
+    # nightly.
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 

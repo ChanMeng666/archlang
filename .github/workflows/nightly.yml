@@ -137,7 +137,8 @@ jobs:
 
   # ---------------------------------------------------------------------------
   # Deliberately redundant with ci.yml's push run on `main`. Node 18, Node 20 and Windows
-  # do not run on PRs, so this is where a break on one of them reaches the pinned issue.
+  # run only on train PRs and unproven pushes (an ordinary PR and a proven push skip them),
+  # so this is where a break on one of them reaches the pinned issue.
   # Path handling and line endings are where an isomorphic, byte-exact compiler gets
   # bitten. Same steps as those legs minus typecheck, lint and the eval, which do not vary
   # by Node version or OS and run on Node 22 on every PR.
