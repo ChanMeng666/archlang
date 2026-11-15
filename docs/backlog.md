@@ -2047,7 +2047,7 @@ two and worth doing regardless.
 **Do not** narrow this to "re-run it by hand" — that is the workaround, and it has now been needed
 twice in five releases.
 
-### 4.10 · A 5 s test budget on a heavy optional import — `todo`
+### 4.10 · A 5 s test budget on a heavy optional import: done by #829, waiting to be archived — `note`
 
 Found 2026-09-04 while gating item 4.9, and worth filing because `AGENTS.md` currently records that
 the suite has **no known flake**.
@@ -2078,6 +2078,11 @@ capability probe so the import is paid once per file rather than inside the time
 say plainly in `AGENTS.md` that the suite has one load-sensitive case, since a number nobody can
 reproduce on a quiet machine is worse than a documented one. **Do not raise the global
 `testTimeout`** — that hides every future instance of the same shape.
+
+**Done by #829.** Both first options together: `test/roof.test.ts` probes `pdfkit` once at module
+scope (`HAS_PDFKIT`, paid at collection), and "PDF export draws it" carries its own
+`PDF_CASE_TIMEOUT_MS` budget; the global `testTimeout` is unchanged. M.6 (visual, sheet) is the same
+shape and stays open.
 
 ### 4.1 · Joinery pass performance — `todo`
 
