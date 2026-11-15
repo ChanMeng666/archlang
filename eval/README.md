@@ -156,8 +156,8 @@ numbers live in `live-baseline.json`; the L1 numbers are recorded there as refer
 
 A dated record of a one-off Claude 5.x live run (aggregate numbers, not comparable with this
 baseline, which was not re-measured) is in `eval/live-runs/2026-10-27-claude-5.md`. The 2026-11-15
-authorability re-measure around the CO-1/CO-2 parser + prompt changes (Claude 5.x and gpt-5.5, 3 runs per
-group; the baseline stays this July record) is in
+authorability re-measure before/after CO-1 and CO-2 (the parser + prompt changes; Claude 5.x
+and gpt-5.5, 3 runs per group; the baseline stays this July record) is in
 `eval/live-runs/2026-11-authorability-remeasure.md`.
 
 > **Prompt-drift history.** v1.15.0's metric-unit-suffix feature added one line to
