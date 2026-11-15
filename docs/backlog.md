@@ -1800,11 +1800,7 @@ recorded pixel hash; it never decodes the committed file. A PNG swapped together
 `sha256` passes. **Gate:** `pixelsHash(readFileSync(file))` must equal `plan.pixelsSha256`; a
 planted swap fails `--check`.
 
-### 3D.2 · No size budget for plan and poster PNGs — `todo`
-
-The budget table caps WebP, MP4 and GLB only; `.plan.png` (92–245 KB today) and `.poster.png` have
-none, so an A1 sheet could grow unchecked. **Gate:** a budget (for example 300 KB) enforced by the
-generator and `--check`.
+- 3D.2 · No size budget for plan and poster PNGs — done: `BUDGET.planPng` 300 KB, `BUDGET.posterPng` 500 KB, enforced by the generator and `--check` (`packages/archlang-3d/test/asset-budget.test.ts`)
 
 ### 3D.4 · Pitched roofs in the 3D preview (design first) — `todo`
 
