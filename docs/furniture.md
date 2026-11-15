@@ -59,6 +59,8 @@ furniture wc in r_bath anchor bottom flush size 400x700
     column below) — it is read as `along × depth`, along the wall and into the room.
     A kind with no footprint and no `size` is [`E_FURN_SIZE`](error-codes.md), under
     every placement.
+  - The rotation is **derived from the wall**, so combining `against` with an
+    explicit `rotate` is an error ([`E_FURN_AGAINST`](error-codes.md)).
 - **`size` may be omitted under `at` and `in <room>` too**, for a kind with a catalogued
   footprint; the plan `w × h` it stands for is the footprint at the piece's quarter-turn.
   - `at (x,y)` draws it with the back north at `rotate 0` (`along` across, `depth` down: a WC
@@ -67,14 +69,17 @@ furniture wc in r_bath anchor bottom flush size 400x700
     the anchor names has a wall behind it, and the kind's facing means something, the back
     goes on that edge and the rotation is derived from it, so `furniture wc in bath anchor
     right` is a 700 × 400 WC at `rotate 90`, the same piece as writing `size 700x400`.
-    Otherwise (no walled edge, a corner walled on both edges, a written `rotate`) it takes
-    the footprint at `rotate 0`, turned by any `rotate`, and the derivation below reads it as
-    it reads a written size.
+    Otherwise (no walled edge, a corner walled on both edges, a written `rotate` or
+    `facing`, or a kind whose facing means nothing, such as a `sofa_l` or a `hedge`) it
+    takes the footprint at `rotate 0`, turned by any `rotate`, and the derivation below
+    reads it as it reads a written size. `spec.llm.md` lists the two
+    groups of kinds.
   - `facing <id>` is settled after the piece is placed, so it reads the footprint at
     `rotate 0`; a turn that would put the back on the footprint's short side is
     [`E_FACING_TRANSPOSED`](error-codes.md), which names the `size` to write.
-  - The rotation is **derived from the wall**, so combining `against` with an
-    explicit `rotate` is an error ([`E_FURN_AGAINST`](error-codes.md)).
+  - Under a `grid` the footprint snaps as a written size does, with
+    [`W_GRID_SNAPPED`](error-codes.md) when that moves it; a side that snaps to nothing is
+    [`E_FURN_SIZE`](error-codes.md).
 - **`in <room>`** records the owning room (by `id`). A trailing `in <room>` doesn't
   move the piece — it lets the linter check the piece is actually inside that room and
   lets `against` infer the interior side. A non-existent id is
@@ -616,7 +621,8 @@ furniture basin        at (5200,600)
 
 `against` reads it as `along × depth`. `at (x,y)` and `in <room>` take a plan `w × h`, so they
 read it at the piece's quarter-turn: back north at `rotate 0`, turned by a written `rotate`, or,
-under `anchor <edge>`, laid along the one walled edge the anchor names (the rule is under
+under `anchor <edge>` for a kind whose facing means something and with no `rotate` or `facing`
+written, laid along the one walled edge the anchor names (the rule is under
 [the placement modes](#three-placement-modes)). A kind with no footprint needs an explicit `size` under every
 placement ([`E_FURN_SIZE`](error-codes.md)).
 

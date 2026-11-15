@@ -2121,8 +2121,10 @@ catalogued footprint may **omit `size`** under any placement and take it (e.g.
 `furniture wc against wall w1 in bath`) — `offset` is where the piece's **centre**
 lands along the wall run. `against` reads the footprint as along × depth; `at` and
 room-relative placement read it at the piece's quarter-turn (back north at `rotate 0`,
-turned by a written `rotate`, or laid along the one walled edge an `anchor` names, so
-`furniture wc in bath anchor right` is `size 700x400` at `rotate 90`). A kind with no
+turned by a written `rotate`; with no `rotate` or `facing`, an `anchor` lays a kind whose
+facing means something along the one walled edge it names, so
+`furniture wc in bath anchor right` is `size 700x400` at `rotate 90`, while a `sofa_l`
+keeps its `rotate 0` footprint). A kind with no
 catalogued footprint still needs an explicit `size`. `in <room>` records which room
 owns the piece (used by the lint rules).
 
