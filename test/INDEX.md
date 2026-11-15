@@ -5,7 +5,7 @@
 Where the tests of a `src` module are, and what each test file is for. Generated; `npm run check:drift`
 fails when it is stale. How to add a test: `docs/testing.md` § 4.
 
-517 test files in `test/`, 284 `src` modules, 106 modules no test imports.
+518 test files in `test/`, 284 `src` modules, 106 modules no test imports.
 
 ## `src` module → tests that import it
 
@@ -398,6 +398,7 @@ The first sentence of each file's header comment.
 - `test/gaps-byte-identity.test.ts` — `hidden`, a piece's `mirror` and a room's `floor` (issue #405): the byte-identity law.
 - `test/garage-byte-identity.test.ts` — The byte-identity law for the outdoor tranche: **a plan that uses none of it renders, describes and lints exactly as it did before it existed.** Every new language form ships with this law, and the form it takes here...
 - `test/garage.test.ts` — `uses garage` — the thirteenth room use, its label vocabulary, and the one advisory rule that reads it.
+- `test/gate-select.test.ts` — `scripts/gate-select.mjs`: what `check:quick` selects beyond the import graph, and which deterministic CI steps (`check:drift`, `typecheck:all`) a change set needs.
 - `test/gbnf-drift.test.ts` — Drift + acceptance/rejection gate for the generated GBNF grammar (`grammars/archlang.gbnf`, produced by `scripts/gen-gbnf.ts`).
 - `test/geometry-hostinfo.test.ts` — hostInfoForWalls — equivalence with the original two functions; WallGrid — equivalence with brute-force hostInfoForWalls (T3.7).
 - `test/glyph-chirality.test.ts` — A mirrored `place` draws the mirror-image SYMBOL.

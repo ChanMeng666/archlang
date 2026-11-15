@@ -103,7 +103,7 @@ describe("listedTrees", () => {
 
   it("does not take a subfolder or a file for the tree", () => {
     expect([...listedTrees(`readdirSync(join(ROOT, "test/fixtures"))`)]).toEqual([]);
-    expect([...listedTrees(`readdirSync(d); import x from "../src/index.js"`)]).toEqual([]);
+    expect([...listedTrees(`readdirSync(d); const p = "../src/index.js"`)]).toEqual([]);
   });
 
   it("takes the folders a git-ls-files pattern names", () => {
@@ -224,7 +224,7 @@ describe("scanningGuards (moved from check-quick.mjs, behaviour unchanged)", () 
     mkdirSync(join(dir, "test", "helpers"), { recursive: true });
     writeFileSync(
       join(dir, "test", "helpers", "corpus.ts"),
-      `import { readdirSync } from "node:fs";\nexport const all = () => readdirSync("examples");\n`,
+      `import { opendirSync } from "node:fs";\nexport const all = () => opendirSync("examples");\n`,
     );
     writeFileSync(
       join(dir, "test", "plain.test.ts"),
@@ -232,7 +232,7 @@ describe("scanningGuards (moved from check-quick.mjs, behaviour unchanged)", () 
     );
     writeFileSync(
       join(dir, "test", "pinned.test.ts"),
-      `import { all } from "./helpers/corpus";\nit("x", () => { all(); createHash("sha256"); });\n`,
+      `import { all } from "./helpers/corpus";\nit("x", () => { all(); createHash("md5"); });\n`,
     );
     writeFileSync(join(dir, "test", "other.test.ts"), `it("x", () => 1);\n`);
   });

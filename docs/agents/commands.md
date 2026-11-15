@@ -8,8 +8,20 @@
   changed files, the typecheck they need, `check:drift` (skipped when only tests changed) and the
   nearest tests by import distance, capped at `--max` (20) with the cut printed. The base is the merge
   base with `origin/main` (`--base`); `--list` prints the plan. What runs where: AGENTS.md § How to work.
-  It cannot see a guard that scans a directory rather than naming a file (the corpus and byte-identity
-  laws over `examples/` and `docs/`), which is why a quick pass is never merge evidence.
+  One child process at a time, each step timed. A `package.json`, the lockfile, `tsup.config.ts`, a tsconfig,
+  or a `src/` diff that adds or removes an export or a type member makes the typecheck step `typecheck:all`
+  (CI's "Type-check every workspace"), on a `dist/` built first when it is missing or older than `src/`
+  (about 30 s and 2 GB for the build, 2 min and 1 GB for the typecheck; `--no-typecheck-all` skips it).
+  Beyond the cap it adds what the import graph ranks too far away: the source-tree scanners a changed
+  `src/`, `scripts/`, `eval/`, `test/` or `.claude/` file wakes (they list that folder and name no file),
+  the tests named after a changed module, and, for a `src/` change, the cheapest tests that pin their
+  output over the examples corpus within `--pins` (20) recorded seconds. Selection is
+  `scripts/gate-select.mjs`. It still cannot see a guard that scans a directory in a way no rule
+  above reads, and the expensive corpus pins (`keep-byte-identity`, `rendered-theme`) are CI's, which is
+  why a quick pass is never merge evidence.
+- `check:drift` reads `git ls-files`, so a new file is invisible to `module-map` and `test-index` until it
+  is `git add`ed (the gate says so), and CI checks the merge with `main`: a branch behind `main` can go
+  red on `module-map` (line and importer counts cover the whole tree) with a green local drift.
 - `npm run check` = `typecheck` + `lint` + `check:test-wiring` + `npm test`, and it is the owner's release
   gate only: ci.yml runs its parts (typecheck, `lint:ci`, `check:drift`, the vitest shards, `check:test-wiring`),
   never the script. Its `typecheck` covers `src/` only; CI runs `npm run typecheck:all`, which adds `test/`,

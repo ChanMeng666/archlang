@@ -7,10 +7,10 @@ Code and tests are the documentation; this file holds only what they cannot say.
 ```bash
 npm run build         # core + CLI → dist/ (before typecheck:all, e2e)
 npm run cli -- compile examples/studio.arch -o studio.svg
-npm run check:quick   # local pre-push: changed files, nearest tests (CI runs the rest)
+npm run check:quick   # local pre-push: changed files, drift, nearest tests (CI runs the rest)
 npm run check         # typecheck + lint + test-wiring + vitest (CI only)
-npm run check:drift   # generated artifacts == generator output (CI only)
-npm run typecheck:all # CI only; the one typecheck that compiles test/ + workspaces
+npm run check:drift   # generated artifacts == generator output (check:quick runs it)
+npm run typecheck:all # test/ + workspaces (check:quick runs it on an export or dependency change)
 npm run docs:build    # after any docs/*.md edit
 npm run gen:all       # every gen:* generator
 ```
@@ -18,9 +18,9 @@ npm run gen:all       # every gen:* generator
 ## How to work
 
 - Prove a change through the CLI (`arch compile|describe|lint --json`), not by eyeballing SVG.
-- Local gate is exactly `check:quick` (+ `docs:build` for docs), then push. Executor briefs list only that. `check`, drift,
-  `typecheck:all`, vitest runs, e2e and bench are CI's; only CI green is merge evidence. A hook
-  blocks them (`.claude/hooks/local-gate.mjs`).
+- Local gate is exactly `check:quick` (+ `docs:build` for docs), then push. Executor briefs list only that. `check`,
+  vitest runs, e2e and bench are CI's; only CI green is merge evidence. A hook
+  blocks them and a direct drift or `typecheck:all` (`.claude/hooks/local-gate.mjs`).
 - Commit or push only when asked. Merge by risk tier (`docs/agents/commands.md` § Merging a PR).
 
 ## Hard rules

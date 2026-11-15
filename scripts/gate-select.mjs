@@ -98,7 +98,8 @@ export function listedTrees(text) {
         .split("/");
       return segs[0] === root && (segs.length === 1 || root === ".claude");
     });
-    if (bare || (lsFiles && new RegExp(`(?:^|[("'\`/|:])${esc}(?:[|)"'\`]|\\\\?/)`, "m").test(text))) roots.add(root);
+    if (bare || (lsFiles && new RegExp(`(?:^|[("'\`/|:\\\\])${esc}(?:[|)"'\`]|\\\\?/)`, "m").test(text)))
+      roots.add(root);
   }
   return roots;
 }
