@@ -5,7 +5,7 @@
 Where the tests of a `src` module are, and what each test file is for. Generated; `npm run check:drift`
 fails when it is stale. How to add a test: `docs/testing.md` § 4.
 
-522 test files in `test/`, 284 `src` modules, 106 modules no test imports.
+527 test files in `test/`, 284 `src` modules, 106 modules no test imports.
 
 ## `src` module → tests that import it
 
@@ -30,7 +30,7 @@ Nearest first, then by name; `(+n)` is the rest. Test names are `test/<name>.tes
 - `src/analyze/quantities.ts` (2) — `describe-quantities`, `net-area-budget`
 - `src/analyze/symmetry.ts` (1) — `rect-ring`
 - `src/analyze/wall-faces.ts` (2) — `lint-space-enclosure`, `wall-status`
-- `src/ast.ts` (115) — `arc-radius-exact`, `band`, `circulation-concave`, `circulation-translation`, `closed-vocabularies`, `corner-window`, `cursor-exhaustive`, `d4` (+107)
+- `src/ast.ts` (116) — `arc-radius-exact`, `band`, `circulation-concave`, `circulation-translation`, `closed-vocabularies`, `corner-window`, `cursor-exhaustive`, `d4` (+108)
 - `src/attach.ts` (1) — `attach`
 - `src/axes.ts` (1) — `axes`
 - `src/backends/ascii.ts` (10) — `axes`, `fence`, `furniture-curves-backends`, `opening`, `outdoor`, `room-floor`, `scene-path-prim`, `schedule` (+2)
@@ -90,15 +90,15 @@ Nearest first, then by name; `(+n)` is the rest. Test names are `test/<name>.tes
 - `src/expr-source.ts` (1) — `emit-opening-oracle`
 - `src/expr.ts` (15) — `block-stair`, `cursor-exhaustive`, `expr`, `furniture-relations`, `import-module-lets`, `keep`, `non-finite`, `openings-between` (+7)
 - `src/facade.ts` (1) — `equivariance-corpus`
-- `src/finish.ts` (5) — `finish-levels`, `finish`, `keep`, `lint-dwelling-reading`, `lint-furniture-on-stair`
+- `src/finish.ts` (5) — `finish-levels`, `finish-sheet-degrade`, `keep`, `lint-dwelling-reading`, `lint-furniture-on-stair`
 - `src/fix-apply.ts` (1) — `fix-apply`
 - `src/fix-producers.ts` (2) — `emit-opening-oracle`, `fix-printer`
 - `src/fixture-orientation.ts` (2) — `fixture-orientation`, `rectilinear-sides`
-- `src/fixtures-catalog.ts` (33) — `catalogue-images`, `equivariance-corpus`, `export-dxf-blocks`, `finish-furnish`, `fixture-classifier-drift`, `fixture-orientation`, `furniture-mirror`, `glyph-chirality` (+25)
+- `src/fixtures-catalog.ts` (34) — `catalogue-images`, `equivariance-corpus`, `export-dxf-blocks`, `finish-furnish-bounds`, `finish-furnish`, `fixture-classifier-drift`, `fixture-orientation`, `furniture-mirror` (+26)
 - `src/format.ts` (58) — `axes`, `dim-faces`, `fence`, `furniture-against`, `furniture-lint`, `furniture-rotate`, `opening`, `openings-between` (+50)
 - `src/frame.ts` (44) — `compose-assoc`, `d4`, `equivariance-corpus`, `equivariance-fuzz`, `equivariance-scene`, `frame`, `furniture-mirror`, `symmetry` (+36)
 - `src/furnish-table.ts` (1) — `lint-label-piece-missing`
-- `src/furnish.ts` (7) — `finish-furnish`, `finish-levels`, `finish`, `fuzz`, `keep`, `lint-furniture-on-stair`, `lint-hint-paste`
+- `src/furnish.ts` (12) — `finish-furnish-bounds`, `finish-furnish-laws`, `finish-levels`, `finish-sheet-degrade`, `fuzz`, `keep`, `lint-furniture-on-stair`, `lint-hint-paste` (+4)
 - `src/furniture-relation.ts` (2) — `furniture-relations`, `rect-ring`
 - `src/geometry.ts` (27) — `band`, `circle-enclosure`, `curves`, `dim-thickness-callout`, `doors`, `double-door-byte-identity`, `equivariance-corpus`, `frame` (+19)
 - `src/geometry/arc-band.ts` (1) — `furniture-lint`
@@ -111,14 +111,14 @@ Nearest first, then by name; `(+n)` is the rest. Test names are `test/<name>.tes
 - `src/geometry/joinery.ts` (4) — `joinery-oracle`, `joinery-split-oracle`, `joinery-split`, `joinery`
 - `src/geometry/min-rect.ts` (1) — `min-rect`
 - `src/geometry/polygon.ts` (16) — `circulation-concave`, `dim-thickness-callout`, `label-placement-oracle`, `label-placement`, `label-wrap`, `net-area`, `outdoor`, `polygon-overlap-oracle` (+8)
-- `src/geometry/rect.ts` (10) — `between-face-probes`, `block-stair-winders`, `finish-furnish`, `finish-levels`, `label-placement-oracle`, `label-wrap`, `lint-clearances-kitchen-doors`, `lint-measure` (+2)
+- `src/geometry/rect.ts` (10) — `between-face-probes`, `block-stair-winders`, `finish-furnish-laws`, `finish-levels`, `label-placement-oracle`, `label-wrap`, `lint-clearances-kitchen-doors`, `lint-measure` (+2)
 - `src/geometry/union.ts` (3) — `band`, `joinery-oracle`, `union`
 - `src/grammar/tokens.ts` (32) — `arch-highlight`, `block-stair-lint`, `closed-vocabularies`, `corner-window`, `door-enums`, `doors`, `element-facets`, `element-keyword-drift` (+24)
 - `src/hatches.ts` (8) — `export-pdf`, `floor-materials-byte-identity`, `joinery-split-oracle`, `joinery-split`, `model-range`, `outdoor`, `room-floor`, `sheet-text`
 - `src/impact.ts` (2) — `rectilinear-doors`, `rectilinear-rooms`
 - `src/import.ts` (31) — `block-stair-byte-identity`, `corner-window-byte-identity`, `dim-thickness-callout`, `drawing-budget`, `floor-materials-byte-identity`, `furniture-relations`, `gaps-byte-identity`, `keep` (+23)
 - `src/import/limits.ts` (1) — `openplan3d-malformed`
-- `src/index.ts` (387) — `acc-metadata`, `access-graph`, `access-policy`, `accessible-svg`, `agent-gallery`, `alias-match`, `anchors`, `annotate` (+379)
+- `src/index.ts` (392) — `acc-metadata`, `access-graph`, `access-policy`, `accessible-svg`, `agent-gallery`, `alias-match`, `anchors`, `annotate` (+384)
 - `src/input-limit.ts` (2) — `import-rooted`, `workspace-seams`
 - `src/intent-concepts.ts` (2) — `vocabulary-living-dining`, `vocabulary-matcher-oracle`
 - `src/intent.ts` (1) — `site`
@@ -126,7 +126,7 @@ Nearest first, then by name; `(+n)` is the rest. Test names are `test/<name>.tes
 - `src/label-fit.ts` (1) — `label-fit`
 - `src/label-placement.ts` (3) — `label-placement-oracle`, `label-placement`, `label-wrap`
 - `src/lexer.ts` (8) — `diagnostics-volume`, `diagnostics`, `expr`, `imperial-input`, `model-range`, `parser-recovery-metric`, `stage-cache`, `unit-suffix`
-- `src/lint.ts` (54) — `annotation-collisions`, `annotation-small-rooms`, `block-stair-shaft`, `block-stair`, `equivariance-corpus`, `finish-furnish`, `lint-coverage`, `lint-fix-texts` (+46)
+- `src/lint.ts` (54) — `annotation-collisions`, `annotation-small-rooms`, `block-stair-shaft`, `block-stair`, `equivariance-corpus`, `finish-furnish-bounds`, `lint-coverage`, `lint-fix-texts` (+46)
 - `src/lint/clearance-measure.ts` (2) — `lint-clearances-kitchen-doors`, `repair-no-worse`
 - `src/lint/context.ts` (49) — `block-stair-landing`, `block-stair-lint`, `block-stair-shaft`, `block-stair`, `lint-clearances-kitchen-doors`, `lint-clearances-wc-window`, `lint-exterior-ring`, `lint-fix-texts` (+41)
 - `src/lint/coverage.ts` (5) — `annotation-collisions`, `error-catalog-families`, `lint-coverage`, `lint-dwelling-reading`, `lint-rule-order`
@@ -160,7 +160,7 @@ Nearest first, then by name; `(+n)` is the rest. Test names are `test/<name>.tes
 - `src/plan-json.ts` (11) — `element-facets`, `format`, `garage`, `plan-json-dropped`, `plan-json-instances`, `polygon-rooms`, `section`, `sheet-annotations` (+3)
 - `src/plan-json/to-json.ts` (1) — `rect-ring`
 - `src/registry.ts` (44) — `annotation-collisions`, `block-stair-byte-identity`, `block-stair`, `corner-window-byte-identity`, `corner-window`, `dim-thickness-callout`, `drawing-budget`, `floor-materials-byte-identity` (+36)
-- `src/repair.ts` (2) — `finish-furnish`, `finish`
+- `src/repair.ts` (2) — `finish-furnish-laws`, `finish-never-worse`
 - `src/reroll.ts` (3) — `keep`, `reroll-findrun-oracle`, `reroll`
 - `src/room-datums.ts` (5) — `openings-between`, `room-datums`, `segment-select`, `shared-grid-byte-identity`, `keep`
 - `src/room-tiling.ts` (7) — `rectilinear-doors`, `rectilinear-rooms-byte-identity`, `rectilinear-rooms`, `rectilinear-sides`, `wall-between-around`, `walls-from-rooms-clauses`, `walls-from-rooms`
@@ -190,7 +190,7 @@ Nearest first, then by name; `(+n)` is the rest. Test names are `test/<name>.tes
 - `src/wall-lowering.ts` (2) — `joinery-split`, `open-crossing`
 - `src/wall-ref.ts` (2) — `rectilinear-rooms`, `walls-from-rooms`
 - `src/while-fix.ts` (1) — `while-fix`
-- `src/world.ts` (112) — `block-stair-byte-identity`, `circulation-unmeasured`, `corner-window-byte-identity`, `corner-window`, `dim-thickness-callout`, `drawing-budget`, `drawing-overflow`, `equivariance-corpus` (+104)
+- `src/world.ts` (117) — `block-stair-byte-identity`, `circulation-unmeasured`, `corner-window-byte-identity`, `corner-window`, `dim-thickness-callout`, `drawing-budget`, `drawing-overflow`, `equivariance-corpus` (+109)
 
 ## Test files
 
@@ -370,9 +370,14 @@ The first sentence of each file's header comment.
 - `test/fast-check-policy.test.ts` — The fast-check run policy (docs/testing.md § 3, "Property tests without a seed").
 - `test/fault-injection.test.ts` — fault-injection gate — the L1 deterministic pipeline heals seeded defects; fault-injection gate — a clean plan is untouched.
 - `test/fence.test.ts` — The `fence` element.
-- `test/finish-furnish.test.ts` — furnish — the corpus is not empty; furnish law — placement is relative: `against wall` or `in <room> anchor`, never `at (x,y)`; furnish law — fill only: a room…
+- `test/finish-corpus-laws.test.ts` — finish — the corpus is not empty; finish law 1 — fixpoint; finish law 3 — an already-sheeted plan is a byte no-op; finish law 5 — a sheet finish wrote holds the drawing.
+- `test/finish-furnish-bounds.test.ts` — furnish laws — bounded, generated rows of rooms, the table and the docs, the profiles, relational rooms, wall runs, smaller placement rules, wet rooms (PS2.45).
+- `test/finish-furnish-laws.test.ts` — furnish laws — never worse, pure insertion, scope, named (issue #370), several uses, the default run furnishes first.
+- `test/finish-furnish.test.ts` — furnish — the corpus is not empty; placement is relative; fill only (a room that holds furniture, a partly furnished room).
 - `test/finish-levels.test.ts` — finish on `level` blocks — the issue's plans; finish on `level` blocks — the floor a piece stands on; finish on `level` blocks — the same id on several levels;…
-- `test/finish.test.ts` — finish — the corpus is not empty; finish law 1 — fixpoint: finishing a finished plan changes nothing; finish law 2 — never worse: no error and no new diagnostic…
+- `test/finish-never-worse.test.ts` — finish law 2 — never worse: no error and no new diagnostic code, also under every lint profile.
+- `test/finish-sheet-degrade.test.ts` — finish — the sheet stage degrades instead of giving up.
+- `test/finish.test.ts` — finish law 4 — no core path moved; finish law 6 — a source that does not compile is returned untouched; finish — fill only what is missing; choosing the sheet; an authored sheet is kept; stages; edge layouts; the titl...
 - `test/fix-apply.test.ts` — Data (piece table); applyFixes.
 - `test/fix-commute.test.ts` — Property-based laws over `applyFixes` (`src/fix-apply.ts`), generalising the example-based cases already pinned in `test/fix-apply.test.ts` to fast-check permutations/ranges: - **Disjoint admissible fixes commute**: h...
 - `test/fix-printer.test.ts` — `emitOpening` (W4b) rebuilds a whole door/window/opening statement through the shared printer (`printDoc(statementText(...))`) instead of a second, hand-written enumeration of clauses, precisely so a rebuild never sil...
