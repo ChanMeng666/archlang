@@ -609,9 +609,7 @@ export function renderReport(haikuIn: ModelInput, sonnetIn: ModelInput): string 
     if (!a || a.sb.length === 0) return [];
     const counts = new Map<number, number>();
     for (const { s } of a.sb) counts.set(s, (counts.get(s) ?? 0) + 1);
-    const parts = [...counts.keys()]
-      .sort((x, y) => y - x)
-      .map((s) => `${s > 0 ? `+${s}` : s}: ${counts.get(s) ?? 0}`);
+    const parts = [...counts.keys()].sort((x, y) => y - x).map((s) => `${s > 0 ? `+${s}` : s}: ${counts.get(s) ?? 0}`);
     return [`- ${model}, complete briefs by s_b: ${parts.join(" · ")}`];
   });
   if (histogram.length > 0) out.push(...histogram, "");
