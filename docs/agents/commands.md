@@ -31,8 +31,9 @@
   before `gen:llms` before `gen:cli` (the CLI reference states the bundle size `gen:llms`
   measures). Run `gen:example-svgs` after any rendering change.
 - CI runs the vitest include list in `vitest.config.ts` — `test/`, `playground/test/`, `packages/*/test/`,
-  `editors/vscode/test/` — in shards, `--shard=N/7` on Node 22 and `N/5` on the main-only legs; only
-  CI's nightly `full-matrix` runs `npm test`. `check:test-wiring` fails on a test outside it.
+  `editors/vscode/test/` — in shards, `--shard=N/7` on Node 22 and `N/5` on Node 18, Node 20 and Windows.
+  No `ci.yml` job runs the whole suite; CI's nightly `full-matrix` and the release's `prepublishOnly` do,
+  unsharded. `check:test-wiring` fails on a test outside it.
 - `*:build:only` scripts skip the core rebuild; `npm run build` must have run.
 - `npm run sync:main` (`scripts/sync-main.mjs`) merges `origin/main` into the current PR branch: generated
   artifacts (whole-file ones on both sides) take `main`'s side and are regenerated (`--no-gen` skips
