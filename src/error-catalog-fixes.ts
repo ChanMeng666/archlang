@@ -50,7 +50,7 @@ export const CATALOG_FIXES: Readonly<Record<string, string>> = {
   E_FURN_FLUSH: "Anchor the piece to the edge you want it flush with (`anchor bottom flush`, `anchor top-left flush`), or drop `flush` and keep it centred.",
   E_FURN_ROOM: "Use the id of an existing `room id=…`, or drop the `in` clause.",
   E_FURN_ROTATE: "Use a quarter-turn: `rotate 0|90|180|270`.",
-  E_FURN_SIZE: "Give the item a positive `size W x H`.",
+  E_FURN_SIZE: "Write a positive `size W x H`, for a kind with no footprint too; on a `grid`, keep each side at least half a grid step, or set a finer `grid`.",
   E_HEIGHT_RANGE: "Write the height in millimetres, or drop the clause (the fix does exactly that): a `height`, `sill` or `head` then inherits its default — 3000 for a storey, 2100 for a door or window head, 900 for a window sill — and a storey without its `slab` or `clear` simply states none.",
   E_IMPERIAL_FORM: "Write `12ft6in` for 12'6\", `0.5in` for 1/2\", and put feet before inches.",
   E_IMPORT_BAD_SPEC: "Use a relative path (\"lib/x.arch\") or a namespaced spec (\"@scope/name:1.0.0\").",

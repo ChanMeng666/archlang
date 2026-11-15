@@ -5,7 +5,7 @@
 Where the tests of a `src` module are, and what each test file is for. Generated; `npm run check:drift`
 fails when it is stale. How to add a test: `docs/testing.md` § 4.
 
-530 test files in `test/`, 285 `src` modules, 106 modules no test imports.
+531 test files in `test/`, 285 `src` modules, 106 modules no test imports.
 
 ## `src` module → tests that import it
 
@@ -45,7 +45,7 @@ Nearest first, then by name; `(+n)` is the rest. Test names are `test/<name>.tes
 - `src/cli/commands-render.ts` (3) — `keep-impact-depends`, `plan-json-dropped`, `watch-arming`
 - `src/cli/context-starter.ts` (1) — `context-starter`
 - `src/cli/help.ts` (1) — `cli-help`
-- `src/cli/io.ts` (81) — `block-stair-byte-identity`, `clause-order-byte-identity`, `cli-contract`, `cli-exit-parse`, `cli-expected-hash`, `cli-flag-matrix`, `cli-help`, `cli-output-format` (+73)
+- `src/cli/io.ts` (82) — `block-stair-byte-identity`, `clause-order-byte-identity`, `cli-contract`, `cli-exit-parse`, `cli-expected-hash`, `cli-flag-matrix`, `cli-help`, `cli-output-format` (+74)
 - `src/cli/link.ts` (1) — `cli-link`
 - `src/cli/review.ts` (1) — `cli-preview-review`
 - `src/cli/run.ts` (48) — `axes`, `cli-batch`, `cli-commands`, `cli-context`, `cli-contract`, `cli-exit-parse`, `cli-expected-hash`, `cli-finish` (+40)
@@ -65,7 +65,7 @@ Nearest first, then by name; `(+n)` is the rest. Test names are `test/<name>.tes
 - `src/elements/dim.ts` (1) — `annotation-collisions`
 - `src/elements/door.ts` (1) — `window-kinds`
 - `src/elements/facets.ts` (1) — `element-facets`
-- `src/elements/fixtures-glyphs.ts` (24) — `catalogue-images`, `cli-manifest`, `drawing-budget`, `equivariance-scene`, `finish-furnish`, `fixture-classifier-drift`, `furniture-mirror`, `glyph-chirality` (+16)
+- `src/elements/fixtures-glyphs.ts` (25) — `catalogue-images`, `cli-manifest`, `drawing-budget`, `equivariance-scene`, `finish-furnish`, `fixture-classifier-drift`, `footprint-any-placement`, `furniture-mirror` (+17)
 - `src/elements/furniture.ts` (11) — `furniture-relations`, `furniture-rotate`, `glyph-chirality`, `glyph-lib`, `glyphs-kitchen`, `glyphs-living`, `glyphs-misc`, `glyphs-new-families` (+3)
 - `src/elements/glyph-chirality.ts` (12) — `furniture-mirror`, `glyph-chirality`, `glyph-lib`, `glyphs-bath`, `glyphs-bedroom`, `glyphs-kitchen`, `glyphs-living`, `glyphs-misc` (+4)
 - `src/elements/glyph-lib.ts` (18) — `doors`, `equivariance-scene`, `furniture-mirror`, `glyph-chirality`, `glyph-lib`, `glyphs-batch2`, `glyphs-bath`, `glyphs-bedroom` (+10)
@@ -95,7 +95,7 @@ Nearest first, then by name; `(+n)` is the rest. Test names are `test/<name>.tes
 - `src/fix-apply.ts` (1) — `fix-apply`
 - `src/fix-producers.ts` (2) — `emit-opening-oracle`, `fix-printer`
 - `src/fixture-orientation.ts` (2) — `fixture-orientation`, `rectilinear-sides`
-- `src/fixtures-catalog.ts` (34) — `catalogue-images`, `equivariance-corpus`, `export-dxf-blocks`, `finish-furnish-bounds`, `finish-furnish`, `fixture-classifier-drift`, `fixture-orientation`, `furniture-mirror` (+26)
+- `src/fixtures-catalog.ts` (35) — `catalogue-images`, `equivariance-corpus`, `export-dxf-blocks`, `finish-furnish-bounds`, `finish-furnish`, `fixture-classifier-drift`, `fixture-orientation`, `footprint-any-placement` (+27)
 - `src/format.ts` (58) — `axes`, `dim-faces`, `fence`, `furniture-against`, `furniture-lint`, `furniture-rotate`, `opening`, `openings-between` (+50)
 - `src/frame.ts` (44) — `compose-assoc`, `d4`, `equivariance-corpus`, `equivariance-fuzz`, `equivariance-scene`, `frame`, `furniture-mirror`, `symmetry` (+36)
 - `src/furnish-table.ts` (1) — `lint-label-piece-missing`
@@ -119,11 +119,11 @@ Nearest first, then by name; `(+n)` is the rest. Test names are `test/<name>.tes
 - `src/impact.ts` (2) — `rectilinear-doors`, `rectilinear-rooms`
 - `src/import.ts` (31) — `block-stair-byte-identity`, `corner-window-byte-identity`, `dim-thickness-callout`, `drawing-budget`, `floor-materials-byte-identity`, `furniture-relations`, `gaps-byte-identity`, `keep` (+23)
 - `src/import/limits.ts` (1) — `openplan3d-malformed`
-- `src/index.ts` (394) — `acc-metadata`, `access-graph`, `access-policy`, `accessible-svg`, `agent-gallery`, `alias-match`, `anchors`, `annotate` (+386)
+- `src/index.ts` (395) — `acc-metadata`, `access-graph`, `access-policy`, `accessible-svg`, `agent-gallery`, `alias-match`, `anchors`, `annotate` (+387)
 - `src/input-limit.ts` (2) — `import-rooted`, `workspace-seams`
 - `src/intent-concepts.ts` (2) — `vocabulary-living-dining`, `vocabulary-matcher-oracle`
 - `src/intent.ts` (1) — `site`
-- `src/ir.ts` (169) — `access-policy`, `arc-radius-exact`, `attach`, `axes`, `between-face-probes`, `block-stair-byte-identity`, `block-stair-frames`, `block-stair-winders` (+161)
+- `src/ir.ts` (171) — `access-policy`, `arc-radius-exact`, `attach`, `axes`, `between-face-probes`, `block-stair-byte-identity`, `block-stair-frames`, `block-stair-winders` (+163)
 - `src/label-fit.ts` (1) — `label-fit`
 - `src/label-placement.ts` (3) — `label-placement-oracle`, `label-placement`, `label-wrap`
 - `src/lexer.ts` (9) — `clause-order-byte-identity`, `diagnostics-volume`, `diagnostics`, `expr`, `imperial-input`, `model-range`, `parser-recovery-metric`, `stage-cache` (+1)
@@ -156,7 +156,7 @@ Nearest first, then by name; `(+n)` is the rest. Test names are `test/<name>.tes
 - `src/num-format.ts` (14) — `annotation-collisions`, `dim-thickness-callout`, `emit-opening-oracle`, `imperial-input`, `keep`, `lint-ruleset-values`, `model-range`, `net-area-stamp` (+6)
 - `src/opening-relation.ts` (3) — `openings-between`, `rectilinear-doors`, `rectilinear-sides`
 - `src/opening-schedule.ts` (2) — `sheet-annotations`, `window-kinds`
-- `src/parser.ts` (147) — `arc-radius-exact`, `attach`, `axes`, `block-stair-byte-identity`, `block-stair`, `chrome-hidden`, `circle-enclosure`, `circulation-concave` (+139)
+- `src/parser.ts` (149) — `arc-radius-exact`, `attach`, `axes`, `block-stair-byte-identity`, `block-stair`, `chrome-hidden`, `circle-enclosure`, `circulation-concave` (+141)
 - `src/pipeline.ts` (1) — `work-counts`
 - `src/plan-json.ts` (11) — `element-facets`, `format`, `garage`, `plan-json-dropped`, `plan-json-instances`, `polygon-rooms`, `section`, `sheet-annotations` (+3)
 - `src/plan-json/to-json.ts` (1) — `rect-ring`
@@ -191,7 +191,7 @@ Nearest first, then by name; `(+n)` is the rest. Test names are `test/<name>.tes
 - `src/wall-lowering.ts` (2) — `joinery-split`, `open-crossing`
 - `src/wall-ref.ts` (2) — `rectilinear-rooms`, `walls-from-rooms`
 - `src/while-fix.ts` (1) — `while-fix`
-- `src/world.ts` (118) — `block-stair-byte-identity`, `circulation-unmeasured`, `clause-order-byte-identity`, `corner-window-byte-identity`, `corner-window`, `dim-thickness-callout`, `drawing-budget`, `drawing-overflow` (+110)
+- `src/world.ts` (119) — `block-stair-byte-identity`, `circulation-unmeasured`, `clause-order-byte-identity`, `corner-window-byte-identity`, `corner-window`, `dim-thickness-callout`, `drawing-budget`, `drawing-overflow` (+111)
 
 ## Test files
 
@@ -391,6 +391,7 @@ The first sentence of each file's header comment.
 - `test/fixture-orientation.test.ts` — the shared back-edge ⇄ quarter-turn mapping; backingWallForRoomEdge / wallBackedEdges; backCandidateEdges — the footprint's aspect constrains the back; derived…
 - `test/floor-materials-byte-identity.test.ts` — The floor words `timber`, `carpeting`, `stone` (`room … floor <word>`) and the `outdoor` kinds `sand`, `soil` (card RM8.7, design `docs/plans/product-roadmap/design/visual-language.md` §3): the byte-identity law, one...
 - `test/font-cjk-pins.test.ts` — the CJK font package's version, its exact pin in the core, its files and its recorded SHA-256 are pinned on every PR (release.yml only checked the version at tag time)
+- `test/footprint-any-placement.test.ts` — A catalogued footprint under every placement (card CO-2): `furniture wc in bath anchor right` and `furniture wc at (x,y)` may leave `size` out, as `against` always could, and a kind with no footprint is `E_FURN_SIZE`...
 - `test/format.test.ts` — T5.2 — `arch fmt` formatter.
 - `test/frame.test.ts` — frame algebra — signed permutation + translation; tp — mapping a point local → global; transformRect — a top-left + size box; transformDeg — carrying a fixture'…
 - `test/furniture-against.test.ts` — furniture against wall.

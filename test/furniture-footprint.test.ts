@@ -7,9 +7,10 @@ import { compile } from "../src/index.js";
 import type { RFurniture } from "../src/ir.js";
 
 /**
- * Catalogued default footprints: a wall-anchored fixture may omit `size` and pick up
+ * Catalogued default footprints: a fixture may omit `size` under any placement and pick up
  * its conventional footprint from the frozen catalog (closed-form, ADR 0005/0006).
- * `at` placement and uncatalogued categories still require an explicit size.
+ * A kind with no footprint still requires an explicit size (`test/footprint-any-placement.test.ts`
+ * holds the other placements and the orientation rule).
  */
 
 const furnOf = (src: string): RFurniture | undefined =>
@@ -37,9 +38,11 @@ describe("catalogued default footprints", () => {
     expect({ w: f!.size.w, h: f!.size.h }).toEqual({ w: 800, h: 500 });
   });
 
-  it("errors when an `at`-placed fixture omits its size (no orientation to apply a footprint)", () => {
+  it("an `at`-placed fixture with no size takes the footprint too, back north at rotate 0", () => {
     const { diagnostics } = compile(plan(`furniture wc at (1000,1000)`), { noCache: true });
-    expect(diagnostics.some((d) => d.code === "E_FURN_SIZE")).toBe(true);
+    expect(diagnostics.filter((d) => d.severity === "error")).toEqual([]);
+    const f = furnOf(plan(`furniture wc at (1000,1000)`));
+    expect({ w: f!.size.w, h: f!.size.h }).toEqual({ w: 400, h: 700 });
   });
 
   it("errors when an uncatalogued category omits its size", () => {

@@ -25,8 +25,9 @@ export interface FixtureSpec {
   /**
    * A conventional default footprint (mm) in **wall-relative** axes — `along` runs
    * parallel to the wall the fixture backs onto, `depth` projects into the room. Lets
-   * `furniture <cat> against wall <id>` omit an explicit `size`; closed-form, never a
-   * guess among alternatives (ADR 0005). Omitted for free-standing furniture.
+   * `furniture <cat>` omit an explicit `size` under any placement (`at`/`in` turn it to plan
+   * axes, `elements/furniture.ts`); closed-form, never a guess among alternatives (ADR 0005).
+   * Omitted for free-standing furniture.
    */
   footprint?: { along: number; depth: number };
   /**
@@ -299,7 +300,7 @@ const CATALOG: Readonly<Record<string, FixtureSpec>> = Object.freeze({
   // models writing for it) already use — `bed`, `wardrobe`, `sofa`, `desk`, `washer` — and
   // that until now fell through to "unknown category": no footprint, no wall requirement,
   // no orientation. Catalogued, each one gains the semantics its name implies, which for
-  // most of them means exactly one thing: a `footprint`, so `against wall` can omit `size`.
+  // most of them means exactly one thing: a `footprint`, so a placement can omit `size`.
   //
   // ## `requiresWall` means SERVICES, and this vocabulary is where that starts to matter
   //

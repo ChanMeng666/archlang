@@ -1810,6 +1810,33 @@ Cloudflare answers a `Range` request for `/3d/*.mp4` with 200, so Safari may not
 the sites fall back to the poster and an MP4 link. **Gate:** a real Safari check; if it fails,
 serve the MP4s from a host that answers 206, or keep the fallback as the design.
 
+## Catalogued footprints under every placement (card CO-2, PR #809, 2026-11-16)
+
+Left by the review of that PR (review-cost cap). CO.1 is a hole that predates it; CO.2 records three
+behaviours it documents rather than changes.
+
+### CO.1 · Under `grid`, an `against` piece with no `size` snaps its footprint silently — `todo`
+
+`furniture.resolve()` snaps a catalogued footprint with `ctx.snap` under every placement, but only
+`at` and `in` report it: `against wall` and `against <room>.<edge>` raise neither `W_GRID_SNAPPED`
+nor, when a side snaps to 0 (a `mirror`'s 50 mm depth on `grid 200`), `E_FURN_SIZE`. This was true
+on `main` before CO-2, which left it alone because the fix moves corpus rows: noting the snap for
+`against` too moved 31 of the 528 `.arch` surface digests (examples, first-contact plans,
+`test/walls-from-rooms/two-bed.arch`), each by a new warning. One way: route `against` through the
+same `noteDefaultSize` (`src/elements/furniture.ts`), and re-measure each moved row with its reason.
+**Gate:** the example law of `test/footprint-any-placement.test.ts` and every other pinned row
+re-measured with the moved fields named; a `grid` row for `against` in that test's `FORMS`.
+
+### CO.2 · Three documented limits of a defaulted footprint — `declared`
+
+(1) `facing <id>` settles after placement, so it never turns a default: a turn onto the footprint's
+short side is `E_FACING_TRANSPOSED`, which names the `size` to write. (2) Under `in … anchor <corner>`
+with both edges walled, the footprint stays at `rotate 0` and the existing derivation backs it onto
+the edge that shape fits, the north or south wall for a deep piece such as a WC. (3) A polygon
+room's refusal (`a WxH piece there leaves the floor`) quotes the size as resolved, which may be the
+footprint laid along an edge, not the catalogue's along × depth. (1) and (2) are in
+`docs/furniture.md` § three placement modes; change one only with its byte-identity rows.
+
 ## Site chrome (found while fixing the nav overflow, 2026-09-20)
 
 ### N.1 · The nav row needs 1152px, and the hamburger persists until then (a WANT, not a bug) — `todo`

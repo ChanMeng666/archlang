@@ -200,7 +200,7 @@ describe("every snippet compiles", () => {
 });
 
 describe("the furniture sentence is true", () => {
-  it.each(STARTER_SIZED)("%s may omit size against a wall", (piece) => {
+  it.each(STARTER_SIZED)("%s may omit size against an edge", (piece) => {
     expect(errorCodes(probe(`furniture ${piece} against bath.right`))).toEqual([]);
   });
 
@@ -209,8 +209,14 @@ describe("the furniture sentence is true", () => {
     expect(errorCodes(withStatement(`furniture ${piece} against living.top`))).toEqual(["E_FURN_SIZE"]);
   });
 
-  it.each([...STARTER_SIZED, ...STARTER_UNSIZED])("%s: `in <room> anchor` always needs a size", (piece) => {
+  it.each(STARTER_SIZED)("%s may omit size under `in <room> anchor` and `at` too", (piece) => {
+    expect(errorCodes(probe(`furniture ${piece} in bath anchor top`))).toEqual([]);
+    expect(errorCodes(probe(`furniture ${piece} at (1700,200)`))).toEqual([]);
+  });
+
+  it.each(STARTER_UNSIZED)("%s: `in <room> anchor` and `at` without size are E_FURN_SIZE", (piece) => {
     expect(errorCodes(probe(`furniture ${piece} in bath anchor top`))).toEqual(["E_FURN_SIZE"]);
+    expect(errorCodes(probe(`furniture ${piece} at (1700,200)`))).toEqual(["E_FURN_SIZE"]);
   });
 });
 

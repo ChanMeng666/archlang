@@ -362,6 +362,13 @@ const POSITIVE: Snippet[] = [
       `${BOX}\n  room id=bath at (0,0) size 3000x2500 uses bath\n  furniture basin against wall w1 segment 0 offset 1500 side right in bath`,
     ),
   },
+  {
+    keyword: "furniture",
+    note: "any placement may omit `size` for a catalogued fixture: `at`, `in … anchor`, `in … centered`",
+    src: plan(
+      `${BOX}\n  room id=bath at (0,0) size 3000x2500 uses bath\n  furniture wc in bath anchor top\n  furniture basin at (2000,1500) rotate 90\n  furniture shower in bath centered`,
+    ),
+  },
 
   {
     keyword: "furniture",

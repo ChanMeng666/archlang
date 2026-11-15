@@ -51,7 +51,7 @@ export interface StarterError {
 
 /**
  * Five errors, each with the one-line fix that clears it: a clause written twice (clauses come in
- * any order, so a repeat is easy to write), `in … anchor` without a size, a bare `at <mm>` on an
+ * any order, so a repeat is easy to write), a piece with no catalogued footprint and no size, a bare `at <mm>` on an
  * edge, a relational opening's nib, an offset past the end of an edge.
  */
 export const STARTER_ERRORS: readonly StarterError[] = [
@@ -63,9 +63,9 @@ export const STARTER_ERRORS: readonly StarterError[] = [
   },
   {
     code: "E_FURN_SIZE",
-    fix: "`in` always needs a `size`:",
-    bad: "furniture wc in bath anchor top",
-    good: "furniture wc in bath anchor top size 400x700",
+    fix: "a piece with no catalogued footprint needs a `size`:",
+    bad: "furniture desk in bath anchor top",
+    good: "furniture desk in bath anchor top size 1200x600",
   },
   {
     code: "E_OPENING_DATUM",
@@ -87,9 +87,9 @@ export const STARTER_ERRORS: readonly StarterError[] = [
   },
 ];
 
-/** Pieces `furniture … against` may leave without a `size` (a catalogued footprint); each is run. */
+/** Pieces `furniture` may leave without a `size` under any placement (a catalogued footprint); each is run. */
 export const STARTER_SIZED = ["wc", "bed", "tv_unit"] as const;
-/** Pieces that always need a `size`, `against` or not (`E_FURN_SIZE`); each is run. */
+/** Pieces that always need a `size`, whatever the placement (`E_FURN_SIZE`); each is run. */
 export const STARTER_UNSIZED = ["sofa", "desk", "table", "chair", "armchair"] as const;
 
 /** The one furniture line the lead example does not carry. */
@@ -182,8 +182,8 @@ ${lead}
   \`${pick("doorOn")}\`
 - window: \`${pick("window")}\`
 - furniture: \`${pick("furniture")}\`
-  \`in\` always needs a \`size\`. \`against\` may omit it only for a catalogued piece, as in
-  \`${STARTER_AGAINST}\` (${STARTER_SIZED.join(", ")}, ...), never for
+  A piece with a catalogued footprint may omit \`size\` under any placement, as in
+  \`${STARTER_AGAINST}\` (${STARTER_SIZED.join(", ")}, ...); never
   ${STARTER_UNSIZED.join(", ")}.
 - sheet: ${STARTER_SHEET.map((s) => `\`${s}\``).join(", ")}; \`${cli} finish\` adds the rest.
 
