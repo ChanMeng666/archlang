@@ -32,14 +32,14 @@ merge procedure and the CI job map in `commands.md`.
   When done, write `free` ONLY if the file still holds your line (never unconditionally). If another line
   holds it, wait up to 15 minutes, then stop, push and report "gate not run". The coordinator, not an executor,
   frees a stale line, and only after checking that no heavy process is running. A release executor has priority.
-- **Serial merge queue** (`mq.sh`, kept in `claude-kept/2026-11-10-archlang-roadmap-v2/`; run from the primary
-  checkout as `mq.sh <pr> …`). Required checks are strict, so it takes one PR at a time: wait on its own state
-  file (`<MQ_DIR>/state.txt`, `free` or `busy <pid> <prs>`), `gh pr update-branch` when BEHIND, wait for every
-  check on the new head, then `gh pr merge --merge --match-head-commit <full SHA>`; it never deletes anything and
-  stops with the reason when checks fail or the head moved. Its sync step is superseded: never let it run
-  `gh pr update-branch`. Sync with `npm run sync:main -- --push` in the PR's worktree, then stop for the red
-  team on the merged head (`commands.md` § Merging a PR, steps 2 and 4); only then hand the PR to the queue
-  to wait for checks and merge.
+- **Merge train, not a serial queue.** Required checks are strict, so the old serial queue (`mq.sh`, kept in
+  `claude-kept/2026-11-10-archlang-roadmap-v2/`) synced and merged one PR at a time; it is superseded, and its
+  `gh pr update-branch` step must never run. Land reviewed PRs with `npm run train -- <pr> …`, then the red
+  team on the train head, then `npm run train -- --land <train pr> --wait` (`commands.md` § Merging a PR,
+  step 2). The build runs `gen:all`: hold the heavy lock. One train at a time: a second train's base goes
+  stale when the first lands, and `--land` then says "rebuild". The train's worktree sits in the primary's
+  `.claude/worktrees/train-<stamp>` with a `node_modules` junction; `--land` and `--abandon` unlink it and
+  remove the worktree, so never delete one by hand.
 - **Name every scratchpad file uniquely** (card or agent prefix), not just the state file: parallel agents
   overwrote each other's `pr-body.md`.
 - **When the machine is busy, a small edit is committed and reported "gate not run"** rather than held in a
