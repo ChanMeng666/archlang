@@ -1123,7 +1123,7 @@ Playground：Chromium `--shard=1/2`、`2/2` 两个 job，Firefox 与 WebKit 的 
 
 照 `../ci-throughput-research.md` §9 的命令重取 §7 的表，**另加** §10.1 各重开条件要的量：每个合并的 PR 同步几次、P90 开 → 合、job 排队时间中位数、`check-changelog-unreleased` 拒掉 union 合并条目的次数、合并造成的 `main` 事故数（TP4 的数法）、每个 job 的中位时长。写在 §10.2 下面；触发了哪一行就记进本节新的一张卡。
 
-**2026-11-15 之后（RM-D48）：** 合并列车（FT2，#788）、已证明的 push（FT1，#785）与更短的运行（FT3a，#794；FT3c，#798）已合并，FT4（#795）在评审中；记录在 `../ci-throughput-research.md` §12。下面是它留下的卡，都是线下，一次一张。
+**2026-11-15 之后（RM-D48）：** 合并列车（FT2，#788）、已证明的 push（FT1，#785）与更短的运行（FT3a，#794；FT3c，#798；FT4，#795，列车 #801，`4f432ca1`）已合并；记录在 `../ci-throughput-research.md` §12。下面是它留下的卡，都是线下，一次一张。
 
 ### TR1 · 列车脚本加固（2026-11-15 加） — `todo` · 未估 · sonnet · 依赖无（线下）
 
@@ -1147,11 +1147,15 @@ Playground：Chromium `--shard=1/2`、`2/2` 两个 job，Firefox 与 WebKit 的 
 
 ### TR6 · 复测（2026-11-15 加，取代 TP5） — `todo` · 0.5 日 · sonnet · 依赖 FT1–FT3 合并后又过了 7 天的合并
 
-照 `../ci-throughput-research.md` §9 的命令重取，量：PR 运行与列车运行的中位数、开 → 合的中位数与 P90、每天几列车、每列车几个成员、`main` push 中已证明的占比、列车红了几次及原因、`main` 红率、回滚率、PR 的 CI 失败率、典型改动上 `check:quick` 的墙钟。护栏同 §7：`main` 红率或回滚率升高，就是时间挪走了而不是省下了。写在 `../ci-throughput-research.md` §12 下面。
+照 `../ci-throughput-research.md` §9 的命令重取，量：PR 运行与列车运行的中位数、开 → 合的中位数与 P90、每天几列车、每列车几个成员、`main` push 中已证明的占比、列车红了几次及原因、`main` 红率、回滚率、PR 的 CI 失败率、典型改动上 `check:quick` 的墙钟（取 TR8 的成对计时）。护栏同 §7：`main` 红率或回滚率升高，就是时间挪走了而不是省下了。写在 `../ci-throughput-research.md` §12 下面。
 
 ### TR7 · finish 拆分之后的文字（2026-11-15 加） — `todo` · 0.2 日 · sonnet · 依赖无（线下）
 
 `.claude/commands/new-fixture-family.md:54`（由 `docs/ci-train-procedure` 那个 PR 做）；ADR 0024、0025 与 `test/cli-finish.test.ts:13` 仍指旧的单个文件；`test/finish.test.ts` 的文件头仍写"the six laws are named in the suite titles below"（定律 1、2、3、5 已移走，头注释由 `docs/ci-train-procedure` 改）。不许：改测试代码。
+
+### TR8 · 本地门禁的残余（2026-11-15 加，出自 #795 的最后一轮评审） — `todo` · 未估 · sonnet · 依赖无（线下）
+
+(a) `docs/agents/commands.md` 里一个过时的算出来的数（"a `src/`-only change adds 19 scanners and 7.5 recorded seconds"，合并时是 20 个和 11.8 秒）：删掉数字，上限已经够说明；(b) `scripts/check-quick.mjs` 头注释的笔误（"(`treeGuards`; at / within 15"）；(c) 源码树扫描器的判定：数任何带引号的 `"src"`（误判 `dataset` 4.3 s、`docs-page-meta`、`docs-sync-list`），不跟随辅助函数（漏掉 `test/sync-main.test.ts`），没有 `packages/` 根（漏掉 `test/workspace-seams.test.ts`）；(d) `test/gate-select.test.ts:80` 拼出一个字符串，被 import 图的正则读成对 `src/index.js` 的 import（使 `module-map.md` 与 `test/INDEX.md` 的 importer 数各多 1）；(e) 额外文件总数加一个 25 的上限；(f) 在空闲的机器上做一次成对计时：同一个一行的 `src/` 改动，分别用 #795 之前与之后的 `origin/main` 的门禁（现有只有负载下的 136、319、119、252 s，估计 30–35 s，置信度低）。不许：把 `typecheck:all` 或构建放回门禁。
 
 ---
 

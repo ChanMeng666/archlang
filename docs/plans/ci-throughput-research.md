@@ -482,7 +482,7 @@ Decided by the coordinator under the owner's words of 2026-11-15 (RM-D48, `produ
 the owner can reverse any item in a sentence. Times are UTC. Every number is measured unless marked
 "predicted" or "estimate". The FT ids are this session's work items; their PRs are the record.
 
-### 12.1 What was built (all merged except FT4)
+### 12.1 What was built (all merged)
 
 - **FT1, #785** (landed by train #789, merge `c995acde`, 09:08:20). A same-repo PR whose head branch starts
   with `train/` runs Node 18, Node 20 and Windows in full. A push to `main` is *proven* when its merge commit
@@ -503,20 +503,20 @@ the owner can reverse any item in a sentence. Times are UTC. Every number is mea
   `test/sequencer.test.ts`; the hook regex covers `npm -w <ws> run e2e|bench`.
 - **FT3c, #798** (train #799, merge `45c2837d`, 11:42:56). `test/finish.test.ts` split into four files and
   `test/finish-furnish.test.ts` into three; a pure move (19,030 tests passed before and after).
-- **FT4, #795 (`chore/ft4-local-gate`): open** in its final review round when this was written. After review,
+- **FT4, #795** (train #801, merge `4f432ca1`, 11:59:30). After review,
   `check:quick` also selects source-tree scanner guards (budget 15 recorded seconds, ceiling 30 files), tests
   named after a changed module (5 files / 10 s) and the cheapest corpus pins (5 s). `typecheck:all` and a build
   inside the gate were built and then removed on evidence (§ 12.4).
 - **Trains landed:** #789 (member #785; built by hand, then synced once by hand), #792 (#788), #796 (#794),
-  #799 (#798). Abandoned: #786 (hand-built; `main` moved).
+  #799 (#798), #801 (#795): five trains today. Abandoned: #786 (hand-built; `main` moved).
 
 ### 12.2 Measured before and after
 
 | Measure | Before (2026-11-14/15, after TP1 and TP2) | After |
 |---|---|---|
 | PR code run, wall clock | median 7.2 min (n=36) | 4.7 min (run 43704031936, one run; 5.7 min on the first version of #794) |
-| Full run (train PR or unproven push) | 12.3 min median push (n=26); train runs 14.6 (incl. about 1.5 queued), 12.5, 13.0 min | 8.7 min (train #796, run 43704660304) and 8.4 min (train #799, run 43709558420) |
-| `main` push run after a train | median 12.3 min | 28 s, 25 s, 26 s, 24 s (four trains, all proven) |
+| Full run (train PR or unproven push) | 12.3 min median push (n=26); train runs 14.6 (incl. about 1.5 queued), 12.5, 13.0 min | 8.7 min (train #796, run 43704660304) and 8.4 min (train #799, run 43709558420), 7.0 min (train #801, run 43710988054, first full run with the finish split) |
+| `main` push run after a train | median 12.3 min | 28 s, 25 s, 26 s, 24 s, 30 s (five trains, all proven) |
 | Merge to deploy finished | median 13.7 min (n=26, estimate from run times) | 2 min 5 s (train #789: merged 09:08:20, deploy success 09:10:25) |
 | Open to merge, non-records PRs | median 35.8 min, 1.2 syncs and 2.6 CI runs per PR (n=27) | not re-measured (needs a week of merges; TR6) |
 
@@ -539,6 +539,12 @@ about 400–500 s.
   already compiled), `check:3d` 10, generated-artifact drift 8, lint 3, E2E 1 + 1. Median 22.5 min from a
   failed run to the next run on the branch. Replaying 11 sampled runs through the gate's selection: 2 were
   already selected by the old gate (the gate was not run or was ignored), 2 are catchable by no rule.
+- **FT4's final review** (the reviewer's numbers, of record): the gate is a strict superset of `main`'s previous
+  gate. Replay of 11 sampled reds: 7 newly caught, 2 already selected by the old gate, 2 catchable by no rule
+  (optimistic: the rules were designed on these runs). The extras add 2 to 35 test files and 1.2 to 25.2 recorded
+  seconds. Train #801's slowest jobs: Node 18 tests 5/5 400 s, Windows tests 2/5 389 s, Node 20 tests 5/5 379 s.
+  Wall-time cost of the gate: about 30–35 s on a typical `src/` change (estimate, low confidence, no paired
+  timing; four gate runs on a loaded machine took 136, 319, 119 and 252 s).
 - Setup overhead per job is 20–90 s.
 - `main` moved under a running train three times (other sessions merged #784, #787, then #797 and #790
   before a build): a train needs every session to check for an open `train/*` PR before merging.
@@ -564,4 +570,4 @@ Card TR6 (`product-roadmap/cards.md`, track 9) re-measures after 7 days of merge
 medians, open to merge median and P90, trains per day, members per train, the share of `main` pushes proven,
 train reds and their cause, the `main` red rate, the revert rate, the PR CI failure rate, and `check:quick`
 wall clock on a typical change. The guardrails are § 7's: if the `main` red rate or the revert rate rises, the
-time was moved, not saved. The follow-ups are TR1–TR5 and TR7.
+time was moved, not saved. The follow-ups are TR1–TR5, TR7 and TR8 (TR8 holds the paired `check:quick` timing TR6 reads).
