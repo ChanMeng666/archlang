@@ -258,7 +258,7 @@ Totals: 401 modules in 34 directories.
 | `identity.ts` | 33 | 3 | Process-local stable identity tokens for cache keying. | none |
 | `impact.ts` | 1405 | 3 | `impact(before, after)` (plan-soundness card PS4.2): change one number, see what follows, what stays put, and what breaks. The executable answer to "what changes, what must not". | none |
 | `import.ts` | 350 | 32 | Module linking — the `import` system. | none |
-| `index.ts` | 713 | 426 | ArchLang — compile declarative floor-plan source to a professional SVG. | none |
+| `index.ts` | 713 | 429 | ArchLang — compile declarative floor-plan source to a professional SVG. | none |
 | `input-limit.ts` | 77 | 5 | A host's refusals, as catalogued diagnostics. | none |
 | `intent-concepts.ts` | 238 | 5 | The intent channel's concept vocabulary — production name resolution for the NL→ArchLang intent contract. | none |
 | `intent.ts` | 1589 | 7 | The intent channel — author-time checking of a brief's INTENT against a plan. | none |

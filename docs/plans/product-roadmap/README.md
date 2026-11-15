@@ -569,6 +569,14 @@ RM-D38、RM-D39 属于另一场的裁定（winder 台阶可到达、楼梯建造
 |---|---|---|---|---|
 | RM-D46 | fidelity 切片（`eval/fidelity.ts`、`eval/corpus-fidelity.json`）的实测路径 `eval:fidelity-live`（`eval/fidelity-live.ts`）是否建、是否付费运行 | **建，并付费运行**：① 费用记在 Anthropic 促销额度上；② 模型为 `claude-haiku-5-5`、`claude-sonnet-5-5`、`claude-opus-5-5`、`claude-fable-5-2`，每个模型 k = 5、只跑一次（每个模型一个进程，一对结果文件，结果永不覆盖）；③ 提示词、回复解析、评分与 `FIDELITY_VERSION` 不变（提示词就是尺子）；④ 结果发布在 `eval/live-runs/`；⑤ 数字单独报告，永不与 `eval:ci`、L0 基线（`eval/live-baseline.json`）或离线 fidelity 计分卡比较 | 所有者在促销额度方案中的选择："P3 fidelity 实测" | 无自动反转。若某个模型的运行未能完成（额度用尽、连续调用失败而 `aborted`、预算熔断），已写下的记录照样发布，标明不完整；重跑、加模型或改 k 要所有者新的裁定 |
 
+### 6.17 所有者裁定：数据集的 model-authoring 配置（RM-D47，2026-11-15）
+
+不改任何铁律：`npm run dataset:model-authoring -- submit` 与 `eval:live`、`eval:fidelity-live` 一样是付费、仅限所有者的命令（`docs/agents/iron-laws.md` § Eval & dataset）；`plan` 与 `build` 不花钱，`collect` 只下载已付费的结果。所有者在本场会话的促销额度方案里选中了 P4，2026-11-15 又就其许可证作了裁定。
+
+| # | 问题 | 裁定 | 原话 | 反转条件 |
+|---|---|---|---|---|
+| RM-D47 | HF 数据集 `ChanMeng666/archlang-repair-trajectories` 是否加一个新配置 `model-authoring`（真实模型按程序化 brief 一次性写 `.arch`，再由确定性工具 `fix` + `repair` 修复；生成器在 `dataset/model-authoring/`），以及其许可证 | **建，付费运行后发布到 HF**：① 费用记在 Anthropic 促销额度上，`submit` 只由所有者运行，由 `--max-usd` 封顶（按估算的上限）；② 只做一次性作答，不加多轮的模型修复轨迹（RM-D45 ⑥）；③ brief 用独立的种子 `20261115`，与两个 eval 语料及已上传的 `repair`/`authoring` 文件去重；金丝雀原样复用；seed-`20260712` 的字节不动；④ 许可证为 CC0，附来源说明：卡片写明每行回复由 Anthropic 的 Claude 模型经 Anthropic API 生成，逐行写出模型 id，使用者自行负责遵守 Anthropic 的条款；不把这个配置宣传为 SFT、微调或训练数据；现有 `default` 配置的 CC0 文本不变；⑤ 配置上传前 `dataset/CARD.md` 不变，卡片文本在 `dataset/CARD.model-authoring.draft.md`，上传时一并合入 | 选择 P4："P4 新数据集发到 HF"；许可证："CC0 + 来源说明" | 若 Anthropic 的条款或所有者的判断不允许以 CC0 发布模型输出，则不上传（已上传的则撤下该配置），许可证另行裁定；重跑、加模型或改 brief 数要所有者新的裁定 |
+
 ---
 
 ## 7. 与已有计划的关系

@@ -27,9 +27,9 @@ import { recordTrajectory } from "./trajectory.js";
 const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const GENERATOR_NAME = "archlang-dataset-gen";
 const GENERATOR_VERSION = "1.0.0";
-const DEFAULT_SEED = 20260712;
-const DEFAULT_REPAIR_ROWS = 1200;
-const DEFAULT_AUTHORING_ROWS = 400;
+export const DEFAULT_SEED = 20260712;
+export const DEFAULT_REPAIR_ROWS = 1200;
+export const DEFAULT_AUTHORING_ROWS = 400;
 
 /** The pinned ArchLang version this corpus was generated against (read, never hardcoded). */
 function archlangVersion(): string {
