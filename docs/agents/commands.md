@@ -35,8 +35,10 @@
   object. The focus says where to look first, never that the review can be skipped.
 - `npm run train` (`scripts/merge-train.mjs`) builds, lands (`--land <pr> [--wait]`) and abandons
   (`--abandon <pr>`) a merge train: § Merging a PR, step 2. Its pure parts reuse `sync:main`'s exports;
-  every `git` and `gh` call passes `forbidden()` first (no push to `main`, no force push, no `--admin`,
-  `--auto`, squash or rebase).
+  every `git` and `gh` call passes `forbidden()` first. It refuses a push whose destination names `main`
+  in any spelling, a force or bulk push (`--force*`, a short-flag bundle holding `f`, a `+refspec`,
+  `--mirror`, `--all`, `--prune`, `--tags`), `gh --admin` and `--auto`, a `gh pr merge` other than a
+  plain `--merge` (no squash, rebase or `--delete-branch`), and a `gh api` call that is not a GET.
 - `e2e:playground` / `e2e:docs` run Playwright against the BUILT site. `E2E_BASE_URL=<origin>` drops
   the preview server and drives that origin instead (nightly uses it with `--grep @prod`).
 - `eval:ci` is the offline authorability gate: it scores the committed goldens (rewriting the
@@ -189,6 +191,10 @@ runs them before the merge.
    safe (the owner's standing approval of 2026-11-09: "判断是否能够合并，如果能，那就自动合并"). An executor
    never merges its own PR. The decision to release, paid eval and the npmjs account stay owner-only.
 1. Review the diff as soon as the PR opens, never after CI; post `reviewed <full sha>` on the PR.
+   That comment means "approved to merge at this SHA", and `npm run train` reads it as a gate: its
+   FIRST line is exactly `reviewed <full sha>` (further lines may follow), posted by the owner or a
+   collaborator, and the newest such comment is the one in force. A review that asks for fixes is
+   worded otherwise, never `reviewed <sha>: …`.
 2. **The train**, for several PRs that are reviewed and green, or any PR that is BEHIND. (A single
    up-to-date green PR may still merge directly: `gh pr merge <n> --merge --match-head-commit <full
    40-character sha>`, a merge commit, since a squash or rebase re-creates allowlisted gitleaks lines.)
@@ -200,12 +206,16 @@ runs them before the merge.
       `train/<UTC stamp>` from `origin/main`'s tip in its own worktree, merges each reviewed head in the
       order given, resolves generated artifacts and `CHANGELOG.md` by `sync:main`'s rules, DROPS a PR with
       any other conflict (or with CHANGELOG lines left outside `[Unreleased]`) and goes on, runs `gen:all`
-      once on the tip, pushes, and opens the train PR. Its body holds the record `--land` reads; stdout has
-      the PR number, the dropped list and each member's re-review focus.
+      once on the tip, pushes, and opens the train PR. Its body holds the record `--land` reads, first;
+      the focus is capped there and posted whole as a comment when cut; stdout has the PR number, the
+      dropped list and each member's re-review focus.
    2. While CI runs: red-team the train head with that focus block (step 4) and post `reviewed <train
-      head>` on the train PR. The script says when that is not needed: a one-member train whose tree is
-      the member's reviewed tree.
-   3. `npm run train -- --land <train pr> --wait`. It refuses unless the train head and every member's
+      head>` on the train PR. The script says when that is not needed: a train of low-tier members only,
+      or a one-member train whose tree is the member's reviewed tree.
+   3. The coordinator, never an executor that authored a member (an executor never merges its own PR),
+      runs `npm run train -- --land <train pr> --wait`. It re-derives every member fact from GitHub and
+      git (branch, draft, base, repository, tier, the pin inside the train head) instead of trusting the
+      body's record, and it refuses unless the train head and every member's
       head are still the recorded ones, `main` is still the train's base, the review comments are there,
       the train's own `ci.yml` run (event `pull_request`, the train branch, the train head) is completed
       and successful, and every check-run passed: never the check names alone, which GitHub matches per
@@ -219,7 +229,8 @@ runs them before the merge.
      cause, `npm run train -- --abandon <train pr>` and build again without it; if not, halve: abandon,
      build with the first half, then the rest. `main` moved before landing (`--land` says "rebuild"):
      abandon and build again; the members' reviews hold, the new train head needs its own (step 2.2).
-3. **A PR dropped from a train**, or one landing alone while BEHIND: `npm run sync:main -- --push` in the
+3. **A PR dropped from a train** (the drop names what it conflicted with: if an earlier member, first let
+   that member land), or one landing alone while BEHIND: `npm run sync:main -- --push` in the
    PR's worktree (never `gh pr update-branch`: GitHub's textual merge stales generated artifacts). If it
    stops (exit 2), resolve the listed files, then `--continue`. It takes `main`'s side of a generated
    artifact and runs `gen:all`, union-merges `CHANGELOG.md` and checks its lines sit under
