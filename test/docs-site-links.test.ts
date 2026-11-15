@@ -6,7 +6,7 @@
  * that a `#fragment` on a site route is the id VitePress gives one of the target page's headings
  * (it turns `_` into `-`: GitHub's `#w_scale_overflow` is `/errors#w-scale-overflow` here).
  */
-import { readdirSync, readFileSync, statSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 // @ts-expect-error plain .mjs module without declarations
@@ -224,6 +224,40 @@ describe("site copies of the canonical docs", () => {
     // The site check reads the same ids, so a correct `#custom-id` link is no false red.
     expect((headingIds(src) as Array<{ vp: string }>).map((h) => h.vp)).toEqual(["errors", "custom-id"]);
   });
+
+  it("heading text keeps a code span verbatim and drops tags only outside one, as VitePress does", () => {
+    const vp = (md: string) => (headingIds(md) as Array<{ vp: string }>).map((h) => h.vp);
+    expect(vp("## The `<arch-plan>` element")).toEqual(["the-arch-plan-element"]);
+    expect(vp("## The <b>bold</b> one")).toEqual(["the-bold-one"]);
+    expect(vp("## `[a](b)` and [c](d)")).toEqual(["a-b-and-c"]);
+    expect(vp("## `` a`b `` x")).toEqual(["a-b-x"]);
+    expect(vp("## Unclosed ` <i>tick</i>")).toEqual(["unclosed-tick"]);
+  });
+
+  // VitePress's own markdown parser (the one `docs:build` uses) gives every heading of every
+  // published page its id; the shared rule must give the same ids, in order.
+  const vitepress = existsSync("node_modules/vitepress/package.json");
+  it.skipIf(!vitepress && !process.env.CI)(
+    `every published page's heading ids match VitePress's renderer${vitepress ? "" : " (SKIPPED: vitepress not installed)"}`,
+    async () => {
+      const { createMarkdownRenderer } = await import("vitepress");
+      const md = await createMarkdownRenderer("docs-site", {}, "/");
+      const pages = [...new Set([...ctx.pages.map(([s]) => s), ...adrs.map((f) => `docs/adr/${f}`)])];
+      expect(pages.length).toBeGreaterThan(40);
+      const diffs: string[] = [];
+      for (const p of pages) {
+        const src = readFileSync(p, "utf8");
+        const want = md
+          .parse(src, {})
+          .filter((t) => t.type === "heading_open")
+          .map((t) => t.attrGet("id"));
+        const got = (headingIds(src) as Array<{ vp: string }>).map((h) => h.vp);
+        if (JSON.stringify(want) !== JSON.stringify(got)) diffs.push(`${p}: ${JSON.stringify({ want, got })}`);
+      }
+      expect(diffs).toEqual([]);
+    },
+    60_000,
+  );
 
   it("keeps a ?query, between the new path and the #fragment", () => {
     const r = (t: string, from = "docs/adr/0010-x.md") => rewriteLinks(`[a](${t})`, from, ctx);

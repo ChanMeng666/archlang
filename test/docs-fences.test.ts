@@ -212,6 +212,17 @@ describe("every live ```arch fence on the public docs site compiles", () => {
     expect(infos("~~~ a`b\nx\n~~~")).toEqual([[1, "a`b", "x"]]);
   });
 
+  it("no published page indents a fence marker 4+ columns (the `^ {0,3}` rule would read it as code)", () => {
+    // A fence inside a list item can legitimately sit 4+ columns in; the shared rule does not model
+    // list nesting, so such a fence would go unchecked. None exists; this keeps it that way.
+    const deep = pages.flatMap((f) =>
+      readFileSync(f, "utf8")
+        .split(/\r?\n/)
+        .flatMap((l, i) => (/^[ \t]{4,}(`{3,}|~{3,})/.test(l.replace(/\t/g, "    ")) ? [`${f}:${i + 1}`] : [])),
+    );
+    expect(deep).toEqual([]);
+  });
+
   it("no published fence uses a near-miss spelling of the escape hatch", () => {
     const suspects = allFences.filter((f) => {
       const info = f.info.trim();

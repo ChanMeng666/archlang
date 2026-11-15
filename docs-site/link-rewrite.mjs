@@ -47,8 +47,55 @@ function stripTags(s) {
   return out;
 }
 
-/** The visible text of a markdown heading: links reduced to their text, tags and emphasis dropped. */
-const headingText = (h) => stripTags(h.replace(/!?\[([^\]]*)\]\([^)]*\)/g, "$1")).replace(/[`*]/g, "");
+/** Prose outside code spans: links reduced to their text, inline tags and emphasis dropped. */
+const proseText = (s) => stripTags(s.replace(/!?\[([^\]]*)\]\([^)]*\)/g, "$1")).replace(/[`*]/g, "");
+
+/**
+ * The visible text of a markdown heading, as markdown-it-anchor reads it in VitePress 1.6.4 (the
+ * `text` and `code_inline` tokens): a code span keeps its content verbatim (`<arch-plan>` stays,
+ * so it slugs to `arch-plan`), with one surrounding space stripped as CommonMark does; outside code
+ * spans links keep their text and inline tags and emphasis are dropped. A backtick run with no
+ * closing run of the same length is literal text.
+ */
+function headingText(h) {
+  let out = "";
+  let i = 0;
+  let prose = "";
+  while (i < h.length) {
+    if (h[i] !== "`") {
+      prose += h[i++];
+      continue;
+    }
+    let n = i;
+    while (n < h.length && h[n] === "`") n++;
+    const run = h.slice(i, n);
+    let close = -1;
+    for (let j = n; j < h.length; ) {
+      if (h[j] !== "`") {
+        j++;
+        continue;
+      }
+      let k = j;
+      while (k < h.length && h[k] === "`") k++;
+      if (k - j === run.length) {
+        close = j;
+        break;
+      }
+      j = k;
+    }
+    if (close < 0) {
+      prose += run;
+      i = n;
+      continue;
+    }
+    let code = h.slice(n, close);
+    if (code.length > 1 && code.startsWith(" ") && code.endsWith(" ") && code.trim()) code = code.slice(1, -1);
+    out += proseText(prose) + code;
+    prose = "";
+    i = close + run.length;
+  }
+  return out + proseText(prose);
+}
 
 /** GitHub's anchor for a heading text (what the canonical docs' fragments are written in). */
 const githubSlug = (text) =>
@@ -119,7 +166,10 @@ function proseLines(markdown) {
  * - ATX headings (`#`..`######` after <= 3 spaces) outside fenced code and HTML comment blocks
  *   (`proseLines`); a closing `#` run counts only after a space.
  * - `vp` is `slug` (VitePress's `slugify` unless a test hands in the one read from VitePress
- *   itself) of the heading text, which KEEPS an em dash GitHub drops. A heading ending in an
+ *   itself) of the heading text (`headingText`: a code span verbatim, so `` `<arch-plan>` `` keeps
+ *   its tag name; tags dropped only outside code spans), which KEEPS an em dash GitHub drops.
+ *   `test/docs-site-links.test.ts` checks every published page's ids against VitePress's own
+ *   markdown parser. A heading ending in an
  *   attribute block (`## Title {#custom-id}`, `{#a .b}`, `{.b}`) loses the block from its text, as
  *   markdown-it-attrs strips it; an `#id` in the block IS the id, as markdown-it-anchor keeps an
  *   explicit one. GitHub knows no attribute block, so `gh` slugs the whole text (`title-custom-id`).

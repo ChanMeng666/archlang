@@ -1718,13 +1718,32 @@ unchanged.
 Left by the reviews of those PRs (review-cost cap). WS.1 and WS.2 fail only on input the docs do
 not yet hold; WS.3 and WS.4 are true of the live site today.
 
-- WS.1 · Four copies of the fence rule, none quite CommonMark — closed 2026-11-16: one `fenceStep`
-  (`docs-site/link-rewrite.mjs`, `^ {0,3}`, no backtick in a backtick info string) that the rewriter,
-  `docs-fences`, `docs-site-links` and `plan-constructs` import; pinned by the indented and ```` ``` a`b ````
-  cases in `docs-fences` and `docs-site-links`
-- WS.2 · The rewriter's heading ids skip neither HTML comments nor `{#id}` — closed 2026-11-16 with
-  WS.1: one `headingIds` (comments, `{#id}`, `{#a .b}`, an explicit id in the slug registry) that
-  `plan-constructs` calls with VitePress's own slugify; pinned in `docs-site-links`
+### WS.1 · Four copies of the fence rule, none quite CommonMark: done by #825, waiting to be archived — `note`
+
+`fenceStep` (`docs-site/link-rewrite.mjs`), the link scan in `test/docs-site-links.test.ts`,
+`fences()` in `test/docs-fences.test.ts` (the live-fence gate) and `headingIds` in
+`test/plan-constructs.test.ts` each implement the fence rule, and they differ: the first three
+accept any leading whitespace (`^\s*`), so a line indented 4+ spaces (indented code) opens a
+fence; none rejects a backtick in a backtick opener's info string, which CommonMark does. One way:
+one exported rule (`^ {0,3}`, the info-string check) that the rewriter and all three tests import.
+**Gate:** unit cases for an indented ```` ``` ```` and for ```` ``` a`b ````; the rewritten output of every
+docs page unchanged; `docs-fences` still finds the same live fences.
+
+### WS.2 · The rewriter's heading ids skip neither HTML comments nor `{#id}`: done by #825, waiting to be archived — `note`
+
+`headingIds` in `docs-site/link-rewrite.mjs` treats a `#` line inside `<!-- … -->` as a heading
+and slugs `## Title {#custom-id}` from its whole text, while the test's copy
+(`test/plan-constructs.test.ts`) does both the way VitePress 1.6.4 does. So the rewriter registers
+a phantom id (`title-custom-id`) that a GitHub-spelled link is then "confirmed" against, and
+`test/docs-site-links.test.ts` reports a correct `#custom-id` link as having no heading (a false
+red). The rewriter's heading pattern also allows no leading spaces where the test's allows
+`^ {0,3}`. Port the test's rules (and share them, with WS.1). An attribute block holding more than
+an id (`{#a .b}`) and an explicit id that repeats an earlier slug are the corner cases to pin.
+**Gate:** unit cases for each; rewritten output over the docs unchanged.
+
+**Done by #825.** The shared heading text keeps a code span verbatim (`` `<arch-plan>` ``), as
+VitePress does; `test/docs-site-links.test.ts` checks every published page's heading ids against
+VitePress's own markdown parser.
 
 ### WS.3 · Example-page `lastmod` misses some of what the page shows — `todo`
 
