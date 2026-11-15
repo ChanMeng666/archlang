@@ -793,7 +793,7 @@ furniture wc at (0,0) size 400x700 rotate 45   # error: not a quarter-turn
 
 *error* — Furniture must have a positive size.
 
-**Cause.** A furniture item's width or height evaluated to zero or a negative number.
+**Cause.** A furniture item's width or height evaluated to zero or a negative number, or it has no `size` and its kind has no catalogued footprint to default to (a kind with one may leave `size` out under any placement).
 
 **Fix.** Give the item a positive `size W x H`.
 

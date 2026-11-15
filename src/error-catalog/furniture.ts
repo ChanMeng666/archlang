@@ -10,7 +10,7 @@ import { defineEntries, e, w } from "./entry.js";
 export const FURNITURE_ENTRIES = defineEntries({
   E_FURN_SIZE: e(
     "Furniture must have a positive size.",
-    "A furniture item's width or height evaluated to zero or a negative number.",
+    "A furniture item's width or height evaluated to zero or a negative number, or it has no `size` and its kind has no catalogued footprint to default to (a kind with one may leave `size` out under any placement).",
     "Give the item a positive `size W x H`.",
     "furniture bed at (0,0) size 0x2000   # error",
   ),

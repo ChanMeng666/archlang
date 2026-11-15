@@ -2117,10 +2117,13 @@ in `--facts symmetry`. Plan JSON carries it as `mirror: true`.
 A piece can be placed three ways: absolutely with `at (x,y)` (optionally turned with
 `rotate`), snapped **`against wall <ref>`** so its back sits on the wall and its
 rotation is derived for you, or **relative to a room** (v1.13). A kind with a
-catalogued footprint placed `against wall` may **omit `size`** and take it (e.g.
+catalogued footprint may **omit `size`** under any placement and take it (e.g.
 `furniture wc against wall w1 in bath`) — `offset` is where the piece's **centre**
-lands along the wall run; `at` and room-relative placement, and any kind with no
-catalogued footprint, still need an explicit `size`. `in <room>` records which room
+lands along the wall run. `against` reads the footprint as along × depth; `at` and
+room-relative placement read it at the piece's quarter-turn (back north at `rotate 0`,
+turned by a written `rotate`, or laid along the one walled edge an `anchor` names, so
+`furniture wc in bath anchor right` is `size 700x400` at `rotate 90`). A kind with no
+catalogued footprint still needs an explicit `size`. `in <room>` records which room
 owns the piece (used by the lint rules).
 
 **Segment selectors.** On a wall of several segments, `segment <n>` (0-based, in the wall's

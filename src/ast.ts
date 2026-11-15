@@ -612,8 +612,8 @@ export interface FurnitureNode extends NodeBase {
   against?: FurnitureAgainst;
   /** Room-relative placement (`in <room> centered|anchor …`). Exclusive with `at`/`against`. */
   place?: FurniturePlace;
-  /** In `at` mode: plan-axis width×height. In `against` mode: wall-relative along×depth.
-   *  Optional only with `against` + a fixture that has a catalogued default footprint. */
+  /** In `at`/`in` mode: plan-axis width×height. In `against` mode: wall-relative along×depth.
+   *  Optional, under any placement, for a fixture that has a catalogued default footprint. */
   size?: { w: Expr; h: Expr };
   /**
    * Byte span of the `size` clause's value when it is ONE literal dimension token

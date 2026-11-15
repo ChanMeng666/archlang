@@ -108,21 +108,31 @@ describe("the canonical fixture names", () => {
 });
 
 /**
- * The spec's `against wall` claim, EXECUTED.
+ * The spec's "any placement may omit `size`" claim, EXECUTED.
  *
  * `spec.llm.md` names the categories that may omit `size`. That sentence is now interpolated
  * from `defaultFootprint`, so it cannot go stale against the catalog — but nothing yet proved
- * the catalog itself matches the resolver. These two cases compile both halves of the claim:
- * every named category really does resolve without a `size`, and every category NOT named
- * really is refused. A footprint that the resolver would not accept fails here, not in a
- * model's output.
+ * the catalog itself matches the resolver. These cases compile both halves of the claim, under
+ * every placement form the furniture statement has: every named category really does resolve
+ * without a `size`, and every category NOT named really is refused. A footprint that the
+ * resolver would not accept fails here, not in a model's output.
  */
-describe("size-optional `against wall` placement matches the catalog", () => {
-  const plan = (category: string) => `plan "P" {
+describe("size-optional placement matches the catalog, under every placement", () => {
+  /** One statement per placement form, the room-relative ones on a walled and an unwalled edge. */
+  const PLACEMENTS = [
+    "against wall w segment 0 offset 3000 in r",
+    "against r.top offset 3000",
+    "at (3000,3000)",
+    "in r centered",
+    "in r anchor top",
+    "in r anchor left",
+    "in r anchor bottom-right",
+  ] as const;
+  const plan = (category: string, placement: string = PLACEMENTS[0]) => `plan "P" {
     units mm
     wall id=w exterior thickness 200 { (0,0) (10000,0) (10000,10000) (0,10000) close }
     room id=r at (0,0) size 10000x10000 label "R"
-    furniture ${category} against wall w segment 0 offset 3000 in r
+    furniture ${category} ${placement}
   }`;
   const errorCodes = (src: string): string[] =>
     compile(src, { noCache: true })
@@ -132,7 +142,9 @@ describe("size-optional `against wall` placement matches the catalog", () => {
   it("a catalogued footprint lets `size` be omitted", () => {
     const sized = CANONICAL_FIXTURES.filter((c) => defaultFootprint(c) !== null);
     expect(sized.length).toBeGreaterThan(8); // the eight originals plus the new vocabulary
-    for (const c of sized) expect(errorCodes(plan(c)), `"${c}" should resolve without a size`).toEqual([]);
+    for (const c of sized)
+      for (const p of PLACEMENTS)
+        expect(errorCodes(plan(c, p)), `"${c}" should resolve without a size, ${p}`).toEqual([]);
   });
 
   it("the spec generator throws if the furniture line stops rendering the list", () => {
@@ -150,6 +162,8 @@ describe("size-optional `against wall` placement matches the catalog", () => {
   it("no catalogued footprint means `size` is still required", () => {
     const unsized = [...CANONICAL_FIXTURES.filter((c) => defaultFootprint(c) === null), "widget"];
     expect(unsized.length).toBeGreaterThan(1);
-    for (const c of unsized) expect(errorCodes(plan(c)), `"${c}" should demand a size`).toContain("E_FURN_SIZE");
+    for (const c of unsized)
+      for (const p of PLACEMENTS)
+        expect(errorCodes(plan(c, p)), `"${c}" should demand a size, ${p}`).toContain("E_FURN_SIZE");
   });
 });

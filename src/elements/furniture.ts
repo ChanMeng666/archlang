@@ -184,8 +184,8 @@ export const furniture: ElementDef = {
     // The clauses after the placement, in any order, each once (`src/clause-order.ts`). Each is
     // read into its own slot and the node is built after, in the order the grammar used to
     // require, so a plan written in that order has the tree, keys in order, it always had.
-    // `size` is optional only for an `against wall` fixture with a catalogued default
-    // footprint; resolve enforces that and errors otherwise.
+    // `size` is optional only for a fixture with a catalogued default footprint, under any
+    // placement; resolve enforces that and errors otherwise.
     let size: FurnitureNode["size"];
     let sizeSpan: Span | undefined;
     let sizeValueSpan: Span | undefined;
@@ -333,11 +333,16 @@ export const furniture: ElementDef = {
   resolve(node, ctx: ResolveCtx): RFurniture {
     const n = node as FurnitureNode;
     const id = ctx.id;
-    // Authored dims: plan w×h for `at`, wall-relative along×depth for `against`. When
-    // `size` is omitted, an `against wall` fixture falls back to its catalogued default
-    // footprint (closed-form, never a guess); anything else is the E_FURN_SIZE error.
+    // Authored dims: plan w×h for `at`/`in`, wall-relative along×depth for `against`. When
+    // `size` is omitted, a fixture with a catalogued footprint takes it under every placement
+    // (closed-form, never a guess); a kind with none is the E_FURN_SIZE error. `against` reads
+    // it as along×depth, as it reads a written size. `at`/`in` turn it to plan axes: back
+    // north at rotate 0 (along across, depth down), its sides swapped under `rotate 90|270`,
+    // and under `in … anchor` onto the one walled edge the anchor names (`placeInRoom`).
     let dw: number;
     let dh: number;
+    /** The size came from the catalogue, so a room-relative placement may still turn it. */
+    let defaulted = false;
     if (n.size) {
       const ww = ctx.eval(n.size.w);
       dw = ctx.snap(ww);
@@ -345,19 +350,15 @@ export const furniture: ElementDef = {
       dh = ctx.snap(wh);
       noteSnap(ctx, `Furniture "${id}"`, "size", [ww, wh], [dw, dh], n.sizeValueSpan ?? n.span);
     } else {
-      const fp = n.against || n.againstEdge ? defaultFootprint(n.category) : null;
+      const fp = defaultFootprint(n.category);
       if (!fp) {
-        ctx.diag({
-          severity: "error",
-          message: `Furniture "${id}" needs a \`size WxH\` (no default footprint for "${n.category}")`,
-          code: "E_FURN_SIZE",
-          span: n.span,
-        });
+        ctx.diag(missingSizeDiagnostic(id, n.category, n.span));
         dw = 0;
         dh = 0;
       } else {
         dw = ctx.snap(fp.along);
         dh = ctx.snap(fp.depth);
+        defaulted = true;
       }
     }
     if (dw <= 0 || dh <= 0) {
@@ -382,6 +383,10 @@ export const furniture: ElementDef = {
         rotate = 0;
       }
     }
+    // A catalogued footprint under `at`/`in` turns with a written quarter-turn, so the symbol
+    // keeps its catalogued along × depth. A written size is plan W×H already, and `against`
+    // derives its own turn.
+    if (defaulted && !n.against && !n.againstEdge && (rotate === 90 || rotate === 270)) [dw, dh] = [dh, dw];
 
     let at: Point;
     let size = { w: dw, h: dh };
@@ -502,6 +507,7 @@ export const furniture: ElementDef = {
         ctx,
         n.span,
         rotate === undefined && facing === undefined && orientationMatters(n.category),
+        defaulted,
       );
       // NOT grid-snapped. A coordinate the RESOLVER derived from wall geometry is not a
       // number the author wrote, and the grid is a drafting aid for the numbers they do
@@ -513,6 +519,7 @@ export const furniture: ElementDef = {
       // still snaps, which is where the grid belongs. `describe().freedom` already draws
       // this same line between authored-absolute and resolver-derived placement.
       at = placed ? placed.at : { x: 0, y: 0 };
+      if (placed?.size) size = placed.size;
       if (placed?.rotate !== undefined) rotate = placed.rotate;
       if (!placed) roomOut = undefined; // room ref invalid — don't double-report via E_FURN_ROOM
     } else {
@@ -858,7 +865,8 @@ function placeInRoom(
   ctx: ResolveCtx,
   span: Span | undefined,
   derive: boolean,
-): { at: Point; rotate?: number } | null {
+  turnable = false,
+): { at: Point; rotate?: number; size?: { w: number; h: number } } | null {
   const room = ctx.rooms.find((r): r is RRoom => r.id === roomId);
   if (!room || room._unplaced) {
     ctx.diag({
@@ -875,7 +883,7 @@ function placeInRoom(
   // centre. A polygon room has none of those as a whole — its bounding box is not its
   // floor, so "anchor bottom-left" could land the piece in a notch that is outside the
   // room. A rectilinear ring reads its own corners and extreme runs instead.
-  if (room.poly) return placeInRing(id, place, room, category, w, h, ctx, span, derive);
+  if (room.poly) return placeInRing(id, place, room, category, w, h, ctx, span, derive, turnable);
   const x0 = room.at.x;
   const y0 = room.at.y;
   const x1 = x0 + room.size.w;
@@ -884,7 +892,7 @@ function placeInRoom(
   const cy = y0 + room.size.h / 2;
   if (place.mode === "centered") {
     flushWithoutEdge(id, place, ctx, span);
-    return { at: { x: cx - w / 2, y: cy - h / 2 } };
+    return { at: { x: cx - w / 2, y: cy - h / 2 }, ...(turnable ? { size: { w, h } } : {}) };
   }
   const inset = place.inset !== undefined ? ctx.eval(place.inset) : 0;
   const a = place.anchor;
@@ -894,6 +902,14 @@ function placeInRoom(
   // the author did not ask for `flush` or because that edge has no wall behind it.
   if (place.flush && ANCHOR_BACK_EDGES[a].length === 0) flushWithoutEdge(id, place, ctx, span);
   const walls = standingWalls(ctx);
+  if (turnable && derive)
+    ({ w, h } = footprintOntoBackedEdge(
+      w,
+      h,
+      ANCHOR_BACK_EDGES[a],
+      walls,
+      (e) => backingWallForRoomEdge(roomRect, e, walls, FIXTURE_WALL_TOL_MM) !== null,
+    ));
   const face = (e: RectEdge): number | null =>
     place.flush && ANCHOR_BACK_EDGES[a].includes(e)
       ? innerFaceOfRoomEdge(roomRect, e, walls, FIXTURE_WALL_TOL_MM)
@@ -907,7 +923,8 @@ function placeInRoom(
   else if (a === "bottom-left" || a === "bottom" || a === "bottom-right") y = (face("bottom") ?? y1) - h - inset;
   else y = cy - h / 2; // left | center | right → vertically centred
   const at = { x, y };
-  if (!derive) return { at };
+  const sized = turnable ? { size: { w, h } } : {};
+  if (!derive) return { at, ...sized };
   // Two independent closed-form constraints: the anchor names the edge(s) the piece
   // is pushed against, and the footprint's aspect says which edges can physically be
   // its back. A single walled edge in both = one answer; anything else = no rotation.
@@ -915,7 +932,7 @@ function placeInRoom(
   const backed = ANCHOR_BACK_EDGES[a].filter(
     (e) => shape.includes(e) && backingWallForRoomEdge(roomRect, e, walls, FIXTURE_WALL_TOL_MM) !== null,
   );
-  return backed.length === 1 ? { at, rotate: rotateForBackEdge(backed[0]!) } : { at };
+  return backed.length === 1 ? { at, rotate: rotateForBackEdge(backed[0]!), ...sized } : { at, ...sized };
 }
 
 /**
@@ -927,6 +944,48 @@ function standingWalls(ctx: ResolveCtx): RWall[] {
   if (!ctx.walls.some((wl) => wl.status === "demolish")) return ctx.walls;
   chargeSteps(ctx.walls.length);
   return ctx.walls.filter((wl) => wl.status !== "demolish");
+}
+
+/**
+ * A catalogued footprint (`size` omitted) under `in … anchor <a>`, for a piece whose turn is
+ * derived: when exactly one edge the anchor names has a wall behind it, the back goes on that
+ * edge, so the footprint (`w` along, `h` deep, as at rotate 0) is laid along it, its sides
+ * swapped on a left or right edge. Any other count leaves it as given, and the derivation that
+ * follows reads its shape as it reads a written size. The scan is charged before it runs.
+ */
+function footprintOntoBackedEdge(
+  w: number,
+  h: number,
+  edges: readonly RectEdge[],
+  walls: readonly RWall[],
+  backed: (e: RectEdge) => boolean,
+): { w: number; h: number } {
+  let points = 0;
+  for (const wl of walls) points += wl.points.length;
+  chargeSteps(edges.length * (walls.length + points + 1));
+  const hit = edges.filter(backed);
+  if (hit.length !== 1) return { w, h };
+  return hit[0] === "left" || hit[0] === "right" ? { w: h, h: w } : { w, h };
+}
+
+/**
+ * `E_FURN_SIZE` for a piece with no `size` whose kind has no catalogued footprint. Every
+ * placement takes a catalogued footprint, so the reason is the kind, never the placement.
+ */
+function missingSizeDiagnostic(id: string, category: string, span: Span | undefined): Diagnostic {
+  const why =
+    fixtureSpec(category) === null
+      ? `"${category}" is not a catalogued fixture, so it has no footprint to default to`
+      : `a ${category} has no catalogued footprint to default to`;
+  return {
+    severity: "error",
+    message: `Furniture "${id}" needs a \`size WxH\`: ${why}`,
+    code: "E_FURN_SIZE",
+    span,
+    hints: [
+      "Write `size <W>x<H>`: plan width × height under `at` and `in`, along × depth under `against`. Only a kind with a catalogued footprint may leave it out, under any placement.",
+    ],
+  };
 }
 
 /**
@@ -945,7 +1004,8 @@ function placeInRing(
   ctx: ResolveCtx,
   span: Span | undefined,
   derive: boolean,
-): { at: Point; rotate?: number } | null {
+  turnable: boolean,
+): { at: Point; rotate?: number; size?: { w: number; h: number } } | null {
   const ring = room.poly!;
   const written = place.mode === "centered" ? "centered" : `anchor ${place.anchor}`;
   const refuse = (why: string): null => {
@@ -974,17 +1034,26 @@ function placeInRing(
   for (const wl of walls) points += wl.points.length;
   chargeSteps(2 * edges.length * (walls.length + points + 1));
   const segs = walls.flatMap((wl) => segmentsOfWall(wl));
+  if (turnable && derive)
+    ({ w, h } = footprintOntoBackedEdge(
+      w,
+      h,
+      edges,
+      walls,
+      (e) => backingWallForRoomEdge(runRect(runs[e]!), e, walls, FIXTURE_WALL_TOL_MM, segs) !== null,
+    ));
   const face = (e: RectEdge): number | null =>
     place.flush ? innerFaceOfRoomEdge(runRect(runs[e]!), e, walls, FIXTURE_WALL_TOL_MM, segs) : null;
   const at = anchoredAt(runs, w, h, inset, face);
   if (!rectInRing({ x: at.x, y: at.y, w, h }, ring))
     return refuse(`a ${fmt3(w)}x${fmt3(h)} piece there leaves the floor of polygon room "${room.id}"`);
-  if (!derive) return { at };
+  const sized = turnable ? { size: { w, h } } : {};
+  if (!derive) return { at, ...sized };
   const shape = backCandidateEdges({ w, h }, defaultFootprint(category));
   const backed = edges.filter(
     (e) => shape.includes(e) && backingWallForRoomEdge(runRect(runs[e]!), e, walls, FIXTURE_WALL_TOL_MM, segs) !== null,
   );
-  return backed.length === 1 ? { at, rotate: rotateForBackEdge(backed[0]!) } : { at };
+  return backed.length === 1 ? { at, rotate: rotateForBackEdge(backed[0]!), ...sized } : { at, ...sized };
 }
 
 /** `clear front|sides <mm>` evaluated (ADR 0029 §4): positive, finite, in range, each once. */

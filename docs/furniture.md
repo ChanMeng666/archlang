@@ -24,9 +24,9 @@ non-absolute modes derive the piece's rotation for you.
 
 | Mode | Grammar | You give | ArchLang derives |
 |------|---------|----------|------------------|
-| **Absolute** | `furniture <kind> at (x,y) size <w>x<h> [rotate 0\|90\|180\|270] [in <room>]` | corner, footprint, optional quarter-turn | nothing — what you write is what's drawn |
+| **Absolute** | `furniture <kind> at (x,y) [size <w>x<h>] [rotate 0\|90\|180\|270] [in <room>]` | corner, footprint (optional for a kind that has one), optional quarter-turn | nothing — what you write is what's drawn, plus the **footprint**, turned by `rotate`, if the kind has one and you omit `size` |
 | **Against wall** | `furniture <kind> against wall <ref> [segment <n>] [offset <mm>] [side left\|right] [size <along>x<depth>] [in <room>]` | which wall, how far along, optionally a depth | the position **and** the rotation, from the wall — plus the **footprint**, if the kind has one and you omit `size` |
-| **In a room** | `furniture <kind> in <room> centered\|anchor <a> [flush] [inset <mm>] size <w>x<h> [rotate …]` | which room, which corner/edge, footprint | the position from the room's box (or, with `flush`, from the backing wall's face), and — for a kind whose facing means something — the rotation from the wall the anchor names |
+| **In a room** | `furniture <kind> in <room> centered\|anchor <a> [flush] [inset <mm>] [size <w>x<h>] [rotate …]` | which room, which corner/edge, footprint (optional for a kind that has one) | the position from the room's box (or, with `flush`, from the backing wall's face), and — for a kind whose facing means something — the rotation from the wall the anchor names; with `size` omitted, the **footprint**, laid along that wall |
 | **Against a room edge** | `furniture <kind> against <room>.<edge> [offset <mm>] [size <along>x<depth>]` | which room edge, how far along | the position and the rotation, from the wall standing on that edge (a derived wall too) or the edge line |
 
 ```arch static
@@ -57,7 +57,22 @@ furniture wc in r_bath anchor bottom flush size 400x700
     inferred for you.
   - `size` may be **omitted** for any kind with a catalogued footprint (the "Footprint"
     column below) — it is read as `along × depth`, along the wall and into the room.
-    A kind with no footprint and no `size` is [`E_FURN_SIZE`](error-codes.md).
+    A kind with no footprint and no `size` is [`E_FURN_SIZE`](error-codes.md), under
+    every placement.
+- **`size` may be omitted under `at` and `in <room>` too**, for a kind with a catalogued
+  footprint; the plan `w × h` it stands for is the footprint at the piece's quarter-turn.
+  - `at (x,y)` draws it with the back north at `rotate 0` (`along` across, `depth` down: a WC
+    is 400 × 700), its two sides swapped under `rotate 90` or `270` (700 × 400).
+  - `in <room> anchor <edge>` lays it along the wall it backs onto: when exactly one edge
+    the anchor names has a wall behind it, and the kind's facing means something, the back
+    goes on that edge and the rotation is derived from it, so `furniture wc in bath anchor
+    right` is a 700 × 400 WC at `rotate 90`, the same piece as writing `size 700x400`.
+    Otherwise (no walled edge, a corner walled on both edges, a written `rotate`) it takes
+    the footprint at `rotate 0`, turned by any `rotate`, and the derivation below reads it as
+    it reads a written size.
+  - `facing <id>` is settled after the piece is placed, so it reads the footprint at
+    `rotate 0`; a turn that would put the back on the footprint's short side is
+    [`E_FACING_TRANSPOSED`](error-codes.md), which names the `size` to write.
   - The rotation is **derived from the wall**, so combining `against` with an
     explicit `rotate` is an error ([`E_FURN_AGAINST`](error-codes.md)).
 - **`in <room>`** records the owning room (by `id`). A trailing `in <room>` doesn't
@@ -135,8 +150,8 @@ Four columns need a word of explanation:
   Same source, plan and 3D preview. The 3D preview is extruded from the same .arch file by the separate archlang-3d package, and checked against the plan: every 3D element comes from the plan's elements, and every solid is closed.
   3D preview: walls, openings, floors, stairs, furniture, outdoor surfaces and fences in plain colours; the ground and the soft contact shadows are the viewer's, not part of the building and not in the file; no pitched roofs or balcony railings yet, and no sections, elevations or BIM.
   More on what it shows: [the 3D preview](https://archlang.uk/3d).
-- **Footprint** is the catalogued `along × depth` in millimetres — the size
-  `against wall` uses when you omit `size`. A dash means the kind has none, so `size` is
+- **Footprint** is the catalogued `along × depth` in millimetres — the size any
+  placement uses when you omit `size`. A dash means the kind has none, so `size` is
   required there.
 - **Facing** says what ArchLang will do about which way the piece points.
   **Derived** means the symbol has an unmistakable back — a cistern, a tap, a nosing, a
@@ -588,18 +603,22 @@ gets no marker at all for a drawn piece.
 
 ## Sizes: catalogued footprints and the fixture library
 
-The **Footprint** column above is what `against wall` uses when you omit `size`, so the
+The **Footprint** column above is what every placement uses when you omit `size`, so the
 common case has no numbers in it at all:
 
 ```arch static
 furniture stove        against wall w_west offset 1200 in r_kitchen
 furniture kitchen_sink against wall w_west offset 2000 in r_kitchen
 furniture fridge       against wall w_west offset 2800 in r_kitchen
+furniture wc           in r_bath anchor right flush
+furniture basin        at (5200,600)
 ```
 
-The other placement modes always need an explicit `size` — an `at (x,y)` or `in <room>`
-piece has no wall to tell `along` from `depth`, so there is no unique answer to derive
-([`E_FURN_SIZE`](error-codes.md)).
+`against` reads it as `along × depth`. `at (x,y)` and `in <room>` take a plan `w × h`, so they
+read it at the piece's quarter-turn: back north at `rotate 0`, turned by a written `rotate`, or,
+under `anchor <edge>`, laid along the one walled edge the anchor names (the rule is under
+[the placement modes](#three-placement-modes)). A kind with no footprint needs an explicit `size` under every
+placement ([`E_FURN_SIZE`](error-codes.md)).
 
 Two importable libraries package the standard pieces at typical residential sizes, for
 when you would rather call a component than write a footprint:
