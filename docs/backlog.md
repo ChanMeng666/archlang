@@ -1478,21 +1478,6 @@ it; that is a 2.0 decision for the owner.
 **Gate:** on a Linux host whose npm prefix is `/usr`, `npm i -g` of the packed tarball succeeds
 and `archlang --version` prints the version. **Size:** S.
 
-### U.20 · The MCP `describe` tool's description names only the centreline area — `todo`
-
-**Observed (card D1, out of its scope).** `describe()` now reports `rooms[].net_area_m2` and
-`totals.net_floor_area_m2` beside the centreline `area_m2`
-(`docs/adr/0027-net-internal-area.md`). The `describe` tool's description in
-`packages/mcp/src/tools.ts` still lists rooms by "area" alone, so an agent reading the tool list
-is not told which figure is the floor no wall stands on, or that it can be absent.
-
-**Hypothesis.** One clause in the description: `area_m2` on wall centrelines, `net_area_m2`
-the floor no wall stands on (absent when it cannot be computed exactly). Any `packages/mcp` change, prose included, publishes only with a version bump
-in `packages/mcp/package.json` and both `server.json` `version` fields.
-
-**Gate:** the tool description names both fields; the MCP lockstep and tool-text tests pass; the
-version is bumped in all three places. **Size:** S.
-
 ### U.22 · `describe()` is unbudgeted, and the net-area term is quadratic per room — `todo`
 
 **Observed (card D1 review).** The net-area measurement pairs a room's edges with the wall-band

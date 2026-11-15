@@ -62,6 +62,31 @@ describe("archlang mcp server", () => {
     }
   });
 
+  it("the describe tool's description names both room areas, each a real key of its output", async () => {
+    const client = await connect();
+    const { tools } = await client.listTools();
+    const text = tools.find((t) => t.name === "describe")?.description ?? "";
+    // centreline and net figures, per room and in totals, and that the net one can be absent
+    for (const key of ["area_m2", "net_area_m2", "floor_area_m2", "net_floor_area_m2"]) {
+      expect(text, key).toContain(`\`${key}\``);
+    }
+    expect(text).toMatch(/centreline/);
+    expect(text).toMatch(/absent when/);
+    // the names are the ones `describe` actually returns, not prose that drifted from it
+    const walled = `plan "W" {
+  wall exterior thickness 200 { (0,0) (4000,0) (4000,3000) (0,3000) close }
+  room id=r at (0,0) size 4000x3000 label "Room"
+}
+`;
+    const out = payload(await client.callTool({ name: "describe", arguments: { source: walled } }));
+    const room = (out.rooms as { area_m2: number; net_area_m2: number }[])[0];
+    expect(room).toHaveProperty("area_m2");
+    expect(room).toHaveProperty("net_area_m2");
+    expect(out.totals).toHaveProperty("floor_area_m2");
+    expect(out.totals).toHaveProperty("net_floor_area_m2");
+    expect(room?.net_area_m2).toBeLessThan(room?.area_m2 ?? 0);
+  });
+
   it("compile returns SVG + diagnostics for a valid plan", async () => {
     const client = await connect();
     const out = payload(await client.callTool({ name: "compile", arguments: { source: TINY, format: "svg" } }));
