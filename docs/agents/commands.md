@@ -207,7 +207,9 @@ runner image lacks, which the specs' layout depends on): 10 and 18 minutes in ru
 Code PRs land by merge train (`npm run train`, `scripts/merge-train.mjs`): one full CI run for several
 reviewed PRs, instead of one sync, one CI run and one re-review per PR. An ordinary PR's run is the
 first run of Node 18, Node 20 and Windows only in the `push` run on `main` (§ CI); a train PR's run
-runs them before the merge.
+runs them before the merge when `changes` calls the change code (a records-only train does not run them).
+Before merging anything into `main` (a train or a direct merge), check for an open `train/*` PR
+(`gh pr list --search "head:train/"`) and do not move `main` under it: one train at a time across sessions.
 
 0. Tier the change by what it touches, not who wrote it: `node scripts/risk-tier.mjs` (highest path
    wins; renames count both paths; a path no rule names is medium). **Low** (internal prose:
@@ -250,10 +252,10 @@ runs them before the merge.
       the train's own `ci.yml` run (event `pull_request`, the train branch, the train head) is completed
       and successful, and every check-run passed: never the check names alone, which GitHub matches per
       SHA (so every member gets a fresh merge commit and the train head is never a member's head). It
-      prints `scripts/ci-proven.mjs --run`'s `proves: yes|no` (information: on "no", `main`'s push run
+      prints `scripts/ci-proven.mjs --run`'s `proves: yes|no|unknown` (`unknown` when `ci-proven` exits 2; information: on "no", `main`'s push run
       runs every leg itself). It merges with
       `--match-head-commit`, reads the state back, and only then deletes each member branch GitHub marked
-      MERGED (still at its pinned SHA, no open PR based on it), comments `landed by train #<n> (<sha>)` on
+      MERGED (still at its pinned SHA, no open PR based on it, and not another open PR's head), comments `landed by train #<n> (<sha>)` on
       it, and removes the train branch and worktree. A member not marked MERGED is reported and left.
    - **Red train:** read the failing job (`gh run view <id> --log-failed`). If one member is clearly the
      cause, `npm run train -- --abandon <train pr>` and build again without it; if not, halve: abandon,
