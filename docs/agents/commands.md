@@ -41,7 +41,8 @@
   `physicalWarnings`/`lintWarnings` count). It never requires every golden to pass; its last line
   says how many are recorded as failing and under which decision (`fixtureVerdict`, `eval/run.ts`).
   `eval:fidelity` is a separate, judge-free corpus whose numbers are never compared with it;
-  `eval:live` is paid and owner-only.
+  `eval:live` is paid and owner-only, and so is `eval:fidelity-live` (its live path; owner-approved
+  2026-11-15), whose numbers are compared with neither.
 - `npm run digest:engines` (ADVISORY, always exits 0, last line `status=` clean, diverged, incomplete or
   baseline-stale) measures cross-engine determinism: the built `dist/` is run in Playwright chromium,
   firefox and webkit over examples, fixtures, recovery and eval plans plus transcendental probes, and

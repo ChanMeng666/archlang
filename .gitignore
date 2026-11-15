@@ -26,6 +26,10 @@ eval/results.live.md
 eval/results.l2.*.md
 eval/results.l2.*.json
 eval/results.l2.*.json.tmp
+# Live fidelity output: ephemeral, one pair per model, never compared with eval:ci or the L0 baseline.
+eval/results.fidelity-live.*.md
+eval/results.fidelity-live.*.json
+eval/results.fidelity-live.*.json.tmp
 # Generated dataset artifacts (HF-only; the generator + seed are the committed source).
 dataset/out/
 # local env & agent-session artifacts
