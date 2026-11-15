@@ -59,6 +59,7 @@ const compat = compatModule as {
   compareMcpTools: (o: unknown, n: unknown) => Finding[];
   compareJsonSchemas: (o: unknown, n: unknown, opts: { surface: string; name: string; path?: string }) => Finding[];
   compareErrorCodes: (o: readonly string[], n: readonly string[]) => Finding[];
+  unwrapParens: (s: string) => string;
 };
 
 const TIMEOUT = 180_000;
@@ -275,6 +276,54 @@ describe("release compatibility: the comparisons are not vacuous", () => {
       ]);
       const lostTuple = compat.compareTypeSurfaces(l, compat.typeSurface(narrowed));
       expect(lostTuple.map((f) => `${f.kind} ${f.name} ${f.path}`)).toContain("enum member removed SCHEMA .enum[]");
+    },
+    TIMEOUT,
+  );
+
+  it(
+    "types: an optional parameter compares the same from a declaration file (`x?: A & B`) and from source (`x: A & B = d`)",
+    () => {
+      // The published `.d.ts` reads `x?: A & B` as `(A & B) | undefined`; dropping `undefined` left
+      // `(A & B)`, while the source's `x: A & B = {}` prints `A & B` (lintReport in 1.62.0).
+      const oldDts = join(dir, "optional-old.d.ts");
+      const newTs = join(dir, "optional-new.ts");
+      writeFileSync(
+        oldDts,
+        [
+          "export interface O { a?: number }",
+          "export declare function report(src: string, opts?: O & { strict?: boolean }): void;",
+          "export declare function onDone(cb?: () => void): void;",
+          'export declare function narrowed(opts?: O & { mode?: "a" | "b" }): void;',
+          "export declare function required(opts?: O & { strict?: boolean }): void;",
+        ].join("\n"),
+      );
+      writeFileSync(
+        newTs,
+        [
+          "export interface O { a?: number }",
+          "export function report(src: string, opts: O & { strict?: boolean } = {}): void {}",
+          "export function onDone(cb: () => void = () => {}): void {}",
+          'export function narrowed(opts: O & { mode?: "a" } = {}): void {}',
+          "export function required(opts: O & { strict?: boolean }): void {}",
+        ].join("\n"),
+      );
+      const oldS = compat.typeSurface(oldDts);
+      const newS = compat.typeSurface(newTs);
+      expect(oldS.report?.["sig0.p1"]).toBe("?O & {strict?: boolean | undefined;}");
+      expect(newS.report?.["sig0.p1"]).toBe(oldS.report?.["sig0.p1"]);
+      expect(oldS.onDone?.["sig0.p0"]).toBe("?() => void");
+      const types = compat.compareTypeSurfaces(oldS, newS);
+      const said = types.map(compat.formatFinding).join("\n");
+      // Not vacuous: the same shape narrowed, or made required, is still reported.
+      expect(types.map((f) => `${f.kind} ${f.name}${f.path ? ` ${f.path}` : ""}`).sort(), said).toEqual([
+        "narrowed input type narrowed sig0.p0",
+        "new required parameter required sig0.required",
+        "parameter became required required sig0.p0",
+      ]);
+      expect(compat.unwrapParens("(A & B)")).toBe("A & B");
+      expect(compat.unwrapParens("(A) | (B)")).toBe("(A) | (B)");
+      expect(compat.unwrapParens("(a: T) => (U)")).toBe("(a: T) => (U)");
+      expect(compat.unwrapParens('("(" & B)')).toBe('"(" & B');
     },
     TIMEOUT,
   );
