@@ -122,7 +122,7 @@ the repair stage will refuse them and the row is rejected.
 > `submit` phase (product-roadmap RM-D47). `CARD.md` carries this config's card text; the upload
 > itself is the owner's step (§ Re-uploading to Hugging Face).
 
-A separate HF config, `model-authoring` (split `one_shot`, file `model-authoring.jsonl`). Real
+A separate HF config, `model-authoring` (split `one_shot`, files `model-authoring.jsonl` and `model-authoring-fable.jsonl`; keep that order in `CARD.md`'s `configs:`, the 1170-row file first for schema inference). Real
 models write `.arch` **one-shot** from procedural briefs, and the deterministic tools heal the
 result. The consumer-facing description, fields and limitations are in
 `CARD.md`; this section covers how it is built and what must not break.
@@ -236,8 +236,8 @@ Notes:
   card-only edit re-uploads `README.md` alone. This is a release-checklist item — see
   `CONTRIBUTING.md` → "Releasing".
 - **The `model-authoring` config** (`CARD.md` already carries its `configs:` entry and section).
-  Its data file and report upload alongside `CARD.md` as `README.md`. **Upload `README.md` last**,
-  after the data file it names exists on HF: an unresolvable `data_files` path breaks loading for
+  Its data files and reports upload alongside `CARD.md` as `README.md`. **Upload `README.md` last**,
+  after the data files it names exist on HF: an unresolvable `data_files` path breaks loading for
   the whole repo.
 
   ```bash

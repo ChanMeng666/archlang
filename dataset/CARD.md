@@ -162,13 +162,15 @@ uploaded unmodified:
 - `model-authoring-report.json`: its report. SHA-256
   `895b7ea4ddca303ff5095558bc8af3328abd4f8414c85cf44da711d725346760`.
 - `model-authoring-fable.jsonl`: 200 rows, `claude-fable-5-2` only. **It covers only the first 200
-  of the 390 briefs** (generated with `--briefs 200`; those brief lines are byte-identical to the
-  first 200 of the other file), with the same generator, commit, version, seed, deduplication and
-  healing. SHA-256 `feb7f9121890b3d53d830cd5ce1d5c98df4324ccdd5b06cbf7822cfc7797d383`.
+  of the 390 briefs** (generated with `--briefs 200`), with the same generator, commit, version,
+  seed, deduplication and healing. What a consumer can check: its 200 `brief_id`s are the first 200
+  of the brief manifest, in order, and for each, `brief`, `brief_params`, `intent`, `generator`,
+  `canary`, `archlang_version` and `system_prompt_sha256` equal those of the first file's row with
+  the same `brief_id`. SHA-256 `feb7f9121890b3d53d830cd5ce1d5c98df4324ccdd5b06cbf7822cfc7797d383`.
 - `model-authoring-fable-report.json`: its report. SHA-256
   `42b9505408fbd1f14bbd70a88c1246005f853dd8a8d789a738090959aa19e4cb`.
 
-Verdict counts per model (from the report; `valid` and `sound` are defined under *Fields*; `l0` is
+Verdict counts per model (from the two reports; `valid` and `sound` are defined under *Fields*; `l0` is
 the raw reply, `final` is after `arch fix` then `arch repair`):
 
 | Model | Rows | L0 valid | L0 sound | Final valid | Final sound |
@@ -177,6 +179,12 @@ the raw reply, `final` is after `arch fix` then `arch repair`):
 | `claude-sonnet-5-5` | 390 | 387 | 351 | 387 | 353 |
 | `claude-opus-5-5` | 390 | 389 | 247 | 389 | 247 |
 | `claude-fable-5-2` | 200 (first 200 briefs only) | 200 | 194 | 200 | 194 |
+
+On the same 200 `brief_id`s the other models score L0 valid / sound: haiku 181 / 132, sonnet
+199 / 176, opus 200 / 116. Compare Fable with them only on those ids, not against the 390-row totals above.
+
+**File order.** The order of the two files under `configs:` matters: the 1170-row file comes first,
+so that schema inference reads it first.
 
 **How the rows were made.**
 
