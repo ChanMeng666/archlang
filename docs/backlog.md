@@ -1548,7 +1548,7 @@ and were not re-run when filing.
 
 - H.1 · Lint messages still quote element ids (issue #187) — closed by PS2.22 and PS2.29 (PR #269); test/lint-messages-id-free.test.ts holds it; RM0.1, 2026-11-11 → archived (lab)
 
-### H.2 · `finish()` cannot accept a code its caller treats as advisory (issue #189) — `todo`
+### H.2 · `finish()` advisory-code `accept` option (issue #189): superseded by #245, waiting to be archived — `note`
 
 **Observed.** `finish()`'s never-worse law (`codesOf`, `src/finish.ts`) refuses any statement
 that adds a diagnostic code, so where `dims auto all` raises `W_OPENING_NOT_DIMENSIONED` the sheet
@@ -1567,6 +1567,13 @@ alternative, a lint profile with per-code severity, is larger and changes what `
 whose `dims auto all` raises only `W_OPENING_NOT_DIMENSIONED` keeps `dims auto all` under
 `accept: ["W_OPENING_NOT_DIMENSIONED"]` with a note naming the code; fixpoint holds with `accept` as
 part of the input; an unknown or error code is a usage error. **Size:** S.
+**Closed (2026-11-16).** PR #245 (PS2.12) took the drafting-layer codes, `W_OPENING_NOT_DIMENSIONED`
+included, out of the never-worse comparison (`NOT_GATED_DRAFTING`, `src/furnish.ts`; ADR 0024's
+amendment of 2026-10-24), so the sheet stage keeps `dims auto all` without any option
+(`test/finish-sheet-degrade.test.ts`). Issue #189 was closed as completed on 2026-10-26. An `accept`
+option for non-drafting codes would loosen the never-worse law, and needs a named caller and an owner decision.
+The Gate's "note naming the code" was not built: `finish` reports nothing for a kept drafting code
+(`unresolved` stays empty), and only a lint of the finished source shows it, as ADR 0024 says.
 
 ## Registry listings (opened 2026-10-10)
 
@@ -1760,7 +1767,7 @@ uses it (and, for `style`, when the reference gains its section). **Gate:**
 
 ## Stairs in the 3D preview (public-surfaces card X3, 2026-11-06)
 
-### ST.1 · No lint compares a stair's drawn treads with its storey height — `todo`
+### ST.1 · Drawn treads against storey height: done by RM1.2a (#736), waiting to be archived — `note`
 
 The plan draws each flight with `treadCount(run)` treads (`src/elements/vertical-glyphs.ts`, a
 nominal 280 mm going, whatever the storey height), and the 3D preview climbs the storey on one
@@ -1775,6 +1782,11 @@ never compares the treads drawn with the storey height, so none of these plans w
 riser the drawing implies, where the plan authors a height. **Gate:** the implied riser for each
 example, hand-derived in the test; a plan with no `height` unchanged; the byte-identity law over
 the corpus for `describe()` if a fact is added, and the lint's own corpus findings listed in the PR.
+**Done by RM1.2a (PR #736, merge `80c1669e`).** `W_STAIR_RISER_TOO_HIGH` (`stairDrawnMaxRiseMm`, 220 mm)
+reports the riser the drawn treads imply where the plan writes a `height`, and
+`test/lint-stair-riser-too-high.test.ts` hand-derives it per example. The three examples with no `height`
+are RM1.2h. #736 also redrew two-storey (3250 mm flight) and turning-stair, so the riser figures
+above are as filed, not as on `main`.
 
 ### ST.2 · The walking line over a winder landing is drawn as a chord but credited as an arc — `todo`
 
