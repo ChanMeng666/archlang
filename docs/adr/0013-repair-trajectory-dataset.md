@@ -111,9 +111,9 @@ motivation is `archcanvas-growth/archive/archlang/docs-archive/research/2026-07-
 
 Decision **d** above rested on the 2026-07-12 decision that declined the T3 live experiment
 permanently. On 2026-11-15 the owner ratified, in words, exactly one live run of it (provider
-`anthropic`; `claude-sonnet-5-5` and `claude-haiku-5-5`; not yet run). Its analysis and decision
-rule will be pre-registered before the run in `eval/live-runs/2026-11-t3-preregistration.md`, and
-its record published in `eval/live-runs/` whatever it shows. The bounds are kept in
+`anthropic`; `claude-sonnet-5-5` and `claude-haiku-5-5`; ran 2026-11-15, record: `eval/live-runs/2026-11-t3-result.md`). Its analysis and decision
+rule were pre-registered before the run in `eval/live-runs/2026-11-t3-preregistration.md`, and
+its record was published in `eval/live-runs/` whatever it showed. The bounds are kept in
 `docs/agents/iron-laws.md`. Decision **d** now reads: no dataset artifact (generator, card or
 report) claims a diagnostic-feedback-loop gain or its absence, before or after that run. The
 published record in `eval/` is the only statement of the result; a dataset artifact neither
