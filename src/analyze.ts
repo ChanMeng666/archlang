@@ -712,6 +712,22 @@ export function separateBalconies(edges: readonly AccessEdge[], ir: ResolvedPlan
   return out ?? edges;
 }
 
+/**
+ * The access digraph a storey is walked on (RM1.3d), the one place the choice is made, so the
+ * walks of `describe()`, the reachability rule and the privacy rules cannot drift apart: walked
+ * from the outside (`fromOutside`, a storey with a way in from the ground), the edges as they are,
+ * with the one {@link EXTERIOR_NODE} a start; walked through but not from (a storey a shaft
+ * arrives on and no door from the ground reaches), one node per balcony ({@link separateBalconies}).
+ */
+export function storeyWalkDigraph(
+  roomIds: readonly string[],
+  edges: readonly AccessEdge[],
+  ir: ResolvedPlan,
+  fromOutside: boolean,
+): Digraph<string, AccessEdge> {
+  return accessDigraph(roomIds, fromOutside ? edges : separateBalconies(edges, ir));
+}
+
 /** How near two balconies' edges must lie (mm) to be one slab ({@link separateBalconies}). */
 const BALCONY_TOUCH_MM = 1;
 
@@ -799,18 +815,13 @@ export function storeyRoomReach(ir: ResolvedPlan, tol: number): (seeds: StoreySe
     "probe",
     outdoorsOf(ir),
   );
-  const g = accessDigraph(
-    rooms.map((r) => r.id),
-    edges,
-  );
+  const ids = rooms.map((r) => r.id);
+  const g = storeyWalkDigraph(ids, edges, ir, true);
   // Walked through but not from, the outside is one node per balcony (`separateBalconies`).
   let through: Digraph<string, AccessEdge> | undefined;
   return (seeds) => {
     if (seeds.exterior !== false) return reachFrom(g, { exterior: seeds.exterior, extraSources: seeds.rooms });
-    through ??= accessDigraph(
-      rooms.map((r) => r.id),
-      separateBalconies(edges, ir),
-    );
+    through ??= storeyWalkDigraph(ids, edges, ir, false);
     return reachFrom(through, { exterior: false, extraSources: seeds.rooms });
   };
 }

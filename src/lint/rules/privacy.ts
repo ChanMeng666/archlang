@@ -29,7 +29,6 @@
 
 import type { Point, UseKind } from "../../ast.js";
 import {
-  accessDigraph,
   type AccessEdge,
   connectorFacePath,
   connectorFaces,
@@ -42,7 +41,7 @@ import {
   roomRing,
   roomsAdjacent,
   roomUses,
-  separateBalconies,
+  storeyWalkDigraph,
   wetRoomsOnlyViaBedroom,
 } from "../../analyze.js";
 import { entranceInputs, entranceWays } from "../../analyze/entrance.js";
@@ -341,9 +340,11 @@ function factsOf(ctx: LintContext): Facts {
   // outside open onto balconies, and each balcony is its own node, walked across (out of one room,
   // in at another, `separateBalconies`). So a room reached only across a balcony from a bedroom is
   // reached through that bedroom. Elsewhere the one exterior node is never walked through (`hops`).
-  const g = accessDigraph(
+  const g = storeyWalkDigraph(
     rooms.map((r) => r.id),
-    arrivals.length === 0 ? all : separateBalconies(all, ctx.ir),
+    all,
+    ctx.ir,
+    arrivals.length === 0,
   );
   const edges = all.filter(joins);
   const uses = new Map<string, Set<UseKind>>(rooms.map((r) => [r.id, roomUses(r)]));
