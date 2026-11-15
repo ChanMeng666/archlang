@@ -74,6 +74,9 @@ function contains(s: HitShape, x: number, y: number): boolean {
   return true;
 }
 
+/** Relative tolerance under which two room sizes count as equal (the tie rule). */
+const TIE_EPS = 1e-9;
+
 /** The size the smallest-room rule compares: the shape's area, else the box's. */
 function sizeOf(s: HitShape): number {
   const c = s.floor_circle;
@@ -98,9 +101,9 @@ function sizeOf(s: HitShape): number {
  * bathroom inside a suite) or overlap, and the innermost one — the smallest by
  * shape area — is the one the pointer means.
  *
- * Ties (two containing rooms of equal area) resolve to the EARLIER item — the
- * comparison is a strict `<`, so nothing later can displace an equal-area
- * incumbent. That makes the result a deterministic function of describe()'s room
+ * Ties (two containing rooms of equal area, to a relative `TIE_EPS`) resolve to
+ * the EARLIER item — a later room must be smaller by more than the tolerance to
+ * displace the incumbent. That makes the result a deterministic function of describe()'s room
  * order, not of floating-point luck.
  */
 export function pickSmallestContaining<T extends HitShape>(items: readonly T[], x: number, y: number): T | null {
@@ -109,7 +112,9 @@ export function pickSmallestContaining<T extends HitShape>(items: readonly T[], 
   for (const item of items) {
     if (!contains(item, x, y)) continue;
     const size = sizeOf(item);
-    if (!hit || size < hitSize) {
+    // Shoelace over a ring of fractional coordinates can differ in its last bits from the
+    // same area computed another way, so sizes within TIE_EPS of each other are a tie.
+    if (!hit || size < hitSize * (1 - TIE_EPS)) {
       hit = item;
       hitSize = size;
     }

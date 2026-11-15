@@ -46,6 +46,21 @@ describe("pickSmallestContaining", () => {
     for (let i = 0; i < 5; i++) expect(pickSmallestContaining([a, b], 700, 700)?.id).toBe("a");
   });
 
+  it("keeps the tie rule for equal rooms whose shoelace areas differ in the last bits", () => {
+    // Review of #822: these two 1000.3 x 700.7 rings give shoelace areas 700910.2100000002
+    // and 700910.21; a strict `<` on those floats let the LATER room win.
+    const ring = (x: number, y: number) => [
+      { x, y },
+      { x: x + 1000.3, y },
+      { x: x + 1000.3, y: y + 700.7 },
+      { x, y: y + 700.7 },
+    ];
+    const a = { id: "a", bbox: { x: 0.1, y: 0.2, w: 1000.3, h: 700.7 }, floor_polygon: ring(0.1, 0.2) };
+    const b = { id: "b", bbox: { x: 300.7, y: 200.1, w: 1000.3, h: 700.7 }, floor_polygon: ring(300.7, 200.1) };
+    expect(pickSmallestContaining([a, b], 500, 400)?.id).toBe("a");
+    expect(pickSmallestContaining([b, a], 500, 400)?.id).toBe("b");
+  });
+
   it("treats the box boundary as inside (a wall-edge hover still hits its room)", () => {
     const r = room("r", 100, 200, 400, 300);
     expect(pickSmallestContaining([r], 100, 200)?.id).toBe("r"); // top-left corner
