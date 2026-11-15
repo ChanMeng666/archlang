@@ -420,13 +420,19 @@ export function buildAll(
       usage: new Tally(),
     };
     let emitted = 0;
+    // Every line of the results file is tallied by type; a line naming no manifest brief is
+    // counted too (it cannot be a row: there is no brief to pair it with).
+    const known = new Set(manifest.map((e) => e.brief_id));
+    for (const [id, line] of results) {
+      t.results.bump(line.result.type);
+      if (!known.has(id)) t.skipped.bump("unknown-custom-id");
+    }
     for (const entry of manifest) {
       const line = results.get(entry.brief_id);
       if (!line) {
         t.skipped.bump("missing-result");
         continue;
       }
-      t.results.bump(line.result.type);
       if (line.result.type !== "succeeded") {
         t.skipped.bump(`result-${line.result.type}`);
         continue;
