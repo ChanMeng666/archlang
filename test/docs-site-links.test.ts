@@ -10,7 +10,7 @@ import { readdirSync, readFileSync, statSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 // @ts-expect-error plain .mjs module without declarations
-import { headingIds, rewriteLinks, routeOfDest, slugify } from "../docs-site/link-rewrite.mjs";
+import { fenceStep, headingIds, rewriteLinks, routeOfDest, slugify } from "../docs-site/link-rewrite.mjs";
 
 const syncSrc = readFileSync("docs-site/sync-docs.mjs", "utf8");
 function table(name: string): Array<[string, string]> {
@@ -59,24 +59,18 @@ const publicFile = (route: string) => {
 };
 
 /**
- * Every inline/reference link target outside fenced code and inline code spans. A fence opens on a
- * run of >= 3 backticks or tildes and closes only on a bare run of the SAME character at least as
- * long (the rule `test/docs-fences.test.ts` states), restated here rather than imported, so the
- * rewriter's own scan is checked against a second copy.
+ * Every inline/reference link target outside fenced code and inline code spans. Fenced code is
+ * found by the one fence rule the rewriter uses (`fenceStep`), so a page's links are read the way
+ * the rewriter reads them; the rule's own cases are pinned below.
  */
 function linksOf(md: string): string[] {
   const out: string[] = [];
   let fence: string | null = null;
   for (const line of md.split("\n")) {
-    const f = /^\s*(`{3,}|~{3,})(.*)$/.exec(line);
-    if (fence === null && f) {
-      fence = f[1]!;
-      continue;
-    }
-    if (fence !== null) {
-      if (f && f[1]![0] === fence[0] && f[1]!.length >= fence.length && !f[2]!.trim()) fence = null;
-      continue;
-    }
+    const step = fenceStep(fence, line) as { open: string | null; marker: boolean };
+    const inside = fence !== null || step.marker;
+    fence = step.open;
+    if (inside) continue;
     const plain = line
       .split(/(`+[^`]*`+)/)
       .filter((_, i) => i % 2 === 0)
@@ -185,6 +179,50 @@ describe("site copies of the canonical docs", () => {
     expect(headingIds("````\n```\n## Not a heading\n```\n````\n## Real").map((h: { vp: string }) => h.vp)).toEqual([
       "real",
     ]);
+  });
+
+  it("a fence marker is indented <= 3 spaces, and a backtick opener's info string holds no backtick", () => {
+    // Indented 4 spaces: indented code, which opens no fence, so the link after it is rewritten.
+    const indented = "    ```\n[a](error-codes.md)\n```\n[b](error-codes.md)\n```";
+    expect(rewriteLinks(indented, "docs/a.md", ctx)).toBe("    ```\n[a](/errors)\n```\n[b](error-codes.md)\n```");
+    expect(linksOf(indented)).toEqual(["error-codes.md"]);
+    // Up to 3 spaces still opens a fence.
+    expect(linksOf("   ```\n[a](error-codes.md)\n   ```\n[b](x.md)")).toEqual(["x.md"]);
+    // ```` ``` a`b ```` is a code span in a paragraph, not a fence: the next line is prose.
+    const span = "``` a`b\n[a](error-codes.md)";
+    expect(rewriteLinks(span, "docs/a.md", ctx)).toBe("``` a`b\n[a](/errors)");
+    expect(linksOf(span)).toEqual(["error-codes.md"]);
+    // A tilde opener may carry a backtick.
+    expect(linksOf("~~~ a`b\n[a](error-codes.md)\n~~~")).toEqual([]);
+    expect(fenceStep(null, "``` a`b")).toEqual({ open: null, marker: false });
+    expect(fenceStep(null, "   ~~~ a`b")).toEqual({ open: "~~~", marker: true, info: "a`b" });
+  });
+
+  it("heading ids skip HTML comments and honour an explicit {#id}, as VitePress does", () => {
+    const ids = (md: string) => (headingIds(md) as Array<{ vp: string; gh: string }>).map((h) => [h.vp, h.gh]);
+    // A `#` line in an HTML comment block (one line or many) is no heading; <= 3 spaces of indent is.
+    expect(ids("<!-- ## a -->\n<!--\n## In a comment\n-->\n   ## Kept")).toEqual([["kept", "kept"]]);
+    // `{#id}` is the VitePress id; GitHub has no attribute blocks and slugs the whole text.
+    expect(ids("## Title {#custom-id}")).toEqual([["custom-id", "title-custom-id"]]);
+    // A block holding more than an id: the id is still the one, the class is stripped from the text.
+    expect(ids("## Title {#a .b}\n## Other {.b}")).toEqual([
+      ["a", "title-a-b"],
+      ["other", "other-b"],
+    ]);
+    // An explicit id takes its place in the registry: a later heading slugged to it is suffixed,
+    // and an explicit id that repeats an earlier slug is kept as written (VitePress refuses that build).
+    expect(ids("## My id\n## Named {#my-id}\n## My id")).toEqual([
+      ["my-id", "my-id"],
+      ["my-id", "named-my-id"],
+      ["my-id-1", "my-id-1"],
+    ]);
+    // A link to the explicit id is kept; a GitHub-spelled one is re-spelled to it, not to a phantom.
+    const src = "# Errors\n## Title {#custom-id}";
+    const withSrc = { ...ctx, sourceOf: (p: string) => (p === "docs/error-codes.md" ? src : ctx.sourceOf(p)) };
+    expect(rewriteLinks("[a](error-codes.md#custom-id)", "docs/a.md", withSrc)).toBe("[a](/errors#custom-id)");
+    expect(rewriteLinks("[a](error-codes.md#title-custom-id)", "docs/a.md", withSrc)).toBe("[a](/errors#custom-id)");
+    // The site check reads the same ids, so a correct `#custom-id` link is no false red.
+    expect((headingIds(src) as Array<{ vp: string }>).map((h) => h.vp)).toEqual(["errors", "custom-id"]);
   });
 
   it("keeps a ?query, between the new path and the #fragment", () => {
