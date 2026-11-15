@@ -146,7 +146,7 @@ export function contains(f: Tri, q: P2): boolean {
 /**
  * How the bake finds faces: `at(q)` lists at least every face that contains `q`, and `near(box)` at
  * least every face that overlaps the box (each once). `TriGrid` is the one the bake uses; the tests
- * pass a lookup that checks it against a scan of every face (`contactShadows`' last parameter).
+ * pass a lookup that checks it against a scan of every face (`contactShadowsWith`).
  */
 export interface FaceLookup {
   at(q: P2): readonly Tri[];
@@ -576,15 +576,26 @@ const MAX_FAN = 8;
 /**
  * The contact shadows of a replay's nodes (`ReplayPayload.nodes`). `ground` (its ground plane)
  * receives under the lowest storey; `lines` (the walls' outline per node, `wallOutline`) narrows the
- * inside-corner bands at a jamb, and without it they keep their full width. `lookup` builds the face
- * lookups (`TriGrid`; a test passes one that checks it). Pure: the same nodes give the same bands,
- * byte for byte.
+ * inside-corner bands at a jamb, and without it they keep their full width. Pure: the same nodes give
+ * the same bands, byte for byte.
  */
 export function contactShadows(
   nodes: readonly ReplayNode[],
   ground?: { y: number },
   lines?: ReadonlyArray<readonly number[] | undefined>,
-  lookup: (tris: readonly Tri[]) => FaceLookup = (tris) => new TriGrid(tris),
+): ContactShadows {
+  return contactShadowsWith(nodes, ground, lines, (tris) => new TriGrid(tris));
+}
+
+/**
+ * `contactShadows` with the face lookups `lookup` builds (`TriGrid` there). Not in the package's
+ * exports: `test/shadows.test.ts` passes a lookup that checks the grid against a scan of every face.
+ */
+export function contactShadowsWith(
+  nodes: readonly ReplayNode[],
+  ground: { y: number } | undefined,
+  lines: ReadonlyArray<readonly number[] | undefined> | undefined,
+  lookup: (tris: readonly Tri[]) => FaceLookup,
 ): ContactShadows {
   const counts: Counts = {
     edges: 0,

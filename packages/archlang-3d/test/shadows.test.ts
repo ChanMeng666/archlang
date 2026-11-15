@@ -17,6 +17,7 @@ import {
   type ContactShadows,
   contactFade,
   contactShadows,
+  contactShadowsWith,
   contains,
   narrowed,
   type P2,
@@ -447,8 +448,10 @@ describe("contact shadows (card RM8.8)", () => {
         `plan "gon" { units mm\nroom id=r polygon ${pts.join(" ")}\nwall id=w exterior thickness 200 { ${pts.join(" ")} close }\n}`,
       ],
     ];
+    const refused: string[] = [];
     const of = (name: string, src: string, w = WORLD): Array<[string, ReplayPayload]> => {
       const r = adaptPlan(src, { world: w });
+      if (!r.ok) refused.push(`${name}: ${r.refusal.code}`);
       return r.ok
         ? [[name, replayPayload(buildMesh(r.scene), { title: name, svg: compile(src, { world: w }).svg })]]
         : [];
@@ -458,7 +461,10 @@ describe("contact shadows (card RM8.8)", () => {
       ...Object.entries(STRESS_PLANS).flatMap(([name, src]) => of(name, src)),
       ...synthetic.flatMap(([name, src]) => of(name, src, world)),
     ];
-    expect(plans.length).toBeGreaterThan(EXAMPLES_LIST.length);
+    // Every plan is covered, none refused: the 38 examples, the 11 stress plans, the row and the gon.
+    expect(refused).toEqual([]);
+    expect([EXAMPLES_LIST.length, Object.keys(STRESS_PLANS).length, synthetic.length]).toEqual([38, 11, 2]);
+    expect(plans.length).toBe(51);
     for (const [name, p] of plans) {
       const rank = new Map(p.events.map((e) => [e.key, e.rank] as const));
       const { lines } = wallOutline(
@@ -466,7 +472,7 @@ describe("contact shadows (card RM8.8)", () => {
         p.nodes.map((nd) => rank.get(nd.key) ?? 0),
       );
       const before = t.at + t.near;
-      const viaCheck = contactShadows(p.nodes, p.ground, lines, (tris) => checked(t, tris));
+      const viaCheck = contactShadowsWith(p.nodes, p.ground, lines, (tris) => checked(t, tris));
       expect(JSON.stringify(viaCheck), name).toBe(JSON.stringify(contactShadows(p.nodes, p.ground, lines)));
       expect(t.at + t.near, name).toBeGreaterThan(before);
     }
