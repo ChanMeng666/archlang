@@ -43,7 +43,8 @@ listed in the stage report (`docs/plans/plan-soundness/README.md` D18).
   the offline `eval:ci` gate compares every golden with the fixture, never requires all to pass, and
   prints how many are recorded as failing (`fixtureVerdict`, `eval/run.ts`; D25's gate bullet,
   ratified 2026-10-27).
-- **`eval/rubric.md` is frozen.** `eval:live` is paid and owner-only (hard rule: AGENTS.md § Hard rules); CI runs `eval:ci`.
+- **`eval/rubric.md` is frozen.** `eval:live` and `eval:fidelity-live` are paid and owner-only (hard rule:
+  AGENTS.md § Hard rules; the fidelity run's bounds are product-roadmap RM-D46); CI runs `eval:ci`.
 
 ## Releases
 
@@ -142,7 +143,7 @@ listed in the stage report (`docs/plans/plan-soundness/README.md` D18).
 - **High-tier merges (owner, 2026-11-09, in words):** the coordinator judges whether a high-tier PR
   (workflows, root config, hooks, owner rules, policy files) can merge and merges it after a
   fresh-context review and green CI, without asking per PR. Still owner-only: the decision to release,
-  `eval:live`, the npmjs account, anything that spends money. An executor never merges its own PR.
+  `eval:live` and `eval:fidelity-live`, the npmjs account, anything that spends money. An executor never merges its own PR.
 
 - **Merging a PR**: once CI is green and the diff has been read (a code change: adversarially
   reviewed), the agent merges without asking, pinned to the reviewed commit (procedure:
