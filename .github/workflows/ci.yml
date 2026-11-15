@@ -49,8 +49,8 @@ jobs:
   # FULL_CI), or its `full_leg` output, which is true on every push and merge_group and on a
   # train PR's code run, false on any other PR and on a proven push. A train PR is one whose
   # head branch starts `train/` in this repository (a fork's `train/x` is an ordinary PR). Each runs its suite in
-  # three shards (`node-18-tests`, `node-20-tests`, `windows-tests`), skipped at JOB level
-  # when FULL_LEG is false, so an ordinary PR starts no runner for them; shard 3 also runs
+  # five shards (`node-18-tests`, `node-20-tests`, `windows-tests`), skipped at JOB level
+  # when FULL_LEG is false, so an ordinary PR starts no runner for them; the last shard also runs
   # the leg's non-test checks. Their required names (`Node 18`, `Node 20`, `Windows (tests
   # + drift)`) are aggregators over the shards: on an ordinary PR they report green with a
   # job-summary line. Their breaks surface after the merge, in the push run on `main` and
@@ -68,13 +68,15 @@ jobs:
   # job names are pinned to the script by test/ci-proven.test.ts. CodeQL is never short-circuited.
   #
   # Node 22 is an aggregator: its check gates on `node-22-checks` (typecheck, lint, drift,
-  # eval) and on the five `node-22-tests` shards, on PRs and pushes alike, and it also
+  # eval) and on the seven `node-22-tests` shards, on PRs and pushes alike, and it also
   # carries the docs leg. A push therefore still runs the whole suite on Node 22, split
   # across the shards: `vitest --shard` puts every test file in exactly one shard.
   #
-  # Playground E2E is an aggregator too, over two Chromium shards and one Firefox+WebKit
-  # job (`e2e-playground-chromium`, `e2e-playground-engines`). Those keep the FULL_CI step
-  # guards of every other gating job, so a record-only PR reports them green, unrun.
+  # Playground E2E is an aggregator too, over three Chromium shards and one Firefox+WebKit
+  # job (`e2e-playground-chromium`, `e2e-playground-engines`); so are Docs site E2E (three
+  # Playwright shards, `e2e-docs-shard`) and 3D package (check:3d) (its two vitest passes,
+  # `check-3d-pass`). The leaves keep the FULL_CI step guards of every other gating job, so a
+  # record-only PR reports them green, unrun.
   # ---------------------------------------------------------------------------
   changes:
     name: Changed paths
@@ -173,26 +175,25 @@ jobs:
           elif [ "$train" = "true" ]; then
             echo "Train PR: every leg runs in full, Node 18, Node 20 and Windows included." >> "$GITHUB_STEP_SUMMARY"
           elif [ "$EVENT" = "pull_request" ]; then
-            echo "Code change: Node 22 (five shards), the builds and the E2E legs run; Node 18, Node 20 and Windows run on main, train PRs and nightly." >> "$GITHUB_STEP_SUMMARY"
+            echo "Code change: Node 22 (seven shards), the builds and the E2E legs run; Node 18, Node 20 and Windows run on main, train PRs and nightly." >> "$GITHUB_STEP_SUMMARY"
           elif [ "$EVENT" = "merge_group" ]; then
             echo "Merge queue: every leg runs in full on the merged result." >> "$GITHUB_STEP_SUMMARY"
           else
             echo "Push: every leg runs in full." >> "$GITHUB_STEP_SUMMARY"
           fi
 
-  # The Node 18 leg, in three shards. Its `if` is FULL_LEG (see the header): true on every
+  # The Node 18 leg, in five shards. Its `if` is FULL_LEG (see the header): true on every
   # unproven push, merge_group and train PR code run, and on any other PR only if `changes`
   # failed (`!cancelled()` lets it run then), so an ordinary PR skips the whole job and starts
-  # no runner. Shard 3 also runs
-  # typecheck, lint, drift and the eval, once for the leg (about 0.4 min). Shard 3, not 1:
-  # test/sequencer.ts gives all 126 files recorded at 0 s to whichever shard is lightest when
-  # they come up, shard 1 on this tree, and their real cost is not 0. That is a reading, not a
-  # guarantee: one added file can move the whole group (TP2's red proof moved it to shard 3).
+  # no runner. The last shard also runs typecheck, lint, drift and the eval, once for the leg
+  # (about 0.6 min), so it is the leg's pole by about that much: test/sequencer.ts balances only
+  # the tests, by ESTIMATED cost (recorded seconds, a file the table lacks at its median), to
+  # within one file's estimate. test/sequencer.test.ts pins the extra steps to the last shard.
   # `node-20-tests` is the same job
   # on Node 20; two job ids, not one matrix, so each `Node <n>` aggregator below reads only
   # its own shards' result (a matrix job's result combines every leg).
   node-18-tests:
-    name: Node ${{ matrix.node }} tests ${{ matrix.shard }}/3
+    name: Node ${{ matrix.node }} tests ${{ matrix.shard }}/5
     runs-on: ubuntu-latest
     needs: changes
     if: ${{ !cancelled() && (needs.changes.result != 'success' || needs.changes.outputs.full_leg == 'true') }}
@@ -200,7 +201,7 @@ jobs:
       fail-fast: false
       matrix:
         node: [18]
-        shard: [1, 2, 3]
+        shard: [1, 2, 3, 4, 5]
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
@@ -215,30 +216,30 @@ jobs:
         run: npm ci
 
       - name: Type-check
-        if: matrix.shard == 3
+        if: matrix.shard == 5
         run: npm run typecheck
 
       - name: Lint & format (Biome)
-        if: matrix.shard == 3
+        if: matrix.shard == 5
         run: npm run lint:ci
 
       - name: Generated artifacts are in sync
-        if: matrix.shard == 3
+        if: matrix.shard == 5
         run: npm run check:drift
 
       # Coverage no longer runs here: it moved to nightly.yml's `coverage` job, where it
       # is still report-only. Every leg runs the plain suite, the pass/fail signal.
       # `--shard` balances by recorded duration (test/sequencer.ts), as on Node 22.
       - name: Test
-        run: npx vitest run --shard=${{ matrix.shard }}/3
+        run: npx vitest run --shard=${{ matrix.shard }}/5
 
       - name: Authorability eval (offline golden regression guard)
-        if: matrix.shard == 3
+        if: matrix.shard == 5
         run: npm run eval:ci
 
   # `node-18-tests` on Node 20, step for step.
   node-20-tests:
-    name: Node ${{ matrix.node }} tests ${{ matrix.shard }}/3
+    name: Node ${{ matrix.node }} tests ${{ matrix.shard }}/5
     runs-on: ubuntu-latest
     needs: changes
     if: ${{ !cancelled() && (needs.changes.result != 'success' || needs.changes.outputs.full_leg == 'true') }}
@@ -246,7 +247,7 @@ jobs:
       fail-fast: false
       matrix:
         node: [20]
-        shard: [1, 2, 3]
+        shard: [1, 2, 3, 4, 5]
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
@@ -261,22 +262,22 @@ jobs:
         run: npm ci
 
       - name: Type-check
-        if: matrix.shard == 3
+        if: matrix.shard == 5
         run: npm run typecheck
 
       - name: Lint & format (Biome)
-        if: matrix.shard == 3
+        if: matrix.shard == 5
         run: npm run lint:ci
 
       - name: Generated artifacts are in sync
-        if: matrix.shard == 3
+        if: matrix.shard == 5
         run: npm run check:drift
 
       - name: Test
-        run: npx vitest run --shard=${{ matrix.shard }}/3
+        run: npx vitest run --shard=${{ matrix.shard }}/5
 
       - name: Authorability eval (offline golden regression guard)
-        if: matrix.shard == 3
+        if: matrix.shard == 5
         run: npm run eval:ci
 
   # The required `Node 18` and `Node 20` checks, one matrix leg each, over that version's
@@ -313,7 +314,7 @@ jobs:
             echo "Node $NODE runs on every push to main, on train PRs and nightly, not on other PRs." | tee -a "$GITHUB_STEP_SUMMARY"
             exit 0
           else
-            echo "Node $NODE tests (three shards): $SHARDS. Expected: success." | tee -a "$GITHUB_STEP_SUMMARY"
+            echo "Node $NODE tests (five shards): $SHARDS. Expected: success." | tee -a "$GITHUB_STEP_SUMMARY"
             want=success
           fi
           if [ "$SHARDS" != "$want" ]; then
@@ -356,16 +357,17 @@ jobs:
   # The suite on Node 22, one job per shard. Files carry no state to one another: a test
   # writes to the repository only under an UPDATE flag and otherwise to a mkdtemp directory.
   # That has to stay true: `vitest --shard` assigns files by recorded duration
-  # (test/sequencer.ts), so a new file can move others between shards.
+  # (test/sequencer.ts), so a table refresh, a new recorded file or (among the files the table
+  # lacks) a new unrecorded one can move others between shards.
   node-22-tests:
-    name: Node 22 tests ${{ matrix.shard }}/5
+    name: Node 22 tests ${{ matrix.shard }}/7
     runs-on: ubuntu-latest
     needs: changes
     if: ${{ !cancelled() && needs.changes.outputs.code != 'false' && (needs.changes.result != 'success' || needs.changes.outputs.proven != 'true') }}
     strategy:
       fail-fast: false
       matrix:
-        shard: [1, 2, 3, 4, 5]
+        shard: [1, 2, 3, 4, 5, 6, 7]
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
@@ -380,7 +382,7 @@ jobs:
         run: npm ci
 
       - name: Test
-        run: npx vitest run --shard=${{ matrix.shard }}/5
+        run: npx vitest run --shard=${{ matrix.shard }}/7
 
   # A PR's CHANGELOG lines land under `## [Unreleased]` and it deletes no released line; a release
   # PR (it adds `## [x.y.z]`) is exempt. Runs on record-only PRs too: CHANGELOG.md is a record. The
@@ -622,18 +624,17 @@ jobs:
 
       # (appended by later workstreams)
 
-  # The Windows leg, in three shards, skipped at job level like `node-18-tests` (FULL_LEG).
-  # Shard 3 also runs `check:drift`, the generators' line-endings and path-handling proof
-  # (shard 3, not 1, for the reason given at `node-18-tests`).
+  # The Windows leg, in five shards, skipped at job level like `node-18-tests` (FULL_LEG).
+  # The last shard also runs `check:drift`, the generators' line-endings and path-handling proof.
   windows-tests:
-    name: Windows tests ${{ matrix.shard }}/3
+    name: Windows tests ${{ matrix.shard }}/5
     runs-on: windows-latest
     needs: changes
     if: ${{ !cancelled() && (needs.changes.result != 'success' || needs.changes.outputs.full_leg == 'true') }}
     strategy:
       fail-fast: false
       matrix:
-        shard: [1, 2, 3]
+        shard: [1, 2, 3, 4, 5]
     # Determinism is a core invariant, and the whole toolchain is developed on
     # Windows — but CI only ever proved it on Linux. This leg catches the two
     # things that actually differ: line endings (a golden/snapshot mismatch) and
@@ -664,10 +665,10 @@ jobs:
         run: npm ci
 
       - name: Test
-        run: npx vitest run --shard=${{ matrix.shard }}/3
+        run: npx vitest run --shard=${{ matrix.shard }}/5
 
       - name: Generated artifacts are in sync
-        if: matrix.shard == 3
+        if: matrix.shard == 5
         run: npm run check:drift
 
   # The required `Windows (tests + drift)` check, over `windows-tests`, as `Node 18` is over
@@ -695,7 +696,7 @@ jobs:
             echo "Windows runs on every push to main, on train PRs and nightly, not on other PRs." | tee -a "$GITHUB_STEP_SUMMARY"
             exit 0
           else
-            echo "Windows tests (three shards): $SHARDS. Expected: success." | tee -a "$GITHUB_STEP_SUMMARY"
+            echo "Windows tests (five shards): $SHARDS. Expected: success." | tee -a "$GITHUB_STEP_SUMMARY"
             want=success
           fi
           if [ "$SHARDS" != "$want" ]; then
@@ -711,9 +712,13 @@ jobs:
     # parent (the base branch tip the PR lands on) in this one job, two runs each in the order base, head, head, base, and
     # reports the per-row ratio plus the noise floor between the two base runs; on same-repo PRs
     # (a fork's GITHUB_TOKEN is read-only) it posts that as a comment. Not a required check, so on
-    # a record-only PR the whole job is skipped.
+    # a record-only PR the whole job is skipped. It cannot fail the run: the job is
+    # `continue-on-error` (scripts/ci-proven.mjs counts the run's conclusion, so a red benchmark
+    # used to block a train's proof). A crashed benchmark still shows red on this job; the summary
+    # then says no table was produced, and only the comment step is lenient (a GitHub API hiccup).
     needs: changes
     if: ${{ !cancelled() && github.event_name == 'pull_request' && needs.changes.outputs.code != 'false' }}
+    continue-on-error: true
     permissions:
       contents: read
       pull-requests: write
@@ -734,6 +739,7 @@ jobs:
       - name: Run benchmark (base, head, head, base)
         # bench/run.ts imports ../src directly (no build), so the base tree needs no install of its
         # own; each side runs its own bench/run.ts, and a row only one side has is shown without a ratio.
+        # A crash here turns this (non-required) job red; the job-level `continue-on-error` keeps the run green.
         run: |
           TSX="$PWD/node_modules/.bin/tsx"
           HERE="$PWD"
@@ -743,9 +749,17 @@ jobs:
           (cd ../bench-base && "$TSX" bench/run.ts --json > "$HERE/base2.json")
           node bench/compare.mjs --base base1.json base2.json --head head1.json head2.json --out bench-comment.md
       - name: Write benchmark summary
-        run: cat bench-comment.md >> "$GITHUB_STEP_SUMMARY"
+        if: ${{ !cancelled() }}
+        run: |
+          if [ -s bench-comment.md ]; then
+            cat bench-comment.md >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "::warning::The benchmark produced no table; see the step above."
+            echo "The benchmark produced no table (informational; it never fails the run)." >> "$GITHUB_STEP_SUMMARY"
+          fi
       - name: Post benchmark comment
-        if: github.event.pull_request.head.repo.full_name == github.repository
+        if: github.event.pull_request.head.repo.full_name == github.repository && hashFiles('bench-comment.md') != ''
+        continue-on-error: true
         uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
         with:
           script: |
@@ -763,13 +777,18 @@ jobs:
               await github.rest.issues.createComment({ owner, repo, issue_number, body: payload });
             }
 
-  # Every Playwright spec in Chromium, in two shards (`--shard` splits the chromium project's
-  # tests). The required name is the `e2e-playground` aggregator's, below.
+  # Every Playwright spec in Chromium, in three shards by explicit spec lists. Playwright's own
+  # `--shard` splits by test COUNT in file order, which put `preview3d.spec.ts`'s 234 s of 50 tests
+  # and most of the rest in one shard (#794's first run: 313 s against 221 s). The lists balance the
+  # specs' measured seconds (run 43699946434); test/e2e-shards.test.ts fails unless together they
+  # name every spec in playground/e2e exactly once, so a new spec cannot be left out. Rebalance from
+  # a later run's log when a shard drifts. The required name is the `e2e-playground` aggregator's.
   e2e-playground-chromium:
-    name: Playground E2E chromium ${{ matrix.shard }}/2
+    name: Playground E2E chromium ${{ matrix.shard }}/3
     runs-on: ubuntu-latest
     needs: changes
     if: ${{ !cancelled() }}
+    timeout-minutes: 20
     env:
       # FULL_CI here means "run the steps": a code change that no train PR run proved.
       FULL_CI: ${{ needs.changes.outputs.code != 'false' && (needs.changes.result != 'success' || needs.changes.outputs.proven != 'true') }}
@@ -778,7 +797,17 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        shard: [1, 2]
+        include:
+          - shard: 1
+            specs: e2e/cli-link.spec.ts e2e/preview3d.spec.ts e2e/takeoff.spec.ts
+          - shard: 2
+            specs: >-
+              e2e/editing.spec.ts e2e/embed.spec.ts e2e/front-door.spec.ts e2e/gallery.spec.ts
+              e2e/knobs.spec.ts e2e/layout.spec.ts e2e/levels.spec.ts e2e/shared-notice.spec.ts
+          - shard: 3
+            specs: >-
+              e2e/actions.spec.ts e2e/boot.spec.ts e2e/checks.spec.ts e2e/examples-static.spec.ts
+              e2e/init-precedence.spec.ts e2e/make-own.spec.ts e2e/panels.spec.ts e2e/short-link.spec.ts
     # The unit suite proves the playground's pure logic and `builds` proves it
     # COMPILES — neither ever opens the page. This job drives the real built
     # bundle in a real Chromium: boot, edit, apply a diagnostic fix, download
@@ -866,7 +895,8 @@ jobs:
 
       - name: Run E2E specs
         if: env.FULL_CI == 'true'
-        run: npx playwright test -c playground --project chromium --shard=${{ matrix.shard }}/2
+        # The specs come before `--project=`: `--project` is variadic and would read them as project names.
+        run: npx playwright test -c playground ${{ matrix.specs }} --project=chromium
 
       # A retry keeps the step above green; this one reads its JSON report and annotates every case
       # that passed only on the retry. Warning only here; nightly's e2e-prod fails on one.
@@ -894,6 +924,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: changes
     if: ${{ !cancelled() }}
+    timeout-minutes: 20
     env:
       # FULL_CI here means "run the steps": a code change that no train PR run proved.
       FULL_CI: ${{ needs.changes.outputs.code != 'false' && (needs.changes.result != 'success' || needs.changes.outputs.proven != 'true') }}
@@ -988,7 +1019,7 @@ jobs:
           retention-days: 7
           if-no-files-found: ignore
 
-  # The required `Playground E2E (Playwright)` check, over the two Chromium shards and the
+  # The required `Playground E2E (Playwright)` check, over the three Chromium shards and the
   # engines job. Both keep FULL_CI step guards, so they succeed on a record-only PR too and this
   # always requires `success` of both. `always()`, not `!cancelled()`, as for `Node 22`: a job
   # skipped by its `if` satisfies a required check, so a cancelled run must not leave this one
@@ -998,6 +1029,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: [changes, e2e-playground-chromium, e2e-playground-engines]
     if: ${{ always() }}
+    timeout-minutes: 5
     steps:
       - name: Every Playground E2E job passed
         if: always()
@@ -1005,17 +1037,27 @@ jobs:
           CHROMIUM: ${{ needs.e2e-playground-chromium.result }}
           ENGINES: ${{ needs.e2e-playground-engines.result }}
         run: |
-          echo "Playground E2E chromium (two shards): $CHROMIUM. Engines: $ENGINES. Expected: success." | tee -a "$GITHUB_STEP_SUMMARY"
+          echo "Playground E2E chromium (three shards): $CHROMIUM. Engines: $ENGINES. Expected: success." | tee -a "$GITHUB_STEP_SUMMARY"
           if [ "$CHROMIUM" != "success" ] || [ "$ENGINES" != "success" ]; then
             echo "::error::A Playground E2E job did not succeed."
             exit 1
           fi
 
-  check-3d:
-    name: 3D package (check:3d)
+  # `npm run check:3d`'s two vitest passes, one job each (`--pass=`, packages/archlang-3d/scripts/
+  # e2e.ts): `suite` is every e2e file but the frame budget, `frame-budget` is that one alone (it
+  # times a browser no other test loads). The bare script runs both, in that order; together the
+  # two jobs run exactly what it runs (packages/archlang-3d/test/e2e-runner.test.ts). The required
+  # name is the `check-3d` aggregator's, below.
+  check-3d-pass:
+    name: 3D package ${{ matrix.pass }} pass
     runs-on: ubuntu-latest
     needs: changes
     if: ${{ !cancelled() }}
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        pass: [suite, frame-budget]
     env:
       # FULL_CI here means "run the steps": a code change that no train PR run proved.
       FULL_CI: ${{ needs.changes.outputs.code != 'false' && (needs.changes.result != 'success' || needs.changes.outputs.proven != 'true') }}
@@ -1027,8 +1069,8 @@ jobs:
     # Khronos glTF-Validator and its determinism over the corpus, the CLI's exit codes, the licence
     # gate and the tarball's `npm pack` check, and the replay in Playwright's Chromium on SwiftShader, including the
     # key-frame pixel baseline, which is pinned to THIS environment (Linux, the Chromium build of the
-    # locked playwright-core; Q21). A required check: one of the ten names branch protection lists
-    # (`docs/agents/commands.md` § CI), a setting the owner holds.
+    # locked playwright-core; Q21). `3D package (check:3d)` is a required check: one of the ten
+    # names branch protection lists (`docs/agents/commands.md` § CI), a setting the owner holds.
     steps:
       - name: Record-only change, nothing to run on this leg
         if: env.FULL_CI != 'true' && env.PROVEN != 'true'
@@ -1090,15 +1132,52 @@ jobs:
         if: env.FULL_CI == 'true'
         run: command -v ffmpeg || (sudo apt-get update && sudo apt-get install -y --no-install-recommends ffmpeg)
 
-      - name: Run check:3d
+      - name: Run check:3d (${{ matrix.pass }} pass)
         if: env.FULL_CI == 'true'
-        run: npm run check:3d
+        # `npm run check:3d` is this script without arguments; npm would eat a bare `--pass=` flag.
+        run: npm -w packages/archlang-3d run e2e -- --pass=${{ matrix.pass }}
 
-  e2e-docs:
-    name: Docs site E2E (Playwright)
+  # The required `3D package (check:3d)` check, over both passes, as `Playground E2E
+  # (Playwright)` is over its jobs: both keep FULL_CI step guards, so this always requires
+  # `success`. `always()`, not `!cancelled()`, for the reason given there.
+  check-3d:
+    name: 3D package (check:3d)
+    runs-on: ubuntu-latest
+    needs: [changes, check-3d-pass]
+    if: ${{ always() }}
+    timeout-minutes: 5
+    steps:
+      - name: Both check:3d passes passed
+        if: always()
+        env:
+          PASSES: ${{ needs.check-3d-pass.result }}
+        run: |
+          echo "3D package passes (suite, frame-budget): $PASSES. Expected: success." | tee -a "$GITHUB_STEP_SUMMARY"
+          if [ "$PASSES" != "success" ]; then
+            echo "::error::A check:3d pass did not succeed."
+            exit 1
+          fi
+
+  # The docs site's Playwright specs in three shards by explicit spec lists, as for
+  # `e2e-playground-chromium` (`--shard` by test count gave #794's first run 314 s against 152 s:
+  # `routes.spec.ts` is 106 cheap tests). test/e2e-shards.test.ts pins the lists to docs-site/e2e.
+  # The required name is the `e2e-docs` aggregator's, below.
+  e2e-docs-shard:
+    name: Docs site E2E ${{ matrix.shard }}/3
     runs-on: ubuntu-latest
     needs: changes
     if: ${{ !cancelled() }}
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - shard: 1
+            specs: e2e/page-chrome.spec.ts
+          - shard: 2
+            specs: e2e/gallery.spec.ts e2e/homepage-links.spec.ts
+          - shard: 3
+            specs: e2e/arch-plan.spec.ts e2e/archlive.spec.ts e2e/routes.spec.ts e2e/three-d.spec.ts
     env:
       # FULL_CI here means "run the steps": a code change that no train PR run proved.
       FULL_CI: ${{ needs.changes.outputs.code != 'false' && (needs.changes.result != 'success' || needs.changes.outputs.proven != 'true') }}
@@ -1196,7 +1275,7 @@ jobs:
 
       - name: Run E2E specs
         if: env.FULL_CI == 'true'
-        run: npx playwright test -c docs-site
+        run: npx playwright test -c docs-site ${{ matrix.specs }}
 
       # A retry keeps the step above green; this one reads its JSON report and annotates every case
       # that passed only on the retry. Warning only here; nightly's e2e-prod fails on one.
@@ -1208,9 +1287,29 @@ jobs:
         if: failure()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
-          name: playwright-report-docs
+          name: playwright-report-docs-${{ matrix.shard }}
           path: |
             docs-site/playwright-report
             docs-site/test-results
           retention-days: 7
           if-no-files-found: ignore
+
+  # The required `Docs site E2E (Playwright)` check, over both shards, as `Playground E2E
+  # (Playwright)` is over its jobs. `always()`, not `!cancelled()`, for the reason given there.
+  e2e-docs:
+    name: Docs site E2E (Playwright)
+    runs-on: ubuntu-latest
+    needs: [changes, e2e-docs-shard]
+    if: ${{ always() }}
+    timeout-minutes: 5
+    steps:
+      - name: Both docs E2E shards passed
+        if: always()
+        env:
+          SHARDS: ${{ needs.e2e-docs-shard.result }}
+        run: |
+          echo "Docs site E2E (three shards): $SHARDS. Expected: success." | tee -a "$GITHUB_STEP_SUMMARY"
+          if [ "$SHARDS" != "success" ]; then
+            echo "::error::A docs site E2E shard did not succeed."
+            exit 1
+          fi

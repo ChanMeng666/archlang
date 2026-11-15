@@ -36,6 +36,10 @@ describe(".claude/hooks/local-gate.mjs", () => {
     expect(check("npx vitest run test/keep.test.ts")).toBe("vitest");
     expect(check("npm run check")).toBe("npm run check");
     expect(check("cd test && npx vitest run keep")).toBe("vitest");
+    // A workspace's e2e, as ci.yml runs check:3d's passes.
+    expect(check("npm -w packages/archlang-3d run e2e -- --pass=suite")).toBe("e2e / bench");
+    expect(check("npm --workspace=packages/archlang-3d run e2e")).toBe("e2e / bench");
+    expect(check("npm run e2e:docs")).toBe("e2e / bench");
   });
 
   it("lets the local gate and mentions through", () => {

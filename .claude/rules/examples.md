@@ -21,7 +21,7 @@ or changed example is never "just an example"; core-compiler.md also loads for t
 - **A same-length edit to an example still moves its permalink** (`test/readme-permalink.test.ts`): hashes read the text, not the geometry. Regenerate with `scripts/gen-permalink.mjs`.
 - **A new example moves more than the example tables**: the corpus counts in `packages/archlang-3d`
   (`e2e/glb.e2e.ts`, `e2e/replay.e2e.ts`, `test/adapter-corpus.test.ts`, `test/mesh.test.ts`) and the digest
-  rows naming it. CI's `check` parts (ci.yml) do not run the e2e half; CI's `check-3d` job runs `check:3d`.
+  rows naming it. CI's `check` parts (ci.yml) do not run the e2e half; CI runs `check:3d`'s two passes as the `check-3d-pass` jobs.
 - **Editing `examples/` moves the playground e2e specs** (actions, layout and levels read
   `examples/hillside-villa.arch`) and the docs e2e: CI runs `npm run e2e:playground`; read its result on an
   examples PR (#305).
