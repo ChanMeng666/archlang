@@ -158,7 +158,9 @@ A dated record of a one-off Claude 5.x live run (aggregate numbers, not comparab
 baseline, which was not re-measured) is in `eval/live-runs/2026-10-27-claude-5.md`. The 2026-11-15
 authorability re-measure around the CO-1/CO-2 parser + prompt changes (Claude 5.x and gpt-5.5, 3 runs per
 group; the baseline stays this July record) is in
-`eval/live-runs/2026-11-authorability-remeasure.md`.
+`eval/live-runs/2026-11-authorability-remeasure.md`. The offline per-brief diagnosis of its gpt-5.5
+intent gap against the 2026-07-11 run (EV.1; no API spend) is in
+`eval/live-runs/2026-11-ev1-intent-gap.md`.
 
 > **Prompt-drift history.** v1.15.0's metric-unit-suffix feature added one line to
 > `spec.llm.md` (the author prompt), so the original 2026-07-11 baseline (valid 25 · intent 13
