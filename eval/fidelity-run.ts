@@ -16,7 +16,7 @@
  * That mirrors `eval/faults/` — seeded defects with expected outcomes — one level up.
  *
  * Nothing here spends a token. The live path a model drives is a separate, guarded, paid
- * command (`eval/fidelity-live.ts`, owner-approved 2026-11-15): it reuses
+ * command (`eval/fidelity-live.ts`, paid and owner-only, product-roadmap RM-D46): it reuses
  * {@link fidelitySystemPrompt}, `parseFidelityReply` and {@link scoreReply} unchanged and
  * writes its own git-ignored record, never this file's scorecard.
  *

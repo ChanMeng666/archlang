@@ -90,36 +90,48 @@ and the gate fails unless the correct one scores 1, the counter-example scores 0
 requirement is **named**. That mirrors `faults/` one level up. `test/eval-fidelity.test.ts` is
 where CI actually catches it. The offline path spends no token; the live path below does.
 
-**The live path (`eval:fidelity-live`, `fidelity-live.ts`) — paid, owner-approved
-2026-11-15, run by the owner.** It asks a model each brief `--trials` times (default 5) with
+**The live path (`eval:fidelity-live`, `fidelity-live.ts`) — paid and owner-only, like
+`eval:live`; approved by the owner on 2026-11-15 (product-roadmap RM-D46), run by the owner.**
+It asks a model each brief `--trials` times (default 5, at most 20) with
 `fidelitySystemPrompt()` and the brief verbatim, parses each raw reply with
 `parseFidelityReply` and scores it with `scoreReply`, all unchanged: the prompt is the ruler,
 so `FIDELITY_VERSION`, the corpus and the references do not move. A satisfiable brief scores 1
 when the plan honours every stated number; an infeasible one scores 1 when the reply declares
-infeasibility naming exactly the conflict set; a validator-accepted plan that moved a number,
-or any plan for an infeasible brief, is a laundering, scores 0 and names the moved ids. The
-calls go through `l2-run.ts`'s provider adapters (raw reply, per-call token split, stop reason,
-retries; no `temperature`, so the trials are samples, not copies), the provider and model
-through `resolveProvider` (`ARCHLANG_EVAL_PROVIDER` / `ARCHLANG_EVAL_MODEL`), and `--budget
-<n>tok|<n>usd` through `LiveLedger`, checked before every call. Without `--yes` it prints the
-plan (calls, a worst-case estimate, budget, output paths) and exits `3` without calling any
-API; it also exits `3` when either results file for the model exists, because a live result
-is never overwritten. Output, git-ignored: `eval/results.fidelity-live.<model>.json` (written
-before the first call and after every call: raw replies, stop reasons, per-call usage, retries,
-scores) and `eval/results.fidelity-live.<model>.md` (rates with Wilson intervals, a per-brief
-table, every laundering with its moved requirements, stop reasons). **Its numbers are reported
-on their own and never compared** with `eval:ci`, the L0 baseline (`live-baseline.json`) or
-the offline fidelity scorecard. `test/eval-fidelity-live.test.ts` pins it offline (fetch
-mocked). Rubric §7.6 still says the live path is not built; the rubric is frozen, so this
-paragraph supersedes that sentence rather than editing it.
+infeasibility naming exactly the conflict set; everything else scores 0. The live layer records
+whether the extracted plan **compiled** and reports a zero as a **laundering** only when a
+compiling plan was delivered (one that moved a stated number; on an infeasible brief, any), with
+the moved ids named. A reply the parser reads as plan source that does not compile (a prose
+refusal, a `json` fence, bare JSON, a fence cut off by the output cap) still scores 0, but is
+reported as *no plan / wrong format*, beside the laundering count, never as a laundering.
 
-At k = 5 a run is 30 calls per model. The dry run's worst case (every reply at the 16384-token
-cap, the ledger's high prices) is about $1.36 for `claude-haiku-5-5` and $5.43 for
-`claude-sonnet-5-5`; one model per process, so each writes its own pair.
+The calls go through `live-author.ts`'s provider adapters, shared with the L2 harness (raw
+reply, per-call token split, stop reason, retries; no `temperature`, so the trials are samples,
+not copies). Provider and model resolve through `resolveProvider` (`ARCHLANG_EVAL_PROVIDER` /
+`ARCHLANG_EVAL_MODEL`), and `--budget <n>tok|<n>usd` feeds `LiveLedger`, checked before every
+call. Each of these exits `3` without calling any API: no `--yes` (it prints the plan: calls,
+an estimate, budget, output paths); `--yes` without `--budget`; an unknown, repeated or bad
+flag; either results file for the model existing, because a live result is never overwritten.
+Five failed calls in a row stop the run (record status `aborted`, exit `1`). Output,
+git-ignored: `eval/results.fidelity-live.<model>.json` (written before the first call and after
+every call: raw replies, stop reasons, per-call usage, retries, the ruler's score and the live
+outcome) and `eval/results.fidelity-live.<model>.md` (rates with Wilson intervals, a per-brief
+table, every laundering with its moved requirements, stop reasons). Under RM-D46 the records are
+then published in `eval/live-runs/`. **Its numbers are reported on their own and never
+compared** with `eval:ci`, the L0 baseline (`live-baseline.json`) or the offline fidelity
+scorecard. `test/eval-fidelity-live.test.ts` pins it offline (fetch mocked). Rubric §7.6 still
+says the live path is not built; the rubric is frozen, so this paragraph supersedes that
+sentence rather than editing it.
+
+RM-D46 runs four models, k = 5, once each: one process per model, 30 calls each. The dry run's
+worst case (every reply at the 16384-token cap, the ledger's high prices, ≈ 258k prompt tokens
+by a chars/3.5 estimate) is about $1.36 for `claude-haiku-5-5`, $5.43 for `claude-sonnet-5-5`,
+$10.86 for `claude-opus-5-5` and $21.73 for `claude-fable-5-2`.
 
 ```bash
-ANTHROPIC_API_KEY="$ANTHROPIC_API_KEY_PROMO" ARCHLANG_EVAL_PROVIDER=anthropic \
-  ARCHLANG_EVAL_MODEL=claude-haiku-5-5 npm run eval:fidelity-live -- --yes --trials 5 --budget 2usd
+for m in claude-haiku-5-5 claude-sonnet-5-5 claude-opus-5-5 claude-fable-5-2; do
+  ANTHROPIC_API_KEY="$ANTHROPIC_API_KEY_PROMO" ARCHLANG_EVAL_PROVIDER=anthropic \
+    ARCHLANG_EVAL_MODEL=$m npm run eval:fidelity-live -- --yes --trials 5 --budget 25usd
+done
 ```
 
 **The recorded gap.** Two requirement classes are unrepresentable in `Intent` — a **door width**
@@ -162,7 +174,7 @@ baseline, which was not re-measured) is in `eval/live-runs/2026-10-27-claude-5.m
 npm run eval        # offline: score the committed goldens (writes eval/results.md)
 npm run eval:ci     # same command — the CI regression gate (no API key; exit 1 on regression)
 npm run eval:fidelity   # offline: the constraint-laundering slice (writes eval/fidelity-results.md)
-npm run eval:fidelity-live -- --yes [--trials k] [--budget <n>tok|<n>usd]   # live fidelity, paid, owner-approved
+npm run eval:fidelity-live -- --yes --budget <n>tok|<n>usd [--trials k]   # live fidelity, paid, owner-only (RM-D46)
 npm run eval:live -- --yes [--max N] [--budget <n>tok|<n>usd] [--l1]   # live, paid, guarded
 npm run eval:g1 -- --yes [--max N]    # Gate G1: generate intent JSONs from briefs (paid, guarded; or the "Eval (G1 intent generation)" workflow)
 npm run eval:l2 -- --yes …   # T3 harness — paid; ONE owner-ratified run only (ratified 2026-11-15, not yet run); see "The one T3 run"
