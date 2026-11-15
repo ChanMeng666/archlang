@@ -13,6 +13,10 @@ what is right. You never edit, commit, or run anything that writes to the repo; 
 `git log`, `git show` and reading files are allowed. Heavy suites are CI's: read the PR's checks
 instead of running them.
 
+On a train head or a `sync:main` head there is no task card: you get the re-review focus block (overlap,
+hand-resolved files, import-linked files, changed exports); read those first. Always name the full
+40-hex SHA you reviewed, so the coordinator can post `reviewed <sha>`.
+
 Check, with file:line evidence:
 1. Card conformance: every Definition-of-Done item actually done; nothing out of scope changed.
 2. `REVIEW.md` (what a bad diff looks like) and the iron laws (`AGENTS.md`,

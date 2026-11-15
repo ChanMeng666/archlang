@@ -270,7 +270,7 @@ apply. The shape that worked for the 49 programme PRs merged between #195 and #2
    read-only red team in parallel; fixes go back to the executor; at most two rounds.
 3. Auto-merge since option A went live (`docs/plans/ci-throughput.md`): post `reviewed <full sha>`, then
    `gh pr merge <n> --auto --merge --match-head-commit <full sha>`; GitHub merges on the seven required
-   checks and deletes the branch, and nothing waits for the `push` run on `main`. A later push voids
+   checks and deletes the branch, and nothing waits for the `push` run on `main` (superseded: `docs/agents/commands.md` § Merging a PR). A later push voids
    the pin (re-review, re-pin). PRs touching the same records (CHANGELOG `[Unreleased]`, this page,
    cards) are stacked: the next branches from the previous head, then `gh pr update-branch <n>` (or a
    `main` merge) once it lands, and the coordinator re-pins; a PR that merged `main` after review is

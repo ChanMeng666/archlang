@@ -72,7 +72,7 @@ only CI green is merge evidence. The job list is in [docs/agents/commands.md](do
 | `npm run check` | typecheck + Biome + the full test suite (CI runs it too) | optional, slow: to reproduce a CI failure |
 | `npm test` | the whole vitest suite: `test/`, `playground/test/`, `packages/*/test/`, `editors/vscode/test/` (CI runs it too) | optional, slow: to reproduce a CI failure |
 | `npm run check:drift` | every generator re-run and byte-compared against its artifact (CI runs it too; `check:quick` covers the files you changed) | optional: **`npm run check` does NOT include it** |
-| `npm run typecheck:all` | the four workspaces too (playground, docs-site via vue-tsc, MCP shim, VS Code extension) | optional: you touched anything outside `src/` + `test/` (CI runs it in the `builds` job) |
+| `npm run typecheck:all` | every workspace too (playground, docs-site via vue-tsc, MCP shim and Worker, web component, archlang-3d, VS Code extension) | optional: you touched anything outside `src/` + `test/` (CI runs it in the `builds` job) |
 | `npm run e2e:playground` / `npm run e2e:docs` | Playwright (chromium) against the BUILT app (CI runs both) | optional: you touched `playground/` or `docs-site/` |
 
 The E2E suites (CI runs both) serve the built output, so build first — e.g.
@@ -80,15 +80,17 @@ The E2E suites (CI runs both) serve the built output, so build first — e.g.
 `E2E_BASE_URL=<origin>` makes either suite drive that origin instead, with no build and no preview
 server (that is how the nightly workflow re-runs the read-only `@prod` subset against production).
 
-**What PR CI runs.** `ci.yml` gates a PR on Node 22 (typecheck, lint, drift, eval and the test
-suite in five shards), a **builds** job (all four workspaces compile, `typecheck:all`, the MCP
-baked-resource freshness check, the VS Code bundle tests) and the **Playwright E2E** jobs (the
-playground in three: two Chromium shards and one Firefox + WebKit job, behind one
-`Playground E2E (Playwright)` check; and the docs site), plus an informational benchmark comment
-that never gates. Node 18, Node 20 and **Windows** (tests + drift at the runner's default line
-endings) keep their checks but report green without running on a PR; they run, each in three
-shards, on every push to `main` and nightly, so run the suite locally if your change is sensitive
-to Node version or platform. `codeql.yml` adds static security analysis on the same events. A separate
+**What PR CI runs.** `ci.yml` gates a PR on Node 22: a `checks` job (typecheck, lint, drift, eval) and
+the test suite in seven shards; **Workspace builds** (every workspace compiles, `typecheck:all`, the MCP
+baked-resource freshness check, the VS Code bundle tests); **Playwright E2E** (the playground in three
+Chromium shards plus an engines job for Firefox and WebKit, and the docs site in three shards, each behind
+one aggregate check); and `3D package (check:3d)`, which aggregates a suite pass and a frame-budget pass.
+An informational benchmark comment never gates. Node 18, Node 20 and **Windows** (tests + drift at the
+runner's default line endings) keep their checks but report green without running on an ordinary PR; they
+run, each in five shards, on the maintainers' merge-train PRs, on unproven pushes to `main` and nightly, so
+run the suite locally if your change is sensitive to Node version or platform. A pull request from a fork
+gets the ordinary run; a maintainer lands it. Layout and the merge procedure:
+[docs/agents/commands.md](docs/agents/commands.md) § CI. `codeql.yml` adds static security analysis on the same events. A separate
 `nightly.yml` runs production smoke, a report-only dependency audit, a full-history secret scan, the
 OS×Node matrix, report-only coverage and the read-only E2E subset against the live sites.
 

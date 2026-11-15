@@ -28,3 +28,6 @@ paths:
   workspace's. Release gate order is in `docs/agents/commands.md`.
 - **`@chanmeng666/arch-plan`'s `prepack` refuses a stale root `dist/`**: run `npm run build` at the
   root before packing or publishing it.
+- **Renaming or adding a `ci.yml` job**: keep the ten required check names and update `FULL_RUN_JOBS` in
+  `scripts/ci-proven.mjs`. `test/ci-proven.test.ts` pins job names and step guards, `test/e2e-shards.test.ts`
+  the E2E spec lists; a mismatch fails open (the `main` push is never proven, silently slow).

@@ -112,6 +112,9 @@ you observed. Do NOT push anything — this command only verifies.
    (`scripts/release-guard.sh`) refuses a tag whose commit lacks green required checks, so a red
    there means the tag publishes nothing until a fix lands (below).
 
+   The version-bump PR lands directly (one up-to-date green PR) or as a one-member train
+   (`npm run train -- <pr>`); tag the resulting `main` commit when its push run is green.
+
 6. **Built artifacts** (CI's `builds` job; run locally if it has not run):
 
    ```bash
@@ -150,8 +153,8 @@ you observed. Do NOT push anything — this command only verifies.
   `main`'s CI run finishes and deploys `https://archlang.uk/arch-plan.js` and the `/embed` recipe,
   both pinned to the new version, but npm only has it once the tag's `release.yml` finishes. Until
   then every embed shows `arch-plan: could not load the ArchLang compiler` (jsDelivr 404s, cached
-  about 30 s), so the tag goes out the moment that CI run is green (about 28 minutes after the
-  merge). It cannot go earlier: `release.yml`'s guard refuses a commit without green required
+  about 30 s), so the tag goes out the moment that CI run is green (about 30 s after a train merge,
+  about 8 min after an unproven direct merge). It cannot go earlier: `release.yml`'s guard refuses a commit without green required
   checks, so a tag pushed before then fails "Guard the release", publishes nothing, and its `verify`
   job polls npm for each missing package for about 10 minutes. If that happens, wait for the CI run
   to go green and `gh run rerun <id> --failed` (1.59.0 was tagged at the merge and published by its

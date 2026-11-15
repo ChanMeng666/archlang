@@ -16,8 +16,8 @@ merge procedure and the CI job map in `commands.md`.
 - **The limits every card repeats**: run `npm run check:quick` once, at the end (plus `npm run docs:build`
   after a published `docs/*.md` edit); never the full suite, `check`, `check:drift`, `typecheck:all`,
   e2e or bench locally (the local-gate hook blocks them and CI is the gate); a vitest file, when it
-  must run, takes `--poolOptions.forks.maxForks=2 --poolOptions.forks.minForks=1`; one executor and
-  one heavy process at a time on this machine (it froze under three parallel test runs); never edit
+  must run, takes `--poolOptions.forks.maxForks=2 --poolOptions.forks.minForks=1`; executors may overlap, but
+  heavy commands go one at a time through the heavy lock (the machine froze under three parallel test runs); never edit
   `docs/plans/*/cards.md` (adjacent card headings conflict on every merge; the coordinator records
   status in a records PR); no push or tag unless the card says so.
 - **An executor that may wait long writes a state file first** (in its scratchpad: what is done, what
@@ -35,17 +35,18 @@ merge procedure and the CI job map in `commands.md`.
   `claude-kept/2026-11-10-archlang-roadmap-v2/`) synced and merged one PR at a time; it is superseded, and its
   `gh pr update-branch` step must never run. Land reviewed PRs with `npm run train -- <pr> …`, then the red
   team on the train head, then `npm run train -- --land <train pr> --wait` (`commands.md` § Merging a PR,
-  step 2). The build runs `gen:all`: hold the heavy lock. One train at a time: a second train's base goes
+  step 2). The build runs `gen:all`: hold the heavy lock. One train at a time across sessions (check `gh pr list --search "head:train/"` before any merge to `main`): a second train's base goes
   stale when the first lands, and `--land` then says "rebuild". The train's worktree sits in the primary's
   `.claude/worktrees/train-<stamp>` with a `node_modules` junction; `--land` and `--abandon` unlink it and
-  remove the worktree, so never delete one by hand.
+  remove the worktree, so never delete one by hand. `npm run train` and `npm run sync:main` are not in
+  `.claude/settings.json`'s allow list, so each use asks for permission.
 - **Name every scratchpad file uniquely** (card or agent prefix), not just the state file: parallel agents
   overwrote each other's `pr-body.md`.
 - **When the machine is busy, a small edit is committed and reported "gate not run"** rather than held in a
   long wait loop; the coordinator runs the gate later or leaves it to CI.
 - **How a day's work continues**: take the first `todo` card of the lowest open wave, honour
   `depends`, dispatch one executor into a worktree from `main` with the card text plus the finding's
-  section from the audit report, at most two executors at once (EH-D1). Merge by tier
+  section from the audit report, at most two executors at once (EH-D1; heavy commands still go through the lock). Merge by tier
   (`scripts/risk-tier.mjs`; `commands.md` § Merging a PR).
 - **Review depth**: a medium PR gets one fresh-context review against `REVIEW.md` and one fix round, a
   second round only for a new mechanism; CI reds found during a round are folded into it. Every
@@ -72,10 +73,10 @@ merge procedure and the CI job map in `commands.md`.
 - **`gh pr merge --match-head-commit` needs the full 40-character SHA**; a short one fails the
   merge, and a branch delete `;`-chained after it then closes the PR unmerged. Auto-merge deletes
   the branch on merge: never delete it by hand (procedure: `commands.md` § Merging a PR).
-- **Two green PRs can break `main` together.** #521 required one MP4 per 3D plan and #523 added
-  plans without one; each PR's CI ran without the other, and `main`'s docs build (and deploy) went
-  red until #525. When two open PRs share a data shape (a manifest, a JSON schema, a component's
-  props), rebase the second after the first merges, and read `main`'s own CI after every merge.
+- **Two green PRs used to break `main` together**; strict protection and a train's tested merge now
+  block that. The trap that remains is a break only on a main-only leg (Node 18, Node 20, Windows), which
+  an ordinary PR does not run: when two open PRs share a data shape (a manifest, a JSON schema, a
+  component's props), land them in one train, and read `main`'s own CI after every merge.
 - **CI runs only on PRs whose base is `main`.** A stacked PR gets no CI, and retargeting it to
   `main` fires `edited`, not a run: push a commit (or rebase and force-push) to start one.
 - A PR that touches `docs/agents/commands.md` is high tier (`scripts/risk-tier.mjs`), so it needs the

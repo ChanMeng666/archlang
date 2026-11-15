@@ -83,14 +83,16 @@ coordinator's own notes (merging, registries, browser and social automation, the
 - **Select hashing tests by transitive import closure, not by a grep of `*.test.ts`.** `test/block-stair-byte-identity.test.ts`
   hashes through `test/helpers/block-stair-law.ts`, so a word search misses it, and only that law hashes the accessibility profile:
   a hint change went red in CI alone (#432). `packages/archlang-3d` and `packages/mcp-worker` hold hashing tests too.
-- **Two PRs that both move digest tables can each be green and red together**: required checks are not
-  up-to-date-with-`main`. Merge the first, merge `main` into the second, re-take, then pin it.
+- **Two PRs that both move digest tables can each be green and red together**: after the first
+  merges, the second is BEHIND (protection is strict): board a train or `sync:main`, re-take on the merged tree, then pin it.
+- **Never name an ordinary same-repo branch `train/…`.** A head branch with that prefix runs the full
+  matrix and cannot board a train.
 - **Parallel PRs conflict on the records** (`CHANGELOG.md` `[Unreleased]`, a programme's
   `handoff.md` and `cards.md`) after nearly every merge. Resolve by keeping both entries; counts in
   those records are recounted only at a stage end, never per PR.
 - **`gh pr update-branch` stales the generated artifacts.** GitHub's textual merge of `test/INDEX.md`
   (its header count) and `docs/agents/module-map.md` is not the generator's output, so the updated head
-  fails `check:drift`/`test-index` (#669, 2026-11-10). Sync with `npm run sync:main -- --push` in the PR's
+  fails `check:drift`/`test-index` (#669, 2026-11-10). For a PR dropped from a train or one landing alone, sync with `npm run sync:main -- --push` in the PR's
   worktree instead: it merges `main` locally, regenerates, commits and pushes; then re-review, then
   re-pin (`commands.md` § Merging a PR).
 - **The PR-scale fuzz passes while the nightly's `FC_SCALE=10` fails.** A seeded property replays the same
@@ -129,7 +131,7 @@ coordinator's own notes (merging, registries, browser and social automation, the
 - **An executor's targeted test subset misses corpus-wide guards.** On 2026-10-28 five PRs went red
   only under the full suite: the taste-digest table, the fixture corpus tables (import-module-lets,
   while and double-door byte identity, rooms-tiling-probe), the per-storey key list (`cli-levels`),
-  and `context-size`'s hand-written catalogue size. Read the PR's full CI (`gh pr checks`) before pinning its auto-merge;
+  and `context-size`'s hand-written catalogue size. Read the PR's full CI (`gh pr checks`) before landing it;
   a `check:quick` pass is never merge evidence, and the full suite runs in CI, not locally.
   (guarded, in part: for an `examples/` or `docs/**/*.md` change `check:quick` runs the tests that list
   that folder first, within its 20-file cap; a `src/`, `scripts/`, `eval/`, `test/` or `.claude/` change also
