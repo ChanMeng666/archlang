@@ -57,7 +57,7 @@ merge procedure and the CI job map in `commands.md`.
   the executor did not. A worktree branch can track `origin/main`, so push with an explicit
   `HEAD:<branch>`.
 - **The session scratchpad is shared by parallel executors**: give each its own subfolder in the brief. A
-  reviewer's `scratchpad/` left inside a worktree fails CI's `npm run check` on lint, and must not be staged.
+  reviewer's `scratchpad/` left inside a worktree fails CI's lint step, and must not be staged.
 - **A worktree locked by the running session refuses `git worktree remove`**, even with `--force`. Leave
   it for the session's end rather than removing it with `-f -f`.
 - **Two actors in one worktree share one checkout.** A reviewer's `git checkout -b probe` silently
@@ -82,11 +82,11 @@ merge procedure and the CI job map in `commands.md`.
   component's props), land them in one train, and read `main`'s own CI after every merge.
 - **CI runs only on PRs whose base is `main`.** A stacked PR gets no CI, and retargeting it to
   `main` fires `edited`, not a run: push a commit (or rebase and force-push) to start one.
-- A PR that touches `docs/agents/commands.md` is high tier (`scripts/risk-tier.mjs`), so it needs the
-  owner's words: keep such a line out of an otherwise medium PR and land it separately.
+- A PR that touches `docs/agents/commands.md` is high tier (`scripts/risk-tier.mjs`), so it needs a
+  fresh-context review and the coordinator's judgement: keep such a line out of an otherwise medium PR and land it separately.
 - `scripts/risk-tier.mjs` also puts `docs-site/public/_headers`, `_redirects`, any `server.json` and
   the root `package.json` in the high tier, so an SEO or metadata PR that regenerates `_headers`
-  waits for the owner's words even when the rest is docs.
+  is reviewed as high tier even when the rest is docs.
 - **A local run that skipped the full suite reports green on what it ran**: on a low-load round the corpus guards and CodeQL fire only in CI, so read a PR's checks before starting the next card.
 - **For the owner's rare local run, `npx vitest run --maxWorkers=N` errors in this repo unless `--minWorkers=1` is also given.**
 
