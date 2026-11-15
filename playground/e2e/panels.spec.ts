@@ -586,6 +586,58 @@ test.describe("preview interactions", () => {
     await expect(card).toBeHidden();
   });
 
+  test("the keyboard alone opens a room's card from the Rooms list (card PG.1)", async ({ page }) => {
+    await page.goto("/");
+    await waitForPlan(page);
+    const d = describe(LANEWAY);
+    const bed = d.rooms.find((r) => r.label === "Bedroom")!;
+    const toggle = page.locator(".room-index .ri-toggle");
+    // Out of sight until the focus reaches it, as a skip link is.
+    await expect.poll(async () => (await toggle.boundingBox())?.width ?? 0).toBeLessThanOrEqual(1.5);
+
+    // Tab from the drawing's toolbar to the Rooms control; no pointer from here on.
+    await page.locator('.pz-toolbar [data-pz="paths"]').focus();
+    for (let i = 0; i < 20 && !(await toggle.evaluate((el) => el === document.activeElement)); i++) {
+      await page.keyboard.press("Tab");
+    }
+    await expect(toggle).toBeFocused();
+    await expect
+      .poll(async () => (await toggle.boundingBox())!.width, { message: "drawn with the focus" })
+      .toBeGreaterThan(20);
+    await expect(toggle).toHaveAttribute("aria-expanded", "false");
+
+    // Enter opens the list: every room on the storey, by name, in describe()'s order.
+    await page.keyboard.press("Enter");
+    await expect(toggle).toHaveAttribute("aria-expanded", "true");
+    const list = page.getByRole("list", { name: "Rooms in the drawing" });
+    await expect(list.getByRole("button")).toHaveText(d.rooms.map((r) => r.label || r.id));
+    // Escape closes the list and leaves the focus on the control.
+    await page.keyboard.press("Escape");
+    await expect(list).toBeHidden();
+    await expect(toggle).toBeFocused();
+
+    // Space opens it again; Tab down to the Bedroom and Enter opens its card.
+    await page.keyboard.press("Space");
+    await expect(list).toBeVisible();
+    const bedButton = list.getByRole("button", { name: "Bedroom", exact: true });
+    for (let i = 0; i < d.rooms.length && !(await bedButton.evaluate((el) => el === document.activeElement)); i++) {
+      await page.keyboard.press("Tab");
+    }
+    await expect(bedButton).toBeFocused();
+    await page.keyboard.press("Enter");
+
+    // The same card a click opens, with its focus rules: it takes the focus, Escape closes it, and
+    // the focus goes back to where the reader was (the Rooms control; the list has closed).
+    const card = page.getByRole("dialog", { name: "Bedroom" });
+    await expect(card).toBeVisible();
+    await expect(card).toContainText(`${bed.net_area_m2} m² (net)`);
+    await expect(card).toBeFocused();
+    await expect(list).toBeHidden();
+    await page.keyboard.press("Escape");
+    await expect(card).toBeHidden();
+    await expect(toggle).toBeFocused();
+  });
+
   test("in edit mode a room's card jumps to the statement that drew it", async ({ page }) => {
     await gotoEdit(page);
     const bed = describe(LANEWAY).rooms.find((r) => r.label === "Bedroom")!;

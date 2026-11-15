@@ -407,6 +407,61 @@
   }
 }
 
+/* The rooms from the keyboard (room-index.ts, card PG.1): out of sight until it has the focus, as
+   a skip link is, then a sheet-world panel in the drawing's lower-left corner, over the knobs. */
+.room-index {
+  position: absolute;
+  left: 12px;
+  bottom: 12px;
+  z-index: 8;
+  max-height: calc(100% - 24px);
+  overflow: auto;
+}
+.room-index:not(:focus-within, .open) {
+  clip-path: inset(50%);
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  white-space: nowrap;
+}
+.room-index button {
+  display: block;
+  width: 100%;
+  min-height: 28px;
+  font: inherit;
+  font-size: 12.5px;
+  padding: 4px 11px;
+  border: 1px solid var(--hairline);
+  border-radius: 2px;
+  background: var(--paper-panel);
+  color: var(--ink);
+  text-align: left;
+  cursor: pointer;
+}
+.room-index button:focus-visible {
+  outline: 2px solid var(--plum-deep);
+  outline-offset: 1px;
+}
+.room-index .ri-list {
+  margin: 4px 0 0;
+  padding: 4px;
+  list-style: none;
+  border: 1px solid var(--hairline);
+  border-radius: 3px;
+  background: var(--paper-panel);
+  box-shadow: 0 2px 10px rgb(28 36 48 / 16%);
+}
+.room-index .ri-list[hidden] {
+  display: none;
+}
+.room-index .ri-list button {
+  border-color: transparent;
+}
+.room-index .ri-none {
+  padding: 4px 11px;
+  font-size: 12.5px;
+}
+
 /* The plan's knobs (knobs-panel.ts): a sheet-world panel in the drawing's lower-left corner, a
    slider per top-level number. A <details>, so its heading folds it. On a phone it is a bottom
    sheet across the drawing, folded to its heading until it is opened. */
