@@ -26,8 +26,8 @@ paths:
   PR that touched neither file. Write to a `mkdtemp` directory.
 - CodeQL `js/polynomial-redos` fires on regexes in `test/` too, and the `analyze` job gates: slice
   a block with `indexOf` rather than a lazy `[\s\S]*?` match over compiler output.
-- **Under heavy machine load the visual, sheet and roof tests can time out.** Rerun the file alone
-  before suspecting the code.
+- **Under heavy machine load the visual and sheet tests can time out** (backlog M.6). Rerun the file
+  alone before suspecting the code; never raise the global `testTimeout`.
 - **`test/reroll-findrun-oracle.test.ts` › "generated sources" is an unseeded property flake**: it
   asserts `> 0` suggestions over 60 fast-check runs with no `seed`, and about 0.5 % of runs (seeds
   124, 461, 524 of 640) offer none. A one-off red there is legitimately re-run; the fix is owed
