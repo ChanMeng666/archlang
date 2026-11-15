@@ -5,10 +5,13 @@ on:
     branches: [main]
   pull_request:
     branches: [main]
-  # The merge queue: GitHub builds the PR merged onto main (and onto the PRs queued ahead of
-  # it) and runs the required checks on THAT tree before fast-forwarding main. Every job below
-  # runs in full on it (EVENT is neither `pull_request` nor a filtered path): the queue is the
-  # last gate, so Node 18/20/Windows run too and the path filter never skips anything.
+  # The merge queue, kept but dormant: a merge queue is unavailable on a user-owned repository,
+  # so this trigger never fires here; it stays so the workflow is queue-ready if the repository
+  # moves to an organization. In a queue GitHub would build the PR merged onto main (and onto
+  # the PRs queued ahead of it) and run the required checks on THAT tree before fast-forwarding
+  # main. Every job below would run in full on it (EVENT is neither `pull_request` nor a
+  # filtered path): the queue would be the last gate, so Node 18/20/Windows would run too and
+  # the path filter would never skip anything.
   merge_group:
 
 permissions:
@@ -54,8 +57,8 @@ jobs:
   # the leg's non-test checks. Their required names (`Node 18`, `Node 20`, `Windows (tests
   # + drift)`) are aggregators over the shards: on an ordinary PR they report green with a
   # job-summary line. A train PR runs them before the merge; an ordinary PR's breaks surface
-  # after it, in the push run on `main` (a proven push skips them) and in nightly's
-  # `full-matrix`; `/release-check` reads both.
+  # after it, in the push run on `main` and in nightly's `full-matrix`; `/release-check`
+  # reads both.
   #
   # A proven push skips everything (`scripts/ci-proven.mjs`, whose header lists the conditions).
   # On a push to `main` only, `changes` sets `proven` when the pushed commit M is a two-parent
@@ -651,8 +654,7 @@ jobs:
     #
     # Off the ordinary PR path (see `changes`): the local gate is `check:quick` (changed files,
     # their nearest tests), not the full suite, so a Windows-only break first shows on a train
-    # PR, or for an ordinary PR's merge on `main` (the push run; a proven push skips it) and in
-    # nightly.
+    # PR, or for an ordinary PR's merge on `main` (the push run) and in nightly.
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 

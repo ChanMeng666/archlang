@@ -23,8 +23,8 @@ say what it enforces; this file does not inventory them.
 | Nightly mutants (report-only): `node scripts/mutants.mjs` | a seeded sample of mutation sites (40 a night, seed the UTC date) in `src/num-format.ts` and `src/expr.ts`, each run against its nearest tests (`nightly.yml` `mutants`; the operators and verdicts are in the script's header; `--dry-run` lists the sample and runs nothing). A survivor becomes either a new test or an allow-list row with a reason (`test/mutants.allow.json`); never gates merge. It rewrites the target files in place, restores them byte for byte, and refuses a target with uncommitted changes; it starts no run past `--budget-minutes` (85 nightly) and rewrites its report after every mutant, so a cancelled night keeps its verdicts |
 
 Locally: `check:quick`, plus `docs:build` for `docs/*.md`; then push. CI never runs the `check`
-script itself: it runs its parts, `check:drift`, `typecheck:all` and the E2E on Node 22; Node 18,
-Node 20 and Windows run on train PRs, unproven pushes to `main` and nightly. The PR's CI green is
+script itself; it runs its parts, plus `check:drift`, `typecheck:all` and the E2E (Node 22 for the
+gating legs). Node 18, Node 20 and Windows run on train PRs, unproven pushes to `main` and nightly. The PR's CI green is
 the only merge evidence.
 
 **PR** (`ci.yml`, `codeql.yml`) and **nightly** (`nightly.yml`): the job map is in

@@ -21,8 +21,7 @@ npm run gen:all       # every gen:* generator
 - Local gate is exactly `check:quick` (+ `docs:build` for docs), then push. Executor briefs list only that. `check`, drift,
   `typecheck:all`, vitest runs, e2e and bench are CI's; only CI green is merge evidence. A hook
   blocks them (`.claude/hooks/local-gate.mjs`).
-- Commit or push only when asked. Merge by risk tier; code PRs ride `npm run train`, one train at a
-  time, never a `train/*` branch (`docs/agents/commands.md` § Merging a PR).
+- Commit or push only when asked. Merge by risk tier; code PRs ride `npm run train` (`docs/agents/commands.md` § Merging a PR).
 
 ## Hard rules
 

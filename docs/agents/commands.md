@@ -183,9 +183,8 @@ and `.claude/commands/release-check.md` item 5, which refuses a release on eithe
 `ci-red` and comment on every red run, so `gh issue list -l ci-red` is the first thing a session
 checks; a green run closes the issue with a comment.
 
-What each job runs. Wall clock now: a PR code run about 4.7 min (poles: `3D package frame-budget
-pass` and a Node 22 shard), a full run 7.0–8.7 min (poles: the Windows and Node 18 shards), a `main`
-push run after a train under half a minute; the numbers and their runs live in
+What each job runs. The poles: of a PR code run, `3D package frame-budget pass` and a Node 22 shard;
+of a full run, the Windows and Node 18 shards. Wall-clock readings and their runs live in
 `docs/plans/ci-throughput-research.md` § 12.2, not here.
 
 | Job (CI's check name) | Runs |
@@ -222,7 +221,8 @@ first run of Node 18, Node 20 and Windows only in the `push` run on `main` (§ C
 runs them before the merge when `changes` calls the change code (a records-only train does not run them).
 Before merging anything into `main` (a train or a direct merge), check for an open `train/*` PR
 (`gh pr list --search "head:train/"`) and do not move `main` under it: one train at a time across sessions.
-Never name an ordinary same-repo branch `train/…`: it runs the full matrix and cannot board a train.
+Never name an ordinary same-repo branch `train/…`: it runs the full matrix when the change is code
+and cannot board a train.
 
 0. Tier the change by what it touches, not who wrote it: `node scripts/risk-tier.mjs` (highest path
    wins; renames count both paths; a path no rule names is medium). **Low** (internal prose:
