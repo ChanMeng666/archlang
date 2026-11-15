@@ -1678,14 +1678,8 @@ inclusive, and keep the smallest-room tie rule (`playground/test/interact.test.t
 unit cases on `hexagon-pavilion` (trapezoids, the rotunda) and `gallery-l`; the rectangle cases
 unchanged.
 
-### PG.3 · The facts line moves the drawing on the first compile — `todo`
-
-The facts line is empty in the served page and filled after the first compile, so the stage
-shrinks by its height then (35 px, measured at 1280 and at 390 wide). Writing
-it at build time (`playground/scripts/gen-static.mjs`) would fix that, but with JavaScript off the
-drawing's share of a 1280×720 viewport would fall to about 0.66, under `boot.spec`'s 0.70; moving
-the line into the output pane's status row first keeps both. **Gate:** the stage box is the same
-before and after the first compile; `boot.spec`'s no-JS share holds.
+- PG.3 · The facts line moves the drawing on the first compile — closed by MP5 (#565, the line is
+  served) and PG-D6 (the stage's foot keeps its row); pinned by `boot.spec`'s first-compile stage-box case
 
 ## Website residue (Search Console fixes #640, #643, #655, 2026-11-10)
 
