@@ -9,7 +9,8 @@
  * the refusal protocol), {@link buildFidelityUserPrompt} (the brief verbatim),
  * {@link parseFidelityReply} and {@link scoreReply}. `FIDELITY_VERSION`, the corpus and the
  * committed references are not touched. This file only drives the calls and writes the record.
- * The provider adapters are `eval/l2-run.ts`'s ({@link makeL2Author}): they return the RAW reply
+ * The provider adapters are `eval/live-author.ts`'s ({@link makeL2Author}, shared with the L2
+ * harness): they return the RAW reply
  * (the refusal fence must reach the parser intact; run.ts's authors keep only the extracted
  * `.arch`), the per-call token split and stop reason, retry 429/5xx/network errors, and send no
  * `temperature`, so the k trials of one brief are samples at the model's default sampling and not
@@ -67,7 +68,7 @@ import {
   type RetryPolicy,
   makeL2Author,
   writeJsonAtomic,
-} from "./l2-run.js";
+} from "./live-author.js";
 import { LiveLedger, isTruncationStop, parseBudget, resolveProvider } from "./run.js";
 import { wilson95 } from "./stats.js";
 
