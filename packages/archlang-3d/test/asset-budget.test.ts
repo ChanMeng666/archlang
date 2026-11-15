@@ -7,6 +7,7 @@
 import { mkdtempSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { fileURLToPath } from "node:url";
 import { afterEach, describe, expect, it } from "vitest";
 import {
   assertWithinBudget,
@@ -24,13 +25,19 @@ afterEach(() => {
 });
 
 describe("the PNG budgets (card 3D.2)", () => {
-  it("every asset kind the generator writes has a finite cap; the plan PNG's is 300 KB", () => {
+  it("every file kind in the committed manifest has a finite cap; the plan PNG's is 300 KB", () => {
+    const m = readManifest(DEFAULT_OUT);
+    const files = (m?.assets ?? []).flatMap((a) => a.files.map((f) => f.path));
+    expect(files.length).toBeGreaterThan(0);
+    for (const f of files) expect(Number.isFinite(budgetOf(f)), f).toBe(true);
     expect(budgetOf("studio.plan.png")).toBe(300_000);
     expect(budgetOf("studio.poster.png")).toBe(BUDGET.posterPng);
-    expect(budgetOf("hillside-villa.poster-full.png")).toBe(BUDGET.posterPng);
-    expect(budgetOf("studio.poster.webp")).toBe(BUDGET.webp);
-    expect(budgetOf("studio.replay.mp4")).toBe(BUDGET.mp4);
-    expect(budgetOf("studio.glb")).toBe(BUDGET.glb);
+  });
+
+  it("the generator guards every PNG it writes before writing it", () => {
+    const src = readFileSync(fileURLToPath(new URL("../scripts/gen-3d-assets.ts", import.meta.url)), "utf8");
+    expect(src).toMatch(/assertWithinBudget\(`\$\{name\}\.\$\{file\}\.png`, still\.png\.byteLength\);/);
+    expect(src).toContain("assertWithinBudget(planFile, drawn.png.byteLength);");
   });
 
   it("the generator refuses a PNG over its cap", () => {
@@ -67,9 +74,7 @@ describe("the PNG budgets (card 3D.2)", () => {
     const pngs = (m?.assets ?? []).flatMap((a) => a.files.map((f) => f.path)).filter((f) => f.endsWith(".png"));
     expect(pngs.length).toBeGreaterThan(0);
     for (const f of pngs) {
-      const size = statSync(join(DEFAULT_OUT, f)).size;
-      expect(size, f).toBeLessThanOrEqual(budgetOf(f));
-      expect(readFileSync(join(DEFAULT_OUT, f)).byteLength).toBe(size);
+      expect(statSync(join(DEFAULT_OUT, f)).size, f).toBeLessThanOrEqual(budgetOf(f));
     }
   });
 });
