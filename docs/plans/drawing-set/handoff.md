@@ -16,6 +16,8 @@
 
 ## 3. 接下来，按序
 
+> **2026-11-15 RM-D43（所有者）：** Show HN 不再是门，下面 CR-D1、D4、D11 里"Show HN 之后"的条件作废；DS3–DS9 与 DS20 进入 `../product-roadmap/handoff.md` §2 的排期（RM-D43 重评表）。
+>
 > **2026-11-05 CR-D1（所有者批准）：** DS3–DS9 推到 Show HN 之后按证据重排；DS1、DS2 改由 `../checker-reach/` 的 CR1、CR2b 承担。冻结前的排期以 `../checker-reach/handoff.md` 为准。
 
 1. DS0 确认记录。

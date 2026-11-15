@@ -57,7 +57,7 @@
 - 合 #675（codeql-action，workflow 属高风险层）、#677、#678：`@dependabot rebase` 到新 `main`，CI 绿后按层级合并（`docs/agents/iron-laws.md` 的 Dependabot 规则）。
 - #604：先修 biome 2.6 的 lint 差异，再合。
 - #676（`three` 0.187）：单独评估 3D 的帧哈希与 GLB 字节、许可白名单与 THIRD_PARTY_NOTICES；不与别的升级同 PR。
-- #603（`@modelcontextprotocol/ext-apps` 1.7.5 → 2.0.4，主版本）：按 RM-D19，~~Show HN 之前不合并，PR 保持打开；12-02 之后由 RM5.4 迁移~~。RM-D27（`README.md` §6.5）作废了日期：RM5.4 现在就可以开工；但这是主版本升级，合并仍等所有者（`docs/agents/iron-laws.md` § Owner policies："a major bump waits for the owner"），在那之前 PR 保持打开。
+- #603（`@modelcontextprotocol/ext-apps` 1.7.5 → 2.0.4，主版本）：按 RM-D19，~~Show HN 之前不合并，PR 保持打开；12-02 之后由 RM5.4 迁移~~。RM-D27（`README.md` §6.5）作废了日期：RM5.4 现在就可以开工；但这是主版本升级，合并仍等所有者（`docs/agents/iron-laws.md` § Owner policies："a major bump waits for the owner"），在那之前 PR 保持打开。**RM-D43（2026-11-15）：** 所有者让协调者评估、该做就现在做；协调者判定现在做（1.x 自 2026-07 没有新版，2.x 已到 2.1.0，主版本迁移越拖越贵），这就是所有者对本次升级的同意。RM5.4 进行中。
 - 清掉 12 个已合并 PR 的远程分支、`refs/remotes/pr308` 和过期的本地分支（例如 `refactor/exhaustive-element-kinds`）；保留 `feat/remove-view`。
 - `origin/ChanMeng666-patch-1`（所有者 2026-11-08 网页上改的 README 影片链接，一行，commit `6c86203a`，没有 PR）：按 RM-D20 落地。先确认新的资源 URL 能打开；再从 `main` 新建分支，cherry-pick `6c86203a`，经 PR 合并（README 改动按风险层级走）。
 
@@ -183,7 +183,7 @@ CRF10：`INSTRUCTIONS` 879/900。做法：`INSTRUCTIONS` 保留一句能力句�
 
 受托裁定（2026-11-11，所有者可一句话推翻）：随 PR 带出 `W_GRID_SNAPPED` 的示例，凡触发它的已发布示例，改写成吸附后的值（图字节恒等）；`W_UNKNOWN_THEME` 也由 CLI 的 `validate` 与 `lint` 报出。
 
-- U.2 裸米值静默编译 → 一条 W（带它猜成的毫米值）。**不升 E**：会让今天能编译的图在 Show HN 前变红。
+- U.2 裸米值静默编译 → 一条 W（带它猜成的毫米值）。**不升 E**：会让今天能编译的图变红（原则 2：现在只加 W，2.0 再升 E）。
 - U.3 家具类别拼错过 `--strict` → 走 `W_ALIAS_MATCH` 同路，`--strict` 下升级。
 - PS0.25 与 6.10（尺寸和门位网格吸附无声）→ 一条 W，带吸附前后值；同一 PR 裁两条。
 - PS0.16（`set door(width: W)` 静默字串化）→ W 现在，消息给出被当成字串的值；2.0 升 E，记进 backlog 的 2.0 桶（RM-D6）。
@@ -273,7 +273,7 @@ CR7 ② 已把"只改一个房间"放进 README（`README.md:32,75,82`）、`doc
 
 证明：最小夹具；字节恒等律（不触发的图 SVG、`describe()`、`lint()`、诊断不变）；`arch explain` 条目。
 
-不许：升 E（Show HN 前只加 W，原则 2）；把大小写不对的名字当成已知名去画；改任何主题的值。
+不许：升 E（现在只加 W，原则 2）；把大小写不对的名字当成已知名去画；改任何主题的值。
 
 ### RM1.4c · `W_GRID_SNAPPED` 没覆盖的几类（2026-11-11 加，出自 #704 的评审） — `todo` · 未估 · opus · 依赖 #704 已合并（线下）
 
@@ -509,7 +509,7 @@ CR11 的其余一半：语言规范独立版本 `lang-1.0`。RM3.2：SBOM（Cycl
 
 不许：改 SVG/PDF 的线宽；在 DXF 里另立一张线宽表（只能从 SVG/PDF 的表派生）；改图层名（NCS v6 的命名是另一件事）；写 `--layers iso13567`（§4 不做）。
 
-### RM5.4 · `@modelcontextprotocol/ext-apps` 2.x 迁移（#603） — `todo` · 未估 · opus · 依赖 ~~2026-12-02 之后~~（RM-D27 作废）所有者对这次主版本升级的同意（合并前要；开工不等）；与 RM1.6b 共用一次 `packages/mcp` bump · 高风险层
+### RM5.4 · `@modelcontextprotocol/ext-apps` 2.x 迁移（#603） — `doing`（2026-11-15，RM-D43） · 未估 · opus · 依赖 ~~2026-12-02 之后~~（RM-D27 作废）所有者对这次主版本升级的同意（合并前要；开工不等）；与 RM1.6b 共用一次 `packages/mcp` bump · 高风险层
 
 RM-D19 的受托裁定：Dependabot #603（1.7.5 → 2.0.4，主版本，CI 在 "Workspace builds" 上红，`packages/mcp-worker/src/server.ts` 的 `TS2353 'title' does not exist in type 'McpUiAppResourceConfig'`）Show HN 之前不合并，之后由本卡迁移。**RM-D27（2026-11-11）之后：** "2026-12-02 之后""Show HN 之前不合并"这两个日期条件作废；本卡仍是主版本升级，按 `docs/agents/iron-laws.md` § Owner policies（"a major bump waits for the owner"）等所有者的同意，并与 RM1.6b 共用一次 bump。
 - 先读 `ext-apps` 2.0 的 release notes，列出影响本仓库的破坏性变更。
@@ -615,7 +615,7 @@ RM-D19 的受托裁定：Dependabot #603（1.7.5 → 2.0.4，主版本，CI 在 
 
 ## 阶段 E · 波次 2′（12-17 → 2027-01-09；1.61.0 约 01-05 切）：深度
 
-先按 Show HN 评论重排（`README.md` §5）。RM1.1b 量的工作必须在 1.61.0 里，所以有效窗口是 12-17 → 约 01-05，19 个日历日，跨圣诞与新年。默认顺序：RM3.1 后半（若没做完）→ PS7.9（若没做完）→ RM1.2a → 发布 1.61.0 → RM1.1b（01-06 → 01-08），线（9.5 日 = 3 + 1.5 + 3 + 1 + 1，前两项只在没做完时计）以下 CRF1 → RM7.2（线下首位）→ RM4.1 → RM1.2b → MF1 → RM1.7 → 其余。RM7.3 在读数日做，不计入线。
+~~先按 Show HN 评论重排（`README.md` §5）。~~ RM-D43：不等评论，按默认顺序开工。RM1.1b 量的工作必须在 1.61.0 里，所以有效窗口是 12-17 → 约 01-05，19 个日历日，跨圣诞与新年。默认顺序：RM3.1 后半（若没做完）→ PS7.9（若没做完）→ RM1.2a → 发布 1.61.0 → RM1.1b（01-06 → 01-08），线（9.5 日 = 3 + 1.5 + 3 + 1 + 1，前两项只在没做完时计）以下 CRF1 → RM7.2（线下首位）→ RM4.1 → RM1.2b → MF1 → RM1.7 → 其余。RM7.3 在读数日做，不计入线。
 
 ### RM1.2a · 行家规则，不加语法的三条 — `done` · #733（`c265c167`）、#738（`b4d7a62d`）、#736（`80c1669e`） · 3 日 · opus · 依赖 RM1.3a；第 2 条依赖 RM1.6a
 
@@ -1045,7 +1045,7 @@ MF-D1（`../math-foundations/README.md` §6.1 第 3 条）要求 MF-D11 在本�
 
 证明：每个形式各自的字节恒等律（一层楼板都没写的图，SVG、`describe()`、`lint()` 三处都逐字节不变，MF-D1 第 2 条）；`describe()` 变化只在用了新子句的图上；`archlang-section` 的示例 `haus_winders.arch` 加剖切线后 `describe --json` 能喂给它（在 PR 里跑一次该工具作说明，不进测试）。
 
-不许：在核心画任何高度或剖面；把剖面放进 `describe()` 以外的核心输出；碰 DS13（它在 `archlang-3d`，按 D3 等 Show HN 之后）；给没写楼板的图加跳过说明；用默认值去猜板厚或顶层净高；不写作者值时推算顶层或单层的净高。
+不许：在核心画任何高度或剖面；把剖面放进 `describe()` 以外的核心输出；碰 DS13（它在 `archlang-3d`，按 D3 等 N10 已读）；给没写楼板的图加跳过说明；用默认值去猜板厚或顶层净高；不写作者值时推算顶层或单层的净高。
 
 ### RM6.1c · `skills/archlang/SKILL.md:323` 仍写 "sliding-family-only"（2026-11-12 加，出自 #714） — `todo` · 未估 · sonnet · 依赖无（线下）
 
@@ -1130,10 +1130,10 @@ Playground：Chromium `--shard=1/2`、`2/2` 两个 job，Firefox 与 WebKit 的 
 | 卡 | 触发 |
 |---|---|
 | IFC 下游包（archlang-3d M5） | 三个外部用户在格式之前先要它，或 Show HN 评论要它；先过 M5 spike 判据；RM7.2 先于它 |
-| DS10–DS15 剖面立面 | N10 读过（记为受干扰即可）+ Show HN 之后（D3） |
+| DS10–DS15 剖面立面 | N10 读过（记为受干扰即可；D3）。~~+ Show HN 之后~~（RM-D43 作废） |
 | 3D 能力 M2+ | 由 `packages/archlang-3d` 的维护自定节奏（`../archlang-3d/` 计划已归档）；N10 读数的结论不挡它 |
 | RM3.3 mask 导入 | 第二个独立样本 |
-| NZ/AU profile、`lint --brief`、FLOORA、MCP 工具分组 | 阶段 F，按 Show HN 评论与读数重排 |
+| NZ/AU profile、`lint --brief`、FLOORA、MCP 工具分组 | 阶段 F 候选；不等 Show HN（RM-D43），评论与读数只给没开工的重排 |
 | 组件接缝单一所有者规则 | 两个 `place` 实例在共享边上对门洞冲突的真实用例 |
 | 占用分类、喷淋、地理锚点等建筑标志 | 非住宅疏散或室内地图的外部请求；届时单独提所有者裁定（`README.md` §4，挂起） |
 | 电气布置 overlay | 2027-01-31 前 Floorcraft 的电气功能显出用户反响（`README.md` §4） |
