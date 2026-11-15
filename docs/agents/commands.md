@@ -207,7 +207,11 @@ runs them before the merge.
       the member's reviewed tree.
    3. `npm run train -- --land <train pr> --wait`. It refuses unless the train head and every member's
       head are still the recorded ones, `main` is still the train's base, the review comments are there,
-      the CI run on the train head is completed and successful and every check-run passed. It merges with
+      the train's own `ci.yml` run (event `pull_request`, the train branch, the train head) is completed
+      and successful, and every check-run passed: never the check names alone, which GitHub matches per
+      SHA (so every member gets a fresh merge commit and the train head is never a member's head). It
+      prints `scripts/ci-proven.mjs --run`'s `proves: yes|no` (information: on "no", `main`'s push run
+      runs every leg itself). It merges with
       `--match-head-commit`, reads the state back, and only then deletes each member branch GitHub marked
       MERGED (still at its pinned SHA, no open PR based on it), comments `landed by train #<n> (<sha>)` on
       it, and removes the train branch and worktree. A member not marked MERGED is reported and left.

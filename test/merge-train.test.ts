@@ -11,6 +11,7 @@ import { mkTmp } from "./helpers/tmp.js";
 const {
   cleanupPlan,
   forbidden,
+  headIsFresh,
   isTrainBranch,
   keepWaiting,
   landVerdict,
@@ -153,6 +154,16 @@ describe("pure cores", () => {
     ).toBeNull();
   });
 
+  it("a train head is fresh: never the base, never a member's head", () => {
+    const members = [
+      { number: 1, pinned: A },
+      { number: 2, pinned: C },
+    ];
+    expect(headIsFresh({ head: H, base: B, members })).toBeNull();
+    expect(headIsFresh({ head: B, base: B, members })).toContain("is the base");
+    expect(headIsFresh({ head: C, base: B, members })).toContain("also member #2's head");
+  });
+
   it("law 3 is waived only for one member whose tree is the train head's", () => {
     const one = [{ number: 1 }];
     expect(law3({ members: one, headTree: A, memberTree: A }).required).toBe(false);
@@ -250,6 +261,16 @@ describe("pure cores", () => {
     expect(msgs(refusedBy((f) => (f.train.headRefName = "train/20261105-030410")))).toContain("branch is");
     expect(msgs(refusedBy((f) => (f.train.baseRefName = "dev")))).toContain("targets dev");
     expect(msgs(refusedBy((f) => (f.train.headRefOid = M)))).toContain("abandon and rebuild");
+    // A hand-built train whose head is a member's head: the check names would read that PR's run.
+    const shared = refusedBy((f) => {
+      f.rec = { ...rec, head: A };
+      f.train.headRefOid = A;
+      f.train.comments = [owner(`reviewed ${A}`)];
+      f.ciRun = ciRun({ head_sha: A, head_branch: rec.branch });
+    });
+    expect(msgs(shared)).toBe(
+      `the train head ${A} is also member #1's head: it must be a fresh merge commit; abandon and rebuild`,
+    );
     expect(msgs(refusedBy((f) => (f.mainSha = M)))).toContain("main is at");
     expect(msgs(refusedBy((f) => (f.train.mergeStateStatus = "BEHIND")))).toContain("BEHIND: rebuild");
     expect(msgs(refusedBy((f) => (f.train.mergeStateStatus = "DIRTY")))).toContain("DIRTY: rebuild");
@@ -594,6 +615,8 @@ describe("the train on a throwaway repository", { timeout: 60_000 }, () => {
     const failing = fakeGh(r, { merge: () => ({ status: 1, stderr: "Head branch was modified" }) });
     expect(runMain(["--land", "99"], failing.gh)).toBe(1);
     expect(lines.err.join("\n")).toContain("nothing was cleaned up");
+    // No FT1 script in this repository: the proof is "unknown", printed, and not a refusal.
+    expect(lines.err.join("\n")).toContain("proves: unknown (scripts/ci-proven.mjs is not in this checkout");
     expect(failing.calls.filter((c) => c[1] === "comment" || c[1] === "list")).toEqual([]);
     for (const b of ["feat/a", "feat/b", "feat/d", BRANCH])
       expect(r.git(r.origin, "rev-parse", `refs/heads/${b}`)).toMatch(/^[0-9a-f]{40}$/);
@@ -611,10 +634,17 @@ describe("the train on a throwaway repository", { timeout: 60_000 }, () => {
         return { status: 0 };
       },
     });
-    expect(runMain(["--land", "99", "--json"], landing.gh)).toBe(1);
+    const proofCalls: unknown[][] = [];
+    const proof = (...a: unknown[]) => {
+      proofCalls.push(a);
+      return { status: 1, stdout: "proves: no (a job was skipped)\n", stderr: "" };
+    };
+    expect(runMain(["--land", "99", "--json"], landing.gh, { proof })).toBe(1);
     const landed = JSON.parse(lines.out.join("\n"));
     const mergeSha = r.git(r.origin, "rev-parse", "main");
-    expect(landed).toMatchObject({ trainPr: 99, merged: true, mergeSha });
+    // The train's own run (id 20 in the fake) is the one asked about; a "no" still lands.
+    expect(proofCalls).toEqual([[20, REPO]]);
+    expect(landed).toMatchObject({ trainPr: 99, merged: true, mergeSha, proof: "proves: no (a job was skipped)" });
     expect(r.git(r.origin, "rev-parse", "main^1")).toBe(base);
     expect(r.git(r.origin, "rev-parse", "main^2")).toBe(j.head);
     expect(
@@ -639,6 +669,31 @@ describe("the train on a throwaway repository", { timeout: 60_000 }, () => {
     expect(r.git(r.work, "branch", "--list", BRANCH)).toBe("");
     for (const calls of [fake.calls, failing.calls, landing.calls])
       for (const c of calls) expect(forbidden("gh", c)).toBeNull();
+  });
+
+  it("one up-to-date member still gets its own merge commit: a fresh head, law 3 waived by tree", () => {
+    const r = setup();
+    r.pr(1, "feat/a", { "src/a.ts": "export const a = 2;\n" });
+    const out: string[] = [];
+    const err: string[] = [];
+    const code = main(["1", "--dry-run", "--json"], {
+      cwd: r.work,
+      out: (l: string) => out.push(l),
+      err: (l: string) => err.push(l),
+      gh: fakeGh(r).gh,
+      now: NOW,
+      runGen: () => true,
+    });
+    expect(code, err.join("\n")).toBe(0);
+    const j = JSON.parse(out.join("\n"));
+    const pinned = r.prs[1]?.headRefOid;
+    expect(j.head).not.toBe(pinned);
+    expect(j.law3).toMatchObject({ required: false });
+    expect(r.git(r.work, "rev-parse", `${j.head}^{tree}`)).toBe(r.git(r.work, "rev-parse", `${pinned}^{tree}`));
+    expect(r.git(r.work, "rev-parse", `${j.head}^2`)).toBe(pinned);
+    // --dry-run pushed nothing and left no worktree.
+    expect(r.git(r.origin, "for-each-ref", "--format=%(refname:short)", "refs/heads/train")).toBe("");
+    expect(existsSync(join(r.work, ".claude", "worktrees", "train-20261115-010203"))).toBe(false);
   });
 
   it("refuses to build when a member is not ready, and creates nothing", () => {

@@ -49,10 +49,18 @@
  * dropped PRs with the reason. It is the single source of truth for `--land` and `--abandon`; no local
  * state file. `--dry-run` builds everything, pushes nothing, opens nothing, removes its worktree.
  *
- * Land: re-read the record; refuse unless the train PR is open, its head is the recorded head, `main` is
- * the recorded base, every member is open at its pinned SHA, law 3 holds, the CI run on the head is
- * completed and successful, every check-run on it passed, and `mergeStateStatus` is CLEAN, UNSTABLE or
+ * The train head is always a fresh commit, never the base or a member's head ({@link headIsFresh}, checked
+ * before the push and again at landing): check-runs are matched to a SHA by name, so a head shared with a
+ * member PR would show that PR's ordinary run (Node 18, Node 20, Windows green by skipping) as the train's.
+ *
+ * Land: re-read the record; refuse unless the train PR is open, its head is the recorded (fresh) head,
+ * `main` is the recorded base, every member is open at its pinned SHA, law 3 holds, the train's own
+ * workflow RUN (`ci.yml`, event `pull_request`, head branch = the train branch, head SHA = the train head,
+ * newest run, whose object is its latest attempt) is completed and successful, every check-run on the head
+ * passed (read in addition to the run, never instead of it), and `mergeStateStatus` is CLEAN, UNSTABLE or
  * HAS_HOOKS ({@link landVerdict}). `--wait` polls every 30 s, at most 90 minutes, while only CI is pending.
+ * Before merging it prints FT1's answer, `node scripts/ci-proven.mjs --run <that run>`
+ * (`proves: yes|no|unknown (…)`): information for the coordinator, never a refusal.
  * Then `gh pr merge --merge --match-head-commit <full sha>` (never `--admin`, `--auto`, squash or rebase),
  * then the state is re-read: nothing is cleaned up unless the train PR reads MERGED. GitHub marks each
  * member merged on its own once its head is reachable from `main`; each is polled, bounded. Only a member
@@ -221,6 +229,17 @@ export function memberVerdict({ pr, repo, tier, runs }) {
   return { ok: reasons.length === 0, pinned: reasons.length === 0 ? pinned : null, reasons };
 }
 
+/**
+ * Why a train head is unfit, or null. It must be a fresh commit: never the base and never a member's head.
+ * GitHub matches check-runs to a SHA by name, so a train head that is also a member PR's head shows that
+ * PR's ordinary run (Node 18, Node 20 and Windows green by skipping) on the train PR as well.
+ */
+export function headIsFresh({ head, base, members }) {
+  if (head === base) return `the train head ${head} is the base: nothing was merged`;
+  const same = members.find((m) => m.pinned === head);
+  return same ? `the train head ${head} is also member #${same.number}'s head: it must be a fresh merge commit` : null;
+}
+
 /** Law 3: whether landing needs `reviewed <train head>`. Exempt only for one member whose tree is the head's. */
 export function law3({ members, headTree, memberTree }) {
   const same = members.length === 1 && SHA.test(headTree ?? "") && headTree === memberTree;
@@ -343,6 +362,8 @@ export function landVerdict(f) {
   if (train?.baseRefName !== MAIN) refuse("state", `the train PR targets ${train?.baseRefName}, not ${MAIN}`);
   if (train?.headRefOid !== rec.head)
     refuse("moved", `the train head is ${train?.headRefOid}, not the recorded ${rec.head}: abandon and rebuild`);
+  const stale = headIsFresh(rec);
+  if (stale) refuse("state", `${stale}; abandon and rebuild`);
   if (f.mainSha !== rec.base) refuse("moved", `${MAIN} is at ${f.mainSha}, not the train's base ${rec.base}: rebuild`);
   else if (["BEHIND", "DIRTY"].includes(train?.mergeStateStatus))
     refuse("moved", `the train PR is ${train.mergeStateStatus}: rebuild`);
@@ -733,6 +754,10 @@ export function main(argv, opts = {}) {
       if (cl.code !== 0) throw new Stop(2, [...cl.out, "the train tip fails the CHANGELOG rule; nothing was pushed"]);
       for (const l of cl.out) log(l);
       const head = t.git("rev-parse", "HEAD");
+      // Every boarded member got its own --no-ff merge commit, so the head is fresh unless every member was
+      // already contained; checked anyway, before anything is pushed.
+      const stale = headIsFresh({ head, base, members });
+      if (stale) throw new Stop(2, [`${stale}; nothing was pushed`]);
       const law = law3({
         members,
         headTree: t.git("rev-parse", `${head}^{tree}`),
@@ -856,6 +881,33 @@ export function main(argv, opts = {}) {
     }
   }
 
+  /**
+   * The `proves: yes|no (<reason>)` line of `node scripts/ci-proven.mjs --run <id>` (FT1), from this
+   * checkout's copy; `proves: unknown (…)` when the script is absent or fails. `opts.proof(runId, repo)`
+   * replaces the call in tests (returns `{ status, stdout, stderr }`).
+   */
+  function readProof(runId, repo) {
+    const script = join(here.root, "scripts", "ci-proven.mjs");
+    let r;
+    if (opts.proof) r = opts.proof(runId, repo);
+    else if (!existsSync(script))
+      return "proves: unknown (scripts/ci-proven.mjs is not in this checkout: FT1 not merged)";
+    else
+      r = spawnSync(process.execPath, [script, "--run", String(runId), "--repo", repo], {
+        cwd: here.root,
+        timeout: 120_000,
+      });
+    const line = String(r?.stdout ?? "")
+      .split(/\r?\n/)
+      .find((l) => l.startsWith("proves: "));
+    return (
+      line ??
+      `proves: unknown (ci-proven exited ${r?.status}: ${String(r?.stderr ?? "")
+        .trim()
+        .slice(0, 200)})`
+    );
+  }
+
   /** `fn()`, or null when it throws (a missing CI-runs response is "no run", which refuses). */
   function v0(fn) {
     try {
@@ -956,6 +1008,11 @@ export function main(argv, opts = {}) {
       throw new Stop(2, lines);
     }
 
+    // Information, never a refusal: will the push run for this merge be proven by the train's run (FT1's
+    // `scripts/ci-proven.mjs --run`)? A "no" means `main` runs every leg itself.
+    const proof = readProof(facts.ciRun.id, repo);
+    log(`main push proof (ci-proven --run ${facts.ciRun.id}): ${proof}`);
+
     // The merge, pinned to the recorded head. Then read the state: cleanup is decided only from it.
     log(`merging #${n} at ${rec.head}`);
     const m = gh(["pr", "merge", String(n), "--merge", "--match-head-commit", rec.head], { ok: "any" });
@@ -1034,9 +1091,10 @@ export function main(argv, opts = {}) {
     else if (here.gitOk("rev-parse", "-q", "--verify", `refs/heads/${rec.branch}`))
       here.git("branch", "-q", "-D", rec.branch);
     const unmerged = results.filter((r) => r.state !== "MERGED");
-    if (args.json) out(JSON.stringify({ trainPr: n, merged: true, mergeSha, members: results }));
+    if (args.json) out(JSON.stringify({ trainPr: n, merged: true, mergeSha, proof, members: results }));
     else {
       out(`landed train #${n} as ${mergeSha}`);
+      out(`  main push proof: ${proof}`);
       for (const r of results)
         out(
           `  #${r.number}: ${r.state}${r.branchDeleted ? ", branch deleted" : ""}${r.commented ? ", commented" : ""}${r.note ? ` (${r.note})` : ""}`,
