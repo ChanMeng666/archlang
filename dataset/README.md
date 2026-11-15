@@ -27,8 +27,8 @@ model-written `model-authoring` config is described in its own section below):
   `describe()` facts, and a machine-checkable intent contract (shape of `schemas/intent.schema.json`)
   — all descending from one ground truth so they cannot drift.
 
-This is **not a benchmark** and **not** the project's private evaluation set (see the iron law
-below).
+This is **not a benchmark** and **not** a held-out set: the project's 26-brief evaluation corpus is
+a public fixture (see the iron law below).
 
 ## Module map
 
@@ -122,7 +122,7 @@ the repair stage will refuse them and the row is rejected.
 > `submit` phase (product-roadmap RM-D47). `CARD.md` carries this config's card text; the upload
 > itself is the owner's step (§ Re-uploading to Hugging Face).
 
-A separate HF config, `model-authoring` (split `one_shot`, files `model-authoring.jsonl` and `model-authoring-fable.jsonl`). Real
+A separate HF config, `model-authoring` (split `one_shot`, file `model-authoring.jsonl`). Real
 models write `.arch` **one-shot** from procedural briefs, and the deterministic tools heal the
 result. The consumer-facing description, fields and limitations are in
 `CARD.md`; this section covers how it is built and what must not break.
@@ -137,8 +137,8 @@ or training data. The `default` config's CC0 text is unchanged.
 git-ignored; `--out <dir>` overrides it):
 
 ```bash
-npm run dataset:model-authoring -- plan --briefs 400 --models haiku-5-5,sonnet-5-5,opus-5-5   # free
-npm run dataset:model-authoring -- submit --yes --models haiku-5-5,sonnet-5-5,opus-5-5 --briefs 400 --max-usd <X>   # PAID, owner-only
+npm run dataset:model-authoring -- plan --briefs 390 --models haiku-5-5,sonnet-5-5,opus-5-5   # free
+npm run dataset:model-authoring -- submit --yes --models haiku-5-5,sonnet-5-5,opus-5-5 --briefs 390 --max-usd <X>   # PAID, owner-only
 npm run dataset:model-authoring -- collect           # re-run until done, or add --wait [--poll 60]
 npm run dataset:model-authoring -- build             # deterministic, no network
 ```
@@ -236,17 +236,14 @@ Notes:
   card-only edit re-uploads `README.md` alone. This is a release-checklist item — see
   `CONTRIBUTING.md` → "Releasing".
 - **The `model-authoring` config** (`CARD.md` already carries its `configs:` entry and section).
-  Its two data files and two reports upload alongside `CARD.md` as `README.md`. The Fable file
-  and report come from a separate `--out` dir (`dataset/out/model-authoring-fable/`, made with
-  `--briefs 200`); the generator names that report `model-authoring-report.json`, so it is renamed
-  on upload by the `path_in_repo` argument:
+  Its data file and report upload alongside `CARD.md` as `README.md`. **Upload `README.md` last**,
+  after the data file it names exists on HF: an unresolvable `data_files` path breaks loading for
+  the whole repo.
 
   ```bash
-  hf upload ChanMeng666/archlang-repair-trajectories dataset/out/model-authoring/model-authoring.jsonl             model-authoring.jsonl             --repo-type dataset
-  hf upload ChanMeng666/archlang-repair-trajectories dataset/out/model-authoring/model-authoring-report.json       model-authoring-report.json       --repo-type dataset
-  hf upload ChanMeng666/archlang-repair-trajectories dataset/out/model-authoring-fable/model-authoring.jsonl       model-authoring-fable.jsonl       --repo-type dataset
-  hf upload ChanMeng666/archlang-repair-trajectories dataset/out/model-authoring-fable/model-authoring-report.json model-authoring-fable-report.json --repo-type dataset
-  hf upload ChanMeng666/archlang-repair-trajectories dataset/CARD.md                                               README.md                         --repo-type dataset
+  hf upload ChanMeng666/archlang-repair-trajectories dataset/out/model-authoring/model-authoring.jsonl model-authoring.jsonl --repo-type dataset
+  hf upload ChanMeng666/archlang-repair-trajectories dataset/out/model-authoring/model-authoring-report.json model-authoring-report.json --repo-type dataset
+  hf upload ChanMeng666/archlang-repair-trajectories dataset/CARD.md README.md --repo-type dataset
   ```
 
 ## Prose discipline

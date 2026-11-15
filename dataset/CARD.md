@@ -28,12 +28,12 @@ configs:
       - split: one_shot
         path:
           - model-authoring.jsonl
-          - model-authoring-fable.jsonl
 ---
 
 # ArchLang Repair Trajectories
 
-A dataset of floor-plan program-repair and authoring examples for [ArchLang](https://github.com/ChanMeng666/archlang) — a small declarative language
+A dataset of floor-plan program-repair and authoring examples for
+[ArchLang](https://github.com/ChanMeng666/archlang) — a small declarative language
 that compiles `.arch` floor-plan source to professional SVG. The `default` config
 (the `repair` and `authoring` splits) is fully synthetic and procedurally generated, and every row
 is self-verifying through the deterministic ArchLang compiler, with **zero model or API
@@ -41,14 +41,16 @@ involvement** in its construction. The separate `model-authoring` config holds r
 Anthropic Claude models; see *The `model-authoring` config*.
 
 - **Generator + seed:** open source in the main repository (`dataset/`, `npm run dataset:gen`),
-  so the corpus is reproducible **byte-for-byte**.
+  so the `default` config's corpus is reproducible **byte-for-byte**. (The `model-authoring`
+  config's model replies are a snapshot; see its section for what replays.)
 - **Pinned:** `default` config: `archlang_version` `1.15.0`, seed `20260712`. `model-authoring`
   config: `archlang_version` `1.62.0`, seed `20261115`.
 - **License:** CC0-1.0 (public domain dedication).
 
 ## What this is
 
-Two splits, both generated from a pinned seed with no clock and no entropy randomness:
+The `default` config has two splits, both generated from a pinned seed with no clock and no
+entropy randomness:
 
 - **`repair`** (flagship). A base plan is generated from a procedural template, a single
   deterministic fault is injected (mirroring the six fault classes of the repository's own
@@ -61,8 +63,9 @@ Two splits, both generated from a pinned seed with no clock and no entropy rando
   `schemas/intent.schema.json`). The brief, the golden, and the intent all descend from one ground
   truth, so they cannot drift.
 
-Both splits are procedural and narrow by design. This is **not a benchmark** and **not** the
-project's private evaluation set (see *Contamination defense*).
+Both `default` splits are procedural and narrow by design. This is **not a benchmark** and
+**not** a held-out evaluation set: the project's 26-brief evaluation corpus is a public fixture
+(see *Contamination defense*).
 
 ## Provenance and self-verification
 
@@ -148,29 +151,24 @@ Anyone who uses these rows is responsible for complying with Anthropic's terms t
 config records how models author ArchLang one-shot and how the deterministic tools respond to
 what they wrote; it is not offered as SFT, fine-tuning or training data.
 
-**What is in it.** Two generated data files, both from repository commit
+**What is in it.** One generated data file, from repository commit
 `2a210589fa2624c22bd0869d8e8c59bd5ed2da34`, `archlang_version` `1.62.0`, brief seed `20261115`,
 uploaded unmodified:
 
 - `model-authoring.jsonl`: 1170 rows, 390 briefs × 3 models (390 rows each: `claude-haiku-5-5`,
-  `claude-sonnet-5-5`, `claude-opus-5-5`). Its report is `model-authoring-report.json`.
-- `model-authoring-fable.jsonl`: 200 rows, `claude-fable-5-2` on the first 200 of the same 390
-  briefs (identical brief lines), made with `--briefs 200`. Its report is
-  `model-authoring-fable-report.json`.
+  `claude-sonnet-5-5`, `claude-opus-5-5`). SHA-256
+  `f424599f9fa1ceb0d32a0a66731877f4df942cf0140b144c183ec663f875295b`.
+- `model-authoring-report.json`: its report. SHA-256
+  `895b7ea4ddca303ff5095558bc8af3328abd4f8414c85cf44da711d725346760`.
 
-The two `one_shot` files together hold 1370 rows. Verdict counts per model (from the two reports;
-`valid` and `sound` are defined under *Fields*; `l0` is the raw reply, `final` is after
-`arch fix` then `arch repair`):
+Verdict counts per model (from the report; `valid` and `sound` are defined under *Fields*; `l0` is
+the raw reply, `final` is after `arch fix` then `arch repair`):
 
 | Model | Rows | L0 valid | L0 sound | Final valid | Final sound |
 | --- | --- | --- | --- | --- | --- |
 | `claude-haiku-5-5` | 390 | 347 | 252 | 347 | 253 |
 | `claude-sonnet-5-5` | 390 | 387 | 351 | 387 | 353 |
 | `claude-opus-5-5` | 390 | 389 | 247 | 389 | 247 |
-| `claude-fable-5-2` | 200 | 200 | 194 | 200 | 194 |
-
-The Fable row covers only 200 briefs, so its counts are not over the same briefs as the other
-three rows.
 
 **How the rows were made.**
 
@@ -185,8 +183,8 @@ three rows.
   (pinned by SHA-256 at a Hugging Face revision). The checks are the `default` config's own: text
   (token-set Jaccard ≥ 0.5, or a shared 8-word n-gram) and structure (the reference plan's
   `describe()` fingerprint). Briefs were also checked against each other (an exact brief repeat,
-  or an exact fingerprint repeat). The rejection counts are in the reports.
-- **Requests.** One Message Batch per model, one request per brief (the generator's `--briefs` limit takes the first N briefs), `max_tokens` 16384, at the
+  or an exact fingerprint repeat). The rejection counts are in the report.
+- **Requests.** One Message Batch per model, one request per brief, `max_tokens` 16384, at the
   model's default sampling (no `temperature` is sent). The system prompt is the repository's
   `spec.llm.md` followed by a one-line reply-format instruction (reply with one fenced `arch`
   block); every row stores its SHA-256, and it was marked for prompt caching.
@@ -196,7 +194,7 @@ three rows.
 - **Rows not published.** A request that errored, expired or was cancelled, or that has no result,
   produces no row. Nor does a reply whose normalized text contains an evaluation golden or
   fidelity reference plan, or that has any fenced block (or a healed plan) whose structure matches
-  one. Each case is counted in the reports. These checks reduce the chance that a reply echoes an
+  one. Each case is counted in the report. These checks reduce the chance that a reply echoes an
   evaluation plan; they are not a proof that none does.
 
 **Fields.**
@@ -237,7 +235,8 @@ adjacency graph; the total area).
 **Replaying a row.** Everything in a row except the reply and the API's ids and usage is computed
 from the brief and `raw_reply` by the deterministic tools. Running extraction, `compile`/`lint`,
 the fix/repair pipeline, the intent check and `describe()` again on a row's stored brief and
-`raw_reply`, with the row's `archlang_version`, reproduces the row byte for byte. The generator
+`raw_reply`, with the row's `archlang_version`, reproduces the row byte for byte against the raw
+JSONL line (a row loaded through `datasets` pads `facts.adjacency` keys with nulls). The generator
 wrote each row, parsed the line back and ran that replay before publishing it. Its `build` step is
 byte-deterministic given the same raw batch results. Under a different ArchLang version the
 replay is not expected to match.
@@ -279,16 +278,17 @@ deterministic tools.
 
 **2. SFT-shaped evidence, no training claim.** Evidence that SFT corpora lift *validity* is not
 evidence about RLVR (which targets intent, geometry, and topology), and vice versa. This dataset is
-an SFT-shaped asset (the `default` config; the `model-authoring` config is not offered as SFT, fine-tuning or training data) plus reward-harness documentation (`arch score --brief` / `validateIntent` as a
-continuous, deterministic reward signal); it carries no claim about the training outcomes of any
+an SFT-shaped asset (the `default` config; the `model-authoring` config is not offered as SFT,
+fine-tuning or training data) plus reward-harness documentation (`arch score --brief` /
+`validateIntent` as a continuous, deterministic reward signal); it carries no claim about the training outcomes of any
 method.
 
 **3. No feedback-loop claim.** Whether a diagnostic-feedback loop beats equal-token-budget
 resampling has not been measured for ArchLang. One live run of that experiment was ratified by
 the project owner on 2026-11-15 and ran that day; its analysis was pre-registered before
 the run (`eval/live-runs/2026-11-t3-preregistration.md` in the main repository) and its record
-is published in `eval/live-runs/2026-11-t3-result.md`. This dataset and card make no claim that such a loop helps or does
-not help, before or after that run: the published record is the only statement of the result.
+is published in `eval/live-runs/2026-11-t3-result.md`. This dataset and card make no claim that
+such a loop helps or does not help, before or after that run: the published record is the only statement of the result.
 The run adds no rows to this dataset. Only structural facts are stated.
 
 ## Baseline context
@@ -308,7 +308,8 @@ this dataset.
 ## Contamination defense
 
 The 26-brief evaluation corpus and its goldens are a public regression fixture in the main
-repository, not a holdout. This corpus is generated independently and **double-deduplicated**
+repository, not a holdout. The `default` corpus is generated independently and
+**double-deduplicated**
 against it:
 
 - **Text:** a candidate brief is rejected if its normalized token-set Jaccard similarity with any
@@ -328,7 +329,9 @@ ARCHLANG-DATASET-CANARY-422d0bc5-c0c6-4c6b-b3c5-3fbc401aefbf
 
 ## Verify any row yourself (zero install)
 
-Every row can be re-checked with the published CLI (`npx @chanmeng666/archlang …`):
+Every `default` row can be re-checked with the published CLI (`npx @chanmeng666/archlang …`).
+A `model-authoring` row replays from its stored `brief` and `raw_reply` (see *Replaying a row*);
+its `source`, `after_repair_source` and `intent` can be checked the same way as below:
 
 ```bash
 # A repair row's healed source should compile clean and lint clean:
@@ -347,22 +350,24 @@ docs site's `/llms-full.txt`.
 
 ## Limitations
 
-- **Synthetic and procedural.** Three template families (single-room studio, hall-served flat,
+- **Synthetic and procedural (`default` config).** Three template families (single-room studio, hall-served flat,
   consulting-room corridor) and six fault classes (off-wall door / window / opening,
   furniture-through-wall, blocked-doorway, and a combined case) — mirroring the repository's own
   fault-injection gate.
 - **Narrow distribution by design.** Not a survey of real floor plans, and not a benchmark.
-- **Not the evaluation set.** It is generated to be provably disjoint from the evaluation corpus.
+- **Not the evaluation set.** The `default` config is generated to be provably disjoint from the
+  evaluation corpus; the `model-authoring` config's briefs are deduplicated against it (see its
+  section), which reduces overlap but is not a proof for the model replies.
 - **Sizes.** Approximately 1,200 `repair` rows and 400 `authoring` rows; exact counts, per-family
-  and per-fault-class breakdowns, and rejection tallies are in the accompanying `report.json`. The `model-authoring` config holds at most one row per
-  brief per model (1170 + 200 rows); its counts are in `model-authoring-report.json` and
-  `model-authoring-fable-report.json`.
+  and per-fault-class breakdowns, and rejection tallies are in the accompanying `report.json`.
+  The `model-authoring` config holds at most one row per brief per model (1170 rows); its counts
+  are in `model-authoring-report.json`.
 
 ## Why publish this
 
 For an adoption-driven, open-source language, any model that learns ArchLang is a win. Publishing
-the generator, the dataset, and the reward-harness documentation recruits community training of the `default` config
-rather than gatekeeping it. The `model-authoring` config is not offered as training data.
+the generator, the dataset, and the reward-harness documentation recruits community training on the `default` config rather than gatekeeping it. The
+`model-authoring` config is not offered as training data.
 
 ## Links
 
