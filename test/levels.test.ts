@@ -15,6 +15,7 @@
  */
 
 import { exampleNames } from "./helpers/corpus.js";
+import { ERROR_CATALOG } from "../src/error-catalog.js";
 import { readFileSync } from "node:fs";
 import { describe as suite, expect, it } from "vitest";
 import { compile, describe as describePlan, lint, repair, resolve, resolveAll, levelBlocks } from "../src/index.js";
@@ -90,6 +91,17 @@ suite("v1.21 levels — parsing + the either/or shape", () => {
     const r = compile(src, { noCache: true });
     expect(r.diagnostics.filter((d) => d.code === "E_LEVEL_MIX")).toEqual([]);
     expect(r.errors).toEqual([]);
+  });
+
+  it("`notes` is a plan-level setting beside the levels, and E_LEVEL_MIX's remedy names it", () => {
+    const src = `plan "P" {
+      notes "Do not scale."
+      level 1 { wall exterior thickness 200 { (0,0) (4000,0) (4000,3000) (0,3000) close } }
+    }`;
+    const r = compile(src, { noCache: true });
+    expect(r.diagnostics.filter((d) => d.code === "E_LEVEL_MIX")).toEqual([]);
+    expect(r.errors).toEqual([]);
+    expect(ERROR_CATALOG.E_LEVEL_MIX?.fix).toContain("`notes`");
   });
 
   it("E_LEVEL_DUP: the same storey number twice (the second one is flagged)", () => {

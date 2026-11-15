@@ -1347,7 +1347,7 @@ level 1 { room at (0,0) size 3000x3000 }   # error: level 1 twice
 
 **Cause.** A plan is either single-storey (no `level` block) or entirely made of them: anything that draws belongs to exactly one storey, so a room/wall/door/`for`/`strip`/component call at plan level next to a `level` block has no storey to belong to.
 
-**Fix.** Move the statement inside the `level` block it belongs to. Only settings (`units`/`grid`/`paper`/`scale`/`north`/`site`/`dims`/`title`/`axes`/`schedule`/`legend`), `component`/`import` declarations, and the plan-global `let`/`set` stay outside — they apply to every level.
+**Fix.** Move the statement inside the `level` block it belongs to. Only settings (`units`/`grid`/`paper`/`scale`/`north`/`site`/`dims`/`title`/`axes`/`schedule`/`legend`/`notes`), `component`/`import` declarations, and the plan-global `let`/`set` stay outside — they apply to every level.
 
 ```arch static
 plan "H" {
