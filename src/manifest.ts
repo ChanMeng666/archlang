@@ -367,7 +367,7 @@ const SECTION_FLAG: ManifestFlag = /* @__PURE__ */ pure(() => ({
 const CONTEXT_LEVEL_FLAG: ManifestFlag = /* @__PURE__ */ pure(() => ({
   flag: "--level",
   arg: `<${CONTEXT_LEVELS.join("|")}>`,
-  description: `starter = one screen (at most ${STARTER_MAX_UNITS} characters) for a small model: the lead example, the statements a plan needs, the loop and the five commonest errors; full = the whole ${CONTEXT_BUNDLE_KB.total} KB bundle (default, unchanged)`,
+  description: `starter = one screen (at most ${STARTER_MAX_UNITS} characters) for a small model: the lead example, the statements a plan needs, the loop and five errors with their fixes; full = the whole ${CONTEXT_BUNDLE_KB.total} KB bundle (default, unchanged)`,
 }));
 
 /**
@@ -1124,7 +1124,7 @@ const COMMANDS: ManifestCommand[] = /* @__PURE__ */ pure(() => [
       { cmd: "archlang context", note: "the cold-start bundle: spec + workflow + CLI reference + every diagnostic" },
       {
         cmd: "archlang context --level starter",
-        note: "one screen for a small model: the lead example, the statements a plan needs, the loop and the five errors cold authors hit first",
+        note: "one screen for a small model: the lead example, the statements a plan needs, the loop and five errors with their fixes",
       },
       {
         cmd: "archlang context --section errors",

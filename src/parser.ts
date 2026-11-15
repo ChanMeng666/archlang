@@ -54,7 +54,8 @@ import { fnv1a } from "./hash.js";
 import { idToken } from "./identity.js";
 import type { ElementDef, ParseCtx, Registry } from "./registry.js";
 import { BUILTIN_REGISTRY } from "./registry.js";
-import { parseFloorClause } from "./elements/room.js";
+import { floorClause } from "./elements/room.js";
+import { missingClause, readClauses, type TailClause } from "./clause-order.js";
 import { KEEP_GRADES, KEEP_WORDS, STATEMENT_STARTS, TITLE_FIELDS, type TitleField } from "./grammar/tokens.js";
 import type { KeepGrade, KeepNode, KeepRef } from "./ast.js";
 import { splitDatum } from "./room-datums.js";
@@ -192,6 +193,8 @@ class Parser {
       parseIdOpt: () => this.parseIdOpt(),
       spanFrom: (start) => this.spanFrom(start),
       fail: (msg, t) => this.fail(msg, t),
+      failAt: (msg, span) => this.fail(msg, this.peek(), span),
+      diag: (d) => this.report(d),
       report: (code, message, span) => this.report({ severity: "error", message, code, span }),
     };
   }
@@ -205,8 +208,8 @@ class Parser {
   private next(): Token {
     return this.toks[Math.min(this.pos++, this.toks.length - 1)]!;
   }
-  private fail(msg: string, t = this.peek()): never {
-    throw new ParseError(msg, { start: t.start, end: t.end }, this.parseHints(t));
+  private fail(msg: string, t = this.peek(), span: Span = { start: t.start, end: t.end }): never {
+    throw new ParseError(msg, span, this.parseHints(t));
   }
 
   /**
@@ -1976,41 +1979,77 @@ class Parser {
     return { kind: "strip", id: "", dir, at, gap, ...(cross ? { cross } : {}), rooms, line: kw.line };
   }
 
-  /** One `room [id=] size <main>[x<cross>] [label "…"] [uses …]` inside a strip. */
+  /** One `room [id=] size <main>[x<cross>] [label "…"] [uses …] [floor …]` inside a strip; the
+   *  clauses come in any order, each once (`src/clause-order.ts`). The child is built after, in
+   *  the order the grammar used to require, so a room written in that order keeps its tree. */
   private parseStripRoom(): StripRoomChild {
     const kw = this.eatKeyword("room");
     const start = kw.start;
     const id = this.parseIdOpt();
-    this.eatKeyword("size");
-    // `<main>` (cross inherited from the strip) or `<main>x<cross>` / `<main> x <cross>`.
-    let main: StripRoomChild["main"];
+    let main: StripRoomChild["main"] | undefined;
     let cross: StripRoomChild["cross"];
-    if (this.isType("dimension")) {
-      const d = this.eat("dimension");
-      main = { t: "num", value: d.num! };
-      cross = { t: "num", value: d.num2! };
-    } else {
-      main = parseExprPratt(this.ctx);
-      if (this.isKeyword("x")) {
-        this.next();
-        cross = parseExprPratt(this.ctx);
-      }
-    }
+    const tail: Pick<StripRoomChild, "label" | "uses"> = {};
+    const floor: Pick<StripRoomChild, "floor"> = {};
+    // Inside a strip only a `room` (or a refused nested `strip`) may follow, so no clause word
+    // here can begin the next item: every clause reads in any position.
+    const inStrip = (c: TailClause): TailClause => ({ ...c, startsStatement: () => false });
+    const clauses: TailClause[] = [
+      {
+        word: "size",
+        rank: 0,
+        required: true,
+        read: (keep) => {
+          this.next();
+          // `<main>` (cross inherited from the strip) or `<main>x<cross>` / `<main> x <cross>`.
+          let m: StripRoomChild["main"];
+          let c: StripRoomChild["cross"];
+          if (this.isType("dimension")) {
+            const d = this.eat("dimension");
+            m = { t: "num", value: d.num! };
+            c = { t: "num", value: d.num2! };
+          } else {
+            m = parseExprPratt(this.ctx);
+            if (this.isKeyword("x")) {
+              this.next();
+              c = parseExprPratt(this.ctx);
+            }
+          }
+          if (!keep) return;
+          main = m;
+          cross = c;
+        },
+      },
+      {
+        word: "label",
+        rank: 1,
+        read: (keep) => {
+          this.next();
+          const v = this.parseStringExpr();
+          if (keep) tail.label = v;
+        },
+      },
+      {
+        word: "uses",
+        rank: 2,
+        read: (keep) => {
+          this.next();
+          const uses: UseKind[] = [];
+          while (this.peek().type === "ident" && USE_SET.has(this.peek().value)) {
+            uses.push(this.next().value as UseKind);
+          }
+          if (uses.length === 0) this.fail(`Expected one or more room uses (${USE_KINDS.join("|")}) after "uses"`);
+          if (keep) tail.uses = uses;
+        },
+      },
+      floorClause(this.ctx, 3, floor),
+    ];
+    readClauses(this.ctx, "room", clauses.map(inStrip));
+    // The one clause a strip room cannot leave out; a `size` still at the cursor begins a statement.
+    if (main === undefined) missingClause(this.ctx, { what: "room", id, start }, "size", "size <main>[x<cross>]");
     const child: StripRoomChild = { id, main, ...(cross ? { cross } : {}), line: kw.line };
-    if (this.isKeyword("label")) {
-      this.next();
-      child.label = this.parseStringExpr();
-    }
-    if (this.isKeyword("uses")) {
-      this.next();
-      const uses: UseKind[] = [];
-      while (this.peek().type === "ident" && USE_SET.has(this.peek().value)) {
-        uses.push(this.next().value as UseKind);
-      }
-      if (uses.length === 0) this.fail(`Expected one or more room uses (${USE_KINDS.join("|")}) after "uses"`);
-      child.uses = uses;
-    }
-    parseFloorClause(this.ctx, child);
+    if (tail.label !== undefined) child.label = tail.label;
+    if (tail.uses !== undefined) child.uses = tail.uses;
+    if (floor.floor !== undefined) child.floor = floor.floor;
     child.span = this.spanFrom(start);
     return child;
   }

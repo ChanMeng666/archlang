@@ -129,8 +129,10 @@ suite("the kind words", () => {
     expect(windows.map((w) => w.kind)).toEqual([undefined, "fixed"]);
   });
 
-  it("the id comes first, as on a door: a kind before it is a parse error", () => {
-    expect(errorsOf(withWindow("window fixed id=w on r.top width 1500"))).toEqual(["E_PARSE"]);
+  it("the id may lead or follow the kind word, as on a door (card CO-1)", () => {
+    // Once a parse error (rule 6 said id= leads); since CO-1 `id=` may follow the kind word.
+    expect(errorsOf(withWindow("window fixed id=w on r.top width 1500"))).toEqual([]);
+    expect(errorsOf(withWindow("window id=w fixed id=v on r.top width 1500"))).toEqual(["E_DUP_CLAUSE"]);
   });
 
   it("an unknown word is the parse error it always was", () => {

@@ -51,6 +51,12 @@ export const LANGUAGE_ENTRIES = defineEntries({
     "Pass a value within the function's domain.",
     "let x = sqrt(-1)   # error",
   ),
+  E_DUP_CLAUSE: e(
+    "A statement writes the same clause twice.",
+    "The clauses after a statement's placement (`size`, `label`, `rotate`, `width`, `hinge`, …) may come in any order, but each at most once, and `id=` once whether it stands before or after the kind word. A second copy would leave one of the two values silently unread, so it is refused; the first is kept and the statement still parses.",
+    "Delete one of the two clauses; the related span marks the first.",
+    'furniture bed at (500,500) size 1500x2000 label "Bed" size 1600x2000   # error: `size` twice',
+  ),
   E_DUP_ID: e(
     "Duplicate element id.",
     "Two elements declare the same `id=…`; ids must be unique across the plan.",
@@ -95,8 +101,8 @@ export const LANGUAGE_ENTRIES = defineEntries({
   ),
   E_PARSE: e(
     "The source could not be read: its SHAPE is wrong.",
-    "The lexer or the parser could not make a statement out of the bytes at this span — a missing or misspelled keyword, a value where a keyword belongs, an unterminated string, an unbalanced brace, clauses written in the wrong order, or blocks and expressions nested past the parser's limit (256 levels — far beyond any real plan; the deeper block is skipped, not read). It is the one code that says nothing about what the plan MEANS: resolution never ran here, so no measurement, no geometry and no soundness rule had a chance to speak.",
-    "Read the message: it names what was expected and what was found, at a byte span. Compare the statement against `archlang spec`'s one line for that keyword — clause ORDER is part of the grammar, not a suggestion. Unlike every other code in this catalog, there is no machine-applicable fix to apply, because the compiler has no reading of the text to correct.",
+    "The lexer or the parser could not make a statement out of the bytes at this span — a missing or misspelled keyword, a value where a keyword belongs, an unterminated string, an unbalanced brace, a clause written before the placement it follows, or blocks and expressions nested past the parser's limit (256 levels — far beyond any real plan; the deeper block is skipped, not read). It is the one code that says nothing about what the plan MEANS: resolution never ran here, so no measurement, no geometry and no soundness rule had a chance to speak.",
+    "Read the message: it names what was expected and what was found, at a byte span. Compare the statement against `archlang spec`'s one line for that keyword: the placement comes first, and the clauses after it in any order. Unlike every other code in this catalog, there is no machine-applicable fix to apply, because the compiler has no reading of the text to correct.",
     "door on w1 at 40% width 900 wall w1   # error: `wall` pairs with the `at (x,y)` form only",
   ),
   E_RECURSION: e(

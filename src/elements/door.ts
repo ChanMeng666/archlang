@@ -1,7 +1,8 @@
 /**
  * `door [id=] [<kind>] at (x,y) width N [wall ref] [hinge <side>] [swing <dir>]
- *  [slide <dir>] [open <0..1>]` — opening + leaf + swing arc, or (for a non-hinged
- *  kind) opening + panels/track/cavity.
+ *  [slide <dir>] [open <0..1>] [head <mm>]` — opening + leaf + swing arc, or (for a non-hinged
+ *  kind) opening + panels/track/cavity. The clauses after the placement come in any order
+ *  (`src/clause-order.ts`).
  */
 
 import type { DoorNode, Point } from "../ast.js";
@@ -17,7 +18,7 @@ import { pointInPolygon, pointOnPolygonEdge } from "../geometry/polygon.js";
 import type { DoorClauseName, DoorKind, DoorSwingDir } from "../grammar/tokens.js";
 import type { DoorSwingBuilding } from "../grammar/tokens.js";
 import { DOOR_ENUMS, DOOR_HINGE_NEAR, DOOR_KIND_CLAUSES, DOOR_KINDS, DOOR_SWING_BUILDING } from "../grammar/tokens.js";
-import { eatEnumValue, parseAttachTarget, resolveOpeningLead } from "../attach.js";
+import { eatEnumValue, parseAttachTarget, resolveOpeningLead, wallClause } from "../attach.js";
 import {
   doorKindClauseFix,
   doorOpenRangeFix,
@@ -27,7 +28,14 @@ import {
   openingWidthFix,
 } from "../fix-producers.js";
 import { renderDoorPanels } from "./door-panels.js";
-import { DOOR_HEAD, parseOpeningHeights, resolveOpeningHeights } from "../datum.js";
+import {
+  DOOR_HEAD,
+  heightsInOrder,
+  type OpeningHeightClauses,
+  openingHeightClauses,
+  resolveOpeningHeights,
+} from "../datum.js";
+import { idAfterKind, missingClause, parseIdWithSpan, readClauses } from "../clause-order.js";
 import { noteSnap } from "../ir/silent-accepts.js";
 
 /**
@@ -304,16 +312,128 @@ export const door: ElementDef = {
 
   parse(ctx: ParseCtx): DoorNode {
     const kw = ctx.eatKeyword("door");
-    const id = ctx.parseIdOpt();
+    const lead = parseIdWithSpan(ctx);
     // A bare KIND word may lead, after any `id=` — the shipped `room polygon` /
     // `room circle` / `dim faces` shape. Unambiguous by construction: the only other
     // legal leads here are `at` and `on` (see `parseAttachTarget`), neither of which
     // is a kind, so a lookahead against the closed table decides it with no backtrack.
+    // An `id=` may follow the kind word too (`door double id=d1 …`).
     const doorKind = DOOR_KINDS.find((k) => ctx.isKeyword(k));
     if (doorKind) ctx.next();
+    const id = doorKind ? idAfterKind(ctx, "door", lead.id, lead.idSpan) : lead.id;
     const { at, atSpan, attach, between } = parseAttachTarget(ctx, true);
-    ctx.eatKeyword("width");
-    const width = ctx.parseExpr();
+    // The clauses after the placement, in any order, each once (`src/clause-order.ts`). Each
+    // writes its own slot and the node is laid out after, in the order the grammar used to
+    // require, so a door written in that order has the tree, keys in order, it always had.
+    let width: DoorNode["width"] | undefined;
+    const wall: Pick<DoorNode, "wall"> = {};
+    const hinge: Pick<DoorNode, "hinge" | "hingeNear"> = {};
+    const swing: Pick<DoorNode, "swingInto" | "swingBuilding" | "swingBuildingSpan" | "swing"> = {};
+    const slide: Pick<DoorNode, "slide" | "slideSpan"> = {};
+    const open: Pick<DoorNode, "open"> = {};
+    const heights: OpeningHeightClauses = {};
+    // `slide left|right` — which way the panel travels. Its byte span (or the zero-width point
+    // where one could be inserted: the end of the placement or of `width`, `wall`, `hinge` or
+    // `swing`, whichever is latest) is recorded so `W_POCKET_RUN`'s reverse-slide fix can
+    // rewrite exactly that clause. Same shape as `FurnitureNode.rotateSpan`, with one
+    // difference: it is recorded ONLY on a door that names a kind or writes `slide`, so a plan
+    // that uses none of this feature has a byte-identical `arch ast --json` too, not merely a
+    // byte-identical drawing.
+    let slideAt = ctx.peek(-1).end;
+    const before = (): void => {
+      slideAt = Math.max(slideAt, ctx.peek(-1).end);
+    };
+    readClauses(ctx, "door", [
+      {
+        word: "width",
+        rank: 1,
+        required: true,
+        read(keep) {
+          ctx.next();
+          const v = ctx.parseExpr();
+          if (!keep) return;
+          width = v;
+          before();
+        },
+      },
+      ...(at
+        ? [
+            wallClause(ctx, 2, (ref) => {
+              wall.wall = ref;
+              before();
+            }),
+          ]
+        : []),
+      {
+        word: "hinge",
+        rank: 3,
+        read(keep) {
+          ctx.next();
+          // `hinge near start|end` fixes the hinge to a wall vertex; `hinge left|right`
+          // is relative to the wall's traversal direction (the older form).
+          const h: typeof hinge = {};
+          if (ctx.isKeyword("near")) {
+            ctx.next();
+            h.hingeNear = eatEnumValue(ctx, DOOR_HINGE_NEAR, "hinge near");
+          } else {
+            h.hinge = eatEnumValue(ctx, DOOR_ENUMS.hinge, "hinge");
+          }
+          if (!keep) return;
+          Object.assign(hinge, h);
+          before();
+        },
+      },
+      {
+        word: "swing",
+        rank: 4,
+        read(keep) {
+          ctx.next();
+          // `swing into <room>` picks in/out toward that room; `swing inward|outward` toward or
+          // away from the building's floor; `swing in|out` is explicit, relative to the wall.
+          const s: typeof swing = {};
+          if (ctx.isKeyword("into")) {
+            ctx.next();
+            s.swingInto = ctx.eatIdent().value;
+          } else {
+            // One read and one message for every bare word, so the refusal names all four.
+            const word = ctx.peek();
+            const v = eatEnumValue(ctx, [...DOOR_ENUMS.swing, ...DOOR_SWING_BUILDING], "swing", "`into <room>`");
+            if ((DOOR_SWING_BUILDING as readonly string[]).includes(v)) {
+              s.swingBuilding = v as DoorSwingBuilding;
+              s.swingBuildingSpan = { start: word.start, end: word.end };
+            } else {
+              s.swing = v as DoorSwingDir;
+            }
+          }
+          if (!keep) return;
+          Object.assign(swing, s);
+          before();
+        },
+      },
+      {
+        word: "slide",
+        rank: 5,
+        read(keep) {
+          const slideKw = ctx.next();
+          const v = eatEnumValue(ctx, DOOR_ENUMS.slide, "slide");
+          if (!keep) return;
+          slide.slide = v;
+          slide.slideSpan = { start: slideKw.start, end: ctx.peek(-1).end };
+        },
+      },
+      {
+        word: "open",
+        rank: 6,
+        read(keep) {
+          ctx.next();
+          const v = ctx.parseExpr();
+          if (keep) open.open = v;
+        },
+      },
+      // The vertical datum: `head` only, last in the old order.
+      ...openingHeightClauses(ctx, heights, { sill: false }, 7),
+    ]);
+    if (width === undefined) missingClause(ctx, { what: "door", id, start: kw.start }, "width", "width <mm>");
     const node: DoorNode = {
       kind: "door",
       id,
@@ -325,65 +445,11 @@ export const door: ElementDef = {
       ...(attach ? { attach } : {}),
       ...(between ? { between } : {}),
     };
-    if (at && ctx.isKeyword("wall")) {
-      ctx.next();
-      node.wall = ctx.eatIdent().value;
-    }
-    if (ctx.isKeyword("hinge")) {
-      ctx.next();
-      // `hinge near start|end` fixes the hinge to a wall vertex; `hinge left|right`
-      // is relative to the wall's traversal direction (the older form).
-      if (ctx.isKeyword("near")) {
-        ctx.next();
-        node.hingeNear = eatEnumValue(ctx, DOOR_HINGE_NEAR, "hinge near");
-      } else {
-        node.hinge = eatEnumValue(ctx, DOOR_ENUMS.hinge, "hinge");
-      }
-    }
-    if (ctx.isKeyword("swing")) {
-      ctx.next();
-      // `swing into <room>` picks in/out toward that room; `swing inward|outward` toward or
-      // away from the building's floor; `swing in|out` is explicit, relative to the wall.
-      if (ctx.isKeyword("into")) {
-        ctx.next();
-        node.swingInto = ctx.eatIdent().value;
-      } else {
-        // One read and one message for every bare word, so the refusal names all four.
-        const word = ctx.peek();
-        const v = eatEnumValue(ctx, [...DOOR_ENUMS.swing, ...DOOR_SWING_BUILDING], "swing", "`into <room>`");
-        if ((DOOR_SWING_BUILDING as readonly string[]).includes(v)) {
-          node.swingBuilding = v as DoorSwingBuilding;
-          node.swingBuildingSpan = { start: word.start, end: word.end };
-        } else {
-          node.swing = v as DoorSwingDir;
-        }
-      }
-    }
-    // `slide left|right` — which way the panel travels. Its byte span (or the
-    // zero-width point where one could be inserted, which is HERE — before the
-    // trailing `open`, which the grammar puts last) is recorded so `W_POCKET_RUN`'s
-    // reverse-slide fix can rewrite exactly that clause. Same shape as
-    // `FurnitureNode.rotateSpan`, with one difference: it is recorded ONLY on a door
-    // that names a kind or writes `slide`, so a plan that uses none of this feature
-    // has a byte-identical `arch ast --json` too, not merely a byte-identical drawing.
-    const slideAt = ctx.peek(-1).end;
-    if (ctx.isKeyword("slide")) {
-      const slideKw = ctx.next();
-      node.slide = eatEnumValue(ctx, DOOR_ENUMS.slide, "slide");
-      node.slideSpan = { start: slideKw.start, end: ctx.peek(-1).end };
-    } else if (doorKind !== undefined && doorKind !== "double") {
-      // A `double` door slides nothing, so it records no insertion point for one.
-      node.slideSpan = { start: slideAt, end: slideAt };
-    }
-    if (ctx.isKeyword("open")) {
-      ctx.next();
-      node.open = ctx.parseExpr();
-    }
-    // The vertical datum: `head` only, and after `open` — the height clauses
-    // trail every clause the statement already had, on all three opening elements, which
-    // is what keeps `slideSpan`'s insertion point (recorded above, before `open`)
-    // meaning exactly what it meant.
-    Object.assign(node, parseOpeningHeights(ctx, { sill: false }));
+    Object.assign(node, wall, hinge, swing);
+    if (slide.slideSpan) Object.assign(node, slide);
+    // A `double` door slides nothing, so it records no insertion point for one.
+    else if (doorKind !== undefined && doorKind !== "double") node.slideSpan = { start: slideAt, end: slideAt };
+    Object.assign(node, open, heightsInOrder(heights));
     return node;
   },
 

@@ -260,7 +260,11 @@ const BASELINE: [string, string][] = [
   ["ba22fde79e6bf00b978a12cf0d002456839cf6e501fa81b7c08d1878c7ba729c", "inline:window-placed-and-curved"],
   ["f4212dfd10a7c3fff934eb02bf28abde3eabe0a1b697c34556fe36942a8a8b9c", "inline:door-every-older-kind"],
   ["c98fbf32b2cd2d4b3a05cc06e86d7a11ebc01f756b9ef22bfea0383555bf1d03", "inline:door-sliding-mirrored"],
-  ["09329c810b6e11ee7ebfc0da57e4652d91c0775e0f62c0361b6fac20280a08cd", "inline:balcony-windows"],
+  // Card CO-1: this row writes `outdoor balcony id=one …`, which was an E_PARSE (the two balconies
+  // were dropped) until `id=` became legal after the kind word. The digest below is the OLD tree's
+  // (`main` at `3ca9556b`) for the same plan with `id=` before the kind (`outdoor id=one balcony`,
+  // the same bytes long); the old tree still reproduces the old pin, `09329c81…`, on the row as written.
+  ["0c5d380bace0d59e32db429d00df9acc4224ec0e1f0df05cfe041ac63a8c06a5", "inline:balcony-windows"],
   ["e17bbe8214ce8a348edbdc2fd581fec9c14cf02d8c913166ef06f60f6cc311ce", "inline:door-narrow-and-double"],
   ["f795d7565b9c1e60f7e27f8fd067c030ef15c504152e4b57baf656b846fb00a3", "inline:window-refusals"],
   ["4685983c90fb78c663624ebf6be63932cad94f313e6d54bca7f6a8048c5d846d", "inline:window-parse-refusal"],

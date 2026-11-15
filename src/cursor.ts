@@ -56,7 +56,8 @@ const openingLead = (
  * missing here is a use `arch lsp rename` silently drops.
  *
  * Each handler pushes in the grammar's own left-to-right order (the order
- * `statement-print.ts` prints, since that IS the source order) wherever doing so costs
+ * `statement-print.ts` prints: the source order, unless the clauses after a placement were
+ * written in another one, `src/clause-order.ts`) wherever doing so costs
  * nothing extra — `collectRefs` (`lsp.ts`) feeds this straight into rename/references,
  * so a caller that reports "first use" or diffs two runs is reading a real position, not
  * an implementation accident. The one place this is not quite true: a `dim

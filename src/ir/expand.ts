@@ -13,6 +13,7 @@
 import type { AstElement, ComponentDef, ElementKind, PlaceNode, RoomNode, Statement, StripNode } from "../ast.js";
 import { moduleBindings } from "../import.js";
 import { beforeRoomsReader } from "../room-datums.js";
+import { clauseWordCallHint } from "../clause-order.js";
 import type { Frame } from "../frame.js";
 import { composeFrame, makeFrame } from "../frame.js";
 import type { Diagnostic, Span } from "../diagnostics.js";
@@ -454,12 +455,13 @@ function expandScopeFrame(
         const comp = components.get(stmt.name);
         if (!comp) {
           const hint = closest(stmt.name, [...components.keys()]);
+          const clause = clauseWordCallHint(stmt.name);
           diag({
             severity: "error",
             message: `Unknown component "${stmt.name}"`,
             code: "E_UNKNOWN_COMPONENT",
             span: stmt.span,
-            hints: hint ? [`did you mean "${hint}"?`] : undefined,
+            hints: hint ? [`did you mean "${hint}"?`] : clause ? [clause] : undefined,
           });
           break;
         }

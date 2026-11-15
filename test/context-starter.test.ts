@@ -175,7 +175,7 @@ describe("every snippet compiles", () => {
     expect(lint(src)).toEqual([]);
   });
 
-  it("a room line with `label` after `size`, before `uses`, is clean in place of the lead's", () => {
+  it("a room line with a `label` is clean in place of the lead's", () => {
     const room = LEAD_EXAMPLE.split("\n")
       .map((l) => l.trim())
       .find((l) => l.startsWith(STARTER_PICKS.room))!;
