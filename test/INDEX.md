@@ -5,7 +5,7 @@
 Where the tests of a `src` module are, and what each test file is for. Generated; `npm run check:drift`
 fails when it is stale. How to add a test: `docs/testing.md` § 4.
 
-516 test files in `test/`, 284 `src` modules, 106 modules no test imports.
+519 test files in `test/`, 284 `src` modules, 106 modules no test imports.
 
 ## `src` module → tests that import it
 
@@ -240,6 +240,7 @@ The first sentence of each file's header comment.
 - `test/check-quick-workspaces.test.ts` — `check:quick` and `typecheck:all` name the same workspaces.
 - `test/check-set.test.ts` — public check set: every case judged; each column derived from its sources.
 - `test/chrome-hidden.test.ts` — `north … hidden`, `scale … hidden`, `title hidden` (issue #405): the mark goes, the fact stays.
+- `test/ci-proven.test.ts` — scripts/ci-proven.mjs: when a push to `main` is proven by a train PR's full CI run.
 - `test/circle-enclosure.test.ts` — W_ROOM_NOT_ENCLOSED on a circle room enclosed by arc walls; straight walls never back a circle room (documented); the verdict is D4-equivariant under `place`.
 - `test/circulation-concave.test.ts` — circulation — a concave room's routing anchor is on the room, not on its notch lip.
 - `test/circulation-entrances.test.ts` — each room walks from its nearest entrance; two entrances that seed one cell (the fuzz gate's seed 1438601647).
@@ -351,6 +352,7 @@ The first sentence of each file's header comment.
 - `test/error-catalog-order.test.ts` — `ERROR_CODES` order is a law of the source, not of the host: errors first, then warnings, and within each group by UTF-16 code unit.
 - `test/error-svg.test.ts` — onError: 'svg' (opt-in error card).
 - `test/escape-fuzz.test.ts` — escaping fuzz — SVG; escaping fuzz — error-card SVG; escaping fuzz — ASCII plan; escaping fuzz — DXF export; escaping fuzz — shrunk regressions.
+- `test/eval-fidelity-live.test.ts` — The fidelity slice's live path (`eval/fidelity-live.ts`), offline: fetch is mocked, no key, no network.
 - `test/eval-fidelity.test.ts` — fidelity corpus — shape and brief-groundedness; infeasibility is DERIVED, never asserted in prose; the detector discriminates — faithful clean, laundered caught…
 - `test/eval-fixture.test.ts` — judge fixture — byte-equivalence proof across the intent lift.
 - `test/eval-live-harness.test.ts` — Live-eval harness, offline: price table, stop/finish-reason capture (fetch mocked, no network).
@@ -510,6 +512,7 @@ The first sentence of each file's header comment.
 - `test/main-entrance.test.ts` — PS0.10 — the main entrance.
 - `test/markdown.test.ts` — extractArchBlocks; rewriteMarkdown; CLI — md format handling.
 - `test/material-vocabulary.test.ts` — The material vocabulary is written twice — the core's `FIXTURE_MATERIALS` (what the `rendered` theme tints by, `src/elements/fixtures-glyphs.ts`) and archlang-3d's `MATERIAL_SLOTS` (what the GLB writer and the viewer...
+- `test/merge-train.test.ts` — scripts/merge-train.mjs: land several reviewed PRs with one full CI run, the three laws kept.
 - `test/meter-headers.test.ts` — Every `src/` module that charges the evaluation-step meter says so in its header comment (engineering-health A-F13, cards EH2.2/EH2.7).
 - `test/min-rect.test.ts` — The law of `src/geometry/min-rect.ts` (plan-soundness PS5.1b): the exact minimum-area enclosing rectangle against a brute-force ROTATION ORACLE that lives here only.
 - `test/miter-limit.test.ts` — acute wall joints — the mitre cap.

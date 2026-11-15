@@ -34,7 +34,8 @@ one's green CI and merge, about 43 minutes each.
 2. CI is the full gate. A narrowing may skip only work that cannot be affected by the change.
 3. After `main` is merged into a PR, the red team reads the merged head, and that head is the one
    pinned. (RM-D37, 2026-11-14, keeps this unchanged: `npm run sync:main`, card TP1, hands the red team
-   a focus list; it never waives the read.)
+   a focus list; it never waives the read. A merge train, `npm run train`, card FT2, is a merged head
+   too: `--land` needs `reviewed <train head>`, except for one member whose tree is the train's.)
 
 ## 3. Options, in the recommended order
 

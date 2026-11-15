@@ -163,7 +163,89 @@ const uniqSorted = (xs) => [...new Set(xs)].sort();
 /** A path the risk tiers call low (internal prose): never a re-review focus. */
 const isLowTier = (f) => classify([f]).tier === "low";
 /** A whole-file generated artifact: regenerated, so neither side's text is reviewed. */
-const isRegenerated = (f, { artifacts = new Set(), partial = new Set() }) => artifacts.has(f) && !partial.has(f);
+export const isRegenerated = (f, { artifacts = new Set(), partial = new Set() }) => artifacts.has(f) && !partial.has(f);
+
+const split0 = (s) => s.split("\0").filter(Boolean);
+
+/**
+ * Run `git merge-file <mode> -p ours base theirs` over the three index stages of `path` (empty when
+ * absent). `io` is the caller's `{ root, run, show }`: `run(cmd, args, { cwd, ok })` spawns, `show(spec)`
+ * is `git show` as a Buffer or null.
+ */
+export function mergeStages(io, path, mode) {
+  const { root, run, show } = io;
+  const dir = mkdtempSync(join(tmpdir(), "sync-main-"));
+  try {
+    const files = {};
+    for (const [name, stage] of [
+      ["base", 1],
+      ["ours", 2],
+      ["theirs", 3],
+    ]) {
+      files[name] = join(dir, name);
+      writeFileSync(files[name], show(`:${stage}:${path}`) ?? Buffer.alloc(0));
+    }
+    // The exit code is the number of conflicts (or 255 on an error, which `ok` refuses).
+    const r = run("git", ["merge-file", mode, "-p", files.ours, files.base, files.theirs], { cwd: root, ok: "any" });
+    if (r.status < 0 || r.status > 127) throw new Error(`git merge-file ${mode} failed: ${r.stderr.toString()}`);
+    return r.stdout;
+  } finally {
+    rmSync(dir, { recursive: true, force: true, maxRetries: 3 });
+  }
+}
+
+/**
+ * Resolve the unmerged `paths` of a merge in progress by {@link classifyUnmerged}: a generated artifact
+ * takes the side `keep` names (3, theirs: `sync:main`'s main; 2, ours: the merge train's main plus the
+ * earlier members) and is staged, or removed when that side deleted it; `CHANGELOG.md` is the union of its
+ * stages unless {@link diff3EditsBase} finds both sides editing one entry. `io` is `{ root, git, run, show }`
+ * (`git(...args)` returns trimmed stdout). Returns `{ scripted, hand }`; `hand` is left unmerged.
+ */
+export function resolveUnmerged(io, paths, sets, keep = 3) {
+  const { root, git } = io;
+  const scripted = [];
+  const hand = [];
+  for (const path of paths) {
+    const stages = [
+      ...new Set(split0(git("ls-files", "-u", "-z", "--", path)).map((l) => Number(l.split("\t")[0].split(" ")[2]))),
+    ];
+    let kind = classifyUnmerged(path, sets, stages);
+    if (kind === "changelog" && diff3EditsBase(mergeStages(io, path, "--diff3").toString("utf8"))) kind = "conflict";
+    if (kind === "generated") {
+      if (stages.includes(keep)) {
+        git("checkout", keep === 3 ? "--theirs" : "--ours", "--", path);
+        git("add", "--", path);
+      } else {
+        git("rm", "-q", "--", path);
+      }
+      scripted.push(path);
+    } else if (kind === "changelog") {
+      writeFileSync(join(root, path), mergeStages(io, path, "--union"));
+      git("add", "--", path);
+      scripted.push(path);
+    } else {
+      hand.push(path);
+    }
+  }
+  return { scripted, hand };
+}
+
+/**
+ * After `runGen(root)` succeeded: the whole-file artifacts it changed or created (named by `sets`, from
+ * {@link artifactSets}), staged, and the other files it changed (`stray`, left unstaged). `untrackedBefore`
+ * is the untracked list from before the run, so an agent's own untracked notes are never reported.
+ * `names(...args)` is a `-z` git listing.
+ */
+export function stageRegenerated(io, sets, untrackedBefore) {
+  const { git, names } = io;
+  const regenerated = [];
+  const newUntracked = names("ls-files", "-o", "--exclude-standard").filter((f) => !untrackedBefore.has(f));
+  const changed = uniqSorted([...names("diff", "--name-only", "--no-renames"), ...newUntracked]);
+  for (const f of changed) if (sets.artifacts.has(f)) regenerated.push(f);
+  if (regenerated.length > 0) git("add", "--", ...regenerated);
+  const stray = changed.filter((f) => !sets.artifacts.has(f));
+  return { regenerated, stray };
+}
 
 /**
  * Focus (a) and (b). `prFiles` = what the PR changed (BASE..OLD_HEAD), `mainFiles` = what main brought in
@@ -200,6 +282,30 @@ export function importLinked({ prFiles, mainFiles, importsOf, sets = {} }) {
   }
   return linked;
 }
+
+/**
+ * `importsOf(file)` for {@link importLinked}: the repository paths a code file imports, read from the
+ * working tree at `root` (the merged head, just committed) by the import reading of
+ * `scripts/nearest-tests.mjs`, cached per file.
+ */
+export function importReader(root) {
+  const importCache = new Map();
+  return (file) => {
+    if (!importCache.has(file)) {
+      let found = [];
+      const abs = join(root, file);
+      if (CODE.test(file) && existsSync(abs)) {
+        const text = readFileSync(abs, "utf8");
+        found = [...text.matchAll(SPEC)].map((m) => resolveSpec(root, file, m[1])).filter((p) => p !== null);
+      }
+      importCache.set(file, found);
+    }
+    return importCache.get(file);
+  };
+}
+
+/** The pathspecs of the `-U0` diff {@link changedExports} reads. */
+export const EXPORT_GLOBS = ["*.ts", "*.tsx", "*.mts", "*.mjs"];
 
 const EXPORT_DECL =
   /^\s*export\s+(?:default\s+)?(?:declare\s+)?(?:async\s+)?(?:function\s*\*?\s*|const\s+|let\s+|class\s+)([A-Za-z_$][\w$]*)/;
@@ -283,8 +389,11 @@ export function conflictLines(hand, partial, hint) {
   return lines;
 }
 
-/** The lines of the final report (text mode). */
-export function reportLines({ head, scripted, regenerated = [], focus }) {
+/**
+ * The lines of the final report (text mode). `other` names the side merged in (`main` here; the merge
+ * train passes "the rest of the train").
+ */
+export function reportLines({ head, scripted, regenerated = [], focus, other = "main" }) {
   const out = [];
   if (scripted.length > 0) out.push(`scripted: ${scripted.join(", ")}`);
   if (regenerated.length > 0) out.push(`regenerated: ${regenerated.join(", ")}`);
@@ -293,14 +402,14 @@ export function reportLines({ head, scripted, regenerated = [], focus }) {
     out.push(`  ${title}:${items.length === 0 ? " none" : ""}`);
     for (const i of items) out.push(`    ${i}`);
   };
-  section("overlap (both the PR and main changed)", focus.overlap);
+  section(`overlap (both the PR and ${other} changed)`, focus.overlap);
   section("hand-resolved conflicts", focus.hand);
   section(
-    "import-linked (main changed; one import from a PR file)",
+    `import-linked (${other} changed; one import from a PR file)`,
     focus.importLinked.map(({ file, via }) => `${file} (${via.map((v) => `${v.how} ${v.file}`).join(", ")})`),
   );
-  section("export declarations main added/removed (grep their callers in the PR)", focus.changedExports);
-  section("exports whose body main changed (grep their callers in the PR)", focus.changedExportBodies);
+  section(`export declarations ${other} added/removed (grep their callers in the PR)`, focus.changedExports);
+  section(`exports whose body ${other} changed (grep their callers in the PR)`, focus.changedExportBodies);
   out.push(`head: ${head}`);
   return out;
 }
@@ -318,10 +427,8 @@ class Stop extends Error {
   }
 }
 
-const split0 = (s) => s.split("\0").filter(Boolean);
-
 /** Run `npm run gen:all` in `cwd`, its output on stderr; true when it succeeds. */
-function defaultRunGen(cwd) {
+export function defaultRunGen(cwd) {
   const viaNpm = process.env.npm_execpath;
   const opts = { cwd, stdio: ["ignore", 2, 2] };
   const r =
@@ -367,26 +474,15 @@ export function main(argv, opts = {}) {
   const showText = (spec) => show(spec)?.toString("utf8") ?? null;
   const names = (...gitArgs) => split0(git(...gitArgs, "-z"));
   const unmerged = () => names("diff", "--name-only", "--no-renames", "--diff-filter=U");
-  /** Run `git merge-file <mode> -p ours base theirs` over the three index stages of `path` (empty when absent). */
-  const mergeStages = (path, mode) => {
-    const dir = mkdtempSync(join(tmpdir(), "sync-main-"));
-    try {
-      const files = {};
-      for (const [name, stage] of [
-        ["base", 1],
-        ["ours", 2],
-        ["theirs", 3],
-      ]) {
-        files[name] = join(dir, name);
-        writeFileSync(files[name], show(`:${stage}:${path}`) ?? Buffer.alloc(0));
-      }
-      // The exit code is the number of conflicts (or 255 on an error, which `ok` refuses).
-      const r = run("git", ["merge-file", mode, "-p", files.ours, files.base, files.theirs], { cwd: root, ok: "any" });
-      if (r.status < 0 || r.status > 127) throw new Error(`git merge-file ${mode} failed: ${r.stderr.toString()}`);
-      return r.stdout;
-    } finally {
-      rmSync(dir, { recursive: true, force: true, maxRetries: 3 });
-    }
+  // `root` is reassigned below: a getter, so the shared helpers read the current one.
+  const io = {
+    get root() {
+      return root;
+    },
+    run,
+    git,
+    show,
+    names,
   };
 
   try {
@@ -461,32 +557,7 @@ export function main(argv, opts = {}) {
       };
       saveState(state);
       const sets = scriptableSets(showText(`${oldHead}:${ARTIFACTS_JSON}`), showText(`${mainHead}:${ARTIFACTS_JSON}`));
-      const scripted = [];
-      const hand = [];
-      for (const path of paths) {
-        const stages = [
-          ...new Set(
-            split0(git("ls-files", "-u", "-z", "--", path)).map((l) => Number(l.split("\t")[0].split(" ")[2])),
-          ),
-        ];
-        let kind = classifyUnmerged(path, sets, stages);
-        if (kind === "changelog" && diff3EditsBase(mergeStages(path, "--diff3").toString("utf8"))) kind = "conflict";
-        if (kind === "generated") {
-          if (stages.includes(3)) {
-            git("checkout", "--theirs", "--", path);
-            git("add", "--", path);
-          } else {
-            git("rm", "-q", "--", path);
-          }
-          scripted.push(path);
-        } else if (kind === "changelog") {
-          writeFileSync(join(root, path), mergeStages(path, "--union"));
-          git("add", "--", path);
-          scripted.push(path);
-        } else {
-          hand.push(path);
-        }
-      }
+      const { scripted, hand } = resolveUnmerged(io, paths, sets, 3);
       state = { ...state, scripted, hand };
       saveState(state);
       for (const f of scripted) log(`resolved ${f} (${f === CHANGELOG ? "union of both sides" : "main's side"})`);
@@ -553,7 +624,7 @@ export function main(argv, opts = {}) {
     }
 
     // ---- 4. regenerate ----
-    const regenerated = [];
+    let regenerated = [];
     if (args.gen) {
       const untrackedBefore = new Set(names("ls-files", "-o", "--exclude-standard"));
       log("npm run gen:all");
@@ -563,11 +634,9 @@ export function main(argv, opts = {}) {
         showText(`${state.mainHead}:${ARTIFACTS_JSON}`),
         existsSync(join(root, ARTIFACTS_JSON)) ? readFileSync(join(root, ARTIFACTS_JSON), "utf8") : null,
       ]);
-      const newUntracked = names("ls-files", "-o", "--exclude-standard").filter((f) => !untrackedBefore.has(f));
-      const changed = uniqSorted([...names("diff", "--name-only", "--no-renames"), ...newUntracked]);
-      for (const f of changed) if (sets.artifacts.has(f)) regenerated.push(f);
-      if (regenerated.length > 0) git("add", "--", ...regenerated);
-      const stray = changed.filter((f) => !sets.artifacts.has(f));
+      const staged = stageRegenerated(io, sets, untrackedBefore);
+      regenerated = staged.regenerated;
+      const { stray } = staged;
       if (stray.length > 0)
         log(`gen:all also changed files that are not generated artifacts (left unstaged): ${stray.join(", ")}`);
     } else {
@@ -605,20 +674,7 @@ export function main(argv, opts = {}) {
     const prFiles = names("diff", "--name-only", "--no-renames", state.base, state.oldHead);
     const mainFiles = names("diff", "--name-only", "--no-renames", state.base, state.mainHead);
     const sets = artifactSets([showText(`${head}:${ARTIFACTS_JSON}`), showText(`${state.oldHead}:${ARTIFACTS_JSON}`)]);
-    const importCache = new Map();
-    /** The repository paths `file` imports on the merged head (the working tree, just committed). */
-    const importsOf = (file) => {
-      if (!importCache.has(file)) {
-        let found = [];
-        const abs = join(root, file);
-        if (CODE.test(file) && existsSync(abs)) {
-          const text = readFileSync(abs, "utf8");
-          found = [...text.matchAll(SPEC)].map((m) => resolveSpec(root, file, m[1])).filter((p) => p !== null);
-        }
-        importCache.set(file, found);
-      }
-      return importCache.get(file);
-    };
+    const importsOf = importReader(root);
     const exportsDiff = gitRaw([
       "diff",
       "--no-color",
@@ -628,10 +684,7 @@ export function main(argv, opts = {}) {
       state.base,
       state.mainHead,
       "--",
-      "*.ts",
-      "*.tsx",
-      "*.mts",
-      "*.mjs",
+      ...EXPORT_GLOBS,
     ]).stdout.toString("utf8");
     const exportsChanged = changedExports(exportsDiff, (f) => isRegenerated(f, sets));
     const focus = {
