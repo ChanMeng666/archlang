@@ -579,6 +579,8 @@ RM-D38、RM-D39 属于另一场的裁定（winder 台阶可到达、楼梯建造
 
 2026-11-16：卡片文本已合入 `dataset/CARD.md`（PR #814）；上传在合并后进行。
 
+2026-11-16：RM-D50（§6.20）是对 RM-D47 反转条件“重跑、加模型或改 brief 数要所有者新的裁定”的一次性、受托的例外，只对 `claude-fable-5-2` 已跑完的这 200 行；该条件其余不变，以后任何重跑、加模型或改 brief 数仍要**所有者**新的裁定。本条原文不改。
+
 ### 6.18 受托裁定：合并列车、已证明的 push、更短的运行（RM-D48，2026-11-15）
 
 所有者 2026-11-15：“我希望能够尽可能的提高速度，让我能够更快的发布功能特性…你可以自由使用各种cli、api、mcp server、skills、claude in chrome、联网搜索等等任何手段”，随后：“当前本地计算机也可以分担一些CI/CD的任务…只要能实现开发效率的提高，我都同意的。前提是要留一部分内存给浏览器的运行”。以下由协调者在这些话之下裁定，所有者一句话可推翻。不改任何铁律或 `AGENTS.md` 的硬规则；`ci-throughput.md` §2 的三条律与严格保护、`.claude/settings.json` 对直接推 `main` 的禁止都保留。记录与数字见 `../ci-throughput-research.md` §12。
@@ -601,6 +603,22 @@ RM-D38、RM-D39 属于另一场的裁定（winder 台阶可到达、楼梯建造
 | RM-D49 ④ | TR10：列车与同步命令的许可 | **做一半：** `.claude/settings.json` 的 allow 加 `Bash(npm run sync:main)` 与 `Bash(npm run sync:main -- *)`；`npm run train` 不加；deny、ask 规则与钩子不变 | 参数只放在 `--` 之后，npm 自己的选项（`--node-options=…`、`--script-shell=…`、`--prefix …`）不会被放行；`train --land` 合并进 `main`，不在 bypass 模式时保留人的确认；所有者默认的 `bypassPermissions` 模式下两者都不弹 |
 | RM-D49 ⑤ | `archcanvas-growth` 的 `prompts/outreach-finder.md` | **只刷新版本事实（取自 npm）**，以远端 `main` 为底，不用别的会话未提交的副本。由 archcanvas-growth #86 做完，2026-11-15T13:57:30Z 合并：核心 1.62.0（2026-11-15 发布）、`archlang-3d` 0.8.1（peer 范围 `^1.61.0`）；决定文件 `strategy/decisions/2026-11-16-outreach-versions-and-investor-snapshots.md`。有意留下一处：提示词仍说 3D 把 winder 平台建成水平的，3D 的 changelog 说 0.8.0 已改，留给下一次完整的事实核对 | 版本只来自 npm、tag 或 `gh release` |
 | RM-D49 ⑥ | `archcanvas-growth` 的 `investor/**` 里的数字 | **标为带日期的快照，并指向读当前值的地方；不刷新任何数字。** 由同一个 #86 做完：`investor/narrative.md`、`deck-outline.md`、`objections.md`、`founder-brief.md` 与 `investor/README.md` 加了快照说明 | 那个仓库不持有产品事实 |
+
+### 6.20 受托裁定：model-authoring 加入 Fable 5.2（RM-D50，2026-11-16）
+
+所有者 2026-11-16 在对话中写道：“请你帮我做出最佳决策”，此前交给所有者的两个未决问题是“发布 Fable 的行吗？”与“更新 `live-baseline.json` 吗？”（后者见 §6.21）。以下由协调者在这句话之下裁定，只对下面这一件（不是长期授权），所有者一句话可推翻。RM-D47 的边界（`docs/agents/iron-laws.md` § Eval & dataset 里 `submit` 的范围）原样有效；`dataset:model-authoring -- submit` 仍是付费、仅限所有者的命令，本条不上传任何东西。
+
+| # | 问题 | 裁定（2026-11-16，受托） | 理由 |
+|---|---|---|---|
+| RM-D50 | RM-D47 的反转条件写明“重跑、加模型或改 brief 数要所有者新的裁定”；而 `claude-fable-5-2` 的一批已在任何裁定之前跑完：提交自仓库提交 `2a210589`，取同一 390 个 brief 的前 200 个（`--briefs 200`，brief 行与前 200 行逐字节相同）。这一批发布吗 | **发布，作为同一 `one_shot` 切分的第二个数据文件**（`model-authoring-fable.jsonl`，附报告 `model-authoring-fable-report.json`）。这是对 RM-D47 反转条件的**一次性、受托的例外，只针对这 200 行**；该条件其余不变，以后任何重跑、加模型或改 brief 数都要**所有者**新的裁定。CC0 与来源说明按 RM-D47 ④ 不变；卡片写明 Fable 只覆盖 390 个 brief 中的前 200 个。**越界事实（代理的错误，如实记录，不作先例）：** 先跑后裁；用的是促销密钥，`--max-usd 80`，最坏情况上限 $75.61，实际费用约 $8（Console 余额运行前 $121.41），批 `msgbatch_01AoABziCC3QHKG8S3Noj8Us` | 生成器、提交、版本 `1.62.0`、种子 `20261115`、去重与修复都与 HF 提交 `d13e4b2d`（2026-11-16）上已上传的三个模型相同，只有模型不同；费用已经花掉，不发布只是浪费 |
+
+### 6.21 受托裁定：`eval/live-baseline.json` 暂不重设基线（RM-D51，2026-11-16）
+
+所有者 2026-11-16：“请你帮我做出最佳决策”（此前交给所有者的未决问题之一：“更新 `live-baseline.json` 吗？”）。以下由协调者在这句话之下裁定，只对下面这一件（不是长期授权），所有者一句话可推翻。不改任何铁律；记录见 `eval/live-runs/2026-11-authorability-remeasure.md`。
+
+| # | 问题 | 裁定（2026-11-16，受托） | 理由 |
+|---|---|---|---|
+| RM-D51 | gpt-5.5 在 `2a210589`（CO-1 + CO-2 之后）三次运行得 valid 22/22/18、intent 10/9/7；七月基线（一次运行）为 valid 23、intent 14。是否据此重设 `eval/live-baseline.json` | **暂不重设，保留七月基线。** 先用已存的逐 brief 结果离线诊断这个差距（不花 API 费用，backlog 卡 EV.1，只限诊断）。**重设 `eval/live-baseline.json` 本身要所有者的裁定**；诊断之后，按 3 次运行的中位数重设只是所有者可以选的一种做法，任何新运行都是付费、仅限所有者的 `eval:live` | intent 的差距尚无解释。把基线下调到它，可能掩盖一次真实的退步，与“为变绿而认可 golden”是同一类错误 |
 
 ---
 
