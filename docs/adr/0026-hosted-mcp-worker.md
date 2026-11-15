@@ -79,11 +79,13 @@ same JSON text as before: that is the text fallback the specification requires.
   registers the viewer with `registerResource` and the MIME type itself (what `registerAppResource`
   does) and takes only the constants from `./server`, which imports nothing at run time. Both lines
   speak the same 2026-01-26 wire protocol. Moving the MCP package to SDK v2 is its own change.
+  The viewer turns off 2.x's WebMCP tool bridge (`webMcpBridge: false`, on by default), keeping
+  1.7.5's `autoResize: true`, and pins the SDK client exactly, so it holds one SDK core.
 - **Not capability-gated.** The specification says a server SHOULD register UI-enabled tools only
   after seeing the host's `io.modelcontextprotocol/ui` capability. A stateless server never sees
   the `initialize` that carried it when it answers `tools/list`, so `_meta.ui` is always present; a
   host that does not know the key ignores it, and the result text is identical either way.
-- **Size:** the page is about 661 KiB (149 KiB gzipped; 513 KiB and 111 KiB on ext-apps 1.7.5),
+- **Size:** the page is about 661 KiB (149 KiB gzipped; 517 KiB and 112 KiB on ext-apps 1.7.5),
   most of it zod and the SDK client inside the `App` class. It is fetched once per host session,
   not per call.
 - **Rendering in a host:** proven in claude.ai for a custom connector (see "Addendum: production").

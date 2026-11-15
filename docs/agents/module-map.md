@@ -129,7 +129,7 @@ Totals: 400 modules in 34 directories.
 | --- | ---: | ---: | --- | --- |
 | `svg-element.ts` | 21 | 2 | Builds the hosted MCP viewer's SVG element from the compiler's output: sanitised, then sized by its `viewBox`. | none |
 | `svg-sanitize.ts` | 142 | 1 | The one way a compiled SVG string becomes a DOM node in a browser surface. The compiler emits only `circle defs desc g line path pattern polygon rect svg text title tspan`, all in the SVG namespace, so none of what is removed here is ever… | none |
-| `viewer.ts` | 202 | 0 | The MCP App viewer for `compile` results (spec: MCP Apps 2026-01-26, `@modelcontextprotocol/ext-apps`). | none |
+| `viewer.ts` | 209 | 0 | The MCP App viewer for `compile` results (spec: MCP Apps 2026-01-26, `@modelcontextprotocol/ext-apps`). | none |
 
 ## `packages/mcp/src/`
 

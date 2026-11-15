@@ -9,7 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-- The hosted MCP server's plan viewer is built with `@modelcontextprotocol/ext-apps` 2.1.0 in place of 1.7.5 (card RM5.4). Both speak the same MCP Apps protocol (2026-01-26): the tools, the resources, the viewer's `text/html;profile=mcp-app` resource and its metadata are unchanged, and the viewer sends a host the same messages. The page grows from about 513 KiB to 661 KiB (149 KiB gzipped), the size of the SDK client that 2.x builds on. The npm MCP server does not use ext-apps and is unchanged.
+- The hosted MCP server's plan viewer is built with `@modelcontextprotocol/ext-apps` 2.1.0 in place of 1.7.5 (card RM5.4). Both speak the same MCP Apps protocol (2026-01-26): the tools, the resources, the viewer's `text/html;profile=mcp-app` resource and its metadata are unchanged, and the viewer sends a host the same messages. The page grows from about 517 KiB (112 KiB gzipped) to 661 KiB (149 KiB gzipped), the size of the SDK client that 2.x builds on. The npm MCP server does not use ext-apps and is unchanged.
 
 ## [1.62.0] - 2026-11-15
 
