@@ -5,7 +5,7 @@
 Where the tests of a `src` module are, and what each test file is for. Generated; `npm run check:drift`
 fails when it is stale. How to add a test: `docs/testing.md` § 4.
 
-518 test files in `test/`, 284 `src` modules, 106 modules no test imports.
+519 test files in `test/`, 284 `src` modules, 106 modules no test imports.
 
 ## `src` module → tests that import it
 
@@ -511,6 +511,7 @@ The first sentence of each file's header comment.
 - `test/main-entrance.test.ts` — PS0.10 — the main entrance.
 - `test/markdown.test.ts` — extractArchBlocks; rewriteMarkdown; CLI — md format handling.
 - `test/material-vocabulary.test.ts` — The material vocabulary is written twice — the core's `FIXTURE_MATERIALS` (what the `rendered` theme tints by, `src/elements/fixtures-glyphs.ts`) and archlang-3d's `MATERIAL_SLOTS` (what the GLB writer and the viewer...
+- `test/merge-train.test.ts` — scripts/merge-train.mjs: land several reviewed PRs with one full CI run, the three laws kept.
 - `test/meter-headers.test.ts` — Every `src/` module that charges the evaluation-step meter says so in its header comment (engineering-health A-F13, cards EH2.2/EH2.7).
 - `test/min-rect.test.ts` — The law of `src/geometry/min-rect.ts` (plan-soundness PS5.1b): the exact minimum-area enclosing rectangle against a brute-force ROTATION ORACLE that lives here only.
 - `test/miter-limit.test.ts` — acute wall joints — the mitre cap.
