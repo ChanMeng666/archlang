@@ -23,7 +23,7 @@ paths:
   prints `Attempting to download` when it bites).
 - **vsce rejects an SVG image from a host outside its badge allow-list** (raw.githubusercontent.com
   included): the VS Code README uses PNGs.
-- **A version bump reddens CI's `npm run check` until `editors/vscode/dist/server.js` is rebuilt**:
+- **A version bump reddens CI's vitest shards until `editors/vscode/dist/server.js` is rebuilt**:
   `editors/vscode/test/stdio.test.ts` compares the bundle's stamped core version with the
   workspace's. Release gate order is in `docs/agents/commands.md`.
 - **`@chanmeng666/arch-plan`'s `prepack` refuses a stale root `dist/`**: run `npm run build` at the
