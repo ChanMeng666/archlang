@@ -271,4 +271,6 @@ you observed. Do NOT push anything — this command only verifies.
 - **Docker MCP Catalog.** The entry (`servers/archlang/server.yaml` in `docker/mcp-registry`, from
   the owner's fork `ChanMeng666/mcp-registry`) pins an archlang commit. When the MCP package's
   version moved, open a follow-up PR there that moves `source.commit` to the release commit
-  (`docs/backlog.md` O.17).
+  (`docs/backlog.md` O.17). While the entry's own PR (#6704) is still open, move `source.commit` on
+  that PR's branch instead (`gh api -X PUT repos/ChanMeng666/mcp-registry/contents/servers/archlang/server.yaml`
+  with the file's `sha` and `branch`).
