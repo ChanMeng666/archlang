@@ -345,6 +345,7 @@ export const outdoor: ElementDef = {
             {
               word: "size",
               rank: 1,
+              required: true,
               read(keep: boolean) {
                 ctx.next();
                 const v = ctx.parseDimensions();

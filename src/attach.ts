@@ -203,18 +203,24 @@ export function parseAttachTarget(
 /**
  * The `wall <id|category>` clause of an opening placed `at (x,y)`, as an order-free clause
  * (`src/clause-order.ts`). `wall` is also a statement keyword, and a `wall` statement reads
- * `wall [id=…] <category> [id=…] thickness …`, so out of the old order the word begins one exactly
- * when `id=` follows it, `thickness` or `id=` follows the next word, or no name follows at all.
+ * `wall [id=<name>] <category> [id=<name>] thickness <expr>`, so out of the old order the word
+ * begins one exactly where that shape can be read: `id=<name>` right after it, or a category
+ * then (past any `id=<name>`) a `thickness` that no `=` follows. Anything else is the clause, and
+ * the words after it stay what they were (`wall w1` then `id = 2` or `thickness = 3` on the next
+ * line: an assignment, which a `wall` statement could never have read). No name after the word
+ * reads as a statement too, since the clause would need one.
  */
 export function wallClause(ctx: ParseCtx, rank: number, set: (ref: string) => void): TailClause {
+  const idAt = (o: number): boolean =>
+    ctx.isKeyword("id", o) && ctx.peek(o + 1).type === "equals" && ctx.peek(o + 2).type === "ident";
   return {
     word: "wall",
     rank,
-    startsStatement: () =>
-      ctx.peek(1).type !== "ident" ||
-      (ctx.isKeyword("id", 1) && ctx.peek(2).type === "equals") ||
-      ctx.isKeyword("thickness", 2) ||
-      (ctx.isKeyword("id", 2) && ctx.peek(3).type === "equals"),
+    startsStatement: () => {
+      if (ctx.peek(1).type !== "ident" || idAt(1)) return true;
+      const t = idAt(2) ? 5 : 2;
+      return ctx.isKeyword("thickness", t) && ctx.peek(t + 1).type !== "equals";
+    },
     read(keep) {
       ctx.next();
       const ref = ctx.eatIdent().value;

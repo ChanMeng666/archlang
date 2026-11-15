@@ -24,7 +24,12 @@
 import { readdirSync, readFileSync, statSync } from "node:fs";
 import { dirname, join, resolve as resolvePath } from "node:path";
 import { describe as suite, expect, it } from "vitest";
-import { ID_AFTER_KIND_STATEMENTS, ORDER_FREE_STATEMENTS } from "../src/clause-order.js";
+import {
+  clauseWordCallHint,
+  EXPRESSION_CLAUSE_EXAMPLES,
+  ID_AFTER_KIND_STATEMENTS,
+  ORDER_FREE_STATEMENTS,
+} from "../src/clause-order.js";
 import { compile, describe, lint } from "../src/index.js";
 import { lex } from "../src/lexer.js";
 import { parse } from "../src/parser.js";
@@ -515,6 +520,15 @@ suite("clause order: a word that begins a statement stays one", () => {
     expect(node.rotate).toBeUndefined();
   });
 
+  it("a required clause not yet read takes its parenthesised value; `=` still makes an assignment", () => {
+    const door = parse(plan("door on bed.left at 50% hinge left width (900)")).plan!.body.find(
+      (s) => s.kind === "door",
+    );
+    expect(door).toHaveProperty("width");
+    const src = plan('let size = 1\n  room id=a at (4000,0) label "A"\n  size = 3');
+    expect(kinds(src).slice(-1)).toEqual(["assign"]);
+  });
+
   it("`rotate (90)` in the old order is still the clause", () => {
     const node = parse(plan("furniture bed at (500,500) size 1500x2000 rotate (90)")).plan!.body.find(
       (s) => s.kind === "furniture",
@@ -545,13 +559,65 @@ suite("clause order: a word that begins a statement stays one", () => {
     }
   });
 
-  it("a clause word called as a component gets a hint saying why", () => {
-    const src = plan("furniture bed at (500,500) size 1500x2000 clear front 600\n  rotate (90)");
-    const d = compile(src).diagnostics.find((x) => x.code === "E_UNKNOWN_COMPONENT");
-    expect(d?.hints?.[0]).toContain("`rotate` is also a clause word");
-    // A name that is no clause word keeps the hint it had (none, with no component to suggest).
-    const other = compile(plan("wombat(1)")).diagnostics.find((x) => x.code === "E_UNKNOWN_COMPONENT");
-    expect(other?.hints).toBeUndefined();
+  it("a clause word called as a component gets a hint saying why, with its own example", () => {
+    const hintOf = (body: string) =>
+      compile(plan(body)).diagnostics.find((x) => x.code === "E_UNKNOWN_COMPONENT")?.hints;
+    const rotate = hintOf("furniture bed at (500,500) size 1500x2000 clear front 600\n  rotate (90)");
+    expect(rotate?.[0]).toContain("`rotate` is also a clause word");
+    expect(rotate?.[0]).toContain("`rotate 90`");
+    expect(hintOf("window on bed.top at 50% width 1200 head 2100\n  sill (900)")?.[0]).toContain("`sill 900`");
+    // Only an order-free clause whose value is an expression can turn into a call: no other name
+    // gets the hint (a clause word with a string value, an attribute word of no such clause, any name).
+    for (const body of ['label("x")', "material(1)", "wombat(1)"]) expect(hintOf(body), body).toBeUndefined();
+  });
+
+  it("every word with a call hint is a clause word the parser reads in any order", () => {
+    const words = new Set<string>();
+    const walk = (dir: string): void => {
+      for (const name of readdirSync(dir)) {
+        const p = join(dir, name);
+        if (statSync(p).isDirectory()) walk(p);
+        else if (name.endsWith(".ts"))
+          for (const m of readFileSync(p, "utf8").matchAll(/(?:word: |clause\()"(\w+)"/g)) words.add(m[1]!);
+      }
+    };
+    walk(join(ROOT, "src"));
+    for (const k of Object.keys(EXPRESSION_CLAUSE_EXAMPLES)) {
+      expect(words.has(k), k).toBe(true);
+      expect(clauseWordCallHint(k), k).toContain(EXPRESSION_CLAUSE_EXAMPLES[k]);
+    }
+  });
+
+  it("a variable named `id` or `thickness` after an out-of-order `wall` clause stays an assignment", () => {
+    // In the old order (`… width 900 wall w1`) this parsed on main and still does; out of it
+    // (`… hinge left wall w1`) it was an E_PARSE on main and now reads the clause, then the line.
+    for (const name of ["id", "thickness"]) {
+      for (const door of ["door at (2000,0) width 900 wall w1", "door at (2000,0) width 900 hinge left wall w1"]) {
+        const src = plan(`let ${name} = 1\n  ${door}\n  ${name} = 2`);
+        expect(parseErrors(src), `${name} / ${door}`).toEqual([]);
+        expect(kinds(src).slice(-2), `${name} / ${door}`).toEqual(["door", "assign"]);
+        const node = parse(src).plan!.body.find((s) => s.kind === "door") as { wall?: string };
+        expect(node.wall).toBe("w1");
+      }
+    }
+  });
+
+  it("an opening placed `at (x,y)` with no width leaves the wall statement after it a wall", () => {
+    // Main's own reading: one E_PARSE on the opening, and wall `p` kept for the door that names it.
+    for (const opening of ["door at (2500,0)", "window at (2500,0)", "opening at (2500,0)"]) {
+      const src = plan(
+        `${opening}\n  wall id=p partition thickness 100 { (0,2000) (5000,2000) }\n  door on p at 50% width 800`,
+      );
+      const errors = compile(src).diagnostics.filter((d) => d.severity === "error");
+      expect(
+        errors.map((d) => d.code),
+        opening,
+      ).toEqual(["E_PARSE"]);
+      expect(
+        parse(src).plan!.body.some((s) => s.kind === "wall" && s.id === "p"),
+        opening,
+      ).toBe(true);
+    }
   });
 });
 
@@ -563,6 +629,11 @@ suite("clause order: a clause a statement cannot leave out is refused on that st
     ["window on bed.top at 50% sill 900", "This window"],
     ["opening on bed.top at 25% head 2100", "This opening"],
     ['outdoor deck at (0,4200) label "Deck"', "This outdoor"],
+    // Placed `at (x,y)`: the form whose `wall` clause is also a statement keyword.
+    ["door id=d at (2000,0)", 'Door "d"'],
+    ["door at (2000,0) hinge left", "This door"],
+    ["window at (2000,0) sill 900", "This window"],
+    ["opening at (2000,0) head 2100", "This opening"],
   ];
   for (const [stmt, name] of MISSING) {
     it(stmt, () => {
@@ -583,6 +654,17 @@ suite("clause order: a clause a statement cannot leave out is refused on that st
     expect(errs).toHaveLength(1);
     expect(src.slice(errs[0]!.span!.start, errs[0]!.span!.end)).toBe('room id=s label "A"');
     expect(errs[0]!.message.startsWith('Room "s"')).toBe(true);
+  });
+
+  it("still names the word that stands where the clause could be, and keeps that token's hints", () => {
+    // A misspelt clause: the message says what was found, as `eatKeyword`'s did.
+    const typo = parse(plan("door on bed.left at 50% widht 900")).diagnostics.find((d) => d.code === "E_PARSE");
+    expect(typo?.message).toContain('expected "width" but found "widht"');
+    // A `,` in a `uses` list earns the hint it always did.
+    const comma = parse(plan("room id=a at (4000,0) uses living, dining size 1000x1000")).diagnostics.find(
+      (d) => d.code === "E_PARSE",
+    );
+    expect(comma?.hints).toContain("separate uses with spaces: `uses living dining`");
   });
 });
 

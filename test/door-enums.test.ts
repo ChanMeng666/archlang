@@ -169,8 +169,11 @@ suite("door enums — the generators fail loudly, not silently", () => {
       `door-clause ::= "hinge" rws hinge-val | "swing" rws swing-val | "slide" rws slide-val | "open" ws expr | "head" ws expr`,
     );
     // The kind word LEADS the statement (it is not a clause), which is what makes the
-    // separate `door-kind` arm of the guard necessary at all. An `id=` may follow it (card CO-1).
-    expect(g).toContain(`door-stmt ::= "door" rws id-opt ( door-kind rws id-after )? ( opening-free-pos `);
+    // separate `door-kind` arm of the guard necessary at all. An `id=` may follow it (card CO-1),
+    // and the clauses come in any order, `width` once among them; `wall` only after `at (x,y)`.
+    expect(g).toContain(
+      `door-stmt ::= "door" rws id-opt ( door-kind rws id-after )? ( opening-free-pos ( ws door-free-clause )* ws opening-width ( ws ( door-free-clause | opening-width ) )* | ( opening-hosted-pos | opening-edge-pos | opening-between-pos ) ( ws door-clause )* ws opening-width ( ws ( door-clause | opening-width ) )* )\n`,
+    );
   });
 
   it("gen-gbnf throws when `swing-val` stops rendering the building-relative words", () => {

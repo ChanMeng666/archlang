@@ -192,7 +192,7 @@ class Parser {
       parseStringExpr: () => this.parseStringExpr(),
       parseIdOpt: () => this.parseIdOpt(),
       spanFrom: (start) => this.spanFrom(start),
-      fail: (msg, t) => this.fail(msg, t),
+      fail: (msg, t, span) => this.fail(msg, t, span),
       diag: (d) => this.report(d),
       report: (code, message, span) => this.report({ severity: "error", message, code, span }),
     };
@@ -207,8 +207,8 @@ class Parser {
   private next(): Token {
     return this.toks[Math.min(this.pos++, this.toks.length - 1)]!;
   }
-  private fail(msg: string, t = this.peek()): never {
-    throw new ParseError(msg, { start: t.start, end: t.end }, this.parseHints(t));
+  private fail(msg: string, t = this.peek(), span: Span = { start: t.start, end: t.end }): never {
+    throw new ParseError(msg, span, this.parseHints(t));
   }
 
   /**
@@ -1996,6 +1996,7 @@ class Parser {
       {
         word: "size",
         rank: 0,
+        required: true,
         read: (keep) => {
           this.next();
           // `<main>` (cross inherited from the strip) or `<main>x<cross>` / `<main> x <cross>`.

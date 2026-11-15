@@ -4,7 +4,9 @@
  *
  * Every clause keeps the RANK it had in the fixed order the grammar used to require. A clause
  * the old grammar would have read at this point (its rank at or above every rank read so far,
- * and not yet written) is read exactly as it was, with no new condition. Any other clause (out
+ * not yet written, and every REQUIRED clause ranked below it already read: the old grammar
+ * never got past a missing `width` to read `wall`) is read exactly as it was, with no new
+ * condition. Any other clause (out
  * of the old order, or written a second time) is read only where its word cannot begin the
  * next statement: not a statement keyword, and not followed by `=` or `(` (an assignment, a
  * component call). A plan that parsed before therefore parses to the same tree: it reads the
@@ -16,7 +18,6 @@
 
 import type { Span } from "./diagnostics.js";
 import type { ParseCtx } from "./registry.js";
-import { KEYWORDS } from "./grammar/tokens.js";
 
 export interface TailClause {
   /** The word that leads the clause. */
@@ -29,6 +30,8 @@ export interface TailClause {
   readonly startsStatement?: () => boolean;
   /** The clause may repeat and checks its own repeats (`clear front|sides`). */
   readonly repeats?: boolean;
+  /** The statement cannot leave it out (a rectangle's `size`, an opening's `width`). */
+  readonly required?: boolean;
   /** Where the statement already said what the clause says (`furniture … in <room> centered`). */
   readonly given?: Span;
   /** Read the clause, the cursor on its word. `keep` is false for a duplicate, read only to be skipped. */
@@ -58,7 +61,20 @@ export function readClauses(ctx: ParseCtx, what: OrderFreeStatement, clauses: re
     const c = clauses.find((k) => (k.at ? k.at() : ctx.isKeyword(k.word)));
     if (!c) return;
     const dup = !c.repeats && first.has(c);
-    if ((dup || c.rank < rank) && (c.startsStatement ? c.startsStatement() : startsStatement(ctx, c.word))) return;
+    // A required clause ranked below this one and not yet read: the old grammar failed on that
+    // clause before it reached this one, so this one is out of the old order.
+    const skipped = clauses.some((k) => k.required && k.rank < c.rank && !first.has(k));
+    const inOrder = !dup && !skipped && c.rank >= rank;
+    // A required clause not yet read, out of order: without it the statement failed on the old
+    // grammar whatever followed, so only an assignment or a statement keyword stops it; a value
+    // in parentheses (`width (900)`) is still its value, not a call.
+    const owed = c.required && !first.has(c);
+    const stops = owed
+      ? ctx.isStatementStart(c.word) || ctx.peek(1).type === "equals"
+      : c.startsStatement
+        ? c.startsStatement()
+        : startsStatement(ctx, c.word);
+    if (!inOrder && stops) return;
     const kw = ctx.peek();
     c.read(!dup);
     const span = { start: kw.start, end: ctx.peek(-1).end };
@@ -78,8 +94,10 @@ export function readClauses(ctx: ParseCtx, what: OrderFreeStatement, clauses: re
 
 /**
  * The statement left out a clause it cannot do without (a rectangle room's `size`, an opening's
- * `width`). Where the cursor is not on the word, the message is `eatKeyword`'s own, as before.
- * Where it is, the word was out of the old order and read as the start of a statement.
+ * `width`): an `E_PARSE` spanned on the statement and naming it, which also says what stands
+ * where the clause could have been (`expected "width" but found "widht"`, as `eatKeyword` said)
+ * and keeps the hints that token earns (`separate uses with spaces` on a `,`). Where that token
+ * is the word itself, it was out of the old order and read as the start of a statement.
  */
 export function missingClause(
   ctx: ParseCtx,
@@ -87,18 +105,24 @@ export function missingClause(
   word: string,
   form: string,
 ): never {
-  const last = ctx.peek(-1);
+  const t = ctx.peek();
   const name = stmt.id ? `${stmt.what} "${stmt.id}"` : `this ${stmt.what}`;
-  const after = ctx.isKeyword(word)
-    ? ` (the \`${word}\` after it reads as the start of a statement, \`${word} = …\` or \`${word}(…)\`)`
-    : "";
-  // Spanned on the statement that lacks the clause, never on the token after it.
-  return ctx.fail(`${name[0]!.toUpperCase()}${name.slice(1)} has no \`${form}\`${after}`, {
-    ...last,
-    type: "ident",
+  const found = ctx.isKeyword(word)
+    ? `: the \`${word}\` after it reads as the start of a statement (\`${word} = …\` or \`${word}(…)\`)`
+    : `: expected "${word}" but found ${describeToken(t)}`;
+  // Spanned on the statement that lacks the clause, never on the token after it; the hints are
+  // the token's, as they were when the parse failed on it.
+  return ctx.fail(`${name[0]!.toUpperCase()}${name.slice(1)} has no \`${form}\`${found}`, t, {
     start: stmt.start,
-    end: last.end,
+    end: ctx.peek(-1).end,
   });
+}
+
+/** A token as a parse message names it (the parser's own wording). */
+function describeToken(t: { type: string; value: string }): string {
+  if (t.type === "eof") return "end of input";
+  if (t.type === "string") return `string ${JSON.stringify(t.value)}`;
+  return `"${t.value}"`;
 }
 
 /**
@@ -139,13 +163,24 @@ export function idAfterKind(ctx: ParseCtx, what: IdAfterKindStatement, id: strin
 }
 
 /**
- * The hint for a call of an unknown component named like a clause word (`KEYWORDS.attribute`):
- * nearly always a clause written out of a statement's old order with a parenthesised value
- * (`… clear front 600 rotate (90)`), which reads as a call. `undefined` for any other name.
+ * The order-free clauses whose value is an expression, each with an example of its own. Only
+ * these can turn into a call: written out of the old order with the value in parentheses
+ * (`… clear front 600 rotate (90)`), the word reads as a component call (see the module header).
+ * `test/clause-order-byte-identity.test.ts` holds the keys to the clause words `src/` reads.
  */
+export const EXPRESSION_CLAUSE_EXAMPLES: Readonly<Record<string, string>> = {
+  size: "size 1500x2000",
+  rotate: "rotate 90",
+  width: "width 900",
+  open: "open 0.5",
+  head: "head 2100",
+  sill: "sill 900",
+};
+
+/** The hint for a call of an unknown component named like one of {@link EXPRESSION_CLAUSE_EXAMPLES}. */
 export function clauseWordCallHint(name: string): string | undefined {
-  if (!(KEYWORDS.attribute as readonly string[]).includes(name)) return undefined;
-  return `\`${name}\` is also a clause word: written out of a statement's old clause order with a value in parentheses, it reads as a call. Drop the parentheses (\`${name} 90\`, not \`${name} (90)\`)`;
+  if (!Object.hasOwn(EXPRESSION_CLAUSE_EXAMPLES, name)) return undefined;
+  return `\`${name}\` is also a clause word: written out of a statement's old clause order with its value in parentheses, it reads as a call. Write the value without them (\`${EXPRESSION_CLAUSE_EXAMPLES[name]}\`)`;
 }
 
 /** `ctx.parseIdOpt()` with the span of what it read, for {@link idAfterKind}. */

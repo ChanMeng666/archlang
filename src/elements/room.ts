@@ -238,6 +238,7 @@ function parseTail(ctx: ParseCtx, node: RoomNode, start: number, sized = false):
     clauses.unshift({
       word: "size",
       rank: 0,
+      required: true,
       read(keep) {
         ctx.next();
         const sizeStart = ctx.peek().start;

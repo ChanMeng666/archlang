@@ -43,6 +43,7 @@ export const opening: ElementDef = {
       {
         word: "width",
         rank: 1,
+        required: true,
         read(keep) {
           ctx.next();
           const v = ctx.parseExpr();
