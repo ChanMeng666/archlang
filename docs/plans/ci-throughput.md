@@ -16,7 +16,7 @@ Every option changes a workflow or a repository setting, and the owner decides w
 - The E2E legs vary: their apt step "Install Chromium system deps" took 10 and 18 min in that run,
   under a minute in others.
 - (As measured then.) No `concurrency` group and no path filters in `ci.yml`; `main` had no branch protection. Since option A (and EH0.5, 2026-11-09) `main` requires ten checks: the seven gating `ci.yml` jobs, `3D package (check:3d)` and both CodeQL `Analyze` legs;
-  `allow_auto_merge`, `allow_update_branch` and `delete_branch_on_merge` are all false.
+  `allow_auto_merge`, `allow_update_branch` and `delete_branch_on_merge` are now all true (they were false when measured), and a merge still pins `--match-head-commit`, never `--auto`, never `gh pr update-branch`.
 - Programme PRs are mostly records only (cards, handoff, audits, backlog, CHANGELOG).
 - Measured 2026-10-27 (row-7 tranche 1, code PRs #296–#301; option D live, Node 22 no longer runs coverage on PRs):
   minutes per job on those PRs: Node 22 13.0–17.6, Node 20 15.3–20.1, Node 18 16.3–21.7, Windows 12.4–20.8,
@@ -125,7 +125,7 @@ triggers. Queued PRs are merged in order, each tested on top of the one before.
 Approved 2026-10-31, measured then at 14–19 min for each Node leg and about 22 for Windows, each
 running the full suite on every code PR.
 
-- As built (PR #385), `pull_request` only: Node 18, Node 20 and `Windows (tests + drift)` keep their
+- As built at #385 (superseded: the current layout is in the `*Status:*` note below and `ci-throughput-research.md` § 12), `pull_request` only: Node 18, Node 20 and `Windows (tests + drift)` keep their
   check names and report green with a job-summary line, guarded steps as in C. `Node 22` is an
   aggregator over `Node 22 checks` (typecheck, lint, drift, eval) and `Node 22 tests 1/3` to `3/3`
   (`vitest run --shard=N/3`). It needs no branch-protection edit. It runs under `always()`, because
@@ -134,7 +134,8 @@ running the full suite on every code PR.
   runs every leg, Node 22's suite across the shards.
 - **Trade-off, accepted by the owner:** a break only on Node 18 or 20, or only on Windows CI, appears
   after the merge, and law 2 above no longer holds for those legs on a PR. Windows may leave PRs
-  because the owner's local gate runs the full suite on Windows before a PR. Nothing local stands in
+  because the owner's local gate runs the full suite on Windows before a PR (since the merge train, RM-D48,
+  a `train/*` PR runs those legs before the merge, and that local full suite no longer runs: the local gate is `check:quick`). Nothing local stands in
   for Node 18 and 20 (the local gate runs Node 24): a `node:` API, a dependency dropping an old Node,
   or a deflate budget can reach `main` red. Dependabot PRs have no local gate at all.
 - **How a break is seen:** a red push run on `main` (GitHub's failed-run notification goes to whoever

@@ -891,6 +891,32 @@ function sideAgainst(landing: BBox, r: BBox): Side | null {
 /** The most tapered steps one quarter turn takes: more would leave treads with no going at all. */
 export const MAX_WINDERS = 8;
 
+/** A landing's rectangle, the sides the flights `before` and `after` it stand against, and the
+ *  corner those sides share where they are adjacent; null when either flight stands against none. */
+function winderTurn(
+  landing: RStairPiece,
+  before: BBox,
+  after: BBox,
+): { r: BBox; a: Side; b: Side; corner: Point } | null {
+  const r: BBox = { x: landing.at.x, y: landing.at.y, w: landing.size.w, h: landing.size.h };
+  const a = sideAgainst(r, before);
+  const b = sideAgainst(r, after);
+  if (a === null || b === null) return null;
+  const cx = a === "left" || b === "left" ? r.x : r.x + r.w;
+  const cy = a === "top" || b === "top" ? r.y : r.y + r.h;
+  return { r, a, b, corner: { x: cx, y: cy } };
+}
+
+/**
+ * The inner corner of a winder landing between the flights `before` and `after` it: the corner its
+ * entry and exit sides share, which its tread lines fan from ({@link winderTreads}) and its walking
+ * line turns round. Read off the landing's own rectangle, and the same point whichever flight is
+ * named first. Null when a flight stands against no side of it.
+ */
+export function winderCorner(landing: RStairPiece, before: BBox, after: BBox): Point | null {
+  return winderTurn(landing, before, after)?.corner ?? null;
+}
+
 /**
  * The tread lines of a winder landing (`landing … winders <n>`), between the flight `before` it in
  * climbing order and the flight `after`: `n - 1` lines fanning from the inner corner, the corner the
@@ -908,12 +934,10 @@ export const MAX_WINDERS = 8;
 export function winderTreads(landing: RStairPiece, before: BBox, after: BBox): Array<[Point, Point]> {
   const n = landing.winders;
   if (n === undefined || !Number.isInteger(n) || n < 2 || n > MAX_WINDERS) return [];
-  const r: BBox = { x: landing.at.x, y: landing.at.y, w: landing.size.w, h: landing.size.h };
-  const a = sideAgainst(r, before);
-  const b = sideAgainst(r, after);
-  if (a === null || b === null) return [];
-  const cx = a === "left" || b === "left" ? r.x : r.x + r.w;
-  const cy = a === "top" || b === "top" ? r.y : r.y + r.h;
+  const turn = winderTurn(landing, before, after);
+  if (turn === null) return [];
+  const { r, a, b } = turn;
+  const { x: cx, y: cy } = turn.corner;
   // Unit vectors from the corner along the entry side and along the exit side.
   const along = (s: Side): Point =>
     s === "left" || s === "right" ? { x: 0, y: cy === r.y ? 1 : -1 } : { x: cx === r.x ? 1 : -1, y: 0 };

@@ -101,8 +101,9 @@ coordinator's own notes (merging, registries, browser and social automation, the
   `fuzz-deep-report.json`, reproduce with a `tsx` probe, then card the real defect; never widen the seed.
 - **A user-facing message never prints `Infinity`, `NaN` or an exponent** (`test/lint-stairs.test.ts`
   pins `/Infinity|NaN|e\+\d/`): classify the value in words ("not a finite number"), do not echo it.
-- **Node 18, Node 20 and Windows do not run on a PR**, so a green PR proves only Node 22 on Linux.
-  A break on the others first shows in the push run on `main` (`commands.md` § CI). Suspect them for
+- **Node 18, Node 20 and Windows do not run on an ordinary PR** (a `train/*` PR runs them in full), so a
+  green ordinary PR proves only Node 22 on Linux. A break on the others shows in the train's run, or in
+  the push run on `main` after a direct merge (`commands.md` § CI). Suspect them for
   a `node:` API newer than Node 18, a dependency that drops an old Node, deflate output (the
   `hillside-villa` budget), and line endings or path handling. Run a changed generator under Node 18
   before merging a tooling PR (#703 reached `main` red as #705), and never hand tsx a tsconfig with
