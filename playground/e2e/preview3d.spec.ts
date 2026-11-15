@@ -1888,6 +1888,25 @@ test.describe("startup chunks", () => {
       for (const m of PROVENANCE)
         expect(text, `assets/${f} carries the lint provenance table ("${m}")`).not.toContain(m);
     }
+    // A tree-shake regression net, NOT the `pure()` guard (that is `test/pure-guard.test.ts` for the
+    // marks in the source and `playground/test/pure-bundle.test.ts` for what rolldown does with
+    // them, red-first). The two JSON Schemas (`INTENT_JSON_SCHEMA`, `PLAN_JSON_SCHEMA`) are read by
+    // no startup code, so a string only they write must be in no built asset. Measured: rolldown
+    // drops them even with the `pure()` marks removed, so this proves nothing about the marks. Each
+    // string is checked in its source first, so a renamed `$id` fails here, not vacuously.
+    const PURE_DROPPED: [string, string][] = [
+      ["src/intent.ts", "https://archlang.uk/intent.schema.json"],
+      ["src/plan-json/schema.ts", "https://archlang.uk/plan.schema.json"],
+    ];
+    for (const [file, m] of PURE_DROPPED) {
+      const src = readFileSync(join(dirname(fileURLToPath(import.meta.url)), "..", "..", file), "utf8");
+      expect(src, `the pure() sentinel "${m}" is in ${file}`).toContain(m);
+      for (const f of assets)
+        expect(
+          readFileSync(join(DIST, "assets", f), "utf8"),
+          `assets/${f} carries a value pure() wraps ("${m}" from ${file}), which the playground never reads`,
+        ).not.toContain(m);
+    }
 
     const gz = (file: string) => gzipSync(readFileSync(join(DIST, file))).length;
     const size = (files: string[]) => files.reduce((a, f) => a + gz(f), 0);
