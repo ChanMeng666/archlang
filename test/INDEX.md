@@ -5,7 +5,7 @@
 Where the tests of a `src` module are, and what each test file is for. Generated; `npm run check:drift`
 fails when it is stale. How to add a test: `docs/testing.md` § 4.
 
-519 test files in `test/`, 284 `src` modules, 106 modules no test imports.
+520 test files in `test/`, 284 `src` modules, 106 modules no test imports.
 
 ## `src` module → tests that import it
 
@@ -292,6 +292,7 @@ The first sentence of each file's header comment.
 - `test/cursor-exhaustive.test.ts` — `cursor.ts`'s `statementExprs` is a compiler-enforced mapped type (`STATEMENT_EXPRS`): adding a `Statement` kind now fails typecheck until it is handled.
 - `test/curves.test.ts` — arcFromChord — the closed-form centre solve; the tessellator — one fixed angular step, integer vertex count; closed-form arc queries (never sampled from the tes…
 - `test/d4.test.ts` — D4 — the group; D4 — faithful actions agree with the matrix; D4 — the normal form is frame.ts's; D4 — the degree helpers keep their exact arithmetic; D4 — insta…
+- `test/dataset-model-authoring.test.ts` — The model-authoring dataset config, offline: the Message Batches client against a mocked fetch (request shape, cache_control, refuse-if-state-exists, resume) and `build` on fixture results (deterministic, self-verifyi...
 - `test/dataset.test.ts` — Cases: emits the requested rows; no row's brief or source contains any holdout prompt's normalized 8-gram; no row source contains a holdout golden source (white…
 - `test/datum.test.ts` — The **vertical datum layer** — heights, sills and heads.
 - `test/defect-corpus.test.ts` — defect corpus: shape.

@@ -16,7 +16,8 @@ package, adds no runtime dependency, and imports only the pure core surface of
 The `dataset/` generator produces the public Hugging Face dataset
 [`ChanMeng666/archlang-repair-trajectories`](https://huggingface.co/datasets/ChanMeng666/archlang-repair-trajectories)
 (CC0-1.0) — two fully synthetic, procedurally generated splits, every row **self-verifying** through
-the deterministic ArchLang compiler with **zero model or API involvement**:
+the deterministic ArchLang compiler with **zero model or API involvement** (the separate,
+model-written `model-authoring` config is described in its own section below):
 
 - **`repair`** (flagship, ~1,200 rows): a procedural base plan, one deterministically injected fault,
   and the broken source healed by the shipped deterministic pipeline — `arch fix` (syntactic span
@@ -42,6 +43,7 @@ below).
 | `canary.ts` | The hardcoded canary GUID (`CANARY`) + its first-line source comment (`CANARY_COMMENT`). |
 | `diff.ts` | A tiny zero-dependency line-based unified-diff generator (LCS backtrack + hunk grouping). |
 | `rng.ts` | The seeded, deterministic PRNG (`mulberry32` / `splitmix32`) — the only randomness source; no clock, no entropy. |
+| `model-authoring/` | The `model-authoring` config (see its section below): `briefs.ts` (the `spine` brief family), `manifest.ts` (seeded, deduplicated brief set), `corpora.ts` (the dedup indices), `batch.ts` (the Message Batches client, on `fetch`), `prices.ts` (copied list prices, cost estimate), `rows.ts` (row derivation + replay), `cli.ts` (the four phases). |
 | `CARD.md` | The Hugging Face consumer README (uploads as the dataset repo's `README.md`). |
 | `out/` | The generated artifacts (`repair.jsonl`, `authoring.jsonl`, `report.json`). **Git-ignored — HF-only.** |
 
@@ -113,6 +115,80 @@ Plans in the `repair` split must stay **fully literal** — no `let`/`for`/scrip
 `repair()` (the geometric corrector) declines scripted sources. `templates.ts` produces a structured
 `PlanModel` and serializes it to fully-literal `.arch`; do not add scripting to the emitted plans, or
 the repair stage will refuse them and the row is rejected.
+
+## The `model-authoring` config (draft for owner review)
+
+> **Draft for owner review.** The generator is in the repository; no rows exist until the owner
+> runs the paid `submit` phase. Nothing has been uploaded.
+
+<!-- OWNER: licensing / provider-terms note for model-authored rows, to be decided before upload -->
+
+A separate HF config, `model-authoring` (split `one_shot`, file `model-authoring.jsonl`). Real
+models write `.arch` **one-shot** from procedural briefs, and the deterministic tools heal the
+result. The consumer-facing description, fields and limitations are in `CARD.md` (*The
+`model-authoring` config*). This section covers how it is built and what must not break.
+
+**Phases** (`npm run dataset:model-authoring -- <phase>`; output under `dataset/out/model-authoring/`,
+git-ignored; `--out <dir>` overrides it):
+
+```bash
+npm run dataset:model-authoring -- plan --briefs 400 --models haiku-5-5,sonnet-5-5,opus-5-5   # free
+npm run dataset:model-authoring -- submit --yes --models haiku-5-5,sonnet-5-5,opus-5-5 --briefs 400 --max-usd <X>   # PAID
+npm run dataset:model-authoring -- collect           # re-run until done, or add --wait [--poll 60]
+npm run dataset:model-authoring -- build             # deterministic, no network
+```
+
+- `plan` makes no network call. It builds the brief set and prints the brief count, the models and
+  three cost figures per model at Batch prices (50 % of list): the cache hitting, the cache never
+  hitting, and the ceiling (`max_tokens` output on every reply). The list prices are copied from
+  `eval/run.ts`, since `dataset/` may not import it; a test fails when the copies drift.
+- `submit` is paid and owner-only. It refuses when `state.json` exists, without `--yes`, without
+  `--max-usd`, for a model with no copied price, or when the summed ceiling exceeds `--max-usd`.
+  It writes `briefs.jsonl` (the manifest), `system-prompt.txt` and `state.json` before its first
+  paid call, then records each batch id as it is created. An interrupted submit therefore leaves a
+  state file listing what was created, and that file blocks a second submit. `--cache-ttl 1h`
+  switches the cache to the one-hour TTL.
+- `collect` polls each batch. For every ended batch it downloads the results verbatim to
+  `results/<model>.jsonl`, writing a `.partial` file and renaming it. A batch whose results file
+  already exists is skipped, so a re-run resumes.
+- `build` checks the manifest's and the system prompt's SHA-256 against the state and that the
+  running `archlang_version` is the pinned one. It then derives each row, re-derives it from what
+  the row stores, compares the bytes, and writes `model-authoring.jsonl` and
+  `model-authoring-report.json`. Rows come in state order (model) then manifest order (brief), so the
+  output does not depend on the order of the results file.
+
+`plan` and `submit` regenerate the published splits in memory (seed `20260712`, 1,200 + 400 rows)
+to deduplicate against them, which takes about a minute and a half.
+
+**Invariants.**
+
+- **One-shot only.** The model sees one brief and never sees a diagnostic. No multi-turn or
+  model-repair trajectory is ever added (the T3 bound; ADR 0013's 2026-11-15 amendment).
+- **Seed space.** Briefs use seed `20261115` by default, never the `default` config's `20260712`.
+  The `default` generator's bytes at `20260712` are untouched; `test/dataset.test.ts` pins its
+  determinism.
+- **Disjointness.** Every brief passes `textReject` and `structReject` (`dedup.ts`) against the
+  eval corpus, the fidelity corpus and the published splits, plus an intra-set check
+  (`manifest.ts`). `build` also drops a row whose reply echoes an eval golden or reference plan, or
+  whose healed plan matches one structurally. `test/dataset.test.ts` § e and
+  `test/dataset-model-authoring.test.ts` enforce this.
+- **Canary.** The same `CANARY`, embedded the same way: a `canary` field, and the first line of
+  every stored `.arch` source (`source`, `after_fix_source`, `after_repair_source`).
+- **Imports.** `dataset/model-authoring/` imports only `../../src/index.js`, `node:*` and other
+  `dataset/` modules, never `eval/`. The Batch client is its own `fetch` code. The system prompt is
+  `spec.llm.md` read from disk plus `REPLY_FORMAT` (`rows.ts`).
+- **Healing** is `recordTrajectory` (`trajectory.ts`), the `repair` split's own pipeline: the fix
+  fixpoint, then one `repair()`, which declines what it cannot rewrite literally.
+- **The API key** is read from `ANTHROPIC_API_KEY` and only ever placed in the `x-api-key`
+  header. It is never logged or written.
+
+Upload, once the owner has decided the licensing note above:
+
+```bash
+hf upload ChanMeng666/archlang-repair-trajectories dataset/out/model-authoring/model-authoring.jsonl        model-authoring.jsonl        --repo-type dataset
+hf upload ChanMeng666/archlang-repair-trajectories dataset/out/model-authoring/model-authoring-report.json  model-authoring-report.json  --repo-type dataset
+hf upload ChanMeng666/archlang-repair-trajectories dataset/CARD.md                                          README.md                    --repo-type dataset
+```
 
 ## Re-uploading to Hugging Face
 

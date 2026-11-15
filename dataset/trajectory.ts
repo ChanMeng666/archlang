@@ -18,7 +18,7 @@
  * Imports ONLY the pure core surface (`../src/index.js`). Nothing from `eval/`.
  */
 
-import { type RepairChange, applyFixes, compile, repair } from "../src/index.js";
+import { type RepairChange, type RepairNote, applyFixes, compile, repair } from "../src/index.js";
 
 /** Upper bound on fix passes, matching `cmdFix`'s / `l1Pipeline`'s MAX_PASSES. */
 const MAX_PASSES = 4;
@@ -49,6 +49,11 @@ export type FixKind = "fix" | "repair" | "both";
 
 export interface Trajectory {
   fixedSource: string;
+  /** The source after the fix fixpoint, before `repair` (equal to the input when no fix pass
+   *  committed). Read by the model-authoring config; the repair split does not emit it. */
+  afterFix: string;
+  /** Problems `repair` declined to (fully) fix, e.g. a scripted source. */
+  repairUnresolved: RepairNote[];
   steps: Step[];
   fixKind: FixKind;
   /** How many fix suggestions were committed across all passes. */
@@ -102,5 +107,13 @@ export function recordTrajectory(broken: string): Trajectory {
   const repairChanged = repaired.changes.length > 0;
   const fixKind: FixKind = fixChanged && repairChanged ? "both" : repairChanged ? "repair" : "fix";
 
-  return { fixedSource, steps, fixKind, fixesApplied, repairChanges: repaired.changes.length };
+  return {
+    fixedSource,
+    afterFix,
+    repairUnresolved: repaired.unresolved,
+    steps,
+    fixKind,
+    fixesApplied,
+    repairChanges: repaired.changes.length,
+  };
 }

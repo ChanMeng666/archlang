@@ -8,7 +8,9 @@ import { compile, describe as describePlan, lint, validateIntent } from "../src/
 import { CANARY, CANARY_COMMENT } from "../dataset/canary.js";
 import type { HoldoutIndex } from "../dataset/dedup.js";
 import { fingerprint, loadHoldout, normalizeText, structReject, textReject } from "../dataset/dedup.js";
-import { generateAll } from "../dataset/generate.js";
+import { DEFAULT_AUTHORING_ROWS, DEFAULT_REPAIR_ROWS, DEFAULT_SEED, generateAll } from "../dataset/generate.js";
+import { PUBLISHED, fidelityIndex, indexOfRows } from "../dataset/model-authoring/corpora.js";
+import { DEFAULT_BRIEF_SEED, buildBriefSet, manifestJsonl } from "../dataset/model-authoring/manifest.js";
 import { recordTrajectory } from "../dataset/trajectory.js";
 
 /**
@@ -212,8 +214,17 @@ vdescribe("c. determinism", () => {
 
   it("no file under dataset/ uses a clock or entropy-seeded randomness", () => {
     const forbidden = ["Date.now", "Math.random", "new Date("];
-    const files = readdirSync(DATASET_DIR).filter((f) => f.endsWith(".ts"));
+    // Every .ts under dataset/, subdirectories included (the model-authoring config lives in
+    // one); `out/` is the git-ignored output directory, not source.
+    const walk = (rel: string): string[] =>
+      readdirSync(join(DATASET_DIR, rel), { withFileTypes: true }).flatMap((d) => {
+        const p = rel ? `${rel}/${d.name}` : d.name;
+        if (d.isDirectory()) return d.name === "out" ? [] : walk(p);
+        return d.name.endsWith(".ts") ? [p] : [];
+      });
+    const files = walk("");
     expect(files.length).toBeGreaterThan(0);
+    expect(files.some((f) => f.startsWith("model-authoring/"))).toBe(true);
     for (const f of files) {
       const src = readFileSync(join(DATASET_DIR, f), "utf8");
       for (const bad of forbidden) {
@@ -277,5 +288,89 @@ vdescribe("d. self-verification — a sample of rows re-verifies from scratch", 
         expect(fr.area_m2).toBe(room!.area_m2);
       }
     }
+  });
+});
+
+/**
+ * e. The MODEL-AUTHORING config (`dataset/model-authoring/`): its briefs use a seed of their own
+ * and must stay disjoint from both eval corpora AND from the published `repair` / `authoring`
+ * splits, through the same `textReject` / `structReject` checks. The CLI checks against the full
+ * published splits (regenerated at the pinned seed); here the published index is the full
+ * `authoring` split plus the first rows of `repair` (the generator is sequential, so a smaller
+ * run is a byte prefix of the published one), to keep CI fast.
+ */
+vdescribe("e. model-authoring config — briefs disjoint from both eval corpora and the published splits", () => {
+  const published = generateAll({ repairRows: 40, authoringRows: DEFAULT_AUTHORING_ROWS, seed: DEFAULT_SEED });
+  const publishedIdx = indexOfRows(published.repairJsonl, published.authoringJsonl);
+  const corpora = { eval: holdout, fidelity: fidelityIndex(), published: publishedIdx };
+  const set = buildBriefSet(DEFAULT_BRIEF_SEED, 12, corpora);
+
+  it("checks against the published generator's own pinned seed and sizes, from a seed of its own", () => {
+    expect(PUBLISHED).toEqual({
+      seed: DEFAULT_SEED,
+      repairRows: DEFAULT_REPAIR_ROWS,
+      authoringRows: DEFAULT_AUTHORING_ROWS,
+    });
+    expect(DEFAULT_SEED).toBe(20260712);
+    expect(DEFAULT_BRIEF_SEED).toBe(20261115);
+    expect(set.entries).toHaveLength(12);
+  });
+
+  it("the published index is live: a published brief and a published plan are each rejected by it", () => {
+    const a = JSON.parse(published.authoringJsonl.split("\n")[0]!) as { brief: string; source: string };
+    const r = JSON.parse(published.repairJsonl.split("\n")[0]!) as { fixed_source: string };
+    expect(textReject(a.brief, publishedIdx).reject).toBe(true);
+    expect(structReject(a.source, publishedIdx).reject).toBe(true);
+    expect(structReject(r.fixed_source, publishedIdx).reject).toBe(true);
+    expect(publishedIdx.prompts.length).toBeGreaterThan(50);
+  });
+
+  it("no brief is a text look-alike of either eval corpus or of the published splits", () => {
+    for (const e of set.entries) {
+      for (const [name, idx] of Object.entries(corpora)) {
+        expect(textReject(e.brief, idx).reject, `${e.brief_id} text vs ${name}`).toBe(false);
+      }
+      const grams = grams8(e.brief);
+      for (const h of holdoutGrams)
+        for (const g of h.grams) expect(grams.has(g), `${e.brief_id} vs ${h.id}`).toBe(false);
+    }
+  });
+
+  it("the brief manifest is byte-deterministic from its seed", () => {
+    expect(manifestJsonl(buildBriefSet(DEFAULT_BRIEF_SEED, 12, corpora).entries)).toBe(manifestJsonl(set.entries));
+  });
+
+  it("no brief repeats a published authoring brief or another brief", () => {
+    const pub = new Set(
+      published.authoringJsonl
+        .split("\n")
+        .filter(Boolean)
+        .map((l) => JSON.parse(l).brief as string),
+    );
+    const mine = set.entries.map((e) => e.brief);
+    expect(new Set(mine).size).toBe(mine.length);
+    for (const b of mine) expect(pub.has(b)).toBe(false);
+  });
+
+  it("dataset/ imports only the pure core and its own modules, never eval/", () => {
+    const walk = (rel: string): string[] =>
+      readdirSync(join(DATASET_DIR, rel), { withFileTypes: true }).flatMap((d) => {
+        const p = rel ? `${rel}/${d.name}` : d.name;
+        if (d.isDirectory()) return d.name === "out" ? [] : walk(p);
+        return d.name.endsWith(".ts") ? [p] : [];
+      });
+    const core = resolve(DATASET_DIR, "..", "src", "index.js");
+    let seen = 0;
+    for (const f of walk("")) {
+      const src = readFileSync(join(DATASET_DIR, f), "utf8");
+      for (const m of src.matchAll(/ from "([^"]+)";/g)) {
+        seen++;
+        const spec = m[1]!;
+        const abs = spec.startsWith(".") ? resolve(DATASET_DIR, dirname(f), spec) : spec;
+        const ok = spec.startsWith("node:") || abs === core || (spec.startsWith(".") && abs.startsWith(DATASET_DIR));
+        expect(ok, `${f} imports ${spec}`).toBe(true);
+      }
+    }
+    expect(seen).toBeGreaterThan(20);
   });
 });
