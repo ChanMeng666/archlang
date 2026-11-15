@@ -2024,7 +2024,7 @@ two and worth doing regardless.
 **Do not** narrow this to "re-run it by hand" — that is the workaround, and it has now been needed
 twice in five releases.
 
-### 4.10 · A 5 s test budget on a heavy optional import — `todo`
+### 4.10 · A 5 s test budget on a heavy optional import: done, waiting to be archived — `note`
 
 Found 2026-09-04 while gating item 4.9, and worth filing because `AGENTS.md` currently records that
 the suite has **no known flake**.
@@ -2055,6 +2055,13 @@ capability probe so the import is paid once per file rather than inside the time
 say plainly in `AGENTS.md` that the suite has one load-sensitive case, since a number nobody can
 reproduce on a quiet machine is worse than a documented one. **Do not raise the global
 `testTimeout`** — that hides every future instance of the same shape.
+
+**Done** by the first two options together: `test/roof.test.ts` probes `pdfkit` once at module
+scope (`HAS_PDFKIT`, a top-level await paid at collection, outside every timed case, the shape
+`test/export-pdf.test.ts` already uses), and "PDF export draws it" carries its own
+`PDF_CASE_TIMEOUT_MS` budget. The global `testTimeout` is unchanged. M.6 (visual, sheet) is the
+same shape and stays open. The entry is closed and waits to be archived to `archlang-lab` with
+`scripts/backlog-archive.mjs`.
 
 ### 4.1 · Joinery pass performance — `todo`
 
