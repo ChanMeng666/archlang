@@ -21,8 +21,8 @@ paths:
 - **A guard that skips when a dependency is absent can be dead with the dependency present.** A test resolving
   `pdfkit/package.json` hit `ERR_PACKAGE_PATH_NOT_EXPORTED`, took the "absent" branch everywhere, and passed locally while
   never reading the file (#433). Run such a test with `CI=true` before trusting it.
-- **A test file must not read what another test file wrote.** CI runs `vitest --shard`, which assigns files by sorted
-  hash, so a new file can move others into another shard, on another runner. Symptom: a red shard on a
+- **A test file must not read what another test file wrote.** CI shards by recorded duration (`test/sequencer.ts`);
+  a table refresh or a new recorded file can move others to another runner. Symptom: a red shard on a
   PR that touched neither file. Write to a `mkdtemp` directory.
 - CodeQL `js/polynomial-redos` fires on regexes in `test/` too, and the `analyze` job gates: slice
   a block with `indexOf` rather than a lazy `[\s\S]*?` match over compiler output.

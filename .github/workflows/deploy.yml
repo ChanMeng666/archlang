@@ -25,8 +25,10 @@ name: Deploy (Cloudflare)
 # Then push to main (or run this workflow manually) to deploy.
 
 # Deploys wait for CI: the trigger is the completed CI run on a push to main, and a red CI
-# deploys nothing (Node 18, Node 20 and Windows run only on main pushes, so before this a red
-# there still deployed). A manual run still deploys the ref it is dispatched from.
+# deploys nothing (Node 18, Node 20 and Windows run on main pushes and train PRs, not on an
+# ordinary PR, so before this a red there still deployed). A proven push run (it skips them:
+# the train PR ran them) is a green run too. A manual run still deploys the ref it is
+# dispatched from.
 on:
   workflow_run:
     workflows: ["CI"]

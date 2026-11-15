@@ -508,15 +508,18 @@ the owner can reverse any item in a sentence. Times are UTC. Every number is mea
   named after a changed module (5 files / 10 s) and the cheapest corpus pins (5 s). `typecheck:all` and a build
   inside the gate were built and then removed on evidence (§ 12.4).
 - **Trains landed:** #789 (member #785; built by hand, then synced once by hand), #792 (#788), #796 (#794),
-  #799 (#798), #801 (#795): five trains today. Abandoned: #786 (hand-built; `main` moved).
+  #799 (#798), #801 (#795), #803 (members #800, low tier, and #802, high tier; base `4f432ca1`, train run
+  43712779650 took 8.6 min, merged 12:23:06 as `60e2436c`, both members marked merged at 12:23:08), #808
+  (members #805, low tier, and #806, high tier; base `43a04a95`; run 43718257635, 7.5 min; merged
+  13:25:59 as `e84870fd`): seven trains today. Abandoned: #786 (hand-built; `main` moved).
 
 ### 12.2 Measured before and after
 
 | Measure | Before (2026-11-14/15, after TP1 and TP2) | After |
 |---|---|---|
 | PR code run, wall clock | median 7.2 min (n=36) | 4.7 min (run 43704031936, one run; 5.7 min on the first version of #794) |
-| Full run (train PR or unproven push) | 12.3 min median push (n=26); train runs 14.6 (incl. about 1.5 queued), 12.5, 13.0 min | 8.7 min (train #796, run 43704660304) and 8.4 min (train #799, run 43709558420), 7.0 min (train #801, run 43710988054, first full run with the finish split) |
-| `main` push run after a train | median 12.3 min | 28 s, 25 s, 26 s, 24 s, 30 s (five trains, all proven) |
+| Full run (train PR or unproven push) | 12.3 min median push (n=26); train runs 14.6 (incl. about 1.5 queued), 12.5, 13.0 min | 8.7 min (train #796, run 43704660304) and 8.4 min (train #799, run 43709558420), 7.0 min (train #801, run 43710988054, first full run with the finish split), 8.6 min (train #803, run 43712779650), 7.5 min (train #808, run 43718257635) |
+| `main` push run after a train | median 12.3 min | 28 s, 25 s, 26 s, 24 s, 30 s, about 29 s, about 24 s (seven trains, all proven; train #803's push run 43713564865, train #808's 43718973798, created 13:26:02, updated 13:26:26) |
 | Merge to deploy finished | median 13.7 min (n=26, estimate from run times) | 2 min 5 s (train #789: merged 09:08:20, deploy success 09:10:25) |
 | Open to merge, non-records PRs | median 35.8 min, 1.2 syncs and 2.6 CI runs per PR (n=27) | not re-measured (needs a week of merges; TR6) |
 
@@ -546,6 +549,8 @@ about 400–500 s.
   Wall-time cost of the gate: about 30–35 s on a typical `src/` change (estimate, low confidence, no paired
   timing; four gate runs on a loaded machine took 136, 319, 119 and 252 s).
 - Setup overhead per job is 20–90 s.
+- A documentation audit after the session found the protection is strict while several docs still said PRs
+  need not be up to date; the docs-truth PRs fixed them.
 - `main` moved under a running train three times (other sessions merged #784, #787, then #797 and #790
   before a build): a train needs every session to check for an open `train/*` PR before merging.
 
@@ -570,4 +575,22 @@ Card TR6 (`product-roadmap/cards.md`, track 9) re-measures after 7 days of merge
 medians, open to merge median and P90, trains per day, members per train, the share of `main` pushes proven,
 train reds and their cause, the `main` red rate, the revert rate, the PR CI failure rate, and `check:quick`
 wall clock on a typical change. The guardrails are § 7's: if the `main` red rate or the revert rate rises, the
-time was moved, not saved. The follow-ups are TR1–TR5, TR7 and TR8 (TR8 holds the paired `check:quick` timing TR6 reads).
+time was moved, not saved. The follow-ups are TR1–TR5 and TR8–TR10 (TR8 holds the paired `check:quick` timing TR6 reads).
+
+### 12.6 Documentation sync (2026-11-15/16)
+
+An audit of `origin/main` after the session found 16 untrue statements and 16 misleading omissions in
+instruction and contributor files. The chief ones: several files still said PRs need not be up to date
+although protection is strict; pre-change shard counts; `AGENTS.md` did not mention the train. They were
+fixed by #805 (low tier) and #806 (high tier: `AGENTS.md`, `docs/agents/commands.md`, workflow comments),
+landed by train #808.
+
+Open for the owner (§ 12.4's rule: the owner can reverse any item): #807, one sentence in
+`docs/agents/iron-laws.md` ("set auto-merge" becomes pinned merges and trains), not merged by an agent;
+TR9 and TR10. In the sibling repositories: `archcanvas-growth` PR #85 (merged) mirrors RM-D48 as a dated
+decision file and adds one sentence to its `AGENTS.md`; `archcanvas` PR #295 (open, waits for the owner:
+that repository's `AGENTS.md` is high tier and its `main` deploys production) repoints its
+cross-repository handoff pointer at `docs/plans/product-roadmap/handoff.md`; the ecosystem map
+(`ChanMeng666/docs/ecosystem/archlang-context.md`) needed no change (generated, topology only, versions
+matched). The session's scratch data is archived at
+`D:\github_repository\claude-kept\2026-11-15-archlang-ci-speedup\` (not a git repository).

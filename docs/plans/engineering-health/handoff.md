@@ -13,7 +13,7 @@ Wave 4 (the residue) DONE: EH2.11, EH2.12, EH1.20, EH2.13, EH1.21, EH1.23, EH3.8
 (git history of this file).
 
 **In flight:** nothing. Since EH3.7 main's required checks are strict: a PR behind main shows `BEHIND`;
-`gh pr update-branch`, wait for CI on the new head, re-pin (`commands.md` § Merging a PR).
+`gh pr update-branch`, wait for CI on the new head, re-pin (`commands.md` § Merging a PR) (superseded: `docs/agents/commands.md` § Merging a PR).
 Lessons of 2026-11-10: (1) CodeQL is required and fails on `String.replace` escaper chains and argv-built RegExps —
 five PRs lost a round; the gotcha and `test/no-replace-chain-escapers.test.ts` now guard it. (2) A 400-file PR shifts
 every pre-existing CodeQL alert into its diff: triage main first (22 test-only alerts dismissed as 'used in tests').

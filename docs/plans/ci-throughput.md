@@ -48,6 +48,9 @@ branches to be up to date" OFF (ON would re-run CI after every merge); admins no
 optional. After review the coordinator runs
 `gh pr merge <n> --auto --merge --match-head-commit <full sha>` and moves on.
 
+*Status, as built:* strict ("up to date") is ON and merges are pinned by `--match-head-commit`, not `--auto`
+(`docs/agents/commands.md` § Merging a PR).
+
 - Effect: coordinator wait per PR 43 → 0 min. CI time unchanged.
 - Needs: the owner (repository settings). No workflow change.
 - Check on first use: a commit pushed after auto-merge is enabled must stop that merge (gh sends
@@ -147,6 +150,9 @@ running the full suite on every code PR.
   packs with `--ignore-scripts`), and vitest isolates each file in a process. `vitest --shard` sorts
   by hash, so the shards are not balanced by time and a new file can move others. `check:test-wiring`
   is untouched: it reads `test.include`, and a shard narrows after that.
+
+  *Status:* now 7 Node 22 shards and 5 per main-only leg, assigned by recorded duration
+  (`ci-throughput-research.md` § 12).
 - Record set: `editors/vscode/CHANGELOG.md` joined it. An `fs` trace of every node process in
   CI (`--require`, run 41158755763, every suite plus `builds`, `check:3d` and both E2E legs) shows only
   `docs-table-pipes` reads it, on the docs leg. `packages/archlang-3d/CHANGELOG.md` stays out:

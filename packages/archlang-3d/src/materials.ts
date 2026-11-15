@@ -174,8 +174,8 @@ export type FloorFinish = (typeof FLOOR_FINISHES)[number];
  * drawing washes those floors in, V-D2), a timber deck in its oak (as an `outdoor deck`'s), paving in
  * the colour an `outdoor paving` is built in (the default theme's `paving` tint laid on
  * `GROUND_WASH` times; written out here so this module, which the viewer bundles, keeps reading no
- * core value, and `test/finish.test.ts` holds it to `groundColour("paving")`), and a polished
- * concrete grey of its own.
+ * core value, and `packages/archlang-3d/test/finish.test.ts` holds it to `groundColour("paving")`),
+ * and a polished concrete grey of its own.
  */
 export const FINISH_PALETTE: Readonly<Record<FloorFinish, SlotMaterial>> = {
   timber: m("#cdb596", 0.6),

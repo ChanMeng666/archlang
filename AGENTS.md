@@ -21,7 +21,7 @@ npm run gen:all       # every gen:* generator
 - Local gate is exactly `check:quick` (+ `docs:build` for docs), then push. Executor briefs list only that. `check`, drift,
   `typecheck:all`, vitest runs, e2e and bench are CI's; only CI green is merge evidence. A hook
   blocks them (`.claude/hooks/local-gate.mjs`).
-- Commit or push only when asked. Merge by risk tier (`docs/agents/commands.md` § Merging a PR).
+- Commit or push only when asked. Merge by risk tier; code PRs ride `npm run train` (`docs/agents/commands.md` § Merging a PR).
 
 ## Hard rules
 
@@ -50,7 +50,7 @@ npm run gen:all       # every gen:* generator
 - A clean auto-merge of a MOVED function another branch MODIFIED is not evidence: diff the moved body (`docs/agents/gotchas.md` § PRs & CI).
 - Releases are tokenless OIDC (`v*` tag); never an npm token, never automate npmjs account/2FA.
   Pushing `main` deploys the sites. Before a tag: follow `.claude/commands/release-check.md`.
-- Eval: one T3 live run, ratified 2026-11-15, not yet run (bounds: `docs/agents/iron-laws.md`); no
+- Eval: one T3 live run, ran 2026-11-15; record: eval/live-runs/2026-11-t3-result.md (bounds: `docs/agents/iron-laws.md`); no
   loop-gain claim either way; its published record is the only statement of the result, any other
   claim needs an owner decision. `eval:live`, `eval:fidelity-live` and
   `dataset:model-authoring -- submit` are paid, owner-only; the eval corpus is a public fixture,
@@ -66,5 +66,5 @@ npm run gen:all       # every gen:* generator
 `commands.md` · `orchestration.md`. `docs/testing.md`: red guards, golden policy. `docs/seo.md` § 8: listings.
 Authoring `.arch` (not contributing): `spec.llm.md`, `skills/archlang/SKILL.md`.
 
-Conventional Commits. This is the only root instruction file; `CLAUDE.md` just imports it;
-path-scoped rules go in `.claude/rules/`. Together ≤ 5,000 bytes (`wc -c`); detail goes in `docs/agents/`.
+Conventional Commits. Sole root instruction file (`CLAUDE.md` just imports it); path rules:
+`.claude/rules/`; detail: `docs/agents/`. Together ≤ 5,000 bytes (`wc -c`).

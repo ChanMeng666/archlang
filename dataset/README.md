@@ -252,8 +252,9 @@ Two standing rules for anything written in this directory or the card:
 
 - **Never claim a diagnostic-feedback-loop gain — or its absence.** The owner declined the T3
   live experiment on 2026-07-12 and ratified exactly one live run of it on 2026-11-15 (bounds in
-  `docs/agents/iron-laws.md`; not yet run). Its analysis will be pre-registered before the run in
-  `eval/live-runs/2026-11-t3-preregistration.md`, and its record published in `eval/live-runs/`.
+  `docs/agents/iron-laws.md`; ran 2026-11-15). Its analysis was pre-registered before the run in
+  `eval/live-runs/2026-11-t3-preregistration.md`, and its record is published in
+  `eval/live-runs/2026-11-t3-result.md`.
   That published record is the only statement of the result; nothing in this directory or the
   card restates it, either way, and any other claim needs an owner decision. The run adds no
   multi-turn model-repair trajectories to the dataset. State only structural facts.

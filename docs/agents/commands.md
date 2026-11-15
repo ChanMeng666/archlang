@@ -12,9 +12,10 @@
   directory-scanning guards and the import-distance tests together. Beyond it, each under its own cap, it adds
   what the import graph ranks too far away: the source-tree scanners a changed `src/`, `scripts/`, `eval/`,
   `test/` or `.claude/` file wakes (tests in `test/` that list that folder and read every file; within 15
-  recorded seconds and at most 30 files, the ones scanning the fewest trees first, then the cheapest; computed from the duration record, a `src/`-only change adds 19 scanners and 7.5 recorded seconds), the tests named after a changed module (at most 5 files and 10 recorded
-  seconds) and, for a `src/` change, the cheapest tests that pin their output over the examples corpus within
-  `--pins` (default 5) recorded seconds. Selection is `scripts/gate-select.mjs`. It still cannot see a guard
+  recorded seconds and at most 30 files, the ones scanning the fewest trees first, then the cheapest),
+  the tests named after a changed module (at most 5 files and 10 recorded seconds) and, for a `src/`
+  change, the cheapest tests that pin their output over the examples corpus within `--pins` (default
+  5) recorded seconds. Selection is `scripts/gate-select.mjs`. It still cannot see a guard
   that scans a directory in a way no rule above reads, and the expensive corpus pins (`keep-byte-identity`,
   `rendered-theme`) and `typecheck:all` are CI's, which is why a quick pass is never merge evidence.
 - `check:drift` reads `git ls-files`, so a new file is invisible to `module-map` and `test-index` until it
@@ -23,7 +24,7 @@
 - `npm run check` = `typecheck` + `lint` + `check:test-wiring` + `npm test`, and it is the owner's release
   gate only: ci.yml runs its parts (typecheck, `lint:ci`, `check:drift`, the vitest shards, `check:test-wiring`),
   never the script. Its `typecheck` covers `src/` only; CI runs `npm run typecheck:all`, which adds `test/`,
-  `eval/`, `dataset/`, `scripts/`, `bench/` and the four workspaces, and needs `dist/` (from `npm run build`):
+  `eval/`, `dataset/`, `scripts/`, `bench/` and every workspace, and needs `dist/` (from `npm run build`):
   without it the playground resolves the bare `archlang` specifier to the wrong package and reports dozens
   of spurious "no exported member" errors.
 - CI runs `npm run check:drift`, separate from `check` (`check:quick` runs it too). `gen:all` orders `gen:spec`
@@ -96,7 +97,7 @@
 
 `ci.yml` (push to `main`, PRs and the merge queue's `merge_group`), all gating except `bench`; the jobs behind the
 `Node 22` check are not required by name, the `Node 22` aggregator gates on them. `main` is protected: its
-required checks are the ten names `Node 18`, `Node 20`, `Node 22`, `Workspace builds`, `Windows (tests + drift)`, the two E2E legs, `3D package (check:3d)` and CodeQL's two `Analyze` legs (not up-to-date-with-`main`, no reviews), and repository
+required checks are the ten names `Node 18`, `Node 20`, `Node 22`, `Workspace builds`, `Windows (tests + drift)`, the two E2E legs, `3D package (check:3d)` and CodeQL's two `Analyze` legs (strict: a PR must contain `main`'s tip; no reviews), and repository
 auto-merge is on. A new push to a PR cancels that PR's running CI (`concurrency`, per PR number); each
 push to `main` runs in a group of its own and is never cancelled.
 
@@ -112,7 +113,7 @@ comment stay PR-only; `deploy.yml` and `main-red.yml` act on `push` runs only. `
 and `arch-render-selftest.yml` are not required and do not run in the queue.
 
 **Not available here:** a merge queue needs an organization-owned repo; on this user-owned repo
-the API rejects a `merge_queue` ruleset (422, 2026-11-10). The protection in force is branch
+the API rejects a `merge_queue` ruleset (HTTP 422). The protection in force is branch
 protection's `strict` required status checks ("require branches to be up to date before merging")
 plus the repo setting "always suggest updating branches": a PR behind `main` cannot merge until its
 branch includes `main`'s tip and the checks have re-run on that tree. The `merge_group` triggers stay
@@ -140,9 +141,8 @@ call the PR a record. An unproven push to `main` runs every leg, each suite spli
 A failed `changes` job runs every leg on a PR too.
 
 **Concurrency.** The account is GitHub Pro: 40 concurrent jobs. The peak, counted as every job with
-work running at once a few seconds after `changes` (measured: 25 on train run 43696702870 before the
-shard change, 24 on PR run 43699946434): a train PR run about 38 (34 `ci.yml` leaves, `changelog`,
-`plugin-validate` and CodeQL's two `Analyze` legs); an unproven push about 36 (no `changelog`, no
+work running at once a few seconds after `changes`: a train PR run about 38 (34 `ci.yml` leaves,
+`changelog`, `plugin-validate` and CodeQL's two `Analyze` legs); an unproven push about 36 (no `changelog`, no
 `bench`); an ordinary code PR about 26 (19 leaves, `changelog`, and the `Node 18`, `Node 20` and
 `Windows (tests + drift)` aggregators, which start at once there because their shards are skipped,
 plus the three other workflows' jobs). A train run and an ordinary PR run together exceed 40, so
@@ -183,34 +183,35 @@ and `.claude/commands/release-check.md` item 5, which refuses a release on eithe
 `ci-red` and comment on every red run, so `gh issue list -l ci-red` is the first thing a session
 checks; a green run closes the issue with a comment.
 
-Minutes, a full run measured 2026-10-27 (PR #290 at 2ed9d70e, `gh run view 40416348158`; wall clock
-22.7), the Node 22 rows on PR #385 at cd730b85:
+What each job runs. The poles: of a PR code run, `3D package frame-budget pass` and a Node 22 shard;
+of a full run, the Windows and Node 18 shards. Wall-clock readings and their runs live in
+`docs/plans/ci-throughput-research.md` § 12.2, not here.
 
-| Job (CI's check name) | Runs | Min |
-|---|---|---|
-| `changes` (Changed paths) | classifies the PR's paths, marks a train PR (`full_leg`), and on a push to `main` decides `proven` (`scripts/ci-proven.mjs`); not a required check | < 0.1 |
-| `node-18-tests`, `node-20-tests` (Node 18 tests 1/5 … 5/5, Node 20 tests 1/5 … 5/5) | unproven push, merge queue and train PRs (job-level skip on other PRs and a proven push): `vitest run --shard=N/5`; shard 5 first runs typecheck, `lint:ci`, `check:drift` and, after the tests, `eval:ci` | three shards on train run 43696702870: Node 18 12.2, 6.2, 8.2; Node 20 11.3, 7.7, 6.0 (five shards: not yet measured) |
-| `build` (Node 18, Node 20) | aggregator over its version's shard job: green with a job-summary line on an ordinary PR, requires the shards' skip on a proven push, else their `success` | 0.1 |
-| `node-22-checks` (Node 22 checks) | typecheck, `lint:ci`, `check:drift`, `eval:ci` | 0.7 |
-| `node-22-tests` (Node 22 tests 1/7 … 7/7) | `vitest run --shard=N/7` | five shards on train run 43696702870: 6.1, 4.5, 6.5, 4.4, 3.2 (seven: not yet measured) |
-| `changelog` (CHANGELOG under [Unreleased]) | PR and merge queue, record-only PRs too: `scripts/check-changelog-unreleased.mjs HEAD^1` (every added CHANGELOG line under `[Unreleased]` or under the `## [x.y.z]` heading a release PR adds, no released line deleted). A deliberate edit of released history carries the PR label `changelog-exempt` (then `--exempt`: reported, not refused); label, then re-run the job. Not a required check; `node-22` requires its success (on a PR and in the queue) | not yet measured |
-| `node-22` (Node 22) | gates on `node-22-checks`, `node-22-tests` and, on a PR or in the queue, `changelog`; on a record-only PR, runs the docs leg | < 0.2 |
-| `builds` (Workspace builds) | `build`, `typecheck:all`, all five workspace builds (docs, playground, MCP shim, hosted MCP Worker, VS Code), MCP `check-dist-resources.mjs`, VS Code bundle tests, `check:test-wiring`, `check:dxf` with ezdxf in a virtualenv (each only here) | 2.0 |
-| `windows-tests` (Windows tests 1/5 … 5/5) | unproven push, merge queue and train PRs (job-level skip on other PRs and a proven push), on windows-latest: `vitest run --shard=N/5` at the runner's default line endings, shard 5 then `check:drift` (no `eval:ci`) | three shards on train run 43696702870: 8.8, 8.4, 6.0 (five: not yet measured) |
-| `windows` (Windows (tests + drift)) | aggregator over `windows-tests`, on ubuntu: green with a job-summary line on an ordinary PR, requires the shards' skip on a proven push, else their `success` | 0.1 |
-| `e2e-playground-chromium` (Playground E2E chromium 1/3 … 3/3) | every playground spec in Chromium, three explicit spec lists balanced by measured seconds, then `Flaky tests` | two `--shard` shards on PR run 43699946434: 3.7, 5.2 (three: not yet measured) |
-| `e2e-playground-engines` (Playground E2E engines) | the `@engines` specs in Firefox and WebKit, then `Flaky tests` | 2.8 (run 43535706255) |
-| `e2e-playground` (Playground E2E (Playwright)) | aggregator: requires `success` of both jobs above | 0.1 (run 43535706255) |
-| `e2e-docs-shard` (Docs site E2E 1/3 … 3/3) | Playwright against the built docs site, three explicit spec lists balanced by measured seconds, then `Flaky tests`; report artifact `playwright-report-docs-<n>` on failure | two `--shard` shards on PR run 43699946434: 5.2, 2.5 (three: not yet measured) |
-| `e2e-docs` (Docs site E2E (Playwright)) | aggregator: requires `success` of the three shards | < 0.1 |
-| `check-3d-pass` (3D package suite pass, 3D package frame-budget pass) | `npm run check:3d`'s two vitest passes, one job each (`npm -w packages/archlang-3d run e2e -- --pass=<suite\|frame-budget>`) on Linux: `packages/archlang-3d`'s heavy tests (GLB through glTF-Validator, determinism over the corpus, CLI exit codes, the tarball through `npm pack`, the replay in Playwright's Chromium on SwiftShader with ffmpeg, the key-frame pixel baseline pinned to this job's Chromium); browsers in `PLAYWRIGHT_BROWSERS_PATH`, cached by the `playwright-core` version | one job on train run 43696702870: 5.6 (suite pass 1.8, frame budget 2.4 in its log); two jobs on PR run 43699946434: 3.4, 3.3 |
-| `check-3d` (3D package (check:3d)) | aggregator: requires `success` of both passes; required | < 0.1 |
-| `bench` | informational PR-head vs merge-base timings, two runs each (order B H H B), ratios and a noise floor in the job summary (+ a PR comment on same-repo PRs); never gates (the gate is `test/work-counts.test.ts`): `continue-on-error`, and a benchmark that produced no table says so in the summary instead of failing; skipped on a record-only PR | 2.8 |
+| Job (CI's check name) | Runs |
+|---|---|
+| `changes` (Changed paths) | classifies the PR's paths, marks a train PR (`full_leg`), and on a push to `main` decides `proven` (`scripts/ci-proven.mjs`); not a required check |
+| `node-18-tests`, `node-20-tests` (Node 18 tests 1/5 … 5/5, Node 20 tests 1/5 … 5/5) | unproven push, merge queue and train PRs (job-level skip on other PRs and a proven push): `vitest run --shard=N/5`; shard 5 first runs typecheck, `lint:ci`, `check:drift` and, after the tests, `eval:ci` |
+| `build` (Node 18, Node 20) | aggregator over its version's shard job: green with a job-summary line on an ordinary PR, requires the shards' skip on a proven push, else their `success` |
+| `node-22-checks` (Node 22 checks) | typecheck, `lint:ci`, `check:drift`, `eval:ci` |
+| `node-22-tests` (Node 22 tests 1/7 … 7/7) | `vitest run --shard=N/7` |
+| `changelog` (CHANGELOG under [Unreleased]) | PR and merge queue, record-only PRs too: `scripts/check-changelog-unreleased.mjs HEAD^1` (every added CHANGELOG line under `[Unreleased]` or under the `## [x.y.z]` heading a release PR adds, no released line deleted). A deliberate edit of released history carries the PR label `changelog-exempt` (then `--exempt`: reported, not refused); label, then re-run the job. Not a required check; `node-22` requires its success (on a PR and in the queue) |
+| `node-22` (Node 22) | gates on `node-22-checks`, `node-22-tests` and, on a PR or in the queue, `changelog`; on a record-only PR, runs the docs leg |
+| `builds` (Workspace builds) | `build`, `typecheck:all`, all five workspace builds (docs, playground, MCP shim, hosted MCP Worker, VS Code), MCP `check-dist-resources.mjs`, VS Code bundle tests, `check:test-wiring`, `check:dxf` with ezdxf in a virtualenv (each only here) |
+| `windows-tests` (Windows tests 1/5 … 5/5) | unproven push, merge queue and train PRs (job-level skip on other PRs and a proven push), on windows-latest: `vitest run --shard=N/5` at the runner's default line endings, shard 5 then `check:drift` (no `eval:ci`) |
+| `windows` (Windows (tests + drift)) | aggregator over `windows-tests`, on ubuntu: green with a job-summary line on an ordinary PR, requires the shards' skip on a proven push, else their `success` |
+| `e2e-playground-chromium` (Playground E2E chromium 1/3 … 3/3) | every playground spec in Chromium, three explicit spec lists balanced by measured seconds, then `Flaky tests` |
+| `e2e-playground-engines` (Playground E2E engines) | the `@engines` specs in Firefox and WebKit, then `Flaky tests` |
+| `e2e-playground` (Playground E2E (Playwright)) | aggregator: requires `success` of both jobs above |
+| `e2e-docs-shard` (Docs site E2E 1/3 … 3/3) | Playwright against the built docs site, three explicit spec lists balanced by measured seconds, then `Flaky tests`; report artifact `playwright-report-docs-<n>` on failure |
+| `e2e-docs` (Docs site E2E (Playwright)) | aggregator: requires `success` of the three shards |
+| `check-3d-pass` (3D package suite pass, 3D package frame-budget pass) | `npm run check:3d`'s two vitest passes, one job each (`npm -w packages/archlang-3d run e2e -- --pass=<suite\|frame-budget>`) on Linux: `packages/archlang-3d`'s heavy tests (GLB through glTF-Validator, determinism over the corpus, CLI exit codes, the tarball through `npm pack`, the replay in Playwright's Chromium on SwiftShader with ffmpeg, the key-frame pixel baseline pinned to this job's Chromium); browsers in `PLAYWRIGHT_BROWSERS_PATH`, cached by the `playwright-core` version |
+| `check-3d` (3D package (check:3d)) | aggregator: requires `success` of both passes; required |
+| `bench` | informational PR-head vs merge-base timings, two runs each (order B H H B), ratios and a noise floor in the job summary (+ a PR comment on same-repo PRs); never gates (the gate is `test/work-counts.test.ts`): `continue-on-error`, and a benchmark that produced no table says so in the summary instead of failing; skipped on a record-only PR |
 
 Coverage is not in `ci.yml`: nightly's `coverage` job runs `test:coverage` (report-only). The E2E legs
 vary most: their "Install Chromium system deps only" step runs on every run (it installs fonts the
-runner image lacks, which the specs' layout depends on): 10 and 18 minutes in run 40329078071, 12 s and
-3 min in the run above; the spread is the apt mirror. Options and status: `docs/plans/ci-throughput.md`.
+runner image lacks, which the specs' layout depends on), and its time, from seconds to well over ten
+minutes, follows the apt mirror. Options and status: `docs/plans/ci-throughput.md`.
 
 ### Merging a PR
 
@@ -220,17 +221,19 @@ first run of Node 18, Node 20 and Windows only in the `push` run on `main` (§ C
 runs them before the merge when `changes` calls the change code (a records-only train does not run them).
 Before merging anything into `main` (a train or a direct merge), check for an open `train/*` PR
 (`gh pr list --search "head:train/"`) and do not move `main` under it: one train at a time across sessions.
+Never name an ordinary same-repo branch `train/…`: it runs the full matrix when the change is code
+and cannot board a train.
 
 0. Tier the change by what it touches, not who wrote it: `node scripts/risk-tier.mjs` (highest path
    wins; renames count both paths; a path no rule names is medium). **Low** (internal prose:
-   `docs/plans`, `docs/agents`, `.claude` rules/commands/agents, contributor docs): merge once CI is
-   green. **Medium** (code, tests, examples, tooling, published and public text incl. docs pages,
+   `docs/plans`, `docs/agents` except `commands.md` and `iron-laws.md`, `.claude` rules/commands/agents,
+   contributor docs): merge once CI is green. **Medium** (code, tests, examples, tooling, published and public text incl. docs pages,
    ADRs, READMEs, `CHANGELOG.md`): also one independent review in a fresh context, given the diff and
    `REVIEW.md`, not the author's conclusion; two rounds at most. **High** (the review policy itself,
    workflows, root `package.json`, `vitest.config.ts`, `scripts/check-*`, baselines,
    `.gitleaksignore`, `.claude/settings.json` and hooks, owner rules, frozen artifacts, manifests,
    deploy config): also one fresh-context review, and the coordinator's own judgement that the diff is
-   safe (the owner's standing approval of 2026-11-09: "判断是否能够合并，如果能，那就自动合并"). An executor
+   safe (the owner's standing approval: "判断是否能够合并，如果能，那就自动合并"). An executor
    never merges its own PR. The decision to release, paid eval and the npmjs account stay owner-only.
 1. Review the diff as soon as the PR opens, never after CI; post `reviewed <full sha>` on the PR.
    That comment means "approved to merge at this SHA", and `npm run train` reads it as a gate: its
@@ -266,7 +269,8 @@ Before merging anything into `main` (a train or a direct merge), check for an op
       could be read; information: on "no", `main`'s push run runs every leg itself). It merges with
       `--match-head-commit`, reads the state back, and only then deletes each member branch GitHub marked
       MERGED (still at its pinned SHA, no open PR based on it, and not another open PR's head),
-      comments `landed by train #<n> (<sha>)` on it, and removes the train branch and worktree. A member not marked MERGED is reported and left.
+      comments `landed by train #<n> (<sha>)` on it, and removes the train branch and worktree. A
+      member not marked MERGED is reported and left.
    - **Red train:** read the failing job (`gh run view <id> --log-failed`). If one member is clearly the
      cause, `npm run train -- --abandon <train pr>` and build again without it; if not, halve: abandon,
      build with the first half, then the rest. `main` moved before landing (`--land` says "rebuild"):
@@ -282,7 +286,7 @@ Before merging anything into `main` (a train or a direct merge), check for an op
    --match-head-commit <new full 40-character sha>` once the required checks pass. A later push voids the
    pin: re-review, re-run this step. Several PRs BEHIND at once board a train (step 2), never one sync
    each: each sync starts a full CI run.
-4. A PR that merged `main` after its review is red-teamed again on the merged head (#280/#283), every
+4. A PR that merged `main` after its review is red-teamed again on the merged head, every
    time, and so is a train head: a clean merge with no shared file can still break it. The red team's
    brief includes the re-review focus block `sync:main` or the train printed (overlap, hand-resolved
    conflicts, import-linked files, export declarations the other side added or removed, exports whose
@@ -301,9 +305,11 @@ Before merging anything into `main` (a train or a direct merge), check for an op
 the pinned issue; its report is an
 artifact), `e2e-prod` (the read-only `@prod` subset against the live sites; its docs half also
 detects a stale deploy), and `report` (the single writer of the pinned issue; a fully green night comments on it and closes it). `deploy.yml` deploys
-both sites after a green CI run on every push to `main` (the playground with its Worker, KV namespace and rate limits from
+both sites after a green CI run on every push to `main`, a proven run included (the playground with its Worker, KV namespace and rate limits from
 `playground/wrangler.jsonc`; the CI token `CLOUDFLARE_API_TOKEN` needs Workers KV Storage: Edit; a Workers
-usage alert is an owner step in the Cloudflare dashboard, outside the repo); `main-red.yml` turns a red CI run on `main` into one pinned issue and closes it on the next green run (post-merge detection: PRs need not be up to date with `main`); `release.yml` publishes on a `v*` tag; `publish-openvsx.yml` (manual, dispatched by the agent after each Marketplace upload) publishes the VS Code
+usage alert is an owner step in the Cloudflare dashboard, outside the repo); the hosted-MCP deploy
+diffs against the head of the previous green push run. `main-red.yml` turns a red CI run on `main` into one pinned issue and closes it on the next green run (a break on a main-only leg, Node 18, Node 20 or Windows, or a flake
+shows first in the push run; a train PR shows it before the merge); `release.yml` publishes on a `v*` tag; `publish-openvsx.yml` (manual, dispatched by the agent after each Marketplace upload) publishes the VS Code
 extension to Open VSX. The `eval-*.yml`
 workflows are manual and owner-only — never dispatch `eval-l2.yml` (the one owner-ratified T3 run is
 local, on the Anthropic provider; `docs/agents/iron-laws.md`).
@@ -330,7 +336,7 @@ likewise runs after `publish`, so a release can raise archlang-3d's core peer fl
 publishes. The VS Code `.vsix` is uploaded by the agent through Claude in Chrome when the owner's
 browser is signed in (release-check, "VS Code Marketplace upload"); then `publish-openvsx.yml` runs
 on the tag. A step that fails after npm has published (a GitHub 500, the registry) is finished by
-re-running the run; the registry probe asks for `version=latest` (#512), so a re-run skips a
+re-running the run; the registry probe asks for `version=latest`, so a re-run skips a
 version already published.
 
 The owner says "release" for each release; the agent then runs the whole path (release PR, tag,

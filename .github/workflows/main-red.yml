@@ -1,7 +1,8 @@
 name: Main red alarm
 
-# Post-merge detection. Branch protection does not require a PR to be up to date with main, so two
-# PRs that are green alone can still break main together. CI re-runs on every push to main; this
+# Post-merge detection. Branch protection is strict (a PR must contain main's tip), so what this
+# catches is a break on a main-only leg (Node 18, Node 20, Windows: an ordinary PR skips them, a
+# train PR runs them) or a flake, on the push run. CI re-runs on every push to main; this
 # turns a red run there into one pinned issue, and closes it on the next green run.
 
 on:
