@@ -575,7 +575,7 @@ Card TR6 (`product-roadmap/cards.md`, track 9) re-measures after 7 days of merge
 medians, open to merge median and P90, trains per day, members per train, the share of `main` pushes proven,
 train reds and their cause, the `main` red rate, the revert rate, the PR CI failure rate, and `check:quick`
 wall clock on a typical change. The guardrails are § 7's: if the `main` red rate or the revert rate rises, the
-time was moved, not saved. The follow-ups are TR1–TR5 and TR8 (TR8 holds the paired `check:quick` timing TR6 reads).
+time was moved, not saved. The follow-ups are TR1–TR5, TR8 and TR11 (TR8 holds the paired `check:quick` timing TR6 reads).
 
 ### 12.6 Documentation sync (2026-11-15/16)
 
@@ -587,11 +587,12 @@ landed by train #808.
 
 The items left for the owner were decided by delegation on 2026-11-16 (RM-D49,
 `product-roadmap/README.md` § 6.19; the owner can reverse any item): the #807 sentence in
-`docs/agents/iron-laws.md` ("set auto-merge" becomes pinned merges and trains) is reworded in RM-D49's PR
-and #807 closes as superseded; TR9 and TR10 are done there. In the sibling repositories: `archcanvas-growth`
-PR #85 (merged) mirrors RM-D48 as a dated decision file and adds one sentence to its `AGENTS.md`;
-`archcanvas` PR #295 (decided: merge; that repository's `AGENTS.md` is high tier and its `main` deploys
-production) repoints its
+`docs/agents/iron-laws.md` ("set auto-merge" becomes pinned merges and trains) is reworded in #811
+and #807 is closed as superseded by it; in #811 TR9 is done and TR10 in part (`sync:main` allowed, `train`
+not). In the sibling repositories: `archcanvas-growth` PR #85 (merged) mirrors RM-D48 as a dated decision
+file and adds one sentence to its `AGENTS.md`, and PR #86 (merged) refreshes the outreach prompt's version
+facts and labels the investor figures as dated snapshots; `archcanvas` PR #295 (decided: merge; merged as
+`d974d9e2`; that repository's `AGENTS.md` is high tier and its `main` deploys production) repoints its
 cross-repository handoff pointer at `docs/plans/product-roadmap/handoff.md`; the ecosystem map
 (`ChanMeng666/docs/ecosystem/archlang-context.md`) needed no change (generated, topology only, versions
 matched). The session's scratch data is archived at

@@ -231,8 +231,8 @@ and cannot board a train.
    ADRs, READMEs, `CHANGELOG.md`): also one independent review in a fresh context, given the diff and
    `REVIEW.md`, not the author's conclusion; two rounds at most. **High** (the review policy itself,
    workflows, root `package.json`, `vitest.config.ts`, `scripts/check-*`, the merge and CI-proof
-   scripts (`scripts/ci-proven.mjs`, `merge-train.mjs`, `sync-main.mjs`, `gate-select.mjs`) and
-   `test/sequencer.ts`, baselines,
+   scripts (`scripts/ci-proven.mjs`, `merge-train.mjs`, `sync-main.mjs`, `gate-select.mjs`,
+   `nearest-tests.mjs`, `workspaces.mjs`) and `test/sequencer.ts`, baselines,
    `.gitleaksignore`, `.claude/settings.json` and hooks, owner rules, frozen artifacts, manifests,
    deploy config): also one fresh-context review, and the coordinator's own judgement that the diff is
    safe (the owner's standing approval: "判断是否能够合并，如果能，那就自动合并"). An executor

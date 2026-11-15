@@ -1163,13 +1163,17 @@ Playground：Chromium `--shard=1/2`、`2/2` 两个 job，Firefox 与 WebKit 的 
 
 `scripts/ci-proven.mjs`、`scripts/merge-train.mjs`、`scripts/sync-main.mjs`、`scripts/gate-select.mjs`、`test/sequencer.ts`、`test/.durations.json` 在 `scripts/risk-tier.mjs` 里是 medium，却决定 CI 跳过什么、什么能合并。裁定：要不要升成 high（高层级 PR 改 `RULES` 与 `commands.md` 第 0 步）。
 
-**已做（RM-D49）：** 前五个升为 high（`RULES` 与 `commands.md` 第 0 步）。`test/.durations.json` 不升：它只改分片平衡、不改正确性，夜间刷新不该每次都要评审；这些脚本的测试文件照现有惯例（`test/risk-tier.test.ts` 与 `scripts/check-*` 的测试都是 medium）留在 medium。
+**已做（RM-D49）：** 前五个，加上同理的 `scripts/nearest-tests.mjs`（`gate-select.mjs` 的选择与 `sync-main.mjs` 的重审重点用它）与 `scripts/workspaces.mjs`（由已是 high 的 `scripts/check-quick.mjs` 导入），共七个升为 high（`RULES` 与 `commands.md` 第 0 步）。`test/.durations.json` 不升：它只改分片平衡、不改正确性，夜间刷新不该每次都要评审；这些脚本的测试文件照现有惯例（`test/risk-tier.test.ts` 与 `scripts/check-*` 的测试都是 medium）留在 medium。
 
 ### TR10 · 列车与同步命令的许可（2026-11-16 加） — `done`（RM-D49，受托，只做一半） · 依赖无（线下）
 
 `npm run train` 与 `npm run sync:main` 不在 `.claude/settings.json` 的 allow 列表里，每次使用都弹许可，无人值守的运行会卡在那里。裁定：要不要允许它们（`.claude/settings.json` 是 high 层级；禁止推 `main` 的 deny 规则不变）。
 
-**已做（RM-D49）：** allow 列表加了 `npm run sync:main`（无参数与带参数两种）。`npm run train` 不加：它的 `--land` 合并进 `main`，所以不在 bypass 模式时仍要人确认；所有者默认的 `bypassPermissions` 模式下两者本来都不弹，不会卡住。deny、ask 规则与钩子不变。
+**已做（RM-D49）：** allow 列表加了 `Bash(npm run sync:main)` 与 `Bash(npm run sync:main -- *)`（参数只放在 `--` 之后，npm 自己的选项如 `--node-options=…` 不放行）。`npm run train` 不加：它的 `--land` 合并进 `main`，所以不在 bypass 模式时仍要人确认；所有者默认的 `bypassPermissions` 模式下两者本来都不弹，不会卡住。deny、ask 规则与钩子不变。
+
+### TR11 · 发布与夜间机器的风险层级（2026-11-16 加，出自 #811 的评审） — `todo` · 不需所有者裁定（下一位协调者判断） · 依赖无（线下）
+
+按 TR9 的同一逻辑，有意留在 medium 的候选，因为它们是发布或夜间的机器，不是合并机器：`scripts/release-guard.sh`（发布门；它只查 10 个必需名里的 7 个，那一项归 TR2）与 `scripts/playwright-flaky.mjs`（夜间用 `--fail-on-flaky` 卡门）。判断：要不要升成 high（改 `scripts/risk-tier.mjs` 的 `RULES`、`test/risk-tier.test.ts` 与 `docs/agents/commands.md` 第 0 步，高层级 PR）。
 
 ---
 

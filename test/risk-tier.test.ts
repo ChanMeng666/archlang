@@ -48,10 +48,18 @@ describe("scripts/risk-tier.mjs", () => {
     expect(tier("scripts/merge-train.mjs")).toBe("high");
     expect(tier("scripts/sync-main.mjs")).toBe("high");
     expect(tier("scripts/gate-select.mjs")).toBe("high");
+    expect(tier("scripts/nearest-tests.mjs")).toBe("high");
+    expect(tier("scripts/workspaces.mjs")).toBe("high");
     expect(tier("test/sequencer.ts")).toBe("high");
+    // Anchored: a neighbour of a machinery script is not machinery.
+    expect(tier("scripts/gate-select-x.mjs")).toBe("medium");
+    expect(tier("scripts/merge-train.test.mjs")).toBe("medium");
     // Tests of a high script stay medium, as test/risk-tier.test.ts does; durations move balance only.
     expect(tier("test/sequencer.test.ts")).toBe("medium");
     expect(tier("test/ci-proven.test.ts")).toBe("medium");
+    expect(tier("test/merge-train.test.ts")).toBe("medium");
+    expect(tier("test/sync-main.test.ts")).toBe("medium");
+    expect(tier("test/gate-select.test.ts")).toBe("medium");
     expect(tier("test/e2e-shards.test.ts")).toBe("medium");
     expect(tier("test/.durations.json")).toBe("medium");
   });

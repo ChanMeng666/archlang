@@ -74,7 +74,8 @@ merge procedure and the CI job map in `commands.md`.
 - **`gh pr merge --match-head-commit` needs the full 40-character SHA**; a short one fails the
   merge, and a branch delete `;`-chained after it then closes the PR unmerged. The merge deletes
   the branch (the repository deletes a merged PR's head branch, and `npm run train -- --land` its members'
-  branches): never delete it by hand (procedure: `commands.md` § Merging a PR).
+  branches, except that `--land` keeps, and reports, a member branch that moved after the pin or that
+  another open PR uses as base or head): never delete it by hand (procedure: `commands.md` § Merging a PR).
 - **Two green PRs used to break `main` together**; strict protection and a train's tested merge now
   block that. The trap that remains is a break only on a main-only leg (Node 18, Node 20, Windows),
   which an ordinary PR does not run: when two open PRs share a data shape (a manifest, a JSON schema, a
