@@ -713,11 +713,14 @@ export function separateBalconies(edges: readonly AccessEdge[], ir: ResolvedPlan
 }
 
 /**
- * The access digraph a storey is walked on (RM1.3d), the one place the choice is made, so the
- * walks of `describe()`, the reachability rule and the privacy rules cannot drift apart: walked
- * from the outside (`fromOutside`, a storey with a way in from the ground), the edges as they are,
- * with the one {@link EXTERIOR_NODE} a start; walked through but not from (a storey a shaft
- * arrives on and no door from the ground reaches), one node per balcony ({@link separateBalconies}).
+ * The access digraph a storey is walked on (RM1.3d), chosen in one place for three walks, so
+ * they cannot drift apart: {@link storeyRoomReach} (the cross-storey reach), the reachability
+ * rule and the privacy rules. Other walks still call {@link separateBalconies} themselves:
+ * `describe()`'s access counted from shaft seeds, `walkedFromShafts`, and the stair-hint
+ * re-measure in `src/lint/rules/circulation-facts.ts`. Walked from the outside (`fromOutside`, a
+ * storey with a way in from the ground), the edges as they are, with the one {@link EXTERIOR_NODE}
+ * a start; walked through but not from (a storey a shaft arrives on and no door from the ground
+ * reaches), one node per balcony ({@link separateBalconies}).
  */
 export function storeyWalkDigraph(
   roomIds: readonly string[],
