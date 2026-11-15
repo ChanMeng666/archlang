@@ -577,6 +577,16 @@ RM-D38、RM-D39 属于另一场的裁定（winder 台阶可到达、楼梯建造
 |---|---|---|---|---|
 | RM-D47 | HF 数据集 `ChanMeng666/archlang-repair-trajectories` 是否加一个新配置 `model-authoring`（真实模型按程序化 brief 一次性写 `.arch`，再由确定性工具 `fix` + `repair` 修复；生成器在 `dataset/model-authoring/`），以及其许可证 | **建，付费运行后发布到 HF**：① 费用记在 Anthropic 促销额度上，`submit` 只由所有者运行，由 `--max-usd` 封顶（按估算的上限）；② 只做一次性作答，不加多轮的模型修复轨迹（RM-D45 ⑥）；③ brief 用独立的种子 `20261115`，与两个 eval 语料及已上传的 `repair`/`authoring` 文件去重；金丝雀原样复用；seed-`20260712` 的字节不动；④ 许可证为 CC0，附来源说明：卡片写明每行回复由 Anthropic 的 Claude 模型经 Anthropic API 生成，逐行写出模型 id，使用者自行负责遵守 Anthropic 的条款；不把这个配置宣传为 SFT、微调或训练数据；现有 `default` 配置的 CC0 文本不变；⑤ 配置上传前 `dataset/CARD.md` 不变，卡片文本在 `dataset/CARD.model-authoring.draft.md`，上传时一并合入 | 选择 P4："P4 新数据集发到 HF"；许可证："CC0 + 来源说明" | 若 Anthropic 的条款或所有者的判断不允许以 CC0 发布模型输出，则不上传（已上传的则撤下该配置），许可证另行裁定；重跑、加模型或改 brief 数要所有者新的裁定 |
 
+### 6.18 受托裁定：合并列车、已证明的 push、更短的运行（RM-D48，2026-11-15）
+
+所有者 2026-11-15：“我希望能够尽可能的提高速度，让我能够更快的发布功能特性…你可以自由使用各种cli、api、mcp server、skills、claude in chrome、联网搜索等等任何手段”，随后：“当前本地计算机也可以分担一些CI/CD的任务…只要能实现开发效率的提高，我都同意的。前提是要留一部分内存给浏览器的运行”。以下由协调者在这些话之下裁定，所有者一句话可推翻。不改任何铁律或 `AGENTS.md` 的硬规则；`ci-throughput.md` §2 的三条律与严格保护、`.claude/settings.json` 对直接推 `main` 的禁止都保留。记录与数字见 `../ci-throughput-research.md` §12。
+
+| # | 问题 | 裁定（2026-11-15，受托） | 理由 |
+|---|---|---|---|
+| RM-D48 | 怎样让所有者更快发布功能，包括本机是否分担 CI | **做：** ① 仓库内的合并列车（`npm run train`，FT2 #788）：经一个普通 PR 用 `--match-head-commit` 合并，所以不违反直接推 `main` 的禁止，也不是 RM-D37 拒绝的组织 + merge queue 或第三方队列；② 律 1 的 `reviewed <sha>` 评论现在同时是机器门（首行恰为 `reviewed <40 位十六进制>`，由 OWNER 或 COLLABORATOR 发），含义是“批准在此 SHA 合并”；③ 律 3 对两种列车豁免：只有一个成员且列车的树等于该成员已评审的树，以及只含低层级成员的列车；④ 已证明的 push（FT1 #785）；⑤ 更多分片与显式规格列表（FT3a #794），`finish` 测试拆分（FT3c #798，RM-D37 曾拒绝，直到出现长杆，它成了 Node 22 的地板）；⑥ TP5 由 TR6 取代。**不做：** 本机 CI runner；本地门禁里的 `typecheck:all`（FT4 #795 建过又按证据去掉）。RM-D37 里“组织 + merge queue”与第三方队列、“PR 上的受影响测试”、`isolate: false`、changelog 碎片仍然拒绝 | 序列化同步是瓶颈（RM-D37）；列车把一次完整 CI 摊给几个 PR，已证明的 push 让合并到部署 2 分 5 秒；本机 runner 被拒：runner 排队约 3 秒，所有者笔记本 15.3 GB 只剩 2.1 GB 空闲且有 19 个 node 进程，GitHub 不建议在公开仓库用自托管 runner；`typecheck:all` 的红有 11/13 来自同一个 Dependabot PR。反转：所有者一句话 |
+
+后续卡 TR1–TR8 在 `cards.md` 第 9 轨。
+
 ---
 
 ## 7. 与已有计划的关系
