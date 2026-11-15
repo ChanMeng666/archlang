@@ -215,7 +215,7 @@ Totals: 401 modules in 34 directories.
 | Module | Lines | Importers | Summary | Budget |
 | --- | ---: | ---: | --- | --- |
 | `analyze.ts` | 1087 | 128 | Shared semantic-analysis layer for the agent-facing tools. | none |
-| `ast.ts` | 1702 | 222 | Abstract syntax tree for an ArchLang `plan`. All distances are in millimetres. | none |
+| `ast.ts` | 1702 | 223 | Abstract syntax tree for an ArchLang `plan`. All distances are in millimetres. | none |
 | `attach.ts` | 477 | 6 | Opening attachment (`door\|window\|opening … on <wall> at <pos>`). | charges the step meter |
 | `axes.ts` | 161 | 4 | **Positioning axes** (定位轴线) — GB/T 50001's structural datum grid. | none |
 | `builtins.ts` | 129 | 3 | Built-in functions: a frozen, pure map injected into the global scope as `builtin` Values. Each is total — bad arity / types emit a diagnostic and return a safe default, never throw — and deterministic (no I/O, no clock). | none |
@@ -245,11 +245,11 @@ Totals: 401 modules in 34 directories.
 | `fix-apply.ts` | 251 | 5 | Deterministic, pure application of {@link FixSuggestion}s to source text. | none |
 | `fix-producers.ts` | 583 | 10 | Fix producers — the functions that attach {@link FixSuggestion}s to specific diagnostics at their raise site (T2c). | none |
 | `fixture-orientation.ts` | 341 | 12 | Which way does a fixture face, and which of a rectangle's edges have a wall behind them. | none |
-| `fixtures-catalog.ts` | 1109 | 51 | Frozen fixture catalog — tacit architectural knowledge about furniture/fixtures as pure, deterministic data. Today it records which fixtures conventionally sit **against a wall** (plumbing fixtures and kitchen runs need a wall behind them… | none |
+| `fixtures-catalog.ts` | 1109 | 52 | Frozen fixture catalog — tacit architectural knowledge about furniture/fixtures as pure, deterministic data. Today it records which fixtures conventionally sit **against a wall** (plumbing fixtures and kitchen runs need a wall behind them… | none |
 | `format.ts` | 381 | 21 | `arch fmt` — a deterministic, comment-preserving source formatter. | none |
 | `frame.ts` | 405 | 14 | Instance frames — the rigid transform behind `place` (component v2). | none |
 | `furnish-table.ts` | 143 | 4 | The furnish table and the family reading of a held piece, shared by `src/furnish.ts` (the `finish` stage that writes the pieces) and the `W_ROOM_MISSING_DEFINING` lint rule (`src/lint/rules/room-contents.ts`, which reads the piece that… | none |
-| `furnish.ts` | 1677 | 9 | The `furnish` stage of `finish()` — furniture by room use, in rooms that hold none (`docs/adr/0025-furnish-as-explicit-transform.md`). | none |
+| `furnish.ts` | 1677 | 12 | The `furnish` stage of `finish()` — furniture by room use, in rooms that hold none (`docs/adr/0025-furnish-as-explicit-transform.md`). | none |
 | `furniture-relation.ts` | 372 | 8 | Furniture relations (ADR 0029): the closed-form geometry behind `facing <id>`, `against <room>.<edge>` and `clear front\|sides <mm>`. | none |
 | `geometry.ts` | 952 | 108 | Pure geometry helpers. All coordinates in millimetres. Deterministic. | none |
 | `hash.ts` | 14 | 3 | FNV-1a — a tiny, fast, deterministic non-cryptographic string hash, used to key the per-stage memo caches (lex → tokens, parse → ast). The length is appended to make accidental collisions vanishingly unlikely; callers that need certainty… | none |
@@ -258,7 +258,7 @@ Totals: 401 modules in 34 directories.
 | `identity.ts` | 33 | 3 | Process-local stable identity tokens for cache keying. | none |
 | `impact.ts` | 1405 | 3 | `impact(before, after)` (plan-soundness card PS4.2): change one number, see what follows, what stays put, and what breaks. The executable answer to "what changes, what must not". | none |
 | `import.ts` | 350 | 32 | Module linking — the `import` system. | none |
-| `index.ts` | 713 | 429 | ArchLang — compile declarative floor-plan source to a professional SVG. | none |
+| `index.ts` | 713 | 436 | ArchLang — compile declarative floor-plan source to a professional SVG. | none |
 | `input-limit.ts` | 77 | 5 | A host's refusals, as catalogued diagnostics. | none |
 | `intent-concepts.ts` | 238 | 5 | The intent channel's concept vocabulary — production name resolution for the NL→ArchLang intent contract. | none |
 | `intent.ts` | 1589 | 7 | The intent channel — author-time checking of a brief's INTENT against a plan. | none |
@@ -314,7 +314,7 @@ Totals: 401 modules in 34 directories.
 | `wall-relation.ts` | 166 | 1 | The pairwise wall forms (ADR 0028 §4, plan decision D1): an authored wall whose geometry is written against the rooms rather than as points. | charges the step meter |
 | `while-deprecation.ts` | 97 | 1 | W7 — soft-deprecation of `while` and reassignment (`NAME = expr`): the advisory warnings only. The machine-applicable fix lives one layer up, in `src/while-fix.ts` + `src/index.ts` — see that module's header for why (a fix here could only… | none |
 | `while-fix.ts` | 449 | 2 | W7's machine-applicable fix: `let I = A; while I < B { …; I = I + 1 }` rewritten to `for I in A..B { … }`. | none |
-| `world.ts` | 56 | 77 | The `World` seam — the compiler's single window onto its environment. | none |
+| `world.ts` | 56 | 78 | The `World` seam — the compiler's single window onto its environment. | none |
 
 ## `src/algebra/`
 
