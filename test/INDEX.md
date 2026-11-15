@@ -5,7 +5,7 @@
 Where the tests of a `src` module are, and what each test file is for. Generated; `npm run check:drift`
 fails when it is stale. How to add a test: `docs/testing.md` § 4.
 
-520 test files in `test/`, 284 `src` modules, 106 modules no test imports.
+522 test files in `test/`, 284 `src` modules, 106 modules no test imports.
 
 ## `src` module → tests that import it
 
@@ -353,6 +353,7 @@ The first sentence of each file's header comment.
 - `test/error-catalog-order.test.ts` — `ERROR_CODES` order is a law of the source, not of the host: errors first, then warnings, and within each group by UTF-16 code unit.
 - `test/error-svg.test.ts` — onError: 'svg' (opt-in error card).
 - `test/escape-fuzz.test.ts` — escaping fuzz — SVG; escaping fuzz — error-card SVG; escaping fuzz — ASCII plan; escaping fuzz — DXF export; escaping fuzz — shrunk regressions.
+- `test/eval-fidelity-live.test.ts` — The fidelity slice's live path (`eval/fidelity-live.ts`), offline: fetch is mocked, no key, no network.
 - `test/eval-fidelity.test.ts` — fidelity corpus — shape and brief-groundedness; infeasibility is DERIVED, never asserted in prose; the detector discriminates — faithful clean, laundered caught…
 - `test/eval-fixture.test.ts` — judge fixture — byte-equivalence proof across the intent lift.
 - `test/eval-live-harness.test.ts` — Live-eval harness, offline: price table, stop/finish-reason capture (fetch mocked, no network).
@@ -661,6 +662,7 @@ The first sentence of each file's header comment.
 - `test/symmetry.test.ts` — `describe(src, { facts: ["symmetry"] })` — the plan's symmetry group per layer, and its repeated rooms.
 - `test/sync-main.test.ts` — scripts/sync-main.mjs: merge origin/main, script the record and generated-artifact conflicts, focus the re-review.
 - `test/syntax.test.ts` — `describe(src, { facts: ["syntax"] })` — space syntax (Hillier & Hanson 1984) on the access graph.
+- `test/t3-analysis.test.ts` — eval/t3-analysis.ts — the pre-registered T3 analysis, on synthetic records built here with the harness's own `buildRecord`, so the record shape and `summary.net.intent` are the harness's.
 - `test/task-skills.test.ts` — The skills under `skills/<name>/SKILL.md`: the umbrella skill `archlang` and the task skills beside it.
 - `test/taste-budget.test.ts` — The taste budget is a COUNT set by measurement (ADR 0032; design §2.4), the way the step budget was (ADR 0022, second addendum §3): `TASTE_BUDGET` is at least 1,000 times the largest charge one `taste()` call makes ov...
 - `test/taste-digests.test.ts` — The taste digest table (ADR 0032; design §4): SHA-256 of `JSON.stringify(taste(src, { profile }))` for every shipped example, every defect-corpus file and every taste-corpus file, under every profile, pinned below.
