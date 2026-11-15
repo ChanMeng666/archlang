@@ -37,8 +37,10 @@ export function mountRoomIndex({ viewport, getRooms, openCard }: RoomIndexOpts):
   viewport.appendChild(box);
 
   function collapse() {
+    // Hide only: emptying the list here would detach the button a pick is still
+    // dispatching from, and the drawing's click guard (`closest(OVERLAY)`) would
+    // then miss it and close the card the pick just opened. `expand()` rebuilds.
     list.hidden = true;
-    list.replaceChildren();
     toggle.setAttribute("aria-expanded", "false");
     box.classList.remove("open");
   }
@@ -50,7 +52,10 @@ export function mountRoomIndex({ viewport, getRooms, openCard }: RoomIndexOpts):
       const b = document.createElement("button");
       b.type = "button";
       b.textContent = roomName(room);
-      b.addEventListener("click", () => {
+      b.addEventListener("click", (e) => {
+        // The pick is the list's, not the drawing's: never let it reach the
+        // viewport's room-click handler underneath.
+        e.stopPropagation();
         collapse();
         toggle.focus({ preventScroll: true });
         openCard(room);

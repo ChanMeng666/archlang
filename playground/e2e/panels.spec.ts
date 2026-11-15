@@ -648,7 +648,7 @@ test.describe("preview interactions", () => {
     await editor.click();
     await expect(editor).toBeFocused();
     const toggle = page.locator(".room-index .ri-toggle");
-    // The editor keeps Tab for itself, so this case starts at the control; the Tab path is the case above.
+    // This case starts at the control; the Tab-from-page-load path is the case above.
     await toggle.focus();
     await page.keyboard.press("Enter");
     const list = page.getByRole("list", { name: "Rooms in the drawing" });
