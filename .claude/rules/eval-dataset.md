@@ -19,6 +19,10 @@ paths:
 - `eval:fidelity` has its own corpus and scorecard — never compare it with `eval:ci`.
   `eval:fidelity-live` (paid, owner-only; product-roadmap RM-D46) is compared with neither, nor with
   the L0 baseline.
+- `npm run dataset:model-authoring -- submit` is paid and owner-only (product-roadmap RM-D47): never
+  run it, nor upload anything to HF; `plan` and `build` are free. Its config is one-shot model
+  replies, CC0 with the provider note in `dataset/CARD.model-authoring.draft.md`, never promoted as
+  training data; `CARD.md` changes only when that config is uploaded.
 - **(Dataset) `dataset/out/` is gitignored and HF-only.** On re-upload the card's
   `task_categories` must come from HF's official list (`text-generation`), under the `ChanMeng666`
   namespace. See `dataset/README.md`.

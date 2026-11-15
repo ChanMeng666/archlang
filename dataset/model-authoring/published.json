@@ -1,0 +1,17 @@
+{
+  "repo": "ChanMeng666/archlang-repair-trajectories",
+  "repo_type": "dataset",
+  "revision": "dc90d7c0e21f760b465c204c526cd09d76263066",
+  "archlang_version": "1.15.0",
+  "dir": "dataset/out/published",
+  "files": {
+    "repair.jsonl": {
+      "bytes": 7314121,
+      "sha256": "a124daed5cdd4dbb5f247002214883c5df7079b8e25a533a000b0b0927109485"
+    },
+    "authoring.jsonl": {
+      "bytes": 1085437,
+      "sha256": "9d839322f09ef2edb71d69cd1e0b61ed0e2afb7a3b7740eed3977b0eaba3eeee"
+    }
+  }
+}

@@ -48,7 +48,9 @@
   says how many are recorded as failing and under which decision (`fixtureVerdict`, `eval/run.ts`).
   `eval:fidelity` is a separate, judge-free corpus whose numbers are never compared with it;
   `eval:live` is paid and owner-only, and so is `eval:fidelity-live` (its live path; product-roadmap
-  RM-D46), whose numbers are compared with neither.
+  RM-D46), whose numbers are compared with neither. `npm run dataset:model-authoring -- submit` (the
+  dataset's model-authoring config; product-roadmap RM-D47) is paid and owner-only too; its `plan`,
+  `collect` and `build` phases spend nothing (`collect` only downloads what was paid for).
 - `npm run digest:engines` (ADVISORY, always exits 0, last line `status=` clean, diverged, incomplete or
   baseline-stale) measures cross-engine determinism: the built `dist/` is run in Playwright chromium,
   firefox and webkit over examples, fixtures, recovery and eval plans plus transcendental probes, and

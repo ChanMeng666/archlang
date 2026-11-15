@@ -20,7 +20,7 @@ Every module, not only the entry, is in the sibling [`module-map.md`](module-map
 The total counts every name the checker sees as exported, including those pulled in by
 `export type * from "./ast.js"`; a count of the names written in `index.ts`' export statements is lower.
 
-Totals: 647 exports (225 values, 422 types), 410 flagged (72 values).
+Totals: 647 exports (225 values, 422 types), 409 flagged (72 values).
 
 ## `src/algebra/d4.ts`
 
@@ -898,7 +898,7 @@ Totals: 647 exports (225 values, 422 types), 410 flagged (72 values).
 | Export | Kind | In-repo consumers |
 | --- | --- | --- |
 | `RepairChange` | type | `dataset` |
-| `RepairNote` | type | none |
+| `RepairNote` | type | `dataset` |
 | `RepairResult` | type | none |
 | `repair` | value | `dataset`, `eval`, `packages/mcp`, `playground`, `src/cli`, `test` |
 
