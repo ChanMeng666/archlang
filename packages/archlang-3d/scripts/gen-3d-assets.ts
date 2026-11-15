@@ -608,8 +608,9 @@ export interface CheckReport {
  * file is there at its recorded bytes and within budget; the GLB is the recorded file and its
  * Mesh3D rebuilds to the recorded content hash; and, with `render`, each poster frame re-rendered
  * hashes as recorded (required when the environment is the recording one) or is within `TOLERANCE`
- * of the committed PNG; the plan PNG is the recorded file and re-rasterises (here, always: resvg, no
- * browser) to the recorded pixels' hash. With the default directory, each entry also has what its
+ * of the committed PNG; the plan PNG is the recorded file, decodes to the recorded pixels' hash
+ * (card 3D.1: the committed file itself, not only its manifest record) and re-rasterises (here,
+ * always: resvg, no browser) to that hash. With the default directory, each entry also has what its
  * `PLANS` row asks for: the posters, a replay MP4 exactly when `video`, and a plan PNG. A file
  * written by another core or package version is a note: what it shows is what decides (the GLB's
  * content, the poster's frame, the plan PNG's pixels), so a version bump fails nothing. External
@@ -702,8 +703,22 @@ export async function checkAssets(dir: string, opts: { render: boolean }): Promi
     if (a.plan) {
       const file = join(dir, `${a.name}.plan.png`);
       if (!a.files.some((f) => f.path === `${a.name}.plan.png`)) problems.push(`${a.name}.plan.png is not listed`);
-      else if (existsSync(file) && sha256(readFileSync(file)) !== a.plan.sha256)
-        problems.push(`${a.name}.plan.png is not the file the manifest records`);
+      else if (existsSync(file)) {
+        const bytes = readFileSync(file);
+        if (sha256(bytes) !== a.plan.sha256) problems.push(`${a.name}.plan.png is not the file the manifest records`);
+        // Card 3D.1: decode the committed file itself, so a PNG swapped together with its
+        // manifest `sha256` (and `bytes`) still fails; the re-raster below only checks the record.
+        let pixels: string | undefined;
+        try {
+          pixels = pixelsHash(bytes);
+        } catch (e) {
+          problems.push(`${a.name}.plan.png does not decode as a PNG (${(e as Error).message})`);
+        }
+        if (pixels !== undefined && pixels !== a.plan.pixelsSha256)
+          problems.push(
+            `${a.name}.plan.png decodes to pixels ${pixels.slice(0, 12)}…, not the recorded ${a.plan.pixelsSha256.slice(0, 12)}… (regenerate)`,
+          );
+      }
       const main = spec?.poster ?? (a.posters[0] ? viewOf(a.posters[0].view) : "all");
       const drawn = await planPng(p, main);
       if (drawn.plan.level !== a.plan.level)

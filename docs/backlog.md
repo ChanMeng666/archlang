@@ -1792,13 +1792,9 @@ listed before and after in the PR; a plan without `winders` byte-identical.
 
 ## 3D asset and surface residue (public-surfaces 3D cards X4b, X6, V2, 2026-11-06)
 
-### 3D.1 · The asset check trusts the manifest for the plan PNG — `todo`
-
-`checkAssets` (`packages/archlang-3d/scripts/gen-3d-assets.ts`) compares a committed
-`<name>.plan.png` only by SHA-256 against the manifest, then re-rasterises the source to the
-recorded pixel hash; it never decodes the committed file. A PNG swapped together with its manifest
-`sha256` passes. **Gate:** `pixelsHash(readFileSync(file))` must equal `plan.pixelsSha256`; a
-planted swap fails `--check`.
+- 3D.1 · The asset check trusts the manifest for the plan PNG — closed: `checkAssets` decodes the
+  committed plan PNG and compares its pixels with `pixelsSha256`; pinned by
+  `packages/archlang-3d/test/plan-png-check.test.ts` (a swap with its manifest `sha256` fails)
 
 ### 3D.2 · No size budget for plan and poster PNGs — `todo`
 
