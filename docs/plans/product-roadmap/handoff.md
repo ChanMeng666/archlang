@@ -141,7 +141,7 @@ RM1.1a 也在本场做完（纯测量，没有 PR，见 §6）。
 
 **编译器路径预算：** `compilerPathBudget` 401,000 B gzip，`embedPathBudget` 387,000。RM0.7f 之后的余量没有在 `f76af65b` 上重量：**动词表或新家族的卡先量。**
 
-**CI 吞吐（第 9 轨，RM-D37，2026-11-14 加；不是第三条车道）：** TP 卡在核心车道两张卡之间占用核心执行者（RM-D22 不变）。TP1（#754）与 TP2（#755）已合并：`npm run sync:main -- --push` 是同步的做法；`main` 的 push 运行 28 → 12.8 分钟，PR 约 9 → 7.3（各一次运行）。下一张 TP6（测试分片的零成本文件），再 TP5（2026-11-21 之后、两者合并满 7 天的合并后复测）。TP3、TP1b 在空档里做；TP4 等触发。卡在 `cards.md` 第 9 轨。
+**CI 吞吐（第 9 轨，RM-D37，2026-11-14 加；不是第三条车道）：** TP 卡在核心车道两张卡之间占用核心执行者（RM-D22 不变）。TP1（#754）与 TP2（#755）已合并：`npm run sync:main -- --push` 是同步的做法；`main` 的 push 运行 28 → 12.8 分钟，PR 约 9 → 7.3（各一次运行）。2026-11-15 之后：TP6 已由 #794 完成，合并列车、已证明的 push 与更多分片都已合并（FT1–FT3，RM-D48，`../ci-throughput-research.md` §12），FT4（#795）在评审中；TP5 由 TR6 取代。下一步是 TR1–TR7（列车脚本加固、证明加固、记录类 push 判定、守卫、40 个 job 的上限、7 天后复测、finish 拆分后的文字）；TP3、TP1b 在空档里做；TP4 等触发。卡在 `cards.md` 第 9 轨。
 
 **发布：** 1.62.0 已发布（§1.2）。1.63.0 要所有者对那一次的决定（没有决定就不切；VS Code Marketplace 与 OpenAI 目录的发布由代理做，含 OpenAI 的 Submit 与 Publish，RM-D41、RM-D44）。2026-12-01 所有者亲自发 Show HN；`main` 一直保持绿。RM5.4（#603）已由 #781 做完（RM-D43）。
 
@@ -184,6 +184,7 @@ RM1.1a 也在本场做完（纯测量，没有 PR，见 §6）。
 - `BEHIND` 的分支用 `npm run sync:main -- --push` 同步（TP1，#754），不用 `gh pr update-branch`（它是 GitHub 的文本合并，会让 `test/INDEX.md`、`docs/agents/module-map.md` 等生成文件过期，`docs/agents/gotchas.md` § PRs & CI）。脚本解不了的冲突停下交给代理，解完 `-- --continue`。同步后的头仍然每次重新红队，它打印的重点清单随红队的简报一起给，然后再钉新头（RM-D37；`docs/agents/commands.md` § Merging a PR）。
 - **记录少开 PR（RM-D37，P0-4）：** 默认一场会话结束时合成一个 `docs(plans)` 记录 PR；记录也可以随它所记录的代码 PR 一起走。每多一个 PR，就多一条会 `BEHIND` 的分支。
 - **合并列车（FT2）：** 代码 PR 用 `npm run train -- <pr> …` 一次性上车（一次完整 CI），红队读列车头并贴 `reviewed <列车头>`，再 `npm run train -- --land <列车 PR> --wait`；被丢下的 PR 照旧 `sync:main`。步骤见 `docs/agents/commands.md` § Merging a PR 第 2 步。
+- **合并任何东西之前（列车，或直接合并），先查有没有开着的 `train/*` PR：** `gh pr list --search "head:train/"`。各会话合起来一次只跑一列车，别在列车底下挪动 `main`（它在一次构建中被挪过三次）；手上有评审好的 PR，就交给跑列车的会话，或等它落地。
 - **一次只同步一个（RM-D37）：** 只适用于不上列车的 PR（被列车丢下的，或单独合并的）。几个这样的 PR 同时 `BEHIND` 时，只同步下一个要合的（最早评审过、CI 绿的那个），其余等它合并；每次同步都起一次完整的 CI，全同步只有一次不白跑。
 - 3D 回放的改动：除了终帧与海报，还要比对升墙中途的帧（`cards.md` §0）。关键帧从 CI 打印的哈希重钉，`check-3d` 红着不合并（`.claude/rules/archlang-3d.md`）。
 - 执行者可能长时间等待时，先写状态文件；机器忙时小改动先提交，报告"门禁未跑"（`cards.md` §0；`docs/agents/orchestration.md`）。本地跑不了指定的 vitest 文件（门禁钩子挡住），以 CI 为准；不用自制的替身代替 vitest。
@@ -282,3 +283,14 @@ RM1.1a 的兜底：1.59.0 到 2026-11-23 还没打 tag，就量当时 `main` 的
 - **(ac) Docker 的 #6704 没合并时，每次发布在同一 PR 分支上移 `source.commit`**（1.61.0 漏了，1.62.0 补上）；`release-check.md` 已写明。
 - **(ad) `npm update` 会顺手修剪别的树**（npm 11 删了 `tsx` 下嵌套的 `esbuild`，约 480 行）：只要两项时，只取那两项的 hunk，再用 `npm ci` 证明 lockfile 一致。`check:quick` 在只改 lockfile 时 biome 报错（卡 RM0.11 第 2 条）。
 - **(ae) 高风险的 Worker 改动要在部署前存一份线上基线：** RM5.4 前用 `curl` 存了 `initialize`、`tools/list`、`resources/list`、`resources/read` 的原始响应，部署后逐字节比；再在 ChatGPT 真实对话里调一次 `compile`，看图与 lint 列表（评审 M1：执行者的宿主是桩，证明不了真实宿主）。
+
+### 2026-11-15 CI 提速一场（协调者转述的记录，我没有独立核对）
+
+- **(af) Playwright 的 `--project` 是可变参数：** `--project chromium a.spec.ts b.spec.ts` 把规格路径当成项目名，跑 0 个测试；规格路径放前面，或写 `--project=chromium`（#794 第二轮；新的守卫测试当时钉的正是坏命令）。
+- **(ag) Playwright 的 `--shard` 按用例数、按文件顺序切，不按时间：** 一片拿到 3.8 分钟的规格，另一片 60 秒；按量到的秒数写显式规格列表才平衡。
+- **(ah) 分支和 `main` 对生成的计数行（`test/INDEX.md` 的 "N test files"）做了完全相同的改动时，git 合得干净，数字却是错的：** 同步必须重新生成（`sync:main` 与 `npm run train` 会）。#788 和 #795 因此红过。
+- **(ai) 列车头若与某成员的头是同一个提交，该成员的普通 PR 运行会把列车 PR 上的 `Node 18` / `Node 20` / `Windows` 画成“跳过即绿”：** 列车头总是一个新的合并提交，落地时判的是列车自己的那次运行。
+- **(aj) 预测的分片时间不是证据：** 三次预测都错了，读运行。
+- **(ak) 执行者带着重锁停下，会留下一行陈旧的锁：** 协调者在确认没有重进程之后释放（它让一次列车构建卡了约 15 分钟）。
+- **(al) 评审者的回放两次推翻了卡的前提：** `check:drift` 本来就在门禁里；`typecheck:all` 的红是同一个 Dependabot PR。给一个红建门禁之前，先量它是什么。
+- **(am) 对毫秒级的扫描器按文件数封顶，会丢掉便宜的捕获：** 按秒封顶。

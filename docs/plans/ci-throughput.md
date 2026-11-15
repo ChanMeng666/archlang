@@ -2,6 +2,7 @@
 
 Status: A, B, C, D live 2026-10-27 (B/C/D by PR #290); G approved by the owner 2026-10-31 (PR #385).
 Follow-up research, 2026-11-12: `ci-throughput-research.md` (measured cost of the strict up-to-date rule and the conflict hot spots). Its § 10 (RM-D37, 2026-11-14) declines E and F: CI on the merged tree stays strict's job, and TP1's `sync:main` resolves the CHANGELOG conflicts F was for. The three laws in § 2 are unchanged.
+Option E's goal, CI on the merged tree without serial syncing, is met by the in-repo merge train (`npm run train`, 2026-11-15); details in `ci-throughput-research.md` § 12.
 Every option changes a workflow or a repository setting, and the owner decides which to take. Job map and per-job minutes: `docs/agents/commands.md` § CI.
 
 ## 1. What is measured
@@ -35,7 +36,7 @@ one's green CI and merge, about 43 minutes each.
 3. After `main` is merged into a PR, the red team reads the merged head, and that head is the one
    pinned. (RM-D37, 2026-11-14, keeps this unchanged: `npm run sync:main`, card TP1, hands the red team
    a focus list; it never waives the read. A merge train, `npm run train`, card FT2, is a merged head
-   too: `--land` needs `reviewed <train head>`, except for one member whose tree is the train's.)
+   too: `--land` needs `reviewed <train head>`, except for one member whose tree is the train's, and for a train of low-tier members only.)
 
 ## 3. Options, in the recommended order
 

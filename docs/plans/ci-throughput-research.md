@@ -6,6 +6,9 @@ against `main` at `213e7393` (2026-11-12 17:44 NZDT, PR #732). § 0–9 are the 
 **Decided 2026-11-14 (§ 10, RM-D37):** the owner delegated every item to the coordinator; § 10 records each
 verdict, its reason and the trigger that would reopen it. The cards are TP1–TP5 in `product-roadmap/cards.md`
 (track 9).
+**2026-11-15 (§ 12, RM-D48):** a merge train, the proven push and shorter runs were built; § 12 records what
+was built, the before and after numbers, the predictions that missed, and each declined item with its reopen
+trigger.
 
 ## 0. For the agent picking this up
 
@@ -24,6 +27,8 @@ verdict, its reason and the trigger that would reopen it. The cards are TP1–TP
 - **Caveats:** the before/after comparison for the strict rule (§ 4.3) covers only 3 days after the switch,
   and other changes happened in the same window, so it shows a direction, not a cause. The flaky rate is
   understated, because Playwright retries hide E2E flakes.
+- **Update (2026-11-15):** § 12 records what was built after § 10 and what it measured; read it before
+  acting on a number in §§ 4–7.
 - **Next step:** superseded by § 10 (RM-D37) and the TP cards; this line is kept as written: "P0-1 (the
   sync-main script) and P0-3 (E2E shards, splitting `finish.test.ts`) need no rule change. Then ask the
   owner about P0-2 (strict) and P1-1 (organization plus merge queue)."
@@ -470,3 +475,93 @@ shard at 6.0). First `main` push run after #755, 43541609209: **12.8 min** (medi
 - Linear: [HN thread](https://news.ycombinator.com/item?id=49792067) · [summary](https://darkfactory.dev/news/2026-09-21-extra-2/story-2) · Cursor: [Graphite](https://cursor.com/blog/graphite), [Bugbot](https://cursor.com/docs/bugbot) · Graphite: [stacked PRs](https://graphite.com/docs/best-practices-for-reviewing-stacks)
 - Turborepo: [Constructing CI](https://turborepo.dev/docs/crafting-your-repository/constructing-ci) · Vercel: [Remote Caching](https://vercel.com/docs/monorepos/remote-caching) · Netflix: [Develocity case study](https://develocity.ai/customers/story/netflix/) · Vitest: [affected tests](https://vitest.dev/guide/recipes/affected-tests)
 - [DORA 2025](https://dora.dev/research/2025/dora-report/) · HN: [Scion thread](https://news.ycombinator.com/item?id=50073633), [critique](https://news.ycombinator.com/item?id=50075586) · [Reddit](https://www.reddit.com/r/EngineeringManagers/comments/1tax505/how_are_teams_handling_pr_review_now_that_ai_is/) · X: [@dalsanto_c](https://x.com/dalsanto_c/status/2110270561477939219), [@liher0505](https://x.com/liher0505/status/2113445054492938400), [@_ethanleonard](https://x.com/_ethanleonard/status/2117382741721256238)
+
+## 12. 2026-11-15: merge train, proven push, shorter runs
+
+Decided by the coordinator under the owner's words of 2026-11-15 (RM-D48, `product-roadmap/README.md` § 6.18);
+the owner can reverse any item in a sentence. Times are UTC. Every number is measured unless marked
+"predicted" or "estimate". The FT ids are this session's work items; their PRs are the record.
+
+### 12.1 What was built (all merged except FT4)
+
+- **FT1, #785** (landed by train #789, merge `c995acde`, 09:08:20). A same-repo PR whose head branch starts
+  with `train/` runs Node 18, Node 20 and Windows in full. A push to `main` is *proven* when its merge commit
+  M has two parents, tree(M) = tree(M^2), M^1 is an ancestor of M^2, the push's `before` is M^1, and a
+  completed successful `ci.yml` `pull_request` run on M^2 from a `train/*` branch into `main` ran every job
+  (no "nothing to run on this leg" marker step, every expected job name present, run no older than 24 h).
+  A proven push skips every leaf's work and the ten required names report success. Fail-open.
+  `scripts/ci-proven.mjs` (`--run <id>` predicts), `test/ci-proven.test.ts`. `deploy.yml`'s MCP diff base is
+  now the head of the previous green push run on `main`.
+- **FT2, #788** (train #792, merge `58bd76f0`, 09:27:39). `npm run train` (`scripts/merge-train.mjs`): build,
+  `--land [--wait]`, `--abandon`; the shared pieces were moved out of `scripts/sync-main.mjs`.
+- **FT3a, #794** (train #796, merge `e3917b01`, 10:42:51). TP6 is done here (the sequencer adds a 2 s
+  per-file overhead; unrecorded files sit at the table median after the recorded ones). Shards: Node 22 5 to 7;
+  Node 18, Node 20, Windows 3 to 5. `Docs site E2E (Playwright)` is an aggregator over 3 jobs with explicit spec
+  lists, `Playground E2E` chromium is 3 jobs likewise, `3D package (check:3d)` is an aggregator over a suite pass
+  and a frame-budget pass (`--pass=`). `Benchmark` cannot fail the run (job-level `continue-on-error`).
+  `test/.durations.json` was refreshed from nightly run 43671538421; `test/e2e-shards.test.ts`,
+  `test/sequencer.test.ts`; the hook regex covers `npm -w <ws> run e2e|bench`.
+- **FT3c, #798** (train #799, merge `45c2837d`, 11:42:56). `test/finish.test.ts` split into four files and
+  `test/finish-furnish.test.ts` into three; a pure move (19,030 tests passed before and after).
+- **FT4, #795 (`chore/ft4-local-gate`): open** in its final review round when this was written. After review,
+  `check:quick` also selects source-tree scanner guards (budget 15 recorded seconds, ceiling 30 files), tests
+  named after a changed module (5 files / 10 s) and the cheapest corpus pins (5 s). `typecheck:all` and a build
+  inside the gate were built and then removed on evidence (§ 12.4).
+- **Trains landed:** #789 (member #785; built by hand, then synced once by hand), #792 (#788), #796 (#794),
+  #799 (#798). Abandoned: #786 (hand-built; `main` moved).
+
+### 12.2 Measured before and after
+
+| Measure | Before (2026-11-14/15, after TP1 and TP2) | After |
+|---|---|---|
+| PR code run, wall clock | median 7.2 min (n=36) | 4.7 min (run 43704031936, one run; 5.7 min on the first version of #794) |
+| Full run (train PR or unproven push) | 12.3 min median push (n=26); train runs 14.6 (incl. about 1.5 queued), 12.5, 13.0 min | 8.7 min (train #796, run 43704660304) and 8.4 min (train #799, run 43709558420) |
+| `main` push run after a train | median 12.3 min | 28 s, 25 s, 26 s, 24 s (four trains, all proven) |
+| Merge to deploy finished | median 13.7 min (n=26, estimate from run times) | 2 min 5 s (train #789: merged 09:08:20, deploy success 09:10:25) |
+| Open to merge, non-records PRs | median 35.8 min, 1.2 syncs and 2.6 CI runs per PR (n=27) | not re-measured (needs a week of merges; TR6) |
+
+**Predictions that did not hold.** #794 predicted a PR run of about 4.2, then 3.7 min, and a full run of
+about 6.4–6.6 min (predicted); it measured 4.7 and 8.4–8.7. FT3c's own PR run showed no improvement: the
+slowest shard took 338 s on a slow runner, and the split files' summed test time rose from about 318 s to
+about 389 s because each file starts cold; judge it over several runs. The poles now: PR run, `3D package
+frame-budget pass` 267 s and a Node 22 shard 232 s; full run, Windows shards 400–500 s and Node 18 shards
+about 400–500 s.
+
+### 12.3 Findings
+
+- **Runner noise follows the job, not the file.** In run 43704660304 shard 4's median ratio to Node 22 was 1.79
+  on Node 18 and 1.03 on Node 20 with identical files (shard 3 the reverse, 1.24 vs 1.62); Windows is about
+  1.47× slower overall. A per-leg duration table was designed and not built.
+- **The 40-concurrent-job limit (GitHub Pro) binds.** A train PR peaks at 38 jobs, an unproven push 36, an
+  ordinary code PR 26; a train plus one PR run queue (up to 79 s seen).
+- **PR CI failures** (the 60 most recent failed `pull_request` runs, by first failing step): unit tests 41,
+  `Type-check every workspace` 13 (11 of them one Dependabot PR; the other 2 were test files the old gate
+  already compiled), `check:3d` 10, generated-artifact drift 8, lint 3, E2E 1 + 1. Median 22.5 min from a
+  failed run to the next run on the branch. Replaying 11 sampled runs through the gate's selection: 2 were
+  already selected by the old gate (the gate was not run or was ignored), 2 are catchable by no rule.
+- Setup overhead per job is 20–90 s.
+- `main` moved under a running train three times (other sessions merged #784, #787, then #797 and #790
+  before a build): a train needs every session to check for an open `train/*` PR before merging.
+
+### 12.4 Declined, with the trigger that reopens it
+
+| Item | Verdict | Why | Reopen when |
+|---|---|---|---|
+| Per-leg duration table | **Designed, not built.** | Noise follows the job (§ 12.3), so a table per leg would fit noise | several nights of per-leg duration artifacts exist |
+| Sharing build artifacts across jobs | **Decline.** | The test steps, not setup, are the poles; an artifact hop is serial | none set |
+| Self-hosted or local runner | **Decline.** | Runner queue was about 3 s; the owner's laptop had 2.1 GB free of 15.3 GB with 19 node processes; GitHub advises against self-hosted runners on public repositories | none set |
+| `typecheck:all` or a build inside `check:quick` | **Built, then removed (FT4).** | The replay (§ 12.3): the `typecheck:all` reds were one Dependabot PR and 2 files the old gate compiled; `check:drift` was already in the gate | none set; re-measure what a red was before building a gate for it |
+| 40-job ceiling | **No option taken** (TR5). | Fewer jobs per run, Windows to 7 shards (peak 40), or a main-only leg off trains (weakens the gate: owner decision) | median job queue time on a train run exceeds 1 min |
+| "Organization + merge queue", third-party queue | **Stay declined** (§ 10.1). | The train is neither: it lands through an ordinary PR merged with `--match-head-commit` | as § 10.1 |
+| Affected tests on PRs, `isolate: false`, changelog fragments | **Stay declined** (§ 10.1). | | as § 10.1 |
+| `finish.test.ts` split | **Taken** (FT3c); § 10.1 declined it until a pole emerged. | It became the Node 22 floor | |
+| Records-only verdict on a push to `main` | **Deferred** (TR3). | Low value while trains carry code PRs | records merges delay deploys that matter |
+| TP5 re-measure | **Replaced by TR6.** | | |
+
+### 12.5 How it is checked
+
+Card TR6 (`product-roadmap/cards.md`, track 9) re-measures after 7 days of merges: PR run and train run
+medians, open to merge median and P90, trains per day, members per train, the share of `main` pushes proven,
+train reds and their cause, the `main` red rate, the revert rate, the PR CI failure rate, and `check:quick`
+wall clock on a typical change. The guardrails are § 7's: if the `main` red rate or the revert rate rises, the
+time was moved, not saved. The follow-ups are TR1–TR5 and TR7.

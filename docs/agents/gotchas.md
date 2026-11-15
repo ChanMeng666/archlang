@@ -159,6 +159,15 @@ coordinator's own notes (merging, registries, browser and social automation, the
 - **`compile()` and its memo moved from `src/index.ts` to `src/compile.ts` (RM0.7f).** The parked
   `origin/feat/remove-view` drops `opts.view` from its cache key in `index.ts`: on a rebase, move that
   edit into `compile.ts` and diff the moved body.
+- **Playwright's `--project` is variadic:** `--project chromium a.spec.ts` reads the spec as a project name and runs 0
+  tests. Put spec paths first or write `--project=chromium`.
+- **Playwright `--shard` splits by test count in file order, not by time.** Balance with explicit spec lists by
+  measured seconds.
+- **A branch and `main` making the identical edit to a generated count line (`test/INDEX.md` "N test files") merge
+  cleanly and leave the count wrong.** A sync must regenerate (`sync:main` and `npm run train` do).
+- **A train head equal to a member's head** lets the member's ordinary PR run paint `Node 18` / `Node 20` / `Windows`
+  green-by-skip on the train PR. The train head is always a fresh merge commit; landing judges the train's own run.
+- **An executor that stops holding the heavy lock leaves a stale line.** Free it only after checking no heavy process runs.
 
 ## Tooling & process
 
