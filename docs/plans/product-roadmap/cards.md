@@ -1147,15 +1147,17 @@ Playground：Chromium `--shard=1/2`、`2/2` 两个 job，Firefox 与 WebKit 的 
 
 ### TR6 · 复测（2026-11-15 加，取代 TP5） — `todo` · 0.5 日 · sonnet · 依赖 FT1–FT3 合并后又过了 7 天的合并
 
-照 `../ci-throughput-research.md` §9 的命令重取，量：PR 运行与列车运行的中位数、开 → 合的中位数与 P90、每天几列车、每列车几个成员、`main` push 中已证明的占比、列车红了几次及原因、`main` 红率、回滚率、PR 的 CI 失败率、典型改动上 `check:quick` 的墙钟（取 TR8 的成对计时）。护栏同 §7：`main` 红率或回滚率升高，就是时间挪走了而不是省下了。写在 `../ci-throughput-research.md` §12 下面。
+照 `../ci-throughput-research.md` §9 的命令重取，量：PR 运行与列车运行的中位数、开 → 合的中位数与 P90、每天几列车、每列车几个成员、`main` push 中已证明的占比、列车红了几次及原因、`main` 红率、回滚率、PR 的 CI 失败率、典型改动上 `check:quick` 的墙钟（取 TR8 的成对计时）。护栏同 §7：`main` 红率或回滚率升高，就是时间挪走了而不是省下了。写在 `../ci-throughput-research.md` §12 下面。之前的基线在 `D:\github_repository\claude-kept\2026-11-15-archlang-ci-speedup\baseline-measurements\` 与 `pr-ci-failures\`（分析脚本与 TSV；原始 API 分页没有留，要用 `gh api` 重取）。
 
-### TR7 · finish 拆分之后的文字（2026-11-15 加） — `todo` · 0.2 日 · sonnet · 依赖无（线下）
+### TR7 · finish 拆分之后的文字（2026-11-15 加） — `done` · 0.2 日 · sonnet · 依赖无（线下）
 
-`.claude/commands/new-fixture-family.md` 与 `test/finish.test.ts` 的文件头已由 #802 改好；ADR 0024、ADR 0025、`test/cli-finish.test.ts:13` 与 `src/finish.ts:22` 的注释由 #806 改（尚未合并）。仍开着一处：`packages/archlang-3d/src/materials.ts:177` 写的是 `test/finish.test.ts` 把它钉在 `groundColour("paving")` 上；根的 `test/` 里没有任何测试提到 `groundColour`，钉它的是 `packages/archlang-3d/test/finish.test.ts:663`，所以注释应写这个完整路径。不许：改测试的断言。
+`.claude/commands/new-fixture-family.md` 与 `test/finish.test.ts` 的文件头由 #802 改好；ADR 0024、ADR 0025、`test/cli-finish.test.ts`、`src/finish.ts` 的注释与 `packages/archlang-3d/src/materials.ts` 的指针由 #806 改好（已在 `origin/main` 上逐处核对）。
 
 ### TR8 · 本地门禁的残余（2026-11-15 加，出自 #795 的最后一轮评审） — `todo` · 未估 · sonnet · 依赖无（线下）
 
-(a) `docs/agents/commands.md` 里一个过时的算出来的数（"a `src/`-only change adds 19 scanners and 7.5 recorded seconds"，合并时是 20 个和 11.8 秒）：删掉数字，上限已经够说明；(b) `scripts/check-quick.mjs` 头注释的笔误（"(`treeGuards`; at / within 15"）；(c) 源码树扫描器的判定：数任何带引号的 `"src"`（误判 `dataset` 4.3 s、`docs-page-meta`、`docs-sync-list`），不跟随辅助函数（漏掉 `test/sync-main.test.ts`），没有 `packages/` 根（漏掉 `test/workspace-seams.test.ts`）；(d) `test/gate-select.test.ts:80` 拼出一个字符串，被 import 图的正则读成对 `src/index.js` 的 import（使 `module-map.md` 与 `test/INDEX.md` 的 importer 数各多 1）；(e) 额外文件总数加一个 25 的上限；(f) 在空闲的机器上做一次成对计时：同一个一行的 `src/` 改动，分别用 #795 之前与之后的 `origin/main` 的门禁（现有只有负载下的 136、319、119、252 s，估计 30–35 s，置信度低）。不许：把 `typecheck:all` 或构建放回门禁。
+`docs/agents/commands.md` 里过时的算出来的数（19 个扫描器、7.5 秒）与 `scripts/check-quick.mjs` 头注释的笔误已由 #806 改好（已在 `origin/main` 上核对）。仍开着：
+
+(a) 源码树扫描器的判定：数任何带引号的 `"src"`（误判 `dataset` 4.3 s、`docs-page-meta`、`docs-sync-list`），不跟随辅助函数（漏掉 `test/sync-main.test.ts`），没有 `packages/` 根（漏掉 `test/workspace-seams.test.ts`）；(b) `test/gate-select.test.ts:80` 拼出一个字符串，被 import 图的正则读成对 `src/index.js` 的 import（使 `module-map.md` 与 `test/INDEX.md` 的 importer 数各多 1）；(c) 额外文件总数加一个 25 的上限；(d) 在空闲的机器上做一次成对计时：同一个一行的 `src/` 改动，分别用 #795 之前与之后的 `origin/main` 的门禁（现有只有负载下的 136、319、119、252 s，估计 30–35 s，置信度低）。不许：把 `typecheck:all` 或构建放回门禁。选择重放的工具在 `D:\github_repository\claude-kept\2026-11-15-archlang-ci-speedup\gate-replay\`（脚本与 17 份记录下来的改动集）。
 
 ### TR9 · 合并机器的风险层级（2026-11-16 加） — `todo` · 所有者裁定 · 依赖无（线下）
 
