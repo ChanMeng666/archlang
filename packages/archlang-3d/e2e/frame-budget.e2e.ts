@@ -13,9 +13,9 @@
  *
  * It PRINTS each plan's medians and the B/A ratios (the budget: at most 1.30 on the worst plan, frame
  * and mount alike) and asserts only that it measured: a timing assertion would flake on a loaded
- * runner. It runs alone, after the other heavy tests (the package's `e2e` script), so no other file's
- * browser shares the runner while it times (review S1). The numbers are copied into the PR from
- * `3D package (check:3d)`'s log, never taken locally. It also asserts that A draws exactly B's frame
+ * runner. It runs alone, in a vitest pass of its own (the package's `e2e` script, `--pass=frame-budget`;
+ * in CI a job of its own), so no other file's browser shares the runner while it times (review S1). The
+ * numbers are copied into the PR from `3D package frame-budget pass`'s log, never taken locally. It also asserts that A draws exactly B's frame
  * where no band shows yet (the top-down phase) and a different one at the end.
  */
 import type {} from "./fixtures/frame-budget-entry.js";

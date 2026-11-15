@@ -15,10 +15,10 @@
  * and the committed *laundered* counter-example, and fails when the two are not told apart.
  * That mirrors `eval/faults/` — seeded defects with expected outcomes — one level up.
  *
- * The live path a model would drive is deliberately NOT built. {@link fidelitySystemPrompt}
- * and {@link parseFidelityReply} are the two pieces a driver needs, and they are exported and
- * tested; wiring an API caller is an owner decision, and every paid path in this directory is
- * guarded or declined. Nothing here spends a token.
+ * Nothing here spends a token. The live path a model drives is a separate, guarded, paid
+ * command (`eval/fidelity-live.ts`, paid and owner-only, product-roadmap RM-D46): it reuses
+ * {@link fidelitySystemPrompt}, `parseFidelityReply` and {@link scoreReply} unchanged and
+ * writes its own git-ignored record, never this file's scorecard.
  *
  * Run: `npm run eval:fidelity`. Exit `0` when every reference is classified correctly,
  * `1` when the detector failed to discriminate (a regression), `3` on bad usage.
