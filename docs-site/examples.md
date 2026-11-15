@@ -18,7 +18,7 @@ prove one language feature. Every figure quoted below comes from
 disagree.
 
 Two things worth knowing before you start. A plan written as
-[`level` blocks](/reference#levels-a-multi-storey-building-v1-21) compiles to **one
+[`level` blocks](/reference#levels-—-a-multi-storey-building-v1-21) compiles to **one
 drawing per storey**, and a live widget shows **page 1** — the lowest storey, which is
 what `compile().svg` returns; the whole set is in `compile().pages`, and
 `archlang describe --level 2 --json` reads a specific floor. And the playground's **theme
@@ -66,7 +66,7 @@ outside the wall line**. A two-storey family house on a 22 × 22 m suburban lot,
 them apart: a terrace is not floor area, so a ground surface appears in no `rooms[]`, no
 `schedule rooms` row and no access graph.
 
-Fifteen [`outdoor`](/reference#outdoor-ground-outside-the-building-v1-31) surfaces cover
+Fifteen [`outdoor`](/reference#outdoor-—-ground-outside-the-building-v1-31) surfaces cover
 all nine kinds — the driveway that runs to the garage door, paving to the front door and
 again between the patio and the deck, a patio behind the living room and a deck off the
 kitchen, a `water` pool, lawns front and back, gravel for the bin and shed yard, planting
@@ -74,7 +74,7 @@ on two front beds and three boundaries, and — on the upper storey — a `balco
 main bedroom whose railing is derived on the three edges with no wall behind them. Each
 draws a **scale-aware** material hatch, so the pattern is the same size on the sheet here
 as it would be at 1:50. Two
-[`fence`](/reference#fence-a-boundary-line-on-the-ground-v1-31) runs post the lot: a
+[`fence`](/reference#fence-—-a-boundary-line-on-the-ground-v1-31) runs post the lot: a
 `panel` enclosure round the pool — which is the drawing saying what the model does not,
 since ground obstructs nothing, water included — and a `picket` street frontage that
 stops either side of the path and the drive.
@@ -329,7 +329,7 @@ each face of the window's own host segment and taking the side no room occupies,
 exact here and on a sloped facade alike. Read it back with
 `archlang describe --json --select windows`.
 
-The wings are [`zone`s](/reference#zones-wings-and-departments-v1-22) — living 67.75 m²
+The wings are [`zone`s](/reference#zones-—-wings-and-departments-v1-22) — living 67.75 m²
 over 4 rooms, private 65.5 m² over 4, service 29.75 m² over 3. A zone has **zero
 geometry**: delete the wrappers and the drawing is byte-identical. Membership is declared,
 never inferred from where a room happens to sit, which is why the schedule can carry a
@@ -363,7 +363,7 @@ which the courtyard's windows and sliding doors stand in.
 _A narrow terrace house on three storeys, one drawing per storey._
 
 A 5.5 × 11 m terrace house written as three
-[`level` blocks](/reference#levels-a-multi-storey-building-v1-21), `paper A3 portrait` at
+[`level` blocks](/reference#levels-—-a-multi-storey-building-v1-21), `paper A3 portrait` at
 `scale 1:50`. Each storey is **4 rooms and 55.64 m²** and becomes its own page — ground
 (Hall, Living, Cloakroom, Kitchen/Dining), first (Landing, Bedroom 1, Bathroom, Bedroom 2),
 second (Landing, Study, Shower room, Main bedroom). `archlang compile` writes
@@ -392,7 +392,7 @@ plan with `W_PATH_TOO_NARROW`.
 _A compact house on two storeys, one drawing per storey._
 
 A compact house written as two
-[`level` blocks](/reference#levels-a-multi-storey-building-v1-21) — **3 rooms and 56 m² on
+[`level` blocks](/reference#levels-—-a-multi-storey-building-v1-21) — **3 rooms and 56 m² on
 the ground floor**, on `paper A3 landscape`. No `scale` is written: the sheet auto-fits,
 and the title block reports the 1:50 it chose. It compiles to two sheets
 (`two-storey.L1.svg`, `two-storey.L2.svg`), each with its own dimension chains and a title
@@ -427,7 +427,7 @@ no coordinate is hand-computed.
 _A public aquarium built from curved walls and circular rooms._
 
 A 60 × 40 m public aquarium — **8 rooms, 2365.59 m², 4 doors, 6 windows**, A2 at 1:200 —
-and the [curved-geometry](/reference#curved-walls-arc-edges-v1-24) flagship. Everything
+and the [curved-geometry](/reference#curved-walls-—-arc-edges-v1-24) flagship. Everything
 above is rectilinear; an aquarium is the building type that is not. Its centrepiece is a
 cylindrical tank you walk around, written as a
 [circular room](/reference#circular-rooms-v1-24) (`room circle at (cx,cy) radius R`, an
@@ -451,7 +451,7 @@ _A public library around a round reading room, with schedule and legend._
 
 A 50 × 32 m public library around a circular reading room — **14 rooms, 1545.06 m², 9 doors,
 16 windows**, `paper A2 landscape` at `scale 1:200`, split into three
-[zones](/reference#zones-wings-and-departments-v1-22): public (9 rooms, 948.06 m²), stacks
+[zones](/reference#zones-—-wings-and-departments-v1-22): public (9 rooms, 948.06 m²), stacks
 (2 rooms, 374.5 m²) and staff (3 rooms, 222.5 m²).
 
 The reading room is a drum inscribed in the 16 × 16 m central bay — a
@@ -486,7 +486,7 @@ side is platform, and the only way across is the gate line. So the drawing is a 
 800 mm gates from a `for` loop, and one 1200 mm wide aisle written beside them. Nothing
 else joins the two halves.
 
-That split is [declared](/reference#zones-wings-and-departments-v1-22), never inferred from
+That split is [declared](/reference#zones-—-wings-and-departments-v1-22), never inferred from
 position: `paid` is 1260 m² over 1 room, `unpaid` 1948 m² over 5, and back-of-house 80 m²
 over 2, so "how much unpaid floor is there" is a read rather than a sum — while the SVG is
 byte-identical without the zone wrappers. The four retail units are one
@@ -507,7 +507,7 @@ An outpatient clinic — **13 rooms, 294.12 m², 11 doors, 13 windows** at `scal
 whose six consulting rooms are **one [component](/reference#components) placed six times**.
 Every consulting room in a clinic is the same room; drawn the usual way that is twenty-four
 statements to keep in step by hand. Here it is written once and
-[instantiated](/reference#placing-instances-place-v1-22): each `place consult(…) as c1 …` is
+[instantiated](/reference#placing-instances-—-place-v1-22): each `place consult(…) as c1 …` is
 an addressable instance of exactly 16.2 m².
 
 Three things follow. **Namespacing** — ids inside the component become
@@ -553,7 +553,7 @@ _A neighbourhood cafe: dining room, servery, kitchen, store and WC._
 A neighbourhood cafe — **6 rooms, 150 m², 7 doors, 8 windows** at `scale 1:100` on
 `paper A3 landscape`, 15.2 × 10.2 m to the outer faces. A cafe is two buildings in one plan:
 a front of house the public walks and a back of house they never see. Two
-[zones](/reference#zones-wings-and-departments-v1-22), `front` (101.1 m²) and `back` (48.9 m²),
+[zones](/reference#zones-—-wings-and-departments-v1-22), `front` (101.1 m²) and `back` (48.9 m²),
 split the schedule's subtotals at no cost in geometry; the public enters the 90 m² dining
 room by a 1200 mm leaf, staff reach the kitchen only through the servery, a cased opening in the servery wall lets the dining room order across the counter, the
 customer WC opens off its own lobby rather than the dining room, and a goods door on
@@ -610,7 +610,7 @@ Six trapezoidal galleries ringing a circular rotunda — **7 rooms, 122.79 m²**
 what a floor plan usually is; this one is not rectangular anywhere, and it exists to show
 that [polygon rooms](/reference#polygonal-rooms-v1-23),
 [circular rooms](/reference#circular-rooms-v1-24) and
-[`arc` wall edges](/reference#curved-walls-arc-edges-v1-24) compose.
+[`arc` wall edges](/reference#curved-walls-—-arc-edges-v1-24) compose.
 
 **The hexagon is not regular, and that is the point.** A regular hexagon of circumradius R
 carries four of its vertices at an irrational offset no grid can express, so its sloped
@@ -635,7 +635,7 @@ _Four terrace houses from one component, placed and mirrored._
 Four terrace dwellings generated from **one component, placed and mirrored** — **16 rooms,
 199.8 m², 16 doors, 18 windows** across 22.2 × 9.6 m. A terrace is the same plan four times,
 so it is written once: `component unit(w, d, gable)` in its own coordinates from (0,0), then
-four [`place`](/reference#placing-instances-place-v1-22) statements, alternating `mirror x`.
+four [`place`](/reference#placing-instances-—-place-v1-22) statements, alternating `mirror x`.
 
 `mirror x` reflects about the *instance's* own origin, so a mirrored unit is placed at its
 far x edge. Alternating it is what makes a terrace a terrace: u1 and u2 meet local-x=w to
