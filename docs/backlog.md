@@ -1511,8 +1511,34 @@ than late; the corpus `describe()` output does not move. **Size:** M.
 `src/analyze/net-area-memo.ts`) and **PR #771** (RM1.3d: the takeoff's wall faces charged to the same
 meter). The card's own adversary (200 overlapping rooms, each meeting 1,932 curves) is pinned in
 `test/net-area-budget.test.ts`: `describe()` measures three rooms, closes the meter and omits the rest;
-the corpus maxima are pinned there far inside the total. The entry is closed and waits to be archived
-to `archlang-lab` with `scripts/backlog-archive.mjs`.
+the corpus maxima are pinned there far inside the total. What the meter does not bound is open as
+U.23. The entry is closed and waits to be archived to `archlang-lab` with `scripts/backlog-archive.mjs`.
+
+### U.23 · The net-area meter is per storey read, so many storeys still make `describe()` slow — `todo`
+
+**Observed (review of the U.22 close, 2026-11-16, `dist/cli.js describe --json` at 1.62.0).** The meter
+of U.22 was first a per-plan total (`51e610b8`), then, in review, one meter per storey read
+(`9e43b71c`; `src/analyze/net-area-memo.ts` module header). Nothing caps storeys times that total.
+The plans below repeat the comb storey of `test/net-area-budget.test.ts`, with each storey shifted 1 mm
+so the memo misses:
+
+| Plan | Rooms measured | Wall time |
+| --- | --- | --- |
+| 1 storey × 4 combs | 2 of 4 | 0.8 s |
+| 30 storeys × 2 combs | 60 of 60 | 9.9 s |
+| 60 storeys × 2 combs | 120 of 120 | 20.4 s |
+| 30 storeys × 2 combs, partitions removed (control) | 60 of 60 | 1.05 s |
+
+No figure is omitted and no diagnostic is raised. `E_STEP_LIMIT` stops the plan somewhere between 60
+and 100 storeys. The Worker's CPU cap still bounds the hosted tools.
+
+**Hypothesis.** A plan-wide ceiling over the per-storey meters: give each read a share of a total, or
+charge every storey to one plan meter and omit `net_area_m2` past it. Either must keep a storey's figures
+independent of the order the storeys are read in.
+
+**Gate:** the 60-storey plan above returns within the budget, with net areas omitted rather than late.
+Each storey's figures do not depend on read order. The corpus `describe()` output does not move.
+**Size:** M.
 
 ## Found downstream (2026-10-17)
 
