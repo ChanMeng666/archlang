@@ -6,10 +6,10 @@
  *
  * A one-entry copy of the committed assets in a temporary directory (a non-default directory, so
  * the `PLANS` rows are not asked for); `render: false`, so no browser: the GLB rebuild and the
- * plan PNG's re-raster are resvg and pure code.
+ * plan PNG's re-raster are resvg and pure code. Nothing here hashes: the swap copies the other
+ * plan's recorded `sha256` and `bytes` from the committed manifest, as a swapper would.
  */
-import { createHash } from "node:crypto";
-import { copyFileSync, mkdtempSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
+import { copyFileSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
@@ -23,12 +23,18 @@ afterEach(() => {
   for (const d of dirs.splice(0)) rmSync(d, { recursive: true, force: true });
 });
 
-/** A directory holding `NAME`'s committed files and a manifest with only its entry. */
-function oneEntryCopy(): { dir: string; manifest: AssetManifest } {
+/** `name`'s entry in the committed manifest, and the manifest. */
+function committedEntry(name: string) {
   const all = readManifest(DEFAULT_OUT);
   if (!all) throw new Error(`no manifest in ${DEFAULT_OUT}`);
-  const entry = all.assets.find((a) => a.name === NAME);
-  if (!entry) throw new Error(`no ${NAME} entry`);
+  const entry = all.assets.find((a) => a.name === name);
+  if (!entry) throw new Error(`no ${name} entry`);
+  return { all, entry };
+}
+
+/** A directory holding `NAME`'s committed files and a manifest with only its entry. */
+function oneEntryCopy(): { dir: string; manifest: AssetManifest } {
+  const { all, entry } = committedEntry(NAME);
   const dir = mkdtempSync(join(tmpdir(), "archlang-3d-plan-png-"));
   dirs.push(dir);
   for (const f of entry.files) copyFileSync(join(DEFAULT_OUT, f.path), join(dir, f.path));
@@ -40,21 +46,26 @@ function oneEntryCopy(): { dir: string; manifest: AssetManifest } {
 const planProblems = (problems: string[]): string[] => problems.filter((p) => p.includes(".plan.png"));
 
 describe("checkAssets decodes the committed plan PNG (card 3D.1)", () => {
-  it("an untouched copy passes the plan PNG legs", async () => {
+  it("an untouched copy passes", async () => {
     const { dir } = oneEntryCopy();
     const [report] = (await checkAssets(dir, { render: false })).filter((r) => r.name === NAME);
     expect(report).toBeDefined();
     expect(planProblems(report!.problems)).toEqual([]);
+    expect(report!.ok).toBe(true);
   }, 120_000);
 
   it("a plan PNG swapped together with its manifest sha256 and bytes fails", async () => {
     const { dir, manifest } = oneEntryCopy();
     const planFile = `${NAME}.plan.png`;
-    const swapped = readFileSync(join(DEFAULT_OUT, `${OTHER}.plan.png`));
-    writeFileSync(join(dir, planFile), swapped);
+    const otherFile = `${OTHER}.plan.png`;
+    writeFileSync(join(dir, planFile), readFileSync(join(DEFAULT_OUT, otherFile)));
+    const other = committedEntry(OTHER).entry;
+    const otherBytes = other.files.find((f) => f.path === otherFile)?.bytes;
+    expect(other.plan?.sha256).toBeDefined();
+    expect(otherBytes).toBeDefined();
     const entry = manifest.assets[0]!;
-    entry.plan!.sha256 = createHash("sha256").update(swapped).digest("hex");
-    for (const f of entry.files) if (f.path === planFile) f.bytes = statSync(join(dir, planFile)).size;
+    entry.plan!.sha256 = other.plan!.sha256;
+    for (const f of entry.files) if (f.path === planFile) f.bytes = otherBytes!;
     writeFileSync(join(dir, "manifest.json"), JSON.stringify(manifest, null, 2));
 
     const [report] = (await checkAssets(dir, { render: false })).filter((r) => r.name === NAME);
@@ -65,19 +76,14 @@ describe("checkAssets decodes the committed plan PNG (card 3D.1)", () => {
   }, 120_000);
 
   it("a plan PNG that does not decode fails without throwing", async () => {
-    const { dir, manifest } = oneEntryCopy();
-    const planFile = `${NAME}.plan.png`;
-    const junk = Buffer.from("not a png");
-    writeFileSync(join(dir, planFile), junk);
-    const entry = manifest.assets[0]!;
-    entry.plan!.sha256 = createHash("sha256").update(junk).digest("hex");
-    for (const f of entry.files) if (f.path === planFile) f.bytes = junk.length;
-    writeFileSync(join(dir, "manifest.json"), JSON.stringify(manifest, null, 2));
+    const { dir } = oneEntryCopy();
+    // The manifest stays as committed, so its sha256 is stale too; that problem may sit beside this one.
+    writeFileSync(join(dir, `${NAME}.plan.png`), Buffer.from("not a png"));
 
     const [report] = (await checkAssets(dir, { render: false })).filter((r) => r.name === NAME);
     expect(report?.ok).toBe(false);
-    expect(planProblems(report!.problems)).toEqual([
+    expect(planProblems(report!.problems)).toContainEqual(
       expect.stringMatching(/^bungalow\.plan\.png does not decode as a PNG/),
-    ]);
+    );
   }, 120_000);
 });
