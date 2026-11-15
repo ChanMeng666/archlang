@@ -1098,7 +1098,7 @@ of the summary is unchanged. Lengths are whole millimetres, areas m² to 2 decim
 | Key | Holds |
 |-----|-------|
 | `walls[]` | per wall category, sorted by name: `count`, `length_centreline_mm`, `length_face_mm`, and `face_area_before_openings_m2` when the plan authors a height |
-| `faces_omitted` | present only when the storey's face lengths are not measured: `too-many-edges` or `too-much-work` (the caps below) |
+| `faces_omitted` | present only when the storey's face lengths are not measured: `too-many-edges` or `too-much-work` (the caps below), or `plan-budget` (the storey's net-area total was spent first) |
 | `rooms[]` | per room, in source order: `perimeter_centreline_mm`, `perimeter_net_mm`, `area_net_m2` (the room's `net_area_m2`) |
 | `floor_area_net_m2` | the storey's `totals.net_floor_area_m2` |
 | `waste_pct`, `floor_area_with_waste_m2` | only when a waste percentage is passed (`--waste <pct>`, 0 to 100); never a default |
@@ -1150,7 +1150,10 @@ Exact, or omitted, as net area is: the outline is measured by the same closed-fo
 walk, every crossing computed exactly, no sampling and no bounding box in a figure. A storey
 with more than 8,000 band edges, or whose walk would cost more than net area's work cap, reports
 `faces_omitted` and no `length_face_mm`; a room whose net area would be omitted under ADR 0027's
-caps has no `perimeter_net_mm`. No shipped plan comes near either.
+caps has no `perimeter_net_mm`. Both are charged to the storey's net-area total (the one
+`net_area_m2` is held to), after every room's area and the faces last: past it a room has no
+`perimeter_net_mm` and the storey reports `faces_omitted: "plan-budget"`, so the walls never take
+a room's share. No shipped plan comes near either.
 
 `archlang takeoff plan.arch --format csv|md [--waste <pct>]` writes the same block as a table
 (Markdown by default). The CSV has one figure per row,
