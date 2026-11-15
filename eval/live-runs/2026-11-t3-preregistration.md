@@ -1,110 +1,170 @@
 # T3 pre-registration: diagnostic loop vs equal-budget resampling (the one run)
 
 The owner ratified this run on 2026-11-15 ("同意开启 T3，仅此一次，按上面的边界执行"; RM-D45,
-`docs/plans/product-roadmap/README.md` §6.15). The bounds are in `docs/agents/iron-laws.md`.
-This file fixes the question, the protocol, the analysis and the exact wording of the verdict
-**before any call is made**. It is committed before the run, and git history is the evidence
-of when. Nothing below may be edited after the first billed call. A defect found later is
-recorded as a dated note at the end of the result file, never fixed here.
+`docs/plans/product-roadmap/README.md` §6.15). Its bounds are in `docs/agents/iron-laws.md`.
+
+This file fixes, **before any call is made**:
+- the question;
+- the protocol;
+- what counts as the run;
+- the analysis;
+- the exact wording of the verdict.
+
+It is committed before the run, and git history is the evidence of when. Nothing below may be
+edited after the first billed call. A defect found later goes into a dated note at the end of the
+result file. It is never fixed here.
 
 ## 1. Question
 
-On the 26-brief public eval corpus (`eval/corpus.json`, a public regression fixture, not a
-holdout), does the L2 diagnostic feedback loop (`eval/l2.ts` `runLoopArm`, ≤ 2 feedback
-rounds) produce plans that meet the brief's intent more often than i.i.d. resampling of the
-same one-shot prompt at the loop's measured token spend (`runControlArm`)?
+Take the 26-brief public eval corpus (`eval/corpus.json`), which is a public regression fixture,
+not a holdout. On it, does the L2 diagnostic feedback loop meet the brief's intent more often
+than i.i.d. resampling of the same one-shot prompt at the loop's measured token spend?
 
-The question is asked for each of two models, `claude-sonnet-5-5` and `claude-haiku-5-5`.
+- The loop is `eval/l2.ts` `runLoopArm`, with at most 2 feedback rounds.
+- The resampling arm is `runControlArm`.
+- The question is asked separately for `claude-sonnet-5-5` and for `claude-haiku-5-5`.
 
 ## 2. Fixed protocol
 
-- **Code.** `eval/l2.ts` and `eval/l2-run.ts` as they stand at the commit the run records
-  (`meta.git`). The run uses `main` after the clause-order relaxation (CO-1) merges. If CO-1
-  has not merged by 2026-11-25, the run uses `main` as it is that day. Either way the record
-  carries the commit and the sha256 of `spec.llm.md` and of the system prompt.
-- **Judge.** Judge v2, synonyms and rubric as committed (`JUDGE_VERSION` unchanged).
-- **Parameters, per model:** `--trials 3`, default `maxRounds` 2, `--concurrency 4`.
-  - Budget breaker: `--budget 80usd` for Sonnet and `--budget 25usd` for Haiku. These are the
-    harness's own over-estimating count. They are set so that the breaker should not trip.
-- **Billing.** The Anthropic promotional credit, through the key mapped per process from
-  `ANTHROPIC_API_KEY_PROMO`, exactly as in `eval/README.md` § "The one T3 run".
-- **Order.** Haiku first, then Sonnet. Each model's invocation is one command.
+**Code.** `eval/l2.ts` and `eval/l2-run.ts` as they stand at the commit the run records
+(`meta.git`).
+- The run starts on `main` after the clause-order relaxation PR (branch `feat/clause-order-free`)
+  merges. If that PR has not merged by 2026-11-25, the run starts on `main` as of that day.
+- Both models run at the same `meta.git.head`, with `meta.git.dirty = false`.
+- Sonnet starts within 24 h of Haiku's end, whatever Haiku's run showed.
+- A model not run by 2026-11-30 00:00 UTC is "Inconclusive (not run)".
+
+**Judge.** Judge v2, and the synonyms and rubric as committed. `JUDGE_VERSION` is unchanged.
+
+**Billing.** The Anthropic promotional credit. The key is mapped per process from
+`ANTHROPIC_API_KEY_PROMO`, as in `eval/README.md` § "The one T3 run".
+
+**Parameters and commands.** Haiku runs first, then Sonnet, each as exactly this one command.
+`MAX_ROUNDS` is 2. The two budgets are the harness's own over-estimating count, set so the
+breaker should not trip.
+
+```powershell
+$env:ANTHROPIC_API_KEY = [Environment]::GetEnvironmentVariable('ANTHROPIC_API_KEY_PROMO','User')
+$env:ARCHLANG_EVAL_PROVIDER = 'anthropic'
+$env:ARCHLANG_EVAL_MODEL = 'claude-haiku-5-5';  npm run eval:l2 -- --yes --trials 3 --concurrency 4 --budget 25usd
+$env:ARCHLANG_EVAL_MODEL = 'claude-sonnet-5-5'; npm run eval:l2 -- --yes --trials 3 --concurrency 4 --budget 80usd
+```
+
+**Analysis script.** The analysis script (§ 7) is committed with a test on synthetic records
+**before the first billed call**.
 
 ## 3. What counts as "the run"
 
-- A model's run is its first `eval:l2 -- --yes` invocation that makes at least one billed call.
-- An invocation that stops before any billed call (preflight exit 3, or a request-shape 4xx on
-  the first call) is not a run. It may be fixed and started again.
-- A run that aborts part-way (crash, freeze, Ctrl-C) is not re-run. Its JSON record, whatever
-  its `status`, is the record and is published as it stands. Briefs it did not complete count
-  under the attrition rule (§ 5).
-- There is no smoke run, no `--max` subset, and no second invocation for either model.
+- A model's run is its first invocation confirmed by `--yes` (or `ARCHLANG_EVAL_CONFIRM=1`)
+  whose record has `ledger.calls ≥ 1`.
+- An invocation that exits 3 (preflight) sends nothing. It is not a run.
+- An invocation that sends requests but ends with `ledger.calls = 0` is kept as "attempt 0":
+  - it is published under `eval/live-runs/t3/`;
+  - it is restarted only on the owner's word.
+- A run that aborts part-way (crash, freeze, Ctrl-C, credit exhausted) is not re-run. Its JSON
+  record, whatever its `meta.status`, is the record. It is published as it stands and analysed
+  under § 5.
+- There is no smoke run, no `--max` subset and no second run.
+- Nobody opens a record while its `meta.status` is `running`.
 
 ## 4. Primary outcome and decision rule
 
-- **Unit.** One paired cell per (brief, trial). Each arm scores 1 if any of its outputs meets
-  intent (`combineMetrics`, best-of, as implemented), else 0.
-- **Per-brief difference.** For each complete brief b,
-  d_b = mean over its 3 trials of (loop_intent − control_intent). The range is −1 … +1.
-- **Statistic.** D = mean of d_b over complete briefs. This equals the harness's `net.intent`
-  when no brief is excluded.
-- **Test.** An exact two-sided sign test over the complete briefs with d_b ≠ 0 (a tied brief
-  is dropped from the test, not from D).
-  - k = the number of briefs with d_b > 0, among n non-tied briefs.
-  - p = the two-sided binomial probability under Binomial(n, ½).
-  - The p-values of the two models are Holm-adjusted together, family α = 0.05.
-- **Verdict per model.** Exactly one of these three sentences is printed, and nothing stronger:
-  - Holm-adjusted p < 0.05 and D > 0: "On this corpus and protocol, the loop met intent more
-    often than equal-budget resampling for <model> (D = …, k/n = …, p_Holm = …)."
-  - Holm-adjusted p < 0.05 and D < 0: "On this corpus and protocol, equal-budget resampling met
-    intent more often than the loop for <model> (D = …, k/n = …, p_Holm = …)."
-  - Otherwise: "On this corpus and protocol, no difference between the loop and equal-budget
-    resampling was detected for <model> (D = …, k/n = …, p_Holm = …)."
-- **Resolution, stated in advance.** With n = 26 non-tied briefs, the sign test needs at least
-  19/26 in one direction for p < 0.05 before the Holm adjustment. A null verdict at this n is
-  not evidence of no effect, and the result file says so.
+**Unit.** One paired cell per (brief, trial). In each cell, an arm scores 1 if any of its outputs
+meets intent, otherwise 0. This is `combineMetrics`, best-of. The loop is credited for any of its
+rounds. The analysis reads the stored `loopScore.intent` and `controlScore.intent` and never
+re-scores a source.
+
+**Complete brief.** A brief is complete when all 3 of its trials completed both arms. Let c be
+the number of complete briefs.
+
+**Sums.**
+- s_b = Σ over the 3 trials of b of (loop_intent − control_intent). This is an integer in −3 … +3.
+- S = Σ_b s_b over the complete briefs.
+- D = S / (3c). D equals the record's `summary.net.intent` up to floating-point rounding, since
+  both are over complete briefs only. The script asserts |D − net.intent| < 1e-9.
+
+**Test.**
+- A brief is tied when s_b = 0.
+- n is the number of non-tied complete briefs.
+- k is the number of those with s_b > 0.
+- p = min(1, 2·P(X ≥ max(k, n − k))) with X ~ Binomial(n, ½). When n = 0, p = 1.
+
+**Holm.** The family is always the two models. A model that is inconclusive or not run enters
+with p = 1. Order the two raw p values. The smaller is multiplied by 2. The larger is taken as
+the maximum of itself and that doubled value. Both are capped at 1.
+
+**Verdict per model.** Exactly one of these sentences is printed, and nothing stronger:
+- If p_Holm < 0.05 and k > n − k and S > 0: "On this corpus and protocol, the loop met intent
+  more often than equal-budget resampling for <model> (D = …, k/n = …, c/26 complete,
+  p_Holm = …)."
+- If p_Holm < 0.05 and k < n − k and S < 0: "On this corpus and protocol, equal-budget
+  resampling met intent more often than the loop for <model> (D = …, k/n = …, c/26 complete,
+  p_Holm = …)."
+- In every other case, including a disagreement between k and S: "On this corpus and protocol,
+  no difference between the loop and equal-budget resampling was detected for <model> (D = …,
+  k/n = …, c/26 complete, p_Holm = …)."
+- If § 5 makes the model inconclusive, that sentence replaces all three.
+
+**Resolution, stated in advance.**
+- With Holm over two models, a model needs raw p < 0.025, which is 20/26 at n = 26 (p = 0.0094).
+- If the other model's raw p is already below 0.025, 19/26 suffices (p = 0.029).
+- n counts non-tied briefs only. At n ≤ 5 no directional verdict is possible. At n = 6 one is
+  possible only as the second rejection.
+- A "no difference detected" verdict at this resolution is not evidence of no effect, and the
+  result file says so.
 
 ## 5. Attrition
 
-- A brief is **complete** when all 3 of its trials completed both arms. Partial and skipped
-  briefs (`eval/l2-run.ts` statuses) are dropped from both arms. The comparison stays paired.
-- The result file lists every dropped brief by id, with its reason (error, budget, abort).
-- If more than 4 of the 26 briefs (> 15 %) are dropped for a model, that model's verdict is
-  replaced by: "Inconclusive for <model>: <m> of 26 briefs were not completed." The Holm family
-  then holds only the other model.
+**Unfinished record.** If a model's record has `meta.status` other than `complete`, that model
+is "Inconclusive for <model>: the run did not complete (status <status>)", whatever the count.
+
+**Complete record.**
+- Partial and skipped briefs (the statuses in `eval/l2-run.ts`) are dropped from both arms, so
+  the comparison stays paired.
+- If more than 4 of the 26 briefs are dropped, the verdict is "Inconclusive for <model>: <m> of
+  26 briefs were not completed".
+
+**Listing.** The result file lists every dropped brief by id, with its reason: error, budget or
+abort.
 
 ## 6. Secondary measures (reported, never decided on)
 
-For each model and arm:
-- valid and sound net deltas;
+For each model and arm, the result file reports:
+- the valid and sound net deltas;
 - pass@3 and pass^3 on intent;
-- mean ± σ of the per-trial rates;
+- the mean ± σ of the per-trial rates;
 - the loop rounds actually used;
 - the control sample counts;
-- tokens and dollars, from both the harness count and the Console's promo balance;
-- truncated replies (`max_tokens`).
+- tokens, and dollars both by the harness count and by the Console's promo balance;
+- the number of truncated replies (`max_tokens`).
 
-Each of these is labelled "secondary, not pre-registered for a decision".
+Each is labelled "secondary, not pre-registered for a decision". Nothing else is reported as a
+finding.
 
-Exploratory: the share of loop-arm fixes that were clause-order or compile errors, against
-lint-only issues. It is labelled exploratory.
+## 7. Analysis and publication
 
-## 7. Publication
+**The script.**
+- It is committed before the first billed call, with a test on synthetic records.
+- It reads only the two JSON records and contains no randomness.
+- It prints the § 4 sentences, the § 5 list and the § 6 tables.
 
-- The result is published whatever it shows, in `eval/live-runs/2026-11-t3-result.md`. That file
-  contains:
-  - the two printed verdict sentences, word for word as § 4 defines them;
-  - the § 6 tables;
-  - the attrition list;
-  - the run commands;
-  - the commit and spec hashes;
-  - the Console cost.
-- The two JSON records are committed beside it under `eval/live-runs/t3/`, or attached to the
-  result PR if they are too large for the repo.
-- The analysis (§ 4–§ 6) is a small committed script that reads only those JSON records. It
-  carries no randomness.
-- That record is the only statement of the result. Any other claim, either way, needs an
-  owner decision. Nothing in it generalises beyond this corpus, these two models, this commit
-  and this protocol.
-- Out of scope, whatever the result: a second run, other models, L3–L5, and promoting
+**The harness's own `.md` scorecard** prints its own verdict line. That scorecard is neither
+published nor quoted.
+
+**Publication.** The result is published whatever it shows, in
+`eval/live-runs/2026-11-t3-result.md`. That file contains:
+- the script's output;
+- the run commands;
+- the commit and the spec hashes;
+- the Console cost.
+
+The two JSON records (and any attempt 0) are always committed under `eval/live-runs/t3/`,
+gzipped if they are large.
+
+**Use of the record.**
+- The records are never an input to `dataset/`.
+- That record is the only statement of the result. Any other claim, either way, needs an owner
+  decision.
+- Nothing in it generalises beyond this corpus, these two models, this commit and this protocol.
+- These stay out of scope whatever the result: a second run, other models, L3–L5, and promoting
   adjacency/reachability to gating.
