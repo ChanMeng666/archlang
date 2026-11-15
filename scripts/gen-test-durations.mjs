@@ -7,7 +7,7 @@
 //   node scripts/gen-test-durations.mjs <test-durations.json> [out.json]
 // A map input replaces the rows the map has, keeps the other existing rows whose file is still in
 // the tree, and drops rows for deleted files. A file in the tree with no row gets none (the
-// sequencer counts it as the table's median).
+// sequencer puts it on the shard its path hashes to).
 // Not a drift artifact: a stale table costs balance, never correctness.
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { relative, resolve } from "node:path";

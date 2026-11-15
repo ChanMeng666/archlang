@@ -257,6 +257,13 @@ describe("scripts/ci-proven.mjs prove()", () => {
     expect(INFORMATIONAL_JOBS).toEqual(["Benchmark (informational)"]);
     const noBench = fullJobs().filter((j) => j.name !== "Benchmark (informational)");
     expect((await decide({ [jobsPath]: jobsOf(noBench) })).proven).toBe(true);
+    // ci.yml makes the benchmark `continue-on-error`, so a failed one leaves the run `success`
+    // (condition d); whatever the jobs API then says of the job itself (failure, or a success with
+    // failed steps), condition e ignores it, and still refuses any other job that is not a success.
+    for (const conclusion of ["failure", "success", "cancelled", "skipped", null]) {
+      const jobs = fullJobs().map((j) => (j.name === "Benchmark (informational)" ? { ...j, conclusion } : j));
+      expect((await decide({ [jobsPath]: jobsOf(jobs) })).proven, String(conclusion)).toBe(true);
+    }
   });
 
   it("refuses jobs from an older attempt and a jobs list that is not on one page", async () => {
@@ -392,6 +399,8 @@ type Job = {
   matrix: Map<string, string[]>;
   env: Map<string, string>;
   jobIf?: string;
+  /** The job's other top-level keys (`continue-on-error`, `runs-on`, ...), as written. */
+  keys: Map<string, string>;
   steps: Step[];
 };
 
@@ -404,7 +413,7 @@ function ciJobs(): Map<string, Job> {
   for (const line of lines.slice(lines.indexOf("jobs:") + 1)) {
     const id = /^ {2}([A-Za-z0-9_-]+):$/.exec(line);
     if (id?.[1]) {
-      job = { id: id[1], matrix: new Map(), env: new Map(), steps: [] };
+      job = { id: id[1], matrix: new Map(), env: new Map(), keys: new Map(), steps: [] };
       jobs.set(id[1], job);
       section = undefined;
       continue;
@@ -415,6 +424,7 @@ function ciJobs(): Map<string, Job> {
       section = top[1] === "env" ? "env" : top[1] === "steps" ? "steps" : undefined;
       if (top[1] === "name" && job.name === undefined) job.name = top[2];
       if (top[1] === "if") job.jobIf = top[2];
+      job.keys.set(top[1], top[2] ?? "");
       continue;
     }
     if (/^ {6}matrix:$/.test(line)) {
@@ -506,6 +516,12 @@ describe("ci.yml and the proof agree", () => {
         expect(guarded, `${j.id}: step ${s.name ?? s.uses} has no FULL_CI guard`).toBe(true);
       }
     }
+  });
+
+  it("only the informational benchmark may fail without failing the run", () => {
+    const lenient = [...jobs.values()].filter((j) => j.keys.get("continue-on-error") === "true").map((j) => j.id);
+    expect(lenient).toEqual(["bench"]);
+    expect(checkNames(jobs.get("bench") as Job)).toEqual(INFORMATIONAL_JOBS);
   });
 
   it("every reader of `proven` also needs a successful `changes`, and FULL_LEG has one definition", () => {

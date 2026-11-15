@@ -18,6 +18,14 @@ import { fileURLToPath } from "node:url";
 /** The frame-budget file, run in a pass of its own. */
 export const FRAME_BUDGET = "e2e/frame-budget.e2e.ts";
 
+/**
+ * The two passes by name, for `--pass=<name>` (repeatable): `suite` is every file but the frame
+ * budget, `frame-budget` that file alone. Without the option both run, in this order. CI runs one
+ * job per name; the runner consumes the option, it never reaches vitest.
+ */
+export const PASSES = ["suite", "frame-budget"] as const;
+const PASS_OPTION = "--pass=";
+
 const CONFIG = ["--config", "vitest.e2e.config.ts"];
 
 /**
@@ -35,7 +43,10 @@ export function selects(filter: string, file: string): boolean {
  * package's e2e files `files` (`e2e/….e2e.ts`).
  */
 export function e2ePasses(args: readonly string[], files: readonly string[]): string[][] {
-  const options = args.filter((a) => a.startsWith("-"));
+  const only = args.filter((a) => a.startsWith(PASS_OPTION)).map((a) => a.slice(PASS_OPTION.length));
+  // An unknown pass name selects nothing, and the runner says so.
+  const wanted = (pass: (typeof PASSES)[number]) => only.length === 0 || only.includes(pass);
+  const options = args.filter((a) => a.startsWith("-") && !a.startsWith(PASS_OPTION));
   // Vitest matches a filter against the file's path with forward slashes, on Windows too.
   const filters = args.filter((a) => !a.startsWith("-")).map((a) => a.split("\\").join("/"));
   const all = filters.length === 0;
@@ -44,8 +55,9 @@ export function e2ePasses(args: readonly string[], files: readonly string[]): st
   const first = picked((file) => file !== FRAME_BUDGET);
   const budget = picked((file) => file === FRAME_BUDGET);
   const passes: string[][] = [];
-  if (all || first.length > 0) passes.push(["run", ...CONFIG, "--exclude", FRAME_BUDGET, ...options, ...first]);
-  if (all || budget.length > 0) passes.push(["run", ...CONFIG, ...options, FRAME_BUDGET]);
+  if (wanted("suite") && (all || first.length > 0))
+    passes.push(["run", ...CONFIG, "--exclude", FRAME_BUDGET, ...options, ...first]);
+  if (wanted("frame-budget") && (all || budget.length > 0)) passes.push(["run", ...CONFIG, ...options, FRAME_BUDGET]);
   return passes;
 }
 
@@ -62,7 +74,7 @@ if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.ur
   const vitest = resolve(pkg, "../../node_modules/vitest/vitest.mjs");
   const passes = e2ePasses(process.argv.slice(2), e2eFiles(pkg));
   if (passes.length === 0) {
-    process.stderr.write("e2e: no e2e file matches the filter\n");
+    process.stderr.write(`e2e: no e2e file matches the filter (or no pass is named ${PASSES.join(" or ")})\n`);
     process.exit(1);
   }
   for (const pass of passes) {
