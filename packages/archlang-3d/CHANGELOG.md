@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+## [0.8.1] - 2026-11-15
+
+The core peer range stays `^1.61.0` (`MIN_CORE`): nothing below reads a core export that 1.61.0 lacks.
+
 ### Fixed
 
 - A contact-shadow band no longer crosses a narrow slot into the wall beyond it (card RM8.8b): where
