@@ -132,7 +132,8 @@ coordinator's own notes (merging, registries, browser and social automation, the
   and `context-size`'s hand-written catalogue size. Read the PR's full CI (`gh pr checks`) before pinning its auto-merge;
   a `check:quick` pass is never merge evidence, and the full suite runs in CI, not locally.
   (guarded, in part: for an `examples/` or `docs/**/*.md` change `check:quick` runs the tests that list
-  that folder first, within its 20-file cap; CI runs the rest)
+  that folder first, within its 20-file cap; a `src/`, `scripts/`, `eval/`, `test/` or `.claude/` change also
+  runs the source-tree scanners and the tests named after a changed module, beyond the cap; CI runs the rest)
 - **A record written through a shell `node -e`/heredoc loses its backslashes** (a Windows path's
   `\2…` became a control byte in a handoff, #335). Write such text with the Write/Edit tools, then
   `LC_ALL=C grep -c $'[\x01-\x08]' <file>` must print 0. (guarded: `test/no-control-bytes.test.ts`, every
