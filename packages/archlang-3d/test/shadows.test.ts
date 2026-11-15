@@ -13,9 +13,17 @@ import { describe, expect, it } from "vitest";
 import { adaptPlan, buildMesh, CONTACT_SHADOW } from "../src/index.js";
 import { replayPayload } from "../src/node.js";
 import type { ReplayPayload } from "../src/replay/payload.js";
-import { type ContactShadows, contactFade, contactShadows } from "../src/replay/shadows.js";
+import {
+  type ContactShadows,
+  contactFade,
+  contactShadows,
+  contains,
+  narrowed,
+  type P2,
+} from "../src/replay/shadows.js";
 import { wallOutline } from "../src/replay/wall-lines.js";
 import { EXAMPLES_LIST, STRESS_PLANS, WORLD } from "./corpus.js";
+import { borderSlivers, checked, tally } from "./lookup-check.js";
 
 function payloadOf(src: string, title: string): ReplayPayload {
   const r = adaptPlan(src, { world: WORLD });
@@ -411,6 +419,125 @@ describe("contact shadows (card RM8.8)", () => {
     expect(gon.counts.edges).toBeGreaterThan(700);
     expect(gon.counts.tests).toBeLessThanOrEqual(40 * gon.counts.probes);
   }, 60_000);
+
+  it("the grid finds what a scan of every face finds, at every probe of the corpus, the 400-room row and the 720-gon (card RM8.8b item 2)", () => {
+    // Every `at(q)` and `near(box)` the bake makes, its answer after the exact test against a scan of
+    // every face of that storey (`lookup-check.ts`), and the bake with the checking lookup the same
+    // as without it: the grid decides only how many faces are tested, never the bands.
+    const t = tally();
+    const world = makeVirtualWorld({});
+    const n = 400;
+    const rooms: string[] = [];
+    const walls = [
+      `wall id=h0 partition thickness 100 { (0,0) (${n * 3000},0) }`,
+      `wall id=h1 partition thickness 100 { (0,3000) (${n * 3000},3000) }`,
+    ];
+    for (let i = 0; i < n; i++) rooms.push(`room id=r_${i} at (${i * 3000},0) size 3000x3000`);
+    for (let k = 0; k <= n; k++)
+      walls.push(`wall id=v${k} partition thickness 100 { (${k * 3000},0) (${k * 3000},3000) }`);
+    const pts: string[] = [];
+    for (let i = 0; i < 720; i++) {
+      const a = (2 * Math.PI * i) / 720;
+      pts.push(`(${Math.round(20000 + 20000 * Math.cos(a))},${Math.round(20000 + 20000 * Math.sin(a))})`);
+    }
+    const synthetic: Array<[string, string]> = [
+      ["row", `plan "row" { units mm\n${rooms.join("\n")}\n${walls.join("\n")}\n}`],
+      [
+        "gon",
+        `plan "gon" { units mm\nroom id=r polygon ${pts.join(" ")}\nwall id=w exterior thickness 200 { ${pts.join(" ")} close }\n}`,
+      ],
+    ];
+    const of = (name: string, src: string, w = WORLD): Array<[string, ReplayPayload]> => {
+      const r = adaptPlan(src, { world: w });
+      return r.ok
+        ? [[name, replayPayload(buildMesh(r.scene), { title: name, svg: compile(src, { world: w }).svg })]]
+        : [];
+    };
+    const plans: Array<[string, ReplayPayload]> = [
+      ...EXAMPLES_LIST.flatMap(([name, src]) => of(name, src)),
+      ...Object.entries(STRESS_PLANS).flatMap(([name, src]) => of(name, src)),
+      ...synthetic.flatMap(([name, src]) => of(name, src, world)),
+    ];
+    expect(plans.length).toBeGreaterThan(EXAMPLES_LIST.length);
+    for (const [name, p] of plans) {
+      const rank = new Map(p.events.map((e) => [e.key, e.rank] as const));
+      const { lines } = wallOutline(
+        p.nodes,
+        p.nodes.map((nd) => rank.get(nd.key) ?? 0),
+      );
+      const before = t.at + t.near;
+      const viaCheck = contactShadows(p.nodes, p.ground, lines, (tris) => checked(t, tris));
+      expect(JSON.stringify(viaCheck), name).toBe(JSON.stringify(contactShadows(p.nodes, p.ground, lines)));
+      expect(t.at + t.near, name).toBeGreaterThan(before);
+    }
+    expect(t.seen).toEqual([]);
+    expect(t.misses).toBe(0);
+    expect(t.at).toBeGreaterThan(40_000);
+    expect(t.near).toBeGreaterThan(6_000);
+  }, 120_000);
+
+  it("the grid finds a sliver that only touches a cell along its border or at its corner (card RM8.8b item 2)", () => {
+    const { tris, probes, grid, measured } = borderSlivers();
+    // The base and the slivers make the grid the placeholders measured, so the slivers lie on its borders.
+    expect([grid.x0, grid.z0, grid.w, grid.h, grid.kx, grid.kz]).toEqual([
+      measured.x0,
+      measured.z0,
+      measured.w,
+      measured.h,
+      measured.kx,
+      measured.kz,
+    ]);
+    expect(grid.kx).toBeGreaterThan(4);
+    const t = tally();
+    const look = checked(t, tris, grid);
+    let hits = 0;
+    for (const q of probes) {
+      hits += look.at(q).filter((f) => f.y === 2 && contains(f, q)).length;
+      look.near(q[0], q[1], q[0], q[1]);
+      look.near(q[0] - 1, q[1] - 1, q[0] + 1, q[1] + 1);
+      look.near(q[0], q[1] - grid.h, q[0], q[1] + grid.h);
+      look.near(q[0] - grid.w, q[1], q[0] + grid.w, q[1]);
+    }
+    expect(t.seen).toEqual([]);
+    expect(t.misses).toBe(0);
+    expect(t.at).toBe(probes.length);
+    // The probes on a sliver's border edge or corner find it.
+    expect(hits).toBeGreaterThan(probes.length / 3);
+  });
+
+  it("a facing gap gives a band no negative width, from the exact cross product (review round 1)", () => {
+    // Antiparallel stretches on parallel lines one lattice step apart, far along a long, nearly
+    // axis-aligned direction (the float normal's cancellation is worst there), and a plain slot.
+    const band = (): number => 150;
+    for (const [dx, dz, k] of [
+      [10_000_019, 1, 150],
+      [1_000_003, 7, 1000],
+      [99_991, 12_345, 3000],
+    ] as const) {
+      // dx·pz − dz·px = −1: t's line one step in front of s's.
+      let [r0, r1, s0, s1, t0, t1]: [number, number, number, number, number, number] = [dx, dz, 1, 0, 0, 1];
+      while (r1 !== 0) {
+        const qn = Math.floor(r0 / r1);
+        [r0, r1, s0, s1, t0, t1] = [r1, r0 - qn * r1, s1, s0 - qn * s1, t1, t0 - qn * t1];
+      }
+      const p: [number, number] = [t0 + k * dx, -s0 + k * dz];
+      expect(dx * p[1] - dz * p[0]).toBe(-1);
+      const m = k + 2;
+      const s = { a: [0, 0] as P2, b: [dx * m, dz * m] as P2, node: 0 };
+      const o = { a: [p[0] + dx * m, p[1] + dz * m] as P2, b: p as P2, node: 1 };
+      for (const piece of narrowed([s, o], band)) {
+        expect(piece.w === undefined || (Number.isFinite(piece.w) && piece.w >= 0)).toBe(true);
+      }
+    }
+    const pieces = narrowed(
+      [
+        { a: [0, 0], b: [4_000_000, 0], node: 0 },
+        { a: [4_000_000, -100_000], b: [0, -100_000], node: 1 },
+      ],
+      band,
+    );
+    expect(pieces.map((x) => x.w)).toEqual([50, 50]);
+  });
 
   it("the dark theme's alphas are the light theme's half as much again", () => {
     for (const k of ["floor", "corner", "furniture"] as const)
