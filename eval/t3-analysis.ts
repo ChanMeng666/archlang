@@ -11,9 +11,12 @@
  * and the ledger. Binomial tails and the Holm adjustment are exact rationals over BigInt, so
  * every comparison with 0.05 is exact.
  *
- * It decides nothing beyond the pre-registration. A § 2/§ 3 check that fails is printed as a
- * PROTOCOL VIOLATION and changes no verdict. A record that is malformed, in the wrong argument
- * slot, or whose D disagrees with its own `summary.net.intent` is an error (exit 1).
+ * Each model gets one standing, in this order: not run (the argument is `none`, or the record
+ * started at or after the § 2 deadline); attempt 0 (`ledger.calls = 0`, § 3); inconclusive under
+ * § 5; or a § 4 verdict. Only a § 4 verdict enters Holm with its own p; every other standing
+ * enters with p = 1. A § 2 check that fails prints as a PROTOCOL VIOLATION and changes no
+ * standing. A record that is malformed, in the wrong argument slot, or whose D disagrees with
+ * its own `summary.net.intent` is an error (exit 1).
  *
  * Run: `npm run eval:t3 -- <haiku.json[.gz]|none> <sonnet.json[.gz]|none>`.
  */
@@ -25,7 +28,7 @@ import { gunzipSync } from "node:zlib";
 import { JUDGE_VERSION } from "./assertions.js";
 import { type MetricTriple, type TrialCell, passAtN, passHatN, summarizeTrials } from "./l2.js";
 import type { BriefRecord, CallRecord, RunMeta, TrialRecord } from "./l2-run.js";
-import { isTruncationStop } from "./run.js";
+import { LiveLedger, isTruncationStop } from "./run.js";
 
 // ── Fixed by the pre-registration ────────────────────────────────────────────────────
 
@@ -38,7 +41,8 @@ export const MAX_DROPPED = 4;
 /** The two models, in run order (§ 2: Haiku first, then Sonnet). */
 export const HAIKU = "claude-haiku-5-5";
 export const SONNET = "claude-sonnet-5-5";
-/** The exact `eval:l2` arguments of each model's one command (§ 2). */
+/** The `eval:l2` arguments of each model's one command (§ 2). `--yes` is not compared: the
+ *  pre-registration also allows `ARCHLANG_EVAL_CONFIRM=1` in its place (§ 3). */
 export const T3_ARGV: Readonly<Record<string, readonly string[]>> = {
   [HAIKU]: ["--yes", "--trials", "3", "--concurrency", "4", "--budget", "25usd"],
   [SONNET]: ["--yes", "--trials", "3", "--concurrency", "4", "--budget", "80usd"],
@@ -54,12 +58,16 @@ const NET_TOLERANCE = 1e-9;
 /** The label every § 6 table carries. */
 export const SECONDARY_LABEL = "secondary, not pre-registered for a decision";
 
+/** How § 2's "a model not run by 2026-11-30 00:00 UTC" is read, printed in every report. */
+export const DEADLINE_READING =
+  'Reading of § 2 applied here: a model is "not run by 2026-11-30 00:00 UTC" when its argument is `none` or its record\'s `meta.startedAt` is at or after that instant. Such a model is "Inconclusive (not run)" and enters Holm with p = 1. A record that started before the deadline but did not complete is handled by § 5.';
+
 // ── The record, as `buildRecord` in eval/l2-run.ts writes it ──────────────────────────
 
 /** The `eval:l2` JSON record (`buildRecord`). */
 export interface L2Record {
   meta: RunMeta & { mode?: string; status: string; maxRounds?: number; judge?: string };
-  summary?: { net?: { intent?: number; valid?: number; sound?: number } };
+  summary: { net: { intent: number; valid?: number; sound?: number } };
   briefs: BriefRecord[];
   ledger: {
     calls: number;
@@ -74,6 +82,7 @@ export interface L2Record {
 }
 
 const isObj = (x: unknown): x is Record<string, unknown> => typeof x === "object" && x !== null && !Array.isArray(x);
+const isTime = (x: unknown): x is string => typeof x === "string" && !Number.isNaN(Date.parse(x));
 
 /** Check the parts of a parsed record the analysis reads, and return it typed. Throws on
  *  anything missing: a record the script cannot read is an error, never a verdict. */
@@ -87,8 +96,16 @@ export function asRecord(raw: unknown, label: string): L2Record {
   const meta = r.meta as Record<string, unknown>;
   if (typeof meta.status !== "string") bad("meta.status is not a string");
   if (typeof meta.model !== "string") bad("meta.model is not a string");
+  if (!isTime(meta.startedAt)) bad("meta.startedAt is not a timestamp");
+  if (meta.endedAt !== null && !isTime(meta.endedAt)) bad("meta.endedAt is neither null nor a timestamp");
   if (!isObj(meta.git)) bad("no meta.git");
+  const head = (meta.git as Record<string, unknown>).head;
+  if (typeof head !== "string" || head === "") bad("meta.git.head is not a non-empty string");
+  if (!isObj(r.summary)) bad("no summary");
+  const net = (r.summary as Record<string, unknown>).net;
+  if (!isObj(net) || typeof net.intent !== "number") bad("no numeric summary.net.intent");
   if (!Array.isArray(r.briefs)) bad("briefs is not an array");
+  if ((r.briefs as unknown[]).length > T3_BRIEFS) bad(`more than ${T3_BRIEFS} briefs`);
   if (!isObj(r.ledger) || typeof (r.ledger as Record<string, unknown>).calls !== "number") bad("no ledger.calls");
   const seen = new Set<string>();
   for (const b of r.briefs as unknown[]) {
@@ -111,10 +128,6 @@ export function asRecord(raw: unknown, label: string): L2Record {
         typeof tr.controlScore.intent === "boolean";
       if (!ok) bad(`brief ${id} has a trial without a stored loopScore.intent / controlScore.intent`);
     }
-  }
-  if (r.summary !== undefined) {
-    const net = isObj(r.summary) ? (r.summary as Record<string, unknown>).net : undefined;
-    if (!isObj(net) || typeof net.intent !== "number") bad("summary without a numeric summary.net.intent");
   }
   return raw as L2Record;
 }
@@ -178,9 +191,8 @@ export function holm2(a: Rational, b: Rational): [Rational, Rational] {
 
 // ── One model's primary quantities (§ 4, § 5) ────────────────────────────────────────
 
-/** Why a brief was dropped (§ 5): a failed call, the budget breaker, or the run stopping
- *  before the brief was written to the record. */
-export type DropReason = "error" | "budget" | "abort" | "not in the record" | "trial count";
+/** Why a brief was dropped: the three reasons of § 5. */
+export type DropReason = "error" | "budget" | "abort";
 
 /** One dropped brief, for the § 5 list. */
 export interface Dropped {
@@ -199,8 +211,6 @@ export interface ModelAnalysis {
   /** Briefs not complete, of the 26 (`26 − c`). */
   m: number;
   dropped: Dropped[];
-  /** s_b per complete brief, in record order. */
-  sb: { id: string; s: number }[];
   S: number;
   /** S / (3c); `null` when c = 0. */
   D: number | null;
@@ -221,12 +231,15 @@ function isComplete(b: BriefRecord): boolean {
   return ts.size === T3_TRIALS && [1, 2, 3].every((t) => ts.has(t));
 }
 
-const oneLine = (s: string, max = 200): string => {
-  const flat = s.replace(/[\r\n]+/g, " ").trim();
-  return flat.length > max ? `${flat.slice(0, max)}…` : flat;
-};
+/** Markdown table-cell escapes, character by character (no regex replace, so no character is
+ *  left half-escaped), as `eval/l2-run.ts` and `scripts/gen-module-map.ts` do. */
+const CELL_ESC: Record<string, string> = { "|": "\\|", "\\": "\\\\", "\r": " ", "\n": " " };
+/** A free-text value made safe for one Markdown table cell or list item. */
+export const cell = (s: string): string => Array.from(s, (c) => CELL_ESC[c] ?? c).join("");
+const clip = (s: string, max = 200): string => (s.length > max ? `${s.slice(0, max)}…` : s);
 
-/** Compute § 4 and § 5 for one model's record. Throws when |D − summary.net.intent| ≥ 1e-9. */
+/** Compute § 4 and § 5 for one model's record. Throws when |D − summary.net.intent| ≥ 1e-9
+ *  (at c = 0, D is undefined and the harness's net.intent must be 0). */
 export function analyseModel(model: string, rec: L2Record): ModelAnalysis {
   const complete = rec.briefs.filter(isComplete);
   const dropped: Dropped[] = [];
@@ -237,36 +250,34 @@ export function analyseModel(model: string, rec: L2Record): ModelAnalysis {
       dropped.push({
         id: b.id,
         reason: "error",
-        detail: `trial ${b.failure?.trial ?? "?"} failed (${b.trials.length} trial(s) kept): ${oneLine(b.failure?.message ?? "no message")}`,
+        detail: `trial ${b.failure?.trial ?? "?"} failed, ${b.trials.length} trial(s) kept: ${clip(b.failure?.message ?? "no message")}`,
       });
-    else dropped.push({ id: b.id, reason: "trial count", detail: `status complete with ${b.trials.length} trial(s)` });
+    else dropped.push({ id: b.id, reason: "error", detail: `status complete but ${b.trials.length} trial(s)` });
   }
   const missing = T3_BRIEFS - rec.briefs.length;
   if (missing > 0) {
-    const reason: DropReason = rec.meta.status === "complete" ? "not in the record" : "abort";
     dropped.push({
       id: null,
-      reason,
-      detail: `${missing} brief(s) never written to the record; it does not name them`,
+      reason: "abort",
+      detail: `${missing} brief(s) never written to the record (record status ${rec.meta.status}), which does not name them; the result file lists their ids by hand from \`git show ${rec.meta.git.head}:eval/corpus.json\``,
     });
   }
 
-  const sb = complete.map((b) => ({
-    id: b.id,
-    s: b.trials.reduce((acc, t) => acc + (t.loopScore.intent ? 1 : 0) - (t.controlScore.intent ? 1 : 0), 0),
-  }));
+  const sb = complete.map((b) =>
+    b.trials.reduce((acc, t) => acc + (t.loopScore.intent ? 1 : 0) - (t.controlScore.intent ? 1 : 0), 0),
+  );
   const c = complete.length;
-  const S = sb.reduce((a, x) => a + x.s, 0);
+  const S = sb.reduce((a, s) => a + s, 0);
   const D = c === 0 ? null : S / (3 * c);
-  const net = rec.summary?.net?.intent;
-  if (D !== null && typeof net === "number" && !(Math.abs(D - net) < NET_TOLERANCE)) {
+  const net = rec.summary.net.intent;
+  if (!(Math.abs((D ?? 0) - net) < NET_TOLERANCE)) {
     throw new Error(
-      `${model}: D = ${D} but the record's summary.net.intent = ${net} (|Δ| ≥ ${NET_TOLERANCE}); the record and the analysis disagree`,
+      `${model}: D = ${D ?? "undefined (c = 0)"} but the record's summary.net.intent = ${net} (|Δ| ≥ ${NET_TOLERANCE}); the record and the analysis disagree`,
     );
   }
-  const ties = sb.filter((x) => x.s === 0).length;
+  const ties = sb.filter((s) => s === 0).length;
   const n = c - ties;
-  const k = sb.filter((x) => x.s > 0).length;
+  const k = sb.filter((s) => s > 0).length;
   const p = signTestP(k, n);
   const m = T3_BRIEFS - c;
 
@@ -276,7 +287,7 @@ export function analyseModel(model: string, rec: L2Record): ModelAnalysis {
   } else if (m > MAX_DROPPED) {
     inconclusive = `Inconclusive for ${model}: ${m} of ${T3_BRIEFS} briefs were not completed.`;
   }
-  return { model, status: rec.meta.status, c, m, dropped, sb, S, D, ties, n, k, p, inconclusive, complete };
+  return { model, status: rec.meta.status, c, m, dropped, S, D, ties, n, k, p, inconclusive, complete };
 }
 
 // ── Formatting ───────────────────────────────────────────────────────────────────────
@@ -293,6 +304,9 @@ export const fmtP = (r: Rational): string => {
 const fmtExact = (r: Rational): string => (r.den === 1n ? `${r.num}` : `${r.num}/${r.den}`);
 const pct = (x: number): string => `${(x * 100).toFixed(1)}%`;
 const signed3 = (x: number): string => (x > 0 ? `+${x.toFixed(3)}` : x.toFixed(3));
+const usdCell = (x: number | null): string => (x === null ? "n/a (no dated price)" : `$${x.toFixed(4)}`);
+/** The file name of a path, whichever separator it uses. */
+export const baseName = (p: string): string => p.split(/[\\/]/).pop() || p;
 
 /** The § 4 verdict sentence for a model § 5 leaves conclusive. */
 export function verdictSentence(a: ModelAnalysis, pHolm: Rational): string {
@@ -307,61 +321,84 @@ export function verdictSentence(a: ModelAnalysis, pHolm: Rational): string {
   return `On this corpus and protocol, no difference between the loop and equal-budget resampling was detected for ${a.model} (${paren}).`;
 }
 
-/** The sentence for a model with no record (§ 2). */
+/** The sentence for a model that was not run (§ 2). */
 export const notRunSentence = (model: string): string => `Inconclusive (not run) for ${model}.`;
+/** The sentence for a record with `ledger.calls = 0` (§ 3). */
+export const attempt0Sentence = (model: string): string =>
+  `${model}: attempt 0 — not a run (§3); restart only on the owner's word.`;
 
-// ── Protocol checks (§ 2, § 3) ───────────────────────────────────────────────────────
+// ── Standing ─────────────────────────────────────────────────────────────────────────
 
-/** One § 2/§ 3 check the record can show. */
+/** A model's standing, decided in this order. */
+export type Standing =
+  | { kind: "not-run"; late: boolean }
+  | { kind: "attempt0"; a: ModelAnalysis }
+  | { kind: "inconclusive"; a: ModelAnalysis }
+  | { kind: "verdict"; a: ModelAnalysis };
+
+/** Whether a record started at or after the § 2 deadline. */
+const startedLate = (rec: L2Record): boolean => Date.parse(rec.meta.startedAt) >= Date.parse(T3_DEADLINE);
+
+/** A model's standing: not run (`none`, or a start at or after the deadline), attempt 0, § 5
+ *  inconclusive, or a § 4 verdict. */
+export function standingOf(model: string, rec: L2Record | null): Standing {
+  if (rec === null) return { kind: "not-run", late: false };
+  if (startedLate(rec)) return { kind: "not-run", late: true };
+  const a = analyseModel(model, rec);
+  if (rec.ledger.calls === 0) return { kind: "attempt0", a };
+  if (a.inconclusive !== null) return { kind: "inconclusive", a };
+  return { kind: "verdict", a };
+}
+
+// ── Protocol checks (§ 2) ────────────────────────────────────────────────────────────
+
+/** One § 2 check the record can show: it holds, it is violated, or the record cannot tell. */
 export interface Check {
   what: string;
-  ok: boolean;
+  state: "holds" | "violated" | "unverifiable";
   detail: string;
 }
 
-const sameArgv = (a: unknown, b: readonly string[]): boolean =>
-  Array.isArray(a) && a.length === b.length && a.every((x, i) => x === b[i]);
+const holds = (ok: boolean): Check["state"] => (ok ? "holds" : "violated");
+const withoutYes = (a: readonly unknown[]): unknown[] => a.filter((x) => x !== "--yes");
+const sameArgv = (a: unknown, b: readonly string[]): boolean => {
+  if (!Array.isArray(a)) return false;
+  const x = withoutYes(a);
+  const y = withoutYes(b);
+  return x.length === y.length && x.every((v, i) => v === y[i]);
+};
+const nonEmpty = (x: unknown): x is string => typeof x === "string" && x !== "";
 
-/** The § 2/§ 3 checks for one model's record. */
+/** The § 2 checks for one model's record. */
 function modelChecks(model: string, rec: L2Record): Check[] {
   const m = rec.meta;
-  const checks: Check[] = [
+  return [
     {
       what: `${model}: \`meta.git.dirty\` is false`,
-      ok: m.git.dirty === false,
+      state: holds(m.git.dirty === false),
       detail: `dirty = ${String(m.git.dirty)}`,
     },
     {
-      what: `${model}: \`ledger.calls\` ≥ 1 (otherwise attempt 0, not the run, § 3)`,
-      ok: rec.ledger.calls >= 1,
-      detail: `calls = ${rec.ledger.calls}`,
-    },
-    {
-      what: `${model}: the command's arguments are § 2's`,
-      ok: sameArgv(m.argv, T3_ARGV[model] ?? []),
+      what: `${model}: the command's arguments are § 2's (\`--yes\` aside)`,
+      state: holds(sameArgv(m.argv, T3_ARGV[model] ?? [])),
       detail: `argv = ${JSON.stringify(m.argv)}`,
     },
     {
       what: `${model}: provider anthropic, ${T3_BRIEFS} briefs, ${T3_TRIALS} trials, MAX_ROUNDS ${T3_MAX_ROUNDS}`,
-      ok:
+      state: holds(
         m.provider === "anthropic" && m.briefs === T3_BRIEFS && m.trials === T3_TRIALS && m.maxRounds === T3_MAX_ROUNDS,
+      ),
       detail: `provider ${String(m.provider)}, briefs ${String(m.briefs)}, trials ${String(m.trials)}, maxRounds ${String(m.maxRounds)}`,
     },
     {
       what: `${model}: judge ${JUDGE_VERSION} (\`JUDGE_VERSION\` unchanged)`,
-      ok: m.judge === JUDGE_VERSION,
+      state: holds(m.judge === JUDGE_VERSION),
       detail: `meta.judge = ${String(m.judge)}`,
     },
-    {
-      what: `${model}: started before ${T3_DEADLINE}`,
-      ok: typeof m.startedAt === "string" && Date.parse(m.startedAt) < Date.parse(T3_DEADLINE),
-      detail: `startedAt = ${String(m.startedAt)}`,
-    },
   ];
-  return checks;
 }
 
-/** Every § 2/§ 3 check the two records can show. A model that was not run has no checks. */
+/** Every § 2 check the two records can show. A model with no record has no checks. */
 export function protocolChecks(haiku: L2Record | null, sonnet: L2Record | null): Check[] {
   const checks: Check[] = [];
   if (haiku) checks.push(...modelChecks(HAIKU, haiku));
@@ -371,41 +408,54 @@ export function protocolChecks(haiku: L2Record | null, sonnet: L2Record | null):
     const s = sonnet.meta.git.head;
     checks.push({
       what: "both models ran at the same `meta.git.head`",
-      ok: h !== null && h === s,
+      state: holds(nonEmpty(h) && nonEmpty(s) && h === s),
       detail: `${HAIKU} ${String(h)}, ${SONNET} ${String(s)}`,
     });
     const end = haiku.meta.endedAt;
     const start = sonnet.meta.startedAt;
-    const gap = end === null ? Number.NaN : Date.parse(start) - Date.parse(end);
-    checks.push({
-      what: `${SONNET} started after ${HAIKU}'s end and within 24 h of it`,
-      ok: Number.isFinite(gap) && gap >= 0 && gap <= SONNET_WINDOW_MS,
-      detail:
-        end === null
-          ? `cannot verify: ${HAIKU}'s endedAt is null (its run did not end); ${SONNET} startedAt ${start}`
-          : `${HAIKU} endedAt ${end}, ${SONNET} startedAt ${start} (${Number.isFinite(gap) ? `${(gap / 3_600_000).toFixed(2)} h` : "unreadable"})`,
-    });
+    const what = `${SONNET} started after ${HAIKU}'s end and within 24 h of it`;
+    if (end === null) {
+      checks.push({
+        what,
+        state: "unverifiable",
+        detail: `${HAIKU}'s endedAt is null (its run did not end); ${SONNET} startedAt ${start}`,
+      });
+    } else {
+      const gap = Date.parse(start) - Date.parse(end);
+      checks.push({
+        what,
+        state: holds(gap >= 0 && gap <= SONNET_WINDOW_MS),
+        detail: `${HAIKU} endedAt ${end}, ${SONNET} startedAt ${start} (${(gap / 3_600_000).toFixed(2)} h)`,
+      });
+    }
   }
   return checks;
 }
 
 // ── § 6 secondary measures ───────────────────────────────────────────────────────────
 
+const triple = (s: MetricTriple): MetricTriple => ({ valid: s.valid, intent: s.intent, sound: s.sound });
 const cellsOf = (briefs: BriefRecord[]): TrialCell[] =>
   briefs.flatMap((b) =>
-    b.trials.map((t) => ({
-      id: b.id,
-      trial: t.trial,
-      loop: triple(t.loopScore),
-      control: triple(t.controlScore),
-    })),
+    b.trials.map((t) => ({ id: b.id, trial: t.trial, loop: triple(t.loopScore), control: triple(t.controlScore) })),
   );
-const triple = (s: MetricTriple): MetricTriple => ({ valid: s.valid, intent: s.intent, sound: s.sound });
 const trialsOf = (briefs: BriefRecord[]): TrialRecord[] => briefs.flatMap((b) => b.trials);
 const tokens = (us: { usage: { input: number; output: number } }[]): { input: number; output: number } =>
   us.reduce((a, u) => ({ input: a.input + u.usage.input, output: a.output + u.usage.output }), { input: 0, output: 0 });
 const truncatedIn = (calls: CallRecord[], arm: "loop" | "control"): number =>
   calls.filter((c) => c.arm === arm && c.stop !== null && isTruncationStop(c.stop)).length;
+/** Every call the record keeps: each trial's, and each failed trial's calls before it failed. */
+const allCalls = (rec: L2Record): CallRecord[] =>
+  rec.briefs.flatMap((b) => [...b.trials.flatMap((t) => t.calls ?? []), ...(b.failure?.calls ?? [])]);
+/** One arm's dollars at the harness's own prices (`LiveLedger`), over the calls the record keeps. */
+function armUsd(model: string, calls: CallRecord[], arm: "loop" | "control"): number | null {
+  const l = new LiveLedger(model);
+  for (const c of calls) {
+    if (c.arm === arm)
+      l.record({ input: c.fresh, output: c.output, cacheCreation: c.cacheWrite, cacheRead: c.cacheRead });
+  }
+  return l.usd();
+}
 
 function median(xs: number[]): number {
   if (xs.length === 0) return 0;
@@ -417,7 +467,8 @@ function median(xs: number[]): number {
 function secondaryTables(models: { model: string; rec: L2Record; a: ModelAnalysis }[]): string[] {
   const label = `*${SECONDARY_LABEL}.* Over the complete briefs unless a column says the whole run.`;
   const out: string[] = ["## Secondary measures (§ 6)", ""];
-  if (models.length === 0) return [...out, "No model was run.", ""];
+  out.push("Models that were not run, and attempt 0, have no rows here.", "");
+  if (models.length === 0) return [...out, "No model has a run to report.", ""];
 
   out.push("### Net deltas, valid and sound (loop − control, of the mean per-trial rates)", "", label, "");
   out.push("| Model | Valid | Sound |", "| --- | --- | --- |");
@@ -480,11 +531,22 @@ function secondaryTables(models: { model: string; rec: L2Record; a: ModelAnalysi
     );
   }
 
-  out.push("", "### Dollars", "", `*${SECONDARY_LABEL}.* Whole run.`, "");
-  out.push("| Model | Harness count (`ledger.usd`) | Console promo balance |", "| --- | --- | --- |");
+  out.push(
+    "",
+    "### Dollars",
+    "",
+    `*${SECONDARY_LABEL}.* Per arm: the harness's own prices (\`LiveLedger\`) over every call the record keeps, failed trials included. Whole run: \`ledger.usd\`, which also counts calls of briefs a stopped run never wrote. The Console's promo balance is not in the record.`,
+    "",
+  );
+  out.push(
+    "| Model | Loop arm (harness count) | Control arm (harness count) | Whole run (`ledger.usd`) | Console promo balance |",
+    "| --- | --- | --- | --- | --- |",
+  );
   for (const { model, rec } of models) {
-    const usd = rec.ledger.usd;
-    out.push(`| ${model} | ${usd === null ? "n/a" : `$${usd.toFixed(2)}`} | (from the Console, by hand) |`);
+    const calls = allCalls(rec);
+    out.push(
+      `| ${model} | ${usdCell(armUsd(model, calls, "loop"))} | ${usdCell(armUsd(model, calls, "control"))} | ${usdCell(rec.ledger.usd)} | (from the Console, by hand) |`,
+    );
   }
 
   out.push("", "### Truncated replies (`max_tokens`)", "", label, "");
@@ -519,11 +581,10 @@ export function renderReport(haikuIn: ModelInput, sonnetIn: ModelInput): string 
       );
     }
   }
-  const analyses = slots.map(({ model, input }) => (input.record ? analyseModel(model, input.record) : null));
-  // Holm (§ 4): an inconclusive or not-run model enters with p = 1.
-  const entering = analyses.map((a) => (a === null || a.inconclusive !== null ? ONE : a.p));
-  const [h0, h1] = holm2(entering[0] as Rational, entering[1] as Rational);
-  const pHolm = [h0, h1];
+  const standings = slots.map(({ model, input }) => standingOf(model, input.record));
+  // Holm (§ 4): every standing but a § 4 verdict enters with p = 1.
+  const entering = standings.map((s) => (s.kind === "verdict" ? s.a.p : ONE));
+  const pHolm = holm2(entering[0] as Rational, entering[1] as Rational);
 
   const out: string[] = [
     "# T3 result: analysis output",
@@ -531,42 +592,58 @@ export function renderReport(haikuIn: ModelInput, sonnetIn: ModelInput): string 
     "Printed by `eval/t3-analysis.ts` from the two records, as pre-registered in",
     "`eval/live-runs/2026-11-t3-preregistration.md` (§§ 4–6).",
     "",
-    `- ${HAIKU}: ${haikuIn.record ? `\`${haikuIn.source}\`` : "none (not run)"}`,
-    `- ${SONNET}: ${sonnetIn.record ? `\`${sonnetIn.source}\`` : "none (not run)"}`,
+    ...slots.map(
+      ({ model, input }) => `- ${model}: ${input.record ? `\`${cell(baseName(input.source))}\`` : "none (not run)"}`,
+    ),
     "",
   ];
 
-  // § 2 / § 3 checks.
+  // § 2 / § 3 checks and notes.
   const checks = protocolChecks(haikuIn.record, sonnetIn.record);
-  const violations = checks.filter((c) => !c.ok);
+  const violations = checks.filter((c) => c.state === "violated");
+  const notes: string[] = [];
+  for (const c of checks) if (c.state === "unverifiable") notes.push(`cannot verify "${c.what}": ${cell(c.detail)}.`);
+  slots.forEach(({ model, input }, i) => {
+    const s = standings[i];
+    if (s?.kind === "not-run" && s.late && input.record) {
+      notes.push(
+        `${model}: \`meta.startedAt\` ${input.record.meta.startedAt} is at or after ${T3_DEADLINE}, so it is "Inconclusive (not run)" (reading below).`,
+      );
+    }
+    if (s?.kind === "attempt0")
+      notes.push(`${model}: \`ledger.calls\` = 0, so this record is attempt 0, not a run (§ 3).`);
+  });
   out.push("## Protocol checks (§ 2, § 3)", "");
   if (violations.length > 0) {
     out.push(`> **PROTOCOL VIOLATION: ${violations.length} check(s) failed.** They change no verdict below.`);
-    for (const v of violations) out.push(`> - **${v.what}**: ${v.detail}`);
+    for (const v of violations) out.push(`> - **${v.what}**: ${cell(v.detail)}`);
     out.push("");
   }
   if (checks.length === 0) out.push("No record, so nothing to check.", "");
   else {
     out.push("| Check | Holds | Detail |", "| --- | --- | --- |");
-    for (const c of checks) out.push(`| ${c.what} | ${c.ok ? "yes" : "**NO**"} | ${c.detail.replace(/\|/g, "\\|")} |`);
+    const shown: Record<Check["state"], string> = { holds: "yes", violated: "**NO**", unverifiable: "cannot verify" };
+    for (const c of checks) out.push(`| ${c.what} | ${shown[c.state]} | ${cell(c.detail)} |`);
     out.push("");
   }
+  if (notes.length > 0) out.push(...notes.map((n) => `- Note: ${n}`), "");
 
   // § 4 / § 5 verdicts.
   out.push("## Verdicts (§ 4, § 5)", "");
   let anyNoDifference = false;
   slots.forEach(({ model }, i) => {
-    const a = analyses[i];
+    const s = standings[i] as Standing;
     let sentence: string;
-    if (!a) sentence = notRunSentence(model);
-    else if (a.inconclusive) sentence = a.inconclusive;
+    if (s.kind === "not-run") sentence = notRunSentence(model);
+    else if (s.kind === "attempt0") sentence = attempt0Sentence(model);
+    else if (s.kind === "inconclusive") sentence = s.a.inconclusive ?? "";
     else {
-      sentence = verdictSentence(a, pHolm[i] as Rational);
+      sentence = verdictSentence(s.a, pHolm[i] as Rational);
       if (sentence.includes("no difference")) anyNoDifference = true;
     }
     out.push(`- ${sentence}`);
   });
-  out.push("");
+  out.push("", DEADLINE_READING, "");
   if (anyNoDifference) {
     out.push(
       'A "no difference detected" verdict at this resolution is not evidence of no effect (§ 4: with Holm over two models a model needs raw p < 0.025, 20/26 at n = 26; n counts non-tied briefs only).',
@@ -574,67 +651,66 @@ export function renderReport(haikuIn: ModelInput, sonnetIn: ModelInput): string 
     );
   }
 
-  // § 4 quantities.
+  // § 4 quantities: in full for a § 4 verdict; status and counts only otherwise.
   out.push("## Primary quantities (§ 4)", "");
   out.push(
-    "Per complete brief b, s_b = Σ over its 3 trials of (loop intent − control intent); S = Σ s_b; D = S / (3c); n = non-tied complete briefs; k = those with s_b > 0. Raw p is the exact two-sided sign test; an inconclusive or not-run model enters Holm with p = 1.",
+    "Per complete brief b, s_b = Σ over its 3 trials of (loop intent − control intent); S = Σ s_b; D = S / (3c); n = non-tied complete briefs; k = those with s_b > 0. Raw p is the exact two-sided sign test. A model without a § 4 verdict shows only its status and counts, and enters Holm with p = 1.",
     "",
   );
   out.push(
-    "| Model | Record status | c | Dropped (of 26) | S | 3c | D | Ties | n | k | n − k | Raw p (exact) | Enters Holm | p_Holm |",
-    "| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |",
+    "| Model | Standing | Record status | c | Dropped (of 26) | S | 3c | D | Ties | n | k | n − k | Raw p (exact) | Enters Holm | p_Holm |",
+    "| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |",
   );
-  slots.forEach(({ model }, i) => {
-    const a = analyses[i];
-    const ph = pHolm[i] as Rational;
-    const en = entering[i] as Rational;
-    if (!a) {
-      out.push(`| ${model} | not run | — | — | — | — | — | — | — | — | — | — | ${fmtP(en)} | ${fmtP(ph)} |`);
-      return;
+  const dash8 = Array(8).fill("—").join(" | ");
+  slots.forEach(({ model, input }, i) => {
+    const s = standings[i] as Standing;
+    const en = fmtP(entering[i] as Rational);
+    if (s.kind === "not-run") {
+      const st = s.late ? "not run (started at or after the deadline)" : "not run";
+      out.push(
+        `| ${model} | ${st} | ${input.record ? cell(input.record.meta.status) : "—"} | — | — | ${dash8} | ${en} | — |`,
+      );
+    } else if (s.kind !== "verdict") {
+      const st = s.kind === "attempt0" ? "attempt 0 (not a run)" : "inconclusive (§ 5)";
+      out.push(`| ${model} | ${st} | ${cell(s.a.status)} | ${s.a.c} | ${s.a.m} | ${dash8} | ${en} | — |`);
+    } else {
+      const a = s.a;
+      out.push(
+        `| ${model} | § 4 verdict | ${cell(a.status)} | ${a.c} | ${a.m} | ${a.S} | ${3 * a.c} | ${fmtD(a.D)} | ${a.ties} | ${a.n} | ${a.k} | ${a.n - a.k} | ${fmtP(a.p)} (${fmtExact(a.p)}) | ${en} | ${fmtP(pHolm[i] as Rational)} |`,
+      );
     }
-    out.push(
-      `| ${model} | ${a.status} | ${a.c} | ${a.m} | ${a.S} | ${3 * a.c} | ${fmtD(a.D)} | ${a.ties} | ${a.n} | ${a.k} | ${a.n - a.k} | ${fmtP(a.p)} (${fmtExact(a.p)}) | ${fmtP(en)} | ${fmtP(ph)} |`,
-    );
   });
   out.push("");
-  const inconclusiveWithData = analyses.filter((a): a is ModelAnalysis => a !== null && a.inconclusive !== null);
-  if (inconclusiveWithData.length > 0) {
-    out.push(
-      `For ${inconclusiveWithData.map((a) => a.model).join(" and ")}, § 5 makes the verdict inconclusive: the row above is arithmetic over the record and decides nothing.`,
-      "",
-    );
-  }
-  const histogram = slots.flatMap(({ model }, i) => {
-    const a = analyses[i];
-    if (!a || a.sb.length === 0) return [];
-    const counts = new Map<number, number>();
-    for (const { s } of a.sb) counts.set(s, (counts.get(s) ?? 0) + 1);
-    const parts = [...counts.keys()].sort((x, y) => y - x).map((s) => `${s > 0 ? `+${s}` : s}: ${counts.get(s) ?? 0}`);
-    return [`- ${model}, complete briefs by s_b: ${parts.join(" · ")}`];
-  });
-  if (histogram.length > 0) out.push(...histogram, "");
 
   // § 5 list.
   out.push("## Dropped briefs (§ 5)", "");
   slots.forEach(({ model }, i) => {
-    const a = analyses[i];
-    if (!a) {
+    const s = standings[i] as Standing;
+    if (s.kind === "not-run") {
       out.push(`- ${model}: not run.`);
       return;
     }
-    if (a.dropped.length === 0) {
+    if (s.kind === "attempt0") {
+      out.push(`- ${model}: attempt 0, not a run.`);
+      return;
+    }
+    if (s.a.dropped.length === 0) {
       out.push(`- ${model}: none.`);
       return;
     }
     out.push(`- ${model}:`);
-    for (const d of a.dropped) out.push(`  - ${d.id === null ? "(unnamed)" : `\`${d.id}\``}: ${d.reason}. ${d.detail}`);
+    for (const d of s.a.dropped) {
+      out.push(`  - ${d.id === null ? "(unnamed)" : `\`${cell(d.id)}\``}: ${d.reason} (${cell(d.detail)})`);
+    }
   });
   out.push("");
 
-  // § 6 tables.
+  // § 6 tables: every model with a run (a § 4 verdict or § 5 inconclusive).
   const run = slots.flatMap(({ model, input }, i) => {
-    const a = analyses[i];
-    return input.record && a ? [{ model, rec: input.record, a }] : [];
+    const s = standings[i] as Standing;
+    return input.record && (s.kind === "verdict" || s.kind === "inconclusive")
+      ? [{ model, rec: input.record, a: s.a }]
+      : [];
   });
   out.push(...secondaryTables(run));
   return out.join("\n");
@@ -654,7 +730,7 @@ export function readRecord(arg: string, read: (path: string) => Buffer = (p) => 
   } catch (err) {
     throw new Error(`${arg}: not JSON (${(err as Error).message})`);
   }
-  return { source: arg.replace(/\\/g, "/"), record: asRecord(raw, arg) };
+  return { source: arg, record: asRecord(raw, arg) };
 }
 
 /** The whole CLI as a function of its arguments: the report, or an error. */
