@@ -55,174 +55,48 @@ const API: ClauseLawApi = {
 
 /** `[surface digest, file]`, measured on `main` at `60e2436c` (see the header). */
 const BASELINE: [string, string][] = [
-  [
-    "5f69fe78d45db6b096e3e7f4c44bfcdb537c4201d06fee8780e813112869f20c",
-    "examples/accessible.arch",
-  ],
-  [
-    "e66504b7142257fc5c1c76c6e1b2f04a68be43ce98ea12b5be242d8e29171521",
-    "examples/aquarium.arch",
-  ],
-  [
-    "07995653257dff5785f4fe210e3c4f6f9d6fc35165be2e5ae34df364079029dc",
-    "examples/attached.arch",
-  ],
-  [
-    "cda041e6004160bf8b826158202f931b3b6457c88f8edd7dc147282163c1c283",
-    "examples/bungalow.arch",
-  ],
-  [
-    "809f674a9d48b528c5e9850768c92afe5d826c22783f1a18df610d8a88adb4f6",
-    "examples/classroom-block.arch",
-  ],
-  [
-    "af780d4296064bdd7a1d81dfc776fa586520a26bfaed8295f3298ff91373ead5",
-    "examples/clinic.arch",
-  ],
-  [
-    "a6d2075bd43f6d46984d64a2ae8edd6e6c96f25ea4fae91f2984ad7bdd4a5b1f",
-    "examples/corner-cafe.arch",
-  ],
-  [
-    "50c9cc316efda2bf16183e877d4be16443df160c9c13fc2a0210d62945c4bd67",
-    "examples/courtyard-family.arch",
-  ],
-  [
-    "e5a170e01d15451ed5a322d6eb9f8267a356f208fea829dfce19cd6d3e1a43ce",
-    "examples/courtyard-house.arch",
-  ],
-  [
-    "cdb42b5c1bee8dd931d9b99b1e338dd895e4cb5d2de1915de8a85f04a3fd444a",
-    "examples/furnished-flat.arch",
-  ],
-  [
-    "0e8f7696890b8f3e01211ecbc873996f49ba22fff103e349e8f4660b1417a1c2",
-    "examples/gallery-l.arch",
-  ],
-  [
-    "55ad2593f768d91a282b6cde6e8a06f6ee5dbd5701fe1858aa8905431432767a",
-    "examples/garden-house.arch",
-  ],
-  [
-    "f273e4717a1afae1cd94ae0f62a7390ae603c7418fbe434e061e191aa98231a0",
-    "examples/garden-loft.arch",
-  ],
-  [
-    "3078765cf03974518e0f2b3ea13585cca69ffbb86438f0899218c8a1c24a09a8",
-    "examples/hexagon-pavilion.arch",
-  ],
-  [
-    "36397208c3c6ea06f9bbc3efba156b33de2189455086852e290890f3c8784884",
-    "examples/hillside-villa.arch",
-  ],
-  [
-    "3aa7b2d5f953e6df63059c368e391ee3ea58c097cd7dff358197a940f4946252",
-    "examples/imports.arch",
-  ],
-  [
-    "f4f0ed59cff4dd7b970fe069579044226fcb0e4f68f24a85845e648875ed17e5",
-    "examples/knob-flat.arch",
-  ],
-  [
-    "21459ebc71dbc508de2faae421b59ac48afd068dd1813adb6bf0595b9963fb3e",
-    "examples/laneway-house.arch",
-  ],
-  [
-    "f57eaea084d2e6e62b85b8450ef96675e9f1466bea9aff24e2869f2d6f0c9804",
-    "examples/lib/doors.arch",
-  ],
-  [
-    "57d6c78e2eea8451a9b32a5828f3babb24b0251cc5c3b72675b431be22b3f310",
-    "examples/lib/fixtures.arch",
-  ],
-  [
-    "adf16d60e17d76d76f092f95fb24dab4b7ba5ebaa977ed32bcc3a8eaddc7e05b",
-    "examples/lib/furniture.arch",
-  ],
-  [
-    "9354e572f6d9df8c04e9b3b0fee0fe15b5ddf87831e0feba28078aaa4158ba92",
-    "examples/library.arch",
-  ],
-  [
-    "635e4b1a04bb6497e1fff846708c3f28519c89b531f5ad14b363381344cad925",
-    "examples/materials.arch",
-  ],
-  [
-    "546b10dfb0204dbce454dff9e47713f32745285f4885e58a46b5faff23d10126",
-    "examples/museum-wing.arch",
-  ],
-  [
-    "1149f0993df1cd719dcffd1d8c5c43c4ea6176c9a43b47954b23b3950bcc6f4a",
-    "examples/museum-wings.arch",
-  ],
-  [
-    "3eb89a03ff32698a0e11f9419f7d8bc6317ce66d2b660dd289d085cb4ecd36a4",
-    "examples/museum.arch",
-  ],
-  [
-    "8c47e263f778993d69c2f85d07a24b3a62c0b96d9f17ccb5cd9ebf2af6fa0120",
-    "examples/one-room.arch",
-  ],
-  [
-    "402cf58e4e122164928e6d875320e63b7be5c017396dce026ab8c73d4a0373ef",
-    "examples/parametric.arch",
-  ],
-  [
-    "f55654d5dd8db8243b7e46f3e9afe6ed8b265da11392f797608f5364d5c4d2b4",
-    "examples/practice-office.arch",
-  ],
-  [
-    "d99a898c06b322f203c7f9f3d34740be351b523712bb04fe7b0d846e85811084",
-    "examples/relational.arch",
-  ],
-  [
-    "f0f4a5aa4758c3f9feb14449b6a9be0b7afd020fb925619c6d83e66f7cb95f2d",
-    "examples/remodel.arch",
-  ],
-  [
-    "602cfd5f8e34268bf660dcad47b5cbf28332ddf92a119fba7317850ab9f9d798",
-    "examples/sheet-notes.arch",
-  ],
-  [
-    "54adc1b89e5472644f55bc3f33f9aa6fd1576b39b324eb6afd8370d8e3cb796f",
-    "examples/showcase/garden-courtyard.arch",
-  ],
-  [
-    "b64f7234dddc6527a0176033e82b38b70ad4fe84ca8df22b7a2e3269a1029553",
-    "examples/studio.arch",
-  ],
-  [
-    "6667da00528cdd4ee4f155586a049ad877f81b83178f5a18c85afef7a76a781d",
-    "examples/terrace-row.arch",
-  ],
-  [
-    "edd65eb6b725687bb30a7c956132e01bc2b9c57d772afaa9c234745af332f8bf",
-    "examples/themed.arch",
-  ],
-  [
-    "7dec52e5621d9af9dbdcf7cb73e58791705e6d976bbecf5ae59419c1c9a9ea17",
-    "examples/tiny-house.arch",
-  ],
-  [
-    "4ebf99f3ba158cc7652424c413c94f9f837f6afd24546d8bbac0f080bb281652",
-    "examples/townhouse.arch",
-  ],
-  [
-    "a9145858f1fb7a7f1a0f0aa86d53e115bfda51e68c2101b822913d7bdc97eed5",
-    "examples/transit-hall.arch",
-  ],
-  [
-    "a60a7362582085a80c577e970a5139fc01d12ec4600af7ad8f4ed8a4ede897aa",
-    "examples/turning-stair.arch",
-  ],
-  [
-    "fe871cbb3d60c1594495e38b1ad0dc30ce3f71904c27b85fa60f276d3aa182bd",
-    "examples/two-bed.arch",
-  ],
-  [
-    "9bad4f64cdc450219b6adac2c6de7a4790d0b48917ef88358b9c54c78b57a90f",
-    "examples/two-storey.arch",
-  ],
+  ["5f69fe78d45db6b096e3e7f4c44bfcdb537c4201d06fee8780e813112869f20c", "examples/accessible.arch"],
+  ["e66504b7142257fc5c1c76c6e1b2f04a68be43ce98ea12b5be242d8e29171521", "examples/aquarium.arch"],
+  ["07995653257dff5785f4fe210e3c4f6f9d6fc35165be2e5ae34df364079029dc", "examples/attached.arch"],
+  ["cda041e6004160bf8b826158202f931b3b6457c88f8edd7dc147282163c1c283", "examples/bungalow.arch"],
+  ["809f674a9d48b528c5e9850768c92afe5d826c22783f1a18df610d8a88adb4f6", "examples/classroom-block.arch"],
+  ["af780d4296064bdd7a1d81dfc776fa586520a26bfaed8295f3298ff91373ead5", "examples/clinic.arch"],
+  ["a6d2075bd43f6d46984d64a2ae8edd6e6c96f25ea4fae91f2984ad7bdd4a5b1f", "examples/corner-cafe.arch"],
+  ["50c9cc316efda2bf16183e877d4be16443df160c9c13fc2a0210d62945c4bd67", "examples/courtyard-family.arch"],
+  ["e5a170e01d15451ed5a322d6eb9f8267a356f208fea829dfce19cd6d3e1a43ce", "examples/courtyard-house.arch"],
+  ["cdb42b5c1bee8dd931d9b99b1e338dd895e4cb5d2de1915de8a85f04a3fd444a", "examples/furnished-flat.arch"],
+  ["0e8f7696890b8f3e01211ecbc873996f49ba22fff103e349e8f4660b1417a1c2", "examples/gallery-l.arch"],
+  ["55ad2593f768d91a282b6cde6e8a06f6ee5dbd5701fe1858aa8905431432767a", "examples/garden-house.arch"],
+  ["f273e4717a1afae1cd94ae0f62a7390ae603c7418fbe434e061e191aa98231a0", "examples/garden-loft.arch"],
+  ["3078765cf03974518e0f2b3ea13585cca69ffbb86438f0899218c8a1c24a09a8", "examples/hexagon-pavilion.arch"],
+  ["36397208c3c6ea06f9bbc3efba156b33de2189455086852e290890f3c8784884", "examples/hillside-villa.arch"],
+  ["3aa7b2d5f953e6df63059c368e391ee3ea58c097cd7dff358197a940f4946252", "examples/imports.arch"],
+  ["f4f0ed59cff4dd7b970fe069579044226fcb0e4f68f24a85845e648875ed17e5", "examples/knob-flat.arch"],
+  ["21459ebc71dbc508de2faae421b59ac48afd068dd1813adb6bf0595b9963fb3e", "examples/laneway-house.arch"],
+  ["f57eaea084d2e6e62b85b8450ef96675e9f1466bea9aff24e2869f2d6f0c9804", "examples/lib/doors.arch"],
+  ["57d6c78e2eea8451a9b32a5828f3babb24b0251cc5c3b72675b431be22b3f310", "examples/lib/fixtures.arch"],
+  ["adf16d60e17d76d76f092f95fb24dab4b7ba5ebaa977ed32bcc3a8eaddc7e05b", "examples/lib/furniture.arch"],
+  ["9354e572f6d9df8c04e9b3b0fee0fe15b5ddf87831e0feba28078aaa4158ba92", "examples/library.arch"],
+  ["635e4b1a04bb6497e1fff846708c3f28519c89b531f5ad14b363381344cad925", "examples/materials.arch"],
+  ["546b10dfb0204dbce454dff9e47713f32745285f4885e58a46b5faff23d10126", "examples/museum-wing.arch"],
+  ["1149f0993df1cd719dcffd1d8c5c43c4ea6176c9a43b47954b23b3950bcc6f4a", "examples/museum-wings.arch"],
+  ["3eb89a03ff32698a0e11f9419f7d8bc6317ce66d2b660dd289d085cb4ecd36a4", "examples/museum.arch"],
+  ["8c47e263f778993d69c2f85d07a24b3a62c0b96d9f17ccb5cd9ebf2af6fa0120", "examples/one-room.arch"],
+  ["402cf58e4e122164928e6d875320e63b7be5c017396dce026ab8c73d4a0373ef", "examples/parametric.arch"],
+  ["f55654d5dd8db8243b7e46f3e9afe6ed8b265da11392f797608f5364d5c4d2b4", "examples/practice-office.arch"],
+  ["d99a898c06b322f203c7f9f3d34740be351b523712bb04fe7b0d846e85811084", "examples/relational.arch"],
+  ["f0f4a5aa4758c3f9feb14449b6a9be0b7afd020fb925619c6d83e66f7cb95f2d", "examples/remodel.arch"],
+  ["602cfd5f8e34268bf660dcad47b5cbf28332ddf92a119fba7317850ab9f9d798", "examples/sheet-notes.arch"],
+  ["54adc1b89e5472644f55bc3f33f9aa6fd1576b39b324eb6afd8370d8e3cb796f", "examples/showcase/garden-courtyard.arch"],
+  ["b64f7234dddc6527a0176033e82b38b70ad4fe84ca8df22b7a2e3269a1029553", "examples/studio.arch"],
+  ["6667da00528cdd4ee4f155586a049ad877f81b83178f5a18c85afef7a76a781d", "examples/terrace-row.arch"],
+  ["edd65eb6b725687bb30a7c956132e01bc2b9c57d772afaa9c234745af332f8bf", "examples/themed.arch"],
+  ["7dec52e5621d9af9dbdcf7cb73e58791705e6d976bbecf5ae59419c1c9a9ea17", "examples/tiny-house.arch"],
+  ["4ebf99f3ba158cc7652424c413c94f9f837f6afd24546d8bbac0f080bb281652", "examples/townhouse.arch"],
+  ["a9145858f1fb7a7f1a0f0aa86d53e115bfda51e68c2101b822913d7bdc97eed5", "examples/transit-hall.arch"],
+  ["a60a7362582085a80c577e970a5139fc01d12ec4600af7ad8f4ed8a4ede897aa", "examples/turning-stair.arch"],
+  ["fe871cbb3d60c1594495e38b1ad0dc30ce3f71904c27b85fa60f276d3aa182bd", "examples/two-bed.arch"],
+  ["9bad4f64cdc450219b6adac2c6de7a4790d0b48917ef88358b9c54c78b57a90f", "examples/two-storey.arch"],
 ];
 
 /** A 10 m square room, walled on its four edges (`walled`) or standing alone. */
@@ -414,7 +288,9 @@ suite("a kind with no footprint: the message says why", () => {
         (d) => d.code === "E_FURN_SIZE",
       );
       expect(ds, p).toHaveLength(1);
-      expect(ds[0]!.message, p).toBe('Furniture "sofa_1" needs a `size WxH`: a sofa has no catalogued footprint to default to');
+      expect(ds[0]!.message, p).toBe(
+        'Furniture "sofa_1" needs a `size WxH`: a sofa has no catalogued footprint to default to',
+      );
       expect(ds[0]!.hints?.[0], p).toMatch(/under any placement/);
     }
   });
