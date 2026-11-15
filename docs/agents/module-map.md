@@ -170,7 +170,7 @@ Totals: 401 modules in 34 directories.
 | `glb-export.ts` | 35 | 3 | Share → Export → GLB (public-surfaces card X5; in the Share menu since card PG4): its own chunk, loaded on the first click (actions.ts imports it dynamically, beside plan3d.ts), so glTF-Transform never reaches the startup chunks or the 3D… | none |
 | `glb-note.ts` | 19 | 1 | The words beside Share → Export → GLB (ruling PG-D5; card X5's note): what the browser writes, and that it does not check it, as the CLI does. Apart from glb-export.ts and preview3d.ts so the startup chunk can put the note in the menu… | none |
 | `intent-panel.ts` | 111 | 1 | Intent, the Checks tab's last section — the v1.14 intent channel, in the browser. | none |
-| `interact.ts` | 149 | 2 | Preview interactions on top of the SVG: - hover a room → tooltip with its name, area and size (C2, room-facts.ts `roomTip`), hit-tested geometrically against describe()'s room bboxes; - click a room → its facts card (room-card.ts), or… | none |
+| `interact.ts` | 213 | 2 | Preview interactions on top of the SVG: - hover a room → tooltip with its name, area and size (C2, room-facts.ts `roomTip`), hit-tested against describe()'s room shapes (`floor_circle`, `floor_polygon`); - click a room → its facts card… | none |
 | `knobs-panel.ts` | 255 | 2 | The Knobs panel: one slider per knob of the plan on screen (knobs.ts), in the drawing's lower-left corner (a bottom sheet on a phone). A native `<details>`, so it folds with a click or the keyboard; each slider is a native `<input… | none |
 | `knobs.ts` | 130 | 3 | Knobs (card P4, PS-D4): a slider for each plain number a plan names at its top level. | none |
 | `level-switcher.ts` | 105 | 1 | The storey switcher — one `L<n>` button per `level` block of a multi-storey plan. | none |
@@ -258,7 +258,7 @@ Totals: 401 modules in 34 directories.
 | `identity.ts` | 33 | 3 | Process-local stable identity tokens for cache keying. | none |
 | `impact.ts` | 1405 | 3 | `impact(before, after)` (plan-soundness card PS4.2): change one number, see what follows, what stays put, and what breaks. The executable answer to "what changes, what must not". | none |
 | `import.ts` | 350 | 32 | Module linking — the `import` system. | none |
-| `index.ts` | 713 | 438 | ArchLang — compile declarative floor-plan source to a professional SVG. | none |
+| `index.ts` | 713 | 439 | ArchLang — compile declarative floor-plan source to a professional SVG. | none |
 | `input-limit.ts` | 77 | 5 | A host's refusals, as catalogued diagnostics. | none |
 | `intent-concepts.ts` | 238 | 5 | The intent channel's concept vocabulary — production name resolution for the NL→ArchLang intent contract. | none |
 | `intent.ts` | 1589 | 7 | The intent channel — author-time checking of a brief's INTENT against a plan. | none |

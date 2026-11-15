@@ -1668,7 +1668,7 @@ cannot open a room's card at all. Once open, the card is reachable and Escape cl
 a focusable list of the rooms (the facts line, or a "Rooms" control) that opens the same card.
 **Gate:** an e2e case opens a room's card from the keyboard alone; the card keeps its focus rules.
 
-### PG.2 · The card and the tooltip pick a room by its bounding box — `todo`
+### PG.2 · The card and the tooltip pick a room by its shape: done by fix/pg2-pick-by-shape, waiting to be archived — `note`
 
 `pickSmallestContaining` (`playground/src/interact.ts`) hit-tests describe()'s `bbox`, so on an L,
 a trapezoid or a circle a point inside the box but outside the room picks that room (or a smaller
