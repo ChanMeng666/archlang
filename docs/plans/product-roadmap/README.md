@@ -531,6 +531,15 @@
 
 RM-D38、RM-D39 属于另一场的裁定（winder 台阶可到达、楼梯建造器检查仍留在下游），不在本节。
 
+### 6.12 所有者裁定：楼梯（RM-D38、RM-D39，2026-11-14，#532）
+
+所有者在 #532 的回复里定的（<https://github.com/ChanMeng666/archlang/issues/532#issuecomment-6876220795>，2026-11-14T10:55:42Z），回应 gerontec 2026-11-13 的两条评论。原话是英文，下表"理由"一栏照录要点。
+
+| # | 问题 | 裁定 | 理由（所有者原话） |
+|---|---|---|---|
+| RM-D38 | 块式楼梯能否结束在带 `winders` 的四分之一转平台上（到 1.61.0 仍报 `E_STAIR_PIECES` "must end on a flight"） | **能，进核心。** 取最后一级 winder 的后缘作到达边；不用此写法的平面逐字节不变。gerontec（#533 的作者）若愿意可提 PR，否则排进下一批并在 #532 贴链接。夹具：`gerontec/archlang-section` 的 `example/haus_winders.arch`（MIT），去掉其中 560 mm 的替身梯段。卡 ST.4（`cards.md`） | "`winderGoings` already counts winders as steps, so lint needs no new idea, and plans without it stay byte-identical." |
+| RM-D39 | gerontec 的木匠式 winder 检查（`stair_check.py`）进不进核心 | **不进，留在 `archlang-section`。** docs 在 section 工具旁把它链接为下游检查。核心若将来画出跨几级的渐变锥度，在 #532 重开。"一级 winder 配三级踏步"的木匠经验作为 docs 示例的说明，不设代码默认值 | "Its warning needs a stated minimum for the inner going, and that is a standard figure, which the core keeps out"；"the core would be checking a stair it does not draw." |
+
 ---
 
 ## 7. 与已有计划的关系

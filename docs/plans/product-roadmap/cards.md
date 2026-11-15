@@ -730,6 +730,12 @@ CRF5（楼梯井同时报两条警告）若在同一 PR 碰到，一并去重。
 
 现象：门偏离墙中线 1 mm 时，`joinWallSet` 的切口留下 1 mm 的皮，2D SVG 把门洞画成关死的（外面直线穿过），也没有诊断。做法二选一：把开口投到中线上，或报警告。证明：2D 字节恒等测试（不用该形式的平面逐字节不变）。不许：在 3D 里补洞而 2D 不管。
 
+### ST.4 · 块式楼梯可结束在带 `winders` 的四分之一转平台上（2026-11-14 加，RM-D38，#532） — `todo` · 未估 · opus · 依赖无（线下；外部邀请 gerontec，先等他回复）
+
+裁定见 `README.md` §6.12 RM-D38。现象：到 1.61.0，块式楼梯结束在带 `winders` 的平台上仍报 `E_STAIR_PIECES` "must end on a flight"。内容：放宽结尾判定，取最后一级 winder 的后缘作到达边；lint 不需要新概念（`winderGoings` 已把 winder 计为踏步）。若 gerontec 不提 PR，按所有者的话排进下一批，开 PR 时在 #532 贴链接。与 backlog ST.2（行走线画成弦、按弧计）不是同一件事。
+证明：`haus_winders.arch` 去掉 560 mm 替身梯段后作夹具，编译不再报 `E_STAIR_PIECES`；不用此写法的平面 SVG、`describe()`、`lint()` 逐字节不变（字节恒等律钉值）。
+不许：改 winder 的画法或几何；改 `winderGoings` 的计数。
+
 ### RM8.10b · RM8.10 的小项（2026-11-15 加，出自 #760） — `todo` · 未估 · sonnet · 依赖无（线下）
 
 1. 滚动路径的测试。2. 实时区域（live region）重复播报。3. 横屏布局。
