@@ -5,7 +5,7 @@
  * `dist/` file a tsup entry writes, nothing published names `src/`, and every runtime dependency is
  * pinned exactly. That the built tree really holds these files is `e2e/pack.e2e.ts`.
  */
-import { readFileSync } from "node:fs";
+import { readdirSync, readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { MIN_CORE } from "../src/index.js";
 import { PREVIEW_LABEL, PREVIEW_LIMITS } from "../src/replay/payload.js";
@@ -27,6 +27,7 @@ const pkg = JSON.parse(readFileSync(new URL("../package.json", import.meta.url),
   publishConfig: Record<string, unknown>;
   peerDependencies: Record<string, string>;
   dependencies: Record<string, string>;
+  devDependencies: Record<string, string>;
 };
 const tsup = readFileSync(new URL("../tsup.config.ts", import.meta.url), "utf8");
 const entries = Object.keys(
@@ -77,6 +78,39 @@ describe("package metadata", () => {
     expect(pkg.dependencies.earcut).toBeDefined();
     const loose = Object.entries(pkg.dependencies).filter(([, v]) => !/^\d+\.\d+\.\d+(-[\w.]+)?$/.test(v));
     expect(loose).toEqual([]);
+  });
+
+  // Hoisting from the root manifest once hid an undeclared `pngjs` in the asset generator,
+  // so an isolated install of this workspace would have failed. Every package imported from src/
+  // or scripts/ is declared here, in one of the three dependency lists.
+  it("every package src/ and scripts/ import is declared by this package", () => {
+    const declared = new Set([
+      ...Object.keys(pkg.dependencies),
+      ...Object.keys(pkg.devDependencies),
+      ...Object.keys(pkg.peerDependencies),
+    ]);
+    const imported = new Set<string>();
+    for (const dir of ["src", "scripts"]) {
+      // A hand walk: `readdirSync`'s `recursive` is newer than CI's Node 18 leg.
+      const files: URL[] = [];
+      const walk = (at: URL): void => {
+        for (const entry of readdirSync(at, { withFileTypes: true })) {
+          if (entry.isDirectory()) walk(new URL(`${entry.name}/`, at));
+          else if (/\.m?ts$/.test(entry.name)) files.push(new URL(entry.name, at));
+        }
+      };
+      walk(new URL(`../${dir}/`, import.meta.url));
+      for (const file of files) {
+        const text = readFileSync(file, "utf8");
+        for (const m of text.matchAll(/(?:\bfrom |\bimport\()"((?:@[a-z0-9][\w.-]*\/)?[a-z0-9][\w.-]*)[^"]*"/g)) {
+          imported.add(m[1] as string);
+        }
+      }
+    }
+    expect(imported).toContain("pngjs");
+    expect([...imported].filter((name) => name !== "node" && !declared.has(name))).toEqual([]);
+    expect(pkg.devDependencies.pngjs).toBeDefined();
+    expect(pkg.devDependencies["@types/pngjs"]).toBeDefined();
   });
 
   it("the playground takes whatever version the workspace holds, so a bump never breaks npm ci", () => {
