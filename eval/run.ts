@@ -422,6 +422,7 @@ async function authorWithAnthropic(
   if (!res.ok) throw new Error(`Anthropic API ${res.status}: ${await res.text()}`);
   const json = (await res.json()) as {
     content: { type: string; text?: string }[];
+    stop_reason?: string | null;
     usage?: {
       input_tokens?: number;
       output_tokens?: number;
@@ -434,6 +435,7 @@ async function authorWithAnthropic(
     output: json.usage?.output_tokens,
     cacheCreation: json.usage?.cache_creation_input_tokens,
     cacheRead: json.usage?.cache_read_input_tokens,
+    stop: json.stop_reason,
   });
   return extractArch(json.content.map((b) => b.text ?? "").join(""));
 }
@@ -466,18 +468,22 @@ async function authorWithOpenAI(prompt: string, system: string, model: string, l
   });
   if (!res.ok) throw new Error(`OpenAI API ${res.status}: ${await res.text()}`);
   const json = (await res.json()) as {
-    choices?: { message?: { content?: string } }[];
+    choices?: { message?: { content?: string }; finish_reason?: string | null }[];
     usage?: { prompt_tokens?: number; completion_tokens?: number };
     system_fingerprint?: string | null;
   };
-  ledger?.record({ input: json.usage?.prompt_tokens, output: json.usage?.completion_tokens });
+  ledger?.record({
+    input: json.usage?.prompt_tokens,
+    output: json.usage?.completion_tokens,
+    stop: json.choices?.[0]?.finish_reason,
+  });
   ledger?.noteFingerprint(json.system_fingerprint);
   return extractArch(json.choices?.[0]?.message?.content ?? "");
 }
 
 /** Ask the resolved provider's model to author a plan from the prompt. The optional
  *  `ledger` records per-call token usage (and OpenAI's system_fingerprint). */
-function makeAuthor(
+export function makeAuthor(
   provider: "anthropic" | "openai",
   model: string,
   ledger?: LiveLedger,
@@ -526,6 +532,12 @@ function wilsonLabel(k: number, n: number): string {
   return `Wilson 95 % ${Math.floor(lo * 100)}–${Math.ceil(hi * 100)} %`;
 }
 
+/** True for a stop reason that means the reply hit the output cap (Anthropic `max_tokens`,
+ *  OpenAI `length`) rather than ending on its own. */
+export function isTruncationStop(stop: string): boolean {
+  return stop === "max_tokens" || stop === "length";
+}
+
 /** Render the scorecard as Markdown. The optional `l1` overlay (live `--l1` only) adds an
  *  "After deterministic repair (L1)" block and a per-row `L1` column; without it the output
  *  is byte-identical to the plain scorecard. */
@@ -534,7 +546,7 @@ export function renderResults(
   summary: Summary,
   mode: string,
   l1?: L1Overlay,
-  opts: { intervals?: boolean } = {},
+  opts: { intervals?: boolean; stops?: ReadonlyMap<string, string> } = {},
 ): string {
   const pct = (n: number): string => `${Math.round((n / summary.total) * 100)}%`;
   // Live only: a Wilson 95 % interval beside each rate (off for the committed offline scorecard).
@@ -564,11 +576,14 @@ export function renderResults(
       return `| ${cells.join(" | ")} |`;
     }
     const status = STATUS_LABEL[statusOf(r)];
-    const notes = r.failures.length
+    const baseNotes = r.failures.length
       ? r.failures.join("; ")
       : r.lintWarnings
         ? `${r.lintWarnings} lint warning(s)`
         : "—";
+    // Live only: the provider's stop/finish reason, so a truncated reply reads differently from a bad plan.
+    const stop = opts.stops?.get(r.id);
+    const notes = stop ? `${baseNotes === "—" ? "" : `${baseNotes}; `}stop: ${stop}` : baseNotes;
     const cells = [
       `\`${r.id}\``,
       status,
@@ -595,6 +610,11 @@ export function renderResults(
     `- **Valid (compiles):** ${rate(summary.valid)}`,
     `- **Intent match (semantic):** ${rate(summary.semanticPass)}`,
     `- **Sound (lint-clean):** ${rate(summary.sound)}`,
+    ...(opts.stops
+      ? [
+          `- **Truncated replies (\`max_tokens\`/\`length\` stop):** ${[...opts.stops.values()].filter(isTruncationStop).length}/${opts.stops.size}`,
+        ]
+      : []),
     "",
     ...(l1 ? renderL1Block(summary, l1) : []),
     "Subscores per row: **R**ooms · **L**abels · **A**rea · **Adj**acency (– = unasserted; adjacency/reachability score but never gate).",
@@ -681,14 +701,21 @@ export function parseBudget(argv: string[]): BudgetLimit | undefined {
 }
 
 /** Approximate public list prices (USD per 1M tokens), verified 2026-07-11 against the
- *  providers' published pricing pages. An unknown model degrades a `usd` budget to
+ *  providers' published pricing pages (the claude-opus-5-5 / sonnet-5-5 / haiku-5-5 / fable-5-x
+ *  rows: verified 2026-11-15 against https://platform.claude.com/docs/en/about-claude/pricing). An unknown model degrades a `usd` budget to
  *  token-only tracking (warned on stderr). Deliberate over-estimates so the ceiling trips
  *  early rather than late: cache-read tokens are billed at the full input rate, and
  *  sticker prices are used where an intro discount exists (claude-sonnet-5 is $2/$10
- *  through 2026-08-31; gpt-5.5 long-context requests can bill up to 2x input). */
+ *  through 2026-08-31, since made standard; gpt-5.5 long-context requests can bill up to 2x input). */
 const PRICES_USD_PER_MTOK: Record<string, { input: number; output: number }> = {
   "claude-sonnet-5": { input: 3, output: 15 },
   "gpt-5.5-2026-04-23": { input: 5, output: 30 },
+  "claude-opus-5-5": { input: 4, output: 20 },
+  "claude-sonnet-5-5": { input: 2, output: 10 },
+  // Haiku 5.5 bills $0.10/$0.50 up to 100k prompt tokens, $0.50/$2.50 above; the higher tier is used.
+  "claude-haiku-5-5": { input: 0.5, output: 2.5 },
+  "claude-fable-5-2": { input: 8, output: 40 },
+  "claude-fable-5-1": { input: 10, output: 50 },
 };
 
 /** Cumulative live-run usage tracker + `--budget` circuit breaker. Records per-call token
@@ -701,6 +728,10 @@ export class LiveLedger {
   cacheCreation = 0;
   cacheRead = 0;
   systemFingerprint?: string;
+  /** Stop/finish reason of the most recent call (`undefined` if the API sent none). */
+  lastStop?: string;
+  /** Count of calls per stop/finish reason. */
+  readonly stops = new Map<string, number>();
   readonly priceKnown: boolean;
 
   constructor(
@@ -711,8 +742,16 @@ export class LiveLedger {
   }
 
   /** Fold one API call's usage into the running totals. */
-  record(u: { input?: number; output?: number; cacheCreation?: number; cacheRead?: number }): void {
+  record(u: {
+    input?: number;
+    output?: number;
+    cacheCreation?: number;
+    cacheRead?: number;
+    stop?: string | null;
+  }): void {
     this.calls++;
+    this.lastStop = u.stop ?? undefined;
+    if (u.stop) this.stops.set(u.stop, (this.stops.get(u.stop) ?? 0) + 1);
     this.inputTokens += u.input ?? 0;
     this.outputTokens += u.output ?? 0;
     this.cacheCreation += u.cacheCreation ?? 0;
@@ -858,13 +897,14 @@ async function main(): Promise<void> {
   // With --l1 we keep each brief's authored L0 source so it can be healed and re-scored
   // afterwards (no extra API calls). Off the L1 path this is the original thin wrapper.
   const rawById = new Map<string, string>();
-  const getSource = l1Mode
-    ? async (e: CorpusEntry): Promise<string> => {
-        const src = await author(e.prompt);
-        rawById.set(e.id, src);
-        return src;
-      }
-    : (e: CorpusEntry) => author(e.prompt);
+  const stopById = new Map<string, string>();
+  const getSource = async (e: CorpusEntry): Promise<string> => {
+    ledger.lastStop = undefined;
+    const src = await author(e.prompt);
+    if (ledger.lastStop) stopById.set(e.id, ledger.lastStop);
+    if (l1Mode) rawById.set(e.id, src);
+    return src;
+  };
   // The breaker is checked BEFORE each brief: once cumulative usage reaches the limit,
   // every remaining brief is skipped (and excluded from the rates). No budget → no gate.
   const { results, summary } = await evaluate(entries, getSource, {
@@ -886,6 +926,7 @@ async function main(): Promise<void> {
   const l1Tag = l1Mode ? " · +L1" : "";
   let md = renderResults(results, summary, `live (${provider} · ${model} · ${pinned}${fp}${l1Tag})`, l1, {
     intervals: true,
+    stops: stopById,
   });
   const baseline = readBaseline();
   if (baseline) md += renderDelta(baseline, summary, { intervals: true });
