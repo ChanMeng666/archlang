@@ -83,16 +83,17 @@ server (that is how the nightly workflow re-runs the read-only `@prod` subset ag
 **What PR CI runs.** `ci.yml` gates a PR on Node 22: a `checks` job (typecheck, lint, drift, eval) and
 the test suite in seven shards; **Workspace builds** (every workspace compiles, `typecheck:all`, the MCP
 baked-resource freshness check, the VS Code bundle tests); **Playwright E2E** (the playground in three
-Chromium shards plus an engines job for Firefox and WebKit, and the docs site in three shards, each behind
-one aggregate check); and `3D package (check:3d)`, which aggregates a suite pass and a frame-budget pass.
-An informational benchmark comment never gates. Node 18, Node 20 and **Windows** (tests + drift at the
-runner's default line endings) keep their checks but report green without running on an ordinary PR; they
-run, each in five shards, on the maintainers' merge-train PRs, on unproven pushes to `main` and nightly, so
-run the suite locally if your change is sensitive to Node version or platform. A pull request from a fork
-gets the ordinary run; a maintainer lands it. Layout and the merge procedure:
-[docs/agents/commands.md](docs/agents/commands.md) § CI. `codeql.yml` adds static security analysis on the same events. A separate
-`nightly.yml` runs production smoke, a report-only dependency audit, a full-history secret scan, the
-OS×Node matrix, report-only coverage and the read-only E2E subset against the live sites.
+Chromium shards plus an engines job for Firefox and WebKit, and the docs site in three shards, each
+behind one aggregate check); and `3D package (check:3d)`, which aggregates a suite pass and a
+frame-budget pass. An informational benchmark comment never gates. Node 18, Node 20 and **Windows**
+(tests + drift at the runner's default line endings) keep their checks but report green without running
+on an ordinary PR; they run, each in five shards, on the maintainers' merge-train PRs, on unproven
+pushes to `main` and nightly, so run the suite locally if your change is sensitive to Node version or
+platform. A pull request from a fork gets the ordinary run; a maintainer lands it. Layout and the merge
+procedure: [docs/agents/commands.md](docs/agents/commands.md) § CI. `codeql.yml` adds static security
+analysis on the same events. A separate `nightly.yml` runs production smoke, a report-only dependency
+audit, a full-history secret scan, the OS×Node matrix, report-only coverage and the read-only E2E subset
+against the live sites.
 
 **Full reference: [docs/testing.md](docs/testing.md)** — the tiers, the golden/snapshot update
 policy, **what to do when each class of guard goes red**, and the house patterns for adding tests.

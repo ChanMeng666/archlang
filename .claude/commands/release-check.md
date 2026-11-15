@@ -154,11 +154,11 @@ you observed. Do NOT push anything — this command only verifies.
   both pinned to the new version, but npm only has it once the tag's `release.yml` finishes. Until
   then every embed shows `arch-plan: could not load the ArchLang compiler` (jsDelivr 404s, cached
   about 30 s), so the tag goes out the moment that CI run is green (about 30 s after a train merge,
-  about 8 min after an unproven direct merge). It cannot go earlier: `release.yml`'s guard refuses a commit without green required
-  checks, so a tag pushed before then fails "Guard the release", publishes nothing, and its `verify`
-  job polls npm for each missing package for about 10 minutes. If that happens, wait for the CI run
-  to go green and `gh run rerun <id> --failed` (1.59.0 was tagged at the merge and published by its
-  rerun). When the publish is done:
+  about 8 min after an unproven direct merge). It cannot go earlier: `release.yml`'s guard refuses a
+  commit without green required checks, so a tag pushed before then fails "Guard the release", publishes
+  nothing, and its `verify` job polls npm for each missing package for about 10 minutes. If that
+  happens, wait for the CI run to go green and `gh run rerun <id> --failed` (1.59.0 was tagged at the
+  merge and published by its rerun). When the publish is done:
 
   ```bash
   curl -sI https://cdn.jsdelivr.net/npm/@chanmeng666/archlang@<version>/+esm   # expect 200

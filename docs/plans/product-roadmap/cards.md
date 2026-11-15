@@ -1151,7 +1151,7 @@ Playground：Chromium `--shard=1/2`、`2/2` 两个 job，Firefox 与 WebKit 的 
 
 ### TR7 · finish 拆分之后的文字（2026-11-15 加） — `todo` · 0.2 日 · sonnet · 依赖无（线下）
 
-`.claude/commands/new-fixture-family.md` 与 `test/finish.test.ts` 的文件头已由 #802 改好。仍开着四处：ADR 0024（约 :61）与 ADR 0025（约 :194）仍指旧的单个文件；`test/cli-finish.test.ts:13` 与 `src/finish.ts:22` 引用 `test/finish.test.ts`，而那几条定律已移走。不许：改测试的断言。（并行的 `docs/ci-truth-high` PR 在修这四处；它合并后此卡改为"已做"。）
+`.claude/commands/new-fixture-family.md` 与 `test/finish.test.ts` 的文件头已由 #802 改好；ADR 0024、ADR 0025、`test/cli-finish.test.ts:13` 与 `src/finish.ts:22` 的注释由 #806 改（尚未合并）。仍开着一处：`packages/archlang-3d/src/materials.ts:177` 写的是 `test/finish.test.ts` 把它钉在 `groundColour("paving")` 上；根的 `test/` 里没有任何测试提到 `groundColour`，钉它的是 `packages/archlang-3d/test/finish.test.ts:663`，所以注释应写这个完整路径。不许：改测试的断言。
 
 ### TR8 · 本地门禁的残余（2026-11-15 加，出自 #795 的最后一轮评审） — `todo` · 未估 · sonnet · 依赖无（线下）
 

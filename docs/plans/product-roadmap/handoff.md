@@ -143,7 +143,7 @@ RM1.1a 也在本场做完（纯测量，没有 PR，见 §6）。
 
 **编译器路径预算：** `compilerPathBudget` 401,000 B gzip，`embedPathBudget` 387,000。RM0.7f 之后的余量没有在 `f76af65b` 上重量：**动词表或新家族的卡先量。**
 
-**CI 吞吐（第 9 轨，RM-D37，2026-11-14 加；不是第三条车道）：** TP 卡在核心车道两张卡之间占用核心执行者（RM-D22 不变）。TP1（#754）与 TP2（#755）已合并：`npm run sync:main -- --push` 是同步的做法；`main` 的 push 运行 28 → 12.8 分钟，PR 约 9 → 7.3（各一次运行）；列车之后的现读数：push 24–30 s，PR 代码运行 4.7 min，完整运行 7.0–8.7 min（`../ci-throughput-research.md` §12.2），六趟列车落地（含 #803）。2026-11-15 之后：TP6 已由 #794 完成，合并列车、已证明的 push 与更多分片都已合并（FT1–FT3，RM-D48，`../ci-throughput-research.md` §12），FT4（#795）已由列车 #801 合并（`4f432ca1`）；TP5 由 TR6 取代。下一步是 TR1–TR10 中的 TR1–TR7（列车脚本加固、证明加固、记录类 push 判定、守卫、40 个 job 的上限、7 天后复测、finish 拆分后的文字、本地门禁的残余 TR8）；TP3、TP1b 在空档里做；TP4 等触发。卡在 `cards.md` 第 9 轨。
+**CI 吞吐（第 9 轨，RM-D37，2026-11-14 加；不是第三条车道）：** TP 卡在核心车道两张卡之间占用核心执行者（RM-D22 不变）。TP1（#754）与 TP2（#755）已合并：`npm run sync:main -- --push` 是同步的做法；`main` 的 push 运行 28 → 12.8 分钟，PR 约 9 → 7.3（各一次运行）；列车之后的现读数：push 24–30 s，PR 代码运行 4.7 min，完整运行 7.0–8.7 min（`../ci-throughput-research.md` §12.2），六趟列车落地（含 #803）。2026-11-15 之后：TP6 已由 #794 完成，合并列车、已证明的 push 与更多分片都已合并（FT1–FT3，RM-D48，`../ci-throughput-research.md` §12），FT4（#795）已由列车 #801 合并（`4f432ca1`）；TP5 由 TR6 取代。未完的是 TR1–TR5 与 TR7–TR10（列车脚本加固、证明加固、记录类 push 判定、守卫、40 个 job 的上限；finish 拆分后的文字 TR7、本地门禁的残余 TR8）；TR6 是 7 天后的复测，TR9、TR10 等所有者裁定；TP3、TP1b 在空档里做；TP4 等触发。卡在 `cards.md` 第 9 轨。
 
 **发布：** 1.62.0 已发布（§1.2）。1.63.0 要所有者对那一次的决定（没有决定就不切；VS Code Marketplace 与 OpenAI 目录的发布由代理做，含 OpenAI 的 Submit 与 Publish，RM-D41、RM-D44）。2026-12-01 所有者亲自发 Show HN；`main` 一直保持绿。RM5.4（#603）已由 #781 做完（RM-D43）。
 
