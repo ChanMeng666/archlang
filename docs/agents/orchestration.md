@@ -15,8 +15,7 @@ merge procedure and the CI job map in `commands.md`.
   that the executor needs (architecture, testing § 2–3, a recipe); the agent definitions only default to the three.
 - **The limits every card repeats**: run `npm run check:quick` once, at the end (plus `npm run docs:build`
   after a published `docs/*.md` edit); never the full suite, `check`, `check:drift`, `typecheck:all`,
-  e2e or bench locally (the local-gate hook blocks them and CI is the gate; `check:quick` itself runs drift
-  and, on an export or dependency change, `typecheck:all`, one step at a time); a vitest file, when it
+  e2e or bench locally (the local-gate hook blocks them and CI is the gate); a vitest file, when it
   must run, takes `--poolOptions.forks.maxForks=2 --poolOptions.forks.minForks=1`; one executor and
   one heavy process at a time on this machine (it froze under three parallel test runs); never edit
   `docs/plans/*/cards.md` (adjacent card headings conflict on every merge; the coordinator records

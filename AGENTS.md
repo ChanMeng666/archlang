@@ -7,10 +7,10 @@ Code and tests are the documentation; this file holds only what they cannot say.
 ```bash
 npm run build         # core + CLI → dist/ (before typecheck:all, e2e)
 npm run cli -- compile examples/studio.arch -o studio.svg
-npm run check:quick   # local pre-push: changed files, drift, nearest tests (CI runs the rest)
+npm run check:quick   # local pre-push: changed files, nearest tests (CI runs the rest)
 npm run check         # typecheck + lint + test-wiring + vitest (CI only)
-npm run check:drift   # generated artifacts == generator output (check:quick runs it)
-npm run typecheck:all # test/ + workspaces (check:quick runs it on an export or dependency change)
+npm run check:drift   # generated artifacts == generator output (CI only)
+npm run typecheck:all # CI only; the one typecheck that compiles test/ + workspaces
 npm run docs:build    # after any docs/*.md edit
 npm run gen:all       # every gen:* generator
 ```
@@ -18,9 +18,9 @@ npm run gen:all       # every gen:* generator
 ## How to work
 
 - Prove a change through the CLI (`arch compile|describe|lint --json`), not by eyeballing SVG.
-- Local gate is exactly `check:quick` (+ `docs:build` for docs), then push. Executor briefs list only that. `check`,
-  vitest runs, e2e and bench are CI's; only CI green is merge evidence. A hook
-  blocks them and a direct drift or `typecheck:all` (`.claude/hooks/local-gate.mjs`).
+- Local gate is exactly `check:quick` (+ `docs:build` for docs), then push. Executor briefs list only that. `check`, drift,
+  `typecheck:all`, vitest runs, e2e and bench are CI's; only CI green is merge evidence. A hook
+  blocks them (`.claude/hooks/local-gate.mjs`).
 - Commit or push only when asked. Merge by risk tier (`docs/agents/commands.md` § Merging a PR).
 
 ## Hard rules
@@ -52,8 +52,8 @@ npm run gen:all       # every gen:* generator
   Pushing `main` deploys the sites. Before a tag: follow `.claude/commands/release-check.md`.
 - Eval: one T3 live run, ratified 2026-11-15, not yet run (bounds: `docs/agents/iron-laws.md`); no
   loop-gain claim either way; its published record is the only statement of the result, any other
-  claim needs an owner decision. `eval:live` is paid, owner-only; the eval corpus is a public
-  fixture, never a holdout; dataset canary never regenerated.
+  claim needs an owner decision. `eval:live`, `eval:fidelity-live` are paid, owner-only; the eval
+  corpus is a public fixture, never a holdout; dataset canary never regenerated.
 - Sites are light-only (no dark mode); `brand/archlang-logo-master.svg` is byte-sacred.
 - No secrets in this public repo. Versions come from npm/tags/`gh release`, never a doc; release
   narrative lives only in `CHANGELOG.md`.

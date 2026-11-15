@@ -1,7 +1,7 @@
 /**
  * What `check:quick` (`scripts/check-quick.mjs`) selects, as pure functions of the changed paths and
- * the tracked files: the directory-scanning guards, the tests named after a changed module, and which
- * of the two deterministic CI steps (`check:drift`, `typecheck:all`) a change set needs. Zero
+ * the tracked files: the directory-scanning guards, the source-tree scanners, the tests named after a
+ * changed module and the corpus pins, and `planTests`, which orders them under their caps. Zero
  * dependencies; it reads only the files it is handed. `test/gate-select.test.ts` pins it.
  */
 import { existsSync, readFileSync } from "node:fs";
@@ -74,12 +74,17 @@ export function scanningGuards(ROOT, dirs, files, scanned = SCANNED_DIRS) {
 }
 
 // ---- the source-tree scanners ----------------------------------------------------------------
-// A guard that lists a SOURCE folder (`src/`, `scripts/`, `eval/`, `test/`, `.claude/`) and reads what it
-// finds: no CLI spawn, no escaper chain, the provenance walk. No import reaches it from the file that broke
-// it, and a folder this wide cannot join `SCANNED_DIRS` (a test that lists `test/fixtures` is not one).
-// These are cheap (a few seconds in all), so they run in addition to the `--max` cap.
+// A guard that lists a SOURCE folder (`src/`, `scripts/`, `eval/`, `test/`, `.claude/`) and asserts over every
+// file it finds: no CLI spawn, no escaper chain, the provenance walk. No import reaches it from the file that
+// broke it, and a folder this wide cannot join `SCANNED_DIRS` (a test that lists `test/fixtures` is not one).
+// They run in addition to the `--max` cap, within `TREE_MAX_FILES` files and `TREE_MAX_SECS` recorded seconds.
 export const TREE_ROOTS = ["src", "scripts", "eval", "test", ".claude"];
+export const TREE_MAX_FILES = 8;
+export const TREE_MAX_SECS = 10;
+/** The recorded seconds assumed for a scanner the duration record does not list yet (a source scan is cheap). */
+export const UNKNOWN_SCAN_SECS = 0.5;
 const LISTS_A_TREE = /\b(?:readdirSync|readdir|opendirSync|globSync)\s*\(|ls-files/;
+const READS_FILES = /\breadFileSync\s*\(/;
 
 /** Whether `f` is a change a scanner of the `root` tree can see (code; any file under `.claude/`). */
 export const touchesTree = (root, f) => f.startsWith(`${root}/`) && (CODE.test(f) || root === ".claude");
@@ -104,52 +109,120 @@ export function listedTrees(text) {
   return roots;
 }
 
-/** The scanner tests a change set wakes: those listing a tree a changed code file sits in. Cheapest first. */
-export function treeGuards(ROOT, changed, files) {
+/** A test that imports the core (`../src/...`): it runs the compiler over what it reads. */
+const IMPORTS_CORE = /from\s+["'](?:\.\.\/)+src\//;
+
+/**
+ * Whether a test is a source-tree scanner, and the roots it scans. It lives in the repo's own `test/` folder
+ * (a workspace test's `src` is the workspace's), enumerates a source root (`listedTrees`), reads the files it
+ * finds as text, and does not run the compiler over a corpus: a test that lists `examples/` or `docs/` AND
+ * imports the core is a corpus test, which `scanningGuards` and `corpusPins` select.
+ */
+export function scannedTrees(text, file = "test/x.test.ts") {
+  const roots = listedTrees(text);
+  if (!file.startsWith("test/") || roots.size === 0 || !READS_FILES.test(text)) return new Set();
+  if (listedDirs(text).size > 0 && IMPORTS_CORE.test(text)) return new Set();
+  return roots;
+}
+
+/** The head of `ordered` that fits `maxFiles` files and `maxSecs` seconds (a file that would overspend ends the list). */
+function capByCost(ordered, maxFiles, maxSecs) {
+  const out = [];
+  let spent = 0;
+  for (const g of ordered) {
+    if (out.length >= maxFiles || spent + g.secs > maxSecs) break;
+    spent += g.secs;
+    out.push(g);
+  }
+  return out;
+}
+
+/**
+ * The scanner tests a change set wakes: those scanning a tree a changed code file sits in, within
+ * `maxFiles` files and `maxSecs` recorded seconds. The slots are dealt round-robin over the woken trees
+ * (a change under `src/` and `test/` gets scanners of both), and within a tree ranked: tests the duration
+ * record does not list yet first (a scanner added since CI last recorded; costed at `UNKNOWN_SCAN_SECS`),
+ * then cheapest, then by name. Each is `{ file, why, secs }`.
+ */
+export function treeGuards(ROOT, changed, files, maxFiles = TREE_MAX_FILES, maxSecs = TREE_MAX_SECS) {
   const woken = TREE_ROOTS.filter((r) => changed.some((f) => touchesTree(r, f)));
   if (woken.length === 0) return [];
   const durations = readDurations(ROOT);
-  const out = [];
+  const found = [];
   for (const t of files.filter((f) => isTest(f) && existsSync(join(ROOT, f)))) {
-    const roots = [...listedTrees(readFileSync(join(ROOT, t), "utf8"))].filter((r) => woken.includes(r));
+    const roots = [...scannedTrees(readFileSync(join(ROOT, t), "utf8"), t)].filter((r) => woken.includes(r));
     if (roots.length > 0) {
-      out.push({
+      found.push({
         file: t,
+        roots,
         why: `scans ${roots.map((r) => `${r}/`).join(" and ")}`,
-        secs: durations[t] ?? Number.POSITIVE_INFINITY,
+        recorded: durations[t] !== undefined,
+        secs: durations[t] ?? UNKNOWN_SCAN_SECS,
       });
     }
   }
-  return out.sort((a, b) => a.secs - b.secs || (a.file < b.file ? -1 : 1));
+  found.sort((a, b) => Number(a.recorded) - Number(b.recorded) || a.secs - b.secs || (a.file < b.file ? -1 : 1));
+  const out = [];
+  let spent = 0;
+  for (let dealt = true; dealt && out.length < maxFiles; ) {
+    dealt = false;
+    for (const root of woken) {
+      const next = found.find((g) => g.roots.includes(root) && !out.includes(g) && spent + g.secs <= maxSecs);
+      if (next && out.length < maxFiles) {
+        out.push(next);
+        spent += next.secs;
+        dealt = true;
+      }
+    }
+  }
+  return out;
 }
 
 // ---- tests named after a changed module ------------------------------------------------------
 const GENERIC_STEMS = new Set(["index", "types", "util", "utils", "helpers", "main", "constants", "common", "shared"]);
 /** A stem shared by more tests than this names a family, not a module. */
 const NAMED_MAX = 6;
+export const NAMED_MAX_FILES = 5;
+export const NAMED_MAX_SECS = 10;
+
+/** The median of the recorded seconds (what a test the record does not list yet is costed at). */
+export function medianSecs(durations) {
+  const v = Object.values(durations)
+    .filter((n) => typeof n === "number")
+    .sort((a, b) => a - b);
+  return v.length === 0 ? 0 : v[Math.floor(v.length / 2)];
+}
 
 /**
  * The tests named after a changed code file: `src/lint/rules/room-contents.ts` -> `test/lint-room-contents.test.ts`
  * (the stem is a whole hyphen-delimited run of the test's name). A stem under 6 characters, a generic one,
- * or one that names more than `NAMED_MAX` tests (`lint`) is skipped.
+ * or one that names more than `NAMED_MAX` tests (`lint`) is skipped. Of those, the cheapest by recorded
+ * seconds (a test the record does not list is costed at the median) within `maxFiles` files and `maxSecs`
+ * seconds. Each is `{ file, why, secs }`.
  */
-export function namedTests(changed, files) {
+export function namedTests(changed, files, durations = {}, maxFiles = NAMED_MAX_FILES, maxSecs = NAMED_MAX_SECS) {
   const tests = files.filter(isTest);
-  const out = [];
+  const median = medianSecs(durations);
+  const found = [];
   for (const f of changed) {
     if (!CODE.test(f) || isTest(f)) continue;
     const stem = posix.basename(f).replace(/\.[^.]+$/, "");
     if (stem.length < 6 || GENERIC_STEMS.has(stem)) continue;
     const hits = tests.filter((t) => `-${posix.basename(t).replace(/\.test\.ts$/, "")}-`.includes(`-${stem}-`));
     if (hits.length > 0 && hits.length <= NAMED_MAX)
-      for (const t of hits) if (!out.some((o) => o.file === t)) out.push({ file: t, why: `named after ${f}` });
+      for (const t of hits)
+        if (!found.some((o) => o.file === t))
+          found.push({ file: t, why: `named after ${f}`, secs: durations[t] ?? median });
   }
-  return out;
+  found.sort((a, b) => a.secs - b.secs || (a.file < b.file ? -1 : 1));
+  return capByCost(found, maxFiles, maxSecs);
 }
 
 // ---- corpus pins ------------------------------------------------------------------------------
 /** The recorded seconds assumed for a test file the duration record does not list yet. */
 export const UNKNOWN_SECS = 3;
+/** The default recorded-seconds budget of the corpus pins (`--pins`): `keep-digests` fits, the costlier ones are CI's. */
+export const PIN_SECS = 5;
 
 /**
  * Of the tests a code change reaches (`related`), the ones that pin their output over the examples corpus
@@ -181,32 +254,52 @@ export function readDurations(ROOT) {
   }
 }
 
+// ---- the test list ----------------------------------------------------------------------------
+/**
+ * What the gate would run, as a pure function of the change set. `related` is the import-distance order
+ * (`nearestTests`), `files` the tracked and untracked files. Two parts:
+ *   - capped by `max` (`--max`), together and in this order: the branch's own changed test files, the
+ *     directory-scanning guards an `examples/` or `docs/**\/*.md` change wakes, then the nearest tests;
+ *   - beyond `max`, each under its own cap: the source-tree scanners (`TREE_MAX_FILES` files and
+ *     `TREE_MAX_SECS` seconds), the tests named after a changed module (`NAMED_MAX_FILES`, `NAMED_MAX_SECS`),
+ *     and, for a change under `src/`, the corpus pins (`pinSecs` seconds).
+ * Returns `{ own, woken, guards, guardPick, extras, picked, total }`; each extra is `{ file, why, rule }`.
+ */
+export function planTests({ ROOT, changed, files, related, max = 20, pinSecs = PIN_SECS }) {
+  const durations = readDurations(ROOT);
+  const own = related.filter((f) => changed.includes(f));
+  const woken = SCANNED_DIRS.filter((s) => changed.some(s.touches));
+  const guards =
+    woken.length > 0
+      ? scanningGuards(
+          ROOT,
+          woken.map((s) => s.dir),
+          files,
+        ).filter((g) => !own.includes(g.file))
+      : [];
+  const guardPick = guards.slice(0, Math.max(0, max - own.length));
+  const capped = [
+    ...own,
+    ...guardPick.map((g) => g.file),
+    ...related.filter((f) => !own.includes(f) && !guardPick.some((g) => g.file === f)),
+  ].slice(0, max);
+  const extras = [];
+  const addExtras = (rule, list) => {
+    for (const g of list) {
+      if (!capped.includes(g.file) && !extras.some((e) => e.file === g.file))
+        extras.push({ file: g.file, why: g.why, rule });
+    }
+  };
+  addExtras("treeGuards", treeGuards(ROOT, changed, files));
+  addExtras("namedTests", namedTests(changed, files, durations));
+  if (changed.some((f) => f.startsWith("src/") && CODE.test(f))) {
+    addExtras("corpusPins", corpusPins(scanningGuards(ROOT, ["examples"], files), related, pinSecs, durations));
+  }
+  const picked = [...extras.map((e) => e.file), ...capped];
+  const total = new Set([...related, ...guards.map((g) => g.file), ...extras.map((e) => e.file)]).size;
+  return { own, woken, guards, guardPick, extras, picked, total };
+}
+
 // ---- which deterministic CI steps a change set needs -----------------------------------------
 /** `check:drift` runs on every change set that is not only test files (the generators read the whole tree). */
 export const driftWanted = (changed) => !changed.every((f) => TEST_DIRS.test(f));
-
-/** A diff line (`-U0`) that adds or removes an `export`, or a type member (`name?: type;`) of an interface or type literal. */
-const SURFACE_LINE = /^[+-]\s*(?:export\b|(?:readonly\s+)?[A-Za-z_$][\w$]*\??:\s.*;\s*(?:\/\/.*)?$)/;
-
-/** Whether a `git diff -U0` of `src/` (new files as all-added lines) moves what a consumer of the core's types sees. */
-export const surfaceChanged = (srcDiff) =>
-  srcDiff.split("\n").some((l) => !/^(?:\+\+\+|---)/.test(l) && SURFACE_LINE.test(l));
-
-/**
- * `typecheck:all` (the root dev config plus every workspace, against a built `dist/`) runs when a change can
- * break something the per-file steps do not compile: a `package.json` or the lockfile (a dependency moved),
- * `tsup.config.ts` or a tsconfig, or code under `src/` whose diff (`srcDiff`) adds or removes an export or a
- * type member (the workspaces and `test/` consume the core's types through `dist/`). A change inside a
- * function body cannot break them, and the 30 s build plus ~2 min typecheck are not spent on it.
- */
-export function typecheckAllWanted(changed, srcDiff = "") {
-  return (
-    changed.some(
-      (f) =>
-        /(?:^|\/)package(?:-lock)?\.json$/.test(f) ||
-        /^tsup\.config\.[cm]?[jt]s$/.test(f) ||
-        /^tsconfig[^/]*\.json$/.test(f),
-    ) ||
-    (changed.some((f) => f.startsWith("src/") && (CODE.test(f) || f.endsWith(".json"))) && surfaceChanged(srcDiff))
-  );
-}

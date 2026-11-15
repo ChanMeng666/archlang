@@ -10,7 +10,7 @@ say what it enforces; this file does not inventory them.
 
 | Command | Notes |
 |---|---|
-| `npm run check:quick` | the local pre-push check: Biome, the typecheck the changes need (`typecheck:all` on a dependency, build-config or export change), `check:drift` and the nearest tests (by import distance, `--max` 20, plus the scanners and pins `scripts/gate-select.mjs` adds) for the files the branch changed. One to five minutes by what changed; not merge evidence |
+| `npm run check:quick` | the local pre-push check: Biome, the typecheck the changes need, `check:drift` and the nearest tests (by import distance, `--max` 20) for the files the branch changed. Under a minute; not merge evidence |
 | `npm run check` | typecheck (`src/` only) + Biome + `check:test-wiring` + `npm test`. CI's floor; not run locally |
 | `npm run check:drift` | every generator re-run and byte-compared. Separate from `check`; its own CI gate |
 | `npm run typecheck:all` | the only typecheck of `test/`, `eval/`, `dataset/`, `scripts/`, `bench/` and the workspaces. `npm run build` first |
@@ -22,9 +22,8 @@ say what it enforces; this file does not inventory them.
 | `npm run test:coverage` | report-only v8 coverage over `src/`; no thresholds, nothing fails on a number. Runs nightly (`nightly.yml` `coverage`), not on PRs |
 | Nightly mutants (report-only): `node scripts/mutants.mjs` | a seeded sample of mutation sites (40 a night, seed the UTC date) in `src/num-format.ts` and `src/expr.ts`, each run against its nearest tests (`nightly.yml` `mutants`; the operators and verdicts are in the script's header; `--dry-run` lists the sample and runs nothing). A survivor becomes either a new test or an allow-list row with a reason (`test/mutants.allow.json`); never gates merge. It rewrites the target files in place, restores them byte for byte, and refuses a target with uncommitted changes; it starts no run past `--budget-minutes` (85 nightly) and rewrites its report after every mutant, so a cancelled night keeps its verdicts |
 
-Locally: `check:quick` (which runs drift and, on the changes above, `typecheck:all`), plus `docs:build` for
-`docs/*.md`; then push. CI runs `check`, `check:drift`, `typecheck:all`, every platform and the E2E, and
-the PR's CI green is the only merge evidence.
+Locally: `check:quick`, plus `docs:build` for `docs/*.md`; then push. CI runs `check`, `check:drift`,
+`typecheck:all`, every platform and the E2E, and the PR's CI green is the only merge evidence.
 
 **PR** (`ci.yml`, `codeql.yml`) and **nightly** (`nightly.yml`): the job map is in
 [`docs/agents/commands.md`](agents/commands.md). Red in nightly's `e2e-prod` means production is

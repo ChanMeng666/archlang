@@ -1,7 +1,7 @@
 /**
- * `scripts/gate-select.mjs`: what `check:quick` selects beyond the import graph, and which deterministic
- * CI steps (`check:drift`, `typecheck:all`) a change set needs. The cases named for a run are failures
- * CI found that the gate's import-distance cut did not reach.
+ * `scripts/gate-select.mjs`: what `check:quick` selects beyond the import graph, and how it caps it. The
+ * real-tree cases pin the scanners that CI has failed on (`no-cli-spawn`, `lint-provenance`,
+ * `no-replace-chain-escapers`) staying selected; the temp-tree cases pin the caps.
  */
 import { execFileSync } from "node:child_process";
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
@@ -13,11 +13,12 @@ import {
   corpusPins,
   driftWanted,
   listedTrees,
+  medianSecs,
   namedTests,
+  planTests,
+  scannedTrees,
   scanningGuards,
-  surfaceChanged,
   treeGuards,
-  typecheckAllWanted,
   // @ts-expect-error — a zero-dep .mjs script with no type declarations.
 } from "../scripts/gate-select.mjs";
 
@@ -27,6 +28,8 @@ const tracked = (): string[] =>
     .split("\n")
     .map((f) => f.trim().replace(/\\/g, "/"))
     .filter(Boolean);
+type Pick = { file: string; secs?: number; why?: string; rule?: string };
+const files_ = (l: Pick[]): string[] => l.map((g) => g.file);
 
 describe("driftWanted", () => {
   it("runs for anything but a change set of test files only", () => {
@@ -34,63 +37,6 @@ describe("driftWanted", () => {
     expect(driftWanted(["docs/analysis.md"])).toBe(true);
     expect(driftWanted(["test/a.test.ts", "scripts/gen-doors.ts"])).toBe(true);
     expect(driftWanted(["test/a.test.ts", "packages/mcp/test/b.test.ts"])).toBe(false);
-  });
-});
-
-describe("surfaceChanged", () => {
-  const diff = (...lines: string[]) => ["--- a/src/x.ts", "+++ b/src/x.ts", "@@ -1 +1 @@", ...lines].join("\n");
-
-  it("sees an export or a type member added or removed", () => {
-    expect(surfaceChanged(diff("+export function f(a: number): string {"))).toBe(true);
-    expect(surfaceChanged(diff("-export const X = 1;"))).toBe(true);
-    expect(surfaceChanged(diff("+  readonly wall?: Wall;"))).toBe(true);
-    expect(surfaceChanged(diff("-  code: string; // the catalogued code"))).toBe(true);
-  });
-
-  it("does not see a change inside a function body", () => {
-    expect(surfaceChanged(diff("+  const w = a + b;", "-  return w * 2;", "+  if (x) { y(); }"))).toBe(false);
-    expect(surfaceChanged(diff("+  x ? a : b;"))).toBe(false);
-  });
-
-  it("does not take the diff header for a change", () => {
-    expect(surfaceChanged("--- a/src/export.ts\n+++ b/src/export.ts\n")).toBe(false);
-    expect(surfaceChanged("")).toBe(false);
-  });
-});
-
-describe("typecheckAllWanted", () => {
-  const surface = "+export const NEW = 1;";
-
-  it("wakes for a dependency file, the build config or a tsconfig", () => {
-    for (const f of [
-      "package.json",
-      "package-lock.json",
-      "packages/mcp/package.json",
-      "tsup.config.ts",
-      "tsconfig.dev.json",
-    ]) {
-      expect(typecheckAllWanted([f]), f).toBe(true);
-    }
-  });
-
-  it("wakes for code under src/ only when its diff moves an export or a type member", () => {
-    expect(typecheckAllWanted(["src/lint/rules/doors.ts"], surface)).toBe(true);
-    expect(typecheckAllWanted(["src/lint/rules/doors.ts"], "+  const a = 1;")).toBe(false);
-    expect(typecheckAllWanted(["src/lint/rules/doors.ts"])).toBe(false);
-  });
-
-  it("stays asleep for what the per-file steps already compile or nothing compiles", () => {
-    for (const f of [
-      "test/lint.test.ts",
-      "scripts/check-quick.mjs",
-      "docs/analysis.md",
-      "examples/studio.arch",
-      "packages/mcp/src/tools.ts",
-      "playground/src/main.ts",
-      "src/README.md",
-    ]) {
-      expect(typecheckAllWanted([f], surface), f).toBe(false);
-    }
   });
 });
 
@@ -116,46 +62,107 @@ describe("listedTrees", () => {
   });
 });
 
-describe("treeGuards: the scanners no import reaches (CI runs 43531366145, 43588711461, 43693457545)", () => {
+describe("scannedTrees: a source-tree scanner is a test that lists a source root and reads what it finds", () => {
+  const scan = `import { readdirSync, readFileSync } from "node:fs";\nreaddirSync(join(ROOT, "src")).map((f) => readFileSync(f));`;
+
+  it("takes a test that lists src/ and reads the files", () => {
+    expect([...scannedTrees(scan)]).toEqual(["src"]);
+  });
+
+  it("leaves out a test that lists a root but reads nothing", () => {
+    expect([...scannedTrees(`readdirSync(join(ROOT, "src"));`)]).toEqual([]);
+  });
+
+  it("leaves out a corpus test: it lists examples/ and imports the core to run it", () => {
+    const corpus = `${scan}\nimport { compile } from "../src/index.js";\nreaddirSync(join(ROOT, "examples"));`;
+    expect([...scannedTrees(corpus)]).toEqual([]);
+    // Listing examples/ without the core is still a scanner.
+    expect([...scannedTrees(`${scan}\nreaddirSync(join(ROOT, "examples"));`)]).toEqual(["src"]);
+  });
+
+  it("leaves out a workspace test: its src/ is the workspace's, not the repo's", () => {
+    expect([...scannedTrees(scan, "packages/mcp/test/server.test.ts")]).toEqual([]);
+  });
+});
+
+describe("treeGuards: the scanners no import reaches", () => {
   const files = tracked();
-  const names = (changed: string[]): string[] => treeGuards(ROOT, changed, files).map((g: { file: string }) => g.file);
 
   it("a changed test file wakes no-cli-spawn", () => {
-    expect(names(["test/cache.test.ts"])).toContain("test/no-cli-spawn.test.ts");
+    expect(files_(treeGuards(ROOT, ["test/cache.test.ts"], files))).toContain("test/no-cli-spawn.test.ts");
   });
 
   it("a changed src/ file wakes the provenance walk and the escaper-chain scan", () => {
-    const got = names(["src/cli/commands-analyze.ts"]);
+    const got = files_(treeGuards(ROOT, ["src/cli/commands-analyze.ts"], files));
     expect(got).toContain("test/lint-provenance.test.ts");
     expect(got).toContain("test/no-replace-chain-escapers.test.ts");
   });
 
   it("a changed eval/ or scripts/ file wakes the escaper-chain scan, a changed docs page wakes none", () => {
-    expect(names(["eval/l2-run.ts"])).toContain("test/no-replace-chain-escapers.test.ts");
-    expect(names(["scripts/gen-module-map.ts"])).toContain("test/no-replace-chain-escapers.test.ts");
-    expect(names(["docs/agents/commands.md"])).toEqual([]);
+    expect(files_(treeGuards(ROOT, ["eval/l2-run.ts"], files))).toContain("test/no-replace-chain-escapers.test.ts");
+    expect(files_(treeGuards(ROOT, ["scripts/gen-module-map.ts"], files))).toContain(
+      "test/no-replace-chain-escapers.test.ts",
+    );
+    expect(treeGuards(ROOT, ["docs/agents/commands.md"], files)).toEqual([]);
   });
 
-  it("a data file under a tree wakes nothing; a code file wakes only the trees it sits in", () => {
-    expect(names(["src/error-catalog/rooms.json"])).toEqual([]);
-    expect(names(["eval/l2.ts"])).not.toContain("test/no-cli-spawn.test.ts");
+  it("a data file under a tree wakes nothing", () => {
+    expect(treeGuards(ROOT, ["src/error-catalog/rooms.json"], files)).toEqual([]);
   });
 
-  it("is the cheapest first and carries a reason", () => {
-    const got = treeGuards(ROOT, ["src/lint.ts"], files) as { secs: number; why: string }[];
-    expect(got.length).toBeGreaterThan(5);
-    expect(got.every((g) => g.why.startsWith("scans "))).toBe(true);
-    const secs = got.map((g) => g.secs);
-    expect(secs).toEqual([...secs].sort((a, b) => a - b));
+  it("stays within 8 files and 10 recorded seconds on the real tree, for a change under every tree", () => {
+    const got = treeGuards(
+      ROOT,
+      ["src/lint.ts", "test/a.test.ts", "scripts/a.mjs", "eval/a.ts", ".claude/hooks/a.mjs"],
+      files,
+    );
+    expect(got.length).toBeLessThanOrEqual(8);
+    expect(got.reduce((a: number, g: Pick) => a + (g.secs ?? 0), 0)).toBeLessThanOrEqual(10);
+  });
+
+  describe("on a temp tree", () => {
+    let dir = "";
+    const scanner = `import { readdirSync, readFileSync } from "node:fs";\nreaddirSync("src").map((f) => readFileSync(f));\n`;
+    const names = (l: Pick[]) => files_(l).map((f) => f.replace(/^test\/|\.test\.ts$/g, ""));
+    beforeAll(() => {
+      dir = mkdtempSync(join(tmpdir(), "gate-tree-"));
+      mkdirSync(join(dir, "test"), { recursive: true });
+      for (const n of ["a", "b", "c", "d", "e", "f", "g", "h", "i", "j"]) {
+        writeFileSync(join(dir, "test", `${n}.test.ts`), scanner);
+      }
+      writeFileSync(join(dir, "test", "not-a-scanner.test.ts"), `it("x", () => 1);\n`);
+      // `a`..`g` are recorded; `h`..`j` are not.
+      const rec: Record<string, number> = { a: 0.1, b: 0.2, c: 0.3, d: 0.4, e: 0.5, f: 0.6, g: 0.7 };
+      writeFileSync(
+        join(dir, "test", ".durations.json"),
+        JSON.stringify(Object.fromEntries(Object.entries(rec).map(([k, v]) => [`test/${k}.test.ts`, v]))),
+      );
+    });
+    afterAll(() => rmSync(dir, { recursive: true, force: true }));
+    const all = () =>
+      ["a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "not-a-scanner"].map((n) => `test/${n}.test.ts`);
+
+    it("takes at most 8 files, the unrecorded first, then the cheapest", () => {
+      expect(names(treeGuards(dir, ["src/x.ts"], all()))).toEqual(["h", "i", "j", "a", "b", "c", "d", "e"]);
+    });
+
+    it("takes at most the seconds it is given, and costs an unrecorded scanner at a small default", () => {
+      const got = treeGuards(dir, ["src/x.ts"], all(), 8, 1.2);
+      expect(got.reduce((a: number, g: Pick) => a + (g.secs ?? 0), 0)).toBeLessThanOrEqual(1.2);
+      expect(names(got)).toEqual(["h", "i", "a"]); // 0.5 + 0.5, then 0.1; the next costs 0.2 and no longer fits
+    });
+
+    it("a scanner with no record does not sort last", () => {
+      expect(names(treeGuards(dir, ["src/x.ts"], all(), 1))).toEqual(["h"]);
+    });
   });
 });
 
-describe("namedTests (CI run 43550526470)", () => {
+describe("namedTests", () => {
   const files = tracked();
 
   it("a rule module wakes the test named after it", () => {
-    const got = namedTests(["src/lint/rules/room-contents.ts"], files).map((t: { file: string }) => t.file);
-    expect(got).toContain("test/lint-room-contents.test.ts");
+    expect(files_(namedTests(["src/lint/rules/room-contents.ts"], files))).toContain("test/lint-room-contents.test.ts");
   });
 
   it("skips a stem that names a family, a generic one and a short one", () => {
@@ -169,16 +176,56 @@ describe("namedTests (CI run 43550526470)", () => {
       "test/lint-room-contents-extra.test.ts",
       "test/subroom-contents.test.ts",
     ];
-    const got = namedTests(["src/room-contents.ts"], fake).map((t: { file: string }) => t.file);
-    expect(got).toEqual(["test/lint-room-contents.test.ts", "test/lint-room-contents-extra.test.ts"]);
+    expect(files_(namedTests(["src/room-contents.ts"], fake))).toEqual([
+      "test/lint-room-contents.test.ts",
+      "test/lint-room-contents-extra.test.ts",
+    ]);
   });
 
   it("never names a test file for itself", () => {
     expect(namedTests(["test/lint-room-contents.test.ts"], files)).toEqual([]);
   });
+
+  describe("caps", () => {
+    const fake = ["a", "b", "c", "d", "e", "f"].map((n) => `test/widget-${n}.test.ts`);
+    const durations: Record<string, number> = {
+      "test/widget-a.test.ts": 4,
+      "test/widget-b.test.ts": 1,
+      "test/widget-c.test.ts": 5,
+      "test/widget-d.test.ts": 2,
+      "test/widget-e.test.ts": 3,
+      "test/widget-f.test.ts": 9,
+    };
+
+    it("takes the cheapest first, at most 5 files", () => {
+      const got = files_(namedTests(["src/widget.ts"], fake, durations, 5, 100));
+      expect(got).toEqual(["b", "d", "e", "a", "c"].map((n) => `test/widget-${n}.test.ts`));
+    });
+
+    it("stops at the seconds it is given", () => {
+      const got = namedTests(["src/widget.ts"], fake, durations, 5, 6) as Pick[];
+      expect(files_(got)).toEqual(["b", "d", "e"].map((n) => `test/widget-${n}.test.ts`)); // 1 + 2 + 3, `a` (4) no longer fits
+    });
+
+    it("costs a test with no record at the median of the record", () => {
+      expect(medianSecs({ x: 1, y: 2, z: 30 })).toBe(2);
+      const got = namedTests(["src/widget.ts"], fake, {
+        "test/widget-a.test.ts": 1,
+        "test/widget-b.test.ts": 3,
+      }) as Pick[];
+      expect(got.find((g) => g.file === "test/widget-c.test.ts")?.secs).toBe(3);
+    });
+
+    it("defaults to 5 files and 10 seconds", () => {
+      const heavy = Object.fromEntries(fake.map((f) => [f, 4]));
+      expect(namedTests(["src/widget.ts"], fake, heavy)).toHaveLength(2); // 4 + 4; a third (12) does not fit
+      const light = Object.fromEntries(fake.map((f) => [f, 0.1]));
+      expect(namedTests(["src/widget.ts"], fake, light)).toHaveLength(5);
+    });
+  });
 });
 
-describe("corpusPins (CI runs 43547025802, 43544511999)", () => {
+describe("corpusPins", () => {
   const guards = [
     { file: "test/a.test.ts", pins: true },
     { file: "test/b.test.ts", pins: true },
@@ -190,28 +237,27 @@ describe("corpusPins (CI runs 43547025802, 43544511999)", () => {
 
   it("takes the reachable pins, cheapest first, within the budget; a test with no record costs the default", () => {
     const related = ["test/a.test.ts", "test/b.test.ts", "test/c.test.ts", "test/d.test.ts", "test/e.test.ts"];
-    const got = corpusPins(guards, related, 20, durations).map((g: { file: string }) => g.file);
-    expect(got).toEqual(["test/b.test.ts", "test/e.test.ts", "test/d.test.ts"]); // 1 + 3 + 10, `a` (30) does not fit
+    expect(files_(corpusPins(guards, related, 20, durations))).toEqual([
+      "test/b.test.ts",
+      "test/e.test.ts",
+      "test/d.test.ts",
+    ]); // 1 + 3 + 10, `a` (30) does not fit
   });
 
   it("skips what the change does not reach, and what does not pin", () => {
-    const got = corpusPins(guards, ["test/b.test.ts", "test/c.test.ts"], 100, durations).map(
-      (g: { file: string }) => g.file,
-    );
-    expect(got).toEqual(["test/b.test.ts"]);
+    expect(files_(corpusPins(guards, ["test/b.test.ts", "test/c.test.ts"], 100, durations))).toEqual([
+      "test/b.test.ts",
+    ]);
   });
 
   it("keeps looking past a test too dear for what is left", () => {
-    const got = corpusPins(guards, ["test/a.test.ts", "test/b.test.ts"], 5, durations).map(
-      (g: { file: string }) => g.file,
-    );
-    expect(got).toEqual(["test/b.test.ts"]);
+    expect(files_(corpusPins(guards, ["test/a.test.ts", "test/b.test.ts"], 5, durations))).toEqual(["test/b.test.ts"]);
   });
 
-  it("finds the corpus pins CI failed on in the real tree", () => {
-    const files = tracked();
-    const exampleGuards = scanningGuards(ROOT, ["examples"], files);
-    const keep = exampleGuards.filter((g: { file: string }) => g.file === "test/keep-digests.test.ts");
+  it("finds keep-digests among the example pins of the real tree", () => {
+    const keep = scanningGuards(ROOT, ["examples"], tracked()).filter(
+      (g: { file: string }) => g.file === "test/keep-digests.test.ts",
+    );
     expect(keep).toHaveLength(1);
     expect(keep[0].pins).toBe(true);
   });
@@ -244,5 +290,62 @@ describe("scanningGuards (moved from check-quick.mjs, behaviour unchanged)", () 
     expect(got.map((g) => g.file)).toEqual(["test/pinned.test.ts", "test/plain.test.ts"]);
     expect(got[0]?.why).toBe("lists examples/ via test/helpers/corpus.ts, pins its output");
     expect(got[1]?.why).toBe("lists examples/ via test/helpers/corpus.ts");
+  });
+});
+
+describe("planTests: what the gate runs for a change set", () => {
+  const files = tracked();
+  const plan = (changed: string[], related: string[], extra: Record<string, unknown> = {}) =>
+    planTests({ ROOT, changed, files, related, ...extra }) as {
+      own: string[];
+      extras: Pick[];
+      picked: string[];
+      total: number;
+    };
+
+  it("caps own + guards + nearest at --max and puts the extras beyond it", () => {
+    const related = Array.from({ length: 30 }, (_, i) => `test/near-${i}.test.ts`);
+    const p = plan(["src/lint/rules/room-contents.ts"], related, { max: 7 });
+    const capped = p.picked.filter((f) => f.startsWith("test/near-"));
+    expect(capped).toEqual(related.slice(0, 7));
+    expect(p.extras.length).toBeGreaterThan(0);
+    expect(p.picked).toHaveLength(7 + p.extras.length);
+  });
+
+  it("selects the three scanners CI has failed on, by their rule", () => {
+    const rule = (changed: string[], file: string) => plan(changed, []).extras.find((e) => e.file === file)?.rule;
+    expect(rule(["test/cache.test.ts"], "test/no-cli-spawn.test.ts")).toBe("treeGuards");
+    expect(rule(["src/cli/commands-analyze.ts"], "test/lint-provenance.test.ts")).toBe("treeGuards");
+    expect(rule(["scripts/gen-module-map.ts"], "test/no-replace-chain-escapers.test.ts")).toBe("treeGuards");
+    expect(rule(["src/lint/rules/room-contents.ts"], "test/lint-room-contents.test.ts")).toBe("namedTests");
+  });
+
+  it("keeps each extra under its own cap whatever the change set", () => {
+    const changed = [
+      "src/lint.ts",
+      "test/a.test.ts",
+      "scripts/a.mjs",
+      "eval/a.ts",
+      ".claude/hooks/a.mjs",
+      "src/room-contents.ts",
+    ];
+    const p = plan(
+      changed,
+      tracked().filter((f) => /^test\/.*\.test\.ts$/.test(f)),
+    );
+    const by = (rule: string) => p.extras.filter((e) => e.rule === rule);
+    expect(by("treeGuards").length).toBeLessThanOrEqual(8);
+    expect(by("namedTests").length).toBeLessThanOrEqual(5);
+  });
+
+  it("runs no extra for a docs or examples change", () => {
+    expect(plan(["docs/agents/commands.md"], []).extras).toEqual([]);
+    expect(plan(["examples/studio.arch"], []).extras).toEqual([]);
+  });
+
+  it("an extra the capped list already holds is listed once", () => {
+    const p = plan(["test/cache.test.ts"], ["test/cache.test.ts", "test/no-cli-spawn.test.ts"]);
+    expect(p.picked.filter((f) => f === "test/no-cli-spawn.test.ts")).toHaveLength(1);
+    expect(p.extras.map((e) => e.file)).not.toContain("test/no-cli-spawn.test.ts");
   });
 });
