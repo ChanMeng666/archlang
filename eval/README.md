@@ -41,7 +41,7 @@ model loop (deep-dive H3).
   permanently. See "The one T3 run" below for the exact command.
 
 **Beside the ladder, not on it: the FIDELITY slice** (`fidelity.ts`, `corpus-fidelity.json`,
-`fidelity-plans/`, `fidelity-run.ts` — roadmap P0-3). The tiers all ask *can a model author
+`fidelity-plans/`, `fidelity-run.ts`, and the paid live path `fidelity-live.ts` — roadmap P0-3). The tiers all ask *can a model author
 this?*; the fidelity slice asks the question they structurally cannot — *when it could not,
 did it move the user's number instead of saying so?* It is **reported on its own and
 multiplied into nothing**; see "The fidelity slice" below and rubric §7.
@@ -88,8 +88,51 @@ does not pretend to answer it. What is testable is whether the **detector discri
 brief commits a scored-correct reply plus a laundered counter-example that a validator accepts,
 and the gate fails unless the correct one scores 1, the counter-example scores 0, and the moved
 requirement is **named**. That mirrors `faults/` one level up. `test/eval-fidelity.test.ts` is
-where CI actually catches it. The live path a model would drive is deliberately **not built** —
-the prompt and reply parser are exported and tested, but nothing here spends a token.
+where CI actually catches it. The offline path spends no token; the live path below does.
+
+**The live path (`eval:fidelity-live`, `fidelity-live.ts`) — paid and owner-only, like
+`eval:live`; approved by the owner on 2026-11-15 (product-roadmap RM-D46), run by the owner.**
+It asks a model each brief `--trials` times (default 5, at most 20) with
+`fidelitySystemPrompt()` and the brief verbatim, parses each raw reply with
+`parseFidelityReply` and scores it with `scoreReply`, all unchanged: the prompt is the ruler,
+so `FIDELITY_VERSION`, the corpus and the references do not move. A satisfiable brief scores 1
+when the plan honours every stated number; an infeasible one scores 1 when the reply declares
+infeasibility naming exactly the conflict set; everything else scores 0. The live layer records
+whether the extracted plan **compiled** and reports a zero as a **laundering** only when a
+compiling plan was delivered (one that moved a stated number; on an infeasible brief, any), with
+the moved ids named. A reply the parser reads as plan source that does not compile (a prose
+refusal, a `json` fence, bare JSON, a fence cut off by the output cap) still scores 0, but is
+reported as *no plan / wrong format*, beside the laundering count, never as a laundering.
+
+The calls go through `live-author.ts`'s provider adapters, shared with the L2 harness (raw
+reply, per-call token split, stop reason, retries; no `temperature`, so the trials are samples,
+not copies). Provider and model resolve through `resolveProvider` (`ARCHLANG_EVAL_PROVIDER` /
+`ARCHLANG_EVAL_MODEL`), and `--budget <n>tok|<n>usd` feeds `LiveLedger`, checked before every
+call. Each of these exits `3` without calling any API: no `--yes` (it prints the plan: calls,
+an estimate, budget, output paths); `--yes` without `--budget`; an unknown, repeated or bad
+flag; either results file for the model existing, because a live result is never overwritten.
+Five failed calls in a row stop the run (record status `aborted`, exit `1`). Output,
+git-ignored: `eval/results.fidelity-live.<model>.json` (written before the first call and after
+every call: raw replies, stop reasons, per-call usage, retries, the ruler's score and the live
+outcome) and `eval/results.fidelity-live.<model>.md` (rates with Wilson intervals, a per-brief
+table, every laundering with its moved requirements, stop reasons). Under RM-D46 the records are
+then published in `eval/live-runs/`. **Its numbers are reported on their own and never
+compared** with `eval:ci`, the L0 baseline (`live-baseline.json`) or the offline fidelity
+scorecard. `test/eval-fidelity-live.test.ts` pins it offline (fetch mocked). Rubric §7.6 still
+says the live path is not built; the rubric is frozen, so this paragraph supersedes that
+sentence rather than editing it.
+
+RM-D46 runs four models, k = 5, once each: one process per model, 30 calls each. The dry run's
+worst case (every reply at the 16384-token cap, the ledger's high prices, ≈ 258k prompt tokens
+by a chars/3.5 estimate) is about $1.36 for `claude-haiku-5-5`, $5.43 for `claude-sonnet-5-5`,
+$10.86 for `claude-opus-5-5` and $21.73 for `claude-fable-5-2`.
+
+```bash
+for m in claude-haiku-5-5 claude-sonnet-5-5 claude-opus-5-5 claude-fable-5-2; do
+  ANTHROPIC_API_KEY="$ANTHROPIC_API_KEY_PROMO" ARCHLANG_EVAL_PROVIDER=anthropic \
+    ARCHLANG_EVAL_MODEL=$m npm run eval:fidelity-live -- --yes --trials 5 --budget 25usd
+done
+```
 
 **The recorded gap.** Two requirement classes are unrepresentable in `Intent` — a **door width**
 (no width vocabulary at all) and a **plan-wide per-room bound** ("no room may exceed 5 m²",
@@ -131,6 +174,7 @@ baseline, which was not re-measured) is in `eval/live-runs/2026-10-27-claude-5.m
 npm run eval        # offline: score the committed goldens (writes eval/results.md)
 npm run eval:ci     # same command — the CI regression gate (no API key; exit 1 on regression)
 npm run eval:fidelity   # offline: the constraint-laundering slice (writes eval/fidelity-results.md)
+npm run eval:fidelity-live -- --yes --budget <n>tok|<n>usd [--trials k]   # live fidelity, paid, owner-only (RM-D46)
 npm run eval:live -- --yes [--max N] [--budget <n>tok|<n>usd] [--l1]   # live, paid, guarded
 npm run eval:g1 -- --yes [--max N]    # Gate G1: generate intent JSONs from briefs (paid, guarded; or the "Eval (G1 intent generation)" workflow)
 npm run eval:l2 -- --yes …   # T3 harness — paid; ONE owner-ratified run only (ratified 2026-11-15, not yet run); see "The one T3 run"
@@ -190,6 +234,10 @@ times, `git rev-parse HEAD`, and sha256 of `spec.llm.md` and of the system promp
 `retry-after`, exponential, at most ~5 min of waiting per call) keeps its completed trials and is
 marked `partial`; partial and budget-skipped briefs are excluded from the rates. The published
 record goes to `eval/live-runs/`.
+
+The pre-registered analysis (§ 4–6) is `npm run eval:t3 -- <haiku.json[.gz]|none> <sonnet.json[.gz]|none>`
+(`t3-analysis.ts`, offline and free: it reads only the two records and prints the Markdown for
+`eval/live-runs/2026-11-t3-result.md`).
 
 ## Judge v2 semantics (`assertions.ts`)
 

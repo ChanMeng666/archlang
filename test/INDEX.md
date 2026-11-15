@@ -5,7 +5,7 @@
 Where the tests of a `src` module are, and what each test file is for. Generated; `npm run check:drift`
 fails when it is stale. How to add a test: `docs/testing.md` § 4.
 
-518 test files in `test/`, 284 `src` modules, 106 modules no test imports.
+521 test files in `test/`, 284 `src` modules, 106 modules no test imports.
 
 ## `src` module → tests that import it
 
@@ -118,7 +118,7 @@ Nearest first, then by name; `(+n)` is the rest. Test names are `test/<name>.tes
 - `src/impact.ts` (2) — `rectilinear-doors`, `rectilinear-rooms`
 - `src/import.ts` (31) — `block-stair-byte-identity`, `corner-window-byte-identity`, `dim-thickness-callout`, `drawing-budget`, `floor-materials-byte-identity`, `furniture-relations`, `gaps-byte-identity`, `keep` (+23)
 - `src/import/limits.ts` (1) — `openplan3d-malformed`
-- `src/index.ts` (387) — `acc-metadata`, `access-graph`, `access-policy`, `accessible-svg`, `agent-gallery`, `alias-match`, `anchors`, `annotate` (+379)
+- `src/index.ts` (388) — `acc-metadata`, `access-graph`, `access-policy`, `accessible-svg`, `agent-gallery`, `alias-match`, `anchors`, `annotate` (+380)
 - `src/input-limit.ts` (2) — `import-rooted`, `workspace-seams`
 - `src/intent-concepts.ts` (2) — `vocabulary-living-dining`, `vocabulary-matcher-oracle`
 - `src/intent.ts` (1) — `site`
@@ -352,6 +352,7 @@ The first sentence of each file's header comment.
 - `test/error-catalog-order.test.ts` — `ERROR_CODES` order is a law of the source, not of the host: errors first, then warnings, and within each group by UTF-16 code unit.
 - `test/error-svg.test.ts` — onError: 'svg' (opt-in error card).
 - `test/escape-fuzz.test.ts` — escaping fuzz — SVG; escaping fuzz — error-card SVG; escaping fuzz — ASCII plan; escaping fuzz — DXF export; escaping fuzz — shrunk regressions.
+- `test/eval-fidelity-live.test.ts` — The fidelity slice's live path (`eval/fidelity-live.ts`), offline: fetch is mocked, no key, no network.
 - `test/eval-fidelity.test.ts` — fidelity corpus — shape and brief-groundedness; infeasibility is DERIVED, never asserted in prose; the detector discriminates — faithful clean, laundered caught…
 - `test/eval-fixture.test.ts` — judge fixture — byte-equivalence proof across the intent lift.
 - `test/eval-live-harness.test.ts` — Live-eval harness, offline: price table, stop/finish-reason capture (fetch mocked, no network).
@@ -398,7 +399,7 @@ The first sentence of each file's header comment.
 - `test/gaps-byte-identity.test.ts` — `hidden`, a piece's `mirror` and a room's `floor` (issue #405): the byte-identity law.
 - `test/garage-byte-identity.test.ts` — The byte-identity law for the outdoor tranche: **a plan that uses none of it renders, describes and lints exactly as it did before it existed.** Every new language form ships with this law, and the form it takes here...
 - `test/garage.test.ts` — `uses garage` — the thirteenth room use, its label vocabulary, and the one advisory rule that reads it.
-- `test/gate-select.test.ts` — `scripts/gate-select.mjs`: what `check:quick` selects beyond the import graph, and which deterministic CI steps (`check:drift`, `typecheck:all`) a change set needs.
+- `test/gate-select.test.ts` — `scripts/gate-select.mjs`: what `check:quick` selects beyond the import graph, and how it caps it.
 - `test/gbnf-drift.test.ts` — Drift + acceptance/rejection gate for the generated GBNF grammar (`grammars/archlang.gbnf`, produced by `scripts/gen-gbnf.ts`).
 - `test/geometry-hostinfo.test.ts` — hostInfoForWalls — equivalence with the original two functions; WallGrid — equivalence with brute-force hostInfoForWalls (T3.7).
 - `test/glyph-chirality.test.ts` — A mirrored `place` draws the mirror-image SYMBOL.
@@ -660,6 +661,7 @@ The first sentence of each file's header comment.
 - `test/symmetry.test.ts` — `describe(src, { facts: ["symmetry"] })` — the plan's symmetry group per layer, and its repeated rooms.
 - `test/sync-main.test.ts` — scripts/sync-main.mjs: merge origin/main, script the record and generated-artifact conflicts, focus the re-review.
 - `test/syntax.test.ts` — `describe(src, { facts: ["syntax"] })` — space syntax (Hillier & Hanson 1984) on the access graph.
+- `test/t3-analysis.test.ts` — eval/t3-analysis.ts — the pre-registered T3 analysis, on synthetic records built here with the harness's own `buildRecord`, so the record shape and `summary.net.intent` are the harness's.
 - `test/task-skills.test.ts` — The skills under `skills/<name>/SKILL.md`: the umbrella skill `archlang` and the task skills beside it.
 - `test/taste-budget.test.ts` — The taste budget is a COUNT set by measurement (ADR 0032; design §2.4), the way the step budget was (ADR 0022, second addendum §3): `TASTE_BUDGET` is at least 1,000 times the largest charge one `taste()` call makes ov...
 - `test/taste-digests.test.ts` — The taste digest table (ADR 0032; design §4): SHA-256 of `JSON.stringify(taste(src, { profile }))` for every shipped example, every defect-corpus file and every taste-corpus file, under every profile, pinned below.

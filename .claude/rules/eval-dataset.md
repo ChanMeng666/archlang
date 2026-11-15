@@ -17,6 +17,8 @@ paths:
   stays disjoint from them; `dataset/` imports only `../src/index.js`; the
   canary in `dataset/canary.ts` is never regenerated (`test/dataset.test.ts`).
 - `eval:fidelity` has its own corpus and scorecard — never compare it with `eval:ci`.
+  `eval:fidelity-live` (paid, owner-only; product-roadmap RM-D46) is compared with neither, nor with
+  the L0 baseline.
 - **(Dataset) `dataset/out/` is gitignored and HF-only.** On re-upload the card's
   `task_categories` must come from HF's official list (`text-generation`), under the `ChanMeng666`
   namespace. See `dataset/README.md`.
