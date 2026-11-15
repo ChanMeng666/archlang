@@ -6,9 +6,9 @@ description: Verify a change — check:quick locally, then the PR's CI as the fu
 
 Prove a change is sound before proposing it. The full suite never runs on this machine (owner's
 rule): `npm run check:quick` catches the cheap mistakes in under a minute, then the push lets GitHub
-CI run `check`'s parts, `check:drift`, `typecheck:all` and the E2E on Node 22 (Node 18, Node 20 and
-Windows run on train PRs, unproven pushes to `main` and nightly). Only the PR's CI green is merge
-evidence; a quick pass is not (a targeted subset misses the corpus-wide guards,
+CI runs `check`'s parts, plus `check:drift`, `typecheck:all` and the E2E (Node 22 for the gating legs;
+Node 18, Node 20 and Windows run on train PRs, unproven pushes to `main` and nightly). Only the PR's CI green is
+merge evidence; a quick pass is not (a targeted subset misses the corpus-wide guards,
 `docs/agents/gotchas.md`).
 
 ## Steps
