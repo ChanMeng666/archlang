@@ -74,6 +74,8 @@
 
 RM1.1a 也在本场做完（纯测量，没有 PR，见 §6）。
 
+2026-11-15 CI 会话合并的 PR：`../ci-throughput-research.md` §12.1。
+
 ### 1.1b 开着的 PR、分支与 worktree（2026-11-15 约 05:10Z，`main` 在 `6444cbd3`，`gh pr list` 读）
 
 - **开着的 PR：** 没有。#603 由 #781（RM5.4）取代并关闭。本记录 PR。#767 已由协调者接手合并（§1.1）。
@@ -141,7 +143,7 @@ RM1.1a 也在本场做完（纯测量，没有 PR，见 §6）。
 
 **编译器路径预算：** `compilerPathBudget` 401,000 B gzip，`embedPathBudget` 387,000。RM0.7f 之后的余量没有在 `f76af65b` 上重量：**动词表或新家族的卡先量。**
 
-**CI 吞吐（第 9 轨，RM-D37，2026-11-14 加；不是第三条车道）：** TP 卡在核心车道两张卡之间占用核心执行者（RM-D22 不变）。TP1（#754）与 TP2（#755）已合并：`npm run sync:main -- --push` 是同步的做法；`main` 的 push 运行 28 → 12.8 分钟，PR 约 9 → 7.3（各一次运行）。2026-11-15 之后：TP6 已由 #794 完成，合并列车、已证明的 push 与更多分片都已合并（FT1–FT3，RM-D48，`../ci-throughput-research.md` §12），FT4（#795）已由列车 #801 合并（`4f432ca1`）；TP5 由 TR6 取代。下一步是 TR1–TR7（列车脚本加固、证明加固、记录类 push 判定、守卫、40 个 job 的上限、7 天后复测、finish 拆分后的文字、本地门禁的残余 TR8）；TP3、TP1b 在空档里做；TP4 等触发。卡在 `cards.md` 第 9 轨。
+**CI 吞吐（第 9 轨，RM-D37，2026-11-14 加；不是第三条车道）：** TP 卡在核心车道两张卡之间占用核心执行者（RM-D22 不变）。TP1（#754）与 TP2（#755）已合并：`npm run sync:main -- --push` 是同步的做法；`main` 的 push 运行 28 → 12.8 分钟，PR 约 9 → 7.3（各一次运行）；列车之后的现读数：push 24–30 s，PR 代码运行 4.7 min，完整运行 7.0–8.7 min（`../ci-throughput-research.md` §12.2），六趟列车落地（含 #803）。2026-11-15 之后：TP6 已由 #794 完成，合并列车、已证明的 push 与更多分片都已合并（FT1–FT3，RM-D48，`../ci-throughput-research.md` §12），FT4（#795）已由列车 #801 合并（`4f432ca1`）；TP5 由 TR6 取代。未完的是 TR1–TR5 与 TR7–TR10（列车脚本加固、证明加固、记录类 push 判定、守卫、40 个 job 的上限；finish 拆分后的文字 TR7、本地门禁的残余 TR8）；TR6 是 7 天后的复测，TR9、TR10 等所有者裁定；TP3、TP1b 在空档里做；TP4 等触发。卡在 `cards.md` 第 9 轨。
 
 **发布：** 1.62.0 已发布（§1.2）。1.63.0 要所有者对那一次的决定（没有决定就不切；VS Code Marketplace 与 OpenAI 目录的发布由代理做，含 OpenAI 的 Submit 与 Publish，RM-D41、RM-D44）。2026-12-01 所有者亲自发 Show HN；`main` 一直保持绿。RM5.4（#603）已由 #781 做完（RM-D43）。
 
@@ -179,8 +181,8 @@ RM1.1a 也在本场做完（纯测量，没有 PR，见 §6）。
 
 ## 5. 怎样合并
 
-- 串行合并：required checks 是 strict 的，一个 PR 合并后其余都会 `BEHIND`。按层级（`node scripts/risk-tier.mjs`；`docs/agents/commands.md` § Merging a PR）：low 在 CI 绿后合；medium 另要一次新上下文评审；high 还要主会话的判断（所有者 2026-11-09 的长期批准）。每个 PR 至多两轮红队。
-- 队列做法：逐个"更新分支 → 等新头上的全部检查 → 用完整 40 位 SHA `--match-head-commit` 合并"，不删除任何东西。2026-11-11 用的脚本是 `mq.sh`（`D:\.claude-scratch\2026-11-11\mq\mq.sh`，从主检出运行，`state.txt` 作锁；同一脚本的副本在 `D:\github_repository\claude-kept\2026-11-10-archlang-roadmap-v2\mq.sh`）。
+- 串行合并（代码 PR 走列车，见下）：required checks 是 strict 的，一个 PR 合并后其余都会 `BEHIND`。按层级（`node scripts/risk-tier.mjs`；`docs/agents/commands.md` § Merging a PR）：low 在 CI 绿后合；medium 另要一次新上下文评审；high 还要主会话的判断（所有者 2026-11-09 的长期批准）。每个 PR 至多两轮红队。
+- **废止（列车取代，见下）：**队列做法：逐个"更新分支 → 等新头上的全部检查 → 用完整 40 位 SHA `--match-head-commit` 合并"，不删除任何东西。2026-11-11 用的脚本是 `mq.sh`（`D:\.claude-scratch\2026-11-11\mq\mq.sh`，从主检出运行，`state.txt` 作锁；同一脚本的副本在 `D:\github_repository\claude-kept\2026-11-10-archlang-roadmap-v2\mq.sh`）。
 - `BEHIND` 的分支用 `npm run sync:main -- --push` 同步（TP1，#754），不用 `gh pr update-branch`（它是 GitHub 的文本合并，会让 `test/INDEX.md`、`docs/agents/module-map.md` 等生成文件过期，`docs/agents/gotchas.md` § PRs & CI）。脚本解不了的冲突停下交给代理，解完 `-- --continue`。同步后的头仍然每次重新红队，它打印的重点清单随红队的简报一起给，然后再钉新头（RM-D37；`docs/agents/commands.md` § Merging a PR）。
 - **记录少开 PR（RM-D37，P0-4）：** 默认一场会话结束时合成一个 `docs(plans)` 记录 PR；记录也可以随它所记录的代码 PR 一起走。每多一个 PR，就多一条会 `BEHIND` 的分支。
 - **合并列车（FT2）：** 代码 PR 用 `npm run train -- <pr> …` 一次性上车（一次完整 CI），红队读列车头并贴 `reviewed <列车头>`，再 `npm run train -- --land <列车 PR> --wait`；被丢下的 PR 照旧 `sync:main`。步骤见 `docs/agents/commands.md` § Merging a PR 第 2 步。

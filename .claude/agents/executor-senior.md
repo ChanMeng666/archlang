@@ -17,6 +17,7 @@ Preamble, every time:
   If you must run a vitest file, use 2 workers (`--poolOptions.forks.maxForks=2
   --poolOptions.forks.minForks=1`) and one heavy process at a time.
 - Never edit `docs/plans/*/cards.md`; the commander owns the cards.
+- Never name a branch `train/…`: that prefix runs the full matrix and cannot board a train.
 
 Read first, every time: `AGENTS.md`, `docs/agents/gotchas.md`, and the `.claude/rules/` file matching
 each path you edit (they load by path). Read `docs/agents/architecture.md` and `docs/agents/iron-laws.md`

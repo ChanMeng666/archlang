@@ -58,7 +58,8 @@ drawing, `paper` and `scale` are not added and that is reported.
 (`src/fix-apply.ts`), not through the formatter, so every authored byte and comment survives.
 A statement is inserted only at a line boundary, in the file's own indentation and line ending.
 
-**6. Four laws, each pinned by test** (`test/finish.test.ts`, `test/fuzz.test.ts`):
+**6. Four laws, each pinned by test** (`test/finish-corpus-laws.test.ts`,
+`test/finish-never-worse.test.ts`, `test/finish.test.ts`, `test/fuzz.test.ts`):
 
 | Law | Statement |
 |---|---|

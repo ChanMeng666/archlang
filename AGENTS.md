@@ -21,7 +21,7 @@ npm run gen:all       # every gen:* generator
 - Local gate is exactly `check:quick` (+ `docs:build` for docs), then push. Executor briefs list only that. `check`, drift,
   `typecheck:all`, vitest runs, e2e and bench are CI's; only CI green is merge evidence. A hook
   blocks them (`.claude/hooks/local-gate.mjs`).
-- Commit or push only when asked. Merge by risk tier (`docs/agents/commands.md` § Merging a PR).
+- Commit or push only when asked. Merge by risk tier; code PRs ride `npm run train` (`docs/agents/commands.md` § Merging a PR).
 
 ## Hard rules
 
@@ -66,5 +66,5 @@ npm run gen:all       # every gen:* generator
 `commands.md` · `orchestration.md`. `docs/testing.md`: red guards, golden policy. `docs/seo.md` § 8: listings.
 Authoring `.arch` (not contributing): `spec.llm.md`, `skills/archlang/SKILL.md`.
 
-Conventional Commits. This is the only root instruction file; `CLAUDE.md` just imports it;
-path-scoped rules go in `.claude/rules/`. Together ≤ 5,000 bytes (`wc -c`); detail goes in `docs/agents/`.
+Conventional Commits. Sole root instruction file (`CLAUDE.md` just imports it); path rules:
+`.claude/rules/`; detail: `docs/agents/`. Together ≤ 5,000 bytes (`wc -c`).
