@@ -20,7 +20,7 @@ Every module, not only the entry, is in the sibling [`module-map.md`](module-map
 The total counts every name the checker sees as exported, including those pulled in by
 `export type * from "./ast.js"`; a count of the names written in `index.ts`' export statements is lower.
 
-Totals: 645 exports (225 values, 420 types), 408 flagged (72 values).
+Totals: 647 exports (225 values, 422 types), 410 flagged (72 values).
 
 ## `src/algebra/d4.ts`
 
@@ -314,7 +314,7 @@ Totals: 645 exports (225 values, 420 types), 408 flagged (72 values).
 | `DoorSummary` | type | none |
 | `FenceSummary` | type | none |
 | `FreedomElement` | type | `src/cli` |
-| `FreedomReport` | type | `src/cli` |
+| `FreedomReport` | type | `src/cli`, `test` |
 | `FurnitureSummary` | type | none |
 | `HeightFacts` | type | none |
 | `InstanceSummary` | type | none |
@@ -857,9 +857,11 @@ Totals: 645 exports (225 values, 420 types), 408 flagged (72 values).
 | `ColumnJson` | type | none |
 | `DimJson` | type | none |
 | `EdgeJson` | type | none |
+| `FenceJson` | type | none |
 | `FurnitureJson` | type | none |
 | `OpeningJson` | type | none |
 | `OpeningOnJson` | type | none |
+| `OutdoorJson` | type | none |
 | `PaperJson` | type | none |
 | `PlanJson` | type | `src/cli`, `test` |
 | `PointJson` | type | none |

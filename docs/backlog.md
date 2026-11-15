@@ -1938,9 +1938,9 @@ rather than an omission:
 - **A polygonal balcony** (`E_OUTDOOR_POLY_DEGENERATE` covers it). The railing is derived per named
   EDGE (`top`/`bottom`/`left`/`right`) and carried through a `place` frame by those edges' outward
   normals; a ring has no such names. Wants a per-EDGE rail model first, which is the real work.
-- **`outdoor` in Plan JSON.** Deliberately absent — `planToJson` is byte-identical with and without
-  ground, pinned in `test/outdoor-byte-identity.test.ts`. Adding it is a schema change and should be
-  argued as one, with a consumer that wants it.
+- ~~**`outdoor` in Plan JSON.**~~ Done in RM3.1 (PS0.21): `outdoor[]` and `fences[]` are optional
+  keys of their own, and with them taken out `planToJson` is byte-identical with and without ground
+  (`test/outdoor-byte-identity.test.ts`; the round-trip law `test/plan-json-roundtrip-law.test.ts`).
 
 A fifth was found while reviewing the flagship for release and is filed on its own, since it is a
 defect in an existing rule rather than a scope decision: **4.8**, a `dims auto` chain running across

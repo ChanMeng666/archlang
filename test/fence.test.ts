@@ -123,12 +123,15 @@ describe("fence — is not a thin wall", () => {
     expect(svg).not.toContain("url(#poche)");
   });
 
-  it("does not change one byte of `planToJson`", () => {
+  it("adds only its own `fences` key to `planToJson`, and not one byte elsewhere", () => {
+    // Plan JSON carries fences since RM3.1 (PS0.21) in a key of its own, never as a wall.
     const a = planToJson(bare);
     const b = planToJson(fenced);
     expect(a.diagnostics.filter((d) => d.severity === "error")).toEqual([]);
     expect(b.diagnostics.filter((d) => d.severity === "error")).toEqual([]);
-    expect(JSON.stringify(b.json)).toBe(JSON.stringify(a.json));
+    expect(b.json?.fences?.length).toBeGreaterThan(0);
+    const { fences: _fences, ...rest } = b.json!;
+    expect(JSON.stringify(rest)).toBe(JSON.stringify(a.json));
   });
 
   it("raises no lint warning of its own", () => {

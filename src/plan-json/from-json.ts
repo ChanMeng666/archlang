@@ -11,11 +11,15 @@ import {
   ARC_DIRS,
   AUTO_DIMS_MODES,
   COMPASS_DIRECTIONS,
+  FENCE_STYLES,
   FURNITURE_ANCHORS,
   HEMISPHERES,
   NORTH_DIRS,
+  OUTDOOR_KINDS,
+  RAIL_EDGES,
   USE_KINDS,
 } from "../ast.js";
+import { FLOOR_MATERIALS } from "../hatches.js";
 import { isLexWord } from "../lexer.js";
 import { isEdgeName } from "../attach.js";
 import { EDGE_WORDS } from "../room-datums.js";
@@ -313,7 +317,7 @@ function validateRows(
   val: Validator,
 ): void {
   const rows = (
-    key: "rooms" | "walls" | "openings" | "furniture" | "dims" | "columns",
+    key: "rooms" | "walls" | "openings" | "furniture" | "dims" | "columns" | "outdoor" | "fences",
     check: (r: unknown, path: string, val: Validator) => void,
   ): void => {
     const list = o[key];
@@ -350,6 +354,8 @@ function validateRows(
   rows("furniture", validateFurniture);
   rows("dims", validateDim);
   rows("columns", validateColumn);
+  rows("outdoor", validateOutdoor);
+  rows("fences", validateFence);
 }
 
 /** `site` — a required `street` word and an optional `hemisphere`, both from the closed
@@ -430,6 +436,61 @@ function validateRoom(r: unknown, path: string, val: Validator): void {
         if (!(isStr(u) && USE_SET.has(u))) val.err(`${path}/uses/${i}`, "unknown room use");
       });
   }
+  // Printed as `floor <word>`: held to the patterns the resolver knows, so an unknown word is
+  // refused with its path rather than drawn as no pattern (`W_UNKNOWN_MATERIAL`).
+  if (r.floor !== undefined && !(isStr(r.floor) && (FLOOR_MATERIALS as readonly string[]).includes(r.floor)))
+    val.err(`${path}/floor`, `expected ${enumList(FLOOR_MATERIALS)}`);
+}
+
+/**
+ * An `outdoor` row (RM3.1): a surface word from {@link OUTDOOR_KINDS}, a rectangle or a ring (the
+ * room's two spellings, held the same way), and a `rail` of the clause's own words. The kind-specific
+ * refusals (`rail` off a balcony, a polygon balcony) stay at resolve, where `E_OUTDOOR_*` own them.
+ */
+function validateOutdoor(o: unknown, path: string, val: Validator): void {
+  if (!isObj(o)) {
+    val.err(path, "expected an object");
+    return;
+  }
+  if (!(isStr(o.kind) && (OUTDOOR_KINDS as readonly string[]).includes(o.kind)))
+    val.err(`${path}/kind`, `expected ${enumList(OUTDOOR_KINDS)}`);
+  if (o.polygon !== undefined) {
+    if (!Array.isArray(o.polygon)) val.err(`${path}/polygon`, "expected an array of points");
+    else {
+      if (o.polygon.length < 3) val.err(`${path}/polygon`, "an outdoor polygon needs at least three vertices");
+      o.polygon.forEach((pt, i) => void reqPoint(pt, `${path}/polygon/${i}`, val));
+    }
+  } else {
+    for (const key of ["x", "y", "width", "height"]) if (!isNum(o[key])) val.err(`${path}/${key}`, "expected a number");
+    for (const key of ["width", "height"]) nonNegative(o[key], `${path}/${key}`, val);
+  }
+  declId(o.id, `${path}/id`, "an outdoor id", val);
+  if (o.label !== undefined && !isStr(o.label)) val.err(`${path}/label`, "expected a string");
+  if (o.rail !== undefined) {
+    if (!Array.isArray(o.rail)) val.err(`${path}/rail`, "expected an array of rail edges");
+    else
+      o.rail.forEach((w, i) => {
+        if (!(isStr(w) && (RAIL_EDGES as readonly string[]).includes(w)))
+          val.err(`${path}/rail/${i}`, `expected ${enumList(RAIL_EDGES)}`);
+      });
+  }
+}
+
+/** A `fence` row (RM3.1): a style from {@link FENCE_STYLES}, two or more straight-run points. */
+function validateFence(f: unknown, path: string, val: Validator): void {
+  if (!isObj(f)) {
+    val.err(path, "expected an object");
+    return;
+  }
+  if (f.style !== undefined && !(isStr(f.style) && (FENCE_STYLES as readonly string[]).includes(f.style)))
+    val.err(`${path}/style`, `expected ${enumList(FENCE_STYLES)}`);
+  if (!Array.isArray(f.points)) val.err(`${path}/points`, "expected an array of points");
+  else {
+    if (f.points.length < 2) val.err(`${path}/points`, "a fence needs at least two points");
+    f.points.forEach((p, i) => void reqPoint(p, `${path}/points/${i}`, val));
+  }
+  if (f.closed !== undefined && typeof f.closed !== "boolean") val.err(`${path}/closed`, "expected a boolean");
+  declId(f.id, `${path}/id`, "a fence id", val);
 }
 
 function validateWall(w: unknown, path: string, val: Validator): void {

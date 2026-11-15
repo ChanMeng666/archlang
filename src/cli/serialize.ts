@@ -135,25 +135,38 @@ async function serialize(
 /** The bytes `-f json` writes: one Plan-JSON document, two-space indented, newline-terminated. */
 const planJsonText = (json: PlanJson): string => `${JSON.stringify(json, null, 2)}\n`;
 
+/** The clauses an older release reported and Plan JSON now carries (RM3.1): never reported, so no note. */
+type CarriedClause = "floor" | "outdoor" | "fence";
+
 /** The note's words for one dropped clause: what the format lacks, the thing counted, its plural. */
-export const DROPPED_WORDS: Record<Exclude<PlanJsonDroppedClause, "keep">, [string, string, string]> = {
+export const DROPPED_WORDS: Record<Exclude<PlanJsonDroppedClause, "keep" | CarriedClause>, [string, string, string]> = {
   "poche hatch": ["hatch scale or angle on `poche` walls", "wall's hatch setting", "walls' hatch settings"],
   circle: ["circular rooms", "circular room", "circular rooms"],
   "label at": ["room label positions", "`label … at` position", "`label … at` positions"],
-  floor: ["room floors", "room `floor`", "room `floor`s"],
   "column order": [
     "order between columns and furniture",
     "column written before furniture",
     "columns written before furniture",
   ],
+  "outdoor order": [
+    "order between rooms and outdoor surfaces",
+    "outdoor surface written before a room",
+    "outdoor surfaces written before a room",
+  ],
+  "fence order": [
+    "order between fences and furniture or columns",
+    "fence written before furniture or a column",
+    "fences written before furniture or a column",
+  ],
+  // `droppedNotes` words this one's note itself: the ids are carried, their being unwritten is not.
+  "auto id": ["record that an id was not written", "auto id", "auto ids"],
   stair: ["stairs", "stair", "stairs"],
   elevator: ["elevators", "elevator", "elevators"],
   escalator: ["escalators", "escalator", "escalators"],
   roof: ["roofs", "roof", "roofs"],
   void: ["voids", "void", "voids"],
-  outdoor: ["outdoor surfaces", "outdoor surface", "outdoor surfaces"],
-  fence: ["fences", "fence", "fences"],
   section: ["section marks", "section mark", "section marks"],
+  place: ["placed instances", "`place`d instance", "`place`d instances"],
   zone: ["zones", "zone", "zones"],
   level: ["level numbers or names", "level", "levels"],
   axes: ["axes", "axis", "axes"],
@@ -180,11 +193,19 @@ const idList = (ids: string[]): string =>
     ? `${ids.slice(0, NOTE_IDS).join(", ")} and ${fmt3(ids.length - NOTE_IDS)} more`
     : ids.join(", ");
 
+/** A clause Plan JSON carries since RM3.1 ({@link CarriedClause}), which `planToJson` never reports. */
+const isCarried = (clause: PlanJsonDroppedClause): clause is CarriedClause =>
+  clause === "floor" || clause === "outdoor" || clause === "fence";
+
 /** One stderr line per clause, the storeys of an export summed; none for `keep`, which has its own. */
 function droppedNotes(rows: PlanJsonDropped[]): string[] {
   const clauses = [...new Set(rows.map((r) => r.clause))];
   return clauses.flatMap((clause) => {
     if (clause === "keep") return [];
+    // Loud, not silent: a report of a carried clause is a regression in `planToJson`, never a
+    // plan's fault, and a note for it would tell the reader the document lost what it holds.
+    if (isCarried(clause))
+      throw new Error(`internal: Plan JSON carries \`${clause}\` (RM3.1), so planToJson must not report it as dropped`);
     const of = rows.filter((r) => r.clause === clause);
     const count = of.reduce((n, r) => n + r.count, 0);
     const ids = [...new Set(of.flatMap((r) => r.ids ?? []))];
@@ -192,6 +213,11 @@ function droppedNotes(rows: PlanJsonDropped[]): string[] {
     const [lacks, one, many] = DROPPED_WORDS[clause];
     const counted = `${fmt3(count)} ${count === 1 ? one : many}`;
     const named = ids.length > 0 ? `: ${idList(ids)}` : "";
+    // The document does carry the ids; what it cannot say is that the resolver made them.
+    if (clause === "auto id")
+      return [
+        `note: Plan JSON writes every id, so ids the plan did not write come back as written ids; this export writes ${counted}${named} (the .arch source still leaves ${count === 1 ? "it" : "them"} unwritten)`,
+      ];
     const told =
       clause === "circle"
         ? `writes ${counted} as ${count === 1 ? "a 48-sided polygon" : "48-sided polygons"}${named}`

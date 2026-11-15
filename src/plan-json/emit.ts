@@ -136,8 +136,24 @@ function emitRows(p: PlanBodyJson, L: string[]): void {
         : `at (${num(r.x)},${num(r.y)}) size ${num(r.width)}x${num(r.height)}`;
     let line = `  room ${idAttr(r.id)}${shape}`;
     if (r.label !== undefined) line += ` label ${q(r.label)}`;
+    // After `label`, before `uses`: one of the two places the grammar reads it.
+    if (r.floor !== undefined) line += ` floor ${r.floor}`;
     const uses = usesForRoom(r);
     if (uses.length > 0) line += ` uses ${uses.join(" ")}`;
+    L.push(line);
+  }
+
+  // The ground after the rooms (RM3.1): the two share the `floor` pass, and a plan writes its
+  // garden round its rooms.
+  for (const o of (p.outdoor ?? []).filter(own)) {
+    const shape =
+      o.polygon && o.polygon.length >= 3
+        ? `polygon ${o.polygon.map((pt) => `(${num(pt.x)},${num(pt.y)})`).join(" ")}`
+        : `at (${num(o.x ?? 0)},${num(o.y ?? 0)}) size ${num(o.width ?? 0)}x${num(o.height ?? 0)}`;
+    let line = `  outdoor ${idAttr(o.id)}${o.kind} ${shape}`;
+    if (o.label !== undefined) line += ` label ${q(o.label)}`;
+    // An empty list is the written `rail none`, a rail that is there and rails nothing.
+    if (o.rail) line += ` rail ${o.rail.length > 0 ? o.rail.join(" ") : "none"}`;
     L.push(line);
   }
 
@@ -147,6 +163,12 @@ function emitRows(p: PlanBodyJson, L: string[]): void {
 
   for (const c of (p.columns ?? []).filter(own))
     L.push(`  column ${idAttr(c.id)}at (${num(c.x)},${num(c.y)}) size ${num(c.width)}x${num(c.height)}`);
+
+  // The fences after the columns (RM3.1): the three share the `furniture` pass.
+  for (const f of (p.fences ?? []).filter(own)) {
+    const pts = (f.points ?? []).map((pt) => `(${num(pt.x)},${num(pt.y)})`).join(" ");
+    L.push(`  fence ${idAttr(f.id)}${f.style ?? "picket"} { ${pts}${f.closed ? " close" : ""} }`);
+  }
 
   for (const d of (p.dims ?? []).filter(own)) {
     let line = `  dim (${num(d.from.x)},${num(d.from.y)})->(${num(d.to.x)},${num(d.to.y)})`;

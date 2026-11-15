@@ -23,7 +23,9 @@ the real parser), `planToJson` (a resolved plan out, with output-only facts) and
   suite by `test/release-compat.test.ts` against the last published core, additive-only. A removal
   needs a `BREAKING: plan-schema: item` line under `[Unreleased]` and a major; so does a changed root `$id` (item `/$id`; policy in `GOVERNANCE.md`).
 - **The round-trip law.** For a non-scripting, grouped plan, `planFromJson(planToJson(src))` compiles to
-  byte-identical SVG (`test/plan-json.test.ts`; the CLI half `test/cli-plan-json-roundtrip.test.ts`). A
+  byte-identical SVG (`test/plan-json.test.ts`; the CLI half `test/cli-plan-json-roundtrip.test.ts`); the
+  in-scope examples also keep `describe()` and `lint()` byte for byte (`test/plan-json-roundtrip-law.test.ts`,
+  whose scope table `test/tables/plan-json-scope.ts` names what each form loses). A
   shipped example that cannot round-trip is named in `CANNOT_ROUND_TRIP` (`test/tables/plan-json-gaps.ts`)
   with the language surface it loses and a `proof` pattern that must still match the file. What the
   format has no field for is reported, never silently lost: `dropped` on `planToJson` (`src/plan-json/to-json.ts`; the words are in

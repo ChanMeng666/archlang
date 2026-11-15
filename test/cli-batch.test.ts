@@ -76,7 +76,8 @@ describe("CLI — batch", () => {
       arc,
       'plan "arc round trip" {\n  units mm\n  paper A4 landscape\n  scale 1:50\n  wall id=w exterior thickness 200 { (0,0) (6000,0) (6000,4000) arc (0,4000) radius 4000 cw (0,0) close }\n}\n',
     );
-    writeFileSync(plain, 'plan "G" { units mm room at (0,0) size 3000x3000 label "R" }');
+    // Its room names its id: an unnamed one would be reported as `auto id` (RM3.1).
+    writeFileSync(plain, 'plan "G" { units mm room id=r at (0,0) size 3000x3000 label "R" }');
     const r = await run(["batch", lossy, arc, plain, "-f", "json", "-o", dir, "--json"]);
     expect(r.status).toBe(0);
     const j = JSON.parse(r.stdout);
