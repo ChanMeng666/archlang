@@ -1493,7 +1493,7 @@ in `packages/mcp/package.json` and both `server.json` `version` fields.
 **Gate:** the tool description names both fields; the MCP lockstep and tool-text tests pass; the
 version is bumped in all three places. **Size:** S.
 
-### U.22 · `describe()` is unbudgeted, and the net-area term is quadratic per room — `todo`
+### U.22 · `describe()` net-area budget: done by #742 and #771, waiting to be archived — `note`
 
 **Observed (card D1 review).** The net-area measurement pairs a room's edges with the wall-band
 curves near it, capped per room at `MAX_NET_CURVES` (`src/analyze/net-area.ts`), but nothing caps
@@ -1507,6 +1507,12 @@ per-plan total and omit `net_area_m2` past it, as a single room already omits pa
 
 **Gate:** the adversarial plan above returns within the budget, with net areas omitted rather
 than late; the corpus `describe()` output does not move. **Size:** M.
+**Done by PR #742** (PS0.15 / RM1.3b: one net-area meter per storey read, `MAX_NET_PLAN_WORK`,
+`src/analyze/net-area-memo.ts`) and **PR #771** (RM1.3d: the takeoff's wall faces charged to the same
+meter). The card's own adversary (200 overlapping rooms, each meeting 1,932 curves) is pinned in
+`test/net-area-budget.test.ts`: `describe()` measures three rooms, closes the meter and omits the rest;
+the corpus maxima are pinned there far inside the total. The entry is closed and waits to be archived
+to `archlang-lab` with `scripts/backlog-archive.mjs`.
 
 ## Found downstream (2026-10-17)
 
