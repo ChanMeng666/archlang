@@ -138,7 +138,7 @@ function tupleTable(name: string): Array<[string, string]> {
  *   - the TRACKED top-level `docs-site/*.md` page sources (index.md → `/`);
  *   - sync-docs' `PAGES` destinations, which are generated and therefore untracked;
  *   - one route per `docs/adr/*.md`, copied FLAT into `docs-site/adr/`, plus the
- *     generated `/adr/` index.
+ *     generated `/adr` index (`adr.md`).
  *
  * The tracked half comes from `git ls-files` on purpose: by the time this runs a docs
  * build may have dropped the generated pages into `docs-site/` too, and reading the

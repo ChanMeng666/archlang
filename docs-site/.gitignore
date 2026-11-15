@@ -21,6 +21,8 @@ whats-new.md
 spec.md
 adr/0*.md
 adr.md
+# Generated here before the index moved to adr.md; a stale copy may linger in old checkouts.
+adr/index.md
 
 # The ADR sidebar, generated from docs/adr/*.md by sync-docs.mjs and imported by
 # .vitepress/config.ts (so the sidebar can never freeze behind the ADR directory).
