@@ -1493,7 +1493,7 @@ in `packages/mcp/package.json` and both `server.json` `version` fields.
 **Gate:** the tool description names both fields; the MCP lockstep and tool-text tests pass; the
 version is bumped in all three places. **Size:** S.
 
-### U.22 · `describe()` is unbudgeted, and the net-area term is quadratic per room — `todo`
+### U.22 · `describe()` net-area budget: done by #742 and #771, waiting to be archived — `note`
 
 **Observed (card D1 review).** The net-area measurement pairs a room's edges with the wall-band
 curves near it, capped per room at `MAX_NET_CURVES` (`src/analyze/net-area.ts`), but nothing caps
@@ -1507,6 +1507,38 @@ per-plan total and omit `net_area_m2` past it, as a single room already omits pa
 
 **Gate:** the adversarial plan above returns within the budget, with net areas omitted rather
 than late; the corpus `describe()` output does not move. **Size:** M.
+**Done by PR #742** (PS0.15 / RM1.3b: one net-area meter per storey read, `MAX_NET_PLAN_WORK`,
+`src/analyze/net-area-memo.ts`) and **PR #771** (RM1.3d: the takeoff's wall faces charged to the same
+meter). The card's own adversary (200 overlapping rooms, each meeting 1,932 curves) is pinned in
+`test/net-area-budget.test.ts`: `describe()` measures three rooms, closes the meter and omits the rest;
+the corpus maxima are pinned there far inside the total. What the meter does not bound is open as
+U.23. The entry is closed and waits to be archived to `archlang-lab` with `scripts/backlog-archive.mjs`.
+
+### U.23 · The net-area meter is per storey read, so many storeys still make `describe()` slow — `todo`
+
+**Observed (review of the U.22 close, 2026-11-16, `dist/cli.js describe --json` at 1.62.0).** The meter
+of U.22 was first a per-plan total (`51e610b8`), then, in review, one meter per storey read
+(`9e43b71c`; `src/analyze/net-area-memo.ts` module header). Nothing caps storeys times that total.
+The plans below repeat the comb storey of `test/net-area-budget.test.ts`, with each storey shifted 1 mm
+so the memo misses:
+
+| Plan | Rooms measured | Wall time |
+| --- | --- | --- |
+| 1 storey × 4 combs | 2 of 4 | 0.8 s |
+| 30 storeys × 2 combs | 60 of 60 | 9.9 s |
+| 60 storeys × 2 combs | 120 of 120 | 20.4 s |
+| 30 storeys × 2 combs, partitions removed (control) | 60 of 60 | 1.05 s |
+
+No figure is omitted and no diagnostic is raised. `E_STEP_LIMIT` stops the plan somewhere between 60
+and 100 storeys. The Worker's CPU cap still bounds the hosted tools.
+
+**Hypothesis.** A plan-wide ceiling over the per-storey meters: give each read a share of a total, or
+charge every storey to one plan meter and omit `net_area_m2` past it. Either must keep a storey's figures
+independent of the order the storeys are read in.
+
+**Gate:** the 60-storey plan above returns within the budget, with net areas omitted rather than late.
+Each storey's figures do not depend on read order. The corpus `describe()` output does not move.
+**Size:** M.
 
 ## Found downstream (2026-10-17)
 
@@ -1678,19 +1710,13 @@ inclusive, and keep the smallest-room tie rule (`playground/test/interact.test.t
 unit cases on `hexagon-pavilion` (trapezoids, the rotunda) and `gallery-l`; the rectangle cases
 unchanged.
 
-### PG.3 · The facts line moves the drawing on the first compile — `todo`
-
-The facts line is empty in the served page and filled after the first compile, so the stage
-shrinks by its height then (35 px, measured at 1280 and at 390 wide). Writing
-it at build time (`playground/scripts/gen-static.mjs`) would fix that, but with JavaScript off the
-drawing's share of a 1280×720 viewport would fall to about 0.66, under `boot.spec`'s 0.70; moving
-the line into the output pane's status row first keeps both. **Gate:** the stage box is the same
-before and after the first compile; `boot.spec`'s no-JS share holds.
+- PG.3 · The facts line moves the drawing on the first compile — closed by MP5 (#565, the line is
+  served) and PG-D6 (the stage's foot keeps its row); pinned by `boot.spec`'s first-compile stage-box case
 
 ## Website residue (Search Console fixes #640, #643, #655, 2026-11-10)
 
 Left by the reviews of those PRs (review-cost cap). WS.1 and WS.2 fail only on input the docs do
-not yet hold; WS.3 to WS.5 are true of the live site today.
+not yet hold; WS.3 and WS.4 are true of the live site today.
 
 ### WS.1 · Four copies of the fence rule, none quite CommonMark — `todo`
 
@@ -1731,18 +1757,6 @@ uses `keep` or `import` yet, so a detector could not be checked against a real p
 `docs/language-reference.md` has no heading for `style` to link to. Add each row when an example
 uses it (and, for `style`, when the reference gains its section). **Gate:**
 `test/plan-constructs.test.ts`'s anchor check covers the new rows.
-
-### WS.5 · The sidebar does not highlight "Architecture decisions" on `/adr` — `todo`
-
-The ADR index is generated as `docs-site/adr/index.md` (`docs-site/sync-docs.mjs`) and served at
-`/adr` (`html_handling: drop-trailing-slash`). VitePress 1.6.4's `isActive` normalises that page
-to `/adr/` and the sidebar item `link: "/adr"` (`docs-site/.vitepress/config.ts`) to `/adr`, so
-they never match (read from `vitepress/dist/client/shared.js`, not yet measured in a browser). The
-likely fix is `link: "/adr/"`, but check the href it renders: `/adr/` redirects to `/adr` here, and
-an internal link to a redirect is worse for crawling than a missing highlight. Only if no link
-spelling works is a route move worth it (a 301 in `docs-site/public/_redirects`, the canonical, the
-breadcrumb and the sitemap together). **Gate:** an e2e case finds the item active on `/adr`; every
-rendered link to the index is `/adr`.
 
 ## Stairs in the 3D preview (public-surfaces card X3, 2026-11-06)
 
@@ -1791,12 +1805,6 @@ planted swap fails `--check`.
 The budget table caps WebP, MP4 and GLB only; `.plan.png` (92–245 KB today) and `.poster.png` have
 none, so an A1 sheet could grow unchecked. **Gate:** a budget (for example 300 KB) enforced by the
 generator and `--check`.
-
-### 3D.3 · `pngjs` is not declared by `packages/archlang-3d` — `todo`
-
-The generator script imports it through the root `devDependencies` (hoisting). Not shipped
-(`scripts/` is outside `files`), but an isolated install of the workspace would break. **Gate:**
-`pngjs` and `@types/pngjs` in the package's `devDependencies`.
 
 ### 3D.4 · Pitched roofs in the 3D preview (design first) — `todo`
 
