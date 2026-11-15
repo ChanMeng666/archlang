@@ -17,9 +17,21 @@
  * shape fits). `facing` settles after the position, so it reads the rotate-0 footprint, and a
  * turn onto the footprint's short side is the existing `E_FACING_TRANSPOSED`.
  *
- * Every default is therefore one an author could have written: each case below compiles to the
- * same SVG, `describe()` and `lint()` (byte spans aside) as the statement with that `size`
- * written out.
+ * Under a `grid` the footprint snaps as a written size does. `at`/`in` report it as one is
+ * reported (`W_GRID_SNAPPED`, naming the "catalogued size"), and a side that snaps to 0 is
+ * `E_FURN_SIZE`. `against` snaps silently, as it did before this change (`docs/backlog.md` CO.1).
+ *
+ * ## The twin law
+ *
+ * Every default is one an author could have written. For every family and alias with a
+ * footprint, under every form in {@link FORMS} (with and without a `grid`), the statement without
+ * `size` compiles to the same SVG, `describe()` and `lint()` as its twin, the same statement with
+ * the footprint the rule names written out as `size`. Two differences are allowed, and nothing
+ * else: (1) byte spans, since the twin is longer by its `size` clause; (2) under a grid, the
+ * default's `W_GRID_SNAPPED` says `catalogued size` where the twin's says `size`. The diagnostics
+ * come in the same order, the snap note included. A footprint with a side that the grid takes to
+ * 0 has no error-free twin, so it is checked on its own: the default is exactly one `E_FURN_SIZE`
+ * that names the catalogued and the snapped size.
  *
  * ## The law
  *
@@ -40,7 +52,7 @@ import { parse } from "../src/parser.js";
 import { resolve } from "../src/ir.js";
 import type { RFurniture } from "../src/ir.js";
 import { makeNodeWorld } from "../src/cli/io.js";
-import { CANONICAL_FIXTURES } from "../src/elements/fixtures-glyphs.js";
+import { FIXTURE_CATEGORIES } from "../src/elements/fixtures-glyphs.js";
 import { defaultFootprint, orientationMatters } from "../src/fixtures-catalog.js";
 import { archFilesUnder, type ClauseLawApi, surfaceDigest } from "./helpers/clause-order-law.js";
 
@@ -99,10 +111,10 @@ const BASELINE: [string, string][] = [
   ["9bad4f64cdc450219b6adac2c6de7a4790d0b48917ef88358b9c54c78b57a90f", "examples/two-storey.arch"],
 ];
 
-/** A 10 m square room, walled on its four edges (`walled`) or standing alone. */
-const plan = (statement: string, walled = true): string => `plan "P" {
+/** A 10 m square room, walled on its four edges (`walled`) or standing alone, on an optional grid. */
+const plan = (statement: string, walled = true, grid?: number): string => `plan "P" {
   units mm
-${walled ? "  wall id=w exterior thickness 200 { (0,0) (10000,0) (10000,10000) (0,10000) close }\n" : ""}  room id=r at (0,0) size 10000x10000 label "R"
+${grid ? `  grid ${grid}\n` : ""}${walled ? "  wall id=w exterior thickness 200 { (0,0) (10000,0) (10000,10000) (0,10000) close }\n" : ""}  room id=r at (0,0) size 10000x10000 label "R"
   ${statement}
 }`;
 
@@ -123,12 +135,21 @@ const surface = (src: string): string =>
     k === "span" ? undefined : v,
   );
 
-const SIZED = CANONICAL_FIXTURES.filter((c) => defaultFootprint(c) !== null);
+/** The one wording the twin law allows to differ: a default's snap note names its source. */
+const asTwin = (surfaceText: string): string => surfaceText.replaceAll('\\" catalogued size ', '\\" size ');
+
+/** Every family and every alias with a footprint (an alias has its own catalogue row). */
+const SIZED = FIXTURE_CATEGORIES.filter((c) => defaultFootprint(c) !== null);
+
+/** `grid g` snapping, as the resolver does it (`ctx.snap`). */
+const snapped = (v: number, g: number | undefined): number => (g ? Math.round(v / g) * g : v);
 
 interface Form {
   /** The placement and any turn, written after the category. */
   placement: string;
   walled: boolean;
+  /** A `grid` the plan sets; absent = none. */
+  grid?: number;
   /** The plan size (or, for `against`, along × depth) the rule names, from the footprint. */
   size(fp: { along: number; depth: number }, oriented: boolean): [number, number];
   /** The quarter-turn the piece resolves to; `undefined` = none. */
@@ -164,7 +185,26 @@ const FORMS: Form[] = [
   { placement: "in r anchor bottom-right", walled: true, size: ALONG },
   { placement: "against wall w segment 0 offset 3000 in r", walled: true, size: ALONG },
   { placement: "against r.left offset 3000", walled: true, size: ALONG },
+  // Under a grid. 100 moves many footprints and zeroes none; 300 zeroes ten, which have no twin.
+  { placement: "at (2000,2000)", walled: true, grid: 100, size: ALONG, rotate: () => undefined },
+  { placement: "at (2000,2000) rotate 90", walled: true, grid: 300, size: ACROSS, rotate: () => 90 },
+  { placement: "in r centered", walled: true, grid: 300, size: ALONG, rotate: () => undefined },
+  {
+    placement: "in r anchor right flush",
+    walled: true,
+    grid: 300,
+    size: (fp, o) => (o ? ACROSS(fp) : ALONG(fp)),
+    rotate: (o) => (o ? 90 : undefined),
+  },
+  { placement: "in r anchor left", walled: false, grid: 100, size: ALONG, rotate: () => undefined },
 ];
+
+const formName = (f: Form): string =>
+  `${f.placement}${f.walled ? "" : " (no walls)"}${f.grid ? ` on grid ${f.grid}` : ""}`;
+
+/** Does the grid take a side of this footprint (as the form lays it) to 0? */
+const zeroed = (c: string, f: Form): boolean =>
+  f.size(defaultFootprint(c)!, orientationMatters(c)).some((v) => snapped(v, f.grid) <= 0);
 
 /** `furniture <c> <placement>` with the size the rule names written out, before any turn clause. */
 const written = (c: string, f: Form, oriented: boolean): string => {
@@ -191,31 +231,61 @@ suite("every family with a footprint, under every placement, without a size", ()
     expect(SIZED.length).toBeGreaterThan(70);
     expect(SIZED.some((c) => orientationMatters(c))).toBe(true);
     expect(SIZED.some((c) => !orientationMatters(c))).toBe(true);
+    // Aliases are in, and a grid row reaches a zeroed footprint (each grid row checks a moved one).
+    expect(SIZED).toContain("toilet");
+    const grid = FORMS.filter((f) => f.grid);
+    expect(grid.some((f) => SIZED.some((c) => zeroed(c, f)))).toBe(true);
   });
 
   for (const f of FORMS) {
-    it(`${f.placement}${f.walled ? "" : " (no walls)"}: no error, and the footprint the rule names`, () => {
+    it(`${formName(f)}: no error, and the footprint the rule names`, () => {
       for (const c of SIZED) {
-        const src = plan(`furniture ${c} ${f.placement}`, f.walled);
+        if (zeroed(c, f)) continue; // the zero rows below
+        const src = plan(`furniture ${c} ${f.placement}`, f.walled, f.grid);
         expect(errors(src), c).toEqual([]);
         if (f.placement.startsWith("against")) continue; // its own resolved frame, pinned elsewhere
         const o = orientationMatters(c);
         const p = pieceOf(src);
         const [w, h] = f.size(defaultFootprint(c)!, o);
-        expect([p.size.w, p.size.h], c).toEqual([w, h]);
+        expect([p.size.w, p.size.h], c).toEqual([snapped(w, f.grid), snapped(h, f.grid)]);
         if (f.rotate) expect(p.rotate, c).toBe(f.rotate(o));
       }
     });
 
-    it(`${f.placement}${f.walled ? "" : " (no walls)"}: the same surface as the size written out`, () => {
+    it(`${formName(f)}: the same surface as the size written out`, () => {
+      let moved = 0;
       for (const c of SIZED) {
+        if (zeroed(c, f)) continue;
         const o = orientationMatters(c);
-        const bare = plan(`furniture ${c} ${f.placement}`, f.walled);
-        const full = plan(written(c, f, o), f.walled);
+        const bare = plan(`furniture ${c} ${f.placement}`, f.walled, f.grid);
+        const full = plan(written(c, f, o), f.walled, f.grid);
         expect(errors(full), c).toEqual([]);
-        expect(surface(bare), c).toBe(surface(full));
+        const b = surface(bare);
+        if (b.includes('\\" catalogued size ')) moved++;
+        expect(asTwin(b), c).toBe(surface(full));
       }
+      // On a grid the note really is reached (so the allowed wording is not vacuous); off one, never.
+      if (f.grid) expect(moved).toBeGreaterThan(0);
+      else expect(moved).toBe(0);
     });
+
+    if (f.grid && !f.placement.startsWith("against"))
+      it(`${formName(f)}: a footprint the grid takes to 0 is one E_FURN_SIZE`, () => {
+        const hit = SIZED.filter((c) => zeroed(c, f));
+        for (const c of hit) {
+          const [w, h] = f.size(defaultFootprint(c)!, orientationMatters(c));
+          const ds = compile(plan(`furniture ${c} ${f.placement}`, f.walled, f.grid), {
+            noCache: true,
+          }).diagnostics.filter((d) => d.severity === "error");
+          expect(
+            ds.map((d) => `${d.code}: ${d.message}`),
+            c,
+          ).toEqual([
+            `E_FURN_SIZE: Furniture "${c}_1" has no positive size: its catalogued ${w}x${h} snaps to ` +
+              `${snapped(w, f.grid)}x${snapped(h, f.grid)} on \`grid ${f.grid}\``,
+          ]);
+        }
+      });
   }
 });
 
@@ -306,7 +376,7 @@ suite("a kind with no footprint: the message says why", () => {
 
   it("never claims a missing footprint for a kind that has one, under any placement", () => {
     for (const c of SIZED)
-      for (const f of FORMS) {
+      for (const f of FORMS.filter((x) => !x.grid)) {
         const ds = compile(plan(`furniture ${c} ${f.placement}`, f.walled), { noCache: true }).diagnostics;
         expect(
           ds.filter((d) => d.code === "E_FURN_SIZE"),

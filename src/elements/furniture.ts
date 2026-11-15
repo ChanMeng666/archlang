@@ -343,6 +343,8 @@ export const furniture: ElementDef = {
     let dh: number;
     /** The size came from the catalogue, so a room-relative placement may still turn it. */
     let defaulted = false;
+    /** That catalogued footprint as written in the catalogue, before the grid snapped it. */
+    let footprint: { along: number; depth: number } | null = null;
     if (n.size) {
       const ww = ctx.eval(n.size.w);
       dw = ctx.snap(ww);
@@ -359,6 +361,7 @@ export const furniture: ElementDef = {
         dw = ctx.snap(fp.along);
         dh = ctx.snap(fp.depth);
         defaulted = true;
+        footprint = fp;
       }
     }
     if (dw <= 0 || dh <= 0) {
@@ -386,7 +389,19 @@ export const furniture: ElementDef = {
     // A catalogued footprint under `at`/`in` turns with a written quarter-turn, so the symbol
     // keeps its catalogued along × depth. A written size is plan W×H already, and `against`
     // derives its own turn.
-    if (defaulted && !n.against && !n.againstEdge && (rotate === 90 || rotate === 270)) [dw, dh] = [dh, dw];
+    const quarter = rotate === 90 || rotate === 270;
+    if (defaulted && !n.against && !n.againstEdge && quarter) [dw, dh] = [dh, dw];
+    // The same footprint unsnapped, in the same plan axes, so a grid that moved it is reported as
+    // a written size is. `against` still snaps it silently (`docs/backlog.md` CO.1).
+    const plain: [number, number] | null =
+      footprint && !n.against && !n.againstEdge
+        ? quarter
+          ? [footprint.depth, footprint.along]
+          : [footprint.along, footprint.depth]
+        : null;
+    // Under `at` it is reported here, where a written size is. `in` reports it once placed: an
+    // anchor may lay it along a walled edge, and the note names it in the axes it is drawn in.
+    if (plain && !n.place) noteDefaultSize(ctx, id, plain, [dw, dh], n.span);
 
     let at: Point;
     let size = { w: dw, h: dh };
@@ -520,6 +535,10 @@ export const furniture: ElementDef = {
       // this same line between authored-absolute and resolver-derived placement.
       at = placed ? placed.at : { x: 0, y: 0 };
       if (placed?.size) size = placed.size;
+      if (plain) {
+        const [pw, ph] = placed?.turned ? [plain[1], plain[0]] : plain;
+        noteDefaultSize(ctx, id, [pw, ph], [size.w, size.h], n.span);
+      }
       if (placed?.rotate !== undefined) rotate = placed.rotate;
       if (!placed) roomOut = undefined; // room ref invalid — don't double-report via E_FURN_ROOM
     } else {
@@ -866,7 +885,7 @@ function placeInRoom(
   span: Span | undefined,
   derive: boolean,
   turnable = false,
-): { at: Point; rotate?: number; size?: { w: number; h: number } } | null {
+): { at: Point; rotate?: number; size?: { w: number; h: number }; turned?: boolean } | null {
   const room = ctx.rooms.find((r): r is RRoom => r.id === roomId);
   if (!room || room._unplaced) {
     ctx.diag({
@@ -902,8 +921,9 @@ function placeInRoom(
   // the author did not ask for `flush` or because that edge has no wall behind it.
   if (place.flush && ANCHOR_BACK_EDGES[a].length === 0) flushWithoutEdge(id, place, ctx, span);
   const walls = standingWalls(ctx);
+  let turned = false;
   if (turnable && derive)
-    ({ w, h } = footprintOntoBackedEdge(
+    ({ w, h, turned } = footprintOntoBackedEdge(
       w,
       h,
       ANCHOR_BACK_EDGES[a],
@@ -923,7 +943,7 @@ function placeInRoom(
   else if (a === "bottom-left" || a === "bottom" || a === "bottom-right") y = (face("bottom") ?? y1) - h - inset;
   else y = cy - h / 2; // left | center | right → vertically centred
   const at = { x, y };
-  const sized = turnable ? { size: { w, h } } : {};
+  const sized = turnable ? { size: { w, h }, turned } : {};
   if (!derive) return { at, ...sized };
   // Two independent closed-form constraints: the anchor names the edge(s) the piece
   // is pushed against, and the footprint's aspect says which edges can physically be
@@ -959,13 +979,13 @@ function footprintOntoBackedEdge(
   edges: readonly RectEdge[],
   walls: readonly RWall[],
   backed: (e: RectEdge) => boolean,
-): { w: number; h: number } {
+): { w: number; h: number; turned: boolean } {
   let points = 0;
   for (const wl of walls) points += wl.points.length;
   chargeSteps(edges.length * (walls.length + points + 1));
   const hit = edges.filter(backed);
-  if (hit.length !== 1) return { w, h };
-  return hit[0] === "left" || hit[0] === "right" ? { w: h, h: w } : { w, h };
+  if (hit.length !== 1) return { w, h, turned: false };
+  return hit[0] === "left" || hit[0] === "right" ? { w: h, h: w, turned: true } : { w, h, turned: false };
 }
 
 /**
@@ -976,7 +996,7 @@ function missingSizeDiagnostic(id: string, category: string, span: Span | undefi
   const why =
     fixtureSpec(category) === null
       ? `"${category}" is not a catalogued fixture, so it has no footprint to default to`
-      : `a ${category} has no catalogued footprint to default to`;
+      : `${/^[aeiou]/.test(category) ? "an" : "a"} ${category} has no catalogued footprint to default to`;
   return {
     severity: "error",
     message: `Furniture "${id}" needs a \`size WxH\`: ${why}`,
@@ -986,6 +1006,29 @@ function missingSizeDiagnostic(id: string, category: string, span: Span | undefi
       "Write `size <W>x<H>`: plan width × height under `at` and `in`, along × depth under `against`. Only a kind with a catalogued footprint may leave it out, under any placement.",
     ],
   };
+}
+
+/**
+ * A catalogued footprint (`size` omitted) under `at`/`in` that the grid moved: `W_GRID_SNAPPED`,
+ * as a written size is, and `E_FURN_SIZE` when a side snapped to nothing. `plain` and `drawn` are
+ * the same plan W×H, before and after the snap.
+ */
+function noteDefaultSize(
+  ctx: ResolveCtx,
+  id: string,
+  plain: readonly [number, number],
+  drawn: readonly [number, number],
+  span: Span | undefined,
+): void {
+  noteSnap(ctx, `Furniture "${id}"`, "catalogued size", plain, drawn, span);
+  if (drawn[0] > 0 && drawn[1] > 0) return;
+  ctx.diag({
+    severity: "error",
+    message: `Furniture "${id}" has no positive size: its catalogued ${fmt3(plain[0])}x${fmt3(plain[1])} snaps to ${fmt3(drawn[0])}x${fmt3(drawn[1])} on \`grid ${fmt3(ctx.grid)}\``,
+    code: "E_FURN_SIZE",
+    ...(span ? { span } : {}),
+    hints: ["Write a `size <W>x<H>` whose sides stay positive on the grid, or set a finer `grid`."],
+  });
 }
 
 /**
@@ -1005,7 +1048,7 @@ function placeInRing(
   span: Span | undefined,
   derive: boolean,
   turnable: boolean,
-): { at: Point; rotate?: number; size?: { w: number; h: number } } | null {
+): { at: Point; rotate?: number; size?: { w: number; h: number }; turned?: boolean } | null {
   const ring = room.poly!;
   const written = place.mode === "centered" ? "centered" : `anchor ${place.anchor}`;
   const refuse = (why: string): null => {
@@ -1034,8 +1077,9 @@ function placeInRing(
   for (const wl of walls) points += wl.points.length;
   chargeSteps(2 * edges.length * (walls.length + points + 1));
   const segs = walls.flatMap((wl) => segmentsOfWall(wl));
+  let turned = false;
   if (turnable && derive)
-    ({ w, h } = footprintOntoBackedEdge(
+    ({ w, h, turned } = footprintOntoBackedEdge(
       w,
       h,
       edges,
@@ -1047,7 +1091,7 @@ function placeInRing(
   const at = anchoredAt(runs, w, h, inset, face);
   if (!rectInRing({ x: at.x, y: at.y, w, h }, ring))
     return refuse(`a ${fmt3(w)}x${fmt3(h)} piece there leaves the floor of polygon room "${room.id}"`);
-  const sized = turnable ? { size: { w, h } } : {};
+  const sized = turnable ? { size: { w, h }, turned } : {};
   if (!derive) return { at, ...sized };
   const shape = backCandidateEdges({ w, h }, defaultFootprint(category));
   const backed = edges.filter(
