@@ -5,7 +5,7 @@
 Where the tests of a `src` module are, and what each test file is for. Generated; `npm run check:drift`
 fails when it is stale. How to add a test: `docs/testing.md` § 4.
 
-515 test files in `test/`, 284 `src` modules, 106 modules no test imports.
+516 test files in `test/`, 285 `src` modules, 106 modules no test imports.
 
 ## `src` module → tests that import it
 
@@ -38,13 +38,14 @@ Nearest first, then by name; `(+n)` is the rest. Test names are `test/<name>.tes
 - `src/backends/png.ts` (1) — `export-font-cjk`
 - `src/backends/svg.ts` (5) — `furniture-curves-backends`, `glyph-lib`, `scene-path-prim`, `scene`, `style`
 - `src/chrome-layout.ts` (4) — `bbox-derived-position`, `chrome-hidden`, `export-pdf`, `sheet`
+- `src/clause-order.ts` (1) — `clause-order-byte-identity`
 - `src/cli/commands-analyze.ts` (12) — `cli-narrow`, `describe-clearances`, `keep-impact-depends`, `lint-summary`, `schedule`, `sheet`, `stages`, `cli-validate-next` (+4)
 - `src/cli/commands-author.ts` (2) — `cli-expected-hash`, `keep`
 - `src/cli/commands-meta.ts` (3) — `cli-context`, `context-size`, `context-starter`
 - `src/cli/commands-render.ts` (3) — `keep-impact-depends`, `plan-json-dropped`, `watch-arming`
 - `src/cli/context-starter.ts` (1) — `context-starter`
 - `src/cli/help.ts` (1) — `cli-help`
-- `src/cli/io.ts` (80) — `block-stair-byte-identity`, `cli-contract`, `cli-exit-parse`, `cli-expected-hash`, `cli-flag-matrix`, `cli-help`, `cli-output-format`, `cli-plan-json-roundtrip` (+72)
+- `src/cli/io.ts` (81) — `block-stair-byte-identity`, `clause-order-byte-identity`, `cli-contract`, `cli-exit-parse`, `cli-expected-hash`, `cli-flag-matrix`, `cli-help`, `cli-output-format` (+73)
 - `src/cli/link.ts` (1) — `cli-link`
 - `src/cli/review.ts` (1) — `cli-preview-review`
 - `src/cli/run.ts` (48) — `axes`, `cli-batch`, `cli-commands`, `cli-context`, `cli-contract`, `cli-exit-parse`, `cli-expected-hash`, `cli-finish` (+40)
@@ -118,14 +119,14 @@ Nearest first, then by name; `(+n)` is the rest. Test names are `test/<name>.tes
 - `src/impact.ts` (2) — `rectilinear-doors`, `rectilinear-rooms`
 - `src/import.ts` (31) — `block-stair-byte-identity`, `corner-window-byte-identity`, `dim-thickness-callout`, `drawing-budget`, `floor-materials-byte-identity`, `furniture-relations`, `gaps-byte-identity`, `keep` (+23)
 - `src/import/limits.ts` (1) — `openplan3d-malformed`
-- `src/index.ts` (387) — `acc-metadata`, `access-graph`, `access-policy`, `accessible-svg`, `agent-gallery`, `alias-match`, `anchors`, `annotate` (+379)
+- `src/index.ts` (388) — `acc-metadata`, `access-graph`, `access-policy`, `accessible-svg`, `agent-gallery`, `alias-match`, `anchors`, `annotate` (+380)
 - `src/input-limit.ts` (2) — `import-rooted`, `workspace-seams`
 - `src/intent-concepts.ts` (2) — `vocabulary-living-dining`, `vocabulary-matcher-oracle`
 - `src/intent.ts` (1) — `site`
 - `src/ir.ts` (169) — `access-policy`, `arc-radius-exact`, `attach`, `axes`, `between-face-probes`, `block-stair-byte-identity`, `block-stair-frames`, `block-stair-winders` (+161)
 - `src/label-fit.ts` (1) — `label-fit`
 - `src/label-placement.ts` (3) — `label-placement-oracle`, `label-placement`, `label-wrap`
-- `src/lexer.ts` (8) — `diagnostics-volume`, `diagnostics`, `expr`, `imperial-input`, `model-range`, `parser-recovery-metric`, `stage-cache`, `unit-suffix`
+- `src/lexer.ts` (9) — `clause-order-byte-identity`, `diagnostics-volume`, `diagnostics`, `expr`, `imperial-input`, `model-range`, `parser-recovery-metric`, `stage-cache` (+1)
 - `src/lint.ts` (54) — `annotation-collisions`, `annotation-small-rooms`, `block-stair-shaft`, `block-stair`, `equivariance-corpus`, `finish-furnish`, `lint-coverage`, `lint-fix-texts` (+46)
 - `src/lint/clearance-measure.ts` (2) — `lint-clearances-kitchen-doors`, `repair-no-worse`
 - `src/lint/context.ts` (49) — `block-stair-landing`, `block-stair-lint`, `block-stair-shaft`, `block-stair`, `lint-clearances-kitchen-doors`, `lint-clearances-wc-window`, `lint-exterior-ring`, `lint-fix-texts` (+41)
@@ -155,7 +156,7 @@ Nearest first, then by name; `(+n)` is the rest. Test names are `test/<name>.tes
 - `src/num-format.ts` (14) — `annotation-collisions`, `dim-thickness-callout`, `emit-opening-oracle`, `imperial-input`, `keep`, `lint-ruleset-values`, `model-range`, `net-area-stamp` (+6)
 - `src/opening-relation.ts` (3) — `openings-between`, `rectilinear-doors`, `rectilinear-sides`
 - `src/opening-schedule.ts` (2) — `sheet-annotations`, `window-kinds`
-- `src/parser.ts` (146) — `arc-radius-exact`, `attach`, `axes`, `block-stair-byte-identity`, `block-stair`, `chrome-hidden`, `circle-enclosure`, `circulation-concave` (+138)
+- `src/parser.ts` (147) — `arc-radius-exact`, `attach`, `axes`, `block-stair-byte-identity`, `block-stair`, `chrome-hidden`, `circle-enclosure`, `circulation-concave` (+139)
 - `src/pipeline.ts` (1) — `work-counts`
 - `src/plan-json.ts` (11) — `element-facets`, `format`, `garage`, `plan-json-dropped`, `plan-json-instances`, `polygon-rooms`, `section`, `sheet-annotations` (+3)
 - `src/plan-json/to-json.ts` (1) — `rect-ring`
@@ -190,7 +191,7 @@ Nearest first, then by name; `(+n)` is the rest. Test names are `test/<name>.tes
 - `src/wall-lowering.ts` (2) — `joinery-split`, `open-crossing`
 - `src/wall-ref.ts` (2) — `rectilinear-rooms`, `walls-from-rooms`
 - `src/while-fix.ts` (1) — `while-fix`
-- `src/world.ts` (112) — `block-stair-byte-identity`, `circulation-unmeasured`, `corner-window-byte-identity`, `corner-window`, `dim-thickness-callout`, `drawing-budget`, `drawing-overflow`, `equivariance-corpus` (+104)
+- `src/world.ts` (113) — `block-stair-byte-identity`, `circulation-unmeasured`, `corner-window-byte-identity`, `corner-window`, `dim-thickness-callout`, `drawing-budget`, `drawing-overflow`, `equivariance-corpus` (+105)
 
 ## Test files
 
@@ -250,6 +251,7 @@ The first sentence of each file's header comment.
 - `test/circulation-unmeasured.test.ts` — G.5 — circulation reports every room it cannot measure; G.5 — a curved wall obstructs the arc it is drawn as.
 - `test/circulation.test.ts` — circulation — facts on the nav grid.
 - `test/claude-plugin.test.ts` — The Claude Code plugin is a slim, self-contained folder, `plugins/archlang/`: the plugin directory rejects any plugin folder holding a file over 5 MiB, and the repo root carries an 11 MB font.
+- `test/clause-order-byte-identity.test.ts` — Order-free trailing clauses (`src/clause-order.ts`): the byte-identity law, the reordered forms, the duplicate diagnostic `E_DUP_CLAUSE`, and a permutation property over the examples.
 - `test/cli-batch.test.ts` — CLI — batch; runPool — bounded concurrency; aggregateExit — one code for many files; perFileJson — the agent-facing per-file shape.
 - `test/cli-commands.test.ts` — CLI — fmt; CLI — watch; CLI — manifest / capabilities.
 - `test/cli-context.test.ts` — `arch context --section` — bounded agent context.
