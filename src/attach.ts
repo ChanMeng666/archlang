@@ -20,6 +20,7 @@ import type { Diagnostic, FixSuggestion, Span } from "./diagnostics.js";
 import type { Expr, ParseExprOpts } from "./expr.js";
 import { chargeSteps } from "./expr.js";
 import type { ParseCtx, ResolveCtx } from "./registry.js";
+import type { TailClause } from "./clause-order.js";
 import type { WallLike, WallSegment } from "./geometry.js";
 import { segmentLength, segmentPointAlong, segmentsOfWall } from "./geometry.js";
 import type { OpeningRelation, WindowCorner } from "./ir.js";
@@ -197,6 +198,28 @@ export function parseAttachTarget(
   const start = ctx.peek().start;
   const at = ctx.parsePoint();
   return { at, atSpan: ctx.spanFrom(start) };
+}
+
+/**
+ * The `wall <id|category>` clause of an opening placed `at (x,y)`, as an order-free clause
+ * (`src/clause-order.ts`). `wall` is also a statement keyword, and a `wall` statement reads
+ * `wall [id=…] <category> thickness …`, so out of the old order the word begins one exactly when
+ * `id=` follows it or `thickness` follows the next word (or no name follows at all).
+ */
+export function wallClause(ctx: ParseCtx, rank: number, set: (ref: string) => void): TailClause {
+  return {
+    word: "wall",
+    rank,
+    startsStatement: () =>
+      ctx.peek(1).type !== "ident" ||
+      (ctx.isKeyword("id", 1) && ctx.peek(2).type === "equals") ||
+      ctx.isKeyword("thickness", 2),
+    read(keep) {
+      ctx.next();
+      const ref = ctx.eatIdent().value;
+      if (keep) set(ref);
+    },
+  };
 }
 
 /**

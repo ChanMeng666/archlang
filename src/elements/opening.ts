@@ -1,14 +1,22 @@
-/** `opening [id=] at (x,y) width N [wall ref]` — a leaf-less cased opening: a gap in
- *  the host wall (no door leaf, no glazing) that still connects the two spaces. */
+/** `opening [id=] at (x,y) width N [wall ref] [head <mm>]` — a leaf-less cased opening: a gap in
+ *  the host wall (no door leaf, no glazing) that still connects the two spaces. The clauses
+ *  after the placement come in any order (`src/clause-order.ts`). */
 
 import type { Point, OpeningNode } from "../ast.js";
 import type { ElementDef, ParseCtx, ResolveCtx, TransformCtx } from "../registry.js";
 import type { SceneNode } from "../scene.js";
 import type { ROpening } from "../ir.js";
 import { add, mul, nearestWallNote, normal, segmentDirAt } from "../geometry.js";
-import { parseAttachTarget, resolveOpeningLead } from "../attach.js";
+import { parseAttachTarget, resolveOpeningLead, wallClause } from "../attach.js";
 import { fixesFrom, offWallFix, openingWidthFix } from "../fix-producers.js";
-import { hostWallHeight, parseOpeningHeights, resolveOpeningHeights } from "../datum.js";
+import {
+  heightsInOrder,
+  hostWallHeight,
+  type OpeningHeightClauses,
+  openingHeightClauses,
+  resolveOpeningHeights,
+} from "../datum.js";
+import { missingClause, readClauses } from "../clause-order.js";
 
 export const opening: ElementDef = {
   kind: "opening",
@@ -26,8 +34,26 @@ export const opening: ElementDef = {
     const kw = ctx.eatKeyword("opening");
     const id = ctx.parseIdOpt();
     const { at, attach, between } = parseAttachTarget(ctx, true);
-    ctx.eatKeyword("width");
-    const width = ctx.parseExpr();
+    // The clauses after the placement, in any order, each once (`src/clause-order.ts`), laid
+    // out after in the old order, so an opening written in that order keeps its tree.
+    let width: OpeningNode["width"] | undefined;
+    const wall: Pick<OpeningNode, "wall"> = {};
+    const heights: OpeningHeightClauses = {};
+    readClauses(ctx, "opening", [
+      {
+        word: "width",
+        rank: 1,
+        read(keep) {
+          ctx.next();
+          const v = ctx.parseExpr();
+          if (keep) width = v;
+        },
+      },
+      ...(at ? [wallClause(ctx, 2, (ref) => (wall.wall = ref))] : []),
+      // The vertical datum: `head` only. A cased opening's sill is the floor.
+      ...openingHeightClauses(ctx, heights, { sill: false }, 3),
+    ]);
+    if (width === undefined) missingClause(ctx, "width", "width <mm>");
     const node: OpeningNode = {
       kind: "opening",
       id,
@@ -37,12 +63,7 @@ export const opening: ElementDef = {
       ...(attach ? { attach } : {}),
       ...(between ? { between } : {}),
     };
-    if (at && ctx.isKeyword("wall")) {
-      ctx.next();
-      node.wall = ctx.eatIdent().value;
-    }
-    // The vertical datum: `head` only. A cased opening's sill is the floor.
-    Object.assign(node, parseOpeningHeights(ctx, { sill: false }));
+    Object.assign(node, wall, heightsInOrder(heights));
     return node;
   },
 

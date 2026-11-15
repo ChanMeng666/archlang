@@ -891,6 +891,15 @@ take `inward`/`outward`.
 
 ## Elements
 
+**Clause order.** In `room`, `furniture`, `door`, `window`, `opening` and `outdoor` (and a room
+inside a `strip`), the clauses after the placement come in any order, each at most once:
+`furniture bed at (500,500) rotate 90 label "Bed" size 1500x2000` is the same piece as the line
+written in the order the grammar lines below show. A clause written twice is
+[`E_DUP_CLAUSE`](error-codes.md#e_dup_clause). An `id=` may also follow the kind word
+(`furniture bed id=b1 …`, `door double id=d1 …`, `wall exterior id=w1 …`). Out of that order, a
+clause word followed by `=` or `(` starts a statement of its own (`size = 3`, `rotate(1)`), as it
+always did: write a parenthesised value (`rotate (90)`) in the order shown, or drop the parentheses.
+
 ### Wall
 
 ```
@@ -1935,7 +1944,7 @@ fix that deletes the clause. A sliding-family or `garage` door on a wall whose h
 edge is an `arc` is [`E_DOOR_KIND_CURVED`](error-codes.md#e_door_kind_curved) — a straight panel
 on a straight track has no meaning on a curved reveal, and drawing one anyway would
 be a wrong drawing with no diagnostic. A `double` door is accepted there, as a hinged one
-is: both leaves are taken from the tangent at the doorway's centre. Clause order follows the grammar line above.
+is: both leaves are taken from the tangent at the doorway's centre. The clauses after the placement come in any order ([Clause order](#elements)).
 
 A `pocket` door needs its own width plus end clearance of clear wall past the
 slide-side jamb, or [`W_POCKET_RUN`](error-codes.md#w_pocket_run) — measured, and

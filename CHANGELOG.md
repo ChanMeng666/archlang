@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- The clauses after a statement's placement come in any order, each once (card CO-1), in `room` (a `strip`'s rooms included), `furniture`, `door`, `window`, `opening` and `outdoor`: `furniture bed at (500,500) rotate 90 label "Bed" size 1500x2000` is the piece `… size 1500x2000 label "Bed" rotate 90` was, and a room's `size` may follow its `label`. `id=` may also follow the kind word (`furniture bed id=b1`, `door double id=d1`, `outdoor deck id=d1`, `wall exterior id=w1`), which spec rule 6 used to list as a parse error. **New code:** the error `E_DUP_CLAUSE`, a clause written twice, reported with the span of the second and a related span on the first, the first kept. A plan that parsed before parses to the same tree, its key order included: `test/clause-order-byte-identity.test.ts` pins every example's parse and its SVG, `describe()`, `lint()` and diagnostics against `main` before the change, and every one of the repository's 530 `.arch` files parsed to an unchanged tree. Out of the old order, a clause word followed by `=` or `(` still starts its own statement (`size = 3`, `rotate(1)`), as it always did.
+
 ### Changed
 
 - The hosted MCP server's plan viewer is built with `@modelcontextprotocol/ext-apps` 2.1.0 in place of 1.7.5 (card RM5.4). Both speak the same MCP Apps protocol (2026-01-26): the tools, the resources, the viewer's `text/html;profile=mcp-app` resource and its metadata are unchanged, and the viewer sends a host the same messages. The page grows from about 517 KiB (112 KiB gzipped) to 661 KiB (149 KiB gzipped), the size of the SDK client that 2.x builds on. The npm MCP server does not use ext-apps and is unchanged.
