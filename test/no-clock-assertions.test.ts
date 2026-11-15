@@ -114,11 +114,11 @@ const SLOW_ALLOWED: Record<string, string> = {
   "test/cli-validate-next.test.ts":
     "every example x variant through the CLI validate path, output compared with and without `next`",
   "test/drawing-budget.test.ts": "corpus sweep: drawn units against the drawing budget for every example",
-  "test/finish-furnish.test.ts":
+  "test/finish-furnish-bounds.test.ts":
     "a generated-rows property plus the wet-room sweep (its counts), each candidate compile-checked",
   "test/finish-levels.test.ts":
     "the compile-check count over every storey of the corpus, and a generated-storeys property",
-  "test/finish.test.ts": "sheet-stage candidates measured on every example and every planted refusal",
+  "test/finish-sheet-degrade.test.ts": "sheet-stage candidates measured on every example and every planted refusal",
   "test/huge-coordinates.test.ts":
     "one case: transit-hall scaled x1000 must be refused with E_OUT_OF_RANGE, never thrown",
   "test/keep-byte-identity.test.ts": "digest and evaluation steps of every corpus file (the weak keep law)",
