@@ -1,6 +1,6 @@
 # 恢复点
 
-本文件是本计划的恢复点，按 RM-D15 也是全部开发排期的恢复点：其他计划的 handoff 顶部只留一行指向这里（RM0.1 已落地这些指针）。新会话从本节开始读，再按 `README.md` 的"如何使用本文"走。§1.1 的第三张表与 §1.1b 是 2026-11-13 约 22:45Z（UTC）读的，`main` 头 `7b2ec476`（用 `git`、`gh` 读）；§1.1 的前两张表是 2026-11-11 12:23Z 读出的；§1.2 是 1.60.0 发布之后读的（npm、GitHub Release、registry、Open VSX、ClawHub、Docker PR 都在 2026-11-13 重读；VS Code Marketplace 与 OpenAI 目录是协调者的记录）；动手前重新读一次，状态可能已经变了。
+本文件是本计划的恢复点，按 RM-D15 也是全部开发排期的恢复点：其他计划的 handoff 顶部只留一行指向这里（RM0.1 已落地这些指针）。新会话从本节开始读，再按 `README.md` 的"如何使用本文"走。§1.1 的第四张表与 §1.1b 是 2026-11-15 约 00:30Z（UTC）读的，`main` 头 `f76af65b`（用 `git`、`gh` 读）；§1.1 的前三张表是更早几场读出的（第二场 2026-11-11 12:23Z，第三场 2026-11-13 22:45Z）；§1.2 是 1.61.0 发布之后读的（2026-11-14，协调者的记录，渠道清单见该节）；动手前重新读一次，状态可能已经变了。
 
 ## 1. 位置（读数时间见各小节）
 
@@ -47,35 +47,52 @@
 
 **`main` 红过一次，已修：** #703、#701、#706 的 `main` 提交在 Node 18 job 上红（`gen:mcp-capabilities` 报 `E.toReversed is not a function`），自动开了 issue #705，#708 修复（07:16Z 关闭）。**08:07Z 之后 `main` 的状态（12:23Z 读）：** `9a3be392` 上 CI、CodeQL、Plugin validate 都 success（CI run 43011402472）；`Main red alarm` 三次 success。**一项失败，已查明：** `Deploy (Cloudflare)` 在 `9a3be392` 上 11:49:49Z 的 run 43015163598 失败（`Deploy mcp (scripted Worker)` 的 smoke 报固定版本的 `/svg/` 副本 `not immutable`），协调者的判断是版本传播的竞态（固定版本的 URL 在部署后一秒落到旧 isolate），不是配置缺口，见卡 RM0.8；之后的 Deploy run 43025136172 在 `e354ddc7` 上全部 success。issue #717 "Nightly checks need attention"（10:39Z 开，`secrets` job failure）已分诊：是误报（gitleaks 把 `test/silent-accepts.test.ts` 第 232 行一条 `accessible` 示例的 SHA-256 摘要读成 `generic-api-key`），由开着的 #723 放行（`.gitleaksignore` 加一条指纹，`test/opaque-literal-guard.test.ts` 加一条规则；`Refs #717`），合并后关 #717。
 
-### 1.1b 开着的 PR、分支与 worktree（2026-11-13 约 22:45Z，`main` 在 `7b2ec476`，`gh pr list`、`git worktree list` 读）
+**第四场（2026-11-14/15，协调者 Opus）合并的：** 合并时间与提交是 `gh pr view` 读出的；#765（根目录 `.mcp.json`）由所有者自己合并，不在 1.61.0 的 tag 里；#752、#754、#755、#759、#761 是别的会话的 PR，已另有记录。
 
-- **开着的 PR 只有 #603**（Dependabot `ext-apps` 2.0.4，主版本）：RM-D34，等 RM5.4，2026-12-01 Show HN 之后；保持打开作提醒。
+| PR | 内容 | 合并时间（UTC） | 合并提交 |
+|---|---|---|---|
+| #750 | CR11a（`done`）：schema `$id` 与变更政策（`GOVERNANCE.md`，RM-D30） | 11-14 00:25 | `f36c1150` |
+| #753 | RM0.7f（`done`）：核心 chunk 拆分 | 11-14 00:47 | `637702bf` |
+| #751 | RM1.2g（`done`）：`archlang-3d` 把 winder 建成渐缩台阶（RM-D36） | 11-14 01:56 | `ffbf59ca` |
+| #756 | RM8.9（`done`）：新家族首批，十六个（含 RM-D29 的四个绿植） | 11-14 02:15 | `f05df528` |
+| #760 | RM8.10（`done`）：在回放 HTML 与 3D 页签里显示 `W3D_MIXED_HEIGHT_JOINT`（RM-D32 (a)） | 11-14 02:42 | `41f2b088` |
+| #762 | RM8.7b（`done`）：PDF 与图例显示新材质的地面浅色（只在 `rendered` 主题，`README.md` §6.10） | 11-14 09:30 | `2f214d8e` |
+| #758 | RM1.6b（`done`）：诊断带结构化 `rule`（联合持有的代码取 `null`） | 11-14 09:52 | `057ae80f`（1.61.0 的切点） |
+| #764 | 发布 1.61.0 的版本号 PR（tag `v1.61.0`） | 11-14 10:25 | `8430ce9a` |
+| #763 | RM1.2c（`done`）：新 W 规则"标签点名了房间没有的家具"（RM-D35、RM-D35a）；不在 1.61.0 里 | 11-14 22:39 | `15967d30` |
+| #768 | CR10（`done`）：公开检查集 + `POST /check` | 11-14 23:13 | `f48b6ae5` |
+| #770 | RM0.7e（`done`）：`pure()` 的守卫测试与误用检查 | 11-14 23:53 | `893d111a` |
+| #769 | RM3.1 前半（`done`）：Plan JSON 无损：范围表、往返律、`outdoor` 与 `fence` | 11-15 00:03 | `13ff3cc2` |
+| #771 | RM1.3d（`done`）：RM1.3b 的余项（余下的拆成 RM1.3e、RM1.3f） | 11-15 00:29 | `f76af65b` |
+
+RM1.1a 也在本场做完（纯测量，没有 PR，见 §6）。
+
+### 1.1b 开着的 PR、分支与 worktree（2026-11-15 约 00:30Z，`main` 在 `f76af65b`，`gh pr list` 读）
+
+- **开着的 PR：** #603（Dependabot `ext-apps` 2.0.4，主版本）：RM-D34，等 RM5.4，2026-12-01 Show HN 之后；保持打开作提醒。#772（RM8.8b，`review`）。本记录 PR。
 - **worktree 只有主检出。** 已合并的本地分支已删。远程分支 `origin/feat/remove-view`（2.0 才做的移除 `view`）保留，不在任何排期。
 - **开着的 issue：** #544、#680、#681、#682、#684。#544（剖切线与楼板基准）：RM6.1 在 #721 里交付了，说明已贴在 #532；关 #544 留给所有者或下一场（那是所有者在 #532 里的线程，代理也可以关）。
 - 移除任何 worktree 之前，先用 `[System.IO.Directory]::Delete(<junction>)` 解开其中的 `node_modules` junction（不递归），再 `git worktree remove`（`docs/agents/gotchas.md` § Tooling & process）；被正在运行的会话锁定的 worktree 拒绝 `git worktree remove`（`docs/agents/orchestration.md`）。
 
-### 1.2 已发布（1.60.0，2026-11-12/13；渠道在 2026-11-13 逐项重读，VS Code Marketplace 与 OpenAI 目录除外，那两项是协调者的记录）
+### 1.2 已发布（1.61.0，2026-11-14；协调者的记录，我没有独立重读）
 
-**发布结果：** 版本号 PR #735 合并，合并提交 `6d18d137`（RM-D33 的切点）；`v1.60.0` tag 指向 `6d18d137`（`git ls-remote` 读）。`release.yml` run 43168116906：第 1 次尝试在 MCP registry 一步失败，401 "token is expired"——registry 的 JWT 在等 npm 可见性（上限 10 分钟，这次 6 分 27 秒）之前就签发了，等完已过期；`gh run rerun --failed` 后通过。#739（`3ec23741`）已修：每次发布尝试之前才登录取令牌。GitHub Release `v1.60.0` 带 `archlang-mcp-0.2.43.mcpb`。1.59.0 的发布记录（`e354ddc7`、run 43021354774、tag 推得太早的重跑）见 git 历史里本文件的上一版与 §12 (j)。
+**发布结果：** 所有者 2026-11-14 决定发布（RM-D40，`README.md` §6.11）。切点是 `main` 的 `057ae80f`：1.60.0 之后的全部，加 RM1.6b 与 RM8.7b；RM1.2c（#763）不在其中。版本号 PR #764 合并提交 `8430ce9a`，tag `v1.61.0`。GitHub Release 带 `archlang-mcp-0.2.44.mcpb`。1.60.0 的发布记录（`6d18d137`、run 43168116906、registry JWT 过期的重跑）见 git 历史里本文件的上一版与 §12 (l)。
 
-| 渠道 | 版本 | 怎样读的 |
+| 渠道 | 版本 | 备注 |
 |---|---|---|
-| npm `@chanmeng666/archlang` | 1.60.0 | `npm view` |
-| npm `@chanmeng666/archlang-mcp` | 0.2.43 | `npm view` |
-| npm `@chanmeng666/archlang-3d` | 0.7.0（SLSA provenance） | `npm view` |
-| npm `@chanmeng666/arch-plan`、`font-cjk` | 0.1.2、1.0.0（没有变） | `npm view`（arch-plan）；font-cjk 是协调者的记录 |
-| 官方 MCP registry | 0.2.43，带 `remotes`（`https://mcp.archlang.uk/mcp`） | `registry.modelcontextprotocol.io/v0/servers/…/versions/latest` |
-| GitHub Release | `v1.60.0`，`archlang-mcp-0.2.43.mcpb` | `gh release view` |
-| jsDelivr / 嵌入 | `archlang@1.60.0` 可取；`archlang.uk/arch-plan.js` 指向 `archlang@1.60.0` | `curl` |
-| Open VSX | 0.48.0（`publish-openvsx.yml --ref v1.60.0`，run 43407395046，success） | `open-vsx.org/api/ChanMeng/archlang/0.48.0` 存在 |
-| VS Code Marketplace | 0.48.0，由协调者经 Claude in Chrome 上传（gallery 的 `vspackage` 返回 200） | `curl` 读 `marketplace.visualstudio.com/_apis/public/gallery/publishers/ChanMeng/vsextensions/archlang/0.48.0/vspackage` |
-| ClawHub | 1.60.0（扫描通过后 `latest` = 1.60.0） | `clawhub.ai/api/v1/skills/archlang` |
-| Docker MCP Catalog | docker/mcp-registry#6704 仍开着，分支 `add-archlang` 头 `37acd209`，`source.commit` = `6d18d137`，等 Docker 合并 | `gh pr view 6704 --repo docker/mcp-registry` |
-| OpenAI 插件目录 | **1.60.0 已发布（2026-11-13），由所有者本人提交并发布**：协调者用 "Create draft from ZIP" 建草稿（`archlang-plugin-1.60.0.zip`，元数据无发现，五个 skill "Checks passed"）；Submit（声明）被权限守卫当作连接应用里的提交挡住，所有者亲自提交并发布；门户列表的 Publication 现为 "Version 1.60.0"。页面由客户端渲染，curl 读不到，这是协调者的观察 | 协调者的记录；流程见 `docs/integrations.md` |
+| npm `@chanmeng666/archlang` | 1.61.0 | |
+| npm `@chanmeng666/archlang-mcp` | 0.2.44 | |
+| npm `@chanmeng666/archlang-3d` | 0.8.0 | |
+| npm `@chanmeng666/arch-plan`、`font-cjk` | 0.1.2、1.0.0（没有变） | |
+| 官方 MCP registry | 0.2.44 | |
+| GitHub Release | `v1.61.0`，`archlang-mcp-0.2.44.mcpb` | |
+| jsDelivr / 嵌入 | `archlang.uk/arch-plan.js` 指向 `archlang@1.61.0`（jsDelivr 200） | |
+| VS Code Marketplace、Open VSX | 0.49.0 | |
+| ClawHub | 1.61.0 | |
+| OpenAI 插件目录 | 1.61.0，**由代理发布**，依据所有者的常设授权（RM-D41） | |
+| Docker MCP Catalog | docker/mcp-registry#6704 仍开着，等 Docker | |
 
-**决定：** RM-D33（2026-11-12 受托，`README.md` §6.7）。1.61.0 仍要所有者对那一次的决定。
-
-上一次发布（1.58.0）的记录：`v1.58.0` 在 `e68fd576`（#689 的合并提交），GitHub Release 发布于 2026-11-10T23:58:46Z，`release.yml` run 42924321089 全部 success；那一次的 9 小时 38 分空档见 §11。
+**决定：** RM-D40（发布 1.61.0）、RM-D41（VS Code Marketplace 与 OpenAI 目录的常设授权）。1.62.0 起每次仍要所有者对那一次的决定；RM1.1b 在 1.62.0 之后量（见 §6）。
 
 ### 1.4 裁定
 
@@ -84,23 +101,26 @@
 - **RM-D17…D20** 是 2026-11-11 的受托裁定（§6.2），**RM-D24…D26** 是同日夜间的受托裁定（§6.4）：都只是那一次的委托，不是长期委托，所有者一句话可推翻任何一条。
 - **RM-D21** 是所有者的方向，**RM-D22、RM-D23** 所有者 2026-11-11 批准，T 形交接保留真实阴角线的设计默认同日确认（§6.3）。
 - **所有者 2026-11-11 决定发布 1.59.0**（原话"我同意发布"，所有者在会话里说的，由协调者转述，我没有核对原始消息）。代理在路线图切点（约 11-21，路线图的日期；"所有者明说才提前"是协调者的读法）跑整条发布链含 tag。bump：核心 minor；`packages/mcp` 的 shim 经 `release:pin`；`packages/archlang-3d`（RM8.1–RM8.3 自 0.5.0 以来）。tag 前的每一项证明在版本号 PR 的分支头上跑完再合并该 PR（§11）。1.60.0、1.61.0 仍要所有者各自的决定。
+- **所有者 2026-11-14：** RM-D40 发布 1.61.0；RM-D41 代理发布 VS Code Marketplace 与 OpenAI 目录，含以后的版本（`README.md` §6.11，原话在那里）。
 - **第二场的受托裁定与仍未答复的所有者裁定：** 见 §4。
 - **RM-D27 是所有者裁定（2026-11-11，`README.md` §6.5，原话照录在那里）：** 阶段日期与 11-24 → 12-01 的冻结期不再挡任何卡的开工或合并；卡在真实依赖满足时开工。仍然成立：铁律；每次发布要所有者对那一次的决定（1.59.0 已决定，1.60.0 起每次另要）；动铁律或 ADR 的设计裁定与主版本的依赖升级归所有者；CI 绿是合并证据；所有者 12-01 亲自发 Show HN，那之前 `main` 保持绿。
 - 发布的措辞已由 #694 写进 `docs/agents/iron-laws.md` § Owner policies："once the owner has decided that release: no decision, no tag, and neither a schedule nor an earlier release's decision is one"。每次发布都要所有者对那一次的决定。
 
 ## 2. 下一步（按车道）
 
-排期以 `README.md` §3 为准；下面是 2026-11-13 约 22:45Z 从实际位置出发的顺序，每条车道从第 1 项做起，前一项合并后再开下一项。**按 RM-D27，顺序就是全部的门：** 一项的真实依赖满足了就开工，不等阶段日期或冻结期。一次一个重命令对整台机器生效，本地只跑 `check:quick`（文档加 `docs:build`），重的门禁交给 CI。已做完、不再列出的：预算卡 RM0.7（#727）及 RM0.7d（#747）、#721（RM6.1）、#723、RM1.2a、RM1.3b、RM8.5–RM8.8；1.60.0 已发布（§1.2）。
+排期以 `README.md` §3 为准；下面是 2026-11-15 约 00:30Z 从实际位置（`main` 在 `f76af65b`）出发的顺序，每条车道从第 1 项做起，前一项合并后再开下一项。**按 RM-D27，顺序就是全部的门：** 一项的真实依赖满足了就开工，不等阶段日期或冻结期。一次一个重命令对整台机器生效，本地只跑 `check:quick`（文档加 `docs:build`），重的门禁交给 CI。已做完、不再列出的：第四场的全部合并（§1.1 第四张表）；核心车道的 CR11a → RM1.6b → CR10 → RM3.1 前半，视觉车道的 RM8.9 → RM8.10；小卡 RM1.2c、RM1.2g、RM1.1a、RM8.7b、RM0.7e、RM0.7f、RM1.3d。RM8.8b 在评审中（#772）。1.61.0 已发布（§1.2）。
 
-**编译器路径预算（先量再动）：** `compilerPathBudget` 401,000 B gzip，`embedPathBudget` 387,000。#747 之后 `main` 约 393.1 KB；RM1.3b 增加约 2.9 KB，估约 396 KB，余量约 5 KB（**估算，没有在 `7b2ec476` 上重量**）。RM8.9 估 2.3–4 KB：**它必须先量。** 余量吃紧时，RM0.7f（拆出约 65 KB 只被惰性路径用到的代码）先于任何新词表卡。
+**核心车道：** RM3.1 后半（`place` 往返及其余），然后按 `README.md` §3 的顺序。RM1.1b 随 1.62.0 量（计划如此，§6）。本场新开的余项卡（`cards.md`，线下）：RM1.3e、RM1.3f、RM8.8c、RM8.8d、RM8.5f、RM8.10b、RM0.7g、RM8.7c、RM1.2i、RM1.1c、CR10b、RM3.1c、RM0.10；RM1.3e 的 (b)(c) 先要一次设计裁定。
 
-**视觉车道：** RM8.9（十六个家族，含 RM-D29 的四个绿植；先量预算）→ RM8.10（RM-D32 选了 (a)，显示警告、不改几何）。小件，空档里做：RM8.1c、RM8.3b、RM8.1e、RM8.7b、RM8.8b。
+**视觉车道：** 首批家族与 RM8.10 做完。空档里做：RM8.1c、RM8.3b、RM8.1e、RM8.8b 的余项（RM8.8c、RM8.8d）。
 
-**核心车道：** CR11a（`GOVERNANCE.md`，RM-D30）→ RM1.6b → CR10 → RM3.1。随时可做的小卡：RM1.2c（RM-D35：新 W 规则，量字节）、RM1.2g（RM-D36：`archlang-3d` 建 winder 台阶）、RM1.1a（首次接触复测，量 1.60.0，`§6` 的表）。线下，有余量才做：RM0.7b、RM0.7c、RM0.7e、RM0.7f、RM1.2d–RM1.2f、RM1.2h、RM1.3d、RM1.4c、RM8.1e、RM5.1b、RM0.6、RM7.4、RM1.6c、RM6.1b–RM6.1d、RM8.6c，以及 CHANGELOG 1.60.0 的 `A-ANNO` 措辞更正（见 `cards.md`）。
+**线下，有余量才做：** RM0.7b、RM0.7c、RM1.2d–RM1.2f、RM1.2h、RM1.4c、RM5.1b、RM0.6、RM7.4、RM1.6c、RM6.1b–RM6.1d、RM8.6c，以及上面的余项卡。CHANGELOG 1.60.0 的 `A-ANNO` 措辞更正已在 1.61.0 的发布说明里做了。
+
+**编译器路径预算：** `compilerPathBudget` 401,000 B gzip，`embedPathBudget` 387,000。RM0.7f 之后的余量没有在 `f76af65b` 上重量：**动词表或新家族的卡先量。**
 
 **CI 吞吐（第 9 轨，RM-D37，2026-11-14 加；不是第三条车道）：** TP 卡在核心车道两张卡之间占用核心执行者（RM-D22 不变）。TP1（#754）与 TP2（#755）已合并：`npm run sync:main -- --push` 是同步的做法；`main` 的 push 运行 28 → 12.8 分钟，PR 约 9 → 7.3（各一次运行）。下一张 TP6（测试分片的零成本文件），再 TP5（2026-11-21 之后、两者合并满 7 天的合并后复测）。TP3、TP1b 在空档里做；TP4 等触发。卡在 `cards.md` 第 9 轨。
 
-**发布：** 1.61.0 要所有者对那一次的决定（没有决定就不切；`README.md` §3 的约 01-05 只是参考）。2026-12-01 所有者亲自发 Show HN，那之前 `main` 保持绿。RM5.4（#603）在 Show HN 之后。
+**发布：** 1.61.0 已发布。1.62.0 要所有者对那一次的决定（没有决定就不切；VS Code Marketplace 与 OpenAI 目录的发布由代理做，RM-D41）。2026-12-01 所有者亲自发 Show HN，那之前 `main` 保持绿。RM5.4（#603）在 Show HN 之后。
 
 **给执行者的简报加两行：** 状态文件按卡命名（`state-rm1.3a.md`，不叫 `state.md`）；scratchpad 里的其他文件（PR 正文等）也用唯一文件名（`pr-body.md` 在同一会话被两个代理互相覆盖过）。
 
@@ -115,20 +135,21 @@
 | 2026-11-11 | **1.59.0 已发布**（`e354ddc7`，各渠道见 §1.2） | 所有者已决定（"我同意发布"，协调者转述），切点由协调者定：#711 与 #713 合并之后切；OpenAI 目录 1.59.0 于 11-12 发布（所有者在聊天里确认声明） |
 | 2026-12-01 | Show HN，所有者亲自发 | growth 的物料已由 growth PR #68 刷新；X9 只写 1.59.0 里已发布的事实 |
 | 2026-11-12/13 | **1.60.0 已发布**（`6d18d137`，各渠道见 §1.2） | RM-D33（受托，`README.md` §6.7）；OpenAI 目录 1.60.0 由所有者本人于 11-13 提交并发布 |
-| 参考：01-05 | 1.61.0（建议） | 要所有者对那一次的决定；RM1.1b 在其发布后量 |
+| 2026-11-14 | **1.61.0 已发布**（切点 `057ae80f`，各渠道见 §1.2） | RM-D40（所有者）；VS Code Marketplace 与 OpenAI 目录由代理发布（RM-D41） |
+| 参考：之后 | 1.62.0（建议） | 要所有者对那一次的决定；RM1.1b 随它量 |
 | 2027-01-09 | agent-reach 读数（窗口到 01-05） | 附 RM7.3 的三项自检 |
 | 2027-01-31 | RM-D2 读数（窗口到 01-28） | 附 RM7.3 的三项自检；不足两项时收缩到轨 1、4、7 |
 
 ## 4. 只有所有者能做的事，与仍等所有者的裁定
 
-- 决定 1.61.0 是否、何时发布（1.59.0 见 §1.4；1.60.0 已发布，见 §1.2）；#603 已由 RM-D34 裁定：现在不合并，2026-12-01 之后 RM5.4 迁移，#603 保持打开。决定之后 tag 与发布链由代理跑，只在 OTP/2FA、登录、账号或令牌的创建、条款与声明的确认、本机文件选择器处停下。
+- 决定 1.62.0 是否、何时发布（1.61.0 已由 RM-D40 决定并发布，见 §1.2）；#603 已由 RM-D34 裁定：现在不合并，2026-12-01 之后 RM5.4 迁移，#603 保持打开。决定之后 tag 与发布链由代理跑，只在 OTP/2FA、登录、账号或令牌的创建、条款与声明的确认、本机文件选择器处停下。
 - 2026-12-01 亲自发 Show HN。
-- **OpenAI 插件目录的提交**（1.60.0 已于 2026-11-13 由所有者本人提交并发布，见 §1.2；以后每次提交仍要所有者的话，代理准备到 Submit 之前）以及需要接受条款或声明的提交，以及 Cloudflare 控制台的改动（`docs/seo.md` § 8）。
+- **登录、2FA、站点权限授予、新账号、条款：** VS Code Marketplace 与 OpenAI 目录的发布已由 RM-D41 交给代理（含以后的版本），代理只在这些处停下；**新的或改变的声明先交所有者**。Cloudflare 控制台的改动（`docs/seo.md` § 8）。
 - **2026-11-12 的受托裁定（所有者说"请你帮我做出最佳决策"，只对那一次；一句话可推翻；`README.md` §6.6）：** RM-D28 `rendered` 地面浅色，批准，条件是图案线对比不低于 2.0:1（草案色值只有 1.66–1.87:1，要另调更浅的一组；ADR 0023 已加修订）；RM-D29 绿植四个全批准（并入 RM8.9，十六个）；RM-D30 CR11a 的 schema 政策与命名空间照 `design/schema-policy.md` §3 采纳（现有两个 `$id` 不改）；RM-D31 PS0.18 关闭（`78e0b7f9`）；RM-D32 RM8.10 选 (a)（显示警告，不改几何），卡已改写、不再等裁定。**仍然不能代裁、仍是所有者的：** OpenAI 插件目录的每次提交（要接受条款；代理准备到最后一步）、`README.md` §6 的较早一批（RM5.4 的主版本升级 #603、MF-D3(b)、backlog D.7、M.9、M.8、M.14、3.1(b)、仓库根 `.mcp.json`；CI throughput 的 E 与 F 已不在此列（2026-11-14 的 RM-D37 裁定不做，`README.md` §6.9）、VA.3），以及 RM1.3c（6.11，双开门）先要一次设计裁定。
 - **2026-11-14 的受托裁定（所有者说"请你帮我做出最佳决策"，只对那一次；一句话可推翻；`README.md` §6.8）：** RM-D35（RM1.2c）新 W 规则"标签点名了房间没有的家具"，不加词表行，`DEFINING.office` 不动；RM-D36（RM1.2g）`archlang-3d` 把 winder 建成 n 级渐缩台阶，2D 的 `W_STAIR_RISER_TOO_HIGH` 不封顶。#603：RM-D34 不变。
 - **协调者本场的裁定（2026-11-12…14，可推翻）：** 最上层绘制的地面决定可走性（#746）；预算内被省略的平面有自己的覆盖/跳过原因（#742）；扶梯方向取停靠点的 `dir`，`planting` 算可走（#745）。更早且已记录的：品味等变律重述（罗盘读者是 R12，主入口由街道选定时另有 R3 与分区）、指北针提示排在 taste 之前、winder 多出 n−1 级。
-- **仍是所有者的（2026-11-13 约 22:45Z）：** 1.61.0 的发布决定；2026-12-01 Show HN；OpenAI 插件目录的每次提交（要接受条款；代理准备到 Submit 之前）；Docker 的 docker/mcp-registry#6704 等 Docker 合并（`source.commit` 为 `6d18d137`）；#603 的主版本升级在 Show HN 之后；关 #544（代理也可以关，那是所有者在 #532 的线程）。
-- 任何一条受托裁定（RM-D17…D20、RM-D24…D26、RM-D28…D32、RM-D33、RM-D34、RM-D35、RM-D36），所有者都可以一句话推翻。
+- **仍是所有者的（2026-11-15）：** 1.62.0 的发布决定；2026-12-01 Show HN；登录/2FA/条款（见上）；Docker 的 docker/mcp-registry#6704 等 Docker 合并；#603 的主版本升级在 Show HN 之后；关 #544（代理也可以关，那是所有者在 #532 的线程）。
+- 任何一条受托裁定（RM-D17…D20、RM-D24…D26、RM-D28…D32、RM-D33、RM-D34、RM-D35、RM-D35a、RM-D36 与 `README.md` §6.10 的第四场协调者裁定），所有者都可以一句话推翻。
 - **第二场的受托裁定（协调者的记录，我无从核对；可一句话推翻）：** 3D 地面是查看器的背景，不是建筑元素，不进 GLB；MCP 能力页保持派生的 `repair` 标题；MCP shim 的版本在发布时经 `release:pin` bump；RM1.4 带出的已发布示例改写成吸附后的值（图字节恒等）；`W_GRID_SNAPPED` 在 `next` 里排最后（新增 `info` 一档）；`W_UNKNOWN_THEME` 也由 CLI 报出；每个内置元素都声明 `setWords`；playground `compilerPathBudget` 458,000 → 458,980（RM1.4）；biome 只关 2.6 里真正新增的三条规则（backlog 3.3）；RM8.1d 的工作计数表重取；RM8.5 的 `AFTER_THE_FORM` 排除名单是测试前提的改动，已同意；RM1.6a 的 +74 B 接受；CRF13 以"不可复现"关闭。
 - **所有者本场的话：** 发布 1.59.0（"我同意发布"），时机委托协调者；RM-D27（原话在 `README.md` §6.5）；删除 `origin/ChanMeng666-patch-1`（已做）。
 
@@ -150,7 +171,7 @@ RM1.1a 的兜底：1.59.0 到 2026-11-23 还没打 tag，就量当时 `main` 的
 
 | 卡 | 量的版本（或 SHA） | N 个缺陷 | lint 报出 k 个 | 日期 | 说明 |
 |---|---|---|---|---|---|
-| RM1.1a | 1.59.0 | | | | |
+| RM1.1a | 1.60.0 | 57（1 B / 21 N / 35 m；去掉 2 条面积口径的行为 55） | 8（+1 部分） | 2026-11-14 | 量的是 1.60.0 而非计划写的 1.59.0（跑的时候 1.60.0 是当前版本）；第 1 臂、冻结提示、六份 brief。证据（所有者本机）：`D:\github_repository\claude-kept\2026-11-15-archlang-session4-record\rm1.1a\`。固定句：六份 brief 写成的平面里有 57 个缺陷，最终 lint 报出 8 个（另有 1 个部分）。第二个提示臂见卡 RM1.1c |
 | RM1.1b | 1.61.0（01-06 → 01-08，附在 01-09 读数里） | | | | |
 
 ## 7. 另一仓库（archcanvas-growth）
@@ -222,3 +243,11 @@ RM1.1a 的兜底：1.59.0 到 2026-11-23 还没打 tag，就量当时 `main` 的
 - **(r) 新增一种元素在兼容检查里像破坏性变更**，除非带标签的联合被当作类似枚举的集合（RM0.9）；改检查器好过加 BREAKING 豁免。
 - **(s) Chrome：** 应用市场类操作要所有者授予该站点；截图会超时，`javascript_tool` 可用；OpenAI 的 "Submit for review" 被权限分类器挡住，由所有者提交。
 - **(t) 第二个 tsup 构建若排除在 npm `files` 之外，可让 playground 不碰核心源码（#727）；检查 tarball 里有没有够不着的文件。**
+
+### 2026-11-14/15 一场（协调者转述的记录，我没有独立核对）
+
+- **(u) 红队的主张也可能错：** #769 的 B2 由测量加 700 个平面的模糊测试定案，执行者对。事实之争先用证据定，再裁定。
+- **(v) 协调者自己的裁定也可能错：** CR10 的方案 A（引用楼梯）与 RM1.6b 对联合持有代码的有意 `null` 相矛盾，被执行者的停止条件拦下；改采方案 B（`joint` 标记）。执行者的停止条件要保留。
+- **(w) 处于 `DIRTY` 的 PR 不跑 CI**（#769、#770）：同步合并了一个 CI 从未跑过的 PR。评审之前先看合并状态。
+- **(x) 只在 CI 里跑的新测试会弄红 Node 18 的 main / 夜间那一腿**（rolldown 的 `engines`）：评审者检查 `engines`，见 (a)。
+- **(y) 执行者在长等待后丢上下文**（RM3.1a 不知道自己的 PR 已经存在）：协调者按原始 `git` 推送，不听旧代理的说法，见 (f)、(o)。
