@@ -14,6 +14,14 @@ are documented here. The format is based on
 
 ## [Unreleased]
 
+## [0.50.0] - 2026-11-15
+
+### Changed
+
+- **Rebundled the core at `@chanmeng666/archlang@1.62.0`**: the new warning `W_LABEL_PIECE_MISSING`
+  (a room label naming a piece the room lacks) in the editor's diagnostics. The release adds no
+  words, so completion is unchanged.
+
 ## [0.49.0] - 2026-11-14
 
 ### Changed
