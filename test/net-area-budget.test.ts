@@ -202,6 +202,41 @@ suite("net area: one total per storey read (U.22, PS0.15)", () => {
     expect(s3.rooms.map((r) => r.net_area_m2 !== undefined)).toEqual([true, true, false]);
   });
 
+  it("the card's own adversary: 200 overlapping rooms each meeting ~1,920 curves (U.22)", () => {
+    // U.22's plan: every room covers the same floor of 480 short partitions, so each meets 1,932
+    // curves (its 4, the exterior band's 8, 480 partition bands' 4 each), under MAX_NET_CURVES,
+    // and its probe work is under MAX_NET_PROBE_WORK. Unmetered, describe() measured all 200
+    // (about 4.2 s, linear in rooms); metered, it measures the rooms that fit and omits the rest.
+    const o = ["wall exterior thickness 200 { (0,0) (25000,0) (25000,21000) (0,21000) close }"];
+    for (let i = 0; i < 24; i++)
+      for (let j = 0; j < 20; j++) {
+        const x = 500 + i * 1000;
+        const y = 500 + j * 1000;
+        o.push(`wall partition thickness 20 { (${x},${y}) (${x + 500},${y}) }`);
+      }
+    for (let k = 0; k < 200; k++)
+      o.push(`room id=r${k} at (${100 + k},100) size ${24000 - 2 * k} x 20000 label "R${k}"`);
+    const src = `plan "u22" {\n  ${o.join("\n  ")}\n}`;
+    const { ir } = resolvePlan(src);
+    const bands = netAreaBands(ir!.walls);
+    const rooms = ir!.elements.filter((e): e is RRoom => e.kind === "room");
+    expect(rooms).toHaveLength(200);
+    // Measured when written: the first room's counts, under both of its own caps.
+    const ONE = { curves: 1932, work: 9_339_264 };
+    for (const r of rooms.slice(0, 3)) expect(netAreaDetail(r, bands)).toMatchObject({ ok: true, ...ONE });
+    expect(ONE.work).toBeLessThan(MAX_NET_PROBE_WORK);
+    const pairs = netAreaPairWork(ONE.curves);
+    clearCache();
+    takeNetAreaUses();
+    const s = describePlan(src);
+    // Three rooms fit; the fourth's pair tests close the meter, so no later room is measured.
+    expect(s.rooms.filter((r) => r.net_area_m2 !== undefined).map((r) => r.id)).toEqual(["r0", "r1", "r2"]);
+    expect("net_floor_area_m2" in s.totals).toBe(false);
+    const used = 3 * (pairs + ONE.work) + pairs;
+    expect(used).toBeLessThanOrEqual(MAX_NET_PLAN_WORK);
+    expect(takeNetAreaUses()).toEqual([{ used, closed: true }]);
+  });
+
   it("the corpus's heaviest plans stay far inside the total (counts pinned when written)", () => {
     // `test/fixtures/star30.arch` is the corpus maximum over every corpus directory (measured
     // when written, examples through eval plans and the defect corpus): 272,216 units.

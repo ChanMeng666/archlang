@@ -276,7 +276,7 @@ const PAGE_META = [
     "A separate package extrudes a 3D preview from the plan's .arch file: walls, openings, floors, stairs, furniture, outdoor surfaces and fences; a replay and a GLB.",
   ],
   [
-    "/adr/",
+    "/adr",
     "Architecture decision records",
     "Index of ArchLang's architecture decision records: the decisions behind the compiler, each with its context, the decision taken and the trade-offs accepted.",
   ],
@@ -461,7 +461,7 @@ const PAGE_META_BY_ROUTE: ReadonlyMap<string, PageMeta> = new Map(
 /**
  * A page source path (`index.md`, `reference.md`, `adr/0001-….md`) → its served
  * route. `cleanUrls` is on, so no `.html` anywhere, and an `index.md` keeps its
- * trailing slash (`/`, `/adr/`) — which is what the canonical URL must carry.
+ * trailing slash (`/`). The ADR index is `adr.md` (sync-docs.mjs), so its route is `/adr`.
  */
 function routeOf(pagePath: string): string {
   const noExt = pagePath.replace(/\.md$/, "");
@@ -616,7 +616,7 @@ function structuredData(
             "@id": `${url}#breadcrumbs`,
             itemListElement: [
               { "@type": "ListItem", position: 1, name: "ArchLang", item: `${SITE_ORIGIN}/` },
-              ...(route.startsWith("/adr/") && route !== "/adr/"
+              ...(route.startsWith("/adr/")
                 ? [
                     {
                       "@type": "ListItem",
@@ -695,7 +695,6 @@ export default defineConfig({
     const route = routeOf(page);
     const meta = PAGE_META_BY_ROUTE.get(route);
     if (!meta) return [];
-    // The static host drops a trailing slash (307), so the ADR index's canonical is `/adr`.
     const url = SITE_ORIGIN + (route === "/" ? route : route.replace(/\/$/, ""));
     const head: HeadConfig[] = [
       ["link", { rel: "canonical", href: url }],
@@ -744,10 +743,7 @@ export default defineConfig({
     transformItems: (items) =>
       items.map((item) => {
         const stamped = LASTMOD[`/${item.url}`];
-        const dated = stamped && !item.lastmod ? { ...item, lastmod: stamped } : item;
-        // The ADR index is `adr/index.html`; the host serves it at `/adr` and 307s `/adr/`
-        // there (html_handling: drop-trailing-slash), so list the path that answers 200.
-        return dated.url === "adr/" ? { ...dated, url: "adr" } : dated;
+        return stamped && !item.lastmod ? { ...item, lastmod: stamped } : item;
       }),
   },
   // sync-docs.mjs drops a RAW markdown copy of each generated page into public/
