@@ -76,7 +76,7 @@ RM1.1a 也在本场做完（纯测量，没有 PR，见 §6）。
 
 ### 1.1b 开着的 PR、分支与 worktree（2026-11-15 约 05:10Z，`main` 在 `6444cbd3`，`gh pr list` 读）
 
-- **开着的 PR：** #603（Dependabot `ext-apps` 2.0.4，主版本）：RM-D43（2026-11-15）之后由 RM5.4 现在迁移，迁移 PR 合并时关掉它。本记录 PR。#767 已由协调者接手合并（§1.1）。
+- **开着的 PR：** 没有。#603 由 #781（RM5.4）取代并关闭。本记录 PR。#767 已由协调者接手合并（§1.1）。
 - **worktree 只有主检出。** 已合并的本地分支已删。远程分支 `origin/feat/remove-view`（2.0 才做的移除 `view`）保留，不在任何排期。
 - **开着的 issue：** #544、#680、#681、#682、#684。#544（剖切线与楼板基准）：RM6.1 在 #721 里交付了，说明已贴在 #532；关 #544 留给所有者或下一场（那是所有者在 #532 里的线程，代理也可以关）。
 - 移除任何 worktree 之前，先用 `[System.IO.Directory]::Delete(<junction>)` 解开其中的 `node_modules` junction（不递归），再 `git worktree remove`（`docs/agents/gotchas.md` § Tooling & process）；被正在运行的会话锁定的 worktree 拒绝 `git worktree remove`（`docs/agents/orchestration.md`）。
@@ -121,7 +121,7 @@ RM1.1a 也在本场做完（纯测量，没有 PR，见 §6）。
 
 | 原来等 Show HN 的 | 现在 |
 |---|---|
-| RM5.4 / #603（`ext-apps` 2.x，RM-D19、RM-D34） | **现在做，进行中**（核心车道插在最前，高风险层：对抗评审，合并后核对部署的 Worker） |
+| RM5.4 / #603（`ext-apps` 2.x，RM-D19、RM-D34） | **已做完**：#781（`ed811e0f`），#603 关闭；部署后在 ChatGPT 真实对话里核对过渲染（`cards.md` RM5.4） |
 | drawing-set DS3–DS9（CR-D1"推到 Show HN 之后按证据重排"） | 作为普通候选进入排期，不再等。小的进小卡车道：DS4（`tools/` 场地草图，0.5 日）、DS10（比例 1:1000、1:2000，1 日）。其余按依赖接在核心车道 RM3.1 后半之后：DS3 → DS8、DS5、DS9、DS6、DS7 → DS14 |
 | DS20 `building from`（D4"Show HN 后"） | 不再等 Show HN；依赖 DS7 |
 | DS13、DS15 剖面立面（"N10 读过 + Show HN 之后"） | 只剩 D3 的 N10 已读这一条（证据，不是日期） |
@@ -143,7 +143,7 @@ RM1.1a 也在本场做完（纯测量，没有 PR，见 §6）。
 
 **CI 吞吐（第 9 轨，RM-D37，2026-11-14 加；不是第三条车道）：** TP 卡在核心车道两张卡之间占用核心执行者（RM-D22 不变）。TP1（#754）与 TP2（#755）已合并：`npm run sync:main -- --push` 是同步的做法；`main` 的 push 运行 28 → 12.8 分钟，PR 约 9 → 7.3（各一次运行）。下一张 TP6（测试分片的零成本文件），再 TP5（2026-11-21 之后、两者合并满 7 天的合并后复测）。TP3、TP1b 在空档里做；TP4 等触发。卡在 `cards.md` 第 9 轨。
 
-**发布：** 1.62.0 已发布（§1.2）。1.63.0 要所有者对那一次的决定（没有决定就不切；VS Code Marketplace 与 OpenAI 目录的发布由代理做，含 OpenAI 的 Submit 与 Publish，RM-D41、RM-D44）。2026-12-01 所有者亲自发 Show HN；`main` 一直保持绿。RM5.4（#603）现在做（RM-D43）。
+**发布：** 1.62.0 已发布（§1.2）。1.63.0 要所有者对那一次的决定（没有决定就不切；VS Code Marketplace 与 OpenAI 目录的发布由代理做，含 OpenAI 的 Submit 与 Publish，RM-D41、RM-D44）。2026-12-01 所有者亲自发 Show HN；`main` 一直保持绿。RM5.4（#603）已由 #781 做完（RM-D43）。
 
 **给执行者的简报加两行：** 状态文件按卡命名（`state-rm1.3a.md`，不叫 `state.md`）；scratchpad 里的其他文件（PR 正文等）也用唯一文件名（`pr-body.md` 在同一会话被两个代理互相覆盖过）。
 
@@ -166,7 +166,7 @@ RM1.1a 也在本场做完（纯测量，没有 PR，见 §6）。
 
 ## 4. 只有所有者能做的事，与仍等所有者的裁定
 
-- 决定 1.63.0 是否、何时发布（1.62.0 已由 RM-D42 决定并发布，见 §1.2）；#603：RM-D43（2026-11-15）之后由 RM5.4 现在迁移（原 RM-D34 的"Show HN 之后"作废）。决定之后 tag 与发布链由代理跑，只在 OTP/2FA、登录、账号或令牌的创建、条款与声明的确认、本机文件选择器处停下。
+- 决定 1.63.0 是否、何时发布（1.62.0 已由 RM-D42 决定并发布，见 §1.2）；#603：RM-D43（2026-11-15）之后由 RM5.4（#781）迁移完，#603 已关（原 RM-D34 的"Show HN 之后"作废）。决定之后 tag 与发布链由代理跑，只在 OTP/2FA、登录、账号或令牌的创建、条款与声明的确认、本机文件选择器处停下。
 - 2026-12-01 亲自发 Show HN。
 - **登录、2FA、站点权限授予、新账号、条款：** VS Code Marketplace 与 OpenAI 目录的发布已由 RM-D41 交给代理（含以后的版本），代理只在这些处停下；**新的或改变的声明先交所有者**。Cloudflare 控制台的改动（`docs/seo.md` § 8）。
 - **2026-11-12 的受托裁定（所有者说"请你帮我做出最佳决策"，只对那一次；一句话可推翻；`README.md` §6.6）：** RM-D28 `rendered` 地面浅色，批准，条件是图案线对比不低于 2.0:1（草案色值只有 1.66–1.87:1，要另调更浅的一组；ADR 0023 已加修订）；RM-D29 绿植四个全批准（并入 RM8.9，十六个）；RM-D30 CR11a 的 schema 政策与命名空间照 `design/schema-policy.md` §3 采纳（现有两个 `$id` 不改）；RM-D31 PS0.18 关闭（`78e0b7f9`）；RM-D32 RM8.10 选 (a)（显示警告，不改几何），卡已改写、不再等裁定。**仍然不能代裁、仍是所有者的：** OpenAI 插件目录的每次提交（要接受条款；代理准备到最后一步）、`README.md` §6 的较早一批（RM5.4 的主版本升级 #603、MF-D3(b)、backlog D.7、M.9、M.8、M.14、3.1(b)、仓库根 `.mcp.json`；CI throughput 的 E 与 F 已不在此列（2026-11-14 的 RM-D37 裁定不做，`README.md` §6.9）、VA.3），以及 RM1.3c（6.11，双开门）先要一次设计裁定。
@@ -280,3 +280,4 @@ RM1.1a 的兜底：1.59.0 到 2026-11-23 还没打 tag，就量当时 `main` 的
 - **(ab) OpenAI 门户：** 1.62.0 的草稿由代理上传；扫描约 10 分钟后页面显示 Approved，"Publish version 1.62.0" 的对话框已经由别人打开并在执行：所有者确认是本人手动点的。以后由代理全做，含 Submit 与 Publish（RM-D44）；分类器若挡，照 (s) 报告，不绕。
 - **(ac) Docker 的 #6704 没合并时，每次发布在同一 PR 分支上移 `source.commit`**（1.61.0 漏了，1.62.0 补上）；`release-check.md` 已写明。
 - **(ad) `npm update` 会顺手修剪别的树**（npm 11 删了 `tsx` 下嵌套的 `esbuild`，约 480 行）：只要两项时，只取那两项的 hunk，再用 `npm ci` 证明 lockfile 一致。`check:quick` 在只改 lockfile 时 biome 报错（卡 RM0.11 第 2 条）。
+- **(ae) 高风险的 Worker 改动要在部署前存一份线上基线：** RM5.4 前用 `curl` 存了 `initialize`、`tools/list`、`resources/list`、`resources/read` 的原始响应，部署后逐字节比；再在 ChatGPT 真实对话里调一次 `compile`，看图与 lint 列表（评审 M1：执行者的宿主是桩，证明不了真实宿主）。

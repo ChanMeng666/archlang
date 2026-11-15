@@ -57,7 +57,7 @@
 - 合 #675（codeql-action，workflow 属高风险层）、#677、#678：`@dependabot rebase` 到新 `main`，CI 绿后按层级合并（`docs/agents/iron-laws.md` 的 Dependabot 规则）。
 - #604：先修 biome 2.6 的 lint 差异，再合。
 - #676（`three` 0.187）：单独评估 3D 的帧哈希与 GLB 字节、许可白名单与 THIRD_PARTY_NOTICES；不与别的升级同 PR。
-- #603（`@modelcontextprotocol/ext-apps` 1.7.5 → 2.0.4，主版本）：按 RM-D19，~~Show HN 之前不合并，PR 保持打开；12-02 之后由 RM5.4 迁移~~。RM-D27（`README.md` §6.5）作废了日期：RM5.4 现在就可以开工；但这是主版本升级，合并仍等所有者（`docs/agents/iron-laws.md` § Owner policies："a major bump waits for the owner"），在那之前 PR 保持打开。**RM-D43（2026-11-15）：** 所有者让协调者评估、该做就现在做；协调者判定现在做（1.x 自 2026-07 没有新版，2.x 已到 2.1.0，主版本迁移越拖越贵），这就是所有者对本次升级的同意。RM5.4 进行中。
+- #603（`@modelcontextprotocol/ext-apps` 1.7.5 → 2.0.4，主版本）：按 RM-D19，~~Show HN 之前不合并，PR 保持打开；12-02 之后由 RM5.4 迁移~~。RM-D27（`README.md` §6.5）作废了日期：RM5.4 现在就可以开工；但这是主版本升级，合并仍等所有者（`docs/agents/iron-laws.md` § Owner policies："a major bump waits for the owner"），在那之前 PR 保持打开。**RM-D43（2026-11-15）：** 所有者让协调者评估、该做就现在做；协调者判定现在做（1.x 自 2026-07 没有新版，2.x 已到 2.1.0，主版本迁移越拖越贵），这就是所有者对本次升级的同意。RM5.4 由 #781 交付：`ext-apps` 2.1.0，client 精确钉 2.4.0（只用一份 core），资源注册改用 `server.registerResource`（与 2.1.0 的 helper 运行时相同），查看器关掉 WebMCP 桥以保持 1.7.5 的行为；对抗评审一轮无阻塞。部署后核对：`initialize`、`tools/list`、`resources/list` 与部署前逐字节相同，查看器页 676,975 字符、sha256 `ed9b8813…`，`compile` 的 `_meta.ui.resourceUri` 在；ChatGPT 真实对话里图画出、可平移缩放、"Lint findings" 列出（走 `callServerTool`）。
 - 清掉 12 个已合并 PR 的远程分支、`refs/remotes/pr308` 和过期的本地分支（例如 `refactor/exhaustive-element-kinds`）；保留 `feat/remove-view`。
 - `origin/ChanMeng666-patch-1`（所有者 2026-11-08 网页上改的 README 影片链接，一行，commit `6c86203a`，没有 PR）：按 RM-D20 落地。先确认新的资源 URL 能打开；再从 `main` 新建分支，cherry-pick `6c86203a`，经 PR 合并（README 改动按风险层级走）。
 
@@ -509,7 +509,7 @@ CR11 的其余一半：语言规范独立版本 `lang-1.0`。RM3.2：SBOM（Cycl
 
 不许：改 SVG/PDF 的线宽；在 DXF 里另立一张线宽表（只能从 SVG/PDF 的表派生）；改图层名（NCS v6 的命名是另一件事）；写 `--layers iso13567`（§4 不做）。
 
-### RM5.4 · `@modelcontextprotocol/ext-apps` 2.x 迁移（#603） — `doing`（2026-11-15，RM-D43） · 未估 · opus · 依赖 ~~2026-12-02 之后~~（RM-D27 作废）所有者对这次主版本升级的同意（合并前要；开工不等）；与 RM1.6b 共用一次 `packages/mcp` bump · 高风险层
+### RM5.4 · `@modelcontextprotocol/ext-apps` 2.x 迁移（#603） — `done` · #781 · `ed811e0f`（2026-11-15，RM-D43；取代 #603，已关） · 未估 · opus · 依赖 ~~2026-12-02 之后~~（RM-D27 作废）所有者对这次主版本升级的同意（合并前要；开工不等）；与 RM1.6b 共用一次 `packages/mcp` bump · 高风险层
 
 RM-D19 的受托裁定：Dependabot #603（1.7.5 → 2.0.4，主版本，CI 在 "Workspace builds" 上红，`packages/mcp-worker/src/server.ts` 的 `TS2353 'title' does not exist in type 'McpUiAppResourceConfig'`）Show HN 之前不合并，之后由本卡迁移。**RM-D27（2026-11-11）之后：** "2026-12-02 之后""Show HN 之前不合并"这两个日期条件作废；本卡仍是主版本升级，按 `docs/agents/iron-laws.md` § Owner policies（"a major bump waits for the owner"）等所有者的同意，并与 RM1.6b 共用一次 bump。
 - 先读 `ext-apps` 2.0 的 release notes，列出影响本仓库的破坏性变更。
