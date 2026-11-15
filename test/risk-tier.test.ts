@@ -43,6 +43,19 @@ describe("scripts/risk-tier.mjs", () => {
     expect(tier(".gitleaksignore")).toBe("high");
   });
 
+  it("rates the merge machinery high, but not its tests or the shard-balance table", () => {
+    expect(tier("scripts/ci-proven.mjs")).toBe("high");
+    expect(tier("scripts/merge-train.mjs")).toBe("high");
+    expect(tier("scripts/sync-main.mjs")).toBe("high");
+    expect(tier("scripts/gate-select.mjs")).toBe("high");
+    expect(tier("test/sequencer.ts")).toBe("high");
+    // Tests of a high script stay medium, as test/risk-tier.test.ts does; durations move balance only.
+    expect(tier("test/sequencer.test.ts")).toBe("medium");
+    expect(tier("test/ci-proven.test.ts")).toBe("medium");
+    expect(tier("test/e2e-shards.test.ts")).toBe("medium");
+    expect(tier("test/.durations.json")).toBe("medium");
+  });
+
   it("rates permissions, owner rules, frozen artifacts and deploy config high", () => {
     expect(tier(".claude/settings.json")).toBe("high");
     expect(tier(".claude/hooks/local-gate.mjs")).toBe("high");

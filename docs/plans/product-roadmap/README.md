@@ -585,7 +585,20 @@ RM-D38、RM-D39 属于另一场的裁定（winder 台阶可到达、楼梯建造
 |---|---|---|---|
 | RM-D48 | 怎样让所有者更快发布功能，包括本机是否分担 CI | **做：** ① 仓库内的合并列车（`npm run train`，FT2 #788）：经一个普通 PR 用 `--match-head-commit` 合并，所以不违反直接推 `main` 的禁止，也不是 RM-D37 拒绝的组织 + merge queue 或第三方队列；② 律 1 的 `reviewed <sha>` 评论现在同时是机器门（首行恰为 `reviewed <40 位十六进制>`，由 OWNER 或 COLLABORATOR 发），含义是“批准在此 SHA 合并”；③ 律 3 对两种列车豁免：只有一个成员且列车的树等于该成员已评审的树，以及只含低层级成员的列车；④ 已证明的 push（FT1 #785）；⑤ 更多分片与显式规格列表（FT3a #794），`finish` 测试拆分（FT3c #798，RM-D37 曾拒绝，直到出现长杆，它成了 Node 22 的地板）；⑥ TP5 由 TR6 取代。**不做：** 本机 CI runner；本地门禁里的 `typecheck:all`（FT4 #795 建过又按证据去掉）。RM-D37 里“组织 + merge queue”与第三方队列、“PR 上的受影响测试”、`isolate: false`、changelog 碎片仍然拒绝 | 序列化同步是瓶颈（RM-D37）；列车把一次完整 CI 摊给几个 PR，已证明的 push 让合并到部署 2 分 5 秒；本机 runner 被拒：runner 排队约 3 秒，所有者笔记本 15.3 GB 只剩 2.1 GB 空闲且有 19 个 node 进程，GitHub 不建议在公开仓库用自托管 runner；`typecheck:all` 的红有 11/13 来自同一个 Dependabot PR。反转：所有者一句话 |
 
-后续卡 TR1–TR10 在 `cards.md` 第 9 轨。文档同步（#805、#806，列车 #808）已落地，留给所有者的四件见 `handoff.md` §4。
+后续卡 TR1–TR10 在 `cards.md` 第 9 轨。文档同步（#805、#806，列车 #808）已落地，留给所有者的四件由 RM-D49（§6.19）裁定。
+
+### 6.19 受托裁定：CI 文档同步留给所有者的事（RM-D49，2026-11-16）
+
+所有者 2026-11-16，对上一场留给所有者的事："请你帮我做出最佳决策，然后实施"。以下由协调者在这句话之下裁定，所有者一句话可推翻。
+
+| # | 问题 | 裁定（2026-11-16，受托） | 理由 |
+|---|---|---|---|
+| RM-D49 ① | #807：`docs/agents/iron-laws.md` 里 "set auto-merge" 一句 | **改，措辞并入 RM-D49 的 PR，#807 作为被取代关闭。** 句尾改为 "then push and start the next item; the coordinator lands it, by train or a pinned direct merge, once it is green and, if its tier needs it, `reviewed <sha>` (`docs/agents/commands.md` § Merging a PR)" | 合并已改为钉住的合并与列车，"set auto-merge" 不再属实；新鲜上下文的评审只在换一种措辞时批准；这条律本身（完整测试只在 GitHub CI 上跑，本地门禁是 `check:quick`，CI 的红读 CI 的日志）一字不改 |
+| RM-D49 ② | archcanvas #295：`AGENTS.md` 的跨仓库交接指针 | **合并（受托）**，指针改指 `docs/plans/product-roadmap/handoff.md`（合并状态见 `handoff.md` §4） | 该仓库 `main` 合并即部署生产，但只改文档的合并此前已部署过两次 |
+| RM-D49 ③ | TR9：合并机器的风险层级 | **做，收窄：** `scripts/ci-proven.mjs`、`merge-train.mjs`、`sync-main.mjs`、`gate-select.mjs` 与 `test/sequencer.ts` 升为 high；`test/.durations.json` 与这些脚本的测试文件不升 | 它们决定 CI 跳过什么、什么合并与删除、本地门禁跑哪些测试、每个测试文件进哪个分片（分片错会悄悄丢测试）；时长表只改平衡不改正确性，夜间刷新不该每次要评审；测试文件照现有惯例是 medium |
+| RM-D49 ④ | TR10：列车与同步命令的许可 | **做一半：** `.claude/settings.json` 的 allow 加 `npm run sync:main`（无参数与带参数）；`npm run train` 不加；deny、ask 规则与钩子不变 | `train --land` 合并进 `main`，不在 bypass 模式时保留人的确认；所有者默认的 `bypassPermissions` 模式下两者都不弹 |
+| RM-D49 ⑤ | `archcanvas-growth` 的 `prompts/outreach-finder.md` | **只刷新版本事实（取自 npm）**，以远端 `main` 为底，不用别的会话未提交的副本（PR 号与合并状态见 `handoff.md` §4） | 版本只来自 npm、tag 或 `gh release` |
+| RM-D49 ⑥ | `archcanvas-growth` 的 `investor/**` 里的数字 | **标为带日期的快照，并指向读当前值的地方；不刷新任何数字**（PR 号与合并状态见 `handoff.md` §4） | 那个仓库不持有产品事实 |
 
 ---
 
