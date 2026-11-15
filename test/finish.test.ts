@@ -32,7 +32,9 @@ import {
  * furnish stage is pinned in `test/finish-furnish.test.ts`; the laws over the examples
  * below run both stages, and a case about one sheet decision asks for `only: "sheet"`.
  *
- * The six laws are named in the suite titles below. The corpus is every shipped example,
+ * Laws 4 and 6 are named in the suite titles below; laws 1, 3 and 5 are in
+ * `test/finish-corpus-laws.test.ts` and law 2 in `test/finish-never-worse.test.ts`.
+ * The corpus is every shipped example,
  * read from the directory rather than listed, so a new example is covered without an edit
  * here; the generated corpus is in `test/fuzz.test.ts`.
  */

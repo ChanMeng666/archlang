@@ -51,7 +51,7 @@ the new word only: plans that do not stay byte-identical.
 9. **Words other tools list**: the LSP offers the whole catalogue (derived; `test/lsp-features.test.ts`
    holds it to `FIXTURE_CATEGORIES`); `finish` furnishes only the rooms and uses a family is mapped to
    (`src/furnish-table.ts`; `docs/furniture.md` prints that table, pinned by
-   `test/finish-furnish.test.ts`); hand-written counts of words and families
+   `test/finish-furnish-bounds.test.ts`); hand-written counts of words and families
    (`grep -n families docs/overview.md`) are not derived.
 10. **`CHANGELOG.md`** (`### Added`), then `npm run gen:all` (`spec.llm.md` lists the words and has a
     30,000-unit cap; `docs/agents/gotchas.md`). Prove it through the CLI (`compile` the new word on a
