@@ -263,7 +263,8 @@ both sites after a green CI run on every push to `main` (the playground with its
 `playground/wrangler.jsonc`; the CI token `CLOUDFLARE_API_TOKEN` needs Workers KV Storage: Edit; a Workers
 usage alert is an owner step in the Cloudflare dashboard, outside the repo); `main-red.yml` turns a red CI run on `main` into one pinned issue and closes it on the next green run (post-merge detection: PRs need not be up to date with `main`); `release.yml` publishes on a `v*` tag; `publish-openvsx.yml` (manual, dispatched by the agent after each Marketplace upload) publishes the VS Code
 extension to Open VSX. The `eval-*.yml`
-workflows are manual and owner-only — never dispatch `eval-l2.yml`.
+workflows are manual and owner-only — never dispatch `eval-l2.yml` (the one owner-ratified T3 run is
+local, on the Anthropic provider; `docs/agents/iron-laws.md`).
 
 ## Release
 
