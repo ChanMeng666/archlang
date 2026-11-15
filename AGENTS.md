@@ -50,8 +50,10 @@ npm run gen:all       # every gen:* generator
 - A clean auto-merge of a MOVED function another branch MODIFIED is not evidence: diff the moved body (`docs/agents/gotchas.md` § PRs & CI).
 - Releases are tokenless OIDC (`v*` tag); never an npm token, never automate npmjs account/2FA.
   Pushing `main` deploys the sites. Before a tag: follow `.claude/commands/release-check.md`.
-- Eval: T3 live run declined forever; `eval:live` is paid, owner-only; the eval corpus is a public fixture, never a holdout;
-  dataset canary never regenerated.
+- Eval: one T3 live run, ratified 2026-11-15, not yet run (bounds: `docs/agents/iron-laws.md`); no
+  loop-gain claim either way; its published record is the only statement of the result, any other
+  claim needs an owner decision. `eval:live` is paid, owner-only; the eval corpus is a public
+  fixture, never a holdout; dataset canary never regenerated.
 - Sites are light-only (no dark mode); `brand/archlang-logo-master.svg` is byte-sacred.
 - No secrets in this public repo. Versions come from npm/tags/`gh release`, never a doc; release
   narrative lives only in `CHANGELOG.md`.

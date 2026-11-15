@@ -92,7 +92,7 @@ README 退出条件（"每条诉求都能指向一张 `done` 卡、一条等待�
 | §1.3 禁用 "first/only"、"code beats CAD"、合规、"设计/布置"、"3D CAD/BIM/render"、IFC 承诺 | `strategy/positioning.md` 规则 3、4；`DEC/2026-10-09-…` 护栏；`DEC/2026-10-29-creator-funnel-governance.md` (c)；`strategy/category.md` §5 | `category.md` 停在 2026-09-14，部分过期（RM0.1 提议刷新） |
 | §1.3 公开 check suite 不叫 benchmark（A2）；导入是功能事实（A3） | `DEC/2026-11-04-positioning-proposals-and-competitor-registry.md` A2、A3 | A3 的通用说法要等 OAS 发版 |
 | §1.3 无遥测 | `DEC/2026-10-13-agent-reach-decisions.md` 决定 4 | |
-| §1.3 eval 语料是公开夹具；T3 永久拒绝 | `DEC/2026-11-04-repo-split-and-public-surfaces.md` 裁定 2；`strategy/positioning.md` 规则 5 | 新的留出集只能私下写在 `archlang-lab` |
+| §1.3 eval 语料是公开夹具；T3 永久拒绝（2026-11-15 起改为所有者批准的仅一次运行，尚未运行；RM-D45，见 `docs/agents/iron-laws.md`） | `DEC/2026-11-04-repo-split-and-public-surfaces.md` 裁定 2；`strategy/positioning.md` 规则 5 | 新的留出集只能私下写在 `archlang-lab` |
 | §4 光影、漫游、PBR、"漂亮 3D" | `DEC/2026-11-01-day-90-verdict-stop.md`；C6 `README.md` 含义 7 | |
 | §4 读图不进语言 | N4 `README.md` 想法 1；C6 `README.md` 含义 8 | |
 | §4 IFC 不承诺 | DD（2026-11-03 附记）；`DEC/2026-10-31-archlang-3d-on-npm-tier-b-gates.md`；`DEC/2026-10-28-…` (b)；R04 `02-archlang-current-state-audit.md`（"not close, never promise it"） | 四种口径并存，见报告 A §G.4 |

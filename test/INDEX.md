@@ -5,7 +5,7 @@
 Where the tests of a `src` module are, and what each test file is for. Generated; `npm run check:drift`
 fails when it is stale. How to add a test: `docs/testing.md` § 4.
 
-516 test files in `test/`, 285 `src` modules, 106 modules no test imports.
+519 test files in `test/`, 285 `src` modules, 106 modules no test imports.
 
 ## `src` module → tests that import it
 
@@ -38,7 +38,7 @@ Nearest first, then by name; `(+n)` is the rest. Test names are `test/<name>.tes
 - `src/backends/png.ts` (1) — `export-font-cjk`
 - `src/backends/svg.ts` (5) — `furniture-curves-backends`, `glyph-lib`, `scene-path-prim`, `scene`, `style`
 - `src/chrome-layout.ts` (4) — `bbox-derived-position`, `chrome-hidden`, `export-pdf`, `sheet`
-- `src/clause-order.ts` (1) — `clause-order-byte-identity`
+- `src/clause-order.ts` (2) — `clause-order-byte-identity`, `door-enums`
 - `src/cli/commands-analyze.ts` (12) — `cli-narrow`, `describe-clearances`, `keep-impact-depends`, `lint-summary`, `schedule`, `sheet`, `stages`, `cli-validate-next` (+4)
 - `src/cli/commands-author.ts` (2) — `cli-expected-hash`, `keep`
 - `src/cli/commands-meta.ts` (3) — `cli-context`, `context-size`, `context-starter`
@@ -191,7 +191,7 @@ Nearest first, then by name; `(+n)` is the rest. Test names are `test/<name>.tes
 - `src/wall-lowering.ts` (2) — `joinery-split`, `open-crossing`
 - `src/wall-ref.ts` (2) — `rectilinear-rooms`, `walls-from-rooms`
 - `src/while-fix.ts` (1) — `while-fix`
-- `src/world.ts` (113) — `block-stair-byte-identity`, `circulation-unmeasured`, `corner-window-byte-identity`, `corner-window`, `dim-thickness-callout`, `drawing-budget`, `drawing-overflow`, `equivariance-corpus` (+105)
+- `src/world.ts` (113) — `block-stair-byte-identity`, `circulation-unmeasured`, `clause-order-byte-identity`, `corner-window-byte-identity`, `corner-window`, `dim-thickness-callout`, `drawing-budget`, `drawing-overflow` (+105)
 
 ## Test files
 
@@ -241,6 +241,7 @@ The first sentence of each file's header comment.
 - `test/check-quick-workspaces.test.ts` — `check:quick` and `typecheck:all` name the same workspaces.
 - `test/check-set.test.ts` — public check set: every case judged; each column derived from its sources.
 - `test/chrome-hidden.test.ts` — `north … hidden`, `scale … hidden`, `title hidden` (issue #405): the mark goes, the fact stays.
+- `test/ci-proven.test.ts` — scripts/ci-proven.mjs: when a push to `main` is proven by a train PR's full CI run.
 - `test/circle-enclosure.test.ts` — W_ROOM_NOT_ENCLOSED on a circle room enclosed by arc walls; straight walls never back a circle room (documented); the verdict is D4-equivariant under `place`.
 - `test/circulation-concave.test.ts` — circulation — a concave room's routing anchor is on the room, not on its notch lip.
 - `test/circulation-entrances.test.ts` — each room walks from its nearest entrance; two entrances that seed one cell (the fuzz gate's seed 1438601647).
@@ -457,6 +458,7 @@ The first sentence of each file's header comment.
 - `test/keep-digests.test.ts` — K3 of the `keep` byte-identity law (ADR 0033 decision 7; PS4.3 design §7): SHA-256 over each keep-corpus plan's keep rows in every surface that carries them — `describe().keeps`, `compile().diagnostics` and `validate...
 - `test/keep-impact-depends.test.ts` — PS4.3b (ADR 0033; design `archlang-lab/plans/plan-soundness/research/2026-10-26-ps43-keep-design.md` §5, §6, §9, R15, R16; card PS4.11): `arch impact`'s `keeps` section, `describe --facts depends`' `depends.keeps[]`,...
 - `test/keep.test.ts` — `keep` (ADR 0033; plan-soundness PS4.3a; design `archlang-lab/plans/plan-soundness/research/2026-10-26-ps43-keep-design.md`): the worked widening drill of design §9 reproduced through the CLI, each form's holds ⇔ resi...
+- `test/l2-run.test.ts` — The L2 live harness (`eval/l2-run.ts`), offline: the T3 bounds preflight, the provider adapters, retries, partial briefs, the JSON record and the scorecard (fetch mocked, no network, no key).
 - `test/l2.test.ts` — runLoopArm — the diagnostic feedback loop; runControlArm — equal-budget i.i.d.
 - `test/label-fit.test.ts` — A room's label that does not fit shrinks (`fitLabels`, `src/label-fit.ts`).
 - `test/label-placement-oracle.test.ts` — The label-relocation pass (`relocateLabels`, `src/label-placement.ts`) against the form it replaced, kept here VERBATIM as the oracle and compared BIT FOR BIT (`docs/backlog.md` M.19, M.15).
@@ -511,6 +513,7 @@ The first sentence of each file's header comment.
 - `test/main-entrance.test.ts` — PS0.10 — the main entrance.
 - `test/markdown.test.ts` — extractArchBlocks; rewriteMarkdown; CLI — md format handling.
 - `test/material-vocabulary.test.ts` — The material vocabulary is written twice — the core's `FIXTURE_MATERIALS` (what the `rendered` theme tints by, `src/elements/fixtures-glyphs.ts`) and archlang-3d's `MATERIAL_SLOTS` (what the GLB writer and the viewer...
+- `test/merge-train.test.ts` — scripts/merge-train.mjs: land several reviewed PRs with one full CI run, the three laws kept.
 - `test/meter-headers.test.ts` — Every `src/` module that charges the evaluation-step meter says so in its header comment (engineering-health A-F13, cards EH2.2/EH2.7).
 - `test/min-rect.test.ts` — The law of `src/geometry/min-rect.ts` (plan-soundness PS5.1b): the exact minimum-area enclosing rectangle against a brute-force ROTATION ORACLE that lives here only.
 - `test/miter-limit.test.ts` — acute wall joints — the mitre cap.

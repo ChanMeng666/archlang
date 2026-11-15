@@ -20,19 +20,25 @@ model loop (deep-dive H3).
   edits, ADR 0011) then `arch repair` (the geometric corrector, ADR 0006) — **no model in the loop,
   zero extra API calls.** ΔL0→L1 is the free tool dividend. Implemented in `l1.ts` (`l1Pipeline`),
   gated offline in CI by `test/fault-injection.test.ts`, and overlaid on a live run with `--l1`.
-- **L2 — a diagnostic feedback loop (built; the live experiment is PERMANENTLY DECLINED).**
-  Roadmap Tranche 3 asked: does feeding diagnostics back to the model beat
+- **L2 — a diagnostic feedback loop (built; ONE owner-ratified live run, ratified 2026-11-15,
+  not yet run).** Roadmap Tranche 3 asked: does feeding diagnostics back to the model beat
   **equal-token-budget i.i.d. resampling** (Olausson, arXiv:2306.09896)? The harness is
   implemented and offline-tested — `l2.ts` (pure protocol: ≤2 feedback rounds fed only
   compile/lint diagnostics with their `fix --dry-run` previews + a trimmed `describe()`,
   oracle-isolated; the control arm matches the loop's *measured* token spend, rounding its
   sample count up, which favours the control) and `l2-run.ts` (guarded CLI + the
-  "Eval (L2 loop vs resampling)" workflow). **By owner decision (2026-07-12) the ~440-call
-  live run will NOT be performed — ever. Do not dispatch it.** The loop-vs-resampling
-  question is therefore **permanently unanswered**: no net-loop-gain claim (nor its absence)
-  may be made in any doc, prompt, or comment; `adjacent`/`reachable` stay subscore-only
-  permanently (the T4 gating-promotion hook is closed); the L3/L4/L5 tiers stay unbuilt.
-  The harness and its 14 offline tests are kept as the protocol's reference implementation.
+  "Eval (L2 loop vs resampling)" workflow, which is never dispatched). The 2026-07-12 decision
+  declined the live run permanently; on **2026-11-15 the owner ratified exactly one live run**
+  within the bounds in `docs/agents/iron-laws.md` (product-roadmap RM-D45): provider
+  `anthropic` on `claude-sonnet-5-5` and `claude-haiku-5-5`, run locally; the analysis and
+  decision rule will be pre-registered before the run in
+  `eval/live-runs/2026-11-t3-preregistration.md`; the result is published in `eval/live-runs/`
+  whatever it shows. **Until that result is published, no net-loop-gain claim and no claim of
+  its absence** may be made in any doc, prompt, or comment. The published record is the only
+  statement of the result; any other claim, either way, needs an owner decision. Nothing else
+  reopens: never re-propose a second run; `adjacent`/`reachable` stay subscore-only
+  permanently (the T4 gating-promotion hook is closed); the L3/L4/L5 tiers stay unbuilt
+  permanently. See "The one T3 run" below for the exact command.
 
 **Beside the ladder, not on it: the FIDELITY slice** (`fidelity.ts`, `corpus-fidelity.json`,
 `fidelity-plans/`, `fidelity-run.ts` — roadmap P0-3). The tiers all ask *can a model author
@@ -127,7 +133,7 @@ npm run eval:ci     # same command — the CI regression gate (no API key; exit 
 npm run eval:fidelity   # offline: the constraint-laundering slice (writes eval/fidelity-results.md)
 npm run eval:live -- --yes [--max N] [--budget <n>tok|<n>usd] [--l1]   # live, paid, guarded
 npm run eval:g1 -- --yes [--max N]    # Gate G1: generate intent JSONs from briefs (paid, guarded; or the "Eval (G1 intent generation)" workflow)
-npm run eval:l2 -- --yes …   # T3 harness — DO NOT RUN: the live experiment is permanently declined (owner decision 2026-07-12)
+npm run eval:l2 -- --yes …   # T3 harness — paid; ONE owner-ratified run only (ratified 2026-11-15, not yet run); see "The one T3 run"
 ```
 
 - **Offline** (`run.ts` default) compiles → lints → describes each committed golden and scores it.
@@ -146,6 +152,44 @@ npm run eval:l2 -- --yes …   # T3 harness — DO NOT RUN: the live experiment 
 machine. It defaults to OpenAI, defaults `--max 26` and `--l1 true`, and skips (green, not failed)
 when the secret is absent. Provider resolution: explicit `ARCHLANG_EVAL_PROVIDER`, else OpenAI when
 only its key is present, else Anthropic.
+
+## The one T3 run (`eval:l2`)
+
+Ratified 2026-11-15, not yet run; bounds in `docs/agents/iron-laws.md`. It runs **locally**, one
+model per process, only after `eval/live-runs/2026-11-t3-preregistration.md` is committed. The
+harness's preflight exits `3` before any call unless all four hold: `ARCHLANG_EVAL_PROVIDER=anthropic`
+is set explicitly; `ARCHLANG_EVAL_MODEL` is `claude-sonnet-5-5` or `claude-haiku-5-5`; the
+pre-registration file exists (its content and whether it is committed are not checked); and
+neither results file for that model exists yet, because a result is never overwritten. The
+dry run passes the same preflight, so it too needs the pre-registration. The key comes from the
+user environment variable `ANTHROPIC_API_KEY_PROMO`, mapped to `ANTHROPIC_API_KEY` for that one
+process only; it is never written to a file or printed. Without `--yes` the same command prints
+the plan and calls nothing.
+
+```powershell
+pwsh -NoProfile -Command {
+  $env:ANTHROPIC_API_KEY = [Environment]::GetEnvironmentVariable('ANTHROPIC_API_KEY_PROMO', 'User')
+  $env:ARCHLANG_EVAL_PROVIDER = 'anthropic'
+  $env:ARCHLANG_EVAL_MODEL = 'claude-haiku-5-5'    # first; then a second process with claude-sonnet-5-5 and --budget 80usd
+  npm run eval:l2 -- --yes --trials 3 --concurrency 4 --budget 25usd
+}
+```
+
+```bash
+ANTHROPIC_API_KEY="$ANTHROPIC_API_KEY_PROMO" ARCHLANG_EVAL_PROVIDER=anthropic \
+  ARCHLANG_EVAL_MODEL=claude-haiku-5-5 npm run eval:l2 -- --yes --trials 3 --concurrency 4 --budget 25usd
+```
+
+The pre-registration (§ 2) fixes the order (Haiku, then Sonnet) and the budgets (25usd, 80usd); its commands are the ones run. The `--budget` values are the pre-registration's to fix (the estimate is about $52 for Sonnet and
+$13 for Haiku at the harness's deliberately high prices; the breaker is checked at each brief's
+start, so in-flight briefs finish). Output, git-ignored: `eval/results.l2.<model>.json`,
+rewritten after every brief (`status` `running`, then `complete`; per call the raw reply, stop
+reason, fresh / cache-write / cache-read tokens and every retry; `meta` carries the start and end
+times, `git rev-parse HEAD`, and sha256 of `spec.llm.md` and of the system prompt), then
+`eval/results.l2.<model>.md` once at the end. A brief whose call fails after the retries (honouring
+`retry-after`, exponential, at most ~5 min of waiting per call) keeps its completed trials and is
+marked `partial`; partial and budget-skipped briefs are excluded from the rates. The published
+record goes to `eval/live-runs/`.
 
 ## Judge v2 semantics (`assertions.ts`)
 
@@ -167,8 +211,9 @@ also checks a seventh kind (`room-windows`) that no corpus entry uses:
 
 Gating predicates are conjunctive — they decide `semanticPass`. `adjacent`/`reachable` **score but
 never fail** a plan in Tier 1: one-shot topology is what v1.13's *loop* tools address, not one-shot
-generation. (The T4 hook that would have promoted them to gating required T3's measurement;
-with the live experiment permanently declined, they stay advisory permanently.)
+generation. (The T4 hook that would have promoted them to gating required T3's measurement.
+The one T3 run ratified on 2026-11-15 does not reopen it: they stay advisory permanently, and
+the hook stays closed.)
 
 - **Area is brief-grounded.** A band is asserted **only where the brief states a number** (±10–15%
   around it); each band carries a `source` quote so a failure cites what licensed the number.
