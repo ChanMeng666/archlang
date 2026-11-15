@@ -11,8 +11,8 @@
   One child process at a time, each step timed. `--max` caps the branch's own changed test files, the
   directory-scanning guards and the import-distance tests together. Beyond it, each under its own cap, it adds
   what the import graph ranks too far away: the source-tree scanners a changed `src/`, `scripts/`, `eval/`,
-  `test/` or `.claude/` file wakes (tests in `test/` that list that folder and read every file; at most 8
-  files and 10 recorded seconds), the tests named after a changed module (at most 5 files and 10 recorded
+  `test/` or `.claude/` file wakes (tests in `test/` that list that folder and read every file; within 15
+  recorded seconds and at most 30 files, the ones scanning the fewest trees first, then the cheapest; computed from the duration record, a `src/`-only change adds 19 scanners and 7.5 recorded seconds), the tests named after a changed module (at most 5 files and 10 recorded
   seconds) and, for a `src/` change, the cheapest tests that pin their output over the examples corpus within
   `--pins` (default 5) recorded seconds. Selection is `scripts/gate-select.mjs`. It still cannot see a guard
   that scans a directory in a way no rule above reads, and the expensive corpus pins (`keep-byte-identity`,

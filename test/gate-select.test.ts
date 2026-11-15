@@ -95,11 +95,10 @@ describe("treeGuards: the scanners no import reaches", () => {
     expect(files_(treeGuards(ROOT, ["test/cache.test.ts"], files))).toContain("test/no-cli-spawn.test.ts");
   });
 
-  it("a changed src/ file wakes the provenance walk", () => {
-    // Nineteen scanners read src/ and eight slots exist: the escaper-chain scan (it reads five trees, so it
-    // ranks after the ones dedicated to src/) is woken by a change under eval/ or scripts/, below.
+  it("a changed src/ file wakes the provenance walk and the escaper-chain scan", () => {
     const got = files_(treeGuards(ROOT, ["src/cli/commands-analyze.ts"], files));
     expect(got).toContain("test/lint-provenance.test.ts");
+    expect(got).toContain("test/no-replace-chain-escapers.test.ts");
   });
 
   it("a changed eval/ or scripts/ file wakes the escaper-chain scan, a changed docs page wakes none", () => {
@@ -114,14 +113,14 @@ describe("treeGuards: the scanners no import reaches", () => {
     expect(treeGuards(ROOT, ["src/error-catalog/rooms.json"], files)).toEqual([]);
   });
 
-  it("stays within 8 files and 10 recorded seconds on the real tree, for a change under every tree", () => {
+  it("stays within 30 files and 15 recorded seconds on the real tree, for a change under every tree", () => {
     const got = treeGuards(
       ROOT,
       ["src/lint.ts", "test/a.test.ts", "scripts/a.mjs", "eval/a.ts", ".claude/hooks/a.mjs"],
       files,
     );
-    expect(got.length).toBeLessThanOrEqual(8);
-    expect(got.reduce((a: number, g: Pick) => a + (g.secs ?? 0), 0)).toBeLessThanOrEqual(10);
+    expect(got.length).toBeLessThanOrEqual(30);
+    expect(got.reduce((a: number, g: Pick) => a + (g.secs ?? 0), 0)).toBeLessThanOrEqual(15);
   });
 
   describe("on a temp tree", () => {
@@ -136,9 +135,10 @@ describe("treeGuards: the scanners no import reaches", () => {
         writeFileSync(join(dir, "test", `${n}.test.ts`), scanner);
       }
       writeFileSync(join(dir, "test", "wide.test.ts"), wide);
+      writeFileSync(join(dir, "test", "slow.test.ts"), scanner);
       writeFileSync(join(dir, "test", "not-a-scanner.test.ts"), `it("x", () => 1);\n`);
-      // `a`..`g` and `wide` are recorded; `h`..`j` are not (costed at 0.5).
-      const rec: Record<string, number> = { a: 0.1, b: 0.2, c: 0.3, d: 0.8, e: 0.9, f: 1.0, g: 1.1, wide: 5 };
+      // `a`..`g`, `slow` and `wide` are recorded; `h`..`j` are not (costed at 0.5).
+      const rec: Record<string, number> = { a: 0.1, b: 0.2, c: 0.3, d: 0.8, e: 0.9, f: 1.0, g: 1.1, slow: 9, wide: 5 };
       writeFileSync(
         join(dir, "test", ".durations.json"),
         JSON.stringify(Object.fromEntries(Object.entries(rec).map(([k, v]) => [`test/${k}.test.ts`, v]))),
@@ -148,13 +148,31 @@ describe("treeGuards: the scanners no import reaches", () => {
     const all = () =>
       ["a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "wide", "not-a-scanner"].map((n) => `test/${n}.test.ts`);
 
-    it("takes at most 8 files, the longest-running first", () => {
-      expect(names(treeGuards(dir, ["src/x.ts"], all()))).toEqual(["g", "f", "e", "d", "h", "i", "j", "c"]);
+    it("takes every scanner within the budget: the fewest trees first, then the cheapest", () => {
+      expect(names(treeGuards(dir, ["src/x.ts"], all()))).toEqual([
+        "a",
+        "b",
+        "c",
+        "h",
+        "i",
+        "j",
+        "d",
+        "e",
+        "f",
+        "g",
+        "wide",
+      ]);
     });
 
-    it("takes at most the seconds it is given, and skips what no longer fits", () => {
-      const got = treeGuards(dir, ["src/x.ts"], all(), 8, 2.45);
-      expect(names(got)).toEqual(["g", "f", "c"]); // 1.1 + 1.0, then 0.3; `e`, `d`, `h`, `b`, `a` would pass 2.45
+    it("cuts a scanner that no longer fits the seconds it is given, and keeps the cheaper ones", () => {
+      expect(names(treeGuards(dir, ["src/x.ts"], all(), 30, 1.0))).toEqual(["a", "b", "c"]); // .6, then .5 passes 1.0
+      const got = treeGuards(dir, ["src/x.ts"], all(), 30, 5.95); // a..j cost 5.9; `wide` costs 5 more
+      expect(names(got)).not.toContain("wide");
+      expect(got).toHaveLength(10);
+    });
+
+    it("holds the ceiling on files, whatever the seconds", () => {
+      expect(names(treeGuards(dir, ["src/x.ts"], all(), 3, 100))).toEqual(["a", "b", "c"]);
     });
 
     it("costs a scanner with no record at a small default, not at infinity", () => {
@@ -162,9 +180,11 @@ describe("treeGuards: the scanners no import reaches", () => {
       expect(got.map((g) => g.secs)).toEqual([0.5]);
     });
 
-    it("ranks the scanner dedicated to the woken tree before one that lists several", () => {
-      expect(names(treeGuards(dir, ["src/x.ts"], all(), 1))).toEqual(["g"]);
-      expect(names(treeGuards(dir, ["src/x.ts"], ["test/a.test.ts", "test/wide.test.ts"]))).toEqual(["a", "wide"]);
+    it("ranks a scanner dedicated to the woken tree before one that lists several, even a dearer one", () => {
+      expect(names(treeGuards(dir, ["src/x.ts"], ["test/wide.test.ts", "test/slow.test.ts"]))).toEqual([
+        "slow",
+        "wide",
+      ]);
     });
   });
 });
@@ -345,7 +365,7 @@ describe("planTests: what the gate runs for a change set", () => {
       tracked().filter((f) => /^test\/.*\.test\.ts$/.test(f)),
     );
     const by = (rule: string) => p.extras.filter((e) => e.rule === rule);
-    expect(by("treeGuards").length).toBeLessThanOrEqual(8);
+    expect(by("treeGuards").length).toBeLessThanOrEqual(30);
     expect(by("namedTests").length).toBeLessThanOrEqual(5);
   });
 

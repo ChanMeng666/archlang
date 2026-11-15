@@ -77,10 +77,11 @@ export function scanningGuards(ROOT, dirs, files, scanned = SCANNED_DIRS) {
 // A guard that lists a SOURCE folder (`src/`, `scripts/`, `eval/`, `test/`, `.claude/`) and asserts over every
 // file it finds: no CLI spawn, no escaper chain, the provenance walk. No import reaches it from the file that
 // broke it, and a folder this wide cannot join `SCANNED_DIRS` (a test that lists `test/fixtures` is not one).
-// They run in addition to the `--max` cap, within `TREE_MAX_FILES` files and `TREE_MAX_SECS` recorded seconds.
+// They run in addition to the `--max` cap, within `TREE_MAX_SECS` recorded seconds (they cost tens of
+// milliseconds each, so the budget is time; `TREE_MAX_FILES` is only a safety ceiling).
 export const TREE_ROOTS = ["src", "scripts", "eval", "test", ".claude"];
-export const TREE_MAX_FILES = 8;
-export const TREE_MAX_SECS = 10;
+export const TREE_MAX_FILES = 30;
+export const TREE_MAX_SECS = 15;
 /** The recorded seconds assumed for a scanner the duration record does not list yet (a source scan is cheap). */
 export const UNKNOWN_SCAN_SECS = 0.5;
 const LISTS_A_TREE = /\b(?:readdirSync|readdir|opendirSync|globSync)\s*\(|ls-files/;
@@ -139,11 +140,10 @@ function capByCost(ordered, maxFiles, maxSecs) {
 
 /**
  * The scanner tests a change set wakes: those scanning a tree a changed code file sits in, within
- * `maxFiles` files and `maxSecs` recorded seconds. The slots are dealt round-robin over the woken trees
- * (a change under `src/` and `test/` gets scanners of both), and within a tree ranked: the scanners
- * dedicated to it (the fewest trees scanned) before those that list it among several, then the
- * longer-running (a scanner that reads more files takes longer; a test the duration record does not list
- * yet is costed at `UNKNOWN_SCAN_SECS`), then by name. Each is `{ file, why, secs }`.
+ * `maxSecs` recorded seconds (and the `maxFiles` safety ceiling). Ranked: the fewest trees scanned first
+ * (every dedicated scanner gets in before one that lists several trees), then the cheapest (a test the
+ * duration record does not list yet is costed at `UNKNOWN_SCAN_SECS`), then by name. A scanner that no
+ * longer fits the budget is cut, and a cheaper one after it may still go in. Each is `{ file, why, secs }`.
  */
 export function treeGuards(ROOT, changed, files, maxFiles = TREE_MAX_FILES, maxSecs = TREE_MAX_SECS) {
   const woken = TREE_ROOTS.filter((r) => changed.some((f) => touchesTree(r, f)));
@@ -163,19 +163,14 @@ export function treeGuards(ROOT, changed, files, maxFiles = TREE_MAX_FILES, maxS
       });
     }
   }
-  found.sort((a, b) => a.breadth - b.breadth || b.secs - a.secs || (a.file < b.file ? -1 : 1));
+  found.sort((a, b) => a.breadth - b.breadth || a.secs - b.secs || (a.file < b.file ? -1 : 1));
   const out = [];
   let spent = 0;
-  for (let dealt = true; dealt && out.length < maxFiles; ) {
-    dealt = false;
-    for (const root of woken) {
-      const next = found.find((g) => g.roots.includes(root) && !out.includes(g) && spent + g.secs <= maxSecs);
-      if (next && out.length < maxFiles) {
-        out.push(next);
-        spent += next.secs;
-        dealt = true;
-      }
-    }
+  for (const g of found) {
+    if (out.length >= maxFiles) break;
+    if (spent + g.secs > maxSecs) continue;
+    out.push(g);
+    spent += g.secs;
   }
   return out;
 }
