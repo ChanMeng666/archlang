@@ -285,7 +285,7 @@ repo secret `OPENAI_API_KEY`). Two further guarded, paid harnesses live beside i
 guard and key handling; details in `eval/README.md`), each with its own `workflow_dispatch`
 workflow: `npm run eval:g1` (Gate G1 intent generation — already run, PASSED; kept for
 reproducibility) and `npm run eval:l2` (the T3 L2 loop-vs-equal-budget-resampling experiment —
-not yet run). **Harness gotcha:** reasoning models spend thinking tokens out of
+one owner-ratified run, 2026-11-15, within the bounds in `docs/agents/iron-laws.md`). **Harness gotcha:** reasoning models spend thinking tokens out of
 `max_completion_tokens` — the cap in `eval/run.ts` is 16384 (a 4096 cap truncated `gpt-5.5` into
 bogusly-low scores); suspect the token budget before the language if a new model scores implausibly
 low.

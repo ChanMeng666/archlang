@@ -93,7 +93,7 @@
 - **3D（PS-D11，所有者 2026-11-06，`docs/plans/public-surfaces/3d.md` §1）：** 3D 预览出现在 ArchLang 的每个公开面，永远配对平面、同一源文件、由 `archlang-3d` 生成。它取代了"Show HN 保持 2D"和 Tier C 门。仍然有效的：用词禁令（永不"3D CAD / BIM / render / walkthrough / photoreal / model"，产品词是"3D 预览"）；3D 代码只在 `packages/archlang-3d`；核心不画高度。N10 读数照读，但**记为受干扰，读数的结论不挡任何 ArchLang 卡**（drawing-set D3 只要求它已读）；ArchCanvas 一侧不在 PS-D11 范围内，CR-D2 的 Tier B 仍等 N10，D29 的 wave 4、6 也仍等 N10（§7）。
 - 可以作为**度量**声明的只有三件：可达性、精确面积、字节恒等。间距、宽度、步行距离永远是 advisory。禁止"first/only"、"code beats CAD"、合规/报批、"设计/布置/家具"、任何 IFC 承诺。
 - "public check suite" 永不叫 benchmark 或 leaderboard（A2）；导入是功能事实不是标题（A3）。
-- 没有遥测；eval 语料和 `test/defect-corpus/` 是公开夹具，不是留出集；新留出集只在私有 `archlang-lab` 里写；T3 永久拒绝。
+- 没有遥测；eval 语料和 `test/defect-corpus/` 是公开夹具，不是留出集；新留出集只在私有 `archlang-lab` 里写；T3 只有一次业主批准的运行（2026-11-15，边界见 `docs/agents/iron-laws.md`），预注册的结果发布前不对循环增益或其缺失下任何结论，发布后只引用那次运行的记录。
 - ~~Show HN 冻结 2026-11-24 → 12-01：只修 bug、只发 patch、不加语言形式（checker-reach §3）。~~ **已由所有者 2026-11-11 取消（RM-D27，§6.5）：** 冻结期不再挡任何卡的开工或合并；卡在真实依赖满足时开工。仍然成立的：Show HN 在 2026-12-01 由所有者亲自发，那之前 `main` 保持绿；每次发布仍要所有者对那一次的决定。
 
 ### 1.4 三份路线图的 P0 怎么裁

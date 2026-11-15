@@ -2194,6 +2194,6 @@ flag, not a step.
 
 ### SET · Settled — never re-propose — `note`
 
-`T3` (the diagnostic-loop live experiment) is **permanently declined**; `T6` (area-syntax sugar) is
+`T3` (the diagnostic-loop live experiment) has **one owner-ratified run** (2026-11-15) and no other; `T6` (area-syntax sugar) is
 **parked** behind the frozen G2 reversal triggers. See `docs/agents/iron-laws.md` before touching
 either.

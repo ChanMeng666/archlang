@@ -556,7 +556,9 @@ warned element ringed and numbered, the access graph, close-ups of flagged openi
   verification output. When the owner says stop, work that cannot be paused (an open PR under
   review, a running CI) is finished and the rest paused, with the resume point written to
   `handoff.md`.
-- Never claim a model-loop gain or its absence, and never run the paid eval (T3 is declined for good).
+- Never claim a model-loop gain or its absence, and never run the paid eval (T3 has one owner-ratified
+  run, 2026-11-15, outside this programme; no claim either way until its pre-registered result is
+  published, then only that record; `docs/agents/iron-laws.md`).
 - Never fix a defect by editing a golden. A new rule that fires on an example is either a real defect
   in the example (fix the example, explain it) or a false positive (fix the rule).
 

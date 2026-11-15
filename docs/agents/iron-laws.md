@@ -7,10 +7,23 @@ listed in the stage report (`docs/plans/plan-soundness/README.md` D18).
 
 ## Eval & dataset
 
-- **T3 (the diagnostic-loop live experiment) is permanently declined.** Never trigger `eval-l2.yml`
-  live, never re-propose it, never claim a model-loop gain or its absence. L3–L5 stay unbuilt; the
-  intent channel's adjacency/reachability assertions stay advisory (`gate: false`); `eval/l2*.ts` is
-  reference only.
+- **T3 (the diagnostic-loop live experiment) gets one owner-ratified run.** On 2026-11-15 the owner
+  ratified in words "同意开启 T3，仅此一次，按上面的边界执行" (open T3, this once only, within the
+  bounds below). That supersedes the 2026-07-12 permanent decline for exactly one live run of
+  `eval/l2-run.ts`, billed to an Anthropic promotional credit. Its bounds:
+  - one run only, on `claude-sonnet-5-5` and `claude-haiku-5-5` (provider `anthropic`, run
+    locally); `eval-l2.yml` is OpenAI-keyed and stays undispatched;
+  - the analysis and the decision rule are pre-registered in a dated file before the run;
+  - the result is published whatever it shows;
+  - until it is published, no loop-gain claim and no claim of its absence; after that, a claim
+    cites only that run's published record;
+  - L3–L5 stay unbuilt, and the intent channel's adjacency/reachability assertions stay advisory
+    (`gate: false`); reopening either needs a separate owner decision;
+  - the dataset gains no multi-turn model-repair trajectories;
+  - unchanged: the eval corpus is a public fixture, never held-out; the dataset canary is never
+    regenerated; the seed-`20260712` dataset bytes stay untouched.
+
+  Any other live run (a second run, another model, a re-run) needs a new owner decision.
 - **T6 (area-syntax sugar) is parked**: no `area` token and no `m2` unit suffix unless one of the
   frozen G2 reversal triggers fires (archived as `research/2026-07-g2-verdict.md` in the
   archcanvas-growth docs archive). Area ships only as an intent-channel assertion.

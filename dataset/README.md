@@ -141,9 +141,12 @@ Notes:
 
 Two standing rules for anything written in this directory or the card:
 
-- **Never claim a diagnostic-feedback-loop gain — or its absence.** The T3 live experiment was
-  permanently declined (owner decision 2026-07-12); the loop-vs-equal-budget-resampling question is
-  **permanently unanswered**. State only structural facts.
+- **Never claim a diagnostic-feedback-loop gain — or its absence — until the one T3 run is
+  published.** The owner declined the T3 live experiment on 2026-07-12 and ratified exactly one
+  live run of it on 2026-11-15 (bounds in `docs/agents/iron-laws.md`, analysis pre-registered).
+  Until that run's result is published the loop-vs-equal-budget-resampling question is
+  **unanswered**; after that, a claim may cite only that run's published record. The run adds no
+  multi-turn model-repair trajectories to the dataset. State only structural facts.
 - **Cite only judge-v2 baseline numbers** (the 2026-07-12 recalibration): one-shot L0 valid 23/26 ·
   intent 14/26 · sound 3/26; the deterministic-tool L1 overlay intent 18/26 · sound 7/26. That L1
   lift belongs to the tool tier's ledger, never a model loop. Never compare rates across judge
