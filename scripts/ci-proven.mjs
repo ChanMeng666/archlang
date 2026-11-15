@@ -37,6 +37,11 @@ export const TRAIN_PREFIX = "train/";
 /** The proving run must have been last updated within this long of the push (24 h). */
 export const MAX_PROOF_AGE_MS = 24 * 60 * 60 * 1000;
 
+/** `<prefix> 1/<count>` … `<prefix> <count>/<count>`: a sharded job's check names. */
+function shards(prefix, count) {
+  return Array.from({ length: count }, (_, i) => `${prefix} ${i + 1}/${count}`);
+}
+
 /**
  * Every job a full PR run of ci.yml reports, by check name. A job missing from the proving run means
  * it was skipped or never started, so it is no proof. test/ci-proven.test.ts derives this list from
@@ -44,32 +49,24 @@ export const MAX_PROOF_AGE_MS = 24 * 60 * 60 * 1000;
  */
 export const FULL_RUN_JOBS = [
   "Changed paths",
-  "Node 18 tests 1/3",
-  "Node 18 tests 2/3",
-  "Node 18 tests 3/3",
-  "Node 20 tests 1/3",
-  "Node 20 tests 2/3",
-  "Node 20 tests 3/3",
+  ...shards("Node 18 tests", 5),
+  ...shards("Node 20 tests", 5),
   "Node 18",
   "Node 20",
   "Node 22 checks",
-  "Node 22 tests 1/5",
-  "Node 22 tests 2/5",
-  "Node 22 tests 3/5",
-  "Node 22 tests 4/5",
-  "Node 22 tests 5/5",
+  ...shards("Node 22 tests", 7),
   "CHANGELOG under [Unreleased]",
   "Node 22",
   "Workspace builds",
-  "Windows tests 1/3",
-  "Windows tests 2/3",
-  "Windows tests 3/3",
+  ...shards("Windows tests", 5),
   "Windows (tests + drift)",
-  "Playground E2E chromium 1/2",
-  "Playground E2E chromium 2/2",
+  ...shards("Playground E2E chromium", 3),
   "Playground E2E engines",
   "Playground E2E (Playwright)",
+  "3D package suite pass",
+  "3D package frame-budget pass",
   "3D package (check:3d)",
+  ...shards("Docs site E2E", 3),
   "Docs site E2E (Playwright)",
 ];
 

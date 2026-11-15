@@ -8,7 +8,7 @@ import { readFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
-import { e2eFiles, e2ePasses, FRAME_BUDGET } from "../scripts/e2e.js";
+import { e2eFiles, e2ePasses, FRAME_BUDGET, PASSES } from "../scripts/e2e.js";
 
 const PKG = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const script = (JSON.parse(readFileSync(resolve(PKG, "package.json"), "utf8")) as { scripts: Record<string, string> })
@@ -57,5 +57,26 @@ describe("the e2e script (card RM8.8b item 6)", () => {
 
   it("a filter that selects nothing runs nothing", () => {
     expect(e2ePasses(["no-such-file"], FILES)).toEqual([]);
+  });
+
+  it("--pass= picks a pass by name and never reaches vitest; the passes together are the bare run", () => {
+    const [suite, budget] = e2ePasses([], FILES);
+    expect(PASSES).toEqual(["suite", "frame-budget"]);
+    expect(e2ePasses(["--pass=suite"], FILES)).toEqual([suite]);
+    expect(e2ePasses(["--pass=frame-budget"], FILES)).toEqual([budget]);
+    expect(e2ePasses(["--pass=frame-budget", "--pass=suite"], FILES)).toEqual([suite, budget]);
+    expect(PASSES.flatMap((p) => e2ePasses([`--pass=${p}`], FILES))).toEqual(e2ePasses([], FILES));
+    // With a filter and an option, the option still reaches the pass and the --pass does not.
+    expect(e2ePasses(["--pass=suite", "--reporter=verbose", "e2e/glb.e2e.ts"], FILES)).toEqual([
+      ["run", "--config", "vitest.e2e.config.ts", "--exclude", FRAME_BUDGET, "--reporter=verbose", "e2e/glb.e2e.ts"],
+    ]);
+    expect(e2ePasses(["--pass=suite", "frame-budget"], FILES)).toEqual([]);
+    expect(e2ePasses(["--pass=nope"], FILES)).toEqual([]);
+  });
+
+  it("CI runs one check-3d job per pass, through the runner", () => {
+    const ci = readFileSync(resolve(PKG, "../../.github/workflows/ci.yml"), "utf8");
+    expect(ci).toContain(`        pass: [${PASSES.join(", ")}]`);
+    expect(ci).toContain(["run: npm -w packages/archlang-3d run e2e -- --pass=$", "{{ matrix.pass }}"].join(""));
   });
 });
