@@ -245,7 +245,7 @@ Totals: 401 modules in 34 directories.
 | `fix-apply.ts` | 251 | 5 | Deterministic, pure application of {@link FixSuggestion}s to source text. | none |
 | `fix-producers.ts` | 583 | 10 | Fix producers — the functions that attach {@link FixSuggestion}s to specific diagnostics at their raise site (T2c). | none |
 | `fixture-orientation.ts` | 341 | 12 | Which way does a fixture face, and which of a rectangle's edges have a wall behind them. | none |
-| `fixtures-catalog.ts` | 1109 | 52 | Frozen fixture catalog — tacit architectural knowledge about furniture/fixtures as pure, deterministic data. Today it records which fixtures conventionally sit **against a wall** (plumbing fixtures and kitchen runs need a wall behind them… | none |
+| `fixtures-catalog.ts` | 1110 | 53 | Frozen fixture catalog — tacit architectural knowledge about furniture/fixtures as pure, deterministic data. Today it records which fixtures conventionally sit **against a wall** (plumbing fixtures and kitchen runs need a wall behind them… | none |
 | `format.ts` | 381 | 21 | `arch fmt` — a deterministic, comment-preserving source formatter. | none |
 | `frame.ts` | 405 | 14 | Instance frames — the rigid transform behind `place` (component v2). | none |
 | `furnish-table.ts` | 143 | 4 | The furnish table and the family reading of a held piece, shared by `src/furnish.ts` (the `finish` stage that writes the pieces) and the `W_ROOM_MISSING_DEFINING` lint rule (`src/lint/rules/room-contents.ts`, which reads the piece that… | none |
@@ -258,11 +258,11 @@ Totals: 401 modules in 34 directories.
 | `identity.ts` | 33 | 3 | Process-local stable identity tokens for cache keying. | none |
 | `impact.ts` | 1405 | 3 | `impact(before, after)` (plan-soundness card PS4.2): change one number, see what follows, what stays put, and what breaks. The executable answer to "what changes, what must not". | none |
 | `import.ts` | 350 | 32 | Module linking — the `import` system. | none |
-| `index.ts` | 713 | 437 | ArchLang — compile declarative floor-plan source to a professional SVG. | none |
+| `index.ts` | 713 | 438 | ArchLang — compile declarative floor-plan source to a professional SVG. | none |
 | `input-limit.ts` | 77 | 5 | A host's refusals, as catalogued diagnostics. | none |
 | `intent-concepts.ts` | 238 | 5 | The intent channel's concept vocabulary — production name resolution for the NL→ArchLang intent contract. | none |
 | `intent.ts` | 1589 | 7 | The intent channel — author-time checking of a brief's INTENT against a plan. | none |
-| `ir.ts` | 1804 | 252 | Intermediate representation + `resolve(ast)`. | charges the step meter |
+| `ir.ts` | 1804 | 253 | Intermediate representation + `resolve(ast)`. | charges the step meter |
 | `keep.ts` | 1833 | 11 | `keep`: declared invariants, checked by `compile()` and never solved (ADR 0033; plan-soundness PS4.3, design `archlang-lab/plans/plan-soundness/research/2026-10-26-ps43-keep-design.md`). | charges the step meter |
 | `label-fit.ts` | 626 | 3 | A room's label that does not fit shrinks: a **post-pass over the lowered Scene**, after `wrapLabels` and `relocateLabels` (`src/label-placement.ts`) have done what they can at the drawing's label size (#367). | none |
 | `label-placement.ts` | 750 | 7 | Obstacle-aware relocation of room labels — a **post-pass over the lowered Scene**. | none |
@@ -279,7 +279,7 @@ Totals: 401 modules in 34 directories.
 | `opening-junctions.ts` | 204 | 6 | Where other walls meet a host wall's run: the measure `W_OPENING_AT_JUNCTION` reports with (`src/lint/rules/openings.ts`) and a relational opening is refused by (`E_OPENING_NIB`, ADR 0028 §5), so the warning and the refusal can never… | none |
 | `opening-relation.ts` | 1425 | 11 | Openings by relation (ADR 0028 §5): where a `door\|window\|opening` stands when its position is written against the rooms rather than against a wall. | charges the step meter |
 | `opening-schedule.ts` | 610 | 6 | **`schedule openings`** — the door and window TAGS drawn beside each opening, and the rows of the DOOR & WINDOW SCHEDULE table the sheet carries (`sheet-tables.ts` lays the table out and lowers it; this module derives what it says and… | none |
-| `parser.ts` | 2082 | 133 | Recursive-descent parser: tokens -> PlanNode. Registry-driven element dispatch. | none |
+| `parser.ts` | 2082 | 134 | Recursive-descent parser: tokens -> PlanNode. Registry-driven element dispatch. | none |
 | `pipeline.ts` | 203 | 7 | The one `compile()` pipeline: parse → link → resolve → render. | none |
 | `plan-json.ts` | 75 | 16 | Structured JSON I/O for ArchLang plans — the machine-native channel an LLM uses to author and read a floor plan without touching `.arch` syntax. | none |
 | `pure.ts` | 28 | 15 | `pure(() => value)` returns `value`, built once at module load exactly as written. It marks a top-level constant whose initializer has no effect outside the value it builds, but whose shape a bundler cannot prove that of: a spread… | none |
@@ -373,7 +373,7 @@ Totals: 401 modules in 34 directories.
 | `commands-share.ts` | 35 | 1 | `link` — print a URL that opens the plan in the hosted playground, so an agent can hand a person a rendered plan with nothing to install. The plan travels in the URL fragment; the minting and the `--json` shape are `linkResult`… | none |
 | `context-starter.ts` | 204 | 2 | `archlang context --level starter` — the one-screen starter for a weak model: the same truth as the full context (`llms-full.txt`), less of it (PS7.2). | none |
 | `help.ts` | 146 | 3 | `archlang --help` / `archlang <cmd> --help`, rendered from the capability manifest. | none |
-| `io.ts` | 919 | 63 | Shared CLI infrastructure — argument parsing, the {@link World}/IO seam, exit codes, and the small emit/format helpers every command module reuses. Split out of the former monolithic `src/cli.ts` (mechanical; behavior unchanged). Node… | none |
+| `io.ts` | 919 | 64 | Shared CLI infrastructure — argument parsing, the {@link World}/IO seam, exit codes, and the small emit/format helpers every command module reuses. Split out of the former monolithic `src/cli.ts` (mechanical; behavior unchanged). Node… | none |
 | `link.ts` | 50 | 3 | Share links for a plan: the playground URL that opens it in the editor, and the chrome-less embed URL that only draws it. Published as `@chanmeng666/archlang/link` (Node only: it compresses with `zlib`) so the MCP shim mints the same… | none |
 | `review.ts` | 731 | 5 | `arch preview --review` (plan-soundness PS5.4): the review sheet. One picture a reviewer (or an agent's vision) reads in a single look: the plan as `preview` draws it, the access graph laid over it, every element a warning names ringed… | none |
 | `run.ts` | 172 | 4 | The CLI as a function: argument parse + dispatch over a {@link CliIo}, returning the exit code (or {@link RESIDENT}) instead of ending the process. `src/cli.ts` runs it on the real process and exits through `exitFlushed`… | none |
@@ -409,8 +409,8 @@ Totals: 401 modules in 34 directories.
 | `escalator.ts` | 85 | 1 | `escalator [id=] at (x,y) size WxH dir up\|down` — a moving stair, drawn as parallel chevrons along the run plus the UP/DN direction arrow. | none |
 | `facets.ts` | 87 | 10 | Which hand-written kind sets each built-in element kind belongs to, one row per kind. | none |
 | `fence.ts` | 312 | 1 | `fence [id=] [picket\|panel\|post] { (x,y) (x,y) … [close] }` — a boundary line on the ground. | none |
-| `fixtures-glyphs.ts` | 754 | 41 | The fixture vocabulary and the dispatch to each category's drawn plan symbol. | none |
-| `furniture.ts` | 1442 | 12 | `furniture [id=] <category> [id=] at (x,y) size WxH [label "…"]` — outlined fill + label; the clauses after the placement come in any order (`src/clause-order.ts`). | charges the step meter |
+| `fixtures-glyphs.ts` | 754 | 42 | The fixture vocabulary and the dispatch to each category's drawn plan symbol. | none |
+| `furniture.ts` | 1511 | 12 | `furniture [id=] <category> [id=] at (x,y) size WxH [label "…"]` — outlined fill + label; the clauses after the placement come in any order (`src/clause-order.ts`). | charges the step meter |
 | `glyph-chirality.ts` | 224 | 14 | The handedness of a drawn fixture symbol, and what a mirrored `place` does to it. | none |
 | `glyph-lib.ts` | 917 | 34 | The drawing vocabulary every fixture glyph is built from. | none |
 | `glyphs-bath.ts` | 370 | 2 | Bathroom plan symbols: the WC, the basin, the shower tray, the tub, the bidet, the urinal and the mirror. | none |
