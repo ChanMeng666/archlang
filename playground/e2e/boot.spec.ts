@@ -96,6 +96,32 @@ test.describe("boot", { tag: "@prod" }, () => {
     );
   });
 
+  // Card PG.3: the facts line is in the served page (scripts/gen-static.mjs) and the stage's foot
+  // keeps its row (ruling PG-D6), so the first compile moves nothing: the stage box a plain visit
+  // opens on is the one the first compiled plan is drawn in, at a desktop and at a phone width.
+  for (const size of [
+    { width: 1280, height: 720 },
+    { width: 390, height: 844 },
+  ]) {
+    test(`the first compile leaves the stage where it was (${size.width}×${size.height})`, async ({ page }) => {
+      await page.setViewportSize(size);
+      await page.goto("/");
+      await expect(page.locator("#viewPlan")).toBeVisible();
+      const served = await page.locator("#facts").textContent();
+      const stage = page.locator(".pz-viewport");
+      const before = await stage.boundingBox();
+      await pickPlan(page, "Two-bed flat");
+      await waitForPlan(page);
+      // The facts line was written again, for the plan the compile drew…
+      await expect(page.locator("#facts")).not.toHaveText(served ?? "");
+      await expect(page.locator("#facts")).toHaveText(
+        /^\d+ lines of ArchLang → [1-9]\d* rooms? · \d+(\.\d+)? m² \((net|centreline)\)$/,
+      );
+      // …and the stage did not move or change size.
+      expect(await stage.boundingBox(), "the stage box after the first compile").toEqual(before);
+    });
+  }
+
   test("a broken plan shows a status on the stage and a dot on Source", async ({ page }) => {
     // Pure navigation: the plan rides in the hash, which no server sees.
     await page.goto(`/${await shareHash(BROKEN_PLAN)}`);

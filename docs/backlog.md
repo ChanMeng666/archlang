@@ -1478,7 +1478,28 @@ it; that is a 2.0 decision for the owner.
 **Gate:** on a Linux host whose npm prefix is `/usr`, `npm i -g` of the packed tarball succeeds
 and `archlang --version` prints the version. **Size:** S.
 
-### U.22 · `describe()` is unbudgeted, and the net-area term is quadratic per room — `todo`
+### U.20 · The MCP `describe` tool's description names both areas: done by #815, waiting to be archived — `note`
+
+**Observed (card D1, out of its scope).** `describe()` now reports `rooms[].net_area_m2` and
+`totals.net_floor_area_m2` beside the centreline `area_m2`
+(`docs/adr/0027-net-internal-area.md`). The `describe` tool's description in
+`packages/mcp/src/tools.ts` still lists rooms by "area" alone, so an agent reading the tool list
+is not told which figure is the floor no wall stands on, or that it can be absent.
+
+**Hypothesis.** One clause in the description: `area_m2` on wall centrelines, `net_area_m2`
+the floor no wall stands on (absent when it cannot be computed exactly). Any `packages/mcp` change, prose included, publishes only with a version bump
+in `packages/mcp/package.json` and both `server.json` `version` fields.
+
+**Gate:** the tool description names both fields; the MCP lockstep and tool-text tests pass; the
+version is bumped in all three places. **Size:** S.
+**Done by #815, without the bump.** A hand bump on `main` pins the plugin
+(`plugins/archlang/.claude-plugin/plugin.json`, via `gen:plugin`) to a shim version npm does not have
+until a release publishes it, so plugin installs would fail to start the server in between. The
+bump is the release's: `npm run release:pin` raises the shim version whenever the core range moves,
+which every core release does, so the description reaches the stdio shim at the next release (the
+hosted server has it on deploy).
+
+### U.22 · `describe()` net-area budget: done by #742 and #771, waiting to be archived — `note`
 
 **Observed (card D1 review).** The net-area measurement pairs a room's edges with the wall-band
 curves near it, capped per room at `MAX_NET_CURVES` (`src/analyze/net-area.ts`), but nothing caps
@@ -1492,6 +1513,38 @@ per-plan total and omit `net_area_m2` past it, as a single room already omits pa
 
 **Gate:** the adversarial plan above returns within the budget, with net areas omitted rather
 than late; the corpus `describe()` output does not move. **Size:** M.
+**Done by PR #742** (PS0.15 / RM1.3b: one net-area meter per storey read, `MAX_NET_PLAN_WORK`,
+`src/analyze/net-area-memo.ts`) and **PR #771** (RM1.3d: the takeoff's wall faces charged to the same
+meter). The card's own adversary (200 overlapping rooms, each meeting 1,932 curves) is pinned in
+`test/net-area-budget.test.ts`: `describe()` measures three rooms, closes the meter and omits the rest;
+the corpus maxima are pinned there far inside the total. What the meter does not bound is open as
+U.23. The entry is closed and waits to be archived to `archlang-lab` with `scripts/backlog-archive.mjs`.
+
+### U.23 · The net-area meter is per storey read, so many storeys still make `describe()` slow — `todo`
+
+**Observed (review of the U.22 close, 2026-11-16, `dist/cli.js describe --json` at 1.62.0).** The meter
+of U.22 was first a per-plan total (`51e610b8`), then, in review, one meter per storey read
+(`9e43b71c`; `src/analyze/net-area-memo.ts` module header). Nothing caps storeys times that total.
+The plans below repeat the comb storey of `test/net-area-budget.test.ts`, with each storey shifted 1 mm
+so the memo misses:
+
+| Plan | Rooms measured | Wall time |
+| --- | --- | --- |
+| 1 storey × 4 combs | 2 of 4 | 0.8 s |
+| 30 storeys × 2 combs | 60 of 60 | 9.9 s |
+| 60 storeys × 2 combs | 120 of 120 | 20.4 s |
+| 30 storeys × 2 combs, partitions removed (control) | 60 of 60 | 1.05 s |
+
+No figure is omitted and no diagnostic is raised. `E_STEP_LIMIT` stops the plan somewhere between 60
+and 100 storeys. The Worker's CPU cap still bounds the hosted tools.
+
+**Hypothesis.** A plan-wide ceiling over the per-storey meters: give each read a share of a total, or
+charge every storey to one plan meter and omit `net_area_m2` past it. Either must keep a storey's figures
+independent of the order the storeys are read in.
+
+**Gate:** the 60-storey plan above returns within the budget, with net areas omitted rather than late.
+Each storey's figures do not depend on read order. The corpus `describe()` output does not move.
+**Size:** M.
 
 ## Found downstream (2026-10-17)
 
@@ -1501,7 +1554,7 @@ and were not re-run when filing.
 
 - H.1 · Lint messages still quote element ids (issue #187) — closed by PS2.22 and PS2.29 (PR #269); test/lint-messages-id-free.test.ts holds it; RM0.1, 2026-11-11 → archived (lab)
 
-### H.2 · `finish()` cannot accept a code its caller treats as advisory (issue #189) — `todo`
+### H.2 · `finish()` advisory-code `accept` option (issue #189): superseded by #245, waiting to be archived — `note`
 
 **Observed.** `finish()`'s never-worse law (`codesOf`, `src/finish.ts`) refuses any statement
 that adds a diagnostic code, so where `dims auto all` raises `W_OPENING_NOT_DIMENSIONED` the sheet
@@ -1520,6 +1573,13 @@ alternative, a lint profile with per-code severity, is larger and changes what `
 whose `dims auto all` raises only `W_OPENING_NOT_DIMENSIONED` keeps `dims auto all` under
 `accept: ["W_OPENING_NOT_DIMENSIONED"]` with a note naming the code; fixpoint holds with `accept` as
 part of the input; an unknown or error code is a usage error. **Size:** S.
+**Closed (2026-11-16).** PR #245 (PS2.12) took the drafting-layer codes, `W_OPENING_NOT_DIMENSIONED`
+included, out of the never-worse comparison (`NOT_GATED_DRAFTING`, `src/furnish.ts`; ADR 0024's
+amendment of 2026-10-24), so the sheet stage keeps `dims auto all` without any option
+(`test/finish-sheet-degrade.test.ts`). Issue #189 was closed as completed on 2026-10-26. An `accept`
+option for non-drafting codes would loosen the never-worse law, and needs a named caller and an owner decision.
+The Gate's "note naming the code" was not built: `finish` reports nothing for a kept drafting code
+(`unresolved` stays empty), and only a lint of the finished source shows it, as ADR 0024 says.
 
 ## Registry listings (opened 2026-10-10)
 
@@ -1645,7 +1705,7 @@ shadows, approved by the owner 2026-11-11).
 
 ## Playground residue (public-surfaces cards P2 and P3, 2026-11-06)
 
-### PG.1 · A room cannot be reached from the keyboard — `todo`
+### PG.1 · A room cannot be reached from the keyboard: done by #824, waiting to be archived — `note`
 
 The hover tooltip and the room's facts card (`playground/src/interact.ts`, `room-card.ts`) open
 from the pointer only: no room in the drawing takes the focus, so a keyboard or screen-reader user
@@ -1653,7 +1713,7 @@ cannot open a room's card at all. Once open, the card is reachable and Escape cl
 a focusable list of the rooms (the facts line, or a "Rooms" control) that opens the same card.
 **Gate:** an e2e case opens a room's card from the keyboard alone; the card keeps its focus rules.
 
-### PG.2 · The card and the tooltip pick a room by its bounding box — `todo`
+### PG.2 · The card and the tooltip pick a room by its shape: done by #822, waiting to be archived — `note`
 
 `pickSmallestContaining` (`playground/src/interact.ts`) hit-tests describe()'s `bbox`, so on an L,
 a trapezoid or a circle a point inside the box but outside the room picks that room (or a smaller
@@ -1663,21 +1723,15 @@ inclusive, and keep the smallest-room tie rule (`playground/test/interact.test.t
 unit cases on `hexagon-pavilion` (trapezoids, the rotunda) and `gallery-l`; the rectangle cases
 unchanged.
 
-### PG.3 · The facts line moves the drawing on the first compile — `todo`
-
-The facts line is empty in the served page and filled after the first compile, so the stage
-shrinks by its height then (35 px, measured at 1280 and at 390 wide). Writing
-it at build time (`playground/scripts/gen-static.mjs`) would fix that, but with JavaScript off the
-drawing's share of a 1280×720 viewport would fall to about 0.66, under `boot.spec`'s 0.70; moving
-the line into the output pane's status row first keeps both. **Gate:** the stage box is the same
-before and after the first compile; `boot.spec`'s no-JS share holds.
+- PG.3 · The facts line moves the drawing on the first compile — closed by MP5 (#565, the line is
+  served) and PG-D6 (the stage's foot keeps its row); pinned by `boot.spec`'s first-compile stage-box case
 
 ## Website residue (Search Console fixes #640, #643, #655, 2026-11-10)
 
 Left by the reviews of those PRs (review-cost cap). WS.1 and WS.2 fail only on input the docs do
-not yet hold; WS.3 to WS.5 are true of the live site today.
+not yet hold; WS.3 and WS.4 are true of the live site today.
 
-### WS.1 · Four copies of the fence rule, none quite CommonMark — `todo`
+### WS.1 · Four copies of the fence rule, none quite CommonMark: done by #825, waiting to be archived — `note`
 
 `fenceStep` (`docs-site/link-rewrite.mjs`), the link scan in `test/docs-site-links.test.ts`,
 `fences()` in `test/docs-fences.test.ts` (the live-fence gate) and `headingIds` in
@@ -1688,7 +1742,7 @@ one exported rule (`^ {0,3}`, the info-string check) that the rewriter and all t
 **Gate:** unit cases for an indented ```` ``` ```` and for ```` ``` a`b ````; the rewritten output of every
 docs page unchanged; `docs-fences` still finds the same live fences.
 
-### WS.2 · The rewriter's heading ids skip neither HTML comments nor `{#id}` — `todo`
+### WS.2 · The rewriter's heading ids skip neither HTML comments nor `{#id}`: done by #825, waiting to be archived — `note`
 
 `headingIds` in `docs-site/link-rewrite.mjs` treats a `#` line inside `<!-- … -->` as a heading
 and slugs `## Title {#custom-id}` from its whole text, while the test's copy
@@ -1699,6 +1753,10 @@ red). The rewriter's heading pattern also allows no leading spaces where the tes
 `^ {0,3}`. Port the test's rules (and share them, with WS.1). An attribute block holding more than
 an id (`{#a .b}`) and an explicit id that repeats an earlier slug are the corner cases to pin.
 **Gate:** unit cases for each; rewritten output over the docs unchanged.
+
+**Done by #825.** The shared heading text keeps a code span verbatim (`` `<arch-plan>` ``), as
+VitePress does; `test/docs-site-links.test.ts` checks every published page's heading ids against
+VitePress's own markdown parser.
 
 ### WS.3 · Example-page `lastmod` misses some of what the page shows — `todo`
 
@@ -1717,21 +1775,9 @@ uses `keep` or `import` yet, so a detector could not be checked against a real p
 uses it (and, for `style`, when the reference gains its section). **Gate:**
 `test/plan-constructs.test.ts`'s anchor check covers the new rows.
 
-### WS.5 · The sidebar does not highlight "Architecture decisions" on `/adr` — `todo`
-
-The ADR index is generated as `docs-site/adr/index.md` (`docs-site/sync-docs.mjs`) and served at
-`/adr` (`html_handling: drop-trailing-slash`). VitePress 1.6.4's `isActive` normalises that page
-to `/adr/` and the sidebar item `link: "/adr"` (`docs-site/.vitepress/config.ts`) to `/adr`, so
-they never match (read from `vitepress/dist/client/shared.js`, not yet measured in a browser). The
-likely fix is `link: "/adr/"`, but check the href it renders: `/adr/` redirects to `/adr` here, and
-an internal link to a redirect is worse for crawling than a missing highlight. Only if no link
-spelling works is a route move worth it (a 301 in `docs-site/public/_redirects`, the canonical, the
-breadcrumb and the sitemap together). **Gate:** an e2e case finds the item active on `/adr`; every
-rendered link to the index is `/adr`.
-
 ## Stairs in the 3D preview (public-surfaces card X3, 2026-11-06)
 
-### ST.1 · No lint compares a stair's drawn treads with its storey height — `todo`
+### ST.1 · Drawn treads against storey height: done by RM1.2a (#736), waiting to be archived — `note`
 
 The plan draws each flight with `treadCount(run)` treads (`src/elements/vertical-glyphs.ts`, a
 nominal 280 mm going, whatever the storey height), and the 3D preview climbs the storey on one
@@ -1746,8 +1792,13 @@ never compares the treads drawn with the storey height, so none of these plans w
 riser the drawing implies, where the plan authors a height. **Gate:** the implied riser for each
 example, hand-derived in the test; a plan with no `height` unchanged; the byte-identity law over
 the corpus for `describe()` if a fact is added, and the lint's own corpus findings listed in the PR.
+**Done by RM1.2a (PR #736, merge `80c1669e`).** `W_STAIR_RISER_TOO_HIGH` (`stairDrawnMaxRiseMm`, 220 mm)
+reports the riser the drawn treads imply where the plan writes a `height`, and
+`test/lint-stair-riser-too-high.test.ts` hand-derives it per example. The three examples with no `height`
+are RM1.2h. #736 also redrew two-storey (3250 mm flight) and turning-stair, so the riser figures
+above are as filed, not as on `main`.
 
-### ST.2 · The walking line over a winder landing is drawn as a chord but credited as an arc — `todo`
+### ST.2 · Winder walking line drawn as the credited arc: done by #821, waiting to be archived — `note`
 
 PR #533 (winders on a quarter-turn landing, preview-and-remodel D46) credits a winder landing with
 `min(n, floor(arc / going))` goings, where `arc` is the quarter arc of radius `width / 2` round the
@@ -1758,12 +1809,16 @@ draw the arc. It moves the SVG of plans that write `winders` only; `describe()` 
 not move (the `block-stair-winders-byte-identity` law pins every plan without the clause). The
 contributor offered to do it. **Gate:** the winders law green; the digest of every winders fixture
 listed before and after in the PR; a plan without `winders` byte-identical.
+**Done by #821.** The arc is drawn as a `<path>`. It is also a room-label obstacle where the chord
+was not (`src/label-placement.ts` boxes an arc), so a label near a winder landing's inner corner can
+place differently, and the drafting-layer `W_ANNOTATION_OVERLAP` with it. No shipped example writes
+`winders`.
 
 - ST.3 · `archlang-3d` builds a winder landing as a level landing — done by RM1.2g (#751) → archived (lab)
 
 ## 3D asset and surface residue (public-surfaces 3D cards X4b, X6, V2, 2026-11-06)
 
-### 3D.1 · The asset check trusts the manifest for the plan PNG — `todo`
+### 3D.1 · The asset check decodes the committed plan PNG: done by #826, waiting to be archived — `note`
 
 `checkAssets` (`packages/archlang-3d/scripts/gen-3d-assets.ts`) compares a committed
 `<name>.plan.png` only by SHA-256 against the manifest, then re-rasterises the source to the
@@ -1771,17 +1826,14 @@ recorded pixel hash; it never decodes the committed file. A PNG swapped together
 `sha256` passes. **Gate:** `pixelsHash(readFileSync(file))` must equal `plan.pixelsSha256`; a
 planted swap fails `--check`.
 
-### 3D.2 · No size budget for plan and poster PNGs — `todo`
+### 3D.2 · No size budget for plan and poster PNGs: done by #828, waiting to be archived — `note`
 
 The budget table caps WebP, MP4 and GLB only; `.plan.png` (92–245 KB today) and `.poster.png` have
 none, so an A1 sheet could grow unchecked. **Gate:** a budget (for example 300 KB) enforced by the
 generator and `--check`.
 
-### 3D.3 · `pngjs` is not declared by `packages/archlang-3d` — `todo`
-
-The generator script imports it through the root `devDependencies` (hoisting). Not shipped
-(`scripts/` is outside `files`), but an isolated install of the workspace would break. **Gate:**
-`pngjs` and `@types/pngjs` in the package's `devDependencies`.
+**Done by #828.** Caps: `BUDGET.planPng` 300 KB, `BUDGET.posterPng` 500 KB (poster PNGs were
+150–362 KB).
 
 ### 3D.4 · Pitched roofs in the 3D preview (design first) — `todo`
 
@@ -1821,6 +1873,25 @@ the edge that shape fits, the north or south wall for a deep piece such as a WC.
 room's refusal (`a WxH piece there leaves the floor`) quotes the size as resolved, which may be the
 footprint laid along an edge, not the catalogue's along × depth. (1) and (2) are in
 `docs/furniture.md` § three placement modes; change one only with its byte-identity rows.
+
+## Live-eval baseline gap (RM-D51, 2026-11-16)
+
+### EV.1 · Diagnose the gpt-5.5 intent gap against the July baseline — `todo`
+
+At `2a210589` (after CO-1 and CO-2) gpt-5.5 scored valid 22/22/18 and intent 10/9/7 of 26 over
+three runs (`eval/live-runs/2026-11-authorability-remeasure.md`), against the July baseline's valid
+23 and intent 14 (one run, `eval/live-baseline.json`). RM-D51 keeps the July baseline. This card is
+the offline diagnosis only, with no API spend: download the per-brief tables of the gpt-5.5 run
+artifacts (`gh run download <id>` for runs 43727485853, 43727489713, 43727493307) and set them
+against July's per-brief record. The only July per-brief table in the repo is
+`eval/g1/baseline-run-29150982395.md`, the 2026-07-11 run (valid 25, intent 13); the artifacts of
+the 2026-07-12 run behind the current baseline (valid 23, intent 14) are gone, so a per-brief
+comparison with that run is not possible and the card says so.
+**Re-baselining `eval/live-baseline.json` is not part of this card:** it needs an owner decision.
+One option the owner may choose is the median of 3 runs; any new run is paid, owner-only
+`eval:live`.
+**Gate:** a per-brief table of which briefs lost intent and why, stated as observed (prompt change,
+judge, model drift), with no claim beyond the data and none about loop gain.
 
 ## Site chrome (found while fixing the nav overflow, 2026-09-20)
 
@@ -2001,7 +2072,7 @@ two and worth doing regardless.
 **Do not** narrow this to "re-run it by hand" — that is the workaround, and it has now been needed
 twice in five releases.
 
-### 4.10 · A 5 s test budget on a heavy optional import — `todo`
+### 4.10 · A 5 s test budget on a heavy optional import: done by #829, waiting to be archived — `note`
 
 Found 2026-09-04 while gating item 4.9, and worth filing because `AGENTS.md` currently records that
 the suite has **no known flake**.
@@ -2032,6 +2103,11 @@ capability probe so the import is paid once per file rather than inside the time
 say plainly in `AGENTS.md` that the suite has one load-sensitive case, since a number nobody can
 reproduce on a quiet machine is worse than a documented one. **Do not raise the global
 `testTimeout`** — that hides every future instance of the same shape.
+
+**Done by #829.** Both first options together: `test/roof.test.ts` probes `pdfkit` once at module
+scope (`HAS_PDFKIT`, paid at collection), and "PDF export draws it" carries its own
+`PDF_CASE_TIMEOUT_MS` budget; the global `testTimeout` is unchanged. M.6 (visual, sheet) is the same
+shape and stays open.
 
 ### 4.1 · Joinery pass performance — `todo`
 

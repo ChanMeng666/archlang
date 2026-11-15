@@ -149,5 +149,4 @@ output, so the decisions above apply to it with these differences:
 - **Unchanged.** One-shot only, with no multi-turn model-repair trajectories (the amendment
   above). There is no loop-gain claim either way, the eval corpora are never called held-out, the
   canary is never regenerated, and the seed-`20260712` bytes are untouched. `dataset/CARD.md`
-  gains the config's section only when the config is uploaded; until then it lives in
-  `dataset/CARD.model-authoring.draft.md`.
+  carries the config's section and `configs:` entry (the upload itself is the owner's step).

@@ -1,5 +1,10 @@
+import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
+import { describe as describeArch } from "../../src/index.js";
 import { DRAG_SLOP, type HitBox, isDragNotClick, pickSmallestContaining } from "../src/interact.js";
+
+const example = (name: string) =>
+  readFileSync(new URL(`../../examples/${name}.arch`, import.meta.url), "utf8").replace(/\r\n?/g, "\n");
 
 const room = (id: string, x: number, y: number, w: number, h: number): { id: string; bbox: HitBox } => ({
   id,
@@ -41,6 +46,21 @@ describe("pickSmallestContaining", () => {
     for (let i = 0; i < 5; i++) expect(pickSmallestContaining([a, b], 700, 700)?.id).toBe("a");
   });
 
+  it("keeps the tie rule for equal rooms whose shoelace areas differ in the last bits", () => {
+    // Review of #822: these two 1000.3 x 700.7 rings give shoelace areas 700910.2100000002
+    // and 700910.21; a strict `<` on those floats let the LATER room win.
+    const ring = (x: number, y: number) => [
+      { x, y },
+      { x: x + 1000.3, y },
+      { x: x + 1000.3, y: y + 700.7 },
+      { x, y: y + 700.7 },
+    ];
+    const a = { id: "a", bbox: { x: 0.1, y: 0.2, w: 1000.3, h: 700.7 }, floor_polygon: ring(0.1, 0.2) };
+    const b = { id: "b", bbox: { x: 300.7, y: 200.1, w: 1000.3, h: 700.7 }, floor_polygon: ring(300.7, 200.1) };
+    expect(pickSmallestContaining([a, b], 500, 400)?.id).toBe("a");
+    expect(pickSmallestContaining([b, a], 500, 400)?.id).toBe("b");
+  });
+
   it("treats the box boundary as inside (a wall-edge hover still hits its room)", () => {
     const r = room("r", 100, 200, 400, 300);
     expect(pickSmallestContaining([r], 100, 200)?.id).toBe("r"); // top-left corner
@@ -57,6 +77,40 @@ describe("pickSmallestContaining", () => {
     const zero = room("zero", 50, 50, 0, 0);
     expect(pickSmallestContaining([outer, zero], 50, 50)?.id).toBe("zero");
     expect(pickSmallestContaining([outer, zero], 51, 50)?.id).toBe("outer");
+  });
+});
+
+describe("pickSmallestContaining by shape, not by box (PG.2)", () => {
+  const pick = (name: string, x: number, y: number) =>
+    pickSmallestContaining(describeArch(example(name)).rooms, x, y)?.id ?? null;
+
+  it("hexagon-pavilion: a corner of the rotunda's box outside its circle is the trapezoid there", () => {
+    // Inside the rotunda's box and the g_nw/g_ne boxes (equal area, the rotunda first), outside the circle.
+    expect(pick("hexagon-pavilion", 6000, 4500)).toBe("g_nw");
+    expect(pick("hexagon-pavilion", 11000, 4500)).toBe("g_ne");
+    // The circle itself, its boundary inclusive.
+    expect(pick("hexagon-pavilion", 8500, 7000)).toBe("rotunda");
+    expect(pick("hexagon-pavilion", 11500, 7000)).toBe("rotunda");
+    expect(pick("hexagon-pavilion", 5500, 7000)).toBe("rotunda");
+  });
+
+  it("hexagon-pavilion: a point in g_n's box but outside its trapezoid is g_nw, not g_n", () => {
+    // g_n's box (6000×3000) is smaller than g_nw's (6000×6000): by box it would win.
+    expect(pick("hexagon-pavilion", 6000, 3800)).toBe("g_nw");
+    expect(pick("hexagon-pavilion", 8500, 2500)).toBe("g_n");
+    // A slanted edge both trapezoids share is inside both; the smaller room wins.
+    expect(pick("hexagon-pavilion", 6250, 2500)).toBe("g_n");
+  });
+
+  it("gallery-l: a point in the L's box and the lobby's box but in neither room picks nothing", () => {
+    expect(pick("gallery-l", 11000, 13000)).toBeNull();
+    // The lobby's trapezoid (inside the L's box, outside the L).
+    expect(pick("gallery-l", 9000, 11000)).toBe("lobby");
+    // The L, and its boundary.
+    expect(pick("gallery-l", 3000, 3000)).toBe("gallery");
+    expect(pick("gallery-l", 3000, 11000)).toBe("gallery");
+    expect(pick("gallery-l", 0, 14000)).toBe("gallery");
+    expect(pick("gallery-l", 12000, 4000)).toBe("gallery");
   });
 });
 

@@ -72,6 +72,7 @@ describe("archlang mcp server", () => {
     }
     expect(text).toMatch(/centreline/);
     expect(text).toMatch(/absent when/);
+    expect(text).toMatch(/net_floor_area_m2` beside it, absent when any room.s net area is/);
     // the names are the ones `describe` actually returns, not prose that drifted from it
     const walled = `plan "W" {
   wall exterior thickness 200 { (0,0) (4000,0) (4000,3000) (0,3000) close }

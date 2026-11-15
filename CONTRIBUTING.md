@@ -51,7 +51,7 @@ npm run build
 npm run check:quick
 
 # Optional, slow (about 14 min on a laptop): typecheck + lint + the whole suite, the way CI runs it
-npm run check   # optional, slow; CI runs it too
+npm run check   # optional, slow; CI runs its parts as separate steps
 ```
 
 The sites are separate Vite apps: `npm run playground:dev` and `npm run docs:dev` (each builds the
@@ -69,8 +69,8 @@ only CI green is merge evidence. The job list is in [docs/agents/commands.md](do
 |---------|--------|-------------|
 | `npm run check:quick` | Biome, typecheck, drift and the nearest tests, for the files you changed | before every push |
 | `npm run docs:build` | the VitePress site actually builds | any `docs/*.md` or `docs-site/` edit: **the core suite never compiles the site** |
-| `npm run check` | typecheck + Biome + the full test suite (CI runs it too) | optional, slow: to reproduce a CI failure |
-| `npm test` | the whole vitest suite: `test/`, `playground/test/`, `packages/*/test/`, `editors/vscode/test/` (CI runs it too) | optional, slow: to reproduce a CI failure |
+| `npm run check` | typecheck + Biome + the full test suite (CI runs these checks as separate steps, not this script) | optional, slow: to reproduce a CI failure |
+| `npm test` | the whole vitest suite: `test/`, `playground/test/`, `packages/*/test/`, `editors/vscode/test/` (CI runs the same include list in shards; the nightly runs `npm test`) | optional, slow: to reproduce a CI failure |
 | `npm run check:drift` | every generator re-run and byte-compared against its artifact (CI runs it too; `check:quick` covers the files you changed) | optional: **`npm run check` does NOT include it** |
 | `npm run typecheck:all` | every workspace too (playground, docs-site via vue-tsc, MCP shim and Worker, web component, archlang-3d, VS Code extension) | optional: you touched anything outside `src/` + `test/` (CI runs it in the `builds` job) |
 | `npm run e2e:playground` / `npm run e2e:docs` | Playwright (chromium) against the BUILT app (CI runs both) | optional: you touched `playground/` or `docs-site/` |
@@ -112,7 +112,8 @@ token anywhere; do not add one. The full transferable recipe (for this or any ot
 in [docs/npm-oidc-publishing-playbook.md](docs/npm-oidc-publishing-playbook.md).
 
 1. Update `CHANGELOG.md` and bump `version` in the root `package.json`.
-2. The owner runs `npm run check` (typecheck + lint + test) **and `npm run check:drift`**; both must be green.
+2. Locally run `npm run check:quick` and `npm run docs:build`; the release PR's CI must be green on the
+   suite, `check:drift` and `typecheck:all` (never the full suite locally).
    `check:drift` is a **separate hard gate that CI runs**, and that `npm run check` does not cover — it
    regenerates every artifact and fails if one drifted (see [CI drift gates](#ci-drift-gates-regenerate-before-you-push)).
    `npm run build && npm test` also run inside the publish via `prepublishOnly` (the owner's release), but they will

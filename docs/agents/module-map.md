@@ -19,7 +19,7 @@ module's remaining facts are in its own header.
 invariants; this file holds every module. The exports of `src/index.ts` are in the sibling
 [`public-surface.md`](public-surface.md).
 
-Totals: 401 modules in 34 directories.
+Totals: 402 modules in 34 directories.
 
 ## `packages/archlang-3d/src/`
 
@@ -170,7 +170,7 @@ Totals: 401 modules in 34 directories.
 | `glb-export.ts` | 35 | 3 | Share → Export → GLB (public-surfaces card X5; in the Share menu since card PG4): its own chunk, loaded on the first click (actions.ts imports it dynamically, beside plan3d.ts), so glTF-Transform never reaches the startup chunks or the 3D… | none |
 | `glb-note.ts` | 19 | 1 | The words beside Share → Export → GLB (ruling PG-D5; card X5's note): what the browser writes, and that it does not check it, as the CLI does. Apart from glb-export.ts and preview3d.ts so the startup chunk can put the note in the menu… | none |
 | `intent-panel.ts` | 111 | 1 | Intent, the Checks tab's last section — the v1.14 intent channel, in the browser. | none |
-| `interact.ts` | 149 | 2 | Preview interactions on top of the SVG: - hover a room → tooltip with its name, area and size (C2, room-facts.ts `roomTip`), hit-tested geometrically against describe()'s room bboxes; - click a room → its facts card (room-card.ts), or… | none |
+| `interact.ts` | 218 | 2 | Preview interactions on top of the SVG: - hover a room → tooltip with its name, area and size (C2, room-facts.ts `roomTip`), hit-tested against describe()'s room shapes (`floor_circle`, `floor_polygon`); - click a room → its facts card… | none |
 | `knobs-panel.ts` | 255 | 2 | The Knobs panel: one slider per knob of the plan on screen (knobs.ts), in the drawing's lower-left corner (a bottom sheet on a phone). A native `<details>`, so it folds with a click or the keyboard; each slider is a native `<input… | none |
 | `knobs.ts` | 130 | 3 | Knobs (card P4, PS-D4): a slider for each plain number a plan names at its top level. | none |
 | `level-switcher.ts` | 105 | 1 | The storey switcher — one `L<n>` button per `level` block of a multi-storey plan. | none |
@@ -183,11 +183,12 @@ Totals: 401 modules in 34 directories.
 | `nudge.ts` | 80 | 2 | The one quiet pointer at Make your own: a small toast, after a visitor has shown interest (the third plan switch, or the first knob let go), never a modal and never focused. It is shown at most once: the first showing is remembered in… | none |
 | `pan-zoom.ts` | 199 | 5 | Pan / zoom / fit for the SVG preview — a tiny zero-dependency controller. | none |
 | `plan3d.ts` | 21 | 4 | The 3D preview's one way from a plan's source to its Mesh3D (card X5), apart from the DOM so a Node test runs it exactly as the page does (`playground/test/glb-export.test.ts`): what the 3D preview shows and what Download GLB writes both… | none |
-| `preview.ts` | 109 | 1 | The SVG preview: the pan/zoom controller, the SVG-into-stage display, the floating toolbar (zoom / fit / fullscreen and the Paths layer; copying and downloading the drawing are Share → Export since card PG4, ruling PG-D5), and the… | none |
+| `preview.ts` | 112 | 1 | The SVG preview: the pan/zoom controller, the SVG-into-stage display, the floating toolbar (zoom / fit / fullscreen and the Paths layer; copying and downloading the drawing are Share → Export since card PG4, ruling PG-D5), and the… | none |
 | `preview3d.ts` | 821 | 1 | The "3D preview" output tab (card A5). Loaded on first open only (`main.ts` imports this module dynamically), so three.js and the separate archlang-3d package never reach the startup chunks. | none |
 | `raster-export.ts` | 92 | 2 | Client-side rasterization + download helpers shared by the preview (copy PNG) and the multi-format download (PNG/PDF). The core's PNG/PDF backends are Node-only, so the playground rasterizes the SVG through a <canvas> instead. | none |
-| `room-card.ts` | 140 | 1 | The room's facts card: a click on a room in the drawing opens it in the drawing's top-left corner, with the room's area, size, use, neighbours and openings, all describe()'s (room-facts.ts). In edit mode it also offers "Jump to source"… | none |
-| `room-facts.ts` | 123 | 4 | The words the drawing's facts are said in: the facts line under it, the hover tooltip and the room's facts card. Pure (no DOM): every figure is describe()'s, read off the summary, never measured here and never typed. An area says which… | none |
+| `room-card.ts` | 144 | 1 | The room's facts card: a click on a room in the drawing opens it in the drawing's top-left corner, with the room's area, size, use, neighbours and openings, all describe()'s (room-facts.ts). In edit mode it also offers "Jump to source"… | none |
+| `room-facts.ts` | 123 | 5 | The words the drawing's facts are said in: the facts line under it, the hover tooltip and the room's facts card. Pure (no DOM): every figure is describe()'s, read off the summary, never measured here and never typed. An area says which… | none |
+| `room-index.ts` | 89 | 1 | The rooms from the keyboard (card PG.1): a "Rooms" control in the drawing's bottom-right corner that lists the storey's rooms, each a button that opens the room's facts card (room-card.ts), the same card a click on the room opens. The… | none |
 | `samples.ts` | 117 | 6 | Playground-only sample plans: plans the gallery offers that are NOT shipped examples. | none |
 | `share.ts` | 249 | 20 | URL-hash share codec — the single source of truth for round-tripping a plan's source through the address bar with no backend. Shared by the main playground (`main.js`) and the chrome-less embed page (`embed.js`) so a `#z=` link works… | none |
 | `shared-notice.ts` | 96 | 3 | The shared-plan notice — the one piece of UI that exists because a `#z=` link is THIRD-PARTY CONTENT. | none |
@@ -214,7 +215,7 @@ Totals: 401 modules in 34 directories.
 
 | Module | Lines | Importers | Summary | Budget |
 | --- | ---: | ---: | --- | --- |
-| `analyze.ts` | 1087 | 128 | Shared semantic-analysis layer for the agent-facing tools. | none |
+| `analyze.ts` | 1087 | 129 | Shared semantic-analysis layer for the agent-facing tools. | none |
 | `ast.ts` | 1702 | 223 | Abstract syntax tree for an ArchLang `plan`. All distances are in millimetres. | none |
 | `attach.ts` | 477 | 6 | Opening attachment (`door\|window\|opening … on <wall> at <pos>`). | charges the step meter |
 | `axes.ts` | 161 | 4 | **Positioning axes** (定位轴线) — GB/T 50001's structural datum grid. | none |
@@ -258,7 +259,7 @@ Totals: 401 modules in 34 directories.
 | `identity.ts` | 33 | 3 | Process-local stable identity tokens for cache keying. | none |
 | `impact.ts` | 1405 | 3 | `impact(before, after)` (plan-soundness card PS4.2): change one number, see what follows, what stays put, and what breaks. The executable answer to "what changes, what must not". | none |
 | `import.ts` | 350 | 32 | Module linking — the `import` system. | none |
-| `index.ts` | 713 | 438 | ArchLang — compile declarative floor-plan source to a professional SVG. | none |
+| `index.ts` | 713 | 440 | ArchLang — compile declarative floor-plan source to a professional SVG. | none |
 | `input-limit.ts` | 77 | 5 | A host's refusals, as catalogued diagnostics. | none |
 | `intent-concepts.ts` | 238 | 5 | The intent channel's concept vocabulary — production name resolution for the NL→ArchLang intent contract. | none |
 | `intent.ts` | 1589 | 7 | The intent channel — author-time checking of a brief's INTENT against a plan. | none |
@@ -283,7 +284,7 @@ Totals: 401 modules in 34 directories.
 | `pipeline.ts` | 203 | 7 | The one `compile()` pipeline: parse → link → resolve → render. | none |
 | `plan-json.ts` | 75 | 16 | Structured JSON I/O for ArchLang plans — the machine-native channel an LLM uses to author and read a floor plan without touching `.arch` syntax. | none |
 | `pure.ts` | 28 | 15 | `pure(() => value)` returns `value`, built once at module load exactly as written. It marks a top-level constant whose initializer has no effect outside the value it builds, but whose shape a bundler cannot prove that of: a spread… | none |
-| `registry.ts` | 536 | 88 | Element registry: the single extension point. Each element type is one module exporting an {@link ElementDef}; parse/resolve/render iterate the registry rather than a hard-coded switch. Adding an element = one new module + one `register`… | none |
+| `registry.ts` | 536 | 89 | Element registry: the single extension point. Each element type is one module exporting an {@link ElementDef}; parse/resolve/render iterate the registry rather than a hard-coded switch. Adding an element = one new module + one `register`… | none |
 | `repair.ts` | 1921 | 5 | `repair(source)` — an explicit, opt-in source-to-source corrector. | none |
 | `reroll.ts` | 714 | 5 | `reroll(source)` — detect a run of ≥3 CONSECUTIVE statements in arithmetic progression and offer a proven-equivalent `for` loop (Szalinski, PLDI 2020, `uwplse/szalinski` `src/solve.rs`, minus the e-graph — fit an AP over sorted… | none |
 | `room-datums.ts` | 418 | 20 | The datum table (ADR 0028 §1): what one resolution group's rooms and grid axes expose as lines, frozen after every room is placed and before any wall resolves. | charges the step meter |
@@ -291,7 +292,7 @@ Totals: 401 modules in 34 directories.
 | `sanitize.ts` | 61 | 2 | Config sanitization — a denylist for **untrusted** `.arch`-sourced config. | none |
 | `scene-build.ts` | 1249 | 30 | Lowers a resolved plan (IR) to the backend-neutral {@link Scene}. | none |
 | `scene-memo.ts` | 175 | 4 | One Scene per resolved plan and drawing options, shared by `compile()` and `lint()`. | none |
-| `scene.ts` | 512 | 117 | Backend-neutral **Scene IR** — the keystone drawing intermediate. | none |
+| `scene.ts` | 512 | 118 | Backend-neutral **Scene IR** — the keystone drawing intermediate. | none |
 | `segment-select.ts` | 221 | 7 | Segment selectors (plan card PS3.5): `segment north\|south\|east\|west` and `segment containing <room>.<edge>`, written wherever `segment <n>` is. A selector is an ALIAS: it resolves to the one segment index the number would name, and from… | charges the step meter |
 | `share.ts` | 76 | 1 | `@chanmeng666/archlang/share`: the browser-safe half of the playground's `#z=` share link, `#z=<base64url(deflate-raw(utf8))>`, for every consumer with no `zlib` (the playground page and its short-link Worker, the hosted MCP Worker, the… | none |
 | `sheet-tables.ts` | 1346 | 14 | **Sheet tables** — the ROOM SCHEDULE and the derived LEGEND, and beside them the DOOR & WINDOW SCHEDULE (`schedule openings`, rows from `opening-schedule.ts`) and the authored NOTES (`notes "…"`), each drawn only when the plan writes it. | none |
@@ -307,7 +308,7 @@ Totals: 401 modules in 34 directories.
 | `theme.ts` | 488 | 57 | Theme: colours, line-weight, and font for the rendered drawing. | none |
 | `types.ts` | 203 | 14 | Public types for the ArchLang compiler. | none |
 | `unified-diff.ts` | 120 | 1 | A tiny, zero-dependency line-based unified diff (LCS backtrack + hunk grouping). | none |
-| `vertical.ts` | 936 | 43 | **Vertical circulation** as facts: the one place the shared semantics of `stair`, `elevator` and `escalator` live, so the three element modules, the nav grid, `lint` and `describe()` can never disagree about them. | none |
+| `vertical.ts` | 960 | 44 | **Vertical circulation** as facts: the one place the shared semantics of `stair`, `elevator` and `escalator` live, so the three element modules, the nav grid, `lint` and `describe()` can never disagree about them. | none |
 | `vocabulary.ts` | 459 | 17 | Closed-vocabulary, token-bounded label matching — the one place ArchLang turns a free-text room label into a controlled classification. | none |
 | `wall-lowering.ts` | 428 | 9 | **The one wall-lowering path** — a set of resolved walls to the Scene nodes that draw them: one poché fill per material group, and ONE outline for the whole set. | none |
 | `wall-ref.ts` | 114 | 19 | How a diagnostic, a hint, a fix or a suggestion names a wall (ADR 0028 §3, "Addressing"). | none |
@@ -426,7 +427,7 @@ Totals: 401 modules in 34 directories.
 | `room.ts` | 798 | 11 | `room [id=] (at (x,y) \| DIR ref [align E] [gap n]) size WxH [label "…"]` or `room [id=] polygon (x,y) (x,y) (x,y) … [label "…" [at (x,y)]]` or `room [id=] circle at (cx,cy) radius R [label "…"]` — floor fill + label + computed area. The… | none |
 | `section.ts` | 256 | 2 | `section <id\|int> (x,y)->(x,y) look <compass>` — a section mark on the plan (RM6.1, design `docs/plans/product-roadmap/design/slab-and-section.md` §2): where a section cuts the building and which way it looks, drawn as GB/T 50001 and ISO… | none |
 | `stair.ts` | 478 | 2 | `stair [id=] at (x,y) size WxH dir up\|down [width <mm>]` — a straight flight of stairs drawn as the conventional plan symbol. Or the block form (issue #362), `stair [id=] dir up\|down width <mm> { flight … landing … flight … }`: one stair… | charges the step meter |
-| `vertical-glyphs.ts` | 463 | 10 | Plan symbols for the vertical-circulation elements (`stair`, `elevator`, `escalator`). | none |
+| `vertical-glyphs.ts` | 507 | 10 | Plan symbols for the vertical-circulation elements (`stair`, `elevator`, `escalator`). | none |
 | `void.ts` | 435 | 9 | `void [id=] (at (x,y) size WxH \| polygon (x,y) …) [rail <edges>]` — a hole in this storey's floor plate. | charges the step meter |
 | `wall.ts` | 489 | 3 | `wall <category> thickness N { (x,y)… [close] }` — poché fill + crisp faces. | none |
 | `walls-from-rooms.ts` | 678 | 1 | `walls from rooms exterior <t_ext> partition <t_int> [{ except <room> … }]` — derive the whole wall set of a group from its rooms (ADR 0028 §3, plan decision D5). | none |
@@ -549,7 +550,7 @@ Totals: 401 modules in 34 directories.
 | `reachability.ts` | 119 | 1 | Room-graph reachability: builds the room-connectivity graph from doors/openings (rooms + the literal "exterior") once, then — per room, in source order — emits W_BATH_VIA_BEDROOM and W_ROOM_UNREACHABLE, preserving the historical… | none |
 | `room-contents.ts` | 598 | 2 | Room-contents advisories (plan-soundness PS2.8, PS2.9): a habitable room with no window, and a furnished room missing the piece that defines it; and (product roadmap RM1.2c) a room whose label names a catalogued piece it does not hold.… | none |
 | `site.ts` | 115 | 1 | `W_ROOM_NOT_EQUATOR_FACING` — the site layer's one advisory rule. | none |
-| `stairs.ts` | 1576 | 7 | Stair safety (plan-soundness PS2.11e, the stair bullets, and PS2.34): a door swinging over a flight or its landing, a flight with no landing at its foot or head, a doorway onto a flight's side, a void where a flight arrives, a flight too… | none |
+| `stairs.ts` | 1576 | 8 | Stair safety (plan-soundness PS2.11e, the stair bullets, and PS2.34): a door swinging over a flight or its landing, a flight with no landing at its foot or head, a doorway onto a flight's side, a void where a flight arrives, a flight too… | none |
 | `vertical.ts` | 207 | 2 | `W_STAIR_UNMATCHED` — a run of vertical circulation that connects nothing. | none |
 
 ## `src/overlays/`

@@ -417,3 +417,60 @@ test.describe("the landing page does not scroll sideways", () => {
     });
   }
 });
+
+/**
+ * The ADR index is served at `/adr` (the host drops a trailing slash), and its sidebar item must
+ * light up there. VitePress's `isActive` reads an `index.md` page as `/adr/`, which never matched
+ * the item's `/adr` link; spelling the link `/adr/` would light it but render an href that 307s,
+ * which costs more in crawling than a missing highlight. So sync-docs.mjs writes the index as
+ * `adr.md`, whose route is `/adr` on both sides.
+ *
+ * UNTAGGED: it asserts the LOCAL build's sidebar, and a lagging production deploy would read red.
+ */
+test.describe("the ADR index's sidebar item", () => {
+  /** Hrefs that reach the index only through a redirect, or a file name the host never serves. */
+  const STALE_INDEX = new Set(["/adr/", "/adr/index", "/adr/index.html", "/adr.html", "/adr/index.md", "/adr.md"]);
+  const ADR_ONE = "/adr/0001-handwritten-parser-vs-lezer";
+
+  test("is the one active item on /adr", async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 800 });
+    const res = await page.goto("/adr");
+    expect(res?.status()).toBe(200);
+    const active = page.locator(".VPSidebar .VPSidebarItem.is-active");
+    await expect(active).toHaveCount(1);
+    await expect(active).toContainText("Architecture decisions");
+    await expect(active.locator("a.link")).toHaveAttribute("href", "/adr");
+  });
+
+  test("is not active on an ADR page, whose own item is", async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 800 });
+    await page.goto(ADR_ONE);
+    const active = page.locator(".VPSidebar .VPSidebarItem.is-active");
+    await expect(active).toHaveCount(1);
+    await expect(active.locator("a.link")).toHaveAttribute("href", ADR_ONE);
+  });
+
+  for (const route of ["/adr", ADR_ONE, "/guide"]) {
+    test(`every link to the index on ${route} is /adr, in the static HTML and after hydration`, async ({
+      page,
+      request,
+    }) => {
+      // Crawlers read the static bytes; a visitor reads the hydrated DOM. Both must agree.
+      const html = await (await request.get(route)).text();
+      const staticHrefs = [...html.matchAll(/href="([^"]*)"/g)].map((m) => m[1] as string);
+      await page.goto(route);
+      const liveHrefs = await page.locator("a[href]").evaluateAll((as) => as.map((a) => a.getAttribute("href") ?? ""));
+      for (const [where, hrefs] of [
+        ["static HTML", staticHrefs],
+        ["hydrated DOM", liveHrefs],
+      ] as const) {
+        const paths = hrefs.map((h) => new URL(h, "https://archlang.uk/").pathname);
+        expect(
+          paths.filter((p) => STALE_INDEX.has(p)),
+          `${route} (${where}) links to the ADR index by a path other than /adr`,
+        ).toEqual([]);
+        expect(paths, `${route} (${where}) has no link to the ADR index at all`).toContain("/adr");
+      }
+    });
+  }
+});
