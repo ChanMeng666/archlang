@@ -5,8 +5,11 @@ Actions) on the 26-brief corpus, taken before and after two changes: CO-1 (PR #7
 room, door, window, opening and outdoor clauses in any order, `id=` after the category) and CO-2
 (PR #809: catalogued footprints under `at`/`in`). The runs were the P1 repeat runs and the P2
 gpt-5.5 re-measure of the owner's in-chat approval of 2026-11-15 for the promotional-credit
-measurement programme (P3 fidelity is in `2026-11-fidelity.md`, under RM-D46). Raw model replies
-and per-brief tables are not published.
+measurement programme (P3 fidelity is in `2026-11-fidelity.md`, under RM-D46). The third P1
+group (after CO-1 + CO-2, at the final commit `68064111`) is one of those owner-approved P1 repeat
+authorability runs, run on 2026-11-15 UTC. Its 12 runs spent about 39.24 usd of the promotional
+credit, summed from the logs' budget lines. Raw model replies and per-brief tables are not
+published.
 
 **Each before/after pair differs in the compiler AND in the author prompt** (`spec.llm.md`, the
 system prompt `eval/run.ts` reads). CO-1's spec rule 6 went from "`id=` after the category is a
@@ -32,10 +35,10 @@ be split between the two.
 | --- | --- | --- | --- | --- |
 | P1 before | 2026-11-15 | `e523f3f5` | haiku-5-5, sonnet-5-5, opus-5-5, fable-5-2 | 1.5 / 3 / 5 / 8 usd |
 | P1 after (CO-1) | 2026-11-15 | `ca02caed` (see provenance) | same four | 1.5 / 3 / 5 / 10 usd |
-| P1 after CO-1 + CO-2 | 2026-11-15 (09:51 to 12:27 on 2026-11-16, UTC+13) | `680641114e5b` | same four | 1.5 / 3 / 5 / 10 usd |
+| P1 after CO-1 + CO-2 | 2026-11-15 (09:51 to 12:27 on 2026-11-16, UTC+13) | `68064111` (not P2's `2a210589`) | same four | 1.5 / 3 / 5 / 10 usd |
 | P2 before | 2026-11-15 | `3ca9556b` | gpt-5.5-2026-04-23 | none recorded |
 | P2 after CO-1 | 2026-11-15 | `ca02caed` | gpt-5.5-2026-04-23 | none recorded |
-| P2 after CO-1 + CO-2 | 2026-11-15 | `2a210589` | gpt-5.5-2026-04-23 | none recorded |
+| P2 after CO-1 + CO-2 | 2026-11-15 | `2a210589` (not P1's `68064111`) | gpt-5.5-2026-04-23 | none recorded |
 
 Fable skipped 1 brief (`sized-office-mix`) in each of runs 1 and 3 before (8 usd cap): its "before"
 n is 25 / 26 / 25 = 76. After (10 usd cap) it skipped none (n = 78). Skipped briefs are excluded
@@ -56,10 +59,16 @@ Every P1-after run therefore measured the same compiler and the same prompt. The
 fast-forward, to `2a210589` (with CO-2), was at 04:00:43, 33 s after the last run ended at
 04:00:10.
 
-The CO-1 + CO-2 group ran in a dedicated detached worktree at `680641114e5b` (origin/main after
+The CO-1 + CO-2 group ran in a dedicated detached worktree at `68064111` (origin/main after
 CO-1 #790 and CO-2 #809), 09:51 to 12:27 local (UTC+13) on 2026-11-16, so the commit could not
 move mid-run: no fast-forward of a checkout was possible. All 12 runs measured one compiler and one
 prompt.
+
+`68064111` is not `2a210589`, the commit of P2 "after CO-1 + CO-2". Between them `src/` differs by
+one commit, `14b44e6c` (`fix(stair): draw the walking line over a winder landing as the arc lint
+credits (ST.2)`, in `src/vertical.ts` and `src/elements/vertical-glyphs.ts`). `spec.llm.md` is
+identical at the two commits, and no brief in `eval/corpus.json` mentions a stair, winder or
+landing, so the commit is not expected to touch these runs; that is not measured.
 
 ## P1: Claude 5.x, per run (L0 valid / intent / sound of 26; L1 in brackets)
 
@@ -102,9 +111,9 @@ Intervals are outward-rounded whole percents, as `eval/run.ts` prints them.
 | fable-5-2 | after CO-1 + CO-2 | 78 | 77 (93-100 %) | 68 (77-93 %) | 15 (12-30 %) | 68 (77-93 %) |
 
 L1 sound sums, before / after CO-1 / after CO-1 + CO-2: haiku 6 / 4 / 5, sonnet 5 / 9 / 11,
-opus 7 / 4 / 6, fable 12 / 15 / 15. L1 valid sums
-equal the L0 valid sums. Each call is treated as a Bernoulli trial; the 3 runs of one brief are not
-independent, so the intervals understate brief-level uncertainty.
+opus 7 / 4 / 6, fable 12 / 15 / 15. L1 valid sums equal the L0 valid sums. Each call is treated as
+a Bernoulli trial; the 3 runs of one brief are not independent, so the intervals understate
+brief-level uncertainty.
 
 ### Compile notes by class (summed over 3 runs)
 
@@ -168,8 +177,9 @@ No significance is claimed.
 
 - Order notes fell to zero for Haiku and Fable and to 2 for Sonnet and Opus after CO-1 (P1;
   Opus was 2 before as well), and from 70 `Unknown statement` notes to 4 for gpt-5.5 (P2). The
-  `needs a size` notes fell from 111 to 0 for gpt-5.5 after CO-2. The only `src/` commits between
-  the phases are CO-1 and CO-2.
+  `needs a size` notes fell from 111 to 0 for gpt-5.5 after CO-2. Between the earlier phases
+  (before, after CO-1, P2 after CO-1 + CO-2) the only `src/` commits are CO-1 and CO-2; P1 after
+  CO-1 + CO-2 adds `14b44e6c` (see provenance).
 - Valid sums, before to after CO-1: Haiku 45 to 47, Sonnet 53 to 69, Opus 68 to 73 (each of 78),
   Fable 67 of 76 to 78 of 78. Fable's pair is confounded: the cap went from 8 to 10 usd,
   `sized-office-mix` was skipped twice before, and one call before was truncated. gpt-5.5: 34 to
@@ -179,16 +189,18 @@ No significance is claimed.
   clause-order errors having masked the size errors; this record does not test it.
 - Intent sums, before to after CO-1: Haiku 23 to 24, Sonnet 47 to 49, Opus 48 to 47, Fable 61 of 76
   to 71 of 78. Only Fable's moved.
-
 - CO-1 + CO-2 against after CO-1 (P1; this adds CO-2 and its prompt change, and also differs in
-  day and run; no significance claimed). Valid: Haiku 47 to 51, Sonnet 69 to 74, Opus 73 to 69,
+  run; no significance claimed). Valid: Haiku 47 to 51, Sonnet 69 to 74, Opus 73 to 69,
   Fable 78 to 77. Intent: Haiku 24 to 22, Sonnet 49 to 46, Opus 47 to 48, Fable 71 to 68. Sound:
   Haiku 4 to 5, Sonnet 7 to 10, Opus 4 to 6, Fable 15 to 15. L1 intent: Haiku 40 to 40, Sonnet
   56 to 63, Opus 57 to 59, Fable 71 to 68. Against before, valid is Haiku 45 to 51, Sonnet 53 to
-  74, Opus 68 to 69, Fable 67 of 76 to 77 of 78. The intervals overlap for every pair after CO-1
-  and CO-2, and the pairs differ in compiler and prompt (`spec.llm.md` changed with CO-2), so the
+  74, Opus 68 to 69, Fable 67 of 76 to 77 of 78. For after CO-1 against after CO-1 + CO-2 the
+  intervals overlap in every pair; for before against after they do not (Sonnet valid 56-78 %
+  against 87-98 %). The pairs differ in compiler and prompt (`spec.llm.md` changed with CO-2), so the
   deltas are not attributable to CO-2 alone.
-- `needs a size` notes after CO-2: Sonnet 9 to 0, Haiku and Fable 0 to 0, Opus 0 to 5 (1, 2 and 2 in runs 1 to 3). Order notes: Sonnet 2 to 0, Haiku 0 to 7 (`offset`, `hinged`), others 0.
+- `needs a size` notes, after CO-1 to after CO-1 + CO-2: Sonnet 9 to 0, Opus 0 to 5 (1, 2 and 2
+  in runs 1 to 3), Haiku and Fable 0 to 0. Order notes: Sonnet 2 to 0, Opus 2 to 0, Haiku 0 to 7
+  (`offset`, `hinged`), Fable 0 to 0.
 
 This record makes no statement about loop gain, and the T3 record
 (`2026-11-t3-result.md`) is the only statement of that result.
