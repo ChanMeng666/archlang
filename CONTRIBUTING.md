@@ -51,7 +51,7 @@ npm run build
 npm run check:quick
 
 # Optional, slow (about 14 min on a laptop): typecheck + lint + the whole suite, the way CI runs it
-npm run check   # optional, slow; CI runs it too
+npm run check   # optional, slow; CI runs its parts as separate steps
 ```
 
 The sites are separate Vite apps: `npm run playground:dev` and `npm run docs:dev` (each builds the
@@ -69,8 +69,8 @@ only CI green is merge evidence. The job list is in [docs/agents/commands.md](do
 |---------|--------|-------------|
 | `npm run check:quick` | Biome, typecheck, drift and the nearest tests, for the files you changed | before every push |
 | `npm run docs:build` | the VitePress site actually builds | any `docs/*.md` or `docs-site/` edit: **the core suite never compiles the site** |
-| `npm run check` | typecheck + Biome + the full test suite (CI runs it too) | optional, slow: to reproduce a CI failure |
-| `npm test` | the whole vitest suite: `test/`, `playground/test/`, `packages/*/test/`, `editors/vscode/test/` (CI runs it too) | optional, slow: to reproduce a CI failure |
+| `npm run check` | typecheck + Biome + the full test suite (CI runs these checks as separate steps, not this script) | optional, slow: to reproduce a CI failure |
+| `npm test` | the whole vitest suite: `test/`, `playground/test/`, `packages/*/test/`, `editors/vscode/test/` (CI runs the same include list in shards; the nightly runs `npm test`) | optional, slow: to reproduce a CI failure |
 | `npm run check:drift` | every generator re-run and byte-compared against its artifact (CI runs it too; `check:quick` covers the files you changed) | optional: **`npm run check` does NOT include it** |
 | `npm run typecheck:all` | every workspace too (playground, docs-site via vue-tsc, MCP shim and Worker, web component, archlang-3d, VS Code extension) | optional: you touched anything outside `src/` + `test/` (CI runs it in the `builds` job) |
 | `npm run e2e:playground` / `npm run e2e:docs` | Playwright (chromium) against the BUILT app (CI runs both) | optional: you touched `playground/` or `docs-site/` |

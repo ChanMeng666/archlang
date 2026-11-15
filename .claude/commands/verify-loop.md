@@ -76,6 +76,6 @@ Add a row for each conditional gate you ran (`typecheck:all`, `docs:build`, `e2e
 `e2e:docs`, MCP dist resources, vscode bundle tests) and mark the ones the diff did not earn as
 `n/a — <reason>`. Never report a gate you skipped as `pass`.
 
-Note: CI's `npm run check` covers neither `check:drift` nor `typecheck:all` nor `docs:build` — the core
+Note: CI's typecheck, lint and test steps cover neither `check:drift` nor `typecheck:all` nor `docs:build` — the core
 suite does not compile the docs site or any workspace. Full map of what each gate catches, and the
 red-run response for each class of guard: `docs/testing.md`.
