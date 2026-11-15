@@ -240,6 +240,7 @@ The first sentence of each file's header comment.
 - `test/check-quick-workspaces.test.ts` — `check:quick` and `typecheck:all` name the same workspaces.
 - `test/check-set.test.ts` — public check set: every case judged; each column derived from its sources.
 - `test/chrome-hidden.test.ts` — `north … hidden`, `scale … hidden`, `title hidden` (issue #405): the mark goes, the fact stays.
+- `test/ci-proven.test.ts` — scripts/ci-proven.mjs: when a push to `main` is proven by a train PR's full CI run.
 - `test/circle-enclosure.test.ts` — W_ROOM_NOT_ENCLOSED on a circle room enclosed by arc walls; straight walls never back a circle room (documented); the verdict is D4-equivariant under `place`.
 - `test/circulation-concave.test.ts` — circulation — a concave room's routing anchor is on the room, not on its notch lip.
 - `test/circulation-entrances.test.ts` — each room walks from its nearest entrance; two entrances that seed one cell (the fuzz gate's seed 1438601647).
