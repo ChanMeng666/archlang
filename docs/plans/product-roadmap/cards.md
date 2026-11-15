@@ -1155,7 +1155,9 @@ Playground：Chromium `--shard=1/2`、`2/2` 两个 job，Firefox 与 WebKit 的 
 
 ### TR8 · 本地门禁的残余（2026-11-15 加，出自 #795 的最后一轮评审） — `todo` · 未估 · sonnet · 依赖无（线下）
 
-(a) `docs/agents/commands.md` 里一个过时的算出来的数（"a `src/`-only change adds 19 scanners and 7.5 recorded seconds"，合并时是 20 个和 11.8 秒）：删掉数字，上限已经够说明；(b) `scripts/check-quick.mjs` 头注释的笔误（"(`treeGuards`; at / within 15"）；(c) 源码树扫描器的判定：数任何带引号的 `"src"`（误判 `dataset` 4.3 s、`docs-page-meta`、`docs-sync-list`），不跟随辅助函数（漏掉 `test/sync-main.test.ts`），没有 `packages/` 根（漏掉 `test/workspace-seams.test.ts`）；(d) `test/gate-select.test.ts:80` 拼出一个字符串，被 import 图的正则读成对 `src/index.js` 的 import（使 `module-map.md` 与 `test/INDEX.md` 的 importer 数各多 1）；(e) 额外文件总数加一个 25 的上限；(f) 在空闲的机器上做一次成对计时：同一个一行的 `src/` 改动，分别用 #795 之前与之后的 `origin/main` 的门禁（现有只有负载下的 136、319、119、252 s，估计 30–35 s，置信度低）。不许：把 `typecheck:all` 或构建放回门禁。选择重放的工具在 `D:\github_repository\claude-kept\2026-11-15-archlang-ci-speedup\gate-replay\`（脚本与 17 份记录下来的改动集）。
+`docs/agents/commands.md` 里过时的算出来的数（19 个扫描器、7.5 秒）与 `scripts/check-quick.mjs` 头注释的笔误已由 #806 改好（已在 `origin/main` 上核对）。仍开着：
+
+(a) 源码树扫描器的判定：数任何带引号的 `"src"`（误判 `dataset` 4.3 s、`docs-page-meta`、`docs-sync-list`），不跟随辅助函数（漏掉 `test/sync-main.test.ts`），没有 `packages/` 根（漏掉 `test/workspace-seams.test.ts`）；(b) `test/gate-select.test.ts:80` 拼出一个字符串，被 import 图的正则读成对 `src/index.js` 的 import（使 `module-map.md` 与 `test/INDEX.md` 的 importer 数各多 1）；(c) 额外文件总数加一个 25 的上限；(d) 在空闲的机器上做一次成对计时：同一个一行的 `src/` 改动，分别用 #795 之前与之后的 `origin/main` 的门禁（现有只有负载下的 136、319、119、252 s，估计 30–35 s，置信度低）。不许：把 `typecheck:all` 或构建放回门禁。选择重放的工具在 `D:\github_repository\claude-kept\2026-11-15-archlang-ci-speedup\gate-replay\`（脚本与 17 份记录下来的改动集）。
 
 ### TR9 · 合并机器的风险层级（2026-11-16 加） — `todo` · 所有者裁定 · 依赖无（线下）
 
