@@ -304,7 +304,7 @@ describe("--strict and ok read the shown set only", () => {
   it("errors are never held back, even a later stage's (a fixtures error at --stage rooms)", () => {
     const broken = file(
       "broken.arch",
-      `plan "x" {\n  units mm\n  room id=living at (0,0) size 5000x4000 label "Living" uses living\n  furniture id=f wc in living anchor top-left\n}\n`,
+      `plan "x" {\n  units mm\n  room id=living at (0,0) size 5000x4000 label "Living" uses living\n  furniture id=f sofa in living anchor top-left\n}\n`,
     );
     for (const s of ["brief", "rooms"] as const) {
       const r = run([broken, "--json", "--stage", s]);

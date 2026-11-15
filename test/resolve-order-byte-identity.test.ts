@@ -95,7 +95,12 @@ const BASELINE: [string, string, string[]][] = [
   ],
   [
     "rooms-and-walls-diagnose.arch",
-    "ae1b1138238250099d8aa49c409ce957501e5636ad18e43e7ea78b53a52f65ed", // RM1.4: snapping is now reported (door_1 at (99999, 99999) under grid 50 raises W_GRID_SNAPPED) (was 07d6157f); RM1.4: the W_GRID_SNAPPED span points at the written value `(99999, 99999)`, 714-727 (was e5f50b01, 706-737); steps 1149 -> 1213, +64 = one DIAGNOSTIC_STEPS
+    // CO-2 (was ae1b1138): its `E_FURN_SIZE` (a `sofa`, no footprint) now says why, "a sofa has no
+    // catalogued footprint to default to", and carries one hint. So the compile diagnostics moved,
+    // and describe() with them, through the same diagnostic at its `diagnostics[8]`; code, span,
+    // order, SVG and lint() are unchanged, and that message with no hint put back into the new
+    // payload gives ae1b1138.
+    "1d95c22f51e28a05f1cb0dd6fa2a0241caa932ad8e7653ad84cde8898c2fde64", // RM1.4: snapping is now reported (door_1 at (99999, 99999) under grid 50 raises W_GRID_SNAPPED) (was 07d6157f); RM1.4: the W_GRID_SNAPPED span points at the written value `(99999, 99999)`, 714-727 (was e5f50b01, 706-737); steps 1149 -> 1213, +64 = one DIAGNOSTIC_STEPS
     [
       "E_WALL_THICKNESS@363",
       "W_UNKNOWN_MATERIAL@474",

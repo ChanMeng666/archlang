@@ -50,7 +50,7 @@ Every diagnostic carries a stable code. Look one up with `arch explain <CODE>`
 | [`E_FURN_FLUSH`](#e_furn_flush) | error | `flush` on a placement that touches no edge. |
 | [`E_FURN_ROOM`](#e_furn_room) | error | Furniture placed `in` an unknown room. |
 | [`E_FURN_ROTATE`](#e_furn_rotate) | error | Furniture rotation must be a quarter-turn. |
-| [`E_FURN_SIZE`](#e_furn_size) | error | Furniture must have a positive size. |
+| [`E_FURN_SIZE`](#e_furn_size) | error | Furniture needs a positive size: written, or its kind's catalogued footprint. |
 | [`E_HEIGHT_RANGE`](#e_height_range) | error | A height is outside the range a storey can be built at. |
 | [`E_IMPERIAL_FORM`](#e_imperial_form) | error | An imperial length is written in a form the language does not read. |
 | [`E_IMPORT_BAD_SPEC`](#e_import_bad_spec) | error | Malformed import spec. |
@@ -791,11 +791,11 @@ furniture wc at (0,0) size 400x700 rotate 45   # error: not a quarter-turn
 
 ## E_FURN_SIZE
 
-*error* — Furniture must have a positive size.
+*error* — Furniture needs a positive size: written, or its kind's catalogued footprint.
 
-**Cause.** A furniture item's width or height evaluated to zero or a negative number.
+**Cause.** A furniture item's width or height evaluated to zero or a negative number (a catalogued footprint can snap to zero on a coarse `grid`), or it has no `size` and its kind has no catalogued footprint to default to (a kind with one may leave `size` out under any placement).
 
-**Fix.** Give the item a positive `size W x H`.
+**Fix.** Write a positive `size W x H`, for a kind with no footprint too; on a `grid`, keep each side at least half a grid step, or set a finer `grid`.
 
 ```arch static
 furniture bed at (0,0) size 0x2000   # error

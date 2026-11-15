@@ -9,7 +9,14 @@
 
 import { describe, expect, it } from "vitest";
 import { compile } from "../src/index.js";
-import { CANONICAL_FIXTURES, FIXTURE_CATEGORIES, hasFixtureGlyph } from "../src/elements/fixtures-glyphs.js";
+import { parse } from "../src/parser.js";
+import { resolve, type RFurniture } from "../src/ir.js";
+import {
+  CANONICAL_FIXTURES,
+  FIXTURE_CATEGORIES,
+  canonicalFixture,
+  hasFixtureGlyph,
+} from "../src/elements/fixtures-glyphs.js";
 import { CATALOG_CATEGORIES, defaultFootprint, zoneFixtureCategories } from "../src/fixtures-catalog.js";
 import { KITCHEN_FIX, WET_FIX } from "../src/lint/rules/per-room.js";
 import { ELEMENT_GRAMMAR, assertVocabRendered } from "../scripts/gen-llm-spec.js";
@@ -108,31 +115,44 @@ describe("the canonical fixture names", () => {
 });
 
 /**
- * The spec's `against wall` claim, EXECUTED.
+ * The spec's "any placement may omit `size`" claim, EXECUTED.
  *
  * `spec.llm.md` names the categories that may omit `size`. That sentence is now interpolated
  * from `defaultFootprint`, so it cannot go stale against the catalog — but nothing yet proved
- * the catalog itself matches the resolver. These two cases compile both halves of the claim:
- * every named category really does resolve without a `size`, and every category NOT named
- * really is refused. A footprint that the resolver would not accept fails here, not in a
- * model's output.
+ * the catalog itself matches the resolver. These cases compile both halves of the claim, under
+ * every placement form the furniture statement has: every named category, and every alias of
+ * one, really does resolve without a `size`, and every category NOT named really is refused. A
+ * footprint that the resolver would not accept fails here, not in a model's output. The line
+ * also says which of them an `anchor` lays along its walled edge; that half is executed too.
  */
-describe("size-optional `against wall` placement matches the catalog", () => {
-  const plan = (category: string) => `plan "P" {
+describe("size-optional placement matches the catalog, under every placement", () => {
+  /** One statement per placement form; the room is walled on all four edges. */
+  const PLACEMENTS = [
+    "against wall w segment 0 offset 3000 in r",
+    "against r.top offset 3000",
+    "at (3000,3000)",
+    "in r centered",
+    "in r anchor top",
+    "in r anchor left",
+    "in r anchor bottom-right",
+  ] as const;
+  const plan = (category: string, placement: string = PLACEMENTS[0]) => `plan "P" {
     units mm
     wall id=w exterior thickness 200 { (0,0) (10000,0) (10000,10000) (0,10000) close }
     room id=r at (0,0) size 10000x10000 label "R"
-    furniture ${category} against wall w segment 0 offset 3000 in r
+    furniture ${category} ${placement}
   }`;
   const errorCodes = (src: string): string[] =>
     compile(src, { noCache: true })
       .diagnostics.filter((d) => d.severity === "error")
       .map((d) => d.code ?? "");
 
-  it("a catalogued footprint lets `size` be omitted", () => {
-    const sized = CANONICAL_FIXTURES.filter((c) => defaultFootprint(c) !== null);
-    expect(sized.length).toBeGreaterThan(8); // the eight originals plus the new vocabulary
-    for (const c of sized) expect(errorCodes(plan(c)), `"${c}" should resolve without a size`).toEqual([]);
+  it("a catalogued footprint lets `size` be omitted, for every family and every alias", () => {
+    const sized = FIXTURE_CATEGORIES.filter((c) => defaultFootprint(c) !== null);
+    expect(sized.length).toBeGreaterThan(CANONICAL_FIXTURES.filter((c) => defaultFootprint(c) !== null).length);
+    for (const c of sized)
+      for (const p of PLACEMENTS)
+        expect(errorCodes(plan(c, p)), `"${c}" should resolve without a size, ${p}`).toEqual([]);
   });
 
   it("the spec generator throws if the furniture line stops rendering the list", () => {
@@ -140,16 +160,72 @@ describe("size-optional `against wall` placement matches the catalog", () => {
     // eight-name-plus-ellipsis this replaced could go stale forever with `check:drift`
     // green, because that gate compares a generator to its OWN output.
     const line = ELEMENT_GRAMMAR.furniture ?? "";
-    const sized = CANONICAL_FIXTURES.filter((c) => defaultFootprint(c) !== null);
-    expect(() => assertVocabRendered(line, "size-optional fixture", sized, "/")).not.toThrow();
-    expect(() => assertVocabRendered(line, "size-optional fixture", [...sized, "hammock"], "/")).toThrow(
+    const { turned, unturned } = spokenGroups(line);
+    expect(() => assertVocabRendered(line, "size-optional fixture", turned, "/")).not.toThrow();
+    expect(() => assertVocabRendered(line, "size-optional fixture", unturned, "/")).not.toThrow();
+    expect(() => assertVocabRendered(line, "size-optional fixture", [...turned, "hammock"], "/")).toThrow(
       /size-optional fixture/,
     );
   });
 
+  /**
+   * The two lists the furniture line prints after "Any placement may omit `size`": the kinds an
+   * `anchor` lays along its one walled edge, then those it never does. Sliced by `indexOf`, not a
+   * lazy regex, over the generator's own output.
+   */
+  function spokenGroups(line: string): { turned: string[]; unturned: string[] } {
+    const lead = "the one walled edge it names): ";
+    const mid = "; never laid along an edge: ";
+    const a = line.indexOf(lead);
+    const b = line.indexOf(mid, a);
+    const end = line.indexOf(". ", b);
+    expect(
+      [a, b, end].every((i) => i > 0),
+      "the sentence as the generator prints it",
+    ).toBe(true);
+    return {
+      turned: line.slice(a + lead.length, b).split("/"),
+      unturned: line.slice(b + mid.length, end).split("/"),
+    };
+  }
+
+  it("the line's two groups are the sized families, and an anchor turns exactly the first", () => {
+    const { turned, unturned } = spokenGroups(ELEMENT_GRAMMAR.furniture ?? "");
+    const sized = CANONICAL_FIXTURES.filter((c) => defaultFootprint(c) !== null);
+    expect([...turned, ...unturned].sort()).toEqual([...sized].sort());
+    expect(turned.length).toBeGreaterThan(0);
+    expect(unturned.length).toBeGreaterThan(0);
+    const piece = (c: string, placement: string): RFurniture =>
+      resolve(parse(plan(c, placement)).plan!).ir.elements.find((e): e is RFurniture => e.kind === "furniture")!;
+    // "+ aliases": each named family with every alias of it, as the sentence is read.
+    const withAliases = (names: string[]) => FIXTURE_CATEGORIES.filter((c) => names.includes(canonicalFixture(c)!));
+    for (const [group, layAlong] of [
+      [withAliases(turned), true],
+      [withAliases(unturned), false],
+    ] as const)
+      for (const c of group) {
+        const fp = defaultFootprint(c)!;
+        // The right edge is walled: a kind the line says is laid along it backs onto it, turned
+        // 90 with its sides swapped; any other keeps the rotate-0 footprint, unturned.
+        const p = piece(c, "in r anchor right");
+        expect([p.size.w, p.size.h, p.rotate ?? 0], `${c} in r anchor right`).toEqual(
+          layAlong ? [fp.depth, fp.along, 90] : [fp.along, fp.depth, 0],
+        );
+        // "with no `rotate`/`facing`": a written turn is never overridden by the edge.
+        const q = piece(c, "in r anchor right rotate 180");
+        expect([q.size.w, q.size.h, q.rotate ?? 0], `${c} in r anchor right rotate 180`).toEqual([
+          fp.along,
+          fp.depth,
+          180,
+        ]);
+      }
+  });
+
   it("no catalogued footprint means `size` is still required", () => {
-    const unsized = [...CANONICAL_FIXTURES.filter((c) => defaultFootprint(c) === null), "widget"];
+    const unsized = [...FIXTURE_CATEGORIES.filter((c) => defaultFootprint(c) === null), "widget"];
     expect(unsized.length).toBeGreaterThan(1);
-    for (const c of unsized) expect(errorCodes(plan(c)), `"${c}" should demand a size`).toContain("E_FURN_SIZE");
+    for (const c of unsized)
+      for (const p of PLACEMENTS)
+        expect(errorCodes(plan(c, p)), `"${c}" should demand a size, ${p}`).toContain("E_FURN_SIZE");
   });
 });

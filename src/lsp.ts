@@ -369,7 +369,7 @@ function fixtureCategoryItems(): CompletionItem[] {
     const fp = footprintText(word);
     const facts: string[] = [];
     if (alias) facts.push(`another name for \`${alias}\` — one family, one symbol`);
-    if (fp) facts.push(`default footprint ${fp}, so \`against wall …\` may omit \`size\``);
+    if (fp) facts.push(`default footprint ${fp}, so any placement may omit \`size\``);
     if (spec?.requiresWall) facts.push("needs a wall behind it (supply / waste / venting)");
     if (spec?.directional) facts.push("has a back worth turning to a wall");
     if (spec?.underlay) facts.push("lies flat and is walked over rather than round");
