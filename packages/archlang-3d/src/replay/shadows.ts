@@ -13,7 +13,9 @@
  *     stretches meet at a turn sharper than 30°: at an outside corner a fan of the 16-gon's
  *     directions (`C16`) closes the gap between the two bands, and at an inside corner the two bands
  *     overlap, darker, as an inside corner is. Where they meet flatter than 30° (the chords of a
- *     curved wall, `nearlyFlat`) the two bands are mitred instead: no fan, no overlap, no corner. The
+ *     curved wall, `nearlyFlat`) the two bands are mitred instead: no fan, no overlap, no corner.
+ *     Where another stretch faces one across a gap narrower than two bands (a slot), each band takes
+ *     half the gap (`narrowed`), so neither crosses it into the solid beyond. The
  *     same buffer holds each fence run's bands (both sides of its rails) and each stair's (round the
  *     plan of its stringers).
  *   - `corner`: up each inside corner sharper than 30°, a vertical band on each of the two wall
@@ -42,8 +44,9 @@
  * engine (IEEE arithmetic, no transcendental), but not exact as `det` is, and rounded to whole
  * micrometres. A length is the square root of an exact integer sum
  * (never `Math.hypot`, whose last bit an engine may choose), and every offset is rounded to whole
- * micrometres with -0 made 0. Receivers and casters are looked up through a uniform grid, so the work
- * is the probes times the faces in one cell, not times every face of the storey.
+ * micrometres with -0 made 0. Receivers and casters are looked up through a uniform grid of near-square
+ * cells listing the faces that overlap each cell, so the work is the probes times the faces in one
+ * cell, not times every face of the storey (`TriGrid`).
  */
 import { CONTACT_SHADOW } from "../materials.js";
 import { C16, S16 } from "../mesh/c16.js";
@@ -94,7 +97,7 @@ export interface ContactShadows {
   };
 }
 
-type P2 = readonly [number, number];
+export type P2 = readonly [number, number];
 type Counts = ContactShadows["counts"];
 
 /** `u × v` in plan (x, z): positive when `v` turns counter-clockwise from `u`, exactly in sign. */
@@ -123,7 +126,7 @@ export function contactFade(ev: { riseFrom: number; riseTo: number; hidden?: boo
 }
 
 /** One plan triangle (a receiving face at its height `y`, or a caster's bottom face). */
-interface Tri {
+export interface Tri {
   a: P2;
   b: P2;
   c: P2;
@@ -133,23 +136,75 @@ interface Tri {
 }
 
 /** Whether `q` lies in `f` or on its edge (either winding). */
-function contains(f: Tri, q: P2): boolean {
+export function contains(f: Tri, q: P2): boolean {
   const s1 = cross(f.b[0] - f.a[0], f.b[1] - f.a[1], q[0] - f.a[0], q[1] - f.a[1]);
   const s2 = cross(f.c[0] - f.b[0], f.c[1] - f.b[1], q[0] - f.b[0], q[1] - f.b[1]);
   const s3 = cross(f.a[0] - f.c[0], f.a[1] - f.c[1], q[0] - f.c[0], q[1] - f.c[1]);
   return (s1 >= 0 && s2 >= 0 && s3 >= 0) || (s1 <= 0 && s2 <= 0 && s3 <= 0);
 }
 
-/** At most this many cells a side: a storey's faces are looked up in `GRID_MAX²` cells at most. */
-const GRID_MAX = 64;
+/**
+ * How the bake finds faces: `at(q)` lists at least every face that contains `q`, and `near(box)` at
+ * least every face that overlaps the box (each once). `TriGrid` is the one the bake uses; the tests
+ * pass a lookup that checks it against a scan of every face (`contactShadowsWith`).
+ */
+export interface FaceLookup {
+  at(q: P2): readonly Tri[];
+  near(x0: number, z0: number, x1: number, z1: number): Tri[];
+}
 
-/** A uniform grid over triangles' plan boxes: the triangles whose box covers a point's cell. */
-class TriGrid {
-  private readonly x0: number;
-  private readonly z0: number;
-  private readonly w: number;
-  private readonly h: number;
-  private readonly k: number;
+/** Cells a triangle gets on average, and the most cells a grid takes (memory, not correctness). */
+const CELLS_PER_TRI = 2;
+const CELLS_MAX = 1 << 16;
+
+/**
+ * Whether the closed triangle `t` and the closed box `[x0, x1] × [z0, z1]` share a point, exactly:
+ * no separating axis among the box's two and the triangle's three edge normals (`det`, integers).
+ */
+export function overlaps(t: Tri, x0: number, z0: number, x1: number, z1: number): boolean {
+  return (
+    Math.max(t.a[0], t.b[0], t.c[0]) >= x0 &&
+    Math.min(t.a[0], t.b[0], t.c[0]) <= x1 &&
+    Math.max(t.a[1], t.b[1], t.c[1]) >= z0 &&
+    Math.min(t.a[1], t.b[1], t.c[1]) <= z1 &&
+    !separates(t.a, t.b, t.c, x0, z0, x1, z1) &&
+    !separates(t.b, t.c, t.a, x0, z0, x1, z1) &&
+    !separates(t.c, t.a, t.b, x0, z0, x1, z1)
+  );
+}
+
+/** Whether the line through `p`, `q` has the box strictly on the side away from `r`. */
+function separates(p: P2, q: P2, r: P2, x0: number, z0: number, x1: number, z1: number): boolean {
+  const ux = q[0] - p[0];
+  const uz = q[1] - p[1];
+  const side = Math.sign(cross(ux, uz, r[0] - p[0], r[1] - p[1]));
+  if (side === 0) return false;
+  return (
+    side * cross(ux, uz, x0 - p[0], z0 - p[1]) < 0 &&
+    side * cross(ux, uz, x1 - p[0], z0 - p[1]) < 0 &&
+    side * cross(ux, uz, x1 - p[0], z1 - p[1]) < 0 &&
+    side * cross(ux, uz, x0 - p[0], z1 - p[1]) < 0
+  );
+}
+
+/**
+ * A uniform grid over a storey's plan triangles: a point's cell lists every triangle that overlaps
+ * it (exactly, `overlaps`), not every one whose box does, so a long sliver (a many-sided room's
+ * triangulation) is listed only where it lies. The cells are as near square as the extent allows,
+ * `kx × kz` of them about `CELLS_PER_TRI` a triangle, so a long thin plan (a row of rooms) is cut
+ * along its length and not into slivers across it (card RM8.8b item 2). A triangle containing a
+ * point is always in that point's cell: the lookup is exact, and the grid decides only how many
+ * faces are tested.
+ */
+export class TriGrid implements FaceLookup {
+  /** The grid's corner, its cells' size and their count across and down (µm; read by the tests). */
+  readonly x0: number;
+  readonly z0: number;
+  readonly w: number;
+  readonly h: number;
+  readonly kx: number;
+  readonly kz: number;
+  /** Each cell's triangles (a hole where a cell has none). */
   private readonly cells: Tri[][];
   constructor(tris: readonly Tri[]) {
     let [x0, z0, x1, z1] = [Infinity, Infinity, -Infinity, -Infinity];
@@ -160,18 +215,49 @@ class TriGrid {
         if (p[1] < z0) z0 = p[1];
         if (p[1] > z1) z1 = p[1];
       }
-    this.k = tris.length === 0 ? 0 : Math.max(1, Math.min(GRID_MAX, Math.ceil(Math.sqrt(tris.length))));
     this.x0 = x0;
     this.z0 = z0;
-    this.w = this.k === 0 ? 1 : Math.max(1, Math.ceil((x1 - x0 + 1) / this.k));
-    this.h = this.k === 0 ? 1 : Math.max(1, Math.ceil((z1 - z0 + 1) / this.k));
-    this.cells = Array.from({ length: this.k * this.k }, () => []);
+    if (tris.length === 0) {
+      [this.kx, this.kz, this.w, this.h] = [0, 0, 1, 1];
+      this.cells = [];
+      return;
+    }
+    const sx = x1 - x0 + 1;
+    const sz = z1 - z0 + 1;
+    const target = Math.min(CELLS_MAX, CELLS_PER_TRI * tris.length);
+    // Square cells of side `s` cover the extent in `target` cells; a side never exceeds the target.
+    const s = Math.sqrt((sx * sz) / target);
+    this.kx = Math.max(1, Math.min(target, Math.ceil(sx / s)));
+    this.kz = Math.max(1, Math.min(Math.floor(CELLS_MAX / this.kx), Math.ceil(sz / s)));
+    this.w = Math.max(1, Math.ceil(sx / this.kx));
+    this.h = Math.max(1, Math.ceil(sz / this.kz));
+    this.cells = new Array<Tri[]>(this.kx * this.kz);
     for (const t of tris) {
-      const xs = [t.a[0], t.b[0], t.c[0]];
-      const zs = [t.a[1], t.b[1], t.c[1]];
-      const [i0, i1] = [this.col(Math.min(...xs)), this.col(Math.max(...xs))];
-      const [j0, j1] = [this.row(Math.min(...zs)), this.row(Math.max(...zs))];
-      for (let j = j0; j <= j1; j++) for (let i = i0; i <= i1; i++) this.cells[j * this.k + i]?.push(t);
+      const i0 = this.col(Math.min(t.a[0], t.b[0], t.c[0]));
+      const i1 = this.col(Math.max(t.a[0], t.b[0], t.c[0]));
+      const j0 = this.row(Math.min(t.a[1], t.b[1], t.c[1]));
+      const j1 = this.row(Math.max(t.a[1], t.b[1], t.c[1]));
+      for (let j = j0; j <= j1; j++) {
+        const cz0 = this.z0 + j * this.h;
+        const cz1 = cz0 + this.h;
+        // The triangle's x-extent [lo, hi] within the row, in floating point (off by far less than
+        // a micrometre, a cell's least width): scanned a cell wider each way. A cell strictly
+        // between the cells of `lo` and `hi` overlaps (the triangle's part in the row is convex,
+        // within the row's height, and reaches every x in [lo, hi]); the cells at either end take
+        // the exact test.
+        const [lo, hi] = rowExtent(t, cz0, cz1);
+        const ilo = this.col(lo);
+        const ihi = this.col(hi);
+        const to = Math.min(i1, ihi + 1);
+        for (let i = Math.max(i0, ilo - 1); i <= to; i++) {
+          const cx0 = this.x0 + i * this.w;
+          if (!((i > ilo && i < ihi) || overlaps(t, cx0, cz0, cx0 + this.w, cz1))) continue;
+          const c = j * this.kx + i;
+          const list = this.cells[c];
+          if (list) list.push(t);
+          else this.cells[c] = [t];
+        }
+      }
     }
   }
   private col(x: number): number {
@@ -181,22 +267,48 @@ class TriGrid {
     return Math.floor((z - this.z0) / this.h);
   }
   at(q: P2): readonly Tri[] {
-    if (this.k === 0) return [];
+    if (this.kx === 0) return [];
     const i = this.col(q[0]);
     const j = this.row(q[1]);
-    if (i < 0 || j < 0 || i >= this.k || j >= this.k) return [];
-    return this.cells[j * this.k + i] ?? [];
+    if (i < 0 || j < 0 || i >= this.kx || j >= this.kz) return [];
+    return this.cells[j * this.kx + i] ?? [];
   }
   /** The triangles in the cells a plan box covers, each once (callers sort what they derive). */
   near(x0: number, z0: number, x1: number, z1: number): Tri[] {
-    if (this.k === 0) return [];
-    const clamp = (v: number): number => Math.max(0, Math.min(this.k - 1, v));
+    if (this.kx === 0) return [];
+    const ci = (v: number): number => Math.max(0, Math.min(this.kx - 1, v));
+    const cj = (v: number): number => Math.max(0, Math.min(this.kz - 1, v));
     const seen = new Set<Tri>();
-    for (let j = clamp(this.row(z0)); j <= clamp(this.row(z1)); j++)
-      for (let i = clamp(this.col(x0)); i <= clamp(this.col(x1)); i++)
-        for (const t of this.cells[j * this.k + i] ?? []) seen.add(t);
+    for (let j = cj(this.row(z0)); j <= cj(this.row(z1)); j++)
+      for (let i = ci(this.col(x0)); i <= ci(this.col(x1)); i++)
+        for (const t of this.cells[j * this.kx + i] ?? []) seen.add(t);
     return [...seen];
   }
+}
+
+/**
+ * The x-extent of triangle `t` within the strip `z0 ≤ z ≤ z1`, in plain floating point (a bound the
+ * grid scans from, widened by a cell; `overlaps` is the exact test). Over the whole triangle's x-range
+ * when the strip holds no vertex and no edge crosses it (it cannot both miss and overlap).
+ */
+function rowExtent(t: Tri, z0: number, z1: number): [number, number] {
+  let lo = Infinity;
+  let hi = -Infinity;
+  const take = (x: number): void => {
+    if (x < lo) lo = x;
+    if (x > hi) hi = x;
+  };
+  const ps = [t.a, t.b, t.c];
+  for (const p of ps) if (p[1] >= z0 && p[1] <= z1) take(p[0]);
+  for (let k = 0; k < 3; k++) {
+    const p = ps[k] as P2;
+    const q = ps[(k + 1) % 3] as P2;
+    if (p[1] === q[1]) continue;
+    for (const z of [z0, z1])
+      if ((p[1] - z) * (q[1] - z) < 0) take(p[0] + ((q[0] - p[0]) * (z - p[1])) / (q[1] - p[1]));
+  }
+  if (lo > hi) return [Math.min(t.a[0], t.b[0], t.c[0]), Math.max(t.a[0], t.b[0], t.c[0])];
+  return [lo, hi];
 }
 
 /** The horizontal triangles of `n` facing up (`up`) or down, at height `y` only when given. */
@@ -225,10 +337,116 @@ interface LineEdge {
 }
 
 /** A boundary stretch, oriented so the solid lies on its left (counter-clockwise round the solid). */
-interface Seg {
+export interface Seg {
   a: P2;
   b: P2;
   node: number;
+  /** Its band's width (mm) where a facing stretch narrows it (`narrowed`); else its node's. */
+  w?: number;
+}
+
+/**
+ * The stretches with each band narrowed where another stretch faces it closer than two bands (card
+ * RM8.8b item 5: the slot a thinner wall's doorway leaves in a thicker collinear wall, stress plan
+ * `s7`, where a 188 mm band crossed the 100 mm slot and came out beyond the far face). Facing: on
+ * parallel lines (the same reduced direction, exactly), opposite in direction, each in front of the
+ * other, and overlapping along their length. A stretch is cut where a facing one's ends fall along
+ * it, and each piece in front of one takes half the gap (when that is less than its band), so two
+ * facing bands meet in the middle and neither crosses the gap. `band` is a stretch's own width, mm.
+ */
+export function narrowed(segs: readonly Seg[], band: (s: Seg) => number): Seg[] {
+  const groups = new Map<string, Seg[]>();
+  for (const s of segs) {
+    const l = planLine(s.a[0], s.a[1], s.b[0], s.b[1]);
+    const key = `${l.dx},${l.dz}`;
+    const g = groups.get(key);
+    if (g) g.push(s);
+    else groups.set(key, [s]);
+  }
+  /** Per stretch: the stretches of it (`t0..t1`, its place along it) another faces, and how wide each may be. */
+  const near = new Map<Seg, Array<{ t0: number; t1: number; w: number }>>();
+  /** Where `o` falls along `s`, clipped to `s`: `[t0, t1]` with t0 < t1, or undefined. */
+  const along = (s: Seg, o: Seg): [number, number] | undefined => {
+    const dx = s.b[0] - s.a[0];
+    const dz = s.b[1] - s.a[1];
+    const l2 = dx * dx + dz * dz;
+    const ta = ((o.a[0] - s.a[0]) * dx + (o.a[1] - s.a[1]) * dz) / l2;
+    const tb = ((o.b[0] - s.a[0]) * dx + (o.b[1] - s.a[1]) * dz) / l2;
+    const t0 = Math.max(0, Math.min(ta, tb));
+    const t1 = Math.min(1, Math.max(ta, tb));
+    return t1 > t0 ? [t0, t1] : undefined;
+  };
+  const note = (s: Seg, o: Seg, w: number): void => {
+    if (w >= band(s)) return;
+    const t = along(s, o);
+    if (!t) return;
+    const list = near.get(s);
+    if (list) list.push({ t0: t[0], t1: t[1], w });
+    else near.set(s, [{ t0: t[0], t1: t[1], w }]);
+  };
+  for (const key of [...groups.keys()].sort()) {
+    const g = groups.get(key) as Seg[];
+    if (g.length < 2) continue;
+    const [dx, dz] = key.split(",").map(Number) as [number, number];
+    const len = lengthOf(dx, dz);
+    // Each stretch's place across the lines (its line's signed distance from the origin) and its
+    // extent along them, in floating point: they only find the candidates, the facing test below is
+    // exact. A sweep along the lines pairs the stretches whose extents overlap.
+    let widest = 0;
+    for (const s of g) widest = Math.max(widest, band(s));
+    const reach = 2000 * widest;
+    const items = g
+      .map((s) => {
+        const [ta, tb] = [(dx * s.a[0] + dz * s.a[1]) / len, (dx * s.b[0] + dz * s.b[1]) / len];
+        return { s, off: (dx * s.a[1] - dz * s.a[0]) / len, lo: Math.min(ta, tb), hi: Math.max(ta, tb) };
+      })
+      .sort((p, q) => p.lo - q.lo || p.off - q.off);
+    let active: typeof items = [];
+    for (const it of items) {
+      active = active.filter((o) => o.hi > it.lo);
+      for (const o of active) {
+        if (Math.abs(o.off - it.off) > reach) continue;
+        const [s, t] = [it.s, o.s];
+        const fs = frame(s);
+        const ft = frame(t);
+        // Opposite in direction, and `t` in front of `s` (on its outward side): then `s` is in
+        // front of `t` too (the relation is symmetric, so each pair is tested once).
+        if (fs.d[0] * ft.d[0] + fs.d[1] * ft.d[1] >= 0) continue;
+        const ex = t.a[0] - s.a[0];
+        const ez = t.a[1] - s.a[1];
+        if (cross(fs.d[0], fs.d[1], ex, ez) >= 0) continue;
+        // The gap from the exact cross product (an integer, then one rounding), never from the
+        // float normal, whose cancellation on a long, nearly parallel offset could give a negative
+        // width; and never below 0.
+        const c = BigInt(fs.d[0]) * BigInt(ez) - BigInt(fs.d[1]) * BigInt(ex);
+        const w = Math.max(0, -Number(c) / fs.len / 2000);
+        note(s, t, w);
+        note(t, s, w);
+      }
+      active.push(it);
+    }
+  }
+  return segs.flatMap((s): Seg[] => {
+    const list = near.get(s);
+    if (!list) return [s];
+    const own = band(s);
+    const ts = [...new Set([0, 1, ...list.flatMap((c) => [c.t0, c.t1])])].sort((x, y) => x - y);
+    const f = frame(s);
+    const at = (t: number): P2 =>
+      t === 0 ? s.a : t === 1 ? s.b : [whole(s.a[0] + f.d[0] * t), whole(s.a[1] + f.d[1] * t)];
+    const out: Seg[] = [];
+    for (let k = 0; k + 1 < ts.length; k++) {
+      const [t0, t1] = [ts[k] as number, ts[k + 1] as number];
+      const m = (t0 + t1) / 2;
+      let w = own;
+      for (const c of list) if (c.t0 <= m && m <= c.t1 && c.w < w) w = c.w;
+      const last = out[out.length - 1];
+      const lw = last ? (last.w ?? own) : undefined;
+      if (last && lw === w) last.b = at(t1);
+      else out.push({ a: at(t0), b: at(t1), node: s.node, ...(w < own ? { w } : {}) });
+    }
+    return out.filter((p) => p.a[0] !== p.b[0] || p.a[1] !== p.b[1]);
+  });
 }
 
 /**
@@ -366,6 +584,19 @@ export function contactShadows(
   ground?: { y: number },
   lines?: ReadonlyArray<readonly number[] | undefined>,
 ): ContactShadows {
+  return contactShadowsWith(nodes, ground, lines, (tris) => new TriGrid(tris));
+}
+
+/**
+ * `contactShadows` with the face lookups `lookup` builds (`TriGrid` there). Not in the package's
+ * exports: `test/shadows.test.ts` passes a lookup that checks the grid against a scan of every face.
+ */
+export function contactShadowsWith(
+  nodes: readonly ReplayNode[],
+  ground: { y: number } | undefined,
+  lines: ReadonlyArray<readonly number[] | undefined> | undefined,
+  lookup: (tris: readonly Tri[]) => FaceLookup,
+): ContactShadows {
   const counts: Counts = {
     edges: 0,
     convex: 0,
@@ -390,7 +621,7 @@ export function contactShadows(
     for (const [n] of here)
       if (n.kind === "floor" || n.kind === "slab" || n.kind === "outdoor" || n.flat === true)
         flatFaces(n, true, undefined, faces);
-    const receivers = new TriGrid(faces);
+    const receivers = lookup(faces);
     const groundY = level === lowest ? ground?.y : undefined;
     /** The band height over the highest receiving face under any of `qs`, or undefined over none. */
     const over = (qs: readonly P2[]): number | undefined => {
@@ -439,7 +670,7 @@ export function contactShadows(
       for (const [n] of walls) e = Math.min(e, yRange(n)[0]);
       const tris: Array<{ node: number; p: readonly [P2, P2, P2] }> = [];
       for (const [n, i] of walls) downFaces(n, i, e, tris);
-      const solid = new TriGrid(tris.map((t) => ({ a: t.p[0], b: t.p[1], c: t.p[2], y: e, node: t.node })));
+      const solid = lookup(tris.map((t) => ({ a: t.p[0], b: t.p[1], c: t.p[2], y: e, node: t.node })));
       const inSolid = (q: P2): boolean => {
         counts.probes++;
         for (const f of solid.at(q)) {
@@ -451,7 +682,7 @@ export function contactShadows(
       // Where casters overlap the summed edges are not the outline: cut each stretch where another
       // node's bottom face begins or ends along it, and keep the pieces whose outside (1 mm out from
       // the piece's middle) is no caster's.
-      const segs = outline(tris).flatMap((s): Seg[] => {
+      const cutSegs = outline(tris).flatMap((s): Seg[] => {
         const f = frame(s);
         const ts = [0, 1];
         const [bx0, bx1] = [Math.min(s.a[0], s.b[0]), Math.max(s.a[0], s.b[0])];
@@ -492,7 +723,8 @@ export function contactShadows(
         if (from !== undefined) kept.push({ a: at(from), b: s.b, node: s.node });
         return kept.filter((k) => k.a[0] !== k.b[0] || k.a[1] !== k.b[1]);
       });
-      const bandOf = (s: Seg): number => nodes[s.node]?.band ?? 0;
+      const bandOf = (s: Seg): number => s.w ?? nodes[s.node]?.band ?? 0;
+      const segs = narrowed(cutSegs, bandOf);
       const pk = (p: P2): string => `${p[0]},${p[1]}`;
       const ending = new Map<string, Seg[]>();
       const starting = new Map<string, Seg[]>();
@@ -520,7 +752,9 @@ export function contactShadows(
         const turn = cross(fi.d[0], fi.d[1], fo.d[0], fo.d[1]);
         if (nearlyFlat(fi.d, fo.d, 1, 1)) {
           // Flatter than 30° (a curved wall's chords; a straight joint of two casters): the two
-          // bands share one outer corner on the bisector, so they neither overlap nor part.
+          // bands' outer corners lie on the bisector, so they neither overlap nor part. Where
+          // `narrowed` cut a stretch (a narrowed piece beside a full-width one, on one line) the two
+          // widths differ and the band steps in width there.
           const m: [number, number] = [fi.n[0] + fo.n[0], fi.n[1] + fo.n[1]];
           const k = 1 + fi.n[0] * fo.n[0] + fi.n[1] * fo.n[1];
           outerB.set(si, scaled([m[0] / k, m[1] / k], bandOf(si)));

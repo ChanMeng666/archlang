@@ -2,6 +2,28 @@
 
 ## [Unreleased]
 
+### Fixed
+
+- A contact-shadow band no longer crosses a narrow slot into the wall beyond it (card RM8.8b): where
+  another wall face stands parallel to a band's own and facing it closer than two bands, each of the
+  two bands takes half the gap. In the stress plan with a doorway leaving a 100 mm slot in a thicker
+  wall, the 188 mm bands crossed the slot and showed 13 mm beyond the far face; in
+  `hexagon-pavilion` the drum's and the east and west spokes' bands crossed the 52 mm between them.
+  No other shipped plan's bands move, so the key frames, posters and videos are unchanged; the
+  Mesh3D and GLB are untouched (the bands are the viewer's).
+- `npm -w packages/archlang-3d run e2e -- <file>` now filters both of its passes (card RM8.8b): npm
+  appended the filter to the frame-budget pass only, so every other e2e file ran regardless. The
+  script is one runner (`scripts/e2e.ts`) that gives each pass the filters that select its files and
+  skips a pass they select none of; with no filter it runs the same two passes as before.
+
+### Changed
+
+- The contact shadows' lookups cost less on a long thin plan and on a many-sided room (card RM8.8b):
+  the faces are listed in near-square grid cells, about two a face, and a cell lists a face only when
+  the two overlap (an exact test), not every face whose box reaches it. Tests a lookup makes fall
+  from 36.9 to 4.6 on a row of 400 rooms, and from 545.5 to 62.2 on a 2880-sided round room. The
+  bands are byte for byte the same.
+
 ## [0.8.0] - 2026-11-14
 
 The core peer range rises to `^1.61.0` (`MIN_CORE`): the winder treads below are cut on the core's `winderTreads`, new in core 1.61.0, as the stairs read `treadCount` from 1.57.0. The read stays feature-detected, so a core below the floor still builds every plan, a `winders` landing level (`stair-winders-not-read`). The sixteen new families' generators and the new floor and ground finishes come into use only with a core that knows their words, 1.61.0; an older core never hands them a piece.
