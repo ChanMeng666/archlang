@@ -95,10 +95,11 @@ describe("treeGuards: the scanners no import reaches", () => {
     expect(files_(treeGuards(ROOT, ["test/cache.test.ts"], files))).toContain("test/no-cli-spawn.test.ts");
   });
 
-  it("a changed src/ file wakes the provenance walk and the escaper-chain scan", () => {
+  it("a changed src/ file wakes the provenance walk", () => {
+    // Nineteen scanners read src/ and eight slots exist: the escaper-chain scan (it reads five trees, so it
+    // ranks after the ones dedicated to src/) is woken by a change under eval/ or scripts/, below.
     const got = files_(treeGuards(ROOT, ["src/cli/commands-analyze.ts"], files));
     expect(got).toContain("test/lint-provenance.test.ts");
-    expect(got).toContain("test/no-replace-chain-escapers.test.ts");
   });
 
   it("a changed eval/ or scripts/ file wakes the escaper-chain scan, a changed docs page wakes none", () => {
@@ -126,6 +127,7 @@ describe("treeGuards: the scanners no import reaches", () => {
   describe("on a temp tree", () => {
     let dir = "";
     const scanner = `import { readdirSync, readFileSync } from "node:fs";\nreaddirSync("src").map((f) => readFileSync(f));\n`;
+    const wide = `${scanner}readdirSync("scripts").map((f) => readFileSync(f));\n`;
     const names = (l: Pick[]) => files_(l).map((f) => f.replace(/^test\/|\.test\.ts$/g, ""));
     beforeAll(() => {
       dir = mkdtempSync(join(tmpdir(), "gate-tree-"));
@@ -133,9 +135,10 @@ describe("treeGuards: the scanners no import reaches", () => {
       for (const n of ["a", "b", "c", "d", "e", "f", "g", "h", "i", "j"]) {
         writeFileSync(join(dir, "test", `${n}.test.ts`), scanner);
       }
+      writeFileSync(join(dir, "test", "wide.test.ts"), wide);
       writeFileSync(join(dir, "test", "not-a-scanner.test.ts"), `it("x", () => 1);\n`);
-      // `a`..`g` are recorded; `h`..`j` are not.
-      const rec: Record<string, number> = { a: 0.1, b: 0.2, c: 0.3, d: 0.4, e: 0.5, f: 0.6, g: 0.7 };
+      // `a`..`g` and `wide` are recorded; `h`..`j` are not (costed at 0.5).
+      const rec: Record<string, number> = { a: 0.1, b: 0.2, c: 0.3, d: 0.8, e: 0.9, f: 1.0, g: 1.1, wide: 5 };
       writeFileSync(
         join(dir, "test", ".durations.json"),
         JSON.stringify(Object.fromEntries(Object.entries(rec).map(([k, v]) => [`test/${k}.test.ts`, v]))),
@@ -143,20 +146,25 @@ describe("treeGuards: the scanners no import reaches", () => {
     });
     afterAll(() => rmSync(dir, { recursive: true, force: true }));
     const all = () =>
-      ["a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "not-a-scanner"].map((n) => `test/${n}.test.ts`);
+      ["a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "wide", "not-a-scanner"].map((n) => `test/${n}.test.ts`);
 
-    it("takes at most 8 files, the unrecorded first, then the cheapest", () => {
-      expect(names(treeGuards(dir, ["src/x.ts"], all()))).toEqual(["h", "i", "j", "a", "b", "c", "d", "e"]);
+    it("takes at most 8 files, the longest-running first", () => {
+      expect(names(treeGuards(dir, ["src/x.ts"], all()))).toEqual(["g", "f", "e", "d", "h", "i", "j", "c"]);
     });
 
-    it("takes at most the seconds it is given, and costs an unrecorded scanner at a small default", () => {
-      const got = treeGuards(dir, ["src/x.ts"], all(), 8, 1.2);
-      expect(got.reduce((a: number, g: Pick) => a + (g.secs ?? 0), 0)).toBeLessThanOrEqual(1.2);
-      expect(names(got)).toEqual(["h", "i", "a"]); // 0.5 + 0.5, then 0.1; the next costs 0.2 and no longer fits
+    it("takes at most the seconds it is given, and skips what no longer fits", () => {
+      const got = treeGuards(dir, ["src/x.ts"], all(), 8, 2.45);
+      expect(names(got)).toEqual(["g", "f", "c"]); // 1.1 + 1.0, then 0.3; `e`, `d`, `h`, `b`, `a` would pass 2.45
     });
 
-    it("a scanner with no record does not sort last", () => {
-      expect(names(treeGuards(dir, ["src/x.ts"], all(), 1))).toEqual(["h"]);
+    it("costs a scanner with no record at a small default, not at infinity", () => {
+      const got = treeGuards(dir, ["src/x.ts"], ["test/h.test.ts"]) as Pick[];
+      expect(got.map((g) => g.secs)).toEqual([0.5]);
+    });
+
+    it("ranks the scanner dedicated to the woken tree before one that lists several", () => {
+      expect(names(treeGuards(dir, ["src/x.ts"], all(), 1))).toEqual(["g"]);
+      expect(names(treeGuards(dir, ["src/x.ts"], ["test/a.test.ts", "test/wide.test.ts"]))).toEqual(["a", "wide"]);
     });
   });
 });

@@ -140,9 +140,10 @@ function capByCost(ordered, maxFiles, maxSecs) {
 /**
  * The scanner tests a change set wakes: those scanning a tree a changed code file sits in, within
  * `maxFiles` files and `maxSecs` recorded seconds. The slots are dealt round-robin over the woken trees
- * (a change under `src/` and `test/` gets scanners of both), and within a tree ranked: tests the duration
- * record does not list yet first (a scanner added since CI last recorded; costed at `UNKNOWN_SCAN_SECS`),
- * then cheapest, then by name. Each is `{ file, why, secs }`.
+ * (a change under `src/` and `test/` gets scanners of both), and within a tree ranked: the scanners
+ * dedicated to it (the fewest trees scanned) before those that list it among several, then the
+ * longer-running (a scanner that reads more files takes longer; a test the duration record does not list
+ * yet is costed at `UNKNOWN_SCAN_SECS`), then by name. Each is `{ file, why, secs }`.
  */
 export function treeGuards(ROOT, changed, files, maxFiles = TREE_MAX_FILES, maxSecs = TREE_MAX_SECS) {
   const woken = TREE_ROOTS.filter((r) => changed.some((f) => touchesTree(r, f)));
@@ -150,18 +151,19 @@ export function treeGuards(ROOT, changed, files, maxFiles = TREE_MAX_FILES, maxS
   const durations = readDurations(ROOT);
   const found = [];
   for (const t of files.filter((f) => isTest(f) && existsSync(join(ROOT, f)))) {
-    const roots = [...scannedTrees(readFileSync(join(ROOT, t), "utf8"), t)].filter((r) => woken.includes(r));
+    const scanned = scannedTrees(readFileSync(join(ROOT, t), "utf8"), t);
+    const roots = [...scanned].filter((r) => woken.includes(r));
     if (roots.length > 0) {
       found.push({
         file: t,
         roots,
+        breadth: scanned.size,
         why: `scans ${roots.map((r) => `${r}/`).join(" and ")}`,
-        recorded: durations[t] !== undefined,
         secs: durations[t] ?? UNKNOWN_SCAN_SECS,
       });
     }
   }
-  found.sort((a, b) => Number(a.recorded) - Number(b.recorded) || a.secs - b.secs || (a.file < b.file ? -1 : 1));
+  found.sort((a, b) => a.breadth - b.breadth || b.secs - a.secs || (a.file < b.file ? -1 : 1));
   const out = [];
   let spent = 0;
   for (let dealt = true; dealt && out.length < maxFiles; ) {
