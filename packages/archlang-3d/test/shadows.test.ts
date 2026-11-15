@@ -217,6 +217,48 @@ describe("contact shadows (card RM8.8)", () => {
     expect(s.casters.some((c) => c[0] === "L2/furniture:x")).toBe(true);
   });
 
+  it("whether a piece is hung reads no ledger row: stripped or contradicted, the ledger moves no band (card RM8.8b item 1)", () => {
+    // The ledger's furniture rows are per category or per id with no storey; a hung piece is told
+    // by its own node (`extras.hung`). Only the fence posts (one row a style) and the ground plane's
+    // storey are read from the ledger, so with every other row gone, or a mount row naming every
+    // standing piece, each node casts what it cast.
+    const kept = new Set(["fence-profile-default", "ground-plane-viewer-only"]);
+    for (const name of ["furnished-flat", "laneway-house", "corner-cafe"]) {
+      const src = sourceOf(name);
+      const r = adaptPlan(src, { world: WORLD });
+      if (!r.ok) throw new Error(r.refusal.code);
+      const mesh = buildMesh(r.scene);
+      const svg = compile(src, { world: WORLD }).svg;
+      const casts = (m: typeof mesh): string =>
+        JSON.stringify(replayPayload(m, { title: name, svg }).nodes.map((n) => [n.key, n.band, n.flat]));
+      const before = casts(mesh);
+      expect(mesh.nodes.some((n) => n.extras.hung === true) || name === "laneway-house", name).toBe(true);
+      expect(casts({ ...mesh, assumptions: mesh.assumptions.filter((a) => kept.has(a.rule)) }), name).toBe(before);
+      // The rows as the mesh builder writes them for a hung piece: by category, and by id.
+      const lies: typeof mesh.assumptions = mesh.nodes
+        .filter((n) => n.kind === "furniture" && n.extras.hung !== true)
+        .flatMap((n) => [
+          {
+            kind: "furniture",
+            field: `mount_mm(${String(n.extras.category)})`,
+            value: 1400,
+            provenance: "default" as const,
+            rule: "furniture-mount-default",
+          },
+          {
+            kind: "furniture",
+            id: n.id,
+            field: "top_mm",
+            value: 1900,
+            provenance: "default" as const,
+            rule: "furniture-mount-from-top",
+          },
+        ]);
+      expect(lies.length, name).toBeGreaterThan(0);
+      expect(casts({ ...mesh, assumptions: [...mesh.assumptions, ...lies] }), name).toBe(before);
+    }
+  });
+
   it("a band fades in over the last quarter of its caster's rise, by ease, and not before", () => {
     const ev = { riseFrom: 0.6, riseTo: 0.7 };
     expect(contactFade(ev, 0.6)).toBe(0);
