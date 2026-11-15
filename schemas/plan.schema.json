@@ -233,6 +233,18 @@
               ]
             }
           },
+          "floor": {
+            "enum": [
+              "tile",
+              "paving",
+              "deck",
+              "concrete",
+              "timber",
+              "carpeting",
+              "stone"
+            ],
+            "description": "`floor <pattern>`: the hatch the room's floor is drawn with. A drawing fact: no area, use or rule reads it. Omitted when not written."
+          },
           "x": {
             "type": "number",
             "description": "Top-left corner X in millimetres."
@@ -906,6 +918,171 @@
         }
       }
     },
+    "outdoor": {
+      "type": "array",
+      "description": "Ground surfaces outside the building (`outdoor`): lawn, paving, deck, water, a balcony. NOT rooms: they are in no `rooms` row, no area total and no `edges`/`input_graph` fact, and they obstruct nothing. A rectangle (x/y/width/height) or an explicit `polygon` ring. Omitted when the plan has none.",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "kind"
+        ],
+        "anyOf": [
+          {
+            "required": [
+              "x",
+              "y",
+              "width",
+              "height"
+            ]
+          },
+          {
+            "required": [
+              "polygon"
+            ]
+          }
+        ],
+        "properties": {
+          "instance": {
+            "type": "string",
+            "description": "Output-only, and present only when the payload carries `instances`: the placed instance this row was born inside. The row is that instance's element in plan coordinates under its dotted id (`west.kit`), kept for a reader that only wants geometry. On input a marked row is regenerated from its component and an edit to it is IGNORED: edit `components[].body` (or `instances[]`) instead. A marked row's `id` must start with `<instance>.` (a dimension has none), so a root row cannot be marked and lost by mistake (E_JSON_SCHEMA). Never present on a row inside `components[].body`."
+          },
+          "id": {
+            "type": "string",
+            "description": "Unique surface id."
+          },
+          "kind": {
+            "enum": [
+              "lawn",
+              "planting",
+              "paving",
+              "deck",
+              "gravel",
+              "water",
+              "driveway",
+              "patio",
+              "balcony",
+              "sand",
+              "soil"
+            ],
+            "description": "Which ground surface: decides the hatch, the tint and the CAD layer."
+          },
+          "x": {
+            "type": "number",
+            "description": "Top-left corner X in millimetres (a polygon's bounding box on output)."
+          },
+          "y": {
+            "type": "number",
+            "description": "Top-left corner Y in millimetres (a polygon's bounding box on output)."
+          },
+          "width": {
+            "type": "number",
+            "description": "Width in millimetres."
+          },
+          "height": {
+            "type": "number",
+            "description": "Height in millimetres (a plan extent, not a vertical height)."
+          },
+          "polygon": {
+            "type": "array",
+            "minItems": 3,
+            "description": "An implicitly-closed simple ring of >=3 vertices instead of the rectangle; replaces x/y/width/height on input. Not on a `balcony`, which is rectangle-only.",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "x",
+                "y"
+              ],
+              "properties": {
+                "x": {
+                  "type": "number",
+                  "description": "X coordinate in millimetres (origin top-left, +x right)."
+                },
+                "y": {
+                  "type": "number",
+                  "description": "Y coordinate in millimetres (+y DOWN, screen convention)."
+                }
+              }
+            }
+          },
+          "label": {
+            "type": "string",
+            "description": "Printed name, drawn with the area beneath it."
+          },
+          "rail": {
+            "type": "array",
+            "description": "`rail <edges>` as written, on a `balcony` only: on output the sides it rails (an empty array is `rail none`); on input `all` and `none` are accepted too. Omitted when the rail is derived (every edge with no wall behind it), which the way back derives again.",
+            "items": {
+              "enum": [
+                "top",
+                "bottom",
+                "left",
+                "right",
+                "all",
+                "none"
+              ]
+            }
+          }
+        }
+      }
+    },
+    "fences": {
+      "type": "array",
+      "description": "Fence runs on the ground (`fence`): straight polylines. NOT walls: a fence hosts no opening and is in no `walls` row. Omitted when the plan has none.",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "points"
+        ],
+        "properties": {
+          "instance": {
+            "type": "string",
+            "description": "Output-only, and present only when the payload carries `instances`: the placed instance this row was born inside. The row is that instance's element in plan coordinates under its dotted id (`west.kit`), kept for a reader that only wants geometry. On input a marked row is regenerated from its component and an edit to it is IGNORED: edit `components[].body` (or `instances[]`) instead. A marked row's `id` must start with `<instance>.` (a dimension has none), so a root row cannot be marked and lost by mistake (E_JSON_SCHEMA). Never present on a row inside `components[].body`."
+          },
+          "id": {
+            "type": "string",
+            "description": "Unique fence id."
+          },
+          "style": {
+            "enum": [
+              "picket",
+              "panel",
+              "post"
+            ],
+            "description": "How it draws. Defaults to `picket`."
+          },
+          "points": {
+            "type": "array",
+            "minItems": 2,
+            "description": "Polyline vertices in order, straight runs only.",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "x",
+                "y"
+              ],
+              "properties": {
+                "x": {
+                  "type": "number",
+                  "description": "X coordinate in millimetres (origin top-left, +x right)."
+                },
+                "y": {
+                  "type": "number",
+                  "description": "Y coordinate in millimetres (+y DOWN, screen convention)."
+                }
+              }
+            }
+          },
+          "closed": {
+            "type": "boolean",
+            "description": "Whether the run closes back to its first vertex."
+          }
+        }
+      }
+    },
     "components": {
       "type": "array",
       "description": "The components the plan's placed instances were made from. Present (with `instances`, and with `instance` on every flattened instance row) ONLY on a storey where a placed component derives its walls with `walls from rooms`; every other payload has neither key, and a placed plan without that statement is exported flattened. Each body is what one instance resolved to in the component's own frame and names (`liv`, not `west.liv`), with the same row shapes as the root: the `walls from rooms` statement as written, never the walls it derives. A component that took parameters is carried parameterless, its arguments already applied. planFromJson prints each as `component <name>() { … }`. Not representable (planToJson refuses, E_JSON_DERIVED_IN_INSTANCE): a nested `place`, two instances of one component with different bodies, an imported component.",
@@ -952,6 +1129,12 @@
               },
               "columns": {
                 "$ref": "#/properties/columns"
+              },
+              "outdoor": {
+                "$ref": "#/properties/outdoor"
+              },
+              "fences": {
+                "$ref": "#/properties/fences"
               }
             }
           }

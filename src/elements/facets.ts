@@ -51,8 +51,8 @@ export const KIND_FACETS = {
   escalator: { cropped: false, shell: false, stacked: true,  unprojected: true,  opening: false, vertical: true,  styled: true,  label: null },
   roof:      { cropped: false, shell: false, stacked: false, unprojected: true,  opening: false, vertical: false, styled: true,  label: null },
   void:      { cropped: false, shell: false, stacked: true,  unprojected: true,  opening: false, vertical: false, styled: true,  label: null },
-  outdoor:   { cropped: false, shell: false, stacked: false, unprojected: true,  opening: false, vertical: false, styled: true,  label: "surface" },
-  fence:     { cropped: false, shell: false, stacked: false, unprojected: true,  opening: false, vertical: false, styled: true,  label: null },
+  outdoor:   { cropped: false, shell: false, stacked: false, unprojected: false, opening: false, vertical: false, styled: true,  label: "surface" },
+  fence:     { cropped: false, shell: false, stacked: false, unprojected: false, opening: false, vertical: false, styled: true,  label: null },
   walls:     { cropped: false, shell: false, stacked: false, unprojected: false, opening: false, vertical: false, styled: false, label: null },
   section:   { cropped: false, shell: false, stacked: false, unprojected: true,  opening: false, vertical: false, styled: true,  label: null },
 } as const satisfies Record<ElementKind, KindFacets>;

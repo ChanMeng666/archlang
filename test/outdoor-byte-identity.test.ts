@@ -279,7 +279,17 @@ describe("outdoor/fence/boundary byte-identity — a plan that uses none of them
   }
 });
 
-describe("the three forms are absent from the Plan JSON projection", () => {
+/**
+ * RM3.1 (PS0.21) moved `outdoor` and `fence` into Plan JSON, each in a key of its own
+ * (`outdoor`, `fences`); the lot line (`site … boundary`) stays out. So the law here is now:
+ * with those two keys taken out, the projection is byte-identical to the plan without the forms.
+ */
+const withoutGround = (json: object | undefined): string => {
+  const { outdoor: _o, fences: _f, ...rest } = (json ?? {}) as Record<string, unknown>;
+  return JSON.stringify(rest);
+};
+
+describe("the three forms touch the Plan JSON projection only in their own keys", () => {
   const PLAN = (extra: string): string =>
     `plan "J" {\n  units mm\n` +
     `  wall id=w1 exterior thickness 200 { (0,0) (8000,0) (8000,5000) (0,5000) close }\n` +
@@ -300,7 +310,7 @@ describe("the three forms are absent from the Plan JSON projection", () => {
    */
   const SITE = `  site {\n    street south\n`;
 
-  it("adding ground, a fence and a lot line does not change one byte of `planToJson`", () => {
+  it("adding ground, a fence and a lot line changes no byte of `planToJson` outside `outdoor`/`fences`", () => {
     const bare = planToJson(PLAN(`${SITE}  }\n`));
     const all = planToJson(
       PLAN(
@@ -312,13 +322,15 @@ describe("the three forms are absent from the Plan JSON projection", () => {
     );
     expect(bare.diagnostics.filter((d) => d.severity === "error")).toEqual([]);
     expect(all.diagnostics.filter((d) => d.severity === "error")).toEqual([]);
-    expect(JSON.stringify(all.json)).toBe(JSON.stringify(bare.json));
+    expect(all.json?.outdoor).toHaveLength(2);
+    expect(all.json?.fences).toHaveLength(1);
+    expect(withoutGround(all.json)).toBe(JSON.stringify(bare.json));
   });
 
-  it("…and neither does each form ON ITS OWN, against a plan with no `site` at all", () => {
+  it("…and so does each form ON ITS OWN, against a plan with no `site` at all", () => {
     // The per-form version of the same law. It runs against the bare control precisely
-    // BECAUSE the site case cannot: it proves that `outdoor` and `fence` add nothing even
-    // to a projection that has no `site` key to hide behind.
+    // BECAUSE the site case cannot: it proves that `outdoor` and `fence` add nothing beyond
+    // their own key even to a projection that has no `site` key to hide behind.
     const bare = JSON.stringify(planToJson(PLAN("")).json);
     for (const extra of [
       `  outdoor lawn at (-3000,-3000) size 16000x13000 label "Garden"\n`,
@@ -326,14 +338,16 @@ describe("the three forms are absent from the Plan JSON projection", () => {
       `  outdoor paving polygon (0,0) (4000,0) (4000,3000)\n`,
       `  fence picket { (-4000,-4000) (14000,-4000) }\n`,
     ]) {
-      expect(JSON.stringify(planToJson(PLAN(extra)).json), extra.trim()).toBe(bare);
+      expect(withoutGround(planToJson(PLAN(extra)).json), extra.trim()).toBe(bare);
     }
   });
 
-  it("no new keyword appears in either committed schema", () => {
-    for (const f of ["schemas/plan.schema.json", "schemas/intent.schema.json"]) {
-      expect(readFileSync(f, "utf8")).not.toMatch(/"(outdoor|fence|boundary|rail)"/);
-    }
+  it("the plan schema gains `outdoor` and `fences` and still has no `boundary`; the intent schema none", () => {
+    const planSchema = readFileSync("schemas/plan.schema.json", "utf8");
+    expect(planSchema).toMatch(/"outdoor"/);
+    expect(planSchema).toMatch(/"fences"/);
+    expect(planSchema).not.toMatch(/"boundary"/);
+    expect(readFileSync("schemas/intent.schema.json", "utf8")).not.toMatch(/"(outdoor|fence|boundary|rail)"/);
   });
 });
 

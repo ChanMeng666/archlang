@@ -551,7 +551,14 @@ describe("compile tool", () => {
     expect(out.ok).toBe(true);
     expect(out.dropped).toEqual(want);
     expect(out.output).toEqual(planToJson(LOSSY).json);
-    const control = await call(client, "compile", { source: TWO_ROOMS, format: "json" });
+    // The control names every id: an unnamed wall or window is reported as `auto id` (core RM3.1).
+    const NAMED = `plan "Named" {
+  wall id=w exterior thickness 200 { (0,0) (6000,0) (6000,4000) (0,4000) close }
+  room id=a at (0,0) size 6000x4000 label "Living" uses living
+  door id=d0 at (1500,4000) width 900 wall exterior hinge left swing in
+}`;
+    expect(planToJson(NAMED).dropped).toBeUndefined();
+    const control = await call(client, "compile", { source: NAMED, format: "json" });
     expect("dropped" in control).toBe(false);
     const svg = await call(client, "compile", { source: LOSSY });
     expect("dropped" in svg).toBe(false);
