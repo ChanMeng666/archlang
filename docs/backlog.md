@@ -1699,9 +1699,13 @@ shadows, approved by the owner 2026-11-11).
 
 ## Playground residue (public-surfaces cards P2 and P3, 2026-11-06)
 
-- PG.1 · A room cannot be reached from the keyboard — closed by a "Rooms" control in the drawing's
-  corner (`playground/src/room-index.ts`), out of sight until focused, listing the storey's rooms; each opens
-  the same card with the focus, which goes back to the control on Escape; pinned by `panels.spec`'s keyboard case
+### PG.1 · A room cannot be reached from the keyboard: done by #824, waiting to be archived — `note`
+
+The hover tooltip and the room's facts card (`playground/src/interact.ts`, `room-card.ts`) open
+from the pointer only: no room in the drawing takes the focus, so a keyboard or screen-reader user
+cannot open a room's card at all. Once open, the card is reachable and Escape closes it. One way:
+a focusable list of the rooms (the facts line, or a "Rooms" control) that opens the same card.
+**Gate:** an e2e case opens a room's card from the keyboard alone; the card keeps its focus rules.
 
 ### PG.2 · The card and the tooltip pick a room by its shape: done by #822, waiting to be archived — `note`
 

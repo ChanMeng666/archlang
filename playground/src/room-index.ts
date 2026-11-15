@@ -1,5 +1,5 @@
 /**
- * The rooms from the keyboard (card PG.1): a "Rooms" control in the drawing's bottom-left corner
+ * The rooms from the keyboard (card PG.1): a "Rooms" control in the drawing's bottom-right corner
  * that lists the storey's rooms, each a button that opens the room's facts card (room-card.ts), the
  * same card a click on the room opens. The drawing itself takes no focus, so without this a
  * keyboard or screen-reader user could not open a card at all.

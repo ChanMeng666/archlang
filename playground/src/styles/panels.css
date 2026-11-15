@@ -408,10 +408,12 @@
 }
 
 /* The rooms from the keyboard (room-index.ts, card PG.1): out of sight until it has the focus, as
-   a skip link is, then a sheet-world panel in the drawing's lower-left corner, over the knobs. */
+   a skip link is, then a sheet-world panel in the drawing's lower-right corner, clear of the knobs
+   panel in the lower-left (on a phone the knobs are a full-width sheet, which it overlaps only
+   while it has the focus). */
 .room-index {
   position: absolute;
-  left: 12px;
+  right: 12px;
   bottom: 12px;
   z-index: 8;
   max-height: calc(100% - 24px);
