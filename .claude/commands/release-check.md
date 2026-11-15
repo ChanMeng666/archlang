@@ -138,7 +138,7 @@ you observed. Do NOT push anything — this command only verifies.
    types, the CLI's checked GLB and a replay with three.js inline that fetches nothing. Its summary
    line gives the tarball's size.
 
-   Gate ORDER: these builds come BEFORE `npm run check` (item 5, the owner-sanctioned run). `check` includes
+   Gate ORDER: these builds come BEFORE the release PR's CI runs the suite (item 5). CI's vitest shards include
    `editors/vscode/test/stdio.test.ts`, which compares the bundled server's stamped core version with
    the workspace version, so a stale `editors/vscode/dist/server.js` fails it after a version bump.
 
