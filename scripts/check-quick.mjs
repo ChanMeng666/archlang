@@ -18,23 +18,24 @@
  *      that folder come right after the changed test files and before the import-distance tests:
  *      a corpus digest or docs tripwire lists the folder and never names the file, so the import
  *      graph cannot reach it (five PRs went red that way on 2026-10-28). See `scanningGuards`.
+ *      `--max` caps exactly that list: the branch's own changed test files, the directory-scanning
+ *      guards and the import-distance tests, together and in that order. It does NOT cap the extras, three
+ *      kinds of test the import graph ranks too far away, each under its own cap: the source-tree
+ *      scanners a changed `src/`, `scripts/`, `eval/`, `test/` or `.claude/` file wakes (`treeGuards`; at
+ *      within 15 recorded seconds, 30 files at most), the tests named after a changed module (`namedTests`; at
+ *      most 5 files and 10 recorded seconds) and, for a change under `src/`, the cheapest reachable tests
+ *      that pin their output over the examples corpus (`corpusPins`; within `--pins` recorded seconds).
+ *      All of it is in `scripts/gate-select.mjs`.
  *
- * Flags: `--base <ref>` (default origin/main), `--max <n>`, `--fix` (let Biome write its fixes),
- * `--no-drift`, `--no-tests`, `--list`
- * (print the plan, run nothing). Exit code is the first failing step's.
+ * Flags: `--base <ref>` (default origin/main), `--max <n>` (default 20), `--pins <secs>` (default 5),
+ * `--fix` (let Biome write its fixes), `--no-drift`, `--no-tests`, `--list` (print the plan, run
+ * nothing). One child process at a time. Exit code is the first failing step's.
  */
 import { execFileSync, spawnSync } from "node:child_process";
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
-import {
-  CODE,
-  isTest,
-  nearestTests as nearestTestsOf,
-  QUOTED,
-  resolveSpec,
-  SPEC,
-  TEST_DIRS,
-} from "./nearest-tests.mjs";
+import { driftWanted, PIN_SECS as DEFAULT_PIN_SECS, planTests } from "./gate-select.mjs";
+import { CODE, nearestTests as nearestTestsOf } from "./nearest-tests.mjs";
 import { checkQuickWorkspaces } from "./workspaces.mjs";
 
 const ROOT = resolve(dirname(new URL(import.meta.url).pathname.replace(/^\/([A-Za-z]:)/, "$1")), "..");
@@ -45,6 +46,7 @@ const opt = (name, dflt) => {
   return i >= 0 && argv[i + 1] ? argv[i + 1] : dflt;
 };
 const MAX = Number(opt("--max", "20"));
+const PIN_SECS = Number(opt("--pins", String(DEFAULT_PIN_SECS)));
 const BASE = opt("--base", "origin/main");
 const LIST = flag("--list");
 
@@ -77,7 +79,6 @@ if (changed.length === 0) {
   process.exit(0);
 }
 
-const isTestDirFile = (f) => TEST_DIRS.test(f);
 const LINTABLE = /\.(ts|tsx|mts|cts|js|mjs|cjs|json|jsonc|css)$/;
 
 const WORKSPACES = checkQuickWorkspaces(ROOT); // package.json `workspaces`, scripts/workspaces.mjs
@@ -86,78 +87,9 @@ const DEV_ROOTS = /^(test|eval|dataset|scripts|bench)\//;
 // ---- 2. the import graph, for the nearest tests ----------------------------------------------
 // `scripts/nearest-tests.mjs` (shared with the nightly mutant sampler, `scripts/mutants.mjs`).
 
-// ---- 2b. the directory-scanning guards -------------------------------------------------------
-// A folder whose files a suite LISTS rather than names. `touches` says which changed path wakes them.
-const SCANNED_DIRS = [
-  { dir: "examples", why: "an examples/ change", touches: (f) => f.startsWith("examples/") },
-  { dir: "docs", why: "a docs/**/*.md change", touches: (f) => f.startsWith("docs/") && f.endsWith(".md") },
-];
-const LISTS_A_DIR = /\b(?:readdirSync|readdir|opendirSync|globSync)\s*\(/;
-/** A test that pins what it reads (a snapshot, a digest, a baseline or a `tables/` row) moves on ANY edit. */
-const PINS = /toMatch(?:Inline|File)?Snapshot\(|createHash\(|\bdigest|baseline|\btables\//i;
-
-/** The scanned folders a module's text lists: a directory call plus a quoted folder literal for it. */
-function listedDirs(text) {
-  const dirs = new Set();
-  if (!LISTS_A_DIR.test(text)) return dirs;
-  for (const m of text.matchAll(QUOTED)) {
-    const segs = m[1]
-      .replace(/^(?:\.\.?\/)+/, "")
-      .replace(/\/$/, "")
-      .split("/");
-    // A folder (`"examples"`, `"../examples"`, `"docs/agents"`), never a file (`"examples/studio.arch"`).
-    if (SCANNED_DIRS.some((s) => s.dir === segs[0]) && !segs[segs.length - 1].includes(".")) dirs.add(segs[0]);
-  }
-  return dirs;
-}
-
-/**
- * The tests that list one of `dirs`, themselves or through a test-folder helper they import
- * (transitively): a test file whose source calls `readdirSync(`/`readdir(`/`opendirSync(`/`globSync(`
- * and quotes the folder. Ordered: tests that pin what they read first, then by the duration CI
- * recorded (`test/.durations.json`, cheapest first, so the cap buys the most guards), then by name.
- * Each is `{ file, why }`.
- */
-function scanningGuards(dirs) {
-  const modules = lines(git("ls-files", "--cached", "--others", "--exclude-standard"))
-    .map((f) => f.replace(/\\/g, "/"))
-    .filter((f) => TEST_DIRS.test(f) && CODE.test(f) && existsSync(join(ROOT, f)));
-  const text = new Map(modules.map((f) => [f, readFileSync(join(ROOT, f), "utf8")]));
-  const direct = new Map(modules.map((f) => [f, listedDirs(text.get(f))]));
-  const durations = (() => {
-    try {
-      return JSON.parse(readFileSync(join(ROOT, "test", ".durations.json"), "utf8"));
-    } catch {
-      return {};
-    }
-  })();
-  const guards = [];
-  for (const t of modules.filter(isTest)) {
-    // Breadth-first over the helpers it imports; a test file is never a helper.
-    const reached = new Map([[t, t]]);
-    let frontier = [t];
-    while (frontier.length > 0) {
-      const next = [];
-      for (const f of frontier) {
-        for (const m of text.get(f).matchAll(SPEC)) {
-          const dep = resolveSpec(ROOT, f, m[1]);
-          if (dep && direct.has(dep) && !isTest(dep) && !reached.has(dep)) {
-            reached.set(dep, f);
-            next.push(dep);
-          }
-        }
-      }
-      frontier = next;
-    }
-    const hit = [...reached.keys()].find((f) => dirs.some((d) => direct.get(f).has(d)));
-    if (!hit) continue;
-    const listed = dirs.filter((d) => [...reached.keys()].some((f) => direct.get(f).has(d)));
-    const pins = PINS.test(text.get(t));
-    const why = `lists ${listed.map((d) => `${d}/`).join(" and ")}${hit === t ? "" : ` via ${hit}`}${pins ? ", pins its output" : ""}`;
-    guards.push({ file: t, why, pins, secs: durations[t] ?? Number.POSITIVE_INFINITY });
-  }
-  return guards.sort((a, b) => Number(b.pins) - Number(a.pins) || a.secs - b.secs || (a.file < b.file ? -1 : 1));
-}
+// ---- 2b. the guards the import graph cannot reach --------------------------------------------
+// `scripts/gate-select.mjs`: directory-scanning guards, source-tree scanners, tests named after a changed
+// module, corpus pins, and the list `planTests` builds from them under their caps.
 
 // ---- 3. the plan -----------------------------------------------------------------------------
 const steps = [];
@@ -197,23 +129,30 @@ for (const ws of WORKSPACES) {
   }
 }
 
-if (!flag("--no-drift") && !changed.every(isTestDirFile)) {
+if (!flag("--no-drift") && driftWanted(changed)) {
   steps.push({ name: "check:drift", cmd: "npm", args: ["run", "-s", "check:drift"] });
 }
 
 let cutNote = "";
 const guardNotes = [];
+const EXTRA_LABELS = {
+  treeGuards: "source-tree scanners",
+  namedTests: "tests named after a changed module",
+  corpusPins: `corpus pins reachable from src/ (within ${PIN_SECS}s of recorded time)`,
+};
 if (!flag("--no-tests")) {
+  const files = lines(git("ls-files", "--cached", "--others", "--exclude-standard")).map((f) => f.replace(/\\/g, "/"));
   const related = nearestTestsOf(ROOT, changed);
-  // The order: the branch's own changed test files, then the directory-scanning guards the change
-  // wakes (they take every slot left before the import-distance tests), then the nearest tests.
-  const own = related.filter((f) => changed.includes(f));
-  const woken = SCANNED_DIRS.filter((s) => changed.some(s.touches));
-  const guards = woken.length > 0 ? scanningGuards(woken.map((s) => s.dir)).filter((g) => !own.includes(g.file)) : [];
-  const guardPick = guards.slice(0, Math.max(0, MAX - own.length));
-  const rest = related.filter((f) => !own.includes(f) && !guardPick.some((g) => g.file === f));
-  const picked = [...own, ...guardPick.map((g) => g.file), ...rest].slice(0, MAX);
-  const total = new Set([...related, ...guards.map((g) => g.file)]).size;
+  // `planTests` (`scripts/gate-select.mjs`): the capped list (the branch's own changed test files, the
+  // directory-scanning guards, the nearest tests), then the extras the import graph ranks too far away.
+  const { own, woken, guards, guardPick, extras, picked, total } = planTests({
+    ROOT,
+    changed,
+    files,
+    related,
+    max: MAX,
+    pinSecs: PIN_SECS,
+  });
   if (total > picked.length) {
     cutNote = `ran ${picked.length} of ${total} related tests; CI runs the rest`;
   }
@@ -224,6 +163,15 @@ if (!flag("--no-tests")) {
         (own.length > 0 ? ` (after ${own.length} changed test file${own.length === 1 ? "" : "s"})` : ""),
       ...guardPick.map((g) => `    + ${g.file} (${g.why})`),
     );
+  }
+  for (const [rule, label] of Object.entries(EXTRA_LABELS)) {
+    const list = extras.filter((e) => e.rule === rule);
+    if (list.length > 0) {
+      guardNotes.push(
+        `${label}: ${list.length} beyond the ${MAX}-file cap`,
+        ...list.map((g) => `    + ${g.file} (${g.why})`),
+      );
+    }
   }
   if (picked.length > 0) {
     steps.push({
@@ -238,6 +186,28 @@ if (!flag("--no-tests")) {
 
 console.log(`check:quick: ${changed.length} changed files against ${BASE} (${mergeBase.slice(0, 8)})`);
 for (const s of steps) console.log(`  - ${s.name}`);
+if (steps.some((s) => s.name === "check:drift")) {
+  // Two things that make a green drift step a false green: files the generators cannot see, and a stale base.
+  const untracked = lines(git("ls-files", "--others", "--exclude-standard")).filter(
+    (f) => !f.startsWith(".claude/worktrees/"),
+  );
+  if (untracked.length > 0) {
+    console.log(
+      `  (${untracked.length} untracked file${untracked.length === 1 ? "" : "s"}, e.g. ${untracked[0]}: the generators that read ` +
+        "`git ls-files` (module-map, test-index) cannot see them; `git add` them before trusting check:drift)",
+    );
+  }
+  let behind = 0;
+  try {
+    behind = Number(git("rev-list", "--count", `HEAD..${BASE}`));
+  } catch {}
+  if (behind > 0) {
+    console.log(
+      `  (${behind} commit${behind === 1 ? "" : "s"} behind ${BASE}: CI checks the merge, and module-map counts the whole tree; ` +
+        "`npm run sync:main` if drift is red there)",
+    );
+  }
+}
 if (cutNote) console.log(`  (${cutNote})`);
 for (const note of guardNotes) console.log(`  ${note}`);
 if (LIST) {

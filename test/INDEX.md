@@ -5,7 +5,7 @@
 Where the tests of a `src` module are, and what each test file is for. Generated; `npm run check:drift`
 fails when it is stale. How to add a test: `docs/testing.md` § 4.
 
-529 test files in `test/`, 285 `src` modules, 106 modules no test imports.
+530 test files in `test/`, 285 `src` modules, 106 modules no test imports.
 
 ## `src` module → tests that import it
 
@@ -119,7 +119,7 @@ Nearest first, then by name; `(+n)` is the rest. Test names are `test/<name>.tes
 - `src/impact.ts` (2) — `rectilinear-doors`, `rectilinear-rooms`
 - `src/import.ts` (31) — `block-stair-byte-identity`, `corner-window-byte-identity`, `dim-thickness-callout`, `drawing-budget`, `floor-materials-byte-identity`, `furniture-relations`, `gaps-byte-identity`, `keep` (+23)
 - `src/import/limits.ts` (1) — `openplan3d-malformed`
-- `src/index.ts` (393) — `acc-metadata`, `access-graph`, `access-policy`, `accessible-svg`, `agent-gallery`, `alias-match`, `anchors`, `annotate` (+385)
+- `src/index.ts` (394) — `acc-metadata`, `access-graph`, `access-policy`, `accessible-svg`, `agent-gallery`, `alias-match`, `anchors`, `annotate` (+386)
 - `src/input-limit.ts` (2) — `import-rooted`, `workspace-seams`
 - `src/intent-concepts.ts` (2) — `vocabulary-living-dining`, `vocabulary-matcher-oracle`
 - `src/intent.ts` (1) — `site`
@@ -408,6 +408,7 @@ The first sentence of each file's header comment.
 - `test/gaps-byte-identity.test.ts` — `hidden`, a piece's `mirror` and a room's `floor` (issue #405): the byte-identity law.
 - `test/garage-byte-identity.test.ts` — The byte-identity law for the outdoor tranche: **a plan that uses none of it renders, describes and lints exactly as it did before it existed.** Every new language form ships with this law, and the form it takes here...
 - `test/garage.test.ts` — `uses garage` — the thirteenth room use, its label vocabulary, and the one advisory rule that reads it.
+- `test/gate-select.test.ts` — `scripts/gate-select.mjs`: what `check:quick` selects beyond the import graph, and how it caps it.
 - `test/gbnf-drift.test.ts` — Drift + acceptance/rejection gate for the generated GBNF grammar (`grammars/archlang.gbnf`, produced by `scripts/gen-gbnf.ts`).
 - `test/geometry-hostinfo.test.ts` — hostInfoForWalls — equivalence with the original two functions; WallGrid — equivalence with brute-force hostInfoForWalls (T3.7).
 - `test/glyph-chirality.test.ts` — A mirrored `place` draws the mirror-image SYMBOL.
