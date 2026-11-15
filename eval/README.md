@@ -191,6 +191,10 @@ times, `git rev-parse HEAD`, and sha256 of `spec.llm.md` and of the system promp
 marked `partial`; partial and budget-skipped briefs are excluded from the rates. The published
 record goes to `eval/live-runs/`.
 
+The pre-registered analysis (§ 4–6) is `npm run eval:t3 -- <haiku.json[.gz]|none> <sonnet.json[.gz]|none>`
+(`t3-analysis.ts`, offline and free: it reads only the two records and prints the Markdown for
+`eval/live-runs/2026-11-t3-result.md`).
+
 ## Judge v2 semantics (`assertions.ts`)
 
 A brief's `expect` block compiles to a flat list of **predicates**, each checked against the plan's
