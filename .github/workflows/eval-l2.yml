@@ -1,13 +1,15 @@
 # ─────────────────────────────────────────────────────────────────────────────────────
-# DO NOT DISPATCH. T3 (this experiment) has exactly ONE owner-ratified live run
-# (2026-11-15), superseding the 2026-07-12 decline for that run only. Its bounds are in
-# docs/agents/iron-laws.md: models claude-sonnet-5-5 and claude-haiku-5-5 (provider
-# anthropic, run locally with `npm run eval:l2`), analysis and decision rule pre-registered
-# in a dated file before the run, result published whatever it shows. This workflow is
-# OpenAI-keyed, so a dispatch would be a second, out-of-bounds run; any other run needs a
-# new owner decision. Until the pre-registered result is published, claim no loop gain and
-# no absence of one; after that, cite only that run's published record. Kept as the
-# harness's reference wiring. See eval/README.md + AGENTS.md.
+# DO NOT DISPATCH, EVER. T3 (this experiment) has exactly ONE owner-ratified live run
+# (ratified 2026-11-15, not yet run), superseding the 2026-07-12 decline for that run only.
+# Its bounds are in docs/agents/iron-laws.md: models claude-sonnet-5-5 and claude-haiku-5-5,
+# provider anthropic, run locally with `npm run eval:l2` (the harness refuses any other
+# provider or model); analysis and decision rule pre-registered before the run in
+# eval/live-runs/2026-11-t3-preregistration.md; the record published in eval/live-runs/
+# whatever it shows. This workflow is OpenAI-keyed: a dispatch would be an out-of-bounds
+# run, so the harness exits 3 here. Never re-propose another run. Claim no loop gain and no
+# absence of one: the published record is the only statement of the result, and any other
+# claim, either way, needs an owner decision. Kept as the harness's reference wiring.
+# See eval/README.md + AGENTS.md.
 # ─────────────────────────────────────────────────────────────────────────────────────
 #
 # L2 authorability experiment — does a diagnostic feedback loop beat equal-budget

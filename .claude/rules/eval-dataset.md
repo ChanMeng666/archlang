@@ -6,10 +6,11 @@ paths:
 ---
 
 # Eval harness and dataset
-- T3 has one owner-ratified live run (2026-11-15), bounds in `docs/agents/iron-laws.md`; never
-  dispatch `eval-l2.yml`. Until that run's pre-registered result is published, claim no loop gain
-  and no absence of one; after that, cite only its published record. `npm run eval:live` is paid
-  and owner-only; CI runs the offline `eval:ci`.
+- T3 has one owner-ratified live run (ratified 2026-11-15, not yet run; bounds in
+  `docs/agents/iron-laws.md`); never dispatch `eval-l2.yml`, never re-propose another run. Until
+  that run's pre-registered result is published, claim no loop gain and no absence of one; the
+  published record is the only statement of the result, and any other claim, either way, needs an
+  owner decision. `npm run eval:live` is paid and owner-only; CI runs the offline `eval:ci`.
 - Never compare rates across a `JUDGE_VERSION`/`SYNONYMS_VERSION` change; regenerate
   `eval/judge-fixture.json` only for an approved bump. `eval/rubric.md` is frozen.
 - The eval corpus and goldens are a public regression fixture, never called held-out; the dataset

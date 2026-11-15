@@ -111,11 +111,13 @@ motivation is `archcanvas-growth/archive/archlang/docs-archive/research/2026-07-
 
 Decision **d** above rested on the 2026-07-12 decision that declined the T3 live experiment
 permanently. On 2026-11-15 the owner ratified, in words, exactly one live run of it (provider
-`anthropic`; `claude-sonnet-5-5` and `claude-haiku-5-5`), with its analysis and decision rule
-pre-registered in a dated file before the run and its result published whatever it shows. The
-bounds are kept in `docs/agents/iron-laws.md`. Decision **d** now reads: until that run's
-pre-registered result is published, no dataset artifact claims a diagnostic-feedback-loop gain or
-its absence; after that, a claim may cite only that run's published record.
+`anthropic`; `claude-sonnet-5-5` and `claude-haiku-5-5`; not yet run). Its analysis and decision
+rule will be pre-registered before the run in `eval/live-runs/2026-11-t3-preregistration.md`, and
+its record published in `eval/live-runs/` whatever it shows. The bounds are kept in
+`docs/agents/iron-laws.md`. Decision **d** now reads: no dataset artifact (generator, card or
+report) claims a diagnostic-feedback-loop gain or its absence, before or after that run. The
+published record in `eval/` is the only statement of the result; a dataset artifact neither
+restates nor cites it as a claim, and any other claim, either way, needs an owner decision.
 
 The rest of this ADR stands. The dataset gains no multi-turn model-repair trajectories from the
 run; the eval corpus stays a public fixture, never held-out; the canary is never regenerated; and
