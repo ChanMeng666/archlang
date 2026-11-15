@@ -8,7 +8,8 @@
  * `retry-after` and stop at a bounded total; and a record that keeps every paid call.
  */
 
-import { readFileSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { afterEach, describe, expect, it, vi } from "vitest";
@@ -19,6 +20,7 @@ import {
   CallFailed,
   EMPTY_REPLY_PLACEHOLDER,
   type LiveAuthor,
+  PREREGISTRATION,
   type RetryPolicy,
   type RunMeta,
   T3_MODELS,
@@ -34,6 +36,8 @@ import {
   retryAfterMs,
   runBrief,
   toCells,
+  writeJsonAtomic,
+  writeProgress,
 } from "../eval/l2-run.js";
 import { type CorpusEntry, LiveLedger, loadCorpus } from "../eval/run.js";
 
@@ -78,7 +82,8 @@ function recordingPolicy(maxTotalWaitMs = 300_000): RetryPolicy & { waits: numbe
 }
 
 describe("preflight — the bounds of the one ratified T3 run", () => {
-  const none = (): boolean => false;
+  /** Only the pre-registration exists: the state the run needs. */
+  const none = (rel: string): boolean => rel === PREREGISTRATION;
   const env = (provider?: string, model?: string) => ({
     ARCHLANG_EVAL_PROVIDER: provider,
     ARCHLANG_EVAL_MODEL: model,
@@ -116,7 +121,7 @@ describe("preflight — the bounds of the one ratified T3 run", () => {
   it("refuses to overwrite an existing results file, json or md", () => {
     const { json, md } = resultsPaths("claude-sonnet-5-5");
     for (const present of [[json], [md], [json, md]]) {
-      const r = preflight(env("anthropic", "claude-sonnet-5-5"), (rel) => present.includes(rel));
+      const r = preflight(env("anthropic", "claude-sonnet-5-5"), (rel) => none(rel) || present.includes(rel));
       expect(r.ok).toBe(false);
       if (!r.ok) {
         expect(r.message).toMatch(/never overwritten/);
@@ -125,7 +130,26 @@ describe("preflight — the bounds of the one ratified T3 run", () => {
     }
     // The other model's file does not block this one.
     const haiku = resultsPaths("claude-haiku-5-5").json;
-    expect(preflight(env("anthropic", "claude-sonnet-5-5"), (rel) => rel === haiku).ok).toBe(true);
+    expect(preflight(env("anthropic", "claude-sonnet-5-5"), (rel) => none(rel) || rel === haiku).ok).toBe(true);
+  });
+
+  it("refuses until the pre-registration exists (checked against a temp root)", () => {
+    expect(PREREGISTRATION).toBe("eval/live-runs/2026-11-t3-preregistration.md");
+    const root = mkdtempSync(join(tmpdir(), "l2-preflight-"));
+    try {
+      const inRoot = (rel: string): boolean => existsSync(join(root, rel));
+      const before = preflight(env("anthropic", "claude-sonnet-5-5"), inRoot);
+      expect(before.ok).toBe(false);
+      if (!before.ok) expect(before.message).toContain(`${PREREGISTRATION} does not exist`);
+      mkdirSync(join(root, "eval/live-runs"), { recursive: true });
+      writeFileSync(join(root, PREREGISTRATION), "# pre-registration\n");
+      expect(preflight(env("anthropic", "claude-sonnet-5-5"), inRoot).ok).toBe(true);
+      // The provider and model are checked first: no pre-registration lets openai through.
+      const r = preflight(env("openai", "gpt-5.5-2026-04-23"), inRoot);
+      expect(r.ok).toBe(false);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
   });
 
   it("writes one results pair per model", () => {
@@ -433,7 +457,7 @@ describe("the record and the scorecard", () => {
       trials: 2,
       ...quiet,
     });
-    partial.failure!.message = "Anthropic API 400: a | b\nc";
+    partial.failure!.message = "Anthropic API 400: a | b\nc \\| d \\ e";
     const skipped: BriefRecord = { id: "s", status: "skipped", trials: [] };
     return { list: [complete, partial, skipped], ledger };
   }
@@ -494,7 +518,67 @@ describe("the record and the scorecard", () => {
     expect(md).toContain("**Verdict (harness arithmetic, not the pre-registered rule):** The loop does not beat");
     expect(md).toContain("| `s` | — | ⏭️ skipped (budget) | — |");
     expect(md).toContain("(partial brief: excluded)");
-    // A failure message with a pipe and a newline stays inside its table cell.
-    expect(md).toContain("| `p` | 2 | ✗ partial — Anthropic API 400: a \\| b c (excluded from the rates) | — |");
+    // A failure message with a pipe, a newline and backslashes stays inside its table cell:
+    // a backslash is escaped too, so a written `\|` cannot turn into an escaped pipe that ends
+    // the escaping early (the raw text is `a | b⏎c \| d \ e`).
+    expect(md).toContain(
+      "| `p` | 2 | ✗ partial — Anthropic API 400: a \\| b c \\\\\\| d \\\\ e (excluded from the rates) | — |",
+    );
+  });
+
+  it("prints no verdict sentence when no brief completed", async () => {
+    const { list, ledger } = await briefs();
+    const incomplete = list.filter((b) => b.status !== "complete");
+    const md = renderMd(incomplete, toCells(incomplete), {
+      provider: "anthropic",
+      model: "claude-sonnet-5-5",
+      trials: 2,
+      total: 3,
+      stops: ledger.stops,
+    });
+    expect(md).toContain(
+      "**Verdict (harness arithmetic, not the pre-registered rule):** no complete briefs — no verdict",
+    );
+    expect(md).not.toMatch(/The loop (beats|does not beat)/);
+  });
+});
+
+describe("writing the record", () => {
+  it("writes atomically, leaving no temporary file, and the direct write fails loudly", () => {
+    const root = mkdtempSync(join(tmpdir(), "l2-record-"));
+    try {
+      const path = join(root, "results.l2.x.json");
+      writeJsonAtomic(path, { a: 1 });
+      expect(JSON.parse(readFileSync(path, "utf8"))).toEqual({ a: 1 });
+      expect(existsSync(`${path}.tmp`)).toBe(false);
+      // The first and the final write call this directly: a failure throws.
+      expect(() => writeJsonAtomic(join(root, "missing-dir", "r.json"), {})).toThrow();
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it("logs and swallows a failed per-brief write (EPERM from a locking reader on Windows)", () => {
+    const lines: string[] = [];
+    const eperm = Object.assign(new Error("EPERM: operation not permitted, rename 'r.json.tmp' -> 'r.json'"), {
+      code: "EPERM",
+    });
+    const wrote = writeProgress(
+      () => {
+        throw eperm;
+      },
+      (l) => lines.push(l),
+    );
+    expect(wrote).toBe(false);
+    expect(lines).toEqual([
+      "⚠ eval:l2: progress write failed (EPERM: operation not permitted, rename 'r.json.tmp' -> 'r.json'); the next brief's write supersedes it\n",
+    ]);
+    expect(
+      writeProgress(
+        () => {},
+        (l) => lines.push(l),
+      ),
+    ).toBe(true);
+    expect(lines).toHaveLength(1);
   });
 });

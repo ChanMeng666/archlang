@@ -157,9 +157,11 @@ only its key is present, else Anthropic.
 
 Ratified 2026-11-15, not yet run; bounds in `docs/agents/iron-laws.md`. It runs **locally**, one
 model per process, only after `eval/live-runs/2026-11-t3-preregistration.md` is committed. The
-harness exits `3` before any call unless `ARCHLANG_EVAL_PROVIDER=anthropic` is set explicitly and
-`ARCHLANG_EVAL_MODEL` is `claude-sonnet-5-5` or `claude-haiku-5-5`, and it refuses (exit `3`) when
-that model's results file already exists: a result is never overwritten. The key comes from the
+harness's preflight exits `3` before any call unless all four hold: `ARCHLANG_EVAL_PROVIDER=anthropic`
+is set explicitly; `ARCHLANG_EVAL_MODEL` is `claude-sonnet-5-5` or `claude-haiku-5-5`; the
+pre-registration file exists (its content and whether it is committed are not checked); and
+neither results file for that model exists yet, because a result is never overwritten. The
+dry run passes the same preflight, so it too needs the pre-registration. The key comes from the
 user environment variable `ANTHROPIC_API_KEY_PROMO`, mapped to `ANTHROPIC_API_KEY` for that one
 process only; it is never written to a file or printed. Without `--yes` the same command prints
 the plan and calls nothing.

@@ -14,9 +14,13 @@
  * is the only statement of the result, and any other claim, either way, needs an owner
  * decision. Never re-propose another run.
  *
- * {@link preflight} enforces the bounds before anything else: the provider must be set to
- * `anthropic` explicitly and the model must be one of {@link T3_MODELS}, and an existing
- * results file for that model is never overwritten. Each refusal exits `3` before any call.
+ * {@link preflight} checks four things before anything else, and each refusal exits `3`
+ * before any call: (1) `ARCHLANG_EVAL_PROVIDER` is `anthropic`, set explicitly; (2)
+ * `ARCHLANG_EVAL_MODEL` is one of {@link T3_MODELS}; (3) the pre-registration file
+ * {@link PREREGISTRATION} exists; (4) neither results file for that model exists yet, so a
+ * result is never overwritten. It does not check the pre-registration's content, the
+ * `--max`/`--trials`/`--budget` values, or that the run has not happened under another name:
+ * those bounds rest on the operator and the pre-registration.
  *
  * Like `eval:live`, it is **guarded**: without `--yes` (or `ARCHLANG_EVAL_CONFIRM=1`) it
  * prints the plan (provider, model, briefs, trials, the loop's call cap, budget, output
@@ -105,12 +109,17 @@ export type Preflight =
   | { ok: true; provider: "anthropic"; model: string; out: { md: string; json: string } }
   | { ok: false; message: string };
 
+/** The pre-registration of the one T3 run's analysis and decision rule (repo-relative). The
+ *  harness refuses to run until it exists. */
+export const PREREGISTRATION = "eval/live-runs/2026-11-t3-preregistration.md";
+
 /**
  * The bounds of the one ratified T3 run, checked before anything else (the caller exits `3`
- * on a refusal, before any call): `ARCHLANG_EVAL_PROVIDER` must be `anthropic`, explicitly;
- * `ARCHLANG_EVAL_MODEL` must be one of {@link T3_MODELS}; and neither results file for that
- * model may exist yet, because a result is never overwritten. `exists` takes a repo-relative
- * path, so the rule is testable without touching the disk.
+ * on a refusal, before any call), in this order: `ARCHLANG_EVAL_PROVIDER` must be
+ * `anthropic`, explicitly; `ARCHLANG_EVAL_MODEL` must be one of {@link T3_MODELS};
+ * {@link PREREGISTRATION} must exist; and neither results file for that model may exist yet,
+ * because a result is never overwritten. `exists` takes a repo-relative path, so the rule is
+ * testable without touching the disk.
  */
 export function preflight(env: Record<string, string | undefined>, exists: (rel: string) => boolean): Preflight {
   const bounds = "eval:l2 runs only within the one ratified T3 run's bounds (docs/agents/iron-laws.md)";
@@ -126,6 +135,12 @@ export function preflight(env: Record<string, string | undefined>, exists: (rel:
     return {
       ok: false,
       message: `✗ ${bounds}: ARCHLANG_EVAL_MODEL must be one of ${T3_MODELS.join(", ")} (got ${model ? `"${model}"` : "nothing"}).`,
+    };
+  }
+  if (!exists(PREREGISTRATION)) {
+    return {
+      ok: false,
+      message: `✗ ${bounds}: the analysis and decision rule must be pre-registered first — ${PREREGISTRATION} does not exist. Nothing was sent.`,
     };
   }
   const out = resultsPaths(model);
@@ -625,8 +640,11 @@ export function buildRecord(
 
 const pct = (x: number): string => `${(x * 100).toFixed(1)}%`;
 const signed = (x: number): string => (x > 0 ? `+${x.toFixed(3)}` : x.toFixed(3));
+/** Table-cell escapes, character by character (no regex replace, so no character is left
+ *  half-escaped), as `scripts/gen-module-map.ts` does. */
+const CELL_ESC: Record<string, string> = { "|": "\\|", "\\": "\\\\", "\r": " ", "\n": " " };
 /** A free-text value made safe for one Markdown table cell. */
-const cell = (s: string): string => s.replace(/\s+/g, " ").replace(/\|/g, "\\|");
+const cell = (s: string): string => Array.from(s, (c) => CELL_ESC[c] ?? c).join("");
 
 /** Render the L2 scorecard Markdown. */
 export function renderMd(
@@ -657,11 +675,14 @@ export function renderMd(
     `- **${metric}:** loop − control = ${signed(s.net[metric])}`;
 
   // Roadmap T3: if the loop's net intent delta is ≤ 0, say so verbatim. This line is the
-  // harness's raw arithmetic, not the pre-registered decision rule.
+  // harness's raw arithmetic, not the pre-registered decision rule. With no complete brief
+  // the deltas are 0 − 0 over nothing, so no sentence about the loop is printed at all.
   const verdict =
-    s.net.intent > 0
-      ? `The loop beats equal-budget resampling on intent by ${signed(s.net.intent)} (net).`
-      : "The loop does not beat equal-budget resampling.";
+    s.briefs === 0
+      ? "no complete briefs — no verdict"
+      : s.net.intent > 0
+        ? `The loop beats equal-budget resampling on intent by ${signed(s.net.intent)} (net).`
+        : "The loop does not beat equal-budget resampling.";
 
   const trialRow = (id: string, tr: TrialRecord, note: string): string => {
     const arm = (a: ArmScore): string => `v${a.valid ? "1" : "0"} i${a.intent ? "1" : "0"} s${a.sound ? "1" : "0"}`;
@@ -750,13 +771,30 @@ function gitInfo(): { head: string | null; dirty: boolean | null } {
   }
 }
 
-/** Write a repo-relative JSON file through a temporary sibling, so a crash mid-write never
- *  leaves a truncated record. */
-function writeJsonAtomic(rel: string, value: unknown): void {
-  const path = resolve(ROOT, rel);
+/** Write a JSON file through a temporary sibling, so a crash mid-write never leaves a
+ *  truncated record. Throws on any failure: the first and the final write of a run call it
+ *  directly, so they fail loudly. */
+export function writeJsonAtomic(path: string, value: unknown): void {
   const tmp = `${path}.tmp`;
   writeFileSync(tmp, `${JSON.stringify(value, null, 2)}\n`);
   renameSync(tmp, path);
+}
+
+/** An incremental (per-brief) write: a failure is logged and swallowed, because the next
+ *  brief's write supersedes it and the run's paid calls must not be lost to it. On Windows a
+ *  reader holding the file open (an editor, an indexer, antivirus) makes `renameSync` throw
+ *  `EPERM`. Returns whether the write succeeded. */
+export function writeProgress(
+  write: () => void,
+  log: (line: string) => void = (l) => process.stderr.write(l),
+): boolean {
+  try {
+    write();
+    return true;
+  } catch (err) {
+    log(`⚠ eval:l2: progress write failed (${(err as Error).message}); the next brief's write supersedes it\n`);
+    return false;
+  }
 }
 
 async function main(): Promise<void> {
@@ -829,18 +867,21 @@ async function main(): Promise<void> {
   // Briefs keep their corpus order in the record whatever order they finish in.
   const slots: (BriefRecord | undefined)[] = new Array(entries.length);
   const done = (): BriefRecord[] => slots.filter((b): b is BriefRecord => b !== undefined);
-  writeJsonAtomic(out.json, buildRecord(meta, "running", done(), ledger));
+  const jsonPath = resolve(ROOT, out.json);
+  // Before the first call: a failure here costs nothing, so it fails loudly.
+  writeJsonAtomic(jsonPath, buildRecord(meta, "running", done(), ledger));
   await pool(
     entries.map((_, i) => i),
     concurrency,
     async (i) => {
       slots[i] = await runBrief(entries[i] as CorpusEntry, author, ledger, { system, trials });
-      writeJsonAtomic(out.json, buildRecord(meta, "running", done(), ledger));
+      writeProgress(() => writeJsonAtomic(jsonPath, buildRecord(meta, "running", done(), ledger)));
     },
   );
   meta.endedAt = new Date().toISOString();
   const briefs = done();
-  writeJsonAtomic(out.json, buildRecord(meta, "complete", briefs, ledger));
+  // The final write is not swallowed: if it fails, the run fails loudly (exit 1).
+  writeJsonAtomic(jsonPath, buildRecord(meta, "complete", briefs, ledger));
 
   const md =
     l2Header(out.json) +
