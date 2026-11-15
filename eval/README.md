@@ -20,8 +20,8 @@ model loop (deep-dive H3).
   edits, ADR 0011) then `arch repair` (the geometric corrector, ADR 0006) — **no model in the loop,
   zero extra API calls.** ΔL0→L1 is the free tool dividend. Implemented in `l1.ts` (`l1Pipeline`),
   gated offline in CI by `test/fault-injection.test.ts`, and overlaid on a live run with `--l1`.
-- **L2 — a diagnostic feedback loop (built; ONE owner-ratified live run, ratified 2026-11-15,
-  not yet run).** Roadmap Tranche 3 asked: does feeding diagnostics back to the model beat
+- **L2 — a diagnostic feedback loop (built; ONE owner-ratified live run, ratified 2026-11-15;
+  ran 2026-11-15; record: eval/live-runs/2026-11-t3-result.md).** Roadmap Tranche 3 asked: does feeding diagnostics back to the model beat
   **equal-token-budget i.i.d. resampling** (Olausson, arXiv:2306.09896)? The harness is
   implemented and offline-tested — `l2.ts` (pure protocol: ≤2 feedback rounds fed only
   compile/lint diagnostics with their `fix --dry-run` previews + a trimmed `describe()`,
@@ -177,7 +177,7 @@ npm run eval:fidelity   # offline: the constraint-laundering slice (writes eval/
 npm run eval:fidelity-live -- --yes --budget <n>tok|<n>usd [--trials k]   # live fidelity, paid, owner-only (RM-D46)
 npm run eval:live -- --yes [--max N] [--budget <n>tok|<n>usd] [--l1]   # live, paid, guarded
 npm run eval:g1 -- --yes [--max N]    # Gate G1: generate intent JSONs from briefs (paid, guarded; or the "Eval (G1 intent generation)" workflow)
-npm run eval:l2 -- --yes …   # T3 harness — paid; ONE owner-ratified run only (ratified 2026-11-15, not yet run); see "The one T3 run"
+npm run eval:l2 -- --yes …   # T3 harness — paid; ONE owner-ratified run only (ratified 2026-11-15; ran 2026-11-15; record: eval/live-runs/2026-11-t3-result.md); see "The one T3 run"
 ```
 
 - **Offline** (`run.ts` default) compiles → lints → describes each committed golden and scores it.
@@ -199,7 +199,7 @@ only its key is present, else Anthropic.
 
 ## The one T3 run (`eval:l2`)
 
-Ratified 2026-11-15, not yet run; bounds in `docs/agents/iron-laws.md`. It runs **locally**, one
+Ratified 2026-11-15; ran 2026-11-15; record: eval/live-runs/2026-11-t3-result.md; bounds in `docs/agents/iron-laws.md`. It runs **locally**, one
 model per process, only after `eval/live-runs/2026-11-t3-preregistration.md` is committed. The
 harness's preflight exits `3` before any call unless all four hold: `ARCHLANG_EVAL_PROVIDER=anthropic`
 is set explicitly; `ARCHLANG_EVAL_MODEL` is `claude-sonnet-5-5` or `claude-haiku-5-5`; the

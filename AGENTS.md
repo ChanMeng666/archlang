@@ -50,7 +50,7 @@ npm run gen:all       # every gen:* generator
 - A clean auto-merge of a MOVED function another branch MODIFIED is not evidence: diff the moved body (`docs/agents/gotchas.md` § PRs & CI).
 - Releases are tokenless OIDC (`v*` tag); never an npm token, never automate npmjs account/2FA.
   Pushing `main` deploys the sites. Before a tag: follow `.claude/commands/release-check.md`.
-- Eval: one T3 live run, ratified 2026-11-15, not yet run (bounds: `docs/agents/iron-laws.md`); no
+- Eval: one T3 live run, ran 2026-11-15; record: eval/live-runs/2026-11-t3-result.md (bounds: `docs/agents/iron-laws.md`); no
   loop-gain claim either way; its published record is the only statement of the result, any other
   claim needs an owner decision. `eval:live`, `eval:fidelity-live` and
   `dataset:model-authoring -- submit` are paid, owner-only; the eval corpus is a public fixture,
