@@ -5,22 +5,33 @@
  *   POST /mcp                   stateless Streamable-HTTP MCP: no sign-in, no sessions, JSON replies
  *   GET  /svg/<payload>         a `#z=` payload compiled to `image/svg+xml`, fresh for five minutes
  *   GET  /v/<render>/svg/<p>    the same drawing pinned to one compiler: the only immutable path
+ *   POST /check                 a plan linted: the `arch lint --json` document (card CR10)
  *   GET  /                      the `read_me` text
  *
  * Bounded before any compile work, by counts, never by a clock: a body over
- * {@link BODY_CAP_BYTES} or any tool argument over {@link SOURCE_CAP_BYTES} gets
- * `E_INPUT_TOO_LARGE`, and an address over its request rate gets `E_RATE_LIMITED`, both as data.
- * `compile()`'s own budgets stay counts; a Worker that runs out of CPU anyway fails with the
+ * {@link BODY_CAP_BYTES} or any tool argument (or `/check` source) over {@link SOURCE_CAP_BYTES}
+ * gets `E_INPUT_TOO_LARGE`, and an address over its request rate gets `E_RATE_LIMITED`, both as
+ * data. `compile()`'s own budgets stay counts; a Worker that runs out of CPU anyway fails with the
  * platform's 5xx, which is never presented as a diagnostic.
  *
  * Nothing logs a body or a source. Each MCP message writes one Analytics Engine data point holding
- * its method and tool name, each from a fixed list; there is no other telemetry and no cookie.
+ * its method and tool name, and each `/check` one holding `check` and its profile name, each from a
+ * fixed list; there is no other telemetry and no cookie.
  */
-import { compile, type Diagnostic, diagnosticToJson, inputTooLarge, rateLimited } from "@chanmeng666/archlang";
+import {
+  compile,
+  type Diagnostic,
+  diagnosticToJson,
+  inputTooLarge,
+  LINT_PROFILE_NAMES,
+  lintReport,
+  rateLimited,
+} from "@chanmeng666/archlang";
 import { WebStandardStreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/webStandardStreamableHttp.js";
 import { decodePlanHashWeb } from "@chanmeng666/archlang/share";
 import {
   BODY_CAP_BYTES,
+  CHECK_PER_PERIOD,
   MCP_PER_PERIOD,
   MCP_PAYLOAD_CAP_CHARS,
   RATE_PERIOD_SECONDS,
@@ -138,7 +149,9 @@ export type Refusal =
   | "rate-limited /svg/"
   | "too-large body"
   | "too-large argument"
-  | "too-large payload";
+  | "too-large payload"
+  | "rate-limited /check"
+  | "too-large /check";
 
 /** One data point for a refusal: method `refused`, tool the reason, both from fixed lists. */
 function countRefusal(env: Env, reason: Refusal): void {
@@ -485,6 +498,98 @@ async function handleSvg(
 }
 
 // ---------------------------------------------------------------------------
+// POST /check
+// ---------------------------------------------------------------------------
+
+/**
+ * What a `POST /check` body asks for, or why it cannot be read. JSON (`content-type:
+ * application/json`) is `{ source, profile?, strict? }`; any other body is the source itself, with
+ * `?profile=` and `?strict=1` in the query. Every text is measured like a tool argument.
+ */
+export function checkRequest(
+  body: string,
+  contentType: string | null,
+  query: URLSearchParams,
+): { source: string; profile?: string; strict: boolean } | { status: 400 | 413; body: unknown } {
+  let source: unknown;
+  let profile: unknown;
+  let strict: unknown;
+  if ((contentType ?? "").toLowerCase().startsWith("application/json")) {
+    let parsed: unknown;
+    try {
+      parsed = JSON.parse(body);
+    } catch {
+      return { status: 400, body: { ok: false, error: "not JSON: send { source, profile?, strict? }" } };
+    }
+    if (parsed === null || typeof parsed !== "object" || Array.isArray(parsed))
+      return { status: 400, body: { ok: false, error: "the body must be an object: { source, profile?, strict? }" } };
+    ({ source, profile, strict } = parsed as Record<string, unknown>);
+  } else {
+    source = body;
+    profile = query.get("profile") ?? undefined;
+    const s = query.get("strict");
+    strict = s === null ? undefined : s === "1" || s === "true" ? true : s === "0" || s === "false" ? false : s;
+  }
+  if (typeof source !== "string") return { status: 400, body: { ok: false, error: "source must be a string" } };
+  for (const [name, value] of [
+    ["source", source],
+    ["profile", profile],
+  ] as const) {
+    const d = typeof value === "string" ? inputTooLarge(value, SOURCE_CAP_BYTES, name) : undefined;
+    if (d) return { status: 413, body: envelope(d) };
+  }
+  if (profile !== undefined && (typeof profile !== "string" || !LINT_PROFILE_NAMES.includes(profile)))
+    return {
+      status: 400,
+      body: {
+        ok: false,
+        // The name is echoed cut to 64 characters: it is the caller's text.
+        error: `unknown lint profile ${JSON.stringify(String(profile).slice(0, 64))} (available: ${LINT_PROFILE_NAMES.join(", ")})`,
+      },
+    };
+  if (strict !== undefined && typeof strict !== "boolean")
+    return { status: 400, body: { ok: false, error: "strict must be true or false" } };
+  return { source, ...(profile !== undefined ? { profile } : {}), strict: strict ?? false };
+}
+
+/**
+ * `POST /check`: the plan linted, answered with the document `arch lint --json` prints for it
+ * (`lintReport`, the same keys and bytes; `rule` on each warning a ruleset number drives, card
+ * RM1.6b). A checked plan is a 200 whatever it holds: `ok` says whether it passed. Imports are not
+ * read (no World), so each `import` is `E_IMPORT_NOT_FOUND`, as the CLI reports a missing module.
+ */
+async function handleCheck(req: Request, url: URL, env: Env): Promise<Response> {
+  if (req.method === "OPTIONS") return new Response(null, { status: 204, headers: CORS });
+  if (req.method !== "POST") {
+    await discardBody(req);
+    return jsonResponse({ ok: false, error: "use POST" }, 405, { allow: "POST, OPTIONS" });
+  }
+  if (!(await allowed(env.RATE_CHECK, req))) {
+    await discardBody(req);
+    countRefusal(env, "rate-limited /check");
+    const d = rateLimited("/check", CHECK_PER_PERIOD, RATE_PERIOD_SECONDS);
+    return jsonResponse(envelope(d), 429, { "retry-after": String(RATE_PERIOD_SECONDS) });
+  }
+  const body = await readCapped(req, BODY_CAP_BYTES);
+  if (typeof body !== "string") {
+    await discardBody(req);
+    countRefusal(env, "too-large /check");
+    return jsonResponse(envelope(inputTooLarge(body.bytes, BODY_CAP_BYTES, "request body", body.exact)!), 413);
+  }
+  const ask = checkRequest(body, req.headers.get("content-type"), url.searchParams);
+  if ("status" in ask) {
+    if (ask.status === 413) countRefusal(env, "too-large /check");
+    return jsonResponse(ask.body, ask.status);
+  }
+  try {
+    env.ANALYTICS?.writeDataPoint({ blobs: ["check", ask.profile ?? ""], indexes: ["check"] });
+  } catch {
+    /* telemetry never fails a request */
+  }
+  return jsonResponse(lintReport(ask.source, { profile: ask.profile, strict: ask.strict }), 200);
+}
+
+// ---------------------------------------------------------------------------
 // entry
 // ---------------------------------------------------------------------------
 
@@ -511,6 +616,7 @@ async function route(req: Request, env: Env, ctx: ExecutionContext, assets: Host
   const url = new URL(req.url);
   try {
     if (url.pathname === "/mcp") return await handleMcp(req, env, url.origin, assets);
+    if (url.pathname === "/check") return await handleCheck(req, url, env);
     const svg = parseSvgPath(url.pathname);
     if (svg) return await handleSvg(req, url, env, ctx, assets, svg);
     if (url.pathname === "/" && (req.method === "GET" || req.method === "HEAD"))

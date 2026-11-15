@@ -18,6 +18,8 @@ interface Env {
   RATE_MCP?: RateLimit;
   /** Per-address limit on `/svg/` cache misses. */
   RATE_SVG?: RateLimit;
+  /** Per-address limit on `POST /check`. */
+  RATE_CHECK?: RateLimit;
   /** OpenAI's domain-verification token, served at `/.well-known/openai-apps-challenge`; empty: 404. */
   OPENAI_APPS_CHALLENGE?: string;
   /** "1" adds the handler's elapsed time as a response header (measurement only; never deployed). */

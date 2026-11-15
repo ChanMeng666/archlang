@@ -30,10 +30,12 @@
   "limits": { "cpu_ms": 5000 },
   // Per-address abuse guard, keyed on CF-Connecting-IP (never stored or logged), set HIGH because
   // connector platforms share egress addresses across their users; held to src/limits.ts by test.
-  // RATE_SVG meters only /svg/ cache misses (a hit compiles nothing).
+  // RATE_SVG meters only /svg/ cache misses (a hit compiles nothing); RATE_CHECK meters POST /check.
+  // 2603 and 2604 are the playground Worker's (playground/test/share-worker.test.ts keeps them apart).
   "ratelimits": [
     { "name": "RATE_MCP", "namespace_id": "2601", "simple": { "limit": 600, "period": 60 } },
-    { "name": "RATE_SVG", "namespace_id": "2602", "simple": { "limit": 3000, "period": 60 } }
+    { "name": "RATE_SVG", "namespace_id": "2602", "simple": { "limit": 3000, "period": 60 } },
+    { "name": "RATE_CHECK", "namespace_id": "2605", "simple": { "limit": 600, "period": 60 } }
   ],
   // OpenAI plugin-portal domain verification (src/app.ts, OPENAI_CHALLENGE_PATH): the token the
   // portal shows, a public string and not a secret, served as text/plain at

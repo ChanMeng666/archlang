@@ -38,7 +38,8 @@
             "args": ["-y", "@chanmeng666/archlang-mcp"]
           }
         }
-      }
+      },
+      "mcpJsonNote": "A root `.mcp.json` file is provided for MCP directory detection."
     },
     "vscode": {
       "label": "VS Code extension",

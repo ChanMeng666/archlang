@@ -23,7 +23,7 @@ import {
   pointOnRoomEdge,
   reachFrom,
   roomUses,
-  separateBalconies,
+  storeyWalkDigraph,
   wetRoomsOnlyViaBedroom,
 } from "../../analyze.js";
 import type { Diagnostic } from "../../diagnostics.js";
@@ -72,9 +72,11 @@ export const reachability: LintRule = {
       const exterior = arrivals.length === 0;
       const walk = exterior
         ? g
-        : accessDigraph(
+        : storeyWalkDigraph(
             rooms.map((r) => r.id),
-            separateBalconies(access().edges, ir),
+            access().edges,
+            ir,
+            false,
           );
       const reachAll = reachFrom(walk, { extraSources: arrivals, exterior });
       const reachNoBed = reachFrom(walk, { extraSources: arrivals, avoid: isBedroomId, exterior });

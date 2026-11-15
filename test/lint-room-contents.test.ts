@@ -415,9 +415,14 @@ describe("W_ROOM_MISSING_DEFINING", () => {
         applied++;
       }
     }
-    // Every `done` case of the folder fires and is cleared, under both profiles: read from the
-    // headers, so a case added to the folder is counted without retyping a number here.
-    const done = cases.filter((f) => /^# status: done$/m.test(readFileSync(join(dir, f), "utf8"))).length;
+    // Every `done` case of the folder that expects this code fires and is cleared, under both
+    // profiles: read from the headers, so a case added to the folder is counted without retyping a
+    // number here. A `done` case expecting another code (desk-nook-no-desk: W_LABEL_PIECE_MISSING)
+    // is not this rule's to clear.
+    const done = cases.filter((f) => {
+      const head = readFileSync(join(dir, f), "utf8");
+      return /^# status: done$/m.test(head) && /^# expect: W_ROOM_MISSING_DEFINING$/m.test(head);
+    }).length;
     expect(done).toBeGreaterThanOrEqual(3);
     expect(applied).toBe(done * 2);
   });

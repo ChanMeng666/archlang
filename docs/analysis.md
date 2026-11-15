@@ -277,7 +277,7 @@ openings) and walks it from the exterior. For the studio:
 | `edges[].estimatedClearWidth` | the usable opening: a **door** loses ~60 mm to its leaf and stop (from one leaf of a `double` door, half its width), an **opening** keeps its full width |
 | `edges[].exterior` | whether this connector reaches the outside |
 | `edges[].straddles` | as `doors[].straddles` |
-| `edges[].onto` | `"water"` when the connector opens onto an `outdoor water` surface and onto no walkable one drawn over it (a `deck` or `paving` bridge keeps it a way out): nobody walks in or out there, so its outside end is `""`, `exterior` is `false`, and it is no entrance and joins nothing. Which ground can be walked on is a property of the kind (every kind but `water`), and the topmost surface at the door decides: the last one drawn there, so a pond drawn inside a lawn is water at its door and a deck drawn over the pond is walked on. Only the access graph reads it: `doors[].between` still names `exterior` (the side with no room), and Plan JSON, which carries no `outdoor` surface, still writes the door as an ordinary exterior door, so its own reachability check counts it as a way in. **Present only then** |
+| `edges[].onto` | `"water"` when the connector opens onto an `outdoor water` surface and onto no walkable one drawn over it (a `deck` or `paving` bridge keeps it a way out): nobody walks in or out there, so its outside end is `""`, `exterior` is `false`, and it is no entrance and joins nothing. Which ground can be walked on is a property of the kind (every kind but `water`), and the topmost surface at the door decides: the last one drawn there, so a pond drawn inside a lawn is water at its door and a deck drawn over the pond is walked on. Only the access graph reads it: `doors[].between` still names `exterior` (the side with no room), and Plan JSON's output-only `edges` and `input_graph`, which do not read its `outdoor` surfaces, still write the door as an ordinary exterior door, so its own reachability check counts it as a way in. **Present only then** |
 | `edges[].ambiguous` | the connector sits where three or more rooms meet, and probing one wall thickness either side of its host wall's centreline could not say which two it joins (a probe landed on a room boundary). It is listed but joins nothing, so it counts for no room's reachability. When the probe does decide, `between` is the room on each face, and lint, circulation and `suggest` all read that same pair |
 | `rooms[].depthFromEntrance` | how many connectors you pass through from the nearest way a person arrives by (`1` = opens straight off it); `null` if you can't get there. A door onto an `outdoor balcony` is no such way for a room a door from the ground reaches; on a storey a stair or lift reaches and no door from the ground does, the rooms it lands in are `1` ([shafts](#vertical-circulation--the-building-graph-v121)) |
 | `rooms[].reachable` | can a person get to this room at all, from outside or, on such a storey, from where a shaft lands? |
@@ -1098,7 +1098,7 @@ of the summary is unchanged. Lengths are whole millimetres, areas m² to 2 decim
 | Key | Holds |
 |-----|-------|
 | `walls[]` | per wall category, sorted by name: `count`, `length_centreline_mm`, `length_face_mm`, and `face_area_before_openings_m2` when the plan authors a height |
-| `faces_omitted` | present only when the storey's face lengths are not measured: `too-many-edges` or `too-much-work` (the caps below) |
+| `faces_omitted` | present only when the storey's face lengths are not measured: `too-many-edges` or `too-much-work` (the caps below), or `plan-budget` (the storey's net-area total was spent first) |
 | `rooms[]` | per room, in source order: `perimeter_centreline_mm`, `perimeter_net_mm`, `area_net_m2` (the room's `net_area_m2`) |
 | `floor_area_net_m2` | the storey's `totals.net_floor_area_m2` |
 | `waste_pct`, `floor_area_with_waste_m2` | only when a waste percentage is passed (`--waste <pct>`, 0 to 100); never a default |
@@ -1150,7 +1150,10 @@ Exact, or omitted, as net area is: the outline is measured by the same closed-fo
 walk, every crossing computed exactly, no sampling and no bounding box in a figure. A storey
 with more than 8,000 band edges, or whose walk would cost more than net area's work cap, reports
 `faces_omitted` and no `length_face_mm`; a room whose net area would be omitted under ADR 0027's
-caps has no `perimeter_net_mm`. No shipped plan comes near either.
+caps has no `perimeter_net_mm`. Both are charged to the storey's net-area total (the one
+`net_area_m2` is held to), after every room's area and the faces last: past it a room has no
+`perimeter_net_mm` and the storey reports `faces_omitted: "plan-budget"`, so the walls never take
+a room's share. No shipped plan comes near either.
 
 `archlang takeoff plan.arch --format csv|md [--waste <pct>]` writes the same block as a table
 (Markdown by default). The CSV has one figure per row,
@@ -1250,7 +1253,7 @@ What it cannot tell you:
 
 | Family | Example codes |
 |--------|---------------|
-| Room | `W_ROOM_TOO_SMALL`, `W_ROOM_DISCONNECTED`, `W_BEDROOM_NO_WINDOW`, `W_HABITABLE_NO_WINDOW`, `W_ROOM_MISSING_DEFINING`, `W_ROOM_OVERLAP`, `W_ROOM_NOT_EQUATOR_FACING` |
+| Room | `W_ROOM_TOO_SMALL`, `W_ROOM_DISCONNECTED`, `W_BEDROOM_NO_WINDOW`, `W_HABITABLE_NO_WINDOW`, `W_ROOM_MISSING_DEFINING`, `W_LABEL_PIECE_MISSING`, `W_ROOM_OVERLAP`, `W_ROOM_NOT_EQUATOR_FACING` |
 | Placement | `W_DOOR_OFF_WALL`, `W_WINDOW_OFF_WALL`, `W_OPENING_OFF_WALL` |
 | Door / circulation | `W_DOOR_CLEARANCE`, `W_SWING_OBSTRUCTED`, `W_DOORWAY_BLOCKED`, `W_LEAF_ACROSS_DOORWAY`, `W_LEAF_TOO_WIDE`, `W_NO_ENTRANCE` |
 | Reachability | `W_ROOM_UNREACHABLE`, `W_BATH_VIA_BEDROOM` |

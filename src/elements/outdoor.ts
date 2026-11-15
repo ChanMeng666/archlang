@@ -9,7 +9,8 @@
  * load-bearing:
  *
  *  - **Not a room.** It never enters `describe().rooms`, `totals.floor_area_m2`, the
- *    drawn `schedule rooms` table, the door access graph, or Plan JSON. A terrace is not
+ *    drawn `schedule rooms` table, the door access graph, or Plan JSON's `rooms[]` (Plan
+ *    JSON carries it in a key of its own, `outdoor[]`, RM3.1). A terrace is not
  *    floor area, and a summary that quietly added 40 m² of lawn to a dwelling's floor
  *    figure would be wrong in the one number every downstream consumer trusts. Its own
  *    area is reported separately, in `describe().outdoor[]` and `totals.outdoor_area_m2`,

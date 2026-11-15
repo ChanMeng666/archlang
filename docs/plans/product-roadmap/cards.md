@@ -368,9 +368,11 @@ Scene3D 已经带 `outdoor` 与 `fences`（`src/scene3d/build.ts` 的 `outdoorOf
 
 ~~不合任何功能代码。~~ RM-D27（所有者 2026-11-11，`README.md` §6.5）取消了冻结期：本阶段的卡依赖满足就开工，功能代码在这一周也照常合并，只要 `main` 在 Show HN（12-01）之前保持绿。
 
-### RM1.1a · 首次接触复测（第一次） — `todo`（**可以开工**：1.59.0 已于 2026-11-11 发布） · 1 日 · opus · 依赖 1.59.0 发布（已满足；兜底见下）
+### RM1.1a · 首次接触复测（第一次） — `done`（2026-11-14，量的是 1.60.0；`handoff.md` §6） · 1 日 · opus · 依赖 1.59.0 发布（已满足；兜底见下）
 
 纯测量，不改代码。按 plan-soundness D7/D15 的六份 brief 与冻结提示，在 1.59.0 上跑一次；记录"N 个缺陷、最终 lint 报出 k 个"。**v2：** 结果记在本计划 `handoff.md` 的测量表；`../plan-soundness/handoff.md` §4 只留一行指针。这个数字是 CR10 发布说明引用的覆盖数字（RM-D3 的措辞），也是 RM7.3 的自检项。
+
+**结果（2026-11-14）：** 量的是已发布的 1.60.0（跑的时候它就是当前版本），不是卡写的 1.59.0；第 1 臂、冻结提示、六份 brief。N = 57 个缺陷（1 B / 21 N / 35 m；去掉 2 条面积口径的行是 55），最终 lint 报出 k = 8 + 1 部分。证据在所有者本机 `D:\github_repository\claude-kept\2026-11-15-archlang-session4-record\rm1.1a\`。第二个提示臂见 RM1.1c。
 
 兜底：1.59.0 到 2026-11-23 还没打 tag，就在当时 `main` 的提交上量，把完整 SHA 记进测量表；CR10 的发布说明引这个 SHA 和第一个包含它的版本。
 
@@ -422,7 +424,7 @@ RM8.1 是查看器缺陷修复，冻结期允许合并；但海报要在 Show HN
 
 执行顺序以 `README.md` §3 的表为准：CR11a → RM1.6a（若阶段 B 没做完）→ RM1.6b → CR10 → RM3.1 前半 → 发布 1.60.0，线（12–14.5 日 = 11–13.5 + 发布 1）以下 RM3.1 后半 → PS7.9（若没做完）→ CR11b + RM3.2 → RM4.3。CR9、CR12、RM2.2 在阶段 E 线下。1.60.0 避开 Product Hunt 那一周。RM3.1 按 RM-D10 拆成两半。RM5.4 在线下，~~12-02 之后才开工~~（RM-D27 作废了这个日期；主版本升级仍等所有者）。
 
-### CR11a · schema `$id` 与变更政策 — `todo` · 1 日 · sonnet · 依赖冻结期的 `schema-policy.md`
+### CR11a · schema `$id` 与变更政策 — `done` · #750 · `f36c1150` · 1 日 · sonnet · 依赖冻结期的 `schema-policy.md`
 
 **设计稿已写（2026-11-11）：** `design/schema-policy.md`，依赖满足。要点：现有两个 `$id` 不改；`$id` 跟格式主版本走；`GOVERNANCE.md` 的变更与弃用条文；门禁 `compareJsonSchemas` 加 `$id`。政策与命名空间已由 RM-D30（2026-11-12，受托，`README.md` §6.6）采纳：现有两个 `$id` 不改；本卡的 PR 把政策写进 `GOVERNANCE.md`。
 
@@ -432,7 +434,7 @@ CR11（`../checker-reach/README.md` §3）的政策那一半：schema 用带版�
 
 不许：改现有 schema 的字段；在这张卡里发 `lang-1.0`（那是 CR11b）。
 
-### RM1.6b · 诊断带结构化 `rule`（#680 后半） — `todo` · 2 日 · opus · 依赖 RM1.6a、CR11a
+### RM1.6b · 诊断带结构化 `rule`（#680 后半） — `done` · #758 · `057ae80f` · 2 日 · opus · 依赖 RM1.6a、CR11a
 
 诊断的 JSON 输出带结构化 `rule`（profile、key、value、units、document、clause、edition、核实等级），只加在由规则数字驱动的诊断上。
 
@@ -446,7 +448,7 @@ CR11（`../checker-reach/README.md` §3）的政策那一半：schema 用带版�
 
 不许：改 `lint(src)` 的返回值或它的 `JSON.stringify` 结果；改 `diagnosticToJson` 现有参数的含义；在 `dataset/generate.ts` 或 `eval/l2.ts` 里打开新参数；改 MCP 输出却不 bump `packages/mcp`；删任何已有 hint 文本；在 `message` 里引条文号或 id；给不由数字驱动的诊断编出处。
 
-### CR10 · 公开检查集 + `POST /check` — `todo` · 5 日 · opus · 依赖 RM1.1a、RM1.6a
+### CR10 · 公开检查集 + `POST /check` — `done` · #768 · `f48b6ae5` · 5 日 · opus · 依赖 RM1.1a、RM1.6a
 
 `../checker-reach/README.md` §3：50 个夹具，每个都写明必须产生的诊断，按通过/失败判定；托管 `POST /check`。用词只叫"公开检查集"（A2）。v1 的追加：发布说明附 RM1.1a 的数字和"lint 跳过了什么"（无解析、无 `site`、无 `level`、无 `height`）；一个最小 GitHub Action 示例（`npx archlang lint --json` 跑夹具，失败即红）。
 
@@ -458,7 +460,7 @@ RM1.1a 若走了兜底（量的是当时 `main` 的 SHA），发布说明引这�
 
 不许：叫 benchmark 或 leaderboard；与模型分数并列；把覆盖数字放进标题、README 徽章、首页、包描述（RM-D3）；跨辖区一列用 `S-secondary`、`M`、`convention` 的数；把跨辖区规则放进默认规则集。
 
-### RM3.1 前半 · Plan JSON 无损：范围表、往返律、`outdoor` 与 `fence` — `todo` · 3 日 · opus · 依赖 CR11a、冻结期的 `plan-json-scope.md` · **批次 C′ 线上**
+### RM3.1 前半 · Plan JSON 无损：范围表、往返律、`outdoor` 与 `fence` — `done` · #769 · `13ff3cc2` · 3 日 · opus · 依赖 CR11a、冻结期的 `plan-json-scope.md` · **批次 C′ 线上**
 
 **设计稿已写（2026-11-11）：** `design/plan-json-scope.md`，范围表的依赖满足（仍依赖 CR11a）。它另建议：前半同时把 `floor` 搬进 Plan JSON、修 J16（只在作者写了 `sill` 时写它）；PS0.18 已由 `78e0b7f9` 修掉（根平面与 PS3.9 组件体同走 `emitRows`），表里 `uses` 一行是"往返"，卡已由 RM-D31（2026-11-12）关闭。
 
@@ -597,7 +599,7 @@ RM-D19 的受托裁定：Dependabot #603（1.7.5 → 2.0.4，主版本，CI 在 
 6. 推拉门（barn）的门扇面跟随墙的绘制方向，镜像不对称。
 证明：每件各一条测试，复现用例先红后绿。不许：改 `main` 上已有的 3D 默认尺寸而不进账本。
 
-### RM8.10 · 在回放 HTML 与 playground 的 3D 页签里显示 `W3D_MIXED_HEIGHT_JOINT` — `todo` · 未估 · sonnet · 依赖无（2026-11-11 加，出自 #691 期间的报告；2026-11-12 按 RM-D32 改写，不再等设计裁定）
+### RM8.10 · 在回放 HTML 与 playground 的 3D 页签里显示 `W3D_MIXED_HEIGHT_JOINT` — `done` · #760 · `41f2b088` · 未估 · sonnet · 依赖无（2026-11-11 加，出自 #691 期间的报告；2026-11-12 按 RM-D32 改写，不再等设计裁定）
 
 报告：T 形交接处两面墙高度不同，交叉块判给较低的 stem 时，较高的贯通墙在 stem 上方有一个真实的缺口，Mesh3D 与 GLB 里都有（平面图里没有）。2026-11-11 复核属实：`packages/archlang-3d/test/wall-lines.test.ts` 的夹具 "a T of two heights"（stem `s` 高 2000、厚 150，贯通墙 `t` 高 3000）用 `archlang3d build --json`（0.5.0）构建，报出 `W3D_MIXED_HEIGHT_JOINT`："Wall s (2000 mm high) owns 22500 mm² of the taller wall t's footprint (3000 mm), so the taller wall is notched where they meet."。这不是遗漏，是既定行为：ADR 0030 决定 5 要求报告、从不静默修补。
 
@@ -631,7 +633,7 @@ CRF5（楼梯井同时报两条警告）若在同一 PR 碰到，一并去重。
 
 不许：第 1 条加默认 W；第 2 条加 `risers` 之类新语法；在 `message` 里引条文号；第 2 条用 `S-secondary` 的数。
 
-### RM1.2c · "Desk Nook" 不触发任何规则（2026-11-14 加，出自 #733） — 已裁定（RM-D35，`README.md` §6.8），`todo` · 未估 · opus · 依赖无（线下）
+### RM1.2c · "Desk Nook" 不触发任何规则（2026-11-14 加，出自 #733） — 已裁定（RM-D35，`README.md` §6.8），`done` · #763 · `15967d30` · 未估 · opus · 依赖无（线下）
 
 现象：标签 "Desk Nook" 不报任何东西。**已裁定（RM-D35，`README.md` §6.8，受托）：** 加一条新的 W 规则"标签点名了房间没有的家具"：房间标签含某个 `CATALOG` 家族名或别名、而房间里没有该家族的夹具时触发。不加词表行，`DEFINING.office` 不动。证明：§0 规则卡门禁（夹具对加留出对，`message` 不引条文号），并量编译器路径字节。不许：加词表行；改 `DEFINING.office`。
 
@@ -652,7 +654,7 @@ CRF5（楼梯井同时报两条警告）若在同一 PR 碰到，一并去重。
 5. 第三份 `rectOfPiece` 重复辅助函数，合并。
 证明：每条一条测试或一处文字对账。不许：加新语法。
 
-### RM1.2g · winder 与 3D 不一致（2026-11-14 加，出自 #736） — 已裁定（RM-D36，`README.md` §6.8），`todo` · 未估 · opus · 依赖无（线下）
+### RM1.2g · winder 与 3D 不一致（2026-11-14 加，出自 #736） — 已裁定（RM-D36，`README.md` §6.8），`done` · #751 · `ffbf59ca` · 未估 · opus · 依赖无（线下）
 
 现象：规则数每一条 winder 线（不设上限），而 `archlang-3d` 把 winder 平台只建成一级；`winders 8` 让 2D 规则沉默，3D 却爬约 306 mm 的级高。**已裁定（RM-D36，`README.md` §6.8，受托）：** `archlang-3d` 把 winder 平台建成 n 级渐缩台阶，使 3D 与 2D 图一致；2D 的 `W_STAIR_RISER_TOO_HIGH` 仍不设上限（winder 多出 n−1 级）。证明：3D 里 `winders 8` 的爬升等于规则读到的级高；2D 规则输出不变。不许：给 2D 规则封顶。
 
@@ -660,7 +662,7 @@ CRF5（楼梯井同时报两条警告）若在同一 PR 碰到，一并去重。
 
 现象：townhouse、garden-house、hillside-villa 在默认 3000 层高上画出的隐含级高为 250/250/273 mm，但没写 `height`，规则跳过。内容：决定写高度（逐个列 digest 变化）还是保持。不许：为过规则而改梯段。
 
-### RM8.8b · RM8.8 的余项（2026-11-14 加，出自 #737） — `todo` · 未估 · opus · 依赖 #737（已合并，`35ed277f`）
+### RM8.8b · RM8.8 的余项（2026-11-14 加，出自 #737） — `done` · #772 · `bbdc374b` · 未估 · opus · 依赖 #737（已合并，`35ed277f`）
 
 1. 若还有路径，"悬空"判定仍依赖按类别的账本行。
 2. 网格在细长平面不是线性的（一排 400 间 → 36.9 次测试/探针），多顶点多边形房间也不是（2880 顶点 → 565 次测试/探针，1117 ms）：改非方形格与精确的三角形/格重叠。
@@ -670,23 +672,23 @@ CRF5（楼梯井同时报两条警告）若在同一 PR 碰到，一并去重。
 6. `npm -w packages/archlang-3d run e2e -- <file>` 的过滤只作用于第二条命令。
 证明：每条一条测试。不许：抬帧时间预算。
 
-### 更正：CHANGELOG 1.60.0 的 A-ANNO 措辞（2026-11-14 加，已核对） — `todo` · 线下
+### 更正：CHANGELOG 1.60.0 的 A-ANNO 措辞（2026-11-14 加，已核对） — `done`（1.61.0 的 CHANGELOG 已更正，`[1.61.0]` Fixed 一节） · 线下
 
 条目说剖切符号画在 `A-ANNO`、`A-ANNO-TEXT`。核对 `src/elements/section.ts` 与 `src/scene.ts`（`annotations` 层映射到 `A-ANNO`，`labels` 层才是 `A-ANNO-TEXT`）：剖切线、看向线与名字文字都在 `annotations` 层，**全部落在 `A-ANNO`，没有 `A-ANNO-TEXT`**，措辞有误。下一版发布说明里更正。
 
-### RM8.7b · PDF 导出与图例不显示新材质的地面浅色（2026-11-14 加，出自 #744 评审 N2） — `todo` · 未估 · opus · 依赖无（线下）
+### RM8.7b · PDF 导出与图例不显示新材质的地面浅色（2026-11-14 加，出自 #744 评审 N2） — `done` · #762 · `2f214d8e` · 未估 · opus · 依赖无（线下）
 
 现象：地面 `timber`、`carpeting`、`stone` 与室外 `sand`、`soil` 的 `rendered` 浅色只进了房间填充，PDF 导出与图例不显示它们。内容：让两处读同一个来源。证明：每种新材质一条 PDF/图例测试。不许：另设一份颜色表。
 
-### RM0.7e · `pure()` 机制的守卫测试与误用检查（2026-11-14 加，出自 #747） — `todo` · 未估 · sonnet · 依赖无（线下）
+### RM0.7e · `pure()` 机制的守卫测试与误用检查（2026-11-14 加，出自 #747） — `done` · #770 · `893d111a` · 未估 · sonnet · 依赖无（线下）
 
 内容：(1) 守卫测试：只编译的 chunk 必须仍然丢掉 `pure()` 包着的值（rolldown 认 `@__NO_SIDE_EFFECTS__` 箭头函数，esbuild 只在同模块 const 上认）；(2) 一条检查，拒绝 `pure()` 的实参里有副作用。证明：故意去掉标注时守卫先红。不许：对有副作用的值标纯。
 
-### RM0.7f · 核心 chunk 拆分：约 65 KB 只被惰性路径用到的代码还在编译器 chunk 里（2026-11-14 加，出自 #747） — `todo` · 未估 · opus · 依赖无（线下）
+### RM0.7f · 核心 chunk 拆分：约 65 KB 只被惰性路径用到的代码还在编译器 chunk 里（2026-11-14 加，出自 #747） — `done` · #753 · `637702bf` · 未估 · opus · 依赖无（线下）
 
 内容：先量（每块占多少），把只被惰性路径可达的代码移出编译器 chunk，再一次性重取预算。证明：前后路径大小贴进 PR，`compile()` 输出语料逐字节不变。不许：不先量就动；抬 `compilerPathBudget`。
 
-### RM1.3d · RM1.3b 的余项（2026-11-14 加，出自 #742–#746） — `todo` · 未估 · opus · 依赖无（线下）
+### RM1.3d · RM1.3b 的余项（2026-11-14 加，出自 #742–#746） — `done` · #771 · `f76af65b` · 未估 · opus · 依赖无（线下）
 
 1. 扶梯的 `reachable_levels` 进 `describe`。
 2. 花园小径算可走。
@@ -694,6 +696,98 @@ CRF5（楼梯井同时报两条警告）若在同一 PR 碰到，一并去重。
 4. 工料的墙面不受净面积预算计量。
 5. `W_ROOM_VIA_PRIVATE` 的支配点缺口。
 证明：每条一条测试。不许：未量就改 digest 表；每个移动的钉值都要带理由。
+
+### RM1.3e · RM1.3d 的余项：走法与裁定（2026-11-15 加，出自 #771 与它的评审） — `todo` · 未估 · opus · 依赖无（线下；(b)(c) 先要裁定）
+
+1. 原第 2 项"花园小径算可走"拆成三件：(a) 室外走法图：每个相接的可走地面组一张，按步数计量；(b) 围栏当屏障、`garden_gate` 当开口（**先要一次裁定：夹具家族能不能带通行属性**）；(c) **先要一次裁定：** 通向没有连到街道的草坪的门，算不算"进来的路"。
+2. Plan JSON 的 `edges` / `input_graph` 可达性忽略 `outdoor`（通向水面的门在那里算入口，在 `describe` 里不算）：并入 RM3.1 后半，或自成一卡。
+3. `levelsEnteredFromBelow`（主入口命名）忽略扶梯方向。
+4. `W_ROOM_VIA_PRIVATE` 的提示在没有地面层的上层也建议"从室外来一扇门，深度 1"。
+证明：每条一条测试。不许：未量就改 digest 表。
+
+### RM1.3f · RM1.3d 的余项：计量与漂移（2026-11-15 加，出自 #771 评审） — `todo` · 未估 · sonnet · 依赖无（线下）
+
+1. `separateBalconies` 的两两检查在每个竖井到达层上跑 3 遍（每条私密规则一遍），不计量：按层记忆化。
+2. `quantities.ts:179` 先提供两两工作、后检查探针上限，超大层报 plan-budget 而不是 too-much-work：调换顺序。
+3. `describe().access`（`describe.ts:663-667`）、`analyze/circulation.ts:256`、`lint/rules/circulation-facts.ts:322` 仍直接调 `separateBalconies`：改走 `storeyWalkDigraph`，免得漂移。
+4. 工料的余量测试只钉 star30 与 clinic：扫所有已发布示例，或断言 clinic 最大。
+5. 记一条抖动（不是缺陷）：`docs-site/e2e/homepage-links.spec.ts:240` "a sheet shows and opens the SAME plan" 在 #771（`60601be6`）上超时 2 次，`main` 上绿。再出现时按 §12 (h) 先把竞态钉住。
+证明：每条一条测试；1–3 条的输出逐字节不变。
+
+### RM8.8c · RM8.8b 的余项（2026-11-15 加，出自 #772 评审） — `todo` · 未估 · opus · 依赖 #772（已合并，`bbdc374b`）
+
+1. 设计裁定：多边形房间的内角带随半径变化（12 边形 r3000→4 条，r3001→6 条；13/14 边形没有）。(a) 在墙节点上标出曲线弦的接点（会移动曲线平面的 Mesh3D/GLB）；(b) 只在查看器里按转角平滑过渡。
+2. 53 条带仍跨过墙或柱（不平行的：短曲线弦上的内角、沿墙面的 80 mm 带、斜楔）：通用的裁剪。
+3. 多边形房间的每次探针测试数现在约为 sqrt(n)，不是常数：记入计量表。
+4. 第二轮评审 m3：负宽度测试不可能红（它接受 `w === undefined`，旧公式也从不出负数）：改成能红的测试，或只记为说明。
+5. 第二轮评审 m4：间隙的 0 夹紧从不触发；同一墙节点内的亚微米间隙产出零面积四边形而不是不出带：不出带，并加一条测试。
+6. 第一轮评审 m4：阴影网格最坏的内存是 N × 65,536 个条目（许多大的、互相重叠的三角形，例如叠起来的房间）：给条目总数设上限。
+7. 第一轮评审 m6：`packages/archlang-3d/scripts/e2e.ts` 把 `-t <名字>` 的值当成文件过滤；从仓库根传的部分路径被拒：分开处理两种参数。
+8. 附带（示例，不是 3D 缺陷）：`examples/hexagon-pavilion.arch` 东西两根辐条离鼓墙约 51.9 mm 就停了（像是写错，3D 的收窄把它遮住了）：核对作者意图；改示例要按 digest 规则列出变化。
+证明：每条一条测试。不许：抬帧时间预算。
+
+### RM8.8d · 门偏墙中线 1 mm 时 2D 把门洞画死（核心；2026-11-15 加，出自 #772 评审第 4 项） — `todo` · 未估 · opus · 依赖无（线下）
+
+现象：门偏离墙中线 1 mm 时，`joinWallSet` 的切口留下 1 mm 的皮，2D SVG 把门洞画成关死的（外面直线穿过），也没有诊断。做法二选一：把开口投到中线上，或报警告。证明：2D 字节恒等测试（不用该形式的平面逐字节不变）。不许：在 3D 里补洞而 2D 不管。
+
+### ST.4 · 块式楼梯可结束在带 `winders` 的四分之一转平台上（2026-11-14 加，RM-D38，#532） — `todo` · 未估 · opus · 依赖无（线下；外部邀请 gerontec，先等他回复）
+
+裁定见 `README.md` §6.12 RM-D38。现象：到 1.61.0，块式楼梯结束在带 `winders` 的平台上仍报 `E_STAIR_PIECES` "must end on a flight"。内容：放宽结尾判定，取最后一级 winder 的后缘作到达边；lint 不需要新概念（`winderGoings` 已把 winder 计为踏步）。若 gerontec 不提 PR，按所有者的话排进下一批，开 PR 时在 #532 贴链接。与 backlog ST.2（行走线画成弦、按弧计）不是同一件事。
+证明：`haus_winders.arch` 去掉 560 mm 替身梯段后作夹具，编译不再报 `E_STAIR_PIECES`；不用此写法的平面 SVG、`describe()`、`lint()` 逐字节不变（字节恒等律钉值）。
+不许：改 winder 的画法或几何；改 `winderGoings` 的计数。
+
+### RM8.10b · RM8.10 的小项（2026-11-15 加，出自 #760） — `todo` · 未估 · sonnet · 依赖无（线下）
+
+1. 滚动路径的测试。2. 实时区域（live region）重复播报。3. 横屏布局。
+证明：每条一条测试。
+
+### RM0.7g · RM0.7f 的小项（2026-11-15 加，出自 #753） — `todo` · 未估 · sonnet · 依赖无（线下）
+
+1. 首次使用预算偏松：收紧。2. 索引页首次渲染。
+证明：前后路径大小贴进 PR。不许：抬 `compilerPathBudget`。
+
+### RM8.7c · RM8.7b 的余项（2026-11-15 加，出自 #762） — `todo` · 未估 · opus · 依赖无（线下）
+
+1. PDF 里更早的地面与地面词仍不显示浅色。
+2. 地面色块对比度低于 2.0:1（RM-D28 的门槛只管了图案线）。
+3. PDF 用页面主题而不是计划主题。
+证明：每条一条 PDF/对比测试。不许：另设一份颜色表。
+
+### RM1.2i · RM1.2c 的已知误报（2026-11-15 加，出自 #763） — `todo` · 未估 · sonnet · 依赖无（线下）
+
+"标签点名了房间没有的家具"规则对这四个标签会误报："Painting Studio"、"Spa Suite"、"Table Tennis Room"、"Buffet Area"。内容：为每一个找出读法上的缺口（名词中心语 / 修饰语）并修，或写进豁免并说明。证明：每个标签一对夹具（报与不报）。不许：因此放松 RM-D35a 的读法。
+
+### RM1.1c · 首次接触复测的第二个提示臂（2026-11-15 加，出自 RM1.1a） — `todo` · 未估 · opus · 依赖 RM1.1a（已 `done`）
+
+RM1.1a 只跑了第 1 臂（冻结提示，六份 brief）。内容：第二臂（另一份提示），在同一版本上量，记入 `handoff.md` §6。不许：改第 1 臂的提示或事后重算 N。
+
+### CR10b · CR10 的余项（2026-11-15 加，出自 #768 评审） — `todo` · 未估 · sonnet · 依赖无（线下）
+
+1. `test/lint-report.test.ts` 部分同义反复（`cmdLint` 与 `lintReport` 共用 `lintFindings`）：加一条对 CR10 之前输出的字节恒等测试。
+2. `lintReport({profile: 拼错})` 静默回落到默认（`src/lint.ts:136` 的 `?? {}`）：库的调用者需要一个 `Diagnostic`。
+3. `../checker-reach/README.md:135` 的种子只写了一部分（3 个种子里 2 个，5 条 AECBench 检查）。
+4. `joint` 标记只证明必要性与无引文：还要求另一把键使其沉默，或一份联合持有的代码清单。
+5. README 的"落下"清单（3 个代码）没有测试钉住。
+6. 引文覆盖审计：凡读规则集数字却没调 `cite()` 的规则（默认列只和 `cite()` 覆盖一样干净；`W_STAIR_TOO_STEEP` 由 m5 发现）。
+7. `W_BED_UNDERSIZED`、`W_EXIT_APPROACH_BLOCKED`、`W_LEAF_TOO_WIDE` 可加入检查集的 opt-in 列。
+证明：每条一条测试。
+
+### RM3.1c · RM3.1 前半的余项（2026-11-15 加，出自 #769 评审） — `todo` · 未估 · opus · 依赖无（线下；与 RM3.1 后半一起做更省）
+
+1. 往返缺口示例（`CANNOT_ROUND_TRIP`）：把每处不一致对到所报的被丢子句。
+2. 先核 `dim diameter` 能否往返（要一个圆形房间的夹具）再按结果列入范围表。
+3. Plan JSON 范围表对照语法的语句/元素关键字表（`src/grammar/tokens.ts`）核一遍。
+4. `on <wall> at <pos>` 的 lint 提示在回程变了（`openings.ts:390-394`）而没有 dropped 行，与 `auto id` 不一致：报出或说明理由。
+5. 标签摆放的重叠求和顺序（`label-placement.ts:310,344`）在室外重排时可能差 1 ulp：加夹具或对和排序（理论上的）。
+证明：每条一条测试。
+
+### RM0.10 · 小件：工具与 schema 的余项（2026-11-15 加，出自 #750、#758、#753 的报告） — `todo` · 未估 · sonnet · 依赖无（线下）
+
+1. `OpenPlan3D` 的 id 映射。
+2. `scripts/backlog-archive.mjs` 改写了 10 个标题（缺陷；与 RM0.6 同源，先读那张卡）。
+3. lint-rules schema 的 `v1` 声明。
+4. `Scene3D` 占位 `$id` 与镜像副本。
+证明：每条一条测试或生成器的漂移检查。不许：手改生成物。
 
 ### 发布 1.61.0 · 约 01-05 · 1 日
 
@@ -903,7 +997,7 @@ RM-D23 已获所有者批准（2026-11-11）。backlog VA.5："Revisit only with
 
 不许：实时阴影图；PBR、位图纹理、HDR 天空或昼夜；让任何物体发光（MF-D2：照明不做）；只改一部分公开面的句子；把阴影说成 photoreal 或 render；动 2D 的符号或主题。
 
-### RM8.9 · 新家族首批 — `todo` · 6 日（主会话估） · opus · 依赖 PS7.9、冻结期的 `visual-language.md`（家族一节） · `[语法：词表]`
+### RM8.9 · 新家族首批 — `done` · #756 · `f05df528` · 6 日（主会话估） · opus · 依赖 PS7.9、冻结期的 `visual-language.md`（家族一节） · `[语法：词表]`
 
 **依赖补充（2026-11-12）：** PS7.9 已满足；本卡再依赖 RM0.7（编译器路径预算）：词表字会让 `KEYWORDS` 与 spec 变大。**清单由十二个变十六个（RM-D29，`README.md` §6.6）：** 另加 `climber`（别名 `climbing_plant`）、`bamboo`、`potted_tree`（别名 `indoor_tree`）、`stepping_stones`，spec 15 单位，名字与占地按 `design/visual-language.md` §4.3；`climber` 是第八个 `wallMounted` 家族（现有七个），`src/fixtures-catalog.ts` 的注释同 PR 改；下面的"十二个"与计数句相应改成十六个。
 
@@ -965,15 +1059,6 @@ MF-D1（`../math-foundations/README.md` §6.1 第 3 条）要求 MF-D11 在本�
 6. `droppedFromStorey` 用 `BUILTIN_REGISTRY` 做 `nameOf`，没用平面自己的注册表或 `KIND_FACETS`。内容：改用后者。
 证明：每件各一条测试；字节恒等律不变。不许：顺手改别的。
 
-### ST.2 · 块式楼梯可在带 `winders` 的四分之一转平台上结束 — `todo` · 未估 · opus · 依赖无 · **外部邀请（gerontec，#532）**
-
-**决策记录（RM-D38，2026-11-14，`README.md` §6.10）：** 块式楼梯可在设有 `winders` 的四分之一转平台上结束，取最后一个 winder 的后缘作为到达边（1.60.0 今天 `E_STAIR_PIECES` 报 'must end on a flight'）。不使用此特性的平面保持字节恒等。外部贡献者 gerontec（#533 作者）受邀为此特性开 PR。夹具：`gerontec/archlang-section` 仓库的 `example/haus_winders.arch`（MIT 许可），移除其中 560 mm 的替代梯段后使用。
-
-内容：扩展楼梯到达判定，允许块式楼梯以带 `winders` 的平台作为终点。核心取最后一个 winder 的后缘作为到达边。Lint 无需新概念，因为 `winderGoings` 已将 winders 计入 goings 数。
-
-证明：使用 `haus_winders.arch` 的最小夹具（移除替代梯段）编译通过，`E_STAIR_PIECES` 不再报错；不使用此特性的平面 SVG、`describe()`、`lint()`、诊断字节恒等（字节恒等律）。
-
-不许：改变不使用此特性的图的任何输出；改变 winders 的绘制或几何；修改 `winderGoings` 的计数规则。
 
 ### RM3.3 · mask 导入 — `todo` · 3 日 · opus · **触发：第二个独立来源带样本**
 

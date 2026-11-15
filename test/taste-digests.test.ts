@@ -213,6 +213,12 @@
  * `stair-safety/riser-too-high` pair under each of the three profiles, measured with `tasteDigest`.
  * No existing row moved: `examples/two-storey` and `examples/turning-stair` drew longer flights in the
  * same PR, which no criterion reads, and on `origin/main` neither raised the new code (it did not exist).
+ *
+ * RM1.2c (`W_LABEL_PIECE_MISSING`, a label naming a piece its room lacks) moved three rows, the
+ * `missing-defining-contents/desk-nook-no-desk` case under each profile: the new validity warning caps
+ * its score. Measured with `tasteDigest`; with the rule taken out of `LINT_RULES` each reproduces the
+ * value it replaces, on the case's old source and on its new header. Its twin, and every other row, held:
+ * the rule fires on no other source here.
  */
 
 import { describe, expect, it } from "vitest";
@@ -782,7 +788,7 @@ const TABLE: ReadonlyArray<[string, string, string]> = [
     "test/defect-corpus/missing-defining-contents/bedroom-no-bed.clean.arch",
   ],
   [
-    "1f8f4a76be51cf8323494a70c09aafd5ff362897f4ed7db5c40bb51c7e1d8ec7",
+    "1d158590290539cc833f07039fe52c8e25d5aea6231e14f66ab08e7aab922f40",
     "generic",
     "test/defect-corpus/missing-defining-contents/desk-nook-no-desk.arch",
   ],
@@ -2002,7 +2008,7 @@ const TABLE: ReadonlyArray<[string, string, string]> = [
     "test/defect-corpus/missing-defining-contents/bedroom-no-bed.clean.arch",
   ],
   [
-    "294e66a4e17606fda9463bc006fc4a6e5df6b88d3b0877937254636a015cc84b",
+    "549e905c950ff7ebe6640ba599c3e215d3ee13500d817a84eb07d76cc364a60e",
     "cn-residential-advisory",
     "test/defect-corpus/missing-defining-contents/desk-nook-no-desk.arch",
   ],
@@ -3222,7 +3228,7 @@ const TABLE: ReadonlyArray<[string, string, string]> = [
     "test/defect-corpus/missing-defining-contents/bedroom-no-bed.clean.arch",
   ],
   [
-    "04d600663b415309e7806e7813bce45f6078d4cbe8c00ab62bff46a2d4a6cfd0",
+    "1b350f57ff90fb0107df3587771642123be6aacb27672d0302fe475e63d5605d",
     "us-residential-advisory",
     "test/defect-corpus/missing-defining-contents/desk-nook-no-desk.arch",
   ],

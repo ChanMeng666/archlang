@@ -5,7 +5,7 @@
 Where the tests of a `src` module are, and what each test file is for. Generated; `npm run check:drift`
 fails when it is stale. How to add a test: `docs/testing.md` § 4.
 
-509 test files in `test/`, 283 `src` modules, 108 modules no test imports.
+514 test files in `test/`, 284 `src` modules, 106 modules no test imports.
 
 ## `src` module → tests that import it
 
@@ -27,7 +27,7 @@ Nearest first, then by name; `(+n)` is the rest. Test names are `test/<name>.tes
 - `src/analyze/net-area-memo.ts` (1) — `net-area-budget`
 - `src/analyze/net-area.ts` (5) — `describe-quantities`, `net-area-budget`, `net-area-once`, `net-area-oracle-corpus`, `net-area`
 - `src/analyze/occupancy.ts` (2) — `nav-grid-scale`, `polygon-rooms`
-- `src/analyze/quantities.ts` (1) — `describe-quantities`
+- `src/analyze/quantities.ts` (2) — `describe-quantities`, `net-area-budget`
 - `src/analyze/symmetry.ts` (1) — `rect-ring`
 - `src/analyze/wall-faces.ts` (2) — `lint-space-enclosure`, `wall-status`
 - `src/ast.ts` (115) — `arc-radius-exact`, `band`, `circulation-concave`, `circulation-translation`, `closed-vocabularies`, `corner-window`, `cursor-exhaustive`, `d4` (+107)
@@ -44,11 +44,11 @@ Nearest first, then by name; `(+n)` is the rest. Test names are `test/<name>.tes
 - `src/cli/commands-render.ts` (3) — `keep-impact-depends`, `plan-json-dropped`, `watch-arming`
 - `src/cli/context-starter.ts` (1) — `context-starter`
 - `src/cli/help.ts` (1) — `cli-help`
-- `src/cli/io.ts` (78) — `block-stair-byte-identity`, `cli-contract`, `cli-exit-parse`, `cli-expected-hash`, `cli-flag-matrix`, `cli-help`, `cli-output-format`, `cli-plan-json-roundtrip` (+70)
+- `src/cli/io.ts` (80) — `block-stair-byte-identity`, `cli-contract`, `cli-exit-parse`, `cli-expected-hash`, `cli-flag-matrix`, `cli-help`, `cli-output-format`, `cli-plan-json-roundtrip` (+72)
 - `src/cli/link.ts` (1) — `cli-link`
 - `src/cli/review.ts` (1) — `cli-preview-review`
-- `src/cli/run.ts` (47) — `axes`, `cli-batch`, `cli-commands`, `cli-context`, `cli-contract`, `cli-exit-parse`, `cli-expected-hash`, `cli-finish` (+39)
-- `src/cli/serialize.ts` (7) — `cli-batch`, `cli-plan-json-roundtrip`, `element-facets`, `plan-json-arcs-paper`, `plan-json-dropped`, `plan-json-instances`, `walls-from-rooms`
+- `src/cli/run.ts` (48) — `axes`, `cli-batch`, `cli-commands`, `cli-context`, `cli-contract`, `cli-exit-parse`, `cli-expected-hash`, `cli-finish` (+40)
+- `src/cli/serialize.ts` (8) — `cli-batch`, `cli-plan-json-roundtrip`, `element-facets`, `plan-json-arcs-paper`, `plan-json-dropped`, `plan-json-instances`, `plan-json-roundtrip-law`, `walls-from-rooms`
 - `src/cli/source-hash.ts` (1) — `cli-expected-hash`
 - `src/cli/summary.ts` (1) — `lint-summary`
 - `src/compile.ts` (1) — `cache`
@@ -64,7 +64,7 @@ Nearest first, then by name; `(+n)` is the rest. Test names are `test/<name>.tes
 - `src/elements/dim.ts` (1) — `annotation-collisions`
 - `src/elements/door.ts` (1) — `window-kinds`
 - `src/elements/facets.ts` (1) — `element-facets`
-- `src/elements/fixtures-glyphs.ts` (23) — `catalogue-images`, `cli-manifest`, `drawing-budget`, `equivariance-scene`, `finish-furnish`, `fixture-classifier-drift`, `furniture-mirror`, `glyph-chirality` (+15)
+- `src/elements/fixtures-glyphs.ts` (24) — `catalogue-images`, `cli-manifest`, `drawing-budget`, `equivariance-scene`, `finish-furnish`, `fixture-classifier-drift`, `furniture-mirror`, `glyph-chirality` (+16)
 - `src/elements/furniture.ts` (11) — `furniture-relations`, `furniture-rotate`, `glyph-chirality`, `glyph-lib`, `glyphs-kitchen`, `glyphs-living`, `glyphs-misc`, `glyphs-new-families` (+3)
 - `src/elements/glyph-chirality.ts` (12) — `furniture-mirror`, `glyph-chirality`, `glyph-lib`, `glyphs-bath`, `glyphs-bedroom`, `glyphs-kitchen`, `glyphs-living`, `glyphs-misc` (+4)
 - `src/elements/glyph-lib.ts` (18) — `doors`, `equivariance-scene`, `furniture-mirror`, `glyph-chirality`, `glyph-lib`, `glyphs-batch2`, `glyphs-bath`, `glyphs-bedroom` (+10)
@@ -94,9 +94,10 @@ Nearest first, then by name; `(+n)` is the rest. Test names are `test/<name>.tes
 - `src/fix-apply.ts` (1) — `fix-apply`
 - `src/fix-producers.ts` (2) — `emit-opening-oracle`, `fix-printer`
 - `src/fixture-orientation.ts` (2) — `fixture-orientation`, `rectilinear-sides`
-- `src/fixtures-catalog.ts` (32) — `catalogue-images`, `equivariance-corpus`, `export-dxf-blocks`, `finish-furnish`, `fixture-classifier-drift`, `fixture-orientation`, `furniture-mirror`, `glyph-chirality` (+24)
+- `src/fixtures-catalog.ts` (33) — `catalogue-images`, `equivariance-corpus`, `export-dxf-blocks`, `finish-furnish`, `fixture-classifier-drift`, `fixture-orientation`, `furniture-mirror`, `glyph-chirality` (+25)
 - `src/format.ts` (58) — `axes`, `dim-faces`, `fence`, `furniture-against`, `furniture-lint`, `furniture-rotate`, `opening`, `openings-between` (+50)
 - `src/frame.ts` (44) — `compose-assoc`, `d4`, `equivariance-corpus`, `equivariance-fuzz`, `equivariance-scene`, `frame`, `furniture-mirror`, `symmetry` (+36)
+- `src/furnish-table.ts` (1) — `lint-label-piece-missing`
 - `src/furnish.ts` (7) — `finish-furnish`, `finish-levels`, `finish`, `fuzz`, `keep`, `lint-furniture-on-stair`, `lint-hint-paste`
 - `src/furniture-relation.ts` (2) — `furniture-relations`, `rect-ring`
 - `src/geometry.ts` (27) — `band`, `circle-enclosure`, `curves`, `dim-thickness-callout`, `doors`, `double-door-byte-identity`, `equivariance-corpus`, `frame` (+19)
@@ -117,7 +118,7 @@ Nearest first, then by name; `(+n)` is the rest. Test names are `test/<name>.tes
 - `src/impact.ts` (2) — `rectilinear-doors`, `rectilinear-rooms`
 - `src/import.ts` (31) — `block-stair-byte-identity`, `corner-window-byte-identity`, `dim-thickness-callout`, `drawing-budget`, `floor-materials-byte-identity`, `furniture-relations`, `gaps-byte-identity`, `keep` (+23)
 - `src/import/limits.ts` (1) — `openplan3d-malformed`
-- `src/index.ts` (383) — `acc-metadata`, `access-graph`, `access-policy`, `accessible-svg`, `agent-gallery`, `alias-match`, `anchors`, `annotate` (+375)
+- `src/index.ts` (387) — `acc-metadata`, `access-graph`, `access-policy`, `accessible-svg`, `agent-gallery`, `alias-match`, `anchors`, `annotate` (+379)
 - `src/input-limit.ts` (2) — `import-rooted`, `workspace-seams`
 - `src/intent-concepts.ts` (2) — `vocabulary-living-dining`, `vocabulary-matcher-oracle`
 - `src/intent.ts` (1) — `site`
@@ -132,7 +133,8 @@ Nearest first, then by name; `(+n)` is the rest. Test names are `test/<name>.tes
 - `src/lint/defining.ts` (2) — `lint-hint-paste`, `lint-room-contents`
 - `src/lint/fixture-paste.ts` (1) — `lint-clearances-wc-window`
 - `src/lint/measure.ts` (1) — `lint-measure`
-- `src/lint/provenance.ts` (3) — `lint-provenance`, `lint-stair-riser-too-high`, `schema-ids`
+- `src/lint/provenance.ts` (4) — `check-set`, `lint-provenance`, `lint-stair-riser-too-high`, `schema-ids`
+- `src/lint/rule-ref.ts` (1) — `check-set`
 - `src/lint/rules/annotations.ts` (1) — `annotation-collisions`
 - `src/lint/rules/circulation-facts.ts` (1) — `lint-attribution-budget`
 - `src/lint/rules/clearances.ts` (1) — `lint-accessible-wc-side-wall`
@@ -141,6 +143,7 @@ Nearest first, then by name; `(+n)` is the rest. Test names are `test/<name>.tes
 - `src/lint/rules/enclosure.ts` (3) — `lint-exterior-ring`, `lint-index-superset`, `wall-closure-measure`
 - `src/lint/rules/index.ts` (12) — `block-stair-landing`, `block-stair-lint`, `error-catalog-families`, `lint-back-to-room-side-on`, `lint-clearances-kitchen-doors`, `lint-clearances-wc-window`, `lint-exterior-ring`, `lint-fix-texts` (+4)
 - `src/lint/rules/per-room.ts` (2) — `fixture-classifier-drift`, `lint-fix-texts`
+- `src/lint/rules/room-contents.ts` (1) — `lint-label-piece-missing`
 - `src/lint/rules/stairs.ts` (4) — `block-stair-landing`, `block-stair-lint`, `lint-stair-riser-too-high`, `lint-stairs`
 - `src/lint/ruleset.ts` (15) — `block-stair-landing`, `block-stair-lint`, `block-stair-shaft`, `block-stair`, `circle-enclosure`, `lint-clearances-kitchen-doors`, `lint-clearances-wc-window`, `lint-exterior-ring` (+7)
 - `src/lint/storeys.ts` (5) — `block-stair-landing`, `block-stair-lint`, `block-stair-shaft`, `block-stair`, `lint-index-superset`
@@ -152,7 +155,7 @@ Nearest first, then by name; `(+n)` is the rest. Test names are `test/<name>.tes
 - `src/num-format.ts` (14) — `annotation-collisions`, `dim-thickness-callout`, `emit-opening-oracle`, `imperial-input`, `keep`, `lint-ruleset-values`, `model-range`, `net-area-stamp` (+6)
 - `src/opening-relation.ts` (3) — `openings-between`, `rectilinear-doors`, `rectilinear-sides`
 - `src/opening-schedule.ts` (2) — `sheet-annotations`, `window-kinds`
-- `src/parser.ts` (147) — `arc-radius-exact`, `attach`, `axes`, `block-stair-byte-identity`, `block-stair`, `chrome-hidden`, `circle-enclosure`, `circulation-concave` (+139)
+- `src/parser.ts` (146) — `arc-radius-exact`, `attach`, `axes`, `block-stair-byte-identity`, `block-stair`, `chrome-hidden`, `circle-enclosure`, `circulation-concave` (+138)
 - `src/pipeline.ts` (1) — `work-counts`
 - `src/plan-json.ts` (11) — `element-facets`, `format`, `garage`, `plan-json-dropped`, `plan-json-instances`, `polygon-rooms`, `section`, `sheet-annotations` (+3)
 - `src/plan-json/to-json.ts` (1) — `rect-ring`
@@ -183,11 +186,11 @@ Nearest first, then by name; `(+n)` is the rest. Test names are `test/<name>.tes
 - `src/view/camera.ts` (5) — `iso-camera`, `iso-mixed-heights`, `iso-painter-order`, `iso-projection`, `iso-sort`
 - `src/view/extrude.ts` (4) — `iso-mixed-heights`, `iso-painter-order`, `iso-projection`, `iso-sort`
 - `src/view/paint.ts` (4) — `iso-cli`, `iso-mixed-heights`, `iso-painter-order`, `iso-sort`
-- `src/vocabulary.ts` (7) — `alias-match`, `garage`, `grid-index`, `room-overlap-oracle`, `vocabulary-fallback`, `vocabulary-living-dining`, `vocabulary-matcher-oracle`
+- `src/vocabulary.ts` (8) — `alias-match`, `garage`, `grid-index`, `lint-label-piece-missing`, `room-overlap-oracle`, `vocabulary-fallback`, `vocabulary-living-dining`, `vocabulary-matcher-oracle`
 - `src/wall-lowering.ts` (2) — `joinery-split`, `open-crossing`
 - `src/wall-ref.ts` (2) — `rectilinear-rooms`, `walls-from-rooms`
 - `src/while-fix.ts` (1) — `while-fix`
-- `src/world.ts` (111) — `block-stair-byte-identity`, `circulation-unmeasured`, `corner-window-byte-identity`, `corner-window`, `dim-thickness-callout`, `drawing-budget`, `drawing-overflow`, `equivariance-corpus` (+103)
+- `src/world.ts` (112) — `block-stair-byte-identity`, `circulation-unmeasured`, `corner-window-byte-identity`, `corner-window`, `dim-thickness-callout`, `drawing-budget`, `drawing-overflow`, `equivariance-corpus` (+104)
 
 ## Test files
 
@@ -235,6 +238,7 @@ The first sentence of each file's header comment.
 - `test/catalogue-images.test.ts` — The symbol catalogue's pictures (product-roadmap card RM8.5): every fixture family has its generated image in `docs-site/public/catalogue/` (its 2D symbol and, in the same picture, its 3D preview, by `scripts/specimen...
 - `test/changelog-unreleased.test.ts` — CHANGELOG lines land under Unreleased, no released line is deleted, and a release PR is exempt.
 - `test/check-quick-workspaces.test.ts` — `check:quick` and `typecheck:all` name the same workspaces.
+- `test/check-set.test.ts` — public check set: every case judged; each column derived from its sources.
 - `test/chrome-hidden.test.ts` — `north … hidden`, `scale … hidden`, `title hidden` (issue #405): the mark goes, the fact stays.
 - `test/circle-enclosure.test.ts` — W_ROOM_NOT_ENCLOSED on a circle room enclosed by arc walls; straight walls never back a circle room (documented); the verdict is D4-equivariant under `place`.
 - `test/circulation-concave.test.ts` — circulation — a concave room's routing anchor is on the room, not on its notch lip.
@@ -476,6 +480,7 @@ The first sentence of each file's header comment.
 - `test/lint-furniture-on-void.test.ts` — CR2 group D: `W_FURNITURE_ON_VOID`, a piece standing on a void, a lift shaft or an escalator of its own storey, and `finish` keeping a single-storey plan's pieces off a void (it used to read voids only on a plan of `l...
 - `test/lint-hint-paste.test.ts` — A quoted fixture hint never warns when pasted (plan-soundness PS2.17, PR #216 review rounds 2 and 3).
 - `test/lint-index-superset.test.ts` — The lint rules' spatial filters drop nothing a full scan would measure (engineering-health EH2.10).
+- `test/lint-label-piece-missing.test.ts` — Product roadmap RM1.2c (ruling RM-D35): `W_LABEL_PIECE_MISSING`, a room whose label names a catalogued piece it does not hold ("Desk Nook" with no desk).
 - `test/lint-layers.test.ts` — Every lint rule declares its soundness LAYER and the codes it may emit (ADR 0032).
 - `test/lint-measure.test.ts` — mm — millimetre rounding into diagnostic prose; shortfall — how far `required` exceeds `available`; deficitMm — a requirement, an availability and a shortfall t…
 - `test/lint-messages-id-free.test.ts` — no message over the corpus quotes an internal id (PS2.22, PS2.29); makeNaming — what an unlabelled room is called (src/naming.ts); the storey is named only on a…
@@ -483,6 +488,7 @@ The first sentence of each file's header comment.
 - `test/lint-profiles-residential.test.ts` — the residential-advisory profiles; the catalog example; single or double: read from the bed, never the label (ADR 0005); areas are net floor under every residen…
 - `test/lint-profiles.test.ts` — lint profiles.
 - `test/lint-provenance.test.ts` — rule provenance — every ruleset key has a row, grades match the source tags; lint --rules exports the effective ruleset; off the compile path; a diagnostic's rule (RM1.6b).
+- `test/lint-report.test.ts` — lintReport is `arch lint --json`, byte for byte.
 - `test/lint-room-contents.test.ts` — W_HABITABLE_NO_WINDOW; W_ROOM_MISSING_DEFINING; finish with the room-contents rule: the review's probes; PS2.17: a kitchen's worktop, written by finish.
 - `test/lint-rule-order.test.ts` — a lint rule is registered in every place a rule is listed.
 - `test/lint-ruleset-values.test.ts` — A lint ruleset value that is not a finite number within the modelling range (or `null` where the field allows it) is refused with `E_RULESET_VALUE` before any rule runs (engineering-health EH2.12).
@@ -554,6 +560,7 @@ The first sentence of each file's header comment.
 - `test/plan-json-instances.test.ts` — PS3.9 — Plan JSON for a component that derives its walls.
 - `test/plan-json-malformed.test.ts` — malformed Plan JSON.
 - `test/plan-json-projector-leaf.test.ts` — **The Plan JSON projector is a leaf.** `to-json.ts` turns a resolved plan into Plan JSON; it must not load the validator (`from-json.ts`), which it reads nothing from.
+- `test/plan-json-roundtrip-law.test.ts` — RM3.1: the Plan JSON round-trip law (`-f json` → `--from-json` → SVG + describe() + lint()) over every in-scope example and the ground/floor/sill fixtures; the scope table held to `dropped`.
 - `test/plan-json-uses-roundtrip.test.ts` — A room's uses survive a Plan JSON round trip (checker-reach CR2 group B).
 - `test/plan-json.test.ts` — plan-json — round-trip byte-identity (SVG); plan-json — derived furniture positions; plan-json — planToJson projection & enrichments; plan-json — `dims auto` is…
 - `test/plan-schema-drift.test.ts` — plan.schema.json drift.
@@ -566,6 +573,7 @@ The first sentence of each file's header comment.
 - `test/polygon-rooms.test.ts` — polygon rooms — parsing and shape; polygon rooms — exact area (shoelace); polygon rooms — rejected rings; polygon rooms — label placement; polygon rooms — the l…
 - `test/print-roundtrip.test.ts` — The central law motivating this task: **a printer is a section of the parser**.
 - `test/public-surface.test.ts` — the public type surface is closed; resolvePlan from the package root keeps linked content.
+- `test/pure-guard.test.ts` — `pure()` (src/pure.ts): every call is marked, takes an arrow, and the arrow has no outside effect (card RM0.7e).
 - `test/rank-fixes.test.ts` — rankFixes; cmdFix pick-one reduction (rankFixes + applyFixes).
 - `test/reachability-blind-spots.test.ts` — RM1.3a — where a person ARRIVES on a storey: a stair-reached upper storey's rooms are reachable (PS0.3), an upper storey's balcony door is no way in (PS0.3), and a balcony door is no arrival for a room a door from the...
 - `test/readme-3d.test.ts` — The 3D preview on the READMEs (public-surfaces card X7): the PS-D12 line and the limits line are carried verbatim, the page they point at is linked, every poster image is a shipped asset the manifest lists, each 3D li...
@@ -759,7 +767,6 @@ module); adding a test that imports it removes it from this list.
 - `src/error-catalog/site.ts`
 - `src/error-catalog/vertical.ts`
 - `src/error-catalog/walls.ts`
-- `src/furnish-table.ts`
 - `src/hash.ts`
 - `src/id-spans.ts`
 - `src/identity.ts`
@@ -778,7 +785,7 @@ module); adding a test that imports it removes it from this list.
 - `src/layout.ts`
 - `src/lint/clearance-facts.ts`
 - `src/lint/element-phrases.ts`
-- `src/lint/rule-ref.ts`
+- `src/lint/report.ts`
 - `src/lint/rules/alias-match.ts`
 - `src/lint/rules/circulation.ts`
 - `src/lint/rules/entrance.ts`
@@ -790,7 +797,6 @@ module); adding a test that imports it removes it from this list.
 - `src/lint/rules/outdoor.ts`
 - `src/lint/rules/privacy.ts`
 - `src/lint/rules/reachability.ts`
-- `src/lint/rules/room-contents.ts`
 - `src/lint/rules/site.ts`
 - `src/lint/rules/vertical.ts`
 - `src/lint/work.ts`
