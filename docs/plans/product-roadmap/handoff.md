@@ -183,6 +183,7 @@ RM1.1a 也在本场做完（纯测量，没有 PR，见 §6）。
 - 队列做法：逐个"更新分支 → 等新头上的全部检查 → 用完整 40 位 SHA `--match-head-commit` 合并"，不删除任何东西。2026-11-11 用的脚本是 `mq.sh`（`D:\.claude-scratch\2026-11-11\mq\mq.sh`，从主检出运行，`state.txt` 作锁；同一脚本的副本在 `D:\github_repository\claude-kept\2026-11-10-archlang-roadmap-v2\mq.sh`）。
 - `BEHIND` 的分支用 `npm run sync:main -- --push` 同步（TP1，#754），不用 `gh pr update-branch`（它是 GitHub 的文本合并，会让 `test/INDEX.md`、`docs/agents/module-map.md` 等生成文件过期，`docs/agents/gotchas.md` § PRs & CI）。脚本解不了的冲突停下交给代理，解完 `-- --continue`。同步后的头仍然每次重新红队，它打印的重点清单随红队的简报一起给，然后再钉新头（RM-D37；`docs/agents/commands.md` § Merging a PR）。
 - **记录少开 PR（RM-D37，P0-4）：** 默认一场会话结束时合成一个 `docs(plans)` 记录 PR；记录也可以随它所记录的代码 PR 一起走。每多一个 PR，就多一条会 `BEHIND` 的分支。
+- **合并列车（FT2）：** 代码 PR 用 `npm run train -- <pr> …` 一次性上车（一次完整 CI），红队读列车头并贴 `reviewed <列车头>`，再 `npm run train -- --land <列车 PR> --wait`；被丢下的 PR 照旧 `sync:main`。步骤见 `docs/agents/commands.md` § Merging a PR 第 2 步。
 - **一次只同步一个（RM-D37）：** 几个 PR 同时 `BEHIND` 时，只同步下一个要合的（最早评审过、CI 绿的那个），其余等它合并；每次同步都起一次完整的 CI，全同步只有一次不白跑。
 - 3D 回放的改动：除了终帧与海报，还要比对升墙中途的帧（`cards.md` §0）。关键帧从 CI 打印的哈希重钉，`check-3d` 红着不合并（`.claude/rules/archlang-3d.md`）。
 - 执行者可能长时间等待时，先写状态文件；机器忙时小改动先提交，报告"门禁未跑"（`cards.md` §0；`docs/agents/orchestration.md`）。本地跑不了指定的 vitest 文件（门禁钩子挡住），以 CI 为准；不用自制的替身代替 vitest。

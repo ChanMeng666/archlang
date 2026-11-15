@@ -391,14 +391,20 @@ gh api "repos/$R/actions/runs/<run_id>/jobs?per_page=100" \
 gh pr list -R $R --state open --json number,title,author
 gh api --paginate "repos/$R/pulls?state=all&per_page=100" \
   | jq -s '[.[][] | select(.merged_at) | ((.merged_at|fromdate)-(.created_at|fromdate))/60] | sort | {n:length, median_min:.[length/2|floor], p90_min:.[(length*0.9)|floor]}'
-# 4. Sync merges vs PR merges, and hand-resolved files
+# 4. Sync merges vs PR merges, and hand-resolved files (a train PR's own merge is counted apart:
+#    its members' merges sit on its second-parent side and count as PR merges)
 git fetch origin
 git log origin/main --since=2026-10-29 --merges --format='%s' \
-  | awk '/^Merge pull request/{a++;next}{b++} END{print "PR merges",a,"sync merges",b}'
+  | awk '/^Merge pull request #[0-9]+ from [^ \/]+\/train\//{t++;next} /^Merge pull request/{a++;next}{b++}
+         END{print "PR merges",a,"train merges",t,"sync merges",b}'
 git log origin/main --since=2026-10-29 --merges --format='%H %s' | grep -v 'Merge pull request' | cut -d' ' -f1 \
   | while read h; do git diff-tree --cc --name-only -r "$h" | tail -n +2; done | sort | uniq -c | sort -rn | head -15
-# 5. Syncs per merged PR
-git log origin/main --since=2026-10-29 --first-parent --merges --format='%H %s' | grep 'Merge pull request' | cut -d' ' -f1 \
+# 5. Syncs per merged PR (a train merge on the first-parent line stands for its members: each member's
+#    merge sits on the train's own first-parent line, and its syncs are the merges in m^1..m^2)
+git log origin/main --since=2026-10-29 --first-parent --merges --format='%H %s' | grep 'Merge pull request' \
+  | while read h s; do
+      case "$s" in *" from "*/train/*) git log --first-parent --merges --format=%H "$h^1..$h^2" ;; *) echo "$h" ;; esac
+    done \
   | while read h; do git rev-list --merges --count "$h^1..$h^2"; done | sort -n | uniq -c
 # 6. Slowest test files
 node -e 'const d=require("./test/.durations.json");Object.entries(d).sort((a,b)=>b[1]-a[1]).slice(0,10).forEach(([f,s])=>console.log(s.toFixed(1),f))'
