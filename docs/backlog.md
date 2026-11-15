@@ -1699,7 +1699,7 @@ shadows, approved by the owner 2026-11-11).
 
 ## Playground residue (public-surfaces cards P2 and P3, 2026-11-06)
 
-### PG.1 · A room cannot be reached from the keyboard — `todo`
+### PG.1 · A room cannot be reached from the keyboard: done by #824, waiting to be archived — `note`
 
 The hover tooltip and the room's facts card (`playground/src/interact.ts`, `room-card.ts`) open
 from the pointer only: no room in the drawing takes the focus, so a keyboard or screen-reader user
@@ -1867,6 +1867,25 @@ the edge that shape fits, the north or south wall for a deep piece such as a WC.
 room's refusal (`a WxH piece there leaves the floor`) quotes the size as resolved, which may be the
 footprint laid along an edge, not the catalogue's along × depth. (1) and (2) are in
 `docs/furniture.md` § three placement modes; change one only with its byte-identity rows.
+
+## Live-eval baseline gap (RM-D51, 2026-11-16)
+
+### EV.1 · Diagnose the gpt-5.5 intent gap against the July baseline — `todo`
+
+At `2a210589` (after CO-1 and CO-2) gpt-5.5 scored valid 22/22/18 and intent 10/9/7 of 26 over
+three runs (`eval/live-runs/2026-11-authorability-remeasure.md`), against the July baseline's valid
+23 and intent 14 (one run, `eval/live-baseline.json`). RM-D51 keeps the July baseline. This card is
+the offline diagnosis only, with no API spend: download the per-brief tables of the gpt-5.5 run
+artifacts (`gh run download <id>` for runs 43727485853, 43727489713, 43727493307) and set them
+against July's per-brief record. The only July per-brief table in the repo is
+`eval/g1/baseline-run-29150982395.md`, the 2026-07-11 run (valid 25, intent 13); the artifacts of
+the 2026-07-12 run behind the current baseline (valid 23, intent 14) are gone, so a per-brief
+comparison with that run is not possible and the card says so.
+**Re-baselining `eval/live-baseline.json` is not part of this card:** it needs an owner decision.
+One option the owner may choose is the median of 3 runs; any new run is paid, owner-only
+`eval:live`.
+**Gate:** a per-brief table of which briefs lost intent and why, stated as observed (prompt change,
+judge, model drift), with no claim beyond the data and none about loop gain.
 
 ## Site chrome (found while fixing the nav overflow, 2026-09-20)
 
