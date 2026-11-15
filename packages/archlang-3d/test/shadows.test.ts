@@ -259,6 +259,84 @@ describe("contact shadows (card RM8.8)", () => {
     }
   });
 
+  it("a band narrows to half a gap it faces, so it never crosses into the solid beyond (card RM8.8b item 5)", () => {
+    // Each foot band's cross-section at its middle, k/8 of the way out, against the storey's walls'
+    // and columns' bottom faces (strictly inside one is in the solid).
+    const crossings = (p: ReplayPayload): string[] => {
+      const s = bake(p);
+      const out: string[] = [];
+      for (const layer of s.layers) {
+        if (layer.cls !== "foot") continue;
+        const casters = p.nodes.filter(
+          (n) =>
+            n.key.startsWith(`L${layer.level}/`) && (n.kind === "wall" || n.kind === "column") && n.band !== undefined,
+        );
+        let e = Infinity;
+        for (const n of casters)
+          for (let i = 1; i < n.positions.length; i += 3) e = Math.min(e, n.positions[i] as number);
+        const tris: number[][] = [];
+        for (const n of casters) {
+          const q = n.positions;
+          for (let i = 0; i < n.indices.length; i += 3) {
+            const v = [n.indices[i], n.indices[i + 1], n.indices[i + 2]] as number[];
+            if (v.every((k) => q[k * 3 + 1] === e))
+              tris.push(v.flatMap((k) => [q[k * 3] as number, q[k * 3 + 2] as number]));
+          }
+        }
+        const inside = (x: number, z: number): boolean =>
+          tris.some(([ax = 0, az = 0, bx = 0, bz = 0, cx = 0, cz = 0]) => {
+            const s1 = (bx - ax) * (z - az) - (bz - az) * (x - ax);
+            const s2 = (cx - bx) * (z - bz) - (cz - bz) * (x - bx);
+            const s3 = (ax - cx) * (z - cz) - (az - cz) * (x - cx);
+            return (s1 > 0 && s2 > 0 && s3 > 0) || (s1 < 0 && s2 < 0 && s3 < 0);
+          });
+        const pos = layer.positions;
+        const ix = layer.indices;
+        const xz = (i: number): [number, number] => [pos[3 * i] as number, pos[3 * i + 2] as number];
+        for (let t = 0; t + 5 < ix.length; t += 3) {
+          // A band is the quad a b d e drawn as (a, b, d) and (a, d, e); a fan is not.
+          const a = ix[t] as number;
+          if (
+            !(
+              ix[t + 1] === a + 1 &&
+              ix[t + 2] === a + 2 &&
+              ix[t + 3] === a &&
+              ix[t + 4] === a + 2 &&
+              ix[t + 5] === a + 3
+            )
+          )
+            continue;
+          const [ia, ib, od, oe] = [xz(a), xz(a + 1), xz(a + 2), xz(a + 3)];
+          const mi = [(ia[0] + ib[0]) / 2, (ia[1] + ib[1]) / 2] as const;
+          const mo = [(od[0] + oe[0]) / 2, (od[1] + oe[1]) / 2] as const;
+          for (let k = 1; k < 8; k++)
+            if (inside(mi[0] + ((mo[0] - mi[0]) * k) / 8, mi[1] + ((mo[1] - mi[1]) * k) / 8)) {
+              out.push(`${mi.join(",")} -> ${mo.join(",")}`);
+              break;
+            }
+          t += 3;
+        }
+      }
+      return out;
+    };
+    // s7: wall a's doorway leaves a 100 mm slot in the 250 mm wall b; b's 188 mm bands crossed it.
+    expect(crossings(payloadOf(STRESS_PLANS["s7-collinear-diff-thickness"] ?? "", "s7"))).toEqual([]);
+    // Two parallel 200 mm walls 100 mm apart: each 150 mm band now stops at the slot's middle.
+    const p = payloadOf(
+      `plan "g" { units mm wall id=a partition thickness 200 { (0,0) (4000,0) } wall id=b partition thickness 200 { (0,300) (4000,300) } }`,
+      "g",
+    );
+    expect(crossings(p)).toEqual([]);
+    const foot = bake(p).layers.find((l) => l.cls === "foot");
+    const gapOuter = new Set<number>();
+    foot?.weight.forEach((w, i) => {
+      const x = foot.positions[3 * i] as number;
+      const z = foot.positions[3 * i + 2] as number;
+      if (w === 0 && x >= -100_000 && x <= 4_100_000 && z > 100_000 && z < 200_000) gapOuter.add(z);
+    });
+    expect([...gapOuter]).toEqual([150_000]);
+  });
+
   it("a band fades in over the last quarter of its caster's rise, by ease, and not before", () => {
     const ev = { riseFrom: 0.6, riseTo: 0.7 };
     expect(contactFade(ev, 0.6)).toBe(0);

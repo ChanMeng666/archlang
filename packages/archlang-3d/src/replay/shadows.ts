@@ -13,7 +13,9 @@
  *     stretches meet at a turn sharper than 30°: at an outside corner a fan of the 16-gon's
  *     directions (`C16`) closes the gap between the two bands, and at an inside corner the two bands
  *     overlap, darker, as an inside corner is. Where they meet flatter than 30° (the chords of a
- *     curved wall, `nearlyFlat`) the two bands are mitred instead: no fan, no overlap, no corner. The
+ *     curved wall, `nearlyFlat`) the two bands are mitred instead: no fan, no overlap, no corner.
+ *     Where another stretch faces one across a gap narrower than two bands (a slot), each band takes
+ *     half the gap (`narrowed`), so neither crosses it into the solid beyond. The
  *     same buffer holds each fence run's bands (both sides of its rails) and each stair's (round the
  *     plan of its stringers).
  *   - `corner`: up each inside corner sharper than 30°, a vertical band on each of the two wall
@@ -324,6 +326,105 @@ interface Seg {
   a: P2;
   b: P2;
   node: number;
+  /** Its band's width (mm) where a facing stretch narrows it (`narrowed`); else its node's. */
+  w?: number;
+}
+
+/**
+ * The stretches with each band narrowed where another stretch faces it closer than two bands (card
+ * RM8.8b item 5: the slot a thinner wall's doorway leaves in a thicker collinear wall, stress plan
+ * `s7`, where a 188 mm band crossed the 100 mm slot and came out beyond the far face). Facing: on
+ * parallel lines (the same reduced direction, exactly), opposite in direction, each in front of the
+ * other, and overlapping along their length. A stretch is cut where a facing one's ends fall along
+ * it, and each piece in front of one takes half the gap (when that is less than its band), so two
+ * facing bands meet in the middle and neither crosses the gap. `band` is a stretch's own width, mm.
+ */
+function narrowed(segs: readonly Seg[], band: (s: Seg) => number): Seg[] {
+  const groups = new Map<string, Seg[]>();
+  for (const s of segs) {
+    const l = planLine(s.a[0], s.a[1], s.b[0], s.b[1]);
+    const key = `${l.dx},${l.dz}`;
+    const g = groups.get(key);
+    if (g) g.push(s);
+    else groups.set(key, [s]);
+  }
+  /** Per stretch: the stretches of it (`t0..t1`, its place along it) another faces, and how wide each may be. */
+  const near = new Map<Seg, Array<{ t0: number; t1: number; w: number }>>();
+  /** Where `o` falls along `s`, clipped to `s`: `[t0, t1]` with t0 < t1, or undefined. */
+  const along = (s: Seg, o: Seg): [number, number] | undefined => {
+    const dx = s.b[0] - s.a[0];
+    const dz = s.b[1] - s.a[1];
+    const l2 = dx * dx + dz * dz;
+    const ta = ((o.a[0] - s.a[0]) * dx + (o.a[1] - s.a[1]) * dz) / l2;
+    const tb = ((o.b[0] - s.a[0]) * dx + (o.b[1] - s.a[1]) * dz) / l2;
+    const t0 = Math.max(0, Math.min(ta, tb));
+    const t1 = Math.min(1, Math.max(ta, tb));
+    return t1 > t0 ? [t0, t1] : undefined;
+  };
+  const note = (s: Seg, o: Seg, w: number): void => {
+    if (w >= band(s)) return;
+    const t = along(s, o);
+    if (!t) return;
+    const list = near.get(s);
+    if (list) list.push({ t0: t[0], t1: t[1], w });
+    else near.set(s, [{ t0: t[0], t1: t[1], w }]);
+  };
+  for (const key of [...groups.keys()].sort()) {
+    const g = groups.get(key) as Seg[];
+    if (g.length < 2) continue;
+    const [dx, dz] = key.split(",").map(Number) as [number, number];
+    const len = lengthOf(dx, dz);
+    // Each stretch's place across the lines (its line's signed distance from the origin) and its
+    // extent along them, in floating point: they only find the candidates, the facing test below is
+    // exact. A sweep along the lines pairs the stretches whose extents overlap.
+    const reach = 2000 * Math.max(...g.map(band));
+    const items = g
+      .map((s) => {
+        const [ta, tb] = [(dx * s.a[0] + dz * s.a[1]) / len, (dx * s.b[0] + dz * s.b[1]) / len];
+        return { s, off: (dx * s.a[1] - dz * s.a[0]) / len, lo: Math.min(ta, tb), hi: Math.max(ta, tb) };
+      })
+      .sort((p, q) => p.lo - q.lo || p.off - q.off);
+    let active: typeof items = [];
+    for (const it of items) {
+      active = active.filter((o) => o.hi > it.lo);
+      for (const o of active) {
+        if (Math.abs(o.off - it.off) > reach) continue;
+        const [s, t] = [it.s, o.s];
+        const fs = frame(s);
+        const ft = frame(t);
+        // Opposite in direction, and `t` in front of `s` (on its outward side), or the other way
+        // round: then each is in front of the other.
+        if (fs.d[0] * ft.d[0] + fs.d[1] * ft.d[1] >= 0) continue;
+        const side = cross(fs.d[0], fs.d[1], t.a[0] - s.a[0], t.a[1] - s.a[1]);
+        if (side >= 0) continue;
+        const gap = (t.a[0] - s.a[0]) * fs.n[0] + (t.a[1] - s.a[1]) * fs.n[1];
+        note(s, t, gap / 2000);
+        note(t, s, gap / 2000);
+      }
+      active.push(it);
+    }
+  }
+  return segs.flatMap((s): Seg[] => {
+    const list = near.get(s);
+    if (!list) return [s];
+    const own = band(s);
+    const ts = [...new Set([0, 1, ...list.flatMap((c) => [c.t0, c.t1])])].sort((x, y) => x - y);
+    const f = frame(s);
+    const at = (t: number): P2 =>
+      t === 0 ? s.a : t === 1 ? s.b : [whole(s.a[0] + f.d[0] * t), whole(s.a[1] + f.d[1] * t)];
+    const out: Seg[] = [];
+    for (let k = 0; k + 1 < ts.length; k++) {
+      const [t0, t1] = [ts[k] as number, ts[k + 1] as number];
+      const m = (t0 + t1) / 2;
+      let w = own;
+      for (const c of list) if (c.t0 <= m && m <= c.t1 && c.w < w) w = c.w;
+      const last = out[out.length - 1];
+      const lw = last ? (last.w ?? own) : undefined;
+      if (last && lw === w) last.b = at(t1);
+      else out.push({ a: at(t0), b: at(t1), node: s.node, ...(w < own ? { w } : {}) });
+    }
+    return out.filter((p) => p.a[0] !== p.b[0] || p.a[1] !== p.b[1]);
+  });
 }
 
 /**
@@ -546,7 +647,7 @@ export function contactShadows(
       // Where casters overlap the summed edges are not the outline: cut each stretch where another
       // node's bottom face begins or ends along it, and keep the pieces whose outside (1 mm out from
       // the piece's middle) is no caster's.
-      const segs = outline(tris).flatMap((s): Seg[] => {
+      const cutSegs = outline(tris).flatMap((s): Seg[] => {
         const f = frame(s);
         const ts = [0, 1];
         const [bx0, bx1] = [Math.min(s.a[0], s.b[0]), Math.max(s.a[0], s.b[0])];
@@ -587,7 +688,8 @@ export function contactShadows(
         if (from !== undefined) kept.push({ a: at(from), b: s.b, node: s.node });
         return kept.filter((k) => k.a[0] !== k.b[0] || k.a[1] !== k.b[1]);
       });
-      const bandOf = (s: Seg): number => nodes[s.node]?.band ?? 0;
+      const bandOf = (s: Seg): number => s.w ?? nodes[s.node]?.band ?? 0;
+      const segs = narrowed(cutSegs, bandOf);
       const pk = (p: P2): string => `${p[0]},${p[1]}`;
       const ending = new Map<string, Seg[]>();
       const starting = new Map<string, Seg[]>();
