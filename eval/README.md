@@ -170,17 +170,17 @@ the plan and calls nothing.
 pwsh -NoProfile -Command {
   $env:ANTHROPIC_API_KEY = [Environment]::GetEnvironmentVariable('ANTHROPIC_API_KEY_PROMO', 'User')
   $env:ARCHLANG_EVAL_PROVIDER = 'anthropic'
-  $env:ARCHLANG_EVAL_MODEL = 'claude-sonnet-5-5'   # then a second process with claude-haiku-5-5
-  npm run eval:l2 -- --yes --trials 3 --budget 80usd --concurrency 4
+  $env:ARCHLANG_EVAL_MODEL = 'claude-haiku-5-5'    # first; then a second process with claude-sonnet-5-5 and --budget 80usd
+  npm run eval:l2 -- --yes --trials 3 --concurrency 4 --budget 25usd
 }
 ```
 
 ```bash
 ANTHROPIC_API_KEY="$ANTHROPIC_API_KEY_PROMO" ARCHLANG_EVAL_PROVIDER=anthropic \
-  ARCHLANG_EVAL_MODEL=claude-sonnet-5-5 npm run eval:l2 -- --yes --trials 3 --budget 80usd --concurrency 4
+  ARCHLANG_EVAL_MODEL=claude-haiku-5-5 npm run eval:l2 -- --yes --trials 3 --concurrency 4 --budget 25usd
 ```
 
-`--budget` values are the pre-registration's to fix (the estimate is about $52 for Sonnet and
+The pre-registration (§ 2) fixes the order (Haiku, then Sonnet) and the budgets (25usd, 80usd); its commands are the ones run. The `--budget` values are the pre-registration's to fix (the estimate is about $52 for Sonnet and
 $13 for Haiku at the harness's deliberately high prices; the breaker is checked at each brief's
 start, so in-flight briefs finish). Output, git-ignored: `eval/results.l2.<model>.json`,
 rewritten after every brief (`status` `running`, then `complete`; per call the raw reply, stop
