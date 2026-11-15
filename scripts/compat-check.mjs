@@ -344,6 +344,30 @@ function splitTop(s, sep) {
   return out.filter(Boolean);
 }
 
+/**
+ * `s` without parentheses that enclose all of it (`(A & B)` → `A & B`, `(() => void)` →
+ * `() => void`); any other `s` (`(A) | B`, `(a: T) => U`, `A`) unchanged.
+ */
+export function unwrapParens(s) {
+  while (s.startsWith("(") && s.endsWith(")")) {
+    let depth = 0;
+    let quote = null;
+    let closesAt = -1;
+    for (let i = 0; i < s.length && closesAt < 0; i++) {
+      const c = s[i];
+      if (quote) {
+        if (c === "\\") i++;
+        else if (c === quote) quote = null;
+      } else if (c === '"' || c === "'" || c === "`") quote = c;
+      else if (c === "(") depth++;
+      else if (c === ")" && --depth === 0) closesAt = i;
+    }
+    if (closesAt !== s.length - 1) break;
+    s = s.slice(1, -1).trim();
+  }
+  return s;
+}
+
 /** The top-level members of a printed union (one member for a non-union). */
 export function unionMembers(s) {
   return splitTop(s, "|");
@@ -549,10 +573,12 @@ export function typeSurface(entryFile) {
         if (!optional && !rest) required++;
         let printed = print(checker.getTypeOfSymbol(p));
         // `x?: T` reads `T | undefined` from a declaration file and `T` from `x: T = d` in source.
-        if (optional)
-          printed = unionMembers(printed)
-            .filter((m) => m !== "undefined")
-            .join(" | ");
+        // A lone `T` left over keeps the parentheses it wore as a union member (`(A & B)`,
+        // `(() => void)`), which the source side never has: drop them so both print `T`.
+        if (optional) {
+          const kept = unionMembers(printed).filter((m) => m !== "undefined");
+          printed = kept.length === 1 ? unwrapParens(kept[0]) : kept.join(" | ");
+        }
         out[`${prefix}${i}.p${j}`] = `${rest ? "..." : optional ? "?" : ""}${printed}`;
       });
       out[`${prefix}${i}.required`] = String(required);
