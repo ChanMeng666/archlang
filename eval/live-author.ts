@@ -5,6 +5,10 @@
  * than one live harness (`eval/l2-run.ts`, `eval/fidelity-live.ts`) drives the same adapters
  * without importing the T3 harness; `eval/l2-run.ts` re-exports every name, unchanged.
  *
+ * Neither adapter sends a `temperature`: the 5.5 models reject one, and a pinned temperature
+ * would make repeated samples near-copies (`eval/l2-run.ts`'s header has the full reasoning). The
+ * Anthropic API has no `seed`, so a seed is a record label there.
+ *
  * `writeJsonAtomic` (the crash-safe record write) moved with them. Its only runtime import is
  * `node:fs`: `ChatMsg`/`Usage` (`eval/l2.ts`) and `LiveLedger` (`eval/run.ts`) are type-only, so
  * loading this module loads neither.
@@ -13,6 +17,12 @@
 import { renameSync, writeFileSync } from "node:fs";
 import type { ChatMsg, Usage } from "./l2.js";
 import type { LiveLedger } from "./run.js";
+
+/** The output-token cap every live call is sent with (Anthropic `max_tokens`, OpenAI
+ *  `max_completion_tokens`). Reasoning models spend thinking tokens from it, so a smaller cap
+ *  measures the budget, not the model (the standing harness lesson); run.ts's L0 path uses the
+ *  same number. */
+export const MAX_OUTPUT_TOKENS = 16384;
 
 // ── Retries ──────────────────────────────────────────────────────────────────────────
 
@@ -137,7 +147,7 @@ export type LiveAuthor = (messages: ChatMsg[], seed: number) => Promise<{ text: 
  *  and the first `system_fingerprint` into `ledger`. */
 export function makeOpenAIAuthor(model: string, ledger: LiveLedger, policy: RetryPolicy = DEFAULT_RETRY): LiveAuthor {
   const key = process.env.OPENAI_API_KEY;
-  if (!key) throw new Error("OPENAI_API_KEY is not set (required for eval:l2)");
+  if (!key) throw new Error("OPENAI_API_KEY is not set (required for a live eval with the openai provider)");
   return async (messages, seed) => {
     const { res, retries } = await postWithRetry(
       "OpenAI",
@@ -150,7 +160,7 @@ export function makeOpenAIAuthor(model: string, ledger: LiveLedger, policy: Retr
           // Reasoning models spend thinking tokens from this cap — a small cap starves the
           // model into truncated (invalid) plans (the standing harness lesson). 16384 both
           // sizes truncation out and mirrors the L0 path.
-          max_completion_tokens: 16384,
+          max_completion_tokens: MAX_OUTPUT_TOKENS,
           // NO temperature: gpt-5.x reasoning endpoints reject a non-default value, so
           // `seed` is the only reproducibility lever.
           seed,
@@ -194,7 +204,7 @@ export const EMPTY_REPLY_PLACEHOLDER = "(empty reply)";
  *  top-level `system` block, marked cacheable (it is the ~30 KB spec, byte-identical on
  *  every call, as in run.ts); with no system turn there is no `system` block at all (an empty
  *  text block is a 400). The rest pass through in order. No `temperature` and no `seed` (see
- *  the module header). `max_tokens` 16384 mirrors run.ts and the OpenAI path. */
+ *  the module header). `max_tokens` is {@link MAX_OUTPUT_TOKENS}, as on the OpenAI path. */
 export function anthropicRequest(model: string, messages: ChatMsg[]): Record<string, unknown> {
   const system = messages
     .filter((m) => m.role === "system")
@@ -208,7 +218,7 @@ export function anthropicRequest(model: string, messages: ChatMsg[]): Record<str
     }));
   return {
     model,
-    max_tokens: 16384,
+    max_tokens: MAX_OUTPUT_TOKENS,
     ...(system.trim() !== "" ? { system: [{ type: "text", text: system, cache_control: { type: "ephemeral" } }] } : {}),
     messages: turns,
   };
@@ -225,7 +235,7 @@ export function makeAnthropicAuthor(
   policy: RetryPolicy = DEFAULT_RETRY,
 ): LiveAuthor {
   const key = process.env.ANTHROPIC_API_KEY;
-  if (!key) throw new Error("ANTHROPIC_API_KEY is not set (required for eval:l2 with the anthropic provider)");
+  if (!key) throw new Error("ANTHROPIC_API_KEY is not set (required for a live eval with the anthropic provider)");
   return async (messages) => {
     const { res, retries } = await postWithRetry(
       "Anthropic",
