@@ -203,8 +203,8 @@ export function parseAttachTarget(
 /**
  * The `wall <id|category>` clause of an opening placed `at (x,y)`, as an order-free clause
  * (`src/clause-order.ts`). `wall` is also a statement keyword, and a `wall` statement reads
- * `wall [id=…] <category> thickness …`, so out of the old order the word begins one exactly when
- * `id=` follows it or `thickness` follows the next word (or no name follows at all).
+ * `wall [id=…] <category> [id=…] thickness …`, so out of the old order the word begins one exactly
+ * when `id=` follows it, `thickness` or `id=` follows the next word, or no name follows at all.
  */
 export function wallClause(ctx: ParseCtx, rank: number, set: (ref: string) => void): TailClause {
   return {
@@ -213,7 +213,8 @@ export function wallClause(ctx: ParseCtx, rank: number, set: (ref: string) => vo
     startsStatement: () =>
       ctx.peek(1).type !== "ident" ||
       (ctx.isKeyword("id", 1) && ctx.peek(2).type === "equals") ||
-      ctx.isKeyword("thickness", 2),
+      ctx.isKeyword("thickness", 2) ||
+      (ctx.isKeyword("id", 2) && ctx.peek(3).type === "equals"),
     read(keep) {
       ctx.next();
       const ref = ctx.eatIdent().value;

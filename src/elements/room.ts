@@ -186,7 +186,7 @@ export function rectLabelOutsideDiag(r: RRoom): Diagnostic | undefined {
  * plan in the old order (`size`, `label`, then `floor` and `uses` either way round) has the tree
  * it always had. Factored out so the rect and polygon forms can never drift apart.
  */
-function parseTail(ctx: ParseCtx, node: RoomNode, sized = false): void {
+function parseTail(ctx: ParseCtx, node: RoomNode, start: number, sized = false): void {
   const clauses: TailClause[] = [
     {
       word: "label",
@@ -251,7 +251,8 @@ function parseTail(ctx: ParseCtx, node: RoomNode, sized = false): void {
   }
   readClauses(ctx, "room", clauses);
   // A rectangle cannot leave its `size` out.
-  if (sized && node.size === undefined) missingClause(ctx, "size", "size <W>x<H>");
+  if (sized && node.size === undefined)
+    missingClause(ctx, { what: "room", id: node.id, start }, "size", "size <W>x<H>");
 }
 
 /**
@@ -381,7 +382,7 @@ export const room: ElementDef = {
         ctx.fail(`A polygon room needs at least three vertices but found ${polygon.length}`, kw);
       }
       const node: RoomNode = { kind: "room", id, polygon, line: kw.line };
-      parseTail(ctx, node);
+      parseTail(ctx, node, kw.start);
       return node;
     }
     // —— `circle at (cx,cy) radius R` — the circular-floor form (no `size`). ——
@@ -392,7 +393,7 @@ export const room: ElementDef = {
       ctx.eatKeyword("radius");
       const r = ctx.parseExpr();
       const node: RoomNode = { kind: "room", id, circle: { c, r }, line: kw.line };
-      parseTail(ctx, node);
+      parseTail(ctx, node, kw.start);
       return node;
     }
     if (ctx.isKeyword("at")) {
@@ -439,7 +440,7 @@ export const room: ElementDef = {
     }
     // `size` is read with the other clauses, so it may follow them; its key keeps its place.
     const node: RoomNode = { kind: "room", id, at, rel, size: undefined, sizeSpan: undefined, line: kw.line };
-    parseTail(ctx, node, true);
+    parseTail(ctx, node, kw.start, true);
     return node;
   },
 

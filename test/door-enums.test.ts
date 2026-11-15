@@ -37,7 +37,8 @@ import {
   KEYWORDS,
   enumList,
 } from "../src/grammar/tokens.js";
-import { assertDoorVocab, renderGbnf } from "../scripts/gen-gbnf.js";
+import { assertClauseShapes, assertDoorVocab, renderGbnf } from "../scripts/gen-gbnf.js";
+import { ORDER_FREE_STATEMENTS } from "../src/clause-order.js";
 import { assertDoorEnumsRendered, doorKindClauses, ELEMENT_GRAMMAR } from "../scripts/gen-llm-spec.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -142,15 +143,14 @@ suite("door enums — one source, six call sites", () => {
 
 suite("door enums — the generators fail loudly, not silently", () => {
   const body = (): [string, string][] => [
-    ["door-stmt", `"door" rws id-opt ( door-kind rws )? ( opening-placement | opening-between ) door-clauses`],
-    ["door-kind", `"hinged" | "sliding" | "barn" | "bifold" | "pocket" | "garage" | "double" | "glazed_sliding"`],
-    // A SEQUENCE of optionals in the parser's own clause order, not a `( clause )*`
-    // set: `door … swing in hinge left` is a parse error, so a grammar that offered
-    // the clauses as an unordered repeat would emit forms the language has never had.
     [
-      "door-clauses",
-      `( ws "hinge" rws hinge-val )? ( ws "swing" rws swing-val )? ( ws "slide" rws slide-val )? ( ws "open" ws expr )?`,
+      "door-stmt",
+      `"door" rws id-opt ( door-kind rws id-opt )? ( opening-free-pos ( ws door-clause )* ws opening-width | opening-hosted-pos ( ws door-clause )* ws opening-width )`,
     ],
+    ["door-kind", `"hinged" | "sliding" | "barn" | "bifold" | "pocket" | "garage" | "double" | "glazed_sliding"`],
+    // An alternation read in any order (card CO-1): `door … swing in hinge left` parses, so
+    // the clauses are a set, not the fixed sequence of optionals they were.
+    ["door-clause", `"hinge" rws hinge-val | "swing" rws swing-val | "slide" rws slide-val | "open" ws expr`],
     ["hinge-val", `"near" rws ( "start" | "end" ) | "left" | "right"`],
     ["swing-val", `"into" rws ref | "inward" | "outward" | "in" | "out"`],
     ["slide-val", `"left" | "right"`],
@@ -166,13 +166,11 @@ suite("door enums — the generators fail loudly, not silently", () => {
     expect(g).toContain(`slide-val ::= "left" | "right"`);
     expect(g).toContain(`door-kind ::= "hinged" | "sliding" | "barn" | "bifold" | "pocket" | "garage"`);
     expect(g).toContain(
-      `door-clauses ::= ( ws "hinge" rws hinge-val )? ( ws "swing" rws swing-val )? ( ws "slide" rws slide-val )? ( ws "open" ws expr )?`,
+      `door-clause ::= "hinge" rws hinge-val | "swing" rws swing-val | "slide" rws slide-val | "open" ws expr | "head" ws expr`,
     );
     // The kind word LEADS the statement (it is not a clause), which is what makes the
-    // separate `door-kind` arm of the guard necessary at all.
-    expect(g).toContain(
-      `door-stmt ::= "door" rws id-opt ( door-kind rws )? ( opening-placement | opening-between ) door-clauses`,
-    );
+    // separate `door-kind` arm of the guard necessary at all. An `id=` may follow it (card CO-1).
+    expect(g).toContain(`door-stmt ::= "door" rws id-opt ( door-kind rws id-opt )? ( opening-free-pos `);
   });
 
   it("gen-gbnf throws when `swing-val` stops rendering the building-relative words", () => {
@@ -194,23 +192,36 @@ suite("door enums — the generators fail loudly, not silently", () => {
     );
   });
 
-  it("gen-gbnf throws when a clause is unreachable from `door-clauses`", () => {
-    const orphaned = body().map(([n, p]) => (n === "door-clauses" ? [n, `( ws "hinge" rws hinge-val )?`] : [n, p])) as [
+  it("gen-gbnf throws when a clause is unreachable from `door-clause`", () => {
+    const orphaned = body().map(([n, p]) => (n === "door-clause" ? [n, `"hinge" rws hinge-val`] : [n, p])) as [
       string,
       string,
     ][];
     expect(() => assertDoorVocab(orphaned, DOOR_ENUMS, DOOR_KINDS)).toThrow(/no door clause emits/);
   });
 
-  it("gen-gbnf throws when the clause table is reordered out of the parser's order", () => {
-    // `door-clauses` renders one optional per key IN TABLE ORDER, which makes that
-    // order load-bearing: the parser reads `hinge`, then `swing`, then `slide`, once
-    // each, so a table shuffled for some unrelated reason would silently ship a
-    // grammar whose every two-clause door is a parse error. Nothing about the
-    // per-clause checks above would notice — every production is still present and
-    // still derives its value set.
+  it("a reordered clause table is no longer an error: the clauses are a set (card CO-1)", () => {
+    // Until CO-1 `door-clauses` rendered one optional per key IN TABLE ORDER and this threw:
+    // the parser read `hinge`, then `swing`, then `slide`. A door's clauses now come in any
+    // order and `door-clause` is an alternation, so the table's key order reaches nothing a
+    // parser reads; every per-clause check above still holds.
     const reordered = { swing: DOOR_ENUMS.swing, hinge: DOOR_ENUMS.hinge, slide: DOOR_ENUMS.slide };
-    expect(() => assertDoorVocab(body(), reordered, DOOR_KINDS)).toThrow(/no longer matches the order/);
+    expect(() => assertDoorVocab(body(), reordered, DOOR_KINDS)).not.toThrow();
+  });
+
+  it("gen-gbnf throws when an order-free statement or a post-kind id= is not rendered so", () => {
+    const shipped = (): [string, string][] =>
+      renderGbnf()
+        .split("\n")
+        .filter((l) => l.includes(" ::= "))
+        .map((l) => [l.slice(0, l.indexOf(" ::= ")), l.slice(l.indexOf(" ::= ") + 5)]);
+    expect(() => assertClauseShapes(shipped())).not.toThrow();
+    expect(() => assertClauseShapes(shipped(), [...ORDER_FREE_STATEMENTS, "stair"])).toThrow(
+      /"stair" reads its clauses/,
+    );
+    expect(() => assertClauseShapes(shipped(), ORDER_FREE_STATEMENTS, ["furniture"])).toThrow(
+      /-stmt` takes an `id=` after its kind word, but ID_AFTER_KIND_STATEMENTS does not name/,
+    );
   });
 
   it("gen-gbnf throws when a door KIND stops being rendered", () => {

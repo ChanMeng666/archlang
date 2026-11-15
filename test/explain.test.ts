@@ -69,7 +69,7 @@ describe("no diagnostic the compiler emits is uncoded", () => {
     ["header — no opening brace", `plan "x"\n  room at (0,0) size 1x1\n`],
     ["statement — unknown keyword", `plan "x" {\n  wombat at (0,0) size 1x1\n}\n`],
     ["statement — token soup", `plan "x" {\n  = = ) ( 3 3 ,\n}\n`],
-    ["statement — clause out of order", `plan "x" {\n  wall exterior id=w1 thickness 200 { (0,0) (1,0) }\n}\n`],
+    ["statement — clause before its placement", `plan "x" {\n  furniture bed size 1500x2000 at (0,0)\n}\n`],
     ["block body — bad statement inside `for`", `plan "x" {\n  for i in 0..2 { wombat at (0,0) }\n}\n`],
     ["missing closing brace", `plan "x" {\n  room at (0,0) size 1x1\n`],
     ["expression — unknown name", `plan "x" {\n  room at (0,0) size nope x 1\n}\n`],

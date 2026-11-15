@@ -394,7 +394,7 @@ export const windowEl: ElementDef = {
       // The vertical datum: `sill` then `head`, last in the old order.
       ...openingHeightClauses(ctx, heights, { sill: true }, 4),
     ]);
-    if (width === undefined) missingClause(ctx, "width", "width <mm>");
+    if (width === undefined) missingClause(ctx, { what: "window", id, start: kw.start }, "width", "width <mm>");
     const node: WindowNode = {
       kind: "window",
       id,

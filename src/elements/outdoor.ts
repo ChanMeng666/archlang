@@ -388,7 +388,7 @@ export const outdoor: ElementDef = {
       },
     ]);
     if (sized) {
-      if (size === undefined) missingClause(ctx, "size", "size <W>x<H>");
+      if (size === undefined) missingClause(ctx, { what: "outdoor", id, start: kw.start }, "size", "size <W>x<H>");
       node.size = size;
     }
     Object.assign(node, label, rail);

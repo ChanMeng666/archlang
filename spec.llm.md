@@ -15,7 +15,7 @@ a `fix`).
 4. **Doors and windows must lie ON a wall segment** (on its centerline), or you get a
    `W_DOOR_OFF_WALL` / `W_WINDOW_OFF_WALL` warning. Host them by rooms (below) or `on <wall> at <pos>` — hosted by construction.
 5. **String interpolation is `"{expr}"`** inside double quotes.
-6. **`id=` goes right after the element keyword or its kind word** (`furniture id=b1 bed …` = `furniture bed id=b1 …`). Ids are unique; omit `id=` to auto-generate one, and name a thing only when you reference it.
+6. **`id=` goes right after the element keyword, or after the kind word of `furniture`, `door`, `window`, `outdoor`, `wall`** (`furniture bed id=b1 …`). Ids are unique; omit `id=` to auto-generate one, and name a thing only when you reference it.
 7. **Everything is expand-time and pure** — `let`/`for`/`if`/functions all evaluate during compile.
 
 ## Start here: rooms first
@@ -71,7 +71,7 @@ reports the result as `sheet`. Big plan? `paper A1` + `dims auto all` is the pro
 
 ## Elements
 
-In `room`, `furniture`, `door`, `window`, `opening`, `outdoor`, the clauses after the placement come in any order, each once (E_DUP_CLAUSE).
+In `room`, `furniture`, `door`, `window`, `opening`, `outdoor`, the clauses after the placement come in any order, each once (E_DUP_CLAUSE); out of the order below, a value in parentheses (`rotate (90)`) reads as a call, so drop them.
 
 ```text
 wall [id=…] <category> thickness <mm> [material poche|concrete|brick|insulation|tile|none [scale <n>] [angle <deg>]] [height <mm>] [status existing|demolish|new] { (x,y) (x,y) … [arc (x,y) radius <mm> [cw|ccw] [major]] … [close] } | between <A> and <B> | around [<A> …]  # category e.g. exterior/partition. An unlisted material is W_UNKNOWN_MATERIAL; `scale`/`angle`: either order, each once. `close` makes a loop. An `arc` clause makes THAT edge a circular arc from the PREVIOUS vertex (default: the minor arc turning `ccw` AS DRAWN, bulging left of travel; `cw`/`major` pick the other circle / the long way round; R < chord/2 = E_ARC_RADIUS). A closed curve is two arcs. Openings work: `on <wall> at <pos>` walks RUN length (an arc contributes R·θ, not its chord); `furniture … against wall` on an arc = E_FURN_AGAINST (use at+rotate). `between`/`around`: points from rooms (their shared edge; their outline, one ring cw from top-left vertex, no hole). `status demolish`: drawn; encloses, hosts (E_OPENING_ON_DEMOLISHED_WALL), measures nothing

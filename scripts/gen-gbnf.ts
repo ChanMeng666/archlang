@@ -37,12 +37,14 @@
  * cannot be greened by editing a column. Add a case there for any clause order,
  * arity floor or either/or pairing you encode below.
  *
- * ATTRIBUTE ORDER IS PART OF THE SHAPE. Every element's optional clauses are read by
- * the parser as a FIXED SEQUENCE of `if (isKeyword(...))` tests, not as a set: after
- * `door … swing in`, a `hinge left` is not a mis-ordered clause, it is the start of an
- * unknown statement. So each element renders its clauses as a run of `( … )?`
- * optionals in the parser's own order — never `( clause )*`, which also invites the
- * decoder to repeat one.
+ * CLAUSE ORDER (card CO-1). In the statements `ORDER_FREE_STATEMENTS` names
+ * (`src/clause-order.ts`), the clauses after the placement come in any order, so each renders
+ * them as `( ws <stmt>-clause )*`, with a clause it cannot leave out (`size`, `width`) required
+ * once among them. A repeat is in the grammar on purpose: the parser reads it and reports
+ * `E_DUP_CLAUSE`, a catalogued code, which is the same deal the grammar makes with every form
+ * the resolver refuses. Every other element keeps its fixed run of `( … )?` optionals, in the
+ * parser's own order. `ID_AFTER_KIND_STATEMENTS` take a second `id-opt` after the kind word.
+ * {@link assertClauseShapes} fails the build when either list and the productions disagree.
  */
 
 import { writeFileSync } from "node:fs";
@@ -77,6 +79,7 @@ import { FLOOR_MATERIALS } from "../src/hatches.js";
 import { PAPER_ORIENTATIONS, PAPER_SIZES } from "../src/sheet.js";
 import { EDGE_WORDS } from "../src/room-datums.js";
 import { SEGMENT_COMPASS_WORDS } from "../src/segment-select.js";
+import { ID_AFTER_KIND_STATEMENTS, ORDER_FREE_STATEMENTS } from "../src/clause-order.js";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const ROOT = resolve(HERE, "..");
@@ -124,23 +127,50 @@ const OPS_USED = [
  */
 const CONTROL_COVERED_STRUCTURALLY = ["plan", "else"];
 
-/** The door clauses that take a closed value set, in table order. */
+/** The door clauses that take a closed value set, in table order. Since card CO-1 the order is
+ *  no longer load-bearing: a door's clauses come in any order, so `door-clause` is an alternation. */
 const DOOR_CLAUSES = Object.keys(DOOR_ENUMS) as DoorEnumClause[];
 
 /**
- * The order `door.parse()` (`src/elements/door.ts`) reads its optional clauses in:
- * `wall`, then these, then `open`. A FIXED sequence, not a set — `door … swing in
- * hinge left` is a parse error, not a re-ordering — so `door-clauses` below renders
- * one `( … )?` per entry **in `DOOR_ENUMS`'s own key order**, which happens to be
- * exactly this order.
- *
- * This constant is a PIN, not the rendering: the productions are still injected from
- * the table (iron rule — derive, never retype), and this exists only so that
- * reordering `DOOR_ENUMS` for some unrelated reason fails the build here instead of
- * silently emitting a grammar whose clause order the parser rejects. Keep it equal to
- * the sequence of `if (ctx.isKeyword(…))` tests in `door.parse()`.
+ * The clauses after a placement, in any order: `( ws <clause> )*`, or, with a clause the
+ * statement cannot leave out, that clause once somewhere among them (a repeat of it too, which
+ * the parser reports as `E_DUP_CLAUSE`).
  */
-const DOOR_CLAUSE_PARSE_ORDER: readonly string[] = ["hinge", "swing", "slide"];
+const anyOrder = (clause: string, required?: string): string =>
+  required ? `( ws ${clause} )* ws ${required} ( ws ( ${clause} | ${required} ) )*` : `( ws ${clause} )*`;
+
+/**
+ * The clause-order guard (card CO-1). Every statement in `orderFree` must render a
+ * `<stmt>-clause` production and reach it through {@link anyOrder}; every `<stmt>-stmt` takes a
+ * second `id-opt` (after its kind word) exactly when `idAfter` names it. Exported so a test can
+ * prove it fires; the lists are the parser's own (`src/clause-order.ts`), never retyped.
+ */
+export function assertClauseShapes(
+  body: [string, string][],
+  orderFree: readonly string[] = ORDER_FREE_STATEMENTS,
+  idAfter: readonly string[] = ID_AFTER_KIND_STATEMENTS,
+): void {
+  const emitted = body.map(([, prod]) => prod).join(" ");
+  for (const k of orderFree) {
+    if (!body.some(([name]) => name === `${k}-clause`) || !emitted.includes(`( ws ${k}-clause )*`)) {
+      throw new Error(
+        `gen-gbnf: "${k}" reads its clauses in any order (ORDER_FREE_STATEMENTS), but no \`${k}-clause\` ` +
+          `production is rendered through \`( ws ${k}-clause )*\`.`,
+      );
+    }
+  }
+  for (const [name, prod] of body) {
+    if (!name.endsWith("-stmt")) continue;
+    const k = name.slice(0, -"-stmt".length);
+    const twice = prod.split("id-opt").length - 1 >= 2;
+    if (twice !== idAfter.includes(k)) {
+      throw new Error(
+        `gen-gbnf: \`${name}\` ${twice ? "takes" : "does not take"} an \`id=\` after its kind word, but ` +
+          `ID_AFTER_KIND_STATEMENTS ${idAfter.includes(k) ? "names" : "does not name"} "${k}".`,
+      );
+    }
+  }
+}
 
 /** The window-kind guard, {@link assertDoorVocab}'s for a door's: `window-kind` renders the table, and
  *  `window-stmt` reaches it. Exported so a test can prove it fires. */
@@ -223,20 +253,8 @@ export function assertDoorVocab(
       throw new Error(`gen-gbnf: no door clause emits \`${lit(clause)} rws ${clause}-val\`.`);
     }
   }
-  // Last, so a missing/stale production above reports itself first: the clause
-  // SEQUENCE is rendered from the table's key order, which makes that order
-  // load-bearing — reorder `DOOR_ENUMS` and the emitted grammar's only output would
-  // be a parse error. See {@link DOOR_CLAUSE_PARSE_ORDER}.
-  const order = Object.keys(enums);
-  if (order.join(" ") !== DOOR_CLAUSE_PARSE_ORDER.join(" ")) {
-    throw new Error(
-      `gen-gbnf: DOOR_ENUMS key order (${order.join(", ")}) no longer matches the order ` +
-        `\`door.parse()\` reads its clauses in (${DOOR_CLAUSE_PARSE_ORDER.join(", ")}). ` +
-        `The grammar renders them as a FIXED sequence, so a mismatch would ship a grammar ` +
-        `whose every multi-clause door is a parse error. Re-read src/elements/door.ts, then ` +
-        `update DOOR_CLAUSE_PARSE_ORDER (and the table) together.`,
-    );
-  }
+  // No order check: since card CO-1 a door's clauses come in any order and `door-clause` is an
+  // alternation, so the table's key order reaches nothing a parser reads.
 }
 
 function assertVocab(body: [string, string][]): void {
@@ -261,6 +279,7 @@ function assertVocab(body: [string, string][]): void {
   }
   assertDoorVocab(body, DOOR_ENUMS);
   assertWindowVocab(body);
+  assertClauseShapes(body);
 }
 
 /**
@@ -448,8 +467,10 @@ function rules(): [string, string][] {
     // A strip child is NOT a `room` statement: it takes a main-axis extent instead of
     // `at`+`size`, and its `label` takes no `at (x,y)` anchor (`parseStripRoom` reads
     // the string and stops), so it gets its own label rule rather than sharing
-    // `room-label`.
-    ["strip-room", `"room" rws id-opt "size" ws strip-size ( ws strip-label )? ( ws room-uses )?`],
+    // `room-label`. Its clauses come in any order, as a `room`'s do, `size` once among them.
+    ["strip-room", `"room" rws id-opt ${anyOrder("strip-room-clause", "strip-room-size")}`],
+    ["strip-room-size", `"size" ws strip-size`],
+    ["strip-room-clause", `strip-label | room-uses | room-floor`],
     ["strip-label", `"label" ws string`],
     ["strip-size", `expr ( ws "x" ws expr )?`],
 
@@ -469,7 +490,7 @@ function rules(): [string, string][] {
     // ---- elements --------------------------------------------------------
     [
       "wall-stmt",
-      `"wall" rws id-opt ident rws "thickness" ws expr ( ws wall-material )? ( ws "height" ws expr )? ( ws wall-status )? ws ( wall-body | wall-relation )`,
+      `"wall" rws id-opt ident rws id-opt "thickness" ws expr ( ws wall-material )? ( ws "height" ws expr )? ( ws wall-status )? ws ( wall-body | wall-relation )`,
     ],
     // `status existing|demolish|new` (B3a): after `height`, before the body, as the parser reads it.
     ["wall-status", `"status" rws ( ${litAlt(WALL_STATUSES)} )`],
@@ -489,12 +510,13 @@ function rules(): [string, string][] {
     ["wall-arc", `"arc" ws point ws "radius" ws expr ( rws arc-dir )? ( rws "major" )?`],
     ["arc-dir", `"cw" | "ccw"`],
     // Two shapes: the rectangle (`at`/relational + `size`) and the explicit RING
-    // (`polygon` + >=3 points, no `size`). Both take the same trailing clauses.
-    [
-      "room-stmt",
-      `"room" rws id-opt ( room-rect | room-poly | room-circle ) ( ws room-label )? ( ws room-uses )? ( ws room-floor )?`,
-    ],
-    ["room-rect", `room-pos ws "size" ws dims`],
+    // (`polygon` + >=3 points, no `size`). Both take the same trailing clauses, in any order;
+    // the rectangle's `size` is one of them, once.
+    ["room-stmt", `"room" rws id-opt ( room-rect | room-poly room-tail | room-circle room-tail )`],
+    ["room-rect", `room-pos ${anyOrder("room-clause", "room-size")}`],
+    ["room-size", `"size" ws dims`],
+    ["room-tail", anyOrder("room-clause")],
+    ["room-clause", `room-label | room-uses | room-floor`],
     // THREE vertices minimum, not two — `parseRoom` fails outright below three
     // ("A polygon room needs at least three vertices"), and a two-point ring is
     // exactly the degenerate thing a decoder would otherwise be free to emit.
@@ -506,69 +528,72 @@ function rules(): [string, string][] {
     ["room-uses", `"uses" rws use-kind ( rws use-kind )*`],
     ["room-floor", `"floor" rws ( ${FLOOR_MATERIALS.map((m) => `"${m}"`).join(" | ")} )`],
     ["use-kind", useKind],
-    // The KIND word leads, after any `id=` — the shipped `room polygon` / `room circle`
-    // / `dim faces` shape. Its alternation is INJECTED from `DOOR_KINDS`, guarded above.
-    ["door-stmt", `"door" rws id-opt ( door-kind rws )? ( opening-placement | opening-between ) door-clauses`],
-    ["door-kind", litAlt(DOOR_KINDS)],
-    // One `( … )?` per DOOR_ENUMS key, in the table's key order, plus the trailing
-    // `open` — and one `<key>-val` production per clause, all INJECTED from the table
-    // (`assertDoorVocab` above fails the build if a key loses its production, a
-    // production stops deriving its alternation, or the key order stops matching the
-    // parser's). A SEQUENCE of optionals, not `( clause )*`: `door.parse()` tests each
-    // keyword once, in this order, so both a re-ordering and a repeat are parse errors.
-    // The non-enum prefixes — `hinge near <vertex>`, `swing into <ref>` — are grammar
-    // structure rather than enum members, so they are stated here beside the injection.
-    // `open <0..1>` is a number, not a closed value set, so it is structure too.
-    // The vertical `head` (v1.35) is appended after `open`, because the three opening
-    // elements all take their height clauses LAST — which is what keeps every clause
-    // before it parsing exactly as it did.
+    // The KIND word leads, after any `id=` (and an `id=` may follow it) — the shipped
+    // `room polygon` / `room circle` / `dim faces` shape. Its alternation is INJECTED from
+    // `DOOR_KINDS`, guarded above.
     [
-      "door-clauses",
-      [
-        ...DOOR_CLAUSES.map((c) => `( ws ${lit(c)} rws ${c}-val )?`),
-        `( ws "open" ws expr )?`,
-        `( ws "head" ws expr )?`,
-      ].join(" "),
+      "door-stmt",
+      `"door" rws id-opt ( door-kind rws id-opt )? ( opening-free-pos ${anyOrder("door-free-clause", "opening-width")} | ( opening-hosted-pos | opening-edge-pos | opening-between-pos ) ${anyOrder("door-clause", "opening-width")} )`,
     ],
+    ["door-kind", litAlt(DOOR_KINDS)],
+    // One arm per DOOR_ENUMS key, then `open` and `head` — and one `<key>-val` production per
+    // clause, all INJECTED from the table (`assertDoorVocab` above fails the build if a key
+    // loses its production or a production stops deriving its alternation). An alternation
+    // read through `anyOrder`: since card CO-1 a door's clauses come in any order. The non-enum
+    // prefixes — `hinge near <vertex>`, `swing into <ref>` — are grammar structure rather than
+    // enum members, so they are stated here beside the injection. `open <0..1>` and the vertical
+    // `head` take a number, not a closed value set, so they are structure too.
+    [
+      "door-clause",
+      [...DOOR_CLAUSES.map((c) => `${lit(c)} rws ${c}-val`), `"open" ws expr`, `"head" ws expr`].join(" | "),
+    ],
+    ["door-free-clause", `door-clause | opening-wall`],
     ["hinge-val", `"near" rws ( ${litAlt(DOOR_HINGE_NEAR)} ) | ${litAlt(DOOR_ENUMS.hinge)}`],
     ["swing-val", `"into" rws ref | ${litAlt(DOOR_SWING_BUILDING)} | ${litAlt(DOOR_ENUMS.swing)}`],
     ["slide-val", litAlt(DOOR_ENUMS.slide)],
-    // `sill` is a WINDOW's alone and precedes `head`: the parsers read a fixed sequence,
-    // so a re-ordering is a parse error, and a door or a cased opening starts at the
-    // floor — a `sill` clause there is not a redundant one, it is not in the language.
-    // A kind word leads, as on a `door`, and `hinge` takes the door's two sides, not `near`.
+    // `sill` is a WINDOW's alone: a door or a cased opening starts at the floor — a `sill`
+    // clause there is not a redundant one, it is not in the language. A kind word leads, as
+    // on a `door`, and `hinge` takes the door's two sides, not `near`.
     [
       "window-stmt",
-      `"window" rws id-opt ( window-kind rws )? opening-placement ( ws "hinge" rws window-hinge )? ( ws "sill" ws expr )? ( ws "head" ws expr )?`,
+      `"window" rws id-opt ( window-kind rws id-opt )? ( opening-free-pos ${anyOrder("window-free-clause", "opening-width")} | ( opening-hosted-pos | opening-edge-pos ) ${anyOrder("window-clause", "opening-width")} )`,
     ],
+    ["window-clause", `"hinge" rws window-hinge | "sill" ws expr | "head" ws expr`],
+    ["window-free-clause", `window-clause | opening-wall`],
     ["window-kind", litAlt(WINDOW_KINDS)],
     ["window-hinge", litAlt(DOOR_ENUMS.hinge)],
-    ["opening-stmt", `"opening" rws id-opt ( opening-placement | opening-between ) ( ws "head" ws expr )?`],
+    [
+      "opening-stmt",
+      `"opening" rws id-opt ( opening-free-pos ${anyOrder("opening-free-clause", "opening-width")} | ( opening-hosted-pos | opening-edge-pos | opening-between-pos ) ${anyOrder("opening-clause", "opening-width")} )`,
+    ],
+    ["opening-clause", `"head" ws expr`],
+    ["opening-free-clause", `opening-clause | opening-wall`],
+    ["opening-width", `"width" ws expr`],
     /*
-     * The shared placement of `door`/`window`/`opening`, and the ONE place the
+     * The shared placements of `door`/`window`/`opening`, and the ONE place the
      * either/or between the two forms is stated.
      *
-     * The trailing `wall <id|category>` clause pairs with the FREE form only. After
+     * The `wall <id|category>` clause pairs with the FREE form only. After
      * `on <wall> at <pos>` the host is already named by construction, and the parsers
-     * guard the clause on exactly that (`if (!attach && ctx.isKeyword("wall"))` in
+     * offer the clause on exactly that (`at ? [wallClause(…)] : []` in
      * src/elements/{door,window,opening}.ts), so `door on w1 at 50% width 900 wall w1`
      * is a PARSE error — no `E_*` code, no recovery, the statement is simply not in the
      * language. A grammar that offers the clause after `on` hands a constrained decoder
-     * the one output it exists to make impossible, which is why this is a split
-     * production rather than a shared target plus an optional tail.
+     * the one output it exists to make impossible, which is why each statement splits its
+     * clause set (`<stmt>-free-clause` adds `opening-wall`) rather than sharing one.
      */
-    ["opening-placement", `opening-free | opening-hosted | opening-edge`],
-    ["opening-free", `"at" ws point ws "width" ws expr ( ws "wall" rws ref )?`],
-    ["opening-hosted", `"on" rws ref rws "at" ws attach-pos ws "width" ws expr`],
+    ["opening-free-pos", `"at" ws point`],
+    ["opening-hosted-pos", `"on" rws ref rws "at" ws attach-pos`],
+    ["opening-wall", `"wall" rws ref`],
     /*
      * The relational placements (ADR 0028 §5). `on <room>.<edge>` may leave its position
      * out (the parser accepts that only for a name ending in an edge word, so the
      * production names the edge word), and `between <A> and <B>` is a door's or a cased
      * opening's alone: `window.parse()` refuses it, so `window-stmt` does not offer it.
      */
-    ["opening-edge", `"on" rws edge-ref ws "width" ws expr`],
+    ["opening-edge-pos", `"on" rws edge-ref`],
     ["edge-ref", `ref "." ( ${litAlt(EDGE_WORDS)} )`],
-    ["opening-between", `"between" rws ref rws "and" rws ref ( rws "at" ws attach-pos )? ws "width" ws expr`],
+    ["opening-between-pos", `"between" rws ref rws "and" rws ref ( rws "at" ws attach-pos )?`],
     /*
      * The attachment position is a full EXPRESSION (v1.27.0), not a bare number — a
      * `for`-generated run of openings places itself with `on w1 at bay * i + 600`.
@@ -593,15 +618,14 @@ function rules(): [string, string][] {
     ],
     ["axis-label", `[0-9]+ | ident`],
     /*
-     * Two shapes, because the trailing `in <roomId>` is available to only one of them.
-     * `at`/`against` do not name a room, so the piece may declare its owner at the end;
-     * the `in <room> centered|anchor …` form ALREADY named it, and `furniture.parse()`
-     * reads the trailing clause under `if (node.room === undefined && …)` — so a second
-     * `in` is a parse error, not a redundant repeat.
+     * Two placement shapes, absolute and room-relative, sharing one set of clauses in any
+     * order. The trailing `in <roomId>` is one of them: after the room-relative form, which
+     * already named the room, it is a repeat the parser reports (`E_DUP_CLAUSE`), as any
+     * other repeat. An `id=` may follow the category word.
      */
-    ["furniture-stmt", `"furniture" rws id-opt ident rws ( furn-placed | furn-roomed )`],
-    ["furn-placed", `( furn-at | furn-against | furn-against-edge ) furn-tail ( ws "in" rws ref )?`],
-    ["furn-roomed", `"in" rws ref rws in-place furn-tail`],
+    ["furniture-stmt", `"furniture" rws id-opt ident rws id-opt ( furn-placed | furn-roomed )`],
+    ["furn-placed", `( furn-at | furn-against | furn-against-edge ) ${anyOrder("furniture-clause")}`],
+    ["furn-roomed", `"in" rws ref rws in-place ${anyOrder("furniture-clause")}`],
     ["furn-at", `"at" ws point`],
     // `segment`, `offset`, `side` — read once each, in this order (a fixed run of
     // `if`s, like every other element's clause list).
@@ -615,12 +639,12 @@ function rules(): [string, string][] {
     ["furn-against-edge", `"against" rws edge-ref ( ws "offset" ws expr )?`],
     ["in-place", `"centered" | "anchor" rws anchor ( ws "flush" )? ( ws "inset" ws expr )?`],
     ["anchor", anchor],
-    // `size`, `label`, then ONE way of stating the turn (`rotate` or `facing`, ADR 0029 §3: the
-    // parser reads both so that resolve can refuse the pair, and a grammar emits only legal
-    // text), then the two `clear` zones — the shared tail, in the parser's order.
+    // The clauses after the placement, any order (card CO-1). `rotate` and `facing` may now both
+    // be derived: the parser reads the pair so that resolve can refuse it (`E_FACING_CONFLICT`,
+    // ADR 0029 §3), a catalogued code, and an order-free run cannot leave one out without the other.
     [
-      "furn-tail",
-      `( ws "size" ws dims )? ( ws "label" ws string )? ( ws "rotate" ws expr | ws "facing" rws ref )? ( ws "mirror" )? ( ws "clear" rws "front" ws expr )? ( ws "clear" rws "sides" ws expr )?`,
+      "furniture-clause",
+      `"size" ws dims | "label" ws string | "rotate" ws expr | "facing" rws ref | "mirror" | "clear" rws ( "front" | "sides" ) ws expr | "in" rws ref`,
     ],
     [
       "dim-stmt",
@@ -645,7 +669,7 @@ function rules(): [string, string][] {
      * `room circle` and a door KIND do. The two spellings are alternatives, never a
      * sequence — `roof overhang 600 polygon (0,0) …` is not in the language — so this is
      * a split production and not a pair of optional tails, for exactly the reason
-     * `opening-placement` is: a decoder offered both would emit the one output shape this
+     * the opening placements are: a decoder offered both would emit the one output shape this
      * file exists to make impossible. The ring is `point point point ( ws point )*`
      * rather than `( ws point ){3,}`, because three is a MINIMUM the parser enforces.
      */
@@ -665,12 +689,12 @@ function rules(): [string, string][] {
     ],
     ["void-edge", `${litAlt(RAIL_EDGES.filter((w) => !(RAIL_SIDES as readonly string[]).includes(w)))} | digits`],
     /*
-     * `outdoor` mirrors `room`'s shape exactly — the KIND word after any `id=`, then one
-     * of two mutually-exclusive spellings, then the trailing clauses in the parser's own
-     * fixed order (`label` before `rail`). Split, not a pair of optional tails, for the
-     * same reason `room-rect | room-poly` is: a decoder offered both would emit the one
-     * shape this file exists to make impossible. Three vertices minimum on the ring, the
-     * parser's own floor.
+     * `outdoor` mirrors `room`'s shape exactly — the KIND word after any `id=` (an `id=` may
+     * follow it too), then one of two mutually-exclusive spellings, then the clauses in any
+     * order, the rectangle's `size` once among them. Split, not one shared tail, for the
+     * same reason `room-rect | room-poly` is: a decoder offered `size` after a ring would emit
+     * the one shape this file exists to make impossible. Three vertices minimum on the ring,
+     * the parser's own floor.
      *
      * `rail` renders as `rail-edge ( rws rail-edge )*` because the clause really is
      * repeatable, and the comma spelling is a separate arm rather than an optional comma
@@ -678,10 +702,11 @@ function rules(): [string, string][] {
      */
     [
       "outdoor-stmt",
-      `"outdoor" rws id-opt outdoor-kind rws ( outdoor-rect | outdoor-poly ) ( ws outdoor-label )? ( ws outdoor-rail )?`,
+      `"outdoor" rws id-opt outdoor-kind rws id-opt ( "at" ws point ${anyOrder("outdoor-clause", "outdoor-size")} | outdoor-poly ${anyOrder("outdoor-clause")} )`,
     ],
     ["outdoor-kind", litAlt(OUTDOOR_KINDS)],
-    ["outdoor-rect", `"at" ws point ws "size" ws dims`],
+    ["outdoor-size", `"size" ws dims`],
+    ["outdoor-clause", `outdoor-label | outdoor-rail`],
     ["outdoor-poly", `"polygon" ws point ws point ws point ( ws point )*`],
     ["outdoor-label", `"label" ws string`],
     ["outdoor-rail", `"rail" rws rail-edge ( ( ws "," ws | rws ) rail-edge )*`],

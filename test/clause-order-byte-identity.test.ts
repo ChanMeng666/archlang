@@ -9,27 +9,48 @@
  * SVG + `describe()` + `lint()` + `compile().diagnostics`, and the parse itself (the `PlanNode` as
  * JSON, key order included, which `arch ast --json` prints, plus the parse diagnostics). Both were
  * **measured on `main` at `3ca9556b`, before the first `src/` edit of this change**, by those helper
- * bodies (a scratch script imported them, as this test does). The same bodies were then run over
- * every `.arch` in the repository (530 files, one of them a parse error before the change): all
- * 530 parse digests were unchanged after it. A deliberate off-by-one in the `rotate` insertion
- * point moved 36 of these 42 rows, so the law can fail.
+ * bodies (a scratch script imported them, as this test does). A deliberate off-by-one in the
+ * `rotate` insertion point moved 36 of these 42 rows, so the law can fail. This file pins the
+ * examples only; plans elsewhere in the repository are pinned by their own laws.
  *
  * Why the rows hold: a clause the old grammar would have read at its token is read exactly as
  * before, with no new condition, and any other clause is read only where its word could not begin
  * the next statement (no statement keyword, no `=` or `(` after it; `wall` by a lookahead for a
- * `wall` statement's `thickness`). Every node is laid out after its clauses are read, in the old
- * order, so even its key order is unchanged. A moved row is a finding to explain, never a re-pin.
+ * `wall` statement's `thickness` or `id=`). Every node is laid out after its clauses are read, in
+ * the old order, so even its key order is unchanged. A moved row is a finding to explain, never a
+ * re-pin.
  */
 
 import { readdirSync, readFileSync, statSync } from "node:fs";
 import { dirname, join, resolve as resolvePath } from "node:path";
 import { describe as suite, expect, it } from "vitest";
-import { ORDER_FREE_STATEMENTS } from "../src/clause-order.js";
+import { ID_AFTER_KIND_STATEMENTS, ORDER_FREE_STATEMENTS } from "../src/clause-order.js";
 import { compile, describe, lint } from "../src/index.js";
 import { lex } from "../src/lexer.js";
 import { parse } from "../src/parser.js";
 import { makeNodeWorld } from "../src/cli/io.js";
-import { archFilesUnder, astDigest, type ClauseLawApi, surfaceDigest } from "./helpers/clause-order-law.js";
+import type { World } from "../src/world.js";
+import {
+  archFilesUnder,
+  astDigest,
+  type ClauseLawApi,
+  PERMUTED,
+  type PermuteApi,
+  permuted,
+  surfaceDigest,
+} from "./helpers/clause-order-law.js";
+
+/** The fewest statements of each kind one permutation must move over the examples (measured:
+ *  furniture 290, room 237, door 206, window 126, opening 17, outdoor 13), so the property cannot
+ *  pass by finding nothing to permute. */
+const PERMUTE_FLOORS: Record<string, number> = {
+  furniture: 250,
+  room: 200,
+  door: 180,
+  window: 100,
+  opening: 15,
+  outdoor: 10,
+};
 
 const ROOT = resolvePath(".");
 const API: ClauseLawApi = {
@@ -356,6 +377,37 @@ suite("clause order: the list the spec reads", () => {
     for (const k of ORDER_FREE_STATEMENTS)
       expect(REORDERED.some(([, others]) => others.some((o) => o.includes(k)))).toBe(true);
   });
+
+  it("ID_AFTER_KIND_STATEMENTS is exactly the statements that call idAfterKind, and rule 6 names them", () => {
+    const called = new Set<string>();
+    const walk = (dir: string): void => {
+      for (const name of readdirSync(dir)) {
+        const p = join(dir, name);
+        if (statSync(p).isDirectory()) walk(p);
+        else if (name.endsWith(".ts"))
+          for (const m of readFileSync(p, "utf8").matchAll(/idAfterKind\(\s*ctx,\s*"(\w+)"/g)) called.add(m[1]!);
+      }
+    };
+    walk(join(ROOT, "src"));
+    expect([...called].sort()).toEqual([...ID_AFTER_KIND_STATEMENTS].sort());
+    const rule6 = readFileSync(join(ROOT, "spec.llm.md"), "utf8")
+      .split("\n")
+      .find((l) => l.startsWith("6. "))!;
+    for (const k of ID_AFTER_KIND_STATEMENTS) expect(rule6).toContain(`\`${k}\``);
+    // And each one reads it there, cleanly.
+    const forms: Record<(typeof ID_AFTER_KIND_STATEMENTS)[number], string> = {
+      furniture: "furniture bed id=b1 at (500,500) size 1500x2000",
+      door: "door pocket id=d1 on bed.left at 50% width 800",
+      window: "window casement id=w1 on bed.top at 50% width 1200",
+      outdoor: "outdoor deck id=o1 at (0,4200) size 4000x2000",
+      wall: "wall exterior id=v1 thickness 200 { (0,7000) (4000,7000) }",
+    };
+    for (const k of ID_AFTER_KIND_STATEMENTS) {
+      expect(parseErrors(plan(forms[k])), k).toEqual([]);
+      const node = parse(plan(forms[k])).plan!.body.find((s) => s.kind === k);
+      expect(node?.id, k).toMatch(/^[a-z]1$/);
+    }
+  });
 });
 
 suite("clause order: the reordered forms", () => {
@@ -411,6 +463,13 @@ const DUPLICATES: [string, string, string][] = [
   ["opening on bed.top at 25% width 900 width 1000", "width 1000", "width 900"],
   ['outdoor balcony at (0,-1500) size 4000x1500 rail top label "B" rail left', "rail left", "rail top"],
   ['strip right at (0,6000) gap 0 height 3000 { room size 3000 label "A" size 4000 }', "size 4000", "size 3000"],
+  ["door at (2000,0) width 900 wall exterior hinge left wall partition", "wall partition", "wall exterior"],
+  // A second `id=`, around or after the kind word, on every statement that takes one there.
+  ["furniture bed id=p0 id=p1 at (500,500) size 1500x2000", "id=p1", "id=p0"],
+  ["door id=d0 pocket id=d1 on bed.left at 50% width 800", "id=d1", "id=d0"],
+  ["window id=w0 casement id=w1 on bed.top at 50% width 1200", "id=w1", "id=w0"],
+  ["outdoor id=o0 deck id=o1 at (0,4200) size 4000x2000", "id=o1", "id=o0"],
+  ["wall id=v0 exterior id=v1 thickness 200 { (0,7000) (4000,7000) }", "id=v1", "id=v0"],
 ];
 
 suite("clause order: a clause written twice is E_DUP_CLAUSE", () => {
@@ -463,144 +522,109 @@ suite("clause order: a word that begins a statement stays one", () => {
     expect(node.rotate).toBeDefined();
   });
 
-  it("a `wall` statement after a door placed `at (x,y)` stays a wall", () => {
-    for (const wall of [
+  it("a `wall` statement after an opening placed `at (x,y)` stays a wall", () => {
+    const walls = [
       "wall exterior thickness 200 { (0,7000) (4000,7000) }",
       "wall id=w9 exterior thickness 200 { (0,7000) (4000,7000) }",
-    ]) {
-      const src = plan(`door at (2000,0) width 900 hinge left\n  ${wall}`);
-      expect(kinds(src).slice(-2)).toEqual(["door", "wall"]);
-      expect(parseErrors(src)).toEqual([]);
+      // `id=` after the category (card CO-1): `wall <cat> id=` is a wall statement, never a clause.
+      "wall exterior id=w9 thickness 200 { (0,7000) (4000,7000) }",
+    ];
+    const openings: [string, string][] = [
+      ["door", "door at (2000,0) width 900 hinge left"],
+      ["window", "window at (2000,0) width 1200 sill 900"],
+      ["opening", "opening at (2000,0) width 900 head 2100"],
+    ];
+    for (const [kind, opening] of openings) {
+      for (const wall of walls) {
+        const src = plan(`${opening}\n  ${wall}`);
+        expect(kinds(src).slice(-2), `${opening} / ${wall}`).toEqual([kind, "wall"]);
+        expect(parseErrors(src), `${opening} / ${wall}`).toEqual([]);
+        const node = parse(src).plan!.body.find((s) => s.kind === kind) as { wall?: string };
+        expect(node.wall).toBeUndefined();
+      }
     }
+  });
+
+  it("a clause word called as a component gets a hint saying why", () => {
+    const src = plan("furniture bed at (500,500) size 1500x2000 clear front 600\n  rotate (90)");
+    const d = compile(src).diagnostics.find((x) => x.code === "E_UNKNOWN_COMPONENT");
+    expect(d?.hints?.[0]).toContain("`rotate` is also a clause word");
+    // A name that is no clause word keeps the hint it had (none, with no component to suggest).
+    const other = compile(plan("wombat(1)")).diagnostics.find((x) => x.code === "E_UNKNOWN_COMPONENT");
+    expect(other?.hints).toBeUndefined();
+  });
+});
+
+suite("clause order: a clause a statement cannot leave out is refused on that statement", () => {
+  /** `[statement, the statement's name in the message]`: each followed by a second, sound statement. */
+  const MISSING: [string, string][] = [
+    ['room id=a at (4000,0) label "A"', 'Room "a"'],
+    ["door id=d on bed.left at 50% hinge left", 'Door "d"'],
+    ["window on bed.top at 50% sill 900", "This window"],
+    ["opening on bed.top at 25% head 2100", "This opening"],
+    ['outdoor deck at (0,4200) label "Deck"', "This outdoor"],
+  ];
+  for (const [stmt, name] of MISSING) {
+    it(stmt, () => {
+      const src = plan(`${stmt}\n  room id=c at (0,9000) size 1000x1000`);
+      const errs = parse(src).diagnostics.filter((d) => d.code === "E_PARSE");
+      expect(errs).toHaveLength(1);
+      // Spanned on the statement that lacks the clause, never on the next statement's token.
+      expect(src.slice(errs[0]!.span!.start, errs[0]!.span!.end)).toBe(stmt);
+      expect(errs[0]!.message.startsWith(name)).toBe(true);
+      // And the next statement still parses.
+      expect(parse(src).plan!.body.some((s) => s.kind === "room" && s.id === "c")).toBe(true);
+    });
+  }
+
+  it("a strip room with no size", () => {
+    const src = plan('strip right at (0,6000) gap 0 height 3000 { room id=s label "A" }');
+    const errs = parse(src).diagnostics.filter((d) => d.code === "E_PARSE");
+    expect(errs).toHaveLength(1);
+    expect(src.slice(errs[0]!.span!.start, errs[0]!.span!.end)).toBe('room id=s label "A"');
+    expect(errs[0]!.message.startsWith('Room "s"')).toBe(true);
   });
 });
 
 // —— The permutation property over the examples ——————————————————————————————————————
 
-interface Span {
-  start: number;
-  end: number;
-}
-const CLAUSE_WORDS: Record<"furniture" | "room", ReadonlySet<string>> = {
-  furniture: new Set(["size", "label", "rotate", "facing", "mirror", "clear", "in"]),
-  room: new Set(["size", "label", "uses", "floor"]),
+const PERMUTE_API: PermuteApi = { lex, parse: (src) => parse(src) };
+/** Every storey's SVG, then `describe()`: the drawing and the summary a permutation must not move. */
+const drawnAndDescribed = (src: string, world: World): string => {
+  const out = compile(src, { noCache: true, world });
+  const svgs = out.pages ? out.pages.map((p) => p.svg) : [out.svg];
+  return [...svgs, JSON.stringify(describe(src, { world }))].join(" ");
 };
 
-/** Every furniture and room statement (strip rooms included) the parse of a file holds. */
-function statements(planNode: unknown): { kind: "furniture" | "room"; span: Span }[] {
-  const out: { kind: "furniture" | "room"; span: Span }[] = [];
-  const seen = new Set<number>();
-  const visit = (v: unknown, stripRoom: boolean): void => {
-    if (Array.isArray(v)) {
-      for (const x of v) visit(x, stripRoom);
-      return;
-    }
-    if (v instanceof Map) {
-      for (const x of v.values()) visit(x, false);
-      return;
-    }
-    if (!v || typeof v !== "object") return;
-    const o = v as Record<string, unknown>;
-    const kind = o.kind === "furniture" || o.kind === "room" ? o.kind : stripRoom ? "room" : undefined;
-    const span = o.span as Span | undefined;
-    if (kind && span && !seen.has(span.start)) {
-      seen.add(span.start);
-      out.push({ kind, span });
-    }
-    for (const [k, x] of Object.entries(o)) if (k !== "span") visit(x, o.kind === "strip" && k === "rooms");
-  };
-  visit(planNode, false);
-  return out;
-}
-
-/**
- * The trailing clauses of one single-line statement, as source slices, and where the first one
- * starts; `null` when it has fewer than two (or spans lines, which this sweep leaves alone).
- */
-function clausesOf(src: string, kind: "furniture" | "room", span: Span): { from: number; parts: string[] } | null {
-  if (src.slice(span.start, span.end).includes("\n")) return null;
-  const ts = lex(src).tokens.filter((t) => t.type !== "eof" && t.start >= span.start && t.end <= span.end);
-  if (ts[0]?.value !== kind) return null;
-  let i = 1;
-  const skipId = (): void => {
-    if (ts[i]?.value === "id" && ts[i + 1]?.type === "equals") i += 3;
-  };
-  skipId();
-  if (kind === "furniture") {
-    i++;
-    skipId();
-    if (ts[i]?.value === "in") i += 2; // the room-relative placement's `in <room>`
-  }
-  const words = CLAUSE_WORDS[kind];
-  const starts: number[] = [];
-  let depth = 0;
-  for (let j = i; j < ts.length; j++) {
-    const t = ts[j]!;
-    if (t.type === "lparen") depth++;
-    else if (t.type === "rparen") depth--;
-    else if (
-      depth === 0 &&
-      t.type === "ident" &&
-      words.has(t.value) &&
-      ts[j + 1]?.type !== "lparen" &&
-      ts[j + 1]?.type !== "equals" &&
-      ts[j - 1]?.value !== "facing" &&
-      ts[j - 1]?.value !== "in"
-    )
-      starts.push(j);
-  }
-  if (starts.length < 2) return null;
-  const parts = starts.map((s, k) => src.slice(ts[s]!.start, ts[(starts[k + 1] ?? ts.length) - 1]!.end));
-  return { from: ts[starts[0]!]!.start, parts };
-}
-
-/** `src` with every statement's trailing clauses put in the order `order` gives, at the same length. */
-function permuted(src: string, order: (parts: string[]) => string[]): { src: string; count: number } {
-  const plan = parse(src).plan;
-  const edits: { start: number; end: number; text: string }[] = [];
-  for (const s of statements(plan)) {
-    const c = clausesOf(src, s.kind, s.span);
-    if (!c) continue;
-    const text = src.slice(s.span.start, c.from) + order(c.parts).join(" ");
-    edits.push({ start: s.span.start, end: s.span.end, text: text.padEnd(s.span.end - s.span.start, " ") });
-  }
-  let out = src;
-  for (const e of edits.sort((a, b) => b.start - a.start)) out = out.slice(0, e.start) + e.text + out.slice(e.end);
-  return { src: out, count: edits.length };
-}
-
-suite("clause order: permuting the trailing clauses of every furniture and room in examples/", () => {
+suite("clause order: permuting the clauses of every statement that reads them in any order, in examples/", () => {
   const ORDERS: [string, (p: string[]) => string[]][] = [
     ["reversed", (p) => [...p].reverse()],
     ["rotated by one", (p) => [...p.slice(1), p[0]!]],
   ];
   for (const file of archFilesUnder(ROOT, "examples")) {
-    it(`${file}: describe() is unchanged`, () => {
+    it(`${file}: every storey's SVG and describe() are unchanged`, () => {
       const src = readFileSync(join(ROOT, file), "utf8");
       const world = makeNodeWorld(dirname(join(ROOT, file)));
-      const before = JSON.stringify(describe(src, { world }));
-      for (const [, order] of ORDERS) {
-        const p = permuted(src, order);
-        if (p.count === 0) continue;
-        expect(p.src).not.toBe(src);
-        expect(p.src.length).toBe(src.length);
-        expect(parseErrors(p.src)).toEqual([]);
-        expect(JSON.stringify(describe(p.src, { world }))).toBe(before);
+      const before = drawnAndDescribed(src, world);
+      for (const [name, order] of ORDERS) {
+        const p = permuted(PERMUTE_API, src, order);
+        if (Object.keys(p.count).length === 0) continue;
+        expect(p.src, name).not.toBe(src);
+        expect(p.src.length, name).toBe(src.length);
+        expect(parseErrors(p.src), name).toEqual([]);
+        expect(drawnAndDescribed(p.src, world), name).toBe(before);
       }
     });
   }
-  it("moves a real number of statements, of both kinds", () => {
-    let furniture = 0;
-    let rooms = 0;
+
+  it("moves a real number of statements, of every kind", () => {
+    const total: Record<string, number> = {};
     for (const file of archFilesUnder(ROOT, "examples")) {
       const src = readFileSync(join(ROOT, file), "utf8");
-      for (const s of statements(parse(src).plan)) {
-        if (!clausesOf(src, s.kind, s.span)) continue;
-        if (s.kind === "furniture") furniture++;
-        else rooms++;
-      }
+      for (const [k, n] of Object.entries(permuted(PERMUTE_API, src, (p) => [...p].reverse()).count))
+        total[k] = (total[k] ?? 0) + n;
     }
-    expect(furniture).toBeGreaterThan(100);
-    expect(rooms).toBeGreaterThan(50);
+    expect(Object.keys(PERMUTED).sort()).toEqual([...ORDER_FREE_STATEMENTS].sort());
+    for (const [k, floor] of Object.entries(PERMUTE_FLOORS)) expect(total[k] ?? 0, k).toBeGreaterThanOrEqual(floor);
   });
 });

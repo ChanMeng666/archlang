@@ -55,7 +55,7 @@ import { idToken } from "./identity.js";
 import type { ElementDef, ParseCtx, Registry } from "./registry.js";
 import { BUILTIN_REGISTRY } from "./registry.js";
 import { floorClause } from "./elements/room.js";
-import { readClauses, type TailClause } from "./clause-order.js";
+import { missingClause, readClauses, type TailClause } from "./clause-order.js";
 import { KEEP_GRADES, KEEP_WORDS, STATEMENT_STARTS, TITLE_FIELDS, type TitleField } from "./grammar/tokens.js";
 import type { KeepGrade, KeepNode, KeepRef } from "./ast.js";
 import { splitDatum } from "./room-datums.js";
@@ -2043,7 +2043,7 @@ class Parser {
     ];
     readClauses(this.ctx, "room", clauses.map(inStrip));
     // The one clause a strip room cannot leave out; a `size` still at the cursor begins a statement.
-    if (main === undefined) this.fail(`Expected "size" but found ${describe(this.peek())}`);
+    if (main === undefined) missingClause(this.ctx, { what: "room", id, start }, "size", "size <main>[x<cross>]");
     const child: StripRoomChild = { id, main, ...(cross ? { cross } : {}), line: kw.line };
     if (tail.label !== undefined) child.label = tail.label;
     if (tail.uses !== undefined) child.uses = tail.uses;

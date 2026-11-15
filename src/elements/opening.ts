@@ -53,7 +53,7 @@ export const opening: ElementDef = {
       // The vertical datum: `head` only. A cased opening's sill is the floor.
       ...openingHeightClauses(ctx, heights, { sill: false }, 3),
     ]);
-    if (width === undefined) missingClause(ctx, "width", "width <mm>");
+    if (width === undefined) missingClause(ctx, { what: "opening", id, start: kw.start }, "width", "width <mm>");
     const node: OpeningNode = {
       kind: "opening",
       id,

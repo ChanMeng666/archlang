@@ -80,32 +80,60 @@ export function readClauses(ctx: ParseCtx, what: OrderFreeStatement, clauses: re
  * `width`). Where the cursor is not on the word, the message is `eatKeyword`'s own, as before.
  * Where it is, the word was out of the old order and read as the start of a statement.
  */
-export function missingClause(ctx: ParseCtx, word: string, form: string): never {
-  if (!ctx.isKeyword(word)) ctx.eatKeyword(word);
-  return ctx.fail(
-    `This \`${word}\` reads as the start of a statement (\`${word} = …\` or \`${word}(…)\`): write \`${form}\` right after the placement`,
-  );
+export function missingClause(
+  ctx: ParseCtx,
+  stmt: { what: string; id: string; start: number },
+  word: string,
+  form: string,
+): never {
+  const last = ctx.peek(-1);
+  const name = stmt.id ? `${stmt.what} "${stmt.id}"` : `this ${stmt.what}`;
+  const after = ctx.isKeyword(word)
+    ? ` (the \`${word}\` after it reads as the start of a statement, \`${word} = …\` or \`${word}(…)\`)`
+    : "";
+  // Spanned on the statement that lacks the clause, never on the token after it.
+  return ctx.fail(`${name[0]!.toUpperCase()}${name.slice(1)} has no \`${form}\`${after}`, {
+    ...last,
+    type: "ident",
+    start: stmt.start,
+    end: last.end,
+  });
 }
+
+/**
+ * The statements whose `id=` may also follow the kind word: each calls {@link idAfterKind} with
+ * its keyword. The spec's rule 6 reads this list, and `test/clause-order-byte-identity.test.ts`
+ * holds it to the calls in `src/`.
+ */
+export const ID_AFTER_KIND_STATEMENTS = ["furniture", "door", "window", "outdoor", "wall"] as const;
+export type IdAfterKindStatement = (typeof ID_AFTER_KIND_STATEMENTS)[number];
 
 /**
  * `id=` after the kind word (`furniture bed id=b1`, `door double id=d1`), where a model writes it.
  * The word after a kind was never `id`, so this reads nothing a plan wrote before. `id` is the id
- * read before the kind ("" for none) and `idSpan` its span; a second `id=` is `E_DUP_CLAUSE`.
+ * read before the kind ("" for none) and `idSpan` its span; every further `id=` is `E_DUP_CLAUSE`.
  */
-export function idAfterKind(ctx: ParseCtx, what: string, id: string, idSpan: Span | undefined): string {
-  if (!ctx.isKeyword("id") || ctx.peek(1).type !== "equals") return id;
-  if (id === "" || !idSpan) return ctx.parseIdOpt();
-  const kw = ctx.next();
-  ctx.next();
-  const t = ctx.eatIdent();
-  ctx.diag({
-    severity: "error",
-    code: "E_DUP_CLAUSE",
-    message: `\`id=\` is written twice on this ${what}: each clause is written once`,
-    span: { start: kw.start, end: t.end },
-    relatedSpans: [{ span: idSpan, message: "`id=` first written here" }],
-    hints: ["delete one of the two"],
-  });
+export function idAfterKind(ctx: ParseCtx, what: IdAfterKindStatement, id: string, idSpan: Span | undefined): string {
+  let first = id ? idSpan : undefined;
+  while (ctx.isKeyword("id") && ctx.peek(1).type === "equals") {
+    if (!first) {
+      const read = parseIdWithSpan(ctx);
+      id = read.id;
+      first = read.idSpan;
+      continue;
+    }
+    const kw = ctx.next();
+    ctx.next();
+    const t = ctx.eatIdent();
+    ctx.diag({
+      severity: "error",
+      code: "E_DUP_CLAUSE",
+      message: `\`id=\` is written twice on this ${what}: each clause is written once`,
+      span: { start: kw.start, end: t.end },
+      relatedSpans: [{ span: first, message: "`id=` first written here" }],
+      hints: ["delete one of the two"],
+    });
+  }
   return id;
 }
 

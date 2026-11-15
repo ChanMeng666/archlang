@@ -432,7 +432,7 @@ export const door: ElementDef = {
       // The vertical datum: `head` only, last in the old order.
       ...openingHeightClauses(ctx, heights, { sill: false }, 7),
     ]);
-    if (width === undefined) missingClause(ctx, "width", "width <mm>");
+    if (width === undefined) missingClause(ctx, { what: "door", id, start: kw.start }, "width", "width <mm>");
     const node: DoorNode = {
       kind: "door",
       id,
