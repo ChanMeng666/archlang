@@ -39,3 +39,4 @@ paths:
   counting the chunk's requests: one boot asks twice (the page and the compile worker).
 - **A worktree's playground typecheck can miss `@resvg/resvg-wasm`** (the primary checkout's
   `node_modules` lacks it): run `npm ci` in the worktree rather than junctioning.
+- **A new Playwright spec goes in exactly one shard list in `ci.yml`**; `test/e2e-shards.test.ts` fails otherwise.

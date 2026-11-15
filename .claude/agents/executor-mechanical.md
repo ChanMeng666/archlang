@@ -17,6 +17,7 @@ Preamble, every time:
   locally: the local-gate hook blocks them and CI is the full gate. If you must run a vitest file,
   use 2 workers (`--poolOptions.forks.maxForks=2 --poolOptions.forks.minForks=1`).
 - Never edit `docs/plans/*/cards.md`; the commander owns the cards.
+- Never name a branch `train/…`: that prefix runs the full matrix and cannot board a train.
 
 Read first: `AGENTS.md`, `docs/agents/iron-laws.md`, `docs/agents/gotchas.md`, and the `.claude/rules/`
 file for each path you edit (they load by path). Read `docs/agents/architecture.md` when the card moves

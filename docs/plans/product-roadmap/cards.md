@@ -17,7 +17,7 @@
 | 本地，永远 | `npm run check:quick`（文档另加 `npm run docs:build`），别的都不跑（`AGENTS.md` § How to work） |
 | 只在 CI 跑 | `check`、`check:drift`、`typecheck:all`、e2e、`check:3d`、bench |
 | 执行者 | 两条车道（RM-D22，所有者 2026-11-11 批准）：一个核心执行者、一个视觉执行者（第 8 轨），外加纯文档卡；每张卡一个 worktree（`docs/agents/orchestration.md`）；一次一个重命令对整台机器生效，重的门禁交给 CI |
-| 每个 PR | 从 `main` 建 worktree，分支 `feat/<card>-<slug>`（文档卡 `docs/<card>-<slug>`）；红队最多两轮；合并串行，按风险层级走 `docs/agents/commands.md` § Merging a PR |
+| 每个 PR | 从 `main` 建 worktree，分支 `feat/<card>-<slug>`（文档卡 `docs/<card>-<slug>`）；红队最多两轮；代码 PR 经 `npm run train` 上车，其余按层级直接合并（`docs/agents/commands.md` § Merging a PR） |
 | 规则卡（RM1.2a/b、RM1.7） | 另加：每条规则一对公开夹具（合法图零报、缺陷图必报）进 `test/defect-corpus/`；留出的一对只写进私有 `archlang-lab`，PR 只报它的计数；PR 里写出该规则用 `arch lint --json` 跑过全部 `examples/**` 的报出数 |
 | ~~冻结期 11-24 → 12-01~~ | ~~只合 bug 修复、测量与文档；不发 minor~~ 已由所有者 2026-11-11 取消（RM-D27，`README.md` §6.5）：这一周照常合并，不再是门。仍然成立：Show HN（12-01）之前 `main` 保持绿；任何一次发布（minor 或 patch）都要所有者对那一次的决定 |
 | 3D 回放的改动（2026-11-11 加） | 除终帧与海报外，还要比对墙升起过程中的帧（例如回放的 6.75 s、6.80 s 处）。#691 的终帧与海报都对，透缝只在升墙中途出现，是第一轮评审逐帧比对视频时抓到的（`docs/agents/gotchas.md` § PRs & CI） |
@@ -1151,11 +1151,19 @@ Playground：Chromium `--shard=1/2`、`2/2` 两个 job，Firefox 与 WebKit 的 
 
 ### TR7 · finish 拆分之后的文字（2026-11-15 加） — `todo` · 0.2 日 · sonnet · 依赖无（线下）
 
-`.claude/commands/new-fixture-family.md:54`（由 `docs/ci-train-procedure` 那个 PR 做）；ADR 0024、0025 与 `test/cli-finish.test.ts:13` 仍指旧的单个文件；`test/finish.test.ts` 的文件头仍写"the six laws are named in the suite titles below"（定律 1、2、3、5 已移走，头注释由 `docs/ci-train-procedure` 改）。不许：改测试代码。
+`.claude/commands/new-fixture-family.md` 与 `test/finish.test.ts` 的文件头已由 #802 改好；ADR 0024、ADR 0025、`test/cli-finish.test.ts:13` 与 `src/finish.ts:22` 的注释由 #806 改（尚未合并）。仍开着一处：`packages/archlang-3d/src/materials.ts:177` 写的是 `test/finish.test.ts` 把它钉在 `groundColour("paving")` 上；根的 `test/` 里没有任何测试提到 `groundColour`，钉它的是 `packages/archlang-3d/test/finish.test.ts:663`，所以注释应写这个完整路径。不许：改测试的断言。
 
 ### TR8 · 本地门禁的残余（2026-11-15 加，出自 #795 的最后一轮评审） — `todo` · 未估 · sonnet · 依赖无（线下）
 
 (a) `docs/agents/commands.md` 里一个过时的算出来的数（"a `src/`-only change adds 19 scanners and 7.5 recorded seconds"，合并时是 20 个和 11.8 秒）：删掉数字，上限已经够说明；(b) `scripts/check-quick.mjs` 头注释的笔误（"(`treeGuards`; at / within 15"）；(c) 源码树扫描器的判定：数任何带引号的 `"src"`（误判 `dataset` 4.3 s、`docs-page-meta`、`docs-sync-list`），不跟随辅助函数（漏掉 `test/sync-main.test.ts`），没有 `packages/` 根（漏掉 `test/workspace-seams.test.ts`）；(d) `test/gate-select.test.ts:80` 拼出一个字符串，被 import 图的正则读成对 `src/index.js` 的 import（使 `module-map.md` 与 `test/INDEX.md` 的 importer 数各多 1）；(e) 额外文件总数加一个 25 的上限；(f) 在空闲的机器上做一次成对计时：同一个一行的 `src/` 改动，分别用 #795 之前与之后的 `origin/main` 的门禁（现有只有负载下的 136、319、119、252 s，估计 30–35 s，置信度低）。不许：把 `typecheck:all` 或构建放回门禁。
+
+### TR9 · 合并机器的风险层级（2026-11-16 加） — `todo` · 所有者裁定 · 依赖无（线下）
+
+`scripts/ci-proven.mjs`、`scripts/merge-train.mjs`、`scripts/sync-main.mjs`、`scripts/gate-select.mjs`、`test/sequencer.ts`、`test/.durations.json` 在 `scripts/risk-tier.mjs` 里是 medium，却决定 CI 跳过什么、什么能合并。裁定：要不要升成 high（高层级 PR 改 `RULES` 与 `commands.md` 第 0 步）。
+
+### TR10 · 列车与同步命令的许可（2026-11-16 加） — `todo` · 所有者裁定 · 依赖无（线下）
+
+`npm run train` 与 `npm run sync:main` 不在 `.claude/settings.json` 的 allow 列表里，每次使用都弹许可，无人值守的运行会卡在那里。裁定：要不要允许它们（`.claude/settings.json` 是 high 层级；禁止推 `main` 的 deny 规则不变）。
 
 ---
 

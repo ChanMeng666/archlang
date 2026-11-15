@@ -585,7 +585,7 @@ RM-D38、RM-D39 属于另一场的裁定（winder 台阶可到达、楼梯建造
 |---|---|---|---|
 | RM-D48 | 怎样让所有者更快发布功能，包括本机是否分担 CI | **做：** ① 仓库内的合并列车（`npm run train`，FT2 #788）：经一个普通 PR 用 `--match-head-commit` 合并，所以不违反直接推 `main` 的禁止，也不是 RM-D37 拒绝的组织 + merge queue 或第三方队列；② 律 1 的 `reviewed <sha>` 评论现在同时是机器门（首行恰为 `reviewed <40 位十六进制>`，由 OWNER 或 COLLABORATOR 发），含义是“批准在此 SHA 合并”；③ 律 3 对两种列车豁免：只有一个成员且列车的树等于该成员已评审的树，以及只含低层级成员的列车；④ 已证明的 push（FT1 #785）；⑤ 更多分片与显式规格列表（FT3a #794），`finish` 测试拆分（FT3c #798，RM-D37 曾拒绝，直到出现长杆，它成了 Node 22 的地板）；⑥ TP5 由 TR6 取代。**不做：** 本机 CI runner；本地门禁里的 `typecheck:all`（FT4 #795 建过又按证据去掉）。RM-D37 里“组织 + merge queue”与第三方队列、“PR 上的受影响测试”、`isolate: false`、changelog 碎片仍然拒绝 | 序列化同步是瓶颈（RM-D37）；列车把一次完整 CI 摊给几个 PR，已证明的 push 让合并到部署 2 分 5 秒；本机 runner 被拒：runner 排队约 3 秒，所有者笔记本 15.3 GB 只剩 2.1 GB 空闲且有 19 个 node 进程，GitHub 不建议在公开仓库用自托管 runner；`typecheck:all` 的红有 11/13 来自同一个 Dependabot PR。反转：所有者一句话 |
 
-后续卡 TR1–TR8 在 `cards.md` 第 9 轨。
+后续卡 TR1–TR10 在 `cards.md` 第 9 轨。
 
 ---
 
