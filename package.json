@@ -131,6 +131,7 @@
     "eval:live": "tsx eval/run.ts --live",
     "eval:g1": "tsx eval/g1/generate.ts",
     "eval:l2": "tsx eval/l2-run.ts",
+    "eval:t3": "tsx eval/t3-analysis.ts",
     "e2e:playground": "playwright test -c playground",
     "e2e:docs": "playwright test -c docs-site",
     "dataset:gen": "tsx dataset/generate.ts",
