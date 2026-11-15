@@ -23,8 +23,9 @@ dist-openai/
 # scorecard is eval/results.md; the live headline lives in eval/live-baseline.json.
 eval/results.live.md
 # L2 loop-vs-resampling output is ephemeral too (per-run, model/day-dependent; one pair per model).
-eval/results.l2*.md
-eval/results.l2*.json
+eval/results.l2.*.md
+eval/results.l2.*.json
+eval/results.l2.*.json.tmp
 # Generated dataset artifacts (HF-only; the generator + seed are the committed source).
 dataset/out/
 # local env & agent-session artifacts
