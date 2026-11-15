@@ -575,7 +575,7 @@ RM-D38、RM-D39 属于另一场的裁定（winder 台阶可到达、楼梯建造
 
 | # | 问题 | 裁定 | 原话 | 反转条件 |
 |---|---|---|---|---|
-| RM-D47 | HF 数据集 `ChanMeng666/archlang-repair-trajectories` 是否加一个新配置 `model-authoring`（真实模型按程序化 brief 一次性写 `.arch`，再由确定性工具 `fix` + `repair` 修复；生成器在 `dataset/model-authoring/`），以及其许可证 | **建，付费运行后发布到 HF**：① 费用记在 Anthropic 促销额度上，`submit` 只由所有者运行，由 `--max-usd` 封顶（按估算的上限）；② 只做一次性作答，不加多轮的模型修复轨迹（RM-D45 ⑥）；③ brief 用独立的种子 `20261115`，与两个 eval 语料及已上传的 `repair`/`authoring` 文件去重；金丝雀原样复用；seed-`20260712` 的字节不动；④ 许可证为 CC0，附来源说明：卡片写明每行回复由 Anthropic 的 Claude 模型经 Anthropic API 生成，逐行写出模型 id，使用者自行负责遵守 Anthropic 的条款；不把这个配置宣传为 SFT、微调或训练数据；现有 `default` 配置的 CC0 文本不变；⑤ 配置上传前 `dataset/CARD.md` 不变，卡片文本在 `dataset/CARD.model-authoring.draft.md`，上传时一并合入 | 选择 P4："P4 新数据集发到 HF"；许可证："CC0 + 来源说明" | 若 Anthropic 的条款或所有者的判断不允许以 CC0 发布模型输出，则不上传（已上传的则撤下该配置），许可证另行裁定；重跑、加模型或改 brief 数要所有者新的裁定 |
+| RM-D47 | HF 数据集 `ChanMeng666/archlang-repair-trajectories` 是否加一个新配置 `model-authoring`（真实模型按程序化 brief 一次性写 `.arch`，再由确定性工具 `fix` + `repair` 修复；生成器在 `dataset/model-authoring/`），以及其许可证 | **建，付费运行后发布到 HF**：① 费用记在 Anthropic 促销额度上，`submit` 只由所有者运行，由 `--max-usd` 封顶（按估算的上限）；② 只做一次性作答，不加多轮的模型修复轨迹（RM-D45 ⑥）；③ brief 用独立的种子 `20261115`，与两个 eval 语料及已上传的 `repair`/`authoring` 文件去重；金丝雀原样复用；seed-`20260712` 的字节不动；④ 许可证为 CC0，附来源说明：卡片写明每行回复由 Anthropic 的 Claude 模型经 Anthropic API 生成，逐行写出模型 id，使用者自行负责遵守 Anthropic 的条款；不把这个配置宣传为 SFT、微调或训练数据；现有 `default` 配置的 CC0 文本不变；⑤ 卡片文本已并入 `dataset/CARD.md`（卡片已合并；上传随后，尚未上传） | 选择 P4："P4 新数据集发到 HF"；许可证："CC0 + 来源说明" | 若 Anthropic 的条款或所有者的判断不允许以 CC0 发布模型输出，则不上传（已上传的则撤下该配置），许可证另行裁定；重跑、加模型或改 brief 数要所有者新的裁定 |
 
 ### 6.18 受托裁定：合并列车、已证明的 push、更短的运行（RM-D48，2026-11-15）
 
