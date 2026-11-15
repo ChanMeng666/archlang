@@ -54,6 +54,7 @@ import type { WallSegment } from "./geometry.js";
 import type { RWall } from "./ir.js";
 import { fmt3 } from "./num-format.js";
 import type { ParseCtx, ResolveCtx } from "./registry.js";
+import type { TailClause } from "./clause-order.js";
 
 /** Floor-to-floor height of a storey, in mm, when the plan declares none. */
 export const STOREY_HEIGHT = 3000;
@@ -174,31 +175,47 @@ export interface OpeningHeightClauses {
 }
 
 /**
- * Parse the trailing vertical clauses of a `window` / `door` / `opening` statement.
- *
- * **They come LAST, after every clause the statement already had, and `sill` precedes
- * `head`.** Both facts are grammar, not taste: the three parsers read a fixed SEQUENCE of
- * optional clauses rather than a set, so an order is what the language accepts and what
- * `arch fmt` must re-emit to stay a fixed point. Putting them last is what keeps every
- * existing statement's parse untouched.
+ * The vertical clauses of a `window` / `door` / `opening` statement, as order-free clauses
+ * (`src/clause-order.ts`) that write `out`: `sill` at `rank`, then `head` one rank later. They
+ * were the LAST clauses of the old fixed order, `sill` before `head`; {@link heightsInOrder}
+ * lays the keys out in that order again, whatever order they were written in.
  *
  * `sill` is offered only to `window`. A door's sill is the floor by definition and a cased
  * opening's is too; a clause that can only ever be written `sill 0` is a clause with
  * nothing to say.
  */
-export function parseOpeningHeights(ctx: ParseCtx, opts: { sill: boolean }): OpeningHeightClauses {
-  const out: OpeningHeightClauses = {};
-  if (opts.sill && ctx.isKeyword("sill")) {
-    const k = ctx.next();
-    out.sill = ctx.parseExpr();
-    out.sillSpan = { start: k.start, end: ctx.peek(-1).end };
-  }
-  if (ctx.isKeyword("head")) {
-    const k = ctx.next();
-    out.head = ctx.parseExpr();
-    out.headSpan = { start: k.start, end: ctx.peek(-1).end };
-  }
-  return out;
+export function openingHeightClauses(
+  ctx: ParseCtx,
+  out: OpeningHeightClauses,
+  opts: { sill: boolean },
+  rank: number,
+): TailClause[] {
+  const clause = (word: "sill" | "head", r: number): TailClause => ({
+    word,
+    rank: r,
+    read(keep) {
+      const k = ctx.next();
+      const v = ctx.parseExpr();
+      if (!keep) return;
+      const span = { start: k.start, end: ctx.peek(-1).end };
+      if (word === "sill") {
+        out.sill = v;
+        out.sillSpan = span;
+      } else {
+        out.head = v;
+        out.headSpan = span;
+      }
+    },
+  });
+  return opts.sill ? [clause("sill", rank), clause("head", rank + 1)] : [clause("head", rank)];
+}
+
+/** `h`'s keys in the old order (`sill`, `sillSpan`, `head`, `headSpan`), the absent ones left out. */
+export function heightsInOrder(h: OpeningHeightClauses): OpeningHeightClauses {
+  return {
+    ...(h.sill !== undefined ? { sill: h.sill, sillSpan: h.sillSpan } : {}),
+    ...(h.head !== undefined ? { head: h.head, headSpan: h.headSpan } : {}),
+  };
 }
 
 /**

@@ -202,8 +202,10 @@ suite("the clause in the grammar", () => {
   });
 
   it("is written once: a repeat is not a second clause", () => {
+    // Since card CO-1 a repeated clause is `E_DUP_CLAUSE`, reported and read past, not an E_PARSE.
     const out = compile(plan("furniture sofa_l at (500,500) size 2600x1600 mirror mirror"));
-    expect(out.diagnostics.some((d) => d.code === "E_PARSE")).toBe(true);
+    expect(out.diagnostics.filter((d) => d.code === "E_DUP_CLAUSE")).toHaveLength(1);
+    expect(out.diagnostics.some((d) => d.code === "E_PARSE")).toBe(false);
   });
 
   it("the parse stage records it only when written", () => {

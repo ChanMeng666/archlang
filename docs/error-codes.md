@@ -5,7 +5,7 @@
 Every diagnostic carries a stable code. Look one up with `arch explain <CODE>`
 (e.g. `arch explain E_ROOM_SIZE`). Errors abort rendering; warnings do not.
 
-**166 errors** · **103 warnings**
+**167 errors** · **103 warnings**
 
 | Code | Severity | Summary |
 | --- | --- | --- |
@@ -33,6 +33,7 @@ Every diagnostic carries a stable code. Look one up with `arch explain <CODE>`
 | [`E_DOOR_WIDTH`](#e_door_width) | error | Door must have a positive width. |
 | [`E_DOTTED_DECL`](#e_dotted_decl) | error | A dotted name cannot be declared. |
 | [`E_DRAWING_LIMIT`](#e_drawing_limit) | error | The drawing is larger than any plan may draw. |
+| [`E_DUP_CLAUSE`](#e_dup_clause) | error | A statement writes the same clause twice. |
 | [`E_DUP_ID`](#e_dup_id) | error | Duplicate element id. |
 | [`E_DUP_INSTANCE`](#e_dup_instance) | error | Duplicate `place … as <name>` instance name. |
 | [`E_ELEMENT_LIMIT`](#e_element_limit) | error | The plan expands to too many elements. |
@@ -574,6 +575,18 @@ room id=main at (0,0) size 3000x3000   # then, in the plan: furniture bed in wes
 
 ```arch static
 for i in 0..200 { escalator at (0, i * 2000) size 300000x1200 dir up }   # error: 429,800 units
+```
+
+## E_DUP_CLAUSE
+
+*error* — A statement writes the same clause twice.
+
+**Cause.** The clauses after a statement's placement (`size`, `label`, `rotate`, `width`, `hinge`, …) may come in any order, but each at most once, and `id=` once whether it stands before or after the kind word. A second copy would leave one of the two values silently unread, so it is refused; the first is kept and the statement still parses.
+
+**Fix.** Delete one of the two clauses; the related span marks the first.
+
+```arch static
+furniture bed at (500,500) size 1500x2000 label "Bed" size 1600x2000   # error: `size` twice
 ```
 
 ## E_DUP_ID
@@ -1555,9 +1568,9 @@ stair id=s at (0,0) size 1000000000000x3000 dir up   # error: a 1e12 mm flight
 
 *error* — The source could not be read: its SHAPE is wrong.
 
-**Cause.** The lexer or the parser could not make a statement out of the bytes at this span — a missing or misspelled keyword, a value where a keyword belongs, an unterminated string, an unbalanced brace, clauses written in the wrong order, or blocks and expressions nested past the parser's limit (256 levels — far beyond any real plan; the deeper block is skipped, not read). It is the one code that says nothing about what the plan MEANS: resolution never ran here, so no measurement, no geometry and no soundness rule had a chance to speak.
+**Cause.** The lexer or the parser could not make a statement out of the bytes at this span — a missing or misspelled keyword, a value where a keyword belongs, an unterminated string, an unbalanced brace, a clause written before the placement it follows, or blocks and expressions nested past the parser's limit (256 levels — far beyond any real plan; the deeper block is skipped, not read). It is the one code that says nothing about what the plan MEANS: resolution never ran here, so no measurement, no geometry and no soundness rule had a chance to speak.
 
-**Fix.** Read the message: it names what was expected and what was found, at a byte span. Compare the statement against `archlang spec`'s one line for that keyword — clause ORDER is part of the grammar, not a suggestion. Unlike every other code in this catalog, there is no machine-applicable fix to apply, because the compiler has no reading of the text to correct.
+**Fix.** Read the message: it names what was expected and what was found, at a byte span. Compare the statement against `archlang spec`'s one line for that keyword: the placement comes first, and the clauses after it in any order. Unlike every other code in this catalog, there is no machine-applicable fix to apply, because the compiler has no reading of the text to correct.
 
 ```arch static
 door on w1 at 40% width 900 wall w1   # error: `wall` pairs with the `at (x,y)` form only

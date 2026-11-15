@@ -1,5 +1,6 @@
 /**
- * `furniture <category> [id=] at (x,y) size WxH [label "…"]` — outlined fill + label.
+ * `furniture [id=] <category> [id=] at (x,y) size WxH [label "…"]` — outlined fill + label; the
+ * clauses after the placement come in any order (`src/clause-order.ts`).
  *
  * Step meter (`MAX_EVAL_STEPS`, `src/expr.ts`): the wall searches are charged before they read,
  * per wall and wall point scanned (`anchor`, `against`, an edge against the walls), the copy of
@@ -47,6 +48,7 @@ import {
 } from "../fixture-orientation.js";
 import { mod360 } from "../algebra/d4.js";
 import { DEFAULT_THEME } from "../theme.js";
+import { idAfterKind, parseIdWithSpan, readClauses } from "../clause-order.js";
 
 /** Canonical pens for counting a glyph's primitives: a count never depends on the pens, so
  *  any will do. A literal, so the element layer stays out of the sheet layer's load graph. */
@@ -95,14 +97,17 @@ export const furniture: ElementDef = {
 
   parse(ctx: ParseCtx): FurnitureNode {
     const kw = ctx.eatKeyword("furniture");
-    const id = ctx.parseIdOpt();
+    const lead = parseIdWithSpan(ctx);
     const category = ctx.eatIdent().value;
+    const id = idAfterKind(ctx, "furniture", lead.id, lead.idSpan);
     // Position: absolute `at (x,y)`, wall-anchored `against wall <id> …`, or
     // room-relative `in <room> centered|anchor …`.
     let at: FurnitureNode["at"];
     let against: FurnitureNode["against"];
     let place: FurnitureNode["place"];
     let room: string | undefined;
+    /** The `in <room>` of a room-relative placement: a trailing `in` says it again. */
+    let roomSpan: Span | undefined;
     let againstEdge: FurnitureAgainstEdge | undefined;
     if (ctx.isKeyword("against") && !ctx.isKeyword("wall", 1)) {
       // `against <room>.<edge> [offset <mm>]` (ADR 0028 §5a, ADR 0029 §2): the edge is read
@@ -143,8 +148,10 @@ export const furniture: ElementDef = {
       // room both positions and owns the fixture. `flush` comes before `inset`
       // because it re-bases it (room centerline → wall face), and the canonical
       // order is what the formatter emits.
-      ctx.next();
-      room = ctx.eatIdent().value;
+      const inTok = ctx.next();
+      const roomTok = ctx.eatIdent();
+      room = roomTok.value;
+      roomSpan = { start: inTok.start, end: roomTok.end };
       if (ctx.isKeyword("centered")) {
         ctx.next();
         // A centred piece is anchored to no edge, so `flush` has nothing to be
@@ -173,18 +180,125 @@ export const furniture: ElementDef = {
       ctx.eatKeyword("at");
       at = ctx.parsePoint();
     }
+    const placeEnd = ctx.peek(-1).end;
+    // The clauses after the placement, in any order, each once (`src/clause-order.ts`). Each is
+    // read into its own slot and the node is built after, in the order the grammar used to
+    // require, so a plan written in that order has the tree, keys in order, it always had.
     // `size` is optional only for an `against wall` fixture with a catalogued default
     // footprint; resolve enforces that and errors otherwise.
     let size: FurnitureNode["size"];
     let sizeSpan: Span | undefined;
     let sizeValueSpan: Span | undefined;
-    if (ctx.isKeyword("size")) {
-      ctx.next();
-      const sizeStart = ctx.peek().start;
-      if (ctx.isType("dimension")) sizeSpan = { start: sizeStart, end: ctx.peek().end };
-      size = ctx.parseDimensions();
-      sizeValueSpan = ctx.spanFrom(sizeStart);
-    }
+    let label: FurnitureNode["label"];
+    /** Where each of `size` and `label` ends: the `rotate` insertion point is the later. */
+    let sizeEnd = placeEnd;
+    let labelEnd = placeEnd;
+    // `rotate` and `facing` (ADR 0029 §3) both state the turn. Either order parses, and the
+    // pair parses too, so resolve can refuse it with a span (`E_FACING_CONFLICT`). `mirror` stands
+    // among them: it says nothing about the turn. Their keys land in the order they were written.
+    const turn: Pick<FurnitureNode, "mirror" | "rotate" | "rotateSpan" | "facing"> = {};
+    let clear: FurnitureClear | undefined;
+    let trailingRoom: string | undefined;
+    readClauses(ctx, "furniture", [
+      {
+        word: "size",
+        rank: 1,
+        read(keep) {
+          ctx.next();
+          const sizeStart = ctx.peek().start;
+          const dimSpan = ctx.isType("dimension") ? { start: sizeStart, end: ctx.peek().end } : undefined;
+          const v = ctx.parseDimensions();
+          if (!keep) return;
+          size = v;
+          sizeSpan = dimSpan;
+          sizeValueSpan = ctx.spanFrom(sizeStart);
+          sizeEnd = sizeValueSpan.end;
+        },
+      },
+      {
+        word: "label",
+        rank: 2,
+        read(keep) {
+          ctx.next();
+          const v = ctx.parseStringExpr();
+          if (!keep) return;
+          label = v;
+          labelEnd = ctx.peek(-1).end;
+        },
+      },
+      {
+        word: "mirror",
+        rank: 3,
+        at: () => isMirrorClause(ctx),
+        read(keep) {
+          const m = ctx.next();
+          if (keep) turn.mirror = true;
+          const axis = ctx.peek();
+          if ((ctx.isKeyword("x") || ctx.isKeyword("y")) && axis.line === m.line && ctx.peek(1).type !== "equals")
+            ctx.fail(
+              `\`mirror\` on a piece takes no axis: it swaps the piece's left and right and its back stays. \`place … mirror x|y\` reflects a whole instance`,
+              axis,
+            );
+        },
+      },
+      {
+        word: "rotate",
+        rank: 3,
+        read(keep) {
+          const rotKw = ctx.next();
+          const v = ctx.parseExpr();
+          if (!keep) return;
+          turn.rotate = v;
+          turn.rotateSpan = { start: rotKw.start, end: ctx.peek(-1).end };
+        },
+      },
+      {
+        word: "facing",
+        rank: 3,
+        read(keep) {
+          const kw = ctx.next();
+          const t = ctx.eatIdent();
+          if (keep) turn.facing = { target: t.value, span: { start: kw.start, end: t.end } };
+        },
+      },
+      {
+        // `clear front <mm>` / `clear sides <mm>` (ADR 0029 §4): declarations, each at most once,
+        // a repeat recorded for resolve (`dupSpan`).
+        word: "clear",
+        rank: 4,
+        repeats: true,
+        read() {
+          const kw = ctx.next();
+          const z = ctx.eatIdent();
+          if (z.value !== "front" && z.value !== "sides")
+            ctx.fail(`Expected \`front\` or \`sides\` after \`clear\` but found "${z.value}"`, z);
+          const v = ctx.parseExpr();
+          const span = { start: kw.start, end: ctx.peek(-1).end };
+          const c: FurnitureClear = clear ?? {};
+          if (c[z.value] !== undefined) c.dupSpan ??= span;
+          else if (z.value === "front") {
+            c.front = v;
+            c.frontSpan = span;
+          } else {
+            c.sides = v;
+            c.sidesSpan = span;
+          }
+          clear = c;
+        },
+      },
+      {
+        // Optional trailing `in <roomId>` — declare the owning room (for the absolute
+        // `at`/`against` forms; the room-relative form already set it above).
+        word: "in",
+        rank: 5,
+        ...(roomSpan ? { given: roomSpan } : {}),
+        read(keep) {
+          ctx.next();
+          const r = ctx.eatIdent().value;
+          if (keep) trailingRoom = r;
+        },
+      },
+    ]);
     const node: FurnitureNode = {
       kind: "furniture",
       id,
@@ -199,64 +313,18 @@ export const furniture: ElementDef = {
       ...(sizeValueSpan ? { sizeValueSpan } : {}),
       line: kw.line,
     };
-    if (ctx.isKeyword("label")) {
-      ctx.next();
-      node.label = ctx.parseStringExpr();
+    if (label !== undefined) node.label = label;
+    Object.assign(node, turn);
+    // `rotate <0|90|180|270>` quarter-turns the drawn symbol. Its byte span, or the zero-width
+    // point where one could be inserted (the end of the placement, `size` or `label`, whichever
+    // is later), is recorded on the node so an orientation fix can rewrite the clause; see
+    // FurnitureNode.rotateSpan.
+    if (node.rotateSpan === undefined) {
+      const rotateAt = Math.max(sizeEnd, labelEnd);
+      node.rotateSpan = { start: rotateAt, end: rotateAt };
     }
-    // Optional `rotate <0|90|180|270>` — quarter-turn the drawn symbol. Its byte
-    // span (or the zero-width point where one could be inserted, which is HERE —
-    // before the trailing `in <room>` the grammar puts last) is recorded on the node
-    // so an orientation fix can rewrite the clause; see FurnitureNode.rotateSpan.
-    const rotateAt = ctx.peek(-1).end;
-    // `rotate` and `facing` (ADR 0029 §3) both state the turn. Either order parses, and the
-    // pair parses too, so resolve can refuse it with a span (`E_FACING_CONFLICT`). `mirror` stands
-    // among them in any order: it says nothing about the turn.
-    for (let k = 0; k < 3; k++) {
-      if (node.mirror === undefined && isMirrorClause(ctx)) {
-        const m = ctx.next();
-        node.mirror = true;
-        const axis = ctx.peek();
-        if ((ctx.isKeyword("x") || ctx.isKeyword("y")) && axis.line === m.line && ctx.peek(1).type !== "equals")
-          ctx.fail(
-            `\`mirror\` on a piece takes no axis: it swaps the piece's left and right and its back stays. \`place … mirror x|y\` reflects a whole instance`,
-            axis,
-          );
-      } else if (node.rotate === undefined && ctx.isKeyword("rotate")) {
-        const rotKw = ctx.next();
-        node.rotate = ctx.parseExpr();
-        node.rotateSpan = { start: rotKw.start, end: ctx.peek(-1).end };
-      } else if (node.facing === undefined && ctx.isKeyword("facing")) {
-        const kw = ctx.next();
-        const t = ctx.eatIdent();
-        node.facing = { target: t.value, span: { start: kw.start, end: t.end } };
-      }
-    }
-    if (node.rotateSpan === undefined) node.rotateSpan = { start: rotateAt, end: rotateAt };
-    // `clear front <mm>` / `clear sides <mm>` (ADR 0029 §4): declarations, each at most once.
-    while (ctx.isKeyword("clear")) {
-      const kw = ctx.next();
-      const z = ctx.eatIdent();
-      if (z.value !== "front" && z.value !== "sides")
-        ctx.fail(`Expected \`front\` or \`sides\` after \`clear\` but found "${z.value}"`, z);
-      const v = ctx.parseExpr();
-      const span = { start: kw.start, end: ctx.peek(-1).end };
-      const c: FurnitureClear = node.clear ?? {};
-      if (c[z.value] !== undefined) c.dupSpan ??= span;
-      else if (z.value === "front") {
-        c.front = v;
-        c.frontSpan = span;
-      } else {
-        c.sides = v;
-        c.sidesSpan = span;
-      }
-      node.clear = c;
-    }
-    // Optional trailing `in <roomId>` — declare the owning room (for the absolute
-    // `at`/`against` forms; the room-relative form already set it above).
-    if (node.room === undefined && ctx.isKeyword("in")) {
-      ctx.next();
-      node.room = ctx.eatIdent().value;
-    }
+    if (clear) node.clear = clear;
+    if (node.room === undefined && trailingRoom !== undefined) node.room = trailingRoom;
     return node;
   },
 

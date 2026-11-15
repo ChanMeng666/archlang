@@ -20,6 +20,7 @@ import type { Diagnostic, FixSuggestion, Span } from "./diagnostics.js";
 import type { Expr, ParseExprOpts } from "./expr.js";
 import { chargeSteps } from "./expr.js";
 import type { ParseCtx, ResolveCtx } from "./registry.js";
+import type { TailClause } from "./clause-order.js";
 import type { WallLike, WallSegment } from "./geometry.js";
 import { segmentLength, segmentPointAlong, segmentsOfWall } from "./geometry.js";
 import type { OpeningRelation, WindowCorner } from "./ir.js";
@@ -197,6 +198,35 @@ export function parseAttachTarget(
   const start = ctx.peek().start;
   const at = ctx.parsePoint();
   return { at, atSpan: ctx.spanFrom(start) };
+}
+
+/**
+ * The `wall <id|category>` clause of an opening placed `at (x,y)`, as an order-free clause
+ * (`src/clause-order.ts`). `wall` is also a statement keyword, and a `wall` statement reads
+ * `wall [id=<name>] <category> [id=<name>] thickness <expr>`, so out of the old order the word
+ * begins one exactly where that shape can be read: `id=<name>` right after it, or a category
+ * then (past any `id=<name>`) a `thickness` that no `=` follows. Anything else is the clause, and
+ * the words after it stay what they were (`wall w1` then `id = 2` or `thickness = 3` on the next
+ * line: an assignment, which a `wall` statement could never have read). No name after the word
+ * reads as a statement too, since the clause would need one.
+ */
+export function wallClause(ctx: ParseCtx, rank: number, set: (ref: string) => void): TailClause {
+  const idAt = (o: number): boolean =>
+    ctx.isKeyword("id", o) && ctx.peek(o + 1).type === "equals" && ctx.peek(o + 2).type === "ident";
+  return {
+    word: "wall",
+    rank,
+    startsStatement: () => {
+      if (ctx.peek(1).type !== "ident" || idAt(1)) return true;
+      const t = idAt(2) ? 5 : 2;
+      return ctx.isKeyword("thickness", t) && ctx.peek(t + 1).type !== "equals";
+    },
+    read(keep) {
+      ctx.next();
+      const ref = ctx.eatIdent().value;
+      if (keep) set(ref);
+    },
+  };
 }
 
 /**

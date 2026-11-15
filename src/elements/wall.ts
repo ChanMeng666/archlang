@@ -5,6 +5,7 @@ import type { Span } from "../diagnostics.js";
 import { heightRangeDiagnostic, isDrawableHeight } from "../datum.js";
 import { ARC_DIRS } from "../ast.js";
 import type { ElementDef, ParseCtx, RenderCtx, ResolveCtx, TransformCtx } from "../registry.js";
+import { idAfterKind, parseIdWithSpan } from "../clause-order.js";
 import type { SceneNode } from "../scene.js";
 import type { RWall } from "../ir.js";
 import { segmentFaceExtremes, segmentsOfWall } from "../geometry.js";
@@ -47,8 +48,10 @@ export const wall: ElementDef = {
 
   parse(ctx: ParseCtx): WallNode {
     const kw = ctx.eatKeyword("wall");
-    const id = ctx.parseIdOpt();
+    const lead = parseIdWithSpan(ctx);
     const category = ctx.eatIdent().value;
+    // An `id=` may follow the category too (`wall exterior id=w1 …`).
+    const id = idAfterKind(ctx, "wall", lead.id, lead.idSpan);
     ctx.eatKeyword("thickness");
     const thicknessStart = ctx.peek().start;
     const thickness = ctx.parseExpr();

@@ -15,9 +15,17 @@ import type { RenderSizes } from "../scene.js";
 import type { Theme } from "../theme.js";
 import { add, mul, nearestWallNote, normal, segmentDirAt, wallFaceProbes } from "../geometry.js";
 import type { WallSegment } from "../geometry.js";
-import { eatEnumValue, parseAttachTarget, resolveOpeningLead } from "../attach.js";
+import { eatEnumValue, parseAttachTarget, resolveOpeningLead, wallClause } from "../attach.js";
+import { idAfterKind, missingClause, parseIdWithSpan, readClauses } from "../clause-order.js";
 import { fixesFrom, offWallFix, openingWidthFix, windowKindClauseFix } from "../fix-producers.js";
-import { parseOpeningHeights, resolveOpeningHeights, WINDOW_HEAD, WINDOW_SILL } from "../datum.js";
+import {
+  heightsInOrder,
+  type OpeningHeightClauses,
+  openingHeightClauses,
+  resolveOpeningHeights,
+  WINDOW_HEAD,
+  WINDOW_SILL,
+} from "../datum.js";
 import { chargeSteps } from "../expr.js";
 import { DOOR_ENUMS, WINDOW_KIND_HINGED, WINDOW_KINDS, type WindowKind } from "../grammar/tokens.js";
 import { sameSeg } from "../opening-junctions.js";
@@ -349,14 +357,45 @@ export const windowEl: ElementDef = {
 
   parse(ctx: ParseCtx): WindowNode {
     const kw = ctx.eatKeyword("window");
-    const id = ctx.parseIdOpt();
+    const lead = parseIdWithSpan(ctx);
     // A bare KIND word may lead, after any `id=`, as on a `door`. The only other legal leads are
     // `at` and `on`, neither of them a kind, so a lookahead against the closed table decides it.
+    // An `id=` may follow the kind word too (`window casement id=w1 …`).
     const windowKind = WINDOW_KINDS.find((k) => ctx.isKeyword(k));
     if (windowKind) ctx.next();
+    const id = windowKind ? idAfterKind(ctx, "window", lead.id, lead.idSpan) : lead.id;
     const { at, attach } = parseAttachTarget(ctx);
-    ctx.eatKeyword("width");
-    const width = ctx.parseExpr();
+    // The clauses after the placement, in any order, each once (`src/clause-order.ts`), laid
+    // out after in the old order, so a window written in that order keeps its tree.
+    let width: WindowNode["width"] | undefined;
+    const wall: Pick<WindowNode, "wall"> = {};
+    const hinge: Pick<WindowNode, "hinge"> = {};
+    const heights: OpeningHeightClauses = {};
+    readClauses(ctx, "window", [
+      {
+        word: "width",
+        rank: 1,
+        required: true,
+        read(keep) {
+          ctx.next();
+          const v = ctx.parseExpr();
+          if (keep) width = v;
+        },
+      },
+      ...(at ? [wallClause(ctx, 2, (ref) => (wall.wall = ref))] : []),
+      {
+        word: "hinge",
+        rank: 3,
+        read(keep) {
+          ctx.next();
+          const v = eatEnumValue(ctx, DOOR_ENUMS.hinge, "hinge");
+          if (keep) hinge.hinge = v;
+        },
+      },
+      // The vertical datum: `sill` then `head`, last in the old order.
+      ...openingHeightClauses(ctx, heights, { sill: true }, 4),
+    ]);
+    if (width === undefined) missingClause(ctx, { what: "window", id, start: kw.start }, "width", "width <mm>");
     const node: WindowNode = {
       kind: "window",
       id,
@@ -366,16 +405,7 @@ export const windowEl: ElementDef = {
       ...(at ? { at } : {}),
       ...(attach ? { attach } : {}),
     };
-    if (at && ctx.isKeyword("wall")) {
-      ctx.next();
-      node.wall = ctx.eatIdent().value;
-    }
-    if (ctx.isKeyword("hinge")) {
-      ctx.next();
-      node.hinge = eatEnumValue(ctx, DOOR_ENUMS.hinge, "hinge");
-    }
-    // The vertical datum: `sill` then `head`, both trailing every existing clause.
-    Object.assign(node, parseOpeningHeights(ctx, { sill: true }));
+    Object.assign(node, wall, hinge, heightsInOrder(heights));
     return node;
   },
 

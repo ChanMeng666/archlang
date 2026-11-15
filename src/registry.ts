@@ -56,6 +56,10 @@ export interface ParseCtx {
   spanFrom(start: number): Span;
   /** Report a fatal parse error at `t` (defaults to the current token); never returns. */
   fail(msg: string, t?: Token): never;
+  /** {@link fail} reported at `span` (a whole statement), with the current token's hints. */
+  failAt(msg: string, span: Span): never;
+  /** Report a catalogued diagnostic and keep parsing (a duplicate clause, `E_DUP_CLAUSE`). */
+  diag(d: Diagnostic): void;
 }
 
 /** Semantic-analysis facade handed to `ElementDef.resolve`. */

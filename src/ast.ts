@@ -453,7 +453,8 @@ export interface DoorNode extends NodeBase {
   slide?: DoorSlideDir;
   /**
    * Byte span of the authored `slide` clause, or the zero-width point where one can
-   * be inserted (always before the trailing `open`, which the grammar puts last) —
+   * be inserted (the end of the placement or of `width`/`wall`/`hinge`/`swing`, whichever is
+   * latest: a clause boundary, so the inserted clause parses in any order) —
    * the `fixtureRotateFix` precedent, so `W_POCKET_RUN`'s reverse-slide fix can
    * rewrite exactly that clause instead of the whole statement.
    */
@@ -630,8 +631,8 @@ export interface FurnitureNode extends NodeBase {
   /**
    * Byte span the `rotate` clause occupies in the ORIGINAL source — the authored
    * `rotate <expr>` run, or the **zero-width** point where one can be inserted
-   * (`start === end`, always *before* the optional trailing `in <room>`, which the
-   * grammar requires to come last). Recorded by the parser purely so a diagnostic
+   * (`start === end`, the end of the placement, `size` or `label`, whichever is later: a
+   * clause boundary, so the inserted clause parses in any order). Recorded by the parser purely so a diagnostic
    * fix can rewrite the fixture's orientation with correct offsets
    * ({@link import("../fix-producers.js").fixtureRotateFix}); it carries no
    * semantics and never affects output.

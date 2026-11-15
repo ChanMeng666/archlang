@@ -409,8 +409,18 @@ const AGREEMENT: [string, string][] = [
   ["window on at arithmetic", P(`  let bay = 1200\n  window on w1 at bay + 300 width 900`)],
   ["opening on at arithmetic", P(`  let bay = 1200\n  opening on w1 at bay + 300 width 900`)],
   ["for-generated run of openings", P(`  for i in 0..3 { door on w1 at 900 * i + 600 width 800 }`)],
-  // —— door clauses are a fixed SEQUENCE, not a set ————————————————————
+  // —— door clauses: any order, each once (card CO-1; a repeat is E_DUP_CLAUSE, which parses) ——
   ["door clauses in order", P(`  door at (2500,0) width 900 wall w1 hinge left swing in`)],
+  ["door width last", P(`  door at (2500,0) hinge left wall w1 width 900`)],
+  ["door no width", P(`  door at (2500,0) hinge left wall w1`)],
+  ["door wall after an on-placement, reordered", P(`  door on w1 at 50% hinge left wall w1 width 900`)],
+  ["door kind then id=", P(`  door pocket id=d1 on w1 at 50% width 900`)],
+  ["door id= twice around the kind", P(`  door id=d0 pocket id=d1 on w1 at 50% width 900`)],
+  ["door id= twice, no kind", P(`  door id=d0 id=d1 on w1 at 50% width 900`)],
+  [
+    "door then a wall statement with a post-kind id",
+    P(`  door at (2500,0) width 900 hinge left\n  wall partition id=w9 thickness 100 { (0,2000) (5000,2000) }`),
+  ],
   ["door swing before hinge", P(`  door at (2500,0) width 900 swing in hinge left`)],
   ["door hinge twice", P(`  door at (2500,0) width 900 hinge left hinge right`)],
   ["door wall after hinge", P(`  door at (2500,0) width 900 hinge left wall w1`)],
@@ -418,8 +428,15 @@ const AGREEMENT: [string, string][] = [
   ["door slide then open", P(`  door sliding on w1 at 50% width 900 slide left open 0.5`)],
   ["door hinge near / swing into", P(`  door at (2500,0) width 900 hinge near start swing into r1`)],
   ["door pocket + hinge (E_ not parse)", P(`  door pocket on w1 at 50% width 900 hinge left`)],
-  // —— furniture: fixed clause order, and one `in` only ————————————————
+  // —— furniture: any order; a second `in` is a repeat (E_DUP_CLAUSE, which parses) ——————
   ["furn size,label,rotate,in", P(`  furniture id=f bed at (1000,1000) size 1000x2000 label "b" rotate 90 in r1`)],
+  ["furn category then id=", P(`  furniture bed id=f at (1000,1000) size 1000x2000`)],
+  ["furn id= twice after the category", P(`  furniture bed id=a id=b at (1000,1000) size 1000x2000`)],
+  ["furn clauses before the placement", P(`  furniture id=f bed size 1000x2000 at (1000,1000)`)],
+  [
+    "furn mirror, facing, clear, label",
+    P(`  furniture id=f sofa at (1000,1000) mirror facing r1 clear front 600 label "s" size 2000x900`),
+  ],
   ["furn label before size", P(`  furniture id=f bed at (1000,1000) label "b" size 1000x2000`)],
   ["furn in before rotate", P(`  furniture id=f bed at (1000,1000) size 1000x2000 in r1 rotate 90`)],
   ["furn size twice", P(`  furniture id=f bed at (1000,1000) size 1000x2000 size 900x900`)],
@@ -439,6 +456,15 @@ const AGREEMENT: [string, string][] = [
   ["room polygon label at", P(`  room id=r2 polygon (6000,0) (7000,0) (7000,1000) label "x" at (6500,500)`)],
   ["room circle + uses", P(`  room id=r2 circle at (9000,0) radius 1000 uses living`)],
   ["room uses before label", P(`  room id=r2 at (6000,0) size 1000x1000 uses living label "x"`)],
+  ["room size last", P(`  room id=r2 at (6000,0) floor tile label "x" uses living size 1000x1000`)],
+  ["room no size", P(`  room id=r2 at (6000,0) label "x" uses living`)],
+  ["room polygon then size", P(`  room id=r2 polygon (6000,0) (7000,0) (7000,1000) size 1000x1000`)],
+  ["room label twice", P(`  room id=r2 at (6000,0) size 1000x1000 label "x" label "y"`)],
+  [
+    "strip room clauses reordered, floor",
+    P(`  strip right at (0,6000) gap 0 height 3000 { room floor tile uses living label "A" size 3000 }`),
+  ],
+  ["strip room no size", P(`  strip right at (0,6000) gap 0 height 3000 { room label "A" }`)],
   ["room uses garage", P(`  room id=r2 at (6000,0) size 1000x1000 uses garage`)],
   ["room relational align/gap", P(`  room id=r2 right-of r1 align top gap 100 size 1000x1000`)],
   ["room relational gap before align", P(`  room id=r2 right-of r1 gap 100 align top size 1000x1000`)],
@@ -538,10 +564,9 @@ const AGREEMENT: [string, string][] = [
   ["void size before at", P(`  void size 2000x2000 at (1000,1000)`)],
   // —— the vertical datum: one setting, three clause sites, two opening clauses ————
   //
-  // The negatives are the ORDER, which is the half a grammar most easily gets wrong: the
-  // three parsers read a fixed SEQUENCE of optional clauses, so `head` before `sill` and
-  // a height clause before the one it must follow are parse errors, not re-orderings. A
-  // grammar that offered them would hand a constrained decoder output the parser refuses.
+  // On the three openings the height clauses are clauses like any other since card CO-1, in
+  // any order after the placement; a `sill` is still a window's alone, and on a wall or a
+  // level header the order stays fixed, so the negatives there are the order.
   ["height setting", P(`  height 3000`)],
   ["height setting, expression", P(`  let h = 3200\n  height h * 1`)],
   ["wall height clause", `plan "p" {\n  wall w thickness 200 height 2400 { (0,0) (100,0) }\n}\n`],
@@ -557,12 +582,20 @@ const AGREEMENT: [string, string][] = [
   ["opening head", P(`  opening on w1 at 50% width 1000 head 2400`)],
   ["door head after open", P(`  door sliding on w1 at 50% width 900 slide left open 0.5 head 2100`)],
   ["door head after swing", P(`  door on w1 at 50% width 900 hinge left swing in head 2100`)],
-  // …and the shapes neither the parser nor a decoder may produce.
+  // Reordered since card CO-1, so these parse too…
   ["window head before sill", P(`  window on w1 at 50% width 1200 head 2100 sill 900`)],
   ["window sill before width", P(`  window on w1 at 50% sill 900 width 1200`)],
+  ["door head before hinge", P(`  door on w1 at 50% width 900 head 2100 hinge left`)],
+  ["window kind then id=", P(`  window casement id=w9 on w1 at 50% width 1200 hinge left`)],
+  ["opening head before width, at-form wall", P(`  opening at (2500,0) head 2100 wall w1 width 900`)],
+  [
+    "window at-form, then a wall statement",
+    P(`  window at (2500,0) width 900 sill 900\n  wall partition id=w9 thickness 100 { (0,2000) (5000,2000) }`),
+  ],
+  // …and the shapes neither the parser nor a decoder may produce.
   ["door sill", P(`  door on w1 at 50% width 900 sill 0`)],
   ["opening sill", P(`  opening on w1 at 50% width 1000 sill 0`)],
-  ["door head before hinge", P(`  door on w1 at 50% width 900 head 2100 hinge left`)],
+  ["window no width", P(`  window on w1 at 50% sill 900`)],
   ["wall height after the body", `plan "p" {\n  wall w thickness 200 { (0,0) (100,0) } height 2400\n}\n`],
   ["level height after the block", `plan "p" {\n  level 1 { room at (0,0) size 100x100 } height 3600\n}\n`],
   ["height setting, no value", P(`  height`)],
@@ -574,9 +607,12 @@ const AGREEMENT: [string, string][] = [
   ["outdoor balcony + rail commas", P(`  outdoor balcony at (0,0) size 4000x1600 rail top, left`)],
   ["outdoor balcony + rail all", P(`  outdoor balcony at (0,0) size 4000x1600 rail all`)],
   ["outdoor label + rail, in order", P(`  outdoor balcony at (0,0) size 4000x1600 label "B" rail none`)],
+  ["outdoor rail before label", P(`  outdoor balcony at (0,0) size 4000x1600 rail all label "B"`)],
+  ["outdoor size last, id= after the kind", P(`  outdoor balcony id=b at (0,0) rail all label "B" size 4000x1600`)],
   // …and the shapes neither the parser nor a decoder may produce.
   ["outdoor no kind", P(`  outdoor at (0,0) size 8000x6000`)],
-  ["outdoor rail before label", P(`  outdoor balcony at (0,0) size 4000x1600 rail all label "B"`)],
+  ["outdoor rect, no size", P(`  outdoor lawn at (0,0) label "G"`)],
+  ["outdoor polygon then size", P(`  outdoor lawn polygon (0,0) (4000,0) (4000,3000) size 1x1`)],
   ["outdoor rect + polygon", P(`  outdoor lawn at (0,0) size 8000x6000 polygon (0,0) (1,0) (0,1)`)],
   ["outdoor polygon, two points", P(`  outdoor lawn polygon (0,0) (9000,0)`)],
   ["outdoor rail, no edge", P(`  outdoor balcony at (0,0) size 4000x1600 rail`)],
@@ -651,6 +687,16 @@ const DIVERGENT: [string, string, string][] = [
       "but integrality is a property of the value AFTER the lexer folds a unit suffix: " +
       "`level 1.5` is an error and `level 0.5cm` (= 5) is not. No context-free rule can " +
       "separate them; a `digits`-only rule would reject `level 1.0`, which is valid.",
+  ],
+  [
+    "furn size (…) out of the old clause order",
+    P(`  furniture id=f bed at (1000,1000) label "b" size (1000) x 2000`),
+    "NOT EXPRESSIBLE without the old order (card CO-1). Out of a statement's old clause order, " +
+      "a clause word followed by `(` reads as a component call, as it always did, so `size (1000)` " +
+      "after `label` is the call `size(1000)` and the `x 2000` after it is a parse error; in the old " +
+      "order, `size (1000) x 2000` is the clause. The grammar reads clauses as an order-free set, " +
+      "and telling the two apart would need a state per old rank. Spec and reference say: drop the " +
+      "parentheses or keep the old order.",
   ],
 ];
 

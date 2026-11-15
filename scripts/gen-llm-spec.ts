@@ -64,6 +64,7 @@ import { AUTO_SCALE_DENOMINATORS, PAPER_ORIENTATIONS, PAPER_SIZES } from "../src
 // retyped into a document that describes the language is exactly the drift `check:drift`
 // cannot see (v1.26's finding, and the reason this file interpolates every closed set).
 import { DOOR_HEAD, MAX_HEIGHT, STOREY_HEIGHT, WINDOW_HEAD, WINDOW_SILL } from "../src/datum.js";
+import { ID_AFTER_KIND_STATEMENTS, ORDER_FREE_STATEMENTS } from "../src/clause-order.js";
 import { COMPASS_DATUM_ALIASES, DATUM_WORDS } from "../src/room-datums.js";
 
 /** The auto-fit scale ladder as the spec prints it (`1:50 / 1:100 / …`). */
@@ -744,7 +745,7 @@ a \`fix\`).
 4. **Doors and windows must lie ON a wall segment** (on its centerline), or you get a
    \`W_DOOR_OFF_WALL\` / \`W_WINDOW_OFF_WALL\` warning. Host them by rooms (below) or \`on <wall> at <pos>\` — hosted by construction.
 5. **String interpolation is \`"{expr}"\`** inside double quotes.
-6. **\`id=\` comes FIRST — right after the element keyword, before any category word** (\`wall exterior id=w1 …\` and \`furniture bed id=b1 …\` are parse errors). Ids are unique; omit \`id=\` to auto-generate one, and name a thing only when you reference it.
+6. **\`id=\` goes right after the element keyword, or after the kind word of ${ID_AFTER_KIND_STATEMENTS.map((k) => `\`${k}\``).join(", ")}** (\`furniture bed id=b1 …\`). Ids are unique; omit \`id=\` to auto-generate one, and name a thing only when you reference it.
 7. **Everything is expand-time and pure** — \`let\`/\`for\`/\`if\`/functions all evaluate during compile.
 
 ## Start here: rooms first
@@ -778,6 +779,8 @@ warns \`W_SCALE_OVERFLOW\` (your scale is never silently overridden). \`arch des
 reports the result as \`sheet\`. Big plan? \`paper A1\` + \`dims auto all\` is the professional default.
 
 ## Elements
+
+In ${ORDER_FREE_STATEMENTS.map((k) => `\`${k}\``).join(", ")}, the clauses after the placement come in any order, each once (E_DUP_CLAUSE); out of the order below, a value in parentheses (\`rotate (90)\`) reads as a call, so drop them.
 
 ${elementLines}
 

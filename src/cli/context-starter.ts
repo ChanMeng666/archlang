@@ -7,7 +7,7 @@
  * `test/context-starter.test.ts`); every statement it teaches is a LINE of that example, picked by
  * its first words; the relational directions are `REL_DIRS`; the `--section` names are the
  * caller's `SECTION_NAMES`. The only authored text is the prose, a few extra statements and the
- * table of the errors cold authors hit most. Every authored statement is executable: each error
+ * table of five errors and their fixes. Every authored statement is executable: each error
  * row's `bad` raises its code and its `good` compiles without an error, each sized/unsized piece
  * is run, and the sheet lines compile inside the lead plan (`test/context-starter.test.ts`), so a
  * sentence here cannot drift from the compiler. The test also pins the size (4,000 units, 60 lines,
@@ -50,15 +50,15 @@ export interface StarterError {
 }
 
 /**
- * The five errors the first-contact audits show cold authors hit most (clause order, `in … anchor`
- * without a size, a bare `at <mm>` on an edge, a relational opening's nib, an offset past the end of
- * an edge), each with the one-line fix that cleared it.
+ * Five errors, each with the one-line fix that clears it: a clause written twice (clauses come in
+ * any order, so a repeat is easy to write), `in … anchor` without a size, a bare `at <mm>` on an
+ * edge, a relational opening's nib, an offset past the end of an edge.
  */
 export const STARTER_ERRORS: readonly StarterError[] = [
   {
-    code: "E_PARSE",
-    fix: "`label` goes after `size`, before `uses`:",
-    bad: 'room id=den below bath size 2000x1500 uses office label "Den"',
+    code: "E_DUP_CLAUSE",
+    fix: "clauses come in any order, but each once:",
+    bad: 'room id=den below bath size 2000x1500 label "Den" label "Study" uses office',
     good: 'room id=den below bath size 2000x1500 label "Den" uses office',
   },
   {
@@ -129,7 +129,7 @@ export const STARTER_PICKS = {
   furniture: "furniture bed in ",
 } as const;
 
-/** A room line with `label "…"` set where the grammar wants it: after `size`, before `uses`. */
+/** A room line with `label "…"` set before its `uses` (any place among the clauses would do). */
 export function withLabel(roomLine: string, label: string): string {
   return roomLine.replace(" uses ", ` label "${label}" uses `);
 }
@@ -170,10 +170,10 @@ joins. Units are mm; the origin is top-left and +y points down. This plan lints 
 ${lead}
 \`\`\`
 
-## The statements a plan needs (edit numbers and ids; keep the clause order)
+## The statements a plan needs (edit numbers and ids; clauses after the placement: any order)
 - plan: \`${pick("plan")}\` opens the block; \`units mm\` comes first.
 - room: \`${withLabel(pick("room"), "Living")}\`
-  \`label\` goes after \`size\`, before \`uses\`. Beside it (\`${REL_DIRS.join("|")}\`):
+  Beside it (\`${REL_DIRS.join("|")}\`):
   \`${pick("relRoom")}\`
 - walls: \`${pick("walls")}\`
   derives every wall; \`open between\` leaves one shared edge open.

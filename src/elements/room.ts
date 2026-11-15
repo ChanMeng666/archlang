@@ -20,6 +20,7 @@ import {
 import type { Diagnostic, Span } from "../diagnostics.js";
 import type { Expr } from "../expr.js";
 import type { ElementDef, ParseCtx, RenderCtx, ResolveCtx, TransformCtx } from "../registry.js";
+import { missingClause, readClauses, type TailClause } from "../clause-order.js";
 import { PLAIN_SHEET_TEXT } from "../sheet-text.js";
 import type { SceneNode } from "../scene.js";
 import type { RRoom } from "../ir.js";
@@ -179,54 +180,97 @@ export function rectLabelOutsideDiag(r: RRoom): Diagnostic | undefined {
 }
 
 /**
- * The trailing clauses every room form shares: `label "…" [at (x,y)]` then
- * `uses <kind> …`. Factored out so the rect and polygon forms can never drift apart —
- * for a rect room this parses exactly the same tokens, in the same order, as before.
+ * The clauses after a room's placement, which every room form shares, in any order and each once
+ * (`src/clause-order.ts`): a rectangle's `size` (when `sized`), `label "…" [at (x,y)]`,
+ * `floor <pattern>` and `uses <kind> …`. Each key lands on `node` as its clause is read, so a
+ * plan in the old order (`size`, `label`, then `floor` and `uses` either way round) has the tree
+ * it always had. Factored out so the rect and polygon forms can never drift apart.
  */
-function parseTail(ctx: ParseCtx, node: RoomNode): void {
-  if (ctx.isKeyword("label")) {
-    ctx.next();
-    node.label = ctx.parseStringExpr();
-    // `label "Gallery" at (x,y)` — an explicit anchor for the label + area text. Only
-    // reachable after a label (the room's own `at` was consumed before `size`).
-    if (ctx.isKeyword("at")) {
-      const kw = ctx.next();
-      node.labelAt = ctx.parsePoint();
-      node.labelAtSpan = { start: kw.start, end: ctx.peek(-1).end };
-    }
+function parseTail(ctx: ParseCtx, node: RoomNode, start: number, sized = false): void {
+  const clauses: TailClause[] = [
+    {
+      word: "label",
+      rank: 1,
+      read(keep) {
+        ctx.next();
+        const label = ctx.parseStringExpr();
+        // `label "Gallery" at (x,y)` — an explicit anchor for the label + area text. Only
+        // reachable after a label (the room's own `at` was consumed before the clauses).
+        let labelAt: ExprPoint | undefined;
+        let labelAtSpan: Span | undefined;
+        if (ctx.isKeyword("at")) {
+          const kw = ctx.next();
+          labelAt = ctx.parsePoint();
+          labelAtSpan = { start: kw.start, end: ctx.peek(-1).end };
+        }
+        if (!keep) return;
+        node.label = label;
+        if (labelAt) {
+          node.labelAt = labelAt;
+          node.labelAtSpan = labelAtSpan;
+        }
+      },
+    },
+    floorClause(ctx, 2, node),
+    {
+      // Optional `uses <kind> [<kind> …]` — explicit room classification. Greedily
+      // consume contiguous valid use-kind identifiers (they never collide with a
+      // following statement keyword), requiring at least one.
+      word: "uses",
+      rank: 2,
+      read(keep) {
+        ctx.next();
+        const uses: UseKind[] = [];
+        while (ctx.peek().type === "ident" && USE_SET.has(ctx.peek().value)) {
+          uses.push(ctx.next().value as UseKind);
+        }
+        if (uses.length === 0) {
+          ctx.fail(
+            `Expected one or more room uses (${USE_KINDS.join("|")}) after "uses" but found ${ctx.peek().value ? `"${ctx.peek().value}"` : "end of input"}`,
+            ctx.peek(),
+          );
+        }
+        if (keep) node.uses = uses;
+      },
+    },
+  ];
+  if (sized) {
+    clauses.unshift({
+      word: "size",
+      rank: 0,
+      required: true,
+      read(keep) {
+        ctx.next();
+        const sizeStart = ctx.peek().start;
+        const size = ctx.parseDimensions();
+        const sizeSpan = ctx.spanFrom(sizeStart);
+        if (!keep) return;
+        node.size = size;
+        node.sizeSpan = sizeSpan;
+      },
+    });
   }
-  parseFloorClause(ctx, node);
-  // Optional `uses <kind> [<kind> …]` — explicit room classification. Greedily
-  // consume contiguous valid use-kind identifiers (they never collide with a
-  // following statement keyword), requiring at least one.
-  if (ctx.isKeyword("uses")) {
-    ctx.next();
-    const uses: UseKind[] = [];
-    while (ctx.peek().type === "ident" && USE_SET.has(ctx.peek().value)) {
-      uses.push(ctx.next().value as UseKind);
-    }
-    if (uses.length === 0) {
-      ctx.fail(
-        `Expected one or more room uses (${USE_KINDS.join("|")}) after "uses" but found ${ctx.peek().value ? `"${ctx.peek().value}"` : "end of input"}`,
-        ctx.peek(),
-      );
-    }
-    node.uses = uses;
-  }
-  parseFloorClause(ctx, node);
+  readClauses(ctx, "room", clauses);
+  // A rectangle cannot leave its `size` out.
+  if (sized && node.size === undefined)
+    missingClause(ctx, { what: "room", id: node.id, start }, "size", "size <W>x<H>");
 }
 
 /**
- * `floor <pattern>`, after `uses` or before it. The word and its value stand on one line, so a
+ * `floor <pattern>`, a clause of a room line. The word and its value stand on one line, so a
  * statement that starts with the word (`floor = 2`, `floor()`, `floor` alone) stays that statement.
  */
-export function parseFloorClause(ctx: ParseCtx, node: { floor?: FloorClause }): void {
-  if (node.floor !== undefined || !ctx.isKeyword("floor")) return;
-  const value = ctx.peek(1);
-  if (value.type !== "ident" || value.line !== ctx.peek().line) return;
-  ctx.next();
-  ctx.next();
-  node.floor = { word: value.value, span: { start: value.start, end: value.end } };
+export function floorClause(ctx: ParseCtx, rank: number, node: { floor?: FloorClause }): TailClause {
+  return {
+    word: "floor",
+    rank,
+    at: () => ctx.isKeyword("floor") && ctx.peek(1).type === "ident" && ctx.peek(1).line === ctx.peek().line,
+    read(keep) {
+      ctx.next();
+      const value = ctx.next();
+      if (keep) node.floor = { word: value.value, span: { start: value.start, end: value.end } };
+    },
+  };
 }
 
 /**
@@ -339,7 +383,7 @@ export const room: ElementDef = {
         ctx.fail(`A polygon room needs at least three vertices but found ${polygon.length}`, kw);
       }
       const node: RoomNode = { kind: "room", id, polygon, line: kw.line };
-      parseTail(ctx, node);
+      parseTail(ctx, node, kw.start);
       return node;
     }
     // —— `circle at (cx,cy) radius R` — the circular-floor form (no `size`). ——
@@ -350,7 +394,7 @@ export const room: ElementDef = {
       ctx.eatKeyword("radius");
       const r = ctx.parseExpr();
       const node: RoomNode = { kind: "room", id, circle: { c, r }, line: kw.line };
-      parseTail(ctx, node);
+      parseTail(ctx, node, kw.start);
       return node;
     }
     if (ctx.isKeyword("at")) {
@@ -395,12 +439,9 @@ export const room: ElementDef = {
       }
       rel = { dir: dirTok.value as RelDir, ref, align, alignSpan, alignBad, gap };
     }
-    ctx.eatKeyword("size");
-    const sizeStart = ctx.peek().start;
-    const size = ctx.parseDimensions();
-    const sizeSpan = ctx.spanFrom(sizeStart);
-    const node: RoomNode = { kind: "room", id, at, rel, size, sizeSpan, line: kw.line };
-    parseTail(ctx, node);
+    // `size` is read with the other clauses, so it may follow them; its key keeps its place.
+    const node: RoomNode = { kind: "room", id, at, rel, size: undefined, sizeSpan: undefined, line: kw.line };
+    parseTail(ctx, node, kw.start, true);
     return node;
   },
 

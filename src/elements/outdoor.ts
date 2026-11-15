@@ -64,6 +64,7 @@
 import type { ExprPoint, OutdoorKind, OutdoorNode, Point, RailEdge, RailSide } from "../ast.js";
 import { OUTDOOR_KINDS, RAIL_EDGES, RAIL_SIDES } from "../ast.js";
 import type { ElementDef, ParseCtx, RenderCtx, ResolveCtx, TransformCtx } from "../registry.js";
+import { idAfterKind, missingClause, parseIdWithSpan, readClauses } from "../clause-order.js";
 import { PLAIN_SHEET_TEXT } from "../sheet-text.js";
 import type { SceneNode } from "../scene.js";
 import { weightWidth } from "../scene.js";
@@ -302,7 +303,7 @@ export const outdoor: ElementDef = {
 
   parse(ctx: ParseCtx): OutdoorNode {
     const kw = ctx.eatKeyword("outdoor");
-    const id = ctx.parseIdOpt();
+    const lead = parseIdWithSpan(ctx);
     const kindTok = ctx.eatIdent();
     if (!(OUTDOOR_KINDS as readonly string[]).includes(kindTok.value)) {
       const hint = closest(kindTok.value, [...OUTDOOR_KINDS]);
@@ -313,10 +314,13 @@ export const outdoor: ElementDef = {
       );
     }
     const surface = kindTok.value as OutdoorKind;
+    // An `id=` may follow the kind word too (`outdoor deck id=d1 …`).
+    const id = idAfterKind(ctx, "outdoor", lead.id, lead.idSpan);
 
     const node: OutdoorNode = { kind: "outdoor", id, surface, line: kw.line };
     // The word after the kind picks the spelling, exactly as it does after `room`.
-    if (ctx.isKeyword("polygon")) {
+    const sized = !ctx.isKeyword("polygon");
+    if (!sized) {
       ctx.eatKeyword("polygon");
       const polygon: ExprPoint[] = [];
       while (ctx.isType("lparen")) polygon.push(ctx.parsePoint());
@@ -327,33 +331,68 @@ export const outdoor: ElementDef = {
     } else {
       ctx.eatKeyword("at");
       node.at = ctx.parsePoint();
-      ctx.eatKeyword("size");
-      node.size = ctx.parseDimensions();
     }
 
-    if (ctx.isKeyword("label")) {
-      ctx.next();
-      node.label = ctx.parseStringExpr();
+    // The clauses after the placement, in any order, each once (`src/clause-order.ts`), laid
+    // out after in the old order (`size`, `label`, `rail`), so a surface written in that order
+    // keeps its tree.
+    let size: OutdoorNode["size"];
+    const label: Pick<OutdoorNode, "label"> = {};
+    const rail: Pick<OutdoorNode, "rail" | "railSpan"> = {};
+    readClauses(ctx, "outdoor", [
+      ...(sized
+        ? [
+            {
+              word: "size",
+              rank: 1,
+              required: true,
+              read(keep: boolean) {
+                ctx.next();
+                const v = ctx.parseDimensions();
+                if (keep) size = v;
+              },
+            },
+          ]
+        : []),
+      {
+        word: "label",
+        rank: 2,
+        read(keep) {
+          ctx.next();
+          const v = ctx.parseStringExpr();
+          if (keep) label.label = v;
+        },
+      },
+      {
+        word: "rail",
+        rank: 3,
+        read(keep) {
+          const railKw = ctx.next();
+          const words: RailEdge[] = [];
+          // Repeatable and comma-separated alike: `rail top left`, `rail top, left`. Both
+          // spellings read naturally and neither is ambiguous, so refusing one would be a
+          // rule with no reader behind it.
+          for (;;) {
+            const t = ctx.peek();
+            if (t.type !== "ident" || !(RAIL_EDGES as readonly string[]).includes(t.value)) break;
+            ctx.next();
+            words.push(t.value as RailEdge);
+            if (ctx.isType("comma")) ctx.next();
+          }
+          if (words.length === 0) {
+            ctx.fail(`A \`rail\` clause needs at least one edge (${RAIL_EDGES.join("|")})`, ctx.peek());
+          }
+          if (!keep) return;
+          rail.rail = words;
+          rail.railSpan = { start: railKw.start, end: ctx.peek(-1).end };
+        },
+      },
+    ]);
+    if (sized) {
+      if (size === undefined) missingClause(ctx, { what: "outdoor", id, start: kw.start }, "size", "size <W>x<H>");
+      node.size = size;
     }
-    if (ctx.isKeyword("rail")) {
-      const railKw = ctx.next();
-      const words: RailEdge[] = [];
-      // Repeatable and comma-separated alike: `rail top left`, `rail top, left`. Both
-      // spellings read naturally and neither is ambiguous, so refusing one would be a
-      // rule with no reader behind it.
-      for (;;) {
-        const t = ctx.peek();
-        if (t.type !== "ident" || !(RAIL_EDGES as readonly string[]).includes(t.value)) break;
-        ctx.next();
-        words.push(t.value as RailEdge);
-        if (ctx.isType("comma")) ctx.next();
-      }
-      if (words.length === 0) {
-        ctx.fail(`A \`rail\` clause needs at least one edge (${RAIL_EDGES.join("|")})`, ctx.peek());
-      }
-      node.rail = words;
-      node.railSpan = { start: railKw.start, end: ctx.peek(-1).end };
-    }
+    Object.assign(node, label, rail);
     return node;
   },
 

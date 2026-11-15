@@ -243,8 +243,8 @@ export function offWallFix(
  *
  * The edit is driven by `_rotateSpan` (recorded by the parser, carried onto the
  * resolved fixture): a non-empty span is the authored `rotate <expr>` run and is
- * REPLACED; a zero-width span is the insertion point — always before the optional
- * trailing `in <room>`, which must stay last — and gets a leading space. Either way
+ * REPLACED; a zero-width span is the insertion point — a clause boundary after the
+ * placement, `size` and `label` (`FurnitureNode.rotateSpan`) — and gets a leading space. Either way
  * the offsets are original-source bytes, so {@link import("./fix-apply.js").applyFixes}
  * can apply it deterministically. `machine-applicable`: the caller only asks for a
  * rotation when exactly one edge of the fixture is walled, so `n` is the unique
@@ -381,8 +381,8 @@ export function doorOpenRangeFix(node: DoorNode, clamped: number): FixSuggestion
  *
  * The edit is driven by `_slideSpan` (recorded by the parser, carried onto the IR) so
  * it rewrites exactly the `slide` clause: a non-empty span is the authored run and is
- * REPLACED, a zero-width span is the insertion point — always before the trailing
- * `open`, which the grammar puts last — and gets a leading space. The
+ * REPLACED, a zero-width span is the insertion point — a clause boundary
+ * (`DoorNode.slideSpan`) — and gets a leading space. The
  * `fixtureRotateFix` precedent, byte for byte.
  */
 export function pocketRunFix(
