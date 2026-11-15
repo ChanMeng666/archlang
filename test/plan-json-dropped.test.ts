@@ -42,8 +42,11 @@ const ONE_LINE: Array<[Exclude<PlanJsonDroppedClause, "keep" | "level">, string]
   ["escalator", "escalator id=e at (5000,0) size 1000x4000 dir up"],
   ["roof", "roof polygon (0,0) (4000,0) (4000,3000)"],
   ["void", "void id=v at (500,500) size 1000x1000"],
-  ["outdoor", "outdoor id=o lawn at (5000,0) size 2000x2000"],
-  ["fence", "fence id=f picket { (5000,0) (7000,0) }"],
+  // `outdoor` and `fence` travel since RM3.1; what does not is their order against a room, a piece.
+  ["outdoor order", "outdoor id=o lawn at (5000,0) size 2000x2000\n  room id=r2 at (9000,0) size 1000x1000"],
+  ["fence order", "fence id=f picket { (5000,0) (7000,0) }\n  furniture id=b bed at (5500,0) size 1000x2000"],
+  ["place", "component bay() { column id=k at (0,0) size 300x300 }\n  place bay() as a at (5000,0)"],
+  ["auto id", "furniture bed at (5500,0) size 1000x2000"],
   ["zone", 'zone west "West" { room id=z at (5000,0) size 2000x2000 }'],
   ["axes", "axes { x at 0, 4000 y at 0 }"],
   ["site boundary", "site { street south boundary (0,0) (5000,0) (5000,4000) }"],
@@ -95,8 +98,11 @@ describe("every clause is reported on the plan that has it, and alone", () => {
     expect(clauses(r.dropped)).toEqual([clause]);
     const rendered = await renderArtifact(source, "json", ARGS, ".", "all");
     expect(rendered.notes).toHaveLength(1);
+    // `auto id` has words of its own: the document carries the ids, not that they were unwritten.
     expect(rendered.notes?.[0]).toMatch(
-      /^note: Plan JSON carries no .+; this export .+ \(the \.arch source still holds (it|them)\)$/,
+      clause === "auto id"
+        ? /^note: Plan JSON writes every id, so ids the plan did not write come back as written ids; this export writes 1 auto id: .+ \(the \.arch source still leaves it unwritten\)$/
+        : /^note: Plan JSON carries no .+; this export .+ \(the \.arch source still holds (it|them)\)$/,
     );
   });
 
@@ -156,7 +162,11 @@ describe("every clause is reported on the plan that has it, and alone", () => {
   place bay() as b at (2000,0)
 }
 `;
-    expect(planToJson(source).dropped).toEqual([{ clause: "stair", count: 2, ids: ["a.s", "b.s"] }]);
+    // And the `place`s themselves (RM3.1): the document holds their rows, flattened, not them.
+    expect(planToJson(source).dropped).toEqual([
+      { clause: "stair", count: 2, ids: ["a.s", "b.s"] },
+      { clause: "place", count: 2, ids: ["a", "b"] },
+    ]);
   });
 });
 
@@ -283,13 +293,18 @@ describe("the CLI", () => {
     expect(r.stderr).toBe("");
   });
 
+  // A plan that names every id: `examples/studio.arch` leaves its walls and windows unnamed, which
+  // is the `auto id` report since RM3.1 (review M1).
   it("a plan that drops nothing has no key, no note and the bytes it always had", async () => {
-    const source = readFileSync("examples/studio.arch", "utf8");
-    const { json } = planToJson(source, { world: makeNodeWorld("examples") });
-    const text = await compileCli(["examples/studio.arch", "-f", "json", "-o", "-"]);
+    const source = planWith("door id=d at (2000,3000) width 900 wall exterior hinge left swing in");
+    const file = join(dir, "named.arch");
+    writeFileSync(file, source);
+    const { json, dropped } = planToJson(source);
+    expect(dropped).toBeUndefined();
+    const text = await compileCli([file, "-f", "json", "-o", "-"]);
     expect(text.stderr).toBe("");
     expect(text.stdout).toBe(`${JSON.stringify(json, null, 2)}\n`);
-    const env = await compileCli(["examples/studio.arch", "-f", "json", "--json"]);
+    const env = await compileCli([file, "-f", "json", "--json"]);
     expect(env.stderr).toBe("");
     expect("dropped" in JSON.parse(env.stdout)).toBe(false);
   });
@@ -315,20 +330,38 @@ describe("the report over the corpus", () => {
    */
   const GAPS = Object.keys(CANNOT_ROUND_TRIP).filter((n) => n !== "imports.arch");
 
-  it("every example that does not come back the same reports something", () => {
-    expect(GAPS.filter((name) => report(name).dropped === undefined)).toEqual([]);
+  // Something other than `auto id`, which most plans report: a gap that stops reporting its real
+  // loss must fail here.
+  it("every example that does not come back the same reports something besides `auto id`", () => {
+    const real = (name: string) => (report(name).dropped ?? []).filter((r) => r.clause !== "auto id");
+    expect(GAPS.filter((name) => real(name).length === 0)).toEqual([]);
   });
 
-  it("every example that does come back the same reports nothing", () => {
+  // An example that comes back the same may still write an id the plan did not (`auto id`,
+  // RM3.1 review M1): a lost fact that no in-scope example's drawing, facts or lint shows.
+  it("every example that does come back the same reports nothing but `auto id`", () => {
     const same = EXAMPLES.filter((n) => !GAPS.includes(n));
     expect(same.length).toBeGreaterThanOrEqual(8);
-    expect(same.filter((name) => report(name).dropped !== undefined)).toEqual([]);
+    const other = (name: string) => (report(name).dropped ?? []).filter((r) => r.clause !== "auto id");
+    expect(same.filter((name) => other(name).length > 0)).toEqual([]);
   });
 });
 
 describe("the list cannot fall behind the language", () => {
   /** The element kinds `resolvedToJson` writes a row or a statement for. */
-  const PROJECTED = ["wall", "room", "door", "window", "opening", "furniture", "dim", "column", "walls"];
+  const PROJECTED = [
+    "wall",
+    "room",
+    "door",
+    "window",
+    "opening",
+    "furniture",
+    "dim",
+    "column",
+    "walls",
+    "outdoor",
+    "fence",
+  ];
 
   it("every element kind is projected or reported", () => {
     const kinds = BUILTIN_DEFS.map((d) => d.kind).sort();

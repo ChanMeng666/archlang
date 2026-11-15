@@ -57,6 +57,8 @@ export type {
   FurnitureJson,
   DimJson,
   ColumnJson,
+  OutdoorJson,
+  FenceJson,
   TitleJson,
   EdgeJson,
   PlanBodyJson,

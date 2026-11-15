@@ -7,7 +7,7 @@
  */
 
 import { describe as suite, expect, it } from "vitest";
-import { compile, describe, format, lint, planToJson } from "../src/index.js";
+import { compile, describe, format, lint, planFromJson, planToJson } from "../src/index.js";
 import { FLOOR_TINT_MATERIAL, FLOOR_TINT_MIX, floorWash, room, roomFloorFill } from "../src/elements/room.js";
 import { toDxf } from "../src/export/dxf.js";
 import { renderAscii } from "../src/backends/ascii.js";
@@ -254,13 +254,14 @@ suite("the clause in the grammar", () => {
     expect(format(rect)).toContain("uses bath floor deck");
   });
 
-  it("is listed in Plan JSON's `dropped`, with the rooms that wrote it", () => {
+  it("travels in Plan JSON as `rooms[].floor` on the rooms that wrote it (RM3.1)", () => {
     const src = plan(`room id=a at (0,0) size 2000x2000 floor tile\n  room id=b at (2000,0) size 2000x2000`);
-    expect(planToJson(src).dropped?.find((r) => r.clause === "floor")).toEqual({
-      clause: "floor",
-      count: 1,
-      ids: ["a"],
-    });
+    const out = planToJson(src);
+    expect(out.dropped).toBeUndefined();
+    expect(out.json?.rooms.map((r) => r.floor)).toEqual(["tile", undefined]);
+    const back = planFromJson(out.json);
+    expect(back.source).toContain("room id=a at (0,0) size 2000x2000 floor tile");
+    expect(compile(back.source!).svg).toBe(compile(src).svg);
   });
 });
 

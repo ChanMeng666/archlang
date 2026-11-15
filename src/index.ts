@@ -270,6 +270,8 @@ export type {
   FurnitureJson,
   DimJson,
   ColumnJson,
+  OutdoorJson,
+  FenceJson,
   TitleJson,
   PaperJson,
   PointJson,

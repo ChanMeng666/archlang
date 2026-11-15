@@ -7,7 +7,18 @@
  * code, so it charges nothing to the step meter.
  */
 
-import type { ArcDirWord, AutoDimsMode, CompassWord, FurnitureAnchor, Hemisphere, UseKind } from "../ast.js";
+import type {
+  ArcDirWord,
+  AutoDimsMode,
+  CompassWord,
+  FenceStyle,
+  FurnitureAnchor,
+  Hemisphere,
+  OutdoorKind,
+  RailEdge,
+  UseKind,
+} from "../ast.js";
+import type { FloorMaterial } from "../hatches.js";
 import type {
   DoorHinge,
   DoorKind,
@@ -85,6 +96,9 @@ export interface RoomJson extends InstanceMark {
    * as the polygon's bounding box, so a rect-only reader still sees a truthful extent).
    */
   polygon?: PointJson[];
+  /** `floor <pattern>` as written (RM3.1): the hatch the room's floor is drawn with. Emitted only
+   *  when the source writes one, so every other payload is unchanged; honoured on input. */
+  floor?: FloorMaterial;
   /** Output-only: floor area in m² (2 dp) — exact (shoelace) for a polygon. Ignored on input. */
   area?: number;
   /** Output-only: the room's floor ring — the rectangle's four corners, or the polygon. */
@@ -287,6 +301,41 @@ export interface ColumnJson extends InstanceMark {
   height: number;
 }
 
+/**
+ * `outdoor [id=] <kind> (at (x,y) size WxH | polygon …) [label "…"] [rail …]` (RM3.1, PS0.21): a
+ * ground surface outside the building. Not a room: it is in no `rooms` row, no area total and no
+ * `edges`/`input_graph` fact. `x`/`y`/`width`/`height` are the resolved extent (a polygon's
+ * bounding box), as on a room.
+ */
+export interface OutdoorJson extends InstanceMark {
+  id?: string;
+  /** The ground surface word (`lawn`, `paving`, `balcony`, …), as `describe().outdoor[].kind`. */
+  kind: OutdoorKind;
+  x?: number;
+  y?: number;
+  width?: number;
+  height?: number;
+  /** The ring of the `polygon` spelling; replaces `x`/`y`/`width`/`height` on input. */
+  polygon?: PointJson[];
+  label?: string;
+  /**
+   * A balcony's `rail` clause as written, resolved to the sides it rails (`[]` is `rail none`); on
+   * input the clause's own words (`all`, `none`) are accepted too. Emitted only when the source
+   * writes the clause: a derived rail is left out and derived again on the way back.
+   */
+  rail?: RailEdge[];
+}
+
+/** `fence [id=] [picket|panel|post] { (x,y) … [close] }` (RM3.1, PS0.21): a boundary line on the
+ *  ground. Not a wall: it hosts no opening and is in no `walls` row. */
+export interface FenceJson extends InstanceMark {
+  id?: string;
+  /** Absent on input means `picket`, as in `.arch`; output always writes it. */
+  style?: FenceStyle;
+  points: PointJson[];
+  closed?: boolean;
+}
+
 /** One optional string per `TITLE_FIELDS` word. */
 export type TitleJson = { [K in TitleField]?: string };
 
@@ -309,6 +358,8 @@ export interface PlanBodyJson {
   furniture: FurnitureJson[];
   dims?: DimJson[];
   columns?: ColumnJson[];
+  outdoor?: OutdoorJson[];
+  fences?: FenceJson[];
 }
 
 /** `component <name>() { … }`, carried as its resolved body (no parameters: the arguments are
@@ -383,6 +434,11 @@ export interface PlanJson {
   furniture: FurnitureJson[];
   dims?: DimJson[];
   columns?: ColumnJson[];
+  /** The ground surfaces (`outdoor`), in source order. Emitted only when the plan has one, so
+   *  every other payload is unchanged (RM3.1). */
+  outdoor?: OutdoorJson[];
+  /** The fence runs, in source order. Emitted only when the plan has one (RM3.1). */
+  fences?: FenceJson[];
   /**
    * The components the plan's `place`d instances were made from, each as its resolved body
    * (PS3.9). Emitted, with {@link PlanJson.instances} and the rows' `instance` markers, only on

@@ -8,7 +8,7 @@ import { type Diagnostic, describe as describePlan, lint, planToJson } from "../
 import { type Args, makeNodeWorld, sourceFromJson } from "../src/cli/io.js";
 import { renderArtifact } from "../src/cli/serialize.js";
 import { runArch, spawnArch } from "./helpers/cli.js";
-import { CANNOT_ROUND_TRIP, UNRESOLVED_WAY_BACK } from "./tables/plan-json-gaps.js";
+import { CANNOT_ROUND_TRIP, CLI_CLOSES, UNRESOLVED_WAY_BACK } from "./tables/plan-json-gaps.js";
 
 /**
  * `archlang compile -f json` writes the Plan JSON that `archlang compile --from-json` reads.
@@ -28,15 +28,6 @@ import { CANNOT_ROUND_TRIP, UNRESOLVED_WAY_BACK } from "./tables/plan-json-gaps.
 
 const EXAMPLES = exampleNames().sort();
 const ARGS: Args = { _: [] };
-
-/**
- * Gaps of the library suite that the CLI path closes. The library projects with no World, so
- * `import` cannot resolve; the CLI resolves it through its file World before projecting, so
- * the JSON it writes is the flat, imported geometry and compiles back to the same drawing.
- */
-const CLI_CLOSES: Record<string, string> = {
-  "imports.arch": "the CLI resolves `import` through its file World, so the projection is flat",
-};
 
 /** The examples `-f json` → `--from-json` cannot reproduce. */
 const EXPECTED_GAPS = Object.keys(CANNOT_ROUND_TRIP)
@@ -116,7 +107,7 @@ describe("compile -f json → compile --from-json (the whole corpus)", () => {
     expect(gaps).toEqual(EXPECTED_GAPS);
   }, 120_000);
 
-  it("the way back does not compile for exactly UNRESOLVED_WAY_BACK, for the lost courtyard cover", async () => {
+  it("the way back does not compile for exactly UNRESOLVED_WAY_BACK", async () => {
     const noCompile: string[] = [];
     for (const name of EXPECTED_GAPS) {
       const outcomes = await roundTrip(name);
