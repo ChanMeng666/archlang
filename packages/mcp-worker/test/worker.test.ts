@@ -138,8 +138,11 @@ describe("hosted MCP over Streamable HTTP", () => {
       const c = (await rpc("resources/read", { uri })).contents[0];
       expect(c.text, uri).toBe(read(paths[name]!));
     }
-    const v = (await rpc("resources/read", { uri: VIEWER_URI })).contents[0];
-    expect(v).toMatchObject({ uri: VIEWER_URI, mimeType: "text/html;profile=mcp-app", text: VIEWER });
+    // Exact, not a subset: dropping the MIME type or the `_meta` a host reads must fail here.
+    const contents = (await rpc("resources/read", { uri: VIEWER_URI })).contents;
+    expect(contents).toStrictEqual([
+      { uri: VIEWER_URI, mimeType: "text/html;profile=mcp-app", text: VIEWER, _meta: { ui: { prefersBorder: true } } },
+    ]);
   });
 
   it("the build bundles exactly the stdio server's resource set", () => {

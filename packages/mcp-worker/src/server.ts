@@ -6,7 +6,9 @@
  * Built fresh for every request: the Worker is stateless (no sessions, no sign-in), so nothing
  * outlives the request that created it.
  */
-import { RESOURCE_MIME_TYPE, RESOURCE_URI_META_KEY, registerAppResource } from "@modelcontextprotocol/ext-apps/server";
+// The constants only: `./server` imports nothing at run time, where the package root would bundle
+// the View's SDK client into the Worker.
+import { RESOURCE_MIME_TYPE, RESOURCE_URI_META_KEY } from "@modelcontextprotocol/ext-apps/server";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import {
   INSTRUCTIONS,
@@ -73,11 +75,14 @@ export function createHostedServer(origin: string, assets: HostedAssets): McpSer
   });
   registerResources(server, assets.resources);
 
-  registerAppResource(
-    server,
+  // What ext-apps' `registerAppResource` does, written out: its 2.x helper is typed against the
+  // SDK 2.x `McpServer` (`@modelcontextprotocol/server`), and this server is the SDK 1.x one that
+  // `registerTools` shares with the stdio shim. The MIME type comes first, as in the helper.
+  server.registerResource(
     "viewer",
     VIEWER_URI,
     {
+      mimeType: RESOURCE_MIME_TYPE,
       title: "ArchLang plan viewer",
       description:
         "Shows a `compile` result: the drawing with pan and zoom, and the plan's lint findings. Text-only hosts read the same result as JSON.",

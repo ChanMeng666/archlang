@@ -120,7 +120,7 @@ Totals: 400 modules in 34 directories.
 | --- | ---: | ---: | --- | --- |
 | `app.ts` | 644 | 3 | The hosted ArchLang MCP Worker's request handler (docs/adr/0026-hosted-mcp-worker.md); `worker.ts` is the entry that hands it the assets bundled at build time. | none |
 | `limits.ts` | 51 | 6 | The hosted server's caps — byte counts and request counts, checked BEFORE any compile work, never a clock (docs/adr/0026-hosted-mcp-worker.md). | none |
-| `server.ts` | 110 | 4 | The hosted server's `McpServer`: the stdio server's tool set and resources (one registry, `packages/mcp/src/tools.ts`), plus what only a hosted, HTTP-reachable server has — the `read_me` tool, the MCP App viewer that `compile` links to… | none |
+| `server.ts` | 115 | 4 | The hosted server's `McpServer`: the stdio server's tool set and resources (one registry, `packages/mcp/src/tools.ts`), plus what only a hosted, HTTP-reachable server has — the `read_me` tool, the MCP App viewer that `compile` links to… | none |
 | `worker.ts` | 15 | 0 | The Worker entry: the request handler (`app.ts`) over the assets the build inlined — the five `archlang://` resources and the viewer page — because a Worker has no filesystem to read them from at run time (scripts/build.mjs). | none |
 
 ## `packages/mcp-worker/src/viewer/`
@@ -129,7 +129,7 @@ Totals: 400 modules in 34 directories.
 | --- | ---: | ---: | --- | --- |
 | `svg-element.ts` | 21 | 2 | Builds the hosted MCP viewer's SVG element from the compiler's output: sanitised, then sized by its `viewBox`. | none |
 | `svg-sanitize.ts` | 142 | 1 | The one way a compiled SVG string becomes a DOM node in a browser surface. The compiler emits only `circle defs desc g line path pattern polygon rect svg text title tspan`, all in the SVG namespace, so none of what is removed here is ever… | none |
-| `viewer.ts` | 202 | 0 | The MCP App viewer for `compile` results (spec: MCP Apps 2026-01-26, `@modelcontextprotocol/ext-apps`). | none |
+| `viewer.ts` | 209 | 0 | The MCP App viewer for `compile` results (spec: MCP Apps 2026-01-26, `@modelcontextprotocol/ext-apps`). | none |
 
 ## `packages/mcp/src/`
 

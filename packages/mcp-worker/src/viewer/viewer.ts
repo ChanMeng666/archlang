@@ -189,7 +189,14 @@ async function render(app: App, result: { content?: Array<{ type: string; text?:
 // the MCP App handshake
 // ---------------------------------------------------------------------------
 
-const app = new App({ name: "archlang-viewer", version: __VIEWER_VERSION__ });
+// The 1.7.5 behaviour: ext-apps 2.x turns on a WebMCP tool bridge by default, which this viewer,
+// with no tools of its own, does not want. An options object replaces the default
+// `{ autoResize: true }`, so it is written out.
+const app = new App(
+  { name: "archlang-viewer", version: __VIEWER_VERSION__ },
+  {},
+  { autoResize: true, webMcpBridge: false },
+);
 app.ontoolinput = (params) => {
   const source = (params.arguments as { source?: unknown } | undefined)?.source;
   lastSource = typeof source === "string" ? source : undefined;

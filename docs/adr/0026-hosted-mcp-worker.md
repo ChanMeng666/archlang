@@ -71,17 +71,23 @@ server's own `lint` tool when the host lets an app call tools, and otherwise lis
 diagnostics). The tool result's `content` is unchanged, so every host without MCP Apps gets the
 same JSON text as before: that is the text fallback the specification requires.
 
-- **Version: ext-apps 1.7.5, not 2.0.3.** 2.x declares peer dependencies on the SDK's v2 split
-  packages (`@modelcontextprotocol/server` and friends); this repository is on the v1 SDK
-  (`@modelcontextprotocol/sdk` 1.29.0), whose matching line is 1.7.x. Both implement the
-  2026-01-26 specification. Moving to 2.x is moving the whole MCP package to SDK v2, which is its
-  own change.
+- **Version: ext-apps 2.x on a v1 SDK server** (RM5.4; first written for 1.7.5). 2.x moved to the
+  SDK's v2 split packages: `@modelcontextprotocol/client` is a required peer (the viewer's `App`
+  extends its `Protocol`), and `@modelcontextprotocol/server` is optional, needed only by the
+  `./server` helpers, which are typed against the v2 `McpServer`. The Worker's server stays on
+  `@modelcontextprotocol/sdk` 1.x, the one `registerTools` shares with the stdio shim, so it
+  registers the viewer with `registerResource` and the MIME type itself (what `registerAppResource`
+  does) and takes only the constants from `./server`, which imports nothing at run time. Both lines
+  speak the same 2026-01-26 wire protocol. Moving the MCP package to SDK v2 is its own change.
+  The viewer turns off 2.x's WebMCP tool bridge (`webMcpBridge: false`, on by default), keeping
+  1.7.5's `autoResize: true`, and pins the SDK client exactly, so it holds one SDK core.
 - **Not capability-gated.** The specification says a server SHOULD register UI-enabled tools only
   after seeing the host's `io.modelcontextprotocol/ui` capability. A stateless server never sees
   the `initialize` that carried it when it answers `tools/list`, so `_meta.ui` is always present; a
   host that does not know the key ignores it, and the result text is identical either way.
-- **Size:** the page is about 513 KiB (111 KiB gzipped), most of it the SDK's schemas inside the
-  `App` class. It is fetched once per host session, not per call.
+- **Size:** the page is about 661 KiB (149 KiB gzipped; 517 KiB and 112 KiB on ext-apps 1.7.5),
+  most of it zod and the SDK client inside the `App` class. It is fetched once per host session,
+  not per call.
 - **Rendering in a host:** proven in claude.ai for a custom connector (see "Addendum: production").
   No other host is claimed.
 
@@ -337,7 +343,7 @@ version-keyed cache with an in-memory stand-in.
 ## Deferred, by name
 
 - **`/png/`** — needs a Worker-compatible renderer proven byte-faithful to the native one.
-- **ext-apps 2.x** — with the move of the MCP package to the v2 SDK.
+- **The v2 SDK for the server** — the MCP package and the Worker's server move together.
 - **Sessions, auth, server-initiated messages** — nothing here needs them.
 - **A `link` result that also names the `/svg/` URL** — the tool's output is shared with the npm
   server, which has no origin to name; `read_me` says how to form it.
