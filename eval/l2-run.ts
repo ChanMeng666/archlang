@@ -43,6 +43,7 @@ import {
   type CorpusEntry,
   LiveLedger,
   VERSION_TAG,
+  isTruncationStop,
   loadCorpus,
   parseBudget,
   resolveProvider,
@@ -153,13 +154,13 @@ export function makeOpenAIAuthor(model: string, ledger: LiveLedger): L2Author {
         throw new Error(`OpenAI API ${res.status}: ${body}`);
       }
       const json = (await res.json()) as {
-        choices?: { message?: { content?: string } }[];
+        choices?: { message?: { content?: string }; finish_reason?: string | null }[];
         usage?: { prompt_tokens?: number; completion_tokens?: number };
         system_fingerprint?: string | null;
       };
       const input = json.usage?.prompt_tokens ?? 0;
       const output = json.usage?.completion_tokens ?? 0;
-      ledger.record({ input, output });
+      ledger.record({ input, output, stop: json.choices?.[0]?.finish_reason });
       ledger.noteFingerprint(json.system_fingerprint);
       return { text: json.choices?.[0]?.message?.content ?? "", usage: { input, output } };
     }
@@ -233,6 +234,7 @@ export function makeAnthropicAuthor(model: string, ledger: LiveLedger): L2Author
       }
       const json = (await res.json()) as {
         content?: { type: string; text?: string }[];
+        stop_reason?: string | null;
         usage?: {
           input_tokens?: number;
           output_tokens?: number;
@@ -244,7 +246,7 @@ export function makeAnthropicAuthor(model: string, ledger: LiveLedger): L2Author
       const cacheCreation = json.usage?.cache_creation_input_tokens ?? 0;
       const cacheRead = json.usage?.cache_read_input_tokens ?? 0;
       const output = json.usage?.output_tokens ?? 0;
-      ledger.record({ input: fresh, output, cacheCreation, cacheRead });
+      ledger.record({ input: fresh, output, cacheCreation, cacheRead, stop: json.stop_reason });
       const text = (json.content ?? []).map((b) => b.text ?? "").join("");
       return { text, usage: { input: fresh + cacheCreation + cacheRead, output } };
     }
@@ -377,9 +379,14 @@ function renderMd(
     fingerprint?: string;
     skipped: number;
     total: number;
+    /** Calls per provider stop/finish reason, over the whole run (`LiveLedger.stops`). */
+    stops: ReadonlyMap<string, number>;
   },
 ): string {
   const s = summarizeTrials(cells);
+  const stopCalls = [...meta.stops.values()].reduce((a, b) => a + b, 0);
+  const truncated = [...meta.stops].reduce((n, [k, v]) => n + (isTruncationStop(k) ? v : 0), 0);
+  const stopList = [...meta.stops].map(([k, v]) => `${k} ${v}`).join(" · ");
   const armRow = (name: "loop" | "control"): string => {
     const a = s[name];
     const ms = (m: { mean: number; sigma: number }): string => `${pct(m.mean)} ±${pct(m.sigma)}`;
@@ -416,6 +423,7 @@ function renderMd(
     "",
     `Mode: **live L2** · ${meta.provider} · model ${meta.model} · ${meta.trials} trial(s) · ${s.briefs} brief(s) · ${VERSION_TAG}${fp}.`,
     `Seeds: ${seedNote}. Loop ≤ ${1 + MAX_ROUNDS} calls/trial; control i.i.d. at the loop's measured token budget.`,
+    `Stop reasons: ${stopList || "none reported"}. Truncated replies (\`max_tokens\`/\`length\`): ${truncated}/${stopCalls}.`,
     "",
     ...(meta.skipped
       ? [
@@ -518,6 +526,7 @@ async function main(): Promise<void> {
       fingerprint: ledger.systemFingerprint,
       skipped,
       total: entries.length,
+      stops: ledger.stops,
     });
   writeFileSync(resolve(ROOT, out.md), md);
 
@@ -546,8 +555,11 @@ async function main(): Promise<void> {
       calls: ledger.calls,
       inputTokens: ledger.inputTokens,
       outputTokens: ledger.outputTokens,
+      cacheCreationTokens: ledger.cacheCreation,
+      cacheReadTokens: ledger.cacheRead,
       totalTokens: ledger.totalTokens(),
       usd: ledger.usd(),
+      stops: Object.fromEntries(ledger.stops),
     },
   };
   writeFileSync(resolve(ROOT, out.json), `${JSON.stringify(jsonOut, null, 2)}\n`);

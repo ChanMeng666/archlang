@@ -332,6 +332,8 @@ describe("l2-run — the live harness's provider adapters (fetch mocked)", () =>
     expect(b.usage).toEqual({ input: 7040, output: 800 });
     // The ledger holds the counts apart and totals each token once.
     expect(ledger.calls).toBe(2);
+    // Each call's stop reason reaches the ledger, so the scorecard can count truncations.
+    expect([...ledger.stops]).toEqual([["end_turn", 2]]);
     expect(ledger.totalTokens()).toBe(7040 + 900 + 7040 + 800);
     expect(calls[0]?.url).toBe("https://api.anthropic.com/v1/messages");
     expect(calls[0]?.init.headers["x-api-key"]).toBe("test-key");
