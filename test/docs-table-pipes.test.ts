@@ -24,6 +24,8 @@
 import { execFileSync } from "node:child_process";
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
+// @ts-expect-error plain .mjs module without declarations
+import { fenceStep } from "../docs-site/link-rewrite.mjs";
 
 /**
  * Nothing is excluded. `docs/archive/` used to be, because it held a real, uncorrected
@@ -109,7 +111,8 @@ interface Offence {
 
 /**
  * Scan one file. Fenced code blocks are skipped: a ```` ```md ```` example may legitimately
- * show a raw table, and it is never parsed as one.
+ * show a raw table, and it is never parsed as one. Fences are found by the one fence rule
+ * (`fenceStep` in `docs-site/link-rewrite.mjs`).
  */
 function scan(file: string): Offence[] {
   const out: Offence[] = [];
@@ -117,14 +120,10 @@ function scan(file: string): Offence[] {
   readFileSync(file, "utf8")
     .split(/\r?\n/)
     .forEach((line, idx) => {
-      const opener = /^\s*(`{3,}|~{3,})/.exec(line);
-      if (opener) {
-        const marks = opener[1]!;
-        if (fence === null) fence = marks;
-        else if (line.trim().startsWith(fence)) fence = null;
-        return;
-      }
-      if (fence !== null) return;
+      const step = fenceStep(fence, line) as { open: string | null; marker: boolean };
+      const inside = fence !== null || step.marker;
+      fence = step.open;
+      if (inside) return;
       // A table row: a line that both opens and closes with a pipe.
       if (!/^\s*\|.*\|\s*$/.test(line)) return;
       const columns = severingPipes(line);

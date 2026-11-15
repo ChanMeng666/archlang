@@ -7,7 +7,7 @@
  *                        alone (no page, caption or strip), ≤ 200 KB; 3 × 3 samples a pixel
  *                        (`POSTER.supersample`; the MP4 2 × 2)
  *   <name>.poster.png    the same frame, lossless: the fallback, and the reference the freshness
- *                        check compares a re-render with
+ *                        check compares a re-render with, ≤ 500 KB
  *   <name>.poster-full.* the assembled end frame too, when the poster shows one storey (`PLANS`)
  *   <name>.replay.mp4    1280×720, 10 s, H.264 yuv420p +faststart, ≤ 1.5 MB (only when `PLANS[].video`)
  *   <name>.glb           closed doors, every check passed (glTF-Validator 0 errors, 0 warnings), ≤ 1 MB
@@ -15,7 +15,7 @@
  *                        by the core's PNG path (`renderPng`, resvg with the bundled font: what
  *                        `arch preview` writes) at `PNG_PREVIEW_WIDTH` px wide, on the drawing's own
  *                        white ground; a plan that declares `paper` comes with its sheet, since the
- *                        core has no plan-only output (`plan.sheet`)
+ *                        core has no plan-only output (`plan.sheet`); ≤ 300 KB
  *
  * and `manifest.json`: per plan the source path and SHA-256 (and of every file it imports), each
  * poster's frame hash (`window.__frameHash`, the key-frame baseline's hashing) and the environment
@@ -126,7 +126,28 @@ export const POSTER = { width: 1600, height: 900, t: 1, theme: "light" as const,
 export const VIDEO = { width: 1280, height: 720, seconds: 10, fps: 30, crfs: [24, 27, 30, 33, 36], supersample: 2 };
 /** The replay length the poster's HTML carries (it draws `t = 1`, so it changes no pixel). */
 const POSTER_SECONDS = VIDEO.seconds;
-export const BUDGET = { webp: 200_000, mp4: 1_500_000, glb: 1_000_000 };
+/**
+ * Byte caps per file kind (card 3D.2 added the PNGs): the generator refuses to write a file over its
+ * cap and `--check` fails a committed one. The plan PNGs were 92–245 KB and the poster PNGs 150–362
+ * KB when the PNG caps were set, so a larger sheet may grow them, never unchecked.
+ */
+export const BUDGET = { webp: 200_000, mp4: 1_500_000, glb: 1_000_000, planPng: 300_000, posterPng: 500_000 };
+
+/** The cap for an asset file by its name (`<name>.plan.png` before any other `.png`); `Infinity` for none. */
+export function budgetOf(path: string): number {
+  if (path.endsWith(".plan.png")) return BUDGET.planPng;
+  if (path.endsWith(".png")) return BUDGET.posterPng;
+  if (path.endsWith(".webp")) return BUDGET.webp;
+  if (path.endsWith(".mp4")) return BUDGET.mp4;
+  if (path.endsWith(".glb")) return BUDGET.glb;
+  return Infinity;
+}
+
+/** The generator's guard for a lossless PNG (no smaller encoding to try): over its cap, the run fails. */
+export function assertWithinBudget(path: string, bytes: number): void {
+  const cap = budgetOf(path);
+  if (bytes > cap) throw new Error(`${path}: ${bytes} bytes, over its ${cap}-byte budget`);
+}
 const WEBP_QUALITIES = [0.9, 0.85, 0.8, 0.75, 0.7, 0.6, 0.5];
 /** The poster's tolerance (`checkAssets`): a pixel differs beyond 24 in a channel; at most 0.5 % may. */
 export const TOLERANCE = { threshold: 24, fraction: 0.005 };
@@ -466,6 +487,7 @@ export async function generateOne(
     });
     if (!still.webp || still.webp.bytes.byteLength > BUDGET.webp)
       throw new Error(`${name}: the WebP ${file} is over ${BUDGET.webp} bytes at every quality tried`);
+    assertWithinBudget(`${name}.${file}.png`, still.png.byteLength);
     const label = viewLabel(view);
     // The same frame as recorded, its two files in place: kept as they are.
     const was = prev?.posters?.find(
@@ -553,6 +575,7 @@ export async function generateOne(
   // The plan beside the poster: the poster's storey, drawn by the core.
   const drawn = await planPng(p, main);
   const planFile = `${name}.plan.png`;
+  assertWithinBudget(planFile, drawn.png.byteLength);
   const keptPlan = kept(planFile);
   const wasPlan = prev?.plan;
   let plan: PlanPng;
@@ -608,8 +631,9 @@ export interface CheckReport {
  * file is there at its recorded bytes and within budget; the GLB is the recorded file and its
  * Mesh3D rebuilds to the recorded content hash; and, with `render`, each poster frame re-rendered
  * hashes as recorded (required when the environment is the recording one) or is within `TOLERANCE`
- * of the committed PNG; the plan PNG is the recorded file and re-rasterises (here, always: resvg, no
- * browser) to the recorded pixels' hash. With the default directory, each entry also has what its
+ * of the committed PNG; the plan PNG is the recorded file, decodes to the recorded pixels' hash
+ * (card 3D.1: the committed file itself, not only its manifest record) and re-rasterises (here,
+ * always: resvg, no browser) to that hash. With the default directory, each entry also has what its
  * `PLANS` row asks for: the posters, a replay MP4 exactly when `video`, and a plan PNG. A file
  * written by another core or package version is a note: what it shows is what decides (the GLB's
  * content, the poster's frame, the plan PNG's pixels), so a version bump fails nothing. External
@@ -668,13 +692,7 @@ export async function checkAssets(dir: string, opts: { render: boolean }): Promi
       }
       const size = statSync(file).size;
       if (size !== f.bytes) problems.push(`${f.path} is ${size} bytes; the manifest says ${f.bytes}`);
-      const budget = f.path.endsWith(".webp")
-        ? BUDGET.webp
-        : f.path.endsWith(".mp4")
-          ? BUDGET.mp4
-          : f.path.endsWith(".glb")
-            ? BUDGET.glb
-            : Infinity;
+      const budget = budgetOf(f.path);
       if (size > budget) problems.push(`${f.path} is over its ${budget}-byte budget`);
     }
     if (a.glb) {
@@ -702,8 +720,22 @@ export async function checkAssets(dir: string, opts: { render: boolean }): Promi
     if (a.plan) {
       const file = join(dir, `${a.name}.plan.png`);
       if (!a.files.some((f) => f.path === `${a.name}.plan.png`)) problems.push(`${a.name}.plan.png is not listed`);
-      else if (existsSync(file) && sha256(readFileSync(file)) !== a.plan.sha256)
-        problems.push(`${a.name}.plan.png is not the file the manifest records`);
+      else if (existsSync(file)) {
+        const bytes = readFileSync(file);
+        if (sha256(bytes) !== a.plan.sha256) problems.push(`${a.name}.plan.png is not the file the manifest records`);
+        // Card 3D.1: decode the committed file itself, so a PNG swapped together with its
+        // manifest `sha256` (and `bytes`) still fails; the re-raster below only checks the record.
+        let pixels: string | undefined;
+        try {
+          pixels = pixelsHash(bytes);
+        } catch (e) {
+          problems.push(`${a.name}.plan.png does not decode as a PNG (${(e as Error).message})`);
+        }
+        if (pixels !== undefined && pixels !== a.plan.pixelsSha256)
+          problems.push(
+            `${a.name}.plan.png decodes to pixels ${pixels.slice(0, 12)}…, not the recorded ${a.plan.pixelsSha256.slice(0, 12)}… (regenerate)`,
+          );
+      }
       const main = spec?.poster ?? (a.posters[0] ? viewOf(a.posters[0].view) : "all");
       const drawn = await planPng(p, main);
       if (drawn.plan.level !== a.plan.level)

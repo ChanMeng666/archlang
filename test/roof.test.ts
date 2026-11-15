@@ -26,6 +26,25 @@ import { offsetRingOutward, ROOF_LAYER } from "../src/elements/roof.js";
 import type { RRoof } from "../src/ir.js";
 import type { Point } from "../src/ast.js";
 
+/**
+ * The optional `pdfkit` probe, paid once at collection time rather than inside the timed
+ * case: a cold dynamic import of it measured 674 ms idle and 5,821 ms under a loaded full
+ * suite, past vitest's default 5 s per-test budget (backlog 4.10). The global `testTimeout`
+ * stays at its default on purpose, so the next case of this shape still names itself.
+ */
+async function hasPdfkit(): Promise<boolean> {
+  try {
+    await import("pdfkit" as string);
+    return true;
+  } catch {
+    return false;
+  }
+}
+const HAS_PDFKIT = await hasPdfkit();
+
+/** Rendering a PDF is an export, not a unit step: this case carries its own budget. */
+const PDF_CASE_TIMEOUT_MS = 30_000;
+
 const plan = (body: string): string => `plan "Roof" {\n  units mm\n${body}\n}\n`;
 
 /** A closed rectangular exterior ring, 8000 × 5000, 200 thick. */
@@ -262,24 +281,19 @@ describe("roof — every backend serializes it", () => {
     expect(() => renderAscii(toScene(resolvePlan(parse(SRC).plan!).ir))).not.toThrow();
   });
 
-  it("PDF export draws it", async () => {
-    let pdfkit = true;
-    try {
-      await import("pdfkit" as string);
-    } catch {
-      pdfkit = false;
-    }
-    if (!pdfkit) {
-      // A missing optional dep is a broken install in CI, and a visible skip locally —
-      // the `test/export-pdf.test.ts` gate shape, so this can never pass having asserted
-      // nothing.
-      if (process.env.CI) throw new Error("optional dep pdfkit missing in CI — the install step is broken");
-      return;
-    }
-    const { toPdf } = await import("../src/export/pdf.js");
-    const bytes = await toPdf(toScene(resolvePlan(parse(SRC).plan!).ir));
-    expect(bytes.byteLength).toBeGreaterThan(1000);
-  });
+  // A missing optional dep is a visible skip locally and a broken install in CI (the body
+  // throws there), so this case never passes having asserted nothing. The PDF module itself
+  // is still imported inside the case; only the pdfkit probe moved to collection time.
+  it.skipIf(!HAS_PDFKIT && !process.env.CI)(
+    "PDF export draws it",
+    async () => {
+      if (!HAS_PDFKIT) throw new Error("optional dep pdfkit missing in CI — the install step is broken");
+      const { toPdf } = await import("../src/export/pdf.js");
+      const bytes = await toPdf(toScene(resolvePlan(parse(SRC).plan!).ir));
+      expect(bytes.byteLength).toBeGreaterThan(1000);
+    },
+    PDF_CASE_TIMEOUT_MS,
+  );
 });
 
 // ---------------------------------------------------------------------------

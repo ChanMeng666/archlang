@@ -32,6 +32,8 @@ import { execFileSync } from "node:child_process";
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { compile } from "../src/index.js";
+// @ts-expect-error plain .mjs module without declarations
+import { fenceStep } from "../docs-site/link-rewrite.mjs";
 
 const SYNC = "docs-site/sync-docs.mjs";
 const CONFIG = "docs-site/.vitepress/config.ts";
@@ -83,25 +85,31 @@ interface Fence {
 }
 
 /**
- * Every fenced code block in one file. A fence opens on a run of >= 3 backticks or tildes
- * and closes on a run of the SAME character at least as long, which is what keeps a
- * ```` ```` ```` -delimited block quoting a ```` ``` ```` fence from being mis-split.
+ * Every fenced code block in one file, by the one fence rule (`fenceStep` in
+ * `docs-site/link-rewrite.mjs`, which the site's link rewriter uses too): CommonMark's, so a
+ * ```` ```` ```` -delimited block quoting a ```` ``` ```` fence is one block, a line indented 4+
+ * spaces opens nothing, and ```` ``` a`b ```` is inline code.
  */
 function fences(file: string): Fence[] {
+  return fencesOf(readFileSync(file, "utf8"), file);
+}
+
+/** The fenced code blocks of a source text (`file` only labels them). */
+function fencesOf(src: string, file: string): Fence[] {
   const out: Fence[] = [];
-  const lines = readFileSync(file, "utf8").split(/\r?\n/);
-  let open: { marks: string; line: number; info: string; body: string[] } | null = null;
+  const lines = src.split(/\r?\n/);
+  let fence: string | null = null;
+  let open: { line: number; info: string; body: string[] } | null = null;
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i]!;
-    const marker = /^\s*(`{3,}|~{3,})(.*)$/.exec(line);
+    const step = fenceStep(fence, line) as { open: string | null; marker: boolean; info?: string };
     if (open) {
-      if (marker && marker[1]![0] === open.marks[0] && marker[1]!.length >= open.marks.length && !marker[2]!.trim()) {
+      if (step.open === null) {
         out.push({ file, line: open.line, info: open.info, body: open.body.join("\n") });
         open = null;
       } else open.body.push(line);
-      continue;
-    }
-    if (marker) open = { marks: marker[1]!, line: i + 1, info: marker[2]!.trim(), body: [] };
+    } else if (step.open !== null) open = { line: i + 1, info: step.info!, body: [] };
+    fence = step.open;
   }
   if (open) out.push({ file, line: open.line, info: open.info, body: open.body.join("\n") });
   return out;
@@ -191,6 +199,28 @@ describe("every live ```arch fence on the public docs site compiles", () => {
     expect(isLive("static arch")).toBe(false);
     expect(isLive("archlang")).toBe(false); // a Shiki alias, but the rewrite rule wants `arch`
     expect(isLive("")).toBe(false);
+  });
+
+  it("finds fences by CommonMark's rule: <= 3 spaces of indent, no backtick in a backtick info string", () => {
+    const infos = (md: string) => fencesOf(md, "x.md").map((f) => [f.line, f.info, f.body]);
+    // Indented 4 spaces: indented code, not a fence, so the later ```arch block is the only one.
+    expect(infos("    ```arch\n    room\n\n```arch\nplan\n```")).toEqual([[4, "arch", "plan"]]);
+    // Up to 3 spaces still opens (and closes) one.
+    expect(infos("   ```arch\nplan\n   ```")).toEqual([[1, "arch", "plan"]]);
+    // ```` ``` a`b ```` is a code span in a paragraph; a tilde opener may hold a backtick.
+    expect(infos("``` a`b\n```arch\nplan\n```")).toEqual([[2, "arch", "plan"]]);
+    expect(infos("~~~ a`b\nx\n~~~")).toEqual([[1, "a`b", "x"]]);
+  });
+
+  it("no published page indents a fence marker 4+ columns (the `^ {0,3}` rule would read it as code)", () => {
+    // A fence inside a list item can legitimately sit 4+ columns in; the shared rule does not model
+    // list nesting, so such a fence would go unchecked. None exists; this keeps it that way.
+    const deep = pages.flatMap((f) =>
+      readFileSync(f, "utf8")
+        .split(/\r?\n/)
+        .flatMap((l, i) => (/^[ \t]{4,}(`{3,}|~{3,})/.test(l.replace(/\t/g, "    ")) ? [`${f}:${i + 1}`] : [])),
+    );
+    expect(deep).toEqual([]);
   });
 
   it("no published fence uses a near-miss spelling of the escape hatch", () => {

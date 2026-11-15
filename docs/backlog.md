@@ -1725,7 +1725,7 @@ unchanged.
 Left by the reviews of those PRs (review-cost cap). WS.1 and WS.2 fail only on input the docs do
 not yet hold; WS.3 and WS.4 are true of the live site today.
 
-### WS.1 · Four copies of the fence rule, none quite CommonMark — `todo`
+### WS.1 · Four copies of the fence rule, none quite CommonMark: done by #825, waiting to be archived — `note`
 
 `fenceStep` (`docs-site/link-rewrite.mjs`), the link scan in `test/docs-site-links.test.ts`,
 `fences()` in `test/docs-fences.test.ts` (the live-fence gate) and `headingIds` in
@@ -1736,7 +1736,7 @@ one exported rule (`^ {0,3}`, the info-string check) that the rewriter and all t
 **Gate:** unit cases for an indented ```` ``` ```` and for ```` ``` a`b ````; the rewritten output of every
 docs page unchanged; `docs-fences` still finds the same live fences.
 
-### WS.2 · The rewriter's heading ids skip neither HTML comments nor `{#id}` — `todo`
+### WS.2 · The rewriter's heading ids skip neither HTML comments nor `{#id}`: done by #825, waiting to be archived — `note`
 
 `headingIds` in `docs-site/link-rewrite.mjs` treats a `#` line inside `<!-- … -->` as a heading
 and slugs `## Title {#custom-id}` from its whole text, while the test's copy
@@ -1747,6 +1747,10 @@ red). The rewriter's heading pattern also allows no leading spaces where the tes
 `^ {0,3}`. Port the test's rules (and share them, with WS.1). An attribute block holding more than
 an id (`{#a .b}`) and an explicit id that repeats an earlier slug are the corner cases to pin.
 **Gate:** unit cases for each; rewritten output over the docs unchanged.
+
+**Done by #825.** The shared heading text keeps a code span verbatim (`` `<arch-plan>` ``), as
+VitePress does; `test/docs-site-links.test.ts` checks every published page's heading ids against
+VitePress's own markdown parser.
 
 ### WS.3 · Example-page `lastmod` misses some of what the page shows — `todo`
 
@@ -1808,7 +1812,7 @@ place differently, and the drafting-layer `W_ANNOTATION_OVERLAP` with it. No shi
 
 ## 3D asset and surface residue (public-surfaces 3D cards X4b, X6, V2, 2026-11-06)
 
-### 3D.1 · The asset check trusts the manifest for the plan PNG — `todo`
+### 3D.1 · The asset check decodes the committed plan PNG: done by #826, waiting to be archived — `note`
 
 `checkAssets` (`packages/archlang-3d/scripts/gen-3d-assets.ts`) compares a committed
 `<name>.plan.png` only by SHA-256 against the manifest, then re-rasterises the source to the
@@ -1816,11 +1820,14 @@ recorded pixel hash; it never decodes the committed file. A PNG swapped together
 `sha256` passes. **Gate:** `pixelsHash(readFileSync(file))` must equal `plan.pixelsSha256`; a
 planted swap fails `--check`.
 
-### 3D.2 · No size budget for plan and poster PNGs — `todo`
+### 3D.2 · No size budget for plan and poster PNGs: done by #828, waiting to be archived — `note`
 
 The budget table caps WebP, MP4 and GLB only; `.plan.png` (92–245 KB today) and `.poster.png` have
 none, so an A1 sheet could grow unchecked. **Gate:** a budget (for example 300 KB) enforced by the
 generator and `--check`.
+
+**Done by #828.** Caps: `BUDGET.planPng` 300 KB, `BUDGET.posterPng` 500 KB (poster PNGs were
+150–362 KB).
 
 ### 3D.4 · Pitched roofs in the 3D preview (design first) — `todo`
 
@@ -2040,7 +2047,7 @@ two and worth doing regardless.
 **Do not** narrow this to "re-run it by hand" — that is the workaround, and it has now been needed
 twice in five releases.
 
-### 4.10 · A 5 s test budget on a heavy optional import — `todo`
+### 4.10 · A 5 s test budget on a heavy optional import: done by #829, waiting to be archived — `note`
 
 Found 2026-09-04 while gating item 4.9, and worth filing because `AGENTS.md` currently records that
 the suite has **no known flake**.
@@ -2071,6 +2078,11 @@ capability probe so the import is paid once per file rather than inside the time
 say plainly in `AGENTS.md` that the suite has one load-sensitive case, since a number nobody can
 reproduce on a quiet machine is worse than a documented one. **Do not raise the global
 `testTimeout`** — that hides every future instance of the same shape.
+
+**Done by #829.** Both first options together: `test/roof.test.ts` probes `pdfkit` once at module
+scope (`HAS_PDFKIT`, paid at collection), and "PDF export draws it" carries its own
+`PDF_CASE_TIMEOUT_MS` budget; the global `testTimeout` is unchanged. M.6 (visual, sheet) is the same
+shape and stays open.
 
 ### 4.1 · Joinery pass performance — `todo`
 
