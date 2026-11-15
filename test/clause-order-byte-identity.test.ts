@@ -525,8 +525,11 @@ suite("clause order: a word that begins a statement stays one", () => {
       (s) => s.kind === "door",
     );
     expect(door).toHaveProperty("width");
+    // `size = 3` is not read as the room's size: the room is refused for lacking one, and says why.
+    // (Recovery then skips to the next statement keyword, as it does after any failed statement.)
     const src = plan('let size = 1\n  room id=a at (4000,0) label "A"\n  size = 3');
-    expect(kinds(src).slice(-1)).toEqual(["assign"]);
+    const err = parse(src).diagnostics.find((d) => d.code === "E_PARSE");
+    expect(err?.message).toContain("reads as the start of a statement (`size = …` or `size(…)`)");
   });
 
   it("`rotate (90)` in the old order is still the clause", () => {
