@@ -1792,12 +1792,6 @@ The budget table caps WebP, MP4 and GLB only; `.plan.png` (92–245 KB today) an
 none, so an A1 sheet could grow unchecked. **Gate:** a budget (for example 300 KB) enforced by the
 generator and `--check`.
 
-### 3D.3 · `pngjs` is not declared by `packages/archlang-3d` — `todo`
-
-The generator script imports it through the root `devDependencies` (hoisting). Not shipped
-(`scripts/` is outside `files`), but an isolated install of the workspace would break. **Gate:**
-`pngjs` and `@types/pngjs` in the package's `devDependencies`.
-
 ### 3D.4 · Pitched roofs in the 3D preview (design first) — `todo`
 
 A plan's roof becomes a hidden 150 mm flat slab (`roof-flat-150`); every surface says "no pitched
