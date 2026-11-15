@@ -2424,7 +2424,8 @@ stair rising from its floor, and the coverage report says `block-stair`.
 **Winders.** A quarter-turn landing whose size is exactly `width` × `width` may end in
 `winders <n>`, a whole number from 2 to 8: the landing is then drawn as `n` tapered steps fanning
 from its inner corner (the corner its entry and exit sides share) at equal angles, the walking line
-crosses it as one chord, and lint counts each winder as one going instead of the one going a level
+turns across it on the quarter arc of radius `width / 2` round that corner, and lint counts each
+winder as one going, up to the whole goings that fit on that arc, instead of the one going a level
 landing replaces. It is not measured as a landing to stand on. A winder is geometry only: no going
 at the walking line or at the narrow end is checked against any standard, and there is no true
 helical (spiral) stair.

@@ -39,6 +39,7 @@ import {
   type RVertical,
   tailEdge,
   travelVector,
+  winderCorner,
   winderTreads,
 } from "../vertical.js";
 import { symbolInk } from "./glyph-lib.js";
@@ -303,7 +304,7 @@ function flightSymbol(s: RStair, f: RunFrame, cut: FlightCut, theme: Theme, size
 /** The walking line's way across a landing, from `p` (where the flight before it ends) to `q`
  *  (where the flight after it starts), turning at right angles: the points between them. */
 function acrossLanding(p: Point, q: Point, before: RStair, after: RStair, landing: RStairPiece): Point[] {
-  // Over winders the walk turns with the treads: one straight chord, no right angle.
+  // Over winders the walk turns with the treads, on one arc ({@link winderArc}): no point between.
   if (landing.winders !== undefined) return [];
   const d0 = travelVector(before);
   const d1 = travelVector(after);
@@ -326,7 +327,35 @@ function acrossLanding(p: Point, q: Point, before: RStair, after: RStair, landin
   ];
 }
 
-/** The walk's length on one landing between two flights in climbing order: {@link acrossLanding}'s. */
+/**
+ * The walking line's turn over a winder landing, from the flight `before` it to the flight `after`,
+ * as walked: the quarter arc of radius `width / 2` round the landing's inner corner
+ * ({@link winderCorner}), which is the length lint credits the winders with (`winderGoings`,
+ * `src/lint/rules/stairs.ts`). It leaves and meets each flight's walking line on its tangent. The
+ * sweep is the turn's own sense, read off the two travels, so a reflection flips it exactly and the
+ * storey above (the same pieces walked the other way) draws the same curve. Null for a level landing.
+ */
+function winderArc(
+  landing: RStairPiece,
+  before: RStair,
+  after: RStair,
+  width: number,
+): { center: Point; r: number; sweep: 0 | 1 } | null {
+  if (landing.winders === undefined) return null;
+  const center = winderCorner(landing, rectOfPiece(before), rectOfPiece(after));
+  const d0 = travelVector(before);
+  const d1 = travelVector(after);
+  const cross = d0.x * d1.y - d0.y * d1.x;
+  if (center === null || cross === 0) return null;
+  return { center, r: width / 2, sweep: cross > 0 ? 1 : 0 };
+}
+
+/**
+ * The walk's length on one landing between two flights in climbing order: {@link acrossLanding}'s.
+ * A winder landing is measured as the level landing it stands for, out to the turn and on (its two
+ * legs, `width` in all), not along its arc: this length only chooses the flight that carries the
+ * break line ({@link cutFlight}), which `winders` therefore never moves.
+ */
 function landingWalk(before: RStair, after: RStair, landing: RStairPiece): number {
   const f0 = runFrame(before, 0);
   const f1 = runFrame(after, 0);
@@ -373,6 +402,7 @@ export function cutFlight(s: RBlockStair): number {
  *
  * The walking line is several `line` primitives, never one long path: a label is kept off each
  * primitive's box (`src/label-placement.ts`), and a turning line's box holds the floor it turns round.
+ * Over a winder landing it is one `arc` primitive ({@link winderArc}), whose box is inside the landing.
  */
 function blockStairGlyph(s: RBlockStair, theme: Theme, sizes: RenderSizes, text: SheetText): SceneNode[] {
   const layer = STAIR_LAYER;
@@ -399,21 +429,35 @@ function blockStairGlyph(s: RBlockStair, theme: Theme, sizes: RenderSizes, text:
   const lastStep = last.length / treadCount(last.length);
   const head = last.length - Math.min(lastStep * 0.4, last.length * 0.12);
   const points: Point[] = [first.at(Math.min(step * 1.2, first.length * 0.3), 0)];
+  // The stretches that are arcs, by the index in `points` of the point each ends on.
+  const arcs = new Map<number, NonNullable<ReturnType<typeof winderArc>>>();
   frames.forEach((f, i) => {
     if (i > 0) {
       const before = frames[i - 1]!;
       const landing = s.landings[up ? i - 1 : s.landings.length - i]!;
-      points.push(
-        ...acrossLanding(before.at(before.length, 0), f.at(0, 0), walk[i - 1]!, walk[i]!, landing),
-        f.at(0, 0),
-      );
+      points.push(...acrossLanding(before.at(before.length, 0), f.at(0, 0), walk[i - 1]!, walk[i]!, landing));
+      const arc = winderArc(landing, walk[i - 1]!, walk[i]!, s.width);
+      if (arc) arcs.set(points.length, arc);
+      points.push(f.at(0, 0));
     }
     if (i < frames.length - 1) points.push(f.at(f.length, 0));
   });
   points.push(last.at(head, 0));
 
   const ink: Paint = { stroke: inkOf(theme), width: sizes.thin, fill: "none" };
-  for (let i = 1; i < points.length; i++) nodes.push(line(points[i - 1]!, points[i]!, layer, ink));
+  for (let i = 1; i < points.length; i++) {
+    const arc = arcs.get(i);
+    nodes.push(
+      arc
+        ? {
+            layer: "furniture",
+            layerName: layer,
+            prim: { t: "arc", ...arc, start: points[i - 1]!, end: points[i]! },
+            paint: ink,
+          }
+        : line(points[i - 1]!, points[i]!, layer, ink),
+    );
+  }
   const barb = Math.min(last.width * 0.28, head * 0.25);
   nodes.push(line(last.at(head, 0), last.at(head - barb, barb * 0.6), layer, ink));
   nodes.push(line(last.at(head, 0), last.at(head - barb, -barb * 0.6), layer, ink));
