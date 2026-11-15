@@ -9,7 +9,7 @@
 // carrying on, because the alternative is a site that builds and deploys with an
 // examples page whose every image 404s.
 import { execFileSync } from "node:child_process";
-import { copyFileSync, mkdirSync, readdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
+import { copyFileSync, mkdirSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 // The README's permalink minter, reused rather than re-implemented: the `#z=` codec has
@@ -197,7 +197,12 @@ const index =
   "# Architecture Decision Records\n\nKey design decisions behind ArchLang, with their context and trade-offs.\n\n" +
   adrEntries.map((e) => `- [${e.text}](${e.link})`).join("\n") +
   "\n";
-writeFileSync(join(adrDest, "index.md"), index);
+// The index is `adr.md`, not `adr/index.md`: the host serves either at `/adr` (it drops the
+// trailing slash), but VitePress's sidebar `isActive` reads an `index.md` page as `/adr/`, which
+// never matches the sidebar's `/adr` link, and a `/adr/` link renders an href that 307s. Delete
+// the old location so a checkout synced before the move does not build the index twice.
+writeFileSync(join(here, "adr.md"), index);
+rmSync(join(adrDest, "index.md"), { force: true });
 // Emit the ADR sidebar as data so .vitepress/config.ts never hand-lists them. The
 // hand-written list had frozen at 0005 while docs/adr/ grew to 0014 — same rot as the
 // stale CLI docs, same fix: derive it from the source of truth.
@@ -240,7 +245,7 @@ try {
     .filter(Boolean)
     .sort()
     .pop();
-  if (newestAdr) lastmod["/adr/"] = newestAdr;
+  if (newestAdr) lastmod["/adr"] = newestAdr;
 } catch (e) {
   console.warn(`  (no sitemap lastmod dates: ${e.message.split("\n")[0]})`);
 }

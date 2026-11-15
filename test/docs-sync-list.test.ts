@@ -165,7 +165,7 @@ describe("no sync-docs output is tracked by git", () => {
       ...tupleTable("SITE_PAGES").map(([, d]) => `docs-site/public/${d}`),
       ...rootCopies.map((d) => `docs-site/public/${d}`),
       ...adrs.map((f) => `docs-site/adr/${f}`),
-      "docs-site/adr/index.md",
+      "docs-site/adr.md",
       ...galleryExamples().map((n) => `docs-site/public/examples/${n}.svg`),
       ...galleryExamples().map((n) => `docs-site/public/examples/${n}.arch`),
       "docs-site/.vitepress/theme/adr-data.js",
