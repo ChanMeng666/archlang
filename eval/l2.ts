@@ -19,6 +19,11 @@
  * If the loop's delta over the control is ≤ 0, that is the finding — the caller prints it
  * verbatim (roadmap T3: "if ≤ 0, print exactly that").
  *
+ * T3 status: one owner-ratified live run (2026-11-15), within the bounds in
+ * `docs/agents/iron-laws.md`. Until its pre-registered result is published, no loop-gain
+ * claim and no claim of its absence; after that, claims cite only that run's published
+ * record. This module is the protocol either way; it decides nothing on its own.
+ *
  * **Oracle isolation (load-bearing; deep-dive H3, AgentLens arXiv:2605.12925).** The
  * feedback the model receives is derived ONLY from the plan it wrote: compiler
  * diagnostics, lint suggestions, and a trimmed `describe()` projection. It never contains
@@ -49,7 +54,7 @@ export interface Usage {
 
 /**
  * The injected model. Given a full message list and a seed, returns the reply text and
- * its token usage. The harness (`eval/l2-run.ts`) supplies a real OpenAI implementation;
+ * its token usage. The harness (`eval/l2-run.ts`) supplies a real OpenAI or Anthropic one;
  * tests supply a scripted fake. Kept deliberately thin so this module needs no network.
  */
 export type L2Author = (messages: ChatMsg[], seed: number) => Promise<{ text: string; usage: Usage }>;
