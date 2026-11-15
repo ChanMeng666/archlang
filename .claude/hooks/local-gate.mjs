@@ -21,7 +21,8 @@ const HEAVY = [
   [/\bcheck:drift\b/, "check:drift (check:quick runs it)"],
   [/\btypecheck:all\b/, "typecheck:all"],
   [/\bcheck:3d\b/, "check:3d"],
-  [/\bnpm\s+run\s+(?:e2e|bench)\b|\bplaywright\s+test\b/, "e2e / bench"],
+  // `(?:-w|--workspace)…`: `npm -w <ws> run e2e` (ci.yml's check:3d passes) is the same call.
+  [/\bnpm\s+(?:(?:-w|--workspace)[=\s]+\S+\s+)?run\s+(?:e2e|bench)\b|\bplaywright\s+test\b/, "e2e / bench"],
 ];
 
 /** Git Bash writes `/d/x`; Node on Windows wants `D:/x`. */
