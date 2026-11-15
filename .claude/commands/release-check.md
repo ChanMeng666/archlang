@@ -105,7 +105,8 @@ you observed. Do NOT push anything — this command only verifies.
    ```
 
    The newest completed push run must be `main`'s head and `success` on every job, with `Node 18`,
-   `Node 20` and `Windows (tests + drift)` listed. Every nightly `Test …` job must be `success`
+   `Node 20` and `Windows (tests + drift)` listed; a proven run (its `Changed paths` summary names
+   the train PR run that proved it) skips the shards, so read that train run's jobs instead. Every nightly `Test …` job must be `success`
    (a red `Secret scan` is not one of these). A red one blocks the release until it is fixed on
    `main`. The bump commit's own push run gates the publish: `release.yml`'s guard
    (`scripts/release-guard.sh`) refuses a tag whose commit lacks green required checks, so a red

@@ -41,18 +41,29 @@ jobs:
   # Every gating job below keeps its check NAME (the required checks on `main` are those
   # names) and only guards its steps on FULL_CI, so a record-only PR reports every check,
   # green, in about a minute. FULL_CI fails OPEN: on a push, on a failed or empty
-  # `changes`, or on any non-record path, every leg runs in full.
+  # `changes`, or on any non-record path, every leg runs in full (a proven push aside, below).
   #
   # Code PRs drop the redundant legs (G in docs/plans/ci-throughput.md).
   #
-  # Node 18, Node 20 and Windows run on FULL_LEG: true on every push and merge_group, and on
-  # a PR only if `changes` failed (the same fail-open as FULL_CI). Each runs its suite in
+  # Node 18, Node 20 and Windows run on FULL_LEG: `changes` failed (the same fail-open as
+  # FULL_CI), or its `full_leg` output, which is true on every push and merge_group and on a
+  # train PR's code run, false on any other PR and on a proven push. A train PR is one whose
+  # head branch starts `train/` in this repository (a fork's `train/x` is an ordinary PR). Each runs its suite in
   # three shards (`node-18-tests`, `node-20-tests`, `windows-tests`), skipped at JOB level
   # when FULL_LEG is false, so an ordinary PR starts no runner for them; shard 3 also runs
   # the leg's non-test checks. Their required names (`Node 18`, `Node 20`, `Windows (tests
-  # + drift)`) are aggregators over the shards: on a PR they report green with a
+  # + drift)`) are aggregators over the shards: on an ordinary PR they report green with a
   # job-summary line. Their breaks surface after the merge, in the push run on `main` and
   # in nightly's `full-matrix`; `/release-check` reads both.
+  #
+  # A proven push skips everything (`scripts/ci-proven.mjs`). On a push to `main` only,
+  # `changes` sets `proven` when the pushed commit is a two-parent merge whose tree is its
+  # second parent's, the first parent is an ancestor of the second, and a successful
+  # `pull_request` run of this workflow for a `train/` branch at that second parent ran every
+  # job (FULL_RUN_JOBS). That run tested the same tree with every leg, so every leaf job here
+  # skips its steps (or is skipped at job level) and every required name reports green with a
+  # job-summary line naming the proving run. Any error or doubt is "not proven": the push
+  # then runs in full, as before. The CodeQL workflow is never short-circuited.
   #
   # Node 22 is an aggregator: its check gates on `node-22-checks` (typecheck, lint, drift,
   # eval) and on the five `node-22-tests` shards, on PRs and pushes alike, and it also
@@ -69,8 +80,12 @@ jobs:
     permissions:
       contents: read
       pull-requests: read
+      actions: read # the proven fast path reads this workflow's runs and their jobs
     outputs:
       code: ${{ steps.verdict.outputs.code }}
+      full_leg: ${{ steps.verdict.outputs.full_leg }}
+      proven: ${{ steps.verdict.outputs.proven }}
+      proof: ${{ steps.verdict.outputs.proof }}
     steps:
       - name: Classify the PR's changed paths
         id: filter
@@ -98,18 +113,64 @@ jobs:
               - '!CHANGELOG.md'
               - '!editors/vscode/CHANGELOG.md'
 
+      # The proven fast path (header): a push to `main` only. Both steps fail open: a failed
+      # checkout or script leaves `proven` unset, and the Verdict reads it only after a success.
+      - name: Check out the proven-run script
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        continue-on-error: true
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          sparse-checkout: scripts/ci-proven.mjs
+          sparse-checkout-cone-mode: false
+          persist-credentials: false
+
+      - name: Did a train PR's full run already prove this commit?
+        id: proven
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        continue-on-error: true
+        timeout-minutes: 2
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: node scripts/ci-proven.mjs
+
       - name: Verdict
         id: verdict
         env:
           EVENT: ${{ github.event_name }}
           CODE: ${{ steps.filter.outputs.code }}
+          HEAD_REF: ${{ github.head_ref }}
+          HEAD_REPO: ${{ github.event.pull_request.head.repo.full_name }}
+          REPO: ${{ github.repository }}
+          PROVEN: ${{ steps.proven.outcome == 'success' && steps.proven.outputs.proven == 'true' }}
+          PROOF: ${{ steps.proven.outputs.proof }}
         run: |
           if [ "$EVENT" = "pull_request" ] && [ "$CODE" = "false" ]; then code=false; else code=true; fi
-          echo "code=$code" >> "$GITHUB_OUTPUT"
-          if [ "$code" = "false" ]; then
+          train=false
+          if [ "$EVENT" = "pull_request" ] && [ "$HEAD_REPO" = "$REPO" ]; then
+            case "$HEAD_REF" in train/*) train=true ;; esac
+          fi
+          if [ "$EVENT" = "push" ] && [ "$PROVEN" = "true" ] && [ -n "$PROOF" ]; then proven=true; else proven=false; fi
+          # The main-only legs (Node 18, Node 20, Windows): every push and merge_group, and a train
+          # PR's code run; never an ordinary PR, a records-only one or a proven push.
+          if [ "$proven" = "true" ]; then full_leg=false
+          elif [ "$EVENT" != "pull_request" ]; then full_leg=true
+          elif [ "$train" = "true" ] && [ "$code" = "true" ]; then full_leg=true
+          else full_leg=false
+          fi
+          {
+            echo "code=$code"
+            echo "full_leg=$full_leg"
+            echo "proven=$proven"
+            if [ "$proven" = "true" ]; then echo "proof=$PROOF"; fi
+          } >> "$GITHUB_OUTPUT"
+          if [ "$proven" = "true" ]; then
+            echo "Proven by $PROOF: that train PR run tested this commit's tree with every leg; every check here reports green without running." >> "$GITHUB_STEP_SUMMARY"
+          elif [ "$code" = "false" ]; then
             echo "Record-only change: the gating legs report green without running; Node 22 runs the docs leg." >> "$GITHUB_STEP_SUMMARY"
+          elif [ "$train" = "true" ]; then
+            echo "Train PR: every leg runs in full, Node 18, Node 20 and Windows included." >> "$GITHUB_STEP_SUMMARY"
           elif [ "$EVENT" = "pull_request" ]; then
-            echo "Code change: Node 22 (five shards), the builds and the E2E legs run; Node 18, Node 20 and Windows run on main and nightly." >> "$GITHUB_STEP_SUMMARY"
+            echo "Code change: Node 22 (five shards), the builds and the E2E legs run; Node 18, Node 20 and Windows run on main, train PRs and nightly." >> "$GITHUB_STEP_SUMMARY"
           elif [ "$EVENT" = "merge_group" ]; then
             echo "Merge queue: every leg runs in full on the merged result." >> "$GITHUB_STEP_SUMMARY"
           else
@@ -117,8 +178,9 @@ jobs:
           fi
 
   # The Node 18 leg, in three shards. Its `if` is FULL_LEG (see the header): true on every
-  # push and merge_group, and on a PR only if `changes` failed (`!cancelled()` lets it run
-  # then), so an ordinary PR skips the whole job and starts no runner. Shard 3 also runs
+  # unproven push, merge_group and train PR code run, and on any other PR only if `changes`
+  # failed (`!cancelled()` lets it run then), so an ordinary PR skips the whole job and starts
+  # no runner. Shard 3 also runs
   # typecheck, lint, drift and the eval, once for the leg (about 0.4 min). Shard 3, not 1:
   # test/sequencer.ts gives all 126 files recorded at 0 s to whichever shard is lightest when
   # they come up, shard 1 on this tree, and their real cost is not 0. That is a reading, not a
@@ -130,7 +192,7 @@ jobs:
     name: Node ${{ matrix.node }} tests ${{ matrix.shard }}/3
     runs-on: ubuntu-latest
     needs: changes
-    if: ${{ !cancelled() && (github.event_name != 'pull_request' || needs.changes.result != 'success') }}
+    if: ${{ !cancelled() && (needs.changes.result != 'success' || needs.changes.outputs.full_leg == 'true') }}
     strategy:
       fail-fast: false
       matrix:
@@ -176,7 +238,7 @@ jobs:
     name: Node ${{ matrix.node }} tests ${{ matrix.shard }}/3
     runs-on: ubuntu-latest
     needs: changes
-    if: ${{ !cancelled() && (github.event_name != 'pull_request' || needs.changes.result != 'success') }}
+    if: ${{ !cancelled() && (needs.changes.result != 'success' || needs.changes.outputs.full_leg == 'true') }}
     strategy:
       fail-fast: false
       matrix:
@@ -215,18 +277,21 @@ jobs:
         run: npm run eval:ci
 
   # The required `Node 18` and `Node 20` checks, one matrix leg each, over that version's
-  # shard job. On a PR (FULL_LEG false: the shards were skipped by design) it reports green
-  # with a job-summary line; otherwise the shards must have succeeded, so a shard that
-  # failed, was cancelled or was skipped turns it red. `always()`, not `!cancelled()`, as
-  # for `Node 22`: a job skipped by its `if` satisfies a required check. Both legs wait for
-  # both shard jobs (one `needs` list per job), but each reads only its own.
+  # shard job. On an ordinary PR (FULL_LEG false: the shards were skipped by design) it reports
+  # green with a job-summary line; on a proven push the shards must have been skipped; otherwise
+  # they must have succeeded, so a shard that failed, was cancelled or was skipped turns it red.
+  # `always()`, not `!cancelled()`, as for `Node 22`: a job skipped by its `if` satisfies a
+  # required check. Both legs wait for both shard jobs (one `needs` list per job), but each reads
+  # only its own.
   build:
     name: Node ${{ matrix.node }}
     runs-on: ubuntu-latest
     needs: [changes, node-18-tests, node-20-tests]
     if: ${{ always() }}
     env:
-      FULL_LEG: ${{ github.event_name != 'pull_request' || needs.changes.result != 'success' }}
+      FULL_LEG: ${{ needs.changes.result != 'success' || needs.changes.outputs.full_leg == 'true' }}
+      PROVEN: ${{ needs.changes.outputs.proven == 'true' }}
+      PROOF: ${{ needs.changes.outputs.proof }}
     strategy:
       fail-fast: false
       matrix:
@@ -238,13 +303,18 @@ jobs:
           SHARDS: ${{ matrix.node == 18 && needs.node-18-tests.result || needs.node-20-tests.result }}
           NODE: ${{ matrix.node }}
         run: |
-          if [ "$FULL_LEG" != "true" ]; then
-            echo "Node $NODE runs on every push to main and nightly, not on PRs." | tee -a "$GITHUB_STEP_SUMMARY"
+          if [ "$PROVEN" = "true" ]; then
+            echo "Node $NODE: proven by $PROOF. Shards: $SHARDS. Expected: skipped." | tee -a "$GITHUB_STEP_SUMMARY"
+            want=skipped
+          elif [ "$FULL_LEG" != "true" ]; then
+            echo "Node $NODE runs on every push to main, on train PRs and nightly, not on other PRs." | tee -a "$GITHUB_STEP_SUMMARY"
             exit 0
+          else
+            echo "Node $NODE tests (three shards): $SHARDS. Expected: success." | tee -a "$GITHUB_STEP_SUMMARY"
+            want=success
           fi
-          echo "Node $NODE tests (three shards): $SHARDS. Expected: success." | tee -a "$GITHUB_STEP_SUMMARY"
-          if [ "$SHARDS" != "success" ]; then
-            echo "::error::A Node $NODE shard did not succeed ($SHARDS)."
+          if [ "$SHARDS" != "$want" ]; then
+            echo "::error::The Node $NODE shards did not give the expected result ($want; got $SHARDS)."
             exit 1
           fi
 
@@ -254,7 +324,7 @@ jobs:
     name: Node 22 checks
     runs-on: ubuntu-latest
     needs: changes
-    if: ${{ !cancelled() && needs.changes.outputs.code != 'false' }}
+    if: ${{ !cancelled() && needs.changes.outputs.code != 'false' && needs.changes.outputs.proven != 'true' }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
@@ -288,7 +358,7 @@ jobs:
     name: Node 22 tests ${{ matrix.shard }}/5
     runs-on: ubuntu-latest
     needs: changes
-    if: ${{ !cancelled() && needs.changes.outputs.code != 'false' }}
+    if: ${{ !cancelled() && needs.changes.outputs.code != 'false' && needs.changes.outputs.proven != 'true' }}
     strategy:
       fail-fast: false
       matrix:
@@ -359,7 +429,8 @@ jobs:
   # The required `Node 22` check. It decides from its needs' results, so a shard that failed,
   # was cancelled or was skipped when it had work to do turns it red. `always()`, not
   # `!cancelled()`: a job skipped by its `if` satisfies a required check, so a cancelled
-  # run must not leave this one skipped.
+  # run must not leave this one skipped. On a proven push the code jobs must have been
+  # skipped, and the docs leg does not run either (FULL_CI stays true: the push is code).
   node-22:
     name: Node 22
     runs-on: ubuntu-latest
@@ -367,6 +438,8 @@ jobs:
     if: ${{ always() }}
     env:
       FULL_CI: ${{ needs.changes.outputs.code != 'false' }}
+      PROVEN: ${{ needs.changes.outputs.proven == 'true' }}
+      PROOF: ${{ needs.changes.outputs.proof }}
     steps:
       - name: Every Node 22 job gave the expected result
         if: always()
@@ -376,7 +449,10 @@ jobs:
           CHANGELOG: ${{ needs.changelog.result }}
           EVENT: ${{ github.event_name }}
         run: |
-          if [ "$FULL_CI" = "true" ]; then want=success; else want=skipped; fi
+          if [ "$PROVEN" = "true" ]; then
+            echo "Node 22: proven by $PROOF." | tee -a "$GITHUB_STEP_SUMMARY"
+            want=skipped
+          elif [ "$FULL_CI" = "true" ]; then want=success; else want=skipped; fi
           if [ "$EVENT" = "pull_request" ] || [ "$EVENT" = "merge_group" ]; then changelog_want=success; else changelog_want=skipped; fi
           echo "Node 22 checks: $CHECKS. Node 22 tests: $TESTS. Expected: $want. CHANGELOG: $CHANGELOG (expected $changelog_want)." | tee -a "$GITHUB_STEP_SUMMARY"
           if [ "$CHECKS" != "$want" ] || [ "$TESTS" != "$want" ]; then
@@ -439,14 +515,21 @@ jobs:
     needs: changes
     if: ${{ !cancelled() }}
     env:
-      FULL_CI: ${{ needs.changes.outputs.code != 'false' }}
+      # FULL_CI here means "run the steps": a code change that no train PR run proved.
+      FULL_CI: ${{ needs.changes.outputs.code != 'false' && needs.changes.outputs.proven != 'true' }}
+      PROVEN: ${{ needs.changes.outputs.proven == 'true' }}
+      PROOF: ${{ needs.changes.outputs.proof }}
     # The core suite never compiles the downstream workspaces, so a change that
     # breaks the docs site, the playground, the MCP shim or the VS Code extension
     # used to reach `main` green. This job compiles all five (docs, playground, MCP shim, hosted MCP Worker, VS Code).
     steps:
       - name: Record-only change, nothing to run on this leg
-        if: env.FULL_CI != 'true'
+        if: env.FULL_CI != 'true' && env.PROVEN != 'true'
         run: echo "Record-only change; see the Node 22 docs leg."
+
+      - name: Proven by a train PR run, nothing to run on this leg
+        if: env.PROVEN == 'true'
+        run: echo "Proven by $PROOF; nothing to run on this leg." | tee -a "$GITHUB_STEP_SUMMARY"
 
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         if: env.FULL_CI == 'true'
@@ -543,7 +626,7 @@ jobs:
     name: Windows tests ${{ matrix.shard }}/3
     runs-on: windows-latest
     needs: changes
-    if: ${{ !cancelled() && (github.event_name != 'pull_request' || needs.changes.result != 'success') }}
+    if: ${{ !cancelled() && (needs.changes.result != 'success' || needs.changes.outputs.full_leg == 'true') }}
     strategy:
       fail-fast: false
       matrix:
@@ -585,28 +668,35 @@ jobs:
         run: npm run check:drift
 
   # The required `Windows (tests + drift)` check, over `windows-tests`, as `Node 18` is over
-  # its shards: green with a job-summary line on a PR, else the shards must have succeeded.
-  # It only reads results, so it runs on Linux.
+  # its shards: green with a job-summary line on an ordinary PR, skipped shards on a proven
+  # push, else the shards must have succeeded. It only reads results, so it runs on Linux.
   windows:
     name: Windows (tests + drift)
     runs-on: ubuntu-latest
     needs: [changes, windows-tests]
     if: ${{ always() }}
     env:
-      FULL_LEG: ${{ github.event_name != 'pull_request' || needs.changes.result != 'success' }}
+      FULL_LEG: ${{ needs.changes.result != 'success' || needs.changes.outputs.full_leg == 'true' }}
+      PROVEN: ${{ needs.changes.outputs.proven == 'true' }}
+      PROOF: ${{ needs.changes.outputs.proof }}
     steps:
       - name: Every Windows shard gave the expected result
         if: always()
         env:
           SHARDS: ${{ needs.windows-tests.result }}
         run: |
-          if [ "$FULL_LEG" != "true" ]; then
-            echo "Windows runs on every push to main and nightly, not on PRs." | tee -a "$GITHUB_STEP_SUMMARY"
+          if [ "$PROVEN" = "true" ]; then
+            echo "Windows: proven by $PROOF. Shards: $SHARDS. Expected: skipped." | tee -a "$GITHUB_STEP_SUMMARY"
+            want=skipped
+          elif [ "$FULL_LEG" != "true" ]; then
+            echo "Windows runs on every push to main, on train PRs and nightly, not on other PRs." | tee -a "$GITHUB_STEP_SUMMARY"
             exit 0
+          else
+            echo "Windows tests (three shards): $SHARDS. Expected: success." | tee -a "$GITHUB_STEP_SUMMARY"
+            want=success
           fi
-          echo "Windows tests (three shards): $SHARDS. Expected: success." | tee -a "$GITHUB_STEP_SUMMARY"
-          if [ "$SHARDS" != "success" ]; then
-            echo "::error::A Windows shard did not succeed ($SHARDS)."
+          if [ "$SHARDS" != "$want" ]; then
+            echo "::error::The Windows shards did not give the expected result ($want; got $SHARDS)."
             exit 1
           fi
 
@@ -678,7 +768,10 @@ jobs:
     needs: changes
     if: ${{ !cancelled() }}
     env:
-      FULL_CI: ${{ needs.changes.outputs.code != 'false' }}
+      # FULL_CI here means "run the steps": a code change that no train PR run proved.
+      FULL_CI: ${{ needs.changes.outputs.code != 'false' && needs.changes.outputs.proven != 'true' }}
+      PROVEN: ${{ needs.changes.outputs.proven == 'true' }}
+      PROOF: ${{ needs.changes.outputs.proof }}
     strategy:
       fail-fast: false
       matrix:
@@ -696,8 +789,12 @@ jobs:
     # which is the whole argument for this leg.
     steps:
       - name: Record-only change, nothing to run on this leg
-        if: env.FULL_CI != 'true'
+        if: env.FULL_CI != 'true' && env.PROVEN != 'true'
         run: echo "Record-only change; see the Node 22 docs leg."
+
+      - name: Proven by a train PR run, nothing to run on this leg
+        if: env.PROVEN == 'true'
+        run: echo "Proven by $PROOF; nothing to run on this leg." | tee -a "$GITHUB_STEP_SUMMARY"
 
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         if: env.FULL_CI == 'true'
@@ -795,11 +892,18 @@ jobs:
     needs: changes
     if: ${{ !cancelled() }}
     env:
-      FULL_CI: ${{ needs.changes.outputs.code != 'false' }}
+      # FULL_CI here means "run the steps": a code change that no train PR run proved.
+      FULL_CI: ${{ needs.changes.outputs.code != 'false' && needs.changes.outputs.proven != 'true' }}
+      PROVEN: ${{ needs.changes.outputs.proven == 'true' }}
+      PROOF: ${{ needs.changes.outputs.proof }}
     steps:
       - name: Record-only change, nothing to run on this leg
-        if: env.FULL_CI != 'true'
+        if: env.FULL_CI != 'true' && env.PROVEN != 'true'
         run: echo "Record-only change; see the Node 22 docs leg."
+
+      - name: Proven by a train PR run, nothing to run on this leg
+        if: env.PROVEN == 'true'
+        run: echo "Proven by $PROOF; nothing to run on this leg." | tee -a "$GITHUB_STEP_SUMMARY"
 
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         if: env.FULL_CI == 'true'
@@ -910,19 +1014,26 @@ jobs:
     needs: changes
     if: ${{ !cancelled() }}
     env:
-      FULL_CI: ${{ needs.changes.outputs.code != 'false' }}
+      # FULL_CI here means "run the steps": a code change that no train PR run proved.
+      FULL_CI: ${{ needs.changes.outputs.code != 'false' && needs.changes.outputs.proven != 'true' }}
+      PROVEN: ${{ needs.changes.outputs.proven == 'true' }}
+      PROOF: ${{ needs.changes.outputs.proof }}
       # The browsers live in the workspace, where the cache step below finds them.
       PLAYWRIGHT_BROWSERS_PATH: ${{ github.workspace }}/.pw-browsers
     # packages/archlang-3d's heavy tests (archlang-3d plan §8.2, isolation rule I2): the GLB through
     # Khronos glTF-Validator and its determinism over the corpus, the CLI's exit codes, the licence
     # gate and the tarball's `npm pack` check, and the replay in Playwright's Chromium on SwiftShader, including the
     # key-frame pixel baseline, which is pinned to THIS environment (Linux, the Chromium build of the
-    # locked playwright-core; Q21). NOT a required check: the seven required names are a
-    # branch-protection setting the owner holds, and this job is not one of them.
+    # locked playwright-core; Q21). A required check: one of the ten names branch protection lists
+    # (`docs/agents/commands.md` § CI), a setting the owner holds.
     steps:
       - name: Record-only change, nothing to run on this leg
-        if: env.FULL_CI != 'true'
+        if: env.FULL_CI != 'true' && env.PROVEN != 'true'
         run: echo "Record-only change; see the Node 22 docs leg."
+
+      - name: Proven by a train PR run, nothing to run on this leg
+        if: env.PROVEN == 'true'
+        run: echo "Proven by $PROOF; nothing to run on this leg." | tee -a "$GITHUB_STEP_SUMMARY"
 
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         if: env.FULL_CI == 'true'
@@ -986,7 +1097,10 @@ jobs:
     needs: changes
     if: ${{ !cancelled() }}
     env:
-      FULL_CI: ${{ needs.changes.outputs.code != 'false' }}
+      # FULL_CI here means "run the steps": a code change that no train PR run proved.
+      FULL_CI: ${{ needs.changes.outputs.code != 'false' && needs.changes.outputs.proven != 'true' }}
+      PROVEN: ${{ needs.changes.outputs.proven == 'true' }}
+      PROOF: ${{ needs.changes.outputs.proof }}
     # `builds` proves the docs site COMPILES and `scripts/smoke.mjs` proves its routes
     # exist AFTER a deploy — neither opens the site. This job serves the built output
     # and checks the two contracts that are invisible to both:
@@ -1007,8 +1121,12 @@ jobs:
     # extends this job the day it lands.
     steps:
       - name: Record-only change, nothing to run on this leg
-        if: env.FULL_CI != 'true'
+        if: env.FULL_CI != 'true' && env.PROVEN != 'true'
         run: echo "Record-only change; see the Node 22 docs leg."
+
+      - name: Proven by a train PR run, nothing to run on this leg
+        if: env.PROVEN == 'true'
+        run: echo "Proven by $PROOF; nothing to run on this leg." | tee -a "$GITHUB_STEP_SUMMARY"
 
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         if: env.FULL_CI == 'true'

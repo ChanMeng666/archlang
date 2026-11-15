@@ -110,7 +110,7 @@ that compile every `arch` fence of every Markdown page, `npm-tarball`) and `docs
 joins the docs leg's list in `ci.yml`, or the record leaves the filter.
 
 **Code PRs.** Node 18, Node 20 and Windows report green with a job-summary line and run nothing: they
-run on every push to `main`, in the merge queue and in nightly's `full-matrix`. Each is an aggregator
+run on every push to `main`, on train PRs, in the merge queue and in nightly's `full-matrix`. Each is an aggregator
 on ubuntu over its own three-shard job (`Node 18 tests 1/3` to `3/3`, the same for Node 20,
 `Windows tests 1/3` to `3/3`), which on a PR is skipped at job level, so no runner starts; on any
 other event it requires the shards' `success`. Shard 3 also runs the leg's non-test checks
@@ -118,7 +118,20 @@ other event it requires the shards' `success`. Shard 3 also runs the leg's non-t
 `Node 22` is an aggregator over `Node 22 checks` and the shards `Node 22 tests 1/5` to `5/5`, and
 fails if one of them failed, was cancelled, or was skipped when `changes` did not call the PR a
 record. A push to `main` runs every leg, each suite split across its shards. A failed `changes` job
-runs every leg on a PR too. A push run peaks at about 23 parallel jobs counting CodeQL's two
+runs every leg on a PR too.
+
+**Train PRs and the proven push.** A PR whose head branch starts `train/` in this repository (a
+fork's `train/x` is an ordinary PR) runs Node 18, Node 20 and Windows in full when `changes` calls
+it code (`full_leg`); a records-only one stays records-only. On a push to `main` only, `changes` runs
+`scripts/ci-proven.mjs`: the push is proven when its commit is a two-parent merge whose tree is its
+second parent's, the first parent is an ancestor of the second, and a successful `pull_request`
+run of `ci.yml` for a `train/` branch at that second parent ran every job of a full run
+(`FULL_RUN_JOBS`, kept equal to `ci.yml` by `test/ci-proven.test.ts`; only `Benchmark` may have
+any conclusion). A proven run skips every leaf job's work, its aggregators accept the skips, and
+every required name reports green with a job-summary line naming the proving run; it concludes
+`success`, so `deploy.yml` and `main-red.yml` act as on any push. Any error or doubt runs the push in
+full. An ordinary PR's merge is never proven (its run skipped the main-only legs). `codeql.yml` is
+never short-circuited. A push run peaks at about 23 parallel jobs counting CodeQL's two
 `Analyze` legs, over the Free plan's 20 concurrent jobs, and the PR runs that strict status checks
 re-trigger when `main` moves (each `npm run sync:main -- --push`) share that limit, so some jobs queue: an
 estimate until TP5 measures the queue time.
@@ -144,7 +157,7 @@ Minutes, a full run measured 2026-10-27 (PR #290 at 2ed9d70e, `gh run view 40416
 
 | Job (CI's check name) | Runs | Min |
 |---|---|---|
-| `changes` (Changed paths) | classifies the PR's paths (not a required check) | < 0.1 |
+| `changes` (Changed paths) | classifies the PR's paths, marks a train PR (`full_leg`), and on a push to `main` decides `proven` (`scripts/ci-proven.mjs`); not a required check | < 0.1 |
 | `node-18-tests`, `node-20-tests` (Node 18 tests 1/3 … 3/3, Node 20 tests 1/3 … 3/3) | push and merge queue only (job-level skip on a PR): `vitest run --shard=N/3`; shard 3 first runs typecheck, `lint:ci`, `check:drift` and, after the tests, `eval:ci` | Node 18: 9.2, 9.9, 8.7; Node 20: 8.5, 7.3, 7.9 (red-proof run 43538960462; unsharded: 20.7, 19.9) |
 | `build` (Node 18, Node 20) | aggregator over its version's shard job: green with a job-summary line on a PR, else requires the shards' `success` | 0.1 |
 | `node-22-checks` (Node 22 checks) | typecheck, `lint:ci`, `check:drift`, `eval:ci` | 0.7 |
