@@ -256,6 +256,42 @@ describe("contact shadows (card RM8.8)", () => {
     expect(s.counts.tests).toBeLessThanOrEqual(16 * s.counts.probes);
   }, 60_000);
 
+  it("the grid stays near-linear on a long thin plan and a many-sided room (card RM8.8b item 2)", () => {
+    const world = makeVirtualWorld({});
+    const bakeOf = (src: string): ContactShadows => {
+      const r = adaptPlan(src, { world });
+      if (!r.ok) throw new Error(r.refusal.code);
+      const p = replayPayload(buildMesh(r.scene), { title: "g", svg: compile(src, { world }).svg });
+      return contactShadows(p.nodes, p.ground);
+    };
+    // A row of 400 rooms: square cells over a 1200 m by 3 m extent were 64 × 64 slivers across it,
+    // each holding six rooms' faces (36.9 tests a probe before the fix, 4.6 after).
+    const n = 400;
+    const rooms: string[] = [];
+    const walls = [
+      `wall id=h0 partition thickness 100 { (0,0) (${n * 3000},0) }`,
+      `wall id=h1 partition thickness 100 { (0,3000) (${n * 3000},3000) }`,
+    ];
+    for (let i = 0; i < n; i++) rooms.push(`room id=r_${i} at (${i * 3000},0) size 3000x3000`);
+    for (let k = 0; k <= n; k++)
+      walls.push(`wall id=v${k} partition thickness 100 { (${k * 3000},0) (${k * 3000},3000) }`);
+    const row = bakeOf(`plan "row" { units mm\n${rooms.join("\n")}\n${walls.join("\n")}\n}`);
+    expect(row.counts.edges).toBeGreaterThan(4 * n);
+    expect(row.counts.tests).toBeLessThanOrEqual(8 * row.counts.probes);
+    // A 720-sided round room: its triangulation's long slivers were listed in every cell their box
+    // covers (156.6 tests a probe before the fix, 29.3 after; 545.5 → 62.2 at 2880 sides).
+    const pts: string[] = [];
+    for (let i = 0; i < 720; i++) {
+      const a = (2 * Math.PI * i) / 720;
+      pts.push(`(${Math.round(20000 + 20000 * Math.cos(a))},${Math.round(20000 + 20000 * Math.sin(a))})`);
+    }
+    const gon = bakeOf(
+      `plan "gon" { units mm\nroom id=r polygon ${pts.join(" ")}\nwall id=w exterior thickness 200 { ${pts.join(" ")} close }\n}`,
+    );
+    expect(gon.counts.edges).toBeGreaterThan(700);
+    expect(gon.counts.tests).toBeLessThanOrEqual(40 * gon.counts.probes);
+  }, 60_000);
+
   it("the dark theme's alphas are the light theme's half as much again", () => {
     for (const k of ["floor", "corner", "furniture"] as const)
       expect(CONTACT_SHADOW.alphaDark[k]).toBeCloseTo(CONTACT_SHADOW.alpha[k] * 1.5, 12);

@@ -42,8 +42,9 @@
  * engine (IEEE arithmetic, no transcendental), but not exact as `det` is, and rounded to whole
  * micrometres. A length is the square root of an exact integer sum
  * (never `Math.hypot`, whose last bit an engine may choose), and every offset is rounded to whole
- * micrometres with -0 made 0. Receivers and casters are looked up through a uniform grid, so the work
- * is the probes times the faces in one cell, not times every face of the storey.
+ * micrometres with -0 made 0. Receivers and casters are looked up through a uniform grid of near-square
+ * cells listing the faces that overlap each cell, so the work is the probes times the faces in one
+ * cell, not times every face of the storey (`TriGrid`).
  */
 import { CONTACT_SHADOW } from "../materials.js";
 import { C16, S16 } from "../mesh/c16.js";
@@ -140,16 +141,53 @@ function contains(f: Tri, q: P2): boolean {
   return (s1 >= 0 && s2 >= 0 && s3 >= 0) || (s1 <= 0 && s2 <= 0 && s3 <= 0);
 }
 
-/** At most this many cells a side: a storey's faces are looked up in `GRID_MAX²` cells at most. */
-const GRID_MAX = 64;
+/** Cells a triangle gets on average, and the most cells a grid takes (memory, not correctness). */
+const CELLS_PER_TRI = 2;
+const CELLS_MAX = 1 << 16;
 
-/** A uniform grid over triangles' plan boxes: the triangles whose box covers a point's cell. */
+/**
+ * Whether the closed triangle `t` and the closed box `[x0, x1] × [z0, z1]` share a point, exactly:
+ * no separating axis among the box's two and the triangle's three edge normals (`det`, integers).
+ */
+function overlaps(t: Tri, x0: number, z0: number, x1: number, z1: number): boolean {
+  return (
+    !separates(t.a, t.b, t.c, x0, z0, x1, z1) &&
+    !separates(t.b, t.c, t.a, x0, z0, x1, z1) &&
+    !separates(t.c, t.a, t.b, x0, z0, x1, z1)
+  );
+}
+
+/** Whether the line through `p`, `q` has the box strictly on the side away from `r`. */
+function separates(p: P2, q: P2, r: P2, x0: number, z0: number, x1: number, z1: number): boolean {
+  const ux = q[0] - p[0];
+  const uz = q[1] - p[1];
+  const side = Math.sign(cross(ux, uz, r[0] - p[0], r[1] - p[1]));
+  if (side === 0) return false;
+  return (
+    side * cross(ux, uz, x0 - p[0], z0 - p[1]) < 0 &&
+    side * cross(ux, uz, x1 - p[0], z0 - p[1]) < 0 &&
+    side * cross(ux, uz, x1 - p[0], z1 - p[1]) < 0 &&
+    side * cross(ux, uz, x0 - p[0], z1 - p[1]) < 0
+  );
+}
+
+/**
+ * A uniform grid over a storey's plan triangles: a point's cell lists every triangle that overlaps
+ * it (exactly, `overlaps`), not every one whose box does, so a long sliver (a many-sided room's
+ * triangulation) is listed only where it lies. The cells are as near square as the extent allows,
+ * `kx × kz` of them about `CELLS_PER_TRI` a triangle, so a long thin plan (a row of rooms) is cut
+ * along its length and not into slivers across it (card RM8.8b item 2). A triangle containing a
+ * point is always in that point's cell: the lookup is exact, and the grid decides only how many
+ * faces are tested.
+ */
 class TriGrid {
   private readonly x0: number;
   private readonly z0: number;
   private readonly w: number;
   private readonly h: number;
-  private readonly k: number;
+  private readonly kx: number;
+  private readonly kz: number;
+  /** Each cell's triangles (a hole where a cell has none). */
   private readonly cells: Tri[][];
   constructor(tris: readonly Tri[]) {
     let [x0, z0, x1, z1] = [Infinity, Infinity, -Infinity, -Infinity];
@@ -160,18 +198,49 @@ class TriGrid {
         if (p[1] < z0) z0 = p[1];
         if (p[1] > z1) z1 = p[1];
       }
-    this.k = tris.length === 0 ? 0 : Math.max(1, Math.min(GRID_MAX, Math.ceil(Math.sqrt(tris.length))));
     this.x0 = x0;
     this.z0 = z0;
-    this.w = this.k === 0 ? 1 : Math.max(1, Math.ceil((x1 - x0 + 1) / this.k));
-    this.h = this.k === 0 ? 1 : Math.max(1, Math.ceil((z1 - z0 + 1) / this.k));
-    this.cells = Array.from({ length: this.k * this.k }, () => []);
+    if (tris.length === 0) {
+      [this.kx, this.kz, this.w, this.h] = [0, 0, 1, 1];
+      this.cells = [];
+      return;
+    }
+    const sx = x1 - x0 + 1;
+    const sz = z1 - z0 + 1;
+    const target = Math.min(CELLS_MAX, CELLS_PER_TRI * tris.length);
+    // Square cells of side `s` cover the extent in `target` cells; a side never exceeds the target.
+    const s = Math.sqrt((sx * sz) / target);
+    this.kx = Math.max(1, Math.min(target, Math.ceil(sx / s)));
+    this.kz = Math.max(1, Math.min(Math.floor(CELLS_MAX / this.kx), Math.ceil(sz / s)));
+    this.w = Math.max(1, Math.ceil(sx / this.kx));
+    this.h = Math.max(1, Math.ceil(sz / this.kz));
+    this.cells = new Array<Tri[]>(this.kx * this.kz);
     for (const t of tris) {
-      const xs = [t.a[0], t.b[0], t.c[0]];
-      const zs = [t.a[1], t.b[1], t.c[1]];
-      const [i0, i1] = [this.col(Math.min(...xs)), this.col(Math.max(...xs))];
-      const [j0, j1] = [this.row(Math.min(...zs)), this.row(Math.max(...zs))];
-      for (let j = j0; j <= j1; j++) for (let i = i0; i <= i1; i++) this.cells[j * this.k + i]?.push(t);
+      const i0 = this.col(Math.min(t.a[0], t.b[0], t.c[0]));
+      const i1 = this.col(Math.max(t.a[0], t.b[0], t.c[0]));
+      const j0 = this.row(Math.min(t.a[1], t.b[1], t.c[1]));
+      const j1 = this.row(Math.max(t.a[1], t.b[1], t.c[1]));
+      for (let j = j0; j <= j1; j++) {
+        const cz0 = this.z0 + j * this.h;
+        const cz1 = cz0 + this.h;
+        // The triangle's x-extent [lo, hi] within the row, in floating point (off by far less than
+        // a micrometre, a cell's least width): scanned a cell wider each way. A cell strictly
+        // between the cells of `lo` and `hi` overlaps (the triangle's part in the row is convex,
+        // within the row's height, and reaches every x in [lo, hi]); the cells at either end take
+        // the exact test.
+        const [lo, hi] = rowExtent(t, cz0, cz1);
+        const ilo = this.col(lo);
+        const ihi = this.col(hi);
+        const to = Math.min(i1, ihi + 1);
+        for (let i = Math.max(i0, ilo - 1); i <= to; i++) {
+          const cx0 = this.x0 + i * this.w;
+          if (!((i > ilo && i < ihi) || overlaps(t, cx0, cz0, cx0 + this.w, cz1))) continue;
+          const c = j * this.kx + i;
+          const list = this.cells[c];
+          if (list) list.push(t);
+          else this.cells[c] = [t];
+        }
+      }
     }
   }
   private col(x: number): number {
@@ -181,22 +250,48 @@ class TriGrid {
     return Math.floor((z - this.z0) / this.h);
   }
   at(q: P2): readonly Tri[] {
-    if (this.k === 0) return [];
+    if (this.kx === 0) return [];
     const i = this.col(q[0]);
     const j = this.row(q[1]);
-    if (i < 0 || j < 0 || i >= this.k || j >= this.k) return [];
-    return this.cells[j * this.k + i] ?? [];
+    if (i < 0 || j < 0 || i >= this.kx || j >= this.kz) return [];
+    return this.cells[j * this.kx + i] ?? [];
   }
   /** The triangles in the cells a plan box covers, each once (callers sort what they derive). */
   near(x0: number, z0: number, x1: number, z1: number): Tri[] {
-    if (this.k === 0) return [];
-    const clamp = (v: number): number => Math.max(0, Math.min(this.k - 1, v));
+    if (this.kx === 0) return [];
+    const ci = (v: number): number => Math.max(0, Math.min(this.kx - 1, v));
+    const cj = (v: number): number => Math.max(0, Math.min(this.kz - 1, v));
     const seen = new Set<Tri>();
-    for (let j = clamp(this.row(z0)); j <= clamp(this.row(z1)); j++)
-      for (let i = clamp(this.col(x0)); i <= clamp(this.col(x1)); i++)
-        for (const t of this.cells[j * this.k + i] ?? []) seen.add(t);
+    for (let j = cj(this.row(z0)); j <= cj(this.row(z1)); j++)
+      for (let i = ci(this.col(x0)); i <= ci(this.col(x1)); i++)
+        for (const t of this.cells[j * this.kx + i] ?? []) seen.add(t);
     return [...seen];
   }
+}
+
+/**
+ * The x-extent of triangle `t` within the strip `z0 ≤ z ≤ z1`, in plain floating point (a bound the
+ * grid scans from, widened by a cell; `overlaps` is the exact test). Over the whole triangle's x-range
+ * when the strip holds no vertex and no edge crosses it (it cannot both miss and overlap).
+ */
+function rowExtent(t: Tri, z0: number, z1: number): [number, number] {
+  let lo = Infinity;
+  let hi = -Infinity;
+  const take = (x: number): void => {
+    if (x < lo) lo = x;
+    if (x > hi) hi = x;
+  };
+  const ps = [t.a, t.b, t.c];
+  for (const p of ps) if (p[1] >= z0 && p[1] <= z1) take(p[0]);
+  for (let k = 0; k < 3; k++) {
+    const p = ps[k] as P2;
+    const q = ps[(k + 1) % 3] as P2;
+    if (p[1] === q[1]) continue;
+    for (const z of [z0, z1])
+      if ((p[1] - z) * (q[1] - z) < 0) take(p[0] + ((q[0] - p[0]) * (z - p[1])) / (q[1] - p[1]));
+  }
+  if (lo > hi) return [Math.min(t.a[0], t.b[0], t.c[0]), Math.max(t.a[0], t.b[0], t.c[0])];
+  return [lo, hi];
 }
 
 /** The horizontal triangles of `n` facing up (`up`) or down, at height `y` only when given. */
