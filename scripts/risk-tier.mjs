@@ -17,6 +17,8 @@ export const RULES = [
   ["high", /^(scripts\/risk-tier\.mjs|REVIEW\.md|docs\/agents\/commands\.md)$/, "the review policy itself"],
   ["high", /^\.github\/(workflows|actions)\/|^\.github\/(CODEOWNERS|dependabot\.yml)$/, "CI, release or ownership"],
   ["high", /^(package\.json|vitest\.config\.ts|scripts\/check-[^/]+)$/, "what CI runs and checks"],
+  ["high", /^scripts\/(ci-proven|merge-train|sync-main|gate-select|nearest-tests|workspaces)\.mjs$/, "merge machinery"],
+  ["high", /^test\/sequencer\.ts$/, "merge machinery: which shard runs each test file"],
   ["high", /(^|\/)[^/]*baseline[^/]*\.json$/, "a pinned baseline"],
   ["high", /^\.(gitleaksignore|gitattributes)$/, "secret scan or byte handling"],
   ["high", /^\.claude\/(settings\.json|hooks\/)/, "agent permissions or hooks"],
