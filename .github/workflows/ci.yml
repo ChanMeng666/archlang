@@ -788,6 +788,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: changes
     if: ${{ !cancelled() }}
+    timeout-minutes: 20
     env:
       # FULL_CI here means "run the steps": a code change that no train PR run proved.
       FULL_CI: ${{ needs.changes.outputs.code != 'false' && (needs.changes.result != 'success' || needs.changes.outputs.proven != 'true') }}
@@ -894,7 +895,8 @@ jobs:
 
       - name: Run E2E specs
         if: env.FULL_CI == 'true'
-        run: npx playwright test -c playground --project chromium ${{ matrix.specs }}
+        # The specs come before `--project=`: `--project` is variadic and would read them as project names.
+        run: npx playwright test -c playground ${{ matrix.specs }} --project=chromium
 
       # A retry keeps the step above green; this one reads its JSON report and annotates every case
       # that passed only on the retry. Warning only here; nightly's e2e-prod fails on one.
@@ -922,6 +924,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: changes
     if: ${{ !cancelled() }}
+    timeout-minutes: 20
     env:
       # FULL_CI here means "run the steps": a code change that no train PR run proved.
       FULL_CI: ${{ needs.changes.outputs.code != 'false' && (needs.changes.result != 'success' || needs.changes.outputs.proven != 'true') }}
@@ -1026,6 +1029,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: [changes, e2e-playground-chromium, e2e-playground-engines]
     if: ${{ always() }}
+    timeout-minutes: 5
     steps:
       - name: Every Playground E2E job passed
         if: always()

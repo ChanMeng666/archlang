@@ -40,9 +40,9 @@ the replay (HTML, video), the GLB and their checks. The plan and its cards:
   environment entry and in a layout Biome rejects: compare CI's printed hashes, add the Linux entry
   back, `biome format` the file, and cite the run in `e2e/fixtures/README.md`.
 - CI runs `npm run check:3d`'s heavy tests (Chromium through `playwright-core`, ffmpeg, glTF-Validator)
-  on Linux as CI's two jobs, one per vitest pass (`npm -w packages/archlang-3d run e2e -- --pass=suite` and
-  `--pass=frame-budget`, `scripts/e2e.ts`), behind the required `3D package (check:3d)`. `playwright-core` is imported
-  lazily (CI's Node 18 leg runs the light tests).
+  on Linux as two jobs, one per vitest pass (`--pass=suite`, `--pass=frame-budget`; `scripts/e2e.ts`),
+  behind the required `3D package (check:3d)`. `playwright-core` is imported lazily (CI's Node 18 leg
+  runs the light tests).
 - A new runtime dependency passes the licence gate (`licences.json`, `npm -w packages/archlang-3d run
   notices` for `THIRD_PARTY_NOTICES`); the deny-list wins over the allow-list.
 - The playground tab is lazy: the startup chunks carry no 3D code (`playground/e2e/preview3d.spec.ts`
@@ -53,7 +53,7 @@ the replay (HTML, video), the GLB and their checks. The plan and its cards:
 - **archlang-3d key frames are pinned from CI's printed hashes.** A change that moves frames leaves
   `e2e/fixtures/keyframe-baseline.json` alone, the `3D package suite pass` job prints the new hashes,
   and a follow-up commit on the same PR pins them with the run link (`e2e/fixtures/README.md`). Never
-  merge with `3D package (check:3d)` red (a required check: the PR stays red until the pin).
+  merge with `3D package (check:3d)` red.
 - **`packages/archlang-3d` imports `playwright-core` lazily** (inside the function that launches a
   browser): 1.64 calls `process.exit(1)` on import under Node < 20, and CI's Node 18 leg runs the
   package's light tests. After a dependency lands in a workspace, a checkout whose `node_modules`
