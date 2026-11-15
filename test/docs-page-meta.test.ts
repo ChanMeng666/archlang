@@ -162,7 +162,7 @@ function builtRoutes(): string[] {
   const adrs = readdirSync("docs/adr")
     .filter((f) => f.endsWith(".md") && f !== "index.md")
     .map((f) => `/adr/${f.replace(/\.md$/, "")}`);
-  return [...new Set([...staticPages, ...synced, ...adrs, "/adr/"])].sort();
+  return [...new Set([...staticPages, ...synced, ...adrs, "/adr"])].sort();
 }
 
 const ROWS = pageMeta();
@@ -174,7 +174,7 @@ describe("PAGE_META covers exactly the routes the docs site builds", () => {
   it("the derivation found a real, non-trivial route set", () => {
     // 5 static pages + 9 synced + 19 ADRs + the ADR index at the time of writing.
     expect(ROUTES.length).toBeGreaterThanOrEqual(30);
-    for (const route of ["/", "/guide", "/reference", "/errors", "/spec", "/adr/"]) {
+    for (const route of ["/", "/guide", "/reference", "/errors", "/spec", "/adr"]) {
       expect(ROUTES).toContain(route);
     }
   });
