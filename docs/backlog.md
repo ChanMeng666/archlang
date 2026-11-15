@@ -1699,7 +1699,7 @@ shadows, approved by the owner 2026-11-11).
 
 ## Playground residue (public-surfaces cards P2 and P3, 2026-11-06)
 
-### PG.1 · A room cannot be reached from the keyboard — `todo`
+### PG.1 · A room cannot be reached from the keyboard: done by #824, waiting to be archived — `note`
 
 The hover tooltip and the room's facts card (`playground/src/interact.ts`, `room-card.ts`) open
 from the pointer only: no room in the drawing takes the focus, so a keyboard or screen-reader user

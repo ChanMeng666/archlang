@@ -7,7 +7,8 @@
  *
  * A non-modal dialog. Opened in view mode it takes the focus, so a keyboard and a screen reader
  * land on it; in edit mode the click has just put the caret in the editor, and the card leaves it
- * there. Escape (outside the editor) or its × closes it, and the focus goes back where it was. A
+ * there. Opened from the keyboard's list of rooms (room-index.ts) it takes the focus in either mode.
+ * Escape (outside the editor) or its × closes it, and the focus goes back where it was. A
  * click on another room shows that room; a click off every room closes it. A new plan closes it; a
  * recompile of the same plan refreshes it, or closes it when its room is gone.
  */
@@ -15,8 +16,11 @@ import type { SceneSummary } from "archlang";
 import { type FactsRoom, openingsText, roomCardFacts } from "./room-facts.js";
 
 export interface RoomCard {
-  /** Show `room`'s facts, or close the card for `null` (a click off every room). */
-  show(room: FactsRoom | null): void;
+  /**
+   * Show `room`'s facts, or close the card for `null` (a click off every room). `takeFocus` moves
+   * the focus to the card even in edit mode (the keyboard's room list, room-index.ts, card PG.1).
+   */
+  show(room: FactsRoom | null, takeFocus?: boolean): void;
   close(): void;
   /** Re-read the open room from the latest summary (a recompile); close when it is gone. */
   refresh(): void;
@@ -114,15 +118,15 @@ export function mountRoomCard({ viewport, stage, getSummary, isEditing, jumpToOf
   });
 
   return {
-    show(room) {
+    show(room, takeFocus = false) {
       const summary = getSummary();
       if (!room || !summary) return close();
       const wasOpen = !card.hidden;
       roomId = room.id;
       render(room, summary);
       card.hidden = false;
-      if (!isEditing()) {
-        if (!wasOpen) returnTo = document.activeElement;
+      if (takeFocus || !isEditing()) {
+        if (!wasOpen || (takeFocus && !card.contains(document.activeElement))) returnTo = document.activeElement;
         card.focus({ preventScroll: true });
       }
     },

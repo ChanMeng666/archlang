@@ -8,6 +8,7 @@
 import { createPanZoom } from "./pan-zoom.js";
 import { mountInteract } from "./interact.js";
 import { mountRoomCard } from "./room-card.js";
+import { mountRoomIndex } from "./room-index.js";
 import { showSvgInStage, sizeFromViewBox } from "./viewer.js";
 import type { RoomSummary, SceneSummary } from "archlang";
 
@@ -78,6 +79,8 @@ export function createPreview(opts: PreviewOpts): Preview {
   // to jump the editor caret to its source (C3, via the annotate data-span attributes).
   const card = mountRoomCard({ viewport, stage, getSummary, isEditing, jumpToOffset });
   mountInteract({ viewport, stage, getRooms, jumpToOffset, onRoomClick: (room) => card.show(room) });
+  // The same card from the keyboard: the drawing takes no focus, so a list of its rooms does (PG.1).
+  mountRoomIndex({ viewport, getRooms, openCard: (room) => card.show(room, true) });
 
   return {
     show(svg, refit) {
