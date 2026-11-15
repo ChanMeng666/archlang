@@ -1812,7 +1812,7 @@ place differently, and the drafting-layer `W_ANNOTATION_OVERLAP` with it. No shi
 
 ## 3D asset and surface residue (public-surfaces 3D cards X4b, X6, V2, 2026-11-06)
 
-### 3D.1 · The asset check trusts the manifest for the plan PNG — `todo`
+### 3D.1 · The asset check decodes the committed plan PNG: done by #826, waiting to be archived — `note`
 
 `checkAssets` (`packages/archlang-3d/scripts/gen-3d-assets.ts`) compares a committed
 `<name>.plan.png` only by SHA-256 against the manifest, then re-rasterises the source to the
