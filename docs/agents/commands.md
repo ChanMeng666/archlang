@@ -75,7 +75,7 @@
 - `gen:3d-assets` (`packages/archlang-3d/scripts/gen-3d-assets.ts`) writes the 3D preview's posters,
   replay MP4s, GLBs and `manifest.json` into `docs-site/public/3d/`. It needs Chromium and ffmpeg
   (`archlang3d doctor`), so it sits outside `gen:all` and the drift gate; its freshness check
-  (`-- --check`) runs in CI's `check-3d` job (`e2e/assets.e2e.ts`). Re-run it after a change to a
+  (`-- --check`) runs in CI's `3D package suite pass` job (`e2e/assets.e2e.ts`). Re-run it after a change to a
   listed plan or to the package's version, mesh or viewer.
 - `npm run dev` is `tsup --watch`, not a web server (`playground:dev` / `docs:dev` are the sites).
 
@@ -127,12 +127,13 @@ call the PR a record. An unproven push to `main` runs every leg, each suite spli
 A failed `changes` job runs every leg on a PR too.
 
 **Concurrency.** The account is GitHub Pro: 40 concurrent jobs. The peak, counted as every job with
-work running at once a few seconds after `changes` (it was 25 measured on train run 43696702870
-before the shard change): a train PR run about 36 (32 `ci.yml` leaves, `changelog`, `plugin-validate` and
-CodeQL's two `Analyze` legs); an unproven push about 34 (no `changelog`, no `bench`); an ordinary
-code PR about 21. Aggregators start only after their leaves, so they add nothing to the peak. A
-second run at the same time queues some jobs; `npm run sync:main -- --push` and every new PR push
-start one.
+work running at once a few seconds after `changes` (measured: 25 on train run 43696702870 before the
+shard change, 24 on PR run 43699946434): a train PR run about 38 (34 `ci.yml` leaves, `changelog`,
+`plugin-validate` and CodeQL's two `Analyze` legs); an unproven push about 36 (no `changelog`, no
+`bench`); an ordinary code PR about 26 (19 leaves, `changelog`, and the `Node 18`, `Node 20` and
+`Windows (tests + drift)` aggregators, which start at once there because their shards are skipped,
+plus the three other workflows' jobs). A train run and an ordinary PR run together exceed 40, so
+some jobs queue; `npm run sync:main -- --push` and every new PR push start a run.
 
 **Train PRs and the proven push.** A PR whose head branch starts `train/` in this repository (a
 fork's `train/x` is an ordinary PR) runs Node 18, Node 20 and Windows in full when `changes` calls
@@ -149,14 +150,17 @@ error or doubt runs the push in full; an ordinary PR's merge fails the `train/` 
 conditions. `codeql.yml` is never short-circuited. `node scripts/ci-proven.mjs --run <run id>` says
 read-only whether a train PR's run would prove its merge.
 
-**Playground E2E** is an aggregator too (`Playground E2E (Playwright)`), over two Chromium shards
-(`Playground E2E chromium 1/2`, `2/2`: the chromium project with `--shard=N/2`) and one job
-for the `@engines` specs in Firefox and WebKit (`Playground E2E engines`). Each has its own `Flaky
-tests` step and its own report artifact on failure (`playwright-report-chromium-<n>`,
-`playwright-report-engines`); the aggregator requires `success` of both, which a record-only PR
-gives with every step skipped.
+**Playground E2E** is an aggregator too (`Playground E2E (Playwright)`), over three Chromium shards
+(`Playground E2E chromium 1/3` to `3/3`) and one job for the `@engines` specs in Firefox and WebKit
+(`Playground E2E engines`). Each has its own `Flaky tests` step and its own report artifact on
+failure (`playwright-report-chromium-<n>`, `playwright-report-engines`); the aggregator requires
+`success` of both, which a record-only PR gives with every step skipped. The Chromium shards and the
+three `Docs site E2E` shards run explicit spec lists (`matrix.include` `specs` in `ci.yml`), balanced
+by each spec's measured seconds, not Playwright's `--shard`, which splits by test count in file order;
+`test/e2e-shards.test.ts` fails unless each site's lists name every spec in its `e2e/` exactly once.
+Rebalance from a run's log (the list reporter prints each test's time) when a shard drifts.
 
-**Shard balance.** `test/sequencer.ts` splits the shards by the seconds per file in `test/.durations.json` plus `FILE_OVERHEAD_S` (2) per file, the import and collection cost the table does not record (without it the files recorded at 0 s all landed in one shard, TP6); a file the table lacks goes to the shard its path hashes to, so it moves no other file (`test/sequencer.test.ts`); nightly's `full-matrix` job (the `Test ubuntu-latest / Node 22` leg) uploads a fresh table as the `test-durations` artifact. Refresh with `gh run download <nightly run id> -n test-durations -D <dir> && node scripts/gen-test-durations.mjs <dir>/test-durations.json` (it merges: rows for files in the artifact are replaced, rows for deleted files dropped), after a nightly whose shard walls differ by more than 1.5× or about once a month.
+**Shard balance.** `test/sequencer.ts` splits the shards by the seconds per file in `test/.durations.json` plus `FILE_OVERHEAD_S` (2) per file, the import and collection cost the table does not record (without it the files recorded at 0 s all landed in one shard, TP6); the files the table lacks follow, in path order, each at the table's median onto the then-lightest shard, so adding one never moves a recorded file (`test/sequencer.test.ts`); nightly's `full-matrix` job (the `Test ubuntu-latest / Node 22` leg) uploads a fresh table as the `test-durations` artifact. Refresh with `gh run download <nightly run id> -n test-durations -D <dir> && node scripts/gen-test-durations.mjs <dir>/test-durations.json` (it merges: rows for files in the artifact are replaced, rows for deleted files dropped), after a nightly whose shard walls differ by more than 1.5× or about once a month.
 
 **A break on a main-only leg appears after the merge** of an ordinary PR (a train PR's run shows it
 before), and nothing blocks on it. It is seen in three
@@ -181,11 +185,13 @@ Minutes, a full run measured 2026-10-27 (PR #290 at 2ed9d70e, `gh run view 40416
 | `builds` (Workspace builds) | `build`, `typecheck:all`, all five workspace builds (docs, playground, MCP shim, hosted MCP Worker, VS Code), MCP `check-dist-resources.mjs`, VS Code bundle tests, `check:test-wiring`, `check:dxf` with ezdxf in a virtualenv (each only here) | 2.0 |
 | `windows-tests` (Windows tests 1/5 … 5/5) | unproven push, merge queue and train PRs (job-level skip on other PRs and a proven push), on windows-latest: `vitest run --shard=N/5` at the runner's default line endings, shard 5 then `check:drift` (no `eval:ci`) | three shards on train run 43696702870: 8.8, 8.4, 6.0 (five: not yet measured) |
 | `windows` (Windows (tests + drift)) | aggregator over `windows-tests`, on ubuntu: green with a job-summary line on an ordinary PR, requires the shards' skip on a proven push, else their `success` | 0.1 |
-| `e2e-playground-chromium` (Playground E2E chromium 1/2, 2/2) | every playground spec in Chromium, `--shard=N/2` (Playwright splits by test count, not duration), then `Flaky tests` | 3.0, 5.1 (run 43535706255) |
+| `e2e-playground-chromium` (Playground E2E chromium 1/3 … 3/3) | every playground spec in Chromium, three explicit spec lists balanced by measured seconds, then `Flaky tests` | two `--shard` shards on PR run 43699946434: 3.7, 5.2 (three: not yet measured) |
 | `e2e-playground-engines` (Playground E2E engines) | the `@engines` specs in Firefox and WebKit, then `Flaky tests` | 2.8 (run 43535706255) |
 | `e2e-playground` (Playground E2E (Playwright)) | aggregator: requires `success` of both jobs above | 0.1 (run 43535706255) |
-| `e2e-docs-shard` (Docs site E2E 1/2, 2/2) | Playwright against the built docs site, `--shard=N/2` (`fullyParallel`: split by test), then `Flaky tests`; report artifact `playwright-report-docs-<n>` on failure | one job on train run 43696702870: 6.0 (two: not yet measured) |
-| `check-3d-pass` (3D package suite pass, 3D package frame-budget pass) | `npm run check:3d`'s two vitest passes, one job each (`npm -w packages/archlang-3d run e2e -- --pass=<suite\|frame-budget>`) on Linux: `packages/archlang-3d`'s heavy tests (GLB through glTF-Validator, determinism over the corpus, CLI exit codes, the tarball through `npm pack`, the replay in Playwright's Chromium on SwiftShader with ffmpeg, the key-frame pixel baseline pinned to this job's Chromium); browsers in `PLAYWRIGHT_BROWSERS_PATH`, cached by the `playwright-core` version | one job on train run 43696702870: 5.6 (suite pass 1.8, frame budget 2.4 in its log) |
+| `e2e-docs-shard` (Docs site E2E 1/3 … 3/3) | Playwright against the built docs site, three explicit spec lists balanced by measured seconds, then `Flaky tests`; report artifact `playwright-report-docs-<n>` on failure | two `--shard` shards on PR run 43699946434: 5.2, 2.5 (three: not yet measured) |
+| `e2e-docs` (Docs site E2E (Playwright)) | aggregator: requires `success` of the three shards | < 0.1 |
+| `check-3d-pass` (3D package suite pass, 3D package frame-budget pass) | `npm run check:3d`'s two vitest passes, one job each (`npm -w packages/archlang-3d run e2e -- --pass=<suite\|frame-budget>`) on Linux: `packages/archlang-3d`'s heavy tests (GLB through glTF-Validator, determinism over the corpus, CLI exit codes, the tarball through `npm pack`, the replay in Playwright's Chromium on SwiftShader with ffmpeg, the key-frame pixel baseline pinned to this job's Chromium); browsers in `PLAYWRIGHT_BROWSERS_PATH`, cached by the `playwright-core` version | one job on train run 43696702870: 5.6 (suite pass 1.8, frame budget 2.4 in its log); two jobs on PR run 43699946434: 3.4, 3.3 |
+| `check-3d` (3D package (check:3d)) | aggregator: requires `success` of both passes; required | < 0.1 |
 | `bench` | informational PR-head vs merge-base timings, two runs each (order B H H B), ratios and a noise floor in the job summary (+ a PR comment on same-repo PRs); never gates (the gate is `test/work-counts.test.ts`): `continue-on-error`, and a benchmark that produced no table says so in the summary instead of failing; skipped on a record-only PR | 2.8 |
 
 Coverage is not in `ci.yml`: nightly's `coverage` job runs `test:coverage` (report-only). The E2E legs

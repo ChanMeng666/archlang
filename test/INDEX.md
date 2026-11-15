@@ -5,7 +5,7 @@
 Where the tests of a `src` module are, and what each test file is for. Generated; `npm run check:drift`
 fails when it is stale. How to add a test: `docs/testing.md` § 4.
 
-519 test files in `test/`, 284 `src` modules, 106 modules no test imports.
+520 test files in `test/`, 284 `src` modules, 106 modules no test imports.
 
 ## `src` module → tests that import it
 
@@ -335,6 +335,7 @@ The first sentence of each file's header comment.
 - `test/double-door-byte-identity.test.ts` — The `double` door kind (plan-soundness PS2.11e): its byte-identity law, its printer and Plan JSON round trips, and what it draws and refuses.
 - `test/drawing-budget.test.ts` — The drawing budget (`MAX_DRAW_UNITS`, `src/draw-budget.ts`): before anything is drawn, `compile()` estimates the primitives every storey will draw, kind by kind, and a plan past the budget is ONE `E_DRAWING_LIMIT` at...
 - `test/drawing-overflow.test.ts` — `sheet.drawing_fits` and `W_DRAWING_OVERFLOW`.
+- `test/e2e-shards.test.ts` — ci.yml's Playwright shard jobs name every spec of their site exactly once, by explicit lists.
 - `test/element-cap.test.ts` — element budget (E_ELEMENT_LIMIT); 1000 identical rooms; huge finite coordinates.
 - `test/element-facets.test.ts` — Every built-in element kind answers every hand-written kind set explicitly (EH1.2).
 - `test/element-keyword-drift.test.ts` — Drift guard for the weakest joint in the "adding an element = one module" story: `KEYWORDS.element` (src/grammar/tokens.ts — feeds the parser's statement-start set, the editor grammars and the LLM spec) and `BUILTIN_D...

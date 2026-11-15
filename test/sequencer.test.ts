@@ -9,7 +9,7 @@ import DurationSequencer, {
   type Durations,
   FILE_OVERHEAD_S,
   fileCost,
-  pathHash,
+  medianOf,
   readDurations,
   shardCosts,
 } from "./sequencer.js";
@@ -54,62 +54,99 @@ describe("assignShards", () => {
     for (const s of shards) expect(s.filter((p) => p.startsWith("zero-")).length).toBeGreaterThanOrEqual(30);
   });
 
-  it("on the real table: a partition, every shard holds files recorded at 0 s, loads within one file's cost", () => {
+  it("on the real table: a partition, files recorded at 0 s in every shard, loads within one file's cost", () => {
     const zeros = SUITE.filter((p) => TABLE[p] === 0);
     expect(zeros.length).toBeGreaterThan(0);
-    const largest = Math.max(...SUITE.filter((p) => p in TABLE).map((p) => fileCost(TABLE[p]!)));
+    // Every file counted as the sequencer counts it, the files the table lacks at its median.
+    const cost = (p: string) => fileCost(p in TABLE ? TABLE[p]! : medianOf(TABLE));
+    const largest = Math.max(...SUITE.map(cost));
     for (const n of [3, 5, 7]) {
       const shards = assignShards(SUITE, TABLE, n);
       expect(isPartition(shards, SUITE), `N=${n}`).toBe(true);
       for (const s of shards)
         expect(s.filter((p) => TABLE[p] === 0).length).toBeGreaterThanOrEqual(Math.floor(zeros.length / n / 2));
       const costs = shardCosts(shards, TABLE);
-      // Greedy-to-lightest: the heaviest shard was the lightest when it took its last file.
+      expect(
+        costs.reduce((a, b) => a + b, 0),
+        `N=${n}`,
+      ).toBeCloseTo(
+        SUITE.reduce((a, p) => a + cost(p), 0),
+        6,
+      );
+      // Greedy-to-lightest, both passes: the heaviest shard was the lightest when it took its last file.
       expect(Math.max(...costs) - Math.min(...costs), `N=${n}`).toBeLessThanOrEqual(largest);
     }
   });
 
-  it("does not depend on the order or duplicates of its input", () => {
-    const paths = SUITE.slice(0, 80);
-    const shuffled = [...paths].sort((a, b) => pathHash(a) - pathHash(b));
-    expect(assignShards([...shuffled, ...paths.slice(0, 5)], TABLE, 4)).toEqual(assignShards(paths, TABLE, 4));
+  it("puts a file the table lacks on the lightest shard at the table's median, after every recorded file", () => {
+    // The #794 pole: an unrecorded file used to be hashed onto a shard regardless of its load.
+    const table: Durations = { "heavy.test.ts": 100, "light.test.ts": 10 };
+    expect(assignShards(["heavy.test.ts", "light.test.ts", "new.test.ts"], table, 2)).toEqual([
+      ["heavy.test.ts"],
+      ["light.test.ts", "new.test.ts"],
+    ]);
+    // Many unrecorded files spread like recorded ones.
+    const many = Array.from({ length: 40 }, (_, i) => `u-${String(i).padStart(2, "0")}.test.ts`);
+    const shards = assignShards([...many, "heavy.test.ts"], { "heavy.test.ts": 30, "x.test.ts": 1 }, 4);
+    const costs = shardCosts(shards, { "heavy.test.ts": 30, "x.test.ts": 1 });
+    expect(Math.max(...costs) - Math.min(...costs)).toBeLessThanOrEqual(fileCost(30));
+    for (const s of shards.slice(1)) expect(s.length).toBeGreaterThan(5);
   });
 
-  it("stability: adding, removing or renaming a file the table lacks moves no other file", () => {
-    const base = SUITE.filter((p) => p in TABLE).concat([
-      "test/zz-unrecorded-a.test.ts",
-      "test/zz-unrecorded-b.test.ts",
-    ]);
+  it("medianOf: the middle usable entry (mean of the two middles), 0 for an empty table", () => {
+    expect(medianOf({ a: 1, b: 9, c: 3 })).toBe(3);
+    expect(medianOf({ a: 1, b: 9, c: 3, d: 5 })).toBe(4);
+    expect(medianOf({})).toBe(0);
+    expect(medianOf({ a: 2, b: Number.NaN, c: -1, d: "7" as unknown as number })).toBe(2);
+  });
+
+  it("does not depend on the order or duplicates of its input", () => {
+    const paths = [...SUITE.slice(0, 80), "test/zz-unrecorded.test.ts"];
+    expect(assignShards([...paths].reverse().concat(paths.slice(0, 5)), TABLE, 4)).toEqual(
+      assignShards(paths, TABLE, 4),
+    );
+  });
+
+  it("stability: adding, removing or renaming a file the table lacks never moves a recorded file", () => {
+    const recordedFiles = SUITE.filter((p) => p in TABLE);
+    const base = recordedFiles.concat(["test/zz-unrecorded-a.test.ts", "test/zz-unrecorded-c.test.ts"]);
     for (const n of [3, 5, 7]) {
       const before = shardOf(assignShards(base, TABLE, n));
-      const variants = [
-        [...base, "test/zz-new.test.ts"],
-        base.filter((p) => p !== "test/zz-unrecorded-a.test.ts"),
-        base.map((p) => (p === "test/zz-unrecorded-b.test.ts" ? "test/zz-renamed.test.ts" : p)),
+      const variants: [string[], string][] = [
+        [[...base, "test/zz-unrecorded-b.test.ts"], "test/zz-unrecorded-b.test.ts"],
+        [base.filter((p) => p !== "test/zz-unrecorded-c.test.ts"), "test/zz-unrecorded-c.test.ts"],
+        [
+          base.map((p) => (p === "test/zz-unrecorded-c.test.ts" ? "test/zz-unrecorded-d.test.ts" : p)),
+          "test/zz-unrecorded-c.test.ts",
+        ],
       ];
-      for (const v of variants) {
+      for (const [v, changed] of variants) {
         const after = shardOf(assignShards(v, TABLE, n));
-        for (const [p, i] of after) if (before.has(p)) expect(i, `${p} moved at N=${n}`).toBe(before.get(p));
+        for (const p of recordedFiles) expect(after.get(p), `${p} moved at N=${n}`).toBe(before.get(p));
+        // Files the table lacks that sort before the changed one keep their shard too; later ones may move.
+        for (const [p, i] of after) if (!(p in TABLE) && p < changed && before.has(p)) expect(i, p).toBe(before.get(p));
       }
     }
   });
 
-  it("puts a file the table lacks, or holds no usable number for, on the shard its path hashes to", () => {
-    expect(pathHash("")).toBe(0x811c9dc5);
-    expect(pathHash("a")).toBe(0xe40c292c);
+  it("treats an entry that is not a finite number ≥ 0 as missing", () => {
     const table = {
       "x.test.ts": 3,
       "nan.test.ts": Number.NaN,
       "neg.test.ts": -1,
       "str.test.ts": "7" as unknown as number,
     };
-    const paths = ["x.test.ts", "nan.test.ts", "neg.test.ts", "str.test.ts", "absent.test.ts"];
-    const where = shardOf(assignShards(paths, table, 5));
-    for (const p of paths.slice(1)) expect(where.get(p), p).toBe(pathHash(p) % 5);
-    expect(where.get("x.test.ts")).toBe(0);
+    const paths = ["str.test.ts", "neg.test.ts", "absent.test.ts", "nan.test.ts", "x.test.ts"];
+    // x first (5), then the rest in path order at the median 3 (+2) onto the lightest shard.
+    expect(assignShards(paths, table, 5)).toEqual([
+      ["x.test.ts"],
+      ["absent.test.ts"],
+      ["nan.test.ts"],
+      ["neg.test.ts"],
+      ["str.test.ts"],
+    ]);
   });
 });
-
 describe("ci.yml's vitest shard jobs", () => {
   const yml = readFileSync(resolve(ROOT, ".github/workflows/ci.yml"), "utf8").replace(/\r\n/g, "\n");
   // Each job's block: from its `  <id>:` line to the next.

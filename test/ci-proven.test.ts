@@ -392,11 +392,13 @@ describe("scripts/ci-proven.mjs main()", () => {
 // carries the one guard, the same predicate that decides `Node 22 checks` at job level. These tests
 // pin all three, so a new PR-only narrowing of a leg cannot land without changing them.
 
-type Step = { name?: string; uses?: string; if?: string };
+type Step = { name?: string; uses?: string; if?: string; "continue-on-error"?: string };
 type Job = {
   id: string;
   name?: string;
   matrix: Map<string, string[]>;
+  /** `matrix.include` entries, each a map of key to value. */
+  include: Record<string, string>[];
   env: Map<string, string>;
   jobIf?: string;
   /** The job's other top-level keys (`continue-on-error`, `runs-on`, ...), as written. */
@@ -413,7 +415,7 @@ function ciJobs(): Map<string, Job> {
   for (const line of lines.slice(lines.indexOf("jobs:") + 1)) {
     const id = /^ {2}([A-Za-z0-9_-]+):$/.exec(line);
     if (id?.[1]) {
-      job = { id: id[1], matrix: new Map(), env: new Map(), keys: new Map(), steps: [] };
+      job = { id: id[1], matrix: new Map(), include: [], env: new Map(), keys: new Map(), steps: [] };
       jobs.set(id[1], job);
       section = undefined;
       continue;
@@ -438,16 +440,21 @@ function ciJobs(): Map<string, Job> {
           axis[1],
           axis[2].split(",").map((s) => s.trim()),
         );
+      const entry = /^ {10}- (\w+): (.*)$/.exec(line);
+      if (entry?.[1] && entry[2] !== undefined) job.include.push({ [entry[1]]: entry[2] });
+      const more = /^ {12}(\w+): (.*)$/.exec(line);
+      const last = job.include.at(-1);
+      if (more?.[1] && more[2] !== undefined && last) last[more[1]] = more[2];
     } else if (section === "env") {
       const kv = /^ {6}([A-Z_]+): (.*)$/.exec(line);
       if (kv?.[1] && kv[2] !== undefined) job.env.set(kv[1], kv[2]);
     } else if (section === "steps") {
-      const start = /^ {6}- (name|uses|if): (.*)$/.exec(line);
+      const start = /^ {6}- (name|uses|if|continue-on-error): (.*)$/.exec(line);
       if (start?.[1]) {
         step = {};
         job.steps.push(step);
       }
-      const field = start ?? /^ {8}(name|uses|if): (.*)$/.exec(line);
+      const field = start ?? /^ {8}(name|uses|if|continue-on-error): (.*)$/.exec(line);
       if (step && field?.[1] && field[2] !== undefined) step[field[1] as keyof Step] = field[2];
     }
   }
@@ -457,7 +464,9 @@ function ciJobs(): Map<string, Job> {
 /** Each job's check names: its `name:` with the matrix expanded. */
 function checkNames(job: Job): string[] {
   if (job.name === undefined) throw new Error(`ci.yml job ${job.id} has no name`);
-  let names = [job.name];
+  const fill = (n: string, entry: Record<string, string>) =>
+    Object.entries(entry).reduce((s, [k, v]) => s.split(`\${{ matrix.${k} }}`).join(v), n);
+  let names = job.include.length > 0 ? job.include.map((e) => fill(job.name as string, e)) : [job.name];
   for (const [axis, values] of job.matrix) {
     const slot = `\${{ matrix.${axis} }}`;
     if (!job.name.includes(slot)) continue;
@@ -522,6 +531,17 @@ describe("ci.yml and the proof agree", () => {
     const lenient = [...jobs.values()].filter((j) => j.keys.get("continue-on-error") === "true").map((j) => j.id);
     expect(lenient).toEqual(["bench"]);
     expect(checkNames(jobs.get("bench") as Job)).toEqual(INFORMATIONAL_JOBS);
+  });
+
+  it("no gating step is lenient: the only `continue-on-error` steps are the fail-open proof and the bench comment", () => {
+    const lenientSteps = [...jobs.values()].flatMap((j) =>
+      j.steps.filter((s) => s["continue-on-error"] !== undefined).map((s) => `${j.id}: ${s.name ?? s.uses}`),
+    );
+    expect(lenientSteps.sort()).toEqual([
+      "bench: Post benchmark comment",
+      "changes: Check out the proven-run script",
+      "changes: Did a train PR's full run already prove this commit?",
+    ]);
   });
 
   it("every reader of `proven` also needs a successful `changes`, and FULL_LEG has one definition", () => {

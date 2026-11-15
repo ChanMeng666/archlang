@@ -12,10 +12,11 @@
  * files recorded at 0 s moved no load and all landed in one shard, the pole of every main-only leg
  * (TP6: that shard ran 284 files to the others' 160 and took about twice as long).
  *
- * Stability: a file in the table goes through the LPT pass over the table's files only; a file not
- * in the table goes to the shard its path hashes to. So adding, removing or renaming a file the
- * table does not hold moves no other file; a table refresh (or deleting a recorded file) may
- * reshuffle the recorded ones, as any rebalance does.
+ * Stability: the files the table holds go first, through the LPT pass over those files only; the
+ * files it lacks follow in path order, each at the table's median cost onto the then-lightest shard.
+ * So adding, removing or renaming a file the table lacks never moves a file the table holds; it may
+ * move other files the table lacks (those after it in path order). A table refresh, or deleting a
+ * recorded file, may reshuffle the recorded files, as any rebalance does.
  *
  * A stale or missing entry costs balance, never correctness: every file still lands in exactly
  * one shard, deterministically (files are sorted by path first, ties go to the lowest shard).
@@ -41,44 +42,46 @@ export function fileCost(seconds: number): number {
   return seconds + FILE_OVERHEAD_S;
 }
 
-/** 32-bit FNV-1a of a path: the shard of a file the table does not hold, stable across runs. */
-export function pathHash(p: string): number {
-  let h = 0x811c9dc5;
-  for (let i = 0; i < p.length; i++) {
-    h ^= p.charCodeAt(i);
-    h = Math.imul(h, 0x01000193) >>> 0;
-  }
-  return h;
+/** The median of the table's usable entries (0 for an empty table): what a file it lacks counts as. */
+export function medianOf(durations: Durations): number {
+  const v = Object.values(durations)
+    .filter((s) => typeof s === "number" && Number.isFinite(s) && s >= 0)
+    .sort((a, b) => a - b);
+  if (v.length === 0) return 0;
+  const m = v.length >> 1;
+  return v.length % 2 ? v[m]! : (v[m - 1]! + v[m]!) / 2;
+}
+
+/** The balancing cost of `p`: its recorded seconds, or the table's median, plus FILE_OVERHEAD_S. */
+function costOf(durations: Durations, p: string, median: number): number {
+  return fileCost(recorded(durations, p) ?? median);
 }
 
 /** The shards (index 0..count-1) as lists of paths relative to the repo root. */
 export function assignShards(paths: string[], durations: Durations, count: number): string[][] {
   const shards: string[][] = Array.from({ length: count }, () => []);
   const load: number[] = new Array(count).fill(0);
-  const byPath = [...new Set(paths)].sort((a, b) => (a < b ? -1 : a > b ? 1 : 0));
-  const known = byPath.filter((p) => recorded(durations, p) !== undefined);
-  // Stable sort: equal costs keep their path order.
-  const byCost = known.sort((a, b) => recorded(durations, b)! - recorded(durations, a)!);
-  for (const p of byCost) {
+  const median = medianOf(durations);
+  const put = (p: string) => {
     let k = 0;
     for (let i = 1; i < count; i++) if (load[i]! < load[k]!) k = i;
     shards[k]!.push(p);
-    load[k]! += fileCost(recorded(durations, p)!);
-  }
-  for (const p of byPath) if (recorded(durations, p) === undefined) shards[pathHash(p) % count]!.push(p);
+    load[k]! += costOf(durations, p, median);
+  };
+  const byPath = [...new Set(paths)].sort((a, b) => (a < b ? -1 : a > b ? 1 : 0));
+  const known = byPath.filter((p) => recorded(durations, p) !== undefined);
+  // Stable sort: equal costs keep their path order.
+  for (const p of known.sort((a, b) => recorded(durations, b)! - recorded(durations, a)!)) put(p);
+  // Second pass: the files the table lacks, in path order, at its median.
+  for (const p of byPath) if (recorded(durations, p) === undefined) put(p);
   return shards;
 }
 
-/** The estimated cost of each shard: its recorded files' costs (a file the table lacks counts 0). */
+/** The estimated cost of each shard, every file counted as `assignShards` counts it. */
 export function shardCosts(shards: string[][], durations: Durations): number[] {
-  return shards.map((s) =>
-    s.reduce((sum, p) => {
-      const r = recorded(durations, p);
-      return r === undefined ? sum : sum + fileCost(r);
-    }, 0),
-  );
+  const median = medianOf(durations);
+  return shards.map((s) => s.reduce((sum, p) => sum + costOf(durations, p, median), 0));
 }
-
 export function readDurations(file: string | URL): Durations {
   try {
     return JSON.parse(readFileSync(file, "utf8")) as Durations;

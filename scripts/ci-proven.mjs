@@ -60,13 +60,13 @@ export const FULL_RUN_JOBS = [
   "Workspace builds",
   ...shards("Windows tests", 5),
   "Windows (tests + drift)",
-  ...shards("Playground E2E chromium", 2),
+  ...shards("Playground E2E chromium", 3),
   "Playground E2E engines",
   "Playground E2E (Playwright)",
   "3D package suite pass",
   "3D package frame-budget pass",
   "3D package (check:3d)",
-  ...shards("Docs site E2E", 2),
+  ...shards("Docs site E2E", 3),
   "Docs site E2E (Playwright)",
 ];
 
