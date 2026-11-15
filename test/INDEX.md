@@ -5,7 +5,7 @@
 Where the tests of a `src` module are, and what each test file is for. Generated; `npm run check:drift`
 fails when it is stale. How to add a test: `docs/testing.md` § 4.
 
-519 test files in `test/`, 284 `src` modules, 106 modules no test imports.
+520 test files in `test/`, 284 `src` modules, 106 modules no test imports.
 
 ## `src` module → tests that import it
 
@@ -352,6 +352,7 @@ The first sentence of each file's header comment.
 - `test/error-catalog-order.test.ts` — `ERROR_CODES` order is a law of the source, not of the host: errors first, then warnings, and within each group by UTF-16 code unit.
 - `test/error-svg.test.ts` — onError: 'svg' (opt-in error card).
 - `test/escape-fuzz.test.ts` — escaping fuzz — SVG; escaping fuzz — error-card SVG; escaping fuzz — ASCII plan; escaping fuzz — DXF export; escaping fuzz — shrunk regressions.
+- `test/eval-fidelity-live.test.ts` — The fidelity slice's live path (`eval/fidelity-live.ts`), offline: fetch is mocked, no key, no network.
 - `test/eval-fidelity.test.ts` — fidelity corpus — shape and brief-groundedness; infeasibility is DERIVED, never asserted in prose; the detector discriminates — faithful clean, laundered caught…
 - `test/eval-fixture.test.ts` — judge fixture — byte-equivalence proof across the intent lift.
 - `test/eval-live-harness.test.ts` — Live-eval harness, offline: price table, stop/finish-reason capture (fetch mocked, no network).

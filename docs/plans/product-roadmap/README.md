@@ -561,6 +561,14 @@ RM-D38、RM-D39 属于另一场的裁定（winder 台阶可到达、楼梯建造
 |---|---|---|---|---|
 | RM-D45 | T3（诊断反馈循环对等预算重采样的实测，`eval/l2.ts`、`eval/l2-run.ts`）是否运行 | **运行一次，只此一次，在以下边界内**：① 只跑一次，模型为 `claude-sonnet-5-5` 与 `claude-haiku-5-5`（提供方 `anthropic`，本地运行；`eval-l2.yml` 永不触发），费用记在 Anthropic 促销额度上；② 分析与判定规则在运行前预注册，写在 `eval/live-runs/2026-11-t3-preregistration.md`；③ 结果无论如何都发布，记录放在 `eval/live-runs/`；④ 发布前不对循环增益或其缺失下任何结论；发布的记录是结果的唯一陈述，其他任何结论（无论哪个方向）都要所有者另行裁定；⑤ L3–L5 永久不建，意图通道的邻接/可达断言永久保持 `gate: false`（T4 的门控提升钩子关闭），不再提议；⑥ 数据集不加入多轮的模型修复轨迹；⑦ 不变：eval 语料是公开夹具，永不称为留出集；数据集金丝雀永不重新生成；seed-`20260712` 的字节不动。第二次运行、重跑或换模型都不再提议 | "同意开启 T3，仅此一次，按上面的边界执行" | 无自动反转。若这次运行未能完成（例如额度用尽或调用失败），已写下的记录照样发布，标明不完整；任何重跑或第二次运行要所有者新的原话裁定 |
 
+### 6.16 所有者裁定：fidelity 切片的付费实测（RM-D46，2026-11-15）
+
+不改任何铁律：`eval:fidelity-live` 与 `eval:live` 一样是付费、仅限所有者的命令（`docs/agents/iron-laws.md` § Eval & dataset）。所有者在本场会话的促销额度方案里，与 P2、P4、P5 一同选中了 P3。
+
+| # | 问题 | 裁定 | 原话 | 反转条件 |
+|---|---|---|---|---|
+| RM-D46 | fidelity 切片（`eval/fidelity.ts`、`eval/corpus-fidelity.json`）的实测路径 `eval:fidelity-live`（`eval/fidelity-live.ts`）是否建、是否付费运行 | **建，并付费运行**：① 费用记在 Anthropic 促销额度上；② 模型为 `claude-haiku-5-5`、`claude-sonnet-5-5`、`claude-opus-5-5`、`claude-fable-5-2`，每个模型 k = 5、只跑一次（每个模型一个进程，一对结果文件，结果永不覆盖）；③ 提示词、回复解析、评分与 `FIDELITY_VERSION` 不变（提示词就是尺子）；④ 结果发布在 `eval/live-runs/`；⑤ 数字单独报告，永不与 `eval:ci`、L0 基线（`eval/live-baseline.json`）或离线 fidelity 计分卡比较 | 所有者在促销额度方案中的选择："P3 fidelity 实测" | 无自动反转。若某个模型的运行未能完成（额度用尽、连续调用失败而 `aborted`、预算熔断），已写下的记录照样发布，标明不完整；重跑、加模型或改 k 要所有者新的裁定 |
+
 ---
 
 ## 7. 与已有计划的关系
