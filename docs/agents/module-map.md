@@ -220,7 +220,7 @@ Totals: 401 modules in 34 directories.
 | `axes.ts` | 161 | 4 | **Positioning axes** (定位轴线) — GB/T 50001's structural datum grid. | none |
 | `builtins.ts` | 129 | 3 | Built-in functions: a frozen, pure map injected into the global scope as `builtin` Values. Each is total — bad arity / types emit a diagnostic and return a safe default, never throw — and deterministic (no I/O, no clock). | none |
 | `chrome-layout.ts` | 374 | 15 | Shared page-chrome layout — the deterministic geometry of the **scale bar** and **title block** in the bottom page margin, and how far the bottom margin must grow to contain them. Both the SVG and PDF backends build their chrome from this… | none |
-| `clause-order.ts` | 145 | 14 | Order-free trailing clauses. A statement's optional keyword-led clauses (`size`, `label`, `rotate`, `clear`, … after a `furniture`'s placement) may come in any order, each once. | none |
+| `clause-order.ts` | 156 | 15 | Order-free trailing clauses. A statement's optional keyword-led clauses (`size`, `label`, `rotate`, `clear`, … after a `furniture`'s placement) may come in any order, each once. | none |
 | `cli.ts` | 91 | 0 | ArchLang CLI — agent-native. | none |
 | `command-name.ts` | 11 | 4 | The command name every help line, example and doc writes. `package.json` installs two bins, `archlang` and `arch`, for the same `dist/cli.js`; `arch` stays as an alias, but coreutils ships an `arch` on Linux, macOS and Git Bash, so a bare… | none |
 | `compile-path.ts` | 21 | 0 | A build entry, not a package export (card RM0.7f): the values the playground's compiler chunk serves, `compile`, `describe`, `describeLevel`, `lint` and `THEMES` (`playground/src/compiler.ts`, the compile worker's and the page's door, and… | none |
@@ -498,7 +498,7 @@ Totals: 401 modules in 34 directories.
 | Module | Lines | Importers | Summary | Budget |
 | --- | ---: | ---: | --- | --- |
 | `checks.ts` | 467 | 1 | The resolver's cross-element checks, run once every coordinate is final: the number domain (`E_NON_FINITE`, `E_OUT_OF_RANGE`; the element is dropped), the drawn sizes a plan's settings scale (a hatch tile, the heaviest pen), the empty… | none |
-| `expand.ts` | 871 | 2 | Expansion, the first stage of `resolve()`: a plan body (`let`, assignment, `set`, `for`/`if`/ `while`, component calls, `place`d instances, `strip`, `zone`, `keep`) flattened into the element stream ({@link Entry}) the resolver works on… | charges the step meter |
+| `expand.ts` | 866 | 2 | Expansion, the first stage of `resolve()`: a plan body (`let`, assignment, `set`, `for`/`if`/ `while`, component calls, `place`d instances, `strip`, `zone`, `keep`) flattened into the element stream ({@link Entry}) the resolver works on… | charges the step meter |
 | `groups.ts` | 431 | 1 | Resolution groups and the per-element bookkeeping around them: the expanded stream partitioned by `place` frame (one group per instance, the root last), an instance's view of its descendants, the pre-charge for wall-deriving statements… | none |
 | `sheet.ts` | 248 | 2 | The sheet, decided in `resolve()`: the two extents a fit is measured on, the storey as drawn ({@link drawnView}), the `paper` + scale resolved into a {@link ResolvedSheet}, and its reports (`W_SCALE_OVERFLOW`, `W_DRAWING_OVERFLOW`, and… | none |
 | `side-tables.ts` | 140 | 1 | What one resolution keeps beside its {@link ResolvedPlan}, never on it: the frozen datum tables, the `place`d instances' bodies, the evaluation steps spent and the keep state. Each is a `WeakMap` keyed by the IR object, so no… | none |

@@ -16,6 +16,7 @@
 
 import type { Span } from "./diagnostics.js";
 import type { ParseCtx } from "./registry.js";
+import { KEYWORDS } from "./grammar/tokens.js";
 
 export interface TailClause {
   /** The word that leads the clause. */
@@ -135,6 +136,16 @@ export function idAfterKind(ctx: ParseCtx, what: IdAfterKindStatement, id: strin
     });
   }
   return id;
+}
+
+/**
+ * The hint for a call of an unknown component named like a clause word (`KEYWORDS.attribute`):
+ * nearly always a clause written out of a statement's old order with a parenthesised value
+ * (`… clear front 600 rotate (90)`), which reads as a call. `undefined` for any other name.
+ */
+export function clauseWordCallHint(name: string): string | undefined {
+  if (!(KEYWORDS.attribute as readonly string[]).includes(name)) return undefined;
+  return `\`${name}\` is also a clause word: written out of a statement's old clause order with a value in parentheses, it reads as a call. Drop the parentheses (\`${name} 90\`, not \`${name} (90)\`)`;
 }
 
 /** `ctx.parseIdOpt()` with the span of what it read, for {@link idAfterKind}. */

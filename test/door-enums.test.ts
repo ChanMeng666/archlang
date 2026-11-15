@@ -145,7 +145,7 @@ suite("door enums — the generators fail loudly, not silently", () => {
   const body = (): [string, string][] => [
     [
       "door-stmt",
-      `"door" rws id-opt ( door-kind rws id-opt )? ( opening-free-pos ( ws door-clause )* ws opening-width | opening-hosted-pos ( ws door-clause )* ws opening-width )`,
+      `"door" rws id-opt ( door-kind rws id-after )? ( opening-free-pos ( ws door-clause )* ws opening-width | opening-hosted-pos ( ws door-clause )* ws opening-width )`,
     ],
     ["door-kind", `"hinged" | "sliding" | "barn" | "bifold" | "pocket" | "garage" | "double" | "glazed_sliding"`],
     // An alternation read in any order (card CO-1): `door … swing in hinge left` parses, so
@@ -170,7 +170,7 @@ suite("door enums — the generators fail loudly, not silently", () => {
     );
     // The kind word LEADS the statement (it is not a clause), which is what makes the
     // separate `door-kind` arm of the guard necessary at all. An `id=` may follow it (card CO-1).
-    expect(g).toContain(`door-stmt ::= "door" rws id-opt ( door-kind rws id-opt )? ( opening-free-pos `);
+    expect(g).toContain(`door-stmt ::= "door" rws id-opt ( door-kind rws id-after )? ( opening-free-pos `);
   });
 
   it("gen-gbnf throws when `swing-val` stops rendering the building-relative words", () => {

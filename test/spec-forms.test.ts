@@ -738,6 +738,12 @@ interface Negative {
 
 const NEGATIVE: Negative[] = [
   {
+    code: "E_DUP_CLAUSE",
+    channel: "compile",
+    note: "the clauses after the placement come in any order, but each once (card CO-1)",
+    src: plan(`  furniture bed at (0,0) size 1600x2000 label "Bed" size 1800x2000`),
+  },
+  {
     code: "E_CLEAR_SCOPE",
     channel: "compile",
     note: "a `clear` on a multi-storey plan's `height` line (RM-D17): each storey writes its own",
@@ -1217,6 +1223,14 @@ const PARSE_ERRORS: { note: string; src: string }[] = [
   },
   // `wall exterior id=w1 …` and `furniture bed id=b1 …` were parse errors here until card CO-1
   // made `id=` legal after the kind word (spec rule 6); they are accepted forms now, in POSITIVE.
+  {
+    note: "`id=` after the kind word of a statement rule 6 does not name (a fence's style word)",
+    src: plan(`  fence picket id=f1 { (0,0) (4000,0) }`),
+  },
+  {
+    note: "a clause before the placement: only the clauses AFTER it come in any order",
+    src: plan(`  furniture bed size 1600x2000 at (0,0)`),
+  },
   {
     note: "`rooms` is the only `schedule` subject",
     src: plan(`  schedule doors`),

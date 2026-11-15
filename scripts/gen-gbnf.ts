@@ -43,7 +43,8 @@
  * once among them. A repeat is in the grammar on purpose: the parser reads it and reports
  * `E_DUP_CLAUSE`, a catalogued code, which is the same deal the grammar makes with every form
  * the resolver refuses. Every other element keeps its fixed run of `( … )?` optionals, in the
- * parser's own order. `ID_AFTER_KIND_STATEMENTS` take a second `id-opt` after the kind word.
+ * parser's own order. `ID_AFTER_KIND_STATEMENTS` take `id-after` after the kind word: any
+ * number of `id=`, since the parser reads each one past the first as an `E_DUP_CLAUSE`.
  * {@link assertClauseShapes} fails the build when either list and the productions disagree.
  */
 
@@ -141,8 +142,8 @@ const anyOrder = (clause: string, required?: string): string =>
 
 /**
  * The clause-order guard (card CO-1). Every statement in `orderFree` must render a
- * `<stmt>-clause` production and reach it through {@link anyOrder}; every `<stmt>-stmt` takes a
- * second `id-opt` (after its kind word) exactly when `idAfter` names it. Exported so a test can
+ * `<stmt>-clause` production and reach it through {@link anyOrder}; every `<stmt>-stmt` takes
+ * `id-after` (after its kind word) exactly when `idAfter` names it. Exported so a test can
  * prove it fires; the lists are the parser's own (`src/clause-order.ts`), never retyped.
  */
 export function assertClauseShapes(
@@ -162,7 +163,7 @@ export function assertClauseShapes(
   for (const [name, prod] of body) {
     if (!name.endsWith("-stmt")) continue;
     const k = name.slice(0, -"-stmt".length);
-    const twice = prod.split("id-opt").length - 1 >= 2;
+    const twice = prod.includes("id-after");
     if (twice !== idAfter.includes(k)) {
       throw new Error(
         `gen-gbnf: \`${name}\` ${twice ? "takes" : "does not take"} an \`id=\` after its kind word, but ` +
@@ -490,7 +491,7 @@ function rules(): [string, string][] {
     // ---- elements --------------------------------------------------------
     [
       "wall-stmt",
-      `"wall" rws id-opt ident rws id-opt "thickness" ws expr ( ws wall-material )? ( ws "height" ws expr )? ( ws wall-status )? ws ( wall-body | wall-relation )`,
+      `"wall" rws id-opt ident rws id-after "thickness" ws expr ( ws wall-material )? ( ws "height" ws expr )? ( ws wall-status )? ws ( wall-body | wall-relation )`,
     ],
     // `status existing|demolish|new` (B3a): after `height`, before the body, as the parser reads it.
     ["wall-status", `"status" rws ( ${litAlt(WALL_STATUSES)} )`],
@@ -533,7 +534,7 @@ function rules(): [string, string][] {
     // `DOOR_KINDS`, guarded above.
     [
       "door-stmt",
-      `"door" rws id-opt ( door-kind rws id-opt )? ( opening-free-pos ${anyOrder("door-free-clause", "opening-width")} | ( opening-hosted-pos | opening-edge-pos | opening-between-pos ) ${anyOrder("door-clause", "opening-width")} )`,
+      `"door" rws id-opt ( door-kind rws id-after )? ( opening-free-pos ${anyOrder("door-free-clause", "opening-width")} | ( opening-hosted-pos | opening-edge-pos | opening-between-pos ) ${anyOrder("door-clause", "opening-width")} )`,
     ],
     ["door-kind", litAlt(DOOR_KINDS)],
     // One arm per DOOR_ENUMS key, then `open` and `head` — and one `<key>-val` production per
@@ -556,7 +557,7 @@ function rules(): [string, string][] {
     // on a `door`, and `hinge` takes the door's two sides, not `near`.
     [
       "window-stmt",
-      `"window" rws id-opt ( window-kind rws id-opt )? ( opening-free-pos ${anyOrder("window-free-clause", "opening-width")} | ( opening-hosted-pos | opening-edge-pos ) ${anyOrder("window-clause", "opening-width")} )`,
+      `"window" rws id-opt ( window-kind rws id-after )? ( opening-free-pos ${anyOrder("window-free-clause", "opening-width")} | ( opening-hosted-pos | opening-edge-pos ) ${anyOrder("window-clause", "opening-width")} )`,
     ],
     ["window-clause", `"hinge" rws window-hinge | "sill" ws expr | "head" ws expr`],
     ["window-free-clause", `window-clause | opening-wall`],
@@ -623,7 +624,7 @@ function rules(): [string, string][] {
      * already named the room, it is a repeat the parser reports (`E_DUP_CLAUSE`), as any
      * other repeat. An `id=` may follow the category word.
      */
-    ["furniture-stmt", `"furniture" rws id-opt ident rws id-opt ( furn-placed | furn-roomed )`],
+    ["furniture-stmt", `"furniture" rws id-opt ident rws id-after ( furn-placed | furn-roomed )`],
     ["furn-placed", `( furn-at | furn-against | furn-against-edge ) ${anyOrder("furniture-clause")}`],
     ["furn-roomed", `"in" rws ref rws in-place ${anyOrder("furniture-clause")}`],
     ["furn-at", `"at" ws point`],
@@ -702,7 +703,7 @@ function rules(): [string, string][] {
      */
     [
       "outdoor-stmt",
-      `"outdoor" rws id-opt outdoor-kind rws id-opt ( "at" ws point ${anyOrder("outdoor-clause", "outdoor-size")} | outdoor-poly ${anyOrder("outdoor-clause")} )`,
+      `"outdoor" rws id-opt outdoor-kind rws id-after ( "at" ws point ${anyOrder("outdoor-clause", "outdoor-size")} | outdoor-poly ${anyOrder("outdoor-clause")} )`,
     ],
     ["outdoor-kind", litAlt(OUTDOOR_KINDS)],
     ["outdoor-size", `"size" ws dims`],
@@ -740,6 +741,9 @@ function rules(): [string, string][] {
 
     // ---- shared clause pieces -------------------------------------------
     ["id-opt", `( "id" ws "=" ws ident rws )?`],
+    // After the kind word (card CO-1): `idAfterKind` reads every `id=` there, each past the first
+    // an `E_DUP_CLAUSE`, so the grammar takes a repeat as it does a repeated clause.
+    ["id-after", `( "id" ws "=" ws ident rws )*`],
     ["point", `"(" ws expr ws "," ws expr ws ")"`],
     ["dims", `expr ws "x" ws expr`],
 
