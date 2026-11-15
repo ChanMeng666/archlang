@@ -10,7 +10,8 @@ import { runArch } from "./helpers/cli.js";
  * `arch finish` at the process boundary. It follows `arch fix`'s write conventions
  * (`test/cli-fix-backup.test.ts`): in place by default, a unified diff on stderr,
  * `--dry-run` writes nothing, `--backup` keeps the original, `-o` redirects, exit 0 / 2 / 3.
- * What `finish()` decides is pinned in `test/finish.test.ts`; this file pins the plumbing.
+ * What `finish()` decides is pinned in `test/finish.test.ts` and the other `test/finish-*.test.ts`
+ * files; this file pins the plumbing.
  */
 
 interface Run {

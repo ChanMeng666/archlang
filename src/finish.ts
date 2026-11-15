@@ -19,7 +19,7 @@
  * re-emission through the formatter — every authored byte and comment survives, and a
  * plan that needs nothing comes back byte-identical with `changed: false`.
  *
- * Four laws, each pinned by `test/finish.test.ts` / `test/fuzz.test.ts`:
+ * Four laws, each pinned by the `test/finish*.test.ts` files / `test/fuzz.test.ts`:
  *
  *   1. **Fixpoint** — `finish(finish(s).source).source === finish(s).source`.
  *   2. **Never worse** — the result has no compile error and no diagnostic code (compile +
