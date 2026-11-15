@@ -1,14 +1,14 @@
 /**
  * Preview interactions on top of the SVG:
  *   - hover a room → tooltip with its name, area and size (C2, room-facts.ts `roomTip`),
- *     hit-tested geometrically against describe()'s room bboxes;
+ *     hit-tested against describe()'s room shapes (`floor_circle`, `floor_polygon`);
  *   - click a room → its facts card (room-card.ts), or close it on a click off every room;
  *   - click any drawn element → jump the editor caret to the source that produced it
  *     (C3), using the `data-span` attributes emitted by `compile(..., { annotate:true })`.
  *
  * Coordinate mapping uses the SVG's own `getScreenCTM().inverse()`, which folds in
  * the pan/zoom CSS transform and the viewBox — so screen px map straight to plan mm
- * (the SVG user space), matching the bbox coordinates.
+ * (the SVG user space), matching describe()'s coordinates.
  */
 import { type FactsRoom, roomTip } from "./room-facts.js";
 
@@ -27,27 +27,96 @@ export interface HitBox {
 /** The subset of a describe() room this module hit-tests and labels. */
 type PreviewRoom = FactsRoom;
 
+/** What the hit test reads of a room: describe()'s shape, with the box as the fallback. */
+export interface HitShape {
+  bbox: HitBox;
+  /** The floor ring (describe()'s `floor_polygon`); `[]` for a circular room. */
+  floor_polygon?: readonly { x: number; y: number }[];
+  /** A circular room's exact circle (describe()'s `floor_circle`). */
+  floor_circle?: { cx: number; cy: number; r: number };
+}
+
+/** On-edge slack in plan mm, so a ring vertex computed in floating point still counts as on its edge. */
+const EDGE_EPS = 1e-6;
+
+/** Is `(x,y)` on the segment `a`–`b` (within {@link EDGE_EPS})? */
+function onSegment(a: { x: number; y: number }, b: { x: number; y: number }, x: number, y: number): boolean {
+  const dx = b.x - a.x;
+  const dy = b.y - a.y;
+  const len = Math.hypot(dx, dy);
+  if (len === 0) return Math.hypot(x - a.x, y - a.y) <= EDGE_EPS;
+  // Distance from the line, then the projection inside the segment.
+  if (Math.abs(dx * (y - a.y) - dy * (x - a.x)) / len > EDGE_EPS) return false;
+  const t = ((x - a.x) * dx + (y - a.y) * dy) / (len * len);
+  return t >= -EDGE_EPS / len && t <= 1 + EDGE_EPS / len;
+}
+
+/** Is `(x,y)` inside the ring or on its boundary (even-odd rule)? */
+function inRing(ring: readonly { x: number; y: number }[], x: number, y: number): boolean {
+  let inside = false;
+  for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
+    const a = ring[j]!;
+    const b = ring[i]!;
+    if (onSegment(a, b, x, y)) return true;
+    if (a.y > y !== b.y > y && x < ((b.x - a.x) * (y - a.y)) / (b.y - a.y) + a.x) inside = !inside;
+  }
+  return inside;
+}
+
+/** Does the room's shape (its circle, else its ring, else its box) contain `(x,y)`, boundary inclusive? */
+function contains(s: HitShape, x: number, y: number): boolean {
+  const b = s.bbox;
+  if (x < b.x || x > b.x + b.w || y < b.y || y > b.y + b.h) return false;
+  const c = s.floor_circle;
+  if (c) return (x - c.cx) ** 2 + (y - c.cy) ** 2 <= c.r ** 2;
+  const ring = s.floor_polygon;
+  if (ring && ring.length >= 3) return inRing(ring, x, y);
+  return true;
+}
+
+/** Relative tolerance under which two room sizes count as equal (the tie rule). */
+const TIE_EPS = 1e-9;
+
+/** The size the smallest-room rule compares: the shape's area, else the box's. */
+function sizeOf(s: HitShape): number {
+  const c = s.floor_circle;
+  if (c) return Math.PI * c.r * c.r;
+  const ring = s.floor_polygon;
+  if (ring && ring.length >= 3) {
+    let twice = 0;
+    for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
+      twice += ring[j]!.x * ring[i]!.y - ring[i]!.x * ring[j]!.y;
+    }
+    return Math.abs(twice) / 2;
+  }
+  return s.bbox.w * s.bbox.h;
+}
+
 /**
- * Hit-test `(x,y)` against `items` and return the SMALLEST box containing it, or
- * null. Rooms can nest (a bathroom inside a suite) or overlap, and the innermost
- * one is the one the pointer means.
+ * Hit-test `(x,y)` against `items` and return the SMALLEST room whose SHAPE
+ * contains it, or null. The shape is describe()'s `floor_circle`, else its
+ * `floor_polygon` ring, else (an item carrying neither) its `bbox`; the boundary
+ * is inside, so a wall-edge hover still hits its room. A point inside an L's or a
+ * trapezoid's box but outside the room picks nothing of it. Rooms can nest (a
+ * bathroom inside a suite) or overlap, and the innermost one — the smallest by
+ * shape area — is the one the pointer means.
  *
- * Ties (two containing boxes of equal area) resolve to the EARLIER item — the
- * comparison is a strict `<`, so nothing later can displace an equal-area
- * incumbent. That makes the result a deterministic function of describe()'s room
+ * Ties (two containing rooms of equal area, to a relative `TIE_EPS`) resolve to
+ * the EARLIER item — a later room must be smaller by more than the tolerance to
+ * displace the incumbent. That makes the result a deterministic function of describe()'s room
  * order, not of floating-point luck.
  */
-export function pickSmallestContaining<T extends { bbox: HitBox }>(
-  items: readonly T[],
-  x: number,
-  y: number,
-): T | null {
+export function pickSmallestContaining<T extends HitShape>(items: readonly T[], x: number, y: number): T | null {
   let hit: T | null = null;
+  let hitSize = 0;
   for (const item of items) {
-    const b = item.bbox;
-    if (x >= b.x && x <= b.x + b.w && y >= b.y && y <= b.y + b.h) {
-      // Prefer the smallest containing room (handles nested/overlapping bboxes).
-      if (!hit || b.w * b.h < hit.bbox.w * hit.bbox.h) hit = item;
+    if (!contains(item, x, y)) continue;
+    const size = sizeOf(item);
+    // Shoelace over a ring of fractional coordinates can differ in its last bits from the
+    // same area computed another way, so sizes within TIE_EPS of each other are a tie.
+    if (!hit || size < hitSize * (1 - TIE_EPS)) {
+      hit = item;
+      hitSize = size;
     }
   }
   return hit;
