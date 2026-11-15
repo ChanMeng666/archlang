@@ -1870,7 +1870,7 @@ footprint laid along an edge, not the catalogue's along × depth. (1) and (2) ar
 
 ## Live-eval baseline gap (RM-D51, 2026-11-16)
 
-### EV.1 · Diagnose the gpt-5.5 intent gap against the July baseline — `todo`
+### EV.1 · Diagnose the gpt-5.5 intent gap against the July baseline: done by #837, waiting to be archived — `note`
 
 At `2a210589` (after CO-1 and CO-2) gpt-5.5 scored valid 22/22/18 and intent 10/9/7 of 26 over
 three runs (`eval/live-runs/2026-11-authorability-remeasure.md`), against the July baseline's valid
