@@ -1716,7 +1716,7 @@ unchanged.
 ## Website residue (Search Console fixes #640, #643, #655, 2026-11-10)
 
 Left by the reviews of those PRs (review-cost cap). WS.1 and WS.2 fail only on input the docs do
-not yet hold; WS.3 to WS.5 are true of the live site today.
+not yet hold; WS.3 and WS.4 are true of the live site today.
 
 ### WS.1 · Four copies of the fence rule, none quite CommonMark — `todo`
 
@@ -1757,18 +1757,6 @@ uses `keep` or `import` yet, so a detector could not be checked against a real p
 `docs/language-reference.md` has no heading for `style` to link to. Add each row when an example
 uses it (and, for `style`, when the reference gains its section). **Gate:**
 `test/plan-constructs.test.ts`'s anchor check covers the new rows.
-
-### WS.5 · The sidebar does not highlight "Architecture decisions" on `/adr` — `todo`
-
-The ADR index is generated as `docs-site/adr/index.md` (`docs-site/sync-docs.mjs`) and served at
-`/adr` (`html_handling: drop-trailing-slash`). VitePress 1.6.4's `isActive` normalises that page
-to `/adr/` and the sidebar item `link: "/adr"` (`docs-site/.vitepress/config.ts`) to `/adr`, so
-they never match (read from `vitepress/dist/client/shared.js`, not yet measured in a browser). The
-likely fix is `link: "/adr/"`, but check the href it renders: `/adr/` redirects to `/adr` here, and
-an internal link to a redirect is worse for crawling than a missing highlight. Only if no link
-spelling works is a route move worth it (a 301 in `docs-site/public/_redirects`, the canonical, the
-breadcrumb and the sitemap together). **Gate:** an e2e case finds the item active on `/adr`; every
-rendered link to the index is `/adr`.
 
 ## Stairs in the 3D preview (public-surfaces card X3, 2026-11-06)
 
