@@ -112,7 +112,8 @@ token anywhere; do not add one. The full transferable recipe (for this or any ot
 in [docs/npm-oidc-publishing-playbook.md](docs/npm-oidc-publishing-playbook.md).
 
 1. Update `CHANGELOG.md` and bump `version` in the root `package.json`.
-2. The owner runs `npm run check` (typecheck + lint + test) **and `npm run check:drift`**; both must be green.
+2. Locally run `npm run check:quick` and `npm run docs:build`; the release PR's CI must be green on the
+   suite, `check:drift` and `typecheck:all` (never the full suite locally).
    `check:drift` is a **separate hard gate that CI runs**, and that `npm run check` does not cover — it
    regenerates every artifact and fails if one drifted (see [CI drift gates](#ci-drift-gates-regenerate-before-you-push)).
    `npm run build && npm test` also run inside the publish via `prepublishOnly` (the owner's release), but they will
