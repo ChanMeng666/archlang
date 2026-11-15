@@ -161,8 +161,10 @@ listed in the stage report (`docs/plans/plan-soundness/README.md` D18).
   browser or CLI when the owner has asked for that listing; the final submit of anything that
   accepts terms, and Cloudflare dashboard edits, are the owner's (`docs/seo.md` section 8).
 - **The full test suite runs on GitHub CI, never on the owner's machine** (owner, 2026-11-04). The local
-  gate is `check:quick` (AGENTS.md § How to work); then push, set auto-merge, and start the next item. A
-  CI red is read from CI's log, not reproduced by a local full run.
+  gate is `check:quick` (AGENTS.md § How to work); then push and start the next item; the coordinator
+  lands it, by train or a pinned direct merge, once it, or its train, is green and, if its tier needs it,
+  `reviewed <sha>` (`docs/agents/commands.md` § Merging a PR; product-roadmap RM-D49). A CI red is read
+  from CI's log, not reproduced by a local full run.
 - **Distribution first**: ArchLang exists for distribution and credibility; revenue is secondary.
 - **ArchCanvas is in maintenance** (D26, the day-90 verdict) and stays on its pinned core (D28): its prompts
   inject `spec.llm.md` verbatim, so a core bump changes what the model writes, and only a paid run can price

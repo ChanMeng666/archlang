@@ -143,7 +143,7 @@ RM1.1a 也在本场做完（纯测量，没有 PR，见 §6）。
 
 **编译器路径预算：** `compilerPathBudget` 401,000 B gzip，`embedPathBudget` 387,000。RM0.7f 之后的余量没有在 `f76af65b` 上重量：**动词表或新家族的卡先量。**
 
-**CI 吞吐（第 9 轨，RM-D37，2026-11-14 加；不是第三条车道）：** TP 卡在核心车道两张卡之间占用核心执行者（RM-D22 不变）。TP1（#754）与 TP2（#755）已合并：`npm run sync:main -- --push` 是同步的做法；`main` 的 push 运行 28 → 12.8 分钟，PR 约 9 → 7.3（各一次运行）；列车之后的现读数：push 24–30 s，PR 代码运行 4.7 min，完整运行 7.0–8.7 min（`../ci-throughput-research.md` §12.2），六趟列车落地（含 #803）。2026-11-15 之后：TP6 已由 #794 完成，合并列车、已证明的 push 与更多分片都已合并（FT1–FT3，RM-D48，`../ci-throughput-research.md` §12），FT4（#795）已由列车 #801 合并（`4f432ca1`）；TP5 由 TR6 取代。未完的是 TR1–TR5 与 TR8–TR10（列车脚本加固、证明加固、记录类 push 判定、守卫、40 个 job 的上限；本地门禁的残余 TR8；TR7 已由 #802、#806 做完）；TR6 是 7 天后的复测，TR9、TR10 等所有者裁定；TP3、TP1b 在空档里做；TP4 等触发。卡在 `cards.md` 第 9 轨。
+**CI 吞吐（第 9 轨，RM-D37，2026-11-14 加；不是第三条车道）：** TP 卡在核心车道两张卡之间占用核心执行者（RM-D22 不变）。TP1（#754）与 TP2（#755）已合并：`npm run sync:main -- --push` 是同步的做法；`main` 的 push 运行 28 → 12.8 分钟，PR 约 9 → 7.3（各一次运行）；列车之后的现读数：push 24–30 s，PR 代码运行 4.7 min，完整运行 7.0–8.7 min（`../ci-throughput-research.md` §12.2），六趟列车落地（含 #803）。2026-11-15 之后：TP6 已由 #794 完成，合并列车、已证明的 push 与更多分片都已合并（FT1–FT3，RM-D48，`../ci-throughput-research.md` §12），FT4（#795）已由列车 #801 合并（`4f432ca1`）；TP5 由 TR6 取代。未完的是 TR1–TR5、TR8 与 TR11（列车脚本加固、证明加固、记录类 push 判定、守卫、40 个 job 的上限；本地门禁的残余 TR8；发布与夜间机器的层级 TR11；TR7 已由 #802、#806 做完）；TR6 是 7 天后的复测，TR9、TR10 已由 RM-D49 裁定并做完；TP3、TP1b 在空档里做；TP4 等触发。卡在 `cards.md` 第 9 轨。
 
 **发布：** 1.62.0 已发布（§1.2）。1.63.0 要所有者对那一次的决定（没有决定就不切；VS Code Marketplace 与 OpenAI 目录的发布由代理做，含 OpenAI 的 Submit 与 Publish，RM-D41、RM-D44）。2026-12-01 所有者亲自发 Show HN；`main` 一直保持绿。RM5.4（#603）已由 #781 做完（RM-D43）。
 
@@ -175,8 +175,8 @@ RM1.1a 也在本场做完（纯测量，没有 PR，见 §6）。
 - **2026-11-14 的受托裁定（所有者说"请你帮我做出最佳决策"，只对那一次；一句话可推翻；`README.md` §6.8）：** RM-D35（RM1.2c）新 W 规则"标签点名了房间没有的家具"，不加词表行，`DEFINING.office` 不动；RM-D36（RM1.2g）`archlang-3d` 把 winder 建成 n 级渐缩台阶，2D 的 `W_STAIR_RISER_TOO_HIGH` 不封顶。#603：RM-D34 不变。
 - **协调者本场的裁定（2026-11-12…14，可推翻）：** 最上层绘制的地面决定可走性（#746）；预算内被省略的平面有自己的覆盖/跳过原因（#742）；扶梯方向取停靠点的 `dir`，`planting` 算可走（#745）。更早且已记录的：品味等变律重述（罗盘读者是 R12，主入口由街道选定时另有 R3 与分区）、指北针提示排在 taste 之前、winder 多出 n−1 级。
 - **仍是所有者的（2026-11-15）：** 1.63.0 的发布决定；2026-12-01 Show HN；登录/2FA/条款（见上）；Docker 的 docker/mcp-registry#6704 等 Docker 合并；关 #544（代理也可以关，那是所有者在 #532 的线程）。
-- **2026-11-15 CI 文档同步留给所有者的四件（可推翻）：** #807（`docs/agents/iron-laws.md` 一句措辞："set auto-merge"改为钉住的合并与列车，代理不合）；archcanvas #295（`AGENTS.md` 里跨仓库交接指针改指本文件，该仓库 `main` 合并即部署生产）；TR9（合并机器的风险层级，`cards.md`）；TR10（`npm run train` / `sync:main` 的许可，`cards.md`）。
-- 任何一条受托裁定（RM-D17…D20、RM-D24…D26、RM-D28…D32、RM-D33、RM-D34、RM-D35、RM-D35a、RM-D36 与 `README.md` §6.10 的第四场协调者裁定），所有者都可以一句话推翻。
+- **2026-11-15 CI 文档同步留给所有者的四件，2026-11-16 受托裁定（RM-D49，`README.md` §6.19；可推翻）：** #807 — 裁定：措辞并入本 PR（#811），#807 已关闭（被 #811 取代）（`docs/agents/iron-laws.md` 的 "set auto-merge" 改为由协调者经列车或钉住的直接合并落地）；archcanvas #295 — 裁定合并，已合并（2026-11-15T13:48:54Z，squash `d974d9e2`；生产部署 run 43720962301 成功，站点返回 200）；TR9 — 已做（#811）；TR10 — 已做一半（#811：放行 `sync:main`，不放行 `train`）。另两件 `archcanvas-growth` 的，都由 archcanvas-growth #86 做完、已合并（2026-11-15T13:57:30Z）：`prompts/outreach-finder.md` 的版本事实（取自 npm）；`investor/**` 的数字标为带日期的快照。#86 有意留下一处：提示词仍说 3D 把 winder 平台建成水平的（3D changelog 说 0.8.0 已改），留给下一次完整的事实核对。
+- 任何一条受托裁定（RM-D17…D20、RM-D24…D26、RM-D28…D32、RM-D33、RM-D34、RM-D35、RM-D35a、RM-D36、RM-D49 与 `README.md` §6.10 的第四场协调者裁定），所有者都可以一句话推翻。
 - **第二场的受托裁定（协调者的记录，我无从核对；可一句话推翻）：** 3D 地面是查看器的背景，不是建筑元素，不进 GLB；MCP 能力页保持派生的 `repair` 标题；MCP shim 的版本在发布时经 `release:pin` bump；RM1.4 带出的已发布示例改写成吸附后的值（图字节恒等）；`W_GRID_SNAPPED` 在 `next` 里排最后（新增 `info` 一档）；`W_UNKNOWN_THEME` 也由 CLI 报出；每个内置元素都声明 `setWords`；playground `compilerPathBudget` 458,000 → 458,980（RM1.4）；biome 只关 2.6 里真正新增的三条规则（backlog 3.3）；RM8.1d 的工作计数表重取；RM8.5 的 `AFTER_THE_FORM` 排除名单是测试前提的改动，已同意；RM1.6a 的 +74 B 接受；CRF13 以"不可复现"关闭。
 - **所有者本场的话：** 发布 1.59.0（"我同意发布"），时机委托协调者；RM-D27（原话在 `README.md` §6.5）；删除 `origin/ChanMeng666-patch-1`（已做）。
 

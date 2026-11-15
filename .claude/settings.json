@@ -11,6 +11,8 @@
       "Bash(npm run cli:*)",
       "Bash(npm run docs:build)",
       "Bash(npm run mcp:build)",
+      "Bash(npm run sync:main)",
+      "Bash(npm run sync:main -- *)",
       "Bash(git status)",
       "Bash(git diff:*)",
       "Bash(git log:*)",

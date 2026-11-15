@@ -39,8 +39,8 @@ merge procedure and the CI job map in `commands.md`.
   pr list --search "head:train/"` before any merge to `main`): a second train's base goes stale when the
   first lands, and `--land` then says "rebuild". The train's worktree sits in the primary's
   `.claude/worktrees/train-<stamp>` with a `node_modules` junction; `--land` and `--abandon` unlink it
-  and remove the worktree, so never delete one by hand. `npm run train` and `npm run sync:main` are not
-  in `.claude/settings.json`'s allow list, so each use asks for permission.
+  and remove the worktree, so never delete one by hand. `npm run sync:main` is in `.claude/settings.json`'s
+  allow list; `npm run train` is not, so outside bypass mode each use asks (its `--land` merges into `main`).
 - **Name every scratchpad file uniquely** (card or agent prefix), not just the state file: parallel agents
   overwrote each other's `pr-body.md`.
 - **When the machine is busy, a small edit is committed and reported "gate not run"** rather than held in a
@@ -72,8 +72,10 @@ merge procedure and the CI job map in `commands.md`.
 - **`gh pr checks <n> --watch` right after `gh pr create` can return before the checks register**, and
   the merge is then refused by branch policy. Before merging, confirm `mergeStateStatus` is `CLEAN`.
 - **`gh pr merge --match-head-commit` needs the full 40-character SHA**; a short one fails the
-  merge, and a branch delete `;`-chained after it then closes the PR unmerged. Auto-merge deletes
-  the branch on merge: never delete it by hand (procedure: `commands.md` § Merging a PR).
+  merge, and a branch delete `;`-chained after it then closes the PR unmerged. The merge deletes
+  the branch (the repository deletes a merged PR's head branch, and `npm run train -- --land` its members'
+  branches, except that `--land` keeps, and reports, a member branch that moved after the pin or that
+  another open PR uses as base or head): never delete it by hand (procedure: `commands.md` § Merging a PR).
 - **Two green PRs used to break `main` together**; strict protection and a train's tested merge now
   block that. The trap that remains is a break only on a main-only leg (Node 18, Node 20, Windows),
   which an ordinary PR does not run: when two open PRs share a data shape (a manifest, a JSON schema, a
