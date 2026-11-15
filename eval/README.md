@@ -91,7 +91,7 @@ requirement is **named**. That mirrors `faults/` one level up. `test/eval-fideli
 where CI actually catches it. The offline path spends no token; the live path below does.
 
 **The live path (`eval:fidelity-live`, `fidelity-live.ts`) — paid and owner-only, like
-`eval:live`; approved by the owner on 2026-11-15 (product-roadmap RM-D46), run by the owner.**
+`eval:live`; approved by the owner on 2026-11-15 (product-roadmap RM-D46), run by the owner; ran 2026-11-15; record: eval/live-runs/2026-11-fidelity.md.**
 It asks a model each brief `--trials` times (default 5, at most 20) with
 `fidelitySystemPrompt()` and the brief verbatim, parses each raw reply with
 `parseFidelityReply` and scores it with `scoreReply`, all unchanged: the prompt is the ruler,
@@ -155,7 +155,10 @@ numbers live in `live-baseline.json`; the L1 numbers are recorded there as refer
 (the baseline and every delta against it are L0).
 
 A dated record of a one-off Claude 5.x live run (aggregate numbers, not comparable with this
-baseline, which was not re-measured) is in `eval/live-runs/2026-10-27-claude-5.md`.
+baseline, which was not re-measured) is in `eval/live-runs/2026-10-27-claude-5.md`. The 2026-11-15
+authorability re-measure around the CO-1/CO-2 parser changes (Claude 5.x and gpt-5.5, 3 runs per
+group; the baseline stays this July record) is in
+`eval/live-runs/2026-11-authorability-remeasure.md`.
 
 > **Prompt-drift history.** v1.15.0's metric-unit-suffix feature added one line to
 > `spec.llm.md` (the author prompt), so the original 2026-07-11 baseline (valid 25 · intent 13
