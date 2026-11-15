@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- The hosted MCP server's plan viewer is built with `@modelcontextprotocol/ext-apps` 2.1.0 in place of 1.7.5 (card RM5.4). Both speak the same MCP Apps protocol (2026-01-26): the tools, the resources, the viewer's `text/html;profile=mcp-app` resource and its metadata are unchanged, and the viewer sends a host the same messages. The page grows from about 513 KiB to 661 KiB (149 KiB gzipped), the size of the SDK client that 2.x builds on. The npm MCP server does not use ext-apps and is unchanged.
+
 ## [1.62.0] - 2026-11-15
 
 Nothing is breaking in the language or the API. One Plan JSON document changes for existing plans (the `sill` change below). **New code:** the warning `W_LABEL_PIECE_MISSING`, a room whose label names a piece the room does not hold; no example plan raises it. **New exports:** `lintReport` (the `arch lint --json` document as data) with the types `LintReport` and `LintReportOptions`, and the Plan JSON types `OutdoorJson` and `FenceJson`. **New output fields:** Plan JSON's optional `outdoor[]`, `fences[]` and `rooms[].floor`, under the same schema `$id` and `version: 1`, written only on a plan that has them; four new `dropped` rows (`auto id`, `place`, `outdoor order`, `fence order`); and `faces_omitted: "plan-budget"` in the quantities facts. **A Plan JSON change for consumers:** a plan with a `height` and a window whose sill the source did not write used to get that window's resolved `sill` (900 mm by default) in its document, and now gets no `sill` key on that window. The field was always optional, and a missing `sill` reads back as the default. No new sheet-level statement: nothing here draws. Also new: the public check set (`test/check-set/`), whose default column holds only cases a `V` or `S-full` number decides as far as rules cite the numbers they read (a rule that reads an uncited `convention` number still puts its case there), and the hosted `POST /check` on `mcp.archlang.uk`; and, in the 3D preview, contact shadows that stop at a narrow slot.
