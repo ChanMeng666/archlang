@@ -182,7 +182,7 @@ ${lead}
   \`${pick("doorOn")}\`
 - window: \`${pick("window")}\`
 - furniture: \`${pick("furniture")}\`
-  A catalogued piece may omit \`size\` under any placement, as in
+  A piece with a catalogued footprint may omit \`size\` under any placement, as in
   \`${STARTER_AGAINST}\` (${STARTER_SIZED.join(", ")}, ...); never
   ${STARTER_UNSIZED.join(", ")}.
 - sheet: ${STARTER_SHEET.map((s) => `\`${s}\``).join(", ")}; \`${cli} finish\` adds the rest.
