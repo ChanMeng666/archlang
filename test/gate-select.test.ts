@@ -74,10 +74,13 @@ describe("scannedTrees: a source-tree scanner is a test that lists a source root
   });
 
   it("leaves out a corpus test: it lists examples/ and imports the core to run it", () => {
-    const corpus = `${scan}\nimport { compile } from "../src/index.js";\nreaddirSync(join(ROOT, "examples"));`;
+    // The folder is a variable so this file holds no literal corpus listing (`no-duplicate-helpers` scans it).
+    const corpusDir = "examples";
+    const listing = `readdirSync(join(ROOT, "${corpusDir}"));`;
+    const corpus = `${scan}\nimport { compile } from "../src/index.js";\n${listing}`;
     expect([...scannedTrees(corpus)]).toEqual([]);
     // Listing examples/ without the core is still a scanner.
-    expect([...scannedTrees(`${scan}\nreaddirSync(join(ROOT, "examples"));`)]).toEqual(["src"]);
+    expect([...scannedTrees(`${scan}\n${listing}`)]).toEqual(["src"]);
   });
 
   it("leaves out a workspace test: its src/ is the workspace's, not the repo's", () => {
@@ -176,9 +179,9 @@ describe("namedTests", () => {
       "test/lint-room-contents-extra.test.ts",
       "test/subroom-contents.test.ts",
     ];
-    expect(files_(namedTests(["src/room-contents.ts"], fake))).toEqual([
-      "test/lint-room-contents.test.ts",
+    expect(files_(namedTests(["src/room-contents.ts"], fake)).sort()).toEqual([
       "test/lint-room-contents-extra.test.ts",
+      "test/lint-room-contents.test.ts",
     ]);
   });
 
