@@ -112,7 +112,7 @@ export function missingClause(
     : `: expected "${word}" but found ${describeToken(t)}`;
   // Spanned on the statement that lacks the clause, never on the token after it; the hints are
   // the token's, as they were when the parse failed on it.
-  return ctx.fail(`${name[0]!.toUpperCase()}${name.slice(1)} has no \`${form}\`${found}`, t, {
+  return ctx.failAt(`${name[0]!.toUpperCase()}${name.slice(1)} has no \`${form}\`${found}`, {
     start: stmt.start,
     end: ctx.peek(-1).end,
   });

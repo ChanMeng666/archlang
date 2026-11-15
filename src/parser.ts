@@ -192,7 +192,8 @@ class Parser {
       parseStringExpr: () => this.parseStringExpr(),
       parseIdOpt: () => this.parseIdOpt(),
       spanFrom: (start) => this.spanFrom(start),
-      fail: (msg, t, span) => this.fail(msg, t, span),
+      fail: (msg, t) => this.fail(msg, t),
+      failAt: (msg, span) => this.fail(msg, this.peek(), span),
       diag: (d) => this.report(d),
       report: (code, message, span) => this.report({ severity: "error", message, code, span }),
     };

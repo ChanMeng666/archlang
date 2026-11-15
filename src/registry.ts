@@ -54,9 +54,10 @@ export interface ParseCtx {
   parseIdOpt(): string;
   /** The span from byte `start` to the end of the last token read. */
   spanFrom(start: number): Span;
-  /** Report a fatal parse error at `t` (defaults to the current token); never returns. `span`, when
-   *  given, is where it is reported; the hints are still `t`'s. */
-  fail(msg: string, t?: Token, span?: Span): never;
+  /** Report a fatal parse error at `t` (defaults to the current token); never returns. */
+  fail(msg: string, t?: Token): never;
+  /** {@link fail} reported at `span` (a whole statement), with the current token's hints. */
+  failAt(msg: string, span: Span): never;
   /** Report a catalogued diagnostic and keep parsing (a duplicate clause, `E_DUP_CLAUSE`). */
   diag(d: Diagnostic): void;
 }

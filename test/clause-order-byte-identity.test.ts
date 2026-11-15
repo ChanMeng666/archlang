@@ -30,7 +30,7 @@ import {
   ID_AFTER_KIND_STATEMENTS,
   ORDER_FREE_STATEMENTS,
 } from "../src/clause-order.js";
-import { compile, describe, lint } from "../src/index.js";
+import { compile, describe, type ElementDef, lint, type ParseCtx, registerElement } from "../src/index.js";
 import { lex } from "../src/lexer.js";
 import { parse } from "../src/parser.js";
 import { makeNodeWorld } from "../src/cli/io.js";
@@ -711,5 +711,35 @@ suite("clause order: permuting the clauses of every statement that reads them in
     }
     expect(Object.keys(PERMUTED).sort()).toEqual([...ORDER_FREE_STATEMENTS].sort());
     for (const [k, floor] of Object.entries(PERMUTE_FLOORS)) expect(total[k] ?? 0, k).toBeGreaterThanOrEqual(floor);
+  });
+});
+
+suite("clause order: ParseCtx.failAt, the span-taking failure", () => {
+  // `fail(msg, t?)` keeps the signature it always had (`test/release-compat.test.ts` pins the
+  // public types); the statement-spanned form is a member of its own, as `diag` is.
+  const plugin = (how: "fail" | "failAt"): ElementDef =>
+    registerElement({
+      kind: `probe_${how}`,
+      keyword: `probe_${how}`,
+      parse(ctx: ParseCtx) {
+        const kw = ctx.eatKeyword(`probe_${how}`);
+        ctx.eatIdent();
+        if (how === "failAt") ctx.failAt("probe refused", { start: kw.start, end: ctx.peek(-1).end });
+        ctx.fail("probe refused");
+      },
+      idPrefix: () => "probe",
+      // Never reached: the parse always fails.
+      resolve: () => ({}) as never,
+      bounds: () => [],
+      render: () => [],
+    });
+
+  it("reports at the span it is given; fail reports at the token, as before", () => {
+    for (const how of ["fail", "failAt"] as const) {
+      const src = `plan "p" {\n  probe_${how} word, rest\n}\n`;
+      const d = compile(src, { plugins: [plugin(how)], noCache: true }).diagnostics.find((x) => x.code === "E_PARSE")!;
+      expect(d.message).toBe("probe refused");
+      expect(src.slice(d.span!.start, d.span!.end), how).toBe(how === "failAt" ? `probe_${how} word` : ",");
+    }
   });
 });
