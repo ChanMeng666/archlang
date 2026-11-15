@@ -182,9 +182,9 @@ jobs:
             echo "run=true" >> "$GITHUB_OUTPUT"; echo "manual run: deploying"; exit 0
           fi
           # A workflow_run event carries no push `before`. The base is the head of the previous green
-          # push run of CI on main: the last commit this job ran for, so a change in a push whose own
-          # CI was red is still seen here. No such run, an API error, or a base that is not an
-          # ancestor of this commit deploys.
+          # push run of CI on main: the last commit whose push CI was green, so a change in a push
+          # whose own CI was red is still seen here. No such run, an API error, or a base that is not
+          # an ancestor of this commit deploys.
           BEFORE=$(gh api "repos/$REPO/actions/workflows/$WORKFLOW_ID/runs?branch=main&event=push&status=success&per_page=50" \
             | jq -r --argjson id "$RUN_ID" --arg created "$RUN_CREATED" \
               '[.workflow_runs[] | select(.id != $id and .conclusion == "success" and .created_at < $created)][0].head_sha // empty' \

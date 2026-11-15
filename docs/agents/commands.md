@@ -84,7 +84,7 @@ push to `main` runs in a group of its own and is never cancelled.
 **Merged-result CI (`merge_group`).** Every workflow that produces a required check (`ci.yml`, `codeql.yml`)
 also triggers on `merge_group`; a required check that did not would block the queue forever. Under it
 `changes` classifies nothing (`code=true`), so every leg runs in full, Node 18, Node 20 and Windows
-included (the queue is the last gate: `FULL_LEG` is true for any event but `pull_request`); `changelog`
+included (the queue is the last gate: `changes` sets `full_leg` on every `merge_group`); `changelog`
 runs and `Node 22` expects it to succeed. The queue's checkout is the merge commit on `main` (or on
 the PR queued ahead), so `HEAD^1` is still the base. There is no `pull_request` payload: the PR number
 is parsed from `merge_group.head_ref` (`gh-readonly-queue/main/pr-<n>-<sha>`) and `changelog-exempt` is
@@ -105,36 +105,38 @@ unpublished `docs/*.md`, `.claude/**/*.md`, `AGENTS.md`, `CLAUDE.md`, `CHANGELOG
 page, an ADR, the README, `spec.llm.md`, a skill, or a non-Markdown file under `docs/plans/`). Then
 every gating job still reports its check, green, with its steps skipped, and Node 22 runs the docs
 leg instead: `check:drift`, `check:test-wiring`, the suites that read a record (`docs-*`, the seven
-that compile every `arch` fence of every Markdown page, `npm-tarball`) and `docs:build`. A push to
-`main`, a failed `changes` job or any other path runs everything. A suite that starts reading a record
+that compile every `arch` fence of every Markdown page, `npm-tarball`) and `docs:build`. An unproven
+push to `main`, a failed `changes` job or any other path runs everything. A suite that starts reading a record
 joins the docs leg's list in `ci.yml`, or the record leaves the filter.
 
 **Code PRs.** Node 18, Node 20 and Windows report green with a job-summary line and run nothing: they
 run on every push to `main`, on train PRs, in the merge queue and in nightly's `full-matrix`. Each is an aggregator
 on ubuntu over its own three-shard job (`Node 18 tests 1/3` to `3/3`, the same for Node 20,
-`Windows tests 1/3` to `3/3`), which on a PR is skipped at job level, so no runner starts; on any
-other event it requires the shards' `success`. Shard 3 also runs the leg's non-test checks
-(typecheck, `lint:ci`, `check:drift`, `eval:ci` on Linux; `check:drift` on Windows). Node 22 runs:
-`Node 22` is an aggregator over `Node 22 checks` and the shards `Node 22 tests 1/5` to `5/5`, and
-fails if one of them failed, was cancelled, or was skipped when `changes` did not call the PR a
-record. A push to `main` runs every leg, each suite split across its shards. A failed `changes` job
-runs every leg on a PR too.
+`Windows tests 1/3` to `3/3`), which on an ordinary PR (and on a proven push) is skipped at job level,
+so no runner starts; on any other event it requires the shards' `success`. Shard 3 also runs the
+leg's non-test checks (typecheck, `lint:ci`, `check:drift`, `eval:ci` on Linux; `check:drift` on
+Windows). Node 22 runs: `Node 22` is an aggregator over `Node 22 checks` and the shards `Node 22 tests
+1/5` to `5/5`, and fails if one of them failed, was cancelled, or was skipped when `changes` did not
+call the PR a record. An unproven push to `main` runs every leg, each suite split across its shards.
+A failed `changes` job runs every leg on a PR too. A push run peaks at about 23 parallel jobs counting
+CodeQL's two `Analyze` legs, over the Free plan's 20 concurrent jobs, and the PR runs that strict
+status checks re-trigger when `main` moves (each `npm run sync:main -- --push`) share that limit, so
+some jobs queue: an estimate until TP5 measures the queue time.
 
 **Train PRs and the proven push.** A PR whose head branch starts `train/` in this repository (a
 fork's `train/x` is an ordinary PR) runs Node 18, Node 20 and Windows in full when `changes` calls
 it code (`full_leg`); a records-only one stays records-only. On a push to `main` only, `changes` runs
-`scripts/ci-proven.mjs`: the push is proven when its commit is a two-parent merge whose tree is its
-second parent's, the first parent is an ancestor of the second, and a successful `pull_request`
-run of `ci.yml` for a `train/` branch at that second parent ran every job of a full run
-(`FULL_RUN_JOBS`, kept equal to `ci.yml` by `test/ci-proven.test.ts`; only `Benchmark` may have
-any conclusion). A proven run skips every leaf job's work, its aggregators accept the skips, and
-every required name reports green with a job-summary line naming the proving run; it concludes
-`success`, so `deploy.yml` and `main-red.yml` act as on any push. Any error or doubt runs the push in
-full. An ordinary PR's merge is never proven (its run skipped the main-only legs). `codeql.yml` is
-never short-circuited. A push run peaks at about 23 parallel jobs counting CodeQL's two
-`Analyze` legs, over the Free plan's 20 concurrent jobs, and the PR runs that strict status checks
-re-trigger when `main` moves (each `npm run sync:main -- --push`) share that limit, so some jobs queue: an
-estimate until TP5 measures the queue time.
+`scripts/ci-proven.mjs` (its header lists the conditions). In short, the push is proven when its
+commit M is a two-parent merge pushed over M^1, tree(M) = tree(M^2), M^1 is an ancestor of M^2, and
+a successful `pull_request` run of `ci.yml` for a `train/` branch at M^2, updated within 24 h, whose
+PR into `main` merged as M, ran every job of a full run (`FULL_RUN_JOBS`, no job ran a
+"nothing to run on this leg" step; only `Benchmark` may have any conclusion; `test/ci-proven.test.ts`
+pins both lists and the step guards to `ci.yml`). A proven run skips every leaf job's work, its
+aggregators require the skips, and every required name reports green with a job-summary line naming
+the proving run; it concludes `success`, so `deploy.yml` and `main-red.yml` act as on any push. Any
+error or doubt runs the push in full; an ordinary PR's merge fails the `train/` and full-run
+conditions. `codeql.yml` is never short-circuited. `node scripts/ci-proven.mjs --run <run id>` says
+read-only whether a train PR's run would prove its merge.
 
 **Playground E2E** is an aggregator too (`Playground E2E (Playwright)`), over two Chromium shards
 (`Playground E2E chromium 1/2`, `2/2`: the chromium project with `--shard=N/2`) and one job
@@ -145,7 +147,8 @@ gives with every step skipped.
 
 **Shard balance.** `test/sequencer.ts` splits the shards by the seconds per file in `test/.durations.json`; nightly's `full-matrix` job (the `Test ubuntu-latest / Node 22` leg) uploads a fresh table as the `test-durations` artifact. Refresh with `gh run download <nightly run id> -n test-durations -D <dir> && node scripts/gen-test-durations.mjs <dir>/test-durations.json` (it merges: rows for files in the artifact are replaced, rows for deleted files dropped), after a nightly whose shard walls differ by more than 1.5× or about once a month.
 
-**A break on a main-only leg appears after the merge**, and nothing blocks on it. It is seen in three
+**A break on a main-only leg appears after the merge** of an ordinary PR (a train PR's run shows it
+before), and nothing blocks on it. It is seen in three
 places: the red push run on `main`, with GitHub's failed-run notification to whoever merged;
 nightly's `report`, which lists a failed `full-matrix` job in the pinned issue, by the next 03:00 UTC;
 and `.claude/commands/release-check.md` item 5, which refuses a release on either. Both alarms label their issue
@@ -158,15 +161,15 @@ Minutes, a full run measured 2026-10-27 (PR #290 at 2ed9d70e, `gh run view 40416
 | Job (CI's check name) | Runs | Min |
 |---|---|---|
 | `changes` (Changed paths) | classifies the PR's paths, marks a train PR (`full_leg`), and on a push to `main` decides `proven` (`scripts/ci-proven.mjs`); not a required check | < 0.1 |
-| `node-18-tests`, `node-20-tests` (Node 18 tests 1/3 … 3/3, Node 20 tests 1/3 … 3/3) | push and merge queue only (job-level skip on a PR): `vitest run --shard=N/3`; shard 3 first runs typecheck, `lint:ci`, `check:drift` and, after the tests, `eval:ci` | Node 18: 9.2, 9.9, 8.7; Node 20: 8.5, 7.3, 7.9 (red-proof run 43538960462; unsharded: 20.7, 19.9) |
-| `build` (Node 18, Node 20) | aggregator over its version's shard job: green with a job-summary line on a PR, else requires the shards' `success` | 0.1 |
+| `node-18-tests`, `node-20-tests` (Node 18 tests 1/3 … 3/3, Node 20 tests 1/3 … 3/3) | unproven push, merge queue and train PRs (job-level skip on other PRs and a proven push): `vitest run --shard=N/3`; shard 3 first runs typecheck, `lint:ci`, `check:drift` and, after the tests, `eval:ci` | Node 18: 9.2, 9.9, 8.7; Node 20: 8.5, 7.3, 7.9 (red-proof run 43538960462; unsharded: 20.7, 19.9) |
+| `build` (Node 18, Node 20) | aggregator over its version's shard job: green with a job-summary line on an ordinary PR, requires the shards' skip on a proven push, else their `success` | 0.1 |
 | `node-22-checks` (Node 22 checks) | typecheck, `lint:ci`, `check:drift`, `eval:ci` | 0.7 |
 | `node-22-tests` (Node 22 tests 1/5 … 5/5) | `vitest run --shard=N/5` | 5.7, 4.8, 5.0, 4.4, 4.7 (run 43538929281) |
 | `changelog` (CHANGELOG under [Unreleased]) | PR and merge queue, record-only PRs too: `scripts/check-changelog-unreleased.mjs HEAD^1` (every added CHANGELOG line under `[Unreleased]` or under the `## [x.y.z]` heading a release PR adds, no released line deleted). A deliberate edit of released history carries the PR label `changelog-exempt` (then `--exempt`: reported, not refused); label, then re-run the job. Not a required check; `node-22` requires its success (on a PR and in the queue) | not yet measured |
 | `node-22` (Node 22) | gates on `node-22-checks`, `node-22-tests` and, on a PR or in the queue, `changelog`; on a record-only PR, runs the docs leg | < 0.2 |
 | `builds` (Workspace builds) | `build`, `typecheck:all`, all five workspace builds (docs, playground, MCP shim, hosted MCP Worker, VS Code), MCP `check-dist-resources.mjs`, VS Code bundle tests, `check:test-wiring`, `check:dxf` with ezdxf in a virtualenv (each only here) | 2.0 |
-| `windows-tests` (Windows tests 1/3 … 3/3) | push and merge queue only (job-level skip on a PR), on windows-latest: `vitest run --shard=N/3` at the runner's default line endings, shard 3 then `check:drift` (no `eval:ci`) | 11.5, 10.0, 8.9 (red-proof run 43538960462; unsharded: 21.1) |
-| `windows` (Windows (tests + drift)) | aggregator over `windows-tests`, on ubuntu: green with a job-summary line on a PR, else requires the shards' `success` | 0.1 |
+| `windows-tests` (Windows tests 1/3 … 3/3) | unproven push, merge queue and train PRs (job-level skip on other PRs and a proven push), on windows-latest: `vitest run --shard=N/3` at the runner's default line endings, shard 3 then `check:drift` (no `eval:ci`) | 11.5, 10.0, 8.9 (red-proof run 43538960462; unsharded: 21.1) |
+| `windows` (Windows (tests + drift)) | aggregator over `windows-tests`, on ubuntu: green with a job-summary line on an ordinary PR, requires the shards' skip on a proven push, else their `success` | 0.1 |
 | `e2e-playground-chromium` (Playground E2E chromium 1/2, 2/2) | every playground spec in Chromium, `--shard=N/2` (Playwright splits by test count, not duration), then `Flaky tests` | 3.0, 5.1 (run 43535706255) |
 | `e2e-playground-engines` (Playground E2E engines) | the `@engines` specs in Firefox and WebKit, then `Flaky tests` | 2.8 (run 43535706255) |
 | `e2e-playground` (Playground E2E (Playwright)) | aggregator: requires `success` of both jobs above | 0.1 (run 43535706255) |

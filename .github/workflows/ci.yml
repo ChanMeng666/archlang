@@ -56,14 +56,16 @@ jobs:
   # job-summary line. Their breaks surface after the merge, in the push run on `main` and
   # in nightly's `full-matrix`; `/release-check` reads both.
   #
-  # A proven push skips everything (`scripts/ci-proven.mjs`). On a push to `main` only,
-  # `changes` sets `proven` when the pushed commit is a two-parent merge whose tree is its
-  # second parent's, the first parent is an ancestor of the second, and a successful
-  # `pull_request` run of this workflow for a `train/` branch at that second parent ran every
-  # job (FULL_RUN_JOBS). That run tested the same tree with every leg, so every leaf job here
-  # skips its steps (or is skipped at job level) and every required name reports green with a
-  # job-summary line naming the proving run. Any error or doubt is "not proven": the push
-  # then runs in full, as before. The CodeQL workflow is never short-circuited.
+  # A proven push skips everything (`scripts/ci-proven.mjs`, whose header lists the conditions).
+  # On a push to `main` only, `changes` sets `proven` when the pushed commit M is a two-parent
+  # merge pushed over M^1, tree(M) is tree(M^2), M^1 is an ancestor of M^2, and a recent
+  # successful `pull_request` run of this workflow for a `train/` branch at M^2, whose PR into
+  # `main` merged as M, ran every job (FULL_RUN_JOBS) without a "nothing to run on this leg"
+  # step. That run tested the same tree with every leg, so every leaf job here skips its steps
+  # (or is skipped at job level) and every required name reports green with a job-summary line
+  # naming the proving run. Every reader of `proven` also needs `changes` to have succeeded. Any
+  # error or doubt is "not proven": the push then runs in full, as before. The step guards and
+  # job names are pinned to the script by test/ci-proven.test.ts. CodeQL is never short-circuited.
   #
   # Node 22 is an aggregator: its check gates on `node-22-checks` (typecheck, lint, drift,
   # eval) and on the five `node-22-tests` shards, on PRs and pushes alike, and it also
@@ -131,6 +133,7 @@ jobs:
         timeout-minutes: 2
         env:
           GITHUB_TOKEN: ${{ github.token }}
+          PUSH_BEFORE: ${{ github.event.before }}
         run: node scripts/ci-proven.mjs
 
       - name: Verdict
@@ -290,7 +293,7 @@ jobs:
     if: ${{ always() }}
     env:
       FULL_LEG: ${{ needs.changes.result != 'success' || needs.changes.outputs.full_leg == 'true' }}
-      PROVEN: ${{ needs.changes.outputs.proven == 'true' }}
+      PROVEN: ${{ needs.changes.result == 'success' && needs.changes.outputs.proven == 'true' }}
       PROOF: ${{ needs.changes.outputs.proof }}
     strategy:
       fail-fast: false
@@ -324,7 +327,7 @@ jobs:
     name: Node 22 checks
     runs-on: ubuntu-latest
     needs: changes
-    if: ${{ !cancelled() && needs.changes.outputs.code != 'false' && needs.changes.outputs.proven != 'true' }}
+    if: ${{ !cancelled() && needs.changes.outputs.code != 'false' && (needs.changes.result != 'success' || needs.changes.outputs.proven != 'true') }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
@@ -358,7 +361,7 @@ jobs:
     name: Node 22 tests ${{ matrix.shard }}/5
     runs-on: ubuntu-latest
     needs: changes
-    if: ${{ !cancelled() && needs.changes.outputs.code != 'false' && needs.changes.outputs.proven != 'true' }}
+    if: ${{ !cancelled() && needs.changes.outputs.code != 'false' && (needs.changes.result != 'success' || needs.changes.outputs.proven != 'true') }}
     strategy:
       fail-fast: false
       matrix:
@@ -438,7 +441,7 @@ jobs:
     if: ${{ always() }}
     env:
       FULL_CI: ${{ needs.changes.outputs.code != 'false' }}
-      PROVEN: ${{ needs.changes.outputs.proven == 'true' }}
+      PROVEN: ${{ needs.changes.result == 'success' && needs.changes.outputs.proven == 'true' }}
       PROOF: ${{ needs.changes.outputs.proof }}
     steps:
       - name: Every Node 22 job gave the expected result
@@ -516,8 +519,8 @@ jobs:
     if: ${{ !cancelled() }}
     env:
       # FULL_CI here means "run the steps": a code change that no train PR run proved.
-      FULL_CI: ${{ needs.changes.outputs.code != 'false' && needs.changes.outputs.proven != 'true' }}
-      PROVEN: ${{ needs.changes.outputs.proven == 'true' }}
+      FULL_CI: ${{ needs.changes.outputs.code != 'false' && (needs.changes.result != 'success' || needs.changes.outputs.proven != 'true') }}
+      PROVEN: ${{ needs.changes.result == 'success' && needs.changes.outputs.proven == 'true' }}
       PROOF: ${{ needs.changes.outputs.proof }}
     # The core suite never compiles the downstream workspaces, so a change that
     # breaks the docs site, the playground, the MCP shim or the VS Code extension
@@ -677,7 +680,7 @@ jobs:
     if: ${{ always() }}
     env:
       FULL_LEG: ${{ needs.changes.result != 'success' || needs.changes.outputs.full_leg == 'true' }}
-      PROVEN: ${{ needs.changes.outputs.proven == 'true' }}
+      PROVEN: ${{ needs.changes.result == 'success' && needs.changes.outputs.proven == 'true' }}
       PROOF: ${{ needs.changes.outputs.proof }}
     steps:
       - name: Every Windows shard gave the expected result
@@ -769,8 +772,8 @@ jobs:
     if: ${{ !cancelled() }}
     env:
       # FULL_CI here means "run the steps": a code change that no train PR run proved.
-      FULL_CI: ${{ needs.changes.outputs.code != 'false' && needs.changes.outputs.proven != 'true' }}
-      PROVEN: ${{ needs.changes.outputs.proven == 'true' }}
+      FULL_CI: ${{ needs.changes.outputs.code != 'false' && (needs.changes.result != 'success' || needs.changes.outputs.proven != 'true') }}
+      PROVEN: ${{ needs.changes.result == 'success' && needs.changes.outputs.proven == 'true' }}
       PROOF: ${{ needs.changes.outputs.proof }}
     strategy:
       fail-fast: false
@@ -893,8 +896,8 @@ jobs:
     if: ${{ !cancelled() }}
     env:
       # FULL_CI here means "run the steps": a code change that no train PR run proved.
-      FULL_CI: ${{ needs.changes.outputs.code != 'false' && needs.changes.outputs.proven != 'true' }}
-      PROVEN: ${{ needs.changes.outputs.proven == 'true' }}
+      FULL_CI: ${{ needs.changes.outputs.code != 'false' && (needs.changes.result != 'success' || needs.changes.outputs.proven != 'true') }}
+      PROVEN: ${{ needs.changes.result == 'success' && needs.changes.outputs.proven == 'true' }}
       PROOF: ${{ needs.changes.outputs.proof }}
     steps:
       - name: Record-only change, nothing to run on this leg
@@ -1015,8 +1018,8 @@ jobs:
     if: ${{ !cancelled() }}
     env:
       # FULL_CI here means "run the steps": a code change that no train PR run proved.
-      FULL_CI: ${{ needs.changes.outputs.code != 'false' && needs.changes.outputs.proven != 'true' }}
-      PROVEN: ${{ needs.changes.outputs.proven == 'true' }}
+      FULL_CI: ${{ needs.changes.outputs.code != 'false' && (needs.changes.result != 'success' || needs.changes.outputs.proven != 'true') }}
+      PROVEN: ${{ needs.changes.result == 'success' && needs.changes.outputs.proven == 'true' }}
       PROOF: ${{ needs.changes.outputs.proof }}
       # The browsers live in the workspace, where the cache step below finds them.
       PLAYWRIGHT_BROWSERS_PATH: ${{ github.workspace }}/.pw-browsers
@@ -1098,8 +1101,8 @@ jobs:
     if: ${{ !cancelled() }}
     env:
       # FULL_CI here means "run the steps": a code change that no train PR run proved.
-      FULL_CI: ${{ needs.changes.outputs.code != 'false' && needs.changes.outputs.proven != 'true' }}
-      PROVEN: ${{ needs.changes.outputs.proven == 'true' }}
+      FULL_CI: ${{ needs.changes.outputs.code != 'false' && (needs.changes.result != 'success' || needs.changes.outputs.proven != 'true') }}
+      PROVEN: ${{ needs.changes.result == 'success' && needs.changes.outputs.proven == 'true' }}
       PROOF: ${{ needs.changes.outputs.proof }}
     # `builds` proves the docs site COMPILES and `scripts/smoke.mjs` proves its routes
     # exist AFTER a deploy — neither opens the site. This job serves the built output
