@@ -1974,8 +1974,9 @@ EV.1 could not tell whether a lost brief-run came from the model, a stricter rul
 geometry, because neither the July nor the November artifacts hold the authored `.arch` source of
 each brief. One way: `eval/run.ts` writes each brief's extracted source into the run's artifact
 (the workflow's upload, never the repo). A workflow artifact on this public repo is downloadable, so
-whether plan sources may be published there (raw replies stay unpublished) is an owner decision to
-take first. **Gate:** an offline test
+whether plan sources may be published there was ruled by RM-D53 (2026-11-16, delegated): yes, the
+extracted `.arch` source only, in the existing `eval-results-live` artifact at GitHub's default
+retention; raw replies stay unpublished; a local run writes to a git-ignored directory. **Gate:** an offline test
 that a live-shaped run writes one source per scored brief, and `eval/README.md` names the file.
 
 ### EV.3 · The baseline does not record the prompt it was measured under — `todo`
@@ -2010,7 +2011,9 @@ which refusals have one nearest legal place, and whether a move may cross a room
 18/26 · 7/26). RM-D52 re-baselined to 22 / 9 / 1 on 2026-11-16 under a changed prompt. The card is
 also on HF, so changing it means a card re-upload, which is owner-only (RM-D47). One way: date
 the July numbers as the baseline at generation time and name the current one beside it, with no
-comparison. **Gate:** the owner's go for the re-upload; card bytes on HF equal the repo's.
+comparison. RM-D54 (2026-11-16, delegated) ruled the change; the repo card was changed by
+#PRNUM. **Gate:** the owner's go for the card-only re-upload ("同意上传卡片"); card bytes on HF
+equal the repo's.
 
 ### AG.1 · `check:quick` misses the text guards an executor most often trips — `todo`
 

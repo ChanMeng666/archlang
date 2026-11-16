@@ -310,14 +310,21 @@ The run adds no rows to this dataset. Only structural facts are stated.
 ## Baseline context
 
 For orientation only — these are numbers about a *model authoring plans*, not about this dataset.
-Measured on the project's public 26-brief evaluation fixture with judge v2, recalibrated 2026-07-12
-(`gpt-5.5`, seed-pinned):
+Measured on the project's public 26-brief evaluation fixture with judge v2 (`gpt-5.5`, seed-pinned).
 
-- **One-shot (L0):** valid 23/26 (88%) · intent 14/26 (54%) · sound 3/26 (12%).
+**Current baseline** (set 2026-11-16 from three runs at commit `2a210589`, the commit this
+dataset's `model-authoring` config was generated at; the median run on valid and intent):
+
+- **One-shot (L0):** valid 22/26 (85%) · intent 9/26 (35%) · sound 1/26 (4%).
 - **Deterministic-tool overlay (L1)** — `fix` + `repair`, zero extra model calls: intent
-  18/26 (69%) · sound 7/26.
+  16/26 · sound 1/26.
 
-That L1 lift belongs to the deterministic tool tier's ledger, not to any model loop. All figures
+**Earlier baseline, 2026-07-12** (an older author prompt and older compile and lint checks):
+L0 valid 23/26 · intent 14/26 · sound 3/26; L1 intent 18/26 · sound 7/26. The two baselines were
+measured with different rulers and are not compared: the difference is neither a measured
+regression nor evidence against one (`eval/README.md` in the main repository).
+
+The L1 lift belongs to the deterministic tool tier's ledger, not to any model loop. All figures
 are judge-v2; the project never compares rates across judge versions, and neither should any use of
 this dataset.
 
