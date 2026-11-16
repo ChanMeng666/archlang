@@ -47,4 +47,28 @@ describe("room uses", () => {
     expect(errors.length).toBeGreaterThan(0);
     expect(errors[0]!.message).toMatch(/room uses/i);
   });
+
+  // Backlog U.6: an outdoor word after `uses` names the element that draws it.
+  it.each([
+    ["balcony", "outdoor balcony"],
+    ["patio", "outdoor patio"],
+    ["terrace", "outdoor patio"],
+    ["garden", "outdoor lawn"],
+  ])("points `uses %s` at `%s`", (word, hint) => {
+    const { diagnostics } = compile(wrap(`room id=r at (0,0) size 4000x3000 uses ${word}`), { noCache: true });
+    expect(diagnostics[0]!.code).toBe("E_PARSE");
+    expect(diagnostics[0]!.message).toContain(`\`${hint}\``);
+  });
+
+  it("points a strip room's `uses balcony` at `outdoor balcony` too", () => {
+    const src = `plan "P" {\n  units mm\n  strip right at (0,0) gap 0 height 3000 { room id=s1 size 3000 uses balcony }\n}`;
+    const { diagnostics } = compile(src, { noCache: true });
+    expect(diagnostics[0]!.code).toBe("E_PARSE");
+    expect(diagnostics[0]!.message).toContain("`outdoor balcony`");
+  });
+
+  it("adds no outdoor hint for a word that is not an outdoor surface", () => {
+    const { errors } = compile(wrap(`room id=r at (0,0) size 4000x3000 uses lounge`), { noCache: true });
+    expect(errors[0]!.message).not.toContain("outdoor");
+  });
 });
