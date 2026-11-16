@@ -17,11 +17,12 @@
 
 import { readFileSync } from "node:fs";
 import { pathToFileURL } from "node:url";
-// The one Node encoder, shared with `archlang link` and the MCP `link` tool. Re-exported so
-// `docs-site/sync-docs.mjs` and `playground/scripts/gen-static.mjs` keep importing it from here.
+// The one Node encoder and the one playground origin, shared with `archlang link` and the MCP
+// `link` tool. Re-exported so `docs-site/sync-docs.mjs` and the playground build scripts import
+// both from here and never keep a copy of the origin.
 import { decodePlanHash, encodePlanHash, PLAYGROUND_ORIGIN } from "../src/cli/share-codec.mjs";
 
-export { decodePlanHash, encodePlanHash };
+export { decodePlanHash, encodePlanHash, PLAYGROUND_ORIGIN };
 
 // The CLI half runs ONLY when this file is the entry point. `docs-site/sync-docs.mjs`
 // IMPORTS `encodePlanHash` to mint the home page's per-example playground links, and

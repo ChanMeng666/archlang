@@ -219,7 +219,7 @@ than implying exposure. And a shim bump drags the pack-time resource law with it
 land in `packages/mcp/package.json` **and both** of `server.json`'s version fields, or the release
 workflow `npm view`-skips it and nothing reaches either registry.
 
-### 3.2 · One playground origin constant — `todo`
+### 3.2 · One playground origin constant: done by #841, waiting to be archived — `note`
 
 Re-export `PLAYGROUND_ORIGIN` (`src/cli/share-codec.mjs`) from `scripts/gen-permalink.mjs` and use it
 for the hard-coded copies at `docs-site/sync-docs.mjs:25` and `playground/scripts/gen-static.mjs:73`,
@@ -492,7 +492,7 @@ connection and decompress nothing, and the sites run on workerd, not Node. At 2.
 
 ## Found while landing the issued-sheet statements (`notes`, `schedule openings`)
 
-### N.2 · `E_LEVEL_MIX`'s remedy does not name `notes` among the plan-level settings — `todo`
+### N.2 · `E_LEVEL_MIX`'s remedy does not name `notes` among the plan-level settings: done by #839, waiting to be archived — `note`
 
 The remedy text in `src/error-catalog.ts` lists the statements that stay outside `level` blocks
 and predates `notes`. Cosmetic: `notes` inside a level is `E_PARSE`, as `legend` is.
@@ -514,7 +514,7 @@ number per storey (`W01` on each level); a set-unique numbering is an owner call
 the sheet statements, and left so `fmt` output on existing files does not move in that change;
 `number`/`revision`/`notes` already use `escapeStr`. Fix: the same escaper for the three.
 
-### N.5 · `E_DRAWING_LIMIT`'s catalogue entry omits its second trigger — `todo`
+### N.5 · `E_DRAWING_LIMIT` catalogue names the NOTES cap: done by #840, waiting to be archived — `note`
 
 `src/error-catalog.ts` describes only the primitive budget; the NOTES cap (over 200 wrapped
 lines, `src/draw-budget.ts`) raises the same code with its own message. One sentence (with N.2).
@@ -1478,7 +1478,7 @@ it; that is a 2.0 decision for the owner.
 **Gate:** on a Linux host whose npm prefix is `/usr`, `npm i -g` of the packed tarball succeeds
 and `archlang --version` prints the version. **Size:** S.
 
-### U.20 · The MCP `describe` tool's description names only the centreline area — `todo`
+### U.20 · The MCP `describe` tool's description names both areas: done by #815, waiting to be archived — `note`
 
 **Observed (card D1, out of its scope).** `describe()` now reports `rooms[].net_area_m2` and
 `totals.net_floor_area_m2` beside the centreline `area_m2`
@@ -1492,6 +1492,12 @@ in `packages/mcp/package.json` and both `server.json` `version` fields.
 
 **Gate:** the tool description names both fields; the MCP lockstep and tool-text tests pass; the
 version is bumped in all three places. **Size:** S.
+**Done by #815, without the bump.** A hand bump on `main` pins the plugin
+(`plugins/archlang/.claude-plugin/plugin.json`, via `gen:plugin`) to a shim version npm does not have
+until a release publishes it, so plugin installs would fail to start the server in between. The
+bump is the release's: `npm run release:pin` raises the shim version whenever the core range moves,
+which every core release does, so the description reaches the stdio shim at the next release (the
+hosted server has it on deploy).
 
 ### U.22 · `describe()` net-area budget: done by #742 and #771, waiting to be archived — `note`
 
@@ -1870,7 +1876,7 @@ footprint laid along an edge, not the catalogue's along × depth. (1) and (2) ar
 
 ## Live-eval baseline gap (RM-D51, 2026-11-16)
 
-### EV.1 · Diagnose the gpt-5.5 intent gap against the July baseline — `todo`
+### EV.1 · Diagnose the gpt-5.5 intent gap against the July baseline: done by #837, waiting to be archived — `note`
 
 At `2a210589` (after CO-1 and CO-2) gpt-5.5 scored valid 22/22/18 and intent 10/9/7 of 26 over
 three runs (`eval/live-runs/2026-11-authorability-remeasure.md`), against the July baseline's valid
@@ -1886,6 +1892,7 @@ One option the owner may choose is the median of 3 runs; any new run is paid, ow
 `eval:live`.
 **Gate:** a per-brief table of which briefs lost intent and why, stated as observed (prompt change,
 judge, model drift), with no claim beyond the data and none about loop gain.
+Done by #837: the record is `eval/live-runs/2026-11-ev1-intent-gap.md`.
 
 ## Site chrome (found while fixing the nav overflow, 2026-09-20)
 

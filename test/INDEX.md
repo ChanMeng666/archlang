@@ -85,7 +85,7 @@ Nearest first, then by name; `(+n)` is the rest. Test names are `test/<name>.tes
 - `src/elements/wall.ts` (1) — `room-datums`
 - `src/elements/window.ts` (1) — `corner-window`
 - `src/error-catalog-fixes.ts` (1) — `explain`
-- `src/error-catalog.ts` (18) — `cli-context`, `context-starter`, `element-cap`, `error-catalog-families`, `garage`, `lint-rule-order`, `lint-summary`, `llms-full-drift` (+10)
+- `src/error-catalog.ts` (19) — `cli-context`, `context-starter`, `element-cap`, `error-catalog-families`, `garage`, `levels`, `lint-rule-order`, `lint-summary` (+11)
 - `src/export/dxf.ts` (10) — `curves`, `export-dxf`, `furniture-curves-backends`, `label-fit`, `label-wrap`, `opening`, `room-floor`, `scene-path-prim` (+2)
 - `src/export/pdf.ts` (8) — `export-font-cjk`, `export-pdf`, `furniture-curves-backends`, `label-wrap`, `roof`, `scene-path-prim`, `sheet`, `v129-cross`
 - `src/expr-source.ts` (1) — `emit-opening-oracle`
@@ -170,7 +170,7 @@ Nearest first, then by name; `(+n)` is the rest. Test names are `test/<name>.tes
 - `src/scene.ts` (60) — `arc-radius-exact`, `axes`, `band`, `bbox-derived-position`, `block-stair-winders-walking-arc`, `block-stair`, `corner-window`, `dim-stagger` (+52)
 - `src/segment-select.ts` (1) — `segment-select`
 - `src/share.ts` (1) — `share-codec`
-- `src/sheet-tables.ts` (4) — `export-pdf`, `sheet-annotations`, `sheet`, `wall-status-drawing`
+- `src/sheet-tables.ts` (5) — `drawing-budget`, `export-pdf`, `sheet-annotations`, `sheet`, `wall-status-drawing`
 - `src/sheet-text.ts` (1) — `sheet-text`
 - `src/sheet.ts` (10) — `chrome-hidden`, `closed-vocabularies`, `dim-stagger`, `dim-thickness-callout`, `dims-ground`, `finish`, `label-fit`, `model-range` (+2)
 - `src/site.ts` (2) — `site`, `wall-face-probe`

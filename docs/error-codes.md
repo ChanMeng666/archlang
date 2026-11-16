@@ -569,7 +569,7 @@ room id=main at (0,0) size 3000x3000   # then, in the plan: furniture bed in wes
 
 *error* — The drawing is larger than any plan may draw.
 
-**Cause.** Before anything is drawn, `compile()` estimates the drawing primitives every element will emit (an upper bound per kind: a room 3, a door 5, a run one or two lines per tread, a fixture its own symbol), plus one per point of its outline and what `dims auto`, the axes and the margin tables add, summed over every storey because a multi-storey plan holds all its pages at once. Past 300,000 the drawing would take hundreds of megabytes, so the plan is refused, at the element whose estimate crosses the budget. Usually a loop that repeats long runs or large fixtures far more often than meant. `describe` and `lint` draw nothing and are not held by it.
+**Cause.** Before anything is drawn, `compile()` estimates the drawing primitives every element will emit (an upper bound per kind: a room 3, a door 5, a run one or two lines per tread, a fixture its own symbol), plus one per point of its outline and what `dims auto`, the axes and the margin tables add, summed over every storey because a multi-storey plan holds all its pages at once. Past 300,000 the drawing would take hundreds of megabytes, so the plan is refused, at the element whose estimate crosses the budget. Usually a loop that repeats long runs or large fixtures far more often than meant. The same code refuses `notes` that wrap to more than 200 lines of 57 characters, the most the NOTES table may draw, reported at the plan header with its own message. `describe` and `lint` draw nothing and are not held by it.
 
 **Fix.** Draw fewer or shorter runs, shrink the loop, or split the building into separate plans.
 
@@ -1347,7 +1347,7 @@ level 1 { room at (0,0) size 3000x3000 }   # error: level 1 twice
 
 **Cause.** A plan is either single-storey (no `level` block) or entirely made of them: anything that draws belongs to exactly one storey, so a room/wall/door/`for`/`strip`/component call at plan level next to a `level` block has no storey to belong to.
 
-**Fix.** Move the statement inside the `level` block it belongs to. Only settings (`units`/`grid`/`paper`/`scale`/`north`/`site`/`dims`/`title`/`axes`/`schedule`/`legend`), `component`/`import` declarations, and the plan-global `let`/`set` stay outside — they apply to every level.
+**Fix.** Move the statement inside the `level` block it belongs to. Only settings (`units`/`grid`/`paper`/`scale`/`north`/`site`/`dims`/`title`/`axes`/`schedule`/`legend`/`notes`), `component`/`import` declarations, and the plan-global `let`/`set` stay outside — they apply to every level.
 
 ```arch static
 plan "H" {

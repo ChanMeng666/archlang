@@ -41,7 +41,9 @@ lands first (`.claude/commands/release-check.md`).
    arguments are only added, optional. CI runs it with the registry reachable.
 8. **The release fields**: `packages/mcp` changes ship only with a version bump in `package.json` AND
    both `server.json` version fields; `npm run release:pin` moves the range and the three fields
-   together (`scripts/bump-lockstep.ts`). Red without it: `packages/mcp/test/lockstep.test.ts`.
+   together (`scripts/bump-lockstep.ts`) in the release PR. Never hand-bump on a feature PR: `gen:plugin`
+   would pin the plugin to a shim version npm does not have yet, and plugin installs fail until the
+   release. `packages/mcp/test/lockstep.test.ts` checks the fields agree, not that they moved.
 9. **`CHANGELOG.md`**: an `### Added` line under `[Unreleased]`; regenerate with `npm run gen:all`
    if a generated block names the tool list (CI runs `npm run check:drift`).
 10. **Prove it**: call the tool through the in-memory `Client` (the `tools.test.ts` case), then
