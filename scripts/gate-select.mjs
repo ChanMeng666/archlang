@@ -1,7 +1,7 @@
 /**
  * What `check:quick` (`scripts/check-quick.mjs`) selects, as pure functions of the changed paths and
  * the tracked files: the directory-scanning guards, the source-tree scanners, the tests named after a
- * changed module and the corpus pins, and `planTests`, which orders them under their caps. Zero
+ * changed module, the text guards and the corpus pins, and `planTests`, which orders them under their caps. Zero
  * dependencies; it reads only the files it is handed. `test/gate-select.test.ts` pins it.
  */
 import { existsSync, readFileSync } from "node:fs";
@@ -215,6 +215,103 @@ export function namedTests(changed, files, durations = {}, maxFiles = NAMED_MAX_
   return capByCost(found, maxFiles, maxSecs);
 }
 
+// ---- the text guards --------------------------------------------------------------------------
+/**
+ * Three guards that read catalogue, docs and allowlisted TEXT by a path the import graph never follows,
+ * so the nearest-tests cut misses them and CI fails on them instead (#848). Each has its own inputs.
+ */
+export const OPAQUE_GUARD = "test/opaque-literal-guard.test.ts";
+export const DOCS_FLAGS = "test/docs-flags.test.ts";
+export const FIX_TEXTS = "test/lint-fix-texts.test.ts";
+export const TEXT_GUARDS = [OPAQUE_GUARD, DOCS_FLAGS, FIX_TEXTS];
+
+/**
+ * Every path a `.gitleaksignore` fingerprint (`<commit>:<path>:<ruleID>:<line>`) names, deduplicated and
+ * sorted, as written. The one parser: `test/opaque-literal-guard.test.ts` reads its guarded set with it.
+ */
+export function fingerprintPaths(text) {
+  return [
+    ...new Set(
+      text
+        .split("\n")
+        .map((l) => l.trim())
+        .filter((l) => l && !l.startsWith("#"))
+        .map((l) => l.split(":")[1] ?? ""),
+    ),
+  ]
+    .filter(Boolean)
+    .sort();
+}
+
+/** The paths `.gitleaksignore` names, with `/` separators; empty when the file cannot be read. */
+export function gitleaksExcluded(ROOT) {
+  let text = "";
+  try {
+    text = readFileSync(join(ROOT, ".gitleaksignore"), "utf8");
+  } catch {
+    return new Set();
+  }
+  return new Set(fingerprintPaths(text).map((p) => p.replace(/\\/g, "/")));
+}
+
+/**
+ * The tracked files `test/docs-flags.test.ts` reads, read out of its text (never retyped): every quoted
+ * literal that is a tracked file, and each `skills/<name>/SKILL.md` when it lists `skills`.
+ */
+export function docsFlagsReads(ROOT, files) {
+  let text = "";
+  try {
+    text = readFileSync(join(ROOT, DOCS_FLAGS), "utf8");
+  } catch {
+    return new Set();
+  }
+  const tracked = new Set(files);
+  const read = new Set([...text.matchAll(/"([^"\n]+)"/g)].map((m) => m[1]).filter((l) => tracked.has(l)));
+  if (/readdirSync\(\s*"skills"\s*\)/.test(text)) {
+    for (const f of files) if (/^skills\/[^/]+\/SKILL\.md$/.test(f)) read.add(f);
+  }
+  return read;
+}
+
+/**
+ * Why a changed path `f` wakes `guard`, or `undefined`. `ctx` is `{ excluded, docs }`: the
+ * `.gitleaksignore` paths and the files `test/docs-flags.test.ts` reads.
+ */
+export function textGuardTrigger(guard, f, ctx) {
+  if (guard === FIX_TEXTS) {
+    if (f === "src/error-catalog.ts" || f === "src/error-catalog-fixes.ts" || f.startsWith("src/error-catalog/"))
+      return "the error catalogue";
+    if (f === "src/fix-producers.ts") return "the fix producers";
+  }
+  if (guard === OPAQUE_GUARD) {
+    if (f === ".gitleaksignore") return "the gitleaks allowlist";
+    if (ctx.excluded.has(f)) return "a file .gitleaksignore names";
+  }
+  if (guard === DOCS_FLAGS && ctx.docs.has(f)) return `a page ${DOCS_FLAGS} reads`;
+  return undefined;
+}
+
+/**
+ * The text guards a change set wakes, each by its own inputs: `lint-fix-texts` by the error catalogue
+ * and the fix producers, `opaque-literal-guard` by `.gitleaksignore` and the files it names,
+ * `docs-flags` by the pages it reads. Each is `{ file, why }`, the why naming the trigger.
+ */
+export function textGuards(ROOT, changed, files) {
+  const ctx = { excluded: gitleaksExcluded(ROOT), docs: docsFlagsReads(ROOT, files) };
+  const out = [];
+  for (const guard of TEXT_GUARDS) {
+    if (!files.includes(guard)) continue;
+    for (const f of changed) {
+      const why = textGuardTrigger(guard, f, ctx);
+      if (why) {
+        out.push({ file: guard, why: `${why} changed (${f})` });
+        break;
+      }
+    }
+  }
+  return out;
+}
+
 // ---- corpus pins ------------------------------------------------------------------------------
 /** The recorded seconds assumed for a test file the duration record does not list yet. */
 export const UNKNOWN_SECS = 3;
@@ -259,7 +356,8 @@ export function readDurations(ROOT) {
  *     directory-scanning guards an `examples/` or `docs/**\/*.md` change wakes, then the nearest tests;
  *   - beyond `max`, each under its own cap: the source-tree scanners (`TREE_MAX_FILES` files and
  *     `TREE_MAX_SECS` seconds), the tests named after a changed module (`NAMED_MAX_FILES`, `NAMED_MAX_SECS`),
- *     and, for a change under `src/`, the corpus pins (`pinSecs` seconds).
+ *     the text guards (`TEXT_GUARDS`, each woken only by its own inputs; uncapped, at most three) and, for a change under `src/`, the corpus pins
+ *     (`pinSecs` seconds).
  * Returns `{ own, woken, guards, guardPick, extras, picked, total }`; each extra is `{ file, why, rule }`.
  */
 export function planTests({ ROOT, changed, files, related, max = 20, pinSecs = PIN_SECS }) {
@@ -289,6 +387,7 @@ export function planTests({ ROOT, changed, files, related, max = 20, pinSecs = P
   };
   addExtras("treeGuards", treeGuards(ROOT, changed, files));
   addExtras("namedTests", namedTests(changed, files, durations));
+  addExtras("textGuards", textGuards(ROOT, changed, files));
   if (changed.some((f) => f.startsWith("src/") && CODE.test(f))) {
     addExtras("corpusPins", corpusPins(scanningGuards(ROOT, ["examples"], files), related, pinSecs, durations));
   }

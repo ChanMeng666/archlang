@@ -13,7 +13,10 @@
   what the import graph ranks too far away: the source-tree scanners a changed `src/`, `scripts/`, `eval/`,
   `test/` or `.claude/` file wakes (tests in `test/` that list that folder and read every file; within 15
   recorded seconds and at most 30 files, the ones scanning the fewest trees first, then the cheapest),
-  the tests named after a changed module (at most 5 files and 10 recorded seconds) and, for a `src/`
+  the tests named after a changed module (at most 5 files and 10 recorded seconds), the three text guards
+  CI failed on in #848, each only on its own inputs (`lint-fix-texts` on the error catalogue or
+  `src/fix-producers.ts`, `opaque-literal-guard` on `.gitleaksignore` or a path it names, `docs-flags`
+  on a page that test reads) and, for a `src/`
   change, the cheapest tests that pin their output over the examples corpus within `--pins` (default
   5) recorded seconds. Selection is `scripts/gate-select.mjs`. It still cannot see a guard
   that scans a directory in a way no rule above reads, and the expensive corpus pins (`keep-byte-identity`,

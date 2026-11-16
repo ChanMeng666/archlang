@@ -40,23 +40,15 @@ import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 import { ERROR_CATALOG } from "../src/error-catalog.js";
+// @ts-expect-error — a zero-dep .mjs script with no type declarations; the one `.gitleaksignore` parser.
+import { fingerprintPaths } from "../scripts/gate-select.mjs";
 
 const ROOT = resolve(".");
 const read = (p: string): string => readFileSync(resolve(ROOT, p), "utf8");
 
 /** Every path named by a fingerprint in `.gitleaksignore`, deduplicated. */
 function fingerprintedPaths(): string[] {
-  return [
-    ...new Set(
-      read(".gitleaksignore")
-        .split("\n")
-        .map((l) => l.trim())
-        .filter((l) => l && !l.startsWith("#"))
-        .map((l) => l.split(":")[1] ?? ""),
-    ),
-  ]
-    .filter(Boolean)
-    .sort();
+  return fingerprintPaths(read(".gitleaksignore")) as string[];
 }
 
 const GUARDED = fingerprintedPaths();

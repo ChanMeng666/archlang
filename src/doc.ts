@@ -138,6 +138,12 @@ export function printDoc(doc: Doc, width = 80, tab = "  "): string {
         break;
     }
   }
-  // Strip any trailing whitespace a break-then-indent may have left on a line.
-  return out.join("").replace(/[ \t]+$/gm, "");
+  // Strip any trailing whitespace a break-then-indent may have left on a line. Only LF ends a
+  // line here: a multiline `$` also matches before CR, U+2028 and U+2029, which a string
+  // literal or comment may hold raw, and would eat a space the author wrote before one.
+  return out
+    .join("")
+    .split("\n")
+    .map((line) => line.replace(/[ \t]+$/, ""))
+    .join("\n");
 }
