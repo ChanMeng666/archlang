@@ -1963,6 +1963,64 @@ for furniture that only grazes a door's swing (EV.1: all 19 physical-lint intent
 (3) The Rooms control overlaps the drawing at ≤ 900 px (PG.1 review). (4) An oracle for
 `docs-site/index.md` frontmatter links. Each becomes its own card once looked at.
 
+## Test-programme findings (promo-credit programme, 2026-11-16)
+
+From `docs/plans/product-roadmap/2026-11-test-findings.md` (§ 3, § 4, § 5). RR.8 (2), the
+`W_DOORWAY_BLOCKED` strictness, is that plan's first direction and is not repeated here.
+
+### EV.2 · A live run keeps no plan source per brief — `todo`
+
+EV.1 could not tell whether a lost brief-run came from the model, a stricter rule or new compiler
+geometry, because neither the July nor the November artifacts hold the authored `.arch` source of
+each brief. One way: `eval/run.ts` writes each brief's extracted source into the run's artifact
+(the workflow's upload, never the repo). A workflow artifact on this public repo is downloadable, so
+whether plan sources may be published there (raw replies stay unpublished) is an owner decision to
+take first. **Gate:** an offline test
+that a live-shaped run writes one source per scored brief, and `eval/README.md` names the file.
+
+### EV.3 · The baseline does not record the prompt it was measured under — `todo`
+
+`eval/live-baseline.json` carries `judge` but no hash of `spec.llm.md` or `eval/corpus.json`, so
+146 of 241 prompt lines changed after July with nothing flagging the baseline as stale. One way:
+record both SHA-256s in the baseline, and have `renderDelta` (`eval/run.ts`) say so plainly when a
+run's hashes differ, as it already does for a judge change. **Gate:** a unit test of `renderDelta`
+for a matching and a differing prompt hash.
+
+### EV.4 · `offset` and `hinged` written as statements get no hint — `todo`
+
+After CO-1 and CO-2 the remaining order notes in the live runs are `Unknown statement "offset"`
+(Haiku 5.5 and gpt-5.5) and `Unknown statement "hinged"` (Haiku 5.5)
+(`eval/live-runs/2026-11-authorability-remeasure.md`). One way: a targeted parse hint naming the
+clause the model meant, as U.6 did for `uses balcony`; whether either becomes syntax waits for
+the data after the hint. **Gate:** each word gets a hint naming the real form, a test per word, and
+no corpus output moves (message only).
+
+### EV.5 · A refused opening offers no move (design first) — `todo`
+
+Six of EV.1's seven compile-error losses are opening-placement refusals (`refused, not moved`, a
+window on a partition edge, a parallel edge with no offset; ADR 0028 § 5). They return no fix. L1 (`eval/l1.ts`) applies only the machine-applicable tier, so
+a `maybe-incorrect` fix would help an author but move no L1 number; only a provably correct move
+(ADR 0011's bar) could be machine-applicable. Design first, within ADR 0005 and ADR 0028 § 5:
+which refusals have one nearest legal place, and whether a move may cross a room boundary.
+**Gate:** a design note in the card or an ADR before code.
+
+### EV.6 · The published dataset card quotes the superseded baseline — `todo`
+
+`dataset/CARD.md` § Baseline context quotes the 2026-07-12 baseline (L0 23/26 · 14/26 · 3/26; L1
+18/26 · 7/26). RM-D52 re-baselined to 22 / 9 / 1 on 2026-11-16 under a changed prompt. The card is
+also on HF, so changing it means a card re-upload, which is owner-only (RM-D47). One way: date
+the July numbers as the baseline at generation time and name the current one beside it, with no
+comparison. **Gate:** the owner's go for the re-upload; card bytes on HF equal the repo's.
+
+### AG.1 · `check:quick` misses the text guards an executor most often trips — `todo`
+
+In the P5 run, executors reported a green local gate on PRs that CI then failed on
+`test/opaque-literal-guard.test.ts`, `test/docs-flags.test.ts` and `test/lint-fix-texts.test.ts`
+(#848): `check:quick` runs the nearest tests, and those guards are not near the catalogue and docs
+files they read. One way: when a change touches `src/error-catalog/`, `docs/*.md` or a
+gitleaks-excluded test, `scripts/check-quick.mjs` also runs those three files. **Gate:** a
+`gate-select` test that such a change selects them; `scripts/check-quick.mjs` is high tier.
+
 ## Site chrome (found while fixing the nav overflow, 2026-09-20)
 
 ### N.1 · The nav row needs 1152px, and the hamburger persists until then (a WANT, not a bug) — `todo`
