@@ -17,10 +17,10 @@
 
 ### Fixed
 
-- The no-browser path of `view` (and `renderStill`) no longer leaves its scratch directory in the
-  temp folder: `renderReplay` and `renderStill` now remove it however they end, including when no
-  browser starts, and a failed removal never replaces the render's result or its error. On Windows
-  the scratch directory is removed with retries.
+- The no-browser path of `view` no longer leaves its scratch directory in the temp folder:
+  `renderReplay` now removes it however it ends, including when no browser starts. The removal
+  retries a busy directory (seen on Windows), and a failed removal never replaces the render's
+  result or its error.
 
 ## [0.8.1] - 2026-11-15
 

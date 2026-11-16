@@ -234,6 +234,18 @@ each deliberately, one PR each, proving the fix is behaviour-neutral: `useMathMi
 good: a false positive on our own `describe()`. Biome 2.6 also formats Markdown and YAML; both stay
 excluded in `files.includes`.
 
+### 3.4 · Replay scratch-directory removal: residue of the leak fix — `todo`
+
+Non-blockers from the review of the scratch-directory fix (`removeScratch`,
+`packages/archlang-3d/src/replay/video.ts`): (1) it uses sync `rmSync` with retries, which blocks
+the event loop up to ~2 s per render under a lasting lock; `rm` from `node:fs/promises` takes the
+same options; (2) a lasting removal failure is now silent: no log line or report field says a
+directory was left; (3) no test pins that a failed removal keeps a SUCCESSFUL render's result, or
+that a rejecting `browser.close()` still removes the directory; (4) the Windows cause (empty
+directories left by parallel renders) is a hypothesis: a probe with a held file reproduced a
+non-empty directory and a thrown error, not an empty one. If empty `archlang3d-replay-*`
+directories still appear in the temp folder after the fix, investigate again.
+
 ## Found while redrawing the showcase
 
 Five things the twelve new examples ran into. None is a regression and none blocked an example from
