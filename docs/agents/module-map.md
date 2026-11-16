@@ -305,7 +305,7 @@ Totals: 403 modules in 34 directories.
 | `text-layout.ts` | 170 | 12 | Line breaking for a drawn name, and where each line of a multi-line text is drawn. | none |
 | `text-metrics.ts` | 151 | 18 | The closed-form text widths in the tree: {@link textWidth}, the one shared estimate, and {@link inkWidth}, from the advances of the two faces a label is drawn in, for a test a label stands right up against. | none |
 | `text-safe.ts` | 63 | 7 | Output-text safety — the single place a string that came from user source is made safe to embed in a **container format**. | none |
-| `theme.ts` | 488 | 57 | Theme: colours, line-weight, and font for the rendered drawing. | none |
+| `theme.ts` | 488 | 58 | Theme: colours, line-weight, and font for the rendered drawing. | none |
 | `types.ts` | 203 | 14 | Public types for the ArchLang compiler. | none |
 | `unified-diff.ts` | 120 | 1 | A tiny, zero-dependency line-based unified diff (LCS backtrack + hunk grouping). | none |
 | `vertical.ts` | 960 | 44 | **Vertical circulation** as facts: the one place the shared semantics of `stair`, `elevator` and `escalator` live, so the three element modules, the nav grid, `lint` and `describe()` can never disagree about them. | none |
@@ -483,7 +483,7 @@ Totals: 403 modules in 34 directories.
 
 | Module | Lines | Importers | Summary | Budget |
 | --- | ---: | ---: | --- | --- |
-| `tokens.ts` | 667 | 52 | The single source of truth for ArchLang's lexical grammar. | none |
+| `tokens.ts` | 667 | 53 | The single source of truth for ArchLang's lexical grammar. | none |
 
 ## `src/import/`
 
