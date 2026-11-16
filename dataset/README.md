@@ -260,8 +260,10 @@ Two standing rules for anything written in this directory or the card:
   That published record is the only statement of the result; nothing in this directory or the
   card restates it, either way, and any other claim needs an owner decision. The run adds no
   multi-turn model-repair trajectories to the dataset. State only structural facts.
-- **Cite only judge-v2 baseline numbers** (the 2026-07-12 recalibration): one-shot L0 valid 23/26 ·
-  intent 14/26 · sound 3/26; the deterministic-tool L1 overlay intent 18/26 · sound 7/26. That L1
+- **Cite only judge-v2 baseline numbers**, from `eval/live-baseline.json` (since 2026-11-16, RM-D52:
+  one-shot L0 valid 22/26 · intent 9/26 · sound 1/26; L1 overlay intent 16/26 · sound 1/26). The
+  2026-07-12 baseline the published card quotes (L0 23/26 · 14/26 · 3/26; L1 18/26 · 7/26) is
+  history, measured under an older prompt, and is never compared with it (backlog EV.6). That L1
   lift belongs to the tool tier's ledger, never a model loop. Never compare rates across judge
   versions, and never cite judge-v1 numbers.
 

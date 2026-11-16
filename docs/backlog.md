@@ -1973,7 +1973,9 @@ From `docs/plans/product-roadmap/2026-11-test-findings.md` (§ 3, § 4, § 5). R
 EV.1 could not tell whether a lost brief-run came from the model, a stricter rule or new compiler
 geometry, because neither the July nor the November artifacts hold the authored `.arch` source of
 each brief. One way: `eval/run.ts` writes each brief's extracted source into the run's artifact
-(the workflow's upload, never the repo; raw replies stay unpublished). **Gate:** an offline test
+(the workflow's upload, never the repo). A workflow artifact on this public repo is downloadable, so
+whether plan sources may be published there (raw replies stay unpublished) is an owner decision to
+take first. **Gate:** an offline test
 that a live-shaped run writes one source per scored brief, and `eval/README.md` names the file.
 
 ### EV.3 · The baseline does not record the prompt it was measured under — `todo`
@@ -1996,10 +1998,19 @@ no corpus output moves (message only).
 ### EV.5 · A refused opening offers no move (design first) — `todo`
 
 Six of EV.1's seven compile-error losses are opening-placement refusals (`refused, not moved`, a
-window on a partition edge, a parallel edge with no offset; ADR 0028 § 5). They return no fix, so
-L1 cannot heal them. One way: offer the nearest legal position as a `maybe-incorrect` fix. Design
-first: which refusals have one nearest legal place, and whether a fix may cross a room boundary.
+window on a partition edge, a parallel edge with no offset; ADR 0028 § 5). They return no fix. L1 (`eval/l1.ts`) applies only the machine-applicable tier, so
+a `maybe-incorrect` fix would help an author but move no L1 number; only a provably correct move
+(ADR 0011's bar) could be machine-applicable. Design first, within ADR 0005 and ADR 0028 § 5:
+which refusals have one nearest legal place, and whether a move may cross a room boundary.
 **Gate:** a design note in the card or an ADR before code.
+
+### EV.6 · The published dataset card quotes the superseded baseline — `todo`
+
+`dataset/CARD.md` § Baseline context quotes the 2026-07-12 baseline (L0 23/26 · 14/26 · 3/26; L1
+18/26 · 7/26). RM-D52 re-baselined to 22 / 9 / 1 on 2026-11-16 under a changed prompt. The card is
+also on HF, so changing it means a card re-upload, which is owner-only (RM-D47). One way: date
+the July numbers as the baseline at generation time and name the current one beside it, with no
+comparison. **Gate:** the owner's go for the re-upload; card bytes on HF equal the repo's.
 
 ### AG.1 · `check:quick` misses the text guards an executor most often trips — `todo`
 

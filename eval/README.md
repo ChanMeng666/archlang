@@ -150,15 +150,17 @@ that, so the blindness is a test, not a claim.
 L0 baseline (`gpt-5.5-2026-04-23`, seed `20260711`, 26 briefs, judge v2, **re-baselined
 2026-11-16 by product-roadmap RM-D52** to the median of three runs at `2a210589`, after CO-1 and
 CO-2): **valid 22/26 (85%) · intent 9/26 (35%) · sound 1/26 (4%)**, the values of the median run
-43727489713 (the three runs: valid 22/22/18, intent 10/9/7, sound 0/1/0). Same run's `--l1`
+43727489713 (the three runs: valid 22/22/18, intent 10/9/7, sound 0/1/0; the per-metric medians
+are 22 / 9 / 0, so this run's sound and L1 numbers are each the highest of the three). Same run's `--l1`
 overlay: **intent 16/26 · sound 1/26**. The L0 numbers live in `live-baseline.json`; the L1
 numbers are recorded there as reference only (the baseline and every delta against it are L0).
 
 The baseline it supersedes, 2026-07-12 (valid 23/26 · intent 14/26 · sound 3/26; L1 intent 18/26),
 was measured under an author prompt 146 of whose 241 lines have since changed and under older
-compile and lint checks. EV.1 (`eval/live-runs/2026-11-ev1-intent-gap.md`) found every lost
-brief-run to be a physical lint code or a post-July compile error and the per-brief counts
-consistent with one flat rate, so **no rate is compared across the two baselines**: the drop is
+compile and lint checks. EV.1 (`eval/live-runs/2026-11-ev1-intent-gap.md`, against the
+2026-07-11 run, since the 07-12 run's per-brief artifacts are gone) found every lost brief-run to
+be a physical lint code or a compile error (6 of the 7 compile errors post-July opening-placement
+refusals), the per-brief counts consistent with one flat rate, and the causes not separable, so **no rate is compared across the two baselines**: the drop is
 not a measured model or language regression, nor evidence against one.
 
 A dated record of a one-off Claude 5.x live run (aggregate numbers, not comparable with
