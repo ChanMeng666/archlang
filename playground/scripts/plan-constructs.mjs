@@ -90,6 +90,7 @@ export const CONSTRUCTS = [
   ["level", "Levels (storeys)", "levels-—-a-multi-storey-building-v1-21", (f) => f.kinds.has("level")],
   ["zone", "Zones", "zones-—-wings-and-departments-v1-22", (f) => f.kinds.has("zone")],
   ["theme", "Theming", "theming", (f) => Boolean(f.plan.theme || f.plan.themeBase || f.plan.themeFrom)],
+  ["style", "Per-element styles (style)", "per-element-styles-—-style", (f) => Boolean(f.plan.styles)],
 ];
 
 /** The statement lists a statement can hold (src/ast.ts): a block's body, an `if`'s branches. */
