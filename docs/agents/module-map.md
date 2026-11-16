@@ -19,7 +19,7 @@ module's remaining facts are in its own header.
 invariants; this file holds every module. The exports of `src/index.ts` are in the sibling
 [`public-surface.md`](public-surface.md).
 
-Totals: 402 modules in 34 directories.
+Totals: 403 modules in 34 directories.
 
 ## `packages/archlang-3d/src/`
 
@@ -27,7 +27,8 @@ Totals: 402 modules in 34 directories.
 | --- | ---: | ---: | --- | --- |
 | `browser.ts` | 33 | 0 | The browser entry for a host page that shows the replay (card A5, the playground's 3D preview tab): build the payload in the page (`replayPayload`) and mount it on a canvas (`mountReplay`). It bundles three.js, so it is a separate entry… | none |
 | `curves.ts` | 45 | 2 | Arc discretisation to a chord tolerance (archlang-3d plan §4.1, `--curve-tol`). The core keeps every arc exact (`Edge` `{ t: "arc", arc }`) and tessellates at a fixed 7.5° step for the drawing; a raised wall is seen up close, so the 3D… | none |
-| `index.ts` | 138 | 32 | @chanmeng666/archlang-3d — reads a resolved ArchLang plan into a plan-aligned Scene3D. ArchLang itself draws plans; this package is a separate downstream consumer (ADR 0030) of the core's public seam (ADR 0031). Browser-safe: the Node… | none |
+| `glb.ts` | 10 | 0 | The GLB entry (`./glb`): `writeGlb` and its naming, for a page that writes the GLB bytes without Node (a "Download GLB" button). The bytes are the ones `./node`'s `writeGlb` and `archlang3d build` write for the same Mesh3D: it is the same… | none |
+| `index.ts` | 138 | 33 | @chanmeng666/archlang-3d — reads a resolved ArchLang plan into a plan-aligned Scene3D. ArchLang itself draws plans; this package is a separate downstream consumer (ADR 0030) of the core's public seam (ADR 0031). Browser-safe: the Node… | none |
 | `materials.ts` | 421 | 12 | Material slots (visual-assets card V1): the ONE palette both the GLB writer (`glb/write.ts`) and the replay viewer (`replay/mount.ts`) read, so a piece's oak or ceramic is the same colour in both. A T0 part names its slot (`Part.mat`… | none |
 | `node.ts` | 46 | 27 | The Node-only entry: a `World` over the file system. Kept out of `src/index.ts` so the browser bundle (adapter + Scene3D) never pulls a `node:*` module (`test/browser-safety.test.ts`). | none |
 | `units.ts` | 16 | 2 | Scene3D lengths are integer micrometres (plan §3.4): a plan coordinate in millimetres is multiplied by 1000 and rounded ONCE, at the adapter's edge, so every later stage works on integers and a last-ulp difference between engines is… | none |
@@ -58,7 +59,7 @@ Totals: 402 modules in 34 directories.
 
 | Module | Lines | Importers | Summary | Budget |
 | --- | ---: | ---: | --- | --- |
-| `write.ts` | 226 | 6 | Mesh3D → GLB (card A4; archlang-3d plan §3.6, §3.7). The same Mesh3D the replay viewer reads, written with glTF-Transform: one scene, one group node per storey (`level:L<n>`) and under it one node per Mesh3D node, named… | none |
+| `write.ts` | 230 | 7 | Mesh3D → GLB (card A4; archlang-3d plan §3.6, §3.7). The same Mesh3D the replay viewer reads, written with glTF-Transform: one scene, one group node per storey (`level:L<n>`) and under it one node per Mesh3D node, named… | none |
 
 ## `packages/archlang-3d/src/mesh/`
 
@@ -77,7 +78,7 @@ Totals: 402 modules in 34 directories.
 | `t0-outdoor.ts` | 1468 | 1 | T0 batch V7 (visual-assets), the site: planting, garden furniture, the things parked on a driveway, the terrace and lawn pieces and the small standing objects a survey records. Declared like V5 (`t0-living.ts`); local frame, units and the… | none |
 | `t0-utility.ts` | 492 | 1 | T0 batch V6 (visual-assets): kitchen, bath and utility. Declared like V5 (`t0-living.ts`); local frame, units and the clip: `t0.ts`. Back is −z (the wall a service stands against), front +z. | none |
 | `t0.ts` | 661 | 4 | T0 parametric furniture (archlang-3d plan §4.4, §5.1–5.3; card A2b; visual-assets V1–V3, V5–V7): pure generators that build a piece from a few parts, fitted EXACTLY to the plan's footprint. The twelve families laneway-house uses are here… | none |
-| `types.ts` | 64 | 14 | Mesh3D v0: the ONE triangulation the viewer and the GLB both read (archlang-3d amendment v0.7; principle 1 of the preview-and-remodel programme). Built from a Scene3D alone, deterministically: same Scene3D, same bytes. | none |
+| `types.ts` | 64 | 15 | Mesh3D v0: the ONE triangulation the viewer and the GLB both read (archlang-3d amendment v0.7; principle 1 of the preview-and-remodel programme). Built from a Scene3D alone, deterministically: same Scene3D, same bytes. | none |
 
 ## `packages/archlang-3d/src/replay/`
 
@@ -103,7 +104,7 @@ Totals: 402 modules in 34 directories.
 
 | Module | Lines | Importers | Summary | Budget |
 | --- | ---: | ---: | --- | --- |
-| `build.ts` | 570 | 7 | Resolved storeys → Scene3D v0. A mapping of the core's resolved facts into micrometres and plan-aligned records: no geometry is built here beyond the core's own (wall ownership through `joinWallSet`; arcs tessellated to a chord tolerance… | none |
+| `build.ts` | 570 | 6 | Resolved storeys → Scene3D v0. A mapping of the core's resolved facts into micrometres and plan-aligned records: no geometry is built here beyond the core's own (wall ownership through `joinWallSet`; arcs tessellated to a chord tolerance… | none |
 | `overlap.ts` | 132 | 5 | V-GEO-05 (archlang-3d plan §4.2, §8.1; card A2b): rooms whose floors overlap by more than 1 cm² would draw two coplanar floor finishes that fight in depth. Each such pair is reported (`W3D_FLOOR_OVERLAP`; the core warns `W_ROOM_OVERLAP`… | none |
 | `types.ts` | 245 | 16 | Scene3D v0: a renderer-independent, plan-aligned 2.5D scene read off a resolved plan (archlang-3d plan §3.5, appendix A). Plan axes: x right, y DOWN; z up. Every length is an integer number of micrometres ({@link Um}); handedness is… | none |
 | `validate.ts` | 226 | 2 | The Scene3D v0 validator: zero dependencies, so it runs in the browser bundle. It checks what `scene3d.schema.json` states (shapes, integer micrometres, enums, no unknown keys) and what a JSON Schema cannot (ids unique per collection and… | none |

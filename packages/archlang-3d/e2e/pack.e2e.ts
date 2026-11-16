@@ -84,6 +84,7 @@ describe("npm pack (what the first publish would send)", () => {
     };
     walk("index.js");
     walk("browser.js");
+    walk("glb.js");
     expect(seen.size).toBeGreaterThan(2);
     // Either spelling: tsup strips `node:` unless told otherwise.
     const builtin = (i: string) => i.startsWith("node:") || builtinModules.includes(i);

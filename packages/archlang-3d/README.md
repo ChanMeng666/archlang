@@ -86,10 +86,29 @@ if (!result.ok) throw new Error(result.refusal.code); // E3D_PLAN_ERRORS, E3D_NO
 writeFileSync("plan.glb", await writeGlb(buildMesh(result.scene)));
 ```
 
+In a browser, `writeGlb` comes from `./glb` and returns the same bytes, with no file system:
+
+```js
+import { adaptPlan, buildMesh } from "@chanmeng666/archlang-3d";
+import { writeGlb } from "@chanmeng666/archlang-3d/glb";
+
+const result = adaptPlan(source);
+if (result.ok) {
+  const bytes = await writeGlb(buildMesh(result.scene)); // a Uint8Array
+  const url = URL.createObjectURL(new Blob([bytes], { type: "model/gltf-binary" }));
+}
+```
+
+The checks `build` runs (glTF-Validator among them) need Node and stay in `./node`. glTF-Transform,
+which writes the GLB, also holds a Node reader that `writeGlb` never uses and that loads `node:fs` and
+`node:path` by a lazy `import()`. A bundler that resolves every import before it drops unused code, esbuild
+among them, needs `node:*` marked external for this entry; nothing from Node is left in the bundle.
+
 | Entry | For | Holds |
 |---|---|---|
 | `@chanmeng666/archlang-3d` | Node and browsers | `adaptPlan`, Scene3D, `buildMesh`, the replay's timeline |
 | `@chanmeng666/archlang-3d/browser` | browsers, with three.js | `mountReplay(canvas, payload)`, `replayPayload` |
+| `@chanmeng666/archlang-3d/glb` | Node and browsers | `writeGlb` (the GLB's bytes) and its node names |
 | `@chanmeng666/archlang-3d/node` | Node | `makeNodeWorld`, `replayHtml`, `renderReplay`, `writeGlb`, the checks |
 
 ## Licence

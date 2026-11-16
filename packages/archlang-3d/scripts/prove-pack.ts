@@ -5,12 +5,12 @@
  *
  *   npm -w packages/archlang-3d run prove:pack -- --dir <empty dir> [--core <version>]
  *
- * It checks: the file list; `.`, `./browser` and `./node` import under plain Node; `.` and
- * `./browser` bundle for a browser with no Node module; the types resolve under `NodeNext` with no
- * `skipLibCheck`, and `.` and `./node` also without the DOM lib; laneway-house's GLB hashes to the
- * repository's pin; the CLI builds a GLB that passes its checks and names this version; the replay
- * HTML loads nothing from a network and carries the pinned three.js with its notice. Exit 1 on the
- * first failure; the last line of stdout is the JSON summary.
+ * It checks: the file list; `.`, `./browser`, `./glb` and `./node` import under plain Node; `.`,
+ * `./browser` and `./glb` bundle for a browser with no Node module; the types resolve under `NodeNext`
+ * with no `skipLibCheck`, and `.`, `./glb` and `./node` also without the DOM lib; laneway-house's GLB,
+ * from `./node` and from `./glb`, hashes to the repository's pin; the CLI builds a GLB that passes its
+ * checks and names this version; the replay HTML loads nothing from a network and carries the pinned
+ * three.js with its notice. Exit 1 on the first failure; the last line of stdout is the JSON summary.
  */
 import { execFileSync, spawnSync } from "node:child_process";
 import { mkdirSync, readdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
@@ -86,6 +86,7 @@ import { readFileSync } from "node:fs";
 import { adaptPlan, ARCHLANG_3D_VERSION, buildMesh, validateScene3D } from "${NAME}";
 import { makeNodeWorld, replayFacts, writeGlb } from "${NAME}/node";
 import { mountReplay, PREVIEW_LABEL } from "${NAME}/browser";
+import { writeGlb as writeGlbBytes } from "${NAME}/glb";
 const base = ${JSON.stringify(join(REPO, "examples"))};
 const r = adaptPlan(readFileSync(base + "/laneway-house.arch", "utf8"), { world: makeNodeWorld(base) });
 if (!r.ok) throw new Error(r.refusal.code);
@@ -94,6 +95,7 @@ console.log(JSON.stringify({
   version: ARCHLANG_3D_VERSION,
   shells: buildMesh(r.scene).nodes.length,
   pinned: createHash("sha256").update(await writeGlb(buildMesh(r.scene), { generator: ${JSON.stringify(PIN_GENERATOR)} })).digest("hex"),
+  glb: createHash("sha256").update(await writeGlbBytes(buildMesh(r.scene), { generator: ${JSON.stringify(PIN_GENERATOR)} })).digest("hex"),
   mount: typeof mountReplay,
   facts: typeof replayFacts,
   label: PREVIEW_LABEL.length > 0,
@@ -104,10 +106,13 @@ const smoke = JSON.parse(execFileSync(process.execPath, ["smoke.mjs"], { cwd: di
   version: string;
   shells: number;
   pinned: string;
+  glb: string;
 };
 if (smoke.version !== manifest.version) fail(`ARCHLANG_3D_VERSION is ${smoke.version}`);
 if (smoke.pinned !== LANEWAY_GLB_SHA256)
   fail(`laneway-house's GLB hashes to ${smoke.pinned}, the pin is ${LANEWAY_GLB_SHA256}`);
+if (smoke.glb !== LANEWAY_GLB_SHA256)
+  fail(`laneway-house's GLB from ./glb hashes to ${smoke.glb}, the pin is ${LANEWAY_GLB_SHA256}`);
 
 // The browser entries: a `node:` module anywhere in their graph fails this bundle.
 for (const entry of ["index.js", "browser.js"]) {
@@ -121,6 +126,20 @@ for (const entry of ["index.js", "browser.js"]) {
     external: [CORE],
   }).catch((e: Error) => fail(`dist/${entry} does not bundle for a browser: ${e.message}`));
 }
+// `./glb`: glTF-Transform's unused `NodeIO` names `node:fs` and `node:path` in a lazy `import()`, which
+// esbuild resolves before it shakes the class out; with `node:*` external, no `node:` module may
+// survive into the bundle in any form.
+const glbBundle = await build({
+  entryPoints: [join(installed, "dist", "glb.js")],
+  bundle: true,
+  platform: "browser",
+  format: "esm",
+  write: false,
+  logLevel: "silent",
+  external: [CORE, "node:*"],
+}).catch((e: Error) => fail(`dist/glb.js does not bundle for a browser: ${e.message}`));
+if (/\b(?:from|import)\s*\(?\s*["']node:|\brequire\(\s*["']node:/.test(glbBundle.outputFiles[0]?.text ?? ""))
+  fail("dist/glb.js keeps a node: module in its browser bundle");
 
 // The published types, as a strict consumer reads them.
 writeFileSync(
@@ -128,7 +147,8 @@ writeFileSync(
   `import { adaptPlan, type Scene3D } from "${NAME}";
 import { makeNodeWorld } from "${NAME}/node";
 import { mountReplay, type ReplayHandle } from "${NAME}/browser";
-export const used: [typeof adaptPlan, typeof makeNodeWorld, typeof mountReplay] = [adaptPlan, makeNodeWorld, mountReplay];
+import { writeGlb } from "${NAME}/glb";
+export const used: [typeof adaptPlan, typeof makeNodeWorld, typeof mountReplay, typeof writeGlb] = [adaptPlan, makeNodeWorld, mountReplay, writeGlb];
 export type Used = [Scene3D, ReplayHandle];
 `,
 );
@@ -147,12 +167,13 @@ writeFileSync(
     files: ["types.ts"],
   }),
 );
-// `.` and `./node` are for Node too: they must check for a project with no DOM lib.
+// `.`, `./glb` and `./node` are for Node too: they must check for a project with no DOM lib.
 writeFileSync(
   join(dir, "types-node.ts"),
   `import { adaptPlan } from "${NAME}";
+import { writeGlb } from "${NAME}/glb";
 import { makeNodeWorld } from "${NAME}/node";
-export const used: [typeof adaptPlan, typeof makeNodeWorld] = [adaptPlan, makeNodeWorld];
+export const used: [typeof adaptPlan, typeof writeGlb, typeof makeNodeWorld] = [adaptPlan, writeGlb, makeNodeWorld];
 `,
 );
 const options = JSON.parse(readFileSync(join(dir, "tsconfig.json"), "utf8"));

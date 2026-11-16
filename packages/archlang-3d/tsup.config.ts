@@ -16,7 +16,13 @@ import { bundleViewer } from "./src/replay/viewer-bundle.js";
  * `cli/commands.ts` (esbuild on `viewer.ts`, `../scene3d/`) fold away, so `dist/` cannot reach them.
  */
 export default defineConfig({
-  entry: { index: "src/index.ts", browser: "src/browser.ts", node: "src/node.ts", cli: "src/cli/main.ts" },
+  entry: {
+    index: "src/index.ts",
+    browser: "src/browser.ts",
+    glb: "src/glb.ts",
+    node: "src/node.ts",
+    cli: "src/cli/main.ts",
+  },
   format: ["esm"],
   target: "es2022",
   platform: "node",
@@ -27,7 +33,13 @@ export default defineConfig({
   sourcemap: false,
   // `replay.d.ts` holds the types `./node` shares with `./browser`, so `./node` never reads a DOM name.
   dts: {
-    entry: { index: "src/index.ts", browser: "src/browser.ts", node: "src/node.ts", replay: "src/replay/payload.ts" },
+    entry: {
+      index: "src/index.ts",
+      browser: "src/browser.ts",
+      glb: "src/glb.ts",
+      node: "src/node.ts",
+      replay: "src/replay/payload.ts",
+    },
   },
   define: { __ARCHLANG3D_BUILT__: "true" },
   onSuccess: async () => {

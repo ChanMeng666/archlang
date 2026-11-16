@@ -2,6 +2,17 @@
 
 ## [Unreleased]
 
+### Added
+
+- `writeGlb` from a new entry, `@chanmeng666/archlang-3d/glb`, which carries no Node module, so a
+  browser can write a plan's GLB bytes (a `Uint8Array`) without Node: the same function and the same
+  bytes as `./node`'s `writeGlb` and `archlang3d build`, with `GLB_GENERATOR`, `bodyMaterialName`,
+  `glbNodeName`, `levelNodeName` and `nodeExtras`. `./node` still exports all of them, and `.` and
+  `./browser` are unchanged, so glTF-Transform reaches neither. The checks (glTF-Validator) stay in
+  `./node`. A bundler that resolves every import before dropping unused code (esbuild) needs
+  `node:*` external for this entry, for glTF-Transform's unused Node reader; nothing from Node is
+  left in the bundle.
+
 ## [0.8.1] - 2026-11-15
 
 The core peer range stays `^1.61.0` (`MIN_CORE`): nothing below reads a core export that 1.61.0 lacks.

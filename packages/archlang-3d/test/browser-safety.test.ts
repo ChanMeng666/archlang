@@ -7,13 +7,21 @@
  * by a lazy `import()` that never runs in a browser. The list is the one the core's own standalone
  * browser build uses (`NODE_ONLY` in `packages/web-component/scripts/build.ts`), read from there,
  * and the test proves each is reached only dynamically.
+ *
+ * The `./glb` entry (`writeGlb` for a page with no Node) is bundled the same way: no Node module in
+ * its graph, no `process`, no clock, and the bundle, run, writes laneway-house's pinned GLB bytes
+ * (a well-formed GLB 2.0 header) with no `Math.random` call while it loads and writes.
  */
-import { readFileSync } from "node:fs";
+import { createHash } from "node:crypto";
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
-import { fileURLToPath } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
 import { build } from "esbuild";
 import { describe, expect, it } from "vitest";
-import { REPO } from "./corpus.js";
+import { adaptPlan, buildMesh, type Mesh3D } from "../src/index.js";
+import { EXAMPLES_LIST, REPO, WORLD } from "./corpus.js";
+import { LANEWAY_GLB_SHA256, PIN_GENERATOR } from "./pins.js";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 
@@ -110,5 +118,88 @@ describe("browser safety", () => {
       [/\bnew\s+Date\s*\(/, "new Date()"],
     ];
     expect(banned.filter(([re]) => re.test(code)).map(([, why]) => why)).toEqual([]);
+  }, 60_000);
+
+  it("bundles the ./glb entry with no Node, and the bundle writes a valid GLB (the pinned bytes)", async () => {
+    const out = await build({
+      entryPoints: [join(HERE, "../src/glb.ts")],
+      bundle: true,
+      platform: "browser",
+      format: "esm",
+      write: false,
+      logLevel: "silent",
+      minifyWhitespace: true,
+      legalComments: "none",
+      metafile: true,
+      // Paths in the metafile are relative to the package, wherever vitest runs from.
+      absWorkingDir: join(HERE, ".."),
+      // glTF-Transform's `NodeIO`, which `writeGlb` never uses, loads `node:fs` and `node:path` by a
+      // lazy `import()`; esbuild resolves it before it shakes the class out, so it is external here,
+      // and the scan below proves no `node:` module survives into the bundle in any form.
+      external: ["node:*"],
+    });
+    expect(out.errors).toEqual([]);
+    const inputs = Object.keys(out.metafile?.inputs ?? {});
+    expect(inputs).toContain("src/glb/write.ts");
+    expect(inputs.some((f) => /node_modules[\\/]@gltf-transform[\\/]core[\\/]/.test(f))).toBe(true);
+    // Only this package's own modules and its libraries: not the core, and nothing a GLB writer does
+    // not need (the adapter, the mesh stage, Scene3D, the replay, three.js, earcut).
+    expect(inputs.filter((f) => !/^(src[\\/]|package\.json$|(\.\.[\\/])*node_modules[\\/])/.test(f))).toEqual([]);
+    expect(inputs.filter((f) => /src[\\/](adapter|mesh|scene3d|replay)[\\/]|[\\/](three|earcut)[\\/]/.test(f))).toEqual(
+      [],
+    );
+    const code = out.outputFiles?.[0]?.text ?? "";
+    // glTF-Transform's bundle names `Math.random` (an id helper for READING external resources), so the
+    // scan bans Node and the clock; the run below proves the write path never calls it.
+    const banned: Array<[RegExp, string]> = [
+      [/\bfrom\s*["']node:/, "a static node: import"],
+      [/\bimport\s*["']node:/, "a bare node: import"],
+      [/\bimport\s*\(\s*["']node:/, "a node: import()"],
+      [/\brequire\(\s*["']node:/, "a node: require"],
+      [/\bprocess\.(env|argv|cwd|exit|platform)\b/, "process"],
+      [/\bDate\.now\s*\(/, "Date.now()"],
+      [/\bnew\s+Date\s*\(/, "new Date()"],
+      [/\bperformance\.now\s*\(/, "performance.now()"],
+    ];
+    expect(banned.filter(([re]) => re.test(code)).map(([, why]) => why)).toEqual([]);
+
+    const src = EXAMPLES_LIST.find(([n]) => n === "laneway-house.arch")?.[1] ?? "";
+    const r = adaptPlan(src, { world: WORLD });
+    if (!r.ok) throw new Error(r.refusal.code);
+    const mesh = buildMesh(r.scene);
+    // Run the bundle itself, from a temporary directory of its own, loaded and run under a
+    // `Math.random` that counts every call.
+    const dir = mkdtempSync(join(tmpdir(), "archlang3d-glb-"));
+    const real = Math.random;
+    let random = 0;
+    let glb: Uint8Array;
+    try {
+      const file = join(dir, "glb.mjs");
+      writeFileSync(file, code);
+      Math.random = () => {
+        random++;
+        return real();
+      };
+      const bundled = (await import(pathToFileURL(file).href)) as {
+        writeGlb: (mesh: Mesh3D, opts?: { generator?: string }) => Promise<Uint8Array>;
+      };
+      glb = await bundled.writeGlb(mesh, { generator: PIN_GENERATOR });
+    } finally {
+      Math.random = real;
+      rmSync(dir, { recursive: true, force: true });
+    }
+    expect(random, "Math.random called while loading or writing").toBe(0);
+    // The GLB 2.0 header: magic "glTF", version 2, total length = the bytes; then the JSON chunk.
+    const view = new DataView(glb.buffer, glb.byteOffset, glb.byteLength);
+    expect(new TextDecoder().decode(glb.subarray(0, 4))).toBe("glTF");
+    expect(view.getUint32(4, true)).toBe(2);
+    expect(view.getUint32(8, true)).toBe(glb.byteLength);
+    expect(view.getUint32(16, true)).toBe(0x4e4f534a); // "JSON"
+    const json = JSON.parse(new TextDecoder().decode(glb.subarray(20, 20 + view.getUint32(12, true)))) as {
+      asset: { version: string; generator: string };
+    };
+    expect(json.asset).toEqual({ version: "2.0", generator: PIN_GENERATOR });
+    // The same bytes `./node`'s `writeGlb` writes for this plan (`test/glb.test.ts`'s pin).
+    expect(createHash("sha256").update(glb).digest("hex")).toBe(LANEWAY_GLB_SHA256);
   }, 60_000);
 });

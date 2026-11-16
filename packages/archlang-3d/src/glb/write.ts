@@ -14,9 +14,13 @@
  * `asset.generator` a fixed string with no time. glTF has no "hidden" flag a validator accepts
  * without an extension, so the hidden roof is written like any node with `extras.archlang.hidden`.
  *
- * Browser-agnostic code, but exported from `./node` only: glTF-Transform's bundle contains a
- * `Math.random()` (its id helper, reached only when READING external resources, never on this
- * write path), which the browser bundle's scan forbids (`test/browser-safety.test.ts`).
+ * Browser-agnostic code, exported from `./glb` (`src/glb.ts`, the write half alone) and from `./node`.
+ * Never from `.` or `./browser`: glTF-Transform's bundle contains a `Math.random()` (its id helper,
+ * reached only when READING external resources, never on this write path), which `.`'s bundle scan
+ * forbids, and `./browser` stays the replay's host alone. `test/browser-safety.test.ts` bundles
+ * `./glb` for a browser, finds no Node module in its graph, and writes a GLB with the bundle under a
+ * `Math.random` that records every call. The version comes from the manifest, not from
+ * `scene3d/build.ts`, so `./glb` carries neither the core nor the mesh stage.
  *
  * The playground bundles this module anyway, in a lazy chunk of its own behind its Download GLB
  * button (`playground/src/glb-export.ts`, public-surfaces card X5), never in `./browser` or the
@@ -26,6 +30,7 @@
  * (`playground/test/glb-export.test.ts`).
  */
 import { Document, Logger, WebIO } from "@gltf-transform/core";
+import { version } from "../../package.json";
 import {
   FENCE_PALETTE,
   FINISH_PALETTE,
@@ -43,10 +48,9 @@ import {
   slotGroups,
 } from "../materials.js";
 import type { Mesh3D, MeshNode } from "../mesh/types.js";
-import { ARCHLANG_3D_VERSION } from "../scene3d/build.js";
 
-/** `asset.generator`: the package and its version, never a time (plan §3.7). */
-export const GLB_GENERATOR = `archlang-3d ${ARCHLANG_3D_VERSION}`;
+/** `asset.generator`: the package and its version (`ARCHLANG_3D_VERSION`), never a time (plan §3.7). */
+export const GLB_GENERATOR = `archlang-3d ${version}`;
 
 /**
  * The material a node's untagged (`body`) shells are written in (visual-assets V9): a floor's finish
