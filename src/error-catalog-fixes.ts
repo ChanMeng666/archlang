@@ -93,7 +93,7 @@ export const CATALOG_FIXES: Readonly<Record<string, string>> = {
   E_LAYOUT_REF: "Reference an existing room id, or fix the typo.",
   E_LAYOUT_UNPLACED: "Fix the room it names (give it a valid reference or absolute `at (x,y)`), or place this room with `at (x,y)`.",
   E_LEVEL_DUP: "Renumber one of them, or merge the two bodies into a single `level` block.",
-  E_LEVEL_MIX: "Move the statement inside the `level` block it belongs to. Only settings (`units`/`grid`/`paper`/`scale`/`north`/`site`/`dims`/`title`/`axes`/`schedule`/`legend`/`notes`), `component`/`import` declarations, and the plan-global `let`/`set` stay outside — they apply to every level.",
+  E_LEVEL_MIX: "Move the statement inside the `level` block it belongs to. Only settings (`units`/`grid`/`paper`/`scale`/`height`/`north`/`site`/`dims`/`title`/`axes`/`schedule`/`legend`/`notes`/`accTitle`/`accDescr`/`theme`/`style`/`sheet text`), `component`/`import` declarations, the plan-global `let`/`set`, a `keep stacked` and a plan-level `section` mark stay outside — they apply to every level.",
   E_LEVEL_NEST: "Move the `level` block out to the plan body. To draw the same content on several storeys, put it in a `component` and call it from each level.",
   E_LOCKED_ELEMENT_CHANGED: "Put the locked element back as it was in the older file, or drop it from `--lock` if the change is intended.",
   E_LOCK_UNNAMED: "Write `id=<name>` on the element in both versions and lock that name.",
