@@ -2011,12 +2011,15 @@ corpus door statements are short, so no pinned payload should move. **Gate:** th
 `E_STEP_LIMIT` or compiles within budget in linear time; a test pins the free/charged boundary
 (a component's second storey is charged); no pinned digest, work count or datum law moves.
 
-### RR.10 · Window and opening fixes re-print their statement with no step charge — `todo`
+### RR.10 · Window and opening fixes re-print their statement with no step charge: done by #880, waiting to be archived — `note`
 
 RR.1 (#855) charged the door path; the review noted that window and opening fixes re-print their
 statement the same way, uncharged, so a looped window or opening has the hole RR.1 closed for doors.
 **Gate:** the shape of `test/doors.test.ts`'s `E_STEP_LIMIT` test, for a window and an opening;
 no pinned step payload, work count or datum law moves (see RR.9 for the per-storey allowance).
+
+Residue: windows and openings now share the door's first-build rule (`src/elements/reprint.ts`),
+so RR.9's per-storey free build covers all three; RR.9 should fix it there.
 
 ### RR.11 · `E_LEVEL_MIX` follow-ups after RR.3 — `todo`
 
