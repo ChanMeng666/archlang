@@ -851,7 +851,7 @@ fix is a table change (a `dining-room` key or alias), which bumps `SYNONYMS_VERS
 version is pinned by a test and the eval scores through the same table, so the bump is the
 owner's call.
 
-### M.21 · `format()` writes the plan name with `JSON.stringify`, which the lexer cannot read back — `todo`
+### M.21 · `format()` writes the plan name with `JSON.stringify`, which the lexer cannot read back: done by #872, waiting to be archived — `note`
 
 The lexer knows only the escapes `\n`, `\"` and `\\` (`src/lexer.ts`, the string-literal
 branch), but `src/format.ts` prints the plan name, level names, zone labels, import specs and
