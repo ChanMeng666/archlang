@@ -59,7 +59,8 @@
  * nothing, removes its worktree.
  *
  * Land: refuse unless every check of {@link landVerdict} holds; `--wait` polls every 30 s, at most 90
- * minutes, while only CI (or law 3's comment, or GitHub's UNKNOWN merge state) is pending. Before merging
+ * minutes, while only CI (or law 3's comment, or GitHub's UNKNOWN merge state) is pending, and re-reads a
+ * BLOCKED merge state that lags green CI for a short bounded grace ({@link BLOCKED_POLL}). Before merging
  * it prints FT1's answer, `node scripts/ci-proven.mjs --run <that run>` (`proves: yes|no|unknown (…)`):
  * information, never a refusal. Then `gh pr merge --merge --match-head-commit <full sha>`, then the state
  * is re-read: nothing is cleaned up unless the train PR reads MERGED. A train PR that already reads MERGED
@@ -129,7 +130,9 @@ export const MEMBER_POLL = { intervalMs: 10_000, attempts: 18 };
 export const UNKNOWN_POLL = { intervalMs: 5_000, attempts: 3 };
 /** GitHub's BLOCKED lags the last check by seconds: under `--wait`, with CI green, re-read it this often. */
 export const BLOCKED_POLL = { intervalMs: 10_000, attempts: 6 };
-const BLOCKED_REFUSAL = "the train PR's mergeStateStatus is BLOCKED";
+/** The refusal for a merge state outside MERGEABLE_STATES; {@link onlyBlocked} matches its BLOCKED text. */
+const stateRefusal = (state) => `the train PR's mergeStateStatus is ${state}`;
+const BLOCKED_REFUSAL = stateRefusal("BLOCKED");
 /** The longest focus text the body carries; a longer one is cut there and posted whole as a comment. */
 export const FOCUS_CAP = 20_000;
 const COMMENT_CAP = 60_000;
@@ -548,7 +551,7 @@ export function landVerdict(f) {
   }
   if (train?.mergeStateStatus === "UNKNOWN") pending.push("mergeStateStatus is UNKNOWN (GitHub is computing it)");
   else if (refusals.length === 0 && pending.length === 0 && !MERGEABLE_STATES.includes(train?.mergeStateStatus))
-    refuse("state", `the train PR's mergeStateStatus is ${train?.mergeStateStatus}`); // BLOCKED_REFUSAL for BLOCKED
+    refuse("state", stateRefusal(train?.mergeStateStatus));
   return { ok: refusals.length === 0 && pending.length === 0, refusals, pending, notes, law };
 }
 
