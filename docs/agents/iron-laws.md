@@ -148,13 +148,14 @@ listed in the stage report (`docs/plans/plan-soundness/README.md` D18).
 ## Owner policies
 
 - **The playground embed ceiling (delegated ruling RM-D57, 2026-11-17; product-roadmap README
-  § 6.25):** `embedPathBudget` in `playground/e2e/startup-chunks.baseline.json` stays at 351,000 B. A PR
+  § 6.25):** `embedPathBudget` in `playground/e2e/startup-chunks.baseline.json` (351,000 B) is not raised. A PR
   that touches the compiler path states the embed path's before and after gzip bytes. A raise is the
   owner's (`REVIEW.md`: a relaxed cap). *Awaiting ratification:* that a raise may merge on the
   coordinator's judgement after a fresh-context review when it is its own re-take PR, for a card that
   needs the bytes and has shown no cheaper cut, by the file's own rule (the measured path × 1.025,
   rounded up to a thousand, leaving headroom below glTF-Transform's ~19,900 B), with the numbers in
-  `embedPathBudgetWhy`. It covers `embedPathBudget` only.
+  `embedPathBudgetWhy`; the headroom rule alone limits little, so the real controls are that
+  precondition and the separate PR. It covers `embedPathBudget` only.
 - **High-tier merges (owner, 2026-11-09, in words):** the coordinator judges whether a high-tier PR
   (workflows, root config, hooks, owner rules, policy files) can merge and merges it after a
   fresh-context review and green CI, without asking per PR. Still owner-only: the decision to release,

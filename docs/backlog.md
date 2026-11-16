@@ -1898,16 +1898,21 @@ re-measured with the moved fields named; a `grid` row for `against` in that test
 **Ruled 2026-11-17 (RM-D56, product-roadmap README § 6.25): do it, under four conditions.** (1) Re-measure
 a moved row only after proof: its SVG and `lint()` are unchanged, and `describe().diagnostics` and
 `compile().diagnostics` differ only by the added `W_GRID_SNAPPED` entries; removing exactly those from
-both, with that suite's own digest body, reproduces the old digest. Reasons go in each baseline header,
-including the "never a re-pin" note in `test/footprint-any-placement.test.ts`, whose BASELINE holds only
-7 of the ~31 rows (the rest sit in other suites). (2) Under `against`, a side snapped to 0 raises
-`W_GRID_SNAPPED` naming that side, not `E_FURN_SIZE`, so a plan that compiles today still compiles; the
-reference states the difference from `at`/`in`. (3) The 7 affected examples (`garden-house`,
+both, with that suite's own digest body, reproduces the old digest. Reasons go in each baseline header.
+After (3), the 7 example rows in `test/footprint-any-placement.test.ts`'s BASELINE must reproduce their
+existing pins unchanged (that header's "never a re-pin" stays true); (1) applies to the ~24 rows in other
+suites. (2) Under `against`, a side snapped to 0 raises
+`W_GRID_SNAPPED` naming that side, not `E_FURN_SIZE`, so a plan that compiles today still compiles: do not
+route `against` through `noteDefaultSize` as is (it raises `E_FURN_SIZE`). The reference states the
+difference from `at`/`in` and from a written `against` size (already `E_FURN_SIZE` when it zeroes), and the
+twin-law header of `test/footprint-any-placement.test.ts` gains that exception; the new `FORMS` row
+includes a zero side (`mirror` on `grid 200`). (3) The 7 affected examples (`garden-house`,
 `hillside-villa`, `museum`, `remodel`, `two-bed`, `courtyard-family`, `showcase/garden-courtyard`) are
 rewritten with explicit on-grid sizes so they stay warning-free (the #704 ruling), drawing bytes
 unchanged. (4) `finish`'s furnish stage writes sizeless `against` pieces under a grid, which would now
 gain warnings and be refused by its never-worse gate: if any pinned `finish` output would move, stop and
-report, do not re-pin.
+report, do not re-pin. Unpinned too: a gridded plan with an off-grid catalogued piece (1 of 413 in the
+corpus, `test/main-entrance-fixtures/n7-back-hall.arch`) loses that piece from `finish`; name it in the PR.
 
 ### CO.2 · Three documented limits of a defaulted footprint — `declared`
 
