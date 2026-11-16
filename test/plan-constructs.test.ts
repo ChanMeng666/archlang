@@ -174,6 +174,10 @@ describe("the constructs are read off the parse tree", () => {
     }
     for (const k of ["boundary", "fence"]) expect(keys("garden-house").has(k), `garden-house: ${k}`).toBe(true);
     expect(keys("accessible").has("accessible")).toBe(true);
+    // `style <kind> { … }` is its own row, not the theme's: a themed plan with no block lists no style.
+    expect(keys("materials").has("style"), "materials: style").toBe(true);
+    expect(keys("themed").has("theme"), "themed: theme").toBe(true);
+    expect(keys("themed").has("style"), "themed writes no style block").toBe(false);
     expect(keys("one-room").has("level"), "a single-storey plan has no levels").toBe(false);
   });
 
