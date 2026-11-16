@@ -18,6 +18,7 @@ import type { WallSegment } from "../geometry.js";
 import { eatEnumValue, parseAttachTarget, resolveOpeningLead, wallClause } from "../attach.js";
 import { idAfterKind, missingClause, parseIdWithSpan, readClauses } from "../clause-order.js";
 import { fixesFrom, offWallFix, openingWidthFix, windowKindClauseFix } from "../fix-producers.js";
+import { reprint } from "./reprint.js";
 import {
   heightsInOrder,
   type OpeningHeightClauses,
@@ -422,7 +423,7 @@ export const windowEl: ElementDef = {
         message: `Window "${id}" must have a positive width`,
         code: "E_WINDOW_WIDTH",
         span: n.span,
-        ...fixesFrom(openingWidthFix("window", n)),
+        ...fixesFrom(reprint(ctx, n, "width", "width", () => openingWidthFix("window", n))),
       });
     }
     // A written kind and a written `hinge`, and nothing otherwise: a kind-free window carries no
@@ -439,7 +440,7 @@ export const windowEl: ElementDef = {
           "Delete the `hinge` clause — the fix does exactly that.",
           `Or make it one of the kinds that hang on a jamb: ${takers.join(", ")}.`,
         ],
-        ...fixesFrom(windowKindClauseFix(n)),
+        ...fixesFrom(reprint(ctx, n, "clause", "clause:hinge", () => windowKindClauseFix(n))),
       });
     }
     const kindFacts = {
@@ -490,7 +491,9 @@ export const windowEl: ElementDef = {
         code: "W_WINDOW_OFF_WALL",
         span: n.span,
         relatedSpans: note ? [note] : undefined,
-        ...fixesFrom(offWallFix("window", n, at, ctx.walls)),
+        ...fixesFrom(
+          reprint(ctx, n, "off", `${at.x},${at.y}`, () => offWallFix("window", n, at, ctx.walls), ctx.walls),
+        ),
       });
     }
     const host = ctx.hostSegment(at, n.wall);
