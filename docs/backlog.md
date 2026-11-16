@@ -1995,7 +1995,7 @@ record both SHA-256s in the baseline, and have `renderDelta` (`eval/run.ts`) say
 run's hashes differ, as it already does for a judge change. **Gate:** a unit test of `renderDelta`
 for a matching and a differing prompt hash.
 
-### EV.4 · `offset` and `hinged` written as statements get no hint — `todo`
+### EV.4 · `offset` and `hinged` written as statements get no hint: done by #866, waiting to be archived — `note`
 
 After CO-1 and CO-2 the remaining order notes in the live runs are `Unknown statement "offset"`
 (Haiku 5.5 and gpt-5.5) and `Unknown statement "hinged"` (Haiku 5.5)
