@@ -98,7 +98,8 @@ export const furniture: ElementDef = {
   parse(ctx: ParseCtx): FurnitureNode {
     const kw = ctx.eatKeyword("furniture");
     const lead = parseIdWithSpan(ctx);
-    const category = ctx.eatIdent().value;
+    const categoryTok = ctx.eatIdent();
+    const category = categoryTok.value;
     const id = idAfterKind(ctx, "furniture", lead.id, lead.idSpan);
     // Position: absolute `at (x,y)`, wall-anchored `against wall <id> …`, or
     // room-relative `in <room> centered|anchor …`.
@@ -311,6 +312,9 @@ export const furniture: ElementDef = {
       ...(size ? { size } : {}),
       ...(sizeSpan ? { sizeSpan } : {}),
       ...(sizeValueSpan ? { sizeValueSpan } : {}),
+      // Only an uncatalogued word records its span (the `W_UNKNOWN_FURNITURE` fix rewrites it),
+      // so a catalogued piece's node is the same as before.
+      ...(known().set.has(category) ? {} : { categorySpan: { start: categoryTok.start, end: categoryTok.end } }),
       line: kw.line,
     };
     if (label !== undefined) node.label = label;
@@ -544,7 +548,7 @@ export const furniture: ElementDef = {
     } else {
       at = ctx.snapPt(ctx.evalPt(n.at!));
     }
-    if (n.label === undefined) noteUnknownCategory(ctx, id, n.category, n.span);
+    if (n.label === undefined) noteUnknownCategory(ctx, id, n.category, n.span, n.categorySpan);
     return {
       kind: "furniture",
       id,
@@ -1537,11 +1541,18 @@ function nearestFurniture(word: string): string | null {
  * its rectangle; this only says so when the word looks like a slip. A piece with a `label` is a
  * custom one by intent and is never reported.
  */
-function noteUnknownCategory(ctx: ResolveCtx, id: string, category: string, span: Span | undefined): void {
+function noteUnknownCategory(
+  ctx: ResolveCtx,
+  id: string,
+  category: string,
+  span: Span | undefined,
+  categorySpan: Span | undefined,
+): void {
   const { set } = known();
   if (set.has(category)) return;
   const lower = category.toLowerCase();
-  const near = set.has(lower) ? lower : nearestFurniture(category);
+  const caseOnly = set.has(lower);
+  const near = caseOnly ? lower : nearestFurniture(category);
   if (near === null) return;
   ctx.diag({
     severity: "warning",
@@ -1551,5 +1562,18 @@ function noteUnknownCategory(ctx: ResolveCtx, id: string, category: string, span
       `Write \`furniture ${near} …\` for the catalogued symbol, or add a \`label\` if "${category}" is a piece of your own.`,
     ],
     ...(span ? { span } : {}),
+    // The nearest kind as an edit of the category word (U.3). Another case of a kind is a slip
+    // for certain; a word some letters away may be a custom piece, so it is never auto-applied.
+    ...(categorySpan
+      ? {
+          fixes: [
+            {
+              title: `write the catalogued kind \`${near}\``,
+              applicability: caseOnly ? ("machine-applicable" as const) : ("maybe-incorrect" as const),
+              edits: [{ span: categorySpan, newText: near }],
+            },
+          ],
+        }
+      : {}),
   });
 }

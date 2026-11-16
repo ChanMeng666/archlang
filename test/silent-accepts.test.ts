@@ -320,6 +320,31 @@ suite("W_UNKNOWN_FURNITURE (U.3)", () => {
     ]);
   });
 
+  it("offers the nearest kind as an edit of the category word: a case slip machine-applicable, a misspelling not", () => {
+    const src = read("test/silent-accepts/unknown-furniture.arch");
+    const fixes = compile(src, { noCache: true })
+      .diagnostics.filter((d) => d.code === "W_UNKNOWN_FURNITURE")
+      .map((d) =>
+        d.fixes!.map((f) => ({
+          a: f.applicability,
+          edits: f.edits.map((e) => [src.slice(e.span.start, e.span.end), e.newText]),
+        })),
+      );
+    expect(fixes).toEqual([
+      [{ a: "maybe-incorrect", edits: [["grand_pianno", "grand_piano"]] }],
+      [{ a: "machine-applicable", edits: [["WC", "wc"]] }],
+    ]);
+  });
+
+  it("`arch validate --strict --json` carries the nearest-category fix (U.3 gate)", async () => {
+    const r = await runArch(["validate", "test/silent-accepts/unknown-furniture.arch", "--strict", "--json"]);
+    const j = JSON.parse(r.stdout) as { diagnostics: { code: string; fixes?: { edits: { newText: string }[] }[] }[] };
+    const texts = j.diagnostics
+      .filter((d) => d.code === "W_UNKNOWN_FURNITURE")
+      .map((d) => d.fixes?.[0]?.edits[0]?.newText);
+    expect(texts).toEqual(["grand_piano", "wc"]);
+  });
+
   it("is quiet on a catalogued word and on a word near no kind", () => {
     expect(raised(plan("  furniture grand_piano at (0,0) size 1500x1500"))).toEqual([]);
     expect(raised(plan("  furniture zzqqxxkk at (0,0) size 1500x1500"))).toEqual([]);

@@ -624,6 +624,12 @@ export interface FurnitureNode extends NodeBase {
   sizeSpan?: Span;
   /** The written `size` (a literal or an expression pair), for `W_GRID_SNAPPED` (RM1.4). */
   sizeValueSpan?: Span;
+  /**
+   * Byte span of the category word, recorded only when the word is no catalogued kind, so
+   * `W_UNKNOWN_FURNITURE` can offer the nearest kind as an edit. No semantics; absent on every
+   * catalogued piece.
+   */
+  categorySpan?: Span;
   /** Label as a string-interpolation template, evaluated at resolve. */
   label?: Expr;
   /** Quarter-turn rotation of the drawn symbol (0|90|180|270 degrees), evaluated at resolve. */
