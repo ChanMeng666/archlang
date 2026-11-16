@@ -1303,7 +1303,7 @@ is a second symptom: it says nothing the parse error did not.
 `arch compile - --json`; the cascade `W_EMPTY_PLAN` is suppressed when a parse error already
 explains it, or the entry says why not. **Size:** S.
 
-### U.6 · `uses balcony` does not point to `outdoor balcony` — `todo`
+### U.6 · `uses balcony` does not point to `outdoor balcony`: done by #850, waiting to be archived — `note`
 
 **Observed (audit finding 12, Appendix B).** `room … uses balcony` returns an `E_PARSE` that
 lists the valid uses and gives no hint toward `outdoor balcony`.
