@@ -536,9 +536,10 @@ still draws a rectangle with its name in it, which is how you annotate something
 has no symbol for. In short, a symbol does not draw its `label`: the label is data, carried in
 `describe()` as `furniture[].label`, for a schedule or any other reader to list. An unlabelled
 word that is close to a catalogued kind (`furniture grand_pianno`) raises `W_UNKNOWN_FURNITURE`,
-which names the kind it is near and offers it as a fix that `arch fix --unsafe` applies (plain
-`arch fix` leaves it, since the word may be a piece of your own and the kind names the auto id);
-a `label` marks the piece as your own and keeps it quiet.
+which names the kind it is near and offers it as a fix that `archlang fix --unsafe` applies (plain
+`archlang fix` leaves it, since the word may be a piece of your own and the kind names the auto id; the fix
+re-prints the whole statement in canonical form, so comments inside a multi-line statement are
+dropped); a `label` marks the piece as your own and keeps it quiet.
 
 **A `rug` is an UNDERLAY, and it is the only kind that is.** An underlay lies flat on the
 floor: furniture stands on it and people walk over it. The drawing honours that in two ways,

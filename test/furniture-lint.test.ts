@@ -496,6 +496,18 @@ describe("W_UNKNOWN_FURNITURE offers the nearest kind as a fix (U.3)", () => {
     expect(after.diagnostics.filter((d) => d.severity === "error" || d.code === "W_UNKNOWN_FURNITURE")).toEqual([]);
   });
 
+  // The reprint is as long as the statement, so a looped piece builds it once for its shared
+  // parse node (charged to the step meter), not once per iteration (#848 review round 2).
+  it("a looped piece shares one fix across its iterations", () => {
+    const src = room(`for i in 0..3 {
+      furniture grand_pianno at (500 + i * 100, 500) size 300x300
+    }`);
+    const ds = unknown(src);
+    expect(ds).toHaveLength(3);
+    expect(ds[1]!.fixes).toBe(ds[0]!.fixes);
+    expect(ds[2]!.fixes).toBe(ds[0]!.fixes);
+  });
+
   it("plain `arch fix` leaves the piece alone; `--unsafe` writes the kind", async () => {
     const plain = JSON.parse((await runArch(["fix", FIXTURE, "--dry-run", "--json"])).stdout) as {
       applied: unknown[];

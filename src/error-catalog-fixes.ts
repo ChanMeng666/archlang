@@ -269,7 +269,7 @@ export const CATALOG_FIXES: Readonly<Record<string, string>> = {
   W_SWING_OVER_STAIR: "Open the door to the other side of its wall (flip its `swing`) or hang it on the other jamb (flip its `hinge`); the hint says when either clears the stair. Otherwise move the door or the stair, or use a `sliding` or `pocket` door, which sweeps nothing. There is no machine-applicable fix: which way a door opens is a design decision.",
   W_SWING_ROOM_NOT_ADJACENT: "Point `swing into` at a room the door actually opens onto, or use explicit `swing in|out`. The door falls back to its default swing.",
   W_TITLE_OVERFLOW: "Shorten the value to the number of characters the warning quotes and move the rest to a `notes \"…\"` line. When the warning names the caption `sheet text` writes, shorten that caption or the value until the two fit their row. There is no machine-applicable fix: what to cut is the author's wording.",
-  W_UNKNOWN_FURNITURE: "Write the kind the message names (the warning offers it as a `maybe-incorrect` fix, applied by `arch fix --unsafe`), or add a `label`.",
+  W_UNKNOWN_FURNITURE: "Write the kind the message names (the warning offers it as a `maybe-incorrect` fix, applied by `archlang fix --unsafe`), or add a `label`.",
   W_UNKNOWN_MATERIAL: "Use a known word (for a wall e.g. brick, concrete, insulation, tile; for a floor tile, paving, deck, concrete, timber, carpeting, stone) or omit it.",
   W_UNKNOWN_STYLE_KEY: "Use a valid key (e.g. fill / stroke / label, depending on the kind).",
   W_UNKNOWN_THEME: "Write a known theme name, or register the theme in the compile options.",

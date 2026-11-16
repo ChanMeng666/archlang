@@ -1554,6 +1554,28 @@ function noteUnknownCategory(ctx: ResolveCtx, id: string, n: FurnitureNode): voi
       `Write \`furniture ${near} …\` for the catalogued symbol, or add a \`label\` if "${category}" is a piece of your own.`,
     ],
     ...(n.span ? { span: n.span } : {}),
-    ...fixesFrom(furnitureCategoryFix(n, near)),
+    ...fixesFrom(categoryFix(ctx, n, near)),
   });
+}
+
+/**
+ * The reprinted statement is as long as the source statement, so it is built once per parse node
+ * per storey's {@link ResolveCtx} (a looped piece shares its node, so a loop does not multiply it)
+ * and charged to the step meter by its source length before it is built. Keyed on the ctx, so the
+ * charge never depends on an earlier compile.
+ */
+const CATEGORY_FIXES = new WeakMap<ResolveCtx, Map<FurnitureNode, ReturnType<typeof furnitureCategoryFix>>>();
+
+function categoryFix(ctx: ResolveCtx, n: FurnitureNode, near: string): ReturnType<typeof furnitureCategoryFix> {
+  let byNode = CATEGORY_FIXES.get(ctx);
+  if (!byNode) {
+    byNode = new Map();
+    CATEGORY_FIXES.set(ctx, byNode);
+  }
+  const cached = byNode.get(n);
+  if (cached !== undefined) return cached;
+  chargeSteps(1 + (n.span ? n.span.end - n.span.start : 0));
+  const fix = furnitureCategoryFix(n, near);
+  byNode.set(n, fix);
+  return fix;
 }
