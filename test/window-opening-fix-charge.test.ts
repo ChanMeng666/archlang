@@ -41,3 +41,52 @@ describe.each(["window", "opening"] as const)("%s fixes (RR.10)", (kind) => {
     expect(ds[2]!.fixes).toBe(ds[0]!.fixes);
   });
 });
+
+// A component body's node is shared by every place, but the off-wall fix reads that place's walls
+// (`ctx.walls` is reassigned per group), so the memo is scoped per wall set and each place gets its
+// own fix (the door's twin is in test/doors.test.ts).
+describe.each(["window", "opening"] as const)("%s off-wall fix in a component placed twice (RR.10)", (kind) => {
+  const code = kind === "window" ? "W_WINDOW_OFF_WALL" : "W_OPENING_OFF_WALL";
+  const mk = (body: string, places: string): string =>
+    `plan "t" {\n  units mm\n  component c(w) {\n${body}\n  }\n${places}\n}`;
+  const fixes = (src: string): [string | undefined, string | undefined][] =>
+    compile(src, { noCache: true })
+      .diagnostics.filter((d) => d.code === code)
+      .map((d) => [d.fixes?.[0]?.applicability, d.fixes?.[0]?.title]);
+
+  it("each place gets its own fix", () => {
+    const one = `    wall id=a partition thickness 100 { (0,0) (w,0) }\n    ${kind} id=d at (500,400) width 900`;
+    expect(fixes(mk(one, "  place c(1000) as p at (0,0)\n  place c(4000) as q at (0,5000)"))).toEqual([
+      ["machine-applicable", `attach the ${kind} to wall "a" at 50%`],
+      ["machine-applicable", `attach the ${kind} to wall "a" at 12.5%`],
+    ]);
+  });
+
+  it("a tie in the second place keeps its fix maybe-incorrect", () => {
+    const tie = [
+      "    wall id=a partition thickness 100 { (0,0) (w,0) }",
+      "    wall id=b partition thickness 100 { (w,0) (w,800) }",
+      `    ${kind} id=d at (600,400) width 900`,
+    ].join("\n");
+    expect(fixes(mk(tie, "  place c(4000) as p at (0,0)\n  place c(1000) as q at (0,5000)"))).toEqual([
+      ["machine-applicable", `attach the ${kind} to wall "a" at 15%`],
+      ["maybe-incorrect", `attach the ${kind} to wall "a" at 60%`],
+    ]);
+  });
+});
+
+// A looped window's kind-clause fix is the same text every iteration, so it is built once.
+it("a looped window shares one kind-clause fix across its iterations", () => {
+  const src = [
+    'plan "P" {',
+    "  units mm",
+    "  wall id=shell exterior thickness 200 { (0,0) (12000,0) (12000,6000) (0,6000) close }",
+    "  for i in 0..3 { window fixed on shell at (20 + i * 10)% width 900 hinge left }",
+    "}",
+  ].join("\n");
+  const ds = compile(src, { noCache: true }).diagnostics.filter((d) => d.code === "E_WINDOW_KIND_CLAUSE");
+  expect(ds).toHaveLength(3);
+  expect(ds[0]!.fixes).toBeDefined();
+  expect(ds[1]!.fixes).toBe(ds[0]!.fixes);
+  expect(ds[2]!.fixes).toBe(ds[0]!.fixes);
+});
