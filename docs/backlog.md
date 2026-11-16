@@ -1886,6 +1886,7 @@ One option the owner may choose is the median of 3 runs; any new run is paid, ow
 `eval:live`.
 **Gate:** a per-brief table of which briefs lost intent and why, stated as observed (prompt change,
 judge, model drift), with no claim beyond the data and none about loop gain.
+Done by #837: the record is `eval/live-runs/2026-11-ev1-intent-gap.md`.
 
 ## Site chrome (found while fixing the nav overflow, 2026-09-20)
 

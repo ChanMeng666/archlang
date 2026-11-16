@@ -1,10 +1,8 @@
 # EV.1, 2026-11-16: the gpt-5.5 intent gap against July, per brief (offline)
 
-A dated, aggregate-only record of an offline comparison. No model was called and no paid eval was
+A dated record of an offline comparison: per-brief outcomes by kind; no raw replies or note text. No model was called and no paid eval was
 run: the per-brief tables were read from the artifacts of three existing GitHub Actions
-"Eval (live)" runs and set against the one July per-brief table in the repo. Raw model replies are
-not published; the failing checks below are named by kind (lint code or compile-error kind), not
-quoted.
+"Eval (live)" runs and set against the one July per-brief table in the repo. The failing checks below are named by kind (lint code or compile-error kind), not quoted.
 
 **`eval/live-baseline.json` is NOT changed by this record.** Re-baselining needs an owner decision
 (RM-D51 keeps the July record).
@@ -13,7 +11,7 @@ quoted.
 
 | Side | Run | Date (UTC) | Commit | Valid | Intent | Sound | L1 intent |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| July | 29150982395 (`eval/g1/baseline-run-29150982395.md`) | 2026-07-11 | pre-v1.15.0 prompt | 25 | 13 | 4 | 18 |
+| July | 29150982395 (`eval/g1/baseline-run-29150982395.md`) | 2026-07-11 | `9da334d1` (pre-v1.15.0 prompt) | 25 | 13 | 4 | 18 |
 | New 1 | 43727485853 | 2026-11-15 | `2a210589` | 22 | 10 | 0 | 15 |
 | New 2 | 43727489713 | 2026-11-15 | `2a210589` | 22 | 9 | 1 | 16 |
 | New 3 | 43727493307 | 2026-11-15 | `2a210589` | 18 | 7 | 0 | 12 |
@@ -37,7 +35,8 @@ Y = intent met, N = not met. For each N, the failing intent check as recorded in
 refused, not moved" (jamb too close to a meeting wall, or span past the wall's end), **C-par**
 compile error "edge runs parallel to the shared edge, offset cannot be measured", **C-ext** compile
 error "window needs an exterior wall" on a partition edge, **C-amb** compile error "door cannot
-tell which wall to stand in", **C-stmt** compile error `Unknown statement`, **rooms** room-count
+tell which wall to stand in", **C-stmt** compile error `Unknown statement`, **C-ctr** compile error "furniture `centered` in a polygon room
+may not be on floor", **rooms** room-count
 predicate, **label** label/concept predicate.
 
 | Brief | July 07-11 | New 1 | New 2 | New 3 | New Y of 3 |
@@ -54,7 +53,7 @@ predicate, **label** label/concept predicate.
 | `scripting-units` | Y | Y | Y | Y | 3 |
 | `three-bed-2bath` | Y | N (DB, FWC) | N (DB, FWC) | N (C-jamb) | 0 |
 | `galley-kitchen` | N (rooms, label) | N (DB, FWC) | N (C-jamb) | Y | 1 |
-| `l-shaped-flat` | N (FWC, rooms) | N (C-par) | N (C-jamb, C-par) | N (C-par) | 0 |
+| `l-shaped-flat` | N (FWC, rooms) | N (C-par, C-jamb) | N (C-jamb, C-par, C-ctr) | N (C-par) | 0 |
 | `accessible-flat` | N (rooms) | N (rooms) | N (DB, rooms) | N (DB, rooms) | 0 |
 | `accessible-bath` | Y | N (C-jamb) | N (DB) | Y | 1 |
 | `compact-studio` | N (DB) | N (DB) | N (DB) | N (DB) | 0 |
@@ -87,30 +86,60 @@ Those 12 briefs account for 26 lost brief-runs (of 39). The failing check in eac
 No brief that met intent in July lost it on a gating Expect predicate (rooms, label, area): every
 loss is a physical lint code or a compile error. In the other direction, 9 of July's 13 failing
 briefs met intent in at least one new run (`small-office` in all three, from a July label
-failure); `against-wall-bath`, `l-shaped-flat`, `accessible-flat` and `compact-studio` failed in
-all four runs.
+failure), gaining 13 of their 39 brief-runs (as the July-passing briefs lost 26 of their 39);
+`against-wall-bath`, `l-shaped-flat`, `accessible-flat` and `compact-studio` failed in all four
+runs.
+
+**These per-brief counts carry no per-brief signal.** July-passing and July-failing briefs each
+met intent in exactly 13 of their 39 new brief-runs, so the new runs score both halves alike, at
+one in three. A flat one-in-three rate per brief-run, with July playing no part, predicts what is
+observed:
+
+| Count (of 13 briefs) | Flat 1/3 predicts | Observed |
+| --- | --- | --- |
+| July-passing briefs missing intent in at least one new run | 12.5 (13 x 26/27) | 12 |
+| July-passing briefs missing intent in all three new runs | 3.9 (13 x 8/27) | 5 |
+| July-failing briefs meeting intent in at least one new run | 9.1 (13 x 19/27) | 9 |
+
+So "12 of 13 lost" and "9 of 13 recovered" are what regression to a common rate looks like, not
+evidence about any one brief. What does differ is the overall rate (13 of 26 in July, 26 of 78
+across the new runs) and the kind of the failing check, below.
 
 ## Causes, as far as this data shows
 
 The question was whether the losses come from a prompt change, the judge, or model drift. The
 data separates them only partly.
 
-- **Compile errors (7 lost brief-runs): compiler and prompt.** Six of the seven are opening-placement
-  refusals (C-jamb, C-ext, C-par) whose messages do not appear in the July table; the "refused,
-  not moved" message entered `src/` on 2026-10-22 (`38bff76f`, ADR 0028 § 5, after July). These
-  are plans the current compiler rejects; whether the July compiler would have accepted the same
-  source cannot be checked, because neither side's sources are available. The seventh is an
-  `Unknown statement` (`sized-kitchen-flat`, run 3), the kind of error July also had
-  (`against-wall-bath`).
-- **Physical lint (19 lost brief-runs): judge or model, not separable here.** `W_DOORWAY_BLOCKED`
-  is in every one of them. Its message wording in the November notes differs from the July notes,
-  and `src/lint/rules/doors.ts` has commits after July, so the check that scores these plans is not
-  the July check. The same notes cannot say whether the model placed furniture differently or the
-  check got stricter: that needs the source of each plan scored under both lint versions, and no
-  source is available for either side.
-- **Prompt.** The author prompt (`spec.llm.md`) changed between July and `2a210589` (at least
-  v1.15.0's suffix line, CO-1 and CO-2), so every new-run difference spans a prompt change too.
-  Nothing in the per-brief notes attributes a loss to it alone.
+- **Compile errors (7 lost brief-runs): 6 of 7 are attributable to post-July compiler
+  messages.** Six are opening-placement refusals: C-jamb ("refused, not moved"), C-ext and C-par.
+  All three messages first appear in `src/` in `38bff76f` (2026-10-21 UTC, ADR 0028 § 5,
+  `git log -S`), after July, and none appears in the July table. These are plans the current
+  compiler rejects; whether the July compiler would have accepted the same source cannot be
+  checked, because neither side's sources are available. The seventh, an `Unknown statement`
+  (`sized-kitchen-flat`, run 3, on `offset`), is unattributed: it is the kind of error July also
+  had (`against-wall-bath`).
+- **Physical lint (19 lost brief-runs): lint rule, compiler geometry, prompt or model, not
+  separable here.** `W_DOORWAY_BLOCKED` is in every one of them, and the check that scores these
+  plans is not the July check. July's rule iterated doors only (`9da334d1`,
+  `src/lint/rules/doors.ts:55`, `for (const d of doors)`); `c2978a47` (2026-10-26 UTC) made it read
+  leaf-less openings too and measure every approach from the wall's face. So `sized-office-mix`'s
+  New 1 loss, whose only finding is "The opening between ... is blocked", could not have been
+  raised in July. The compiler also produces different geometry from the same kind of source:
+  walls derived from rooms (`760a6b84`, merged by #223 on 2026-10-21 UTC) did not exist in July,
+  and CO-2 (#809, 2026-11-15 UTC) gives unsized furniture a catalogue footprint, after which
+  gpt-5.5's `needs a size` notes went from 111 to 0 (`2026-11-authorability-remeasure.md`), so
+  more furniture is now drawn and can stand in a doorway. Whether the model placed furniture
+  differently, the rule got stricter or the compiler drew more cannot be told from the notes:
+  that needs the source of each plan scored under both versions, and no source is available for
+  either side.
+- **Prompt.** The author prompt (`spec.llm.md`) changed far more than v1.15.0's suffix line, CO-1
+  and CO-2: 156 commits touched it between `9da334d1` and `2a210589`
+  (`git log --oneline 9da334d1..2a210589 -- spec.llm.md`), and 146 of its 241 lines differ
+  (`git diff --shortstat`: 146 insertions, 146 deletions; 241 lines on both sides). gpt-5.5's
+  intent was already 5 / 5 / 5 per run before CO-1 on 2026-11-15 (`2026-11-authorability-remeasure.md`,
+  P2), so the gap predates CO-1 and CO-2. As `eval/README.md` says, no rate may be compared across
+  this prompt drift until the owner re-measures; this record is the diagnosis RM-D51 sanctions,
+  not such a comparison, and nothing in the per-brief notes attributes a loss to the prompt alone.
 - **Model drift.** Model id and seed are the same on both sides; these tables give no evidence for
   or against drift in the served model.
 - **Noise.** The three new runs at one commit disagree with each other on 15 of the 26 briefs, and
