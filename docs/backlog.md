@@ -1980,8 +1980,12 @@ retention, accepted as a limit; raw replies stay unpublished, so when `extractAr
 fence and would fall back to the whole reply, only a "not extracted" marker is stored; a local run
 writes to a git-ignored directory. **Gate:** an offline test
 that a live-shaped run writes one source per scored brief and only a marker for an unfenced or
-truncated reply, a check that the local directory is git-ignored, and `eval/README.md` names the
-file.
+truncated reply, a check that the local directory is git-ignored, cases for the fence shapes `extractArch`'s regex mishandles (a typed block, prose, then an `arch` block; an
+untyped first block of prose; an inline triple backtick; a four-backtick fence; probed in #858's
+review). The property to hold, as a hypothesis to check: the stored text is the body of a block
+whose opening fence is the reply's first line-start fence with an empty or `arch` info string,
+else a marker; and
+`eval/README.md` names the file.
 
 ### EV.3 · The baseline does not record the prompt it was measured under — `todo`
 
@@ -2009,7 +2013,7 @@ a `maybe-incorrect` fix would help an author but move no L1 number; only a prova
 which refusals have one nearest legal place, and whether a move may cross a room boundary.
 **Gate:** a design note in the card or an ADR before code.
 
-### EV.6 · The published dataset card quotes the superseded baseline — `todo`
+### EV.6 · The published dataset card quotes the superseded baseline: done by #856, the HF re-upload of 2026-11-16 and #858, waiting to be archived — `note`
 
 `dataset/CARD.md` § Baseline context quotes the 2026-07-12 baseline (L0 23/26 · 14/26 · 3/26; L1
 18/26 · 7/26). RM-D52 re-baselined to 22 / 9 / 1 on 2026-11-16 under a changed prompt. The card is
@@ -2019,6 +2023,10 @@ comparison. RM-D54 (2026-11-16, delegated) ruled the change; the repo card was c
 #856. **Gate:** the card-only re-upload, by the owner or on the owner's explicit instruction for that
 upload; card bytes on HF equal the repo's; `dataset/README.md`'s "the HF card quoted it" line
 updated after.
+
+Done: the owner said "同意上传卡片，请你自动帮我实施" (2026-11-16); `dataset/CARD.md` from main (SHA-256
+`2ed46aad…9cc4`) was uploaded as `README.md`, HF commit `90914659`, and the downloaded file's SHA-256
+equals main's.
 
 ### AG.1 · `check:quick` misses the text guards an executor most often trips — `todo`
 
