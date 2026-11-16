@@ -20,6 +20,8 @@ import { readFileSync } from "node:fs";
 import { describe as suite, expect, it } from "vitest";
 import { compile, describe as describePlan, lint, repair, resolve, resolveAll, levelBlocks } from "../src/index.js";
 import { parse } from "../src/parser.js";
+import { LEVEL_SHARED_KINDS, PLAN_SETTING_KEYWORDS } from "../src/ast.js";
+import { BUILTIN_DEFS } from "../src/elements/defs.js";
 
 const TWO_STOREY = readFileSync("examples/two-storey.arch", "utf8");
 
@@ -102,6 +104,35 @@ suite("v1.21 levels — parsing + the either/or shape", () => {
     expect(r.diagnostics.filter((d) => d.code === "E_LEVEL_MIX")).toEqual([]);
     expect(r.errors).toEqual([]);
     expect(ERROR_CATALOG.E_LEVEL_MIX?.fix).toContain("`notes`");
+  });
+
+  // RR.3: the remedy's list of what stays outside the levels is derived, not typed. The parser's
+  // plan-body switch is the source of truth for the settings: a new `case` that is not a body
+  // statement and not named in `PLAN_SETTING_KEYWORDS` fails here, as does a shared kind or a
+  // plan-level-only element the remedy does not name.
+  it("E_LEVEL_MIX's remedy names every plan-level form the parser lets sit beside the levels", () => {
+    const parser = readFileSync("src/parser.ts", "utf8").replace(/\r\n/g, "\n");
+    const from = parser.indexOf("plan.sheetText = this.parseSheetText(plan, start);");
+    const to = parser.indexOf("plan.body.push(this.parseOneBodyStatement(plan.components, undefined));", from);
+    expect(from).toBeGreaterThan(0);
+    expect(to).toBeGreaterThan(from);
+    const cases = [...parser.slice(from, to).matchAll(/case "([A-Za-z]+)":/g)].map((m) => m[1]!);
+    // Declarations and body statements the switch reads, which the remedy names apart or which draw.
+    const notSettings = new Set(["component", "import", "strip", "level"]);
+    const settings = cases.filter((c) => !notSettings.has(c));
+    expect(settings.length).toBeGreaterThan(10);
+    expect([...settings, "sheet text"].sort()).toEqual([...PLAN_SETTING_KEYWORDS].sort());
+
+    const fix = ERROR_CATALOG.E_LEVEL_MIX?.fix ?? "";
+    for (const k of PLAN_SETTING_KEYWORDS) expect(fix).toContain(`\`${k}\``);
+    for (const k of ["component", "import"]) expect(fix).toContain(`\`${k}\``);
+    // `assign` is `set`'s re-binding, `error` an already-reported parse error, `level` the storey itself.
+    for (const k of LEVEL_SHARED_KINDS.filter((k) => !["assign", "error", "level"].includes(k))) {
+      expect(fix).toContain(`\`${k}`);
+    }
+    const planLevelOnly = BUILTIN_DEFS.filter((d) => d.planLevelOnly).map((d) => d.kind);
+    expect(planLevelOnly.length).toBeGreaterThan(0);
+    for (const k of planLevelOnly) expect(fix).toContain(`\`${k}\``);
   });
 
   it("E_LEVEL_DUP: the same storey number twice (the second one is flagged)", () => {

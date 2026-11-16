@@ -1917,7 +1917,7 @@ One way: edit only the kind word's span, derived at resolve time from the node's
 source tokens, without adding a parse-node field (that moved five parse digests in #848 round 1).
 **Gate:** a multi-line statement with comments keeps them after `archlang fix --unsafe`.
 
-### RR.3 · `E_LEVEL_MIX` lists the plan-level settings by hand — `todo`
+### RR.3 · `E_LEVEL_MIX` lists the plan-level settings by hand: done by #857, waiting to be archived — `note`
 
 After N.2 (#839) the remedy names `notes`, but a plan also allows `style`, `keep` and the
 plan-level `section` mark beside a `level` (`src/parser.ts`, `src/ast.ts`), and it says "Only
@@ -1925,7 +1925,7 @@ settings (…)". Comments in `src/ast.ts` (near the level kind list) and `src/im
 same stale list. **Gate:** the remedy's list derives from the parser's allowed set, and a test fails
 when a new plan-level form is not named.
 
-### RR.4 · `E_DRAWING_LIMIT`'s remedy does not cover the notes cap — `todo`
+### RR.4 · `E_DRAWING_LIMIT`'s remedy does not cover the notes cap: done by #859, waiting to be archived — `note`
 
 N.5 (#840) names the NOTES cap under Cause, but Fix still says only "Draw fewer or shorter runs,
 shrink the loop, or split the building". **Gate:** the remedy names shortening `notes`; the
@@ -1938,7 +1938,7 @@ balcony … label "Terrace"`; `yard → paving` has no source in the repo. The h
 first word after `uses` is unknown, so `uses living balcony` and `uses Balcony` get none.
 **Gate:** the mapping agrees with `docs/language-reference.md`, and a test covers a later word.
 
-### RR.6 · Site-only link guard gaps — `todo`
+### RR.6 · Site-only link guard gaps: done by #863, waiting to be archived — `note`
 
 After #838, `test/docs-site-links.test.ts` still skips same-page `#fragment` links on site-only
 pages, does not check a fragment on a route with no markdown source (`/adr#x`), and does not read
@@ -1948,7 +1948,7 @@ outside it: `packages/mcp/README.md` links
 `/reference#keyboard-and-screen-reader-operability-annotate--accessible`, which is dead on the site.
 **Gate:** that README link fixed, and a guard for absolute `archlang.uk` fragments in READMEs.
 
-### RR.7 · EV.1 record wording — `todo`
+### RR.7 · EV.1 record wording: done by #864, waiting to be archived — `note`
 
 In `eval/live-runs/2026-11-ev1-intent-gap.md`: "What does differ is the overall rate" compares 13/26
 with 26/78 across the prompt drift the record says it does not compare (state the counts, claim no
@@ -1961,7 +1961,87 @@ line 56, not 55. **Gate:** those four sentences corrected; no number changes.
 (1) An `/adr` smoke check on the deployed site (WS.5). (2) Whether `W_DOORWAY_BLOCKED` is too strict
 for furniture that only grazes a door's swing (EV.1: all 19 physical-lint intent losses).
 (3) The Rooms control overlaps the drawing at ≤ 900 px (PG.1 review). (4) An oracle for
-`docs-site/index.md` frontmatter links. Each becomes its own card once looked at.
+`docs-site/index.md` frontmatter links. (5) Site-link guard holes left by RR.6 (#863 review): same-page
+`#fragment` links on site-only pages, a fragment on a source-less route (`/adr#x`) and raw `href=`
+links are unchecked; README scanning skips dot directories and walks the filesystem, not the tracked
+tree; absolute `archlang.uk` fragments outside READMEs (`docs/overview.md`, `llms-install.md`) and
+fragment-less dead routes are unchecked; a bare URL followed by punctuation, or an id rendered by a
+component the page does not name, is wrongly refused; a malformed `%` escape throws. Each becomes
+its own card once looked at.
+
+## Test-programme findings (promo-credit programme, 2026-11-16)
+
+From `docs/plans/product-roadmap/2026-11-test-findings.md` (§ 3, § 4, § 5). RR.8 (2), the
+`W_DOORWAY_BLOCKED` strictness, is that plan's first direction and is not repeated here.
+
+### EV.2 · A live run keeps no plan source per brief — `todo`
+
+EV.1 could not tell whether a lost brief-run came from the model, a stricter rule or new compiler
+geometry, because neither the July nor the November artifacts hold the authored `.arch` source of
+each brief. One way: `eval/run.ts` writes each brief's extracted source into the run's artifact
+(the workflow's upload, never the repo). A workflow artifact on this public repo is downloadable, so
+whether plan sources may be published there was ruled by RM-D53 (2026-11-16, delegated): yes, the
+extracted `.arch` source only, in the existing `eval-results-live` artifact at GitHub's default
+retention, accepted as a limit; raw replies stay unpublished, so when `extractArch` finds no complete
+fence and would fall back to the whole reply, only a "not extracted" marker is stored; a local run
+writes to a git-ignored directory. **Gate:** an offline test
+that a live-shaped run writes one source per scored brief and only a marker for an unfenced or
+truncated reply, a check that the local directory is git-ignored, cases for the fence shapes `extractArch`'s regex mishandles (a typed block, prose, then an `arch` block; an
+untyped first block of prose; an inline triple backtick; a four-backtick fence; probed in #858's
+review). The property to hold, as a hypothesis to check: the stored text is the body of a block
+whose opening fence is the reply's first line-start fence with an empty or `arch` info string,
+else a marker; and
+`eval/README.md` names the file.
+
+### EV.3 · The baseline does not record the prompt it was measured under — `todo`
+
+`eval/live-baseline.json` carries `judge` but no hash of `spec.llm.md` or `eval/corpus.json`, so
+146 of 241 prompt lines changed after July with nothing flagging the baseline as stale. One way:
+record both SHA-256s in the baseline, and have `renderDelta` (`eval/run.ts`) say so plainly when a
+run's hashes differ, as it already does for a judge change. **Gate:** a unit test of `renderDelta`
+for a matching and a differing prompt hash.
+
+### EV.4 · `offset` and `hinged` written as statements get no hint: done by #866, waiting to be archived — `note`
+
+After CO-1 and CO-2 the remaining order notes in the live runs are `Unknown statement "offset"`
+(Haiku 5.5 and gpt-5.5) and `Unknown statement "hinged"` (Haiku 5.5)
+(`eval/live-runs/2026-11-authorability-remeasure.md`). One way: a targeted parse hint naming the
+clause the model meant, as U.6 did for `uses balcony`; whether either becomes syntax waits for
+the data after the hint. **Gate:** each word gets a hint naming the real form, a test per word, and
+no corpus output moves (message only).
+
+### EV.5 · A refused opening offers no move (design first) — `todo`
+
+Six of EV.1's seven compile-error losses are opening-placement refusals (`refused, not moved`, a
+window on a partition edge, a parallel edge with no offset; ADR 0028 § 5). They return no fix. L1 (`eval/l1.ts`) applies only the machine-applicable tier, so
+a `maybe-incorrect` fix would help an author but move no L1 number; only a provably correct move
+(ADR 0011's bar) could be machine-applicable. Design first, within ADR 0005 and ADR 0028 § 5:
+which refusals have one nearest legal place, and whether a move may cross a room boundary.
+**Gate:** a design note in the card or an ADR before code.
+
+### EV.6 · The published dataset card quotes the superseded baseline: done by #856, the HF re-upload of 2026-11-16 and #858, waiting to be archived — `note`
+
+`dataset/CARD.md` § Baseline context quotes the 2026-07-12 baseline (L0 23/26 · 14/26 · 3/26; L1
+18/26 · 7/26). RM-D52 re-baselined to 22 / 9 / 1 on 2026-11-16 under a changed prompt. The card is
+also on HF, so changing it means a card re-upload, which is owner-only (RM-D47). One way: date
+the July numbers as the baseline at generation time and name the current one beside it, with no
+comparison. RM-D54 (2026-11-16, delegated) ruled the change; the repo card was changed by
+#856. **Gate:** the card-only re-upload, by the owner or on the owner's explicit instruction for that
+upload; card bytes on HF equal the repo's; `dataset/README.md`'s "the HF card quoted it" line
+updated after.
+
+Done: the owner said "同意上传卡片，请你自动帮我实施" (2026-11-16); `dataset/CARD.md` from main (SHA-256
+`2ed46aad…9cc4`) was uploaded as `README.md`, HF commit `90914659`, and the downloaded file's SHA-256
+equals main's.
+
+### AG.1 · `check:quick` misses the text guards an executor most often trips — `todo`
+
+In the P5 run, executors reported a green local gate on PRs that CI then failed on
+`test/opaque-literal-guard.test.ts`, `test/docs-flags.test.ts` and `test/lint-fix-texts.test.ts`
+(#848): `check:quick` runs the nearest tests, and those guards are not near the catalogue and docs
+files they read. One way: when a change touches `src/error-catalog/`, `docs/*.md` or a
+gitleaks-excluded test, `scripts/check-quick.mjs` also runs those three files. **Gate:** a
+`gate-select` test that such a change selects them; `scripts/check-quick.mjs` is high tier.
 
 ## Site chrome (found while fixing the nav overflow, 2026-09-20)
 

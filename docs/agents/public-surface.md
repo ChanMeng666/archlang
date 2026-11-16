@@ -20,7 +20,7 @@ Every module, not only the entry, is in the sibling [`module-map.md`](module-map
 The total counts every name the checker sees as exported, including those pulled in by
 `export type * from "./ast.js"`; a count of the names written in `index.ts`' export statements is lower.
 
-Totals: 647 exports (225 values, 422 types), 409 flagged (72 values).
+Totals: 648 exports (226 values, 422 types), 410 flagged (73 values).
 
 ## `src/algebra/d4.ts`
 
@@ -182,6 +182,7 @@ Totals: 647 exports (225 values, 422 types), 409 flagged (72 values).
 | `OpeningNode` | type | none |
 | `OutdoorKind` | type | none |
 | `OutdoorNode` | type | none |
+| `PLAN_SETTING_KEYWORDS` | value | none |
 | `PlaceNode` | type | none |
 | `PlaceRotate` | type | none |
 | `PlanNode` | type | `playground` |

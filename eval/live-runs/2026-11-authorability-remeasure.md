@@ -21,6 +21,8 @@ be split between the two.
 **`eval/live-baseline.json` is NOT updated by these runs.** It stays the July record
 (`gpt-5.5-2026-04-23`, seed `20260711`, valid 23, intent 14, sound 3 of 26; same run's L1 intent
 18/26); changing it needs an owner decision. Nothing here is a baseline.
+(2026-11-16, later: RM-D52 re-baselined `eval/live-baseline.json` to the median run of the P2
+after CO-1 + CO-2 group; see `eval/README.md`.)
 
 ## Setup
 
