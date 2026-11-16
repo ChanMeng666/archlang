@@ -1917,7 +1917,7 @@ One way: edit only the kind word's span, derived at resolve time from the node's
 source tokens, without adding a parse-node field (that moved five parse digests in #848 round 1).
 **Gate:** a multi-line statement with comments keeps them after `archlang fix --unsafe`.
 
-### RR.3 · `E_LEVEL_MIX` lists the plan-level settings by hand — `todo`
+### RR.3 · `E_LEVEL_MIX` lists the plan-level settings by hand: done by #857, waiting to be archived — `note`
 
 After N.2 (#839) the remedy names `notes`, but a plan also allows `style`, `keep` and the
 plan-level `section` mark beside a `level` (`src/parser.ts`, `src/ast.ts`), and it says "Only
