@@ -56,7 +56,7 @@ import {
   srcFromHash,
 } from "../playground/src/share.js";
 import { decodePayload } from "../playground/worker/share-core.js";
-import { decodePlanHash, encodePlanHash } from "../src/cli/share-codec.mjs";
+import { decodePlanHash, encodePlanHash, PLAYGROUND_ORIGIN } from "../src/cli/share-codec.mjs";
 import {
   decodePlanHashWeb,
   fromBase64Url,
@@ -376,5 +376,40 @@ describe.skipIf(!HAS_DEFLATE_RAW)("the source caps hold at the byte for every re
     expect(await srcFromHash(`#z=${pageAt}`)).toHaveLength(LINK_INFLATE_CAP_BYTES);
     expect(await readHash(`#z=${pageOver}`)).toEqual({ refused: "too_large" });
     expect(await srcFromHash(`#z=${pageOver}`)).toBeNull();
+  });
+});
+
+describe("the build scripts read the one playground origin (src/cli/share-codec.mjs)", () => {
+  // A hard-coded copy of the origin rots silently the day the playground moves: the CLI's links
+  // follow the constant while the docs home page, the static pages and their sitemap keep the
+  // old host. Each build script imports the constant through `scripts/gen-permalink.mjs`.
+  const CONSUMERS = [
+    ["docs-site/sync-docs.mjs", 'import { encodePlanHash, PLAYGROUND_ORIGIN } from "../scripts/gen-permalink.mjs";'],
+    [
+      "playground/scripts/gen-static.mjs",
+      'import { encodePlanHash, PLAYGROUND_ORIGIN } from "../../scripts/gen-permalink.mjs";',
+    ],
+    ["playground/scripts/example-rows.mjs", 'import { PLAYGROUND_ORIGIN } from "../../scripts/gen-permalink.mjs";'],
+  ] as const;
+
+  it(`${GEN_PERMALINK} re-exports the codec's origin`, async () => {
+    // @ts-expect-error — the root typecheck has no allowJs, so it has no declarations for it.
+    const mod = (await import("../scripts/gen-permalink.mjs")) as { PLAYGROUND_ORIGIN: string };
+    expect(mod.PLAYGROUND_ORIGIN).toBe(PLAYGROUND_ORIGIN);
+    expect(PLAYGROUND_ORIGIN).toBe(PLAYGROUND);
+  });
+
+  it.each(CONSUMERS)("%s imports the origin and keeps no copy of it", (file, importLine) => {
+    const src = readFileSync(file, "utf8");
+    expect(src).toContain(importLine);
+    expect(src.includes(`"${PLAYGROUND}"`), `${file} hard-codes the playground origin; import PLAYGROUND_ORIGIN`).toBe(
+      false,
+    );
+  });
+
+  it("example-rows exposes the same origin to its readers", async () => {
+    // @ts-expect-error — the root typecheck has no allowJs, so it has no declarations for it.
+    const rows = (await import("../playground/scripts/example-rows.mjs")) as { PLAYGROUND_ORIGIN: string };
+    expect(rows.PLAYGROUND_ORIGIN).toBe(PLAYGROUND_ORIGIN);
   });
 });

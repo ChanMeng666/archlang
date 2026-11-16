@@ -11,6 +11,7 @@ import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 // @ts-expect-error plain .mjs module without declarations
 import { fenceStep, headingIds, rewriteLinks, routeOfDest, slugify } from "../docs-site/link-rewrite.mjs";
+import { PLAYGROUND_ORIGIN } from "../src/cli/share-codec.mjs";
 
 const syncSrc = readFileSync("docs-site/sync-docs.mjs", "utf8");
 function table(name: string): Array<[string, string]> {
@@ -21,7 +22,9 @@ function table(name: string): Array<[string, string]> {
 const PAGES = table("PAGES");
 const SITE_PAGES = table("SITE_PAGES");
 const ROOT_COPIES = table("ROOT_COPIES");
-const PLAYGROUND = /const PLAYGROUND = "([^"]+)"/.exec(syncSrc)![1]!;
+// sync-docs.mjs takes its playground origin from the codec (`const PLAYGROUND = PLAYGROUND_ORIGIN`).
+expect(syncSrc).toMatch(/\nconst PLAYGROUND = PLAYGROUND_ORIGIN;/);
+const PLAYGROUND = PLAYGROUND_ORIGIN;
 const adrs = readdirSync("docs/adr").filter((f) => f.endsWith(".md") && f !== "index.md");
 
 const ctx = {
