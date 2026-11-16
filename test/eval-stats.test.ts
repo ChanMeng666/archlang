@@ -6,7 +6,7 @@ import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { JUDGE_VERSION } from "../eval/assertions.js";
-import { promptHashes, renderDelta, renderResults } from "../eval/run.js";
+import { liveDeltaSection, promptHashes, renderDelta, renderResults, sha256Text, systemPrompt } from "../eval/run.js";
 import type { Score } from "../eval/run.js";
 import { sha256 } from "./helpers/digest.js";
 
@@ -68,7 +68,9 @@ describe("live report intervals", () => {
   });
 
   it("live mode prints k/n with a Wilson 95 % interval beside every rate", () => {
-    const md = renderResults(results, summary, "live (x)", undefined, { intervals: true });
+    const md = renderResults(results, summary, "live (x)", undefined, {
+      intervals: true,
+    });
     expect(md).toContain("- **Valid (compiles):** 3/3 (100%; Wilson 95 % 43–100 %)");
     expect(md).toContain("- **Intent match (semantic):** 2/3 (67%; Wilson 95 % 20–94 %)");
     expect(md).toContain("- **Sound (lint-clean):** 3/3 (100%; Wilson 95 % 43–100 %)");
@@ -88,53 +90,88 @@ describe("live report intervals", () => {
 
 describe("renderDelta prompt hashes (EV.3)", () => {
   const summary = { total: 3, valid: 3, semanticPass: 2, sound: 3 };
-  const spec = "a".repeat(64);
+  const prompt = "a".repeat(64);
   const corpus = "b".repeat(64);
-  const base = { total: 3, valid: 3, semanticPass: 1, sound: 3, judge: JUDGE_VERSION };
-  const WARN = "span a prompt change and are NOT comparable";
+  const base = {
+    total: 3,
+    valid: 3,
+    semanticPass: 1,
+    sound: 3,
+    judge: JUDGE_VERSION,
+  };
+  const hashed = { ...base, promptSha256: prompt, corpusSha256: corpus };
+  const HASH_LINE = `This run's prompt: \`promptSha256\` ${prompt} · \`corpusSha256\` ${corpus}.`;
+  const UNVERIFIED = "comparability unverified";
 
-  it("matching hashes add no prompt warning", () => {
-    const md = renderDelta({ ...base, specSha256: spec, corpusSha256: corpus }, summary, {
-      prompt: { spec, corpus },
-    });
-    expect(md).not.toContain(WARN);
+  it("matching hashes add only the hash line: byte-equal to the delta without hashes", () => {
+    const md = renderDelta(hashed, summary, { prompt: { prompt, corpus } });
+    const without = renderDelta(hashed, summary);
+    const anchor = `Against \`eval/live-baseline.json\` (recorded run).\n`;
+    expect(without).toContain(anchor);
+    expect(md).toBe(without.replace(anchor, `${anchor}\n${HASH_LINE}\n`));
+  });
+
+  it("a differing prompt hash is NOT comparable, naming only that hash, as a prompt change", () => {
+    const md = renderDelta({ ...hashed, promptSha256: "c".repeat(64) }, summary, { prompt: { prompt, corpus } });
+    expect(md).toContain(`(SHA-256: \`promptSha256\` ${"c".repeat(12)} → ${"a".repeat(12)})`);
+    expect(md).toContain("span a prompt change and are NOT comparable");
+    expect(md).not.toContain("`corpusSha256` d");
+    expect(md).not.toContain(UNVERIFIED);
+  });
+
+  it("a differing corpus hash is NOT comparable as a prompt or corpus change", () => {
+    const md = renderDelta({ ...hashed, corpusSha256: "d".repeat(64) }, summary, { prompt: { prompt, corpus } });
+    expect(md).toContain(`(SHA-256: \`corpusSha256\` ${"d".repeat(12)} → ${"b".repeat(12)})`);
+    expect(md).toContain("span a prompt or corpus change and are NOT comparable");
+  });
+
+  it("a baseline without hashes is unverified, never called not comparable", () => {
+    const md = renderDelta(base, summary, { prompt: { prompt, corpus } });
+    expect(md).toContain(`> Baseline records no \`promptSha256\` or \`corpusSha256\` hash; ${UNVERIFIED}.`);
     expect(md).not.toContain("NOT comparable");
-    expect(md).toContain(`\`specSha256\` ${spec} · \`corpusSha256\` ${corpus}`);
-  });
-
-  it("a differing spec hash is flagged, naming only the file that changed", () => {
-    const md = renderDelta({ ...base, specSha256: "c".repeat(64), corpusSha256: corpus }, summary, {
-      prompt: { spec, corpus },
-    });
-    expect(md).toContain(WARN);
-    expect(md).toContain(`\`spec.llm.md\` ${"c".repeat(12)} → ${"a".repeat(12)}`);
-    expect(md).not.toContain("`eval/corpus.json` ");
-  });
-
-  it("a differing corpus hash is flagged", () => {
-    const md = renderDelta({ ...base, specSha256: spec, corpusSha256: "d".repeat(64) }, summary, {
-      prompt: { spec, corpus },
-    });
-    expect(md).toContain(WARN);
-    expect(md).toContain(`\`eval/corpus.json\` ${"d".repeat(12)} → ${"b".repeat(12)}`);
-  });
-
-  it("a baseline without hashes is flagged as unrecorded", () => {
-    const md = renderDelta(base, summary, { prompt: { spec, corpus } });
-    expect(md).toContain(WARN);
-    expect(md).toContain("`spec.llm.md` (unrecorded)");
-    expect(md).toContain("`eval/corpus.json` (unrecorded)");
+    expect(md).toContain(HASH_LINE);
   });
 
   it("without the run's hashes the delta is unchanged", () => {
     expect(renderDelta(base, summary)).not.toContain("prompt");
   });
 
-  it("promptHashes is the SHA-256 of both files, LF-normalised", () => {
+  it("with no baseline the live section still prints this run's hashes", () => {
+    const md = liveDeltaSection(null, summary, { prompt, corpus });
+    expect(md).toContain(HASH_LINE);
+    expect(md).toContain("No `eval/live-baseline.json`");
+    expect(liveDeltaSection(hashed, summary, { prompt, corpus })).toBe(
+      renderDelta(hashed, summary, {
+        intervals: true,
+        prompt: { prompt, corpus },
+      }),
+    );
+  });
+
+  it("the live run passes its prompt hashes into the delta section", () => {
+    const src = readFileSync(resolve(fileURLToPath(new URL("..", import.meta.url)), "eval/run.ts"), "utf8");
+    const main = src.slice(src.indexOf("async function main("));
+    expect(main).toContain("md += liveDeltaSection(baseline, summary, promptHashes());");
+  });
+
+  it("sha256Text normalises CRLF to LF", () => {
+    const lf = "line one\nline two\n";
+    expect(sha256Text(lf)).toBe(sha256(lf));
+    expect(sha256Text(lf.replace(/\n/g, "\r\n"))).toBe(sha256(lf));
+  });
+
+  it("promptHashes hashes the exact system prompt sent, not spec.llm.md alone", () => {
+    const root = fileURLToPath(new URL("..", import.meta.url));
+    const read = (rel: string): string => readFileSync(resolve(root, rel), "utf8");
     const h = promptHashes();
-    const lf = (rel: string): string =>
-      readFileSync(resolve(fileURLToPath(new URL("..", import.meta.url)), rel), "utf8").replace(/\r\n/g, "\n");
-    expect(h).toEqual({ spec: sha256(lf("spec.llm.md")), corpus: sha256(lf("eval/corpus.json")) });
-    expect(h.spec).toMatch(/^[0-9a-f]{64}$/);
+    expect(h).toEqual({
+      prompt: sha256Text(systemPrompt()),
+      corpus: sha256Text(read("eval/corpus.json")),
+    });
+    expect(h.prompt).not.toBe(sha256Text(read("spec.llm.md")));
+    expect(promptHashes("x\r\ny", "c")).toEqual({
+      prompt: sha256("x\ny"),
+      corpus: sha256("c"),
+    });
   });
 });

@@ -11,7 +11,7 @@
  *     language change breaks a plan a model already wrote, the eval fails. No API key.
  *     Writes the committed scorecard `eval/results.md`.
  *   - **live** (`--live`, needs an API key): ask a model to author each plan from the
- *     prompt (with `spec.llm.md` as the system prompt) and score that. This produces
+ *     prompt (system prompt: `spec.llm.md` + a reply-format line, {@link systemPrompt}) and score that. This produces
  *     the headline number for the README.
  *
  * Because live runs cost money, `--live` is guarded: it prints what it *would* send
@@ -173,7 +173,11 @@ function statusOf(r: Score): RowStatus {
 }
 
 /** The exact status cell strings (kept identical to the historical inline literals). */
-const STATUS_LABEL: Record<RowStatus, string> = { pass: "✅ pass", warns: "⚠️ warns", fail: "❌ fail" };
+const STATUS_LABEL: Record<RowStatus, string> = {
+  pass: "✅ pass",
+  warns: "⚠️ warns",
+  fail: "❌ fail",
+};
 
 /** Verdict ordering so an L0→L1 transition can be called an improvement or a regression. */
 const STATUS_RANK: Record<RowStatus, number> = { fail: 0, warns: 1, pass: 2 };
@@ -198,7 +202,14 @@ export interface L1Row {
  *  `(entry, l0, raw)` always yields a deeply-equal row); exported for unit testing. */
 export function l1Row(entry: CorpusEntry, l0: Score, raw: string | undefined): L1Row {
   const l0Status = statusOf(l0);
-  if (raw === undefined) return { id: entry.id, l0Status, l1: l0, fixesApplied: 0, repairChanges: 0 };
+  if (raw === undefined)
+    return {
+      id: entry.id,
+      l0Status,
+      l1: l0,
+      fixesApplied: 0,
+      repairChanges: 0,
+    };
   const healed = l1Pipeline(raw);
   return {
     id: entry.id,
@@ -356,7 +367,10 @@ export function fixtureVerdict(results: readonly Score[], fixture: JudgeFixture)
 
 /** Live provider/model, resolved from env: explicit `ARCHLANG_EVAL_PROVIDER`,
  *  else OpenAI when only its key is present, else Anthropic (the default). */
-export function resolveProvider(): { provider: "anthropic" | "openai"; model: string } {
+export function resolveProvider(): {
+  provider: "anthropic" | "openai";
+  model: string;
+} {
   const explicit = process.env.ARCHLANG_EVAL_PROVIDER?.toLowerCase();
   const hasOpenAI = Boolean(process.env.OPENAI_API_KEY);
   const hasAnthropic = Boolean(process.env.ANTHROPIC_API_KEY);
@@ -371,9 +385,9 @@ export function resolveProvider(): { provider: "anthropic" | "openai"; model: st
 }
 
 /** The one system prompt both providers get: the spec + a reply-format instruction.
- *  Exported so the L2 harness (`eval/l2-run.ts`) drives the same system prompt. */
-export function systemPrompt(): string {
-  const spec = readFileSync(resolve(ROOT, "spec.llm.md"), "utf8");
+ *  Exported so the L2 harness (`eval/l2-run.ts`) drives the same system prompt; `spec` is
+ *  injectable so a past commit's prompt can be rebuilt (and hashed) from its `spec.llm.md`. */
+export function systemPrompt(spec: string = readFileSync(resolve(ROOT, "spec.llm.md"), "utf8")): string {
   return `${spec}\n\nYou write ArchLang. Reply with ONLY one \`\`\`arch code block — no prose.`;
 }
 
@@ -396,7 +410,11 @@ async function authorWithAnthropic(
   const call = (pinTemperature: boolean) =>
     fetch("https://api.anthropic.com/v1/messages", {
       method: "POST",
-      headers: { "x-api-key": key, "anthropic-version": "2023-06-01", "content-type": "application/json" },
+      headers: {
+        "x-api-key": key,
+        "anthropic-version": "2023-06-01",
+        "content-type": "application/json",
+      },
       body: JSON.stringify({
         model,
         // Reasoning models spend internal thinking tokens from this same budget — a 2048
@@ -451,7 +469,10 @@ async function authorWithOpenAI(prompt: string, system: string, model: string, l
   if (!key) throw new Error("OPENAI_API_KEY is not set (required for --live with the openai provider)");
   const res = await fetch("https://api.openai.com/v1/chat/completions", {
     method: "POST",
-    headers: { authorization: `Bearer ${key}`, "content-type": "application/json" },
+    headers: {
+      authorization: `Bearer ${key}`,
+      "content-type": "application/json",
+    },
     body: JSON.stringify({
       model,
       // Reasoning models spend internal thinking tokens from this same budget — a
@@ -469,7 +490,10 @@ async function authorWithOpenAI(prompt: string, system: string, model: string, l
   });
   if (!res.ok) throw new Error(`OpenAI API ${res.status}: ${await res.text()}`);
   const json = (await res.json()) as {
-    choices?: { message?: { content?: string }; finish_reason?: string | null }[];
+    choices?: {
+      message?: { content?: string };
+      finish_reason?: string | null;
+    }[];
     usage?: { prompt_tokens?: number; completion_tokens?: number };
     system_fingerprint?: string | null;
   };
@@ -644,29 +668,54 @@ export interface Baseline extends Summary {
   /** Scoring-core version the baseline was produced under. Absent on pre-judge-field
    *  baselines — which `renderDelta` flags, since a judge change makes deltas incomparable. */
   judge?: string;
-  /** SHA-256 (hex) of `spec.llm.md`, the system prompt the baseline was measured under, as
-   *  {@link promptHashes} computes it. Absent on baselines recorded before the field existed. */
-  specSha256?: string;
+  /** SHA-256 (hex) of the system prompt the baseline was measured under ({@link systemPrompt}:
+   *  `spec.llm.md` + the reply-format line), as {@link promptHashes} computes it. Absent on
+   *  baselines recorded before the field existed. */
+  promptSha256?: string;
   /** SHA-256 (hex) of `eval/corpus.json`, the briefs the baseline was measured on. */
   corpusSha256?: string;
 }
 
 /** The SHA-256s of what a live run's prompt is made of. */
 export interface PromptHashes {
-  spec: string;
+  /** Of the exact {@link systemPrompt} string both providers are sent. */
+  prompt: string;
+  /** Of `eval/corpus.json`, the briefs. */
   corpus: string;
 }
 
-/** SHA-256 (hex) of a text file's content, line endings normalised to LF so a CRLF working
- *  copy hashes the same as the committed bytes. */
-function sha256OfText(rel: string): string {
-  const text = readFileSync(resolve(ROOT, rel), "utf8").replace(/\r\n/g, "\n");
-  return createHash("sha256").update(text, "utf8").digest("hex");
+/** SHA-256 (hex) of a text, line endings normalised to LF so a CRLF working copy hashes the
+ *  same as the committed bytes. */
+export function sha256Text(text: string): string {
+  return createHash("sha256").update(text.replace(/\r\n/g, "\n"), "utf8").digest("hex");
 }
 
-/** The hashes a baseline records (`specSha256`, `corpusSha256`) and a run compares against. */
-export function promptHashes(): PromptHashes {
-  return { spec: sha256OfText("spec.llm.md"), corpus: sha256OfText("eval/corpus.json") };
+/** The hashes a baseline records (`promptSha256`, `corpusSha256`) and a run compares against.
+ *  Both inputs default to the working tree; pass a past commit's texts to rebuild its hashes. */
+export function promptHashes(
+  system: string = systemPrompt(),
+  corpus: string = readFileSync(resolve(ROOT, "eval/corpus.json"), "utf8"),
+): PromptHashes {
+  return { prompt: sha256Text(system), corpus: sha256Text(corpus) };
+}
+
+/** The live report's baseline section: the delta (with prompt hashes) when a baseline exists,
+ *  else this run's hashes alone, so they can be recorded into the next baseline. */
+export function liveDeltaSection(base: Baseline | null, s: Summary, prompt: PromptHashes): string {
+  if (base) return renderDelta(base, s, { intervals: true, prompt });
+  return [
+    "",
+    "## Delta vs baseline",
+    "",
+    `No \`${BASELINE}\`; nothing to compare against.`,
+    "",
+    hashLine(prompt),
+    "",
+  ].join("\n");
+}
+
+function hashLine(p: PromptHashes): string {
+  return `This run's prompt: \`promptSha256\` ${p.prompt} · \`corpusSha256\` ${p.corpus}.`;
 }
 
 const LIVE_RESULTS = "eval/results.live.md";
@@ -843,27 +892,35 @@ export function renderDelta(
       : `\n> ⚠ Baseline judge ${
           base.judge ? `v${base.judge}` : "(unrecorded)"
         } ≠ current judge v${JUDGE_VERSION} — these deltas span a scoring-core change and are NOT comparable.\n`;
-  // A prompt change (the spec the model reads, or the briefs it answers) is a different
-  // measurement too, so say so whenever this run's prompt hashes are known and differ.
+  // A prompt change (the system prompt the model reads, or the briefs it answers) is a different
+  // measurement too: a recorded hash that differs is NOT comparable; an unrecorded one is unverified.
   const p = opts.prompt;
-  const promptParts: string[] = [];
+  const changed: string[] = [];
+  const unrecorded: string[] = [];
   if (p) {
-    const part = (file: string, was: string | undefined, now: string): void => {
-      if (was !== now) promptParts.push(`\`${file}\` ${was ? was.slice(0, 12) : "(unrecorded)"} → ${now.slice(0, 12)}`);
+    const part = (field: string, was: string | undefined, now: string): void => {
+      if (was === undefined) unrecorded.push(`\`${field}\``);
+      else if (was !== now) changed.push(`\`${field}\` ${was.slice(0, 12)} → ${now.slice(0, 12)}`);
     };
-    part("spec.llm.md", base.specSha256, p.spec);
-    part("eval/corpus.json", base.corpusSha256, p.corpus);
+    part("promptSha256", base.promptSha256, p.prompt);
+    part("corpusSha256", base.corpusSha256, p.corpus);
   }
+  const corpusChanged = p !== undefined && base.corpusSha256 !== undefined && base.corpusSha256 !== p.corpus;
   const promptNote =
-    promptParts.length === 0
+    (changed.length === 0
       ? ""
-      : `\n> ⚠ Baseline prompt ≠ this run's prompt (SHA-256: ${promptParts.join("; ")}) — these deltas span a prompt change and are NOT comparable.\n`;
+      : `\n> ⚠ Baseline prompt ≠ this run's prompt (SHA-256: ${changed.join("; ")}) — these deltas span a ${
+          corpusChanged ? "prompt or corpus" : "prompt"
+        } change and are NOT comparable.\n`) +
+    (unrecorded.length === 0
+      ? ""
+      : `\n> Baseline records no ${unrecorded.join(" or ")} hash; comparability unverified.\n`);
   return [
     "",
     "## Delta vs baseline",
     "",
     `Against \`${BASELINE}\` (${who}).`,
-    ...(p ? ["", `This run's prompt: \`specSha256\` ${p.spec} · \`corpusSha256\` ${p.corpus}.`] : []),
+    ...(p ? ["", hashLine(p)] : []),
     "",
     line("Valid (compiles)", base.valid, s.valid),
     line("Intent match (semantic)", base.semanticPass, s.semanticPass),
@@ -974,7 +1031,7 @@ async function main(): Promise<void> {
     stops: stopById,
   });
   const baseline = readBaseline();
-  if (baseline) md += renderDelta(baseline, summary, { intervals: true, prompt: promptHashes() });
+  md += liveDeltaSection(baseline, summary, promptHashes());
   md = LIVE_HEADER + md;
   writeFileSync(resolve(ROOT, LIVE_RESULTS), md);
   process.stdout.write(md + "\n");
