@@ -10,6 +10,7 @@ import { exampleNames, libNames } from "./helpers/corpus.js";
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { compile, format } from "../src/index.js";
+import { trimBlanksEnd } from "../src/doc.js";
 import { parse } from "../src/parser.js";
 import { planFromJson, planToJson } from "../src/plan-json.js";
 import type { Theme } from "../src/theme.js";
@@ -154,6 +155,88 @@ describe("every string literal `fmt` quotes reads back as the same text (M.21)",
     it(`${name}: a comment keeps the blank before the break`, () => {
       const src = `plan "P" {\n  units mm\n  # ${v}\n  room id=r at (0,0) size 3000x3000\n}\n`;
       expect(format(src)).toContain(`# ${v}\n`);
+    });
+    it(`${name}: a room label, a dim text and a list string keep the blank before the break`, () => {
+      const q = `"${lit(v)}"`;
+      const src =
+        `plan "P" {\n  units mm\n  let xs = [${q}, "b"]\n  room id=r at (0,0) size 3000x3000 label ${q}\n` +
+        `  dim (0,0)->(3000,0) offset 600 text ${q}\n}\n`;
+      const once = format(src);
+      expect(once).toContain(`let xs = [${q}, "b"]`);
+      expect(once).toContain(`label ${q}`);
+      expect(once).toContain(`text ${q}`);
+      expect(format(once)).toBe(once);
+    });
+  }
+  // A blank run that does not end its line must not cost quadratic time to strip (RR.17).
+  it("a long blank run inside a string is kept, and the strip reads each character a bounded number of times", () => {
+    const blanks = " ".repeat(10_000);
+    const src = `plan "P" {\n  units mm\n  notes "A${blanks}B"\n  room id=r at (0,0) size 3000x3000\n}\n`;
+    expect(format(src)).toContain(`"A${blanks}B"`);
+    // Count the character reads on a line that a regex `/[ \t]+$/` would rescan once per blank.
+    const counted = (s: string) => {
+      let reads = 0;
+      const line = {
+        length: s.length,
+        charCodeAt: (i: number) => {
+          reads++;
+          return s.charCodeAt(i);
+        },
+        slice: (a: number, b: number) => s.slice(a, b),
+      } as unknown as string;
+      return { out: () => trimBlanksEnd(line), reads: () => reads };
+    };
+    const inner = counted(`A${blanks}B`);
+    inner.out();
+    expect(inner.reads()).toBeLessThanOrEqual(1);
+    const tail = counted(`A${blanks}\t`);
+    expect(tail.out()).toBe("A");
+    expect(tail.reads()).toBeLessThanOrEqual(blanks.length + 2);
+  });
+  // The read count above pins the helper; this pins its caller. A `/[ \t]+$/` (or any anchored or
+  // quantified regex) run over the long line rescans the blank run once per blank. Only
+  // fixed-character escapes may read a string as long as the run.
+  it("format runs no quantified or anchored regex over a line holding a long blank run", () => {
+    const blanks = " ".repeat(10_000);
+    const src = `plan "P" {\n  units mm\n  notes "A${blanks}B"\n  room id=r at (0,0) size 3000x3000\n}\n`;
+    const proto = RegExp.prototype as unknown as Record<PropertyKey, unknown>;
+    const keys: PropertyKey[] = [
+      Symbol.replace,
+      Symbol.match,
+      Symbol.matchAll,
+      Symbol.split,
+      Symbol.search,
+      "exec",
+      "test",
+    ];
+    const saved = keys.map((k) => proto[k] as (this: RegExp, ...a: unknown[]) => unknown);
+    const scans: string[] = [];
+    keys.forEach((k, n) => {
+      proto[k] = function (this: RegExp, s: unknown, ...rest: unknown[]) {
+        if (typeof s === "string" && s.length >= blanks.length) scans.push(this.source);
+        return saved[n]!.call(this, s, ...rest);
+      };
+    });
+    let out = "";
+    try {
+      out = format(src);
+    } finally {
+      keys.forEach((k, n) => {
+        proto[k] = saved[n];
+      });
+    }
+    expect(out).toContain(`"A${blanks}B"`);
+    expect(scans.filter((re) => /[+*?$]/.test(re))).toEqual([]);
+  });
+  for (const tail of ["\r\r\n", "\r\r\r\n", "\r\r"]) {
+    it(`a comment ending ${JSON.stringify(tail)} is a fixed point`, () => {
+      const room = `  room id=r at (0,0) size 3000x3000\n`;
+      const src = tail.endsWith("\n")
+        ? `plan "P" {\n  units mm\n  # note${tail}${room}}\n`
+        : `plan "P" {\n  units mm\n${room}}\n# note${tail}`;
+      const once = format(src);
+      expect(once).toContain("# note\n");
+      expect(format(once)).toBe(once);
     });
   }
 });

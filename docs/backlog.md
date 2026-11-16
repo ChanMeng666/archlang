@@ -2081,7 +2081,7 @@ asserts that an ordinary `src/` change wakes none of the guards (mutants `starts
 the 20-file cap is AG.2 (1).) **Gate:** one `test/gate-select.test.ts` case per item, each failing
 on today's selection.
 
-### RR.17 · `fmt` follow-ups after M.21 — `todo`
+### RR.17 · `fmt` follow-ups after M.21: done by #884, waiting to be archived — `note`
 
 From #872's round-2 review. (1) Strings printed through `statementText` (room `label`, `text`, list
 strings) are not pinned for a blank before a line break. (2) `src/doc.ts` strips trailing blanks
@@ -2089,6 +2089,11 @@ with `/[ \t]+$/` per line, quadratic in a blank run that does not end the line (
 after #872, 8.5 s before), and the playground runs it on user text; scan from the right. (3) `fmt` is not a fixed
 point for a comment on a CR CR LF line: the lexer drops one trailing CR, so pass 1 prints `# note\r`
 and pass 2 `# note`. **Gate:** the corpus `format` output stays byte-identical.
+
+Closure note (#884). On CR CR LF input the lexer now drops every trailing CR from a comment, so the
+while-to-for fix's `newText` and `repair().source` carry such a comment without the extra CRs: benign,
+and the result is a `fmt` fixed point where main's was not. Residue, not fixed: a comment ending CR,
+blank, LF (`# note\r \n`) is still not a fixed point, since pass 1 keeps the `\r` and strips the blank.
 
 ### RR.18 · A per-upload owner instruction is not in the eval-dataset rule: decided by RM-D55, waiting to be archived — `note`
 
