@@ -54,7 +54,7 @@ import { fnv1a } from "./hash.js";
 import { idToken } from "./identity.js";
 import type { ElementDef, ParseCtx, Registry } from "./registry.js";
 import { BUILTIN_REGISTRY } from "./registry.js";
-import { floorClause, roomUsesExpected } from "./elements/room.js";
+import { floorClause, roomUsesExpected, roomUsesTrailingOutdoor } from "./elements/room.js";
 import { missingClause, readClauses, type TailClause } from "./clause-order.js";
 import { KEEP_GRADES, KEEP_WORDS, STATEMENT_STARTS, TITLE_FIELDS, type TitleField } from "./grammar/tokens.js";
 import type { KeepGrade, KeepNode, KeepRef } from "./ast.js";
@@ -2038,6 +2038,8 @@ class Parser {
             uses.push(this.next().value as UseKind);
           }
           if (uses.length === 0) this.fail(roomUsesExpected(this.peek().value || undefined));
+          const outdoor = roomUsesTrailingOutdoor(this.peek().type, this.peek().value);
+          if (outdoor !== undefined) this.fail(outdoor);
           if (keep) tail.uses = uses;
         },
       },

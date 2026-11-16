@@ -52,7 +52,9 @@ describe("room uses", () => {
   it.each([
     ["balcony", "outdoor balcony"],
     ["patio", "outdoor patio"],
-    ["terrace", "outdoor patio"],
+    // The language reference draws a terrace as `outdoor balcony … label "Terrace"` (RR.5).
+    ["terrace", "outdoor balcony"],
+    ["Balcony", "outdoor balcony"],
     ["garden", "outdoor lawn"],
   ])("points `uses %s` at `%s`", (word, hint) => {
     const { diagnostics } = compile(wrap(`room id=r at (0,0) size 4000x3000 uses ${word}`), { noCache: true });
@@ -70,5 +72,39 @@ describe("room uses", () => {
   it("adds no outdoor hint for a word that is not an outdoor surface", () => {
     const { errors } = compile(wrap(`room id=r at (0,0) size 4000x3000 uses lounge`), { noCache: true });
     expect(errors[0]!.message).not.toContain("outdoor");
+  });
+
+  // Backlog RR.5: the hint also fires on an outdoor word after a valid use.
+  it.each([
+    ["living balcony", "balcony", "outdoor balcony"],
+    ["living dining Terrace", "Terrace", "outdoor balcony"],
+    ["bedroom garden", "garden", "outdoor lawn"],
+  ])("points `uses %s` at the outdoor surface", (words, word, hint) => {
+    const { diagnostics } = compile(wrap(`room id=r at (0,0) size 4000x3000 uses ${words}`), { noCache: true });
+    expect(diagnostics[0]!.code).toBe("E_PARSE");
+    expect(diagnostics[0]!.message).toContain(`"${word}" after "uses" is not a room use`);
+    expect(diagnostics[0]!.message).toContain(`\`${hint}\``);
+  });
+
+  it("points a strip room's later `uses … balcony` at `outdoor balcony` too", () => {
+    const src = `plan "P" {
+  units mm
+  strip right at (0,0) gap 0 height 3000 { room id=s1 size 3000 uses living balcony }
+}`;
+    const { diagnostics } = compile(src, { noCache: true });
+    expect(diagnostics[0]!.code).toBe("E_PARSE");
+    expect(diagnostics[0]!.message).toContain("`outdoor balcony`");
+  });
+
+  it("names no outdoor kind for a word with no source in the language reference", () => {
+    const { errors } = compile(wrap(`room id=r at (0,0) size 4000x3000 uses yard`), { noCache: true });
+    expect(errors[0]!.message).not.toContain("outdoor");
+  });
+
+  it("a valid uses list followed by a clause still compiles", () => {
+    const { errors } = compile(wrap(`room id=r at (0,0) size 4000x3000 uses living dining label "L"`), {
+      noCache: true,
+    });
+    expect(errors).toEqual([]);
   });
 });
