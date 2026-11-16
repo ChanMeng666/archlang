@@ -90,7 +90,7 @@ failure), gaining 13 of their 39 brief-runs (as the July-passing briefs lost 26 
 `against-wall-bath`, `l-shaped-flat`, `accessible-flat` and `compact-studio` failed in all four
 runs.
 
-**These per-brief counts carry no per-brief signal.** July-passing and July-failing briefs each
+**These per-brief counts show no per-brief signal.** July-passing and July-failing briefs each
 met intent in exactly 13 of their 39 new brief-runs, so the new runs score both halves alike, at
 one in three. A flat one-in-three rate per brief-run, with July playing no part, predicts what is
 observed:
@@ -102,8 +102,9 @@ observed:
 | July-failing briefs meeting intent in at least one new run | 9.1 (13 x 19/27) | 9 |
 
 So "12 of 13 lost" and "9 of 13 recovered" are what regression to a common rate looks like, not
-evidence about any one brief. What does differ is the overall rate (13 of 26 in July, 26 of 78
-across the new runs) and the kind of the failing check, below.
+evidence about any one brief. The overall counts are 13 of 26 in July and 26 of 78 across the new
+runs; they straddle the prompt, lint-rule and compiler changes below, so no significance is claimed
+for the difference. The kind of the failing check is discussed below.
 
 ## Causes, as far as this data shows
 
@@ -121,14 +122,15 @@ data separates them only partly.
 - **Physical lint (19 lost brief-runs): lint rule, compiler geometry, prompt or model, not
   separable here.** `W_DOORWAY_BLOCKED` is in every one of them, and the check that scores these
   plans is not the July check. July's rule iterated doors only (`9da334d1`,
-  `src/lint/rules/doors.ts:55`, `for (const d of doors)`); `c2978a47` (2026-10-26 UTC) made it read
+  `src/lint/rules/doors.ts:56`, `for (const d of doors)`); `c2978a47` (2026-10-26 UTC) made it read
   leaf-less openings too and measure every approach from the wall's face. So `sized-office-mix`'s
   New 1 loss, whose only finding is "The opening between ... is blocked", could not have been
   raised in July. The compiler also produces different geometry from the same kind of source:
   walls derived from rooms (`760a6b84`, merged by #223 on 2026-10-21 UTC) did not exist in July,
   and CO-2 (#809, 2026-11-15 UTC) gives unsized furniture a catalogue footprint, after which
-  gpt-5.5's `needs a size` notes went from 111 to 0 (`2026-11-authorability-remeasure.md`), so
-  more furniture is now drawn and can stand in a doorway. Whether the model placed furniture
+  gpt-5.5's `needs a size` notes went from 111 to 0 (`2026-11-authorability-remeasure.md`): a plan
+  the pre-CO-2 compiler refused with that error now compiles, and its unsized furniture is drawn at a
+  catalogue footprint, where it can stand in a doorway (the note count says nothing about July). Whether the model placed furniture
   differently, the rule got stricter or the compiler drew more cannot be told from the notes:
   that needs the source of each plan scored under both versions, and no source is available for
   either side.
