@@ -1791,7 +1791,7 @@ measured. Either draw them (a drawing change on plans that write them only) or w
 `W_UNKNOWN_STYLE_KEY`. **Gate:** a test that each accepted `style` key moves its own kind's ink and
 nothing else; the reference's `style` section updated.
 
-### WS.6 · The reference's `style` section is a hand-written copy of `STYLE_KEYS` — `todo`
+### WS.6 · The reference's `style` section is a hand-written copy of `STYLE_KEYS`: done by #888, waiting to be archived — `note`
 
 #868 wrote "Per-element styles — `style`" in `docs/language-reference.md` by hand; its first draft
 already disagreed with `spec.llm.md` on the styleless kinds (`opening`, `walls`). **Gate:** a test that
