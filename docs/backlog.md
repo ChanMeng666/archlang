@@ -1894,6 +1894,75 @@ One option the owner may choose is the median of 3 runs; any new run is paid, ow
 judge, model drift), with no claim beyond the data and none about loop gain.
 Done by #837: the record is `eval/live-runs/2026-11-ev1-intent-gap.md`.
 
+## Review residue of the promo-credit backlog run (PRs #837–#850, 2026-11-16)
+
+Left by the reviews of those PRs (review-cost cap: two rounds, residue becomes cards).
+
+### RR.1 · A door fix re-prints its statement with no step charge — `todo`
+
+`emitOpening` (`src/fix-producers.ts`) deep-clones the door node and prints the whole statement for
+every diagnostic that offers a door fix, with no `chargeSteps`. A looped door whose statement holds
+a long dead expression branch took 59 s to compile on `main` (#848 review round 2), and no
+`E_STEP_LIMIT` fired. #848 closed the same hole for `W_UNKNOWN_FURNITURE` by building the fix once
+per parse node per `ResolveCtx` and charging its source length first (`categoryFix`,
+`src/elements/furniture.ts`). **Gate:** the door path does the same; a test that a looped door
+shares one fix object across its iterations.
+
+### RR.2 · A re-printing fix drops interior comments and rounds long decimals — `todo`
+
+The `W_UNKNOWN_FURNITURE` and door fixes replace the whole statement with `statementText()`, so a
+comment between the clauses of a multi-line statement is lost, and `1000.12345` comes back as
+`1000.123`. Both are in the `maybe-incorrect` tier and `docs/furniture.md` names the comment loss.
+One way: edit only the kind word's span, derived at resolve time from the node's span and the
+source tokens, without adding a parse-node field (that moved five parse digests in #848 round 1).
+**Gate:** a multi-line statement with comments keeps them after `archlang fix --unsafe`.
+
+### RR.3 · `E_LEVEL_MIX` lists the plan-level settings by hand — `todo`
+
+After N.2 (#839) the remedy names `notes`, but a plan also allows `style`, `keep` and the
+plan-level `section` mark beside a `level` (`src/parser.ts`, `src/ast.ts`), and it says "Only
+settings (…)". Comments in `src/ast.ts` (near the level kind list) and `src/import.ts` carry the
+same stale list. **Gate:** the remedy's list derives from the parser's allowed set, and a test fails
+when a new plan-level form is not named.
+
+### RR.4 · `E_DRAWING_LIMIT`'s remedy does not cover the notes cap — `todo`
+
+N.5 (#840) names the NOTES cap under Cause, but Fix still says only "Draw fewer or shorter runs,
+shrink the loop, or split the building". **Gate:** the remedy names shortening `notes`; the
+catalogue outputs regenerated.
+
+### RR.5 · The `uses` outdoor hint: `terrace` and a later word — `todo`
+
+U.6 (#850) maps `terrace` to `patio`, but the language reference draws a terrace as `outdoor
+balcony … label "Terrace"`; `yard → paving` has no source in the repo. The hint fires only when the
+first word after `uses` is unknown, so `uses living balcony` and `uses Balcony` get none.
+**Gate:** the mapping agrees with `docs/language-reference.md`, and a test covers a later word.
+
+### RR.6 · Site-only link guard gaps — `todo`
+
+After #838, `test/docs-site-links.test.ts` still skips same-page `#fragment` links on site-only
+pages, does not check a fragment on a route with no markdown source (`/adr#x`), and does not read
+raw `href=` or frontmatter links. Its header still describes only canonical copies, and a comment
+calls `levels-a-multi-storey-building-v1-21` GitHub's spelling. Absolute site URLs in READMEs are
+outside it: `packages/mcp/README.md` links
+`/reference#keyboard-and-screen-reader-operability-annotate--accessible`, which is dead on the site.
+**Gate:** that README link fixed, and a guard for absolute `archlang.uk` fragments in READMEs.
+
+### RR.7 · EV.1 record wording — `todo`
+
+In `eval/live-runs/2026-11-ev1-intent-gap.md`: "What does differ is the overall rate" compares 13/26
+with 26/78 across the prompt drift the record says it does not compare (state the counts, claim no
+significance); "so more furniture is now drawn" compares with the pre-CO-2 November runs, not July;
+"carry no per-brief signal" should read "show no per-brief signal"; the `doors.ts` citation is
+line 56, not 55. **Gate:** those four sentences corrected; no number changes.
+
+### RR.8 · Four small follow-ups — `todo`
+
+(1) An `/adr` smoke check on the deployed site (WS.5). (2) Whether `W_DOORWAY_BLOCKED` is too strict
+for furniture that only grazes a door's swing (EV.1: all 19 physical-lint intent losses).
+(3) The Rooms control overlaps the drawing at ≤ 900 px (PG.1 review). (4) An oracle for
+`docs-site/index.md` frontmatter links. Each becomes its own card once looked at.
+
 ## Site chrome (found while fixing the nav overflow, 2026-09-20)
 
 ### N.1 · The nav row needs 1152px, and the hamburger persists until then (a WANT, not a bug) — `todo`
