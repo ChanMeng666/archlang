@@ -1938,7 +1938,7 @@ balcony … label "Terrace"`; `yard → paving` has no source in the repo. The h
 first word after `uses` is unknown, so `uses living balcony` and `uses Balcony` get none.
 **Gate:** the mapping agrees with `docs/language-reference.md`, and a test covers a later word.
 
-### RR.6 · Site-only link guard gaps — `todo`
+### RR.6 · Site-only link guard gaps: done by #863, waiting to be archived — `note`
 
 After #838, `test/docs-site-links.test.ts` still skips same-page `#fragment` links on site-only
 pages, does not check a fragment on a route with no markdown source (`/adr#x`), and does not read
