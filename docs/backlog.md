@@ -1926,7 +1926,7 @@ Done by #837: the record is `eval/live-runs/2026-11-ev1-intent-gap.md`.
 
 Left by the reviews of those PRs (review-cost cap: two rounds, residue becomes cards).
 
-### RR.1 · A door fix re-prints its statement with no step charge — `todo`
+### RR.1 · A door fix re-prints its statement with no step charge: done by #855, waiting to be archived — `note`
 
 `emitOpening` (`src/fix-producers.ts`) deep-clones the door node and prints the whole statement for
 every diagnostic that offers a door fix, with no `chargeSteps`. A looped door whose statement holds
@@ -1997,6 +1997,19 @@ fragment-less dead routes are unchecked; a bare URL followed by punctuation, or 
 component the page does not name, is wrongly refused; a malformed `%` escape throws. Each becomes
 its own card once looked at.
 
+### RR.9 · A door's free first fix build recurs per storey — `todo`
+
+Left by RR.1 (#855 review round 2). `src/elements/door.ts` builds each fix (and the hinge-flipped
+text) once per door node and key, but the first build per `ResolveCtx` is uncharged, and there is
+one ctx per storey (two under `paper`). A component's door node is shared by every storey that
+places it, so a component holding one long door statement, placed by a few hundred one-line
+`level` statements, gets storeys × (4 fix kinds + flip) uncharged reprints of that statement:
+quadratic in source bytes (probe: 36 KB, 18 s, 3.9 % of the step budget, no `E_STEP_LIMIT`; 36 s
+with `paper`). Main does the same work uncharged, so #855 is not a regression. Suggested fix:
+a fixed byte allowance per build, `1 + span` charged past it, for fixes and flip text alike;
+corpus door statements are short, so no pinned payload should move. **Gate:** that input returns
+`E_STEP_LIMIT` or compiles within budget in linear time; a test pins the free/charged boundary
+(a component's second storey is charged); no pinned digest, work count or datum law moves.
 ## Test-programme findings (promo-credit programme, 2026-11-16)
 
 From `docs/plans/product-roadmap/2026-11-test-findings.md` (§ 3, § 4, § 5). RR.8 (2), the
