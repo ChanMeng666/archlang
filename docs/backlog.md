@@ -506,7 +506,7 @@ on a room name the label pass did not move. Each is pinned in `test/opening-tags
 (the list may only shrink). Better needs more candidate places or a leader line. Tags also
 number per storey (`W01` on each level); a set-unique numbering is an owner call.
 
-### N.4 · `fmt` round-trips `project`/`drawn_by`/`date` wrongly for a control character — `todo`
+### N.4 · `fmt` round-trips `project`/`drawn_by`/`date` wrongly for a control character: done by #872, waiting to be archived — `note`
 
 `src/format.ts` quotes those three title fields with `JSON.stringify`, which writes a tab as
 `\t`; the lexer reads back only `\"`, `\\` and `\n`, so `title { project "A<TAB>B" }` formats to
@@ -851,7 +851,7 @@ fix is a table change (a `dining-room` key or alias), which bumps `SYNONYMS_VERS
 version is pinned by a test and the eval scores through the same table, so the bump is the
 owner's call.
 
-### M.21 · `format()` writes the plan name with `JSON.stringify`, which the lexer cannot read back — `todo`
+### M.21 · `format()` writes the plan name with `JSON.stringify`, which the lexer cannot read back: done by #872, waiting to be archived — `note`
 
 The lexer knows only the escapes `\n`, `\"` and `\\` (`src/lexer.ts`, the string-literal
 branch), but `src/format.ts` prints the plan name, level names, zone labels, import specs and

@@ -23,6 +23,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- `arch fmt` (and `formatPlan`, which `repair` prints through) now quotes every string with the language's own escaper (backlog M.21, N.4): the plan name, level names, zone labels, import specs, every title field, `accTitle`/`accDescr`, `theme from` and theme and style values were written with `JSON.stringify`, whose `\t`, `\r` and `\uXXXX` the lexer reads back as other text. A tab, CR, control character or lone surrogate in one now reads back as itself, and a space or tab before a raw CR, U+2028 or U+2029 in a string or comment is no longer stripped as trailing whitespace. No file without such a string or comment moves: `fmt` output over every tracked `.arch` file is byte-identical to before.
 - The playground's room tooltip and facts card pick a room by its shape (`floor_polygon`, `floor_circle`), not its bounding box (backlog PG.2): on an L, a trapezoid or the rotunda, a point inside the box but outside the room no longer opens that room's card. The smallest containing room still wins, and equal rooms tie to the earlier one.
 
 ## [1.62.0] - 2026-11-15
