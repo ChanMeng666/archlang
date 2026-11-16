@@ -320,11 +320,13 @@ function lexImpl(src: string): LexResult {
       continue;
     }
 
-    // Comment to end of line — captured as trivia (not a token). Exclude a
-    // trailing CR so CRLF sources don't leave a stray `\r` in the comment text.
+    // Comment to end of line — captured as trivia (not a token). Exclude every
+    // trailing CR so CRLF (or CR CR LF) sources leave no stray `\r` in the
+    // comment text: `fmt` would print it, then drop it on the next pass.
     if (c === "#") {
       while (i < src.length && peek() !== "\n") advance();
-      const end = src[i - 1] === "\r" ? i - 1 : i;
+      let end = i;
+      while (src[end - 1] === "\r") end--;
       comments.push({ span: { start: startIdx, end }, text: src.slice(startIdx, end) });
       continue;
     }
