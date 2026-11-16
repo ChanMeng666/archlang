@@ -2021,7 +2021,7 @@ no pinned step payload, work count or datum law moves (see RR.9 for the per-stor
 Residue: windows and openings now share the door's first-build rule (`src/elements/reprint.ts`),
 so RR.9's per-storey free build covers all three; RR.9 should fix it there.
 
-### RR.11 · `E_LEVEL_MIX` follow-ups after RR.3 — `todo`
+### RR.11 · `E_LEVEL_MIX` follow-ups after RR.3: done by #890, waiting to be archived — `note`
 
 From #857's review. The parser's own `E_LEVEL_MIX` message (`src/parser.ts`, around the level-mix
 check) still omits `keep` and `section`; changing it moves `compile().diagnostics`, so it needs its
@@ -2029,6 +2029,9 @@ own byte-identity note. `docs/language-reference.md` (§ Levels) lists the plan-
 hand without `height`, `site`, `notes` or `sheet text`. **Gate:** both read from the same list RR.3
 derives, and a test fails when a plan-level form is added without them. #857's review also noted
 guard gaps it did not itemise; re-read that guard when this is taken.
+
+Residue: § import in `docs/language-reference.md` still lists a module's ignored settings by hand
+(no `height`, `site`, `notes`, `style`, `sheet text`), unguarded.
 
 ### RR.12 · `E_DRAWING_LIMIT`'s remedy retypes its message clause: done by #892, waiting to be archived — `note`
 

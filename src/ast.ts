@@ -1401,6 +1401,17 @@ export const PLAN_SETTING_KEYWORDS = [
   "sheet text",
 ] as const;
 
+/**
+ * What may stay beside the `level` blocks, as one phrase: the settings ({@link PLAN_SETTING_KEYWORDS}),
+ * the declarations, the plan-global scope ({@link LEVEL_SHARED_KINDS}), a `keep stacked` and the
+ * plan-level-only element (the `section` mark). `E_LEVEL_MIX`'s catalogue remedy reads it and the
+ * parser message quotes that remedy from the generated `CATALOG_FIXES` (the shipped chunk holds the
+ * phrase once), and `test/levels.test.ts` fails when a plan-level form is missing from it.
+ */
+export const LEVEL_MIX_STAYS_OUTSIDE =
+  `settings (${PLAN_SETTING_KEYWORDS.map((k) => `\`${k}\``).join("/")}), \`component\`/\`import\` declarations, ` +
+  "the plan-global `let`/`set`, a `keep stacked` and a plan-level `section` mark";
+
 /** `component NAME(params) { body }` — a reusable parameterised sub-plan. */
 export interface ComponentDef {
   name: string;
