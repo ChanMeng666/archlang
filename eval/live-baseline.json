@@ -3,6 +3,8 @@
   "model": "gpt-5.5-2026-04-23",
   "date": "2026-11-15",
   "judge": "2",
+  "promptSha256": "02c3fed83d214ab887594087c78df6cb14bdec1a46c6bd5a537489ed9967e8a5",
+  "corpusSha256": "0012b98245d8e3171177860e3aaa712ec763f14507f8c10549b9a28ae362b39a",
   "valid": 22,
   "semanticPass": 9,
   "sound": 1,
