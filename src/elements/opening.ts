@@ -9,6 +9,7 @@ import type { ROpening } from "../ir.js";
 import { add, mul, nearestWallNote, normal, segmentDirAt } from "../geometry.js";
 import { parseAttachTarget, resolveOpeningLead, wallClause } from "../attach.js";
 import { fixesFrom, offWallFix, openingWidthFix } from "../fix-producers.js";
+import { reprint } from "./reprint.js";
 import {
   heightsInOrder,
   hostWallHeight,
@@ -81,7 +82,7 @@ export const opening: ElementDef = {
         message: `Opening "${id}" must have a positive width`,
         code: "E_OPENING_WIDTH",
         span: n.span,
-        ...fixesFrom(openingWidthFix("opening", n)),
+        ...fixesFrom(reprint(ctx, n, "width", "width", () => openingWidthFix("opening", n))),
       });
     }
     // A cased opening is drawn FULL HEIGHT unless the author says otherwise, so its `head`
@@ -117,7 +118,9 @@ export const opening: ElementDef = {
         code: "W_OPENING_OFF_WALL",
         span: n.span,
         relatedSpans: note ? [note] : undefined,
-        ...fixesFrom(offWallFix("opening", n, at, ctx.walls)),
+        ...fixesFrom(
+          reprint(ctx, n, "off", `${at.x},${at.y}`, () => offWallFix("opening", n, at, ctx.walls), ctx.walls),
+        ),
       });
     }
     const host = ctx.hostSegment(at, n.wall);
