@@ -121,7 +121,13 @@ describe("a live-shaped run writes one file per scored brief", () => {
     );
     // The collector main() uses: makeAuthor's onReply keeps the raw reply in memory only.
     const collector = liveReplyCollector();
-    const author = makeAuthor("anthropic", "claude-sonnet-5-5", new LiveLedger("claude-sonnet-5-5"), undefined, collector.onReply);
+    const author = makeAuthor(
+      "anthropic",
+      "claude-sonnet-5-5",
+      new LiveLedger("claude-sonnet-5-5"),
+      undefined,
+      collector.onReply,
+    );
     const scored = new Map<string, string>();
     const { results } = await evaluate(
       entries,
