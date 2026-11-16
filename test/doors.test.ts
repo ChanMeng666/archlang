@@ -251,7 +251,7 @@ suite("doors — E_DOOR_KIND_CLAUSE refuses in both directions", () => {
   });
 
   // The fix re-prints the whole statement, so a looped door builds it once for its shared parse
-  // node (charged to the step meter), not once per iteration (RR.1, #848 review round 2).
+  // node, not once per iteration; builds after a node's first are charged (RR.1, #848 review round 2).
   it("a looped door shares one fix object across its iterations", () => {
     const loop = "  for i in 0..3 { door pocket on mid at (20 + i * 25)% width 900 hinge left }";
     const ds = compile(plan("door id=only on mid at 10% width 900", loop), { noCache: true }).diagnostics.filter(

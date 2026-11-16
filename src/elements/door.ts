@@ -293,9 +293,11 @@ const clamp01 = (v: number): number => Math.min(Math.max(v, 0), 1);
  * on an earlier compile; the key carries every other input the text varies by.
  *
  * The step charge is the statement's source length, taken only at the site where a fix's
- * diagnostic fires, before the build. A node's first build of each fix `kind` per ctx is free: it
- * is no longer than the source its parse already paid for, so a plan whose doors each print a
- * fix once costs exactly what it did. Every further build (a looped door, whose shared node yields
+ * diagnostic fires, before the build. A node's first build of each fix `kind` per ctx is free, so a
+ * plan whose doors each print a fix once costs exactly what it did and no pinned step payload
+ * moves. That allowance is NOT bounded by source size: a component's door node is shared by every
+ * storey that places it, and each storey (two under `paper`) is a new ctx, so free builds grow as
+ * storeys × statement length (backlog RR.9). Every further build (a looped door, whose shared node yields
  * a new key per iteration; a component's second place) is charged. The flip text is built for
  * every hinged door and is never charged (`kind` undefined).
  */
