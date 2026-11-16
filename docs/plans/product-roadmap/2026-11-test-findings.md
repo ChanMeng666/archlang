@@ -29,7 +29,7 @@
 
 ## 2. 测量结论
 
-### 2.1 可写性：CO-1、CO-2 前后，valid 上升的模型多，intent 只有 gpt-5.5 明显不同
+### 2.1 可写性：CO-1、CO-2 前后，valid 上升的模型多，intent 只有 gpt-5.5 与 Fable 有变化
 
 均为 3 次运行之和，n = 78；数据见 remeasure 记录。
 

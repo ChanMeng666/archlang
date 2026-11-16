@@ -263,7 +263,7 @@ Two standing rules for anything written in this directory or the card:
 - **Cite only judge-v2 baseline numbers**, from `eval/live-baseline.json` (since 2026-11-16, RM-D52:
   one-shot L0 valid 22/26 · intent 9/26 · sound 1/26; L1 overlay intent 16/26 · sound 1/26). The
   2026-07-12 baseline the published card quotes (L0 23/26 · 14/26 · 3/26; L1 18/26 · 7/26) is
-  history, measured under an older prompt, and is never compared with it (backlog EV.6). That L1
+  history, measured under an older prompt, and is never compared with it (backlog EV.6). The L1
   lift belongs to the tool tier's ledger, never a model loop. Never compare rates across judge
   versions, and never cite judge-v1 numbers.
 
