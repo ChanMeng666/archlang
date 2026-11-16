@@ -114,16 +114,13 @@ const USE_SET: ReadonlySet<string> = new Set<UseKind>(USE_KINDS);
  * {@link OUTDOOR_KINDS} word maps to itself (derived, so a new kind joins without an edit);
  * a synonym that is not a kind maps to the kind `docs/language-reference.md` draws it as
  * (its outdoor example: `outdoor lawn … label "Garden"`, `outdoor balcony … label "Terrace"`),
- * and a word with no such source gets no hint (backlog RR.5). Read case-blind. The synonyms are
- * exported so a test ties each one to that example.
+ * and a word with no such source gets no hint (backlog RR.5). Read case-blind. Exported so a
+ * test ties each synonym (an entry whose word is not its kind) to that example.
  */
-export const OUTDOOR_USE_SYNONYMS: readonly (readonly [word: string, kind: string])[] = [
+export const OUTDOOR_USE_NEAR_MISS: ReadonlyMap<string, string> = new Map<string, string>([
+  ...OUTDOOR_KINDS.map((k): [string, string] => [k, k]),
   ["terrace", "balcony"],
   ["garden", "lawn"],
-];
-const OUTDOOR_USE_NEAR_MISS: ReadonlyMap<string, string> = new Map<string, string>([
-  ...OUTDOOR_KINDS.map((k): [string, string] => [k, k]),
-  ...OUTDOOR_USE_SYNONYMS.map(([w, k]): [string, string] => [w, k]),
 ]);
 
 function outdoorKindFor(word: string | undefined): string | undefined {

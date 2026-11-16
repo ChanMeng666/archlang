@@ -5,11 +5,13 @@ import { describe as describePlan, lint, compile, registerElement } from "../src
 import type { ParseCtx, ResolveCtx } from "../src/index.js";
 import { format } from "../src/format.js";
 import { readFileSync } from "node:fs";
-import { join } from "node:path";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
 import { parseWithLexer } from "../src/parser.js";
 import { lexUnmemoised } from "../src/lexer.js";
-import { OUTDOOR_USE_SYNONYMS } from "../src/elements/room.js";
-import { ROOT } from "./helpers/rectilinear-rooms-law.js";
+import { OUTDOOR_USE_NEAR_MISS } from "../src/elements/room.js";
+
+const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
 
 /**
  * Room `uses` tags — the keystone that makes room classification *authored intent*
@@ -230,12 +232,30 @@ describe("uses hints (RR.13)", () => {
     ["an outdoor word after a uses list", "room at (0,0) size 1000x1000 uses living balcony"],
     ["an unknown statement after a uses list", "room at (0,0) size 1000x1000 uses living lounge"],
     ["a comma after a uses list", "room at (0,0) size 1000x1000 uses living, dining"],
+    // The comma's hint read off the cursor: the room element has consumed it (RR.13 review).
+    ["a consumed comma", "room ,id=r at (0,0) size 5000x5000"],
+    // The strip's expected `room` (eatKeyword) on an outdoor word after a uses list.
+    [
+      "an outdoor word in a strip",
+      "strip right at (0,0) gap 0 height 3000 { room id=s1 size 3000 uses living balcony }",
+    ],
   ])("formats the hints for many failures of %s in token reads linear in the tokens", (_what, line) => {
     const n = 400;
     const one = tokenReads(plan(line, n));
     const two = tokenReads(plan(line, 2 * n));
     // Linear doubles (plus a constant); a scan from the first token per failure quadruples.
     expect(two).toBeLessThanOrEqual(2 * one + 1000);
+  });
+
+  it("reads the comma hint for a comma the parser has already consumed", () => {
+    const src = wrap("room ,id=r at (0,0) size 5000x5000");
+    const off = compile(src, { noCache: true }).diagnostics[0]!;
+    expect(off.code).toBe("E_PARSE");
+    expect(off.hints ?? []).toEqual([]);
+    expect(src.slice(off.span!.start, off.span!.end)).toBe(",");
+    const hinted = compile(wrap("room id=r at (0,0) size 5000x5000 uses living, dining"), { noCache: true })
+      .diagnostics[0]!;
+    expect(hinted.hints).toEqual(["separate uses with spaces: `uses living dining`"]);
   });
 
   it("gives no outdoor hint to an outdoor word on its own line after a uses list", () => {
@@ -271,8 +291,9 @@ describe("uses hints (RR.13)", () => {
 
   it("maps each outdoor synonym to the kind the language reference's outdoor example draws it as", () => {
     const ref = readFileSync(join(ROOT, "docs", "language-reference.md"), "utf8");
-    expect(OUTDOOR_USE_SYNONYMS.length).toBeGreaterThan(0);
-    for (const [word, kind] of OUTDOOR_USE_SYNONYMS) {
+    const synonyms = [...OUTDOOR_USE_NEAR_MISS].filter(([word, kind]) => word !== kind);
+    expect(synonyms.length).toBeGreaterThan(0);
+    for (const [word, kind] of synonyms) {
       const label = word[0]!.toUpperCase() + word.slice(1);
       const drawn = [...ref.matchAll(new RegExp(`outdoor ([a-z]+) [^\\n]*label "${label}"`, "g"))].map((m) => m[1]);
       expect(drawn, `"${word}" in docs/language-reference.md`).toEqual([kind]);
