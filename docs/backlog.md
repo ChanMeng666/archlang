@@ -1976,8 +1976,12 @@ each brief. One way: `eval/run.ts` writes each brief's extracted source into the
 (the workflow's upload, never the repo). A workflow artifact on this public repo is downloadable, so
 whether plan sources may be published there was ruled by RM-D53 (2026-11-16, delegated): yes, the
 extracted `.arch` source only, in the existing `eval-results-live` artifact at GitHub's default
-retention; raw replies stay unpublished; a local run writes to a git-ignored directory. **Gate:** an offline test
-that a live-shaped run writes one source per scored brief, and `eval/README.md` names the file.
+retention, accepted as a limit; raw replies stay unpublished, so when `extractArch` finds no complete
+fence and would fall back to the whole reply, only a "not extracted" marker is stored; a local run
+writes to a git-ignored directory. **Gate:** an offline test
+that a live-shaped run writes one source per scored brief and only a marker for an unfenced or
+truncated reply, a check that the local directory is git-ignored, and `eval/README.md` names the
+file.
 
 ### EV.3 · The baseline does not record the prompt it was measured under — `todo`
 
@@ -2012,8 +2016,9 @@ which refusals have one nearest legal place, and whether a move may cross a room
 also on HF, so changing it means a card re-upload, which is owner-only (RM-D47). One way: date
 the July numbers as the baseline at generation time and name the current one beside it, with no
 comparison. RM-D54 (2026-11-16, delegated) ruled the change; the repo card was changed by
-#856. **Gate:** the owner's go for the card-only re-upload ("同意上传卡片"); card bytes on HF
-equal the repo's.
+#856. **Gate:** the card-only re-upload, by the owner or on the owner's explicit instruction for that
+upload; card bytes on HF equal the repo's; `dataset/README.md`'s "the HF card quoted it" line
+updated after.
 
 ### AG.1 · `check:quick` misses the text guards an executor most often trips — `todo`
 

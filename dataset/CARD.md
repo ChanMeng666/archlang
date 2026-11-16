@@ -313,16 +313,20 @@ For orientation only — these are numbers about a *model authoring plans*, not 
 Measured on the project's public 26-brief evaluation fixture with judge v2 (`gpt-5.5`, seed-pinned).
 
 **Current baseline** (set 2026-11-16 from three runs at commit `2a210589`, the commit this
-dataset's `model-authoring` config was generated at; the median run on valid and intent):
+dataset's `model-authoring` config was generated at; one gpt-5.5 run on 26 briefs, so not
+comparable with this dataset's Claude counts, see "The `model-authoring` config" above). It is the median run
+on valid and intent; the three runs scored valid 22/22/18, intent 10/9/7, sound 0/1/0, so this
+run's sound and its L1 numbers are each the highest of the three (L1 intent 15/16/12):
 
 - **One-shot (L0):** valid 22/26 (85%) · intent 9/26 (35%) · sound 1/26 (4%).
-- **Deterministic-tool overlay (L1)** — `fix` + `repair`, zero extra model calls: intent
-  16/26 · sound 1/26.
+- **Deterministic-tool overlay (L1)** — `fix` + `repair`, zero extra model calls, reference only:
+  intent 16/26 · sound 1/26. The overlay moved intent in all three runs (+5, +7, +5) and sound in
+  none.
 
-**Earlier baseline, 2026-07-12** (an older author prompt and older compile and lint checks):
-L0 valid 23/26 · intent 14/26 · sound 3/26; L1 intent 18/26 · sound 7/26. The two baselines were
-measured with different rulers and are not compared: the difference is neither a measured
-regression nor evidence against one (`eval/README.md` in the main repository).
+**Earlier baseline, 2026-07-12** (a different author prompt and different compile and lint checks;
+the same judge version): L0 valid 23/26 · intent 14/26 · sound 3/26; L1 intent 18/26 · sound 7/26.
+The two are not compared: the difference is neither a measured regression nor evidence against
+one (`eval/README.md` in the main repository).
 
 The L1 lift belongs to the deterministic tool tier's ledger, not to any model loop. All figures
 are judge-v2; the project never compares rates across judge versions, and neither should any use of
