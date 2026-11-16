@@ -6,6 +6,9 @@ run: the per-brief tables were read from the artifacts of three existing GitHub 
 
 **`eval/live-baseline.json` is NOT changed by this record.** Re-baselining needs an owner decision
 (RM-D51 keeps the July record).
+(2026-11-16, later: after this record, RM-D52 re-baselined `eval/live-baseline.json` to the median
+run of the after-CO-1 + CO-2 group, valid 22, intent 9, sound 1; the July record is kept as
+history and not compared with it; see `eval/README.md`. No number below changes.)
 
 ## Sources
 
