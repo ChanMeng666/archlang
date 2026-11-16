@@ -2,7 +2,8 @@
 
 import { lintCodes as codes } from "./helpers/diag.js";
 import { describe, expect, it } from "vitest";
-import { lint, compile, describe as describePlan } from "../src/index.js";
+import { lint, compile, describe as describePlan, applyFixes } from "../src/index.js";
+import { runArch } from "./helpers/cli.js";
 import { format } from "../src/format.js";
 import { arcBandIntrusion } from "../src/geometry/arc-band.js";
 import { arcFromChord } from "../src/geometry/arc.js";
@@ -445,4 +446,79 @@ describe("fixture front-clearance lint", () => {
     const c = lint(kitchen(`furniture counter at (200,800) size 600x600`)).map((d) => d.code ?? "");
     expect(c).not.toContain("W_FURN_CLEARANCE");
   });
+});
+
+describe("W_UNKNOWN_FURNITURE offers the nearest kind as a fix (U.3)", () => {
+  const FIXTURE = "test/silent-accepts/unknown-furniture.arch";
+  const unknown = (src: string) =>
+    compile(src, { noCache: true }).diagnostics.filter((d) => d.code === "W_UNKNOWN_FURNITURE");
+
+  // The fix re-prints the statement through the shared printer, so a canonically written one
+  // changes only in its kind word.
+  it("rewrites the statement with only the kind changed, and never auto-applies it", () => {
+    const src = room(`furniture grand_pianno at (500, 500) size 1500x1500
+    furniture WC at (3000, 500) size 400x700`);
+    const fixes = unknown(src).map((d) =>
+      d.fixes!.map((f) => ({
+        a: f.applicability,
+        edits: f.edits.map((e) => [src.slice(e.span.start, e.span.end), e.newText]),
+      })),
+    );
+    expect(fixes).toEqual([
+      [
+        {
+          a: "maybe-incorrect",
+          edits: [
+            [
+              "furniture grand_pianno at (500, 500) size 1500x1500",
+              "furniture grand_piano at (500, 500) size 1500x1500",
+            ],
+          ],
+        },
+      ],
+      [
+        {
+          a: "maybe-incorrect",
+          edits: [["furniture WC at (3000, 500) size 400x700", "furniture wc at (3000, 500) size 400x700"]],
+        },
+      ],
+    ]);
+  });
+
+  it("applied at the maybe-incorrect tier (the --unsafe path) it compiles clean of the warning", () => {
+    const src = room(`furniture grand_pianno at (500, 500) size 1500x1500
+    furniture WC at (3000, 3000) size 400x700`);
+    const suggestions = unknown(src).flatMap((d) => d.fixes ?? []);
+    expect(applyFixes(src, suggestions).applied).toEqual([]);
+    const out = applyFixes(src, suggestions, { maxApplicability: "maybe-incorrect" });
+    expect(out.applied).toHaveLength(2);
+    const after = compile(out.output, { noCache: true });
+    expect(after.diagnostics.filter((d) => d.severity === "error" || d.code === "W_UNKNOWN_FURNITURE")).toEqual([]);
+  });
+
+  it("plain `arch fix` leaves the piece alone; `--unsafe` writes the kind", async () => {
+    const plain = JSON.parse((await runArch(["fix", FIXTURE, "--dry-run", "--json"])).stdout) as {
+      applied: unknown[];
+      unresolved: string[];
+    };
+    expect(plain.applied).toEqual([]);
+    expect(plain.unresolved).toContain("W_UNKNOWN_FURNITURE");
+    const unsafe = JSON.parse((await runArch(["fix", FIXTURE, "--dry-run", "--unsafe", "--json"])).stdout) as {
+      diff: string;
+    };
+    expect(unsafe.diff).toContain("furniture grand_piano at (500, 500) size 1500x1500 in main");
+    expect(unsafe.diff).toContain("furniture wc at (3000, 500) size 400x700 in main");
+  }, 60000);
+
+  it("`arch validate --strict --json` carries the fix (U.3 gate)", async () => {
+    const r = await runArch(["validate", FIXTURE, "--strict", "--json"]);
+    const j = JSON.parse(r.stdout) as { diagnostics: { code: string; fixes?: { edits: { newText: string }[] }[] }[] };
+    const texts = j.diagnostics
+      .filter((d) => d.code === "W_UNKNOWN_FURNITURE")
+      .map((d) => d.fixes?.[0]?.edits[0]?.newText);
+    expect(texts).toEqual([
+      "furniture grand_piano at (500, 500) size 1500x1500 in main",
+      "furniture wc at (3000, 500) size 400x700 in main",
+    ]);
+  }, 60000);
 });
