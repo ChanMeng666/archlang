@@ -42,7 +42,8 @@ const PRINT_WIDTH = 80;
  * `s` as an ArchLang string literal, written by the language's own escaper (`escapeStr`, as
  * `finish` writes one). Never `JSON.stringify`: the lexer knows only the `\n`, `\"` and `\\`
  * escapes and reads any other escaped character literally, so JSON's `\t`, `\r` and `\uXXXX`
- * would read back as different text.
+ * would read back as different text. The printer (`src/doc.ts`) strips trailing blanks only
+ * before an LF, which a literal never holds raw, so the literal reads back as exactly `s`.
  */
 const quote = (s: string): string => `"${escapeStr(s)}"`;
 
@@ -162,7 +163,7 @@ function titleDoc(title: TitleNode): Doc {
 function sheetTextDoc(block: SheetTextNode, comments: readonly Comment[], source: string): Doc {
   const { start, end } = block.span;
   const slots = block.entries.map(
-    (e): Slot => ({ start: e.span.start, end: e.span.end, block: false, doc: `${e.key} "${escapeStr(e.value)}"` }),
+    (e): Slot => ({ start: e.span.start, end: e.span.end, block: false, doc: `${e.key} ${quote(e.value)}` }),
   );
   const inside = comments.filter((c) => c.span.start > start && c.span.start < end);
   const lines = weaveSlots(slots, inside, source);
@@ -321,7 +322,7 @@ export function formatPlan(plan: PlanNode, source: string): string {
   if (hide?.title) settings.push("title hidden");
   // One `notes` line per note, in source order — repeated statements append, so this is a
   // fixed point whether the author wrote one statement or several.
-  for (const n of plan.notes ?? []) settings.push(`notes "${escapeStr(n)}"`);
+  for (const n of plan.notes ?? []) settings.push(`notes ${quote(n)}`);
   if (plan.accTitle !== undefined) settings.push(`accTitle ${quote(plan.accTitle)}`);
   if (plan.accDescr !== undefined) settings.push(`accDescr ${quote(plan.accDescr)}`);
 

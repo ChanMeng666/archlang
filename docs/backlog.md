@@ -506,7 +506,7 @@ on a room name the label pass did not move. Each is pinned in `test/opening-tags
 (the list may only shrink). Better needs more candidate places or a leader line. Tags also
 number per storey (`W01` on each level); a set-unique numbering is an owner call.
 
-### N.4 · `fmt` round-trips `project`/`drawn_by`/`date` wrongly for a control character — `todo`
+### N.4 · `fmt` round-trips `project`/`drawn_by`/`date` wrongly for a control character: done by #872, waiting to be archived — `note`
 
 `src/format.ts` quotes those three title fields with `JSON.stringify`, which writes a tab as
 `\t`; the lexer reads back only `\"`, `\\` and `\n`, so `title { project "A<TAB>B" }` formats to
