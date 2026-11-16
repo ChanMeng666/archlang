@@ -1922,9 +1922,9 @@ One option the owner may choose is the median of 3 runs; any new run is paid, ow
 judge, model drift), with no claim beyond the data and none about loop gain.
 Done by #837: the record is `eval/live-runs/2026-11-ev1-intent-gap.md`.
 
-## Review residue of the promo-credit backlog run (PRs #837–#850, 2026-11-16)
+## Review residue of the promo-credit backlog run (PRs #837–#872, 2026-11-16)
 
-Left by the reviews of those PRs (review-cost cap: two rounds, residue becomes cards).
+Left by the reviews of those PRs (RR.1–RR.8 from #837–#850, RR.9–RR.18 from #855–#872) (review-cost cap: two rounds, residue becomes cards).
 
 ### RR.1 · A door fix re-prints its statement with no step charge: done by #855, waiting to be archived — `note`
 
@@ -2022,9 +2022,10 @@ no pinned step payload, work count or datum law moves (see RR.9 for the per-stor
 
 From #857's review. The parser's own `E_LEVEL_MIX` message (`src/parser.ts`, around the level-mix
 check) still omits `keep` and `section`; changing it moves `compile().diagnostics`, so it needs its
-own byte-identity note. `docs/language-reference.md` (Storeys) lists the plan-level settings by
+own byte-identity note. `docs/language-reference.md` (§ Levels) lists the plan-level settings by
 hand without `height`, `site`, `notes` or `sheet text`. **Gate:** both read from the same list RR.3
-derives, and a test fails when a plan-level form is added without them.
+derives, and a test fails when a plan-level form is added without them. #857's review also noted
+guard gaps it did not itemise; re-read that guard when this is taken.
 
 ### RR.12 · `E_DRAWING_LIMIT`'s remedy retypes its message clause — `todo`
 
@@ -2036,13 +2037,14 @@ builds it, or a test pins that they agree.
 
 From #861's reviews. (1) `usesOutdoorHint` (`src/parser.ts`) runs `this.toks.indexOf(t)` before it
 knows the word is an outdoor word, so a file of many unknown statements formats its errors in
-quadratic time (1.4 MB: 1.5 s on main, 10.4 s after #861); the comma hint (#850) already has the
-same shape on main. Start the walk at `this.pos - 1` and test the word first, for both.
+quadratic time (1.4 MB: 1.5 s before #861, 10.4 s after); the comma hint (#395) has the same
+shape. Start the walk at `this.pos - 1` and test the word first, for both.
 (2) The walk-back is token-adjacent, so an outdoor word on its own line after a room's `uses` list
 is hinted "after `uses`"; require the same line, or give a neutral hint. (3) The strip's
 `Expected "room"` text is retyped beside `eatKeyword`'s. (4) No test covers the identifier-type
 guard on the strip path (`uses living "balcony"` in a strip). (5) The `terrace → balcony`,
-`garden → lawn` mapping test is not tied to the language reference's outdoor examples.
+`garden → lawn` mapping test is not tied to the language reference's outdoor examples. **Gate:** for
+(1), both hints linear in tokens, pinned by a token-visit count, not time; a test per other item.
 
 ### RR.14 · Live-delta prompt-hash follow-ups after EV.3 — `todo`
 
@@ -2051,7 +2053,8 @@ From #865's round-2 review. (1) `renderDelta` without hashes gained a trailing b
 this run's prompt"; say "corpus change" when the prompt hash matched. (3) An unparsable
 `eval/live-baseline.json` is reported as missing. (4) `promptHashes()` re-reads the files after the
 paid calls; compute the hashes once, before the first call, from the strings actually sent (this
-also fixes the CRLF wording and a `null` hash that would throw after the spend). (5) Three places
+also fixes the CRLF wording); read and validate the baseline before the spend too, since a `null`
+hash in it throws in `renderDelta` after the paid calls. (5) Three places
 still say the delta section appears only with a baseline (`eval/README.md`, the `eval/run.ts`
 header, `LIVE_HEADER`). (6) A vacuous `not.toContain` in the prompt-mismatch test. **Gate:** offline
 tests only; no paid run.
@@ -2070,16 +2073,17 @@ branch of the derivation is unpinned (no set-equality test, no non-literal skill
 asserts that an ordinary `src/` change wakes none of the guards (mutants `startsWith("src/")` pass).
 (4) A lone change to `src/elements/*.ts`, `src/lint/element-phrases.ts`, `src/lint/ruleset.ts` or
 `src/diagnostics.ts` does not wake `lint-fix-texts`, though they compose fix text. (5)
-`opaque-literal-guard` no longer wakes on `docs-site/public/<key>.txt` or on the error catalogue.
-(6) A deleted or renamed page wakes nothing. (7) An `examples/` change fills the 20-file cap with
-scanning guards and cuts by-name guards.
+`opaque-literal-guard` does not wake on `docs-site/public/<key>.txt` or on the error catalogue.
+(6) A deleted or renamed page wakes nothing. (An `examples/` change crowding by-name guards out of
+the 20-file cap is AG.2 (1).) **Gate:** one `test/gate-select.test.ts` case per item, each failing
+on today's selection.
 
 ### RR.17 · `fmt` follow-ups after M.21 — `todo`
 
 From #872's round-2 review. (1) Strings printed through `statementText` (room `label`, `text`, list
 strings) are not pinned for a blank before a line break. (2) `src/doc.ts` strips trailing blanks
-with `/[ \t]+$/` per line, quadratic in a blank run that does not end the line (60k spaces: 3.3 s;
-main 8.5 s), and the playground runs it on user text; scan from the right. (3) `fmt` is not a fixed
+with `/[ \t]+$/` per line, quadratic in a blank run that does not end the line (60k spaces: about 3 s
+after #872, 8.5 s before), and the playground runs it on user text; scan from the right. (3) `fmt` is not a fixed
 point for a comment on a CR CR LF line: the lexer drops one trailing CR, so pass 1 prints `# note\r`
 and pass 2 `# note`. **Gate:** the corpus `format` output stays byte-identical.
 
