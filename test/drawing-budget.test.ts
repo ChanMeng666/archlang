@@ -280,4 +280,14 @@ suite("the prose quotes the budget it describes", () => {
     expect(ERROR_CATALOG.E_DRAWING_LIMIT!.fix).toMatch(/shorten (?:the `notes`|them)/);
     expect(ERROR_CATALOG.E_DRAWING_LIMIT!.fix).toContain("`notes`");
   });
+  it("the remedy's NOTES clause is the one the message builds, word for word (RR.12)", () => {
+    // The message and the catalogue remedy each say what to do about over-long `notes`; this pins
+    // that they agree, so a rewording of one cannot leave the other stale.
+    const src = `plan "N" {\n  units mm\n  paper A3 landscape\n  room id=r at (0,0) size 3000x3000\n  notes "${"y".repeat(20_000)}"\n}\n`;
+    const d = compile(src, { noCache: true }).diagnostics.find((x) => x.code === "E_DRAWING_LIMIT");
+    expect(d?.message).toContain(`${MAX_NOTE_LINES} lines of ${NOTE_LINE_CHARS} characters`);
+    const clause = d!.message.slice(d!.message.lastIndexOf("; ") + 2);
+    expect(clause).toMatch(/^shorten them, /);
+    expect(ERROR_CATALOG.E_DRAWING_LIMIT!.fix).toContain(`the \`notes\`, ${clause}.`);
+  });
 });
