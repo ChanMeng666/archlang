@@ -2116,7 +2116,7 @@ are the agent's, standing; replacing a published data file still needs an owner 
 From `docs/plans/product-roadmap/2026-11-test-findings.md` (§ 3, § 4, § 5). RR.8 (2), the
 `W_DOORWAY_BLOCKED` strictness, is that plan's first direction and is not repeated here.
 
-### EV.2 · A live run keeps no plan source per brief — `todo`
+### EV.2 · A live run keeps no plan source per brief: done by #897, waiting to be archived — `note`
 
 EV.1 could not tell whether a lost brief-run came from the model, a stricter rule or new compiler
 geometry, because neither the July nor the November artifacts hold the authored `.arch` source of
@@ -2134,6 +2134,11 @@ review). The property to hold, as a hypothesis to check: the stored text is the 
 whose opening fence is the reply's first line-start fence with an empty or `arch` info string,
 else a marker; and
 `eval/README.md` names the file.
+
+Residue (2026-11-17): the hypothesis held with one tightening, a marker also when that block is not
+the text `extractArch` scored; `extractArch` itself still mishandles a typed first block and a
+four-backtick fence, left alone because `dataset/model-authoring/rows.ts` pins parity with it and a
+fix would move live scoring, so it needs its own card.
 
 ### EV.3 · The baseline does not record the prompt it was measured under: done by #865, waiting to be archived — `note`
 
