@@ -20,7 +20,7 @@ Every module, not only the entry, is in the sibling [`module-map.md`](module-map
 The total counts every name the checker sees as exported, including those pulled in by
 `export type * from "./ast.js"`; a count of the names written in `index.ts`' export statements is lower.
 
-Totals: 648 exports (226 values, 422 types), 410 flagged (73 values).
+Totals: 649 exports (227 values, 422 types), 411 flagged (74 values).
 
 ## `src/algebra/d4.ts`
 
@@ -169,6 +169,7 @@ Totals: 648 exports (226 values, 422 types), 410 flagged (73 values).
 | `KeepGrade` | type | none |
 | `KeepNode` | type | none |
 | `KeepRef` | type | none |
+| `LEVEL_MIX_STAYS_OUTSIDE` | value | none |
 | `LEVEL_SHARED_KINDS` | value | none |
 | `LetNode` | type | `playground` |
 | `LevelNode` | type | none |

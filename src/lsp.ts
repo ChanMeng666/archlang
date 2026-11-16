@@ -224,6 +224,10 @@ function collectRefs(plan: PlanNode, tokens: Token[]): Ref[] {
     if (s.kind === "instance") {
       const sp = findNameSpan(tokens, s.span!.start, s.name);
       if (sp) refs.push({ name: s.name, span: sp });
+    } else if (s.kind === "assign" && s.span) {
+      // `NAME = expr` writes the binding it names, so the target is a use for rename.
+      const sp = findNameSpan(tokens, s.span.start, s.name);
+      if (sp) refs.push({ name: s.name, span: sp });
     }
   });
   return refs;

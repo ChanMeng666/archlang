@@ -6,7 +6,16 @@ import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { JUDGE_VERSION } from "../eval/assertions.js";
-import { liveDeltaSection, promptHashes, renderDelta, renderResults, sha256Text, systemPrompt } from "../eval/run.js";
+import {
+  liveDeltaSection,
+  parseBaseline,
+  promptHashes,
+  readBaseline,
+  renderDelta,
+  renderResults,
+  sha256Text,
+  systemPrompt,
+} from "../eval/run.js";
 import type { Score } from "../eval/run.js";
 import { sha256 } from "./helpers/digest.js";
 
@@ -115,14 +124,25 @@ describe("renderDelta prompt hashes (EV.3)", () => {
     const md = renderDelta({ ...hashed, promptSha256: "c".repeat(64) }, summary, { prompt: { prompt, corpus } });
     expect(md).toContain(`(SHA-256: \`promptSha256\` ${"c".repeat(12)} → ${"a".repeat(12)})`);
     expect(md).toContain("span a prompt change and are NOT comparable");
-    expect(md).not.toContain("`corpusSha256` d");
+    expect(md).not.toMatch(/`corpusSha256` [0-9a-f]{12} →/);
     expect(md).not.toContain(UNVERIFIED);
   });
 
-  it("a differing corpus hash is NOT comparable as a prompt or corpus change", () => {
+  it("a differing corpus hash alone is NOT comparable as a corpus change, never a prompt one", () => {
     const md = renderDelta({ ...hashed, corpusSha256: "d".repeat(64) }, summary, { prompt: { prompt, corpus } });
-    expect(md).toContain(`(SHA-256: \`corpusSha256\` ${"d".repeat(12)} → ${"b".repeat(12)})`);
-    expect(md).toContain("span a prompt or corpus change and are NOT comparable");
+    expect(md).toContain(
+      `> ⚠ Baseline corpus ≠ this run's corpus (SHA-256: \`corpusSha256\` ${"d".repeat(12)} → ${"b".repeat(12)}) — these deltas span a corpus change and are NOT comparable.`,
+    );
+    expect(md).not.toContain("Baseline prompt");
+    expect(md).not.toContain("prompt change");
+  });
+
+  it("both hashes differing names the prompt and the corpus", () => {
+    const md = renderDelta({ ...hashed, promptSha256: "c".repeat(64), corpusSha256: "d".repeat(64) }, summary, {
+      prompt: { prompt, corpus },
+    });
+    expect(md).toContain("> ⚠ Baseline prompt and corpus ≠ this run's prompt and corpus (SHA-256: `promptSha256`");
+    expect(md).toContain("span a prompt and corpus change and are NOT comparable");
   });
 
   it("a baseline without hashes is unverified, never called not comparable", () => {
@@ -132,8 +152,22 @@ describe("renderDelta prompt hashes (EV.3)", () => {
     expect(md).toContain(HASH_LINE);
   });
 
-  it("without the run's hashes the delta is unchanged", () => {
-    expect(renderDelta(base, summary)).not.toContain("prompt");
+  it("without the run's hashes the delta is byte-identical to the pre-EV.3 one", () => {
+    expect(renderDelta(base, summary)).toBe(
+      [
+        "",
+        "## Delta vs baseline",
+        "",
+        "Against `eval/live-baseline.json` (recorded run).",
+        "",
+        "- **Valid (compiles):** 3 → 3 (0)",
+        "- **Intent match (semantic):** 1 → 2 (+1)",
+        "- **Sound (lint-clean):** 3 → 3 (0)",
+        "",
+        "",
+        "",
+      ].join("\n"),
+    );
   });
 
   it("with no baseline the live section still prints this run's hashes", () => {
@@ -148,10 +182,52 @@ describe("renderDelta prompt hashes (EV.3)", () => {
     );
   });
 
-  it("the live run passes its prompt hashes into the delta section", () => {
+  it("the live run hashes what it sends and reads the baseline before the first call", () => {
     const src = readFileSync(resolve(fileURLToPath(new URL("..", import.meta.url)), "eval/run.ts"), "utf8");
-    const main = src.slice(src.indexOf("async function main("));
-    expect(main).toContain("md += liveDeltaSection(baseline, summary, promptHashes());");
+    const main = src.slice(src.indexOf("// LIVE — networked and paid."));
+    const at = (needle: string): number => {
+      const i = main.indexOf(needle);
+      expect(i, needle).toBeGreaterThan(-1);
+      expect(main.indexOf(needle, i + 1), `${needle} appears once`).toBe(-1);
+      return i;
+    };
+    const hashed = at("const hashes = promptHashes(system, corpusText);");
+    const read = at("baseline = readBaseline();");
+    const parsed = at("loadCorpus(corpusText)");
+    const sent = at("makeAuthor(provider, model, ledger, system, replies.onReply)");
+    const confirm = at("if (!confirmed)");
+    const firstCall = at("await evaluate(");
+    for (const before of [hashed, read, parsed]) expect(before).toBeLessThan(Math.min(confirm, sent, firstCall));
+    expect(at("md += liveDeltaSection(baseline, summary, hashes);")).toBeGreaterThan(firstCall);
+    expect(main).not.toContain("promptHashes()");
+  });
+
+  it("a baseline is null only when missing; unparsable or malformed throws, naming the problem", () => {
+    const root = fileURLToPath(new URL("..", import.meta.url));
+    expect(readBaseline(resolve(root, "eval/no-such-baseline.json"))).toBeNull();
+    expect(() => readBaseline(resolve(root, "eval"))).toThrow("could not be read");
+    expect(() => parseBaseline("{ not json")).toThrow("is not valid JSON");
+    expect(() => parseBaseline("[]")).toThrow("is not a JSON object");
+    const ok = { ...hashed };
+    expect(parseBaseline(JSON.stringify(ok))).toEqual(ok);
+    expect(parseBaseline(JSON.stringify(base))).toEqual(base);
+    expect(() => parseBaseline(JSON.stringify({ ...ok, promptSha256: null }))).toThrow("`promptSha256` must be 64");
+    expect(() => parseBaseline(JSON.stringify({ ...ok, corpusSha256: "abc" }))).toThrow("`corpusSha256` must be 64");
+    expect(() => parseBaseline(JSON.stringify({ ...ok, sound: "3" }))).toThrow(
+      "`sound` must be a non-negative integer",
+    );
+    expect(() => parseBaseline(JSON.stringify({ ...ok, valid: 4 }))).toThrow("`valid` exceeds `total`");
+    expect(() => parseBaseline(JSON.stringify({ ...ok, total: 0, valid: 0, semanticPass: 0, sound: 0 }))).toThrow(
+      "`total` must be at least 1",
+    );
+    expect(() => parseBaseline(JSON.stringify({ ...ok, judge: 2 }))).toThrow("`judge` must be a string");
+    // The committed baseline is valid as recorded.
+    expect(readBaseline()).not.toBeNull();
+  });
+
+  it("a null hash in an unvalidated baseline would throw in renderDelta (why the run validates first)", () => {
+    const bad = { ...hashed, promptSha256: null as unknown as string };
+    expect(() => renderDelta(bad, summary, { prompt: { prompt, corpus } })).toThrow();
   });
 
   it("sha256Text normalises CRLF to LF", () => {

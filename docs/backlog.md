@@ -758,7 +758,7 @@ therefore snaps to a different shape. The same rule makes `fmt2(−x) ≠ −fmt
 `0.13`, `fmt2(−0.125)` is `−0.12` (re-run through `src/num-format.ts`). Changing either moves
 output; it needs a decision and a sweep.
 
-### M.11 · LSP rename misses an assignment target — `todo`
+### M.11 · LSP rename misses an assignment target: done by #887, waiting to be archived — `note`
 
 `rename` (`src/lsp.ts`) collects references from expressions and instance names, not the name
 on the left of `NAME = expr`. Re-run: renaming `x` to `y` in `let x = 1`, `x = x + 1`,
@@ -1436,7 +1436,7 @@ written by hand. The corpus holds mostly dwellings and museums; card D6 adds non
 **Gate:** `arch new --list --json` lists names; `arch new --from <example>` writes a file that
 compiles clean. **Size:** S.
 
-### U.17 · No report says how many diagnostics carry a machine fix — `todo`
+### U.17 · No report says how many diagnostics carry a machine fix: done by #898, waiting to be archived — `note`
 
 **Observed (engineering gap audit, row 24).** Every code in `ERROR_CATALOG` (`src/error-catalog.ts`) carries a
 catalogue `fix` text; only a minority produce a span edit (a grep estimate, not a measurement). The catalogue
@@ -1448,6 +1448,9 @@ count. The estimate is the first thing to replace.
 
 **Gate:** the script prints "N of M codes have a span edit" and a test fails if the count
 drops. **Size:** S.
+
+Residue: `scripts/fix-coverage.ts` counts raise sites that can attach a span edit; it does not
+prove each fix is reachable on some input.
 
 ### U.18 · The playground PDF is raster — `todo`
 
@@ -1780,7 +1783,7 @@ fires on `materials`. `keep` and `import` still have no row because no `EXAMPLE_
 them, and the test's every-row-fires guard rejects a detector no page checks; add each with the
 first example page that uses it.
 
-### WS.5 · `style wall { fill }` and `{ hatch }` are accepted and draw nothing — `todo`
+### WS.5 · `style wall { fill }` and `{ hatch }` are accepted and draw nothing: done by #896, waiting to be archived — `note`
 
 The parser takes both keys with no diagnostic and stores `pocheBase` / `pocheHatch` in
 `plan.styles.wall`, but `src/backends/svg.ts` builds every hatch pattern from the scene theme
@@ -1791,7 +1794,7 @@ measured. Either draw them (a drawing change on plans that write them only) or w
 `W_UNKNOWN_STYLE_KEY`. **Gate:** a test that each accepted `style` key moves its own kind's ink and
 nothing else; the reference's `style` section updated.
 
-### WS.6 · The reference's `style` section is a hand-written copy of `STYLE_KEYS` — `todo`
+### WS.6 · The reference's `style` section is a hand-written copy of `STYLE_KEYS`: done by #888, waiting to be archived — `note`
 
 #868 wrote "Per-element styles — `style`" in `docs/language-reference.md` by hand; its first draft
 already disagreed with `spec.llm.md` on the styleless kinds (`opening`, `walls`). **Gate:** a test that
@@ -2021,7 +2024,7 @@ no pinned step payload, work count or datum law moves (see RR.9 for the per-stor
 Residue: windows and openings now share the door's first-build rule (`src/elements/reprint.ts`),
 so RR.9's per-storey free build covers all three; RR.9 should fix it there.
 
-### RR.11 · `E_LEVEL_MIX` follow-ups after RR.3 — `todo`
+### RR.11 · `E_LEVEL_MIX` follow-ups after RR.3: done by #890, waiting to be archived — `note`
 
 From #857's review. The parser's own `E_LEVEL_MIX` message (`src/parser.ts`, around the level-mix
 check) still omits `keep` and `section`; changing it moves `compile().diagnostics`, so it needs its
@@ -2030,13 +2033,19 @@ hand without `height`, `site`, `notes` or `sheet text`. **Gate:** both read from
 derives, and a test fails when a plan-level form is added without them. #857's review also noted
 guard gaps it did not itemise; re-read that guard when this is taken.
 
-### RR.12 · `E_DRAWING_LIMIT`'s remedy retypes its message clause — `todo`
+Residue: § import in `docs/language-reference.md` still lists a module's ignored settings by hand
+(no `height`, `site`, `notes`, `style`, `sheet text`), unguarded.
+
+### RR.12 · `E_DRAWING_LIMIT`'s remedy retypes its message clause: done by #892, waiting to be archived — `note`
 
 From #859's review (RR.4): the remedy repeats a clause of the message by hand, so a later wording
 change to one leaves the other stale. **Gate:** the remedy reads the clause from where the message
 builds it, or a test pins that they agree.
 
-### RR.13 · `uses` outdoor-hint follow-ups after RR.5 — `todo`
+Residue: only the NOTES clause is pinned, by a test (a dependency-free leaf constant imported by both
+sides was not tried); the primitive-budget message paraphrases the remedy and stays unpinned.
+
+### RR.13 · `uses` outdoor-hint follow-ups after RR.5: done by #881, waiting to be archived — `note`
 
 From #861's reviews. (1) `usesOutdoorHint` (`src/parser.ts`) runs `this.toks.indexOf(t)` before it
 knows the word is an outdoor word, so a file of many unknown statements formats its errors in
@@ -2049,7 +2058,7 @@ guard on the strip path (`uses living "balcony"` in a strip). (5) The `terrace �
 `garden → lawn` mapping test is not tied to the language reference's outdoor examples. **Gate:** for
 (1), both hints linear in tokens, pinned by a token-visit count, not time; a test per other item.
 
-### RR.14 · Live-delta prompt-hash follow-ups after EV.3 — `todo`
+### RR.14 · Live-delta prompt-hash follow-ups after EV.3: done by #885, waiting to be archived — `note`
 
 From #865's round-2 review. (1) `renderDelta` without hashes gained a trailing blank line, and the
 "unchanged" test only checks a substring. (2) A corpus-only mismatch still says "Baseline prompt ≠
@@ -2062,13 +2071,15 @@ still say the delta section appears only with a baseline (`eval/README.md`, the 
 header, `LIVE_HEADER`). (6) A vacuous `not.toContain` in the prompt-mismatch test. **Gate:** offline
 tests only; no paid run.
 
+Residue: none. The item (6) assertion tightens an existing check, so it passes before and after the fix.
+
 ### RR.15 · The EV.1 record predates RM-D52: done by #879, waiting to be archived — `note`
 
 From #864's review: `eval/live-runs/2026-11-ev1-intent-gap.md` still says re-baselining needs an owner
 decision and that RM-D51 keeps the July record; RM-D52 (#854) re-baselined. Add a dated pointer line,
 as `2026-11-authorability-remeasure.md` has; change no number.
 
-### RR.16 · Text-guard selection follow-ups after AG.1 — `todo`
+### RR.16 · Text-guard selection follow-ups after AG.1: done by #895, waiting to be archived — `note`
 
 From #867's reviews. (1) `docs-flags` imports `src/manifest.ts`, which wakes it only through the
 capped import list, so a flag rename with its regenerated docs can cut it. (2) The `skills/*/SKILL.md`
@@ -2081,7 +2092,15 @@ asserts that an ordinary `src/` change wakes none of the guards (mutants `starts
 the 20-file cap is AG.2 (1).) **Gate:** one `test/gate-select.test.ts` case per item, each failing
 on today's selection.
 
-### RR.17 · `fmt` follow-ups after M.21 — `todo`
+Closure note (#895). Items (2) and (3) were missing pins, not wrong selection, so their cases pass on
+main's selection and fail on the mutants named above. Item (4) is read from the changed module's own
+source (`composesFixText`: a `message:`/`fix:`/`hint:`/`hints:` property outside a comment line, or a first doc
+comment mentioning "message" or "hint", in a module inside that test's transitive import closure), not a
+list of paths.
+
+Residue moved to AG.2.
+
+### RR.17 · `fmt` follow-ups after M.21: done by #884, waiting to be archived — `note`
 
 From #872's round-2 review. (1) Strings printed through `statementText` (room `label`, `text`, list
 strings) are not pinned for a blank before a line break. (2) `src/doc.ts` strips trailing blanks
@@ -2089,6 +2108,11 @@ with `/[ \t]+$/` per line, quadratic in a blank run that does not end the line (
 after #872, 8.5 s before), and the playground runs it on user text; scan from the right. (3) `fmt` is not a fixed
 point for a comment on a CR CR LF line: the lexer drops one trailing CR, so pass 1 prints `# note\r`
 and pass 2 `# note`. **Gate:** the corpus `format` output stays byte-identical.
+
+Closure note (#884). On CR CR LF input the lexer now drops every trailing CR from a comment, so the
+while-to-for fix's `newText` and `repair().source` carry such a comment without the extra CRs: benign,
+and the result is a `fmt` fixed point where main's was not. Residue, not fixed: a comment ending CR,
+blank, LF (`# note\r \n`) is still not a fixed point, since pass 1 keeps the `\r` and strips the blank.
 
 ### RR.18 · A per-upload owner instruction is not in the eval-dataset rule: decided by RM-D55, waiting to be archived — `note`
 
@@ -2105,7 +2129,7 @@ are the agent's, standing; replacing a published data file still needs an owner 
 From `docs/plans/product-roadmap/2026-11-test-findings.md` (§ 3, § 4, § 5). RR.8 (2), the
 `W_DOORWAY_BLOCKED` strictness, is that plan's first direction and is not repeated here.
 
-### EV.2 · A live run keeps no plan source per brief — `todo`
+### EV.2 · A live run keeps no plan source per brief: done by #897, waiting to be archived — `note`
 
 EV.1 could not tell whether a lost brief-run came from the model, a stricter rule or new compiler
 geometry, because neither the July nor the November artifacts hold the authored `.arch` source of
@@ -2123,6 +2147,22 @@ review). The property to hold, as a hypothesis to check: the stored text is the 
 whose opening fence is the reply's first line-start fence with an empty or `arch` info string,
 else a marker; and
 `eval/README.md` names the file.
+
+Residue (2026-11-17): the hypothesis held with one tightening, a marker also when that block is not
+the text `extractArch` scored; `extractArch` itself still mishandles a typed first block and a
+four-backtick fence, left alone because `dataset/model-authoring/rows.ts` pins parity with it and a
+fix would move live scoring, so it needs its own card (EV.7).
+
+### EV.7 · `extractArch` scores the wrong text for a typed first block or a four-backtick fence — `todo`
+
+`extractArch` (`eval/run.ts`) skips a typed first block (` ```json `) and opens at its closing fence,
+so for a typed block, prose, then an `arch` block it scores the text between the blocks (possibly
+empty); for a four-backtick fence holding a ` ``` ` line it stops at that line. EV.2 stores only a
+marker for both, so no source is lost, but the scored text is wrong. One way: score the body of the
+reply's first line-start fence with an empty or `arch` info string (`firstArchFence`). A fix moves
+live scoring against `eval/live-baseline.json`, and `dataset/model-authoring/rows.ts` pins parity
+with `extractArch`. **Gate:** both shapes scored as that block, with tests; the `rows.ts` parity
+test kept green; the change to live scoring named against the baseline before it lands.
 
 ### EV.3 · The baseline does not record the prompt it was measured under: done by #865, waiting to be archived — `note`
 
@@ -2180,8 +2220,16 @@ Two things AG.1 left. (1) A by-name guard (a test the import graph reaches only 
 changed file) still competes for the 20 `--max` slots, so a change set with many `examples/` files
 fills the cap with directory-scanning guards and the by-name guard is cut (review m1 of #867).
 (2) `test/lint-fix-texts.test.ts` records about 61 s and runs uncapped on any error-catalogue or
-`src/fix-producers.ts` change, which is most of a `check:quick` minute. One way: give by-name
-guards their own extras slot, and cap `textGuards` by recorded seconds with the cut printed.
+`src/fix-producers.ts` change, which is most of a `check:quick` minute, and since #895 it also wakes
+for about 40 % of `src/` (120 of 286 `src/**/*.ts`, by `composesFixText`). Cap `textGuards` by recorded
+seconds with the cut printed, or split the `arch <cmd>` block of `test/lint-fix-texts.test.ts` into its
+own cheap test. The header rule (first doc comment mentions "message" or "hint") misfires both ways:
+`src/finish.ts`, `src/sheet-text.ts`, `src/text-safe.ts` and `src/taste/advice.ts` wake it, while
+`src/statement-print.ts`, `src/fixtures-catalog.ts` and `src/furnish-table.ts` do not. Deletion wiring
+(from RR.16's review round 1): `scripts/check-quick.mjs`'s deletion wiring is pinned by no test (a
+temp-repo `--list` case would pin it); a delete-only branch that deletes a test file runs no step, so a
+stale `test/INDEX.md` shows only in CI; deleting a `src/` module runs drift only; a case-only rename on
+Windows is not seen as a deletion. One way for (1): give by-name guards their own extras slot.
 **Gate:** `gate-select` tests for both; `scripts/check-quick.mjs` is high tier.
 
 ## Site chrome (found while fixing the nav overflow, 2026-09-20)

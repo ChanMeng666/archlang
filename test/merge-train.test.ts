@@ -901,6 +901,39 @@ describe("the train on a throwaway repository", { timeout: 90_000 }, () => {
       j.head,
     ]);
 
+    // A BLOCKED merge state with CI green: `--wait` re-reads it (bounded, BLOCKED_POLL) before refusing;
+    // without `--wait` it refuses at once. The merge itself still fails here, so nothing lands for real.
+    const blockedThen = (states: string[]) => {
+      const inner = fakeGh(r, { merge: () => ({ status: 1, stderr: "Head branch was modified" }) });
+      let views = 0;
+      const gh = (a: string[]) => {
+        if (a[0] === "pr" && a[1] === "view" && a[2] === "99")
+          (r.prs[99] as Pr).mergeStateStatus = states[Math.min(views++, states.length - 1)] as string;
+        return inner.gh(a);
+      };
+      return { gh, calls: inner.calls };
+    };
+    const blockedMsg = "the train PR's mergeStateStatus is BLOCKED";
+    let sleeps: number[] = [];
+    const sleep = (ms: number) => void sleeps.push(ms);
+    const lagging = blockedThen(["BLOCKED", "BLOCKED", "CLEAN"]);
+    expect(runMain(["--land", "99", "--wait"], lagging.gh, { sleep })).toBe(1);
+    expect(sleeps).toEqual([10_000, 10_000]);
+    expect(lagging.calls.filter((c) => c[1] === "merge")).toHaveLength(1);
+    sleeps = [];
+    const stuck = blockedThen(["BLOCKED"]);
+    expect(runMain(["--land", "99", "--wait"], stuck.gh, { sleep })).toBe(2);
+    expect(sleeps).toEqual(Array(6).fill(10_000));
+    expect(lines.err.join("\n")).toContain(blockedMsg);
+    expect(stuck.calls.filter((c) => c[1] === "merge")).toEqual([]);
+    sleeps = [];
+    const noWait = blockedThen(["BLOCKED", "CLEAN"]);
+    expect(runMain(["--land", "99"], noWait.gh, { sleep })).toBe(2);
+    expect(sleeps).toEqual([]);
+    expect(lines.err.join("\n")).toContain(blockedMsg);
+    expect(noWait.calls.filter((c) => c[1] === "merge")).toEqual([]);
+    (r.prs[99] as Pr).mergeStateStatus = "CLEAN";
+
     // Land for real: GitHub's merge (simulated on origin), #1 and #2 marked merged, #4 not; a file nobody
     // expected in the train's worktree keeps it in place.
     writeFileSync(join(wt, "unexpected.txt"), "an agent's edit\n");

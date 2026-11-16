@@ -20,15 +20,17 @@
  * run; `--budget <n>tok|usd` is a cumulative-usage circuit breaker; `--l1` overlays the
  * deterministic-repair tier (ΔL0→L1, zero extra API calls) — all three are live-only.
  * Live output is written to `eval/results.live.md` (git-ignored, ephemeral — the numbers
- * move with the model and the day) and, when `eval/live-baseline.json` is present, carries
- * a "Delta vs baseline" section (always L0, never mixed with L1). The offline path is
+ * move with the model and the day) and always ends with a "Delta vs baseline" section
+ * (always L0, never mixed with L1): the delta against `eval/live-baseline.json` when that file
+ * exists, else only this run's prompt hashes, for the next baseline to record. A baseline that
+ * exists but is unreadable or invalid stops the run before any call. The offline path is
  * unchanged.
  *
  * Run: `npm run eval` / `npm run eval:ci` (offline) · `npm run eval:live -- --yes`.
  */
 
 import { createHash } from "node:crypto";
-import { readFileSync, writeFileSync } from "node:fs";
+import { mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { dirname, resolve } from "node:path";
 import { compile, describe as describePlan, lint } from "../src/index.js";
@@ -101,8 +103,13 @@ export interface Score {
 }
 
 /** Load the corpus (entries with golden paths resolved relative to the repo root). */
-export function loadCorpus(): CorpusEntry[] {
-  return JSON.parse(readFileSync(resolve(ROOT, "eval/corpus.json"), "utf8")) as CorpusEntry[];
+export function loadCorpus(text: string = readCorpusText()): CorpusEntry[] {
+  return JSON.parse(text) as CorpusEntry[];
+}
+
+/** The raw text of `eval/corpus.json`; a live run reads it once, parses and hashes that one string. */
+export function readCorpusText(): string {
+  return readFileSync(resolve(ROOT, "eval/corpus.json"), "utf8");
 }
 
 /** Read an entry's committed golden source. */
@@ -398,7 +405,7 @@ export function extractArch(text: string): string {
   return (m ? m[1]! : text).trim();
 }
 
-/** Author a plan via the Anthropic Messages API. */
+/** Author a plan via the Anthropic Messages API; resolves to the raw reply text. */
 async function authorWithAnthropic(
   prompt: string,
   system: string,
@@ -456,14 +463,14 @@ async function authorWithAnthropic(
     cacheRead: json.usage?.cache_read_input_tokens,
     stop: json.stop_reason,
   });
-  return extractArch(json.content.map((b) => b.text ?? "").join(""));
+  return json.content.map((b) => b.text ?? "").join("");
 }
 
 /** Best-effort reproducibility seed for the OpenAI request (the API documents `seed` as
  *  a hint, not a guarantee — pair it with `system_fingerprint` to detect backend drift). */
 const OPENAI_SEED = 20260711;
 
-/** Author a plan via the OpenAI Chat Completions API (dependency-free `fetch`). */
+/** Author a plan via the OpenAI Chat Completions API (dependency-free `fetch`); resolves to the raw reply text. */
 async function authorWithOpenAI(prompt: string, system: string, model: string, ledger?: LiveLedger): Promise<string> {
   const key = process.env.OPENAI_API_KEY;
   if (!key) throw new Error("OPENAI_API_KEY is not set (required for --live with the openai provider)");
@@ -503,19 +510,125 @@ async function authorWithOpenAI(prompt: string, system: string, model: string, l
     stop: json.choices?.[0]?.finish_reason,
   });
   ledger?.noteFingerprint(json.system_fingerprint);
-  return extractArch(json.choices?.[0]?.message?.content ?? "");
+  return json.choices?.[0]?.message?.content ?? "";
 }
 
-/** Ask the resolved provider's model to author a plan from the prompt. The optional
- *  `ledger` records per-call token usage (and OpenAI's system_fingerprint). */
+/** Ask the resolved provider's model to author a plan from the prompt; resolves to the
+ *  {@link extractArch} source. The optional `ledger` records per-call token usage (and OpenAI's
+ *  system_fingerprint); `system` is the exact system prompt sent, so a live run can hash the same
+ *  string it sends; the optional `onReply` sees the raw reply before extraction, so
+ *  {@link liveSourceFile} can decide what may be stored (the raw reply itself never is). */
 export function makeAuthor(
   provider: "anthropic" | "openai",
   model: string,
   ledger?: LiveLedger,
+  system: string = systemPrompt(),
+  onReply?: (reply: string) => void,
 ): (prompt: string) => Promise<string> {
-  const system = systemPrompt();
   const author = provider === "openai" ? authorWithOpenAI : authorWithAnthropic;
-  return (prompt: string) => author(prompt, system, model, ledger);
+  return async (prompt: string) => {
+    const reply = await author(prompt, system, model, ledger);
+    onReply?.(reply);
+    return extractArch(reply);
+  };
+}
+
+/**
+ * The body of a reply's first complete fenced block whose info string is empty or `arch`, read the
+ * way Markdown reads fences, else `undefined`: a fence opens only at a line start (up to three
+ * spaces) with three or more backticks, and closes on a line of at least as many backticks and
+ * nothing else. A fence of another type (`json`) is skipped whole, an inline triple backtick opens
+ * nothing, and a block left open (a truncated reply) is not complete. Unlike {@link extractArch} it
+ * never falls back to the whole reply. Trimmed like {@link extractArch}.
+ */
+export function firstArchFence(reply: string): string | undefined {
+  const lines = reply.split("\n").map((l) => l.replace(/\r$/, ""));
+  for (let i = 0; i < lines.length; i++) {
+    const open = /^ {0,3}(`{3,})([^`]*)$/.exec(lines[i]!);
+    if (!open) continue;
+    const ticks = open[1]!.length;
+    const info = open[2]!.trim().split(/\s+/)[0]!;
+    let close = -1;
+    for (let j = i + 1; j < lines.length && close < 0; j++) {
+      const c = /^ {0,3}(`{3,})[ \t]*$/.exec(lines[j]!);
+      if (c && c[1]!.length >= ticks) close = j;
+    }
+    if (close < 0) return undefined;
+    if (info === "" || info.toLowerCase() === "arch")
+      return lines
+        .slice(i + 1, close)
+        .join("\n")
+        .trim();
+    i = close;
+  }
+  return undefined;
+}
+
+/** Where a live run writes each scored brief's plan source (git-ignored; the `eval-live`
+ *  workflow uploads it in the `eval-results-live` artifact). */
+export const LIVE_SOURCES_DIR = "eval/results.live-sources";
+
+/** The start of a marker file: the brief was scored, but no source is stored for it. */
+export const NOT_EXTRACTED = "not extracted";
+
+/**
+ * What a live run stores for one scored brief (product-roadmap RM-D53): the extracted `.arch`
+ * source as `<id>.arch` when the scored text is exactly the body of the reply's first complete
+ * `arch` or untyped fence ({@link firstArchFence}), else a `<id>.not-extracted.txt` marker naming
+ * the reason and holding no reply text. The raw reply is never stored, so neither is its prose: an
+ * unfenced or truncated reply, and one where {@link extractArch}'s regex took text that is not that
+ * block, get the marker. `reply` is `undefined` when the call failed before a reply came back.
+ */
+export function liveSourceFile(id: string, reply: string | undefined): { name: string; text: string } {
+  const marker = (why: string) => ({ name: `${id}.not-extracted.txt`, text: `${NOT_EXTRACTED}: ${why}\n` });
+  if (reply === undefined) return marker("no reply");
+  const block = firstArchFence(reply);
+  if (block === undefined) return marker("no complete arch fence in the reply");
+  if (block !== extractArch(reply)) return marker("the scored text is not the reply's first arch fence");
+  // Exactly the scored string, no suffix: recompiling it reproduces the scored diagnostics.
+  return { name: `${id}.arch`, text: block };
+}
+
+/** A brief id {@link writeLiveSources} may turn into a file name: a plain slug, no separators. */
+const SAFE_ID = /^[A-Za-z0-9._-]+$/;
+
+/** Write one {@link liveSourceFile} per scored (non-skipped) brief into `dir`, replacing what a
+ *  previous run left there. Throws, before touching `dir`, on an id that is not a plain slug. */
+export function writeLiveSources(dir: string, results: readonly Score[], replyById: ReadonlyMap<string, string>): void {
+  for (const r of results) {
+    if (!SAFE_ID.test(r.id) || r.id.includes("..")) {
+      throw new Error(`unsafe brief id for a file name: ${JSON.stringify(r.id)}`);
+    }
+  }
+  rmSync(dir, { recursive: true, force: true });
+  mkdirSync(dir, { recursive: true });
+  for (const r of results) {
+    if (r.skipped) continue;
+    const f = liveSourceFile(r.id, replyById.get(r.id));
+    writeFileSync(resolve(dir, f.name), f.text);
+  }
+}
+
+/** main()'s reply wiring: `onReply` goes to {@link makeAuthor}, `author` wraps each brief's call
+ *  and keeps that brief's raw reply in memory only, and `write` hands them to
+ *  {@link writeLiveSources}. */
+export function liveReplyCollector() {
+  const replyById = new Map<string, string>();
+  let last: string | undefined;
+  return {
+    onReply: (reply: string): void => {
+      last = reply;
+    },
+    async author(id: string, call: () => Promise<string>): Promise<string> {
+      last = undefined;
+      const src = await call();
+      if (last !== undefined) replyById.set(id, last);
+      return src;
+    },
+    write(dir: string, results: readonly Score[]): void {
+      writeLiveSources(dir, results, replyById);
+    },
+  };
 }
 
 /** The L1 table cell for a brief: healers applied + any L0→L1 verdict transition. */
@@ -678,24 +791,22 @@ export interface Baseline extends Summary {
 
 /** The SHA-256s of what a live run's prompt is made of. */
 export interface PromptHashes {
-  /** Of the exact {@link systemPrompt} string both providers are sent. */
+  /** Of the {@link systemPrompt} string both providers are sent (LF-normalised, {@link sha256Text}). */
   prompt: string;
-  /** Of `eval/corpus.json`, the briefs. */
+  /** Of the `eval/corpus.json` text the briefs were parsed from (LF-normalised). */
   corpus: string;
 }
 
-/** SHA-256 (hex) of a text, line endings normalised to LF so a CRLF working copy hashes the
- *  same as the committed bytes. */
+/** SHA-256 (hex) of a text after CRLF -> LF, so the string a CRLF working copy sends hashes
+ *  the same as the one an LF checkout sends: the hash names the text, not its line endings. */
 export function sha256Text(text: string): string {
   return createHash("sha256").update(text.replace(/\r\n/g, "\n"), "utf8").digest("hex");
 }
 
 /** The hashes a baseline records (`promptSha256`, `corpusSha256`) and a run compares against.
- *  Both inputs default to the working tree; pass a past commit's texts to rebuild its hashes. */
-export function promptHashes(
-  system: string = systemPrompt(),
-  corpus: string = readFileSync(resolve(ROOT, "eval/corpus.json"), "utf8"),
-): PromptHashes {
+ *  A live run passes the strings it sends, before its first call; both inputs default to the
+ *  working tree, and a past commit's texts rebuild its hashes. */
+export function promptHashes(system: string = systemPrompt(), corpus: string = readCorpusText()): PromptHashes {
   return { prompt: sha256Text(system), corpus: sha256Text(corpus) };
 }
 
@@ -725,19 +836,61 @@ const BASELINE = "eval/live-baseline.json";
 const LIVE_HEADER = [
   "<!-- Live authorability results — generated by `npm run eval:live`. EPHEMERAL and",
   "     git-ignored: these numbers depend on the model and the day, so they must NOT be",
-  "     committed as the offline scorecard (that is `eval/results.md`). The delta below,",
-  "     when present, is against `eval/live-baseline.json`. -->",
+  "     committed as the offline scorecard (that is `eval/results.md`). The section below",
+  "     is the delta against `eval/live-baseline.json` when that file exists, else only",
+  "     this run's prompt hashes. -->",
   "",
   "",
 ].join("\n");
 
-/** Read the recorded live baseline, or `null` if it is missing/unreadable. */
-function readBaseline(): Baseline | null {
+const HEX64 = /^[0-9a-f]{64}$/;
+
+/** Parse and validate a recorded live baseline's text. Throws (naming the field) on anything
+ *  `renderDelta` could not print, so a live run fails before its first paid call. */
+export function parseBaseline(text: string): Baseline {
+  let v: unknown;
   try {
-    return JSON.parse(readFileSync(resolve(ROOT, BASELINE), "utf8")) as Baseline;
-  } catch {
-    return null;
+    v = JSON.parse(text);
+  } catch (e) {
+    throw new Error(`${BASELINE} is not valid JSON: ${(e as Error).message}`);
   }
+  if (typeof v !== "object" || v === null || Array.isArray(v)) throw new Error(`${BASELINE} is not a JSON object`);
+  const o = v as Record<string, unknown>;
+  for (const k of ["total", "valid", "semanticPass", "sound"]) {
+    const n = o[k];
+    if (typeof n !== "number" || !Number.isInteger(n) || n < 0) {
+      throw new Error(`${BASELINE}: \`${k}\` must be a non-negative integer, got ${JSON.stringify(n)}`);
+    }
+  }
+  if (o.total === 0) throw new Error(`${BASELINE}: \`total\` must be at least 1`);
+  for (const k of ["valid", "semanticPass", "sound"]) {
+    if ((o[k] as number) > (o.total as number)) throw new Error(`${BASELINE}: \`${k}\` exceeds \`total\``);
+  }
+  for (const k of ["provider", "model", "date", "judge"]) {
+    if (o[k] !== undefined && typeof o[k] !== "string") {
+      throw new Error(`${BASELINE}: \`${k}\` must be a string when present, got ${JSON.stringify(o[k])}`);
+    }
+  }
+  for (const k of ["promptSha256", "corpusSha256"]) {
+    const h = o[k];
+    if (h !== undefined && !(typeof h === "string" && HEX64.test(h))) {
+      throw new Error(`${BASELINE}: \`${k}\` must be 64 lowercase hex digits when present, got ${JSON.stringify(h)}`);
+    }
+  }
+  return o as unknown as Baseline;
+}
+
+/** Read the recorded live baseline: `null` only if the file does not exist; an unreadable or
+ *  invalid file throws ({@link parseBaseline}) rather than being reported as missing. */
+export function readBaseline(path: string = resolve(ROOT, BASELINE)): Baseline | null {
+  let text: string;
+  try {
+    text = readFileSync(path, "utf8");
+  } catch (e) {
+    if ((e as NodeJS.ErrnoException).code === "ENOENT") return null;
+    throw new Error(`${BASELINE} could not be read: ${(e as Error).message}`);
+  }
+  return parseBaseline(text);
 }
 
 /** `--max <n>`: cap the brief count. Exits `3` on a missing/invalid value. */
@@ -905,13 +1058,13 @@ export function renderDelta(
     part("promptSha256", base.promptSha256, p.prompt);
     part("corpusSha256", base.corpusSha256, p.corpus);
   }
+  const promptChanged = p !== undefined && base.promptSha256 !== undefined && base.promptSha256 !== p.prompt;
   const corpusChanged = p !== undefined && base.corpusSha256 !== undefined && base.corpusSha256 !== p.corpus;
+  const what = promptChanged && corpusChanged ? "prompt and corpus" : promptChanged ? "prompt" : "corpus";
   const promptNote =
     (changed.length === 0
       ? ""
-      : `\n> ⚠ Baseline prompt ≠ this run's prompt (SHA-256: ${changed.join("; ")}) — these deltas span a ${
-          corpusChanged ? "prompt or corpus" : "prompt"
-        } change and are NOT comparable.\n`) +
+      : `\n> ⚠ Baseline ${what} ≠ this run's ${what} (SHA-256: ${changed.join("; ")}) — these deltas span a ${what} change and are NOT comparable.\n`) +
     (unrecorded.length === 0
       ? ""
       : `\n> Baseline records no ${unrecorded.join(" or ")} hash; comparability unverified.\n`);
@@ -927,7 +1080,8 @@ export function renderDelta(
     line("Sound (lint-clean)", base.sound, s.sound),
     note,
     judgeNote,
-    promptNote,
+    // Only when there is one, so a delta without hashes stays byte-identical to the pre-EV.3 one.
+    ...(promptNote ? [promptNote] : []),
     "",
   ].join("\n");
 }
@@ -967,7 +1121,19 @@ async function main(): Promise<void> {
   const max = parseMax(argv);
   const budget = parseBudget(argv);
   const l1Mode = argv.includes("--l1");
-  const all = loadCorpus();
+  // Everything the delta section needs is read, validated and hashed BEFORE any paid call:
+  // the system prompt and corpus text are read once, hashed, and those same strings are sent.
+  const system = systemPrompt();
+  const corpusText = readCorpusText();
+  const hashes = promptHashes(system, corpusText);
+  let baseline: Baseline | null;
+  try {
+    baseline = readBaseline();
+  } catch (e) {
+    process.stderr.write(`${(e as Error).message}\nFix or remove it; nothing was sent.\n`);
+    process.exit(3);
+  }
+  const all = loadCorpus(corpusText);
   const entries = max !== undefined ? all.slice(0, max) : all;
   const confirmed = argv.includes("--yes") || process.env.ARCHLANG_EVAL_CONFIRM === "1";
   if (!confirmed) {
@@ -995,14 +1161,16 @@ async function main(): Promise<void> {
     );
   }
 
-  const author = makeAuthor(provider, model, ledger);
+  // Each brief's raw reply stays in memory only, so writeLiveSources can decide what to store.
+  const replies = liveReplyCollector();
+  const author = makeAuthor(provider, model, ledger, system, replies.onReply);
   // With --l1 we keep each brief's authored L0 source so it can be healed and re-scored
   // afterwards (no extra API calls). Off the L1 path this is the original thin wrapper.
   const rawById = new Map<string, string>();
   const stopById = new Map<string, string>();
   const getSource = async (e: CorpusEntry): Promise<string> => {
     ledger.lastStop = undefined;
-    const src = await author(e.prompt);
+    const src = await replies.author(e.id, () => author(e.prompt));
     if (ledger.lastStop) stopById.set(e.id, ledger.lastStop);
     if (l1Mode) rawById.set(e.id, src);
     return src;
@@ -1030,12 +1198,12 @@ async function main(): Promise<void> {
     intervals: true,
     stops: stopById,
   });
-  const baseline = readBaseline();
-  md += liveDeltaSection(baseline, summary, promptHashes());
+  md += liveDeltaSection(baseline, summary, hashes);
   md = LIVE_HEADER + md;
   writeFileSync(resolve(ROOT, LIVE_RESULTS), md);
+  replies.write(resolve(ROOT, LIVE_SOURCES_DIR), results);
   process.stdout.write(md + "\n");
-  process.stdout.write(`✓ wrote ${LIVE_RESULTS} (git-ignored)\n`);
+  process.stdout.write(`✓ wrote ${LIVE_RESULTS} and ${LIVE_SOURCES_DIR}/ (git-ignored)\n`);
   if (budget) process.stderr.write(`budget: ${ledger.spentLabel()} (limit ${budget.amount}${budget.kind})\n`);
 }
 
