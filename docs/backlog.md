@@ -2022,7 +2022,6 @@ comparison. RM-D54 (2026-11-16, delegated) ruled the change; the repo card was c
 upload; card bytes on HF equal the repo's; `dataset/README.md`'s "the HF card quoted it" line
 updated after.
 
-
 Done: the owner said "同意上传卡片，请你自动帮我实施" (2026-11-16); `dataset/CARD.md` from main (SHA-256
 `2ed46aad…9cc4`) was uploaded as `README.md`, HF commit `90914659`, and the downloaded file's SHA-256
 equals main's.
