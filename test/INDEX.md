@@ -5,7 +5,7 @@
 Where the tests of a `src` module are, and what each test file is for. Generated; `npm run check:drift`
 fails when it is stale. How to add a test: `docs/testing.md` § 4.
 
-535 test files in `test/`, 286 `src` modules, 107 modules no test imports.
+537 test files in `test/`, 286 `src` modules, 107 modules no test imports.
 
 ## `src` module → tests that import it
 
@@ -85,7 +85,7 @@ Nearest first, then by name; `(+n)` is the rest. Test names are `test/<name>.tes
 - `src/elements/wall.ts` (1) — `room-datums`
 - `src/elements/window.ts` (1) — `corner-window`
 - `src/error-catalog-fixes.ts` (1) — `explain`
-- `src/error-catalog.ts` (19) — `cli-context`, `context-starter`, `element-cap`, `error-catalog-families`, `garage`, `levels`, `lint-rule-order`, `lint-summary` (+11)
+- `src/error-catalog.ts` (20) — `cli-context`, `context-starter`, `element-cap`, `error-catalog-families`, `fix-coverage`, `garage`, `levels`, `lint-rule-order` (+12)
 - `src/export/dxf.ts` (10) — `curves`, `export-dxf`, `furniture-curves-backends`, `label-fit`, `label-wrap`, `opening`, `room-floor`, `scene-path-prim` (+2)
 - `src/export/pdf.ts` (8) — `export-font-cjk`, `export-pdf`, `furniture-curves-backends`, `label-wrap`, `roof`, `scene-path-prim`, `sheet`, `v129-cross`
 - `src/expr-source.ts` (1) — `emit-opening-oracle`
@@ -119,7 +119,7 @@ Nearest first, then by name; `(+n)` is the rest. Test names are `test/<name>.tes
 - `src/impact.ts` (2) — `rectilinear-doors`, `rectilinear-rooms`
 - `src/import.ts` (31) — `block-stair-byte-identity`, `corner-window-byte-identity`, `dim-thickness-callout`, `drawing-budget`, `floor-materials-byte-identity`, `furniture-relations`, `gaps-byte-identity`, `keep` (+23)
 - `src/import/limits.ts` (1) — `openplan3d-malformed`
-- `src/index.ts` (398) — `acc-metadata`, `access-graph`, `access-policy`, `accessible-svg`, `agent-gallery`, `alias-match`, `anchors`, `annotate` (+390)
+- `src/index.ts` (399) — `acc-metadata`, `access-graph`, `access-policy`, `accessible-svg`, `agent-gallery`, `alias-match`, `anchors`, `annotate` (+391)
 - `src/input-limit.ts` (2) — `import-rooted`, `workspace-seams`
 - `src/intent-concepts.ts` (2) — `vocabulary-living-dining`, `vocabulary-matcher-oracle`
 - `src/intent.ts` (1) — `site`
@@ -181,7 +181,7 @@ Nearest first, then by name; `(+n)` is the rest. Test names are `test/<name>.tes
 - `src/taste/index.ts` (2) — `taste-budget`, `taste`
 - `src/text-layout.ts` (5) — `escape-fuzz`, `label-placement-oracle`, `label-wrap`, `text-layout`, `text-metrics`
 - `src/text-metrics.ts` (6) — `dim-stagger`, `dim-thickness-callout`, `label-placement`, `sheet-text`, `text-layout`, `text-metrics`
-- `src/theme.ts` (21) — `element-facets`, `equivariance-scene`, `export-pdf`, `format`, `furniture-mirror`, `glyph-chirality`, `glyph-dispatch-table`, `glyph-lib` (+13)
+- `src/theme.ts` (22) — `element-facets`, `equivariance-scene`, `export-pdf`, `format`, `furniture-mirror`, `glyph-chirality`, `glyph-dispatch-table`, `glyph-lib` (+14)
 - `src/types.ts` (9) — `datum`, `doors`, `element-cap`, `fixture-orientation`, `furniture-flush`, `furniture-lint`, `garage`, `keep` (+1)
 - `src/vertical.ts` (52) — `block-stair-frames`, `block-stair-shaft`, `block-stair-winders-walking-arc`, `block-stair-winders`, `block-stair`, `circulation-concave`, `circulation-translation`, `element-facets` (+44)
 - `src/view/camera.ts` (5) — `iso-camera`, `iso-mixed-heights`, `iso-painter-order`, `iso-projection`, `iso-sort`
@@ -385,6 +385,7 @@ The first sentence of each file's header comment.
 - `test/finish.test.ts` — finish law 4 — no core path moved; finish law 6 — a source that does not compile is returned untouched; finish — fill only what is missing; choosing the sheet; an authored sheet is kept; stages; edge layouts; the titl...
 - `test/fix-apply.test.ts` — Data (piece table); applyFixes.
 - `test/fix-commute.test.ts` — Property-based laws over `applyFixes` (`src/fix-apply.ts`), generalising the example-based cases already pinned in `test/fix-apply.test.ts` to fast-check permutations/ranges: - **Disjoint admissible fixes commute**: h...
+- `test/fix-coverage.test.ts` — How many catalogued codes can carry a machine fix (a span edit, `Diagnostic.fixes`), read from the source by `scripts/fix-coverage.ts` (card U.17).
 - `test/fix-printer.test.ts` — `emitOpening` (W4b) rebuilds a whole door/window/opening statement through the shared printer (`printDoc(statementText(...))`) instead of a second, hand-written enumeration of clauses, precisely so a rebuild never sil...
 - `test/fix-producers.test.ts` — off-wall opening fix (W_*_OFF_WALL → attachment form); opening width fix (E_*_WIDTH → has-placeholders); attach-position clamp fix (E_ATTACH_POS_RANGE → machine…
 - `test/fix-pullback.test.ts` — Lint fixes pulled back through the instance frame (backlog E.1, `fix-pullback`).
@@ -665,6 +666,7 @@ The first sentence of each file's header comment.
 - `test/step-budget.test.ts` — The evaluation-step budget (`MAX_EVAL_STEPS`, `src/expr.ts`): one deterministic counter across a whole resolution, every storey, instance, call and loop iteration.
 - `test/stepped-facade-dims.test.ts` — `dims auto all` on a STEPPED facade: no opening may drop out of the chains without a diagnostic.
 - `test/strip.test.ts` — T1e — room strip.
+- `test/style-keys-draw.test.ts` — Every accepted `style <kind> { <attr> … }` key moves its own kind's ink and nothing else (WS.5).
 - `test/style-reference-section.test.ts` — The language reference's "Per-element styles — `style`" section agrees with `STYLE_KEYS` (WS.6).
 - `test/style.test.ts` — Scene style metadata (T3.1); AIA layers (T3.2); openings void walls (T3.3).
 - `test/suggest.test.ts` — suggestTopology; suggestTopology — W_NO_ENTRANCE; suggestTopology — W_BATH_VIA_BEDROOM; suggestTopology — W_BATH_VIA_BEDROOM spares an en-suite beside a bathroo…

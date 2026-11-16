@@ -1436,7 +1436,7 @@ written by hand. The corpus holds mostly dwellings and museums; card D6 adds non
 **Gate:** `arch new --list --json` lists names; `arch new --from <example>` writes a file that
 compiles clean. **Size:** S.
 
-### U.17 · No report says how many diagnostics carry a machine fix — `todo`
+### U.17 · No report says how many diagnostics carry a machine fix: done by #898, waiting to be archived — `note`
 
 **Observed (engineering gap audit, row 24).** Every code in `ERROR_CATALOG` (`src/error-catalog.ts`) carries a
 catalogue `fix` text; only a minority produce a span edit (a grep estimate, not a measurement). The catalogue
@@ -1448,6 +1448,9 @@ count. The estimate is the first thing to replace.
 
 **Gate:** the script prints "N of M codes have a span edit" and a test fails if the count
 drops. **Size:** S.
+
+Residue: `scripts/fix-coverage.ts` counts raise sites that can attach a span edit; it does not
+prove each fix is reachable on some input.
 
 ### U.18 · The playground PDF is raster — `todo`
 
@@ -1780,7 +1783,7 @@ fires on `materials`. `keep` and `import` still have no row because no `EXAMPLE_
 them, and the test's every-row-fires guard rejects a detector no page checks; add each with the
 first example page that uses it.
 
-### WS.5 · `style wall { fill }` and `{ hatch }` are accepted and draw nothing — `todo`
+### WS.5 · `style wall { fill }` and `{ hatch }` are accepted and draw nothing: done by #896, waiting to be archived — `note`
 
 The parser takes both keys with no diagnostic and stores `pocheBase` / `pocheHatch` in
 `plan.styles.wall`, but `src/backends/svg.ts` builds every hatch pattern from the scene theme
@@ -2055,7 +2058,7 @@ guard on the strip path (`uses living "balcony"` in a strip). (5) The `terrace �
 `garden → lawn` mapping test is not tied to the language reference's outdoor examples. **Gate:** for
 (1), both hints linear in tokens, pinned by a token-visit count, not time; a test per other item.
 
-### RR.14 · Live-delta prompt-hash follow-ups after EV.3 — `todo`
+### RR.14 · Live-delta prompt-hash follow-ups after EV.3: done by #885, waiting to be archived — `note`
 
 From #865's round-2 review. (1) `renderDelta` without hashes gained a trailing blank line, and the
 "unchanged" test only checks a substring. (2) A corpus-only mismatch still says "Baseline prompt ≠
@@ -2067,6 +2070,8 @@ hash in it throws in `renderDelta` after the paid calls. (5) Three places
 still say the delta section appears only with a baseline (`eval/README.md`, the `eval/run.ts`
 header, `LIVE_HEADER`). (6) A vacuous `not.toContain` in the prompt-mismatch test. **Gate:** offline
 tests only; no paid run.
+
+Residue: none. The item (6) assertion tightens an existing check, so it passes before and after the fix.
 
 ### RR.15 · The EV.1 record predates RM-D52: done by #879, waiting to be archived — `note`
 

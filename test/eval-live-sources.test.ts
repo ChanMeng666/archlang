@@ -121,7 +121,7 @@ describe("a live-shaped run writes one file per scored brief", () => {
     );
     // The collector main() uses: makeAuthor's onReply keeps the raw reply in memory only.
     const collector = liveReplyCollector();
-    const author = makeAuthor("anthropic", "claude-sonnet-5-5", new LiveLedger("claude-sonnet-5-5"), collector.onReply);
+    const author = makeAuthor("anthropic", "claude-sonnet-5-5", new LiveLedger("claude-sonnet-5-5"), undefined, collector.onReply);
     const scored = new Map<string, string>();
     const { results } = await evaluate(
       entries,
@@ -168,7 +168,7 @@ describe("a live-shaped run writes one file per scored brief", () => {
     const src = readFileSync(resolve(ROOT, "eval/run.ts"), "utf8");
     const main = src.slice(src.indexOf("async function main("));
     expect(main).toContain("const replies = liveReplyCollector();");
-    expect(main).toContain("makeAuthor(provider, model, ledger, replies.onReply)");
+    expect(main).toContain("makeAuthor(provider, model, ledger, system, replies.onReply)");
     expect(main).toContain("await replies.author(e.id, () => author(e.prompt))");
     expect(main).toContain("replies.write(resolve(ROOT, LIVE_SOURCES_DIR), results);");
   });
