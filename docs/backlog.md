@@ -2036,8 +2036,8 @@ From #859's review (RR.4): the remedy repeats a clause of the message by hand, s
 change to one leaves the other stale. **Gate:** the remedy reads the clause from where the message
 builds it, or a test pins that they agree.
 
-Residue: only the NOTES clause is pinned (a test, not a shared constant, which would join the
-catalogue to the compiler chunk); the primitive-budget message paraphrases the remedy and stays unpinned.
+Residue: only the NOTES clause is pinned, by a test (a dependency-free leaf constant imported by both
+sides was not tried); the primitive-budget message paraphrases the remedy and stays unpinned.
 
 ### RR.13 · `uses` outdoor-hint follow-ups after RR.5: done by #881, waiting to be archived — `note`
 
