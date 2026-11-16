@@ -13,7 +13,7 @@
  * `process`, no clock, and the bundle, run, writes laneway-house byte for byte as `./node` does (a
  * well-formed GLB 2.0 header) with no `Math.random` call while it loads and writes.
  */
-import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdtempSync, readFileSync, realpathSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
@@ -26,6 +26,13 @@ import { PIN_GENERATOR } from "./pins.js";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 
+/**
+ * The `file:` URL a dynamic `import()` loads `path` from. The path is resolved first
+ * (`realpathSync.native`): a Windows runner's temp directory is an 8.3 short name
+ * (`C:/Users/RUNNER~1/…`), whose `~` `pathToFileURL` writes as `%7E`, a URL Vite fails to load.
+ */
+const importUrl = (path: string): string => pathToFileURL(realpathSync.native(path)).href;
+
 /** `NODE_ONLY` from the web component's build script: the core's lazy Node-only imports. */
 function nodeOnly(): string[] {
   const script = readFileSync(join(REPO, "packages/web-component/scripts/build.ts"), "utf8");
@@ -34,6 +41,18 @@ function nodeOnly(): string[] {
 }
 
 describe("browser safety", () => {
+  // An 8.3 alias every Windows volume with short names has; elsewhere there is nothing to resolve.
+  const SHORT = "C:\\PROGRA~1";
+  it.skipIf(process.platform !== "win32" || !existsSync(SHORT))(
+    "importUrl resolves a Windows short path, so the URL holds no %7E",
+    () => {
+      const url = importUrl(SHORT);
+      expect(url).not.toContain("%7E");
+      expect(url).not.toContain("~");
+      expect(pathToFileURL(SHORT).href).toContain("%7E"); // what the unresolved path would have loaded
+    },
+  );
+
   it("bundles adapter + Scene3D for the browser with no Node, clock or randomness", async () => {
     const external = nodeOnly();
     expect(external).toContain("node:*");
@@ -211,7 +230,9 @@ describe("browser safety", () => {
         random++;
         return real();
       };
-      const bundled = (await import(pathToFileURL(file).href)) as {
+      const url = importUrl(file);
+      expect(url, "a short temp path left in the module URL").not.toContain("%7E");
+      const bundled = (await import(url)) as {
         writeGlb: (mesh: Mesh3D, opts?: { generator?: string }) => Promise<Uint8Array>;
       };
       glb = await bundled.writeGlb(mesh, { generator: PIN_GENERATOR });
