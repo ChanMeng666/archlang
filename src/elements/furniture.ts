@@ -25,6 +25,7 @@ import type { BBox } from "../geometry/rect.js";
 import { pointInPolygon } from "../geometry/polygon.js";
 import { FIXTURE_CATEGORIES, fixtureGlyph } from "./fixtures-glyphs.js";
 import { noteSnap } from "../ir/silent-accepts.js";
+import { fixesFrom, furnitureCategoryFix } from "../fix-producers.js";
 import { mirrorGlyph } from "./glyph-chirality.js";
 import { mapSceneNode } from "./glyph-lib.js";
 import { CATALOG_CATEGORIES, defaultFootprint, fixtureSpec, orientationMatters } from "../fixtures-catalog.js";
@@ -544,7 +545,7 @@ export const furniture: ElementDef = {
     } else {
       at = ctx.snapPt(ctx.evalPt(n.at!));
     }
-    if (n.label === undefined) noteUnknownCategory(ctx, id, n.category, n.span);
+    if (n.label === undefined) noteUnknownCategory(ctx, id, n);
     return {
       kind: "furniture",
       id,
@@ -1535,10 +1536,12 @@ function nearestFurniture(word: string): string | null {
  * kind but is one in another case or within {@link nearEdits} edits of one (`WC`,
  * `grand_pianno`). Furniture is open on purpose, so an unknown word stays legal and still draws
  * its rectangle; this only says so when the word looks like a slip. A piece with a `label` is a
- * custom one by intent and is never reported.
+ * custom one by intent and is never reported. It offers the nearest kind as a rewrite of the
+ * statement ({@link furnitureCategoryFix}), never auto-applied.
  */
-function noteUnknownCategory(ctx: ResolveCtx, id: string, category: string, span: Span | undefined): void {
+function noteUnknownCategory(ctx: ResolveCtx, id: string, n: FurnitureNode): void {
   const { set } = known();
+  const category = n.category;
   if (set.has(category)) return;
   const lower = category.toLowerCase();
   const near = set.has(lower) ? lower : nearestFurniture(category);
@@ -1550,6 +1553,29 @@ function noteUnknownCategory(ctx: ResolveCtx, id: string, category: string, span
     hints: [
       `Write \`furniture ${near} …\` for the catalogued symbol, or add a \`label\` if "${category}" is a piece of your own.`,
     ],
-    ...(span ? { span } : {}),
+    ...(n.span ? { span: n.span } : {}),
+    ...fixesFrom(categoryFix(ctx, n, near)),
   });
+}
+
+/**
+ * The reprinted statement is as long as the source statement, so it is built once per parse node
+ * per storey's {@link ResolveCtx} (a looped piece shares its node, so a loop does not multiply it)
+ * and charged to the step meter by its source length before it is built. Keyed on the ctx, so the
+ * charge never depends on an earlier compile.
+ */
+const CATEGORY_FIXES = new WeakMap<ResolveCtx, Map<FurnitureNode, ReturnType<typeof furnitureCategoryFix>>>();
+
+function categoryFix(ctx: ResolveCtx, n: FurnitureNode, near: string): ReturnType<typeof furnitureCategoryFix> {
+  let byNode = CATEGORY_FIXES.get(ctx);
+  if (!byNode) {
+    byNode = new Map();
+    CATEGORY_FIXES.set(ctx, byNode);
+  }
+  const cached = byNode.get(n);
+  if (cached !== undefined) return cached;
+  chargeSteps(1 + (n.span ? n.span.end - n.span.start : 0));
+  const fix = furnitureCategoryFix(n, near);
+  byNode.set(n, fix);
+  return fix;
 }

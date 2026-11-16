@@ -1253,7 +1253,7 @@ tiny value (a hairline, a model in another scale) may be noise.
 inputs and on no example (`arch lint --json` over `examples/`); the error-catalog example test
 and `gen:errors` stay green. **Size:** S.
 
-### U.3 · A misspelt furniture category passes `validate --strict` — `todo`
+### U.3 · A misspelt furniture category passes `validate --strict`: done by #848, waiting to be archived — `note`
 
 **Observed (audit finding 11, Appendix B).** `furniture grand_pianno` passes `validate --strict`
 with no signal at all, although an unknown material or theme key gets `W_UNKNOWN_MATERIAL`,

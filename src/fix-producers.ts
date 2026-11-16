@@ -15,7 +15,7 @@
  * parser/registry in.
  */
 
-import type { DoorNode, OpeningNode, Point, WindowNode } from "./ast.js";
+import type { DoorNode, FurnitureNode, OpeningNode, Point, WindowNode } from "./ast.js";
 import type { FixSuggestion, Span } from "./diagnostics.js";
 import type { DoorHinge } from "./grammar/tokens.js";
 import type { Bounds, DimLike, WallLike } from "./geometry.js";
@@ -578,6 +578,27 @@ export function roomAlignAxisFix(span: Span, counterpart: string): FixSuggestion
       applicability: "machine-applicable",
       fixId: "room-align-axis",
       edits: [{ span, newText: counterpart }],
+    },
+  ];
+}
+
+/**
+ * The fix for `W_UNKNOWN_FURNITURE` (U.3): write the nearest catalogued kind. The replacement is
+ * the whole statement re-emitted from a clone of the AST with only the category changed (the
+ * `emitOpening` seam), so the parse node records nothing for it. Always `maybe-incorrect`, so a
+ * plain `arch fix` never applies it: the word may be a custom piece, the auto id follows the kind
+ * (`Sofa_1` becomes `sofa_1`, breaking a `facing Sofa_1`), and the kind carries semantics (a
+ * symmetric `table` refuses `facing`). Returns `null` without a span to write into.
+ */
+export function furnitureCategoryFix(node: FurnitureNode, near: string): FixSuggestion[] | null {
+  if (!node.span) return null;
+  const clone = structuredClone(node);
+  clone.category = near;
+  return [
+    {
+      title: `write the catalogued kind \`${near}\``,
+      applicability: "maybe-incorrect",
+      edits: [{ span: node.span, newText: printDoc(statementText(clone)) }],
     },
   ];
 }
