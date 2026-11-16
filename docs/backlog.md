@@ -514,7 +514,7 @@ number per storey (`W01` on each level); a set-unique numbering is an owner call
 the sheet statements, and left so `fmt` output on existing files does not move in that change;
 `number`/`revision`/`notes` already use `escapeStr`. Fix: the same escaper for the three.
 
-### N.5 · `E_DRAWING_LIMIT`'s catalogue entry omits its second trigger — `todo`
+### N.5 · `E_DRAWING_LIMIT` catalogue names the NOTES cap: done by #840, waiting to be archived — `note`
 
 `src/error-catalog.ts` describes only the primitive budget; the NOTES cap (over 200 wrapped
 lines, `src/draw-budget.ts`) raises the same code with its own message. One sentence (with N.2).

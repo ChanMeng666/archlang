@@ -170,7 +170,7 @@ Nearest first, then by name; `(+n)` is the rest. Test names are `test/<name>.tes
 - `src/scene.ts` (60) — `arc-radius-exact`, `axes`, `band`, `bbox-derived-position`, `block-stair-winders-walking-arc`, `block-stair`, `corner-window`, `dim-stagger` (+52)
 - `src/segment-select.ts` (1) — `segment-select`
 - `src/share.ts` (1) — `share-codec`
-- `src/sheet-tables.ts` (4) — `export-pdf`, `sheet-annotations`, `sheet`, `wall-status-drawing`
+- `src/sheet-tables.ts` (5) — `drawing-budget`, `export-pdf`, `sheet-annotations`, `sheet`, `wall-status-drawing`
 - `src/sheet-text.ts` (1) — `sheet-text`
 - `src/sheet.ts` (10) — `chrome-hidden`, `closed-vocabularies`, `dim-stagger`, `dim-thickness-callout`, `dims-ground`, `finish`, `label-fit`, `model-range` (+2)
 - `src/site.ts` (2) — `site`, `wall-face-probe`
