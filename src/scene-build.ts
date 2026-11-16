@@ -1025,10 +1025,16 @@ function drawStorey(
   const standing = ir.drawn ? plan.walls : ir.walls;
   const demolished = ir.drawn ? ir.walls.filter((w) => w.status === "demolish") : [];
   const wallHatches = hatchesUsed(standing);
+  // `style wall { fill | hatch }` draws the walls' patterns in the walls' styled poché ink. A wall
+  // pattern's id is never a ground's or a floor's (a floor of a wall material is `bare`, its own
+  // id), so only the walls and their legend swatches move. A `style wall` that sets neither keeps
+  // the drawing's poché ink, so its bytes are unchanged; no `style wall` → no ink at all.
+  const wallTheme = styledByKind.get("wall");
   const hatches = hatchesUsed(
     standing,
     groundMaterialsUsed(outdoorEls),
     floorMaterialsUsed(ir.elements.filter((e): e is RRoom => e.kind === "room")),
+    wallTheme && { base: wallTheme.pocheBase, line: wallTheme.pocheHatch },
   );
   for (const pushed of lowerWallSet(demolished, [], ctxFor("wall"), "dashed", work)) {
     nodes.push({ ...pushed, layer: "wallFill" });

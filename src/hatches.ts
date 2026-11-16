@@ -101,6 +101,10 @@ export interface HatchSpec {
   angle: number;
   /** A floor's: the wall pattern of this name, drawn with no base. Absent on every other spec. */
   bare?: true;
+  /** A wall's under `style wall { fill | hatch }`: the base and line its pattern is drawn in, in place
+   *  of the drawing's. No wall pattern id is shared with a ground or floor pattern, so the walls'
+   *  `<pattern>` (and the legend swatch reusing it) takes the walls' ink and nothing else does. */
+  ink?: { base: string; line: string };
 }
 
 /**
@@ -155,10 +159,11 @@ export function hatchesUsed(
   walls: readonly { material: string; hatchScale: number; hatchAngle: number }[],
   ground: readonly string[] = [],
   floors: readonly FloorMaterial[] = [],
+  ink?: HatchSpec["ink"],
 ): HatchSpec[] {
   const seen = new Map<string, HatchSpec>();
   for (const w of walls) {
-    const h = hatchOf(w);
+    const h: HatchSpec = { ...hatchOf(w), ink };
     const k = hatchKey(h);
     if (!seen.has(k)) seen.set(k, h);
   }
@@ -782,7 +787,7 @@ export function isSolidFill(material: string): boolean {
 /** Render the `<pattern>` markup for a hatch spec (material assumed known). */
 export function hatchPattern(spec: HatchSpec, base: Omit<HatchCtx, "scale" | "angle">): string {
   const meta = META[spec.material]!;
-  const ctx = { ...base, scale: spec.scale, angle: spec.angle };
+  const ctx = { ...base, ...spec.ink, scale: spec.scale, angle: spec.angle };
   return meta.build(hatchId(spec), spec.bare ? { ...ctx, base: "none" } : ctx);
 }
 
