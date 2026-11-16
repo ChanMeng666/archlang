@@ -147,6 +147,13 @@ listed in the stage report (`docs/plans/plan-soundness/README.md` D18).
 
 ## Owner policies
 
+- **Playground size ceilings (delegated ruling RM-D57, 2026-11-17; product-roadmap README § 6.25):**
+  `embedPathBudget` and its siblings in `playground/e2e/startup-chunks.baseline.json` are hard. A PR
+  that touches the compiler path states the embed path's before and after gzip bytes. A raise is
+  its own re-take PR, only by the file's own rule (measured path × 1.025, rounded up to a thousand,
+  still below the smallest lazy heavyweight's margin) with the numbers in the `…Why` text; such a
+  re-take merges on the coordinator's judgement after a fresh-context review. Any other raise is the
+  owner's (`REVIEW.md`: a relaxed cap).
 - **High-tier merges (owner, 2026-11-09, in words):** the coordinator judges whether a high-tier PR
   (workflows, root config, hooks, owner rules, policy files) can merge and merges it after a
   fresh-context review and green CI, without asking per PR. Still owner-only: the decision to release,

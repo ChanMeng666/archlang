@@ -1895,6 +1895,23 @@ same `noteDefaultSize` (`src/elements/furniture.ts`), and re-measure each moved 
 **Gate:** the example law of `test/footprint-any-placement.test.ts` and every other pinned row
 re-measured with the moved fields named; a `grid` row for `against` in that test's `FORMS`.
 
+**Ruled 2026-11-17 (RM-D56, product-roadmap README § 6.25): do it.** Each moved row is re-measured only
+after proof that the new `W_GRID_SNAPPED` is its only change (removing the added diagnostics from the
+new payload reproduces the old digest; SVG and `describe()` unchanged), with the reason in the
+baseline header (`docs/testing.md` § Re-measuring a byte-identity digest). A row that would gain
+`E_FURN_SIZE` is not re-pinned: stop and report it.
+
+### EB.1 · The embed-path size check is a Playwright-only number — `todo`
+
+The playground's embed path is a hard gzip ceiling (`embedPathBudget`,
+`playground/e2e/startup-chunks.baseline.json`; RM-D57 keeps it at 351,000 B), measured only by
+`playground/e2e/preview3d.spec.ts` in CI. P7's executors each rebuilt a scratch script to replicate
+that walk from `embed.html` with `gzipSync` before pushing a compiler change (#881 was 21 B over,
+#890 about 120 B over). One way: a repo script that builds the playground as CI does and prints the
+embed path's per-chunk and total gzip bytes against the budget, which the spec and the script share.
+**Gate:** the script's total equals the spec's on the same build; `docs/agents/commands.md` names it;
+compiler-path PR briefs say to run it.
+
 ### CO.2 · Three documented limits of a defaulted footprint — `declared`
 
 (1) `facing <id>` settles after placement, so it never turns a default: a turn onto the footprint's
