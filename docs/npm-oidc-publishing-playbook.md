@@ -123,7 +123,7 @@ Template notes, each learned the hard way or from the docs:
 - **Custom `if:` conditions must include `success() &&`** — a bare custom `if:` drops GitHub's
   implicit failure check, and a failed earlier publish would NOT stop later steps.
 - **Make every publish idempotent** (the `npm view` guard) so a partially-failed release is
-  fixed by re-running the workflow (`gh workflow run release.yml`), not by hand-surgery.
+  fixed by re-running the workflow (`gh run rerun <id> --failed` on the tag's run), not by hand-surgery.
 - **Guard secondary-registry syncs by the *secondary registry's* state, not by "did npm
   publish happen this run"** — otherwise an npm-ok/registry-failed partial run skips the sync
   forever on re-run. (Example: the MCP registry — `mcp-publisher login github-oidc` →
