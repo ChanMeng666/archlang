@@ -2088,8 +2088,14 @@ the 20-file cap is AG.2 (1).) **Gate:** one `test/gate-select.test.ts` case per 
 on today's selection.
 
 Closure note (#895). Items (2) and (3) were missing pins, not wrong selection, so their cases pass on
-main's selection and fail on the mutants named above. Residue: item (4)'s list of modules that compose fix
-text is written out from this card (no table exists to derive it from); the test checks that every entry is tracked.
+main's selection and fail on the mutants named above. Item (4) is read from the changed module's own
+source (`composesFixText`: a `message:`/`fix:`/`hint:`/`hints:` property, `Diagnostic`, or a header naming
+message text), not a list of paths.
+
+Residue (review round 1, not fixed): `scripts/check-quick.mjs`'s deletion wiring is pinned by no test (a
+temp-repo `--list` case would pin it); a delete-only branch that deletes a test file runs no step, so a
+stale `test/INDEX.md` shows only in CI; deleting a `src/` module runs drift only; a case-only rename on
+Windows is not seen as a deletion.
 
 ### RR.17 · `fmt` follow-ups after M.21: done by #884, waiting to be archived — `note`
 

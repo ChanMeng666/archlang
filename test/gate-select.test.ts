@@ -19,6 +19,7 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import {
+  composesFixText,
   corpusPins,
   DOCS_FLAGS,
   docsFlagsReads,
@@ -477,26 +478,40 @@ describe("planTests: what the gate runs for a change set", () => {
     });
 
     it("RR.16 (3): an ordinary src/ change wakes none of them", () => {
-      const ordinary = ["src/layout.ts", "src/num-format.ts", "src/geometry.ts", "src/expr.ts", "src/lint.ts"];
+      // Modules that compose no message, fix or hint text (a `message:`-building one wakes lint-fix-texts, (4)).
+      const ordinary = ["src/axes.ts", "src/chrome-layout.ts", "src/compile-work.ts", "src/cursor.ts", "src/doc.ts"];
       for (const f of ordinary) {
         expect(files, f).toContain(f);
+        expect(composesFixText(ROOT, f), f).toBeUndefined();
         expect(guards([f]), f).toEqual([]);
       }
     });
 
-    it("RR.16 (4): lint-fix-texts wakes on a lone module that composes fix text", () => {
-      const element = files.find((f) => /^src\/elements\/[^/]+\.ts$/.test(f) && f !== "src/elements/defs.ts");
-      expect(element).toBeDefined();
-      for (const f of [
-        element!,
-        "src/elements/furniture.ts",
-        "src/lint/element-phrases.ts",
-        "src/lint/ruleset.ts",
-        "src/diagnostics.ts",
-      ]) {
+    it("RR.16 (4): lint-fix-texts wakes on a lone module whose own source composes fix text, read from it", () => {
+      const fixTexts = (changed: string[]) => whys(changed).filter(([f]) => f === FIX_TEXTS);
+      const composes: [string, string][] = [
+        ["src/elements/door.ts", "a module with a `message:` property"],
+        ["src/elements/furniture.ts", "a module with a `message:` property"],
+        ["src/keep.ts", "a module with a `message:` property"],
+        ["src/lock.ts", "a module with a `message:` property"],
+        ["src/while-fix.ts", "a module with a `fix:` property"],
+        ["src/lint/ruleset.ts", "a module with a `message:` property"],
+        ["src/diagnostics.ts", "a module with a `message:` property"],
+        ["src/lint/element-phrases.ts", "a module whose header names message text"],
+      ];
+      for (const [f, why] of composes) {
         expect(files, f).toContain(f);
-        expect(whys([f]), f).toEqual([[FIX_TEXTS, `a module that composes fix text changed (${f})`]]);
+        expect(fixTexts([f]), f).toEqual([[FIX_TEXTS, `${why} changed (${f})`]]);
       }
+      // Element modules that draw or register but compose no text wake nothing.
+      for (const f of ["src/elements/glyphs-bath.ts", "src/elements/index.ts", "src/elements/defs.ts"]) {
+        expect(files, f).toContain(f);
+        expect(composesFixText(ROOT, f), f).toBeUndefined();
+        expect(guards([f]), f).not.toContain(FIX_TEXTS);
+      }
+      // Not code under src/, or gone from disk: nothing to read.
+      expect(composesFixText(ROOT, "CHANGELOG.md")).toBeUndefined();
+      expect(composesFixText(ROOT, "src/no-such-module.ts")).toBeUndefined();
     });
 
     it("RR.16 (5): opaque-literal-guard wakes on the published IndexNow key and on the error catalogue", () => {
@@ -504,8 +519,10 @@ describe("planTests: what the gate runs for a change set", () => {
       expect(key).toBeDefined();
       expect(whys([key!])).toEqual([[OPAQUE_GUARD, `the published IndexNow key changed (${key})`]]);
       expect(guards(["docs-site/public/robots.txt"])).toEqual([]);
-      expect(guards(["src/error-catalog.ts"])).toEqual([FIX_TEXTS, OPAQUE_GUARD].sort());
-      expect(guards(["src/error-catalog/layout.ts"])).toEqual([FIX_TEXTS, OPAQUE_GUARD].sort());
+      for (const f of ["src/error-catalog.ts", "src/error-catalog-fixes.ts", "src/error-catalog/layout.ts"]) {
+        expect(files, f).toContain(f);
+        expect(guards([f]), f).toEqual([FIX_TEXTS, OPAQUE_GUARD].sort());
+      }
     });
 
     it("RR.16 (6): a page deleted or renamed away still wakes docs-flags", () => {

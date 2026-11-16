@@ -298,29 +298,47 @@ export function guardImports(ROOT, guard) {
 export const isErrorCatalogue = (f) =>
   f === "src/error-catalog.ts" || f === "src/error-catalog-fixes.ts" || f.startsWith("src/error-catalog/");
 
+/** A property that carries diagnostic text: `message:`, `fix:`, `hint:` or `hints:` (optional ones too). */
+const TEXT_PROP = /(?:^|[\s{,(])(message|fix|hint|hints)\??\s*:/m;
+
 /**
- * The modules that compose the fix and hint text `test/lint-fix-texts.test.ts` reads, beyond the catalogue
- * and the producers: the element modules (each builds its own diagnostics' fixes), the phrases lint rules
- * name an element with, the ruleset whose thresholds the texts quote, and the `Diagnostic` shape itself.
+ * Why a changed module composes the fix and hint text `test/lint-fix-texts.test.ts` reads, read out of
+ * its own source (never a list of paths), or `undefined`: a `message:`/`fix:`/`hint:`/`hints:` property,
+ * the `Diagnostic` type, or a leading doc comment that says it names message or hint text (the phrases
+ * lint rules name an element with). Only `src/` code; a deleted or unreadable module composes nothing.
  */
-export const composesFixText = (f) =>
-  (f.startsWith("src/elements/") && CODE.test(f)) ||
-  f === "src/lint/element-phrases.ts" ||
-  f === "src/lint/ruleset.ts" ||
-  f === "src/diagnostics.ts";
+export function composesFixText(ROOT, f) {
+  if (!f.startsWith("src/") || !CODE.test(f)) return undefined;
+  let text = "";
+  try {
+    text = readFileSync(join(ROOT, f), "utf8");
+  } catch {
+    return undefined;
+  }
+  const prop = TEXT_PROP.exec(text);
+  if (prop) return `a module with a \`${prop[1]}:\` property`;
+  if (/\bDiagnostic\b/.test(text)) return "a module that builds a Diagnostic";
+  const start = text.indexOf("/**");
+  const end = start === -1 ? -1 : text.indexOf("*/", start);
+  const head = end === -1 || text.slice(0, start).trim() !== "" ? "" : text.slice(start, end);
+  if (/\b(message|hint)s?\b/i.test(head)) return "a module whose header names message text";
+  return undefined;
+}
 
 /** The key file IndexNow serves at the domain root, which `opaque-literal-guard` matches to the test's key. */
 export const isIndexNowKey = (f) => /^docs-site\/public\/[0-9a-f]{32}\.txt$/.test(f);
 
 /**
- * Why a changed path `f` wakes `guard`, or `undefined`. `ctx` is `{ excluded, docs, imports? }`: the
- * `.gitleaksignore` paths, the files `test/docs-flags.test.ts` reads, and each guard's `guardImports`.
+ * Why a changed path `f` wakes `guard`, or `undefined`. `ctx` is `{ excluded, docs, imports?, root? }`: the
+ * `.gitleaksignore` paths, the files `test/docs-flags.test.ts` reads, each guard's `guardImports`, and the
+ * repo root `composesFixText` reads a changed module under.
  */
 export function textGuardTrigger(guard, f, ctx) {
   if (guard === FIX_TEXTS) {
     if (isErrorCatalogue(f)) return "the error catalogue";
     if (f === "src/fix-producers.ts") return "the fix producers";
-    if (composesFixText(f)) return "a module that composes fix text";
+    const composes = ctx.root === undefined ? undefined : composesFixText(ctx.root, f);
+    if (composes) return composes;
     // Its imports are the whole core (`src/index.ts`, `src/lint.ts`): not a trigger of their own.
     return undefined;
   }
@@ -337,7 +355,7 @@ export function textGuardTrigger(guard, f, ctx) {
 
 /**
  * The text guards a change set wakes, each by its own inputs: `lint-fix-texts` by the error catalogue,
- * the fix producers and the modules that compose fix text; `opaque-literal-guard` by `.gitleaksignore`,
+ * the fix producers and a module whose own source composes fix text (`composesFixText`); `opaque-literal-guard` by `.gitleaksignore`,
  * the files it names, the published IndexNow key and the catalogue; `docs-flags` by the pages it reads,
  * a deleted or renamed-away one too (`gone`); those two also by a module they import directly. Each is
  * `{ file, why }`, the why naming the trigger.
@@ -347,6 +365,7 @@ export function textGuards(ROOT, changed, files, gone = []) {
     excluded: gitleaksExcluded(ROOT),
     docs: docsFlagsReads(ROOT, files, gone),
     imports: new Map(TEXT_GUARDS.map((g) => [g, guardImports(ROOT, g)])),
+    root: ROOT,
   };
   const out = [];
   for (const guard of TEXT_GUARDS) {

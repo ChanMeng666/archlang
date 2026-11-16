@@ -25,7 +25,7 @@
  *      within 15 recorded seconds and 30 files at most), the tests named after a changed module (`namedTests`; at
  *      most 5 files and 10 recorded seconds), the text guards CI failed on in #848, each woken only by its own
  *      inputs (`textGuards`; no cap beyond the three files): `lint-fix-texts` by the error catalogue,
- *      `src/fix-producers.ts` or a module that composes fix text, `opaque-literal-guard` by `.gitleaksignore`,
+ *      `src/fix-producers.ts` or a `src/` module whose own text composes fix text (`composesFixText`), `opaque-literal-guard` by `.gitleaksignore`,
  *      a path it names, the IndexNow key or the catalogue, `docs-flags` by a page that test reads (deleted
  *      or renamed away too), both by a module they import; and, for a change under `src/`, the cheapest reachable tests
  *      that pin their output over the examples corpus (`corpusPins`; within `--pins` recorded seconds).
