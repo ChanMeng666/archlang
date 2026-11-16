@@ -70,7 +70,7 @@ describe("fix coverage (U.17)", () => {
           'const b = { code: ok ? "E_DOOR_WIDTH" : "E_WINDOW_WIDTH", fixes: [f] };',
           'const c = { code: "E_HEIGHT_RANGE", ...(ok ? { fixes: [f] } : {}) };',
           'const d = ds.map((d) => (d.code !== "W_POCKET_RUN" ? d : { ...d, fixes: [f] }));',
-          'const e = { ...d, fixes: d.fixes.map((f) => f) };',
+          "const e = { ...d, fixes: d.fixes.map((f) => f) };",
           'const g = { code: "W_DOOR_CLEARANCE", message: "no fix" };',
           "const h = { fixes: [f] };",
         ].join("\n"),

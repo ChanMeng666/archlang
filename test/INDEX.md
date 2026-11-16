@@ -5,7 +5,7 @@
 Where the tests of a `src` module are, and what each test file is for. Generated; `npm run check:drift`
 fails when it is stale. How to add a test: `docs/testing.md` § 4.
 
-534 test files in `test/`, 286 `src` modules, 107 modules no test imports.
+535 test files in `test/`, 286 `src` modules, 107 modules no test imports.
 
 ## `src` module → tests that import it
 
@@ -384,6 +384,7 @@ The first sentence of each file's header comment.
 - `test/finish.test.ts` — finish law 4 — no core path moved; finish law 6 — a source that does not compile is returned untouched; finish — fill only what is missing; choosing the sheet; an authored sheet is kept; stages; edge layouts; the titl...
 - `test/fix-apply.test.ts` — Data (piece table); applyFixes.
 - `test/fix-commute.test.ts` — Property-based laws over `applyFixes` (`src/fix-apply.ts`), generalising the example-based cases already pinned in `test/fix-apply.test.ts` to fast-check permutations/ranges: - **Disjoint admissible fixes commute**: h...
+- `test/fix-coverage.test.ts` — How many catalogued codes can carry a machine fix (a span edit, `Diagnostic.fixes`), read from the source by `scripts/fix-coverage.ts` (card U.17).
 - `test/fix-printer.test.ts` — `emitOpening` (W4b) rebuilds a whole door/window/opening statement through the shared printer (`printDoc(statementText(...))`) instead of a second, hand-written enumeration of clauses, precisely so a rebuild never sil...
 - `test/fix-producers.test.ts` — off-wall opening fix (W_*_OFF_WALL → attachment form); opening width fix (E_*_WIDTH → has-placeholders); attach-position clamp fix (E_ATTACH_POS_RANGE → machine…
 - `test/fix-pullback.test.ts` — Lint fixes pulled back through the instance frame (backlog E.1, `fix-pullback`).

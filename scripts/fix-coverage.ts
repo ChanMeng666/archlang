@@ -183,7 +183,10 @@ export function fixCoverage(root: string = REPO): FixCoverage {
 }
 
 export function renderFixCoverage(c: FixCoverage): string {
-  const lines = [`${c.withEdit.length} of ${c.catalogued.length} codes have a span edit`, ...c.withEdit.map((x) => `  ${x}`)];
+  const lines = [
+    `${c.withEdit.length} of ${c.catalogued.length} codes have a span edit`,
+    ...c.withEdit.map((x) => `  ${x}`),
+  ];
   if (c.uncatalogued.length) lines.push(`uncatalogued: ${c.uncatalogued.join(", ")}`);
   for (const s of c.unattributed) lines.push(`unattributed fix site: ${s.file}:${s.line}`);
   return lines.join("\n") + "\n";
