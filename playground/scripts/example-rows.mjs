@@ -14,20 +14,21 @@
  * these rows across four lines and adds one, so a pattern that demanded `"]` would match zero
  * rows the moment anyone ran `npm run lint:fix`.
  *
- * Plain JavaScript with no dependency, so a Node build script and the vitest suite import the
+ * Plain JavaScript with no package dependency, so a Node build script and the vitest suite import the
  * same function.
  */
 
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
+import { PLAYGROUND_ORIGIN } from "../../scripts/gen-permalink.mjs";
 
 /** @typedef {{ name: string, label: string, group: string, blurb: string }} ExampleRow */
 
 /** The table's file, relative to the repo root. */
 export const EXAMPLES_TS = "playground/src/examples.ts";
 
-/** Where the static example pages are served. */
-export const PLAYGROUND_ORIGIN = "https://playground.archlang.uk";
+/** Where the static example pages are served: the one origin, `src/cli/share-codec.mjs`. */
+export { PLAYGROUND_ORIGIN };
 
 /**
  * The rows out of the text of `examples.ts`, in table order. Throws when the table lost its

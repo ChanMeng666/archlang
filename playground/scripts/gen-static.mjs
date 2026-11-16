@@ -64,7 +64,7 @@ import { mkdirSync, readFileSync, readdirSync, writeFileSync } from "node:fs";
 import { dirname, join, relative } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 
-import { encodePlanHash } from "../../scripts/gen-permalink.mjs";
+import { encodePlanHash, PLAYGROUND_ORIGIN } from "../../scripts/gen-permalink.mjs";
 import { factsLine } from "../src/facts-line.js";
 import { cardText, splitLabel } from "../src/plan-label.js";
 import { readExampleRows, rowNeighbours } from "./example-rows.mjs";
@@ -76,7 +76,7 @@ const playground = join(here, "..");
 const repo = join(playground, "..");
 const outDir = join(playground, "dist");
 
-const ORIGIN = "https://playground.archlang.uk";
+const ORIGIN = PLAYGROUND_ORIGIN;
 const DOCS = "https://archlang.uk";
 const OG_IMAGE = `${ORIGIN}/brand/archlang-og.png`;
 /** The ids the docs JSON-LD defines (site-shared/identity.json); these pages reference them. */
