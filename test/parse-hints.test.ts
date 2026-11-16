@@ -79,7 +79,7 @@ describe("parse hints", () => {
     const src = plan(
       [
         "  room id=r at (0,0) size 4000x4000",
-        "  wall id=w { (0,0) (4000,0) }",
+        "  wall id=w exterior thickness 200 { (0,0) (4000,0) }",
         "  door hinged on r.bottom at 900 from start width 900",
         "  furniture sofa against wall w offset 1500",
         "  furniture bed in r anchor top inset 200",
