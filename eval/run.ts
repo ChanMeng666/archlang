@@ -577,12 +577,21 @@ export function liveSourceFile(id: string, reply: string | undefined): { name: s
   const block = firstArchFence(reply);
   if (block === undefined) return marker("no complete arch fence in the reply");
   if (block !== extractArch(reply)) return marker("the scored text is not the reply's first arch fence");
-  return { name: `${id}.arch`, text: `${block}\n` };
+  // Exactly the scored string, no suffix: recompiling it reproduces the scored diagnostics.
+  return { name: `${id}.arch`, text: block };
 }
 
+/** A brief id {@link writeLiveSources} may turn into a file name: a plain slug, no separators. */
+const SAFE_ID = /^[A-Za-z0-9._-]+$/;
+
 /** Write one {@link liveSourceFile} per scored (non-skipped) brief into `dir`, replacing what a
- *  previous run left there. */
+ *  previous run left there. Throws, before touching `dir`, on an id that is not a plain slug. */
 export function writeLiveSources(dir: string, results: readonly Score[], replyById: ReadonlyMap<string, string>): void {
+  for (const r of results) {
+    if (!SAFE_ID.test(r.id) || r.id.includes("..")) {
+      throw new Error(`unsafe brief id for a file name: ${JSON.stringify(r.id)}`);
+    }
+  }
   rmSync(dir, { recursive: true, force: true });
   mkdirSync(dir, { recursive: true });
   for (const r of results) {
@@ -590,6 +599,28 @@ export function writeLiveSources(dir: string, results: readonly Score[], replyBy
     const f = liveSourceFile(r.id, replyById.get(r.id));
     writeFileSync(resolve(dir, f.name), f.text);
   }
+}
+
+/** main()'s reply wiring: `onReply` goes to {@link makeAuthor}, `author` wraps each brief's call
+ *  and keeps that brief's raw reply in memory only, and `write` hands them to
+ *  {@link writeLiveSources}. */
+export function liveReplyCollector() {
+  const replyById = new Map<string, string>();
+  let last: string | undefined;
+  return {
+    onReply: (reply: string): void => {
+      last = reply;
+    },
+    async author(id: string, call: () => Promise<string>): Promise<string> {
+      last = undefined;
+      const src = await call();
+      if (last !== undefined) replyById.set(id, last);
+      return src;
+    },
+    write(dir: string, results: readonly Score[]): void {
+      writeLiveSources(dir, results, replyById);
+    },
+  };
 }
 
 /** The L1 table cell for a brief: healers applied + any L0→L1 verdict transition. */
@@ -1070,20 +1101,15 @@ async function main(): Promise<void> {
   }
 
   // Each brief's raw reply stays in memory only, so writeLiveSources can decide what to store.
-  const replyById = new Map<string, string>();
-  let lastReply: string | undefined;
-  const author = makeAuthor(provider, model, ledger, (reply) => {
-    lastReply = reply;
-  });
+  const replies = liveReplyCollector();
+  const author = makeAuthor(provider, model, ledger, replies.onReply);
   // With --l1 we keep each brief's authored L0 source so it can be healed and re-scored
   // afterwards (no extra API calls). Off the L1 path this is the original thin wrapper.
   const rawById = new Map<string, string>();
   const stopById = new Map<string, string>();
   const getSource = async (e: CorpusEntry): Promise<string> => {
     ledger.lastStop = undefined;
-    lastReply = undefined;
-    const src = await author(e.prompt);
-    if (lastReply !== undefined) replyById.set(e.id, lastReply);
+    const src = await replies.author(e.id, () => author(e.prompt));
     if (ledger.lastStop) stopById.set(e.id, ledger.lastStop);
     if (l1Mode) rawById.set(e.id, src);
     return src;
@@ -1115,7 +1141,7 @@ async function main(): Promise<void> {
   md += liveDeltaSection(baseline, summary, promptHashes());
   md = LIVE_HEADER + md;
   writeFileSync(resolve(ROOT, LIVE_RESULTS), md);
-  writeLiveSources(resolve(ROOT, LIVE_SOURCES_DIR), results, replyById);
+  replies.write(resolve(ROOT, LIVE_SOURCES_DIR), results);
   process.stdout.write(md + "\n");
   process.stdout.write(`✓ wrote ${LIVE_RESULTS} and ${LIVE_SOURCES_DIR}/ (git-ignored)\n`);
   if (budget) process.stderr.write(`budget: ${ledger.spentLabel()} (limit ${budget.amount}${budget.kind})\n`);

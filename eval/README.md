@@ -207,7 +207,8 @@ npm run eval:l2 -- --yes …   # T3 harness — paid; ONE owner-ratified run onl
   `live-baseline.json` is present. Each scored brief's plan source goes to
   `eval/results.live-sources/<id>.arch` (git-ignored; `writeLiveSources` in `run.ts`): only the body
   of the reply's first complete `arch` or untyped fence, and only when that is exactly the text
-  scored. Otherwise `<id>.not-extracted.txt` holds a one-line reason and no reply text — an unfenced
+  scored, byte for byte. A fence body that is prose is stored too when it is exactly what was scored:
+  it is the extracted source RM-D53 allows. Otherwise `<id>.not-extracted.txt` holds a one-line reason and no reply text — an unfenced
   or truncated reply is never stored, so the model's prose stays unpublished (product-roadmap
   RM-D53). The workflow uploads both in the `eval-results-live` artifact (GitHub's default retention).
 

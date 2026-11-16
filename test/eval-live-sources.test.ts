@@ -1,7 +1,7 @@
 /** Live-run plan sources (EV.2, product-roadmap RM-D53), offline: fetch mocked, no network. */
 
 import { spawnSync } from "node:child_process";
-import { mkdtempSync, readFileSync, readdirSync, rmSync } from "node:fs";
+import { mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -13,6 +13,7 @@ import {
   evaluate,
   extractArch,
   firstArchFence,
+  liveReplyCollector,
   liveSourceFile,
   loadCorpus,
   makeAuthor,
@@ -70,9 +71,9 @@ describe("liveSourceFile: the stored text is the first arch/untyped fence's body
         expect(f.text.split("\n")).toHaveLength(2); // one line, nothing of the reply
         if (reply.trim() !== "") expect(f.text).not.toContain(reply.trim().split("\n")[0]!.slice(0, 12));
       } else {
-        expect(f).toEqual({ name: "b1.arch", text: `${stored}\n` });
-        // Stored only when it is exactly what was scored.
-        expect(stored).toBe(extractArch(reply));
+        // Stored only when it is exactly what was scored, byte for byte (no added newline).
+        expect(f).toEqual({ name: "b1.arch", text: extractArch(reply) });
+        expect(f.text).toBe(stored);
       }
     });
   }
@@ -107,24 +108,27 @@ describe("a live-shaped run writes one file per scored brief", () => {
       vi.fn(async () => {
         const text = replies.get(current);
         if (text === null) return new Response("overloaded", { status: 529 });
-        return new Response(JSON.stringify({ content: [{ type: "text", text }], stop_reason: "end_turn" }), {
-          status: 200,
-        });
+        return new Response(
+          JSON.stringify({
+            content: [{ type: "text", text }],
+            stop_reason: "end_turn",
+          }),
+          {
+            status: 200,
+          },
+        );
       }),
     );
-    // The same wiring main() uses: makeAuthor's onReply keeps the raw reply in memory only.
-    const replyById = new Map<string, string>();
-    let lastReply: string | undefined;
-    const author = makeAuthor("anthropic", "claude-sonnet-5-5", new LiveLedger("claude-sonnet-5-5"), (r) => {
-      lastReply = r;
-    });
+    // The collector main() uses: makeAuthor's onReply keeps the raw reply in memory only.
+    const collector = liveReplyCollector();
+    const author = makeAuthor("anthropic", "claude-sonnet-5-5", new LiveLedger("claude-sonnet-5-5"), collector.onReply);
+    const scored = new Map<string, string>();
     const { results } = await evaluate(
       entries,
       async (e) => {
         current = e.id;
-        lastReply = undefined;
-        const src = await author(e.prompt);
-        if (lastReply !== undefined) replyById.set(e.id, lastReply);
+        const src = await collector.author(e.id, () => author(e.prompt));
+        scored.set(e.id, src);
         return src;
       },
       { beforeEach: (e) => e.id === entries[4]!.id },
@@ -134,7 +138,7 @@ describe("a live-shaped run writes one file per scored brief", () => {
 
     const dir = mkdtempSync(join(tmpdir(), "ev2-"));
     try {
-      writeLiveSources(dir, results, replyById);
+      collector.write(dir, results);
       const files = readdirSync(dir).sort();
       expect(files).toEqual(
         [
@@ -144,19 +148,50 @@ describe("a live-shaped run writes one file per scored brief", () => {
           `${entries[3]!.id}.not-extracted.txt`,
         ].sort(),
       );
-      expect(readFileSync(join(dir, `${entries[0]!.id}.arch`), "utf8")).toBe(`${golden}\n`);
+      // Byte-equal to the text that was scored.
+      expect(readFileSync(join(dir, `${entries[0]!.id}.arch`), "utf8")).toBe(scored.get(entries[0]!.id));
+      expect(scored.get(entries[0]!.id)).toBe(golden);
       for (const f of files.filter((x) => x.endsWith(".txt"))) {
         const text = readFileSync(join(dir, f), "utf8");
         expect(text.startsWith(`${NOT_EXTRACTED}: `)).toBe(true);
         expect(text).not.toContain("room");
       }
       // A second run replaces the first run's files.
-      writeLiveSources(dir, results.slice(0, 1), replyById);
+      collector.write(dir, results.slice(0, 1));
       expect(readdirSync(dir)).toEqual([`${entries[0]!.id}.arch`]);
     } finally {
       rmSync(dir, { recursive: true, force: true });
     }
   });
+
+  it("main() wires the collector: makeAuthor gets its onReply, each brief goes through it, it writes", () => {
+    const src = readFileSync(resolve(ROOT, "eval/run.ts"), "utf8");
+    const main = src.slice(src.indexOf("async function main("));
+    expect(main).toContain("const replies = liveReplyCollector();");
+    expect(main).toContain("makeAuthor(provider, model, ledger, replies.onReply)");
+    expect(main).toContain("await replies.author(e.id, () => author(e.prompt))");
+    expect(main).toContain("replies.write(resolve(ROOT, LIVE_SOURCES_DIR), results);");
+  });
+});
+
+describe("writeLiveSources refuses an id that is not a plain slug", () => {
+  for (const id of ["../x", "a/b", "a\\b", "..", "a..b", "", "C:x", "a b"]) {
+    it(JSON.stringify(id), () => {
+      const dir = mkdtempSync(join(tmpdir(), "ev2-"));
+      try {
+        writeFileSync(join(dir, "keep.txt"), "x");
+        const results = [
+          { id: "ok-1", skipped: false },
+          { id, skipped: false },
+        ] as unknown as Parameters<typeof writeLiveSources>[1];
+        expect(() => writeLiveSources(dir, results, new Map())).toThrow(/unsafe brief id/);
+        // Nothing was removed or written.
+        expect(readdirSync(dir)).toEqual(["keep.txt"]);
+      } finally {
+        rmSync(dir, { recursive: true, force: true });
+      }
+    });
+  }
 });
 
 describe("the local directory is git-ignored", () => {
