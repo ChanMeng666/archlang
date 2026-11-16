@@ -46,6 +46,12 @@ listed in the stage report (`docs/plans/plan-soundness/README.md` D18).
 - **`eval/rubric.md` is frozen.** `eval:live`, `eval:fidelity-live` and `dataset:model-authoring -- submit`
   are paid and owner-only (hard rule: AGENTS.md § Hard rules; the fidelity run's bounds are
   product-roadmap RM-D46, the dataset config's RM-D47); CI runs `eval:ci`.
+- **Uploads to the HF dataset repo `ChanMeng666/archlang-repair-trajectories` are the agent's (owner,
+  2026-11-16, in words; product-roadmap RM-D55):** the agent uploads with the owner's logged-in `hf`
+  CLI and verifies by SHA-256 (a mismatch stops and is reported), stopping for a login, 2FA, token or
+  any other owner-only step, which it guides the owner through. Unchanged: replacing a published data
+  file (a regeneration, new rows) needs an owner ruling first (RM-D47), the seed-`20260712` bytes stay
+  as published, and no token in the repo or chat.
 
 ## Releases
 

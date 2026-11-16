@@ -20,7 +20,13 @@ paths:
   `eval:fidelity-live` (paid, owner-only; product-roadmap RM-D46) is compared with neither, nor with
   the L0 baseline.
 - `npm run dataset:model-authoring -- submit` is paid and owner-only (product-roadmap RM-D47): never
-  run it, nor upload anything to HF; `plan` and `build` are free. Its config is one-shot model
+  run it; `plan` and `build` are free. Uploading to the HF dataset repo `ChanMeng666/archlang-repair-trajectories` is
+  the agent's (RM-D55, owner 2026-11-16): with the owner's logged-in `hf` CLI, re-download and compare
+  SHA-256 after (a mismatch stops and is reported); stop and guide the owner for a login, 2FA, token
+  or any other step only the owner can do; never a token in the repo or chat. What may be uploaded is
+  unchanged: replacing a published data file (a regeneration, new rows) needs an owner ruling first
+  (RM-D47; the seed-`20260712` bytes stay as published); without one, only the card. The
+  model-authoring config is one-shot model
   replies, CC0 with the provider note in `dataset/CARD.md`, never promoted as
   training data.
 - **(Dataset) `dataset/out/` is gitignored and HF-only.** On re-upload the card's

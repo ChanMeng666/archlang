@@ -2087,12 +2087,15 @@ after #872, 8.5 s before), and the playground runs it on user text; scan from th
 point for a comment on a CR CR LF line: the lexer drops one trailing CR, so pass 1 prints `# note\r`
 and pass 2 `# note`. **Gate:** the corpus `format` output stays byte-identical.
 
-### RR.18 · A per-upload owner instruction is not in the eval-dataset rule — `decision`
+### RR.18 · A per-upload owner instruction is not in the eval-dataset rule: decided by RM-D55, waiting to be archived — `note`
 
 `.claude/rules/eval-dataset.md` makes HF uploads owner-only and has no carve-out for an explicit
 per-upload instruction from the owner, which is how the card upload of 2026-11-16 (HF `90914659`) was
 done (`docs/plans/product-roadmap/handoff.md`). Whether to add that carve-out is the owner's call;
 until then the rule stands as written.
+
+**Decided** by RM-D55 (owner, 2026-11-16; product-roadmap README §6.24): uploads to the dataset repo
+are the agent's, standing; replacing a published data file still needs an owner ruling first.
 
 ## Test-programme findings (promo-credit programme, 2026-11-16)
 
