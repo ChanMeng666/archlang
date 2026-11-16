@@ -2030,11 +2030,14 @@ hand without `height`, `site`, `notes` or `sheet text`. **Gate:** both read from
 derives, and a test fails when a plan-level form is added without them. #857's review also noted
 guard gaps it did not itemise; re-read that guard when this is taken.
 
-### RR.12 · `E_DRAWING_LIMIT`'s remedy retypes its message clause — `todo`
+### RR.12 · `E_DRAWING_LIMIT`'s remedy retypes its message clause: done by #892, waiting to be archived — `note`
 
 From #859's review (RR.4): the remedy repeats a clause of the message by hand, so a later wording
 change to one leaves the other stale. **Gate:** the remedy reads the clause from where the message
 builds it, or a test pins that they agree.
+
+Residue: only the NOTES clause is pinned (a test, not a shared constant, which would join the
+catalogue to the compiler chunk); the primitive-budget message paraphrases the remedy and stays unpinned.
 
 ### RR.13 · `uses` outdoor-hint follow-ups after RR.5: done by #881, waiting to be archived — `note`
 
