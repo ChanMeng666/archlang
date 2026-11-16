@@ -378,6 +378,9 @@ function main(): void {
 }
 
 // Run only when invoked directly (not when imported by the test).
-if ((process.argv[1] !== undefined && import.meta.url === pathToFileURL(resolve(process.argv[1])).href) || process.argv[1]?.endsWith("generate.ts")) {
+if (
+  (process.argv[1] !== undefined && import.meta.url === pathToFileURL(resolve(process.argv[1])).href) ||
+  process.argv[1]?.endsWith("generate.ts")
+) {
   main();
 }

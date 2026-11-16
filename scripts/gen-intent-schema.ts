@@ -28,6 +28,9 @@ function main(): void {
 }
 
 // Only write when run directly (the drift test imports `renderIntentSchema`).
-if ((process.argv[1] !== undefined && import.meta.url === pathToFileURL(resolve(process.argv[1])).href) || process.argv[1]?.endsWith("gen-intent-schema.ts")) {
+if (
+  (process.argv[1] !== undefined && import.meta.url === pathToFileURL(resolve(process.argv[1])).href) ||
+  process.argv[1]?.endsWith("gen-intent-schema.ts")
+) {
   main();
 }

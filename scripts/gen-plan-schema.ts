@@ -29,6 +29,9 @@ function main(): void {
 }
 
 // Only write when run directly (the drift test imports `renderPlanSchema`).
-if ((process.argv[1] !== undefined && import.meta.url === pathToFileURL(resolve(process.argv[1])).href) || process.argv[1]?.endsWith("gen-plan-schema.ts")) {
+if (
+  (process.argv[1] !== undefined && import.meta.url === pathToFileURL(resolve(process.argv[1])).href) ||
+  process.argv[1]?.endsWith("gen-plan-schema.ts")
+) {
   main();
 }
