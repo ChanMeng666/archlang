@@ -31,7 +31,18 @@ describe("T5.2 — formatter is idempotent", () => {
   }
 });
 
-describe("the newer sheet strings are a fixed point for ANY text (`number`, `revision`, `notes`)", () => {
+/**
+ * A blank right before a character a multiline `$` treats as a line end (CR, U+2028, U+2029):
+ * the printer once stripped it as trailing whitespace, inside a string literal or comment.
+ */
+const BLANK_BEFORE_BREAK: Record<string, string> = {
+  spaceCr: "A \rB",
+  tabCr: "A\t\rB",
+  spaceLs: "A \u2028B",
+  spacePs: "A \u2029B",
+};
+
+describe("the sheet strings are a fixed point for ANY text (every title field, `notes`)", () => {
   // The lexer reads back only `\"`, `\\` and `\n`; any other control character must reach
   // the source raw, which `escapeStr` does and `JSON.stringify` does not (`\t` would come back
   // as `t`). The idempotence law above runs over the examples only, which hold none of these.
@@ -43,19 +54,106 @@ describe("the newer sheet strings are a fixed point for ANY text (`number`, `rev
     quoteBackslash: 'A"\\101',
     braces: "A{1}01",
     newline: "A\n101",
+    ...BLANK_BEFORE_BREAK,
   };
   const lit = (s: string): string => s.replace(/\\/g, "\\\\").replace(/"/g, '\\"').replace(/\n/g, "\\n");
   for (const [name, v] of Object.entries(payloads)) {
     it(`${name}: format(format(x)) === format(x), and the value survives fmt and Plan JSON`, () => {
-      const src = `plan "P" {\n  units mm\n  notes "${lit(v)}"\n  room id=r at (0,0) size 3000x3000\n  title { number "${lit(v)}" revision "${lit(v)}" }\n}\n`;
-      expect(parse(src).plan!.title).toMatchObject({ number: v, revision: v });
+      const src = `plan "P" {\n  units mm\n  notes "${lit(v)}"\n  room id=r at (0,0) size 3000x3000\n  title { project "${lit(v)}" drawn_by "${lit(v)}" date "${lit(v)}" number "${lit(v)}" revision "${lit(v)}" }\n}\n`;
+      const all = { project: v, drawnBy: v, date: v, number: v, revision: v };
+      expect(parse(src).plan!.title).toMatchObject(all);
       const once = format(src);
       expect(format(once)).toBe(once);
       const p = parse(once).plan!;
-      expect(p.title).toMatchObject({ number: v, revision: v });
+      expect(p.title).toMatchObject(all);
       expect(p.notes).toEqual([v]);
       const back = planFromJson(planToJson(src).json);
-      expect(back.ast?.title).toMatchObject({ number: v, revision: v });
+      expect(back.ast?.title).toMatchObject(all);
+    });
+  }
+});
+
+describe("every string literal `fmt` quotes reads back as the same text (M.21)", () => {
+  // `format()` once quoted the plan name, level names, zone labels, import specs, the older
+  // title fields, `accTitle`/`accDescr`, `theme from` and theme/style values with
+  // `JSON.stringify`, whose `\t`/`\r`/`\uXXXX` escapes the lexer reads back as other text;
+  // and its printer stripped a blank before a CR/U+2028/U+2029 inside one.
+  const payloads: Record<string, string> = {
+    tab: "A\tB",
+    cr: "A\rB",
+    soh: "A\u0001B",
+    unitSep: "A\u001fB",
+    del: "A\u007fB",
+    loneSurrogate: "A\ud83dB",
+    newline: "A\nB",
+    quoteBackslash: 'A"\\B',
+    braces: "A{1}B",
+    ...BLANK_BEFORE_BREAK,
+  };
+  const lit = (s: string): string => s.replace(/\\/g, "\\\\").replace(/"/g, '\\"').replace(/\n/g, "\\n");
+  for (const [name, v] of Object.entries(payloads)) {
+    const q = `"${lit(v)}"`;
+    it(`${name}: theme and style string values`, () => {
+      const src =
+        `plan "P" {\n  units mm\n  theme { font: ${q} }\n  style room { fill: ${q} }\n` +
+        `  room id=r at (0,0) size 3000x3000\n}\n`;
+      const read = (s: string) => {
+        const p = parse(s).plan!;
+        return { font: p.theme?.font, room: Object.values(p.styles?.room ?? {}) };
+      };
+      expect(read(src)).toEqual({ font: v, room: [v] });
+      const once = format(src);
+      expect(read(once)).toEqual({ font: v, room: [v] });
+      expect(format(once)).toBe(once);
+    });
+    it(`${name}: plan name, level name, zone label, import spec (both forms), title, acc text`, () => {
+      const src =
+        `plan ${q} {\n  units mm\n  import ${q}: Unit\n  import ${q} as W\n  accTitle ${q}\n  accDescr ${q}\n` +
+        `  level 1 ${q} {\n    zone west ${q} {\n      room id=r at (0,0) size 3000x3000\n    }\n  }\n` +
+        `  title { project ${q} drawn_by ${q} date ${q} }\n}\n`;
+      const read = (s: string) => {
+        const { plan } = parse(s);
+        const level = plan!.body.find((st) => st.kind === "level") as { name?: string; body: { kind: string }[] };
+        const zone = level.body.find((st) => st.kind === "zone") as { label?: string };
+        return {
+          name: plan!.name,
+          level: level.name,
+          zone: zone.label,
+          imports: plan!.imports.map((i) => [i.spec, i.wholeAs]),
+          title: plan!.title,
+          accTitle: plan!.accTitle,
+          accDescr: plan!.accDescr,
+        };
+      };
+      const want = {
+        name: v,
+        level: v,
+        zone: v,
+        imports: [
+          [v, undefined],
+          [v, "W"],
+        ],
+        title: { project: v, drawnBy: v, date: v },
+        accTitle: v,
+        accDescr: v,
+      };
+      expect(read(src)).toMatchObject(want);
+      const once = format(src);
+      expect(read(once)).toMatchObject(want);
+      expect(format(once)).toBe(once);
+    });
+    it(`${name}: \`theme from\` path`, () => {
+      const src = `plan "P" {\n  units mm\n  theme from ${q}\n  room id=r at (0,0) size 3000x3000\n}\n`;
+      expect(parse(src).plan!.themeFrom).toBe(v);
+      const once = format(src);
+      expect(parse(once).plan!.themeFrom).toBe(v);
+      expect(format(once)).toBe(once);
+    });
+  }
+  for (const [name, v] of Object.entries(BLANK_BEFORE_BREAK)) {
+    it(`${name}: a comment keeps the blank before the break`, () => {
+      const src = `plan "P" {\n  units mm\n  # ${v}\n  room id=r at (0,0) size 3000x3000\n}\n`;
+      expect(format(src)).toContain(`# ${v}\n`);
     });
   }
 });

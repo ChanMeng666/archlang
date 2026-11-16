@@ -506,7 +506,7 @@ on a room name the label pass did not move. Each is pinned in `test/opening-tags
 (the list may only shrink). Better needs more candidate places or a leader line. Tags also
 number per storey (`W01` on each level); a set-unique numbering is an owner call.
 
-### N.4 · `fmt` round-trips `project`/`drawn_by`/`date` wrongly for a control character — `todo`
+### N.4 · `fmt` round-trips `project`/`drawn_by`/`date` wrongly for a control character: done by #872, waiting to be archived — `note`
 
 `src/format.ts` quotes those three title fields with `JSON.stringify`, which writes a tab as
 `\t`; the lexer reads back only `\"`, `\\` and `\n`, so `title { project "A<TAB>B" }` formats to
@@ -851,7 +851,7 @@ fix is a table change (a `dining-room` key or alias), which bumps `SYNONYMS_VERS
 version is pinned by a test and the eval scores through the same table, so the bump is the
 owner's call.
 
-### M.21 · `format()` writes the plan name with `JSON.stringify`, which the lexer cannot read back — `todo`
+### M.21 · `format()` writes the plan name with `JSON.stringify`, which the lexer cannot read back: done by #872, waiting to be archived — `note`
 
 The lexer knows only the escapes `\n`, `\"` and `\\` (`src/lexer.ts`, the string-literal
 branch), but `src/format.ts` prints the plan name, level names, zone labels, import specs and
@@ -2075,7 +2075,7 @@ Done: the owner said "同意上传卡片，请你自动帮我实施" (2026-11-16
 `2ed46aad…9cc4`) was uploaded as `README.md`, HF commit `90914659`, and the downloaded file's SHA-256
 equals main's.
 
-### AG.1 · `check:quick` misses the text guards an executor most often trips — `todo`
+### AG.1 · `check:quick` misses the text guards an executor most often trips: done by #867, waiting to be archived — `note`
 
 In the P5 run, executors reported a green local gate on PRs that CI then failed on
 `test/opaque-literal-guard.test.ts`, `test/docs-flags.test.ts` and `test/lint-fix-texts.test.ts`
@@ -2083,6 +2083,16 @@ In the P5 run, executors reported a green local gate on PRs that CI then failed 
 files they read. One way: when a change touches `src/error-catalog/`, `docs/*.md` or a
 gitleaks-excluded test, `scripts/check-quick.mjs` also runs those three files. **Gate:** a
 `gate-select` test that such a change selects them; `scripts/check-quick.mjs` is high tier.
+
+### AG.2 · `check:quick` residue from AG.1's review — `todo`
+
+Two things AG.1 left. (1) A by-name guard (a test the import graph reaches only because it names a
+changed file) still competes for the 20 `--max` slots, so a change set with many `examples/` files
+fills the cap with directory-scanning guards and the by-name guard is cut (review m1 of #867).
+(2) `test/lint-fix-texts.test.ts` records about 61 s and runs uncapped on any error-catalogue or
+`src/fix-producers.ts` change, which is most of a `check:quick` minute. One way: give by-name
+guards their own extras slot, and cap `textGuards` by recorded seconds with the cut printed.
+**Gate:** `gate-select` tests for both; `scripts/check-quick.mjs` is high tier.
 
 ## Site chrome (found while fixing the nav overflow, 2026-09-20)
 

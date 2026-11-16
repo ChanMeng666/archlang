@@ -17,7 +17,8 @@ merge evidence; a quick pass is not (a targeted subset misses the corpus-wide gu
    config for `test/` and `scripts/`, each changed workspace's own), `check:drift`, and the nearest
    tests by import distance (`--max`, default 20; it prints what it cut), plus, outside `--max`, the
    source-tree scanner guards, tests named after a changed module and the cheapest corpus pins
-   (`--pins`). `--list` shows the plan, `--fix` lets Biome write its fixes. After pushing, read the PR's
+   (`--pins`), each under its own cap, and the three text guards, uncapped, each on its own inputs
+   (`lint-fix-texts`, `opaque-literal-guard`, `docs-flags`). `--list` shows the plan, `--fix` lets Biome write its fixes. After pushing, read the PR's
    checks (`gh pr checks <n>`) and fix any red from CI's log, never by re-running the whole suite
    locally.
 
