@@ -276,7 +276,8 @@ and cannot board a train.
       head are still the recorded ones, `main` is still the train's base, the review comments are there,
       the train's own `ci.yml` run (event `pull_request`, the train branch, the train head) is completed
       and successful, and every check-run passed: never the check names alone, which GitHub matches per
-      SHA (so every member gets a fresh merge commit and the train head is never a member's head). It
+      SHA (so every member gets a fresh merge commit and the train head is never a member's head);
+      `--wait` also re-reads a BLOCKED merge state that lags green CI for a short bounded grace. It
       prints `scripts/ci-proven.mjs --run`'s `proves: yes|no|unknown` (`unknown` when no proof line
       could be read; information: on "no", `main`'s push run runs every leg itself). It merges with
       `--match-head-commit`, reads the state back, and only then deletes each member branch GitHub marked
