@@ -13,7 +13,7 @@
 
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
-import { fileURLToPath } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
 import { type DiagnosticJson, compile, describe, diagnosticToJson, lint, validateIntent } from "../src/index.js";
 import { authoringFor } from "./briefs.js";
 import { CANARY } from "./canary.js";
@@ -378,6 +378,6 @@ function main(): void {
 }
 
 // Run only when invoked directly (not when imported by the test).
-if (import.meta.url === `file://${process.argv[1]}` || process.argv[1]?.endsWith("generate.ts")) {
+if ((process.argv[1] !== undefined && import.meta.url === pathToFileURL(resolve(process.argv[1])).href) || process.argv[1]?.endsWith("generate.ts")) {
   main();
 }

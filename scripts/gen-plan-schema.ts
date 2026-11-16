@@ -11,7 +11,7 @@
 
 import { writeFileSync, mkdirSync } from "node:fs";
 import { dirname, resolve } from "node:path";
-import { fileURLToPath } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
 import { PLAN_JSON_SCHEMA } from "../src/plan-json.js";
 
 /** The exact bytes the drift test compares against (2-space indent + trailing newline). */
@@ -29,6 +29,6 @@ function main(): void {
 }
 
 // Only write when run directly (the drift test imports `renderPlanSchema`).
-if (import.meta.url === `file://${process.argv[1]}` || process.argv[1]?.endsWith("gen-plan-schema.ts")) {
+if ((process.argv[1] !== undefined && import.meta.url === pathToFileURL(resolve(process.argv[1])).href) || process.argv[1]?.endsWith("gen-plan-schema.ts")) {
   main();
 }
