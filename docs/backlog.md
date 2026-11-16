@@ -2071,7 +2071,7 @@ From #864's review: `eval/live-runs/2026-11-ev1-intent-gap.md` still says re-bas
 decision and that RM-D51 keeps the July record; RM-D52 (#854) re-baselined. Add a dated pointer line,
 as `2026-11-authorability-remeasure.md` has; change no number.
 
-### RR.16 · Text-guard selection follow-ups after AG.1 — `todo`
+### RR.16 · Text-guard selection follow-ups after AG.1: done by #895, waiting to be archived — `note`
 
 From #867's reviews. (1) `docs-flags` imports `src/manifest.ts`, which wakes it only through the
 capped import list, so a flag rename with its regenerated docs can cut it. (2) The `skills/*/SKILL.md`
@@ -2083,6 +2083,10 @@ asserts that an ordinary `src/` change wakes none of the guards (mutants `starts
 (6) A deleted or renamed page wakes nothing. (An `examples/` change crowding by-name guards out of
 the 20-file cap is AG.2 (1).) **Gate:** one `test/gate-select.test.ts` case per item, each failing
 on today's selection.
+
+Closure note (#895). Items (2) and (3) were missing pins, not wrong selection, so their cases pass on
+main's selection and fail on the mutants named above. Residue: item (4)'s list of modules that compose fix
+text is written out from this card (no table exists to derive it from); the test checks that every entry is tracked.
 
 ### RR.17 · `fmt` follow-ups after M.21: done by #884, waiting to be archived — `note`
 
