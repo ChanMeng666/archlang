@@ -13,6 +13,7 @@ import {
   AXIS_ALIGNS,
   REL_ALIGNS,
   REL_DIR_AXIS,
+  OUTDOOR_KINDS,
   REL_DIRS as REL_DIR_LIST,
   USE_KINDS,
   relAlignCounterpart,
@@ -106,6 +107,32 @@ export function floorWash(theme: Theme, floor: string): string | undefined {
 }
 const REL_ALIGN_SET: ReadonlySet<string> = new Set<RelAlign>(REL_ALIGNS);
 const USE_SET: ReadonlySet<string> = new Set<UseKind>(USE_KINDS);
+
+/**
+ * Words an author reaches for after `uses` that name ground OUTSIDE the building, which
+ * ArchLang draws as an `outdoor <kind>` surface rather than as a room (backlog U.6). Every
+ * {@link OUTDOOR_KINDS} word maps to itself (derived, so a new kind joins without an edit);
+ * the few common synonyms that are not kinds map to the nearest one.
+ */
+const OUTDOOR_USE_NEAR_MISS: ReadonlyMap<string, string> = new Map<string, string>([
+  ...OUTDOOR_KINDS.map((k): [string, string] => [k, k]),
+  ["terrace", "patio"],
+  ["garden", "lawn"],
+  ["yard", "paving"],
+]);
+
+/**
+ * The one wording of the "no valid room use after `uses`" parse error, shared by the
+ * room element and the strip parser so the two cannot drift. When the offending word is
+ * an outdoor surface (`uses balcony`), the message names the element that draws it.
+ */
+export function roomUsesExpected(found: string | undefined): string {
+  const base = `Expected one or more room uses (${USE_KINDS.join("|")}) after "uses" but found ${found ? `"${found}"` : "end of input"}`;
+  const kind = found === undefined ? undefined : OUTDOOR_USE_NEAR_MISS.get(found);
+  return kind === undefined
+    ? base
+    : `${base}; "${found}" is not a room use: draw it as its own \`outdoor ${kind}\` surface outside the room`;
+}
 
 /** The axis sentence both `align` diagnostics end on, rendered from {@link AXIS_ALIGNS}
  *  rather than retyped per branch — the rule and its two prose spellings have one owner,
@@ -225,10 +252,7 @@ function parseTail(ctx: ParseCtx, node: RoomNode, start: number, sized = false):
           uses.push(ctx.next().value as UseKind);
         }
         if (uses.length === 0) {
-          ctx.fail(
-            `Expected one or more room uses (${USE_KINDS.join("|")}) after "uses" but found ${ctx.peek().value ? `"${ctx.peek().value}"` : "end of input"}`,
-            ctx.peek(),
-          );
+          ctx.fail(roomUsesExpected(ctx.peek().value || undefined), ctx.peek());
         }
         if (keep) node.uses = uses;
       },
