@@ -54,7 +54,7 @@ import { fnv1a } from "./hash.js";
 import { idToken } from "./identity.js";
 import type { ElementDef, ParseCtx, Registry } from "./registry.js";
 import { BUILTIN_REGISTRY } from "./registry.js";
-import { floorClause, roomUsesExpected, roomUsesTrailingOutdoor } from "./elements/room.js";
+import { floorClause, roomUsesExpected, roomUsesOutdoorHint } from "./elements/room.js";
 import { missingClause, readClauses, type TailClause } from "./clause-order.js";
 import { KEEP_GRADES, KEEP_WORDS, STATEMENT_STARTS, TITLE_FIELDS, type TitleField } from "./grammar/tokens.js";
 import type { KeepGrade, KeepNode, KeepRef } from "./ast.js";
@@ -254,6 +254,22 @@ class Parser {
       }
     }
     return undefined;
+  }
+
+  /**
+   * The outdoor-surface hint for `t` when it is an outdoor word directly after a valid
+   * `uses` list (`uses living balcony`). Only the two errors that word already raises read
+   * it: the unknown statement, and a strip's expected `room` (backlog RR.5).
+   */
+  private usesOutdoorHint(t: Token): string | undefined {
+    let i = this.toks.indexOf(t) - 1;
+    let sawUse = false;
+    while (i >= 0 && this.toks[i]!.type === "ident" && USE_SET.has(this.toks[i]!.value)) {
+      sawUse = true;
+      i--;
+    }
+    if (!sawUse || i < 0 || this.toks[i]!.type !== "ident" || this.toks[i]!.value !== "uses") return undefined;
+    return roomUsesOutdoorHint(t.type, t.value);
   }
 
   /** Span from a start offset to the end of the last consumed token. */
@@ -1701,7 +1717,7 @@ class Parser {
       // for clarity of intent.
       else if (this.peek(1).type === "lparen") node = this.parseInstance();
       else {
-        const stray = STRAY_CLAUSE_HINTS.get(t.value);
+        const stray = STRAY_CLAUSE_HINTS.get(t.value) ?? this.usesOutdoorHint(t);
         if (stray === undefined) this.fail(`Unknown statement "${t.value}"`, t);
         throw new ParseError(`Unknown statement "${t.value}"`, { start: t.start, end: t.end }, [stray]);
       }
@@ -2008,6 +2024,13 @@ class Parser {
    *  clauses come in any order, each once (`src/clause-order.ts`). The child is built after, in
    *  the order the grammar used to require, so a room written in that order keeps its tree. */
   private parseStripRoom(): StripRoomChild {
+    const next = this.peek();
+    const outdoor = this.isKeyword("room") ? undefined : this.usesOutdoorHint(next);
+    if (outdoor !== undefined) {
+      throw new ParseError(`Expected "room" but found ${describe(next)}`, { start: next.start, end: next.end }, [
+        outdoor,
+      ]);
+    }
     const kw = this.eatKeyword("room");
     const start = kw.start;
     const id = this.parseIdOpt();
@@ -2062,9 +2085,7 @@ class Parser {
           while (this.peek().type === "ident" && USE_SET.has(this.peek().value)) {
             uses.push(this.next().value as UseKind);
           }
-          if (uses.length === 0) this.fail(roomUsesExpected(this.peek().value || undefined));
-          const outdoor = roomUsesTrailingOutdoor(this.peek().type, this.peek().value);
-          if (outdoor !== undefined) this.fail(outdoor);
+          if (uses.length === 0) this.fail(roomUsesExpected(this.peek().value || undefined, this.peek().type));
           if (keep) tail.uses = uses;
         },
       },

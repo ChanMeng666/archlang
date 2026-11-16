@@ -1,7 +1,8 @@
 /** room uses. */
 
 import { describe, expect, it } from "vitest";
-import { describe as describePlan, lint, compile } from "../src/index.js";
+import { describe as describePlan, lint, compile, registerElement } from "../src/index.js";
+import type { ParseCtx, ResolveCtx } from "../src/index.js";
 import { format } from "../src/format.js";
 
 /**
@@ -74,7 +75,13 @@ describe("room uses", () => {
     expect(errors[0]!.message).not.toContain("outdoor");
   });
 
-  // Backlog RR.5: the hint also fires on an outdoor word after a valid use.
+  it("adds no outdoor hint to a quoted word after `uses`", () => {
+    const { errors } = compile(wrap(`room id=r at (0,0) size 4000x3000 uses "Garden"`), { noCache: true });
+    expect(errors[0]!.message).not.toContain("outdoor");
+  });
+
+  // Backlog RR.5: an outdoor word after a valid use ends the list; the error it already raises
+  // (the next statement is unknown) gains the hint, its message and span unchanged.
   it.each([
     ["living balcony", "balcony", "outdoor balcony"],
     ["living dining Terrace", "Terrace", "outdoor balcony"],
@@ -82,8 +89,9 @@ describe("room uses", () => {
   ])("points `uses %s` at the outdoor surface", (words, word, hint) => {
     const { diagnostics } = compile(wrap(`room id=r at (0,0) size 4000x3000 uses ${words}`), { noCache: true });
     expect(diagnostics[0]!.code).toBe("E_PARSE");
-    expect(diagnostics[0]!.message).toContain(`"${word}" after "uses" is not a room use`);
-    expect(diagnostics[0]!.message).toContain(`\`${hint}\``);
+    expect(diagnostics[0]!.message).toBe(`Unknown statement "${word}"`);
+    expect(diagnostics[0]!.hints?.[0]).toContain(`"${word}" after "uses" is not a room use`);
+    expect(diagnostics[0]!.hints?.[0]).toContain(`\`${hint}\``);
   });
 
   it("points a strip room's later `uses … balcony` at `outdoor balcony` too", () => {
@@ -93,7 +101,86 @@ describe("room uses", () => {
 }`;
     const { diagnostics } = compile(src, { noCache: true });
     expect(diagnostics[0]!.code).toBe("E_PARSE");
-    expect(diagnostics[0]!.message).toContain("`outdoor balcony`");
+    expect(diagnostics[0]!.message).toBe('Expected "room" but found "balcony"');
+    expect(diagnostics[0]!.hints?.[0]).toContain("`outdoor balcony`");
+  });
+
+  it("keeps the room: `uses living balcony` reports exactly one diagnostic, no cascade", () => {
+    const src = `plan "P" {
+  units mm
+  room id=a at (0,0) size 4000x3000 uses living balcony
+  room id=b right-of a size 3000x3000
+  furniture sofa in a centered size 2000x900
+  furniture bed in b centered size 1600x2000
+}`;
+    const { diagnostics } = compile(src, { noCache: true });
+    expect(diagnostics).toHaveLength(1);
+    expect(diagnostics[0]!.hints?.[0]).toContain("`outdoor balcony`");
+  });
+
+  // RR.5 review B1: an outdoor word after a uses list that STARTS a valid statement still
+  // parses as that statement; only a word that already fails gets the hint.
+  const usesThen = (stmt: string, before = "") => `plan "P" {
+  units mm
+  ${before}
+  wall exterior thickness 200 { (0,0) (4000,0) (4000,3000) (0,3000) close }
+  room id=r at (0,0) size 4000x3000 uses living
+  ${stmt}
+}`;
+  const comp = (name: string, params: string) =>
+    `component ${name}(${params}) { room at (${params.split(",")[0]},0) size 1000x1000 label "${name}" }`;
+  it.each([
+    ["a declared component call", usesThen("Balcony(0, 4000)", comp("Balcony", "x, y"))],
+    ["a lower-case outdoor component call", usesThen("terrace(0)", comp("terrace", "x"))],
+    ["a capitalised outdoor component call", usesThen("Water(0)", comp("Water", "x"))],
+    ["an assignment to an outdoor name", usesThen("deck = 4000", "let deck = 0")],
+    [
+      "assignments in a for body",
+      `plan "P" {
+  units mm
+  let deck = 0
+  for i in 0..2 {
+    room at (i * 2000, 0) size 2000x2000 uses living
+    deck = 4000
+    room at (i * 2000, 3000) size 2000x2000 uses bedroom
+    deck = deck + 1
+  }
+}`,
+    ],
+    [
+      "an assignment to a component parameter",
+      `plan "P" {
+  units mm
+  component plot(garden) {
+    room at (garden, 0) size 2000x2000 uses living
+    garden = garden + 1
+  }
+  plot(0)
+}`,
+    ],
+  ])("still compiles %s after a uses list", (_what, src) => {
+    expect(compile(src, { noCache: true }).diagnostics.filter((d) => d.severity === "error")).toEqual([]);
+  });
+
+  it("still compiles a plugin element keyword `garden` after a uses list", () => {
+    const garden = registerElement({
+      kind: "garden_plot",
+      keyword: "garden",
+      parse(ctx: ParseCtx) {
+        const kw = ctx.eatKeyword("garden");
+        const at = ctx.parsePoint();
+        return { kind: "garden_plot", id: "", at, line: kw.line } as never;
+      },
+      idPrefix: () => "garden",
+      resolve(node: { at: unknown; span: unknown }, ctx: ResolveCtx) {
+        const at = ctx.snapPt(ctx.evalPt(node.at as never));
+        return { kind: "garden_plot", id: ctx.id, at, span: node.span } as never;
+      },
+      bounds: (r: { at: { x: number; y: number } }) => [r.at, r.at],
+      render: () => [],
+    } as never);
+    const { diagnostics } = compile(usesThen("garden (1000,1000)"), { plugins: [garden], noCache: true });
+    expect(diagnostics.filter((d) => d.severity === "error")).toEqual([]);
   });
 
   it("names no outdoor kind for a word with no source in the language reference", () => {
