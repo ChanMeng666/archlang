@@ -1767,7 +1767,7 @@ the page embeds) also change the page and are not listed. Adding `src/` would mo
 the compiler belongs (the package version may be the better signal). **Gate:** the
 `test/playground-examples-rows.test.ts` pin lists the new inputs.
 
-### WS.4 · "What this plan uses" has no row for `keep`, `import` or `style` — `todo`
+### WS.4 · "What this plan uses" has no row for `keep`, `import` or `style`: done by #868, waiting to be archived — `note`
 
 `playground/scripts/plan-constructs.mjs` detects constructs from `compile().ast`. No example page
 uses `keep` or `import` yet, so a detector could not be checked against a real page, and
@@ -1775,6 +1775,34 @@ uses `keep` or `import` yet, so a detector could not be checked against a real p
 uses it (and, for `style`, when the reference gains its section). **Gate:**
 `test/plan-constructs.test.ts`'s anchor check covers the new rows.
 
+**Done by #868** for `style`: the reference gained "Per-element styles — `style`" and the row
+fires on `materials`. `keep` and `import` still have no row because no `EXAMPLE_ROWS` plan writes
+them, and the test's every-row-fires guard rejects a detector no page checks; add each with the
+first example page that uses it.
+
+### WS.5 · `style wall { fill }` and `{ hatch }` are accepted and draw nothing — `todo`
+
+The parser takes both keys with no diagnostic and stores `pocheBase` / `pocheHatch` in
+`plan.styles.wall`, but `src/backends/svg.ts` builds every hatch pattern from the scene theme
+(`THEME.pocheBase`, `THEME.pocheHatch`), never the per-kind styled theme (#868 review: on walls
+with default, concrete and brick poché, `theme { pocheBase }` moved 3 fills and `style wall { fill }`
+none). The comment at `src/theme.ts` that `style wall { hatch … }` moves that ink is false as
+measured. Either draw them (a drawing change on plans that write them only) or warn
+`W_UNKNOWN_STYLE_KEY`. **Gate:** a test that each accepted `style` key moves its own kind's ink and
+nothing else; the reference's `style` section updated.
+
+### WS.6 · The reference's `style` section is a hand-written copy of `STYLE_KEYS` — `todo`
+
+#868 wrote "Per-element styles — `style`" in `docs/language-reference.md` by hand; its first draft
+already disagreed with `spec.llm.md` on the styleless kinds (`opening`, `walls`). **Gate:** a test that
+every kind/attribute pair the section names resolves through `resolveStyleKey` and that the kinds it
+says take no `style` equal `KEYWORDS.element` minus the styled kinds.
+
+### WS.7 · "What this plan uses" rows for `keep` and `import` — `deferred`
+
+Left by WS.4 (#868): no `EXAMPLE_ROWS` plan writes `keep` or `import`, and the every-row-fires guard
+rejects an unchecked detector. **Trigger:** the first example page whose plan writes either. **Gate:**
+`test/plan-constructs.test.ts` lists the row on that page.
 ## Stairs in the 3D preview (public-surfaces card X3, 2026-11-06)
 
 ### ST.1 · Drawn treads against storey height: done by RM1.2a (#736), waiting to be archived — `note`
@@ -1898,7 +1926,7 @@ Done by #837: the record is `eval/live-runs/2026-11-ev1-intent-gap.md`.
 
 Left by the reviews of those PRs (review-cost cap: two rounds, residue becomes cards).
 
-### RR.1 · A door fix re-prints its statement with no step charge — `todo`
+### RR.1 · A door fix re-prints its statement with no step charge: done by #855, waiting to be archived — `note`
 
 `emitOpening` (`src/fix-producers.ts`) deep-clones the door node and prints the whole statement for
 every diagnostic that offers a door fix, with no `chargeSteps`. A looped door whose statement holds
@@ -1969,6 +1997,19 @@ fragment-less dead routes are unchecked; a bare URL followed by punctuation, or 
 component the page does not name, is wrongly refused; a malformed `%` escape throws. Each becomes
 its own card once looked at.
 
+### RR.9 · A door's free first fix build recurs per storey — `todo`
+
+Left by RR.1 (#855 review round 2). `src/elements/door.ts` builds each fix (and the hinge-flipped
+text) once per door node and key, but the first build per `ResolveCtx` is uncharged, and there is
+one ctx per storey (two under `paper`). A component's door node is shared by every storey that
+places it, so a component holding one long door statement, placed by a few hundred one-line
+`level` statements, gets storeys × (4 fix kinds + flip) uncharged reprints of that statement:
+quadratic in source bytes (probe: 36 KB, 18 s, 3.9 % of the step budget, no `E_STEP_LIMIT`; 36 s
+with `paper`). Main does the same work uncharged, so #855 is not a regression. Suggested fix:
+a fixed byte allowance per build, `1 + span` charged past it, for fixes and flip text alike;
+corpus door statements are short, so no pinned payload should move. **Gate:** that input returns
+`E_STEP_LIMIT` or compiles within budget in linear time; a test pins the free/charged boundary
+(a component's second storey is charged); no pinned digest, work count or datum law moves.
 ## Test-programme findings (promo-credit programme, 2026-11-16)
 
 From `docs/plans/product-roadmap/2026-11-test-findings.md` (§ 3, § 4, § 5). RR.8 (2), the

@@ -3806,6 +3806,28 @@ compile(src, { theme: { wallStroke: "#0000ff", lineWeight: 0.5 } });
 
 See [`examples/themed.arch`](../examples/themed.arch).
 
+### Per-element styles — `style`
+
+A `style <kind> { … }` block recolours one element kind instead of the whole drawing:
+
+```
+style wall { stroke: "#1f2a24" }
+style room { fill: "#f6f4ef" }
+```
+
+`<kind>` is any element kind except `opening` (a hole, with no ink) and `walls` (walls derived by
+`walls from rooms` take `style wall`). `style` is a plan-level statement; a `level` or `component`
+body does not take it. The keys are friendly attributes, and each kind takes its own: `room` takes
+`fill`, `label` and `area`; `wall` takes `stroke`; `door` takes `leaf` and `opening`; `window`
+takes `pane` and `opening`; every other kind takes a subset of `fill`, `stroke` and `label`. `wall`
+also accepts `fill` and `hatch` (the poché base and hatch), but the drawing does not read them yet:
+the poché follows the plan's `theme` (`pocheBase`, `pocheHatch`). Each attribute
+names a theme colour, so a `style` block overrides the plan's `theme` for that kind only, and a
+programmatic `CompileOptions.theme` still wins. A key the kind does not take warns
+(`W_UNKNOWN_STYLE_KEY`) and is dropped; two blocks for the same kind merge, the later key winning.
+
+See [`examples/materials.arch`](../examples/materials.arch).
+
 ### Named themes
 
 `theme <name>` starts from a built-in palette, and a block after the name overrides single keys
