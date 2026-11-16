@@ -141,6 +141,15 @@ export function parseUnmemoised(src: string, registry: Registry = BUILTIN_REGIST
   return parseImpl(src, registry, lexUnmemoised);
 }
 
+/**
+ * {@link parse} over a caller's lexer, unmemoised: the seam a test uses to count how many
+ * times the parser reads a token (a proxied token array). Internal: not re-exported from
+ * the package root.
+ */
+export function parseWithLexer(src: string, lexer: (src: string) => LexResult): ParseOutcome {
+  return parseImpl(src, BUILTIN_REGISTRY, lexer);
+}
+
 function parseImpl(src: string, registry: Registry, lexer: (src: string) => LexResult = lex): ParseOutcome {
   const { tokens, errors: lexErrors, comments } = lexer(src);
   const lexDiags: Diagnostic[] = lexErrors.map((e) => ({
@@ -243,7 +252,7 @@ class Parser {
       return ["ids are letters, digits and `_` (not `-`); write `my_room`, not `my-room`"];
     }
     if (t.type === "comma") {
-      let i = this.toks.indexOf(t) - 1;
+      let i = this.indexOfToken(t) - 1;
       let sawUse = false;
       while (i >= 0 && this.toks[i]!.type === "ident" && USE_SET.has(this.toks[i]!.value)) {
         sawUse = true;
@@ -257,19 +266,43 @@ class Parser {
   }
 
   /**
+   * The index of `t` in the token stream: the cursor when `t` is the token under it (every
+   * hint caller), else a binary search on `start` (tokens are in source order). Never a scan,
+   * so a file of many failing statements formats its hints in time linear in its tokens.
+   */
+  private indexOfToken(t: Token): number {
+    if (this.toks[this.pos] === t) return this.pos;
+    let lo = 0;
+    let hi = this.toks.length - 1;
+    while (lo <= hi) {
+      const mid = (lo + hi) >> 1;
+      const m = this.toks[mid]!;
+      if (m === t) return mid;
+      if (m.start < t.start) lo = mid + 1;
+      else hi = mid - 1;
+    }
+    return -1;
+  }
+
+  /**
    * The outdoor-surface hint for `t` when it is an outdoor word directly after a valid
-   * `uses` list (`uses living balcony`). Only the two errors that word already raises read
-   * it: the unknown statement, and a strip's expected `room` (backlog RR.5).
+   * `uses` list on the same line (`uses living balcony`). Only the two errors that word
+   * already raises read it: the unknown statement, and a strip's expected `room` (backlog
+   * RR.5). The word is tested first, so any other failing token costs no walk; a word on its
+   * own line after a `uses` list is the next statement, not part of the list, and gets none.
    */
   private usesOutdoorHint(t: Token): string | undefined {
-    let i = this.toks.indexOf(t) - 1;
+    const hint = roomUsesOutdoorHint(t.type, t.value);
+    if (hint === undefined) return undefined;
+    let i = this.indexOfToken(t) - 1;
+    if (i < 0 || this.toks[i]!.line !== t.line) return undefined;
     let sawUse = false;
     while (i >= 0 && this.toks[i]!.type === "ident" && USE_SET.has(this.toks[i]!.value)) {
       sawUse = true;
       i--;
     }
     if (!sawUse || i < 0 || this.toks[i]!.type !== "ident" || this.toks[i]!.value !== "uses") return undefined;
-    return roomUsesOutdoorHint(t.type, t.value);
+    return hint;
   }
 
   /** Span from a start offset to the end of the last consumed token. */
@@ -402,9 +435,15 @@ class Parser {
     const t = this.peek(o);
     return t.type === "ident" && t.value === kw;
   }
-  private eatKeyword(kw: string): Token {
+  /** Eat keyword `kw`; on a miss, `hint` (when it returns one) replaces the generic hints. */
+  private eatKeyword(kw: string, hint?: (t: Token) => string | undefined): Token {
     const t = this.peek();
-    if (t.type !== "ident" || t.value !== kw) this.fail(`Expected "${kw}" but found ${describe(t)}`);
+    if (t.type !== "ident" || t.value !== kw) {
+      const msg = `Expected "${kw}" but found ${describe(t)}`;
+      const extra = hint?.(t);
+      if (extra !== undefined) throw new ParseError(msg, { start: t.start, end: t.end }, [extra]);
+      this.fail(msg, t);
+    }
     return this.next();
   }
   private eat(type: Token["type"]): Token {
@@ -2024,14 +2063,7 @@ class Parser {
    *  clauses come in any order, each once (`src/clause-order.ts`). The child is built after, in
    *  the order the grammar used to require, so a room written in that order keeps its tree. */
   private parseStripRoom(): StripRoomChild {
-    const next = this.peek();
-    const outdoor = this.isKeyword("room") ? undefined : this.usesOutdoorHint(next);
-    if (outdoor !== undefined) {
-      throw new ParseError(`Expected "room" but found ${describe(next)}`, { start: next.start, end: next.end }, [
-        outdoor,
-      ]);
-    }
-    const kw = this.eatKeyword("room");
+    const kw = this.eatKeyword("room", (t) => this.usesOutdoorHint(t));
     const start = kw.start;
     const id = this.parseIdOpt();
     let main: StripRoomChild["main"] | undefined;

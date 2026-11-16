@@ -4,6 +4,12 @@ import { describe, expect, it } from "vitest";
 import { describe as describePlan, lint, compile, registerElement } from "../src/index.js";
 import type { ParseCtx, ResolveCtx } from "../src/index.js";
 import { format } from "../src/format.js";
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
+import { parseWithLexer } from "../src/parser.js";
+import { lexUnmemoised } from "../src/lexer.js";
+import { OUTDOOR_USE_SYNONYMS } from "../src/elements/room.js";
+import { ROOT } from "./helpers/rectilinear-rooms-law.js";
 
 /**
  * Room `uses` tags — the keystone that makes room classification *authored intent*
@@ -193,5 +199,87 @@ describe("room uses", () => {
       noCache: true,
     });
     expect(errors).toEqual([]);
+  });
+});
+
+// Backlog RR.13: follow-ups to the RR.5 outdoor hint.
+const strip = (body: string) => `plan "P" {
+  units mm
+  strip right at (0,0) gap 0 height 3000 { ${body} }
+}`;
+
+/** How many times the parser reads an element of the token array, `indexOf` scans included. */
+function tokenReads(src: string): number {
+  let reads = 0;
+  parseWithLexer(src, (s) => {
+    const r = lexUnmemoised(s);
+    const tokens = new Proxy(r.tokens, {
+      get(target, key, recv) {
+        if (typeof key === "string" && /^\d+$/.test(key)) reads++;
+        return Reflect.get(target, key, recv) as unknown;
+      },
+    });
+    return { ...r, tokens };
+  });
+  return reads;
+}
+
+describe("uses hints (RR.13)", () => {
+  const plan = (line: string, n: number) => `plan "P" {\n  units mm\n${`  ${line}\n`.repeat(n)}}`;
+  it.each([
+    ["an outdoor word after a uses list", "room at (0,0) size 1000x1000 uses living balcony"],
+    ["an unknown statement after a uses list", "room at (0,0) size 1000x1000 uses living lounge"],
+    ["a comma after a uses list", "room at (0,0) size 1000x1000 uses living, dining"],
+  ])("formats the hints for many failures of %s in token reads linear in the tokens", (_what, line) => {
+    const n = 400;
+    const one = tokenReads(plan(line, n));
+    const two = tokenReads(plan(line, 2 * n));
+    // Linear doubles (plus a constant); a scan from the first token per failure quadruples.
+    expect(two).toBeLessThanOrEqual(2 * one + 1000);
+  });
+
+  it("gives no outdoor hint to an outdoor word on its own line after a uses list", () => {
+    const { diagnostics } = compile(wrap(`room id=r at (0,0) size 4000x3000 uses living\n  balcony`), {
+      noCache: true,
+    });
+    expect(diagnostics[0]!.message).toBe('Unknown statement "balcony"');
+    expect(diagnostics[0]!.hints ?? []).toEqual([]);
+  });
+
+  it("gives no outdoor hint in a strip to an outdoor word on the next line", () => {
+    const { diagnostics } = compile(strip(`room id=s1 size 3000 uses living\n    balcony`), { noCache: true });
+    expect(diagnostics[0]!.message).toBe('Expected "room" but found "balcony"');
+    expect(JSON.stringify(diagnostics[0]!.hints ?? [])).not.toContain("outdoor");
+  });
+
+  it("words the strip's hinted error exactly as the plain expected-room error", () => {
+    const hinted = compile(strip(`room id=s1 size 3000 uses living balcony`), { noCache: true }).diagnostics[0]!;
+    const plain = compile(strip(`room id=s1 size 3000 uses living lounge`), { noCache: true }).diagnostics[0]!;
+    expect(hinted.hints?.[0]).toContain("`outdoor balcony`");
+    expect(plain.hints ?? []).toEqual([]);
+    expect(hinted.message).toBe(plain.message.replace('"lounge"', '"balcony"'));
+    expect(hinted.code).toBe(plain.code);
+    expect(hinted.span!.end - hinted.span!.start).toBe("balcony".length);
+  });
+
+  it("gives no outdoor hint in a strip to a quoted outdoor word after a uses list", () => {
+    const { diagnostics } = compile(strip(`room id=s1 size 3000 uses living "balcony"`), { noCache: true });
+    expect(diagnostics[0]!.code).toBe("E_PARSE");
+    expect(JSON.stringify(diagnostics[0]!.hints ?? [])).not.toContain("outdoor");
+    expect(diagnostics[0]!.message).not.toContain("outdoor");
+  });
+
+  it("maps each outdoor synonym to the kind the language reference's outdoor example draws it as", () => {
+    const ref = readFileSync(join(ROOT, "docs", "language-reference.md"), "utf8");
+    expect(OUTDOOR_USE_SYNONYMS.length).toBeGreaterThan(0);
+    for (const [word, kind] of OUTDOOR_USE_SYNONYMS) {
+      const label = word[0]!.toUpperCase() + word.slice(1);
+      const drawn = [...ref.matchAll(new RegExp(`outdoor ([a-z]+) [^\\n]*label "${label}"`, "g"))].map((m) => m[1]);
+      expect(drawn, `"${word}" in docs/language-reference.md`).toEqual([kind]);
+      const { diagnostics } = compile(wrap(`room id=r at (0,0) size 4000x3000 uses living ${word}`), {
+        noCache: true,
+      });
+      expect(diagnostics[0]!.hints?.[0]).toContain(`\`outdoor ${kind}\``);
+    }
   });
 });
