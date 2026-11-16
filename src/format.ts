@@ -135,20 +135,14 @@ function componentDoc(def: ComponentDef, comments: Comment[], source: string): D
   return concat([`component ${def.name}(${def.params.join(", ")}) `, blockDoc(def.body, def.span!, comments, source)]);
 }
 
-/** The title fields `fmt` has always quoted with `JSON.stringify` (see {@link titleDoc}). */
-const LEGACY_JSON_QUOTED: ReadonlySet<string> = new Set(["project", "drawn_by", "date"]);
-
 function titleDoc(title: TitleNode): Doc {
   const fields: Doc[] = [];
-  // Every field of `TITLE_FIELDS`, in its order. `number`/`revision` are quoted by the
-  // language's own escaper, so `fmt` is a fixed point for any string. The three older fields
-  // keep the `JSON.stringify` quoting they always had — which is NOT a fixed point for a control
-  // character (the lexer reads `\t` back as `t`) — because changing it would move `fmt` output
-  // on existing inputs; that is its own change (`docs/backlog.md`).
+  // Every field of `TITLE_FIELDS`, in its order, quoted by the language's own escaper, so `fmt`
+  // is a fixed point for any string (`JSON.stringify` is not: the lexer reads `\t` back as `t`).
   for (const word of TITLE_FIELDS) {
     const v = title[TITLE_FIELD_KEY[word]];
     if (v === undefined) continue;
-    fields.push(LEGACY_JSON_QUOTED.has(word) ? `${word} ${JSON.stringify(v)}` : `${word} "${escapeStr(v)}"`);
+    fields.push(`${word} "${escapeStr(v)}"`);
   }
   if (fields.length === 0) return "title { }";
   return concat(["title {", indent(concat([hardline, join(hardline, fields)])), hardline, "}"]);

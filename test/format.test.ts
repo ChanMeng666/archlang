@@ -31,7 +31,7 @@ describe("T5.2 — formatter is idempotent", () => {
   }
 });
 
-describe("the newer sheet strings are a fixed point for ANY text (`number`, `revision`, `notes`)", () => {
+describe("the sheet strings are a fixed point for ANY text (every title field, `notes`)", () => {
   // The lexer reads back only `\"`, `\\` and `\n`; any other control character must reach
   // the source raw, which `escapeStr` does and `JSON.stringify` does not (`\t` would come back
   // as `t`). The idempotence law above runs over the examples only, which hold none of these.
@@ -47,15 +47,16 @@ describe("the newer sheet strings are a fixed point for ANY text (`number`, `rev
   const lit = (s: string): string => s.replace(/\\/g, "\\\\").replace(/"/g, '\\"').replace(/\n/g, "\\n");
   for (const [name, v] of Object.entries(payloads)) {
     it(`${name}: format(format(x)) === format(x), and the value survives fmt and Plan JSON`, () => {
-      const src = `plan "P" {\n  units mm\n  notes "${lit(v)}"\n  room id=r at (0,0) size 3000x3000\n  title { number "${lit(v)}" revision "${lit(v)}" }\n}\n`;
-      expect(parse(src).plan!.title).toMatchObject({ number: v, revision: v });
+      const src = `plan "P" {\n  units mm\n  notes "${lit(v)}"\n  room id=r at (0,0) size 3000x3000\n  title { project "${lit(v)}" drawn_by "${lit(v)}" date "${lit(v)}" number "${lit(v)}" revision "${lit(v)}" }\n}\n`;
+      const all = { project: v, drawnBy: v, date: v, number: v, revision: v };
+      expect(parse(src).plan!.title).toMatchObject(all);
       const once = format(src);
       expect(format(once)).toBe(once);
       const p = parse(once).plan!;
-      expect(p.title).toMatchObject({ number: v, revision: v });
+      expect(p.title).toMatchObject(all);
       expect(p.notes).toEqual([v]);
       const back = planFromJson(planToJson(src).json);
-      expect(back.ast?.title).toMatchObject({ number: v, revision: v });
+      expect(back.ast?.title).toMatchObject(all);
     });
   }
 });
