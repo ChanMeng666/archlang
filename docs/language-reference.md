@@ -3496,10 +3496,12 @@ a `level` block has no floor to belong to — that is
 [`E_LEVEL_MIX`](error-codes.md#e_level_mix), reported on the offending statement. What
 stays outside (and applies to **every** level):
 
-- every plan **setting** — `units`, `grid`, `paper`, `scale`, `north`, `dims auto`,
-  `title`, `axes`, `schedule`, `legend`, `theme`/`style`, `accTitle`/`accDescr`;
+- every plan **setting** — `units`, `grid`, `paper`, `scale`, `height`, `north`, `site`,
+  `dims`, `title`, `axes`, `schedule`, `legend`, `notes`, `accTitle`/`accDescr`,
+  `theme`/`style` and `sheet text`;
 - **declarations** — `component` and `import`;
-- the **plan-global scope** — `let` bindings and `set` defaults.
+- the **plan-global scope** — `let` bindings and `set` defaults;
+- a `keep stacked`, and a plan-level `section` mark (drawn on the lowest storey).
 
 So `let W = 8000` written once is the same `W` on every floor, and one `component` can be
 called from each level.

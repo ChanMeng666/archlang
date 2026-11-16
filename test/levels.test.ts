@@ -20,7 +20,7 @@ import { readFileSync } from "node:fs";
 import { describe as suite, expect, it } from "vitest";
 import { compile, describe as describePlan, lint, repair, resolve, resolveAll, levelBlocks } from "../src/index.js";
 import { parse } from "../src/parser.js";
-import { LEVEL_SHARED_KINDS, PLAN_SETTING_KEYWORDS } from "../src/ast.js";
+import { LEVEL_MIX_STAYS_OUTSIDE, LEVEL_SHARED_KINDS, PLAN_SETTING_KEYWORDS } from "../src/ast.js";
 import { BUILTIN_DEFS } from "../src/elements/defs.js";
 
 const TWO_STOREY = readFileSync("examples/two-storey.arch", "utf8");
@@ -123,16 +123,40 @@ suite("v1.21 levels — parsing + the either/or shape", () => {
     expect(settings.length).toBeGreaterThan(10);
     expect([...settings, "sheet text"].sort()).toEqual([...PLAN_SETTING_KEYWORDS].sort());
 
-    const fix = ERROR_CATALOG.E_LEVEL_MIX?.fix ?? "";
-    for (const k of PLAN_SETTING_KEYWORDS) expect(fix).toContain(`\`${k}\``);
-    for (const k of ["component", "import"]) expect(fix).toContain(`\`${k}\``);
-    // `assign` is `set`'s re-binding, `error` an already-reported parse error, `level` the storey itself.
-    for (const k of LEVEL_SHARED_KINDS.filter((k) => !["assign", "error", "level"].includes(k))) {
-      expect(fix).toContain(`\`${k}`);
-    }
+    // RR.11: the parser's message, the catalogue remedy and the language reference's § Levels list
+    // each name every form; the first two read one phrase, the docs list is checked here.
+    const message = compile(`plan "P" {\n  room at (0,0) size 1000x1000\n  level 1 { ${shell("A")} }\n}`, {
+      noCache: true,
+    }).diagnostics.find((d) => d.code === "E_LEVEL_MIX")?.message;
+    expect(message).toBeDefined();
+    const ref = readFileSync("docs/language-reference.md", "utf8").replace(/\r\n/g, "\n");
+    const levels = ref.indexOf("\n## Levels");
+    const listFrom = ref.indexOf("stays outside (and applies to **every** level):", levels);
+    const listTo = ref.indexOf("\n\n", ref.indexOf("\n- ", listFrom));
+    expect(levels).toBeGreaterThan(0);
+    expect(listFrom).toBeGreaterThan(levels);
+    expect(listTo).toBeGreaterThan(listFrom);
+    const docsList = ref.slice(listFrom, listTo);
+
     const planLevelOnly = BUILTIN_DEFS.filter((d) => d.planLevelOnly).map((d) => d.kind);
     expect(planLevelOnly.length).toBeGreaterThan(0);
-    for (const k of planLevelOnly) expect(fix).toContain(`\`${k}\``);
+    // `assign` is `set`'s re-binding, `error` an already-reported parse error, `level` the storey itself.
+    const shared = LEVEL_SHARED_KINDS.filter((k) => !["assign", "error", "level"].includes(k));
+    const forms = [...PLAN_SETTING_KEYWORDS, "component", "import", ...shared, ...planLevelOnly];
+    for (const [where, text] of [
+      ["the shared phrase", LEVEL_MIX_STAYS_OUTSIDE],
+      ["the catalogue remedy", ERROR_CATALOG.E_LEVEL_MIX?.fix ?? ""],
+      ["the parser message", message ?? ""],
+      ["the language reference's § Levels list", docsList],
+    ] as const) {
+      for (const k of forms) {
+        // `keep` is named as `keep stacked`, the only form allowed there.
+        const named = k === "keep" ? "`keep stacked`" : `\`${k}\``;
+        expect(text.includes(named), `${where} does not name ${named}`).toBe(true);
+      }
+    }
+    expect(ERROR_CATALOG.E_LEVEL_MIX?.fix).toContain(LEVEL_MIX_STAYS_OUTSIDE);
+    expect(message).toContain(LEVEL_MIX_STAYS_OUTSIDE);
   });
 
   it("E_LEVEL_DUP: the same storey number twice (the second one is flagged)", () => {
