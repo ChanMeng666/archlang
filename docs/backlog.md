@@ -1938,7 +1938,7 @@ balcony … label "Terrace"`; `yard → paving` has no source in the repo. The h
 first word after `uses` is unknown, so `uses living balcony` and `uses Balcony` get none.
 **Gate:** the mapping agrees with `docs/language-reference.md`, and a test covers a later word.
 
-### RR.6 · Site-only link guard gaps — `todo`
+### RR.6 · Site-only link guard gaps: done by #863, waiting to be archived — `note`
 
 After #838, `test/docs-site-links.test.ts` still skips same-page `#fragment` links on site-only
 pages, does not check a fragment on a route with no markdown source (`/adr#x`), and does not read
@@ -1961,7 +1961,13 @@ line 56, not 55. **Gate:** those four sentences corrected; no number changes.
 (1) An `/adr` smoke check on the deployed site (WS.5). (2) Whether `W_DOORWAY_BLOCKED` is too strict
 for furniture that only grazes a door's swing (EV.1: all 19 physical-lint intent losses).
 (3) The Rooms control overlaps the drawing at ≤ 900 px (PG.1 review). (4) An oracle for
-`docs-site/index.md` frontmatter links. Each becomes its own card once looked at.
+`docs-site/index.md` frontmatter links. (5) Site-link guard holes left by RR.6 (#863 review): same-page
+`#fragment` links on site-only pages, a fragment on a source-less route (`/adr#x`) and raw `href=`
+links are unchecked; README scanning skips dot directories and walks the filesystem, not the tracked
+tree; absolute `archlang.uk` fragments outside READMEs (`docs/overview.md`, `llms-install.md`) and
+fragment-less dead routes are unchecked; a bare URL followed by punctuation, or an id rendered by a
+component the page does not name, is wrongly refused; a malformed `%` escape throws. Each becomes
+its own card once looked at.
 
 ## Test-programme findings (promo-credit programme, 2026-11-16)
 
