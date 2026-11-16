@@ -300,24 +300,48 @@ export const isErrorCatalogue = (f) =>
 
 /** A property that carries diagnostic text: `message:`, `fix:`, `hint:` or `hints:` (optional ones too). */
 const TEXT_PROP = /(?:^|[\s{,(])(message|fix|hint|hints)\??\s*:/m;
+/** A comment line (`//`, `/*`, or a doc comment's ` * ` line): prose, never a property. */
+const COMMENT_LINE = /^\s*(?:\/\/|\/\*|\*)/;
+
+const closures = new Map();
+/** Every non-test module `guard` reaches through its imports, transitively (`guardImports` per step); memoised. */
+export function guardClosure(ROOT, guard) {
+  const key = `${ROOT}\0${guard}`;
+  const hit = closures.get(key);
+  if (hit) return hit;
+  const seen = new Set();
+  const queue = [...guardImports(ROOT, guard)];
+  while (queue.length > 0) {
+    const f = queue.pop();
+    if (seen.has(f)) continue;
+    seen.add(f);
+    for (const dep of guardImports(ROOT, f)) if (!seen.has(dep)) queue.push(dep);
+  }
+  closures.set(key, seen);
+  return seen;
+}
 
 /**
  * Why a changed module composes the fix and hint text `test/lint-fix-texts.test.ts` reads, read out of
- * its own source (never a list of paths), or `undefined`: a `message:`/`fix:`/`hint:`/`hints:` property,
- * the `Diagnostic` type, or a leading doc comment that says it names message or hint text (the phrases
- * lint rules name an element with). Only `src/` code; a deleted or unreadable module composes nothing.
+ * its own source (never a list of paths), or `undefined`: a `message:`/`fix:`/`hint:`/`hints:` property
+ * outside a comment line, or a leading doc comment that mentions "message" or "hint". Only `src/` code
+ * inside the guard's transitive import closure (`guardClosure`); a deleted or unreadable module composes nothing.
  */
 export function composesFixText(ROOT, f) {
   if (!f.startsWith("src/") || !CODE.test(f)) return undefined;
+  if (!guardClosure(ROOT, FIX_TEXTS).has(f)) return undefined;
   let text = "";
   try {
     text = readFileSync(join(ROOT, f), "utf8");
   } catch {
     return undefined;
   }
-  const prop = TEXT_PROP.exec(text);
+  const code = text
+    .split("\n")
+    .filter((line) => !COMMENT_LINE.test(line))
+    .join("\n");
+  const prop = TEXT_PROP.exec(code);
   if (prop) return `a module with a \`${prop[1]}:\` property`;
-  if (/\bDiagnostic\b/.test(text)) return "a module that builds a Diagnostic";
   const start = text.indexOf("/**");
   const end = start === -1 ? -1 : text.indexOf("*/", start);
   const head = end === -1 || text.slice(0, start).trim() !== "" ? "" : text.slice(start, end);

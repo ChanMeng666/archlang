@@ -16,10 +16,12 @@
   the tests named after a changed module (at most 5 files and 10 recorded seconds), the three text guards
   CI failed on in #848, each only on its own inputs (`lint-fix-texts` on the error catalogue,
   `src/fix-producers.ts` or a `src/` module whose source has a `message:`/`fix:`/`hint:`/`hints:`
-  property, names `Diagnostic` or whose header says it names message text; `opaque-literal-guard` on
+  property outside a comment line or whose first doc comment mentions "message" or "hint", if it is
+  inside that test's transitive import closure; `opaque-literal-guard` on
   `.gitleaksignore`, a path it names, the IndexNow key or the catalogue; `docs-flags` on a page that
-  test reads, deleted too; both on a module they import. Every trigger is derived from the files' text,
-  never a hand list of paths) and, for a `src/`
+  test reads, deleted too; both on a module they import. The guard-read and fix-text triggers are
+  derived from the files' text; the catalogue, fix-producers, IndexNow and `.gitleaksignore` triggers
+  are named paths) and, for a `src/`
   change, the cheapest tests that pin their output over the examples corpus within `--pins` (default
   5) recorded seconds. Selection is `scripts/gate-select.mjs`. It still cannot see a guard
   that scans a directory in a way no rule above reads, and the expensive corpus pins (`keep-byte-identity`,

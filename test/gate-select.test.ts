@@ -485,6 +485,13 @@ describe("planTests: what the gate runs for a change set", () => {
         expect(composesFixText(ROOT, f), f).toBeUndefined();
         expect(guards([f]), f).toEqual([]);
       }
+      // Ceiling: of every src/**/*.ts, the share whose own change wakes lint-fix-texts by its trigger stays
+      // under half (measured 120/286 when the import-closure and comment-line narrowings landed).
+      const src = files.filter((f) => f.startsWith("src/") && f.endsWith(".ts"));
+      const ctx = { excluded: new Set(), docs: new Set(), root: ROOT };
+      const woken = src.filter((f) => textGuardTrigger(FIX_TEXTS, f, ctx) !== undefined);
+      console.info(`lint-fix-texts wakes for ${woken.length}/${src.length} src/**/*.ts`);
+      expect(woken.length / src.length).toBeLessThan(0.5);
     });
 
     it("RR.16 (4): lint-fix-texts wakes on a lone module whose own source composes fix text, read from it", () => {
@@ -494,8 +501,6 @@ describe("planTests: what the gate runs for a change set", () => {
         ["src/elements/furniture.ts", "a module with a `message:` property"],
         ["src/keep.ts", "a module with a `message:` property"],
         ["src/lock.ts", "a module with a `message:` property"],
-        ["src/while-fix.ts", "a module with a `fix:` property"],
-        ["src/lint/ruleset.ts", "a module with a `message:` property"],
         ["src/diagnostics.ts", "a module with a `message:` property"],
         ["src/lint/element-phrases.ts", "a module whose header names message text"],
       ];
@@ -505,6 +510,13 @@ describe("planTests: what the gate runs for a change set", () => {
       }
       // Element modules that draw or register but compose no text wake nothing.
       for (const f of ["src/elements/glyphs-bath.ts", "src/elements/index.ts", "src/elements/defs.ts"]) {
+        expect(files, f).toContain(f);
+        expect(composesFixText(ROOT, f), f).toBeUndefined();
+        expect(guards([f]), f).not.toContain(FIX_TEXTS);
+      }
+      // Outside the guard's transitive import closure (src/while-fix.ts, src/cli/*), or `message:` only in
+      // doc-comment prose (src/lint/ruleset.ts): no trigger.
+      for (const f of ["src/while-fix.ts", "src/cli/link.ts", "src/lint/ruleset.ts"]) {
         expect(files, f).toContain(f);
         expect(composesFixText(ROOT, f), f).toBeUndefined();
         expect(guards([f]), f).not.toContain(FIX_TEXTS);
