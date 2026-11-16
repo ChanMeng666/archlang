@@ -146,7 +146,7 @@ export function printDoc(doc: Doc, width = 80, tab = "  "): string {
 
 /** `line` without its trailing spaces and tabs. A right-to-left scan: the regex `/[ \t]+$/` is
  *  quadratic in a blank run that does not end the line, and the playground runs this on user text. */
-function trimBlanksEnd(line: string): string {
+export function trimBlanksEnd(line: string): string {
   let end = line.length;
   while (end > 0 && (line.charCodeAt(end - 1) === 32 || line.charCodeAt(end - 1) === 9)) end--;
   return end === line.length ? line : line.slice(0, end);

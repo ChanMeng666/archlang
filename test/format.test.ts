@@ -10,6 +10,7 @@ import { exampleNames, libNames } from "./helpers/corpus.js";
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { compile, format } from "../src/index.js";
+import { trimBlanksEnd } from "../src/doc.js";
 import { parse } from "../src/parser.js";
 import { planFromJson, planToJson } from "../src/plan-json.js";
 import type { Theme } from "../src/theme.js";
@@ -168,13 +169,29 @@ describe("every string literal `fmt` quotes reads back as the same text (M.21)",
     });
   }
   // A blank run that does not end its line must not cost quadratic time to strip (RR.17).
-  it("a long blank run inside a string is kept and stripped in linear time", () => {
-    const blanks = " ".repeat(100_000);
+  it("a long blank run inside a string is kept, and the strip reads each character a bounded number of times", () => {
+    const blanks = " ".repeat(10_000);
     const src = `plan "P" {\n  units mm\n  notes "A${blanks}B"\n  room id=r at (0,0) size 3000x3000\n}\n`;
-    const t0 = performance.now();
-    const once = format(src);
-    expect(performance.now() - t0).toBeLessThan(3000);
-    expect(once).toContain(`"A${blanks}B"`);
+    expect(format(src)).toContain(`"A${blanks}B"`);
+    // Count the character reads on a line that a regex `/[ \t]+$/` would rescan once per blank.
+    const counted = (s: string) => {
+      let reads = 0;
+      const line = {
+        length: s.length,
+        charCodeAt: (i: number) => {
+          reads++;
+          return s.charCodeAt(i);
+        },
+        slice: (a: number, b: number) => s.slice(a, b),
+      } as unknown as string;
+      return { out: () => trimBlanksEnd(line), reads: () => reads };
+    };
+    const inner = counted(`A${blanks}B`);
+    inner.out();
+    expect(inner.reads()).toBeLessThanOrEqual(2);
+    const tail = counted(`A${blanks}\t`);
+    expect(tail.out()).toBe("A");
+    expect(tail.reads()).toBeLessThanOrEqual(2 * (blanks.length + 2));
   });
   for (const tail of ["\r\r\n", "\r\r\r\n", "\r\r"]) {
     it(`a comment ending ${JSON.stringify(tail)} is a fixed point`, () => {
