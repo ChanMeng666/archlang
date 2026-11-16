@@ -75,6 +75,27 @@ export interface ParseOutcome {
  *  (`src/grammar/tokens.ts`) so the parser and the editor grammars stay in sync. */
 const FIXED_STATEMENT_STARTS: readonly string[] = STATEMENT_STARTS;
 
+/**
+ * Clause words agents write where a statement must start (live runs): each names the
+ * form it belongs to. Message unchanged; only the hint is added.
+ */
+const STRAY_CLAUSE_HINTS: ReadonlyMap<string, string> = new Map([
+  [
+    "offset",
+    "`offset` is not a statement: it is a clause of `furniture … against wall <id> offset <mm>` or " +
+      "`furniture … against <room>.<edge> offset <mm>` (mm along the wall to the piece's centre) and " +
+      "`dim … offset <mm>`, and follows `keep` in `keep offset <d|id> from <d> <mm>`. Place an opening " +
+      "along its wall with `at <mm> from start|end`; pull an anchored piece in from its edge with " +
+      "`in <room> anchor <a> inset <mm>`",
+  ],
+  [
+    "hinged",
+    "`hinged` is a door kind, not a statement: it comes straight after `door` " +
+      "(`door hinged on <room>.<edge> at <pos> width <mm>`), and a door with no kind is already hinged; " +
+      "the hinge side is the clause `hinge left|right`",
+  ],
+]);
+
 /** Thrown internally by `eat*` helpers; always caught within the parser. */
 class ParseError extends Error {
   constructor(
@@ -1679,7 +1700,11 @@ class Parser {
       // expand (E_UNKNOWN_COMPONENT), not here. `components`/`selfName` retained
       // for clarity of intent.
       else if (this.peek(1).type === "lparen") node = this.parseInstance();
-      else this.fail(`Unknown statement "${t.value}"`, t);
+      else {
+        const stray = STRAY_CLAUSE_HINTS.get(t.value);
+        if (stray === undefined) this.fail(`Unknown statement "${t.value}"`, t);
+        throw new ParseError(`Unknown statement "${t.value}"`, { start: t.start, end: t.end }, [stray]);
+      }
     }
     node.span = this.spanFrom(start);
     return node;

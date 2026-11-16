@@ -1031,9 +1031,9 @@ export interface StripNode extends NodeBase {
  *
  * A plan is either single-storey (no `level` block anywhere, the historical shape) or
  * entirely made of level blocks: a drawable statement sitting beside a level block is
- * `E_LEVEL_MIX`. Plan-level *settings* (`units`/`grid`/`paper`/`scale`/`north`/`site`/`dims`/
- * `title`/`axes`/`schedule`/`legend`) and the plan-global scope (`let`/`set`/`component`/
- * `import`) stay OUTSIDE the levels and apply to every one of them — one building, one
+ * `E_LEVEL_MIX`. Plan-level *settings* ({@link PLAN_SETTING_KEYWORDS}), the plan-global scope
+ * (`let`/`set`/`component`/`import`), a `keep stacked` and a plan-level-only element (the
+ * `section` mark) stay OUTSIDE the levels and apply to every one of them — one building, one
  * sheet spec, one set of components.
  *
  * `level` is an integer: `0` and negatives are legal (`level -1 "Basement"`). Numbers must
@@ -1372,6 +1372,34 @@ export type Statement =
  * shared.)
  */
 export const LEVEL_SHARED_KINDS: readonly Statement["kind"][] = ["let", "set", "assign", "error", "level", "keep"];
+
+/**
+ * The plan-level **settings**: every keyword the plan-body switch in `src/parser.ts` reads into a
+ * plan field rather than a body statement, plus `sheet text`, read before that switch. They are
+ * one per sheet, so they stay beside the `level` blocks and an imported module's are ignored.
+ * `E_LEVEL_MIX`'s remedy is built from this list, and `test/levels.test.ts` fails when the
+ * parser's switch reads a setting this list does not name.
+ */
+export const PLAN_SETTING_KEYWORDS = [
+  "units",
+  "grid",
+  "paper",
+  "scale",
+  "height",
+  "north",
+  "site",
+  "dims",
+  "title",
+  "axes",
+  "schedule",
+  "legend",
+  "notes",
+  "accTitle",
+  "accDescr",
+  "theme",
+  "style",
+  "sheet text",
+] as const;
 
 /** `component NAME(params) { body }` — a reusable parameterised sub-plan. */
 export interface ComponentDef {
