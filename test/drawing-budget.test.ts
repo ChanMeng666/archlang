@@ -276,4 +276,8 @@ suite("the prose quotes the budget it describes", () => {
       `\`notes\` that wrap to more than ${MAX_NOTE_LINES} lines of ${NOTE_LINE_CHARS} characters`,
     );
   });
+  it("the remedy covers the NOTES cap too: it names shortening the `notes`", () => {
+    expect(ERROR_CATALOG.E_DRAWING_LIMIT!.fix).toMatch(/shorten (?:the `notes`|them)/);
+    expect(ERROR_CATALOG.E_DRAWING_LIMIT!.fix).toContain("`notes`");
+  });
 });
