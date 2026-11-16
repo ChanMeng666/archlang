@@ -5,6 +5,8 @@
  * it over every source and asserts each link left is a known route, a public file or absolute, and
  * that a `#fragment` on a site route is the id VitePress gives one of the target page's headings
  * (it turns `_` into `-`: GitHub's `#w_scale_overflow` is `/errors#w-scale-overflow` here).
+ * The hand-written site-only pages (SITE_PAGES) are checked as written, and every absolute
+ * `https://archlang.uk/<route>#fragment` in a README must name a heading id on that page.
  */
 import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
 import { join } from "node:path";
@@ -154,7 +156,7 @@ describe("site copies of the canonical docs", () => {
   it("a dead fragment in a site-only page is caught", () => {
     const fromExamples = linksOf(readFileSync("docs-site/examples.md", "utf8")).filter((l) => l.includes("#"));
     expect(fromExamples.length).toBeGreaterThan(10);
-    // GitHub's spelling of an em-dash heading (examples.md once carried 13 such)is dead on the site.
+    // The em dash dropped (examples.md once carried 13 such) is dead on the site: VitePress keeps it.
     expect(problems("[a](/reference#levels-a-multi-storey-building-v1-21)", true)).toEqual([
       "/reference#levels-a-multi-storey-building-v1-21 (no heading with that VitePress id)",
     ]);
@@ -305,5 +307,67 @@ describe("site copies of the canonical docs", () => {
       "[a](https://github.com/ChanMeng666/archlang/blob/main/CHANGELOG.md?plain=1#frag)",
     );
     expect(r("../../schemas/plan.schema.json?x=1")).toBe("[a](/plan.schema.json?x=1)");
+  });
+});
+
+/** Every README*.md in the repo, outside dependencies, build output and dot directories. */
+function readmes(dir = "."): string[] {
+  const out: string[] = [];
+  for (const e of readdirSync(dir, { withFileTypes: true })) {
+    if (e.name.startsWith(".") || e.name === "node_modules" || e.name === "dist") continue;
+    const p = dir === "." ? e.name : `${dir}/${e.name}`;
+    if (e.isDirectory()) out.push(...readmes(p));
+    else if (/^readme[^/]*\.md$/i.test(e.name)) out.push(p);
+  }
+  return out;
+}
+
+/** Problems with the absolute `archlang.uk` links in a README that carry a `#fragment`. */
+function siteFragmentProblems(md: string): string[] {
+  const bad: string[] = [];
+  for (const m of md.matchAll(
+    /https?:\/\/(?:www\.)?archlang\.uk(\/[^\s)"'<>#?]*)?(?:\?[^\s)"'<>#]*)?#([^\s)"'<>]+)/g,
+  )) {
+    const route = (m[1] ?? "/").replace(/\/$/, "") || "/";
+    const link = m[0];
+    if (!ROUTES.has(route) && !publicFile(route) && !publicPage(route))
+      bad.push(`${link} (no such route or public file)`);
+    else {
+      const ids = idsOf(route);
+      if (!ids) bad.push(`${link} (no markdown source to check the fragment against)`);
+      else if (!ids.has(decodeURIComponent(m[2]!))) bad.push(`${link} (no heading with that VitePress id)`);
+    }
+  }
+  return bad;
+}
+
+describe("absolute archlang.uk fragments in READMEs", () => {
+  const files = readmes();
+  it("the scan finds the READMEs that link the site", () => {
+    expect(files).toEqual(expect.arrayContaining(["README.md", "packages/mcp/README.md", "editors/vscode/README.md"]));
+    const linked = files.flatMap((f) => [...readFileSync(f, "utf8").matchAll(/https:\/\/archlang\.uk\/[^\s)"#]*#/g)]);
+    expect(linked.length).toBeGreaterThan(3);
+  });
+
+  for (const f of files) {
+    it(`${f}: every https://archlang.uk/...#fragment names a heading on that page`, () => {
+      expect(siteFragmentProblems(readFileSync(f, "utf8"))).toEqual([]);
+    });
+  }
+
+  it("a dead fragment, a dead route and the playground are told apart", () => {
+    // GitHub's `--` for ` + ` is dead on the site: VitePress collapses it to one dash.
+    const dead = "https://archlang.uk/reference#keyboard-and-screen-reader-operability-annotate--accessible";
+    expect(siteFragmentProblems(`[a](${dead})`)).toEqual([`${dead} (no heading with that VitePress id)`]);
+    const live = "https://archlang.uk/reference#keyboard-and-screen-reader-operability-annotate-accessible";
+    expect(siteFragmentProblems(`[a](${live})`)).toEqual([]);
+    expect(siteFragmentProblems("[a](https://archlang.uk/nope#x)")).toEqual([
+      "https://archlang.uk/nope#x (no such route or public file)",
+    ]);
+    expect(siteFragmentProblems("[a](https://archlang.uk/#nope)")).toEqual([
+      "https://archlang.uk/#nope (no heading with that VitePress id)",
+    ]);
+    // The playground's `#z=` share fragment is another host, not a heading.
+    expect(siteFragmentProblems("[a](https://playground.archlang.uk/#z=abc&3d)")).toEqual([]);
   });
 });
