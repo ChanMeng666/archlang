@@ -7,9 +7,9 @@
  * `writeGlb` over the same whole-plan Mesh3D (`plan3d.ts`). `playground/test/glb-export.test.ts`
  * holds the page's path to the CLI's bytes over the examples, and writes with `Math.random`
  * throwing, since the writer's library carries one (reached only when reading). The package
- * exports `writeGlb` from its Node entry only (that entry also reads the file system), but the
- * writer itself is browser-agnostic (glTF-Transform's `WebIO`), so the playground reads its module
- * from source, as it reads the rest of the package. What the browser cannot do is check it: the CLI
+ * exports `writeGlb` from `./glb` (no Node) and `./node`; the writer is browser-agnostic
+ * (glTF-Transform's `WebIO`), and the playground reads its module from source, as it reads the
+ * rest of the package. What the browser cannot do is check it: the CLI
  * runs the Khronos glTF validator on every GLB it writes, a Node-only check the playground does not
  * load, and the button's note says so.
  */

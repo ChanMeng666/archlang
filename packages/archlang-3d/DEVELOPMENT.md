@@ -84,6 +84,8 @@ const mesh = r.ok ? buildMesh(r.scene) : null; // closed, outward-wound shells; 
   `PREVIEW_LIMITS` (the PS-D12 line and the limits line, `payload.ts`) for a page
   that shows the replay (the playground's 3D preview tab, card A5); it bundles three.js, so it is
   not `.`.
+- `src/glb.ts` (`./glb`): `writeGlb` and its naming for a page with no Node; glTF-Transform rides
+  only this entry and `./node`, never `.` or `./browser` (`test/browser-safety.test.ts`).
 - `src/node.ts`: the Node `World` and the Node-only builders (replay, GLB, checks), kept out of the
   browser entry. The World is `src/world.ts`: an `import` is read only from under the working
   directory or the plan's own directory, only `.arch`, only up to 1 MiB, a copy of the core CLI's

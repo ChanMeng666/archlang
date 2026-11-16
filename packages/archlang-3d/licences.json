@@ -7,7 +7,7 @@
       "version": "4.5.1",
       "license": "MIT",
       "source": "https://github.com/donmccurdy/glTF-Transform",
-      "checked": "LICENSE.md is MIT (Don McCurdy). Original TypeScript; it wraps or ports no other project. One dependency, property-graph (same author)."
+      "checked": "LICENSE.md is MIT (Don McCurdy). Original TypeScript; its published dist/index.js bundles parts of gl-matrix 3.4.4 (vec3, mat4; MIT, read 2026-11-17 from the gl-matrix 3.4.4 tarball: Copyright (c) 2015-2025, Brandon Jones, Colin MacKenzie IV, under the same MIT permission notice as below), which this package inlines into dist/ with the library (tsup.config.ts). One dependency, property-graph (same author)."
     },
     {
       "name": "property-graph",

@@ -30,12 +30,11 @@ const pkg = JSON.parse(readFileSync(new URL("../package.json", import.meta.url),
   devDependencies: Record<string, string>;
 };
 const tsup = readFileSync(new URL("../tsup.config.ts", import.meta.url), "utf8");
-const entries = Object.keys(
-  JSON.parse((/entry: (\{[^}]*\}),\n\s*format/.exec(tsup)?.[1] ?? "{}").replace(/(\w+):/g, '"$1":')) as Record<
-    string,
-    string
-  >,
-);
+// The entry object as JSON: its keys quoted, and the trailing comma Biome writes on a broken line dropped.
+const entryObject = (/entry: (\{[^}]*\}),\n\s*format/.exec(tsup)?.[1] ?? "{}")
+  .replace(/(\w+):/g, '"$1":')
+  .replace(/,(\s*\})$/, "$1");
+const entries = Object.keys(JSON.parse(entryObject) as Record<string, string>);
 
 describe("package metadata", () => {
   it("MIN_CORE is the peer range's floor", () => {
@@ -51,11 +50,12 @@ describe("package metadata", () => {
   });
 
   it("every published path is under dist/, from a tsup entry, with types", () => {
-    expect(entries).toEqual(["index", "browser", "node", "cli"]);
+    expect(entries).toEqual(["index", "browser", "glb", "node", "cli"]);
     const built = (name: string) => `./dist/${name}.js`;
     expect(pkg.exports).toEqual({
       ".": { types: "./dist/index.d.ts", import: built("index") },
       "./browser": { types: "./dist/browser.d.ts", import: built("browser") },
+      "./glb": { types: "./dist/glb.d.ts", import: built("glb") },
       "./node": { types: "./dist/node.d.ts", import: built("node") },
     });
     expect([pkg.main, pkg.module]).toEqual([built("index"), built("index")]);
