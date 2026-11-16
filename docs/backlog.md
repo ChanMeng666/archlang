@@ -2012,7 +2012,7 @@ which refusals have one nearest legal place, and whether a move may cross a room
 also on HF, so changing it means a card re-upload, which is owner-only (RM-D47). One way: date
 the July numbers as the baseline at generation time and name the current one beside it, with no
 comparison. RM-D54 (2026-11-16, delegated) ruled the change; the repo card was changed by
-#PRNUM. **Gate:** the owner's go for the card-only re-upload ("同意上传卡片"); card bytes on HF
+#856. **Gate:** the owner's go for the card-only re-upload ("同意上传卡片"); card bytes on HF
 equal the repo's.
 
 ### AG.1 · `check:quick` misses the text guards an executor most often trips — `todo`
