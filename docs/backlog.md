@@ -2090,6 +2090,11 @@ after #872, 8.5 s before), and the playground runs it on user text; scan from th
 point for a comment on a CR CR LF line: the lexer drops one trailing CR, so pass 1 prints `# note\r`
 and pass 2 `# note`. **Gate:** the corpus `format` output stays byte-identical.
 
+Closure note (#884). On CR CR LF input the lexer now drops every trailing CR from a comment, so the
+while-to-for fix's `newText` and `repair().source` carry such a comment without the extra CRs: benign,
+and the result is a `fmt` fixed point where main's was not. Residue, not fixed: a comment ending CR,
+blank, LF (`# note\r \n`) is still not a fixed point, since pass 1 keeps the `\r` and strips the blank.
+
 ### RR.18 · A per-upload owner instruction is not in the eval-dataset rule: decided by RM-D55, waiting to be archived — `note`
 
 `.claude/rules/eval-dataset.md` makes HF uploads owner-only and has no carve-out for an explicit

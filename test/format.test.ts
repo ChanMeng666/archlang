@@ -188,10 +188,45 @@ describe("every string literal `fmt` quotes reads back as the same text (M.21)",
     };
     const inner = counted(`A${blanks}B`);
     inner.out();
-    expect(inner.reads()).toBeLessThanOrEqual(2);
+    expect(inner.reads()).toBeLessThanOrEqual(1);
     const tail = counted(`A${blanks}\t`);
     expect(tail.out()).toBe("A");
-    expect(tail.reads()).toBeLessThanOrEqual(2 * (blanks.length + 2));
+    expect(tail.reads()).toBeLessThanOrEqual(blanks.length + 2);
+  });
+  // The read count above pins the helper; this pins its caller. A `/[ \t]+$/` (or any anchored or
+  // quantified regex) run over the long line rescans the blank run once per blank. Only
+  // fixed-character escapes may read a string as long as the run.
+  it("format runs no quantified or anchored regex over a line holding a long blank run", () => {
+    const blanks = " ".repeat(10_000);
+    const src = `plan "P" {\n  units mm\n  notes "A${blanks}B"\n  room id=r at (0,0) size 3000x3000\n}\n`;
+    const proto = RegExp.prototype as unknown as Record<PropertyKey, unknown>;
+    const keys: PropertyKey[] = [
+      Symbol.replace,
+      Symbol.match,
+      Symbol.matchAll,
+      Symbol.split,
+      Symbol.search,
+      "exec",
+      "test",
+    ];
+    const saved = keys.map((k) => proto[k] as (this: RegExp, ...a: unknown[]) => unknown);
+    const scans: string[] = [];
+    keys.forEach((k, n) => {
+      proto[k] = function (this: RegExp, s: unknown, ...rest: unknown[]) {
+        if (typeof s === "string" && s.length >= blanks.length) scans.push(this.source);
+        return saved[n]!.call(this, s, ...rest);
+      };
+    });
+    let out = "";
+    try {
+      out = format(src);
+    } finally {
+      keys.forEach((k, n) => {
+        proto[k] = saved[n];
+      });
+    }
+    expect(out).toContain(`"A${blanks}B"`);
+    expect(scans.filter((re) => /[+*?$]/.test(re))).toEqual([]);
   });
   for (const tail of ["\r\r\n", "\r\r\r\n", "\r\r"]) {
     it(`a comment ending ${JSON.stringify(tail)} is a fixed point`, () => {
