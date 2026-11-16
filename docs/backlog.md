@@ -1436,7 +1436,7 @@ written by hand. The corpus holds mostly dwellings and museums; card D6 adds non
 **Gate:** `arch new --list --json` lists names; `arch new --from <example>` writes a file that
 compiles clean. **Size:** S.
 
-### U.17 · No report says how many diagnostics carry a machine fix — `todo`
+### U.17 · No report says how many diagnostics carry a machine fix: done by #898, waiting to be archived — `note`
 
 **Observed (engineering gap audit, row 24).** Every code in `ERROR_CATALOG` (`src/error-catalog.ts`) carries a
 catalogue `fix` text; only a minority produce a span edit (a grep estimate, not a measurement). The catalogue
@@ -1448,6 +1448,9 @@ count. The estimate is the first thing to replace.
 
 **Gate:** the script prints "N of M codes have a span edit" and a test fails if the count
 drops. **Size:** S.
+
+Residue: `scripts/fix-coverage.ts` counts raise sites that can attach a span edit; it does not
+prove each fix is reachable on some input.
 
 ### U.18 · The playground PDF is raster — `todo`
 
