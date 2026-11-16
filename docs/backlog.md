@@ -758,7 +758,7 @@ therefore snaps to a different shape. The same rule makes `fmt2(−x) ≠ −fmt
 `0.13`, `fmt2(−0.125)` is `−0.12` (re-run through `src/num-format.ts`). Changing either moves
 output; it needs a decision and a sweep.
 
-### M.11 · LSP rename misses an assignment target — `todo`
+### M.11 · LSP rename misses an assignment target: done by #887, waiting to be archived — `note`
 
 `rename` (`src/lsp.ts`) collects references from expressions and instance names, not the name
 on the left of `NAME = expr`. Re-run: renaming `x` to `y` in `let x = 1`, `x = x + 1`,
