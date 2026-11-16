@@ -2033,11 +2033,14 @@ guard gaps it did not itemise; re-read that guard when this is taken.
 Residue: § import in `docs/language-reference.md` still lists a module's ignored settings by hand
 (no `height`, `site`, `notes`, `style`, `sheet text`), unguarded.
 
-### RR.12 · `E_DRAWING_LIMIT`'s remedy retypes its message clause — `todo`
+### RR.12 · `E_DRAWING_LIMIT`'s remedy retypes its message clause: done by #892, waiting to be archived — `note`
 
 From #859's review (RR.4): the remedy repeats a clause of the message by hand, so a later wording
 change to one leaves the other stale. **Gate:** the remedy reads the clause from where the message
 builds it, or a test pins that they agree.
+
+Residue: only the NOTES clause is pinned, by a test (a dependency-free leaf constant imported by both
+sides was not tried); the primitive-budget message paraphrases the remedy and stays unpinned.
 
 ### RR.13 · `uses` outdoor-hint follow-ups after RR.5: done by #881, waiting to be archived — `note`
 
