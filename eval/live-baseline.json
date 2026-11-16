@@ -1,11 +1,11 @@
 {
   "provider": "openai",
   "model": "gpt-5.5-2026-04-23",
-  "date": "2026-07-12",
+  "date": "2026-11-15",
   "judge": "2",
-  "valid": 23,
-  "semanticPass": 14,
-  "sound": 3,
+  "valid": 22,
+  "semanticPass": 9,
+  "sound": 1,
   "total": 26,
-  "note": "Calibrated L0 baseline, re-measured 2026-07-12 under the post-v1.15.0 author prompt (spec.llm.md gained the metric-unit-suffix line; judge v2 unchanged, seed 20260711, max_completion_tokens 16384, GH Actions run 29190294073). Supersedes the 2026-07-11 baseline (valid 25 / intent 13 / sound 4, pre-suffix prompt): movement is within run noise at n=26 and intent stays inside the predicted 45-60% band - the spec drift did not materially move the numbers. Same run's deterministic dividend (--l1): intent 18/26 (69%, ΔL0->L1 +4), sound 7/26 (+4), 8 briefs healed / 1 regressed by 41 repair moves + 0 fix edits - L1 numbers recorded for reference only; this baseline and every delta against it are L0. All 8 area assertions passed again (0 failures), re-confirming Gate G2's residual-0 verdict under the current prompt."
+  "note": "Re-baselined 2026-11-16 by product-roadmap RM-D52 (owner-delegated) to the median of three runs at commit 2a210589 (after CO-1 #790 and CO-2 #809; judge v2, synonyms v1, seed 20260711, GH Actions runs 43727485853 / 43727489713 / 43727493307, L0 valid 22/22/18, intent 10/9/7, sound 0/1/0). The values are run 43727489713, the median run on valid and intent (per-metric medians are 22 / 9 / 0); its L1 overlay: intent 16/26, sound 1/26, recorded for reference only, and this baseline and every delta against it are L0. spec.llm.md and eval/corpus.json are byte-identical between 2a210589 and the commit that set this baseline. Supersedes the 2026-07-12 baseline (valid 23 / intent 14 / sound 3, GH Actions run 29190294073), which was measured under a prompt 146 of whose 241 lines have since changed and under older compile and lint checks; EV.1 (eval/live-runs/2026-11-ev1-intent-gap.md) found the per-brief losses consistent with one flat rate and every lost brief-run a physical lint code or a post-July compile error, so the two baselines are not comparable and no rate is compared across them."
 }

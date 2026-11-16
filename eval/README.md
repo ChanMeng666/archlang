@@ -147,17 +147,24 @@ that, so the blindness is a test, not a claim.
 > it decides what the generator rejects, and widening it would change the bytes a given seed
 > reproduces, breaking the published dataset's seed-`20260712` reproducibility claim.
 
-Calibrated L0 baseline (`gpt-5.5-2026-04-23`, seed `20260711`, 26 briefs, judge v2,
-**re-measured 2026-07-12 under the post-v1.15.0 author prompt**): **valid 23/26 (88%) ·
-intent 14/26 (54%) · sound 3/26 (12%)**. Same run's `--l1` overlay: **intent 18/26 (69%,
-ΔL0→L1 +4) · sound 7/26 (+4)**, 8 briefs healed / 1 regressed by 41 repair moves. The L0
-numbers live in `live-baseline.json`; the L1 numbers are recorded there as reference only
-(the baseline and every delta against it are L0).
+L0 baseline (`gpt-5.5-2026-04-23`, seed `20260711`, 26 briefs, judge v2, **re-baselined
+2026-11-16 by product-roadmap RM-D52** to the median of three runs at `2a210589`, after CO-1 and
+CO-2): **valid 22/26 (85%) · intent 9/26 (35%) · sound 1/26 (4%)**, the values of the median run
+43727489713 (the three runs: valid 22/22/18, intent 10/9/7, sound 0/1/0). Same run's `--l1`
+overlay: **intent 16/26 · sound 1/26**. The L0 numbers live in `live-baseline.json`; the L1
+numbers are recorded there as reference only (the baseline and every delta against it are L0).
 
-A dated record of a one-off Claude 5.x live run (aggregate numbers, not comparable with this
-baseline, which was not re-measured) is in `eval/live-runs/2026-10-27-claude-5.md`. The 2026-11-15
+The baseline it supersedes, 2026-07-12 (valid 23/26 · intent 14/26 · sound 3/26; L1 intent 18/26),
+was measured under an author prompt 146 of whose 241 lines have since changed and under older
+compile and lint checks. EV.1 (`eval/live-runs/2026-11-ev1-intent-gap.md`) found every lost
+brief-run to be a physical lint code or a post-July compile error and the per-brief counts
+consistent with one flat rate, so **no rate is compared across the two baselines**: the drop is
+not a measured model or language regression, nor evidence against one.
+
+A dated record of a one-off Claude 5.x live run (aggregate numbers, not comparable with
+this baseline) is in `eval/live-runs/2026-10-27-claude-5.md`. The 2026-11-15
 authorability re-measure before/after CO-1 and CO-2 (the parser + prompt changes; Claude 5.x
-and gpt-5.5, 3 runs per group; the baseline stays this July record) is in
+and gpt-5.5, 3 runs per group; its last gpt-5.5 group is this baseline's source) is in
 `eval/live-runs/2026-11-authorability-remeasure.md`. The offline per-brief diagnosis of its gpt-5.5
 intent gap against the 2026-07-11 run (EV.1; no API spend) is in
 `eval/live-runs/2026-11-ev1-intent-gap.md`.
@@ -170,8 +177,9 @@ intent gap against the 2026-07-11 run (EV.1; no API spend) is in
 > predicted 45–60% band, L1 intent was identical (18/26), and all 8 area assertions passed
 > again (Gate G2's residual-0 verdict re-confirmed). Any future language-surface change to
 > `spec.llm.md` re-opens this question and needs the same owner-approved re-measurement.
-> `spec.llm.md` has since gained the `arch finish` line and `live-baseline.json` has not been
-> re-measured, so no rate may be compared across it until the owner does.
+> `spec.llm.md` later changed far more (CO-1, CO-2 and others); RM-D52 re-baselined on 2026-11-16
+> at `2a210589`, and `spec.llm.md` was unchanged from there to the commit that set the baseline. A
+> later change to `spec.llm.md` re-opens the question again.
 
 ## How to run
 
