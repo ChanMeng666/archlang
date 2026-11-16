@@ -492,7 +492,7 @@ connection and decompress nothing, and the sites run on workerd, not Node. At 2.
 
 ## Found while landing the issued-sheet statements (`notes`, `schedule openings`)
 
-### N.2 · `E_LEVEL_MIX`'s remedy does not name `notes` among the plan-level settings — `todo`
+### N.2 · `E_LEVEL_MIX`'s remedy does not name `notes` among the plan-level settings: done by #839, waiting to be archived — `note`
 
 The remedy text in `src/error-catalog.ts` lists the statements that stay outside `level` blocks
 and predates `notes`. Cosmetic: `notes` inside a level is `E_PARSE`, as `legend` is.
