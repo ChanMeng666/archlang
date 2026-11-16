@@ -3823,7 +3823,8 @@ body does not take it. The keys are friendly attributes, and each kind takes its
 `fill`, `label` and `area`; `wall` takes `stroke`, `fill` and `hatch`; `door` takes `leaf` and `opening`; `window`
 takes `pane` and `opening`; every other kind takes a subset of `fill`, `stroke` and `label`. A
 wall's `fill` and `hatch` are its poché base and hatch line: they recolour the walls' poché (and
-its legend swatch) and leave every floor and ground pattern in the plan's `theme` ink. Each attribute
+its legend swatch) in the SVG and PNG, and leave every floor and ground pattern in the plan's `theme`
+ink; the PDF export still draws the poché in the plan's colour. Each attribute
 names a theme colour, so a `style` block overrides the plan's `theme` for that kind only, and a
 programmatic `CompileOptions.theme` still wins. A key the kind does not take warns
 (`W_UNKNOWN_STYLE_KEY`) and is dropped; two blocks for the same kind merge, the later key winning.
