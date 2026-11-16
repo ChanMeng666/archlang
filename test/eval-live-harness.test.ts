@@ -68,6 +68,17 @@ describe("stop reason capture", () => {
     expect(JSON.stringify(body.system)).toContain("SYSTEM-RR14");
   });
 
+  it("the OpenAI path sends the system prompt it is given, verbatim as messages[0]", async () => {
+    vi.stubEnv("OPENAI_API_KEY", "k");
+    const fetch = vi.fn(async (_url: string, _init: RequestInit) =>
+      ok({ choices: [{ message: { content: "x" }, finish_reason: "stop" }] }),
+    );
+    vi.stubGlobal("fetch", fetch);
+    await makeAuthor("openai", "gpt-5.5-2026-04-23", undefined, "SYSTEM-RR14-OPENAI")("brief");
+    const body = JSON.parse(String(fetch.mock.calls[0]![1].body)) as { messages: unknown[] };
+    expect(body.messages[0]).toEqual({ role: "system", content: "SYSTEM-RR14-OPENAI" });
+  });
+
   it("truncation predicate", () => {
     expect(isTruncationStop("max_tokens")).toBe(true);
     expect(isTruncationStop("length")).toBe(true);
