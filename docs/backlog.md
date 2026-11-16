@@ -2033,7 +2033,7 @@ From #859's review (RR.4): the remedy repeats a clause of the message by hand, s
 change to one leaves the other stale. **Gate:** the remedy reads the clause from where the message
 builds it, or a test pins that they agree.
 
-### RR.13 · `uses` outdoor-hint follow-ups after RR.5 — `todo`
+### RR.13 · `uses` outdoor-hint follow-ups after RR.5: done by #881, waiting to be archived — `note`
 
 From #861's reviews. (1) `usesOutdoorHint` (`src/parser.ts`) runs `this.toks.indexOf(t)` before it
 knows the word is an outdoor word, so a file of many unknown statements formats its errors in
