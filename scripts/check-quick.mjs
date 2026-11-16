@@ -92,7 +92,8 @@ const DEV_ROOTS = /^(test|eval|dataset|scripts|bench)\//;
 
 // ---- 2b. the guards the import graph cannot reach --------------------------------------------
 // `scripts/gate-select.mjs`: directory-scanning guards, source-tree scanners, tests named after a changed
-// module, corpus pins, and the list `planTests` builds from them under their caps.
+// module, corpus pins, the text guards (uncapped, each on its own inputs), and the list `planTests`
+// builds from them.
 
 // ---- 3. the plan -----------------------------------------------------------------------------
 const steps = [];
