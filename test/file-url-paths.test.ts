@@ -6,7 +6,7 @@ import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 
 /**
- * `new URL(import.meta.url).pathname` keeps percent-encoding (`%20`) and, on Windows, a leading slash,
+ * Taking `.pathname` of the module's own URL keeps percent-encoding (`%20`) and, on Windows, a leading slash,
  * so the path is wrong under a checkout with spaces (#915). A `file://` + `process.argv[1]` template never
  * equals `import.meta.url` on Windows or with encoded characters. The fix is `fileURLToPath` /
  * `pathToFileURL`. The patterns are assembled from pieces so this file does not match itself.
