@@ -147,11 +147,12 @@ listed in the stage report (`docs/plans/plan-soundness/README.md` D18).
 
 ## Owner policies
 
-- **The playground embed ceiling (delegated ruling RM-D57, 2026-11-17; product-roadmap README
+- **The playground embed ceiling (delegated ruling RM-D57, its re-take rule owner-ratified, 2026-11-17; product-roadmap README
   § 6.25):** `embedPathBudget` in `playground/e2e/startup-chunks.baseline.json` (351,000 B) is not raised. A PR
-  that touches the compiler path states the embed path's before and after gzip bytes. A raise is the
-  owner's (`REVIEW.md`: a relaxed cap). *Awaiting ratification:* that a raise may merge on the
-  coordinator's judgement after a fresh-context review when it is its own re-take PR, for a card that
+  that touches the compiler path states the embed path's before and after gzip bytes. A raise outside the rule below is
+  the owner's (`REVIEW.md`: a relaxed cap). **Ratified by the owner in words, 2026-11-17** ("我授权你自动
+  实施合并"): a raise merges on the coordinator's judgement after a fresh-context review when it is its
+  own re-take PR, for a card that
   needs the bytes and has shown no cheaper cut, by the file's own rule (the measured path × 1.025,
   rounded up to a thousand, leaving headroom below glTF-Transform's ~19,900 B), with the numbers in
   `embedPathBudgetWhy`; the headroom rule alone limits little, so the real controls are that
@@ -181,6 +182,7 @@ listed in the stage report (`docs/plans/plan-soundness/README.md` D18).
   `reviewed <sha>` (`docs/agents/commands.md` § Merging a PR; product-roadmap RM-D49). A CI red is read
   from CI's log, not reproduced by a local full run.
 - **Distribution first**: ArchLang exists for distribution and credibility; revenue is secondary.
-- **ArchCanvas is in maintenance** (D26, the day-90 verdict) and stays on its pinned core (D28): its prompts
-  inject `spec.llm.md` verbatim, so a core bump changes what the model writes, and only a paid run can price
-  that. A new language form is not a reason to bump it.
+- **ArchCanvas moves its core only on purpose** (preview-and-remodel D47, amending D28; the owner,
+  2026-11-16): its development restarted, and the versions it depends on are in its own `package.json`.
+  Its prompts inject `spec.llm.md` verbatim, so a core bump changes what the model writes, and only a paid
+  run can price that. A new language form is not a reason to bump it.
