@@ -141,6 +141,15 @@ export function parseUnmemoised(src: string, registry: Registry = BUILTIN_REGIST
   return parseImpl(src, registry, lexUnmemoised);
 }
 
+/**
+ * {@link parse} over a caller's lexer, unmemoised: the seam a test uses to count how many
+ * times the parser reads a token (a proxied token array). Internal: not re-exported from
+ * the package root.
+ */
+export function parseWithLexer(src: string, lexer: (src: string) => LexResult): ParseOutcome {
+  return parseImpl(src, BUILTIN_REGISTRY, lexer);
+}
+
 function parseImpl(src: string, registry: Registry, lexer: (src: string) => LexResult = lex): ParseOutcome {
   const { tokens, errors: lexErrors, comments } = lexer(src);
   const lexDiags: Diagnostic[] = lexErrors.map((e) => ({
@@ -242,34 +251,38 @@ class Parser {
     if (t.type === "minus" && this.lastIdSpan && t.start === this.lastIdSpan.end) {
       return ["ids are letters, digits and `_` (not `-`); write `my_room`, not `my-room`"];
     }
-    if (t.type === "comma") {
-      let i = this.toks.indexOf(t) - 1;
-      let sawUse = false;
-      while (i >= 0 && this.toks[i]!.type === "ident" && USE_SET.has(this.toks[i]!.value)) {
-        sawUse = true;
-        i--;
-      }
-      if (sawUse && i >= 0 && this.toks[i]!.type === "ident" && this.toks[i]!.value === "uses") {
-        return ["separate uses with spaces: `uses living dining`"];
-      }
+    if (t.type === "comma" && this.afterUses(t, false)) {
+      return ["separate uses with spaces: `uses living dining`"];
     }
-    return undefined;
+    // An outdoor word after a `uses` list on its line (`uses living balcony`): the error it
+    // raises (an unknown statement, a strip's expected `room`) names the `outdoor` surface
+    // (backlog RR.5). The word is tested first, so any other failing token costs no walk; a
+    // word on its own line after a `uses` list is the next statement and gets none.
+    const outdoor = roomUsesOutdoorHint(t.type, t.value);
+    return outdoor !== undefined && this.afterUses(t, true) ? [outdoor] : undefined;
   }
 
   /**
-   * The outdoor-surface hint for `t` when it is an outdoor word directly after a valid
-   * `uses` list (`uses living balcony`). Only the two errors that word already raises read
-   * it: the unknown statement, and a strip's expected `room` (backlog RR.5).
+   * Whether `t` directly follows the use-kinds of a `uses` list (`uses living dining`); with
+   * `sameLine`, only when the token before `t` is on its line. `t` is found by a binary search
+   * on `start` (tokens are in source order), never a scan: a hint may be for a token already
+   * consumed (the comma's, as in `room ,id=r …`), so the cursor does not locate it, and a file of
+   * many failing statements must format its hints in time linear in its tokens.
    */
-  private usesOutdoorHint(t: Token): string | undefined {
-    let i = this.toks.indexOf(t) - 1;
-    let sawUse = false;
-    while (i >= 0 && this.toks[i]!.type === "ident" && USE_SET.has(this.toks[i]!.value)) {
-      sawUse = true;
-      i--;
+  private afterUses(t: Token, sameLine: boolean): boolean {
+    const toks = this.toks;
+    let lo = 0;
+    let hi = toks.length;
+    while (lo < hi) {
+      const mid = (lo + hi) >> 1;
+      if (toks[mid]!.start < t.start) lo = mid + 1;
+      else hi = mid;
     }
-    if (!sawUse || i < 0 || this.toks[i]!.type !== "ident" || this.toks[i]!.value !== "uses") return undefined;
-    return roomUsesOutdoorHint(t.type, t.value);
+    let i = lo - 1;
+    if (sameLine && toks[i]?.line !== t.line) return false;
+    const end = i;
+    while (i >= 0 && toks[i]!.type === "ident" && USE_SET.has(toks[i]!.value)) i--;
+    return i < end && toks[i]?.type === "ident" && toks[i]!.value === "uses";
   }
 
   /** Span from a start offset to the end of the last consumed token. */
@@ -1717,7 +1730,7 @@ class Parser {
       // for clarity of intent.
       else if (this.peek(1).type === "lparen") node = this.parseInstance();
       else {
-        const stray = STRAY_CLAUSE_HINTS.get(t.value) ?? this.usesOutdoorHint(t);
+        const stray = STRAY_CLAUSE_HINTS.get(t.value);
         if (stray === undefined) this.fail(`Unknown statement "${t.value}"`, t);
         throw new ParseError(`Unknown statement "${t.value}"`, { start: t.start, end: t.end }, [stray]);
       }
@@ -2024,13 +2037,6 @@ class Parser {
    *  clauses come in any order, each once (`src/clause-order.ts`). The child is built after, in
    *  the order the grammar used to require, so a room written in that order keeps its tree. */
   private parseStripRoom(): StripRoomChild {
-    const next = this.peek();
-    const outdoor = this.isKeyword("room") ? undefined : this.usesOutdoorHint(next);
-    if (outdoor !== undefined) {
-      throw new ParseError(`Expected "room" but found ${describe(next)}`, { start: next.start, end: next.end }, [
-        outdoor,
-      ]);
-    }
     const kw = this.eatKeyword("room");
     const start = kw.start;
     const id = this.parseIdOpt();
