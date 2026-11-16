@@ -36,6 +36,7 @@ import {
   AUTO_DIMS_MODES,
   COMPASS_DIRECTIONS,
   HEMISPHERES,
+  LEVEL_MIX_STAYS_OUTSIDE,
   LEVEL_SHARED_KINDS,
   NORTH_DIRS,
   SCHEDULE_SUBJECTS,
@@ -746,7 +747,7 @@ class Parser {
         code: "E_LEVEL_MIX",
         message:
           `"${s.kind}" cannot sit at plan level in a multi-storey plan — move it inside the \`level\` block it belongs to ` +
-          `(settings, \`component\`/\`import\`, and plan-global \`let\`/\`set\` stay outside and apply to every level)`,
+          `(${LEVEL_MIX_STAYS_OUTSIDE} stay outside and apply to every level)`,
         span: s.span,
       });
     }
