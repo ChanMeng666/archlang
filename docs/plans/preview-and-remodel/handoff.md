@@ -24,7 +24,7 @@ signal moved at 4 signups or 1 first frame a week. n is tiny. Posts 2–4 are re
 
 **Day 90 is read as STOP on the consumer product (D26):** ArchCanvas is in maintenance. ArchLang keeps being built on its merit (D29), which replaces the line that nothing new opens before the reads. The question to the user is deferred by the owner.
 
-ArchCanvas stays on core 1.48 (D28); the draft bump PR there is not to be merged.
+ArchCanvas stays on core 1.48 (D28); the draft bump PR there is not to be merged. *(Superseded 2026-11-16: D47.)*
 
 **OpenAI plugin directory:** ArchLang is live at 1.50.1 (`docs/seo.md` section 8), so its skills pin an older CLI than npm's 1.53.0. A new ZIP is the owner's submit; the listing's open items are O.11 to O.14 in `docs/backlog.md`.
 
@@ -50,7 +50,7 @@ promise it.
    Wave 7 releases fall inside the window; the growth `data/agent-reach.csv` notes date each one.
 3. **G11 and H9,** the older residue. D27 closed with J15.
 
-A new npm package goes: `prove:pack` with no browser, first version by hand, register, dispatch within 48 hours.
+A new npm package goes: `prove:pack` with no browser, first version by hand, register only when a core release is about to go, then publish a new version with that release's `v*` tag within 48 hours.
 Registering first is impossible, because npm needs the package to exist.
 
 ## 4. How a card is run

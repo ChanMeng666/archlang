@@ -200,7 +200,7 @@ you observed. Do NOT push anything — this command only verifies.
   workflow `release.yml`, no environment); until then that job fails with an auth error and nothing
   else is affected. Its `prepack` refuses a stale root `dist/`, so `npm run build` first when publishing by hand.
   npmjs lists a new trusted publisher as "Pending validation" and it LAPSES unless one publish goes
-  through it within about 48 hours: right after registering, a NEW version of that package must go
+  through it within about 48 hours, so register only when a core release is about to go: right after registering, a NEW version of that package must go
   out with the next core release (bump it, merge, push the `v<core version>` tag; the tag's run skips
   every version already on npm and publishes only the new ones). `gh workflow run release.yml --ref main`
   publishes nothing: the guard (`scripts/release-guard.sh`, since 2026-11-09) refuses a ref that is not

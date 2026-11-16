@@ -172,7 +172,7 @@ listed in the stage report (`docs/plans/plan-soundness/README.md` D18).
   `reviewed <sha>` (`docs/agents/commands.md` § Merging a PR; product-roadmap RM-D49). A CI red is read
   from CI's log, not reproduced by a local full run.
 - **Distribution first**: ArchLang exists for distribution and credibility; revenue is secondary.
-- **ArchCanvas moves its core only on purpose** (D28): its development restarted on 2026-11-16, and since
-  then it depends on `@chanmeng666/archlang` `^1.62.0` and `@chanmeng666/archlang-3d` `^0.8.1`. Its prompts
-  inject `spec.llm.md` verbatim, so a core bump changes what the model writes, and only a paid run can price
-  that. A new language form is not a reason to bump it.
+- **ArchCanvas moves its core only on purpose** (preview-and-remodel D47, amending D28; the owner,
+  2026-11-16): its development restarted, and the versions it depends on are in its own `package.json`.
+  Its prompts inject `spec.llm.md` verbatim, so a core bump changes what the model writes, and only a paid
+  run can price that. A new language form is not a reason to bump it.
