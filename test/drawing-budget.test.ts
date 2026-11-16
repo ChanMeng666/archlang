@@ -25,6 +25,7 @@ import { link } from "../src/import.js";
 import { parse } from "../src/parser.js";
 import { BUILTIN_REGISTRY } from "../src/registry.js";
 import { FIXTURE_CATEGORIES } from "../src/elements/fixtures-glyphs.js";
+import { MAX_NOTE_LINES, NOTE_LINE_CHARS } from "../src/sheet-tables.js";
 import { MAX_RUN_TREADS, TREAD_GOING_MM } from "../src/elements/vertical-glyphs.js";
 import type { World } from "../src/world.js";
 import { NULL_WORLD } from "../src/world.js";
@@ -269,5 +270,10 @@ suite("the prose quotes the budget it describes", () => {
   it("the catalogue entry and the language reference name MAX_DRAW_UNITS", () => {
     expect(ERROR_CATALOG.E_DRAWING_LIMIT!.cause).toContain(grouped(MAX_DRAW_UNITS));
     expect(readFileSync(join(ROOT, "docs/language-reference.md"), "utf8")).toContain(`past ${grouped(MAX_DRAW_UNITS)}`);
+  });
+  it("the catalogue entry names its second trigger, the NOTES cap, with the numbers it enforces", () => {
+    expect(ERROR_CATALOG.E_DRAWING_LIMIT!.cause).toContain(
+      `\`notes\` that wrap to more than ${MAX_NOTE_LINES} lines of ${NOTE_LINE_CHARS} characters`,
+    );
   });
 });

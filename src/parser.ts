@@ -54,7 +54,7 @@ import { fnv1a } from "./hash.js";
 import { idToken } from "./identity.js";
 import type { ElementDef, ParseCtx, Registry } from "./registry.js";
 import { BUILTIN_REGISTRY } from "./registry.js";
-import { floorClause } from "./elements/room.js";
+import { floorClause, roomUsesExpected } from "./elements/room.js";
 import { missingClause, readClauses, type TailClause } from "./clause-order.js";
 import { KEEP_GRADES, KEEP_WORDS, STATEMENT_STARTS, TITLE_FIELDS, type TitleField } from "./grammar/tokens.js";
 import type { KeepGrade, KeepNode, KeepRef } from "./ast.js";
@@ -2037,7 +2037,7 @@ class Parser {
           while (this.peek().type === "ident" && USE_SET.has(this.peek().value)) {
             uses.push(this.next().value as UseKind);
           }
-          if (uses.length === 0) this.fail(`Expected one or more room uses (${USE_KINDS.join("|")}) after "uses"`);
+          if (uses.length === 0) this.fail(roomUsesExpected(this.peek().value || undefined));
           if (keep) tail.uses = uses;
         },
       },
