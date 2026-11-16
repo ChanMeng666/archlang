@@ -152,12 +152,13 @@ suite("the pattern", () => {
     }
   });
 
-  it("no wall material shares a pattern id with a ground or floor-only pattern", () => {
-    // `hatchId` ignores `ink`, so a shared id would repaint the ground/floor fill in the walls'
-    // `style wall { fill | hatch }` ink (src/hatches.ts, GROUND_MATERIALS doc).
+  it("no wall material shares a pattern id with a ground pattern", () => {
+    // Ground ids are keyed as a wall's are and `hatchId` ignores `ink`, so a shared id would give
+    // the ground the walls' poché base and their `style wall { fill | hatch }` ink (src/hatches.ts,
+    // GROUND_MATERIALS doc). A floor-only word needs no such pin: a wall-named floor gets a
+    // `-floor` id (`floorHatch`), pinned above.
     const wall = new Set<string>(KNOWN_MATERIALS);
     expect(GROUND_MATERIALS.filter((m) => wall.has(m))).toEqual([]);
-    expect(FLOOR_PATTERNS.filter((m) => wall.has(m))).toEqual([]);
   });
 
   it("is one pattern however many rooms write it", () => {

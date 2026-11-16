@@ -57,8 +57,8 @@ export const DEFAULT_MATERIAL: Material = "poche";
  *
  * Pattern ids are keyed exactly as a wall's are, and {@link hatchId} ignores
  * {@link HatchSpec.ink}, so the two lists MUST stay disjoint: a ground word in the wall list
- * would share its `<pattern>` with the ground, and `style wall { fill | hatch }` would then
- * repaint the ground's fill in the walls' ink. Pinned by `test/room-floor.test.ts`.
+ * would share its `<pattern>` with the ground, which would then take the walls' poché base and
+ * their `style wall { fill | hatch }` ink. Pinned by `test/room-floor.test.ts`.
  */
 export const GROUND_MATERIALS = [
   "grass",
