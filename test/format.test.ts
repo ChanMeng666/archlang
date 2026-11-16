@@ -38,8 +38,8 @@ describe("T5.2 — formatter is idempotent", () => {
 const BLANK_BEFORE_BREAK: Record<string, string> = {
   spaceCr: "A \rB",
   tabCr: "A\t\rB",
-  spaceLs: "A  B",
-  spacePs: "A  B",
+  spaceLs: "A \u2028B",
+  spacePs: "A \u2029B",
 };
 
 describe("the sheet strings are a fixed point for ANY text (every title field, `notes`)", () => {
