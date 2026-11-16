@@ -15,6 +15,13 @@
   package. `./node` and the CLI share that one copy; `@gltf-transform/core` stays a dependency at
   the same exact pin, though `dist/` no longer imports it.
 
+### Fixed
+
+- The no-browser path of `view` (and `renderStill`) no longer leaves its scratch directory in the
+  temp folder: `renderReplay` and `renderStill` now remove it however they end, including when no
+  browser starts, and a failed removal never replaces the render's result or its error. On Windows
+  the scratch directory is removed with retries.
+
 ## [0.8.1] - 2026-11-15
 
 The core peer range stays `^1.61.0` (`MIN_CORE`): nothing below reads a core export that 1.61.0 lacks.
