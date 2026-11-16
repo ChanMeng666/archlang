@@ -8,7 +8,7 @@
  * fix built against the other place's walls. Every scope is per compile, so a charge never depends
  * on an earlier compile; the key carries every other input the text varies by.
  *
- * The step charge is the statement's source length, taken only at the site where a fix's
+ * The charge to the step meter is the statement's source length, taken only at the site where a fix's
  * diagnostic fires, before the build. A node's first build of each fix `kind` per ctx is free, so a
  * plan whose openings each print a fix once costs exactly what it did and no pinned step payload
  * moves. That allowance is NOT bounded by source size: a component's node is shared by every
