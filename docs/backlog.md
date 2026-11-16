@@ -2094,6 +2094,9 @@ per-upload instruction from the owner, which is how the card upload of 2026-11-1
 done (`docs/plans/product-roadmap/handoff.md`). Whether to add that carve-out is the owner's call;
 until then the rule stands as written.
 
+**Decided** by RM-D55 (owner, 2026-11-16; product-roadmap README §6.24): uploads to the dataset repo
+are the agent's, standing; replacing a published data file still needs an owner ruling first.
+
 ## Test-programme findings (promo-credit programme, 2026-11-16)
 
 From `docs/plans/product-roadmap/2026-11-test-findings.md` (§ 3, § 4, § 5). RR.8 (2), the
