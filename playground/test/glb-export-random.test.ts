@@ -1,8 +1,8 @@
 /**
  * Download GLB (card X5) puts glTF-Transform in a playground chunk, and glTF-Transform's bundle
  * carries a `Math.random()` (an id helper the package's browser bundle may not hold, which is why
- * the package exports `writeGlb` from its Node entry only). It is reached only when READING a glTF
- * with external resources, never on the write path. This holds the page's path to that: the GLB
+ * the package exports `writeGlb` from `./glb` and `./node`, never `.` or `./browser`). It is
+ * reached only when READING a glTF with external resources, never on the write path. This holds the page's path to that: the GLB
  * writer's modules are loaded and laneway-house written twice with `Math.random` recording every
  * caller, and no call comes from the writer, the library, the package or the playground modules;
  * the two writes are the same bytes.

@@ -34,6 +34,10 @@
       "types": "./dist/browser.d.ts",
       "import": "./dist/browser.js"
     },
+    "./glb": {
+      "types": "./dist/glb.d.ts",
+      "import": "./dist/glb.js"
+    },
     "./node": {
       "types": "./dist/node.d.ts",
       "import": "./dist/node.js"

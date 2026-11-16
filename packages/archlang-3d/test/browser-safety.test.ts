@@ -7,13 +7,22 @@
  * by a lazy `import()` that never runs in a browser. The list is the one the core's own standalone
  * browser build uses (`NODE_ONLY` in `packages/web-component/scripts/build.ts`), read from there,
  * and the test proves each is reached only dynamically.
+ *
+ * The `./glb` entry (`writeGlb` for a page with no Node) is built as tsup builds it, its libraries
+ * inlined, and that output then bundles for a browser with no option at all: no Node module, no
+ * `process`, no clock, and the bundle, run, writes laneway-house byte for byte as `./node` does (a
+ * well-formed GLB 2.0 header) with no `Math.random` call while it loads and writes.
  */
-import { readFileSync } from "node:fs";
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
-import { fileURLToPath } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
 import { build } from "esbuild";
 import { describe, expect, it } from "vitest";
-import { REPO } from "./corpus.js";
+import { adaptPlan, buildMesh, type Mesh3D } from "../src/index.js";
+import { EXAMPLES_LIST, REPO, WORLD } from "./corpus.js";
+import { writeGlb } from "../src/node.js";
+import { PIN_GENERATOR } from "./pins.js";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 
@@ -110,5 +119,118 @@ describe("browser safety", () => {
       [/\bnew\s+Date\s*\(/, "new Date()"],
     ];
     expect(banned.filter(([re]) => re.test(code)).map(([, why]) => why)).toEqual([]);
+  }, 60_000);
+
+  it("the ./glb entry, built as tsup builds it, bundles for a browser as it is and writes a valid GLB", async () => {
+    // Stage 1, as `tsup.config.ts` builds `dist/glb.js`: for Node, its libraries inlined (`noExternal`),
+    // so glTF-Transform's unused `NodeIO` (a lazy `import("node:fs")`) is shaken out here, once.
+    const tsup = readFileSync(join(HERE, "../tsup.config.ts"), "utf8");
+    const inlined = [...(/noExternal: \[([^\]]*)\]/.exec(tsup)?.[1] ?? "").matchAll(/"([^"]+)"/g)].map(
+      (m) => m[1] as string,
+    );
+    const built = await build({
+      entryPoints: [join(HERE, "../src/glb.ts")],
+      bundle: true,
+      platform: "node",
+      format: "esm",
+      target: "es2022",
+      write: false,
+      logLevel: "silent",
+      metafile: true,
+      // Paths in the metafile are relative to the package, wherever vitest runs from.
+      absWorkingDir: join(HERE, ".."),
+    });
+    expect(built.errors).toEqual([]);
+    const inputs = Object.keys(built.metafile?.inputs ?? {});
+    expect(inputs).toContain("src/glb/write.ts");
+    // Every library the entry reaches is one tsup inlines: left external, the consumer's bundler would
+    // meet `NodeIO`'s `node:` imports, which webpack refuses for a browser target.
+    const libraries = [
+      ...new Set(
+        inputs.flatMap((f) => /node_modules[\\/]((?:@[^\\/]+[\\/])?[^\\/]+)/.exec(f)?.[1]?.replace(/\\/g, "/") ?? []),
+      ),
+    ];
+    expect(libraries).toContain("@gltf-transform/core");
+    expect(libraries.filter((l) => !inlined.includes(l))).toEqual([]);
+    // Only this package's own modules and its libraries: not the core, and nothing a GLB writer does
+    // not need (the adapter, the mesh stage, Scene3D, the replay, three.js, earcut).
+    expect(inputs.filter((f) => !/^(src[\\/]|package\.json$|(\.\.[\\/])*node_modules[\\/])/.test(f))).toEqual([]);
+    expect(
+      inputs.filter((f) =>
+        /src[\\/](adapter|mesh|scene3d|replay)[\\/]|[\\/](three|earcut)[\\/]|@chanmeng666[\\/]archlang[\\/]/.test(f),
+      ),
+    ).toEqual([]);
+
+    // Stage 2, as a consumer's bundler meets it: for a browser, with no external and no other option.
+    const dir = mkdtempSync(join(tmpdir(), "archlang3d-glb-"));
+    const real = Math.random;
+    let random = 0;
+    let glb: Uint8Array;
+    let expected: Uint8Array;
+    try {
+      const stage1 = join(dir, "glb.js");
+      writeFileSync(stage1, built.outputFiles?.[0]?.text ?? "");
+      const out = await build({
+        entryPoints: [stage1],
+        bundle: true,
+        platform: "browser",
+        format: "esm",
+        write: false,
+        logLevel: "silent",
+        minifyWhitespace: true,
+        legalComments: "none",
+      }).catch((e: { errors?: Array<{ text: string }> }) => ({
+        errors: (e.errors ?? []).map((x) => x.text),
+        outputFiles: undefined,
+      }));
+      expect(out.errors).toEqual([]);
+      const code = out.outputFiles?.[0]?.text ?? "";
+      // glTF-Transform's bundle names `Math.random` (an id helper for READING external resources), so
+      // the scan bans Node and the clock; the run below proves the write path never calls it.
+      const banned: Array<[RegExp, string]> = [
+        [/\bfrom\s*["']node:/, "a static node: import"],
+        [/\bimport\s*["']node:/, "a bare node: import"],
+        [/\bimport\s*\(\s*["']node:/, "a node: import()"],
+        [/\brequire\(\s*["']node:/, "a node: require"],
+        [/\bprocess\.(env|argv|cwd|exit|platform)\b/, "process"],
+        [/\bDate\.now\s*\(/, "Date.now()"],
+        [/\bnew\s+Date\s*\(/, "new Date()"],
+        [/\bperformance\.now\s*\(/, "performance.now()"],
+      ];
+      expect(banned.filter(([re]) => re.test(code)).map(([, why]) => why)).toEqual([]);
+
+      const src = EXAMPLES_LIST.find(([n]) => n === "laneway-house.arch")?.[1] ?? "";
+      const r = adaptPlan(src, { world: WORLD });
+      if (!r.ok) throw new Error(r.refusal.code);
+      const mesh = buildMesh(r.scene);
+      expected = await writeGlb(mesh, { generator: PIN_GENERATOR }); // `./node`'s, before the recorder
+      // Run the browser bundle itself, loaded and run under a `Math.random` that counts every call.
+      const file = join(dir, "glb.browser.mjs");
+      writeFileSync(file, code);
+      Math.random = () => {
+        random++;
+        return real();
+      };
+      const bundled = (await import(pathToFileURL(file).href)) as {
+        writeGlb: (mesh: Mesh3D, opts?: { generator?: string }) => Promise<Uint8Array>;
+      };
+      glb = await bundled.writeGlb(mesh, { generator: PIN_GENERATOR });
+    } finally {
+      Math.random = real;
+      rmSync(dir, { recursive: true, force: true });
+    }
+    expect(random, "Math.random called while loading or writing").toBe(0);
+    // The GLB 2.0 header: magic "glTF", version 2, total length = the bytes; then the JSON chunk.
+    const view = new DataView(glb.buffer, glb.byteOffset, glb.byteLength);
+    expect(new TextDecoder().decode(glb.subarray(0, 4))).toBe("glTF");
+    expect(view.getUint32(4, true)).toBe(2);
+    expect(view.getUint32(8, true)).toBe(glb.byteLength);
+    expect(view.getUint32(16, true)).toBe(0x4e4f534a); // "JSON"
+    const json = JSON.parse(new TextDecoder().decode(glb.subarray(20, 20 + view.getUint32(12, true)))) as {
+      asset: { version: string; generator: string };
+    };
+    expect(json.asset).toEqual({ version: "2.0", generator: PIN_GENERATOR });
+    // Byte for byte what `./node`'s `writeGlb` writes for this plan (whose digest `test/glb.test.ts` pins).
+    expect(Buffer.compare(Buffer.from(glb), Buffer.from(expected)), "the same bytes as ./node").toBe(0);
   }, 60_000);
 });
