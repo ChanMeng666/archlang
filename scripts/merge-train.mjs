@@ -127,6 +127,9 @@ export const WAIT = { intervalMs: 30_000, timeoutMs: 90 * 60_000 };
 export const MEMBER_POLL = { intervalMs: 10_000, attempts: 18 };
 /** GitHub computes `mergeStateStatus` lazily: an UNKNOWN is re-read this often, this many times. */
 export const UNKNOWN_POLL = { intervalMs: 5_000, attempts: 3 };
+/** GitHub's BLOCKED lags the last check by seconds: under `--wait`, with CI green, re-read it this often. */
+export const BLOCKED_POLL = { intervalMs: 10_000, attempts: 6 };
+const BLOCKED_REFUSAL = "the train PR's mergeStateStatus is BLOCKED";
 /** The longest focus text the body carries; a longer one is cut there and posted whole as a comment. */
 export const FOCUS_CAP = 20_000;
 const COMMENT_CAP = 60_000;
@@ -545,12 +548,16 @@ export function landVerdict(f) {
   }
   if (train?.mergeStateStatus === "UNKNOWN") pending.push("mergeStateStatus is UNKNOWN (GitHub is computing it)");
   else if (refusals.length === 0 && pending.length === 0 && !MERGEABLE_STATES.includes(train?.mergeStateStatus))
-    refuse("state", `the train PR's mergeStateStatus is ${train?.mergeStateStatus}`);
+    refuse("state", `the train PR's mergeStateStatus is ${train?.mergeStateStatus}`); // BLOCKED_REFUSAL for BLOCKED
   return { ok: refusals.length === 0 && pending.length === 0, refusals, pending, notes, law };
 }
 
 /** Whether a `--wait` keeps polling: something is pending and nothing but law 3 is refused. */
 export const keepWaiting = (v) => v.pending.length > 0 && v.refusals.every((r) => r.kind === "review");
+
+/** Whether the only thing in the way is a BLOCKED merge state, everything else (CI included) having passed. */
+export const onlyBlocked = (v) =>
+  v.pending.length === 0 && v.refusals.length === 1 && v.refusals[0].msg === BLOCKED_REFUSAL;
 
 /** Whether the only thing in the way is GitHub's UNKNOWN merge state (re-read briefly even without --wait). */
 export const onlyUnknown = (v) =>
@@ -635,8 +642,8 @@ const samePath = (a, b) => {
 /**
  * The script. `opts`: `cwd` (any checkout of the repository), `out`/`err` (print a line), `gh(args, cwd)`
  * (returns `{ status, stdout, stderr }`; default the `gh` CLI), `runGen(root)` (default `npm run gen:all`),
- * `proof(runId, repo)` (default FT1's `ci-proven.mjs --run`), `now()`, `sleep(ms)`, `wait`, `memberPoll`
- * and `unknownPoll` (the poll bounds). Returns the exit code.
+ * `proof(runId, repo)` (default FT1's `ci-proven.mjs --run`), `now()`, `sleep(ms)`, `wait`, `memberPoll`,
+ * `unknownPoll` and `blockedPoll` (the poll bounds). Returns the exit code.
  */
 export function main(argv, opts = {}) {
   const out = opts.out ?? ((l) => process.stdout.write(`${l}\n`));
@@ -648,6 +655,7 @@ export function main(argv, opts = {}) {
   const waitBounds = opts.wait ?? WAIT;
   const memberPoll = opts.memberPoll ?? MEMBER_POLL;
   const unknownPoll = opts.unknownPoll ?? UNKNOWN_POLL;
+  const blockedPoll = opts.blockedPoll ?? BLOCKED_POLL;
   let args;
   try {
     args = parseArgs(argv);
@@ -1234,6 +1242,7 @@ export function main(argv, opts = {}) {
     let v = landVerdict(facts);
     const deadline = now().getTime() + waitBounds.timeoutMs;
     let unknownTries = 0;
+    let blockedTries = 0;
     for (;;) {
       if (args.wait && keepWaiting(v) && now().getTime() < deadline) {
         log(`waiting ${Math.round(waitBounds.intervalMs / 1000)} s: ${v.pending.join("; ")}`);
@@ -1241,6 +1250,10 @@ export function main(argv, opts = {}) {
       } else if (onlyUnknown(v) && unknownTries < unknownPoll.attempts) {
         unknownTries++;
         sleep(unknownPoll.intervalMs);
+      } else if (args.wait && onlyBlocked(v) && blockedTries < blockedPoll.attempts) {
+        blockedTries++;
+        log(`CI is green but the merge state is BLOCKED: re-reading in ${Math.round(blockedPoll.intervalMs / 1000)} s`);
+        sleep(blockedPoll.intervalMs);
       } else break;
       facts = read(viewPr(n, TRAIN_FIELDS));
       v = landVerdict(facts);
