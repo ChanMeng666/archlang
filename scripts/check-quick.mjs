@@ -38,11 +38,13 @@
 import { execFileSync, spawnSync } from "node:child_process";
 import { existsSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
 import { driftWanted, PIN_SECS as DEFAULT_PIN_SECS, planTests } from "./gate-select.mjs";
 import { CODE, nearestTests as nearestTestsOf } from "./nearest-tests.mjs";
 import { checkQuickWorkspaces } from "./workspaces.mjs";
 
-const ROOT = resolve(dirname(new URL(import.meta.url).pathname.replace(/^\/([A-Za-z]:)/, "$1")), "..");
+// fileURLToPath decodes %20 etc., so a checkout under a path with spaces resolves correctly.
+const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const argv = process.argv.slice(2);
 const flag = (name) => argv.includes(name);
 const opt = (name, dflt) => {
