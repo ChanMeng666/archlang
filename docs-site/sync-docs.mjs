@@ -16,7 +16,7 @@ import { fileURLToPath, pathToFileURL } from "node:url";
 // three implementations already (playground/src/share.ts, this one, and ArchLive.vue's
 // inline copy), welded by test/share-codec.test.ts. The home page's per-example links are
 // a fourth CONSUMER of that encoder, never a fourth copy of it.
-import { encodePlanHash } from "../scripts/gen-permalink.mjs";
+import { encodePlanHash, PLAYGROUND_ORIGIN } from "../scripts/gen-permalink.mjs";
 import { rewriteLinks } from "./link-rewrite.mjs";
 import { siteMarkdown } from "./site-markdown.mjs";
 import { HOME_3D_PLAN, MANIFEST, PAYLOAD, previewLines, sizeLabel, threeDAssets, VIEW3D_PARAM } from "./three-d.mjs";
@@ -25,7 +25,7 @@ const here = dirname(fileURLToPath(import.meta.url));
 const repo = join(here, "..");
 
 /** Where an example's "Open in Playground" link points. */
-const PLAYGROUND = "https://playground.archlang.uk";
+const PLAYGROUND = PLAYGROUND_ORIGIN;
 
 // ───────────────────────────────────────────────────────────────────────────────
 // THE FOUR SOURCE TABLES. Everything this script writes is derived from these

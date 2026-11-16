@@ -213,7 +213,7 @@ describe("the static page generator reads this table, and nothing else hand-list
   it("gen-static.mjs reuses the shared share-hash codec instead of re-implementing it", () => {
     // `encodePlanHash` already has three implementations welded by
     // test/share-codec.test.ts; a fourth would be a fourth thing to keep in step.
-    expect(gen).toMatch(/import \{ encodePlanHash \} from "\.\.\/\.\.\/scripts\/gen-permalink\.mjs"/);
+    expect(gen).toMatch(/import \{[^}]*\bencodePlanHash\b[^}]*\} from "\.\.\/\.\.\/scripts\/gen-permalink\.mjs"/);
     expect(gen, "a re-implemented deflate/base64url codec").not.toMatch(/deflateRawSync/);
   });
 
@@ -558,7 +558,7 @@ describe("the two hosts link each example plan both ways", () => {
     );
     // The permalink input is the module the generator really imports its encoder from, and that
     // module takes it from the codec listed beside it.
-    expect(gen).toMatch(/import \{ encodePlanHash \} from "\.\.\/\.\.\/scripts\/gen-permalink\.mjs";/);
+    expect(gen).toMatch(/import \{[^}]*\bencodePlanHash\b[^}]*\} from "\.\.\/\.\.\/scripts\/gen-permalink\.mjs";/);
     expect(readFileSync("scripts/gen-permalink.mjs", "utf8")).toMatch(
       /import \{[^}]*\bencodePlanHash\b[^}]*\} from "\.\.\/src\/cli\/share-codec\.mjs";/,
     );
