@@ -163,7 +163,7 @@ export function hatchesUsed(
 ): HatchSpec[] {
   const seen = new Map<string, HatchSpec>();
   for (const w of walls) {
-    const h: HatchSpec = { ...hatchOf(w), ink };
+    const h: HatchSpec = ink ? { ...hatchOf(w), ink } : hatchOf(w);
     const k = hatchKey(h);
     if (!seen.has(k)) seen.set(k, h);
   }
