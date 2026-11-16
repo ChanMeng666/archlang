@@ -5,7 +5,7 @@
 Where the tests of a `src` module are, and what each test file is for. Generated; `npm run check:drift`
 fails when it is stale. How to add a test: `docs/testing.md` § 4.
 
-533 test files in `test/`, 286 `src` modules, 107 modules no test imports.
+534 test files in `test/`, 286 `src` modules, 107 modules no test imports.
 
 ## `src` module → tests that import it
 
@@ -59,7 +59,7 @@ Nearest first, then by name; `(+n)` is the rest. Test names are `test/<name>.tes
 - `src/describe.ts` (49) — `acc-metadata`, `accessible-svg`, `d4`, `describe`, `diff-laws`, `diff`, `room-adjacency-oracle`, `window-facing-probe` (+41)
 - `src/diagnostics.ts` (52) — `diagnostics-volume`, `diagnostics`, `error-catalog-families`, `export-font-cjk`, `expr`, `fix-pullback`, `lint-file-provenance`, `lint-ruleset-values` (+44)
 - `src/diff.ts` (3) — `diff-fabric`, `diff-laws`, `diff`
-- `src/doc.ts` (1) — `fix-printer`
+- `src/doc.ts` (2) — `fix-printer`, `format`
 - `src/draw-budget.ts` (5) — `drawing-budget`, `sheet-annotations`, `walls-from-rooms-clauses`, `window-kinds`, `work-counts`
 - `src/elements/defs.ts` (6) — `element-facets`, `element-keyword-drift`, `levels`, `plan-json-dropped`, `silent-accepts`, `transform-seam`
 - `src/elements/dim.ts` (1) — `annotation-collisions`
@@ -114,7 +114,7 @@ Nearest first, then by name; `(+n)` is the rest. Test names are `test/<name>.tes
 - `src/geometry/polygon.ts` (16) — `circulation-concave`, `dim-thickness-callout`, `label-placement-oracle`, `label-placement`, `label-wrap`, `net-area`, `outdoor`, `polygon-overlap-oracle` (+8)
 - `src/geometry/rect.ts` (10) — `between-face-probes`, `block-stair-winders`, `finish-furnish-laws`, `finish-levels`, `label-placement-oracle`, `label-wrap`, `lint-clearances-kitchen-doors`, `lint-measure` (+2)
 - `src/geometry/union.ts` (3) — `band`, `joinery-oracle`, `union`
-- `src/grammar/tokens.ts` (32) — `arch-highlight`, `block-stair-lint`, `closed-vocabularies`, `corner-window`, `door-enums`, `doors`, `element-facets`, `element-keyword-drift` (+24)
+- `src/grammar/tokens.ts` (33) — `arch-highlight`, `block-stair-lint`, `closed-vocabularies`, `corner-window`, `door-enums`, `doors`, `element-facets`, `element-keyword-drift` (+25)
 - `src/hatches.ts` (8) — `export-pdf`, `floor-materials-byte-identity`, `joinery-split-oracle`, `joinery-split`, `model-range`, `outdoor`, `room-floor`, `sheet-text`
 - `src/impact.ts` (2) — `rectilinear-doors`, `rectilinear-rooms`
 - `src/import.ts` (31) — `block-stair-byte-identity`, `corner-window-byte-identity`, `dim-thickness-callout`, `drawing-budget`, `floor-materials-byte-identity`, `furniture-relations`, `gaps-byte-identity`, `keep` (+23)
@@ -181,7 +181,7 @@ Nearest first, then by name; `(+n)` is the rest. Test names are `test/<name>.tes
 - `src/taste/index.ts` (2) — `taste-budget`, `taste`
 - `src/text-layout.ts` (5) — `escape-fuzz`, `label-placement-oracle`, `label-wrap`, `text-layout`, `text-metrics`
 - `src/text-metrics.ts` (6) — `dim-stagger`, `dim-thickness-callout`, `label-placement`, `sheet-text`, `text-layout`, `text-metrics`
-- `src/theme.ts` (20) — `element-facets`, `equivariance-scene`, `export-pdf`, `format`, `furniture-mirror`, `glyph-chirality`, `glyph-dispatch-table`, `glyph-lib` (+12)
+- `src/theme.ts` (21) — `element-facets`, `equivariance-scene`, `export-pdf`, `format`, `furniture-mirror`, `glyph-chirality`, `glyph-dispatch-table`, `glyph-lib` (+13)
 - `src/types.ts` (9) — `datum`, `doors`, `element-cap`, `fixture-orientation`, `furniture-flush`, `furniture-lint`, `garage`, `keep` (+1)
 - `src/vertical.ts` (52) — `block-stair-frames`, `block-stair-shaft`, `block-stair-winders-walking-arc`, `block-stair-winders`, `block-stair`, `circulation-concave`, `circulation-translation`, `element-facets` (+44)
 - `src/view/camera.ts` (5) — `iso-camera`, `iso-mixed-heights`, `iso-painter-order`, `iso-projection`, `iso-sort`
@@ -664,6 +664,7 @@ The first sentence of each file's header comment.
 - `test/step-budget.test.ts` — The evaluation-step budget (`MAX_EVAL_STEPS`, `src/expr.ts`): one deterministic counter across a whole resolution, every storey, instance, call and loop iteration.
 - `test/stepped-facade-dims.test.ts` — `dims auto all` on a STEPPED facade: no opening may drop out of the chains without a diagnostic.
 - `test/strip.test.ts` — T1e — room strip.
+- `test/style-reference-section.test.ts` — The language reference's "Per-element styles — `style`" section agrees with `STYLE_KEYS` (WS.6).
 - `test/style.test.ts` — Scene style metadata (T3.1); AIA layers (T3.2); openings void walls (T3.3).
 - `test/suggest.test.ts` — suggestTopology; suggestTopology — W_NO_ENTRANCE; suggestTopology — W_BATH_VIA_BEDROOM; suggestTopology — W_BATH_VIA_BEDROOM spares an en-suite beside a bathroo…
 - `test/swing-building-digests.test.ts` — The building-relative swing digest table (card PS3.8): SHA-256 over SVG, `describe()`, `lint()` and `compile().diagnostics` of every storey of each plan in `test/tables/swing-building-plans.ts`, pinned in its own comm...
