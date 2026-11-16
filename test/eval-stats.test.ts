@@ -2,8 +2,13 @@
 
 import { describe, expect, it } from "vitest";
 import { wilson95 } from "../eval/stats.js";
-import { renderDelta, renderResults } from "../eval/run.js";
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
+import { fileURLToPath } from "node:url";
+import { JUDGE_VERSION } from "../eval/assertions.js";
+import { promptHashes, renderDelta, renderResults } from "../eval/run.js";
 import type { Score } from "../eval/run.js";
+import { sha256 } from "./helpers/digest.js";
 
 describe("wilson95", () => {
   const near = (k: number, n: number, lo: number, hi: number): void => {
@@ -78,5 +83,58 @@ describe("live report intervals", () => {
     expect(live).toContain("now 2/3 (Wilson 95 % 20–94 %)");
     expect(live).toContain("are NOT comparable");
     expect(plain).toContain("are NOT comparable");
+  });
+});
+
+describe("renderDelta prompt hashes (EV.3)", () => {
+  const summary = { total: 3, valid: 3, semanticPass: 2, sound: 3 };
+  const spec = "a".repeat(64);
+  const corpus = "b".repeat(64);
+  const base = { total: 3, valid: 3, semanticPass: 1, sound: 3, judge: JUDGE_VERSION };
+  const WARN = "span a prompt change and are NOT comparable";
+
+  it("matching hashes add no prompt warning", () => {
+    const md = renderDelta({ ...base, specSha256: spec, corpusSha256: corpus }, summary, {
+      prompt: { spec, corpus },
+    });
+    expect(md).not.toContain(WARN);
+    expect(md).not.toContain("NOT comparable");
+    expect(md).toContain(`\`specSha256\` ${spec} · \`corpusSha256\` ${corpus}`);
+  });
+
+  it("a differing spec hash is flagged, naming only the file that changed", () => {
+    const md = renderDelta({ ...base, specSha256: "c".repeat(64), corpusSha256: corpus }, summary, {
+      prompt: { spec, corpus },
+    });
+    expect(md).toContain(WARN);
+    expect(md).toContain(`\`spec.llm.md\` ${"c".repeat(12)} → ${"a".repeat(12)}`);
+    expect(md).not.toContain("`eval/corpus.json` ");
+  });
+
+  it("a differing corpus hash is flagged", () => {
+    const md = renderDelta({ ...base, specSha256: spec, corpusSha256: "d".repeat(64) }, summary, {
+      prompt: { spec, corpus },
+    });
+    expect(md).toContain(WARN);
+    expect(md).toContain(`\`eval/corpus.json\` ${"d".repeat(12)} → ${"b".repeat(12)}`);
+  });
+
+  it("a baseline without hashes is flagged as unrecorded", () => {
+    const md = renderDelta(base, summary, { prompt: { spec, corpus } });
+    expect(md).toContain(WARN);
+    expect(md).toContain("`spec.llm.md` (unrecorded)");
+    expect(md).toContain("`eval/corpus.json` (unrecorded)");
+  });
+
+  it("without the run's hashes the delta is unchanged", () => {
+    expect(renderDelta(base, summary)).not.toContain("prompt");
+  });
+
+  it("promptHashes is the SHA-256 of both files, LF-normalised", () => {
+    const h = promptHashes();
+    const lf = (rel: string): string =>
+      readFileSync(resolve(fileURLToPath(new URL("..", import.meta.url)), rel), "utf8").replace(/\r\n/g, "\n");
+    expect(h).toEqual({ spec: sha256(lf("spec.llm.md")), corpus: sha256(lf("eval/corpus.json")) });
+    expect(h.spec).toMatch(/^[0-9a-f]{64}$/);
   });
 });

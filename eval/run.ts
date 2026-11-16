@@ -27,6 +27,7 @@
  * Run: `npm run eval` / `npm run eval:ci` (offline) · `npm run eval:live -- --yes`.
  */
 
+import { createHash } from "node:crypto";
 import { readFileSync, writeFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { dirname, resolve } from "node:path";
@@ -643,6 +644,29 @@ export interface Baseline extends Summary {
   /** Scoring-core version the baseline was produced under. Absent on pre-judge-field
    *  baselines — which `renderDelta` flags, since a judge change makes deltas incomparable. */
   judge?: string;
+  /** SHA-256 (hex) of `spec.llm.md`, the system prompt the baseline was measured under, as
+   *  {@link promptHashes} computes it. Absent on baselines recorded before the field existed. */
+  specSha256?: string;
+  /** SHA-256 (hex) of `eval/corpus.json`, the briefs the baseline was measured on. */
+  corpusSha256?: string;
+}
+
+/** The SHA-256s of what a live run's prompt is made of. */
+export interface PromptHashes {
+  spec: string;
+  corpus: string;
+}
+
+/** SHA-256 (hex) of a text file's content, line endings normalised to LF so a CRLF working
+ *  copy hashes the same as the committed bytes. */
+function sha256OfText(rel: string): string {
+  const text = readFileSync(resolve(ROOT, rel), "utf8").replace(/\r\n/g, "\n");
+  return createHash("sha256").update(text, "utf8").digest("hex");
+}
+
+/** The hashes a baseline records (`specSha256`, `corpusSha256`) and a run compares against. */
+export function promptHashes(): PromptHashes {
+  return { spec: sha256OfText("spec.llm.md"), corpus: sha256OfText("eval/corpus.json") };
 }
 
 const LIVE_RESULTS = "eval/results.live.md";
@@ -794,7 +818,11 @@ export class LiveLedger {
 }
 
 /** A "Delta vs baseline" Markdown section: each headline metric as baseline → now (±). */
-export function renderDelta(base: Baseline, s: Summary, opts: { intervals?: boolean } = {}): string {
+export function renderDelta(
+  base: Baseline,
+  s: Summary,
+  opts: { intervals?: boolean; prompt?: PromptHashes } = {},
+): string {
   const line = (name: string, b: number, n: number): string => {
     const d = n - b;
     const ci = opts.intervals
@@ -815,17 +843,34 @@ export function renderDelta(base: Baseline, s: Summary, opts: { intervals?: bool
       : `\n> ⚠ Baseline judge ${
           base.judge ? `v${base.judge}` : "(unrecorded)"
         } ≠ current judge v${JUDGE_VERSION} — these deltas span a scoring-core change and are NOT comparable.\n`;
+  // A prompt change (the spec the model reads, or the briefs it answers) is a different
+  // measurement too, so say so whenever this run's prompt hashes are known and differ.
+  const p = opts.prompt;
+  const promptParts: string[] = [];
+  if (p) {
+    const part = (file: string, was: string | undefined, now: string): void => {
+      if (was !== now) promptParts.push(`\`${file}\` ${was ? was.slice(0, 12) : "(unrecorded)"} → ${now.slice(0, 12)}`);
+    };
+    part("spec.llm.md", base.specSha256, p.spec);
+    part("eval/corpus.json", base.corpusSha256, p.corpus);
+  }
+  const promptNote =
+    promptParts.length === 0
+      ? ""
+      : `\n> ⚠ Baseline prompt ≠ this run's prompt (SHA-256: ${promptParts.join("; ")}) — these deltas span a prompt change and are NOT comparable.\n`;
   return [
     "",
     "## Delta vs baseline",
     "",
     `Against \`${BASELINE}\` (${who}).`,
+    ...(p ? ["", `This run's prompt: \`specSha256\` ${p.spec} · \`corpusSha256\` ${p.corpus}.`] : []),
     "",
     line("Valid (compiles)", base.valid, s.valid),
     line("Intent match (semantic)", base.semanticPass, s.semanticPass),
     line("Sound (lint-clean)", base.sound, s.sound),
     note,
     judgeNote,
+    promptNote,
     "",
   ].join("\n");
 }
@@ -929,7 +974,7 @@ async function main(): Promise<void> {
     stops: stopById,
   });
   const baseline = readBaseline();
-  if (baseline) md += renderDelta(baseline, summary, { intervals: true });
+  if (baseline) md += renderDelta(baseline, summary, { intervals: true, prompt: promptHashes() });
   md = LIVE_HEADER + md;
   writeFileSync(resolve(ROOT, LIVE_RESULTS), md);
   process.stdout.write(md + "\n");
