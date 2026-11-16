@@ -12,6 +12,7 @@ import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { pathToFileURL } from "node:url";
+import type { Browser } from "playwright-core";
 import { SWIFTSHADER_ARGS } from "./swiftshader.js";
 import { keyFrames, type ReplayEvent } from "./timeline.js";
 
@@ -89,19 +90,33 @@ export function withSupersample(html: string, k = 1): string {
   return html.slice(0, at + PAYLOAD_OPEN.length) + json + html.slice(end);
 }
 
+/**
+ * Remove a render's scratch directory, best effort. On Windows the directory can still be busy just
+ * after the browser closes (its `replay.html` delete-pending), so the removal retries; Node retries
+ * EBUSY, EMFILE, ENFILE, ENOTEMPTY and EPERM.
+ */
+function removeScratch(dir: string): void {
+  try {
+    rmSync(dir, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 });
+  } catch {
+    // A directory left in the temp folder must never replace the render's result or its error.
+  }
+}
+
 /** Render key frames (and, given `mp4`, every frame) of a replay HTML in headless Chromium. */
 export async function renderReplay(o: VideoOptions): Promise<VideoReport> {
   const fps = o.fps ?? 30;
   const seconds = o.seconds ?? 15;
   const frames = Math.round(fps * seconds);
   const dir = mkdtempSync(join(tmpdir(), "archlang3d-replay-"));
-  const file = join(dir, "replay.html");
-  writeFileSync(file, seekOnly(withSupersample(o.html, o.supersample)));
-  // Loaded only here: playwright-core exits the process on import under Node < 20, and the light
-  // tests (which run on CI's Node 18 leg) import this module's neighbours, never a browser.
-  const { chromium } = await import("playwright-core");
-  const browser = await chromium.launch({ args: SWIFTSHADER_ARGS });
+  let browser: Browser | undefined;
   try {
+    const file = join(dir, "replay.html");
+    writeFileSync(file, seekOnly(withSupersample(o.html, o.supersample)));
+    // Loaded only here: playwright-core exits the process on import under Node < 20, and the light
+    // tests (which run on CI's Node 18 leg) import this module's neighbours, never a browser.
+    const { chromium } = await import("playwright-core");
+    browser = await chromium.launch({ args: SWIFTSHADER_ARGS });
     const page = await browser.newPage({
       viewport: { width: o.width + 40, height: o.height + 120 },
       deviceScaleFactor: 1,
@@ -215,8 +230,11 @@ export async function renderReplay(o: VideoOptions): Promise<VideoReport> {
       browser: browser.version(),
     };
   } finally {
-    await browser.close();
-    rmSync(dir, { recursive: true, force: true });
+    try {
+      await browser?.close();
+    } finally {
+      removeScratch(dir);
+    }
   }
 }
 
@@ -251,16 +269,17 @@ export interface Still {
 export async function renderStill(o: StillOptions): Promise<Still> {
   const t = o.t ?? 1;
   const dir = mkdtempSync(join(tmpdir(), "archlang3d-still-"));
-  const file = join(dir, "replay.html");
-  writeFileSync(file, seekOnly(withSupersample(o.html, o.supersample)));
-  const { chromium } = await import("playwright-core");
-  const browser = await chromium.launch({ args: SWIFTSHADER_ARGS });
-  const bytesOf = (url: string, type: string): Uint8Array => {
-    const head = `data:${type};base64,`;
-    if (!url.startsWith(head)) throw new Error(`the browser did not encode ${type} (got ${url.slice(0, 32)}…)`);
-    return new Uint8Array(Buffer.from(url.slice(head.length), "base64"));
-  };
+  let browser: Browser | undefined;
   try {
+    const file = join(dir, "replay.html");
+    writeFileSync(file, seekOnly(withSupersample(o.html, o.supersample)));
+    const { chromium } = await import("playwright-core");
+    browser = await chromium.launch({ args: SWIFTSHADER_ARGS });
+    const bytesOf = (url: string, type: string): Uint8Array => {
+      const head = `data:${type};base64,`;
+      if (!url.startsWith(head)) throw new Error(`the browser did not encode ${type} (got ${url.slice(0, 32)}…)`);
+      return new Uint8Array(Buffer.from(url.slice(head.length), "base64"));
+    };
     const page = await browser.newPage({
       viewport: { width: o.width + 40, height: o.height + 120 },
       deviceScaleFactor: 1,
@@ -314,7 +333,10 @@ export async function renderStill(o: StillOptions): Promise<Still> {
     }
     return { sha256, png, ...(webp ? { webp } : {}), ...(diff ? { diff } : {}), browser: browser.version() };
   } finally {
-    await browser.close();
-    rmSync(dir, { recursive: true, force: true });
+    try {
+      await browser?.close();
+    } finally {
+      removeScratch(dir);
+    }
   }
 }
