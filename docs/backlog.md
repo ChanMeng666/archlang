@@ -1876,7 +1876,7 @@ footprint laid along an edge, not the catalogue's along × depth. (1) and (2) ar
 
 ## Live-eval baseline gap (RM-D51, 2026-11-16)
 
-### EV.1 · Diagnose the gpt-5.5 intent gap against the July baseline — `todo`
+### EV.1 · Diagnose the gpt-5.5 intent gap against the July baseline: done by #837, waiting to be archived — `note`
 
 At `2a210589` (after CO-1 and CO-2) gpt-5.5 scored valid 22/22/18 and intent 10/9/7 of 26 over
 three runs (`eval/live-runs/2026-11-authorability-remeasure.md`), against the July baseline's valid
@@ -1892,6 +1892,7 @@ One option the owner may choose is the median of 3 runs; any new run is paid, ow
 `eval:live`.
 **Gate:** a per-brief table of which briefs lost intent and why, stated as observed (prompt change,
 judge, model drift), with no claim beyond the data and none about loop gain.
+Done by #837: the record is `eval/live-runs/2026-11-ev1-intent-gap.md`.
 
 ## Site chrome (found while fixing the nav overflow, 2026-09-20)
 
