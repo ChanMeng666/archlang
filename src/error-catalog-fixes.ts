@@ -32,7 +32,7 @@ export const CATALOG_FIXES: Readonly<Record<string, string>> = {
   E_DOOR_OPEN_RANGE: "Give `open` a fraction in `[0,1]`; `archlang fix` clamps it to the nearer end for you. Omit it entirely for the default 0.5.",
   E_DOOR_WIDTH: "Give the door a positive `width`.",
   E_DOTTED_DECL: "Declare the short name and address it from outside as `<instance>.<name>`.",
-  E_DRAWING_LIMIT: "Draw fewer or shorter runs, shrink the loop, or split the building into separate plans.",
+  E_DRAWING_LIMIT: "Draw fewer or shorter runs, shrink the loop, or split the building into separate plans. When the message names the `notes`, shorten them, or keep the long text in a separate document and reference it in one note.",
   E_DUP_CLAUSE: "Delete one of the two clauses; the related span marks the first.",
   E_DUP_ID: "Rename one of them, or drop the explicit id to auto-generate a unique one.",
   E_DUP_INSTANCE: "Give each instance its own name (`as west` / `as east`).",

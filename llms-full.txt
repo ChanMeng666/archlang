@@ -900,7 +900,7 @@ Every diagnostic carries a stable code and a `fix`. Look one up with `archlang e
 - `E_DOOR_OPEN_RANGE` — `open` must be between 0 and 1. **Fix:** Give `open` a fraction in `[0,1]`; `archlang fix` clamps it to the nearer end for you. Omit it entirely for the default 0.5.
 - `E_DOOR_WIDTH` — Door must have a positive width. **Fix:** Give the door a positive `width`.
 - `E_DOTTED_DECL` — A dotted name cannot be declared. **Fix:** Declare the short name and address it from outside as `<instance>.<name>`.
-- `E_DRAWING_LIMIT` — The drawing is larger than any plan may draw. **Fix:** Draw fewer or shorter runs, shrink the loop, or split the building into separate plans.
+- `E_DRAWING_LIMIT` — The drawing is larger than any plan may draw. **Fix:** Draw fewer or shorter runs, shrink the loop, or split the building into separate plans. When the message names the `notes`, shorten them, or keep the long text in a separate document and reference it in one note.
 - `E_DUP_CLAUSE` — A statement writes the same clause twice. **Fix:** Delete one of the two clauses; the related span marks the first.
 - `E_DUP_ID` — Duplicate element id. **Fix:** Rename one of them, or drop the explicit id to auto-generate a unique one.
 - `E_DUP_INSTANCE` — Duplicate `place … as <name>` instance name. **Fix:** Give each instance its own name (`as west` / `as east`).
