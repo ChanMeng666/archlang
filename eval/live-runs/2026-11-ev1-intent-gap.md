@@ -103,8 +103,8 @@ observed:
 
 So "12 of 13 lost" and "9 of 13 recovered" are what regression to a common rate looks like, not
 evidence about any one brief. The overall counts are 13 of 26 in July and 26 of 78 across the new
-runs; they straddle the prompt drift below, so no significance is claimed for the difference. The
-kind of the failing check is set out below.
+runs; they straddle the prompt, lint-rule and compiler changes below, so no significance is claimed
+for the difference. The kind of the failing check is discussed below.
 
 ## Causes, as far as this data shows
 
@@ -128,9 +128,9 @@ data separates them only partly.
   raised in July. The compiler also produces different geometry from the same kind of source:
   walls derived from rooms (`760a6b84`, merged by #223 on 2026-10-21 UTC) did not exist in July,
   and CO-2 (#809, 2026-11-15 UTC) gives unsized furniture a catalogue footprint, after which
-  gpt-5.5's `needs a size` notes went from 111 to 0 (`2026-11-authorability-remeasure.md`), so
-  more furniture is now drawn than in the November runs before CO-2 (that count says nothing about
-  July), and it can stand in a doorway. Whether the model placed furniture
+  gpt-5.5's `needs a size` notes went from 111 to 0 (`2026-11-authorability-remeasure.md`): a plan
+  the pre-CO-2 compiler refused with that error now compiles, and its unsized furniture is drawn at a
+  catalogue footprint, where it can stand in a doorway (the note count says nothing about July). Whether the model placed furniture
   differently, the rule got stricter or the compiler drew more cannot be told from the notes:
   that needs the source of each plan scored under both versions, and no source is available for
   either side.
