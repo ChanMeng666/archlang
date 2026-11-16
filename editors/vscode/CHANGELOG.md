@@ -14,6 +14,16 @@ are documented here. The format is based on
 
 ## [Unreleased]
 
+## [0.51.0] - 2026-11-17
+
+### Changed
+
+- **Rebundled the core at `@chanmeng666/archlang@1.63.0`**: the clauses after a statement's placement
+  check in any order and `id=` after the kind word (`furniture bed id=b1`), with the new error
+  `E_DUP_CLAUSE` for a clause written twice; a catalogued piece (`furniture wc at (…)`) needs no
+  `size` under any placement; and new hints for `offset`, `hinged` and an outdoor word after `uses`
+  in the editor's diagnostics. Rename now reaches the target of an assignment.
+
 ## [0.50.0] - 2026-11-15
 
 ### Changed
