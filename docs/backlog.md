@@ -1948,7 +1948,7 @@ outside it: `packages/mcp/README.md` links
 `/reference#keyboard-and-screen-reader-operability-annotate--accessible`, which is dead on the site.
 **Gate:** that README link fixed, and a guard for absolute `archlang.uk` fragments in READMEs.
 
-### RR.7 · EV.1 record wording — `todo`
+### RR.7 · EV.1 record wording: done by #864, waiting to be archived — `note`
 
 In `eval/live-runs/2026-11-ev1-intent-gap.md`: "What does differ is the overall rate" compares 13/26
 with 26/78 across the prompt drift the record says it does not compare (state the counts, claim no
