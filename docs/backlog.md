@@ -2049,7 +2049,7 @@ guard on the strip path (`uses living "balcony"` in a strip). (5) The `terrace �
 `garden → lawn` mapping test is not tied to the language reference's outdoor examples. **Gate:** for
 (1), both hints linear in tokens, pinned by a token-visit count, not time; a test per other item.
 
-### RR.14 · Live-delta prompt-hash follow-ups after EV.3 — `todo`
+### RR.14 · Live-delta prompt-hash follow-ups after EV.3: done by #885, waiting to be archived — `note`
 
 From #865's round-2 review. (1) `renderDelta` without hashes gained a trailing blank line, and the
 "unchanged" test only checks a substring. (2) A corpus-only mismatch still says "Baseline prompt ≠
@@ -2061,6 +2061,8 @@ hash in it throws in `renderDelta` after the paid calls. (5) Three places
 still say the delta section appears only with a baseline (`eval/README.md`, the `eval/run.ts`
 header, `LIVE_HEADER`). (6) A vacuous `not.toContain` in the prompt-mismatch test. **Gate:** offline
 tests only; no paid run.
+
+Residue: none. The item (6) assertion tightens an existing check, so it passes before and after the fix.
 
 ### RR.15 · The EV.1 record predates RM-D52: done by #879, waiting to be archived — `note`
 
