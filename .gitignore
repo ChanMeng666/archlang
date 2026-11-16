@@ -22,6 +22,8 @@ dist-openai/
 # Live eval output is ephemeral (moves with the model/day) — the committed
 # scorecard is eval/results.md; the live headline lives in eval/live-baseline.json.
 eval/results.live.md
+# Live plan sources (extracted .arch only; uploaded in the eval-results-live artifact).
+eval/results.live-sources/
 # L2 loop-vs-resampling output is ephemeral too (per-run, model/day-dependent; one pair per model).
 eval/results.l2.*.md
 eval/results.l2.*.json

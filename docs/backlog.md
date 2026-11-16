@@ -2129,7 +2129,7 @@ are the agent's, standing; replacing a published data file still needs an owner 
 From `docs/plans/product-roadmap/2026-11-test-findings.md` (§ 3, § 4, § 5). RR.8 (2), the
 `W_DOORWAY_BLOCKED` strictness, is that plan's first direction and is not repeated here.
 
-### EV.2 · A live run keeps no plan source per brief — `todo`
+### EV.2 · A live run keeps no plan source per brief: done by #897, waiting to be archived — `note`
 
 EV.1 could not tell whether a lost brief-run came from the model, a stricter rule or new compiler
 geometry, because neither the July nor the November artifacts hold the authored `.arch` source of
@@ -2147,6 +2147,22 @@ review). The property to hold, as a hypothesis to check: the stored text is the 
 whose opening fence is the reply's first line-start fence with an empty or `arch` info string,
 else a marker; and
 `eval/README.md` names the file.
+
+Residue (2026-11-17): the hypothesis held with one tightening, a marker also when that block is not
+the text `extractArch` scored; `extractArch` itself still mishandles a typed first block and a
+four-backtick fence, left alone because `dataset/model-authoring/rows.ts` pins parity with it and a
+fix would move live scoring, so it needs its own card (EV.7).
+
+### EV.7 · `extractArch` scores the wrong text for a typed first block or a four-backtick fence — `todo`
+
+`extractArch` (`eval/run.ts`) skips a typed first block (` ```json `) and opens at its closing fence,
+so for a typed block, prose, then an `arch` block it scores the text between the blocks (possibly
+empty); for a four-backtick fence holding a ` ``` ` line it stops at that line. EV.2 stores only a
+marker for both, so no source is lost, but the scored text is wrong. One way: score the body of the
+reply's first line-start fence with an empty or `arch` info string (`firstArchFence`). A fix moves
+live scoring against `eval/live-baseline.json`, and `dataset/model-authoring/rows.ts` pins parity
+with `extractArch`. **Gate:** both shapes scored as that block, with tests; the `rows.ts` parity
+test kept green; the change to live scoring named against the baseline before it lands.
 
 ### EV.3 · The baseline does not record the prompt it was measured under: done by #865, waiting to be archived — `note`
 

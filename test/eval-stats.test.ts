@@ -194,7 +194,7 @@ describe("renderDelta prompt hashes (EV.3)", () => {
     const hashed = at("const hashes = promptHashes(system, corpusText);");
     const read = at("baseline = readBaseline();");
     const parsed = at("loadCorpus(corpusText)");
-    const sent = at("makeAuthor(provider, model, ledger, system)");
+    const sent = at("makeAuthor(provider, model, ledger, system, replies.onReply)");
     const confirm = at("if (!confirmed)");
     const firstCall = at("await evaluate(");
     for (const before of [hashed, read, parsed]) expect(before).toBeLessThan(Math.min(confirm, sent, firstCall));
