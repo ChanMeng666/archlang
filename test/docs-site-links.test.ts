@@ -322,6 +322,34 @@ function readmes(dir = "."): string[] {
   return out;
 }
 
+const THEME = "docs-site/.vitepress/theme";
+function vueFiles(dir = THEME): string[] {
+  return readdirSync(dir, { withFileTypes: true }).flatMap((e) =>
+    e.isDirectory() ? vueFiles(`${dir}/${e.name}`) : e.name.endsWith(".vue") ? [`${dir}/${e.name}`] : [],
+  );
+}
+const START_DOORS: string[] = JSON.parse(readFileSync("site-shared/doors.json", "utf8")).order.start;
+
+/**
+ * The ids the Vue components a page uses render (`<WhyCards />` on `/`, `<StartDoors />` on
+ * `/start`), which the page's markdown does not hold: each static `id="..."`, and StartDoors'
+ * `door-${id}` for every door in doors.json's `order.start` (its `v-for` over START_ORDER).
+ */
+function componentIdsOf(route: string): Set<string> {
+  const src = SOURCE_OF.get(route);
+  const out = new Set<string>();
+  if (!src) return out;
+  const used = new Set([...readFileSync(src, "utf8").matchAll(/<([A-Z][A-Za-z0-9]*)/g)].map((m) => m[1]!));
+  for (const f of vueFiles()) {
+    if (!used.has(f.slice(f.lastIndexOf("/") + 1, -4))) continue;
+    const vue = readFileSync(f, "utf8");
+    for (const m of vue.matchAll(/\sid="([^"]+)"/g)) out.add(m[1]!);
+    const tmpl = /:id="`([a-z-]*)\$\{id\}`"/.exec(vue);
+    if (tmpl && /v-for="\(id, i\) in START_ORDER"/.test(vue)) for (const d of START_DOORS) out.add(`${tmpl[1]}${d}`);
+  }
+  return out;
+}
+
 /** Problems with the absolute `archlang.uk` links in a README that carry a `#fragment`. */
 function siteFragmentProblems(md: string): string[] {
   const bad: string[] = [];
@@ -335,7 +363,10 @@ function siteFragmentProblems(md: string): string[] {
     else {
       const ids = idsOf(route);
       if (!ids) bad.push(`${link} (no markdown source to check the fragment against)`);
-      else if (!ids.has(decodeURIComponent(m[2]!))) bad.push(`${link} (no heading with that VitePress id)`);
+      else {
+        const frag = decodeURIComponent(m[2]!);
+        if (!ids.has(frag) && !componentIdsOf(route).has(frag)) bad.push(`${link} (no heading with that VitePress id)`);
+      }
     }
   }
   return bad;
@@ -366,6 +397,16 @@ describe("absolute archlang.uk fragments in READMEs", () => {
     ]);
     expect(siteFragmentProblems("[a](https://archlang.uk/#nope)")).toEqual([
       "https://archlang.uk/#nope (no heading with that VitePress id)",
+    ]);
+    // Ids a page's components render count only on that page.
+    expect(componentIdsOf("/start").has("door-claudeai")).toBe(true);
+    expect(componentIdsOf("/").has("what-a-language-gives")).toBe(true);
+    expect(siteFragmentProblems("[a](https://archlang.uk/start#door-claudeai)")).toEqual([]);
+    expect(siteFragmentProblems("[a](https://archlang.uk/start#door-nope)")).toEqual([
+      "https://archlang.uk/start#door-nope (no heading with that VitePress id)",
+    ]);
+    expect(siteFragmentProblems("[a](https://archlang.uk/reference#door-claudeai)")).toEqual([
+      "https://archlang.uk/reference#door-claudeai (no heading with that VitePress id)",
     ]);
     // The playground's `#z=` share fragment is another host, not a heading.
     expect(siteFragmentProblems("[a](https://playground.archlang.uk/#z=abc&3d)")).toEqual([]);
