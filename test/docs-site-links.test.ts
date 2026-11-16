@@ -354,7 +354,7 @@ function componentIdsOf(route: string): Set<string> {
 function siteFragmentProblems(md: string): string[] {
   const bad: string[] = [];
   for (const m of md.matchAll(
-    /https?:\/\/(?:www\.)?archlang\.uk(\/[^\s)"'<>#?]*)?(?:\?[^\s)"'<>#]*)?#([^\s)"'<>]+)/g,
+    /https?:\/\/(?:www\.)?archlang\.uk(\/[^\s)"'<>#?]*)?(?:\?[^\s)"'<>#]*)?#([^\s)"'<>]+)/gi,
   )) {
     const route = (m[1] ?? "/").replace(/\/$/, "") || "/";
     const link = m[0];
