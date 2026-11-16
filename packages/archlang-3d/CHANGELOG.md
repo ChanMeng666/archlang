@@ -9,9 +9,11 @@
   bytes as `./node`'s `writeGlb` and `archlang3d build`, with `GLB_GENERATOR`, `bodyMaterialName`,
   `glbNodeName`, `levelNodeName` and `nodeExtras`. `./node` still exports all of them, and `.` and
   `./browser` are unchanged, so glTF-Transform reaches neither. The checks (glTF-Validator) stay in
-  `./node`. A bundler that resolves every import before dropping unused code (esbuild) needs
-  `node:*` external for this entry, for glTF-Transform's unused Node reader; nothing from Node is
-  left in the bundle.
+  `./node`. The entry needs no bundler configuration: glTF-Transform (with `property-graph`) is
+  now inlined into `dist/` at build, its unused Node reader (a lazy `import("node:fs")`, which
+  webpack refuses for a browser target) shaken out, so `./glb` imports no Node module and no other
+  package. `./node` and the CLI share that one copy; `@gltf-transform/core` stays a dependency at
+  the same exact pin, though `dist/` no longer imports it.
 
 ## [0.8.1] - 2026-11-15
 

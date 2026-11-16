@@ -99,10 +99,9 @@ if (result.ok) {
 }
 ```
 
-The checks `build` runs (glTF-Validator among them) need Node and stay in `./node`. glTF-Transform,
-which writes the GLB, also holds a Node reader that `writeGlb` never uses and that loads `node:fs` and
-`node:path` by a lazy `import()`. A bundler that resolves every import before it drops unused code, esbuild
-among them, needs `node:*` marked external for this entry; nothing from Node is left in the bundle.
+The checks `build` runs (glTF-Validator among them) need Node and stay in `./node`. `./glb` needs no
+bundler configuration: glTF-Transform, which writes the GLB, is built into the package with its
+unused Node reader removed, so the entry imports no Node module and no other package.
 
 | Entry | For | Holds |
 |---|---|---|

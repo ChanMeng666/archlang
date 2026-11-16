@@ -126,9 +126,8 @@ for (const entry of ["index.js", "browser.js"]) {
     external: [CORE],
   }).catch((e: Error) => fail(`dist/${entry} does not bundle for a browser: ${e.message}`));
 }
-// `./glb`: glTF-Transform's unused `NodeIO` names `node:fs` and `node:path` in a lazy `import()`, which
-// esbuild resolves before it shakes the class out; with `node:*` external, no `node:` module may
-// survive into the bundle in any form.
+// `./glb` inlines glTF-Transform, its unused `NodeIO` shaken out at build (`tsup.config.ts`): it
+// bundles for a browser with no external at all, and no `node:` module survives in any form.
 const glbBundle = await build({
   entryPoints: [join(installed, "dist", "glb.js")],
   bundle: true,
@@ -136,7 +135,6 @@ const glbBundle = await build({
   format: "esm",
   write: false,
   logLevel: "silent",
-  external: [CORE, "node:*"],
 }).catch((e: Error) => fail(`dist/glb.js does not bundle for a browser: ${e.message}`));
 if (/\b(?:from|import)\s*\(?\s*["']node:|\brequire\(\s*["']node:/.test(glbBundle.outputFiles[0]?.text ?? ""))
   fail("dist/glb.js keeps a node: module in its browser bundle");

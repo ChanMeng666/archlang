@@ -89,5 +89,10 @@ describe("npm pack (what the first publish would send)", () => {
     // Either spelling: tsup strips `node:` unless told otherwise.
     const builtin = (i: string) => i.startsWith("node:") || builtinModules.includes(i);
     expect([...seen].flatMap((f) => imports(f).filter(builtin))).toEqual([]);
+    // `./glb` inlines glTF-Transform (`tsup.config.ts`): its graph names only its own chunks, so a
+    // consumer's bundler never meets the library's `NodeIO` and its `node:` imports.
+    seen.clear();
+    walk("glb.js");
+    expect([...seen].flatMap((f) => imports(f).filter((i) => !i.startsWith("./")))).toEqual([]);
   });
 });
