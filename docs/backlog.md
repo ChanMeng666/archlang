@@ -1898,7 +1898,7 @@ Done by #837: the record is `eval/live-runs/2026-11-ev1-intent-gap.md`.
 
 Left by the reviews of those PRs (review-cost cap: two rounds, residue becomes cards).
 
-### RR.1 · A door fix re-prints its statement with no step charge — `todo`
+### RR.1 · A door fix re-prints its statement with no step charge: done by #855, waiting to be archived — `note`
 
 `emitOpening` (`src/fix-producers.ts`) deep-clones the door node and prints the whole statement for
 every diagnostic that offers a door fix, with no `chargeSteps`. A looped door whose statement holds
