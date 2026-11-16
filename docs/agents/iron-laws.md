@@ -149,7 +149,7 @@ listed in the stage report (`docs/plans/plan-soundness/README.md` D18).
 
 - **The playground embed ceiling (delegated ruling RM-D57, 2026-11-17; product-roadmap README
   § 6.25):** `embedPathBudget` in `playground/e2e/startup-chunks.baseline.json` (351,000 B) is not raised. A PR
-  that touches the compiler path states the embed path's before and after gzip bytes. Any other raise is
+  that touches the compiler path states the embed path's before and after gzip bytes. A raise outside the rule below is
   the owner's (`REVIEW.md`: a relaxed cap). **Ratified by the owner in words, 2026-11-17** ("我授权你自动
   实施合并"): a raise merges on the coordinator's judgement after a fresh-context review when it is its
   own re-take PR, for a card that
