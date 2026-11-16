@@ -8,8 +8,9 @@ gpt-5.5 re-measure of the owner's in-chat approval of 2026-11-15 for the promoti
 measurement programme (P3 fidelity is in `2026-11-fidelity.md`, under RM-D46). The third P1
 group (after CO-1 + CO-2, at the final commit `68064111`) is one of those owner-approved P1 repeat
 authorability runs, run on 2026-11-15 UTC. Its 12 runs spent about 39.24 usd of the promotional
-credit, summed from the logs' budget lines. Raw model replies and per-brief tables are not
-published.
+credit, summed from the logs' budget lines. Raw model replies are not published, and
+this record publishes no per-brief tables; EV.1's record (`2026-11-ev1-intent-gap.md`) publishes
+per-brief outcome kinds for the three P2 runs after CO-1 + CO-2.
 
 **Each before/after pair differs in the compiler AND in the author prompt** (`spec.llm.md`, the
 system prompt `eval/run.ts` reads). CO-1's spec rule 6 went from "`id=` after the category is a

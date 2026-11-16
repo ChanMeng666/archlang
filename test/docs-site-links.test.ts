@@ -57,6 +57,10 @@ const publicFile = (route: string) => {
     return false;
   }
 };
+/** `public/x.html` is served at `/x` too (clean URLs), as a hand-written page links it. */
+const publicPage = (route: string) => publicFile(`${route}.html`);
+/** The raw markdown copy every PAGES/SITE_PAGES page also serves at `/<route>.md` (`sync-docs.mjs`). */
+const RAW_MD = new Set<string>(ctx.pages.map(([, d]) => `/${d}`));
 
 /**
  * Every inline/reference link target outside fenced code and inline code spans. Fenced code is
@@ -100,15 +104,19 @@ const idsOf = (route: string): Set<string> | null => {
 };
 
 /** Problems with a site copy's links; empty when every one resolves. */
-function problems(md: string): string[] {
+function problems(md: string, siteOnly = false): string[] {
   const bad: string[] = [];
   for (const link of linksOf(md)) {
     if (link.startsWith("#") || /^[a-z][a-z0-9+.-]*:/i.test(link)) continue;
     const [pathAndQuery = "", frag] = link.split("#");
     const path = pathAndQuery.split("?")[0]!;
+    // A hand-written page may point at a page's raw markdown copy on purpose (`/cli.md`); a
+    // rewritten canonical copy never should.
+    if (siteOnly && RAW_MD.has(path) && !frag) continue;
     if (path.endsWith(".md")) bad.push(`${link} (still .md)`);
     else if (!path.startsWith("/")) bad.push(`${link} (still repo-relative)`);
-    else if (!ROUTES.has(path) && !publicFile(path)) bad.push(`${link} (no such route or public file)`);
+    else if (!ROUTES.has(path) && !publicFile(path) && !(siteOnly && publicPage(path)))
+      bad.push(`${link} (no such route or public file)`);
     else if (frag) {
       const ids = idsOf(path);
       if (ids && !ids.has(decodeURIComponent(frag))) bad.push(`${link} (no heading with that VitePress id)`);
@@ -130,6 +138,30 @@ describe("site copies of the canonical docs", () => {
       expect(problems(rewriteLinks(readFileSync(src, "utf8"), src, ctx))).toEqual([]);
     });
   }
+
+  // The hand-written site pages (SITE_PAGES) are served as written, never rewritten, so their
+  // links are checked raw: a `#fragment` must be the id VitePress gives the target heading (it
+  // keeps an em dash: `/reference#levels-—-a-multi-storey-building-v1-21`, not GitHub's `--`).
+  for (const [src] of SITE_PAGES) {
+    it(`${src} (site-only): every link resolves on the site, fragments included`, () => {
+      expect(problems(readFileSync(src, "utf8"), true)).toEqual([]);
+    });
+  }
+
+  it("a dead fragment in a site-only page is caught", () => {
+    const fromExamples = linksOf(readFileSync("docs-site/examples.md", "utf8")).filter((l) => l.includes("#"));
+    expect(fromExamples.length).toBeGreaterThan(10);
+    // GitHub's spelling of an em-dash heading (examples.md once carried 13 such)is dead on the site.
+    expect(problems("[a](/reference#levels-a-multi-storey-building-v1-21)", true)).toEqual([
+      "/reference#levels-a-multi-storey-building-v1-21 (no heading with that VitePress id)",
+    ]);
+    expect(problems("[a](/reference#levels-—-a-multi-storey-building-v1-21)", true)).toEqual([]);
+    expect(problems("[a](/cli.md) [b](/arch-plan-demo)", true)).toEqual([]);
+    expect(problems("[a](/nope.md) [b](/nope)", true)).toEqual([
+      "/nope.md (still .md)",
+      "/nope (no such route or public file)",
+    ]);
+  });
 
   it("maps each kind of target from the tables", () => {
     const r = (t: string, from = "docs/adr/0010-x.md") => rewriteLinks(`[a](${t})`, from, ctx);
