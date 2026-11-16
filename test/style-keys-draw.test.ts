@@ -8,10 +8,11 @@
  * pins the general claim for every `STYLE_KEYS` pair on a plan that draws the kind.
  */
 
-import { readdirSync, readFileSync } from "node:fs";
+import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { compile } from "../src/index.js";
 import { STYLE_KEYS, resolveStyleKey } from "../src/theme.js";
+import { examples as examplePaths } from "./helpers/corpus.js";
 
 const INK = "#a1b2c3";
 
@@ -61,10 +62,7 @@ const INLINE: Record<string, string> = {
   void id=v at (1000,1000) size 2000x2000
 }`,
 };
-const examples = readdirSync("examples")
-  .filter((f) => f.endsWith(".arch"))
-  .sort()
-  .map((f) => readFileSync(`examples/${f}`, "utf8"));
+const examples = examplePaths().map((f) => readFileSync(f, "utf8"));
 function plansFor(kind: string): string[] {
   const writes = examples.filter((s) => new RegExp(`^\\s*${kind}\\b`, "m").test(s));
   return [...(INLINE[kind] ? [INLINE[kind]] : []), ...writes];
