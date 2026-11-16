@@ -11,7 +11,15 @@ import { compile, describe, format, lint, planFromJson, planToJson } from "../sr
 import { FLOOR_TINT_MATERIAL, FLOOR_TINT_MIX, floorWash, room, roomFloorFill } from "../src/elements/room.js";
 import { toDxf } from "../src/export/dxf.js";
 import { renderAscii } from "../src/backends/ascii.js";
-import { FLOOR_MATERIALS, FLOOR_PATTERNS, floorHatch, hatchId, hatchPattern, KNOWN_MATERIALS } from "../src/hatches.js";
+import {
+  FLOOR_MATERIALS,
+  FLOOR_PATTERNS,
+  floorHatch,
+  GROUND_MATERIALS,
+  hatchId,
+  hatchPattern,
+  KNOWN_MATERIALS,
+} from "../src/hatches.js";
 import type { RRoom } from "../src/ir.js";
 import type { RenderSizes, SceneNode } from "../src/scene.js";
 import { DEFAULT_THEME, mergeTheme, THEMES, type Theme } from "../src/theme.js";
@@ -142,6 +150,14 @@ suite("the pattern", () => {
       expect(svg).toContain(`<pattern id="${id}"`);
       expect(id.endsWith("-floor")).toBe((KNOWN_MATERIALS as readonly string[]).includes(material));
     }
+  });
+
+  it("no wall material shares a pattern id with a ground or floor-only pattern", () => {
+    // `hatchId` ignores `ink`, so a shared id would repaint the ground/floor fill in the walls'
+    // `style wall { fill | hatch }` ink (src/hatches.ts, GROUND_MATERIALS doc).
+    const wall = new Set<string>(KNOWN_MATERIALS);
+    expect(GROUND_MATERIALS.filter((m) => wall.has(m))).toEqual([]);
+    expect(FLOOR_PATTERNS.filter((m) => wall.has(m))).toEqual([]);
   });
 
   it("is one pattern however many rooms write it", () => {

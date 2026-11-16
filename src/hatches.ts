@@ -55,9 +55,10 @@ export const DEFAULT_MATERIAL: Material = "poche";
  *    Sharing the table is what keeps a ground fill from being a second, parallel hatch
  *    system that the legend and the DXF export would each have to learn about separately.
  *
- * Pattern ids are keyed exactly as a wall's are, so a `paving` ground and a hypothetical
- * `paving` wall would reuse one pattern element rather than collide — which is the right
- * outcome, since the pattern IS the same pattern.
+ * Pattern ids are keyed exactly as a wall's are, and {@link hatchId} ignores
+ * {@link HatchSpec.ink}, so the two lists MUST stay disjoint: a ground word in the wall list
+ * would share its `<pattern>` with the ground, and `style wall { fill | hatch }` would then
+ * repaint the ground's fill in the walls' ink. Pinned by `test/room-floor.test.ts`.
  */
 export const GROUND_MATERIALS = [
   "grass",
