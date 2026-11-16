@@ -48,11 +48,15 @@ describe("parse hints", () => {
       "  room id=r at (0,0) size 4000x4000\n  offset 400",
     ]) {
       const src = plan(body);
-      const [d] = parseErrors(src);
+      const errs = parseErrors(src);
+      expect(errs, body).toHaveLength(1);
+      const [d] = errs;
       expect(d!.message, body).toBe(`Unknown statement "offset"`);
       expect(d!.hints, body).toHaveLength(1);
-      expect(d!.hints![0], body).toContain("`furniture … against <wall|room.edge> offset <mm>`");
-      expect(d!.hints![0], body).toContain("`dim (x,y)->(x,y) offset <mm>`");
+      expect(d!.hints![0], body).toContain("`furniture … against wall <id> offset <mm>`");
+      expect(d!.hints![0], body).toContain("`furniture … against <room>.<edge> offset <mm>`");
+      expect(d!.hints![0], body).toContain("`dim … offset <mm>`");
+      expect(d!.hints![0], body).toContain("`keep offset <d|id> from <d> <mm>`");
       expect(d!.hints![0], body).toContain("`at <mm> from start|end`");
       expect(d!.hints![0], body).toContain("inset <mm>");
       expect(src.slice(d!.span!.start, d!.span!.end)).toBe("offset");
@@ -65,28 +69,54 @@ describe("parse hints", () => {
       "  room id=r at (0,0) size 4000x4000\n  hinged door on r.bottom at center width 900",
     ]) {
       const src = plan(body);
-      const [d] = parseErrors(src);
+      const errs = parseErrors(src);
+      expect(errs, body).toHaveLength(1);
+      const [d] = errs;
       expect(d!.message, body).toBe(`Unknown statement "hinged"`);
       expect(d!.hints, body).toEqual([
         "`hinged` is a door kind, not a statement: it comes straight after `door` " +
-          "(`door hinged on <room>.<edge> at <pos> width <mm>`), and a door with no kind is already hinged",
+          "(`door hinged on <room>.<edge> at <pos> width <mm>`), and a door with no kind is already hinged; " +
+          "the hinge side is the clause `hinge left|right`",
       ]);
       expect(src.slice(d!.span!.start, d!.span!.end)).toBe("hinged");
     }
   });
 
-  it("the real forms the hints name parse", () => {
+  it("the real forms the hints name compile with no error", () => {
     const src = plan(
       [
         "  room id=r at (0,0) size 4000x4000",
-        "  wall id=w exterior thickness 200 { (0,0) (4000,0) }",
-        "  door hinged on r.bottom at 900 from start width 900",
-        "  furniture sofa against wall w offset 1500",
-        "  furniture bed in r anchor top inset 200",
+        "  walls from rooms exterior 200 partition 100",
+        "  wall id=w partition thickness 100 { (1000,1000) (3000,1000) }",
+        "  door hinged on r.bottom at 900 from start width 900 hinge left",
+        "  furniture sofa against r.top offset 1500 size 1800x900",
+        "  furniture desk against wall w offset 1000 side right size 1200x600",
+        "  furniture bed in r anchor left inset 200",
         "  dim (0,0)->(4000,0) offset 600",
       ].join("\n"),
     );
-    expect(parseErrors(src)).toEqual([]);
+    expect(compile(src).diagnostics.filter((d) => d.severity === "error")).toEqual([]);
+  });
+
+  it("valid programs that use the words as names, and a string, get no hint", () => {
+    for (const body of [
+      "  let offset = 300\n  room id=r at (0,0) size 4000x4000",
+      "  let hinged = 1\n  hinged = hinged + 1\n  room id=r at (0,0) size 4000x4000",
+      "  for offset in [0, 1] {\n    room at (offset*5000,0) size 4000x4000\n  }",
+      "  component offset(hinged) {\n    room at (hinged,0) size 4000x4000\n  }\n  place offset(0) as o at (0,0)",
+    ]) {
+      const ds = compile(plan(body)).diagnostics;
+      expect(
+        ds.filter((d) => d.severity === "error"),
+        body,
+      ).toEqual([]);
+      expect(
+        ds.some((d) => d.hints?.some((h) => h.includes("is not a statement"))),
+        body,
+      ).toBe(false);
+    }
+    const [d] = parseErrors(plan('  room id=r at (0,0) size 4000x4000\n  "offset" 400'));
+    expect(d?.hints ?? []).toEqual([]);
   });
 
   it("fires nowhere else", () => {

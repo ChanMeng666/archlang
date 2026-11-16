@@ -82,15 +82,17 @@ const FIXED_STATEMENT_STARTS: readonly string[] = STATEMENT_STARTS;
 const STRAY_CLAUSE_HINTS: ReadonlyMap<string, string> = new Map([
   [
     "offset",
-    "`offset` is not a statement and belongs to no opening or room: it ends only " +
-      "`furniture … against <wall|room.edge> offset <mm>` (mm along the wall to the piece's centre) " +
-      "and `dim (x,y)->(x,y) offset <mm>`. Place an opening along its wall with `at <mm> from start|end`; " +
-      "pull an anchored piece in from its edge with `in <room> anchor <a> inset <mm>`",
+    "`offset` is not a statement: it is a clause of `furniture … against wall <id> offset <mm>` or " +
+      "`furniture … against <room>.<edge> offset <mm>` (mm along the wall to the piece's centre) and " +
+      "`dim … offset <mm>`, and follows `keep` in `keep offset <d|id> from <d> <mm>`. Place an opening " +
+      "along its wall with `at <mm> from start|end`; pull an anchored piece in from its edge with " +
+      "`in <room> anchor <a> inset <mm>`",
   ],
   [
     "hinged",
     "`hinged` is a door kind, not a statement: it comes straight after `door` " +
-      "(`door hinged on <room>.<edge> at <pos> width <mm>`), and a door with no kind is already hinged",
+      "(`door hinged on <room>.<edge> at <pos> width <mm>`), and a door with no kind is already hinged; " +
+      "the hinge side is the clause `hinge left|right`",
   ],
 ]);
 
