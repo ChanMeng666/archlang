@@ -25,7 +25,9 @@ Streamable-HTTP server at `mcp.archlang.uk` (ADR 0026). Checklist for a new tool
   the suite by `test/release-compat.test.ts`; it needs the npm registry and fails under `CI` offline). A
   removed or retyped argument needs a `BREAKING: mcp-schemas: item` line under `[Unreleased]` and a
   major; add arguments as optional.
-- **Lockstep.** A `packages/mcp` change ships only with a version bump in `package.json` AND both
+- **Lockstep.** A `packages/mcp` change ships only with a version bump (the release PR's, by
+  `release:pin`; never a hand bump on a feature PR, which pins the plugin to an unpublished
+  shim) in `package.json` AND both
   `server.json` version fields; the core dependency range stays `^<core version>`
   (`packages/mcp/test/lockstep.test.ts`). `npm run release:pin` (`scripts/bump-lockstep.ts`) rewrites the
   range, the shim version, both `server.json` fields and the lock entry from the core version; run it

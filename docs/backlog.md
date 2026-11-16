@@ -1478,7 +1478,7 @@ it; that is a 2.0 decision for the owner.
 **Gate:** on a Linux host whose npm prefix is `/usr`, `npm i -g` of the packed tarball succeeds
 and `archlang --version` prints the version. **Size:** S.
 
-### U.20 · The MCP `describe` tool's description names only the centreline area — `todo`
+### U.20 · The MCP `describe` tool's description names both areas: done by #815, waiting to be archived — `note`
 
 **Observed (card D1, out of its scope).** `describe()` now reports `rooms[].net_area_m2` and
 `totals.net_floor_area_m2` beside the centreline `area_m2`
@@ -1492,6 +1492,12 @@ in `packages/mcp/package.json` and both `server.json` `version` fields.
 
 **Gate:** the tool description names both fields; the MCP lockstep and tool-text tests pass; the
 version is bumped in all three places. **Size:** S.
+**Done by #815, without the bump.** A hand bump on `main` pins the plugin
+(`plugins/archlang/.claude-plugin/plugin.json`, via `gen:plugin`) to a shim version npm does not have
+until a release publishes it, so plugin installs would fail to start the server in between. The
+bump is the release's: `npm run release:pin` raises the shim version whenever the core range moves,
+which every core release does, so the description reaches the stdio shim at the next release (the
+hosted server has it on deploy).
 
 ### U.22 · `describe()` net-area budget: done by #742 and #771, waiting to be archived — `note`
 
