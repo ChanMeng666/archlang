@@ -2059,7 +2059,7 @@ still say the delta section appears only with a baseline (`eval/README.md`, the 
 header, `LIVE_HEADER`). (6) A vacuous `not.toContain` in the prompt-mismatch test. **Gate:** offline
 tests only; no paid run.
 
-### RR.15 · The EV.1 record predates RM-D52: done by #PRNUM, waiting to be archived — `note`
+### RR.15 · The EV.1 record predates RM-D52: done by #879, waiting to be archived — `note`
 
 From #864's review: `eval/live-runs/2026-11-ev1-intent-gap.md` still says re-baselining needs an owner
 decision and that RM-D51 keeps the July record; RM-D52 (#854) re-baselined. Add a dated pointer line,
