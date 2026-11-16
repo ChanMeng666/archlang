@@ -16,8 +16,9 @@ merge evidence; a quick pass is not (a targeted subset misses the corpus-wide gu
 1. **`npm run check:quick`** — Biome on the changed files, the typecheck the changes need (the dev
    config for `test/` and `scripts/`, each changed workspace's own), `check:drift`, and the nearest
    tests by import distance (`--max`, default 20; it prints what it cut), plus, outside `--max`, the
-   source-tree scanner guards, tests named after a changed module and the cheapest corpus pins
-   (`--pins`). `--list` shows the plan, `--fix` lets Biome write its fixes. After pushing, read the PR's
+   source-tree scanner guards, tests named after a changed module, the three text guards each on its
+   own inputs (`lint-fix-texts`, `opaque-literal-guard`, `docs-flags`) and the cheapest corpus pins
+   (`--pins`), each under its own cap. `--list` shows the plan, `--fix` lets Biome write its fixes. After pushing, read the PR's
    checks (`gh pr checks <n>`) and fix any red from CI's log, never by re-running the whole suite
    locally.
 

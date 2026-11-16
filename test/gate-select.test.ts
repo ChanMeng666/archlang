@@ -11,17 +11,23 @@ import { fileURLToPath } from "node:url";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import {
   corpusPins,
+  DOCS_FLAGS,
+  docsFlagsReads,
   driftWanted,
+  fingerprintPaths,
+  FIX_TEXTS,
   gitleaksExcluded,
   listedTrees,
   medianSecs,
   namedTests,
+  OPAQUE_GUARD,
   planTests,
   scannedTrees,
   scanningGuards,
   TEXT_GUARDS,
+  textGuards,
+  textGuardTrigger,
   treeGuards,
-  wakesTextGuards,
   // @ts-expect-error — a zero-dep .mjs script with no type declarations.
 } from "../scripts/gate-select.mjs";
 
@@ -372,46 +378,107 @@ describe("planTests: what the gate runs for a change set", () => {
     expect(by("namedTests").length).toBeLessThanOrEqual(5);
   });
 
-  it("runs no extra for an examples change, and only the text guards for a docs change", () => {
-    expect(plan(["docs/agents/commands.md"], []).extras.map((e) => e.rule)).toEqual([
-      "textGuards",
-      "textGuards",
-      "textGuards",
+  it("runs no extra for an examples change, and only docs-flags for a page it reads", () => {
+    expect(plan(["docs/agents/commands.md"], []).extras.map((e) => [e.rule, e.file])).toEqual([
+      ["textGuards", DOCS_FLAGS],
     ]);
     expect(plan(["examples/studio.arch"], []).extras).toEqual([]);
   });
 
-  it("selects the three text guards CI failed on (#848) for a catalogue, docs, CHANGELOG or gitleaks-excluded test change", () => {
+  describe("the text guards CI failed on (#848), each woken by its own inputs", () => {
     const guards = (changed: string[]) =>
       plan(changed, [])
         .extras.filter((e) => e.rule === "textGuards")
         .map((e) => e.file)
         .sort();
-    const all = [...TEXT_GUARDS].sort();
-    expect(all).toEqual([
-      "test/docs-flags.test.ts",
-      "test/lint-fix-texts.test.ts",
-      "test/opaque-literal-guard.test.ts",
-    ]);
-    for (const f of all) expect(tracked()).toContain(f);
-    expect(guards(["src/error-catalog/layout.ts"])).toEqual(all);
-    expect(guards(["src/error-catalog.ts"])).toEqual(all);
-    expect(guards(["docs/language-reference.md"])).toEqual(all);
-    expect(guards(["CHANGELOG.md"])).toEqual(all);
-    // A test file a `.gitleaksignore` fingerprint names (read from the real file, not retyped).
-    const excluded = [...gitleaksExcluded(ROOT)].filter((f) => f.startsWith("test/") && f.endsWith(".test.ts"));
-    expect(excluded.length).toBeGreaterThan(0);
-    expect(guards([excluded[0]])).toEqual(all);
+    const whys = (changed: string[]) =>
+      plan(changed, [])
+        .extras.filter((e) => e.rule === "textGuards")
+        .map((e) => [e.file, e.why]);
+
+    it("names three tracked guards", () => {
+      expect([...TEXT_GUARDS].sort()).toEqual([
+        "test/docs-flags.test.ts",
+        "test/lint-fix-texts.test.ts",
+        "test/opaque-literal-guard.test.ts",
+      ]);
+      expect([OPAQUE_GUARD, DOCS_FLAGS, FIX_TEXTS].sort()).toEqual([...TEXT_GUARDS].sort());
+      for (const f of TEXT_GUARDS) expect(tracked()).toContain(f);
+    });
+
+    it("lint-fix-texts: every error-catalogue file and the fix producers, nothing else", () => {
+      expect(guards(["src/error-catalog.ts"])).toEqual([FIX_TEXTS]);
+      expect(guards(["src/error-catalog-fixes.ts"])).toEqual([FIX_TEXTS]);
+      expect(guards(["src/error-catalog/layout.ts"])).toEqual([FIX_TEXTS]);
+      expect(guards(["src/fix-producers.ts"])).toEqual([FIX_TEXTS]);
+      expect(whys(["src/fix-producers.ts"])).toEqual([[FIX_TEXTS, "the fix producers changed (src/fix-producers.ts)"]]);
+      expect(whys(["src/error-catalog-fixes.ts"])).toEqual([
+        [FIX_TEXTS, "the error catalogue changed (src/error-catalog-fixes.ts)"],
+      ]);
+    });
+
+    it("a CHANGELOG-only or docs/backlog.md-only change pulls none of them", () => {
+      expect(guards(["CHANGELOG.md"])).toEqual([]);
+      expect(guards(["docs/backlog.md"])).toEqual([]);
+    });
+
+    it("docs-flags: exactly the pages its text names, read from the test, not retyped", () => {
+      const reads = docsFlagsReads(ROOT, files) as Set<string>;
+      expect(reads.has("docs/language-reference.md")).toBe(true);
+      expect(reads.has("skills/archlang/SKILL.md")).toBe(true);
+      expect(reads.has("docs/backlog.md")).toBe(false);
+      expect(reads.has("canary.md")).toBe(false);
+      expect(guards(["docs/language-reference.md"])).toEqual([DOCS_FLAGS]);
+      expect(guards(["docs-site/index.md"])).toEqual([DOCS_FLAGS]);
+      expect(whys(["docs-site/index.md"])).toEqual([
+        [DOCS_FLAGS, `a page ${DOCS_FLAGS} reads changed (docs-site/index.md)`],
+      ]);
+    });
+
+    it("opaque-literal-guard: .gitleaksignore and every path it names, inside test/ or not", () => {
+      expect(guards([".gitleaksignore"])).toEqual([OPAQUE_GUARD]);
+      const excluded = [...(gitleaksExcluded(ROOT) as Set<string>)];
+      const inTest = excluded.find((f) => f.startsWith("test/") && f.endsWith(".test.ts"));
+      const outside = excluded.find((f) => !f.startsWith("test/"));
+      expect(inTest).toBeDefined();
+      expect(outside).toBeDefined();
+      expect(guards([inTest!])).toEqual([OPAQUE_GUARD]);
+      expect(guards([outside!])).toEqual([OPAQUE_GUARD]);
+      expect(whys([outside!])).toEqual([[OPAQUE_GUARD, `a file .gitleaksignore names changed (${outside})`]]);
+    });
+
+    it("leaves them all out for a change that is no guard's input", () => {
+      const none = ["test/cache.test.ts", "examples/README.md", "docs/backlog.md", "CHANGELOG.md", "package.json"];
+      for (const f of none) expect(guards([f]), f).toEqual([]);
+      expect(guards(none)).toEqual([]);
+    });
   });
 
-  it("leaves the text guards out for a change that touches none of their inputs", () => {
-    const guards = (changed: string[]) => plan(changed, []).extras.filter((e) => e.rule === "textGuards");
-    expect(guards(["src/lint/rules/room-contents.ts"])).toEqual([]);
-    expect(guards(["examples/studio.arch"])).toEqual([]);
-    expect(guards(["test/cache.test.ts"])).toEqual([]);
-    expect(guards(["docs-site/index.md"])).toEqual([]);
-    expect(wakesTextGuards("test/cache.test.ts", new Set(["test/other.test.ts"]))).toBeUndefined();
-    expect(wakesTextGuards("test/x.test.ts", new Set(["test/x.test.ts"]))).toBe("a gitleaks-excluded test file");
+  describe("the .gitleaksignore reader (temp tree)", () => {
+    let dir = "";
+    beforeAll(() => {
+      dir = mkdtempSync(join(tmpdir(), "gate-gitleaks-"));
+    });
+    afterAll(() => rmSync(dir, { recursive: true, force: true }));
+
+    it("is empty and wakes nothing when the file cannot be read", () => {
+      expect([...(gitleaksExcluded(dir) as Set<string>)]).toEqual([]);
+      expect(textGuards(dir, ["paper/a.json"], [OPAQUE_GUARD])).toEqual([]);
+    });
+
+    it("parses fingerprints once, normalises backslashes, and wakes the guard for a non-test path", () => {
+      const text =
+        "# header\n\nc1:paper\\x\\y.json:generic-api-key:3\nc2:test/a.test.ts:generic-api-key:9\nc3:test/a.test.ts:r:1\n";
+      expect(fingerprintPaths(text)).toEqual(["paper\\x\\y.json", "test/a.test.ts"]);
+      writeFileSync(join(dir, ".gitleaksignore"), text);
+      expect([...(gitleaksExcluded(dir) as Set<string>)].sort()).toEqual(["paper/x/y.json", "test/a.test.ts"]);
+      expect(textGuards(dir, ["paper/x/y.json"], [OPAQUE_GUARD])).toEqual([
+        { file: OPAQUE_GUARD, why: "a file .gitleaksignore names changed (paper/x/y.json)" },
+      ]);
+      expect(
+        textGuardTrigger(OPAQUE_GUARD, "paper/x/z.json", { excluded: new Set(["paper/x/y.json"]), docs: new Set() }),
+      ).toBeUndefined();
+    });
   });
 
   it("an extra the capped list already holds is listed once", () => {

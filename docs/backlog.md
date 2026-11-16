@@ -2071,6 +2071,16 @@ files they read. One way: when a change touches `src/error-catalog/`, `docs/*.md
 gitleaks-excluded test, `scripts/check-quick.mjs` also runs those three files. **Gate:** a
 `gate-select` test that such a change selects them; `scripts/check-quick.mjs` is high tier.
 
+### AG.2 · `check:quick` residue from AG.1's review — `todo`
+
+Two things AG.1 left. (1) A by-name guard (a test the import graph reaches only because it names a
+changed file) still competes for the 20 `--max` slots, so a change set with many `examples/` files
+fills the cap with directory-scanning guards and the by-name guard is cut (review m1 of #867).
+(2) `test/lint-fix-texts.test.ts` records about 61 s and runs uncapped on any error-catalogue or
+`src/fix-producers.ts` change, which is most of a `check:quick` minute. One way: give by-name
+guards their own extras slot, and cap `textGuards` by recorded seconds with the cut printed.
+**Gate:** `gate-select` tests for both; `scripts/check-quick.mjs` is high tier.
+
 ## Site chrome (found while fixing the nav overflow, 2026-09-20)
 
 ### N.1 · The nav row needs 1152px, and the hamburger persists until then (a WANT, not a bug) — `todo`

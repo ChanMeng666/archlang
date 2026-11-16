@@ -19,12 +19,14 @@
  *      a corpus digest or docs tripwire lists the folder and never names the file, so the import
  *      graph cannot reach it (five PRs went red that way on 2026-10-28). See `scanningGuards`.
  *      `--max` caps exactly that list: the branch's own changed test files, the directory-scanning
- *      guards and the import-distance tests, together and in that order. It does NOT cap the extras, three
+ *      guards and the import-distance tests, together and in that order. It does NOT cap the extras, four
  *      kinds of test the import graph ranks too far away, each under its own cap: the source-tree
  *      scanners a changed `src/`, `scripts/`, `eval/`, `test/` or `.claude/` file wakes (`treeGuards`;
  *      within 15 recorded seconds and 30 files at most), the tests named after a changed module (`namedTests`; at
- *      most 5 files and 10 recorded seconds), the three text guards a change to the error catalogue, a docs
- *      page, the CHANGELOG or a gitleaks-excluded test wakes (`textGuards`; CI failed on them in #848) and, for a change under `src/`, the cheapest reachable tests
+ *      most 5 files and 10 recorded seconds), the text guards CI failed on in #848, each woken only by its own
+ *      inputs (`textGuards`; no cap beyond the three files): `lint-fix-texts` by the error catalogue or
+ *      `src/fix-producers.ts`, `opaque-literal-guard` by `.gitleaksignore` or a path it names, `docs-flags`
+ *      by a page that test reads; and, for a change under `src/`, the cheapest reachable tests
  *      that pin their output over the examples corpus (`corpusPins`; within `--pins` recorded seconds).
  *      All of it is in `scripts/gate-select.mjs`.
  *
@@ -139,7 +141,7 @@ const guardNotes = [];
 const EXTRA_LABELS = {
   treeGuards: "source-tree scanners",
   namedTests: "tests named after a changed module",
-  textGuards: "text guards a catalogue, docs, CHANGELOG or gitleaks-excluded test change wakes",
+  textGuards: "text guards woken by their own inputs (catalogue, .gitleaksignore paths, docs-flags pages)",
   corpusPins: `corpus pins reachable from src/ (within ${PIN_SECS}s of recorded time)`,
 };
 if (!flag("--no-tests")) {
