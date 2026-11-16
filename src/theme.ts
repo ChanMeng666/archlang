@@ -292,15 +292,15 @@ export const STYLE_KEYS: Readonly<Record<string, Readonly<Record<string, keyof T
   escalator: { fill: "furnitureFill", stroke: "furnitureStroke", label: "annotation" },
   // Both draw an unfilled dashed outline and nothing else, so `stroke` is the whole
   // palette either has. They are still listed: `STYLE_KINDS` is `KEYWORDS.element` minus
-  // `opening` (which is a hole and has no ink), and `gen-llm-spec.ts` throws when that
-  // exception stops being exactly one word.
+  // `opening` (a hole, with no ink) and `walls` (its derived walls take `style wall`), and
+  // `gen-llm-spec.ts` throws when that exception stops being exactly those two words.
   roof: { stroke: "annotationMuted" },
   void: { stroke: "annotation" },
   // Ground surfaces. `fill` names the TINT under the hatch; the hatch's own ink rides `pocheHatch`
   // (the SVG backend builds every pattern from one base/line pair — see `src/hatches.ts`),
   // so it is deliberately not offered here: a per-kind hatch colour would need a second
-  // pattern set per style block, and `style wall { hatch … }` already moves that ink for
-  // the whole drawing. `outdoor.fill` points at `paving` because that is the tint the
+  // pattern set per style block. (`style wall { fill | hatch }` moves the WALLS' pattern ink
+  // only, because no wall pattern id is a ground's: `scene-build.ts`.) `outdoor.fill` points at `paving` because that is the tint the
   // majority of the kinds take; overriding it recolours all of them, which is the honest
   // granularity a single `style outdoor { … }` block can offer.
   outdoor: { fill: "paving", stroke: "outdoorStroke", label: "outdoorStroke" },
@@ -311,7 +311,8 @@ export const STYLE_KEYS: Readonly<Record<string, Readonly<Record<string, keyof T
 
 /** Every element kind `style <kind> { … }` accepts, derived from {@link STYLE_KEYS} so
  *  the list cannot be retyped anywhere. It is `KEYWORDS.element` minus `opening` (which
- *  has no ink of its own — it is a hole). Read by `scripts/gen-llm-spec.ts`. */
+ *  has no ink of its own — it is a hole) and `walls` (the walls it derives take `style wall`).
+ *  Read by `scripts/gen-llm-spec.ts`. */
 export const STYLE_KINDS: readonly string[] = /* @__PURE__ */ Object.keys(STYLE_KEYS);
 
 /** Resolve a `style <kind> { <key> … }` attribute to a Theme key, or null.

@@ -317,6 +317,29 @@ describe("T5.3 — rename", () => {
     for (const e of edits!) expect(SRC2.slice(e.span.start, e.span.end)).toBe("LVLH");
     expect(edits!.some((e) => e.span.start === SRC2.indexOf("height LVLH") + "height ".length)).toBe(true);
   });
+
+  // M.11: the name on the left of `NAME = expr` is a write to the binding, so a rename
+  // must rewrite it too; before the fix it gave `let y = 1`, `x = y + 1` (target left).
+  const SRC3 = [
+    'plan "A" {',
+    "  units mm",
+    "  let x = 1000",
+    "  x = x + 1000",
+    "  room id=r at (x,0) size 3000x3000",
+    "}",
+  ].join("\n");
+
+  it("renames the target of an assignment", () => {
+    const edits = rename(SRC3, SRC3.indexOf("let x") + 4, "y");
+    expect(edits).not.toBeNull();
+    // def + assignment target + `x + 1000` + `(x,0)`
+    expect(edits!.length).toBe(4);
+    for (const e of edits!) expect(SRC3.slice(e.span.start, e.span.end)).toBe("x");
+    expect(edits!.some((e) => e.span.start === SRC3.indexOf("  x = x") + 2)).toBe(true);
+    // Renaming from the assignment target itself reaches the same sites.
+    const fromTarget = rename(SRC3, SRC3.indexOf("  x = x") + 2, "y");
+    expect(fromTarget!.map((e) => e.span.start).sort()).toEqual(edits!.map((e) => e.span.start).sort());
+  });
 });
 
 describe("T5.3 — signature help", () => {

@@ -3496,10 +3496,12 @@ a `level` block has no floor to belong to — that is
 [`E_LEVEL_MIX`](error-codes.md#e_level_mix), reported on the offending statement. What
 stays outside (and applies to **every** level):
 
-- every plan **setting** — `units`, `grid`, `paper`, `scale`, `north`, `dims auto`,
-  `title`, `axes`, `schedule`, `legend`, `theme`/`style`, `accTitle`/`accDescr`;
+- every plan **setting** — `units`, `grid`, `paper`, `scale`, `height`, `north`, `site`,
+  `dims`, `title`, `axes`, `schedule`, `legend`, `notes`, `accTitle`/`accDescr`,
+  `theme`/`style` and `sheet text`;
 - **declarations** — `component` and `import`;
-- the **plan-global scope** — `let` bindings and `set` defaults.
+- the **plan-global scope** — `let` bindings and `set` defaults;
+- a `keep stacked`, and a plan-level `section` mark (drawn on the lowest storey).
 
 So `let W = 8000` written once is the same `W` on every floor, and one `component` can be
 called from each level.
@@ -3818,10 +3820,11 @@ style room { fill: "#f6f4ef" }
 `<kind>` is any element kind except `opening` (a hole, with no ink) and `walls` (walls derived by
 `walls from rooms` take `style wall`). `style` is a plan-level statement; a `level` or `component`
 body does not take it. The keys are friendly attributes, and each kind takes its own: `room` takes
-`fill`, `label` and `area`; `wall` takes `stroke`; `door` takes `leaf` and `opening`; `window`
-takes `pane` and `opening`; every other kind takes a subset of `fill`, `stroke` and `label`. `wall`
-also accepts `fill` and `hatch` (the poché base and hatch), but the drawing does not read them yet:
-the poché follows the plan's `theme` (`pocheBase`, `pocheHatch`). Each attribute
+`fill`, `label` and `area`; `wall` takes `stroke`, `fill` and `hatch`; `door` takes `leaf` and `opening`; `window`
+takes `pane` and `opening`; every other kind takes a subset of `fill`, `stroke` and `label`. A
+wall's `fill` and `hatch` are its poché base and hatch line: they recolour the walls' poché (and
+its legend swatch) in the SVG and PNG, and leave every floor and ground pattern in the plan's `theme`
+ink; the PDF export still draws the poché in the plan's colour. Each attribute
 names a theme colour, so a `style` block overrides the plan's `theme` for that kind only, and a
 programmatic `CompileOptions.theme` still wins. A key the kind does not take warns
 (`W_UNKNOWN_STYLE_KEY`) and is dropped; two blocks for the same kind merge, the later key winning.
