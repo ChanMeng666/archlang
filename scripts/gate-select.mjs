@@ -255,53 +255,103 @@ export function gitleaksExcluded(ROOT) {
 }
 
 /**
- * The tracked files `test/docs-flags.test.ts` reads, read out of its text (never retyped): every quoted
- * literal that is a tracked file, and each `skills/<name>/SKILL.md` when it lists `skills`.
+ * The files `test/docs-flags.test.ts` reads, read out of its text (never retyped): every quoted literal
+ * that is a tracked file or one of `gone` (a page deleted or renamed away, which the test may still name),
+ * and each `skills/<name>/SKILL.md` when it lists `skills`.
  */
-export function docsFlagsReads(ROOT, files) {
+export function docsFlagsReads(ROOT, files, gone = []) {
   let text = "";
   try {
     text = readFileSync(join(ROOT, DOCS_FLAGS), "utf8");
   } catch {
     return new Set();
   }
-  const tracked = new Set(files);
-  const read = new Set([...text.matchAll(/"([^"\n]+)"/g)].map((m) => m[1]).filter((l) => tracked.has(l)));
+  const known = new Set([...files, ...gone]);
+  const read = new Set([...text.matchAll(/"([^"\n]+)"/g)].map((m) => m[1]).filter((l) => known.has(l)));
   if (/readdirSync\(\s*"skills"\s*\)/.test(text)) {
-    for (const f of files) if (/^skills\/[^/]+\/SKILL\.md$/.test(f)) read.add(f);
+    for (const f of known) if (/^skills\/[^/]+\/SKILL\.md$/.test(f)) read.add(f);
   }
   return read;
 }
 
 /**
- * Why a changed path `f` wakes `guard`, or `undefined`. `ctx` is `{ excluded, docs }`: the
- * `.gitleaksignore` paths and the files `test/docs-flags.test.ts` reads.
+ * The files a guard imports directly by a relative specifier (`../src/manifest.js` -> `src/manifest.ts`),
+ * read out of its text. The import graph ranks a guard by distance, so the capped list can cut it even
+ * for a change to the very module it imports (#867). Empty when the guard cannot be read.
+ */
+export function guardImports(ROOT, guard) {
+  let text = "";
+  try {
+    text = readFileSync(join(ROOT, guard), "utf8");
+  } catch {
+    return new Set();
+  }
+  const out = new Set();
+  for (const m of text.matchAll(SPEC)) {
+    const dep = resolveSpec(ROOT, guard, m[1]);
+    if (dep && !isTest(dep)) out.add(dep);
+  }
+  return out;
+}
+
+/** The error catalogue: its index, its fix texts and every entry module. */
+export const isErrorCatalogue = (f) =>
+  f === "src/error-catalog.ts" || f === "src/error-catalog-fixes.ts" || f.startsWith("src/error-catalog/");
+
+/**
+ * The modules that compose the fix and hint text `test/lint-fix-texts.test.ts` reads, beyond the catalogue
+ * and the producers: the element modules (each builds its own diagnostics' fixes), the phrases lint rules
+ * name an element with, the ruleset whose thresholds the texts quote, and the `Diagnostic` shape itself.
+ */
+export const composesFixText = (f) =>
+  (f.startsWith("src/elements/") && CODE.test(f)) ||
+  f === "src/lint/element-phrases.ts" ||
+  f === "src/lint/ruleset.ts" ||
+  f === "src/diagnostics.ts";
+
+/** The key file IndexNow serves at the domain root, which `opaque-literal-guard` matches to the test's key. */
+export const isIndexNowKey = (f) => /^docs-site\/public\/[0-9a-f]{32}\.txt$/.test(f);
+
+/**
+ * Why a changed path `f` wakes `guard`, or `undefined`. `ctx` is `{ excluded, docs, imports? }`: the
+ * `.gitleaksignore` paths, the files `test/docs-flags.test.ts` reads, and each guard's `guardImports`.
  */
 export function textGuardTrigger(guard, f, ctx) {
   if (guard === FIX_TEXTS) {
-    if (f === "src/error-catalog.ts" || f === "src/error-catalog-fixes.ts" || f.startsWith("src/error-catalog/"))
-      return "the error catalogue";
+    if (isErrorCatalogue(f)) return "the error catalogue";
     if (f === "src/fix-producers.ts") return "the fix producers";
+    if (composesFixText(f)) return "a module that composes fix text";
+    // Its imports are the whole core (`src/index.ts`, `src/lint.ts`): not a trigger of their own.
+    return undefined;
   }
   if (guard === OPAQUE_GUARD) {
     if (f === ".gitleaksignore") return "the gitleaks allowlist";
     if (ctx.excluded.has(f)) return "a file .gitleaksignore names";
+    if (isIndexNowKey(f)) return "the published IndexNow key";
+    if (isErrorCatalogue(f)) return "the error catalogue";
   }
   if (guard === DOCS_FLAGS && ctx.docs.has(f)) return `a page ${DOCS_FLAGS} reads`;
+  if (ctx.imports?.get(guard)?.has(f)) return `a module ${guard} imports`;
   return undefined;
 }
 
 /**
- * The text guards a change set wakes, each by its own inputs: `lint-fix-texts` by the error catalogue
- * and the fix producers, `opaque-literal-guard` by `.gitleaksignore` and the files it names,
- * `docs-flags` by the pages it reads. Each is `{ file, why }`, the why naming the trigger.
+ * The text guards a change set wakes, each by its own inputs: `lint-fix-texts` by the error catalogue,
+ * the fix producers and the modules that compose fix text; `opaque-literal-guard` by `.gitleaksignore`,
+ * the files it names, the published IndexNow key and the catalogue; `docs-flags` by the pages it reads,
+ * a deleted or renamed-away one too (`gone`); those two also by a module they import directly. Each is
+ * `{ file, why }`, the why naming the trigger.
  */
-export function textGuards(ROOT, changed, files) {
-  const ctx = { excluded: gitleaksExcluded(ROOT), docs: docsFlagsReads(ROOT, files) };
+export function textGuards(ROOT, changed, files, gone = []) {
+  const ctx = {
+    excluded: gitleaksExcluded(ROOT),
+    docs: docsFlagsReads(ROOT, files, gone),
+    imports: new Map(TEXT_GUARDS.map((g) => [g, guardImports(ROOT, g)])),
+  };
   const out = [];
   for (const guard of TEXT_GUARDS) {
     if (!files.includes(guard)) continue;
-    for (const f of changed) {
+    for (const f of [...changed, ...gone]) {
       const why = textGuardTrigger(guard, f, ctx);
       if (why) {
         out.push({ file: guard, why: `${why} changed (${f})` });
@@ -351,7 +401,8 @@ export function readDurations(ROOT) {
 // ---- the test list ----------------------------------------------------------------------------
 /**
  * What the gate would run, as a pure function of the change set. `related` is the import-distance order
- * (`nearestTests`), `files` the tracked and untracked files. Two parts:
+ * (`nearestTests`), `files` the tracked and untracked files, `gone` the paths the branch deleted or renamed
+ * away (only the text guards read them). Two parts:
  *   - capped by `max` (`--max`), together and in this order: the branch's own changed test files, the
  *     directory-scanning guards an `examples/` or `docs/**\/*.md` change wakes, then the nearest tests;
  *   - beyond `max`, each under its own cap: the source-tree scanners (`TREE_MAX_FILES` files and
@@ -360,7 +411,7 @@ export function readDurations(ROOT) {
  *     (`pinSecs` seconds).
  * Returns `{ own, woken, guards, guardPick, extras, picked, total }`; each extra is `{ file, why, rule }`.
  */
-export function planTests({ ROOT, changed, files, related, max = 20, pinSecs = PIN_SECS }) {
+export function planTests({ ROOT, changed, files, related, gone = [], max = 20, pinSecs = PIN_SECS }) {
   const durations = readDurations(ROOT);
   const own = related.filter((f) => changed.includes(f));
   const woken = SCANNED_DIRS.filter((s) => changed.some(s.touches));
@@ -387,7 +438,7 @@ export function planTests({ ROOT, changed, files, related, max = 20, pinSecs = P
   };
   addExtras("treeGuards", treeGuards(ROOT, changed, files));
   addExtras("namedTests", namedTests(changed, files, durations));
-  addExtras("textGuards", textGuards(ROOT, changed, files));
+  addExtras("textGuards", textGuards(ROOT, changed, files, gone));
   if (changed.some((f) => f.startsWith("src/") && CODE.test(f))) {
     addExtras("corpusPins", corpusPins(scanningGuards(ROOT, ["examples"], files), related, pinSecs, durations));
   }

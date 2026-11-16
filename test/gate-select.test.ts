@@ -4,7 +4,16 @@
  * `no-replace-chain-escapers`) staying selected; the temp-tree cases pin the caps.
  */
 import { execFileSync } from "node:child_process";
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import {
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  readdirSync,
+  readFileSync,
+  rmSync,
+  statSync,
+  writeFileSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -17,6 +26,7 @@ import {
   fingerprintPaths,
   FIX_TEXTS,
   gitleaksExcluded,
+  guardImports,
   listedTrees,
   medianSecs,
   namedTests,
@@ -406,15 +416,12 @@ describe("planTests: what the gate runs for a change set", () => {
       for (const f of TEXT_GUARDS) expect(tracked()).toContain(f);
     });
 
-    it("lint-fix-texts: every error-catalogue file and the fix producers, nothing else", () => {
-      expect(guards(["src/error-catalog.ts"])).toEqual([FIX_TEXTS]);
-      expect(guards(["src/error-catalog-fixes.ts"])).toEqual([FIX_TEXTS]);
-      expect(guards(["src/error-catalog/layout.ts"])).toEqual([FIX_TEXTS]);
+    it("lint-fix-texts: every error-catalogue file and the fix producers (the catalogue wakes the opaque guard too, RR.16 (5))", () => {
+      const fixTexts = (changed: string[]) => whys(changed).filter(([f]) => f === FIX_TEXTS);
+      for (const f of ["src/error-catalog.ts", "src/error-catalog-fixes.ts", "src/error-catalog/layout.ts"])
+        expect(fixTexts([f]), f).toEqual([[FIX_TEXTS, `the error catalogue changed (${f})`]]);
       expect(guards(["src/fix-producers.ts"])).toEqual([FIX_TEXTS]);
       expect(whys(["src/fix-producers.ts"])).toEqual([[FIX_TEXTS, "the fix producers changed (src/fix-producers.ts)"]]);
-      expect(whys(["src/error-catalog-fixes.ts"])).toEqual([
-        [FIX_TEXTS, "the error catalogue changed (src/error-catalog-fixes.ts)"],
-      ]);
     });
 
     it("a CHANGELOG-only or docs/backlog.md-only change pulls none of them", () => {
@@ -445,6 +452,71 @@ describe("planTests: what the gate runs for a change set", () => {
       expect(guards([inTest!])).toEqual([OPAQUE_GUARD]);
       expect(guards([outside!])).toEqual([OPAQUE_GUARD]);
       expect(whys([outside!])).toEqual([[OPAQUE_GUARD, `a file .gitleaksignore names changed (${outside})`]]);
+    });
+
+    // RR.16: one case per follow-up from #867's reviews.
+    it("RR.16 (1): docs-flags wakes on src/manifest.ts, the module it imports, read from its text", () => {
+      expect(whys(["src/manifest.ts"])).toEqual([
+        [DOCS_FLAGS, `a module ${DOCS_FLAGS} imports changed (src/manifest.ts)`],
+      ]);
+      expect([...(guardImports(ROOT, DOCS_FLAGS) as Set<string>)]).toContain("src/manifest.ts");
+    });
+
+    it("RR.16 (2): docs-flags reads every quoted page on disk plus every skill, a skill it never quotes too", () => {
+      // A differently-shaped derivation: the files on disk (not git's list) and `readdirSync`, not a regex.
+      const text = readFileSync(join(ROOT, DOCS_FLAGS), "utf8");
+      const quoted = [...text.matchAll(/"([^"\n]+)"/g)]
+        .map((m) => m[1]!)
+        .filter((l) => existsSync(join(ROOT, l)) && statSync(join(ROOT, l)).isFile());
+      const skills = readdirSync(join(ROOT, "skills")).map((d) => `skills/${d}/SKILL.md`);
+      const expected = [...new Set([...quoted, ...skills])].sort();
+      expect([...(docsFlagsReads(ROOT, files) as Set<string>)].sort()).toEqual(expected);
+      const unquoted = skills.find((s) => !text.includes(`"${s}"`));
+      expect(unquoted, "a skill docs-flags reads only through readdirSync").toBeDefined();
+      expect(guards([unquoted!])).toEqual([DOCS_FLAGS]);
+    });
+
+    it("RR.16 (3): an ordinary src/ change wakes none of them", () => {
+      const ordinary = ["src/layout.ts", "src/num-format.ts", "src/geometry.ts", "src/expr.ts", "src/lint.ts"];
+      for (const f of ordinary) {
+        expect(files, f).toContain(f);
+        expect(guards([f]), f).toEqual([]);
+      }
+    });
+
+    it("RR.16 (4): lint-fix-texts wakes on a lone module that composes fix text", () => {
+      const element = files.find((f) => /^src\/elements\/[^/]+\.ts$/.test(f) && f !== "src/elements/defs.ts");
+      expect(element).toBeDefined();
+      for (const f of [
+        element!,
+        "src/elements/furniture.ts",
+        "src/lint/element-phrases.ts",
+        "src/lint/ruleset.ts",
+        "src/diagnostics.ts",
+      ]) {
+        expect(files, f).toContain(f);
+        expect(whys([f]), f).toEqual([[FIX_TEXTS, `a module that composes fix text changed (${f})`]]);
+      }
+    });
+
+    it("RR.16 (5): opaque-literal-guard wakes on the published IndexNow key and on the error catalogue", () => {
+      const key = files.find((f) => /^docs-site\/public\/[0-9a-f]{32}\.txt$/.test(f));
+      expect(key).toBeDefined();
+      expect(whys([key!])).toEqual([[OPAQUE_GUARD, `the published IndexNow key changed (${key})`]]);
+      expect(guards(["docs-site/public/robots.txt"])).toEqual([]);
+      expect(guards(["src/error-catalog.ts"])).toEqual([FIX_TEXTS, OPAQUE_GUARD].sort());
+      expect(guards(["src/error-catalog/layout.ts"])).toEqual([FIX_TEXTS, OPAQUE_GUARD].sort());
+    });
+
+    it("RR.16 (6): a page deleted or renamed away still wakes docs-flags", () => {
+      const page = "docs/says-no.md";
+      const without = files.filter((f) => f !== page);
+      const gone = (changed: string[]) =>
+        (planTests({ ROOT, changed, files: without, related: [], gone: [page] }) as { extras: Pick[] }).extras
+          .filter((e) => e.rule === "textGuards")
+          .map((e) => [e.file, e.why]);
+      expect(gone([])).toEqual([[DOCS_FLAGS, `a page ${DOCS_FLAGS} reads changed (${page})`]]);
+      expect(gone(["docs/says-no-renamed.md"])).toEqual([[DOCS_FLAGS, `a page ${DOCS_FLAGS} reads changed (${page})`]]);
     });
 
     it("leaves them all out for a change that is no guard's input", () => {

@@ -24,9 +24,10 @@
  *      scanners a changed `src/`, `scripts/`, `eval/`, `test/` or `.claude/` file wakes (`treeGuards`;
  *      within 15 recorded seconds and 30 files at most), the tests named after a changed module (`namedTests`; at
  *      most 5 files and 10 recorded seconds), the text guards CI failed on in #848, each woken only by its own
- *      inputs (`textGuards`; no cap beyond the three files): `lint-fix-texts` by the error catalogue or
- *      `src/fix-producers.ts`, `opaque-literal-guard` by `.gitleaksignore` or a path it names, `docs-flags`
- *      by a page that test reads; and, for a change under `src/`, the cheapest reachable tests
+ *      inputs (`textGuards`; no cap beyond the three files): `lint-fix-texts` by the error catalogue,
+ *      `src/fix-producers.ts` or a module that composes fix text, `opaque-literal-guard` by `.gitleaksignore`,
+ *      a path it names, the IndexNow key or the catalogue, `docs-flags` by a page that test reads (deleted
+ *      or renamed away too), both by a module they import; and, for a change under `src/`, the cheapest reachable tests
  *      that pin their output over the examples corpus (`corpusPins`; within `--pins` recorded seconds).
  *      All of it is in `scripts/gate-select.mjs`.
  *
@@ -76,8 +77,13 @@ const changed = [
 ]
   .map((f) => f.replace(/\\/g, "/"))
   .filter((f) => existsSync(join(ROOT, f)) && !f.startsWith(".claude/worktrees/"));
+// The paths the branch deleted or renamed away (`--no-renames` splits a rename into a deletion and an
+// addition): nothing can run or lint them, but a text guard that names one must still wake.
+const gone = lines(git("diff", "--name-only", "--no-renames", "--diff-filter=D", mergeBase))
+  .map((f) => f.replace(/\\/g, "/"))
+  .filter((f) => !existsSync(join(ROOT, f)) && !f.startsWith(".claude/worktrees/"));
 
-if (changed.length === 0) {
+if (changed.length === 0 && gone.length === 0) {
   console.log(`check:quick: nothing changed against ${BASE}.`);
   process.exit(0);
 }
@@ -133,7 +139,7 @@ for (const ws of WORKSPACES) {
   }
 }
 
-if (!flag("--no-drift") && driftWanted(changed)) {
+if (!flag("--no-drift") && driftWanted([...changed, ...gone])) {
   steps.push({ name: "check:drift", cmd: "npm", args: ["run", "-s", "check:drift"] });
 }
 
@@ -142,7 +148,8 @@ const guardNotes = [];
 const EXTRA_LABELS = {
   treeGuards: "source-tree scanners",
   namedTests: "tests named after a changed module",
-  textGuards: "text guards woken by their own inputs (catalogue, .gitleaksignore paths, docs-flags pages)",
+  textGuards:
+    "text guards woken by their own inputs (catalogue, fix-text modules, .gitleaksignore paths, docs-flags pages)",
   corpusPins: `corpus pins reachable from src/ (within ${PIN_SECS}s of recorded time)`,
 };
 if (!flag("--no-tests")) {
@@ -155,6 +162,7 @@ if (!flag("--no-tests")) {
     changed,
     files,
     related,
+    gone,
     max: MAX,
     pinSecs: PIN_SECS,
   });
