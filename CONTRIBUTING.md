@@ -90,9 +90,9 @@ frame-budget pass. An informational benchmark comment never gates. Node 18, Node
 on an ordinary PR; they run, each in five shards, on the maintainers' merge-train PRs, on unproven
 pushes to `main` and nightly, so run the suite locally if your change is sensitive to Node version or
 platform. A pull request from a fork gets the ordinary run; a maintainer lands it. On a first contribution GitHub
-holds the fork's CI runs until a maintainer approves them, and a run that expires unapproved shows as
-failed with no jobs. That red is not a verdict on your change: leave the pull request open and a
-maintainer will approve the run or land it. Layout and the merge
+holds the fork's CI runs as awaiting approval until a maintainer approves them; that wait is not a
+verdict on your change. Leave the pull request open: closing it before approval records the held runs
+as failed with no jobs, and a maintainer will approve the run or land it. Layout and the merge
 procedure: [docs/agents/commands.md](docs/agents/commands.md) § CI. `codeql.yml` adds static security
 analysis on the same events. A separate `nightly.yml` runs production smoke, a report-only dependency
 audit, a full-history secret scan, the OS×Node matrix, report-only coverage and the read-only E2E subset
