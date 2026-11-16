@@ -10,10 +10,9 @@
  *
  * The `./glb` entry (`writeGlb` for a page with no Node) is built as tsup builds it, its libraries
  * inlined, and that output then bundles for a browser with no option at all: no Node module, no
- * `process`, no clock, and the bundle, run, writes laneway-house's pinned GLB bytes (a well-formed
- * GLB 2.0 header) with no `Math.random` call while it loads and writes.
+ * `process`, no clock, and the bundle, run, writes laneway-house byte for byte as `./node` does (a
+ * well-formed GLB 2.0 header) with no `Math.random` call while it loads and writes.
  */
-import { createHash } from "node:crypto";
 import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
@@ -22,7 +21,8 @@ import { build } from "esbuild";
 import { describe, expect, it } from "vitest";
 import { adaptPlan, buildMesh, type Mesh3D } from "../src/index.js";
 import { EXAMPLES_LIST, REPO, WORLD } from "./corpus.js";
-import { LANEWAY_GLB_SHA256, PIN_GENERATOR } from "./pins.js";
+import { writeGlb } from "../src/node.js";
+import { PIN_GENERATOR } from "./pins.js";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 
@@ -166,6 +166,7 @@ describe("browser safety", () => {
     const real = Math.random;
     let random = 0;
     let glb: Uint8Array;
+    let expected: Uint8Array;
     try {
       const stage1 = join(dir, "glb.js");
       writeFileSync(stage1, built.outputFiles?.[0]?.text ?? "");
@@ -202,6 +203,7 @@ describe("browser safety", () => {
       const r = adaptPlan(src, { world: WORLD });
       if (!r.ok) throw new Error(r.refusal.code);
       const mesh = buildMesh(r.scene);
+      expected = await writeGlb(mesh, { generator: PIN_GENERATOR }); // `./node`'s, before the recorder
       // Run the browser bundle itself, loaded and run under a `Math.random` that counts every call.
       const file = join(dir, "glb.browser.mjs");
       writeFileSync(file, code);
@@ -228,7 +230,7 @@ describe("browser safety", () => {
       asset: { version: string; generator: string };
     };
     expect(json.asset).toEqual({ version: "2.0", generator: PIN_GENERATOR });
-    // The same bytes `./node`'s `writeGlb` writes for this plan (`test/glb.test.ts`'s pin).
-    expect(createHash("sha256").update(glb).digest("hex")).toBe(LANEWAY_GLB_SHA256);
+    // Byte for byte what `./node`'s `writeGlb` writes for this plan (whose digest `test/glb.test.ts` pins).
+    expect(Buffer.compare(Buffer.from(glb), Buffer.from(expected)), "the same bytes as ./node").toBe(0);
   }, 60_000);
 });

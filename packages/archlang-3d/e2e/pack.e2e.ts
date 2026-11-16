@@ -13,6 +13,7 @@ import { readdirSync, readFileSync } from "node:fs";
 import { builtinModules } from "node:module";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
+import { build } from "esbuild";
 import { describe, expect, it } from "vitest";
 import { viewerScript } from "../src/node.js";
 
@@ -89,10 +90,25 @@ describe("npm pack (what the first publish would send)", () => {
     // Either spelling: tsup strips `node:` unless told otherwise.
     const builtin = (i: string) => i.startsWith("node:") || builtinModules.includes(i);
     expect([...seen].flatMap((f) => imports(f).filter(builtin))).toEqual([]);
-    // `./glb` inlines glTF-Transform (`tsup.config.ts`): its graph names only its own chunks, so a
-    // consumer's bundler never meets the library's `NodeIO` and its `node:` imports.
-    seen.clear();
-    walk("glb.js");
-    expect([...seen].flatMap((f) => imports(f).filter((i) => !i.startsWith("./")))).toEqual([]);
+  });
+
+  it("dist/glb.js bundles for a browser with no option, from dist/ alone", async () => {
+    // `./glb` inlines glTF-Transform (`tsup.config.ts`), so a consumer's bundler never meets the
+    // library's `NodeIO` and its `node:` imports. Read by esbuild, not by a text scan: the inlined
+    // library's doc comments quote imports (`import { add } from 'gl-matrix/add'`) that are no import.
+    const out = await build({
+      entryPoints: [join(PKG, "dist", "glb.js")],
+      bundle: true,
+      platform: "browser",
+      format: "esm",
+      write: false,
+      logLevel: "silent",
+      metafile: true,
+      absWorkingDir: PKG,
+    });
+    expect(out.errors).toEqual([]);
+    const inputs = Object.keys(out.metafile.inputs);
+    expect(inputs).toContain("dist/glb.js");
+    expect(inputs.filter((f) => !/^dist[\\/][\w.-]+\.js$/.test(f))).toEqual([]);
   });
 });
