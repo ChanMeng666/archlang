@@ -1767,7 +1767,7 @@ the page embeds) also change the page and are not listed. Adding `src/` would mo
 the compiler belongs (the package version may be the better signal). **Gate:** the
 `test/playground-examples-rows.test.ts` pin lists the new inputs.
 
-### WS.4 · "What this plan uses" has no row for `keep`, `import` or `style` — `todo`
+### WS.4 · "What this plan uses" has no row for `keep`, `import` or `style`: done by #868, waiting to be archived — `note`
 
 `playground/scripts/plan-constructs.mjs` detects constructs from `compile().ast`. No example page
 uses `keep` or `import` yet, so a detector could not be checked against a real page, and
@@ -1775,6 +1775,34 @@ uses `keep` or `import` yet, so a detector could not be checked against a real p
 uses it (and, for `style`, when the reference gains its section). **Gate:**
 `test/plan-constructs.test.ts`'s anchor check covers the new rows.
 
+**Done by #868** for `style`: the reference gained "Per-element styles — `style`" and the row
+fires on `materials`. `keep` and `import` still have no row because no `EXAMPLE_ROWS` plan writes
+them, and the test's every-row-fires guard rejects a detector no page checks; add each with the
+first example page that uses it.
+
+### WS.5 · `style wall { fill }` and `{ hatch }` are accepted and draw nothing — `todo`
+
+The parser takes both keys with no diagnostic and stores `pocheBase` / `pocheHatch` in
+`plan.styles.wall`, but `src/backends/svg.ts` builds every hatch pattern from the scene theme
+(`THEME.pocheBase`, `THEME.pocheHatch`), never the per-kind styled theme (#868 review: on walls
+with default, concrete and brick poché, `theme { pocheBase }` moved 3 fills and `style wall { fill }`
+none). The comment at `src/theme.ts` that `style wall { hatch … }` moves that ink is false as
+measured. Either draw them (a drawing change on plans that write them only) or warn
+`W_UNKNOWN_STYLE_KEY`. **Gate:** a test that each accepted `style` key moves its own kind's ink and
+nothing else; the reference's `style` section updated.
+
+### WS.6 · The reference's `style` section is a hand-written copy of `STYLE_KEYS` — `todo`
+
+#868 wrote "Per-element styles — `style`" in `docs/language-reference.md` by hand; its first draft
+already disagreed with `spec.llm.md` on the styleless kinds (`opening`, `walls`). **Gate:** a test that
+every kind/attribute pair the section names resolves through `resolveStyleKey` and that the kinds it
+says take no `style` equal `KEYWORDS.element` minus the styled kinds.
+
+### WS.7 · "What this plan uses" rows for `keep` and `import` — `deferred`
+
+Left by WS.4 (#868): no `EXAMPLE_ROWS` plan writes `keep` or `import`, and the every-row-fires guard
+rejects an unchecked detector. **Trigger:** the first example page whose plan writes either. **Gate:**
+`test/plan-constructs.test.ts` lists the row on that page.
 ## Stairs in the 3D preview (public-surfaces card X3, 2026-11-06)
 
 ### ST.1 · Drawn treads against storey height: done by RM1.2a (#736), waiting to be archived — `note`
@@ -1938,7 +1966,7 @@ balcony … label "Terrace"`; `yard → paving` has no source in the repo. The h
 first word after `uses` is unknown, so `uses living balcony` and `uses Balcony` get none.
 **Gate:** the mapping agrees with `docs/language-reference.md`, and a test covers a later word.
 
-### RR.6 · Site-only link guard gaps — `todo`
+### RR.6 · Site-only link guard gaps: done by #863, waiting to be archived — `note`
 
 After #838, `test/docs-site-links.test.ts` still skips same-page `#fragment` links on site-only
 pages, does not check a fragment on a route with no markdown source (`/adr#x`), and does not read
@@ -1948,7 +1976,7 @@ outside it: `packages/mcp/README.md` links
 `/reference#keyboard-and-screen-reader-operability-annotate--accessible`, which is dead on the site.
 **Gate:** that README link fixed, and a guard for absolute `archlang.uk` fragments in READMEs.
 
-### RR.7 · EV.1 record wording — `todo`
+### RR.7 · EV.1 record wording: done by #864, waiting to be archived — `note`
 
 In `eval/live-runs/2026-11-ev1-intent-gap.md`: "What does differ is the overall rate" compares 13/26
 with 26/78 across the prompt drift the record says it does not compare (state the counts, claim no
@@ -1961,7 +1989,13 @@ line 56, not 55. **Gate:** those four sentences corrected; no number changes.
 (1) An `/adr` smoke check on the deployed site (WS.5). (2) Whether `W_DOORWAY_BLOCKED` is too strict
 for furniture that only grazes a door's swing (EV.1: all 19 physical-lint intent losses).
 (3) The Rooms control overlaps the drawing at ≤ 900 px (PG.1 review). (4) An oracle for
-`docs-site/index.md` frontmatter links. Each becomes its own card once looked at.
+`docs-site/index.md` frontmatter links. (5) Site-link guard holes left by RR.6 (#863 review): same-page
+`#fragment` links on site-only pages, a fragment on a source-less route (`/adr#x`) and raw `href=`
+links are unchecked; README scanning skips dot directories and walks the filesystem, not the tracked
+tree; absolute `archlang.uk` fragments outside READMEs (`docs/overview.md`, `llms-install.md`) and
+fragment-less dead routes are unchecked; a bare URL followed by punctuation, or an id rendered by a
+component the page does not name, is wrongly refused; a malformed `%` escape throws. Each becomes
+its own card once looked at.
 
 ## Test-programme findings (promo-credit programme, 2026-11-16)
 
@@ -1995,7 +2029,7 @@ record both SHA-256s in the baseline, and have `renderDelta` (`eval/run.ts`) say
 run's hashes differ, as it already does for a judge change. **Gate:** a unit test of `renderDelta`
 for a matching and a differing prompt hash.
 
-### EV.4 · `offset` and `hinged` written as statements get no hint — `todo`
+### EV.4 · `offset` and `hinged` written as statements get no hint: done by #866, waiting to be archived — `note`
 
 After CO-1 and CO-2 the remaining order notes in the live runs are `Unknown statement "offset"`
 (Haiku 5.5 and gpt-5.5) and `Unknown statement "hinged"` (Haiku 5.5)

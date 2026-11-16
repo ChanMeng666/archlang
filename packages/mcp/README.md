@@ -106,7 +106,7 @@ compile(src, { annotate: true, accessible: { idPrefix: "plan-7" } });
 ```
 
 The output contract, what an embedder still owns, and the known screen-reader limitations are in
-the [language reference](https://archlang.uk/reference#keyboard-and-screen-reader-operability-annotate--accessible).
+the [language reference](https://archlang.uk/reference#keyboard-and-screen-reader-operability-annotate-accessible).
 
 ## Resources
 
