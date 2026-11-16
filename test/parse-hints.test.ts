@@ -40,12 +40,62 @@ describe("parse hints", () => {
     expect(d!.hints).toHaveLength(1);
   });
 
+  // EV.4: clause words written where a statement starts (live runs) name the form they belong to.
+  it("`offset` as a statement names the forms that take it", () => {
+    for (const body of [
+      "  room id=r at (0,0) size 4000x4000\n  door on r.bottom at center width 900 offset 200",
+      "  room id=r at (0,0) size 4000x4000\n  furniture sofa in r anchor top offset 300",
+      "  room id=r at (0,0) size 4000x4000\n  offset 400",
+    ]) {
+      const src = plan(body);
+      const [d] = parseErrors(src);
+      expect(d!.message, body).toBe(`Unknown statement "offset"`);
+      expect(d!.hints, body).toHaveLength(1);
+      expect(d!.hints![0], body).toContain("`furniture … against <wall|room.edge> offset <mm>`");
+      expect(d!.hints![0], body).toContain("`dim (x,y)->(x,y) offset <mm>`");
+      expect(d!.hints![0], body).toContain("`at <mm> from start|end`");
+      expect(d!.hints![0], body).toContain("inset <mm>");
+      expect(src.slice(d!.span!.start, d!.span!.end)).toBe("offset");
+    }
+  });
+
+  it("`hinged` as a statement names the door kind", () => {
+    for (const body of [
+      "  room id=r at (0,0) size 4000x4000\n  door on r.bottom at center width 900 hinged",
+      "  room id=r at (0,0) size 4000x4000\n  hinged door on r.bottom at center width 900",
+    ]) {
+      const src = plan(body);
+      const [d] = parseErrors(src);
+      expect(d!.message, body).toBe(`Unknown statement "hinged"`);
+      expect(d!.hints, body).toEqual([
+        "`hinged` is a door kind, not a statement: it comes straight after `door` " +
+          "(`door hinged on <room>.<edge> at <pos> width <mm>`), and a door with no kind is already hinged",
+      ]);
+      expect(src.slice(d!.span!.start, d!.span!.end)).toBe("hinged");
+    }
+  });
+
+  it("the real forms the hints name parse", () => {
+    const src = plan(
+      [
+        "  room id=r at (0,0) size 4000x4000",
+        "  wall id=w { (0,0) (4000,0) }",
+        "  door hinged on r.bottom at 900 from start width 900",
+        "  furniture sofa against wall w offset 1500",
+        "  furniture bed in r anchor top inset 200",
+        "  dim (0,0)->(4000,0) offset 600",
+      ].join("\n"),
+    );
+    expect(parseErrors(src)).toEqual([]);
+  });
+
   it("fires nowhere else", () => {
     const cases = [
       "  room id=a at (0,0), size 3000x3000", // comma elsewhere
       "  room id=a at (0,0) size 3000x3000 uses living\n  room id=b right-of a, gap 0", // comma after a non-use
       "  room id=a at (0,0) size 3000x3000; room id=b at (5000,0) size 3000x3000", // mid-line semicolon
       "  room id=e at (0,0) size 3000-x3000", // minus not glued to an id
+      "  kitchen at (0,0)", // an unknown statement that is no stray clause word
     ];
     for (const body of cases) {
       const errs = parseErrors(plan(body));
