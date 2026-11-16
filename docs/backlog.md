@@ -1925,7 +1925,7 @@ settings (…)". Comments in `src/ast.ts` (near the level kind list) and `src/im
 same stale list. **Gate:** the remedy's list derives from the parser's allowed set, and a test fails
 when a new plan-level form is not named.
 
-### RR.4 · `E_DRAWING_LIMIT`'s remedy does not cover the notes cap — `todo`
+### RR.4 · `E_DRAWING_LIMIT`'s remedy does not cover the notes cap: done by #859, waiting to be archived — `note`
 
 N.5 (#840) names the NOTES cap under Cause, but Fix still says only "Draw fewer or shorter runs,
 shrink the loop, or split the building". **Gate:** the remedy names shortening `notes`; the
