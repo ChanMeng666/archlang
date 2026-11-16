@@ -1925,9 +1925,9 @@ One option the owner may choose is the median of 3 runs; any new run is paid, ow
 judge, model drift), with no claim beyond the data and none about loop gain.
 Done by #837: the record is `eval/live-runs/2026-11-ev1-intent-gap.md`.
 
-## Review residue of the promo-credit backlog run (PRs #837–#872, 2026-11-16)
+## Review residue of the promo-credit backlog run (PRs #837–#904, 2026-11-16/17)
 
-Left by the reviews of those PRs (RR.1–RR.8 from #837–#850, RR.9–RR.18 from #855–#872) (review-cost cap: two rounds, residue becomes cards).
+Left by the reviews of those PRs (RR.1–RR.8 from #837–#850, RR.9–RR.18 from #855–#872, RR.19–RR.24 from #879–#904) (review-cost cap: two rounds, residue becomes cards).
 
 ### RR.1 · A door fix re-prints its statement with no step charge: done by #855, waiting to be archived — `note`
 
@@ -2123,6 +2123,64 @@ until then the rule stands as written.
 
 **Decided** by RM-D55 (owner, 2026-11-16; product-roadmap README §6.24): uploads to the dataset repo
 are the agent's, standing; replacing a published data file still needs an owner ruling first.
+
+### RR.19 · `uses` hint follow-ups after RR.13 — `todo`
+
+From #881's round-2 review. (1) `afterUses` (`src/parser.ts`) binary-searches the token list on every
+comma or outdoor-word failure, so the hints are n log n, not linear; `test/room-uses.test.ts`'s
+read-count slack is tuned to n = 400 and turns red above about 508 with no regression. Bound the
+count by the number of failures, or look at the cursor first. (2) The off-cursor lookup is unpinned:
+replacing the search with `lo = this.pos` passes every test; pin it with a plugin element that fails
+on a consumed token after a `uses` list, or drop the search. (3) A missing-`size` error raised at an
+outdoor word right after `uses` now carries the outdoor hint (true, untested), and the comments in
+`src/parser.ts` and `src/elements/room.ts` still say only two errors carry it; `wall id=uses living
+balcony …` gets a wrong outdoor hint because `afterUses` does not check that `uses` is a room clause
+(the comma hint has had the same blind spot since #395). **Gate:** a test per item; no corpus output
+moves.
+
+### RR.20 · `fmt` is not a fixed point for a comment ending CR, blank, LF — `todo`
+
+From #884's review (RR.17). `src/lexer.ts` stops trimming a comment's trailing CRs at a blank, then
+`trimBlanksEnd` (`src/doc.ts`) strips the blank and exposes the CR: `# note\r \n` prints `# note\r`
+on pass 1 and `# note` on pass 2. Strip the whole trailing `[ \t\r]*` run in one place. **Gate:** the
+T5.2 idempotence law gains these line shapes; `arch fmt` over every tracked `.arch` stays
+byte-identical.
+
+### RR.21 · `style wall` ink follow-ups after WS.5 — `todo`
+
+From #896's and #901's reviews. (1) The PDF export (`src/export/pdf.ts`) collapses every `url(#…)`
+fill to the scene theme's `pocheBase` and ignores `HatchSpec.ink`, so `style wall { fill | hatch }`
+shows in the SVG and PNG only (the reference says so). (2) `test/style-keys-draw.test.ts`'s
+"nothing else" half cannot fail for untagged ink (walls, dims). (3) The mixed precedence case,
+`CompileOptions.theme { pocheBase }` with `style wall { fill, hatch }`, is correct by probe and
+unpinned. (4) `test/style-reference-section.test.ts` drops parenthesised asides over the whole
+section, so a wrong attribute written inside a parenthesis passes. **Gate:** a test per item; plans
+that write no `style wall` stay byte-identical.
+
+### RR.22 · `fix-coverage` follow-ups after U.17 — `todo`
+
+From #898's review. (1) `W_WHILE_DEPRECATED` is counted among the codes with a span edit, but its fix
+exists only inside `arch fix` (`src/cli/commands-author.ts`), never from `compile()` or `lint()`: say
+so in the script's output or count it separately. (2) The function-comparison fallback in
+`scripts/fix-coverage.ts` credits every `x.code === "…"` literal in the enclosing function, so a
+future site in a function that tests several codes would over-credit. **Gate:** a synthetic-tree case
+for each.
+
+### RR.23 · Live eval: the sent system string on a CRLF checkout — `todo`
+
+From #885's late review (RR.14). On a CRLF working copy the live run sends the system prompt with CRLF
+while `promptSha256` is LF-normalised, so two runs that sent different bytes record the same hash;
+`eval/README.md` documents it, but the comment in `eval/run.ts`'s `main()` says "those same strings
+are sent". Normalise once and send the normalised string, or reword the comment. Also, "exit 3 before
+any spend" is pinned only by a source-text order check (`test/eval-stats.test.ts`); a run of `main()`
+with a bad baseline would pin the exit code. **Gate:** offline tests only; no paid run.
+
+### RR.24 · Two statement reprints outside `reprint` (observation) — `todo`
+
+From #880's review (RR.10). `furnitureCategoryFix` (`src/fix-producers.ts`, through `categoryFix` in
+`src/elements/furniture.ts`, which charges every build) and the dim swap (`src/elements/dim.ts`)
+re-print a whole statement without going through `src/elements/reprint.ts`. Card it as a defect only
+if a looped or component-placed case reproduces an uncharged reprint; otherwise close it as checked.
 
 ## Test-programme findings (promo-credit programme, 2026-11-16)
 
