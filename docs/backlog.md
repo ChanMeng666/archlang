@@ -1959,7 +1959,7 @@ N.5 (#840) names the NOTES cap under Cause, but Fix still says only "Draw fewer 
 shrink the loop, or split the building". **Gate:** the remedy names shortening `notes`; the
 catalogue outputs regenerated.
 
-### RR.5 · The `uses` outdoor hint: `terrace` and a later word — `todo`
+### RR.5 · The `uses` outdoor hint: `terrace` and a later word: done by #861, waiting to be archived — `note`
 
 U.6 (#850) maps `terrace` to `patio`, but the language reference draws a terrace as `outdoor
 balcony … label "Terrace"`; `yard → paving` has no source in the repo. The hint fires only when the
