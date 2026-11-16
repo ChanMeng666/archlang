@@ -1767,13 +1767,18 @@ the page embeds) also change the page and are not listed. Adding `src/` would mo
 the compiler belongs (the package version may be the better signal). **Gate:** the
 `test/playground-examples-rows.test.ts` pin lists the new inputs.
 
-### WS.4 · "What this plan uses" has no row for `keep`, `import` or `style` — `todo`
+### WS.4 · "What this plan uses" has no row for `keep`, `import` or `style`: done by #868, waiting to be archived — `note`
 
 `playground/scripts/plan-constructs.mjs` detects constructs from `compile().ast`. No example page
 uses `keep` or `import` yet, so a detector could not be checked against a real page, and
 `docs/language-reference.md` has no heading for `style` to link to. Add each row when an example
 uses it (and, for `style`, when the reference gains its section). **Gate:**
 `test/plan-constructs.test.ts`'s anchor check covers the new rows.
+
+**Done by #868** for `style`: the reference gained "Per-element styles — `style`" and the row
+fires on `materials`. `keep` and `import` still have no row because no `EXAMPLE_ROWS` plan writes
+them, and the test's every-row-fires guard rejects a detector no page checks; add each with the
+first example page that uses it.
 
 ## Stairs in the 3D preview (public-surfaces card X3, 2026-11-06)
 
