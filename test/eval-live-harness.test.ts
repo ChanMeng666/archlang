@@ -57,6 +57,17 @@ describe("stop reason capture", () => {
     expect(ledger.lastStop).toBe("length");
   });
 
+  it("sends the system prompt it is given, the string a live run hashes (RR.14)", async () => {
+    vi.stubEnv("ANTHROPIC_API_KEY", "k");
+    const fetch = vi.fn(async (_url: string, _init: RequestInit) =>
+      ok({ content: [{ type: "text", text: "x" }], stop_reason: "end_turn" }),
+    );
+    vi.stubGlobal("fetch", fetch);
+    await makeAuthor("anthropic", "claude-sonnet-5-5", undefined, "SYSTEM-RR14")("brief");
+    const body = JSON.parse(String(fetch.mock.calls[0]![1].body)) as { system: unknown };
+    expect(JSON.stringify(body.system)).toContain("SYSTEM-RR14");
+  });
+
   it("truncation predicate", () => {
     expect(isTruncationStop("max_tokens")).toBe(true);
     expect(isTruncationStop("length")).toBe(true);
