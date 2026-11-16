@@ -120,7 +120,7 @@ the repair stage will refuse them and the row is rejected.
 
 > The generator is in the repository; rows exist only after the owner runs the paid, owner-only
 > `submit` phase (product-roadmap RM-D47). `CARD.md` carries this config's card text; the upload
-> itself is the owner's step (§ Re-uploading to Hugging Face).
+> is the agent's step under RM-D55 (§ Re-uploading to Hugging Face).
 
 A separate HF config, `model-authoring` (split `one_shot`, files `model-authoring.jsonl` and `model-authoring-fable.jsonl`; keep that order in `CARD.md`'s `configs:`, the 1170-row file first for schema inference). Real
 models write `.arch` **one-shot** from procedural briefs, and the deterministic tools heal the
@@ -215,7 +215,11 @@ the gates work, the CLI run is the check against the published bytes.
 
 ## Re-uploading to Hugging Face
 
-Upload is the owner's manual step (the `hf` CLI, logged in as the owner — **no tokens in the repo**).
+Upload is done by the agent (product-roadmap RM-D55, owner 2026-11-16) with the `hf` CLI logged in as
+the owner — **no tokens in the repo or in chat**; the agent stops and guides the owner only for a login,
+2FA or token step, and after each upload re-downloads the file and compares its SHA-256. What goes up
+is unchanged: new rows (a re-run, a new model, a new brief count) still need an owner ruling (RM-D47),
+and `submit`, which spends money, stays the owner's.
 Use the **canonical `ChanMeng666` namespace casing** (the same class of lesson as npm provenance and
 the MCP registry — the owner segment is identity-checked):
 

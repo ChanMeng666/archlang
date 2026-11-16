@@ -255,8 +255,9 @@ alter a compiled plan, its diagnostics, or `describe()` facts) means a new `arch
 
 A **card-only edit** (prose, links) re-uploads `README.md` alone.
 
-**Upload** is the owner's manual step via the `hf` CLI — logged in as the owner; **no tokens in the
-repo**, no automation. Use the **canonical `ChanMeng666` namespace casing** (the owner segment is
+**Upload** runs the `hf` CLI logged in as the owner; an agent does it (product-roadmap RM-D55), stopping
+only for the owner's login, 2FA or token step, and checks each file's SHA-256 after; **no tokens in the
+repo or in chat**, no CI automation. Use the **canonical `ChanMeng666` namespace casing** (the owner segment is
 identity-checked, same class of lesson as npm provenance / the MCP registry):
 
 ```bash

@@ -46,6 +46,11 @@ listed in the stage report (`docs/plans/plan-soundness/README.md` D18).
 - **`eval/rubric.md` is frozen.** `eval:live`, `eval:fidelity-live` and `dataset:model-authoring -- submit`
   are paid and owner-only (hard rule: AGENTS.md § Hard rules; the fidelity run's bounds are
   product-roadmap RM-D46, the dataset config's RM-D47); CI runs `eval:ci`.
+- **HF uploads are the agent's (owner, 2026-11-16, in words; product-roadmap RM-D55):** the agent
+  uploads the dataset's files and card with the owner's logged-in `hf` CLI and verifies by SHA-256,
+  stopping only for a login, 2FA or token step, which it guides the owner through. Unchanged: what
+  may be uploaded (new rows need a ruling, RM-D47), the seed-`20260712` bytes, and no token in the
+  repo or chat.
 
 ## Releases
 
