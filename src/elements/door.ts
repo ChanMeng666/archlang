@@ -2,7 +2,8 @@
  * `door [id=] [<kind>] at (x,y) width N [wall ref] [hinge <side>] [swing <dir>]
  *  [slide <dir>] [open <0..1>] [head <mm>]` — opening + leaf + swing arc, or (for a non-hinged
  *  kind) opening + panels/track/cavity. The clauses after the placement come in any order
- *  (`src/clause-order.ts`).
+ *  (`src/clause-order.ts`). Each re-printed statement (a fix, the hinge-flipped text) is charged
+ *  to the step meter by its source length, once per parse node.
  */
 
 import type { DoorNode, Point } from "../ast.js";
@@ -37,6 +38,7 @@ import {
 } from "../datum.js";
 import { idAfterKind, missingClause, parseIdWithSpan, readClauses } from "../clause-order.js";
 import { noteSnap } from "../ir/silent-accepts.js";
+import { chargeSteps } from "../expr.js";
 
 /**
  * The words `set door(…)` reads, by key: the only `set` defaults a door applies. The parser holds
@@ -280,6 +282,33 @@ function leafSlab(s: DoorSwing, t: number): Point[] {
 /** Clamp `v` into `[0,1]`. */
 const clamp01 = (v: number): number => Math.min(Math.max(v, 0), 1);
 
+/**
+ * Every door fix (and the hinge-flipped text `W_SWING_OBSTRUCTED` reads) re-prints the whole
+ * statement, as long as its source, so each is built once per parse node and key per storey's
+ * {@link ResolveCtx} (a looped door shares its node, so a loop does not multiply it) and charged
+ * to the step meter by the statement's source length before it is built. Keyed on the ctx, so the
+ * charge never depends on an earlier compile. The key carries every input the text varies by.
+ */
+const DOOR_REPRINTS = new WeakMap<ResolveCtx, Map<DoorNode, Map<string, unknown>>>();
+
+function doorReprint<T>(ctx: ResolveCtx, n: DoorNode, key: string, build: () => T): T {
+  let byNode = DOOR_REPRINTS.get(ctx);
+  if (!byNode) {
+    byNode = new Map();
+    DOOR_REPRINTS.set(ctx, byNode);
+  }
+  let byKey = byNode.get(n);
+  if (!byKey) {
+    byKey = new Map();
+    byNode.set(n, byKey);
+  }
+  if (byKey.has(key)) return byKey.get(key) as T;
+  chargeSteps(1 + (n.span ? n.span.end - n.span.start : 0));
+  const built = build();
+  byKey.set(key, built);
+  return built;
+}
+
 export const door: ElementDef = {
   kind: "door",
   keyword: "door",
@@ -466,7 +495,7 @@ export const door: ElementDef = {
         message: `Door "${id}" must have a positive width`,
         code: "E_DOOR_WIDTH",
         span: n.span,
-        ...fixesFrom(openingWidthFix("door", n)),
+        ...fixesFrom(doorReprint(ctx, n, "width", () => openingWidthFix("door", n))),
       });
     }
     // Position + host: either walk the attached wall, or the classic point + nearest
@@ -490,7 +519,7 @@ export const door: ElementDef = {
           code: "W_DOOR_OFF_WALL",
           span: n.span,
           relatedSpans: note ? [note] : undefined,
-          ...fixesFrom(offWallFix("door", n, at, ctx.walls)),
+          ...fixesFrom(doorReprint(ctx, n, `off:${at.x},${at.y}`, () => offWallFix("door", n, at, ctx.walls))),
         });
       }
     }
@@ -521,7 +550,7 @@ export const door: ElementDef = {
             ? `Or make it one of the kinds that takes it: ${alternatives.map((k) => `\`${k}\``).join(", ")}.`
             : `No door kind takes \`${clause}\`.`,
         ],
-        ...fixesFrom(doorKindClauseFix(n, clause)),
+        ...fixesFrom(doorReprint(ctx, n, `clause:${clause}`, () => doorKindClauseFix(n, clause))),
       });
     }
     // The sliding family is drawn as a straight panel on a straight track, and a
@@ -555,7 +584,7 @@ export const door: ElementDef = {
         code: "E_DOOR_OPEN_RANGE",
         span: n.span,
         hints: [`Use a fraction in [0,1] — \`open ${clamped}\` is the nearest legal value.`],
-        ...fixesFrom(doorOpenRangeFix(n, clamped)),
+        ...fixesFrom(doorReprint(ctx, n, `open:${clamped}`, () => doorOpenRangeFix(n, clamped))),
       });
     }
     // The drawn fraction after the diagnostic above: an out-of-range value still has to
@@ -595,8 +624,11 @@ export const door: ElementDef = {
     // Pre-emit the hinge-flipped statement for `W_SWING_OBSTRUCTED`'s fix: lint sees
     // only the IR, and re-emitting here keeps the authored placement/width expressions
     // (rather than baking in resolved numbers). Internal field — no Scene, no bytes.
+    const flipHinge = hinge === "left" ? "right" : "left";
     const flipText =
-      n.span && named !== "double" ? emitOpening("door", n, { hinge: hinge === "left" ? "right" : "left" }) : undefined;
+      n.span && named !== "double"
+        ? doorReprint(ctx, n, `flip:${flipHinge}`, () => emitOpening("door", n, { hinge: flipHinge }))
+        : undefined;
     // The vertical datum. A door's sill is the floor by definition, so only the
     // head is authorable and the `sill: 0` below is the fact, not a default.
     const { head } = resolveOpeningHeights(ctx, `Door "${id}"`, n, { sill: 0, head: DOOR_HEAD }, host, n.span);

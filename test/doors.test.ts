@@ -249,6 +249,19 @@ suite("doors — E_DOOR_KIND_CLAUSE refuses in both directions", () => {
     expect(out.output).toContain("door id=d pocket on mid at 50% width 900 slide right");
     expect(compile(out.output, { noCache: true }).errors).toEqual([]);
   });
+
+  // The fix re-prints the whole statement, so a looped door builds it once for its shared parse
+  // node (charged to the step meter), not once per iteration (RR.1, #848 review round 2).
+  it("a looped door shares one fix object across its iterations", () => {
+    const loop = "  for i in 0..3 { door pocket on mid at (20 + i * 25)% width 900 hinge left }";
+    const ds = compile(plan("door id=only on mid at 10% width 900", loop), { noCache: true }).diagnostics.filter(
+      (d) => d.code === "E_DOOR_KIND_CLAUSE",
+    );
+    expect(ds).toHaveLength(3);
+    expect(ds[0]!.fixes).toBeDefined();
+    expect(ds[1]!.fixes).toBe(ds[0]!.fixes);
+    expect(ds[2]!.fixes).toBe(ds[0]!.fixes);
+  });
 });
 
 suite("doors — a non-hinged kind on a curved host is refused, not approximated", () => {
