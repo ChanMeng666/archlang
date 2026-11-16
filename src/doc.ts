@@ -141,9 +141,13 @@ export function printDoc(doc: Doc, width = 80, tab = "  "): string {
   // Strip any trailing whitespace a break-then-indent may have left on a line. Only LF ends a
   // line here: a multiline `$` also matches before CR, U+2028 and U+2029, which a string
   // literal or comment may hold raw, and would eat a space the author wrote before one.
-  return out
-    .join("")
-    .split("\n")
-    .map((line) => line.replace(/[ \t]+$/, ""))
-    .join("\n");
+  return out.join("").split("\n").map(trimBlanksEnd).join("\n");
+}
+
+/** `line` without its trailing spaces and tabs. A right-to-left scan: the regex `/[ \t]+$/` is
+ *  quadratic in a blank run that does not end the line, and the playground runs this on user text. */
+function trimBlanksEnd(line: string): string {
+  let end = line.length;
+  while (end > 0 && (line.charCodeAt(end - 1) === 32 || line.charCodeAt(end - 1) === 9)) end--;
+  return end === line.length ? line : line.slice(0, end);
 }

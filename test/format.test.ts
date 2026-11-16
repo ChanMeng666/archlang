@@ -155,6 +155,37 @@ describe("every string literal `fmt` quotes reads back as the same text (M.21)",
       const src = `plan "P" {\n  units mm\n  # ${v}\n  room id=r at (0,0) size 3000x3000\n}\n`;
       expect(format(src)).toContain(`# ${v}\n`);
     });
+    it(`${name}: a room label, a dim text and a list string keep the blank before the break`, () => {
+      const q = `"${lit(v)}"`;
+      const src =
+        `plan "P" {\n  units mm\n  let xs = [${q}, "b"]\n  room id=r at (0,0) size 3000x3000 label ${q}\n` +
+        `  dim (0,0)->(3000,0) offset 600 text ${q}\n}\n`;
+      const once = format(src);
+      expect(once).toContain(`let xs = [${q}, "b"]`);
+      expect(once).toContain(`label ${q}`);
+      expect(once).toContain(`text ${q}`);
+      expect(format(once)).toBe(once);
+    });
+  }
+  // A blank run that does not end its line must not cost quadratic time to strip (RR.17).
+  it("a long blank run inside a string is kept and stripped in linear time", () => {
+    const blanks = " ".repeat(100_000);
+    const src = `plan "P" {\n  units mm\n  notes "A${blanks}B"\n  room id=r at (0,0) size 3000x3000\n}\n`;
+    const t0 = performance.now();
+    const once = format(src);
+    expect(performance.now() - t0).toBeLessThan(3000);
+    expect(once).toContain(`"A${blanks}B"`);
+  });
+  for (const tail of ["\r\r\n", "\r\r\r\n", "\r\r"]) {
+    it(`a comment ending ${JSON.stringify(tail)} is a fixed point`, () => {
+      const room = `  room id=r at (0,0) size 3000x3000\n`;
+      const src = tail.endsWith("\n")
+        ? `plan "P" {\n  units mm\n  # note${tail}${room}}\n`
+        : `plan "P" {\n  units mm\n${room}}\n# note${tail}`;
+      const once = format(src);
+      expect(once).toContain("# note\n");
+      expect(format(once)).toBe(once);
+    });
   }
 });
 
