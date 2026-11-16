@@ -1,7 +1,7 @@
 /**
  * What `check:quick` (`scripts/check-quick.mjs`) selects, as pure functions of the changed paths and
  * the tracked files: the directory-scanning guards, the source-tree scanners, the tests named after a
- * changed module and the corpus pins, and `planTests`, which orders them under their caps. Zero
+ * changed module, the text guards and the corpus pins, and `planTests`, which orders them under their caps. Zero
  * dependencies; it reads only the files it is handed. `test/gate-select.test.ts` pins it.
  */
 import { existsSync, readFileSync } from "node:fs";
@@ -215,6 +215,59 @@ export function namedTests(changed, files, durations = {}, maxFiles = NAMED_MAX_
   return capByCost(found, maxFiles, maxSecs);
 }
 
+// ---- the text guards --------------------------------------------------------------------------
+/**
+ * Three guards that read catalogue, docs and test TEXT by a path the import graph never follows, so the
+ * nearest-tests cut misses them and CI fails on them instead (#848).
+ */
+export const TEXT_GUARDS = [
+  "test/opaque-literal-guard.test.ts",
+  "test/docs-flags.test.ts",
+  "test/lint-fix-texts.test.ts",
+];
+
+/** Every path a `.gitleaksignore` fingerprint (`<commit>:<path>:<ruleID>:<line>`) names. */
+export function gitleaksExcluded(ROOT) {
+  let text = "";
+  try {
+    text = readFileSync(join(ROOT, ".gitleaksignore"), "utf8");
+  } catch {
+    return new Set();
+  }
+  return new Set(
+    text
+      .split("\n")
+      .map((l) => l.trim())
+      .filter((l) => l && !l.startsWith("#"))
+      .map((l) => (l.split(":")[1] ?? "").replace(/\\/g, "/"))
+      .filter(Boolean),
+  );
+}
+
+/** Why a changed path wakes the text guards, or `undefined`. */
+export function wakesTextGuards(f, excluded) {
+  if (f === "src/error-catalog.ts" || f === "src/error-catalog-fixes.ts" || f.startsWith("src/error-catalog/"))
+    return "the error catalogue";
+  if (/^docs\/.+\.md$/.test(f)) return "a docs page";
+  if (f === "CHANGELOG.md") return "the CHANGELOG";
+  if (TEST_DIRS.test(f) && excluded.has(f)) return "a gitleaks-excluded test file";
+  return undefined;
+}
+
+/**
+ * The text guards a change set wakes: a change to the error catalogue, a `docs/**\/*.md` page, the CHANGELOG
+ * or a test-tree file a `.gitleaksignore` fingerprint names. All three, or none. Each is `{ file, why }`.
+ */
+export function textGuards(ROOT, changed, files) {
+  const excluded = gitleaksExcluded(ROOT);
+  const cause = changed.map((f) => [f, wakesTextGuards(f, excluded)]).find(([, why]) => why);
+  if (!cause) return [];
+  return TEXT_GUARDS.filter((t) => files.includes(t)).map((file) => ({
+    file,
+    why: `${cause[1]} changed (${cause[0]})`,
+  }));
+}
+
 // ---- corpus pins ------------------------------------------------------------------------------
 /** The recorded seconds assumed for a test file the duration record does not list yet. */
 export const UNKNOWN_SECS = 3;
@@ -259,7 +312,8 @@ export function readDurations(ROOT) {
  *     directory-scanning guards an `examples/` or `docs/**\/*.md` change wakes, then the nearest tests;
  *   - beyond `max`, each under its own cap: the source-tree scanners (`TREE_MAX_FILES` files and
  *     `TREE_MAX_SECS` seconds), the tests named after a changed module (`NAMED_MAX_FILES`, `NAMED_MAX_SECS`),
- *     and, for a change under `src/`, the corpus pins (`pinSecs` seconds).
+ *     the three text guards (`TEXT_GUARDS`, uncapped) and, for a change under `src/`, the corpus pins
+ *     (`pinSecs` seconds).
  * Returns `{ own, woken, guards, guardPick, extras, picked, total }`; each extra is `{ file, why, rule }`.
  */
 export function planTests({ ROOT, changed, files, related, max = 20, pinSecs = PIN_SECS }) {
@@ -289,6 +343,7 @@ export function planTests({ ROOT, changed, files, related, max = 20, pinSecs = P
   };
   addExtras("treeGuards", treeGuards(ROOT, changed, files));
   addExtras("namedTests", namedTests(changed, files, durations));
+  addExtras("textGuards", textGuards(ROOT, changed, files));
   if (changed.some((f) => f.startsWith("src/") && CODE.test(f))) {
     addExtras("corpusPins", corpusPins(scanningGuards(ROOT, ["examples"], files), related, pinSecs, durations));
   }

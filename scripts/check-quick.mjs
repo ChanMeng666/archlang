@@ -23,7 +23,8 @@
  *      kinds of test the import graph ranks too far away, each under its own cap: the source-tree
  *      scanners a changed `src/`, `scripts/`, `eval/`, `test/` or `.claude/` file wakes (`treeGuards`;
  *      within 15 recorded seconds and 30 files at most), the tests named after a changed module (`namedTests`; at
- *      most 5 files and 10 recorded seconds) and, for a change under `src/`, the cheapest reachable tests
+ *      most 5 files and 10 recorded seconds), the three text guards a change to the error catalogue, a docs
+ *      page, the CHANGELOG or a gitleaks-excluded test wakes (`textGuards`; CI failed on them in #848) and, for a change under `src/`, the cheapest reachable tests
  *      that pin their output over the examples corpus (`corpusPins`; within `--pins` recorded seconds).
  *      All of it is in `scripts/gate-select.mjs`.
  *
@@ -138,6 +139,7 @@ const guardNotes = [];
 const EXTRA_LABELS = {
   treeGuards: "source-tree scanners",
   namedTests: "tests named after a changed module",
+  textGuards: "text guards a catalogue, docs, CHANGELOG or gitleaks-excluded test change wakes",
   corpusPins: `corpus pins reachable from src/ (within ${PIN_SECS}s of recorded time)`,
 };
 if (!flag("--no-tests")) {

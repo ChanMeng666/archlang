@@ -12,13 +12,16 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import {
   corpusPins,
   driftWanted,
+  gitleaksExcluded,
   listedTrees,
   medianSecs,
   namedTests,
   planTests,
   scannedTrees,
   scanningGuards,
+  TEXT_GUARDS,
   treeGuards,
+  wakesTextGuards,
   // @ts-expect-error — a zero-dep .mjs script with no type declarations.
 } from "../scripts/gate-select.mjs";
 
@@ -369,9 +372,46 @@ describe("planTests: what the gate runs for a change set", () => {
     expect(by("namedTests").length).toBeLessThanOrEqual(5);
   });
 
-  it("runs no extra for a docs or examples change", () => {
-    expect(plan(["docs/agents/commands.md"], []).extras).toEqual([]);
+  it("runs no extra for an examples change, and only the text guards for a docs change", () => {
+    expect(plan(["docs/agents/commands.md"], []).extras.map((e) => e.rule)).toEqual([
+      "textGuards",
+      "textGuards",
+      "textGuards",
+    ]);
     expect(plan(["examples/studio.arch"], []).extras).toEqual([]);
+  });
+
+  it("selects the three text guards CI failed on (#848) for a catalogue, docs, CHANGELOG or gitleaks-excluded test change", () => {
+    const guards = (changed: string[]) =>
+      plan(changed, [])
+        .extras.filter((e) => e.rule === "textGuards")
+        .map((e) => e.file)
+        .sort();
+    const all = [...TEXT_GUARDS].sort();
+    expect(all).toEqual([
+      "test/docs-flags.test.ts",
+      "test/lint-fix-texts.test.ts",
+      "test/opaque-literal-guard.test.ts",
+    ]);
+    for (const f of all) expect(tracked()).toContain(f);
+    expect(guards(["src/error-catalog/layout.ts"])).toEqual(all);
+    expect(guards(["src/error-catalog.ts"])).toEqual(all);
+    expect(guards(["docs/language-reference.md"])).toEqual(all);
+    expect(guards(["CHANGELOG.md"])).toEqual(all);
+    // A test file a `.gitleaksignore` fingerprint names (read from the real file, not retyped).
+    const excluded = [...gitleaksExcluded(ROOT)].filter((f) => f.startsWith("test/") && f.endsWith(".test.ts"));
+    expect(excluded.length).toBeGreaterThan(0);
+    expect(guards([excluded[0]])).toEqual(all);
+  });
+
+  it("leaves the text guards out for a change that touches none of their inputs", () => {
+    const guards = (changed: string[]) => plan(changed, []).extras.filter((e) => e.rule === "textGuards");
+    expect(guards(["src/lint/rules/room-contents.ts"])).toEqual([]);
+    expect(guards(["examples/studio.arch"])).toEqual([]);
+    expect(guards(["test/cache.test.ts"])).toEqual([]);
+    expect(guards(["docs-site/index.md"])).toEqual([]);
+    expect(wakesTextGuards("test/cache.test.ts", new Set(["test/other.test.ts"]))).toBeUndefined();
+    expect(wakesTextGuards("test/x.test.ts", new Set(["test/x.test.ts"]))).toBe("a gitleaks-excluded test file");
   });
 
   it("an extra the capped list already holds is listed once", () => {
