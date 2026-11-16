@@ -5,7 +5,7 @@
 Where the tests of a `src` module are, and what each test file is for. Generated; `npm run check:drift`
 fails when it is stale. How to add a test: `docs/testing.md` § 4.
 
-537 test files in `test/`, 286 `src` modules, 107 modules no test imports.
+538 test files in `test/`, 286 `src` modules, 107 modules no test imports.
 
 ## `src` module → tests that import it
 
@@ -375,6 +375,7 @@ The first sentence of each file's header comment.
 - `test/fast-check-policy.test.ts` — The fast-check run policy (docs/testing.md § 3, "Property tests without a seed").
 - `test/fault-injection.test.ts` — fault-injection gate — the L1 deterministic pipeline heals seeded defects; fault-injection gate — a clean plan is untouched.
 - `test/fence.test.ts` — The `fence` element.
+- `test/file-url-paths.test.ts` — No tracked script derives a filesystem path from a file URL by hand.
 - `test/finish-corpus-laws.test.ts` — finish — the corpus is not empty; finish law 1 — fixpoint; finish law 3 — an already-sheeted plan is a byte no-op; finish law 5 — a sheet finish wrote holds the drawing.
 - `test/finish-furnish-bounds.test.ts` — furnish laws — bounded, generated rows of rooms, the table and the docs, the profiles, relational rooms, wall runs, smaller placement rules, wet rooms (PS2.45).
 - `test/finish-furnish-laws.test.ts` — furnish laws — never worse, pure insertion, scope, named (issue #370), several uses, the default run furnishes first.
