@@ -2028,7 +2028,7 @@ Done: the owner said "同意上传卡片，请你自动帮我实施" (2026-11-16
 `2ed46aad…9cc4`) was uploaded as `README.md`, HF commit `90914659`, and the downloaded file's SHA-256
 equals main's.
 
-### AG.1 · `check:quick` misses the text guards an executor most often trips — `todo`
+### AG.1 · `check:quick` misses the text guards an executor most often trips: done by #867, waiting to be archived — `note`
 
 In the P5 run, executors reported a green local gate on PRs that CI then failed on
 `test/opaque-literal-guard.test.ts`, `test/docs-flags.test.ts` and `test/lint-fix-texts.test.ts`
