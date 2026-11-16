@@ -405,7 +405,7 @@ Totals: 402 modules in 34 directories.
 | `defs.ts` | 61 | 7 | The built-in element definitions, as a flat array in canonical order. | none |
 | `dim.ts` | 507 | 3 | `dim [faces\|clear] (x,y)->(x,y) [offset N] [text "…"]` — dimension line with ticks + length, or `dim radius <wallId> [segment <n>]` / `dim diameter <roomId>` — a GB/T curve call-out whose geometry and text are DERIVED from the referenced… | none |
 | `door-panels.ts` | 319 | 2 | How each NON-HINGED door kind is drawn in its reveal. | none |
-| `door.ts` | 786 | 2 | `door [id=] [<kind>] at (x,y) width N [wall ref] [hinge <side>] [swing <dir>] [slide <dir>] [open <0..1>] [head <mm>]` — opening + leaf + swing arc, or (for a non-hinged kind) opening + panels/track/cavity. The clauses after the placement… | charges the step meter |
+| `door.ts` | 819 | 2 | `door [id=] [<kind>] at (x,y) width N [wall ref] [hinge <side>] [swing <dir>] [slide <dir>] [open <0..1>] [head <mm>]` — opening + leaf + swing arc, or (for a non-hinged kind) opening + panels/track/cavity. The clauses after the placement… | charges the step meter |
 | `elevator.ts` | 76 | 1 | `elevator [id=] at (x,y) size WxH` — a lift shaft, drawn as the car rectangle with the conventional crossed diagonals. | none |
 | `escalator.ts` | 85 | 1 | `escalator [id=] at (x,y) size WxH dir up\|down` — a moving stair, drawn as parallel chevrons along the run plus the UP/DN direction arrow. | none |
 | `facets.ts` | 87 | 10 | Which hand-written kind sets each built-in element kind belongs to, one row per kind. | none |

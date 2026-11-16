@@ -262,6 +262,46 @@ suite("doors — E_DOOR_KIND_CLAUSE refuses in both directions", () => {
     expect(ds[1]!.fixes).toBe(ds[0]!.fixes);
     expect(ds[2]!.fixes).toBe(ds[0]!.fixes);
   });
+
+  // The charge is real: each off-wall door at its own point re-prints a statement as long as its
+  // source, so a loop of them with a long dead branch runs out of steps (it did not before RR.1).
+  it("charges each re-printed off-wall fix to the step meter", () => {
+    const dead = `max(${Array(12000).fill("1").join(",")})`;
+    const src = [
+      'plan "P" {',
+      "  units mm",
+      "  wall exterior thickness 200 { (0,0) (12000,0) (12000,6000) (0,6000) close }",
+      `  for i in 0..300 { door at (if i < 0 { ${dead} } else { 3000 + i }, 3000) width 900 }`,
+      "}",
+    ].join("\n");
+    expect(compile(src, { noCache: true }).diagnostics.map((d) => d.code)).toContain("E_STEP_LIMIT");
+  });
+
+  // A component body's door node is shared by every place, but the off-wall fix reads that
+  // place's walls (`ctx.walls` is reassigned per group), so each place gets its own fix.
+  it("a component placed twice gets each place's own off-wall fix", () => {
+    const mk = (body: string, places: string): string =>
+      `plan "t" {\n  units mm\n  component c(w) {\n${body}\n  }\n${places}\n}`;
+    const fixes = (src: string): [string | undefined, string | undefined][] =>
+      compile(src, { noCache: true })
+        .diagnostics.filter((d) => d.code === "W_DOOR_OFF_WALL")
+        .map((d) => [d.fixes?.[0]?.applicability, d.fixes?.[0]?.title]);
+    const one = "    wall id=a partition thickness 100 { (0,0) (w,0) }\n    door id=d at (500,400) width 900";
+    expect(fixes(mk(one, "  place c(1000) as p at (0,0)\n  place c(4000) as q at (0,5000)"))).toEqual([
+      ["machine-applicable", 'attach the door to wall "a" at 50%'],
+      ["machine-applicable", 'attach the door to wall "a" at 12.5%'],
+    ]);
+    // In the second place two walls tie for nearest: its fix stays maybe-incorrect.
+    const tie = [
+      "    wall id=a partition thickness 100 { (0,0) (w,0) }",
+      "    wall id=b partition thickness 100 { (w,0) (w,800) }",
+      "    door id=d at (600,400) width 900",
+    ].join("\n");
+    expect(fixes(mk(tie, "  place c(4000) as p at (0,0)\n  place c(1000) as q at (0,5000)"))).toEqual([
+      ["machine-applicable", 'attach the door to wall "a" at 15%'],
+      ["maybe-incorrect", 'attach the door to wall "a" at 60%'],
+    ]);
+  });
 });
 
 suite("doors — a non-hinged kind on a curved host is refused, not approximated", () => {

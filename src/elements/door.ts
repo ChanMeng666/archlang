@@ -2,8 +2,10 @@
  * `door [id=] [<kind>] at (x,y) width N [wall ref] [hinge <side>] [swing <dir>]
  *  [slide <dir>] [open <0..1>] [head <mm>]` — opening + leaf + swing arc, or (for a non-hinged
  *  kind) opening + panels/track/cavity. The clauses after the placement come in any order
- *  (`src/clause-order.ts`). Each re-printed statement (a fix, the hinge-flipped text) is charged
- *  to the step meter by its source length, once per parse node.
+ *  (`src/clause-order.ts`). A re-printed statement (a fix, the hinge-flipped text) is built once
+ *  per parse node and key per {@link ResolveCtx} (per wall set for the off-wall fix). A fix is
+ *  charged to the step meter by its source length only where its diagnostic fires, a node's first
+ *  build of each fix free; the hinge-flipped text is never charged.
  */
 
 import type { DoorNode, Point } from "../ast.js";
@@ -284,18 +286,34 @@ const clamp01 = (v: number): number => Math.min(Math.max(v, 0), 1);
 
 /**
  * Every door fix (and the hinge-flipped text `W_SWING_OBSTRUCTED` reads) re-prints the whole
- * statement, as long as its source, so each is built once per parse node and key per storey's
- * {@link ResolveCtx} (a looped door shares its node, so a loop does not multiply it) and charged
- * to the step meter by the statement's source length before it is built. Keyed on the ctx, so the
- * charge never depends on an earlier compile. The key carries every input the text varies by.
+ * statement, as long as its source, so each is built once per parse node and key per memo scope.
+ * The scope is the storey's {@link ResolveCtx}, or for the off-wall fix the wall set it reads
+ * (`ctx.walls`, reassigned per group on the same ctx), so a component placed twice never shares a
+ * fix built against the other place's walls. Every scope is per compile, so a charge never depends
+ * on an earlier compile; the key carries every other input the text varies by.
+ *
+ * The step charge is the statement's source length, taken only at the site where a fix's
+ * diagnostic fires, before the build. A node's first build of each fix `kind` per ctx is free: it
+ * is no longer than the source its parse already paid for, so a plan whose doors each print a
+ * fix once costs exactly what it did. Every further build (a looped door, whose shared node yields
+ * a new key per iteration; a component's second place) is charged. The flip text is built for
+ * every hinged door and is never charged (`kind` undefined).
  */
-const DOOR_REPRINTS = new WeakMap<ResolveCtx, Map<DoorNode, Map<string, unknown>>>();
+const DOOR_REPRINTS = new WeakMap<object, Map<DoorNode, Map<string, unknown>>>();
+const FREE_BUILDS = new WeakMap<ResolveCtx, Map<DoorNode, Set<string>>>();
 
-function doorReprint<T>(ctx: ResolveCtx, n: DoorNode, key: string, build: () => T): T {
-  let byNode = DOOR_REPRINTS.get(ctx);
+function doorReprint<T>(
+  ctx: ResolveCtx,
+  n: DoorNode,
+  kind: string | undefined,
+  key: string,
+  build: () => T,
+  scope: object = ctx,
+): T {
+  let byNode = DOOR_REPRINTS.get(scope);
   if (!byNode) {
     byNode = new Map();
-    DOOR_REPRINTS.set(ctx, byNode);
+    DOOR_REPRINTS.set(scope, byNode);
   }
   let byKey = byNode.get(n);
   if (!byKey) {
@@ -303,7 +321,20 @@ function doorReprint<T>(ctx: ResolveCtx, n: DoorNode, key: string, build: () => 
     byNode.set(n, byKey);
   }
   if (byKey.has(key)) return byKey.get(key) as T;
-  chargeSteps(1 + (n.span ? n.span.end - n.span.start : 0));
+  if (kind !== undefined) {
+    let free = FREE_BUILDS.get(ctx);
+    if (!free) {
+      free = new Map();
+      FREE_BUILDS.set(ctx, free);
+    }
+    let kinds = free.get(n);
+    if (!kinds) {
+      kinds = new Set();
+      free.set(n, kinds);
+    }
+    if (kinds.has(kind)) chargeSteps(1 + (n.span ? n.span.end - n.span.start : 0));
+    else kinds.add(kind);
+  }
   const built = build();
   byKey.set(key, built);
   return built;
@@ -495,7 +526,7 @@ export const door: ElementDef = {
         message: `Door "${id}" must have a positive width`,
         code: "E_DOOR_WIDTH",
         span: n.span,
-        ...fixesFrom(doorReprint(ctx, n, "width", () => openingWidthFix("door", n))),
+        ...fixesFrom(doorReprint(ctx, n, "width", "width", () => openingWidthFix("door", n))),
       });
     }
     // Position + host: either walk the attached wall, or the classic point + nearest
@@ -519,7 +550,9 @@ export const door: ElementDef = {
           code: "W_DOOR_OFF_WALL",
           span: n.span,
           relatedSpans: note ? [note] : undefined,
-          ...fixesFrom(doorReprint(ctx, n, `off:${at.x},${at.y}`, () => offWallFix("door", n, at, ctx.walls))),
+          ...fixesFrom(
+            doorReprint(ctx, n, "off", `${at.x},${at.y}`, () => offWallFix("door", n, at, ctx.walls), ctx.walls),
+          ),
         });
       }
     }
@@ -550,7 +583,7 @@ export const door: ElementDef = {
             ? `Or make it one of the kinds that takes it: ${alternatives.map((k) => `\`${k}\``).join(", ")}.`
             : `No door kind takes \`${clause}\`.`,
         ],
-        ...fixesFrom(doorReprint(ctx, n, `clause:${clause}`, () => doorKindClauseFix(n, clause))),
+        ...fixesFrom(doorReprint(ctx, n, "clause", `clause:${clause}`, () => doorKindClauseFix(n, clause))),
       });
     }
     // The sliding family is drawn as a straight panel on a straight track, and a
@@ -584,7 +617,7 @@ export const door: ElementDef = {
         code: "E_DOOR_OPEN_RANGE",
         span: n.span,
         hints: [`Use a fraction in [0,1] — \`open ${clamped}\` is the nearest legal value.`],
-        ...fixesFrom(doorReprint(ctx, n, `open:${clamped}`, () => doorOpenRangeFix(n, clamped))),
+        ...fixesFrom(doorReprint(ctx, n, "open", `open:${clamped}`, () => doorOpenRangeFix(n, clamped))),
       });
     }
     // The drawn fraction after the diagnostic above: an out-of-range value still has to
@@ -627,7 +660,7 @@ export const door: ElementDef = {
     const flipHinge = hinge === "left" ? "right" : "left";
     const flipText =
       n.span && named !== "double"
-        ? doorReprint(ctx, n, `flip:${flipHinge}`, () => emitOpening("door", n, { hinge: flipHinge }))
+        ? doorReprint(ctx, n, undefined, `flip:${flipHinge}`, () => emitOpening("door", n, { hinge: flipHinge }))
         : undefined;
     // The vertical datum. A door's sill is the floor by definition, so only the
     // head is authorable and the `sill: 0` below is the fact, not a default.
