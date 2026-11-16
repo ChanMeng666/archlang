@@ -1895,22 +1895,19 @@ same `noteDefaultSize` (`src/elements/furniture.ts`), and re-measure each moved 
 **Gate:** the example law of `test/footprint-any-placement.test.ts` and every other pinned row
 re-measured with the moved fields named; a `grid` row for `against` in that test's `FORMS`.
 
-**Ruled 2026-11-17 (RM-D56, product-roadmap README § 6.25): do it.** Each moved row is re-measured only
-after proof that the new `W_GRID_SNAPPED` is its only change (removing the added diagnostics from the
-new payload reproduces the old digest; SVG and `describe()` unchanged), with the reason in the
-baseline header (`docs/testing.md` § Re-measuring a byte-identity digest). A row that would gain
-`E_FURN_SIZE` is not re-pinned: stop and report it.
-
-### EB.1 · The embed-path size check is a Playwright-only number — `todo`
-
-The playground's embed path is a hard gzip ceiling (`embedPathBudget`,
-`playground/e2e/startup-chunks.baseline.json`; RM-D57 keeps it at 351,000 B), measured only by
-`playground/e2e/preview3d.spec.ts` in CI. P7's executors each rebuilt a scratch script to replicate
-that walk from `embed.html` with `gzipSync` before pushing a compiler change (#881 was 21 B over,
-#890 about 120 B over). One way: a repo script that builds the playground as CI does and prints the
-embed path's per-chunk and total gzip bytes against the budget, which the spec and the script share.
-**Gate:** the script's total equals the spec's on the same build; `docs/agents/commands.md` names it;
-compiler-path PR briefs say to run it.
+**Ruled 2026-11-17 (RM-D56, product-roadmap README § 6.25): do it, under four conditions.** (1) Re-measure
+a moved row only after proof: its SVG and `lint()` are unchanged, and `describe().diagnostics` and
+`compile().diagnostics` differ only by the added `W_GRID_SNAPPED` entries; removing exactly those from
+both, with that suite's own digest body, reproduces the old digest. Reasons go in each baseline header,
+including the "never a re-pin" note in `test/footprint-any-placement.test.ts`, whose BASELINE holds only
+7 of the ~31 rows (the rest sit in other suites). (2) Under `against`, a side snapped to 0 raises
+`W_GRID_SNAPPED` naming that side, not `E_FURN_SIZE`, so a plan that compiles today still compiles; the
+reference states the difference from `at`/`in`. (3) The 7 affected examples (`garden-house`,
+`hillside-villa`, `museum`, `remodel`, `two-bed`, `courtyard-family`, `showcase/garden-courtyard`) are
+rewritten with explicit on-grid sizes so they stay warning-free (the #704 ruling), drawing bytes
+unchanged. (4) `finish`'s furnish stage writes sizeless `against` pieces under a grid, which would now
+gain warnings and be refused by its never-worse gate: if any pinned `finish` output would move, stop and
+report, do not re-pin.
 
 ### CO.2 · Three documented limits of a defaulted footprint — `declared`
 
@@ -2198,6 +2195,17 @@ From #880's review (RR.10). `furnitureCategoryFix` (`src/fix-producers.ts`, thro
 `src/elements/furniture.ts`, which charges every build) and the dim swap (`src/elements/dim.ts`)
 re-print a whole statement without going through `src/elements/reprint.ts`. Card it as a defect only
 if a looped or component-placed case reproduces an uncharged reprint; otherwise close it as checked.
+
+### EB.1 · The embed-path size check is a Playwright-only number — `todo`
+
+The playground's embed path is a hard gzip ceiling (`embedPathBudget`,
+`playground/e2e/startup-chunks.baseline.json`; RM-D57 keeps it at 351,000 B), measured only by
+`playground/e2e/preview3d.spec.ts` in CI. P7's executors each rebuilt a scratch script to replicate
+that walk from `embed.html` with `gzipSync` before pushing a compiler change (#881 was 21 B over,
+#890 about 120 B over). One way: a repo script that builds the playground as CI does and prints the
+embed path's per-chunk and total gzip bytes against the budget, which the spec and the script share.
+**Gate:** the script's total equals the spec's on the same build; `docs/agents/commands.md` names it;
+compiler-path PR briefs say to run it.
 
 ## Test-programme findings (promo-credit programme, 2026-11-16)
 
