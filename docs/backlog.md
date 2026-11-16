@@ -219,7 +219,7 @@ than implying exposure. And a shim bump drags the pack-time resource law with it
 land in `packages/mcp/package.json` **and both** of `server.json`'s version fields, or the release
 workflow `npm view`-skips it and nothing reaches either registry.
 
-### 3.2 · One playground origin constant — `todo`
+### 3.2 · One playground origin constant: done by #841, waiting to be archived — `note`
 
 Re-export `PLAYGROUND_ORIGIN` (`src/cli/share-codec.mjs`) from `scripts/gen-permalink.mjs` and use it
 for the hard-coded copies at `docs-site/sync-docs.mjs:25` and `playground/scripts/gen-static.mjs:73`,
