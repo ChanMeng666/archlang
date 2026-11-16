@@ -203,8 +203,10 @@ npm run eval:l2 -- --yes …   # T3 harness — paid; ONE owner-ratified run onl
   calling any API**. `--max <n>` caps briefs; `--budget <n>tok|<n>usd` is a cumulative-usage circuit
   breaker (the unit suffix is required; a skipped brief is excluded from every denominator); `--l1`
   adds the deterministic overlay. Output goes to `eval/results.live.md` (git-ignored, ephemeral — the
-  numbers move with the model and the day) with a "Delta vs baseline" section when
-  `live-baseline.json` is present.
+  numbers move with the model and the day). It always ends with a "Delta vs baseline" section: the
+  delta against `live-baseline.json` when that file exists, else only the run's prompt hashes. A
+  baseline file that exists but is not valid JSON or has a malformed field stops the run (exit `3`)
+  before any call.
 
 **In practice, run the live eval from GitHub Actions** ("Eval (live)" `workflow_dispatch`,
 `.github/workflows/eval-live.yml`): `OPENAI_API_KEY` lives in Actions secrets, not on any dev
@@ -300,9 +302,11 @@ Three pinned versions stamp every result: `JUDGE_VERSION` (`assertions.ts`, curr
 **The iron rule: never compare rates across a judge (or synonyms) change.** A judge change
 re-defines what "pass"/"sound" *mean*, so a delta straddling one compares two different measurements.
 `renderDelta` prints a loud non-comparability warning when `base.judge !== JUDGE_VERSION`, and
-another when the baseline's `promptSha256` or `corpusSha256` (SHA-256 of the exact
-`systemPrompt()` string, i.e. `spec.llm.md` plus the reply-format line, and of `eval/corpus.json`,
-LF-normalised; `promptHashes()` in `run.ts`) differs from the run's. A baseline that records no
+another, naming the prompt, the corpus or both, when the baseline's `promptSha256` or
+`corpusSha256` differs from the run's. Those are SHA-256s of the `systemPrompt()` string the run
+sends (`spec.llm.md` plus the reply-format line) and of the `eval/corpus.json` text its briefs are
+parsed from, each with CRLF read as LF so a CRLF checkout hashes the same; the run reads and hashes
+both once, before its first call (`promptHashes()` in `run.ts`). A baseline that records no
 hash gets a milder "comparability unverified" note instead. A live run always prints its own two
 hashes, with or without a baseline, for the next baseline to record. The
 judge-v1 → v2 recalibration is the canonical example: intent 9% → 50%, **zero model change** — a
