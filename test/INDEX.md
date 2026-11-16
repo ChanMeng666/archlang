@@ -5,7 +5,7 @@
 Where the tests of a `src` module are, and what each test file is for. Generated; `npm run check:drift`
 fails when it is stale. How to add a test: `docs/testing.md` § 4.
 
-532 test files in `test/`, 285 `src` modules, 106 modules no test imports.
+533 test files in `test/`, 286 `src` modules, 107 modules no test imports.
 
 ## `src` module → tests that import it
 
@@ -119,7 +119,7 @@ Nearest first, then by name; `(+n)` is the rest. Test names are `test/<name>.tes
 - `src/impact.ts` (2) — `rectilinear-doors`, `rectilinear-rooms`
 - `src/import.ts` (31) — `block-stair-byte-identity`, `corner-window-byte-identity`, `dim-thickness-callout`, `drawing-budget`, `floor-materials-byte-identity`, `furniture-relations`, `gaps-byte-identity`, `keep` (+23)
 - `src/import/limits.ts` (1) — `openplan3d-malformed`
-- `src/index.ts` (397) — `acc-metadata`, `access-graph`, `access-policy`, `accessible-svg`, `agent-gallery`, `alias-match`, `anchors`, `annotate` (+389)
+- `src/index.ts` (398) — `acc-metadata`, `access-graph`, `access-policy`, `accessible-svg`, `agent-gallery`, `alias-match`, `anchors`, `annotate` (+390)
 - `src/input-limit.ts` (2) — `import-rooted`, `workspace-seams`
 - `src/intent-concepts.ts` (2) — `vocabulary-living-dining`, `vocabulary-matcher-oracle`
 - `src/intent.ts` (1) — `site`
@@ -723,6 +723,7 @@ The first sentence of each file's header comment.
 - `test/window-facing-probe.test.ts` — Cases: a courtyard window with no host room faces the courtyard, not the plan centre; a window on a re-entrant polygon room's courtyard wall faces the courtyard…
 - `test/window-kinds-byte-identity.test.ts` — Window kinds and the glazed sliding door (issue #369): the byte-identity law.
 - `test/window-kinds.test.ts` — Window kinds and the glazed sliding door (issue #369): what each form draws, states and refuses.
+- `test/window-opening-fix-charge.test.ts` — RR.10: a window's or opening's fix re-prints the whole statement, so it is memoised per parse node and charged to the step meter after a node's first build, as RR.1 (#855) did for doors (`src/elements/reprint.ts`; the...
 - `test/windows-furniture.test.ts` — window — placement & hosting; furniture — rect + label (the uncatalogued fallback).
 - `test/witness-lines.test.ts` — dims auto — witness lines terminate on the facade.
 - `test/work-counts.test.ts` — The work-count golden (engineering-health EH1.6): per plan, the evaluator's steps, the drawing budget's units and the resolved elements, the work counters of one `lint()` run (EH2.10) and of one drawing (EH2.14), as C...
@@ -768,6 +769,7 @@ module); adding a test that imports it removes it from this list.
 - `src/elements/escalator.ts`
 - `src/elements/fence.ts`
 - `src/elements/opening.ts`
+- `src/elements/reprint.ts`
 - `src/elements/stair.ts`
 - `src/elements/walls-from-rooms.ts`
 - `src/error-catalog/circulation.ts`
