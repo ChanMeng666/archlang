@@ -38,6 +38,17 @@ import { ptStr, stairHeadStr, stairPieceStr, statementText } from "./statement-p
 
 const PRINT_WIDTH = 80;
 
+/**
+ * `s` as an ArchLang string literal, written by the language's own escaper (`escapeStr`, as
+ * `finish` writes one). Never `JSON.stringify`: the lexer knows only the `\n`, `\"` and `\\`
+ * escapes and reads any other escaped character literally, so JSON's `\t`, `\r` and `\uXXXX`
+ * would read back as different text.
+ */
+const quote = (s: string): string => `"${escapeStr(s)}"`;
+
+/** A non-numeric theme/style value: a string (all the parser stores) through {@link quote}. */
+const quoteValue = (v: unknown): string => (typeof v === "string" ? quote(v) : JSON.stringify(v));
+
 /** Format ArchLang source. Returns the source unchanged if it does not parse. */
 export function format(source: string): string {
   const { plan, diagnostics } = parse(source);
@@ -96,7 +107,7 @@ function statementDoc(s: Statement, comments: Comment[], source: string): Doc {
       // multi-storey shape survives `fmt` untouched (dropping it would silently merge two
       // floors into one drawing).
       return concat([
-        `level ${numStr(s.level)}${s.name !== undefined ? ` ${JSON.stringify(s.name)}` : ""}` +
+        `level ${numStr(s.level)}${s.name !== undefined ? ` ${quote(s.name)}` : ""}` +
           `${s.height !== undefined ? ` height ${exprStr(s.height)}` : ""}` +
           `${s.slab !== undefined ? ` slab ${exprStr(s.slab)}` : ""}` +
           `${s.clear !== undefined ? ` clear ${exprStr(s.clear)}` : ""} `,
@@ -107,7 +118,7 @@ function statementDoc(s: Statement, comments: Comment[], source: string): Doc {
       // block: dropping the wrapper would silently erase the plan's declared grouping
       // (and, with `schedule rooms`, the table's group headings).
       return concat([
-        `zone ${s.id}${s.label !== undefined ? ` ${JSON.stringify(s.label)}` : ""} `,
+        `zone ${s.id}${s.label !== undefined ? ` ${quote(s.label)}` : ""} `,
         blockDoc(s.body, s.span!, comments, source),
       ]);
     case "error":
@@ -126,29 +137,22 @@ function statementDoc(s: Statement, comments: Comment[], source: string): Doc {
 
 function importDoc(imp: ImportNode): Doc {
   // Whole-file instantiation has no item list — the file IS the component.
-  if (imp.wholeAs !== undefined) return `import ${JSON.stringify(imp.spec)} as ${imp.wholeAs}`;
+  if (imp.wholeAs !== undefined) return `import ${quote(imp.spec)} as ${imp.wholeAs}`;
   const items = imp.star ? "*" : imp.items.map((it) => (it.alias ? `${it.name} as ${it.alias}` : it.name)).join(", ");
-  return `import ${JSON.stringify(imp.spec)}: ${items}`;
+  return `import ${quote(imp.spec)}: ${items}`;
 }
 
 function componentDoc(def: ComponentDef, comments: Comment[], source: string): Doc {
   return concat([`component ${def.name}(${def.params.join(", ")}) `, blockDoc(def.body, def.span!, comments, source)]);
 }
 
-/** The title fields `fmt` has always quoted with `JSON.stringify` (see {@link titleDoc}). */
-const LEGACY_JSON_QUOTED: ReadonlySet<string> = new Set(["project", "drawn_by", "date"]);
-
 function titleDoc(title: TitleNode): Doc {
   const fields: Doc[] = [];
-  // Every field of `TITLE_FIELDS`, in its order. `number`/`revision` are quoted by the
-  // language's own escaper, so `fmt` is a fixed point for any string. The three older fields
-  // keep the `JSON.stringify` quoting they always had — which is NOT a fixed point for a control
-  // character (the lexer reads `\t` back as `t`) — because changing it would move `fmt` output
-  // on existing inputs; that is its own change (`docs/backlog.md`).
+  // Every field of `TITLE_FIELDS`, in its order, each quoted by the language's own escaper.
   for (const word of TITLE_FIELDS) {
     const v = title[TITLE_FIELD_KEY[word]];
     if (v === undefined) continue;
-    fields.push(LEGACY_JSON_QUOTED.has(word) ? `${word} ${JSON.stringify(v)}` : `${word} "${escapeStr(v)}"`);
+    fields.push(`${word} ${quote(v)}`);
   }
   if (fields.length === 0) return "title { }";
   return concat(["title {", indent(concat([hardline, join(hardline, fields)])), hardline, "}"]);
@@ -185,13 +189,11 @@ function siteDoc(site: SiteNode): Doc {
 }
 
 function themeDoc(plan: PlanNode): Doc | undefined {
-  if (plan.themeFrom !== undefined) return `theme from ${JSON.stringify(plan.themeFrom)}`;
+  if (plan.themeFrom !== undefined) return `theme from ${quote(plan.themeFrom)}`;
   const entries = Object.entries(plan.theme ?? {});
   const base = plan.themeBase ? ` ${plan.themeBase}` : "";
   if (entries.length === 0) return base ? `theme${base}` : undefined;
-  const lines = entries.map(
-    ([k, v]) => `${k}: ${isNumericThemeKey(k as never) ? numStr(v as number) : JSON.stringify(v)}`,
-  );
+  const lines = entries.map(([k, v]) => `${k}: ${isNumericThemeKey(k as never) ? numStr(v as number) : quoteValue(v)}`);
   return concat([`theme${base} {`, indent(concat([hardline, join(hardline, lines)])), hardline, "}"]);
 }
 
@@ -208,7 +210,7 @@ function themeDoc(plan: PlanNode): Doc | undefined {
 function styleDoc(kind: string, st: Record<string, unknown>): Doc {
   const lines = Object.entries(st).map(([k, v]) => {
     const friendly = styleKeyFor(kind, k as keyof Theme) ?? k;
-    return `${friendly}: ${isNumericThemeKey(k as never) ? numStr(v as number) : JSON.stringify(v)}`;
+    return `${friendly}: ${isNumericThemeKey(k as never) ? numStr(v as number) : quoteValue(v)}`;
   });
   return concat([`style ${kind} {`, indent(concat([hardline, join(hardline, lines)])), hardline, "}"]);
 }
@@ -320,8 +322,8 @@ export function formatPlan(plan: PlanNode, source: string): string {
   // One `notes` line per note, in source order — repeated statements append, so this is a
   // fixed point whether the author wrote one statement or several.
   for (const n of plan.notes ?? []) settings.push(`notes "${escapeStr(n)}"`);
-  if (plan.accTitle !== undefined) settings.push(`accTitle ${JSON.stringify(plan.accTitle)}`);
-  if (plan.accDescr !== undefined) settings.push(`accDescr ${JSON.stringify(plan.accDescr)}`);
+  if (plan.accTitle !== undefined) settings.push(`accTitle ${quote(plan.accTitle)}`);
+  if (plan.accDescr !== undefined) settings.push(`accDescr ${quote(plan.accDescr)}`);
 
   // Theme + per-element styles (hoisted under the settings).
   const sections: Doc[] = [];
@@ -374,7 +376,7 @@ export function formatPlan(plan: PlanNode, source: string): string {
     head.push(c.text);
     head.push(hardline);
   }
-  head.push(`plan ${JSON.stringify(plan.name)} {`);
+  head.push(`plan ${quote(plan.name)} {`);
   head.push(indent(concat([hardline, join(hardline, bodyParts)])));
   head.push(hardline, "}", hardline);
   return printDoc(concat(head), PRINT_WIDTH);

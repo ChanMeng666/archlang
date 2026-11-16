@@ -60,6 +60,64 @@ describe("the newer sheet strings are a fixed point for ANY text (`number`, `rev
   }
 });
 
+describe("every string `fmt` prints reads back as the same text (M.21)", () => {
+  // `format()` once quoted the plan name, level names, zone labels, import specs, the older
+  // title fields, `accTitle`/`accDescr`, `theme from` and theme/style values with
+  // `JSON.stringify`, whose `\t`/`\r`/`\uXXXX` escapes the lexer reads back as other text.
+  const payloads: Record<string, string> = {
+    tab: "A\tB",
+    cr: "A\rB",
+    soh: "A\u0001B",
+    unitSep: "A\u001fB",
+    quoteBackslash: 'A"\\B',
+    braces: "A{1}B",
+  };
+  const lit = (s: string): string => s.replace(/\\/g, "\\\\").replace(/"/g, '\\"');
+  for (const [name, v] of Object.entries(payloads)) {
+    const q = `"${lit(v)}"`;
+    it(`${name}: plan name, level name, zone label, import spec, title, acc text`, () => {
+      const src =
+        `plan ${q} {\n  units mm\n  import ${q}: Unit\n  accTitle ${q}\n  accDescr ${q}\n` +
+        `  level 1 ${q} {\n    zone west ${q} {\n      room id=r at (0,0) size 3000x3000\n    }\n  }\n` +
+        `  title { project ${q} drawn_by ${q} date ${q} }\n}\n`;
+      const read = (s: string) => {
+        const { plan } = parse(s);
+        const level = plan!.body.find((st) => st.kind === "level") as { name?: string; body: { kind: string }[] };
+        const zone = level.body.find((st) => st.kind === "zone") as { label?: string };
+        return {
+          name: plan!.name,
+          level: level.name,
+          zone: zone.label,
+          imports: plan!.imports.map((i) => i.spec),
+          title: plan!.title,
+          accTitle: plan!.accTitle,
+          accDescr: plan!.accDescr,
+        };
+      };
+      const want = {
+        name: v,
+        level: v,
+        zone: v,
+        imports: [v],
+        title: { project: v, drawnBy: v, date: v },
+        accTitle: v,
+        accDescr: v,
+      };
+      expect(read(src)).toMatchObject(want);
+      const once = format(src);
+      expect(read(once)).toMatchObject(want);
+      expect(format(once)).toBe(once);
+    });
+    it(`${name}: \`theme from\` path`, () => {
+      const src = `plan "P" {\n  units mm\n  theme from ${q}\n  room id=r at (0,0) size 3000x3000\n}\n`;
+      expect(parse(src).plan!.themeFrom).toBe(v);
+      const once = format(src);
+      expect(parse(once).plan!.themeFrom).toBe(v);
+      expect(format(once)).toBe(once);
+    });
+  }
+});
+
 describe("T5.2 — formatter preserves comments", () => {
   for (const name of ALL) {
     it(`every comment in ${name} survives`, () => {
