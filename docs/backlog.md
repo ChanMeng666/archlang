@@ -2170,7 +2170,7 @@ for each.
 
 From #885's late review (RR.14). On a CRLF working copy the live run sends the system prompt with CRLF
 while `promptSha256` is LF-normalised, so two runs that sent different bytes record the same hash;
-`eval/README.md` documents it, but the comment in `eval/run.ts`'s `main()` says "those same strings
+`eval/README.md` documents only the hash's LF normalisation, and the comment in `eval/run.ts`'s `main()` says "those same strings
 are sent". Normalise once and send the normalised string, or reword the comment. Also, "exit 3 before
 any spend" is pinned only by a source-text order check (`test/eval-stats.test.ts`); a run of `main()`
 with a bad baseline would pin the exit code. **Gate:** offline tests only; no paid run.
