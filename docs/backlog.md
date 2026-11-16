@@ -1780,6 +1780,29 @@ fires on `materials`. `keep` and `import` still have no row because no `EXAMPLE_
 them, and the test's every-row-fires guard rejects a detector no page checks; add each with the
 first example page that uses it.
 
+### WS.5 · `style wall { fill }` and `{ hatch }` are accepted and draw nothing — `todo`
+
+The parser takes both keys with no diagnostic and stores `pocheBase` / `pocheHatch` in
+`plan.styles.wall`, but `src/backends/svg.ts` builds every hatch pattern from the scene theme
+(`THEME.pocheBase`, `THEME.pocheHatch`), never the per-kind styled theme (#868 review: on walls
+with default, concrete and brick poché, `theme { pocheBase }` moved 3 fills and `style wall { fill }`
+none). The comment at `src/theme.ts` that `style wall { hatch … }` moves that ink is false as
+measured. Either draw them (a drawing change on plans that write them only) or warn
+`W_UNKNOWN_STYLE_KEY`. **Gate:** a test that each accepted `style` key moves its own kind's ink and
+nothing else; the reference's `style` section updated.
+
+### WS.6 · The reference's `style` section is a hand-written copy of `STYLE_KEYS` — `todo`
+
+#868 wrote "Per-element styles — `style`" in `docs/language-reference.md` by hand; its first draft
+already disagreed with `spec.llm.md` on the styleless kinds (`opening`, `walls`). **Gate:** a test that
+every kind/attribute pair the section names resolves through `resolveStyleKey` and that the kinds it
+says take no `style` equal `KEYWORDS.element` minus the styled kinds.
+
+### WS.7 · "What this plan uses" rows for `keep` and `import` — `deferred`
+
+Left by WS.4 (#868): no `EXAMPLE_ROWS` plan writes `keep` or `import`, and the every-row-fires guard
+rejects an unchecked detector. **Trigger:** the first example page whose plan writes either. **Gate:**
+`test/plan-constructs.test.ts` lists the row on that page.
 ## Stairs in the 3D preview (public-surfaces card X3, 2026-11-06)
 
 ### ST.1 · Drawn treads against storey height: done by RM1.2a (#736), waiting to be archived — `note`
