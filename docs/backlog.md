@@ -1780,7 +1780,7 @@ fires on `materials`. `keep` and `import` still have no row because no `EXAMPLE_
 them, and the test's every-row-fires guard rejects a detector no page checks; add each with the
 first example page that uses it.
 
-### WS.5 · `style wall { fill }` and `{ hatch }` are accepted and draw nothing — `todo`
+### WS.5 · `style wall { fill }` and `{ hatch }` are accepted and draw nothing: done by #896, waiting to be archived — `note`
 
 The parser takes both keys with no diagnostic and stores `pocheBase` / `pocheHatch` in
 `plan.styles.wall`, but `src/backends/svg.ts` builds every hatch pattern from the scene theme

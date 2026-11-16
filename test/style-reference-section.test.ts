@@ -51,7 +51,7 @@ describe("language reference § Per-element styles agrees with STYLE_KEYS (WS.6)
     expect(sorted(styleless)).toEqual(sorted(expected));
   });
 
-  // "`room` takes `fill`, `label` and `area`" / "`wall` also accepts `fill` and `hatch`"
+  // "`room` takes `fill`, `label` and `area`" (an "also accepts" clause is read the same way)
   const named = new Map<string, Set<string>>();
   for (const m of text.matchAll(/`(\w+)` (?:takes|also accepts) ([^;:.]+)/g)) {
     const attrs = named.get(m[1]!) ?? new Set<string>();
