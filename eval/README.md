@@ -299,7 +299,12 @@ Three pinned versions stamp every result: `JUDGE_VERSION` (`assertions.ts`, curr
 
 **The iron rule: never compare rates across a judge (or synonyms) change.** A judge change
 re-defines what "pass"/"sound" *mean*, so a delta straddling one compares two different measurements.
-`renderDelta` prints a loud non-comparability warning when `base.judge !== JUDGE_VERSION`. The
+`renderDelta` prints a loud non-comparability warning when `base.judge !== JUDGE_VERSION`, and
+another when the baseline's `promptSha256` or `corpusSha256` (SHA-256 of the exact
+`systemPrompt()` string, i.e. `spec.llm.md` plus the reply-format line, and of `eval/corpus.json`,
+LF-normalised; `promptHashes()` in `run.ts`) differs from the run's. A baseline that records no
+hash gets a milder "comparability unverified" note instead. A live run always prints its own two
+hashes, with or without a baseline, for the next baseline to record. The
 judge-v1 → v2 recalibration is the canonical example: intent 9% → 50%, **zero model change** — a
 measurement of the ruler, not the model. Judge-v1 numbers are kept only as history. A frozen rubric
 is never edited in place for a policy change; it is superseded by the next version, which bumps
