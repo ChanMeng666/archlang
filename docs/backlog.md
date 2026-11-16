@@ -2078,7 +2078,7 @@ asserts that an ordinary `src/` change wakes none of the guards (mutants `starts
 the 20-file cap is AG.2 (1).) **Gate:** one `test/gate-select.test.ts` case per item, each failing
 on today's selection.
 
-### RR.17 · `fmt` follow-ups after M.21 — `todo`
+### RR.17 · `fmt` follow-ups after M.21: done by #884, waiting to be archived — `note`
 
 From #872's round-2 review. (1) Strings printed through `statementText` (room `label`, `text`, list
 strings) are not pinned for a blank before a line break. (2) `src/doc.ts` strips trailing blanks
