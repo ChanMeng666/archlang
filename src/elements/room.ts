@@ -112,26 +112,45 @@ const USE_SET: ReadonlySet<string> = new Set<UseKind>(USE_KINDS);
  * Words an author reaches for after `uses` that name ground OUTSIDE the building, which
  * ArchLang draws as an `outdoor <kind>` surface rather than as a room (backlog U.6). Every
  * {@link OUTDOOR_KINDS} word maps to itself (derived, so a new kind joins without an edit);
- * the few common synonyms that are not kinds map to the nearest one.
+ * a synonym that is not a kind maps to the kind `docs/language-reference.md` draws it as
+ * (its outdoor example: `outdoor lawn … label "Garden"`, `outdoor balcony … label "Terrace"`),
+ * and a word with no such source gets no hint (backlog RR.5). Read case-blind.
  */
 const OUTDOOR_USE_NEAR_MISS: ReadonlyMap<string, string> = new Map<string, string>([
   ...OUTDOOR_KINDS.map((k): [string, string] => [k, k]),
-  ["terrace", "patio"],
+  ["terrace", "balcony"],
   ["garden", "lawn"],
-  ["yard", "paving"],
 ]);
+
+function outdoorKindFor(word: string | undefined): string | undefined {
+  return word === undefined ? undefined : OUTDOOR_USE_NEAR_MISS.get(word.toLowerCase());
+}
 
 /**
  * The one wording of the "no valid room use after `uses`" parse error, shared by the
  * room element and the strip parser so the two cannot drift. When the offending word is
  * an outdoor surface (`uses balcony`), the message names the element that draws it.
  */
-export function roomUsesExpected(found: string | undefined): string {
+export function roomUsesExpected(found: string | undefined, type: string): string {
   const base = `Expected one or more room uses (${USE_KINDS.join("|")}) after "uses" but found ${found ? `"${found}"` : "end of input"}`;
-  const kind = found === undefined ? undefined : OUTDOOR_USE_NEAR_MISS.get(found);
+  const kind = type === "ident" ? outdoorKindFor(found) : undefined;
   return kind === undefined
     ? base
     : `${base}; "${found}" is not a room use: draw it as its own \`outdoor ${kind}\` surface outside the room`;
+}
+
+/**
+ * The hint for an outdoor word that directly follows a valid `uses` list (`uses living
+ * balcony`), else `undefined`. The list simply ends before such a word, so the room is kept;
+ * the parser adds this only to the error the word ALREADY raises where the next statement
+ * (or a strip's next `room`) should start (backlog RR.5). The same word anywhere else (an
+ * assignment, a component call, a plugin keyword) parses as before.
+ */
+export function roomUsesOutdoorHint(type: string, found: string): string | undefined {
+  const kind = type === "ident" ? outdoorKindFor(found) : undefined;
+  return kind === undefined
+    ? undefined
+    : `"${found}" after "uses" is not a room use: draw it as its own \`outdoor ${kind}\` surface outside the room`;
 }
 
 /** The axis sentence both `align` diagnostics end on, rendered from {@link AXIS_ALIGNS}
@@ -252,7 +271,7 @@ function parseTail(ctx: ParseCtx, node: RoomNode, start: number, sized = false):
           uses.push(ctx.next().value as UseKind);
         }
         if (uses.length === 0) {
-          ctx.fail(roomUsesExpected(ctx.peek().value || undefined), ctx.peek());
+          ctx.fail(roomUsesExpected(ctx.peek().value || undefined, ctx.peek().type), ctx.peek());
         }
         if (keep) node.uses = uses;
       },

@@ -1959,7 +1959,7 @@ N.5 (#840) names the NOTES cap under Cause, but Fix still says only "Draw fewer 
 shrink the loop, or split the building". **Gate:** the remedy names shortening `notes`; the
 catalogue outputs regenerated.
 
-### RR.5 · The `uses` outdoor hint: `terrace` and a later word — `todo`
+### RR.5 · The `uses` outdoor hint: `terrace` and a later word: done by #861, waiting to be archived — `note`
 
 U.6 (#850) maps `terrace` to `patio`, but the language reference draws a terrace as `outdoor
 balcony … label "Terrace"`; `yard → paving` has no source in the repo. The hint fires only when the
@@ -2034,7 +2034,7 @@ whose opening fence is the reply's first line-start fence with an empty or `arch
 else a marker; and
 `eval/README.md` names the file.
 
-### EV.3 · The baseline does not record the prompt it was measured under — `todo`
+### EV.3 · The baseline does not record the prompt it was measured under: done by #865, waiting to be archived — `note`
 
 `eval/live-baseline.json` carries `judge` but no hash of `spec.llm.md` or `eval/corpus.json`, so
 146 of 241 prompt lines changed after July with nothing flagging the baseline as stale. One way:
