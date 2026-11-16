@@ -1922,9 +1922,9 @@ One option the owner may choose is the median of 3 runs; any new run is paid, ow
 judge, model drift), with no claim beyond the data and none about loop gain.
 Done by #837: the record is `eval/live-runs/2026-11-ev1-intent-gap.md`.
 
-## Review residue of the promo-credit backlog run (PRs #837–#850, 2026-11-16)
+## Review residue of the promo-credit backlog run (PRs #837–#872, 2026-11-16)
 
-Left by the reviews of those PRs (review-cost cap: two rounds, residue becomes cards).
+Left by the reviews of those PRs (RR.1–RR.8 from #837–#850, RR.9–RR.18 from #855–#872) (review-cost cap: two rounds, residue becomes cards).
 
 ### RR.1 · A door fix re-prints its statement with no step charge: done by #855, waiting to be archived — `note`
 
@@ -2010,6 +2010,90 @@ a fixed byte allowance per build, `1 + span` charged past it, for fixes and flip
 corpus door statements are short, so no pinned payload should move. **Gate:** that input returns
 `E_STEP_LIMIT` or compiles within budget in linear time; a test pins the free/charged boundary
 (a component's second storey is charged); no pinned digest, work count or datum law moves.
+
+### RR.10 · Window and opening fixes re-print their statement with no step charge — `todo`
+
+RR.1 (#855) charged the door path; the review noted that window and opening fixes re-print their
+statement the same way, uncharged, so a looped window or opening has the hole RR.1 closed for doors.
+**Gate:** the shape of `test/doors.test.ts`'s `E_STEP_LIMIT` test, for a window and an opening;
+no pinned step payload, work count or datum law moves (see RR.9 for the per-storey allowance).
+
+### RR.11 · `E_LEVEL_MIX` follow-ups after RR.3 — `todo`
+
+From #857's review. The parser's own `E_LEVEL_MIX` message (`src/parser.ts`, around the level-mix
+check) still omits `keep` and `section`; changing it moves `compile().diagnostics`, so it needs its
+own byte-identity note. `docs/language-reference.md` (§ Levels) lists the plan-level settings by
+hand without `height`, `site`, `notes` or `sheet text`. **Gate:** both read from the same list RR.3
+derives, and a test fails when a plan-level form is added without them. #857's review also noted
+guard gaps it did not itemise; re-read that guard when this is taken.
+
+### RR.12 · `E_DRAWING_LIMIT`'s remedy retypes its message clause — `todo`
+
+From #859's review (RR.4): the remedy repeats a clause of the message by hand, so a later wording
+change to one leaves the other stale. **Gate:** the remedy reads the clause from where the message
+builds it, or a test pins that they agree.
+
+### RR.13 · `uses` outdoor-hint follow-ups after RR.5 — `todo`
+
+From #861's reviews. (1) `usesOutdoorHint` (`src/parser.ts`) runs `this.toks.indexOf(t)` before it
+knows the word is an outdoor word, so a file of many unknown statements formats its errors in
+quadratic time (1.4 MB: 1.5 s before #861, 10.4 s after); the comma hint (#395) has the same
+shape. Start the walk at `this.pos - 1` and test the word first, for both.
+(2) The walk-back is token-adjacent, so an outdoor word on its own line after a room's `uses` list
+is hinted "after `uses`"; require the same line, or give a neutral hint. (3) The strip's
+`Expected "room"` text is retyped beside `eatKeyword`'s. (4) No test covers the identifier-type
+guard on the strip path (`uses living "balcony"` in a strip). (5) The `terrace → balcony`,
+`garden → lawn` mapping test is not tied to the language reference's outdoor examples. **Gate:** for
+(1), both hints linear in tokens, pinned by a token-visit count, not time; a test per other item.
+
+### RR.14 · Live-delta prompt-hash follow-ups after EV.3 — `todo`
+
+From #865's round-2 review. (1) `renderDelta` without hashes gained a trailing blank line, and the
+"unchanged" test only checks a substring. (2) A corpus-only mismatch still says "Baseline prompt ≠
+this run's prompt"; say "corpus change" when the prompt hash matched. (3) An unparsable
+`eval/live-baseline.json` is reported as missing. (4) `promptHashes()` re-reads the files after the
+paid calls; compute the hashes once, before the first call, from the strings actually sent (this
+also fixes the CRLF wording); read and validate the baseline before the spend too, since a `null`
+hash in it throws in `renderDelta` after the paid calls. (5) Three places
+still say the delta section appears only with a baseline (`eval/README.md`, the `eval/run.ts`
+header, `LIVE_HEADER`). (6) A vacuous `not.toContain` in the prompt-mismatch test. **Gate:** offline
+tests only; no paid run.
+
+### RR.15 · The EV.1 record predates RM-D52 — `todo`
+
+From #864's review: `eval/live-runs/2026-11-ev1-intent-gap.md` still says re-baselining needs an owner
+decision and that RM-D51 keeps the July record; RM-D52 (#854) re-baselined. Add a dated pointer line,
+as `2026-11-authorability-remeasure.md` has; change no number.
+
+### RR.16 · Text-guard selection follow-ups after AG.1 — `todo`
+
+From #867's reviews. (1) `docs-flags` imports `src/manifest.ts`, which wakes it only through the
+capped import list, so a flag rename with its regenerated docs can cut it. (2) The `skills/*/SKILL.md`
+branch of the derivation is unpinned (no set-equality test, no non-literal skill). (3) No test
+asserts that an ordinary `src/` change wakes none of the guards (mutants `startsWith("src/")` pass).
+(4) A lone change to `src/elements/*.ts`, `src/lint/element-phrases.ts`, `src/lint/ruleset.ts` or
+`src/diagnostics.ts` does not wake `lint-fix-texts`, though they compose fix text. (5)
+`opaque-literal-guard` does not wake on `docs-site/public/<key>.txt` or on the error catalogue.
+(6) A deleted or renamed page wakes nothing. (An `examples/` change crowding by-name guards out of
+the 20-file cap is AG.2 (1).) **Gate:** one `test/gate-select.test.ts` case per item, each failing
+on today's selection.
+
+### RR.17 · `fmt` follow-ups after M.21 — `todo`
+
+From #872's round-2 review. (1) Strings printed through `statementText` (room `label`, `text`, list
+strings) are not pinned for a blank before a line break. (2) `src/doc.ts` strips trailing blanks
+with `/[ \t]+$/` per line, quadratic in a blank run that does not end the line (60k spaces: about 3 s
+after #872, 8.5 s before), and the playground runs it on user text; scan from the right. (3) `fmt` is not a fixed
+point for a comment on a CR CR LF line: the lexer drops one trailing CR, so pass 1 prints `# note\r`
+and pass 2 `# note`. **Gate:** the corpus `format` output stays byte-identical.
+
+### RR.18 · A per-upload owner instruction is not in the eval-dataset rule — `decision`
+
+`.claude/rules/eval-dataset.md` makes HF uploads owner-only and has no carve-out for an explicit
+per-upload instruction from the owner, which is how the card upload of 2026-11-16 (HF `90914659`) was
+done (`docs/plans/product-roadmap/handoff.md`). Whether to add that carve-out is the owner's call;
+until then the rule stands as written.
+
 ## Test-programme findings (promo-credit programme, 2026-11-16)
 
 From `docs/plans/product-roadmap/2026-11-test-findings.md` (§ 3, § 4, § 5). RR.8 (2), the
