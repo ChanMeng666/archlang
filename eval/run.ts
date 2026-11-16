@@ -28,7 +28,7 @@
  */
 
 import { createHash } from "node:crypto";
-import { readFileSync, writeFileSync } from "node:fs";
+import { mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { dirname, resolve } from "node:path";
 import { compile, describe as describePlan, lint } from "../src/index.js";
@@ -398,7 +398,7 @@ export function extractArch(text: string): string {
   return (m ? m[1]! : text).trim();
 }
 
-/** Author a plan via the Anthropic Messages API. */
+/** Author a plan via the Anthropic Messages API; resolves to the raw reply text. */
 async function authorWithAnthropic(
   prompt: string,
   system: string,
@@ -456,14 +456,14 @@ async function authorWithAnthropic(
     cacheRead: json.usage?.cache_read_input_tokens,
     stop: json.stop_reason,
   });
-  return extractArch(json.content.map((b) => b.text ?? "").join(""));
+  return json.content.map((b) => b.text ?? "").join("");
 }
 
 /** Best-effort reproducibility seed for the OpenAI request (the API documents `seed` as
  *  a hint, not a guarantee — pair it with `system_fingerprint` to detect backend drift). */
 const OPENAI_SEED = 20260711;
 
-/** Author a plan via the OpenAI Chat Completions API (dependency-free `fetch`). */
+/** Author a plan via the OpenAI Chat Completions API (dependency-free `fetch`); resolves to the raw reply text. */
 async function authorWithOpenAI(prompt: string, system: string, model: string, ledger?: LiveLedger): Promise<string> {
   const key = process.env.OPENAI_API_KEY;
   if (!key) throw new Error("OPENAI_API_KEY is not set (required for --live with the openai provider)");
@@ -503,19 +503,93 @@ async function authorWithOpenAI(prompt: string, system: string, model: string, l
     stop: json.choices?.[0]?.finish_reason,
   });
   ledger?.noteFingerprint(json.system_fingerprint);
-  return extractArch(json.choices?.[0]?.message?.content ?? "");
+  return json.choices?.[0]?.message?.content ?? "";
 }
 
-/** Ask the resolved provider's model to author a plan from the prompt. The optional
- *  `ledger` records per-call token usage (and OpenAI's system_fingerprint). */
+/** Ask the resolved provider's model to author a plan from the prompt; resolves to the
+ *  {@link extractArch} source. The optional `ledger` records per-call token usage (and OpenAI's
+ *  system_fingerprint); the optional `onReply` sees the raw reply before extraction, so
+ *  {@link liveSourceFile} can decide what may be stored (the raw reply itself never is). */
 export function makeAuthor(
   provider: "anthropic" | "openai",
   model: string,
   ledger?: LiveLedger,
+  onReply?: (reply: string) => void,
 ): (prompt: string) => Promise<string> {
   const system = systemPrompt();
   const author = provider === "openai" ? authorWithOpenAI : authorWithAnthropic;
-  return (prompt: string) => author(prompt, system, model, ledger);
+  return async (prompt: string) => {
+    const reply = await author(prompt, system, model, ledger);
+    onReply?.(reply);
+    return extractArch(reply);
+  };
+}
+
+/**
+ * The body of a reply's first complete fenced block whose info string is empty or `arch`, read the
+ * way Markdown reads fences, else `undefined`: a fence opens only at a line start (up to three
+ * spaces) with three or more backticks, and closes on a line of at least as many backticks and
+ * nothing else. A fence of another type (`json`) is skipped whole, an inline triple backtick opens
+ * nothing, and a block left open (a truncated reply) is not complete. Unlike {@link extractArch} it
+ * never falls back to the whole reply. Trimmed like {@link extractArch}.
+ */
+export function firstArchFence(reply: string): string | undefined {
+  const lines = reply.split("\n").map((l) => l.replace(/\r$/, ""));
+  for (let i = 0; i < lines.length; i++) {
+    const open = /^ {0,3}(`{3,})([^`]*)$/.exec(lines[i]!);
+    if (!open) continue;
+    const ticks = open[1]!.length;
+    const info = open[2]!.trim().split(/\s+/)[0]!;
+    let close = -1;
+    for (let j = i + 1; j < lines.length && close < 0; j++) {
+      const c = /^ {0,3}(`{3,})[ \t]*$/.exec(lines[j]!);
+      if (c && c[1]!.length >= ticks) close = j;
+    }
+    if (close < 0) return undefined;
+    if (info === "" || info.toLowerCase() === "arch")
+      return lines
+        .slice(i + 1, close)
+        .join("\n")
+        .trim();
+    i = close;
+  }
+  return undefined;
+}
+
+/** Where a live run writes each scored brief's plan source (git-ignored; the `eval-live`
+ *  workflow uploads it in the `eval-results-live` artifact). */
+export const LIVE_SOURCES_DIR = "eval/results.live-sources";
+
+/** The start of a marker file: the brief was scored, but no source is stored for it. */
+export const NOT_EXTRACTED = "not extracted";
+
+/**
+ * What a live run stores for one scored brief (product-roadmap RM-D53): the extracted `.arch`
+ * source as `<id>.arch` when the scored text is exactly the body of the reply's first complete
+ * `arch` or untyped fence ({@link firstArchFence}), else a `<id>.not-extracted.txt` marker naming
+ * the reason and holding no reply text. The raw reply is never stored, so neither is its prose: an
+ * unfenced or truncated reply, and one where {@link extractArch}'s regex took text that is not that
+ * block, get the marker. `reply` is `undefined` when the call failed before a reply came back.
+ */
+export function liveSourceFile(id: string, reply: string | undefined): { name: string; text: string } {
+  const marker = (why: string) => ({ name: `${id}.not-extracted.txt`, text: `${NOT_EXTRACTED}: ${why}\n` });
+  if (reply === undefined) return marker("no reply");
+  const block = firstArchFence(reply);
+  if (block === undefined) return marker("no complete arch fence in the reply");
+  if (block !== extractArch(reply)) return marker("the scored text is not the reply's first arch fence");
+  return { name: `${id}.arch`, text: `${block}\n` };
+}
+
+/** Write one {@link liveSourceFile} per scored (non-skipped) brief into `dir`, replacing what a
+ *  previous run left there. */
+export function writeLiveSources(dir: string, results: readonly Score[], replyById: ReadonlyMap<string, string>): void {
+  rmSync(dir, { recursive: true, force: true });
+  mkdirSync(dir, { recursive: true });
+  for (const r of results) {
+    if (r.skipped) continue;
+    const f = liveSourceFile(r.id, replyById.get(r.id));
+    writeFileSync(resolve(dir, f.name), f.text);
+  }
 }
 
 /** The L1 table cell for a brief: healers applied + any L0→L1 verdict transition. */
@@ -995,14 +1069,21 @@ async function main(): Promise<void> {
     );
   }
 
-  const author = makeAuthor(provider, model, ledger);
+  // Each brief's raw reply stays in memory only, so writeLiveSources can decide what to store.
+  const replyById = new Map<string, string>();
+  let lastReply: string | undefined;
+  const author = makeAuthor(provider, model, ledger, (reply) => {
+    lastReply = reply;
+  });
   // With --l1 we keep each brief's authored L0 source so it can be healed and re-scored
   // afterwards (no extra API calls). Off the L1 path this is the original thin wrapper.
   const rawById = new Map<string, string>();
   const stopById = new Map<string, string>();
   const getSource = async (e: CorpusEntry): Promise<string> => {
     ledger.lastStop = undefined;
+    lastReply = undefined;
     const src = await author(e.prompt);
+    if (lastReply !== undefined) replyById.set(e.id, lastReply);
     if (ledger.lastStop) stopById.set(e.id, ledger.lastStop);
     if (l1Mode) rawById.set(e.id, src);
     return src;
@@ -1034,8 +1115,9 @@ async function main(): Promise<void> {
   md += liveDeltaSection(baseline, summary, promptHashes());
   md = LIVE_HEADER + md;
   writeFileSync(resolve(ROOT, LIVE_RESULTS), md);
+  writeLiveSources(resolve(ROOT, LIVE_SOURCES_DIR), results, replyById);
   process.stdout.write(md + "\n");
-  process.stdout.write(`✓ wrote ${LIVE_RESULTS} (git-ignored)\n`);
+  process.stdout.write(`✓ wrote ${LIVE_RESULTS} and ${LIVE_SOURCES_DIR}/ (git-ignored)\n`);
   if (budget) process.stderr.write(`budget: ${ledger.spentLabel()} (limit ${budget.amount}${budget.kind})\n`);
 }
 

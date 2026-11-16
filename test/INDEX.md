@@ -5,7 +5,7 @@
 Where the tests of a `src` module are, and what each test file is for. Generated; `npm run check:drift`
 fails when it is stale. How to add a test: `docs/testing.md` § 4.
 
-534 test files in `test/`, 286 `src` modules, 107 modules no test imports.
+535 test files in `test/`, 286 `src` modules, 107 modules no test imports.
 
 ## `src` module → tests that import it
 
@@ -361,6 +361,7 @@ The first sentence of each file's header comment.
 - `test/eval-fidelity.test.ts` — fidelity corpus — shape and brief-groundedness; infeasibility is DERIVED, never asserted in prose; the detector discriminates — faithful clean, laundered caught…
 - `test/eval-fixture.test.ts` — judge fixture — byte-equivalence proof across the intent lift.
 - `test/eval-live-harness.test.ts` — Live-eval harness, offline: price table, stop/finish-reason capture (fetch mocked, no network).
+- `test/eval-live-sources.test.ts` — Live-run plan sources (EV.2, product-roadmap RM-D53), offline: fetch mocked, no network.
 - `test/eval-offline.test.ts` — eval — committed goldens still author correctly; L1 deterministic-dividend overlay.
 - `test/eval-stats.test.ts` — wilson95; live report intervals.
 - `test/example-svgs-drift.test.ts` — Drift guard for the committed `examples/*.svg` drawings the README embeds.

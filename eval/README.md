@@ -204,7 +204,12 @@ npm run eval:l2 -- --yes …   # T3 harness — paid; ONE owner-ratified run onl
   breaker (the unit suffix is required; a skipped brief is excluded from every denominator); `--l1`
   adds the deterministic overlay. Output goes to `eval/results.live.md` (git-ignored, ephemeral — the
   numbers move with the model and the day) with a "Delta vs baseline" section when
-  `live-baseline.json` is present.
+  `live-baseline.json` is present. Each scored brief's plan source goes to
+  `eval/results.live-sources/<id>.arch` (git-ignored; `writeLiveSources` in `run.ts`): only the body
+  of the reply's first complete `arch` or untyped fence, and only when that is exactly the text
+  scored. Otherwise `<id>.not-extracted.txt` holds a one-line reason and no reply text — an unfenced
+  or truncated reply is never stored, so the model's prose stays unpublished (product-roadmap
+  RM-D53). The workflow uploads both in the `eval-results-live` artifact (GitHub's default retention).
 
 **In practice, run the live eval from GitHub Actions** ("Eval (live)" `workflow_dispatch`,
 `.github/workflows/eval-live.yml`): `OPENAI_API_KEY` lives in Actions secrets, not on any dev
