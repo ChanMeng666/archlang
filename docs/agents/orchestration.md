@@ -99,7 +99,7 @@ merge procedure and the CI job map in `commands.md`.
   feature makes `archlang.uk` document syntax `npx @chanmeng666/archlang` cannot parse. Say so when
   you land one without releasing it.
 - **(npm) A newly registered trusted publisher lapses unless a publish goes through it within about
-  48 hours**; dispatch `release.yml` once (`.claude/commands/release-check.md`).
+  48 hours**; publish a new version of it with the next `v<core version>` tag (a dispatch from `main` is refused by the release guard; `.claude/commands/release-check.md`).
 - **(MCP registry) Search matches server names only**, so the 100-char `description` says what the
   server is for; the tool-name lockstep lives in `packages/mcp/README.md`'s tool table
   (`packages/mcp/test/server.test.ts`).

@@ -14,7 +14,7 @@ you observed. Do NOT push anything — this command only verifies.
 
    ```bash
    npm view @chanmeng666/archlang version
-   npm view @chanmeng666/archlang-3d version   # E404 until the owner's hand publish
+   npm view @chanmeng666/archlang-3d version
    git tag --sort=-v:refname | head
    gh release list --limit 3
    grep -m3 '^## ' CHANGELOG.md
@@ -68,7 +68,11 @@ you observed. Do NOT push anything — this command only verifies.
    - `packages/font-cjk`: `release.yml` publishes it before the core and refuses a version/pin
      mismatch with the core's exact `optionalDependencies` pin.
    - `packages/archlang-3d` is versioned on its own: a core release needs nothing from it, and
-     `release.yml`'s `publish-archlang-3d` job does nothing unless its version is new. A version bump
+     `release.yml`'s `publish-archlang-3d` job does nothing unless its version is not on npm. It
+     publishes only with a core release: the job `needs: publish`, and the publish job's guard
+     (`scripts/release-guard.sh`, since 2026-11-09) refuses any ref that is not the `v<core version>`
+     tag, so a dispatch from `main` publishes nothing and the 3D job is skipped. A bump merged
+     between core releases waits on `main` for the next `v*` tag. A version bump
      (0.1.0 → 0.1.1) touches exactly: `packages/archlang-3d/package.json` `version`; `package-lock.json`
      (`npm install --package-lock-only`, one line; `npm ci` still passes without it, so nothing but this
      list catches it); and
@@ -196,15 +200,18 @@ you observed. Do NOT push anything — this command only verifies.
   workflow `release.yml`, no environment); until then that job fails with an auth error and nothing
   else is affected. Its `prepack` refuses a stale root `dist/`, so `npm run build` first when publishing by hand.
   npmjs lists a new trusted publisher as "Pending validation" and it LAPSES unless one publish goes
-  through it within about 48 hours: right after registering, run `gh workflow run release.yml --ref main`
-  once (a dispatch run skips every version already on npm and publishes only the new one). On the
+  through it within about 48 hours: right after registering, a NEW version of that package must go
+  out with the next core release (bump it, merge, push the `v<core version>` tag; the tag's run skips
+  every version already on npm and publishes only the new ones). `gh workflow run release.yml --ref main`
+  publishes nothing: the guard (`scripts/release-guard.sh`, since 2026-11-09) refuses a ref that is not
+  the `v<core version>` tag, and every publish job `needs: publish`. On the
   registration form tick "Allow npm publish" (`release.yml` publishes directly; the form prefers staged
   publishing and warns), label free, environment empty. Afterwards `npm view` lists a `0.0.0-stage`
   placeholder version made by npm's staged-publish machinery: ignore it, never unpublish it by hand.
   Any NEW package follows this order: first version by hand, register, then a NEW version through
   `release.yml` within 2 days (<https://docs.npmjs.com/trusted-publishers>: "must complete its first
-  successful publish within 2 days", then it expires and must be deleted and recreated). A dispatch
-  alone validates nothing when every version is already on npm, since it skips them: bump first.
+  successful publish within 2 days", then it expires and must be deleted and recreated). A rerun
+  validates nothing when every version is already on npm, since it skips them: bump first.
   arch-plan did this (0.1.0 by hand, without provenance; 0.1.1 through the workflow, with it).
   npm cannot register a publisher for a package that does not exist
   (<https://docs.npmjs.com/cli/v11/commands/npm-trust>: "must already exist on the npm registry").
@@ -218,9 +225,12 @@ you observed. Do NOT push anything — this command only verifies.
      job skips with a notice. 0.1.0 carries no provenance.
   3. The owner registers: npmjs.com → package → Settings → Trusted Publisher → GitHub Actions,
      `ChanMeng666` / `archlang` / `release.yml`, environment empty, tick "Allow npm publish".
-  4. Within 2 days: a PR with the 0.1.1 bump (item 2's list), merged, then
-     `gh workflow run release.yml --ref main`. The job publishes 0.1.1 with provenance, which
-     validates the registration. Confirm with `npm view @chanmeng666/archlang-3d@0.1.1 dist.attestations`.
+  4. Within 2 days: a PR with the 0.1.1 bump (item 2's list), merged, then the next core release's
+     `v<core version>` tag. The job publishes 0.1.1 with provenance, which validates the
+     registration. Confirm with `npm view @chanmeng666/archlang-3d@0.1.1 dist.attestations`.
+
+  Every later `@chanmeng666/archlang-3d` version is published the same way: only by a core
+  release's `v*` tag run, and only when its `package.json` version is not on npm.
 - **VS Code Marketplace upload: a web upload, done by an agent in the owner's signed-in Chrome**
   (publisher `ChanMeng`, extension `ChanMeng.archlang`); nothing in CI publishes it. After a
   language-surface change, or any release that bumps `editors/vscode`:

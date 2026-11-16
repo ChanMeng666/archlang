@@ -86,7 +86,8 @@ if (!result.ok) throw new Error(result.refusal.code); // E3D_PLAN_ERRORS, E3D_NO
 writeFileSync("plan.glb", await writeGlb(buildMesh(result.scene)));
 ```
 
-In a browser, `writeGlb` comes from `./glb` and returns the same bytes, with no file system:
+In a browser, `writeGlb` comes from `./glb` and returns the same bytes, with no file system
+(`./glb` comes with the release after 0.8.1; 0.8.1 has no such entry):
 
 ```js
 import { adaptPlan, buildMesh } from "@chanmeng666/archlang-3d";
@@ -107,7 +108,7 @@ unused Node reader removed, so the entry imports no Node module and no other pac
 |---|---|---|
 | `@chanmeng666/archlang-3d` | Node and browsers | `adaptPlan`, Scene3D, `buildMesh`, the replay's timeline |
 | `@chanmeng666/archlang-3d/browser` | browsers, with three.js | `mountReplay(canvas, payload)`, `replayPayload` |
-| `@chanmeng666/archlang-3d/glb` | Node and browsers | `writeGlb` (the GLB's bytes) and its node names |
+| `@chanmeng666/archlang-3d/glb` | Node and browsers (after 0.8.1) | `writeGlb` (the GLB's bytes) and its node names |
 | `@chanmeng666/archlang-3d/node` | Node | `makeNodeWorld`, `replayHtml`, `renderReplay`, `writeGlb`, the checks |
 
 ## Licence

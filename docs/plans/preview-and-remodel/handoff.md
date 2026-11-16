@@ -32,7 +32,7 @@ ArchCanvas stays on core 1.48 (D28); the draft bump PR there is not to be merged
 Thread: growth `discovery/interviews/2026-10-30-daniel-damm-x-thread.md`. Also needs IFC: not close, never
 promise it.
 
-`packages/archlang-3d` is published at 0.x. Later versions go through `release.yml`: bump, merge, `gh workflow run release.yml --ref main`.
+`packages/archlang-3d` is published at 0.x. Later versions go through `release.yml`: bump, merge, then the next core release's `v<core version>` tag (the release guard refuses a dispatch from `main`).
 
 ## 2. Pre-flight for a new session
 

@@ -89,7 +89,7 @@
 ### 1.3 战略层已定的边界（growth `strategy/decisions/` 与本仓库的所有者裁定，不在本计划内重议）
 
 - ArchLang 以**分发与可信度**衡量，收入其次（2026-10-09）。可以按价值新增语言形式（2026-11-01 D29）。
-- 消费者产品已 STOP（2026-11-01）；ArchCanvas 维护态、钉在 core 1.48；不做消费者功能。
+- 消费者产品曾于 2026-11-01 STOP；ArchCanvas 的开发自 2026-11-16 重启，自那天起依赖 `@chanmeng666/archlang` `^1.62.0` 与 `@chanmeng666/archlang-3d` `^0.8.1`。它的提示词逐字注入 `spec.llm.md`，核心升级只有付费评测能定价；新语言形式不是升级理由（D28，`docs/agents/iron-laws.md`）。
 - **3D（PS-D11，所有者 2026-11-06，`docs/plans/public-surfaces/3d.md` §1）：** 3D 预览出现在 ArchLang 的每个公开面，永远配对平面、同一源文件、由 `archlang-3d` 生成。它取代了"Show HN 保持 2D"和 Tier C 门。仍然有效的：用词禁令（永不"3D CAD / BIM / render / walkthrough / photoreal / model"，产品词是"3D 预览"）；3D 代码只在 `packages/archlang-3d`；核心不画高度。N10 读数照读，但**记为受干扰，读数的结论不挡任何 ArchLang 卡**（drawing-set D3 只要求它已读）；ArchCanvas 一侧不在 PS-D11 范围内，CR-D2 的 Tier B 仍等 N10，D29 的 wave 4、6 也仍等 N10（§7）。
 - 可以作为**度量**声明的只有三件：可达性、精确面积、字节恒等。间距、宽度、步行距离永远是 advisory。禁止"first/only"、"code beats CAD"、合规/报批、"设计/布置/家具"、任何 IFC 承诺。
 - "public check suite" 永不叫 benchmark 或 leaderboard（A2）；导入是功能事实不是标题（A3）。
