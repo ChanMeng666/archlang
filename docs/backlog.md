@@ -2079,7 +2079,7 @@ From #864's review: `eval/live-runs/2026-11-ev1-intent-gap.md` still says re-bas
 decision and that RM-D51 keeps the July record; RM-D52 (#854) re-baselined. Add a dated pointer line,
 as `2026-11-authorability-remeasure.md` has; change no number.
 
-### RR.16 · Text-guard selection follow-ups after AG.1 — `todo`
+### RR.16 · Text-guard selection follow-ups after AG.1: done by #895, waiting to be archived — `note`
 
 From #867's reviews. (1) `docs-flags` imports `src/manifest.ts`, which wakes it only through the
 capped import list, so a flag rename with its regenerated docs can cut it. (2) The `skills/*/SKILL.md`
@@ -2091,6 +2091,14 @@ asserts that an ordinary `src/` change wakes none of the guards (mutants `starts
 (6) A deleted or renamed page wakes nothing. (An `examples/` change crowding by-name guards out of
 the 20-file cap is AG.2 (1).) **Gate:** one `test/gate-select.test.ts` case per item, each failing
 on today's selection.
+
+Closure note (#895). Items (2) and (3) were missing pins, not wrong selection, so their cases pass on
+main's selection and fail on the mutants named above. Item (4) is read from the changed module's own
+source (`composesFixText`: a `message:`/`fix:`/`hint:`/`hints:` property outside a comment line, or a first doc
+comment mentioning "message" or "hint", in a module inside that test's transitive import closure), not a
+list of paths.
+
+Residue moved to AG.2.
 
 ### RR.17 · `fmt` follow-ups after M.21: done by #884, waiting to be archived — `note`
 
@@ -2121,7 +2129,7 @@ are the agent's, standing; replacing a published data file still needs an owner 
 From `docs/plans/product-roadmap/2026-11-test-findings.md` (§ 3, § 4, § 5). RR.8 (2), the
 `W_DOORWAY_BLOCKED` strictness, is that plan's first direction and is not repeated here.
 
-### EV.2 · A live run keeps no plan source per brief — `todo`
+### EV.2 · A live run keeps no plan source per brief: done by #897, waiting to be archived — `note`
 
 EV.1 could not tell whether a lost brief-run came from the model, a stricter rule or new compiler
 geometry, because neither the July nor the November artifacts hold the authored `.arch` source of
@@ -2139,6 +2147,22 @@ review). The property to hold, as a hypothesis to check: the stored text is the 
 whose opening fence is the reply's first line-start fence with an empty or `arch` info string,
 else a marker; and
 `eval/README.md` names the file.
+
+Residue (2026-11-17): the hypothesis held with one tightening, a marker also when that block is not
+the text `extractArch` scored; `extractArch` itself still mishandles a typed first block and a
+four-backtick fence, left alone because `dataset/model-authoring/rows.ts` pins parity with it and a
+fix would move live scoring, so it needs its own card (EV.7).
+
+### EV.7 · `extractArch` scores the wrong text for a typed first block or a four-backtick fence — `todo`
+
+`extractArch` (`eval/run.ts`) skips a typed first block (` ```json `) and opens at its closing fence,
+so for a typed block, prose, then an `arch` block it scores the text between the blocks (possibly
+empty); for a four-backtick fence holding a ` ``` ` line it stops at that line. EV.2 stores only a
+marker for both, so no source is lost, but the scored text is wrong. One way: score the body of the
+reply's first line-start fence with an empty or `arch` info string (`firstArchFence`). A fix moves
+live scoring against `eval/live-baseline.json`, and `dataset/model-authoring/rows.ts` pins parity
+with `extractArch`. **Gate:** both shapes scored as that block, with tests; the `rows.ts` parity
+test kept green; the change to live scoring named against the baseline before it lands.
 
 ### EV.3 · The baseline does not record the prompt it was measured under: done by #865, waiting to be archived — `note`
 
@@ -2196,8 +2220,16 @@ Two things AG.1 left. (1) A by-name guard (a test the import graph reaches only 
 changed file) still competes for the 20 `--max` slots, so a change set with many `examples/` files
 fills the cap with directory-scanning guards and the by-name guard is cut (review m1 of #867).
 (2) `test/lint-fix-texts.test.ts` records about 61 s and runs uncapped on any error-catalogue or
-`src/fix-producers.ts` change, which is most of a `check:quick` minute. One way: give by-name
-guards their own extras slot, and cap `textGuards` by recorded seconds with the cut printed.
+`src/fix-producers.ts` change, which is most of a `check:quick` minute, and since #895 it also wakes
+for about 40 % of `src/` (120 of 286 `src/**/*.ts`, by `composesFixText`). Cap `textGuards` by recorded
+seconds with the cut printed, or split the `arch <cmd>` block of `test/lint-fix-texts.test.ts` into its
+own cheap test. The header rule (first doc comment mentions "message" or "hint") misfires both ways:
+`src/finish.ts`, `src/sheet-text.ts`, `src/text-safe.ts` and `src/taste/advice.ts` wake it, while
+`src/statement-print.ts`, `src/fixtures-catalog.ts` and `src/furnish-table.ts` do not. Deletion wiring
+(from RR.16's review round 1): `scripts/check-quick.mjs`'s deletion wiring is pinned by no test (a
+temp-repo `--list` case would pin it); a delete-only branch that deletes a test file runs no step, so a
+stale `test/INDEX.md` shows only in CI; deleting a `src/` module runs drift only; a case-only rename on
+Windows is not seen as a deletion. One way for (1): give by-name guards their own extras slot.
 **Gate:** `gate-select` tests for both; `scripts/check-quick.mjs` is high tier.
 
 ## Site chrome (found while fixing the nav overflow, 2026-09-20)
