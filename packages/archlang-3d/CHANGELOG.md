@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+## [0.9.0] - 2026-11-17
+
+The core peer range stays `^1.61.0` (`MIN_CORE`): nothing below reads a core export that 1.61.0 lacks.
+
 ### Added
 
 - `writeGlb` from a new entry, `@chanmeng666/archlang-3d/glb`, which carries no Node module, so a
