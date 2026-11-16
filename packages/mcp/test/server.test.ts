@@ -72,6 +72,8 @@ describe("archlang mcp server", () => {
     }
     expect(text).toMatch(/centreline/);
     expect(text).toMatch(/absent when/);
+    expect(text).toMatch(/`area_m2`, measured on the wall centrelines/);
+    expect(text).toMatch(/`net_area_m2`, the floor no wall stands on, absent when it cannot be computed exactly/);
     expect(text).toMatch(/net_floor_area_m2` beside it, absent when any room.s net area is/);
     // the names are the ones `describe` actually returns, not prose that drifted from it
     const walled = `plan "W" {
