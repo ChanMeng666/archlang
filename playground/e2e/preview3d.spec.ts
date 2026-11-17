@@ -1787,9 +1787,10 @@ test.describe("startup chunks", () => {
       return found[0] as string;
     });
     expect(boot, "the boot import of ./compiler.js is the compiler chunk").toContain(compiler);
-    // The worker runs the compile job's chunk and what it imports statically: the compiler, and
-    // nothing of the page's (the entry and the startup chunks run page code, which needs a
-    // document), so it never runs the view path in a worker.
+    // The worker runs the compile job's chunk and what it imports statically: the compiler and,
+    // for `lint` (card EB.2), the core's lazy chunk the header actions import too, and no page
+    // code (the entry and the startup chunks run page code, which needs a document), so it never
+    // runs the view path in a worker.
     const workerChunk = boot[boot.length - 1] as string;
     const inWorker = reach([workerChunk]);
     expect(inWorker, "the compile worker imports the compiler").toContain(compiler);
@@ -1802,6 +1803,11 @@ test.describe("startup chunks", () => {
     expect(actionsChunk, "the boot imports name the header actions' chunk").toBeDefined();
     expect(paths.actions, "the shared walk's actions are the header actions' chunk").toBe(actionsChunk);
     const { firstUsePath } = paths;
+    // The worker loads nothing a first use has not loaded on the page already (card EB.2: its
+    // `lint` rides the actions' lazy core chunk), so no budget misses what it fetches but its own chunk.
+    for (const file of inWorker)
+      if (file !== workerChunk)
+        expect(firstUsePath, `the compile worker's ${file} is on the first use's path`).toContain(file);
 
     // The embed (embed.html, the iframe other pages show): it imports the core statically
     // (embed.ts), so it walks into the compiler the way index.html's preload does.

@@ -2282,9 +2282,10 @@ compiler path 364,738 B of 365,000 B, so every card that added compiler-chunk co
 chunk carried `lint()` and most of its rules, which no compile, no embed and no view-mode render
 runs. **Gate:** at least ~3,000 B gzip cut from the compiler chunk on both paths with no change of
 behaviour (a corpus digest of SVG, `describe()`, `lint()` and diagnostics, before and after), the
-budgets never raised (the cut came to ~49.5 KB, so both were re-taken down by their own rule,
-measured × 1.025 rounded up to the thousand, to keep a glTF-Transform-sized leak tripping them:
-coordinator's ruling), and `firstUsePathBudget` and `growthBudget` still met.
+budgets never raised (the cut came to ~49.5 KB on the embed and compiler paths and ~12.5 KB on the
+first use's, so all three were re-taken down by their own rule, measured × 1.025 rounded up to the
+thousand, to keep a glTF-Transform-sized leak tripping them: the coordinator's ruling and review),
+and `growthBudget` still met.
 
 ## Test-programme findings (promo-credit programme, 2026-11-16)
 

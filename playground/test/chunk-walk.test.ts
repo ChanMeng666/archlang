@@ -87,9 +87,15 @@ describe("chunkWalk (the startup-chunks gate's walk and `npm run size:embed`)", 
       "assets/panels-p1.js",
       "assets/rolldown-runtime-r1.js",
     ]);
-    // An entry that imports no compiler chunk (or two) is refused, not walked without one.
+    // An entry that imports no compiler chunk, or two, is refused, not walked with none or a guess.
     const none = { ...files, "assets/index-i1.js": `import"./panels-p1.js";const a=()=>import("./actions-a1.js");` };
     expect(() => build(none).indexPaths()).toThrow(/imports 0 compiler chunks dynamically, not one/);
+    const two = {
+      ...files,
+      "assets/compiler-c2.js": "",
+      "assets/index-i1.js": `const c=()=>import("./compiler-c1.js"),d=()=>import("./compiler-c2.js"),a=()=>import("./actions-a1.js");`,
+    };
+    expect(() => build(two).indexPaths()).toThrow(/imports 2 compiler chunks dynamically, not one/);
   });
 
   it("throws on an import that names no built file, and on a page with no module script", () => {
