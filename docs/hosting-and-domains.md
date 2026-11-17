@@ -354,13 +354,15 @@ The rest of the rules:
   `_redirects`). Dead inbound URLs: the first two are the repo's own file names, which earlier
   copies of the docs linked to. The rest are repo-relative links that older copies of the docs
   published before `docs-site/link-rewrite.mjs` existed (some reported as 404 by Search Console,
-  the rest found in review); each goes where that rewrite sends the link today. Repo files
+  the rest found in review); each goes where that rewrite sends the link it came from today. Repo files
   (`/examples/museum-wing.arch`, `/examples/museum-wings.arch`, `/brand/README`, `/dataset/CARD`,
   `/dataset/README`, `/eval/README`, and `/CHANGELOG`, `/CHANGELOG.html`, `/CHANGELOG.md`) go to
   their GitHub page, an absolute destination; `/schemas/plan.schema.json` goes to
   `/plan.schema.json`, where `ROOT_COPIES` in `docs-site/sync-docs.mjs` serves it; `/playground`,
-  `/playground/`, `/playground/index` and `/playground/index.html` go to the playground origin
-  `https://playground.archlang.uk`. Every rule has a `redirectCheck` in `scripts/smoke.mjs`.
+  `/playground/`, `/playground/index` and `/playground/index.html` (variants of the one
+  `playground/index.html` link) go to the playground origin, written `https://playground.archlang.uk/`
+  because Cloudflare emits the root slash in `Location` and `redirectCheck` compares exactly.
+  Every rule has a `redirectCheck` in `scripts/smoke.mjs`.
 - **`/  /index.html  200`** (playground only, in `_redirects`). Not a redirect: a **status-200 rule
   is a rewrite**, and the redirect layer runs before the asset lookup. It exists to give `/` a file
   under `html_handling: "none"` — see below.
