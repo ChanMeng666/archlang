@@ -199,7 +199,9 @@ none (O.12 in `backlog.md`), and Codex is untested (O.13).
    manifest it reads is `.cursor-plugin/plugin.json` in that folder. If the form takes only a
    repository root, the root `.cursor-plugin/marketplace.json` names that folder. The publisher
    application already filed (`seo.md` section 8) named `plugins/archlang`, which no longer holds a
-   Cursor manifest: tell Cursor the new path.
+   Cursor manifest. The publish page cannot edit a filed application, so the new path goes to the
+   contact that page names, `marketplace-publishing@cursor.com`: the owner sent it on 2026-11-17 and
+   awaits a reply.
 3. Cursor reviews every plugin and every update by hand before listing it. Follow its submission
    checklist at <https://cursor.com/docs/reference/plugins>.
 
