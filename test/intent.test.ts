@@ -5,7 +5,9 @@ import { fileURLToPath } from "node:url";
 import { dirname, resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 import {
+  checkPredicates,
   compileIntent,
+  describe as describePlan,
   feedbackForResult,
   type Intent,
   intentFromJson,
@@ -452,5 +454,180 @@ describe("compileIntent — predicate lowering", () => {
       "adjacent",
       "reachable",
     ]);
+  });
+});
+
+// RM9.1: a floor-area band is judged on the EXACT area, read back from the summary's unrounded room
+// geometry. `describe()` keeps its display convention (each room to 0.01 m², the total the sum of
+// those), so these plans still print the rounded figures.
+describe("validateIntent — floor-area bands judge the exact area (RM9.1)", () => {
+  /** Five rooms of exactly 6.675 + 6.65 + 6.675 + 13.75 + 6.25 = 40.000 m², printed as 40.01. */
+  const FORTY = `plan "Forty" {
+  units mm
+  room id=a at (0,0)       size 2500x2670 label "A"
+  room id=b at (2500,0)    size 2500x2660 label "B"
+  room id=c at (5000,0)    size 2500x2670 label "C"
+  room id=d at (0,2670)    size 5000x2750 label "D"
+  room id=e at (5000,2670) size 2500x2500 label "E"
+}`;
+  /** One room of exactly 4.001 m² (2000 x 2000.5 mm), printed as 4. */
+  const OVER = `plan "Over" {
+  units mm
+  room id=s at (0,0) size 2000x2000.5 label "Store"
+}`;
+  /** An exterior ring whose inner faces enclose exactly 5000 x 8000.8 mm = 40.004 m², printed as 40.
+   *  The summary carries no unrounded source for it, so its band reads the printed figure. */
+  const GROSS = `plan "Gross" {
+  units mm
+  wall exterior thickness 200 { (0,0) (5200,0) (5200,8200.8) (0,8200.8) close }
+  room id=r at (0,0) size 5200x8200.8 label "Hall"
+}`;
+
+  it("a total of exactly 40.000 m² passes a max of 40, though describe() prints 40.01", () => {
+    expect(describePlan(FORTY).totals.floor_area_m2).toBe(40.01);
+    const r = validateIntent(FORTY, { totalAreaM2: { max: 40, source: "at most 40 m²" } });
+    expect(r.ok).toBe(true);
+    expect(r.violations).toEqual([]);
+    // The printed 40.01 would contradict the verdict, so the detail prints the exact figure.
+    expect(r.assertions[0]?.detail).toBe("area: total 40 m² within [0, 40]");
+  });
+
+  it("a total equal to the band edge passes at either edge", () => {
+    expect(validateIntent(FORTY, { totalAreaM2: { min: 40, max: 40, source: "exactly 40 m²" } }).ok).toBe(true);
+  });
+
+  it("a total 0.001 m² over the max fails, and the message prints the exact figure", () => {
+    expect(describePlan(OVER).totals.floor_area_m2).toBe(4);
+    const r = validateIntent(OVER, { totalAreaM2: { max: 4, source: "at most 4 m²" } });
+    expect(r.ok).toBe(false);
+    expect(r.violations.map((v) => v.message)).toEqual([
+      "intent /totalAreaM2: total 4.001 m² outside [0, 4] (at most 4 m²)",
+    ]);
+    expect(validateIntent(OVER, { totalAreaM2: { max: 4.001, source: "at most 4.001 m²" } }).ok).toBe(true);
+  });
+
+  it("a per-room band is judged on the room's exact area at both edges", () => {
+    // Room `a` is exactly 6.675 m², printed 6.68.
+    const band = (min: number, max: number): Intent => ({
+      roomsInclude: [{ concept: "A", areaM2: { min, max, source: "brief" } }],
+    });
+    expect(describePlan(FORTY).rooms[0]?.area_m2).toBe(6.68);
+    expect(validateIntent(FORTY, band(6, 6.675)).ok).toBe(true);
+    expect(validateIntent(FORTY, band(6.675, 7)).ok).toBe(true);
+    const over = validateIntent(FORTY, band(6.676, 7));
+    expect(over.ok).toBe(false);
+    expect(over.violations.map((v) => v.code)).toEqual(["E_INTENT_ROOM_AREA"]);
+    const store = { roomsInclude: [{ concept: "Store", areaM2: { max: 4, source: "brief" } }] };
+    expect(validateIntent(OVER, store).ok).toBe(false);
+  });
+
+  it("a gross internal area band is judged on the printed figure, which has no exact source", () => {
+    expect(describePlan(GROSS).totals.gross_internal_area_m2).toBe(40);
+    const r = validateIntent(GROSS, { grossInternalAreaM2: { max: 40, source: "at most 40 m² inside" } });
+    expect(r.ok).toBe(true);
+    expect(r.assertions[0]?.detail).toBe("area: gross internal area 40 m² within [0, 40]");
+    expect(r.measures?.[0]).toMatchObject({ measured: [40], residual: [0], pass: true });
+  });
+
+  it("a summary read back from JSON is judged exactly too: the geometry travels with it", () => {
+    const parsed = JSON.parse(JSON.stringify(describePlan(FORTY))) as ReturnType<typeof describePlan>;
+    const preds = compileIntent({ totalAreaM2: { max: 40, source: "brief" } });
+    expect(checkPredicates(preds, parsed)[0]?.detail).toBe("area: total 40 m² within [0, 40]");
+  });
+
+  it("a circular room is πR², to a whole mm²", () => {
+    // Radius 2000 mm: 12.566371 m², printed 12.57, so a min of 12.57 now fails.
+    const round = `plan "Round" {
+  units mm
+  room id=c circle at (0,0) radius 2000 label "Rotunda"
+}`;
+    expect(describePlan(round).totals.floor_area_m2).toBe(12.57);
+    expect(
+      validateIntent(round, { totalAreaM2: { min: 12.57, max: 13, source: "brief" } }).violations.map((v) => v.message),
+    ).toEqual(["intent /totalAreaM2: total 12.566371 m² outside [12.57, 13] (brief)"]);
+    expect(validateIntent(round, { totalAreaM2: { min: 12.566371, max: 13, source: "brief" } }).ok).toBe(true);
+  });
+
+  it("an equal division (`let w = 10000 / 7`) is judged to a whole mm², never on a float residue", () => {
+    // Seven bays of exactly 7 m²; summed as floats they come to 49000000.00000001 mm², each
+    // 7000000.000000001. Rounded once to a whole mm², they sit on the edge and pass, as on main.
+    const sevenths = `plan "Sevenths" {
+  units mm
+  let w = 10000 / 7
+  for i in 0..7 {
+    room at (0, i * 4900) size w x 4900 label "Bay"
+  }
+}`;
+    expect(describePlan(sevenths).totals.floor_area_m2).toBe(49);
+    expect(validateIntent(sevenths, { totalAreaM2: { max: 49, source: "brief" } }).ok).toBe(true);
+    const bays = { roomsInclude: [{ concept: "Bay", count: { min: 7 }, areaM2: { max: 7, source: "brief" } }] };
+    expect(validateIntent(sevenths, bays).ok).toBe(true);
+  });
+
+  it("a total that rounds onto the edge but exceeds it prints every digit it exceeds by", () => {
+    // 4040 x 9901 mm = 40.00004 m², printed 40: "total 40 m² outside [0, 40]" would contradict itself.
+    const tight = `plan "Tight" {
+  units mm
+  room id=a at (0,0) size 4040x9901 label "A"
+}`;
+    expect(describePlan(tight).totals.floor_area_m2).toBe(40);
+    expect(
+      validateIntent(tight, { totalAreaM2: { max: 40, source: "brief" } }).violations.map((v) => v.message),
+    ).toEqual(["intent /totalAreaM2: total 40.00004 m² outside [0, 40] (brief)"]);
+  });
+
+  it("on a plan with level blocks the total is every storey's exact area, summed before rounding", () => {
+    // FORTY's rooms over two storeys: 20.000 m² printed 20.01 below, 20 m² above.
+    const two = `plan "Two" {
+  units mm
+  level 0 "Ground" {
+    room id=a at (0,0)    size 2500x2670 label "A"
+    room id=b at (2500,0) size 2500x2660 label "B"
+    room id=c at (5000,0) size 2500x2670 label "C"
+  }
+  level 1 "Upper" {
+    room id=d at (0,0)    size 5000x2750 label "D"
+    room id=e at (5000,0) size 2500x2500 label "E"
+  }
+}`;
+    const s = describePlan(two);
+    expect(s.levels?.map((l) => l.totals.floor_area_m2)).toEqual([20.01, 20]);
+    const preds = compileIntent({ totalAreaM2: { max: 40, source: "brief" } });
+    expect(checkPredicates(preds, s)[0]?.detail).toBe("area: total 40 m² within [0, 40]");
+    // A storey total a caller replaced is judged as printed: 20.01 + 30 = 50.01.
+    s.levels![1]!.totals.floor_area_m2 = 30;
+    expect(checkPredicates(preds, s)[0]?.detail).toBe("area: total 50.01 m² outside [0, 40] (brief)");
+  });
+
+  it("the building's gross internal area band reads the printed sum of the storeys", () => {
+    // Each storey encloses exactly 5000 x 4000.4 mm = 20.002 m², printed 20; the building prints 40.
+    const ring = "wall exterior thickness 200 { (0,0) (5200,0) (5200,4200.4) (0,4200.4) close }";
+    const two = `plan "Gross over two" {
+  units mm
+  level 0 "Ground" {
+    ${ring}
+    room id=r at (0,0) size 5200x4200.4 label "Hall"
+  }
+  level 1 "Upper" {
+    ${ring}
+    room id=r at (0,0) size 5200x4200.4 label "Room"
+  }
+}`;
+    expect(describePlan(two).totals.gross_internal_area_all_levels_m2).toBe(40);
+    const r = validateIntent(two, { grossInternalAreaM2: { max: 40, source: "brief" } });
+    expect(r.ok).toBe(true);
+    expect(r.assertions[0]?.detail).toBe("area: gross internal area over 2 storeys 40 m² within [0, 40]");
+  });
+
+  it("a figure a caller replaced is judged as printed, never on the stale exact one", () => {
+    const s = describePlan(FORTY);
+    s.rooms[0]!.area_m2 = 9;
+    const room = compileIntent({ roomsInclude: [{ concept: "A", areaM2: { max: 7, source: "brief" } }] });
+    expect(checkPredicates(room, s).find((a) => a.predicate.kind === "room-area")?.pass).toBe(false);
+    s.totals.floor_area_m2 = 50;
+    const total = compileIntent({ totalAreaM2: { max: 40, source: "brief" } });
+    expect(checkPredicates(total, s).find((a) => a.predicate.kind === "total-area")?.detail).toBe(
+      "area: total 50 m² outside [0, 40] (brief)",
+    );
   });
 });
