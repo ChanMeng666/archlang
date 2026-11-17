@@ -18,10 +18,10 @@
  *
  * - `examples/*.arch` — the shipped corpus; none of it names a new word (the first case below
  *   holds that premise, over every `.arch` and Markdown file the repository ships, so the law
- *   cannot pass because a plan stopped being in its corpus; "ships" means tracked by git,
- *   `test/helpers/shipped-sources.ts`, so gitignored local output is never read). The one exception is the closed list
- *   `SHOWCASE_PLANS` (`test/helpers/showcase-plans.ts`, card RM8.5): plans under
- *   `examples/showcase/` that show the new families on purpose. They are never rows (the rows are
+ *   cannot pass because a plan stopped being in its corpus; "ships" means tracked by git, or
+ *   untracked and not ignored, `test/helpers/shipped-sources.ts`, so gitignored local output is
+ *   never read). The one exception is the closed list `SHOWCASE_PLANS`
+ *   (`test/helpers/showcase-plans.ts`, card RM8.5): plans under `examples/showcase/` that show the new families on purpose. They are never rows (the rows are
  *   the top-level examples), so the law's statement, rows and baseline are unchanged; only the
  *   premise's coverage narrows, by exactly that list.
  * - `inline:families-before-legend` — every family that existed before the tranche on one sheet,
@@ -160,8 +160,8 @@ suite("visual-assets families — byte-identity law", () => {
   it("no shipped plan names a new word, so the law's corpus is a corpus that did not change", () => {
     // `furniture <word>` and `furniture id=<x> <word>` (the only two places a category stands),
     // in every plan file, Markdown fence and code or data string the repository ships plans in:
-    // shipped means tracked by git (`test/helpers/shipped-sources.ts`), so gitignored local output
-    // (a paid eval run's `eval/results.*`) is not scanned, here or in CI.
+    // shipped means tracked by git, or untracked and not ignored (`test/helpers/shipped-sources.ts`),
+    // so gitignored local output (a paid eval run's `eval/results.*`) is not scanned.
     const words = new RegExp(`\\bfurniture\\s+(?:id=(?:"[^"]*"|\\S+)\\s+)?(${NEW_WORDS.join("|")})\\b`);
     expect(words.test("furniture id=lamp1 floor_lamp at (0,0)"), "the guard sees the id= form").toBe(true);
     expect(words.test("furniture palm at (0,0)"), "the guard sees the bare form").toBe(true);

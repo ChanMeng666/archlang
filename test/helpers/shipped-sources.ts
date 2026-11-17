@@ -3,13 +3,15 @@
  * `test/new-families-byte-identity.test.ts` (card V8) and `test/rm89-families-byte-identity.test.ts`
  * (RM8.9) share it.
  *
- * "Shipped" means TRACKED BY GIT: the list comes from `git ls-files`, never from the disk, so
- * gitignored local output (a paid eval run's `eval/results.*`, a build, a generated site copy)
- * can neither fail the premise locally nor be something CI checks. A file the repository ships
- * is one it tracks; a new plan is in the premise's corpus once it is `git add`ed, which is also
- * when CI first sees it.
+ * "Shipped" means tracked by git, or untracked and not ignored: the list comes from
+ * `git ls-files --cached --others --exclude-standard`, so the scan reads what the old disk walk
+ * read except gitignored files. Gitignored local output (a paid eval run's `eval/results.*`, a
+ * build, a generated site copy) can neither fail the premise locally nor be something CI checks,
+ * while a new plan that is not `git add`ed yet is still caught before it is pushed.
  */
 import { execFileSync } from "node:child_process";
+import { existsSync } from "node:fs";
+import { join } from "node:path";
 
 /** The source kinds a plan can ship in: a plan file, a Markdown fence, or a string in code or data. */
 export const SOURCE_EXT = /\.(arch|md|ts|tsx|js|mjs|json|vue)$/;
@@ -19,17 +21,22 @@ const SKIPPED = (seg: string): boolean =>
   seg === "node_modules" || seg === "dist" || seg === "public" || seg.startsWith(".");
 
 /**
- * Every tracked source file under `dir` (a repo-relative folder), recursively, as repo-relative
- * `/`-separated paths, skipping any path with a segment below `dir` (the file's own name
- * included) that is `node_modules`, `dist`, `public` or starts with `.`.
+ * Every source file under `dir` (a repo-relative folder) that is tracked, or untracked and not
+ * ignored, recursively, as sorted, de-duplicated, repo-relative `/`-separated paths. It skips any
+ * path with a segment below `dir` (the file's own name included) that is `node_modules`, `dist`,
+ * `public` or starts with `.`, and a tracked file deleted from the working tree (which the disk
+ * walk never saw either).
  */
 export function shippedSources(root: string, dir: string): string[] {
-  return execFileSync("git", ["ls-files", "-z", "--", dir], { cwd: root, encoding: "utf8" })
+  const listed = execFileSync("git", ["ls-files", "-z", "--cached", "--others", "--exclude-standard", "--", dir], {
+    cwd: root,
+    encoding: "utf8",
+  })
     .split("\0")
     .filter(Boolean)
-    .map((p) => p.replace(/\\/g, "/"))
-    .filter((p) => {
-      const below = p.slice(dir.length + 1).split("/");
-      return !below.some(SKIPPED) && SOURCE_EXT.test(below.at(-1)!);
-    });
+    .map((p) => p.replace(/\\/g, "/"));
+  return [...new Set(listed)].sort().filter((p) => {
+    const below = p.slice(dir.length + 1).split("/");
+    return !below.some(SKIPPED) && SOURCE_EXT.test(below.at(-1)!) && existsSync(join(root, p));
+  });
 }

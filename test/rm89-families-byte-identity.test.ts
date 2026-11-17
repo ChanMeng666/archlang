@@ -31,8 +31,8 @@
  * - `examples/*.arch` — the shipped corpus, the V8 law's own list of it; none of it names a new
  *   word (the first case below holds that premise over every plan, Markdown fence and code or data
  *   string the repository ships, skipping only the closed `SHOWCASE_PLANS` list, which is never a
- *   row; "ships" means tracked by git, `test/helpers/shipped-sources.ts`, so gitignored local
- *   output is never read).
+ *   row; "ships" means tracked by git, or untracked and not ignored,
+ *   `test/helpers/shipped-sources.ts`, so gitignored local output is never read).
  * - `inline:families-before-rm89-legend` — all 103 families that existed before the batch on one
  *   sheet with its legend, which lists fixture rows in `FIXTURE_FAMILIES` order: a family slotted
  *   in rather than appended would move it.
@@ -167,8 +167,8 @@ suite("new-families batch (RM8.9) — byte-identity law", () => {
   it("no shipped plan names a new word, so the law's corpus is a corpus that did not change", () => {
     // `furniture <word>` and `furniture id=<x> <word>` (the only two places a category stands),
     // in every plan file, Markdown fence and code or data string the repository ships plans in:
-    // shipped means tracked by git (`test/helpers/shipped-sources.ts`), so gitignored local output
-    // (a paid eval run's `eval/results.*`) is not scanned, here or in CI.
+    // shipped means tracked by git, or untracked and not ignored (`test/helpers/shipped-sources.ts`),
+    // so gitignored local output (a paid eval run's `eval/results.*`) is not scanned.
     const words = new RegExp(`\\bfurniture\\s+(?:id=(?:"[^"]*"|\\S+)\\s+)?(${NEW_WORDS.join("|")})\\b`);
     expect(words.test("furniture id=ac1 wall_ac at (0,0)"), "the guard sees the id= form").toBe(true);
     expect(words.test("furniture pool at (0,0)"), "the guard sees the bare form").toBe(true);
