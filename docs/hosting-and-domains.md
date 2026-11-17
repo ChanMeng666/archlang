@@ -309,7 +309,7 @@ Routes:Edit + Workers KV Storage:Edit on the account, DNS:Edit + Zone:Read on th
 
 ### `_headers` and `_redirects`, and why each rule exists
 
-`docs-site/public/_headers`, `playground/public/_headers` and `playground/public/_redirects` are
+`docs-site/public/_headers`, `docs-site/public/_redirects`, `playground/public/_headers` and `playground/public/_redirects` are
 parsed by the Worker's asset layer and are never served (a request for `/_headers` is a 404 —
 verified). Each rule was written against a **measured** difference from what Vercel used to send,
 not on principle.
@@ -350,6 +350,13 @@ The rest of the rules:
 - **`/archlang.gbnf` → `text/plain; charset=utf-8`** (docs only). Cloudflare sends **no
   `Content-Type` at all** for that extension; Vercel sent `application/octet-stream`. Both deliver
   a machine-readable route as an opaque download.
+- **`/error-codes`, `/language-reference` and six more → 301** (docs only, in `_redirects`). Dead inbound URLs:
+  the first two are the repo's own file names, which earlier copies of the docs linked to; the six
+  more are ones Search Console reported as 404, because older copies of the docs published
+  repo-relative links before `docs-site/link-rewrite.mjs` existed. Repo files (`/examples/museum-wing.arch`, `/brand/README`,
+  `/dataset/CARD`, `/dataset/README`, `/eval/README`) go to their GitHub page, an absolute
+  destination; `/schemas/plan.schema.json` goes to `/plan.schema.json`, where `ROOT_COPIES` in
+  `docs-site/sync-docs.mjs` serves it. Every rule has a `redirectCheck` in `scripts/smoke.mjs`.
 - **`/  /index.html  200`** (playground only, in `_redirects`). Not a redirect: a **status-200 rule
   is a rewrite**, and the redirect layer runs before the asset lookup. It exists to give `/` a file
   under `html_handling: "none"` — see below.
