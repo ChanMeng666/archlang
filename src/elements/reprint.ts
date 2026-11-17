@@ -43,7 +43,10 @@ export interface ReprintNode {
 /**
  * The longest statement (source bytes) whose first build of a fix `kind` per ctx is free: a few
  * times longer than any door, window, opening or dim statement in the shipped examples, so no
- * pinned step payload moves, and small enough that a free build is a constant per placement.
+ * pinned step payload moves. The free work it leaves is up to 256 bytes per build, per kind, per
+ * statement placed on a storey: linear in placements, but not small. A hinged door builds its flip
+ * text on every placement, so 550 hinged 255-byte doors in a component placed by 550 levels took
+ * about 26 s within budget at review time (backlog RR.25).
  */
 export const REPRINT_FREE_BYTES = 256;
 

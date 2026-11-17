@@ -2250,6 +2250,18 @@ loop iteration, uncharged (5,000 iterations of a 96 KB statement: 8.6 s, 1.8 GB,
 budget). It now goes through `reprint` with a constant key, once per node per storey (156 ms, the
 same steps, no pinned payload moved). Its per-storey build is RR.9's shape (1,000 levels × 96 KB: 2.1 s).
 
+### RR.25 · Re-print work under the 256-byte allowance is still uncharged — `todo`
+
+Left by RR.9 (#939 review). A statement of 256 bytes or fewer still builds its first fix of each kind
+per storey free (`REPRINT_FREE_BYTES`, `src/elements/reprint.ts`). The probe: 550 hinged doors of 255
+bytes (a dense dead branch) in a component placed by 550 levels, 163 KB of source. It took 26.3 s and
+4,862,000 steps, with no `E_STEP_LIMIT` (only `E_DRAWING_LIMIT`). The same plan with `double` doors,
+which have no flip text, took 3.95 s at the same steps. The flip text is built for every hinged door
+whether or not a diagnostic fires. One way: build the flip text only when a diagnostic that carries
+it fires, or charge it at a per-byte rate past a much smaller allowance. **Gate:** the probe returns
+`E_STEP_LIMIT` or finishes within budget in a time proportional to its steps; no pinned payload
+moves (the longest corpus statement is 96 bytes).
+
 ### EB.1 · The embed-path size check is a Playwright-only number — `todo`
 
 The playground's embed path is a hard gzip ceiling (`embedPathBudget`,
