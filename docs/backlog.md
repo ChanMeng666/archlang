@@ -2232,12 +2232,18 @@ are sent". Normalise once and send the normalised string, or reword the comment.
 any spend" is pinned only by a source-text order check (`test/eval-stats.test.ts`); a run of `main()`
 with a bad baseline would pin the exit code. **Gate:** offline tests only; no paid run.
 
-### RR.24 · Two statement reprints outside `reprint` (observation) — `todo`
+### RR.24 · Two statement reprints outside `reprint` (observation): done by #936, waiting to be archived — `note`
 
 From #880's review (RR.10). `furnitureCategoryFix` (`src/fix-producers.ts`, through `categoryFix` in
 `src/elements/furniture.ts`, which charges every build) and the dim swap (`src/elements/dim.ts`)
 re-print a whole statement without going through `src/elements/reprint.ts`. Card it as a defect only
 if a looped or component-placed case reproduces an uncharged reprint; otherwise close it as checked.
+
+Checked (#936). The furniture fix is charged on every build: a component placed by 200 levels used
+4,840,000 steps, near `E_STEP_LIMIT`. The dim swap reproduced: it is printed for every dim and every
+loop iteration, uncharged (5,000 iterations of a 96 KB statement: 8.6 s, 1.8 GB, 2.4 % of the step
+budget). It now goes through `reprint` with a constant key, once per node per storey (156 ms, the
+same steps, no pinned payload moved). Its per-storey build is RR.9's shape (1,000 levels × 96 KB: 2.1 s).
 
 ### EB.1 · The embed-path size check is a Playwright-only number: done by #937, waiting to be archived — `note`
 
