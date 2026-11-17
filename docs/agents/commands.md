@@ -80,16 +80,15 @@
   agent-facing OUTPUT bytes (SVG, `describe()`, `lint()`, diagnostics, after 2-dp rounding), not
   transcendental agreement: a 1-ulp `Math.cos` difference is invisible by design, and `hypot` is
   caught only where it feeds an exact comparison. It measures, it fixes nothing. Set `PLAYWRIGHT_BROWSERS_PATH` to keep the browsers off the default cache.
-- `gen:plugin` (in `gen:all`, drift-gated) writes `plugins/archlang/`: the Claude Code plugin's
-  manifest and its copies of the skills. Edit `skills/` (the umbrella `skills/archlang/` included), never the copies.
-- `gen:agent-manifests` (in `gen:all`, drift-gated) writes the other hosts' files: `plugins/archlang/plugin.json`, `plugins/archlang/.cursor-plugin/plugin.json`, `rules/archlang.mdc`, `integrations/copilot/*` and the root `gemini-extension.json` (the core's version: rerun after a bump). Details: `docs/integrations.md`.
+- `gen:plugin` (in `gen:all`, drift-gated) writes the Claude Code plugin's manifest (`version`, the hosted MCP server) and the skill copies in `plugins/archlang/` and `plugins/archlang-cursor/`. Edit `skills/` (the umbrella `skills/archlang/` included), never the copies.
+- `gen:agent-manifests` (in `gen:all`, drift-gated) writes the other hosts' files: `plugins/archlang/plugin.json` and `mcp.json` (hosted server), the Cursor plugin in `plugins/archlang-cursor/` (`.cursor-plugin/plugin.json`, `mcp.json` with the local server, `rules/archlang.mdc`), the root `.cursor-plugin/marketplace.json`, `integrations/copilot/*` and the root `gemini-extension.json` (the core's version: rerun after a bump). `plugins/archlang/` holds only Markdown, text, JSON and PNG and starts no local server: Anthropic's directory refuses anything else from an unverified publisher. Details: `docs/integrations.md`.
 - `build:mcpb` rebuilds the core, then writes both `.mcpb` bundles to the gitignored `dist-mcpb/`;
   `prove:mcpb` unpacks one outside the repo and drives it over stdio. Neither runs in `ci.yml`: only
   `release.yml` runs them, last and best-effort, so a broken bundle shows as a yellow step on a
   green release.
 - `build:openai-plugin` writes the OpenAI directory ZIP to the gitignored `dist-openai/` from the
-  generated `plugins/archlang/` (adds the version, swaps in the hosted server's `mcp.json`, pins the
-  skills' CLI) and checks what it wrote; `prove:openai-plugin` re-checks a ZIP. `--plugin-version=<v>`
+  generated `plugins/archlang/` (adds the version, pins the skills' CLI; its `mcp.json` is already the
+  hosted server) and checks what it wrote; `prove:openai-plugin` re-checks a ZIP. `--plugin-version=<v>`
   moves the listing's version and leaves the pin on the core. Neither is in CI; an agent may upload
   the draft, and the owner submits and publishes (`docs/integrations.md`).
 - `gen:doors` writes the "Try it" blocks from `site-shared/doors.json` into `README.md`,

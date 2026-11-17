@@ -20,7 +20,11 @@ claude mcp add archlang -- npx -y @chanmeng666/archlang-mcp   # or the MCP serve
 ```
 
 Inside Claude Code, `/plugin marketplace add ChanMeng666/archlang` followed by
-`/plugin install archlang@archlang` installs the skills and the MCP server together.
+`/plugin install archlang@archlang` installs the skills and the MCP server together. The plugin
+connects to the hosted server at `https://mcp.archlang.uk/mcp` (no sign-in, rate-limited), so the
+plans its tools compile are sent there and not stored ([privacy](/privacy)). For the local server
+instead, which sends nothing and also renders PNG, add it with the `claude mcp add` line above and
+disable the plugin's `archlang` server in `/mcp`.
 
 **Cursor.** Add the MCP server to `.cursor/mcp.json`:
 
@@ -36,7 +40,8 @@ Inside Claude Code, `/plugin marketplace add ChanMeng666/archlang` followed by
 ```
 
 To install the plugin locally (skills, MCP server and a rule for `*.arch` files), copy the
-repository's `plugins/archlang/` folder to `~/.cursor/plugins/local/archlang` and reload the window.
+repository's `plugins/archlang-cursor/` folder to `~/.cursor/plugins/local/archlang` and reload the
+window. The Cursor plugin starts the local MCP server.
 
 **Codex.** Open the Plugins tab and search for ArchLang. Without the directory, copy the skill
 folders from the repository's `plugins/archlang/skills/` into your project's `.agents/skills/`, or

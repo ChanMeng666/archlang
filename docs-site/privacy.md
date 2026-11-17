@@ -72,6 +72,16 @@ the link, or email chanmeng.dev@gmail.com if the plan should not be named in pub
 deleted the short link stops working. To avoid the edge cache, use the playground or the local
 tools, which send nothing.
 
+## The ArchLang plugins
+
+The Claude Code plugin (and the same plugin read by Codex, ChatGPT and GitHub Copilot) connects to
+the hosted endpoint above, `https://mcp.archlang.uk/mcp`, with no sign-in and under the same rate
+limit: when the agent calls one of its tools, the plan text and drawing options are sent there and
+handled as that section says. Its skills drive the local command line tool, which sends nothing. To
+keep plans on your machine, use the local MCP server instead (in Claude Code, `claude mcp add
+archlang -- npx -y @chanmeng666/archlang-mcp`, then disable the plugin's server). The Cursor plugin
+starts the local server and sends nothing.
+
 ## Local tools
 
 The npm packages, the command line tool and the VS Code extension run on your machine and send

@@ -1,0 +1,16 @@
+{
+  "name": "archlang",
+  "owner": {
+    "name": "Chan Meng"
+  },
+  "metadata": {
+    "description": "ArchLang: write floor plans as code, compiled and checked by a deterministic compiler. Skills to author, edit, review and export .arch plans through the archlang CLI, and the ArchLang MCP server."
+  },
+  "plugins": [
+    {
+      "name": "archlang",
+      "source": "plugins/archlang-cursor",
+      "description": "ArchLang: write floor plans as code, compiled and checked by a deterministic compiler. Skills to author, edit, review and export .arch plans through the archlang CLI, and the ArchLang MCP server."
+    }
+  ]
+}

@@ -26,8 +26,8 @@ docs-site/public/arch-plan.standalone.js
 examples/**/*.svg
 plugins/archlang/skills/
 plugins/archlang/plugin.json
-plugins/archlang/.cursor-plugin/
-plugins/archlang/rules/
+plugins/archlang-cursor/
+.cursor-plugin/
 integrations/
 package-lock.json
 

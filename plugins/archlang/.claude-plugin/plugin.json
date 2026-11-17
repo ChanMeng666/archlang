@@ -1,6 +1,6 @@
 {
   "name": "archlang",
-  "description": "ArchLang: a deterministic DSL and compiler for floor plans. Gives the agent the archlang skill (author, compile, lint and verify .arch plans through the CLI), four task skills (brief to plan, edit, export, review) and the ArchLang MCP server.",
+  "description": "ArchLang: a deterministic DSL and compiler for floor plans. Gives the agent the archlang skill (author, compile, lint and verify .arch plans through the CLI), four task skills (brief to plan, edit, export, review) and the hosted ArchLang MCP server at mcp.archlang.uk.",
   "author": {
     "name": "Chan Meng",
     "url": "https://github.com/ChanMeng666"
@@ -8,6 +8,7 @@
   "homepage": "https://archlang.uk",
   "repository": "https://github.com/ChanMeng666/archlang",
   "license": "MIT",
+  "privacyPolicyUrl": "https://archlang.uk/privacy",
   "keywords": [
     "floor-plan",
     "architecture",
@@ -18,11 +19,8 @@
   ],
   "mcpServers": {
     "archlang": {
-      "command": "npx",
-      "args": [
-        "-y",
-        "@chanmeng666/archlang-mcp@0.2.46"
-      ]
+      "type": "http",
+      "url": "https://mcp.archlang.uk/mcp"
     }
   },
   "version": "1.63.0"

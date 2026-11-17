@@ -51,12 +51,12 @@ you observed. Do NOT push anything — this command only verifies.
      `release.yml` enforces it: `packages/mcp/scripts/check-core-exports.ts` fails the shim publish when
      npm's copy of the range's minimum lacks a subpath the server loads.
    - Claude Code plugin manifest (`plugins/archlang/.claude-plugin/plugin.json`): its `version` is
-     the core's and its `npx` pin is the shim's exact version. After the version bumps run
+     the core's and its MCP server is the hosted one (no shim pin: Anthropic's directory refuses a
+     local server from an unverified publisher). After the version bumps run
      `npm run gen:plugin` and commit the manifest; `check:drift` fails on a stale one. The Gemini CLI
-     manifest (`gemini-extension.json`) carries the core's version too: run `npm run gen:agent-manifests`. The release
-     PR pins a shim version that is not on npm until the tag's `release.yml` publishes it, so a
-     plugin installed from `main` can fail to launch its server for those few minutes; accepted.
-     Confirm `npm view @chanmeng666/archlang-mcp version` equals the pin once the tag run finishes.
+     manifest (`gemini-extension.json`) carries the core's version too: run `npm run gen:agent-manifests`. The hosted
+     server ships on every `main` push (`deploy.yml`'s `deploy-mcp`), so a plugin installed from
+     `main` reaches the new tools without waiting for npm.
    - Same range pin for `editors/vscode` (`editors/vscode/test/lockstep.test.ts`).
    - The served `<arch-plan>` (`docs-site/public/arch-plan.js`) names the core version in its
      jsDelivr URL: after the version bump run `npm run gen:arch-plan` (or `npm run gen:all`) and

@@ -2,9 +2,9 @@
  * The agent-directory manifests (`npm run gen:agent-manifests`) are one skill source published in
  * each host's shape. `check:drift` proves they are reproducible; this proves they are well formed:
  * the portable manifest validates against the vendored Agent Plugins schema (never fetched at test
- * time), the OpenAI directory listing meets that directory's submission limits, `mcp.json` starts the
- * local server while the OpenAI ZIP's names the hosted one, the Cursor manifest meets its one
- * documented requirement, every skill a host will look for exists and is byte-identical to its
+ * time), the OpenAI directory listing meets that directory's submission limits, `plugins/archlang/mcp.json`
+ * (and so the OpenAI ZIP's) names the hosted server while the Cursor plugin's own folder starts the local
+ * one, the Cursor manifest meets its one documented requirement, every skill a host will look for exists and is byte-identical to its
  * source, and no generated text file carries a version number, a secret or a retired positioning
  * claim.
  */
@@ -12,6 +12,10 @@ import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 import {
+  BUNDLE_ROOTS,
+  CURSOR_MARKETPLACE,
+  CURSOR_MCP_MANIFEST,
+  CURSOR_ROOT,
   CURSOR_RULE,
   GEMINI_CONTEXT,
   GEMINI_MANIFEST,
@@ -155,10 +159,10 @@ describe("agent-directory manifests", () => {
     expect(missing.join("\n")).toMatch(/missing required `name`/);
   });
 
-  it("mcp.json meets the vendored Agent Plugins MCP schema and pins no version", () => {
+  it("the Cursor plugin's mcp.json starts the local server per the vendored schema and pins no version", () => {
     const schema = readJson("test/fixtures/schemas/agent-plugin-mcp.schema.json");
     expect(schema.$id).toBe(MCP_SCHEMA_ID);
-    const mcp = readJson(MCP_MANIFEST);
+    const mcp = readJson(CURSOR_MCP_MANIFEST);
     // structural checks by hand: the schema uses $ref/oneOf, beyond the small validator above
     expect(schema.required).toEqual(["$schema", "mcpServers"]);
     expect(Object.keys(mcp).sort()).toEqual(["$schema", "mcpServers"]);
@@ -173,9 +177,11 @@ describe("agent-directory manifests", () => {
     for (const a of server.args) expect(a).not.toMatch(/@[^/]*$|@latest/);
   });
 
-  it("the OpenAI ZIP's mcp.json declares exactly the hosted server, Streamable HTTP, per the vendored schema", () => {
+  it("plugins/archlang/mcp.json (the OpenAI ZIP's too) declares exactly the hosted server, Streamable HTTP, per the vendored schema", () => {
     const schema = readJson("test/fixtures/schemas/agent-plugin-mcp.schema.json");
     const mcp = JSON.parse(hostedMcpManifest());
+    // the folder Anthropic's and OpenAI's directories read starts no local server
+    expect(readJson(MCP_MANIFEST)).toEqual(mcp);
     expect(Object.keys(mcp).sort()).toEqual(["$schema", "mcpServers"]);
     expect(mcp.$schema).toBe(MCP_SCHEMA_ID);
     // one server: the OpenAI portal connects one per plugin, and plugin-level review cases need one
@@ -241,10 +247,15 @@ describe("agent-directory manifests", () => {
     }
   });
 
-  it("the plugin bundle carries the root LICENSE and SECURITY.md byte-for-byte", () => {
-    for (const f of BUNDLED_ROOT_FILES) {
-      expect(readFileSync(resolve(`${PLUGIN_ROOT}/${f}`)).equals(readFileSync(resolve(f))), f).toBe(true);
-    }
+  it("each plugin bundle carries the root LICENSE and SECURITY.md byte-for-byte", () => {
+    expect(BUNDLE_ROOTS).toEqual([PLUGIN_ROOT, CURSOR_ROOT]);
+    for (const r of BUNDLE_ROOTS)
+      for (const f of BUNDLED_ROOT_FILES) {
+        // an extensionless file is not a type Anthropic's directory accepts from an unverified publisher
+        expect(f.dest, f.src).toMatch(/\.(?:md|txt)$/);
+        const at = `${r}/${f.dest}`;
+        expect(readFileSync(resolve(at)).equals(readFileSync(resolve(f.src))), at).toBe(true);
+      }
   });
 
   it("the OpenAI listing icon is a square PNG inside the plugin, copied from the Claude icon", () => {
@@ -270,11 +281,24 @@ describe("agent-directory manifests", () => {
     expect(cursor.name).toMatch(/^[a-z0-9](?:[a-z0-9.-]*[a-z0-9])?$/);
     expect(typeof cursor.description).toBe("string");
     // rules/*.mdc are discovered from the plugin root: the generated rule is where Cursor looks
-    expect(CURSOR_RULE).toMatch(/\/rules\/[^/]+\.mdc$/);
+    expect(CURSOR_RULE).toBe(`${CURSOR_ROOT}/rules/archlang.mdc`);
+    expect(CURSOR_MANIFEST).toBe(`${CURSOR_ROOT}/.cursor-plugin/plugin.json`);
+    // the Cursor plugin is its own folder, apart from the one Anthropic's directory reviews
+    expect(CURSOR_ROOT.startsWith(`${PLUGIN_ROOT}/`)).toBe(false);
     expect(cursor.name).toBe(readJson(PORTABLE_MANIFEST).name);
     // skills are found in the default root `skills/` directory; a `skills` key would only add to it
     expect(cursor).not.toHaveProperty("skills");
     expect(readJson(PORTABLE_MANIFEST)).not.toHaveProperty("skills");
+  });
+
+  it("the root Cursor marketplace file lists the one Cursor plugin, by its manifest name and folder", () => {
+    const m = readJson(CURSOR_MARKETPLACE);
+    expect(m.name).toMatch(/^[a-z0-9]+(?:-[a-z0-9]+)*$/);
+    expect(m.owner.name).toBeTruthy();
+    expect(m.plugins).toHaveLength(1);
+    expect(m.plugins[0].name).toBe(readJson(CURSOR_MANIFEST).name);
+    expect(m.plugins[0].source).toBe(CURSOR_ROOT);
+    expect(existsSync(resolve(m.plugins[0].source, ".cursor-plugin/plugin.json"))).toBe(true);
   });
 
   it("the plugin root the manifests sit in holds every skill, byte-identical to skills/<name>/SKILL.md", () => {
@@ -283,9 +307,10 @@ describe("agent-directory manifests", () => {
       .map((e) => e.name)
       .sort();
     expect(sources).toContain("archlang");
-    expect(readdirSync(resolve(PLUGIN_ROOT, "skills")).sort()).toEqual(sources);
+    for (const r of [PLUGIN_ROOT, CURSOR_ROOT]) expect(readdirSync(resolve(r, "skills")).sort(), r).toEqual(sources);
     for (const d of sources) {
       expect(read(`${PLUGIN_ROOT}/skills/${d}/SKILL.md`), d).toBe(read(`skills/${d}/SKILL.md`));
+      expect(read(`${CURSOR_ROOT}/skills/${d}/SKILL.md`), d).toBe(read(`skills/${d}/SKILL.md`));
       // the manifests rely on the plugin root's skills/ directory: each skill names itself
       expect(read(`skills/${d}/SKILL.md`)).toMatch(new RegExp(`^name:\\s*${d}\\s*$`, "m"));
     }

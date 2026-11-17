@@ -1,10 +1,13 @@
 # Agent integrations
 
 ArchLang keeps one skill source, `skills/<name>/SKILL.md` (the umbrella `archlang` skill and the task
-skills beside it), and publishes it in the shape each agent host reads. The plugin root for every host
-is the slim folder `plugins/archlang/`, not the repository root: the repository carries an 11 MB font
-that plugin directories can reject. `plugins/archlang/skills/` is filled by `npm run gen:plugin`; the
-other files below by `npm run gen:agent-manifests`. Both are gated by `npm run check:drift`, so edit
+skills beside it), and publishes it in the shape each agent host reads. The plugin root is a slim
+folder, not the repository root: the repository carries an 11 MB font that plugin directories can
+reject. Every host but Cursor reads `plugins/archlang/`; Cursor reads its own folder,
+`plugins/archlang-cursor/`, because Anthropic's plugin directory reviews `plugins/archlang/` and
+accepts a local MCP server, and any file that is not Markdown, text, JSON, YAML or an image (a
+Cursor `.mdc` rule), only from a Verified organization. The two `skills/` folders are filled by
+`npm run gen:plugin`; the other files below by `npm run gen:agent-manifests`. Both are gated by `npm run check:drift`, so edit
 the skill or `src/manifest.ts`, never the output. No generated manifest names a version or a count, so
 none can go stale; hosts read the repository's own tags and releases. The one exception is the Gemini
 CLI manifest at the repository root, whose `version` Gemini asks to match the release tag: it carries
@@ -14,13 +17,13 @@ Formats were taken from each host's own documentation on 2026-10-13 (the OpenAI 
 2026-10-15); the source URLs are in the header of `scripts/gen-agent-manifests.ts`. The Claude Code plugin (`plugins/archlang/.claude-plugin/`) is
 covered in [`overview.md`](overview.md) and is not repeated here.
 
-| Host | Plugin files (under `plugins/archlang/`) | Copy-in files |
-|---|---|---|
-| Codex and ChatGPT | a ZIP built from `plugin.json`, `mcp.json`, `skills/`, `assets/icon.png` (below) | none |
-| GitHub Copilot (CLI) | `plugin.json`, `mcp.json`, `skills/` | `integrations/copilot/*` |
-| Cursor | `.cursor-plugin/plugin.json`, `mcp.json`, `skills/`, `rules/archlang.mdc` | none |
-| Gemini CLI | `gemini-extension.json` at the repository root (not under `plugins/archlang/`) | none |
-| Any Agent Plugins client | `plugin.json`, `mcp.json`, `skills/` | none |
+| Host | Plugin files | MCP server | Copy-in files |
+|---|---|---|---|
+| Codex and ChatGPT | a ZIP built from `plugins/archlang/`: `plugin.json`, `mcp.json`, `skills/`, `assets/icon.png` (below) | hosted | none |
+| GitHub Copilot (CLI) | `plugins/archlang/`: `plugin.json`, `mcp.json`, `skills/` | hosted | `integrations/copilot/*` |
+| Cursor | `plugins/archlang-cursor/`: `.cursor-plugin/plugin.json`, `mcp.json`, `skills/`, `rules/archlang.mdc`; listed by the root `.cursor-plugin/marketplace.json` | local | none |
+| Gemini CLI | `gemini-extension.json` at the repository root | local | none |
+| Any Agent Plugins client | `plugins/archlang/`: `plugin.json`, `mcp.json`, `skills/` | hosted | none |
 
 ## What the files are
 
@@ -34,27 +37,39 @@ covered in [`overview.md`](overview.md) and is not repeated here.
   server in its `mcp.json`, so there is no `skills` or `mcpServers` field.
 - `assets/icon.png`: a byte copy of `.claude-plugin/icon.png` (1024 px square PNG), the OpenAI
   listing's `logo` and `composerIcon`.
-- `.cursor-plugin/plugin.json`: the Cursor plugin manifest. Cursor requires only `name`; it discovers
-  `skills/` and `rules/*.mdc` from the plugin root.
 - `mcp.json`: the MCP server (see below).
-- `rules/archlang.mdc`: a Cursor rule scoped to `**/*.arch`.
+- `LICENSE.txt`, `SECURITY.md`: byte copies of the repository's `LICENSE` and `SECURITY.md`, in both
+  plugin folders (`LICENSE` gains `.txt` because the directory accepts only file types it can tell).
+- `plugins/archlang-cursor/.cursor-plugin/plugin.json`: the Cursor plugin manifest. Cursor requires
+  only `name`; it discovers `skills/`, `rules/*.mdc` and `mcp.json` from the plugin root.
+- `plugins/archlang-cursor/rules/archlang.mdc`: a Cursor rule scoped to `**/*.arch`.
+- `plugins/archlang-cursor/mcp.json`: the local MCP server (see below).
+- `.cursor-plugin/marketplace.json` (repository root): Cursor's multi-plugin marketplace file, naming
+  the one plugin at `plugins/archlang-cursor`, so a submission or install that takes only the
+  repository root still finds it.
 - `integrations/copilot/copilot-instructions.md` and `integrations/copilot/archlang.instructions.md`:
   Copilot custom instructions (repository-wide, and path-specific with `applyTo: "**/*.arch"`), for a
   user to copy into their own project.
 
 - `gemini-extension.json` (repository root): the Gemini CLI extension manifest. `name`, the core's
-  `version` and `description`, the same stdio MCP server as `mcp.json`, and `contextFileName` set to
+  `version` and `description`, the same stdio MCP server as the Cursor plugin's `mcp.json`, and `contextFileName` set to
   `integrations/copilot/copilot-instructions.md` (Gemini accepts a relative path inside the extension;
   a root `GEMINI.md` would also load as contributor context, and `AGENTS.md` is the only root
   instruction file).
 
-`mcp.json` declares the MCP server as a stdio server run with `npx -y @chanmeng666/archlang-mcp`, the
-unpinned command the README recommends, so it names no version. Copilot CLI gives the portable
-`plugin.json` precedence over the Claude manifest, and this file is how Copilot (and Cursor) users get the
-server as well as the skills: the local one, so PNG output and offline use keep working. The OpenAI
-directory takes a remote HTTPS server instead (a local server is excluded from a public submission)
-and no longer accepts a skills-only package, so its ZIP carries a different `mcp.json`, the hosted
-server `https://mcp.archlang.uk/mcp` (below).
+`plugins/archlang/mcp.json` declares the hosted server, `https://mcp.archlang.uk/mcp` (Streamable
+HTTP, no sign-in; below), and so does the Claude manifest (`"type": "http"`): both directories that
+read this folder take a remote server and refuse a local one (Anthropic's, from a publisher that is
+not a Verified organization; OpenAI's, from any public submission). Copilot CLI gives the portable
+`plugin.json` precedence over the Claude manifest, so Copilot users get the hosted server too. A plan
+an agent passes to a tool is then sent to `mcp.archlang.uk`, compiled in memory and not stored
+([privacy](https://archlang.uk/privacy)); the hosted server has no PNG or PDF renderer. To use the
+local server instead, add it yourself (Claude Code: `claude mcp add archlang -- npx -y
+@chanmeng666/archlang-mcp`) and disable the plugin's.
+
+`plugins/archlang-cursor/mcp.json` declares the local stdio server run with `npx -y
+@chanmeng666/archlang-mcp`, the unpinned command the README recommends, so it names no version:
+Cursor users keep PNG output and offline use, and the Cursor plugin sends nothing.
 
 ## How a user installs them
 
@@ -65,8 +80,9 @@ server `https://mcp.archlang.uk/mcp` (below).
   Without it, copy the skill folders into the project's `.github/skills/`, and optionally
   `integrations/copilot/copilot-instructions.md` to `.github/copilot-instructions.md` and
   `integrations/copilot/archlang.instructions.md` to `.github/instructions/`.
-- **Cursor:** once listed, install from the Cursor Marketplace. Locally, copy `plugins/archlang/` to
-  `~/.cursor/plugins/local/archlang` and reload the window.
+- **Cursor:** once listed, install from the Cursor Marketplace. Locally, copy `plugins/archlang-cursor/` to
+  `~/.cursor/plugins/local/archlang` and reload the window. (The Cursor plugin used to be
+  `plugins/archlang/`; a copy made from it keeps working, and a refresh copies the new folder.)
 - **Gemini CLI:** `gemini extensions install https://github.com/ChanMeng666/archlang`. The gallery
   at <https://geminicli.com/extensions/> lists repositories with the `gemini-cli-extension` topic.
 - **OpenClaw:** the skill is on ClawHub at <https://clawhub.ai/chanmeng666/skills/archlang>;
@@ -74,8 +90,8 @@ server `https://mcp.archlang.uk/mcp` (below).
 - **Anything else:** `npx skills add ChanMeng666/archlang` installs the same skills for the hosts the
   `skills` CLI supports. With the GitHub CLI, install one skill at a time by path, e.g.
   `gh skill install ChanMeng666/archlang skills/archlang --agent cursor`: `gh skill install --all`
-  refuses, because it also finds the plugin's copies under `plugins/archlang/skills/` and reads
-  the matching names as a conflict.
+  refuses, because it also finds the plugins' copies under `plugins/archlang/skills/` and
+  `plugins/archlang-cursor/skills/` and reads the matching names as a conflict.
 
 ## Hosted MCP server
 
@@ -108,7 +124,7 @@ change it; the repository's `plugin.json` has none), `mcp.json` declaring the ho
 (`type: "streamable-http"`, `url: "https://mcp.archlang.uk/mcp"`, no headers, no sign-in),
 `assets/icon.png` and `skills/`, whose `npx -y` and `npm i -g` commands name the core's version (the
 directory's scan flags an unpinned package as a mutable source, and a finding left open may lead to
-rejection). `.claude-plugin/`, `.cursor-plugin/` and `rules/` stay out. It then
+rejection). `.claude-plugin/`, `README.md`, `LICENSE.txt` and `SECURITY.md` stay out. It then
 opens the written ZIP again and checks the entry list and both rewritten files;
 `npm run prove:openai-plugin` repeats that check on an existing ZIP.
 
@@ -179,10 +195,11 @@ none (O.12 in `backlog.md`), and Codex is untested (O.13).
 
 1. Sign in to Cursor with the owner's account and open <https://cursor.com/marketplace/publish>.
 2. Submit the repository `https://github.com/ChanMeng666/archlang` with the plugin path
-   `plugins/archlang` (plugins must be open source and are distributed as Git repositories); the
-   manifest it reads is `.cursor-plugin/plugin.json`. If the form takes only a repository root, say so
-   in the submission: the Cursor docs describe a `.cursor-plugin/marketplace.json` for multi-plugin
-   repositories, which this repository does not ship.
+   `plugins/archlang-cursor` (plugins must be open source and are distributed as Git repositories); the
+   manifest it reads is `.cursor-plugin/plugin.json` in that folder. If the form takes only a
+   repository root, the root `.cursor-plugin/marketplace.json` names that folder. The publisher
+   application already filed (`seo.md` section 8) named `plugins/archlang`, which no longer holds a
+   Cursor manifest: tell Cursor the new path.
 3. Cursor reviews every plugin and every update by hand before listing it. Follow its submission
    checklist at <https://cursor.com/docs/reference/plugins>.
 
