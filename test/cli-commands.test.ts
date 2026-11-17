@@ -114,10 +114,10 @@ describe("CLI — fmt", () => {
   it("never destroys source it cannot parse — an unparseable plan comes back verbatim", async () => {
     const broken = 'plan "B" {\n  units mm\n  room at (0,0) size 4000x3000 label "R"\n  garbage nonsense here\n}\n';
     const r = await run(["fmt", "-"], broken);
-    // `fmt` is deliberately non-gating (it reports no diagnostics), so the only
-    // protection an author has is that the bytes survive.
-    expect(r.status).toBe(0);
+    // The bytes survive on stdout, and the refusal is said: exit 2 and one line on stderr (AF6).
+    expect(r.status).toBe(2);
     expect(r.stdout).toBe(broken);
+    expect(r.stderr).toContain("stdin not formatted");
   }, 60000);
 });
 

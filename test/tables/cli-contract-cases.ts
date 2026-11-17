@@ -31,8 +31,8 @@ const OP3D = "test/fixtures/openplan3d/two-room-web-project.json";
 /**
  * One row per manifest command (the test checks the set equals the manifest's). `exit` for a
  * user-error input is the code the command ends with TODAY: most analysers end `EXIT.USER`; the
- * authoring and sharing commands (`fmt`, `repair`, `reroll`, `suggest`, `link`, `complete`) answer a
- * plan that does not parse with exit 0 (documented in the manifest; `impact` exits 2), and this
+ * authoring and sharing commands (`repair`, `reroll`, `suggest`, `link`, `complete`) answer a
+ * plan that does not parse with exit 0 (documented in the manifest; `impact` and `fmt` exit 2), and this
  * table pins that (`note`) so a change to either side is a finding, not an accident.
  */
 export const CASES: Record<string, Case> = {
@@ -101,11 +101,8 @@ export const CASES: Record<string, Case> = {
   },
   fmt: {
     ok: () => ["fmt", STUDIO, "--json"],
-    user: {
-      argv: (d) => ["fmt", join(d, "bad.arch"), "--json"],
-      exit: EXIT.OK,
-      note: "an unparseable source is returned unchanged",
-    },
+    // AF6: an unparseable source is still returned unchanged, but refused out loud; moved 0 -> 2.
+    user: { argv: (d) => ["fmt", join(d, "bad.arch"), "--json"], exit: EXIT.USER },
   },
   repair: {
     ok: () => ["repair", STUDIO, "--json"],

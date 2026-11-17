@@ -392,5 +392,9 @@ is measured in the cited tests; the backlog holds the measurements.
 5. **Won't fix, recorded.** The total-area `E_NON_FINITE` branch stays as an unreachable
    backstop. `arch fmt`'s 0.001 mm canonical form below |n|·1000 ≤ 2^53 is the language's
    resolution (the lattice §1's arc check decides on), so a sub-micrometre literal printing 0 is by
-   design. Annotation primitives (a door leaf, glazing, dimension ticks) may reach slightly past the
+   design. *Amended (backlog M.8, card AF6, 2026-11):* that no longer holds for `arch fmt`. A literal
+   off the lattice still resolves as written, so a 3 dp printer made a formatted plan draw, describe
+   and lint differently (`1500.0049` printed as `1500.005`). `format()` now prints each literal
+   losslessly (`fmtLiteral`, `src/num-format.ts`); a value with three decimals or fewer keeps its
+   bytes. Annotation primitives (a door leaf, glazing, dimension ticks) may reach slightly past the
    range on an accepted plan; they are finite, and only bounds and measures are held.

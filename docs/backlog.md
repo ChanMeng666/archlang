@@ -46,7 +46,6 @@ is to be started until its question is answered; the entry named holds the evide
 | Item | The question |
 |---|---|
 | 3.1 (b) | Take the `vitest` 2 → 5 major now, or keep waiting on the entry's triggers? |
-| M.8 | Should `format()` keep more than three decimals, and should `arch fmt` say so (stderr, exit code) when it refuses a file with parse errors? |
 | M.9 | Should grid snap and `fmt2` round half away from zero, so a mirror image snaps alike? It moves output. |
 | M.14 | Should a roof's acute corner be bevelled or miter-limited, and at what limit? |
 | D.7 | One hairline for the whole sheet? The title block's rules would move in every example. |
@@ -768,7 +767,7 @@ programme's gate runs; not reproduced on purpose here.
 
 - M.7 · `diffPlans` follow-ups — closed → archived (lab)
 
-### M.8 · The source formatter is lossy past three decimals, and silent when it refuses — `todo`
+### M.8 · The source formatter is lossy past three decimals, and silent when it refuses: done by #PRNUM, waiting to be archived — `note`
 
 **Carded as** AF6 (`docs/plans/product-roadmap/cards.md` track 10, 2026-11-18).
 
@@ -777,6 +776,15 @@ programme's gate runs; not reproduced on purpose here.
 `at (0, 1.001)`. Separately, `arch fmt` on a file with parse errors (including the newly
 diagnosed trailing content) prints it unchanged and exits 0, so nothing tells the user it
 refused: re-run on a stray-`}` file. Consider a note on stderr or a non-zero exit.
+
+Closure note (#PRNUM, card AF6, decided under the RM-D65 delegation). `format()` prints each literal
+through `fmtLiteral` (`src/num-format.ts`): `fmtSource` where that reads back as the same double, else
+the shortest decimal that does, so every value with three decimals or fewer keeps its bytes (`fmt`
+over every tracked `.arch` is byte-identical) and `at (0.0004,1.0005)` stays as written. `arch fmt` on
+a plan that does not parse exits 2 with one line on stderr; `--json` adds `parsed: false` and the
+parse `diagnostics`, with `ok: false`. Residue, not fixed: `repair` (through `formatPlan`) and every
+fix producer still re-print an untouched literal of more than three decimals at 0.001 in the statement
+they rewrite, and the playground's Format button still says "Already formatted" on a plan it refused.
 
 ### M.9 · Grid snap rounds half up, so a mirror image snaps differently — `todo`
 

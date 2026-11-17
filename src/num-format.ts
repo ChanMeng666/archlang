@@ -13,9 +13,9 @@
  * product from an absurd magnitude. `fmt3`'s `"0"` for NaN/±Infinity is a byte-pinned backstop,
  * NOT a way to represent an overflow, and must not be removed.
  *
- * Also owns `MODEL_RANGE_MM` and `fmtSource`, which prints a number so it re-parses to the same
- * double; `ir/checks.ts` `checkNumberDomain` (elements' `bounds()` and `measures()`) and
- * `checkDrawnSizes` hold the resolved plan to the range once, after frames are carried, and an
+ * Also owns `MODEL_RANGE_MM`, `fmtSource` (a computed number as lexable source, on the 0.001 mm
+ * lattice) and `fmtLiteral` (a written literal, losslessly, for `arch fmt`); `ir/checks.ts`
+ * `checkNumberDomain` (elements' `bounds()` and `measures()`) and `checkDrawnSizes` hold the resolved plan to the range once, after frames are carried, and an
  * element past it is reported once and dropped.
  */
 
@@ -126,19 +126,36 @@ export function fmtPermyriad(p: number): string {
 }
 
 /**
- * {@link fmt3} for SOURCE text — the printers that write `.arch` (`format`, the shared
- * statement and expression printers). Every finite value it prints re-parses to the same
- * double:
+ * {@link fmt3} for SOURCE text that a tool computes — the shared statement and expression
+ * printers as a fix producer, `repair`, `finish` or an importer uses them. What it prints is
+ * lexable, and a value on the 0.001 mm lattice reads back as the same double; a value off the
+ * lattice reads back rounded to it (that rounding is deliberate for a computed value, whose
+ * last digits are float noise):
  *
  * - while `|n| × 1000 ≤ 2⁵³` it is `fmt3` exactly (3 dp, the historical bytes);
  * - above that, `fmt3`'s `Math.round(n × 1000) / 1000` can move the value itself (an integer
  *   near 10²¹ came back 10⁵ off), so the value is printed as `String(n)` — the shortest
  *   decimal that reads back as `n` — with an exponent (1e21 and above) expanded into zeros,
  *   because the lexer has no exponent form and `1e+24` would not re-parse.
+ *
+ * A literal the author WROTE is printed by {@link fmtLiteral} instead (`arch fmt`).
  */
 export function fmtSource(n: number): string {
   if (!Number.isFinite(n) || Math.abs(n) * 1000 <= 2 ** 53) return fmt3(n);
   return plainDigits(n);
+}
+
+/**
+ * A number literal as `arch fmt` writes it back: LOSSLESS, so the printed text always reads back
+ * as exactly `n` (M.8). {@link fmtSource} whenever that already reads back as `n` — so every value
+ * on the 0.001 mm lattice keeps the historical bytes — else the shortest decimal that does
+ * ({@link plainDigits}): `0.0004` stays `0.0004` and `1.0005` stays `1.0005`, where `fmtSource`
+ * wrote `0` and `1.001`. It differs from `fmtSource` exactly where `fmtSource` would have moved
+ * the value. Non-finite → `"0"`, the `fmt3` backstop (the lexer never yields one).
+ */
+export function fmtLiteral(n: number): string {
+  const s = fmtSource(n);
+  return !Number.isFinite(n) || Number(s) === n ? s : plainDigits(n);
 }
 
 /**

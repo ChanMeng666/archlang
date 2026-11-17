@@ -1,4 +1,4 @@
-/** impact exits 2 on a plan that does not parse; fmt returns it verbatim with exit 0 (EH1.18). */
+/** impact and fmt exit 2 on a plan that does not parse; fmt returns it verbatim and says it refused (EH1.18, AF6). */
 
 import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -7,7 +7,7 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { EXIT } from "../src/cli/io.js";
 import { runArch } from "./helpers/cli.js";
 
-/** EH1.18: `impact` cannot compare a broken side, so it exits 2; `fmt` keeps its verbatim exit-0 contract. */
+/** EH1.18: `impact` cannot compare a broken side, so it exits 2. AF6: `fmt` refuses one, still verbatim, and exits 2 too. */
 const BAD = 'plan "B" { units mm room at (0,0) size 4000x3000 label "R" @ }\n';
 const GOOD = 'plan "A" { units mm room at (0,0) size 4000x3000 label "R" }\n';
 let dir = "";
@@ -19,13 +19,49 @@ beforeAll(() => {
 afterAll(() => rmSync(dir, { recursive: true, force: true }));
 
 describe("a plan that does not parse", () => {
-  it("fmt --write exits 0, reports changed: false and does not touch the file", async () => {
+  it("fmt --write exits 2, reports parsed: false with the diagnostics and does not touch the file", async () => {
     const r = await runArch(["fmt", join(dir, "bad.arch"), "--write", "--json"]);
-    expect(r.status).toBe(EXIT.OK);
-    const j = JSON.parse(r.stdout) as { ok: boolean; changed: boolean };
-    expect(j.ok).toBe(true);
+    expect(r.status).toBe(EXIT.USER);
+    const j = JSON.parse(r.stdout) as {
+      ok: boolean;
+      parsed: boolean;
+      changed: boolean;
+      source_hash: string;
+      diagnostics: Array<{ code: string; span: [number, number] }>;
+    };
+    expect(j.ok).toBe(false);
+    expect(j.parsed).toBe(false);
     expect(j.changed).toBe(false);
+    expect("written_hash" in j).toBe(false);
+    // The revision is still reported, so an agent reading `source_hash` off `fmt --json` keeps it.
+    expect(j.source_hash).toMatch(/^[0-9a-f]{64}$/);
+    expect(j.diagnostics[0]!.code).toBe("E_PARSE");
+    expect(BAD.slice(...j.diagnostics[0]!.span)).toBe("@");
     expect(readFileSync(join(dir, "bad.arch"), "utf8")).toBe(BAD);
+  });
+
+  it("fmt in human mode exits 2, prints the source verbatim on stdout and one line on stderr", async () => {
+    for (const argv of [
+      ["fmt", join(dir, "bad.arch")],
+      ["fmt", join(dir, "bad.arch"), "--write"],
+    ]) {
+      const r = await runArch(argv);
+      expect(r.status, argv.join(" ")).toBe(EXIT.USER);
+      expect(r.stdout, argv.join(" ")).toBe(argv.includes("--write") ? "" : BAD);
+      expect(r.stderr.trim().split("\n"), argv.join(" ")).toHaveLength(1);
+      expect(r.stderr, argv.join(" ")).toContain("not formatted: 1 parse error");
+    }
+    expect(readFileSync(join(dir, "bad.arch"), "utf8")).toBe(BAD);
+  });
+
+  it("fmt on a plan that parses says parsed: true and exits 0", async () => {
+    const r = await runArch(["fmt", join(dir, "good.arch"), "--json"]);
+    expect(r.status).toBe(EXIT.OK);
+    const j = JSON.parse(r.stdout) as Record<string, unknown>;
+    expect(j.ok).toBe(true);
+    expect(j.parsed).toBe(true);
+    expect("diagnostics" in j).toBe(false);
+    expect(r.stderr).toBe("");
   });
 
   it("impact exits 2 whichever side is broken", async () => {
@@ -75,10 +111,12 @@ describe("a plan that does not parse", () => {
     expect(r.stderr + r.stdout).toContain("E_PARSE");
   });
 
-  it("fmt - (stdin) exits 0 and returns the source verbatim", async () => {
+  it("fmt - (stdin) exits 2 and returns the source verbatim", async () => {
     const r = await runArch(["fmt", "-", "--json"], { input: BAD });
-    expect(r.status).toBe(EXIT.OK);
-    const j = JSON.parse(r.stdout) as { formatted: string; changed: boolean };
+    expect(r.status).toBe(EXIT.USER);
+    const j = JSON.parse(r.stdout) as { ok: boolean; parsed: boolean; formatted: string; changed: boolean };
+    expect(j.ok).toBe(false);
+    expect(j.parsed).toBe(false);
     expect(j.formatted).toBe(BAD);
     expect(j.changed).toBe(false);
   });

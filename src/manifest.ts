@@ -882,7 +882,7 @@ const COMMANDS: ManifestCommand[] = /* @__PURE__ */ pure(() => [
     flags: [{ flag: "--write", description: "format the file in place" }, EXPECTED_HASH_FLAG, JSON_FLAG, QUIET_FLAG],
     input: "<file.arch|->",
     output:
-      "formatted source (or in place with --write); exits 0 and returns the source verbatim when it does not parse; `fmt --write` leaves the file untouched",
+      "formatted source (or in place with --write); --json gives { ok, parsed, changed, formatted, source_hash, output_hash } (with --write: output and written_hash instead of formatted and output_hash). A number literal is printed losslessly (its shortest form, never rounded to 0.001). A plan that does not parse is refused: exit 2, the source returned verbatim, `fmt --write` leaves the file untouched, one line on stderr, and --json gives ok false, parsed false and the parse diagnostics",
     examples: [
       { cmd: "archlang fmt plan.arch --json", note: "canonical source plus a `changed` flag, nothing written" },
       { cmd: "archlang fmt plan.arch --write", note: "rewrite the file in canonical form" },
