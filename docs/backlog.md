@@ -2274,7 +2274,7 @@ embed path's per-chunk and total gzip bytes against the budget, which the spec a
 **Gate:** the script's total equals the spec's on the same build; `docs/agents/commands.md` names it;
 compiler-path PR briefs say to run it.
 
-### EB.2 · Headroom on the playground's shared compiler chunk: done by #PR, waiting to be archived — `note`
+### EB.2 · Headroom on the playground's shared compiler chunk: done by #947, waiting to be archived — `note`
 
 Both hard gzip ceilings over the playground's compiler chunk were nearly full on `main` aaae8d4c
 (`playground/e2e/startup-chunks.baseline.json`): the embed path 350,995 B of 351,000 B and the
