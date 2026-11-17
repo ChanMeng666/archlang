@@ -165,8 +165,11 @@ export function idAfterKind(ctx: ParseCtx, what: IdAfterKindStatement, id: strin
 /**
  * A `door`'s or `window`'s kind word as one more order-free clause (backlog EV.8): after the
  * placement, in any order with the rest (`door on w at 50% width 900 sliding`), as models write it.
- * Read only where the word cannot begin the next statement, so every plan that parsed before reads
- * as it did: a kind word after an opening's clauses began an "Unknown statement" there. `lead` is
+ * Read only on the line of the token before it, and only where the word cannot begin the next
+ * statement, so every plan that parsed before reads as it did: a kind word after an opening's
+ * clauses began an "Unknown statement" there. A kind word that starts a line is never this clause,
+ * even where a statement could not start with it: `sliding door …` on the next line is the next
+ * statement (an `E_PARSE`, with `hinged`'s hint), never a kind for the door above it. `lead` is
  * the token of a kind written straight after the keyword, if any; `set` takes the kind read here,
  * and the statement lays its node out as if the word had been written there. A second kind word,
  * wherever the first stood, is `E_DUP_CLAUSE`, reported and read past.
@@ -185,7 +188,7 @@ export function kindClause<K extends string>(
     word: "kind",
     // Before the placement in the old order, so reading it never puts a later clause out of order.
     rank: 0,
-    at: () => word() !== undefined && !begins(),
+    at: () => word() !== undefined && ctx.peek().line === ctx.peek(-1).line && !begins(),
     startsStatement: begins,
     // A second kind word is a different word from the first, so this clause checks its own repeats.
     repeats: true,
