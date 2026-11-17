@@ -2128,6 +2128,14 @@ keeps its `rotate 0` footprint). A kind with no
 catalogued footprint still needs an explicit `size`. `in <room>` records which room
 owns the piece (used by the lint rules).
 
+Under a `grid`, an omitted size snaps as a written one does, and every placement reports a
+footprint the grid moved with `W_GRID_SNAPPED`, naming the "catalogued size". They differ only
+when the grid takes a side to 0. Under `at` and `in` that is `E_FURN_SIZE`, as a written size that
+snaps to 0 is under any placement. Under `against` with no `size` it stays a `W_GRID_SNAPPED`
+that names the side, so a `mirror` (50 mm deep) `against` a wall on `grid 200` is drawn 0 deep,
+with a warning and no error: `against` snapped its footprint silently before it reported the snap,
+and a plan that compiled then still compiles.
+
 **Segment selectors.** On a wall of several segments, `segment <n>` (0-based, in the wall's
 direction) says which one the piece backs onto. A selector can stand in its place and resolves to
 exactly that number, so the plan draws, describes and lints as if the number were written:

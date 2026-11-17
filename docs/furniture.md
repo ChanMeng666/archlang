@@ -78,8 +78,10 @@ furniture wc in r_bath anchor bottom flush size 400x700
     `rotate 0`; a turn that would put the back on the footprint's short side is
     [`E_FACING_TRANSPOSED`](error-codes.md), which names the `size` to write.
   - Under a `grid` the footprint snaps as a written size does, with
-    [`W_GRID_SNAPPED`](error-codes.md) when that moves it; a side that snaps to nothing is
-    [`E_FURN_SIZE`](error-codes.md).
+    [`W_GRID_SNAPPED`](error-codes.md) when that moves it (under `against` too); a side that
+    snaps to nothing is [`E_FURN_SIZE`](error-codes.md) under `at` and `in`, and under `against`
+    a `W_GRID_SNAPPED` that names the side (a written size that snaps to nothing is
+    `E_FURN_SIZE` under every placement).
 - **`in <room>`** records the owning room (by `id`). A trailing `in <room>` doesn't
   move the piece — it lets the linter check the piece is actually inside that room and
   lets `against` infer the interior side. A non-existent id is

@@ -1921,7 +1921,7 @@ serve the MP4s from a host that answers 206, or keep the fallback as the design.
 Left by the review of that PR (review-cost cap). CO.1 is a hole that predates it; CO.2 records three
 behaviours it documents rather than changes.
 
-### CO.1 · Under `grid`, an `against` piece with no `size` snaps its footprint silently — `todo`
+### CO.1 · Under `grid`, an `against` piece with no `size` snaps its footprint silently: done by #941, waiting to be archived — `note`
 
 `furniture.resolve()` snaps a catalogued footprint with `ctx.snap` under every placement, but only
 `at` and `in` report it: `against wall` and `against <room>.<edge>` raise neither `W_GRID_SNAPPED`

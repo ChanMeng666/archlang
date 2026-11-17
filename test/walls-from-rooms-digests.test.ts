@@ -5,7 +5,8 @@
  * (every existing digest suite unchanged, the twins byte-identical in SVG and lint,
  * `test/walls-from-rooms.test.ts`). Measured with the test's own digest body
  * (`allStoreysDigestWithDiagnostics`). A moved row is a finding to explain
- * (`docs/testing.md` §3), never a re-pin.
+ * (`docs/testing.md` §3), never a re-pin. CO.1 (RM-D56) re-measured `two-bed-twin` after proof: it
+ * gains one `W_GRID_SNAPPED` and nothing else (its row says how that was shown).
  */
 
 import { describe as suite, expect, it } from "vitest";
@@ -23,7 +24,7 @@ const DIGESTS: [string, string][] = [
   // Re-measured 2026-10-24 (PS2.12): the annotation-collision examples (the twin follows two-bed's bed move); why, and the swap-back proof, in `test/byte-identity-baseline.ts`'s header.
   // Re-measured 2026-10-25 (PS2.11a/b): the twin follows two-bed's window and WC moves; why, and the proof that nothing else moved, in `test/byte-identity-baseline.ts`'s header.
   // Re-measured 2026-10-26 (PS2.11e/PS2.46/PS2.54): the studio and two-bed twins follow their examples' stove moves; open-plan, open-width and open-instances move in hints only (the fixture statements a `W_ROOM_NO_FIXTURE` or `W_ROOM_MISSING_DEFINING` hint quotes are now held clear of a cased opening's approach and a window over a hob, so a different anchor, or a shower for a bathtub, is quoted); SVG, `describe()` and diagnostics unchanged.
-  ["two-bed-twin", "e481c569e6ef769ee6123b5b35e231163a8824a3082dc4341ca39c922d7fe354"], // PS2.11e, see header; RM1.4: snapping is now reported (the twin's 850x2000 sofa and 450x600 basin under grid 100 raise W_GRID_SNAPPED; steps 629 -> 757, +128 = two DIAGNOSTIC_STEPS) (was a458ded6)
+  ["two-bed-twin", "655771bf8e36cd1f8548a99ab8ff1ec9badbde462ae5174a28c0fff05072ad94"], // PS2.11e, see header; RM1.4: snapping is now reported (the twin's 850x2000 sofa and 450x600 basin under grid 100 raise W_GRID_SNAPPED; steps 629 -> 757, +128 = two DIAGNOSTIC_STEPS) (was a458ded6); CO.1 (RM-D56): its sizeless `against` fridge (600x650 on grid 100) raises W_GRID_SNAPPED too; with exactly that entry removed from compile() and describe() diagnostics, main's source through this compiler gives e481c569 again (was e481c569)
   ["widen-4000", "caaf25e6f0f27dc2409f4d81d2434d83c7c75b62e5bcad55cd8a08d5a8dbce19"],
   ["widen-4500", "5756d730cbb5d2bb27471d50e24023b29b6826aa359bf76a4cd43b2a156afef9"],
   ["courtyard", "ddab523168af17603cb23ef2ade5be2c433e2f48992a8cdf7b6e5e7a71d00d59"], // PS2.29: message text only, same code, same span

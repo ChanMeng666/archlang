@@ -154,8 +154,12 @@ describe("validate · next tiers through the CLI", () => {
     ]) {
       const out = JSON.parse(runValidate(argv).stdout);
       const codes = out.diagnostics.map((d: { code: string }) => d.code);
-      // The audit's finding still stands: the swing is first in emission order, the stair codes after it.
-      expect(codes[0], argv.join(" ")).toBe("W_SWING_OBSTRUCTED");
+      // The audit's finding still stands: the swing is the first lint code in emission order, the
+      // stair codes after it. CO.1: the plan's sizeless `against` pieces under `grid 100` raise
+      // `W_GRID_SNAPPED` at resolve, listed before every lint code; it is tier `info` (last), so
+      // `next` is still the stair code.
+      expect(codes[0], argv.join(" ")).toBe("W_GRID_SNAPPED");
+      expect(lintCodes(out)[0], argv.join(" ")).toBe("W_SWING_OBSTRUCTED");
       expect(codes, argv.join(" ")).toContain("W_STAIR_NO_LANDING");
       expect(out.next, argv.join(" ")).toMatchObject({ tier: "validity", code: "W_STAIR_SIDE_ENTRY" });
     }

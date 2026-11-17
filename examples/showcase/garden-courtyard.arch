@@ -75,7 +75,7 @@ plan "Garden Courtyard House" {
   furniture wc against r_cbath.left offset 1700 size 400x700 in r_cbath
   furniture basin against r_cbath.right offset 700 size 600x450 in r_cbath
   furniture shower against r_cbath.bottom offset 2300 size 1200x1200 in r_cbath
-  furniture towel_rail against r_cbath.top offset 600 in r_cbath
+  furniture towel_rail against r_cbath.top offset 600 size 500x100 in r_cbath
 
   # ---- hall, living, kitchen ----
   furniture console_table against r_hall.left offset 1500 in r_hall
