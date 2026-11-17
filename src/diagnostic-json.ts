@@ -63,6 +63,18 @@ export interface DiagnosticJson {
   /** The storey that raised it (a multi-storey plan's authored `level` number);
    *  present only when the diagnostic carries one. See {@link Diagnostic.level}. */
   level?: number;
+  /** The `place … as <name>` instance whose expansion raised it, dotted when nested; present only
+   *  when the diagnostic carries one. See {@link Diagnostic.instance}. */
+  instance?: string;
+  /** The component {@link instance} was made from; present only when the diagnostic carries one. */
+  component?: string;
+  /**
+   * Secondary locations that explain it (rustc's secondary spans, LSP `relatedInformation`): the
+   * statement an id was first declared at, the `place` that put an instance's body here, the wall
+   * a door was expected on. Present only when the diagnostic carries related spans; each entry
+   * follows the diagnostic's own rule for `line`/`col`/`span`/`file`.
+   */
+  related?: RelatedSpanJson[];
   /**
    * The lint ruleset number this warning was raised against (card RM1.6b): its key, value, units,
    * who set it, its document, clause, edition and verification grade, and the profile the run
@@ -70,6 +82,20 @@ export interface DiagnosticJson {
    * ruleset number drives the diagnostic; never part of `lint()`'s own return value.
    */
   rule?: DiagnosticRuleJson;
+}
+
+/**
+ * A {@link import("./diagnostics.js").RelatedSpan} projected to JSON, keyed as a diagnostic is:
+ * `message`, then 1-based `line`/`col` of `span[0]` (only when the span is in the source being
+ * projected), `span` as `[start, end)`, and `file` when the span is measured in an imported module
+ * (then no `line`/`col`, as for the diagnostic itself).
+ */
+export interface RelatedSpanJson {
+  message: string;
+  line?: number;
+  col?: number;
+  span: [number, number];
+  file?: string;
 }
 
 /** A source a ruleset number is read from, as {@link DiagnosticRuleJson.also} lists it. */
@@ -150,6 +176,22 @@ export function diagnosticToJson(source: string, d: Diagnostic, opts?: Diagnosti
       return j;
     });
   if (d.level !== undefined) out.level = d.level;
+  // Card AF1: appended after every key above (and before `rule`, which stays last), so a
+  // diagnostic that carries none of these projects to exactly the bytes it did before.
+  if (d.instance !== undefined) out.instance = d.instance;
+  if (d.component !== undefined) out.component = d.component;
+  if (d.relatedSpans?.length)
+    out.related = d.relatedSpans.map((r) => {
+      const j = { message: r.message } as RelatedSpanJson;
+      if (r.file === undefined) {
+        const { line, col } = offsetToLineCol(source, r.span.start);
+        j.line = line;
+        j.col = col;
+      }
+      j.span = [r.span.start, r.span.end];
+      if (r.file !== undefined) j.file = r.file;
+      return j;
+    });
   const rule = opts?.rule?.(d);
   if (rule) out.rule = rule;
   return out;

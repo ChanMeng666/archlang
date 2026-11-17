@@ -90,6 +90,15 @@ export interface FixSuggestion {
 export interface RelatedSpan {
   span: Span;
   message: string;
+  /**
+   * The module this span is measured in, when that is NOT the compiled source: the same rule
+   * as {@link Diagnostic.file}, read per span, because one diagnostic can point into two
+   * files (a defect inside an `import`ed component's body, plus the `place` statement in
+   * the compiled source that put it there). Absent = the compiled source. `stampProvenance`
+   * and lint's fold stamp it onto a body's own related spans when they stamp the diagnostic's
+   * `file`. Append-only field.
+   */
+  file?: string;
 }
 
 export interface Diagnostic {
@@ -141,6 +150,17 @@ export interface Diagnostic {
   instance?: string;
   /** The component the {@link instance} was made from. Append-only field. */
   component?: string;
+}
+
+/**
+ * The related spans of a diagnostic being stamped with `file`, each stamped with it too unless it
+ * already names a file: a span raised alongside a primary span is measured in the same source as
+ * it, so moving the primary into `file` moves them there with it. The input is never mutated
+ * (a diagnostic may be shared); `undefined` and `[]` come back as they went in.
+ */
+export function relatedInFile(rel: RelatedSpan[] | undefined, file: string): RelatedSpan[] | undefined {
+  if (!rel?.some((r) => r.file === undefined)) return rel;
+  return rel.map((r) => (r.file === undefined ? { ...r, file } : r));
 }
 
 /**
@@ -373,21 +393,15 @@ export function formatDiagnostic(source: string, d: Diagnostic): string {
     }
   }
 
-  // Related locations: a small framed snippet per secondary span. A `RelatedSpan` carries
-  // no `file` of its own — it is measured in whatever source the OWNING diagnostic is
-  // (`d.file`), so the same "cannot index the wrong file" rule as the primary span above
-  // applies here too: `file` present means `--> <file> [start..end]`, no excerpt.
-  //
-  // One known imprecision, pre-existing and not introduced here: `ir.ts`'s
-  // `stampProvenance` can attach a "placed here" related span measured in the COMPILED
-  // source even when the diagnostic's OWN span (and `file`) point into a component's
-  // body — a `place` statement always renders its related span against the file it is
-  // written in, which is not always `d.file`. `diagnosticJson` does not project
-  // `relatedSpans` at all today, so no consumer currently disambiguates this either;
-  // fixing it precisely needs `RelatedSpan` to carry its own optional `file`.
+  // Related locations: a small framed snippet per secondary span. Each is measured in its
+  // OWN `file` (`RelatedSpan.file`, absent = the compiled source), not the owning
+  // diagnostic's: a defect inside an imported component's body carries `file`, while the
+  // "placed here" span `stampProvenance` adds points at the `place` statement in the
+  // compiled source. The same "cannot index the wrong file" rule as the primary span above
+  // applies: `file` present means `--> <file> [start..end]`, no excerpt.
   for (const rel of d.relatedSpans ?? []) {
-    if (d.file !== undefined) {
-      lines.push(` --> ${d.file} [${rel.span.start}..${rel.span.end}] note: ${rel.message}`);
+    if (rel.file !== undefined) {
+      lines.push(` --> ${rel.file} [${rel.span.start}..${rel.span.end}] note: ${rel.message}`);
       continue;
     }
     const { line, col } = offsetToLineCol(source, rel.span.start);

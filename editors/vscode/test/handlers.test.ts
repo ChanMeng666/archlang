@@ -602,6 +602,22 @@ describe("positions are line/character, not offsets", () => {
     expect(CJK.split("\n")[3]!.slice(err!.range.start.character)).toMatch(/^room id=bad/);
   });
 
+  it("a related span after a CJK line is relatedInformation at the right position (card AF1)", () => {
+    const src =
+      'plan "重复" {\n  room id=a at (0,0) size 3000x3000 label "客厅"\n  room id=a at (3000,0) size 3000x3000 label "卧室"\n}\n';
+    const dup = h.diagnostics(src, "file:///dup.arch").find((d) => d.code === "E_DUP_ID");
+    expect(dup?.relatedInformation).toEqual([
+      {
+        location: {
+          uri: "file:///dup.arch",
+          range: { start: { line: 1, character: 2 }, end: { line: 1, character: 46 } },
+        },
+        message: 'id "a" first declared here',
+      },
+    ]);
+    expect(h.diagnostics(src).find((d) => d.code === "E_DUP_ID")?.relatedInformation).toBeUndefined();
+  });
+
   it("an ASTRAL character counts as TWO units, the LSP UTF-16 default", () => {
     const src = uni("🏠🏠");
     const line = src.split("\n")[2]!;

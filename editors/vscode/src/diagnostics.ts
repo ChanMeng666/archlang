@@ -18,6 +18,11 @@ export interface LspRange {
   start: LspPosition;
   end: LspPosition;
 }
+/** An LSP `DiagnosticRelatedInformation`: a location in a document, and what it says there. */
+export interface LspRelatedInformation {
+  location: { uri: string; range: LspRange };
+  message: string;
+}
 export interface LspDiagnostic {
   range: LspRange;
   /** One of {@link Severity}: the LSP `DiagnosticSeverity` codes, so the result IS an LSP `Diagnostic`. */
@@ -25,6 +30,13 @@ export interface LspDiagnostic {
   message: string;
   code?: string;
   source: string;
+  /**
+   * The diagnostic's related spans (`Diagnostic.relatedSpans`: an id's first declaration, the
+   * `place` behind an instance), each a location in the document `uri` names. Present only when
+   * a `uri` was passed and the diagnostic carries a related span measured in this document; a
+   * span that names another `file` is left out, since it addresses that module's bytes.
+   */
+  relatedInformation?: LspRelatedInformation[];
 }
 
 /**
@@ -67,24 +79,41 @@ export function spanToRange(text: string, span: { start: number; end: number }):
   return { start: offsetToPosition(text, span.start), end: offsetToPosition(text, span.end) };
 }
 
-/** Compile `text` and return its diagnostics in LSP shape. */
-export function lspDiagnostics(compile: CompileFn, text: string): LspDiagnostic[] {
+/** A span's LSP range, widened to one character when it is empty so the editor can show it. */
+function visibleRange(text: string, span: { start: number; end: number } | undefined): LspRange {
+  const start = span ? offsetToPosition(text, span.start) : { line: 0, character: 0 };
+  const end = span ? offsetToPosition(text, span.end) : start;
+  return {
+    start,
+    end:
+      end.line === start.line && end.character === start.character ? { ...start, character: start.character + 1 } : end,
+  };
+}
+
+/**
+ * Compile `text` and return its diagnostics in LSP shape. With the document's `uri`, a diagnostic's
+ * related spans become `relatedInformation` (card AF1); without it there is no location to name,
+ * and the result is what it always was.
+ */
+export function lspDiagnostics(compile: CompileFn, text: string, uri?: string): LspDiagnostic[] {
   const { diagnostics } = compile(text, { noCache: true });
   return diagnostics.map((d) => {
-    const start = d.span ? offsetToPosition(text, d.span.start) : { line: 0, character: 0 };
-    const end = d.span ? offsetToPosition(text, d.span.end) : start;
-    return {
-      range: {
-        start,
-        end:
-          end.line === start.line && end.character === start.character
-            ? { ...start, character: start.character + 1 }
-            : end,
-      },
+    const out: LspDiagnostic = {
+      range: visibleRange(text, d.span),
       severity: d.severity === "error" ? Severity.Error : Severity.Warning,
       message: d.message,
       code: d.code,
       source: "archlang",
     };
+    if (uri !== undefined) {
+      // A span naming another `file` (`RelatedSpan.file`) addresses that module's bytes, not this
+      // document's. Read through `in`, so the adapter also typechecks against a built core older than
+      // the field (a worktree whose `node_modules` is a junction resolves the primary's `dist/`).
+      const related = (d.relatedSpans ?? [])
+        .filter((r) => !("file" in r && r.file !== undefined))
+        .map((r) => ({ location: { uri, range: visibleRange(text, r.span) }, message: r.message }));
+      if (related.length) out.relatedInformation = related;
+    }
+    return out;
   });
 }

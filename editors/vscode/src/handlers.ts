@@ -154,7 +154,8 @@ function wantsRefactor(only: readonly string[] | undefined, triggerKind: number 
 export interface Handlers {
   /** Advertised in the `initialize` response. */
   capabilities: ServerCapabilities;
-  diagnostics(text: string): Diagnostic[];
+  /** With the document's `uri`, related spans come back as `relatedInformation` in that document. */
+  diagnostics(text: string, uri?: string): Diagnostic[];
   hover(text: string, position: Position): Hover | null;
   completion(text: string, position: Position): CompletionItem[];
   definition(text: string, uri: string, position: Position): Definition | null;
@@ -168,9 +169,10 @@ export function createHandlers(core: CoreLsp): Handlers {
   return {
     capabilities: SERVER_CAPABILITIES,
 
-    diagnostics(text) {
-      // lspDiagnostics returns LSP-shaped diagnostics (range/severity/message/code/source).
-      return lspDiagnostics(core.compile, text);
+    diagnostics(text, uri) {
+      // lspDiagnostics returns LSP-shaped diagnostics (range/severity/message/code/source, and
+      // relatedInformation when the uri is known).
+      return lspDiagnostics(core.compile, text, uri);
     },
 
     hover(text, position) {

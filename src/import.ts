@@ -17,7 +17,7 @@ import type { ComponentDef, ImportNode, PlanNode, Statement } from "./ast.js";
 import type { Diagnostic, Span } from "./diagnostics.js";
 import type { Registry } from "./registry.js";
 import type { World } from "./world.js";
-import { offsetToLineCol } from "./diagnostics.js";
+import { offsetToLineCol, relatedInFile } from "./diagnostics.js";
 import { plainDigits } from "./num-format.js";
 import { parse } from "./parser.js";
 
@@ -233,7 +233,9 @@ function loadModule(
       // is forwarded: that would move `compile().diagnostics` for every plan that merely
       // imports a library, which is exactly the byte-identity law this deprecation must
       // not break.
-      diagnostics.push({ ...d, file: path });
+      diagnostics.push(
+        d.relatedSpans ? { ...d, file: path, relatedSpans: relatedInFile(d.relatedSpans, path) } : { ...d, file: path },
+      );
     }
   }
   // Tag every component DECLARED here with its file. Its body's spans are offsets into

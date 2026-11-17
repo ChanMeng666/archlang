@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- A diagnostic's related locations, and the placed instance and component it came from, reach the JSON every tool reads (card AF1, backlog M.15). `diagnosticToJson`, and with it `--json` on `compile`, `lint`, `validate` and the other commands, both MCP servers and the playground, adds `related` (each `{ message, line, col, span }`, or `{ message, span, file }` for a location in an imported module, like rustc's secondary spans), `instance` and `component`, only on a diagnostic that carries them and after its other keys (`rule` stays last), so every other diagnostic prints the same bytes as before. Until now only `arch compile`'s text output showed them. The VS Code language server gives them as `relatedInformation`. A duplicate id (`E_DUP_ID`) now points at the statement that first declared it ("first declared here"). A related span carries its own `file` (`RelatedSpan.file`), so the "placed here" note on a diagnostic from an imported component's body is shown framed in the compiled source, where it was printed as an offset into the module.
+
 ### Changed
 
 - A piece placed `against` a wall or a room edge with no `size` now reports a catalogued footprint that the plan's `grid` moved, with `W_GRID_SNAPPED` naming the "catalogued size" as `at` and `in` already did (backlog CO.1); it was snapped silently. The drawing does not change. A side the grid takes to 0 (a 50 mm deep `mirror` on `grid 200`) is that warning naming the side, not an error, so a plan that compiled still compiles; a written size that snaps to 0 stays `E_FURN_SIZE`. Seven examples write the snapped size out and stay warning-free, drawn as before. `finish` writes no sizeless `against` piece that would now warn: on a gridded plan it leaves out a piece whose catalogued footprint is off the grid (one plan in the test corpus, `test/main-entrance-fixtures/n7-back-hall.arch`, loses its fridge, 600 x 650 on `grid 100`).

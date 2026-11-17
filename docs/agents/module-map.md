@@ -233,8 +233,8 @@ Totals: 404 modules in 34 directories.
 | `cursor.ts` | 425 | 8 | Read-only navigation over the parsed AST (a `LinkedNode`-style cursor). | none |
 | `datum.ts` | 545 | 18 | The **vertical datum layer** — the heights a floor plan implies but has never written down. | none |
 | `describe.ts` | 1112 | 25 | `describe(source)` — a pure, semantic summary of a floor plan. | none |
-| `diagnostic-json.ts` | 156 | 5 | Agent-facing JSON projection of a {@link Diagnostic}. | none |
-| `diagnostics.ts` | 407 | 113 | Diagnostics for the ArchLang compiler. | none |
+| `diagnostic-json.ts` | 198 | 5 | Agent-facing JSON projection of a {@link Diagnostic}. | none |
+| `diagnostics.ts` | 421 | 114 | Diagnostics for the ArchLang compiler. | none |
 | `diff.ts` | 736 | 5 | `diffPlans(sourceA, sourceB)` — a pure, structural semantic diff of two plans. | none |
 | `doc.ts` | 157 | 7 | A tiny Wadler/Prettier "Doc" intermediate representation and printer. | none |
 | `draw-budget.ts` | 202 | 7 | The drawing budget: before `toScene()` runs, the primitives a plan will draw are estimated over EVERY storey (a multi-storey compile holds all its pages at once), and a plan past {@link MAX_DRAW_UNITS} is one `E_DRAWING_LIMIT` instead of… | none |
@@ -259,8 +259,8 @@ Totals: 404 modules in 34 directories.
 | `id-spans.ts` | 23 | 2 | The byte span of an element statement's `id=<name>` name, kept beside the AST. A leaf: the parser records spans here and the resolver reads them, so reading one never loads the parser. | none |
 | `identity.ts` | 33 | 3 | Process-local stable identity tokens for cache keying. | none |
 | `impact.ts` | 1405 | 3 | `impact(before, after)` (plan-soundness card PS4.2): change one number, see what follows, what stays put, and what breaks. The executable answer to "what changes, what must not". | none |
-| `import.ts` | 349 | 34 | Module linking — the `import` system. | none |
-| `index.ts` | 713 | 444 | ArchLang — compile declarative floor-plan source to a professional SVG. | none |
+| `import.ts` | 351 | 34 | Module linking — the `import` system. | none |
+| `index.ts` | 714 | 445 | ArchLang — compile declarative floor-plan source to a professional SVG. | none |
 | `input-limit.ts` | 77 | 5 | A host's refusals, as catalogued diagnostics. | none |
 | `intent-concepts.ts` | 238 | 5 | The intent channel's concept vocabulary — production name resolution for the NL→ArchLang intent contract. | none |
 | `intent.ts` | 1589 | 7 | The intent channel — author-time checking of a brief's INTENT against a plan. | none |
@@ -270,7 +270,7 @@ Totals: 404 modules in 34 directories.
 | `label-placement.ts` | 750 | 7 | Obstacle-aware relocation of room labels — a **post-pass over the lowered Scene**. | none |
 | `layout.ts` | 249 | 1 | Relational placement (T6.2) — the optional layout seam. | none |
 | `lexer.ts` | 613 | 25 | Hand-written lexer for ArchLang. Zero dependencies; tracks line/col. | none |
-| `lint.ts` | 373 | 32 | `lint(source)` — architectural soundness rules, as diagnostics. | none |
+| `lint.ts` | 381 | 32 | `lint(source)` — architectural soundness rules, as diagnostics. | none |
 | `lock.ts` | 197 | 2 | The lock check (preview-and-remodel card B1, decision D6): `impact(before, after, { lock })` and `arch impact --against old.arch --lock <id,…>`. A lock names elements that must not change between two versions of a plan; it is checked… | none |
 | `lsp.ts` | 688 | 3 | Pure language-services core for the ArchLang LSP (T5.3). | none |
 | `manifest.ts` | 1254 | 19 | CLI capability manifest — the whole `archlang` API surface as one structured document, so an AI agent can discover commands, flags, formats, elements, lint profiles, error codes, and fixture categories in a single `archlang manifest… | none |
@@ -501,8 +501,8 @@ Totals: 404 modules in 34 directories.
 | Module | Lines | Importers | Summary | Budget |
 | --- | ---: | ---: | --- | --- |
 | `checks.ts` | 467 | 1 | The resolver's cross-element checks, run once every coordinate is final: the number domain (`E_NON_FINITE`, `E_OUT_OF_RANGE`; the element is dropped), the drawn sizes a plan's settings scale (a hatch tile, the heaviest pen), the empty… | none |
-| `expand.ts` | 866 | 2 | Expansion, the first stage of `resolve()`: a plan body (`let`, assignment, `set`, `for`/`if`/ `while`, component calls, `place`d instances, `strip`, `zone`, `keep`) flattened into the element stream ({@link Entry}) the resolver works on… | charges the step meter |
-| `groups.ts` | 431 | 1 | Resolution groups and the per-element bookkeeping around them: the expanded stream partitioned by `place` frame (one group per instance, the root last), an instance's view of its descendants, the pre-charge for wall-deriving statements… | none |
+| `expand.ts` | 870 | 2 | Expansion, the first stage of `resolve()`: a plan body (`let`, assignment, `set`, `for`/`if`/ `while`, component calls, `place`d instances, `strip`, `zone`, `keep`) flattened into the element stream ({@link Entry}) the resolver works on… | charges the step meter |
+| `groups.ts` | 453 | 1 | Resolution groups and the per-element bookkeeping around them: the expanded stream partitioned by `place` frame (one group per instance, the root last), an instance's view of its descendants, the pre-charge for wall-deriving statements… | none |
 | `sheet.ts` | 248 | 2 | The sheet, decided in `resolve()`: the two extents a fit is measured on, the storey as drawn ({@link drawnView}), the `paper` + scale resolved into a {@link ResolvedSheet}, and its reports (`W_SCALE_OVERFLOW`, `W_DRAWING_OVERFLOW`, and… | none |
 | `side-tables.ts` | 140 | 1 | What one resolution keeps beside its {@link ResolvedPlan}, never on it: the frozen datum tables, the `place`d instances' bodies, the evaluation steps spent and the keep state. Each is a `WeakMap` keyed by the IR object, so no… | none |
 | `silent-accepts.ts` | 113 | 5 | Warnings for what the resolver used to accept without a word (product-roadmap RM1.4): a length that reads as metres (`W_LENGTH_IN_METRES`) and a written size or door position that `grid` moved (`W_GRID_SNAPPED`). Both are warnings only… | none |

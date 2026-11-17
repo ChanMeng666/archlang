@@ -49,7 +49,10 @@ connection.onInitialize(
 documents.onDidChangeContent((e) => {
   void (async () => {
     const h = await getHandlers();
-    connection.sendDiagnostics({ uri: e.document.uri, diagnostics: h.diagnostics(e.document.getText()) });
+    connection.sendDiagnostics({
+      uri: e.document.uri,
+      diagnostics: h.diagnostics(e.document.getText(), e.document.uri),
+    });
   })();
 });
 

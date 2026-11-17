@@ -234,11 +234,32 @@ export function chargeDerivedElements(
  *  across component instances. */
 export function assignIds(entries: Entry[], registry: Registry, diagnostics: Diagnostic[]): void {
   const seen = new Set<string>();
-  const assignId = (provided: string, prefix: string, idx: number, span?: Span): string => {
+  /** Where each explicit id was first declared, and the file that span is measured in. */
+  const declared = new Map<string, { span?: Span; file?: string }>();
+  const assignId = (
+    provided: string,
+    prefix: string,
+    idx: number,
+    span: Span | undefined,
+    file: string | undefined,
+  ): string => {
     if (provided) {
+      const first = declared.get(provided);
       if (seen.has(provided)) {
-        diagnostics.push({ severity: "error", message: `Duplicate id "${provided}"`, code: "E_DUP_ID", span });
+        // "First declared here", when it is a different statement and both spans are measured in
+        // the compiled source: this diagnostic carries no `file`, so neither may its related span.
+        // A legacy component called twice declares the id at one span, which would repeat it.
+        const rel =
+          first?.span &&
+          span &&
+          file === undefined &&
+          first.file === undefined &&
+          (first.span.start !== span.start || first.span.end !== span.end)
+            ? { relatedSpans: [{ span: first.span, message: `id "${provided}" first declared here` }] }
+            : {};
+        diagnostics.push({ severity: "error", message: `Duplicate id "${provided}"`, code: "E_DUP_ID", span, ...rel });
       }
+      if (!first) declared.set(provided, { span, file });
       seen.add(provided);
       return provided;
     }
@@ -253,13 +274,14 @@ export function assignIds(entries: Entry[], registry: Registry, diagnostics: Dia
       if (e.node.kind !== def.kind) continue;
       idx++;
       e.idAuthored = Boolean(e.node.id);
-      e.id = assignId(e.node.id, def.idPrefix(e.node), idx, e.node.span);
+      e.id = assignId(e.node.id, def.idPrefix(e.node), idx, e.node.span, e.file);
     }
   }
   // The ids a statement gives the elements it derives (`ElementDef.authoredChildIds`): checked
   // against every other id, after them, so a duplicate is reported on the later name.
   for (const e of entries) {
-    for (const c of registry.byKind.get(e.node.kind)?.authoredChildIds?.(e.node) ?? []) assignId(c.id, "", 0, c.span);
+    for (const c of registry.byKind.get(e.node.kind)?.authoredChildIds?.(e.node) ?? [])
+      assignId(c.id, "", 0, c.span, e.file);
   }
 }
 
