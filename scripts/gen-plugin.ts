@@ -35,8 +35,7 @@ export function pluginManifest(): string {
   const manifest = readJson(PLUGIN_MANIFEST);
   const next = { ...manifest, version: readJson("package.json").version as string };
   next.mcpServers = { archlang: { type: "http", url: HOSTED_MCP_URL } };
-  return `${JSON.stringify(next, null, 2)}
-`;
+  return `${JSON.stringify(next, null, 2)}\n`;
 }
 
 /** Published path → source path, for every skill a plugin ships (`dir`: one plugin's skills folder). */

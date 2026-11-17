@@ -104,6 +104,8 @@ describe("plugin folder", () => {
   it("discloses in its README that the MCP server is the hosted one, and how to run the local one", () => {
     const readme = readFileSync(resolve(PLUGIN, "README.md"), "utf8");
     expect(readme).toContain(HOSTED_MCP_URL);
+    // the hand-written manifest description names the same host
+    expect(plugin.description).toContain(new URL(HOSTED_MCP_URL).host);
     expect(readme).toContain("https://archlang.uk/privacy");
     expect(readme).toContain(`claude mcp add archlang -- npx -y ${read("packages/mcp/package.json").name}`);
   });

@@ -14,18 +14,19 @@ them into SVG, DXF and PDF drawings and checks them. This plugin gives the agent
 In Claude Code:
 
 ```text
-/plugin install archlang --marketplace ChanMeng666/archlang
+/plugin marketplace add ChanMeng666/archlang
+/plugin install archlang@archlang
 ```
 
-On a version before 2.1.275, `/plugin marketplace add ChanMeng666/archlang` and then
-`/plugin install archlang@archlang`.
+or, from a shell, `claude plugin install archlang --marketplace ChanMeng666/archlang`.
 
 ## What it sends
 
 When the agent calls one of the MCP server's tools, the plan text and the drawing options it passes
 are sent to `mcp.archlang.uk`, compiled in memory and returned. The server keeps no request log and
-no account; the one thing it keeps is a rendered drawing in the edge cache when a tool returns an
-`/svg/` link. The sender's IP address is used only as a rate-limit key. The full policy:
+no account. It keeps a rendered drawing in the edge cache when a tool returns an `/svg/` link (the
+drawing carries the plan's labels), and aggregate request counts (method, tool name, refusal reason;
+no plan text, no address) for three months. The sender's IP address is used only as a rate-limit key. The full policy:
 <https://archlang.uk/privacy>.
 
 ## Using the local server instead

@@ -19,7 +19,7 @@
  *     for; the repository's skills name no version.
  * Its `mcp.json` is the folder's own, the hosted server (Streamable HTTP, no sign-in), because a
  * public submission takes a remote HTTPS server and excludes a local one; the builder still checks it.
- * `.claude-plugin/` is another host's folder, and `LICENSE.txt` and `SECURITY.md` are not part of the
+ * `.claude-plugin/` is another host's folder, and `README.md`, `LICENSE.txt` and `SECURITY.md` are not part of the
  * listing layout; they stay out (the Cursor plugin, with its rule and local server, has its own folder,
  * `plugins/archlang-cursor/`).
  *

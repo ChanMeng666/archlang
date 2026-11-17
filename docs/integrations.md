@@ -124,7 +124,7 @@ change it; the repository's `plugin.json` has none), `mcp.json` declaring the ho
 (`type: "streamable-http"`, `url: "https://mcp.archlang.uk/mcp"`, no headers, no sign-in),
 `assets/icon.png` and `skills/`, whose `npx -y` and `npm i -g` commands name the core's version (the
 directory's scan flags an unpinned package as a mutable source, and a finding left open may lead to
-rejection). `.claude-plugin/`, `LICENSE.txt` and `SECURITY.md` stay out. It then
+rejection). `.claude-plugin/`, `README.md`, `LICENSE.txt` and `SECURITY.md` stay out. It then
 opens the written ZIP again and checks the entry list and both rewritten files;
 `npm run prove:openai-plugin` repeats that check on an existing ZIP.
 
