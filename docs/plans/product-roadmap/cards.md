@@ -1189,7 +1189,7 @@ Playground：Chromium `--shard=1/2`、`2/2` 两个 job，Firefox 与 WebKit 的 
 
 不许：没重新读代码就关卡。
 
-### AF1 · `relatedSpans`、`instance`、`component` 进 `--json`、MCP 与 LSP — `blocked`（RM-D64） · 1 日 · sonnet · 依赖无
+### AF1 · `relatedSpans`、`instance`、`component` 进 `--json`、MCP 与 LSP — `done` · #944（`aaae8d4c`，2026-11-18） · 1 日 · sonnet · 依赖无
 
 带走 backlog M.15 的第一条。证明：一份带相关位置的 `lint --json` 的前后对照，再加上述载荷检查。不许：把相关位置压平成散文；删改已有的键（`CompileResult` 只增不删）。
 
@@ -1197,7 +1197,7 @@ Playground：Chromium `--shard=1/2`、`2/2` 两个 job，Firefox 与 WebKit 的 
 
 不许：手抄词表（闭集取自 `src/grammar/tokens.ts`）；span 或修复覆盖整条语句（今天 `sofaa` 的修复就是这样，要一并收窄）。
 
-### AF3 · 未知名字求值为错误值，不再引出连带错误 — `blocked`（RM-D64） · 2 日 · opus · 依赖无
+### AF3 · 未知名字求值为错误值，不再引出连带错误 — `doing`（2026-11-18） · 2 日 · opus · 依赖无
 
 只有已经失败的方案，诊断会变；给这些诊断钉值。不许：动任何能编译的方案的输出。
 
@@ -1209,7 +1209,7 @@ Playground：Chromium `--shard=1/2`、`2/2` 两个 job，Firefox 与 WebKit 的 
 
 MCP 工具用 `new-mcp-tool` skill 加；`docs/error-codes.md` 经 `gen:*` 生成。不许：增加豁免（今天 66 条，只减不增）。
 
-### AF6 · `fmt --json` 拒绝时要说出来（并入 M.8） — `blocked`（RM-D64） · 1 日 · sonnet · 依赖无
+### AF6 · `fmt --json` 拒绝时要说出来（并入 M.8） — `done` · #946（`0c406056`，2026-11-18；退出码 0→2 是 Breaking，已写进 CHANGELOG） · 1 日 · sonnet · 依赖无
 
 做完时 M.8 在同一 PR 里裁掉。
 
@@ -1313,15 +1313,15 @@ EV.5 的门照旧：先有设计稿或 ADR，代码在后。PR 里如实写 L1 �
 
 读 RM1.1a 的审计材料（所有者本机，`handoff.md` §6 那一行写着位置），把 57 个缺陷按缺陷类归档，每一类判为"加 lint"（写出候选规则、证据等级、误报风险）或"声明不查"（写出理由和公开的说法）。产物是一份报告，进 `../ai-first-language/` 或本目录的 `design/`。公开仓库只写类、计数和判定，不写原文。不许：把审计原文、模型名或私有夹具写进公开仓库；在本卡里加任何规则。
 
-### RM9.1 · 总面积与 intent 面积带用精确面积（N1） — `blocked`（RM-D64） · 1 日 · opus · 依赖无
+### RM9.1 · 总面积与 intent 面积带用精确面积（N1） — `done` · #942（`fff61fe2`，2026-11-18；显示照旧是取整求和并写进文档，intent 门槛改用精确面积，只在惰性 chunk 里算） · 1 日 · opus · 依赖无
 
 今天恰好 40.000 m² 的平面报成 40.01 m²，`validate --intent` 因此误判（2026-11-18 复现，growth 试用的 `h4.arch`）。改为按精确面积（mm² 整数）求和，只在显示时舍入；intent 的面积带也比较精确值。先读 `docs/intent.md`，看这是不是有记录的口径；如果是，本卡改成文档卡，并报告所有者。证明：语料上只有总数那一行或 caption 移动，按 RM-D56 的方法逐行列出。不许：改单个房间面积的舍入；改 `describe --json` 已有键的含义（新增键可以）。
 
-### RM9.2 · 整栋的总面积（N1；下游请求 4） — `blocked`（RM-D64） · 1.5 日 · opus · 依赖 RM9.1
+### RM9.2 · 整栋的总面积（N1；下游请求 4） — `doing`（2026-11-18） · 1.5 日 · opus · 依赖 RM9.1
 
 `describe()` 的标题、caption 和 `<desc>` 在多层平面上写出整栋的总数，各层的数标明"每层"。`--json` 只增加键（`CompileResult` 只增不删）。证明：只有多层示例的 caption、`<desc>` 和 `describe` 文字移动，按 RM-D56 的方法。不许：单层平面的任何字节移动。
 
-### RM9.3 · 不可能的 brief：`E_INTENT_INFEASIBLE`（N1） — `blocked`（RM-D64） · 2 日 · opus · 依赖无
+### RM9.3 · 不可能的 brief：`E_INTENT_INFEASIBLE`（N1） — `doing`（2026-11-18） · 2 日 · opus · 依赖无
 
 先做一次纯搬移：把 `eval/fidelity.ts` 的 `proveInfeasible` 搬进 `src/`，eval 改为 import 它，字节恒等。然后 `validate --intent` 在判任何平面之前先跑它，给出一条带算式的 E（错误目录条目、示例、`explain`）。不许：在 `compile()` 里求解；把"不可能"判给拿不出算式的 brief。
 
