@@ -80,8 +80,8 @@ const BASELINE: [string, string][] = [
   ["examples/parametric.arch", "402cf58e4e122164928e6d875320e63b7be5c017396dce026ab8c73d4a0373ef"],
   ["examples/remodel.arch", "f0f4a5aa4758c3f9feb14449b6a9be0b7afd020fb925619c6d83e66f7cb95f2d"], // `centreline_at`, see ./byte-identity-baseline.ts
   ["examples/sheet-notes.arch", "602cfd5f8e34268bf660dcad47b5cbf28332ddf92a119fba7317850ab9f9d798"],
-  ["examples/turning-stair.arch", "a60a7362582085a80c577e970a5139fc01d12ec4600af7ad8f4ed8a4ede897aa"], // new example (S2), see header; `centreline_at`, see ./byte-identity-baseline.ts; RM1.3a, see ./byte-identity-baseline.ts; RM1.2a, see ./byte-identity-baseline.ts
-  ["examples/two-storey.arch", "9bad4f64cdc450219b6adac2c6de7a4790d0b48917ef88358b9c54c78b57a90f"], // RM1.3a, see ./byte-identity-baseline.ts; RM1.2a, see ./byte-identity-baseline.ts
+  ["examples/turning-stair.arch", "4d2fb9dcc6a44640a4d0e52d202df14909c73a5743799af8c25cb1f117dc87a8"], // new example (S2), see header; `centreline_at`, see ./byte-identity-baseline.ts; RM1.3a, see ./byte-identity-baseline.ts; RM1.2a, see ./byte-identity-baseline.ts; RM9.2, see ./byte-identity-baseline.ts
+  ["examples/two-storey.arch", "3b39a946ba68d2d386deb2ddf2ac70e647e841754137c64b076c6a74c43247b2"], // RM1.3a, see ./byte-identity-baseline.ts; RM1.2a, see ./byte-identity-baseline.ts; RM9.2, see ./byte-identity-baseline.ts
   ["test/fixtures/axes-grid.arch", "e6be5d70788d931cacaa8cb1db2c2c454c1532d01153b90e2427c125770e5559"],
   ["test/fixtures/chain30.arch", "ce81264ecdc3a086f99708f90aee5dd929c71b9e8ccaaa54a1da5ce5aa213325"], // #367, see test/byte-identity-baseline.ts
   ["test/fixtures/dense-bays.arch", "9f4ad4538851a27b463113cd7e563823d185bc7e18b342fd9eebb45f2887992f"],
@@ -94,10 +94,10 @@ const BASELINE: [string, string][] = [
   ["test/fixtures/lock-window-moved.arch", "5178ac32070a056b37462b4169b3fbdbbb0ee9a94ca05221cc0c64cedf89dd99"],
   ["test/fixtures/schedule-sheet.arch", "15dc29228ea12dae7240ad843567f88218c5a57bd8838ea950b1a5792c2579a5"],
   ["test/fixtures/star30.arch", "5104211cdd3733a56e18d141c68db6a097b679e484b1b18897e7637dd05d0bbb"], // #367, see test/byte-identity-baseline.ts
-  ["test/fixtures/storeys-eaves-overflow.arch", "51a639bc42529f5f51f8a9a45a0441d450aa9426be6e2e1f92b16267866a0b27"], // RM1.3a, see ./byte-identity-baseline.ts; RM1.2a, see ./byte-identity-baseline.ts; RM1.2a review, see ./byte-identity-baseline.ts
+  ["test/fixtures/storeys-eaves-overflow.arch", "79b8e6c4eb85f66b84d6d76c0141872f30b04baa67da49130f81e80d085cef1f"], // RM1.3a, see ./byte-identity-baseline.ts; RM1.2a, see ./byte-identity-baseline.ts; RM1.2a review, see ./byte-identity-baseline.ts; RM9.2, see ./byte-identity-baseline.ts
   // was 05693d9e. D27: this plan's stair stands in no wall, so `bounds()` reaching its break line widens the
   // drawing 156 mm. Only the SVG, the Scene and the overlay moved: with the old ones put back the old digest returns.
-  ["test/fixtures/zones-levels.arch", "543c732b812f10c5f40822c085740e4a3c7093add2f9c2663cff28396c4192e7"],
+  ["test/fixtures/zones-levels.arch", "21c4b504af358718519aea5578a13c3a441ea218c01732f688c8cafff5059d1c"], // RM9.2, see ./byte-identity-baseline.ts
   ["test/fixtures/zones-wings.arch", "392675a2abd9bc82b094fc768190979fabf814b22dbb8d4fbaf7de410570c35a"],
 ];
 
@@ -172,7 +172,7 @@ const MAIN_SOURCES: [path: string, payload: string, source: string, undo: [branc
   ],
   [
     "examples/garden-house.arch",
-    "a344c463254cecbd315383b8d58f6611a7e3ad5adfe6c97b02e5f64b09ec9d3c", // RM1.3a, see ./byte-identity-baseline.ts
+    "f6ce8908e0b86afd1862d36269334682052ecd99e01c3c40fb707e9570eff6b0", // RM1.3a, see ./byte-identity-baseline.ts; RM9.2, see ./byte-identity-baseline.ts
     "52ea794853ab388d2497d18ad2d1efc6e38768c55ca2ba63eabc96033515c3b1", // source: RM1.4 writes the four snapped sizes (same length; was 7b0be7cc); CO.1 writes its snapped `against` sizes out, here and in the undo block: less those clauses the rebuilt source is main's, and the payload is unchanged (was 6ad0c1d8)
     [
       [
@@ -194,7 +194,7 @@ const MAIN_SOURCES: [path: string, payload: string, source: string, undo: [branc
   ],
   [
     "examples/hillside-villa.arch",
-    "454972020b0a9c632c4ebfe7bc36448c5ce277e50f47519e62a81eed4ec43d6d", // RM1.3a, see ./byte-identity-baseline.ts
+    "92047f171eebb4ce67422c2552350ee1e3ae8c96c85e807c0a5da6e9cd9b24e3", // RM1.3a, see ./byte-identity-baseline.ts; RM9.2, see ./byte-identity-baseline.ts
     "44fdb87ebd3a403a9c3289db5a7cdf9250f7c683213dbe8159474a48197815c5", // source: RM1.4 writes the 17 snapped values and its comment of one (same length; was 8aff5c59); CO.1 writes its snapped `against` sizes out, here and in the undo block: less those clauses the rebuilt source is main's, and the payload is unchanged (was 743e5cde)
     [
       [
@@ -296,7 +296,7 @@ const MAIN_SOURCES: [path: string, payload: string, source: string, undo: [branc
   ],
   [
     "examples/townhouse.arch",
-    "ebaaf82c5685c454f71a07d668d72ea265172da9fa05c667cdc248418ceca6b0", // RM1.3a, see ./byte-identity-baseline.ts
+    "fd3ee6cef1861fc17f29c2c7225b8546be602f5f5b61eef18cf8d6a6cde1f970", // RM1.3a, see ./byte-identity-baseline.ts; RM9.2, see ./byte-identity-baseline.ts
     "6173926c3747eec3b2a679cf4c24c15f463a0638f56bd9d9a5d87fd53b44d091",
     [
       [
