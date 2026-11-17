@@ -30,8 +30,12 @@ const CASES: { name: string; typo: string; fixed: string; report: string; times?
   },
   {
     name: "an unknown name inside an arithmetic expression",
-    typo: plan(`  let width = 4000\n  room id=a at (0,0) size wdth * 2 + 100 x 3000\n  room id=b at (0,0) size 3000 x 3000`),
-    fixed: plan(`  let width = 4000\n  room id=a at (0,0) size width * 2 + 100 x 3000\n  room id=b at (8100,0) size 3000 x 3000`),
+    typo: plan(
+      `  let width = 4000\n  room id=a at (0,0) size wdth * 2 + 100 x 3000\n  room id=b at (0,0) size 3000 x 3000`,
+    ),
+    fixed: plan(
+      `  let width = 4000\n  room id=a at (0,0) size width * 2 + 100 x 3000\n  room id=b at (8100,0) size 3000 x 3000`,
+    ),
     report: `E_UNKNOWN_REF Unknown name "wdth"`,
     drops: ["a"],
   },
@@ -45,8 +49,12 @@ const CASES: { name: string; typo: string; fixed: string; report: string; times?
   {
     // From a garbage 0 the loop would run from 0 and lay a room over `z`.
     name: "an unknown name as a for-loop bound (no iteration from a garbage 0)",
-    typo: plan(`  let lo = 1\n  for i in lp..3 {\n    room at (i * 3000, 0) size 3000 x 3000\n  }\n  room id=z at (0,0) size 3000 x 3000`),
-    fixed: plan(`  let lo = 1\n  for i in lo..3 {\n    room at (i * 3000, 0) size 3000 x 3000\n  }\n  room id=z at (0,0) size 3000 x 3000`),
+    typo: plan(
+      `  let lo = 1\n  for i in lp..3 {\n    room at (i * 3000, 0) size 3000 x 3000\n  }\n  room id=z at (0,0) size 3000 x 3000`,
+    ),
+    fixed: plan(
+      `  let lo = 1\n  for i in lo..3 {\n    room at (i * 3000, 0) size 3000 x 3000\n  }\n  room id=z at (0,0) size 3000 x 3000`,
+    ),
     report: `E_UNKNOWN_REF Unknown name "lp"`,
     drops: [],
   },
@@ -59,25 +67,37 @@ const CASES: { name: string; typo: string; fixed: string; report: string; times?
     drops: [],
   },
   {
-    name: "an unknown name as a for-loop iterable (no `\"for\" expects an array` after it)",
-    typo: plan(`  let xs = [0, 3000]\n  for i in xz {\n    room at (i, 0) size 3000 x 3000\n  }\n  room id=z at (0,4000) size 3000 x 3000`),
-    fixed: plan(`  let xs = [0, 3000]\n  for i in xs {\n    room at (i, 0) size 3000 x 3000\n  }\n  room id=z at (0,4000) size 3000 x 3000`),
+    name: 'an unknown name as a for-loop iterable (no `"for" expects an array` after it)',
+    typo: plan(
+      `  let xs = [0, 3000]\n  for i in xz {\n    room at (i, 0) size 3000 x 3000\n  }\n  room id=z at (0,4000) size 3000 x 3000`,
+    ),
+    fixed: plan(
+      `  let xs = [0, 3000]\n  for i in xs {\n    room at (i, 0) size 3000 x 3000\n  }\n  room id=z at (0,4000) size 3000 x 3000`,
+    ),
     report: `E_UNKNOWN_REF Unknown name "xz"`,
     drops: [],
   },
   {
     // From a garbage 0 the `then` branch would lay `a` over `c`; an error-valued condition takes neither.
     name: "an unknown name in an `if` condition expands neither branch",
-    typo: plan(`  let width = 1\n  if wdth == 0 {\n    room id=a at (0,0) size 3000 x 3000\n  } else {\n    room id=b at (4000,0) size 3000 x 3000\n  }\n  room id=c at (0,0) size 3000 x 3000`),
-    fixed: plan(`  let width = 1\n  if width == 0 {\n    room id=a at (0,0) size 3000 x 3000\n  } else {\n    room id=b at (4000,0) size 3000 x 3000\n  }\n  room id=c at (0,0) size 3000 x 3000`),
+    typo: plan(
+      `  let width = 1\n  if wdth == 0 {\n    room id=a at (0,0) size 3000 x 3000\n  } else {\n    room id=b at (4000,0) size 3000 x 3000\n  }\n  room id=c at (0,0) size 3000 x 3000`,
+    ),
+    fixed: plan(
+      `  let width = 1\n  if width == 0 {\n    room id=a at (0,0) size 3000 x 3000\n  } else {\n    room id=b at (4000,0) size 3000 x 3000\n  }\n  room id=c at (0,0) size 3000 x 3000`,
+    ),
     report: `E_UNKNOWN_REF Unknown name "wdth"`,
     drops: ["a", "b"],
   },
   {
     // `s3` stands where `s2`'s extent ends, so it goes with `s2`; `s1` stays.
     name: "an unknown name as a `strip` extent drops that room and the rooms it moves",
-    typo: plan(`  let width = 3000\n  strip right at (0,0) gap 0 height 3000 {\n    room id=s1 size 3000\n    room id=s2 size wdth\n    room id=s3 size 3000\n  }`),
-    fixed: plan(`  let width = 3000\n  strip right at (0,0) gap 0 height 3000 {\n    room id=s1 size 3000\n    room id=s2 size width\n    room id=s3 size 3000\n  }`),
+    typo: plan(
+      `  let width = 3000\n  strip right at (0,0) gap 0 height 3000 {\n    room id=s1 size 3000\n    room id=s2 size wdth\n    room id=s3 size 3000\n  }`,
+    ),
+    fixed: plan(
+      `  let width = 3000\n  strip right at (0,0) gap 0 height 3000 {\n    room id=s1 size 3000\n    room id=s2 size width\n    room id=s3 size 3000\n  }`,
+    ),
     report: `E_UNKNOWN_REF Unknown name "wdth"`,
     drops: ["s2", "s3"],
   },
@@ -90,15 +110,23 @@ const CASES: { name: string; typo: string; fixed: string; report: string; times?
   },
   {
     name: "an unknown name as a placed component's argument",
-    typo: plan(`  component bay(w) {\n    room id=r at (0,0) size w x 3000\n  }\n  let width = 4000\n  place bay(wdth) as east at (0,0)`),
-    fixed: plan(`  component bay(w) {\n    room id=r at (0,0) size w x 3000\n  }\n  let width = 4000\n  place bay(width) as east at (0,0)`),
+    typo: plan(
+      `  component bay(w) {\n    room id=r at (0,0) size w x 3000\n  }\n  let width = 4000\n  place bay(wdth) as east at (0,0)`,
+    ),
+    fixed: plan(
+      `  component bay(w) {\n    room id=r at (0,0) size w x 3000\n  }\n  let width = 4000\n  place bay(width) as east at (0,0)`,
+    ),
     report: `E_UNKNOWN_REF Unknown name "wdth"`,
     drops: ["east.r"],
   },
   {
     name: "an unknown name in a `place` origin (no overlap with the room at the garbage 0)",
-    typo: plan(`  component bay(w) {\n    room id=r at (0,0) size w x 3000\n  }\n  let x0 = 5000\n  place bay(4000) as east at (xo,0)\n  room id=b at (0,0) size 4000 x 3000`),
-    fixed: plan(`  component bay(w) {\n    room id=r at (0,0) size w x 3000\n  }\n  let x0 = 5000\n  place bay(4000) as east at (x0,0)\n  room id=b at (0,0) size 4000 x 3000`),
+    typo: plan(
+      `  component bay(w) {\n    room id=r at (0,0) size w x 3000\n  }\n  let x0 = 5000\n  place bay(4000) as east at (xo,0)\n  room id=b at (0,0) size 4000 x 3000`,
+    ),
+    fixed: plan(
+      `  component bay(w) {\n    room id=r at (0,0) size w x 3000\n  }\n  let x0 = 5000\n  place bay(4000) as east at (x0,0)\n  room id=b at (0,0) size 4000 x 3000`,
+    ),
     report: `E_UNKNOWN_REF Unknown name "xo"`,
     drops: ["east.r"],
   },
@@ -140,7 +168,9 @@ describe("AF3: an unknown name is one diagnostic, never a cascade", () => {
   });
 
   it("an opening on a wall that read the error value goes with its wall, silently", () => {
-    const src = plan(`  let len = 6000\n  wall id=w exterior thickness 200 { (0,0) (lenn,0) }\n  door on w at 50% width 900`);
+    const src = plan(
+      `  let len = 6000\n  wall id=w exterior thickness 200 { (0,0) (lenn,0) }\n  door on w at 50% width 900`,
+    );
     expect(diagnostics(src).map((d) => d.split(" ")[0])).toEqual(["E_UNKNOWN_REF"]);
     expect(ids(src)).toEqual([]);
   });

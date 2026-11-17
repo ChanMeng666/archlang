@@ -1624,10 +1624,7 @@ function resolveBody(
     let kept = 0;
     for (const d of diagnostics) {
       const owner = ownerOf.get(d);
-      if (
-        owner === undefined ||
-        (!droppedEntries.has(owner) && (!poisonedEntries.has(owner) || rootCauses.has(d)))
-      ) {
+      if (owner === undefined || (!droppedEntries.has(owner) && (!poisonedEntries.has(owner) || rootCauses.has(d)))) {
         diagnostics[kept++] = d;
       }
     }

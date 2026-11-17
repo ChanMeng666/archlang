@@ -489,8 +489,8 @@ function expandScopeFrame(
             span: stmt.span,
           });
         }
-        const argVals: Value[] = comp.params.map((_, i) =>
-          stmt.args[i] !== undefined ? evalIn(stmt.args[i]) : POISON, // a missing one is its E_ARGCOUNT
+        const argVals: Value[] = comp.params.map(
+          (_, i) => (stmt.args[i] !== undefined ? evalIn(stmt.args[i]) : POISON), // a missing one is its E_ARGCOUNT
         );
         // Component scope = plan global + params; its lets are local. An imported
         // component falls back to its own module's `let`s.
@@ -533,8 +533,8 @@ function expandScopeFrame(
         if (!child) break;
         const first = out.length;
         const comp = components.get(stmt.name)!;
-        const argVals: Value[] = comp.params.map((_, i) =>
-          stmt.args[i] !== undefined ? evalIn(stmt.args[i]) : POISON, // a missing one is its E_ARGCOUNT
+        const argVals: Value[] = comp.params.map(
+          (_, i) => (stmt.args[i] !== undefined ? evalIn(stmt.args[i]) : POISON), // a missing one is its E_ARGCOUNT
         );
         const childScope = new Scope(global);
         comp.params.forEach((p, i) => {
