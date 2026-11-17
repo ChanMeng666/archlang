@@ -2285,7 +2285,7 @@ the text `extractArch` scored; `extractArch` itself still mishandles a typed fir
 four-backtick fence, left alone because `dataset/model-authoring/rows.ts` pins parity with it and a
 fix would move live scoring, so it needs its own card (EV.7).
 
-### EV.7 · `extractArch` scores the wrong text for a typed first block or a four-backtick fence — `todo`
+### EV.7 · `extractArch` scores the wrong text for a typed first block or a four-backtick fence: done by #940, waiting to be archived — `note`
 
 `extractArch` (`eval/run.ts`) skips a typed first block (` ```json `) and opens at its closing fence,
 so for a typed block, prose, then an `arch` block it scores the text between the blocks (possibly
@@ -2295,6 +2295,11 @@ reply's first line-start fence with an empty or `arch` info string (`firstArchFe
 live scoring against `eval/live-baseline.json`, and `dataset/model-authoring/rows.ts` pins parity
 with `extractArch`. **Gate:** both shapes scored as that block, with tests; the `rows.ts` parity
 test kept green; the change to live scoring named against the baseline before it lands.
+
+Residue (2026-11-18): one reader, `dataset/model-authoring/reply.ts`, shared by `eval/run.ts` and
+`rows.ts`; `eval/README.md` names the reply shapes that now score differently and that
+`eval/live-baseline.json` was measured under the old regex (not re-measured). Over the 1,370
+`model-authoring` replies none scores differently, so no published row moves.
 
 ### EV.3 · The baseline does not record the prompt it was measured under: done by #865, waiting to be archived — `note`
 
