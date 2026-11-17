@@ -2297,6 +2297,21 @@ clause the model meant, as U.6 did for `uses balcony`; whether either becomes sy
 the data after the hint. **Gate:** each word gets a hint naming the real form, a test per word, and
 no corpus output moves (message only).
 
+### EV.8 · A door or window kind word after `width` is still a parse error — `todo`
+
+EV.4's data, from a downstream product: in ArchCanvas's paid 1.62 run, 2 of the 3 first drafts
+that failed to compile (of 26; its clean first drafts fell from 85 % to 62 %) failed with
+`E_PARSE: Unknown statement "sliding"` / `"hinged"`, a door kind word written after `width` or at
+the end (the drafts were not saved; `door … at 50% width 1000 sliding` and `… swing in hinged` are
+the reconstructed family). It now carries a prompt override and a tripwire that goes red when
+upstream accepts the form. Probed at 1.63.0: `door id=d on w at 50% width 900
+sliding`, `… swing in hinged` and `window … width 900 casement` still fail exactly as on 1.62.0
+(CO-1 made the clauses order-free, not the kind word). One way: accept the kind word as one more
+order-free clause of `door` and `window` (once, `E_DUP_CLAUSE` on a second kind or a kind before
+`on`), with the spec line and the GBNF saying so. **Gate:** CO-1's law (every example's parse, SVG,
+`describe()`, `lint()` and diagnostics byte-identical), a test per kind word in each position, and
+the `hinged` hint (EV.4) kept for a kind written as its own statement.
+
 ### EV.5 · A refused opening offers no move (design first) — `todo`
 
 Six of EV.1's seven compile-error losses are opening-placement refusals (`refused, not moved`, a
