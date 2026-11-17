@@ -132,6 +132,10 @@ interface ExpandCtx {
   keeps: KeepSink;
   /** Where a `keep` met here stands: a component body refuses it (`E_KEEP_PLACEMENT`). */
   keepPlace: KeepPlace;
+  /** Set, shared BY REFERENCE, when a `for`, `if` or `while` expanded nothing because its
+   *  iterable or condition was the error value (AF3): what it would have written is missing for
+   *  that root cause alone, so no "nothing to draw" follows it. Absent: not recorded. */
+  errorValue?: { skipped: boolean };
 }
 
 /**
@@ -490,7 +494,7 @@ function expandScopeFrame(
           });
         }
         const argVals: Value[] = comp.params.map(
-          (_, i) => (stmt.args[i] !== undefined ? evalIn(stmt.args[i]) : POISON), // a missing one is its E_ARGCOUNT
+          (_, i) => (stmt.args[i] !== undefined ? evalIn(stmt.args[i]) : POISON), // error value: E_ARGCOUNT
         );
         // Component scope = plan global + params; its lets are local. An imported
         // component falls back to its own module's `let`s.
@@ -534,7 +538,7 @@ function expandScopeFrame(
         const first = out.length;
         const comp = components.get(stmt.name)!;
         const argVals: Value[] = comp.params.map(
-          (_, i) => (stmt.args[i] !== undefined ? evalIn(stmt.args[i]) : POISON), // a missing one is its E_ARGCOUNT
+          (_, i) => (stmt.args[i] !== undefined ? evalIn(stmt.args[i]) : POISON), // error value: E_ARGCOUNT
         );
         const childScope = new Scope(global);
         comp.params.forEach((p, i) => {
@@ -568,6 +572,7 @@ function expandScopeFrame(
               modules: ectx.modules,
               keeps: ectx.keeps,
               keepPlace: "component",
+              ...(ectx.errorValue ? { errorValue: ectx.errorValue } : {}),
             },
             // No label: the instance NAME is already the heading a reader wants, and
             // inventing one ("wing instance") would print the same text for every
@@ -582,7 +587,10 @@ function expandScopeFrame(
       case "for": {
         const it = evalIn(stmt.iter);
         // Already diagnosed: by the stack budget, or where the error value came from (AF3).
-        if (it === BUDGET_SUBSTITUTE || it === POISON) break;
+        if (it === BUDGET_SUBSTITUTE || it === POISON) {
+          if (it === POISON && ectx.errorValue) ectx.errorValue.skipped = true;
+          break;
+        }
         if (it.t !== "arr") {
           diag({
             severity: "error",
@@ -605,7 +613,10 @@ function expandScopeFrame(
       case "if": {
         const cv = evalIn(stmt.cond);
         // An error-valued condition (AF3) expands neither branch: either would be a guess.
-        if (cv === POISON) break;
+        if (cv === POISON) {
+          if (ectx.errorValue) ectx.errorValue.skipped = true;
+          break;
+        }
         const cond = asBool(cv, diag, exprSpan(stmt.cond));
         const branch = cond ? stmt.then : stmt.else;
         if (branch) {
@@ -619,7 +630,9 @@ function expandScopeFrame(
           // Each test of the condition starts an iteration (one step, at the loop).
           stepSite(stmt.span, ectx.file, ectx.frame);
           chargeSteps(1);
-          if (!asBool(evalIn(stmt.cond), diag, exprSpan(stmt.cond))) break; // POISON reads false
+          const cv = evalIn(stmt.cond);
+          if (cv === POISON && ectx.errorValue) ectx.errorValue.skipped = true;
+          if (!asBool(cv, diag, exprSpan(stmt.cond))) break; // POISON reads false
           if (n++ >= MAX_ITERATIONS) {
             diag({
               severity: "error",

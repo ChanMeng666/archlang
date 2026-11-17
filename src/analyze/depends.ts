@@ -245,6 +245,12 @@ function readsOf(s: Statement): Reads {
   return { names, ids, axes };
 }
 
+/** The ids one statement's resolution reads (its `on`, before namespacing), for the resolver's
+ *  AF3 sweep: a statement that reads an element dropped for the error value goes with it. */
+export function statementReadIds(s: Statement): ReadonlySet<string> {
+  return readsOf(s).ids;
+}
+
 const sorted = (xs: Iterable<string>): string[] => [...new Set(xs)].sort((a, b) => (a < b ? -1 : a > b ? 1 : 0));
 
 /** The rooms a `walls from rooms` statement derives from: its group's placed rooms less

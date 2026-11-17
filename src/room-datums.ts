@@ -225,7 +225,7 @@ function readAxis(
     ...(span ? { span } : {}),
     ...(near ? { hints: [`did you mean \`axis.${near}\`?`] } : {}),
   });
-  return REFUSED;
+  return REFUSED; // error value: E_UNKNOWN_REF
 }
 
 /**
@@ -249,7 +249,7 @@ function nearAxis(
     ...(span ? { span } : {}),
     hints: [`did you mean \`axis.${label}\`?`],
   });
-  return REFUSED;
+  return REFUSED; // error value: E_UNKNOWN_REF
 }
 
 /** Where a datum is read when no table exists yet. */
@@ -282,7 +282,7 @@ export function beforeRoomsReader(phase: DatumPhase, axisScope?: AxisScope): Dat
       code: "E_DATUM_BEFORE_ROOMS",
       ...(span ? { span } : {}),
     });
-    return REFUSED;
+    return REFUSED; // error value: E_DATUM_BEFORE_ROOMS
   };
 }
 
@@ -301,7 +301,7 @@ export function functionBodyReader(fn: string): DatumReader {
       code: "E_DATUM_BEFORE_ROOMS",
       ...(span ? { span } : {}),
     });
-    return REFUSED;
+    return REFUSED; // error value: E_DATUM_BEFORE_ROOMS
   };
 }
 
@@ -349,6 +349,7 @@ export function tableReader(table: DatumTable, opts: TableReaderOpts): DatumRead
       };
       if (hint !== undefined) out.hints = [hint];
       onError(out);
+      // error value: E_DATUM_NAME, E_DATUM_COMPASS, E_ROOM_NOT_RECTANGLE, E_DATUM_UNPLACED, E_UNKNOWN_REF
       return REFUSED;
     };
     if (opts.instanceIds().has(name)) {

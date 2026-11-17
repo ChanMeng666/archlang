@@ -355,6 +355,10 @@ export interface RRoom extends RBase {
    *  unplaced or on a cycle). Survives the instance transform so an enclosing pass treats
    *  it as unplaced; `checkRoomOverlaps` skips it. Internal; never rendered. */
   _unplaced?: true;
+  /** Set (with {@link _unplaced}) on a room that read the error value (AF3, `src/expr.ts`): it is
+   *  dropped, so nothing may be placed against it, and a datum read off it is the error value,
+   *  silently. Survives the instance transform. Internal; never rendered. */
+  _errorValue?: true;
   /** Set on a `polygon` room that reported its own ring (`E_ROOM_POLY_DEGENERATE`,
    *  `E_ROOM_POLY_SELF_INTERSECT`): it has no floor anything can be derived from, and the plan
    *  already says why. Internal; never rendered. */
