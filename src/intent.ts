@@ -24,10 +24,10 @@ import type { Diagnostic } from "./diagnostics.js";
 import { describe } from "./describe.js";
 import type { DescribeOptions, RoomSummary, SceneSummary, WindowSummary } from "./describe.js";
 import type { GrossAreaReason } from "./analyze/gross-area.js";
-import { polygonArea, polygonLabelPoint } from "./geometry/polygon.js";
+import { polygonLabelPoint } from "./geometry/polygon.js";
 import { isCirculationRoom, roomsMatchingConcept } from "./intent-concepts.js";
 import { makeNaming, type NameableRoom, sizeWords } from "./naming.js";
-import { fmt2, fmtWritten } from "./num-format.js";
+import { fmt2 } from "./num-format.js";
 import { pure } from "./pure.js";
 import { type CompassLetter, type SiteFacts, SYMBOLIC_FACINGS, type SymbolicFacing } from "./site.js";
 
@@ -455,11 +455,25 @@ function totalFloorArea(summary: SceneSummary): number {
  * that is not its rooms' printed sum, was put there by a caller: it is judged as printed.
  */
 
+/** The shoelace area of a ring in mm², as `polygonArea` (`src/geometry/polygon.ts`) measures it,
+ *  in the same operation order. Written here rather than imported: the import would make the
+ *  playground's `compiler` chunk export `polygonArea` to this lazy one, bytes on the embed path's
+ *  budget (`playground/e2e/startup-chunks.baseline.json`). */
+function ringAreaMm2(ring: readonly { x: number; y: number }[]): number {
+  let s = 0;
+  for (let i = 0; i < ring.length; i++) {
+    const a = ring[i]!;
+    const b = ring[(i + 1) % ring.length]!;
+    s += a.x * b.y - b.x * a.y;
+  }
+  return Math.abs(s) / 2;
+}
+
 /** A room's exact floor area in mm², unrounded, or `undefined` when it does not round to the
  *  room's printed `area_m2`. */
 function exactRoomMm2(r: RoomSummary): number | undefined {
   const c = r.floor_circle;
-  const mm2 = c ? Math.PI * c.r * c.r : polygonArea(r.floor_polygon);
+  const mm2 = c ? Math.PI * c.r * c.r : ringAreaMm2(r.floor_polygon);
   return r2(Math.round(mm2) / 1_000_000) === r.area_m2 ? mm2 : undefined;
 }
 
@@ -545,8 +559,11 @@ function checkOne(
       const exact = exactTotalFloorArea(summary);
       const pass = exact >= p.minM2 && exact <= p.maxM2;
       // The printed figure, unless it alone would contradict the verdict either way ("40 m² outside
-      // [0, 40]", "40.01 m² within [0, 40]"): then the exact one, in full (a whole mm² is at most 6 dp).
-      const shown = (a >= p.minM2 && a <= p.maxM2) !== pass ? fmtWritten(exact) : `${a}`;
+      // [0, 40]", "40.01 m² within [0, 40]"): then the exact one, in full. Printed as this line
+      // always printed its figure, `${}`: a whole mm² in m² has at most 6 dp, so the shortest
+      // decimal is every digit and never an exponent (no `fmtWritten`, whose import would add an
+      // export to the playground's `compiler` chunk, on the embed path's budget).
+      const shown = (a >= p.minM2 && a <= p.maxM2) !== pass ? exact : a;
       const detail = pass
         ? `area: total ${shown} m² within ${band(p.minM2, p.maxM2)}`
         : `area: total ${shown} m² outside ${band(p.minM2, p.maxM2)} (${p.source})`;

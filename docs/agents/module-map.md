@@ -263,7 +263,7 @@ Totals: 404 modules in 34 directories.
 | `index.ts` | 713 | 444 | ArchLang — compile declarative floor-plan source to a professional SVG. | none |
 | `input-limit.ts` | 77 | 5 | A host's refusals, as catalogued diagnostics. | none |
 | `intent-concepts.ts` | 238 | 5 | The intent channel's concept vocabulary — production name resolution for the NL→ArchLang intent contract. | none |
-| `intent.ts` | 1639 | 7 | The intent channel — author-time checking of a brief's INTENT against a plan. | none |
+| `intent.ts` | 1656 | 7 | The intent channel — author-time checking of a brief's INTENT against a plan. | none |
 | `ir.ts` | 1804 | 256 | Intermediate representation + `resolve(ast)`. | charges the step meter |
 | `keep.ts` | 1833 | 11 | `keep`: declared invariants, checked by `compile()` and never solved (ADR 0033; plan-soundness PS4.3, design `archlang-lab/plans/plan-soundness/research/2026-10-26-ps43-keep-design.md`). | charges the step meter |
 | `label-fit.ts` | 626 | 3 | A room's label that does not fit shrinks: a **post-pass over the lowered Scene**, after `wrapLabels` and `relocateLabels` (`src/label-placement.ts`) have done what they can at the drawing's label size (#367). | none |
