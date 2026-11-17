@@ -363,6 +363,9 @@ export const furniture: ElementDef = {
         dh = ctx.snap(fp.depth);
         defaulted = true;
         footprint = fp;
+        // `against` reads it as along × depth, as a written size, so its note goes where a written
+        // size's does (the same diagnostic order as its twin).
+        if (n.against || n.againstEdge) noteAgainstFootprint(ctx, id, [fp.along, fp.depth], [dw, dh], n.span);
       }
     }
     if (dw <= 0 || dh <= 0) {
@@ -393,7 +396,7 @@ export const furniture: ElementDef = {
     const quarter = rotate === 90 || rotate === 270;
     if (defaulted && !n.against && !n.againstEdge && quarter) [dw, dh] = [dh, dw];
     // The same footprint unsnapped, in the same plan axes, so a grid that moved it is reported as
-    // a written size is. `against` still snaps it silently (`docs/backlog.md` CO.1).
+    // a written size is. `against` reported its own above (`noteAgainstFootprint`).
     const plain: [number, number] | null =
       footprint && !n.against && !n.againstEdge
         ? quarter
@@ -1029,6 +1032,38 @@ function noteDefaultSize(
     code: "E_FURN_SIZE",
     ...(span ? { span } : {}),
     hints: ["Write a `size <W>x<H>` whose sides stay positive on the grid, or set a finer `grid`."],
+  });
+}
+
+/**
+ * A catalogued footprint (`size` omitted) under `against` that the grid moved: `W_GRID_SNAPPED`,
+ * as a written size is. A side the grid takes to 0 stays a warning that names the side, never
+ * {@link noteDefaultSize}'s `E_FURN_SIZE`: such a plan compiled before the note existed, and still
+ * does (RM-D56). A written `against` size that snaps to 0 is `E_FURN_SIZE`, as it always was.
+ * `plain` and `drawn` are along × depth, before and after the snap.
+ */
+function noteAgainstFootprint(
+  ctx: ResolveCtx,
+  id: string,
+  plain: readonly [number, number],
+  drawn: readonly [number, number],
+  span: Span | undefined,
+): void {
+  const side = drawn[1] <= 0 ? "depth" : drawn[0] <= 0 ? "along" : null;
+  if (side === null) {
+    noteSnap(ctx, `Furniture "${id}"`, "catalogued size", plain, drawn, span);
+    return;
+  }
+  const i = side === "depth" ? 1 : 0;
+  const g = fmt3(ctx.grid);
+  ctx.diag({
+    severity: "warning",
+    code: "W_GRID_SNAPPED",
+    message: `Furniture "${id}" catalogued size ${fmt3(plain[0])} x ${fmt3(plain[1])} was snapped to ${fmt3(drawn[0])} x ${fmt3(drawn[1])} by \`grid ${g}\`: its ${side} ${fmt3(plain[i])} snaps to 0`,
+    hints: [
+      `The drawing, \`describe()\` and \`lint()\` all use ${fmt3(drawn[0])} x ${fmt3(drawn[1])}. Set a finer \`grid\` to keep the catalogued size; a written \`size\` whose ${side} snaps to 0 is \`E_FURN_SIZE\`.`,
+    ],
+    ...(span ? { span } : {}),
   });
 }
 

@@ -120,12 +120,12 @@ plan "Garden House" {
 
     furniture washer  against wall shell segment 0 offset 7300 in r_util
     furniture dryer   against wall shell segment 0 offset 8100 in r_util
-    furniture basin   against wall shell segment 0 offset 9900 in r_util
+    furniture basin   against wall shell segment 0 offset 9900 size 600x500 in r_util
     furniture wc      against wall shell segment 0 offset 10900 in r_util
 
     furniture kitchen_sink against wall w_e1 offset 600  in r_kitchen
     furniture stove        against wall w_e1 offset 1600 in r_kitchen
-    furniture fridge       against wall w_e1 offset 3200 in r_kitchen
+    furniture fridge       against wall w_e1 offset 3200 size 600x700 in r_kitchen
     furniture counter      against wall w_e1 offset 2500 in r_kitchen
     furniture dining_table at (10200,10800) size 1600x900 in r_kitchen
 

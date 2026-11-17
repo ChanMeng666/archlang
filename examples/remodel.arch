@@ -50,7 +50,7 @@ plan "Apartment Remodel" {
   furniture kitchen_sink against r_living.left offset 1200 in r_living
   furniture counter      against r_living.left offset 1900 in r_living
   furniture stove        against r_living.left offset 2600 in r_living
-  furniture fridge       against r_living.left offset 3600 in r_living
+  furniture fridge       against r_living.left offset 3600 size 600x700 in r_living
   furniture table at (3600,1300) size 1400x900 label "Table" in r_living
   furniture sofa  at (4000,4400) size 900x2000 label "Sofa" in r_living
 

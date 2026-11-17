@@ -87,8 +87,12 @@ export const STARTER_ERRORS: readonly StarterError[] = [
   },
 ];
 
-/** Pieces `furniture` may leave without a `size` under any placement (a catalogued footprint); each is run. */
-export const STARTER_SIZED = ["wc", "bed", "tv_unit"] as const;
+/**
+ * Pieces `furniture` may leave without a `size` under any placement (a catalogued footprint); each is run.
+ * The third is the `against` line's, inside the lead plan's `grid 100`: a footprint on that grid
+ * (a bookshelf's 900 x 300), since one off it is `W_GRID_SNAPPED` (CO.1; a `tv_unit`'s 1500 x 450 was).
+ */
+export const STARTER_SIZED = ["wc", "bed", "bookshelf"] as const;
 /** Pieces that always need a `size`, whatever the placement (`E_FURN_SIZE`); each is run. */
 export const STARTER_UNSIZED = ["sofa", "desk", "table", "chair", "armchair"] as const;
 

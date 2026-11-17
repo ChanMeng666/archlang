@@ -97,7 +97,7 @@ plan "Courtyard Family House" {
 
   # Fire on the north wall, the TV on the west: each seat faces one of them.
   furniture id=fire fireplace against living.top offset 2500
-  furniture id=tv tv          against living.left offset 1300
+  furniture id=tv tv          against living.left offset 1300 size 1200x100
   furniture chaise    at (10000,600) size 800x1600 facing tv in living
   furniture loveseat  at (11000,2500) size 1500x850 facing fire in living
   furniture sideboard against living.right offset 4000
