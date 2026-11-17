@@ -435,12 +435,68 @@ const storeysOf = (summary: SceneSummary): readonly StoreyFacts[] =>
 /** Every room of the plan, lowest storey first. */
 const allRooms = (summary: SceneSummary): RoomSummary[] => storeysOf(summary).flatMap((s) => s.rooms);
 
-/** The plan's total floor area: the storeys' figures summed and rounded as each already is, or
- *  the one storey's figure untouched. */
+/** The plan's PRINTED total floor area: the storeys' figures summed and rounded as each already
+ *  is, or the one storey's figure untouched. A detail prints it; a band judges
+ *  {@link exactTotalFloorArea}. */
 function totalFloorArea(summary: SceneSummary): number {
   const storeys = storeysOf(summary);
   if (storeys.length === 1) return storeys[0]!.totals.floor_area_m2;
   return r2(storeys.reduce((n, s) => n + s.totals.floor_area_m2, 0));
+}
+
+/*
+ * A floor-area band is a limit, so it is judged on the EXACT area, never on the printed one
+ * (card RM9.1): `describe()` rounds each room to 0.01 m² and sums the rounded figures, so five
+ * rooms of exactly 40.000 m² print 40.01. The exact area is read back from the geometry the
+ * summary already carries unrounded: a `floor_circle` is πR², any other room the shoelace area of
+ * its `floor_polygon`, as `roomAreaMm2` measures them. It is a float (a width of `10000 / 7`
+ * times seven), so it is rounded ONCE, after any summing, to a whole mm². A figure the geometry
+ * does not reproduce, a room whose exact area does not round to its `area_m2` or a storey total
+ * that is not its rooms' printed sum, was put there by a caller: it is judged as printed.
+ */
+
+/** The shoelace area of a ring in mm², as `polygonArea` (`src/geometry/polygon.ts`) measures it,
+ *  in the same operation order. Written here rather than imported: the import would make the
+ *  playground's `compiler` chunk export `polygonArea` to this lazy one, bytes on the embed path's
+ *  budget (`playground/e2e/startup-chunks.baseline.json`). */
+function ringAreaMm2(ring: readonly { x: number; y: number }[]): number {
+  let s = 0;
+  for (let i = 0; i < ring.length; i++) {
+    const a = ring[i]!;
+    const b = ring[(i + 1) % ring.length]!;
+    s += a.x * b.y - b.x * a.y;
+  }
+  return Math.abs(s) / 2;
+}
+
+/** A room's exact floor area in mm², unrounded, or `undefined` when it does not round to the
+ *  room's printed `area_m2`. */
+function exactRoomMm2(r: RoomSummary): number | undefined {
+  const c = r.floor_circle;
+  const mm2 = c ? Math.PI * c.r * c.r : ringAreaMm2(r.floor_polygon);
+  return r2(Math.round(mm2) / 1_000_000) === r.area_m2 ? mm2 : undefined;
+}
+
+/** A room's exact floor area in m², to a whole mm², or its printed `area_m2`. */
+function exactRoomArea(r: RoomSummary): number {
+  const mm2 = exactRoomMm2(r);
+  return mm2 === undefined ? r.area_m2 : Math.round(mm2) / 1_000_000;
+}
+
+/** The plan's exact total floor area in m²: every room's exact area summed, then rounded once to
+ *  a whole mm²; or {@link totalFloorArea} when any figure is not reproduced (never a mix). */
+function exactTotalFloorArea(summary: SceneSummary): number {
+  let mm2 = 0;
+  for (const s of storeysOf(summary)) {
+    // `describe()` prints a storey's total as its rooms' printed areas summed, in this order.
+    if (r2(s.rooms.reduce((n, r) => n + r.area_m2, 0)) !== s.totals.floor_area_m2) return totalFloorArea(summary);
+    for (const r of s.rooms) {
+      const x = exactRoomMm2(r);
+      if (x === undefined) return totalFloorArea(summary);
+      mm2 += x;
+    }
+  }
+  return Math.round(mm2) / 1_000_000;
 }
 
 /** Whether `a` and `b` (concept ids) are joined by an interior door/opening in the
@@ -500,10 +556,17 @@ function checkOne(
     }
     case "total-area": {
       const a = totalFloorArea(summary);
-      const pass = a >= p.minM2 && a <= p.maxM2;
+      const exact = exactTotalFloorArea(summary);
+      const pass = exact >= p.minM2 && exact <= p.maxM2;
+      // The printed figure, unless it alone would contradict the verdict either way ("40 m² outside
+      // [0, 40]", "40.01 m² within [0, 40]"): then the exact one, in full. Printed as this line
+      // always printed its figure, `${}`: a whole mm² in m² has at most 6 dp, so the shortest
+      // decimal is every digit and never an exponent (no `fmtWritten`, whose import would add an
+      // export to the playground's `compiler` chunk, on the embed path's budget).
+      const shown = (a >= p.minM2 && a <= p.maxM2) !== pass ? exact : a;
       const detail = pass
-        ? `area: total ${a} m² within ${band(p.minM2, p.maxM2)}`
-        : `area: total ${a} m² outside ${band(p.minM2, p.maxM2)} (${p.source})`;
+        ? `area: total ${shown} m² within ${band(p.minM2, p.maxM2)}`
+        : `area: total ${shown} m² outside ${band(p.minM2, p.maxM2)} (${p.source})`;
       return { predicate: p, pass, detail };
     }
     case "adjacent": {
@@ -681,7 +744,11 @@ function checkRoomArea(
   const lo = p.minM2 ?? 0;
   const hi = p.maxM2 ?? INF;
   const assigned = claims.get(p.concept) ?? roomsMatchingConcept(p.concept, allRooms(summary));
-  const within = assigned.filter((r) => r.area_m2 >= lo && r.area_m2 <= hi).length;
+  // Judged on each room's exact area (RM9.1); the detail prints counts, not areas.
+  const within = assigned.filter((r) => {
+    const a = exactRoomArea(r);
+    return a >= lo && a <= hi;
+  }).length;
   const pass = within >= p.min;
   const detail = pass
     ? `area: concept "${p.concept}" ok (${within} within ${band(lo, hi)} m²)`
