@@ -428,6 +428,13 @@ const AGREEMENT: [string, string][] = [
   ["door slide then open", P(`  door sliding on w1 at 50% width 900 slide left open 0.5`)],
   ["door hinge near / swing into", P(`  door at (2500,0) width 900 hinge near start swing into r1`)],
   ["door pocket + hinge (E_ not parse)", P(`  door pocket on w1 at 50% width 900 hinge left`)],
+  // —— the kind word among a door's or window's clauses (backlog EV.8), on the same line ———
+  ["door kind after the placement", P(`  door on w1 at 50% pocket width 900`)],
+  ["door kind after width", P(`  door on w1 at 50% width 900 sliding slide left`)],
+  ["door kind at the end", P(`  door on w1 at 50% width 900 swing in hinged`)],
+  ["door kind twice (E_DUP_CLAUSE, which parses)", P(`  door barn on w1 at 50% width 900 sliding`)],
+  ["window kind at the end", P(`  window on w1 at 50% width 1200 sill 900 casement`)],
+  ["window kind after the placement", P(`  window on w1 at 50% tilt_turn width 1200 hinge left`)],
   // —— furniture: any order; a second `in` is a repeat (E_DUP_CLAUSE, which parses) ——————
   ["furn size,label,rotate,in", P(`  furniture id=f bed at (1000,1000) size 1000x2000 label "b" rotate 90 in r1`)],
   ["furn category then id=", P(`  furniture bed id=f at (1000,1000) size 1000x2000`)],
@@ -697,6 +704,16 @@ const DIVERGENT: [string, string, string][] = [
       "order, `size (1000) x 2000` is the clause. The grammar reads clauses as an order-free set, " +
       "and telling the two apart would need a state per old rank. Spec and reference say: drop the " +
       "parentheses or keep the old order.",
+  ],
+  [
+    "a door's kind word starting the next line",
+    P(`  door on w1 at 50% width 900\n  sliding`),
+    "The parser reads a door's or window's kind word as a clause only on the line of the token " +
+      "before it (backlog EV.8, review of #943), so a kind word that starts a line is the next " +
+      "statement and an `Unknown statement` here, as before EV.8. The grammar's `ws` crosses line " +
+      "breaks before every clause, so it takes the word as the door's kind. Fix = an inline-only " +
+      "separator for the kind arm (`( ws door-clause | isp door-kind )*`), which `anyOrder` and " +
+      "the clause-shape guard would both have to learn.",
   ],
 ];
 

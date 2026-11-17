@@ -38,7 +38,7 @@ import {
   openingHeightClauses,
   resolveOpeningHeights,
 } from "../datum.js";
-import { idAfterKind, missingClause, parseIdWithSpan, readClauses } from "../clause-order.js";
+import { idAfterKind, kindClause, missingClause, parseIdWithSpan, readClauses } from "../clause-order.js";
 import { noteSnap } from "../ir/silent-accepts.js";
 import { reprint } from "./reprint.js";
 
@@ -321,9 +321,10 @@ export const door: ElementDef = {
     // `room circle` / `dim faces` shape. Unambiguous by construction: the only other
     // legal leads here are `at` and `on` (see `parseAttachTarget`), neither of which
     // is a kind, so a lookahead against the closed table decides it with no backtrack.
-    // An `id=` may follow the kind word too (`door double id=d1 …`).
-    const doorKind = DOOR_KINDS.find((k) => ctx.isKeyword(k));
-    if (doorKind) ctx.next();
+    // An `id=` may follow the kind word too (`door double id=d1 …`), and the kind may instead
+    // come among the clauses after the placement (`kindClause`, backlog EV.8).
+    let doorKind = DOOR_KINDS.find((k) => ctx.isKeyword(k));
+    const kindTok = doorKind ? ctx.next() : undefined;
     const id = doorKind ? idAfterKind(ctx, "door", lead.id, lead.idSpan) : lead.id;
     const { at, atSpan, attach, between } = parseAttachTarget(ctx, true);
     // The clauses after the placement, in any order, each once (`src/clause-order.ts`). Each
@@ -348,6 +349,7 @@ export const door: ElementDef = {
       slideAt = Math.max(slideAt, ctx.peek(-1).end);
     };
     readClauses(ctx, "door", [
+      kindClause(ctx, "door", DOOR_KINDS, kindTok, (k) => (doorKind = k)),
       {
         word: "width",
         rank: 1,

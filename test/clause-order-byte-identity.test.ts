@@ -27,6 +27,10 @@
  * clause taken out of its furniture node (`size`, `sizeSpan`, `sizeValueSpan`) and every offset
  * mapped back across the inserted bytes, is byte for byte the parse pinned before (the PR states
  * the method and its output).
+ *
+ * EV.8 made a door's or window's kind word one more order-free clause, read only where it cannot
+ * begin the next statement, so no row above moved; the sweep at the end moves every example's lead
+ * kind word to the end of its statement and holds the drawing, the summary and the lint to it.
  */
 
 import { readdirSync, readFileSync, statSync } from "node:fs";
@@ -38,7 +42,8 @@ import {
   ID_AFTER_KIND_STATEMENTS,
   ORDER_FREE_STATEMENTS,
 } from "../src/clause-order.js";
-import { compile, describe, type ElementDef, lint, type ParseCtx, registerElement } from "../src/index.js";
+import { compile, describe, type ElementDef, format, lint, type ParseCtx, registerElement } from "../src/index.js";
+import { DOOR_KINDS, WINDOW_KINDS } from "../src/grammar/tokens.js";
 import { lex } from "../src/lexer.js";
 import { parse } from "../src/parser.js";
 import { makeNodeWorld } from "../src/cli/io.js";
@@ -361,6 +366,13 @@ const REORDERED: [string, string[]][] = [
   ],
   ["window at (2000,0) width 1200 wall exterior sill 900", ["window at (2000,0) sill 900 wall exterior width 1200"]],
   ["opening on bed.top at 25% width 900 head 2100", ["opening on bed.top at 25% head 2100 width 900"]],
+  // The kind word among a door's or window's clauses (backlog EV.8): the forms the live runs wrote.
+  ["door id=d sliding on bed.bottom at center width 900", ["door id=d on bed.bottom at center width 900 sliding"]],
+  [
+    "door hinged on bed.bottom at center width 900 swing in",
+    ["door on bed.bottom at center width 900 swing in hinged"],
+  ],
+  ["window casement on bed.top at center width 900", ["window on bed.top at center width 900 casement"]],
   [
     'outdoor id=d1 deck at (0,4200) size 4000x2000 label "Deck"',
     ['outdoor deck id=d1 at (0,4200) label "Deck" size 4000x2000'],
@@ -490,6 +502,11 @@ const DUPLICATES: [string, string, string][] = [
   ["window id=w0 casement id=w1 on bed.top at 50% width 1200", "id=w1", "id=w0"],
   ["outdoor id=o0 deck id=o1 at (0,4200) size 4000x2000", "id=o1", "id=o0"],
   ["wall id=v0 exterior id=v1 thickness 200 { (0,7000) (4000,7000) }", "id=v1", "id=v0"],
+  // A second kind word (backlog EV.8), after one before `on` or after one among the clauses.
+  ["door sliding on bed.left at 50% width 800 barn", "barn", "sliding"],
+  ["door on bed.left at 50% width 800 pocket open 0.5 sliding", "sliding", "pocket"],
+  ["window casement on bed.top at 50% width 1200 tilt", "tilt", "casement"],
+  ["window on bed.top at 50% fixed width 1200 fixed", "fixed", "fixed"],
 ];
 
 suite("clause order: a clause written twice is E_DUP_CLAUSE", () => {
@@ -756,5 +773,203 @@ suite("clause order: ParseCtx.failAt, the span-taking failure", () => {
       expect(d.message).toBe("probe refused");
       expect(src.slice(d.span!.start, d.span!.end), how).toBe(how === "failAt" ? `probe_${how} word` : ",");
     }
+  });
+});
+
+// —— The kind word among the clauses (backlog EV.8) ——————————————————————————————————————
+
+/** The `kind` node the parse of `src` holds, keys in order (what `arch ast --json` prints), with
+ *  every byte span taken out: those move with the word. */
+const nodeOf = (src: string, kind: string): string =>
+  JSON.stringify(
+    parse(src).plan!.body.find((s) => s.kind === kind),
+    (k, v: unknown) => (/span$/i.test(k) ? undefined : v),
+  );
+
+suite("clause order: a door's or window's kind word among its clauses is the kind written after the keyword", () => {
+  const forms = (lead: string, kind: string, place: string, [a, b]: [string, string]): [string, string][] => [
+    ["after the placement", `${lead} ${place} ${kind} ${a} ${b}`],
+    ["after width", `${lead} ${place} ${a} ${kind} ${b}`],
+    ["at the end", `${lead} ${place} ${a} ${b} ${kind}`],
+  ];
+  /** `[the canonical form, the same statement with the kind among its clauses, a name]`. */
+  const cases: [string, string, string][] = [];
+  for (const k of DOOR_KINDS)
+    for (const [where, form] of forms("door id=d", k, "on bed.bottom at center", ["width 900", "head 2100"]))
+      cases.push([`door id=d ${k} on bed.bottom at center width 900 head 2100`, form, `door ${k} ${where}`]);
+  for (const k of WINDOW_KINDS)
+    for (const [where, form] of forms("window id=w", k, "on bed.top at center", ["width 1200", "sill 900"]))
+      cases.push([`window id=w ${k} on bed.top at center width 1200 sill 900`, form, `window ${k} ${where}`]);
+
+  it("covers every kind the grammar knows, in each of three positions", () => {
+    expect(cases).toHaveLength(3 * (DOOR_KINDS.length + WINDOW_KINDS.length));
+  });
+  for (const [canonical, form, name] of cases) {
+    it(`${name}: ${form}`, () => {
+      const what = form.split(" ")[0]!;
+      const src = plan(form);
+      const want = plan(canonical);
+      expect(parseErrors(src)).toEqual([]);
+      expect(nodeOf(src, what)).toBe(nodeOf(want, what));
+      expect(compile(src).svg).toBe(compile(want).svg);
+      expect(summary(src)).toBe(summary(want));
+      const said = (s: string) => lint(s).map((d) => `${d.code}: ${d.message}`);
+      expect(said(src)).toEqual(said(want));
+      // `arch fmt` prints the kind where the canonical form writes it, and is a fixpoint there.
+      expect(format(src)).toBe(format(want));
+      expect(format(src)).toContain(`  ${canonical}\n`);
+      expect(format(format(src))).toBe(format(src));
+    });
+  }
+
+  it("a kind-dependent clause check sees the kind wherever it is written", () => {
+    // The three door forms below are the same length and start at the same byte, so the fix's
+    // edit (span and text) must be the same edit: the whole statement, re-printed without `hinge`.
+    const refusal = (body: string) =>
+      compile(plan(body))
+        .diagnostics.filter((d) => d.code === "E_DOOR_KIND_CLAUSE" || d.code === "E_WINDOW_KIND_CLAUSE")
+        .map((d) => ({
+          code: d.code,
+          message: d.message,
+          edits: (d.fixes ?? []).flatMap((f) => f.edits.map((e) => ({ span: e.span, newText: e.newText }))),
+        }));
+    const canonical = "door id=d sliding on bed.bottom at center width 900 hinge left";
+    const sliding = refusal(canonical);
+    expect(sliding).toHaveLength(1);
+    expect(sliding[0]!.edits).toHaveLength(1);
+    const [edit] = sliding[0]!.edits;
+    expect(plan(canonical).slice(edit!.span.start, edit!.span.end)).toBe(canonical);
+    expect(edit!.newText).toBe("door id=d sliding on bed.bottom at center width 900");
+    expect(refusal("door id=d on bed.bottom at center width 900 hinge left sliding")).toEqual(sliding);
+    expect(refusal("door id=d on bed.bottom at center sliding width 900 hinge left")).toEqual(sliding);
+    // A casement takes `hinge`; a window with no kind does not.
+    expect(refusal("window on bed.top at center width 1200 hinge left")).toHaveLength(1);
+    expect(refusal("window on bed.top at center width 1200 hinge left casement")).toEqual([]);
+  });
+
+  it("a kind word that begins a statement stays one", () => {
+    const kinds = (src: string): string[] => parse(src).plan!.body.map((s) => s.kind);
+    const assign = plan("let sliding = 1\n  door on bed.bottom at center width 900\n  sliding = 2");
+    expect(kinds(assign).slice(-2)).toEqual(["door", "assign"]);
+    expect(parseErrors(assign)).toEqual([]);
+    expect(nodeOf(assign, "door")).not.toContain("doorKind");
+    const call = plan("window on bed.top at center width 1200\n  casement(1)");
+    expect(kinds(call).slice(-2)).toEqual(["window", "instance"]);
+    expect(nodeOf(call, "window")).not.toContain("windowKind");
+  });
+
+  it("a kind word that starts a line is never a clause: it reads as on main", () => {
+    // Read as a clause only on the line of the token before it (review of #943): a kind word that
+    // starts a line begins the next statement, so `sliding door id=d2 …` after a door is no kind for
+    // that door. Main's reading, measured on 8f678bea for each of these: one `E_PARSE` "Unknown
+    // statement" on the word (with `hinged`'s hint), and the opening above it kindless. The oracle is
+    // the same source with a word that is no kind (`wombat`) in its place, which reads so on both.
+    const before = [
+      "door id=d1 on bed.bottom at center width 900",
+      "door id=d1 on bed.bottom at center width 900 hinge left",
+      "window id=w1 on bed.top at center width 1200",
+    ];
+    const after: [string, string][] = [
+      ...DOOR_KINDS.map((k): [string, string] => [k, `${k} door id=d2 on bed.left at center width 800`]),
+      ...WINDOW_KINDS.map((k): [string, string] => [k, `${k} window id=w2 on bed.right at center width 1200`]),
+      ["sliding", "sliding"],
+    ];
+    const said = (src: string, word: string) =>
+      compile(src).diagnostics.map((d) => [
+        d.code,
+        d.message.replace(word, "<w>"),
+        src.slice(d.span!.start, d.span!.end).replace(word, "<w>"),
+        d.hints ?? [],
+        d.fixes ?? [],
+      ]);
+    for (const first of before)
+      for (const [word, second] of after) {
+        const name = `${first} / ${second}`;
+        const src = plan(`${first}\n  ${second}`);
+        const other = plan(`${first}\n  ${second.replace(word, "wombat")}`);
+        const ds = compile(src).diagnostics;
+        expect(
+          ds.map((d) => `${d.code}: ${d.message}`),
+          name,
+        ).toEqual([`E_PARSE: Unknown statement "${word}"`]);
+        expect(src.slice(ds[0]!.span!.start, ds[0]!.span!.end), name).toBe(word);
+        // Everything but `hinged`'s own hint is as the unknown word's.
+        const unhinted = (x: unknown[][]) => x.map((d) => [d[0], d[1], d[2], d[4]]);
+        expect(unhinted(said(src, word)), name).toEqual(unhinted(said(other, "wombat")));
+        expect(ds[0]!.hints?.length ?? 0, name).toBe(word === "hinged" ? 1 : 0);
+        expect(compile(src).svg, name).toBe(compile(other).svg);
+        const kind = first.split(" ")[0]!;
+        expect(nodeOf(src, kind), name).toBe(nodeOf(plan(first), kind));
+      }
+  });
+
+  it("`hinged` starting the line after a door keeps EV.4's hint", () => {
+    const src = plan(
+      "door id=d1 on bed.bottom at center width 900\n  hinged door id=d2 on bed.left at center width 800",
+    );
+    const [d] = compile(src).diagnostics;
+    expect(d?.message).toBe(`Unknown statement "hinged"`);
+    expect(d?.hints?.[0]).toContain("`hinged` is a door kind, not a statement");
+  });
+});
+
+/** `src` with the lead kind word of each single-line `door` and `window` moved to its statement's end. */
+const kindsToEnd = (src: string): { src: string; moved: number } => {
+  const kinds: Record<string, readonly string[]> = { door: DOOR_KINDS, window: WINDOW_KINDS };
+  const tokens = lex(src).tokens;
+  const edits: { from: number; to: number; end: number; word: string }[] = [];
+  const seen = new Set<number>();
+  const visit = (v: unknown): void => {
+    if (Array.isArray(v) || v instanceof Map) {
+      for (const x of v.values()) visit(x);
+      return;
+    }
+    if (!v || typeof v !== "object") return;
+    const o = v as { kind?: unknown; span?: { start: number; end: number } };
+    const span = o.span;
+    if (typeof o.kind === "string" && o.kind in kinds && span && !seen.has(span.start)) {
+      seen.add(span.start);
+      if (!src.slice(span.start, span.end).includes("\n")) {
+        const ts = tokens.filter((t) => t.start >= span.start && t.end <= span.end);
+        // `door [id=<id>] <kind> …`: the kind is the second token, or the fifth after an `id=`.
+        const i = ts[1]?.value === "id" && ts[2]?.type === "equals" ? 4 : 1;
+        const t = ts[i];
+        if (t && kinds[o.kind]!.includes(t.value))
+          edits.push({ from: ts[i - 1]!.end, to: t.end, end: span.end, word: t.value });
+      }
+    }
+    for (const [k, x] of Object.entries(o)) if (k !== "span") visit(x);
+  };
+  visit(parse(src).plan);
+  let out = src;
+  for (const e of [...edits].sort((a, b) => b.from - a.from))
+    out = `${out.slice(0, e.from)}${out.slice(e.to, e.end)} ${e.word}${out.slice(e.end)}`;
+  return { src: out, moved: edits.length };
+};
+
+/** The fewest lead kind words the sweep below must move over the examples (measured: 48). */
+const KIND_MOVE_FLOOR = 45;
+
+suite("clause order: every example's lead kind word moved to the end of its statement", () => {
+  for (const file of archFilesUnder(ROOT, "examples")) {
+    const src = readFileSync(join(ROOT, file), "utf8");
+    const moved = kindsToEnd(src);
+    if (moved.moved === 0) continue;
+    it(`${file}: every storey's SVG, describe() and lint() are unchanged`, () => {
+      const world = makeNodeWorld(dirname(join(ROOT, file)));
+      expect(moved.src).not.toBe(src);
+      expect(parseErrors(moved.src)).toEqual([]);
+      expect(drawnAndDescribed(moved.src, world)).toBe(drawnAndDescribed(src, world));
+      const said = (s: string) => lint(s, { world }).map((d) => `${d.code}: ${d.message}`);
+      expect(said(moved.src)).toEqual(said(src));
+      expect(format(moved.src)).toBe(format(src));
+    });
+  }
+
+  it("moves a real number of kind words", () => {
+    let total = 0;
+    for (const file of archFilesUnder(ROOT, "examples"))
+      total += kindsToEnd(readFileSync(join(ROOT, file), "utf8")).moved;
+    expect(total).toBeGreaterThanOrEqual(KIND_MOVE_FLOOR);
   });
 });

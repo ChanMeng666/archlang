@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- A `door`'s or `window`'s kind word may also come among the clauses after its placement, in any order with them (backlog EV.8): `door id=d on w at 50% width 900 sliding`, `door … swing in hinged` and `window … width 900 casement` now parse, where each was `E_PARSE: Unknown statement "sliding"` (or `"hinged"`, `"casement"`). The door or window is the one the kind written straight after the keyword gives, so it draws, describes and lints the same, kind-dependent clause checks (`E_DOOR_KIND_CLAUSE`, `E_WINDOW_KIND_CLAUSE`) see the kind wherever it is written, and `arch fmt` prints it after the keyword. A second kind word, before `on` or among the clauses, is `E_DUP_CLAUSE`. It is read only on the same line as the word before it: a kind word that starts a line is the next statement, as before (`sliding door id=d2 …` after a door is still `E_PARSE: Unknown statement "sliding"`, and `hinged` there keeps its hint), and one that begins a statement (`sliding = 2`, `casement(1)`) still does. A plan that parsed before parses to the same tree (`test/clause-order-byte-identity.test.ts`). The spec's clause-order sentence and the GBNF grammar say so.
+
 ### Changed
 
 - A piece placed `against` a wall or a room edge with no `size` now reports a catalogued footprint that the plan's `grid` moved, with `W_GRID_SNAPPED` naming the "catalogued size" as `at` and `in` already did (backlog CO.1); it was snapped silently. The drawing does not change. A side the grid takes to 0 (a 50 mm deep `mirror` on `grid 200`) is that warning naming the side, not an error, so a plan that compiled still compiles; a written size that snaps to 0 stays `E_FURN_SIZE`. Seven examples write the snapped size out and stay warning-free, drawn as before. `finish` writes no sizeless `against` piece that would now warn: on a gridded plan it leaves out a piece whose catalogued footprint is off the grid (one plan in the test corpus, `test/main-entrance-fixtures/n7-back-hall.arch`, loses its fridge, 600 x 650 on `grid 100`).
