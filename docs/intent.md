@@ -193,6 +193,7 @@ resolve on their own.
 
 | Code | Fires when |
 |------|-----------|
+| `E_INTENT_INFEASIBLE` | the contract's own numbers cannot all hold, whatever the plan (see [An impossible brief](#an-impossible-brief)). Listed **first** |
 | `E_INTENT_ROOM_COUNT` | the room count is off (subject to policy B) |
 | `E_INTENT_ROOM_MISSING` | no room matches a required concept |
 | `E_INTENT_ROOM_AREA` | a concept's rooms fall outside their area band |
@@ -223,6 +224,32 @@ run in `eval/live-runs/2026-11-t3-preregistration.md`, and its record is publish
 statement of the result, and any other claim needs an owner decision. The run does not change
 this channel: these checks report and score the miss, but they never fail the gate
 (`gate: false`, permanently).
+
+### An impossible brief
+
+Before any plan is judged, `validateIntent` adds up the contract's own numbers. Each
+`roomsInclude[i].areaM2.min` asks for `count.min` rooms (default 1) of at least that area, and
+those rooms are distinct, so the floors add. When they add to more than `totalAreaM2.max`, no
+plan can pass every gating assertion, and one `E_INTENT_INFEASIBLE` leads the violations with the
+sum written out:
+
+```text
+E_INTENT_INFEASIBLE: intent /roomsInclude/0/areaM2 + /roomsInclude/0/count + /roomsInclude/1/areaM2 + /roomsInclude/2/areaM2 + /totalAreaM2: no plan can meet these numbers together: 3 "bedroom" × at least 12 m² = 36 m² + 1 "living-room" × at least 10 m² = 10 m² + 1 "bathroom" × at least 3.5 m² = 3.5 m² = 49.5 m² of rooms, above the total floor area of at most 40 m² (/totalAreaM2)
+```
+
+Its feedback says to relax one of the named numbers (ask whoever wrote the brief which one
+gives); no edit to the plan clears it, and it carries no fix. The band misses it causes are still
+listed after it, and `satisfied`, `total`, the subscores and `score --brief` are what the
+assertions alone give, so the meter does not move. A floor above a ceiling on the same rooms is
+reported the same way.
+
+It is called only with that arithmetic, never on a hunch. Concepts one room could serve together
+(a bathroom and a WC) count once, at their largest; a concept named by two entries keeps neither
+count; a sum that ties the ceiling to within a few mm² is not called impossible. "Three bedrooms of
+at least 12 m², a living room and a bathroom, all inside 40 m²" with no stated floor for the
+living room or the bathroom is **not** reported: 36 m² leaves 4 m² that the contract does not
+forbid. The derivation is the eval's (`eval/fidelity.ts` re-exports it from
+`src/intent-feasibility.ts`), and nothing is solved: no layout is searched for.
 
 ## From the CLI
 

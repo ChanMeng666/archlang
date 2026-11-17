@@ -14,6 +14,12 @@ export const INTENT_ENTRIES = defineEntries({
     "Grow or shrink the shell so the enclosed floor lands in the band; partitions inside the shell do not change the figure. Gating tier: this failure fails `validateIntent`'s `ok`. Assert a band only where the brief states a number.",
     '# brief says "about 70 m²" (band 63–77); the shell encloses 9600 × 6400 = 61.44 m² inside its inner faces',
   ),
+  E_INTENT_INFEASIBLE: e(
+    "The brief's numbers cannot all hold, whatever the plan.",
+    "Before any plan is judged, `validateIntent` adds up the intent contract's own numbers: the per-room area floors of concepts no single room can serve together (each times its `count.min`) against the `totalAreaM2` ceiling, or a floor above a ceiling on the same rooms. When the sum provably passes the ceiling, no plan can pass every gating assertion, and the message states the sum term by term. It is reported only with that arithmetic: a contract it cannot prove impossible gets no such error. The band misses it causes are still listed after it.",
+    "Relax one of the numbers the message names (ask whoever wrote the brief which one gives); no edit to the plan clears it. Gating tier: listed first, and the plan already fails `validateIntent`'s `ok`.",
+    '# intent: 3 bedrooms of at least 12 m², a living room of at least 10 m², at most 40 m² in all\n# 3 "bedroom" × at least 12 m² = 36 m² + 1 "living-room" × at least 10 m² = 10 m² = 46 m², above 40 m²',
+  ),
   E_INTENT_NOT_ADJACENT: e(
     "Two rooms the brief wants adjacent share no interior door.",
     "An intent `adjacency` edge names two concepts (e.g. hall ↔ bathroom) that are not joined by an interior door or cased opening in the plan's modeled connectivity.",

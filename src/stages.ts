@@ -127,6 +127,7 @@ export const COMPILE_WARNING_STAGES: Readonly<Record<string, AuthoringStage>> = 
  * (`rooms`) or the gross internal area (`walls`), so the bare code answers `rooms`.
  */
 export const INTENT_CODE_STAGES: Readonly<Record<string, AuthoringStage>> = /* @__PURE__ */ Object.freeze({
+  E_INTENT_INFEASIBLE: "rooms",
   E_INTENT_ROOM_COUNT: "rooms",
   E_INTENT_ROOM_MISSING: "rooms",
   E_INTENT_ROOM_AREA: "rooms",

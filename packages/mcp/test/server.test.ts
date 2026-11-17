@@ -176,6 +176,29 @@ describe("archlang mcp server", () => {
     expect(violations.some((v) => v.code === "E_INTENT_ROOM_COUNT" && v.gate === true)).toBe(true);
   });
 
+  it("validate reports an impossible brief first, as E_INTENT_INFEASIBLE with its arithmetic", async () => {
+    const client = await connect();
+    const intent = {
+      roomsInclude: [
+        { concept: "bedroom", count: { min: 3 }, areaM2: { min: 12, source: "three bedrooms of at least 12 m²" } },
+      ],
+      totalAreaM2: { max: 30, source: "at most 30 m² in all" },
+    };
+    const out = payload(await client.callTool({ name: "validate", arguments: { source: TINY, intent } }));
+    expect(out.ok).toBe(false);
+    const block = out.intent as {
+      violations: Array<{ code: string; message: string; gate: boolean }>;
+      feedback: string[];
+    };
+    expect(block.violations[0]).toEqual({
+      code: "E_INTENT_INFEASIBLE",
+      message:
+        'intent /roomsInclude/0/areaM2 + /roomsInclude/0/count + /totalAreaM2: no plan can meet these numbers together: 3 "bedroom" × at least 12 m² = 36 m² of rooms, above the total floor area of at most 30 m² (/totalAreaM2)',
+      gate: true,
+    });
+    expect(block.feedback[0]).toMatch(/^Relax one of: /);
+  });
+
   it("validate returns intentErrors (data) for a malformed intent", async () => {
     const client = await connect();
     const out = payload(

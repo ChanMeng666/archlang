@@ -1,0 +1,246 @@
+/** RM9.3 — an impossible brief is reported as impossible, with its arithmetic: proveInfeasible's sound rules, E_INTENT_INFEASIBLE first… */
+
+import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { describe, expect, it } from "vitest";
+import { type Intent, feedbackForResult, nextDiagnostic, validateIntent } from "../src/index.js";
+import { type Requirement, intentRequirements, proveInfeasible } from "../src/intent-feasibility.js";
+import { loadFidelityCorpus } from "../eval/fidelity.js";
+import { runArch } from "./helpers/cli.js";
+
+type NoQuote<T> = T extends unknown ? Omit<T, "quote"> : never;
+const R = (r: NoQuote<Requirement>): Requirement => ({ ...r, quote: r.id }) as Requirement;
+
+describe("proveInfeasible — the rules RM9.3 adds", () => {
+  it("a plan-wide floor times the rooms the concepts require is a conflict (the backlog's case)", () => {
+    // `{total ≤ 12, every room ≥ 5, exactly 3 bedrooms}`: 3 × 5 = 15 m² above 12.
+    const reqs = [
+      R({ id: "T", kind: "total-area", op: "at-most", m2: 12 }),
+      R({ id: "F", kind: "room-area", op: "at-least", m2: 5 }),
+      R({ id: "B", kind: "room-count", concept: "bedroom", exact: 3 }),
+    ];
+    const proofs = proveInfeasible(reqs);
+    expect(proofs.map((p) => p.conflicts)).toEqual([["B", "F", "T"]]);
+    expect(proofs[0]!.reason).toBe(
+      "every room being at least its stated minimum, over the 3 rooms the stated counts require, demands 15 m² of floor, above the stated ceiling of 12 m²",
+    );
+    expect(proofs[0]!.demand).toEqual({
+      terms: [{ ids: ["F", "B"], rooms: 3, m2: 5 }],
+      m2: 15,
+      ceiling: { id: "T", m2: 12 },
+    });
+    // Control: two bedrooms fit (2 × 5 = 10 ≤ 12).
+    expect(proveInfeasible(reqs.map((r) => (r.id === "B" ? { ...r, exact: 2 } : r)) as Requirement[])).toEqual([]);
+  });
+
+  it("the concept rooms: overlapping concepts count once, at their largest; disjoint ones add", () => {
+    // bathroom ~ wc share a room type: one group, max(2, 1) = 2 rooms; bedroom adds 2 → 4 × 4 = 16 > 15.
+    const reqs = [
+      R({ id: "T", kind: "total-area", op: "at-most", m2: 15 }),
+      R({ id: "F", kind: "room-area", op: "at-least", m2: 4 }),
+      R({ id: "W", kind: "room-count", concept: "bathroom", exact: 2 }),
+      R({ id: "C", kind: "room-count", concept: "wc", exact: 1 }),
+      R({ id: "B", kind: "room-count", concept: "bedroom", exact: 2 }),
+    ];
+    expect(proveInfeasible(reqs).map((p) => p.conflicts)).toEqual([["B", "F", "T", "W"]]);
+    // At 16 the four rooms fit exactly: no conflict (the WC is not counted on its own).
+    expect(proveInfeasible(reqs.map((r) => (r.id === "T" ? { ...r, m2: 16 } : r)) as Requirement[])).toEqual([]);
+  });
+
+  it("a plan-wide count that already binds keeps its old proof, and the concept rule adds none", () => {
+    const reqs = [
+      R({ id: "T", kind: "total-area", op: "at-most", m2: 12 }),
+      R({ id: "F", kind: "room-area", op: "at-least", m2: 5 }),
+      R({ id: "N", kind: "room-count", exact: 3 }),
+      R({ id: "B", kind: "room-count", concept: "bedroom", exact: 3 }),
+    ];
+    expect(proveInfeasible(reqs).map((p) => [p.conflicts, p.reason])).toEqual([
+      [
+        ["F", "N", "T"],
+        "every room being at least its stated minimum demands 15 m² of floor, above the stated ceiling of 12 m²",
+      ],
+    ]);
+  });
+
+  it("a demand that ties its ceiling up to float noise is no conflict (0.1 × 3 vs 0.3)", () => {
+    // 0.1 * 3 is 0.30000000000000004 in floats, and three rooms of exactly 0.1 m² total 0.3 m².
+    const reqs = [
+      R({ id: "T", kind: "total-area", op: "at-most", m2: 0.3 }),
+      R({ id: "B", kind: "room-area", concept: "bedroom", op: "at-least", m2: 0.1 }),
+      R({ id: "C", kind: "room-count", concept: "bedroom", exact: 3 }),
+    ];
+    expect(0.1 * 3 > 0.3).toBe(true);
+    expect(proveInfeasible(reqs)).toEqual([]);
+    // One mm² per room is the slack, so a real excess of a few cm² is still caught.
+    expect(proveInfeasible(reqs.map((r) => (r.id === "T" ? { ...r, m2: 0.299 } : r)) as Requirement[])).toHaveLength(1);
+  });
+
+  it("a capacity proof carries its arithmetic term by term", () => {
+    const [proof] = proveInfeasible([
+      R({ id: "T", kind: "total-area", op: "at-most", m2: 40 }),
+      R({ id: "B", kind: "room-area", concept: "bedroom", op: "at-least", m2: 12 }),
+      R({ id: "N", kind: "room-count", concept: "bedroom", exact: 3 }),
+      R({ id: "L", kind: "room-area", concept: "living-room", op: "at-least", m2: 10 }),
+    ]);
+    expect(proof!.demand).toEqual({
+      terms: [
+        { ids: ["B", "N"], concept: "bedroom", rooms: 3, m2: 12 },
+        { ids: ["L"], concept: "living-room", rooms: 1, m2: 10 },
+      ],
+      m2: 46,
+      ceiling: { id: "T", m2: 40 },
+    });
+  });
+});
+
+// The growth trial's H4 brief: "three bedrooms of at least 12 m² each, a living room and a
+// bathroom, all inside 40 m²", drawn as its best attempt (an 8 × 5 m box, 40.000 m² exactly).
+const H4 = `plan "H4" {
+  units mm
+  room id=b1 at (0,0) size 2700x2500 label "Bedroom 1"
+  room id=b2 at (2700,0) size 2600x2500 label "Bedroom 2"
+  room id=b3 at (5300,0) size 2700x2500 label "Bedroom 3"
+  room id=liv at (0,2500) size 5500x2500 label "Living room"
+  room id=bath at (5500,2500) size 2500x2500 label "Bathroom"
+}`;
+
+/** The H4 contract, with a floor on the living room and the bathroom as given. */
+const h4 = (living: number | undefined, bath: number | undefined): Intent => ({
+  rooms: 5,
+  roomsInclude: [
+    {
+      concept: "bedroom",
+      count: { min: 3, max: 3 },
+      areaM2: { min: 12, source: "three bedrooms of at least 12 m² each" },
+    },
+    { concept: "living-room", ...(living !== undefined ? { areaM2: { min: living, source: "a living room" } } : {}) },
+    { concept: "bathroom", ...(bath !== undefined ? { areaM2: { min: bath, source: "a bathroom" } } : {}) },
+  ],
+  totalAreaM2: { max: 40, source: "all inside 40 m² total" },
+});
+
+const H4_MESSAGE =
+  "intent /roomsInclude/0/areaM2 + /roomsInclude/0/count + /roomsInclude/1/areaM2 + /roomsInclude/2/areaM2 + /totalAreaM2: " +
+  'no plan can meet these numbers together: 3 "bedroom" × at least 12 m² = 36 m² + 1 "living-room" × at least 10 m² = 10 m² ' +
+  '+ 1 "bathroom" × at least 3.5 m² = 3.5 m² = 49.5 m² of rooms, above the total floor area of at most 40 m² (/totalAreaM2)';
+
+const codes = (i: Intent, src = H4): string[] => validateIntent(src, i).violations.map((v) => v.code);
+
+describe("validateIntent — E_INTENT_INFEASIBLE comes first, with the arithmetic", () => {
+  it("the H4 shape (3 bedrooms ≥ 12 m², living ≥ 10, bath ≥ 3.5, total ≤ 40) is infeasible, root cause first", () => {
+    const res = validateIntent(H4, h4(10, 3.5));
+    const [first, ...rest] = res.violations;
+    expect(first!.code).toBe("E_INTENT_INFEASIBLE");
+    expect(first!.message).toBe(H4_MESSAGE);
+    expect(first!.gate).toBe(true);
+    expect(first!.conflicts).toEqual([
+      "/roomsInclude/0/areaM2",
+      "/roomsInclude/0/count",
+      "/roomsInclude/1/areaM2",
+      "/roomsInclude/2/areaM2",
+      "/totalAreaM2",
+    ]);
+    // The band misses are still listed, after it, exactly as the assertions give them.
+    expect(rest.map((v) => v.code)).toEqual(["E_INTENT_ROOM_AREA"]);
+    expect(rest.length).toBe(res.assertions.filter((a) => !a.pass).length);
+    // The meter is the assertions' alone: the contract check adds no assertion.
+    expect([res.ok, res.satisfied, res.total]).toEqual([false, 7, 8]);
+    // `next` names it, and its hint says to relax a number, not to redraw.
+    const next = nextDiagnostic({ diagnostics: [], intent: res });
+    expect(next?.code).toBe("E_INTENT_INFEASIBLE");
+    expect(next?.hint).toBe(feedbackForResult(res)[0]);
+    expect(next?.hint).toMatch(
+      /^Relax one of: \/roomsInclude\/0\/areaM2, .*\/totalAreaM2\. These numbers cannot all hold/,
+    );
+  });
+
+  it("is reported from the contract alone, whatever the source (a plan that does not compile too)", () => {
+    const res = validateIntent("plan {{{ not archlang", h4(10, 3.5));
+    expect(res.violations[0]?.message).toBe(H4_MESSAGE);
+    expect(res.diagnostics.length).toBeGreaterThan(0);
+  });
+
+  it("the trial's own contract, with no floor on the living room or bath, is NOT called infeasible", () => {
+    // 3 × 12 = 36 m² ≤ 40 m²: the contract leaves 4 m² for the other two rooms and states no
+    // minimum for either, so no arithmetic proves it impossible.
+    expect(codes(h4(undefined, undefined))).not.toContain("E_INTENT_INFEASIBLE");
+  });
+
+  it("a feasible near-miss (the floors add to exactly the ceiling) is not infeasible; 0.01 m² over is", () => {
+    expect(codes(h4(4, undefined))).not.toContain("E_INTENT_INFEASIBLE");
+    expect(codes(h4(4, 0))).not.toContain("E_INTENT_INFEASIBLE");
+    expect(codes(h4(4.01, undefined))[0]).toBe("E_INTENT_INFEASIBLE");
+  });
+
+  it("a band whose count.min is 0 demands nothing", () => {
+    const i: Intent = {
+      roomsInclude: [{ concept: "bedroom", count: { min: 0 }, areaM2: { min: 50, source: "s" } }],
+      totalAreaM2: { max: 40, source: "t" },
+    };
+    expect(intentRequirements(i)).toEqual([
+      { id: "/totalAreaM2", kind: "total-area", op: "at-most", m2: 40, quote: "t" },
+    ]);
+    expect(codes(i)).not.toContain("E_INTENT_INFEASIBLE");
+  });
+
+  it("a concept named twice never lets one entry's count multiply the other's floor", () => {
+    // Three plain bedrooms and one of at least 12 m²: 12 m² of floor is demanded, not 36.
+    const i: Intent = {
+      roomsInclude: [
+        { concept: "bedroom", count: { min: 3 } },
+        { concept: "bedroom", areaM2: { min: 12, source: "s" } },
+      ],
+      totalAreaM2: { max: 20, source: "t" },
+    };
+    expect(intentRequirements(i).filter((r) => r.kind === "room-count")).toEqual([]);
+    expect(codes(i)).not.toContain("E_INTENT_INFEASIBLE");
+  });
+
+  it("a programmatic band with min above max is a contradiction on its own rooms", () => {
+    const res = validateIntent(H4, {
+      roomsInclude: [{ concept: "bedroom", areaM2: { min: 20, max: 10, source: "s" } }],
+    });
+    expect(res.violations[0]!.message).toBe(
+      "intent /roomsInclude/0/areaM2: no plan can meet these numbers together: a floor of 20 m² sits above a ceiling of 10 m² on the same room(s)",
+    );
+  });
+
+  it("over the fidelity corpus: only an impossible brief's honest contract is flagged, a laundered one never", () => {
+    const corpus = loadFidelityCorpus();
+    const flagged: string[] = [];
+    for (const e of corpus) {
+      if (proveInfeasible(intentRequirements(e.statedContract)).length > 0) flagged.push(e.id);
+      // A plan passes each laundered contract (test/eval-fidelity.test.ts), so it is feasible.
+      expect(proveInfeasible(intentRequirements(e.references.launderedContract)), e.id).toEqual([]);
+    }
+    for (const id of flagged) expect(corpus.find((e) => e.id === id)?.infeasible, id).toBeDefined();
+    // capped-wet-room's conflict is a plan-wide room ceiling, which `Intent` cannot state.
+    expect(flagged).toEqual(["over-programmed-flat", "four-bed-cap"]);
+  });
+});
+
+describe("arch validate --intent — the CLI reports it first", () => {
+  it("--json lists E_INTENT_INFEASIBLE first, at the rooms stage", async () => {
+    const dir = mkdtempSync(join(tmpdir(), "arch-infeasible-"));
+    try {
+      const plan = join(dir, "h4.arch");
+      const intent = join(dir, "h4.intent.json");
+      writeFileSync(plan, H4);
+      writeFileSync(intent, JSON.stringify(h4(10, 3.5)));
+      const r = await runArch(["validate", plan, "--intent", intent, "--json"]);
+      expect(r.status).toBe(2);
+      const out = JSON.parse(r.stdout) as {
+        intent: { violations: { code: string; message: string; gate: boolean; stage: string }[] };
+      };
+      expect(out.intent.violations[0]).toEqual({
+        code: "E_INTENT_INFEASIBLE",
+        message: H4_MESSAGE,
+        gate: true,
+        stage: "rooms",
+      });
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+});

@@ -12,6 +12,7 @@
  * layout and never reads a plan: it adds and compares the numbers the brief states.
  */
 
+import type { Intent } from "./intent.js";
 import { CONCEPTS } from "./intent-concepts.js";
 import { synonymMatchesLabel } from "./vocabulary.js";
 
@@ -36,7 +37,8 @@ export type Facing = "N" | "S" | "E" | "W";
  *
  * Scope conventions: an omitted `concept` means EVERY room (or every door) in the plan;
  * a named concept is resolved through the eval's private vocabulary shim, which throws on
- * an unknown key so a corpus typo fails loudly.
+ * an unknown key so a corpus typo fails loudly. The intent channel lowers its contract to
+ * this shape with intent paths as ids ({@link intentRequirements}).
  */
 export type Requirement =
   | { id: string; kind: "room-area"; concept?: string; op: Op; m2: number; quote: string }
@@ -49,6 +51,18 @@ export type Requirement =
  *  keeps a computed drift from printing float noise). */
 const round2 = (n: number): number => Math.round(n * 100) / 100;
 
+/** One summand of a capacity proof's demand: `rooms` rooms, each at least `m2`. */
+export interface DemandTerm {
+  /** The requirement ids this term reads, in requirement order: the floor, then the count. */
+  ids: string[];
+  /** The concept the floor is on; absent for a plan-wide ("every room") floor. */
+  concept?: string;
+  /** How many rooms the term counts: a stated count, or 1 where none is stated. */
+  rooms: number;
+  /** The floor each of those rooms carries, in m². */
+  m2: number;
+}
+
 /** One derivation that a requirement set cannot all hold at once. */
 export interface InfeasibilityProof {
   /** `capacity` — demanded floor area exceeds a stated cap. `contradiction` — a stated
@@ -57,7 +71,23 @@ export interface InfeasibilityProof {
   /** The requirement ids that participate, sorted — the set a correct refusal must name. */
   conflicts: string[];
   reason: string;
+  /** A capacity proof's arithmetic, so a caller can print it term by term: the terms whose
+   *  sum is `m2`, and the ceiling that sum exceeds. Absent on a contradiction. */
+  demand?: { terms: DemandTerm[]; m2: number; ceiling: { id: string; m2: number } };
 }
+
+/**
+ * How far a demand must pass its ceiling before it is called a conflict: 1 mm² (10⁻⁶ m²) per
+ * room it counts, plus one. A plan is judged on areas rounded to a whole mm² (the intent
+ * channel) or to 0.01 m² (`describe()`), and the demand is a float sum, so a demand that ties
+ * its ceiling to within that slack can still be met: three rooms of 0.1 m² add to
+ * 0.30000000000000004, and a plan of three 0.1 m² rooms totals 0.3 m². Only the sound
+ * direction is lost: a brief within a few mm² of its ceiling is never called impossible.
+ */
+const slackM2 = (rooms: number): number => (rooms + 1) * 1e-6;
+
+/** Whether `demand` m² over `rooms` rooms passes the ceiling `cap` m² by more than the slack. */
+const exceeds = (demand: number, rooms: number, cap: number): boolean => demand - cap > slackM2(rooms);
 
 /**
  * Whether ONE room could satisfy both concepts under `roomsMatchingConcept`'s semantics
@@ -92,7 +122,15 @@ const sortUnique = (ids: string[]): string[] => [...new Set(ids)].sort();
  * the largest; ties go to the first in requirement order) and over a plan-wide "every room at
  * least m" minimum (the largest such floor) multiplied by a stated exact room count — and each
  * way that exceeds the cap is its own proof. The two are never summed: that would
- * double-count a room. A plan-wide floor is never combined with a concept's count.
+ * double-count a room. When no plan-wide count binds, the plan-wide floor is multiplied by the
+ * rooms the concepts require instead (a third way, tried only when the second proves nothing):
+ * each group of concepts that {@link conceptsMayOverlap} needs at least its largest count (a
+ * floor with no count needs one room), and disjoint groups add. "Every room at least 5 m²,
+ * exactly 3 bedrooms, at most 12 m² in all" is 3 × 5 = 15 m² above 12.
+ *
+ * A count is read only as a floor ("at least n rooms"), never as a ceiling, so a caller may
+ * lower a stated minimum count to `room-count` soundly. A demand is a conflict only when it
+ * passes the ceiling by more than {@link slackM2}.
  *
  * **Contradiction.** An `at-least m` and an `at-most M` whose scopes overlap (same concept,
  * or one of them plan-wide) with `m > M` is unsatisfiable directly.
@@ -142,7 +180,7 @@ export function proveInfeasible(requirements: readonly Requirement[]): Infeasibi
     for (let i = 0; i < names.length; i++)
       for (let j = i + 1; j < names.length; j++)
         if (conceptsMayOverlap(names[i]!, names[j]!)) parent[find(j)] = find(i);
-    const best = new Map<number, { demand: number; ids: string[] }>();
+    const best = new Map<number, { demand: number; ids: string[]; term: DemandTerm }>();
     names.forEach((concept, i) => {
       const floor = byConcept.get(concept)!;
       const c = counts.find((x) => x.kind === "room-count" && x.concept === concept);
@@ -150,20 +188,27 @@ export function proveInfeasible(requirements: readonly Requirement[]): Infeasibi
       const demand = floor.m2 * n;
       const root = find(i);
       const cur = best.get(root);
-      if (cur === undefined || demand > cur.demand)
-        best.set(root, { demand, ids: c !== undefined ? [floor.id, c.id] : [floor.id] });
+      if (cur === undefined || demand > cur.demand) {
+        const ids = c !== undefined ? [floor.id, c.id] : [floor.id];
+        best.set(root, { demand, ids, term: { ids, concept, rooms: n, m2: floor.m2 } });
+      }
     });
     let specific = 0;
+    let specificRooms = 0;
     const specificIds: string[] = [];
-    for (const { demand, ids } of best.values()) {
+    const terms: DemandTerm[] = [];
+    for (const { demand, ids, term } of best.values()) {
       specific += demand;
+      specificRooms += term.rooms;
       specificIds.push(...ids);
+      terms.push(term);
     }
-    if (specificIds.length > 0 && specific > cap.m2) {
+    if (specificIds.length > 0 && exceeds(specific, specificRooms, cap.m2)) {
       proofs.push({
         rule: "capacity",
         conflicts: sortUnique([...specificIds, cap.id]),
         reason: `the stated per-room minima demand ${round2(specific)} m² of floor, above the stated ceiling of ${cap.m2} m²`,
+        demand: { terms, m2: specific, ceiling: { id: cap.id, m2: cap.m2 } },
       });
     }
     // (b) Plan-wide demand: "every room at least m" × a stated exact room count. The binding
@@ -177,12 +222,61 @@ export function proveInfeasible(requirements: readonly Requirement[]): Infeasibi
     if (widest !== undefined) {
       const n = planCount !== undefined && planCount.kind === "room-count" ? planCount.exact : 1;
       const wide = widest.m2 * n;
-      if (wide > cap.m2) {
+      const ids = [widest.id, ...(planCount !== undefined ? [planCount.id] : [])];
+      if (exceeds(wide, n, cap.m2)) {
         proofs.push({
           rule: "capacity",
-          conflicts: sortUnique([widest.id, ...(planCount !== undefined ? [planCount.id] : []), cap.id]),
+          conflicts: sortUnique([...ids, cap.id]),
           reason: `every room being at least its stated minimum demands ${round2(wide)} m² of floor, above the stated ceiling of ${cap.m2} m²`,
+          demand: { terms: [{ ids, rooms: n, m2: widest.m2 }], m2: wide, ceiling: { id: cap.id, m2: cap.m2 } },
         });
+      } else {
+        // (c) The rooms the concepts require, when they outnumber the plan-wide count: each
+        // overlap group needs its largest count (a concept floor alone needs one room), and
+        // disjoint groups add. Ties go to the first in requirement order.
+        const need = new Map<string, { rooms: number; id: string }>();
+        for (const r of requirements) {
+          const concept = "concept" in r ? r.concept : undefined;
+          if (concept === undefined) continue;
+          const rooms = r.kind === "room-count" ? r.exact : r.kind === "room-area" && r.op === "at-least" ? 1 : 0;
+          const cur = need.get(concept);
+          if (rooms > 0 && (cur === undefined || rooms > cur.rooms)) need.set(concept, { rooms, id: r.id });
+        }
+        const keys = [...need.keys()];
+        const up = keys.map((_, i) => i);
+        const root = (i: number): number => {
+          let r = i;
+          while (up[r] !== r) r = up[r]!;
+          return r;
+        };
+        for (let i = 0; i < keys.length; i++)
+          for (let j = i + 1; j < keys.length; j++) if (conceptsMayOverlap(keys[i]!, keys[j]!)) up[root(j)] = root(i);
+        const group = new Map<number, { rooms: number; id: string }>();
+        keys.forEach((k, i) => {
+          const x = need.get(k)!;
+          const cur = group.get(root(i));
+          if (cur === undefined || x.rooms > cur.rooms) group.set(root(i), x);
+        });
+        let rooms = 0;
+        const counted: string[] = [];
+        for (const g of group.values()) {
+          rooms += g.rooms;
+          counted.push(g.id);
+        }
+        const conceptWide = widest.m2 * rooms;
+        if (rooms > n && exceeds(conceptWide, rooms, cap.m2)) {
+          const cIds = [widest.id, ...counted];
+          proofs.push({
+            rule: "capacity",
+            conflicts: sortUnique([...cIds, cap.id]),
+            reason: `every room being at least its stated minimum, over the ${rooms} rooms the stated counts require, demands ${round2(conceptWide)} m² of floor, above the stated ceiling of ${cap.m2} m²`,
+            demand: {
+              terms: [{ ids: cIds, rooms, m2: widest.m2 }],
+              m2: conceptWide,
+              ceiling: { id: cap.id, m2: cap.m2 },
+            },
+          });
+        }
       }
     }
   }
@@ -214,4 +308,64 @@ export function proveInfeasible(requirements: readonly Requirement[]): Infeasibi
   }
 
   return proofs;
+}
+
+/**
+ * A brief's intent contract as {@link Requirement}s, each id the intent path that states it, for
+ * {@link proveInfeasible} (`validateIntent`'s `E_INTENT_INFEASIBLE`). Only what the intent
+ * channel itself enforces is lowered, so a proof over these is a proof that no plan passes
+ * every gating assertion:
+ *
+ * - a `roomsInclude[i].areaM2` band becomes a floor (`min`) and, when its concept is named by no
+ *   other entry, a ceiling (`max`) on that concept. The channel requires `count.min` (default 1)
+ *   of the concept's rooms inside the band, so a band whose `count.min` is 0 demands nothing and
+ *   is not lowered;
+ * - a stated `count.min` above 1 becomes a `room-count` on the concept, read by
+ *   {@link proveInfeasible} only as "at least n rooms". A concept named by two entries keeps
+ *   neither count: the channel credits each entry with rooms of its own, so one entry's count
+ *   must not multiply the other's floor. Dropping it only weakens the proof;
+ * - `totalAreaM2` becomes a total-area ceiling (`max`) and floor (`min`).
+ *
+ * `rooms`, windows, adjacency, reachability and the brief-bound measures state nothing these
+ * rules add up, and `grossInternalAreaM2` is measured inside the walls, not over the rooms, so
+ * none of them is lowered.
+ */
+export function intentRequirements(intent: Intent): Requirement[] {
+  const out: Requirement[] = [];
+  const entries = intent.roomsInclude ?? [];
+  const named = new Map<string, number>();
+  for (const inc of entries) named.set(inc.concept, (named.get(inc.concept) ?? 0) + 1);
+  entries.forEach((inc, i) => {
+    const min = inc.count?.min ?? 1;
+    if (min === 0) return;
+    const path = `/roomsInclude/${i}`;
+    const unique = named.get(inc.concept) === 1;
+    const band = inc.areaM2;
+    if (band?.min !== undefined)
+      out.push({
+        id: `${path}/areaM2`,
+        kind: "room-area",
+        concept: inc.concept,
+        op: "at-least",
+        m2: band.min,
+        quote: band.source,
+      });
+    if (band?.max !== undefined && unique)
+      out.push({
+        id: `${path}/areaM2`,
+        kind: "room-area",
+        concept: inc.concept,
+        op: "at-most",
+        m2: band.max,
+        quote: band.source,
+      });
+    if (inc.count?.min !== undefined && min > 1 && unique)
+      out.push({ id: `${path}/count`, kind: "room-count", concept: inc.concept, exact: min, quote: `${path}/count` });
+  });
+  const total = intent.totalAreaM2;
+  if (total?.max !== undefined)
+    out.push({ id: "/totalAreaM2", kind: "total-area", op: "at-most", m2: total.max, quote: total.source });
+  if (total?.min !== undefined)
+    out.push({ id: "/totalAreaM2", kind: "total-area", op: "at-least", m2: total.min, quote: total.source });
+  return out;
 }
