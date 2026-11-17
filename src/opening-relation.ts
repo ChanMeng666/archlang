@@ -97,6 +97,8 @@ export interface RelationCtx {
   walls: readonly RWall[];
   snapPt(p: Point): Point;
   diag(d: Diagnostic): void;
+  /** {@link import("./registry.js").ResolveCtx.sameFile}; absent: every span is taken as this source's. */
+  sameFile?(file: string | undefined): boolean;
   eval(e: Expr): number;
   datums?: DatumAccess;
 }
@@ -957,7 +959,10 @@ function placeOnRun(
       message: `${what} cannot stand between "${a}" and "${b}": \`walls from rooms\` declares that pair open, so the edge they share is already voided`,
       code: "E_WALL_BETWEEN_OPEN",
       span,
-      ...(open.span ? { relatedSpans: [{ span: open.span, message: "the `open between` clause" }] } : {}),
+      // The clause is in the deriving statement's file; offered only where this opening's is (AF1).
+      ...(open.span && (ctx.sameFile?.(hostWall._file) ?? true)
+        ? { relatedSpans: [{ span: open.span, message: "the `open between` clause" }] }
+        : {}),
       hints: [
         `Remove the ${kind} (the edge is already open), or remove the \`open between\` clause and keep the wall with the ${kind} in it.`,
       ],

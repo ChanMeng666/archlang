@@ -38,6 +38,33 @@ describe("LSP diagnostics mapping", () => {
     expect(offsetToPosition(text, 999)).toEqual({ line: 2, character: 3 }); // clamps to end
   });
 
+  it("maps related spans to relatedInformation in the document's uri (card AF1)", () => {
+    const src = [
+      'plan "D" {',
+      '  room id=a at (0,0) size 3000x3000 label "A"',
+      '  room id=a at (3000,0) size 3000x3000 label "B"',
+      "}",
+    ].join("\n");
+    const uri = "file:///plans/dup.arch";
+    const dup = lspDiagnostics(compile, src, uri).find((d) => d.code === "E_DUP_ID");
+    expect(dup?.range.start).toEqual({ line: 2, character: 2 });
+    expect(dup?.relatedInformation).toEqual([
+      {
+        location: { uri, range: { start: { line: 1, character: 2 }, end: { line: 1, character: 45 } } },
+        message: "first declared here",
+      },
+    ]);
+    // Without a uri there is no location to name: the shape is what it always was.
+    const bare = lspDiagnostics(compile, src).find((d) => d.code === "E_DUP_ID");
+    expect(bare).toBeDefined();
+    expect("relatedInformation" in bare!).toBe(false);
+  });
+
+  it("a diagnostic with no related span gains no relatedInformation key", () => {
+    const src = `plan "E" { room id=r at (0,0) size 0x1000 label "R" }`;
+    for (const d of lspDiagnostics(compile, src, "file:///e.arch")) expect("relatedInformation" in d).toBe(false);
+  });
+
   it("returns no diagnostics for valid source", () => {
     const src = `plan "OK" { room id=r at (0,0) size 1000x1000 label "R" }`;
     expect(lspDiagnostics(compile, src)).toEqual([]);

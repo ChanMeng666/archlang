@@ -62,6 +62,7 @@ export type {
   DiagnosticJsonOptions,
   DiagnosticRuleJson,
   FixSuggestionJson,
+  RelatedSpanJson,
   RuleSourceJson,
 } from "./diagnostic-json.js";
 // RM1.6b: the ruleset number a lint warning was raised against, with its provenance, for
