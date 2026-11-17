@@ -5,7 +5,7 @@
 Every diagnostic carries a stable code. Look one up with `arch explain <CODE>`
 (e.g. `arch explain E_ROOM_SIZE`). Errors abort rendering; warnings do not.
 
-**167 errors** · **103 warnings**
+**168 errors** · **103 warnings**
 
 | Code | Severity | Summary |
 | --- | --- | --- |
@@ -68,6 +68,7 @@ Every diagnostic carries a stable code. Look one up with `arch explain <CODE>`
 | [`E_INPUT_TOO_LARGE`](#e_input_too_large) | error | The source is larger than this host accepts. |
 | [`E_INSTANCE_NO_TRANSFORM`](#e_instance_no_transform) | error | A plugin element inside a `place`d component has no `transform()`. |
 | [`E_INTENT_GROSS_AREA`](#e_intent_gross_area) | error | The plan's gross internal area is outside the brief's band. |
+| [`E_INTENT_INFEASIBLE`](#e_intent_infeasible) | error | The brief's numbers cannot all hold, whatever the plan. |
 | [`E_INTENT_NOT_ADJACENT`](#e_intent_not_adjacent) | error | Two rooms the brief wants adjacent share no interior door. |
 | [`E_INTENT_NO_DOOR`](#e_intent_no_door) | error | The plan has no modeled entrance, so `reachable` cannot hold. |
 | [`E_INTENT_NO_SITE`](#e_intent_no_site) | error | An intent asserts a SYMBOLIC window facing against a plan with no `site`. |
@@ -1005,6 +1006,19 @@ place c() as g at (5000,0)   # error: cannot be placed
 
 ```arch static
 # brief says "about 70 m²" (band 63–77); the shell encloses 9600 × 6400 = 61.44 m² inside its inner faces
+```
+
+## E_INTENT_INFEASIBLE
+
+*error* — The brief's numbers cannot all hold, whatever the plan.
+
+**Cause.** Before any plan is judged, `validateIntent` adds up the intent contract's own numbers: the per-room area floors of concepts no single room can serve together (each times its `count.min`) against the `totalAreaM2` ceiling, or a floor above a ceiling on the same rooms. When the sum provably passes the ceiling, no plan can pass every gating assertion, and the message states the sum term by term. It is reported only with that arithmetic: a contract it cannot prove impossible gets no such error. The band misses it causes are still listed after it.
+
+**Fix.** Relax one of the numbers the message names (ask whoever wrote the brief which one gives); no edit to the plan clears it. Gating tier: listed first, and the plan already fails `validateIntent`'s `ok`.
+
+```arch static
+# intent: 3 bedrooms of at least 12 m², a living room of at least 10 m², at most 40 m² in all
+# 3 "bedroom" × at least 12 m² = 36 m² + 1 "living-room" × at least 10 m² = 10 m² = 46 m², above 40 m²
 ```
 
 ## E_INTENT_NOT_ADJACENT

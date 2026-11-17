@@ -59,7 +59,7 @@ import {
   isAuthoringStage,
   type KindOf,
   kindsOf,
-  predicateStage,
+  violationStage,
 } from "../stages.js";
 // Internal (not part of the public surface): parse → link → resolve without
 // rendering — validate/lint need only the diagnostics, never the SVG.
@@ -1002,6 +1002,9 @@ const violationJson = (v: IntentCheckResult["violations"][number]): Record<strin
   code: v.code,
   message: v.message,
   gate: v.gate,
+  // `E_INTENT_INFEASIBLE` only, appended after the other keys, so every other violation prints
+  // the same bytes as before.
+  ...(v.conflicts ? { conflicts: v.conflicts } : {}),
 });
 
 /** The brief-bound measure rows (PS4.4), present on the intent block only when the intent
@@ -1116,7 +1119,7 @@ function reportWithChecks(
         satisfied: intentResult.satisfied,
         total: intentResult.total,
         subscores: intentResult.subscores,
-        violations: intentResult.violations.map((v) => withStage(violationJson(v), predicateStage(v.predicate))),
+        violations: intentResult.violations.map((v) => withStage(violationJson(v), violationStage(v))),
         ...measuresJson(intentResult),
       };
       if (feedback) block.feedback = feedback;
