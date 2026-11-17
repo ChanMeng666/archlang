@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // `npm run size:embed`: the playground's embed path in gzip bytes against `embedPathBudget`
-// (card EB.1). It builds as CI's `build` job does (`npm run build`, then
+// (card EB.1). It builds as CI's `e2e-playground-chromium` job does (`npm run build`, then
 // `npm run playground:build:only`), walks the build from `embed.html` and prints each chunk's gzip
 // size, the total, the budget and the headroom. The walk and the sizes are
 // `playground/scripts/chunk-walk.mjs`, the very functions the startup-chunks gate in

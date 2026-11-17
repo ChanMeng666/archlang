@@ -27,8 +27,8 @@ import { gzipSync } from "node:zlib";
 
 /**
  * `import x,{a as b}from"./c.js"`, `import*as x from…`, `import"./c.js"` and the re-exports
- * `export{…}from…` / `export*from…`; never `import("./c.js")`. Global: read with `matchAll`, which
- * copies the expression, so sharing it is safe.
+ * `export{…}from…` / `export*from…`; never `import("./c.js")`. Global: read only with `matchAll`, never
+ * `.test()` or `.exec()`: `matchAll` copies `lastIndex`, so one of those would make it skip edges.
  */
 export const STATIC =
   /\b(?:import|export)\s*(?:[\w$]+\s*,?\s*)?(?:\*(?:\s*as\s+[\w$]+)?|\{[^}]*\})?\s*(?:from\s*)?["'](\.{1,2}\/[^"']+)["']/g;
