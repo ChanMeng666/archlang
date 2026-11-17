@@ -1066,7 +1066,8 @@ function withAllLevelsGrossArea(
   if (own !== undefined) recordGrossAreaMm2(out, own);
   if (!missing) {
     const exact = storeys.map((s) => exactGrossAreaMm2(s.t));
-    if (exact.every((x) => x !== undefined)) recordGrossAllLevelsMm2(out, exact.reduce((n, x) => n + x, 0));
+    const sum = exact.reduce<number | undefined>((n, x) => (n === undefined || x === undefined ? undefined : n + x), 0);
+    if (sum !== undefined) recordGrossAllLevelsMm2(out, sum);
   }
   return out as SceneSummary["totals"];
 }
