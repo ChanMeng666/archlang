@@ -315,7 +315,19 @@ interface CaptionInput {
   totals: SceneSummary["totals"];
   /** Door/opening ids that connect the exterior to a room (from the access graph). */
   entrances: string[];
+  /** On a plan of two or more storeys: this storey's level and the building's figures (RM9.2). */
+  building?: CaptionBuilding;
 }
+
+/** The building a storey's caption leads with: {@link storeyCaptions}. */
+interface CaptionBuilding {
+  level: number;
+  levels: number;
+  rooms: number;
+  floor_area_m2: number;
+}
+
+const roomsText = (n: number): string => `${n} room${n === 1 ? "" : "s"}`;
 
 /**
  * One deterministic caption sentence for a plan, e.g.
@@ -327,10 +339,17 @@ interface CaptionInput {
  * plans list the first {@link CAPTION_ROOM_CAP} rooms then "and N more" so the
  * sentence stays bounded. Shared by {@link describe} (`summary.caption`) and the
  * accessible-SVG `<desc>` so the two never diverge.
+ *
+ * On a plan of two or more storeys the total is the building's and the storey's own figures are
+ * labelled with its level (RM9.2): `"House" — a 2-level floor plan, 7 rooms, 112 m² total;
+ * level 1 (3 rooms, 56 m²): Hall (15.4 m²), …`. Everything after the room list is the storey's.
  */
 export function buildCaption(s: CaptionInput): string {
   const named = s.plan ? `"${s.plan}" — a` : "A";
-  let out = `${named} ${s.totals.rooms}-room floor plan, ${fmt2(s.totals.floor_area_m2)} m² total`;
+  const b = s.building;
+  let out = b
+    ? `${named} ${b.levels}-level floor plan, ${roomsText(b.rooms)}, ${fmt2(b.floor_area_m2)} m² total; level ${b.level} (${roomsText(s.totals.rooms)}, ${fmt2(s.totals.floor_area_m2)} m²)`
+    : `${named} ${s.totals.rooms}-room floor plan, ${fmt2(s.totals.floor_area_m2)} m² total`;
 
   if (s.rooms.length > 0) {
     const shown = s.rooms.slice(0, CAPTION_ROOM_CAP);
@@ -367,6 +386,46 @@ export function buildCaption(s: CaptionInput): string {
 export function captionForPlan(ir: ResolvedPlan, tol: number = DEFAULT_TOL): string {
   const s = summarize(ir, tol, [], [], false, undefined, false);
   return buildCaption({ plan: s.plan, rooms: s.rooms, totals: s.totals, entrances: s.access.entrances });
+}
+
+/**
+ * The caption of each storey of a plan with two or more `level` blocks, lowest first, for the
+ * pages' `<desc>` (the {@link compile} path): what `describe()` writes on each `levels[i]`, with
+ * the building's figures first (RM9.2). One storey summary each, as {@link captionForPlan} runs.
+ */
+export function levelCaptions(levels: readonly { level: number; ir: ResolvedPlan }[], tol = DEFAULT_TOL): string[] {
+  return storeyCaptions(
+    levels.map((l) => ({ level: l.level, s: summarize(l.ir, tol, [], [], false, undefined, false) })),
+  );
+}
+
+/** What a storey's caption is composed from. */
+type CaptionSource = Pick<SceneSummary, "plan" | "rooms" | "totals" | "access">;
+
+/**
+ * The building's floor area: the storeys' `floor_area_m2` (each its rooms' rounded figures
+ * summed) summed lowest first and rounded, as an intent's printed total is (`src/intent.ts`).
+ */
+const buildingFloorArea = (storeys: readonly CaptionSource[]): number =>
+  r2(storeys.reduce((n, s) => n + s.totals.floor_area_m2, 0));
+
+/** Each storey's {@link buildCaption}, led by the building's figures. */
+function storeyCaptions(storeys: readonly { level: number; s: CaptionSource }[]): string[] {
+  const all = storeys.map((x) => x.s);
+  const building = {
+    levels: storeys.length,
+    rooms: all.reduce((n, s) => n + s.totals.rooms, 0),
+    floor_area_m2: buildingFloorArea(all),
+  };
+  return storeys.map(({ level, s }) =>
+    buildCaption({
+      plan: s.plan,
+      rooms: s.rooms,
+      totals: s.totals,
+      entrances: s.access.entrances,
+      building: { ...building, level },
+    }),
+  );
 }
 
 /** An all-zero {@link FreedomReport} (the failed-resolution path). */
@@ -986,6 +1045,16 @@ function summarizeResolved(
     true,
     levels.length > 0 ? arrivalRoomsOn(levels[0]!.level) : [],
   );
+  // RM9.2: on two or more storeys every caption leads with the building's figures; the top level
+  // repeats the lowest storey's, as every top-level fact does. Assigned in place, so the key keeps
+  // its position.
+  if (perLevel && perLevel.length > 1) {
+    const caps = storeyCaptions(perLevel.map((l) => ({ level: l.level, s: l })));
+    perLevel.forEach((l, i) => {
+      l.caption = caps[i]!;
+    });
+    top.caption = caps[0]!;
+  }
   // ADR 0033 / PS4.3b: the keeps as static facts, under `depends` (the plan's every keep on the
   // top-level object, a storey's own on its `levels[]` entry), only when the plan declares one.
   if (keeps && plan && top.depends) {
@@ -1028,7 +1097,7 @@ function summarizeResolved(
  * The top-level totals with the building's gross internal area inserted right after the
  * storey's own (so the key order reads storey figure, building figure): the sum over every
  * storey, or the first storey whose figure is omitted. A single-storey plan's building is its
- * one storey.
+ * one storey. On two or more storeys the building's floor area follows the storey's (RM9.2).
  */
 function withAllLevelsGrossArea(
   totals: SceneSummary["totals"],
@@ -1055,6 +1124,9 @@ function withAllLevelsGrossArea(
   const out: Record<string, unknown> = {};
   for (const [k, v] of Object.entries(totals)) {
     out[k] = v;
+    // RM9.2: the building's floor area beside the storey's, on two or more storeys only.
+    if (k === "floor_area_m2" && perLevel && perLevel.length > 1)
+      out.floor_area_all_levels_m2 = buildingFloorArea(perLevel);
     if (k === "gross_internal_area_m2" || k === "gross_internal_area_omitted") Object.assign(out, building);
   }
   return out as SceneSummary["totals"];

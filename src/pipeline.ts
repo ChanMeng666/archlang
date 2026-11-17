@@ -18,6 +18,7 @@ import { parse } from "./parser.js";
 import { drawnView, lineWeightOutOfRange, resolveAll } from "./ir.js";
 import type { PlanResolution } from "./ir.js";
 import { drawScene, planTheme } from "./scene-build.js";
+import { levelCaptions } from "./describe.js";
 import { buildingArrivals } from "./describe/verticals.js";
 import { DEFAULT_TOL } from "./analyze/rooms.js";
 import { type CompileWork, newCompileWork } from "./compile-work.js";
@@ -178,9 +179,16 @@ export function compileUncached(source: string, opts: CompileOptions, work?: Com
       // The circulation overlay walks a storey a shaft reaches from the runs that arrive on it, as
       // `describe()` does (M.4): a building fact, read only when that overlay is asked for.
       const arrivals = opts.overlays?.includes("circulation") ? buildingArrivals(resolved.levels, DEFAULT_TOL) : null;
-      pages = resolved.levels.map((l) => {
-        const s = drawScene(l.ir, opts, runtime, work, arrivals?.get(l.level) ?? []);
-        offerScene(l.ir, opts, runtime, s);
+      // An accessible page's `<desc>` states the building's figures (RM9.2), so it reads every
+      // storey: one storey summary each, as each page's own caption ran. Such a Scene is not a
+      // function of its storey alone, so it is never offered to the Scene memo.
+      const captions =
+        opts.accessible && resolved.ir.accDescr === undefined && resolved.levels.length > 1
+          ? levelCaptions(resolved.levels.map((l) => ({ level: l.level, ir: drawnView(l.ir) })))
+          : undefined;
+      pages = resolved.levels.map((l, i) => {
+        const s = drawScene(l.ir, opts, runtime, work, arrivals?.get(l.level) ?? [], captions?.[i]);
+        if (!captions) offerScene(l.ir, opts, runtime, s);
         return { level: l.level, ...(l.name !== undefined ? { name: l.name } : {}), svg: renderSvg(s, opts), scene: s };
       });
       scene = pages[0]!.scene;

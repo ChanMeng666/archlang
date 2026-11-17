@@ -78,7 +78,7 @@ matter — run it yourself for the full object):
 
 | Field | Meaning |
 |-------|---------|
-| `caption` | one deterministic sentence summarising the whole plan (room count, total area, the rooms and their areas, door/window counts, entrance) — **always present**, composed only from the fields above so it never diverges from them |
+| `caption` | one deterministic sentence summarising the whole plan (room count, total area, the rooms and their areas, door/window counts, entrance) — **always present**, composed only from the fields above so it never diverges from them. On two or more storeys it leads with the building's level count, rooms and `totals.floor_area_all_levels_m2`, then the storey's own figures under its level ([Levels](#levels--one-storeys-facts-at-a-time-v121)) |
 | `bbox` | overall extent on wall **centerlines** — the coordinate space the source is written in (room `at`/`size`, wall points), so this is the number to compute *with* |
 | `bbox_outer` | overall extent on the **outer wall faces** — `bbox` plus half a wall thickness at each end (7000×6000 inside a 200 shell is 7200×6200 outside). What a builder measures, what `dims auto`'s overall chain prints, and what to quote when someone asks how big the building is |
 | `rooms[].uses` | the room's [`uses` tags](language-reference.md#room) (or the inferred kind when none were authored) |
@@ -607,6 +607,14 @@ storey. So `describe()` keeps its contract and appends one:
   single-plan shape** plus `level` and `name`. `levels[0]` therefore repeats the top-level
   facts. The key is **absent** for a single-storey plan, so every existing summary is
   unchanged.
+- **the building's total** is stated wherever a total is read as the whole plan's. On two or
+  more storeys the top-level `totals.floor_area_all_levels_m2` is every storey's
+  `floor_area_m2` summed (the rounded storey figures, like every display total), and every
+  caption leads with it and names its storey: `"Two-storey house" — a 2-level floor plan,
+  7 rooms, 112 m² total; level 1 (3 rooms, 56 m²): Hall (15.4 m²), …`. Each page's accessible
+  `<desc>` is its storey's caption, and the `archlang describe` text header reads
+  `Two-storey house — 2 levels, 7 room(s), 112 m²; level 1: 3 room(s), 56 m²`, with
+  `--level 2` naming level 2. A plan with one `level` block is one storey: nothing is added.
 
 ```json
 "levels": [

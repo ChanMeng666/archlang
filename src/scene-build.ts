@@ -797,11 +797,14 @@ export function drawScene(
   /** The runs this storey is reached by, for the circulation overlay alone (`compile()` reads
    *  them off the whole building when that overlay is asked for; M.4). Nothing else reads them. */
   arrivals: readonly ArrivingRun[] = [],
+  /** An accessible page's `<desc>` on a plan of two or more storeys, which reads the whole
+   *  building (`levelCaptions`, RM9.2); absent, the storey's own caption. */
+  caption?: string,
 ): Scene {
   // One net-area total per storey drawn (U.22, `src/analyze/net-area-memo.ts`), fresh whoever
   // draws it: a Scene is a function of its storey alone, so the Scene memo `lint()` reads can
   // never hold a schedule other than the one a fresh drawing would.
-  return withNetAreaBudget(() => drawStorey(plan, opts, runtime, work, arrivals));
+  return withNetAreaBudget(() => drawStorey(plan, opts, runtime, work, arrivals, caption));
 }
 
 /** {@link drawScene} under its net-area total. */
@@ -811,6 +814,7 @@ function drawStorey(
   runtime: Runtime,
   work: CompileWork | undefined,
   arrivals: readonly ArrivingRun[],
+  caption: string | undefined,
 ): Scene {
   // The storey as drawn (B3a): every wall, a `status demolish` one included, which is lowered in
   // a call of its own and drawn dashed (B3b). What the sheet MEASURES (the room schedule's net
@@ -1213,7 +1217,7 @@ function drawStorey(
     // them. An explicit `accTitle`/`accDescr` (plan-level keywords) overrides the
     // derived pair — the plan name for the title, the deterministic describe() caption
     // for the desc. Off by default → the Scene is byte-identical. Never read by geometry.
-    ...(opts.accessible ? { name: ir.accTitle ?? ir.name, caption: ir.accDescr ?? captionForPlan(ir) } : {}),
+    ...(opts.accessible ? { name: ir.accTitle ?? ir.name, caption: ir.accDescr ?? caption ?? captionForPlan(ir) } : {}),
   };
   // Export metadata for the DXF wall-layer split (`Scene.walls`): the walls each lowering call
   // above was handed, in its order (the standing walls, then the demolished ones), projected
