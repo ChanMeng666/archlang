@@ -1097,7 +1097,7 @@ function summarizeResolved(
  * The top-level totals with the building's gross internal area inserted right after the
  * storey's own (so the key order reads storey figure, building figure): the sum over every
  * storey, or the first storey whose figure is omitted. A single-storey plan's building is its
- * one storey. On two or more storeys the building's floor area follows the storey's (RM9.2).
+ * one storey. On two or more storeys the building's floor area follows its gross internal area (RM9.2).
  */
 function withAllLevelsGrossArea(
   totals: SceneSummary["totals"],
@@ -1121,13 +1121,12 @@ function withAllLevelsGrossArea(
         gross_internal_area_all_levels_m2: r2(storeys.reduce((n, s) => n + (s.t.gross_internal_area_m2 ?? 0), 0)),
         ...(left.length > 0 ? { gross_internal_area_all_levels_leaves_out: left } : {}),
       };
+  // RM9.2: the building's floor area, after its gross internal area, on two or more storeys only.
+  const floor = perLevel && perLevel.length > 1 ? { floor_area_all_levels_m2: buildingFloorArea(perLevel) } : {};
   const out: Record<string, unknown> = {};
   for (const [k, v] of Object.entries(totals)) {
     out[k] = v;
-    // RM9.2: the building's floor area beside the storey's, on two or more storeys only.
-    if (k === "floor_area_m2" && perLevel && perLevel.length > 1)
-      out.floor_area_all_levels_m2 = buildingFloorArea(perLevel);
-    if (k === "gross_internal_area_m2" || k === "gross_internal_area_omitted") Object.assign(out, building);
+    if (k === "gross_internal_area_m2" || k === "gross_internal_area_omitted") Object.assign(out, building, floor);
   }
   return out as SceneSummary["totals"];
 }

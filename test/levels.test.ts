@@ -321,12 +321,11 @@ suite("v1.21 levels — describe()/lint() per storey", () => {
     const s = describePlan(TWO_LEVELS);
     expect(s.totals.floor_area_m2).toBe(12);
     expect(s.totals.floor_area_all_levels_m2).toBe(24);
-    // The key sits right after the storey's figure, and only on the whole-plan totals.
-    expect(Object.keys(s.totals).slice(0, 5)).toEqual([
-      "rooms",
-      "doors",
-      "windows",
+    // The key follows the building's gross internal area, and is only on the whole-plan totals.
+    expect(Object.keys(s.totals).slice(3, 7)).toEqual([
       "floor_area_m2",
+      "gross_internal_area_m2",
+      "gross_internal_area_all_levels_m2",
       "floor_area_all_levels_m2",
     ]);
     for (const l of s.levels!) expect(l.totals).not.toHaveProperty("floor_area_all_levels_m2");

@@ -766,7 +766,8 @@ export interface SceneSummary {
     floor_area_m2: number;
     /**
      * The BUILDING's floor area in m², 2 dp: every storey's {@link floor_area_m2} summed, lowest
-     * first, and rounded (RM9.2), the "m² total" the caption states. Present only on a whole-plan
+     * first, and rounded (RM9.2), the "m² total" the caption states. It follows the building's
+     * gross internal area keys, so the storey's figures keep their places. Present only on a whole-plan
      * summary of two or more storeys, top-level `totals` only: absent from `levels[i]`, from a
      * summary narrowed with `describe --level`, and on a single-storey plan (whose building is
      * its `floor_area_m2`).

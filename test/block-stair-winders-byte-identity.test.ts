@@ -35,7 +35,7 @@ const API: CompilerApi = { compile, describe: describePlan, lint };
 
 /** Measured at `5593484d` (see the header): `[digest, row]`. */
 const BASELINE: [string, string][] = [
-  ["1934af2ec2648d74dcc65086998e453f53b34098373f3fd3c26be4e4c6e0c37f", "examples/turning-stair.arch"], // RM1.3a, see ./byte-identity-baseline.ts; RM1.2a, see ./byte-identity-baseline.ts; RM9.2, see ./byte-identity-baseline.ts
+  ["b4cd0ecd025d2670f096cf2c6119aba7855c5ccc639f68343403f3036290152c", "examples/turning-stair.arch"], // RM1.3a, see ./byte-identity-baseline.ts; RM1.2a, see ./byte-identity-baseline.ts; RM9.2, see ./byte-identity-baseline.ts
   ["575e7d3daa85f52c3902fb0f3f8dbdd4abeabda0c57da5db85c1ca06046616ed", "quarter-turn dir up, no height"],
   ["f03bc7c44e2cb44e8a8127c4f98c8424da352684171c564c47ccad788a08c261", "quarter-turn dir up, height 2750"], // RM1.2a review, see ./byte-identity-baseline.ts
   ["2955a883162ea99165881ad2f4e433af2cf994297015db70eaccdfb81ac463b3", "quarter-turn dir down, no height"],
