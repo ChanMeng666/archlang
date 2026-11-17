@@ -20,7 +20,6 @@ import { resolvePlan, roomUses } from "./analyze.js";
 import { memoRoomNetAreaMm2, storeyNetAreaBands, withNetAreaBudget } from "./analyze/net-area-memo.js";
 import type { ResolvedPlan, RRoom } from "./ir.js";
 import type { Diagnostic, Span } from "./diagnostics.js";
-import { relatedInFile } from "./diagnostics.js";
 import { type BuildingContext, buildLintContext, type LintLayer, type LintStage } from "./lint/context.js";
 import { foldCoverage, type LintCoverage, type LintUnclassifiedRoom, type SkipNote } from "./lint/coverage.js";
 import { ONCE_PER_PLACEMENT_CODES } from "./lint/rules/dims.js";
@@ -357,7 +356,7 @@ function lintOne(
 }
 
 /**
- * Carry a lint diagnostic's `file` down onto every one of its fixes (and its related spans) — the same weld
+ * Carry a lint diagnostic's `file` down onto every one of its fixes — the same weld
  * `stampProvenance` performs for the resolve stage, applied once at the rule-fold boundary
  * so no individual rule can forget it.
  *
@@ -369,13 +368,6 @@ function lintOne(
  * fixes come out of here untouched.
  */
 function withFixProvenance(d: Diagnostic): Diagnostic {
-  const file = d.file;
-  if (file === undefined) return d;
-  // Its related spans are measured where it is, so each names the file too (`RelatedSpan.file`).
-  const related = relatedInFile(d.relatedSpans, file);
-  if (!d.fixes && related === d.relatedSpans) return d;
-  const out: Diagnostic = { ...d };
-  if (d.fixes) out.fixes = d.fixes.map((f) => ({ ...f, file }));
-  if (related !== d.relatedSpans) out.relatedSpans = related;
-  return carryRule(d, out);
+  if (d.file === undefined || !d.fixes) return d;
+  return carryRule(d, { ...d, fixes: d.fixes.map((f) => ({ ...f, file: d.file })) });
 }

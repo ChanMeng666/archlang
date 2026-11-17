@@ -612,7 +612,7 @@ describe("positions are line/character, not offsets", () => {
           uri: "file:///dup.arch",
           range: { start: { line: 1, character: 2 }, end: { line: 1, character: 46 } },
         },
-        message: 'id "a" first declared here',
+        message: "first declared here",
       },
     ]);
     expect(h.diagnostics(src).find((d) => d.code === "E_DUP_ID")?.relatedInformation).toBeUndefined();

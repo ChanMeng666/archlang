@@ -691,7 +691,7 @@ export function hostSegmentForWalls(walls: WallLike[], at: Point, ref?: string):
 export function nearestWallNote<T extends WallLike & { span?: { start: number; end: number }; _file?: string }>(
   p: Point,
   walls: readonly T[],
-  sameFile: (file: string | undefined) => boolean = () => true,
+  sameFile: (file: string | undefined) => boolean,
 ): { span: { start: number; end: number }; message: string } | null {
   let best: T | undefined;
   let bestDist = Infinity;

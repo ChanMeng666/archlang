@@ -149,9 +149,7 @@ export const section: ElementDef = {
         code: "E_SECTION_DUP",
         message: `Section "${n.name}" is already marked — each section name may appear once in a plan`,
         span: n.nameSpan,
-        ...(first.span && ctx.sameFile(first._file)
-          ? { relatedSpans: [{ span: first.span, message: `section ${n.name} first marked here` }] }
-          : {}),
+        ...(first.span ? { relatedSpans: [{ span: first.span, message: `section ${n.name} first marked here` }] } : {}),
       });
     }
     const horizontal = from.y === to.y;

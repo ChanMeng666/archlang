@@ -51,7 +51,7 @@ describe("LSP diagnostics mapping", () => {
     expect(dup?.relatedInformation).toEqual([
       {
         location: { uri, range: { start: { line: 1, character: 2 }, end: { line: 1, character: 45 } } },
-        message: 'id "a" first declared here',
+        message: "first declared here",
       },
     ]);
     // Without a uri there is no location to name: the shape is what it always was.

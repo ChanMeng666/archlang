@@ -17,7 +17,6 @@ import { clauseWordCallHint } from "../clause-order.js";
 import type { Frame } from "../frame.js";
 import { composeFrame, makeFrame } from "../frame.js";
 import type { Diagnostic, Span } from "../diagnostics.js";
-import { relatedInFile } from "../diagnostics.js";
 import type { Env, EnvFallback, Expr, Value } from "../expr.js";
 import {
   asBool,
@@ -723,7 +722,7 @@ export function stampProvenance(d: Diagnostic, frame: Frame | undefined, file: s
     if (d.fixes) out.fixes = d.fixes.map((f) => ({ ...f, file }));
     // The body's own related spans are measured where its primary span is; the "placed here"
     // span below is not, so each related span names its file (`RelatedSpan.file`).
-    if (d.relatedSpans) out.relatedSpans = relatedInFile(d.relatedSpans, file);
+    if (d.relatedSpans) out.relatedSpans = d.relatedSpans.map((r) => (r.file === undefined ? { ...r, file } : r));
   }
   if (frame) {
     out.instance = frame.prefix;

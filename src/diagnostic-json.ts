@@ -12,7 +12,7 @@
 
 import type { Applicability, Diagnostic, Severity } from "./diagnostics.js";
 import { offsetToLineCol } from "./diagnostics.js";
-import { CATALOG_FIXES } from "./error-catalog-fixes.js";
+import { catalogFix } from "./catalog-fix.js";
 
 /** A {@link import("./diagnostics.js").FixSuggestion} projected to JSON — edit
  *  spans become `[start, end]` tuples (like the diagnostic's own `span`). */
@@ -160,8 +160,7 @@ export function diagnosticToJson(source: string, d: Diagnostic, opts?: Diagnosti
     out.span = [d.span.start, d.span.end];
   }
   if (d.file !== undefined) out.file = d.file;
-  // An own key only, as `ERROR_CATALOG[code]?.fix` was: an inherited name (`constructor`) has no fix.
-  const fix = d.code && Object.hasOwn(CATALOG_FIXES, d.code) ? CATALOG_FIXES[d.code] : undefined;
+  const fix = catalogFix(d.code);
   if (fix) out.fix = fix;
   if (d.hints?.length) out.hints = d.hints;
   if (d.fixes?.length)

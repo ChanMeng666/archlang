@@ -95,8 +95,8 @@ export interface RelatedSpan {
    * as {@link Diagnostic.file}, read per span, because one diagnostic can point into two
    * files (a defect inside an `import`ed component's body, plus the `place` statement in
    * the compiled source that put it there). Absent = the compiled source. `stampProvenance`
-   * and lint's fold stamp it onto a body's own related spans when they stamp the diagnostic's
-   * `file`. Append-only field.
+   * stamps it onto a body's own related spans when it stamps the diagnostic's `file`; a lint
+   * rule names it through `LintContext.at`. Append-only field.
    */
   file?: string;
 }
@@ -150,17 +150,6 @@ export interface Diagnostic {
   instance?: string;
   /** The component the {@link instance} was made from. Append-only field. */
   component?: string;
-}
-
-/**
- * The related spans of a diagnostic being stamped with `file`, each stamped with it too unless it
- * already names a file: a span raised alongside a primary span is measured in the same source as
- * it, so moving the primary into `file` moves them there with it. The input is never mutated
- * (a diagnostic may be shared); `undefined` and `[]` come back as they went in.
- */
-export function relatedInFile(rel: RelatedSpan[] | undefined, file: string): RelatedSpan[] | undefined {
-  if (!rel?.some((r) => r.file === undefined)) return rel;
-  return rel.map((r) => (r.file === undefined ? { ...r, file } : r));
 }
 
 /**

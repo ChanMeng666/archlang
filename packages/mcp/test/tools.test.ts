@@ -929,7 +929,7 @@ describe("source_hash", () => {
 describe("related spans reach a host", () => {
   const DUP =
     'plan "D" {\n  room id=a at (0,0) size 3000x3000 label "A"\n  room id=a at (3000,0) size 3000x3000 label "B"\n}\n';
-  const FIRST = { message: 'id "a" first declared here', line: 2, col: 3, span: [13, 56] };
+  const FIRST = { message: "first declared here", line: 2, col: 3, span: [13, 56] };
 
   it("compile and validate return a duplicate id's first declaration as `related`", async () => {
     const client = await connect();

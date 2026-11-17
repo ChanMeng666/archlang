@@ -133,7 +133,7 @@ describe("hosted MCP over Streamable HTTP", () => {
       'plan "D" {\n  room id=a at (0,0) size 3000x3000 label "A"\n  room id=a at (3000,0) size 3000x3000 label "B"\n}\n';
     const out = toolText(await rpc("tools/call", { name: "validate", arguments: { source: dup } }));
     const d = (out.diagnostics as Array<Record<string, unknown>>).find((x) => x.code === "E_DUP_ID");
-    expect(d?.related).toEqual([{ message: 'id "a" first declared here', line: 2, col: 3, span: [13, 56] }]);
+    expect(d?.related).toEqual([{ message: "first declared here", line: 2, col: 3, span: [13, 56] }]);
   });
 
   it("serves every archlang:// resource byte-equal to the repo, and the viewer as an MCP App", async () => {

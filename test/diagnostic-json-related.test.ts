@@ -42,7 +42,7 @@ describe("a duplicate id points at its first declaration", () => {
     const d = byCode(compile(DUP, { noCache: true }).diagnostics, "E_DUP_ID");
     expect(d.relatedSpans).toHaveLength(1);
     const rel = d.relatedSpans![0]!;
-    expect(rel.message).toBe('id "a" first declared here');
+    expect(rel.message).toBe("first declared here");
     expect(DUP.slice(rel.span.start, rel.span.end)).toBe('room id=a at (0,0) size 3000x3000 label "A"');
     expect(DUP.slice(d.span!.start, d.span!.end)).toBe('room id=a at (3000,0) size 3000x3000 label "B"');
     expect("file" in rel).toBe(false);
@@ -51,7 +51,7 @@ describe("a duplicate id points at its first declaration", () => {
   it("diagnosticToJson projects it as `related`, keyed as a diagnostic is, after the existing keys", () => {
     const d = byCode(compile(DUP, { noCache: true }).diagnostics, "E_DUP_ID");
     const j = diagnosticToJson(DUP, d);
-    expect(j.related).toEqual([{ message: 'id "a" first declared here', line: 2, col: 3, span: [13, 56] }]);
+    expect(j.related).toEqual([{ message: "first declared here", line: 2, col: 3, span: [13, 56] }]);
     expect(Object.keys(j.related![0]!)).toEqual(["message", "line", "col", "span"]);
     expect(Object.keys(j)).toEqual(["code", "severity", "message", "line", "col", "span", "fix", "related"]);
     // Append-only: strip the new key and the bytes are those of the diagnostic without it.
@@ -63,7 +63,7 @@ describe("a duplicate id points at its first declaration", () => {
       const r = await runArch([cmd, "-", "--json"], { input: DUP });
       const out = JSON.parse(r.stdout) as { diagnostics: Array<{ code?: string; related?: unknown }> };
       const dup = out.diagnostics.find((x) => x.code === "E_DUP_ID");
-      expect(dup?.related, cmd).toEqual([{ message: 'id "a" first declared here', line: 2, col: 3, span: [13, 56] }]);
+      expect(dup?.related, cmd).toEqual([{ message: "first declared here", line: 2, col: 3, span: [13, 56] }]);
     }
   });
 
@@ -78,10 +78,10 @@ describe("a duplicate id points at its first declaration", () => {
     const d = byCode(compile(src, { noCache: true }).diagnostics, "E_DUP_ID");
     expect(src.slice(d.span!.start, d.span!.end)).toBe("door id=same at (1000,0) width 900");
     const [rel] = d.relatedSpans!;
-    expect(rel!.message).toBe('id "same" also declared here');
+    expect(rel!.message).toBe("also declared here");
     expect(src.slice(rel!.span.start, rel!.span.end)).toBe('room id=same at (0,0) size 3000x3000 label "A"');
     expect(diagnosticToJson(src, d).related).toEqual([
-      { message: 'id "same" also declared here', line: 4, col: 3, span: [rel!.span.start, rel!.span.end] },
+      { message: "also declared here", line: 4, col: 3, span: [rel!.span.start, rel!.span.end] },
     ]);
   });
 
@@ -97,8 +97,26 @@ describe("a duplicate id points at its first declaration", () => {
     expect(
       dups.map((d) => [lineOf(d.span!.start), d.relatedSpans?.map((r) => [r.message, lineOf(r.span.start)])]),
     ).toEqual([
-      [2, [['id "x" also declared here', 3]]],
-      [5, [['id "x" first declared here', 2]]],
+      [2, [["also declared here", 3]]],
+      [5, [["first declared here", 2]]],
+    ]);
+  });
+
+  it("a room checked before a door above it still points at the door as 'first declared here'", () => {
+    // Registry order checks both rooms before the door, so the second room is reported before the
+    // door has been seen; its note still names the earliest declaration in the source (the door).
+    const src = `plan "R" {
+  door id=x at (1000,0) width 900
+  room id=x at (0,0) size 3000x3000
+  room id=x at (3000,0) size 3000x3000
+}`;
+    const dups = compile(src, { noCache: true }).diagnostics.filter((d) => d.code === "E_DUP_ID");
+    const lineOf = (o: number) => src.slice(0, o).split("\n").length;
+    expect(
+      dups.map((d) => [lineOf(d.span!.start), d.relatedSpans?.map((r) => [r.message, lineOf(r.span.start)])]),
+    ).toEqual([
+      [4, [["first declared here", 2]]],
+      [2, [["also declared here", 3]]],
     ]);
   });
 
