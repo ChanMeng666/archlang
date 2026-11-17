@@ -26,8 +26,9 @@ import type { DescribeOptions, RoomSummary, SceneSummary, WindowSummary } from "
 import type { GrossAreaReason } from "./analyze/gross-area.js";
 import { polygonLabelPoint } from "./geometry/polygon.js";
 import { isCirculationRoom, roomsMatchingConcept } from "./intent-concepts.js";
+import { type InfeasibilityProof, intentRequirements, proveInfeasible } from "./intent-feasibility.js";
 import { makeNaming, type NameableRoom, sizeWords } from "./naming.js";
-import { fmt2 } from "./num-format.js";
+import { fmt2, plainDigits } from "./num-format.js";
 import { pure } from "./pure.js";
 import { type CompassLetter, type SiteFacts, SYMBOLIC_FACINGS, type SymbolicFacing } from "./site.js";
 
@@ -225,8 +226,9 @@ export interface Subscores {
   adjacency: number | null;
 }
 
-/** The twelve catalogued blame codes {@link validateIntent} emits. */
+/** The thirteen catalogued blame codes {@link validateIntent} emits. */
 export type IntentCode =
+  | "E_INTENT_INFEASIBLE"
   | "E_INTENT_ROOM_MISSING"
   | "E_INTENT_ROOM_COUNT"
   | "E_INTENT_ROOM_AREA"
@@ -248,6 +250,10 @@ export interface IntentViolation {
   message: string;
   gate: boolean;
   predicate: Predicate;
+  /** `E_INTENT_INFEASIBLE` only: the intent paths whose numbers cannot all hold, sorted. Its
+   *  `predicate` is the one the conflict is judged against (the total-area ceiling's, for a
+   *  capacity conflict). Absent on every other code. */
+  conflicts?: string[];
 }
 
 /** The result of checking a brief's {@link Intent} against a plan. `ok` is true when the
@@ -1147,6 +1153,92 @@ function makeViolation(a: AssertionResult, path: string, summary: SceneSummary):
   }
 }
 
+/*
+ * The arithmetic an `E_INTENT_INFEASIBLE` message prints is EXACT decimal arithmetic on the numbers
+ * as written: each operand is its shortest round-trip decimal (`plainDigits`, the lossless printer
+ * of `src/num-format.ts`), and products and sums are taken on those digits as scaled integers, so
+ * `3 × 12.006` prints `36.018` (never `36.02`, never `36.018000000000004`) and the sum a message
+ * states is the sum of the operands it shows. Only finite numbers ≥ 0 reach it
+ * ({@link intentRequirements} lowers nothing else).
+ */
+
+/** A finite number ≥ 0 as an exact decimal: `units / 10^scale`. */
+interface Dec {
+  units: bigint;
+  scale: number;
+}
+
+const decOf = (n: number): Dec => {
+  const s = plainDigits(n);
+  const dot = s.indexOf(".");
+  return dot < 0
+    ? { units: BigInt(s), scale: 0 }
+    : { units: BigInt(s.slice(0, dot) + s.slice(dot + 1)), scale: s.length - dot - 1 };
+};
+
+const decMul = (a: Dec, b: Dec): Dec => ({ units: a.units * b.units, scale: a.scale + b.scale });
+
+const decAdd = (a: Dec, b: Dec): Dec => {
+  const k = Math.max(a.scale, b.scale);
+  return { units: a.units * 10n ** BigInt(k - a.scale) + b.units * 10n ** BigInt(k - b.scale), scale: k };
+};
+
+/** An exact decimal printed in full, trailing zeros dropped: `36.018`, `40`, `0.5`. */
+function decText(d: Dec): string {
+  if (d.scale === 0) return d.units.toString();
+  const digits = d.units.toString().padStart(d.scale + 1, "0");
+  const whole = digits.slice(0, digits.length - d.scale);
+  const frac = digits.slice(digits.length - d.scale).replace(/0+$/, "");
+  return frac === "" ? whole : `${whole}.${frac}`;
+}
+
+/** One summand of a capacity proof, as a person reads it: `3 "bedroom" × at least 12 m² = 36 m²`. */
+function demandTermText(t: NonNullable<InfeasibilityProof["demand"]>["terms"][number]): string {
+  const what = t.concept === undefined ? "rooms" : `"${t.concept}"`;
+  return `${decText(decOf(t.rooms))} ${what} × at least ${decText(decOf(t.m2))} m² = ${decText(decMul(decOf(t.rooms), decOf(t.m2)))} m²`;
+}
+
+/** A proof's arithmetic, every number printed exactly ({@link decText}). */
+function proofArithmetic(proof: InfeasibilityProof): string {
+  const d = proof.demand;
+  if (d) {
+    const sum = d.terms.reduce<Dec>((n, t) => decAdd(n, decMul(decOf(t.rooms), decOf(t.m2))), { units: 0n, scale: 0 });
+    const total = d.terms.length > 1 ? ` = ${decText(sum)} m²` : "";
+    return `${d.terms.map(demandTermText).join(" + ")}${total} of rooms, above the total floor area of at most ${decText(decOf(d.ceiling.m2))} m² (${d.ceiling.id})`;
+  }
+  const b = proof.bounds;
+  if (b) {
+    return `a floor of ${decText(decOf(b.floor.m2))} m² (${b.floor.id}) sits above a ceiling of ${decText(decOf(b.ceiling.m2))} m² (${b.ceiling.id})`;
+  }
+  return proof.reason;
+}
+
+/**
+ * The `E_INTENT_INFEASIBLE` violation for the first proof {@link proveInfeasible} derives from the
+ * contract, or `undefined` when it derives none. The message states the arithmetic; nothing is
+ * solved and no plan is read. Its predicate is the one the conflict is judged against: the
+ * ceiling's for a capacity proof, else the first conflicting predicate.
+ */
+function infeasibleViolation(
+  proof: InfeasibilityProof | undefined,
+  predicates: readonly Predicate[],
+  paths: readonly string[],
+): IntentViolation | undefined {
+  if (proof === undefined) return undefined;
+  const anchor = proof.demand?.ceiling.id;
+  let at = anchor === undefined ? -1 : paths.indexOf(anchor);
+  if (at < 0) at = paths.findIndex((p) => proof.conflicts.includes(p));
+  const predicate = predicates[at];
+  if (predicate === undefined) return undefined;
+  return {
+    code: "E_INTENT_INFEASIBLE",
+    message: `intent ${proof.conflicts.join(" + ")}: no plan can meet these numbers together: ${proofArithmetic(proof)}`,
+    gate: true,
+    predicate,
+    conflicts: proof.conflicts,
+  };
+}
+
 /**
  * Check a brief's {@link Intent} against ArchLang `source`. Compiles the intent to
  * predicates, evaluates them over `describe(source)`'s facts, and returns the passes,
@@ -1155,14 +1247,23 @@ function makeViolation(a: AssertionResult, path: string, summary: SceneSummary):
  *
  * `ok` is true when the plan compiled AND no GATING assertion failed (advisory
  * adjacency/reachability misses are listed and scored but never clear `ok`).
+ *
+ * Before any plan is judged, the contract itself is checked ({@link proveInfeasible} over
+ * {@link intentRequirements}): when its numbers provably cannot all hold, one
+ * `E_INTENT_INFEASIBLE` violation, whose message states the arithmetic, leads `violations`. The
+ * band misses it causes are still listed after it, and `satisfied`, `total`, `subscores` and
+ * `ok` are what the assertions alone give (a contract no plan can meet already fails `ok`).
  */
 export function validateIntent(source: string, intent: Intent, opts: DescribeOptions = {}): IntentCheckResult {
-  const summary = describe(source, opts);
   const { predicates, paths } = compileWithPaths(intent);
+  // The contract first, before any plan is read: numbers that cannot all hold are the root
+  // cause of every band they make fail, so that violation leads the list.
+  const infeasible = infeasibleViolation(proveInfeasible(intentRequirements(intent))[0], predicates, paths);
+  const summary = describe(source, opts);
   const assertions = checkPredicates(predicates, summary);
   const subscores = projectSubscores(assertions);
 
-  const violations: IntentViolation[] = [];
+  const violations: IntentViolation[] = infeasible ? [infeasible] : [];
   assertions.forEach((a, i) => {
     if (!a.pass) violations.push(makeViolation(a, paths[i] ?? "", summary));
   });
@@ -1197,6 +1298,11 @@ function feedbackForViolation(v: IntentViolation, result: IntentCheckResult): st
   const a = result.assertions.find((x) => x.predicate === p);
   const fact = a ? factOf(a.detail) : "";
   switch (v.code) {
+    case "E_INTENT_INFEASIBLE":
+      return (
+        `Relax one of: ${(v.conflicts ?? []).join(", ")}. These numbers cannot all hold, so no edit to the plan meets them; ` +
+        `ask whoever wrote the brief which one gives, and fix this before the area misses it causes.`
+      );
     case "E_INTENT_ROOM_MISSING": {
       const concept = p.kind === "room-exists" ? p.concept : "";
       return `Add a room for "${concept}" — a \`room\` whose label, \`uses\`, or type matches the concept (${fact}).`;
@@ -1555,7 +1661,7 @@ export const INTENT_JSON_SCHEMA = /* @__PURE__ */ pure(() => ({
       required: ["source"],
       anyOf: [{ required: ["min"] }, { required: ["max"] }],
       description:
-        'Total floor-area band in square metres, summed over every storey of a plan with `level` blocks. Same band conventions as `areaM2`: "about/~N" or bare N → ±10%; "at least N" → `min` only; qualitative words → omit. At least one of min/max is required.',
+        'Total floor-area band in square metres, summed over every storey of a plan with `level` blocks. Same band conventions as `areaM2`: "about/~N" or bare N → ±10%; "at least N" → `min` only; qualitative words → omit. At least one of min/max is required. A `max` below what the `roomsInclude` area floors add up to (each times its `count.min`) is reported first as E_INTENT_INFEASIBLE, with the sum: the brief cannot be met, so relax a number rather than redraw.',
       properties: {
         min: { type: "number", description: "Lower bound (m²)." },
         max: { type: "number", description: 'Upper bound (m²); omit for an open "at least" band.' },

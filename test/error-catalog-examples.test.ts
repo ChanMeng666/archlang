@@ -93,6 +93,7 @@ const FRAGMENT =
  */
 const NOT_REPRODUCED: ReadonlyMap<string, string> = new Map([
   ["E_INTENT_GROSS_AREA", INTENT],
+  ["E_INTENT_INFEASIBLE", INTENT],
   ["E_INTENT_NO_DOOR", INTENT],
   ["E_INTENT_NO_SITE", INTENT],
   ["E_INTENT_NO_WINDOW", INTENT],
@@ -259,7 +260,9 @@ suite("error catalog — every example that can raise its code does", () => {
     // no virtual World a snippet runs under can; each is raised in test/import-rooted.test.ts.
     // E_RULESET_VALUE took it to 66: `lint()` raises it on the caller's `ruleset` option before
     // the plan resolves, and no source compiled here carries one; raised in
-    // test/lint-ruleset-values.test.ts.
-    expect(NOT_REPRODUCED.size).toBeLessThanOrEqual(66);
+    // test/lint-ruleset-values.test.ts. E_INTENT_INFEASIBLE took it to 67: like every E_INTENT_*
+    // code, `validateIntent()` raises it on the intent channel, from the contract alone; raised
+    // in test/intent-infeasible.test.ts.
+    expect(NOT_REPRODUCED.size).toBeLessThanOrEqual(67);
   });
 });
