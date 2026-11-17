@@ -663,6 +663,18 @@ RM-D38、RM-D39 属于另一场的裁定（winder 台阶可到达、楼梯建造
 |---|---|---|---|
 | RM-D59 | 发不发、发什么 | **发，立即：核心 1.63.0 + `archlang-3d` 0.9.0，切点 `5b251cfc`（1.62.0 之后的全部），由代理跑完整条发布链** | `archlang-3d` 只随核心 tag 发布，它的 `[Unreleased]` 有 `./glb` 新入口（次版本）；1.62.0 之后已攒 68 次合并的用户可见改动；`main` 与夜间都绿；节奏与前三次发布一致。结果见 `handoff.md` §1.2 |
 
+### 6.27 受托裁定：AI 优先语言调研的四个问题（RM-D60…D63），与所有者的调研阶段（RM-D64，2026-11-18）
+
+调研记录：`../ai-first-language/README.md`（英文，2026-11-18；向 TypeScript、Rust、AI 原生与相邻语言、文献借鉴什么，卡 AF0…AF23）。所有者原话（2026-11-18，引用调研留给他的四个问题之后）："请你帮我做出最佳决策。"只对这四件；一句话可推翻。同一条消息里所有者又说："我同意，请你自动实施。请你先将上述的所有调研结论、思考、分析等内容完整地落档，记录到对应文档当中。目前仍然是调研、分析、测试阶段，不是具体实施项目迭代和开发的阶段。"后一句记为 RM-D64，是所有者本人的话，不是受托裁定。四条受托裁定都没有改铁律；凡会改铁律的选项都裁成"不做"，或改走可选入口。
+
+| 编号 | 问题 | 裁定 | 理由 |
+|---|---|---|---|
+| RM-D60 | lint 的可信度分类；是否允许在源码里豁免某条警告 | **分两步做。** (1) **类别（AF11）**：分四类，`correctness`、`suspicious`、`style`、`pedantic`，每条规则自己声明。`LintLayer` 只有两个值（`validity`、`drafting`，`src/lint/context.ts:247`），只能给默认值，归类主要靠每条规则的声明。只是元数据：进 `explain`、capabilities 和文档，**不进 `lint()` 的序列化**，语料字节不动。每条规则的归类在 AF11 的 PR 里逐条列出，经新上下文评审。(2) **源内豁免（AF12）**：做，但很窄。只有 `expect <CODE> reason "…"`，必须写理由，没有不带理由的 `allow`。先写 ADR。被期望的警告照算、带标记、不删除；期望落空另报一条 W。`correctness` 类和一切错误都不能豁免。`--strict` 与 `next` 跳过被期望的警告，但**评测的 sound 与 `score` 的上限照样把它算作已报**。它是新语言形式，所以带字节恒等律，并且要先确认 spec 的余量（2026-11-18：29,629 个 UTF-16 单位，上限 30,000，余 371）。AF12 依赖 AF11 | 今天的 `family`、`layer`、`stage` 都不回答代理最想知道的"这条规则有多可信"；Clippy 用类别回答了这个问题（`declare_clippy_lint/src/lib.rs:156-274`）。Rust 的 `#[expect]` 必须带理由、落空还会报（RFC 2383），比静默的 `allow` 诚实。需求是真的：设计上就没有窗的储藏室，会一直推着代理去改一张本来就对的图。评测与评分不认豁免，所以豁免刷不出 sound；类别不进序列化，所以不碰铁律 |
+| RM-D61 | 要不要给 `.arch` 加语言版本标记；2.0 移除哪些写法 | **采纳设计，现在不建。** 版本头（AF15）只随 2.0 一起实现，而且是可选的：不写就是当前版本，现有文件的字节不变。edition 管的是 2.0 里**所有会让今天能编译的源码不再编译的改动**，也就是 backlog 已有的"2.0 bucket"（`docs/backlog.md`：所有者 RM-D6、RM-D16 裁定的 `W_SET_VALUE_WORD` 与无宿主门窗警告升为错误，V.5、V.6、6.7），再加两个已弃用的形式：`while`（`W_WHILE_DEPRECATED`）和重新赋值 `NAME = expr`（`W_REASSIGN_DEPRECATED`）。**本裁定不新增也不删减任何一项。** 每项都配一条 compat lint 和能证明的最强修复。今天只有 `while` 有修复，而且只覆盖规范形状的计数循环，在组件里是 maybe-incorrect（`src/while-fix.ts:2-33`）；`W_REASSIGN_DEPRECATED` 只有提示。`--view` 是 CLI 选项，不是源码形式，按 ADR 0021 在 2.0 移除，不归 edition 管。2.0 发不发、何时发，是所有者对那一次发布的决定 | edition 只有在出现破坏性变更时才有回报（`edition-guide/src/editions/index.md:13-27`），而所有破坏性变更已经集中在 2.0 bucket 里，按 backlog 的规则"2.0 定了再一起做"。现在先建一个没有内容的版本头，只会白占 spec 的 371 个单位余量 |
+| RM-D62 | 改用按内容生成的 id，或给 `describe` 加"元素是怎么定位的"字段（都会让语料上的 `describe()` 移动） | **内容 id：不做。** 自动 id 移位的问题由两样东西解决：AF14 的 `id_deltas`（`impact`/`diff` 新增的键），以及 spec 已有的规则 6"只给要引用的东西命名"。**放置出处（AF17）：做，但只走可选入口**（例如 `describe --provenance`）；默认的 `describe()` 字节不动，新入口带字节恒等律。两项都不改铁律，所以都在这次委托的范围之内 | 内容 id 会让语料上的全部 `describe()` 移动，还会改掉作者看到的名字，是铁律级的改动；而它的收益用 `id_deltas` 就能拿到，D2 的 `MoveIDDeltas`、`RenameIDDeltas` 正是这种做法（`d2oracle/edit.go:2778, 3163`）。出处对代理有用（KCL 的 Free/Fixed/Conflict；LLM4CAD-Editor，arXiv 2606.20607）。按"可选输出不动默认字节"（`docs/agents/architecture.md`）走，既拿到收益又守住默认输出 |
+| RM-D63 | 付费的规格书消融实验（示例对规则散文；starter、spec、全量 bundle 三档）值不值得做 | **现在不做**（AF23 `parked`）。先做免费、离线的 AF21（外来语法按来源语言分类）和 AF22（每张 brief 到达 lint 全过所需的 token 数）。**以下四条全部满足才重新提给所有者：** (a) AF21、AF22 已合并；(b) AF21 归入"spec 形态能回答"的类别（外来语法、签名误读）的失败，占失败的 20% 以上；(c) EV.7 已做（RM-D58：它排在任何 live 评测之前）；(d) 有预注册的设计、花费上限，以及按同一提交多次运行估出的方差。满足了，花钱也仍要所有者对那一次的明确同意（付费评测归所有者）。本裁定只定"现在不做"和"什么时候值得再问"，对 T3 不作任何解读 | 噪声大：同一提交上三次 gpt-5.5 运行有 15/26 张 brief 结果不一致（EV.1），26 张 brief 的消融分辨不出小效应。免费数据也许已经能回答这个问题。促销额度已停用（2026-11-17） |
+| RM-D64 | 第 10 轨现在能做什么（所有者本人的话，见上） | **调研阶段。** 第 10 轨的卡入队，但不开工改产品代码。现在可以做的只有：AF21、AF22（离线测量，产物是写进文档的报告，脚本放 scratch 或 `archlang-lab`，不进 `src/`；输入与排除见卡）、AF9 的设计稿（EV.5 的门本来就是先写设计稿）、AF12 的 ADR 草稿。AF15 随 2.0、AF23 按 RM-D63，都是 `parked`；其余卡都标 `blocked`，等所有者一句"开工"。所有者开工之后，按 `cards.md` 第 10 轨的顺序做 | 所有者原话 |
+
 ---
 
 ## 7. 与已有计划的关系
@@ -676,6 +688,7 @@ RM-D15（所有者 2026-11-11 批准）之后，下面各条成立。其他计�
 - **plan-soundness**：作为计划搁置；卡留作规则池，按首次接触复测的证据取用；PS7.9 在本计划排期；§7 第 7 行与 PS6.1 仍 parked。
 - **preview-and-remodel**：搁置，门不变（wave 4、6 等 N10，不早于 11-27 读）。J16–J18 的残留已拆进 RM1.5a、RM4.2 和 RM3.1 的范围表。
 - **public-surfaces、playground-minimal、playground-mobile-perf、visual-assets、ci-throughput**：按 RM-D15 关闭。**engineering-health、archlang-3d**：已关闭或已归档（`docs/plans/README.md`），不在 RM-D15 的名单里；3D 能力的节奏交给 `packages/archlang-3d` 的维护。残留：VA.1–VA.5、PG.1–PG.3 在 `docs/backlog.md`（CI throughput 的待裁行已由 RM-D37 裁定并移除，§6.9）（VA.1、VA.2、VA.4、VA.5 自 2026-11-11 由第 8 轨的卡承接，见下）；MP7 仍记在 `../playground-mobile-perf/README.md` §5（deferred）；engineering-health 的在 `../engineering-health/closing-audit.md` §1。
+- **ai-first-language（2026-11-18）**：调研记录，不是第二个队列。卡在 `cards.md` 第 10 轨，裁定 RM-D60…D64（§6.27）。它带走 backlog 的 EV.5（并入 AF9）、M.8（并入 AF6）和 M.15 的第一条（并入 AF1）；打包卡做完时，原卡在同一 PR 裁掉。
 - **geo-seo**：运营节奏，不是开发队列；下次面板 2026-12-01 与 Show HN 同日，建议挪到 12-02。
 - **第 8 轨（2026-11-11）与其他卡、backlog 的关系：**
   - RM5.2 的 `--theme`（VA.4）移到 RM8.4；RM5.2 其余不变。

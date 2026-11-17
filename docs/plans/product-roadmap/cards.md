@@ -1177,6 +1177,120 @@ Playground：Chromium `--shard=1/2`、`2/2` 两个 job，Firefox 与 WebKit 的 
 
 ---
 
+## 第 10 轨 · AI 优先语言（2026-11-18 加；设计与证据见 `../ai-first-language/README.md` §7，裁定 RM-D60…D64 见 `README.md` §6.27）
+
+**调研阶段（RM-D64，所有者 2026-11-18）：** 现在只能做 AF21、AF22（离线测量）、AF9 的设计稿和 AF12 的 ADR 草稿；这两张卡的代码部分，以及其余 `blocked` 的卡，都等所有者一句"开工"。开工之后按下面的顺序做：先 A 波（便宜、纯增量），再做 AF9，然后按 AF21、AF22 的结果定 D 波的形态。这一轨不是新车道：它的卡在核心车道两张卡之间占用核心执行者的位置，一次一张（RM-D22 的两个执行者不变）。
+
+**每张卡做什么写在调研记录 §7 的同号一行；这里只写状态、规模、依赖、门和不许做什么。** 所有卡都跑 `cards.md` §0 的门禁。**动 `describe()`、`lint()`、`compile().diagnostics` 的卡：** 先用字节恒等载荷证明语料不动；会动就停下报告，不重钉（AGENTS.md "Never bless a golden to green a suite"）。**`[语法]` 卡**（AF12、AF15）：带字节恒等律，并且先确认 spec 的余量（2026-11-18：29,629 个 UTF-16 单位，上限 30,000，`test/llm-spec-drift.test.ts:87`）。
+
+### A 波 · 诊断的信息密度
+
+### AF0 · 记录对账：两条过期的测试注释，U.2 与 U.5 的实际状态 — `blocked`（RM-D64） · 0.3 日 · sonnet · 依赖无（线下）
+
+不许：没重新读代码就关卡。
+
+### AF1 · `relatedSpans`、`instance`、`component` 进 `--json`、MCP 与 LSP — `blocked`（RM-D64） · 1 日 · sonnet · 依赖无
+
+带走 backlog M.15 的第一条。证明：一份带相关位置的 `lint --json` 的前后对照，再加上述载荷检查。不许：把相关位置压平成散文；删改已有的键（`CompileResult` 只增不删）。
+
+### AF2 · 一个 did-you-mean 生产者，词级 span 加修复 — `blocked`（RM-D64） · 2 日 · opus · 依赖 AF1
+
+不许：手抄词表（闭集取自 `src/grammar/tokens.ts`）；span 或修复覆盖整条语句（今天 `sofaa` 的修复就是这样，要一并收窄）。
+
+### AF3 · 未知名字求值为错误值，不再引出连带错误 — `blocked`（RM-D64） · 2 日 · opus · 依赖无
+
+只有已经失败的方案，诊断会变；给这些诊断钉值。不许：动任何能编译的方案的输出。
+
+### AF4 · `E_PARSE` 带结构化的 `expected[]` 和建议 — `blocked`（RM-D64） · 2 日 · opus · 依赖 AF2
+
+不许：只给散文版本。
+
+### AF5 · 错误目录的错例与正例成对，`explain` 进 MCP — `blocked`（RM-D64） · 2 日 · sonnet · 依赖无
+
+MCP 工具用 `new-mcp-tool` skill 加；`docs/error-codes.md` 经 `gen:*` 生成。不许：增加豁免（今天 66 条，只减不增）。
+
+### AF6 · `fmt --json` 拒绝时要说出来（并入 M.8） — `blocked`（RM-D64） · 1 日 · sonnet · 依赖无
+
+做完时 M.8 在同一 PR 里裁掉。
+
+### AF7 · 冲突带上每条有贡献的语句 — `blocked`（RM-D64） · 1 日 · sonnet · 依赖 AF1
+
+载荷检查同 AF1。
+
+### AF8 · capabilities 公布 `fix` 能解决哪些码 — `blocked`（RM-D64） · 0.5 日 · sonnet · 依赖无
+
+不许：手写列表（从修复生产者生成）。
+
+### B 波 · 修复推进到语义失分
+
+### AF9 · 被拒的开口与门道堵塞：带占位符的修复（并入 EV.5） — `todo`（调研阶段只做设计稿；代码等 RM-D64） · 设计 1 日、代码 4 日 · opus · 代码依赖设计稿
+
+EV.5 的门照旧：先有设计稿或 ADR，代码在后。PR 里如实写 L1 数字是否移动（L1 只应用 machine-applicable 的修复）。不许：跨房间边界移动开口，除非设计稿明确允许；把不能证明唯一的移动标成 machine-applicable。
+
+### AF10 · 量纲：先管过大，再数维度 — `blocked`（RM-D64） · 第一步 1 日、第二步 3 日 · opus · 依赖无（第二步的警告也不依赖；升为错误要等 AF15）
+
+第一步用 `new-lint-rule` skill，带规则卡的公开夹具；阈值要有 `V` 或 `S-full` 的出处（原则 10），否则只做提示、不进新规则。不许：自动换算单位。
+
+### AF11 · lint 的可信度类别（RM-D60） — `blocked`（RM-D64） · 1 日 · opus · 依赖无
+
+归类表逐条写进 PR，经新上下文评审。不许：类别进入 `lint()` 的序列化。
+
+### AF12 · 源内的 `expect <CODE> reason "…"`（RM-D60） — `todo`（调研阶段只做 ADR 草稿；代码等 RM-D64） · ADR 1 日、代码 3 日 · opus · 代码依赖 AF11 与 ADR · `[语法]`
+
+规则全按 RM-D60。不许：不带理由的 `allow`；删除被期望的诊断；让评测或评分少算一条被期望的警告。
+
+### C 波 · 编辑与变更
+
+### AF13 · `arch edit` 与 MCP `edit`：按元素修改，核对旧值 — `blocked`（RM-D64） · 5 日 · opus · 依赖 AF14
+
+用 `new-cli-flag`、`new-mcp-tool` 两个 skill。不许：把编辑放进 `compile()`（它保持纯函数）。
+
+### AF14 · `impact`/`diff` 报告 `id_deltas`（RM-D62） — `blocked`（RM-D64） · 1 日 · sonnet · 依赖无
+
+不许：改自动 id 的生成方式。
+
+### AF15 · 源内语言版本头与 `fix --edition`（RM-D61） — `parked`（随 2.0） · 4 日 · opus · 依赖所有者的 2.0 发布决定 · `[语法]`
+
+范围按 RM-D61：backlog 的 2.0 bucket 加两个已弃用形式，本卡不增不减。
+
+### AF16 · 保持意图的命名重构 — `blocked`（RM-D64） · 3 日 · opus · 依赖 AF13
+
+不许：前后的 SVG、`describe()`、`lint()` 字节不同时仍然执行重构（这种情况必须拒绝）。
+
+### AF17 · 放置出处，只走可选入口（RM-D62） — `blocked`（RM-D64） · 2 日 · opus · 依赖无
+
+带字节恒等律。不许：改默认的 `describe()`。
+
+### D 波 · 上下文与编辑器
+
+### AF18 · 生成的类型化签名表与 `context --for` — `blocked`（RM-D64） · 3 日 · opus · 依赖 AF5、AF21
+
+带漂移测试。不许：手写第三份语言描述。
+
+### AF19 · VS Code 对齐 LSP 3.18 — `blocked`（RM-D64） · 2 日 · sonnet · 依赖 AF1
+
+只改 `editors/vscode`。
+
+### AF20 · Lark 语法与"每个文件一处违例"的语料 — `blocked`（RM-D64，低优先） · 2 日 · sonnet · 依赖无
+
+不许：手写语法（与 GBNF 从同一张 token 表生成）。
+
+### E 波 · 测量
+
+### AF21 · 外来语法按来源语言分类（离线） — `todo`（调研阶段可做） · 1 日 · opus · 依赖无
+
+输入：Hugging Face 上已发布的 model-authoring 行，以及 `eval-results-live` 的 workflow artifact（RM-D53）。**不读 `eval/live-runs/t3/`**：对 T3 两组的任何读数都是对 T3 结果的第二次表述，要所有者裁定（`docs/agents/iron-laws.md`）。报告写进 `../ai-first-language/`，写出方差，并分开报 26 张评测 brief 和 model-authoring 的 brief。不许：调用付费模型；把脚本放进 `src/`（脚本放 scratch 或 `archlang-lab`）。
+
+### AF22 · 每张 brief 到达 lint 全过所需的 token 数（离线） — `todo`（调研阶段可做） · 1 日 · sonnet · 依赖无
+
+输入、排除和规则同 AF21。一次只读一组。不许：比较带反馈循环的一组与对照组。
+
+### AF23 · 付费的规格书消融（RM-D63） — `parked` · 未估 · opus · 重开条件见 RM-D63
+
+花钱要所有者对那一次的明确同意。
+
+---
+
 ## 等待触发（不排期）
 
 | 卡 | 触发 |
