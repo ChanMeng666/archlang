@@ -152,6 +152,41 @@ describe("the fallback chain: a reply the old regex took a block from never fall
   });
 });
 
+describe("known regression, backlog EV.10: an arch block in a wrapper fence, then a later untyped block", () => {
+  // The current, documented behaviour, not the desired one: step 1 skips the wrapper and takes the
+  // later untyped (or, for the glued closer, the arch fence run on to the later closer) block, where
+  // the old regex scored the plan. Each needs a wrapper the model was not asked for.
+  const RUN = "arch compile a.arch";
+  const cases: [string, string, string][] = [
+    [
+      "a ```markdown wrapper, then a ```bash block",
+      `${F}markdown\n${F}arch\n${PLAN}\n${F}\n${F}\n\nTo compile:\n${F}bash\n${RUN}\n${F}\n`,
+      `To compile:\n${F}bash\n${RUN}`,
+    ],
+    [
+      "a four-backtick wrapper, then an untyped block",
+      `${F}\`markdown\n${F}arch\n${PLAN}\n${F}\n${F}\`\n\n${F}\n${RUN}\n${F}\n`,
+      RUN,
+    ],
+    [
+      "an unclosed ```json, the arch block, then an untyped block",
+      `${F}json\n{"rooms": 1}\n${F}arch\n${PLAN}\n${F}\n\n${F}\n${RUN}\n${F}\n`,
+      RUN,
+    ],
+    [
+      "a closer glued to the last line, then an untyped block",
+      `${F}arch\n${PLAN}${F}\n\nRun:\n${F}\n${RUN}\n${F}\n`,
+      `${PLAN}${F}\n\nRun:`,
+    ],
+  ];
+  for (const [name, reply, scored] of cases) {
+    it(name, () => {
+      expect(extractArch(reply)).toBe(scored);
+      expect(liveSourceFile("b1", reply)).toEqual({ name: "b1.arch", text: scored });
+    });
+  }
+});
+
 describe("a live-shaped run writes one file per scored brief", () => {
   it("source for a fenced reply, marker for unfenced, truncated and failed, nothing for skipped", async () => {
     const entries = loadCorpus().slice(0, 5);

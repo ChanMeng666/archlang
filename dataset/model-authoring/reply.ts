@@ -75,7 +75,9 @@ export function legacyRegexBlock(text: string): string | undefined {
  * block; (2) else {@link legacyRegexBlock}'s, so a reply the old reader took a block from (a
  * ```` ```markdown ```` wrapper, a typed opener never closed, a closer glued to the last line) is
  * never pushed to the whole reply; (3) else the whole reply, trimmed (an unfenced or truncated reply
- * is scored as written, and fails as written).
+ * is scored as written, and fails as written). Known gap (backlog EV.10): such a wrapped block
+ * followed by a later fenced block lets step 1 take the later block, where the old regex took the
+ * plan.
  */
 export function extractArch(text: string): string {
   return firstArchFence(text) ?? legacyRegexBlock(text) ?? text.trim();

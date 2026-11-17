@@ -221,24 +221,31 @@ npm run eval:l2 -- --yes …   # T3 harness — paid; ONE owner-ratified run onl
   `\r` dropped; no container handling, so a fence inside a list item or a block quote is not read);
   (2) else the block the pre-EV.7 regex took (`legacyRegexBlock`), so a ` ```markdown ` or
   four-backtick wrapper, a typed opener never closed or a closer glued to the last line scores the
-  plan as before; (3) else the whole reply, trimmed. These reply shapes score differently from the
-  old regex, all at step 1: a complete typed block (` ```json `) before the `arch` block (the regex
-  opened at its closing fence and scored the text between the blocks); a four-backtick fence holding
-  a ` ``` ` line, or a block whose body holds a ` ``` ` (the regex stopped there); CRLF line ends
-  (the regex found no fence and scored the whole reply, fences and all); an opener the regex skipped
-  (` ```ARCH `, ` ```arch title `, ` ``` ` with a trailing space; it scored the whole reply, or the
-  text after that block's closing fence); and a ` ``` ` that ends a line of prose before the block
-  (the regex opened there). Where step 1 finds a block, the old regex's text lay outside that block
-  or was a cut-short part of it; where it finds none, the old regex's block is scored unchanged; so
-  no shape scores worse than the old regex. An unfenced or truncated reply is scored as written, as
-  before, and EV.2 stores only its marker. **`live-baseline.json` was measured under the old regex**
-  and is not re-measured: the change takes effect at the next live run. Its replies were never kept,
-  so which of its 26 briefs would move cannot be computed. Its run (43727489713) and the two others
-  of RM-D52 were scored by the old regex, so their artifacts can show only shapes it got wrong: none
-  of their compile failures names the prose, JSON or empty text such a shape scores (each names plan
-  geometry or an unknown statement). That is consistent with none of those 78 replies being one, and
-  does not prove it. Of the 1,370 `model-authoring` replies (`dataset/out/`), none scores
-  differently, so no published row's bytes move.
+  plan as before when no later fence follows; (3) else the whole reply, trimmed. These reply shapes
+  score differently from the old regex, all at step 1: a complete typed block (` ```json `) before
+  the `arch` block (the regex opened at its closing fence and scored the text between the blocks); a
+  four-backtick fence holding a ` ``` ` line, or a block whose body holds a ` ``` ` (the regex
+  stopped there); CRLF line ends (the regex found no fence and scored the whole reply, fences and
+  all); an opener the regex skipped (` ```ARCH `, ` ```arch title `, ` ``` ` with a trailing space;
+  it scored the whole reply, or the text after that block's closing fence); a ` ``` ` that ends a
+  line of prose before the block (the regex opened there); and the one shape that scores worse
+  (backlog EV.10): an `arch` block inside a wrapper fence (a ` ```markdown ` or four-backtick
+  wrapper, a typed opener never closed, or a closer glued to the plan's last line) **followed by**
+  another fenced block, usually one with an empty info string. The old regex scored the plan; step 1
+  now scores text from after it (that later block's body, or the text from a leftover wrapper fence
+  to the later block's closer, which for a ` ```markdown ` wrapper holds even when the later block
+  is typed, ` ```bash `), or, for the glued closer, the plan run on to the later block's opener. It
+  needs a wrapper the model was not asked for; `test/eval-live-sources.test.ts` pins the four shapes
+  as they score now. Where step 1 finds no block, the old regex's block is scored unchanged. An
+  unfenced or truncated reply is scored as written, as before, and EV.2 stores only its marker.
+  **`live-baseline.json` was measured under the old regex** and is not re-measured: the change
+  takes effect at the next live run. Its replies were never kept, so which of its 26 briefs would
+  move cannot be computed. Its run (43727489713) and the two others of RM-D52 were scored by the old
+  regex, so their artifacts can show only shapes it got wrong, never the EV.10 shape it got right:
+  none of their compile failures names the prose, JSON or empty text such a shape scores (each names
+  plan geometry or an unknown statement). That is consistent with none of those 78 replies being one,
+  and does not prove it. Of the 1,370 `model-authoring` replies (`dataset/out/`), none scores
+  differently (each one's first fence is a complete ` ```arch ` block), so no published row's bytes move.
 
 **In practice, run the live eval from GitHub Actions** ("Eval (live)" `workflow_dispatch`,
 `.github/workflows/eval-live.yml`): `OPENAI_API_KEY` lives in Actions secrets, not on any dev
