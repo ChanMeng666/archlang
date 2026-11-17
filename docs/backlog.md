@@ -767,7 +767,7 @@ programme's gate runs; not reproduced on purpose here.
 
 - M.7 · `diffPlans` follow-ups — closed → archived (lab)
 
-### M.8 · The source formatter is lossy past three decimals, and silent when it refuses: done by #PRNUM, waiting to be archived — `note`
+### M.8 · The source formatter is lossy past three decimals, and silent when it refuses: done by #946, waiting to be archived — `note`
 
 **Carded as** AF6 (`docs/plans/product-roadmap/cards.md` track 10, 2026-11-18).
 
@@ -777,7 +777,7 @@ programme's gate runs; not reproduced on purpose here.
 diagnosed trailing content) prints it unchanged and exits 0, so nothing tells the user it
 refused: re-run on a stray-`}` file. Consider a note on stderr or a non-zero exit.
 
-Closure note (#PRNUM, card AF6, decided under the RM-D65 delegation). `format()` prints each literal
+Closure note (#946, card AF6, decided under the RM-D65 delegation). `format()` prints each literal
 through `fmtLiteral` (`src/num-format.ts`): `fmtSource` where that reads back as the same double, else
 the shortest decimal that does, so every value with three decimals or fewer keeps its bytes (`fmt`
 over every tracked `.arch` is byte-identical) and `at (0.0004,1.0005)` stays as written. `arch fmt` on
