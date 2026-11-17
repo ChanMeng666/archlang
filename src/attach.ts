@@ -85,7 +85,8 @@ export function eatEnumValue<T extends string>(ctx: ParseCtx, allowed: readonly 
  * `noModulo` is what makes the trailing `%` readable: see {@link ParseExprOpts}.
  * `center` is still matched first, as a keyword, so it can never be read as a
  * bare reference. `axis` is read as the datum word only when a label follows it (a number,
- * or a name other than the `width` that always follows a position): `axis <label>` was never
+ * or a name other than `width`, the clause the old grammar required straight after a position;
+ * since the clauses come in any order, any other word after `axis` is its label): `axis <label>` was never
  * a legal expression, so a plan that names a binding `axis` (`at axis width 900`) reads as
  * it always did. `from` after the value was never legal either. `corner` likewise, read as the
  * word only with a dotted name after it: a binding of that name followed by a dotted name was

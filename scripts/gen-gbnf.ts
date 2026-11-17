@@ -543,10 +543,13 @@ function rules(): [string, string][] {
     // read through `anyOrder`: since card CO-1 a door's clauses come in any order. The non-enum
     // prefixes — `hinge near <vertex>`, `swing into <ref>` — are grammar structure rather than
     // enum members, so they are stated here beside the injection. `open <0..1>` and the vertical
-    // `head` take a number, not a closed value set, so they are structure too.
+    // `head` take a number, not a closed value set, so they are structure too. The kind word may
+    // also come among the clauses (backlog EV.8), once in all, which a GBNF does not count.
     [
       "door-clause",
-      [...DOOR_CLAUSES.map((c) => `${lit(c)} rws ${c}-val`), `"open" ws expr`, `"head" ws expr`].join(" | "),
+      [...DOOR_CLAUSES.map((c) => `${lit(c)} rws ${c}-val`), `"open" ws expr`, `"head" ws expr`, "door-kind"].join(
+        " | ",
+      ),
     ],
     ["door-free-clause", `door-clause | opening-wall`],
     ["hinge-val", `"near" rws ( ${litAlt(DOOR_HINGE_NEAR)} ) | ${litAlt(DOOR_ENUMS.hinge)}`],
@@ -559,7 +562,7 @@ function rules(): [string, string][] {
       "window-stmt",
       `"window" rws id-opt ( window-kind rws id-after )? ( opening-free-pos ${anyOrder("window-free-clause", "opening-width")} | ( opening-hosted-pos | opening-edge-pos ) ${anyOrder("window-clause", "opening-width")} )`,
     ],
-    ["window-clause", `"hinge" rws window-hinge | "sill" ws expr | "head" ws expr`],
+    ["window-clause", `"hinge" rws window-hinge | "sill" ws expr | "head" ws expr | window-kind`],
     ["window-free-clause", `window-clause | opening-wall`],
     ["window-kind", litAlt(WINDOW_KINDS)],
     ["window-hinge", litAlt(DOOR_ENUMS.hinge)],

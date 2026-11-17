@@ -64,8 +64,10 @@ describe("parse hints", () => {
   });
 
   it("`hinged` as a statement names the door kind", () => {
+    // After a door's clauses `hinged` is that door's kind (backlog EV.8,
+    // test/clause-order-byte-identity.test.ts); standing as a statement of its own it keeps the hint.
     for (const body of [
-      "  room id=r at (0,0) size 4000x4000\n  door on r.bottom at center width 900 hinged",
+      "  room id=r at (0,0) size 4000x4000\n  hinged",
       "  room id=r at (0,0) size 4000x4000\n  hinged door on r.bottom at center width 900",
     ]) {
       const src = plan(body);

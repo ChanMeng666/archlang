@@ -218,11 +218,11 @@ Totals: 405 modules in 34 directories.
 | --- | ---: | ---: | --- | --- |
 | `analyze.ts` | 1087 | 129 | Shared semantic-analysis layer for the agent-facing tools. | none |
 | `ast.ts` | 1741 | 225 | Abstract syntax tree for an ArchLang `plan`. All distances are in millimetres. | none |
-| `attach.ts` | 477 | 6 | Opening attachment (`door\|window\|opening … on <wall> at <pos>`). | charges the step meter |
+| `attach.ts` | 478 | 6 | Opening attachment (`door\|window\|opening … on <wall> at <pos>`). | charges the step meter |
 | `axes.ts` | 161 | 4 | **Positioning axes** (定位轴线) — GB/T 50001's structural datum grid. | none |
 | `builtins.ts` | 129 | 3 | Built-in functions: a frozen, pure map injected into the global scope as `builtin` Values. Each is total — bad arity / types emit a diagnostic and return a safe default, never throw — and deterministic (no I/O, no clock). | none |
 | `chrome-layout.ts` | 374 | 15 | Shared page-chrome layout — the deterministic geometry of the **scale bar** and **title block** in the bottom page margin, and how far the bottom margin must grow to contain them. Both the SVG and PDF backends build their chrome from this… | none |
-| `clause-order.ts` | 191 | 15 | Order-free trailing clauses. A statement's optional keyword-led clauses (`size`, `label`, `rotate`, `clear`, … after a `furniture`'s placement) may come in any order, each once. | none |
+| `clause-order.ts` | 242 | 15 | Order-free trailing clauses. A statement's optional keyword-led clauses (`size`, `label`, `rotate`, `clear`, … after a `furniture`'s placement) may come in any order, each once. | none |
 | `cli.ts` | 91 | 0 | ArchLang CLI — agent-native. | none |
 | `command-name.ts` | 11 | 4 | The command name every help line, example and doc writes. `package.json` installs two bins, `archlang` and `arch`, for the same `dist/cli.js`; `arch` stays as an alias, but coreutils ships an `arch` on Linux, macOS and Git Bash, so a bare… | none |
 | `compile-path.ts` | 21 | 0 | A build entry, not a package export (card RM0.7f): the values the playground's compiler chunk serves, `compile`, `describe`, `describeLevel`, `lint` and `THEMES` (`playground/src/compiler.ts`, the compile worker's and the page's door, and… | none |
@@ -407,7 +407,7 @@ Totals: 405 modules in 34 directories.
 | `defs.ts` | 61 | 7 | The built-in element definitions, as a flat array in canonical order. | none |
 | `dim.ts` | 512 | 3 | `dim [faces\|clear] (x,y)->(x,y) [offset N] [text "…"]` — dimension line with ticks + length, or `dim radius <wallId> [segment <n>]` / `dim diameter <roomId>` — a GB/T curve call-out whose geometry and text are DERIVED from the referenced… | none |
 | `door-panels.ts` | 319 | 2 | How each NON-HINGED door kind is drawn in its reveal. | none |
-| `door.ts` | 763 | 2 | `door [id=] [<kind>] at (x,y) width N [wall ref] [hinge <side>] [swing <dir>] [slide <dir>] [open <0..1>] [head <mm>]` — opening + leaf + swing arc, or (for a non-hinged kind) opening + panels/track/cavity. The clauses after the placement… | none |
+| `door.ts` | 765 | 2 | `door [id=] [<kind>] at (x,y) width N [wall ref] [hinge <side>] [swing <dir>] [slide <dir>] [open <0..1>] [head <mm>]` — opening + leaf + swing arc, or (for a non-hinged kind) opening + panels/track/cavity. The clauses after the placement… | none |
 | `elevator.ts` | 76 | 1 | `elevator [id=] at (x,y) size WxH` — a lift shaft, drawn as the car rectangle with the conventional crossed diagonals. | none |
 | `escalator.ts` | 85 | 1 | `escalator [id=] at (x,y) size WxH dir up\|down` — a moving stair, drawn as parallel chevrons along the run plus the UP/DN direction arrow. | none |
 | `facets.ts` | 87 | 10 | Which hand-written kind sets each built-in element kind belongs to, one row per kind. | none |
@@ -434,7 +434,7 @@ Totals: 405 modules in 34 directories.
 | `void.ts` | 435 | 9 | `void [id=] (at (x,y) size WxH \| polygon (x,y) …) [rail <edges>]` — a hole in this storey's floor plate. | charges the step meter |
 | `wall.ts` | 489 | 3 | `wall <category> thickness N { (x,y)… [close] }` — poché fill + crisp faces. | none |
 | `walls-from-rooms.ts` | 678 | 1 | `walls from rooms exterior <t_ext> partition <t_int> [{ except <room> … }]` — derive the whole wall set of a group from its rooms (ADR 0028 §3, plan decision D5). | none |
-| `window.ts` | 634 | 5 | `window [id=] [<kind>] at (x,y) width N [wall ref] [hinge <side>]` — opening + double glazing + exterior sill, plus the kind's mark (see {@link kindMarks}). | charges the step meter |
+| `window.ts` | 636 | 5 | `window [id=] [<kind>] at (x,y) width N [wall ref] [hinge <side>]` — opening + double glazing + exterior sill, plus the kind's mark (see {@link kindMarks}). | charges the step meter |
 
 ## `src/error-catalog/`
 
@@ -485,7 +485,7 @@ Totals: 405 modules in 34 directories.
 
 | Module | Lines | Importers | Summary | Budget |
 | --- | ---: | ---: | --- | --- |
-| `tokens.ts` | 667 | 53 | The single source of truth for ArchLang's lexical grammar. | none |
+| `tokens.ts` | 667 | 54 | The single source of truth for ArchLang's lexical grammar. | none |
 
 ## `src/import/`
 
