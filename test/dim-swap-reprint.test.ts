@@ -55,12 +55,13 @@ describe("a dim's swap text is printed once per node per storey (RR.24)", () => 
     expect(calls.dim).toBe(3);
   });
 
-  // The memo adds no charge (a ctx never rebuilds the text), so the step payload does not move:
-  // a looped dim's steps do not grow with the length of a dead branch it never evaluates.
-  it("adds no step charge: the steps are the same at any statement length", () => {
-    const loop = (k: number): string =>
-      plan(`  for i in 0..300 { dim (0,1000)->(if i < 0 { ${dead(k)} } else { 3000 + i },1000) offset 300 }`);
-    expect(steps(loop(12000))).toBe(steps(loop(1)));
+  // A ctx builds the text once, so a looped dim pays for it at most once per storey, never once per
+  // iteration: free for a short statement, `1 +` its length past `REPRINT_FREE_BYTES` (RR.9).
+  it("charges a long statement once per storey, never per iteration", () => {
+    const stmt = (k: number): string => `dim (0,1000)->(if i < 0 { ${dead(k)} } else { 3000 + i },1000) offset 300`;
+    const loop = (k: number): string => plan(`  for i in 0..300 { ${stmt(k)} }`);
+    expect(steps(loop(50))).toBe(steps(loop(1)));
+    expect(steps(loop(12000)) - steps(loop(1))).toBe(1 + stmt(12000).length);
   });
 
   // The looped dim still carries the fix: the W_DIM_INSIDE edit is the memoised swapped text.
