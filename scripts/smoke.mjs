@@ -298,7 +298,8 @@ function docsChecks() {
     // docs-site/public/_redirects. The sitemap lists `/adr`, never the 307-ing `/adr/`.
     redirectCheck("/error-codes", "/errors"),
     redirectCheck("/language-reference", "/reference"),
-    // Six more Search Console 404s plus one found in review: repo files go to GitHub (absolute Location), the schema to the root copy.
+    // Old repo-relative links: repo files go to GitHub (absolute Location), the schema to the root copy,
+    // playground/index.html to the playground origin.
     redirectCheck(
       "/examples/museum-wing.arch",
       "https://github.com/ChanMeng666/archlang/blob/main/examples/museum-wing.arch",
@@ -312,6 +313,13 @@ function docsChecks() {
     redirectCheck("/dataset/CARD", "https://github.com/ChanMeng666/archlang/blob/main/dataset/CARD.md"),
     redirectCheck("/dataset/README", "https://github.com/ChanMeng666/archlang/blob/main/dataset/README.md"),
     redirectCheck("/eval/README", "https://github.com/ChanMeng666/archlang/blob/main/eval/README.md"),
+    redirectCheck("/CHANGELOG", "https://github.com/ChanMeng666/archlang/blob/main/CHANGELOG.md"),
+    redirectCheck("/CHANGELOG.html", "https://github.com/ChanMeng666/archlang/blob/main/CHANGELOG.md"),
+    redirectCheck("/CHANGELOG.md", "https://github.com/ChanMeng666/archlang/blob/main/CHANGELOG.md"),
+    redirectCheck("/playground", "https://playground.archlang.uk/"),
+    redirectCheck("/playground/", "https://playground.archlang.uk/"),
+    redirectCheck("/playground/index", "https://playground.archlang.uk/"),
+    redirectCheck("/playground/index.html", "https://playground.archlang.uk/"),
     // No noindex on the agent files: GS-D7 de-indexes the raw page copies only (below).
     route("/llms.txt", contentType("text"), nonEmpty(), noHeader("x-robots-tag")),
     // Heading emitted by scripts/gen-llms-full.ts — its presence proves we got the bundle,
