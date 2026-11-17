@@ -43,7 +43,8 @@ export function systemPromptOf(spec: string): string {
 
 /**
  * Pull the `.arch` source out of a reply: the body of its first complete `arch` or untyped fence,
- * else the whole reply, trimmed. One implementation with the eval harness (`reply.ts`, EV.7).
+ * else the pre-EV.7 reader's block, else the whole reply, trimmed. One implementation with the eval
+ * harness (`reply.ts`, EV.7).
  */
 export { extractArch };
 

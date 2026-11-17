@@ -2297,9 +2297,21 @@ with `extractArch`. **Gate:** both shapes scored as that block, with tests; the 
 test kept green; the change to live scoring named against the baseline before it lands.
 
 Residue (2026-11-18): one reader, `dataset/model-authoring/reply.ts`, shared by `eval/run.ts` and
-`rows.ts`; `eval/README.md` names the reply shapes that now score differently and that
-`eval/live-baseline.json` was measured under the old regex (not re-measured). Over the 1,370
-`model-authoring` replies none scores differently, so no published row moves.
+`rows.ts`: the first complete top-level `arch`/untyped fence, else the old regex's block (so no
+shape scores worse than before), else the whole reply. `eval/README.md` names the reply shapes that
+now score differently and that `eval/live-baseline.json` was measured under the old regex (not
+re-measured). Over the 1,370 `model-authoring` replies none scores differently, so no published row
+moves. The published card's wording is EV.9.
+
+### EV.9 · The dataset card states the pre-EV.7 extraction rule — `todo`
+
+`dataset/CARD.md`'s `source` row says the `.arch` is extracted as "the first fenced block, else the
+whole reply". EV.7 (#940) made the rule the first complete top-level `arch` or untyped fence, else
+the pre-EV.7 regex's block, else the whole reply. Every published row reads the same under both (all
+1,370 replies' first fence is a complete ` ```arch ` block), so no data is wrong, only the
+wording. `dataset/CARD.md` is the published HF card, so changing it means re-uploading the card
+(RM-D55, the agent's), which EV.7 left out of scope. **Gate:** the row states the new rule, and the
+HF card is re-uploaded and its SHA-256 compared after.
 
 ### EV.3 · The baseline does not record the prompt it was measured under: done by #865, waiting to be archived — `note`
 

@@ -58,8 +58,9 @@ describe("liveSourceFile: the stored text is the first arch/untyped fence's body
   for (const [name, reply, stored] of cases) {
     it(name, () => {
       const f = liveSourceFile("b1", reply);
-      // The scored text is the first arch fence's body whenever there is one, else the whole reply.
-      expect(extractArch(reply)).toBe(firstArchFence(reply) ?? reply.trim());
+      // The scored text is the first arch fence's body whenever there is one.
+      const block = firstArchFence(reply);
+      if (block !== undefined) expect(extractArch(reply)).toBe(block);
       if (stored === undefined) {
         expect(f.name).toBe("b1.not-extracted.txt");
         expect(f.text.startsWith(`${NOT_EXTRACTED}: `)).toBe(true);
@@ -99,10 +100,55 @@ describe("extractArch scores the reply's first complete arch or untyped fence (E
   });
 
   it("an unfenced or truncated reply is still scored as written, and stored only as a marker", () => {
-    for (const reply of [`${PLAN}\n`, `${F}arch\n${PLAN}`, `${F}json\n{}\n${F}\n${F}arch\n${PLAN}`]) {
+    for (const reply of [`${PLAN}\n`, `${F}arch\n${PLAN}`, `  ${PLAN}  `]) {
       expect(extractArch(reply)).toBe(reply.trim());
       expect(liveSourceFile("b1", reply).name).toBe("b1.not-extracted.txt");
     }
+  });
+
+  it("openers the old regex skipped: ```ARCH, ```arch title, ``` with a trailing space", () => {
+    for (const opener of [`${F}ARCH`, `${F}arch title="Flat"`, `${F} `]) {
+      const reply = `${opener}\n${PLAN}\n${F}\n`;
+      expect(extractArch(reply), opener).toBe(PLAN);
+      expect(liveSourceFile("b1", reply), opener).toEqual({ name: "b1.arch", text: PLAN });
+    }
+  });
+
+  it("a leading byte-order mark is dropped before the reply is read", () => {
+    const reply = `﻿${F}arch\n${PLAN}\n${F}\n`;
+    expect(firstArchFence(reply)).toBe(PLAN);
+    expect(extractArch(reply)).toBe(PLAN);
+    expect(liveSourceFile("b1", reply)).toEqual({ name: "b1.arch", text: PLAN });
+  });
+});
+
+describe("the fallback chain: a reply the old regex took a block from never falls to the whole reply", () => {
+  // No complete top-level arch/untyped fence here, so the second step, the old reader, scores the
+  // block it always scored; EV.2 still stores only a marker for each (no complete arch fence).
+  const cases: [string, string][] = [
+    ["a ```markdown wrapper around an arch block", `${F}markdown\n${F}arch\n${PLAN}\n${F}\n${F}\n`],
+    ["a four-backtick wrapper around an arch block", `${F}\`markdown\n${F}arch\n${PLAN}\n${F}\n${F}\`\n`],
+    [
+      "a typed opener never closed before the arch block",
+      `${F}json\n{"rooms": 1}\nThe plan:\n${F}arch\n${PLAN}\n${F}\n`,
+    ],
+    ["a closer glued to the last line", `${F}arch\n${PLAN}${F}\n`],
+  ];
+  for (const [name, reply] of cases) {
+    it(name, () => {
+      expect(firstArchFence(reply)).toBeUndefined();
+      expect(extractArch(reply)).toBe(PLAN);
+      expect(liveSourceFile("b1", reply)).toEqual({
+        name: "b1.not-extracted.txt",
+        text: `${NOT_EXTRACTED}: no complete arch fence in the reply\n`,
+      });
+    });
+  }
+
+  it("the old reader's block, not the whole reply, when the first step finds none", () => {
+    // A closed json block, then an arch block never closed: the old regex opens at the json
+    // block's closing fence and scores the empty text up to the arch opener, as it always did.
+    expect(extractArch(`${F}json\n{}\n${F}\n${F}arch\n${PLAN}`)).toBe("");
   });
 });
 

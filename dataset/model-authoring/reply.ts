@@ -5,16 +5,23 @@
  * `dataset/` may import only the core and its own modules, never `eval/`; it imports nothing.
  */
 
+/** A leading byte-order mark, dropped before a reply is read. */
+const stripBom = (text: string): string => (text.charCodeAt(0) === 0xfeff ? text.slice(1) : text);
+
 /**
- * The body of a reply's first complete fenced block whose info string is empty or `arch`, read the
- * way Markdown reads fences, else `undefined`: a fence opens only at a line start (up to three
- * spaces) with three or more backticks, and closes on a line of at least as many backticks and
+ * The body of a reply's first complete top-level fenced block whose info string is empty or `arch`,
+ * read the way Markdown reads fences, else `undefined`: a fence opens only at a line start (up to
+ * three spaces) with three or more backticks, and closes on a line of at least as many backticks and
  * nothing else. A fence of another type (`json`) is skipped whole, an inline triple backtick opens
- * nothing, and a block left open (a truncated reply) is not complete. A `\r` before a line end is
- * dropped. Trimmed. Linear: each line is read once by the opener test and once by the closer test.
+ * nothing, and a block left open (a truncated reply) is not complete. There is no container
+ * handling (a list item or a block quote is not read). A leading byte-order mark is dropped, and so
+ * is a `\r` before a line end. Trimmed. Linear: each line is read once by the opener test and once
+ * by the closer test.
  */
 export function firstArchFence(reply: string): string | undefined {
-  const lines = reply.split("\n").map((l) => l.replace(/\r$/, ""));
+  const lines = stripBom(reply)
+    .split("\n")
+    .map((l) => l.replace(/\r$/, ""));
   for (let i = 0; i < lines.length; i++) {
     const open = /^ {0,3}(`{3,})([^`]*)$/.exec(lines[i]!);
     if (!open) continue;
@@ -37,9 +44,39 @@ export function firstArchFence(reply: string): string | undefined {
 }
 
 /**
- * The `.arch` source scored for a reply: {@link firstArchFence}'s block, else the whole reply,
- * trimmed (an unfenced or truncated reply is scored as written, and fails as written).
+ * The reader `extractArch` used before EV.7, kept as the second step: the regex
+ * `` /```(?:arch)?\n([\s\S]*?)```/ `` of `eval/run.ts`, which takes the text after the first
+ * ```` ``` ```` or ```` ```arch ```` that a newline follows, up to the next ```` ``` ```` anywhere,
+ * trimmed; `undefined` when it finds no such pair. Written as `rows.ts` wrote it, with `indexOf`
+ * rather than the lazy regex, so it is linear; the two were pinned equal by the rows parity test
+ * before EV.7, and the body is that function's, with its whole-reply fallback left to the caller.
+ */
+export function legacyRegexBlock(text: string): string | undefined {
+  let from = 0;
+  for (;;) {
+    const i = text.indexOf("```", from);
+    if (i === -1) break;
+    const after = i + 3;
+    let start = -1;
+    if (text.startsWith("arch\n", after)) start = after + 5;
+    else if (text[after] === "\n") start = after + 1;
+    if (start !== -1) {
+      const end = text.indexOf("```", start);
+      if (end === -1) break; // no closing fence anywhere later: no block
+      return text.slice(start, end).trim();
+    }
+    from = i + 1;
+  }
+  return undefined;
+}
+
+/**
+ * The `.arch` source scored for a reply, the first step that finds one: (1) {@link firstArchFence}'s
+ * block; (2) else {@link legacyRegexBlock}'s, so a reply the old reader took a block from (a
+ * ```` ```markdown ```` wrapper, a typed opener never closed, a closer glued to the last line) is
+ * never pushed to the whole reply; (3) else the whole reply, trimmed (an unfenced or truncated reply
+ * is scored as written, and fails as written).
  */
 export function extractArch(text: string): string {
-  return firstArchFence(text) ?? text.trim();
+  return firstArchFence(text) ?? legacyRegexBlock(text) ?? text.trim();
 }

@@ -400,7 +400,8 @@ export function systemPrompt(spec: string = readFileSync(resolve(ROOT, "spec.llm
 }
 
 /** `extractArch` pulls the `.arch` source out of a model reply: the body of its first complete
- *  `arch` or untyped fence (`firstArchFence`), else the whole reply, trimmed. Re-exported so the L2
+ *  `arch` or untyped fence (`firstArchFence`), else the block the pre-EV.7 regex took
+ *  (`legacyRegexBlock`), else the whole reply, trimmed. Re-exported so the L2
  *  harness and the `model-authoring` rows parse replies identically to the L0 path: one
  *  implementation, in `dataset/model-authoring/reply.ts` (EV.7). */
 export { extractArch, firstArchFence };
@@ -545,7 +546,9 @@ export const NOT_EXTRACTED = "not extracted";
  * source as `<id>.arch` when the scored text is exactly the body of the reply's first complete
  * `arch` or untyped fence ({@link firstArchFence}), else a `<id>.not-extracted.txt` marker naming
  * the reason and holding no reply text. The raw reply is never stored, so neither is its prose: an
- * unfenced or truncated reply gets the marker. Since EV.7 {@link extractArch} scores exactly that
+ * unfenced or truncated reply gets the marker, and so does a reply only the pre-EV.7 regex reads a
+ * block from (a ```` ```markdown ```` wrapper, a closer glued to the last line), since that block
+ * is not a complete top-level fence. Since EV.7 {@link extractArch} scores exactly that
  * block whenever there is one, so the equality check below holds by construction; it stays as the
  * guard that a later change to the scored text cannot store a text that was not scored. `reply` is
  * `undefined` when the call failed before a reply came back.

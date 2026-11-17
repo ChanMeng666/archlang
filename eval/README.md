@@ -214,24 +214,31 @@ npm run eval:l2 -- --yes …   # T3 harness — paid; ONE owner-ratified run onl
   it is the extracted source RM-D53 allows. Otherwise `<id>.not-extracted.txt` holds a one-line reason and no reply text — an unfenced
   or truncated reply is never stored, so the model's prose stays unpublished (product-roadmap
   RM-D53). The workflow uploads both in the `eval-results-live` artifact (GitHub's default retention).
-- **Which text is scored** (`extractArch`, EV.7): the body of the reply's first complete fence whose
-  info string is empty or `arch`, read the way Markdown reads fences (`firstArchFence`), else the
-  whole reply, trimmed. One implementation, `dataset/model-authoring/reply.ts`, shared by `run.ts`,
-  `l2.ts` and the `model-authoring` rows. Until EV.7 it was a regex, and these reply shapes score
-  differently now: a typed first block (` ```json `), prose, then an `arch` block (the regex scored
-  the text between the blocks, now the `arch` block); a four-backtick fence holding a ` ``` ` line
-  (the regex stopped at that line, now the block runs to its closing ` ```` `); CRLF line ends (the
-  regex found no fence and scored the whole reply, fences and all); an opener the regex skipped
-  (` ```ARCH `, ` ```arch title `, ` ``` ` with a trailing space); and a fence the regex took but
-  Markdown does not (a ` ``` ` not at a line start or indented four spaces or more, or a closing
-  ` ``` ` with text on its line). An unfenced or truncated reply is scored as written, as before.
-  **`live-baseline.json` was measured under the old regex** and is not re-measured: the change takes
-  effect at the next live run. Its replies were never kept, so which of its 26 briefs would move
-  cannot be computed; in its run (43727489713) and the two others of RM-D52 every compile failure
-  names plan geometry or an unknown statement, none the prose, JSON or empty text a mis-extraction
-  scores, which is consistent with none of those 78 replies having these shapes but does not prove
-  it. Of the 1,370 `model-authoring` replies (`dataset/out/`), every one's first fence is a complete
-  ` ```arch ` block and none scores differently, so no published row's bytes move.
+- **Which text is scored** (`extractArch`, EV.7; one implementation, `dataset/model-authoring/reply.ts`,
+  shared by `run.ts`, `l2.ts` and the `model-authoring` rows), the first step that finds one:
+  (1) the body of the reply's first complete top-level fence whose info string is empty or `arch`,
+  read the way Markdown reads fences (`firstArchFence`; a leading byte-order mark and each line's
+  `\r` dropped; no container handling, so a fence inside a list item or a block quote is not read);
+  (2) else the block the pre-EV.7 regex took (`legacyRegexBlock`), so a ` ```markdown ` or
+  four-backtick wrapper, a typed opener never closed or a closer glued to the last line scores the
+  plan as before; (3) else the whole reply, trimmed. These reply shapes score differently from the
+  old regex, all at step 1: a complete typed block (` ```json `) before the `arch` block (the regex
+  opened at its closing fence and scored the text between the blocks); a four-backtick fence holding
+  a ` ``` ` line, or a block whose body holds a ` ``` ` (the regex stopped there); CRLF line ends
+  (the regex found no fence and scored the whole reply, fences and all); an opener the regex skipped
+  (` ```ARCH `, ` ```arch title `, ` ``` ` with a trailing space; it scored the whole reply, or the
+  text after that block's closing fence); and a ` ``` ` that ends a line of prose before the block
+  (the regex opened there). Where step 1 finds a block, the old regex's text lay outside that block
+  or was a cut-short part of it; where it finds none, the old regex's block is scored unchanged; so
+  no shape scores worse than the old regex. An unfenced or truncated reply is scored as written, as
+  before, and EV.2 stores only its marker. **`live-baseline.json` was measured under the old regex**
+  and is not re-measured: the change takes effect at the next live run. Its replies were never kept,
+  so which of its 26 briefs would move cannot be computed. Its run (43727489713) and the two others
+  of RM-D52 were scored by the old regex, so their artifacts can show only shapes it got wrong: none
+  of their compile failures names the prose, JSON or empty text such a shape scores (each names plan
+  geometry or an unknown statement). That is consistent with none of those 78 replies being one, and
+  does not prove it. Of the 1,370 `model-authoring` replies (`dataset/out/`), none scores
+  differently, so no published row's bytes move.
 
 **In practice, run the live eval from GitHub Actions** ("Eval (live)" `workflow_dispatch`,
 `.github/workflows/eval-live.yml`): `OPENAI_API_KEY` lives in Actions secrets, not on any dev
