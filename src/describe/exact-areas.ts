@@ -8,77 +8,48 @@
  * (`src/intent.ts`): five rooms of exactly 40.000 m² print 40.01 m², and a `max` of 40 must
  * still pass.
  *
- * Each exact figure is keyed by the very object `describe()` put the printed one on (a
- * `RoomSummary`, a storey's `totals`), in a `WeakMap`, so the JSON bytes are exactly what they
- * were: no key is added, none changes. It is kept with the printed figure it refines and
- * answered only while that object still prints it: an object that did not come from `describe()`
+ * An exact figure (mm², unrounded) is keyed by the very object `describe()` put the printed one
+ * on (a `RoomSummary`, a storey's `totals`) and by the printed key's name, in a `WeakMap`, so the
+ * JSON bytes are exactly what they were. It is kept with the printed figure it refines and
+ * answered only while that key still prints it: an object that did not come from `describe()`
  * (a summary parsed back from JSON, a copy) or whose figure a caller has since replaced has no
  * exact figure, and every reader then falls back to the printed one.
  *
  * Pure; imports nothing at runtime.
  */
 
-/** An exact area in mm², and the printed m² figure it was recorded beside. */
-interface Exact {
-  mm2: number;
-  printed: number | undefined;
+type Keyed = Record<string, unknown>;
+
+/** Per object, per printed key: the exact mm² and the printed figure it was recorded beside. */
+const EXACT = new WeakMap<object, Record<string, [mm2: number, printed: unknown]>>();
+
+/** Record the exact mm² behind `o[key]`, the figure it prints now. */
+export function recordExactMm2(o: object, key: string, mm2: number): void {
+  const m = EXACT.get(o) ?? {};
+  m[key] = [mm2, (o as Keyed)[key]];
+  EXACT.set(o, m);
 }
 
-const ROOM = new WeakMap<object, Exact>();
-const FLOOR = new WeakMap<object, Exact>();
-const GROSS = new WeakMap<object, Exact>();
-const GROSS_ALL_LEVELS = new WeakMap<object, Exact>();
-
-const read = (table: WeakMap<object, Exact>, key: object, printed: number | undefined): number | undefined => {
-  const e = table.get(key);
-  return e !== undefined && e.printed === printed ? e.mm2 : undefined;
-};
-
-/** A room as `describe()` prints it. */
-type PrintedRoom = { area_m2: number };
-/** A storey's `totals` as `describe()` prints them. */
-type PrintedTotals = {
-  floor_area_m2: number;
-  gross_internal_area_m2?: number;
-  gross_internal_area_all_levels_m2?: number;
-};
-
-/** Record `room`'s exact floor area (mm²) beside its printed `area_m2`. */
-export function recordRoomAreaMm2(room: PrintedRoom, mm2: number): void {
-  ROOM.set(room, { mm2, printed: room.area_m2 });
+/** The exact mm² behind `o[key]`, or `undefined` (see the module header). */
+export function exactMm2(o: object, key: string): number | undefined {
+  const e = EXACT.get(o)?.[key];
+  return e && e[1] === (o as Keyed)[key] ? e[0] : undefined;
 }
 
-/** The exact floor area (mm²) behind `room.area_m2`, or `undefined` (see the module header). */
-export function exactRoomAreaMm2(room: PrintedRoom): number | undefined {
-  return read(ROOM, room, room.area_m2);
+/** The exact figures behind every `o[key]` summed, or `undefined` when any one has none (never a
+ *  sum of the two kinds). */
+export function sumExactMm2(os: readonly object[], key: string): number | undefined {
+  let mm2 = 0;
+  for (const o of os) {
+    const x = exactMm2(o, key);
+    if (x === undefined) return undefined;
+    mm2 += x;
+  }
+  return mm2;
 }
 
-/** Record a storey's exact floor area (mm², its rooms summed unrounded) beside `floor_area_m2`. */
-export function recordFloorAreaMm2(totals: PrintedTotals, mm2: number): void {
-  FLOOR.set(totals, { mm2, printed: totals.floor_area_m2 });
-}
-
-/** The exact floor area (mm²) behind `totals.floor_area_m2`, or `undefined`. */
-export function exactFloorAreaMm2(totals: PrintedTotals): number | undefined {
-  return read(FLOOR, totals, totals.floor_area_m2);
-}
-
-/** Record a storey's exact gross internal area (mm²) beside `gross_internal_area_m2`. */
-export function recordGrossAreaMm2(totals: PrintedTotals, mm2: number): void {
-  GROSS.set(totals, { mm2, printed: totals.gross_internal_area_m2 });
-}
-
-/** The exact gross internal area (mm²) behind `totals.gross_internal_area_m2`, or `undefined`. */
-export function exactGrossAreaMm2(totals: PrintedTotals): number | undefined {
-  return read(GROSS, totals, totals.gross_internal_area_m2);
-}
-
-/** Record the building's exact gross internal area (mm²) beside `gross_internal_area_all_levels_m2`. */
-export function recordGrossAllLevelsMm2(totals: PrintedTotals, mm2: number): void {
-  GROSS_ALL_LEVELS.set(totals, { mm2, printed: totals.gross_internal_area_all_levels_m2 });
-}
-
-/** The building's exact gross internal area (mm²) behind `gross_internal_area_all_levels_m2`, or `undefined`. */
-export function exactGrossAllLevelsMm2(totals: PrintedTotals): number | undefined {
-  return read(GROSS_ALL_LEVELS, totals, totals.gross_internal_area_all_levels_m2);
+/** Carry every exact figure recorded on `from` to `to`, a rebuilt copy printing the same keys. */
+export function carryExact(from: object, to: object): void {
+  const m = EXACT.get(from);
+  if (m) EXACT.set(to, { ...m });
 }

@@ -9,7 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
-- `validate --intent`, `score --brief` and `validateIntent()` judge an area band (`totalAreaM2`, `roomsInclude[].areaM2`, `grossInternalAreaM2`) on the exact floor area, so a total equal to a band edge no longer fails (card RM9.1). Five rooms of exactly 40.000 m² failed a `max` of 40 as "total 40.01 m² outside [0, 40]", because the band read `describe()`'s total, the sum of the rounded room areas. `describe()` is unchanged and still prints 40.01. Where the printed figure alone would contradict the verdict, the detail prints the exact one to 4 decimals.
+- `validate --intent`, `score --brief` and `validateIntent()` judge an area band (`totalAreaM2`, `roomsInclude[].areaM2`, `grossInternalAreaM2`) on the exact area, to a whole mm², instead of the 2 dp figure `describe()` prints (card RM9.1). This moves verdicts both ways. A figure exactly at a band edge now passes where its printed figure was over it: five rooms of exactly 40.000 m² failed a `max` of 40 as "total 40.01 m² outside [0, 40]", because the band read `describe()`'s total, the sum of the rounded room areas. A figure that rounds onto the edge but exceeds it now fails where it passed: one room of 4040 x 9901 mm (40.00004 m², printed 40) fails a `max` of 40, and a `min` likewise fails a figure just under it that rounds up. Where the printed figure alone would contradict the verdict, the detail prints the exact one in full ("total 40.00004 m² outside [0, 40]"). `describe()` is unchanged and still prints 40.01 and 40; a summary read back from JSON is judged on its printed figures, as before.
 
 ### Changed
 

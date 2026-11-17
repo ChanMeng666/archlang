@@ -13,7 +13,7 @@ import { roomAreaMm2, roomUses, type RoomBox } from "../analyze.js";
 import { roomTypeForUses } from "../plan-json.js";
 import type { RoomSummary } from "./types.js";
 import { instanceOf, r2 } from "./shared.js";
-import { recordRoomAreaMm2 } from "./exact-areas.js";
+import { recordExactMm2 } from "./exact-areas.js";
 
 /** A room's `net_area_m2` key: the rounded figure, or no key at all when it is omitted. */
 const netField = (mm2: number | undefined): { net_area_m2?: number } =>
@@ -55,7 +55,7 @@ export function roomSummaries(
       ...instanceOf(r),
     };
     // The exact figure behind `area_m2`, off the JSON: a brief's band is judged on it (RM9.1).
-    recordRoomAreaMm2(summary, areaMm2);
+    recordExactMm2(summary, "area_m2", areaMm2);
     return summary;
   });
 }

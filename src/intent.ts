@@ -27,13 +27,8 @@ import type { GrossAreaReason } from "./analyze/gross-area.js";
 import { polygonLabelPoint } from "./geometry/polygon.js";
 import { isCirculationRoom, roomsMatchingConcept } from "./intent-concepts.js";
 import { makeNaming, type NameableRoom, sizeWords } from "./naming.js";
-import {
-  exactFloorAreaMm2,
-  exactGrossAllLevelsMm2,
-  exactGrossAreaMm2,
-  exactRoomAreaMm2,
-} from "./describe/exact-areas.js";
-import { fmt2, fmt4 } from "./num-format.js";
+import { exactMm2, sumExactMm2 } from "./describe/exact-areas.js";
+import { fmt2, fmtWritten } from "./num-format.js";
 import { pure } from "./pure.js";
 import { type CompassLetter, type SiteFacts, SYMBOLIC_FACINGS, type SymbolicFacing } from "./site.js";
 
@@ -442,8 +437,7 @@ const storeysOf = (summary: SceneSummary): readonly StoreyFacts[] =>
 const allRooms = (summary: SceneSummary): RoomSummary[] => storeysOf(summary).flatMap((s) => s.rooms);
 
 /** The plan's PRINTED total floor area: the storeys' figures summed and rounded as each already
- *  is, or the one storey's figure untouched. A detail prints it; a band judges
- *  {@link exactTotalFloorArea}. */
+ *  is, or the one storey's figure untouched. A detail prints it; a band judges the exact one. */
 function totalFloorArea(summary: SceneSummary): number {
   const storeys = storeysOf(summary);
   if (storeys.length === 1) return storeys[0]!.totals.floor_area_m2;
@@ -456,34 +450,19 @@ function totalFloorArea(summary: SceneSummary): number {
  * 40.000 m² print 40.01. The exact figures ride beside the summary in a side table
  * (`src/describe/exact-areas.ts`), off the JSON; a summary that did not come from `describe()`,
  * or a figure a caller has since replaced, has none, and is judged on its printed figures as before.
+ * An exact figure is a float sum (a width of `10000 / 7` times seven), so it is rounded ONCE, after
+ * any summing, to a whole mm²: the area the source states, never a float residue over an edge.
  */
 
-/** A room's exact floor area in m², or its printed `area_m2` when no exact figure was recorded. */
-function exactRoomAreaM2(r: RoomSummary): number {
-  const mm2 = exactRoomAreaMm2(r);
-  return mm2 === undefined ? r.area_m2 : mm2 / 1_000_000;
-}
-
-/** The plan's exact total floor area in m², every storey's exact figure (its rooms summed before
- *  any rounding) summed, or {@link totalFloorArea} when any storey has none (never a sum of the
- *  two kinds). */
-function exactTotalFloorArea(summary: SceneSummary): number {
-  let mm2 = 0;
-  for (const s of storeysOf(summary)) {
-    const x = exactFloorAreaMm2(s.totals);
-    if (x === undefined) return totalFloorArea(summary);
-    mm2 += x;
-  }
-  return mm2 / 1_000_000;
-}
+/** The exact figure `mm2` (unrounded) in m², to a whole mm², or `printed` when there is none. */
+const exactM2 = (mm2: number | undefined, printed: number): number =>
+  mm2 === undefined ? printed : Math.round(mm2) / 1_000_000;
 
 /** Whether the printed figure alone would contradict a verdict taken on the exact one: then the
- *  detail prints the exact figure to 4 dp instead, so a line never says "40 m² outside [0, 40]". */
+ *  detail prints the exact figure in full ({@link fmtWritten}: a whole mm² is at most 6 dp), so a
+ *  line never says "40 m² outside [0, 40]". */
 const contradicts = (printed: number, pass: boolean, lo: number, hi: number): boolean =>
   (printed >= lo && printed <= hi) !== pass;
-
-/** Round to 4 decimals, as {@link fmt4} prints: the exact figure a contradicted detail shows. */
-const r4 = (n: number): number => Math.round(n * 10_000) / 10_000;
 
 /** Whether `a` and `b` (concept ids) are joined by an interior door/opening in the
  *  plan's `input_graph`, on any one storey (a shaft joins storeys, a door never does).
@@ -542,9 +521,15 @@ function checkOne(
     }
     case "total-area": {
       const a = totalFloorArea(summary);
-      const exact = exactTotalFloorArea(summary);
+      const exact = exactM2(
+        sumExactMm2(
+          storeysOf(summary).map((s) => s.totals),
+          "floor_area_m2",
+        ),
+        a,
+      );
       const pass = exact >= p.minM2 && exact <= p.maxM2;
-      const shown = contradicts(a, pass, p.minM2, p.maxM2) ? fmt4(exact) : `${a}`;
+      const shown = contradicts(a, pass, p.minM2, p.maxM2) ? fmtWritten(exact) : `${a}`;
       const detail = pass
         ? `area: total ${shown} m² within ${band(p.minM2, p.maxM2)}`
         : `area: total ${shown} m² outside ${band(p.minM2, p.maxM2)} (${p.source})`;
@@ -727,7 +712,7 @@ function checkRoomArea(
   const assigned = claims.get(p.concept) ?? roomsMatchingConcept(p.concept, allRooms(summary));
   // Judged on each room's exact area (RM9.1); the detail prints counts, not areas.
   const within = assigned.filter((r) => {
-    const a = exactRoomAreaM2(r);
+    const a = exactM2(exactMm2(r, "area_m2"), r.area_m2);
     return a >= lo && a <= hi;
   }).length;
   const pass = within >= p.min;
@@ -932,15 +917,16 @@ function checkGrossArea(p: Extract<Predicate, { kind: "gross-area" }>, summary: 
     return unmeasured(p, what, "m2", reason, storeys > 1 ? missing?.level : undefined);
   }
   // Judged on the exact figure (RM9.1), else the printed one.
-  const exactMm2 = storeys > 0 ? exactGrossAllLevelsMm2(t) : exactGrossAreaMm2(t);
-  const exact = exactMm2 === undefined ? a : exactMm2 / 1_000_000;
+  const exact = exactM2(exactMm2(t, storeys > 0 ? "gross_internal_area_all_levels_m2" : "gross_internal_area_m2"), a);
   const pass = exact >= p.minM2 && exact <= p.maxM2;
   // The figure is printed to 0.01 m², so the residual is too; where that figure would contradict
-  // the verdict, the exact one is printed to 4 dp, and its residual with it.
+  // the verdict, the exact one is printed in full, and its residual with it (to a whole mm²).
   const exactShown = contradicts(a, pass, p.minM2, p.maxM2);
-  const measured = exactShown ? r4(exact) : a;
-  const residual = exactShown ? r4(bandResidual(exact, p.minM2, p.maxM2)) : r2(bandResidual(a, p.minM2, p.maxM2));
-  const fmt = exactShown ? fmt4 : fmt2;
+  const measured = exactShown ? exact : a;
+  const residual = exactShown
+    ? Math.round(bandResidual(exact, p.minM2, p.maxM2) * 1e6) / 1e6
+    : r2(bandResidual(a, p.minM2, p.maxM2));
+  const fmt = exactShown ? fmtWritten : fmt2;
   const detail = pass
     ? `area: ${what} ${fmt(measured)} m² within ${band(p.minM2, p.maxM2)}`
     : `area: ${what} ${fmt(measured)} m² outside ${band(p.minM2, p.maxM2)}, residual ${signedText(residual, fmt)} m² (${p.source})`;
