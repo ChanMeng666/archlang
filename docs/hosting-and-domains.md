@@ -88,7 +88,7 @@ was added.
   are merely large are refused first, by bytes, with `E_INPUT_TOO_LARGE`, and an address over its
   rate with `E_RATE_LIMITED` (600 `/mcp`, 600 `/check` or 3000 `/svg/` misses a minute: an abuse guard set high
   because connector platforms call from shared egress addresses). The spend bound is
-  `limits.cpu_ms` (5 s of CPU per request) plus a billing notification set before announcing it.
+  `limits.cpu_ms` (5 s of CPU per request) plus the account's billing alerts (ADR 0026, "Addendum: production").
 - **It needs Workers Paid before it reaches `main`.** `limits` is supported only on the Standard
   usage model, which only Paid has; on a Free account `deploy-mcp` should fail, and its last step
   names Paid as the likely cause.

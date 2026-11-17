@@ -1632,8 +1632,8 @@ The plugin was submitted from `plugins/archlang/` on 2026-10-10. The directory o
 updates" webhook, which was dismissed and is not set up. Observed in the portal on 2026-11-17, for
 the review stage: the directory follows `main` without it and needs no resubmission. Every version
 in its list is labelled "via scheduled check", new `main` commits appeared roughly every 7 hours,
-and every commit becomes a new version, docs-only ones included; "Check for new commits" pressed
-right after the #921 merge did not surface `573b7fe`, the scheduled check did, within hours. The
+and whether each commit between two checks gets its own version was not checked; "Check for
+new commits" pressed right after the #921 merge did not surface `573b7fe`, the next scheduled check did. The
 directory refused 1.63.0 at `2c9a8d7` that day for its local `npx` server and the Cursor rule (both
 accepted only from Verified organizations); #921 moved the plugin to the hosted server and the
 Cursor plugin to its own folder, and `573b7fe` passed the security scan with notes only and waits
