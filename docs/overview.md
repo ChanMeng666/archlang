@@ -22,7 +22,7 @@ reproducible.** Open source (MIT). Zero-dependency, and built so an
 ```bash
 npx skills add ChanMeng666/archlang                      # the ArchLang skills, for any agent that reads skills
 claude mcp add archlang -- npx -y @chanmeng666/archlang-mcp   # or the MCP server (Claude Code shown)
-/plugin marketplace add ChanMeng666/archlang                # or, inside Claude Code: the skills + MCP server as one plugin (plugins/archlang)
+/plugin marketplace add ChanMeng666/archlang                # or, inside Claude Code: the skills + the hosted MCP server as one plugin (plugins/archlang)
 /plugin install archlang@archlang
 ```
 

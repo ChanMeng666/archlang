@@ -27,10 +27,14 @@
  *     PNG/JPEG/WebP/SVG, square, 48 to 4096 px, at most 5 MiB).
  * The plugin root is `plugins/archlang/` (the slim folder the Claude plugin already uses; the
  * repository root carries an 11 MB font), which `gen:plugin` fills with `skills/`. `mcp.json` there
- * (portable Agent Plugins MCP file, https://agent-plugins.org/schemas/1.0.0/mcp.schema.json) starts the
- * MCP server unpinned, like the README's recommended command, so it names no version. The OpenAI
- * directory takes a remote HTTPS server instead and no longer accepts a skills-only package, so the
- * ZIP `npm run build:openai-plugin` assembles swaps in {@link hostedMcpManifest} (ADR 0026's server).
+ * (portable Agent Plugins MCP file, https://agent-plugins.org/schemas/1.0.0/mcp.schema.json) declares
+ * the hosted server ({@link hostedMcpManifest}, ADR 0026), as the Claude manifest does: Anthropic's
+ * plugin directory accepts a local MCP server, and any file outside Markdown, text, JSON, YAML and
+ * images, only from a Verified organization, and the OpenAI directory takes only a remote server.
+ * The Cursor plugin therefore lives in its own folder, `plugins/archlang-cursor/` (listed by the
+ * root `.cursor-plugin/marketplace.json`): its manifest, its `rules/archlang.mdc`, the same skills
+ * (`gen:plugin`) and a `mcp.json` that starts the local server unpinned ({@link localMcpManifest}),
+ * like the README's recommended command, so it names no version.
  * `assets/icon.png` is a byte copy of the Claude plugin's `.claude-plugin/icon.png` (1024 px square),
  * so the OpenAI listing icon sits inside the plugin folder the ZIP is built from.
  * Gemini CLI extension, read on 2026-11-06:
@@ -62,16 +66,30 @@ const read = (p: string): string => readFileSync(join(ROOT, p), "utf8");
 
 export const PLUGIN_ROOT = "plugins/archlang";
 export const PORTABLE_MANIFEST = `${PLUGIN_ROOT}/plugin.json`;
-export const CURSOR_MANIFEST = `${PLUGIN_ROOT}/.cursor-plugin/plugin.json`;
 export const MCP_MANIFEST = `${PLUGIN_ROOT}/mcp.json`;
 export const MCP_SCHEMA_ID = "https://agent-plugins.org/schemas/1.0.0/mcp.schema.json";
-export const CURSOR_RULE = `${PLUGIN_ROOT}/rules/archlang.mdc`;
+/** The Cursor plugin's own folder: Cursor-only files stay out of the folder Anthropic's directory reviews. */
+export const CURSOR_ROOT = "plugins/archlang-cursor";
+export const CURSOR_MANIFEST = `${CURSOR_ROOT}/.cursor-plugin/plugin.json`;
+export const CURSOR_MCP_MANIFEST = `${CURSOR_ROOT}/mcp.json`;
+export const CURSOR_RULE = `${CURSOR_ROOT}/rules/archlang.mdc`;
+/** Cursor's multi-plugin marketplace file at the repository root, so a repository-root submission finds the plugin. */
+export const CURSOR_MARKETPLACE = ".cursor-plugin/marketplace.json";
 export const PORTABLE_SCHEMA_ID = "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json";
 /** The listing icon, copied from the Claude plugin's icon (binary, so not among the text outputs). */
 export const ICON_SOURCE = `${PLUGIN_ROOT}/.claude-plugin/icon.png`;
 export const PLUGIN_ICON = `${PLUGIN_ROOT}/assets/icon.png`;
-/** Root files copied byte-for-byte into the plugin bundle, which is distributed on its own (MIT notice). */
-export const BUNDLED_ROOT_FILES = ["LICENSE", "SECURITY.md"] as const;
+/**
+ * Root files copied byte-for-byte into each plugin bundle, which is distributed on its own (MIT
+ * notice): repository path → name in the bundle. `LICENSE` ships as `LICENSE.txt`, because
+ * Anthropic's directory accepts only files whose type it can tell (Markdown, text, JSON, YAML, images).
+ */
+export const BUNDLED_ROOT_FILES = [
+  { src: "LICENSE", dest: "LICENSE.txt" },
+  { src: "SECURITY.md", dest: "SECURITY.md" },
+] as const;
+/** The folders that carry the bundled root files. */
+export const BUNDLE_ROOTS = [PLUGIN_ROOT, CURSOR_ROOT] as const;
 /** Gemini CLI extension manifest (repository root) and the context file it names. */
 export const GEMINI_MANIFEST = "gemini-extension.json";
 export const COPILOT_INSTRUCTIONS = "integrations/copilot/copilot-instructions.md";
@@ -117,7 +135,7 @@ export function skillNames(): string[] {
     .filter((d) => existsSync(join(ROOT, "skills", d, "SKILL.md")));
 }
 
-/** These manifests carry the skills only (the MCP server is the Claude plugin's), so they say so. */
+/** The description every non-Claude manifest shares. */
 const DESCRIPTION =
   "ArchLang: write floor plans as code, compiled and checked by a deterministic compiler. Skills to author, edit, review and export .arch plans through the archlang CLI, and the ArchLang MCP server.";
 
@@ -187,8 +205,11 @@ export function portableManifest(): string {
   });
 }
 
-/** `mcp.json`: the MCP server, started by its package name with no version. */
-export function mcpManifest(): string {
+/**
+ * The Cursor plugin's `mcp.json`: the local MCP server, started by its package name with no version,
+ * so PNG output and offline use keep working there.
+ */
+export function localMcpManifest(): string {
   const { name } = JSON.parse(read("packages/mcp/package.json"));
   return json({
     $schema: MCP_SCHEMA_ID,
@@ -197,14 +218,31 @@ export function mcpManifest(): string {
 }
 
 /**
- * The OpenAI ZIP's `mcp.json` (`scripts/build-openai-plugin.ts`): the hosted server over Streamable
- * HTTP, no sign-in, because the directory takes a remote HTTPS server and excludes a local one. The
- * repository's `mcp.json` keeps the local server for the hosts that start it (PNG, offline use).
+ * `plugins/archlang/mcp.json`, also the OpenAI ZIP's (`scripts/build-openai-plugin.ts`): the hosted
+ * server over Streamable HTTP, no sign-in, because both directories that read this folder take a
+ * remote HTTPS server and refuse a local one (from an unverified publisher, in Anthropic's case).
  */
 export function hostedMcpManifest(): string {
   return json({
     $schema: MCP_SCHEMA_ID,
     mcpServers: { archlang: { type: "streamable-http", url: HOSTED_MCP_URL } },
+  });
+}
+
+/** `plugins/archlang/mcp.json`: the hosted server (see {@link hostedMcpManifest}). */
+export const mcpManifest = hostedMcpManifest;
+
+/**
+ * Root `.cursor-plugin/marketplace.json`: Cursor's multi-plugin marketplace file, naming the one
+ * plugin at `plugins/archlang-cursor` (Cursor merges that folder's `.cursor-plugin/plugin.json` in).
+ */
+export function cursorMarketplace(): string {
+  const { name, author } = identity();
+  return json({
+    name,
+    owner: { name: author.name },
+    metadata: { description: DESCRIPTION },
+    plugins: [{ name, source: CURSOR_ROOT, description: DESCRIPTION }],
   });
 }
 
@@ -216,7 +254,7 @@ export function cursorManifest(): string {
 
 /**
  * `gemini-extension.json`: the stdio MCP server, started by its package name with no version like
- * `mcp.json`, and the generated instructions as the context file. The description is the core
+ * the Cursor plugin's `mcp.json`, and the generated instructions as the context file. The description is the core
  * package's one-liner (GS-D5); `version` is the core's, for the tag match the gallery asks for.
  */
 export function geminiManifest(): string {
@@ -283,7 +321,9 @@ export function textOutputs(): { dest: string; text: string }[] {
     { dest: PORTABLE_MANIFEST, text: portableManifest() },
     { dest: MCP_MANIFEST, text: mcpManifest() },
     { dest: CURSOR_MANIFEST, text: cursorManifest() },
+    { dest: CURSOR_MCP_MANIFEST, text: localMcpManifest() },
     { dest: CURSOR_RULE, text: cursorRule() },
+    { dest: CURSOR_MARKETPLACE, text: cursorMarketplace() },
     { dest: COPILOT_INSTRUCTIONS, text: copilotInstructions() },
     { dest: "integrations/copilot/archlang.instructions.md", text: copilotPathInstructions() },
   ];
@@ -300,7 +340,7 @@ export function allOutputs(): string[] {
     ...textOutputs().map((o) => o.dest),
     ...versionedOutputs().map((o) => o.dest),
     PLUGIN_ICON,
-    ...BUNDLED_ROOT_FILES.map((f) => `${PLUGIN_ROOT}/${f}`),
+    ...BUNDLE_ROOTS.flatMap((r) => BUNDLED_ROOT_FILES.map((f) => `${r}/${f.dest}`)),
   ];
 }
 
@@ -311,6 +351,10 @@ if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.ur
   }
   mkdirSync(dirname(join(ROOT, PLUGIN_ICON)), { recursive: true });
   copyFileSync(join(ROOT, ICON_SOURCE), join(ROOT, PLUGIN_ICON));
-  for (const f of BUNDLED_ROOT_FILES) copyFileSync(join(ROOT, f), join(ROOT, PLUGIN_ROOT, f));
+  for (const r of BUNDLE_ROOTS)
+    for (const f of BUNDLED_ROOT_FILES) {
+      mkdirSync(join(ROOT, r), { recursive: true });
+      copyFileSync(join(ROOT, f.src), join(ROOT, r, f.dest));
+    }
   process.stdout.write(`gen-agent-manifests: wrote ${allOutputs().length} files\n`);
 }

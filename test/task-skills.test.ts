@@ -174,14 +174,14 @@ describe("skills/", () => {
     expect(readdirSync(".").filter((f) => f.toLowerCase() === "skill.md")).toEqual([]);
   });
 
-  it("confines every tracked SKILL.md to skills/<name>/ or plugins/archlang/skills/<name>/", () => {
+  it("confines every tracked SKILL.md to skills/<name>/ or a plugin's skills/<name>/", () => {
     // The `skills` CLI walks the root's children, so a SKILL.md anywhere else (a `.claude/skills`
     // dev skill, say) would ship to every user who runs `npx skills add`.
     const tracked = execFileSync("git", ["ls-files", "-z", "--", "*SKILL.md"], { encoding: "utf8" })
       .split("\0")
       .filter(Boolean);
     expect(tracked.length).toBeGreaterThan(0);
-    const allowed = /^(?:skills|plugins\/archlang\/skills)\/[a-z0-9]+(?:-[a-z0-9]+)*\/SKILL\.md$/;
+    const allowed = /^(?:skills|plugins\/archlang(?:-cursor)?\/skills)\/[a-z0-9]+(?:-[a-z0-9]+)*\/SKILL\.md$/;
     expect(tracked.filter((f) => !allowed.test(f))).toEqual([]);
   });
 

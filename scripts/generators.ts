@@ -6,7 +6,7 @@
  * unchanged, so both read one list.
  */
 
-import { PLUGIN_MANIFEST, pluginSkillFiles } from "./gen-plugin.js";
+import { PLUGIN_MANIFEST, allPluginSkillFiles } from "./gen-plugin.js";
 import { allOutputs } from "./gen-agent-manifests.js";
 import { SURFACES as DOORS_SURFACES } from "./gen-doors.js";
 import { README_SVGS, VIEW_SVGS, svgPath } from "./gen-example-svgs.js";
@@ -55,11 +55,11 @@ export const GENERATORS: readonly {
   // Imported, never retyped: the curated README drawing list lives in the generator, so a
   // name added there is drift-gated here with no second edit (and cannot be forgotten).
   { script: "gen:example-svgs", artifacts: [...README_SVGS.map(svgPath), ...VIEW_SVGS.map((v) => v.dest)] },
-  // The skill copies are whole files; the manifest keeps its hand-written fields and gets only
-  // `version` and the MCP pin rewritten (`pluginManifest()`).
+  // The skill copies (both plugin folders) are whole files; the manifest keeps its hand-written
+  // fields and gets only `version` and the hosted MCP server rewritten (`pluginManifest()`).
   {
     script: "gen:plugin",
-    artifacts: [...pluginSkillFiles().map((f) => f.dest), PLUGIN_MANIFEST],
+    artifacts: [...allPluginSkillFiles().map((f) => f.dest), PLUGIN_MANIFEST],
     partial: [PLUGIN_MANIFEST],
   },
   // The per-route `.md` Content-Type rules, derived from the PAGES + SITE_PAGES tables in docs-site/sync-docs.mjs.

@@ -3,7 +3,7 @@
  * gitignored build product, so what is pinned here is the builder: the ZIP it would write is
  * opened again and read entry by entry, and must hold exactly the portable layout the directory
  * reads, differing from the generated folder `plugins/archlang/` only on purpose (`plugin.json`
- * gains the version, `mcp.json` names the hosted server, the skills pin the CLI). The same check
+ * gains the version, the skills pin the CLI; `mcp.json` is the folder's own, the hosted server). The same check
  * (`checkOpenaiZip`) runs on the written file in `build:openai-plugin` and `prove:openai-plugin`;
  * this suite also asserts the contents directly, so the check cannot pass by being lenient.
  */
@@ -69,7 +69,9 @@ describe("OpenAI plugin ZIP", () => {
       mcpServers: { archlang: { type: "streamable-http", url: HOSTED_MCP_URL } },
     });
     expect(HOSTED_MCP_URL).toBe("https://mcp.archlang.uk/mcp");
-    expect(readJson("plugins/archlang/mcp.json").mcpServers.archlang.type).toBe("stdio");
+    // the folder's own mcp.json is the same hosted server; the local one is the Cursor plugin's
+    expect(readJson("plugins/archlang/mcp.json")).toEqual(mcp);
+    expect(readJson("plugins/archlang-cursor/mcp.json").mcpServers.archlang.type).toBe("stdio");
   });
 
   it("every skill pins the CLI to the core version, and the repository's skills name none", () => {
@@ -95,10 +97,12 @@ describe("OpenAI plugin ZIP", () => {
     expect(() =>
       checkOpenaiZip(tamper((fs) => [...fs, { name: "rules/archlang.mdc", data: Buffer.from("x") }])),
     ).toThrow(/entries/);
-    // the repository's local mcp.json instead of the hosted one
+    // the Cursor plugin's local mcp.json instead of the hosted one
     expect(() =>
       checkOpenaiZip(
-        tamper((fs) => fs.map((x) => (x.name === "mcp.json" ? { ...x, data: read("plugins/archlang/mcp.json") } : x))),
+        tamper((fs) =>
+          fs.map((x) => (x.name === "mcp.json" ? { ...x, data: read("plugins/archlang-cursor/mcp.json") } : x)),
+        ),
       ),
     ).toThrow(/hosted server/);
     // the version missing

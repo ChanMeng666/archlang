@@ -1631,8 +1631,10 @@ was rebased and is conflict-free. Left: the merge.
 The plugin was submitted from `plugins/archlang/` on 2026-10-10 and is in review. The directory
 offered a "push updates" webhook, which was dismissed and is not set up. Whether the listing follows
 `main` without it, or needs a resubmission after each release, has not been observed; settle it at
-the first release after the listing is approved. The directory holds a pinned-`npx` server for a
-policy review, and may ask for a privacy-policy page. The OpenAI plugin directory
+the first release after the listing is approved. The directory refused 1.63.0 on 2026-11-17 for its
+local `npx` server and the Cursor rule (both accepted only from Verified organizations); the plugin
+now declares the hosted server and the Cursor plugin has its own folder (`docs/seo.md` section 8).
+It may ask for a privacy-policy page. The OpenAI plugin directory
 needs a privacy-policy page and a terms page too; both now exist, at https://archlang.uk/privacy and
 https://archlang.uk/terms. The OpenAI submission's state is O.7 and `docs/seo.md` section 8.
 

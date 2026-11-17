@@ -11,16 +11,17 @@
  * The ZIP holds, at its root, the portable "Agent Plugins" layout the directory reads
  * (https://developers.openai.com/plugins/build/plugins): `plugin.json` with the listing under
  * `extensions["com.openai"]`, `mcp.json`, `skills/` and `assets/icon.png`. It differs from the
- * folder in three ways, all on purpose:
+ * folder in two ways, both on purpose:
  *   - `plugin.json` gains `"version"` (the core's, root `package.json`, unless named), which final
  *     submission requires and every update must change; the repository's manifest names no version.
- *   - `mcp.json` declares the hosted server (Streamable HTTP, no sign-in), because a public
- *     submission takes a remote HTTPS server and excludes a local one; the repository's keeps the
- *     local `npx` server that Copilot CLI and Cursor start (PNG, offline use).
  *   - each skill's install commands name the core's version, because the directory's scan flags an
  *     unpinned package as a mutable source, and a reviewed skill should run the CLI it was written
  *     for; the repository's skills name no version.
- * `.claude-plugin/`, `.cursor-plugin/` and `rules/` are other hosts' files and stay out.
+ * Its `mcp.json` is the folder's own, the hosted server (Streamable HTTP, no sign-in), because a
+ * public submission takes a remote HTTPS server and excludes a local one; the builder still checks it.
+ * `.claude-plugin/` is another host's folder, and `LICENSE.txt` and `SECURITY.md` are not part of the
+ * listing layout; they stay out (the Cursor plugin, with its rule and local server, has its own folder,
+ * `plugins/archlang-cursor/`).
  *
  * The folder must be in sync with its generators first (`npm run gen:all`); a stale folder is
  * refused rather than zipped. The archive is deterministic (sorted entries, fixed timestamp: the

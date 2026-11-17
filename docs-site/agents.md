@@ -25,13 +25,15 @@ it matches intent without ever looking at an image** — token-cheap and in any 
 ```bash
 npx skills add ChanMeng666/archlang                      # the ArchLang skills, for any agent that reads skills
 claude mcp add archlang -- npx -y @chanmeng666/archlang-mcp   # or the MCP server (Claude Code shown)
-/plugin marketplace add ChanMeng666/archlang                # or, inside Claude Code: the skill + MCP server as one plugin
+/plugin marketplace add ChanMeng666/archlang                # or, inside Claude Code: the skills + the hosted MCP server as one plugin
 /plugin install archlang@archlang
 ```
 
 `npx skills add ChanMeng666/archlang` offers five skills (add `--yes` to install them all without
 asking). Start from `archlang`, the full workflow; the other four are task skills, short checklists
-for one job each. The Claude Code plugin loads all five.
+for one job each. The Claude Code plugin loads all five, and connects to the hosted MCP server at
+`https://mcp.archlang.uk/mcp` (no sign-in, rate-limited; [privacy](/privacy)). For the local server
+instead, add it with `claude mcp add` as above and disable the plugin's.
 
 - `archlang-brief-to-plan`: write a new plan from a written brief and check it against the brief.
 - `archlang-edit-plan`: change an existing `.arch` with the smallest edit, then re-verify.
