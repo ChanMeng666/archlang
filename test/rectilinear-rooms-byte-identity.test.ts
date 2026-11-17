@@ -36,6 +36,18 @@
  * for an `inline:door-` row) with those charges applied (`src/geometry/polygon.ts`) and nothing else.
  * For every row, this branch's payload with the old step count put back reproduces the digest taken
  * on that tree.
+ *
+ * Re-measured for CO.1 (RM-D56): `against` with no `size` now reports a footprint the `grid`
+ * snapped (`W_GRID_SNAPPED`, "catalogued size"). Two kinds of row moved, each proven before it was
+ * re-taken by a scratch script that runs this suite's own digest body (the PR states the method and
+ * its output). A plan that relies on the snap (`test/walls-from-rooms/two-bed.arch` and its table
+ * twin) moved by the added entries only: its source as `main` has it, through this branch's
+ * compiler, with exactly those entries removed from `compile().diagnostics` and
+ * `describe().diagnostics` and the 64 steps (`DIAGNOSTIC_STEPS`) each one charged taken back,
+ * reproduces the old digest; SVG and `lint()` did not move. The examples that relied on it now write
+ * the snapped size out (RM-D56 condition 3: warning-free, the drawing unchanged); their rows moved by
+ * the inserted bytes alone: with every span mapped back across the inserted `size` clauses
+ * and the step count `main` measured put back (a written size costs 2 steps), the old digest returns.
  */
 
 import { describe as suite, expect, it } from "vitest";
@@ -114,10 +126,10 @@ const BASELINE: [string, string][] = [
   ["2fa285ac0a1406f1c19a4f5b8cd6405b9435f3192b681642f9f90add9c479fc8", "examples/courtyard-house.arch"], // H10: +34 ring scan, +0 overlap
   ["d4c16e520cd04dc9f2f2598e37cd9405e158c0c2bd5eba42b81ff7a5e81fe36c", "examples/furnished-flat.arch"],
   ["969fe0c639c3e332de2045feda5a3300b521e1964214ea9bf6bbca79c29ee9f4", "examples/gallery-l.arch"], // H10: +21 ring scan, +8 overlap
-  ["89ea32363cf8a3370151edbb546505318b081ba6148b87709fdf344b51c7e8a8", "examples/garden-house.arch"], // H10: +36 ring scan, +0 overlap; RM1.3a, see ./byte-identity-baseline.ts
+  ["6afd308276d804a195546f34f857941468e0421fbd41119689798c01b921dcb3", "examples/garden-house.arch"], // H10: +36 ring scan, +0 overlap; RM1.3a, see ./byte-identity-baseline.ts; CO.1: the example writes its 2 snapped `against` sizes out (+26 bytes), so only spans and the steps of the written clauses (+8) moved; see the header (was 89ea3236)
   ["df359e005849a18fc1d8e83823066f09da02733314120bef6d20af6e184fae01", "examples/garden-loft.arch"],
   ["d9a3b8c66ec2f242d2938dccecddd0553b964d72735d42ee005c33f003182968", "examples/hexagon-pavilion.arch"], // H10: +36 ring scan, +92 overlap
-  ["c0385530fabf6843d672dbadb71265ca0942d8a81b0ddc7d007d30b380f2bc72", "examples/hillside-villa.arch"], // H10: +32 ring scan, +0 overlap; RM1.3a, see ./byte-identity-baseline.ts
+  ["fa4e97e48df3a071adc5780d87998c250e2f0760be36037077fdcc52396c06c5", "examples/hillside-villa.arch"], // H10: +32 ring scan, +0 overlap; RM1.3a, see ./byte-identity-baseline.ts; CO.1: the example writes its 3 snapped `against` sizes out (+40 bytes), so only spans and the steps of the written clauses (+12) moved; see the header (was c0385530)
   ["7d331b6506b22f2f3b347f7cd69066691419d8ce179543e995880159f3fd9781", "examples/imports.arch"],
   ["58c936f9c43e85d632a9af54000e307199b4f36fab26f4a5ad35f6f427042c34", "examples/knob-flat.arch"], // new example (P4, the knobs example)
   ["d96d19caeabce46e47c45e8c0e3ce20dd1c578b6cc789b04fbe96fa437ef6995", "examples/laneway-house.arch"],
@@ -125,12 +137,12 @@ const BASELINE: [string, string][] = [
   ["213c92fbdb0b2724f37dcf4b6a69c8284a07e0b1db01be8993bef183399cad3b", "examples/materials.arch"],
   ["4c6d86aeda2a2b463c3e1f4b8e57a0b7a412337d0a846a159292297020e7f54c", "examples/museum-wing.arch"],
   ["15c59814835fd26b4d3a639eb7fc8fe5eb0a358ec90077b2420cfcf4161cbce1", "examples/museum-wings.arch"],
-  ["6e9a779e53d3e4ca9051b2a00385661cd0fcee9fa61c4fd77b203824739fc3d3", "examples/museum.arch"],
+  ["bef0574168ede681ba417072a2a2af13ce7e403685e8a7273e5ba1d89dd86c73", "examples/museum.arch"], // CO.1: the example writes its 5 snapped `against` sizes out (+65 bytes), so only spans and the steps of the written clauses (+10) moved; see the header (was 6e9a779e)
   ["e5c34d6978bd49dec5063e1269e7d39bf538dfef5cdfe0ecd92507725df683d1", "examples/one-room.arch"],
   ["66ec0cf20311f8457b9c783e04918c5063991fa9c361c80d2ae2906626e1a1b7", "examples/parametric.arch"],
   ["d4d84c989958a7f6849751317b9d8d2a97ec4d2c17bead11a1ce4e15b0fd61ee", "examples/practice-office.arch"],
   ["678707d468322ff24ce8915bd462b4e21c095a0f46dc46a68504044ee4fceb1d", "examples/relational.arch"], // `centreline_at`, see ./byte-identity-baseline.ts
-  ["facbd0d502627b5b2644c995be82e7c58bc0c580d710e485809790448a3a36f7", "examples/remodel.arch"], // `centreline_at`, see ./byte-identity-baseline.ts
+  ["5cbb6abfc75147d3e38de1845e6c126d860b1a871571ce205479763eebb1a2bc", "examples/remodel.arch"], // `centreline_at`, see ./byte-identity-baseline.ts; CO.1: the example writes its snapped `against` size out (+13 bytes), so only spans and the steps of the written clauses (+2) moved; see the header (was facbd0d5)
   ["37b4fc842de526931aef55456f668bdc120d4101cab310726e57a293a1479373", "examples/sheet-notes.arch"],
   ["aadd36ceb57aa3def298e2052e3eb75e6a0adffda89582598c87996b26d6f043", "examples/studio.arch"],
   ["2177671f90a2b15d52e9448a4d53d0d8378ff9d2f8ad609843f598ca6f0287da", "examples/terrace-row.arch"],
@@ -139,7 +151,7 @@ const BASELINE: [string, string][] = [
   ["1e7bc2febd96e53c82c6a3fb52dce11afe0fe642435b261fce1f145f7663824c", "examples/townhouse.arch"], // H10: +12 ring scan, +0 overlap; RM1.3a, see ./byte-identity-baseline.ts
   ["8fb90ee449d4117eccc0d2a31d5d58a6eeb9856e8a2b08048c388ac1742d18a6", "examples/transit-hall.arch"],
   ["5e11515ff4a206682f77cb329722c1c9307a104725a8b2965eab26e41cb22ef5", "examples/turning-stair.arch"], // new example (S2): no rectilinear room; `centreline_at`, see ./byte-identity-baseline.ts; RM1.3a, see ./byte-identity-baseline.ts; RM1.2a, see ./byte-identity-baseline.ts
-  ["8f5ccdac7528e0374d50a2c05664c90704bdb22b1da8ee129b6c3a8e1b754af1", "examples/two-bed.arch"], // H10: +6 ring scan, +0 overlap; `centreline_at`, see ./byte-identity-baseline.ts
+  ["8b28b25e441d1f053afb7f245c0f4ff8b791fea8139b5dd031e58831a8c659a2", "examples/two-bed.arch"], // H10: +6 ring scan, +0 overlap; `centreline_at`, see ./byte-identity-baseline.ts; CO.1: the example writes its snapped `against` size out (+13 bytes), so only spans and the steps of the written clauses (+2) moved; see the header (was 8f5ccdac)
   ["dae436a55df2d81ec8dd62c63e284e2598fb4c53f13b4fc0a5f8f7681d6c22e7", "examples/two-storey.arch"], // H10: +12 ring scan, +0 overlap; RM1.3a, see ./byte-identity-baseline.ts; RM1.2a, see ./byte-identity-baseline.ts
   ["449c5ed8dd295c5962225440d46ebac117ee2258e17e05f8ab42ade1ee6e804c", "test/fixtures/axes-grid.arch"],
   ["5336af359d30144ea7f14a069b605773dab5615c8a72f5182a07dfd03d318ada", "test/fixtures/chain30.arch"], // #367, see test/byte-identity-baseline.ts
@@ -161,14 +173,14 @@ const BASELINE: [string, string][] = [
   ["3795021918eab02d38979618173a348100b1b7e0265d3a0308c8ee12dc4fb8dd", "test/fixtures/zones-wings.arch"],
   ["952eaf929d8902442dd0949e6eb4e47e96bd422839f97839d627ced86b92bfab", "test/walls-from-rooms/relational.arch"],
   ["45b54b55b05cb37250a074822e9a8663cbdb30943f9986042e2d9ff73de1e5fe", "test/walls-from-rooms/studio.arch"],
-  ["23caf64c7d304dae6be7a79b4cc5c9c760ca60d2c86558eb4978965013332519", "test/walls-from-rooms/two-bed.arch"], // H10: +6 ring scan, +0 overlap; RM1.4: snapping is now reported (this test plan's 850x2000 sofa and 450x600 basin under grid 100 raise W_GRID_SNAPPED; steps 629 -> 757, +128 = two DIAGNOSTIC_STEPS) (was c37b6759)
+  ["dce94a8b897ecfd9c2119f9102f3710f2d7ec91e1a53a9973aaf4f4d9810bf88", "test/walls-from-rooms/two-bed.arch"], // H10: +6 ring scan, +0 overlap; RM1.4: snapping is now reported (this test plan's 850x2000 sofa and 450x600 basin under grid 100 raise W_GRID_SNAPPED; steps 629 -> 757, +128 = two DIAGNOSTIC_STEPS) (was c37b6759); CO.1: +1 W_GRID_SNAPPED (a sizeless `against` piece on a grid), steps +64 = 1 x 64; see the header (was 23caf64c)
   [
     "e34ebf0bb5db581599908cb00a756d35ca6123585b36cc7bb31cebf1dbe5a6d7",
     "test/walls-from-rooms/widen-after-authored.arch",
   ],
   ["926ffff72612a4181cca6a69c423dd217536149ecb546237451555a9a420ca2b", "test/walls-from-rooms/widen.arch"],
   ["45b54b55b05cb37250a074822e9a8663cbdb30943f9986042e2d9ff73de1e5fe", "plans:studio-twin"],
-  ["23caf64c7d304dae6be7a79b4cc5c9c760ca60d2c86558eb4978965013332519", "plans:two-bed-twin"], // H10: +6 ring scan, +0 overlap; RM1.4: snapping is now reported (this test plan's 850x2000 sofa and 450x600 basin under grid 100 raise W_GRID_SNAPPED; steps 629 -> 757, +128 = two DIAGNOSTIC_STEPS) (was c37b6759)
+  ["dce94a8b897ecfd9c2119f9102f3710f2d7ec91e1a53a9973aaf4f4d9810bf88", "plans:two-bed-twin"], // H10: +6 ring scan, +0 overlap; RM1.4: snapping is now reported (this test plan's 850x2000 sofa and 450x600 basin under grid 100 raise W_GRID_SNAPPED; steps 629 -> 757, +128 = two DIAGNOSTIC_STEPS) (was c37b6759); CO.1: +1 W_GRID_SNAPPED (a sizeless `against` piece on a grid), steps +64 = 1 x 64; see the header (was 23caf64c)
   ["926ffff72612a4181cca6a69c423dd217536149ecb546237451555a9a420ca2b", "plans:widen-4000"],
   ["c2df8198835d6360cb2895b79d725c4f0516c5f3e118b3d239e9d489132d51cd", "plans:widen-4500"],
   ["4c78ce0c73bc8f9f1cef4703c25c6ad5a1164b13f51abaf6ad1a5a46f026e53e", "plans:courtyard"], // H10: +6 ring scan, +0 overlap

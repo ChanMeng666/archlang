@@ -19,6 +19,14 @@
  * `wall` statement's `thickness` or `id=`). Every node is laid out after its clauses are read, in
  * the old order, so even its key order is unchanged. A moved row is a finding to explain, never a
  * re-pin.
+ *
+ * CO.1 (RM-D56 condition 3) rewrote seven examples to write out the snapped size of a sizeless
+ * `against` piece, which now raises `W_GRID_SNAPPED`. Their surface digests did not move; their
+ * PARSE digests did, because the parse holds the new clauses. Each was re-measured after proof, by
+ * a scratch script running `astPayload`'s own body: the working text's parse, with each inserted
+ * clause taken out of its furniture node (`size`, `sizeSpan`, `sizeValueSpan`) and every offset
+ * mapped back across the inserted bytes, is byte for byte the parse pinned before (the PR states
+ * the method and its output).
  */
 
 import { readdirSync, readFileSync, statSync } from "node:fs";
@@ -105,7 +113,8 @@ const BASELINE: [string, string, string][] = [
   ],
   [
     "50c9cc316efda2bf16183e877d4be16443df160c9c13fc2a0210d62945c4bd67",
-    "d98a3db2d6b2b029300bc50a06e667e5d27b9b6184d0278ba9e88044cd186b83",
+    // CO.1: the parse holds the `size` clause the example now writes; without them, offsets mapped back, it is the parse pinned here (was d98a3db2)
+    "e466b6cbab0709528fea51543f3a63fe936e6b622221285f0c5432314d62a46a",
     "examples/courtyard-family.arch",
   ],
   [
@@ -125,7 +134,8 @@ const BASELINE: [string, string, string][] = [
   ],
   [
     "55ad2593f768d91a282b6cde6e8a06f6ee5dbd5701fe1858aa8905431432767a",
-    "c7dbe7c1132bb9291414972d245f55d5643bf8791d9b7eaf336827b43777ee49",
+    // CO.1: the parse holds the 2 `size` clauses the example now writes; without them, offsets mapped back, it is the parse pinned here (was c7dbe7c1)
+    "93f0b4a6783c3f4db608a63eed304f6c4a4d9bc750f86575da0122b4ab4deb1c",
     "examples/garden-house.arch",
   ],
   [
@@ -140,7 +150,8 @@ const BASELINE: [string, string, string][] = [
   ],
   [
     "36397208c3c6ea06f9bbc3efba156b33de2189455086852e290890f3c8784884",
-    "db3a5d1e8d2cb7dc1728521dda5b403208ae09e7c80227a8a63c4deccdf725b8",
+    // CO.1: the parse holds the 3 `size` clauses the example now writes; without them, offsets mapped back, it is the parse pinned here (was db3a5d1e)
+    "664292dca8bb269674094cf7e5f83be38addc1c7f81074b19e7bf444d2f9593e",
     "examples/hillside-villa.arch",
   ],
   [
@@ -195,7 +206,8 @@ const BASELINE: [string, string, string][] = [
   ],
   [
     "3eb89a03ff32698a0e11f9419f7d8bc6317ce66d2b660dd289d085cb4ecd36a4",
-    "939b54bdc5befd94cca913bd37bfd2e8114b3b9a8d540296c06006cfe7b1c7f1",
+    // CO.1: the parse holds the 5 `size` clauses the example now writes; without them, offsets mapped back, it is the parse pinned here (was 939b54bd)
+    "b03609154b4439003583696a97f6728d05ecdf87f269125deb6190c2bb949dd1",
     "examples/museum.arch",
   ],
   [
@@ -220,7 +232,8 @@ const BASELINE: [string, string, string][] = [
   ],
   [
     "f0f4a5aa4758c3f9feb14449b6a9be0b7afd020fb925619c6d83e66f7cb95f2d",
-    "32255022b18313851a2704790420742b9e587e2b2b9483884d621b57b9ef9921",
+    // CO.1: the parse holds the `size` clause the example now writes; without them, offsets mapped back, it is the parse pinned here (was 32255022)
+    "efcd35205789be7eabf3601ee5bb0710736afe32c21b585a76727e77cee6913e",
     "examples/remodel.arch",
   ],
   [
@@ -230,7 +243,8 @@ const BASELINE: [string, string, string][] = [
   ],
   [
     "54adc1b89e5472644f55bc3f33f9aa6fd1576b39b324eb6afd8370d8e3cb796f",
-    "03e2e2c2bab12a715ee987c378bb802f56e0aa03da9d1112e6a3244e041de0f5",
+    // CO.1: the parse holds the `size` clause the example now writes; without them, offsets mapped back, it is the parse pinned here (was 03e2e2c2)
+    "d73f013d20fa721c51394f80187840ef24307659d7353e84999c1c46e3c0f22f",
     "examples/showcase/garden-courtyard.arch",
   ],
   [
@@ -270,7 +284,8 @@ const BASELINE: [string, string, string][] = [
   ],
   [
     "fe871cbb3d60c1594495e38b1ad0dc30ce3f71904c27b85fa60f276d3aa182bd",
-    "a1f390c9f0acc2156992a615fbcba5d82d2abaaf561bb6aa949534ac5a2ea81d",
+    // CO.1: the parse holds the `size` clause the example now writes; without them, offsets mapped back, it is the parse pinned here (was a1f390c9)
+    "f38a754378d2d9630dc74064e8c99212938d9cf5c904c96b9dc6bede56a7af8e",
     "examples/two-bed.arch",
   ],
   [

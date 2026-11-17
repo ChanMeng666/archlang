@@ -173,7 +173,7 @@ const MAIN_SOURCES: [path: string, payload: string, source: string, undo: [branc
   [
     "examples/garden-house.arch",
     "a344c463254cecbd315383b8d58f6611a7e3ad5adfe6c97b02e5f64b09ec9d3c", // RM1.3a, see ./byte-identity-baseline.ts
-    "6ad0c1d88078c4b2df6b28da09d54edc0e2be45053bd26a558ae175e4e319c85", // source: RM1.4 writes the four snapped sizes (same length; was 7b0be7cc)
+    "52ea794853ab388d2497d18ad2d1efc6e38768c55ca2ba63eabc96033515c3b1", // source: RM1.4 writes the four snapped sizes (same length; was 7b0be7cc); CO.1 writes its snapped `against` sizes out, here and in the undo block: less those clauses the rebuilt source is main's, and the payload is unchanged (was 6ad0c1d8)
     [
       [
         "    furniture fridge       against wall w_e1 offset 3200 size 600x700 in r_kitchen\n    furniture counter      against wall w_e1 offset 2500 in r_kitchen",
@@ -195,7 +195,7 @@ const MAIN_SOURCES: [path: string, payload: string, source: string, undo: [branc
   [
     "examples/hillside-villa.arch",
     "454972020b0a9c632c4ebfe7bc36448c5ce277e50f47519e62a81eed4ec43d6d", // RM1.3a, see ./byte-identity-baseline.ts
-    "743e5cde36c04ef04320e40c555d8121664626102527ecf0b88485438c9e272b", // source: RM1.4 writes the 17 snapped values and its comment of one (same length; was 8aff5c59)
+    "44fdb87ebd3a403a9c3289db5a7cdf9250f7c683213dbe8159474a48197815c5", // source: RM1.4 writes the 17 snapped values and its comment of one (same length; was 8aff5c59); CO.1 writes its snapped `against` sizes out, here and in the undo block: less those clauses the rebuilt source is main's, and the payload is unchanged (was 743e5cde)
     [
       [
         "    furniture stove          against wall shell segment 1 offset 7400 in r_kitchen\n    furniture dishwasher     against wall shell segment 1 offset 6600 in r_kitchen\n    furniture fridge         against wall w_l1_band_e offset 4700 size 600x700 in r_kitchen",
@@ -319,7 +319,7 @@ const MAIN_SOURCES: [path: string, payload: string, source: string, undo: [branc
   [
     "examples/two-bed.arch",
     "773304f859e2ecbbb549d24b228cf74022fbfd7d8dfc18a7125ceb2db394edcb", // `centreline_at`, see ./byte-identity-baseline.ts
-    "b200791560ca27c8ed0c07b8ffd09c51f427f4b3d44ce5d1492c0280980765fc", // source: RM1.4 writes the two snapped sizes (same length; was 64900f55)
+    "a0afaf247acffa4956292c55837b1691fe220d874495daaf8e5a4f44c61d9caf", // source: RM1.4 writes the two snapped sizes (same length; was 64900f55); CO.1 writes its fridge's snapped `against` size out: less that clause the rebuilt source is main's, and the payload is unchanged (was b2007915)
     [
       [
         "  furniture stove        against wall exterior segment 3 offset 5300 in r_living",
