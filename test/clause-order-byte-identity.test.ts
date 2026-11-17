@@ -823,12 +823,23 @@ suite("clause order: a door's or window's kind word among its clauses is the kin
   }
 
   it("a kind-dependent clause check sees the kind wherever it is written", () => {
+    // The three door forms below are the same length and start at the same byte, so the fix's
+    // edit (span and text) must be the same edit: the whole statement, re-printed without `hinge`.
     const refusal = (body: string) =>
       compile(plan(body))
         .diagnostics.filter((d) => d.code === "E_DOOR_KIND_CLAUSE" || d.code === "E_WINDOW_KIND_CLAUSE")
-        .map((d) => [d.code, d.message, d.fixes?.map((f) => f.edits.map((e) => e.newText))]);
-    const sliding = refusal("door id=d sliding on bed.bottom at center width 900 hinge left");
+        .map((d) => ({
+          code: d.code,
+          message: d.message,
+          edits: (d.fixes ?? []).flatMap((f) => f.edits.map((e) => ({ span: e.span, newText: e.newText }))),
+        }));
+    const canonical = "door id=d sliding on bed.bottom at center width 900 hinge left";
+    const sliding = refusal(canonical);
     expect(sliding).toHaveLength(1);
+    expect(sliding[0]!.edits).toHaveLength(1);
+    const [edit] = sliding[0]!.edits;
+    expect(plan(canonical).slice(edit!.span.start, edit!.span.end)).toBe(canonical);
+    expect(edit!.newText).toBe("door id=d sliding on bed.bottom at center width 900");
     expect(refusal("door id=d on bed.bottom at center width 900 hinge left sliding")).toEqual(sliding);
     expect(refusal("door id=d on bed.bottom at center sliding width 900 hinge left")).toEqual(sliding);
     // A casement takes `hinge`; a window with no kind does not.
@@ -847,12 +858,58 @@ suite("clause order: a door's or window's kind word among its clauses is the kin
     expect(nodeOf(call, "window")).not.toContain("windowKind");
   });
 
-  it("a kind word on the line after an opening is its clause, as any clause word there is", () => {
-    // A statement ends where a word cannot continue it, never at a line break, so `hinge left` on
-    // the next line was already the door's clause; a kind word there is read the same way.
-    const src = plan("door id=d on bed.bottom at center width 900\n  sliding");
-    expect(parseErrors(src)).toEqual([]);
-    expect(nodeOf(src, "door")).toBe(nodeOf(plan("door id=d sliding on bed.bottom at center width 900"), "door"));
+  it("a kind word that starts a line is never a clause: it reads as on main", () => {
+    // Read as a clause only on the line of the token before it (review of #943): a kind word that
+    // starts a line begins the next statement, so `sliding door id=d2 …` after a door is no kind for
+    // that door. Main's reading, measured on 8f678bea for each of these: one `E_PARSE` "Unknown
+    // statement" on the word (with `hinged`'s hint), and the opening above it kindless. The oracle is
+    // the same source with a word that is no kind (`wombat`) in its place, which reads so on both.
+    const before = [
+      "door id=d1 on bed.bottom at center width 900",
+      "door id=d1 on bed.bottom at center width 900 hinge left",
+      "window id=w1 on bed.top at center width 1200",
+    ];
+    const after: [string, string][] = [
+      ...DOOR_KINDS.map((k): [string, string] => [k, `${k} door id=d2 on bed.left at center width 800`]),
+      ...WINDOW_KINDS.map((k): [string, string] => [k, `${k} window id=w2 on bed.right at center width 1200`]),
+      ["sliding", "sliding"],
+    ];
+    const said = (src: string, word: string) =>
+      compile(src).diagnostics.map((d) => [
+        d.code,
+        d.message.replace(word, "<w>"),
+        src.slice(d.span!.start, d.span!.end).replace(word, "<w>"),
+        d.hints ?? [],
+        d.fixes ?? [],
+      ]);
+    for (const first of before)
+      for (const [word, second] of after) {
+        const name = `${first} / ${second}`;
+        const src = plan(`${first}\n  ${second}`);
+        const other = plan(`${first}\n  ${second.replace(word, "wombat")}`);
+        const ds = compile(src).diagnostics;
+        expect(
+          ds.map((d) => `${d.code}: ${d.message}`),
+          name,
+        ).toEqual([`E_PARSE: Unknown statement "${word}"`]);
+        expect(src.slice(ds[0]!.span!.start, ds[0]!.span!.end), name).toBe(word);
+        // Everything but `hinged`'s own hint is as the unknown word's.
+        const unhinted = (x: unknown[][]) => x.map((d) => [d[0], d[1], d[2], d[4]]);
+        expect(unhinted(said(src, word)), name).toEqual(unhinted(said(other, "wombat")));
+        expect(ds[0]!.hints?.length ?? 0, name).toBe(word === "hinged" ? 1 : 0);
+        expect(compile(src).svg, name).toBe(compile(other).svg);
+        const kind = first.split(" ")[0]!;
+        expect(nodeOf(src, kind), name).toBe(nodeOf(plan(first), kind));
+      }
+  });
+
+  it("`hinged` starting the line after a door keeps EV.4's hint", () => {
+    const src = plan(
+      "door id=d1 on bed.bottom at center width 900\n  hinged door id=d2 on bed.left at center width 800",
+    );
+    const [d] = compile(src).diagnostics;
+    expect(d?.message).toBe(`Unknown statement "hinged"`);
+    expect(d?.hints?.[0]).toContain("`hinged` is a door kind, not a statement");
   });
 });
 
