@@ -109,6 +109,7 @@ import type {
 } from "./describe/types.js";
 import { roomAdjacency } from "./describe/adjacency.js";
 import { roomSummaries } from "./describe/rooms.js";
+import { exactGrossAreaMm2, recordGrossAllLevelsMm2, recordGrossAreaMm2 } from "./describe/exact-areas.js";
 import { doorSummaries, openingSummaries, windowSummaries } from "./describe/openings.js";
 import { furnitureSummaries } from "./describe/furniture.js";
 import { r2 } from "./describe/shared.js";
@@ -742,6 +743,8 @@ function summarizeStorey(
     // disagree by a rounding step. Spread, so a plan with no ground has no key at all.
     ...(outdoor.length > 0 ? { outdoor_area_m2: r2(outdoor.reduce((s, o) => s + o.area_m2, 0)) } : {}),
   };
+  // The exact figure behind `gross_internal_area_m2`, off the JSON: a brief's band is judged on it (RM9.1).
+  if (gia?.ok) recordGrossAreaMm2(totals, gia.mm2);
 
   // Declared zones. Membership ROLLS UP through nesting (`west` contains everything in
   // `west.galleries`), and each area is summed from the same rounded per-room number
@@ -1056,6 +1059,14 @@ function withAllLevelsGrossArea(
   for (const [k, v] of Object.entries(totals)) {
     out[k] = v;
     if (k === "gross_internal_area_m2" || k === "gross_internal_area_omitted") Object.assign(out, building);
+  }
+  // The exact figures behind the rounded ones, off the JSON (RM9.1): the storey's own, carried to
+  // the rebuilt object, and the building's, the storeys' exact sum.
+  const own = exactGrossAreaMm2(totals);
+  if (own !== undefined) recordGrossAreaMm2(out, own);
+  if (!missing) {
+    const exact = storeys.map((s) => exactGrossAreaMm2(s.t));
+    if (exact.every((x) => x !== undefined)) recordGrossAllLevelsMm2(out, exact.reduce((n, x) => n + x, 0));
   }
   return out as SceneSummary["totals"];
 }

@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- `validate --intent`, `score --brief` and `validateIntent()` judge an area band (`totalAreaM2`, `roomsInclude[].areaM2`, `grossInternalAreaM2`) on the exact floor area, so a total equal to a band edge no longer fails (card RM9.1). Five rooms of exactly 40.000 m² failed a `max` of 40 as "total 40.01 m² outside [0, 40]", because the band read `describe()`'s total, the sum of the rounded room areas. `describe()` is unchanged and still prints 40.01. Where the printed figure alone would contradict the verdict, the detail prints the exact one to 4 decimals.
+
 ### Changed
 
 - The step budget now charges a fix that re-prints a long statement on every storey. A door, window, opening or `dim` statement longer than 256 source bytes now spends `1 + length` steps each time its fix text is built (once per storey and once per `paper` pass), and so does a hinged door's flipped text and a `dim`'s swapped text, which are built whether or not a diagnostic fires. Before, the first build per storey was free. A component holding a very long such statement (tens of kilobytes) and placed by a few hundred `level`s now stops at `E_STEP_LIMIT` in about a second, where it ran for tens of seconds. Shorter statements spend exactly what they did, and every shipped example compiles to the same bytes and steps.
