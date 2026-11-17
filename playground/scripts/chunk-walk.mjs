@@ -2,8 +2,9 @@
  * The walk through the BUILT playground (`playground/dist/`) from a page's roots to everything they
  * import statically, and its gzip sizes (card PG5a, card EB.1). One copy, imported by both places
  * that measure it: the startup-chunks gate in `playground/e2e/preview3d.spec.ts`, and
- * `scripts/embed-path-size.mjs` (`npm run size:embed`), which prints the embed path against
- * `embedPathBudget` before a compiler-path PR is pushed. A second copy of the walk is how two
+ * `scripts/embed-path-size.mjs` (`npm run size:embed`), which prints the embed path, the compiler
+ * path and the first use's path against their budgets before a compiler-path PR is pushed (card
+ * EB.2 added the two index.html paths, `indexPaths`). A second copy of the walk is how two
  * numbers come to disagree, so neither place spells it out again.
  *
  * What a page file costs is everything it imports statically, not the file alone: a module's static
@@ -106,7 +107,32 @@ export function chunkWalk(read, exists) {
     const { scripts, preloads } = pageRoots("embed.html");
     return reach([...scripts, ...preloads]);
   };
-  return { pageRoots, resolveFrom, imports, staticImports, reach, gz, size, embedPath };
+  /**
+   * index.html's measured paths (card EB.2): the startup set (its module script and preloads,
+   * walked), the compiler path (`compilerPathBudget`: the startup set and the compiler chunk's
+   * walk) and the first use's path (`firstUsePathBudget`: that and the header actions' walk). The
+   * compiler and the actions are the chunks the entry imports dynamically as `compiler-*.js` and
+   * `actions-*.js` (main.ts `import("./compiler.js")`, `import("./actions.js")`), one each.
+   * @returns {{ compiler: string, actions: string, startup: string[], compilerPath: string[], firstUsePath: string[] }}
+   */
+  const indexPaths = () => {
+    const { scripts, preloads } = pageRoots("index.html");
+    const lazy = imports(/** @type {string} */ (scripts[0]), DYNAMIC);
+    /** @param {string} name */
+    const only = (name) => {
+      const found = lazy.filter((f) => new RegExp(`^assets/${name}-[\\w-]+\\.js$`).test(f));
+      if (found.length !== 1)
+        throw new Error(`chunk walk: index.html's entry imports ${found.length} ${name} chunks dynamically, not one`);
+      return /** @type {string} */ (found[0]);
+    };
+    const compiler = only("compiler");
+    const actions = only("actions");
+    const startup = reach([...scripts, ...preloads]);
+    const compilerPath = reach([...startup, compiler]);
+    const firstUsePath = reach([...compilerPath, actions]);
+    return { compiler, actions, startup, compilerPath, firstUsePath };
+  };
+  return { pageRoots, resolveFrom, imports, staticImports, reach, gz, size, embedPath, indexPaths };
 }
 
 /**

@@ -27,12 +27,18 @@
  * The page and the worker run the same function on the same compiler build, so a request gives
  * byte-identical results in both (playground/test/compile-worker.test.ts, e2e/editing.spec.ts).
  *
- * Its static imports are the compiler and nothing of the page's: a worker that imported the
+ * Its static imports are the compiler (and, for `lint`, the core's lazy chunk) and nothing of the
+ * page's: a worker that imported the
  * page's entry chunk would run the page's code, which needs a document, and fail
  * (e2e/preview3d.spec.ts, "startup chunks", walks this chunk's imports).
  */
 import type { CompileOptions, Diagnostic, DescribeOptions, LintOptions, PlanNode, Scene, SceneSummary } from "archlang";
-import { compile, describe, lint, THEMES } from "./compiler.js";
+import { compile, describe, THEMES } from "./compiler.js";
+// `lint` is the editor's alone (no compile, embed or view-mode render runs it), so it is not in the
+// compiler chunk (card EB.2, src/compile-path.ts): it comes from the core's lazy chunk, which the
+// header actions load on the page with the first use anyway (an HTTP-cache hit here). That chunk
+// imports the compiler chunk and nothing of the page's (e2e/preview3d.spec.ts, "startup chunks").
+import { lint } from "archlang";
 
 /** One render's request: the source and every setting that changes what the compiler returns. */
 export interface CompileRequest {
