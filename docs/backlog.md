@@ -2295,6 +2295,93 @@ first use's, so all three were re-taken down by their own rule, measured × 1.02
 thousand, to keep a glTF-Transform-sized leak tripping them: the coordinator's ruling and review),
 and `growthBudget` still met.
 
+## Review residue of the v3 night (PRs #936–#948, 2026-11-18)
+
+Non-blocking findings of that night's fresh-context reviews (the review-loop cap: residue becomes cards).
+Each names the PR whose review found it.
+
+### NR.1 · `finish` drops a gridded kitchen's fridge without a word (#941) — `todo`
+
+Since CO.1, a sizeless `against` piece on a grid warns, so `finish`'s never-worse gate refuses it and the
+piece is left out: `test/main-entrance-fixtures/n7-back-hall.arch` loses its 600 × 650 fridge on `grid 100`,
+with `unresolved` unchanged and a clean `lint`. One way: furnish writes the snapped `size`, or adds an
+`unresolved` note. **Gate:** that fixture's finished plan keeps a fridge or says why not.
+
+### NR.2 · `W_GRID_SNAPPED`'s hint for a sizeless piece names no fix (#941) — `todo`
+
+The non-zero branch reuses `noteSnap` (`src/ir/silent-accepts.ts`): "Write a multiple of 100 mm … to keep the
+value as written", but nothing was written. The fix is `size 600x700` (the snapped catalogue size). Also: when
+both sides snap to 0, the message names only the depth. **Gate:** the hint quotes a pasteable `size` clause.
+
+### NR.3 · CO.1 leftovers (#941) — `todo`
+
+`src/expr.ts` near line 698 still says the largest compiling example spends 5,294 steps (now 5,306), and the
+CHANGELOG omits the starter's `tv_unit` → `bookshelf` change (CLI output).
+
+### NR.4 · EV.8 leftovers (#943) — `todo`
+
+(1) `spec.llm.md` does not state the same-line rule for a kind word after the clauses. (2) With bare-CR line
+ends, a next-line kind word is still absorbed (the lexer counts only `\n`), untested. (3) The GBNF accepts a
+kind word on the next line (pinned as an over-acceptance). (4) LSP completion and `complete` do not offer a
+kind word after `width`.
+
+### NR.5 · RM9.1 leftovers (#942) — `todo`
+
+(1) `exactRoomMm2`'s guard rounds `Math.round(mm2) / 1e6` but `describe()` prints `r2(mm2 / 1e6)`: a circle of
+radius 9007 mm prints 254.86 while the guard computes 254.87, so it falls back to printed figures and drags
+the total with it; guard on `r2(mm2 / 1_000_000)`. (2) A rectangle's area is `w * h` in `describe()` but a
+shoelace over its ring in `intent.ts`; on a 0.1 mm grid they can round to different whole mm², so the exact
+area depends on `at` by 1 mm². (3) No test of an L-shaped or counter-clockwise `floor_polygon`. (4) A summary
+without `floor_polygon` now throws; `?? []` would route it to the printed fallback. (5) `eval/fidelity.ts`
+still judges areas on printed figures. **Gate:** each item fixed with a test, or stated as a limit.
+
+### NR.6 · AF1 leftovers (#944) — `todo`
+
+(1) `E_DUP_ID` raised inside an imported component's body carries no `file` or `instance` (its span points
+past the importer's end). (2) The section, `walls from rooms` and `open between` same-file gates have no
+cross-file test. (3) A future dataset regeneration would include `related` in its diagnostic rows (decide
+before regenerating; RM-D47).
+
+### NR.7 · AF6 leftovers (#946) — `todo`
+
+(1) `repair` and every fix producer still print an untouched literal with more than three decimals at 0.001
+when they rewrite its statement. (2) The keep texts (`src/keep.ts`, `src/impact.ts`) say "as `arch fmt` prints
+it" but use the 3-decimal printer. (3) The playground's Format button says "Already formatted" on a plan it
+refused.
+
+### NR.8 · A plan saved with a byte-order mark does not parse (#946) — `todo`
+
+`validate` on a BOM-prefixed plan gives `E_PARSE: Unexpected character "\uFEFF"` (seen in the MCP hash-parity
+test). Editors on Windows write one; an agent reading such a file gets a parse error on line 1. One way: the
+lexer skips a leading U+FEFF (spans stay byte offsets of the original). **Gate:** a BOM plan compiles to the
+same SVG as the plan without it.
+
+### NR.9 · Budget-record leftovers (#947) — `todo`
+
+(1) `compilerPathBudgetWhy` still says "under firstUsePathBudget, which stands", false since #947 re-took it
+down. (2) `growthBudget` (458,980 B baseline) guards nothing since RM0.7 (the compiler path is ~124 KB under
+it): re-baseline it by its rule or retire it. (3) `docs/agents/iron-laws.md`'s RM-D57 line could point at
+`npm run size:embed` (#937 review).
+
+### NR.10 · Moving the twelve `E_INTENT_*` rows out of the compiler chunk's fix table (#948) — `todo`
+
+They are never compile diagnostics; dropping them from `src/error-catalog-fixes.ts`'s compile-path copy
+saves about 633 B gzip. Needs the `test/explain.test.ts` pin (its keys equal every catalogue code) reworked.
+Only worth doing when headroom is short again.
+
+### NR.11 · Test narrative that will rot (#936) — `todo`
+
+`test/dim-swap-reprint.test.ts`'s header quotes wall-clock and RSS figures, and `src/elements/dim.ts` cites
+`(backlog RR.24)`, which will be archived. Replace with what the test pins.
+
+### NR.12 · The primary checkout's dependencies lag `main` (night of 2026-11-18) — `todo`
+
+Worktrees junction `node_modules` to the primary checkout, whose copy had `@modelcontextprotocol/ext-apps`
+1.7.5 (main pins 2.1.0) and a root `vite` 6 (the playground needs 8, so `npm run size:embed` fails in a
+worktree unless `playground/node_modules` is junctioned too). The mcp-worker typecheck and `size:embed` were
+proven by CI only. One way: `npm ci` in the primary when no peer session uses it, and a line in
+`docs/agents/orchestration.md` about `playground/node_modules`.
+
 ## Test-programme findings (promo-credit programme, 2026-11-16)
 
 From `docs/plans/product-roadmap/2026-11-test-findings.md` (§ 3, § 4, § 5). RR.8 (2), the
