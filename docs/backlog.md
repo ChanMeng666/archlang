@@ -246,6 +246,20 @@ directories left by parallel renders) is a hypothesis: a probe with a held file 
 non-empty directory and a thrown error, not an empty one. If empty `archlang3d-replay-*`
 directories still appear in the temp folder after the fix, investigate again.
 
+### 3.5 · File-URL path guard: residue of the #915 fix — `todo`
+
+Non-blockers from the review of #919 (`test/file-url-paths.test.ts`): (1) the guard misses realistic
+variants: a three-slash `file:` template, `"file://" + path`, a destructured or stored
+`new URL(import.meta.url)` whose `pathname` is read later or on the next line (the scan is per
+line), `import.meta.url.replace("file://", "")`/`.slice(7)`, and `.tsx`/`.cts`/`.jsx` files; no
+tracked file has one today; (2) `check:quick` selects the guard only for `scripts/` changes, and only
+because of its `toContain("scripts/check-quick.mjs")` sanity literal (`scannedTrees()`,
+`scripts/gate-select.mjs`), so the pattern returning in `dataset/` or `packages/*/scripts/` is
+caught by CI, not locally; (3) `dataset/generate.ts` keeps its `endsWith("generate.ts")` fallback,
+which also matches `eval/g1/generate.ts` if that script ever imports it; the `realpathSync` idiom in
+`scripts/risk-tier.mjs` is the narrower replacement for all three entry-point checks; (4) no run of
+`check:quick` from a checkout under a path with spaces has been recorded.
+
 ## Found while redrawing the showcase
 
 Five things the twelve new examples ran into. None is a regression and none blocked an example from
