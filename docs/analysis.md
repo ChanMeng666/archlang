@@ -101,6 +101,7 @@ matter — run it yourself for the full object):
 | `totals.gross_internal_area_m2` | **gross internal area** of THIS storey in m², 2 dp: the floor inside the inner faces of the storey's `exterior` walls (authored, or the ring `walls from rooms` derives), joined as the drawing joins them with openings left uncut. It counts the partitions and any floor no room covers, and excludes the shell and a courtyard ring's court; a court bounded only by partitions is counted as floor. Separate buildings on one storey sum. Exact from each loop's closed-form area, never a bbox. Like every total here the top-level figure is the LOWEST storey's, and each `levels[i].totals` carries its own storey's. **Absent** when the storey has none, and then `totals.gross_internal_area_omitted` names why: `no-closed-exterior-ring`, `exterior-ring-subdivided` (an exterior wall divides the shell), `nested-exterior-rings`, `too-much-work` or `inconsistent`. Every resolving summary carries exactly one of the two |
 | `totals.gross_internal_area_leaves_out` | what that figure leaves out, present only when it does: the ids of the rooms with floor outside every exterior ring, measured from the room's shape, on a storey where a ring closes and an open shell stands beside it or off it (the shell `W_EXTERIOR_RING_OPEN` reads, slits included). A closed porch built off an open shell gives the porch's figure, and this names the rooms behind the gap. A ring over part of a room puts that part in the figure and lists the room, since the rest is left out; the list says what is short, not how much. A closed core standing inside a room encloses the core, so the room is listed. A room with no `uses` whose label or id ends in a word for a place outdoors is not listed. Absent on every other storey, and past that reading's counted cap. `totals.gross_internal_area_all_levels_leaves_out` is the same for the building's figure, as `[{ level?, rooms }]`, top level only |
 | `totals.gross_internal_area_all_levels_m2` | the BUILDING's gross internal area: the sum of every storey's figure (equal to it on a single-storey plan); top-level `totals` only, never in `levels[i]` or a summary narrowed with `--level`. This, not the centreline `floor_area_m2`, is the "about N m²" a brief means, and the figure an intent's `grossInternalAreaM2` binds to on a plan with `level` blocks. **Absent** when any storey's figure is, and then `totals.gross_internal_area_all_levels_omitted` is `{ level?, reason }` for the first such storey (`level` only on a plan with `level` blocks) |
+| `totals.floor_area_all_levels_m2` | the BUILDING's floor area: every storey's `floor_area_m2` summed and rounded (the sum of the printed storey figures, like every display total), the "m² total" a multi-storey caption states. **Present only on a plan of two or more storeys**, top-level `totals` only, never in `levels[i]` or a summary narrowed with `--level`; a single-storey plan's building is its `floor_area_m2`. It comes after the building's gross internal area keys (`gross_internal_area_all_levels_*`), so every existing key keeps its place |
 | `totals.outdoor_area_m2` | total ground area in m² — **present only when the storey declares an `outdoor` surface**. Deliberately a **sibling** of `floor_area_m2` rather than part of it: floor area is floor area, and a terrace is not it. A consumer that wants plot coverage adds the two, having decided that is what it means |
 | `accTitle` / `accDescr` | the plan's declared [accessible metadata](language-reference.md#accessible-metadata-acctitle-accdescr) — **present only when the source declares them** |
 | `axes` | the plan's declared [positioning axes](language-reference.md#positioning-axes-定位轴线) — **present only when the source declares an `axes` block** |
@@ -610,11 +611,13 @@ storey. So `describe()` keeps its contract and appends one:
 - **the building's total** is stated wherever a total is read as the whole plan's. On two or
   more storeys the top-level `totals.floor_area_all_levels_m2` is every storey's
   `floor_area_m2` summed (the rounded storey figures, like every display total), and every
-  caption leads with it and names its storey: `"Two-storey house" — a 2-level floor plan,
-  7 rooms, 112 m² total; level 1 (3 rooms, 56 m²): Hall (15.4 m²), …`. Each page's accessible
-  `<desc>` is its storey's caption, and the `archlang describe` text header reads
-  `Two-storey house — 2 levels, 7 room(s), 112 m²; level 1: 3 room(s), 56 m²`, with
-  `--level 2` naming level 2. A plan with one `level` block is one storey: nothing is added.
+  caption leads with it, then names its storey and puts every one of the storey's figures in
+  that storey's clause: `"Two-storey house" — a 2-level floor plan, 7 rooms, 112 m² total;
+  level 1 "Ground floor" (3 rooms, 56 m², 3 doors, 2 windows; entrance via front): Hall
+  (15.4 m²), …`. Each page's accessible `<desc>` is its storey's caption, and the
+  `archlang describe` text header reads `Two-storey house — 2 levels, 7 room(s), 112 m²;
+  level 1 "Ground floor": 3 room(s), 56 m²`, with `--level 2` naming level 2. A plan with one
+  `level` block is one storey: nothing is added.
 
 ```json
 "levels": [

@@ -438,12 +438,13 @@ export function cmdDescribe(args: Args, io: CliIo): number {
       const levels = full.levels ?? [];
       const roomsArea = (rooms: number, m2: number): string => `${rooms} room(s), ${m2} m²`;
       // RM9.2: on two or more storeys the building's figures lead, then the storey's, by level.
+      const inView = levels.find((l) => l.level === (args.level ?? levels[0]?.level));
       const head =
-        levels.length > 1
+        levels.length > 1 && inView
           ? `${summary.plan} — ${levels.length} levels, ${roomsArea(
               levels.reduce((n, l) => n + l.totals.rooms, 0),
               full.totals.floor_area_all_levels_m2!,
-            )}; level ${args.level ?? levels[0]!.level}: `
+            )}; level ${inView.level}${inView.name !== undefined ? ` "${inView.name}"` : ""}: `
           : `${summary.plan}${storey} — `;
       const lines = [
         `${head}${roomsArea(summary.totals.rooms, summary.totals.floor_area_m2)}${filtered ? ` (showing ${summary.rooms.length})` : ""}`,

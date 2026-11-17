@@ -184,7 +184,7 @@ export function compileUncached(source: string, opts: CompileOptions, work?: Com
       // function of its storey alone, so it is never offered to the Scene memo.
       const captions =
         opts.accessible && resolved.ir.accDescr === undefined && resolved.levels.length > 1
-          ? levelCaptions(resolved.levels.map((l) => ({ level: l.level, ir: drawnView(l.ir) })))
+          ? levelCaptions(resolved.levels.map((l) => ({ level: l.level, name: l.name, ir: drawnView(l.ir) })))
           : undefined;
       pages = resolved.levels.map((l, i) => {
         const s = drawScene(l.ir, opts, runtime, work, arrivals?.get(l.level) ?? [], captions?.[i]);

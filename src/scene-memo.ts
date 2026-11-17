@@ -31,7 +31,9 @@
  * is drawn, by `compile()` and by the rule alike.
  *
  * The memo assumes `toScene` is a pure function of its key; a test that swaps a drawing module by
- * mock must `clearCache()` around the swap.
+ * mock must `clearCache()` around the swap. The one Scene that is not: an accessible page of a plan
+ * of two or more storeys, whose `<desc>` states the whole building (RM9.2, `levelCaptions`), so the
+ * pipeline never offers one.
  */
 
 import type { ResolvedPlan } from "./ir.js";

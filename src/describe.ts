@@ -322,6 +322,8 @@ interface CaptionInput {
 /** The building a storey's caption leads with: {@link storeyCaptions}. */
 interface CaptionBuilding {
   level: number;
+  /** The storey's name (`level 1 "Ground floor"`), when the source gave one. */
+  name?: string;
   levels: number;
   rooms: number;
   floor_area_m2: number;
@@ -340,40 +342,43 @@ const roomsText = (n: number): string => `${n} room${n === 1 ? "" : "s"}`;
  * sentence stays bounded. Shared by {@link describe} (`summary.caption`) and the
  * accessible-SVG `<desc>` so the two never diverge.
  *
- * On a plan of two or more storeys the total is the building's and the storey's own figures are
- * labelled with its level (RM9.2): `"House" — a 2-level floor plan, 7 rooms, 112 m² total;
- * level 1 (3 rooms, 56 m²): Hall (15.4 m²), …`. Everything after the room list is the storey's.
+ * On a plan of two or more storeys the total is the building's, and every figure of the storey
+ * sits inside its level's clause, before its room list (RM9.2): `"House" — a 2-level floor plan,
+ * 7 rooms, 112 m² total; level 1 "Ground" (3 rooms, 56 m², 3 doors, 2 windows; entrance via
+ * front): Hall (15.4 m²), …`. Nothing after the opening clause is the building's.
  */
 export function buildCaption(s: CaptionInput): string {
   const named = s.plan ? `"${s.plan}" — a` : "A";
-  const b = s.building;
-  let out = b
-    ? `${named} ${b.levels}-level floor plan, ${roomsText(b.rooms)}, ${fmt2(b.floor_area_m2)} m² total; level ${b.level} (${roomsText(s.totals.rooms)}, ${fmt2(s.totals.floor_area_m2)} m²)`
-    : `${named} ${s.totals.rooms}-room floor plan, ${fmt2(s.totals.floor_area_m2)} m² total`;
-
+  let list = "";
   if (s.rooms.length > 0) {
     const shown = s.rooms.slice(0, CAPTION_ROOM_CAP);
     const parts = shown.map((r) => `${r.label ?? r.id} (${fmt2(r.area_m2)} m²)`);
     const more = s.rooms.length - shown.length;
-    out += `: ${parts.join(", ")}${more > 0 ? `, and ${more} more` : ""}`;
+    list = `: ${parts.join(", ")}${more > 0 ? `, and ${more} more` : ""}`;
   }
 
   const counts: string[] = [];
   if (s.totals.doors > 0) counts.push(`${s.totals.doors} door${s.totals.doors === 1 ? "" : "s"}`);
   if (s.totals.windows > 0) counts.push(`${s.totals.windows} window${s.totals.windows === 1 ? "" : "s"}`);
-  if (counts.length > 0) out += `; ${counts.join(", ")}`;
 
-  if (s.entrances.length > 0) {
-    const sep = counts.length > 0 ? ", " : "; ";
-    if (s.entrances.length === 1) {
-      out += `${sep}entrance via ${s.entrances[0]}`;
-    } else {
-      const first = s.entrances.slice(0, 2);
-      const extra = s.entrances.length - first.length;
-      out += `${sep}entrances via ${first.join(", ")}${extra > 0 ? `, and ${extra} more` : ""}`;
-    }
+  let entrance = "";
+  if (s.entrances.length === 1) entrance = `entrance via ${s.entrances[0]}`;
+  else if (s.entrances.length > 1) {
+    const first = s.entrances.slice(0, 2);
+    const extra = s.entrances.length - first.length;
+    entrance = `entrances via ${first.join(", ")}${extra > 0 ? `, and ${extra} more` : ""}`;
   }
 
+  const b = s.building;
+  if (b) {
+    const facts = [roomsText(s.totals.rooms), `${fmt2(s.totals.floor_area_m2)} m²`, ...counts].join(", ");
+    const level = `level ${b.level}${b.name !== undefined ? ` "${b.name}"` : ""}`;
+    return `${named} ${b.levels}-level floor plan, ${roomsText(b.rooms)}, ${fmt2(b.floor_area_m2)} m² total; ${level} (${facts}${entrance ? `; ${entrance}` : ""})${list}.`;
+  }
+
+  let out = `${named} ${s.totals.rooms}-room floor plan, ${fmt2(s.totals.floor_area_m2)} m² total${list}`;
+  if (counts.length > 0) out += `; ${counts.join(", ")}`;
+  if (entrance) out += `${counts.length > 0 ? ", " : "; "}${entrance}`;
   return `${out}.`;
 }
 
@@ -393,9 +398,12 @@ export function captionForPlan(ir: ResolvedPlan, tol: number = DEFAULT_TOL): str
  * pages' `<desc>` (the {@link compile} path): what `describe()` writes on each `levels[i]`, with
  * the building's figures first (RM9.2). One storey summary each, as {@link captionForPlan} runs.
  */
-export function levelCaptions(levels: readonly { level: number; ir: ResolvedPlan }[], tol = DEFAULT_TOL): string[] {
+export function levelCaptions(
+  levels: readonly { level: number; name?: string; ir: ResolvedPlan }[],
+  tol = DEFAULT_TOL,
+): string[] {
   return storeyCaptions(
-    levels.map((l) => ({ level: l.level, s: summarize(l.ir, tol, [], [], false, undefined, false) })),
+    levels.map((l) => ({ level: l.level, name: l.name, s: summarize(l.ir, tol, [], [], false, undefined, false) })),
   );
 }
 
@@ -410,20 +418,20 @@ const buildingFloorArea = (storeys: readonly CaptionSource[]): number =>
   r2(storeys.reduce((n, s) => n + s.totals.floor_area_m2, 0));
 
 /** Each storey's {@link buildCaption}, led by the building's figures. */
-function storeyCaptions(storeys: readonly { level: number; s: CaptionSource }[]): string[] {
+function storeyCaptions(storeys: readonly { level: number; name?: string; s: CaptionSource }[]): string[] {
   const all = storeys.map((x) => x.s);
   const building = {
     levels: storeys.length,
     rooms: all.reduce((n, s) => n + s.totals.rooms, 0),
     floor_area_m2: buildingFloorArea(all),
   };
-  return storeys.map(({ level, s }) =>
+  return storeys.map(({ level, name, s }) =>
     buildCaption({
       plan: s.plan,
       rooms: s.rooms,
       totals: s.totals,
       entrances: s.access.entrances,
-      building: { ...building, level },
+      building: { ...building, level, ...(name !== undefined ? { name } : {}) },
     }),
   );
 }
@@ -1049,7 +1057,7 @@ function summarizeResolved(
   // repeats the lowest storey's, as every top-level fact does. Assigned in place, so the key keeps
   // its position.
   if (perLevel && perLevel.length > 1) {
-    const caps = storeyCaptions(perLevel.map((l) => ({ level: l.level, s: l })));
+    const caps = storeyCaptions(perLevel.map((l) => ({ level: l.level, name: l.name, s: l })));
     perLevel.forEach((l, i) => {
       l.caption = caps[i]!;
     });

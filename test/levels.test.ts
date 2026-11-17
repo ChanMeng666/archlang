@@ -316,11 +316,35 @@ suite("v1.21 levels — describe()/lint() per storey", () => {
     expect(upper.caption).toContain("Bedroom 1");
   });
 
-  it("RM9.2: on two storeys the caption, the pages' <desc> and the text header state the building's total", async () => {
-    // Two 12 m² storeys: the building is 24 m², and each storey's own figures carry its level.
-    const s = describePlan(TWO_LEVELS);
-    expect(s.totals.floor_area_m2).toBe(12);
-    expect(s.totals.floor_area_all_levels_m2).toBe(24);
+  it("RM9.2: on three storeys the caption, every page's <desc> and the text header state the building's total", async () => {
+    // Three storeys with different room counts, areas, openings and names (24 + 12 + 18 m²), so a
+    // figure taken from the wrong storey, or one storey's repeated, cannot pass.
+    const wall = "wall id=s exterior thickness 200 { (0,0) (6000,0) (6000,4000) (0,4000) close }";
+    const THREE = `plan "P" {
+  units mm
+  level 1 "Ground" {
+    ${wall}
+    room id=a at (0,0) size 3000x4000 label "Hall"
+    room id=b at (3000,0) size 3000x4000 label "Living"
+    door id=front on s at 1500 width 900
+    window id=w1 on s at 4500 width 1200
+  }
+  level 2 {
+    ${wall}
+    room id=c at (0,0) size 6000x2000 label "Studio"
+  }
+  level 3 "Attic" {
+    ${wall}
+    room id=d at (0,0) size 2000x3000 label "Store"
+    room id=e at (2000,0) size 2000x3000 label "Den"
+    room id=f at (4000,0) size 2000x3000 label "Nook"
+    window id=w3 on s at 1000 width 900
+    window id=w4 on s at 5000 width 900
+  }
+}`;
+    const s = describePlan(THREE);
+    expect(s.totals.floor_area_m2).toBe(24);
+    expect(s.totals.floor_area_all_levels_m2).toBe(54);
     // The key follows the building's gross internal area, and is only on the whole-plan totals.
     expect(Object.keys(s.totals).slice(3, 7)).toEqual([
       "floor_area_m2",
@@ -329,37 +353,49 @@ suite("v1.21 levels — describe()/lint() per storey", () => {
       "floor_area_all_levels_m2",
     ]);
     for (const l of s.levels!) expect(l.totals).not.toHaveProperty("floor_area_all_levels_m2");
-    const head = `"P" — a 2-level floor plan, 2 rooms, 24 m² total`;
+    // Every figure of a storey (rooms, area, doors, windows, entrance) is inside its level's clause.
+    const head = `"P" — a 3-level floor plan, 6 rooms, 54 m² total`;
     expect(s.levels!.map((l) => l.caption)).toEqual([
-      `${head}; level 1 (1 room, 12 m²): Down (12 m²).`,
-      `${head}; level 2 (1 room, 12 m²): Up (12 m²).`,
+      `${head}; level 1 "Ground" (2 rooms, 24 m², 1 door, 1 window; entrance via front): Hall (12 m²), Living (12 m²).`,
+      `${head}; level 2 (1 room, 12 m²): Studio (12 m²).`,
+      `${head}; level 3 "Attic" (3 rooms, 18 m², 2 windows): Store (6 m²), Den (6 m²), Nook (6 m²).`,
     ]);
     expect(s.caption).toBe(s.levels![0]!.caption);
     // Each page's accessible <desc> is that storey's caption; `svg` is page 1.
-    const c = compile(TWO_LEVELS, { noCache: true, accessible: true });
+    const c = compile(THREE, { noCache: true, accessible: true });
     const desc = (svg: string) => svg.slice(svg.indexOf('<desc id="arch-desc">') + 21, svg.indexOf("</desc>"));
     expect(c.pages!.map((p) => desc(p.svg))).toEqual(s.levels!.map((l) => l.caption.replaceAll('"', "&quot;")));
     expect(desc(c.svg)).toBe(desc(c.pages![0]!.svg));
-    // `arch describe`: the building first, then the storey in view.
-    const r = await runArch(["describe", "-"], { input: TWO_LEVELS });
-    expect(r.stdout.split("\n")[0]).toBe("P — 2 levels, 2 room(s), 24 m²; level 1: 1 room(s), 12 m²");
-    const up = await runArch(["describe", "-", "--level", "2"], { input: TWO_LEVELS });
-    expect(up.stdout.split("\n")[0]).toBe("P — 2 levels, 2 room(s), 24 m²; level 2: 1 room(s), 12 m² (showing 1)");
+    // `arch describe`: the building first, then the storey in view, by its number and name.
+    const building = "P — 3 levels, 6 room(s), 54 m²";
+    expect((await runArch(["describe", "-"], { input: THREE })).stdout.split("\n")[0]).toBe(
+      `${building}; level 1 "Ground": 2 room(s), 24 m²`,
+    );
+    const at = async (n: number) =>
+      (await runArch(["describe", "-", "--level", String(n)], { input: THREE })).stdout.split("\n")[0];
+    expect(await at(2)).toBe(`${building}; level 2: 1 room(s), 12 m² (showing 1)`);
+    expect(await at(3)).toBe(`${building}; level 3 "Attic": 3 room(s), 18 m² (showing 3)`);
   });
 
   it("RM9.2: a single-storey plan's caption, <desc>, totals and header are as before", async () => {
-    const one = `plan "P" { ${shell("Only")} }`;
+    const one =
+      `plan "P" { ${shell("Only")}\n  door id=front on w at 1000 width 900\n  window id=w1 on w at 3000 width 900 }`.replace(
+        "wall exterior",
+        "wall id=w exterior",
+      );
     const s = describePlan(one);
-    expect(s.caption).toBe(`"P" — a 1-room floor plan, 12 m² total: Only (12 m²).`);
+    expect(s.caption).toBe(
+      `"P" — a 1-room floor plan, 12 m² total: Only (12 m²); 1 door, 1 window, entrance via front.`,
+    );
     expect(s.totals).not.toHaveProperty("floor_area_all_levels_m2");
     expect(compile(one, { noCache: true, accessible: true }).svg).toContain(
-      `<desc id="arch-desc">&quot;P&quot; — a 1-room floor plan, 12 m² total: Only (12 m²).</desc>`,
+      `<desc id="arch-desc">&quot;P&quot; — a 1-room floor plan, 12 m² total: Only (12 m²); 1 door, 1 window, entrance via front.</desc>`,
     );
     expect((await runArch(["describe", "-"], { input: one })).stdout.split("\n")[0]).toBe("P — 1 room(s), 12 m²");
     // One `level` block is one storey: its building is it, so nothing is added either.
-    const lone = `plan "P" { level 1 { ${shell("Only")} } }`;
+    const lone = `plan "P" { level 1 "Only" { ${shell("Only")} } }`;
     const l = describePlan(lone);
-    expect(l.caption).toBe(s.caption);
+    expect(l.caption).toBe(`"P" — a 1-room floor plan, 12 m² total: Only (12 m²).`);
     expect(l.totals).not.toHaveProperty("floor_area_all_levels_m2");
   });
 

@@ -765,15 +765,6 @@ export interface SceneSummary {
     windows: number;
     floor_area_m2: number;
     /**
-     * The BUILDING's floor area in m², 2 dp: every storey's {@link floor_area_m2} summed, lowest
-     * first, and rounded (RM9.2), the "m² total" the caption states. It follows the building's
-     * gross internal area keys, so the storey's figures keep their places. Present only on a whole-plan
-     * summary of two or more storeys, top-level `totals` only: absent from `levels[i]`, from a
-     * summary narrowed with `describe --level`, and on a single-storey plan (whose building is
-     * its `floor_area_m2`).
-     */
-    floor_area_all_levels_m2?: number;
-    /**
      * GROSS INTERNAL AREA in m², 2 dp: the floor enclosed by the inner faces of the storey's
      * `exterior` walls (authored, or the ring `walls from rooms` derives), joined as the drawing
      * joins them, before any opening is cut. Exact from the shape: each loop's closed-form
@@ -832,6 +823,15 @@ export interface SceneSummary {
      * (absent on a plan with no `level` blocks). Top-level `totals` only, as that figure is.
      */
     gross_internal_area_all_levels_leaves_out?: Array<{ level?: number; rooms: string[] }>;
+    /**
+     * The BUILDING's floor area in m², 2 dp: every storey's {@link floor_area_m2} summed, lowest
+     * first, and rounded (RM9.2), the "m² total" the caption states. It follows the building's
+     * gross internal area keys, so the storey's figures keep their places. Present only on a whole-plan
+     * summary of two or more storeys, top-level `totals` only: absent from `levels[i]`, from a
+     * summary narrowed with `describe --level`, and on a single-storey plan (whose building is
+     * its `floor_area_m2`).
+     */
+    floor_area_all_levels_m2?: number;
     /**
      * Sum of the rooms' {@link RoomSummary.net_area_m2}, rounded to 2 decimals — summed from
      * the same rounded per-room figures, the way `floor_area_m2` is, so the total and the
