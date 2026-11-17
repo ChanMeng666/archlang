@@ -770,7 +770,7 @@ programme's gate runs; not reproduced on purpose here.
 
 ### M.8 · The source formatter is lossy past three decimals, and silent when it refuses — `todo`
 
-**Carried by** `docs/plans/product-roadmap/cards.md` track 10, AF6 (2026-11-18).
+**Carded as** AF6 (`docs/plans/product-roadmap/cards.md` track 10, 2026-11-18).
 
 `format()` prints every literal through `fmt3`, so precision beyond 0.001 mm is dropped and a
 `.0005` rounds by the binary value. Re-run: `room id=a at (0.0004,1.0005) …` formats to
@@ -821,7 +821,7 @@ imported outside their modules (grep re-run).
 
 ### M.15 · Parser recovery and resource-cap follow-ups — `todo`
 
-**Carried by** `docs/plans/product-roadmap/cards.md` track 10, AF1 (the `relatedSpans` bullet only) (2026-11-18).
+**Carded as** AF1, the `relatedSpans` bullet only (`docs/plans/product-roadmap/cards.md` track 10, 2026-11-18).
 
 - `relatedSpans` (the "plan was closed here" note) reach only `arch compile`'s text output, not
   `--json` or the LSP. Re-run: the `lint --json` diagnostic has no related span.
@@ -2324,7 +2324,7 @@ the `hinged` hint (EV.4) kept for a kind written as its own statement.
 
 ### EV.5 · A refused opening offers no move (design first) — `todo`
 
-**Carried by** `docs/plans/product-roadmap/cards.md` track 10, AF9 (2026-11-18).
+**Carded as** AF9 (`docs/plans/product-roadmap/cards.md` track 10, 2026-11-18).
 
 Six of EV.1's seven compile-error losses are opening-placement refusals (`refused, not moved`, a
 window on a partition edge, a parallel edge with no offset; ADR 0028 § 5). They return no fix. L1 (`eval/l1.ts`) applies only the machine-applicable tier, so

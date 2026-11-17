@@ -57,7 +57,7 @@ No builds and no installs ran on the clones. The probes below ran against the CL
 - **Not borrowable.** Both languages benefit from a vast training corpus. Hejlsberg: "New
   languages are actually disadvantaged."
 
-**ArchLang already goes further than either on the supported half**:
+**ArchLang already has most of the supported half**:
 - catalogued codes with byte spans;
 - rustc-style applicability tiers and an atomic fix applier (ADR 0011);
 - a fix loop that rolls back a pass that makes things worse;
@@ -66,8 +66,9 @@ No builds and no installs ran on the clones. The probes below ran against the CL
 So **what is worth borrowing is the information density of the diagnostics and the
 change-management machinery**, not a type system or a borrow checker.
 
-**ArchLang's bottleneck is semantic, not syntactic.** Every eval brief compiles, but only 1–5 of 26
-come back lint-clean (§5). The literature says the levers for that layer are relational defaults,
+**ArchLang's bottleneck is semantic, not syntactic.** On the 26-brief eval fixture, live runs
+compile 13–22 of 26 and come back lint-clean on 0–6 of 26 (§5), and most of the compile errors
+that remain are semantic refusals of an opening, not syntax (EV.1: six of seven). The literature says the levers for that layer are relational defaults,
 precise actionable diagnostics and worked examples. Grammar-constrained decoding is not one of them
 (§4). The cards are therefore ordered by expected effect on soundness and intent, not by
 resemblance to TypeScript or Rust.
@@ -160,12 +161,12 @@ essays, vendor claims or a single workshop paper.
 | P2 | **An external deterministic checker beats self-critique** | Huang et al., ICLR 2024, https://arxiv.org/abs/2310.01798. Olausson et al., ICLR 2024, https://arxiv.org/abs/2306.09896: GPT-4's own feedback was wrong in 32/80 cases vs 7/80 for humans. Self-Debug, ICLR 2024, https://arxiv.org/abs/2304.05128: the gains need execution information | Strong | Done |
 | P3 | **A loop is credited only against equal-budget resampling** | Olausson 2024; Large Language Monkeys, https://arxiv.org/abs/2407.21787 (15.9% → 56% at 250 samples); Codex pass@k, https://arxiv.org/abs/2107.03374 | Strong | Done (the L2 control arm). The T3 run's only statement is its published record, `eval/live-runs/2026-11-t3-result.md` |
 | P4 | **Design for transfer from what models already write; name foreign forms in diagnostics** | SPEAC, NeurIPS 2024, https://arxiv.org/abs/2406.03636: 24–28/33 parse vs ≤ 4/33 for few-shot, fine-tuning and self-repair. CangjieBench, https://arxiv.org/abs/2603.14501: about 59% of failures are syntax borrowed from other languages. CAD-Recode and Text-to-CadQuery reuse Python; LayoutGPT reuses CSS | Strong | Partial: tuples, `WxH`, unit suffixes, order-free clauses, some did-you-mean. Gap: no classified corpus of foreign-syntax attempts (AF21) |
-| P5 | **Semantic constraints help; syntax-only constrained decoding barely does** | Grammar Prompting, NeurIPS 2023, https://arxiv.org/abs/2305.19234, Table 1: constrained decoding alone +0.4 on GeoQuery. Mündler 2025 (types). JSONSchemaBench, https://arxiv.org/abs/2501.10868: at most +4% | Strong | Partial: `grammars/archlang.gbnf` exists, drift-tested, never used in an eval. Low priority, since every brief already compiles |
+| P5 | **Semantic constraints help; syntax-only constrained decoding barely does** | Grammar Prompting, NeurIPS 2023, https://arxiv.org/abs/2305.19234, Table 1: constrained decoding alone +0.4 on GeoQuery. Mündler 2025 (types). JSONSchemaBench, https://arxiv.org/abs/2501.10868: at most +4% | Strong | Partial: `grammars/archlang.gbnf` exists, drift-tested, never used in an eval. Low priority: the compile errors that remain are mostly semantic refusals (EV.1) |
 | P6 | **Teach with worked examples; rule prose is for checking** | Aycock et al., ICLR 2025, https://arxiv.org/abs/2409.19151: "almost all improvements stem from the book's parallel examples rather than its grammatical explanations" | Moderate–strong | Partial: the ` ```arch ` blocks hold ~3.9k of the spec's ~29.6k characters (~13%, measured); never ablated (AF23) |
 | P7 | **Diagnostics must be precise and actionable; vague ones are worse than none** | Deo, Campanoni, McMichen, arXiv:2604.13927 (3-page workshop paper): precise remarks 3.3×, ambiguous ones "actively detrimental". RustAssistant ~74%. FeedbackEval, https://arxiv.org/abs/2504.06939: bare compiler feedback 49.2% vs mixed 63.6% | Moderate (no study isolates wording) | Done in kind; the density gaps are AF1–AF8 |
 | P8 | **A short curated cheat-sheet beats doc retrieval** | CangjieBench: a 2,146-token cheat-sheet 50.4 pass@1 vs 26.2 for retrieval over the official docs. Bassamzadeh and Methani, https://arxiv.org/abs/2407.02742: "too many API descriptions can confuse" | Moderate | Done (one spec, ADR 0009), at ~4× that size; a shorter core never measured |
 | P9 | **Self-verified synthetic data is the scalable route to weights that know the language** | MultiPL-T: OCaml 6.9 → 19.9. RLVR floor plans, https://arxiv.org/abs/2605.14117: ≥ 94% relative reduction in compatibility error | Strong for fine-tuning | Done as data (ADR 0013); the project does not train |
-| P10 | **Measure fidelity to the brief apart from validity** | Tell2Design's IoU vs 38% "meet all" | Moderate | Done, ahead of the literature (the fidelity slice includes infeasible briefs) |
+| P10 | **Measure fidelity to the brief apart from validity** | Tell2Design's IoU vs 38% "meet all" | Moderate | Done (the fidelity slice includes infeasible briefs) |
 | P11 | **Constrain only the artifact, never the reasoning** | Tam et al., https://arxiv.org/abs/2408.02442: JSON mode −27 points on GSM8K. Contested by the vendor-written dottxt reply, https://blog.dottxt.ai/say-what-you-mean.html | Moderate, contested | Done by construction (`eval/live-author.ts` forces no output format) |
 | P12 | **Token economy is second-order; retries dominate agent cost** | SimPy, https://arxiv.org/abs/2404.16333 (8.6–34.7% fewer tokens, needs fine-tuning). Formatting study, https://arxiv.org/abs/2508.13666. *Tokenmaxxing*, https://arxiv.org/abs/2607.22807 | Moderate | Partial: tokens-to-sound never measured (AF22) |
 | P13 | **Explicit, or every inference observable** | MultiPL-E (precise types beat `Any`); Ronacher, *A Language For Agents*, https://lucumr.pocoo.org/2026/2/9/a-language-for-agents/ (essay) | Weak–moderate | Partial: walls, areas and clearances are derived and visible only through `describe` (AF17) |
@@ -199,21 +200,27 @@ articles and are left out.
 
 | Measure | Value | Source |
 |---|---|---|
-| `spec.llm.md` | 29,932 bytes, ~7.5k tokens | The cap is 30,000 UTF-16 units (`test/llm-spec-drift.test.ts:87`), so **headroom is about 70 units**. Any new language form needs spec bytes first |
+| `spec.llm.md` | 29,932 bytes = 29,629 UTF-16 units, ~7.5k tokens | The cap is 30,000 UTF-16 units (`test/llm-spec-drift.test.ts:87` asserts `spec.length`), so **headroom is 371 units**. Any new language form needs spec room first |
 | Full bundle (`arch context`) | ~176 KB | `src/context-size.ts` |
 | Diagnostic codes | 270 (167 E, 103 W) | `docs/error-codes.md` |
 | Codes with a machine span-edit fix | 26 of 270 | `test/fix-coverage.test.ts:14` |
 | Fix applicability uses in `src/` | 25 machine-applicable, 10 maybe-incorrect, 4 has-placeholders | grep |
-| Lint rules | 59 entries | `src/lint/rules/index.ts` |
-| CLI commands / MCP tools | 27 / 11 | `src/manifest.ts`; `packages/mcp/src/tools.ts` |
+| Lint rules | 63 entries in `LINT_RULES` | `src/lint/rules/index.ts` |
+| CLI commands / MCP tools | 26 (29 names with aliases; `arch manifest`) / 11 | `src/manifest.ts`; `packages/mcp/src/tools.ts` |
 
 **Measured weak spots:**
 
 1. **Soundness (lint-clean) is the weak axis.**
-   - Offline: 4/26 (`eval/results.md`).
-   - Live, Fable 5.2: 5/26 (`eval/results.live.md`).
+   - Offline goldens: valid 26/26, sound 4/26 (`eval/results.md`).
+   - Live, Fable 5.2: sound 5, 5, 5 after CO-1 and 5, 4, 6 after CO-1 + CO-2 (three runs each,
+     `eval/live-runs/2026-11-authorability-remeasure.md`).
    - Claude 5.5 models: Opus 2, Sonnet 4, Haiku 1 of 26 (`eval/live-runs/2026-10-27-claude-5.md`).
-   - Current live baseline: valid 22, intent 9, sound 1 (RM-D52).
+   - Current live baseline: valid 22, intent 9, sound 1 (RM-D52, `eval/live-baseline.json`). Live
+     valid ranges 13–22 of 26 (`eval/live-runs/2026-10-27-claude-5.md`).
+   - **Counter-evidence, on different briefs:** one-shot L0 sound on the model-authoring set is
+     252/390 (Haiku), 351/390 (Sonnet), 247/390 (Opus) and 194/200 (Fable 5.2) (`dataset/CARD.md`).
+     Those briefs are not comparable with the fixture, but the claim that orders the cards rests on
+     the 26-brief fixture alone (§9).
 2. **`W_DOORWAY_BLOCKED` appears in all 19 brief-runs that lost intent to physical lint**
    (`eval/live-runs/2026-11-ev1-intent-gap.md`).
 3. **Six of the seven compile-error losses in EV.1 are refused openings**, none with a fix
@@ -230,7 +237,7 @@ puts semantic fixes (AF9) and diagnostic density (AF1–AF8) first.
 
 Each was re-run by the coordinator against `dist/cli.js` built from `main`:
 
-1. **`diagnosticToJson` never reads `relatedSpans`** (`src/diagnostic-json.ts:119-155`). The text
+1. **`diagnosticToJson` never reads `relatedSpans`** (`src/diagnostic-json.ts:120-155`). The text
    output shows "first declared here", but `--json`, both MCP hosts and the VS Code mapping
    (`editors/vscode/src/diagnostics.ts:71-90`) drop it. Already listed in backlog M.15.
 2. **`arch fmt --json` on a file that does not parse returns `"ok": true, "changed": false`.** The
@@ -243,8 +250,10 @@ Each was re-run by the coordinator against `dist/cli.js` built from `main`:
 
 The research agents found these too (each is noted against the card that would fix it):
 
-- `dor` gets "Unknown statement" with no suggestion. `STRAY_CLAUSE_HINTS` covers two words
-  (`src/parser.ts:1733`). → AF2
+- `dor` gets "Unknown statement" with no suggestion. `STRAY_CLAUSE_HINTS` (`src/parser.ts:83`,
+  looked up at `:1732`) covers two words. → AF2
+- `furniture sofaa …` gets `W_UNKNOWN_FURNITURE` with a fix, but its span is the whole statement
+  and the fix reprints it (`(500,500)` becomes `(500, 500)`). → AF2
 - `right-of hal` gets no hint, and its span covers the whole statement (`src/layout.ts:166-172`). → AF2
 - An unknown name evaluates to zero after its `E_UNKNOWN_REF` (`src/expr.ts:915`, `return NUM0`),
   so `wdth` also yields a spurious "positive size" error. → AF3
@@ -268,7 +277,7 @@ card depends on a ruling (RM-D60…D63). The status, size, model and gate of eac
 |---|---|---|---|
 | AF0 | — | Housekeeping: fix the two stale test comments in §6; re-check U.2 and U.5 against the code and mark them done or narrow them | Records only |
 | AF1 | rustc `spans[]{is_primary,label}`; TS `relatedInformation` | `relatedSpans`, `instance` and `component` appear in `diagnosticToJson`, in both MCP hosts and in LSP `relatedInformation`. A duplicate id gains "first declared here" | JSON is append-only (new keys only on diagnostics that carry them). Check whether `lint()`/`describe()` serialisation moves; if it does, the new key stays out of the pinned payload or the card stops and reports. Carries M.15's first bullet |
-| AF2 | TS `getSpellingSuggestion` plus one spelling codefix for 14 codes | One did-you-mean producer for unknown statements, unknown ids in relations, clause words and `uses` words. Each emits a **word-level span** and a fix (machine-applicable when the candidate is unique within distance; maybe-incorrect otherwise). The model to copy is the existing `sofaa` case | Diagnostics of already-failing plans change only; pin them. Closed sets come from `src/grammar/tokens.ts`, never retyped |
+| AF2 | TS `getSpellingSuggestion` plus one spelling codefix for 14 codes | One did-you-mean producer for unknown statements (`dor`), unknown ids in relations (`right-of hal`), clause words (`betwen`) and `uses` words (`bedrom`). Each emits a **word-level span** and a fix that replaces only that word (machine-applicable when the candidate is unique within distance; maybe-incorrect otherwise). The existing `sofaa` fix is narrowed to the same shape. An unknown name in an expression (`wdth`) belongs to AF3 | Diagnostics of already-failing plans change only; pin them. Closed sets come from `src/grammar/tokens.ts`, never retyped |
 | AF3 | TS error type | An unknown name evaluates to an error value that suppresses dependent diagnostics (no "size must be positive" after `E_UNKNOWN_REF`) | Charge to the step meter as today; diagnostics of failing plans only |
 | AF4 | TS elaboration; rustc "expected one of" | `E_PARSE` carries a structured `expected[]` (from the token table) and a suggestion when one alternative is close | `E_PARSE` currently says "no machine-applicable fix"; keep the list structured, never prose-only |
 | AF5 | rustc paired examples; MoonBit `_error/` and `_fixed/`; Clippy "Use instead" | `CatalogEntry` gains `fixed`. CI checks that the example raises the code and that `fixed` compiles without it. `explain --json` returns both. An MCP `explain` tool | Generated docs (`docs/error-codes.md`) via `gen:*`; the 66 exemptions shrink, never grow |
@@ -281,8 +290,8 @@ card depends on a ruling (RM-D60…D63). The status, size, model and gate of eac
 | Card | Borrowed from | Design | Constraints |
 |---|---|---|---|
 | AF9 | rustc `HasPlaceholders` and tool-only suggestions | For the EV.5 refusals (jamb too close, window on a partition, parallel edge) and `W_DOORWAY_BLOCKED`: a placeholder skeleton or a maybe-incorrect move. Machine-applicable only when provably the single nearest legal place (ADR 0011's bar) | EV.5's gate stands: a design note or an ADR before code. ADR 0005 (no invisible architect) and ADR 0028 §5 bound it. L1 applies only machine-applicable fixes, so AF9 may move no L1 number |
-| AF10 | `uom` / `dimensioned` | Step 1: an advisory lint for an implausibly large room, wall or opening (the probe in §6). Step 2: count length dimensions through expressions and warn when an area is used as a length; never convert units | Step 1 is a new W code and lint rule (the `new-lint-rule` skill); step 2 is charged to the step meter and becomes an error only at an edition boundary (AF15) |
-| AF11 🔒 | Clippy categories | Every lint rule gets a confidence category (`correctness`, `suspicious`, `style`, `pedantic`), derived from the existing `layer` plus a per-rule override | RM-D60: metadata only; it never enters `lint()` serialisation and moves no corpus bytes |
+| AF10 | `uom` / `dimensioned` | Step 1: an advisory lint for an implausibly large room, wall or opening (the probe in §6). Step 2: count length dimensions through expressions and warn when an area is used as a length; never convert units | Step 1 is a new W code and lint rule (the `new-lint-rule` skill); its threshold needs a `V` or `S-full` source (product-roadmap principle 10) or it stays a hint. Step 2 is charged to the step meter; only its escalation to an error waits for an edition boundary (AF15) |
+| AF11 🔒 | Clippy categories | Every lint rule declares a confidence category (`correctness`, `suspicious`, `style`, `pedantic`). `LintLayer` has only two values (`validity`, `drafting`; `src/lint/context.ts:247`), so it can only give a default; each rule's own declaration does the work | RM-D60: metadata only; it never enters `lint()` serialisation and moves no corpus bytes |
 | AF12 🔒 | Rust `#[expect]` with `reason`; `Forbid` | Source-level `expect <CODE> reason "<text>"` for a deliberate design choice (a windowless store) | RM-D60: an ADR first. Expected warnings are still computed and marked, never deleted. An unfulfilled `expect` warns. `correctness` codes and errors cannot be waived. Eval and score count a waived warning as fired. A new language form: byte-identity law, needs spec headroom |
 
 ### Wave C: editing and change
@@ -291,7 +300,7 @@ card depends on a ruling (RM-D60…D63). The status, size, model and gate of eac
 |---|---|---|---|
 | AF13 | D2 `d2oracle`; KCL versioned operations; zerolang `patch` | `arch edit` and an MCP `edit` tool: `set room#living size 4200x4000 expect 4000x4000`. It is printed through `statement-print.ts`, refuses on a stale value and returns the `impact` report | `compile()` stays pure; edit lives in the CLI and MCP layers. `new-cli-flag` and `new-mcp-tool` skills |
 | AF14 | D2 id deltas | `impact` and `diff` gain `id_deltas` (auto ids that shifted) | Additive JSON key. Content-derived ids are declined (RM-D62) |
-| AF15 🔒 | Rust editions; KCL `kclVersion` | An optional source header naming the language edition (absent = current, byte-identical). A compat group of machine-applicable lints for the removals; `arch fix --edition` reusing the proved `while` → `for` migration (`src/while-fix.ts`) | RM-D61: designed now, built only with 2.0. The removal list is the forms deprecated today: `while` (`W_WHILE_DEPRECATED`) and reassignment (`W_REASSIGN_DEPRECATED`). `--view` is a CLI flag, not source, so it is removed in 2.0 outside the edition |
+| AF15 🔒 | Rust editions; KCL `kclVersion` | An optional source header naming the language edition (absent = current, byte-identical). A compat group of lints for every source-breaking 2.0 change, each with the strongest fix that can be proved; `arch fix --edition` reuses the `while` → `for` migration (`src/while-fix.ts`) | RM-D61: designed now, built only with 2.0. Its scope is the backlog's 2.0 bucket (`docs/backlog.md`: the escalations ruled by RM-D6 and RM-D16, V.5, V.6, 6.7) plus the two deprecated forms, `while` and reassignment; RM-D61 adds none. Today only `while` has a fix (the canonical counted loop; maybe-incorrect inside a component, `src/while-fix.ts:2-33`); `W_REASSIGN_DEPRECATED` has hints only. `--view` is a CLI flag, removed in 2.0 outside the edition |
 | AF16 | Gleam code actions; KCL principle | Named refactorings that preserve intent: absolute → `right-of` when exactly equal; hand-written walls → `walls from rooms` when equal; extract/inline `let` | Each proves byte-identical SVG + `describe()` + `lint()` before and after on the corpus; refuses otherwise |
 | AF17 🔒 | KCL point states; LLM4CAD-Editor | Placement provenance (`literal`, `right-of X`, `derived`) through an **opt-in** surface (for example `describe --provenance`), plus an advisory "a relation would hold here" hint | RM-D62: opt-in only; default `describe()` bytes never move |
 
@@ -307,8 +316,8 @@ card depends on a ruling (RM-D60…D63). The status, size, model and gate of eac
 
 | Card | What | Cost |
 |---|---|---|
-| AF21 | Classify the foreign-syntax attempts in the replies the repo already holds (dataset rows, eval artifacts) by source language, the CangjieBench way | Free, offline; no paid call |
-| AF22 | Tokens to a lint-clean plan per brief, from the same artifacts | Free, offline |
+| AF21 | Classify the foreign-syntax attempts by source language, the CangjieBench way. Inputs: the published model-authoring rows on Hugging Face and the `eval-results-live` workflow artifacts (RM-D53). **Never `eval/live-runs/t3/`**: a reading of the T3 arms would be a second statement of that result, which needs an owner decision (`docs/agents/iron-laws.md`) | Free, offline; no paid call |
+| AF22 | Tokens to a lint-clean plan per brief, from the same inputs and with the same exclusion; one arm at a time, never a loop-against-control comparison | Free, offline |
 | AF23 🔒 | Spec ablation: examples vs rule prose; starter vs spec vs full bundle | Paid (`eval:live`). RM-D63: parked; reopen conditions in that ruling |
 
 ## 8. What not to borrow
@@ -317,7 +326,7 @@ card depends on a ruling (RM-D60…D63). The status, size, model and gate of eac
 |---|---|
 | A borrow checker or ownership types | Openings name their host wall, walls derive from rooms (ADR 0028), and meaningless clauses are refused, so the class of error is structurally absent. At most, report which room owns which wall as a fact |
 | Structural or gradual typing, exhaustive `match` | No user-defined types; `--stage` and `--strict` already give gradual strictness |
-| More syntax-only constrained decoding | ≤ 4% in the literature (P5); every eval brief already compiles |
+| More syntax-only constrained decoding | ≤ 4% in the literature (P5); the compile errors that remain are mostly semantic refusals (EV.1) |
 | A token-level type sampler (MoonBit) | Hosted models give no hook; GBNF covers local models |
 | Content-derived ids | They would move `describe()` over the corpus and rename what authors see; `id_deltas` (AF14) answers the real problem (RM-D62) |
 | Positional references (Vera); sort-then-index selectors (build123d) | Named references are what the CAD studies reward; `E_SEGMENT_SELECT` refuses ambiguity instead |
@@ -332,6 +341,9 @@ card depends on a ruling (RM-D60…D63). The status, size, model and gate of eac
   ChatHouseDiffusion's numbers; Pel; Weft; Agentis; the "Hejlsberg dismisses AI-first languages"
   summary. Alderson's token-efficiency post was read only through search snippets.
 - MoonBit's AI claims are vendor claims with no baseline. VeraBench is self-reported on 60 problems.
+- The card order rests on the 26-brief fixture alone. On the model-authoring briefs, one-shot
+  sound is far higher (§5), so part of the soundness gap may be a property of the fixture. AF21 and
+  AF22 report both sets.
 - The run-to-run noise is high: three gpt-5.5 runs at one commit disagree on 15 of 26 briefs (EV.1).
   Any measurement card (AF21–AF23) must report its own variance.
 - The working notes (four reports with every quote and `path:line`) are kept outside this public
