@@ -241,11 +241,16 @@ Its feedback says to relax one of the named numbers (ask whoever wrote the brief
 gives); no edit to the plan clears it, and it carries no fix. The band misses it causes are still
 listed after it, and `satisfied`, `total`, the subscores and `score --brief` are what the
 assertions alone give, so the meter does not move. A floor above a ceiling on the same rooms is
-reported the same way.
+reported the same way. Every number in the message is printed exactly as written, and the products
+and the sum are exact (`3 × 12.006` is `36.018`). It is a `brief`-stage finding: `validate --stage
+brief` shows it, since it is decided before any room exists. In `--json` it carries `conflicts`,
+the intent paths it names.
 
 It is called only with that arithmetic, never on a hunch. Concepts one room could serve together
 (a bathroom and a WC) count once, at their largest; a concept named by two entries keeps neither
-count; a sum that ties the ceiling to within a few mm² is not called impossible. "Three bedrooms of
+count; a sum is called impossible only when it passes the ceiling by more than 0.005 m² per room
+it counts plus 0.005 m², the bound of the 0.01 m² display rounding that a plan's total can fall
+back to. "Three bedrooms of
 at least 12 m², a living room and a bathroom, all inside 40 m²" with no stated floor for the
 living room or the bathroom is **not** reported: 36 m² leaves 4 m² that the contract does not
 forbid. The derivation is the eval's (`eval/fidelity.ts` re-exports it from

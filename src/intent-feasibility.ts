@@ -74,17 +74,24 @@ export interface InfeasibilityProof {
   /** A capacity proof's arithmetic, so a caller can print it term by term: the terms whose
    *  sum is `m2`, and the ceiling that sum exceeds. Absent on a contradiction. */
   demand?: { terms: DemandTerm[]; m2: number; ceiling: { id: string; m2: number } };
+  /** A contradiction's two bounds: the floor and the ceiling it sits above. Absent on a capacity
+   *  proof. */
+  bounds?: { floor: { id: string; m2: number }; ceiling: { id: string; m2: number } };
 }
 
 /**
- * How far a demand must pass its ceiling before it is called a conflict: 1 mm² (10⁻⁶ m²) per
- * room it counts, plus one. A plan is judged on areas rounded to a whole mm² (the intent
- * channel) or to 0.01 m² (`describe()`), and the demand is a float sum, so a demand that ties
- * its ceiling to within that slack can still be met: three rooms of 0.1 m² add to
- * 0.30000000000000004, and a plan of three 0.1 m² rooms totals 0.3 m². Only the sound
- * direction is lost: a brief within a few mm² of its ceiling is never called impossible.
+ * How far a demand must pass its ceiling before it is called a conflict: 0.005 m² per room it
+ * counts, plus 0.005 m², the bound of `describe()`'s display rounding (0.01 m²). A plan's rooms
+ * and total are judged on figures that can each sit up to that far below the exact area: the
+ * eval reads `describe()`'s printed areas, and the intent channel falls back to them for the
+ * whole total when any room's exact area does not reproduce its printed one
+ * (`exactTotalFloorArea`, `src/intent.ts`). So three bedrooms of exactly 12.004 m² pass a floor
+ * of 12.004 while the printed total, 36.00 m², passes a ceiling of 36.005, and calling 36.012
+ * above 36.005 a conflict would be false. The slack also covers the float sum: three rooms of
+ * 0.1 m² add to 0.30000000000000004. Only the sound direction is lost: a brief within that
+ * slack of its ceiling is never called impossible.
  */
-const slackM2 = (rooms: number): number => (rooms + 1) * 1e-6;
+const slackM2 = (rooms: number): number => (rooms + 1) * 0.005;
 
 /** Whether `demand` m² over `rooms` rooms passes the ceiling `cap` m² by more than the slack. */
 const exceeds = (demand: number, rooms: number, cap: number): boolean => demand - cap > slackM2(rooms);
@@ -233,7 +240,10 @@ export function proveInfeasible(requirements: readonly Requirement[]): Infeasibi
       } else {
         // (c) The rooms the concepts require, when they outnumber the plan-wide count: each
         // overlap group needs its largest count (a concept floor alone needs one room), and
-        // disjoint groups add. Ties go to the first in requirement order.
+        // disjoint groups add. Ties go to the first in requirement order. Reached only from a
+        // plan-wide ("every room") floor, which `Intent` cannot state, so only the eval's
+        // requirement lists (`derivedConflicts`, `eval/fidelity.ts`) reach it; no fidelity-corpus
+        // brief does today, and `intentRequirements` never does.
         const need = new Map<string, { rooms: number; id: string }>();
         for (const r of requirements) {
           const concept = "concept" in r ? r.concept : undefined;
@@ -291,6 +301,7 @@ export function proveInfeasible(requirements: readonly Requirement[]): Infeasibi
           rule: "contradiction",
           conflicts: sortUnique([lo.id, hi.id]),
           reason: `a floor of ${lo.m2} m² sits above a ceiling of ${hi.m2} m² on the same room(s)`,
+          bounds: { floor: { id: lo.id, m2: lo.m2 }, ceiling: { id: hi.id, m2: hi.m2 } },
         });
       }
     }
@@ -303,6 +314,7 @@ export function proveInfeasible(requirements: readonly Requirement[]): Infeasibi
         rule: "contradiction",
         conflicts: sortUnique([totalFloor.id, cap.id]),
         reason: `a total-area floor of ${totalFloor.m2} m² sits above a ceiling of ${cap.m2} m²`,
+        bounds: { floor: { id: totalFloor.id, m2: totalFloor.m2 }, ceiling: { id: cap.id, m2: cap.m2 } },
       });
     }
   }
@@ -326,22 +338,27 @@ export function proveInfeasible(requirements: readonly Requirement[]): Infeasibi
  *   must not multiply the other's floor. Dropping it only weakens the proof;
  * - `totalAreaM2` becomes a total-area ceiling (`max`) and floor (`min`).
  *
+ * Only finite numbers ≥ 0 are lowered.
+ *
  * `rooms`, windows, adjacency, reachability and the brief-bound measures state nothing these
  * rules add up, and `grossInternalAreaM2` is measured inside the walls, not over the rooms, so
  * none of them is lowered.
  */
 export function intentRequirements(intent: Intent): Requirement[] {
+  // `intentFromJson` admits only finite numbers ≥ 0; a caller's own object may hold anything, and
+  // a number outside that domain is never lowered (so a proof never rests on one).
+  const stated = (n: number): boolean => Number.isFinite(n) && n >= 0;
   const out: Requirement[] = [];
   const entries = intent.roomsInclude ?? [];
   const named = new Map<string, number>();
   for (const inc of entries) named.set(inc.concept, (named.get(inc.concept) ?? 0) + 1);
   entries.forEach((inc, i) => {
     const min = inc.count?.min ?? 1;
-    if (min === 0) return;
+    if (!stated(min) || min === 0) return;
     const path = `/roomsInclude/${i}`;
     const unique = named.get(inc.concept) === 1;
     const band = inc.areaM2;
-    if (band?.min !== undefined)
+    if (band?.min !== undefined && stated(band.min))
       out.push({
         id: `${path}/areaM2`,
         kind: "room-area",
@@ -350,7 +367,7 @@ export function intentRequirements(intent: Intent): Requirement[] {
         m2: band.min,
         quote: band.source,
       });
-    if (band?.max !== undefined && unique)
+    if (band?.max !== undefined && stated(band.max) && unique)
       out.push({
         id: `${path}/areaM2`,
         kind: "room-area",
@@ -363,9 +380,9 @@ export function intentRequirements(intent: Intent): Requirement[] {
       out.push({ id: `${path}/count`, kind: "room-count", concept: inc.concept, exact: min, quote: `${path}/count` });
   });
   const total = intent.totalAreaM2;
-  if (total?.max !== undefined)
+  if (total?.max !== undefined && stated(total.max))
     out.push({ id: "/totalAreaM2", kind: "total-area", op: "at-most", m2: total.max, quote: total.source });
-  if (total?.min !== undefined)
+  if (total?.min !== undefined && stated(total.min))
     out.push({ id: "/totalAreaM2", kind: "total-area", op: "at-least", m2: total.min, quote: total.source });
   return out;
 }

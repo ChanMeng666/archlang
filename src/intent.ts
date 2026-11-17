@@ -28,7 +28,7 @@ import { polygonLabelPoint } from "./geometry/polygon.js";
 import { isCirculationRoom, roomsMatchingConcept } from "./intent-concepts.js";
 import { type InfeasibilityProof, intentRequirements, proveInfeasible } from "./intent-feasibility.js";
 import { makeNaming, type NameableRoom, sizeWords } from "./naming.js";
-import { fmt0, fmt2 } from "./num-format.js";
+import { fmt2, plainDigits } from "./num-format.js";
 import { pure } from "./pure.js";
 import { type CompassLetter, type SiteFacts, SYMBOLIC_FACINGS, type SymbolicFacing } from "./site.js";
 
@@ -1153,10 +1153,64 @@ function makeViolation(a: AssertionResult, path: string, summary: SceneSummary):
   }
 }
 
+/*
+ * The arithmetic an `E_INTENT_INFEASIBLE` message prints is EXACT decimal arithmetic on the numbers
+ * as written: each operand is its shortest round-trip decimal (`plainDigits`, the lossless printer
+ * of `src/num-format.ts`), and products and sums are taken on those digits as scaled integers, so
+ * `3 × 12.006` prints `36.018` (never `36.02`, never `36.018000000000004`) and the sum a message
+ * states is the sum of the operands it shows. Only finite numbers ≥ 0 reach it
+ * ({@link intentRequirements} lowers nothing else).
+ */
+
+/** A finite number ≥ 0 as an exact decimal: `units / 10^scale`. */
+interface Dec {
+  units: bigint;
+  scale: number;
+}
+
+const decOf = (n: number): Dec => {
+  const s = plainDigits(n);
+  const dot = s.indexOf(".");
+  return dot < 0
+    ? { units: BigInt(s), scale: 0 }
+    : { units: BigInt(s.slice(0, dot) + s.slice(dot + 1)), scale: s.length - dot - 1 };
+};
+
+const decMul = (a: Dec, b: Dec): Dec => ({ units: a.units * b.units, scale: a.scale + b.scale });
+
+const decAdd = (a: Dec, b: Dec): Dec => {
+  const k = Math.max(a.scale, b.scale);
+  return { units: a.units * 10n ** BigInt(k - a.scale) + b.units * 10n ** BigInt(k - b.scale), scale: k };
+};
+
+/** An exact decimal printed in full, trailing zeros dropped: `36.018`, `40`, `0.5`. */
+function decText(d: Dec): string {
+  if (d.scale === 0) return d.units.toString();
+  const digits = d.units.toString().padStart(d.scale + 1, "0");
+  const whole = digits.slice(0, digits.length - d.scale);
+  const frac = digits.slice(digits.length - d.scale).replace(/0+$/, "");
+  return frac === "" ? whole : `${whole}.${frac}`;
+}
+
 /** One summand of a capacity proof, as a person reads it: `3 "bedroom" × at least 12 m² = 36 m²`. */
 function demandTermText(t: NonNullable<InfeasibilityProof["demand"]>["terms"][number]): string {
   const what = t.concept === undefined ? "rooms" : `"${t.concept}"`;
-  return `${fmt0(t.rooms)} ${what} × at least ${fmt2(t.m2)} m² = ${fmt2(t.rooms * t.m2)} m²`;
+  return `${decText(decOf(t.rooms))} ${what} × at least ${decText(decOf(t.m2))} m² = ${decText(decMul(decOf(t.rooms), decOf(t.m2)))} m²`;
+}
+
+/** A proof's arithmetic, every number printed exactly ({@link decText}). */
+function proofArithmetic(proof: InfeasibilityProof): string {
+  const d = proof.demand;
+  if (d) {
+    const sum = d.terms.reduce<Dec>((n, t) => decAdd(n, decMul(decOf(t.rooms), decOf(t.m2))), { units: 0n, scale: 0 });
+    const total = d.terms.length > 1 ? ` = ${decText(sum)} m²` : "";
+    return `${d.terms.map(demandTermText).join(" + ")}${total} of rooms, above the total floor area of at most ${decText(decOf(d.ceiling.m2))} m² (${d.ceiling.id})`;
+  }
+  const b = proof.bounds;
+  if (b) {
+    return `a floor of ${decText(decOf(b.floor.m2))} m² (${b.floor.id}) sits above a ceiling of ${decText(decOf(b.ceiling.m2))} m² (${b.ceiling.id})`;
+  }
+  return proof.reason;
 }
 
 /**
@@ -1176,13 +1230,9 @@ function infeasibleViolation(
   if (at < 0) at = paths.findIndex((p) => proof.conflicts.includes(p));
   const predicate = predicates[at];
   if (predicate === undefined) return undefined;
-  const d = proof.demand;
-  const arithmetic = d
-    ? `${d.terms.map(demandTermText).join(" + ")}${d.terms.length > 1 ? ` = ${fmt2(d.m2)} m²` : ""} of rooms, above the total floor area of at most ${fmt2(d.ceiling.m2)} m² (${d.ceiling.id})`
-    : proof.reason;
   return {
     code: "E_INTENT_INFEASIBLE",
-    message: `intent ${proof.conflicts.join(" + ")}: no plan can meet these numbers together: ${arithmetic}`,
+    message: `intent ${proof.conflicts.join(" + ")}: no plan can meet these numbers together: ${proofArithmetic(proof)}`,
     gate: true,
     predicate,
     conflicts: proof.conflicts,
