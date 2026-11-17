@@ -137,7 +137,7 @@
           ]
         }
       ],
-      "description": "Total floor-area band in square metres, summed over every storey of a plan with `level` blocks. Same band conventions as `areaM2`: \"about/~N\" or bare N → ±10%; \"at least N\" → `min` only; qualitative words → omit. At least one of min/max is required.",
+      "description": "Total floor-area band in square metres, summed over every storey of a plan with `level` blocks. Same band conventions as `areaM2`: \"about/~N\" or bare N → ±10%; \"at least N\" → `min` only; qualitative words → omit. At least one of min/max is required. A `max` below what the `roomsInclude` area floors add up to (each times its `count.min`) is reported first as E_INTENT_INFEASIBLE, with the sum: the brief cannot be met, so relax a number rather than redraw.",
       "properties": {
         "min": {
           "type": "number",

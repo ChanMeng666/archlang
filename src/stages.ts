@@ -41,7 +41,7 @@
 import type { KeepNode, KeepRef } from "./ast.js";
 import type { Diagnostic } from "./diagnostics.js";
 import { pure } from "./pure.js";
-import type { IntentCheckResult, Predicate } from "./intent.js";
+import type { IntentCheckResult, IntentViolation, Predicate } from "./intent.js";
 import type { ResolvedElement } from "./ir.js";
 import type { KeepResult } from "./keep.js";
 import { LINT_CODE_STAGES } from "./lint.js";
@@ -127,6 +127,7 @@ export const COMPILE_WARNING_STAGES: Readonly<Record<string, AuthoringStage>> = 
  * (`rooms`) or the gross internal area (`walls`), so the bare code answers `rooms`.
  */
 export const INTENT_CODE_STAGES: Readonly<Record<string, AuthoringStage>> = /* @__PURE__ */ Object.freeze({
+  E_INTENT_INFEASIBLE: "brief",
   E_INTENT_ROOM_COUNT: "rooms",
   E_INTENT_ROOM_MISSING: "rooms",
   E_INTENT_ROOM_AREA: "rooms",
@@ -192,6 +193,15 @@ export function predicateStage(p: Predicate): AuthoringStage {
     case "room-windows":
       return "openings";
   }
+}
+
+/**
+ * The stage of an intent violation: {@link predicateStage} of its predicate, except
+ * `E_INTENT_INFEASIBLE`, which is decided from the brief alone (before any room exists), so it is a
+ * `brief` finding and `--stage brief` shows it.
+ */
+export function violationStage(v: Pick<IntentViolation, "code" | "predicate">): AuthoringStage {
+  return v.code === "E_INTENT_INFEASIBLE" ? "brief" : predicateStage(v.predicate);
 }
 
 /** A `--graph` check reads interior-door adjacency, so it is an `openings` finding. */
@@ -318,7 +328,7 @@ export function atStage(
   let intentCounts: StageView["intent"];
   if (input.intent) {
     const shownP = (p: Predicate): boolean => stageAtMost(predicateStage(p), stage);
-    const violations = input.intent.violations.filter((v) => shownP(v.predicate));
+    const violations = input.intent.violations.filter((v) => stageAtMost(violationStage(v), stage));
     held += input.intent.violations.length - violations.length;
     // `ok` as the shown set reads it: the plan compiled and no shown gating assertion failed.
     const compiled = !input.diagnostics.some((d) => d.severity === "error");
