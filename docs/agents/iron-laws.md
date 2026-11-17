@@ -83,8 +83,9 @@ listed in the stage report (`docs/plans/plan-soundness/README.md` D18).
   that is all script** (the Cloudflare account also holds an unrelated scripted Worker, `sunostats`, which
   shares the Workers Paid caps): its own deploy job, served at `mcp.archlang.uk`; DNS and the
   Workers plan are owner-only. A site never gains a `main` to share its work.
-- **The hosted MCP spend bound is three things**: `limits.cpu_ms`, the account's USD 10 billing
-  budget alert, and the zone WAF rule `mcp abuse guard` (100 requests per 10 s per IP to any path on `mcp.archlang.uk`). The
+- **The hosted MCP spend bound is three things**: `limits.cpu_ms`, the account's billing alerts
+  (the USD 10 budget alert and a usage alert on Workers Standard Requests above 5,000,000, both
+  verified in the dashboard 2026-11-17; they email the owner and stop nothing), and the zone WAF rule `mcp abuse guard` (100 requests per 10 s per IP to any path on `mcp.archlang.uk`). The
   Worker's own rate-limit bindings are best-effort and are not part of the bound. The rule lives in
   the Cloudflare dashboard, not in the repository.
 
