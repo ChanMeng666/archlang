@@ -254,21 +254,23 @@ function redirectCheck(path, location) {
   return {
     name: `${path} (301 → ${location})`,
     run: async (base) => {
-      let res;
+      // A freshly uploaded rule can answer 404 (or a stale Location) while it propagates, so a
+      // wrong status or Location is retried like fetchOk retries a non-200 (2026-11-17 deploy).
+      let last = "no attempt made";
       for (let attempt = 1; attempt <= ATTEMPTS; attempt++) {
         try {
-          res = await fetch(base + path, { redirect: "manual", headers: { "user-agent": "archlang-smoke/1" } });
-          break;
+          const res = await fetch(base + path, { redirect: "manual", headers: { "user-agent": "archlang-smoke/1" } });
+          await res.arrayBuffer();
+          const to = res.headers.get("location") ?? "";
+          if (res.status !== 301) last = `HTTP ${res.status}, expected 301`;
+          else if (to !== location && to !== base + location) last = `Location is "${to}", expected "${location}"`;
+          else return [`301 ${to}`];
         } catch (e) {
-          if (attempt === ATTEMPTS) throw new Error(`network error: ${e.message}`);
-          await sleep(RETRY_MS);
+          last = `network error: ${e.message}`;
         }
+        if (attempt < ATTEMPTS) await sleep(RETRY_MS);
       }
-      await res.arrayBuffer();
-      if (res.status !== 301) throw new Error(`HTTP ${res.status}, expected 301`);
-      const to = res.headers.get("location") ?? "";
-      if (to !== location && to !== base + location) throw new Error(`Location is "${to}", expected "${location}"`);
-      return [`301 ${to}`];
+      throw new Error(`${last} (after ${ATTEMPTS} attempts, ${RETRY_MS / 1000}s apart)`);
     },
   };
 }
