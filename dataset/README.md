@@ -43,7 +43,7 @@ a public fixture (see the iron law below).
 | `canary.ts` | The hardcoded canary GUID (`CANARY`) + its first-line source comment (`CANARY_COMMENT`). |
 | `diff.ts` | A tiny zero-dependency line-based unified-diff generator (LCS backtrack + hunk grouping). |
 | `rng.ts` | The seeded, deterministic PRNG (`mulberry32` / `splitmix32`) — the only randomness source; no clock, no entropy. |
-| `model-authoring/` | The `model-authoring` config (see its section below): `briefs.ts` (the `spine` brief family), `manifest.ts` (seeded, deduplicated brief set), `corpora.ts` (the dedup indices), `published.json` (SHA-256 pin of the uploaded splits), `batch.ts` (the Message Batches client, on `fetch`), `prices.ts` (copied list prices, cost estimate), `rows.ts` (row derivation + replay), `cli.ts` (the four phases). |
+| `model-authoring/` | The `model-authoring` config (see its section below): `briefs.ts` (the `spine` brief family), `manifest.ts` (seeded, deduplicated brief set), `corpora.ts` (the dedup indices), `published.json` (SHA-256 pin of the uploaded splits), `batch.ts` (the Message Batches client, on `fetch`), `prices.ts` (copied list prices, cost estimate), `rows.ts` (row derivation + replay), `reply.ts` (which text of a reply is the plan; `eval/run.ts` imports this one implementation, EV.7), `cli.ts` (the four phases). |
 | `CARD.md` | The Hugging Face consumer README (uploads as the dataset repo's `README.md`). |
 | `out/` | The generated artifacts (`repair.jsonl`, `authoring.jsonl`, `report.json`). **Git-ignored — HF-only.** |
 

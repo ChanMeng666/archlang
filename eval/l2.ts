@@ -25,6 +25,9 @@
  * other claim, either way, needs an owner decision. This module is the protocol; it decides
  * nothing on its own.
  *
+ * The T3 record (eval/live-runs/2026-11-t3-result.md) was scored at ca02caed with the reader that
+ * preceded EV.7.
+ *
  * **Oracle isolation (load-bearing; deep-dive H3, AgentLens arXiv:2605.12925).** The
  * feedback the model receives is derived ONLY from the plan it wrote: compiler
  * diagnostics, lint suggestions, and a trimmed `describe()` projection. It never contains

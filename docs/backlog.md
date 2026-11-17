@@ -2302,7 +2302,7 @@ the text `extractArch` scored; `extractArch` itself still mishandles a typed fir
 four-backtick fence, left alone because `dataset/model-authoring/rows.ts` pins parity with it and a
 fix would move live scoring, so it needs its own card (EV.7).
 
-### EV.7 · `extractArch` scores the wrong text for a typed first block or a four-backtick fence — `todo`
+### EV.7 · `extractArch` scores the wrong text for a typed first block or a four-backtick fence: done by #940, waiting to be archived — `note`
 
 `extractArch` (`eval/run.ts`) skips a typed first block (` ```json `) and opens at its closing fence,
 so for a typed block, prose, then an `arch` block it scores the text between the blocks (possibly
@@ -2312,6 +2312,43 @@ reply's first line-start fence with an empty or `arch` info string (`firstArchFe
 live scoring against `eval/live-baseline.json`, and `dataset/model-authoring/rows.ts` pins parity
 with `extractArch`. **Gate:** both shapes scored as that block, with tests; the `rows.ts` parity
 test kept green; the change to live scoring named against the baseline before it lands.
+
+Residue (2026-11-18): one reader, `dataset/model-authoring/reply.ts`, shared by `eval/run.ts` and
+`rows.ts`: the first complete top-level `arch`/untyped fence, else the old regex's block, else the
+whole reply. `eval/README.md` names the reply shapes that now score differently and that
+`eval/live-baseline.json` was measured under the old regex (not re-measured). One shape scores worse
+than the old regex: an `arch` block inside a wrapper fence (` ```markdown ` or four-backtick
+wrapper, a typed opener never closed, a closer glued to the last line) followed by another fenced
+block, usually untyped, now scores text from after the plan where the old regex scored the plan; it
+needs a wrapper the model was not asked for, the four shapes are pinned as they score now, and EV.10
+resolves it. Over the 1,370 `model-authoring` replies none scores differently, so no published row
+moves. The published card's wording is EV.9.
+
+### EV.9 · The dataset card states the pre-EV.7 extraction rule — `todo`
+
+`dataset/CARD.md`'s `source` row says the `.arch` is extracted as "the first fenced block, else the
+whole reply". EV.7 (#940) made the rule the first complete top-level `arch` or untyped fence, else
+the pre-EV.7 regex's block, else the whole reply. Every published row reads the same under both (all
+1,370 replies' first fence is a complete ` ```arch ` block), so no data is wrong, only the
+wording. `dataset/CARD.md` is the published HF card, so changing it means re-uploading the card
+(RM-D55, the agent's), which EV.7 left out of scope. **Gate:** the row states the new rule, and the
+HF card is re-uploaded and its SHA-256 compared after.
+
+### EV.10 · A wrapped `arch` block followed by a later block scores the later block — `todo`
+
+After EV.7 (#940), `extractArch` (`dataset/model-authoring/reply.ts`) takes the first complete
+top-level fence with an empty or `arch` info string before it falls back to the pre-EV.7 regex. When
+the `arch` block sits inside a wrapper fence (a ` ```markdown ` or four-backtick wrapper, a typed
+opener never closed, a closer glued to the plan's last line) and another fenced block follows, that
+first step skips the wrapper and scores text from after the plan (the later block, e.g.
+`arch compile a.arch`, or the plan run on to the later block's opener), where the old regex scored
+the plan. `test/eval-live-sources.test.ts` › "known regression, backlog EV.10" pins the four shapes
+as they score now. One way: prefer an explicitly `arch`-labelled block, at any nesting the reader can
+see, over an untyped one, or take the legacy step's block when it is an `arch` block the first step
+skipped. A change moves live scoring, so name it against `eval/live-baseline.json` as EV.7 did.
+**Gate:** the four pinned shapes score the plan; every other case in that file and the 13 rows
+parity samples keep their outputs (or each moved one is named); the 1,370 `model-authoring` replies
+still score byte-identically.
 
 ### EV.3 · The baseline does not record the prompt it was measured under: done by #865, waiting to be archived — `note`
 

@@ -656,20 +656,27 @@ describe("the published-split pin", () => {
 });
 
 describe("extractArch matches the eval harness's reply parser", () => {
-  const samples = [
-    '```arch\nplan "a" {}\n```',
-    "prose\n```\nplan {}\n```\nmore",
-    "````arch\nx\n```",
-    "```archx\nnope```\n```arch\nyes\n```",
-    "```json\n{}\n```\n```arch\nplan\n```",
-    "no fence at all",
-    "```arch\nunclosed",
-    "``` \nspace\n```",
-    "",
-    "```arch\n```",
+  it("is the one implementation the eval harness uses (EV.7)", () => {
+    expect(extractArch).toBe(evalExtract);
+  });
+  // [reply, the text scored]. The last five moved at EV.7; the rest are the pre-EV.7 outputs.
+  const samples: [string, string][] = [
+    ['```arch\nplan "a" {}\n```', 'plan "a" {}'],
+    ["prose\n```\nplan {}\n```\nmore", "plan {}"],
+    ["````arch\nx\n```", "x"], // never closed as a fence: the old reader's block
+    ["```archx\nnope```\n```arch\nyes\n```", ""], // the old reader's block, as before
+    ["no fence at all", "no fence at all"],
+    ["```arch\nunclosed", "```arch\nunclosed"],
+    ["", ""],
+    ["```arch\n```", ""],
+    ["```json\n{}\n```\n```arch\nplan\n```", "plan"], // was "": a typed first block
+    ["```json\n{}\n```\nprose\n```arch\nplan\n```", "plan"], // was "prose"
+    ["````arch\nplan\n```\nmore\n````", "plan\n```\nmore"], // was "plan": a four-backtick fence
+    ["```arch\r\nplan\r\n```\r\n", "plan"], // was the whole reply: CRLF
+    ["``` \nspace\n```", "space"], // was the whole reply: a trailing space after the opener
   ];
-  it.each(samples)("%j", (s) => {
-    expect(extractArch(s)).toBe(evalExtract(s));
+  it.each(samples)("%j", (reply, scored) => {
+    expect(extractArch(reply)).toBe(scored);
   });
 });
 
