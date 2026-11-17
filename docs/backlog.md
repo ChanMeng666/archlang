@@ -2057,7 +2057,7 @@ fragment-less dead routes are unchecked; a bare URL followed by punctuation, or 
 component the page does not name, is wrongly refused; a malformed `%` escape throws. Each becomes
 its own card once looked at.
 
-### RR.9 · A door's free first fix build recurs per storey — `todo`
+### RR.9 · A door's free first fix build recurs per storey: done by #939, waiting to be archived — `note`
 
 Left by RR.1 (#855 review round 2). `src/elements/door.ts` builds each fix (and the hinge-flipped
 text) once per door node and key, but the first build per `ResolveCtx` is uncharged, and there is
@@ -2070,6 +2070,11 @@ a fixed byte allowance per build, `1 + span` charged past it, for fixes and flip
 corpus door statements are short, so no pinned payload should move. **Gate:** that input returns
 `E_STEP_LIMIT` or compiles within budget in linear time; a test pins the free/charged boundary
 (a component's second storey is charged); no pinned digest, work count or datum law moves.
+
+Done (#939) in `src/elements/reprint.ts`, so doors, windows, openings and dims (whose swap text
+#936 routed there) share it: a statement longer than `REPRINT_FREE_BYTES` (256) pays `1 + span` on
+every build, on every storey; a shorter one keeps the free first build per ctx. The probe (a 30 KB
+door, 300 levels) took 13.8 s, 27 s with `paper`; it now stops at `E_STEP_LIMIT` in 1.6 s.
 
 ### RR.10 · Window and opening fixes re-print their statement with no step charge: done by #880, waiting to be archived — `note`
 
