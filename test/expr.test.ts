@@ -4,7 +4,17 @@ import { describe, expect, it } from "vitest";
 import { compile } from "../src/index.js";
 import { parse } from "../src/parser.js";
 import { resolve } from "../src/ir.js";
-import { asNum, asStr, evalExpr, parseExpr, typeName, type Env, type ExprTokens, type Value } from "../src/expr.js";
+import {
+  asNum,
+  asStr,
+  evalExpr,
+  POISON,
+  parseExpr,
+  typeName,
+  type Env,
+  type ExprTokens,
+  type Value,
+} from "../src/expr.js";
 import { lex } from "../src/lexer.js";
 import type { Diagnostic } from "../src/diagnostics.js";
 
@@ -93,7 +103,8 @@ describe("Value coercions (errors-as-data, never thrown)", () => {
     const { diags, onError } = collect();
     // s + 1 — string used where a number is needed.
     const out = evalExpr({ t: "bin", op: "+", l: { t: "ref", name: "s" }, r: { t: "num", value: 1 } }, env, onError);
-    expect(out).toEqual({ t: "num", v: 1 }); // string coerces to 0, 0 + 1 = 1
+    // The mismatch is diagnosed once and the sum is the error value (AF3), not a guessed 0 + 1.
+    expect(out).toBe(POISON);
     expect(diags.some((d) => d.code === "E_TYPE")).toBe(true);
   });
 
@@ -209,7 +220,7 @@ describe("expression grammar (T2.2)", () => {
 
   it("type mismatch in arithmetic is a diagnostic, not a throw", () => {
     const r = ev('"a" + 1');
-    expect(r.value).toEqual({ t: "num", v: 1 }); // string coerces to 0
+    expect(r.value).toBe(POISON); // the error value (AF3), not a guessed 0 + 1
     expect(r.diags.some((d) => d.code === "E_TYPE")).toBe(true);
   });
 
