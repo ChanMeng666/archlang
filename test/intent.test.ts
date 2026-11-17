@@ -537,4 +537,16 @@ describe("validateIntent — area bands judge the exact area (RM9.1)", () => {
     expect(checkPredicates(preds, parsed).find((a) => a.predicate.kind === "total-area")?.pass).toBe(false);
     expect(checkPredicates(preds, describePlan(FORTY)).find((a) => a.predicate.kind === "total-area")?.pass).toBe(true);
   });
+
+  it("a figure a caller replaced is judged as printed, never on the stale exact one", () => {
+    const s = describePlan(FORTY);
+    s.rooms[0]!.area_m2 = 9;
+    const room = compileIntent({ roomsInclude: [{ concept: "A", areaM2: { max: 7, source: "brief" } }] });
+    expect(checkPredicates(room, s).find((a) => a.predicate.kind === "room-area")?.pass).toBe(false);
+    s.totals.floor_area_m2 = 50;
+    const total = compileIntent({ totalAreaM2: { max: 40, source: "brief" } });
+    expect(checkPredicates(total, s).find((a) => a.predicate.kind === "total-area")?.detail).toBe(
+      "area: total 50 m² outside [0, 40] (brief)",
+    );
+  });
 });

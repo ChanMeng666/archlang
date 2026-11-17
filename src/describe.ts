@@ -109,7 +109,14 @@ import type {
 } from "./describe/types.js";
 import { roomAdjacency } from "./describe/adjacency.js";
 import { roomSummaries } from "./describe/rooms.js";
-import { exactGrossAreaMm2, recordGrossAllLevelsMm2, recordGrossAreaMm2 } from "./describe/exact-areas.js";
+import {
+  exactFloorAreaMm2,
+  exactGrossAreaMm2,
+  exactRoomAreaMm2,
+  recordFloorAreaMm2,
+  recordGrossAllLevelsMm2,
+  recordGrossAreaMm2,
+} from "./describe/exact-areas.js";
 import { doorSummaries, openingSummaries, windowSummaries } from "./describe/openings.js";
 import { furnitureSummaries } from "./describe/furniture.js";
 import { r2 } from "./describe/shared.js";
@@ -743,7 +750,12 @@ function summarizeStorey(
     // disagree by a rounding step. Spread, so a plan with no ground has no key at all.
     ...(outdoor.length > 0 ? { outdoor_area_m2: r2(outdoor.reduce((s, o) => s + o.area_m2, 0)) } : {}),
   };
-  // The exact figure behind `gross_internal_area_m2`, off the JSON: a brief's band is judged on it (RM9.1).
+  // The exact figures behind `floor_area_m2` (the rooms' exact areas, summed unrounded) and
+  // `gross_internal_area_m2`, off the JSON: a brief's band is judged on them (RM9.1).
+  recordFloorAreaMm2(
+    totals,
+    rooms.reduce((s, r) => s + (exactRoomAreaMm2(r) ?? 0), 0),
+  );
   if (gia?.ok) recordGrossAreaMm2(totals, gia.mm2);
 
   // Declared zones. Membership ROLLS UP through nesting (`west` contains everything in
@@ -1062,14 +1074,17 @@ function withAllLevelsGrossArea(
   }
   // The exact figures behind the rounded ones, off the JSON (RM9.1): the storey's own, carried to
   // the rebuilt object, and the building's, the storeys' exact sum.
+  const t = out as SceneSummary["totals"];
+  const floor = exactFloorAreaMm2(totals);
+  if (floor !== undefined) recordFloorAreaMm2(t, floor);
   const own = exactGrossAreaMm2(totals);
-  if (own !== undefined) recordGrossAreaMm2(out, own);
+  if (own !== undefined) recordGrossAreaMm2(t, own);
   if (!missing) {
     const exact = storeys.map((s) => exactGrossAreaMm2(s.t));
     const sum = exact.reduce<number | undefined>((n, x) => (n === undefined || x === undefined ? undefined : n + x), 0);
-    if (sum !== undefined) recordGrossAllLevelsMm2(out, sum);
+    if (sum !== undefined) recordGrossAllLevelsMm2(t, sum);
   }
-  return out as SceneSummary["totals"];
+  return t;
 }
 
 /**

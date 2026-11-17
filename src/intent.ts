@@ -27,7 +27,12 @@ import type { GrossAreaReason } from "./analyze/gross-area.js";
 import { polygonLabelPoint } from "./geometry/polygon.js";
 import { isCirculationRoom, roomsMatchingConcept } from "./intent-concepts.js";
 import { makeNaming, type NameableRoom, sizeWords } from "./naming.js";
-import { exactGrossAllLevelsMm2, exactGrossAreaMm2, exactRoomAreaMm2 } from "./describe/exact-areas.js";
+import {
+  exactFloorAreaMm2,
+  exactGrossAllLevelsMm2,
+  exactGrossAreaMm2,
+  exactRoomAreaMm2,
+} from "./describe/exact-areas.js";
 import { fmt2, fmt4 } from "./num-format.js";
 import { pure } from "./pure.js";
 import { type CompassLetter, type SiteFacts, SYMBOLIC_FACINGS, type SymbolicFacing } from "./site.js";
@@ -449,8 +454,8 @@ function totalFloorArea(summary: SceneSummary): number {
  * A band is a limit, so it is judged on the EXACT area, never on the printed one (card RM9.1):
  * `describe()` rounds each room to 0.01 m² and sums the rounded figures, so five rooms of exactly
  * 40.000 m² print 40.01. The exact figures ride beside the summary in a side table
- * (`src/describe/exact-areas.ts`), off the JSON; a summary that did not come from `describe()`
- * has none, and is judged on its printed figures as before.
+ * (`src/describe/exact-areas.ts`), off the JSON; a summary that did not come from `describe()`,
+ * or a figure a caller has since replaced, has none, and is judged on its printed figures as before.
  */
 
 /** A room's exact floor area in m², or its printed `area_m2` when no exact figure was recorded. */
@@ -459,16 +464,16 @@ function exactRoomAreaM2(r: RoomSummary): number {
   return mm2 === undefined ? r.area_m2 : mm2 / 1_000_000;
 }
 
-/** The plan's exact total floor area in m², every storey's rooms summed before any rounding, or
- *  {@link totalFloorArea} when any room has no exact figure (never a sum of the two kinds). */
+/** The plan's exact total floor area in m², every storey's exact figure (its rooms summed before
+ *  any rounding) summed, or {@link totalFloorArea} when any storey has none (never a sum of the
+ *  two kinds). */
 function exactTotalFloorArea(summary: SceneSummary): number {
   let mm2 = 0;
-  for (const s of storeysOf(summary))
-    for (const r of s.rooms) {
-      const x = exactRoomAreaMm2(r);
-      if (x === undefined) return totalFloorArea(summary);
-      mm2 += x;
-    }
+  for (const s of storeysOf(summary)) {
+    const x = exactFloorAreaMm2(s.totals);
+    if (x === undefined) return totalFloorArea(summary);
+    mm2 += x;
+  }
   return mm2 / 1_000_000;
 }
 
