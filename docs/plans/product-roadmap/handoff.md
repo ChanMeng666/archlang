@@ -169,6 +169,8 @@ RM1.1a 也在本场做完（纯测量，没有 PR，见 §6）。
 
 **发布：** 1.63.0 已发布（§1.2，RM-D59）。1.64.0 要所有者对那一次的决定（没有决定就不切；VS Code Marketplace 与 OpenAI 目录的发布由代理做，含 OpenAI 的 Submit 与 Publish，RM-D41、RM-D44）。2026-12-01 所有者亲自发 Show HN；`main` 一直保持绿。RM5.4（#603）已由 #781 做完（RM-D43）。
 
+**运维小项（不占车道，2026-11-17 加）：** Search Console 的 "Not found (404)" 复验 2026-11-17 重新开始（6 个待验、0 失败；账号见协调者记忆，不写进本公开仓库）。Google 来信或约两周后读结果，记进 `../geo-seo/handoff.md` 的 G7c 行；失败就先 `curl` 那几个网址看是否仍 301。
+
 **给执行者的简报加两行：** 状态文件按卡命名（`state-rm1.3a.md`，不叫 `state.md`）；scratchpad 里的其他文件（PR 正文等）也用唯一文件名（`pr-body.md` 在同一会话被两个代理互相覆盖过）。
 
 **阶段 C/D/E/F：** 见 `README.md` §3，日期是参考。五份设计稿都已写（`schema-policy.md`、`walls-facts.md`、`slab-and-section.md`、`plan-json-scope.md`、`visual-language.md`）；`slab-and-section.md` 的链接已在 #544 贴出（2026-11-11T12:36:10Z）；RM6.1 剖切符号那一半的 PR 在 #532 留言。
@@ -335,4 +337,18 @@ RM1.1a 的兜底：1.59.0 到 2026-11-23 还没打 tag，就量当时 `main` 的
 - **(ao) 发布构建前先 `git fetch`：** 本地 `origin/main` 停在合并之前，第一次打出的是旧的 `archlang-0.50.0.vsix`；fetch、快进到合并提交后重打才是 0.51.0。上传前按 `release-check.md` 在 `.vsix` 里核对版本，这一步拦住了它。
 - **(ap) 版本号 PR 要拿 `git log <上个 tag>..main` 对 `[Unreleased]`：** 这次补上了七条漏记的用户可见改动（其中一条是步数计费的行为变化，评审又要求写进摘要）。
 - **(aq) 报告里的每个"发现"都要附出处：** 发布后协调者报了三条"发布说明不准"，没有任何命令或评审产出过它们；核对后两条是假的、一条是惯例。没有证据的不列。
+
+### 2026-11-17/18 运维一场（所有者转来的邮件；协调者记录）
+
+起因是三类邮件：DigitalOcean 快照调价、Search Console 404 复验失败、archcanvas.uk 两次掉线告警。所做的事都已合并、部署并在线上核对过：
+
+- **archlang.uk 死链（G7c）：** #927、#928、#929 共加 14 条 301（旧版文档发布过的仓库相对链接，去向与 `docs-site/link-rewrite.mjs` 今天的改写一致）；#930 让 `redirectCheck` 在传播期重试；#931 记进 `../geo-seo/handoff.md` 与 `.claude/rules/sites.md`。Search Console 复验已重开（见 §2 运维小项）。
+- **archcanvas（私有仓库）：** 主机维护、掉线诊断用的日志、一处导出校验修复与旧备份清理（archcanvas #321、#322、#324、#325、#327）。细节只记在 archcanvas 自己的 `docs/OPERATIONS.md` 与 `docs/TODO.md`，不写进本公开仓库。
+- **DigitalOcean 快照调价：** 账号里没有快照，不受影响（记在 archcanvas 的 runbook）。
+
+教训：
+
+- **(ar) 没有 PR 检查会执行 `_redirects`：** 第一次证明是部署后的 `smoke.mjs`，规则写错就让 `main` 变红。#929 的新上下文评审在 `wrangler dev` 上重放，抓到指向裸 origin 的 `Location` 会带根斜杠（已记进 `.claude/rules/sites.md`）。
+- **(as) 新规则上传后几秒内可能答 404：** #929 的部署 smoke 因此红过一次，重跑即绿；#930 加了重试（每条至多 25 s）。原因没证实：同一瞬间 `.html` 变体已答 301。下一次加规则的部署若重试后仍红，要另查。
+- **(at) 评审每轮都抓到了真问题：** #321 的边界卡顿漏记、#929 的斜杠、#324/#325 的文档政策。小改动也照风险层级走一轮新上下文评审。
 
