@@ -16,13 +16,14 @@
  *
  * ## What each row is for
  *
- * - `examples/*.arch` — the shipped corpus; none of it names a new word (the first case below
- *   holds that premise, over every `.arch` and Markdown file the repository ships, so the law
- *   cannot pass because a plan stopped being in its corpus). The one exception is the closed list
- *   `SHOWCASE_PLANS` (`test/helpers/showcase-plans.ts`, card RM8.5): plans under
- *   `examples/showcase/` that show the new families on purpose. They are never rows (the rows are
- *   the top-level examples), so the law's statement, rows and baseline are unchanged; only the
- *   premise's coverage narrows, by exactly that list.
+ * - `examples/*.arch` — the shipped corpus; none of it names a new word (the first case below holds
+ *   that premise, over every `.arch` and Markdown file the repository ships, so the law cannot pass
+ *   because a plan stopped being in its corpus; "ships" means tracked by git, or untracked and not
+ *   ignored, `test/helpers/shipped-sources.ts`, so gitignored local output is never read). The one
+ *   exception is the closed list `SHOWCASE_PLANS` (`test/helpers/showcase-plans.ts`, card RM8.5):
+ *   plans under `examples/showcase/` that show the new families on purpose. They are never rows
+ *   (the rows are the top-level examples), so the law's statement, rows and baseline are unchanged;
+ *   only the premise's coverage narrows, by exactly that list.
  * - `inline:families-before-legend` — every family that existed before the tranche on one sheet,
  *   with its legend: the legend lists fixture rows in `FIXTURE_FAMILIES` order, so a family slotted
  *   in rather than appended would move this row.
@@ -37,8 +38,8 @@
  * `docs/testing.md` § 3 describes, and record the reason here.
  */
 
-import { readdirSync, readFileSync, statSync } from "node:fs";
-import { join, relative } from "node:path";
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import { describe as suite, expect, it } from "vitest";
 import { compile, describe, lint } from "../src/index.js";
 import { makeNodeWorld } from "../src/cli/io.js";
@@ -60,6 +61,7 @@ import {
   perThemeDigests,
 } from "./helpers/new-families-law.js";
 import { SHOWCASE_PLANS } from "./helpers/showcase-plans.js";
+import { shippedSources } from "./helpers/shipped-sources.js";
 
 const API: FamiliesLawApi = { compile, describe, lint, rendered: THEMES.rendered! };
 const ROWS = familiesLawRows(ROOT, CANONICAL_FIXTURES);
@@ -140,21 +142,6 @@ const BASELINE: [string, string][] = [
   ["79b5ba0efe233640ad18646b6ee13070309315ef6240feb73d46b4ad55299e72", "inline:near-words"],
 ];
 
-/** The source kinds a plan can ship in: a plan file, a Markdown fence, or a string in code or data. */
-const SOURCE_EXT = /\.(arch|md|ts|tsx|js|mjs|json|vue)$/;
-
-/** Every source file under `dir` (recursively), skipping dependencies, builds and generated sites. */
-function shippedSources(dir: string): string[] {
-  const out: string[] = [];
-  for (const name of readdirSync(dir)) {
-    if (name === "node_modules" || name === "dist" || name === "public" || name.startsWith(".")) continue;
-    const p = join(dir, name);
-    if (statSync(p).isDirectory()) out.push(...shippedSources(p));
-    else if (SOURCE_EXT.test(name)) out.push(p);
-  }
-  return out;
-}
-
 suite("visual-assets families — byte-identity law", () => {
   it("names exactly the twenty families appended after the earlier ones, aliases included", () => {
     // Was `CANONICAL_FIXTURES.length === FAMILIES_BEFORE + 20`, which a later append broke; the
@@ -172,7 +159,9 @@ suite("visual-assets families — byte-identity law", () => {
 
   it("no shipped plan names a new word, so the law's corpus is a corpus that did not change", () => {
     // `furniture <word>` and `furniture id=<x> <word>` (the only two places a category stands),
-    // in every plan file, Markdown fence and code or data string the repository ships plans in.
+    // in every plan file, Markdown fence and code or data string the repository ships plans in:
+    // shipped means tracked by git, or untracked and not ignored (`test/helpers/shipped-sources.ts`),
+    // so gitignored local output (a paid eval run's `eval/results.*`) is not scanned.
     const words = new RegExp(`\\bfurniture\\s+(?:id=(?:"[^"]*"|\\S+)\\s+)?(${NEW_WORDS.join("|")})\\b`);
     expect(words.test("furniture id=lamp1 floor_lamp at (0,0)"), "the guard sees the id= form").toBe(true);
     expect(words.test("furniture palm at (0,0)"), "the guard sees the bare form").toBe(true);
@@ -204,19 +193,29 @@ suite("visual-assets families — byte-identity law", () => {
       "editors/vscode/src",
     ];
     for (const dir of dirs) {
-      for (const f of shippedSources(join(ROOT, dir))) {
-        const rel = relative(ROOT, f).replace(/\\/g, "/");
+      for (const rel of shippedSources(ROOT, dir)) {
         // The plans under `docs/plans/` describe work; they are not compiled. A package's tests
         // build their own scenes and are not shipped plans.
         if (rel.startsWith("docs/plans/") || /^packages\/[^/]+\/test\//.test(rel)) continue;
         if (SHOWCASE_PLANS.includes(rel)) continue;
-        if (words.test(readFileSync(f, "utf8"))) users.push(rel);
+        if (words.test(readFileSync(join(ROOT, rel), "utf8"))) users.push(rel);
       }
     }
     for (const f of ["README.md", "spec.llm.md", "llms-full.txt"]) {
       if (words.test(readFileSync(join(ROOT, f), "utf8"))) users.push(f);
     }
     expect(users).toEqual([]);
+  });
+
+  it("the premise scan refuses a missing folder, so a renamed entry cannot make it vacuous", () => {
+    // `git ls-files` lists nothing for a path that does not exist; the disk walk threw ENOENT.
+    expect(() => shippedSources(ROOT, "no-such-dir")).toThrow(/no-such-dir is not a folder/);
+    expect(() => shippedSources(ROOT, "README.md"), "a file is not a folder").toThrow(/is not a folder/);
+    // A trailing separator names the same folder.
+    const examples = shippedSources(ROOT, "examples");
+    expect(examples.length).toBeGreaterThan(0);
+    expect(shippedSources(ROOT, "examples/")).toEqual(examples);
+    expect(shippedSources(ROOT, "examples\\")).toEqual(examples);
   });
 
   it("the table pins every row the law reads, in order", () => {
