@@ -350,6 +350,12 @@ The rest of the rules:
 - **`/archlang.gbnf` → `text/plain; charset=utf-8`** (docs only). Cloudflare sends **no
   `Content-Type` at all** for that extension; Vercel sent `application/octet-stream`. Both deliver
   a machine-readable route as an opaque download.
+- **`/error-codes`, `/language-reference` and six more → 301** (docs only, in `_redirects`). Dead inbound URLs
+  that Search Console reported as 404: older copies of the docs published repo-relative links before
+  `docs-site/link-rewrite.mjs` existed. Repo files (`/examples/museum-wing.arch`, `/brand/README`,
+  `/dataset/CARD`, `/dataset/README`, `/eval/README`) go to their GitHub page, an absolute
+  destination; `/schemas/plan.schema.json` goes to `/plan.schema.json`, where `ROOT_COPIES` in
+  `docs-site/sync-docs.mjs` serves it. Every rule has a `redirectCheck` in `scripts/smoke.mjs`.
 - **`/  /index.html  200`** (playground only, in `_redirects`). Not a redirect: a **status-200 rule
   is a rewrite**, and the redirect layer runs before the asset lookup. It exists to give `/` a file
   under `html_handling: "none"` — see below.
