@@ -97,6 +97,7 @@ import type { InstanceBody, KeepState } from "./ir/side-tables.js";
 import {
   ceilingOfIr,
   datumTablesOfIr,
+  droppedForErrorValueOfIr,
   instanceBodiesOfIr,
   stepsSpent,
   keepStateOfIr,
@@ -178,7 +179,14 @@ export type {
 } from "./ir/types.js";
 export { MAX_ELEMENTS, whileSpanKey } from "./ir/expand.js";
 export type { InstanceBody } from "./ir/side-tables.js";
-export { ceilingOf, datumTablesOf, instanceBodiesOf, keepResultsOf, evaluationSteps } from "./ir/side-tables.js";
+export {
+  ceilingOf,
+  datumTablesOf,
+  droppedForErrorValue,
+  instanceBodiesOf,
+  keepResultsOf,
+  evaluationSteps,
+} from "./ir/side-tables.js";
 export { sheetExtents, drawnView } from "./ir/sheet.js";
 export { lineWeightOutOfRange, MAX_OVERLAP_PAIRS_LISTED, checkRoomOverlaps } from "./ir/checks.js";
 export { DERIVED_ELEMENTS_PER_ROOM } from "./ir/groups.js";
@@ -1808,6 +1816,12 @@ function resolveBody(
   };
   datumTablesOfIr.set(ir, datumTables);
   if (instanceBodies.size > 0) instanceBodiesOfIr.set(ir, instanceBodies);
+  // Only on a storey the AF3 sweep dropped something from, so every other IR is the one it was.
+  if (poisoned.size > 0)
+    droppedForErrorValueOfIr.set(
+      ir,
+      [...poisoned].map((e) => e.id),
+    );
 
   // 8. The storey's keeps (ADR 0033), last: measured against the plan as it resolved, in plan
   //    coordinates, in source order — on a `paper` plan's drawn pass only (R11). A keep reads, it

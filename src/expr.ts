@@ -1060,14 +1060,15 @@ function evalCall(e: Extract<Expr, { t: "call" }>, env: Env, onError: (d: Diagno
     return evalExpr(callee.body, callEnv, onError, depth + 1);
   }
   if (callee && callee.t === "builtin" && builtinDispatch) {
-    // A built-in fed the error value, or one that diagnoses its own arguments, yields it.
+    // A built-in fed the error value, or one that raises an ERROR about its own arguments,
+    // yields it. Only an error: the error value is held only by a plan that already fails.
     for (const a of args) if (a === POISON) return POISON;
     let raised = false;
     const r = builtinDispatch(
       callee.name,
       args,
       (d) => {
-        raised = true;
+        if (d.severity === "error") raised = true;
         onError(d);
       },
       e.span,

@@ -5,7 +5,7 @@
 Where the tests of a `src` module are, and what each test file is for. Generated; `npm run check:drift`
 fails when it is stale. How to add a test: `docs/testing.md` § 4.
 
-543 test files in `test/`, 288 `src` modules, 108 modules no test imports.
+544 test files in `test/`, 288 `src` modules, 108 modules no test imports.
 
 ## `src` module → tests that import it
 
@@ -118,16 +118,16 @@ Nearest first, then by name; `(+n)` is the rest. Test names are `test/<name>.tes
 - `src/grammar/tokens.ts` (34) — `arch-highlight`, `block-stair-lint`, `clause-order-byte-identity`, `closed-vocabularies`, `corner-window`, `door-enums`, `doors`, `element-facets` (+26)
 - `src/hatches.ts` (8) — `export-pdf`, `floor-materials-byte-identity`, `joinery-split-oracle`, `joinery-split`, `model-range`, `outdoor`, `room-floor`, `sheet-text`
 - `src/impact.ts` (2) — `rectilinear-doors`, `rectilinear-rooms`
-- `src/import.ts` (33) — `block-stair-byte-identity`, `corner-window-byte-identity`, `dim-swap-reprint`, `dim-thickness-callout`, `drawing-budget`, `floor-materials-byte-identity`, `furniture-relations`, `gaps-byte-identity` (+25)
+- `src/import.ts` (34) — `block-stair-byte-identity`, `corner-window-byte-identity`, `dim-swap-reprint`, `dim-thickness-callout`, `drawing-budget`, `error-value-law`, `floor-materials-byte-identity`, `furniture-relations` (+26)
 - `src/import/limits.ts` (1) — `openplan3d-malformed`
-- `src/index.ts` (404) — `acc-metadata`, `access-graph`, `access-policy`, `accessible-svg`, `agent-gallery`, `alias-match`, `anchors`, `annotate` (+396)
+- `src/index.ts` (405) — `acc-metadata`, `access-graph`, `access-policy`, `accessible-svg`, `agent-gallery`, `alias-match`, `anchors`, `annotate` (+397)
 - `src/input-limit.ts` (2) — `import-rooted`, `workspace-seams`
 - `src/intent-concepts.ts` (2) — `vocabulary-living-dining`, `vocabulary-matcher-oracle`
 - `src/intent.ts` (1) — `site`
-- `src/ir.ts` (173) — `access-policy`, `arc-radius-exact`, `attach`, `axes`, `between-face-probes`, `block-stair-byte-identity`, `block-stair-frames`, `block-stair-winders` (+165)
+- `src/ir.ts` (174) — `access-policy`, `arc-radius-exact`, `attach`, `axes`, `between-face-probes`, `block-stair-byte-identity`, `block-stair-frames`, `block-stair-winders` (+166)
 - `src/label-fit.ts` (1) — `label-fit`
 - `src/label-placement.ts` (3) — `label-placement-oracle`, `label-placement`, `label-wrap`
-- `src/lexer.ts` (11) — `clause-order-byte-identity`, `diagnostics-volume`, `diagnostics`, `expr`, `fmt-lossless`, `imperial-input`, `model-range`, `parser-recovery-metric` (+3)
+- `src/lexer.ts` (12) — `clause-order-byte-identity`, `diagnostics-volume`, `diagnostics`, `error-value-law`, `expr`, `fmt-lossless`, `imperial-input`, `model-range` (+4)
 - `src/lint.ts` (54) — `annotation-collisions`, `annotation-small-rooms`, `block-stair-shaft`, `block-stair`, `equivariance-corpus`, `finish-furnish-bounds`, `lint-coverage`, `lint-fix-texts` (+46)
 - `src/lint/clearance-measure.ts` (2) — `lint-clearances-kitchen-doors`, `repair-no-worse`
 - `src/lint/context.ts` (49) — `block-stair-landing`, `block-stair-lint`, `block-stair-shaft`, `block-stair`, `lint-clearances-kitchen-doors`, `lint-clearances-wc-window`, `lint-exterior-ring`, `lint-fix-texts` (+41)
@@ -157,11 +157,11 @@ Nearest first, then by name; `(+n)` is the rest. Test names are `test/<name>.tes
 - `src/num-format.ts` (15) — `annotation-collisions`, `dim-thickness-callout`, `emit-opening-oracle`, `fmt-lossless`, `imperial-input`, `keep`, `lint-ruleset-values`, `model-range` (+7)
 - `src/opening-relation.ts` (3) — `openings-between`, `rectilinear-doors`, `rectilinear-sides`
 - `src/opening-schedule.ts` (2) — `sheet-annotations`, `window-kinds`
-- `src/parser.ts` (153) — `arc-radius-exact`, `attach`, `axes`, `block-stair-byte-identity`, `block-stair`, `chrome-hidden`, `circle-enclosure`, `circulation-concave` (+145)
+- `src/parser.ts` (154) — `arc-radius-exact`, `attach`, `axes`, `block-stair-byte-identity`, `block-stair`, `chrome-hidden`, `circle-enclosure`, `circulation-concave` (+146)
 - `src/pipeline.ts` (1) — `work-counts`
 - `src/plan-json.ts` (11) — `element-facets`, `format`, `garage`, `plan-json-dropped`, `plan-json-instances`, `polygon-rooms`, `section`, `sheet-annotations` (+3)
 - `src/plan-json/to-json.ts` (1) — `rect-ring`
-- `src/registry.ts` (47) — `annotation-collisions`, `block-stair-byte-identity`, `block-stair-winders-walking-arc`, `block-stair`, `corner-window-byte-identity`, `corner-window`, `dim-swap-reprint`, `dim-thickness-callout` (+39)
+- `src/registry.ts` (48) — `annotation-collisions`, `block-stair-byte-identity`, `block-stair-winders-walking-arc`, `block-stair`, `corner-window-byte-identity`, `corner-window`, `dim-swap-reprint`, `dim-thickness-callout` (+40)
 - `src/repair.ts` (2) — `finish-furnish-laws`, `finish-never-worse`
 - `src/reroll.ts` (3) — `keep`, `reroll-findrun-oracle`, `reroll`
 - `src/room-datums.ts` (5) — `openings-between`, `room-datums`, `segment-select`, `shared-grid-byte-identity`, `keep`
@@ -192,7 +192,7 @@ Nearest first, then by name; `(+n)` is the rest. Test names are `test/<name>.tes
 - `src/wall-lowering.ts` (2) — `joinery-split`, `open-crossing`
 - `src/wall-ref.ts` (2) — `rectilinear-rooms`, `walls-from-rooms`
 - `src/while-fix.ts` (1) — `while-fix`
-- `src/world.ts` (121) — `block-stair-byte-identity`, `circulation-unmeasured`, `clause-order-byte-identity`, `corner-window-byte-identity`, `corner-window`, `dim-thickness-callout`, `drawing-budget`, `drawing-overflow` (+113)
+- `src/world.ts` (122) — `block-stair-byte-identity`, `circulation-unmeasured`, `clause-order-byte-identity`, `corner-window-byte-identity`, `corner-window`, `dim-thickness-callout`, `drawing-budget`, `drawing-overflow` (+114)
 
 ## Test files
 
@@ -359,6 +359,7 @@ The first sentence of each file's header comment.
 - `test/error-catalog-families.test.ts` — The error catalogue is written by family (`src/error-catalog/<family>.ts`, one `defineEntries({...})` each) and merged by `mergeFamilies` in `src/error-catalog.ts`.
 - `test/error-catalog-order.test.ts` — `ERROR_CODES` order is a law of the source, not of the host: errors first, then warnings, and within each group by UTF-16 code unit.
 - `test/error-svg.test.ts` — onError: 'svg' (opt-in error card).
+- `test/error-value-law.test.ts` — The AF3 law: the error value (`POISON`, `src/expr.ts`) is held only by a plan that already fails.
 - `test/error-value.test.ts` — An unknown name evaluates to the error value (AF3, TypeScript's error type): its `E_UNKNOWN_REF`, hint included, is the one diagnostic of that root cause, and the element that read it is dropped rather than drawn from...
 - `test/escape-fuzz.test.ts` — escaping fuzz — SVG; escaping fuzz — error-card SVG; escaping fuzz — ASCII plan; escaping fuzz — DXF export; escaping fuzz — shrunk regressions.
 - `test/eval-fidelity-live.test.ts` — The fidelity slice's live path (`eval/fidelity-live.ts`), offline: fetch is mocked, no key, no network.

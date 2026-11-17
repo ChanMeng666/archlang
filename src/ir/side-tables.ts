@@ -30,6 +30,20 @@ export function datumTablesOf(ir: ResolvedPlan): ReadonlyMap<string, DatumTable>
   return datumTablesOfIr.get(ir) ?? new Map();
 }
 
+/** Each resolved storey's elements dropped for reading the error value (AF3), by id. */
+export const droppedForErrorValueOfIr = new WeakMap<ResolvedPlan, readonly string[]>();
+
+/**
+ * The ids of the elements one storey's resolution dropped because they read the error value
+ * (`POISON`, AF3, `src/expr.ts`), with the walls derived from them and the openings hosted on
+ * those, in the order the sweep met them; empty when none was. Every source of the error value raises an
+ * error-severity diagnostic, so only a plan that already fails is ever non-empty
+ * (`test/error-value-law.test.ts`). Internal, for that law; not part of the public surface.
+ */
+export function droppedForErrorValue(ir: ResolvedPlan): readonly string[] {
+  return droppedForErrorValueOfIr.get(ir) ?? [];
+}
+
 /** One `place`d instance's body as its own group resolved it, before its frame carried it. */
 export interface InstanceBody {
   /** The instance's own elements in its LOCAL frame and LOCAL names (no `<prefix>.`), in
