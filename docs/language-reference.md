@@ -898,7 +898,7 @@ written in the order the grammar lines below show. A clause written twice is
 [`E_DUP_CLAUSE`](error-codes.md#e_dup_clause). An `id=` may also follow the kind word
 (`furniture bed id=b1 …`, `door double id=d1 …`, `wall exterior id=w1 …`). A `door`'s or
 `window`'s kind word may instead come among its clauses (`door on w1 at 50% width 900 sliding`),
-once: it is the door the kind after `door` gives, and `arch fmt` moves it there. Out of that order, a
+once: it is the door the kind after `door` gives, and `archlang fmt` moves it there. Out of that order, a
 clause word followed by `=` or `(` starts a statement of its own (`size = 3`, `rotate(1)`), as it
 always did: write a parenthesised value (`rotate (90)`) in the order shown, or drop the parentheses.
 
