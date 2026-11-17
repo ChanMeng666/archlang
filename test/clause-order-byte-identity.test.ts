@@ -138,7 +138,7 @@ const BASELINE: [string, string, string][] = [
     "examples/gallery-l.arch",
   ],
   [
-    "55ad2593f768d91a282b6cde6e8a06f6ee5dbd5701fe1858aa8905431432767a",
+    "12bef849c5ca991fc47fb0b4e81c54d263a1fb2857237a234d3c18a7d646c33a", // RM9.2, see ./byte-identity-baseline.ts
     // CO.1: the parse holds the 2 `size` clauses the example now writes; without them, offsets mapped back, it is the parse pinned here (was c7dbe7c1)
     "93f0b4a6783c3f4db608a63eed304f6c4a4d9bc750f86575da0122b4ab4deb1c",
     "examples/garden-house.arch",
@@ -154,7 +154,7 @@ const BASELINE: [string, string, string][] = [
     "examples/hexagon-pavilion.arch",
   ],
   [
-    "36397208c3c6ea06f9bbc3efba156b33de2189455086852e290890f3c8784884",
+    "20faa1e459244053784f4742224e7b437c1bfe1dc059208fb5e240976f446545", // RM9.2, see ./byte-identity-baseline.ts
     // CO.1: the parse holds the 3 `size` clauses the example now writes; without them, offsets mapped back, it is the parse pinned here (was db3a5d1e)
     "664292dca8bb269674094cf7e5f83be38addc1c7f81074b19e7bf444d2f9593e",
     "examples/hillside-villa.arch",
@@ -273,7 +273,7 @@ const BASELINE: [string, string, string][] = [
     "examples/tiny-house.arch",
   ],
   [
-    "4ebf99f3ba158cc7652424c413c94f9f837f6afd24546d8bbac0f080bb281652",
+    "f1507b4659c74fcc6bb49744b03253c57fcc2bb38595581241cecc45354f01ec", // RM9.2, see ./byte-identity-baseline.ts
     "355d36bd5d1cf39a9694d70ffba4532ec12f63cd25ae9132c5f4198ca071bd3a",
     "examples/townhouse.arch",
   ],
@@ -283,7 +283,7 @@ const BASELINE: [string, string, string][] = [
     "examples/transit-hall.arch",
   ],
   [
-    "a60a7362582085a80c577e970a5139fc01d12ec4600af7ad8f4ed8a4ede897aa",
+    "1934af2ec2648d74dcc65086998e453f53b34098373f3fd3c26be4e4c6e0c37f", // RM9.2, see ./byte-identity-baseline.ts
     "9846048edccb900827a20a6de7d258f356688609aa11a1272d338b92c863eac8",
     "examples/turning-stair.arch",
   ],
@@ -294,7 +294,7 @@ const BASELINE: [string, string, string][] = [
     "examples/two-bed.arch",
   ],
   [
-    "9bad4f64cdc450219b6adac2c6de7a4790d0b48917ef88358b9c54c78b57a90f",
+    "846007280eac8f1610e07cce5068623d58cfd6e574ae8890610c06751d575d40", // RM9.2, see ./byte-identity-baseline.ts
     "a2400915472bf50c8146ee82ad9e09b2cf4d64e2887565c5b33975f90c8abc4b",
     "examples/two-storey.arch",
   ],
