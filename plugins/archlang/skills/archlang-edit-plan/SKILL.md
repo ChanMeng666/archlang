@@ -65,7 +65,8 @@ rewrites the file (`fix`, `finish`, `repair -o plan.arch`, `fmt --write`) says w
 `source_hash` is the file as the command read it, and `written_hash` the file once the command has
 written it. A result that hands you rewritten text instead (`repair --json`, a `--dry-run`, or the
 MCP `repair`, `fix` and `finish` tools) gives `output_hash`, the file's revision once you write that
-text to it unchanged. `archlang fmt plan.arch --json` reports `source_hash` without writing. If the
+text to it unchanged. `archlang fmt plan.arch --json` reports `source_hash` without writing, even
+when it refuses a plan that does not parse (exit `2`, `ok: false`, `parsed: false`). If the
 file changed since, the command writes nothing and exits `4` with `E_STALE_SOURCE`: read the file
 again, redo your edit on what is there now, and use the new hash. This narrows the window for a
 clash; it is not a lock.

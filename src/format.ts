@@ -6,8 +6,9 @@
  * IR ({@link import("./doc.js")}), weaves the captured comments back in by source
  * position, and prints at an 80-column target. It is pure text→text and never
  * throws: on a parse error it returns the source unchanged, so it can never
- * corrupt broken input. Re-running it is a fixpoint (`format(format(x)) ===
- * format(x)`).
+ * corrupt broken input ({@link formatChecked} says so). Every number literal is
+ * printed losslessly, so the text compiles to the same values. Re-running it is a
+ * fixpoint (`format(format(x)) === format(x)`).
  */
 
 import type {
@@ -27,11 +28,12 @@ import type { Comment } from "./lexer.js";
 import { parse } from "./parser.js";
 import { isNumericThemeKey, styleKeyFor, type Theme } from "./theme.js";
 import { concat, type Doc, hardline, indent, join, printDoc } from "./doc.js";
-/** Deterministic number → string (trim to 3 dp, non-finite → "0"). */
-import { fmtSource as numStr } from "./num-format.js";
+import type { Diagnostic } from "./diagnostics.js";
 // Expression re-emission lives in one place (shared with the fix producers) so
-// the formatter and `arch fix` render an expression byte-identically.
-import { escapeStr, exprToSource as exprStr } from "./expr-source.js";
+// the formatter and `arch fix` render an expression byte-identically. A number prints
+// through the one literal printer: `fmtSource` (3 dp) for `formatPlan`'s other caller,
+// `repair`, and lossless (`fmtLiteral`) inside `format()` (M.8).
+import { escapeStr, exprToSource as exprStr, numLiteral as numStr, withLosslessLiterals } from "./expr-source.js";
 // The leaf (non-block) statement kinds print through the one shared printer an
 // element's own fix producers also lower onto — see `statement-print.ts`'s header.
 import { ptStr, stairHeadStr, stairPieceStr, statementText } from "./statement-print.js";
@@ -50,13 +52,34 @@ const quote = (s: string): string => `"${escapeStr(s)}"`;
 /** A non-numeric theme/style value: a string (all the parser stores) through {@link quote}. */
 const quoteValue = (v: unknown): string => (typeof v === "string" ? quote(v) : JSON.stringify(v));
 
-/** Format ArchLang source. Returns the source unchanged if it does not parse. */
-export function format(source: string): string {
+/** What {@link formatChecked} returns: the text, and whether the formatter read the source at all. */
+export interface FormatResult {
+  /** The canonical source, or the input verbatim when it was refused. */
+  formatted: string;
+  /** `false` when the source has a parse error, so the formatter refused it and changed nothing. */
+  parsed: boolean;
+  /** The parse diagnostics when refused (every severity, as `parse()` returned them); `[]` otherwise. */
+  diagnostics: Diagnostic[];
+}
+
+/**
+ * {@link format} that also says whether it refused (AF6): `arch fmt` reports `parsed: false` and
+ * the parse diagnostics instead of a silent verbatim copy. The refusal rule is the one below.
+ */
+export function formatChecked(source: string): FormatResult {
   const { plan, diagnostics } = parse(source);
   // Never reformat broken input — a parse error could mean we'd drop or mangle
   // something. Return it verbatim (idempotent: a clean file re-formats to itself).
-  if (!plan || diagnostics.some((d) => d.severity === "error")) return source;
-  return formatPlan(plan, source);
+  if (!plan || diagnostics.some((d) => d.severity === "error"))
+    return { formatted: source, parsed: false, diagnostics: [...diagnostics] };
+  // Every number `format()` prints is a literal the author wrote, so it prints losslessly:
+  // the text reads back as the same double, never rounded to 0.001 mm (M.8).
+  return { formatted: withLosslessLiterals(() => formatPlan(plan, source)), parsed: true, diagnostics: [] };
+}
+
+/** Format ArchLang source. Returns the source unchanged if it does not parse. */
+export function format(source: string): string {
+  return formatChecked(source).formatted;
 }
 
 // ---- statements → Doc ----

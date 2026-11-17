@@ -905,8 +905,14 @@ describe("source_hash", () => {
           ["--import", "tsx", join(REPO, "src", "cli.ts"), "fmt", file, "--json"],
           { cwd: REPO, encoding: "utf8" },
         );
-        expect(cli.status, cli.stderr).toBe(0);
-        const cliHash = JSON.parse(cli.stdout).source_hash as string;
+        // `fmt --json` reports `source_hash` for any file, a file it refuses included (EH1.18's
+        // parity contract, kept by AF6). The BOM variant does not parse (a leading U+FEFF is
+        // `E_PARSE`), so fmt refuses it: exit 2, `ok: false`, `parsed: false`, the hash still there.
+        const j = JSON.parse(cli.stdout) as { ok: boolean; parsed: boolean; source_hash: string };
+        const refused = name === "bom";
+        expect(cli.status, `${name}: ${cli.stderr}`).toBe(refused ? 2 : 0);
+        expect([j.ok, j.parsed], name).toEqual(refused ? [false, false] : [true, true]);
+        const cliHash = j.source_hash;
         expect(cliHash, name).toBe(createHash("sha256").update(bytes).digest("hex"));
         // What a host sends is the file's text: its bytes decoded as UTF-8, a BOM kept as U+FEFF.
         const text = bytes.toString("utf8");
