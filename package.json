@@ -58,6 +58,8 @@
     "!dist/error-catalog.js.map",
     "!dist/compile-path.js",
     "!dist/compile-path.js.map",
+    "!dist/first-use-path.js",
+    "!dist/first-use-path.js.map",
     "examples",
     "spec.llm.md",
     "llms-full.txt",
