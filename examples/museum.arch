@@ -130,17 +130,17 @@ plan "City Museum" {
   furniture wc against wall wcw_s offset 1500 in wcw
   furniture wc against wall wcw_s offset 5000 in wcw
   furniture wc against wall wcw_s offset 8500 in wcw
-  furniture basin against wall spine_s offset 79000 in wcw
-  furniture basin against wall spine_s offset 83000 in wcw
+  furniture basin against wall spine_s offset 79000 size 600x500 in wcw
+  furniture basin against wall spine_s offset 83000 size 600x500 in wcw
 
   furniture wc against wall wcm_s offset 1500 in wcm
   furniture wc against wall wcm_s offset 5000 in wcm
   furniture wc against wall wcm_s offset 8500 in wcm
-  furniture basin against wall wcw_s offset 3000 in wcm
-  furniture basin against wall wcw_s offset 7000 in wcm
+  furniture basin against wall wcw_s offset 3000 size 600x500 in wcm
+  furniture basin against wall wcw_s offset 7000 size 600x500 in wcm
 
   furniture wc against wall wca_n offset 550 in wca
-  furniture basin against wall wca_n offset 1800 in wca
+  furniture basin against wall wca_n offset 1800 size 600x500 in wca
 
   # ---- cafe fit-out ---------------------------------------------------------
   furniture counter against wall spine_s offset 90000 size 6000x800 label "Servery" in cafe

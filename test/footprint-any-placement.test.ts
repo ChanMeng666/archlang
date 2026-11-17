@@ -17,9 +17,12 @@
  * shape fits). `facing` settles after the position, so it reads the rotate-0 footprint, and a
  * turn onto the footprint's short side is the existing `E_FACING_TRANSPOSED`.
  *
- * Under a `grid` the footprint snaps as a written size does. `at`/`in` report it as one is
- * reported (`W_GRID_SNAPPED`, naming the "catalogued size"), and a side that snaps to 0 is
- * `E_FURN_SIZE`. `against` snaps silently, as it did before this change (`docs/backlog.md` CO.1).
+ * Under a `grid` the footprint snaps as a written size does, and every placement reports it as one
+ * is reported (`W_GRID_SNAPPED`, naming the "catalogued size"; `against` since CO.1). Under
+ * `at`/`in` a side that snaps to 0 is `E_FURN_SIZE`. Under `against` it is not: it stays one
+ * `W_GRID_SNAPPED` that names the side, because `against` snapped its footprint silently before
+ * CO.1 and a plan that compiled then still compiles (RM-D56). A written `against` size that
+ * snaps to 0 is `E_FURN_SIZE`, as it always was.
  *
  * ## The twin law
  *
@@ -30,8 +33,9 @@
  * else: (1) byte spans, since the twin is longer by its `size` clause; (2) under a grid, the
  * default's `W_GRID_SNAPPED` says `catalogued size` where the twin's says `size`. The diagnostics
  * come in the same order, the snap note included. A footprint with a side that the grid takes to
- * 0 has no error-free twin, so it is checked on its own: the default is exactly one `E_FURN_SIZE`
- * that names the catalogued and the snapped size.
+ * 0 has no error-free twin, so it is checked on its own: under `at`/`in` the default is exactly
+ * one `E_FURN_SIZE` that names the catalogued and the snapped size; under `against`, the one
+ * exception, it is no error and exactly one `W_GRID_SNAPPED` that names the zeroed side.
  *
  * ## The law
  *
@@ -42,6 +46,11 @@
  * `src/` edit of this change**, by that helper body (a scratch script imported it, as this test
  * does). A deliberate plant (`against` taking the footprint transposed) moved rows here, so the
  * law can fail. A moved row is a finding to explain, never a re-pin.
+ *
+ * CO.1 made `against` report its snapped footprint, which seven examples relied on silently
+ * (`courtyard-family`, `garden-house`, `hillside-villa`, `museum`, `remodel`, `two-bed`,
+ * `showcase/garden-courtyard`). They now write the snapped size out, so they stay warning-free and
+ * these rows reproduce unchanged: no row was re-pinned.
  */
 
 import { readFileSync } from "node:fs";
@@ -197,6 +206,9 @@ const FORMS: Form[] = [
     rotate: (o) => (o ? 90 : undefined),
   },
   { placement: "in r anchor left", walled: false, grid: 100, size: ALONG, rotate: () => undefined },
+  // `against` under a grid (CO.1): 200 moves many footprints and zeroes a side of some (a mirror's 50 mm depth).
+  { placement: "against wall w segment 0 offset 3000 in r", walled: true, grid: 200, size: ALONG },
+  { placement: "against r.left offset 3000", walled: true, grid: 100, size: ALONG },
 ];
 
 const formName = (f: Form): string =>
@@ -235,6 +247,8 @@ suite("every family with a footprint, under every placement, without a size", ()
     expect(SIZED).toContain("toilet");
     const grid = FORMS.filter((f) => f.grid);
     expect(grid.some((f) => SIZED.some((c) => zeroed(c, f)))).toBe(true);
+    const againstGrid = grid.filter((f) => f.placement.startsWith("against"));
+    expect(againstGrid.some((f) => SIZED.some((c) => zeroed(c, f)))).toBe(true);
   });
 
   for (const f of FORMS) {
@@ -284,6 +298,35 @@ suite("every family with a footprint, under every placement, without a size", ()
             `E_FURN_SIZE: Furniture "${c}_1" has no positive size: its catalogued ${w}x${h} snaps to ` +
               `${snapped(w, f.grid)}x${snapped(h, f.grid)} on \`grid ${f.grid}\``,
           ]);
+        }
+      });
+
+    if (f.grid && f.placement.startsWith("against"))
+      it(`${formName(f)}: a footprint the grid takes to 0 is no error, one W_GRID_SNAPPED naming the side`, () => {
+        const hit = SIZED.filter((c) => zeroed(c, f));
+        if (f.grid === 200) expect(hit).toContain("mirror"); // the row's reason to exist
+        for (const c of hit) {
+          const [w, h] = f.size(defaultFootprint(c)!, orientationMatters(c));
+          const [sw, sh] = [snapped(w, f.grid), snapped(h, f.grid)];
+          const side = sh <= 0 ? "depth" : "along";
+          const ds = compile(plan(`furniture ${c} ${f.placement}`, f.walled, f.grid), { noCache: true }).diagnostics;
+          expect(
+            ds.filter((d) => d.severity === "error"),
+            c,
+          ).toEqual([]);
+          expect(
+            ds.filter((d) => d.code === "W_GRID_SNAPPED").map((d) => d.message),
+            c,
+          ).toEqual([
+            `Furniture "${c}_1" catalogued size ${w} x ${h} was snapped to ${sw} x ${sh} by \`grid ${f.grid}\`: ` +
+              `its ${side} ${side === "depth" ? h : w} snaps to 0`,
+          ]);
+          // A written size that snaps to 0 under `against` is still the error it always was.
+          const twin = compile(plan(written(c, f, orientationMatters(c)), f.walled, f.grid), { noCache: true });
+          expect(
+            twin.diagnostics.filter((d) => d.severity === "error").map((d) => d.code),
+            c,
+          ).toEqual(["E_FURN_SIZE"]);
         }
       });
   }

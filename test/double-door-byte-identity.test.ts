@@ -176,8 +176,8 @@ const MAIN_SOURCES: [path: string, payload: string, source: string, undo: [branc
     "6ad0c1d88078c4b2df6b28da09d54edc0e2be45053bd26a558ae175e4e319c85", // source: RM1.4 writes the four snapped sizes (same length; was 7b0be7cc)
     [
       [
-        "    furniture fridge       against wall w_e1 offset 3200 in r_kitchen\n    furniture counter      against wall w_e1 offset 2500 in r_kitchen",
-        "    furniture fridge       against wall w_e1 offset 2500 in r_kitchen\n    furniture counter      against wall w_e1 offset 3200 in r_kitchen",
+        "    furniture fridge       against wall w_e1 offset 3200 size 600x700 in r_kitchen\n    furniture counter      against wall w_e1 offset 2500 in r_kitchen",
+        "    furniture fridge       against wall w_e1 offset 2500 size 600x700 in r_kitchen\n    furniture counter      against wall w_e1 offset 3200 in r_kitchen",
       ],
     ],
   ],
@@ -198,8 +198,8 @@ const MAIN_SOURCES: [path: string, payload: string, source: string, undo: [branc
     "743e5cde36c04ef04320e40c555d8121664626102527ecf0b88485438c9e272b", // source: RM1.4 writes the 17 snapped values and its comment of one (same length; was 8aff5c59)
     [
       [
-        "    furniture stove          against wall shell segment 1 offset 7400 in r_kitchen\n    furniture dishwasher     against wall shell segment 1 offset 6600 in r_kitchen\n    furniture fridge         against wall w_l1_band_e offset 4700 in r_kitchen",
-        "    furniture stove          against wall shell segment 1 offset 6500 in r_kitchen\n    furniture dishwasher     against wall shell segment 1 offset 7100 in r_kitchen\n    furniture fridge         against wall shell segment 1 offset 7700 in r_kitchen",
+        "    furniture stove          against wall shell segment 1 offset 7400 in r_kitchen\n    furniture dishwasher     against wall shell segment 1 offset 6600 in r_kitchen\n    furniture fridge         against wall w_l1_band_e offset 4700 size 600x700 in r_kitchen",
+        "    furniture stove          against wall shell segment 1 offset 6500 in r_kitchen\n    furniture dishwasher     against wall shell segment 1 offset 7100 in r_kitchen\n    furniture fridge         against wall shell segment 1 offset 7700 size 600x700 in r_kitchen",
       ],
     ],
   ],
