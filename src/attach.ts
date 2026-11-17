@@ -347,7 +347,8 @@ export function resolveAttachment(
     const vertical = p.kind === "mm" && Number.isFinite(raw) && rel ? axisFamily(axes, rel) : undefined;
     const d = vertical === undefined ? undefined : axisCrossingDistance({ vertical, c: raw }, segs, segmentLength);
     const along = vertical !== undefined && d !== undefined ? { wall: attach.wall, vertical, c: raw, d } : undefined;
-    diag(axisArithmeticDiag(what, p, known, attach.span, along));
+    // A mistake in the text, so it stands beside an undeclared label's E_UNKNOWN_REF (AF3).
+    (rel?.rootDiag ?? diag)(axisArithmeticDiag(what, p, known, attach.span, along));
     return null;
   }
   if (p.kind !== "center" && !Number.isFinite(raw)) {
@@ -447,6 +448,7 @@ export function resolveOpeningLead(
     walls: ctx.walls,
     snapPt: ctx.snapPt,
     diag: ctx.diag,
+    ...(ctx.rootDiag ? { rootDiag: ctx.rootDiag } : {}),
     sameFile: ctx.sameFile,
     eval: (e) => ctx.eval(e),
     ...(ctx.datums ? { datums: ctx.datums } : {}),

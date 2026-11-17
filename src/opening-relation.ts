@@ -97,6 +97,8 @@ export interface RelationCtx {
   walls: readonly RWall[];
   snapPt(p: Point): Point;
   diag(d: Diagnostic): void;
+  /** {@link import("./registry.js").ResolveCtx.rootDiag}; absent: `diag`. */
+  rootDiag?(d: Diagnostic): void;
   /** {@link import("./registry.js").ResolveCtx.sameFile}; absent: every span is taken as this source's. */
   sameFile?(file: string | undefined): boolean;
   eval(e: Expr): number;
@@ -697,7 +699,8 @@ function positionOnRun(
       if (axes.length > 0) {
         // Only the declared labels: an undeclared one is the evaluator's E_UNKNOWN_REF already.
         const known = declaredAxes(axes, ctx);
-        if (known.length > 0) ctx.diag(axisArithmeticDiag(what, pos, known, posSpan));
+        // A mistake in the text, so it stands beside an undeclared label's E_UNKNOWN_REF (AF3).
+        if (known.length > 0) (ctx.rootDiag ?? ctx.diag)(axisArithmeticDiag(what, pos, known, posSpan));
         return undefined;
       }
       if (!Number.isFinite(v)) {

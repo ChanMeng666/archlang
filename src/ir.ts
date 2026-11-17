@@ -1099,6 +1099,7 @@ function resolveBody(
     sameFile: (file) => file === activeEntry?.file,
     ...(world.now ? { now: () => world.now!() } : {}),
     diag: pushDiag,
+    rootDiag: evalDiag,
     north: ast.north,
   };
   function hostInfo(at: Point, ref?: string): { host: WallSegment | null; onWall: boolean } {
