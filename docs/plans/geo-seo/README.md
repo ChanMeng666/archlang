@@ -94,6 +94,8 @@ Each card is one PR unless bundled below. Executors run in worktrees from `main`
   `/language-reference` → `/reference`, 301. The docs sitemap stops listing `/adr/` (a 307 to
   `/adr`). `scripts/smoke.mjs` asserts both redirects. Proved on `wrangler dev` before merge,
   because the docs Worker has no `main` script and `_redirects` must work as a static-asset rule.
+  Follow-up G7c (2026-11-17): every repo-relative link older docs published now 301s to where
+  `docs-site/link-rewrite.mjs` sends it today (state in `handoff.md`).
 
 ### Stage 1: agent discovery (PR B, high tier because of `server.json`)
 

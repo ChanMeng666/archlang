@@ -51,6 +51,9 @@ paths:
   and gate on a marker only the new build has, never a status code.
 - **`check:quick` picks the nearest tests**, so `docs-page-meta`, `docs-sync-list`, `docs-fences`
   and `docs-topics` may run only in CI for a docs-site PR; read its CI before calling it green.
+- **No PR check executes `_redirects`**: the first proof is the post-deploy `smoke.mjs` run, so a
+  bad rule turns `main` red. Replay it on `wrangler dev` first; a bare-origin destination comes back
+  with a root slash in `Location`, and matching is exact and case-sensitive.
 - **Cloudflare static assets answer a `Range` request with 200, not 206**, so an MP4 may not play
   on Safari: every replay on the sites keeps its poster and an MP4 link as the fallback.
 - **The playground's startup budget is a sum, not a per-PR limit**: ordinary core growth reaches it
