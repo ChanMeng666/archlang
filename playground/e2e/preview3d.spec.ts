@@ -1,11 +1,11 @@
-import { existsSync, readdirSync, readFileSync } from "node:fs";
-import { dirname, join, posix } from "node:path";
+import { readdirSync, readFileSync } from "node:fs";
+import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { gzipSync } from "node:zlib";
 import { expect, type Page, test } from "@playwright/test";
 // The package's own software-WebGL flags (its replay tests render with the same ones); the one
 // browser-free module of the package, so the specs' typecheck never pulls its Node entry.
 import { SWIFTSHADER_ARGS } from "../../packages/archlang-3d/src/replay/swiftshader.js";
+import { chunkWalkOf, DYNAMIC } from "../scripts/chunk-walk.mjs";
 import { srcFromHash } from "../src/share.js";
 import {
   BROKEN_PLAN,
@@ -1720,18 +1720,10 @@ test.describe("startup chunks", () => {
       gzip: Record<string, number>;
       compilerGzip: Record<string, number>;
     };
+    // The walk through the built files, shared with `npm run size:embed` (card EB.1): one copy, so
+    // the script's numbers are the gate's. What it follows and why: `playground/scripts/chunk-walk.mjs`.
+    const { pageRoots, imports, staticImports, reach, size, embedPath: embedWalk } = chunkWalkOf(DIST);
     // A page's own module script and modulepreloads, as index.html / embed.html name them.
-    const pageRoots = (page: string) => {
-      const html = readFileSync(join(DIST, page), "utf8");
-      const scripts = [...html.matchAll(/<script type="module"[^>]*\bsrc="\.\/(assets\/[^"]+\.js)"/g)].map(
-        (m) => m[1] as string,
-      );
-      const preloads = [...html.matchAll(/<link rel="modulepreload"[^>]*\bhref="\.\/(assets\/[^"]+\.js)"/g)].map(
-        (m) => m[1] as string,
-      );
-      expect(scripts.length, `${page} loads a module script`).toBeGreaterThan(0);
-      return { scripts, preloads };
-    };
     const { scripts, preloads } = pageRoots("index.html");
 
     const assets = readdirSync(join(DIST, "assets"));
@@ -1757,39 +1749,10 @@ test.describe("startup chunks", () => {
     expect(preloads, "the compiler is not preloaded").not.toContain(compiler);
     expect(scripts, "the compiler is not the page's module script").not.toContain(compiler);
 
-    // What a startup file costs is everything it imports statically, not the file alone: a
-    // module's static imports load and run before it does. The pages name only the roots, so
-    // the gate walks the graph from them (card PG5a: the compiler once imported the whole jsPDF
-    // chunk, ~129 KB gzip, for the bundler's runtime helpers, and a gate that counted only the
-    // files index.html names never saw it). A dynamic `import()` is not followed: that is a lazy
-    // chunk, loaded on demand, unless it is one every visit makes (`boot` below).
-    // A relative specifier resolves against the importing file, `?query` dropped; one that names
-    // no built file fails here, so a change in how the bundler spells imports cannot quietly
-    // drop edges from the walk.
-    const resolveFrom = (from: string, spec: string): string => {
-      const file = posix.normalize(posix.join(posix.dirname(from), spec.replace(/[?#].*$/, "")));
-      expect(existsSync(join(DIST, file)), `${from} imports "${spec}", a built file`).toBe(true);
-      return file;
-    };
-    const imports = (file: string, re: RegExp): string[] =>
-      [...readFileSync(join(DIST, file), "utf8").matchAll(re)].map((m) => resolveFrom(file, m[1] as string));
-    // `import x,{a as b}from"./c.js"`, `import*as x from…`, `import"./c.js"` and the re-exports
-    // `export{…}from…` / `export*from…`; never `import("./c.js")`.
-    const STATIC =
-      /\b(?:import|export)\s*(?:[\w$]+\s*,?\s*)?(?:\*(?:\s*as\s+[\w$]+)?|\{[^}]*\})?\s*(?:from\s*)?["'](\.{1,2}\/[^"']+)["']/g;
-    const DYNAMIC = /\bimport\(\s*["'`](\.{1,2}\/[^"'`]+)["'`]\s*\)/g;
-    const staticImports = (file: string) => imports(file, STATIC);
-    const reach = (roots: string[]): string[] => {
-      const seen = new Set<string>();
-      const todo = [...roots];
-      while (todo.length) {
-        const file = todo.pop() as string;
-        if (seen.has(file)) continue;
-        seen.add(file);
-        todo.push(...staticImports(file));
-      }
-      return [...seen].sort();
-    };
+    // What a startup file costs is everything it imports statically, not the file alone, so the
+    // gate walks the graph from the pages' roots (card PG5a) and never follows a dynamic `import()`
+    // (a lazy chunk, loaded on demand) unless it is one every visit makes (`boot` below). A
+    // specifier that names no built file throws, so no edge drops out of the walk quietly.
     // The walk itself is checked to see imports: the entry imports its shared chunks, and the
     // compiler at least the bundler's runtime helpers, so a parser miss cannot drop the
     // compiler's imports from both the forbidden-chunk check and the budgets.
@@ -1836,8 +1799,7 @@ test.describe("startup chunks", () => {
 
     // The embed (embed.html, the iframe other pages show): it imports the core statically
     // (embed.ts), so it walks into the compiler the way index.html's preload does.
-    const embed = pageRoots("embed.html");
-    const embedPath = reach([...embed.scripts, ...embed.preloads]);
+    const embedPath = embedWalk();
     expect(embedPath, "the embed reaches the compiler").toContain(compiler);
 
     const lazy: [string, string][] = [
@@ -1908,8 +1870,6 @@ test.describe("startup chunks", () => {
         ).not.toContain(m);
     }
 
-    const gz = (file: string) => gzipSync(readFileSync(join(DIST, file))).length;
-    const size = (files: string[]) => files.reduce((a, f) => a + gz(f), 0);
     const view = size(viewPath);
     const total = size(compilerPath);
     const embedTotal = size(embedPath);

@@ -20,6 +20,10 @@ merge procedure and the CI job map in `commands.md`.
   overlap, but heavy commands go one at a time through the heavy lock (the machine froze under three
   parallel test runs); never edit `docs/plans/*/cards.md` (adjacent card headings conflict on every
   merge; the coordinator records status in a records PR); no push or tag unless the card says so.
+- **A card that touches the compiler path** (the core the playground's compiler or embed chunk
+  bundles) tells the executor to run `npm run size:embed` (`commands.md` § Non-obvious scripts) under
+  the heavy lock, on its base and on its branch, and to put both embed-path totals in the PR body
+  (RM-D57); no scratch copy of the walk.
 - **An executor that may wait long writes a state file first** (in its scratchpad: what is done, what
   remains) before it waits on an asset build or an idle machine; two executors lost their card that way on
   2026-11-11 and reported having none. When one says so, take over from raw `git`, not its judgement.
