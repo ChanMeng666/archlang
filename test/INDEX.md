@@ -5,7 +5,7 @@
 Where the tests of a `src` module are, and what each test file is for. Generated; `npm run check:drift`
 fails when it is stale. How to add a test: `docs/testing.md` § 4.
 
-540 test files in `test/`, 286 `src` modules, 106 modules no test imports.
+541 test files in `test/`, 286 `src` modules, 106 modules no test imports.
 
 ## `src` module → tests that import it
 
@@ -120,14 +120,14 @@ Nearest first, then by name; `(+n)` is the rest. Test names are `test/<name>.tes
 - `src/impact.ts` (2) — `rectilinear-doors`, `rectilinear-rooms`
 - `src/import.ts` (33) — `block-stair-byte-identity`, `corner-window-byte-identity`, `dim-swap-reprint`, `dim-thickness-callout`, `drawing-budget`, `floor-materials-byte-identity`, `furniture-relations`, `gaps-byte-identity` (+25)
 - `src/import/limits.ts` (1) — `openplan3d-malformed`
-- `src/index.ts` (401) — `acc-metadata`, `access-graph`, `access-policy`, `accessible-svg`, `agent-gallery`, `alias-match`, `anchors`, `annotate` (+393)
+- `src/index.ts` (402) — `acc-metadata`, `access-graph`, `access-policy`, `accessible-svg`, `agent-gallery`, `alias-match`, `anchors`, `annotate` (+394)
 - `src/input-limit.ts` (2) — `import-rooted`, `workspace-seams`
 - `src/intent-concepts.ts` (2) — `vocabulary-living-dining`, `vocabulary-matcher-oracle`
 - `src/intent.ts` (1) — `site`
 - `src/ir.ts` (173) — `access-policy`, `arc-radius-exact`, `attach`, `axes`, `between-face-probes`, `block-stair-byte-identity`, `block-stair-frames`, `block-stair-winders` (+165)
 - `src/label-fit.ts` (1) — `label-fit`
 - `src/label-placement.ts` (3) — `label-placement-oracle`, `label-placement`, `label-wrap`
-- `src/lexer.ts` (10) — `clause-order-byte-identity`, `diagnostics-volume`, `diagnostics`, `expr`, `imperial-input`, `model-range`, `parser-recovery-metric`, `room-uses` (+2)
+- `src/lexer.ts` (11) — `clause-order-byte-identity`, `diagnostics-volume`, `diagnostics`, `expr`, `fmt-lossless`, `imperial-input`, `model-range`, `parser-recovery-metric` (+3)
 - `src/lint.ts` (54) — `annotation-collisions`, `annotation-small-rooms`, `block-stair-shaft`, `block-stair`, `equivariance-corpus`, `finish-furnish-bounds`, `lint-coverage`, `lint-fix-texts` (+46)
 - `src/lint/clearance-measure.ts` (2) — `lint-clearances-kitchen-doors`, `repair-no-worse`
 - `src/lint/context.ts` (49) — `block-stair-landing`, `block-stair-lint`, `block-stair-shaft`, `block-stair`, `lint-clearances-kitchen-doors`, `lint-clearances-wc-window`, `lint-exterior-ring`, `lint-fix-texts` (+41)
@@ -154,7 +154,7 @@ Nearest first, then by name; `(+n)` is the rest. Test names are `test/<name>.tes
 - `src/markdown.ts` (7) — `label-fit`, `label-placement-oracle`, `label-wrap`, `room-adjacency-oracle`, `room-overlap-oracle`, `step-budget`, `vocabulary-matcher-oracle`
 - `src/naming.ts` (3) — `grid-index`, `lint-messages-id-free`, `room-overlap-oracle`
 - `src/next.ts` (3) — `cli-validate-next`, `next`, `silent-accepts`
-- `src/num-format.ts` (14) — `annotation-collisions`, `dim-thickness-callout`, `emit-opening-oracle`, `imperial-input`, `keep`, `lint-ruleset-values`, `model-range`, `net-area-stamp` (+6)
+- `src/num-format.ts` (15) — `annotation-collisions`, `dim-thickness-callout`, `emit-opening-oracle`, `fmt-lossless`, `imperial-input`, `keep`, `lint-ruleset-values`, `model-range` (+7)
 - `src/opening-relation.ts` (3) — `openings-between`, `rectilinear-doors`, `rectilinear-sides`
 - `src/opening-schedule.ts` (2) — `sheet-annotations`, `window-kinds`
 - `src/parser.ts` (152) — `arc-radius-exact`, `attach`, `axes`, `block-stair-byte-identity`, `block-stair`, `chrome-hidden`, `circle-enclosure`, `circulation-concave` (+144)
@@ -259,7 +259,7 @@ The first sentence of each file's header comment.
 - `test/cli-commands.test.ts` — CLI — fmt; CLI — watch; CLI — manifest / capabilities.
 - `test/cli-context.test.ts` — `arch context --section` — bounded agent context.
 - `test/cli-contract.test.ts` — the contract table covers the manifest.
-- `test/cli-exit-parse.test.ts` — impact exits 2 on a plan that does not parse; fmt returns it verbatim with exit 0 (EH1.18).
+- `test/cli-exit-parse.test.ts` — impact and fmt exit 2 on a plan that does not parse; fmt returns it verbatim and says it refused (EH1.18, AF6).
 - `test/cli-expected-hash.test.ts` — --expected-hash: a stale read refuses before anything is computed or written; --expected-hash: a matching read writes, and reports the revisions; --expected-has…
 - `test/cli-finish.test.ts` — arch finish — the write boundary; arch finish — exit codes; arch finish — a plan with `level` blocks.
 - `test/cli-fix-backup.test.ts` — arch fix — safe retries (--backup / diff preview).
@@ -396,6 +396,7 @@ The first sentence of each file's header comment.
 - `test/fixture-classifier-drift.test.ts` — Drift guards for the fixture classifier lists.
 - `test/fixture-orientation.test.ts` — the shared back-edge ⇄ quarter-turn mapping; backingWallForRoomEdge / wallBackedEdges; backCandidateEdges — the footprint's aspect constrains the back; derived…
 - `test/floor-materials-byte-identity.test.ts` — The floor words `timber`, `carpeting`, `stone` (`room … floor <word>`) and the `outdoor` kinds `sand`, `soil` (card RM8.7, design `docs/plans/product-roadmap/design/visual-language.md` §3): the byte-identity law, one...
+- `test/fmt-lossless.test.ts` — M.8 / AF6 — `arch fmt` prints every number literal losslessly: the text reads back as the same double, so a formatted plan compiles to the same drawing, facts and findings, and `fmt` stays a fixed point.
 - `test/font-cjk-pins.test.ts` — the CJK font package's version, its exact pin in the core, its files and its recorded SHA-256 are pinned on every PR (release.yml only checked the version at tag time)
 - `test/footprint-any-placement.test.ts` — A catalogued footprint under every placement (card CO-2): `furniture wc in bath anchor right` and `furniture wc at (x,y)` may leave `size` out, as `against` always could, and a kind with no footprint is `E_FURN_SIZE`...
 - `test/format.test.ts` — T5.2 — `arch fmt` formatter.

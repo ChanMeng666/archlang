@@ -444,7 +444,7 @@ Totals: 649 exports (227 values, 422 types), 411 flagged (74 values).
 
 | Export | Kind | In-repo consumers |
 | --- | --- | --- |
-| `format` | value | `editors`, `playground`, `src/cli`, `test` |
+| `format` | value | `editors`, `playground`, `test` |
 
 ## `src/furnish-table.ts`
 
