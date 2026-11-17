@@ -2239,7 +2239,7 @@ From #880's review (RR.10). `furnitureCategoryFix` (`src/fix-producers.ts`, thro
 re-print a whole statement without going through `src/elements/reprint.ts`. Card it as a defect only
 if a looped or component-placed case reproduces an uncharged reprint; otherwise close it as checked.
 
-### EB.1 · The embed-path size check is a Playwright-only number — `todo`
+### EB.1 · The embed-path size check is a Playwright-only number: done by #937, waiting to be archived — `note`
 
 The playground's embed path is a hard gzip ceiling (`embedPathBudget`,
 `playground/e2e/startup-chunks.baseline.json`; RM-D57 keeps it at 351,000 B), measured only by
