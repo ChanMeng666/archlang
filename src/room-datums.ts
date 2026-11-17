@@ -26,7 +26,7 @@
 
 import type { Point } from "./ast.js";
 import type { Diagnostic, Span } from "./diagnostics.js";
-import { chargeSteps, closest, type DatumReader, type Value } from "./expr.js";
+import { chargeSteps, closest, type DatumReader, POISON, type Value } from "./expr.js";
 import type { RAxis, RRoom } from "./ir.js";
 import { type EdgeLine, extremeRuns, rectilinear, runsText, type SideWord } from "./room-tiling.js";
 
@@ -190,7 +190,8 @@ export function axisRead(name: string): string | undefined {
   return /^axis\.(?:[0-9]+|[A-Z]+)$/.test(name) ? name.slice(5) : undefined;
 }
 
-const NUM0: Value = { t: "num", v: 0 };
+/** A refused datum reads as the error value (`POISON`, AF3), so nothing that reads it reports again. */
+const REFUSED: Value = POISON;
 
 /** The axes a statement can read: the plan's in the root group, none in a placed instance. */
 export interface AxisScope {
@@ -224,7 +225,7 @@ function readAxis(
     ...(span ? { span } : {}),
     ...(near ? { hints: [`did you mean \`axis.${near}\`?`] } : {}),
   });
-  return NUM0;
+  return REFUSED;
 }
 
 /**
@@ -248,7 +249,7 @@ function nearAxis(
     ...(span ? { span } : {}),
     hints: [`did you mean \`axis.${label}\`?`],
   });
-  return NUM0;
+  return REFUSED;
 }
 
 /** Where a datum is read when no table exists yet. */
@@ -281,7 +282,7 @@ export function beforeRoomsReader(phase: DatumPhase, axisScope?: AxisScope): Dat
       code: "E_DATUM_BEFORE_ROOMS",
       ...(span ? { span } : {}),
     });
-    return NUM0;
+    return REFUSED;
   };
 }
 
@@ -300,7 +301,7 @@ export function functionBodyReader(fn: string): DatumReader {
       code: "E_DATUM_BEFORE_ROOMS",
       ...(span ? { span } : {}),
     });
-    return NUM0;
+    return REFUSED;
   };
 }
 
@@ -348,7 +349,7 @@ export function tableReader(table: DatumTable, opts: TableReaderOpts): DatumRead
       };
       if (hint !== undefined) out.hints = [hint];
       onError(out);
-      return NUM0;
+      return REFUSED;
     };
     if (opts.instanceIds().has(name)) {
       return refuse({

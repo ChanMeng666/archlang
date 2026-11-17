@@ -32,17 +32,19 @@ import { numberAxes } from "./axes.js";
 import type { Frame } from "./frame.js";
 import { tryTransformElement } from "./frame.js";
 import type { Diagnostic, Span } from "./diagnostics.js";
-import type { Env, Expr } from "./expr.js";
+import type { Env, Expr, Value } from "./expr.js";
 import { fmt0, fmt3, MODEL_RANGE_MM } from "./num-format.js";
 import {
   asNum,
   asStr,
+  BUDGET_SUBSTITUTE,
   chargeSteps,
   currentStepSite,
   DIAGNOSTIC_STEPS,
   evalExpr,
   exprSpan,
   MAX_EVAL_STEPS,
+  POISON,
   type StepLimitSignal,
   stepSite,
   withDatumReader,
@@ -978,19 +980,38 @@ function resolveBody(
   const ownerOf = new Map<Diagnostic, Entry>();
   /** The entry a resolved element (local, or carried into plan coordinates) came from. */
   const entryOf = new Map<ResolvedElement, Entry>();
-  const pushDiag = (d: Diagnostic): void => {
+  const pushDiag = (d: Diagnostic): Diagnostic => {
     chargeSteps(DIAGNOSTIC_STEPS);
     const out = activeEntry ? stampProvenance(d, activeEntry.frame, activeEntry.file) : d;
     diagSink.push(out);
     if (activeEntry) ownerOf.set(out, activeEntry);
+    return out;
   };
+  /** What the evaluator itself reported (a root cause, AF3): kept when its element is dropped
+   *  for reading the error value, while the element's follow-on diagnostics go with it. */
+  const rootCauses = new Set<Diagnostic>();
+  const evalDiag = (d: Diagnostic): void => {
+    rootCauses.add(pushDiag(d));
+  };
+  /** Bumped by every evaluation that yields the error value (`POISON`), a refused type, a
+   *  non-finite number or the stack budget's stand-in: the statement that read it is poisoned. */
+  let poisonHits = 0;
+  const isBad = (v: Value): boolean => v === POISON || v === BUDGET_SUBSTITUTE;
   /** Record a relational-placement diagnostic, owned by the room it is about. */
   const ownRoomDiag = (d: Diagnostic, room: RRoom | undefined): void => {
     const e = room ? entryOf.get(room) : undefined;
     if (e) ownerOf.set(d, e);
   };
-  const evalNum = (e: Expr): number => asNum(evalExpr(e, activeEnv, pushDiag), pushDiag, exprSpan(e));
-  const evalStr = (e: Expr): string => asStr(evalExpr(e, activeEnv, pushDiag));
+  const evalNum = (e: Expr): number => {
+    const v = evalExpr(e, activeEnv, evalDiag);
+    if (isBad(v) || v.t !== "num" || !Number.isFinite(v.v)) poisonHits++;
+    return asNum(v, evalDiag, exprSpan(e));
+  };
+  const evalStr = (e: Expr): string => {
+    const v = evalExpr(e, activeEnv, evalDiag);
+    if (isBad(v)) poisonHits++;
+    return asStr(v);
+  };
   const evalPt = (p: ExprPoint): Point => ({ x: evalNum(p.x), y: evalNum(p.y) });
   // Openings call isOnWall(at, ref) then hostSegment(at, ref) with identical
   // args back-to-back; a one-entry memo fuses those into a single wall scan.
@@ -1018,11 +1039,12 @@ function resolveBody(
   if (ast.height !== undefined) {
     stepSite(ast.heightSpan);
     activeEnv = globalScope.flatten();
+    const hits = poisonHits;
     const h = evalNum(ast.height);
     if (isDrawableHeight(h)) {
       storeyHeight = h;
       heightWritten = true;
-    } else diagnostics.push(heightRangeDiagnostic("The plan", "height", h, ast.heightSpan));
+    } else if (poisonHits === hits) diagnostics.push(heightRangeDiagnostic("The plan", "height", h, ast.heightSpan));
   }
   // The storey's `slab` and clear height (MF-D1, RM-D17), evaluated as `height` is, only on a plan
   // that writes a `slab` or a `clear`: on any other plan nothing here runs or is charged.
@@ -1030,6 +1052,8 @@ function resolveBody(
   if (plansAuthorCeiling(ast)) {
     const envBefore = activeEnv;
     activeEnv = globalScope.flatten();
+    /** The last `slab`/`clear` read the error value (AF3): its range report would be a follow-on. */
+    let lastBad = false;
     ceiling = resolveCeiling(
       ast,
       extras.level ? `Level ${fmt0(extras.level.level)}` : "The plan",
@@ -1037,9 +1061,14 @@ function resolveBody(
       {
         eval: (e, span) => {
           stepSite(span);
-          return evalNum(e);
+          const hits = poisonHits;
+          const v = evalNum(e);
+          lastBad = poisonHits !== hits;
+          return v;
         },
-        diag: (d) => diagnostics.push(d),
+        diag: (d) => {
+          if (!lastBad) diagnostics.push(d);
+        },
       },
     );
     activeEnv = envBefore;
@@ -1177,7 +1206,9 @@ function resolveBody(
         stepSite(e.node.span, e.file, e.frame);
         ctx.id = e.id;
         ctx.defaults = e.defaults;
+        const hits = poisonHits;
         const r = def.resolve(e.node, ctx);
+        if (poisonHits !== hits) e.poisoned = true;
         e.resolved = r;
         entryOf.set(r, e);
         markPlacement(r, e.node, e.fromStrip === true);
@@ -1502,7 +1533,10 @@ function resolveBody(
       // and left out.
       const inRange = (list: Expr[], axis: "x" | "y"): number[] =>
         list.flatMap((e) => {
+          const hits = poisonHits;
           const v = snap(evalNum(e));
+          // A position that read the error value (AF3) is no datum: left out, its report standing.
+          if (poisonHits !== hits) return [];
           if (Math.abs(v) <= MODEL_RANGE_MM) return [v];
           axesDiags.push(outOfRange(`The \`axes\` ${axis} position`, v, exprSpan(e) ?? ast.axes?.span));
           return [];
@@ -1557,26 +1591,48 @@ function resolveBody(
   //     diagnostic about a dropped element (its resolve-time errors and warnings) is removed,
   //     so an element out of range is reported exactly once.
   const outside = checkNumberDomain(resolvedElements, registry, diagnostics);
-  if (outside.size > 0) {
+  //     An element that read the error value (AF3, `POISON`: an unknown name, a refused type, …)
+  //     is dropped the same way, with the same companions, and every diagnostic it raised goes
+  //     but the evaluator's own: that report is the root cause, and the rest (a size that is
+  //     not positive, a door off its wall) only describe the garbage 0 it was drawn from.
+  const poisoned = new Set<ResolvedElement>();
+  for (const e of entries) if (e.poisoned && e.resolved && !dropped.has(e)) poisoned.add(e.resolved);
+  if (outside.size > 0 || poisoned.size > 0) {
     // A dropped wall-deriving statement takes its derived walls with it (its bounds and
     // measures are theirs), and so the openings hosted on them below.
-    for (const el of [...outside]) {
-      for (const w of registry.byKind.get(el.kind)?.yieldsWalls?.(el) ?? []) outside.add(w);
-    }
-    for (const el of resolvedElements) {
-      if ((el.kind === "door" || el.kind === "window" || el.kind === "opening") && el.host) {
-        const host = hostWallOf(el.host, walls);
-        if (host && outside.has(host)) outside.add(el);
+    const widen = (gone: Set<ResolvedElement>): void => {
+      if (gone.size === 0) return;
+      for (const el of [...gone]) {
+        for (const w of registry.byKind.get(el.kind)?.yieldsWalls?.(el) ?? []) gone.add(w);
       }
-    }
+      for (const el of resolvedElements) {
+        if ((el.kind === "door" || el.kind === "window" || el.kind === "opening") && el.host) {
+          const host = hostWallOf(el.host, walls);
+          if (host && gone.has(host)) gone.add(el);
+        }
+      }
+    };
+    widen(outside);
+    widen(poisoned);
     const droppedEntries = new Set<Entry>();
-    for (const e of entries) if (e.resolved && outside.has(e.resolved)) droppedEntries.add(e);
+    const poisonedEntries = new Set<Entry>();
+    for (const e of entries) {
+      if (!e.resolved) continue;
+      if (outside.has(e.resolved)) droppedEntries.add(e);
+      else if (poisoned.has(e.resolved)) poisonedEntries.add(e);
+    }
     let kept = 0;
     for (const d of diagnostics) {
       const owner = ownerOf.get(d);
-      if (owner === undefined || !droppedEntries.has(owner)) diagnostics[kept++] = d;
+      if (
+        owner === undefined ||
+        (!droppedEntries.has(owner) && (!poisonedEntries.has(owner) || rootCauses.has(d)))
+      ) {
+        diagnostics[kept++] = d;
+      }
     }
     diagnostics.length = kept;
+    for (const el of poisoned) outside.add(el);
     const keptWalls = walls.filter((w) => !outside.has(w));
     walls.length = 0;
     for (const w of keptWalls) walls.push(w);
@@ -1643,11 +1699,14 @@ function resolveBody(
   if (ast.site?.boundary) {
     stepSite(ast.site.boundarySpan ?? ast.site.span);
     activeEnv = globalScope.flatten();
+    const hits = poisonHits;
     const ring = ast.site.boundary.map((p) => snapPt({ x: evalNum(p.x), y: evalNum(p.y) }));
     const effective = effectiveVertices(ring);
     const span = ast.site.boundarySpan ?? ast.site.span;
     const far = farthest(ring.flatMap((p) => [p.x, p.y]));
-    if (far !== undefined) {
+    if (poisonHits !== hits) {
+      // A vertex read the error value (AF3): no lot line, and no report beyond its own.
+    } else if (far !== undefined) {
       diagnostics.push(outOfRange("The site `boundary`", far, span));
     } else if (effective.length < 3) {
       diagnostics.push({

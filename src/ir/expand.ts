@@ -34,6 +34,7 @@ import {
   exprSpan,
   firstOverflow,
   leaveStack,
+  POISON,
   resetOverflowReports,
   setEnvFallback,
   stepSite,
@@ -94,6 +95,12 @@ export interface Entry {
    * {@link Diagnostic.file}. Absent = the compiled source.
    */
   file?: string;
+  /**
+   * The element read the error value (`POISON`, AF3): a `place` origin or a `strip` position it
+   * stands at, or (set by the resolver) a value it evaluated. `resolve()` drops it with every
+   * diagnostic it raised but the evaluator's own. Absent on every plan without an error.
+   */
+  poisoned?: true;
 }
 
 /** Ambient state threaded down {@link expandScope} — everything a `place` needs. */
@@ -483,7 +490,7 @@ function expandScopeFrame(
           });
         }
         const argVals: Value[] = comp.params.map((_, i) =>
-          stmt.args[i] !== undefined ? evalIn(stmt.args[i]) : { t: "num", v: 0 },
+          stmt.args[i] !== undefined ? evalIn(stmt.args[i]) : POISON, // a missing one is its E_ARGCOUNT
         );
         // Component scope = plan global + params; its lets are local. An imported
         // component falls back to its own module's `let`s.
@@ -515,11 +522,19 @@ function expandScopeFrame(
         break;
       }
       case "place": {
-        const child = placeFrame(stmt, evalIn, diag, components, ectx, depth);
+        // An origin that read the error value (AF3) puts every element of the instance nowhere.
+        let originBad = false;
+        const evalAt = (e: Expr): Value => {
+          const v = evalIn(e);
+          if (v === POISON) originBad = true;
+          return v;
+        };
+        const child = placeFrame(stmt, evalAt, diag, components, ectx, depth);
         if (!child) break;
+        const first = out.length;
         const comp = components.get(stmt.name)!;
         const argVals: Value[] = comp.params.map((_, i) =>
-          stmt.args[i] !== undefined ? evalIn(stmt.args[i]) : { t: "num", v: 0 },
+          stmt.args[i] !== undefined ? evalIn(stmt.args[i]) : POISON, // a missing one is its E_ARGCOUNT
         );
         const childScope = new Scope(global);
         comp.params.forEach((p, i) => {
@@ -561,11 +576,13 @@ function expandScopeFrame(
             declareZone(zone, stmt.alias, undefined, true),
           ),
         );
+        if (originBad) for (let i = first; i < out.length; i++) out[i]!.poisoned = true;
         break;
       }
       case "for": {
         const it = evalIn(stmt.iter);
-        if (it === BUDGET_SUBSTITUTE) break; // already diagnosed by the stack budget
+        // Already diagnosed: by the stack budget, or where the error value came from (AF3).
+        if (it === BUDGET_SUBSTITUTE || it === POISON) break;
         if (it.t !== "arr") {
           diag({
             severity: "error",
@@ -586,7 +603,10 @@ function expandScopeFrame(
         break;
       }
       case "if": {
-        const cond = asBool(evalIn(stmt.cond), diag, exprSpan(stmt.cond));
+        const cv = evalIn(stmt.cond);
+        // An error-valued condition (AF3) expands neither branch: either would be a guess.
+        if (cv === POISON) break;
+        const cond = asBool(cv, diag, exprSpan(stmt.cond));
         const branch = cond ? stmt.then : stmt.else;
         if (branch) {
           out.push(...expandScope(branch, new Scope(scope), global, components, diagnostics, depth, ectx, zone));
@@ -599,7 +619,7 @@ function expandScopeFrame(
           // Each test of the condition starts an iteration (one step, at the loop).
           stepSite(stmt.span, ectx.file, ectx.frame);
           chargeSteps(1);
-          if (!asBool(evalIn(stmt.cond), diag, exprSpan(stmt.cond))) break;
+          if (!asBool(evalIn(stmt.cond), diag, exprSpan(stmt.cond))) break; // POISON reads false
           if (n++ >= MAX_ITERATIONS) {
             diag({
               severity: "error",
@@ -629,7 +649,8 @@ function expandScopeFrame(
         // Expand the strip into ordinary absolute-placed room entries. Positions
         // are closed-form (running sum of extents + gap); the resulting rooms flow
         // through room.resolve exactly like hand-authored `room at (x,y) size WxH`.
-        for (const child of stripRooms(stmt, evalIn, diag)) {
+        const bad = new Set<RoomNode>();
+        for (const child of stripRooms(stmt, evalIn, diag, bad)) {
           if (!spend(stmt)) break;
           out.push({
             node: child,
@@ -638,6 +659,7 @@ function expandScopeFrame(
             defaults: scope.effectiveSet("room"),
             fromStrip: true,
             ...prov,
+            ...(bad.has(child) ? { poisoned: true as const } : {}),
           });
         }
         break;
@@ -697,8 +719,10 @@ export function keepValueOf(e: Expr, env: () => Env, diag: (d: Diagnostic) => vo
     raised = true;
     diag(d);
   };
-  const v = asNum(evalExpr(e, env(), report), report, exprSpan(e));
-  return raised ? undefined : v;
+  const x = evalExpr(e, env(), report);
+  const v = asNum(x, report, exprSpan(e));
+  // The error value (AF3) was diagnosed where it came from, a `let` the keep reads.
+  return raised || x === POISON ? undefined : v;
 }
 
 /**
@@ -815,18 +839,38 @@ function placeFrame(
  * `height`/`width` (overridable per room). Deterministic pure arithmetic — the
  * emitted rooms are byte-identical to hand-authored `room at (x,y) size WxH`.
  */
-function stripRooms(strip: StripNode, evalIn: (e: Expr) => Value, diag: (d: Diagnostic) => void): RoomNode[] {
-  const num = (e: Expr): number => asNum(evalIn(e), diag, exprSpan(e));
+function stripRooms(
+  strip: StripNode,
+  evalIn: (e: Expr) => Value,
+  diag: (d: Diagnostic) => void,
+  /** Receives each room whose position or size read the error value (`POISON`, AF3). */
+  bad: Set<RoomNode>,
+): RoomNode[] {
+  let hit = false;
+  const num = (e: Expr): number => {
+    const v = evalIn(e);
+    if (v === POISON) hit = true;
+    return asNum(v, diag, exprSpan(e));
+  };
   const numE = (v: number): Expr => ({ t: "num", value: v });
   const originX = num(strip.at.x);
   const originY = num(strip.at.y);
+  /** The error value reaches every room's position from here on (the origin, a `gap`, an extent). */
+  let carried = hit;
+  hit = false;
   const gap = num(strip.gap);
+  const gapBad = hit;
+  hit = false;
   const horiz = strip.dir === "right" || strip.dir === "left";
   const stripCross = strip.cross !== undefined ? num(strip.cross) : undefined;
+  const crossBad = hit;
   const rooms: RoomNode[] = [];
   let offset = 0;
   for (const child of strip.rooms) {
+    hit = false;
     const mainExt = num(child.main);
+    const mainBad = hit;
+    hit = child.cross === undefined && crossBad;
     const crossExt = child.cross !== undefined ? num(child.cross) : stripCross;
     if (crossExt === undefined) {
       diag({
@@ -863,7 +907,9 @@ function stripRooms(strip: StripNode, evalIn: (e: Expr) => Value, diag: (d: Diag
       line: child.line,
       span: child.span,
     });
+    if (carried || mainBad || hit) bad.add(rooms[rooms.length - 1]!);
     offset += mainExt + gap;
+    carried ||= mainBad || gapBad;
   }
   return rooms;
 }

@@ -283,7 +283,11 @@ const BASELINE: [string, string][] = [
   ["677f3ab547dbd2e1f18664e21b766b4a2b192f98d6256fb6a1675092954e4249", "inline:grid-two-storeys"],
   ["4eaf01eb94652604da289ac427ac979740fa12a4d5decb77ac86b0f90d9a6488", "inline:grid-two-storeys-one-value"],
   ["b6860b36fcef66bcb40e68a6e697d8c55fc498fb6b3a44428a28e32ec3e79b53", "inline:grid-a-placed-wall"],
-  ["473e30dbb65b4fcb1b7ef2d900adcb9c91fbac419a20aa1055f729e10e392a08", "inline:grid-a-datum-too-early"],
+  // AF3 (was 473e30db): `room b at (a.right, 0)` reads a datum in the room pass, which is refused and
+  // now reads as the error value, so `b` is dropped and the `W_ROOM_OVERLAP` its garbage 0 made with
+  // `a` goes; `E_DATUM_BEFORE_ROOMS` is its one report. Only compile().diagnostics and describe()'s
+  // copy of them moved (steps 169 both); that diagnostic put back gives 473e30db.
+  ["0f09ce9772100e87782606d78f8597d59fb4f6d46945ed4e7d38f53c9a72d290", "inline:grid-a-datum-too-early"],
   ["c051801e4ed69139e0eaae1b2d06631c85c890da52d4dac71162f8ad01ef3b44", "inline:grid-a-datum-in-a-function"],
 ];
 

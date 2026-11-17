@@ -100,13 +100,16 @@ const BASELINE: [string, string, string[]][] = [
     // and describe() with them, through the same diagnostic at its `diagnostics[8]`; code, span,
     // order, SVG and lint() are unchanged, and that message with no hint put back into the new
     // payload gives ae1b1138.
-    "1d95c22f51e28a05f1cb0dd6fa2a0241caa932ad8e7653ad84cde8898c2fde64", // RM1.4: snapping is now reported (door_1 at (99999, 99999) under grid 50 raises W_GRID_SNAPPED) (was 07d6157f); RM1.4: the W_GRID_SNAPPED span points at the written value `(99999, 99999)`, 714-727 (was e5f50b01, 706-737); steps 1149 -> 1213, +64 = one DIAGNOSTIC_STEPS
+    // AF3 (was 1d95c22f): room `b`'s `size 3000x missing_h` now reads the error value, so `b` is
+    // dropped and its follow-on `E_ROOM_SIZE@411` goes; `E_UNKNOWN_REF@441` is its one report. Only
+    // that diagnostic left `compile().diagnostics` and describe() (SVG and lint() are unchanged,
+    // steps too: it was charged when raised), and splicing it back into the new payload gives 1d95c22f.
+    "38dc7f61b1e82b86399e4b6e2accb856abdf696fc52d6f4f2fb528b0b582fb3e", // RM1.4: snapping is now reported (door_1 at (99999, 99999) under grid 50 raises W_GRID_SNAPPED) (was 07d6157f); RM1.4: the W_GRID_SNAPPED span points at the written value `(99999, 99999)`, 714-727 (was e5f50b01, 706-737); steps 1149 -> 1213, +64 = one DIAGNOSTIC_STEPS
     [
       "E_WALL_THICKNESS@363",
       "W_UNKNOWN_MATERIAL@474",
       "E_ROOM_SIZE@312",
       "E_UNKNOWN_REF@441",
-      "E_ROOM_SIZE@411",
       "W_ROOM_LABEL_OUTSIDE@607",
       "W_GRID_SNAPPED@714", // RM1.4: snapping is now reported, at the door's written `(x, y)`, before its off-wall warning
       "W_DOOR_OFF_WALL@706",
