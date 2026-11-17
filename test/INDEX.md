@@ -5,7 +5,7 @@
 Where the tests of a `src` module are, and what each test file is for. Generated; `npm run check:drift`
 fails when it is stale. How to add a test: `docs/testing.md` § 4.
 
-539 test files in `test/`, 286 `src` modules, 107 modules no test imports.
+540 test files in `test/`, 286 `src` modules, 106 modules no test imports.
 
 ## `src` module → tests that import it
 
@@ -77,6 +77,7 @@ Nearest first, then by name; `(+n)` is the rest. Test names are `test/<name>.tes
 - `src/elements/glyphs-outdoor.ts` (1) — `glyphs-outdoor`
 - `src/elements/index.ts` (1) — `elements`
 - `src/elements/outdoor.ts` (5) — `export-pdf`, `ground-walkability`, `label-placement-oracle`, `label-placement`, `outdoor`
+- `src/elements/reprint.ts` (1) — `reprint-allowance`
 - `src/elements/roof.ts` (3) — `label-placement-oracle`, `roof`, `v129-cross`
 - `src/elements/room.ts` (6) — `export-pdf`, `label-placement`, `net-area-stamp`, `rect-label-anchor`, `room-floor`, `room-uses`
 - `src/elements/section.ts` (1) — `section`
@@ -117,13 +118,13 @@ Nearest first, then by name; `(+n)` is the rest. Test names are `test/<name>.tes
 - `src/grammar/tokens.ts` (33) — `arch-highlight`, `block-stair-lint`, `closed-vocabularies`, `corner-window`, `door-enums`, `doors`, `element-facets`, `element-keyword-drift` (+25)
 - `src/hatches.ts` (8) — `export-pdf`, `floor-materials-byte-identity`, `joinery-split-oracle`, `joinery-split`, `model-range`, `outdoor`, `room-floor`, `sheet-text`
 - `src/impact.ts` (2) — `rectilinear-doors`, `rectilinear-rooms`
-- `src/import.ts` (32) — `block-stair-byte-identity`, `corner-window-byte-identity`, `dim-swap-reprint`, `dim-thickness-callout`, `drawing-budget`, `floor-materials-byte-identity`, `furniture-relations`, `gaps-byte-identity` (+24)
+- `src/import.ts` (33) — `block-stair-byte-identity`, `corner-window-byte-identity`, `dim-swap-reprint`, `dim-thickness-callout`, `drawing-budget`, `floor-materials-byte-identity`, `furniture-relations`, `gaps-byte-identity` (+25)
 - `src/import/limits.ts` (1) — `openplan3d-malformed`
-- `src/index.ts` (400) — `acc-metadata`, `access-graph`, `access-policy`, `accessible-svg`, `agent-gallery`, `alias-match`, `anchors`, `annotate` (+392)
+- `src/index.ts` (401) — `acc-metadata`, `access-graph`, `access-policy`, `accessible-svg`, `agent-gallery`, `alias-match`, `anchors`, `annotate` (+393)
 - `src/input-limit.ts` (2) — `import-rooted`, `workspace-seams`
 - `src/intent-concepts.ts` (2) — `vocabulary-living-dining`, `vocabulary-matcher-oracle`
 - `src/intent.ts` (1) — `site`
-- `src/ir.ts` (172) — `access-policy`, `arc-radius-exact`, `attach`, `axes`, `between-face-probes`, `block-stair-byte-identity`, `block-stair-frames`, `block-stair-winders` (+164)
+- `src/ir.ts` (173) — `access-policy`, `arc-radius-exact`, `attach`, `axes`, `between-face-probes`, `block-stair-byte-identity`, `block-stair-frames`, `block-stair-winders` (+165)
 - `src/label-fit.ts` (1) — `label-fit`
 - `src/label-placement.ts` (3) — `label-placement-oracle`, `label-placement`, `label-wrap`
 - `src/lexer.ts` (10) — `clause-order-byte-identity`, `diagnostics-volume`, `diagnostics`, `expr`, `imperial-input`, `model-range`, `parser-recovery-metric`, `room-uses` (+2)
@@ -156,11 +157,11 @@ Nearest first, then by name; `(+n)` is the rest. Test names are `test/<name>.tes
 - `src/num-format.ts` (14) — `annotation-collisions`, `dim-thickness-callout`, `emit-opening-oracle`, `imperial-input`, `keep`, `lint-ruleset-values`, `model-range`, `net-area-stamp` (+6)
 - `src/opening-relation.ts` (3) — `openings-between`, `rectilinear-doors`, `rectilinear-sides`
 - `src/opening-schedule.ts` (2) — `sheet-annotations`, `window-kinds`
-- `src/parser.ts` (151) — `arc-radius-exact`, `attach`, `axes`, `block-stair-byte-identity`, `block-stair`, `chrome-hidden`, `circle-enclosure`, `circulation-concave` (+143)
+- `src/parser.ts` (152) — `arc-radius-exact`, `attach`, `axes`, `block-stair-byte-identity`, `block-stair`, `chrome-hidden`, `circle-enclosure`, `circulation-concave` (+144)
 - `src/pipeline.ts` (1) — `work-counts`
 - `src/plan-json.ts` (11) — `element-facets`, `format`, `garage`, `plan-json-dropped`, `plan-json-instances`, `polygon-rooms`, `section`, `sheet-annotations` (+3)
 - `src/plan-json/to-json.ts` (1) — `rect-ring`
-- `src/registry.ts` (46) — `annotation-collisions`, `block-stair-byte-identity`, `block-stair-winders-walking-arc`, `block-stair`, `corner-window-byte-identity`, `corner-window`, `dim-swap-reprint`, `dim-thickness-callout` (+38)
+- `src/registry.ts` (47) — `annotation-collisions`, `block-stair-byte-identity`, `block-stair-winders-walking-arc`, `block-stair`, `corner-window-byte-identity`, `corner-window`, `dim-swap-reprint`, `dim-thickness-callout` (+39)
 - `src/repair.ts` (2) — `finish-furnish-laws`, `finish-never-worse`
 - `src/reroll.ts` (3) — `keep`, `reroll-findrun-oracle`, `reroll`
 - `src/room-datums.ts` (5) — `openings-between`, `room-datums`, `segment-select`, `shared-grid-byte-identity`, `keep`
@@ -613,6 +614,7 @@ The first sentence of each file's header comment.
 - `test/repair-coverage.test.ts` — repair — scripted statements are reported, not skipped; repair — a single resolved instance is rewritten however it is nested; repair — `in <room>` placements;…
 - `test/repair-no-worse.test.ts` — repair — the villa witness; repair — the no-worse law; repair — order dependence, stated rather than hidden.
 - `test/repair.test.ts` — arch repair.
+- `test/reprint-allowance.test.ts` — RR.9: a statement reprint (a door, window or opening fix, the door's flip text, a dim's swap text) is free only for a statement of at most `REPRINT_FREE_BYTES` bytes, so a component's long statement placed by many sto...
 - `test/reroll-findrun-oracle.test.ts` — `findRun` (`src/reroll.ts`) went from a shrinking search — try every length from the maximal same-kind window down to 3, re-running `collectSlots` over the whole prefix each time, cubic on a long NON-progression windo...
 - `test/reroll.test.ts` — reroll — the flat parametric row; reroll — nested statement lists; reroll — loop-variable collision; reroll — world passthrough (a plan with imports); reroll —…
 - `test/resolve-order-byte-identity.test.ts` — The byte-identity law for the resolve order (ADR 0028 §1, card PS3.2): `resolve()` places every room first, freezes a datum table, then resolves walls, then openings — and a plan that uses no new form resolves, draws,...
@@ -775,7 +777,6 @@ module); adding a test that imports it removes it from this list.
 - `src/elements/escalator.ts`
 - `src/elements/fence.ts`
 - `src/elements/opening.ts`
-- `src/elements/reprint.ts`
 - `src/elements/stair.ts`
 - `src/elements/walls-from-rooms.ts`
 - `src/error-catalog/circulation.ts`

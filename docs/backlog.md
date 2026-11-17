@@ -2057,7 +2057,7 @@ fragment-less dead routes are unchecked; a bare URL followed by punctuation, or 
 component the page does not name, is wrongly refused; a malformed `%` escape throws. Each becomes
 its own card once looked at.
 
-### RR.9 · A door's free first fix build recurs per storey — `todo`
+### RR.9 · A door's free first fix build recurs per storey: done by #939, waiting to be archived — `note`
 
 Left by RR.1 (#855 review round 2). `src/elements/door.ts` builds each fix (and the hinge-flipped
 text) once per door node and key, but the first build per `ResolveCtx` is uncharged, and there is
@@ -2070,6 +2070,11 @@ a fixed byte allowance per build, `1 + span` charged past it, for fixes and flip
 corpus door statements are short, so no pinned payload should move. **Gate:** that input returns
 `E_STEP_LIMIT` or compiles within budget in linear time; a test pins the free/charged boundary
 (a component's second storey is charged); no pinned digest, work count or datum law moves.
+
+Done (#939) in `src/elements/reprint.ts`, so doors, windows, openings and dims (whose swap text
+#936 routed there) share it: a statement longer than `REPRINT_FREE_BYTES` (256) pays `1 + span` on
+every build, on every storey; a shorter one keeps the free first build per ctx. The probe (a 30 KB
+door, 300 levels) took 13.8 s, 27 s with `paper`; it now stops at `E_STEP_LIMIT` in 1.6 s.
 
 ### RR.10 · Window and opening fixes re-print their statement with no step charge: done by #880, waiting to be archived — `note`
 
@@ -2244,6 +2249,18 @@ Checked (#936). The furniture fix is charged on every build: a component placed 
 loop iteration, uncharged (5,000 iterations of a 96 KB statement: 8.6 s, 1.8 GB, 2.4 % of the step
 budget). It now goes through `reprint` with a constant key, once per node per storey (156 ms, the
 same steps, no pinned payload moved). Its per-storey build is RR.9's shape (1,000 levels × 96 KB: 2.1 s).
+
+### RR.25 · Re-print work under the 256-byte allowance is still uncharged — `todo`
+
+Left by RR.9 (#939 review). A statement of 256 bytes or fewer still builds its first fix of each kind
+per storey free (`REPRINT_FREE_BYTES`, `src/elements/reprint.ts`). The probe: 550 hinged doors of 255
+bytes (a dense dead branch) in a component placed by 550 levels, 163 KB of source. It took 26.3 s and
+4,862,000 steps, with no `E_STEP_LIMIT` (only `E_DRAWING_LIMIT`). The same plan with `double` doors,
+which have no flip text, took 3.95 s at the same steps. The flip text is built for every hinged door
+whether or not a diagnostic fires. One way: build the flip text only when a diagnostic that carries
+it fires, or charge it at a per-byte rate past a much smaller allowance. **Gate:** the probe returns
+`E_STEP_LIMIT` or finishes within budget in a time proportional to its steps; no pinned payload
+moves (the longest corpus statement is 96 bytes).
 
 ### EB.1 · The embed-path size check is a Playwright-only number: done by #937, waiting to be archived — `note`
 
