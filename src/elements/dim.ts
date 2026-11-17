@@ -14,6 +14,7 @@ import { add, length, mul, normal, projectToWallFace, segmentsOfWall, sub, unit 
 import { arcPointAt, diameterText, radiusText } from "../geometry/arc.js";
 import { printDoc } from "../doc.js";
 import { statementText } from "../statement-print.js";
+import { reprint } from "./reprint.js";
 import { fmt2 } from "../num-format.js";
 import { parseSegmentSelect, segmentSelectText } from "../segment-select.js";
 import { DIM_TEXT_GAP, textWidth } from "../text-metrics.js";
@@ -324,7 +325,11 @@ export const dim: ElementDef = {
     // written endpoints to swap (they are derived), so it gets no fix text — the lint
     // warning, if it ever fires, stands on its own rather than offering an edit that
     // would replace `dim radius w1` with a pair of literal points.
-    if (n.span && !n.curve) r._swapText = emitSwapped(n);
+    // Built for every dim, whether or not the warning fires, and as long as the statement's
+    // source, so it goes through the shared reprint memo (backlog RR.24): the text varies only by
+    // the parse node, so a looped dim, whose iterations share the node, prints it once per storey
+    // instead of once per iteration.
+    if (n.span && !n.curve) r._swapText = reprint(ctx, n, "swap", "swap", () => emitSwapped(n));
     // Carried for the `W_DIM_OVERLAP` lint fix: where to write a re-tiered `offset`.
     // Unlike the swap this is a sub-span edit, so a CURVE call-out gets it too — the
     // `offset` clause means the same thing on both forms.
