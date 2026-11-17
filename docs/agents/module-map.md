@@ -259,12 +259,12 @@ Totals: 404 modules in 34 directories.
 | `id-spans.ts` | 23 | 2 | The byte span of an element statement's `id=<name>` name, kept beside the AST. A leaf: the parser records spans here and the resolver reads them, so reading one never loads the parser. | none |
 | `identity.ts` | 33 | 3 | Process-local stable identity tokens for cache keying. | none |
 | `impact.ts` | 1405 | 3 | `impact(before, after)` (plan-soundness card PS4.2): change one number, see what follows, what stays put, and what breaks. The executable answer to "what changes, what must not". | none |
-| `import.ts` | 349 | 33 | Module linking — the `import` system. | none |
-| `index.ts` | 713 | 443 | ArchLang — compile declarative floor-plan source to a professional SVG. | none |
+| `import.ts` | 349 | 34 | Module linking — the `import` system. | none |
+| `index.ts` | 713 | 444 | ArchLang — compile declarative floor-plan source to a professional SVG. | none |
 | `input-limit.ts` | 77 | 5 | A host's refusals, as catalogued diagnostics. | none |
 | `intent-concepts.ts` | 238 | 5 | The intent channel's concept vocabulary — production name resolution for the NL→ArchLang intent contract. | none |
 | `intent.ts` | 1589 | 7 | The intent channel — author-time checking of a brief's INTENT against a plan. | none |
-| `ir.ts` | 1804 | 255 | Intermediate representation + `resolve(ast)`. | charges the step meter |
+| `ir.ts` | 1804 | 256 | Intermediate representation + `resolve(ast)`. | charges the step meter |
 | `keep.ts` | 1833 | 11 | `keep`: declared invariants, checked by `compile()` and never solved (ADR 0033; plan-soundness PS4.3, design `archlang-lab/plans/plan-soundness/research/2026-10-26-ps43-keep-design.md`). | charges the step meter |
 | `label-fit.ts` | 626 | 3 | A room's label that does not fit shrinks: a **post-pass over the lowered Scene**, after `wrapLabels` and `relocateLabels` (`src/label-placement.ts`) have done what they can at the drawing's label size (#367). | none |
 | `label-placement.ts` | 750 | 7 | Obstacle-aware relocation of room labels — a **post-pass over the lowered Scene**. | none |
@@ -281,11 +281,11 @@ Totals: 404 modules in 34 directories.
 | `opening-junctions.ts` | 204 | 6 | Where other walls meet a host wall's run: the measure `W_OPENING_AT_JUNCTION` reports with (`src/lint/rules/openings.ts`) and a relational opening is refused by (`E_OPENING_NIB`, ADR 0028 §5), so the warning and the refusal can never… | none |
 | `opening-relation.ts` | 1425 | 11 | Openings by relation (ADR 0028 §5): where a `door\|window\|opening` stands when its position is written against the rooms rather than against a wall. | charges the step meter |
 | `opening-schedule.ts` | 610 | 6 | **`schedule openings`** — the door and window TAGS drawn beside each opening, and the rows of the DOOR & WINDOW SCHEDULE table the sheet carries (`sheet-tables.ts` lays the table out and lowers it; this module derives what it says and… | none |
-| `parser.ts` | 2135 | 137 | Recursive-descent parser: tokens -> PlanNode. Registry-driven element dispatch. | none |
+| `parser.ts` | 2135 | 138 | Recursive-descent parser: tokens -> PlanNode. Registry-driven element dispatch. | none |
 | `pipeline.ts` | 203 | 7 | The one `compile()` pipeline: parse → link → resolve → render. | none |
 | `plan-json.ts` | 75 | 16 | Structured JSON I/O for ArchLang plans — the machine-native channel an LLM uses to author and read a floor plan without touching `.arch` syntax. | none |
 | `pure.ts` | 28 | 15 | `pure(() => value)` returns `value`, built once at module load exactly as written. It marks a top-level constant whose initializer has no effect outside the value it builds, but whose shape a bundler cannot prove that of: a spread… | none |
-| `registry.ts` | 536 | 91 | Element registry: the single extension point. Each element type is one module exporting an {@link ElementDef}; parse/resolve/render iterate the registry rather than a hard-coded switch. Adding an element = one new module + one `register`… | none |
+| `registry.ts` | 536 | 92 | Element registry: the single extension point. Each element type is one module exporting an {@link ElementDef}; parse/resolve/render iterate the registry rather than a hard-coded switch. Adding an element = one new module + one `register`… | none |
 | `repair.ts` | 1921 | 5 | `repair(source)` — an explicit, opt-in source-to-source corrector. | none |
 | `reroll.ts` | 714 | 5 | `reroll(source)` — detect a run of ≥3 CONSECUTIVE statements in arithmetic progression and offer a proven-equivalent `for` loop (Szalinski, PLDI 2020, `uwplse/szalinski` `src/solve.rs`, minus the e-graph — fit an AP over sorted… | none |
 | `room-datums.ts` | 418 | 20 | The datum table (ADR 0028 §1): what one resolution group's rooms and grid axes expose as lines, frozen after every room is placed and before any wall resolves. | charges the step meter |
@@ -424,7 +424,7 @@ Totals: 404 modules in 34 directories.
 | `index.ts` | 17 | 1 | Built-in element registry — back-compatible views over the default {@link Registry}. The canonical built-in list now lives in `defs.ts`; the per-call registry machinery (and the public `register*` extension points) live in `registry.ts`.… | none |
 | `opening.ts` | 185 | 2 | `opening [id=] at (x,y) width N [wall ref] [head <mm>]` — a leaf-less cased opening: a gap in the host wall (no door leaf, no glazing) that still connects the two spaces. The clauses after the placement come in any order… | none |
 | `outdoor.ts` | 726 | 15 | `outdoor [id=] <kind> (at (x,y) size WxH \| polygon (x,y) …) [label "…"] [rail <edges>]` — a ground surface OUTSIDE the building: lawn, planting, paving, deck, gravel, water, driveway, patio, balcony, sand, soil. | none |
-| `reprint.ts` | 73 | 4 | The memo and step charge for a fix that re-prints its whole statement (door, window, opening, and the endpoint-swapped text a `dim` carries for `W_DIM_INSIDE`). | charges the step meter |
+| `reprint.ts` | 91 | 5 | The memo and step charge for a fix that re-prints its whole statement (door, window, opening, and the endpoint-swapped text a `dim` carries for `W_DIM_INSIDE`). | charges the step meter |
 | `roof.ts` | 383 | 6 | `roof overhang <mm> [wall <id>]` — or `roof polygon (x,y) (x,y) (x,y) …` — the eaves projection line. | none |
 | `room.ts` | 842 | 12 | `room [id=] (at (x,y) \| DIR ref [align E] [gap n]) size WxH [label "…"]` or `room [id=] polygon (x,y) (x,y) (x,y) … [label "…" [at (x,y)]]` or `room [id=] circle at (cx,cy) radius R [label "…"]` — floor fill + label + computed area. The… | none |
 | `section.ts` | 256 | 2 | `section <id\|int> (x,y)->(x,y) look <compass>` — a section mark on the plan (RM6.1, design `docs/plans/product-roadmap/design/slab-and-section.md` §2): where a section cuts the building and which way it looks, drawn as GB/T 50001 and ISO… | none |
