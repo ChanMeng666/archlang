@@ -96,6 +96,9 @@ coordinator's own notes (merging, registries, browser and social automation, the
   fails `check:drift`/`test-index` (#669, 2026-11-10). For a PR dropped from a train or one landing
   alone, sync with `npm run sync:main -- --push` in the PR's worktree instead: it merges `main` locally,
   regenerates, commits and pushes; then re-review, then re-pin (`commands.md` § Merging a PR).
+- **`check:drift` reports freshly regenerated output as DRIFT until it is staged.** It runs the
+  generators, then `git diff --quiet` on their outputs (`scripts/check-drift.ts`): working tree
+  against the index. After `npm run gen:*`, `git add` the outputs (or commit) before `check:quick`.
 - **The PR-scale fuzz passes while the nightly's `FC_SCALE=10` fails.** A seeded property replays the same
   first runs, so a counterexample at run 494+ only ever appears in `fuzz-deep` (#664). Download its
   `fuzz-deep-report.json`, reproduce with a `tsx` probe, then card the real defect; never widen the seed.
