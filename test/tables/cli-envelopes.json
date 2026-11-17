@@ -1,5 +1,5 @@
 {
-  "_reason": "EH1.18: impact exits 2 with { ok, diagnostics } on a plan that does not parse (impact user row)",
+  "_reason": "AF6: fmt refuses a plan that does not parse out loud: parsed (both rows) and diagnostics (fmt user) added",
   "rows": {
     "compile ok": ["bytes", "diagnostics", "format", "ok", "output", "summary"],
     "compile user": ["diagnostics", "format", "ok"],
@@ -73,8 +73,8 @@
     "ast user": ["ast", "diagnostics", "ok"],
     "complete ok": ["items", "ok"],
     "complete user": ["items", "ok"],
-    "fmt ok": ["changed", "formatted", "ok", "output_hash", "source_hash"],
-    "fmt user": ["changed", "formatted", "ok", "output_hash", "source_hash"],
+    "fmt ok": ["changed", "formatted", "ok", "output_hash", "parsed", "source_hash"],
+    "fmt user": ["changed", "diagnostics", "formatted", "ok", "output_hash", "parsed", "source_hash"],
     "repair ok": ["changed", "changes", "ok", "output_hash", "source", "source_hash", "unresolved"],
     "repair user": ["changed", "changes", "ok", "output_hash", "source", "source_hash", "unresolved"],
     "fix ok": ["applied", "ok", "output_hash", "passes", "skipped", "source_hash", "target", "unresolved", "wrote"],

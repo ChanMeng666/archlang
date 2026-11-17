@@ -29,12 +29,11 @@ import type {
 } from "./ast.js";
 import type { Expr } from "./expr.js";
 import { concat, type Doc, group, hardline, indent, join, line } from "./doc.js";
-/** Deterministic number → string (trim to 3 dp, non-finite → "0"). */
-import { fmtSource as numStr } from "./num-format.js";
 import { segmentExprText, segmentSelectText } from "./segment-select.js";
 // Expression re-emission lives in one place (shared with the fix producers) so
-// the formatter and `arch fix` render an expression byte-identically.
-import { exprToSource as exprStr } from "./expr-source.js";
+// the formatter and `arch fix` render an expression byte-identically. A bare number
+// prints through the same literal printer (`fmtSource`, lossless inside `arch fmt`).
+import { exprToSource as exprStr, numLiteral as numStr } from "./expr-source.js";
 
 /**
  * Every {@link Statement} kind {@link statementText} prints — everything except

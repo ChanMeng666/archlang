@@ -9,7 +9,32 @@
  */
 
 import type { Expr } from "./expr.js";
-import { fmtSource as numStr } from "./num-format.js";
+import { fmtLiteral, fmtSource } from "./num-format.js";
+
+/**
+ * The printer every numeric literal goes through, here and in `statement-print.ts`.
+ * `fmtSource` (3 dp on the 0.001 mm lattice) for the fix producers, `repair` and every other
+ * tool that prints values it COMPUTED, whose last digits are float noise; `arch fmt` switches it
+ * to the lossless `fmtLiteral` for the length of one synchronous `format()` call
+ * ({@link withLosslessLiterals}), since every number it prints is one the author wrote (M.8).
+ * One binding, swapped and restored in a `finally`, so the printers keep their one shape and no
+ * caller outside `format()` ever sees the lossless printer.
+ */
+let literalPrinter: (n: number) => string = fmtSource;
+
+/** A numeric literal as source text, through the printer in force (see {@link literalPrinter}). */
+export const numLiteral = (n: number): string => literalPrinter(n);
+
+/** Run `f` with every numeric literal printed losslessly (`fmtLiteral`); `arch fmt`'s one entry. */
+export function withLosslessLiterals<T>(f: () => T): T {
+  const prev = literalPrinter;
+  literalPrinter = fmtLiteral;
+  try {
+    return f();
+  } finally {
+    literalPrinter = prev;
+  }
+}
 
 const BIN_PREC: Record<string, number> = {
   "||": 1,
@@ -62,7 +87,7 @@ function strStr(parts: (string | Expr)[]): string {
 export function exprToSource(e: Expr): string {
   switch (e.t) {
     case "num":
-      return numStr(e.value);
+      return numLiteral(e.value);
     case "bool":
       return e.value ? "true" : "false";
     case "ref":

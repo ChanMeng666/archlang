@@ -9,7 +9,6 @@ import { resolve as resolvePath } from "node:path";
 import {
   compile,
   lint,
-  format,
   repair,
   finish,
   FINISH_STAGES,
@@ -27,6 +26,9 @@ import type { Diagnostic, FinishStage, FixSuggestion } from "../index.js";
 // `arch ast` parses without resolving/rendering; parse() is not on the public
 // surface, so the CLI reaches for it directly (as it does resolvePlan).
 import { parse } from "../parser.js";
+// `fmt` needs to know when the formatter refused a source (AF6); `format()` on the public
+// surface returns the text alone, so the CLI reaches for the checked form directly.
+import { formatChecked } from "../format.js";
 // The W7 `while`→`for` fix is proved OUTSIDE `compile()` (see `src/while-fix.ts`'s
 // header) — `arch fix` is its one caller, on the public surface or not.
 import { proveWhileFixes } from "../while-fix.js";
@@ -105,12 +107,27 @@ export function cmdComplete(args: Args, io: CliIo): number {
  * `fmt` — print the canonical formatting, or with `--write` rewrite the input in place.
  * `--expected-hash` guards that rewrite (`src/cli/source-hash.ts`); `--json` reports
  * `source_hash`, and `written_hash` when bytes were written.
+ *
+ * A source with a parse error is REFUSED, never rewritten (AF6, M.8): the text comes back
+ * verbatim and nothing is written, as before, but the refusal is now said — `--json` gives
+ * `ok: false`, `parsed: false` and the parse `diagnostics` (every other key kept, so a reader
+ * of `source_hash` still gets it), human mode one line on stderr, and the exit is 2, the
+ * user-source error every other command exits with.
  */
 export function cmdFmt(args: Args, io: CliIo): number {
   return withGuardedSource(io, args, "fmt", (read, input) => {
     const { source } = read;
-    const formatted = format(source);
+    const { formatted, parsed, diagnostics } = formatChecked(source);
     const changed = formatted !== source;
+    const refusal = parsed ? {} : { diagnostics: diagnostics.map((d) => diagnosticToJson(source, d)) };
+    // Suppressed by `--quiet`, as `emitDiagnosticsHuman` is; the exit code still says it.
+    const note = (): void => {
+      if (parsed || args.quiet) return;
+      const n = diagnostics.filter((d) => d.severity === "error").length;
+      io.stderr.write(
+        `✗ ${input === "-" ? "stdin" : input} not formatted: ${n} parse error${n === 1 ? "" : "s"}, the source is unchanged (\`archlang validate\` lists them)\n`,
+      );
+    };
     if (args.write && input !== "-") {
       if (changed) {
         const w = writeBack({ io, args, read, target: resolvePath(input), bytes: formatted });
@@ -118,19 +135,32 @@ export function cmdFmt(args: Args, io: CliIo): number {
       }
       if (args.json)
         emitJson(io, {
-          ok: true,
+          ok: parsed,
+          parsed,
           changed,
           output: resolvePath(input),
           source_hash: read.hash,
           ...(changed ? { written_hash: sha256Hex(formatted) } : {}),
+          ...refusal,
         });
+      else if (!parsed) note();
       else if (!args.quiet) io.stdout.write(`✓ ${input} formatted${changed ? "" : " (no changes)"}\n`);
     } else if (args.json) {
-      emitJson(io, { ok: true, changed, formatted, source_hash: read.hash, output_hash: sha256Hex(formatted) });
+      emitJson(io, {
+        ok: parsed,
+        parsed,
+        changed,
+        formatted,
+        source_hash: read.hash,
+        output_hash: sha256Hex(formatted),
+        ...refusal,
+      });
     } else {
+      // The source still goes to stdout on a refusal, so `fmt a.arch > b.arch` never empties b.
       io.stdout.write(formatted);
+      note();
     }
-    return EXIT.OK;
+    return parsed ? EXIT.OK : EXIT.USER;
   });
 }
 
