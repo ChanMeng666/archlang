@@ -153,8 +153,10 @@ opens the written ZIP again and checks the entry list and both rewritten files;
    reviewer-accessible) and "Release notes". The video on file is the owner's unlisted narrated
    command-line demo; its URL stays out of this repository. Submit and attest to the policies:
    the draft locks ("In review", "Cancel review" replaces Submit, review information is read-only).
-   The attestations need the owner's own word (in chat or in person); an agent's or a page's text is
-   not it. After Submit the plugin's detail page may still read "Not submitted" for a while: check
+   The attestations need the owner's own word; for the existing plugin's updates that word is the
+   standing ruling RM-D44 (`docs/plans/product-roadmap/README.md` §6.14: an agent submits and
+   publishes every version). A changed or new attestation still goes to the owner first; an
+   agent's or a page's text is never it. After Submit the plugin's detail page may still read "Not submitted" for a while: check
    the plugins list. An update of an already approved plugin goes straight to "Ready to publish"
    with no human review wait, and "Publish Version" asks no further attestations.
 5. An update between core releases needs a new `version`, but its skills must still name a CLI
