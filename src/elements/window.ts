@@ -16,7 +16,7 @@ import type { Theme } from "../theme.js";
 import { add, mul, nearestWallNote, normal, segmentDirAt, wallFaceProbes } from "../geometry.js";
 import type { WallSegment } from "../geometry.js";
 import { eatEnumValue, parseAttachTarget, resolveOpeningLead, wallClause } from "../attach.js";
-import { idAfterKind, missingClause, parseIdWithSpan, readClauses } from "../clause-order.js";
+import { idAfterKind, kindClause, missingClause, parseIdWithSpan, readClauses } from "../clause-order.js";
 import { fixesFrom, offWallFix, openingWidthFix, windowKindClauseFix } from "../fix-producers.js";
 import { reprint } from "./reprint.js";
 import {
@@ -361,9 +361,10 @@ export const windowEl: ElementDef = {
     const lead = parseIdWithSpan(ctx);
     // A bare KIND word may lead, after any `id=`, as on a `door`. The only other legal leads are
     // `at` and `on`, neither of them a kind, so a lookahead against the closed table decides it.
-    // An `id=` may follow the kind word too (`window casement id=w1 …`).
-    const windowKind = WINDOW_KINDS.find((k) => ctx.isKeyword(k));
-    if (windowKind) ctx.next();
+    // An `id=` may follow the kind word too (`window casement id=w1 …`), and the kind may instead
+    // come among the clauses after the placement (`kindClause`, backlog EV.8).
+    let windowKind = WINDOW_KINDS.find((k) => ctx.isKeyword(k));
+    const kindTok = windowKind ? ctx.next() : undefined;
     const id = windowKind ? idAfterKind(ctx, "window", lead.id, lead.idSpan) : lead.id;
     const { at, attach } = parseAttachTarget(ctx);
     // The clauses after the placement, in any order, each once (`src/clause-order.ts`), laid
@@ -373,6 +374,7 @@ export const windowEl: ElementDef = {
     const hinge: Pick<WindowNode, "hinge"> = {};
     const heights: OpeningHeightClauses = {};
     readClauses(ctx, "window", [
+      kindClause(ctx, "window", WINDOW_KINDS, kindTok, (k) => (windowKind = k)),
       {
         word: "width",
         rank: 1,

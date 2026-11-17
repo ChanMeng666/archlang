@@ -115,7 +115,7 @@ Nearest first, then by name; `(+n)` is the rest. Test names are `test/<name>.tes
 - `src/geometry/polygon.ts` (16) — `circulation-concave`, `dim-thickness-callout`, `label-placement-oracle`, `label-placement`, `label-wrap`, `net-area`, `outdoor`, `polygon-overlap-oracle` (+8)
 - `src/geometry/rect.ts` (10) — `between-face-probes`, `block-stair-winders`, `finish-furnish-laws`, `finish-levels`, `label-placement-oracle`, `label-wrap`, `lint-clearances-kitchen-doors`, `lint-measure` (+2)
 - `src/geometry/union.ts` (3) — `band`, `joinery-oracle`, `union`
-- `src/grammar/tokens.ts` (33) — `arch-highlight`, `block-stair-lint`, `closed-vocabularies`, `corner-window`, `door-enums`, `doors`, `element-facets`, `element-keyword-drift` (+25)
+- `src/grammar/tokens.ts` (34) — `arch-highlight`, `block-stair-lint`, `clause-order-byte-identity`, `closed-vocabularies`, `corner-window`, `door-enums`, `doors`, `element-facets` (+26)
 - `src/hatches.ts` (8) — `export-pdf`, `floor-materials-byte-identity`, `joinery-split-oracle`, `joinery-split`, `model-range`, `outdoor`, `room-floor`, `sheet-text`
 - `src/impact.ts` (2) — `rectilinear-doors`, `rectilinear-rooms`
 - `src/import.ts` (33) — `block-stair-byte-identity`, `corner-window-byte-identity`, `dim-swap-reprint`, `dim-thickness-callout`, `drawing-budget`, `floor-materials-byte-identity`, `furniture-relations`, `gaps-byte-identity` (+25)

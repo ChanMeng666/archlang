@@ -2368,7 +2368,7 @@ clause the model meant, as U.6 did for `uses balcony`; whether either becomes sy
 the data after the hint. **Gate:** each word gets a hint naming the real form, a test per word, and
 no corpus output moves (message only).
 
-### EV.8 · A door or window kind word after `width` is still a parse error — `todo`
+### EV.8 · A door or window kind word after `width` is still a parse error: done by #943, waiting to be archived — `note`
 
 EV.4's data, from a downstream product: in ArchCanvas's paid 1.62 run, 2 of the 3 first drafts
 that failed to compile (of 26; its clean first drafts fell from 85 % to 62 %) failed with

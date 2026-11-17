@@ -792,7 +792,7 @@ reports the result as \`sheet\`. Big plan? \`paper A1\` + \`dims auto all\` is t
 
 ## Elements
 
-In ${ORDER_FREE_STATEMENTS.map((k) => `\`${k}\``).join(", ")}, the clauses after the placement come in any order, each once (E_DUP_CLAUSE); out of the order below, a value in parentheses (\`rotate (90)\`) reads as a call, so drop them.
+In ${ORDER_FREE_STATEMENTS.map((k) => `\`${k}\``).join(", ")}, the clauses after the placement come in any order, each once (E_DUP_CLAUSE), a door's or window's kind word too; out of the order below, a value in parentheses (\`rotate (90)\`) reads as a call, so drop them.
 
 ${elementLines}
 
