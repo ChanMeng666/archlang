@@ -213,3 +213,136 @@ describe("AF3: an unknown name is one diagnostic, never a cascade", () => {
     expect(at("xs[0] + 1")).not.toBe(POISON);
   });
 });
+
+/** Two rooms side by side, room `a` written with `aClause`, then `rest`. */
+const pair = (aClause: string, ...rest: string[]): string =>
+  plan(
+    [
+      "  let x0 = 0",
+      "  let W = 4000",
+      `  room id=a ${aClause}`,
+      "  room id=b at (4000,0) size 4000 x 3000",
+      ...rest.map((l) => `  ${l}`),
+    ].join("\n"),
+  );
+const AT_TYPO = "at (xo,0) size 4000 x 3000";
+const AT_FIXED = "at (x0,0) size 4000 x 3000";
+const WALLS = "walls from rooms exterior 200 partition 100";
+const OPENINGS = [
+  "door between a and b at center width 800",
+  "window on a.top width 1200",
+  "furniture bed in a anchor top-right flush size 1400x2000",
+];
+const RELATED = [
+  "room id=c below a align left gap 0 size 2000 x 2000",
+  "room id=d right-of c align top gap 0 size 2000 x 2000",
+];
+const CELL = (w: string): string =>
+  plan(
+    `  component cell(w) {\n    room id=r at (0,0) size w x 3000\n    furniture bed in r anchor top-right flush size 1400x2000\n  }\n  place cell(${w}) as c1 at (0,0)\n  place cell(4000) as c2 at (5000,0)\n  keep align c1.r.top c2.r.top`,
+  );
+const BACKED = (end: string): string =>
+  plan(
+    `  let len = 6000\n  wall id=w exterior thickness 200 { (0,0) (${end},0) }\n  furniture counter against wall w offset 1000 side left size 600x600`,
+  );
+
+/** Each case: the plan with the typo, its control, and the ids the typo's plan keeps. */
+const DEPENDENTS: { name: string; typo: string; fixed: string; kept: string[] }[] = [
+  {
+    name: "a keep that aligns the dropped room",
+    typo: pair(AT_TYPO, "keep align a.top b.top"),
+    fixed: pair(AT_FIXED, "keep align a.top b.top"),
+    kept: ["b"],
+  },
+  {
+    name: "a keep that measures an offset from the dropped room",
+    typo: pair(AT_TYPO, "keep offset b.left from a.right 0"),
+    fixed: pair(AT_FIXED, "keep offset b.left from a.right 0"),
+    kept: ["b"],
+  },
+  {
+    name: "derived walls, an opening between, a window on an edge and a piece in the room (a position typo)",
+    typo: pair(AT_TYPO, WALLS, ...OPENINGS),
+    fixed: pair(AT_FIXED, WALLS, ...OPENINGS),
+    kept: ["b", "walls_1"],
+  },
+  {
+    // Before: `E_DATUM_UNPLACED` "a room with no positive size" three times, citing an E_ROOM_SIZE gone.
+    name: "derived walls, an opening between, a window on an edge and a piece in the room (a size typo)",
+    typo: pair("at (0,0) size Wx x 3000", WALLS, ...OPENINGS),
+    fixed: pair("at (0,0) size W x 3000", WALLS, ...OPENINGS),
+    kept: ["b", "walls_1"],
+  },
+  {
+    name: "`except` naming the dropped room",
+    typo: pair(AT_TYPO, `${WALLS} { except a }`),
+    fixed: pair(AT_FIXED, `${WALLS} { except a }`),
+    kept: ["b", "walls_1"],
+  },
+  {
+    name: "`open between` naming the dropped room",
+    typo: pair(AT_TYPO, `${WALLS} { open between a and b }`),
+    fixed: pair(AT_FIXED, `${WALLS} { open between a and b }`),
+    // The clause cannot act, so the statement derives nothing: it follows the room too.
+    kept: ["b"],
+  },
+  {
+    name: "a room placed against the dropped room, and one placed against that",
+    typo: pair(AT_TYPO, ...RELATED),
+    fixed: pair(AT_FIXED, ...RELATED),
+    kept: ["b"],
+  },
+  {
+    name: "a datum of the dropped room read in an expression",
+    typo: pair(AT_TYPO, "column at (a.right, 3000) size 600x600"),
+    fixed: pair(AT_FIXED, "column at (a.right, 3000) size 600x600"),
+    kept: ["b"],
+  },
+  {
+    name: "a placed instance's room, and the piece and the keep that name it",
+    typo: CELL("wq"),
+    fixed: CELL("4000"),
+    kept: ["c2.r", "c2.bed_1"],
+  },
+  {
+    name: "a piece backed onto a wall that read the error value",
+    typo: BACKED("lenn"),
+    fixed: BACKED("len"),
+    kept: [],
+  },
+];
+
+describe("AF3: nothing left in the plan or its diagnostics names an element the error value took", () => {
+  for (const c of DEPENDENTS) {
+    it(c.name, () => {
+      expect(diagnostics(c.fixed)).toEqual([]);
+      expect(diagnostics(c.typo).map((d) => d.split(" ")[0])).toEqual(["E_UNKNOWN_REF"]);
+      expect(ids(c.typo)).toEqual(c.kept);
+    });
+  }
+
+  it("a `keep stacked` naming a room one storey dropped says nothing more", () => {
+    const src = (x: string): string =>
+      plan(
+        `  let x0 = 0\n  level 0 {\n    room id=a at (${x},0) size 4000 x 3000\n  }\n  level 1 {\n    room id=a at (0,0) size 4000 x 3000\n  }\n  keep stacked a on levels 0 1`,
+      );
+    expect(diagnostics(src("x0"))).toEqual([]);
+    expect(diagnostics(src("xo"))).toEqual([`E_UNKNOWN_REF Unknown name "xo"`]);
+  });
+
+  it("a relational opening keeps its axis-arithmetic report beside an undeclared axis's (`rootDiag`)", () => {
+    // `axis.2 + axis.9`: the undeclared label is the evaluator's E_UNKNOWN_REF; arithmetic on a
+    // declared one is a mistake in the text (E_OPENING_DATUM), so both stand though the door goes.
+    const src = pair(
+      AT_FIXED,
+      "axes { x at 0, 4000, 8000 }",
+      WALLS,
+      "door between a and b at axis.2 + axis.9 from start width 800",
+    );
+    const codes = compile(src, { noCache: true })
+      .diagnostics.filter((d) => d.severity === "error")
+      .map((d) => d.code)
+      .sort();
+    expect(codes).toEqual(["E_OPENING_DATUM", "E_UNKNOWN_REF"]);
+  });
+});

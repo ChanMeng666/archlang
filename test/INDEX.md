@@ -360,7 +360,7 @@ The first sentence of each file's header comment.
 - `test/error-catalog-families.test.ts` — The error catalogue is written by family (`src/error-catalog/<family>.ts`, one `defineEntries({...})` each) and merged by `mergeFamilies` in `src/error-catalog.ts`.
 - `test/error-catalog-order.test.ts` — `ERROR_CODES` order is a law of the source, not of the host: errors first, then warnings, and within each group by UTF-16 code unit.
 - `test/error-svg.test.ts` — onError: 'svg' (opt-in error card).
-- `test/error-value-law.test.ts` — The AF3 law: the error value (`POISON`, `src/expr.ts`) is held only by a plan that already fails.
+- `test/error-value-law.test.ts` — The AF3 laws: the error value (`POISON`, `src/expr.ts`) is held only by a plan that already fails, and when it is, its root errors are the plan's only new diagnostics.
 - `test/error-value.test.ts` — An unknown name evaluates to the error value (AF3, TypeScript's error type): its `E_UNKNOWN_REF`, hint included, is the one diagnostic of that root cause, and the element that read it is dropped rather than drawn from...
 - `test/escape-fuzz.test.ts` — escaping fuzz — SVG; escaping fuzz — error-card SVG; escaping fuzz — ASCII plan; escaping fuzz — DXF export; escaping fuzz — shrunk regressions.
 - `test/eval-fidelity-live.test.ts` — The fidelity slice's live path (`eval/fidelity-live.ts`), offline: fetch is mocked, no key, no network.
