@@ -163,6 +163,54 @@ export function idAfterKind(ctx: ParseCtx, what: IdAfterKindStatement, id: strin
 }
 
 /**
+ * A `door`'s or `window`'s kind word as one more order-free clause (backlog EV.8): after the
+ * placement, in any order with the rest (`door on w at 50% width 900 sliding`), as models write it.
+ * Read only where the word cannot begin the next statement, so every plan that parsed before reads
+ * as it did: a kind word after an opening's clauses began an "Unknown statement" there. `lead` is
+ * the token of a kind written straight after the keyword, if any; `set` takes the kind read here,
+ * and the statement lays its node out as if the word had been written there. A second kind word,
+ * wherever the first stood, is `E_DUP_CLAUSE`, reported and read past.
+ */
+export function kindClause<K extends string>(
+  ctx: ParseCtx,
+  what: "door" | "window",
+  kinds: readonly K[],
+  lead: { start: number; end: number } | undefined,
+  set: (kind: K) => void,
+): TailClause {
+  let first: Span | undefined = lead && { start: lead.start, end: lead.end };
+  const word = (): K | undefined => kinds.find((k) => ctx.isKeyword(k));
+  const begins = (): boolean => startsStatement(ctx, ctx.peek().value);
+  return {
+    word: "kind",
+    // Before the placement in the old order, so reading it never puts a later clause out of order.
+    rank: 0,
+    at: () => word() !== undefined && !begins(),
+    startsStatement: begins,
+    // A second kind word is a different word from the first, so this clause checks its own repeats.
+    repeats: true,
+    read() {
+      const kind = word()!;
+      const t = ctx.next();
+      const span = { start: t.start, end: t.end };
+      if (!first) {
+        first = span;
+        set(kind);
+        return;
+      }
+      ctx.diag({
+        severity: "error",
+        code: "E_DUP_CLAUSE",
+        message: `\`${kind}\` is a second kind word on this ${what}: each clause is written once`,
+        span,
+        relatedSpans: [{ span: first, message: "the kind first written here" }],
+        hints: ["delete one of the two"],
+      });
+    },
+  };
+}
+
+/**
  * The order-free clauses whose value is an expression, each with an example of its own. Only
  * these can turn into a call: written out of the old order with the value in parentheses
  * (`… clear front 600 rotate (90)`), the word reads as a component call (see the module header).
