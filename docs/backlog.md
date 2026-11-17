@@ -2245,7 +2245,7 @@ loop iteration, uncharged (5,000 iterations of a 96 KB statement: 8.6 s, 1.8 GB,
 budget). It now goes through `reprint` with a constant key, once per node per storey (156 ms, the
 same steps, no pinned payload moved). Its per-storey build is RR.9's shape (1,000 levels × 96 KB: 2.1 s).
 
-### EB.1 · The embed-path size check is a Playwright-only number — `todo`
+### EB.1 · The embed-path size check is a Playwright-only number: done by #937, waiting to be archived — `note`
 
 The playground's embed path is a hard gzip ceiling (`embedPathBudget`,
 `playground/e2e/startup-chunks.baseline.json`; RM-D57 keeps it at 351,000 B), measured only by
