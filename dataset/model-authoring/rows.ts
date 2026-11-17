@@ -26,6 +26,7 @@ import {
 import { CANARY, CANARY_COMMENT } from "../canary.js";
 import { recordTrajectory } from "../trajectory.js";
 import type { ManifestEntry } from "./manifest.js";
+import { extractArch } from "./reply.js";
 
 export const CONFIG_NAME = "model-authoring";
 export const GENERATOR_NAME = "archlang-dataset-model-authoring";
@@ -41,28 +42,10 @@ export function systemPromptOf(spec: string): string {
 }
 
 /**
- * Pull the `.arch` source out of a reply: the body of the first fenced block opened by
- * ```` ```arch ```` or a bare ```` ``` ```` at a line end, up to the next ```` ``` ````; the whole
- * reply when there is none. Trimmed. Written with `indexOf`, not a lazy regex, so it is linear.
+ * Pull the `.arch` source out of a reply: the body of its first complete `arch` or untyped fence,
+ * else the whole reply, trimmed. One implementation with the eval harness (`reply.ts`, EV.7).
  */
-export function extractArch(text: string): string {
-  let from = 0;
-  for (;;) {
-    const i = text.indexOf("```", from);
-    if (i === -1) break;
-    const after = i + 3;
-    let start = -1;
-    if (text.startsWith("arch\n", after)) start = after + 5;
-    else if (text[after] === "\n") start = after + 1;
-    if (start !== -1) {
-      const end = text.indexOf("```", start);
-      if (end === -1) break; // no closing fence anywhere later: no block
-      return text.slice(start, end).trim();
-    }
-    from = i + 1;
-  }
-  return text.trim();
-}
+export { extractArch };
 
 /**
  * Every fenced block in a reply, whatever its info string (```` ```arch ````, ```` ```json ````, a

@@ -214,6 +214,24 @@ npm run eval:l2 -- --yes …   # T3 harness — paid; ONE owner-ratified run onl
   it is the extracted source RM-D53 allows. Otherwise `<id>.not-extracted.txt` holds a one-line reason and no reply text — an unfenced
   or truncated reply is never stored, so the model's prose stays unpublished (product-roadmap
   RM-D53). The workflow uploads both in the `eval-results-live` artifact (GitHub's default retention).
+- **Which text is scored** (`extractArch`, EV.7): the body of the reply's first complete fence whose
+  info string is empty or `arch`, read the way Markdown reads fences (`firstArchFence`), else the
+  whole reply, trimmed. One implementation, `dataset/model-authoring/reply.ts`, shared by `run.ts`,
+  `l2.ts` and the `model-authoring` rows. Until EV.7 it was a regex, and these reply shapes score
+  differently now: a typed first block (` ```json `), prose, then an `arch` block (the regex scored
+  the text between the blocks, now the `arch` block); a four-backtick fence holding a ` ``` ` line
+  (the regex stopped at that line, now the block runs to its closing ` ```` `); CRLF line ends (the
+  regex found no fence and scored the whole reply, fences and all); an opener the regex skipped
+  (` ```ARCH `, ` ```arch title `, ` ``` ` with a trailing space); and a fence the regex took but
+  Markdown does not (a ` ``` ` not at a line start or indented four spaces or more, or a closing
+  ` ``` ` with text on its line). An unfenced or truncated reply is scored as written, as before.
+  **`live-baseline.json` was measured under the old regex** and is not re-measured: the change takes
+  effect at the next live run. Its replies were never kept, so which of its 26 briefs would move
+  cannot be computed; in its run (43727489713) and the two others of RM-D52 every compile failure
+  names plan geometry or an unknown statement, none the prose, JSON or empty text a mis-extraction
+  scores, which is consistent with none of those 78 replies having these shapes but does not prove
+  it. Of the 1,370 `model-authoring` replies (`dataset/out/`), every one's first fence is a complete
+  ` ```arch ` block and none scores differently, so no published row's bytes move.
 
 **In practice, run the live eval from GitHub Actions** ("Eval (live)" `workflow_dispatch`,
 `.github/workflows/eval-live.yml`): `OPENAI_API_KEY` lives in Actions secrets, not on any dev

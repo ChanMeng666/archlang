@@ -35,6 +35,7 @@ import { fileURLToPath } from "node:url";
 import { dirname, resolve } from "node:path";
 import { compile, describe as describePlan, lint } from "../src/index.js";
 import type { Intent } from "../src/intent.js";
+import { extractArch, firstArchFence } from "../dataset/model-authoring/reply.js";
 import {
   type AssertionResult,
   type Subscores,
@@ -398,12 +399,11 @@ export function systemPrompt(spec: string = readFileSync(resolve(ROOT, "spec.llm
   return `${spec}\n\nYou write ArchLang. Reply with ONLY one \`\`\`arch code block — no prose.`;
 }
 
-/** Pull the `.arch` source out of a model reply (fenced block if present, else raw).
- *  Exported so the L2 harness parses model replies identically to the L0 path. */
-export function extractArch(text: string): string {
-  const m = text.match(/```(?:arch)?\n([\s\S]*?)```/);
-  return (m ? m[1]! : text).trim();
-}
+/** `extractArch` pulls the `.arch` source out of a model reply: the body of its first complete
+ *  `arch` or untyped fence (`firstArchFence`), else the whole reply, trimmed. Re-exported so the L2
+ *  harness and the `model-authoring` rows parse replies identically to the L0 path: one
+ *  implementation, in `dataset/model-authoring/reply.ts` (EV.7). */
+export { extractArch, firstArchFence };
 
 /** Author a plan via the Anthropic Messages API; resolves to the raw reply text. */
 async function authorWithAnthropic(
@@ -533,37 +533,6 @@ export function makeAuthor(
   };
 }
 
-/**
- * The body of a reply's first complete fenced block whose info string is empty or `arch`, read the
- * way Markdown reads fences, else `undefined`: a fence opens only at a line start (up to three
- * spaces) with three or more backticks, and closes on a line of at least as many backticks and
- * nothing else. A fence of another type (`json`) is skipped whole, an inline triple backtick opens
- * nothing, and a block left open (a truncated reply) is not complete. Unlike {@link extractArch} it
- * never falls back to the whole reply. Trimmed like {@link extractArch}.
- */
-export function firstArchFence(reply: string): string | undefined {
-  const lines = reply.split("\n").map((l) => l.replace(/\r$/, ""));
-  for (let i = 0; i < lines.length; i++) {
-    const open = /^ {0,3}(`{3,})([^`]*)$/.exec(lines[i]!);
-    if (!open) continue;
-    const ticks = open[1]!.length;
-    const info = open[2]!.trim().split(/\s+/)[0]!;
-    let close = -1;
-    for (let j = i + 1; j < lines.length && close < 0; j++) {
-      const c = /^ {0,3}(`{3,})[ \t]*$/.exec(lines[j]!);
-      if (c && c[1]!.length >= ticks) close = j;
-    }
-    if (close < 0) return undefined;
-    if (info === "" || info.toLowerCase() === "arch")
-      return lines
-        .slice(i + 1, close)
-        .join("\n")
-        .trim();
-    i = close;
-  }
-  return undefined;
-}
-
 /** Where a live run writes each scored brief's plan source (git-ignored; the `eval-live`
  *  workflow uploads it in the `eval-results-live` artifact). */
 export const LIVE_SOURCES_DIR = "eval/results.live-sources";
@@ -576,8 +545,10 @@ export const NOT_EXTRACTED = "not extracted";
  * source as `<id>.arch` when the scored text is exactly the body of the reply's first complete
  * `arch` or untyped fence ({@link firstArchFence}), else a `<id>.not-extracted.txt` marker naming
  * the reason and holding no reply text. The raw reply is never stored, so neither is its prose: an
- * unfenced or truncated reply, and one where {@link extractArch}'s regex took text that is not that
- * block, get the marker. `reply` is `undefined` when the call failed before a reply came back.
+ * unfenced or truncated reply gets the marker. Since EV.7 {@link extractArch} scores exactly that
+ * block whenever there is one, so the equality check below holds by construction; it stays as the
+ * guard that a later change to the scored text cannot store a text that was not scored. `reply` is
+ * `undefined` when the call failed before a reply came back.
  */
 export function liveSourceFile(id: string, reply: string | undefined): { name: string; text: string } {
   const marker = (why: string) => ({ name: `${id}.not-extracted.txt`, text: `${NOT_EXTRACTED}: ${why}\n` });

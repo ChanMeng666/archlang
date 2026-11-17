@@ -667,7 +667,13 @@ describe("extractArch matches the eval harness's reply parser", () => {
     "``` \nspace\n```",
     "",
     "```arch\n```",
+    "```json\n{}\n```\nprose\n```arch\nplan\n```", // EV.7: a typed first block, prose, an arch block
+    "````arch\nplan\n```\nmore\n````", // EV.7: a four-backtick fence holding a ``` line
+    "```arch\r\nplan\r\n```\r\n",
   ];
+  it("is the one implementation the eval harness uses (EV.7)", () => {
+    expect(extractArch).toBe(evalExtract);
+  });
   it.each(samples)("%j", (s) => {
     expect(extractArch(s)).toBe(evalExtract(s));
   });

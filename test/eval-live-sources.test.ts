@@ -34,25 +34,23 @@ describe("liveSourceFile: the stored text is the first arch/untyped fence's body
   const cases: [string, string, string | undefined][] = [
     ["a lone arch block", `${F}arch\n${PLAN}\n${F}`, PLAN],
     ["an untyped block", `${F}\n${PLAN}\n${F}\n`, PLAN],
-    ["CRLF line ends", `${F}arch\r\n${PLAN}\r\n${F}\r\n`, undefined], // body keeps \r; see below
+    // Since EV.7 the fence reader drops the \r before each line end and that body is scored.
+    ["CRLF line ends", `${F}arch\r\n${PLAN}\r\n${F}\r\n`, PLAN],
     ["prose around one arch block", `Here you go:\n\n${F}arch\n${PLAN}\n${F}\n\nEnjoy.`, PLAN],
-    // extractArch's regex skips "```json" and opens at the json block's CLOSING fence, so it scores
-    // the prose between the blocks: never stored.
-    [
-      "a typed block, prose, then an arch block",
-      `${F}json\n{"a":1}\n${F}\nThe plan:\n${F}arch\n${PLAN}\n${F}`,
-      undefined,
-    ],
+    // Before EV.7 the regex skipped "```json" and opened at the json block's CLOSING fence, scoring
+    // the prose between the blocks; now the json block is skipped whole and the arch block scored.
+    ["a typed block, prose, then an arch block", `${F}json\n{"a":1}\n${F}\nThe plan:\n${F}arch\n${PLAN}\n${F}`, PLAN],
     // The first untyped block is the one scored, prose or not: stored, since it is that block.
     [
       "an untyped first block of prose",
       `${F}\nI will draw one room.\n${F}\n${F}arch\n${PLAN}\n${F}`,
       "I will draw one room.",
     ],
-    // An inline ``` opens nothing; extractArch's regex agrees here only by luck of the newline.
+    // An inline ``` opens nothing.
     ["an inline triple backtick", `Use ${F}arch${F} fences.\n${F}arch\n${PLAN}\n${F}`, PLAN],
-    // A four-backtick fence holding a ``` line: the block runs to ````, the regex stops at ```.
-    ["a four-backtick fence", `${F}\`arch\n${PLAN}\n${F}\nmore\n${F}\``, undefined],
+    // A four-backtick fence holding a ``` line: the block runs to the closing ```` (before EV.7
+    // the regex stopped at the inner ```).
+    ["a four-backtick fence", `${F}\`arch\n${PLAN}\n${F}\nmore\n${F}\``, `${PLAN}\n${F}\nmore`],
     ["an unfenced reply", `${PLAN}\n`, undefined],
     ["a truncated reply (fence never closed)", `${F}arch\n${PLAN}`, undefined],
     ["an empty reply", "", undefined],
@@ -60,11 +58,8 @@ describe("liveSourceFile: the stored text is the first arch/untyped fence's body
   for (const [name, reply, stored] of cases) {
     it(name, () => {
       const f = liveSourceFile("b1", reply);
-      if (name === "CRLF line ends") {
-        // The fence reader accepts CRLF, but extractArch keeps the \r in the body, so the two
-        // disagree and the marker is stored: never a text that differs from the one scored.
-        expect(firstArchFence(reply)).toBe(PLAN);
-      }
+      // The scored text is the first arch fence's body whenever there is one, else the whole reply.
+      expect(extractArch(reply)).toBe(firstArchFence(reply) ?? reply.trim());
       if (stored === undefined) {
         expect(f.name).toBe("b1.not-extracted.txt");
         expect(f.text.startsWith(`${NOT_EXTRACTED}: `)).toBe(true);
@@ -87,6 +82,27 @@ describe("liveSourceFile: the stored text is the first arch/untyped fence's body
       name: "b1.not-extracted.txt",
       text: `${NOT_EXTRACTED}: no reply\n`,
     });
+  });
+});
+
+describe("extractArch scores the reply's first complete arch or untyped fence (EV.7)", () => {
+  it("a typed first block, prose, then an arch block: the arch block is scored", () => {
+    const reply = `${F}json\n{"rooms": 1}\n${F}\n\nThe plan:\n\n${F}arch\n${PLAN}\n${F}\n`;
+    expect(extractArch(reply)).toBe(PLAN);
+    expect(liveSourceFile("b1", reply)).toEqual({ name: "b1.arch", text: PLAN });
+  });
+
+  it("a four-backtick fence holding a ``` line: scored to its closing ````", () => {
+    const reply = `Here:\n${F}\`arch\n${PLAN}\n${F}\n// trailing note\n${F}\`\n`;
+    expect(extractArch(reply)).toBe(`${PLAN}\n${F}\n// trailing note`);
+    expect(liveSourceFile("b1", reply).name).toBe("b1.arch");
+  });
+
+  it("an unfenced or truncated reply is still scored as written, and stored only as a marker", () => {
+    for (const reply of [`${PLAN}\n`, `${F}arch\n${PLAN}`, `${F}json\n{}\n${F}\n${F}arch\n${PLAN}`]) {
+      expect(extractArch(reply)).toBe(reply.trim());
+      expect(liveSourceFile("b1", reply).name).toBe("b1.not-extracted.txt");
+    }
   });
 });
 
