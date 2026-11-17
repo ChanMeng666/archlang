@@ -1891,27 +1891,29 @@
  * ## RM9.2: the building's floor area in the caption and the totals — `describe()` only
  *
  * On a plan of two or more storeys every `describe()` caption (the top level's and each
- * `levels[i]`'s) now leads with the building's level count, rooms and floor area and names its
- * storey (`… — a 2-level floor plan, 7 rooms, 112 m² total; level 1 (3 rooms, 56 m²): …`), and the
- * top-level `totals` gains `floor_area_all_levels_m2` after the building's gross internal area keys. A single-storey
- * plan, and a plan with one `level` block, is untouched. The default SVG, `lint()`,
+ * `levels[i]`'s) now leads with the building's level count, rooms and floor area, then names its
+ * storey (by number, and by name when the level has one) and puts every figure of the storey
+ * inside that clause: `… — a 2-level floor plan, 7 rooms, 112 m² total; level 1 "Ground floor"
+ * (3 rooms, 56 m², 3 doors, 2 windows; entrance via front): Hall (15.4 m²), …`. The top-level
+ * `totals` gains `floor_area_all_levels_m2` after the building's gross internal area keys. A
+ * single-storey plan, and a plan with one `level` block, is untouched. The default SVG, `lint()`,
  * `compile().diagnostics`, every Scene and every step count are byte-identical (the accessible
  * `<desc>` moves too, but no table hashes an accessible compile). So every row of a multi-storey
- * plan that hashes `describe()` moves. Measured on `origin/main` 0c406056 against the branch by a
- * scratch script that imports each suite's own digest body (`test/helpers/byte-identity-digest.ts`,
- * `rectilinear-rooms-law.ts`'s `lawDigest`, `block-stair-law.ts`'s `stairLawDigest`,
- * `new-families-law.ts`'s `familiesLawDigest`, `rendered-theme-law.ts`'s `themeLawDigest`, with the
- * suites' own API wiring), over the 42 multi-storey sources the corpus and those laws hold (the two
- * `AUTHORS_HEIGHT` plans read height-free, as here), and the 7 multi-storey inline rows of
- * `test/tables/*.ts` and the winder laws: all 784 digests move, and with `describe()` swapped for the
- * branch's own with only `main`'s captions put back and that one key removed, all 784 reproduce
- * `main`'s digest (a planted run that keeps the key reproduces none of the 672 corpus ones); the
- * three rebuilt `main` sources `double-door-byte-identity`'s second law digests (`garden-house`,
- * `hillside-villa`, `townhouse`, `lint()` empty) move and reproduce alike. The
- * digests the tables pin were replaced old for new: 246 lines in 24 files, each carrying `RM9.2` beside it, and
- * in this file `garden-house`, `hillside-villa`, `townhouse`, `turning-stair` and `two-storey` in
- * both tables. The K1 keep table was re-taken by its generator (24 rows, the same undo reproduces
- * each, steps unchanged).
+ * plan that hashes `describe()` moves. Measured on `origin/main` 0c406056 (3b72c266 changed docs
+ * only) against the branch by a scratch script that imports each suite's own digest body
+ * (`test/helpers/byte-identity-digest.ts`, `rectilinear-rooms-law.ts`'s `lawDigest`,
+ * `block-stair-law.ts`'s `stairLawDigest`, `new-families-law.ts`'s `familiesLawDigest`,
+ * `rendered-theme-law.ts`'s `themeLawDigest`, with the suites' own API wiring), over the 42
+ * multi-storey sources the corpus and those laws hold (the two `AUTHORS_HEIGHT` plans read
+ * height-free, as here) and the 7 multi-storey inline rows of `test/tables/*.ts` and the winder
+ * laws: all 784 digests move, and with `describe()` swapped for the branch's own with only
+ * `main`'s captions put back and that one key removed, all 784 reproduce `main`'s digest (a planted
+ * run that keeps the key reproduces none of the 672 corpus ones). The three rebuilt `main` sources
+ * `double-door-byte-identity`'s second law digests (`garden-house`, `hillside-villa`, `townhouse`,
+ * `lint()` empty) move and reproduce alike. The digests the tables pin were replaced old for new:
+ * 246 lines in 24 files, each carrying `RM9.2` beside it, and in this file `garden-house`,
+ * `hillside-villa`, `townhouse`, `turning-stair` and `two-storey` in both tables. The K1 keep table
+ * was re-taken by its generator (24 rows, the same undo reproduces each, steps unchanged).
  */
 
 /** SHA-256 over every storey's SVG + `describe()` + `lint()`, measured on `f4548db`. */
@@ -1927,10 +1929,10 @@ export const BASELINE: [string, string][] = [
   ["courtyard-house", "3984a002996a4d4aba0c1bdd462474f710a87ecc50848093435573f4bd4d6c2e"], // re-measured for PS2.4, see header; PS2.11e, see header
   ["furnished-flat", "52b8bee1afff224fca393b2fd77bf7a4720009b91d0a625da434648220a5eb87"], // PS2.11e, see header
   ["gallery-l", "9c21788039e6844add835cfa386e822c5f093475d8d5b4ff7cccc40551f8233f"], // PS2.10 dim fixed, see header; PS2.11e, see header
-  ["garden-house", "1c0bb483df9b41482900ea1eb4b8dabfa19aaaaaebe37f50f832bc37dae0927a"], // re-measured, see header; RM1.3a, see header; RM9.2, see header
+  ["garden-house", "b364b3a1a66a02657b1c845eb36338df5d434d8599d05294de2591bb785c7663"], // re-measured, see header; RM1.3a, see header; RM9.2, see header
   ["garden-loft", "bb63052829092bf42cd5b611c9edf81d6364d9a32b5c1cc91b14fa485fddc560"], // PS2.11e, see header
   ["hexagon-pavilion", "c9feff36e36022353398608901b0b508a737c27eca89e4e2c2becd3a5723e0b5"],
-  ["hillside-villa", "782615f1153bc83ea1069f2a1bf086aaa4b051adca725d231d39f83b12478ee6"], // re-measured, see header; PS2.11e, see header; RM1.3a, see header; RM9.2, see header
+  ["hillside-villa", "b8315f36a8b3a1742adadc6e8c1f2e9bb50bc22f66b654edb3731fd66d5f3294"], // re-measured, see header; PS2.11e, see header; RM1.3a, see header; RM9.2, see header
   ["imports", "1de644a1f7abfb2b5cc67269fac11a191810d959379f7b04e14c259014d1e9f4"],
   ["knob-flat", "1844e64f6fda7da8b8cd66a89979c17934ada812ccea5f24f763731a3ecc7c8d"], // added with the example, see header
   ["laneway-house", "40f81577eb4e641b4fd5cd0bd750c6a9021fb91d9a9b54f7dc09e563382368fd"], // PS2.11e, see header
@@ -1949,11 +1951,11 @@ export const BASELINE: [string, string][] = [
   ["terrace-row", "ec839a417cb57b6bce80a592a144bd98a216b175edb92c67df3260ab5ce9c33d"], // re-measured, see header
   ["themed", "24c18315c2fcc753391aa01a506f69f611f6d9ac8512053981dc8ce75f36f746"], // PS2.11e, see header
   ["tiny-house", "8236b2c882cc2ff9f21a7b0d5a715f773d300b7432e5746987f2e3809e430ce9"], // PS2.11e, see header
-  ["townhouse", "bf5a4826b03457aef39f2b8b935b5722b5d8cd6584c8ba1a5f1c4a62f71d0d51"], // re-measured, see header; PS2.11e, see header; RM1.3a, see header; RM9.2, see header
+  ["townhouse", "bed996ac8ccf72053ec094ada3051b9fbfa80ccc38c72f4360547253e0141542"], // re-measured, see header; PS2.11e, see header; RM1.3a, see header; RM9.2, see header
   ["transit-hall", "084cfa94f152b75ecee1786602569b6f008c3b3d3071d655d2d6711306ccea97"], // PS2.11e, see header
-  ["turning-stair", "f386219d7723a98bfe5716e1c721862f96954cccca53272c7222ec3c5f57d2e2"], // added with the example, see header; `centreline_at`, see header; RM1.3a, see header; RM1.2a, see header; RM9.2, see header
+  ["turning-stair", "f14a63c239831bd0136b7b1f3c4310241d0f87328e52b39cf7d9489909426b2d"], // added with the example, see header; `centreline_at`, see header; RM1.3a, see header; RM1.2a, see header; RM9.2, see header
   ["two-bed", "21101fea33b149201d58eddfc32d024b4a939a682cf7e4f37c859d717a8e8eca"], // PS3.6 source rewrite, see header; PS2.11e, see header; `centreline_at`, see header
-  ["two-storey", "e1efe265ece65a51621ba60c63f5159c341a7b2f1476c3a8d9064e006c9c047e"], // re-measured, see header; RM1.3a, see header; RM1.2a, see header; RM9.2, see header
+  ["two-storey", "2fb1f30f346916bba41a4d27ae4192d84f0a84c1ad450de6249aaf7cced587d1"], // re-measured, see header; RM1.3a, see header; RM1.2a, see header; RM9.2, see header
 ];
 
 /**
@@ -1979,10 +1981,10 @@ export const SEMANTIC_BASELINE: [string, string][] = [
   ["courtyard-house", "cbbeb130a02d8dd2a3065e2f95fcf7bd83b3ec5e2f972bef17d201deab16ebd9"], // re-measured for PS2.4, see header
   ["furnished-flat", "d4f5194c4a9f26337646b7bf28a05645fc083fe1e1ec7eb4b6e3cd93b0f32641"],
   ["gallery-l", "5dec4904ac00c1d5a20747336ec0acaa4b6682f40b02008aad554ccfa87f0025"], // PS2.11e, see header
-  ["garden-house", "19abfe8f4d4cf9735a6b473c9ac27b8394817a8046950578f1290844d507d23e"], // re-measured, see header; RM1.3a, see header; RM9.2, see header
+  ["garden-house", "17d99286bab8445d7613d7454f3e8e38a6a9f171d69d5bb3f12730a1e2bb1274"], // re-measured, see header; RM1.3a, see header; RM9.2, see header
   ["garden-loft", "d37d7f678f65473d7f0b023a1cb6caca96fc92da9db5f412e66db2726071c5e8"],
   ["hexagon-pavilion", "435b9fb0cc07194798fde23c5528f869a07ad02ee3842b4d4d87775a76b6f36a"],
-  ["hillside-villa", "6f702edd23da0a79b429502099de4840496c16e52b31d9367c56e04fd40eb710"], // re-measured, see header; PS2.11e, see header; RM1.3a, see header; RM9.2, see header
+  ["hillside-villa", "3e74b76a22ec1f41361641266bac7e36fcbdd385a32e142ccf170abe1965e6df"], // re-measured, see header; PS2.11e, see header; RM1.3a, see header; RM9.2, see header
   ["imports", "85b77c3fa1a9961a884cf5966ae5f87af436edf6adf3c16f2e426f72ed2b1b2f"],
   ["knob-flat", "0649d38e9f1df5f91c531d84b75d19e3268df59b4e7e9220471c9ed4419eb6c7"], // added with the example, see header
   ["laneway-house", "55f68cc66a633508a2442aafa4dcf60d38076c2f54470c3a56ad3107493839d0"],
@@ -2001,11 +2003,11 @@ export const SEMANTIC_BASELINE: [string, string][] = [
   ["terrace-row", "0c37d23bb8dfa83ce746869724ff62952637f1acb8a6ca353bfe8f7a440941a7"],
   ["themed", "7e222ca408876d502b7e8662d90b695bfa3e8712c855023a6dacc3d21a3bbacd"],
   ["tiny-house", "3513ef53a1064ff6b4435f4a8f05db2578aa258a1bb6c55c90df0517a638190b"], // PS2.11e, see header
-  ["townhouse", "7a9897b725bf49791504931694395f0575b63fddc37581a10d8c8b2d03af3230"], // re-measured, see header; RM1.3a, see header; RM9.2, see header
+  ["townhouse", "147c81676e0bfcc60e8f2669ba7ca12bb24dd032ebfbdc97c45b9a034132a5dc"], // re-measured, see header; RM1.3a, see header; RM9.2, see header
   ["transit-hall", "4092fd0a7d88401cc49781d8021f0863300e8cbe65804d5735a9271a0c6c3eff"], // PS2.11e, see header
-  ["turning-stair", "4820fac0486fe7d6c7f088bcf511071058bb474fac831e3385af37bdf60bcac8"], // added with the example, see header; `centreline_at`, see header; RM1.3a, see header; RM1.2a, see header; RM9.2, see header
+  ["turning-stair", "95a956232914bc2728140f0b649392e11b9873fe176b16d66d9e3fedd71712fc"], // added with the example, see header; `centreline_at`, see header; RM1.3a, see header; RM1.2a, see header; RM9.2, see header
   ["two-bed", "436fadbabbba67d12d667cfca3dc435a7be1e5d131d27f5a523caf9584b26454"], // PS3.6 source rewrite, see header; `centreline_at`, see header
-  ["two-storey", "47cdf2eb908588ca78fc78eae623facad293828907c39e94983c6769301455d3"], // re-measured, see header; RM1.3a, see header; RM1.2a, see header; RM9.2, see header
+  ["two-storey", "9ef96f2f94e981a208d90683b26fba3edaf6d41a18704a337c68bd5b49a50273"], // re-measured, see header; RM1.3a, see header; RM1.2a, see header; RM9.2, see header
 ];
 
 /**

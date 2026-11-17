@@ -126,10 +126,10 @@ const BASELINE: [string, string][] = [
   ["2fa285ac0a1406f1c19a4f5b8cd6405b9435f3192b681642f9f90add9c479fc8", "examples/courtyard-house.arch"], // H10: +34 ring scan, +0 overlap
   ["d4c16e520cd04dc9f2f2598e37cd9405e158c0c2bd5eba42b81ff7a5e81fe36c", "examples/furnished-flat.arch"],
   ["969fe0c639c3e332de2045feda5a3300b521e1964214ea9bf6bbca79c29ee9f4", "examples/gallery-l.arch"], // H10: +21 ring scan, +8 overlap
-  ["fd7e56d57c79d8195b5e06b4194511e080ab67c85c4628de6bad0c5e76483114", "examples/garden-house.arch"], // H10: +36 ring scan, +0 overlap; RM1.3a, see ./byte-identity-baseline.ts; CO.1: the example writes its 2 snapped `against` sizes out (+26 bytes), so only spans and the steps of the written clauses (+8) moved; see the header (was 89ea3236); RM9.2, see ./byte-identity-baseline.ts
+  ["681b232ee25561997018e7f86bea85fefc427392402f8d91757d41fb65950997", "examples/garden-house.arch"], // H10: +36 ring scan, +0 overlap; RM1.3a, see ./byte-identity-baseline.ts; CO.1: the example writes its 2 snapped `against` sizes out (+26 bytes), so only spans and the steps of the written clauses (+8) moved; see the header (was 89ea3236); RM9.2, see ./byte-identity-baseline.ts
   ["df359e005849a18fc1d8e83823066f09da02733314120bef6d20af6e184fae01", "examples/garden-loft.arch"],
   ["d9a3b8c66ec2f242d2938dccecddd0553b964d72735d42ee005c33f003182968", "examples/hexagon-pavilion.arch"], // H10: +36 ring scan, +92 overlap
-  ["6371bbec9b6ab8a5ff6d4f474db1efe156c478ec3b24569872352d8ff5b6f6ed", "examples/hillside-villa.arch"], // H10: +32 ring scan, +0 overlap; RM1.3a, see ./byte-identity-baseline.ts; CO.1: the example writes its 3 snapped `against` sizes out (+40 bytes), so only spans and the steps of the written clauses (+12) moved; see the header (was c0385530); RM9.2, see ./byte-identity-baseline.ts
+  ["a3e5a5e0aac6c803091ef4958ebd66e52e50cf6fa79c031dcdd008aaddbf40ba", "examples/hillside-villa.arch"], // H10: +32 ring scan, +0 overlap; RM1.3a, see ./byte-identity-baseline.ts; CO.1: the example writes its 3 snapped `against` sizes out (+40 bytes), so only spans and the steps of the written clauses (+12) moved; see the header (was c0385530); RM9.2, see ./byte-identity-baseline.ts
   ["7d331b6506b22f2f3b347f7cd69066691419d8ce179543e995880159f3fd9781", "examples/imports.arch"],
   ["58c936f9c43e85d632a9af54000e307199b4f36fab26f4a5ad35f6f427042c34", "examples/knob-flat.arch"], // new example (P4, the knobs example)
   ["d96d19caeabce46e47c45e8c0e3ce20dd1c578b6cc789b04fbe96fa437ef6995", "examples/laneway-house.arch"],
@@ -148,11 +148,11 @@ const BASELINE: [string, string][] = [
   ["2177671f90a2b15d52e9448a4d53d0d8378ff9d2f8ad609843f598ca6f0287da", "examples/terrace-row.arch"],
   ["581409daa1ba3e4a05cf5faf0e9b88b139941b6c33ae4d9cbc89a1b44d690f01", "examples/themed.arch"],
   ["d3dbf4f8bf57cb0b7b5f0a1e7aba17ca7513e2da8a007f31d6259c60dbde6269", "examples/tiny-house.arch"], // H10: +6 ring scan, +0 overlap
-  ["aeb2bfd8ac6af9d3261b4a33ca41e277c4e81a0226548ebdeba37f57f14ad6b1", "examples/townhouse.arch"], // H10: +12 ring scan, +0 overlap; RM1.3a, see ./byte-identity-baseline.ts; RM9.2, see ./byte-identity-baseline.ts
+  ["ca6cfbf42200ad7cc70ef16fb3372e6a0204fb04b9264704a9b0bf78845643ea", "examples/townhouse.arch"], // H10: +12 ring scan, +0 overlap; RM1.3a, see ./byte-identity-baseline.ts; RM9.2, see ./byte-identity-baseline.ts
   ["8fb90ee449d4117eccc0d2a31d5d58a6eeb9856e8a2b08048c388ac1742d18a6", "examples/transit-hall.arch"],
-  ["270c95d0bd9bb53cbdffa3c657ab122d38437d28199064463b6519b5b2ba1790", "examples/turning-stair.arch"], // new example (S2): no rectilinear room; `centreline_at`, see ./byte-identity-baseline.ts; RM1.3a, see ./byte-identity-baseline.ts; RM1.2a, see ./byte-identity-baseline.ts; RM9.2, see ./byte-identity-baseline.ts
+  ["9be220d7fa5b952acb7469b79a7f1d10b98af354edffc3b578c2c4652ba555ed", "examples/turning-stair.arch"], // new example (S2): no rectilinear room; `centreline_at`, see ./byte-identity-baseline.ts; RM1.3a, see ./byte-identity-baseline.ts; RM1.2a, see ./byte-identity-baseline.ts; RM9.2, see ./byte-identity-baseline.ts
   ["8b28b25e441d1f053afb7f245c0f4ff8b791fea8139b5dd031e58831a8c659a2", "examples/two-bed.arch"], // H10: +6 ring scan, +0 overlap; `centreline_at`, see ./byte-identity-baseline.ts; CO.1: the example writes its snapped `against` size out (+13 bytes), so only spans and the steps of the written clauses (+2) moved; see the header (was 8f5ccdac)
-  ["4803b58d1f43be3687a8e1a740e07d3149f3b85d552cdb1f527b2cb8285e09b3", "examples/two-storey.arch"], // H10: +12 ring scan, +0 overlap; RM1.3a, see ./byte-identity-baseline.ts; RM1.2a, see ./byte-identity-baseline.ts; RM9.2, see ./byte-identity-baseline.ts
+  ["ab731444b82ba3e03b338d1a007082441c94c43a8755ca653d54fda011870822", "examples/two-storey.arch"], // H10: +12 ring scan, +0 overlap; RM1.3a, see ./byte-identity-baseline.ts; RM1.2a, see ./byte-identity-baseline.ts; RM9.2, see ./byte-identity-baseline.ts
   ["449c5ed8dd295c5962225440d46ebac117ee2258e17e05f8ab42ade1ee6e804c", "test/fixtures/axes-grid.arch"],
   ["5336af359d30144ea7f14a069b605773dab5615c8a72f5182a07dfd03d318ada", "test/fixtures/chain30.arch"], // #367, see test/byte-identity-baseline.ts
   ["cbfb99f4c6105f1dc4686f8c90aae852f5c78f87bbf40cfdcf3271bbf3e1bb04", "test/fixtures/dense-bays.arch"],
@@ -166,10 +166,10 @@ const BASELINE: [string, string][] = [
   ["ffa5f189efd9d7fbaa321a32a24e7942a74be753b443a73bd78b8ea382cbbfe5", "test/fixtures/off-path-bypass.arch"], // RM1.4: the unknown-furniture search is charged to the step meter (+29 steps: `cabinet`, 234 -> 263) (was 947c91d4)
   ["f6031de45dc54fe15b0c22019de5123543e6aade443518347c48d3373892c9bd", "test/fixtures/schedule-sheet.arch"],
   ["2f0c4e2b63425468b46263ab7a6581dfd15bd12fadc36db828f97f6fc079a17c", "test/fixtures/star30.arch"], // #367, see test/byte-identity-baseline.ts
-  ["32fe2f84129b108c663e67f1e405710aa7705b14d39c8c28668f5049c89fbdf7", "test/fixtures/storeys-eaves-overflow.arch"], // H10: +12 ring scan, +0 overlap; RM1.3a, see ./byte-identity-baseline.ts; RM1.2a, see ./byte-identity-baseline.ts; RM1.2a review, see ./byte-identity-baseline.ts; RM9.2, see ./byte-identity-baseline.ts
+  ["31649c7b2509b66e869c414d11b6436d4cbaf54a2e450737dcbf05bc552d059c", "test/fixtures/storeys-eaves-overflow.arch"], // H10: +12 ring scan, +0 overlap; RM1.3a, see ./byte-identity-baseline.ts; RM1.2a, see ./byte-identity-baseline.ts; RM1.2a review, see ./byte-identity-baseline.ts; RM9.2, see ./byte-identity-baseline.ts
   // was 5c3ce8b3. D27: this plan's stair stands in no wall, so `bounds()` reaching its break line widens the
   // drawing 156 mm. Only the SVG, the Scene and the overlay moved: with the old ones put back the old digest returns.
-  ["fb0469fee0ff677d54625425b6a6cff9459672962a5252f5e627af743b82eaad", "test/fixtures/zones-levels.arch"], // RM9.2, see ./byte-identity-baseline.ts
+  ["c7f59a307241b34c9bffce2308c512728493b23d3118fd33baf43bbb79b054ea", "test/fixtures/zones-levels.arch"], // RM9.2, see ./byte-identity-baseline.ts
   ["3795021918eab02d38979618173a348100b1b7e0265d3a0308c8ee12dc4fb8dd", "test/fixtures/zones-wings.arch"],
   ["952eaf929d8902442dd0949e6eb4e47e96bd422839f97839d627ced86b92bfab", "test/walls-from-rooms/relational.arch"],
   ["45b54b55b05cb37250a074822e9a8663cbdb30943f9986042e2d9ff73de1e5fe", "test/walls-from-rooms/studio.arch"],

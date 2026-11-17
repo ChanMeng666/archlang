@@ -138,7 +138,7 @@ const BASELINE: [string, string, string][] = [
     "examples/gallery-l.arch",
   ],
   [
-    "026a1866ff723eda62b014e85f62047957320e4ad5cd12aeb7a0bb4d8801c825", // RM9.2, see ./byte-identity-baseline.ts
+    "72528a5f6784a5c5d9527299a5abb330423c747bafb17458716dc336cc9a3eb3", // RM9.2, see ./byte-identity-baseline.ts
     // CO.1: the parse holds the 2 `size` clauses the example now writes; without them, offsets mapped back, it is the parse pinned here (was c7dbe7c1)
     "93f0b4a6783c3f4db608a63eed304f6c4a4d9bc750f86575da0122b4ab4deb1c",
     "examples/garden-house.arch",
@@ -154,7 +154,7 @@ const BASELINE: [string, string, string][] = [
     "examples/hexagon-pavilion.arch",
   ],
   [
-    "064ca016799ef6b310141d839fadcdf037710bedc33a8210443a79b4792f69d3", // RM9.2, see ./byte-identity-baseline.ts
+    "a297769a6679a3b1a5fff9f4146b0eb01a71ad80c35aca165ed82ec8c46a5755", // RM9.2, see ./byte-identity-baseline.ts
     // CO.1: the parse holds the 3 `size` clauses the example now writes; without them, offsets mapped back, it is the parse pinned here (was db3a5d1e)
     "664292dca8bb269674094cf7e5f83be38addc1c7f81074b19e7bf444d2f9593e",
     "examples/hillside-villa.arch",
@@ -273,7 +273,7 @@ const BASELINE: [string, string, string][] = [
     "examples/tiny-house.arch",
   ],
   [
-    "cb95b345d860f157f4b841b7889e694778b0c4de898eced5a975ddeb6a70a0a7", // RM9.2, see ./byte-identity-baseline.ts
+    "e3a0dd96778a4b6bca5c3a3363a7583a9508be5b87cedd65638f81b7670795a8", // RM9.2, see ./byte-identity-baseline.ts
     "355d36bd5d1cf39a9694d70ffba4532ec12f63cd25ae9132c5f4198ca071bd3a",
     "examples/townhouse.arch",
   ],
@@ -283,7 +283,7 @@ const BASELINE: [string, string, string][] = [
     "examples/transit-hall.arch",
   ],
   [
-    "b4cd0ecd025d2670f096cf2c6119aba7855c5ccc639f68343403f3036290152c", // RM9.2, see ./byte-identity-baseline.ts
+    "4d2fb9dcc6a44640a4d0e52d202df14909c73a5743799af8c25cb1f117dc87a8", // RM9.2, see ./byte-identity-baseline.ts
     "9846048edccb900827a20a6de7d258f356688609aa11a1272d338b92c863eac8",
     "examples/turning-stair.arch",
   ],
@@ -294,7 +294,7 @@ const BASELINE: [string, string, string][] = [
     "examples/two-bed.arch",
   ],
   [
-    "228c3b181625bc72e1d1967eb56986553d3ed83234b34cd3d86038b813fd5c1d", // RM9.2, see ./byte-identity-baseline.ts
+    "3b39a946ba68d2d386deb2ddf2ac70e647e841754137c64b076c6a74c43247b2", // RM9.2, see ./byte-identity-baseline.ts
     "a2400915472bf50c8146ee82ad9e09b2cf4d64e2887565c5b33975f90c8abc4b",
     "examples/two-storey.arch",
   ],

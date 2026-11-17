@@ -195,10 +195,10 @@ const CORPUS: [string, string][] = [
   ["examples/courtyard-house.arch", "e5a170e01d15451ed5a322d6eb9f8267a356f208fea829dfce19cd6d3e1a43ce"],
   ["examples/furnished-flat.arch", "cdb42b5c1bee8dd931d9b99b1e338dd895e4cb5d2de1915de8a85f04a3fd444a"],
   ["examples/gallery-l.arch", "0e8f7696890b8f3e01211ecbc873996f49ba22fff103e349e8f4660b1417a1c2"],
-  ["examples/garden-house.arch", "026a1866ff723eda62b014e85f62047957320e4ad5cd12aeb7a0bb4d8801c825"], // RM1.3a, see ./byte-identity-baseline.ts; RM9.2, see ./byte-identity-baseline.ts
+  ["examples/garden-house.arch", "72528a5f6784a5c5d9527299a5abb330423c747bafb17458716dc336cc9a3eb3"], // RM1.3a, see ./byte-identity-baseline.ts; RM9.2, see ./byte-identity-baseline.ts
   ["examples/garden-loft.arch", "f273e4717a1afae1cd94ae0f62a7390ae603c7418fbe434e061e191aa98231a0"],
   ["examples/hexagon-pavilion.arch", "3078765cf03974518e0f2b3ea13585cca69ffbb86438f0899218c8a1c24a09a8"],
-  ["examples/hillside-villa.arch", "064ca016799ef6b310141d839fadcdf037710bedc33a8210443a79b4792f69d3"], // RM1.3a, see ./byte-identity-baseline.ts; RM9.2, see ./byte-identity-baseline.ts
+  ["examples/hillside-villa.arch", "a297769a6679a3b1a5fff9f4146b0eb01a71ad80c35aca165ed82ec8c46a5755"], // RM1.3a, see ./byte-identity-baseline.ts; RM9.2, see ./byte-identity-baseline.ts
   ["examples/imports.arch", "a0341285f4e3699b738aa1916bba278eed61e347df4d3a2de139b9f0185d9678"],
   ["examples/knob-flat.arch", "f4f0ed59cff4dd7b970fe069579044226fcb0e4f68f24a85845e648875ed17e5"], // new example (P4, the knobs example), see header
   ["examples/laneway-house.arch", "21459ebc71dbc508de2faae421b59ac48afd068dd1813adb6bf0595b9963fb3e"],
@@ -217,11 +217,11 @@ const CORPUS: [string, string][] = [
   ["examples/terrace-row.arch", "6667da00528cdd4ee4f155586a049ad877f81b83178f5a18c85afef7a76a781d"],
   ["examples/themed.arch", "edd65eb6b725687bb30a7c956132e01bc2b9c57d772afaa9c234745af332f8bf"],
   ["examples/tiny-house.arch", "7dec52e5621d9af9dbdcf7cb73e58791705e6d976bbecf5ae59419c1c9a9ea17"],
-  ["examples/townhouse.arch", "cb95b345d860f157f4b841b7889e694778b0c4de898eced5a975ddeb6a70a0a7"], // RM1.3a, see ./byte-identity-baseline.ts; RM9.2, see ./byte-identity-baseline.ts
+  ["examples/townhouse.arch", "e3a0dd96778a4b6bca5c3a3363a7583a9508be5b87cedd65638f81b7670795a8"], // RM1.3a, see ./byte-identity-baseline.ts; RM9.2, see ./byte-identity-baseline.ts
   ["examples/transit-hall.arch", "a9145858f1fb7a7f1a0f0aa86d53e115bfda51e68c2101b822913d7bdc97eed5"],
-  ["examples/turning-stair.arch", "b4cd0ecd025d2670f096cf2c6119aba7855c5ccc639f68343403f3036290152c"], // new example (S2), see header; `centreline_at`, see ./byte-identity-baseline.ts; RM1.3a, see ./byte-identity-baseline.ts; RM1.2a, see ./byte-identity-baseline.ts; RM9.2, see ./byte-identity-baseline.ts
+  ["examples/turning-stair.arch", "4d2fb9dcc6a44640a4d0e52d202df14909c73a5743799af8c25cb1f117dc87a8"], // new example (S2), see header; `centreline_at`, see ./byte-identity-baseline.ts; RM1.3a, see ./byte-identity-baseline.ts; RM1.2a, see ./byte-identity-baseline.ts; RM9.2, see ./byte-identity-baseline.ts
   ["examples/two-bed.arch", "fe871cbb3d60c1594495e38b1ad0dc30ce3f71904c27b85fa60f276d3aa182bd"], // `centreline_at`, see ./byte-identity-baseline.ts
-  ["examples/two-storey.arch", "228c3b181625bc72e1d1967eb56986553d3ed83234b34cd3d86038b813fd5c1d"], // RM1.3a, see ./byte-identity-baseline.ts; RM1.2a, see ./byte-identity-baseline.ts; RM9.2, see ./byte-identity-baseline.ts
+  ["examples/two-storey.arch", "3b39a946ba68d2d386deb2ddf2ac70e647e841754137c64b076c6a74c43247b2"], // RM1.3a, see ./byte-identity-baseline.ts; RM1.2a, see ./byte-identity-baseline.ts; RM9.2, see ./byte-identity-baseline.ts
   ["test/fixtures/axes-grid.arch", "e6be5d70788d931cacaa8cb1db2c2c454c1532d01153b90e2427c125770e5559"],
   ["test/fixtures/chain30.arch", "ce81264ecdc3a086f99708f90aee5dd929c71b9e8ccaaa54a1da5ce5aa213325"], // #367, see test/byte-identity-baseline.ts
   ["test/fixtures/dense-bays.arch", "9f4ad4538851a27b463113cd7e563823d185bc7e18b342fd9eebb45f2887992f"],
@@ -235,10 +235,10 @@ const CORPUS: [string, string][] = [
   ["test/fixtures/off-path-bypass.arch", "81ef92c32f98bc41635428f477b2cf7e59adea520e60892b5e39aa48fcbcaecf"],
   ["test/fixtures/schedule-sheet.arch", "15dc29228ea12dae7240ad843567f88218c5a57bd8838ea950b1a5792c2579a5"],
   ["test/fixtures/star30.arch", "5104211cdd3733a56e18d141c68db6a097b679e484b1b18897e7637dd05d0bbb"], // #367, see test/byte-identity-baseline.ts
-  ["test/fixtures/storeys-eaves-overflow.arch", "411493bf7eb340f80df2d419f1b4dbabd5f8c81dad1f3a28f0cd015508528b66"], // RM1.3a, see ./byte-identity-baseline.ts; RM1.2a, see ./byte-identity-baseline.ts; RM1.2a review, see ./byte-identity-baseline.ts; RM9.2, see ./byte-identity-baseline.ts
+  ["test/fixtures/storeys-eaves-overflow.arch", "79b8e6c4eb85f66b84d6d76c0141872f30b04baa67da49130f81e80d085cef1f"], // RM1.3a, see ./byte-identity-baseline.ts; RM1.2a, see ./byte-identity-baseline.ts; RM1.2a review, see ./byte-identity-baseline.ts; RM9.2, see ./byte-identity-baseline.ts
   // was 05693d9e. D27: this plan's stair stands in no wall, so `bounds()` reaching its break line widens the
   // drawing 156 mm. Only the SVG, the Scene and the overlay moved: with the old ones put back the old digest returns.
-  ["test/fixtures/zones-levels.arch", "be054985bdfcf29d4387e509ace22f68e61f32296c827f9ea22b6fdbff1a5262"], // RM9.2, see ./byte-identity-baseline.ts
+  ["test/fixtures/zones-levels.arch", "21c4b504af358718519aea5578a13c3a441ea218c01732f688c8cafff5059d1c"], // RM9.2, see ./byte-identity-baseline.ts
   ["test/fixtures/zones-wings.arch", "392675a2abd9bc82b094fc768190979fabf814b22dbb8d4fbaf7de410570c35a"],
 ];
 
