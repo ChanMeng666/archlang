@@ -5,7 +5,7 @@
 Where the tests of a `src` module are, and what each test file is for. Generated; `npm run check:drift`
 fails when it is stale. How to add a test: `docs/testing.md` § 4.
 
-544 test files in `test/`, 288 `src` modules, 108 modules no test imports.
+545 test files in `test/`, 289 `src` modules, 108 modules no test imports.
 
 ## `src` module → tests that import it
 
@@ -45,10 +45,10 @@ Nearest first, then by name; `(+n)` is the rest. Test names are `test/<name>.tes
 - `src/cli/commands-render.ts` (3) — `keep-impact-depends`, `plan-json-dropped`, `watch-arming`
 - `src/cli/context-starter.ts` (1) — `context-starter`
 - `src/cli/help.ts` (1) — `cli-help`
-- `src/cli/io.ts` (84) — `block-stair-byte-identity`, `clause-order-byte-identity`, `cli-contract`, `cli-exit-parse`, `cli-expected-hash`, `cli-flag-matrix`, `cli-help`, `cli-output-format` (+76)
+- `src/cli/io.ts` (85) — `block-stair-byte-identity`, `clause-order-byte-identity`, `cli-contract`, `cli-exit-parse`, `cli-expected-hash`, `cli-flag-matrix`, `cli-help`, `cli-output-format` (+77)
 - `src/cli/link.ts` (1) — `cli-link`
 - `src/cli/review.ts` (1) — `cli-preview-review`
-- `src/cli/run.ts` (50) — `axes`, `cli-batch`, `cli-commands`, `cli-context`, `cli-contract`, `cli-exit-parse`, `cli-expected-hash`, `cli-finish` (+42)
+- `src/cli/run.ts` (51) — `axes`, `cli-batch`, `cli-commands`, `cli-context`, `cli-contract`, `cli-exit-parse`, `cli-expected-hash`, `cli-finish` (+43)
 - `src/cli/serialize.ts` (8) — `cli-batch`, `cli-plan-json-roundtrip`, `element-facets`, `plan-json-arcs-paper`, `plan-json-dropped`, `plan-json-instances`, `plan-json-roundtrip-law`, `walls-from-rooms`
 - `src/cli/source-hash.ts` (1) — `cli-expected-hash`
 - `src/cli/summary.ts` (1) — `lint-summary`
@@ -120,9 +120,10 @@ Nearest first, then by name; `(+n)` is the rest. Test names are `test/<name>.tes
 - `src/impact.ts` (2) — `rectilinear-doors`, `rectilinear-rooms`
 - `src/import.ts` (34) — `block-stair-byte-identity`, `corner-window-byte-identity`, `dim-swap-reprint`, `dim-thickness-callout`, `drawing-budget`, `error-value-law`, `floor-materials-byte-identity`, `furniture-relations` (+26)
 - `src/import/limits.ts` (1) — `openplan3d-malformed`
-- `src/index.ts` (405) — `acc-metadata`, `access-graph`, `access-policy`, `accessible-svg`, `agent-gallery`, `alias-match`, `anchors`, `annotate` (+397)
+- `src/index.ts` (406) — `acc-metadata`, `access-graph`, `access-policy`, `accessible-svg`, `agent-gallery`, `alias-match`, `anchors`, `annotate` (+398)
 - `src/input-limit.ts` (2) — `import-rooted`, `workspace-seams`
 - `src/intent-concepts.ts` (2) — `vocabulary-living-dining`, `vocabulary-matcher-oracle`
+- `src/intent-feasibility.ts` (1) — `intent-infeasible`
 - `src/intent.ts` (1) — `site`
 - `src/ir.ts` (174) — `access-policy`, `arc-radius-exact`, `attach`, `axes`, `between-face-probes`, `block-stair-byte-identity`, `block-stair-frames`, `block-stair-winders` (+166)
 - `src/label-fit.ts` (1) — `label-fit`
@@ -455,6 +456,7 @@ The first sentence of each file's header comment.
 - `test/input-limit.test.ts` — `inputTooLarge()` and `rateLimited()` — a host's refusals as catalogued diagnostics.
 - `test/instruction-budget.test.ts` — the instruction files stay inside their byte budget (EH3.9).
 - `test/intent-all-storeys.test.ts` — Issue #365: on a plan with `level` blocks the intent's `rooms`, `roomsInclude` and `totalAreaM2` read the whole building, as `grossInternalAreaM2` and `roomDimensions` always did.
+- `test/intent-infeasible.test.ts` — RM9.3 — an impossible brief is reported as impossible, with its arithmetic: proveInfeasible's sound rules, E_INTENT_INFEASIBLE first…
 - `test/intent-schema-drift.test.ts` — intent.schema.json drift.
 - `test/intent.test.ts` — validateIntent — corpus round-trip (goldens satisfy their own intent); validateIntent — determinism; validateIntent — per-kind gating; validateIntent — window f…
 - `test/interner-oracle.test.ts` — `PointInterner` against a brute-force reference of its documented contract.
