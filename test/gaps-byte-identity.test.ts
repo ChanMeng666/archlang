@@ -271,7 +271,7 @@ const BASELINE: [string, string][] = [
   ["57879436768cab2c738430d6586f0e88de6cb79c178799a011c9d09f73e553df", "inline:stair-parse-refusals"],
   ["4ee5b0cc65a55f8a21b0dfdbac7c3d3a513cd912f2a54693ad59a1fba85435b2", "inline:sheet-word-as-names"],
   ["77ecc92eac7412e138fc1a1fd3d3541e26b27d9a9497c7d9bb1c7a1b679bdf07", "inline:sheet-macro"],
-  ["bac2d9d5b2987f1d23e0f43bb746c80496a4b3c39f027c92b6f973bcd1291a8c", "inline:every-table"], // RM1.3a, see ./byte-identity-baseline.ts; RM1.3b overlay, see ./byte-identity-baseline.ts
+  ["2de76bce4951fd1cedcc36c2bd47d225c08b08bf500be4fa0b257081492771c6", "inline:every-table"], // RM1.3a, see ./byte-identity-baseline.ts; RM1.3b overlay, see ./byte-identity-baseline.ts; RM9.2, see ./byte-identity-baseline.ts
   ["c3bd0b213038578a15a84f8031adaf7461a5a76f1ce406e189e1de434b5954b2", "inline:fractional-sites"],
   ["4df881b97667921f10ebabdc0ef5a593c8f5fbc8724a8fba1bd396d9554b8d05", "inline:curve-call-outs"],
   ["1f92cd16e9aaeaa19f81a01ddd2d74c4fd634dc6ca80f568e815bcab0cde07d8", "inline:sheet-near-miss-0"],

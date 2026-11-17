@@ -280,8 +280,8 @@ const BASELINE: [string, string][] = [
   ["4fe84962b3516be8567ead2ebfc660ce0ab2e557f3a9cda5b28eccb5abdcf9a1", "inline:grid-keep-a-column-fixed"],
   ["6325c4f4289cfda123811182522813a128973d53e1633f086a92884a4d9da7bc", "inline:grid-keep-a-room"],
   ["7af7a431b01736f8e2002ef969fd27eb0d1452c9d2a8dd144ba373fc5c702f19", "inline:grid-keep-unknown-label"],
-  ["677f3ab547dbd2e1f18664e21b766b4a2b192f98d6256fb6a1675092954e4249", "inline:grid-two-storeys"],
-  ["4eaf01eb94652604da289ac427ac979740fa12a4d5decb77ac86b0f90d9a6488", "inline:grid-two-storeys-one-value"],
+  ["a9051ce810c4b3ce95c1487c17e2747ec2213d88d278ae40a6ab81bbf0c683e9", "inline:grid-two-storeys"], // RM9.2, see ./byte-identity-baseline.ts
+  ["b955c7175f0959c794ed949a2d967423a72c5b07e5a023f01aaa5f4e9566f24b", "inline:grid-two-storeys-one-value"], // RM9.2, see ./byte-identity-baseline.ts
   ["b6860b36fcef66bcb40e68a6e697d8c55fc498fb6b3a44428a28e32ec3e79b53", "inline:grid-a-placed-wall"],
   ["473e30dbb65b4fcb1b7ef2d900adcb9c91fbac419a20aa1055f729e10e392a08", "inline:grid-a-datum-too-early"],
   ["c051801e4ed69139e0eaae1b2d06631c85c890da52d4dac71162f8ad01ef3b44", "inline:grid-a-datum-in-a-function"],

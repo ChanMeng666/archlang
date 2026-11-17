@@ -282,9 +282,9 @@ const BASELINE: [string, string][] = [
   ["e6eed958e1d4cea68f7981fce9964af4b5a26fa3d09ad3eafebb0992ce5cb727", "inline:stair-refusals"],
   ["57879436768cab2c738430d6586f0e88de6cb79c178799a011c9d09f73e553df", "inline:stair-parse-refusals"],
   ["7fa38724de8f8f22ec5dde6df8e9d8e2f027ccf18c2068f69ef2d4761b81c5e6", "inline:slab-clear-words-as-names"],
-  ["8b4e76d9ff5c26abb83e540daa47fff35c81cb11d302349a365f3eb9d23361ab", "inline:section-words-as-names"],
+  ["aeeb60fa9856dadace8f516e174ea764780e14b31832f32f4264f440fed7906c", "inline:section-words-as-names"], // RM9.2, see ./byte-identity-baseline.ts
   ["a99e77bd8df64e89959fb92f93aff9fa2428527390ffa9a07c12291da1ddbff5", "inline:slab-clear-macro-after-height"],
-  ["f156c5c8ef062f59a41dc96071ae85f9a42bf670c5508e40f3536563bd511c93", "inline:slab-clear-storeys-without"],
+  ["e3ab5a83f54e7c932831c15d13cfae56917a605086a356576958105ec28abb17", "inline:slab-clear-storeys-without"], // RM9.2, see ./byte-identity-baseline.ts
 ];
 
 const pinned = new Map(BASELINE.map(([digest, name]) => [name, digest]));

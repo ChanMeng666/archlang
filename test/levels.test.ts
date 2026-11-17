@@ -298,11 +298,7 @@ suite("v1.21 levels — describe()/lint() per storey", () => {
     expect(s.rooms).toEqual(first.rooms);
     // The top-level totals are the lowest storey's, plus the BUILDING figures no storey
     // carries: the gross internal area (PS4.4) and the floor area (RM9.2) over every storey.
-    const {
-      gross_internal_area_all_levels_m2: building,
-      floor_area_all_levels_m2: floorAll,
-      ...storey
-    } = s.totals;
+    const { gross_internal_area_all_levels_m2: building, floor_area_all_levels_m2: floorAll, ...storey } = s.totals;
     expect(storey).toEqual(first.totals);
     expect(floorAll).toBe(Math.round(s.levels!.reduce((n, l) => n + l.totals.floor_area_m2, 0) * 100) / 100);
     expect(building).toBe(

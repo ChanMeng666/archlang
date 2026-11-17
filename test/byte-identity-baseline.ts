@@ -1902,10 +1902,11 @@
  * `rectilinear-rooms-law.ts`'s `lawDigest`, `block-stair-law.ts`'s `stairLawDigest`,
  * `new-families-law.ts`'s `familiesLawDigest`, `rendered-theme-law.ts`'s `themeLawDigest`, with the
  * suites' own API wiring), over the 42 multi-storey sources the corpus and those laws hold (the two
- * `AUTHORS_HEIGHT` plans read height-free, as here): all 672 digests move, and with `describe()`
- * swapped for the branch's own with only `main`'s captions put back and that one key removed, all 672
- * reproduce `main`'s digest (a planted run that keeps the key reproduces none). The digests the
- * tables pin were replaced old for new: 234 lines in 23 files, each carrying `RM9.2` beside it, and
+ * `AUTHORS_HEIGHT` plans read height-free, as here), and the 7 multi-storey inline rows of
+ * `test/tables/*.ts` and the winder laws: all 784 digests move, and with `describe()` swapped for the
+ * branch's own with only `main`'s captions put back and that one key removed, all 784 reproduce
+ * `main`'s digest (a planted run that keeps the key reproduces none of the 672 corpus ones). The
+ * digests the tables pin were replaced old for new: 243 lines in 24 files, each carrying `RM9.2` beside it, and
  * in this file `garden-house`, `hillside-villa`, `townhouse`, `turning-stair` and `two-storey` in
  * both tables. The K1 keep table was re-taken by its generator (24 rows, the same undo reproduces
  * each, steps unchanged).
