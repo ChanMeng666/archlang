@@ -17,7 +17,7 @@ that can be read; no development.
 
 1. §1 answers the question; §2–§4 give the evidence; §5 is ArchLang's measured position; §6
    the findings reproduced on the CLI.
-2. §7 is the card design (AF0…AF23). Before taking a card, read its row in §7, its gate in
+2. §7 is the card design (AF0…AF26). Before taking a card, read its row in §7, its gate in
    `../product-roadmap/cards.md` track 10, and the rulings RM-D60…RM-D64.
 3. §8 lists what not to borrow, §9 the evidence's weak points. A claim marked *unverified* is a
    lead, never a citation.
@@ -265,7 +265,23 @@ The research agents found these too (each is noted against the card that would f
   - Backlog U.2 and U.5 may be partly done (`W_LENGTH_IN_METRES`; `src/elements/wall.ts:53` accepts
     `id=` after the category). → AF0
 
-## 7. Card design (AF0…AF23)
+**Irregular grammar rules the spec has to teach** (read from `spec.llm.md`; each one costs spec
+bytes and is a place a model can guess wrong; P4 and Gleam's "one way to do it" argue for fewer):
+
+- Rule 6: `id=` goes right after the element keyword, or after the kind word of `furniture`,
+  `door`, `window`, `outdoor`, `wall` (`spec.llm.md:18`).
+- Written out of the listed clause order, a parenthesised value (`rotate (90)`) reads as a call
+  (`spec.llm.md:74`).
+- `%` ends a position expression, so a modulo must be parenthesised (`spec.llm.md:79`).
+- `swing in|out` is relative to the wall's drawn direction, so the spec recommends `inward|outward`
+  (`spec.llm.md:79`).
+- Door clauses depend on the door kind (`E_DOOR_KIND_CLAUSE`), and `wall …` pairs only with
+  `at (x,y)` (`spec.llm.md:79`).
+- The kind word after `width` is still a parse error (backlog EV.8).
+
+AF26 audits them; any change to the grammar they lead to is a separate, ruled card.
+
+## 7. Card design (AF0…AF26)
 
 Columns: what each card borrows, what it changes, and the constraints from `AGENTS.md`. 🔒 means the
 card depends on a ruling (RM-D60…D63). The status, size, model and gate of each card are in
@@ -319,6 +335,28 @@ card depends on a ruling (RM-D60…D63). The status, size, model and gate of eac
 | AF21 | Classify the foreign-syntax attempts by source language, the CangjieBench way. Inputs: the published model-authoring rows on Hugging Face and the `eval-results-live` workflow artifacts (RM-D53). **Never `eval/live-runs/t3/`**: a reading of the T3 arms would be a second statement of that result, which needs an owner decision (`docs/agents/iron-laws.md`) | Free, offline; no paid call |
 | AF22 | Tokens to a lint-clean plan per brief, from the same inputs and with the same exclusion; one arm at a time, never a loop-against-control comparison | Free, offline |
 | AF23 🔒 | Spec ablation: examples vs rule prose; starter vs spec vs full bundle | Paid (`eval:live`). RM-D63: parked; reopen conditions in that ruling |
+| AF26 | Audit the irregular grammar rules (§6): for each, the spec bytes it costs, whether AF21's classification finds models tripping on it, and the regular form that would replace it. The output is a document; a grammar change it proposes is its own card, and a source-breaking one joins the 2.0 bucket (RM-D61) | Free, offline; analysis only |
+
+### Wave F: hygiene and surface parity (added by the completeness pass)
+
+| Card | Borrowed from | Design | Constraints |
+|---|---|---|---|
+| AF24 | rustc's typed diagnostics (`rustc_errors/src/diagnostic.rs:340-353`: built but never emitted panics) | Migrate the remaining string-literal diagnostic sites (about 440 `code: "…"` literals in `src/`, against `diag(code: CatalogCode)`, `src/diagnostics.ts`) to `diag()`, so `tsc` rejects an uncatalogued code everywhere | One batch per PR; the JSON key order of a migrated diagnostic can move (`src/diagnostics.ts:159-161`), so each batch proves the byte-identity payload unchanged or stops |
+| AF25 | TS "the services, not the IDE" (Hejlsberg) | The MCP server reaches what the CLI already does that an agent needs: `fmt`, `impact`, `ast`, `reroll` (absent from `packages/mcp/src/tools.ts`; `explain` is AF5) | One tool per PR with the `new-mcp-tool` skill; hosted Worker and stdio shim together |
+
+### Ideas recorded, not carded
+
+Each has evidence but no card yet, because a cheaper card answers first or because it is paid
+(owner-only):
+
+| Idea | Evidence | Why not carded now |
+|---|---|---|
+| Name-aware constrained decoding: a prefix checker that also knows declared ids and the closed word sets | Mündler 2025 (types, not syntax, carry the gain); ArchLang's "types" are mostly names and closed sets | Helps only self-hosted decoders; AF2 gives the same knowledge to every model through diagnostics |
+| Retrieve examples matched to the brief instead of one fixed set | Aycock 2025; DocPrompting; LayoutGPT (models copy values from exemplars, a caution) | Waits for AF21 and AF23 to show examples matter for this spec |
+| Measure how often a model mis-predicts a derived fact (a wall, an area, a clearance) | P13 | Needs a paid run or AF22's artifacts first |
+| Report pass@k with the unbiased estimator next to the single-sample L0 | Chen 2021 | A change to the eval's reporting; belongs to the next eval card, not this track |
+| Ablate feedback type (minimal vs full diagnostics vs diagnostics plus fix) and diagnostic wording | Self-Debug Table 2; FeedbackEval; P7 (no study isolates wording) | Paid; same gate as AF23 (RM-D63) |
+| A light `compile --json` envelope | Backlog U.8 (13.7 KB of `describe()` for five rooms) | Already carded as U.8 |
 
 ## 8. What not to borrow
 
@@ -345,6 +383,6 @@ card depends on a ruling (RM-D60…D63). The status, size, model and gate of eac
   sound is far higher (§5), so part of the soundness gap may be a property of the fixture. AF21 and
   AF22 report both sets.
 - The run-to-run noise is high: three gpt-5.5 runs at one commit disagree on 15 of 26 briefs (EV.1).
-  Any measurement card (AF21–AF23) must report its own variance.
+  Any measurement card (AF21–AF23, AF26) must report its own variance.
 - The working notes (four reports with every quote and `path:line`) are kept outside this public
   repository by the owner's convention for research material. This record is self-contained.
