@@ -2323,7 +2323,7 @@ CHANGELOG omits the starter's `tv_unit` → `bookshelf` change (CLI output).
 (1) `spec.llm.md` does not state the same-line rule for a kind word after the clauses. (2) With bare-CR line
 ends, a next-line kind word is still absorbed (the lexer counts only `\n`), untested. (3) The GBNF accepts a
 kind word on the next line (pinned as an over-acceptance). (4) LSP completion and `complete` do not offer a
-kind word after `width`.
+kind word after `width`. **Gate:** each item fixed with a test, or stated as a known limit in the reference.
 
 ### NR.5 · RM9.1 leftovers (#942) — `todo`
 
@@ -2340,14 +2340,14 @@ still judges areas on printed figures. **Gate:** each item fixed with a test, or
 (1) `E_DUP_ID` raised inside an imported component's body carries no `file` or `instance` (its span points
 past the importer's end). (2) The section, `walls from rooms` and `open between` same-file gates have no
 cross-file test. (3) A future dataset regeneration would include `related` in its diagnostic rows (decide
-before regenerating; RM-D47).
+before regenerating; RM-D47). **Gate:** (1) and (2) each with a test; (3) a stated decision.
 
 ### NR.7 · AF6 leftovers (#946) — `todo`
 
 (1) `repair` and every fix producer still print an untouched literal with more than three decimals at 0.001
 when they rewrite its statement. (2) The keep texts (`src/keep.ts`, `src/impact.ts`) say "as `arch fmt` prints
 it" but use the 3-decimal printer. (3) The playground's Format button says "Already formatted" on a plan it
-refused.
+refused. **Gate:** each item fixed with a test, or stated as a limit at its site.
 
 ### NR.8 · A plan saved with a byte-order mark does not parse (#946) — `todo`
 
@@ -2359,28 +2359,29 @@ same SVG as the plan without it.
 ### NR.9 · Budget-record leftovers (#947) — `todo`
 
 (1) `compilerPathBudgetWhy` still says "under firstUsePathBudget, which stands", false since #947 re-took it
-down. (2) `growthBudget` (458,980 B baseline) guards nothing since RM0.7 (the compiler path is ~124 KB under
-it): re-baseline it by its rule or retire it. (3) `docs/agents/iron-laws.md`'s RM-D57 line could point at
-`npm run size:embed` (#937 review).
+down. (2) `growthBudget` (ceiling 458,980 B over a 438,980 B baseline) guards nothing since RM0.7 (the compiler
+path, 315,282 B, is ~124 KB under the baseline): re-baseline it by its rule or retire it. (3) `docs/agents/iron-laws.md`'s RM-D57 line could point at
+`npm run size:embed` (#937 review). **Gate:** (1) and (2) fixed in the baseline file; (3) the owner's call.
 
-### NR.10 · Moving the twelve `E_INTENT_*` rows out of the compiler chunk's fix table (#948) — `todo`
+### NR.10 · Moving the `E_INTENT_*` rows out of the compiler chunk's fix table (#948) — `todo`
 
-They are never compile diagnostics; dropping them from `src/error-catalog-fixes.ts`'s compile-path copy
+Twelve today (thirteen once #948 lands), they are never compile diagnostics; dropping them from `src/error-catalog-fixes.ts`'s compile-path copy
 saves about 633 B gzip. Needs the `test/explain.test.ts` pin (its keys equal every catalogue code) reworked.
 Only worth doing when headroom is short again.
 
 ### NR.11 · Test narrative that will rot (#936) — `todo`
 
 `test/dim-swap-reprint.test.ts`'s header quotes wall-clock and RSS figures, and `src/elements/dim.ts` cites
-`(backlog RR.24)`, which will be archived. Replace with what the test pins.
+`(backlog RR.24)`, which will be archived. Replace with what the test pins. **Gate:** no figure or backlog id left in either.
 
 ### NR.12 · The primary checkout's dependencies lag `main` (night of 2026-11-18) — `todo`
 
 Worktrees junction `node_modules` to the primary checkout, whose copy had `@modelcontextprotocol/ext-apps`
-1.7.5 (main pins 2.1.0) and a root `vite` 6 (the playground needs 8, so `npm run size:embed` fails in a
-worktree unless `playground/node_modules` is junctioned too). The mcp-worker typecheck and `size:embed` were
-proven by CI only. One way: `npm ci` in the primary when no peer session uses it, and a line in
-`docs/agents/orchestration.md` about `playground/node_modules`.
+1.7.5 (main pins 2.1.0), so the mcp-worker typecheck failed locally. Separately, the root `vite` is 6 by main's
+own override (`package.json`) while the playground needs 8, so `npm run size:embed` fails in a worktree unless
+`playground/node_modules` is junctioned too. Both were proven by CI only. One way: `npm ci` in the primary when
+no peer session uses it, and a line in `docs/agents/orchestration.md` about the `playground/node_modules`
+junction. **Gate:** a fresh worktree runs `check:quick` and `size:embed` with the documented junctions.
 
 ## Test-programme findings (promo-credit programme, 2026-11-16)
 
