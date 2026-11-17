@@ -2262,7 +2262,7 @@ it fires, or charge it at a per-byte rate past a much smaller allowance. **Gate:
 `E_STEP_LIMIT` or finishes within budget in a time proportional to its steps; no pinned payload
 moves (the longest corpus statement is 96 bytes).
 
-### EB.1 · The embed-path size check is a Playwright-only number — `todo`
+### EB.1 · The embed-path size check is a Playwright-only number: done by #937, waiting to be archived — `note`
 
 The playground's embed path is a hard gzip ceiling (`embedPathBudget`,
 `playground/e2e/startup-chunks.baseline.json`; RM-D57 keeps it at 351,000 B), measured only by

@@ -43,6 +43,12 @@
   No `ci.yml` job runs the whole suite; CI's nightly `full-matrix` and the release's `prepublishOnly` do,
   unsharded. `check:test-wiring` fails on a test outside it.
 - `*:build:only` scripts skip the core rebuild; `npm run build` must have run.
+- `npm run size:embed` (`scripts/embed-path-size.mjs`) builds as CI's `e2e-playground-chromium` job does (`npm run build`,
+  then `playground:build:only`; heavy, take the heavy lock) and prints the playground's embed path, each
+  chunk's gzip bytes, the total, `embedPathBudget` and the headroom; exit 1 over the budget. `--no-build`
+  measures the existing `playground/dist/`, `--json` prints one object. Its walk and sizes are
+  `playground/scripts/chunk-walk.mjs`, the functions the startup-chunks gate (`playground/e2e/preview3d.spec.ts`)
+  calls, so its total is that gate's on the same build.
 - `npm run sync:main` (`scripts/sync-main.mjs`) merges `origin/main` into the current PR branch: generated
   artifacts (whole-file ones on both sides) take `main`'s side and are regenerated (`--no-gen` skips
   `gen:all`), `CHANGELOG.md` is union-merged and must keep the branch's lines under `[Unreleased]`. Any

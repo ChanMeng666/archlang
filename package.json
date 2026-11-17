@@ -123,6 +123,7 @@
     "train": "node scripts/merge-train.mjs",
     "check:3d": "npm -w packages/archlang-3d run e2e",
     "check:dxf": "tsx scripts/check-dxf.ts",
+    "size:embed": "node scripts/embed-path-size.mjs",
     "lint:ci": "biome ci .",
     "eval": "tsx eval/run.ts",
     "eval:ci": "tsx eval/run.ts",
