@@ -2274,6 +2274,16 @@ embed path's per-chunk and total gzip bytes against the budget, which the spec a
 **Gate:** the script's total equals the spec's on the same build; `docs/agents/commands.md` names it;
 compiler-path PR briefs say to run it.
 
+### EB.2 · Headroom on the playground's shared compiler chunk: done by #PR, waiting to be archived — `note`
+
+Both hard gzip ceilings over the playground's compiler chunk were nearly full on `main` aaae8d4c
+(`playground/e2e/startup-chunks.baseline.json`): the embed path 350,995 B of 351,000 B and the
+compiler path 364,738 B of 365,000 B, so every card that added compiler-chunk code failed CI. The
+chunk carried `lint()` and most of its rules, which no compile, no embed and no view-mode render
+runs. **Gate:** at least ~3,000 B gzip cut from the compiler chunk on both paths with no change of
+behaviour (a corpus digest of SVG, `describe()`, `lint()` and diagnostics, before and after), the
+budgets neither lowered nor raised, and `firstUsePathBudget` and `growthBudget` still met.
+
 ## Test-programme findings (promo-credit programme, 2026-11-16)
 
 From `docs/plans/product-roadmap/2026-11-test-findings.md` (§ 3, § 4, § 5). RR.8 (2), the

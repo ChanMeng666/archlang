@@ -1722,7 +1722,7 @@ test.describe("startup chunks", () => {
     };
     // The walk through the built files, shared with `npm run size:embed` (card EB.1): one copy, so
     // the script's numbers are the gate's. What it follows and why: `playground/scripts/chunk-walk.mjs`.
-    const { pageRoots, imports, staticImports, reach, size, embedPath: embedWalk } = chunkWalkOf(DIST);
+    const { pageRoots, imports, staticImports, reach, size, embedPath: embedWalk, indexPaths } = chunkWalkOf(DIST);
     // A page's own module script and modulepreloads, as index.html / embed.html name them.
     const { scripts, preloads } = pageRoots("index.html");
 
@@ -1764,7 +1764,12 @@ test.describe("startup chunks", () => {
     // What every visit loads is the view path and nothing more: the compiler waits for a use.
     expect(startup, "the startup set is the view path alone (no compiler)").toEqual(viewPath);
     // What has loaded by the end of the first compile: the startup set and the compiler's own walk.
-    const compilerPath = reach([...startup, compiler]);
+    // Taken from the walk `npm run size:embed` prints too (card EB.2), which finds the compiler as
+    // the entry's dynamic import of it: checked to be this compiler chunk, and its startup set this one.
+    const paths = indexPaths();
+    expect(paths.compiler, "the shared walk's compiler is the compiler chunk").toBe(compiler);
+    expect(paths.startup, "the shared walk's startup set is this one").toEqual(startup);
+    const { compilerPath } = paths;
 
     // The `import()`s a visit makes on its first use, or when idle (main.ts `up`): the compiler
     // and the example sources and samples (the gallery), and the header actions once the
@@ -1795,7 +1800,8 @@ test.describe("startup chunks", () => {
     // header actions' walk, which takes in the core's lazy chunk.
     const actionsChunk = boot.find((f) => /^assets\/actions-[\w-]+\.js$/.test(f)) as string;
     expect(actionsChunk, "the boot imports name the header actions' chunk").toBeDefined();
-    const firstUsePath = reach([...compilerPath, actionsChunk]);
+    expect(paths.actions, "the shared walk's actions are the header actions' chunk").toBe(actionsChunk);
+    const { firstUsePath } = paths;
 
     // The embed (embed.html, the iframe other pages show): it imports the core statically
     // (embed.ts), so it walks into the compiler the way index.html's preload does.

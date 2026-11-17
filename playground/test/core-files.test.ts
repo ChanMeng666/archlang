@@ -77,4 +77,27 @@ describe("coreFiles (vite.config.js's compiler chunk)", () => {
     expect(door.length).toBeGreaterThan(0);
     expect([...entry].sort()).toEqual([...door].sort());
   });
+
+  it("src/first-use-path.ts names exactly what the header actions and the compile job take from the core beyond the door", () => {
+    // Card EB.2: a name the actions or the compile worker import from `archlang` without the entry
+    // would sit in a core chunk with edit mode's code, which a first use would then load with them
+    // (firstUsePathBudget counts it); a name the entry keeps after they drop it holds code there for
+    // nobody. Names the compiler door serves (compile, describe, …) are the compiler chunk's.
+    const imported = (file: string) =>
+      [...readFileSync(join(REPO, file), "utf8").matchAll(/^import\s*\{([^}]*)\}\s*from\s*"archlang";$/gm)].flatMap(
+        (m) =>
+          m[1]!
+            .split(",")
+            .map((n) => n.trim())
+            .filter((n) => n && !n.startsWith("type ")),
+      );
+    const door = new Set(reexported(readFileSync(join(REPO, "playground/src/compiler.ts"), "utf8")));
+    const used = [
+      ...new Set([...imported("playground/src/actions.ts"), ...imported("playground/src/compile-worker.ts")]),
+    ];
+    const entry = reexported(readFileSync(join(REPO, "src/first-use-path.ts"), "utf8"));
+    expect(used).toContain("finish");
+    expect(used).toContain("lint");
+    expect(entry.sort()).toEqual(used.filter((n) => !door.has(n)).sort());
+  });
 });

@@ -8,9 +8,11 @@ const CORE_DIST = `${resolve(__dirname, "../dist").replace(/\\/g, "/")}/`;
 /** The view path's door to it (src/compiler.ts), which belongs in the same chunk. */
 const CORE_DOOR = resolve(__dirname, "src/compiler.ts").replace(/\\/g, "/");
 // The built core's files (scripts/core-files.mjs): `index.js` and the chunks `compile-path.js`
-// imports (src/compile-path.ts, card RM0.7f: compile, describe, describeLevel, lint, THEMES). Not
+// imports (src/compile-path.ts, card RM0.7f: compile, describe, describeLevel, THEMES). Not
 // every file under dist/: the chunks only the rest of `index.js` reaches (`finish`, `repair`,
-// `toDxf`, `planToJson`, `validateIntent`, `completion`, …), `cli/review.js` (the Checks overlay's
+// `lint`, `toDxf`, `planToJson`, `validateIntent`, `completion`, …; split again by
+// src/first-use-path.ts, card EB.2, so the header actions' share loads apart from edit mode's),
+// `cli/review.js` (the Checks overlay's
 // review sheet, card P6) and the chunk holding its code are reached only by lazy imports, so they
 // stay out of the `compiler` chunk and land in the lazy chunks that use them.
 const CORE_FILES = coreFiles(
