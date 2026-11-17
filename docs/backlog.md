@@ -2299,10 +2299,12 @@ no corpus output moves (message only).
 
 ### EV.8 · A door or window kind word after `width` is still a parse error — `todo`
 
-EV.4's data, from a downstream product: ArchCanvas's paid 1.62 run saw 2 of 26 first drafts fail
-on `door … at 50% width 1000 sliding` / `… swing in hinged` (`E_PARSE: Unknown statement`), the
-main cause of its first-draft drop (85 % to 62 %); it now carries a prompt override and a tripwire
-that goes red when upstream accepts the form. Probed at 1.63.0: `door id=d on w at 50% width 900
+EV.4's data, from a downstream product: in ArchCanvas's paid 1.62 run, 2 of the 3 first drafts
+that failed to compile (of 26; its clean first drafts fell from 85 % to 62 %) failed with
+`E_PARSE: Unknown statement "sliding"` / `"hinged"`, a door kind word written after `width` or at
+the end (the drafts were not saved; `door … at 50% width 1000 sliding` and `… swing in hinged` are
+the reconstructed family). It now carries a prompt override and a tripwire that goes red when
+upstream accepts the form. Probed at 1.63.0: `door id=d on w at 50% width 900
 sliding`, `… swing in hinged` and `window … width 900 casement` still fail exactly as on 1.62.0
 (CO-1 made the clauses order-free, not the kind word). One way: accept the kind word as one more
 order-free clause of `door` and `window` (once, `E_DUP_CLAUSE` on a second kind or a kind before
