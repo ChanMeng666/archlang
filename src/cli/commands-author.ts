@@ -120,8 +120,9 @@ export function cmdFmt(args: Args, io: CliIo): number {
     const { formatted, parsed, diagnostics } = formatChecked(source);
     const changed = formatted !== source;
     const refusal = parsed ? {} : { diagnostics: diagnostics.map((d) => diagnosticToJson(source, d)) };
+    // Suppressed by `--quiet`, as `emitDiagnosticsHuman` is; the exit code still says it.
     const note = (): void => {
-      if (parsed) return;
+      if (parsed || args.quiet) return;
       const n = diagnostics.filter((d) => d.severity === "error").length;
       io.stderr.write(
         `✗ ${input === "-" ? "stdin" : input} not formatted: ${n} parse error${n === 1 ? "" : "s"}, the source is unchanged (\`archlang validate\` lists them)\n`,

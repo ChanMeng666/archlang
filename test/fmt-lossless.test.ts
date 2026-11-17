@@ -36,15 +36,42 @@ const surface = (src: string): string[] => {
 };
 
 describe("fmtLiteral: every finite literal value reads back as itself", () => {
-  it("3,000 doubles from 1e-9 to 1e15 with up to 17 significant digits round-trip through the lexer", () => {
+  /** `v`'s literal: never an exponent, a sign only on a negative, and the digits lex back as |v|. */
+  const roundTrips = (v: number): void => {
+    const s = fmtLiteral(v);
+    expect(s, String(v)).toMatch(/^-?\d+(\.\d+)?$/);
+    expect(s.startsWith("-"), String(v)).toBe(v < 0);
+    // A negative literal is the unary `-` before the number, so the lexer reads the digits alone.
+    expect(lexed(s.replace(/^-/, "")), s).toBe(Math.abs(v));
+    expect(Number(s), s).toBe(v);
+  };
+
+  it("5,000 doubles of either sign, from below 1e-300 to above 1e300, with up to 17 significant digits", () => {
     const next = lcg(20261118);
-    for (let i = 0; i < 3000; i++) {
+    for (let i = 0; i < 5000; i++) {
       const digits = 1 + Math.floor(next() * 17);
-      const v = Number((next() * 10 ** Math.floor(-9 + next() * 25)).toPrecision(digits));
-      const s = fmtLiteral(v);
-      expect(s, String(v)).toMatch(/^\d+(\.\d+)?$/);
-      expect(lexed(s), s).toBe(v);
+      const magnitude = 10 ** Math.floor(-320 + next() * 628); // 1e-320 (subnormal) .. 1e307
+      const v = Number((next() * 9 * magnitude + magnitude).toPrecision(digits));
+      if (!Number.isFinite(v) || v === 0) continue;
+      roundTrips(next() < 0.5 ? -v : v);
     }
+  });
+
+  it("the extremes: the smallest subnormal, the largest double, and the edges of fmtSource's 3 dp branch", () => {
+    for (const v of [
+      Number.MIN_VALUE,
+      2.2250738585072014e-308,
+      1e-7,
+      0.0005,
+      Number.MAX_VALUE,
+      Number.MAX_SAFE_INTEGER,
+      2 ** 53 / 1000,
+      2 ** 53 / 1000 + 0.5,
+      999999999999740600000,
+      1e21,
+      1.5e300,
+    ])
+      for (const s of [v, -v]) roundTrips(s);
   });
 
   it("is fmtSource wherever fmtSource already reads back (the historical bytes), and differs only where it moved the value", () => {
@@ -121,12 +148,17 @@ describe("format() keeps a literal's precision (M.8)", () => {
     expect(surface(once)).toEqual(surface(PRECISE));
   });
 
-  it("the comparison can fail: the 3 dp printer's text draws a different plan", () => {
+  it("the comparison can fail: the 3 dp printer's text draws, describes and lints a different plan", () => {
     // What `format()` wrote before M.8: every literal through fmtSource (33.33333% became
-    // 33.333%, 1500.0049 became 1500.005), and the drawing moves with it.
+    // 33.333%, 1500.0049 became 1500.005). The drawing, `describe()` and `lint()` all move
+    // with it, which is what ADR 0022 §5's amendment states.
     const old = PRECISE.replace(/\d+\.\d+/g, (m) => fmtSource(Number(m)));
     expect(old).not.toBe(PRECISE);
-    expect(surface(old)[0]).not.toBe(surface(PRECISE)[0]);
+    const [svgOld, , describeOld, lintOld] = surface(old);
+    const [svg, , describeNow, lintNow] = surface(PRECISE);
+    expect(svgOld, "drawing").not.toBe(svg);
+    expect(describeOld, "describe()").not.toBe(describeNow);
+    expect(lintOld, "lint()").not.toBe(lintNow);
   });
 
   it("generated plans with arbitrary-precision coordinates compile to the same bytes after format, and stay a fixed point", () => {

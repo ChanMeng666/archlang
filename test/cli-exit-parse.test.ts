@@ -54,6 +54,19 @@ describe("a plan that does not parse", () => {
     expect(readFileSync(join(dir, "bad.arch"), "utf8")).toBe(BAD);
   });
 
+  it("fmt --quiet suppresses the refusal line, as it suppresses diagnostics, and still exits 2", async () => {
+    for (const argv of [
+      ["fmt", join(dir, "bad.arch"), "--quiet"],
+      ["fmt", join(dir, "bad.arch"), "--write", "-q"],
+    ]) {
+      const r = await runArch(argv);
+      expect(r.status, argv.join(" ")).toBe(EXIT.USER);
+      expect(r.stdout, argv.join(" ")).toBe(argv.includes("--write") ? "" : BAD);
+      expect(r.stderr, argv.join(" ")).toBe("");
+    }
+    expect(readFileSync(join(dir, "bad.arch"), "utf8")).toBe(BAD);
+  });
+
   it("fmt on a plan that parses says parsed: true and exits 0", async () => {
     const r = await runArch(["fmt", join(dir, "good.arch"), "--json"]);
     expect(r.status).toBe(EXIT.OK);

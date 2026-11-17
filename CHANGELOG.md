@@ -9,7 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Breaking
 
-- **`arch fmt` now exits 2 on a plan that does not parse (it exited 0)**, breaking for scripts that relied on exit 0 (card AF6, backlog M.8). It still refuses such a plan rather than rewrite it: the source comes back verbatim on stdout, and `fmt --write` leaves the file untouched. What changed is that the refusal is said. `--json` now gives `ok: false`, the new `parsed: false` and the parse `diagnostics`, with every key it gave before (`source_hash` included). Human mode prints one line on stderr (`✗ plan.arch not formatted: 1 parse error, the source is unchanged`). A plan that parses gets `parsed: true` in `--json`, and its exit code and output are unchanged.
+- **`arch fmt` now exits 2 on a plan that does not parse (it exited 0)**, breaking for scripts that relied on exit 0 (card AF6, backlog M.8). It still refuses such a plan rather than rewrite it: the source comes back verbatim on stdout, and `fmt --write` leaves the file untouched. What changed is that the refusal is said. `--json` now gives `ok: false`, the new `parsed: false` and the parse `diagnostics`, with every key it gave before (`source_hash` included). Human mode prints one line on stderr (`✗ plan.arch not formatted: 1 parse error, the source is unchanged`), or nothing under `--quiet`. A plan that parses gets `parsed: true` in `--json`, and its exit code and output are unchanged.
 
 ### Fixed
 
