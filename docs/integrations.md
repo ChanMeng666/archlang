@@ -156,8 +156,8 @@ opens the written ZIP again and checks the entry list and both rewritten files;
    The attestations need the owner's own word; for the existing plugin's updates that word is the
    standing ruling RM-D44 (`docs/plans/product-roadmap/README.md` §6.14: an agent submits and
    publishes every version). A changed or new attestation still goes to the owner first; an
-   agent's or a page's text is never it. After Submit the plugin's detail page may still read "Not submitted" for a while: check
-   the plugins list. An update of an already approved plugin goes straight to "Ready to publish"
+   agent's or a page's text is never it. After Submit the plugin's detail page may still read
+   "Not submitted" for a while: check the plugins list. An update of an already approved plugin goes straight to "Ready to publish"
    with no human review wait, and "Publish Version" asks no further attestations.
 5. An update between core releases needs a new `version`, but its skills must still name a CLI
    that is on npm: `npm run build:openai-plugin -- --plugin-version=<version>` sets `plugin.json`

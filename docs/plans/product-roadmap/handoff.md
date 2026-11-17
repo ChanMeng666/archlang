@@ -91,8 +91,8 @@ RM1.1a 也在本场做完（纯测量，没有 PR，见 §6）。
 |---|---|---|
 | npm `@chanmeng666/archlang` | 1.63.0 | |
 | npm `@chanmeng666/archlang-mcp` | 0.2.46 | `release:pin` 移到 `^1.63.0` |
-| npm `@chanmeng666/archlang-3d` | 0.9.0（`./glb` 新入口；`MIN_CORE` 仍 1.61.0；有 provenance） | 本地 `check:3d` 与两次 `prove:pack`（380,153 B） |
-| npm `@chanmeng666/arch-plan`、`font-cjk` | 0.1.2、1.0.0（没有变；作业跳过已存在的版本） | |
+| npm `@chanmeng666/archlang-3d` | 0.9.0（`./glb` 新入口；`MIN_CORE` 仍 1.61.0；有 provenance） | 本地 `check:3d` 与两次 `prove:pack`（本地打包 380,153 B） |
+| npm `@chanmeng666/arch-plan`、`@chanmeng666/archlang-font-cjk` | 0.1.2、1.0.0（没有变；作业跳过已存在的版本） | |
 | 官方 MCP registry | 0.2.46，`remotes` 指向 `https://mcp.archlang.uk/mcp` | |
 | GitHub Release | `v1.63.0`，`archlang-mcp-0.2.46.mcpb` | |
 | jsDelivr / 嵌入 | `archlang@1.63.0` jsDelivr 200；`/arch-plan-demo` 两图画出、第三个显示 `E_PARSE` | |
@@ -194,7 +194,7 @@ RM1.1a 也在本场做完（纯测量，没有 PR，见 §6）。
 - 决定 1.64.0 是否、何时发布（1.63.0 已由 RM-D59 决定并发布，见 §1.2）；#603：RM-D43（2026-11-15）之后由 RM5.4（#781）迁移完，#603 已关（原 RM-D34 的"Show HN 之后"作废）。决定之后 tag 与发布链由代理跑，只在 OTP/2FA、登录、账号或令牌的创建、条款与声明的确认、本机文件选择器处停下。
 - 2026-12-01 亲自发 Show HN。
 - **登录、2FA、站点权限授予、新账号、条款：** VS Code Marketplace 与 OpenAI 目录的发布已由 RM-D41 交给代理（含以后的版本），代理只在这些处停下；**新的或改变的声明先交所有者**。Cloudflare 控制台的改动（`docs/seo.md` § 8）。
-- **2026-11-12 的受托裁定（所有者说"请你帮我做出最佳决策"，只对那一次；一句话可推翻；`README.md` §6.6）：** RM-D28 `rendered` 地面浅色，批准，条件是图案线对比不低于 2.0:1（草案色值只有 1.66–1.87:1，要另调更浅的一组；ADR 0023 已加修订）；RM-D29 绿植四个全批准（并入 RM8.9，十六个）；RM-D30 CR11a 的 schema 政策与命名空间照 `design/schema-policy.md` §3 采纳（现有两个 `$id` 不改）；RM-D31 PS0.18 关闭（`78e0b7f9`）；RM-D32 RM8.10 选 (a)（显示警告，不改几何），卡已改写、不再等裁定。**仍然不能代裁、仍是所有者的：** OpenAI 插件目录的每次提交（要接受条款；代理准备到最后一步）、`README.md` §6 的较早一批（RM5.4 的主版本升级 #603、MF-D3(b)、backlog D.7、M.9、M.8、M.14、3.1(b)、仓库根 `.mcp.json`；CI throughput 的 E 与 F 已不在此列（2026-11-14 的 RM-D37 裁定不做，`README.md` §6.9）、VA.3），以及 RM1.3c（6.11，双开门）先要一次设计裁定。
+- **2026-11-12 的受托裁定（所有者说"请你帮我做出最佳决策"，只对那一次；一句话可推翻；`README.md` §6.6）：** RM-D28 `rendered` 地面浅色，批准，条件是图案线对比不低于 2.0:1（草案色值只有 1.66–1.87:1，要另调更浅的一组；ADR 0023 已加修订）；RM-D29 绿植四个全批准（并入 RM8.9，十六个）；RM-D30 CR11a 的 schema 政策与命名空间照 `design/schema-policy.md` §3 采纳（现有两个 `$id` 不改）；RM-D31 PS0.18 关闭（`78e0b7f9`）；RM-D32 RM8.10 选 (a)（显示警告，不改几何），卡已改写、不再等裁定。**仍然不能代裁、仍是所有者的：** OpenAI 插件目录的每次提交（当时如此；2026-11-15 的 RM-D44 起由代理提交与发布，新的或改变的声明仍先交所有者）、`README.md` §6 的较早一批（RM5.4 的主版本升级 #603、MF-D3(b)、backlog D.7、M.9、M.8、M.14、3.1(b)、仓库根 `.mcp.json`；CI throughput 的 E 与 F 已不在此列（2026-11-14 的 RM-D37 裁定不做，`README.md` §6.9）、VA.3），以及 RM1.3c（6.11，双开门）先要一次设计裁定。
 - **2026-11-14 的受托裁定（所有者说"请你帮我做出最佳决策"，只对那一次；一句话可推翻；`README.md` §6.8）：** RM-D35（RM1.2c）新 W 规则"标签点名了房间没有的家具"，不加词表行，`DEFINING.office` 不动；RM-D36（RM1.2g）`archlang-3d` 把 winder 建成 n 级渐缩台阶，2D 的 `W_STAIR_RISER_TOO_HIGH` 不封顶。#603：RM-D34 不变。
 - **协调者本场的裁定（2026-11-12…14，可推翻）：** 最上层绘制的地面决定可走性（#746）；预算内被省略的平面有自己的覆盖/跳过原因（#742）；扶梯方向取停靠点的 `dir`，`planting` 算可走（#745）。更早且已记录的：品味等变律重述（罗盘读者是 R12，主入口由街道选定时另有 R3 与分区）、指北针提示排在 taste 之前、winder 多出 n−1 级。
 - **仍是所有者的（2026-11-17 更新）：** 1.64.0 的发布决定；2026-12-01 Show HN；登录/2FA/条款（见上）；Docker 的 docker/mcp-registry#6704 等 Docker 合并；关 #544（代理也可以关，那是所有者在 #532 的线程）。
