@@ -14,16 +14,12 @@
     {
       "src": "https://archlang.uk/brand/archlang-icon-app-plum.svg",
       "mimeType": "image/svg+xml",
-      "sizes": [
-        "any"
-      ]
+      "sizes": ["any"]
     },
     {
       "src": "https://archlang.uk/brand/archlang-apple-touch.png",
       "mimeType": "image/png",
-      "sizes": [
-        "180x180"
-      ]
+      "sizes": ["180x180"]
     }
   ],
   "packages": [
