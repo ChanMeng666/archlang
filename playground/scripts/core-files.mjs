@@ -5,9 +5,10 @@ export const ENTRY = "compile-path.js";
  * The built core's files that make the playground's `compiler` chunk, read off the build itself:
  * `index.js` and the chunks `compile-path.js` imports, transitively. vite.config.js puts exactly
  * these in the `compiler` chunk. `compile-path.js` is a build entry (src/compile-path.ts, card
- * RM0.7f) that names what that chunk serves (`compile`, `describe`, `describeLevel`, `lint`,
- * `THEMES`), so esbuild split the shared code by it: what it reaches is in the chunks it imports,
- * and what only the rest of `index.js` reaches (`finish`, `repair`, `toDxf`, `planToJson`, …) is in
+ * RM0.7f) that names what that chunk serves (`compile`, `describe`, `describeLevel`, `THEMES`;
+ * `lint` left it at card EB.2), so esbuild split the shared code by it: what it reaches is in the
+ * chunks it imports, and what only the rest of `index.js` reaches (`finish`, `repair`, `lint`,
+ * `toDxf`, `planToJson`, …; a second build entry, src/first-use-path.ts, splits that again) is in
  * chunks that `index.js` imports and this walk does not take. Those, and anything else under dist/
  * (`cli/review.js`, the Checks overlay's review sheet, and the chunk holding its code), are reached
  * only by lazy imports and load with the lazy chunk that uses them. `index.js` holds only imports

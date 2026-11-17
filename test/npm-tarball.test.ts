@@ -84,11 +84,12 @@ describe("npm tarball (npm pack --dry-run)", () => {
     expect(paths.filter((p) => p.startsWith("dist/error-catalog"))).toEqual([]);
   });
 
-  it("keeps dist/compile-path.js and its map out of the tarball, and nothing the package loads", () => {
-    // A build entry for the repository's playground alone (card RM0.7f, tsup.config.ts): it holds
-    // only imports and exports, no `exports` entry names it and nothing imports it. Its chunks are
-    // imported by dist/index.js too, so they must ship. Checked from the sources, which this suite
-    // can read without a build: the `files` negations are exactly the two playground-only builds,
+  it("keeps dist/compile-path.js, dist/first-use-path.js and their maps out of the tarball, and nothing the package loads", () => {
+    // Build entries for the repository's playground alone (cards RM0.7f and EB.2, tsup.config.ts):
+    // each holds only imports and exports, no `exports` entry names it and nothing imports it.
+    // Their chunks are imported by dist/index.js too, so they must ship. Checked from the sources,
+    // which this suite can read without a build: the `files` negations are exactly the
+    // playground-only builds,
     // so none can drop a chunk; and every file package.json points a consumer at is built by a
     // tsup entry and excluded by no negation.
     const pkg = JSON.parse(readFileSync(resolve("package.json"), "utf8")) as {
@@ -103,6 +104,8 @@ describe("npm tarball (npm pack --dry-run)", () => {
       [
         "!dist/compile-path.js",
         "!dist/compile-path.js.map",
+        "!dist/first-use-path.js",
+        "!dist/first-use-path.js.map",
         "!dist/error-catalog.js",
         "!dist/error-catalog.js.map",
       ].sort(),
@@ -111,8 +114,10 @@ describe("npm tarball (npm pack --dry-run)", () => {
     const list = (re: RegExp) => [...(re.exec(tsup)?.[1] ?? "").matchAll(/"([^"]+)"/g)].map((m) => m[1] as string);
     const entries = list(/\n {2}entry: \[([^\]]*)\]/);
     const dtsEntries = list(/\n {2}dts: \{ entry: \[([^\]]*)\]/);
-    expect(entries).toContain("src/compile-path.ts");
-    expect(dtsEntries, "no declaration file for the build-only entry").not.toContain("src/compile-path.ts");
+    for (const buildOnly of ["src/compile-path.ts", "src/first-use-path.ts"]) {
+      expect(entries).toContain(buildOnly);
+      expect(dtsEntries, `no declaration file for the build-only entry ${buildOnly}`).not.toContain(buildOnly);
+    }
     // `./dist/cli/link.js` ← `src/cli/link.ts`, `./dist/index.d.ts` ← a dts entry `src/index.ts`.
     const source = (target: string) => target.replace(/^\.?\/?dist\//, "src/").replace(/(\.d)?\.js$|\.d\.ts$/, ".ts");
     const targets = [
@@ -129,7 +134,7 @@ describe("npm tarball (npm pack --dry-run)", () => {
       expect(from, `${target} is built by a tsup entry`).toContain(source(target));
     }
     expect(targets.map((t) => t.replace(/^\.\//, ""))).toContain("dist/cli/link.js");
-    expect(paths.filter((p) => p.startsWith("dist/compile-path"))).toEqual([]);
+    expect(paths.filter((p) => p.startsWith("dist/compile-path") || p.startsWith("dist/first-use-path"))).toEqual([]);
     // After a build (locally; CI's suite runs without one), npm's own list: every chunk the
     // package's entries (the `.js` targets above, read from package.json) import ships.
     const builtEntries = [...new Set(targets.map((t) => t.replace(/^\.\//, "")))].filter(
