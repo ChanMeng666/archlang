@@ -1,5 +1,6 @@
 /**
- * The memo and step charge for a fix that re-prints its whole statement (door, window, opening).
+ * The memo and step charge for a fix that re-prints its whole statement (door, window, opening,
+ * and the endpoint-swapped text a `dim` carries for `W_DIM_INSIDE`).
  *
  * Every such fix (and the door's hinge-flipped text `W_SWING_OBSTRUCTED` reads) re-prints the
  * whole statement, as long as its source, so each is built once per parse node and key per memo
@@ -15,7 +16,11 @@
  * storey that places it, and each storey (two under `paper`) is a new ctx, so free builds grow as
  * storeys × statement length (backlog RR.9). Every further build (a looped statement, whose shared
  * node yields a new key per iteration; a component's second place) is charged. A build with `kind`
- * undefined (the door's flip text, built for every hinged door) is never charged.
+ * undefined (the door's flip text, built for every hinged door) is never charged. The dim's swap
+ * text varies by nothing but its node, so its key is constant and a ctx builds it once: like the
+ * flip text it is built whether or not its warning fires, and only RR.9's per-storey builds remain.
+ * `W_UNKNOWN_FURNITURE`'s fix keeps its own memo (`categoryFix`, `src/elements/furniture.ts`),
+ * which charges every build, the first included.
  */
 import type { Span } from "../diagnostics.js";
 import type { ResolveCtx } from "../registry.js";

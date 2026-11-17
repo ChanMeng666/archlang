@@ -5,7 +5,7 @@
 Where the tests of a `src` module are, and what each test file is for. Generated; `npm run check:drift`
 fails when it is stale. How to add a test: `docs/testing.md` § 4.
 
-538 test files in `test/`, 286 `src` modules, 107 modules no test imports.
+539 test files in `test/`, 286 `src` modules, 107 modules no test imports.
 
 ## `src` module → tests that import it
 
@@ -117,13 +117,13 @@ Nearest first, then by name; `(+n)` is the rest. Test names are `test/<name>.tes
 - `src/grammar/tokens.ts` (33) — `arch-highlight`, `block-stair-lint`, `closed-vocabularies`, `corner-window`, `door-enums`, `doors`, `element-facets`, `element-keyword-drift` (+25)
 - `src/hatches.ts` (8) — `export-pdf`, `floor-materials-byte-identity`, `joinery-split-oracle`, `joinery-split`, `model-range`, `outdoor`, `room-floor`, `sheet-text`
 - `src/impact.ts` (2) — `rectilinear-doors`, `rectilinear-rooms`
-- `src/import.ts` (31) — `block-stair-byte-identity`, `corner-window-byte-identity`, `dim-thickness-callout`, `drawing-budget`, `floor-materials-byte-identity`, `furniture-relations`, `gaps-byte-identity`, `keep` (+23)
+- `src/import.ts` (32) — `block-stair-byte-identity`, `corner-window-byte-identity`, `dim-swap-reprint`, `dim-thickness-callout`, `drawing-budget`, `floor-materials-byte-identity`, `furniture-relations`, `gaps-byte-identity` (+24)
 - `src/import/limits.ts` (1) — `openplan3d-malformed`
-- `src/index.ts` (399) — `acc-metadata`, `access-graph`, `access-policy`, `accessible-svg`, `agent-gallery`, `alias-match`, `anchors`, `annotate` (+391)
+- `src/index.ts` (400) — `acc-metadata`, `access-graph`, `access-policy`, `accessible-svg`, `agent-gallery`, `alias-match`, `anchors`, `annotate` (+392)
 - `src/input-limit.ts` (2) — `import-rooted`, `workspace-seams`
 - `src/intent-concepts.ts` (2) — `vocabulary-living-dining`, `vocabulary-matcher-oracle`
 - `src/intent.ts` (1) — `site`
-- `src/ir.ts` (171) — `access-policy`, `arc-radius-exact`, `attach`, `axes`, `between-face-probes`, `block-stair-byte-identity`, `block-stair-frames`, `block-stair-winders` (+163)
+- `src/ir.ts` (172) — `access-policy`, `arc-radius-exact`, `attach`, `axes`, `between-face-probes`, `block-stair-byte-identity`, `block-stair-frames`, `block-stair-winders` (+164)
 - `src/label-fit.ts` (1) — `label-fit`
 - `src/label-placement.ts` (3) — `label-placement-oracle`, `label-placement`, `label-wrap`
 - `src/lexer.ts` (10) — `clause-order-byte-identity`, `diagnostics-volume`, `diagnostics`, `expr`, `imperial-input`, `model-range`, `parser-recovery-metric`, `room-uses` (+2)
@@ -156,11 +156,11 @@ Nearest first, then by name; `(+n)` is the rest. Test names are `test/<name>.tes
 - `src/num-format.ts` (14) — `annotation-collisions`, `dim-thickness-callout`, `emit-opening-oracle`, `imperial-input`, `keep`, `lint-ruleset-values`, `model-range`, `net-area-stamp` (+6)
 - `src/opening-relation.ts` (3) — `openings-between`, `rectilinear-doors`, `rectilinear-sides`
 - `src/opening-schedule.ts` (2) — `sheet-annotations`, `window-kinds`
-- `src/parser.ts` (150) — `arc-radius-exact`, `attach`, `axes`, `block-stair-byte-identity`, `block-stair`, `chrome-hidden`, `circle-enclosure`, `circulation-concave` (+142)
+- `src/parser.ts` (151) — `arc-radius-exact`, `attach`, `axes`, `block-stair-byte-identity`, `block-stair`, `chrome-hidden`, `circle-enclosure`, `circulation-concave` (+143)
 - `src/pipeline.ts` (1) — `work-counts`
 - `src/plan-json.ts` (11) — `element-facets`, `format`, `garage`, `plan-json-dropped`, `plan-json-instances`, `polygon-rooms`, `section`, `sheet-annotations` (+3)
 - `src/plan-json/to-json.ts` (1) — `rect-ring`
-- `src/registry.ts` (45) — `annotation-collisions`, `block-stair-byte-identity`, `block-stair-winders-walking-arc`, `block-stair`, `corner-window-byte-identity`, `corner-window`, `dim-thickness-callout`, `drawing-budget` (+37)
+- `src/registry.ts` (46) — `annotation-collisions`, `block-stair-byte-identity`, `block-stair-winders-walking-arc`, `block-stair`, `corner-window-byte-identity`, `corner-window`, `dim-swap-reprint`, `dim-thickness-callout` (+38)
 - `src/repair.ts` (2) — `finish-furnish-laws`, `finish-never-worse`
 - `src/reroll.ts` (3) — `keep`, `reroll-findrun-oracle`, `reroll`
 - `src/room-datums.ts` (5) — `openings-between`, `room-datums`, `segment-select`, `shared-grid-byte-identity`, `keep`
@@ -174,7 +174,7 @@ Nearest first, then by name; `(+n)` is the rest. Test names are `test/<name>.tes
 - `src/sheet-text.ts` (1) — `sheet-text`
 - `src/sheet.ts` (10) — `chrome-hidden`, `closed-vocabularies`, `dim-stagger`, `dim-thickness-callout`, `dims-ground`, `finish`, `label-fit`, `model-range` (+2)
 - `src/site.ts` (2) — `site`, `wall-face-probe`
-- `src/statement-print.ts` (2) — `fix-printer`, `keep`
+- `src/statement-print.ts` (3) — `dim-swap-reprint`, `fix-printer`, `keep`
 - `src/suggest.ts` (1) — `suggest`
 - `src/taste/arith.ts` (1) — `taste`
 - `src/taste/criteria.ts` (2) — `taste-separation`, `taste`
@@ -315,6 +315,7 @@ The first sentence of each file's header comment.
 - `test/diff.test.ts` — diffPlans — structural; diffPlans — summary & circulation; diffPlans — circulation deltas (entrance-bearing fixtures); diffPlans — auto-id rooms pair by unique…
 - `test/dim-faces.test.ts` — `dim faces` / `dim clear` — endpoint projection onto the wall faces; W_DIM_INSIDE — a hand dim whose line reads inside the building; W_DIM_OVERLAP — two hand di…
 - `test/dim-stagger.test.ts` — dims auto — number staggering on a crowded chain; text width — one estimate, one place; chain geometry constants stay welded to the drawing.
+- `test/dim-swap-reprint.test.ts` — RR.24: a dim carries its endpoint-swapped statement for `W_DIM_INSIDE`'s fix, printed whether or not the warning fires and as long as the statement's source.
 - `test/dim-text-mismatch.test.ts` — readDimText — what reads as a length; W_DIM_TEXT_MISMATCH — the rounding rule; W_DIM_TEXT_MISMATCH — the fix and the hint; W_DIM_TEXT_MISMATCH — red-team round…
 - `test/dim-thickness-callout.test.ts` — wall-thickness call-outs are never drawn in the poché; wall-thickness call-outs stay off doorways and fixtures.
 - `test/dims-ground.test.ts` — `dims auto` chains clear the ground attached to the facade they measure.
