@@ -234,7 +234,9 @@ export function chargeDerivedElements(
  *  across component instances. */
 export function assignIds(entries: Entry[], registry: Registry, diagnostics: Diagnostic[]): void {
   const seen = new Set<string>();
-  /** Where each explicit id was first declared, and the file that span is measured in. */
+  /** The earliest declaration (by source position) of each explicit id seen so far, and the file
+   *  its span is measured in. Ids are assigned in registry order, not source order, so a later
+   *  statement can be checked first (a `room` before a `door` above it). */
   const declared = new Map<string, { span?: Span; file?: string }>();
   const assignId = (
     provided: string,
@@ -244,22 +246,31 @@ export function assignIds(entries: Entry[], registry: Registry, diagnostics: Dia
     file: string | undefined,
   ): string => {
     if (provided) {
-      const first = declared.get(provided);
+      const other = declared.get(provided);
       if (seen.has(provided)) {
-        // "First declared here", when it is a different statement and both spans are measured in
+        // The other declaration, when it is a different statement and both spans are measured in
         // the compiled source: this diagnostic carries no `file`, so neither may its related span.
         // A legacy component called twice declares the id at one span, which would repeat it.
+        // "first" when it is earlier in the source, "also" when registry order checked it first.
         const rel =
-          first?.span &&
+          other?.span &&
           span &&
           file === undefined &&
-          first.file === undefined &&
-          (first.span.start !== span.start || first.span.end !== span.end)
-            ? { relatedSpans: [{ span: first.span, message: `id "${provided}" first declared here` }] }
+          other.file === undefined &&
+          (other.span.start !== span.start || other.span.end !== span.end)
+            ? {
+                relatedSpans: [
+                  {
+                    span: other.span,
+                    message: `id "${provided}" ${other.span.start < span.start ? "first" : "also"} declared here`,
+                  },
+                ],
+              }
             : {};
         diagnostics.push({ severity: "error", message: `Duplicate id "${provided}"`, code: "E_DUP_ID", span, ...rel });
       }
-      if (!first) declared.set(provided, { span, file });
+      if (!other || (span && file === other.file && (!other.span || span.start < other.span.start)))
+        declared.set(provided, { span, file });
       seen.add(provided);
       return provided;
     }

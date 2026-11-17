@@ -447,6 +447,7 @@ export function resolveOpeningLead(
     walls: ctx.walls,
     snapPt: ctx.snapPt,
     diag: ctx.diag,
+    sameFile: ctx.sameFile,
     eval: (e) => ctx.eval(e),
     ...(ctx.datums ? { datums: ctx.datums } : {}),
   };

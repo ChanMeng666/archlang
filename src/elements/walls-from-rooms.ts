@@ -333,7 +333,10 @@ export const wallsFromRooms: ElementDef = {
         message: `\`walls from rooms\` cannot open the pair: ${e.kind} "${e.id}" stands on the edge "${a}" and "${b}" share, which the clause declares open`,
         code: "E_WALL_BETWEEN_OPEN",
         span: o.span,
-        ...(e.span ? { relatedSpans: [{ span: e.span, message: `the ${e.kind} on the open edge` }] } : {}),
+        // Reported at the statement's own span, so the opening's is offered only from the same file (AF1).
+        ...(e.span && e._file === s._file
+          ? { relatedSpans: [{ span: e.span, message: `the ${e.kind} on the open edge` }] }
+          : {}),
         hints: [
           `Remove the ${e.kind} (the edge is already open), or remove the \`open between\` clause and keep the wall with the ${e.kind} in it.`,
         ],

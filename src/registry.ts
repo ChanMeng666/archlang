@@ -91,6 +91,14 @@ export interface ResolveCtx {
   rooms: RRoom[];
   hostSegment(at: Point, ref?: string): WallSegment | null;
   isOnWall(at: Point, ref?: string): boolean;
+  /**
+   * Is a span measured in `file` (another element's `_file`; absent = the compiled source)
+   * measured in the same source as the statement now resolving? A related span is read in
+   * its diagnostic's source, so one pointing at another element is offered only when this
+   * holds: a wall carried in from an imported component's instance has offsets into that
+   * module, not into the importer (card AF1).
+   */
+  sameFile(file: string | undefined): boolean;
   /** Active `set <kind>(…)` overrides for the element being resolved (by attr
    *  name), or undefined when none are in scope. Elements apply these only to
    *  attributes the user left unspecified. */

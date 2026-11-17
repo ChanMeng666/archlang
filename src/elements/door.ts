@@ -489,7 +489,7 @@ export const door: ElementDef = {
       noteSnap(ctx, `Door "${id}"`, "at", [written.x, written.y], [at.x, at.y], n.atSpan ?? n.span, true);
       host = ctx.hostSegment(at, n.wall);
       if (ctx.walls.length > 0 && !ctx.isOnWall(at, n.wall)) {
-        const note = nearestWallNote(at, ctx.walls);
+        const note = nearestWallNote(at, ctx.walls, ctx.sameFile);
         ctx.diag({
           severity: "warning",
           message: `Door "${id}" does not lie on any wall`,

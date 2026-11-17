@@ -195,9 +195,9 @@ export const dimOverlap: LintRule = {
               ? "Move one of them out a tier — a larger `offset` on one of them clears the other's line and text."
               : `Move one of them out a tier — \`offset ${fmt2(newOffset)}\` clears the other's line and text.`,
           ],
-          // A related span is read in the diagnostic's OWN file, so only offer one when the
-          // colliding dim was written in that same source — otherwise it would frame
-          // unrelated bytes. Same rule `stampProvenance` applies to a `place` span.
+          // Lint's fold stamps the diagnostic's own `file` onto its related spans
+          // (`withFixProvenance`), so only offer one when the colliding dim was written in that
+          // same source — otherwise it would be published against the wrong file.
           ...(later.dm._file === other.dm._file
             ? { relatedSpans: [{ span: other.span, message: "overlaps this dimension" }] }
             : {}),

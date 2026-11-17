@@ -58,13 +58,48 @@ describe("a duplicate id points at its first declaration", () => {
     expect(stripAf1Keys(j)).toBe(JSON.stringify(diagnosticToJson(DUP, withoutAf1Fields(d))));
   });
 
-  it("`arch compile --json` and `arch validate --json` carry it", async () => {
-    for (const cmd of ["compile", "validate"]) {
+  it("`arch compile --json`, `arch lint --json` and `arch validate --json` carry it", async () => {
+    for (const cmd of ["compile", "lint", "validate"]) {
       const r = await runArch([cmd, "-", "--json"], { input: DUP });
       const out = JSON.parse(r.stdout) as { diagnostics: Array<{ code?: string; related?: unknown }> };
       const dup = out.diagnostics.find((x) => x.code === "E_DUP_ID");
       expect(dup?.related, cmd).toEqual([{ message: 'id "a" first declared here', line: 2, col: 3, span: [13, 56] }]);
     }
+  });
+
+  it("ids are checked in registry order, not source order: a later room's id is 'also declared here'", () => {
+    // The `room` is checked before the `door` above it, so the error stays on the door (its span is
+    // unchanged) and its related span points DOWN the file, worded as such.
+    const src = `plan "O" {
+  wall exterior thickness 200 { (0,0) (6000,0) (6000,3000) (0,3000) close }
+  door id=same at (1000,0) width 900
+  room id=same at (0,0) size 3000x3000 label "A"
+}`;
+    const d = byCode(compile(src, { noCache: true }).diagnostics, "E_DUP_ID");
+    expect(src.slice(d.span!.start, d.span!.end)).toBe("door id=same at (1000,0) width 900");
+    const [rel] = d.relatedSpans!;
+    expect(rel!.message).toBe('id "same" also declared here');
+    expect(src.slice(rel!.span.start, rel!.span.end)).toBe('room id=same at (0,0) size 3000x3000 label "A"');
+    expect(diagnosticToJson(src, d).related).toEqual([
+      { message: 'id "same" also declared here', line: 4, col: 3, span: [rel!.span.start, rel!.span.end] },
+    ]);
+  });
+
+  it("with three declarations, each later one points at the earliest seen in the source", () => {
+    const src = `plan "T" {
+  door id=x at (1000,0) width 900
+  room id=x at (0,0) size 3000x3000
+  room id=y at (3000,0) size 3000x3000
+  door id=x at (2000,0) width 900
+}`;
+    const dups = compile(src, { noCache: true }).diagnostics.filter((d) => d.code === "E_DUP_ID");
+    const lineOf = (o: number) => src.slice(0, o).split("\n").length;
+    expect(
+      dups.map((d) => [lineOf(d.span!.start), d.relatedSpans?.map((r) => [r.message, lineOf(r.span.start)])]),
+    ).toEqual([
+      [2, [['id "x" also declared here', 3]]],
+      [5, [['id "x" first declared here', 2]]],
+    ]);
   });
 
   it("a legacy component called twice declares the id at one span, so no related span repeats it", () => {
@@ -182,5 +217,58 @@ describe("a diagnostic from an imported body: each related span names the file i
       for (const r of d.relatedSpans ?? []) expect(r.file).toBe("lib.arch");
     }
     expect(overlap.some((d) => d.relatedSpans?.length)).toBe(true);
+  });
+});
+
+describe("a related span naming ANOTHER element is offered only from the same file", () => {
+  it("a door written in the importer, nearest a wall carried in from an imported instance: no note", () => {
+    const lib = `plan "lib" {
+  component shell() {
+    wall id=w exterior thickness 200 { (0,0) (4000,0) (4000,3000) (0,3000) close }
+    room id=r at (0,0) size 4000x3000
+  }
+}`;
+    const main = `plan "main" {
+  import "lib.arch": shell
+  place shell() as s1 at (0,0)
+  door id=d at (2000,1500) width 900
+}`;
+    const world = makeVirtualWorld({ "lib.arch": lib });
+    const d = byCode(compile(main, { world, noCache: true }).diagnostics, "W_DOOR_OFF_WALL");
+    // Before: a "nearest wall" span of offsets into lib.arch, published against main.
+    expect(d.file).toBeUndefined();
+    expect(d.relatedSpans).toBeUndefined();
+    expect("related" in diagnosticToJson(main, d)).toBe(false);
+  });
+
+  it("a door written in an imported body, nearest a wall written in the importer: no note", () => {
+    const lib = `plan "lib" {
+  component nook() {
+    room id=n at (0,0) size 2000x2000
+    door id=d at (1000,1000) width 800
+  }
+}`;
+    const main = `plan "main" {
+  import "lib.arch": nook
+  wall id=big exterior thickness 200 { (0,0) (2000,0) (2000,2000) (0,2000) close }
+  nook()
+}`;
+    const world = makeVirtualWorld({ "lib.arch": lib });
+    const d = byCode(compile(main, { world, noCache: true }).diagnostics, "W_DOOR_OFF_WALL");
+    // Before: main's `wall id=big` offsets, stamped as lib.arch's.
+    expect(d.file).toBe("lib.arch");
+    expect(d.relatedSpans).toBeUndefined();
+  });
+
+  it("the same door and wall in one file keep the note", () => {
+    const src = `plan "one" {
+  wall id=w exterior thickness 200 { (0,0) (4000,0) (4000,3000) (0,3000) close }
+  room id=r at (0,0) size 4000x3000
+  door id=d at (2000,1500) width 900
+}`;
+    const d = byCode(compile(src, { noCache: true }).diagnostics, "W_DOOR_OFF_WALL");
+    expect(d.relatedSpans?.map((r) => src.slice(r.span.start, r.span.end))).toEqual([
+      "wall id=w exterior thickness 200 { (0,0) (4000,0) (4000,3000) (0,3000) close }",
+    ]);
   });
 });

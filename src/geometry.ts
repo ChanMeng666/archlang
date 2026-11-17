@@ -683,11 +683,15 @@ export function hostSegmentForWalls(walls: WallLike[], at: Point, ref?: string):
 /**
  * The wall nearest to `p` (by closest segment), as a related-span diagnostic
  * note — used to point a "door/window not on any wall" warning at the wall it
- * was probably meant for. Returns null if no wall carries a span.
+ * was probably meant for. Returns null if no wall carries a span, or when `sameFile` says the
+ * nearest wall's span (its `_file`) is measured in another source than the diagnostic's: a
+ * related span is read in its diagnostic's source (card AF1), and a nearer same-file wall would
+ * not be the nearest one.
  */
-export function nearestWallNote<T extends WallLike & { span?: { start: number; end: number } }>(
+export function nearestWallNote<T extends WallLike & { span?: { start: number; end: number }; _file?: string }>(
   p: Point,
   walls: readonly T[],
+  sameFile: (file: string | undefined) => boolean = () => true,
 ): { span: { start: number; end: number }; message: string } | null {
   let best: T | undefined;
   let bestDist = Infinity;
@@ -701,7 +705,8 @@ export function nearestWallNote<T extends WallLike & { span?: { start: number; e
     }
   }
   // A derived wall is named by its relation, never by its internal name (ADR 0028 §3).
-  return best?.span ? { span: best.span, message: `nearest ${wallPhraseOf(best)} is here` } : null;
+  if (!best?.span || !sameFile(best._file)) return null;
+  return { span: best.span, message: `nearest ${wallPhraseOf(best)} is here` };
 }
 
 /**

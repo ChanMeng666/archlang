@@ -111,7 +111,7 @@ export const opening: ElementDef = {
     }
     const at = ctx.snapPt(ctx.evalPt(n.at!));
     if (ctx.walls.length > 0 && !ctx.isOnWall(at, n.wall)) {
-      const note = nearestWallNote(at, ctx.walls);
+      const note = nearestWallNote(at, ctx.walls, ctx.sameFile);
       ctx.diag({
         severity: "warning",
         message: `Opening "${id}" does not lie on any wall`,
