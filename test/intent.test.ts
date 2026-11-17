@@ -457,9 +457,10 @@ describe("compileIntent — predicate lowering", () => {
   });
 });
 
-// RM9.1: a band is judged on the EXACT area. `describe()` keeps its display convention (each room
-// to 0.01 m², the total the sum of those), so these plans still print the rounded figures.
-describe("validateIntent — area bands judge the exact area (RM9.1)", () => {
+// RM9.1: a floor-area band is judged on the EXACT area, read back from the summary's unrounded room
+// geometry. `describe()` keeps its display convention (each room to 0.01 m², the total the sum of
+// those), so these plans still print the rounded figures.
+describe("validateIntent — floor-area bands judge the exact area (RM9.1)", () => {
   /** Five rooms of exactly 6.675 + 6.65 + 6.675 + 13.75 + 6.25 = 40.000 m², printed as 40.01. */
   const FORTY = `plan "Forty" {
   units mm
@@ -474,7 +475,8 @@ describe("validateIntent — area bands judge the exact area (RM9.1)", () => {
   units mm
   room id=s at (0,0) size 2000x2000.5 label "Store"
 }`;
-  /** An exterior ring whose inner faces enclose exactly 5000 x 8000.8 mm = 40.004 m², printed as 40. */
+  /** An exterior ring whose inner faces enclose exactly 5000 x 8000.8 mm = 40.004 m², printed as 40.
+   *  The summary carries no unrounded source for it, so its band reads the printed figure. */
   const GROSS = `plan "Gross" {
   units mm
   wall exterior thickness 200 { (0,0) (5200,0) (5200,8200.8) (0,8200.8) close }
@@ -519,23 +521,31 @@ describe("validateIntent — area bands judge the exact area (RM9.1)", () => {
     expect(validateIntent(OVER, store).ok).toBe(false);
   });
 
-  it("a gross internal area band is judged on the exact figure, and its residual with it", () => {
+  it("a gross internal area band is judged on the printed figure, which has no exact source", () => {
     expect(describePlan(GROSS).totals.gross_internal_area_m2).toBe(40);
     const r = validateIntent(GROSS, { grossInternalAreaM2: { max: 40, source: "at most 40 m² inside" } });
-    expect(r.ok).toBe(false);
-    expect(r.violations.map((v) => v.message)).toEqual([
-      "intent /grossInternalAreaM2: gross internal area 40.004 m² outside [0, 40], residual +0.004 m² (at most 40 m² inside)",
-    ]);
-    expect(r.measures?.[0]).toMatchObject({ measured: [40.004], residual: [0.004], pass: false });
-    expect(validateIntent(GROSS, { grossInternalAreaM2: { max: 40.004, source: "brief" } }).ok).toBe(true);
+    expect(r.ok).toBe(true);
+    expect(r.assertions[0]?.detail).toBe("area: gross internal area 40 m² within [0, 40]");
+    expect(r.measures?.[0]).toMatchObject({ measured: [40], residual: [0], pass: true });
   });
 
-  it("a summary that did not come from describe() is judged on its printed figures", () => {
-    // A JSON round trip drops the side table: the printed 40.01 decides, as before.
+  it("a summary read back from JSON is judged exactly too: the geometry travels with it", () => {
     const parsed = JSON.parse(JSON.stringify(describePlan(FORTY))) as ReturnType<typeof describePlan>;
     const preds = compileIntent({ totalAreaM2: { max: 40, source: "brief" } });
-    expect(checkPredicates(preds, parsed).find((a) => a.predicate.kind === "total-area")?.pass).toBe(false);
-    expect(checkPredicates(preds, describePlan(FORTY)).find((a) => a.predicate.kind === "total-area")?.pass).toBe(true);
+    expect(checkPredicates(preds, parsed)[0]?.detail).toBe("area: total 40 m² within [0, 40]");
+  });
+
+  it("a circular room is πR², to a whole mm²", () => {
+    // Radius 2000 mm: 12.566371 m², printed 12.57, so a min of 12.57 now fails.
+    const round = `plan "Round" {
+  units mm
+  room id=c circle at (0,0) radius 2000 label "Rotunda"
+}`;
+    expect(describePlan(round).totals.floor_area_m2).toBe(12.57);
+    expect(
+      validateIntent(round, { totalAreaM2: { min: 12.57, max: 13, source: "brief" } }).violations.map((v) => v.message),
+    ).toEqual(["intent /totalAreaM2: total 12.566371 m² outside [12.57, 13] (brief)"]);
+    expect(validateIntent(round, { totalAreaM2: { min: 12.566371, max: 13, source: "brief" } }).ok).toBe(true);
   });
 
   it("an equal division (`let w = 10000 / 7`) is judged to a whole mm², never on a float residue", () => {
@@ -584,14 +594,14 @@ describe("validateIntent — area bands judge the exact area (RM9.1)", () => {
     expect(s.levels?.map((l) => l.totals.floor_area_m2)).toEqual([20.01, 20]);
     const preds = compileIntent({ totalAreaM2: { max: 40, source: "brief" } });
     expect(checkPredicates(preds, s)[0]?.detail).toBe("area: total 40 m² within [0, 40]");
-    // Read back from JSON, the printed storeys decide, as before.
-    const parsed = JSON.parse(JSON.stringify(s)) as ReturnType<typeof describePlan>;
-    expect(checkPredicates(preds, parsed)[0]?.detail).toBe("area: total 40.01 m² outside [0, 40] (brief)");
+    // A storey total a caller replaced is judged as printed: 20.01 + 30 = 50.01.
+    s.levels![1]!.totals.floor_area_m2 = 30;
+    expect(checkPredicates(preds, s)[0]?.detail).toBe("area: total 50.01 m² outside [0, 40] (brief)");
   });
 
-  it("the building's gross internal area is the storeys' exact figures summed", () => {
-    // Each storey encloses exactly 5000 x 4000.4 mm = 20.002 m², printed 20; the building 40.004, printed 40.
-    const ring = `wall exterior thickness 200 { (0,0) (5200,0) (5200,4200.4) (0,4200.4) close }`;
+  it("the building's gross internal area band reads the printed sum of the storeys", () => {
+    // Each storey encloses exactly 5000 x 4000.4 mm = 20.002 m², printed 20; the building prints 40.
+    const ring = "wall exterior thickness 200 { (0,0) (5200,0) (5200,4200.4) (0,4200.4) close }";
     const two = `plan "Gross over two" {
   units mm
   level 0 "Ground" {
@@ -605,11 +615,8 @@ describe("validateIntent — area bands judge the exact area (RM9.1)", () => {
 }`;
     expect(describePlan(two).totals.gross_internal_area_all_levels_m2).toBe(40);
     const r = validateIntent(two, { grossInternalAreaM2: { max: 40, source: "brief" } });
-    expect(r.violations.map((v) => v.message)).toEqual([
-      "intent /grossInternalAreaM2: gross internal area over 2 storeys 40.004 m² outside [0, 40], residual +0.004 m² (brief)",
-    ]);
-    expect(r.measures?.[0]).toMatchObject({ measured: [40.004], residual: [0.004], pass: false });
-    expect(validateIntent(two, { grossInternalAreaM2: { max: 40.004, source: "brief" } }).ok).toBe(true);
+    expect(r.ok).toBe(true);
+    expect(r.assertions[0]?.detail).toBe("area: gross internal area over 2 storeys 40 m² within [0, 40]");
   });
 
   it("a figure a caller replaced is judged as printed, never on the stale exact one", () => {

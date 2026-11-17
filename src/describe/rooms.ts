@@ -13,7 +13,6 @@ import { roomAreaMm2, roomUses, type RoomBox } from "../analyze.js";
 import { roomTypeForUses } from "../plan-json.js";
 import type { RoomSummary } from "./types.js";
 import { instanceOf, r2 } from "./shared.js";
-import { recordExactMm2 } from "./exact-areas.js";
 
 /** A room's `net_area_m2` key: the rounded figure, or no key at all when it is omitted. */
 const netField = (mm2: number | undefined): { net_area_m2?: number } =>
@@ -30,13 +29,12 @@ export function roomSummaries(
     const rect = roomRects.get(r.id)!;
     const adjacent = adjacency[i]!;
     const uses = roomUses(r);
-    const areaMm2 = roomAreaMm2(r);
-    const summary: RoomSummary = {
+    return {
       id: r.id,
       ...(r.label !== undefined ? { label: r.label } : {}),
       uses: [...uses],
       room_type: roomTypeForUses(uses),
-      area_m2: r2(areaMm2 / 1_000_000),
+      area_m2: r2(roomAreaMm2(r) / 1_000_000),
       ...netField(memoRoomNetAreaMm2(r, bands)),
       // `bbox` stays a plain {x,y,w,h} — never the RoomBox, whose `poly` would leak a
       // fifth key into the JSON. A polygon room's true floor is `floor_polygon`.
@@ -54,8 +52,5 @@ export function roomSummaries(
       adjacent,
       ...instanceOf(r),
     };
-    // The exact figure behind `area_m2`, off the JSON: a brief's band is judged on it (RM9.1).
-    recordExactMm2(summary, "area_m2", areaMm2);
-    return summary;
   });
 }
