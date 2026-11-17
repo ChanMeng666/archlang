@@ -15,8 +15,9 @@
  * retyped by hand is exactly how a template goes stale — AGENTS.md).
  *
  * Retry envelope: a request is retried up to 6 times, 5s apart, on a network error or a
- * non-200 (a `wrangler deploy` takes a few seconds to propagate to every edge). A 200 whose BODY
- * fails its assertion is a real failure and is never retried — waiting can't fix wrong bytes.
+ * non-200 (a `wrangler deploy` takes a few seconds to propagate to every edge); a redirect check
+ * likewise retries a wrong status or `Location`. A 200 whose BODY fails its assertion is a real
+ * failure and is never retried — waiting can't fix wrong bytes.
  *
  * Exit codes: 0 all checks passed · 1 at least one check failed · 2 bad usage.
  */
@@ -84,7 +85,7 @@ function docsExampleRoutes(syncSrc) {
 }
 
 // ---------------------------------------------------------------------------
-// Assertions — each throws with a human reason; a throw is never retried.
+// Assertions on a 200's body — each throws with a human reason; a throw is never retried.
 // ---------------------------------------------------------------------------
 
 const contentType = (sub) => (_body, res) => {
@@ -248,14 +249,14 @@ function missingMarkdownCheck() {
 /**
  * A path that must answer a permanent redirect (301) to `location`. Fetched with
  * `redirect: "manual"`, because `route()` follows redirects and would see only the 200 after
- * them. The rule comes from `docs-site/public/_redirects`, which nothing else executes.
+ * them. The rule comes from `docs-site/public/_redirects`, which nothing else executes. A wrong
+ * status or `Location` is retried in the same envelope as `fetchOk`: a freshly uploaded rule has
+ * answered 404 seconds after deploy and 301 later.
  */
 function redirectCheck(path, location) {
   return {
     name: `${path} (301 → ${location})`,
     run: async (base) => {
-      // A freshly uploaded rule can answer 404 (or a stale Location) while it propagates, so a
-      // wrong status or Location is retried like fetchOk retries a non-200 (2026-11-17 deploy).
       let last = "no attempt made";
       for (let attempt = 1; attempt <= ATTEMPTS; attempt++) {
         try {
