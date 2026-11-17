@@ -1067,6 +1067,7 @@ function resolveBody(
       return budget.count <= MAX_ELEMENTS;
     },
     isOnWall: (at, ref) => hostInfo(at, ref).onWall,
+    sameFile: (file) => file === activeEntry?.file,
     ...(world.now ? { now: () => world.now!() } : {}),
     diag: pushDiag,
     north: ast.north,

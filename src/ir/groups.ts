@@ -234,11 +234,21 @@ export function chargeDerivedElements(
  *  across component instances. */
 export function assignIds(entries: Entry[], registry: Registry, diagnostics: Diagnostic[]): void {
   const seen = new Set<string>();
-  const assignId = (provided: string, prefix: string, idx: number, span?: Span): string => {
+  // For "first declared here" (card AF1), only declarations in the compiled source: this diagnostic
+  // carries no `file`, so neither may its related span. The earliest one of each id, and for each
+  // duplicate the earliest one seen before it (another declaration, the one it duplicates).
+  const earliest = new Map<string, Span>();
+  const dups: [Diagnostic, string, Span?][] = [];
+  const assignId = (provided: string, prefix: string, idx: number, span?: Span, file?: string): string => {
     if (provided) {
+      const here = file === undefined ? span : undefined;
+      const e = earliest.get(provided);
       if (seen.has(provided)) {
-        diagnostics.push({ severity: "error", message: `Duplicate id "${provided}"`, code: "E_DUP_ID", span });
+        const d: Diagnostic = { severity: "error", message: `Duplicate id "${provided}"`, code: "E_DUP_ID", span };
+        diagnostics.push(d);
+        if (here) dups.push([d, provided, e]);
       }
+      if (here && !(e && e.start <= here.start)) earliest.set(provided, here);
       seen.add(provided);
       return provided;
     }
@@ -253,13 +263,24 @@ export function assignIds(entries: Entry[], registry: Registry, diagnostics: Dia
       if (e.node.kind !== def.kind) continue;
       idx++;
       e.idAuthored = Boolean(e.node.id);
-      e.id = assignId(e.node.id, def.idPrefix(e.node), idx, e.node.span);
+      e.id = assignId(e.node.id, def.idPrefix(e.node), idx, e.node.span, e.file);
     }
   }
   // The ids a statement gives the elements it derives (`ElementDef.authoredChildIds`): checked
   // against every other id, after them, so a duplicate is reported on the later name.
   for (const e of entries) {
-    for (const c of registry.byKind.get(e.node.kind)?.authoredChildIds?.(e.node) ?? []) assignId(c.id, "", 0, c.span);
+    for (const c of registry.byKind.get(e.node.kind)?.authoredChildIds?.(e.node) ?? [])
+      assignId(c.id, "", 0, c.span, e.file);
+  }
+  // Each duplicate points at the earliest declaration in the source, or, when it is that one
+  // itself (ids are checked in registry order, not source order), at the one it duplicates, which
+  // comes later ("also declared here"). A legacy component called twice declares an id at one
+  // span, which would only repeat the error's own.
+  for (const [d, id, prev] of dups) {
+    const s = d.span!.start;
+    const e = earliest.get(id)!;
+    const o = e.start !== s ? e : prev;
+    if (o && o.start !== s) d.relatedSpans = [{ span: o, message: `${o.start < s ? "first" : "also"} declared here` }];
   }
 }
 

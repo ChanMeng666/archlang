@@ -927,3 +927,51 @@ describe("source_hash", () => {
     }
   }, 30000);
 });
+
+// ---------------------------------------------------------------------------
+// related spans (card AF1): the shim's `toJson` is the core's `diagnosticToJson`
+// ---------------------------------------------------------------------------
+
+describe("related spans reach a host", () => {
+  const DUP =
+    'plan "D" {\n  room id=a at (0,0) size 3000x3000 label "A"\n  room id=a at (3000,0) size 3000x3000 label "B"\n}\n';
+  const FIRST = { message: "first declared here", line: 2, col: 3, span: [13, 56] };
+
+  it("compile and validate return a duplicate id's first declaration as `related`", async () => {
+    const client = await connect();
+    for (const tool of ["compile", "validate"]) {
+      const out = await call(client, tool, { source: DUP });
+      const dup = (out.diagnostics as Array<Record<string, unknown>>).find((d) => d.code === "E_DUP_ID");
+      expect(dup?.related, tool).toEqual([FIRST]);
+    }
+  });
+
+  it("a placed instance's warning names `instance` and `component`, and the `place` as a related span", async () => {
+    const src = `plan "P" {
+  grid 100
+  component nook() {
+    wall id=w exterior thickness 200 { (0,0) (2000,0) (2000,2000) (0,2000) close }
+    room id=n at (0,0) size 2000x2000
+    door id=d at (1000,1500) width 800
+  }
+  wall exterior thickness 200 { (0,0) (5000,0) (5000,4000) (0,4000) close }
+  place nook() as n1 at (0,0)
+}
+`;
+    const out = await call(await connect(), "validate", { source: src });
+    const off = (out.diagnostics as Array<Record<string, unknown>>).find((d) => d.code === "W_DOOR_OFF_WALL");
+    expect(off).toMatchObject({ instance: "n1", component: "nook" });
+    const related = off!.related as Array<{ message: string; line: number }>;
+    expect(related.map((r) => r.message)).toEqual(['nearest wall "w" is here', 'in instance "n1" placed here']);
+    expect(related[1]!.line).toBe(9);
+  });
+
+  it("a diagnostic without related spans carries no `related` key", async () => {
+    const out = await call(await connect(), "lint", { source: TINY });
+    expect((out.diagnostics as unknown[]).length).toBeGreaterThan(0);
+    for (const d of out.diagnostics as Array<Record<string, unknown>>) {
+      expect(Object.keys(d)).not.toContain("related");
+      expect(Object.keys(d)).not.toContain("instance");
+    }
+  });
+});

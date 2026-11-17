@@ -831,8 +831,9 @@ imported outside their modules (grep re-run).
 
 **Carded as** AF1, the `relatedSpans` bullet only (`docs/plans/product-roadmap/cards.md` track 10, 2026-11-18).
 
-- `relatedSpans` (the "plan was closed here" note) reach only `arch compile`'s text output, not
-  `--json` or the LSP. Re-run: the `lint --json` diagnostic has no related span.
+- ~~`relatedSpans` (the "plan was closed here" note) reach only `arch compile`'s text output, not
+  `--json` or the LSP.~~ Done by #944 (AF1): `diagnosticToJson` emits `related`, `instance` and
+  `component`, and the language server emits `relatedInformation`.
 - Indentation-guided recovery: a tab meeting spaces has no order, so such lines fall back to
   the previous rule; when a block header fails and its `}` is also missing, the deeper-indented
   lines are skipped as its body (pinned in `test/parser-recovery-metric.test.ts`).

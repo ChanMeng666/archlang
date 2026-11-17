@@ -97,14 +97,16 @@ describe("formatDiagnostic — codespan frames", () => {
     expect(text).toContain("= help:");
   });
 
-  it("m6: a relatedSpan on a `file`-carrying diagnostic also gets no excerpt", () => {
+  it("m6: a relatedSpan measured in another `file` gets no excerpt", () => {
+    // Each related span names its own file (`RelatedSpan.file`, card AF1); the compiler stamps the
+    // body's file onto them with the diagnostic's (`stampProvenance`, lint's fold).
     const d: Diagnostic = {
       severity: "error",
       code: "E_DOOR_OFF_WALL",
       message: "door is off the wall",
       span: { start: 5, end: 9 },
       file: "lib/m.arch",
-      relatedSpans: [{ span: { start: 40, end: 50 }, message: "the wall it should be on" }],
+      relatedSpans: [{ span: { start: 40, end: 50 }, message: "the wall it should be on", file: "lib/m.arch" }],
     };
     const text = formatDiagnostic('plan "main" { units mm }', d);
     const lines = text.split("\n");
@@ -112,6 +114,25 @@ describe("formatDiagnostic — codespan frames", () => {
     expect(relatedLine).toContain("--> lib/m.arch [40..50]");
     expect(relatedLine).not.toMatch(/\d+:\d+/);
     expect(text).not.toContain("units mm");
+  });
+
+  it("m6b: a relatedSpan with no `file` on a `file`-carrying diagnostic is in the compiled source", () => {
+    // The "placed here" span `stampProvenance` adds: the diagnostic is inside an imported body, the
+    // `place` statement is in the source being compiled, so it is framed from that source.
+    const src = 'plan "main" {\n  place nook() as n1 at (0,0)\n}';
+    const at = src.indexOf("place");
+    const d: Diagnostic = {
+      severity: "warning",
+      code: "W_DOOR_OFF_WALL",
+      message: "door is off the wall",
+      span: { start: 5, end: 9 },
+      file: "lib/m.arch",
+      relatedSpans: [{ span: { start: at, end: at + 27 }, message: 'in instance "n1" placed here' }],
+    };
+    const text = formatDiagnostic(src, d);
+    expect(text).toContain(" --> lib/m.arch [5..9]");
+    expect(text).toContain("2 |   place nook() as n1 at (0,0)");
+    expect(text).toContain('note: in instance "n1" placed here');
   });
 
   it("a relatedSpan on a diagnostic with NO `file` still frames a normal excerpt", () => {

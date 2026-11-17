@@ -14,6 +14,12 @@ are documented here. The format is based on
 
 ## [Unreleased]
 
+### Added
+
+- A diagnostic's related locations appear under it in the Problems panel and the hover (LSP
+  `relatedInformation`): a duplicate id links to the statement that first declared it, a door off
+  its wall to the nearest wall, a placed instance's warning to its `place` statement.
+
 ## [0.51.0] - 2026-11-17
 
 ### Changed

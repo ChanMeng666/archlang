@@ -5,7 +5,7 @@
 Where the tests of a `src` module are, and what each test file is for. Generated; `npm run check:drift`
 fails when it is stale. How to add a test: `docs/testing.md` § 4.
 
-541 test files in `test/`, 286 `src` modules, 106 modules no test imports.
+542 test files in `test/`, 287 `src` modules, 107 modules no test imports.
 
 ## `src` module → tests that import it
 
@@ -45,10 +45,10 @@ Nearest first, then by name; `(+n)` is the rest. Test names are `test/<name>.tes
 - `src/cli/commands-render.ts` (3) — `keep-impact-depends`, `plan-json-dropped`, `watch-arming`
 - `src/cli/context-starter.ts` (1) — `context-starter`
 - `src/cli/help.ts` (1) — `cli-help`
-- `src/cli/io.ts` (83) — `block-stair-byte-identity`, `clause-order-byte-identity`, `cli-contract`, `cli-exit-parse`, `cli-expected-hash`, `cli-flag-matrix`, `cli-help`, `cli-output-format` (+75)
+- `src/cli/io.ts` (84) — `block-stair-byte-identity`, `clause-order-byte-identity`, `cli-contract`, `cli-exit-parse`, `cli-expected-hash`, `cli-flag-matrix`, `cli-help`, `cli-output-format` (+76)
 - `src/cli/link.ts` (1) — `cli-link`
 - `src/cli/review.ts` (1) — `cli-preview-review`
-- `src/cli/run.ts` (49) — `axes`, `cli-batch`, `cli-commands`, `cli-context`, `cli-contract`, `cli-exit-parse`, `cli-expected-hash`, `cli-finish` (+41)
+- `src/cli/run.ts` (50) — `axes`, `cli-batch`, `cli-commands`, `cli-context`, `cli-contract`, `cli-exit-parse`, `cli-expected-hash`, `cli-finish` (+42)
 - `src/cli/serialize.ts` (8) — `cli-batch`, `cli-plan-json-roundtrip`, `element-facets`, `plan-json-arcs-paper`, `plan-json-dropped`, `plan-json-instances`, `plan-json-roundtrip-law`, `walls-from-rooms`
 - `src/cli/source-hash.ts` (1) — `cli-expected-hash`
 - `src/cli/summary.ts` (1) — `lint-summary`
@@ -57,7 +57,7 @@ Nearest first, then by name; `(+n)` is the rest. Test names are `test/<name>.tes
 - `src/cursor.ts` (3) — `block-stair`, `cursor-exhaustive`, `reroll-findrun-oracle`
 - `src/datum.ts` (11) — `access-policy`, `cursor-exhaustive`, `describe-depends`, `diff-laws`, `emit-opening-oracle`, `equivariance-fuzz`, `fix-printer`, `fuzz` (+3)
 - `src/describe.ts` (49) — `acc-metadata`, `accessible-svg`, `d4`, `describe`, `diff-laws`, `diff`, `room-adjacency-oracle`, `window-facing-probe` (+41)
-- `src/diagnostics.ts` (52) — `diagnostics-volume`, `diagnostics`, `error-catalog-families`, `export-font-cjk`, `expr`, `fix-pullback`, `lint-file-provenance`, `lint-ruleset-values` (+44)
+- `src/diagnostics.ts` (53) — `diagnostic-json-related`, `diagnostics-volume`, `diagnostics`, `error-catalog-families`, `export-font-cjk`, `expr`, `fix-pullback`, `lint-file-provenance` (+45)
 - `src/diff.ts` (3) — `diff-fabric`, `diff-laws`, `diff`
 - `src/doc.ts` (2) — `fix-printer`, `format`
 - `src/draw-budget.ts` (5) — `drawing-budget`, `sheet-annotations`, `walls-from-rooms-clauses`, `window-kinds`, `work-counts`
@@ -120,7 +120,7 @@ Nearest first, then by name; `(+n)` is the rest. Test names are `test/<name>.tes
 - `src/impact.ts` (2) — `rectilinear-doors`, `rectilinear-rooms`
 - `src/import.ts` (33) — `block-stair-byte-identity`, `corner-window-byte-identity`, `dim-swap-reprint`, `dim-thickness-callout`, `drawing-budget`, `floor-materials-byte-identity`, `furniture-relations`, `gaps-byte-identity` (+25)
 - `src/import/limits.ts` (1) — `openplan3d-malformed`
-- `src/index.ts` (402) — `acc-metadata`, `access-graph`, `access-policy`, `accessible-svg`, `agent-gallery`, `alias-match`, `anchors`, `annotate` (+394)
+- `src/index.ts` (403) — `acc-metadata`, `access-graph`, `access-policy`, `accessible-svg`, `agent-gallery`, `alias-match`, `anchors`, `annotate` (+395)
 - `src/input-limit.ts` (2) — `import-rooted`, `workspace-seams`
 - `src/intent-concepts.ts` (2) — `vocabulary-living-dining`, `vocabulary-matcher-oracle`
 - `src/intent.ts` (1) — `site`
@@ -308,6 +308,7 @@ The first sentence of each file's header comment.
 - `test/describe-overlay-blind.test.ts` — **`describe()` never reads the circulation overlay.** The overlay is the opt-in render of the walking model (`--overlay circulation`): polylines for a picture, never a measured fact.
 - `test/describe-quantities.test.ts` — `describe --facts quantities` and `arch takeoff` (preview-and-remodel B4, D9): geometric quantities, held to figures computed BY HAND from the source coordinates, not copied from a run.
 - `test/describe.test.ts` — describe — semantic facts; describe — window facing is read against the plan's `north`; describe — freedom (degrees-of-freedom placement report); describe — err…
+- `test/diagnostic-json-related.test.ts` — Card AF1: a diagnostic's related spans, `instance` and `component` reach the JSON projection (`diagnosticToJson`, which the CLI's `--json`, both MCP hosts and the playground share).
 - `test/diagnostic-json.test.ts` — diagnosticToJson.
 - `test/diagnostics-volume.test.ts` — offsetToLineCol — line-start table agrees with the scan; diagnostics are capped at MAX_DIAGNOSTICS, then one E_DIAGNOSTIC_LIMIT (EH-D8).
 - `test/diagnostics.test.ts` — lexer — byte-offset spans; offsetToLineCol; formatDiagnostic — codespan frames; parser — error recovery + multi-error collection; compile — warnings never block…
@@ -756,6 +757,7 @@ module); adding a test that imports it removes it from this list.
 - `src/backends/error-svg.ts`
 - `src/backends/png-defaults.ts`
 - `src/builtins.ts`
+- `src/catalog-fix.ts`
 - `src/cli.ts`
 - `src/cli/commands-import.ts`
 - `src/cli/commands-share.ts`

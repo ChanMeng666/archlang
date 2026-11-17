@@ -720,6 +720,9 @@ export function stampProvenance(d: Diagnostic, frame: Frame | undefined, file: s
   if (file !== undefined) {
     out.file = file;
     if (d.fixes) out.fixes = d.fixes.map((f) => ({ ...f, file }));
+    // The body's own related spans are measured where its primary span is; the "placed here"
+    // span below is not, so each related span names its file (`RelatedSpan.file`).
+    if (d.relatedSpans) out.relatedSpans = d.relatedSpans.map((r) => (r.file === undefined ? { ...r, file } : r));
   }
   if (frame) {
     out.instance = frame.prefix;
@@ -728,7 +731,7 @@ export function stampProvenance(d: Diagnostic, frame: Frame | undefined, file: s
     // `place` statement actually lives there.
     if (frame.span && frame.file === undefined) {
       out.relatedSpans = [
-        ...(d.relatedSpans ?? []),
+        ...(out.relatedSpans ?? []),
         { span: frame.span, message: `in instance "${frame.prefix}" placed here` },
       ];
     }
