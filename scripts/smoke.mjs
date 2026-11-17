@@ -298,10 +298,14 @@ function docsChecks() {
     // docs-site/public/_redirects. The sitemap lists `/adr`, never the 307-ing `/adr/`.
     redirectCheck("/error-codes", "/errors"),
     redirectCheck("/language-reference", "/reference"),
-    // Six more Search Console 404s: repo files go to GitHub (absolute Location), the schema to the root copy.
+    // Six more Search Console 404s plus one found in review: repo files go to GitHub (absolute Location), the schema to the root copy.
     redirectCheck(
       "/examples/museum-wing.arch",
       "https://github.com/ChanMeng666/archlang/blob/main/examples/museum-wing.arch",
+    ),
+    redirectCheck(
+      "/examples/museum-wings.arch",
+      "https://github.com/ChanMeng666/archlang/blob/main/examples/museum-wings.arch",
     ),
     redirectCheck("/schemas/plan.schema.json", "/plan.schema.json"),
     redirectCheck("/brand/README", "https://github.com/ChanMeng666/archlang/blob/main/brand/README.md"),

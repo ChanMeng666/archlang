@@ -2,12 +2,13 @@
 # (never served). Two URLs that earlier copies of the docs linked to and that return 404 today:
 # the repo's own file names, `docs/error-codes.md` and `docs/language-reference.md`, whose pages
 # live here at /errors and /reference (docs-site/sync-docs.mjs PAGES).
-# Six more, reported as 404 by Search Console: repo-relative links that copies of the docs published
+# Six more, reported as 404 by Search Console, and one found in review: repo-relative links that copies of the docs published
 # before docs-site/link-rewrite.mjs existed. Each goes to where that rewrite sends the link today:
 # GitHub for repo files, /plan.schema.json for the schema (sync-docs.mjs ROOT_COPIES).
 /error-codes        /errors     301
 /language-reference /reference  301
 /examples/museum-wing.arch  https://github.com/ChanMeng666/archlang/blob/main/examples/museum-wing.arch 301
+/examples/museum-wings.arch https://github.com/ChanMeng666/archlang/blob/main/examples/museum-wings.arch 301
 /schemas/plan.schema.json   /plan.schema.json 301
 /brand/README               https://github.com/ChanMeng666/archlang/blob/main/brand/README.md 301
 /dataset/CARD               https://github.com/ChanMeng666/archlang/blob/main/dataset/CARD.md 301
