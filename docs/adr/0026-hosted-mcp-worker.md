@@ -327,8 +327,11 @@ version-keyed cache with an in-memory stand-in.
   POSTs gave 130 x 200 then 170 x 429, and service resumed after the timeout. It was first
   scoped to `/mcp` only and later widened to the whole host. It lives in the Cloudflare dashboard,
   so a reader of the repository alone cannot see it.
-- **Spend bound, restated.** `limits.cpu_ms` plus the account's USD 10 billing budget alert plus
-  that WAF rule; the Worker's own bindings are not part of the bound.
+- **Spend bound, restated.** `limits.cpu_ms` plus the account's billing alerts plus that WAF rule;
+  the Worker's own bindings are not part of the bound. The alerts, verified in the dashboard on
+  2026-11-17, both enabled and emailing the owner: "Default budget alert (auto-created)" at USD 10,
+  and a usage-based billing alert on Workers Standard Requests above 5,000,000. They notify; neither
+  stops spending.
 - **Shared account caps.** The Cloudflare account also holds another scripted Worker, `sunostats`
   (an unrelated project), which shares the Workers Paid account caps. ADR 0019's "no `main`" law
   concerns the two ArchLang site Workers only.

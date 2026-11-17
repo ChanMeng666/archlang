@@ -1626,15 +1626,21 @@ settings were set to install `@chanmeng666/archlang-mcp` and run `archlang-mcp` 
 The score badge is on the entry in #14383 and the maintainer was told there. On 2026-11-06 #14383
 was rebased and is conflict-free. Left: the merge.
 
-### O.3 · How the Claude plugin directory learns of a new version is unverified — `todo`
+### O.3 · Whether the Claude plugin directory publishes later versions after approval is unobserved — `todo`
 
-The plugin was submitted from `plugins/archlang/` on 2026-10-10 and is in review. The directory
-offered a "push updates" webhook, which was dismissed and is not set up. Whether the listing follows
-`main` without it, or needs a resubmission after each release, has not been observed; settle it at
-the first release after the listing is approved. The directory refused 1.63.0 on 2026-11-17 for its
-local `npx` server and the Cursor rule (both accepted only from Verified organizations); the plugin
-now declares the hosted server and the Cursor plugin has its own folder (`docs/seo.md` section 8).
-It may ask for a privacy-policy page. The OpenAI plugin directory
+The plugin was submitted from `plugins/archlang/` on 2026-10-10. The directory offered a "push
+updates" webhook, which was dismissed and is not set up. Observed in the portal on 2026-11-17, for
+the review stage: the directory follows `main` without it and needs no resubmission. Every version
+in its list is labelled "via scheduled check", new `main` commits appeared roughly every 7 hours,
+and whether each commit between two checks gets its own version was not checked; "Check for
+new commits" pressed right after the #921 merge did not surface `573b7fe`, the next scheduled check did. The
+directory refused 1.63.0 at `2c9a8d7` that day for its local `npx` server and the Cursor rule (both
+accepted only from Verified organizations); #921 moved the plugin to the hosted server and the
+Cursor plugin to its own folder, and `573b7fe` passed the security scan with notes only and waits
+for a reviewer (`docs/seo.md` section 8). Still unobserved: whether, once the listing is approved,
+later versions are published without a new review or a resubmission; settle it at the first
+release after approval. The listing reads `privacyPolicyUrl`; its manifest check calls the field
+unrecognized, a note, not a finding. The OpenAI plugin directory
 needs a privacy-policy page and a terms page too; both now exist, at https://archlang.uk/privacy and
 https://archlang.uk/terms. The OpenAI submission's state is O.7 and `docs/seo.md` section 8.
 
