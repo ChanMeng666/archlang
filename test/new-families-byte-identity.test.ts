@@ -16,14 +16,14 @@
  *
  * ## What each row is for
  *
- * - `examples/*.arch` — the shipped corpus; none of it names a new word (the first case below
- *   holds that premise, over every `.arch` and Markdown file the repository ships, so the law
- *   cannot pass because a plan stopped being in its corpus; "ships" means tracked by git, or
- *   untracked and not ignored, `test/helpers/shipped-sources.ts`, so gitignored local output is
- *   never read). The one exception is the closed list `SHOWCASE_PLANS`
- *   (`test/helpers/showcase-plans.ts`, card RM8.5): plans under `examples/showcase/` that show the new families on purpose. They are never rows (the rows are
- *   the top-level examples), so the law's statement, rows and baseline are unchanged; only the
- *   premise's coverage narrows, by exactly that list.
+ * - `examples/*.arch` — the shipped corpus; none of it names a new word (the first case below holds
+ *   that premise, over every `.arch` and Markdown file the repository ships, so the law cannot pass
+ *   because a plan stopped being in its corpus; "ships" means tracked by git, or untracked and not
+ *   ignored, `test/helpers/shipped-sources.ts`, so gitignored local output is never read). The one
+ *   exception is the closed list `SHOWCASE_PLANS` (`test/helpers/showcase-plans.ts`, card RM8.5):
+ *   plans under `examples/showcase/` that show the new families on purpose. They are never rows
+ *   (the rows are the top-level examples), so the law's statement, rows and baseline are unchanged;
+ *   only the premise's coverage narrows, by exactly that list.
  * - `inline:families-before-legend` — every family that existed before the tranche on one sheet,
  *   with its legend: the legend lists fixture rows in `FIXTURE_FAMILIES` order, so a family slotted
  *   in rather than appended would move this row.
@@ -205,6 +205,17 @@ suite("visual-assets families — byte-identity law", () => {
       if (words.test(readFileSync(join(ROOT, f), "utf8"))) users.push(f);
     }
     expect(users).toEqual([]);
+  });
+
+  it("the premise scan refuses a missing folder, so a renamed entry cannot make it vacuous", () => {
+    // `git ls-files` lists nothing for a path that does not exist; the disk walk threw ENOENT.
+    expect(() => shippedSources(ROOT, "no-such-dir")).toThrow(/no-such-dir is not a folder/);
+    expect(() => shippedSources(ROOT, "README.md"), "a file is not a folder").toThrow(/is not a folder/);
+    // A trailing separator names the same folder.
+    const examples = shippedSources(ROOT, "examples");
+    expect(examples.length).toBeGreaterThan(0);
+    expect(shippedSources(ROOT, "examples/")).toEqual(examples);
+    expect(shippedSources(ROOT, "examples\\")).toEqual(examples);
   });
 
   it("the table pins every row the law reads, in order", () => {

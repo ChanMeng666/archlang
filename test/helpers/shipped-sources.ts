@@ -10,7 +10,7 @@
  * while a new plan that is not `git add`ed yet is still caught before it is pushed.
  */
 import { execFileSync } from "node:child_process";
-import { existsSync } from "node:fs";
+import { existsSync, statSync } from "node:fs";
 import { join } from "node:path";
 
 /** The source kinds a plan can ship in: a plan file, a Markdown fence, or a string in code or data. */
@@ -26,8 +26,17 @@ const SKIPPED = (seg: string): boolean =>
  * path with a segment below `dir` (the file's own name included) that is `node_modules`, `dist`,
  * `public` or starts with `.`, and a tracked file deleted from the working tree (which the disk
  * walk never saw either).
+ *
+ * `dir` must be an existing folder: a missing one throws, as the disk walk's `readdirSync` did
+ * (ENOENT), because `git ls-files` would list nothing and the premise would pass vacuously for it.
+ * A trailing `/` or `\` on `dir` is ignored.
  */
-export function shippedSources(root: string, dir: string): string[] {
+export function shippedSources(root: string, inDir: string): string[] {
+  const dir = inDir.replace(/[\\/]+$/, "").replace(/\\/g, "/");
+  const abs = join(root, dir);
+  if (!existsSync(abs) || !statSync(abs).isDirectory()) {
+    throw new Error(`shippedSources: ${dir} is not a folder under ${root}; a premise scan over it would read nothing`);
+  }
   const listed = execFileSync("git", ["ls-files", "-z", "--cached", "--others", "--exclude-standard", "--", dir], {
     cwd: root,
     encoding: "utf8",
