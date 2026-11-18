@@ -83,6 +83,19 @@ RM1.1a 也在本场做完（纯测量，没有 PR，见 §6）。
 - **开着的 issue：** #544、#680、#681、#682、#684。#544（剖切线与楼板基准）：RM6.1 在 #721 里交付了，说明已贴在 #532；关 #544 留给所有者或下一场（那是所有者在 #532 里的线程，代理也可以关）。
 - 移除任何 worktree 之前，先用 `[System.IO.Directory]::Delete(<junction>)` 解开其中的 `node_modules` junction（不递归），再 `git worktree remove`（`docs/agents/gotchas.md` § Tooling & process）；被正在运行的会话锁定的 worktree 拒绝 `git worktree remove`（`docs/agents/orchestration.md`）。
 
+### 1.2a 已发布（1.64.0，2026-11-18；协调者用 `npm view`、`gh`、`curl` 和门户页面读）
+
+RM-D66（`README.md` §6.29）。版本号 PR 是 #953（合并提交 `27bcead8`；`main` 的 push run 44212688197 全绿），tag `v1.64.0` 打在这个提交上，`release.yml` run 44218917453 各 job 全部 success。
+- **npm：** 核心 1.64.0（有 SLSA provenance）、`archlang-mcp` 0.2.47；`archlang-3d` 0.9.0、`arch-plan` 0.1.2、`font-cjk` 1.0.0 不变。
+- **jsDelivr：** `@1.64.0/+esm` 返回 200。
+- **MCP 注册表：** latest 是 0.2.47，带托管 remote，以及 #926 加的 title 和 icons。
+- **VS Code：** Marketplace 0.52.0（经 Chrome 上传，vspackage 返回 200）；Open VSX 0.52.0（`publish-openvsx.yml` 在 tag 上运行，成功）。
+- **ClawHub：** `archlang@1.64.0` 已提交，等安全扫描。
+- **OpenAI 目录：** 1.64.0 已发布。代理从 ZIP 建草稿，5 个技能的检查全部通过，没有 finding；按 RM-D44 由代理勾选六项声明、提交，因为是已批准插件的更新，直接成为"可发布"，随即发布，取代 1.63.0。
+- **Docker：** 目录条目（docker/mcp-registry#6704，仍未合并）的 `source.commit` 已移到 `27bcead8`。
+
+发布 PR 第一次 CI 红过一次：Playground E2E engines 在 `apt` 装浏览器依赖时超时，与代码无关，重跑后通过。AF3（#951）在 tag 之后合并，所以进 1.65.0；它第一次 CI 的 release-compat 红，是因为 npm 的传播延迟：失败的 `npm pack` 在核心发布后约 69 秒运行，tarball 还取不到。重跑通过。
+
 ### 1.2 已发布（1.63.0，2026-11-17；协调者用 `npm view`、`gh`、`curl`、门户页面读）
 
 **发布结果：** 所有者 2026-11-17 把是否发布交给协调者（"请你做出最佳决策，然后实施"，RM-D59，`README.md` §6.26）。起因：一封外部邮件报告 `archlang-3d` 0.8.1 在没装浏览器时每次留下约 600 KB 临时目录，#918 修了（`renderReplay`/`renderStill` 无论怎样结束都删目录，删除带重试、失败不覆盖结果）。`archlang-3d` 只随核心 `v*` tag 发布，且它的 `[Unreleased]` 已有 `./glb` 新入口，所以实际决定是核心 1.63.0 + `archlang-3d` 0.9.0（次版本，不是 0.8.2）。切点 `main` 的 `5b251cfc`（1.62.0 之后的全部，68 次合并）。版本号 PR #920（发布前按评审改了发布说明的措辞：补上步数计费的行为变化、`E_FURN_SIZE` 只对省略 `size` 而言），合并提交 `5b4d13bf`；它的 push CI（run 43982483605）含 Node 18、Node 20、Windows 全绿之后推 tag `v1.63.0`；`release.yml` run 43983747782 全部成功。发布期间请 archlang-8c 会话暂停合入 `main`，tag 之后已通知。
