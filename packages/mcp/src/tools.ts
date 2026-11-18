@@ -72,6 +72,15 @@ const newerCore = coreNamespace as Partial<
   Pick<typeof coreNamespace, "PNG_PREVIEW_WIDTH" | "isOptionalDepError" | "diagnosticRule">
 >;
 
+/**
+ * The `overprint` option of the installed core's `diagnosticToJson` (card AL6), `unknown` on a core
+ * whose options have none. Typed off the option rather than by `Pick`ing the export, so this module
+ * also typechecks against a core older than the export (a worktree whose core resolves to an older
+ * build), as it must load on one.
+ */
+type OverprintOption = NonNullable<Parameters<typeof diagnosticToJson>[2]> extends { overprint?: infer F } ? F : never;
+const diagnosticOverprint = (coreNamespace as unknown as { diagnosticOverprint?: OverprintOption }).diagnosticOverprint;
+
 /** What the `link` tool reports when the installed core cannot provide the `./link` subpath. */
 export interface LinkUnavailable {
   ok: false;
@@ -161,10 +170,12 @@ const errorCount = (ds: Diagnostic[]): number => ds.filter((d) => d.severity ===
 const toJson = (source: string, ds: Diagnostic[]) => ds.map((d) => diagnosticToJson(source, d));
 /**
  * `lint` and `validate` attach each warning's ruleset number and its provenance (`rule`, card
- * RM1.6b), read from the diagnostics `lint()` returned in this call. On a core without
- * `diagnosticRule` the option is empty and the warnings carry no `rule`, as before.
+ * RM1.6b), and each `W_ANNOTATION_OVERLAP` warning what it says is printed over what (`overprint`,
+ * card AL6), read from the diagnostics `lint()` returned in this call. On a core without
+ * `diagnosticRule` or `diagnosticOverprint` that option is empty and the warnings carry no `rule`
+ * or no `overprint`, as before.
  */
-const WITH_RULE = { rule: newerCore.diagnosticRule };
+const WITH_RULE = { rule: newerCore.diagnosticRule, overprint: diagnosticOverprint };
 const toJsonWithRule = (source: string, ds: Diagnostic[]) => ds.map((d) => diagnosticToJson(source, d, WITH_RULE));
 
 /** The agent-facing projection of one intent violation. The predicate objects are dropped

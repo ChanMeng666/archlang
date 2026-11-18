@@ -18,6 +18,7 @@ import { unknownThemeDiagnostic } from "../pipeline.js";
 import type { Diagnostic } from "../types.js";
 import type { World } from "../world.js";
 import type { LintCoverage } from "./coverage.js";
+import { diagnosticOverprint } from "./overprint-ref.js";
 import { diagnosticRule } from "./provenance.js";
 
 /**
@@ -77,7 +78,8 @@ export interface LintReport {
   /** No error, and with `strict` no warning either: what the CLI's exit code says. */
   ok: boolean;
   strict: boolean;
-  /** Each diagnostic as `diagnosticToJson` writes it, with its ruleset number (`rule`, RM1.6b). */
+  /** Each diagnostic as `diagnosticToJson` writes it, with its ruleset number (`rule`, RM1.6b)
+   *  and, on a `W_ANNOTATION_OVERLAP` warning, what overprints what (`overprint`, AL6). */
   diagnostics: DiagnosticJson[];
   /** Which rule families ran or skipped, and why; absent when the plan did not resolve. */
   coverage?: LintCoverage;
@@ -98,7 +100,9 @@ export function lintReport(source: string, opts: LintReportOptions & { strict?: 
     summary: diagnosticsSummary(diags),
     ok: e === 0 && (!strict || w === 0),
     strict,
-    diagnostics: diags.map((d) => diagnosticToJson(source, d, { rule: diagnosticRule })),
+    diagnostics: diags.map((d) =>
+      diagnosticToJson(source, d, { rule: diagnosticRule, overprint: diagnosticOverprint }),
+    ),
     ...(coverage ? { coverage } : {}),
   };
 }

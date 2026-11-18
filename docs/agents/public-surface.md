@@ -20,7 +20,7 @@ Every module, not only the entry, is in the sibling [`module-map.md`](module-map
 The total counts every name the checker sees as exported, including those pulled in by
 `export type * from "./ast.js"`; a count of the names written in `index.ts`' export statements is lower.
 
-Totals: 650 exports (227 values, 423 types), 412 flagged (74 values).
+Totals: 655 exports (228 values, 427 types), 415 flagged (74 values).
 
 ## `src/algebra/d4.ts`
 
@@ -342,8 +342,12 @@ Totals: 650 exports (227 values, 423 types), 412 flagged (74 values).
 | --- | --- | --- |
 | `DiagnosticJson` | type | `dataset`, `playground` |
 | `DiagnosticJsonOptions` | type | none |
+| `DiagnosticOverprintJson` | type | `test` |
 | `DiagnosticRuleJson` | type | none |
 | `FixSuggestionJson` | type | none |
+| `LabelPart` | type | none |
+| `OverprintItemJson` | type | none |
+| `OverprintKind` | type | none |
 | `RelatedSpanJson` | type | none |
 | `RuleSourceJson` | type | none |
 | `diagnosticToJson` | value | `dataset`, `eval`, `packages/mcp`, `packages/mcp-worker`, `playground`, `src/cli`, `test` |
@@ -716,6 +720,12 @@ Totals: 650 exports (227 values, 423 types), 412 flagged (74 values).
 | `LintFamily` | type | none |
 | `LintSkipReason` | type | none |
 | `LintUnclassifiedRoom` | type | none |
+
+## `src/lint/overprint-ref.ts`
+
+| Export | Kind | In-repo consumers |
+| --- | --- | --- |
+| `diagnosticOverprint` | value | `test` |
 
 ## `src/lint/provenance.ts`
 

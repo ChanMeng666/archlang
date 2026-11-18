@@ -82,6 +82,74 @@ export interface DiagnosticJson {
    * ruleset number drives the diagnostic; never part of `lint()`'s own return value.
    */
   rule?: DiagnosticRuleJson;
+  /**
+   * What a `W_ANNOTATION_OVERLAP` warning says is printed over what (card AL6): the text it is
+   * about and each thing under it, by kind, so a reader can tell a room's own name or area figure
+   * from a figure `dims auto` drew. Present only when the caller asks for it
+   * ({@link DiagnosticJsonOptions.overprint}) and the diagnostic carries one; after `rule`; never
+   * part of `lint()`'s own return value.
+   */
+  overprint?: DiagnosticOverprintJson;
+}
+
+/**
+ * The kinds of text and ink an overprint names (card AL6). A subject is one of the texts:
+ * `room-label` (a room's name and area figure, the one label they make), `furniture-label`, or a
+ * `dims auto` figure (`dim-chain`, a chain's span; `dim-thickness`, the wall-thickness figure;
+ * `dim-radius` and `dim-diameter`, the curve call-outs). What it is printed over may also be a
+ * drawn `symbol` (a piece, a fixture, a stair or a lift), a `wall`'s poché, a `door-swing`, the
+ * `floor-edge` of the subject's own room (the text runs off its floor), the sheet `chrome` (the
+ * north arrow, the scale bar, the title block) or a `leader` line. Some kinds are named for checks
+ * the rule does not make yet: today it reports no `furniture-label`, `chrome` or `leader`, and no
+ * `dims auto` figure under another text.
+ */
+export type OverprintKind =
+  | "room-label"
+  | "furniture-label"
+  | "dim-chain"
+  | "dim-thickness"
+  | "dim-radius"
+  | "dim-diameter"
+  | "symbol"
+  | "wall"
+  | "door-swing"
+  | "floor-edge"
+  | "chrome"
+  | "leader";
+
+/** One of the two texts a room's label is drawn as: its `name`, its `area` figure. */
+export type LabelPart = "name" | "area";
+
+/**
+ * One text or thing an overprint names. `id` is the element's id as `describe()` lists it (a
+ * symbol's, a door's; authored or assigned, and an assigned one such as `desk_15` moves when a
+ * statement is inserted before it, so it identifies the element in this run and is no handle to
+ * edit by: the hint quotes only authored ids); `room` is the id of the room a label belongs to, or,
+ * for a `dims auto` figure, the room it stands in; `text` is the text as the sheet draws it (a
+ * `room-label`'s is the room's name, or its area figure when it has no name). `parts` says which
+ * texts of a room's label are involved, `name` before `area`, each measured on its own: on every
+ * `over` entry of a `room-label` report, the texts of the subject's label that lie over that thing;
+ * on a `room-label` entry of a figure's report, the texts of that label the figure is printed over.
+ * Each key is present only when it applies.
+ */
+export interface OverprintItemJson {
+  kind: OverprintKind;
+  id?: string;
+  room?: string;
+  text?: string;
+  parts?: LabelPart[];
+}
+
+/**
+ * A diagnostic's `overprint`: the text it is about (`subject`, which always has its `text`) and
+ * what that text is printed over (`over`), in the order the rule found them: the drawn symbols,
+ * then for a room's label a wall, the door swings and its floor's edge, and for a `dims auto`
+ * figure the rooms whose labels it covers, one entry per room. A room's warning is about its
+ * label (`room-label`), whichever of its texts overprints; each `over` entry's `parts` says which.
+ */
+export interface DiagnosticOverprintJson {
+  subject: OverprintItemJson & { text: string };
+  over: OverprintItemJson[];
 }
 
 /**
@@ -137,11 +205,18 @@ export interface DiagnosticJsonOptions {
    * posted diagnostic has no reference, and gets no `rule`.
    */
   rule?: (d: Diagnostic) => DiagnosticRuleJson | undefined;
+  /**
+   * Attach `overprint`: pass `diagnosticOverprint`, which reads the detail `lint()` keeps beside
+   * each `W_ANNOTATION_OVERLAP` warning (card AL6). As for `rule`, call it on the diagnostics
+   * `lint()` returned, where it ran.
+   */
+  overprint?: (d: Diagnostic) => DiagnosticOverprintJson | undefined;
 }
 
 /**
  * Project a {@link Diagnostic} into the agent-friendly JSON shape (with `fix`). The two-argument
- * call is the canonical shape; `opts` only appends keys (`rule`, after every other key).
+ * call is the canonical shape; `opts` only appends keys (`rule`, then `overprint`, after every
+ * other key).
  */
 export function diagnosticToJson(source: string, d: Diagnostic, opts?: DiagnosticJsonOptions): DiagnosticJson {
   const out: DiagnosticJson = {} as DiagnosticJson;
@@ -193,5 +268,7 @@ export function diagnosticToJson(source: string, d: Diagnostic, opts?: Diagnosti
     });
   const rule = opts?.rule?.(d);
   if (rule) out.rule = rule;
+  const overprint = opts?.overprint?.(d);
+  if (overprint) out.overprint = overprint;
   return out;
 }

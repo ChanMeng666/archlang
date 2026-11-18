@@ -8,7 +8,7 @@ import { cmdLint, cmdValidate } from "../src/cli/commands-analyze.js";
 import { type CliIo, nodeIo, parseArgs } from "../src/cli/io.js";
 import { diagnosticsSummary, validateSummary } from "../src/cli/summary.js";
 import { ERROR_CODES } from "../src/error-catalog.js";
-import { diagnosticRule, diagnosticToJson, isAuthoringStage, lint } from "../src/index.js";
+import { diagnosticOverprint, diagnosticRule, diagnosticToJson, isAuthoringStage, lint } from "../src/index.js";
 import type { Diagnostic } from "../src/index.js";
 import { validateJsonFiles, withoutSummary } from "./helpers/validate-json-run.js";
 import { runArch } from "./helpers/cli.js";
@@ -135,37 +135,45 @@ describe.each([
 
 describe("the diagnostics are what lint() returns", () => {
   // RM1.6b: `lint --json` opts into `rule` (`diagnosticToJson`'s third argument), the ruleset number
-  // a warning was raised against. Without it every key is the two-argument projection's, in order.
+  // a warning was raised against, and AL6 into `overprint`, what a `W_ANNOTATION_OVERLAP` warning
+  // says is printed over what. Without them every key is the two-argument projection's, in order.
   it("lint --json: every diagnostic equals lint()'s, byte for byte, over the corpus", () => {
     let checked = 0;
     let ruled = 0;
+    let overprinted = 0;
     for (const f of validateJsonFiles()) {
       const j = JSON.parse(runIn(cmdLint, [f, "--json"]).stdout) as { diagnostics: Diagnostic[] };
       // A plan that does not compile reports its errors instead; the library's lint() is silent.
       if (j.diagnostics.some((d) => d.severity === "error")) continue;
       const src = readFileSync(f, "utf8");
       const ds = lint(src);
-      expect(JSON.stringify(j.diagnostics), f).toBe(
-        JSON.stringify(ds.map((d) => diagnosticToJson(src, d, { rule: diagnosticRule }))),
+      expect(JSON.stringify(j.diagnostics), f).toBe(JSON.stringify(ds.map((d) => diagnosticToJson(src, d, WITH))));
+      const without = (j.diagnostics as unknown as Array<Record<string, unknown>>).map(
+        ({ rule: _r, overprint: _o, ...rest }) => rest,
       );
-      const withoutRule = (j.diagnostics as unknown as Array<Record<string, unknown>>).map(
-        ({ rule: _r, ...rest }) => rest,
-      );
-      expect(JSON.stringify(withoutRule), f).toBe(JSON.stringify(ds.map((d) => diagnosticToJson(src, d))));
-      ruled += (j.diagnostics as unknown as Array<Record<string, unknown>>).filter((d) => d.rule !== undefined).length;
+      expect(JSON.stringify(without), f).toBe(JSON.stringify(ds.map((d) => diagnosticToJson(src, d))));
+      const shown = j.diagnostics as unknown as Array<Record<string, unknown>>;
+      ruled += shown.filter((d) => d.rule !== undefined).length;
+      overprinted += shown.filter((d) => d.overprint !== undefined).length;
+      // Only the one code carries it, and it is never on a copy `lint()` did not return.
+      for (const d of shown) if (d.overprint !== undefined) expect(d.code, f).toBe("W_ANNOTATION_OVERLAP");
       checked++;
     }
     expect(checked).toBeGreaterThan(150);
-    // Not vacuous: the corpus raises warnings a ruleset number drives under the default ruleset.
+    // Not vacuous: the corpus raises warnings a ruleset number drives under the default ruleset,
+    // and the annotation-collisions defects raise `W_ANNOTATION_OVERLAP`.
     expect(ruled).toBeGreaterThan(0);
+    expect(overprinted).toBeGreaterThan(0);
   }, 600_000);
 
-  // `validate --json` prints compile()'s diagnostics, then lint()'s, each with its `rule` and a
-  // `stage` appended last (PS7.1). The K1/K3 digest view strips `rule` (`validateDigestView`), so
-  // this is the test that holds it: the lint tail, `stage` aside, is the three-argument projection.
-  it("validate --json: the lint diagnostics equal lint()'s with their rule, then a stage, over the corpus", () => {
+  // `validate --json` prints compile()'s diagnostics, then lint()'s, each with its `rule` (and, on
+  // `W_ANNOTATION_OVERLAP`, its `overprint`) and a `stage` appended last (PS7.1). The K1/K3 digest
+  // view strips `rule` and `overprint` (`validateDigestView`), so this is the test that holds them:
+  // the lint tail, `stage` aside, is the three-argument projection.
+  it("validate --json: the lint diagnostics equal lint()'s with their rule and overprint, then a stage, over the corpus", () => {
     let checked = 0;
     let ruled = 0;
+    let overprinted = 0;
     for (const f of validateJsonFiles()) {
       const j = JSON.parse(runIn(cmdValidate, [f, "--json"]).stdout) as { diagnostics: Record<string, unknown>[] };
       if (j.diagnostics.some((d) => d.severity === "error")) continue;
@@ -177,17 +185,21 @@ describe("the diagnostics are what lint() returns", () => {
         expect(typeof d.stage === "string" && isAuthoringStage(d.stage), `${f}: stage ${String(d.stage)}`).toBe(true);
       }
       const tail = j.diagnostics.slice(j.diagnostics.length - ds.length).map(({ stage: _s, ...rest }) => rest);
-      expect(JSON.stringify(tail), f).toBe(
-        JSON.stringify(ds.map((d) => diagnosticToJson(src, d, { rule: diagnosticRule }))),
-      );
+      expect(JSON.stringify(tail), f).toBe(JSON.stringify(ds.map((d) => diagnosticToJson(src, d, WITH))));
       ruled += tail.filter((d) => d.rule !== undefined && d.severity === "warning").length;
+      overprinted += tail.filter((d) => d.overprint !== undefined).length;
       checked++;
     }
     expect(checked).toBeGreaterThan(150);
-    // Not vacuous: at least one warning carries the ruleset number it was raised against.
+    // Not vacuous: at least one warning carries the ruleset number it was raised against, and at
+    // least one carries an overprint.
     expect(ruled).toBeGreaterThan(0);
+    expect(overprinted).toBeGreaterThan(0);
   }, 600_000);
 });
+
+/** What `lint --json` and `validate --json` attach (RM1.6b, AL6). */
+const WITH = { rule: diagnosticRule, overprint: diagnosticOverprint } as const;
 
 describe("a wide summary and a failing later tier", () => {
   it("heads a 40-code summary with the count, and the head survives the 200-byte cut", () => {

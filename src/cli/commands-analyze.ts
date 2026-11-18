@@ -72,13 +72,16 @@ import { diagnosticRule, type EffectiveRule, effectiveRuleset } from "../lint/pr
 // What `lint` reports for a source, shared with the hosted `POST /check` (card CR10).
 import { lintFindings, withThemeWord } from "../lint/report.js";
 
+// What a `W_ANNOTATION_OVERLAP` warning says is printed over what (card AL6).
+import { diagnosticOverprint } from "../lint/overprint-ref.js";
+
 /**
  * `lint --json` and `validate --json` attach each warning's ruleset number and its provenance
- * (`rule`, card RM1.6b). `report` and `reportWithChecks` read the diagnostics `lint()` returned in
- * this process, so the reference it keeps beside each one is still there. A compile diagnostic
- * has none and gets no `rule`.
+ * (`rule`, card RM1.6b), and to a `W_ANNOTATION_OVERLAP` warning what it says is printed over what
+ * (`overprint`, card AL6). `report` and `reportWithChecks` read the diagnostics `lint()` returned in
+ * this process, so what it keeps beside each one is still there. A compile diagnostic has neither.
  */
-const WITH_RULE = { rule: diagnosticRule } as const;
+const WITH_RULE = { rule: diagnosticRule, overprint: diagnosticOverprint } as const;
 // The zero-dep levenshtein behind every "did you mean" hint the CLI prints.
 import { closest } from "../expr.js";
 import { parse } from "../parser.js";

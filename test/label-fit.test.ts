@@ -383,6 +383,8 @@ const MOVED = [
   // RM8.5's showcase plan (a subdirectory, so the walk reaches it and the example samplers do not).
   "examples/showcase/garden-courtyard.arch",
   "test/fixtures/chain30.arch",
+  // The label-crowding witness: the pass shrinks the label of every room on its north strip (seven).
+  "test/fixtures/dense-office.arch",
   "test/fixtures/star30.arch",
 ];
 
@@ -482,7 +484,7 @@ describe("the order of the source", () => {
   it("holds over the corpus: where the passes before it agree, this one does", () => {
     let held = 0;
     let acted = 0;
-    let before = 0;
+    const before: string[] = [];
     for (const { name, src, world } of corpus()) {
       const other = roomsReversed(src, world);
       if (other === null) continue;
@@ -490,7 +492,9 @@ describe("the order of the source", () => {
       const a = off(() => textsOf(src, world));
       const b = off(() => textsOf(other, world));
       if (JSON.stringify(a) !== JSON.stringify(b)) {
-        before++;
+        before.push(name);
+        // Excused is the pass before this one, never this one's result where it does agree.
+        if (ORDER_EXCUSED[name] === "agrees") expect(textsOf(other, world), name).toEqual(textsOf(src, world));
         continue;
       }
       const after = textsOf(src, world);
@@ -500,10 +504,33 @@ describe("the order of the source", () => {
     }
     expect(held).toBeGreaterThan(200);
     expect(acted).toBeGreaterThan(5);
-    // Few, or the comparison above is excusing what it is meant to hold.
-    expect(before).toBeLessThanOrEqual(4);
+    // Exactly the plans named, or the comparison above is excusing what it is meant to hold: a plan
+    // that newly depends on the order fails here, and so does one that stops depending on it.
+    expect(before.sort()).toEqual(Object.keys(ORDER_EXCUSED).sort());
   }, 300_000);
 });
+
+/**
+ * The corpus plans whose labels `relocateLabels` places differently when the rooms are written in
+ * reverse (it visits groups in element order, as its doc comment says), each with whether this
+ * pass's result then agrees across both orders anyway ("agrees", asserted above) or inherits the
+ * difference ("differs": this pass is order-free only GIVEN what relocation left). Each is a plan
+ * whose names do not fit their rooms; measured by reversing the room lines, as `roomsReversed` does.
+ */
+const ORDER_EXCUSED: Readonly<Record<string, "agrees" | "differs">> = {
+  // Thirty 3 m rooms in series, each with a 2.7 m label: every room's label depends on its neighbours'.
+  "test/fixtures/chain30.arch": "differs",
+  // The label-crowding witness: Store / IT, Kitchenette / Break and Boardroom, a name wider than
+  // its room between them.
+  "test/fixtures/dense-office.arch": "agrees",
+  // A corridor with thirty such rooms off it: all thirty-one labels depend on their neighbours'.
+  "test/fixtures/star30.arch": "differs",
+  // The bathroom's label, off the bathtub, and the hall's land by the order; once fitted they agree.
+  "test/plans/plan-soundness/audits/first-contact-plans/2026-10-24-rerun/2-house.arch": "agrees",
+  // The Staff Room's and the Accessible WC's labels land by the order; the staff room's fitted name
+  // inherits it.
+  "test/plans/plan-soundness/audits/first-contact-plans/2026-10-26-walls-first/6-clinic.arch": "differs",
+};
 
 describe("the count", () => {
   it("shrinks every label of an honest plan of many rooms", () => {

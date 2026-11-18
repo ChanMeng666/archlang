@@ -60,11 +60,18 @@ export { diagnosticToJson } from "./diagnostic-json.js";
 export type {
   DiagnosticJson,
   DiagnosticJsonOptions,
+  DiagnosticOverprintJson,
   DiagnosticRuleJson,
   FixSuggestionJson,
+  LabelPart,
+  OverprintItemJson,
+  OverprintKind,
   RelatedSpanJson,
   RuleSourceJson,
 } from "./diagnostic-json.js";
+// AL6: what a `W_ANNOTATION_OVERLAP` warning says is printed over what, for
+// `diagnosticToJson(source, d, { overprint: diagnosticOverprint })`. Read where `lint()` ran.
+export { diagnosticOverprint } from "./lint/overprint-ref.js";
 // RM1.6b: the ruleset number a lint warning was raised against, with its provenance, for
 // `diagnosticToJson(source, d, { rule: diagnosticRule })`. Read where `lint()` ran. The table's
 // values are `pure`, so a bundle that never calls it (the playground) drops them.

@@ -13,7 +13,7 @@
  *   line exactly as far as it sat under the one-line name. Every node the wrap did not touch
  *   is identical, and every other room's name is the same one-line text; where a neighbour's
  *   taller block makes the relocation place another label differently, that knock-on is
- *   counted (the corpus has none).
+ *   named (the corpus has four, all the label-crowding witness's, each listed with its cause).
  *
  * "Fits its room" is measured here independently of the pass: the text box lies inside the
  * room's ring (`rectInsidePolygon`) and overlaps no wall band grown by the pass's clearance —
@@ -157,6 +157,8 @@ interface Tally {
   knockOns: number;
   /** Wrapped names, `plan: "name" → lines`, for the record. */
   seen: string[];
+  /** The knock-ons, `plan: "name"`, when the caller names them. */
+  knocked?: string[];
 }
 
 /** The law, for one source. */
@@ -183,7 +185,10 @@ function law(name: string, src: string, world: World, t: Tally): void {
         expect(differs({ ...wrapped, at: 0 }, { ...one, at: 0 }), `${name}: ${one.value}`).toBeNull();
         const fa = a.final[ni]!.prim as Text;
         const fb = b.final[ni]!.prim as Text;
-        if (differs(fb.at, fa.at) !== null) t.knockOns++;
+        if (differs(fb.at, fa.at) !== null) {
+          t.knockOns++;
+          t.knocked?.push(`${name}: ${JSON.stringify(one.value)}`);
+        }
         continue;
       }
       any = true;
@@ -247,7 +252,7 @@ function corpus(): { name: string; src: string; world: World }[] {
 
 describe("room-name wrapping against the previous implementation", () => {
   it("the corpus: only names that did not fit moved, and each now fits its room", () => {
-    const t: Tally = { plans: 0, wrapped: 0, knockOns: 0, seen: [] };
+    const t: Tally = { plans: 0, wrapped: 0, knockOns: 0, seen: [], knocked: [] };
     for (const c of corpus()) law(c.name, c.src, c.world, t);
     expect(t.plans).toBeGreaterThan(250);
     // The drawings that move, named — a new one is a finding to list, not a number to bump.
@@ -266,9 +271,30 @@ describe("room-name wrapping against the previous implementation", () => {
       // B3b: the remodel pins its kitchen/living name east of the demolished wall's dashes, where
       // one line would cross them; it wraps like two-bed-hall's.
       'examples/remodel.arch: "Kitchen / Living" → "Kitchen /" / "Living"',
+      // The label-crowding witness, crowded on purpose; each name is wider on one line than its room
+      // is between its walls (asserted above), so each wrap is the rule doing its job:
+      // a 3 m pod room's two words,
+      'test/fixtures/dense-office.arch: "Focus Pods" → "Focus" / "Pods"',
+      // a 3 m meeting room's two words,
+      'test/fixtures/dense-office.arch: "Meeting A" → "Meeting" / "A"',
+      // and the two 1.5 m WCs, whose number goes under the word.
+      'test/fixtures/dense-office.arch: "WC 1" → "WC" / "1"',
+      'test/fixtures/dense-office.arch: "WC 2" → "WC" / "2"',
       'test/recovery-corpus/clinic.arch: "Accessible WC" → "Accessible" / "WC"',
     ]);
-    expect(t.knockOns).toBe(0);
+    // The names a neighbour's wrap moves, named, or a count would excuse a new one. `relocateLabels`
+    // makes each placed label an obstacle for the next, so on the label-crowding witness, whose
+    // north-strip names are wider than their rooms, a wrapped neighbour leaves another name a
+    // different place. Its strip is placed in element order: WC 1 and WC 2 (both wrap), then the
+    // store's, the kitchenette's and the boardroom's names (each moved), Meeting A (wraps), then
+    // Meeting B (moved).
+    expect(t.knocked!.sort()).toEqual([
+      'test/fixtures/dense-office.arch: "Boardroom"',
+      'test/fixtures/dense-office.arch: "Kitchenette / Break"',
+      'test/fixtures/dense-office.arch: "Meeting B"',
+      'test/fixtures/dense-office.arch: "Store / IT"',
+    ]);
+    expect(t.knockOns).toBe(t.knocked!.length);
   }, 600_000);
 
   it("generated plans of narrow walled rooms: the law holds", () => {
