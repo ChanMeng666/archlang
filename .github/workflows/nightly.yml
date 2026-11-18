@@ -172,13 +172,14 @@ jobs:
       - run: npm test
         if: ${{ !(matrix.os == 'ubuntu-latest' && matrix.node == 22) }}
 
-      # The Node 22 ubuntu leg also records per-file durations: download the `test-durations`
-      # artifact and keep it as test/.durations.json (test/.durations.README.md).
+      # The Node 22 ubuntu leg also records per-file durations, import and collect included
+      # (test/durations-reporter.ts): download the `test-durations` artifact and merge it into
+      # test/.durations.json (test/.durations.README.md).
       - name: Test (with the duration report)
         if: ${{ matrix.os == 'ubuntu-latest' && matrix.node == 22 }}
-        run: |
-          npx vitest run --reporter=default --reporter=json --outputFile.json=vitest-report.json
-          node scripts/gen-test-durations.mjs vitest-report.json test-durations.json
+        env:
+          TEST_DURATIONS_OUT: test-durations.json
+        run: npx vitest run --reporter=default --reporter=./test/durations-reporter.ts
 
       - name: Upload the regenerated durations
         if: ${{ always() && matrix.os == 'ubuntu-latest' && matrix.node == 22 }}
@@ -400,6 +401,15 @@ jobs:
           path: ~/.cache/ms-playwright
           key: playwright-${{ runner.os }}-${{ steps.pw.outputs.version }}
 
+      # apt's downloads come from the `apt-debs` cache when it has them (`.github/actions/apt-debs`).
+      - name: Restore apt debs (chromium)
+        uses: ./.github/actions/apt-debs
+        with:
+          mode: restore
+          set: chromium
+          version: ${{ steps.pw.outputs.version }}
+          commands: npx playwright install-deps chromium
+
       # On a cache hit the browser binary is already there but the OS packages it
       # links against are not (they live outside the cached path), so the two
       # cases install different things.
@@ -410,6 +420,12 @@ jobs:
       - name: Install Chromium system deps only (cached browser)
         if: steps.pw-cache.outputs.cache-hit == 'true'
         run: npx playwright install-deps chromium
+
+      - name: Save apt debs (chromium)
+        uses: ./.github/actions/apt-debs
+        with:
+          mode: save
+          set: chromium
 
       - name: Playground — https://playground.archlang.uk
         run: npx playwright test -c playground --grep @prod
@@ -492,6 +508,15 @@ jobs:
           path: ~/.cache/ms-playwright
           key: playwright-all-${{ runner.os }}-${{ steps.pw.outputs.version }}
 
+      # apt's downloads come from the `apt-debs` cache when it has them (`.github/actions/apt-debs`).
+      - name: Restore apt debs (all three engines)
+        uses: ./.github/actions/apt-debs
+        with:
+          mode: restore
+          set: all
+          version: ${{ steps.pw.outputs.version }}
+          commands: npx playwright install-deps chromium firefox webkit
+
       - name: Install browsers (browser + system deps)
         if: steps.pw-cache.outputs.cache-hit != 'true'
         run: npx playwright install --with-deps chromium firefox webkit
@@ -499,6 +524,12 @@ jobs:
       - name: Install system deps only (cached browsers)
         if: steps.pw-cache.outputs.cache-hit == 'true'
         run: npx playwright install-deps chromium firefox webkit
+
+      - name: Save apt debs (all three engines)
+        uses: ./.github/actions/apt-debs
+        with:
+          mode: save
+          set: all
 
       - run: npm run build
 

@@ -5,7 +5,7 @@
 Where the tests of a `src` module are, and what each test file is for. Generated; `npm run check:drift`
 fails when it is stale. How to add a test: `docs/testing.md` § 4.
 
-550 test files in `test/`, 290 `src` modules, 109 modules no test imports.
+552 test files in `test/`, 290 `src` modules, 109 modules no test imports.
 
 ## `src` module → tests that import it
 
@@ -213,6 +213,7 @@ The first sentence of each file's header comment.
 - `test/annotation-collisions.test.ts` — Plan-soundness PS2.12: `W_ANNOTATION_OVERLAP` and `W_TITLE_OVERFLOW` (`src/lint/rules/annotations.ts`).
 - `test/annotation-overprint.test.ts` — Card AL6: `W_ANNOTATION_OVERLAP` says, as data beside the warning, which text is printed over what (`diagnosticOverprint`, `src/lint/overprint-ref.ts`).
 - `test/annotation-small-rooms.test.ts` — #367: a room label in a small room.
+- `test/apt-debs-cache.test.ts` — Every apt install in ci.yml and nightly.yml runs inside an `apt-debs` restore/save pair, and the warm-up workflow installs each set the way its jobs do.
 - `test/arc-radius-exact.test.ts` — arc radius — exact semicircle on a Pythagorean chord; arc radius — the exact tie is built as the exact semicircle, whichever way hypot rounds; arc radius — the…
 - `test/arc-tessellation-error.test.ts` — arc tessellation error statements.
 - `test/arc-window-attribution.test.ts` — PS0.12 — a window on an arc edge is attributed from the shape.
@@ -424,6 +425,7 @@ The first sentence of each file's header comment.
 - `test/garage.test.ts` — `uses garage` — the thirteenth room use, its label vocabulary, and the one advisory rule that reads it.
 - `test/gate-select.test.ts` — `scripts/gate-select.mjs`: what `check:quick` selects beyond the import graph, and how it caps it.
 - `test/gbnf-drift.test.ts` — Drift + acceptance/rejection gate for the generated GBNF grammar (`grammars/archlang.gbnf`, produced by `scripts/gen-gbnf.ts`).
+- `test/gen-test-durations.test.ts` — scripts/gen-test-durations.mjs: merging and median-of-runs into the duration table, and what it refuses.
 - `test/geometry-hostinfo.test.ts` — hostInfoForWalls — equivalence with the original two functions; WallGrid — equivalence with brute-force hostInfoForWalls (T3.7).
 - `test/glyph-chirality.test.ts` — A mirrored `place` draws the mirror-image SYMBOL.
 - `test/glyph-dispatch-table.test.ts` — fixture glyph dispatch is by family.

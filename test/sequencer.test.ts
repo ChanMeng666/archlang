@@ -1,9 +1,11 @@
 /** test/sequencer.ts: LPT shard balancing with a per-file overhead, and its stability property. */
 
 import { execFileSync } from "node:child_process";
-import { readFileSync } from "node:fs";
-import { resolve } from "node:path";
+import { mkdtempSync, readFileSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join, resolve } from "node:path";
 import { describe, expect, it } from "vitest";
+import DurationsReporter, { durationsOf, type FileTiming, fileSeconds } from "./durations-reporter.js";
 import DurationSequencer, {
   assignShards,
   type Durations,
@@ -12,6 +14,7 @@ import DurationSequencer, {
   medianOf,
   readDurations,
   shardCosts,
+  startOrder,
 } from "./sequencer.js";
 
 const ROOT = resolve(__dirname, "..");
@@ -54,17 +57,17 @@ describe("assignShards", () => {
     for (const s of shards) expect(s.filter((p) => p.startsWith("zero-")).length).toBeGreaterThanOrEqual(30);
   });
 
-  it("on the real table: a partition, files recorded at 0 s in every shard, loads within one file's cost", () => {
-    const zeros = SUITE.filter((p) => TABLE[p] === 0);
-    expect(zeros.length).toBeGreaterThan(0);
+  it("on the real table: a partition, the lightest files in every shard, loads within the last file's cost", () => {
+    // TP6's files recorded at 0 s now record their collect time; the lightest ones must still spread.
+    const isLight = (p: string) => p in TABLE && TABLE[p]! <= 0.5;
+    const zeros = SUITE.filter(isLight);
+    expect(zeros.length).toBeGreaterThan(20);
     // Every file counted as the sequencer counts it, the files the table lacks at its median.
     const cost = (p: string) => fileCost(p in TABLE ? TABLE[p]! : medianOf(TABLE));
-    const largest = Math.max(...SUITE.map(cost));
     for (const n of [3, 5, 7]) {
       const shards = assignShards(SUITE, TABLE, n);
       expect(isPartition(shards, SUITE), `N=${n}`).toBe(true);
-      for (const s of shards)
-        expect(s.filter((p) => TABLE[p] === 0).length).toBeGreaterThanOrEqual(Math.floor(zeros.length / n / 2));
+      for (const s of shards) expect(s.filter(isLight).length).toBeGreaterThanOrEqual(Math.floor(zeros.length / n / 2));
       const costs = shardCosts(shards, TABLE);
       expect(
         costs.reduce((a, b) => a + b, 0),
@@ -73,8 +76,13 @@ describe("assignShards", () => {
         SUITE.reduce((a, p) => a + cost(p), 0),
         6,
       );
-      // Greedy-to-lightest, both passes: the heaviest shard was the lightest when it took its last file.
-      expect(Math.max(...costs) - Math.min(...costs), `N=${n}`).toBeLessThanOrEqual(largest);
+      // Greedy-to-lightest, both passes: the heaviest shard was the lightest when it took its last file, so
+      // no shard is lighter than it by more than that file (a light one, the files going longest first).
+      const heaviest = costs.indexOf(Math.max(...costs));
+      const last = shards[heaviest]!.at(-1)!;
+      expect(Math.max(...costs) - Math.min(...costs), `N=${n}`).toBeLessThanOrEqual(cost(last) + 1e-9);
+      // And a balance alarm: a file outweighing a shard's share, or a broken pass, shows here first.
+      expect(Math.max(...costs) / Math.min(...costs), `N=${n}`).toBeLessThan(1.05);
     }
   });
 
@@ -170,6 +178,83 @@ describe("ci.yml's vitest shard jobs", () => {
       for (const m of b.matchAll(/if: matrix\.shard == (\d+)/g)) expect(Number(m[1]), id).toBe(n);
     }
   });
+
+  it("the Node 22 shards and nightly's duration leg record with test/durations-reporter.ts, never a JSON report", () => {
+    const reporter = "--reporter=./test/durations-reporter.ts";
+    const node22 = blocks.find((b) => b.startsWith("  node-22-tests:"));
+    expect(node22).toContain(reporter);
+    // Naming reporters drops vitest's own `github-actions` one, so the shards name it.
+    expect(node22).toContain("--reporter=github-actions");
+    const out = ["test-durations-$", "{{ matrix.shard }}.json"].join("");
+    expect(node22).toContain(`TEST_DURATIONS_OUT: ${out}`);
+    expect(node22).toContain(`path: ${out}`);
+    const nightly = readFileSync(resolve(ROOT, ".github/workflows/nightly.yml"), "utf8").replace(/\r\n/g, "\n");
+    const at = nightly.indexOf("- name: Test (with the duration report)");
+    expect(at).toBeGreaterThan(0);
+    const step = nightly.slice(at, nightly.indexOf("\n      - ", at));
+    expect(step).toContain(reporter);
+    expect(step).toContain("TEST_DURATIONS_OUT: test-durations.json");
+    expect(step).not.toContain("--reporter=json");
+  });
+});
+
+describe("test/durations-reporter.ts", () => {
+  const file = (over: Partial<FileTiming>): FileTiming => ({
+    filepath: join(ROOT, "test", "x.test.ts"),
+    prepareDuration: 300,
+    environmentLoad: 20,
+    setupDuration: 80,
+    collectDuration: 4_000,
+    result: { duration: 1_550 },
+    ...over,
+  });
+
+  it("counts prepare, environment, setup, collect and the run, in seconds to 0.1", () => {
+    expect(fileSeconds(file({}))).toBe(6);
+    expect(fileSeconds(file({ collectDuration: 4_040 }))).toBe(6);
+    expect(fileSeconds(file({ collectDuration: 4_140 }))).toBe(6.1);
+    // Collect alone is a file's cost when it has no tests to run.
+    expect(
+      fileSeconds(
+        file({ prepareDuration: undefined, environmentLoad: undefined, setupDuration: 0, result: undefined }),
+      ),
+    ).toBe(4);
+    // A field that is missing, negative or not finite counts 0.
+    expect(fileSeconds(file({ prepareDuration: -5, environmentLoad: Number.NaN, result: {} }))).toBe(4.1);
+  });
+
+  it("gives no row to a file that never finished collecting, or one vitest did not run", () => {
+    expect(fileSeconds(file({ collectDuration: undefined }))).toBeUndefined();
+    expect(fileSeconds(file({ collectDuration: Number.POSITIVE_INFINITY }))).toBeUndefined();
+    expect(fileSeconds(file({ local: true }))).toBeUndefined();
+  });
+
+  it("keys rows by the repo-relative path with `/`, sorted, the table's format", () => {
+    const files = [
+      file({ filepath: join(ROOT, "test", "b.test.ts") }),
+      file({ filepath: join(ROOT, "packages", "mcp", "test", "a.test.ts"), collectDuration: 1_050 }),
+      file({ filepath: join(ROOT, "test", "broken.test.ts"), collectDuration: undefined }),
+    ];
+    const table = durationsOf(files, ROOT);
+    expect(Object.keys(table)).toEqual(["packages/mcp/test/a.test.ts", "test/b.test.ts"]);
+    expect(table).toEqual({ "packages/mcp/test/a.test.ts": 3, "test/b.test.ts": 6 });
+  });
+
+  it("writes the map to TEST_DURATIONS_OUT, relative to the run's root", () => {
+    const dir = mkdtempSync(join(tmpdir(), "durations-reporter-"));
+    const before = process.env.TEST_DURATIONS_OUT;
+    try {
+      process.env.TEST_DURATIONS_OUT = join(dir, "out.json");
+      const r = new DurationsReporter();
+      r.onInit({ config: { root: ROOT } } as never);
+      r.onFinished([file({ filepath: join(ROOT, "test", "y.test.ts") })] as never);
+      expect(JSON.parse(readFileSync(join(dir, "out.json"), "utf8"))).toEqual({ "test/y.test.ts": 6 });
+    } finally {
+      if (before === undefined) delete process.env.TEST_DURATIONS_OUT;
+      else process.env.TEST_DURATIONS_OUT = before;
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
 });
 
 describe("DurationSequencer.shard()", () => {
@@ -187,5 +272,42 @@ describe("DurationSequencer.shard()", () => {
       expect(seen.length, `N=${count}`).toBe(files.length);
       expect(new Set(seen).size, `N=${count}`).toBe(files.length);
     }
+  });
+});
+
+describe("startOrder and DurationSequencer.sort()", () => {
+  it("starts the longest recorded file first, a file the table lacks at its median, ties by path", () => {
+    const table: Durations = { "a.test.ts": 1, "b.test.ts": 9, "c.test.ts": 3, "d.test.ts": 3, "e.test.ts": 5 };
+    // Median 3: the unrecorded `z` ties with c and d and sorts after them by path.
+    expect(
+      startOrder(["z.test.ts", "d.test.ts", "a.test.ts", "c.test.ts", "e.test.ts", "b.test.ts", "a.test.ts"], table),
+    ).toEqual(["b.test.ts", "e.test.ts", "c.test.ts", "d.test.ts", "z.test.ts", "a.test.ts"]);
+  });
+
+  it("shard() then sort(), as vitest calls them: each index runs its own files, in startOrder", async () => {
+    const files = SUITE.map((p) => ({ moduleId: resolve(ROOT, p) }));
+    const rel = (l: { moduleId: string }[]) => l.map((f) => f.moduleId.slice(ROOT.length + 1).replace(/\\/g, "/"));
+    const shards = assignShards(SUITE, TABLE, 7);
+    const seen: string[] = [];
+    for (let index = 1; index <= 7; index++) {
+      const self = { ctx: { config: { root: ROOT, shard: { index, count: 7 } } } };
+      const mine = await DurationSequencer.prototype.shard.call(self as never, files as never);
+      const got = rel((await DurationSequencer.prototype.sort.call(self as never, mine)) as { moduleId: string }[]);
+      expect(got, `index ${index}`).toEqual(startOrder(shards[index - 1]!, TABLE));
+      seen.push(...got);
+    }
+    expect(seen.sort()).toEqual([...SUITE].sort());
+  });
+
+  it("without --shard leaves the order to vitest's default", async () => {
+    const files = ["test/b.test.ts", "test/a.test.ts"].map((p) => ({
+      moduleId: resolve(ROOT, p),
+      project: { name: "" },
+    }));
+    // No cached results or stats: vitest's default keeps the input order.
+    const cache = { getFileTestResults: () => undefined, getFileStats: () => undefined };
+    const self = { ctx: { config: { root: ROOT }, cache } };
+    const got = (await DurationSequencer.prototype.sort.call(self as never, files as never)) as { moduleId: string }[];
+    expect(got.map((f) => f.moduleId)).toEqual(files.map((f) => f.moduleId));
   });
 });

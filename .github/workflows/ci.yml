@@ -385,8 +385,26 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      # Each shard also writes its files' seconds, import and collect included
+      # (test/durations-reporter.ts), uploaded as `test-durations-<shard>`: the seven merge into
+      # test/.durations.json (test/.durations.README.md). Naming reporters drops the
+      # `github-actions` one vitest adds by itself on Actions, so it is named too.
       - name: Test
-        run: npx vitest run --shard=${{ matrix.shard }}/7
+        env:
+          TEST_DURATIONS_OUT: test-durations-${{ matrix.shard }}.json
+        run: npx vitest run --shard=${{ matrix.shard }}/7 --reporter=default --reporter=github-actions --reporter=./test/durations-reporter.ts
+
+      # Lenient: the durations are a by-product, so an artifact-service error never fails a shard.
+      - name: Upload the shard's per-file durations
+        if: always()
+        continue-on-error: true
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: test-durations-${{ matrix.shard }}
+          path: test-durations-${{ matrix.shard }}.json
+          if-no-files-found: ignore
+          retention-days: 14
+          overwrite: true
 
   # A PR's CHANGELOG lines land under `## [Unreleased]` and it deletes no released line; a release
   # PR (it adds `## [x.y.z]`) is exempt. Runs on record-only PRs too: CHANGELOG.md is a record. The
@@ -882,13 +900,23 @@ jobs:
             ~/.cache/ms-playwright/ffmpeg-*
           key: playwright-chromium-${{ runner.os }}-${{ steps.pw.outputs.version }}
 
+      # apt's downloads come from the `apt-debs` cache when it has them (`.github/actions/apt-debs`).
+      - name: Restore apt debs (chromium)
+        if: env.FULL_CI == 'true'
+        uses: ./.github/actions/apt-debs
+        with:
+          mode: restore
+          set: chromium
+          version: ${{ steps.pw.outputs.version }}
+          commands: npx playwright install-deps chromium
+
       # On a cache hit the browser binary is already there but the OS packages it
       # links against are not (they live outside the cached path), so the two
       # cases install different things. The cache-hit step is NOT skippable: on
       # ubuntu-latest it installs nine packages, mostly fonts (ipafont-gothic,
       # freefont, unifont, wqy-zenhei, xfonts-*) the image lacks, and the specs
-      # measure laid-out text (boundingBox). When it takes 10+ minutes that is the
-      # Azure apt mirror serving those debs slowly, not a cache miss.
+      # measure laid-out text (boundingBox). The mirror has served them at ~130 kB/s
+      # (10+ minutes), so the apt-debs steps around them cache the debs themselves.
       - name: Install Chromium (browser + system deps)
         if: env.FULL_CI == 'true' && steps.pw-cache.outputs.cache-hit != 'true'
         run: npx playwright install --with-deps chromium
@@ -896,6 +924,13 @@ jobs:
       - name: Install Chromium system deps only (cached browser)
         if: env.FULL_CI == 'true' && steps.pw-cache.outputs.cache-hit == 'true'
         run: npx playwright install-deps chromium
+
+      - name: Save apt debs (chromium)
+        if: env.FULL_CI == 'true'
+        uses: ./.github/actions/apt-debs
+        with:
+          mode: save
+          set: chromium
 
       - name: Run E2E specs
         if: env.FULL_CI == 'true'
@@ -986,6 +1021,16 @@ jobs:
             ~/.cache/ms-playwright/webkit-*
           key: playwright-engines-${{ runner.os }}-${{ steps.pw.outputs.version }}
 
+      # apt's downloads come from the `apt-debs` cache when it has them (`.github/actions/apt-debs`).
+      - name: Restore apt debs (engines)
+        if: env.FULL_CI == 'true'
+        uses: ./.github/actions/apt-debs
+        with:
+          mode: restore
+          set: engines
+          version: ${{ steps.pw.outputs.version }}
+          commands: npx playwright install-deps firefox webkit
+
       - name: Install Firefox and WebKit (browsers + system deps)
         if: env.FULL_CI == 'true' && steps.pw-cache-engines.outputs.cache-hit != 'true'
         run: npx playwright install --with-deps firefox webkit
@@ -993,6 +1038,13 @@ jobs:
       - name: Install Firefox and WebKit system deps only (cached browsers)
         if: env.FULL_CI == 'true' && steps.pw-cache-engines.outputs.cache-hit == 'true'
         run: npx playwright install-deps firefox webkit
+
+      - name: Save apt debs (engines)
+        if: env.FULL_CI == 'true'
+        uses: ./.github/actions/apt-debs
+        with:
+          mode: save
+          set: engines
 
       # Its own report and results folders (the ones .gitignore names), as when both runs shared a
       # job: a local run of both keeps Chromium's report and traces.
@@ -1121,6 +1173,16 @@ jobs:
           path: ${{ env.PLAYWRIGHT_BROWSERS_PATH }}
           key: playwright-core-${{ runner.os }}-${{ steps.pw.outputs.version }}
 
+      # apt's downloads come from the `apt-debs` cache when it has them (`.github/actions/apt-debs`).
+      - name: Restore apt debs (Chromium + ffmpeg)
+        if: env.FULL_CI == 'true'
+        uses: ./.github/actions/apt-debs
+        with:
+          mode: restore
+          set: chromium-ffmpeg
+          version: ${{ steps.pw.outputs.version }}
+          commands: npx playwright-core install-deps chromium && (command -v ffmpeg || (sudo apt-get update && sudo apt-get install -y --no-install-recommends ffmpeg))
+
       # The pixel baseline pins only text-free frames, so no font packages are needed; the
       # browser's own shared libraries still are, and they live outside the cached path.
       - name: Install Chromium (browser + system deps)
@@ -1135,6 +1197,13 @@ jobs:
       - name: Install ffmpeg
         if: env.FULL_CI == 'true'
         run: command -v ffmpeg || (sudo apt-get update && sudo apt-get install -y --no-install-recommends ffmpeg)
+
+      - name: Save apt debs (Chromium + ffmpeg)
+        if: env.FULL_CI == 'true'
+        uses: ./.github/actions/apt-debs
+        with:
+          mode: save
+          set: chromium-ffmpeg
 
       - name: Run check:3d (${{ matrix.pass }} pass)
         if: env.FULL_CI == 'true'
@@ -1262,13 +1331,23 @@ jobs:
           path: ~/.cache/ms-playwright
           key: playwright-${{ runner.os }}-${{ steps.pw.outputs.version }}
 
+      # apt's downloads come from the `apt-debs` cache when it has them (`.github/actions/apt-debs`).
+      - name: Restore apt debs (chromium)
+        if: env.FULL_CI == 'true'
+        uses: ./.github/actions/apt-debs
+        with:
+          mode: restore
+          set: chromium
+          version: ${{ steps.pw.outputs.version }}
+          commands: npx playwright install-deps chromium
+
       # On a cache hit the browser binary is already there but the OS packages it
       # links against are not (they live outside the cached path), so the two
       # cases install different things. The cache-hit step is NOT skippable: on
       # ubuntu-latest it installs nine packages, mostly fonts (ipafont-gothic,
       # freefont, unifont, wqy-zenhei, xfonts-*) the image lacks, and the specs
-      # measure laid-out text (boundingBox). When it takes 10+ minutes that is the
-      # Azure apt mirror serving those debs slowly, not a cache miss.
+      # measure laid-out text (boundingBox). The mirror has served them at ~130 kB/s
+      # (10+ minutes), so the apt-debs steps around them cache the debs themselves.
       - name: Install Chromium (browser + system deps)
         if: env.FULL_CI == 'true' && steps.pw-cache.outputs.cache-hit != 'true'
         run: npx playwright install --with-deps chromium
@@ -1276,6 +1355,13 @@ jobs:
       - name: Install Chromium system deps only (cached browser)
         if: env.FULL_CI == 'true' && steps.pw-cache.outputs.cache-hit == 'true'
         run: npx playwright install-deps chromium
+
+      - name: Save apt debs (chromium)
+        if: env.FULL_CI == 'true'
+        uses: ./.github/actions/apt-debs
+        with:
+          mode: save
+          set: chromium
 
       - name: Run E2E specs
         if: env.FULL_CI == 'true'
