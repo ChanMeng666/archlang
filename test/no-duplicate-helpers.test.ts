@@ -9,11 +9,16 @@
  * `worldFor`, calls `createHash("sha256")` or lists the examples directory itself, unless it is on
  * the allow-list below WITH a reason. The list only shrinks: an entry whose file no longer matches
  * its rule fails too, so delete it.
+ *
+ * Cost: the `runner` rule is two lookaheads, anchored with `^`. Unanchored, a file without a match was
+ * retried at every offset, each lookahead scanning to the end: quadratic in the file's size, 47.5 s on
+ * the 20 largest test files against 0.00 s anchored, the same verdict on all 729. Run while vitest
+ * collected the file, it made this file 54-163 s of collect on CI. The scan runs in `beforeAll`.
  */
 
 import { execFileSync } from "node:child_process";
 import { readFileSync } from "node:fs";
-import { describe, expect, it } from "vitest";
+import { beforeAll, describe, expect, it } from "vitest";
 
 type Rule = "worldFor" | "sha256" | "runner" | "examplesDir";
 
@@ -31,8 +36,9 @@ const RULES: Record<Rule, { re: RegExp; use: string }> = {
   },
   // A new byte-identity RUNNER: a file that hashes (sha256) and also calls compile(...). Its digest body must be
   // test/helpers/byte-identity-digest.ts (digestWith / allStoreysDigestWith...), run against the old tree by git archive.
+  // Anchored: both lookaheads hold after some offset exactly when they hold after offset 0 (header: Cost).
   runner: {
-    re: new RegExp(`(?=[\\s\\S]*${HASH.source})(?=[\\s\\S]*\\bcompile\\()`),
+    re: new RegExp(`^(?=[\\s\\S]*${HASH.source})(?=[\\s\\S]*\\bcompile\\()`),
     use: "digestWith / allStoreysDigestWithDiagnostics from './helpers/byte-identity-digest.js' (one digest body, never a lookalike)",
   },
   examplesDir: {
@@ -84,15 +90,23 @@ function breaks(file: string): Rule[] {
 }
 
 describe("no new local copy of a test helper", () => {
-  const found = new Map(files.map((f) => [f, breaks(f)] as const));
+  // In beforeAll, not at describe time: describe callbacks run while vitest collects the file.
+  let found = new Map<string, Rule[]>();
+  beforeAll(() => {
+    found = new Map(files.map((f) => [f, breaks(f)] as const));
+  });
 
   it("scans the test files (the guard cannot pass by finding nothing)", () => {
     expect(files.length).toBeGreaterThan(400);
+    expect(found.size).toBe(files.length);
     expect(RULES.worldFor.re.test("const worldFor = (dir: string): World => ({")).toBe(true);
     expect(RULES.sha256.re.test('createHash("sha256").update(x)')).toBe(true);
     expect(RULES.sha256.re.test("createHash('sha256').update(x)")).toBe(true);
     expect(RULES.runner.re.test("createHash('sha256'); const r = compile(src);")).toBe(true);
+    // Either order, on any line: the anchor only fixes where the lookaheads start.
+    expect(RULES.runner.re.test("const r = compile(src);\n\nconst d = createHash('sha256');")).toBe(true);
     expect(RULES.runner.re.test('createHash("sha256")')).toBe(false);
+    expect(RULES.runner.re.source.startsWith("^(?=")).toBe(true);
     expect(RULES.examplesDir.re.test('readdirSync(join(ROOT, "examples"))')).toBe(true);
   });
 
