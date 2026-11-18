@@ -172,15 +172,9 @@ describe("the width a room's text is read at against a symbol", () => {
 
   it("clears the witness's two WCs, which nothing read before", () => {
     const src = readFileSync("test/fixtures/dense-office.arch", "utf8");
-    const over = overSymbols(src);
-    expect(over.filter((o) => o.room === "r_wc1" || o.room === "r_wc2")).toEqual([]);
-    expect([...new Set(over.map((o) => o.value))].sort()).toEqual(["Kitchenette / Break", "Store / IT"]);
-    expect(
-      lint(src)
-        .filter((d) => d.code === OVERLAP)
-        .map((d) => diagnosticOverprint(d)!.subject.text)
-        .sort(),
-    ).toEqual(["Kitchenette / Break", "Store / IT"]);
+    // Its other two names over fixtures are led into the corridor since card AL3b, so none is left.
+    expect(overSymbols(src)).toEqual([]);
+    expect(lint(src).filter((d) => d.code === OVERLAP)).toEqual([]);
   });
 });
 
@@ -205,6 +199,6 @@ describe("over the corpus", () => {
         expect(reported.has(`${o.room}|${o.symbol}`), `${file}: "${o.value}" over ${o.symbol}`).toBe(true);
       }
     }
-    expect(pairs).toBeGreaterThan(10);
+    expect(pairs).toBeGreaterThan(5);
   }, 60_000);
 });

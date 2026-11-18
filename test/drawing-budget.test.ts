@@ -11,7 +11,10 @@
  * (a loose bound refuses real buildings: a 24-storey tower of 200 flats a floor draws 29,352
  * primitives and must compile). So the suite holds it from both sides: for every kind's
  * shapes, every fixture category and every corpus plan the primitives drawn never exceed the
- * estimate, and over the corpus the estimate's primitive part is at most four times them.
+ * estimate, and over the corpus the estimate's primitive part is at most 4.25 times them: four
+ * until card AL3b charged each named, unpinned room the line and dot of a leader, which it draws
+ * only when its label is led off its floor (`examples/remodel.arch`, the loosest, went from 3.99
+ * to 4.01 for its three such rooms).
  */
 import { corpusFiles } from "./helpers/corpus.js";
 import { worldFor } from "./helpers/world.js";
@@ -244,7 +247,7 @@ suite("the estimate is an upper bound on what is drawn", () => {
     expect(sited.drawn).toBeLessThanOrEqual(sited.primitives);
   }, 120_000);
 
-  it("over the corpus: never under what is drawn, never more than four times it, far below the budget", () => {
+  it("over the corpus: never under what is drawn, never more than 4.25 times it, far below the budget", () => {
     let max = 0;
     let n = 0;
     let loosest = 0;
@@ -253,7 +256,7 @@ suite("the estimate is an upper bound on what is drawn", () => {
       expect(m.errors, p).not.toContain("E_DRAWING_LIMIT");
       if (m.drawn === 0) continue; // a plan with an error draws nothing to compare against
       expect(m.drawn, p).toBeLessThanOrEqual(m.primitives);
-      expect(m.primitives, p).toBeLessThanOrEqual(4 * m.drawn);
+      expect(m.primitives, p).toBeLessThanOrEqual(4.25 * m.drawn);
       loosest = Math.max(loosest, m.primitives / m.drawn);
       max = Math.max(max, m.estimate);
       n++;

@@ -1977,6 +1977,20 @@
  * compiler against the branch's on the same sources, moved this plan's SVG alone, and a planted
  * change to the upright label moved exactly the 9 sources that draw one.
  *
+ * Re-measured for AL3b (a room's label no pass can clear is led to clear floor nearby, ADR 0035),
+ * the same 14 rows. The store's and the kitchenette's names, reported over the IT rack and the sink,
+ * now stand in the corridor, each joined to its room by a line and a dot (2 texts and 2 tspans out,
+ * 4 texts, 2 lines and 2 circles in); and the "200" figure, which card AL5 had moved to the south
+ * wall off the kitchenette's name, keeps its first station on the north wall now that the name is
+ * gone from it (its line, two ticks and number moved back). Of `lint()` under both profiles the two
+ * `W_ANNOTATION_OVERLAP` reports are gone and nothing else moved; `describe()`, the diagnostics and
+ * the steps did not move. The fixture's header comment was rewritten at the same byte length, and
+ * the previous branch's compiler gives the old digests on the edited fixture exactly. Put the
+ * previous branch's drawing (every page's SVG and Scene) and its `lint()` back into this branch's
+ * payload and each old digest is reproduced; the drawing alone reproduces none, which is the two
+ * reports. A per-payload sweep of the 734 corpus rows moved this plan and five audit plans under
+ * `test/plans/` (no digest pins them) and nothing else.
+ *
  * Re-measured for AL3w (a room's text is read against a symbol at the wider of its estimate and its
  * ink), the same 14 rows. "WC 1" and "WC 2" were wrapped over their basins: "WC" draws 1.67 em of
  * ink against a 1.24 em estimate, so neither the label fit nor the rule saw the basin under it. Now

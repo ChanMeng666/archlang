@@ -625,8 +625,17 @@ export const room: ElementDef = {
     return r.labelAt ? [r.labelAt.x, r.labelAt.y] : [];
   },
 
-  /** At most 4 primitives (the drawing budget, `MAX_DRAW_UNITS`): its floor (a polygon or a true circle), its `floor` hatch, its name and its area. */
-  drawCost: (resolved) => ((resolved as RRoom).floor ? 4 : 3),
+  /**
+   * At most 6 primitives (the drawing budget, `MAX_DRAW_UNITS`): its floor (a polygon or a true
+   * circle), its `floor` hatch, its name and its area, and, when its label is led off its floor
+   * (card AL3b, `src/label-fit.ts`), the leader's line and dot. Only a named room whose label is not
+   * pinned can be led, so only it is charged the two.
+   */
+  drawCost: (resolved) => {
+    const r = resolved as RRoom;
+    const leader = r.label && r.labelAt === undefined ? 2 : 0;
+    return (r.floor ? 4 : 3) + leader;
+  },
 
   render(resolved, ctx: RenderCtx): SceneNode[] {
     const r = resolved as RRoom;

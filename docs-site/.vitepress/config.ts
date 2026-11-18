@@ -453,7 +453,7 @@ const PAGE_META = [
   [
     "/adr/0035-room-label-leaders",
     "ADR 35 — room label leaders",
-    "Proposed: a room label no pass can clear moves to clear floor nearby with a leader to its room, and label placement no longer depends on source order.",
+    "A room label no pass can clear moves to clear floor nearby, inside the building, with a leader to its room; label placement no longer depends on source order.",
   ],
 ] as const;
 

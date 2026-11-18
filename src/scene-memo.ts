@@ -40,7 +40,7 @@ import type { ResolvedPlan } from "./ir.js";
 import type { Registry, Runtime } from "./registry.js";
 import { BUILTIN_RUNTIME } from "./registry.js";
 import type { Scene } from "./scene.js";
-import { carryDrawnAutoDims, toScene } from "./scene-build.js";
+import { carryDrawnAutoDims, carryDrawnLeaders, toScene } from "./scene-build.js";
 import type { CompileOptions } from "./types.js";
 
 /** A memoised Scene: read-only, without the DXF projections a copy does not carry. */
@@ -149,6 +149,7 @@ function copyScene(scene: Scene): SharedScene {
   const out: Record<string, unknown> = {};
   for (const k of Object.keys(data)) if (k !== "walls") out[k] = copyData(data[k]);
   carryDrawnAutoDims(scene, out, copyData);
+  carryDrawnLeaders(scene, out, copyData);
   return out as unknown as SharedScene;
 }
 

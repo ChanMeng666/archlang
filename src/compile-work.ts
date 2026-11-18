@@ -30,9 +30,15 @@ export interface CompileWork {
    * A plan whose labels are clear scores none.
    */
   labelRelocations: number;
+  /**
+   * The leader step (`fitLabels`, `src/label-fit.ts`, card AL3b): the places tried for a label the
+   * fit left over something, each a form of the label at a lattice place on a room's floor. A plan
+   * whose labels the fit cleared tries none.
+   */
+  labelLeaders: number;
 }
 
 /** A fresh set of counters, all 0. */
 export function newCompileWork(): CompileWork {
-  return { joinerySplitTests: 0, labelRelocations: 0 };
+  return { joinerySplitTests: 0, labelRelocations: 0, labelLeaders: 0 };
 }

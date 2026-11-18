@@ -2,10 +2,10 @@
  * Card AL6: `W_ANNOTATION_OVERLAP` says, as data beside the warning, which text is printed over
  * what (`diagnosticOverprint`, `src/lint/overprint-ref.ts`).
  *
- * Pinned on the label-crowding witness (`test/fixtures/dense-office.arch`): its two room names over
- * fixtures, each detail exact, kinds and ids (its `dims auto all` wall-thickness figure, once over
- * the kitchenette's name, now stands clear of every label, card AL5), and on a galley whose
- * thickness figure stands on a counter, a thickness report that remains. A room's report is about its label (`room-label`), and each thing under it
+ * Pinned on two names pinned over fixtures ({@link PINS}), each detail exact, kinds and ids, and on
+ * a galley whose thickness figure stands on a counter, a thickness report that remains. The
+ * label-crowding witness (`test/fixtures/dense-office.arch`) reports nothing since card AL3b: the two
+ * room names it reported over fixtures are led into the corridor. A room's report is about its label (`room-label`), and each thing under it
  * says which of the label's texts is over it (`parts`), measured hit by hit, never copied from the
  * message: the name alone, the area figure alone, and two shelves, one under each text, which the
  * message joins. A figure's report says the room it stands in only of the pieces under it (a label
@@ -35,33 +35,49 @@ import { runArch } from "./helpers/cli.js";
 const OVERLAP = "W_ANNOTATION_OVERLAP";
 const WITNESS_PATH = "test/fixtures/dense-office.arch";
 const WITNESS = readFileSync(WITNESS_PATH, "utf8");
+/** A pinned plan with reports, for the CLI: a pinned name over a bed. */
+const PINNED_PATH = "test/defect-corpus/annotation-collisions/label-over-bed.arch";
+const PINNED = readFileSync(PINNED_PATH, "utf8");
+
+/** Two rooms whose pinned names stand over fixtures: the store's name over its shelving, the
+ *  kitchen's area figure over its sink. A pinned label is never led off its floor (card AL3b). */
+const PINS = `plan "Two pins" {
+  units mm
+  paper A4 landscape
+  scale 1:100
+  wall id=shell exterior thickness 200 { (0,0) (6000,0) (6000,3000) (0,3000) close }
+  wall id=mid partition thickness 100 { (3000,0) (3000,3000) }
+  room id=r_store at (0,0) size 3000x3000 label "Store" at (1500,1500) uses storage
+  room id=r_kitchen at (3000,0) size 3000x3000 label "Kitchen" at (4500,1500) uses kitchen
+  door id=d_store at (1500,3000) width 900 wall shell swing in
+  door id=d_kitchen at (4500,3000) width 900 wall shell swing in
+  furniture id=shelf shelving at (1100,1250) size 800x400 in r_store
+  furniture id=sink kitchen_sink at (4100,1600) size 800x500 in r_kitchen
+}`;
 const overlaps = (src: string): Diagnostic[] => lint(src).filter((d) => d.code === OVERLAP);
 
-suite("the witness: who overprints whom", () => {
-  const ds = overlaps(WITNESS);
+suite("who overprints whom", () => {
+  const ds = overlaps(PINS);
 
-  it("reports two room names over fixtures, and no figure: the thickness figure keeps off the labels (AL5)", () => {
-    // The store's shelving stands where its first filing cabinet stood (card AL4 put an uncatalogued
-    // word there, whose "IT Rack" is wider than it in either direction and is not drawn, so no
-    // `furniture-label` is under either name).
+  it("the label-crowding witness reports nothing: its two names are led into the corridor (AL3b)", () => {
+    expect(overlaps(WITNESS)).toEqual([]);
+  });
+
+  it("reports each pinned name over its fixture, and which of its texts is over it", () => {
     expect(ds.map(diagnosticOverprint)).toEqual([
       {
-        subject: { kind: "room-label", room: "r_store", text: "Store / IT" },
-        over: [{ kind: "symbol", id: "shelving_5", parts: ["name"] }],
+        subject: { kind: "room-label", room: "r_store", text: "Store" },
+        over: [{ kind: "symbol", id: "shelf", parts: ["name"] }],
       },
       {
-        // The store's shelving stands under the kitchenette's name, across the partition.
-        subject: { kind: "room-label", room: "r_kitchen", text: "Kitchenette / Break" },
-        over: [
-          { kind: "symbol", id: "shelving_5", parts: ["name"] },
-          { kind: "symbol", id: "kitchen_sink_7", parts: ["name"] },
-        ],
+        subject: { kind: "room-label", room: "r_kitchen", text: "Kitchen" },
+        over: [{ kind: "symbol", id: "sink", parts: ["area"] }],
       },
     ] satisfies DiagnosticOverprintJson[]);
   });
 
   it("every id it names is one describe() lists", () => {
-    const s = describe(WITNESS);
+    const s = describe(PINS);
     const ids = new Set([...s.rooms.map((r) => r.id), ...s.furniture.map((f) => f.id), ...s.doors.map((d) => d.id)]);
     for (const d of ds) {
       const o = diagnosticOverprint(d)!;
@@ -124,11 +140,11 @@ suite("beside the diagnostic, never on it", () => {
   });
 
   it("a copy or a clone has none; a diagnostic of another code has none", () => {
-    const [d] = overlaps(WITNESS);
+    const [d] = overlaps(PINS);
     expect(diagnosticOverprint(d!)).toBeDefined();
     expect(diagnosticOverprint({ ...d! })).toBeUndefined();
     expect(diagnosticOverprint(structuredClone(d!))).toBeUndefined();
-    const other = lint(WITNESS, { profile: "accessibility-advisory" }).filter((x) => x.code !== OVERLAP);
+    const other = lint(PINS, { profile: "accessibility-advisory" }).filter((x) => x.code !== OVERLAP);
     expect(other.length).toBeGreaterThan(0);
     for (const x of other) expect(diagnosticOverprint(x)).toBeUndefined();
   });
@@ -400,9 +416,10 @@ suite("the annotation-collisions defects: every report has a detail, and its sub
 
 suite("the CLI attaches it: `lint --json` and `validate --json`", () => {
   it("lint --json: every W_ANNOTATION_OVERLAP carries `overprint` as its last key, no other code does", async () => {
-    const r = await runArch(["lint", WITNESS_PATH, "--json"]);
+    const r = await runArch(["lint", PINNED_PATH, "--json"]);
     const out = JSON.parse(r.stdout) as { diagnostics: Array<Record<string, unknown>> };
-    const ds = lint(WITNESS);
+    const ds = lint(PINNED);
+    expect(ds.some((d) => d.code === OVERLAP)).toBe(true);
     expect(out.diagnostics.map((d) => d.overprint)).toEqual(ds.map(diagnosticOverprint));
     for (const d of out.diagnostics)
       if (d.code === OVERLAP) expect(Object.keys(d).at(-1)).toBe("overprint");
@@ -410,10 +427,10 @@ suite("the CLI attaches it: `lint --json` and `validate --json`", () => {
   });
 
   it("validate --json: `overprint` sits after `rule`, before the `stage` it ends with", async () => {
-    const r = await runArch(["validate", WITNESS_PATH, "--json"]);
+    const r = await runArch(["validate", PINNED_PATH, "--json"]);
     const out = JSON.parse(r.stdout) as { diagnostics: Array<Record<string, unknown>> };
     const shown = out.diagnostics.filter((d) => d.code === OVERLAP);
-    expect(shown).toHaveLength(2);
+    expect(shown).toHaveLength(1);
     for (const d of shown) expect(Object.keys(d).slice(-2)).toEqual(["overprint", "stage"]);
   });
 });

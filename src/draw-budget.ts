@@ -11,8 +11,10 @@
  * (counted by the same `synthDims` the drawing calls), the `axes` bubbles, the lot line and
  * the margin tables. A kind with no `drawCost` (a plugin's) is estimated at
  * {@link DEFAULT_DRAW_COST}. `test/drawing-budget.test.ts` holds the estimate at or above what
- * is drawn for every kind, every fixture category and every corpus plan, and at most four
- * times it over the corpus, so it can neither undercount nor drift loose.
+ * is drawn for every kind, every fixture category and every corpus plan, and at most 4.25
+ * times it over the corpus, so it can neither undercount nor drift loose (four until card AL3b
+ * charged each named room whose label is not pinned the two primitives of a leader it draws only
+ * when its label is led off its floor).
  *
  * Only `compile()` draws, so only `compile()` checks it (`src/pipeline.ts`); `describe()` and
  * `lint()` draw nothing and are unaffected.

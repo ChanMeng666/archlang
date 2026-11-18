@@ -4,12 +4,12 @@
 # north side; a corridor; reception, focus pods and an open-plan area with a 5 x 5 desk grid on
 # the south.
 #
-# It is crowded on purpose. `lint` reports `W_ANNOTATION_OVERLAP` here for a room's own name
-# printed over a fixture. The boardroom's long window leaves the north wall one clear run, beside
-# the kitchenette, where the "200" wall-thickness figure `dims auto all` writes would print
-# over the kitchenette's name, which runs past its own walls; so it is now written on the next
-# longest 200 run instead, the south wall, clear of every label (card AL5, label-crowding).
-# Every other lint warning is cleared.
+# It is crowded on purpose. The store's and the kitchenette's names find no clear place on their
+# own floors, so each is led to clear floor in the corridor (card AL3b, label-crowding); the
+# two WCs' names fit between pan and basin once read at the width they draw (card AL3w). With the
+# kitchenette's name gone from the boardroom, the "200" wall-thickness figure `dims auto all`
+# writes on the north wall keeps its first station (card AL5 moves it only off a label). Every
+# lint warning here is cleared.
 plan "Dense Office" {
   units mm
   grid 50
