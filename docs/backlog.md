@@ -2383,6 +2383,40 @@ own override (`package.json`) while the playground needs 8, so `npm run size:emb
 no peer session uses it, and a line in `docs/agents/orchestration.md` about the `playground/node_modules`
 junction. **Gate:** a fresh worktree runs `check:quick` and `size:embed` with the documented junctions.
 
+### NR.13 · RM9.2 leftovers (#950) — `todo`
+
+(1) The 3-storey caption test has no doors and no entrance on levels 2 and 3, so a door or entrance swap
+between those two would pass. (2) A level name is embedded verbatim, so a name containing `"`, `;` or `(`
+blurs the clause (the plan name does the same today). (3) `archlang-3d`'s info strip sums storey areas
+itself; it could read `totals.floor_area_all_levels_m2`. (4) Public `toScene(levelIr, { accessible: true })`
+still captions one storey. **Gate:** each fixed with a test, or stated as a limit at its site.
+
+### NR.14 · RM9.3 leftovers (#948) — `todo`
+
+(1) The property test in `test/intent-infeasible.test.ts` is vacuous for the soundness bound: at its seed
+no passing plan has demand above the ceiling, so only the deterministic repro bites; generate borderline
+cases on purpose. (2) `violationStage` is not exported, so a library caller using
+`predicateStage(v.predicate)` still gets `rooms` for `E_INTENT_INFEASIBLE`. (3) A self-contradicting
+count (`rooms: 2` while `roomsInclude` needs 3) is not reported as infeasible. **Gate:** each with a test.
+
+### NR.15 · AF3 leftovers (#951) — `todo`
+
+(1) A dropped wall (`wallsShort`, `src/ir.ts`) silences independent errors on surviving walls
+(`E_ATTACH_WALL_REF`, `E_ATTACH_POS_RANGE`, `E_WINDOW_WIDTH`) until the root error is fixed. (2) The
+POISON-site guard regex in `test/error-value-law.test.ts` misses `= POISON` and `=> POISON` forms (no such
+site today). **Gate:** (1) those errors reported beside the root, with a test; (2) the regex widened.
+
+### NR.16 · Room words only in English (downstream ask, 2026-11-18) — `todo`
+
+A downstream application reports that brief-check concept matching and the label classifier know only
+English room words: Spanish and Portuguese labels ("Dormitorio", "Baño", "Cocina", "Quarto", "Banheiro",
+"Lavandería", "Despensa", "Banheiro da suíte") classify as nothing, so gating room checks fail on rooms
+that exist. About one in five of its recent briefs is in Spanish or Portuguese. Two ways: (a) a small,
+accent-insensitive es/pt vocabulary in the concept table and the label classifier; (b) state that `uses`
+tags and concepts are the language-neutral channel, never label words, with a lint when a room has no
+`uses`. Until decided, the downstream app writes `uses` on every room. **Gate:** a decision recorded,
+then the chosen form with a test per language.
+
 ## Test-programme findings (promo-credit programme, 2026-11-16)
 
 From `docs/plans/product-roadmap/2026-11-test-findings.md` (§ 3, § 4, § 5). RR.8 (2), the
