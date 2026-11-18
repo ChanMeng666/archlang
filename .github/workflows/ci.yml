@@ -385,8 +385,26 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      # Each shard also writes its files' seconds, import and collect included
+      # (test/durations-reporter.ts), uploaded as `test-durations-<shard>`: the seven merge into
+      # test/.durations.json (test/.durations.README.md). Naming reporters drops the
+      # `github-actions` one vitest adds by itself on Actions, so it is named too.
       - name: Test
-        run: npx vitest run --shard=${{ matrix.shard }}/7
+        env:
+          TEST_DURATIONS_OUT: test-durations-${{ matrix.shard }}.json
+        run: npx vitest run --shard=${{ matrix.shard }}/7 --reporter=default --reporter=github-actions --reporter=./test/durations-reporter.ts
+
+      # Lenient: the durations are a by-product, so an artifact-service error never fails a shard.
+      - name: Upload the shard's per-file durations
+        if: always()
+        continue-on-error: true
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: test-durations-${{ matrix.shard }}
+          path: test-durations-${{ matrix.shard }}.json
+          if-no-files-found: ignore
+          retention-days: 14
+          overwrite: true
 
   # A PR's CHANGELOG lines land under `## [Unreleased]` and it deletes no released line; a release
   # PR (it adds `## [x.y.z]`) is exempt. Runs on record-only PRs too: CHANGELOG.md is a record. The

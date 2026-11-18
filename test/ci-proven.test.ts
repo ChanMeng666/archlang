@@ -533,7 +533,7 @@ describe("ci.yml and the proof agree", () => {
     expect(checkNames(jobs.get("bench") as Job)).toEqual(INFORMATIONAL_JOBS);
   });
 
-  it("no gating step is lenient: the only `continue-on-error` steps are the fail-open proof and the bench comment", () => {
+  it("no gating step is lenient: the only `continue-on-error` steps are the fail-open proof, the bench comment and the durations upload", () => {
     const lenientSteps = [...jobs.values()].flatMap((j) =>
       j.steps.filter((s) => s["continue-on-error"] !== undefined).map((s) => `${j.id}: ${s.name ?? s.uses}`),
     );
@@ -541,6 +541,7 @@ describe("ci.yml and the proof agree", () => {
       "bench: Post benchmark comment",
       "changes: Check out the proven-run script",
       "changes: Did a train PR's full run already prove this commit?",
+      "node-22-tests: Upload the shard's per-file durations",
     ]);
   });
 

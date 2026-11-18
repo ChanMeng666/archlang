@@ -40,11 +40,10 @@ export function listedDirs(text, scanned = SCANNED_DIRS) {
  * recorded (`test/.durations.json`, cheapest first, so the cap buys the most guards), then by name.
  * Each is `{ file, why }`. `files` is the tracked and untracked file list.
  */
-export function scanningGuards(ROOT, dirs, files, scanned = SCANNED_DIRS) {
+export function scanningGuards(ROOT, dirs, files, scanned = SCANNED_DIRS, durations = readDurations(ROOT)) {
   const modules = files.filter((f) => TEST_DIRS.test(f) && CODE.test(f) && existsSync(join(ROOT, f)));
   const text = new Map(modules.map((f) => [f, readFileSync(join(ROOT, f), "utf8")]));
   const direct = new Map(modules.map((f) => [f, listedDirs(text.get(f), scanned)]));
-  const durations = readDurations(ROOT);
   const guards = [];
   for (const t of modules.filter(isTest)) {
     // Breadth-first over the helpers it imports; a test file is never a helper.
@@ -77,11 +76,16 @@ export function scanningGuards(ROOT, dirs, files, scanned = SCANNED_DIRS) {
 // A guard that lists a SOURCE folder (`src/`, `scripts/`, `eval/`, `test/`, `.claude/`) and asserts over every
 // file it finds: no CLI spawn, no escaper chain, the provenance walk. No import reaches it from the file that
 // broke it, and a folder this wide cannot join `SCANNED_DIRS` (a test that lists `test/fixtures` is not one).
-// They run in addition to the `--max` cap, within `TREE_MAX_SECS` recorded seconds (they cost tens of
-// milliseconds each, so the budget is time; `TREE_MAX_FILES` is only a safety ceiling).
+// They run in addition to the `--max` cap, up to `TREE_MAX_FILES` (a safety ceiling): every one under
+// `TREE_FREE_SECS` recorded seconds, then the others within `TREE_MAX_SECS`. The table counts a file's import
+// and collect time (`test/durations-reporter.ts`), most of a scanner's seconds, so a refresh moves a cheap
+// scanner by tenths of a second; free of the budget, that can no longer cut one. The budget covers the
+// costliest set of 1-s-and-over scanners the test-time table's 15 s used to pick, collect included, times 1.3
+// (`test/gate-select.test.ts` pins the picks on the real table and on one 1.3 times costlier).
 export const TREE_ROOTS = ["src", "scripts", "eval", "test", ".claude"];
 export const TREE_MAX_FILES = 30;
-export const TREE_MAX_SECS = 15;
+export const TREE_FREE_SECS = 1;
+export const TREE_MAX_SECS = 55;
 /** The recorded seconds assumed for a scanner the duration record does not list yet (a source scan is cheap). */
 export const UNKNOWN_SCAN_SECS = 0.5;
 const LISTS_A_TREE = /\b(?:readdirSync|readdir|opendirSync|globSync)\s*\(|ls-files/;
@@ -139,16 +143,23 @@ function capByCost(ordered, maxFiles, maxSecs) {
 }
 
 /**
- * The scanner tests a change set wakes: those scanning a tree a changed code file sits in, within
- * `maxSecs` recorded seconds (and the `maxFiles` safety ceiling). Ranked: the fewest trees scanned first
- * (every dedicated scanner gets in before one that lists several trees), then the cheapest (a test the
- * duration record does not list yet is costed at `UNKNOWN_SCAN_SECS`), then by name. A scanner that no
- * longer fits the budget is cut, and a cheaper one after it may still go in. Each is `{ file, why, secs }`.
+ * The scanner tests a change set wakes: those scanning a tree a changed code file sits in. Every one under
+ * `TREE_FREE_SECS` goes in, then the others within `maxSecs` recorded seconds, all within the `maxFiles`
+ * safety ceiling. Ranked: the fewest trees scanned first (every dedicated scanner gets in before one that
+ * lists several trees), then the cheapest (a test the duration record does not list yet is costed at
+ * `UNKNOWN_SCAN_SECS`), then by name. A scanner that no longer fits the budget is cut, and a cheaper one
+ * after it may still go in. Each is `{ file, why, secs }`, in rank order.
  */
-export function treeGuards(ROOT, changed, files, maxFiles = TREE_MAX_FILES, maxSecs = TREE_MAX_SECS) {
+export function treeGuards(
+  ROOT,
+  changed,
+  files,
+  maxFiles = TREE_MAX_FILES,
+  maxSecs = TREE_MAX_SECS,
+  durations = readDurations(ROOT),
+) {
   const woken = TREE_ROOTS.filter((r) => changed.some((f) => touchesTree(r, f)));
   if (woken.length === 0) return [];
-  const durations = readDurations(ROOT);
   const found = [];
   for (const t of files.filter((f) => isTest(f) && existsSync(join(ROOT, f)))) {
     const scanned = scannedTrees(readFileSync(join(ROOT, t), "utf8"), t);
@@ -164,15 +175,16 @@ export function treeGuards(ROOT, changed, files, maxFiles = TREE_MAX_FILES, maxS
     }
   }
   found.sort((a, b) => a.breadth - b.breadth || a.secs - b.secs || (a.file < b.file ? -1 : 1));
-  const out = [];
+  const free = found.filter((g) => g.secs < TREE_FREE_SECS).slice(0, maxFiles);
+  const taken = new Set(free);
   let spent = 0;
   for (const g of found) {
-    if (out.length >= maxFiles) break;
-    if (spent + g.secs > maxSecs) continue;
-    out.push(g);
+    if (taken.size >= maxFiles) break;
+    if (g.secs < TREE_FREE_SECS || spent + g.secs > maxSecs) continue;
+    taken.add(g);
     spent += g.secs;
   }
-  return out;
+  return found.filter((g) => taken.has(g));
 }
 
 // ---- tests named after a changed module ------------------------------------------------------
@@ -180,7 +192,11 @@ const GENERIC_STEMS = new Set(["index", "types", "util", "utils", "helpers", "ma
 /** A stem shared by more tests than this names a family, not a module. */
 const NAMED_MAX = 6;
 export const NAMED_MAX_FILES = 5;
-export const NAMED_MAX_SECS = 10;
+/**
+ * Covers, times 1.3, the costliest picks the test-time table's 10 s used to make for any `src/` module, now
+ * that the table counts collect time (`clause-order-byte-identity`, 24.3 s; `test/gate-select.test.ts`).
+ */
+export const NAMED_MAX_SECS = 35;
 
 /** The median of the recorded seconds (what a test the record does not list yet is costed at). */
 export function medianSecs(durations) {
@@ -408,8 +424,11 @@ export function textGuards(ROOT, changed, files, gone = []) {
 // ---- corpus pins ------------------------------------------------------------------------------
 /** The recorded seconds assumed for a test file the duration record does not list yet. */
 export const UNKNOWN_SECS = 3;
-/** The default recorded-seconds budget of the corpus pins (`--pins`): `keep-digests` fits, the costlier ones are CI's. */
-export const PIN_SECS = 5;
+/**
+ * The default recorded-seconds budget of the corpus pins (`--pins`): the ten the test-time table's 5 s used to
+ * pick (`keep-digests` among them), collect included, cost 21.3 s; 30 keeps them on a table 1.3 times costlier.
+ */
+export const PIN_SECS = 30;
 
 /**
  * Of the tests a code change reaches (`related`), the ones that pin their output over the examples corpus
@@ -454,8 +473,16 @@ export function readDurations(ROOT) {
  *     (`pinSecs` seconds).
  * Returns `{ own, woken, guards, guardPick, extras, picked, total }`; each extra is `{ file, why, rule }`.
  */
-export function planTests({ ROOT, changed, files, related, gone = [], max = 20, pinSecs = PIN_SECS }) {
-  const durations = readDurations(ROOT);
+export function planTests({
+  ROOT,
+  changed,
+  files,
+  related,
+  gone = [],
+  max = 20,
+  pinSecs = PIN_SECS,
+  durations = readDurations(ROOT),
+}) {
   const own = related.filter((f) => changed.includes(f));
   const woken = SCANNED_DIRS.filter((s) => changed.some(s.touches));
   const guards =
@@ -464,6 +491,8 @@ export function planTests({ ROOT, changed, files, related, gone = [], max = 20, 
           ROOT,
           woken.map((s) => s.dir),
           files,
+          SCANNED_DIRS,
+          durations,
         ).filter((g) => !own.includes(g.file))
       : [];
   const guardPick = guards.slice(0, Math.max(0, max - own.length));
@@ -479,11 +508,14 @@ export function planTests({ ROOT, changed, files, related, gone = [], max = 20, 
         extras.push({ file: g.file, why: g.why, rule });
     }
   };
-  addExtras("treeGuards", treeGuards(ROOT, changed, files));
+  addExtras("treeGuards", treeGuards(ROOT, changed, files, TREE_MAX_FILES, TREE_MAX_SECS, durations));
   addExtras("namedTests", namedTests(changed, files, durations));
   addExtras("textGuards", textGuards(ROOT, changed, files, gone));
   if (changed.some((f) => f.startsWith("src/") && CODE.test(f))) {
-    addExtras("corpusPins", corpusPins(scanningGuards(ROOT, ["examples"], files), related, pinSecs, durations));
+    addExtras(
+      "corpusPins",
+      corpusPins(scanningGuards(ROOT, ["examples"], files, SCANNED_DIRS, durations), related, pinSecs, durations),
+    );
   }
   const picked = [...extras.map((e) => e.file), ...capped];
   const total = new Set([...related, ...guards.map((g) => g.file), ...extras.map((e) => e.file)]).size;

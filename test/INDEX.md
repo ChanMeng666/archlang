@@ -5,7 +5,7 @@
 Where the tests of a `src` module are, and what each test file is for. Generated; `npm run check:drift`
 fails when it is stale. How to add a test: `docs/testing.md` § 4.
 
-551 test files in `test/`, 290 `src` modules, 109 modules no test imports.
+552 test files in `test/`, 290 `src` modules, 109 modules no test imports.
 
 ## `src` module → tests that import it
 
@@ -425,6 +425,7 @@ The first sentence of each file's header comment.
 - `test/garage.test.ts` — `uses garage` — the thirteenth room use, its label vocabulary, and the one advisory rule that reads it.
 - `test/gate-select.test.ts` — `scripts/gate-select.mjs`: what `check:quick` selects beyond the import graph, and how it caps it.
 - `test/gbnf-drift.test.ts` — Drift + acceptance/rejection gate for the generated GBNF grammar (`grammars/archlang.gbnf`, produced by `scripts/gen-gbnf.ts`).
+- `test/gen-test-durations.test.ts` — scripts/gen-test-durations.mjs: merging and median-of-runs into the duration table, and what it refuses.
 - `test/geometry-hostinfo.test.ts` — hostInfoForWalls — equivalence with the original two functions; WallGrid — equivalence with brute-force hostInfoForWalls (T3.7).
 - `test/glyph-chirality.test.ts` — A mirrored `place` draws the mirror-image SYMBOL.
 - `test/glyph-dispatch-table.test.ts` — fixture glyph dispatch is by family.
