@@ -30,8 +30,10 @@
  * the box, because the estimate behind it went per character. It too is input, not the search. A
  * fourth (card AL3w): a labelled area's own text is boxed at the wider of the estimate and its ink
  * (`symbolExtent`), the width the fit and the rule read it at against a symbol. How big a label is
- * stays the pass's input. A fifth (card AL3a): the groups take their turns in `plotOrder`, an order read off the plan, rather
- * than element order. Which group goes when is the pass's input; the sums under test are not.
+ * stays the pass's input. A fifth (card AL3a): the groups take their turns in `plotOrder`, an order
+ * read off the plan, rather than element order, and a room's label that stands off its own floor
+ * (more than `COLLIDE_MIN` of its ink box) claims no floor. Which group goes when, and which labels
+ * are obstacles, are the pass's input; the sums under test are not.
  */
 
 import { corpusFiles, walkFiles as walk } from "./helpers/corpus.js";
@@ -340,8 +342,20 @@ function relocateLabelsBefore(
       continue;
     }
 
+    // Card AL3a: a room's label off its own floor claims none.
+    let inkW = 0;
+    for (const i of texts) {
+      const prim = nodes[i]!.prim;
+      if (prim.t === "text") inkW = Math.max(inkW, inkExtent(prim).w);
+    }
+    const claims = (r: BBox): boolean => {
+      if (!g.wrap) return true;
+      const ink = { x: r.x + (r.w - inkW) / 2, y: r.y, w: inkW, h: r.h };
+      return rectAreaOutside(ink, g.ring) <= COLLIDE_MIN * ink.w * ink.h;
+    };
+
     if (buried(rect0, obstacles) + buried(rect0, placed) <= COLLIDE_MIN) {
-      placed.push(rect0);
+      if (claims(rect0)) placed.push(rect0);
       continue;
     }
 
@@ -388,7 +402,8 @@ function relocateLabelsBefore(
         nodes[i] = { ...n, prim: { ...n.prim, at: { x: n.prim.at.x + dx, y: n.prim.at.y + dy } } };
       }
     }
-    placed.push(shiftBBox(rect0, dx, dy));
+    const landed = shiftBBox(rect0, dx, dy);
+    if (claims(landed)) placed.push(landed);
   }
 }
 

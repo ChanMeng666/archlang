@@ -43,8 +43,11 @@
  * The labels take their turns in an order read off the plan, never the source's
  * ({@link plotOrder}: the anchor's y, then its x, then the texts, then the ring; the order
  * `fitLabels` takes its turns in), so the same rooms written in any order draw the same (card AL3a,
- * label-crowding). Before, the turns went by element order, and each placed label is an obstacle
- * for the next, so five corpus plans, written the other way round, drew differently.
+ * label-crowding). And a room's label that stands off its own floor where it is drawn claims no
+ * floor: it does not fit, `fitLabels` will shrink or wrap it, and a neighbour must not dodge a box
+ * that is about to change (`fitLabels`' own rule). Before, the turns went by element order, and each
+ * placed label was an obstacle for the next, so five corpus plans, written the other way round, drew
+ * differently.
  *
  * Prior art: planscript-rust's `best_area_label_candidate` / `label_score`
  * (`src/exporters.rs`, MIT) — the candidate lattice, the distance-from-centre preference
@@ -623,8 +626,10 @@ export function underLabels(n: SceneNode): boolean {
  * Mutates `nodes` in place (replacing, never editing, the text nodes it moves), which is
  * safe: every node in the list was freshly built by this `toScene` call. Groups are
  * visited in {@link plotOrder}, never element order, and each placed label becomes an obstacle
- * for the next, so two labels can never be relocated onto each other. An `outdoor` surface takes
- * its turn among the rooms, by the same order.
+ * for the next, so two labels can never be relocated onto each other; a room's label that stands
+ * off its own floor (by more than {@link COLLIDE_MIN} of its ink, where it lands) is the one
+ * exception, and claims no floor. An `outdoor` surface takes its turn among the rooms, by the same
+ * order.
  *
  * `work`, when given, counts every place scored (`labelRelocations`, `src/compile-work.ts`); an
  * out-parameter only.
@@ -672,6 +677,13 @@ export function relocateLabels(
   }
   const placed = new BoxSums(meanExtent(labelBoxes));
   const probes = new Map<string, Probe[]>();
+  /** A room's label claims the floor it stands on unless it stands off its own floor (it does not
+   *  fit, and `fitLabels` will change it). `inkW` is the drawn width of its widest text. */
+  const claims = (g: LabelGroup, rect: BBox, inkW: number): boolean => {
+    if (!g.wrap) return true;
+    const ink = inkOf(rect, inkW);
+    return rectAreaOutside(ink, g.ring) <= COLLIDE_MIN * ink.w * ink.h;
+  };
   /** The fractions of `rect` buried in obstacles and in placed labels, the placed sum
    *  continued from where `probe` last stood. */
   const crowd = (rect: BBox, probe: Probe): { obstacles: number; placed: number } => {
@@ -687,6 +699,12 @@ export function relocateLabels(
       if (n.layer === "labels" && n.prim.t === "text") texts.push(i);
     }
     if (texts.length === 0) continue;
+    // The width the group draws: every text of a group is centred on one line, so the widest.
+    let inkW = 0;
+    for (const i of texts) {
+      const prim = nodes[i]!.prim;
+      if (prim.t === "text") inkW = Math.max(inkW, inkExtent(prim).w);
+    }
     let rect0: BBox | null = null;
     for (const i of texts) {
       const b = labelBox(nodes[i]!.prim);
@@ -716,7 +734,7 @@ export function relocateLabels(
 
     const trigger = crowd(rect0, probe(0));
     if (trigger.obstacles + trigger.placed <= COLLIDE_MIN) {
-      placed.push(rect0);
+      if (claims(g, rect0, inkW)) placed.push(rect0);
       continue;
     }
 
@@ -733,13 +751,7 @@ export function relocateLabels(
     let best = anchor;
     let bestScore = score(anchor, 0, 1);
     // How far off its floor the label already stands, the most a place may be. The slack is for
-    // the clip's own rounding: two places the same distance off must read as equal. Every text
-    // of a group is centred on one line, so the widest text is the block's width.
-    let inkW = 0;
-    for (const i of texts) {
-      const prim = nodes[i]!.prim;
-      if (prim.t === "text") inkW = Math.max(inkW, inkExtent(prim).w);
-    }
+    // the clip's own rounding: two places the same distance off must read as equal.
     const inkRect = inkOf(rect0, inkW);
     const offFloor = rectAreaOutside(inkRect, ring) + inkRect.w * inkRect.h * 1e-9;
     let k = 2;
@@ -765,7 +777,8 @@ export function relocateLabels(
         nodes[i] = { ...n, prim: { ...n.prim, at: { x: n.prim.at.x + dx, y: n.prim.at.y + dy } } };
       }
     }
-    placed.push(shiftBBox(rect0, dx, dy));
+    const landed = shiftBBox(rect0, dx, dy);
+    if (claims(g, landed, inkW)) placed.push(landed);
   }
 }
 

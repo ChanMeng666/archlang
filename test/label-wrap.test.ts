@@ -283,14 +283,13 @@ describe("room-name wrapping against the previous implementation", () => {
       'test/recovery-corpus/clinic.arch: "Accessible WC" → "Accessible" / "WC"',
     ]);
     // The names a neighbour's wrap moves, named, or a count would excuse a new one. `relocateLabels`
-    // makes each placed label an obstacle for the next, so on the label-crowding witness, whose
-    // north-strip names are wider than their rooms, a wrapped neighbour leaves another name a
-    // different place. Its strip is placed in element order: WC 1 and WC 2 (both wrap), then the
-    // store's, the kitchenette's and the boardroom's names (each moved), Meeting A (wraps), then
-    // Meeting B (moved).
+    // makes each placed label an obstacle for the next, except one that stands off its own floor
+    // (card AL3a): a name too wide for its room claims nothing, since `fitLabels` will change it.
+    // With the wrap off, a north-strip name of the witness runs off its floor on one line and claims
+    // nothing; with it on, the wrapped block fits its room and claims its floor, so the next name
+    // along the strip (taken west to east) is placed against it. Two names are knocked on so: the
+    // store's and Meeting B's. The kitchenette's and the boardroom's (two more before AL3a) are gone.
     expect(t.knocked!.sort()).toEqual([
-      'test/fixtures/dense-office.arch: "Boardroom"',
-      'test/fixtures/dense-office.arch: "Kitchenette / Break"',
       'test/fixtures/dense-office.arch: "Meeting B"',
       'test/fixtures/dense-office.arch: "Store / IT"',
     ]);
