@@ -79,6 +79,7 @@ jobs:
           mode: restore
           set: ${{ matrix.set }}
           version: ${{ steps.pw.outputs.version }}
+          commands: ${{ matrix.install }}
 
       - name: Install the set's system deps
         env:
@@ -89,3 +90,4 @@ jobs:
         uses: ./.github/actions/apt-debs
         with:
           mode: save
+          set: ${{ matrix.set }}

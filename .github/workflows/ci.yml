@@ -890,6 +890,7 @@ jobs:
           mode: restore
           set: chromium
           version: ${{ steps.pw.outputs.version }}
+          commands: npx playwright install-deps chromium
 
       # On a cache hit the browser binary is already there but the OS packages it
       # links against are not (they live outside the cached path), so the two
@@ -911,6 +912,7 @@ jobs:
         uses: ./.github/actions/apt-debs
         with:
           mode: save
+          set: chromium
 
       - name: Run E2E specs
         if: env.FULL_CI == 'true'
@@ -1009,6 +1011,7 @@ jobs:
           mode: restore
           set: engines
           version: ${{ steps.pw.outputs.version }}
+          commands: npx playwright install-deps firefox webkit
 
       - name: Install Firefox and WebKit (browsers + system deps)
         if: env.FULL_CI == 'true' && steps.pw-cache-engines.outputs.cache-hit != 'true'
@@ -1023,6 +1026,7 @@ jobs:
         uses: ./.github/actions/apt-debs
         with:
           mode: save
+          set: engines
 
       # Its own report and results folders (the ones .gitignore names), as when both runs shared a
       # job: a local run of both keeps Chromium's report and traces.
@@ -1159,6 +1163,7 @@ jobs:
           mode: restore
           set: chromium-ffmpeg
           version: ${{ steps.pw.outputs.version }}
+          commands: npx playwright-core install-deps chromium && (command -v ffmpeg || (sudo apt-get update && sudo apt-get install -y --no-install-recommends ffmpeg))
 
       # The pixel baseline pins only text-free frames, so no font packages are needed; the
       # browser's own shared libraries still are, and they live outside the cached path.
@@ -1180,6 +1185,7 @@ jobs:
         uses: ./.github/actions/apt-debs
         with:
           mode: save
+          set: chromium-ffmpeg
 
       - name: Run check:3d (${{ matrix.pass }} pass)
         if: env.FULL_CI == 'true'
@@ -1315,6 +1321,7 @@ jobs:
           mode: restore
           set: chromium
           version: ${{ steps.pw.outputs.version }}
+          commands: npx playwright install-deps chromium
 
       # On a cache hit the browser binary is already there but the OS packages it
       # links against are not (they live outside the cached path), so the two
@@ -1336,6 +1343,7 @@ jobs:
         uses: ./.github/actions/apt-debs
         with:
           mode: save
+          set: chromium
 
       - name: Run E2E specs
         if: env.FULL_CI == 'true'

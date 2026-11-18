@@ -58,9 +58,11 @@ coordinator's own notes (merging, registries, browser and social automation, the
 
 ## PRs & CI
 
-- **`Playground E2E engines` can die in "Install Firefox and WebKit system deps" with no test run**: the
-  apt download crawls until the 20-minute job timeout and the step reads `cancelled`. It is the runner,
-  not the change: `gh run rerun <id> --failed`.
+- **An E2E or 3D job can die in its "system deps" install step with no test run**: the apt download
+  crawls until the job timeout and the step reads `cancelled`. It is the mirror, not the change. The
+  `apt-debs` cache serves those debs (`Need to get 0 B/…` on a hit); a cold or incomplete one still
+  downloads: `gh run rerun <id> --failed`. A wrong cached deb is reset with `gh cache delete`
+  (`docs/agents/commands.md` § CI).
 - **For about a minute after a release publishes, every PR's `test/release-compat.test.ts` is red**: it
   resolves the registry's `latest` (`scripts/compat-check.mjs`), which npm lists before that tarball can be fetched. Re-run the
   failed job; never touch the test.

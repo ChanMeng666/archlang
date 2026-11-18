@@ -407,6 +407,7 @@ jobs:
           mode: restore
           set: chromium
           version: ${{ steps.pw.outputs.version }}
+          commands: npx playwright install-deps chromium
 
       # On a cache hit the browser binary is already there but the OS packages it
       # links against are not (they live outside the cached path), so the two
@@ -423,6 +424,7 @@ jobs:
         uses: ./.github/actions/apt-debs
         with:
           mode: save
+          set: chromium
 
       - name: Playground — https://playground.archlang.uk
         run: npx playwright test -c playground --grep @prod
@@ -512,6 +514,7 @@ jobs:
           mode: restore
           set: all
           version: ${{ steps.pw.outputs.version }}
+          commands: npx playwright install-deps chromium firefox webkit
 
       - name: Install browsers (browser + system deps)
         if: steps.pw-cache.outputs.cache-hit != 'true'
@@ -525,6 +528,7 @@ jobs:
         uses: ./.github/actions/apt-debs
         with:
           mode: save
+          set: all
 
       - run: npm run build
 
