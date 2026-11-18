@@ -13,7 +13,7 @@
 
 **2026-11-18**：AL1 完成（#958，合并提交 `0c44a140`）。
 
-**2026-11-18**：AL5 进入审阅。墙厚数字在标签定位之后，按 `W_ANNOTATION_OVERLAP` 自己的判断与最终的房间文字相撞时重新选位：同一墙段（标签框作障碍）→ 同厚度次长墙段 → 两者的另一侧（只限下面有地面的一侧，不进外墙外的尺寸带）。都不行就不画，由新的 drafting 层警告 `W_DIM_THICKNESS_UNPLACED` 指出墙和厚度。`autoDimensions(ir, sizes, registry, labelBoxes?)` 接收 lint 从 Scene 读到的标签框，画图和 lint 由同一个函数决定。语料中只有见证夹具变化（"200" 移到南墙）；见证夹具头注释改写时保持字节数不变，span 不动。
+**2026-11-18**：AL5 进入审阅（#959）。墙厚数字在标签定位之后，按 `W_ANNOTATION_OVERLAP` 自己的判断与最终的房间文字相撞时重新选位：同一墙段（标签框作障碍）→ 同厚度次长墙段 → 两者的另一侧（只限下面有地面的一侧，不进外墙外的尺寸带）。都不行就不画，由新的 drafting 层警告 `W_DIM_THICKNESS_UNPLACED` 指出墙和厚度。`autoDimensions(ir, sizes, registry, labelBoxes?)` 接收 lint 从 Scene 读到的标签框，画图和 lint 由同一个函数决定。语料中只有见证夹具变化（"200" 移到南墙）；见证夹具头注释改写时保持字节数不变，span 不动。
 
 下一步：AL4。依次做下去，每张卡一个 PR；卡合并后在这里记一行，并从 `cards.md` 删掉那张卡。
 
@@ -22,7 +22,7 @@
 | AL6 | #957 | 完成 |
 | AL6b | — | todo |
 | AL1 | #958 | 完成 |
-| AL5 | — | 审阅中 |
+| AL5 | #959 | 审阅中 |
 | AL4 | — | todo |
 | AL3 | — | todo |
 | AL2a | — | todo |
