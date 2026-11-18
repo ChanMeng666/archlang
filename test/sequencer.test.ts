@@ -57,14 +57,13 @@ describe("assignShards", () => {
     for (const s of shards) expect(s.filter((p) => p.startsWith("zero-")).length).toBeGreaterThanOrEqual(30);
   });
 
-  it("on the real table: a partition, the lightest files in every shard, loads within one file's cost", () => {
+  it("on the real table: a partition, the lightest files in every shard, loads within the last file's cost", () => {
     // TP6's files recorded at 0 s now record their collect time; the lightest ones must still spread.
     const isLight = (p: string) => p in TABLE && TABLE[p]! <= 0.5;
     const zeros = SUITE.filter(isLight);
     expect(zeros.length).toBeGreaterThan(20);
     // Every file counted as the sequencer counts it, the files the table lacks at its median.
     const cost = (p: string) => fileCost(p in TABLE ? TABLE[p]! : medianOf(TABLE));
-    const largest = Math.max(...SUITE.map(cost));
     for (const n of [3, 5, 7]) {
       const shards = assignShards(SUITE, TABLE, n);
       expect(isPartition(shards, SUITE), `N=${n}`).toBe(true);
@@ -77,8 +76,13 @@ describe("assignShards", () => {
         SUITE.reduce((a, p) => a + cost(p), 0),
         6,
       );
-      // Greedy-to-lightest, both passes: the heaviest shard was the lightest when it took its last file.
-      expect(Math.max(...costs) - Math.min(...costs), `N=${n}`).toBeLessThanOrEqual(largest);
+      // Greedy-to-lightest, both passes: the heaviest shard was the lightest when it took its last file, so
+      // no shard is lighter than it by more than that file (a light one, the files going longest first).
+      const heaviest = costs.indexOf(Math.max(...costs));
+      const last = shards[heaviest]!.at(-1)!;
+      expect(Math.max(...costs) - Math.min(...costs), `N=${n}`).toBeLessThanOrEqual(cost(last) + 1e-9);
+      // And a balance alarm: a file outweighing a shard's share, or a broken pass, shows here first.
+      expect(Math.max(...costs) / Math.min(...costs), `N=${n}`).toBeLessThan(1.05);
     }
   });
 
@@ -280,14 +284,19 @@ describe("startOrder and DurationSequencer.sort()", () => {
     ).toEqual(["b.test.ts", "e.test.ts", "c.test.ts", "d.test.ts", "z.test.ts", "a.test.ts"]);
   });
 
-  it("orders a shard's specs by startOrder under --shard, and is a permutation of them", async () => {
-    const shardFiles = assignShards(SUITE, TABLE, 7)[0]!;
-    const files = [...shardFiles].sort().map((p) => ({ moduleId: resolve(ROOT, p) }));
-    const self = { ctx: { config: { root: ROOT, shard: { index: 1, count: 7 } } } };
-    const got = (await DurationSequencer.prototype.sort.call(self as never, files as never)) as { moduleId: string }[];
-    const rel = got.map((f) => f.moduleId.slice(ROOT.length + 1).replace(/\\/g, "/"));
-    expect(rel).toEqual(startOrder(shardFiles, TABLE));
-    expect(rel.length).toBe(files.length);
+  it("shard() then sort(), as vitest calls them: each index runs its own files, in startOrder", async () => {
+    const files = SUITE.map((p) => ({ moduleId: resolve(ROOT, p) }));
+    const rel = (l: { moduleId: string }[]) => l.map((f) => f.moduleId.slice(ROOT.length + 1).replace(/\\/g, "/"));
+    const shards = assignShards(SUITE, TABLE, 7);
+    const seen: string[] = [];
+    for (let index = 1; index <= 7; index++) {
+      const self = { ctx: { config: { root: ROOT, shard: { index, count: 7 } } } };
+      const mine = await DurationSequencer.prototype.shard.call(self as never, files as never);
+      const got = rel((await DurationSequencer.prototype.sort.call(self as never, mine)) as { moduleId: string }[]);
+      expect(got, `index ${index}`).toEqual(startOrder(shards[index - 1]!, TABLE));
+      seen.push(...got);
+    }
+    expect(seen.sort()).toEqual([...SUITE].sort());
   });
 
   it("without --shard leaves the order to vitest's default", async () => {
