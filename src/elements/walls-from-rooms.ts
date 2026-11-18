@@ -173,8 +173,12 @@ export const wallsFromRooms: ElementDef = {
     }
     const rooms = own.filter((e): e is RRoom => e.kind === "room" && e._unplaced !== true);
     const roomIds = new Set(rooms.map((r) => r.id));
+    // A room that read the error value (AF3) is dropped: like a refused ring below, it is out
+    // of the set quietly, named by an `except` or a clause without a word, and leaves no gap
+    // that is reported. Empty on a plan that holds no such room.
+    const gone = own.flatMap((e) => (e.kind === "room" && e._errorValue ? [e.id] : []));
     for (const x of n.except) {
-      if (roomIds.has(x.id)) continue;
+      if (roomIds.has(x.id) || gone.includes(x.id)) continue;
       ctx.diag({
         severity: "error",
         message: `\`except ${x.id}\` names no room written beside it: \`walls from rooms\` derives from the rooms of the plan or component it is written in, so only those can be left out`,
@@ -186,9 +190,10 @@ export const wallsFromRooms: ElementDef = {
     // A rectilinear room that reported its own ring has no floor to derive from, so it is out of
     // the set, quietly: the plan already says why, and the gap it leaves is that error, not a
     // second one. A slanted ring stays in, and is refused as any slanted polygon is.
-    const broken = new Set(
-      rooms.filter((r) => r._ringRefused && !excluded.has(r.id) && rectilinear(r.poly!)).map((r) => r.id),
-    );
+    const broken = new Set([
+      ...rooms.filter((r) => r._ringRefused && !excluded.has(r.id) && rectilinear(r.poly!)).map((r) => r.id),
+      ...gone,
+    ]);
     const { pairs, clauses, bad } = resolvePairs(n, rooms, excluded, broken, ctx);
     if (pairs.length > 0) {
       out.pairs = pairs.map((p, k) =>

@@ -109,6 +109,10 @@ export interface ResolveCtx {
    *  deterministic in tests. */
   now?(): Date;
   diag(d: Diagnostic): void;
+  /** Report a mistake read off the source text, not off an evaluated value (arithmetic on a
+   *  declared axis): it stands as a root cause when its element is dropped for reading the
+   *  error value (AF3), where a {@link diag} report goes with the element. Absent: `diag`. */
+  rootDiag?(d: Diagnostic): void;
   /**
    * The elements of the group being resolved (the root plan, or one `place`d instance) that
    * have resolved so far, in source order, in the group's own frame: its own statements

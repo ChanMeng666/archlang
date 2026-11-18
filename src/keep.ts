@@ -50,6 +50,7 @@ import { axisRead, COMPASS_DATUM_ALIASES, type DatumWord } from "./room-datums.j
 import { keepFormText, keepRefText } from "./statement-print.js";
 import { boardedFlight, isVertical } from "./vertical.js";
 import { classifyLabelUses } from "./vocabulary.js";
+import { droppedForErrorValue } from "./ir/side-tables.js";
 import { kindsWith } from "./elements/facets.js";
 
 /** Most keeps one plan may declare: 12 × the 80 that would pin every edge of the largest example. */
@@ -587,6 +588,12 @@ function lookup(ix: StoreyIndex, ctx: KeepStoreyCtx, id: string, text: string): 
   return el;
 }
 
+/** Does a keep name an element (or a room's datum) dropped for the error value (AF3)? */
+function namesGone(node: KeepNode, gone: readonly string[]): boolean {
+  chargeSteps(1);
+  return refsOf(node).some((r) => (r.t === "el" && gone.includes(r.id)) || (r.t === "room" && gone.includes(r.room)));
+}
+
 const isRefusal = (x: unknown): x is Refusal => typeof x === "object" && x !== null && "code" in x && "hint" in x;
 
 /** A straight wall segment of an authored wall, or why it is not one. */
@@ -875,9 +882,13 @@ export function evaluateKeeps(records: readonly KeepRecord[], ctx: KeepStoreyCtx
   const out: KeepResult[] = [];
   let ix: StoreyIndex | undefined;
   let scan: WallScan | undefined;
+  const gone = droppedForErrorValue(ctx.ir);
   for (const rec of records) {
     const node = rec.node;
     stepSite(node.span);
+    // A keep naming an element the error value took (AF3) is not measured, and says nothing:
+    // that element's own report is the one report, and it has no line to read.
+    if (gone.length > 0 && namesGone(node, gone)) continue;
     ix ??= indexOf(ctx);
     const text = keepFormText(node);
     const base = {
@@ -1663,6 +1674,11 @@ export function evaluateStacked(
         break;
       }
       const el = indexFor(s).get(target.id);
+      // Dropped on this level for the error value (AF3): its own report is the one report.
+      if (!el && droppedForErrorValue(s.ir).includes(target.id)) {
+        failed = true;
+        break;
+      }
       if (!el) {
         refuse(
           { code: "E_KEEP_TARGET" },

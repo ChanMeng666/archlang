@@ -119,6 +119,21 @@ export function nonFinite(onError: (d: Diagnostic) => void, span?: Span, what = 
  *  stays silent instead of adding a spurious type error beside the budget's own diagnostic. */
 export const BUDGET_SUBSTITUTE: Value = { t: "num", v: 0 };
 
+/**
+ * The error value (TypeScript's error type, AF3): what an expression evaluates to once its own
+ * evaluation has been diagnosed (an unknown name or function, a type mismatch, a division by
+ * zero, a bad index, a refused datum, a non-finite result). It reads as the number 0, but it is a
+ * distinct object and it PROPAGATES: an operator, an `if`, an index or a built-in fed one yields
+ * it again without a diagnostic of its own, so the one report of the root cause is the only one.
+ * The resolver drops an element that reads it (`ir.ts`), with every follow-on diagnostic of that
+ * element, rather than drawing it from a garbage 0. Only a plan that already has an error ever
+ * holds one.
+ */
+export const POISON: Value = { t: "num", v: 0 };
+
+/** A value `asBool` refuses (the error value included): the truth it stood for is unknown. */
+const notBool = (v: Value): boolean => v.t !== "bool" && v !== BUDGET_SUBSTITUTE;
+
 /** Coerce a Value to a number, diagnosing a mismatch and yielding 0. A non-finite number
  *  is refused here too (defence in depth: producers already yield 0 beside their own
  *  `E_NON_FINITE`, so this fires only for a value that bypassed them). */
@@ -136,7 +151,7 @@ export function asNum(v: Value, onError: (d: Diagnostic) => void, span?: Span): 
 export function asBool(v: Value, onError: (d: Diagnostic) => void, span?: Span): boolean {
   if (v.t === "bool") return v.v;
   // The stack budget's stand-in is not the user's mistake: it was already diagnosed.
-  if (v === BUDGET_SUBSTITUTE) return false;
+  if (v === BUDGET_SUBSTITUTE || v === POISON) return false;
   onError({ severity: "error", message: `Expected a boolean but got ${typeName(v)}`, code: "E_TYPE", span });
   return false;
 }
@@ -860,7 +875,7 @@ export function evalExpr(e: Expr, env: Env, onError: (d: Diagnostic) => void, de
         span: exprSpan(e),
       });
     }
-    return BUDGET_SUBSTITUTE;
+    return BUDGET_SUBSTITUTE; // error value: E_CALL_DEPTH
   }
   try {
     switch (e.t) {
@@ -870,6 +885,7 @@ export function evalExpr(e: Expr, env: Env, onError: (d: Diagnostic) => void, de
         return { t: "bool", v: e.value };
       case "str": {
         let s = "";
+        let bad = false;
         for (const p of e.parts) {
           // A character appended is a step, charged BEFORE the append: a template can double
           // a string per iteration. An array's printed form is charged by `asStr` before it
@@ -881,11 +897,12 @@ export function evalExpr(e: Expr, env: Env, onError: (d: Diagnostic) => void, de
             continue;
           }
           const v = evalExpr(p, env, onError, depth);
+          if (v === POISON) bad = true;
           const part = asStr(v);
           if (v.t !== "arr") chargeSteps(part.length);
           s += part;
         }
-        return { t: "str", v: s };
+        return bad ? POISON : { t: "str", v: s }; // error value: passed on
       }
       case "arr": {
         const items: Value[] = [];
@@ -912,22 +929,29 @@ export function evalExpr(e: Expr, env: Env, onError: (d: Diagnostic) => void, de
             span: e.span,
             hints: hint ? [`did you mean "${hint}"?`] : undefined,
           });
-          return NUM0;
+          return POISON; // error value: E_UNKNOWN_REF
         }
         return v;
       }
       case "unary": {
+        const x = evalExpr(e.e, env, onError, depth);
+        if (x === POISON) return POISON; // error value: passed on
         if (e.op === "!") {
-          return { t: "bool", v: !asBool(evalExpr(e.e, env, onError, depth), onError, e.span) };
+          const b = asBool(x, onError, e.span);
+          return notBool(x) ? POISON : { t: "bool", v: !b }; // error value: E_TYPE
         }
-        const v = asNum(evalExpr(e.e, env, onError, depth), onError, e.span);
-        return { t: "num", v: e.op === "-" ? -v : v };
+        const v = asNum(x, onError, e.span);
+        return x.t === "num" ? { t: "num", v: e.op === "-" ? -v : v } : POISON; // error value: E_TYPE
       }
       case "bin":
         return evalBin(e, env, onError, depth);
       case "range": {
-        const lo = asNum(evalExpr(e.lo, env, onError, depth), onError, e.span);
-        const hi = asNum(evalExpr(e.hi, env, onError, depth), onError, e.span);
+        const lv = evalExpr(e.lo, env, onError, depth);
+        const lo = asNum(lv, onError, e.span);
+        const hv = evalExpr(e.hi, env, onError, depth);
+        const hi = asNum(hv, onError, e.span);
+        // error value: E_TYPE, passed on
+        if (lv === POISON || hv === POISON || lv.t !== "num" || hv.t !== "num") return POISON;
         const items: Value[] = [];
         let n = 0;
         for (let v = lo; v < hi; v += 1) {
@@ -947,8 +971,10 @@ export function evalExpr(e: Expr, env: Env, onError: (d: Diagnostic) => void, de
       }
       case "index": {
         const base = evalExpr(e.base, env, onError, depth);
-        const i = asNum(evalExpr(e.idx, env, onError, depth), onError, e.span);
+        const iv = evalExpr(e.idx, env, onError, depth);
+        const i = asNum(iv, onError, e.span);
         if (base === BUDGET_SUBSTITUTE) return NUM0;
+        if (base === POISON || iv === POISON || iv.t !== "num") return POISON; // error value: E_TYPE, passed on
         if (base.t !== "arr") {
           onError({
             severity: "error",
@@ -956,7 +982,7 @@ export function evalExpr(e: Expr, env: Env, onError: (d: Diagnostic) => void, de
             code: "E_TYPE",
             span: e.span,
           });
-          return NUM0;
+          return POISON; // error value: E_TYPE
         }
         const k = Math.trunc(i);
         // Written as the negation of "in range" so a NaN index (every comparison false) is
@@ -968,13 +994,16 @@ export function evalExpr(e: Expr, env: Env, onError: (d: Diagnostic) => void, de
             code: "E_INDEX",
             span: e.span,
           });
-          return NUM0;
+          return POISON; // error value: E_INDEX
         }
         return base.v[k]!;
       }
       case "if": {
-        const c = asBool(evalExpr(e.cond, env, onError, depth), onError, e.span);
-        return evalExpr(c ? e.then : e.else, env, onError, depth);
+        const cv = evalExpr(e.cond, env, onError, depth);
+        // An error-valued condition chooses no branch: either would be a guess.
+        if (cv === POISON) return POISON; // error value: passed on
+        const c = asBool(cv, onError, e.span);
+        return notBool(cv) ? POISON : evalExpr(c ? e.then : e.else, env, onError, depth); // error value: E_TYPE
       }
       case "call":
         return evalCall(e, env, onError, depth);
@@ -1006,7 +1035,7 @@ function evalCall(e: Extract<Expr, { t: "call" }>, env: Env, onError: (d: Diagno
         code: "E_CALL_DEPTH",
         span: e.span,
       });
-      return NUM0;
+      return POISON; // error value: E_CALL_DEPTH
     }
     // The closure is copied per call: a binding copied is a step (see `MAX_EVAL_STEPS`).
     chargeSteps(callee.closure.size);
@@ -1014,8 +1043,9 @@ function evalCall(e: Extract<Expr, { t: "call" }>, env: Env, onError: (d: Diagno
     // A function written in an imported component's body keeps the body's fallback.
     const fallback = fallbacks.get(callee.closure);
     if (fallback) fallbacks.set(callEnv, fallback);
+    // A parameter the call did not pass (its `E_ARITY` above) is the error value.
     callee.params.forEach((p, i) => {
-      callEnv.set(p, args[i] ?? NUM0);
+      callEnv.set(p, args[i] ?? POISON); // error value: E_ARITY
     });
     // The arguments above were evaluated under the caller's datum reader; the body reads no
     // datum (it would bind room names at the call site), so it runs under the body reader.
@@ -1031,7 +1061,20 @@ function evalCall(e: Extract<Expr, { t: "call" }>, env: Env, onError: (d: Diagno
     return evalExpr(callee.body, callEnv, onError, depth + 1);
   }
   if (callee && callee.t === "builtin" && builtinDispatch) {
-    return builtinDispatch(callee.name, args, onError, e.span);
+    // A built-in fed the error value, or one that raises an ERROR about its own arguments,
+    // yields it. Only an error: the error value is held only by a plan that already fails.
+    for (const a of args) if (a === POISON) return POISON; // error value: passed on
+    let raised = false;
+    const r = builtinDispatch(
+      callee.name,
+      args,
+      (d) => {
+        if (d.severity === "error") raised = true;
+        onError(d);
+      },
+      e.span,
+    );
+    return raised ? POISON : r; // error value: E_ARITY, E_DOMAIN, E_TYPE, E_UNKNOWN_FN (src/builtins.ts)
   }
   const hint = closest(e.callee, [...env.keys()]);
   onError({
@@ -1041,7 +1084,7 @@ function evalCall(e: Extract<Expr, { t: "call" }>, env: Env, onError: (d: Diagno
     span: e.span,
     hints: hint ? [`did you mean "${hint}"?`] : undefined,
   });
-  return NUM0;
+  return POISON; // error value: E_UNKNOWN_FN
 }
 
 /** Structural equality across Value kinds (cross-type compares unequal;
@@ -1077,26 +1120,38 @@ function valueEq(a0: Value, b0: Value): boolean {
 function finiteNum(v: number, e: Extract<Expr, { t: "bin" }>, onError: (d: Diagnostic) => void): Value {
   if (Number.isFinite(v)) return { t: "num", v };
   nonFinite(onError, e.span, `"${e.op}"`);
-  return NUM0;
+  return POISON; // error value: E_NON_FINITE
 }
 
 function evalBin(e: Extract<Expr, { t: "bin" }>, env: Env, onError: (d: Diagnostic) => void, depth: number): Value {
   const op = e.op;
   // Logical operators short-circuit (so the RHS isn't evaluated needlessly).
+  // An error-valued operand makes the result the error value (`POISON`), with no report of
+  // its own; both operands are still evaluated as before, so each root cause is reported.
   if (op === "&&" || op === "||") {
-    const l = asBool(evalExpr(e.l, env, onError, depth), onError, e.span);
-    if (op === "&&" && !l) return { t: "bool", v: false };
+    const lv = evalExpr(e.l, env, onError, depth);
+    const l = asBool(lv, onError, e.span);
+    if (op === "&&" && !l) return notBool(lv) ? POISON : { t: "bool", v: false }; // error value: E_TYPE
     if (op === "||" && l) return { t: "bool", v: true };
-    return { t: "bool", v: asBool(evalExpr(e.r, env, onError, depth), onError, e.span) };
+    const rv = evalExpr(e.r, env, onError, depth);
+    const r = asBool(rv, onError, e.span);
+    return notBool(lv) || notBool(rv) ? POISON : { t: "bool", v: r }; // error value: E_TYPE
   }
   // Equality works on any matching Value kind.
   if (op === "==" || op === "!=") {
-    const eq = valueEq(evalExpr(e.l, env, onError, depth), evalExpr(e.r, env, onError, depth));
+    const lv = evalExpr(e.l, env, onError, depth);
+    const rv = evalExpr(e.r, env, onError, depth);
+    if (lv === POISON || rv === POISON) return POISON; // error value: passed on
+    const eq = valueEq(lv, rv);
     return { t: "bool", v: op === "==" ? eq : !eq };
   }
   // Remaining operators are numeric (comparisons and arithmetic).
-  const l = asNum(evalExpr(e.l, env, onError, depth), onError, e.span);
-  const r = asNum(evalExpr(e.r, env, onError, depth), onError, e.span);
+  const lv = evalExpr(e.l, env, onError, depth);
+  const l = asNum(lv, onError, e.span);
+  const rv = evalExpr(e.r, env, onError, depth);
+  const r = asNum(rv, onError, e.span);
+  // error value: E_TYPE, passed on
+  if (lv === POISON || rv === POISON || lv.t !== "num" || rv.t !== "num") return POISON;
   switch (op) {
     case "<":
       return { t: "bool", v: l < r };
@@ -1121,7 +1176,7 @@ function evalBin(e: Extract<Expr, { t: "bin" }>, env: Env, onError: (d: Diagnost
           code: "E_DIV_ZERO",
           span: e.span,
         });
-        return NUM0;
+        return POISON; // error value: E_DIV_ZERO
       }
       return finiteNum(op === "/" ? l / r : l % r, e, onError);
     default:

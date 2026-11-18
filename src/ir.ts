@@ -25,24 +25,28 @@ import {
   functionBodyReader,
   buildDatumTable,
   type DatumTable,
+  splitDatum,
   tableReader,
   type TableReaderOpts,
 } from "./room-datums.js";
+import { statementReadIds } from "./analyze/depends.js";
 import { numberAxes } from "./axes.js";
 import type { Frame } from "./frame.js";
 import { tryTransformElement } from "./frame.js";
 import type { Diagnostic, Span } from "./diagnostics.js";
-import type { Env, Expr } from "./expr.js";
+import type { Env, Expr, Value } from "./expr.js";
 import { fmt0, fmt3, MODEL_RANGE_MM } from "./num-format.js";
 import {
   asNum,
   asStr,
+  BUDGET_SUBSTITUTE,
   chargeSteps,
   currentStepSite,
   DIAGNOSTIC_STEPS,
   evalExpr,
   exprSpan,
   MAX_EVAL_STEPS,
+  POISON,
   type StepLimitSignal,
   stepSite,
   withDatumReader,
@@ -95,6 +99,7 @@ import type { InstanceBody, KeepState } from "./ir/side-tables.js";
 import {
   ceilingOfIr,
   datumTablesOfIr,
+  droppedForErrorValueOfIr,
   instanceBodiesOfIr,
   stepsSpent,
   keepStateOfIr,
@@ -176,7 +181,14 @@ export type {
 } from "./ir/types.js";
 export { MAX_ELEMENTS, whileSpanKey } from "./ir/expand.js";
 export type { InstanceBody } from "./ir/side-tables.js";
-export { ceilingOf, datumTablesOf, instanceBodiesOf, keepResultsOf, evaluationSteps } from "./ir/side-tables.js";
+export {
+  ceilingOf,
+  datumTablesOf,
+  droppedForErrorValue,
+  instanceBodiesOf,
+  keepResultsOf,
+  evaluationSteps,
+} from "./ir/side-tables.js";
 export { sheetExtents, drawnView } from "./ir/sheet.js";
 export { lineWeightOutOfRange, MAX_OVERLAP_PAIRS_LISTED, checkRoomOverlaps } from "./ir/checks.js";
 export { DERIVED_ELEMENTS_PER_ROOM } from "./ir/groups.js";
@@ -897,6 +909,7 @@ function resolveBody(
   const zoneFrame = rootZoneFrame();
   const executedWhiles = new Set<string>();
   const budget: ElementBudget = { count: 0, capped: false };
+  const errorValue = { skipped: false };
   const keepSink: KeepSink = { list: [], count: extras.keepsBefore ?? 0, limited: extras.keepsLimited === true };
   const entries = expandScope(
     ast.body,
@@ -913,6 +926,7 @@ function resolveBody(
       modules: { builtins: builtinScope, envs: new Map() },
       keeps: keepSink,
       keepPlace: extras.level !== undefined ? "storey" : "plan",
+      errorValue,
     },
     zoneFrame,
   );
@@ -978,19 +992,39 @@ function resolveBody(
   const ownerOf = new Map<Diagnostic, Entry>();
   /** The entry a resolved element (local, or carried into plan coordinates) came from. */
   const entryOf = new Map<ResolvedElement, Entry>();
-  const pushDiag = (d: Diagnostic): void => {
+  const pushDiag = (d: Diagnostic): Diagnostic => {
     chargeSteps(DIAGNOSTIC_STEPS);
     const out = activeEntry ? stampProvenance(d, activeEntry.frame, activeEntry.file) : d;
     diagSink.push(out);
     if (activeEntry) ownerOf.set(out, activeEntry);
+    return out;
   };
+  /** What the evaluator itself reported (a root cause, AF3): kept when its element is dropped
+   *  for reading the error value, while the element's follow-on diagnostics go with it. */
+  const rootCauses = new Set<Diagnostic>();
+  const evalDiag = (d: Diagnostic): void => {
+    rootCauses.add(pushDiag(d));
+  };
+  /** Bumped by every evaluation that yields the error value (`POISON`), a refused type, a
+   *  non-finite number or the stack budget's stand-in: the statement that read it is poisoned. */
+  let poisonHits = 0;
+  const isBad = (v: Value): boolean => v === POISON || v === BUDGET_SUBSTITUTE;
   /** Record a relational-placement diagnostic, owned by the room it is about. */
   const ownRoomDiag = (d: Diagnostic, room: RRoom | undefined): void => {
     const e = room ? entryOf.get(room) : undefined;
     if (e) ownerOf.set(d, e);
   };
-  const evalNum = (e: Expr): number => asNum(evalExpr(e, activeEnv, pushDiag), pushDiag, exprSpan(e));
-  const evalStr = (e: Expr): string => asStr(evalExpr(e, activeEnv, pushDiag));
+  const evalNum = (e: Expr): number => {
+    const v = evalExpr(e, activeEnv, evalDiag);
+    // error value: E_TYPE, E_NON_FINITE, passed on
+    if (isBad(v) || v.t !== "num" || !Number.isFinite(v.v)) poisonHits++;
+    return asNum(v, evalDiag, exprSpan(e));
+  };
+  const evalStr = (e: Expr): string => {
+    const v = evalExpr(e, activeEnv, evalDiag);
+    if (isBad(v)) poisonHits++; // error value: passed on
+    return asStr(v);
+  };
   const evalPt = (p: ExprPoint): Point => ({ x: evalNum(p.x), y: evalNum(p.y) });
   // Openings call isOnWall(at, ref) then hostSegment(at, ref) with identical
   // args back-to-back; a one-entry memo fuses those into a single wall scan.
@@ -1018,11 +1052,12 @@ function resolveBody(
   if (ast.height !== undefined) {
     stepSite(ast.heightSpan);
     activeEnv = globalScope.flatten();
+    const hits = poisonHits;
     const h = evalNum(ast.height);
     if (isDrawableHeight(h)) {
       storeyHeight = h;
       heightWritten = true;
-    } else diagnostics.push(heightRangeDiagnostic("The plan", "height", h, ast.heightSpan));
+    } else if (poisonHits === hits) diagnostics.push(heightRangeDiagnostic("The plan", "height", h, ast.heightSpan));
   }
   // The storey's `slab` and clear height (MF-D1, RM-D17), evaluated as `height` is, only on a plan
   // that writes a `slab` or a `clear`: on any other plan nothing here runs or is charged.
@@ -1030,6 +1065,8 @@ function resolveBody(
   if (plansAuthorCeiling(ast)) {
     const envBefore = activeEnv;
     activeEnv = globalScope.flatten();
+    /** The last `slab`/`clear` read the error value (AF3): its range report would be a follow-on. */
+    let lastBad = false;
     ceiling = resolveCeiling(
       ast,
       extras.level ? `Level ${fmt0(extras.level.level)}` : "The plan",
@@ -1037,9 +1074,14 @@ function resolveBody(
       {
         eval: (e, span) => {
           stepSite(span);
-          return evalNum(e);
+          const hits = poisonHits;
+          const v = evalNum(e);
+          lastBad = poisonHits !== hits;
+          return v;
         },
-        diag: (d) => diagnostics.push(d),
+        diag: (d) => {
+          if (!lastBad) diagnostics.push(d);
+        },
       },
     );
     activeEnv = envBefore;
@@ -1070,9 +1112,27 @@ function resolveBody(
     sameFile: (file) => file === activeEntry?.file,
     ...(world.now ? { now: () => world.now!() } : {}),
     diag: pushDiag,
+    rootDiag: evalDiag,
     north: ast.north,
   };
+  /** A wall went for the error value (AF3: an authored wall that read it, or a `walls from
+   *  rooms` that read it or derived nothing for a room that did): from then on the wall list is
+   *  short of it, so a statement that reads the walls (a host by position, a back, a face, a
+   *  ring) read what the error value made, and goes with it. Never set on a plan without one. */
+  let wallsShort = false;
+  let wallsNow = ctx.walls;
+  Object.defineProperty(ctx, "walls", {
+    get: (): RWall[] => {
+      if (wallsShort) poisonHits++; // error value: passed on (the wall's own report)
+      return wallsNow;
+    },
+    set: (v: RWall[]) => {
+      wallsNow = v;
+    },
+    enumerable: true,
+  });
   function hostInfo(at: Point, ref?: string): { host: WallSegment | null; onWall: boolean } {
+    if (wallsShort) poisonHits++; // error value: passed on (the wall's own report)
     const key = `${at.x},${at.y},${ref ?? ""}`;
     if (key === hiKey && hiVal) return hiVal;
     if (!wallGrid) wallGrid = new WallGrid(ctx.walls);
@@ -1177,7 +1237,15 @@ function resolveBody(
         stepSite(e.node.span, e.file, e.frame);
         ctx.id = e.id;
         ctx.defaults = e.defaults;
+        const hits = poisonHits;
         const r = def.resolve(e.node, ctx);
+        if (poisonHits !== hits) e.poisoned = true;
+        if (def.yieldsWalls && !e.poisoned && grpRooms.some((x) => x._errorValue) && def.yieldsWalls(r).length === 0) {
+          // It derived nothing because a room it derives from went (a clause named it, or the
+          // rest no longer tile): it follows that room.
+          e.poisoned = true;
+        }
+        if (e.poisoned && (r.kind === "wall" || def.yieldsWalls)) wallsShort = true;
         e.resolved = r;
         entryOf.set(r, e);
         markPlacement(r, e.node, e.fromStrip === true);
@@ -1191,6 +1259,12 @@ function resolveBody(
         // `applyFixes` then splices into the wrong source. Set only when there is one, so
         // an import-free plan's IR carries no new key at all.
         if (e.file !== undefined) r._file = e.file;
+        // A room that read the error value (AF3) is dropped at the sweep: from here on nothing is
+        // placed against it, derived from it or read off it (its datums are the error value).
+        if (e.poisoned && r.kind === "room") {
+          r._unplaced = true;
+          r._errorValue = true;
+        }
         if (r.kind === "wall") {
           r._idAuthored = e.idAuthored === true;
           // A pairwise wall the rooms refused (ADR 0028 §4) has no points: no body to draw or
@@ -1326,10 +1400,42 @@ function resolveBody(
           ownRoomDiag(out, room);
         });
       });
+      // A room left unplaced because what it is placed against read the error value (AF3) is
+      // gone with it, to the end of the chain: one step per room per round, before the round.
+      if (grpRooms.some((r) => r._errorValue)) {
+        const goneRooms = new Set<string>();
+        for (const r of grpRooms) if (r._errorValue) goneRooms.add(r.id);
+        for (let grew = true; grew; ) {
+          grew = false;
+          chargeSteps(grpRooms.length);
+          for (const r of grpRooms) {
+            if (r._errorValue || !r._unplaced || r._rel === undefined || !goneRooms.has(r._rel.ref)) continue;
+            r._errorValue = true;
+            goneRooms.add(r.id);
+            grew = true;
+          }
+        }
+      }
       const frozen = buildDatumTable(grpRooms, axes);
       table = frozen;
       const opts = datumOpts(grp);
-      const reader = tableReader(frozen, opts);
+      const tabled = tableReader(frozen, opts);
+      // A datum of a room that read the error value (AF3) is the error value, read silently:
+      // that room's own report is the one report. Only a group that holds such a room wraps.
+      const gone = new Set<string>();
+      for (const r of grpRooms) if (r._errorValue) gone.add(r.id);
+      const reader: typeof tabled =
+        gone.size === 0
+          ? tabled
+          : (name, span, onError) => {
+              const d = splitDatum(name);
+              if (d !== undefined && gone.has(d.room)) {
+                // error value: passed on (the room's own report)
+                poisonHits++;
+                return POISON;
+              }
+              return tabled(name, span, onError);
+            };
       // A relational opening reads the same table through the same reader (ADR 0028 §5).
       ctx.datums = {
         table: frozen,
@@ -1340,7 +1446,8 @@ function resolveBody(
             refused = true;
             pushDiag(reword ? reword(d) : d);
           });
-          return v === undefined ? undefined : refused ? null : v.t === "num" ? v.v : null;
+          // The error value (a dropped room's datum, AF3) is a refusal too, already reported.
+          return v === undefined ? undefined : refused || v === POISON ? null : v.t === "num" ? v.v : null;
         },
       };
       // Every later statement reads the frozen table (ADR 0028 §2).
@@ -1502,7 +1609,10 @@ function resolveBody(
       // and left out.
       const inRange = (list: Expr[], axis: "x" | "y"): number[] =>
         list.flatMap((e) => {
+          const hits = poisonHits;
           const v = snap(evalNum(e));
+          // A position that read the error value (AF3) is no datum: left out, its report standing.
+          if (poisonHits !== hits) return [];
           if (Math.abs(v) <= MODEL_RANGE_MM) return [v];
           axesDiags.push(outOfRange(`The \`axes\` ${axis} position`, v, exprSpan(e) ?? ast.axes?.span));
           return [];
@@ -1557,26 +1667,112 @@ function resolveBody(
   //     diagnostic about a dropped element (its resolve-time errors and warnings) is removed,
   //     so an element out of range is reported exactly once.
   const outside = checkNumberDomain(resolvedElements, registry, diagnostics);
-  if (outside.size > 0) {
+  //     An element that read the error value (AF3, `POISON`: an unknown name, a refused type, …)
+  //     is dropped the same way, with the same companions, and every diagnostic it raised goes
+  //     but the evaluator's own: that report is the root cause, and the rest (a size that is
+  //     not positive, a door off its wall) only describe the garbage 0 it was drawn from.
+  const poisoned = new Set<ResolvedElement>();
+  for (const e of entries) if (e.poisoned && e.resolved && !dropped.has(e)) poisoned.add(e.resolved);
+  if (outside.size > 0 || poisoned.size > 0) {
     // A dropped wall-deriving statement takes its derived walls with it (its bounds and
     // measures are theirs), and so the openings hosted on them below.
-    for (const el of [...outside]) {
-      for (const w of registry.byKind.get(el.kind)?.yieldsWalls?.(el) ?? []) outside.add(w);
-    }
-    for (const el of resolvedElements) {
-      if ((el.kind === "door" || el.kind === "window" || el.kind === "opening") && el.host) {
-        const host = hostWallOf(el.host, walls);
-        if (host && outside.has(host)) outside.add(el);
+    const widen = (gone: Set<ResolvedElement>): void => {
+      if (gone.size === 0) return;
+      for (const el of [...gone]) {
+        for (const w of registry.byKind.get(el.kind)?.yieldsWalls?.(el) ?? []) gone.add(w);
+      }
+      for (const el of resolvedElements) {
+        if ((el.kind === "door" || el.kind === "window" || el.kind === "opening") && el.host) {
+          const host = hostWallOf(el.host, walls);
+          if (host && gone.has(host)) gone.add(el);
+        }
+      }
+    };
+    widen(outside);
+    widen(poisoned);
+    // And every statement that reads what went (AF3): a room placed against it, an opening
+    // between it and another, a piece in it, a dimension to it, and what reads those, to the
+    // fixpoint. Its reports go too, so nothing left in the plan or its diagnostics names an
+    // element the error value took. One step per statement per round, before the round.
+    if (poisoned.size > 0) {
+      const goneIds = new Set<string>();
+      const readsOf = new Map<Entry, readonly string[]>();
+      // The wall-deriving statements (`walls from rooms`) of each group, by instance: an opening
+      // placed by rooms (`between`, `on <room>.<edge>`) stands in the walls one of them derives.
+      const derivers = new Map<string, string[]>();
+      for (const e of entries) {
+        if (e.resolved === undefined || !registry.byKind.get(e.node.kind)?.yieldsWalls) continue;
+        const key = e.resolved._instance ?? "";
+        const list = derivers.get(key);
+        if (list) list.push(e.resolved.id);
+        else derivers.set(key, [e.resolved.id]);
+      }
+      const readIds = (e: Entry, el: ResolvedElement): readonly string[] => {
+        let ids = readsOf.get(e);
+        if (ids === undefined) {
+          const inst = el._instance;
+          const own = [...statementReadIds(e.node)];
+          // `in <room>` on a piece at fixed coordinates only says whose it is: still its room's.
+          if (e.node.kind === "furniture" && e.node.room !== undefined) own.push(e.node.room);
+          // A wall named by id (an opening's host, `wall <id>`, a piece's back, a roof's ring).
+          const n = e.node as { attach?: { wall?: string }; wall?: string; against?: { wall?: string } };
+          for (const w of [n.attach?.wall, n.wall, n.against?.wall]) if (typeof w === "string") own.push(w);
+          const out = own.map((id) => (inst ? `${inst}.${id}` : id));
+          const k = e.node.kind;
+          const byRooms =
+            ((k === "door" || k === "window" || k === "opening") &&
+              (("between" in e.node && e.node.between !== undefined) ||
+                (n.attach?.wall !== undefined && splitDatum(n.attach.wall) !== undefined))) ||
+            (k === "furniture" && e.node.againstEdge !== undefined);
+          if (byRooms) out.push(...(derivers.get(inst ?? "") ?? []));
+          const r = el as { _againstWall?: string; _follows?: string };
+          if (r._againstWall !== undefined) out.push(r._againstWall);
+          if (r._follows !== undefined) out.push(r._follows);
+          readsOf.set(e, out);
+          ids = out;
+        }
+        return ids;
+      };
+      /** The groups (by instance) a room went from. */
+      const roomGone = new Set<string>();
+      /** A wall-deriving statement that derived no wall where a room went: it stood on that room
+       *  (a clause named it, or the rest no longer tile), so it is the room's follower too. */
+      const derivedNothing = (el: ResolvedElement): boolean =>
+        roomGone.has(el._instance ?? "") && (registry.byKind.get(el.kind)?.yieldsWalls?.(el).length ?? 1) === 0;
+      for (let grew = true; grew; ) {
+        grew = false;
+        for (const el of poisoned) {
+          goneIds.add(el.id);
+          if (el.kind === "room") roomGone.add(el._instance ?? "");
+        }
+        chargeSteps(entries.length);
+        for (const e of entries) {
+          const el = e.resolved;
+          if (el === undefined || dropped.has(e) || poisoned.has(el) || outside.has(el)) continue;
+          if (derivedNothing(el) || readIds(e, el).some((id) => goneIds.has(id))) {
+            poisoned.add(el);
+            grew = true;
+          }
+        }
+        if (grew) widen(poisoned);
       }
     }
     const droppedEntries = new Set<Entry>();
-    for (const e of entries) if (e.resolved && outside.has(e.resolved)) droppedEntries.add(e);
+    const poisonedEntries = new Set<Entry>();
+    for (const e of entries) {
+      if (!e.resolved) continue;
+      if (outside.has(e.resolved)) droppedEntries.add(e);
+      else if (poisoned.has(e.resolved)) poisonedEntries.add(e);
+    }
     let kept = 0;
     for (const d of diagnostics) {
       const owner = ownerOf.get(d);
-      if (owner === undefined || !droppedEntries.has(owner)) diagnostics[kept++] = d;
+      if (owner === undefined || (!droppedEntries.has(owner) && (!poisonedEntries.has(owner) || rootCauses.has(d)))) {
+        diagnostics[kept++] = d;
+      }
     }
     diagnostics.length = kept;
+    for (const el of poisoned) outside.add(el);
     const keptWalls = walls.filter((w) => !outside.has(w));
     walls.length = 0;
     for (const w of keptWalls) walls.push(w);
@@ -1618,7 +1814,8 @@ function resolveBody(
   // 4. Cross-element checks. Drawability and room references read the plan as authored
   //    (a dropped room is still the room a piece of furniture names, so it raises no
   //    second error); the overlap check reads only what was kept.
-  checkPlanDrawable(resolvedElements, diagnostics);
+  // A plan left empty because a loop or condition read the error value (AF3) is that error's.
+  if (!errorValue.skipped) checkPlanDrawable(resolvedElements, diagnostics);
   const siteBeforeOverlaps = currentStepSite();
   checkRoomOverlaps(elements, diagnostics, (extras?.storeyCount ?? 1) > 1 ? extras?.level?.level : undefined, ast.grid);
   stepSite(siteBeforeOverlaps?.span, siteBeforeOverlaps?.file, siteBeforeOverlaps?.frame);
@@ -1643,11 +1840,14 @@ function resolveBody(
   if (ast.site?.boundary) {
     stepSite(ast.site.boundarySpan ?? ast.site.span);
     activeEnv = globalScope.flatten();
+    const hits = poisonHits;
     const ring = ast.site.boundary.map((p) => snapPt({ x: evalNum(p.x), y: evalNum(p.y) }));
     const effective = effectiveVertices(ring);
     const span = ast.site.boundarySpan ?? ast.site.span;
     const far = farthest(ring.flatMap((p) => [p.x, p.y]));
-    if (far !== undefined) {
+    if (poisonHits !== hits) {
+      // A vertex read the error value (AF3): no lot line, and no report beyond its own.
+    } else if (far !== undefined) {
       diagnostics.push(outOfRange("The site `boundary`", far, span));
     } else if (effective.length < 3) {
       diagnostics.push({
@@ -1751,6 +1951,12 @@ function resolveBody(
   };
   datumTablesOfIr.set(ir, datumTables);
   if (instanceBodies.size > 0) instanceBodiesOfIr.set(ir, instanceBodies);
+  // Only on a storey the AF3 sweep dropped something from, so every other IR is the one it was.
+  if (poisoned.size > 0)
+    droppedForErrorValueOfIr.set(
+      ir,
+      [...poisoned].map((e) => e.id),
+    );
 
   // 8. The storey's keeps (ADR 0033), last: measured against the plan as it resolved, in plan
   //    coordinates, in source order — on a `paper` plan's drawn pass only (R11). A keep reads, it

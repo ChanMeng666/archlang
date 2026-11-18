@@ -350,15 +350,17 @@ suite("an imported module's `let` is expansion, whoever looks it up first", () =
       const out = compile(src, { world: makeVirtualWorld({ "m.arch": DATUM }), noCache: true });
       const d = out.diagnostics.filter((x) => x.code === "E_DATUM_BEFORE_ROOMS");
       expect(d.map((x) => [x.file, DATUM.slice(x.span!.start, x.span!.end)])).toEqual([["m.arch", "main.bottom"]]);
-      // An error draws nothing, so the rest is read off the resolved walls: in either order
-      // both components' walls sit where the module with the refused value's 0 puts them.
+      // An error draws nothing, so the rest is read off the resolved walls. The refused datum
+      // is the error value (AF3), so in either order every wall that reads E is dropped: a
+      // value leaked from either instance's room would be a real number and resolve a wall.
       const walls = (m: string) =>
         irWith(src, { "m.arch": m })
           .walls.map((w) => [w.id, w.points])
           .sort((x, y) => String(x[0]).localeCompare(String(y[0])));
-      expect(walls(DATUM)).toEqual(walls(LITERAL));
-      // Neither component read the other's (or its own) room: every wall is at E = 0.
-      const ys = walls(DATUM).flatMap((w) => (w[1] as { y: number }[]).map((p) => p.y));
+      expect(walls(DATUM)).toEqual([]);
+      // The same module with E written as a literal resolves both walls, so the check above
+      // is not vacuous: every wall is at E = 0.
+      const ys = walls(LITERAL).flatMap((w) => (w[1] as { y: number }[]).map((p) => p.y));
       expect(ys).toEqual([0, 0, 0, 0]);
     });
   }
