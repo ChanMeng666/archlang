@@ -30,17 +30,26 @@ import {
   guardImports,
   listedTrees,
   medianSecs,
+  NAMED_MAX_SECS,
   namedTests,
   OPAQUE_GUARD,
+  PIN_SECS,
   planTests,
+  readDurations,
+  SCANNED_DIRS,
   scannedTrees,
   scanningGuards,
   TEXT_GUARDS,
+  TREE_FREE_SECS,
+  TREE_MAX_FILES,
+  TREE_MAX_SECS,
   textGuards,
   textGuardTrigger,
   treeGuards,
   // @ts-expect-error — a zero-dep .mjs script with no type declarations.
 } from "../scripts/gate-select.mjs";
+// @ts-expect-error — a zero-dep .mjs script with no type declarations.
+import { nearestTests } from "../scripts/nearest-tests.mjs";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
 const tracked = (): string[] =>
@@ -133,14 +142,16 @@ describe("treeGuards: the scanners no import reaches", () => {
     expect(treeGuards(ROOT, ["src/error-catalog/rooms.json"], files)).toEqual([]);
   });
 
-  it("stays within 30 files and 25 recorded seconds on the real tree, for a change under every tree", () => {
+  it("on the real tree, for a change under every tree: the ceiling on files, the budget on the 1-s scanners", () => {
     const got = treeGuards(
       ROOT,
       ["src/lint.ts", "test/a.test.ts", "scripts/a.mjs", "eval/a.ts", ".claude/hooks/a.mjs"],
       files,
-    );
-    expect(got.length).toBeLessThanOrEqual(30);
-    expect(got.reduce((a: number, g: Pick) => a + (g.secs ?? 0), 0)).toBeLessThanOrEqual(25);
+    ) as Pick[];
+    expect(got.length).toBeLessThanOrEqual(TREE_MAX_FILES);
+    const budgeted = got.filter((g) => (g.secs ?? 0) >= TREE_FREE_SECS);
+    expect(budgeted.length).toBeGreaterThan(0);
+    expect(budgeted.reduce((a, g) => a + (g.secs ?? 0), 0)).toBeLessThanOrEqual(TREE_MAX_SECS);
   });
 
   describe("on a temp tree", () => {
@@ -184,9 +195,22 @@ describe("treeGuards: the scanners no import reaches", () => {
       ]);
     });
 
-    it("cuts a scanner that no longer fits the seconds it is given, and keeps the cheaper ones", () => {
-      expect(names(treeGuards(dir, ["src/x.ts"], all(), 30, 1.0))).toEqual(["a", "b", "c"]); // .6, then .5 passes 1.0
-      const got = treeGuards(dir, ["src/x.ts"], all(), 30, 5.95); // a..j cost 5.9; `wide` costs 5 more
+    it("takes every sub-second scanner free of the budget, and cuts a 1-s one that no longer fits", () => {
+      // a..e and h..j are under TREE_FREE_SECS (1): all in, whatever the seconds.
+      expect(names(treeGuards(dir, ["src/x.ts"], all(), 30, 0))).toEqual(["a", "b", "c", "h", "i", "j", "d", "e"]);
+      // f (1.0) fits 1.0; g (1.1) would make 2.1.
+      expect(names(treeGuards(dir, ["src/x.ts"], all(), 30, 1.0))).toEqual([
+        "a",
+        "b",
+        "c",
+        "h",
+        "i",
+        "j",
+        "d",
+        "e",
+        "f",
+      ]);
+      const got = treeGuards(dir, ["src/x.ts"], all(), 30, 5.95); // f + g cost 2.1; `wide` costs 5 more
       expect(names(got)).not.toContain("wide");
       expect(got).toHaveLength(10);
     });
@@ -267,9 +291,10 @@ describe("namedTests", () => {
       expect(got.find((g) => g.file === "test/widget-c.test.ts")?.secs).toBe(3);
     });
 
-    it("defaults to 5 files and 15 seconds", () => {
-      const heavy = Object.fromEntries(fake.map((f) => [f, 4]));
-      expect(namedTests(["src/widget.ts"], fake, heavy)).toHaveLength(3); // 4 + 4 + 4; a fourth (16) does not fit
+    it("defaults to 5 files and 35 seconds", () => {
+      expect(NAMED_MAX_SECS).toBe(35);
+      const heavy = Object.fromEntries(fake.map((f) => [f, 8]));
+      expect(namedTests(["src/widget.ts"], fake, heavy)).toHaveLength(4); // 8 x 4 = 32; a fifth (40) does not fit
       const light = Object.fromEntries(fake.map((f) => [f, 0.1]));
       expect(namedTests(["src/widget.ts"], fake, light)).toHaveLength(5);
     });
@@ -587,4 +612,100 @@ describe("planTests: what the gate runs for a change set", () => {
     expect(p.picked.filter((f) => f === "test/no-cli-spawn.test.ts")).toHaveLength(1);
     expect(p.extras.map((e) => e.file)).not.toContain("test/no-cli-spawn.test.ts");
   });
+});
+
+// The table counts each file's import and collect time, so a file costs more seconds than the test-time
+// table gave it, and the next refresh moves every row by run-to-run noise (runners differ by up to 1.3x).
+// The budgets were rescaled so the gate still picks what the test-time table's 15 / 10 / 5 s picked; these
+// pin those picks (the budget-sensitive ones: a cheaper pick of the same rule rides along) on the real table
+// and on one 1.3 times costlier.
+describe("the picks survive a table 1.3 times costlier", () => {
+  const files = tracked();
+  const real = readDurations(ROOT) as Record<string, number>;
+  const scaled = (k: number) =>
+    Object.fromEntries(Object.entries(real).map(([f, s]) => [f, Math.round(s * k * 10) / 10])) as Record<
+      string,
+      number
+    >;
+  const T = (n: string) => (n.includes("/") ? n : `test/${n}.test.ts`);
+  const scanners = (changed: string[], d: Record<string, number>) =>
+    files_(treeGuards(ROOT, changed, files, TREE_MAX_FILES, TREE_MAX_SECS, d));
+  // Each change set's source-tree scanners of 1 s or more that the test-time table's 15 s picked, and
+  // `no-replace-chain-escapers` (0.2 s: cut at 25 s on a run's table before the sub-second rule).
+  const SCANNERS: [string, string[], string[]][] = [
+    [
+      "src/",
+      ["src/lint.ts"],
+      [
+        "pure-guard",
+        "core-no-3d",
+        "no-import-side-effects",
+        "sheet-text",
+        "lint-provenance",
+        "dataset",
+        "docs-fences",
+        "no-replace-chain-escapers",
+      ],
+    ],
+    ["test/", ["test/cache.test.ts"], ["no-clock-assertions", "docs-fences", "no-cli-spawn"]],
+    ["eval/", ["eval/l2-run.ts"], ["vocabulary-equivalence", "dataset", "no-replace-chain-escapers"]],
+    [
+      "five trees",
+      [
+        "src/lint.ts",
+        "test/cache.test.ts",
+        "scripts/gen-module-map.ts",
+        "eval/l2-run.ts",
+        ".claude/hooks/local-gate.mjs",
+      ],
+      [
+        "pure-guard",
+        "core-no-3d",
+        "no-import-side-effects",
+        "sheet-text",
+        "lint-provenance",
+        "vocabulary-equivalence",
+        "no-clock-assertions",
+        "docs-fences",
+        "no-replace-chain-escapers",
+      ],
+    ],
+  ];
+  // A changed module and the costliest of its named tests the test-time table's 10 s picked.
+  const NAMED: [string, string][] = [
+    ["src/clause-order.ts", "clause-order-byte-identity"],
+    ["src/lint/rules/footprint.ts", "footprint-any-placement"],
+    ["src/elements/opening.ts", "window-opening-fix-charge"],
+    ["src/geometry/joinery.ts", "joinery-pipeline"],
+    ["src/lint/rules/room-contents.ts", "lint-room-contents"],
+  ];
+  // The costliest corpus pins the test-time table's 5 s picked for a change under src/.
+  const PINS = [
+    "keep-digests",
+    "nav-grid-residual",
+    "block-stair-frames",
+    "plan-json-dropped",
+    "packages/archlang-3d/test/browser-safety.test.ts",
+  ];
+  const related = nearestTests(ROOT, ["src/lint.ts"]) as string[];
+
+  for (const k of [1, 1.3]) {
+    it(`x${k}: every sub-second scanner, and the 1-s scanners each change set picked`, () => {
+      const d = scaled(k);
+      for (const [name, changed, want] of SCANNERS) {
+        const got = scanners(changed, d);
+        expect(got, name).toEqual(expect.arrayContaining(want.map(T)));
+        // Free of the budget: no sub-second scanner is ever cut below the ceiling on files.
+        const all = treeGuards(ROOT, changed, files, 1000, 0, d) as Pick[];
+        if (all.length <= TREE_MAX_FILES) for (const g of all) expect(got, `${name}: ${g.file}`).toContain(g.file);
+      }
+    });
+
+    it(`x${k}: the named tests and the corpus pins`, () => {
+      const d = scaled(k);
+      for (const [mod, test] of NAMED) expect(files_(namedTests([mod], files, d)), mod).toContain(T(test));
+      const pins = files_(corpusPins(scanningGuards(ROOT, ["examples"], files, SCANNED_DIRS, d), related, PIN_SECS, d));
+      expect(pins).toEqual(expect.arrayContaining(PINS.map(T)));
+    });
+  }
 });

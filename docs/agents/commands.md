@@ -11,9 +11,9 @@
   One child process at a time, each step timed. `--max` caps the branch's own changed test files, the
   directory-scanning guards and the import-distance tests together. Beyond it, each under its own cap, it adds
   what the import graph ranks too far away: the source-tree scanners a changed `src/`, `scripts/`, `eval/`,
-  `test/` or `.claude/` file wakes (tests in `test/` that list that folder and read every file; within 25
-  recorded seconds and at most 30 files, the ones scanning the fewest trees first, then the cheapest),
-  the tests named after a changed module (at most 5 files and 15 recorded seconds), the three text guards
+  `test/` or `.claude/` file wakes (tests in `test/` that list that folder and read every file; at most 30 files:
+  every one under 1 recorded second, then the others within 55, the ones scanning the fewest trees first,
+  then the cheapest), the tests named after a changed module (at most 5 files and 35 recorded seconds), the three text guards
   CI failed on in #848, each only on its own inputs (`lint-fix-texts` on the error catalogue,
   `src/fix-producers.ts` or a `src/` module whose source has a `message:`/`fix:`/`hint:`/`hints:`
   property outside a comment line or whose first doc comment mentions "message" or "hint", if it is
@@ -23,7 +23,7 @@
   derived from the files' text; the catalogue, fix-producers, IndexNow and `.gitleaksignore` triggers
   are named paths) and, for a `src/`
   change, the cheapest tests that pin their output over the examples corpus within `--pins` (default
-  5) recorded seconds. Selection is `scripts/gate-select.mjs`. It still cannot see a guard
+  30) recorded seconds. Selection is `scripts/gate-select.mjs`. It still cannot see a guard
   that scans a directory in a way no rule above reads, and the expensive corpus pins (`keep-byte-identity`,
   `rendered-theme`) and `typecheck:all` are CI's, which is why a quick pass is never merge evidence.
 - `check:drift` reads `git ls-files`, so a new file is invisible to `module-map` and `test-index` until it
@@ -189,7 +189,7 @@ by each spec's measured seconds, not Playwright's `--shard`, which splits by tes
 `test/e2e-shards.test.ts` fails unless each site's lists name every spec in its `e2e/` exactly once.
 Rebalance from a run's log (the list reporter prints each test's time) when a shard drifts.
 
-**Shard balance.** `test/sequencer.ts` splits the shards by the seconds per file in `test/.durations.json`, each file's whole cost in its worker with import and collect included (`test/durations-reporter.ts`; a JSON report's span is test time only), plus `FILE_OVERHEAD_S` (2) per file; the files the table lacks follow, in path order, each at the table's median onto the then-lightest shard, so adding one never moves a recorded file (`test/sequencer.test.ts`); within a shard the longest recorded file starts first (vitest's default starts the largest source file first, which left a small slow file running alone at the end). Each `Node 22 tests` shard uploads its files' map as `test-durations-<n>`, and nightly's `full-matrix` job (the `Test ubuntu-latest / Node 22` leg) the whole suite's as `test-durations`. Refresh with `gh run download <run id> -p 'test-durations-*' -D <dir> && node scripts/gen-test-durations.mjs <dir>/*/test-durations-*.json` (it merges: rows for files in the maps are replaced, rows for deleted files dropped), after a run whose shard walls differ by more than 1.5× or about once a month. `check:quick`'s test budgets (`scripts/gate-select.mjs`) read the same seconds.
+**Shard balance.** `test/sequencer.ts` splits the shards by the seconds per file in `test/.durations.json`, each file's whole cost in its worker with import and collect included (`test/durations-reporter.ts`; a JSON report's span is test time only), plus `FILE_OVERHEAD_S` (2) per file; the files the table lacks follow, in path order, each at the table's median onto the then-lightest shard, so adding one never moves a recorded file (`test/sequencer.test.ts`); within a shard the longest recorded file starts first (vitest's default starts the largest source file first, which left a small slow file running alone at the end). Each `Node 22 tests` shard uploads its files' map as `test-durations-<n>`, and nightly's `full-matrix` job (the `Test ubuntu-latest / Node 22` leg) the whole suite's as `test-durations`. Refresh as the median of three runs: `gh run download <run id> -p 'test-durations-*' -D <dir>` for each, then `node scripts/gen-test-durations.mjs -o test/.durations.json --median <dir1> <dir2> <dir3>` (rows for files in the runs are replaced, rows for deleted files dropped; `test/.durations.README.md`). Refresh when the same shard index is the slowest in three runs of the same table, or about once a month. One run's spread is not a trigger: a runner can be about 1.3× faster or slower than another, and every file it runs moves with it. `check:quick`'s test budgets (`scripts/gate-select.mjs`) read the same seconds and are pinned against a table 1.3× costlier (`test/gate-select.test.ts`).
 
 **A break on a main-only leg appears after the merge** of an ordinary PR (a train PR's run shows it
 before), and nothing blocks on it. It is seen in three
