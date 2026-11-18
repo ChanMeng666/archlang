@@ -129,7 +129,9 @@ opens the written ZIP again and checks the entry list and both rewritten files;
 `npm run prove:openai-plugin` repeats that check on an existing ZIP.
 
 1. Sign in at <https://platform.openai.com/plugins> with an organization-owner account (or a member with
-   Apps Management Write) and complete the individual or business verification in organization settings.
+   Apps Management Write; the portal can open in another of the account's organizations, showing no
+   ArchLang plugin, until the organization switcher names the one that owns it), and
+   complete the individual or business verification in organization settings.
 2. In the PRIMARY checkout, on the release's commit, run `npm run build:openai-plugin`; upload
    `dist-openai/archlang-plugin-<version>.zip`. Two cases. (a) The FIRST draft of a new plugin goes
    through the plugins LIST page's "Upload new or existing plugin" (step 3). Its dropzone creates a file
