@@ -53,7 +53,16 @@ AL6（#957）第二轮红队的三条测试缺口，只改测试，不改 `src/`
 - **补充（下游应用的请求，2026-11-18）**：所有候选位都避不开时，不画这个墙厚数字，并由一条 drafting 层 lint 指出哪一个没画。用 `new-lint-rule` 技能加。示例必须保持零警告；语料里墙厚数字的报告现在是 0 条，这条 lint 在语料上预计不报，要量过再说。
 - **变化面**：语料里没有墙厚数字的报告，预计语料零变化，用计数器证明；只有见证夹具变化。要守住 `test/dim-thickness-callout.test.ts` 和 `test/annotation-collisions.test.ts`（墙厚数字避开楼梯）。
 - 同时完成 PS2.39 中"墙厚数字压房间文字"这一部分。
-- **发布**：patch。`autoDimensions` 不从 `src/index.ts` 导出。
+- **发布**：minor。新增 lint 码 `W_DIM_THICKNESS_UNPLACED`（`.claude/commands/release-check.md`：新增 `W_*` 码至少 minor）；`autoDimensions` 不从 `src/index.ts` 导出。
+
+### AL5b · AL5 的后续 — `todo` · 1 日 · opus
+AL5（#959）第二轮红队留下的三项。
+
+- **S1 计数不一致**：重新选位用的是 `fitWork` 里 `fitLabels` 剩下的部分（单层 8M），`W_ANNOTATION_OVERLAP` 有自己的 1M 计数（`MAX_ANNOTATION_WORK`，`annotations.ts` 中 `pairs > MAX_ANNOTATION_WORK` 处）。很大的单层平面上（例：1 层、1200 种墙厚 → 501 个不画并报告，699 个留在标签上），重新选位用完计数后留下的数字，lint 因自身计数超限整层跳过而不报。做法二选一：给 `DrawnAutoDims` 加一个"计数用完"标记，并由 lint 记一条跳过；或者让两个计数对齐。
+- **S2 备份副本无测试**：`src/scene-memo.ts` 的 `copyScene` 把布局复制到 memo 副本上（`carryDrawnAutoDims`），但没有测试覆盖；`annotations.ts` 的 `drawnStorey` 在拿不到布局时静默回退到 `autoDimensions`。加一个测试：数字被挪动的平面，经 playground 的路径（先 lint 请求，再 `compile` 提供 Scene，再 lint 命中 memo），断言 lint 读到的是挪动后的布局；考虑把回退改成显式。
+- **细节**：没被挪动的数字压在开口编号、门扇扫过的范围或另一个尺寸数字上时，没有规则报告，和 main 一样。决定是否扩展 `W_ANNOTATION_OVERLAP` 去量这些。
+- **变化面**：S1 若加跳过记录，会改变超大平面的 lint 覆盖说明；S2 只加测试；细节项若扩展规则，会改变 drafting lint，需量语料。
+- **发布**：S1/细节按实际改动定；S2 不发布。
 
 ### AL4 · 比家具宽的家具文字 — `todo` · 1.5 日 · opus
 只有没进目录的家具词会画文字：一个矩形加居中的 `furnFont` 文字（`src/elements/furniture.ts:620–653`），不检查放不放得下。

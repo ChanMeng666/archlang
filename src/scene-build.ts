@@ -906,8 +906,10 @@ interface Ink {
  * less what `fitLabels` spent), one unit per node, label or drawn thing read and per ring vertex
  * clipped, and per wall segment, opening and element a station search reads. It is charged before
  * the work it counts. Past it the pass stops where it stands: the figure in hand and every one after
- * it keep the stations they were drawn at, so a figure over a label is still drawn there and still
- * reported by `W_ANNOTATION_OVERLAP`, never left out silently.
+ * it keep the stations they were drawn at, so a figure over a label is still drawn there (never
+ * left out). `W_ANNOTATION_OVERLAP` reports such a figure only while its own count
+ * (`MAX_ANNOTATION_WORK`) lasts; on a storey past that count too, as before this pass existed, it
+ * is not reported (the rule files an `annotation-budget` skip instead).
  */
 function restationThickness(
   ir: ResolvedPlan,
