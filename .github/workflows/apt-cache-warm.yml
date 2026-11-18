@@ -1,0 +1,91 @@
+name: apt cache warm-up
+
+# Fills the `apt-debs` caches (`.github/actions/apt-debs`) on `main`'s scope. A cache saved on a PR
+# ref is readable by that PR only, and a proven `main` push skips every step, so without this run
+# each PR would start cold and wait on the apt mirror (~130 kB/s at worst). One job per package set,
+# running the install commands of the CI jobs that restore it (`test/apt-debs-cache.test.ts` pins
+# them to ci.yml's and nightly.yml's) and the save step. Not a required check, not part of ci.yml.
+
+on:
+  schedule:
+    # 02:20 UTC, before nightly.yml's 03:00 run.
+    - cron: "20 2 * * *"
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - ".github/actions/apt-debs/**"
+      - ".github/workflows/apt-cache-warm.yml"
+      - ".github/workflows/ci.yml"
+      - ".github/workflows/nightly.yml"
+      # The keys hold the resolved Playwright version.
+      - "package-lock.json"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: apt-cache-warm-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  warm:
+    name: Warm apt debs (${{ matrix.set }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - set: chromium
+            pkg: "@playwright/test"
+            install: npx playwright install-deps chromium
+          - set: engines
+            pkg: "@playwright/test"
+            install: npx playwright install-deps firefox webkit
+          - set: chromium-ffmpeg
+            pkg: playwright-core
+            install: >-
+              npx playwright-core install-deps chromium &&
+              (command -v ffmpeg || (sudo apt-get update && sudo apt-get install -y --no-install-recommends ffmpeg))
+          - set: all
+            pkg: "@playwright/test"
+            install: npx playwright install-deps chromium firefox webkit
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Set up Node.js
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 22
+          check-latest: true
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      # Resolved as the CI jobs resolve it, so the key is the one they restore.
+      - name: Resolve Playwright version
+        id: pw
+        env:
+          PKG: ${{ matrix.pkg }}
+        run: |
+          version=$(node -p "require(process.env.PKG + '/package.json').version")
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+
+      - name: Restore apt debs (${{ matrix.set }})
+        uses: ./.github/actions/apt-debs
+        with:
+          mode: restore
+          set: ${{ matrix.set }}
+          version: ${{ steps.pw.outputs.version }}
+
+      - name: Install the set's system deps
+        env:
+          INSTALL: ${{ matrix.install }}
+        run: bash -c "$INSTALL"
+
+      - name: Save apt debs (${{ matrix.set }})
+        uses: ./.github/actions/apt-debs
+        with:
+          mode: save

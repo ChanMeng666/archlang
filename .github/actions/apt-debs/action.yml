@@ -1,0 +1,128 @@
+name: apt-debs
+description: >-
+  Cache the .deb files a job's apt installs download, so the next run of the job reads them from
+  the cache instead of a slow Ubuntu mirror. `mode: restore` before the install steps pre-fills
+  apt's archive directory; `mode: save` after them stores what apt used. The install commands stay
+  as they are: apt uses a pre-placed deb whose name (package_version_arch) and size match the index
+  and downloads the rest, so a miss, a partial hit or a stale deb only costs time.
+
+inputs:
+  mode:
+    description: '"restore" (before the install steps) or "save" (after them).'
+    required: true
+  set:
+    description: >-
+      A short name for the job's package set (`chromium`, `engines`, `chromium-ffmpeg`, `all`):
+      jobs that install the same packages share it. Used by `restore` only.
+    required: false
+    default: ""
+  version:
+    description: >-
+      The resolved Playwright version whose `install-deps` list the set follows (a bump may change
+      the packages). Used by `restore` only.
+    required: false
+    default: ""
+
+runs:
+  using: composite
+  steps:
+    - name: Check the inputs
+      shell: bash
+      env:
+        MODE: ${{ inputs.mode }}
+        SET: ${{ inputs.set }}
+        VERSION: ${{ inputs.version }}
+      run: |
+        set -euo pipefail
+        if [ "$MODE" != restore ] && [ "$MODE" != save ]; then
+          echo "::error::apt-debs mode must be restore or save, not '$MODE'"; exit 1
+        fi
+        if [ "$MODE" = restore ] && { [ -z "$SET" ] || [ -z "$VERSION" ]; }; then
+          echo "::error::apt-debs restore needs set and version"; exit 1
+        fi
+
+    # The key holds the runner image (a new image may ship other package versions) and the
+    # Playwright version; the restore key is the image OS alone, so a new image or a bump still
+    # restores the last debs and apt downloads only what changed. ImageOS and ImageVersion are the
+    # hosted runner's environment variables, not workflow env, so the key is built in the shell.
+    - name: Keep apt's downloads, and build the key
+      id: key
+      if: inputs.mode == 'restore'
+      shell: bash
+      env:
+        SET: ${{ inputs.set }}
+        VERSION: ${{ inputs.version }}
+      run: |
+        set -euo pipefail
+        printf '%s\n' 'APT::Keep-Downloaded-Packages "true";' 'Binary::apt::APT::Keep-Downloaded-Packages "true";' \
+          | sudo tee /etc/apt/apt.conf.d/99-archlang-keep-debs > /dev/null
+        prefix="apt-debs-${SET}-${ImageOS:-unknown}-"
+        echo "prefix=$prefix" >> "$GITHUB_OUTPUT"
+        echo "key=${prefix}${ImageVersion:-unknown}-${VERSION}" >> "$GITHUB_OUTPUT"
+
+    - name: Restore the cached debs
+      id: restore
+      if: inputs.mode == 'restore'
+      uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+      with:
+        path: ~/apt-debs
+        key: ${{ steps.key.outputs.key }}
+        restore-keys: ${{ steps.key.outputs.prefix }}
+
+    - name: Pre-fill apt's archive directory
+      if: inputs.mode == 'restore'
+      shell: bash
+      env:
+        KEY: ${{ steps.key.outputs.key }}
+        HIT: ${{ steps.restore.outputs.cache-hit }}
+        MATCHED: ${{ steps.restore.outputs.cache-matched-key }}
+      run: |
+        set -euo pipefail
+        eval "$(apt-config shell ARCHIVES Dir::Cache::Archives/d)"
+        shopt -s nullglob
+        debs=(~/apt-debs/*.deb)
+        if [ "${#debs[@]}" -gt 0 ]; then sudo cp -- "${debs[@]}" "$ARCHIVES"; fi
+        echo "apt-debs: ${#debs[@]} debs into $ARCHIVES from ${MATCHED:-no cache} (exact hit: ${HIT:-false})"
+        echo "APT_DEBS_KEY=$KEY" >> "$GITHUB_ENV"
+        echo "APT_DEBS_HIT=${HIT:-false}" >> "$GITHUB_ENV"
+
+    # Only the debs of packages now installed, at their installed version: a stale version a
+    # partial hit restored, or a deb apt fetched for nothing, is not carried forward.
+    - name: Collect the debs apt used
+      id: collect
+      if: inputs.mode == 'save'
+      shell: bash
+      run: |
+        set -euo pipefail
+        if [ -z "${APT_DEBS_KEY:-}" ]; then
+          echo "::warning::apt-debs save without a restore in this job; nothing saved"
+          echo "save=false" >> "$GITHUB_OUTPUT"; exit 0
+        fi
+        if [ "${APT_DEBS_HIT:-false}" = "true" ]; then
+          echo "apt-debs: exact hit on $APT_DEBS_KEY; not saving"
+          echo "save=false" >> "$GITHUB_OUTPUT"; exit 0
+        fi
+        eval "$(apt-config shell ARCHIVES Dir::Cache::Archives/d)"
+        # apt names a deb package_version_arch.deb with ':' (an epoch) quoted as %3a.
+        dpkg-query -W -f='${Package}_${Version}_${Architecture}.deb\n' | sed 's/:/%3a/g' | sort -u > "$RUNNER_TEMP/apt-installed"
+        (cd "$ARCHIVES" && find . -maxdepth 1 -name '*.deb' -printf '%f\n' | sort) > "$RUNNER_TEMP/apt-archives"
+        rm -rf ~/apt-debs
+        mkdir -p ~/apt-debs
+        comm -12 "$RUNNER_TEMP/apt-archives" "$RUNNER_TEMP/apt-installed" | while IFS= read -r f; do cp -- "$ARCHIVES/$f" ~/apt-debs/; done
+        n=$(find ~/apt-debs -maxdepth 1 -name '*.deb' | wc -l)
+        echo "apt-debs: $n debs ($(du -sh ~/apt-debs | cut -f1)) of $(wc -l < "$RUNNER_TEMP/apt-archives") in $ARCHIVES, for $APT_DEBS_KEY"
+        if [ "$n" -eq 0 ]; then
+          echo "::warning::apt-debs found no installed package's deb in $ARCHIVES; nothing saved"
+          echo "save=false" >> "$GITHUB_OUTPUT"; exit 0
+        fi
+        echo "save=true" >> "$GITHUB_OUTPUT"
+        echo "key=$APT_DEBS_KEY" >> "$GITHUB_OUTPUT"
+
+    # Sibling shards save the same key at the same time: the loser's save logs that the key is
+    # taken and the step still succeeds (the save action only warns, it never fails the job).
+    - name: Save the debs
+      if: inputs.mode == 'save' && steps.collect.outputs.save == 'true'
+      uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+      with:
+        path: ~/apt-debs
+        key: ${{ steps.collect.outputs.key }}

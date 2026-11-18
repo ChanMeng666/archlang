@@ -227,7 +227,11 @@ of a full run, the Windows and Node 18 shards. Wall-clock readings and their run
 Coverage is not in `ci.yml`: nightly's `coverage` job runs `test:coverage` (report-only). The E2E legs
 vary most: their "Install Chromium system deps only" step runs on every run (it installs fonts the
 runner image lacks, which the specs' layout depends on), and its time, from seconds to well over ten
-minutes, follows the apt mirror. Options and status: `docs/plans/ci-throughput.md`.
+minutes, follows the apt mirror. Every apt install in `ci.yml` and `nightly.yml` sits between the
+`apt-debs` restore and save steps (`.github/actions/apt-debs`): the cached debs pre-fill apt's archive
+directory, so a hit reads `Need to get 0 B/… of archives`; `apt-cache-warm.yml` (daily, on dispatch, and on a
+`main` push that changes it, the action, `ci.yml`, `nightly.yml` or the lockfile) keeps one `main`-scoped cache per package set, since a PR's own cache is
+readable only by that PR. Options and status: `docs/plans/ci-throughput.md`.
 
 ### Merging a PR
 

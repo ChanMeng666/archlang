@@ -400,6 +400,14 @@ jobs:
           path: ~/.cache/ms-playwright
           key: playwright-${{ runner.os }}-${{ steps.pw.outputs.version }}
 
+      # apt's downloads come from the `apt-debs` cache when it has them (`.github/actions/apt-debs`).
+      - name: Restore apt debs (chromium)
+        uses: ./.github/actions/apt-debs
+        with:
+          mode: restore
+          set: chromium
+          version: ${{ steps.pw.outputs.version }}
+
       # On a cache hit the browser binary is already there but the OS packages it
       # links against are not (they live outside the cached path), so the two
       # cases install different things.
@@ -410,6 +418,11 @@ jobs:
       - name: Install Chromium system deps only (cached browser)
         if: steps.pw-cache.outputs.cache-hit == 'true'
         run: npx playwright install-deps chromium
+
+      - name: Save apt debs (chromium)
+        uses: ./.github/actions/apt-debs
+        with:
+          mode: save
 
       - name: Playground — https://playground.archlang.uk
         run: npx playwright test -c playground --grep @prod
@@ -492,6 +505,14 @@ jobs:
           path: ~/.cache/ms-playwright
           key: playwright-all-${{ runner.os }}-${{ steps.pw.outputs.version }}
 
+      # apt's downloads come from the `apt-debs` cache when it has them (`.github/actions/apt-debs`).
+      - name: Restore apt debs (all three engines)
+        uses: ./.github/actions/apt-debs
+        with:
+          mode: restore
+          set: all
+          version: ${{ steps.pw.outputs.version }}
+
       - name: Install browsers (browser + system deps)
         if: steps.pw-cache.outputs.cache-hit != 'true'
         run: npx playwright install --with-deps chromium firefox webkit
@@ -499,6 +520,11 @@ jobs:
       - name: Install system deps only (cached browsers)
         if: steps.pw-cache.outputs.cache-hit == 'true'
         run: npx playwright install-deps chromium firefox webkit
+
+      - name: Save apt debs (all three engines)
+        uses: ./.github/actions/apt-debs
+        with:
+          mode: save
 
       - run: npm run build
 
