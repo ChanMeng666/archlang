@@ -24,7 +24,13 @@
  *
  * A stale or missing entry costs balance, never correctness: every file still lands in exactly
  * one shard, deterministically (files are sorted by path first, ties go to the lowest shard).
- * `sort()` stays vitest's default.
+ *
+ * Start order: under `--shard`, `sort()` starts a shard's files longest recorded first (a file the
+ * table lacks at its median, ties by path). vitest's default, with no result cache as on CI, starts
+ * the largest source file first, so a small file that takes long starts last and sets the shard's
+ * wall: `no-duplicate-helpers` (113 lines, 163 s of collect) finished 86 s after every other file of
+ * its shard. Without `--shard`, `sort()` stays vitest's default (failed and slow files first, from
+ * its cache).
  */
 import { readFileSync } from "node:fs";
 import { relative } from "node:path";
@@ -86,6 +92,14 @@ export function shardCosts(shards: string[][], durations: Durations): number[] {
   const median = medianOf(durations);
   return shards.map((s) => s.reduce((sum, p) => sum + costOf(durations, p, median), 0));
 }
+
+/** The order a shard starts `paths` in: longest recorded first (a file the table lacks at its median), ties by path. */
+export function startOrder(paths: string[], durations: Durations): string[] {
+  const median = medianOf(durations);
+  const secs = (p: string) => recorded(durations, p) ?? median;
+  return [...new Set(paths)].sort((a, b) => secs(b) - secs(a) || (a < b ? -1 : a > b ? 1 : 0));
+}
+
 export function readDurations(file: string | URL): Durations {
   try {
     return JSON.parse(readFileSync(file, "utf8")) as Durations;
@@ -94,13 +108,27 @@ export function readDurations(file: string | URL): Durations {
   }
 }
 
+type Specs = Awaited<ReturnType<BaseSequencer["shard"]>>;
+
+/** A spec's path relative to the repo root, with `/`: the table's key. */
+const relOf = (root: string) => (f: Specs[number]) => relative(root, f.moduleId).replace(/\\/g, "/");
+
 export default class DurationSequencer extends BaseSequencer {
-  override async shard(files: Awaited<ReturnType<BaseSequencer["shard"]>>) {
+  override async shard(files: Specs) {
     const { root, shard } = this.ctx.config;
     if (!shard) return files;
-    const rel = (f: (typeof files)[number]) => relative(root, f.moduleId).replace(/\\/g, "/");
+    const rel = relOf(root);
     const durations = readDurations(new URL("./.durations.json", import.meta.url));
     const mine = new Set(assignShards(files.map(rel), durations, shard.count)[shard.index - 1]);
     return files.filter((f) => mine.has(rel(f)));
+  }
+
+  override async sort(files: Specs) {
+    const { root, shard } = this.ctx.config;
+    if (!shard) return super.sort(files);
+    const rel = relOf(root);
+    const durations = readDurations(new URL("./.durations.json", import.meta.url));
+    const rank = new Map(startOrder(files.map(rel), durations).map((p, i) => [p, i] as const));
+    return [...files].sort((a, b) => rank.get(rel(a))! - rank.get(rel(b))!);
   }
 }

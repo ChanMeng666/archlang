@@ -14,6 +14,7 @@ import DurationSequencer, {
   medianOf,
   readDurations,
   shardCosts,
+  startOrder,
 } from "./sequencer.js";
 
 const ROOT = resolve(__dirname, "..");
@@ -267,5 +268,37 @@ describe("DurationSequencer.shard()", () => {
       expect(seen.length, `N=${count}`).toBe(files.length);
       expect(new Set(seen).size, `N=${count}`).toBe(files.length);
     }
+  });
+});
+
+describe("startOrder and DurationSequencer.sort()", () => {
+  it("starts the longest recorded file first, a file the table lacks at its median, ties by path", () => {
+    const table: Durations = { "a.test.ts": 1, "b.test.ts": 9, "c.test.ts": 3, "d.test.ts": 3, "e.test.ts": 5 };
+    // Median 3: the unrecorded `z` ties with c and d and sorts after them by path.
+    expect(
+      startOrder(["z.test.ts", "d.test.ts", "a.test.ts", "c.test.ts", "e.test.ts", "b.test.ts", "a.test.ts"], table),
+    ).toEqual(["b.test.ts", "e.test.ts", "c.test.ts", "d.test.ts", "z.test.ts", "a.test.ts"]);
+  });
+
+  it("orders a shard's specs by startOrder under --shard, and is a permutation of them", async () => {
+    const shardFiles = assignShards(SUITE, TABLE, 7)[0]!;
+    const files = [...shardFiles].sort().map((p) => ({ moduleId: resolve(ROOT, p) }));
+    const self = { ctx: { config: { root: ROOT, shard: { index: 1, count: 7 } } } };
+    const got = (await DurationSequencer.prototype.sort.call(self as never, files as never)) as { moduleId: string }[];
+    const rel = got.map((f) => f.moduleId.slice(ROOT.length + 1).replace(/\\/g, "/"));
+    expect(rel).toEqual(startOrder(shardFiles, TABLE));
+    expect(rel.length).toBe(files.length);
+  });
+
+  it("without --shard leaves the order to vitest's default", async () => {
+    const files = ["test/b.test.ts", "test/a.test.ts"].map((p) => ({
+      moduleId: resolve(ROOT, p),
+      project: { name: "" },
+    }));
+    // No cached results or stats: vitest's default keeps the input order.
+    const cache = { getFileTestResults: () => undefined, getFileStats: () => undefined };
+    const self = { ctx: { config: { root: ROOT }, cache } };
+    const got = (await DurationSequencer.prototype.sort.call(self as never, files as never)) as { moduleId: string }[];
+    expect(got.map((f) => f.moduleId)).toEqual(files.map((f) => f.moduleId));
   });
 });
