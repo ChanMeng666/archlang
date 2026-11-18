@@ -72,7 +72,7 @@ plan "Dense Office" {
   furniture basin against wall w_n1 offset 1900 in r_wc1
   furniture wc against wall w_n2 offset 600 in r_wc2
   furniture basin against wall w_n2 offset 1900 in r_wc2
-  furniture server_rack against wall w_n3 offset 800 in r_store
+  furniture filing_cabinet against wall w_n3 offset 800 in r_store
   furniture filing_cabinet against wall w_n3 offset 2000 in r_store
   furniture kitchen_sink against wall w_n4 offset 900 in r_kitchen
   furniture counter against wall w_n4 offset 1800 in r_kitchen

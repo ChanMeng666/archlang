@@ -1915,7 +1915,7 @@
  * `hillside-villa`, `townhouse`, `turning-stair` and `two-storey` in both tables. The K1 keep table
  * was re-taken by its generator (24 rows, the same undo reproduces each, steps unchanged).
  *
- * ## `test/fixtures/dense-office.arch`: a row ADDED with a new fixture (AL6), nothing re-measured
+ * ## `test/fixtures/dense-office.arch`: a row ADDED with a new fixture (AL6), re-taken for a fixture edit
  *
  * The witness plan of the label-crowding cards arrived with `W_ANNOTATION_OVERLAP`'s overprint
  * detail (card AL6). Its rows in the corpus tables that must list every fixture (the
@@ -1930,6 +1930,15 @@
  * row moved: a per-payload sweep of 755 corpus rows (SVG per storey, `compile().diagnostics`,
  * `describe()`, `lint()` under both profiles), a `git archive` of `main` against the branch,
  * moved only this plan's `lint()`, and a planted message change moved 21.
+ *
+ * Its rows were re-taken once, in the same card, for an edit to the FIXTURE, not the compiler: the
+ * store's `server_rack` (a word of the frozen visual-assets tranche, which no shipped plan may name,
+ * `./new-families-byte-identity.test.ts`) became a second `filing_cabinet` at the same place, which
+ * keeps both kinds of subject (the store's name over its cabinet, the "200" over the kitchenette's
+ * name). Each digest moves for that alone: the SVG draws a cabinet where the rack was, `describe()`
+ * lists `filing_cabinet_5` for `server_rack_5`, and `lint()` says "the filing cabinet" for "the
+ * server rack". The edited fixture digests the same on the card's earlier commit (a `git archive`)
+ * as on its last, and the script reproduced `dense-bays`' three pinned digests again first.
  */
 
 /** SHA-256 over every storey's SVG + `describe()` + `lint()`, measured on `f4548db`. */

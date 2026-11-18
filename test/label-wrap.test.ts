@@ -266,6 +266,15 @@ describe("room-name wrapping against the previous implementation", () => {
       // B3b: the remodel pins its kitchen/living name east of the demolished wall's dashes, where
       // one line would cross them; it wraps like two-bed-hall's.
       'examples/remodel.arch: "Kitchen / Living" → "Kitchen /" / "Living"',
+      // The label-crowding witness, crowded on purpose; each name is wider on one line than its room
+      // is between its walls (asserted above), so each wrap is the rule doing its job:
+      // a 3 m pod room's two words,
+      'test/fixtures/dense-office.arch: "Focus Pods" → "Focus" / "Pods"',
+      // a 3 m meeting room's two words,
+      'test/fixtures/dense-office.arch: "Meeting A" → "Meeting" / "A"',
+      // and the two 1.5 m WCs, whose number goes under the word.
+      'test/fixtures/dense-office.arch: "WC 1" → "WC" / "1"',
+      'test/fixtures/dense-office.arch: "WC 2" → "WC" / "2"',
       'test/recovery-corpus/clinic.arch: "Accessible WC" → "Accessible" / "WC"',
     ]);
     expect(t.knockOns).toBe(0);
