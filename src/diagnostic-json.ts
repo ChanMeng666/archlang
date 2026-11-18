@@ -94,17 +94,17 @@ export interface DiagnosticJson {
 
 /**
  * The kinds of text and ink an overprint names (card AL6). A subject is one of the texts:
- * `room-name`, `room-area`, `furniture-label`, or a `dims auto` figure (`dim-chain`, a chain's
- * span; `dim-thickness`, the wall-thickness figure; `dim-radius` and `dim-diameter`, the curve
- * call-outs). What it is printed over may also be a drawn `symbol` (a piece, a fixture, a stair or
- * a lift), a `wall`'s poché, a `door-swing`, the `floor-edge` of the subject's own room (the text
- * runs off its floor), the sheet `chrome` (the north arrow, the scale bar, the title block) or a
- * `leader` line. Some kinds are named for checks the rule does not make yet: today it reports no
- * `furniture-label`, `chrome` or `leader`, and no `dims auto` figure under another text.
+ * `room-label` (a room's name and area figure, the one label they make), `furniture-label`, or a
+ * `dims auto` figure (`dim-chain`, a chain's span; `dim-thickness`, the wall-thickness figure;
+ * `dim-radius` and `dim-diameter`, the curve call-outs). What it is printed over may also be a
+ * drawn `symbol` (a piece, a fixture, a stair or a lift), a `wall`'s poché, a `door-swing`, the
+ * `floor-edge` of the subject's own room (the text runs off its floor), the sheet `chrome` (the
+ * north arrow, the scale bar, the title block) or a `leader` line. Some kinds are named for checks
+ * the rule does not make yet: today it reports no `furniture-label`, `chrome` or `leader`, and no
+ * `dims auto` figure under another text.
  */
 export type OverprintKind =
-  | "room-name"
-  | "room-area"
+  | "room-label"
   | "furniture-label"
   | "dim-chain"
   | "dim-thickness"
@@ -117,25 +117,35 @@ export type OverprintKind =
   | "chrome"
   | "leader";
 
+/** One of the two texts a room's label is drawn as: its `name`, its `area` figure. */
+export type LabelPart = "name" | "area";
+
 /**
  * One text or thing an overprint names. `id` is the element's id as `describe()` lists it (a
  * symbol's, a door's; authored or assigned, and an assigned one such as `desk_15` moves when a
  * statement is inserted before it, so it identifies the element in this run and is no handle to
  * edit by: the hint quotes only authored ids); `room` is the id of the room a label belongs to, or,
- * for a `dims auto` figure, the room it stands in; `text` is the text as the sheet draws it. Each
- * is present only when it applies.
+ * for a `dims auto` figure, the room it stands in; `text` is the text as the sheet draws it (a
+ * `room-label`'s is the room's name, or its area figure when it has no name). `parts` says which
+ * texts of a room's label are involved, `name` before `area`, each measured on its own: on every
+ * `over` entry of a `room-label` report, the texts of the subject's label that lie over that thing;
+ * on a `room-label` entry of a figure's report, the texts of that label the figure is printed over.
+ * Each key is present only when it applies.
  */
 export interface OverprintItemJson {
   kind: OverprintKind;
   id?: string;
   room?: string;
   text?: string;
+  parts?: LabelPart[];
 }
 
 /**
  * A diagnostic's `overprint`: the text it is about (`subject`, which always has its `text`) and
- * what that text is printed over (`over`, in the order the message lists them). A room's warning
- * names one subject: its name when the name is among what overprints, otherwise its area figure.
+ * what that text is printed over (`over`), in the order the rule found them: the drawn symbols,
+ * then for a room's label a wall, the door swings and its floor's edge, and for a `dims auto`
+ * figure the rooms whose labels it covers, one entry per room. A room's warning is about its
+ * label (`room-label`), whichever of its texts overprints; each `over` entry's `parts` says which.
  */
 export interface DiagnosticOverprintJson {
   subject: OverprintItemJson & { text: string };

@@ -20,7 +20,7 @@ Every module, not only the entry, is in the sibling [`module-map.md`](module-map
 The total counts every name the checker sees as exported, including those pulled in by
 `export type * from "./ast.js"`; a count of the names written in `index.ts`' export statements is lower.
 
-Totals: 654 exports (228 values, 426 types), 414 flagged (74 values).
+Totals: 655 exports (228 values, 427 types), 415 flagged (74 values).
 
 ## `src/algebra/d4.ts`
 
@@ -345,6 +345,7 @@ Totals: 654 exports (228 values, 426 types), 414 flagged (74 values).
 | `DiagnosticOverprintJson` | type | `test` |
 | `DiagnosticRuleJson` | type | none |
 | `FixSuggestionJson` | type | none |
+| `LabelPart` | type | none |
 | `OverprintItemJson` | type | none |
 | `OverprintKind` | type | none |
 | `RelatedSpanJson` | type | none |

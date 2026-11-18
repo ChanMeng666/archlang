@@ -63,6 +63,7 @@ export type {
   DiagnosticOverprintJson,
   DiagnosticRuleJson,
   FixSuggestionJson,
+  LabelPart,
   OverprintItemJson,
   OverprintKind,
   RelatedSpanJson,

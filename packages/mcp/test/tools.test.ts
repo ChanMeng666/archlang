@@ -138,11 +138,11 @@ describe("lint tool", () => {
       const ds = (await call(client, tool, { source: LABEL_OVER_WC })).diagnostics as Array<Record<string, unknown>>;
       const overlap = ds.find((d) => d.code === "W_ANNOTATION_OVERLAP")!;
       expect(overlap.overprint, tool).toEqual({
-        subject: { kind: "room-name", room: "r_bath", text: "Bathroom" },
+        subject: { kind: "room-label", room: "r_bath", text: "Bathroom" },
         over: [
-          { kind: "symbol", id: "wc_2" },
-          { kind: "symbol", id: "basin_3" },
-          { kind: "door-swing", id: "d_bath" },
+          { kind: "symbol", id: "wc_2", parts: ["name"] },
+          { kind: "symbol", id: "basin_3", parts: ["name"] },
+          { kind: "door-swing", id: "d_bath", parts: ["area"] },
         ],
       });
       for (const d of ds) if (d.code !== "W_ANNOTATION_OVERLAP") expect(d, tool).not.toHaveProperty("overprint");

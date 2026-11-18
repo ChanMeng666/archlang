@@ -4,7 +4,11 @@
  *
  * Pinned on the label-crowding witness (`test/fixtures/dense-office.arch`): its two room names over
  * fixtures and its `dims auto all` wall-thickness figure over the kitchenette's name, each detail
- * exact, kinds and ids. Then what holds everywhere: `lint()` and its JSON are untouched (the detail
+ * exact, kinds and ids. A room's report is about its label (`room-label`), and each thing under it
+ * says which of the label's texts is over it (`parts`), measured hit by hit, never copied from the
+ * message: the name alone, the area figure alone, and two shelves, one under each text, which the
+ * message joins. A figure's report says the room it stands in only of the pieces under it (a label
+ * names its own room). Then what holds everywhere: `lint()` and its JSON are untouched (the detail
  * is kept beside the diagnostic, never on it), the two-argument projection is unchanged and the
  * option only appends a last key, a copy or a clone has no detail while `lint()`'s own copies (a
  * storey's `level`) carry it, the CLI's `lint`/`validate --json` attach it, and over the
@@ -39,19 +43,20 @@ suite("the witness: who overprints whom", () => {
   it("reports two room names over fixtures and one wall-thickness figure over a name", () => {
     expect(ds.map(diagnosticOverprint)).toEqual([
       {
-        subject: { kind: "room-name", room: "r_store", text: "Store / IT" },
-        over: [{ kind: "symbol", id: "filing_cabinet_6" }],
+        subject: { kind: "room-label", room: "r_store", text: "Store / IT" },
+        over: [{ kind: "symbol", id: "filing_cabinet_5", parts: ["name"] }],
       },
       {
-        subject: { kind: "room-name", room: "r_kitchen", text: "Kitchenette / Break" },
+        // The store's first cabinet stands under the kitchenette's name, across the partition.
+        subject: { kind: "room-label", room: "r_kitchen", text: "Kitchenette / Break" },
         over: [
-          { kind: "symbol", id: "server_rack_5" },
-          { kind: "symbol", id: "kitchen_sink_7" },
+          { kind: "symbol", id: "filing_cabinet_5", parts: ["name"] },
+          { kind: "symbol", id: "kitchen_sink_7", parts: ["name"] },
         ],
       },
       {
         subject: { kind: "dim-thickness", room: "r_board", text: "200" },
-        over: [{ kind: "room-name", room: "r_kitchen", text: "Kitchenette / Break" }],
+        over: [{ kind: "room-label", room: "r_kitchen", text: "Kitchenette / Break", parts: ["name"] }],
       },
     ] satisfies DiagnosticOverprintJson[]);
   });
@@ -130,7 +135,7 @@ suite("beside the diagnostic, never on it", () => {
     const ds = overlaps(src);
     expect(ds.map((d) => d.level)).toEqual([1, 2]);
     for (const d of ds)
-      expect(diagnosticOverprint(d)?.subject).toEqual({ kind: "room-name", room: "r_bath", text: "Bathroom" });
+      expect(diagnosticOverprint(d)?.subject).toEqual({ kind: "room-label", room: "r_bath", text: "Bathroom" });
   });
 });
 
@@ -150,9 +155,17 @@ suite("the fabric kinds: a wall, a door's swing, the floor's edge", () => {
 }`;
     const [d, ...rest] = overlaps(src);
     expect(rest).toEqual([]);
+    // The message joins the two texts; the detail parts them: the area figure is the one over the
+    // wall, and the name the one over the swing.
+    expect(d!.message).toContain(
+      'The name "Abstellraum" and the area figure (1.1 m²) are printed over a wall and the swing',
+    );
     expect(diagnosticOverprint(d!)).toEqual({
-      subject: { kind: "room-name", room: "abst", text: "Abstellraum" },
-      over: [{ kind: "wall" }, { kind: "door-swing", id: "d_abst" }],
+      subject: { kind: "room-label", room: "abst", text: "Abstellraum" },
+      over: [
+        { kind: "wall", parts: ["area"] },
+        { kind: "door-swing", id: "d_abst", parts: ["name"] },
+      ],
     });
   });
 
@@ -167,8 +180,138 @@ suite("the fabric kinds: a wall, a door's swing, the floor's edge", () => {
     const [d] = overlaps(src);
     expect(d!.message).toContain("is printed over a wall and runs out of the room");
     expect(diagnosticOverprint(d!)).toEqual({
-      subject: { kind: "room-name", room: "r", text: "Hauswirtschaftsraumundabstellkammer" },
-      over: [{ kind: "wall" }, { kind: "floor-edge", room: "r" }],
+      subject: { kind: "room-label", room: "r", text: "Hauswirtschaftsraumundabstellkammer" },
+      over: [
+        { kind: "wall", parts: ["name"] },
+        { kind: "floor-edge", room: "r", parts: ["name"] },
+      ],
+    });
+  });
+});
+
+/** A 4 x 3 m store whose label is pinned at its centre, and `extra` statements. */
+const store = (extra: string) => `plan "Store" {
+  units mm
+  grid 50
+  paper A4 landscape
+  scale 1:50
+  wall id=shell exterior thickness 200 { (0,0) (4000,0) (4000,3000) (0,3000) close }
+  room id=r_store at (0,0) size 4000x3000 label "Store" at (2000,1500) uses storage
+  door id=d_store at (600,3000) width 800 wall shell swing in
+${extra}
+}`;
+// The name is drawn centred at y 1465, the area figure at y 1657.5: one shelf under each.
+const UNDER_NAME = "  furniture id=s_name shelf at (1700,1380) size 600x150";
+const UNDER_AREA = "  furniture id=s_area shelf at (1700,1610) size 600x100";
+
+suite("`parts`: which of a room label's texts each thing is under", () => {
+  it("the name alone", () => {
+    const [d, ...rest] = overlaps(store(UNDER_NAME));
+    expect(rest).toEqual([]);
+    expect(d!.message.startsWith('The name "Store" is printed over the shelf')).toBe(true);
+    expect(diagnosticOverprint(d!)).toEqual({
+      subject: { kind: "room-label", room: "r_store", text: "Store" },
+      over: [{ kind: "symbol", id: "s_name", parts: ["name"] }],
+    });
+  });
+
+  it("the area figure alone: the subject is still the room's label, named by its name", () => {
+    const [d, ...rest] = overlaps(store(UNDER_AREA));
+    expect(rest).toEqual([]);
+    expect(d!.message.startsWith('The area figure (12.0 m²) of "Store" is printed over the shelf')).toBe(true);
+    expect(diagnosticOverprint(d!)).toEqual({
+      subject: { kind: "room-label", room: "r_store", text: "Store" },
+      over: [{ kind: "symbol", id: "s_area", parts: ["area"] }],
+    });
+  });
+
+  it("two shelves, one under the name and one under the area figure: each hit says its own text", () => {
+    const [d, ...rest] = overlaps(store(`${UNDER_NAME}\n${UNDER_AREA}`));
+    expect(rest).toEqual([]);
+    // The message reads as if both texts were over one shelf; the detail does not copy that.
+    const opening = 'The name "Store" and the area figure (12.0 m²) are printed over the shelf,';
+    expect(d!.message.startsWith(opening)).toBe(true);
+    expect(diagnosticOverprint(d!)).toEqual({
+      subject: { kind: "room-label", room: "r_store", text: "Store" },
+      over: [
+        { kind: "symbol", id: "s_name", parts: ["name"] },
+        { kind: "symbol", id: "s_area", parts: ["area"] },
+      ],
+    });
+  });
+});
+
+/**
+ * A round pavilion whose `R3000` call-out `dims auto overall` letters at (3000,1500), halfway
+ * from the centre to the arc's midpoint (`test/defect-corpus/annotation-collisions/`), with the
+ * pavilion's label pinned at `pav` and `extra` statements.
+ */
+const pavilion = (pav: string, extra: string) => `plan "Pavilion" {
+  units mm
+  grid 50
+  paper A4 landscape
+  scale 1:50
+  dims auto overall
+  wall id=drum exterior thickness 200 {
+    (6000,3000)
+    arc (0,3000) radius 3000
+    arc (6000,3000) radius 3000
+  }
+  room id=r_pav circle at (3000,3000) radius 3000 label "Pavilion" at ${pav} uses living
+  door on drum at 75% width 900
+  window on drum at 25% width 1200
+${extra}
+}`;
+const TABLE = "  furniture table at (2400,1100) size 1200x800";
+/** A room east of the drum whose label is pinned on the call-out. */
+const annex = (at: string) => `  room id=r_annex at (6200,1500) size 3000x3000 label "Annex" at ${at} uses storage`;
+const figureOf = (src: string): Diagnostic => overlaps(src).find((d) => d.message.startsWith("The radius call-out"))!;
+const RADIUS = "The radius call-out R3000 that `dims auto overall` draws from the arc's centre is printed over";
+const TWO = "so the two overprint each other on the drawing.";
+
+suite("a figure's report says where the pieces under it are, and only the pieces", () => {
+  it("a piece and the labels of the figure's own room: the room after the whole list, as before", () => {
+    const d = figureOf(pavilion("(3000,1500)", TABLE));
+    expect(d.message).toBe(
+      `${RADIUS} the table, the name "Pavilion" and the area figure (28.3 m²) of "Pavilion" in "Pavilion", ${TWO}`,
+    );
+    expect(diagnosticOverprint(d)).toEqual({
+      subject: { kind: "dim-radius", room: "r_pav", text: "R3000" },
+      over: [
+        { kind: "symbol", id: "table_1" },
+        { kind: "room-label", room: "r_pav", text: "Pavilion", parts: ["name", "area"] },
+      ],
+    });
+  });
+
+  it("a piece and another room's label: the figure's room goes with the piece, not after the label", () => {
+    // The table stands in the pavilion and the annex's label is pinned onto the call-out: the room
+    // the figure stands in is the table's, so it follows the table and never reads as the annex's.
+    const d = figureOf(pavilion("(3000,4300)", `${TABLE}\n${annex("(3000,1500)")}`));
+    expect(d.message).toBe(
+      `${RADIUS} the table in "Pavilion", the name "Annex" and the area figure (9.0 m²) of "Annex", ${TWO}`,
+    );
+    expect(diagnosticOverprint(d)).toEqual({
+      subject: { kind: "dim-radius", room: "r_pav", text: "R3000" },
+      over: [
+        { kind: "symbol", id: "table_1" },
+        { kind: "room-label", room: "r_annex", text: "Annex", parts: ["name", "area"] },
+      ],
+    });
+  });
+
+  it("the labels of two rooms and no piece: no room, each label names its own", () => {
+    const d = figureOf(pavilion("(3000,1350)", annex("(3000,1700)")));
+    expect(d.message).toBe(
+      `${RADIUS} the name "Pavilion", the area figure (28.3 m²) of "Pavilion" and the name "Annex", ${TWO}`,
+    );
+    // One entry per room; the annex's area figure is clear of the call-out.
+    expect(diagnosticOverprint(d)).toEqual({
+      subject: { kind: "dim-radius", room: "r_pav", text: "R3000" },
+      over: [
+        { kind: "room-label", room: "r_pav", text: "Pavilion", parts: ["name", "area"] },
+        { kind: "room-label", room: "r_annex", text: "Annex", parts: ["name"] },
+      ],
     });
   });
 });
@@ -184,8 +327,8 @@ suite("the annotation-collisions defects: every report has a detail, and its sub
   ];
   /** The subject kind each opening of the message names. */
   const OPENING: [RegExp, string][] = [
-    [/^The name /, "room-name"],
-    [/^The area figure /, "room-area"],
+    [/^The name /, "room-label"],
+    [/^The area figure /, "room-label"],
     [/^The wall-thickness figure /, "dim-thickness"],
     [/^The radius call-out /, "dim-radius"],
     [/^The diameter call-out /, "dim-diameter"],
@@ -207,6 +350,19 @@ suite("the annotation-collisions defects: every report has a detail, and its sub
         expect(o!.subject.kind, `${f}: ${d.message}`).toBe(want);
         expect(o!.subject.text.length, f).toBeGreaterThan(0);
         expect(o!.over.length, f).toBeGreaterThan(0);
+        // The texts a room's message opens with are exactly the texts its hits found, name first.
+        if (o!.subject.kind === "room-label") {
+          const said = [
+            ...(/^The name /.test(d.message) ? ["name"] : []),
+            ...(/^The area figure |^The name "[^"]*" and the area figure /.test(d.message) ? ["area"] : []),
+          ];
+          const found = new Set(o!.over.flatMap((x) => x.parts ?? []));
+          expect(
+            (["name", "area"] as const).filter((p) => found.has(p)),
+            `${f}: ${d.message}`,
+          ).toEqual(said);
+          for (const x of o!.over) expect(x.parts?.length, `${f}: ${d.message}`).toBeGreaterThan(0);
+        }
         for (const item of [o!.subject, ...o!.over]) {
           kinds.add(item.kind);
           if (item.id !== undefined) expect(ids.has(item.id), `${f}: ${item.id}`).toBe(true);
@@ -217,7 +373,7 @@ suite("the annotation-collisions defects: every report has a detail, and its sub
       }
     }
     expect(reports).toBeGreaterThan(4);
-    for (const k of ["room-name", "dim-thickness", "dim-radius", "symbol", "door-swing"])
+    for (const k of ["room-label", "dim-thickness", "dim-radius", "symbol", "door-swing"])
       expect(kinds.has(k), k).toBe(true);
   });
 });
