@@ -56,17 +56,18 @@ describe("assignShards", () => {
     for (const s of shards) expect(s.filter((p) => p.startsWith("zero-")).length).toBeGreaterThanOrEqual(30);
   });
 
-  it("on the real table: a partition, files recorded at 0 s in every shard, loads within one file's cost", () => {
-    const zeros = SUITE.filter((p) => TABLE[p] === 0);
-    expect(zeros.length).toBeGreaterThan(0);
+  it("on the real table: a partition, the lightest files in every shard, loads within one file's cost", () => {
+    // TP6's files recorded at 0 s now record their collect time; the lightest ones must still spread.
+    const isLight = (p: string) => p in TABLE && TABLE[p]! <= 0.5;
+    const zeros = SUITE.filter(isLight);
+    expect(zeros.length).toBeGreaterThan(20);
     // Every file counted as the sequencer counts it, the files the table lacks at its median.
     const cost = (p: string) => fileCost(p in TABLE ? TABLE[p]! : medianOf(TABLE));
     const largest = Math.max(...SUITE.map(cost));
     for (const n of [3, 5, 7]) {
       const shards = assignShards(SUITE, TABLE, n);
       expect(isPartition(shards, SUITE), `N=${n}`).toBe(true);
-      for (const s of shards)
-        expect(s.filter((p) => TABLE[p] === 0).length).toBeGreaterThanOrEqual(Math.floor(zeros.length / n / 2));
+      for (const s of shards) expect(s.filter(isLight).length).toBeGreaterThanOrEqual(Math.floor(zeros.length / n / 2));
       const costs = shardCosts(shards, TABLE);
       expect(
         costs.reduce((a, b) => a + b, 0),
@@ -183,9 +184,12 @@ describe("ci.yml's vitest shard jobs", () => {
     expect(node22).toContain(`TEST_DURATIONS_OUT: ${out}`);
     expect(node22).toContain(`path: ${out}`);
     const nightly = readFileSync(resolve(ROOT, ".github/workflows/nightly.yml"), "utf8").replace(/\r\n/g, "\n");
-    const leg = nightly.slice(nightly.indexOf("- name: Test (with the duration report)"));
-    expect(leg.slice(0, leg.indexOf("\n      - "))).toContain(reporter);
-    expect(nightly).not.toContain("--reporter=json");
+    const at = nightly.indexOf("- name: Test (with the duration report)");
+    expect(at).toBeGreaterThan(0);
+    const step = nightly.slice(at, nightly.indexOf("\n      - ", at));
+    expect(step).toContain(reporter);
+    expect(step).toContain("TEST_DURATIONS_OUT: test-durations.json");
+    expect(step).not.toContain("--reporter=json");
   });
 });
 

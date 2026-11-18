@@ -133,14 +133,14 @@ describe("treeGuards: the scanners no import reaches", () => {
     expect(treeGuards(ROOT, ["src/error-catalog/rooms.json"], files)).toEqual([]);
   });
 
-  it("stays within 30 files and 15 recorded seconds on the real tree, for a change under every tree", () => {
+  it("stays within 30 files and 25 recorded seconds on the real tree, for a change under every tree", () => {
     const got = treeGuards(
       ROOT,
       ["src/lint.ts", "test/a.test.ts", "scripts/a.mjs", "eval/a.ts", ".claude/hooks/a.mjs"],
       files,
     );
     expect(got.length).toBeLessThanOrEqual(30);
-    expect(got.reduce((a: number, g: Pick) => a + (g.secs ?? 0), 0)).toBeLessThanOrEqual(15);
+    expect(got.reduce((a: number, g: Pick) => a + (g.secs ?? 0), 0)).toBeLessThanOrEqual(25);
   });
 
   describe("on a temp tree", () => {
@@ -267,9 +267,9 @@ describe("namedTests", () => {
       expect(got.find((g) => g.file === "test/widget-c.test.ts")?.secs).toBe(3);
     });
 
-    it("defaults to 5 files and 10 seconds", () => {
+    it("defaults to 5 files and 15 seconds", () => {
       const heavy = Object.fromEntries(fake.map((f) => [f, 4]));
-      expect(namedTests(["src/widget.ts"], fake, heavy)).toHaveLength(2); // 4 + 4; a third (12) does not fit
+      expect(namedTests(["src/widget.ts"], fake, heavy)).toHaveLength(3); // 4 + 4 + 4; a fourth (16) does not fit
       const light = Object.fromEntries(fake.map((f) => [f, 0.1]));
       expect(namedTests(["src/widget.ts"], fake, light)).toHaveLength(5);
     });

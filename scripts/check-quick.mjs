@@ -22,8 +22,8 @@
  *      guards and the import-distance tests, together and in that order. It does NOT cap the extras, four
  *      kinds of test the import graph ranks too far away, each under its own cap: the source-tree
  *      scanners a changed `src/`, `scripts/`, `eval/`, `test/` or `.claude/` file wakes (`treeGuards`;
- *      within 15 recorded seconds and 30 files at most), the tests named after a changed module (`namedTests`; at
- *      most 5 files and 10 recorded seconds), the text guards CI failed on in #848, each woken only by its own
+ *      within 25 recorded seconds and 30 files at most), the tests named after a changed module (`namedTests`; at
+ *      most 5 files and 15 recorded seconds), the text guards CI failed on in #848, each woken only by its own
  *      inputs (`textGuards`; no cap beyond the three files): `lint-fix-texts` by the error catalogue,
  *      `src/fix-producers.ts` or a `src/` module whose own text composes fix text (`composesFixText`), `opaque-literal-guard` by `.gitleaksignore`,
  *      a path it names, the IndexNow key or the catalogue, `docs-flags` by a page that test reads (deleted

@@ -77,11 +77,12 @@ export function scanningGuards(ROOT, dirs, files, scanned = SCANNED_DIRS) {
 // A guard that lists a SOURCE folder (`src/`, `scripts/`, `eval/`, `test/`, `.claude/`) and asserts over every
 // file it finds: no CLI spawn, no escaper chain, the provenance walk. No import reaches it from the file that
 // broke it, and a folder this wide cannot join `SCANNED_DIRS` (a test that lists `test/fixtures` is not one).
-// They run in addition to the `--max` cap, within `TREE_MAX_SECS` recorded seconds (they cost tens of
-// milliseconds each, so the budget is time; `TREE_MAX_FILES` is only a safety ceiling).
+// They run in addition to the `--max` cap, within `TREE_MAX_SECS` recorded seconds (a scanner's seconds are
+// mostly importing it, which the table records, so the budget is time; `TREE_MAX_FILES` is only a safety
+// ceiling). 25, not 15, since the table counts collect time: at 15 a change under `src/` lost the provenance walk.
 export const TREE_ROOTS = ["src", "scripts", "eval", "test", ".claude"];
 export const TREE_MAX_FILES = 30;
-export const TREE_MAX_SECS = 15;
+export const TREE_MAX_SECS = 25;
 /** The recorded seconds assumed for a scanner the duration record does not list yet (a source scan is cheap). */
 export const UNKNOWN_SCAN_SECS = 0.5;
 const LISTS_A_TREE = /\b(?:readdirSync|readdir|opendirSync|globSync)\s*\(|ls-files/;
@@ -180,7 +181,8 @@ const GENERIC_STEMS = new Set(["index", "types", "util", "utils", "helpers", "ma
 /** A stem shared by more tests than this names a family, not a module. */
 const NAMED_MAX = 6;
 export const NAMED_MAX_FILES = 5;
-export const NAMED_MAX_SECS = 10;
+/** 15, not 10, since the table counts collect time: at 10 `lint-room-contents` (11.1 s) no longer fit. */
+export const NAMED_MAX_SECS = 15;
 
 /** The median of the recorded seconds (what a test the record does not list yet is costed at). */
 export function medianSecs(durations) {

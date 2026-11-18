@@ -11,8 +11,10 @@
  * (`test/durations-reporter.ts`). The table used to come from vitest's JSON report, whose per-file
  * span is test time only: one shard then collected for 300 s against 57-83 s for the others while
  * the table called them equal. Every file also costs FILE_OVERHEAD_S on top, for what no per-file
- * field records (starting its worker process). Without it the ~126 files then recorded at 0 s moved
- * no load and all landed in one shard (TP6: 284 files to the others' 160, about twice as long).
+ * field records (starting its worker process; on CI at most about 0.2 s a file, a shard's wall times
+ * its three workers less its recorded seconds). It was added when ~126 files recorded 0 s, moved no
+ * load and all landed in one shard (TP6: 284 files to the others' 160, about twice as long). On a
+ * collect-inclusive table any value from 0 to 2 gives the same shard loads within 2 s, so it stays 2.
  *
  * Stability: the files the table holds go first, through the LPT pass over those files only; the
  * files it lacks follow in path order, each at the table's median cost onto the then-lightest shard.

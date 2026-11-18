@@ -11,9 +11,9 @@
   One child process at a time, each step timed. `--max` caps the branch's own changed test files, the
   directory-scanning guards and the import-distance tests together. Beyond it, each under its own cap, it adds
   what the import graph ranks too far away: the source-tree scanners a changed `src/`, `scripts/`, `eval/`,
-  `test/` or `.claude/` file wakes (tests in `test/` that list that folder and read every file; within 15
+  `test/` or `.claude/` file wakes (tests in `test/` that list that folder and read every file; within 25
   recorded seconds and at most 30 files, the ones scanning the fewest trees first, then the cheapest),
-  the tests named after a changed module (at most 5 files and 10 recorded seconds), the three text guards
+  the tests named after a changed module (at most 5 files and 15 recorded seconds), the three text guards
   CI failed on in #848, each only on its own inputs (`lint-fix-texts` on the error catalogue,
   `src/fix-producers.ts` or a `src/` module whose source has a `message:`/`fix:`/`hint:`/`hints:`
   property outside a comment line or whose first doc comment mentions "message" or "hint", if it is
@@ -189,7 +189,7 @@ by each spec's measured seconds, not Playwright's `--shard`, which splits by tes
 `test/e2e-shards.test.ts` fails unless each site's lists name every spec in its `e2e/` exactly once.
 Rebalance from a run's log (the list reporter prints each test's time) when a shard drifts.
 
-**Shard balance.** `test/sequencer.ts` splits the shards by the seconds per file in `test/.durations.json` plus `FILE_OVERHEAD_S` (2) per file, the import and collection cost the table does not record (without it the files recorded at 0 s all landed in one shard, TP6); the files the table lacks follow, in path order, each at the table's median onto the then-lightest shard, so adding one never moves a recorded file (`test/sequencer.test.ts`); nightly's `full-matrix` job (the `Test ubuntu-latest / Node 22` leg) uploads a fresh table as the `test-durations` artifact. Refresh with `gh run download <nightly run id> -n test-durations -D <dir> && node scripts/gen-test-durations.mjs <dir>/test-durations.json` (it merges: rows for files in the artifact are replaced, rows for deleted files dropped), after a nightly whose shard walls differ by more than 1.5× or about once a month.
+**Shard balance.** `test/sequencer.ts` splits the shards by the seconds per file in `test/.durations.json`, each file's whole cost in its worker with import and collect included (`test/durations-reporter.ts`; a JSON report's span is test time only), plus `FILE_OVERHEAD_S` (2) per file; the files the table lacks follow, in path order, each at the table's median onto the then-lightest shard, so adding one never moves a recorded file (`test/sequencer.test.ts`). Each `Node 22 tests` shard uploads its files' map as `test-durations-<n>`, and nightly's `full-matrix` job (the `Test ubuntu-latest / Node 22` leg) the whole suite's as `test-durations`. Refresh with `gh run download <run id> -p 'test-durations-*' -D <dir> && node scripts/gen-test-durations.mjs <dir>/*/test-durations-*.json` (it merges: rows for files in the maps are replaced, rows for deleted files dropped), after a run whose shard walls differ by more than 1.5× or about once a month. `check:quick`'s test budgets (`scripts/gate-select.mjs`) read the same seconds.
 
 **A break on a main-only leg appears after the merge** of an ordinary PR (a train PR's run shows it
 before), and nothing blocks on it. It is seen in three
