@@ -82,12 +82,16 @@ runs:
         shopt -s nullglob
         debs=(~/apt-debs/*.deb)
         if [ "${#debs[@]}" -gt 0 ]; then sudo cp -- "${debs[@]}" "$ARCHIVES"; fi
+        # What came in, so the save can tell whether apt added anything.
+        for d in "${debs[@]}"; do basename "$d"; done | sort > "$RUNNER_TEMP/apt-debs-restored"
         echo "apt-debs: ${#debs[@]} debs into $ARCHIVES from ${MATCHED:-no cache} (exact hit: ${HIT:-false})"
         echo "APT_DEBS_KEY=$KEY" >> "$GITHUB_ENV"
         echo "APT_DEBS_HIT=${HIT:-false}" >> "$GITHUB_ENV"
 
     # Only the debs of packages now installed, at their installed version: a stale version a
-    # partial hit restored, or a deb apt fetched for nothing, is not carried forward.
+    # partial hit restored, or a deb apt fetched for nothing, is not carried forward. A partial hit
+    # (another image version) that downloaded nothing new saves nothing: the restore key finds the
+    # same debs next time.
     - name: Collect the debs apt used
       id: collect
       if: inputs.mode == 'save'
@@ -103,16 +107,24 @@ runs:
           echo "save=false" >> "$GITHUB_OUTPUT"; exit 0
         fi
         eval "$(apt-config shell ARCHIVES Dir::Cache::Archives/d)"
-        # apt names a deb package_version_arch.deb with ':' (an epoch) quoted as %3a.
-        dpkg-query -W -f='${Package}_${Version}_${Architecture}.deb\n' | sed 's/:/%3a/g' | sort -u > "$RUNNER_TEMP/apt-installed"
+        # apt names a deb package_version_arch.deb with ':' (an epoch) quoted as %3a, and its arch
+        # part may be an arch variant dpkg does not report (amd64v3 for an amd64 package), so the
+        # match is on package_version alone.
+        dpkg-query -W -f='${Package}_${Version}\n' | sed 's/:/%3a/g' | sort -u > "$RUNNER_TEMP/apt-installed"
         (cd "$ARCHIVES" && find . -maxdepth 1 -name '*.deb' -printf '%f\n' | sort) > "$RUNNER_TEMP/apt-archives"
+        awk -F_ 'NR == FNR { keep[$0] = 1; next } ($1 "_" $2) in keep' \
+          "$RUNNER_TEMP/apt-installed" "$RUNNER_TEMP/apt-archives" > "$RUNNER_TEMP/apt-keep"
         rm -rf ~/apt-debs
         mkdir -p ~/apt-debs
-        comm -12 "$RUNNER_TEMP/apt-archives" "$RUNNER_TEMP/apt-installed" | while IFS= read -r f; do cp -- "$ARCHIVES/$f" ~/apt-debs/; done
-        n=$(find ~/apt-debs -maxdepth 1 -name '*.deb' | wc -l)
+        while IFS= read -r f; do cp -- "$ARCHIVES/$f" ~/apt-debs/; done < "$RUNNER_TEMP/apt-keep"
+        n=$(wc -l < "$RUNNER_TEMP/apt-keep")
         echo "apt-debs: $n debs ($(du -sh ~/apt-debs | cut -f1)) of $(wc -l < "$RUNNER_TEMP/apt-archives") in $ARCHIVES, for $APT_DEBS_KEY"
         if [ "$n" -eq 0 ]; then
           echo "::warning::apt-debs found no installed package's deb in $ARCHIVES; nothing saved"
+          echo "save=false" >> "$GITHUB_OUTPUT"; exit 0
+        fi
+        if cmp -s "$RUNNER_TEMP/apt-keep" "$RUNNER_TEMP/apt-debs-restored"; then
+          echo "apt-debs: apt added nothing to the $n restored debs; not saving"
           echo "save=false" >> "$GITHUB_OUTPUT"; exit 0
         fi
         echo "save=true" >> "$GITHUB_OUTPUT"
