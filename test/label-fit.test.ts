@@ -29,9 +29,8 @@ vi.mock("../src/label-fit.js", async (importOriginal) => {
   const real = await importOriginal<typeof import("../src/label-fit.js")>();
   return {
     ...real,
-    fitLabels: (...args: Parameters<typeof real.fitLabels>) => {
-      if (!state.off) real.fitLabels(...args);
-    },
+    // Off, it spends none of the count; on, the work it spent, which the pass after it reads.
+    fitLabels: (...args: Parameters<typeof real.fitLabels>): number => (state.off ? 0 : real.fitLabels(...args)),
   };
 });
 

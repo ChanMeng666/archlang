@@ -5,7 +5,7 @@
 Every diagnostic carries a stable code. Look one up with `arch explain <CODE>`
 (e.g. `arch explain E_ROOM_SIZE`). Errors abort rendering; warnings do not.
 
-**168 errors** · **103 warnings**
+**168 errors** · **104 warnings**
 
 | Code | Severity | Summary |
 | --- | --- | --- |
@@ -195,6 +195,7 @@ Every diagnostic carries a stable code. Look one up with `arch explain <CODE>`
 | [`W_DIM_NO_WALL`](#w_dim_no_wall) | warning | A `dim faces`/`dim clear` endpoint has no wall to measure to. |
 | [`W_DIM_OVERLAP`](#w_dim_overlap) | warning | Two hand-written dimensions are drawn on top of each other. |
 | [`W_DIM_TEXT_MISMATCH`](#w_dim_text_mismatch) | warning | A hand-written dimension's number is not the span it measures. |
+| [`W_DIM_THICKNESS_UNPLACED`](#w_dim_thickness_unplaced) | warning | A wall-thickness figure that `dims auto walls` or `dims auto all` would write is left out of the drawing: it would be printed over a room's label, and no other place for it is clear. |
 | [`W_DOORWAY_BLOCKED`](#w_doorway_blocked) | warning | A doorway's landing is blocked. |
 | [`W_DOOR_CLEARANCE`](#w_door_clearance) | warning | Door is narrower than the minimum clear width. |
 | [`W_DOOR_NEAR_CORNER`](#w_door_near_corner) | warning | A door leaves less wall between its jamb and a corner than the wall is thick. |
@@ -2456,7 +2457,7 @@ room at (0,0) size 2000x1500 label "Powder"   # warning: WC inferred from the al
 
 *warning* — A label or a `dims auto` number is printed over a symbol, a wall, a door swing or another label, or a label runs off its room.
 
-**Cause.** Read off the drawing itself, after the label placer has moved every room label it could and shrunk what still did not fit: a room's name or area figure lies over a furniture, fixture or stair symbol, over a wall or over the area a door's leaf sweeps, or runs off its own floor; or a number `dims auto` writes (a wall-thickness figure, an `R` or `φ` call-out, a chain figure) lies over such a symbol or over a room's name or area figure. "Over" means the text's box (its estimated width at its drawn size, turned with it) shares more than 2 % of its area with one of the symbol's drawn shapes, the same threshold at which the label placer moves a label; against a wall, a swing or the floor's edge the box is taken at the width the text can draw, character by character, the wider of Roboto and Helvetica Bold (an estimate covering those two faces, not a promise for every font), not the generous 0.62 of its size per character, since a label stands right up to them in any small room. The placer never moves a label further off its floor than it started, so a name too wide for its room may slide along the room but not out of it. A room's label that does not fit is drawn smaller, down to the furniture-label size (2 mm on a sheet), and wrapped at a space where that helps; one that still does not fit is reported here (an `outdoor` surface's label is not: this reads rooms only, and it neither shrinks nor wraps). A label pinned off its room is `W_ROOM_LABEL_OUTSIDE`'s report, and a wall or swing under it is not repeated here; a rug is floor finish and does not count. Drafting only: `describe()`, Plan JSON and the drawing are unchanged by it. A `dims auto` number lettered on a room floor is not itself a fault: the thickness figure is written beside its wall on the side with floor, and the `R` and `φ` call-outs inside the curve they measure, by convention.
+**Cause.** Read off the drawing itself, after the label placer has moved every room label it could and shrunk what still did not fit: a room's name or area figure lies over a furniture, fixture or stair symbol, over a wall or over the area a door's leaf sweeps, or runs off its own floor; or a number `dims auto` writes (a wall-thickness figure, an `R` or `φ` call-out, a chain figure) lies over such a symbol or over a room's name or area figure. "Over" means the text's box (its estimated width at its drawn size, turned with it) shares more than 2 % of its area with one of the symbol's drawn shapes, the same threshold at which the label placer moves a label; against a wall, a swing or the floor's edge the box is taken at the width the text can draw, character by character, the wider of Roboto and Helvetica Bold (an estimate covering those two faces, not a promise for every font), not the generous 0.62 of its size per character, since a label stands right up to them in any small room. The placer never moves a label further off its floor than it started, so a name too wide for its room may slide along the room but not out of it. A room's label that does not fit is drawn smaller, down to the furniture-label size (2 mm on a sheet), and wrapped at a space where that helps; one that still does not fit is reported here (an `outdoor` surface's label is not: this reads rooms only, and it neither shrinks nor wraps). A label pinned off its room is `W_ROOM_LABEL_OUTSIDE`'s report, and a wall or swing under it is not repeated here; a rug is floor finish and does not count. Drafting only: `describe()`, Plan JSON and the drawing are unchanged by it. A `dims auto` number lettered on a room floor is not itself a fault: the thickness figure is written beside its wall on the side with floor, and the `R` and `φ` call-outs inside the curve they measure, by convention. A thickness figure over a room's label is moved off it, or left out and reported by `W_DIM_THICKNESS_UNPLACED`; it stays over a label only on a plan so large that the search for its place ran out of its count, and is reported here then only while this rule's own count lasts (past it, as on a plan this large before, the storey's report is skipped and the lint coverage says so).
 
 **Fix.** For a room label: give it a clear point with `label "…" at (x,y)`, move the pinned point if it already has one, or move the piece or the door; a name reported at the smallest height needs a shorter name or a wider room, since the drawing does not draw a leader to it. A pinned label keeps its size. For a `dims auto` number: move the piece or the pinned label clear of it; a wall-thickness figure is lettered on the longest straight wall of its thickness at a run no crossing wall, opening, piece of furniture or stair stands on, so moving the piece off that wall frees one, or use `dims auto rooms` and state the thickness with a hand `dim`. There is no machine-applicable fix: where the label or the piece should go is a drafting decision with no unique answer.
 
@@ -2661,6 +2662,22 @@ dim (0,-100)->(4000,-100) offset -300 text "4000"   # warning: both in the same 
 
 ```arch static
 dim (0,-100)->(4000,-100) offset -300 text "4500"   # lint: the line spans 4000 mm
+```
+
+## W_DIM_THICKNESS_UNPLACED
+
+*warning* — A wall-thickness figure that `dims auto walls` or `dims auto all` would write is left out of the drawing: it would be printed over a room's label, and no other place for it is clear.
+
+**Cause.** `dims auto walls` and `dims auto all` letter each wall thickness once, beside the longest straight wall of that thickness, at a run no crossing wall, opening, piece of furniture or stair stands on. After the label placer has put every room's name and area figure where it finally stands, a figure printed over one of them (the `W_ANNOTATION_OVERLAP` test: the label's box covers more than 2 % of the figure's) is taken elsewhere: along the same wall, then beside the next-longest straight wall of that thickness, then on the other side of either where there is floor (never into the band outside an exterior wall, where the chains are). A place counts only when the figure there is clear of everything already drawn, by the same 2 %: the room labels, the opening tags, the axis bubbles, the furniture, fixture and stair symbols, the walls, the door swings and the other dimension figures. None of the places is, so the drawing leaves the figure out rather than print it over something. The warning names the wall and the thickness, and the rooms whose label the figure met. Drafting only: `describe()`, Plan JSON and the rest of the drawing are unchanged by it, and the thickness is still the wall's. The search is counted against what the label placer left of its own count; on a plan so large that it runs out, the figures not yet searched stay where they were first drawn, and `W_ANNOTATION_OVERLAP` reports those over a label only while its own count lasts (past it, the storey's `W_ANNOTATION_OVERLAP` report is skipped and the lint coverage says so, as on a plan this large before).
+
+**Fix.** Move a pinned label's `label "…" at (x,y)` point clear of the figure, or give an unpinned one a clear point, or move what stands along the wall, so a run of it reads clear (the hint names the rooms); or draw with `dims auto rooms` and state the thickness with a hand `dim` (`offset 0`, face to face) where it reads clear. There is no machine-applicable fix: where the figure or the label should go is a drafting decision.
+
+```arch static
+paper A4 landscape
+scale 1:100
+dims auto all
+wall id=shell exterior thickness 200 { (0,0) (1200,0) (1200,1200) (0,1200) close }
+room id=r at (0,0) size 1200x1200 label "WC" at (600,600)   # lint: the 200 figure has no clear place
 ```
 
 ## W_DOORWAY_BLOCKED

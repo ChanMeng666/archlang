@@ -3,8 +3,9 @@
  * what (`diagnosticOverprint`, `src/lint/overprint-ref.ts`).
  *
  * Pinned on the label-crowding witness (`test/fixtures/dense-office.arch`): its two room names over
- * fixtures and its `dims auto all` wall-thickness figure over the kitchenette's name, each detail
- * exact, kinds and ids. A room's report is about its label (`room-label`), and each thing under it
+ * fixtures, each detail exact, kinds and ids (its `dims auto all` wall-thickness figure, once over
+ * the kitchenette's name, now stands clear of every label, card AL5), and on a galley whose
+ * thickness figure stands on a counter, a thickness report that remains. A room's report is about its label (`room-label`), and each thing under it
  * says which of the label's texts is over it (`parts`), measured hit by hit, never copied from the
  * message: the name alone, the area figure alone, and two shelves, one under each text, which the
  * message joins. A figure's report says the room it stands in only of the pieces under it (a label
@@ -13,9 +14,8 @@
  * option only appends a last key, a copy or a clone has no detail while `lint()`'s own copies (a
  * storey's `level`) carry it, the CLI's `lint`/`validate --json` attach it, and over the
  * annotation-collisions defects every report has one whose subject is the text the message
- * names, whose ids are ids `describe()` lists. The message no longer names the room a
- * thickness figure stands in when the label under it is another room's (the witness's
- * ` in "Boardroom"`).
+ * names, whose ids are ids `describe()` lists. The message no longer names the room a figure
+ * stands in when the label under it is another room's (the pavilion's call-out over the annex).
  */
 
 import { readdirSync, readFileSync } from "node:fs";
@@ -40,7 +40,7 @@ const overlaps = (src: string): Diagnostic[] => lint(src).filter((d) => d.code =
 suite("the witness: who overprints whom", () => {
   const ds = overlaps(WITNESS);
 
-  it("reports two room names over fixtures and one wall-thickness figure over a name", () => {
+  it("reports two room names over fixtures, and no figure: the thickness figure keeps off the labels (AL5)", () => {
     expect(ds.map(diagnosticOverprint)).toEqual([
       {
         subject: { kind: "room-label", room: "r_store", text: "Store / IT" },
@@ -54,22 +54,7 @@ suite("the witness: who overprints whom", () => {
           { kind: "symbol", id: "kitchen_sink_7", parts: ["name"] },
         ],
       },
-      {
-        subject: { kind: "dim-thickness", room: "r_board", text: "200" },
-        over: [{ kind: "room-label", room: "r_kitchen", text: "Kitchenette / Break", parts: ["name"] }],
-      },
     ] satisfies DiagnosticOverprintJson[]);
-  });
-
-  it("the figure stands in the boardroom, and its message names the kitchenette's label, not the boardroom", () => {
-    const figure = ds[2]!;
-    expect(figure.message).toBe(
-      'The wall-thickness figure 200 that `dims auto all` writes beside its wall is printed over the name "Kitchenette / Break", so the two overprint each other on the drawing.',
-    );
-    expect(figure.message).not.toContain("Boardroom");
-    // The structured detail keeps both rooms: where the figure stands and whose label it covers.
-    expect(diagnosticOverprint(figure)?.subject.room).toBe("r_board");
-    expect(diagnosticOverprint(figure)?.over[0]?.room).toBe("r_kitchen");
   });
 
   it("every id it names is one describe() lists", () => {
@@ -82,6 +67,37 @@ suite("the witness: who overprints whom", () => {
         if (item.room !== undefined) expect(ids.has(item.room), item.room).toBe(true);
       }
     }
+  });
+});
+
+/**
+ * A galley whose 3.7 m counter lines its whole north wall, the longest 300 run: the thickness
+ * figure has no run clear of it and stands on it. A label is never under a thickness figure any
+ * more (AL5); a symbol still can be.
+ */
+const GALLEY = `plan "Galley" {
+  units mm
+  grid 50
+  paper A4 landscape
+  scale 1:100
+  dims auto all
+  wall id=shell exterior thickness 300 { (0,0) (4000,0) (4000,3000) (0,3000) close }
+  room id=r_k at (0,0) size 4000x3000 label "Kitchen" uses kitchen
+  door id=d_k at (2000,3000) width 900 wall shell swing in
+  furniture id=run counter at (150,150) size 3700x600
+}`;
+
+suite("a thickness figure over a piece: the report that remains", () => {
+  it("names the piece and the room it stands in, and the detail says so", () => {
+    const [d, ...rest] = overlaps(GALLEY);
+    expect(rest).toEqual([]);
+    expect(d!.message).toBe(
+      'The wall-thickness figure 300 that `dims auto all` writes beside its wall is printed over the counter in "Kitchen", so the two overprint each other on the drawing.',
+    );
+    expect(diagnosticOverprint(d!)).toEqual({
+      subject: { kind: "dim-thickness", room: "r_k", text: "300" },
+      over: [{ kind: "symbol", id: "run" }],
+    } satisfies DiagnosticOverprintJson);
   });
 });
 
@@ -325,6 +341,8 @@ suite("the annotation-collisions defects: every report has a detail, and its sub
       .sort()
       .map((f) => join(dir, f).replace(/\\/g, "/")),
   ];
+  // The galley above: since AL5 the one source here whose thickness figure is reported.
+  const sources = [...files.map((f) => [f, readFileSync(f, "utf8")] as const), ["galley", GALLEY] as const];
   /** The subject kind each opening of the message names. */
   const OPENING: [RegExp, string][] = [
     [/^The name /, "room-label"],
@@ -338,8 +356,7 @@ suite("the annotation-collisions defects: every report has a detail, and its sub
   it("holds on each report, and the set is not empty", () => {
     let reports = 0;
     const kinds = new Set<string>();
-    for (const f of files) {
-      const src = readFileSync(f, "utf8");
+    for (const [f, src] of sources) {
       const s = describe(src);
       const ids = new Set([...s.rooms.map((r) => r.id), ...s.furniture.map((x) => x.id), ...s.doors.map((x) => x.id)]);
       for (const d of overlaps(src)) {
@@ -393,7 +410,7 @@ suite("the CLI attaches it: `lint --json` and `validate --json`", () => {
     const r = await runArch(["validate", WITNESS_PATH, "--json"]);
     const out = JSON.parse(r.stdout) as { diagnostics: Array<Record<string, unknown>> };
     const shown = out.diagnostics.filter((d) => d.code === OVERLAP);
-    expect(shown).toHaveLength(3);
+    expect(shown).toHaveLength(2);
     for (const d of shown) expect(Object.keys(d).slice(-2)).toEqual(["overprint", "stage"]);
   });
 });

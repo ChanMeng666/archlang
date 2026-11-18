@@ -168,3 +168,55 @@ export function inkExtent(prim: Extract<ScenePrim, { t: "text" }>): { w: number;
   for (const line of textLines(prim)) w = Math.max(w, inkWidth(line.value, prim.size));
   return { w, h: textExtent(prim).h };
 }
+
+/** An axis-aligned extent. */
+export interface Box {
+  minX: number;
+  minY: number;
+  maxX: number;
+  maxY: number;
+}
+
+/** One text on the sheet: its turned box and its extent. */
+export interface TextBox {
+  rect: Point[];
+  box: Box;
+  area: number;
+}
+
+/**
+ * The turned rectangle a text occupies on the sheet, about its anchor: {@link textExtent} (or
+ * `width`, when given) by its height, turned with the text. Shared by the annotation-collision
+ * lint (`src/lint/rules/annotations.ts`) and the `dims auto` thickness station
+ * (`src/scene-build.ts`), so the drawing and the lint measure a text with one box.
+ */
+export function textBox(prim: Extract<ScenePrim, { t: "text" }>, width?: number): TextBox {
+  const extent = textExtent(prim);
+  const w = width ?? extent.w;
+  const h = extent.h;
+  const th = ((prim.rotate ?? 0) * Math.PI) / 180;
+  const u = { x: Math.cos(th), y: Math.sin(th) };
+  const v = { x: -u.y, y: u.x };
+  const shift = prim.anchor === "start" ? w / 2 : prim.anchor === "end" ? -w / 2 : 0;
+  const c = { x: prim.at.x + u.x * shift, y: prim.at.y + u.y * shift };
+  const at = (a: number, b: number): Point => ({ x: c.x + u.x * a + v.x * b, y: c.y + u.y * a + v.y * b });
+  const rect = [at(-w / 2, -h / 2), at(w / 2, -h / 2), at(w / 2, h / 2), at(-w / 2, h / 2)];
+  const box = emptyBox();
+  for (const p of rect) grow(box, p);
+  return { rect, box, area: w * h };
+}
+
+/** A box that holds nothing yet; {@link grow} widens it. */
+export const emptyBox = (): Box => ({ minX: Infinity, minY: Infinity, maxX: -Infinity, maxY: -Infinity });
+
+/** Widen `b` to take in `p`. */
+export function grow(b: Box, p: Point): void {
+  b.minX = Math.min(b.minX, p.x);
+  b.minY = Math.min(b.minY, p.y);
+  b.maxX = Math.max(b.maxX, p.x);
+  b.maxY = Math.max(b.maxY, p.y);
+}
+
+/** Do two boxes share interior? Boxes that only touch do not. */
+export const boxesMeet = (a: Box, b: Box): boolean =>
+  a.minX < b.maxX && b.minX < a.maxX && a.minY < b.maxY && b.minY < a.maxY;

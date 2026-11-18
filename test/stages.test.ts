@@ -85,8 +85,8 @@ describe("the stage ladder and the per-rule table", () => {
     // `W_GARAGE_OPENING_UNDERSIZED` at openings; G9's `W_FURNITURE_ON_STAIR` at fixtures; H1's
     // `W_EXTERIOR_RING_OPEN` at walls; CR2's `W_FURNITURE_ON_VOID` at fixtures; RM1.2a's
     // `W_STAIR_RISER_TOO_HIGH` at rooms, as `W_STAIR_TOO_STEEP`; RM1.2c's `W_LABEL_PIECE_MISSING` at fixtures,
-    // as `W_ROOM_MISSING_DEFINING`.
-    expect(counts).toEqual({ brief: 0, rooms: 9, walls: 7, openings: 26, fixtures: 24, drafting: 6 });
+    // as `W_ROOM_MISSING_DEFINING`; AL5's `W_DIM_THICKNESS_UNPLACED` at drafting, as `W_ANNOTATION_OVERLAP`.
+    expect(counts).toEqual({ brief: 0, rooms: 9, walls: 7, openings: 26, fixtures: 24, drafting: 7 });
   });
 
   it("the drafting layer is exactly the drafting stage, and no lint code is a brief finding", () => {

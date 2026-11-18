@@ -231,7 +231,7 @@ const CORPUS: [string, string][] = [
   ["test/fixtures/axes-grid.arch", "32dad3e21d1e5c40424473fdf05896088a2f848fd7f90d395d6cbd70169a0655"],
   ["test/fixtures/chain30.arch", "ce81264ecdc3a086f99708f90aee5dd929c71b9e8ccaaa54a1da5ce5aa213325"], // #367, see test/byte-identity-baseline.ts
   ["test/fixtures/dense-bays.arch", "9f4ad4538851a27b463113cd7e563823d185bc7e18b342fd9eebb45f2887992f"],
-  ["test/fixtures/dense-office.arch", "1e32d6ab44662ad7b3b8e1cf1a091acba337af684ddf96d1c36bda80187e5007"], // AL6: a new row, see ./byte-identity-baseline.ts
+  ["test/fixtures/dense-office.arch", "65fb5bb8b70fa47bc31d37161515933016d917be401b826ff633d815a8ce041c"], // AL6: a new row, see ./byte-identity-baseline.ts
   ["test/fixtures/diff-a.arch", "33a377ed414748c1262bdfbd057d657f8dda607ff77be9d944d2daa5feb12b2a"],
   ["test/fixtures/diff-b.arch", "1d4aaebab314c77742fc16d68c8925aa629ae42e1253a2167e240a2f25849ab1"],
   ["test/fixtures/diff-circ-a.arch", "e5bebcb2ebee7d35409f726a36c6da902eb7f414cadc9b93adb6e5d8a014235d"],
