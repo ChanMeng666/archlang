@@ -208,8 +208,8 @@
         "width": 1600,
         "height": 1667,
         "sheet": false,
-        "sha256": "ed5d979bce2b4d132ca24a5190494b684c2aa927d51201449d691057485f6683",
-        "pixelsSha256": "da4dacc282c4782a5e4a4986e434ea3090d32c4bc2581639ee94641c98250aa3"
+        "sha256": "6aad0850f93bd2dd93732f392df75cb1fabb4ec80fd92116927f1f612c4e7bb1",
+        "pixelsSha256": "c4d9119ed7386e346ce2ce1483de778e55ca877c90130a694796b394bf8f9471"
       },
       "files": [
         {
@@ -238,9 +238,9 @@
         },
         {
           "path": "laneway-house.plan.png",
-          "bytes": 187286,
-          "archlang": "1.56.0",
-          "archlang3d": "0.4.0"
+          "bytes": 187239,
+          "archlang": "1.64.0",
+          "archlang3d": "0.9.0"
         }
       ]
     },
@@ -289,8 +289,8 @@
         "width": 1600,
         "height": 1807,
         "sheet": false,
-        "sha256": "36fb4b11d2629a10a4c56166c0bdbf4dd6f7bc111f7c66737f28048198477b21",
-        "pixelsSha256": "c2e07a226051ece16c0cd5b28356aaace5c612da75e14ac9e2a86c587d2f57c4"
+        "sha256": "0856ef551bb18e30127f633e0a37d53ea195705db10588b66c0c41529335695e",
+        "pixelsSha256": "d03a449dd8966802a26d02a80a0e8acd999862fa652e16a627865144d12193bb"
       },
       "files": [
         {
@@ -319,9 +319,9 @@
         },
         {
           "path": "knob-flat.plan.png",
-          "bytes": 171793,
-          "archlang": "1.56.0",
-          "archlang3d": "0.4.0"
+          "bytes": 171722,
+          "archlang": "1.64.0",
+          "archlang3d": "0.9.0"
         }
       ]
     },
@@ -387,8 +387,8 @@
         "height": 1131,
         "level": 1,
         "sheet": true,
-        "sha256": "9279025dad0687ed138ab1a3ca18eb30102014d453a1bbaf52b3102392c2a836",
-        "pixelsSha256": "11a82d5c23ac0735ec6f28f5aa1dc3a8cfc38dc2c171104536309ef568510a31"
+        "sha256": "5442981ec12da7a7a3973681fdca65ce5fc2a9350ef61696a625c445c3867eaf",
+        "pixelsSha256": "4d9e2b7be1ea2878c3b56067761fdcfc2665ae033e3f93d16ffbf93d42163b8e"
       },
       "files": [
         {
@@ -429,9 +429,9 @@
         },
         {
           "path": "two-storey.plan.png",
-          "bytes": 144863,
-          "archlang": "1.60.0",
-          "archlang3d": "0.7.0"
+          "bytes": 144826,
+          "archlang": "1.64.0",
+          "archlang3d": "0.9.0"
         }
       ]
     },
@@ -582,8 +582,8 @@
         "width": 1600,
         "height": 1131,
         "sheet": true,
-        "sha256": "325ca6323cbdd65a4e64956a5c13b8a3939dc058467b8f18b57ff1d605f0e767",
-        "pixelsSha256": "f78986745c733f7b832834542e27463dc90adb1307752d79f7a6e83bd8154c77"
+        "sha256": "99d37876d5a5db6f5fa5d7d6a1d1d47d42c59745d3a2a28271d77a1cea989d88",
+        "pixelsSha256": "df7d5151ee22347bac2070c25dc853545b3a81e4d26e7c3733f75069c07a43d0"
       },
       "files": [
         {
@@ -606,9 +606,9 @@
         },
         {
           "path": "bungalow.plan.png",
-          "bytes": 120347,
-          "archlang": "1.56.0",
-          "archlang3d": "0.4.0"
+          "bytes": 120425,
+          "archlang": "1.64.0",
+          "archlang3d": "0.9.0"
         }
       ]
     },
@@ -649,8 +649,8 @@
         "width": 1600,
         "height": 1131,
         "sheet": true,
-        "sha256": "7a2331b8939c9d8798158ef97a4e0497df91f7044b60157fae85f12be48600a4",
-        "pixelsSha256": "214224cf9b8f9466293925a3f07c0e0fce51fa72d419dd0abc400d6e8e9f47c0"
+        "sha256": "7ff4fa30b2e634dc98aafa721c3dd7dec248b8be4c30b07066af5e261dcd2798",
+        "pixelsSha256": "8f2f39fdc6e46043d97fc7ef0119ad04812cddbc519efc8727089458b5643d4d"
       },
       "files": [
         {
@@ -673,9 +673,9 @@
         },
         {
           "path": "courtyard-house.plan.png",
-          "bytes": 209379,
-          "archlang": "1.56.0",
-          "archlang3d": "0.4.0"
+          "bytes": 209431,
+          "archlang": "1.64.0",
+          "archlang3d": "0.9.0"
         }
       ]
     },
@@ -733,8 +733,8 @@
         "height": 1130,
         "level": 1,
         "sheet": true,
-        "sha256": "1554bdd1a60899f5b28bb593f92b8fd94183f3a2ef6037c902de5090048f6260",
-        "pixelsSha256": "564e8c6a841521cd8bf0d16ee429087aed9dbcb5d0b839c45772017f26beefc8"
+        "sha256": "03591d2ec798537dd10aa95e75eaeff506bb8777a2be6a4dbcd13fca1a3a8fd2",
+        "pixelsSha256": "60023d9d8c3e885c3954a435b2db87ff12c7cb5b2e18b575d6c4df06e1261cc2"
       },
       "files": [
         {
@@ -769,9 +769,9 @@
         },
         {
           "path": "hillside-villa.plan.png",
-          "bytes": 127305,
-          "archlang": "1.56.0",
-          "archlang3d": "0.4.0"
+          "bytes": 127299,
+          "archlang": "1.64.0",
+          "archlang3d": "0.9.0"
         }
       ]
     },
@@ -812,8 +812,8 @@
         "width": 1600,
         "height": 1131,
         "sheet": true,
-        "sha256": "a8524cad53428bd7ae10dfd6fe02be5f5b0619bc28a346b51b77bc5c53b23d93",
-        "pixelsSha256": "7c1fe9775d45b6925d87f261cb553ba1c612608046f0146ffe5215634aba1d43"
+        "sha256": "05a011c0a241fec36390d8f2d40430560d00f1ac7d7732f77ff9299d8ac31509",
+        "pixelsSha256": "a9f5495d7ca09a75836d9822408d65a139ecb97fb9e4f509a8d72587cad6b5c3"
       },
       "files": [
         {
@@ -836,9 +836,9 @@
         },
         {
           "path": "corner-cafe.plan.png",
-          "bytes": 126514,
-          "archlang": "1.56.0",
-          "archlang3d": "0.4.0"
+          "bytes": 126442,
+          "archlang": "1.64.0",
+          "archlang3d": "0.9.0"
         }
       ]
     },
@@ -879,8 +879,8 @@
         "width": 1600,
         "height": 1131,
         "sheet": true,
-        "sha256": "5e6fa7eb0b1cd9d42f529031b427f2c20c4389a7de9d014268cd984db2f82b1d",
-        "pixelsSha256": "b9117a408024efb57815025312bd3c037cbe5969e458d3da200977cb6f854c8a"
+        "sha256": "f0a0d815e6dbb3961339e84793c42520e27acdf0cfa2af4a9c7d06d9bd5f7c77",
+        "pixelsSha256": "9a7a00ea5438aa403d0ac08fb123a74dd3f3e6b1b846b5c2046bc11951ad93e2"
       },
       "files": [
         {
@@ -903,9 +903,9 @@
         },
         {
           "path": "library.plan.png",
-          "bytes": 163184,
-          "archlang": "1.56.0",
-          "archlang3d": "0.4.0"
+          "bytes": 163127,
+          "archlang": "1.64.0",
+          "archlang3d": "0.9.0"
         }
       ]
     }

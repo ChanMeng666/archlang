@@ -32,8 +32,16 @@ function drawnArrow(svg: string): Rect | null {
   const line = svg.split("\n").find((l) => l.startsWith("<g><polygon ") && l.includes('transform="rotate('));
   if (!line) return null;
   const cut = line.indexOf("<text ");
-  const attrs = (s: string): Map<string, string> =>
-    new Map([...s.matchAll(/([a-z-]+)="([^"]*)"/g)].map((m) => [m[1]!, m[2]!]));
+  // Each `name="value"` of one element, read by `indexOf` (a backtracking regex trips CodeQL).
+  const attrs = (s: string): Map<string, string> => {
+    const out = new Map<string, string>();
+    for (let at = s.indexOf('="'); at >= 0; at = s.indexOf('="', at + 2)) {
+      const end = s.indexOf('"', at + 2);
+      out.set(s.slice(s.lastIndexOf(" ", at) + 1, at), s.slice(at + 2, end));
+      at = end - 1;
+    }
+    return out;
+  };
   const poly = attrs(line.slice(0, cut));
   const text = attrs(line.slice(cut));
   const [deg, cx, cy] = poly.get("transform")!.slice("rotate(".length, -1).split(" ").map(Number) as [

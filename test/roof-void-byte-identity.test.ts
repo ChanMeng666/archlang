@@ -255,14 +255,15 @@ import { type CompilerApi, semanticDigestWith } from "./helpers/byte-identity-di
 // Re-measured 2026-10-25 (PS2.11a/b): laneway-house (its WC moved off the corner); why, and the proof that nothing else moved, in `test/byte-identity-baseline.ts`'s header.
 // Re-measured 2026-10-26 (PS2.11e/PS2.46): laneway-house and studio (hob and fridge apart, whole payload only), gallery-l and aquarium (their wide leaves now `door double` pairs, so `describe()` names the kind: both tables); why, in `test/byte-identity-baseline.ts`'s header.
 // Re-measured 2026-10-26 (PR #283 red-team round 1): gallery-l and aquarium widen a `double` pair to 2000 and `describe()` reads one leaf's clear width (both tables); why, in `test/byte-identity-baseline.ts`'s header.
+// Re-measured for AL1 (the north arrow keeps off the dimension bands): aquarium, gallery-l and laneway-house, whole payload only. On each exactly one SVG line moved, the arrow's `<g>`; `describe()` and `lint()` are byte-identical, and `main`'s (`a9db286e`) SVG put back reproduces each old digest.
 const BASELINE: [string, string][] = [
   // PS4.4: every row whose plan resolves re-measured once for the new totals key (gross internal area); see test/byte-identity-baseline.ts.
   // Both laneway-house rows re-measured 2026-10-20 (PS2.17): its kitchen gained a worktop; the new
   // compiler on the previous source, the worktop finding removed, reproduces 1e163ea9… and f3afd6b5….
-  ["laneway-house", "2ac23ea67c6a4241a26e39e753229b5ac552dc939a6cc4ce500e8c7c8353e7d7"], // PS2.11e, see header
+  ["laneway-house", "6407dcffe6121fecc0e8d2335c36cbba6e8003a85f32ce1385094d1b72c06fdf"], // PS2.11e, see header
   ["studio", "7dac86ce77ab71a1d3be8eda909e523aba3655579103db09b061e003ab8287c6"], // PS2.11e, see header
-  ["gallery-l", "cfecaf8961e2bba24cd3e508418a15634ba62812a0f5c01ae6e4b7f6ae6bf3aa"], // PS2.10 dims fixed (byte-identity-baseline.ts); PS2.11e, see header
-  ["aquarium", "e0a8d48404f923552b8259f744f7ba35fde1e81e6b3c8a86685203935a35c3a9"], // re-measured for PS2.4, see header; PS2.10 dims fixed (byte-identity-baseline.ts); PS2.11e, see header
+  ["gallery-l", "b523d020cbb5eaacceefae1ef43b427ba21572b918fb3886552b6adaa458a8ec"], // PS2.10 dims fixed (byte-identity-baseline.ts); PS2.11e, see header
+  ["aquarium", "649197e4fc52aded85a167167ac252d4aef1bf9a0ad6ee91371b63cf4521061b"], // re-measured for PS2.4, see header; PS2.10 dims fixed (byte-identity-baseline.ts); PS2.11e, see header
 ];
 
 /** The SUMMARY half of the same law — see the header. Re-measured for `aquarium` twice, both times because its rooms were wrong (the second: PS2.4). */
