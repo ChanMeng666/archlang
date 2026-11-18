@@ -775,8 +775,10 @@ export function relocateLabels(
  * authored label after a placed one. Read off the plan, never the source, so the same rooms written
  * in any order take the same turns. Only two groups alike in all of that, which draw the same texts
  * at the same place in the same ring, keep their element order between them (the sort is stable).
+ * Exported for the relocation's oracle (`test/label-placement-oracle.test.ts`), which takes its turns
+ * the same way.
  */
-function plotOrder(nodes: readonly SceneNode[], groups: readonly LabelGroup[]): LabelGroup[] {
+export function plotOrder(nodes: readonly SceneNode[], groups: readonly LabelGroup[]): LabelGroup[] {
   const keyed = groups.map((g) => {
     const texts: string[] = [];
     for (let i = g.from; i < g.to; i++) {
