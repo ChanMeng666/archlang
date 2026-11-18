@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.64.0] - 2026-11-18
+
+One command-line change is breaking: `arch fmt` exits 2 on a plan it cannot parse, where it exited 0 (below). The language and the library API break nothing. **New code:** the error `E_INTENT_INFEASIBLE`, a brief whose numbers cannot all hold. **New form:** a `door`'s or `window`'s kind word may come among the clauses after its placement, on the statement's own line. **New output:** `related`, `instance` and `component` on a diagnostic's JSON, and `totals.floor_area_all_levels_m2` in `describe()`. On a multi-storey plan, the caption, `<desc>` and the `arch describe` header now state the whole building's area.
+
 ### Breaking
 
 - **`arch fmt` now exits 2 on a plan that does not parse (it exited 0)**, breaking for scripts that relied on exit 0 (card AF6, backlog M.8). It still refuses such a plan rather than rewrite it: the source comes back verbatim on stdout, and `fmt --write` leaves the file untouched. What changed is that the refusal is said. `--json` now gives `ok: false`, the new `parsed: false` and the parse `diagnostics`, with every key it gave before (`source_hash` included). Human mode prints one line on stderr (`✗ plan.arch not formatted: 1 parse error, the source is unchanged`), or nothing under `--quiet`. A plan that parses gets `parsed: true` in `--json`, and its exit code and output are unchanged.
@@ -32,6 +36,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - The Claude Code plugin (`plugins/archlang/`) connects to the hosted MCP server, `https://mcp.archlang.uk/mcp` (HTTP, no sign-in, rate-limited), where it started the local one with `npx -y @chanmeng666/archlang-mcp@<version>`: Anthropic's plugin directory refused 1.63.0 because it accepts a local MCP server, and any file that is not Markdown, text, JSON, YAML or an image, only from a Verified organization. The plans the plugin's MCP tools compile are therefore sent to `mcp.archlang.uk` ([privacy](https://archlang.uk/privacy)); the skills still drive the local CLI, which sends nothing. For the local server instead, `claude mcp add archlang -- npx -y @chanmeng666/archlang-mcp` and disable the plugin's. The folder's portable `mcp.json`, which GitHub Copilot CLI and other Agent Plugins clients read, names the hosted server too (it was the local one); the OpenAI ZIP already did. The folder gains a `README.md` saying what the plugin runs and sends, and ships the licence as `LICENSE.txt`.
 - archlang.uk: URLs that older copies of the docs linked to now redirect (301), some reported as 404 by Search Console and the rest found in review: `/examples/museum-wing.arch`, `/examples/museum-wings.arch`, `/brand/README`, `/dataset/CARD`, `/dataset/README`, `/eval/README`, `/CHANGELOG`, `/CHANGELOG.html` and `/CHANGELOG.md` to the file on GitHub, `/schemas/plan.schema.json` to `/plan.schema.json`, and `/playground`, `/playground/`, `/playground/index` and `/playground/index.html` to the playground.
 - The Cursor plugin moves to its own folder, `plugins/archlang-cursor/` (manifest, `rules/archlang.mdc`, the skills, and a `mcp.json` that still starts the local server), named by a new root `.cursor-plugin/marketplace.json`. Nothing changes for Cursor users: a local copy of the old folder keeps working; copy `plugins/archlang-cursor/` to `~/.cursor/plugins/local/archlang` to refresh it.
+
+### Shipped alongside
+
+- **`@chanmeng666/archlang-mcp` 0.2.47**, re-pinned to `^1.64.0`: the registry manifest (`server.json`) carries a `title` and two `icons`, and the baked spec and capabilities follow this core.
+- **VS Code extension 0.52.0** (`editors/vscode/CHANGELOG.md`): rebundles this core and shows a diagnostic's related locations in the Problems panel.
+- `@chanmeng666/archlang-3d` is unchanged at 0.9.0, `@chanmeng666/arch-plan` at 0.1.2 (the `<arch-plan>` element served from archlang.uk loads this core) and `@chanmeng666/archlang-font-cjk` at 1.0.0.
 
 ## [1.63.0] - 2026-11-17
 
