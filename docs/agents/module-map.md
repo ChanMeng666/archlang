@@ -269,8 +269,8 @@ Totals: 408 modules in 34 directories.
 | `intent.ts` | 1762 | 8 | The intent channel — author-time checking of a brief's INTENT against a plan. | none |
 | `ir.ts` | 2011 | 259 | Intermediate representation + `resolve(ast)`. | charges the step meter |
 | `keep.ts` | 1849 | 11 | `keep`: declared invariants, checked by `compile()` and never solved (ADR 0033; plan-soundness PS4.3, design `archlang-lab/plans/plan-soundness/research/2026-10-26-ps43-keep-design.md`). | charges the step meter |
-| `label-fit.ts` | 762 | 5 | A room's label that does not fit shrinks: a **post-pass over the lowered Scene**, after `wrapLabels` and `relocateLabels` (`src/label-placement.ts`) have done what they can at the drawing's label size (#367). | none |
-| `label-placement.ts` | 837 | 10 | Obstacle-aware relocation of room labels — a **post-pass over the lowered Scene**. | none |
+| `label-fit.ts` | 757 | 5 | A room's label that does not fit shrinks: a **post-pass over the lowered Scene**, after `wrapLabels` and `relocateLabels` (`src/label-placement.ts`) have done what they can at the drawing's label size (#367). | none |
+| `label-placement.ts` | 875 | 11 | Obstacle-aware relocation of room labels — a **post-pass over the lowered Scene**. | none |
 | `layout.ts` | 249 | 1 | Relational placement (T6.2) — the optional layout seam. | none |
 | `lexer.ts` | 613 | 27 | Hand-written lexer for ArchLang. Zero dependencies; tracks line/col. | none |
 | `lint.ts` | 380 | 33 | `lint(source)` — architectural soundness rules, as diagnostics. | none |
@@ -306,7 +306,7 @@ Totals: 408 modules in 34 directories.
 | `stages.ts` | 370 | 6 | The authoring stages (plan-soundness PS7.1): the order in which a plan's decisions are taken, lowest frequency first, and which findings mean anything at each. | none |
 | `statement-print.ts` | 407 | 12 | Text printers for the LEAF (non-block) statement kinds — the element statements and the `set …` settings line. This is the one place `format.ts`'s pretty-printer, an element's own `resolve()` (a lint fix's replacement text) and Plan… | none |
 | `suggest.ts` | 623 | 2 | `suggestTopology(source)` — topology repair suggestions as DATA, never applied. | none |
-| `text-layout.ts` | 238 | 17 | Line breaking for a drawn name, and where each line of a multi-line text is drawn. | none |
+| `text-layout.ts` | 238 | 18 | Line breaking for a drawn name, and where each line of a multi-line text is drawn. | none |
 | `text-metrics.ts` | 151 | 20 | The closed-form text widths in the tree: {@link textWidth}, the one shared estimate, and {@link inkWidth}, from the advances of the two faces a label is drawn in, for a test a label stands right up against. | none |
 | `text-safe.ts` | 63 | 7 | Output-text safety — the single place a string that came from user source is made safe to embed in a **container format**. | none |
 | `theme.ts` | 489 | 59 | Theme: colours, line-weight, and font for the rendered drawing. | none |
