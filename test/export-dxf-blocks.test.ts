@@ -272,7 +272,9 @@ suite("a block", () => {
 
   it("every catalogued fixture is a block, and an uncatalogued word stays flat", () => {
     const body = CATALOG_CATEGORIES.map((c, i) => `furniture id=f${i} ${c} at (${3000 * i},0) size 1000x1000`);
-    const dxf = dxfOf(plan(`${body.join("\n  ")}\n  furniture id=odd hammock at (0,3000) size 1000x1000 label "H"`));
+    // A label is drawn only where it fits its piece (card AL4), and this plan of every catalogued
+    // fixture side by side letters its furniture about 10 m high: the hammock is sized to hold its "H".
+    const dxf = dxfOf(plan(`${body.join("\n  ")}\n  furniture id=odd hammock at (0,3000) size 12000x12000 label "H"`));
     expect(inserts(dxf)).toHaveLength(CATALOG_CATEGORIES.length);
     expect(
       ents(dxf)

@@ -42,6 +42,14 @@
  * arrow's `<g>`, and where the body hashes the Scene, the added `chrome.north` with it; `describe()`,
  * `lint()`, the diagnostics and the steps did not move. Put `main`'s SVG back (`a9db286e`) and drop
  * `chrome.north`, and this body reproduces every old digest; the new ones are this body on the branch.
+ *
+ * `inline:near-words` re-taken for AL4 (an uncatalogued word's label is drawn only where it fits its
+ * piece), for an edit to the ROW, not a digest bless: its pieces were 700 mm wide, and at the row's
+ * 122.4 mm lettering `table_lamp` (759 mm by the shared estimate) and `planter_box` (835 mm) no longer
+ * fit, so the branch left both labels out and the row stopped showing every near word as a labelled
+ * rectangle. The pieces are now 850 mm wide, the layout otherwise unchanged. `main`'s compiler
+ * (`48334285`) gives the old pin on the old row exactly and `6f9b9f86…` on the edited row, and the
+ * branch gives that same digest on the edited row: every label fits, so it draws `main`'s bytes.
  */
 
 import { readFileSync } from "node:fs";
@@ -145,7 +153,7 @@ const BASELINE: [string, string][] = [
   ["1e2e65d06cd1b4c7a2c89b94365dcc51980b85044242fb45dd7da177aa2fe93f", "examples/two-bed.arch"],
   ["c309fa15bad9c1908b53b4ebefec8ab3e8e80320f5f23a5e3293b68d81efa65a", "examples/two-storey.arch"], // RM1.3a, see ./byte-identity-baseline.ts; RM1.2a, see ./byte-identity-baseline.ts; RM9.2, see ./byte-identity-baseline.ts
   ["20f6d2fdea1167d15fb58cdf5100eba2b5ef8f608c4d4af0ff2a5ddf6211620c", "inline:families-before-legend"],
-  ["79b5ba0efe233640ad18646b6ee13070309315ef6240feb73d46b4ad55299e72", "inline:near-words"],
+  ["6f9b9f86a99482c0ca862988a96dea45a10711ee0043353ae8ceffc3c7542892", "inline:near-words"], // AL4: the row edited, see the header
 ];
 
 suite("visual-assets families — byte-identity law", () => {

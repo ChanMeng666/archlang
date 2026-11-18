@@ -18,7 +18,8 @@ import type {
 import { FURNITURE_ANCHORS } from "../ast.js";
 import type { Diagnostic, Span } from "../diagnostics.js";
 import type { ElementDef, ParseCtx, RenderCtx, ResolveCtx, TransformCtx } from "../registry.js";
-import type { CadPart, CadTurn, RenderSizes, SceneNode } from "../scene.js";
+import type { CadPart, CadTurn, RenderSizes, SceneNode, ScenePrim } from "../scene.js";
+import { inkExtent, textExtent } from "../text-layout.js";
 import type { FurnitureAuthored, ResolvedElement, RFurniture, RRoom, RWall } from "../ir.js";
 import { rectCorners, segmentsOfWall, unit, normal, add, mul, sub, length, type WallSegment } from "../geometry.js";
 import type { BBox } from "../geometry/rect.js";
@@ -591,7 +592,8 @@ export const furniture: ElementDef = {
    * `render` calls, and counted. A glyph's count depends on the footprint (cabinet
    * divisions, a hedge's shrubs) and never on the pens, so canonical pens are used. The
    * count is at most 67 (a cabinet run's 64 divisions); an uncatalogued word draws its
-   * labelled rectangle (2).
+   * labelled rectangle (2), or the rectangle alone when its label fits the piece in neither
+   * direction ({@link furnitureLabelPrim}), which 2 still bounds.
    */
   drawCost(resolved): number {
     const f = resolved as RFurniture;
@@ -627,7 +629,9 @@ export const furniture: ElementDef = {
     // are the exact factorisation of the frame (`elements/glyph-chirality.ts`). A symbol
     // with a vertical mirror axis is returned untouched, so a mirrored `table` keeps its
     // exact bytes; the fallback rectangle below is symmetric and its label is centred, so
-    // it is deliberately outside this branch and mirrors to itself by construction.
+    // it is deliberately outside this branch and mirrors to itself by construction. A turned
+    // label is no exception: text is never mirrored, so it reads bottom to top on the plain
+    // piece and on its reflection alike (`test/glyph-chirality.test.ts` pins both).
     if (nodes && f._mirror) nodes = mirrorGlyph(nodes, cx);
     if (!nodes) {
       nodes = [];
@@ -636,21 +640,10 @@ export const furniture: ElementDef = {
         prim: { t: "polygon", pts: rectCorners(rect.x, rect.y, rect.w, rect.h) },
         paint: { fill: theme.furnitureFill, stroke: theme.furnitureStroke, width: sizes.thin },
       });
-      if (f.label) {
-        // Label stays at the centre (rotation-invariant) and upright.
-        nodes.push({
-          layer: "furniture",
-          prim: {
-            t: "text",
-            at: { x: cx, y: cy },
-            value: f.label,
-            size: sizes.furnFont,
-            anchor: "middle",
-            baseline: "central",
-          },
-          paint: { fill: theme.furnitureLabel },
-        });
-      }
+      // The label stays at the centre (rotation-invariant), upright when it fits, turned along a
+      // tall piece when only that fits, and not drawn at all when neither does (card AL4).
+      const label = f.label ? furnitureLabelPrim(f.label, { x: cx, y: cy }, f.size, sizes.furnFont) : null;
+      if (label) nodes.push({ layer: "furniture", prim: label, paint: { fill: theme.furnitureLabel } });
     }
     return deg === 0 ? nodes : nodes.map((n) => rotateNode(n, { x: cx, y: cy }, deg));
   },
@@ -1447,6 +1440,48 @@ function rotatePoint(p: Point, c: Point, deg: number): Point {
  * an arc yet, and asserting the arc rule through a glyph that does not draw one is how the
  * gap survived in the first place.
  */
+/**
+ * An uncatalogued piece's label (card AL4): the text centred on the piece at the furniture-label
+ * size, or `null` when it fits the piece in no direction. "Fits" means within the piece's footprint
+ * as the sheet draws it (`size`, already quarter-turned), at the WIDER of the two widths a text is
+ * measured by: the shared estimate the label passes and `W_ANNOTATION_OVERLAP` box a text with
+ * ({@link textExtent}, 0.62 em a character) and the width it can draw ({@link inkExtent}, the faces'
+ * own advances, a full em for a CJK character), by the size. So both the box every pass reads and
+ * the ink stay inside the piece: `MMWW` is wider in ink than estimated, CJK wider still.
+ *
+ *  1. Upright, when it fits so: the label as it was always drawn, byte for byte.
+ *  2. Else turned a quarter along the piece, when the piece is taller than it is wide and the
+ *     label fits along its length. It reads bottom to top (`rotate -90`), the way a drawing's
+ *     vertical text reads from the sheet's right-hand edge, whatever the piece's `rotate` or
+ *     `mirror`: text is never mirrored, so a reflected piece draws the same label (no glyph gains
+ *     handedness, `test/glyph-chirality.test.ts`).
+ *  3. Else nothing: the label is never set below the furniture-label size, the smallest lettering
+ *     the sheet draws (ruling AL-D2). It stays in `describe()`, which reads the plan, not the
+ *     drawing.
+ *
+ * Either text stands wholly inside the footprint, so the ink stays within `bounds()`.
+ */
+export function furnitureLabelPrim(
+  label: string,
+  centre: Point,
+  size: { w: number; h: number },
+  furnFont: number,
+): Extract<ScenePrim, { t: "text" }> | null {
+  const prim: Extract<ScenePrim, { t: "text" }> = {
+    t: "text",
+    at: centre,
+    value: label,
+    size: furnFont,
+    anchor: "middle",
+    baseline: "central",
+  };
+  const { w: estimate, h } = textExtent(prim);
+  const w = Math.max(estimate, inkExtent(prim).w);
+  if (w <= size.w && h <= size.h) return prim;
+  if (size.h > size.w && w <= size.h && h <= size.w) return { ...prim, rotate: -90 };
+  return null;
+}
+
 export function rotateNode(n: SceneNode, c: Point, deg: number): SceneNode {
   const rp = (p: Point): Point => rotatePoint(p, c, deg);
   // A rotation preserves orientation: every `sweep` (an arc prim's, a path's arc edges')

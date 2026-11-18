@@ -76,8 +76,11 @@ export function inlineRows(canonicalFamilies: readonly string[]): FamiliesLawRow
   });
   const W = 300 + cols * 1400;
   const H = 300 + Math.ceil(fams.length / cols) * 1200;
+  // 850 mm wide so every word's label fits its piece (card AL4 draws a label only where it fits; at
+  // this plan's 122.4 mm lettering `planter_box` is 835 mm by the shared estimate). 700 mm left out
+  // `table_lamp` and `planter_box`, and the row would stop proving they are still labelled rectangles.
   const near = NEAR_WORDS.map(
-    (word, i) => `  furniture ${word} at (${300 + i * 900},300) size 700x500 label "${word}" in r`,
+    (word, i) => `  furniture ${word} at (${300 + i * 900},300) size 850x500 label "${word}" in r`,
   );
   return [
     {

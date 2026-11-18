@@ -1960,6 +1960,22 @@
  * sweep of 569 corpus rows (SVG per storey, the circulation overlay, `compile().diagnostics`,
  * `describe()`, `lint()` under both profiles) of a `git archive` of `main` against the branch moved
  * this plan alone, and a planted edit moved one more.
+ *
+ * Re-taken for AL4 (an uncatalogued word's label stays inside its piece), the same 14 rows, in two
+ * steps. First the FIXTURE: the store's two `filing_cabinet`s became a `shelving` "IT Rack" and a
+ * `cabinet` "Supplies" on their footprints, and a 300 mm `screen` "Display" and a tall `coat_stand`
+ * "Coats" were added at the end (after every room, door and window, so no span moves). On `main`'s
+ * compiler (`48334285`) the edited plan already draws, describes and lints differently from the old
+ * one for that alone (the four pieces and their labels, `describe()`'s list, `shelving_5` for
+ * `filing_cabinet_5` in two reports); the room names and the "200" figure stand where they stood.
+ * Then the COMPILER: on the edited plan the branch changes only the drawing ("IT Rack", "Supplies"
+ * and "Display" are left out, "Coats" is turned); `describe()`, `lint()` under both profiles, the
+ * diagnostics and the steps do not move. Put `main`'s drawing (every page's SVG and Scene) back into
+ * the branch's payload and `main`'s digest of the edited plan is reproduced for every row; the new
+ * digests are this body on the branch. A per-payload sweep of 570 corpus rows (SVG per storey, the
+ * circulation overlay, `compile().diagnostics`, `describe()`, `lint()` under both profiles), `main`'s
+ * compiler against the branch's on the same sources, moved this plan's SVG alone, and a planted
+ * change to the upright label moved exactly the 9 sources that draw one.
  */
 
 /** SHA-256 over every storey's SVG + `describe()` + `lint()`, measured on `f4548db`. */

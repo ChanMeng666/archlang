@@ -5,7 +5,7 @@
  * wall-thickness figure the drawing left out because every place for it is over a room's label.
  *
  * `W_ANNOTATION_OVERLAP` — a number `dims auto` writes, or a room's name or area figure, printed
- * over a furniture, fixture or stair symbol; a `dims auto` number printed over a room's name or
+ * over a furniture, fixture or stair symbol or a piece's own label; a `dims auto` number printed over a room's name or
  * area figure; or a room's name or area figure printed over a wall or a door's swing, or running
  * off its own floor (#367). Each report also says, as data kept beside it, which text is printed
  * over what ({@link citeOverprint}, card AL6): the subject by kind (a room's `room-label`, a
@@ -57,7 +57,12 @@
  * outline and the pillows drawn inside it are not added twice.
  *
  * A rug (an `underlay` fixture) is not a symbol here: it is the floor finish, and a name on a rug
- * reads. Furniture labels are text, not symbol ink, and are not measured.
+ * reads. A piece's own label (only an uncatalogued word draws one, inside its rectangle) is text,
+ * not symbol ink: a room's name, area figure or `dims auto` number is over it when the area it
+ * shares with the label's box is more than the same 2 % of its own (card AL4). The label lies
+ * inside its piece's rectangle (`furnitureLabelPrim`), so a text over it is over the piece: it is
+ * read only for a text already over the piece, whose message names the piece, and its overprint
+ * lists a `furniture-label` after the `symbol`.
  *
  * A door's swing is the area its leaf sweeps, not the leaf and the arc alone: they enclose nothing
  * this measure can see, and it is the area the label placer steers off. "Off its floor" is the
@@ -84,7 +89,9 @@
  * collision work is a count, {@link MAX_ANNOTATION_WORK}: one unit per (text, symbol) and
  * (number, label) pair whose boxes are compared, plus one per shape vertex clipped. Worst case
  * `numbers × symbols + labels × symbols + numbers × labels` pairs, each clip linear in the
- * shape's vertices; past the count the storey is skipped, never half-measured.
+ * shape's vertices; past the count the storey is skipped, never half-measured. A piece's own label
+ * adds no pair: it is read only for a text already over its piece (four vertices, clipped and
+ * counted), so a plan of labelled pieces is measured exactly as far as one without labels.
  *
  * The walls, swings and floors have a count of their own, the same size, so that measuring them can
  * never cost a plan a symbol report: one unit per (label, swing) pair and per label, plus one per
@@ -147,6 +154,13 @@ interface SymbolInk {
 /** One text on the sheet: its turned box and its extent ({@link textBox}). */
 type Text = TextBox;
 
+/** A piece's own label as drawn (card AL4): the piece, the text and its turned box. */
+interface FurnitureLabel {
+  el: ResolvedElement;
+  prim: TextPrim;
+  text: Text;
+}
+
 /** What both rules here read off one storey's drawing: its annotated Scene and the `dims auto` layout it was drawn with. */
 interface DrawnStorey {
   scene: ReturnType<typeof memoScene>;
@@ -206,6 +220,10 @@ export const annotationOverlap: LintRule = {
     const byId = new Map<string, ResolvedElement>();
     for (const el of ir.elements) if (isSymbolElement(el)) byId.set(el.id, el);
     const symbols = new Map<string, SymbolInk>();
+    // The pieces' own labels, by piece (card AL4). A label lies inside its piece's rectangle, so a
+    // text can be over it only where it is over the piece: each is read only for a text already
+    // over its piece, and costs no pair of its own.
+    const pieceLabels = new Map<string, FurnitureLabel[]>();
     // Room labels: each room's name and area figure as drawn.
     const labels: { room: RRoom; prim: TextPrim; text: Text; ink: Text; isName: boolean }[] = [];
     const roomById = new Map(rooms.map((r) => [r.id, r] as const));
@@ -226,6 +244,12 @@ export const annotationOverlap: LintRule = {
       }
       const el = byId.get(n.elementId);
       if (!el || el.kind !== n.elementKind) continue;
+      if (el.kind === "furniture" && n.prim.t === "text") {
+        const own = pieceLabels.get(el.id) ?? [];
+        own.push({ el, prim: n.prim, text: textBox(n.prim) });
+        pieceLabels.set(el.id, own);
+        continue;
+      }
       const shapes = shapesOf(n.prim);
       if (shapes.length === 0) continue;
       let s = symbols.get(el.id);
@@ -326,6 +350,8 @@ export const annotationOverlap: LintRule = {
       wall: boolean;
       doors: RDoor[];
       outside: boolean;
+      /** The pieces' own labels it is printed over (card AL4). */
+      furnitureLabels: FurnitureLabel[];
       /** The name itself, not only the area figure, is over a wall or off the floor. */
       nameTight: boolean;
       /** Which of the label's texts each thing is under, as each hit was found (AL6). */
@@ -342,6 +368,7 @@ export const annotationOverlap: LintRule = {
           wall: false,
           doors: [],
           outside: false,
+          furnitureLabels: [],
           nameTight: false,
           parts: new Map(),
         };
@@ -366,6 +393,12 @@ export const annotationOverlap: LintRule = {
         const e = hitOn(l);
         if (!e.hits.includes(s.el)) e.hits.push(s.el);
         mark(e, s.el, l);
+        // The piece's own label, read only now that the text is over the piece.
+        for (const fl of pieceLabels.get(s.el.id) ?? []) {
+          if (!over(l.text, [fl.text.rect], fl.text.box)) continue;
+          if (!e.furnitureLabels.includes(fl)) e.furnitureLabels.push(fl);
+          mark(e, fl, l);
+        }
       }
     }
     // Measured whole or not at all, and merged only once it is known to be whole. A label pinned off
@@ -398,12 +431,19 @@ export const annotationOverlap: LintRule = {
       drawn: string;
       at: Point;
       hits: ResolvedElement[];
+      furnitureLabels: FurnitureLabel[];
       over: typeof labels;
     }[] = [];
     for (const nb of numbers) {
       const hits: ResolvedElement[] = [];
+      const onTexts: FurnitureLabel[] = [];
       const onLabels: typeof labels = [];
-      for (const s of syms) if (over(nb.text, s.shapes, s.box)) hits.push(s.el);
+      for (const s of syms) {
+        if (!over(nb.text, s.shapes, s.box)) continue;
+        hits.push(s.el);
+        for (const fl of pieceLabels.get(s.el.id) ?? [])
+          if (over(nb.text, [fl.text.rect], fl.text.box)) onTexts.push(fl);
+      }
       for (const l of labels) if (over(nb.text, [l.text.rect], l.text.box)) onLabels.push(l);
       if (hits.length + onLabels.length > 0)
         perNumber.push({
@@ -412,6 +452,7 @@ export const annotationOverlap: LintRule = {
           drawn: nb.prim.value,
           at: nb.prim.at,
           hits,
+          furnitureLabels: onTexts,
           over: onLabels,
         });
     }
@@ -456,6 +497,7 @@ export const annotationOverlap: LintRule = {
       const parts = (k: UnderKey): LabelPart[] => partsOf(e.parts.get(k));
       const under: OverprintItemJson[] = [
         ...e.hits.map((el): OverprintItemJson => ({ ...symbolItem(el), parts: parts(el) })),
+        ...e.furnitureLabels.map((fl): OverprintItemJson => ({ ...furnitureLabelItem(fl), parts: parts(fl) })),
         ...(e.wall ? [{ kind: "wall", parts: parts("wall") } as const] : []),
         ...e.doors.map((d): OverprintItemJson => ({ kind: "door-swing", id: d.id, parts: parts(d) })),
         ...(e.outside ? [{ kind: "floor-edge", room: room.id, parts: parts("floor-edge") } as const] : []),
@@ -541,6 +583,7 @@ export const annotationOverlap: LintRule = {
       }
       const under: OverprintItemJson[] = [
         ...nb.hits.map(symbolItem),
+        ...nb.furnitureLabels.map(furnitureLabelItem),
         ...[...covered].map(
           ([r, found]): OverprintItemJson => ({
             kind: "room-label",
@@ -729,8 +772,15 @@ const FIGURE_KIND: Readonly<Record<ReturnType<typeof callOutKind>, OverprintKind
 /** A drawn symbol in an overprint: its kind and the id `describe()` lists it by (AL6). */
 const symbolItem = (el: ResolvedElement): OverprintItemJson => ({ kind: "symbol", id: el.id });
 
-/** What a room's label can be printed over: a symbol's element, a door, a wall, its floor's edge. */
-type UnderKey = ResolvedElement | RDoor | "wall" | "floor-edge";
+/** A piece's own label in an overprint: its kind, its piece's id and the text as drawn (card AL4). */
+const furnitureLabelItem = (fl: FurnitureLabel): OverprintItemJson => ({
+  kind: "furniture-label",
+  id: fl.el.id,
+  text: fl.prim.value,
+});
+
+/** What a room's label can be printed over: a symbol's element, a piece's label, a door, a wall, its floor's edge. */
+type UnderKey = ResolvedElement | FurnitureLabel | RDoor | "wall" | "floor-edge";
 
 /** The texts of a room's label, in the order it draws them (AL6). */
 const LABEL_PARTS: readonly LabelPart[] = ["name", "area"];
