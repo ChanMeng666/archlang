@@ -491,7 +491,10 @@ describe("the order of the source", () => {
       // `relocateLabels` takes its turns in an order read off the plan (`plotOrder`, card AL3a), so
       // what it leaves this pass agrees too. Five plans were excused here before it did.
       const a = off(() => textsOf(src, world));
-      expect(off(() => textsOf(other, world)), name).toEqual(a);
+      expect(
+        off(() => textsOf(other, world)),
+        name,
+      ).toEqual(a);
       const after = textsOf(src, world);
       expect(textsOf(other, world), name).toEqual(after);
       held++;
@@ -504,16 +507,20 @@ describe("the order of the source", () => {
   // Generated strips of rooms whose names are often wider than the room, beside a corridor, the room
   // statements in two orders: the same texts, with this pass and without it (card AL3a).
   it("draws the same texts in any order of the room statements, generated", () => {
-    const NAMES = ["Store / IT", "Kitchenette / Break", "Accessible WC", "WC", "Hauswirtschaftsraum", "Dressing", "Office"];
+    const NAMES = [
+      "Store / IT",
+      "Kitchenette / Break",
+      "Accessible WC",
+      "WC",
+      "Hauswirtschaftsraum",
+      "Dressing",
+      "Office",
+    ];
     const spec = fc.record({ w: fc.constantFrom(1200, 1500, 1800, 2400, 3000), name: fc.constantFrom(...NAMES) });
     fc.assert(
       fc.property(
         fc.array(spec, { minLength: 2, maxLength: 7 }),
-        fc.constantFrom("", "  paper A3 landscape
-  scale 1:50
-", "  paper A4 landscape
-  scale 1:100
-"),
+        fc.constantFrom("", "  paper A3 landscape\n  scale 1:50\n", "  paper A4 landscape\n  scale 1:100\n"),
         fc.integer({ min: 0, max: 1_000_000 }),
         (rooms, paper, shuffleSeed) => {
           let x = 0;
@@ -531,13 +538,7 @@ describe("the order of the source", () => {
             [other[i], other[j]] = [other[j]!, other[i]!];
           }
           const plan = (ls: readonly string[]) =>
-            `plan "o" {
-  units mm
-${paper}${ls.join("
-")}
-  walls from rooms exterior 200 partition 100
-}
-`;
+            `plan "o" {\n  units mm\n${paper}${ls.join("\n")}\n  walls from rooms exterior 200 partition 100\n}\n`;
           expect(textsOf(plan(other), NULL_WORLD)).toEqual(textsOf(plan(lines), NULL_WORLD));
           expect(off(() => textsOf(plan(other), NULL_WORLD))).toEqual(off(() => textsOf(plan(lines), NULL_WORLD)));
         },
@@ -549,27 +550,34 @@ ${paper}${ls.join("
   // The five plans the corpus law excused until card AL3a, in every rotation of their room lines,
   // not only reversed: each is a plan whose names do not fit their rooms, so every label's place
   // depends on its neighbours'.
-  it.each(FORMERLY_EXCUSED)("%s draws the same in every rotation of its rooms", (file) => {
-    const src = readFileSync(file, "utf8");
-    const world = worldFor(dirname(resolvePath(ROOT, file)));
-    const lines = src.split("\n");
-    const rooms = lines.flatMap((l, i) => (/^\s*room\b/.test(l) ? [i] : []));
-    const rotated = (k: number): string => {
-      const out = [...lines];
-      rooms.forEach((i, j) => {
-        out[i] = lines[rooms[(j + k) % rooms.length]!]!;
-      });
-      return out.join("\n");
-    };
-    const first = textsOf(src, world);
-    const unfitted = off(() => textsOf(src, world));
-    for (const k of [1, 2, Math.floor(rooms.length / 2), rooms.length - 1]) {
-      const other = rotated(k);
-      expect(roomsOf(other, world), `${file} rotated ${k}`).toBe(roomsOf(src, world));
-      expect(textsOf(other, world), `${file} rotated ${k}`).toEqual(first);
-      expect(off(() => textsOf(other, world)), `${file} rotated ${k}, unfitted`).toEqual(unfitted);
-    }
-  }, 120_000);
+  it.each(FORMERLY_EXCUSED)(
+    "%s draws the same in every rotation of its rooms",
+    (file) => {
+      const src = readFileSync(file, "utf8");
+      const world = worldFor(dirname(resolvePath(ROOT, file)));
+      const lines = src.split("\n");
+      const rooms = lines.flatMap((l, i) => (/^\s*room\b/.test(l) ? [i] : []));
+      const rotated = (k: number): string => {
+        const out = [...lines];
+        rooms.forEach((i, j) => {
+          out[i] = lines[rooms[(j + k) % rooms.length]!]!;
+        });
+        return out.join("\n");
+      };
+      const first = textsOf(src, world);
+      const unfitted = off(() => textsOf(src, world));
+      for (const k of [1, 2, Math.floor(rooms.length / 2), rooms.length - 1]) {
+        const other = rotated(k);
+        expect(roomsOf(other, world), `${file} rotated ${k}`).toBe(roomsOf(src, world));
+        expect(textsOf(other, world), `${file} rotated ${k}`).toEqual(first);
+        expect(
+          off(() => textsOf(other, world)),
+          `${file} rotated ${k}, unfitted`,
+        ).toEqual(unfitted);
+      }
+    },
+    120_000,
+  );
 });
 
 /** The corpus plans whose labels depended on the order of the source until card AL3a (the owner-
