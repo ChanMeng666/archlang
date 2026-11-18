@@ -42,6 +42,12 @@
  * `examples/courtyard-family.arch` likewise (product-roadmap RM8.5: the vocabulary showcase).
  *
  * A digest here moving is a finding to explain before it is a diff to re-measure.
+ *
+ * Re-measured for AL1 (the north arrow keeps off the dimension and axis bands): 20 digests, of the
+ * 20 plans here whose arrow moved off a band. On each moved page exactly one SVG line moved, the
+ * arrow's `<g>`, and where the body hashes the Scene, the added `chrome.north` with it; `describe()`,
+ * `lint()`, the diagnostics and the steps did not move. Put `main`'s SVG back (`a9db286e`) and drop
+ * `chrome.north`, and this body reproduces every old digest; the new ones are this body on the branch.
  */
 
 import { sha256 } from "./helpers/digest.js";
@@ -68,24 +74,24 @@ const API: CompilerApi = { compile, describe: describePlan, lint };
 const BASELINE: [string, string][] = [
   ["examples/accessible.arch", "5f69fe78d45db6b096e3e7f4c44bfcdb537c4201d06fee8780e813112869f20c"],
   ["examples/attached.arch", "07995653257dff5785f4fe210e3c4f6f9d6fc35165be2e5ae34df364079029dc"],
-  ["examples/clinic.arch", "af780d4296064bdd7a1d81dfc776fa586520a26bfaed8295f3298ff91373ead5"],
-  ["examples/corner-cafe.arch", "a6d2075bd43f6d46984d64a2ae8edd6e6c96f25ea4fae91f2984ad7bdd4a5b1f"], // #367, see test/byte-identity-baseline.ts
+  ["examples/clinic.arch", "b31aad2c2f0c0d1b7e63498f8844570f16c700846d533288de7e43bf5ad56e63"],
+  ["examples/corner-cafe.arch", "d669e11a11740a841311fe359a3d5bc650343ba1f16e827bc4d869dc65206bd5"], // #367, see test/byte-identity-baseline.ts
   ["examples/courtyard-family.arch", "50c9cc316efda2bf16183e877d4be16443df160c9c13fc2a0210d62945c4bd67"], // new example (RM8.5, the courtyard-family showcase)
   ["examples/hexagon-pavilion.arch", "3078765cf03974518e0f2b3ea13585cca69ffbb86438f0899218c8a1c24a09a8"],
   ["examples/imports.arch", "a0341285f4e3699b738aa1916bba278eed61e347df4d3a2de139b9f0185d9678"],
-  ["examples/knob-flat.arch", "f4f0ed59cff4dd7b970fe069579044226fcb0e4f68f24a85845e648875ed17e5"], // new example (P4, the knobs example), see header
-  ["examples/materials.arch", "635e4b1a04bb6497e1fff846708c3f28519c89b531f5ad14b363381344cad925"],
-  ["examples/museum-wing.arch", "546b10dfb0204dbce454dff9e47713f32745285f4885e58a46b5faff23d10126"],
+  ["examples/knob-flat.arch", "578ec7551025df65b704f453b7af3493bf4abcfb19737fdece206e4c85fd2586"], // new example (P4, the knobs example), see header
+  ["examples/materials.arch", "b3d629675b1a43d4d1113f10b38e732d0b826fdb2b019fcf14ac4b166abd435d"],
+  ["examples/museum-wing.arch", "add9b13a425ec75dd2b88c4eba087465228822c37321b3d1952db6f0795ef6c7"],
   ["examples/one-room.arch", "8c47e263f778993d69c2f85d07a24b3a62c0b96d9f17ccb5cd9ebf2af6fa0120"],
-  ["examples/parametric.arch", "402cf58e4e122164928e6d875320e63b7be5c017396dce026ab8c73d4a0373ef"],
+  ["examples/parametric.arch", "7cceeb1be4622a8b84e1625a124d31f44fdfc15cd5362c4f4f25fa67f5560989"],
   ["examples/remodel.arch", "f0f4a5aa4758c3f9feb14449b6a9be0b7afd020fb925619c6d83e66f7cb95f2d"], // `centreline_at`, see ./byte-identity-baseline.ts
-  ["examples/sheet-notes.arch", "602cfd5f8e34268bf660dcad47b5cbf28332ddf92a119fba7317850ab9f9d798"],
+  ["examples/sheet-notes.arch", "708332c1a3f4cf35989718277b996af6f718d2e5fb8bd3d2912d8f87f7d61a2a"],
   ["examples/turning-stair.arch", "4d2fb9dcc6a44640a4d0e52d202df14909c73a5743799af8c25cb1f117dc87a8"], // new example (S2), see header; `centreline_at`, see ./byte-identity-baseline.ts; RM1.3a, see ./byte-identity-baseline.ts; RM1.2a, see ./byte-identity-baseline.ts; RM9.2, see ./byte-identity-baseline.ts
-  ["examples/two-storey.arch", "3b39a946ba68d2d386deb2ddf2ac70e647e841754137c64b076c6a74c43247b2"], // RM1.3a, see ./byte-identity-baseline.ts; RM1.2a, see ./byte-identity-baseline.ts; RM9.2, see ./byte-identity-baseline.ts
-  ["test/fixtures/axes-grid.arch", "e6be5d70788d931cacaa8cb1db2c2c454c1532d01153b90e2427c125770e5559"],
+  ["examples/two-storey.arch", "92a71843b7de0b87acb1ef3ea1b859d1c0bedbe4ef35025f3524ecea1d674aa8"], // RM1.3a, see ./byte-identity-baseline.ts; RM1.2a, see ./byte-identity-baseline.ts; RM9.2, see ./byte-identity-baseline.ts
+  ["test/fixtures/axes-grid.arch", "32dad3e21d1e5c40424473fdf05896088a2f848fd7f90d395d6cbd70169a0655"],
   ["test/fixtures/chain30.arch", "ce81264ecdc3a086f99708f90aee5dd929c71b9e8ccaaa54a1da5ce5aa213325"], // #367, see test/byte-identity-baseline.ts
   ["test/fixtures/dense-bays.arch", "9f4ad4538851a27b463113cd7e563823d185bc7e18b342fd9eebb45f2887992f"],
-  ["test/fixtures/dense-office.arch", "280166a9b49ed9968af0e501bfa4348fed5c116a9512f0396d8ffedf5e9770bf"], // AL6: a new row, see ./byte-identity-baseline.ts
+  ["test/fixtures/dense-office.arch", "1e32d6ab44662ad7b3b8e1cf1a091acba337af684ddf96d1c36bda80187e5007"], // AL6: a new row, see ./byte-identity-baseline.ts
   ["test/fixtures/diff-a.arch", "33a377ed414748c1262bdfbd057d657f8dda607ff77be9d944d2daa5feb12b2a"],
   ["test/fixtures/diff-b.arch", "1d4aaebab314c77742fc16d68c8925aa629ae42e1253a2167e240a2f25849ab1"],
   ["test/fixtures/diff-circ-a.arch", "e5bebcb2ebee7d35409f726a36c6da902eb7f414cadc9b93adb6e5d8a014235d"],
@@ -93,9 +99,9 @@ const BASELINE: [string, string][] = [
   ["test/fixtures/lock-before.arch", "23d883d88f5b94b73686c13e795ed57352dd778e3b807c1d73fdea1e3870943c"],
   ["test/fixtures/lock-partition-moved.arch", "8a18c466ef0388eaba790eea5e5dc217fcdfe8d8624ec8e0ed529ec98a4e4d56"],
   ["test/fixtures/lock-window-moved.arch", "5178ac32070a056b37462b4169b3fbdbbb0ee9a94ca05221cc0c64cedf89dd99"],
-  ["test/fixtures/schedule-sheet.arch", "15dc29228ea12dae7240ad843567f88218c5a57bd8838ea950b1a5792c2579a5"],
+  ["test/fixtures/schedule-sheet.arch", "7894657cc6c6afff831d31be9a8658f9761f90c4ddfc4015c9b28571863fc780"],
   ["test/fixtures/star30.arch", "5104211cdd3733a56e18d141c68db6a097b679e484b1b18897e7637dd05d0bbb"], // #367, see test/byte-identity-baseline.ts
-  ["test/fixtures/storeys-eaves-overflow.arch", "79b8e6c4eb85f66b84d6d76c0141872f30b04baa67da49130f81e80d085cef1f"], // RM1.3a, see ./byte-identity-baseline.ts; RM1.2a, see ./byte-identity-baseline.ts; RM1.2a review, see ./byte-identity-baseline.ts; RM9.2, see ./byte-identity-baseline.ts
+  ["test/fixtures/storeys-eaves-overflow.arch", "68492d111abcc4a0219738601073936dbd3aed2f645531ad125cb2bf083949e2"], // RM1.3a, see ./byte-identity-baseline.ts; RM1.2a, see ./byte-identity-baseline.ts; RM1.2a review, see ./byte-identity-baseline.ts; RM9.2, see ./byte-identity-baseline.ts
   // was 05693d9e. D27: this plan's stair stands in no wall, so `bounds()` reaching its break line widens the
   // drawing 156 mm. Only the SVG, the Scene and the overlay moved: with the old ones put back the old digest returns.
   ["test/fixtures/zones-levels.arch", "21c4b504af358718519aea5578a13c3a441ea218c01732f688c8cafff5059d1c"], // RM9.2, see ./byte-identity-baseline.ts
@@ -132,7 +138,7 @@ suite("`double` door kind — the byte-identity law", () => {
 const MAIN_SOURCES: [path: string, payload: string, source: string, undo: [branch: string, main: string][]][] = [
   [
     "examples/bungalow.arch",
-    "21eee9f4da8cc53b9fb86193eab28a24ca0b795dab96cf68d57e1c34cd567f71",
+    "4125b726f5c41900935d95fea66d118e2bcdbf67e7583f5d8e092c8a326a465f",
     "f6ba848bd9ad0f4073876e5fbac39a4ea54bb7ef690f8d32243b5ed5d3142eef",
     [
       [
@@ -147,7 +153,7 @@ const MAIN_SOURCES: [path: string, payload: string, source: string, undo: [branc
   ],
   [
     "examples/courtyard-house.arch",
-    "f7069b459aea043d9b908d9649dd280515e5b975f351cc779fd7666869727dfe",
+    "657cad4c8b08b7302671002ecc684c578b3a8fb9bcd508c85dcfd1dc1f87f931",
     "0bc00da708cfd4f3c1ff27a675968ef37cd4d8668ceb1b1ee9f6e3fab67e4401",
     [
       [
@@ -184,7 +190,7 @@ const MAIN_SOURCES: [path: string, payload: string, source: string, undo: [branc
   ],
   [
     "examples/garden-loft.arch",
-    "9c32144fa59fbed83396dcbfa1083cce3838976d60f4dae96f21df2f13c17cae",
+    "869e2d6aa14441c8fc1839c84b7a562b04502fa012fd3ced4e8f2a8da1697e6a",
     "e5124b3fb7009b347c15af1daaf6c54696d250f3b0f823f0695728271e53766c",
     [
       [
@@ -195,7 +201,7 @@ const MAIN_SOURCES: [path: string, payload: string, source: string, undo: [branc
   ],
   [
     "examples/hillside-villa.arch",
-    "92047f171eebb4ce67422c2552350ee1e3ae8c96c85e807c0a5da6e9cd9b24e3", // RM1.3a, see ./byte-identity-baseline.ts; RM9.2, see ./byte-identity-baseline.ts
+    "9e118d9f68ca353f4e637ffca1770c5d956c784c8994fd9c5ed33c7b34945645", // RM1.3a, see ./byte-identity-baseline.ts; RM9.2, see ./byte-identity-baseline.ts
     "44fdb87ebd3a403a9c3289db5a7cdf9250f7c683213dbe8159474a48197815c5", // source: RM1.4 writes the 17 snapped values and its comment of one (same length; was 8aff5c59); CO.1 writes its snapped `against` sizes out, here and in the undo block: less those clauses the rebuilt source is main's, and the payload is unchanged (was 743e5cde)
     [
       [
@@ -206,7 +212,7 @@ const MAIN_SOURCES: [path: string, payload: string, source: string, undo: [branc
   ],
   [
     "examples/laneway-house.arch",
-    "47330af81518da4ba0088fd0d85a62c62ed2d87f180b7ca070a9b488346b7730",
+    "bb8fde692c133530cf38bc453a660e7769d49c867be25b195f13e9223728ac08",
     "cd383a3a7c334d9e7979a99724e7d8ba3d2fee67be9f8b09a76e0b84ba141ef9",
     [
       [
@@ -221,7 +227,7 @@ const MAIN_SOURCES: [path: string, payload: string, source: string, undo: [branc
   ],
   [
     "examples/practice-office.arch",
-    "0c130db682d1f18310d6e8516b7949b3a476d70f7cbd9236bbd31afc32995429",
+    "2a5de67161f1db660b230d4f0a8e326c722d6e4ebaf5dbbf6f2d61d13c49de91",
     "a9ce310bf0cf4c4fb19e2f6601234f341ffa32daefd22e9679971bc979940a0b",
     [
       [
@@ -297,7 +303,7 @@ const MAIN_SOURCES: [path: string, payload: string, source: string, undo: [branc
   ],
   [
     "examples/townhouse.arch",
-    "fd3ee6cef1861fc17f29c2c7225b8546be602f5f5b61eef18cf8d6a6cde1f970", // RM1.3a, see ./byte-identity-baseline.ts; RM9.2, see ./byte-identity-baseline.ts
+    "2cdbb29bbd1055233ae1b91d64b798961e0b7f47cf280ef73f030b4c04c4a859", // RM1.3a, see ./byte-identity-baseline.ts; RM9.2, see ./byte-identity-baseline.ts
     "6173926c3747eec3b2a679cf4c24c15f463a0638f56bd9d9a5d87fd53b44d091",
     [
       [
@@ -308,7 +314,7 @@ const MAIN_SOURCES: [path: string, payload: string, source: string, undo: [branc
   ],
   [
     "examples/transit-hall.arch",
-    "97a6f7c827c1a1e61846c74b3ee38992af2472e349c986fea064a8dcb5eadf72",
+    "14ed0b4789b50d4ea16dcb81ef02083e9f31e2a9add5b7a4b566f4e8f6dbb910",
     "523c0f5bac7ee09915107b0595039e1c4d8b3378b4269636527e638ed6efdb16",
     [
       [

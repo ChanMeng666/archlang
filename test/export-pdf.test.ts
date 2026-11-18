@@ -64,9 +64,10 @@
  * codes.
  */
 
+import { readFileSync } from "node:fs";
 import { inflateSync } from "node:zlib";
 import { describe, expect, it, vi } from "vitest";
-import { layoutChrome } from "../src/chrome-layout.js";
+import { historicalNorth, layoutChrome } from "../src/chrome-layout.js";
 import { compile } from "../src/index.js";
 import { resolve } from "../src/ir.js";
 import { parse } from "../src/parser.js";
@@ -431,6 +432,43 @@ describe("PDF export", () => {
 
   // -------------------------------------------------------------------------
   // Multi-page / `level` fan-out.
+
+  // -------------------------------------------------------------------------
+  // The north arrow is drawn where the SVG draws it (card AL1).
+
+  describe("north arrow", () => {
+    /** Every closed four-point path of the page, as its vertex list: the arrow is one. */
+    const quads = (ops: string): number[][][] => {
+      const lines = ops.split("\n");
+      const out: number[][][] = [];
+      lines.forEach((l, k) => {
+        if (!l.endsWith(" m") || !/ l$/.test(lines[k + 3] ?? "") || lines[k + 4] !== "h") return;
+        out.push([l, lines[k + 1]!, lines[k + 2]!, lines[k + 3]!].map((op) => op.split(" ").slice(0, 2).map(Number)));
+      });
+      return out;
+    };
+    const near = (a: number[][], b: number[][]): boolean =>
+      a.every((p, i) => Math.abs(p[0]! - b[i]![0]!) < 0.01 && Math.abs(p[1]! - b[i]![1]!) < 0.01);
+
+    it("on a plan whose arrow moved (the dense-office witness), at the SVG's spot, not the old one", async () => {
+      const r = compile(readFileSync("test/fixtures/dense-office.arch", "utf8"), { noCache: true });
+      const scene = r.scene!;
+      const north = scene.chrome?.north;
+      expect(north, "the witness's arrow moves off the top chains").toBeDefined();
+      const line = r.svg.split("\n").find((l) => l.startsWith("<g><polygon "))!;
+      const at = line.indexOf('points="') + 'points="'.length;
+      const svgPts = line
+        .slice(at, line.indexOf('"', at))
+        .split(" ")
+        .map((p) => p.split(",").map(Number));
+      const drawn = quads(pageOps(await toPdf(scene)));
+      expect(drawn.some((q) => near(q, svgPts))).toBe(true);
+      // Where it stood before: the same shape moved back to the historical centre is not drawn.
+      const was = historicalNorth(scene.bounds, scene.sizes.margin, scene.sizes.refDim);
+      const old = svgPts.map(([x, y]) => [x! - north!.cx + was.cx, y! - north!.cy + was.cy]);
+      expect(drawn.some((q) => near(q, old))).toBe(false);
+    });
+  });
 
   describe("multi-storey", () => {
     it("fans out to one single-page PDF per storey, each carrying ITS OWN drawing", async () => {

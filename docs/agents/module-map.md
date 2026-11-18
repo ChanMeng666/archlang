@@ -222,7 +222,7 @@ Totals: 408 modules in 34 directories.
 | `axes.ts` | 161 | 4 | **Positioning axes** (定位轴线) — GB/T 50001's structural datum grid. | none |
 | `builtins.ts` | 129 | 3 | Built-in functions: a frozen, pure map injected into the global scope as `builtin` Values. Each is total — bad arity / types emit a diagnostic and return a safe default, never throw — and deterministic (no I/O, no clock). | none |
 | `catalog-fix.ts` | 15 | 2 | The catalogued remediation for a diagnostic code: one row of the catalogue's fix column (`CATALOG_FIXES`, generated from `ERROR_CATALOG`). `diagnosticToJson` attaches it as `fix`, and the error card (`backends/error-svg.ts`) draws it. It… | none |
-| `chrome-layout.ts` | 374 | 15 | Shared page-chrome layout — the deterministic geometry of the **scale bar** and **title block** in the bottom page margin, and how far the bottom margin must grow to contain them. Both the SVG and PDF backends build their chrome from this… | none |
+| `chrome-layout.ts` | 626 | 17 | Shared page-chrome layout — the deterministic geometry of the **scale bar** and **title block** in the bottom page margin, and how far the bottom margin must grow to contain them. Both the SVG and PDF backends build their chrome from this… | none |
 | `clause-order.ts` | 242 | 15 | Order-free trailing clauses. A statement's optional keyword-led clauses (`size`, `label`, `rotate`, `clear`, … after a `furniture`'s placement) may come in any order, each once. | none |
 | `cli.ts` | 91 | 0 | ArchLang CLI — agent-native. | none |
 | `command-name.ts` | 11 | 4 | The command name every help line, example and doc writes. `package.json` installs two bins, `archlang` and `arch`, for the same `dist/cli.js`; `arch` stays as an alias, but coreutils ships an `arch` on Linux, macOS and Git Bash, so a bare… | none |
@@ -255,14 +255,14 @@ Totals: 408 modules in 34 directories.
 | `furnish-table.ts` | 143 | 4 | The furnish table and the family reading of a held piece, shared by `src/furnish.ts` (the `finish` stage that writes the pieces) and the `W_ROOM_MISSING_DEFINING` lint rule (`src/lint/rules/room-contents.ts`, which reads the piece that… | none |
 | `furnish.ts` | 1677 | 12 | The `furnish` stage of `finish()` — furniture by room use, in rooms that hold none (`docs/adr/0025-furnish-as-explicit-transform.md`). | none |
 | `furniture-relation.ts` | 372 | 8 | Furniture relations (ADR 0029): the closed-form geometry behind `facing <id>`, `against <room>.<edge>` and `clear front\|sides <mm>`. | none |
-| `geometry.ts` | 957 | 108 | Pure geometry helpers. All coordinates in millimetres. Deterministic. | none |
+| `geometry.ts` | 957 | 107 | Pure geometry helpers. All coordinates in millimetres. Deterministic. | none |
 | `hash.ts` | 14 | 3 | FNV-1a — a tiny, fast, deterministic non-cryptographic string hash, used to key the per-stage memo caches (lex → tokens, parse → ast). The length is appended to make accidental collisions vanishingly unlikely; callers that need certainty… | none |
 | `hatches.ts` | 884 | 31 | Material hatch patterns — a small named hatch *library*. Each material maps to an SVG `<pattern>` builder (for the SVG backend), a natural rotation, and a predefined DXF HATCH pattern name (so the hatch survives to CAD as a real `HATCH`… | none |
 | `id-spans.ts` | 23 | 2 | The byte span of an element statement's `id=<name>` name, kept beside the AST. A leaf: the parser records spans here and the resolver reads them, so reading one never loads the parser. | none |
 | `identity.ts` | 33 | 3 | Process-local stable identity tokens for cache keying. | none |
 | `impact.ts` | 1405 | 3 | `impact(before, after)` (plan-soundness card PS4.2): change one number, see what follows, what stays put, and what breaks. The executable answer to "what changes, what must not". | none |
 | `import.ts` | 349 | 35 | Module linking — the `import` system. | none |
-| `index.ts` | 721 | 450 | ArchLang — compile declarative floor-plan source to a professional SVG. | none |
+| `index.ts` | 726 | 451 | ArchLang — compile declarative floor-plan source to a professional SVG. | none |
 | `input-limit.ts` | 77 | 5 | A host's refusals, as catalogued diagnostics. | none |
 | `intent-concepts.ts` | 238 | 6 | The intent channel's concept vocabulary — production name resolution for the NL→ArchLang intent contract. | none |
 | `intent-feasibility.ts` | 388 | 3 | Infeasibility of a brief's stated numbers: the arithmetic that makes "this brief is impossible" checkable, before any plan exists. | none |
@@ -270,7 +270,7 @@ Totals: 408 modules in 34 directories.
 | `ir.ts` | 2011 | 257 | Intermediate representation + `resolve(ast)`. | charges the step meter |
 | `keep.ts` | 1849 | 11 | `keep`: declared invariants, checked by `compile()` and never solved (ADR 0033; plan-soundness PS4.3, design `archlang-lab/plans/plan-soundness/research/2026-10-26-ps43-keep-design.md`). | charges the step meter |
 | `label-fit.ts` | 626 | 3 | A room's label that does not fit shrinks: a **post-pass over the lowered Scene**, after `wrapLabels` and `relocateLabels` (`src/label-placement.ts`) have done what they can at the drawing's label size (#367). | none |
-| `label-placement.ts` | 750 | 7 | Obstacle-aware relocation of room labels — a **post-pass over the lowered Scene**. | none |
+| `label-placement.ts` | 750 | 9 | Obstacle-aware relocation of room labels — a **post-pass over the lowered Scene**. | none |
 | `layout.ts` | 249 | 1 | Relational placement (T6.2) — the optional layout seam. | none |
 | `lexer.ts` | 613 | 27 | Hand-written lexer for ArchLang. Zero dependencies; tracks line/col. | none |
 | `lint.ts` | 380 | 32 | `lint(source)` — architectural soundness rules, as diagnostics. | none |
@@ -294,9 +294,9 @@ Totals: 408 modules in 34 directories.
 | `room-datums.ts` | 420 | 20 | The datum table (ADR 0028 §1): what one resolution group's rooms and grid axes expose as lines, frozen after every room is placed and before any wall resolves. | charges the step meter |
 | `room-tiling.ts` | 1397 | 17 | The derivation behind `walls from rooms` (ADR 0028 §3, plan decision D5): one group's rectangular and rectilinear rooms in, its exterior ring(s) and its partitions out, or a refusal naming the rooms at fault. Pure: no diagnostics, no ids… | charges the step meter |
 | `sanitize.ts` | 61 | 2 | Config sanitization — a denylist for **untrusted** `.arch`-sourced config. | none |
-| `scene-build.ts` | 1263 | 30 | Lowers a resolved plan (IR) to the backend-neutral {@link Scene}. | none |
+| `scene-build.ts` | 1294 | 30 | Lowers a resolved plan (IR) to the backend-neutral {@link Scene}. | none |
 | `scene-memo.ts` | 177 | 4 | One Scene per resolved plan and drawing options, shared by `compile()` and `lint()`. | none |
-| `scene.ts` | 512 | 118 | Backend-neutral **Scene IR** — the keystone drawing intermediate. | none |
+| `scene.ts` | 512 | 119 | Backend-neutral **Scene IR** — the keystone drawing intermediate. | none |
 | `segment-select.ts` | 221 | 7 | Segment selectors (plan card PS3.5): `segment north\|south\|east\|west` and `segment containing <room>.<edge>`, written wherever `segment <n>` is. A selector is an ALIAS: it resolves to the one segment index the number would name, and from… | charges the step meter |
 | `share.ts` | 76 | 1 | `@chanmeng666/archlang/share`: the browser-safe half of the playground's `#z=` share link, `#z=<base64url(deflate-raw(utf8))>`, for every consumer with no `zlib` (the playground page and its short-link Worker, the hosted MCP Worker, the… | none |
 | `sheet-tables.ts` | 1346 | 15 | **Sheet tables** — the ROOM SCHEDULE and the derived LEGEND, and beside them the DOOR & WINDOW SCHEDULE (`schedule openings`, rows from `opening-schedule.ts`) and the authored NOTES (`notes "…"`), each drawn only when the plan writes it. | none |
@@ -307,7 +307,7 @@ Totals: 408 modules in 34 directories.
 | `statement-print.ts` | 407 | 12 | Text printers for the LEAF (non-block) statement kinds — the element statements and the `set …` settings line. This is the one place `format.ts`'s pretty-printer, an element's own `resolve()` (a lint fix's replacement text) and Plan… | none |
 | `suggest.ts` | 623 | 2 | `suggestTopology(source)` — topology repair suggestions as DATA, never applied. | none |
 | `text-layout.ts` | 170 | 12 | Line breaking for a drawn name, and where each line of a multi-line text is drawn. | none |
-| `text-metrics.ts` | 151 | 18 | The closed-form text widths in the tree: {@link textWidth}, the one shared estimate, and {@link inkWidth}, from the advances of the two faces a label is drawn in, for a test a label stands right up against. | none |
+| `text-metrics.ts` | 151 | 20 | The closed-form text widths in the tree: {@link textWidth}, the one shared estimate, and {@link inkWidth}, from the advances of the two faces a label is drawn in, for a test a label stands right up against. | none |
 | `text-safe.ts` | 63 | 7 | Output-text safety — the single place a string that came from user source is made safe to embed in a **container format**. | none |
 | `theme.ts` | 489 | 59 | Theme: colours, line-weight, and font for the rendered drawing. | none |
 | `types.ts` | 203 | 14 | Public types for the ArchLang compiler. | none |
@@ -325,7 +325,7 @@ Totals: 408 modules in 34 directories.
 
 | Module | Lines | Importers | Summary | Budget |
 | --- | ---: | ---: | --- | --- |
-| `d4.ts` | 351 | 33 | The dihedral group D4 — the eight symmetries of a square: four quarter-turns and four axis reflections — with ONE encoding and ONE normal form. | none |
+| `d4.ts` | 351 | 34 | The dihedral group D4 — the eight symmetries of a square: four quarter-turns and four axis reflections — with ONE encoding and ONE normal form. | none |
 | `paths.ts` | 141 | 6 | One best-path engine over any selective semiring. | none |
 | `semiring.ts` | 107 | 7 | Semirings for path problems. | none |
 
@@ -364,7 +364,7 @@ Totals: 408 modules in 34 directories.
 | `font.ts` | 395 | 3 | The fonts every Node-only backend embeds, resolved once. | none |
 | `png-defaults.ts` | 8 | 2 | The page width, in pixels, of a PNG meant to be LOOKED AT (on a screen, or by a model's vision) when the caller names none. The native render is thousands of pixels wide; this keeps the image legible and small. `archlang preview` and the… | none |
 | `png.ts` | 113 | 2 | PNG backend — a **deterministic raster** serializer of the {@link Scene}. | none |
-| `svg.ts` | 434 | 9 | SVG backend — a pure serializer of the {@link Scene}. | none |
+| `svg.ts` | 445 | 9 | SVG backend — a pure serializer of the {@link Scene}. | none |
 
 ## `src/cli/`
 
@@ -464,7 +464,7 @@ Totals: 408 modules in 34 directories.
 | Module | Lines | Importers | Summary | Budget |
 | --- | ---: | ---: | --- | --- |
 | `dxf.ts` | 820 | 12 | DXF export backend — a pure serializer of the {@link Scene}. Emits ASCII DXF headed `AC1015` (AutoCAD 2000): R12-style LINE/ARC/TEXT entities (broadly importable) plus the `HATCH` entity (introduced after R12, hence the version bump) so… | none |
-| `pdf.ts` | 460 | 9 | PDF export backend — a **true vector** serializer of the {@link Scene}. | none |
+| `pdf.ts` | 458 | 9 | PDF export backend — a **true vector** serializer of the {@link Scene}. | none |
 
 ## `src/geometry/`
 
@@ -480,7 +480,7 @@ Totals: 408 modules in 34 directories.
 | `joinery.ts` | 1251 | 7 | **Wall joinery** — one boundary for a whole set of walls, with no line drawn inside another wall's solid. | none |
 | `min-rect.ts` | 169 | 2 | The exact minimum-area enclosing rectangle of a point set on the 0.001 mm lattice (plan-soundness PS5.1b; design `archlang-lab/plans/plan-soundness/research/2026-10-24-ps5-taste-design.md` §3 R9, R18). | none |
 | `polygon.ts` | 669 | 69 | Simple-polygon math for **polygonal rooms**. | charges the step meter |
-| `rect.ts` | 502 | 38 | Shared axis-aligned rectangle math for the analysis/repair layer. | none |
+| `rect.ts` | 502 | 39 | Shared axis-aligned rectangle math for the analysis/repair layer. | none |
 | `union.ts` | 193 | 3 | Boolean of axis-aligned rectangles (union, and difference of "holes") → boundary loops. | none |
 
 ## `src/grammar/`

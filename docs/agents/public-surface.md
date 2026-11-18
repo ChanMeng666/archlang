@@ -20,7 +20,7 @@ Every module, not only the entry, is in the sibling [`module-map.md`](module-map
 The total counts every name the checker sees as exported, including those pulled in by
 `export type * from "./ast.js"`; a count of the names written in `index.ts`' export statements is lower.
 
-Totals: 655 exports (228 values, 427 types), 415 flagged (74 values).
+Totals: 658 exports (229 values, 429 types), 418 flagged (75 values).
 
 ## `src/algebra/d4.ts`
 
@@ -270,6 +270,14 @@ Totals: 655 exports (228 values, 427 types), 415 flagged (74 values).
 | `isOptionalDepError` | value | `src/cli` |
 | `renderPng` | value | `packages/archlang-3d`, `packages/mcp`, `src/cli`, `test` |
 | `renderPngFromSvg` | value | `scripts`, `src/cli` |
+
+## `src/chrome-layout.ts`
+
+| Export | Kind | In-repo consumers |
+| --- | --- | --- |
+| `NorthArrowBox` | type | none |
+| `NorthSpot` | type | none |
+| `historicalNorth` | value | none |
 
 ## `src/compile.ts`
 

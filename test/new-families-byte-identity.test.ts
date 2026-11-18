@@ -36,6 +36,12 @@
  * A finding to explain before it is a digest to re-measure. A drawing change landing from
  * elsewhere moves the SVG half of a row on purpose; prove it by substitution, as
  * `docs/testing.md` § 3 describes, and record the reason here.
+ *
+ * Re-measured for AL1 (the north arrow keeps off the dimension and axis bands): 22 digests, of the
+ * 22 plans here whose arrow moved off a band. On each moved page exactly one SVG line moved, the
+ * arrow's `<g>`, and where the body hashes the Scene, the added `chrome.north` with it; `describe()`,
+ * `lint()`, the diagnostics and the steps did not move. Put `main`'s SVG back (`a9db286e`) and drop
+ * `chrome.north`, and this body reproduces every old digest; the new ones are this body on the branch.
  */
 
 import { readFileSync } from "node:fs";
@@ -101,43 +107,43 @@ const NEW_WORDS: readonly string[] = FIXTURE_CATEGORIES.filter((w) => TRANCHE.in
 /** Measured at `8233acc4` (see the header): `[digest, row]`. */
 const BASELINE: [string, string][] = [
   ["1defb1a97f6a98d2aad9f52a1a5dd7e4d40f5f7549f4cf70999b58b9aefd7212", "examples/accessible.arch"],
-  ["875c65bb70dd8f85c3f2a6347c21e3d8a6cce8d6b9b9a9ce1eb1c1bac9d9722a", "examples/aquarium.arch"],
+  ["46000a43c13888cf2eee11367cbbc755ddaaee42930ba101d22b5c56472b9045", "examples/aquarium.arch"],
   ["b65120c0078ef74191d75591963b87f64f2f0c6494282cb2eaecb845c75a9f25", "examples/attached.arch"],
-  ["e43ca3ddecaafcd826272abe80bb27b22a88a52cb28267c408bee2dc823e1845", "examples/bungalow.arch"],
-  ["e0f56d5e7226168c38b1c7ee28d4b6fe43b5550d2d6dcbf9478317ef92134db2", "examples/classroom-block.arch"],
-  ["4cb08a0d3671499549a71d5404e7edf421ed8bf633d159c815d22859deed87a9", "examples/clinic.arch"],
-  ["7e7cd0c04d41dc603dd9100f49c45e72c5c6739a0df335638e1ceda79d794c50", "examples/corner-cafe.arch"],
+  ["49d92a00bed95bd6d06eed52ed71e14c9931dbdca182b372a34e585e4e4327f5", "examples/bungalow.arch"],
+  ["338016fcea87c340bd779573a3e4aea2ada57e897059e90ceb793ee359ed2be5", "examples/classroom-block.arch"],
+  ["48cb9f6644d4da205cac0dfc262588850a286485b41eea5c4f775285db367df6", "examples/clinic.arch"],
+  ["85fb5d784146dc24314305e34c9b707a6d867a4b1ced66bfe8ca1b2ff1e37336", "examples/corner-cafe.arch"],
   ["fbd2bd10d650feaaad65cc9aed910165f2b7b7a96cdc0b4dab8314b46a8710b5", "examples/courtyard-family.arch"], // new example (RM8.5, the courtyard-family showcase)
-  ["b763e113515203306d321fb2021b87dcf75432fdc98c3712808288227a6db91b", "examples/courtyard-house.arch"],
+  ["54e3c3c58f1f6c0aa7ab0dc26f541f5ecbeae8a54abed8a5e0b5fb42f6d7c784", "examples/courtyard-house.arch"],
   ["4cc9df18d329f19f7291bb1942317741494f08df82d7357623effb66f4012cf9", "examples/furnished-flat.arch"],
-  ["94ed5dea82a84d559a97e2b179f81509ce710cccb82ea1c2a54d87e6cac4669b", "examples/gallery-l.arch"],
+  ["258681d9f66e5578ff99e17f77d3b301da6d2dbd3fca5ac4a80a0e1e33615ae1", "examples/gallery-l.arch"],
   ["f751c9de83b8ea36f902bd5160f7c17b99b8a7b503c48b6ba091ce77ae8f9e23", "examples/garden-house.arch"], // RM1.3a, see ./byte-identity-baseline.ts; RM9.2, see ./byte-identity-baseline.ts
-  ["2621494eb04015b448fa01ed95fb9aa4ad2b03170a5822f616e61b4b4fe7dd2e", "examples/garden-loft.arch"],
+  ["4b4d7b00fdcf5aa4139be22895d356c389781cc973e4395391a4ee1fd1db3894", "examples/garden-loft.arch"],
   ["8bd6a37eaeb951c8fa11e547eee4ae9727f32c3189c5a79f168e461f01012f08", "examples/hexagon-pavilion.arch"],
-  ["387315aaae9a8a1727a27304a802a1e0631b32f2607ef0e94175c6c1f30c4634", "examples/hillside-villa.arch"], // RM1.3a, see ./byte-identity-baseline.ts; RM9.2, see ./byte-identity-baseline.ts
+  ["a7f940b31da42e963c8a9632117ac1ed320aa11220090d4c70d236cc931dff1d", "examples/hillside-villa.arch"], // RM1.3a, see ./byte-identity-baseline.ts; RM9.2, see ./byte-identity-baseline.ts
   ["b3ed32c98852d61c69c521cf756843e3d950dbff3bf5bbe45dabe997336ceb86", "examples/imports.arch"],
-  ["b70f7455f644b327a4b36f56d283a7eb2397d5ed84523363c2f0df92cf0f2f96", "examples/knob-flat.arch"], // new example (P4, the knobs example)
-  ["913ed13bd8dd60b02816e127ef1a347bdcae49c7e944cee0925db120015d6ece", "examples/laneway-house.arch"],
-  ["fbc95cdcb6f4c4baf8f8afeae25f4d3b96a49812af107e13ef64713868f8bc46", "examples/library.arch"],
-  ["f6e8fc4606bd7782cb703ea8d7ecc0e900be392607be0d5181f9f187db5377fa", "examples/materials.arch"],
-  ["835149afac322674a3bfd9f221e1d8464ca94215cb8aba9dcac4ca359bf8a3a4", "examples/museum-wing.arch"],
-  ["2f84be39e29096299da8cc82ab468ac95091c4f42814a016780dc0d9dc9c5a29", "examples/museum-wings.arch"],
-  ["c8ed1b848cd448df36aa38be1613bd0d2d4e36fefc7440436700d7fcc6de64d4", "examples/museum.arch"],
+  ["d9a87f3402f1a99d4113e036a6a72de30a84826e8317a840cd353b0013c3bd5b", "examples/knob-flat.arch"], // new example (P4, the knobs example)
+  ["ade6cb2c0d185671a4fc243dbc65cf92d255da0326b88709dc837268a6350ccf", "examples/laneway-house.arch"],
+  ["664bacc1ef9be51bc128910ff9b42f45c322ef981ed05a85ae7ab89ec34afad6", "examples/library.arch"],
+  ["f7dd7ef9a52f8da5a49f25f36428bbc33d754b113c1b4964e3508b5b8c65d43f", "examples/materials.arch"],
+  ["b82630a3e096c4328d93982f581c817698e4ac5c9cb965b56562b320f54b80b5", "examples/museum-wing.arch"],
+  ["25ce0b468db11db582491d07df83390a831cd5522fce2167650b009ba822f5eb", "examples/museum-wings.arch"],
+  ["ed71bbdda5b24b9a8f7871521dc0145742ef06ed8604e232064b02183e129ec7", "examples/museum.arch"],
   ["45f4b26abfa7c62fa3b0c6c94fcbe2af3e4b11db62bba0b16f0e0567969a3bb4", "examples/one-room.arch"],
-  ["edadca7560cb6c0aa60e9ad9ca8b1aef14ce798e697993ea3d931a42ef82f906", "examples/parametric.arch"],
-  ["e87aecb6cc5312ddd304a1f3a1d877ced1cec8824801bce8aac932ee50cd5b04", "examples/practice-office.arch"],
+  ["4064206eb1e0357dd6f2bf27ee3ab812f1be6dc9d6e7228c2b0f4170566e90ff", "examples/parametric.arch"],
+  ["a2c15d155fa58b84ebea6b73569f96cc91c9a15087158de4cdf9719a116a0c75", "examples/practice-office.arch"],
   ["438ead3b52356d8750a56b91d7057fdc6f7556a0ea89ff0acad3a270111f9b9d", "examples/relational.arch"],
   ["e034f7f8f3920b2ff501edb0aaa4e3a21c28770dea67c43d4cdb61345f6e1793", "examples/remodel.arch"],
-  ["cb2821cbd51740692331b476d9efb05ca5c5c35056b3b4724edc4def271192c9", "examples/sheet-notes.arch"],
+  ["157e38a1404dbc2adddd0832783a7424abaea04e111f44c467ec1fa9b7b70f12", "examples/sheet-notes.arch"],
   ["1d9c8a9a57e9b4104d8aceb7a1ea5f23cea6963680037270195115d99e70d7cd", "examples/studio.arch"],
   ["7784e0a77b26d646d188f9f8c3bdef276a7de207da696a02345d499f9c36321f", "examples/terrace-row.arch"],
   ["78d8e4b1ef3ca7afd21a9ec05a638b1d426299d7fb57e7bf09f1b4bcd17e58d8", "examples/themed.arch"],
   ["1183ede6f8a3a1ebf83e9b2c3614d88155e37613c4d5fc3f6acd3f80defa7f6c", "examples/tiny-house.arch"],
-  ["9834e13fa4d951235a25ce47be48f3f75da1ae3090109a1d882ec1911638d242", "examples/townhouse.arch"], // RM1.3a, see ./byte-identity-baseline.ts; RM9.2, see ./byte-identity-baseline.ts
-  ["d4389ceea35c71a0a73b9e3a7e47c770531d15c038ac69ac0bda89bc8099ced0", "examples/transit-hall.arch"],
+  ["3b76fb02d4b1f0f9c644e973a2ca5625f7ed523bb63d66fb140049546512d735", "examples/townhouse.arch"], // RM1.3a, see ./byte-identity-baseline.ts; RM9.2, see ./byte-identity-baseline.ts
+  ["7d9680366da7f54a92ac8d224fe3fa46dc36385030e87365d0e9158494c52961", "examples/transit-hall.arch"],
   ["9914c01d77860216fda528327da5290168a75b9a21925f46838852db606ebd93", "examples/turning-stair.arch"], // RM1.3a, see ./byte-identity-baseline.ts; RM1.2a, see ./byte-identity-baseline.ts; RM9.2, see ./byte-identity-baseline.ts
   ["1e2e65d06cd1b4c7a2c89b94365dcc51980b85044242fb45dd7da177aa2fe93f", "examples/two-bed.arch"],
-  ["6cc88874f5fb592c93bbb02c7f096d6e5341818e0b2729eb6e274ae510b4b8a8", "examples/two-storey.arch"], // RM1.3a, see ./byte-identity-baseline.ts; RM1.2a, see ./byte-identity-baseline.ts; RM9.2, see ./byte-identity-baseline.ts
+  ["c309fa15bad9c1908b53b4ebefec8ab3e8e80320f5f23a5e3293b68d81efa65a", "examples/two-storey.arch"], // RM1.3a, see ./byte-identity-baseline.ts; RM1.2a, see ./byte-identity-baseline.ts; RM9.2, see ./byte-identity-baseline.ts
   ["20f6d2fdea1167d15fb58cdf5100eba2b5ef8f608c4d4af0ff2a5ddf6211620c", "inline:families-before-legend"],
   ["79b5ba0efe233640ad18646b6ee13070309315ef6240feb73d46b4ad55299e72", "inline:near-words"],
 ];

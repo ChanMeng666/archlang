@@ -461,7 +461,7 @@
 <text x="9206" y="55460" font-size="380" fill="#333333" text-anchor="end" dominant-baseline="central" font-weight="600">2365.59</text>
 <text x="12006" y="55460" font-size="380" fill="#333333" text-anchor="end" dominant-baseline="central" font-weight="600">2293.93</text>
 </g>
-<g><polygon points="59250,-2700 58800,-1260 59250,-1575 59700,-1260" fill="#333333" transform="rotate(0 59250 -1800)"/><text x="59250" y="-3116" font-size="520" fill="#333333" text-anchor="middle" dominant-baseline="central">N</text></g>
+<g><polygon points="65250,-6240 64800,-4800 65250,-5115 65700,-4800" fill="#333333" transform="rotate(0 65250 -5340)"/><text x="65250" y="-6656" font-size="520" fill="#333333" text-anchor="middle" dominant-baseline="central">N</text></g>
 <g><rect x="-150" y="46400" width="2500" height="280" fill="#333333"/><rect x="2350" y="46400" width="2500" height="280" fill="none" stroke="#333333" stroke-width="36"/><text x="-150" y="47080" font-size="400" fill="#333333" text-anchor="start" dominant-baseline="central">0</text><text x="4850" y="47080" font-size="400" fill="#333333" text-anchor="middle" dominant-baseline="central">5 m</text></g>
 <g><rect x="53350" y="46400" width="6800" height="920" fill="none" stroke="#333333" stroke-width="36"/><text x="53690" y="46860" font-size="304" fill="#888888" dominant-baseline="central">SCALE</text><text x="59810" y="46860" font-size="380" fill="#333333" text-anchor="end" dominant-baseline="central">1:200</text></g>
 </svg>

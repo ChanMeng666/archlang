@@ -5,7 +5,7 @@
 Where the tests of a `src` module are, and what each test file is for. Generated; `npm run check:drift`
 fails when it is stale. How to add a test: `docs/testing.md` § 4.
 
-546 test files in `test/`, 290 `src` modules, 109 modules no test imports.
+547 test files in `test/`, 290 `src` modules, 109 modules no test imports.
 
 ## `src` module → tests that import it
 
@@ -37,7 +37,7 @@ Nearest first, then by name; `(+n)` is the rest. Test names are `test/<name>.tes
 - `src/backends/font.ts` (1) — `export-font-cjk`
 - `src/backends/png.ts` (1) — `export-font-cjk`
 - `src/backends/svg.ts` (5) — `furniture-curves-backends`, `glyph-lib`, `scene-path-prim`, `scene`, `style`
-- `src/chrome-layout.ts` (4) — `bbox-derived-position`, `chrome-hidden`, `export-pdf`, `sheet`
+- `src/chrome-layout.ts` (5) — `bbox-derived-position`, `chrome-hidden`, `export-pdf`, `north-arrow`, `sheet`
 - `src/clause-order.ts` (2) — `clause-order-byte-identity`, `door-enums`
 - `src/cli/commands-analyze.ts` (12) — `cli-narrow`, `describe-clearances`, `keep-impact-depends`, `lint-summary`, `schedule`, `sheet`, `stages`, `cli-validate-next` (+4)
 - `src/cli/commands-author.ts` (2) — `cli-expected-hash`, `keep`
@@ -120,14 +120,14 @@ Nearest first, then by name; `(+n)` is the rest. Test names are `test/<name>.tes
 - `src/impact.ts` (2) — `rectilinear-doors`, `rectilinear-rooms`
 - `src/import.ts` (34) — `block-stair-byte-identity`, `corner-window-byte-identity`, `dim-swap-reprint`, `dim-thickness-callout`, `drawing-budget`, `error-value-law`, `floor-materials-byte-identity`, `furniture-relations` (+26)
 - `src/import/limits.ts` (1) — `openplan3d-malformed`
-- `src/index.ts` (407) — `acc-metadata`, `access-graph`, `access-policy`, `accessible-svg`, `agent-gallery`, `alias-match`, `anchors`, `annotate` (+399)
+- `src/index.ts` (408) — `acc-metadata`, `access-graph`, `access-policy`, `accessible-svg`, `agent-gallery`, `alias-match`, `anchors`, `annotate` (+400)
 - `src/input-limit.ts` (2) — `import-rooted`, `workspace-seams`
 - `src/intent-concepts.ts` (2) — `vocabulary-living-dining`, `vocabulary-matcher-oracle`
 - `src/intent-feasibility.ts` (1) — `intent-infeasible`
 - `src/intent.ts` (1) — `site`
 - `src/ir.ts` (174) — `access-policy`, `arc-radius-exact`, `attach`, `axes`, `between-face-probes`, `block-stair-byte-identity`, `block-stair-frames`, `block-stair-winders` (+166)
 - `src/label-fit.ts` (1) — `label-fit`
-- `src/label-placement.ts` (3) — `label-placement-oracle`, `label-placement`, `label-wrap`
+- `src/label-placement.ts` (4) — `label-placement-oracle`, `label-placement`, `label-wrap`, `north-arrow`
 - `src/lexer.ts` (12) — `clause-order-byte-identity`, `diagnostics-volume`, `diagnostics`, `error-value-law`, `expr`, `fmt-lossless`, `imperial-input`, `model-range` (+4)
 - `src/lint.ts` (54) — `annotation-collisions`, `annotation-small-rooms`, `block-stair-shaft`, `block-stair`, `equivariance-corpus`, `finish-furnish-bounds`, `lint-coverage`, `lint-fix-texts` (+46)
 - `src/lint/clearance-measure.ts` (2) — `lint-clearances-kitchen-doors`, `repair-no-worse`
@@ -169,7 +169,7 @@ Nearest first, then by name; `(+n)` is the rest. Test names are `test/<name>.tes
 - `src/room-tiling.ts` (7) — `rectilinear-doors`, `rectilinear-rooms-byte-identity`, `rectilinear-rooms`, `rectilinear-sides`, `wall-between-around`, `walls-from-rooms-clauses`, `walls-from-rooms`
 - `src/scene-build.ts` (23) — `annotation-collisions`, `annotation-small-rooms`, `export-dxf`, `export-font-cjk`, `export-pdf`, `furniture-curves-backends`, `furniture-rotate`, `glyph-chirality` (+15)
 - `src/scene-memo.ts` (1) — `scene-memo`
-- `src/scene.ts` (60) — `arc-radius-exact`, `axes`, `band`, `bbox-derived-position`, `block-stair-winders-walking-arc`, `block-stair`, `corner-window`, `dim-stagger` (+52)
+- `src/scene.ts` (61) — `arc-radius-exact`, `axes`, `band`, `bbox-derived-position`, `block-stair-winders-walking-arc`, `block-stair`, `corner-window`, `dim-stagger` (+53)
 - `src/segment-select.ts` (1) — `segment-select`
 - `src/share.ts` (1) — `share-codec`
 - `src/sheet-tables.ts` (5) — `drawing-budget`, `export-pdf`, `sheet-annotations`, `sheet`, `wall-status-drawing`
@@ -182,7 +182,7 @@ Nearest first, then by name; `(+n)` is the rest. Test names are `test/<name>.tes
 - `src/taste/criteria.ts` (2) — `taste-separation`, `taste`
 - `src/taste/index.ts` (2) — `taste-budget`, `taste`
 - `src/text-layout.ts` (5) — `escape-fuzz`, `label-placement-oracle`, `label-wrap`, `text-layout`, `text-metrics`
-- `src/text-metrics.ts` (6) — `dim-stagger`, `dim-thickness-callout`, `label-placement`, `sheet-text`, `text-layout`, `text-metrics`
+- `src/text-metrics.ts` (7) — `dim-stagger`, `dim-thickness-callout`, `label-placement`, `north-arrow`, `sheet-text`, `text-layout`, `text-metrics`
 - `src/theme.ts` (22) — `element-facets`, `equivariance-scene`, `export-pdf`, `format`, `furniture-mirror`, `glyph-chirality`, `glyph-dispatch-table`, `glyph-lib` (+14)
 - `src/types.ts` (9) — `datum`, `doors`, `element-cap`, `fixture-orientation`, `furniture-flush`, `furniture-lint`, `garage`, `keep` (+1)
 - `src/vertical.ts` (52) — `block-stair-frames`, `block-stair-shaft`, `block-stair-winders-walking-arc`, `block-stair-winders`, `block-stair`, `circulation-concave`, `circulation-translation`, `element-facets` (+44)
@@ -193,7 +193,7 @@ Nearest first, then by name; `(+n)` is the rest. Test names are `test/<name>.tes
 - `src/wall-lowering.ts` (2) — `joinery-split`, `open-crossing`
 - `src/wall-ref.ts` (2) — `rectilinear-rooms`, `walls-from-rooms`
 - `src/while-fix.ts` (1) — `while-fix`
-- `src/world.ts` (122) — `block-stair-byte-identity`, `circulation-unmeasured`, `clause-order-byte-identity`, `corner-window-byte-identity`, `corner-window`, `dim-thickness-callout`, `drawing-budget`, `drawing-overflow` (+114)
+- `src/world.ts` (123) — `block-stair-byte-identity`, `circulation-unmeasured`, `clause-order-byte-identity`, `corner-window-byte-identity`, `corner-window`, `dim-thickness-callout`, `drawing-budget`, `drawing-overflow` (+115)
 
 ## Test files
 
@@ -560,6 +560,7 @@ The first sentence of each file's header comment.
 - `test/no-replace-chain-escapers.test.ts` — Guard: no `String.replace` escaper chains in tooling or source (CodeQL js/incomplete-sanitization).
 - `test/no-value-cycles.test.ts` — No runtime import cycles in `src/`.
 - `test/non-finite.test.ts` — The number domain is closed and nesting is bounded: no non-finite value and no deep nesting can make `compile()` / `describe()` / `lint()` throw.
+- `test/north-arrow.test.ts` — The north arrow keeps off the dimension and axis bands on every corpus page (card AL1).
 - `test/npm-tarball.test.ts` — What `npm publish` actually ships — asked of npm itself, not of `package.json`.
 - `test/opaque-literal-guard.test.ts` — A CONTENT guard for the files whose secret-scanner findings are excluded.
 - `test/open-boundary-junctions.test.ts` — An `open between` boundary and the openings beside it (issue #368, part 2): voided over its whole clear span, a boundary has nothing built on it for a jamb to meet, so it stops counting as a meeting wall for `E_OPENIN...

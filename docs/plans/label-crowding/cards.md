@@ -20,24 +20,27 @@
 - **状态取值**：`todo`、`blocked`、`folded`、`withdrawn`。卡合并后删除，在 `handoff.md` 记一行。
 - **估时**：AI 日，±50%。
 
-### AL6 · `W_ANNOTATION_OVERLAP` 写明是谁压住了谁 — `todo` · 1.5 日 · opus
-沿用 RM1.6b 的做法（`src/lint/rule-ref.ts`）：用一个 `WeakMap` 把附加信息挂在诊断旁边，不放进诊断本身，所以 `JSON.stringify(lint())` 不变。
+### AL6b · AL6 的测试加固 — `todo` · 0.5 日 · opus
+AL6（#957）第二轮红队的三条测试缺口，只改测试，不改 `src/`。
 
-- 导出 `diagnosticOverprint`。`DiagnosticJsonOptions` 加一个可选的 `overprint`。CLI 的 `lint`/`validate --json` 和 MCP 的 `lint`/`validate` 打开它。
-- 附加信息的形状：`{ subject: {kind, id?, room?, text}, over: [{kind, id?, room?, text?}] }`。
-  - `kind` 取 `room-name | room-area | furniture-label | dim-chain | dim-thickness | dim-radius | dim-diameter | symbol | wall | door-swing | floor-edge | chrome | leader`。
-  - id 只出现在这里和 hints 里，不进消息正文（`docs/agents/iron-laws.md`）。
-- 顺手修正墙厚数字报告里的 `where`：现在写的是数字锚点所在的房间（如 "in Boardroom"），应该写被压住的标签所在的房间（`annotations.ts:405–408`）。
-- 加入见证夹具 `test/fixtures/dense-office.arch`。
-- **变化面**：`lint()`、`describe()`、SVG 都不变。`--json` 只在报这个码的平面上多出一个键。要核对的测试：`test/tables/cli-envelopes.json`、`test/lint-summary.test.ts`、`test/lint-messages-id-free.test.ts`、`test/release-compat.test.ts`。
-- **发布**：minor（新导出、新选项）。MCP shim 改动要同时改 `packages/mcp/package.json` 和两处 `server.json` 的版本号，因此路径上是 high 风险，要一次新的复审。
+- **N-1**：`test/label-fit.test.ts` 的 `ORDER_EXCUSED` 只对 `"agrees"` 断言两种房间顺序的结果相等；`"differs"` 的条目什么都不断言。给 `"differs"` 加上"不相等"的断言，否则一个已经不再依赖顺序的平面仍被名单放过。
+- **N-2**：`dim-chain`、`dim-diameter` 两种主体和"无名房间"的主体（`room-label` 的 `text` 取面积数字）没有测试，语料里也没有例子。`src/lint/rules/annotations.ts` 的 `FIGURE_KIND` 即使两行写反，测试也全绿。为每种主体各写一个最小平面，断言 `overprint.subject.kind` 和 `text`。
+- **N-3**：`test/label-wrap.test.ts` 里 `expect(t.knockOns).toBe(t.knocked!.length)` 是同义反复：两个计数在同一处一起加一。删掉它，或改成一个能失败的断言（例如与独立数出的 knock-on 数比较）。
+- **变化面**：只有测试。两份所有者批准的名单（`ORDER_EXCUSED` 和 label-wrap 的 knock-on 名单）只能缩小。
+- **发布**：不发布（只改测试）。
 
 ### AL1 · 指北针避开尺寸链 — `todo` · 1.5 日 · opus
 现在 `src/backends/svg.ts:370–391` 和 `src/export/pdf.ts:387–403` 各自算一遍位置：`cx = b.maxX − r`，`cy = b.minY − margin·0.55`，不看任何尺寸。
 
 - 在 `src/chrome-layout.ts` 加一个共用的 `northArrowBox(...)`（照 `titleBlockMetrics` 的写法），结果放在可选字段 `ChromeLayout.north` 里，两个后端都从它取位置。
-- 原位置的框不碰 `dims`/`axes` 节点时留在原位，这类平面字节不变。否则移到右上角的空方块：`x > b.maxX + reach.right`、`y < b.minY − reach.top`。尺寸链止于建筑转角，这个角上不会有尺寸链，而且在页面已经留出的边距之内。
-- **不要**加大图纸模式的 `margin.top`。那样页面会超出图纸，而 `describe().sheet.fits` 仍报为真（`sheet.ts:235–237` 警告过这个问题）。
+- 按顺序取第一个空位（协调方 2026-11-18 裁定，方案 C）：
+  1. 原位置的框不碰 `dims`/`axes` 节点时留在原位，这类平面字节不变；
+  2. 否则放进页面右上角的方块：`x > b.maxX + reach.right`、`y < b.minY − reach.top`。尺寸链止于建筑转角，这里不会有尺寸链；
+  3. 角上的方块放不下时，放到右侧尺寸带以外那一条的顶端；
+  4. 再放不下，放到顶部尺寸带以上那一条的右端；
+  5. 都放不下时，没有图纸的平面把上边距和右边距加大到刚好能放进角上的方块；图纸模式留在原位置。
+- 2–4 还要避开已画的其他节点、比例尺和图签，并在页面之内。量过：语料 33 个需要移动的页面里，角上方块放不下的有 10 页（见证夹具在内），这正是 3、4 两步的用处。回退一步在语料上从不触发。
+- **不要**加大图纸模式的任何边距。那样页面会超出图纸，而 `describe().sheet.fits` 仍报为真（`sheet.ts:235–237` 警告过这个问题）。
 - 用一条语料不变式测试钉住"指北针框与尺寸、轴线不相交"，不加 lint 码。
 - **变化面**：示例首页 22 页的 SVG 和 PNG 金样会变（多层平面另量），`describe()`/`lint()` 不变。
 - **发布**：`ChromeLayout.north` 经公开的 `Scene.chrome` 可读到，所以算 minor；如果字段不公开，算 patch。
@@ -47,6 +50,7 @@
 
 - `fitLabels` 之后，对每个按规则自己的谓词与最终标签框相撞的墙厚数字，重新选位：把标签框加进障碍物，重跑各级候选位；还不行就换同厚度次长的墙段，再换另一侧。
 - `autoDimensions(ir, sizes, registry, labelBoxes?)` 增加一个参数。lint 把它从 Scene 读到的标签框传进去（`annotations.ts:175–186`），这样画图和 lint 由同一个纯函数决定。
+- **补充（下游应用的请求，2026-11-18）**：所有候选位都避不开时，不画这个墙厚数字，并由一条 drafting 层 lint 指出哪一个没画。用 `new-lint-rule` 技能加。示例必须保持零警告；语料里墙厚数字的报告现在是 0 条，这条 lint 在语料上预计不报，要量过再说。
 - **变化面**：语料里没有墙厚数字的报告，预计语料零变化，用计数器证明；只有见证夹具变化。要守住 `test/dim-thickness-callout.test.ts` 和 `test/annotation-collisions.test.ts`（墙厚数字避开楼梯）。
 - 同时完成 PS2.39 中"墙厚数字压房间文字"这一部分。
 - **发布**：patch。`autoDimensions` 不从 `src/index.ts` 导出。
@@ -69,6 +73,7 @@
 - 规则认定带引出线的标签已解决：按它实际所在的地面检查，不再报"跑出房间"。
 - 改写 `W_ANNOTATION_OVERLAP` 的原因与修复文字（`src/error-catalog/drafting.ts:126–131`，用 `gen:*` 重新生成）。
 - 写 ADR（AL-D3）。默认开启，不加语法；要加 `[语法]` 开关，就得等 PS7.9，并附字节恒等律。
+- 让 `relocateLabels` 与房间的书写顺序无关。它现在按元素顺序逐组处理，已知结果随顺序变化的平面：`test/fixtures/chain30.arch`、`star30.arch`、`dense-office.arch`，以及 `test/plans/plan-soundness/audits/first-contact-plans/` 下的 `2026-10-24-rerun/2-house.arch` 和 `2026-10-26-walls-first/6-clinic.arch`。本卡合并时，两份所有者批准的名单（`test/label-fit.test.ts` 的 `ORDER_EXCUSED`、`test/label-wrap.test.ts` 的 knock-on 名单）都必须缩小。
 - **变化面**：7 个"放不下"的语料文件（`test/fixtures/chain30.arch`、`star30.arch`，以及 5 个首次接触审计平面）的 SVG 和 drafting lint 会变，预计约 70 条报告消失。示例不变。要守住 `test/label-fit.test.ts`、`test/annotation-small-rooms.test.ts`、`test/annotation-collisions.test.ts`、`test/opening-tags-corpus.test.ts`（其 `ALLOWED` 只能缩小）和工作量表。
 - 同时部分回应 N.3、L.2。
 - **发布**：minor。
@@ -86,3 +91,22 @@
 
 ### AL2c · 尺寸数字仍然相撞时报警 — `todo`（在 AL2a 之后）· 1.5 日 · opus
 新增 drafting 层码（暂名 `W_DIM_TEXT_CROWDED`），用 `new-lint-rule` 技能加。`dims auto` 的尺寸链现在没有源码 span（`ir.autoDims` 只是一个字符串，`src/ir/types.ts:941`），要先给它记一个 span。要确认示例仍然零警告。**发布**：minor。
+
+### AL7 · 第二行 `dims auto` 静默覆盖第一行 — `todo` · 0.5 日 · opus
+一个平面写两行 `dims auto`（如先 `all` 后 `rooms`），后一行静默生效，前一行被丢掉，没有任何诊断（1.64 上核实过：`validate --json` 只报与此无关的码）。`parseDimsSetting`（`src/parser.ts`）每次直接覆盖 `plan.autoDims`。
+
+- 做成解析阶段的目录化警告，不做 lint 规则，也不用 `E_DUP_CLAUSE`：
+  - 不做 lint：第一行在解析后就没了，`plan.autoDims` 只是一个字符串，lint 只看解析结果，看不到重复。只有解析器同时看到两行。
+  - 不报错：报 `E_*` 会让今天能编译的平面编译失败，等于破坏性变化。警告保持"后者生效"的行为不变，图和 `describe()` 一字不动。
+  - 先例：`W_DUP_ACC_METADATA`（`warnDupAcc`，`src/parser.ts`）对重复的 `accTitle`/`accDescr` 就是这样做的：后者生效，在第二行上报警告。照它写，码名暂定 `W_DUP_SETTING` 或更窄的 `W_DUP_DIMS`，在目录（`src/error-catalog/language.ts`）登记，用 `gen:*` 重新生成文档。
+- span 指向第二行，related span 指向第一行（同 `E_DUP_CLAUSE`）。
+- **变化面**：只有写了两行 `dims auto` 的平面的 `compile().diagnostics` 会多一条警告；`lint()` 不变，解析阶段的警告不进 `lint()`（`W_DUP_ACC_METADATA` 也是这样，2026-11-18 核实）。要先在语料上数出有几个这样的平面（预计 0）。示例必须保持零警告。
+- **发布**：minor（新码）。
+
+### AL8 · 规格书写明 `dims auto` 每种模式画什么 — `todo` · 0.5 日 · opus
+`spec.llm.md` 第 55 行 `# OPTIONAL: overall|rooms|walls|all` 只列模式名，不说各画什么。尤其 `rooms` 不画总尺寸链，所以外轮廓的总长总宽在图上从不出现，作者以为选了 `rooms` 就够了。
+
+- 改那一行注释，写明每种模式画哪几条链，并点出 `rooms` 没有总尺寸。
+- `spec.llm.md` 有铁律上限：渲染结果少于 30,000 个 UTF-16 码元（`test/llm-spec-drift.test.ts`，不是按字节量）。2026-11-18 的 `main` 上是 29,665 码元（`wc -c` 量出 29,968 字节，多出的是多字节字符），余量约 335。新字要用同一文件里可证明重复的内容换出来（`docs/agents/gotchas.md` 的 spec 删减规则：删之前 grep 确认同一事实仍在文件里），换不出来就等 PS7.9。动手前在合并后的树上重量一次。
+- `gen:spec`、`gen:llms`、`gen:cli` 按顺序重新生成。
+- **发布**：patch（只改文档）。

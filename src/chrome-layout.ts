@@ -7,17 +7,20 @@
  * "title block obscured by the 7000 dimension" bug).
  *
  * Pure and deterministic: closed-form arithmetic over the resolved scene, no I/O.
- * The north arrow sits in the top margin (never part of the bottom collision) and
- * stays in each backend.
+ * The north arrow sits in the top margin, never part of the bottom collision; where it
+ * goes is {@link northArrowBox}, which `toScene` runs once the page is known.
  */
 
 import type { ChromeHide, Point, TitleNode } from "./ast.js";
 import type { Bounds } from "./geometry.js";
+import type { BBox } from "./geometry/rect.js";
+import { primBBox } from "./label-placement.js";
 import type { SceneNode } from "./scene.js";
 import type { LegendEntry, RoomSchedule, SheetTables } from "./sheet-tables.js";
 import { layoutSheetTables, tableRowsHeight, translateSheetTables } from "./sheet-tables.js";
 import type { OpeningRow } from "./opening-schedule.js";
 import { PLAIN_SHEET_TEXT, type SheetText } from "./sheet-text.js";
+import { inkWidth, textWidth } from "./text-metrics.js";
 
 /**
  * Chrome geometry as fractions of the drawing's reference dimension. Named (rather
@@ -110,6 +113,15 @@ export interface ChromeLayout {
    * Lowered to Scene primitives by `sheetTableNodes`, not by the backends.
    */
   tables?: SheetTables;
+  /**
+   * Where the north arrow is drawn, present exactly when {@link northArrowBox} put it somewhere
+   * other than its historical spot (so its `spot` is `corner`, `right`, `top` or `grown`).
+   * Absent when the arrow stands at the historical spot (that spot is clear, or a sheet has no
+   * room elsewhere), with `north … hidden`, and on a hand-built Scene. The backends then draw it
+   * at {@link historicalNorth}`(scene.bounds, scene.sizes.margin, scene.sizes.refDim)`, where it
+   * always stood; an absent field keeps that drawing's Scene byte-identical to before.
+   */
+  north?: NorthArrowBox;
 }
 
 export interface ChromeInput {
@@ -368,6 +380,246 @@ export function anchorChromeToSheet(
       : null,
     ...(t ? { tables: translateSheetTables(t, page.x + margin - t.left, tablesTop - t.top) } : {}),
   };
+}
+
+// ---------------------------------------------------------------------------
+// The north arrow
+// ---------------------------------------------------------------------------
+
+/** The arrow's radius and its label's font size, as fractions of `refDim` (4.5 mm and 2.6 mm on paper). */
+const NORTH_R_F = 0.045;
+const NORTH_FS_F = 0.026;
+/** How far above the drawing the arrow has always been centred, as a fraction of the base margin. */
+const NORTH_DROP_F = 0.55;
+
+/**
+ * Which rule of {@link northArrowBox} placed the arrow: its historical spot (`historical`),
+ * the page's top-right corner square beyond both dimension bands (`corner`), the top of the
+ * strip right of the right-hand band (`right`), the right end of the strip above the top band
+ * (`top`), a corner square the page grew to make (`grown`, never on a sheet), or, on a sheet
+ * where nothing fits, the historical spot although it is not clear (`blocked`). `toScene`
+ * records the placement on `ChromeLayout.north` only for the four that move the arrow, so a
+ * Scene never carries `historical` or `blocked`.
+ */
+export type NorthSpot = "historical" | "corner" | "right" | "top" | "grown" | "blocked";
+
+/** Where the north arrow is drawn, and the ink it puts on the page. */
+export interface NorthArrowBox {
+  /** The triangle's centre, which it turns about. */
+  cx: number;
+  cy: number;
+  /** The triangle's radius: its tip is `r` from the centre. */
+  r: number;
+  /** The label's font size; the label is centred `r + 0.8 * fs` from the centre, toward north. */
+  fs: number;
+  /** The drawn ink's axis-aligned extent: the turned triangle and the upright label. */
+  box: BBox;
+  spot: NorthSpot;
+}
+
+/** The arrow's radius and label size for a drawing of reference dimension `refDim`. */
+export function northArrowMetrics(refDim: number): { r: number; fs: number } {
+  return { r: refDim * NORTH_R_F, fs: refDim * NORTH_FS_F };
+}
+
+/**
+ * The arrow's historical spot: its right edge on the drawing's right bound, its centre a little
+ * over half the base margin above the drawing. Where every arrow stood before AL1, and where it
+ * still stands when that spot is clear of the dimension bands. The same arithmetic, in the same
+ * order, as the backends always ran, so a plan whose arrow stays keeps its bytes. Public: a
+ * consumer reading a Scene with no `chrome.north` finds the arrow here, from `scene.bounds`,
+ * `scene.sizes.margin` and `scene.sizes.refDim`.
+ */
+export function historicalNorth(
+  bounds: Bounds,
+  baseMargin: number,
+  refDim: number,
+): { cx: number; cy: number; r: number; fs: number } {
+  const { r, fs } = northArrowMetrics(refDim);
+  return { cx: bounds.maxX - r, cy: bounds.minY - baseMargin * NORTH_DROP_F, r, fs };
+}
+
+/**
+ * The axis-aligned extent of the arrow drawn at (`cx`, `cy`) turned `deg` clockwise: the four
+ * triangle points the backends draw, turned about the centre, and the label's box, centred at the
+ * pointing end, as wide as the wider of the two width estimates and one font size tall.
+ */
+export function northArrowInk(cx: number, cy: number, r: number, fs: number, deg: number, word: string): BBox {
+  const rad = (deg * Math.PI) / 180;
+  const c = Math.cos(rad);
+  const s = Math.sin(rad);
+  const tri: ReadonlyArray<readonly [number, number]> = [
+    [0, -r],
+    [-r * 0.5, r * 0.6],
+    [0, r * 0.25],
+    [r * 0.5, r * 0.6],
+  ];
+  const lx = cx + s * (r + fs * 0.8);
+  const ly = cy - c * (r + fs * 0.8);
+  const hw = Math.max(textWidth(word, fs), inkWidth(word, fs)) / 2;
+  let x0 = lx - hw;
+  let x1 = lx + hw;
+  let y0 = ly - fs / 2;
+  let y1 = ly + fs / 2;
+  for (const [px, py] of tri) {
+    const x = cx + px * c - py * s;
+    const y = cy + px * s + py * c;
+    x0 = Math.min(x0, x);
+    x1 = Math.max(x1, x);
+    y0 = Math.min(y0, y);
+    y1 = Math.max(y1, y);
+  }
+  return { x: x0, y: y0, w: x1 - x0, h: y1 - y0 };
+}
+
+/** Do two rectangles share an interior point? (Touching edges do not.) */
+const rectsOverlap = (a: BBox, b: BBox): boolean =>
+  a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + b.h && a.y + a.h > b.y;
+
+/**
+ * Does a drawn primitive put ink inside the OPEN rectangle `box`? A line is tested as the segment
+ * it is (clipped to the closed rectangle, it is inside when the clipped piece's midpoint is
+ * strictly inside, so a line that only runs along or touches the edge is not); anything else by
+ * its box ({@link primBBox}), which is how the label passes measure it.
+ */
+export function primInkInside(prim: SceneNode["prim"], box: BBox): boolean {
+  if (prim.t === "line") {
+    const dx = prim.b.x - prim.a.x;
+    const dy = prim.b.y - prim.a.y;
+    const p = [-dx, dx, -dy, dy];
+    const q = [prim.a.x - box.x, box.x + box.w - prim.a.x, prim.a.y - box.y, box.y + box.h - prim.a.y];
+    let t0 = 0;
+    let t1 = 1;
+    for (let i = 0; i < 4; i++) {
+      const pi = p[i]!;
+      const qi = q[i]!;
+      if (pi === 0) {
+        if (qi < 0) return false;
+      } else {
+        const t = qi / pi;
+        if (pi < 0) t0 = Math.max(t0, t);
+        else t1 = Math.min(t1, t);
+        if (t0 > t1) return false;
+      }
+    }
+    const mx = prim.a.x + dx * ((t0 + t1) / 2);
+    const my = prim.a.y + dy * ((t0 + t1) / 2);
+    return mx > box.x && mx < box.x + box.w && my > box.y && my < box.y + box.h;
+  }
+  const bb = primBBox(prim);
+  return bb !== null && rectsOverlap(bb, box);
+}
+
+/** What {@link northArrowBox} reads. */
+export interface NorthPlacementInput {
+  bounds: Bounds;
+  refDim: number;
+  /** The symmetric page margin (`sizes.margin`), which the historical spot is measured from. */
+  baseMargin: number;
+  /** Everything drawn so far: the dimension and axis bands, and every other node the arrow must keep off. */
+  nodes: readonly SceneNode[];
+  /** The page bearing the arrow points along, in degrees clockwise from the page top. */
+  deg: number;
+  /** The label at its pointing end. */
+  word: string;
+  /** The page rectangle, in plan mm, as laid out so far. */
+  page: { x: number; y: number; w: number; h: number };
+  /** The page margins laid out so far. */
+  margin: PageMargins;
+  /** On a sheet: the page is the paper, so no margin may grow (`describe().sheet` reserves the paper, not this). */
+  sheet: boolean;
+  /** The bottom chrome, already placed, which the arrow must also keep off. */
+  chrome: Pick<ChromeLayout, "scaleBar" | "titleBlock">;
+}
+
+/**
+ * Where the north arrow goes (card AL1). It used to stand at {@link historicalNorth} whatever was
+ * there, and on a plan dimensioned on its top facade that is over the top chains' figures.
+ *
+ * The rules, in order; the first that gives a clear spot wins:
+ *
+ * 1. the historical spot, when its ink is clear of every `dims` and `axes` node, so a plan whose
+ *    arrow was never in the way keeps its bytes;
+ * 2. the page's top-right corner square, right of the right-hand band and above the top band
+ *    ({@link dimReach}). Chains end at the building's corners, so nothing of them is there;
+ * 3. the top of the strip right of the right-hand band (a page whose top margin is too shallow
+ *    for the arrow but whose right margin is wide enough);
+ * 4. the right end of the strip above the top band (the converse);
+ * 5. only if none of those has room: off a sheet, the top and right margins grow just enough for
+ *    the corner square to hold it; on a sheet, whose page is the paper and must not grow, the
+ *    historical spot.
+ *
+ * Spots 2 to 4 must also be clear of every other node already drawn and of the scale bar and
+ * title block, and lie inside the page. The arrow keeps `gap` ({@link GAP_F}, the gap the bottom
+ * chrome keeps from the bottom band) from the band it sits beside and from the page edge, or half
+ * the room there is when that is less.
+ */
+export function northArrowBox(input: NorthPlacementInput): { north: NorthArrowBox; margin: PageMargins } {
+  const { bounds: b, refDim, nodes, deg, word, page, margin } = input;
+  const h = historicalNorth(b, input.baseMargin, refDim);
+  const { r, fs } = h;
+  const at = (cx: number, cy: number, spot: NorthSpot): NorthArrowBox => ({
+    cx,
+    cy,
+    r,
+    fs,
+    box: northArrowInk(cx, cy, r, fs, deg, word),
+    spot,
+  });
+  const historical = at(h.cx, h.cy, "historical");
+  const clearOf = (box: BBox, layers: readonly SceneNode["layer"][] | null): boolean => {
+    for (const n of nodes) {
+      if (layers && !layers.includes(n.layer)) continue;
+      if (primInkInside(n.prim, box)) return false;
+    }
+    return true;
+  };
+  if (clearOf(historical.box, REACH_LAYERS)) return { north: historical, margin };
+
+  // The ink's offset from the centre, so a box can be placed and its centre read back.
+  const rel = northArrowInk(0, 0, r, fs, deg, word);
+  const reach = dimReach(b, nodes);
+  const gap = refDim * GAP_F;
+  const left = b.maxX + reach.right;
+  const above = b.minY - reach.top;
+  const pageR = page.x + page.w;
+  const pageB = page.y + page.h;
+  const sx = pageR - left - rel.w;
+  const sy = above - page.y - rel.h;
+  const chromeBoxes: BBox[] = [];
+  const s = input.chrome.scaleBar;
+  if (!s.hidden) {
+    const labelW = textWidth(scaleBarLabel(s), s.fs);
+    chromeBoxes.push({ x: s.x0 - s.fs, y: s.y0, w: s.barLen + labelW + 2 * s.fs, h: s.hgt + s.fs * SCALEBAR_LABEL_F });
+  }
+  const t = input.chrome.titleBlock;
+  if (t) chromeBoxes.push({ x: t.x0, y: t.y0, w: t.w, h: t.h });
+  const tryBox = (x: number, y: number, spot: NorthSpot): NorthArrowBox | null => {
+    if (x < page.x || y < page.y || x + rel.w > pageR || y + rel.h > pageB) return null;
+    const placed = at(x - rel.x, y - rel.y, spot);
+    if (!clearOf(placed.box, null)) return null;
+    for (const c of chromeBoxes) if (rectsOverlap(c, placed.box)) return null;
+    return placed;
+  };
+  const candidates: Array<() => NorthArrowBox | null> = [
+    () =>
+      sx >= 0 && sy >= 0 ? tryBox(left + Math.min(gap, sx / 2), above - Math.min(gap, sy / 2) - rel.h, "corner") : null,
+    () => (sx >= 0 ? tryBox(left + Math.min(gap, sx / 2), page.y + Math.min(gap, sx / 2), "right") : null),
+    () =>
+      sy >= 0 ? tryBox(pageR - Math.min(gap, sy / 2) - rel.w, above - Math.min(gap, sy / 2) - rel.h, "top") : null,
+  ];
+  for (const candidate of candidates) {
+    const placed = candidate();
+    if (placed) return { north: placed, margin };
+  }
+
+  if (input.sheet) return { north: { ...historical, spot: "blocked" }, margin };
+  const grown: PageMargins = {
+    ...margin,
+    top: Math.max(margin.top, reach.top + rel.h),
+    right: Math.max(margin.right, reach.right + rel.w),
+  };
+  return { north: at(left - rel.x, above - rel.h - rel.y, "grown"), margin: grown };
 }
 
 /** A point on the bottom band, kept here so backends share the witness geometry. */

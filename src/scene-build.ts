@@ -37,7 +37,8 @@ import { floorMaterialsUsed, hatchesUsed } from "./hatches.js";
 import { attachSceneWalls, lowerWallSet } from "./wall-lowering.js";
 import type { FacadeOpening, SideGeom } from "./facade.js";
 import { SIDES, cleanTicks, facadeAt, facadeOpenings, measureExtent, openingsBySide, sideGeoms } from "./facade.js";
-import { anchorChromeToSheet, dimReach, layoutChrome } from "./chrome-layout.js";
+import { anchorChromeToSheet, dimReach, historicalNorth, layoutChrome, northArrowBox } from "./chrome-layout.js";
+import { northBearingDeg } from "./algebra/d4.js";
 import { axesNodes } from "./axes.js";
 import { siteBoundaryNodes } from "./site.js";
 import { groundMaterialsUsed, outdoorLabelAnchor, outdoorRing } from "./elements/outdoor.js";
@@ -1152,14 +1153,14 @@ function drawStorey(
       ? { level: { level: ir.level, ...(ir.levelName !== undefined ? { name: ir.levelName } : {}) } }
       : {}),
   });
-  const m = chrome.margin;
+  let m = chrome.margin;
 
   // The page. Without a sheet it is the content box (drawing + grown margins) — the
   // historical page, byte-for-byte. With a sheet it is the PAPER (paper mm × the scale
   // denominator) and the content box is centred on it; if the laid-out content is
   // bigger than the sheet (an authored scale we warned about with `W_SCALE_OVERFLOW`)
   // the page grows to contain it, so a drawing is never clipped to make a sheet fit.
-  const content = { x: b.minX - m.left, y: b.minY - m.top, w: drawW + m.left + m.right, h: drawH + m.top + m.bottom };
+  let content = { x: b.minX - m.left, y: b.minY - m.top, w: drawW + m.left + m.right, h: drawH + m.top + m.bottom };
   let sheet: SceneSheet | undefined;
   if (ir.sheet) {
     const pageW = Math.max(ir.sheet.widthMm * ir.sheet.denom, content.w);
@@ -1186,6 +1187,36 @@ function drawStorey(
     // A legend swatch's tint is read with the theme its element is drawn with (`SwatchThemes`).
     const swatchThemes = { room: ctxFor("room").theme, outdoor: ctxFor("outdoor").theme };
     for (const pushed of sheetTableNodes(chrome.tables, theme, sizes, wording, swatchThemes)) nodes.push(pushed);
+  }
+
+  // The north arrow (card AL1): its historical spot when that is clear of the dimension and
+  // axis bands, else a clear spot beyond them (`northArrowBox`). Placed once the page is
+  // known and everything but the opt-in overlays is drawn, so it keeps off all of it and an
+  // overlay never moves it. Off a sheet, and only when no spot has room, the top and right
+  // margins grow for it, so the content box is re-taken; a sheet's page never grows.
+  if (!ir.hide?.north) {
+    const placed = northArrowBox({
+      bounds: b,
+      refDim,
+      baseMargin: sizes.margin,
+      nodes,
+      deg: northBearingDeg(ir.north),
+      word: wording.has("north") ? wording.word("north") : "N",
+      page: sheet ? sheet.page : content,
+      margin: m,
+      sheet: sheet !== undefined,
+      chrome,
+    });
+    // Recorded only when the arrow stands somewhere else than it always stood: one left there
+    // (its spot clear, or a sheet with no room elsewhere) keeps its Scene's bytes too, and the
+    // backends draw an absent `north` at `historicalNorth`.
+    const was = historicalNorth(b, sizes.margin, refDim);
+    if (placed.north.cx !== was.cx || placed.north.cy !== was.cy)
+      chrome = { ...chrome, margin: placed.margin, north: placed.north };
+    if (placed.margin !== m) {
+      m = placed.margin;
+      content = { x: b.minX - m.left, y: b.minY - m.top, w: drawW + m.left + m.right, h: drawH + m.top + m.bottom };
+    }
   }
 
   // Opt-in diagnostic overlays (ADR 0008): appended AFTER all nodes and after chrome
