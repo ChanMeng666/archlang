@@ -514,8 +514,11 @@ describe("relocateLabels: the indexed pass against the full scan", () => {
   const degenerate: Record<string, string> = {
     "300 coincident rooms": plan(`  for i in 0..300 { room at (0,0) size 4000x3000 label "Room" }`),
     "200 near-coincident rooms": plan(`  for i in 0..200 { room at (i*7, i*3) size 4000x3000 label "R{i}" }`),
-    "a crowded lattice (labels wider than rooms)": plan(
-      `  for i in 0..14 { for j in 0..14 { room at (i*1200, j*1200) size 1200x1200 label "Room" } }`,
+    // Card AL3a: a label wider than its room claims no floor, so a lattice of such rooms searches
+    // nothing; this one's rooms overlap by half, each label on its own floor and over its neighbours'.
+    "a crowded lattice (rooms overlapping by half)": plan(
+      `  paper A1 landscape\n  scale 1:100\n` +
+        `  for i in 0..14 { for j in 0..14 { room at (i*900, j*900) size 1800x1800 label "Room" } }`,
     ),
     "coincident L-shapes and circles": plan(
       `  for i in 0..80 { room polygon (0,0) (4000,0) (4000,1500) (2000,1500) (2000,3000) (0,3000) label "L" }\n` +
