@@ -7,10 +7,12 @@
  * wall clock (9.3 min vs 5.5 min). Here the files are assigned longest-processing-time first to
  * the currently lightest shard, using `test/.durations.json` (seconds per file).
  *
- * Every file also costs FILE_OVERHEAD_S on top of its recorded seconds: the table records a file's
- * test time, not the time to import and collect it, which every file pays. Without it the ~126
- * files recorded at 0 s moved no load and all landed in one shard, the pole of every main-only leg
- * (TP6: that shard ran 284 files to the others' 160 and took about twice as long).
+ * A file's recorded seconds are its whole cost in its worker, importing and collecting it included
+ * (`test/durations-reporter.ts`). The table used to come from vitest's JSON report, whose per-file
+ * span is test time only: one shard then collected for 300 s against 57-83 s for the others while
+ * the table called them equal. Every file also costs FILE_OVERHEAD_S on top, for what no per-file
+ * field records (starting its worker process). Without it the ~126 files then recorded at 0 s moved
+ * no load and all landed in one shard (TP6: 284 files to the others' 160, about twice as long).
  *
  * Stability: the files the table holds go first, through the LPT pass over those files only; the
  * files it lacks follow in path order, each at the table's median cost onto the then-lightest shard.
@@ -28,7 +30,7 @@ import { BaseSequencer } from "vitest/node";
 
 export type Durations = Record<string, number>;
 
-/** Seconds every file costs beyond its recorded time (import and collection). */
+/** Seconds every file costs beyond its recorded time (starting its worker process). */
 export const FILE_OVERHEAD_S = 2;
 
 /** The recorded seconds of `p`, or undefined when the table has no usable entry for it. */

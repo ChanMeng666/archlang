@@ -1,48 +1,59 @@
 #!/usr/bin/env node
-// Rewrite test/.durations.json (seconds per test file, the table test/sequencer.ts balances
-// `vitest --shard` by) from a vitest JSON report:
-//   npx vitest run --reporter=json --outputFile=<report.json>
-//   node scripts/gen-test-durations.mjs <report.json> [out.json]
-// or MERGE an already-generated {file: seconds} map (nightly's `test-durations` artifact) into the table:
-//   node scripts/gen-test-durations.mjs <test-durations.json> [out.json]
-// A map input replaces the rows the map has, keeps the other existing rows whose file is still in
-// the tree, and drops rows for deleted files. A file in the tree with no row gets none (the
+// MERGE one or more {file: seconds} maps into test/.durations.json, the table test/sequencer.ts
+// balances `vitest --shard` by:
+//   node scripts/gen-test-durations.mjs [-o out.json] <test-durations.json>...
+// A map comes from test/durations-reporter.ts: nightly's `test-durations` artifact (the whole suite),
+// or a PR run's `test-durations-<n>` artifacts (one per Node 22 shard; pass them all at once).
+// The maps' rows replace the table's; the other existing rows are kept while their file is still in
+// the tree, and rows for deleted files are dropped. A file in the tree with no row gets none (the
 // sequencer counts it as the table's median, after every recorded file).
+// A vitest JSON report (`--reporter=json`) is refused: its per-file span is first test start to last
+// test end, without the file's import and collect time, so its rows would not be comparable.
 // Not a drift artifact: a stale table costs balance, never correctness.
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
-import { relative, resolve } from "node:path";
+import { resolve } from "node:path";
 
-const [report, out = "test/.durations.json"] = process.argv.slice(2);
-if (!report) {
-  console.error("usage: gen-test-durations.mjs <vitest-json-report | {file: seconds} map> [out.json]");
+const args = process.argv.slice(2);
+let out = "test/.durations.json";
+const maps = [];
+for (let i = 0; i < args.length; i++) {
+  if (args[i] === "-o" || args[i] === "--out") out = args[++i];
+  else maps.push(args[i]);
+}
+if (maps.length === 0 || !out) {
+  console.error("usage: gen-test-durations.mjs [-o out.json] <{file: seconds} map>...");
   process.exit(2);
 }
 const root = process.cwd();
-const input = JSON.parse(readFileSync(report, "utf8"));
-const table = {};
-if (Array.isArray(input.testResults)) {
-  for (const f of input.testResults) {
-    const rel = relative(root, resolve(f.name)).replace(/\\/g, "/");
-    const seconds = (f.endTime - f.startTime) / 1000;
-    if (Number.isFinite(seconds)) table[rel] = Math.round(seconds * 10) / 10;
+const input = {};
+for (const file of maps) {
+  const map = JSON.parse(readFileSync(file, "utf8"));
+  if (Array.isArray(map.testResults)) {
+    console.error(
+      `${file} is a vitest JSON report, whose per-file span leaves out import and collect time; ` +
+        "write a map with test/durations-reporter.ts instead (test/.durations.README.md)",
+    );
+    process.exit(2);
   }
-} else {
-  let old = {};
-  try {
-    old = JSON.parse(readFileSync(out, "utf8"));
-  } catch {}
-  let kept = 0;
-  let dropped = 0;
-  for (const [file, seconds] of Object.entries(old)) {
-    if (file in input) continue;
-    if (existsSync(resolve(root, file))) {
-      table[file] = seconds;
-      kept++;
-    } else dropped++;
-  }
-  for (const [file, seconds] of Object.entries(input)) if (Number.isFinite(seconds)) table[file] = seconds;
-  console.log(`map: ${Object.keys(input).length} rows, ${kept} kept, ${dropped} dropped`);
+  for (const [f, seconds] of Object.entries(map))
+    if (typeof seconds === "number" && Number.isFinite(seconds) && seconds >= 0) input[f] = seconds;
 }
+let old = {};
+try {
+  old = JSON.parse(readFileSync(out, "utf8"));
+} catch {}
+const table = {};
+let kept = 0;
+let dropped = 0;
+for (const [file, seconds] of Object.entries(old)) {
+  if (file in input) continue;
+  if (existsSync(resolve(root, file))) {
+    table[file] = seconds;
+    kept++;
+  } else dropped++;
+}
+Object.assign(table, input);
+console.log(`${maps.length} map(s): ${Object.keys(input).length} rows, ${kept} kept, ${dropped} dropped`);
 const sorted = Object.fromEntries(Object.entries(table).sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0)));
 writeFileSync(out, `${JSON.stringify(sorted, null, 2)}\n`);
 console.log(`${Object.keys(sorted).length} files -> ${out}`);

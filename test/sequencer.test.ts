@@ -1,9 +1,11 @@
 /** test/sequencer.ts: LPT shard balancing with a per-file overhead, and its stability property. */
 
 import { execFileSync } from "node:child_process";
-import { readFileSync } from "node:fs";
-import { resolve } from "node:path";
+import { mkdtempSync, readFileSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join, resolve } from "node:path";
 import { describe, expect, it } from "vitest";
+import DurationsReporter, { durationsOf, type FileTiming, fileSeconds } from "./durations-reporter.js";
 import DurationSequencer, {
   assignShards,
   type Durations,
@@ -168,6 +170,80 @@ describe("ci.yml's vitest shard jobs", () => {
         .map((s) => Number(s.trim()));
       expect(list, id).toEqual(Array.from({ length: n }, (_, i) => i + 1));
       for (const m of b.matchAll(/if: matrix\.shard == (\d+)/g)) expect(Number(m[1]), id).toBe(n);
+    }
+  });
+
+  it("the Node 22 shards and nightly's duration leg record with test/durations-reporter.ts, never a JSON report", () => {
+    const reporter = "--reporter=./test/durations-reporter.ts";
+    const node22 = blocks.find((b) => b.startsWith("  node-22-tests:"));
+    expect(node22).toContain(reporter);
+    // Naming reporters drops vitest's own `github-actions` one, so the shards name it.
+    expect(node22).toContain("--reporter=github-actions");
+    const out = ["test-durations-$", "{{ matrix.shard }}.json"].join("");
+    expect(node22).toContain(`TEST_DURATIONS_OUT: ${out}`);
+    expect(node22).toContain(`path: ${out}`);
+    const nightly = readFileSync(resolve(ROOT, ".github/workflows/nightly.yml"), "utf8").replace(/\r\n/g, "\n");
+    const leg = nightly.slice(nightly.indexOf("- name: Test (with the duration report)"));
+    expect(leg.slice(0, leg.indexOf("\n      - "))).toContain(reporter);
+    expect(nightly).not.toContain("--reporter=json");
+  });
+});
+
+describe("test/durations-reporter.ts", () => {
+  const file = (over: Partial<FileTiming>): FileTiming => ({
+    filepath: join(ROOT, "test", "x.test.ts"),
+    prepareDuration: 300,
+    environmentLoad: 20,
+    setupDuration: 80,
+    collectDuration: 4_000,
+    result: { duration: 1_550 },
+    ...over,
+  });
+
+  it("counts prepare, environment, setup, collect and the run, in seconds to 0.1", () => {
+    expect(fileSeconds(file({}))).toBe(6);
+    expect(fileSeconds(file({ collectDuration: 4_040 }))).toBe(6);
+    expect(fileSeconds(file({ collectDuration: 4_140 }))).toBe(6.1);
+    // Collect alone is a file's cost when it has no tests to run.
+    expect(
+      fileSeconds(
+        file({ prepareDuration: undefined, environmentLoad: undefined, setupDuration: 0, result: undefined }),
+      ),
+    ).toBe(4);
+    // A field that is missing, negative or not finite counts 0.
+    expect(fileSeconds(file({ prepareDuration: -5, environmentLoad: Number.NaN, result: {} }))).toBe(4.1);
+  });
+
+  it("gives no row to a file that never finished collecting, or one vitest did not run", () => {
+    expect(fileSeconds(file({ collectDuration: undefined }))).toBeUndefined();
+    expect(fileSeconds(file({ collectDuration: Number.POSITIVE_INFINITY }))).toBeUndefined();
+    expect(fileSeconds(file({ local: true }))).toBeUndefined();
+  });
+
+  it("keys rows by the repo-relative path with `/`, sorted, the table's format", () => {
+    const files = [
+      file({ filepath: join(ROOT, "test", "b.test.ts") }),
+      file({ filepath: join(ROOT, "packages", "mcp", "test", "a.test.ts"), collectDuration: 1_050 }),
+      file({ filepath: join(ROOT, "test", "broken.test.ts"), collectDuration: undefined }),
+    ];
+    const table = durationsOf(files, ROOT);
+    expect(Object.keys(table)).toEqual(["packages/mcp/test/a.test.ts", "test/b.test.ts"]);
+    expect(table).toEqual({ "packages/mcp/test/a.test.ts": 3, "test/b.test.ts": 6 });
+  });
+
+  it("writes the map to TEST_DURATIONS_OUT, relative to the run's root", () => {
+    const dir = mkdtempSync(join(tmpdir(), "durations-reporter-"));
+    const before = process.env.TEST_DURATIONS_OUT;
+    try {
+      process.env.TEST_DURATIONS_OUT = join(dir, "out.json");
+      const r = new DurationsReporter();
+      r.onInit({ config: { root: ROOT } } as never);
+      r.onFinished([file({ filepath: join(ROOT, "test", "y.test.ts") })] as never);
+      expect(JSON.parse(readFileSync(join(dir, "out.json"), "utf8"))).toEqual({ "test/y.test.ts": 6 });
+    } finally {
+      if (before === undefined) delete process.env.TEST_DURATIONS_OUT;
+      else process.env.TEST_DURATIONS_OUT = before;
+      rmSync(dir, { recursive: true, force: true });
     }
   });
 });
