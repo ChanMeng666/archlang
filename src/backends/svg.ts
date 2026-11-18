@@ -13,10 +13,15 @@ import type { NorthDir, Point } from "../ast.js";
 import type { CompileOptions } from "../types.js";
 import type { LineType, Paint, PathLoop, RenderSizes, Scene, SceneNode } from "../scene.js";
 import { RENDER_PASSES, layerOf, weightWidth } from "../scene.js";
-import type { Bounds } from "../geometry.js";
 import { hatchPattern } from "../hatches.js";
 import type { Theme } from "../theme.js";
-import { layoutChrome, type ScaleBarBox, scaleBarLabel, type TitleBlockBox } from "../chrome-layout.js";
+import {
+  historicalNorth,
+  layoutChrome,
+  type ScaleBarBox,
+  scaleBarLabel,
+  type TitleBlockBox,
+} from "../chrome-layout.js";
 
 /** Round to 2 decimals and strip trailing zeros — keeps output stable & compact. */
 import { fmt2 as fmt } from "../num-format.js";
@@ -357,7 +362,11 @@ export function renderSvg(scene: Scene, opts: CompileOptions = {}): string {
   // issuable — which an illustrative view must never do. `Scene.view` is set only by
   // `toIso`, so every plan drawing takes the branch it always has.
   if (!scene.view) {
-    if (!scene.northHidden) out.push(northArrow(scene.north, b, margin, refDim, THEME, scene.northLabel ?? "N"));
+    if (!scene.northHidden) {
+      // Where `toScene` placed it (`ChromeLayout.north`); a hand-built Scene draws it where it always stood.
+      const at = chrome.north ?? historicalNorth(b, margin, refDim);
+      out.push(northArrow(scene.north, at, THEME, scene.northLabel ?? "N"));
+    }
     if (!chrome.scaleBar.hidden) out.push(scaleBar(chrome.scaleBar, thin, THEME));
     const tb = titleBlock(chrome.titleBlock, thin, THEME);
     if (tb) out.push(tb);
@@ -367,12 +376,14 @@ export function renderSvg(scene: Scene, opts: CompileOptions = {}): string {
   return out.join("\n");
 }
 
-function northArrow(north: NorthDir, b: Bounds, margin: number, refDim: number, THEME: Theme, word: string): string {
-  const r = refDim * 0.045;
-  const cx = b.maxX - r;
-  const cy = b.minY - margin * 0.55;
+function northArrow(
+  north: NorthDir,
+  at: { cx: number; cy: number; r: number; fs: number },
+  THEME: Theme,
+  word: string,
+): string {
+  const { cx, cy, r, fs } = at;
   const deg = northBearingDeg(north);
-  const fs = refDim * 0.026;
   // Triangle points "up" before rotation; only the arrow rotates — the "N"
   // label stays upright at the pointing end so it always reads correctly.
   const tri = `${fmt(cx)},${fmt(cy - r)} ${fmt(cx - r * 0.5)},${fmt(cy + r * 0.6)} ${fmt(cx)},${fmt(cy + r * 0.25)} ${fmt(cx + r * 0.5)},${fmt(cy + r * 0.6)}`;

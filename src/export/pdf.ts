@@ -47,7 +47,7 @@ import type { Point } from "../ast.js";
 import type { Paint, PathLoop, Scene, SceneNode } from "../scene.js";
 import { RENDER_PASSES } from "../scene.js";
 import type { Theme } from "../theme.js";
-import { layoutChrome, scaleBarLabel, type TitleRow } from "../chrome-layout.js";
+import { historicalNorth, layoutChrome, scaleBarLabel, type TitleRow } from "../chrome-layout.js";
 import { plainText } from "../text-safe.js";
 import { textLines } from "../text-layout.js";
 import { northBearingDeg } from "../algebra/d4.js";
@@ -383,25 +383,6 @@ function drawChrome(doc: any, scene: Scene, ctx: TextCtx): void {
   const margin = sizes.margin;
   const thin = sizes.thin;
 
-  // North arrow (triangle rotated by bearing; "N" stays upright).
-  if (!scene.northHidden) {
-    const r = refDim * 0.045;
-    const cx = b.maxX - r;
-    const cy = b.minY - margin * 0.55;
-    const deg = northBearingDeg(scene.north);
-    const fs = refDim * 0.026;
-    doc.save();
-    doc.rotate(deg, { origin: [cx, cy] });
-    doc
-      .polygon([cx, cy - r], [cx - r * 0.5, cy + r * 0.6], [cx, cy + r * 0.25], [cx + r * 0.5, cy + r * 0.6])
-      .fill(theme.annotation);
-    doc.restore();
-    const rad = (deg * Math.PI) / 180;
-    const lx = cx + Math.sin(rad) * (r + fs * 0.8);
-    const ly = cy - Math.cos(rad) * (r + fs * 0.8);
-    drawText(doc, ctx, { x: lx, y: ly }, scene.northLabel ?? "N", fs, "middle", undefined, theme.annotation);
-  }
-
   // Scale bar + title block come from the shared chrome layout (placed below the
   // dimension band; the bottom margin already grew to fit — see scene.height).
   const chrome =
@@ -414,6 +395,23 @@ function drawChrome(doc: any, scene: Scene, ctx: TextCtx): void {
       title: scene.title,
       scale: scene.scale,
     });
+
+  // North arrow (triangle rotated by bearing; "N" stays upright), where `toScene` placed it
+  // (`ChromeLayout.north`); a hand-built Scene draws it where it always stood.
+  if (!scene.northHidden) {
+    const { cx, cy, r, fs } = chrome.north ?? historicalNorth(b, margin, refDim);
+    const deg = northBearingDeg(scene.north);
+    doc.save();
+    doc.rotate(deg, { origin: [cx, cy] });
+    doc
+      .polygon([cx, cy - r], [cx - r * 0.5, cy + r * 0.6], [cx, cy + r * 0.25], [cx + r * 0.5, cy + r * 0.6])
+      .fill(theme.annotation);
+    doc.restore();
+    const rad = (deg * Math.PI) / 180;
+    const lx = cx + Math.sin(rad) * (r + fs * 0.8);
+    const ly = cy - Math.cos(rad) * (r + fs * 0.8);
+    drawText(doc, ctx, { x: lx, y: ly }, scene.northLabel ?? "N", fs, "middle", undefined, theme.annotation);
+  }
 
   // Scale bar (two-segment alternating bar + end labels).
   if (!chrome.scaleBar.hidden) {
