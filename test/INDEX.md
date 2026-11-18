@@ -102,7 +102,7 @@ Nearest first, then by name; `(+n)` is the rest. Test names are `test/<name>.tes
 - `src/furnish-table.ts` (1) — `lint-label-piece-missing`
 - `src/furnish.ts` (13) — `finish-furnish-bounds`, `finish-furnish-laws`, `finish-levels`, `finish-sheet-degrade`, `fuzz`, `keep`, `lint-furniture-on-stair`, `lint-hint-paste` (+5)
 - `src/furniture-relation.ts` (2) — `furniture-relations`, `rect-ring`
-- `src/geometry.ts` (27) — `band`, `circle-enclosure`, `curves`, `dim-thickness-callout`, `doors`, `double-door-byte-identity`, `equivariance-corpus`, `frame` (+19)
+- `src/geometry.ts` (28) — `band`, `circle-enclosure`, `curves`, `dim-thickness-callout`, `doors`, `double-door-byte-identity`, `equivariance-corpus`, `frame` (+20)
 - `src/geometry/arc-band.ts` (1) — `furniture-lint`
 - `src/geometry/arc.ts` (18) — `arc-radius-exact`, `arc-tessellation-error`, `band`, `circle-enclosure`, `curves`, `frame`, `furniture-lint`, `intersect` (+10)
 - `src/geometry/backend.ts` (1) — `joinery-oracle`
@@ -112,7 +112,7 @@ Nearest first, then by name; `(+n)` is the rest. Test names are `test/<name>.tes
 - `src/geometry/intersect.ts` (5) — `band`, `intersect`, `joinery-oracle`, `joinery-split-oracle`, `joinery-pipeline`
 - `src/geometry/joinery.ts` (4) — `joinery-oracle`, `joinery-split-oracle`, `joinery-split`, `joinery`
 - `src/geometry/min-rect.ts` (1) — `min-rect`
-- `src/geometry/polygon.ts` (16) — `circulation-concave`, `dim-thickness-callout`, `label-placement-oracle`, `label-placement`, `label-wrap`, `net-area`, `outdoor`, `polygon-overlap-oracle` (+8)
+- `src/geometry/polygon.ts` (17) — `circulation-concave`, `dim-thickness-callout`, `label-placement-oracle`, `label-placement`, `label-wrap`, `lint-thickness-unplaced`, `net-area`, `outdoor` (+9)
 - `src/geometry/rect.ts` (10) — `between-face-probes`, `block-stair-winders`, `finish-furnish-laws`, `finish-levels`, `label-placement-oracle`, `label-wrap`, `lint-clearances-kitchen-doors`, `lint-measure` (+2)
 - `src/geometry/union.ts` (3) — `band`, `joinery-oracle`, `union`
 - `src/grammar/tokens.ts` (34) — `arch-highlight`, `block-stair-lint`, `clause-order-byte-identity`, `closed-vocabularies`, `corner-window`, `door-enums`, `doors`, `element-facets` (+26)
@@ -125,8 +125,8 @@ Nearest first, then by name; `(+n)` is the rest. Test names are `test/<name>.tes
 - `src/intent-concepts.ts` (2) — `vocabulary-living-dining`, `vocabulary-matcher-oracle`
 - `src/intent-feasibility.ts` (1) — `intent-infeasible`
 - `src/intent.ts` (1) — `site`
-- `src/ir.ts` (174) — `access-policy`, `arc-radius-exact`, `attach`, `axes`, `between-face-probes`, `block-stair-byte-identity`, `block-stair-frames`, `block-stair-winders` (+166)
-- `src/label-fit.ts` (1) — `label-fit`
+- `src/ir.ts` (175) — `access-policy`, `arc-radius-exact`, `attach`, `axes`, `between-face-probes`, `block-stair-byte-identity`, `block-stair-frames`, `block-stair-winders` (+167)
+- `src/label-fit.ts` (2) — `label-fit`, `lint-thickness-unplaced`
 - `src/label-placement.ts` (4) — `label-placement-oracle`, `label-placement`, `label-wrap`, `north-arrow`
 - `src/lexer.ts` (12) — `clause-order-byte-identity`, `diagnostics-volume`, `diagnostics`, `error-value-law`, `expr`, `fmt-lossless`, `imperial-input`, `model-range` (+4)
 - `src/lint.ts` (55) — `annotation-collisions`, `annotation-small-rooms`, `block-stair-shaft`, `block-stair`, `equivariance-corpus`, `finish-furnish-bounds`, `lint-coverage`, `lint-fix-texts` (+47)
@@ -525,7 +525,7 @@ The first sentence of each file's header comment.
 - `test/lint-stairs.test.ts` — Plan-soundness PS2.11e (the stair bullets), PS2.34 and PS2.15: the six stair-safety codes.
 - `test/lint-storey-way-in.test.ts` — `W_NO_ENTRANCE` on a multi-storey plan (#404): each storey it fires on is told which storey it is and what is missing there, because the building may have a front door on another floor.
 - `test/lint-summary.test.ts` — diagnosticsSummary; the diagnostics are what lint() returns; a wide summary and a failing later tier; the text report opens with the line; withoutSummary (the d…
-- `test/lint-thickness-unplaced.test.ts` — Card AL5: a `dims auto` wall-thickness figure printed over a room's label moves off it, or is not drawn and `W_DIM_THICKNESS_UNPLACED` says so.
+- `test/lint-thickness-unplaced.test.ts` — Card AL5: a `dims auto` wall-thickness figure printed over a room's label moves to a place clear of everything drawn, or is not drawn and `W_DIM_THICKNESS_UNPLACED` says so.
 - `test/lint.test.ts` — lint — clean plans; lint — rules fire on the right violation; lint — architectural-soundness rules (v1.1); lint — configurable ruleset; lint — W_NO_ENTRANCE ask…
 - `test/llm-spec-drift.test.ts` — Drift guard for `spec.llm.md` (the one-prompt agent spec).
 - `test/llms-full-drift.test.ts` — Drift guard for `llms-full.txt` (the bundled full agent context).

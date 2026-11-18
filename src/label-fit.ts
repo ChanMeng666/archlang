@@ -377,7 +377,9 @@ function placesFor(g: LabelGroup): Place[] {
 
 /**
  * Shrink, or wrap and shrink, each room's label that does not fit: see the header. Replaces the
- * text nodes it changes, as `relocateLabels` does; a label that fits is left alone.
+ * text nodes it changes, as `relocateLabels` does; a label that fits is left alone. Returns the
+ * work it spent of the storey's {@link fitWork}, so the pass after it (the `dims auto` thickness
+ * figures' re-station, `src/scene-build.ts`, card AL5) spends only what is left of the one count.
  */
 export function fitLabels(
   nodes: SceneNode[],
@@ -385,8 +387,8 @@ export function fitLabels(
   drawn: readonly ElementNodes[],
   plan: ResolvedPlan,
   sizes: RenderSizes,
-): void {
-  if (!groups.some((g) => g.wrap && !g.fixed)) return;
+): number {
+  if (!groups.some((g) => g.wrap && !g.fixed)) return 0;
   const marks = marksOf(nodes, groups, drawn, plan);
   const grid = new GridIndex<Mark>(meanExtent(marks.map((m) => m.box)));
   for (const m of marks) grid.insert(boxOf(m.box), m);
@@ -587,8 +589,9 @@ export function fitLabels(
       const box = primBBox(prim)!;
       grid.insert(boxOf(box), { kind: "text", box, shapes: [], owner: gi, stale: false, seen: 0 });
     }
-    if (work > budget) return;
+    if (work > budget) return work;
   }
+  return work;
 }
 
 /** A label that does not fit, as the passes before this one left it. */

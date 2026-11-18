@@ -23,11 +23,10 @@
  *    them off whatever they could and `fitLabels` shrank what still did not fit (`toScene`,
  *    `src/label-placement.ts`, `src/label-fit.ts`). A label the placer could clear is never
  *    reported; one it could not, or one the author pinned with `label … at (x,y)`, is;
- *  - the `dims auto` numbers from {@link autoDimensions} (the list `toScene` renders) placed by
- *    {@link dimTextPrim} (the arithmetic `dim.render` letters them with), at the Scene's own
- *    `sizes`, laid out with the room labels' boxes read here, as the drawing lays them out after
- *    its label passes: a thickness figure that would stand over a label stands elsewhere, or is not
- *    drawn (card AL5), so none is ever reported over a label;
+ *  - the `dims auto` numbers the Scene was drawn with (`drawnAutoDims`, kept beside it by
+ *    `toScene`) placed by {@link dimTextPrim} (the arithmetic `dim.render` letters them with), at
+ *    the Scene's own `sizes`: every wall-thickness figure where card AL5's re-station left it (off
+ *    every label, or not drawn), or, past that pass's count, where it was first drawn;
  *  - each symbol's DRAWN shapes — the polygons, closed paths and circles its `render` emits —
  *    not its footprint box. A line encloses no area and an arc stroke is not ink a number sits
  *    in, so neither is measured (the label placer's own rule, `primBBox`);
@@ -100,10 +99,18 @@
 import type { Point } from "../../ast.js";
 import type { Diagnostic } from "../../diagnostics.js";
 import { doorLeaves, rectCorners } from "../../geometry.js";
-import type { RDim, RDoor, ResolvedElement, ResolvedPlan, RFurniture, RRoom } from "../../ir.js";
+import {
+  drawnView,
+  type RDim,
+  type RDoor,
+  type ResolvedElement,
+  type ResolvedPlan,
+  type RFurniture,
+  type RRoom,
+} from "../../ir.js";
 import type { ScenePrim } from "../../scene.js";
 import { BUILTIN_RUNTIME } from "../../registry.js";
-import { autoDimensions, unplacedThicknesses } from "../../scene-build.js";
+import { autoDimensions, type DrawnAutoDims, drawnAutoDims } from "../../scene-build.js";
 import { memoScene } from "../../scene-memo.js";
 import { dimTextPrim } from "../../elements/dim.js";
 import { titleBlockMetrics, titleRows } from "../../chrome-layout.js";
@@ -140,6 +147,42 @@ interface SymbolInk {
 /** One text on the sheet: its turned box and its extent ({@link textBox}). */
 type Text = TextBox;
 
+/** What both rules here read off one storey's drawing: its annotated Scene and the `dims auto` layout it was drawn with. */
+interface DrawnStorey {
+  scene: ReturnType<typeof memoScene>;
+  layout: DrawnAutoDims;
+}
+
+/** The storey's {@link DrawnStorey} per `lint()` run (one context per storey), `null` past the drawing budget. */
+const drawnByRun = new WeakMap<LintContext, DrawnStorey | null>();
+
+/**
+ * The storey as drawn, read once per `lint()` run and shared by `W_ANNOTATION_OVERLAP` and
+ * `W_DIM_THICKNESS_UNPLACED`: one Scene memo read however many of the two rules ask. The
+ * `dims auto` numbers are the ones the Scene was drawn with ({@link drawnAutoDims}: every
+ * wall-thickness figure where card AL5's re-station left it, and the ones it left out), never laid
+ * out again here, so the lint reads the drawing's own decision, on the drawing's own view of the
+ * storey. `null` when the storey is past the drawing budget (each rule then files its own
+ * `annotation-budget` skip).
+ */
+function drawnStorey(ctx: LintContext): DrawnStorey | null {
+  const known = drawnByRun.get(ctx);
+  if (known !== undefined) return known;
+  const { ir } = ctx;
+  const registry = BUILTIN_RUNTIME.registry;
+  let out: DrawnStorey | null = null;
+  if (drawBudgetDiagnostic([{ ir }], registry, undefined) === undefined) {
+    // The compile's own Scene when it drew this storey annotated (the playground's render).
+    const scene = memoScene(ir, { annotate: true });
+    // Every Scene `toScene` draws carries its layout, and the memo's copy carries it over; the
+    // fallback (the layout before the labels) is for a Scene from elsewhere, which none is.
+    const layout = drawnAutoDims(scene) ?? { dims: autoDimensions(ir, scene.sizes, registry), unplaced: [] };
+    out = { scene, layout };
+  }
+  drawnByRun.set(ctx, out);
+  return out;
+}
+
 export const annotationOverlap: LintRule = {
   name: "annotation-overlap",
   family: "annotation",
@@ -152,13 +195,12 @@ export const annotationOverlap: LintRule = {
     const rooms = ctx.rooms;
     // Nothing can collide: no room to letter, and no `dims auto` number to sit on a symbol.
     if (rooms.length === 0 && !(ir.autoDims && hasSymbols)) return [];
-    const registry = BUILTIN_RUNTIME.registry;
-    if (drawBudgetDiagnostic([{ ir }], registry, undefined) !== undefined) {
+    const drawn = drawnStorey(ctx);
+    if (drawn === null) {
       ctx.skip("annotation-budget");
       return [];
     }
-    // The compile's own Scene when it drew this storey annotated (the playground's render).
-    const scene = memoScene(ir, { annotate: true });
+    const { scene } = drawn;
 
     // Symbols, grouped by the element that drew them, in drawing order.
     const byId = new Map<string, ResolvedElement>();
@@ -206,12 +248,7 @@ export const annotationOverlap: LintRule = {
     };
     // The `dims auto` numbers, as drawn: laid out with the labels' boxes, so a thickness figure the
     // drawing moved off a label, or left out, is read where it is drawn, or not at all (card AL5).
-    const numbers = autoDimensions(
-      ir,
-      scene.sizes,
-      registry,
-      labels.map((l) => l.text),
-    ).map((dm) => {
+    const numbers = drawn.layout.dims.map((dm) => {
       const prim = dimTextPrim(dm, scene.sizes, wording.mm);
       return { dm, prim, text: textBox(prim) };
     });
@@ -611,12 +648,13 @@ export const titleOverflow: LintRule = {
  * either where floor stands under it (`synthWallDims`, `src/scene-build.ts`). So the drawing leaves
  * the figure out, and this says which.
  *
- * It reads what the drawing decides, from the same function: the room labels' boxes off the
- * storey's annotated Scene, as `W_ANNOTATION_OVERLAP` reads them, handed to
- * {@link unplacedThicknesses}, the layout {@link autoDimensions} gives that rule. Drafting only, as
+ * It reads what the drawing decided, never deciding again: the figures the storey's Scene left out
+ * (`drawnAutoDims`), read once per storey and shared with `W_ANNOTATION_OVERLAP`
+ * ({@link drawnStorey}), so a `lint()` run reads the Scene memo once per storey whichever of the
+ * two rules asks, and the two and the drawing cannot disagree (on a remodel too: the drawing's view
+ * of the storey, its demolished walls included, is the one read). Drafting only, as
  * `W_ANNOTATION_OVERLAP` is: the plan's facts are untouched. Bounded as that rule is: the storey is
- * drawn only within the drawing budget, else the rule files an `annotation-budget` skip; the layout
- * is the drawing's own, at most four stations per thickness.
+ * drawn only within the drawing budget, else the rule files an `annotation-budget` skip.
  */
 export const thicknessUnplaced: LintRule = {
   name: "thickness-unplaced",
@@ -627,37 +665,43 @@ export const thicknessUnplaced: LintRule = {
   check(ctx: LintContext): Diagnostic[] {
     const { ir } = ctx;
     if ((ir.autoDims !== "walls" && ir.autoDims !== "all") || ctx.rooms.length === 0) return [];
-    const registry = BUILTIN_RUNTIME.registry;
-    if (drawBudgetDiagnostic([{ ir }], registry, undefined) !== undefined) {
+    const drawn = drawnStorey(ctx);
+    if (drawn === null) {
       ctx.skip("annotation-budget");
       return [];
-    }
-    const scene = memoScene(ir, { annotate: true });
-    const roomIds = new Set(ctx.rooms.map((r) => r.id));
-    const labels: TextBox[] = [];
-    for (const n of scene.nodes) {
-      if (n.elementKind === "room" && n.prim.t === "text" && roomIds.has(n.elementId ?? ""))
-        labels.push(textBox(n.prim));
     }
     const wording = sheetText(ir.sheetText?.entries);
     const setting = `\`dims auto ${ir.autoDims}\``;
     const out: Diagnostic[] = [];
-    for (const u of unplacedThicknesses(ir, scene.sizes, registry, labels)) {
-      const wall = ir.walls.find((w) => w.id === u.run.wallId);
-      if (!wall) continue;
+    for (const u of drawn.layout.unplaced) {
+      // The wall as the sheet draws it: a `status demolish` wall is drawn (dashed) and can carry the figure.
+      const wall = drawnView(ir).walls.find((w) => w.id === u.run.wallId);
+      // Never skipped: the run is one of the drawn walls, so it is found; were it not, the report stands without a span.
       const value = wording.plain(wording.mm(u.thickness));
       const where = wallNamed(ctx, u.run);
       const runs = u.second
         ? `neither ${where}, the longest straight wall of that thickness, nor the next longest has any`
         : `${where}, the only straight wall of that thickness, has no`;
-      const named = wall._idAuthored === true ? ` (\`${wall.id}\`)` : "";
+      const named = wall?._idAuthored === true ? ` (\`${wall.id}\`)` : "";
+      const under = u.labelRooms.map((id) => ctx.rooms.find((r) => r.id === id)).filter((r): r is RRoom => !!r);
+      const labelsOf = under.length > 0 ? listOf(under.map((r) => `the label of ${ctx.nameOf(r)}`)) : "a room's label";
+      // A pinned label is moved by its point; any other is given one (the placer did not clear it).
+      const remedies = [
+        ...under.map((r) =>
+          r.labelAt !== undefined
+            ? `move the \`label "${r.label ?? ""}" at (x,y)\` point of ${roomRef(ctx, r)} clear of it`
+            : `give the label of ${roomRef(ctx, r)} a clear point with \`label "…" at (x,y)\``,
+        ),
+        `move what stands along that wall${named}`,
+      ];
+      const first = orList(remedies);
       out.push({
         severity: "warning",
         code: "W_DIM_THICKNESS_UNPLACED",
-        ...ctx.at(wall),
-        message: `The wall-thickness figure ${value} that ${setting} writes is not drawn: it would be printed over a room's name or area figure, and ${runs} other place for it, on a side with floor, clear of the room labels, crossing walls, openings, furniture and stairs.`,
+        ...(wall ? ctx.at(wall) : {}),
+        message: `The wall-thickness figure ${value} that ${setting} writes is not drawn: where it would stand it is printed over ${labelsOf}, and ${runs} other place for it, on a side with floor, clear of everything drawn there (labels, tags, symbols, walls, door swings and other figures).`,
         hints: [
-          `Give the label of a room beside that wall${named} a clear point with \`label "…" at (x,y)\`, or move what stands along it; or draw with \`dims auto rooms\` and state the ${value} thickness with a hand \`dim\` (\`offset 0\`, face to face) where it reads clear.`,
+          `${first.charAt(0).toUpperCase()}${first.slice(1)}; or draw with \`dims auto rooms\` and state the ${value} thickness with a hand \`dim\` (\`offset 0\`, face to face) where it reads clear.`,
         ],
       });
     }

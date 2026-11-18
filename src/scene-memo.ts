@@ -40,7 +40,7 @@ import type { ResolvedPlan } from "./ir.js";
 import type { Registry, Runtime } from "./registry.js";
 import { BUILTIN_RUNTIME } from "./registry.js";
 import type { Scene } from "./scene.js";
-import { toScene } from "./scene-build.js";
+import { carryDrawnAutoDims, toScene } from "./scene-build.js";
 import type { CompileOptions } from "./types.js";
 
 /** A memoised Scene: read-only, without the DXF projections a copy does not carry. */
@@ -141,12 +141,14 @@ export function offerScene(ir: ResolvedPlan, opts: CompileOptions, runtime: Runt
 
 /**
  * A deep copy of the Scene's data without `walls`, whose enumerable getter projects every wall on
- * first read: copying it would run that projection on the caller's Scene, which no lint reads.
+ * first read: copying it would run that projection on the caller's Scene, which no lint reads. The
+ * `dims auto` layout kept beside the Scene (`drawnAutoDims`, card AL5) is copied over too, deeply.
  */
 function copyScene(scene: Scene): SharedScene {
   const data = scene as unknown as Record<string, unknown>;
   const out: Record<string, unknown> = {};
   for (const k of Object.keys(data)) if (k !== "walls") out[k] = copyData(data[k]);
+  carryDrawnAutoDims(scene, out, copyData);
   return out as unknown as SharedScene;
 }
 

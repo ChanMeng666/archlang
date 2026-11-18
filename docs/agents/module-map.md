@@ -255,7 +255,7 @@ Totals: 408 modules in 34 directories.
 | `furnish-table.ts` | 143 | 4 | The furnish table and the family reading of a held piece, shared by `src/furnish.ts` (the `finish` stage that writes the pieces) and the `W_ROOM_MISSING_DEFINING` lint rule (`src/lint/rules/room-contents.ts`, which reads the piece that… | none |
 | `furnish.ts` | 1677 | 13 | The `furnish` stage of `finish()` — furniture by room use, in rooms that hold none (`docs/adr/0025-furnish-as-explicit-transform.md`). | none |
 | `furniture-relation.ts` | 372 | 8 | Furniture relations (ADR 0029): the closed-form geometry behind `facing <id>`, `against <room>.<edge>` and `clear front\|sides <mm>`. | none |
-| `geometry.ts` | 957 | 107 | Pure geometry helpers. All coordinates in millimetres. Deterministic. | none |
+| `geometry.ts` | 957 | 108 | Pure geometry helpers. All coordinates in millimetres. Deterministic. | none |
 | `hash.ts` | 14 | 3 | FNV-1a — a tiny, fast, deterministic non-cryptographic string hash, used to key the per-stage memo caches (lex → tokens, parse → ast). The length is appended to make accidental collisions vanishingly unlikely; callers that need certainty… | none |
 | `hatches.ts` | 884 | 31 | Material hatch patterns — a small named hatch *library*. Each material maps to an SVG `<pattern>` builder (for the SVG backend), a natural rotation, and a predefined DXF HATCH pattern name (so the hatch survives to CAD as a real `HATCH`… | none |
 | `id-spans.ts` | 23 | 2 | The byte span of an element statement's `id=<name>` name, kept beside the AST. A leaf: the parser records spans here and the resolver reads them, so reading one never loads the parser. | none |
@@ -267,9 +267,9 @@ Totals: 408 modules in 34 directories.
 | `intent-concepts.ts` | 238 | 6 | The intent channel's concept vocabulary — production name resolution for the NL→ArchLang intent contract. | none |
 | `intent-feasibility.ts` | 388 | 3 | Infeasibility of a brief's stated numbers: the arithmetic that makes "this brief is impossible" checkable, before any plan exists. | none |
 | `intent.ts` | 1762 | 8 | The intent channel — author-time checking of a brief's INTENT against a plan. | none |
-| `ir.ts` | 2011 | 257 | Intermediate representation + `resolve(ast)`. | charges the step meter |
+| `ir.ts` | 2011 | 258 | Intermediate representation + `resolve(ast)`. | charges the step meter |
 | `keep.ts` | 1849 | 11 | `keep`: declared invariants, checked by `compile()` and never solved (ADR 0033; plan-soundness PS4.3, design `archlang-lab/plans/plan-soundness/research/2026-10-26-ps43-keep-design.md`). | charges the step meter |
-| `label-fit.ts` | 626 | 3 | A room's label that does not fit shrinks: a **post-pass over the lowered Scene**, after `wrapLabels` and `relocateLabels` (`src/label-placement.ts`) have done what they can at the drawing's label size (#367). | none |
+| `label-fit.ts` | 629 | 4 | A room's label that does not fit shrinks: a **post-pass over the lowered Scene**, after `wrapLabels` and `relocateLabels` (`src/label-placement.ts`) have done what they can at the drawing's label size (#367). | none |
 | `label-placement.ts` | 750 | 9 | Obstacle-aware relocation of room labels — a **post-pass over the lowered Scene**. | none |
 | `layout.ts` | 249 | 1 | Relational placement (T6.2) — the optional layout seam. | none |
 | `lexer.ts` | 613 | 27 | Hand-written lexer for ArchLang. Zero dependencies; tracks line/col. | none |
@@ -294,8 +294,8 @@ Totals: 408 modules in 34 directories.
 | `room-datums.ts` | 420 | 20 | The datum table (ADR 0028 §1): what one resolution group's rooms and grid axes expose as lines, frozen after every room is placed and before any wall resolves. | charges the step meter |
 | `room-tiling.ts` | 1397 | 17 | The derivation behind `walls from rooms` (ADR 0028 §3, plan decision D5): one group's rectangular and rectilinear rooms in, its exterior ring(s) and its partitions out, or a refusal naming the rooms at fault. Pure: no diagnostics, no ids… | charges the step meter |
 | `sanitize.ts` | 61 | 2 | Config sanitization — a denylist for **untrusted** `.arch`-sourced config. | none |
-| `scene-build.ts` | 1549 | 31 | Lowers a resolved plan (IR) to the backend-neutral {@link Scene}. | none |
-| `scene-memo.ts` | 177 | 4 | One Scene per resolved plan and drawing options, shared by `compile()` and `lint()`. | none |
+| `scene-build.ts` | 1763 | 31 | Lowers a resolved plan (IR) to the backend-neutral {@link Scene}. | none |
+| `scene-memo.ts` | 179 | 4 | One Scene per resolved plan and drawing options, shared by `compile()` and `lint()`. | none |
 | `scene.ts` | 512 | 120 | Backend-neutral **Scene IR** — the keystone drawing intermediate. | none |
 | `segment-select.ts` | 221 | 7 | Segment selectors (plan card PS3.5): `segment north\|south\|east\|west` and `segment containing <room>.<edge>`, written wherever `segment <n>` is. A selector is an ALIAS: it resolves to the one segment index the number would name, and from… | charges the step meter |
 | `share.ts` | 76 | 1 | `@chanmeng666/archlang/share`: the browser-safe half of the playground's `#z=` share link, `#z=<base64url(deflate-raw(utf8))>`, for every consumer with no `zlib` (the playground page and its short-link Worker, the hosted MCP Worker, the… | none |
@@ -475,12 +475,12 @@ Totals: 408 modules in 34 directories.
 | `backend.ts` | 73 | 5 | Optional polygon-geometry backend seam. | none |
 | `band.ts` | 787 | 25 | The **band** of a wall: its two faces, its corners and its caps, as exact edge loops. | none |
 | `clipper.ts` | 177 | 2 | Optional {@link GeometryBackend} adapter over `clipper2-wasm`. | none |
-| `grid-index.ts` | 247 | 17 | Uniform-grid bucket spatial index over axis-aligned boxes. | none |
+| `grid-index.ts` | 247 | 18 | Uniform-grid bucket spatial index over axis-aligned boxes. | none |
 | `intersect.ts` | 341 | 8 | Closed-form intersection and ray-crossing primitives for **wall joinery**. | none |
 | `joinery.ts` | 1251 | 7 | **Wall joinery** — one boundary for a whole set of walls, with no line drawn inside another wall's solid. | none |
 | `min-rect.ts` | 169 | 2 | The exact minimum-area enclosing rectangle of a point set on the 0.001 mm lattice (plan-soundness PS5.1b; design `archlang-lab/plans/plan-soundness/research/2026-10-24-ps5-taste-design.md` §3 R9, R18). | none |
-| `polygon.ts` | 669 | 69 | Simple-polygon math for **polygonal rooms**. | charges the step meter |
-| `rect.ts` | 502 | 39 | Shared axis-aligned rectangle math for the analysis/repair layer. | none |
+| `polygon.ts` | 669 | 70 | Simple-polygon math for **polygonal rooms**. | charges the step meter |
+| `rect.ts` | 502 | 40 | Shared axis-aligned rectangle math for the analysis/repair layer. | none |
 | `union.ts` | 193 | 3 | Boolean of axis-aligned rectangles (union, and difference of "holes") → boundary loops. | none |
 
 ## `src/grammar/`
@@ -536,7 +536,7 @@ Totals: 408 modules in 34 directories.
 | Module | Lines | Importers | Summary | Budget |
 | --- | ---: | ---: | --- | --- |
 | `alias-match.ts` | 93 | 1 | `W_ALIAS_MATCH` — advisory: a room's use was inferred from a non-canonical alias. | none |
-| `annotations.ts` | 771 | 2 | Annotation collisions on the drawn sheet (plan-soundness PS2.12): drafting advisories that read the drawing itself, never the plan's facts, so `describe()`, Plan JSON and the SVG are untouched by them. A third, `W_DIM_THICKNESS_UNPLACED`… | none |
+| `annotations.ts` | 815 | 2 | Annotation collisions on the drawn sheet (plan-soundness PS2.12): drafting advisories that read the drawing itself, never the plan's facts, so `describe()`, Plan JSON and the SVG are untouched by them. A third, `W_DIM_THICKNESS_UNPLACED`… | none |
 | `circulation-facts.ts` | 1097 | 3 | Circulation quality as advisory warnings, built on the circulation nav-grid facts (ADR 0008): a walk that squeezes below a passable width (`W_PATH_TOO_NARROW`), or that wanders far from a straight line (`W_CIRCUITOUS_PATH`). Facts →… | none |
 | `circulation.ts` | 43 | 1 | Circulation: a room whose doorways can't reach a usable patch of clear floor — technically reachable (it has a door) but so packed that you can't step in. A grid flood-fill fact (see analyze/occupancy.ts); only fires when there *is*… | none |
 | `clearances.ts` | 473 | 2 | The clearance family of plan-soundness PS2.11, beyond the seat check: a WC whose centreline stands too near a side obstacle (PS2.11a) and a tall unit standing in front of a window (PS2.11b). Both measure the drawn shapes — a fixture's… | none |

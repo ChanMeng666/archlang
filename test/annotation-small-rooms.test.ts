@@ -185,18 +185,28 @@ suite("W_ANNOTATION_OVERLAP — a room label against the room it stands in", () 
       'room id=r at (0,0) size 2000x2000 label "" at (1650,1000) uses storage',
       "door id=d between r and z at center width 900 swing into r",
     );
+    // A `dims auto` figure over the unnamed room's area figure: the drum's diameter call-out, at its
+    // centre, where the empty label is pinned. (The plan this used, a 300 wall-thickness figure over
+    // the area figure of a 1.2 m store, no longer has one: since AL5 a thickness figure moves off a
+    // room's label, so only an `R`, `φ` or chain figure can still be printed over one.)
     const dims = of(`plan "p" {
   units mm
   paper A4 landscape
   scale 1:50
   dims auto
-  room id=r at (0,0) size 1200x900 label "" uses storage
-  walls from rooms exterior 300 partition 100
-  furniture id=t table at (600,450) size 300x300
+  wall id=drum exterior thickness 200 {
+    (2400,1200)
+    arc (0,1200) radius 1200
+    arc (2400,1200) radius 1200
+  }
+  room id=r circle at (1200,1200) radius 1200 label "" at (1200,1200) uses storage
 }`);
     for (const d of [...of(swing), ...dims]) expect(d.message).not.toContain('""');
     expect(of(swing)[0]!.message).toContain('and "Next"');
     expect(dims.length).toBeGreaterThan(0);
+    expect(dims.map((d) => d.message)).toContain(
+      "The diameter call-out φ2400 that `dims auto all` draws across the circle is printed over the area figure (4.5 m²) of the store, so the two overprint each other on the drawing.",
+    );
   });
 
   it('tells a `label ""` pinned on a wall about its pin, not about naming the room', () => {
