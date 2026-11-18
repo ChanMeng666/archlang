@@ -262,7 +262,7 @@ Totals: 408 modules in 34 directories.
 | `identity.ts` | 33 | 3 | Process-local stable identity tokens for cache keying. | none |
 | `impact.ts` | 1405 | 3 | `impact(before, after)` (plan-soundness card PS4.2): change one number, see what follows, what stays put, and what breaks. The executable answer to "what changes, what must not". | none |
 | `import.ts` | 349 | 35 | Module linking — the `import` system. | none |
-| `index.ts` | 726 | 452 | ArchLang — compile declarative floor-plan source to a professional SVG. | none |
+| `index.ts` | 726 | 453 | ArchLang — compile declarative floor-plan source to a professional SVG. | none |
 | `input-limit.ts` | 77 | 5 | A host's refusals, as catalogued diagnostics. | none |
 | `intent-concepts.ts` | 238 | 6 | The intent channel's concept vocabulary — production name resolution for the NL→ArchLang intent contract. | none |
 | `intent-feasibility.ts` | 388 | 3 | Infeasibility of a brief's stated numbers: the arithmetic that makes "this brief is impossible" checkable, before any plan exists. | none |
@@ -296,7 +296,7 @@ Totals: 408 modules in 34 directories.
 | `sanitize.ts` | 61 | 2 | Config sanitization — a denylist for **untrusted** `.arch`-sourced config. | none |
 | `scene-build.ts` | 1765 | 31 | Lowers a resolved plan (IR) to the backend-neutral {@link Scene}. | none |
 | `scene-memo.ts` | 179 | 4 | One Scene per resolved plan and drawing options, shared by `compile()` and `lint()`. | none |
-| `scene.ts` | 512 | 120 | Backend-neutral **Scene IR** — the keystone drawing intermediate. | none |
+| `scene.ts` | 512 | 121 | Backend-neutral **Scene IR** — the keystone drawing intermediate. | none |
 | `segment-select.ts` | 221 | 7 | Segment selectors (plan card PS3.5): `segment north\|south\|east\|west` and `segment containing <room>.<edge>`, written wherever `segment <n>` is. A selector is an ALIAS: it resolves to the one segment index the number would name, and from… | charges the step meter |
 | `share.ts` | 76 | 1 | `@chanmeng666/archlang/share`: the browser-safe half of the playground's `#z=` share link, `#z=<base64url(deflate-raw(utf8))>`, for every consumer with no `zlib` (the playground page and its short-link Worker, the hosted MCP Worker, the… | none |
 | `sheet-tables.ts` | 1346 | 15 | **Sheet tables** — the ROOM SCHEDULE and the derived LEGEND, and beside them the DOOR & WINDOW SCHEDULE (`schedule openings`, rows from `opening-schedule.ts`) and the authored NOTES (`notes "…"`), each drawn only when the plan writes it. | none |
@@ -306,7 +306,7 @@ Totals: 408 modules in 34 directories.
 | `stages.ts` | 370 | 6 | The authoring stages (plan-soundness PS7.1): the order in which a plan's decisions are taken, lowest frequency first, and which findings mean anything at each. | none |
 | `statement-print.ts` | 407 | 12 | Text printers for the LEAF (non-block) statement kinds — the element statements and the `set …` settings line. This is the one place `format.ts`'s pretty-printer, an element's own `resolve()` (a lint fix's replacement text) and Plan… | none |
 | `suggest.ts` | 623 | 2 | `suggestTopology(source)` — topology repair suggestions as DATA, never applied. | none |
-| `text-layout.ts` | 222 | 15 | Line breaking for a drawn name, and where each line of a multi-line text is drawn. | none |
+| `text-layout.ts` | 222 | 16 | Line breaking for a drawn name, and where each line of a multi-line text is drawn. | none |
 | `text-metrics.ts` | 151 | 20 | The closed-form text widths in the tree: {@link textWidth}, the one shared estimate, and {@link inkWidth}, from the advances of the two faces a label is drawn in, for a test a label stands right up against. | none |
 | `text-safe.ts` | 63 | 7 | Output-text safety — the single place a string that came from user source is made safe to embed in a **container format**. | none |
 | `theme.ts` | 489 | 59 | Theme: colours, line-weight, and font for the rendered drawing. | none |
@@ -415,7 +415,7 @@ Totals: 408 modules in 34 directories.
 | `facets.ts` | 87 | 10 | Which hand-written kind sets each built-in element kind belongs to, one row per kind. | none |
 | `fence.ts` | 312 | 1 | `fence [id=] [picket\|panel\|post] { (x,y) (x,y) … [close] }` — a boundary line on the ground. | none |
 | `fixtures-glyphs.ts` | 754 | 42 | The fixture vocabulary and the dispatch to each category's drawn plan symbol. | none |
-| `furniture.ts` | 1647 | 12 | `furniture [id=] <category> [id=] at (x,y) size WxH [label "…"]` — outlined fill + label; the clauses after the placement come in any order (`src/clause-order.ts`). | charges the step meter |
+| `furniture.ts` | 1647 | 13 | `furniture [id=] <category> [id=] at (x,y) size WxH [label "…"]` — outlined fill + label; the clauses after the placement come in any order (`src/clause-order.ts`). | charges the step meter |
 | `glyph-chirality.ts` | 224 | 14 | The handedness of a drawn fixture symbol, and what a mirrored `place` does to it. | none |
 | `glyph-lib.ts` | 917 | 34 | The drawing vocabulary every fixture glyph is built from. | none |
 | `glyphs-bath.ts` | 370 | 2 | Bathroom plan symbols: the WC, the basin, the shower tray, the tub, the bidet, the urinal and the mirror. | none |
@@ -463,7 +463,7 @@ Totals: 408 modules in 34 directories.
 
 | Module | Lines | Importers | Summary | Budget |
 | --- | ---: | ---: | --- | --- |
-| `dxf.ts` | 820 | 12 | DXF export backend — a pure serializer of the {@link Scene}. Emits ASCII DXF headed `AC1015` (AutoCAD 2000): R12-style LINE/ARC/TEXT entities (broadly importable) plus the `HATCH` entity (introduced after R12, hence the version bump) so… | none |
+| `dxf.ts` | 820 | 13 | DXF export backend — a pure serializer of the {@link Scene}. Emits ASCII DXF headed `AC1015` (AutoCAD 2000): R12-style LINE/ARC/TEXT entities (broadly importable) plus the `HATCH` entity (introduced after R12, hence the version bump) so… | none |
 | `pdf.ts` | 458 | 9 | PDF export backend — a **true vector** serializer of the {@link Scene}. | none |
 
 ## `src/geometry/`
@@ -479,7 +479,7 @@ Totals: 408 modules in 34 directories.
 | `intersect.ts` | 341 | 8 | Closed-form intersection and ray-crossing primitives for **wall joinery**. | none |
 | `joinery.ts` | 1251 | 7 | **Wall joinery** — one boundary for a whole set of walls, with no line drawn inside another wall's solid. | none |
 | `min-rect.ts` | 169 | 2 | The exact minimum-area enclosing rectangle of a point set on the 0.001 mm lattice (plan-soundness PS5.1b; design `archlang-lab/plans/plan-soundness/research/2026-10-24-ps5-taste-design.md` §3 R9, R18). | none |
-| `polygon.ts` | 669 | 70 | Simple-polygon math for **polygonal rooms**. | charges the step meter |
+| `polygon.ts` | 669 | 71 | Simple-polygon math for **polygonal rooms**. | charges the step meter |
 | `rect.ts` | 502 | 40 | Shared axis-aligned rectangle math for the analysis/repair layer. | none |
 | `union.ts` | 193 | 3 | Boolean of axis-aligned rectangles (union, and difference of "holes") → boundary loops. | none |
 
