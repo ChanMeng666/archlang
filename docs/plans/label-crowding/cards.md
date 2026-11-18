@@ -100,7 +100,7 @@ AL6（#957）第二轮红队的三条测试缺口，只改测试，不改 `src/`
   - 不报错：报 `E_*` 会让今天能编译的平面编译失败，等于破坏性变化。警告保持"后者生效"的行为不变，图和 `describe()` 一字不动。
   - 先例：`W_DUP_ACC_METADATA`（`warnDupAcc`，`src/parser.ts`）对重复的 `accTitle`/`accDescr` 就是这样做的：后者生效，在第二行上报警告。照它写，码名暂定 `W_DUP_SETTING` 或更窄的 `W_DUP_DIMS`，在目录（`src/error-catalog/language.ts`）登记，用 `gen:*` 重新生成文档。
 - span 指向第二行，related span 指向第一行（同 `E_DUP_CLAUSE`）。
-- **变化面**：只有写了两行 `dims auto` 的平面的 `compile().diagnostics` 和 `lint()` 会多一条警告，要先在语料上数出有几个这样的平面（预计 0）。示例必须保持零警告。
+- **变化面**：只有写了两行 `dims auto` 的平面的 `compile().diagnostics` 会多一条警告；`lint()` 不变，解析阶段的警告不进 `lint()`（`W_DUP_ACC_METADATA` 也是这样，2026-11-18 核实）。要先在语料上数出有几个这样的平面（预计 0）。示例必须保持零警告。
 - **发布**：minor（新码）。
 
 ### AL8 · 规格书写明 `dims auto` 每种模式画什么 — `todo` · 0.5 日 · opus

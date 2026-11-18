@@ -564,6 +564,11 @@ export type {
 // a Scene: `toDxf(scene)` / `toPdf(scene)`; build one with `toScene(ir)` or read
 // `compile().scene`.
 export { toScene } from "./scene-build.js";
+// The north arrow's historical spot (card AL1): where every backend draws the arrow when
+// `scene.chrome.north` is absent, read from `scene.bounds`, `scene.sizes.margin`, `scene.sizes.refDim`.
+// `NorthArrowBox` is that field's type when present; `NorthSpot` the rule that placed it.
+export { historicalNorth } from "./chrome-layout.js";
+export type { NorthArrowBox, NorthSpot } from "./chrome-layout.js";
 // The opt-in axonometric view: a SIBLING of `toScene` producing the same Scene
 // type, so every backend draws it unchanged. Illustrative only — see `src/view/`.
 export { toIso } from "./view/iso.js";

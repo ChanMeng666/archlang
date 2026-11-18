@@ -12,8 +12,8 @@
 import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { describe, expect, it } from "vitest";
-import { dimReach } from "../src/chrome-layout.js";
-import { compile } from "../src/index.js";
+import { dimReach, northArrowBox, northArrowInk, northArrowMetrics } from "../src/chrome-layout.js";
+import { compile, describe as describePlan } from "../src/index.js";
 import { primBBox } from "../src/label-placement.js";
 import type { Scene, SceneNode } from "../src/scene.js";
 import { inkWidth, textWidth } from "../src/text-metrics.js";
@@ -187,8 +187,12 @@ describe("the north arrow over the corpus", () => {
   }, 120_000);
 });
 
-/** A plan dimensioned on all four sides whose margins leave no strip wide enough for a turned arrow. */
-const turned = (settings: string): string => `plan "Turned" {
+/**
+ * A plan dimensioned on all four sides: its top and right strips are each only `gap` deep, so an
+ * upright arrow fits the right strip only, an arrow pointing right the top strip only, and one
+ * turned 45 degrees neither. `extra` adds statements before the closing brace.
+ */
+const turned = (settings: string, extra = ""): string => `plan "Turned" {
   units mm
 ${settings}
   dims auto all
@@ -201,20 +205,37 @@ ${settings}
   window at (0,2500) width 1500 wall exterior
   window at (5000,0) width 1200 wall exterior
   window at (6000,3800) width 700 wall exterior
-}
+${extra}}
 `;
 const sceneOf = (src: string): { svg: string; scene: Scene } => {
   const out = compile(src, { noCache: true });
   expect(out.errors).toEqual([]);
   return { svg: out.svg, scene: out.scene! };
 };
+const isArrowLine = (l: string): boolean => l.startsWith("<g><polygon ") && l.includes('transform="rotate(');
+const withoutArrow = (svg: string): string =>
+  svg
+    .split("\n")
+    .filter((l) => !isArrowLine(l))
+    .join("\n");
+
+describe("each strip is reached in a drawing", () => {
+  it("an upright arrow takes the right strip, one pointing right the top strip, each clear of the bands", () => {
+    for (const [north, spot] of [
+      ["up", "right"],
+      ["right", "top"],
+    ] as const) {
+      const { svg, scene } = sceneOf(turned(`  north ${north}`));
+      expect(scene.chrome!.north!.spot, north).toBe(spot);
+      expect(bandHits(scene, inset(drawnArrow(svg)!, 0.02)), north).toBe(0);
+    }
+  });
+});
 
 describe("when no spot has room", () => {
   it("off a sheet, grows the top and right margins just enough for the corner square, and nothing else", () => {
     const { svg, scene } = sceneOf(turned("  north 45"));
     const control = sceneOf(turned("  north 45 hidden")).scene;
-    // Upright, the arrow fits the strip right of the right-hand band; turned 45 degrees it fits no strip.
-    expect(sceneOf(turned("  north up")).scene.chrome!.north!.spot).toBe("right");
     expect(scene.chrome!.north!.spot).toBe("grown");
     const arrow = drawnArrow(svg)!;
     expect(bandHits(scene, inset(arrow, 0.02))).toBe(0);
@@ -232,22 +253,140 @@ describe("when no spot has room", () => {
     expect(arrow.x0 >= page.x0 && arrow.y0 >= page.y0 && arrow.x1 <= page.x1 && arrow.y1 <= page.y1).toBe(true);
   });
 
-  it("on a sheet, whose page must not grow, keeps the historical spot and every other byte", () => {
-    const paper = "  paper A4 landscape\n  scale 1:20\n";
-    const { svg, scene } = sceneOf(turned(`${paper}  north 45`));
-    const control = sceneOf(turned(`${paper}  north 45 hidden`));
-    expect(scene.chrome!.north!.spot).toBe("blocked");
-    expect(scene.chrome!.margin).toEqual(control.scene.chrome!.margin);
+  it("on a sheet, whose page must not grow, keeps the historical spot, records nothing, and moves no other byte", () => {
+    // The building fits A4 at 1:50 (`describe().sheet.fits`); the lawn west and south of it does
+    // not, so the page grows to the drawing and the strips beyond the bands are only `gap` deep.
+    // (A sheet whose whole drawing fits always leaves at least 15 mm of paper in the corner, more
+    // than the turned arrow needs, so this fallback needs a drawing larger than its sheet.)
+    const paper = "  paper A4 landscape\n  scale 1:50\n";
+    const yard = "  outdoor id=yard lawn at (-14000,0) size 14000x14000\n";
+    const src = turned(`${paper}  north 45`, yard);
+    const hidden = turned(`${paper}  north 45 hidden`, yard);
+    const { svg, scene } = sceneOf(src);
+    const control = sceneOf(hidden);
+    expect(describePlan(src).sheet).toEqual(describePlan(hidden).sheet);
+    expect(describePlan(src).sheet?.fits).toBe(true);
+    expect(scene.sheet?.grown).toBe(true);
+    // Not recorded: the arrow stands where it always stood, so the Scene's chrome is the control's.
+    expect(scene.chrome!.north).toBeUndefined();
+    expect(scene.chrome).toEqual(control.scene.chrome);
     expect([scene.width, scene.height]).toEqual([control.scene.width, control.scene.height]);
-    const arrowLine = (l: string): boolean => l.startsWith("<g><polygon ") && l.includes('transform="rotate(');
-    expect(
-      svg
-        .split("\n")
-        .filter((l) => !arrowLine(l))
-        .join("\n"),
-    ).toBe(control.svg);
+    expect(withoutArrow(svg)).toBe(control.svg);
     const arrow = drawnArrow(svg)!;
     const old = historicalArrow(scene, svg, arrow);
     expect(Math.abs(old.x0 - arrow.x0) + Math.abs(old.y0 - arrow.y0)).toBeLessThan(0.02);
+    // And there it is on a band: no rule had room.
+    expect(bandHits(scene, inset(arrow, 0.02))).toBeGreaterThan(0);
+  });
+});
+
+/**
+ * The rules one at a time, on a synthetic page: a drawing 5000 x 4000 at `refDim` 10 000, a top
+ * band (one dimension line 800 above it, across the historical spot) and a right-hand band (one
+ * line 800 right of it). Each row varies the page, or puts one obstacle where the corner square's
+ * arrow would go, so the rule it names decides the spot. The upright arrow's ink is 450 x 1058;
+ * `gap` is 500.
+ */
+describe("northArrowBox, rule by rule", () => {
+  const refDim = 10000;
+  const bounds = { minX: 0, minY: 0, maxX: 5000, maxY: 4000 };
+  const line = (a: [number, number], b: [number, number]): SceneNode => ({
+    layer: "dims",
+    prim: { t: "line", a: { x: a[0], y: a[1] }, b: { x: b[0], y: b[1] } },
+    paint: {},
+  });
+  const BANDS = [line([0, -800], [5000, -800]), line([5800, 0], [5800, 4000])];
+  const LEFT = 5800; // the right-hand band's outer edge
+  const ABOVE = -800; // the top band's outer edge
+  const { r, fs } = northArrowMetrics(refDim);
+  const ink = northArrowInk(0, 0, r, fs, 0, "N");
+  const NO_CHROME = {
+    scaleBar: { x0: 0, y0: 6000, barLen: 1000, hgt: 50, fs: 100, hidden: true as const },
+    titleBlock: null,
+  };
+  /** A page whose right edge is `right` past the band and whose top is `top` above it. */
+  const place = (
+    right: number,
+    top: number,
+    opts: {
+      nodes?: SceneNode[];
+      chrome?: Parameters<typeof northArrowBox>[0]["chrome"];
+      h?: number;
+      sheet?: boolean;
+    } = {},
+  ) =>
+    northArrowBox({
+      bounds,
+      refDim,
+      baseMargin: 1700,
+      nodes: [...BANDS, ...(opts.nodes ?? [])],
+      deg: 0,
+      word: "N",
+      page: { x: -2000, y: ABOVE - top, w: LEFT + right + 2000, h: opts.h ?? 12000 },
+      margin: { top: 800 + top, right: 800 + right, bottom: 1700, left: 2000 },
+      sheet: opts.sheet ?? false,
+      chrome: opts.chrome ?? NO_CHROME,
+    });
+  // An obstacle over the corner square's arrow (which sits at x 6300..6750, y -2358..-1300).
+  const CORNER_BLOCK = { x: 6200, y: -2500, w: 700, h: 1300 };
+
+  it("the premise: the historical spot is on the top band, and the corner square takes the arrow when it has room", () => {
+    expect(ink.w).toBe(450);
+    expect(ink.h).toBeCloseTo(1058, 6);
+    const { north } = place(5000, 6000);
+    expect(north.spot).toBe("corner");
+    expect(north.box.x).toBe(LEFT + 500);
+    expect(north.box.y + north.box.h).toBeCloseTo(ABOVE - 500, 6);
+  });
+
+  it("an arrow fitting only the strip above the top band takes it (rule 4)", () => {
+    // 300 right of the band: narrower than the arrow, so no corner and no right strip.
+    expect(place(300, 3000).north.spot).toBe("top");
+  });
+
+  it("a node in the corner sends the arrow to the right strip, which comes before the top strip (rules 2-4)", () => {
+    const node: SceneNode = {
+      layer: "labels",
+      prim: {
+        t: "polygon",
+        pts: [
+          { x: CORNER_BLOCK.x, y: CORNER_BLOCK.y },
+          { x: CORNER_BLOCK.x + CORNER_BLOCK.w, y: CORNER_BLOCK.y },
+          { x: CORNER_BLOCK.x + CORNER_BLOCK.w, y: CORNER_BLOCK.y + CORNER_BLOCK.h },
+          { x: CORNER_BLOCK.x, y: CORNER_BLOCK.y + CORNER_BLOCK.h },
+        ],
+      },
+      paint: {},
+    };
+    // Both strips have room and both are clear of the node, so the order decides.
+    expect(place(5000, 6000, { nodes: [node] }).north.spot).toBe("right");
+  });
+
+  it("the title block or the scale bar in the corner sends the arrow on, as a node does", () => {
+    const titleBlock = {
+      x0: CORNER_BLOCK.x,
+      y0: CORNER_BLOCK.y,
+      w: CORNER_BLOCK.w,
+      h: CORNER_BLOCK.h,
+      rowH: 100,
+      fs: 50,
+      pad: 10,
+      rows: [],
+    };
+    expect(place(5000, 6000, { chrome: { ...NO_CHROME, titleBlock } }).north.spot).toBe("right");
+    const scaleBar = { x0: 6400, y0: -2000, barLen: 200, hgt: 50, fs: 100 };
+    expect(place(5000, 6000, { chrome: { scaleBar, titleBlock: null } }).north.spot).toBe("right");
+  });
+
+  it("a spot that would leave the page is refused (the page check)", () => {
+    // Room right of the band, none above it, and a page whose bottom the right strip's arrow would
+    // cross. `toScene` never hands over such a page (it always holds the drawing); the rule is
+    // `northArrowBox`'s own contract.
+    const short = { h: 1000 };
+    expect(place(2000, 500, { ...short, sheet: true }).north.spot).toBe("blocked");
+    const grown = place(2000, 500, short);
+    expect(grown.north.spot).toBe("grown");
+    expect(grown.margin.top).toBeCloseTo(800 + ink.h, 6);
+    expect(grown.margin.right).toBe(800 + 2000);
   });
 });

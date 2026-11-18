@@ -114,10 +114,12 @@ export interface ChromeLayout {
    */
   tables?: SheetTables;
   /**
-   * Where the north arrow is drawn when {@link northArrowBox} moved it off its historical spot.
-   * Absent when it stays there (so that drawing's Scene keeps its bytes), with `north … hidden`,
-   * and on a hand-built Scene: the backends then draw it at {@link historicalNorth}, where it
-   * always stood.
+   * Where the north arrow is drawn, present exactly when {@link northArrowBox} put it somewhere
+   * other than its historical spot (so its `spot` is `corner`, `right`, `top` or `grown`).
+   * Absent when the arrow stands at the historical spot (that spot is clear, or a sheet has no
+   * room elsewhere), with `north … hidden`, and on a hand-built Scene. The backends then draw it
+   * at {@link historicalNorth}`(scene.bounds, scene.sizes.margin, scene.sizes.refDim)`, where it
+   * always stood; an absent field keeps that drawing's Scene byte-identical to before.
    */
   north?: NorthArrowBox;
 }
@@ -395,7 +397,9 @@ const NORTH_DROP_F = 0.55;
  * the page's top-right corner square beyond both dimension bands (`corner`), the top of the
  * strip right of the right-hand band (`right`), the right end of the strip above the top band
  * (`top`), a corner square the page grew to make (`grown`, never on a sheet), or, on a sheet
- * where nothing fits, the historical spot although it is not clear (`blocked`).
+ * where nothing fits, the historical spot although it is not clear (`blocked`). `toScene`
+ * records the placement on `ChromeLayout.north` only for the four that move the arrow, so a
+ * Scene never carries `historical` or `blocked`.
  */
 export type NorthSpot = "historical" | "corner" | "right" | "top" | "grown" | "blocked";
 
@@ -422,7 +426,9 @@ export function northArrowMetrics(refDim: number): { r: number; fs: number } {
  * The arrow's historical spot: its right edge on the drawing's right bound, its centre a little
  * over half the base margin above the drawing. Where every arrow stood before AL1, and where it
  * still stands when that spot is clear of the dimension bands. The same arithmetic, in the same
- * order, as the backends always ran, so a plan whose arrow stays keeps its bytes.
+ * order, as the backends always ran, so a plan whose arrow stays keeps its bytes. Public: a
+ * consumer reading a Scene with no `chrome.north` finds the arrow here, from `scene.bounds`,
+ * `scene.sizes.margin` and `scene.sizes.refDim`.
  */
 export function historicalNorth(
   bounds: Bounds,

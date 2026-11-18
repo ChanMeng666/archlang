@@ -37,7 +37,7 @@ import { floorMaterialsUsed, hatchesUsed } from "./hatches.js";
 import { attachSceneWalls, lowerWallSet } from "./wall-lowering.js";
 import type { FacadeOpening, SideGeom } from "./facade.js";
 import { SIDES, cleanTicks, facadeAt, facadeOpenings, measureExtent, openingsBySide, sideGeoms } from "./facade.js";
-import { anchorChromeToSheet, dimReach, layoutChrome, northArrowBox } from "./chrome-layout.js";
+import { anchorChromeToSheet, dimReach, historicalNorth, layoutChrome, northArrowBox } from "./chrome-layout.js";
 import { northBearingDeg } from "./algebra/d4.js";
 import { axesNodes } from "./axes.js";
 import { siteBoundaryNodes } from "./site.js";
@@ -1207,9 +1207,12 @@ function drawStorey(
       sheet: sheet !== undefined,
       chrome,
     });
-    // An arrow left where it always stood is not recorded, so that Scene keeps its bytes too
-    // (the backends draw an absent `north` at `historicalNorth`).
-    if (placed.north.spot !== "historical") chrome = { ...chrome, margin: placed.margin, north: placed.north };
+    // Recorded only when the arrow stands somewhere else than it always stood: one left there
+    // (its spot clear, or a sheet with no room elsewhere) keeps its Scene's bytes too, and the
+    // backends draw an absent `north` at `historicalNorth`.
+    const was = historicalNorth(b, sizes.margin, refDim);
+    if (placed.north.cx !== was.cx || placed.north.cy !== was.cy)
+      chrome = { ...chrome, margin: placed.margin, north: placed.north };
     if (placed.margin !== m) {
       m = placed.margin;
       content = { x: b.minX - m.left, y: b.minY - m.top, w: drawW + m.left + m.right, h: drawH + m.top + m.bottom };
