@@ -31,9 +31,9 @@
  * fourth (card AL3w): a labelled area's own text is boxed at the wider of the estimate and its ink
  * (`symbolExtent`), the width the fit and the rule read it at against a symbol. How big a label is
  * stays the pass's input. A fifth (card AL3a): the groups take their turns in `plotOrder`, an order
- * read off the plan, rather than element order, and a room's label that stands off its own floor
- * (more than `COLLIDE_MIN` of its ink box) claims no floor. Which group goes when, and which labels
- * are obstacles, are the pass's input; the sums under test are not.
+ * read off the plan, rather than element order, and a label the fit will redraw (`fitTexts`, with a
+ * text more than `COLLIDE_MIN` of its own ink box off its floor) claims no floor. Which group goes
+ * when, and which labels are obstacles, are the pass's input; the sums under test are not.
  */
 
 import { corpusFiles, walkFiles as walk } from "./helpers/corpus.js";
@@ -57,6 +57,7 @@ import {
   CLEARANCE,
   COLLIDE_MIN,
   FRACTIONS,
+  fitTexts,
   type LabelGroup,
   plotOrder,
   relocateLabels,
@@ -342,20 +343,21 @@ function relocateLabelsBefore(
       continue;
     }
 
-    // Card AL3a: a room's label off its own floor claims none.
-    let inkW = 0;
-    for (const i of texts) {
-      const prim = nodes[i]!.prim;
-      if (prim.t === "text") inkW = Math.max(inkW, inkExtent(prim).w);
-    }
-    const claims = (r: BBox): boolean => {
-      if (!g.wrap) return true;
-      const ink = { x: r.x + (r.w - inkW) / 2, y: r.y, w: inkW, h: r.h };
-      return rectAreaOutside(ink, g.ring) <= COLLIDE_MIN * ink.w * ink.h;
+    // Card AL3a: a label the fit will redraw (a name and an area figure, one of them off its own
+    // floor where it stands, each read at its own ink box) claims none; any other keeps its claim.
+    const claims = (): boolean => {
+      const own = fitTexts(nodes, g);
+      if (!own) return true;
+      for (const prim of [own.name, own.area]) {
+        const { w, h } = inkExtent(prim);
+        const ink = { x: prim.at.x - w / 2, y: prim.at.y - h / 2, w, h };
+        if (Math.max(0, rectAreaOutside(ink, g.ring) / (w * h)) > COLLIDE_MIN) return false;
+      }
+      return true;
     };
 
     if (buried(rect0, obstacles) + buried(rect0, placed) <= COLLIDE_MIN) {
-      if (claims(rect0)) placed.push(rect0);
+      if (claims()) placed.push(rect0);
       continue;
     }
 
@@ -403,7 +405,7 @@ function relocateLabelsBefore(
       }
     }
     const landed = shiftBBox(rect0, dx, dy);
-    if (claims(landed)) placed.push(landed);
+    if (claims()) placed.push(landed);
   }
 }
 

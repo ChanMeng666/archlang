@@ -47,11 +47,13 @@
  * The labels take their turns in an order read off the plan, never the source's
  * ({@link plotOrder}: the anchor's y, then its x, then the texts, then the ring; the order
  * `fitLabels` takes its turns in), so the same rooms written in any order draw the same (card AL3a,
- * label-crowding). And a room's label that stands off its own floor where it is drawn claims no
- * floor: it does not fit, `fitLabels` will shrink or wrap it, and a neighbour must not dodge a box
- * that is about to change (`fitLabels`' own rule). Before, the turns went by element order, and each
- * placed label was an obstacle for the next, so five corpus plans, written the other way round, drew
- * differently.
+ * label-crowding). And a room's label that `fitLabels` will redraw claims no floor: one the fit
+ * takes ({@link fitTexts}: a name and an area figure) with a text standing off its own floor where it
+ * is drawn does not fit, the fit will shrink, wrap or move it, and a neighbour must not dodge a box
+ * that is about to change (`fitLabels`' own rule). Any other label, an area figure on its own among
+ * them, is never redrawn, so it keeps its floor however far off it stands. Before, the turns went by
+ * element order, and each placed label was an obstacle for the next, so five corpus plans, written
+ * the other way round, drew differently.
  *
  * Prior art: planscript-rust's `best_area_label_candidate` / `label_score`
  * (`src/exporters.rs`, MIT) — the candidate lattice, the distance-from-centre preference
@@ -630,10 +632,10 @@ export function underLabels(n: SceneNode): boolean {
  * Mutates `nodes` in place (replacing, never editing, the text nodes it moves), which is
  * safe: every node in the list was freshly built by this `toScene` call. Groups are
  * visited in {@link plotOrder}, never element order, and each placed label becomes an obstacle
- * for the next, so two labels can never be relocated onto each other; a room's label that stands
- * off its own floor (by more than {@link COLLIDE_MIN} of its ink, where it lands) is the one
- * exception, and claims no floor. An `outdoor` surface takes its turn among the rooms, by the same
- * order.
+ * for the next, so two labels can never be relocated onto each other; a label `fitLabels` will redraw
+ * ({@link fitTexts}, with a text more than {@link COLLIDE_MIN} of its ink off its own floor where it
+ * lands, read as the fit reads it) is the one exception, and claims no floor. An `outdoor` surface
+ * takes its turn among the rooms, by the same order.
  *
  * `work`, when given, counts every place scored (`labelRelocations`, `src/compile-work.ts`); an
  * out-parameter only.
@@ -681,12 +683,19 @@ export function relocateLabels(
   }
   const placed = new BoxSums(meanExtent(labelBoxes));
   const probes = new Map<string, Probe[]>();
-  /** A room's label claims the floor it stands on unless it stands off its own floor (it does not
-   *  fit, and `fitLabels` will change it). `inkW` is the drawn width of its widest text. */
-  const claims = (g: LabelGroup, rect: BBox, inkW: number): boolean => {
-    if (!g.wrap) return true;
-    const ink = inkOf(rect, inkW);
-    return rectAreaOutside(ink, g.ring) <= COLLIDE_MIN * ink.w * ink.h;
+  /** A label claims the floor it stands on unless `fitLabels` will redraw it: the fit takes it
+   *  ({@link fitTexts}) and one of its two texts, where it now stands, is more than
+   *  {@link COLLIDE_MIN} of its ink off its own floor, read as the fit reads it (each text's own ink
+   *  box, which makes it a misfit there). A label the fit never takes keeps its claim. */
+  const claims = (g: LabelGroup): boolean => {
+    const own = fitTexts(nodes, g);
+    if (!own) return true;
+    for (const prim of [own.name, own.area]) {
+      const { w, h } = inkExtent(prim);
+      const ink = { x: prim.at.x - w / 2, y: prim.at.y - h / 2, w, h };
+      if (Math.max(0, rectAreaOutside(ink, g.ring) / (ink.w * ink.h)) > COLLIDE_MIN) return false;
+    }
+    return true;
   };
   /** The fractions of `rect` buried in obstacles and in placed labels, the placed sum
    *  continued from where `probe` last stood. */
@@ -738,7 +747,7 @@ export function relocateLabels(
 
     const trigger = crowd(rect0, probe(0));
     if (trigger.obstacles + trigger.placed <= COLLIDE_MIN) {
-      if (claims(g, rect0, inkW)) placed.push(rect0);
+      if (claims(g)) placed.push(rect0);
       continue;
     }
 
@@ -782,8 +791,37 @@ export function relocateLabels(
       }
     }
     const landed = shiftBBox(rect0, dx, dy);
-    if (claims(g, landed, inkW)) placed.push(landed);
+    if (claims(g)) placed.push(landed);
   }
+}
+
+/**
+ * The two texts of a group `fitLabels` (`src/label-fit.ts`) takes: a room's (`wrap`), not authored
+ * (`fixed`), drawing exactly a name and an area figure, the name not turned. Null for any other group,
+ * which the fit never reads and never redraws. The fit takes its candidates from here and the
+ * relocation lets only such a label give up its floor (card AL3a), so the two cannot disagree on
+ * which labels are about to change.
+ */
+export function fitTexts(nodes: readonly SceneNode[], g: LabelGroup): FitTexts | null {
+  if (!g.wrap || g.fixed) return null;
+  const texts: number[] = [];
+  for (let i = g.from; i < g.to; i++) {
+    const n = nodes[i]!;
+    if (n.layer === "labels" && n.prim.t === "text") texts.push(i);
+  }
+  if (texts.length !== 2) return null;
+  const name = nodes[texts[0]!]!.prim;
+  const area = nodes[texts[1]!]!.prim;
+  if (name.t !== "text" || area.t !== "text" || name.rotate !== undefined) return null;
+  return { nameAt: texts[0]!, areaAt: texts[1]!, name, area };
+}
+
+/** A group's name and area figure as {@link fitTexts} finds them: their node indices and texts. */
+export interface FitTexts {
+  nameAt: number;
+  areaAt: number;
+  name: Extract<ScenePrim, { t: "text" }>;
+  area: Extract<ScenePrim, { t: "text" }>;
 }
 
 /**

@@ -17,13 +17,16 @@ import { toDxf } from "../src/export/dxf.js";
 import { clearCache, compile, lint } from "../src/index.js";
 import type { ResolvedPlan, RRoom } from "../src/ir.js";
 import { fitWork, labelHeights, MAX_FIT_WORK } from "../src/label-fit.js";
+import { COLLIDE_MIN } from "../src/label-placement.js";
 import { extractArchBlocks } from "../src/markdown.js";
 import type { RenderSizes, ScenePrim } from "../src/scene.js";
 import { toScene } from "../src/scene-build.js";
 import { SHEET_MM } from "../src/sheet.js";
+import { inkExtent } from "../src/text-layout.js";
 import type { World } from "../src/world.js";
 import { NULL_WORLD } from "../src/world.js";
 import { runs } from "./setup/fast-check.js";
+import { OPENINGS_BETWEEN_PLANS } from "./tables/openings-between-plans.js";
 
 const { state } = vi.hoisted(() => ({ state: { off: false } }));
 
@@ -619,6 +622,36 @@ describe("a neighbour's label that does not fit", () => {
     expect(texts.map((t) => t.value)).toEqual(["GYM", "3.1 m²"]);
     expect(texts[0]!.size).toBe(sizes.roomFont);
     expect(texts).toEqual(drawn(plan(""), "r2").texts);
+  });
+});
+
+// The limit of that rule (CI on #964). Only a label `fitLabels` takes, a name and an area figure, gives
+// up its floor when it stands off it; the fit never redraws an area figure drawn alone, so a neighbour
+// that ignored one would stay drawn over it. In the relational-openings table's `frames` (one unit in
+// eight turns and mirrors on one sheet, its text 1,610 mm high) rooms `a` and `b` draw only an area
+// figure, each wider than its room. Before this rule was narrowed, `b`'s stood over `a`'s by 29 % in
+// four of the copies; one dodging the other leaves 1.25 %.
+describe("an area figure drawn alone", () => {
+  it("keeps its floor, so the next room's figure is placed off it", () => {
+    const src = OPENINGS_BETWEEN_PLANS.find((p) => p[0] === "frames")![1];
+    const { ir } = resolvePlan(src);
+    const scene = toScene(ir!, { annotate: true });
+    const ink = (id: string) => {
+      const texts = scene.nodes.filter((n) => n.elementId === id && n.prim.t === "text").map((n) => n.prim as Text);
+      expect(
+        texts.map((t) => t.value),
+        id,
+      ).toEqual(["20.0 m²"]);
+      const { w, h } = inkExtent(texts[0]!);
+      return { x: texts[0]!.at.x - w / 2, y: texts[0]!.at.y - h / 2, w, h };
+    };
+    for (const copy of ["r0", "m0", "r90", "m90", "r180", "m180", "r270", "m270"]) {
+      const a = ink(`${copy}.a`);
+      const b = ink(`${copy}.b`);
+      const w = Math.max(0, Math.min(a.x + a.w, b.x + b.w) - Math.max(a.x, b.x));
+      const h = Math.max(0, Math.min(a.y + a.h, b.y + b.h) - Math.max(a.y, b.y));
+      expect(w * h, copy).toBeLessThanOrEqual(COLLIDE_MIN * a.w * a.h);
+    }
   });
 });
 

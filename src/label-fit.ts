@@ -96,6 +96,7 @@ import {
   CLEARANCE,
   COLLIDE_MIN,
   FRACTIONS,
+  fitTexts,
   type LabelGroup,
   meanExtent,
   overlapArea,
@@ -499,16 +500,10 @@ export function fitLabels(
   const misfits: Misfit[] = [];
   for (let gi = 0; gi < groups.length && work <= budget; gi++) {
     const g = groups[gi]!;
-    if (!g.wrap || g.fixed) continue;
-    const texts: number[] = [];
-    for (let i = g.from; i < g.to; i++) {
-      const n = nodes[i]!;
-      if (n.layer === "labels" && n.prim.t === "text") texts.push(i);
-    }
-    if (texts.length !== 2) continue;
-    const name = nodes[texts[0]!]!.prim;
-    const area = nodes[texts[1]!]!.prim;
-    if (name.t !== "text" || area.t !== "text" || name.rotate !== undefined) continue;
+    // The groups the fit takes; the relocation's claim rule reads the same ones (card AL3a).
+    const own = fitTexts(nodes, g);
+    if (!own) continue;
+    const { name, area } = own;
 
     const nameBoxesNow = boxesOf(name, name.at);
     const areaBoxesNow = boxesOf(area, area.at);
@@ -519,7 +514,7 @@ export function fitLabels(
     const areaNow = read(areaBoxesNow, areaOffNow, gi, clearanceNow);
     if (!nameNow || !areaNow) break;
     if (nameNow.fabric > COLLIDE_MIN || areaNow.fabric > COLLIDE_MIN) {
-      misfits.push({ gi, nameAt: texts[0]!, areaAt: texts[1]!, name, area, buried: nameNow.total + areaNow.total });
+      misfits.push({ gi, nameAt: own.nameAt, areaAt: own.areaAt, name, area, buried: nameNow.total + areaNow.total });
     }
   }
 
