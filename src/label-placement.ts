@@ -69,7 +69,7 @@ import { OUTDOOR_LAYERS } from "./elements/outdoor.js";
 import type { ResolvedPlan } from "./ir.js";
 import type { RenderSizes, SceneNode, ScenePrim } from "./scene.js";
 import { textWidth } from "./text-metrics.js";
-import { balancedLines, fewestLines, inkExtent, LABEL_LINE_PITCH, textExtent } from "./text-layout.js";
+import { balancedLines, fewestLines, inkExtent, LABEL_LINE_PITCH, symbolExtent, textExtent } from "./text-layout.js";
 
 /**
  * One labelled area and the node range it contributed to the Scene. `toScene` records it
@@ -135,6 +135,21 @@ const W_OBSTACLE = 250;
 const W_PLACED = 10_000;
 /** How far a candidate may be preferred away from the anchor (planscript's `·4`). */
 export const W_DISTANCE = 4;
+
+/**
+ * A labelled area's text as this pass reads it: its box at the wider of the shared estimate and the
+ * width it draws ({@link symbolExtent}, card AL3w), the width `fitLabels` and `W_ANNOTATION_OVERLAP`
+ * read it at against a symbol. A short name of wide letters ("WC", "BEDROOM") draws past the
+ * estimate; read at it, its ink could stand on a piece this pass never saw, and the fit would then
+ * shrink a name that a full-size place one lattice step away holds clear. Every other text is its
+ * {@link primBBox} exactly.
+ */
+function labelBox(prim: ScenePrim): BBox | null {
+  const b = primBBox(prim);
+  if (!b || prim.t !== "text" || prim.rotate !== undefined) return b;
+  const w = symbolExtent(prim).w;
+  return w > b.w ? { x: b.x + (b.w - w) / 2, y: b.y, w, h: b.h } : b;
+}
 
 /** Bounding box of a point set (empty → null). */
 function bboxOfPoints(pts: readonly Point[]): BBox | null {
@@ -646,7 +661,7 @@ export function relocateLabels(
   for (const g of groups) {
     for (let i = g.from; i < g.to; i++) {
       const n = nodes[i]!;
-      const b = n.layer === "labels" && n.prim.t === "text" ? primBBox(n.prim) : null;
+      const b = n.layer === "labels" && n.prim.t === "text" ? labelBox(n.prim) : null;
       if (b) labelBoxes.push(b);
     }
   }
@@ -669,7 +684,7 @@ export function relocateLabels(
     if (texts.length === 0) continue;
     let rect0: BBox | null = null;
     for (const i of texts) {
-      const b = primBBox(nodes[i]!.prim);
+      const b = labelBox(nodes[i]!.prim);
       if (b) rect0 = rect0 ? unionBBox(rect0, b) : b;
     }
     if (!rect0) continue;

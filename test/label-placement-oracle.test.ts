@@ -27,7 +27,10 @@
  * further off the label's floor than its anchor stands is no candidate. That rule changes which
  * places are searched, in both forms alike; the sums this file compares are untouched by it. A
  * third edit: that width is read through `inkExtent` for each label rather than as one ratio of
- * the box, because the estimate behind it went per character. It too is input, not the search.
+ * the box, because the estimate behind it went per character. It too is input, not the search. A
+ * fourth (card AL3w): a labelled area's own text is boxed at the wider of the estimate and its ink
+ * (`symbolExtent`), the width the fit and the rule read it at against a symbol. How big a label is
+ * stays the pass's input.
  */
 
 import { corpusFiles, walkFiles as walk } from "./helpers/corpus.js";
@@ -49,7 +52,7 @@ import type { ResolvedPlan } from "../src/ir.js";
 import { BoxSums, CLEARANCE, COLLIDE_MIN, FRACTIONS, type LabelGroup, relocateLabels } from "../src/label-placement.js";
 import { extractArchBlocks } from "../src/markdown.js";
 import type { RenderSizes, SceneNode, ScenePrim } from "../src/scene.js";
-import { inkExtent, textExtent } from "../src/text-layout.js";
+import { inkExtent, symbolExtent, textExtent } from "../src/text-layout.js";
 import type { World } from "../src/world.js";
 import { NULL_WORLD } from "../src/world.js";
 import { floorAt, runs } from "./setup/fast-check.js";
@@ -308,7 +311,13 @@ function relocateLabelsBefore(
     if (texts.length === 0) continue;
     let rect0: BBox | null = null;
     for (const i of texts) {
-      const b = primBBox(nodes[i]!.prim);
+      const prim = nodes[i]!.prim;
+      let b = primBBox(prim);
+      // Card AL3w: the wider of the estimate and the ink, as the pass reads its own labels.
+      if (b && prim.t === "text" && prim.rotate === undefined) {
+        const w = symbolExtent(prim).w;
+        if (w > b.w) b = { x: b.x + (b.w - w) / 2, y: b.y, w, h: b.h };
+      }
       if (b) rect0 = rect0 ? unionBBox(rect0, b) : b;
     }
     if (!rect0) continue;

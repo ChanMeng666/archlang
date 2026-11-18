@@ -8,7 +8,8 @@
  * What `W_ANNOTATION_OVERLAP` reads: the name or the area figure stands more than
  * {@link COLLIDE_MIN} of its own box over a wall, over the area a door's leaf sweeps or off its
  * own floor, at the width it can draw ({@link inkExtent}); or over a furniture, fixture or stair
- * symbol's drawn shapes, at the rule's generous width ({@link textExtent}). A label that passes is
+ * symbol's drawn shapes, at the rule's generous width, or the ink where that is wider
+ * ({@link symbolExtent}). A label that passes is
  * not touched, so a plan with nothing to report keeps its bytes; `test/label-fit.test.ts` holds
  * that over the corpus and the plans the soundness audits wrote. A rug is floor finish, as it is
  * to the rule. A piece's own label (card AL4) lies inside its piece, so a label over it is over the
@@ -43,8 +44,9 @@
  * places `relocateLabels` tries, from the room's anchor out; the first form with a clear place
  * wins, at its best place. A form that also keeps `relocateLabels`' clearance from the walls at the
  * height tried beats one that does not, so a label that shrinks does not end up touching one. A
- * wrapped form comes first because a name that reached this pass did not
- * fit on one line. Breaking stays {@link balancedLines}'s: only at a space, by a count of
+ * wrapped form comes first: `relocateLabels` has already tried the one-line name at the full size
+ * on the same lattice, reading it at the width this pass reads it against a symbol (card AL3w), so
+ * a name that reached this pass did not stand clear there on one line. Breaking stays {@link balancedLines}'s: only at a space, by a count of
  * characters, so the same name breaks the same way on every run and no word is ever split or
  * hyphenated. The full size is tried for wrapped forms too: `wrapLabels` asks for clearance from
  * the walls at the generous width, and leaves `Abstell- raum` on one line for want of 1.25 mm.
@@ -106,7 +108,7 @@ import {
   LABEL_AREA_DROP,
   LABEL_LINE_PITCH,
   LABEL_NAME_RISE,
-  textExtent,
+  symbolExtent,
 } from "./text-layout.js";
 import { isVertical } from "./vertical.js";
 
@@ -253,9 +255,12 @@ interface Form {
 }
 
 /** A text's box twice, as the rule reads it: {@link inkExtent} for the walls, swings and floor,
- *  the generous {@link textExtent} for a symbol. */
+ *  and for a symbol or a piece's label the wider of the generous {@link textExtent} and the ink
+ *  (card AL3w: "WC" draws 1.67 em of ink against an estimate of 1.24 em). */
 interface TextBoxes {
   ink: BBox;
+  /** The box a symbol or a piece's label is read against: {@link symbolExtent}, which is the
+   *  estimate itself except where the ink is wider (the field keeps its name from before AL3w). */
   estimate: BBox;
 }
 
@@ -270,7 +275,8 @@ const centred = ({ w, h }: { w: number; h: number }, at: Point): BBox => ({
 
 /** Where a text's boxes stand with its anchor at `at` (a room's text is never turned). */
 function boxesOf(prim: TextPrim, at: Point): TextBoxes {
-  return { ink: centred(inkExtent(prim), at), estimate: centred(textExtent(prim), at) };
+  const ink = inkExtent(prim);
+  return { ink: centred(ink, at), estimate: centred(symbolExtent(prim, ink.w), at) };
 }
 
 const shifted = (b: BBox, at: Point): BBox => ({ x: at.x + b.x, y: at.y + b.y, w: b.w, h: b.h });
@@ -645,7 +651,7 @@ export function fitLabels(
   if (pieces.length === 0) return work;
   const pieceGrid = new GridIndex<BBox>(meanExtent(pieces));
   for (const b of pieces) pieceGrid.insert(boxOf(b), b);
-  /** The largest share of a text's box (the estimate, as the rule boxes it) any piece's label covers. */
+  /** The largest share of a text's box (as the rule boxes it, {@link symbolExtent}) any piece's label covers. */
   const onPieceLabel = (t: TextBoxes): number => {
     const area = t.estimate.w * t.estimate.h;
     let worst = 0;

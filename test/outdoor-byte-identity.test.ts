@@ -222,7 +222,7 @@ const BASELINE: [string, string][] = [
   // PS4.4: every row whose plan resolves re-measured once for the new totals key (gross internal area); see test/byte-identity-baseline.ts.
   // Both laneway-house rows re-measured 2026-10-20 (PS2.17): its kitchen gained a worktop; the new
   // compiler on the previous source, the worktop finding removed, reproduces 1e163ea9… and f3afd6b5….
-  ["laneway-house", "6407dcffe6121fecc0e8d2335c36cbba6e8003a85f32ce1385094d1b72c06fdf"], // PS2.11e, see header
+  ["laneway-house", "230ec0c67719c910affb60417d46b9d7aa8e749e950299cca0d585a91e46d6b1"], // PS2.11e, see header
   ["studio", "7dac86ce77ab71a1d3be8eda909e523aba3655579103db09b061e003ab8287c6"], // PS2.11e, see header
   ["gallery-l", "b523d020cbb5eaacceefae1ef43b427ba21572b918fb3886552b6adaa458a8ec"], // PS2.10 dims fixed (byte-identity-baseline.ts); PS2.11e, see header
   ["aquarium", "649197e4fc52aded85a167167ac252d4aef1bf9a0ad6ee91371b63cf4521061b"], // re-measured for PS2.4, see header; PS2.10 dims fixed (byte-identity-baseline.ts); PS2.11e, see header

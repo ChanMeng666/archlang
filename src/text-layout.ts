@@ -169,6 +169,22 @@ export function inkExtent(prim: Extract<ScenePrim, { t: "text" }>): { w: number;
   return { w, h: textExtent(prim).h };
 }
 
+/**
+ * The extent a room's name or area figure is read at against a symbol or a piece's own label (card
+ * AL3w): {@link textExtent}, widened to the width it draws ({@link inkExtent}) where a short run of
+ * wide letters draws past the estimate ("WC" is 1.24 em estimated and 1.67 em of ink, so a "WC"
+ * over a basin read at the estimate stood clear of it). Every other text is its estimate exactly.
+ * The label fit (`src/label-fit.ts`) and `W_ANNOTATION_OVERLAP` read this one width, so the label
+ * the drawing leaves on a symbol is the one the rule reports.
+ */
+export function symbolExtent(
+  prim: Extract<ScenePrim, { t: "text" }>,
+  inkW: number = inkExtent(prim).w,
+): { w: number; h: number } {
+  const estimate = textExtent(prim);
+  return inkW > estimate.w ? { w: inkW, h: estimate.h } : estimate;
+}
+
 /** An axis-aligned extent. */
 export interface Box {
   minX: number;

@@ -1976,6 +1976,32 @@
  * circulation overlay, `compile().diagnostics`, `describe()`, `lint()` under both profiles), `main`'s
  * compiler against the branch's on the same sources, moved this plan's SVG alone, and a planted
  * change to the upright label moved exactly the 9 sources that draw one.
+ *
+ * Re-measured for AL3w (a room's text is read against a symbol at the wider of its estimate and its
+ * ink), the same 14 rows. "WC 1" and "WC 2" were wrapped over their basins: "WC" draws 1.67 em of
+ * ink against a 1.24 em estimate, so neither the label fit nor the rule saw the basin under it. Now
+ * the fit sets each on one line between the pan and the basin: exactly those four texts moved (8
+ * SVG elements out, the name's two `<tspan>` lines among them, 4 in); `describe()`, `lint()` under
+ * both profiles, the diagnostics and the steps did not move. Put `main`'s drawing (every page's SVG
+ * and Scene, `287e19f8`) back into the branch's payload and every old digest is reproduced; the new
+ * ones are this body on the branch. A per-payload sweep of 734 corpus rows (379 files and the docs'
+ * 355 `arch` fences; SVG per storey, `describe()`, `lint()`), `main`'s compiler against the
+ * branch's, moved this plan's SVG alone, and a planted change (the wrap step off) moved 19.
+ *
+ * ## `examples/laneway-house.arch` and `eval/goldens/anchor-furniture.arch`: re-measured for AL3w's review
+ *
+ * After the first red-team round the relocation reads a label at the same width (the wider of its
+ * estimate and its ink), so a name whose ink alone stands on a piece is moved at full size rather
+ * than shrunk later. In these two plans the bedroom's name, which the relocation now reads wider,
+ * moves to clearer floor at the same size: exactly its two texts (name and area figure) moved in each
+ * SVG; `describe()`, `lint()` under both profiles, the diagnostics and the steps did not move. Their
+ * 22 digests in 25 tables were re-measured with each suite's own body; put the previous head's
+ * (`6f928fdc`) drawing back into this payload and each old digest is reproduced. The laneway's PNG
+ * golden differs only inside the union of the label's old and new boxes (9,841 pixels, plan x
+ * 4410..6306, y 3770..5978) and was re-rendered by the suite's own call; its SVG snapshot and
+ * `examples/laneway-house.svg` move by the same two lines. A sweep of 886 rows (379 files, 355 docs
+ * fences, 152 more fixture files) moved these two and `test/taste-corpus/r6-bed-in-kitchen.good.arch`
+ * (pinned only by `keep`'s weak-law table, re-taken), and nothing else.
  */
 
 /** SHA-256 over every storey's SVG + `describe()` + `lint()`, measured on `f4548db`. */
@@ -1997,7 +2023,7 @@ export const BASELINE: [string, string][] = [
   ["hillside-villa", "38fbb6c938ce81e4403a6508e522f944602665da35cb126ee352341e647876d4"], // re-measured, see header; PS2.11e, see header; RM1.3a, see header; RM9.2, see header
   ["imports", "1de644a1f7abfb2b5cc67269fac11a191810d959379f7b04e14c259014d1e9f4"],
   ["knob-flat", "a99858f74f98ab0ed82ec056df9b76543ee62e4c6692036f80ff301cf701a5c9"], // added with the example, see header
-  ["laneway-house", "b2900d3df455096b73fcb78e7b3cf7625395dbb2bf0f660d28bd1e93520371fd"], // PS2.11e, see header
+  ["laneway-house", "8ede769dc35da44c182237feaa51d1c6f8648ec7310326a53843ea3d09b0d617"], // PS2.11e, see header
   ["library", "0da11bfe9ec07c1ffa8e8c902fceb0e15a20b7cd825df540d9ca5094d16f28eb"], // PS2.11e, see header
   ["materials", "26e7ea4574248ccd8f73e34cf1bfb68501eee154cbacafbfff4b861a68eed0af"],
   ["museum-wing", "9cd492d6f597fc12e2c403466488e66a36b09f035bef9a9eb4bcea1fc164d9ff"],
