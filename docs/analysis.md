@@ -1275,7 +1275,7 @@ What it cannot tell you:
 | Circulation quality | `W_ROOM_NO_CLEAR_PATH`, `W_PATH_TOO_NARROW`, `W_CIRCUITOUS_PATH` |
 | Circulation and privacy | `W_ROOM_VIA_PRIVATE`, `W_WET_ROOM_DOOR`, `W_ENTRANCE_INTO_PRIVATE` |
 | Enclosure | `W_BOUNDARY_NO_WALL`, `W_FLOOR_UNASSIGNED`, `W_ROOM_OUTSIDE_SHELL` |
-| Annotation | `W_DIM_INSIDE`, `W_DIM_OVERLAP`, `W_DIM_TEXT_MISMATCH`, `W_OPENING_NOT_DIMENSIONED` |
+| Annotation | `W_DIM_INSIDE`, `W_DIM_OVERLAP`, `W_DIM_TEXT_MISMATCH`, `W_OPENING_NOT_DIMENSIONED`, `W_DIM_THICKNESS_UNPLACED` |
 
 Every code is documented — with cause, fix, and example — in the
 [error catalog](error-codes.md), or run `archlang explain W_SWING_OBSTRUCTED`. (In human

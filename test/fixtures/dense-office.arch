@@ -5,10 +5,10 @@
 # the south.
 #
 # It is crowded on purpose. `lint` reports `W_ANNOTATION_OVERLAP` here for a room's own name
-# printed over a fixture and for the wall-thickness figure `dims auto all` writes printed over
-# a room's label: the two kinds of subject the cards must tell apart. The boardroom's long
-# window leaves the exterior wall one clear run, next to the kitchenette, so the "200" figure
-# stands in the boardroom and prints over the kitchenette's name, which runs past its own walls.
+# printed over a fixture. The boardroom's long window leaves the north wall one clear run, beside
+# the kitchenette, where the "200" wall-thickness figure `dims auto all` writes would print
+# over the kitchenette's name, which runs past its own walls; so it is now written on the next
+# longest 200 run instead, the south wall, clear of every label (card AL5, label-crowding).
 # Every other lint warning is cleared.
 plan "Dense Office" {
   units mm

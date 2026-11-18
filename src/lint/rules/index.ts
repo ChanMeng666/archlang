@@ -6,7 +6,7 @@
 
 import type { LintRule } from "../context.js";
 import { aliasMatch } from "./alias-match.js";
-import { annotationOverlap, titleOverflow } from "./annotations.js";
+import { annotationOverlap, thicknessUnplaced, titleOverflow } from "./annotations.js";
 import { roomNoClearPath } from "./circulation.js";
 import { dimInside, dimOverlap, dimTextMismatch, openingNotDimensioned } from "./dims.js";
 import { circuitousPath, pathTooNarrow } from "./circulation-facts.js";
@@ -208,6 +208,9 @@ export const LINT_RULES: readonly LintRule[] = [
   // A room whose label names a catalogued piece it does not hold (product roadmap RM1.2c, ruling
   // RM-D35). Appended LAST, so no existing diagnostic moves within the array.
   labelPieceMissing,
+  // A wall-thickness figure `dims auto` leaves undrawn: no station clears the room labels (card AL5,
+  // label-crowding). Appended LAST, so no existing diagnostic moves within the array.
+  thicknessUnplaced,
 ];
 
 export type { LintContext, LintRule } from "../context.js";

@@ -85,6 +85,7 @@ export const DECIDED: Record<AuthoringStage, string[]> = {
     "W_DIM_INSIDE",
     "W_DIM_OVERLAP",
     "W_DIM_TEXT_MISMATCH",
+    "W_DIM_THICKNESS_UNPLACED",
     "W_OPENING_NOT_DIMENSIONED",
     "W_TITLE_OVERFLOW",
   ],

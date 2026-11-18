@@ -1945,6 +1945,21 @@
  * arrow's `<g>`, and where the body hashes the Scene, the added `chrome.north` with it; `describe()`,
  * `lint()`, the diagnostics and the steps did not move. Put `main`'s SVG back (`a9db286e`) and drop
  * `chrome.north`, and this body reproduces every old digest; the new ones are this body on the branch.
+ *
+ * Re-measured for AL5 (a wall-thickness figure keeps off the room labels): its 14 rows (the
+ * `stairLawDigest` tables, `rectilinear-rooms`, `double-door`, `open-crossing`, `import-module-lets`
+ * and `./while-byte-identity-baseline.ts`). The "200" figure that stood in the boardroom over the
+ * kitchenette's name is written on the next-longest 200 run, the south wall, into the open-plan
+ * floor: exactly its four SVG nodes moved (the dimension line, its two ticks and the number), and
+ * the one `W_ANNOTATION_OVERLAP` report about it is gone from `lint()` under both profiles (a
+ * drafting rule, ADR 0032 §4); `describe()`, the diagnostics and the steps did not move. The fixture's
+ * header comment was reworded at the same byte length, so every span stays put, and `main`'s
+ * compiler (`0c44a140`) on the edited fixture gives the old digests exactly. Put `main`'s drawing
+ * (every page's SVG and Scene) and its `lint()` back into the branch's payload and each old digest
+ * is reproduced; the drawing alone reproduces none, which is the lint's one report. A per-payload
+ * sweep of 569 corpus rows (SVG per storey, the circulation overlay, `compile().diagnostics`,
+ * `describe()`, `lint()` under both profiles) of a `git archive` of `main` against the branch moved
+ * this plan alone, and a planted edit moved one more.
  */
 
 /** SHA-256 over every storey's SVG + `describe()` + `lint()`, measured on `f4548db`. */

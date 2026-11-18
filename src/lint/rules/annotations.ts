@@ -1,7 +1,8 @@
 /**
- * Annotation collisions on the drawn sheet (plan-soundness PS2.12): two drafting advisories that
- * read the drawing itself, never the plan's facts, so `describe()`, Plan JSON and the SVG are
- * untouched by them.
+ * Annotation collisions on the drawn sheet (plan-soundness PS2.12): drafting advisories that read
+ * the drawing itself, never the plan's facts, so `describe()`, Plan JSON and the SVG are untouched
+ * by them. A third, `W_DIM_THICKNESS_UNPLACED` ({@link thicknessUnplaced}, card AL5), names a
+ * wall-thickness figure the drawing left out because every place for it is over a room's label.
  *
  * `W_ANNOTATION_OVERLAP` — a number `dims auto` writes, or a room's name or area figure, printed
  * over a furniture, fixture or stair symbol; a `dims auto` number printed over a room's name or
@@ -24,7 +25,9 @@
  *    reported; one it could not, or one the author pinned with `label … at (x,y)`, is;
  *  - the `dims auto` numbers from {@link autoDimensions} (the list `toScene` renders) placed by
  *    {@link dimTextPrim} (the arithmetic `dim.render` letters them with), at the Scene's own
- *    `sizes`;
+ *    `sizes`, laid out with the room labels' boxes read here, as the drawing lays them out after
+ *    its label passes: a thickness figure that would stand over a label stands elsewhere, or is not
+ *    drawn (card AL5), so none is ever reported over a label;
  *  - each symbol's DRAWN shapes — the polygons, closed paths and circles its `render` emits —
  *    not its footprint box. A line encloses no area and an arc stroke is not ink a number sits
  *    in, so neither is measured (the label placer's own rule, `primBBox`);
@@ -100,20 +103,20 @@ import { doorLeaves, rectCorners } from "../../geometry.js";
 import type { RDim, RDoor, ResolvedElement, ResolvedPlan, RFurniture, RRoom } from "../../ir.js";
 import type { ScenePrim } from "../../scene.js";
 import { BUILTIN_RUNTIME } from "../../registry.js";
-import { autoDimensions } from "../../scene-build.js";
+import { autoDimensions, unplacedThicknesses } from "../../scene-build.js";
 import { memoScene } from "../../scene-memo.js";
 import { dimTextPrim } from "../../elements/dim.js";
 import { titleBlockMetrics, titleRows } from "../../chrome-layout.js";
 import { drawBudgetDiagnostic } from "../../draw-budget.js";
 import { isSymbolElement, sectorOf, shapesOf } from "../../label-fit.js";
 import { COLLIDE_MIN, meanExtent, wallBands } from "../../label-placement.js";
-import { inkExtent, textExtent } from "../../text-layout.js";
+import { type Box, boxesMeet, emptyBox, grow, inkExtent, type TextBox, textBox } from "../../text-layout.js";
 import { EM_PER_CHAR, inkWidth, textWidth } from "../../text-metrics.js";
 import { PLAIN_SHEET_TEXT, sheetText } from "../../sheet-text.js";
 import { pointInRoomBox, roomBox } from "../../analyze.js";
 import { GridIndex } from "../../geometry/grid-index.js";
 import { clippedArea, clippedSigned, pointInPolygon } from "../../geometry/polygon.js";
-import { openingName } from "../element-phrases.js";
+import { openingName, wallNamed } from "../element-phrases.js";
 import type { LintContext, LintRule } from "../context.js";
 import { citeOverprint } from "../overprint-ref.js";
 import type { LabelPart, OverprintItemJson, OverprintKind } from "../../diagnostic-json.js";
@@ -134,19 +137,8 @@ interface SymbolInk {
   box: Box;
 }
 
-/** One text on the sheet: its turned box and its extent. */
-interface Text {
-  rect: Point[];
-  box: Box;
-  area: number;
-}
-
-interface Box {
-  minX: number;
-  minY: number;
-  maxX: number;
-  maxY: number;
-}
+/** One text on the sheet: its turned box and its extent ({@link textBox}). */
+type Text = TextBox;
 
 export const annotationOverlap: LintRule = {
   name: "annotation-overlap",
@@ -212,8 +204,14 @@ export const annotationOverlap: LintRule = {
       const stamp = `${wording.plain(drawn.slice(0, end))} m²`;
       return drawn.length > end + " m²".length ? `${stamp} ${PLAIN_SHEET_TEXT.word("net")}` : stamp;
     };
-    // The `dims auto` numbers, as drawn.
-    const numbers = autoDimensions(ir, scene.sizes, registry).map((dm) => {
+    // The `dims auto` numbers, as drawn: laid out with the labels' boxes, so a thickness figure the
+    // drawing moved off a label, or left out, is read where it is drawn, or not at all (card AL5).
+    const numbers = autoDimensions(
+      ir,
+      scene.sizes,
+      registry,
+      labels.map((l) => l.text),
+    ).map((dm) => {
       const prim = dimTextPrim(dm, scene.sizes, wording.mm);
       return { dm, prim, text: textBox(prim) };
     });
@@ -605,6 +603,68 @@ export const titleOverflow: LintRule = {
   },
 };
 
+/**
+ * `W_DIM_THICKNESS_UNPLACED` — a wall thickness `dims auto walls|all` letters nowhere (card AL5).
+ * Its figure would have stood over a room's name or area figure, as the labels finally stand, and
+ * the drawing found no other station clear of them: not on the same wall with the labels as
+ * blockers, not on the next-longest straight run of that thickness, not on the other side of
+ * either where floor stands under it (`synthWallDims`, `src/scene-build.ts`). So the drawing leaves
+ * the figure out, and this says which.
+ *
+ * It reads what the drawing decides, from the same function: the room labels' boxes off the
+ * storey's annotated Scene, as `W_ANNOTATION_OVERLAP` reads them, handed to
+ * {@link unplacedThicknesses}, the layout {@link autoDimensions} gives that rule. Drafting only, as
+ * `W_ANNOTATION_OVERLAP` is: the plan's facts are untouched. Bounded as that rule is: the storey is
+ * drawn only within the drawing budget, else the rule files an `annotation-budget` skip; the layout
+ * is the drawing's own, at most four stations per thickness.
+ */
+export const thicknessUnplaced: LintRule = {
+  name: "thickness-unplaced",
+  family: "annotation",
+  layer: "drafting",
+  stage: "drafting",
+  codes: ["W_DIM_THICKNESS_UNPLACED"],
+  check(ctx: LintContext): Diagnostic[] {
+    const { ir } = ctx;
+    if ((ir.autoDims !== "walls" && ir.autoDims !== "all") || ctx.rooms.length === 0) return [];
+    const registry = BUILTIN_RUNTIME.registry;
+    if (drawBudgetDiagnostic([{ ir }], registry, undefined) !== undefined) {
+      ctx.skip("annotation-budget");
+      return [];
+    }
+    const scene = memoScene(ir, { annotate: true });
+    const roomIds = new Set(ctx.rooms.map((r) => r.id));
+    const labels: TextBox[] = [];
+    for (const n of scene.nodes) {
+      if (n.elementKind === "room" && n.prim.t === "text" && roomIds.has(n.elementId ?? ""))
+        labels.push(textBox(n.prim));
+    }
+    const wording = sheetText(ir.sheetText?.entries);
+    const setting = `\`dims auto ${ir.autoDims}\``;
+    const out: Diagnostic[] = [];
+    for (const u of unplacedThicknesses(ir, scene.sizes, registry, labels)) {
+      const wall = ir.walls.find((w) => w.id === u.run.wallId);
+      if (!wall) continue;
+      const value = wording.plain(wording.mm(u.thickness));
+      const where = wallNamed(ctx, u.run);
+      const runs = u.second
+        ? `neither ${where}, the longest straight wall of that thickness, nor the next longest has any`
+        : `${where}, the only straight wall of that thickness, has no`;
+      const named = wall._idAuthored === true ? ` (\`${wall.id}\`)` : "";
+      out.push({
+        severity: "warning",
+        code: "W_DIM_THICKNESS_UNPLACED",
+        ...ctx.at(wall),
+        message: `The wall-thickness figure ${value} that ${setting} writes is not drawn: it would be printed over a room's name or area figure, and ${runs} other place for it, on a side with floor, clear of the room labels, crossing walls, openings, furniture and stairs.`,
+        hints: [
+          `Give the label of a room beside that wall${named} a clear point with \`label "…" at (x,y)\`, or move what stands along it; or draw with \`dims auto rooms\` and state the ${value} thickness with a hand \`dim\` (\`offset 0\`, face to face) where it reads clear.`,
+        ],
+      });
+    }
+    return out;
+  },
+};
+
 /** Which call-out a `dims auto` number is. A chain span is the only one with an offset; the
  *  thickness figure is digits, the curve call-outs start with their symbol. */
 function callOutKind(dm: RDim): "thickness" | "radius" | "diameter" | "chain" {
@@ -709,31 +769,3 @@ function listOf(words: readonly string[]): string {
 /** "a", "a, or b", "a, b, or c": a hint's choices. */
 const orList = (words: readonly string[]): string =>
   words.length <= 1 ? (words[0] ?? "") : `${words.slice(0, -1).join(", ")}, or ${words[words.length - 1]}`;
-
-/** The turned rectangle a text occupies on the sheet, about its anchor. */
-function textBox(prim: TextPrim, width?: number): Text {
-  const extent = textExtent(prim);
-  const w = width ?? extent.w;
-  const h = extent.h;
-  const th = ((prim.rotate ?? 0) * Math.PI) / 180;
-  const u = { x: Math.cos(th), y: Math.sin(th) };
-  const v = { x: -u.y, y: u.x };
-  const shift = prim.anchor === "start" ? w / 2 : prim.anchor === "end" ? -w / 2 : 0;
-  const c = { x: prim.at.x + u.x * shift, y: prim.at.y + u.y * shift };
-  const at = (a: number, b: number): Point => ({ x: c.x + u.x * a + v.x * b, y: c.y + u.y * a + v.y * b });
-  const rect = [at(-w / 2, -h / 2), at(w / 2, -h / 2), at(w / 2, h / 2), at(-w / 2, h / 2)];
-  const box = emptyBox();
-  for (const p of rect) grow(box, p);
-  return { rect, box, area: w * h };
-}
-
-const emptyBox = (): Box => ({ minX: Infinity, minY: Infinity, maxX: -Infinity, maxY: -Infinity });
-
-function grow(b: Box, p: Point): void {
-  b.minX = Math.min(b.minX, p.x);
-  b.minY = Math.min(b.minY, p.y);
-  b.maxX = Math.max(b.maxX, p.x);
-  b.maxY = Math.max(b.maxY, p.y);
-}
-
-const boxesMeet = (a: Box, b: Box): boolean => a.minX < b.maxX && b.minX < a.maxX && a.minY < b.maxY && b.minY < a.maxY;

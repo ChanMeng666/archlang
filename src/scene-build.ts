@@ -45,13 +45,15 @@ import { groundMaterialsUsed, outdoorLabelAnchor, outdoorRing } from "./elements
 import { roomLabelAnchor } from "./elements/room.js";
 import { isUnderlay } from "./fixtures-catalog.js";
 import { type ArrivingRun, isVertical } from "./vertical.js";
-import { rectRing } from "./geometry/polygon.js";
+import { clippedArea, rectRing } from "./geometry/polygon.js";
 import { CHAIN_BASE, CHAIN_STEP, DIM_TEXT_GAP, drawingBounds, renderSizes } from "./sheet.js";
 import { textWidth } from "./text-metrics.js";
+import { boxesMeet, type TextBox, textBox } from "./text-layout.js";
+import { dimTextPrim } from "./elements/dim.js";
 import type { LabelGroup } from "./label-placement.js";
 import type { ElementNodes } from "./label-fit.js";
 import { fitLabels } from "./label-fit.js";
-import { relocateLabels, wrapLabels } from "./label-placement.js";
+import { COLLIDE_MIN, relocateLabels, wrapLabels } from "./label-placement.js";
 import { legendEntries, roomSchedule, sheetTableNodes } from "./sheet-tables.js";
 import { openingRows, openingTagNodes } from "./opening-schedule.js";
 import { circulationOverlayNodes } from "./overlays/circulation.js";
@@ -111,24 +113,76 @@ export function themeBaseLookup(name: string | undefined, runtime: Runtime): Par
  * Each is a plain {@link RDim} with no `text`, so the dim element formats the
  * measured length itself — the same value a hand-written `dim` would show.
  */
-function synthDims(ir: ResolvedPlan, sizes: RenderSizes, registry: Registry = BUILTIN_RUNTIME.registry): RDim[] {
+function synthDims(
+  ir: ResolvedPlan,
+  sizes: RenderSizes,
+  registry: Registry = BUILTIN_RUNTIME.registry,
+  labels?: readonly TextBox[],
+): PlacedDims {
   const dims: RDim[] = [];
   if (ir.autoDims !== "walls") {
     synthGbChains(ir, sizes, dims);
     synthCurveDims(ir, dims);
   }
-  if (ir.autoDims === "walls" || ir.autoDims === "all") synthWallDims(ir, sizes, dims, registry);
-  return dims;
+  const placed: PlacedDims = { dims, restationed: 0, unplaced: [] };
+  if (ir.autoDims === "walls" || ir.autoDims === "all") synthWallDims(ir, sizes, placed, registry, labels);
+  return placed;
+}
+
+/** What {@link synthDims} lays out: the dimensions, and what the label boxes changed (card AL5). */
+interface PlacedDims {
+  /** Every dimension, in drawing order: the chains, the curve call-outs, then the thickness figures. */
+  dims: RDim[];
+  /** How many thickness figures stand somewhere else than they would with no label boxes. */
+  restationed: number;
+  /** The thickness figures left undrawn: no station clears the room labels. */
+  unplaced: UnplacedThickness[];
+}
+
+/**
+ * A wall thickness `dims auto` letters nowhere (card AL5): its figure met a room's name or area
+ * figure where it would stand, and no other station clears the labels (see
+ * {@link synthWallDims}), so the figure is not drawn. `W_DIM_THICKNESS_UNPLACED` reports it.
+ */
+export interface UnplacedThickness {
+  /** The thickness, in mm. */
+  thickness: number;
+  /** The longest straight run of that thickness: the wall the figure is lettered on. */
+  run: WallSegment;
+  /** Whether a second straight run of that thickness was tried. */
+  second: boolean;
 }
 
 /**
  * The dimensions `dims auto` draws on this storey at `sizes`, in drawing order — exactly the
  * list {@link toScene} renders, for a reader of the drawing that needs to know which number is
  * which kind of call-out (the annotation-collision lint, `src/lint/rules/annotations.ts`).
- * Pass the Scene's own `sizes` and the compile's registry to get the drawn positions.
+ * Pass the Scene's own `sizes`, the compile's registry and the room labels' boxes as the Scene
+ * draws them ({@link textBox} of every text a room draws) to get the drawn positions: a
+ * wall-thickness figure that meets a label moves off it, or is not drawn (card AL5). With no
+ * `labelBoxes` it is the list as laid out before the labels are placed.
  */
-export function autoDimensions(ir: ResolvedPlan, sizes: RenderSizes, registry: Registry): RDim[] {
-  return ir.autoDims ? synthDims(ir, sizes, registry) : [];
+export function autoDimensions(
+  ir: ResolvedPlan,
+  sizes: RenderSizes,
+  registry: Registry,
+  labelBoxes?: readonly TextBox[],
+): RDim[] {
+  return ir.autoDims ? synthDims(ir, sizes, registry, labelBoxes).dims : [];
+}
+
+/**
+ * The wall thicknesses `dims auto` letters nowhere on this storey, given the room labels' boxes
+ * as the Scene draws them: the same {@link synthDims} as {@link autoDimensions}, so the lint
+ * (`W_DIM_THICKNESS_UNPLACED`) and the drawing decide together.
+ */
+export function unplacedThicknesses(
+  ir: ResolvedPlan,
+  sizes: RenderSizes,
+  registry: Registry,
+  labelBoxes: readonly TextBox[],
+): UnplacedThickness[] {
+  return ir.autoDims === "walls" || ir.autoDims === "all" ? synthDims(ir, sizes, registry, labelBoxes).unplaced : [];
 }
 
 /**
@@ -136,10 +190,11 @@ export function autoDimensions(ir: ResolvedPlan, sizes: RenderSizes, registry: R
  * (`src/draw-budget.ts`): the same {@link synthDims} the drawing calls. The pens only move
  * a chain outward or flip a number's side, never add or remove a dimension, so any pens do;
  * likewise the registry (furniture footprints) only moves a call-out's station, so the
- * built-in one does.
+ * built-in one does. It is laid out with no room labels: a label can only move a thickness
+ * figure or leave it out (card AL5), never add one, so the count bounds what is drawn.
  */
 export function autoDimCount(ir: ResolvedPlan): number {
-  return ir.autoDims ? synthDims(ir, renderSizes(ir.sheet, 1000, 1000, 1)).length : 0;
+  return ir.autoDims ? synthDims(ir, renderSizes(ir.sheet, 1000, 1000, 1)).dims.length : 0;
 }
 
 /**
@@ -531,6 +586,84 @@ function thicknessStation(
   openings: readonly FacadeOpening[],
   registry: Registry,
 ): Point {
+  const { lo, hi, mid, blocked, extra, at } = stationRuns(rep, ir, reach, pad, side, openings, registry);
+  // Tier 1: the wall-clear station, kept when nothing else stands on it.
+  const wallClear = widestFreeRun(lo, hi, blocked);
+  if (wallClear === null) return mid; // tier 4 — no run is clear of walls, so none is clear of all
+  if (!extra.some((e) => e.lo < wallClear && wallClear < e.hi)) return at(wallClear);
+  // Tier 2: clear of everything; tier 3: clear of walls alone.
+  const allClear = widestFreeRun(lo, hi, [...blocked, ...extra]);
+  return at(allClear ?? wallClear);
+}
+
+/**
+ * {@link thicknessStation}'s tiers 1 and 2 with the room LABELS as blockers too (card AL5): a
+ * station clear of every crossing wall, opening, piece of furniture, stair and label box that
+ * reaches into the band the number is written in, or `null` when there is none. A label blocks
+ * the run its box spans along the wall, widened by `pad` at each end, as a piece of furniture
+ * does. Tiers 3 and 4 are not taken: a figure moved off a label is never moved into poché, a
+ * doorway or a symbol instead.
+ */
+function clearStation(
+  run: { a: Point; b: Point; t: number },
+  ir: ResolvedPlan,
+  reach: number,
+  pad: number,
+  side: Vec,
+  openings: readonly FacadeOpening[],
+  registry: Registry,
+  labels: readonly TextBox[],
+): Point | null {
+  const { horiz, lo, hi, blocked, extra, bandLo, bandHi, at } = stationRuns(
+    run,
+    ir,
+    reach,
+    pad,
+    side,
+    openings,
+    registry,
+  );
+  for (const l of labels) {
+    const xLo = horiz ? l.box.minY : l.box.minX;
+    const xHi = horiz ? l.box.maxY : l.box.maxX;
+    if (xHi <= bandLo || xLo >= bandHi) continue;
+    const aLo = (horiz ? l.box.minX : l.box.minY) - pad;
+    const aHi = (horiz ? l.box.maxX : l.box.maxY) + pad;
+    if (aHi <= lo || aLo >= hi) continue;
+    extra.push({ lo: Math.max(lo, aLo), hi: Math.min(hi, aHi) });
+  }
+  const wallClear = widestFreeRun(lo, hi, blocked);
+  if (wallClear === null) return null;
+  if (!extra.some((e) => e.lo < wallClear && wallClear < e.hi)) return at(wallClear);
+  const allClear = widestFreeRun(lo, hi, [...blocked, ...extra]);
+  return allClear === null ? null : at(allClear);
+}
+
+/**
+ * What a station along `rep` is chosen from ({@link thicknessStation}): the run `[lo, hi]` along
+ * the wall, the parts of it crossing walls take (`blocked`) and the parts openings, furniture and
+ * stairs take (`extra`), the band across the wall the number is written in, and the point at a
+ * distance along the wall.
+ */
+function stationRuns(
+  rep: { a: Point; b: Point; t: number },
+  ir: ResolvedPlan,
+  reach: number,
+  pad: number,
+  side: Vec,
+  openings: readonly FacadeOpening[],
+  registry: Registry,
+): {
+  horiz: boolean;
+  lo: number;
+  hi: number;
+  mid: Point;
+  blocked: { lo: number; hi: number }[];
+  extra: { lo: number; hi: number }[];
+  bandLo: number;
+  bandHi: number;
+  at: (v: number) => Point;
+} {
   const horiz = rep.a.y === rep.b.y;
   const lo = horiz ? Math.min(rep.a.x, rep.b.x) : Math.min(rep.a.y, rep.b.y);
   const hi = horiz ? Math.max(rep.a.x, rep.b.x) : Math.max(rep.a.y, rep.b.y);
@@ -604,13 +737,7 @@ function thicknessStation(
   }
 
   const at = (v: number): Point => (horiz ? { x: v, y: c } : { x: c, y: v });
-  // Tier 1: the wall-clear station, kept when nothing else stands on it.
-  const wallClear = widestFreeRun(lo, hi, blocked);
-  if (wallClear === null) return mid; // tier 4 — no run is clear of walls, so none is clear of all
-  if (!extra.some((e) => e.lo < wallClear && wallClear < e.hi)) return at(wallClear);
-  // Tier 2: clear of everything; tier 3: clear of walls alone.
-  const allClear = widestFreeRun(lo, hi, [...blocked, ...extra]);
-  return at(allClear ?? wallClear);
+  return { horiz, lo, hi, mid, blocked, extra, bandLo, bandHi, at };
 }
 
 /**
@@ -649,9 +776,25 @@ function widestFreeRun(lo: number, hi: number, blocked: readonly { lo: number; h
  *  where one exists, no opening or furniture footprint either) and
  *  {@link thicknessSideFlipped} picks WHICH SIDE (the one with floor under it, not the
  *  annotation band outside the building). Presentation only — never expands bounds
- *  meaningfully (faces sit ½-thickness off a centerline already inside the plan). */
-function synthWallDims(ir: ResolvedPlan, sizes: RenderSizes, dims: RDim[], registry: Registry): void {
-  const repByThickness = new Map<number, { a: Point; b: Point; n: Vec; t: number; len: number }>();
+ *  meaningfully (faces sit ½-thickness off a centerline already inside the plan).
+ *
+ *  Given the room labels' boxes as drawn (`labels`, card AL5), a figure that meets one by the
+ *  annotation lint's own test ({@link overLabel}) is taken elsewhere, at the first of these that
+ *  is clear of walls, openings, furniture, stairs and labels ({@link clearStation}) and meets no
+ *  label: the same wall and side with the labels as blockers; the next-longest straight run of
+ *  that thickness, on its floor side; then the other side of each, where floor stands under the
+ *  station (never the annotation band outside an exterior wall, where the chains are). When none
+ *  is, the figure is not drawn and the thickness is listed in `placed.unplaced`. A figure that
+ *  meets no label is laid out exactly as with no labels. */
+function synthWallDims(
+  ir: ResolvedPlan,
+  sizes: RenderSizes,
+  placed: PlacedDims,
+  registry: Registry,
+  labels?: readonly TextBox[],
+): void {
+  const dims = placed.dims;
+  const repByThickness = new Map<number, { a: Point; b: Point; n: Vec; t: number; len: number; seg: WallSegment }>();
   for (const w of ir.walls) {
     for (const s of segmentsOfWall(w)) {
       if (s.arc) continue; // a curve's thickness call-out would sit on its chord, not on it
@@ -668,6 +811,7 @@ function synthWallDims(ir: ResolvedPlan, sizes: RenderSizes, dims: RDim[], regis
         n: normal(dir),
         t: s.thickness,
         len,
+        seg: s,
       });
     }
   }
@@ -688,11 +832,76 @@ function synthWallDims(ir: ResolvedPlan, sizes: RenderSizes, dims: RDim[], regis
     const onPlusSide = thicknessSideFlipped(rep.a, rep.b, rep.n, rep.t, rooms);
     const at = thicknessStation(rep, ir, reach, sizes.dimFont, onPlusSide ? rep.n : mul(rep.n, -1), openings, registry);
     const half = mul(rep.n, rep.t / 2);
-    dims.push({
+    const dm: RDim = {
       ...mkDim(add(at, half), add(at, mul(half, -1)), 0, text),
       ...(onPlusSide ? { calloutFrom: true } : {}),
-    });
+    };
+    if (!labels || labels.length === 0 || !overLabel(textBox(dimTextPrim(dm, sizes, mm)), labels)) {
+      dims.push(dm);
+      continue;
+    }
+    // Card AL5: the figure is printed over a room's label. Take it elsewhere, or not at all.
+    const second = nextLongestRun(ir, rep.seg);
+    const runs = second ? [rep, second] : [rep];
+    const sides = runs.map((r) => thicknessSideFlipped(r.a, r.b, r.n, r.t, rooms));
+    const tries = [
+      ...runs.map((r, i) => ({ r, plus: sides[i]!, floorFirst: true })),
+      ...runs.map((r, i) => ({ r, plus: !sides[i]!, floorFirst: false })),
+    ];
+    let moved: RDim | undefined;
+    for (const { r, plus, floorFirst } of tries) {
+      const side = plus ? r.n : mul(r.n, -1);
+      const station = clearStation(r, ir, reach, sizes.dimFont, side, openings, registry, labels);
+      if (station === null) continue;
+      // The other side only where it has floor, probed as `thicknessSideFlipped` probes it.
+      if (!floorFirst && !rooms.some((room) => pointInRoomBox(add(station, mul(side, r.t * 1.5)), room))) continue;
+      const h = mul(r.n, r.t / 2);
+      const cand: RDim = {
+        ...mkDim(add(station, h), add(station, mul(h, -1)), 0, text),
+        ...(plus ? { calloutFrom: true } : {}),
+      };
+      if (overLabel(textBox(dimTextPrim(cand, sizes, mm)), labels)) continue;
+      moved = cand;
+      break;
+    }
+    if (moved) {
+      dims.push(moved);
+      placed.restationed++;
+    } else placed.unplaced.push({ thickness: t, run: rep.seg, second: second !== undefined });
   }
+}
+
+/**
+ * Is a figure's box printed over one of the room labels' boxes? `W_ANNOTATION_OVERLAP`'s test of
+ * a `dims auto` number against a label (`src/lint/rules/annotations.ts`): the boxes meet and the
+ * label's box covers more than {@link COLLIDE_MIN} of the figure's.
+ */
+function overLabel(fig: TextBox, labels: readonly TextBox[]): boolean {
+  return labels.some((l) => boxesMeet(fig.box, l.box) && clippedArea(l.rect, fig.rect) > COLLIDE_MIN * fig.area);
+}
+
+/**
+ * The next-longest straight, axis-aligned run of `rep`'s thickness after `rep` itself (card AL5),
+ * on the same terms {@link synthWallDims} picks `rep` by: max length, then source order. `undefined`
+ * when the thickness has no other such run.
+ */
+function nextLongestRun(
+  ir: ResolvedPlan,
+  rep: WallSegment,
+): { a: Point; b: Point; n: Vec; t: number; len: number; seg: WallSegment } | undefined {
+  let best: { a: Point; b: Point; n: Vec; t: number; len: number; seg: WallSegment } | undefined;
+  for (const w of ir.walls) {
+    for (const s of segmentsOfWall(w)) {
+      if (s.arc || s.thickness !== rep.thickness) continue;
+      if (s.wallId === rep.wallId && s.index === rep.index) continue;
+      const d = sub(s.b, s.a);
+      if (d.x !== 0 && d.y !== 0) continue;
+      const len = Math.hypot(d.x, d.y);
+      if (len <= 0 || (best && best.len >= len)) continue;
+      best = { a: s.a, b: s.b, n: normal(unit(d)), t: s.thickness, len, seg: s };
+    }
+  }
+  return best;
 }
 
 /** Shared empty map for the non-annotate path — no allocation on the default compile. */
@@ -1058,7 +1267,7 @@ function drawStorey(
     const dimDef = registry.byKind.get("dim");
     if (dimDef) {
       const dimCtx = ctxFor("dim");
-      for (const dm of synthDims(ir, sizes, runtime.registry)) {
+      for (const dm of synthDims(ir, sizes, runtime.registry).dims) {
         const from = nodes.length;
         for (const pushed of dimDef.render(dm, dimCtx)) nodes.push(pushed);
         autoDims.push({ el: dm, from, to: nodes.length });
@@ -1115,6 +1324,34 @@ function drawStorey(
   wrapLabels(nodes, labelGroups, ir, sizes);
   relocateLabels(nodes, labelGroups, ir, sizes, work);
   fitLabels(nodes, labelGroups, drawnElements, plan, sizes);
+
+  // A wall-thickness figure `dims auto` wrote over a room's name or area figure, as the labels
+  // finally stand, moves off it or is not drawn (card AL5, `synthWallDims`). Laid out again by the
+  // same `synthWallDims`, with the labels' boxes, as `autoDimensions` lays them out for the lint;
+  // only when a figure moved are the thickness figures' nodes drawn again, so every other plan
+  // keeps its bytes. They are the last dimensions drawn, so their nodes are one run at the end of
+  // `autoDims`, one entry per thickness.
+  const labelBoxes = ir.autoDims === "walls" || ir.autoDims === "all" ? roomLabelBoxes(nodes, drawnElements) : [];
+  const dimDef = registry.byKind.get("dim");
+  if (labelBoxes.length > 0 && dimDef && autoDims.length > 0) {
+    const placed: PlacedDims = { dims: [], restationed: 0, unplaced: [] };
+    synthWallDims(ir, sizes, placed, runtime.registry, labelBoxes);
+    const first = autoDims.length - (placed.dims.length + placed.unplaced.length);
+    if (placed.restationed + placed.unplaced.length > 0 && first >= 0) {
+      const dimCtx = ctxFor("dim");
+      const from = autoDims[first]!.from;
+      const to = autoDims[autoDims.length - 1]!.to;
+      const redrawn: SceneNode[] = [];
+      const entries: ElementNodes[] = [];
+      for (const dm of placed.dims) {
+        const at = from + redrawn.length;
+        for (const pushed of dimDef.render(dm, dimCtx)) redrawn.push(pushed);
+        entries.push({ el: dm, from: at, to: from + redrawn.length });
+      }
+      nodes.splice(from, to - from, ...redrawn);
+      autoDims.splice(first, autoDims.length - first, ...entries);
+    }
+  }
 
   // Opt-in sheet tables (`schedule rooms` / `legend`) — derived closed-form from the plan
   // (see `sheet-tables.ts`). Computed before chrome layout because the table heights are
@@ -1281,6 +1518,24 @@ function attachSceneParts(
       return parts;
     },
   });
+}
+
+/**
+ * The box ({@link textBox}) of every text a room draws, its name and its area figure, where the
+ * label passes left it: the labels `W_ANNOTATION_OVERLAP` reads off the annotated Scene (every
+ * text node whose element is a room), read here from the rooms' own node ranges, since an
+ * unannotated node names no element.
+ */
+function roomLabelBoxes(nodes: readonly SceneNode[], drawn: readonly ElementNodes[]): TextBox[] {
+  const out: TextBox[] = [];
+  for (const { el, from, to } of drawn) {
+    if (el.kind !== "room") continue;
+    for (let i = from; i < to; i++) {
+      const prim = nodes[i]!.prim;
+      if (prim.t === "text") out.push(textBox(prim));
+    }
+  }
+  return out;
 }
 
 /** The text nodes of every room label pinned with `label "…" at (x,y)` — the names the label pass never moves. */
