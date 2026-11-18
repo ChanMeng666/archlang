@@ -1011,9 +1011,6 @@ export function fitLabels(
               if (tier === 0) break search;
             }
           }
-          // A form with a clean leader (or none) is as far as the search goes: a smaller one is not
-          // tried for want of the walls' clearance alone.
-          if (best && best.tier <= 1) break search;
         }
       }
       if (capped() || !best) {
