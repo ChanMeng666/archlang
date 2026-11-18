@@ -19,7 +19,7 @@ module's remaining facts are in its own header.
 invariants; this file holds every module. The exports of `src/index.ts` are in the sibling
 [`public-surface.md`](public-surface.md).
 
-Totals: 407 modules in 34 directories.
+Totals: 408 modules in 34 directories.
 
 ## `packages/archlang-3d/src/`
 
@@ -138,7 +138,7 @@ Totals: 407 modules in 34 directories.
 | --- | ---: | ---: | --- | --- |
 | `png.ts` | 78 | 5 | What `compile` says about `format:"png"`, written once. | none |
 | `server.ts` | 145 | 7 | ArchLang MCP server — a thin stdio Model Context Protocol shim over the `@chanmeng666/archlang` LIBRARY (never a subprocess of the CLI). Every tool wraps one pure, exported function; the core stays zero-dependency — the MCP SDK lives ONLY… | none |
-| `tools.ts` | 849 | 9 | The ArchLang MCP TOOL SET, transport-agnostic: every tool and resource the server offers, registered on any `McpServer` the caller built. It reads nothing from disk and starts no transport, so the stdio server (`server.ts`, the npm bin)… | none |
+| `tools.ts` | 860 | 9 | The ArchLang MCP TOOL SET, transport-agnostic: every tool and resource the server offers, registered on any `McpServer` the caller built. It reads nothing from disk and starts no transport, so the stdio server (`server.ts`, the npm bin)… | none |
 
 ## `packages/web-component/src/`
 
@@ -234,8 +234,8 @@ Totals: 407 modules in 34 directories.
 | `cursor.ts` | 425 | 8 | Read-only navigation over the parsed AST (a `LinkedNode`-style cursor). | none |
 | `datum.ts` | 545 | 18 | The **vertical datum layer** — the heights a floor plan implies but has never written down. | none |
 | `describe.ts` | 1191 | 26 | `describe(source)` — a pure, semantic summary of a floor plan. | none |
-| `diagnostic-json.ts` | 197 | 5 | Agent-facing JSON projection of a {@link Diagnostic}. | none |
-| `diagnostics.ts` | 410 | 115 | Diagnostics for the ArchLang compiler. | none |
+| `diagnostic-json.ts` | 264 | 7 | Agent-facing JSON projection of a {@link Diagnostic}. | none |
+| `diagnostics.ts` | 410 | 116 | Diagnostics for the ArchLang compiler. | none |
 | `diff.ts` | 736 | 5 | `diffPlans(sourceA, sourceB)` — a pure, structural semantic diff of two plans. | none |
 | `doc.ts` | 157 | 7 | A tiny Wadler/Prettier "Doc" intermediate representation and printer. | none |
 | `draw-budget.ts` | 202 | 7 | The drawing budget: before `toScene()` runs, the primitives a plan will draw are estimated over EVERY storey (a multi-storey compile holds all its pages at once), and a plan past {@link MAX_DRAW_UNITS} is one `E_DRAWING_LIMIT` instead of… | none |
@@ -262,7 +262,7 @@ Totals: 407 modules in 34 directories.
 | `identity.ts` | 33 | 3 | Process-local stable identity tokens for cache keying. | none |
 | `impact.ts` | 1405 | 3 | `impact(before, after)` (plan-soundness card PS4.2): change one number, see what follows, what stays put, and what breaks. The executable answer to "what changes, what must not". | none |
 | `import.ts` | 349 | 35 | Module linking — the `import` system. | none |
-| `index.ts` | 714 | 449 | ArchLang — compile declarative floor-plan source to a professional SVG. | none |
+| `index.ts` | 720 | 450 | ArchLang — compile declarative floor-plan source to a professional SVG. | none |
 | `input-limit.ts` | 77 | 5 | A host's refusals, as catalogued diagnostics. | none |
 | `intent-concepts.ts` | 238 | 6 | The intent channel's concept vocabulary — production name resolution for the NL→ArchLang intent contract. | none |
 | `intent-feasibility.ts` | 388 | 3 | Infeasibility of a brief's stated numbers: the arithmetic that makes "this brief is impossible" checkable, before any plan exists. | none |
@@ -273,7 +273,7 @@ Totals: 407 modules in 34 directories.
 | `label-placement.ts` | 750 | 7 | Obstacle-aware relocation of room labels — a **post-pass over the lowered Scene**. | none |
 | `layout.ts` | 249 | 1 | Relational placement (T6.2) — the optional layout seam. | none |
 | `lexer.ts` | 613 | 27 | Hand-written lexer for ArchLang. Zero dependencies; tracks line/col. | none |
-| `lint.ts` | 373 | 32 | `lint(source)` — architectural soundness rules, as diagnostics. | none |
+| `lint.ts` | 380 | 32 | `lint(source)` — architectural soundness rules, as diagnostics. | none |
 | `lock.ts` | 197 | 2 | The lock check (preview-and-remodel card B1, decision D6): `impact(before, after, { lock })` and `arch impact --against old.arch --lock <id,…>`. A lock names elements that must not change between two versions of a plan; it is checked… | none |
 | `lsp.ts` | 688 | 3 | Pure language-services core for the ArchLang LSP (T5.3). | none |
 | `manifest.ts` | 1254 | 19 | CLI capability manifest — the whole `archlang` API surface as one structured document, so an AI agent can discover commands, flags, formats, elements, lint profiles, error codes, and fixture categories in a single `archlang manifest… | none |
@@ -370,7 +370,7 @@ Totals: 407 modules in 34 directories.
 
 | Module | Lines | Importers | Summary | Budget |
 | --- | ---: | ---: | --- | --- |
-| `commands-analyze.ts` | 1415 | 10 | The analysis commands — `describe`, `validate` (incl. `--graph`/`--intent`), `lint`, and `score`. Render-free: they resolve/lint the plan and report facts or gate on an intent contract. Split out of the former monolithic `src/cli.ts`… | none |
+| `commands-analyze.ts` | 1418 | 10 | The analysis commands — `describe`, `validate` (incl. `--graph`/`--intent`), `lint`, and `score`. Render-free: they resolve/lint the plan and report facts or gate on an intent contract. Split out of the former monolithic `src/cli.ts`… | none |
 | `commands-author.ts` | 616 | 3 | The authoring/transform commands — `ast`, `complete`, `fmt`, `repair`, `fix`, `finish`, `suggest`. They parse/format/correct source (the syntactic `fix` and the geometric `repair` are a hard boundary; see ADR 0006/0011). Split out of the… | none |
 | `commands-import.ts` | 113 | 1 | `import` — a plan in another tool's format, as `.arch` source. One format today: `--from openplan3d` (an OpenPlan3D web project or prepared RoomPlan interchange JSON), converted by the core's pure `openPlan3dToArch()`. This file only… | none |
 | `commands-meta.ts` | 229 | 5 | The metadata / info commands — `manifest`, `spec`, `context`, `new`, `explain`. They print the CLI's own surface (manifest), the shipped language docs (spec / context), scaffold a starter plan (new), or look up an error code (explain).… | none |
@@ -523,8 +523,9 @@ Totals: 407 modules in 34 directories.
 | `element-phrases.ts` | 96 | 6 | How a lint MESSAGE names a wall or a door, window or opening (PS2.29: a message never quotes an id). A wall is named by its kind and the line it runs on ("the exterior wall at y 0"), a connector by the rooms it joins ("the door between… | none |
 | `fixture-paste.ts` | 254 | 5 | A pasteable fixture statement for an empty wet room or kitchen (`W_ROOM_NO_FIXTURE`'s hint), placed from the room's own shape and CHECKED before it is quoted. | none |
 | `measure.ts` | 95 | 19 | The measured half of an advisory placement warning: **required, available, shortfall**. | none |
+| `overprint-ref.ts` | 42 | 5 | Which text a `W_ANNOTATION_OVERLAP` warning reports, and what it is printed over (card AL6), kept BESIDE the diagnostic in a `WeakMap`, never on it, as the ruleset reference is (`rule-ref.ts`, RM1.6b): `lint()` returns the same objects… | none |
 | `provenance.ts` | 488 | 7 | Where each lint ruleset number comes from, as data: a table parallel to {@link DEFAULT_RULESET} and {@link LINT_PROFILES}, keyed by profile and ruleset key, with the document, clause, edition and verification grade of every number.… | none |
-| `report.ts` | 104 | 2 | The `arch lint --json` document as a pure function (card CR10): what the CLI's `lint` reports for one source, built here once so the hosted `POST /check` (`packages/mcp-worker`) returns the same document for the same input. `cmdLint`… | none |
+| `report.ts` | 108 | 2 | The `arch lint --json` document as a pure function (card CR10): what the CLI's `lint` reports for one source, built here once so the hosted `POST /check` (`packages/mcp-worker`) returns the same document for the same input. `cmdLint`… | none |
 | `rule-ref.ts` | 84 | 13 | Which ruleset number a lint diagnostic was raised against (card RM1.6b), kept BESIDE the diagnostic in a `WeakMap`, never on it: `lint()` returns the same objects, with the same keys, and `JSON.stringify(lint(src))` is unchanged. A rule… | none |
 | `ruleset.ts` | 879 | 24 | The lint ruleset: tunable thresholds, named advisory profiles, and the options type. Split from `lint.ts` so individual rule modules (`./rules/*.ts`) can import the types without a cycle through the `lint()` entry point; `lint.ts`… | none |
 | `storeys.ts` | 118 | 8 | The storeys `lint()` reads and the building fact each is read with: the per-storey {@link BuildingContext} of a multi-storey plan ({@link buildingContexts}) and the plan's dwelling reading (PS2.18). Stated once here so every reader of a… | none |
@@ -535,7 +536,7 @@ Totals: 407 modules in 34 directories.
 | Module | Lines | Importers | Summary | Budget |
 | --- | ---: | ---: | --- | --- |
 | `alias-match.ts` | 93 | 1 | `W_ALIAS_MATCH` — advisory: a room's use was inferred from a non-canonical alias. | none |
-| `annotations.ts` | 636 | 2 | Annotation collisions on the drawn sheet (plan-soundness PS2.12): two drafting advisories that read the drawing itself, never the plan's facts, so `describe()`, Plan JSON and the SVG are untouched by them. | none |
+| `annotations.ts` | 718 | 2 | Annotation collisions on the drawn sheet (plan-soundness PS2.12): two drafting advisories that read the drawing itself, never the plan's facts, so `describe()`, Plan JSON and the SVG are untouched by them. | none |
 | `circulation-facts.ts` | 1097 | 3 | Circulation quality as advisory warnings, built on the circulation nav-grid facts (ADR 0008): a walk that squeezes below a passable width (`W_PATH_TOO_NARROW`), or that wanders far from a straight line (`W_CIRCUITOUS_PATH`). Facts →… | none |
 | `circulation.ts` | 43 | 1 | Circulation: a room whose doorways can't reach a usable patch of clear floor — technically reachable (it has a door) but so packed that you can't step in. A grid flood-fill fact (see analyze/occupancy.ts); only fires when there *is*… | none |
 | `clearances.ts` | 473 | 2 | The clearance family of plan-soundness PS2.11, beyond the seat check: a WC whose centreline stands too near a side obstacle (PS2.11a) and a tall unit standing in front of a window (PS2.11b). Both measure the drawn shapes — a fixture's… | none |

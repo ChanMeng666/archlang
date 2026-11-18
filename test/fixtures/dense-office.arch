@@ -1,0 +1,91 @@
+# A dense eleven-room office, 20 x 12.5 m, drawn with `dims auto all`: the witness plan of the
+# label-crowding cards (docs/plans/label-crowding/). A support strip of small rooms (two WCs and
+# a store, each 1500 mm wide) beside a kitchenette, a boardroom and two meeting rooms on the
+# north side; a corridor; reception, focus pods and an open-plan area with a 5 x 5 desk grid on
+# the south.
+#
+# It is crowded on purpose. `lint` reports `W_ANNOTATION_OVERLAP` here for a room's own name
+# printed over a fixture and for the wall-thickness figure `dims auto all` writes printed over
+# a room's label: the two kinds of subject the cards must tell apart. The boardroom's long
+# window leaves the exterior wall one clear run, next to the kitchenette, so the "200" figure
+# stands in the boardroom and prints over the kitchenette's name, which runs past its own walls.
+# Every other lint warning is cleared.
+plan "Dense Office" {
+  units mm
+  grid 50
+  north up
+  dims auto all
+
+  # ---- shell and partitions ---------------------------------------------------
+  wall id=shell exterior thickness 200 { (0,0) (20000,0) (20000,12500) (0,12500) close }
+  wall id=w_cn partition thickness 100 { (0,3000) (20000,3000) }
+  wall id=w_cs partition thickness 100 { (0,4500) (20000,4500) }
+  wall id=w_n1 partition thickness 100 { (1500,0) (1500,3000) }
+  wall id=w_n2 partition thickness 100 { (3000,0) (3000,3000) }
+  wall id=w_n3 partition thickness 100 { (4500,0) (4500,3000) }
+  wall id=w_n4 partition thickness 100 { (7800,0) (7800,3000) }
+  wall id=w_n5 partition thickness 100 { (14000,0) (14000,3000) }
+  wall id=w_n6 partition thickness 100 { (17000,0) (17000,3000) }
+  wall id=w_s1 partition thickness 100 { (3500,4500) (3500,12500) }
+  wall id=w_s2 partition thickness 100 { (6500,4500) (6500,12500) }
+
+  # ---- rooms ------------------------------------------------------------------
+  room id=r_wc1     at (0,0)        size 1500x3000  label "WC 1" uses wc
+  room id=r_wc2     at (1500,0)     size 1500x3000  label "WC 2" uses wc
+  room id=r_store   at (3000,0)     size 1500x3000  label "Store / IT" uses utility
+  room id=r_kitchen at (4500,0)     size 3300x3000  label "Kitchenette / Break" uses kitchen
+  room id=r_board   at (7800,0)     size 6200x3000  label "Boardroom" uses office
+  room id=r_meet_a  at (14000,0)    size 3000x3000  label "Meeting A" uses office
+  room id=r_meet_b  at (17000,0)    size 3000x3000  label "Meeting B" uses office
+  room id=r_hall    at (0,3000)     size 20000x1500 label "Corridor" uses circulation
+  room id=r_recep   at (0,4500)     size 3500x8000  label "Reception" uses entry
+  room id=r_pods    at (3500,4500)  size 3000x8000  label "Focus Pods" uses office
+  room id=r_open    at (6500,4500)  size 13500x8000 label "Open Plan" uses office
+
+  # ---- doors ------------------------------------------------------------------
+  door id=d_front at (1750,12500) width 1200 wall shell swing in
+  door id=d_recep on w_cs at 1750 width 1000 swing into r_recep
+  door id=d_pods on w_cs at 5000 width 900 swing into r_pods
+  door id=d_open on w_cs at 9000 width 1200 swing into r_open
+  door id=d_wc1 on w_cn at 750 width 800 swing into r_hall
+  door id=d_wc2 on w_cn at 2250 width 800 swing into r_hall
+  door id=d_store on w_cn at 3750 width 800 swing into r_hall
+  door id=d_kitchen on w_cn at 6150 width 900 swing into r_kitchen
+  door id=d_board on w_cn at 11000 width 1000 swing into r_board
+  door id=d_meet_a on w_cn at 15500 width 900 swing into r_meet_a
+  door id=d_meet_b on w_cn at 18500 width 900 swing into r_meet_b
+  door id=d_pods2 on w_s1 at 4000 width 900 swing into r_pods
+  door id=d_east at (20000,3750) width 1000 wall shell swing out
+
+  # ---- windows ----------------------------------------------------------------
+  window at (6150,0) width 1800 wall shell
+  window at (11300,0) width 5000 wall shell
+  window at (15500,0) width 1800 wall shell
+  window at (18500,0) width 1800 wall shell
+  window at (5000,12500) width 1500 wall shell
+  window at (10000,12500) width 3000 wall shell
+  window at (16000,12500) width 3000 wall shell
+  window at (0,9500) width 1800 wall shell
+
+  # ---- fit-out ----------------------------------------------------------------
+  furniture wc against wall w_n1 offset 600 in r_wc1
+  furniture basin against wall w_n1 offset 1900 in r_wc1
+  furniture wc against wall w_n2 offset 600 in r_wc2
+  furniture basin against wall w_n2 offset 1900 in r_wc2
+  furniture server_rack against wall w_n3 offset 800 in r_store
+  furniture filing_cabinet against wall w_n3 offset 2000 in r_store
+  furniture kitchen_sink against wall w_n4 offset 900 in r_kitchen
+  furniture counter against wall w_n4 offset 1800 in r_kitchen
+  furniture fridge against wall w_n4 offset 2500 in r_kitchen
+  furniture stove against wall w_n3 offset 2300 in r_kitchen
+  furniture table in r_kitchen centered size 900x800 label "Table"
+  furniture meeting_table in r_board centered size 3200x900 label "Board table"
+  furniture meeting_table in r_meet_a centered size 1800x1000 label "Table"
+  furniture meeting_table in r_meet_b centered size 1800x1000 label "Table"
+  furniture reception_desk in r_recep anchor top inset 1300 size 2000x700 label "Reception"
+  for i in 0..4 {
+    for j in 0..4 {
+      furniture desk at (7100 + i * 2600, 5800 + j * 1300) size 1600x700
+    }
+  }
+}

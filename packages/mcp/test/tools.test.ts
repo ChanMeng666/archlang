@@ -66,6 +66,15 @@ const ihdr = (res: PngContent): { width: number; height: number } => {
 /** A plan eight times taller than wide, with no sheet. */
 const TALL = 'plan "Tall" {\n  room at (0,0) size 1000x8000 label "Gallery"\n}\n';
 
+/** The defect corpus's room label pinned over the WC, the basin and the door's swing (AL6). */
+const LABEL_OVER_WC = readFileSync(
+  resolve(
+    dirname(fileURLToPath(import.meta.url)),
+    "../../../test/defect-corpus/annotation-collisions/label-over-wc.arch",
+  ),
+  "utf8",
+);
+
 // ---------------------------------------------------------------------------
 // lint
 // ---------------------------------------------------------------------------
@@ -121,6 +130,23 @@ describe("lint tool", () => {
     const tiny = (await call(client, "lint", { source: TINY })).diagnostics as Array<Record<string, unknown>>;
     const disconnected = tiny.find((d) => d.code === "W_ROOM_DISCONNECTED")!;
     expect(disconnected).not.toHaveProperty("rule");
+  });
+
+  it("a `W_ANNOTATION_OVERLAP` warning says what overprints what in `overprint`; others carry none (AL6)", async () => {
+    const client = await connect();
+    for (const tool of ["lint", "validate"]) {
+      const ds = (await call(client, tool, { source: LABEL_OVER_WC })).diagnostics as Array<Record<string, unknown>>;
+      const overlap = ds.find((d) => d.code === "W_ANNOTATION_OVERLAP")!;
+      expect(overlap.overprint, tool).toEqual({
+        subject: { kind: "room-name", room: "r_bath", text: "Bathroom" },
+        over: [
+          { kind: "symbol", id: "wc_2" },
+          { kind: "symbol", id: "basin_3" },
+          { kind: "door-swing", id: "d_bath" },
+        ],
+      });
+      for (const d of ds) if (d.code !== "W_ANNOTATION_OVERLAP") expect(d, tool).not.toHaveProperty("overprint");
+    }
   });
 
   it("an unknown profile falls back to the default ruleset rather than failing", async () => {

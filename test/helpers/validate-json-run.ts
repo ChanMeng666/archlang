@@ -48,18 +48,28 @@ export const withoutStageKeys = (stdout: string): string =>
  * first line indented exactly as the key (a nested `also` entry closes deeper), found by
  * `indexOf`, never a lazy regex over compiler output.
  */
-export function withoutRuleKeys(stdout: string): string {
+export const withoutRuleKeys = (stdout: string): string => withoutObjectKeys(stdout, "rule");
+
+/**
+ * `stdout` without the `"overprint": { … }` object AL6 adds to a `W_ANNOTATION_OVERLAP` warning
+ * (after `rule`), byte for byte, the same way as {@link withoutRuleKeys}: its `over` entries close
+ * deeper than the key, so the first line indented exactly as the key is its own closing brace.
+ */
+export const withoutOverprintKeys = (stdout: string): string => withoutObjectKeys(stdout, "overprint");
+
+/** `stdout` without every `"<key>": { … }` object member and the comma before it (see above). */
+function withoutObjectKeys(stdout: string, key: string): string {
   let out = "";
   let from = 0;
   for (;;) {
-    const at = stdout.indexOf('"rule": {\n', from);
+    const at = stdout.indexOf(`"${key}": {\n`, from);
     if (at < 0) return out + stdout.slice(from);
     const lineStart = stdout.lastIndexOf("\n", at) + 1;
     const indent = stdout.slice(lineStart, at);
     const close = stdout.indexOf(`\n${indent}}`, at);
     // `,\n` + indent before the key: the comma ends the previous key's line.
     if (!/^ +$/.test(indent) || close < 0 || stdout.slice(lineStart - 2, lineStart) !== ",\n")
-      throw new Error(`withoutRuleKeys: an unexpected "rule" at byte ${at}`);
+      throw new Error(`without "${key}": an unexpected "${key}" at byte ${at}`);
     out += stdout.slice(from, lineStart - 2);
     from = close + 1 + indent.length + 1;
   }
@@ -68,13 +78,15 @@ export function withoutRuleKeys(stdout: string): string {
 /**
  * What the digest laws that hash `validate --json` (`keep-byte-identity` K1, `keep-digests` K3)
  * measure: the output without the keys added after their pins (PS7.6's `summary`, PS7.1's
- * `stage`, RM1.6b's `rule`), so no pin is re-blessed. `summary` is held by `../lint-summary.test.ts`
- * (the corpus, cut at 200 bytes); `rule` and `stage` in `validate --json` by its corpus test "the
- * lint diagnostics equal lint()'s with their rule, then a stage", which compares every lint
- * diagnostic with `diagnosticToJson(src, d, { rule: diagnosticRule })` and needs a warning to carry
- * a `rule`.
+ * `stage`, RM1.6b's `rule`, AL6's `overprint`), so no pin is re-blessed. `summary` is held by
+ * `../lint-summary.test.ts` (the corpus, cut at 200 bytes); `rule`, `overprint` and `stage` in
+ * `validate --json` by its corpus test "the lint diagnostics equal lint()'s with their rule and
+ * overprint, then a stage", which compares every lint diagnostic with
+ * `diagnosticToJson(src, d, { rule: diagnosticRule, overprint: diagnosticOverprint })` and needs a
+ * warning to carry each.
  */
-export const validateDigestView = (stdout: string): string => withoutRuleKeys(withoutStageKeys(withoutSummary(stdout)));
+export const validateDigestView = (stdout: string): string =>
+  withoutOverprintKeys(withoutRuleKeys(withoutStageKeys(withoutSummary(stdout))));
 
 /** Run `validate <argv…>` in-process; return its exit code and everything it wrote to stdout. */
 export function runValidate(argv: string[]): { exit: number; stdout: string } {

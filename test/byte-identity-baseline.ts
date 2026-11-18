@@ -1914,6 +1914,22 @@
  * 246 lines in 24 files, each carrying `RM9.2` beside it, and in this file `garden-house`,
  * `hillside-villa`, `townhouse`, `turning-stair` and `two-storey` in both tables. The K1 keep table
  * was re-taken by its generator (24 rows, the same undo reproduces each, steps unchanged).
+ *
+ * ## `test/fixtures/dense-office.arch`: a row ADDED with a new fixture (AL6), nothing re-measured
+ *
+ * The witness plan of the label-crowding cards arrived with `W_ANNOTATION_OVERLAP`'s overprint
+ * detail (card AL6). Its rows in the corpus tables that must list every fixture (the
+ * `stairLawDigest` tables, `rectilinear-rooms`, `double-door`, `open-crossing`,
+ * `import-module-lets` and `./while-byte-identity-baseline.ts`) were measured with each suite's own
+ * digest body and API wiring on the branch that added it, by a scratch script that first
+ * reproduced `dense-bays`' three pinned digests exactly. The same card changes one message on this
+ * plan: its "200" wall-thickness figure stands in the boardroom and prints over the kitchenette's
+ * name, and the message no longer adds ` in "Boardroom"` (it named the room the figure stands in,
+ * where the label's room is meant). On `main`'s compiler the plan digests otherwise identically:
+ * the branch's payload with that one message put back reproduces `main`'s three digests. No other
+ * row moved: a per-payload sweep of 755 corpus rows (SVG per storey, `compile().diagnostics`,
+ * `describe()`, `lint()` under both profiles), a `git archive` of `main` against the branch,
+ * moved only this plan's `lint()`, and a planted message change moved 21.
  */
 
 /** SHA-256 over every storey's SVG + `describe()` + `lint()`, measured on `f4548db`. */

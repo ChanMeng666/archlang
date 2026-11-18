@@ -6,7 +6,10 @@
  * `W_ANNOTATION_OVERLAP` — a number `dims auto` writes, or a room's name or area figure, printed
  * over a furniture, fixture or stair symbol; a `dims auto` number printed over a room's name or
  * area figure; or a room's name or area figure printed over a wall or a door's swing, or running
- * off its own floor (#367).
+ * off its own floor (#367). Each report also says, as data kept beside it, which text is printed
+ * over what ({@link citeOverprint}, card AL6): the subject by kind (`room-name`, `room-area`, a
+ * `dim-*` figure) and every thing under it, so a reader can tell the author's label from a figure
+ * the `dims auto` chain drew.
  *
  * `W_TITLE_OVERFLOW` — a title-block value wider than its row.
  *
@@ -111,6 +114,8 @@ import { GridIndex } from "../../geometry/grid-index.js";
 import { clippedArea, clippedSigned, pointInPolygon } from "../../geometry/polygon.js";
 import { openingName } from "../element-phrases.js";
 import type { LintContext, LintRule } from "../context.js";
+import { citeOverprint } from "../overprint-ref.js";
+import type { OverprintItemJson, OverprintKind } from "../../diagnostic-json.js";
 
 type TextPrim = Extract<ScenePrim, { t: "text" }>;
 
@@ -287,16 +292,34 @@ export const annotationOverlap: LintRule = {
       outside: boolean;
       /** The name itself, not only the area figure, is over a wall or off the floor. */
       nameTight: boolean;
+      /** The name and the area figure as the sheet draws them, once each is among the hits. */
+      nameText: string | null;
+      areaText: string | null;
     }
     const perRoom = new Map<RRoom, RoomHit>();
     const hitOn = (l: (typeof labels)[number]): RoomHit => {
       let e = perRoom.get(l.room);
       if (!e) {
-        e = { name: false, area: null, hits: [], wall: false, doors: [], outside: false, nameTight: false };
+        e = {
+          name: false,
+          area: null,
+          hits: [],
+          wall: false,
+          doors: [],
+          outside: false,
+          nameTight: false,
+          nameText: null,
+          areaText: null,
+        };
         perRoom.set(l.room, e);
       }
-      if (l.isName) e.name = true;
-      else e.area = plainArea(l.prim.value);
+      if (l.isName) {
+        e.name = true;
+        e.nameText = l.prim.value;
+      } else {
+        e.area = plainArea(l.prim.value);
+        e.areaText = l.prim.value;
+      }
       return e;
     };
     for (const l of labels) {
@@ -327,14 +350,28 @@ export const annotationOverlap: LintRule = {
       }
 
     // A `dims auto` number over a symbol or a room's label: one warning per number.
-    const perNumber: { dm: RDim; value: string; at: Point; hits: ResolvedElement[]; over: typeof labels }[] = [];
+    const perNumber: {
+      dm: RDim;
+      value: string;
+      drawn: string;
+      at: Point;
+      hits: ResolvedElement[];
+      over: typeof labels;
+    }[] = [];
     for (const nb of numbers) {
       const hits: ResolvedElement[] = [];
       const onLabels: typeof labels = [];
       for (const s of syms) if (over(nb.text, s.shapes, s.box)) hits.push(s.el);
       for (const l of labels) if (over(nb.text, [l.text.rect], l.text.box)) onLabels.push(l);
       if (hits.length + onLabels.length > 0)
-        perNumber.push({ dm: nb.dm, value: wording.plain(nb.prim.value), at: nb.prim.at, hits, over: onLabels });
+        perNumber.push({
+          dm: nb.dm,
+          value: wording.plain(nb.prim.value),
+          drawn: nb.prim.value,
+          at: nb.prim.at,
+          hits,
+          over: onLabels,
+        });
     }
     if (spent) {
       ctx.skip("annotation-budget");
@@ -371,7 +408,19 @@ export const annotationOverlap: LintRule = {
       const moveOr = movable.length > 0 ? `, or move ${byId}` : "";
       const tight = e.wall || e.outside;
       const clearPoint = `\`label "${room.label ?? "…"}" at (x,y)\``;
-      out.push({
+      // AL6: the same report as data, beside the warning (`overprint-ref.ts`): the room's name when
+      // the name is among what overprints, else its area figure, and what is under it, in the
+      // message's order.
+      const about: OverprintItemJson & { text: string } = e.name
+        ? { kind: "room-name", room: room.id, text: e.nameText ?? "" }
+        : { kind: "room-area", room: room.id, text: e.areaText ?? "" };
+      const under: OverprintItemJson[] = [
+        ...e.hits.map(symbolItem),
+        ...(e.wall ? [{ kind: "wall" } as const] : []),
+        ...e.doors.map((d): OverprintItemJson => ({ kind: "door-swing", id: d.id })),
+        ...(e.outside ? [{ kind: "floor-edge", room: room.id } as const] : []),
+      ];
+      const warning: Diagnostic = {
         severity: "warning",
         code: "W_ANNOTATION_OVERLAP",
         ...ctx.at(room),
@@ -396,16 +445,22 @@ export const annotationOverlap: LintRule = {
                       : `Give it a clear point with ${clearPoint}`
                 }${moveOr}.`,
         ],
-      });
+      };
+      out.push(citeOverprint(warning, { subject: about, over: under }));
     }
 
     const setting = `\`dims auto ${ir.autoDims ?? "all"}\``;
     for (const nb of perNumber) {
       const kind = callOutKind(nb.dm);
       const floor = rooms.find((r) => pointInRoomBox(nb.at, roomBox(r)));
-      // Where the number stands, unless what it is over already says so (a room's own label).
+      // Where what it is over is: the room of the labels it is over when they are one room's (a
+      // figure beside a wall can stand in the room next to the label it covers, AL6), none when
+      // they are several rooms' (each label's phrase names its own), else the room the number
+      // stands in; and nothing when what it is over already says so (one room's own labels alone).
+      const labelRooms = new Set(nb.over.map((l) => l.room));
+      const target = nb.over.length === 0 ? floor : labelRooms.size === 1 ? nb.over[0]!.room : undefined;
       const where =
-        floor && !(nb.hits.length === 0 && nb.over.every((l) => l.room === floor)) ? ` in ${ctx.nameOf(floor)}` : "";
+        target && !(nb.hits.length === 0 && nb.over.every((l) => l.room === target)) ? ` in ${ctx.nameOf(target)}` : "";
       const things = listOf([
         ...nb.hits.map(symbolWord),
         ...nb.over.map((l) =>
@@ -434,7 +489,22 @@ export const annotationOverlap: LintRule = {
         chain: "A chain number sits outside the building's outer faces.",
       }[kind];
       const anchor = pinnedLabel?.room ?? nb.hits[0] ?? nb.over[0]!.room;
-      out.push({
+      const figure: OverprintItemJson & { text: string } = {
+        kind: FIGURE_KIND[kind],
+        ...(floor ? { room: floor.id } : {}),
+        text: nb.drawn,
+      };
+      const under: OverprintItemJson[] = [
+        ...nb.hits.map(symbolItem),
+        ...nb.over.map(
+          (l): OverprintItemJson => ({
+            kind: l.isName ? "room-name" : "room-area",
+            room: l.room.id,
+            text: l.prim.value,
+          }),
+        ),
+      ];
+      const warning: Diagnostic = {
         severity: "warning",
         code: "W_ANNOTATION_OVERLAP",
         ...ctx.at(anchor),
@@ -442,7 +512,8 @@ export const annotationOverlap: LintRule = {
         hints: [
           `${why} ${move}${kind === "thickness" ? ", or draw with `dims auto rooms` and state that thickness with a hand `dim` (`offset 0`, face to face) where it reads clear" : ""}.`,
         ],
-      });
+      };
+      out.push(citeOverprint(warning, { subject: figure, over: under }));
     }
     return out;
   },
@@ -531,6 +602,17 @@ function callOutKind(dm: RDim): "thickness" | "radius" | "diameter" | "chain" {
   if (/^\d/.test(t)) return "thickness";
   return t.startsWith("R") ? "radius" : "diameter";
 }
+
+/** A `dims auto` call-out's overprint kind (AL6). */
+const FIGURE_KIND: Readonly<Record<ReturnType<typeof callOutKind>, OverprintKind>> = {
+  thickness: "dim-thickness",
+  radius: "dim-radius",
+  diameter: "dim-diameter",
+  chain: "dim-chain",
+};
+
+/** A drawn symbol in an overprint: its kind and the id `describe()` lists it by (AL6). */
+const symbolItem = (el: ResolvedElement): OverprintItemJson => ({ kind: "symbol", id: el.id });
 
 /** A symbol as a person names it: the piece's category (or its own label), or the run's kind. */
 function symbolWord(el: ResolvedElement): string {

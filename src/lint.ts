@@ -24,6 +24,7 @@ import { type BuildingContext, buildLintContext, type LintLayer, type LintStage 
 import { foldCoverage, type LintCoverage, type LintUnclassifiedRoom, type SkipNote } from "./lint/coverage.js";
 import { ONCE_PER_PLACEMENT_CODES } from "./lint/rules/dims.js";
 import { LINT_RULES } from "./lint/rules/index.js";
+import { carryOverprint } from "./lint/overprint-ref.js";
 import { carryRule, stampRuleProfile } from "./lint/rule-ref.js";
 import { LINT_PROFILES, type LintOptions, type LintRuleset, resolveRuleset, validateRuleset } from "./lint/ruleset.js";
 import { lintStoreys } from "./lint/storeys.js";
@@ -188,7 +189,7 @@ function lintResolved(
     const out = storeys.flatMap((st) => {
       unclassified.push(...unclassifiedRooms(st.ir, st.level));
       return lintStorey(st.ir, rules, st.building, notes, work, st.level).map((d) =>
-        carryRule(d, { ...d, level: st.level }),
+        carry(d, { ...d, level: st.level }),
       );
     });
     return {
@@ -296,7 +297,7 @@ export function reconcileSharedFixes(diags: Diagnostic[], storeys: readonly Lint
     const withFix = idx.filter((i) => diags[i]!.fixes?.length).length;
     const agree = withFix === idx.length && idx.every((i) => editsOf(diags[i]!) === editsOf(first));
     if (allRaise && agree) {
-      for (const i of idx.slice(1)) out[i] = carryRule(diags[i]!, withoutFixes(diags[i]!));
+      for (const i of idx.slice(1)) out[i] = carry(diags[i]!, withoutFixes(diags[i]!));
       continue;
     }
     const why = !allRaise
@@ -307,7 +308,7 @@ export function reconcileSharedFixes(diags: Diagnostic[], storeys: readonly Lint
     const hint = `This statement is shared by ${s.placements.size} placed instances (${s.ids.join(", ")}), and ${why}, so no fix is offered: one edit to the shared source cannot be right for all of them. Edit it by hand, or give the instances their own statements.`;
     for (const i of idx) {
       const d = withoutFixes(diags[i]!);
-      out[i] = carryRule(diags[i]!, { ...d, hints: [...(d.hints ?? []), hint] });
+      out[i] = carry(diags[i]!, { ...d, hints: [...(d.hints ?? []), hint] });
     }
   }
   return out;
@@ -369,5 +370,11 @@ function lintOne(
  */
 function withFixProvenance(d: Diagnostic): Diagnostic {
   if (d.file === undefined || !d.fixes) return d;
-  return carryRule(d, { ...d, fixes: d.fixes.map((f) => ({ ...f, file: d.file })) });
+  return carry(d, { ...d, fixes: d.fixes.map((f) => ({ ...f, file: d.file })) });
+}
+
+/** `to`, a copy of `from`, carrying what is kept beside `from`: its ruleset reference (RM1.6b)
+ *  and its overprint detail (AL6). Returns `to`. */
+function carry<D extends Diagnostic>(from: Diagnostic, to: D): D {
+  return carryOverprint(from, carryRule(from, to));
 }

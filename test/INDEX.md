@@ -5,7 +5,7 @@
 Where the tests of a `src` module are, and what each test file is for. Generated; `npm run check:drift`
 fails when it is stale. How to add a test: `docs/testing.md` § 4.
 
-545 test files in `test/`, 289 `src` modules, 108 modules no test imports.
+546 test files in `test/`, 290 `src` modules, 109 modules no test imports.
 
 ## `src` module → tests that import it
 
@@ -45,10 +45,10 @@ Nearest first, then by name; `(+n)` is the rest. Test names are `test/<name>.tes
 - `src/cli/commands-render.ts` (3) — `keep-impact-depends`, `plan-json-dropped`, `watch-arming`
 - `src/cli/context-starter.ts` (1) — `context-starter`
 - `src/cli/help.ts` (1) — `cli-help`
-- `src/cli/io.ts` (86) — `block-stair-byte-identity`, `clause-order-byte-identity`, `cli-contract`, `cli-exit-parse`, `cli-expected-hash`, `cli-flag-matrix`, `cli-help`, `cli-output-format` (+78)
+- `src/cli/io.ts` (87) — `block-stair-byte-identity`, `clause-order-byte-identity`, `cli-contract`, `cli-exit-parse`, `cli-expected-hash`, `cli-flag-matrix`, `cli-help`, `cli-output-format` (+79)
 - `src/cli/link.ts` (1) — `cli-link`
 - `src/cli/review.ts` (1) — `cli-preview-review`
-- `src/cli/run.ts` (52) — `axes`, `cli-batch`, `cli-commands`, `cli-context`, `cli-contract`, `cli-exit-parse`, `cli-expected-hash`, `cli-finish` (+44)
+- `src/cli/run.ts` (53) — `annotation-overprint`, `axes`, `cli-batch`, `cli-commands`, `cli-context`, `cli-contract`, `cli-exit-parse`, `cli-expected-hash` (+45)
 - `src/cli/serialize.ts` (8) — `cli-batch`, `cli-plan-json-roundtrip`, `element-facets`, `plan-json-arcs-paper`, `plan-json-dropped`, `plan-json-instances`, `plan-json-roundtrip-law`, `walls-from-rooms`
 - `src/cli/source-hash.ts` (1) — `cli-expected-hash`
 - `src/cli/summary.ts` (1) — `lint-summary`
@@ -120,7 +120,7 @@ Nearest first, then by name; `(+n)` is the rest. Test names are `test/<name>.tes
 - `src/impact.ts` (2) — `rectilinear-doors`, `rectilinear-rooms`
 - `src/import.ts` (34) — `block-stair-byte-identity`, `corner-window-byte-identity`, `dim-swap-reprint`, `dim-thickness-callout`, `drawing-budget`, `error-value-law`, `floor-materials-byte-identity`, `furniture-relations` (+26)
 - `src/import/limits.ts` (1) — `openplan3d-malformed`
-- `src/index.ts` (406) — `acc-metadata`, `access-graph`, `access-policy`, `accessible-svg`, `agent-gallery`, `alias-match`, `anchors`, `annotate` (+398)
+- `src/index.ts` (407) — `acc-metadata`, `access-graph`, `access-policy`, `accessible-svg`, `agent-gallery`, `alias-match`, `anchors`, `annotate` (+399)
 - `src/input-limit.ts` (2) — `import-rooted`, `workspace-seams`
 - `src/intent-concepts.ts` (2) — `vocabulary-living-dining`, `vocabulary-matcher-oracle`
 - `src/intent-feasibility.ts` (1) — `intent-infeasible`
@@ -211,6 +211,7 @@ The first sentence of each file's header comment.
 - `test/anchors.test.ts` — source anchors — scene metadata; source anchors — SVG attributes; public API surface.
 - `test/annotate.test.ts` — annotate (opt-in data-span).
 - `test/annotation-collisions.test.ts` — Plan-soundness PS2.12: `W_ANNOTATION_OVERLAP` and `W_TITLE_OVERFLOW` (`src/lint/rules/annotations.ts`).
+- `test/annotation-overprint.test.ts` — Card AL6: `W_ANNOTATION_OVERLAP` says, as data beside the warning, which text is printed over what (`diagnosticOverprint`, `src/lint/overprint-ref.ts`).
 - `test/annotation-small-rooms.test.ts` — #367: a room label in a small room.
 - `test/arc-radius-exact.test.ts` — arc radius — exact semicircle on a Pythagorean chord; arc radius — the exact tie is built as the exact semicircle, whichever way hypot rounds; arc radius — the…
 - `test/arc-tessellation-error.test.ts` — arc tessellation error statements.
@@ -821,6 +822,7 @@ module); adding a test that imports it removes it from this list.
 - `src/layout.ts`
 - `src/lint/clearance-facts.ts`
 - `src/lint/element-phrases.ts`
+- `src/lint/overprint-ref.ts`
 - `src/lint/report.ts`
 - `src/lint/rules/alias-match.ts`
 - `src/lint/rules/circulation.ts`
