@@ -44,9 +44,14 @@
  * places `relocateLabels` tries, from the room's anchor out; the first form with a clear place
  * wins, at its best place. A form that also keeps `relocateLabels`' clearance from the walls at the
  * height tried beats one that does not, so a label that shrinks does not end up touching one. A
- * wrapped form comes first: `relocateLabels` has already tried the one-line name at the full size
- * on the same lattice, reading it at the width this pass reads it against a symbol (card AL3w), so
- * a name that reached this pass did not stand clear there on one line. Breaking stays {@link balancedLines}'s: only at a space, by a count of
+ * wrapped form comes first, and the one-line name is not tried at the full size: `relocateLabels`
+ * has already searched the lattice with the name as `wrapLabels` left it, at the full size and at
+ * the width this pass reads it at against a symbol (card AL3w), and left it where its own reading
+ * scored best. That reading is coarser than this pass's: it boxes what is drawn rather than
+ * clipping its shapes, and reads another room's label where the relocation left it, at the full
+ * size. Off its own floor, such a label claims no floor (card AL3a). So it is no proof that no
+ * full-size one-line place stands clear by this pass's reading, only the reason this pass does not
+ * search those places again. Breaking stays {@link balancedLines}'s: only at a space, by a count of
  * characters, so the same name breaks the same way on every run and no word is ever split or
  * hyphenated. The full size is tried for wrapped forms too: `wrapLabels` asks for clearance from
  * the walls at the generous width, and leaves `Abstell- raum` on one line for want of 1.25 mm.

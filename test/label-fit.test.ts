@@ -580,6 +580,48 @@ describe("the order of the source", () => {
   );
 });
 
+// A red-team case from AL3w's review (S1). "NEWSROOM" is wider than its room, so it stands off its
+// floor wherever the relocation puts it, and `fitLabels` will change it. Read at its full size, its box
+// reached into the gym, so the relocation moved "GYM", which stood clear at the room's anchor, and
+// the fit then shrank it (350 to 300). A label off its own floor claims no floor (card AL3a), so the
+// gym's label is drawn as it is with no name next door.
+describe("a neighbour's label that does not fit", () => {
+  const plan = (newsroom: string) => `plan "p" {
+  units mm
+  paper A3 landscape
+  scale 1:100
+  dims auto
+  wall id=wn exterior thickness 200 { (0,0) (6550,0) }
+  wall id=we exterior thickness 200 { (6550,0) (6550,2150) }
+  wall id=ws exterior thickness 200 { (0,2150) (6550,2150) }
+  wall id=ww exterior thickness 200 { (0,0) (0,2150) }
+  room id=r0 at (0,0) size 1900x2150 label "Lobby"
+  door on wn at 400 width 800 hinge near start swing into r0
+  window on ws at 800 width 800
+  wall id=wp1 partition thickness 100 { (1900,0) (1900,2150) }
+  room id=r1 at (1900,0) size 1450x2150${newsroom}
+  furniture table at (2250,150) size 800x1250
+  furniture table at (2050,200) size 1050x1350
+  door on wn at 2100 width 800 hinge near start swing into r1
+  wall id=wp2 partition thickness 100 { (3350,0) (3350,2150) }
+  room id=r2 at (3350,0) size 1450x2150 label "GYM"
+  furniture plinth at (4669,-50) size 650x1900
+  door on wn at 3600 width 800 hinge near start swing into r2
+  wall id=wp3 partition thickness 100 { (4800,0) (4800,2150) }
+  room id=r3 at (4800,0) size 1750x2150 label "Workroom"
+  furniture sofa at (5050,100) size 1200x1800
+  furniture fridge at (6132,200) size 400x1850
+}
+`;
+
+  it("does not move or shrink a name that stands clear where it is drawn", () => {
+    const { texts, sizes } = drawn(plan(` label "NEWSROOM"`), "r2");
+    expect(texts.map((t) => t.value)).toEqual(["GYM", "3.1 m²"]);
+    expect(texts[0]!.size).toBe(sizes.roomFont);
+    expect(texts).toEqual(drawn(plan(""), "r2").texts);
+  });
+});
+
 /** The corpus plans whose labels depended on the order of the source until card AL3a (the owner-
  *  approved `ORDER_EXCUSED` list, now empty and gone). */
 const FORMERLY_EXCUSED = [

@@ -36,9 +36,13 @@
  *
  * Candidates are visited in one fixed order — the incumbent anchor **first**, then a 7×7
  * lattice of bounding-box fractions — and only a **strictly** better score displaces the
- * incumbent. Same rule as {@link import("./geometry/polygon.js").polygonLabelPoint}: no
- * float comparison picks a winner among equals, so a tie always keeps the label where it
- * was. Pure arithmetic, one pass, no iteration to a tolerance.
+ * incumbent. Same rule as {@link import("./geometry/polygon.js").polygonLabelPoint}: an exact
+ * tie keeps the label where it was, or at the place visited first. Pure arithmetic, one pass, no
+ * iteration to a tolerance, so the same plan always draws the same. What is not promised is
+ * symmetry: the scores are compared exactly, so two places that a mirror of the room makes equal
+ * in exact arithmetic can score a rounding error apart (the two bottom corners of a symmetric shed
+ * differ by about 1e-13), and then the lower one wins. Which one that is depends on the rounding,
+ * so a mirrored plan, or a change to a label's width, can move the label to the other twin.
  *
  * The labels take their turns in an order read off the plan, never the source's
  * ({@link plotOrder}: the anchor's y, then its x, then the texts, then the ring; the order
