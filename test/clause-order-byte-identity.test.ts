@@ -31,6 +31,12 @@
  * EV.8 made a door's or window's kind word one more order-free clause, read only where it cannot
  * begin the next statement, so no row above moved; the sweep at the end moves every example's lead
  * kind word to the end of its statement and holds the drawing, the summary and the lint to it.
+ *
+ * Re-measured for AL1 (the north arrow keeps off the dimension and axis bands): 22 digests, of the
+ * 22 plans here whose arrow moved off a band. On each moved page exactly one SVG line moved, the
+ * arrow's `<g>`, and where the body hashes the Scene, the added `chrome.north` with it; `describe()`,
+ * `lint()`, the diagnostics and the steps did not move. Put `main`'s SVG back (`a9db286e`) and drop
+ * `chrome.north`, and this body reproduces every old digest; the new ones are this body on the branch.
  */
 
 import { readdirSync, readFileSync, statSync } from "node:fs";
@@ -87,7 +93,7 @@ const BASELINE: [string, string, string][] = [
     "examples/accessible.arch",
   ],
   [
-    "e66504b7142257fc5c1c76c6e1b2f04a68be43ce98ea12b5be242d8e29171521",
+    "eee3dc30bd94b5f31c7189f719ff38e09d6f56a3d5484f443432591f8f1e737e",
     "295d276e58e73e06965138c13e787c33e01f4941de5b9b86a80cf21e39773ae7",
     "examples/aquarium.arch",
   ],
@@ -97,22 +103,22 @@ const BASELINE: [string, string, string][] = [
     "examples/attached.arch",
   ],
   [
-    "cda041e6004160bf8b826158202f931b3b6457c88f8edd7dc147282163c1c283",
+    "074d553112362b1bcc8c67536edf075b07c8657746b3429e4bedbcb401b15b55",
     "37e4e7f995fba8c2b54e1761670ed57e081e7b8c71d3160e986464eb067d1c5f",
     "examples/bungalow.arch",
   ],
   [
-    "809f674a9d48b528c5e9850768c92afe5d826c22783f1a18df610d8a88adb4f6",
+    "cca7c3dfef6593e826303c88878fbfb5537bded8a6bb9323696ae4b446ac046a",
     "3418a51e7e362baa5e3c4db04201d2b58e5d16f47620bd4bcb16c2b0a87cf1d2",
     "examples/classroom-block.arch",
   ],
   [
-    "af780d4296064bdd7a1d81dfc776fa586520a26bfaed8295f3298ff91373ead5",
+    "b31aad2c2f0c0d1b7e63498f8844570f16c700846d533288de7e43bf5ad56e63",
     "c23e64a1e7cfcb3a4c83184fb3585b731dff2faa82e3b05af29c1d3881c82de3",
     "examples/clinic.arch",
   ],
   [
-    "a6d2075bd43f6d46984d64a2ae8edd6e6c96f25ea4fae91f2984ad7bdd4a5b1f",
+    "d669e11a11740a841311fe359a3d5bc650343ba1f16e827bc4d869dc65206bd5",
     "492b9b4b92658c91fa125ff4fb3d732c366eaf70d18d16417af3728cd8f9d201",
     "examples/corner-cafe.arch",
   ],
@@ -123,7 +129,7 @@ const BASELINE: [string, string, string][] = [
     "examples/courtyard-family.arch",
   ],
   [
-    "e5a170e01d15451ed5a322d6eb9f8267a356f208fea829dfce19cd6d3e1a43ce",
+    "0f6dddac275250a710e3f37d7c0fc74818389bef1c32d8929df2a747bbad63c3",
     "25a92395c7fa23a45a061ddd8a518ed4b75da1ed9f7efe943a7ca2e2d6b3a7e4",
     "examples/courtyard-house.arch",
   ],
@@ -133,7 +139,7 @@ const BASELINE: [string, string, string][] = [
     "examples/furnished-flat.arch",
   ],
   [
-    "0e8f7696890b8f3e01211ecbc873996f49ba22fff103e349e8f4660b1417a1c2",
+    "f3d86da1d7aed260f386efa6ca98b440c89ee7b2b84b0d0937401c72d7bb113e",
     "1f836a0a72557fb27fa676de33f2f610135ed17801c8aeea864cccc02dac834b",
     "examples/gallery-l.arch",
   ],
@@ -144,7 +150,7 @@ const BASELINE: [string, string, string][] = [
     "examples/garden-house.arch",
   ],
   [
-    "f273e4717a1afae1cd94ae0f62a7390ae603c7418fbe434e061e191aa98231a0",
+    "e0ce8a5f9a6bd4b5b5e72bb23c77a149cc412e40aff10930807e7b5c960a13db",
     "0b5dc494c902deae80b99ee963db3a559500c513971ebcd09f84568e0abf0e0e",
     "examples/garden-loft.arch",
   ],
@@ -154,7 +160,7 @@ const BASELINE: [string, string, string][] = [
     "examples/hexagon-pavilion.arch",
   ],
   [
-    "a297769a6679a3b1a5fff9f4146b0eb01a71ad80c35aca165ed82ec8c46a5755", // RM9.2, see ./byte-identity-baseline.ts
+    "123f2af228faf039c29d9861b60cfff3574b3cd04bc0057d5549cd02e67066fb", // RM9.2, see ./byte-identity-baseline.ts
     // CO.1: the parse holds the 3 `size` clauses the example now writes; without them, offsets mapped back, it is the parse pinned here (was db3a5d1e)
     "664292dca8bb269674094cf7e5f83be38addc1c7f81074b19e7bf444d2f9593e",
     "examples/hillside-villa.arch",
@@ -165,12 +171,12 @@ const BASELINE: [string, string, string][] = [
     "examples/imports.arch",
   ],
   [
-    "f4f0ed59cff4dd7b970fe069579044226fcb0e4f68f24a85845e648875ed17e5",
+    "578ec7551025df65b704f453b7af3493bf4abcfb19737fdece206e4c85fd2586",
     "861d0bfad44daeb5aca964024702d0c5ecdb6e0de3c9ded952fa4ddb8f9e7704",
     "examples/knob-flat.arch",
   ],
   [
-    "21459ebc71dbc508de2faae421b59ac48afd068dd1813adb6bf0595b9963fb3e",
+    "5b411f773f980c1a09770a438dea5cd288de50e67655a1c6df255245b4e406f0",
     "d282238093b245e45aaa9532ec851a819efef14a1bc4bb16021c6c6cf65d04d3",
     "examples/laneway-house.arch",
   ],
@@ -190,27 +196,27 @@ const BASELINE: [string, string, string][] = [
     "examples/lib/furniture.arch",
   ],
   [
-    "9354e572f6d9df8c04e9b3b0fee0fe15b5ddf87831e0feba28078aaa4158ba92",
+    "acbc3325a38dea3132c2e6898df4c40ac2df5e85684fab1531409ba397e3b506",
     "2656d94df54442b0936f0506bd4764479a09beebbc51eb8a681877b6aa05a4a0",
     "examples/library.arch",
   ],
   [
-    "635e4b1a04bb6497e1fff846708c3f28519c89b531f5ad14b363381344cad925",
+    "b3d629675b1a43d4d1113f10b38e732d0b826fdb2b019fcf14ac4b166abd435d",
     "b5bbeb04654ba6c882d13379eedf22a33d314ba2455909da3b840a93a787ceb9",
     "examples/materials.arch",
   ],
   [
-    "546b10dfb0204dbce454dff9e47713f32745285f4885e58a46b5faff23d10126",
+    "add9b13a425ec75dd2b88c4eba087465228822c37321b3d1952db6f0795ef6c7",
     "581493cdcfee7476e66c720831b2606d0361cab972c16bde90bf2eda4d00cbe8",
     "examples/museum-wing.arch",
   ],
   [
-    "1149f0993df1cd719dcffd1d8c5c43c4ea6176c9a43b47954b23b3950bcc6f4a",
+    "4acccb8ead0234e18186574c23a4c795d32c6a8f819fc67a983cebea337b8b29",
     "5138c8eb05d19204ef65fa34ac995bd1e465d387b82a5bb77c9023a383fd5cd8",
     "examples/museum-wings.arch",
   ],
   [
-    "3eb89a03ff32698a0e11f9419f7d8bc6317ce66d2b660dd289d085cb4ecd36a4",
+    "bf1d425c9bf21d6ddb3e4757f53a1820f186cca67c3300c0a6ce8eb6b4e73713",
     // CO.1: the parse holds the 5 `size` clauses the example now writes; without them, offsets mapped back, it is the parse pinned here (was 939b54bd)
     "b03609154b4439003583696a97f6728d05ecdf87f269125deb6190c2bb949dd1",
     "examples/museum.arch",
@@ -221,12 +227,12 @@ const BASELINE: [string, string, string][] = [
     "examples/one-room.arch",
   ],
   [
-    "402cf58e4e122164928e6d875320e63b7be5c017396dce026ab8c73d4a0373ef",
+    "7cceeb1be4622a8b84e1625a124d31f44fdfc15cd5362c4f4f25fa67f5560989",
     "1cb3caeffb5c87343c033a9e53ac46efd5a890c672b634fca9eacf4cedde5b60",
     "examples/parametric.arch",
   ],
   [
-    "f55654d5dd8db8243b7e46f3e9afe6ed8b265da11392f797608f5364d5c4d2b4",
+    "f655cd0dfaa4ec152a2effa51cd2a3fb6254d46c8fb7e29529cbd3c7b78491cb",
     "7166b9fa609e198e936988b8d61fb098d5df8b69d4de68b4137af0295ae5b869",
     "examples/practice-office.arch",
   ],
@@ -242,7 +248,7 @@ const BASELINE: [string, string, string][] = [
     "examples/remodel.arch",
   ],
   [
-    "602cfd5f8e34268bf660dcad47b5cbf28332ddf92a119fba7317850ab9f9d798",
+    "708332c1a3f4cf35989718277b996af6f718d2e5fb8bd3d2912d8f87f7d61a2a",
     "bc6256ca802a3ea17c2a1cb2b0f1e4f7b4bca01bb571cc5147831d7b4021448c",
     "examples/sheet-notes.arch",
   ],
@@ -273,12 +279,12 @@ const BASELINE: [string, string, string][] = [
     "examples/tiny-house.arch",
   ],
   [
-    "e3a0dd96778a4b6bca5c3a3363a7583a9508be5b87cedd65638f81b7670795a8", // RM9.2, see ./byte-identity-baseline.ts
+    "3657648f9aa2ed74e7babc743d4f7129bb0cc657cca631695784a6bf0615364e", // RM9.2, see ./byte-identity-baseline.ts
     "355d36bd5d1cf39a9694d70ffba4532ec12f63cd25ae9132c5f4198ca071bd3a",
     "examples/townhouse.arch",
   ],
   [
-    "a9145858f1fb7a7f1a0f0aa86d53e115bfda51e68c2101b822913d7bdc97eed5",
+    "649e39d370d434467bee6f23ad8c7fc0bef578d44081f18d96ec82ed2532c5be",
     "1d864acd2807f9551f1fea419578ebeadb11971a6865b5916d8e3ed75d8a0d7a",
     "examples/transit-hall.arch",
   ],
@@ -294,7 +300,7 @@ const BASELINE: [string, string, string][] = [
     "examples/two-bed.arch",
   ],
   [
-    "3b39a946ba68d2d386deb2ddf2ac70e647e841754137c64b076c6a74c43247b2", // RM9.2, see ./byte-identity-baseline.ts
+    "92a71843b7de0b87acb1ef3ea1b859d1c0bedbe4ef35025f3524ecea1d674aa8", // RM9.2, see ./byte-identity-baseline.ts
     "a2400915472bf50c8146ee82ad9e09b2cf4d64e2887565c5b33975f90c8abc4b",
     "examples/two-storey.arch",
   ],

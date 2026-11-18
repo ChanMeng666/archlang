@@ -176,7 +176,7 @@ describe("the north arrow over the corpus", () => {
     expect(moved).toBeGreaterThanOrEqual(33);
     expect(spots.get("historical") ?? 0).toBeGreaterThan(90);
     expect(spots.has("grown") || spots.has("blocked")).toBe(false);
-  }, 600_000);
+  }, 120_000);
 });
 
 /** A plan dimensioned on all four sides whose margins leave no strip wide enough for a turned arrow. */

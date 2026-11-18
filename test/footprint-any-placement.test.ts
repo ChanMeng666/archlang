@@ -51,6 +51,12 @@
  * (`courtyard-family`, `garden-house`, `hillside-villa`, `museum`, `remodel`, `two-bed`,
  * `showcase/garden-courtyard`). They now write the snapped size out, so they stay warning-free and
  * these rows reproduce unchanged: no row was re-pinned.
+ *
+ * Re-measured for AL1 (the north arrow keeps off the dimension and axis bands): 22 digests, of the
+ * 22 plans here whose arrow moved off a band. On each moved page exactly one SVG line moved, the
+ * arrow's `<g>`, and where the body hashes the Scene, the added `chrome.north` with it; `describe()`,
+ * `lint()`, the diagnostics and the steps did not move. Put `main`'s SVG back (`a9db286e`) and drop
+ * `chrome.north`, and this body reproduces every old digest; the new ones are this body on the branch.
  */
 
 import { readFileSync } from "node:fs";
@@ -77,47 +83,47 @@ const API: ClauseLawApi = {
 /** `[surface digest, file]`, measured on `main` at `60e2436c` (see the header). */
 const BASELINE: [string, string][] = [
   ["5f69fe78d45db6b096e3e7f4c44bfcdb537c4201d06fee8780e813112869f20c", "examples/accessible.arch"],
-  ["e66504b7142257fc5c1c76c6e1b2f04a68be43ce98ea12b5be242d8e29171521", "examples/aquarium.arch"],
+  ["eee3dc30bd94b5f31c7189f719ff38e09d6f56a3d5484f443432591f8f1e737e", "examples/aquarium.arch"],
   ["07995653257dff5785f4fe210e3c4f6f9d6fc35165be2e5ae34df364079029dc", "examples/attached.arch"],
-  ["cda041e6004160bf8b826158202f931b3b6457c88f8edd7dc147282163c1c283", "examples/bungalow.arch"],
-  ["809f674a9d48b528c5e9850768c92afe5d826c22783f1a18df610d8a88adb4f6", "examples/classroom-block.arch"],
-  ["af780d4296064bdd7a1d81dfc776fa586520a26bfaed8295f3298ff91373ead5", "examples/clinic.arch"],
-  ["a6d2075bd43f6d46984d64a2ae8edd6e6c96f25ea4fae91f2984ad7bdd4a5b1f", "examples/corner-cafe.arch"],
+  ["074d553112362b1bcc8c67536edf075b07c8657746b3429e4bedbcb401b15b55", "examples/bungalow.arch"],
+  ["cca7c3dfef6593e826303c88878fbfb5537bded8a6bb9323696ae4b446ac046a", "examples/classroom-block.arch"],
+  ["b31aad2c2f0c0d1b7e63498f8844570f16c700846d533288de7e43bf5ad56e63", "examples/clinic.arch"],
+  ["d669e11a11740a841311fe359a3d5bc650343ba1f16e827bc4d869dc65206bd5", "examples/corner-cafe.arch"],
   ["50c9cc316efda2bf16183e877d4be16443df160c9c13fc2a0210d62945c4bd67", "examples/courtyard-family.arch"],
-  ["e5a170e01d15451ed5a322d6eb9f8267a356f208fea829dfce19cd6d3e1a43ce", "examples/courtyard-house.arch"],
+  ["0f6dddac275250a710e3f37d7c0fc74818389bef1c32d8929df2a747bbad63c3", "examples/courtyard-house.arch"],
   ["cdb42b5c1bee8dd931d9b99b1e338dd895e4cb5d2de1915de8a85f04a3fd444a", "examples/furnished-flat.arch"],
-  ["0e8f7696890b8f3e01211ecbc873996f49ba22fff103e349e8f4660b1417a1c2", "examples/gallery-l.arch"],
+  ["f3d86da1d7aed260f386efa6ca98b440c89ee7b2b84b0d0937401c72d7bb113e", "examples/gallery-l.arch"],
   ["72528a5f6784a5c5d9527299a5abb330423c747bafb17458716dc336cc9a3eb3", "examples/garden-house.arch"], // RM9.2, see ./byte-identity-baseline.ts
-  ["f273e4717a1afae1cd94ae0f62a7390ae603c7418fbe434e061e191aa98231a0", "examples/garden-loft.arch"],
+  ["e0ce8a5f9a6bd4b5b5e72bb23c77a149cc412e40aff10930807e7b5c960a13db", "examples/garden-loft.arch"],
   ["3078765cf03974518e0f2b3ea13585cca69ffbb86438f0899218c8a1c24a09a8", "examples/hexagon-pavilion.arch"],
-  ["a297769a6679a3b1a5fff9f4146b0eb01a71ad80c35aca165ed82ec8c46a5755", "examples/hillside-villa.arch"], // RM9.2, see ./byte-identity-baseline.ts
+  ["123f2af228faf039c29d9861b60cfff3574b3cd04bc0057d5549cd02e67066fb", "examples/hillside-villa.arch"], // RM9.2, see ./byte-identity-baseline.ts
   ["3aa7b2d5f953e6df63059c368e391ee3ea58c097cd7dff358197a940f4946252", "examples/imports.arch"],
-  ["f4f0ed59cff4dd7b970fe069579044226fcb0e4f68f24a85845e648875ed17e5", "examples/knob-flat.arch"],
-  ["21459ebc71dbc508de2faae421b59ac48afd068dd1813adb6bf0595b9963fb3e", "examples/laneway-house.arch"],
+  ["578ec7551025df65b704f453b7af3493bf4abcfb19737fdece206e4c85fd2586", "examples/knob-flat.arch"],
+  ["5b411f773f980c1a09770a438dea5cd288de50e67655a1c6df255245b4e406f0", "examples/laneway-house.arch"],
   ["f57eaea084d2e6e62b85b8450ef96675e9f1466bea9aff24e2869f2d6f0c9804", "examples/lib/doors.arch"],
   ["57d6c78e2eea8451a9b32a5828f3babb24b0251cc5c3b72675b431be22b3f310", "examples/lib/fixtures.arch"],
   ["adf16d60e17d76d76f092f95fb24dab4b7ba5ebaa977ed32bcc3a8eaddc7e05b", "examples/lib/furniture.arch"],
-  ["9354e572f6d9df8c04e9b3b0fee0fe15b5ddf87831e0feba28078aaa4158ba92", "examples/library.arch"],
-  ["635e4b1a04bb6497e1fff846708c3f28519c89b531f5ad14b363381344cad925", "examples/materials.arch"],
-  ["546b10dfb0204dbce454dff9e47713f32745285f4885e58a46b5faff23d10126", "examples/museum-wing.arch"],
-  ["1149f0993df1cd719dcffd1d8c5c43c4ea6176c9a43b47954b23b3950bcc6f4a", "examples/museum-wings.arch"],
-  ["3eb89a03ff32698a0e11f9419f7d8bc6317ce66d2b660dd289d085cb4ecd36a4", "examples/museum.arch"],
+  ["acbc3325a38dea3132c2e6898df4c40ac2df5e85684fab1531409ba397e3b506", "examples/library.arch"],
+  ["b3d629675b1a43d4d1113f10b38e732d0b826fdb2b019fcf14ac4b166abd435d", "examples/materials.arch"],
+  ["add9b13a425ec75dd2b88c4eba087465228822c37321b3d1952db6f0795ef6c7", "examples/museum-wing.arch"],
+  ["4acccb8ead0234e18186574c23a4c795d32c6a8f819fc67a983cebea337b8b29", "examples/museum-wings.arch"],
+  ["bf1d425c9bf21d6ddb3e4757f53a1820f186cca67c3300c0a6ce8eb6b4e73713", "examples/museum.arch"],
   ["8c47e263f778993d69c2f85d07a24b3a62c0b96d9f17ccb5cd9ebf2af6fa0120", "examples/one-room.arch"],
-  ["402cf58e4e122164928e6d875320e63b7be5c017396dce026ab8c73d4a0373ef", "examples/parametric.arch"],
-  ["f55654d5dd8db8243b7e46f3e9afe6ed8b265da11392f797608f5364d5c4d2b4", "examples/practice-office.arch"],
+  ["7cceeb1be4622a8b84e1625a124d31f44fdfc15cd5362c4f4f25fa67f5560989", "examples/parametric.arch"],
+  ["f655cd0dfaa4ec152a2effa51cd2a3fb6254d46c8fb7e29529cbd3c7b78491cb", "examples/practice-office.arch"],
   ["d99a898c06b322f203c7f9f3d34740be351b523712bb04fe7b0d846e85811084", "examples/relational.arch"],
   ["f0f4a5aa4758c3f9feb14449b6a9be0b7afd020fb925619c6d83e66f7cb95f2d", "examples/remodel.arch"],
-  ["602cfd5f8e34268bf660dcad47b5cbf28332ddf92a119fba7317850ab9f9d798", "examples/sheet-notes.arch"],
+  ["708332c1a3f4cf35989718277b996af6f718d2e5fb8bd3d2912d8f87f7d61a2a", "examples/sheet-notes.arch"],
   ["54adc1b89e5472644f55bc3f33f9aa6fd1576b39b324eb6afd8370d8e3cb796f", "examples/showcase/garden-courtyard.arch"],
   ["b64f7234dddc6527a0176033e82b38b70ad4fe84ca8df22b7a2e3269a1029553", "examples/studio.arch"],
   ["6667da00528cdd4ee4f155586a049ad877f81b83178f5a18c85afef7a76a781d", "examples/terrace-row.arch"],
   ["edd65eb6b725687bb30a7c956132e01bc2b9c57d772afaa9c234745af332f8bf", "examples/themed.arch"],
   ["7dec52e5621d9af9dbdcf7cb73e58791705e6d976bbecf5ae59419c1c9a9ea17", "examples/tiny-house.arch"],
-  ["e3a0dd96778a4b6bca5c3a3363a7583a9508be5b87cedd65638f81b7670795a8", "examples/townhouse.arch"], // RM9.2, see ./byte-identity-baseline.ts
-  ["a9145858f1fb7a7f1a0f0aa86d53e115bfda51e68c2101b822913d7bdc97eed5", "examples/transit-hall.arch"],
+  ["3657648f9aa2ed74e7babc743d4f7129bb0cc657cca631695784a6bf0615364e", "examples/townhouse.arch"], // RM9.2, see ./byte-identity-baseline.ts
+  ["649e39d370d434467bee6f23ad8c7fc0bef578d44081f18d96ec82ed2532c5be", "examples/transit-hall.arch"],
   ["4d2fb9dcc6a44640a4d0e52d202df14909c73a5743799af8c25cb1f117dc87a8", "examples/turning-stair.arch"], // RM9.2, see ./byte-identity-baseline.ts
   ["fe871cbb3d60c1594495e38b1ad0dc30ce3f71904c27b85fa60f276d3aa182bd", "examples/two-bed.arch"],
-  ["3b39a946ba68d2d386deb2ddf2ac70e647e841754137c64b076c6a74c43247b2", "examples/two-storey.arch"], // RM9.2, see ./byte-identity-baseline.ts
+  ["92a71843b7de0b87acb1ef3ea1b859d1c0bedbe4ef35025f3524ecea1d674aa8", "examples/two-storey.arch"], // RM9.2, see ./byte-identity-baseline.ts
 ];
 
 /** A 10 m square room, walled on its four edges (`walled`) or standing alone, on an optional grid. */
