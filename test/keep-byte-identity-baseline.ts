@@ -10,7 +10,7 @@
  * PR legitimately moves a hashed output (never keep code), the table is re-taken by the generator, the
  * reason recorded below and the moved files listed in that commit's message.
  *
- * Taken: AL3w review round 1 on feat/al3w-symbol-ink-width (the relocation reads a label at the wider of its estimate and its ink): 3 rows move, examples/laneway-house.arch, eval/goldens/anchor-furniture.arch and test/taste-corpus/r6-bed-in-kitchen.good.arch, each a room name placed on clearer floor at the same size; with every page's SVG put back to the previous head's (6f928fdc) each payload agrees; describe, lint, validate, impact and the steps are unchanged
+ * Taken: re-taken for AL3a (order-free label placement) on db1acefd: walls-first 6-clinic's Staff Room label is placed again (SVG only)
  */
 
 /** `[path from the repository root, SHA-256 of the payload, evaluation steps]`, sorted by root. */
@@ -1548,7 +1548,7 @@ export const KEEP_WEAK_BASELINE: readonly (readonly [string, string, number])[] 
   ],
   [
     "test/plans/plan-soundness/audits/first-contact-plans/2026-10-26-walls-first/6-clinic.arch",
-    "7d742d390ea662bd011d41982268d92f559f285946d93ad0521f872c57766245",
+    "68556832748c438f36667cc63c5bc652738f31aeab8dfa56c7b4ab4431767856",
     722,
   ],
   [

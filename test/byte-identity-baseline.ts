@@ -1995,13 +1995,34 @@
  * than shrunk later. In these two plans the bedroom's name, which the relocation now reads wider,
  * moves to clearer floor at the same size: exactly its two texts (name and area figure) moved in each
  * SVG; `describe()`, `lint()` under both profiles, the diagnostics and the steps did not move. Their
- * 22 digests in 25 tables were re-measured with each suite's own body; put the previous head's
- * (`6f928fdc`) drawing back into this payload and each old digest is reproduced. The laneway's PNG
+ * 26 pinned rows in 25 files (9 distinct digests) were re-measured with each suite's own body, and
+ * `keep`'s weak-law table re-taken (3 rows); put the previous head's (`6f928fdc`) drawing back into
+ * this payload and each old digest is reproduced. The laneway's PNG
  * golden differs only inside the union of the label's old and new boxes (9,841 pixels, plan x
  * 4410..6306, y 3770..5978) and was re-rendered by the suite's own call; its SVG snapshot and
  * `examples/laneway-house.svg` move by the same two lines. A sweep of 886 rows (379 files, 355 docs
  * fences, 152 more fixture files) moved these two and `test/taste-corpus/r6-bed-in-kitchen.good.arch`
  * (pinned only by `keep`'s weak-law table, re-taken), and nothing else.
+ *
+ * ## `test/fixtures/chain30.arch` and `star30.arch`: re-measured for AL3a (order-free label placement)
+ *
+ * The relocation now takes its turns in an order read off the plan, and a room's label that stands
+ * off its own floor claims no floor (it does not fit; `fitLabels` will change it). In these two
+ * fixtures every name is wider than its 3 m room, so none claims a floor any more and each settles
+ * without dodging its neighbours'. Only the rooms' texts moved: each name and area figure is placed
+ * again, and most names now wrap, so `<tspan>` lines are added. Of `lint()`, only the wording of
+ * `W_ANNOTATION_OVERLAP` moved (20 reports in `chain30`, 14 in `star30`, the count unchanged: which
+ * neighbours' door swings a label, placed again, stands over). `describe()`, the diagnostics and the
+ * steps did not move. Their 30 pinned rows in 15 files (6 distinct digests) were re-measured with
+ * each suite's own body. Put `main`'s (`db1acefd`) drawing (every page's SVG and Scene) and its
+ * `lint()` back into this branch's payload and each old digest is reproduced; the drawing alone
+ * reproduces none, which is the lint's rewording. A per-payload sweep of 734 corpus rows (379 files,
+ * 355 docs `arch` fences) and 152 more fixture files, `main`'s compiler against the branch's, moved
+ * these two and
+ * `test/plans/plan-soundness/audits/first-contact-plans/2026-10-26-walls-first/6-clinic.arch`'s SVG
+ * (its Staff Room's name and area figure placed again, the name at 350 rather than 300; pinned only
+ * by `keep`'s weak-law table, one row re-taken), and nothing else. A planted change (the wrap step
+ * off) moved 19 rows.
  */
 
 /** SHA-256 over every storey's SVG + `describe()` + `lint()`, measured on `f4548db`. */
