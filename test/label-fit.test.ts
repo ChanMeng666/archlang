@@ -10,6 +10,7 @@ import { walkFiles as walk } from "./helpers/corpus.js";
 import { worldFor } from "./helpers/world.js";
 import { readFileSync } from "node:fs";
 import { dirname, join, relative, resolve as resolvePath, sep } from "node:path";
+import fc from "fast-check";
 import { describe, expect, it, vi } from "vitest";
 import { resolvePlan } from "../src/analyze.js";
 import { toDxf } from "../src/export/dxf.js";
@@ -22,6 +23,7 @@ import { toScene } from "../src/scene-build.js";
 import { SHEET_MM } from "../src/sheet.js";
 import type { World } from "../src/world.js";
 import { NULL_WORLD } from "../src/world.js";
+import { runs } from "./setup/fast-check.js";
 
 const { state } = vi.hoisted(() => ({ state: { off: false } }));
 
@@ -480,22 +482,16 @@ describe("the order of the source", () => {
     }
   });
 
-  it("holds over the corpus: where the passes before it agree, this one does", () => {
+  it("holds over the corpus, before this pass and after it", () => {
     let held = 0;
     let acted = 0;
-    const before: string[] = [];
     for (const { name, src, world } of corpus()) {
       const other = roomsReversed(src, world);
       if (other === null) continue;
-      // `relocateLabels` visits in element order: where its result differs, the order is its own.
+      // `relocateLabels` takes its turns in an order read off the plan (`plotOrder`, card AL3a), so
+      // what it leaves this pass agrees too. Five plans were excused here before it did.
       const a = off(() => textsOf(src, world));
-      const b = off(() => textsOf(other, world));
-      if (JSON.stringify(a) !== JSON.stringify(b)) {
-        before.push(name);
-        // Excused is the pass before this one, never this one's result where it does agree.
-        if (ORDER_EXCUSED[name] === "agrees") expect(textsOf(other, world), name).toEqual(textsOf(src, world));
-        continue;
-      }
+      expect(off(() => textsOf(other, world)), name).toEqual(a);
       const after = textsOf(src, world);
       expect(textsOf(other, world), name).toEqual(after);
       held++;
@@ -503,33 +499,88 @@ describe("the order of the source", () => {
     }
     expect(held).toBeGreaterThan(200);
     expect(acted).toBeGreaterThan(5);
-    // Exactly the plans named, or the comparison above is excusing what it is meant to hold: a plan
-    // that newly depends on the order fails here, and so does one that stops depending on it.
-    expect(before.sort()).toEqual(Object.keys(ORDER_EXCUSED).sort());
   }, 300_000);
+
+  // Generated strips of rooms whose names are often wider than the room, beside a corridor, the room
+  // statements in two orders: the same texts, with this pass and without it (card AL3a).
+  it("draws the same texts in any order of the room statements, generated", () => {
+    const NAMES = ["Store / IT", "Kitchenette / Break", "Accessible WC", "WC", "Hauswirtschaftsraum", "Dressing", "Office"];
+    const spec = fc.record({ w: fc.constantFrom(1200, 1500, 1800, 2400, 3000), name: fc.constantFrom(...NAMES) });
+    fc.assert(
+      fc.property(
+        fc.array(spec, { minLength: 2, maxLength: 7 }),
+        fc.constantFrom("", "  paper A3 landscape
+  scale 1:50
+", "  paper A4 landscape
+  scale 1:100
+"),
+        fc.integer({ min: 0, max: 1_000_000 }),
+        (rooms, paper, shuffleSeed) => {
+          let x = 0;
+          const lines = rooms.map((r, i) => {
+            const line = `  room id=r${i} at (${x},0) size ${r.w}x3000 label "${r.name}" uses storage`;
+            x += r.w;
+            return line;
+          });
+          lines.push(`  room id=hall at (0,3000) size ${x}x1500 label "Corridor" uses circulation`);
+          let state = shuffleSeed;
+          const other = [...lines];
+          for (let i = other.length - 1; i > 0; i--) {
+            state = (state * 1103515245 + 12345) % 2147483648;
+            const j = state % (i + 1);
+            [other[i], other[j]] = [other[j]!, other[i]!];
+          }
+          const plan = (ls: readonly string[]) =>
+            `plan "o" {
+  units mm
+${paper}${ls.join("
+")}
+  walls from rooms exterior 200 partition 100
+}
+`;
+          expect(textsOf(plan(other), NULL_WORLD)).toEqual(textsOf(plan(lines), NULL_WORLD));
+          expect(off(() => textsOf(plan(other), NULL_WORLD))).toEqual(off(() => textsOf(plan(lines), NULL_WORLD)));
+        },
+      ),
+      { numRuns: runs(40), seed: 3141 },
+    );
+  }, 120_000);
+
+  // The five plans the corpus law excused until card AL3a, in every rotation of their room lines,
+  // not only reversed: each is a plan whose names do not fit their rooms, so every label's place
+  // depends on its neighbours'.
+  it.each(FORMERLY_EXCUSED)("%s draws the same in every rotation of its rooms", (file) => {
+    const src = readFileSync(file, "utf8");
+    const world = worldFor(dirname(resolvePath(ROOT, file)));
+    const lines = src.split("\n");
+    const rooms = lines.flatMap((l, i) => (/^\s*room\b/.test(l) ? [i] : []));
+    const rotated = (k: number): string => {
+      const out = [...lines];
+      rooms.forEach((i, j) => {
+        out[i] = lines[rooms[(j + k) % rooms.length]!]!;
+      });
+      return out.join("\n");
+    };
+    const first = textsOf(src, world);
+    const unfitted = off(() => textsOf(src, world));
+    for (const k of [1, 2, Math.floor(rooms.length / 2), rooms.length - 1]) {
+      const other = rotated(k);
+      expect(roomsOf(other, world), `${file} rotated ${k}`).toBe(roomsOf(src, world));
+      expect(textsOf(other, world), `${file} rotated ${k}`).toEqual(first);
+      expect(off(() => textsOf(other, world)), `${file} rotated ${k}, unfitted`).toEqual(unfitted);
+    }
+  }, 120_000);
 });
 
-/**
- * The corpus plans whose labels `relocateLabels` places differently when the rooms are written in
- * reverse (it visits groups in element order, as its doc comment says), each with whether this
- * pass's result then agrees across both orders anyway ("agrees", asserted above) or inherits the
- * difference ("differs": this pass is order-free only GIVEN what relocation left). Each is a plan
- * whose names do not fit their rooms; measured by reversing the room lines, as `roomsReversed` does.
- */
-const ORDER_EXCUSED: Readonly<Record<string, "agrees" | "differs">> = {
-  // Thirty 3 m rooms in series, each with a 2.7 m label: every room's label depends on its neighbours'.
-  "test/fixtures/chain30.arch": "differs",
-  // The label-crowding witness: Store / IT, Kitchenette / Break and Boardroom, a name wider than
-  // its room between them.
-  "test/fixtures/dense-office.arch": "agrees",
-  // A corridor with thirty such rooms off it: all thirty-one labels depend on their neighbours'.
-  "test/fixtures/star30.arch": "differs",
-  // The bathroom's label, off the bathtub, and the hall's land by the order; once fitted they agree.
-  "test/plans/plan-soundness/audits/first-contact-plans/2026-10-24-rerun/2-house.arch": "agrees",
-  // The Staff Room's and the Accessible WC's labels land by the order; the staff room's fitted name
-  // inherits it.
-  "test/plans/plan-soundness/audits/first-contact-plans/2026-10-26-walls-first/6-clinic.arch": "differs",
-};
+/** The corpus plans whose labels depended on the order of the source until card AL3a (the owner-
+ *  approved `ORDER_EXCUSED` list, now empty and gone). */
+const FORMERLY_EXCUSED = [
+  "test/fixtures/chain30.arch",
+  "test/fixtures/dense-office.arch",
+  "test/fixtures/star30.arch",
+  "test/plans/plan-soundness/audits/first-contact-plans/2026-10-24-rerun/2-house.arch",
+  "test/plans/plan-soundness/audits/first-contact-plans/2026-10-26-walls-first/6-clinic.arch",
+];
 
 describe("the count", () => {
   it("shrinks every label of an honest plan of many rooms", () => {

@@ -53,10 +53,9 @@
  *
  * Which labels do not fit is read first, from the fabric alone. A label that does not fit then
  * claims no floor until its turn comes, so a neighbour never dodges a box that is about to shrink,
- * and the turns go by the room's anchor. So this pass is order-free GIVEN what `relocateLabels` left,
- * and that pass is not: it visits in element order, and the rooms of
- * `test/plans/plan-soundness/audits/first-contact-plans/6-clinic.arch`, written the other way
- * round, settle differently before this pass sees them. A place is ranked off the lattice, never by a
+ * and the turns go by the room's anchor. `relocateLabels` takes its turns in the same order (card
+ * AL3a), so the two passes together are order-free: the same rooms written in any order draw the
+ * same. A place is ranked off the lattice, never by a
  * measured distance, so an edit too small to matter cannot flip a label across its room.
  *
  * When no height clears it, the form that leaves the least of the label buried is drawn, and an

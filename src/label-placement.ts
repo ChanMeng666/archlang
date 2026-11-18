@@ -32,13 +32,19 @@
  * it; what is left over something after that is `W_ANNOTATION_OVERLAP`'s to report. That rule
  * reads rooms only, so an `outdoor` surface's label is not reported.
  *
- * ### Determinism
+ * ### Determinism, and the order of the source
  *
  * Candidates are visited in one fixed order — the incumbent anchor **first**, then a 7×7
  * lattice of bounding-box fractions — and only a **strictly** better score displaces the
  * incumbent. Same rule as {@link import("./geometry/polygon.js").polygonLabelPoint}: no
  * float comparison picks a winner among equals, so a tie always keeps the label where it
  * was. Pure arithmetic, one pass, no iteration to a tolerance.
+ *
+ * The labels take their turns in an order read off the plan, never the source's
+ * ({@link plotOrder}: the anchor's y, then its x, then the texts, then the ring; the order
+ * `fitLabels` takes its turns in), so the same rooms written in any order draw the same (card AL3a,
+ * label-crowding). Before, the turns went by element order, and each placed label is an obstacle
+ * for the next, so five corpus plans, written the other way round, drew differently.
  *
  * Prior art: planscript-rust's `best_area_label_candidate` / `label_score`
  * (`src/exporters.rs`, MIT) — the candidate lattice, the distance-from-centre preference
@@ -616,10 +622,9 @@ export function underLabels(n: SceneNode): boolean {
  *
  * Mutates `nodes` in place (replacing, never editing, the text nodes it moves), which is
  * safe: every node in the list was freshly built by this `toScene` call. Groups are
- * visited in ELEMENT order and each placed label becomes an obstacle for the next, so two
- * labels can never be relocated onto each other — and an `outdoor` surface takes its turn
- * among the rooms rather than after them, which is what keeps a plan with no ground on
- * exactly the group list, and therefore exactly the bytes, it would have without ground.
+ * visited in {@link plotOrder}, never element order, and each placed label becomes an obstacle
+ * for the next, so two labels can never be relocated onto each other. An `outdoor` surface takes
+ * its turn among the rooms, by the same order.
  *
  * `work`, when given, counts every place scored (`labelRelocations`, `src/compile-work.ts`); an
  * out-parameter only.
@@ -675,7 +680,7 @@ export function relocateLabels(
     probe.placedN = placed.boxes.length;
     return { obstacles: buried(rect, probe.obstacles), placed: buried(rect, probe.placed) };
   };
-  for (const g of groups) {
+  for (const g of plotOrder(nodes, groups)) {
     const texts: number[] = [];
     for (let i = g.from; i < g.to; i++) {
       const n = nodes[i]!;
@@ -762,4 +767,52 @@ export function relocateLabels(
     }
     placed.push(shiftBBox(rect0, dx, dy));
   }
+}
+
+/**
+ * The groups in the order the relocation takes them: by the anchor's y, then its x (the order
+ * `fitLabels` takes its turns in), then the texts as drawn, then the ring vertex by vertex, then an
+ * authored label after a placed one. Read off the plan, never the source, so the same rooms written
+ * in any order take the same turns. Only two groups alike in all of that, which draw the same texts
+ * at the same place in the same ring, keep their element order between them (the sort is stable).
+ */
+function plotOrder(nodes: readonly SceneNode[], groups: readonly LabelGroup[]): LabelGroup[] {
+  const keyed = groups.map((g) => {
+    const texts: string[] = [];
+    for (let i = g.from; i < g.to; i++) {
+      const prim = nodes[i]!.prim;
+      if (nodes[i]!.layer === "labels" && prim.t === "text") texts.push(prim.value);
+    }
+    return { g, texts };
+  });
+  keyed.sort((a, b) => {
+    const pa = a.g.anchor;
+    const pb = b.g.anchor;
+    return (
+      pa.y - pb.y ||
+      pa.x - pb.x ||
+      strings(a.texts, b.texts) ||
+      ring(a.g.ring, b.g.ring) ||
+      Number(a.g.fixed) - Number(b.g.fixed)
+    );
+  });
+  return keyed.map((k) => k.g);
+}
+
+/** Two lists of strings, element by element by code unit, then by length. */
+function strings(a: readonly string[], b: readonly string[]): number {
+  for (let i = 0; i < Math.min(a.length, b.length); i++) {
+    if (a[i]! < b[i]!) return -1;
+    if (a[i]! > b[i]!) return 1;
+  }
+  return a.length - b.length;
+}
+
+/** Two rings, vertex by vertex (x, then y), then by length. */
+function ring(a: readonly Point[], b: readonly Point[]): number {
+  for (let i = 0; i < Math.min(a.length, b.length); i++) {
+    const d = a[i]!.x - b[i]!.x || a[i]!.y - b[i]!.y;
+    if (d !== 0) return d;
+  }
+  return a.length - b.length;
 }
