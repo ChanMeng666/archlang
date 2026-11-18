@@ -41,16 +41,19 @@ suite("the witness: who overprints whom", () => {
   const ds = overlaps(WITNESS);
 
   it("reports two room names over fixtures, and no figure: the thickness figure keeps off the labels (AL5)", () => {
+    // The store's shelving stands where its first filing cabinet stood (card AL4 put an uncatalogued
+    // word there, whose "IT Rack" is wider than it in either direction and is not drawn, so no
+    // `furniture-label` is under either name).
     expect(ds.map(diagnosticOverprint)).toEqual([
       {
         subject: { kind: "room-label", room: "r_store", text: "Store / IT" },
-        over: [{ kind: "symbol", id: "filing_cabinet_5", parts: ["name"] }],
+        over: [{ kind: "symbol", id: "shelving_5", parts: ["name"] }],
       },
       {
-        // The store's first cabinet stands under the kitchenette's name, across the partition.
+        // The store's shelving stands under the kitchenette's name, across the partition.
         subject: { kind: "room-label", room: "r_kitchen", text: "Kitchenette / Break" },
         over: [
-          { kind: "symbol", id: "filing_cabinet_5", parts: ["name"] },
+          { kind: "symbol", id: "shelving_5", parts: ["name"] },
           { kind: "symbol", id: "kitchen_sink_7", parts: ["name"] },
         ],
       },

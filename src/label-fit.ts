@@ -10,8 +10,10 @@
  * own floor, at the width it can draw ({@link inkExtent}); or over a furniture, fixture or stair
  * symbol's drawn shapes, at the rule's generous width ({@link textExtent}). A label that passes is
  * not touched, so a plan with nothing to report keeps its bytes; `test/label-fit.test.ts` holds
- * that over the corpus and the plans the soundness audits wrote. A rug is floor finish and a piece's own label is text, not ink, as they
- * are to the rule.
+ * that over the corpus and the plans the soundness audits wrote. A rug is floor finish, as it is
+ * to the rule. A piece's own label is text, not symbol ink: like another room's label or a
+ * `dims auto` number, it never makes a label shrink, and a place that sits on it ranks below one
+ * that does not, as `relocateLabels` and the rule read it (card AL4).
  *
  * Walls are read here as their bands, not the poché the rule clips: a band is a box, so it costs
  * no clip, and it differs from the poché only across an opening's gap and at a mitre's tip.
@@ -318,6 +320,12 @@ function marksOf(
     const shapes: Point[][] = [];
     for (let i = from; i < to; i++) shapes.push(...shapesOf(nodes[i]!.prim));
     if (shapes.length > 0) marks.push(mark("symbol", extentOf(shapes), shapes));
+    // A piece's own label is text a name must not sit on, as `relocateLabels` and the rule read it
+    // (card AL4); only an uncatalogued word draws one, inside its rectangle.
+    for (let i = from; i < to; i++) {
+      const prim = nodes[i]!.prim;
+      if (el.kind === "furniture" && prim.t === "text") marks.push(mark("text", primBBox(prim)!));
+    }
   }
   for (let i = 0; i < nodes.length; i++) {
     if (measured[i] || underLabels(nodes[i]!)) continue;

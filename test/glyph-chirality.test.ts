@@ -66,16 +66,17 @@ const H = 4000;
  * INSIDE that footprint. Place the piece off-centre and the reflection moves it — a real
  * difference, but not the one under test.
  */
-function paired(category: string, mirror: "" | "x" | "y", size = "2600x1600", rotate = 0): string {
+function paired(category: string, mirror: "" | "x" | "y", size = "2600x1600", rotate = 0, label = ""): string {
   const [w, h] = size.split("x").map(Number) as [number, number];
   const at = mirror === "x" ? `(${W},0)` : mirror === "y" ? `(0,${H})` : "(0,0)";
   const clause = mirror ? ` mirror ${mirror}` : "";
   const turn = rotate ? ` rotate ${rotate}` : "";
+  const text = label ? ` label "${label}"` : "";
   return `plan "chirality" {
   component c() {
     wall id=w exterior thickness 200 { (0,0) (${W},0) (${W},${H}) (0,${H}) close }
     room id=r at (0,0) size ${W}x${H} label "Room"
-    furniture ${category} at (${(W - w) / 2},${(H - h) / 2}) size ${size}${turn} in r
+    furniture ${category} at (${(W - w) / 2},${(H - h) / 2}) size ${size}${turn}${text} in r
   }
   place c() as a at ${at}${clause}
 }`;
@@ -229,6 +230,22 @@ describe("a symbol with no handedness is not perturbed", () => {
     // deliberately outside the mirroring branch, so this is a pin on the branch's placement
     // as much as on the drawing.
     expect(svgOf(paired("hammock", "x", "2000x800"))).toBe(svgOf(paired("hammock", "", "2000x800")));
+  });
+
+  it("an uncatalogued word's label, upright or turned, is the same mirrored or not (card AL4)", () => {
+    // Text is never mirrored: a label turned along a tall piece reads bottom to top on the piece and
+    // on its reflection alike, so neither axis gives the fallback a hand. Under `mirror y` the frame
+    // derives `rotate 180`, and the label is the same as on the plain piece turned so.
+    for (const size of ["2000x800", "300x1400"]) {
+      const plain = svgOf(paired("hammock", "", size, 0, "Hammock"));
+      expect(plain).toContain(">Hammock<");
+      expect(svgOf(paired("hammock", "x", size, 0, "Hammock"))).toBe(plain);
+      expect(svgOf(paired("hammock", "y", size, 0, "Hammock"))).toBe(
+        svgOf(paired("hammock", "", size, 180, "Hammock")),
+      );
+    }
+    // The pins above are not vacuous: the tall piece's label is the turned one.
+    expect(svgOf(paired("hammock", "", "300x1400", 0, "Hammock"))).toContain('transform="rotate(-90 ');
   });
 
   it("the pairing trick really does put the two instances on the same box", () => {

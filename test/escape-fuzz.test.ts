@@ -285,9 +285,13 @@ const INJECTION_SITES: Record<string, (p: string) => string> = {
   // would never reach the SVG and this site would silently stop testing anything. (It read
   // `desk` until the domain glyph modules landed and desk started drawing — the property
   // caught it, which is the property working.) The labelled-rectangle fallback that an
-  // uncatalogued word takes is the one path that renders a furniture label at all.
+  // uncatalogued word takes is the one path that renders a furniture label at all. And it draws
+  // the label only when it fits the rectangle (card AL4), so the site sets a 1:1 sheet, whose
+  // furniture lettering is 2 mm, and a 5 m piece: room for 4,032 characters on one line, more
+  // than the longest payload `hostile` builds (eight chunks of at most 400), so every payload is
+  // drawn. On a 1200 mm piece at the drawing's own lettering a 25-character payload was left out.
   furnitureLabel: (p) =>
-    `plan "P" { ${WALL} room id=r at (0,0) size 6000x4000 label "Room"\n furniture widget at (1000,1000) size 1200x600 label "${lit(p)}" }`,
+    `plan "P" { paper A0 landscape scale 1:1 ${WALL} room id=r at (0,0) size 6000x4000 label "Room"\n furniture widget at (500,1000) size 5000x600 label "${lit(p)}" }`,
   dimText: (p) => `plan "P" { ${WALL} dim (0,-100)->(6000,-100) offset 600 text "${lit(p)}" }`,
   titleBlock: (p) => `plan "P" { title { project "${lit(p)}" drawn_by "${lit(p)}" date "${lit(p)}" } ${WALL} }`,
   titleNumberRevision: (p) => `plan "P" { title { number "${lit(p)}" revision "${lit(p)}" } ${WALL} }`,

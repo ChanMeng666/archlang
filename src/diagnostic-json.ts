@@ -100,8 +100,9 @@ export interface DiagnosticJson {
  * drawn `symbol` (a piece, a fixture, a stair or a lift), a `wall`'s poché, a `door-swing`, the
  * `floor-edge` of the subject's own room (the text runs off its floor), the sheet `chrome` (the
  * north arrow, the scale bar, the title block) or a `leader` line. Some kinds are named for checks
- * the rule does not make yet: today it reports no `furniture-label`, `chrome` or `leader`, and no
- * `dims auto` figure under another text.
+ * the rule does not make yet: today it reports a `furniture-label` (an uncatalogued piece's label,
+ * its `id` the piece's; card AL4) only as what a text is printed over, never as a subject; no
+ * `chrome` or `leader`; and no `dims auto` figure under another text.
  */
 export type OverprintKind =
   | "room-label"
@@ -122,9 +123,9 @@ export type LabelPart = "name" | "area";
 
 /**
  * One text or thing an overprint names. `id` is the element's id as `describe()` lists it (a
- * symbol's, a door's; authored or assigned, and an assigned one such as `desk_15` moves when a
- * statement is inserted before it, so it identifies the element in this run and is no handle to
- * edit by: the hint quotes only authored ids); `room` is the id of the room a label belongs to, or,
+ * symbol's, a door's, the piece's for a `furniture-label`; authored or assigned, and an assigned
+ * one such as `desk_15` moves when a statement is inserted before it, so it identifies the element
+ * in this run and is no handle to edit by: the hint quotes only authored ids); `room` is the id of the room a label belongs to, or,
  * for a `dims auto` figure, the room it stands in; `text` is the text as the sheet draws it (a
  * `room-label`'s is the room's name, or its area figure when it has no name). `parts` says which
  * texts of a room's label are involved, `name` before `area`, each measured on its own: on every
@@ -143,6 +144,7 @@ export interface OverprintItemJson {
 /**
  * A diagnostic's `overprint`: the text it is about (`subject`, which always has its `text`) and
  * what that text is printed over (`over`), in the order the rule found them: the drawn symbols,
+ * then the pieces' labels (a piece whose label is under the text is listed as a `symbol` too),
  * then for a room's label a wall, the door swings and its floor's edge, and for a `dims auto`
  * figure the rooms whose labels it covers, one entry per room. A room's warning is about its
  * label (`room-label`), whichever of its texts overprints; each `over` entry's `parts` says which.

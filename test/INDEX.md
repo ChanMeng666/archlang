@@ -5,7 +5,7 @@
 Where the tests of a `src` module are, and what each test file is for. Generated; `npm run check:drift`
 fails when it is stale. How to add a test: `docs/testing.md` § 4.
 
-548 test files in `test/`, 290 `src` modules, 109 modules no test imports.
+549 test files in `test/`, 290 `src` modules, 109 modules no test imports.
 
 ## `src` module → tests that import it
 
@@ -66,7 +66,7 @@ Nearest first, then by name; `(+n)` is the rest. Test names are `test/<name>.tes
 - `src/elements/door.ts` (1) — `window-kinds`
 - `src/elements/facets.ts` (1) — `element-facets`
 - `src/elements/fixtures-glyphs.ts` (25) — `catalogue-images`, `cli-manifest`, `drawing-budget`, `equivariance-scene`, `finish-furnish`, `fixture-classifier-drift`, `footprint-any-placement`, `furniture-mirror` (+17)
-- `src/elements/furniture.ts` (11) — `furniture-relations`, `furniture-rotate`, `glyph-chirality`, `glyph-lib`, `glyphs-kitchen`, `glyphs-living`, `glyphs-misc`, `glyphs-new-families` (+3)
+- `src/elements/furniture.ts` (12) — `furniture-label-fit`, `furniture-relations`, `furniture-rotate`, `glyph-chirality`, `glyph-lib`, `glyphs-kitchen`, `glyphs-living`, `glyphs-misc` (+4)
 - `src/elements/glyph-chirality.ts` (12) — `furniture-mirror`, `glyph-chirality`, `glyph-lib`, `glyphs-bath`, `glyphs-bedroom`, `glyphs-kitchen`, `glyphs-living`, `glyphs-misc` (+4)
 - `src/elements/glyph-lib.ts` (18) — `doors`, `equivariance-scene`, `furniture-mirror`, `glyph-chirality`, `glyph-lib`, `glyphs-batch2`, `glyphs-bath`, `glyphs-bedroom` (+10)
 - `src/elements/glyphs-bath.ts` (1) — `glyphs-bath`
@@ -87,7 +87,7 @@ Nearest first, then by name; `(+n)` is the rest. Test names are `test/<name>.tes
 - `src/elements/window.ts` (1) — `corner-window`
 - `src/error-catalog-fixes.ts` (1) — `explain`
 - `src/error-catalog.ts` (20) — `cli-context`, `context-starter`, `element-cap`, `error-catalog-families`, `fix-coverage`, `garage`, `levels`, `lint-rule-order` (+12)
-- `src/export/dxf.ts` (10) — `curves`, `export-dxf`, `furniture-curves-backends`, `label-fit`, `label-wrap`, `opening`, `room-floor`, `scene-path-prim` (+2)
+- `src/export/dxf.ts` (11) — `curves`, `export-dxf`, `furniture-curves-backends`, `furniture-label-fit`, `label-fit`, `label-wrap`, `opening`, `room-floor` (+3)
 - `src/export/pdf.ts` (8) — `export-font-cjk`, `export-pdf`, `furniture-curves-backends`, `label-wrap`, `roof`, `scene-path-prim`, `sheet`, `v129-cross`
 - `src/expr-source.ts` (1) — `emit-opening-oracle`
 - `src/expr.ts` (16) — `block-stair`, `cursor-exhaustive`, `error-value`, `expr`, `furniture-relations`, `import-module-lets`, `keep`, `non-finite` (+8)
@@ -112,7 +112,7 @@ Nearest first, then by name; `(+n)` is the rest. Test names are `test/<name>.tes
 - `src/geometry/intersect.ts` (5) — `band`, `intersect`, `joinery-oracle`, `joinery-split-oracle`, `joinery-pipeline`
 - `src/geometry/joinery.ts` (4) — `joinery-oracle`, `joinery-split-oracle`, `joinery-split`, `joinery`
 - `src/geometry/min-rect.ts` (1) — `min-rect`
-- `src/geometry/polygon.ts` (17) — `circulation-concave`, `dim-thickness-callout`, `label-placement-oracle`, `label-placement`, `label-wrap`, `lint-thickness-unplaced`, `net-area`, `outdoor` (+9)
+- `src/geometry/polygon.ts` (18) — `circulation-concave`, `dim-thickness-callout`, `furniture-label-fit`, `label-placement-oracle`, `label-placement`, `label-wrap`, `lint-thickness-unplaced`, `net-area` (+10)
 - `src/geometry/rect.ts` (10) — `between-face-probes`, `block-stair-winders`, `finish-furnish-laws`, `finish-levels`, `label-placement-oracle`, `label-wrap`, `lint-clearances-kitchen-doors`, `lint-measure` (+2)
 - `src/geometry/union.ts` (3) — `band`, `joinery-oracle`, `union`
 - `src/grammar/tokens.ts` (34) — `arch-highlight`, `block-stair-lint`, `clause-order-byte-identity`, `closed-vocabularies`, `corner-window`, `door-enums`, `doors`, `element-facets` (+26)
@@ -120,7 +120,7 @@ Nearest first, then by name; `(+n)` is the rest. Test names are `test/<name>.tes
 - `src/impact.ts` (2) — `rectilinear-doors`, `rectilinear-rooms`
 - `src/import.ts` (34) — `block-stair-byte-identity`, `corner-window-byte-identity`, `dim-swap-reprint`, `dim-thickness-callout`, `drawing-budget`, `error-value-law`, `floor-materials-byte-identity`, `furniture-relations` (+26)
 - `src/import/limits.ts` (1) — `openplan3d-malformed`
-- `src/index.ts` (409) — `acc-metadata`, `access-graph`, `access-policy`, `accessible-svg`, `agent-gallery`, `alias-match`, `anchors`, `annotate` (+401)
+- `src/index.ts` (410) — `acc-metadata`, `access-graph`, `access-policy`, `accessible-svg`, `agent-gallery`, `alias-match`, `anchors`, `annotate` (+402)
 - `src/input-limit.ts` (2) — `import-rooted`, `workspace-seams`
 - `src/intent-concepts.ts` (2) — `vocabulary-living-dining`, `vocabulary-matcher-oracle`
 - `src/intent-feasibility.ts` (1) — `intent-infeasible`
@@ -169,7 +169,7 @@ Nearest first, then by name; `(+n)` is the rest. Test names are `test/<name>.tes
 - `src/room-tiling.ts` (7) — `rectilinear-doors`, `rectilinear-rooms-byte-identity`, `rectilinear-rooms`, `rectilinear-sides`, `wall-between-around`, `walls-from-rooms-clauses`, `walls-from-rooms`
 - `src/scene-build.ts` (24) — `annotation-collisions`, `annotation-small-rooms`, `export-dxf`, `export-font-cjk`, `export-pdf`, `furniture-curves-backends`, `furniture-rotate`, `glyph-chirality` (+16)
 - `src/scene-memo.ts` (1) — `scene-memo`
-- `src/scene.ts` (62) — `arc-radius-exact`, `axes`, `band`, `bbox-derived-position`, `block-stair-winders-walking-arc`, `block-stair`, `corner-window`, `dim-stagger` (+54)
+- `src/scene.ts` (63) — `arc-radius-exact`, `axes`, `band`, `bbox-derived-position`, `block-stair-winders-walking-arc`, `block-stair`, `corner-window`, `dim-stagger` (+55)
 - `src/segment-select.ts` (1) — `segment-select`
 - `src/share.ts` (1) — `share-codec`
 - `src/sheet-tables.ts` (5) — `drawing-budget`, `export-pdf`, `sheet-annotations`, `sheet`, `wall-status-drawing`
@@ -181,7 +181,7 @@ Nearest first, then by name; `(+n)` is the rest. Test names are `test/<name>.tes
 - `src/taste/arith.ts` (1) — `taste`
 - `src/taste/criteria.ts` (2) — `taste-separation`, `taste`
 - `src/taste/index.ts` (2) — `taste-budget`, `taste`
-- `src/text-layout.ts` (6) — `escape-fuzz`, `label-placement-oracle`, `label-wrap`, `lint-thickness-unplaced`, `text-layout`, `text-metrics`
+- `src/text-layout.ts` (7) — `escape-fuzz`, `furniture-label-fit`, `label-placement-oracle`, `label-wrap`, `lint-thickness-unplaced`, `text-layout`, `text-metrics`
 - `src/text-metrics.ts` (7) — `dim-stagger`, `dim-thickness-callout`, `label-placement`, `north-arrow`, `sheet-text`, `text-layout`, `text-metrics`
 - `src/theme.ts` (22) — `element-facets`, `equivariance-scene`, `export-pdf`, `format`, `furniture-mirror`, `glyph-chirality`, `glyph-dispatch-table`, `glyph-lib` (+14)
 - `src/types.ts` (9) — `datum`, `doors`, `element-cap`, `fixture-orientation`, `furniture-flush`, `furniture-lint`, `garage`, `keep` (+1)
@@ -410,6 +410,7 @@ The first sentence of each file's header comment.
 - `test/furniture-curves-backends.test.ts` — Do all four backends actually DRAW a curve that lands on the `furniture` pass?
 - `test/furniture-flush.test.ts` — innerFaceOfRoomEdge — the geometry `flush` measures from; flush arithmetic — the four edge anchors; flush arithmetic — corners apply the rule per edge; flush an…
 - `test/furniture-footprint.test.ts` — catalogued default footprints.
+- `test/furniture-label-fit.test.ts` — Card AL4: an uncatalogued piece's label is drawn upright when it fits its rectangle, turned along a tall piece when only that fits, and not drawn when it fits neither way (ruling AL-D2: never below the furniture-label...
 - `test/furniture-lint.test.ts` — furniture lint; furniture `in <room>` ownership; furniture `in <room>` ownership is measured by FOOTPRINT, not centre; furniture-vs-wall collision lint; furnitu…
 - `test/furniture-mirror.test.ts` — `furniture … mirror` (issue #405): one piece's left and right swap, and its back stays.
 - `test/furniture-place.test.ts` — T1c — furniture in <room> centered; T1c — furniture in <room> anchor.

@@ -5,7 +5,9 @@ catalogued kind draws a **real plan symbol** — a WC with a cistern and a seat,
 with a headboard and pillows, a wardrobe with its hanging rail and hangers — in the same drawing
 vocabulary as the door arcs and window panes. Anything ArchLang doesn't know still
 renders as a **labelled rectangle**, which is the escape hatch for a piece the
-catalogue has no word for.
+catalogue has no word for. The label is drawn only inside the rectangle: upright when it fits,
+turned along a tall piece when only that fits, and otherwise not drawn at all (`describe` still
+lists it).
 
 Where you put it matters to the [soundness checks](analysis.md): the linter knows a WC
 should have its back to a wall, that a bath needs a wet fixture, and that a door leaf

@@ -2092,7 +2092,9 @@ A piece of furniture or a built-in fixture. Every **catalogued** kind draws a re
 plan symbol — a WC with a cistern, a bed with a headboard, a wardrobe with its hanging
 rail and hangers — and ignores any `label`. Any other kind falls back to a schematic
 **labelled rectangle**, which is the escape hatch for something ArchLang has no
-symbol for. The catalogue is `archlang manifest --json`'s `fixtureCategories`, and every
+symbol for. Its label is set at the furniture-label size, upright when it fits the rectangle,
+turned to read up a tall piece when only that fits, and left off the drawing when it fits
+neither way (it stays in `describe`). The catalogue is `archlang manifest --json`'s `fixtureCategories`, and every
 kind is documented with its symbol, footprint and facing in
 [Furniture & Fixtures](furniture.md).
 
