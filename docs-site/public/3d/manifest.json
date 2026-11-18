@@ -208,8 +208,8 @@
         "width": 1600,
         "height": 1667,
         "sheet": false,
-        "sha256": "6aad0850f93bd2dd93732f392df75cb1fabb4ec80fd92116927f1f612c4e7bb1",
-        "pixelsSha256": "c4d9119ed7386e346ce2ce1483de778e55ca877c90130a694796b394bf8f9471"
+        "sha256": "49e566ad0d2defc7b4022723eea6b91613f5743f9c6288196eaa5a6e3f35a028",
+        "pixelsSha256": "34742290bdfdc74e194f2c656f563a03b67feb1ca9cc8798efd0bf5d622ec5f2"
       },
       "files": [
         {
@@ -238,7 +238,7 @@
         },
         {
           "path": "laneway-house.plan.png",
-          "bytes": 187239,
+          "bytes": 187465,
           "archlang": "1.64.0",
           "archlang3d": "0.9.0"
         }

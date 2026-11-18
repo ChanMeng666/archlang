@@ -580,6 +580,10 @@ describe("fixture symbols — the outdoor tranche (re-blessed when redrawn)", ()
     `);
   });
 
+  // The room's name and area stand at the bottom-right corner: the plan is mirror-symmetric, the
+  // relocation scores the two bottom corners equal up to float rounding (about 1e-13), and reading
+  // the name at its ink width (255 mm, over its 223 mm estimate; card AL3w) tips that tie from left
+  // to right. Both corners are equally clear of the shed (1.7 % of the name's box either way).
   it("shed", () => {
     expect(svg("furniture shed at (300,300) size 2400x1800")).toMatchInlineSnapshot(`
       "<svg xmlns="http://www.w3.org/2000/svg" xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"  viewBox="-510 -510 4020 3420" font-family="Helvetica, Arial, sans-serif">
@@ -598,8 +602,8 @@ describe("fixture symbols — the outdoor tranche (re-blessed when redrawn)", ()
       <line x1="408" y1="1200" x2="2592" y2="1200" stroke="#a8a29a" stroke-width="3.47" stroke-dasharray="28.8 19.2"/>
       </g>
       <g id="A-ANNO-TEXT" inkscape:groupmode="layer" inkscape:label="A-ANNO-TEXT">
-      <text x="300" y="2142" font-size="90" fill="#222222" text-anchor="middle" dominant-baseline="central" font-weight="600">Room</text>
-      <text x="300" y="2241" font-size="66" fill="#7a7a7a" text-anchor="middle" dominant-baseline="central">7.2 m²</text>
+      <text x="2700" y="2142" font-size="90" fill="#222222" text-anchor="middle" dominant-baseline="central" font-weight="600">Room</text>
+      <text x="2700" y="2241" font-size="66" fill="#7a7a7a" text-anchor="middle" dominant-baseline="central">7.2 m²</text>
       </g>
       <g><polygon points="2865,-415.5 2797.5,-199.5 2865,-246.75 2932.5,-199.5" fill="#333333" transform="rotate(0 2865 -280.5)"/><text x="2865" y="-477.9" font-size="78" fill="#333333" text-anchor="middle" dominant-baseline="central">N</text></g>
       <g><rect x="0" y="2550" width="250" height="42" fill="#333333"/><rect x="250" y="2550" width="250" height="42" fill="none" stroke="#333333" stroke-width="4.8"/><text x="0" y="2652" font-size="60" fill="#333333" text-anchor="start" dominant-baseline="central">0</text><text x="500" y="2652" font-size="60" fill="#333333" text-anchor="middle" dominant-baseline="central">0.5 m</text></g>
