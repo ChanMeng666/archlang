@@ -1976,6 +1976,17 @@
  * circulation overlay, `compile().diagnostics`, `describe()`, `lint()` under both profiles), `main`'s
  * compiler against the branch's on the same sources, moved this plan's SVG alone, and a planted
  * change to the upright label moved exactly the 9 sources that draw one.
+ *
+ * Re-measured for AL3w (a room's text is read against a symbol at the wider of its estimate and its
+ * ink), the same 14 rows. "WC 1" and "WC 2" were wrapped over their basins: "WC" draws 1.67 em of
+ * ink against a 1.24 em estimate, so neither the label fit nor the rule saw the basin under it. Now
+ * the fit sets each on one line between the pan and the basin: exactly those four texts moved (8
+ * SVG elements out, the name's two `<tspan>` lines among them, 4 in); `describe()`, `lint()` under
+ * both profiles, the diagnostics and the steps did not move. Put `main`'s drawing (every page's SVG
+ * and Scene, `287e19f8`) back into the branch's payload and every old digest is reproduced; the new
+ * ones are this body on the branch. A per-payload sweep of 734 corpus rows (379 files and the docs'
+ * 355 `arch` fences; SVG per storey, `describe()`, `lint()`), `main`'s compiler against the
+ * branch's, moved this plan's SVG alone, and a planted change (the wrap step off) moved 19.
  */
 
 /** SHA-256 over every storey's SVG + `describe()` + `lint()`, measured on `f4548db`. */

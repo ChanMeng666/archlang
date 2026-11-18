@@ -48,7 +48,10 @@
  * ## What "over" means
  *
  * A text's box is the rectangle its estimated width and its size span about its anchor, turned
- * with the text. It is over a symbol when the area it shares with one of the symbol's drawn
+ * with the text. A room's name or area figure is boxed against a symbol or a piece's label at the
+ * wider of that estimate and the width it draws ({@link symbolExtent}, card AL3w): the estimate is
+ * generous for most text but short of the ink for a short run of wide letters, so "WC" read at it
+ * stood clear of a basin it was printed over. The label fit reads the same width. It is over a symbol when the area it shares with one of the symbol's drawn
  * shapes is more than {@link COLLIDE_MIN} (2 %) of its own area — the threshold at which the
  * label placer itself decides a label is buried and must move. Below it the overlap is the
  * estimate's own slack, not ink. The shared area is exact: each drawn shape is clipped to the
@@ -124,7 +127,16 @@ import { titleBlockMetrics, titleRows } from "../../chrome-layout.js";
 import { drawBudgetDiagnostic } from "../../draw-budget.js";
 import { isSymbolElement, sectorOf, shapesOf } from "../../label-fit.js";
 import { COLLIDE_MIN, meanExtent, wallBands } from "../../label-placement.js";
-import { type Box, boxesMeet, emptyBox, grow, inkExtent, type TextBox, textBox } from "../../text-layout.js";
+import {
+  type Box,
+  boxesMeet,
+  emptyBox,
+  grow,
+  inkExtent,
+  symbolExtent,
+  type TextBox,
+  textBox,
+} from "../../text-layout.js";
 import { EM_PER_CHAR, inkWidth, textWidth } from "../../text-metrics.js";
 import { PLAIN_SHEET_TEXT, sheetText } from "../../sheet-text.js";
 import { pointInRoomBox, roomBox } from "../../analyze.js";
@@ -224,8 +236,11 @@ export const annotationOverlap: LintRule = {
     // text can be over it only where it is over the piece: each is read only for a text already
     // over its piece, and costs no pair of its own.
     const pieceLabels = new Map<string, FurnitureLabel[]>();
-    // Room labels: each room's name and area figure as drawn.
-    const labels: { room: RRoom; prim: TextPrim; text: Text; ink: Text; isName: boolean }[] = [];
+    // Room labels: each room's name and area figure as drawn, boxed three ways: `text` at the
+    // estimate (against a `dims auto` number), `ink` at the width it draws (against the walls, the
+    // swings and the floor's edge), `symbol` at the wider of the two (against a symbol or a piece's
+    // label, card AL3w; the label fit reads the same width).
+    const labels: { room: RRoom; prim: TextPrim; text: Text; ink: Text; symbol: Text; isName: boolean }[] = [];
     const roomById = new Map(rooms.map((r) => [r.id, r] as const));
     const named = new Set<RRoom>();
     // The walls' poche as drawn (openings cut, joints mitred); a demolished wall draws none.
@@ -239,7 +254,15 @@ export const annotationOverlap: LintRule = {
         // `room.render` draws the name first (only when the room has one), then the area figure.
         const isName = !!room.label && !named.has(room);
         named.add(room);
-        labels.push({ room, prim: n.prim, text: textBox(n.prim), ink: textBox(n.prim, inkExtent(n.prim).w), isName });
+        const inkW = inkExtent(n.prim).w;
+        labels.push({
+          room,
+          prim: n.prim,
+          text: textBox(n.prim),
+          ink: textBox(n.prim, inkW),
+          symbol: textBox(n.prim, symbolExtent(n.prim, inkW).w),
+          isName,
+        });
         continue;
       }
       const el = byId.get(n.elementId);
@@ -389,13 +412,13 @@ export const annotationOverlap: LintRule = {
       (labels.find((l) => l.room === room && l.isName) ?? labels.find((l) => l.room === room))!.prim.value;
     for (const l of labels) {
       for (const s of syms) {
-        if (!over(l.text, s.shapes, s.box)) continue;
+        if (!over(l.symbol, s.shapes, s.box)) continue;
         const e = hitOn(l);
         if (!e.hits.includes(s.el)) e.hits.push(s.el);
         mark(e, s.el, l);
         // The piece's own label, read only now that the text is over the piece.
         for (const fl of pieceLabels.get(s.el.id) ?? []) {
-          if (!over(l.text, [fl.text.rect], fl.text.box)) continue;
+          if (!over(l.symbol, [fl.text.rect], fl.text.box)) continue;
           if (!e.furnitureLabels.includes(fl)) e.furnitureLabels.push(fl);
           mark(e, fl, l);
         }
