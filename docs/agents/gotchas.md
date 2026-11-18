@@ -58,6 +58,12 @@ coordinator's own notes (merging, registries, browser and social automation, the
 
 ## PRs & CI
 
+- **`Playground E2E engines` can die in "Install Firefox and WebKit system deps" with no test run**: the
+  apt download crawls until the 20-minute job timeout and the step reads `cancelled`. It is the runner,
+  not the change: `gh run rerun <id> --failed`.
+- **For about a minute after a release publishes, every PR's `test/release-compat.test.ts` is red**: it
+  `npm pack`s the version in `package.json`, which npm lists before the tarball can be fetched. Re-run the
+  failed job; never touch the test.
 - **`vitest -u -t "<name>"` (the owner's update command) on a snapshot file deletes every snapshot the filter skipped** as obsolete
   (`snapshot.test.ts` lost its multi-level plans this way). Run `-u` unfiltered and read the diff.
   (guarded: hook rule `filtered-update`, `.claude/hooks/local-gate.mjs`, even under `#allow-local-heavy`)
@@ -180,6 +186,13 @@ coordinator's own notes (merging, registries, browser and social automation, the
 
 ## Tooling & process
 
+- **`npm run size:embed` in a `.claude/worktrees/*` checkout also needs `playground\node_modules` junctioned to
+  the primary's**: the root resolves `vite` 6 (a root override) and the playground needs 8; without it the
+  build fails on resvg's native binary. Unlink that junction too before removing the worktree.
+- **An agent stopped by a usage limit, or one resumed after its context compacted, may not remember its
+  card**: resume it with `SendMessage` and restate the card, the branch, the PR and what is left; read its
+  branch with raw `git` before trusting its report, and free a heavy-lock line it left behind once no
+  heavy process runs.
 - **A root `.ignore` hides `CHANGELOG`, generated files and goldens from ripgrep** (and the Grep tool);
   name the path to search them.
 - **A new `.gitleaksignore` fingerprint on a live file needs a rule in `test/opaque-literal-guard.test.ts`.**
