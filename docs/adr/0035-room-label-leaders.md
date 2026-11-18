@@ -134,6 +134,7 @@ Measured on the built branch against `main` 287e19f8, over the same corpus:
   - The plan estimated about 70 fewer. The difference is the two no-`paper` fixtures, which no leader can help.
   - The shipped examples stay free of warnings and their drawings do not change.
   - The witness's "200" thickness figure keeps its first station, because the kitchenette's name no longer runs over it.
+  - The other 152 `.arch` files in the tests' and packages' fixture folders go from 9 reports to 2: `test/keep-corpus/min-clear-joins.arch` (6 to 0: three labels led, three placed again on their own floor) and `test/finish-fixtures/agent-ux-prefinish.arch` (1 to 0, led).
 - **Order.**
   - `ORDER_EXCUSED` goes from five plans to none.
   - The label-wrap knock-on list stays at four (§3).

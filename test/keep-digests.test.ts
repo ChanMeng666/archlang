@@ -18,6 +18,12 @@
  * `validate --json` reads differently: arcbbox 1 report to 0, joins still 6 with its hint and some
  * of its subjects changed. `describe()` and every other lint code are byte-identical on both plans;
  * no keep row moved.
+ *
+ * Re-measured for AL3b (label-crowding; ADR 0035), `min-clear-joins`: of its six labels that no fit
+ * cleared, three are led to a neighbouring room's floor and three placed again on their own, so its
+ * `validate --json` carries no `W_ANNOTATION_OVERLAP` (6 reports to 0). The keep rows (`describe().keeps`), `compile().diagnostics`, the exit code and
+ * the `validate --json` output with those reports taken out are the same on the previous branch and
+ * this one; that branch gives the old digest exactly.
  */
 
 import { describe as suite, expect, it } from "vitest";
@@ -30,7 +36,7 @@ const K3_DIGESTS: [string, string][] = [
   ["loops", "9e6d4833ecd871d814eb1555d848f54a3ad90957a018c54795141cf061eb9dec"],
   ["min-clear-arcbbox", "0c2e5d959babb03fa8a41b522c68646e3dbe69d270d319b0d6a518f246c899eb"], // #367, see the header
   ["min-clear-derived", "50217fb42eed03770f6adab3455b56d8f160d25a845872f6499006a3b56ef192"],
-  ["min-clear-joins", "bb34d6f205d32293b0e6f59622622b1311c5556c2a46553eb860f86323162b17"], // round 2: the `skipped` reasons; #367, see the header
+  ["min-clear-joins", "2de56a545f66f8d01350912154b95c28663f3ef8712512400e97b5d96444fc68"], // round 2: the `skipped` reasons; #367 and AL3b, see the header
   ["min-clear-lining300", "6e792240271d43879ea9fe432c93a1c26390a664cc89317caa7c3b6ca6c10902"],
   ["min-clear-nib100", "4db5ed0e35604fca30f61b4adb18aed1f9e0230df3d6e63264772b9479bbe9c7"],
   ["min-clear-t45", "da04ce990baae33b4b2fd03d392030fdfbf90c9e425fefe45620ca2d7a46cc8d"],
