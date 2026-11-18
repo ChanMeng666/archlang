@@ -187,7 +187,7 @@ const BASELINE: Readonly<Record<string, string>> = {
   "studio.arch": "c1b79a49af3ad31cddf82e88632624d46663c804f134b6e172e585cad36ed969",
   // laneway-house, bungalow and two-bed re-measured 2026-10-20 (PS2.17), a worktop in each kitchen;
   // see `byte-identity-baseline.ts`, "a worktop in every example kitchen", for the swap-back proof.
-  "laneway-house.arch": "b2900d3df455096b73fcb78e7b3cf7625395dbb2bf0f660d28bd1e93520371fd",
+  "laneway-house.arch": "8ede769dc35da44c182237feaa51d1c6f8648ec7310326a53843ea3d09b0d617",
   "bungalow.arch": "ee5c69442b4fe458063ae5e6cbafd3192d6acdb09b7f132ccc10a4e55a44de67",
   // Re-measured for the `overhead` flag. Its SOURCE gained two statements —
   // a `range_hood` over the stove and a `mirror` over the basin, the two correct drawings

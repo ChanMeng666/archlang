@@ -176,7 +176,7 @@ const BASELINE: [string, string, string][] = [
     "examples/knob-flat.arch",
   ],
   [
-    "5b411f773f980c1a09770a438dea5cd288de50e67655a1c6df255245b4e406f0",
+    "958934b402346348371464d60abc57c5bffde8eb7b5bcda1890a2bf6036b2749",
     "d282238093b245e45aaa9532ec851a819efef14a1bc4bb16021c6c6cf65d04d3",
     "examples/laneway-house.arch",
   ],

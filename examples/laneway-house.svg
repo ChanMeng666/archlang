@@ -172,8 +172,8 @@
 <text x="2100" y="2482.9" font-size="169.4" fill="#7a7a7a" text-anchor="middle" dominant-baseline="central">27.3 m²</text>
 <text x="5850" y="1203.8" font-size="231" fill="#222222" text-anchor="middle" dominant-baseline="central" font-weight="600">Bath</text>
 <text x="5850" y="1457.9" font-size="169.4" fill="#7a7a7a" text-anchor="middle" dominant-baseline="central">8.3 m²</text>
-<text x="4860" y="3853.8" font-size="231" fill="#222222" text-anchor="middle" dominant-baseline="central" font-weight="600">Bedroom</text>
-<text x="4860" y="4107.9" font-size="169.4" fill="#7a7a7a" text-anchor="middle" dominant-baseline="central">13.2 m²</text>
+<text x="5850" y="5653.8" font-size="231" fill="#222222" text-anchor="middle" dominant-baseline="central" font-weight="600">Bedroom</text>
+<text x="5850" y="5907.9" font-size="169.4" fill="#7a7a7a" text-anchor="middle" dominant-baseline="central">13.2 m²</text>
 </g>
 <g id="A-ANNO-DIMS" inkscape:groupmode="layer" inkscape:label="A-ANNO-DIMS">
 <line x1="-100" y1="6600" x2="-100" y2="6784.8" stroke="#0E5484" stroke-width="8.62"/>

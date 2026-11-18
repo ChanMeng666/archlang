@@ -553,7 +553,7 @@ const BASELINE: [string, string][] = [
   ["examples/hillside-villa.arch", "123f2af228faf039c29d9861b60cfff3574b3cd04bc0057d5549cd02e67066fb"], // re-measured, see header; PS2.11e, see header; RM1.3a, see ./byte-identity-baseline.ts; RM9.2, see ./byte-identity-baseline.ts
   ["examples/imports.arch", "3aa7b2d5f953e6df63059c368e391ee3ea58c097cd7dff358197a940f4946252"],
   ["examples/knob-flat.arch", "578ec7551025df65b704f453b7af3493bf4abcfb19737fdece206e4c85fd2586"], // new example (P4, the knobs example), see header
-  ["examples/laneway-house.arch", "5b411f773f980c1a09770a438dea5cd288de50e67655a1c6df255245b4e406f0"], // PS2.11e, see header
+  ["examples/laneway-house.arch", "958934b402346348371464d60abc57c5bffde8eb7b5bcda1890a2bf6036b2749"], // PS2.11e, see header
   ["examples/library.arch", "acbc3325a38dea3132c2e6898df4c40ac2df5e85684fab1531409ba397e3b506"], // PS2.11e, see header
   ["examples/materials.arch", "b3d629675b1a43d4d1113f10b38e732d0b826fdb2b019fcf14ac4b166abd435d"],
   ["examples/museum-wing.arch", "add9b13a425ec75dd2b88c4eba087465228822c37321b3d1952db6f0795ef6c7"],
@@ -589,7 +589,7 @@ const BASELINE: [string, string][] = [
   ["test/fixtures/axes-grid.arch", "32dad3e21d1e5c40424473fdf05896088a2f848fd7f90d395d6cbd70169a0655"],
   ["test/fixtures/chain30.arch", "ce81264ecdc3a086f99708f90aee5dd929c71b9e8ccaaa54a1da5ce5aa213325"], // new fixture, see header; #367, see test/byte-identity-baseline.ts
   ["test/fixtures/dense-bays.arch", "9f4ad4538851a27b463113cd7e563823d185bc7e18b342fd9eebb45f2887992f"],
-  ["test/fixtures/dense-office.arch", "75745f6de0dff9d48395c79a4929068f3cdac1eceb7cebce616e318d43726c8e"], // AL6: a new row, see ./byte-identity-baseline.ts
+  ["test/fixtures/dense-office.arch", "29cce3519c238ed80dcaf485972329e3e91fc7e524e55292cde767e1d15ae490"], // AL6: a new row, see ./byte-identity-baseline.ts
   ["test/fixtures/diff-a.arch", "33a377ed414748c1262bdfbd057d657f8dda607ff77be9d944d2daa5feb12b2a"], // re-measured for PS2.4, see header
   ["test/fixtures/diff-b.arch", "1d4aaebab314c77742fc16d68c8925aa629ae42e1253a2167e240a2f25849ab1"],
   ["test/fixtures/diff-circ-a.arch", "e5bebcb2ebee7d35409f726a36c6da902eb7f414cadc9b93adb6e5d8a014235d"],
@@ -617,7 +617,7 @@ const BASELINE: [string, string][] = [
   ["eval/goldens/accessible-bath.arch", "d92fb8bf1dafde517a579409ff32602a06687a29149d3c2e7e1de69bd4cc4fce"],
   ["eval/goldens/accessible-flat.arch", "3809f58573d9685eb190389ae026bdbafa161dd57bdbf109a90048f4bb3e802a"],
   ["eval/goldens/against-wall-bath.arch", "731d8f1fc40ba19a5f431d54a643f236d70e4ae92aca19368cea2a38f29d734e"], // PS2.11e, see header
-  ["eval/goldens/anchor-furniture.arch", "c825ed175012280d8d024156f13d0b5e7bd3d3fca4a8ffde1f8d298b200c897c"],
+  ["eval/goldens/anchor-furniture.arch", "9be77fd0784c0098f976f4248acdff7dac9290df6161c61f456554455b293b30"],
   ["eval/goldens/attach-openings.arch", "658dd5a6589283292b8269548c0f38d01e57503ed244e40cd1084add86c290c1"], // PS2.11e, see header
   ["eval/goldens/bungalow.arch", "8c685c18b9651a339158e040310869881ee190ead53c7309913f86e171c09d71"], // RM1.4: snapping is now reported (eval golden, not edited: W_GRID_SNAPPED x2) (was 4271ab6f); RM1.4: the W_GRID_SNAPPED span points at the written value (was a85eb29f); steps 465 -> 593, +128 = two DIAGNOSTIC_STEPS
   ["eval/goldens/compact-studio.arch", "36b588ea8e25c29f6be7523de08b31c41ec63fe4ab8bd1a40a93daca4885f784"], // PS2.11e, see header
