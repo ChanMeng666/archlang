@@ -46,8 +46,8 @@ merge procedure and the CI job map in `commands.md`.
   and remove the worktree, so never delete one by hand. `npm run sync:main` is in `.claude/settings.json`'s
   allow list; `npm run train` is not, so outside bypass mode each use asks (its `--land` merges into `main`).
 - **A worktree that builds the playground** (`npm run size:embed`) junctions `playground\node_modules` to the
-  primary's as well as `node_modules` (`gotchas.md` § Tooling & process). After a dependency PR, `npm ci` in the
-  primary while no worktree gate runs, holding the heavy lock: every junctioned worktree reads that copy.
+  primary's as well as `node_modules` (`gotchas.md` § Tooling & process). After a dependency PR, `npm install` (or `npm ci`) in
+  the primary while no worktree gate runs, holding the heavy lock: every junctioned worktree reads that copy.
 - **Name every scratchpad file uniquely** (card or agent prefix), not just the state file: parallel agents
   overwrote each other's `pr-body.md`.
 - **When the machine is busy, a small edit is committed and reported "gate not run"** rather than held in a

@@ -2383,7 +2383,7 @@ own override (`package.json`) while the playground needs 8, so `npm run size:emb
 no peer session uses it, and a line in `docs/agents/orchestration.md` about the `playground/node_modules`
 junction. **Gate:** a fresh worktree runs `check:quick` and `size:embed` with the documented junctions.
 
-Done: `npm ci` ran in the primary during the 1.64.0 release (ext-apps 2.1.0, playground vite 8.3.5); `orchestration.md` and `gotchas.md` name the `playground/node_modules` junction (#955).
+Done: `npm ci` ran in the primary during the 1.64.0 release (ext-apps 2.1.0, playground vite 8.3.5); `orchestration.md` and `gotchas.md` name the `playground/node_modules` junction (#955). Gate evidence: three fresh worktrees (EB.2 #947, RM9.3 #948, AF3 #951) ran `check:quick` and `size:embed` with those junctions on 2026-11-18.
 
 ### NR.13 · RM9.2 leftovers (#950) — `todo`
 
