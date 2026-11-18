@@ -164,5 +164,5 @@ describe("over the corpus", () => {
       }
     }
     expect(pairs).toBeGreaterThan(10);
-  }, 300_000);
+  }, 60_000);
 });
