@@ -287,8 +287,14 @@ const BASELINE: [string, string][] = [
   // now reads as the error value, so `b` is dropped and the `W_ROOM_OVERLAP` its garbage 0 made with
   // `a` goes; `E_DATUM_BEFORE_ROOMS` is its one report. Only compile().diagnostics and describe()'s
   // copy of them moved (steps 169 both); that diagnostic put back gives 473e30db.
-  ["0f09ce9772100e87782606d78f8597d59fb4f6d46945ed4e7d38f53c9a72d290", "inline:grid-a-datum-too-early"],
-  ["c051801e4ed69139e0eaae1b2d06631c85c890da52d4dac71162f8ad01ef3b44", "inline:grid-a-datum-in-a-function"],
+  // AF3 sweep (was 0f09ce97 / c051801e): both plans already fail, and only the step count moved,
+  // by the sweeps that carry the error value on to what reads a dropped element, charged before
+  // the work (one step per room, then one per statement, per round): too-early 169 -> 173 (a room
+  // round over a and b, 2, and a statement round over both, 2), in-a-function 119 -> 121 (a
+  // statement round, 2). Diagnostics, scenes, describe(), lint(), the a11y lint and the overlay are
+  // unchanged; head's output with the old step count put back gives 0f09ce97 and c051801e exactly.
+  ["c9d9095c05e146b5b8db5c0c0b601625f8c6d633038ce7af5b194883af21c466", "inline:grid-a-datum-too-early"],
+  ["c11dcd909964181b03b13568c7ec679106c95ac98b41ad30ea48f9d4f94d82d9", "inline:grid-a-datum-in-a-function"],
 ];
 
 suite("the shared grid: the byte-identity law", () => {
