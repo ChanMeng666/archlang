@@ -14,6 +14,14 @@ are documented here. The format is based on
 
 ## [Unreleased]
 
+## [0.52.0] - 2026-11-18
+
+### Changed
+
+- **Rebundled the core at `@chanmeng666/archlang@1.64.0`**: a door's or window's kind word may follow its
+  clauses on the same line (`door … width 900 sliding`); a brief that cannot be met is reported as
+  `E_INTENT_INFEASIBLE`; a multi-storey plan's caption states the whole building's area.
+
 ### Added
 
 - A diagnostic's related locations appear under it in the Problems panel and the hover (LSP
