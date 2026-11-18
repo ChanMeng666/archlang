@@ -59,8 +59,10 @@
  * A rug (an `underlay` fixture) is not a symbol here: it is the floor finish, and a name on a rug
  * reads. A piece's own label (only an uncatalogued word draws one, inside its rectangle) is text,
  * not symbol ink: a room's name, area figure or `dims auto` number is over it when the area it
- * shares with the label's box is more than the same 2 % of its own (card AL4). Such a hit names the
- * piece, as its rectangle's would, and its overprint lists a `furniture-label` beside the `symbol`.
+ * shares with the label's box is more than the same 2 % of its own (card AL4). The label lies
+ * inside its piece's rectangle (`furnitureLabelPrim`), so a text over it is over the piece: it is
+ * read only for a text already over the piece, whose message names the piece, and its overprint
+ * lists a `furniture-label` after the `symbol`.
  *
  * A door's swing is the area its leaf sweeps, not the leaf and the arc alone: they enclose nothing
  * this measure can see, and it is the area the label placer steers off. "Off its floor" is the
@@ -84,11 +86,12 @@
  * Post-resolve and outside the evaluator, so nothing is charged to the step meter. The storey is
  * drawn once (`toScene`) only when it is within the drawing budget (`drawBudgetDiagnostic`, the
  * check `compile()` refuses a plan by); otherwise the rule files an `annotation-budget` skip. The
- * collision work is a count, {@link MAX_ANNOTATION_WORK}: one unit per (text, symbol), (text,
- * piece's label) and (number, label) pair whose boxes are compared, plus one per shape vertex
- * clipped. Worst case `(numbers + labels) × (symbols + pieces' labels) + numbers × labels` pairs,
- * each clip linear in the shape's vertices (four for a label's box); past the count the storey is
- * skipped, never half-measured.
+ * collision work is a count, {@link MAX_ANNOTATION_WORK}: one unit per (text, symbol) and
+ * (number, label) pair whose boxes are compared, plus one per shape vertex clipped. Worst case
+ * `numbers × symbols + labels × symbols + numbers × labels` pairs, each clip linear in the
+ * shape's vertices; past the count the storey is skipped, never half-measured. A piece's own label
+ * adds no pair: it is read only for a text already over its piece (four vertices, clipped and
+ * counted), so a plan of labelled pieces is measured exactly as far as one without labels.
  *
  * The walls, swings and floors have a count of their own, the same size, so that measuring them can
  * never cost a plan a symbol report: one unit per (label, swing) pair and per label, plus one per
@@ -217,8 +220,10 @@ export const annotationOverlap: LintRule = {
     const byId = new Map<string, ResolvedElement>();
     for (const el of ir.elements) if (isSymbolElement(el)) byId.set(el.id, el);
     const symbols = new Map<string, SymbolInk>();
-    // The pieces' own labels, in drawing order (card AL4).
-    const furnitureLabels: FurnitureLabel[] = [];
+    // The pieces' own labels, by piece (card AL4). A label lies inside its piece's rectangle, so a
+    // text can be over it only where it is over the piece: each is read only for a text already
+    // over its piece, and costs no pair of its own.
+    const pieceLabels = new Map<string, FurnitureLabel[]>();
     // Room labels: each room's name and area figure as drawn.
     const labels: { room: RRoom; prim: TextPrim; text: Text; ink: Text; isName: boolean }[] = [];
     const roomById = new Map(rooms.map((r) => [r.id, r] as const));
@@ -240,7 +245,9 @@ export const annotationOverlap: LintRule = {
       const el = byId.get(n.elementId);
       if (!el || el.kind !== n.elementKind) continue;
       if (el.kind === "furniture" && n.prim.t === "text") {
-        furnitureLabels.push({ el, prim: n.prim, text: textBox(n.prim) });
+        const own = pieceLabels.get(el.id) ?? [];
+        own.push({ el, prim: n.prim, text: textBox(n.prim) });
+        pieceLabels.set(el.id, own);
         continue;
       }
       const shapes = shapesOf(n.prim);
@@ -279,8 +286,7 @@ export const annotationOverlap: LintRule = {
         return { door, ring, box };
       }),
     );
-    const pairs =
-      (numbers.length + labels.length) * (syms.length + furnitureLabels.length) + numbers.length * labels.length;
+    const pairs = (numbers.length + labels.length) * syms.length + numbers.length * labels.length;
     if (pairs > MAX_ANNOTATION_WORK) {
       ctx.skip("annotation-budget");
       return [];
@@ -387,13 +393,12 @@ export const annotationOverlap: LintRule = {
         const e = hitOn(l);
         if (!e.hits.includes(s.el)) e.hits.push(s.el);
         mark(e, s.el, l);
-      }
-      for (const fl of furnitureLabels) {
-        if (!over(l.text, [fl.text.rect], fl.text.box)) continue;
-        const e = hitOn(l);
-        if (!e.hits.includes(fl.el)) e.hits.push(fl.el);
-        if (!e.furnitureLabels.includes(fl)) e.furnitureLabels.push(fl);
-        mark(e, fl, l);
+        // The piece's own label, read only now that the text is over the piece.
+        for (const fl of pieceLabels.get(s.el.id) ?? []) {
+          if (!over(l.text, [fl.text.rect], fl.text.box)) continue;
+          if (!e.furnitureLabels.includes(fl)) e.furnitureLabels.push(fl);
+          mark(e, fl, l);
+        }
       }
     }
     // Measured whole or not at all, and merged only once it is known to be whole. A label pinned off
@@ -433,11 +438,11 @@ export const annotationOverlap: LintRule = {
       const hits: ResolvedElement[] = [];
       const onTexts: FurnitureLabel[] = [];
       const onLabels: typeof labels = [];
-      for (const s of syms) if (over(nb.text, s.shapes, s.box)) hits.push(s.el);
-      for (const fl of furnitureLabels) {
-        if (!over(nb.text, [fl.text.rect], fl.text.box)) continue;
-        if (!hits.includes(fl.el)) hits.push(fl.el);
-        onTexts.push(fl);
+      for (const s of syms) {
+        if (!over(nb.text, s.shapes, s.box)) continue;
+        hits.push(s.el);
+        for (const fl of pieceLabels.get(s.el.id) ?? [])
+          if (over(nb.text, [fl.text.rect], fl.text.box)) onTexts.push(fl);
       }
       for (const l of labels) if (over(nb.text, [l.text.rect], l.text.box)) onLabels.push(l);
       if (hits.length + onLabels.length > 0)

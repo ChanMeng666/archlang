@@ -11,9 +11,12 @@
  * symbol's drawn shapes, at the rule's generous width ({@link textExtent}). A label that passes is
  * not touched, so a plan with nothing to report keeps its bytes; `test/label-fit.test.ts` holds
  * that over the corpus and the plans the soundness audits wrote. A rug is floor finish, as it is
- * to the rule. A piece's own label is text, not symbol ink: like another room's label or a
- * `dims auto` number, it never makes a label shrink, and a place that sits on it ranks below one
- * that does not, as `relocateLabels` and the rule read it (card AL4).
+ * to the rule. A piece's own label (card AL4) lies inside its piece, so a label over it is over the
+ * piece and already searched for; the search never reads it, and decides every label exactly as it
+ * would with no such label. Only once every label stands does a last step move a label this pass
+ * redrew off a piece's label, to a place where the same form is no worse by every measure the
+ * search reads; so it never shrinks, unwraps or newly buries a label (see the last step of
+ * {@link fitLabels}).
  *
  * Walls are read here as their bands, not the poché the rule clips: a band is a box, so it costs
  * no clip, and it differs from the poché only across an opening's gap and at a mitre's tip.
@@ -245,6 +248,8 @@ interface Reading {
 interface Form {
   name: TextPrim;
   area: TextPrim;
+  /** The lattice place it stands at (the room's anchor or a lattice point). */
+  p?: Point;
 }
 
 /** A text's box twice, as the rule reads it: {@link inkExtent} for the walls, swings and floor,
@@ -320,12 +325,6 @@ function marksOf(
     const shapes: Point[][] = [];
     for (let i = from; i < to; i++) shapes.push(...shapesOf(nodes[i]!.prim));
     if (shapes.length > 0) marks.push(mark("symbol", extentOf(shapes), shapes));
-    // A piece's own label is text a name must not sit on, as `relocateLabels` and the rule read it
-    // (card AL4); only an uncatalogued word draws one, inside its rectangle.
-    for (let i = from; i < to; i++) {
-      const prim = nodes[i]!.prim;
-      if (el.kind === "furniture" && prim.t === "text") marks.push(mark("text", primBBox(prim)!));
-    }
   }
   for (let i = 0; i < nodes.length; i++) {
     if (measured[i] || underLabels(nodes[i]!)) continue;
@@ -333,6 +332,19 @@ function marksOf(
     if (b) marks.push(mark("text", b));
   }
   return marks;
+}
+
+/** The boxes of the pieces' own labels: the text an uncatalogued word draws inside its rectangle (card AL4). */
+function pieceLabelBoxes(nodes: readonly SceneNode[], drawn: readonly ElementNodes[]): BBox[] {
+  const out: BBox[] = [];
+  for (const { el, from, to } of drawn) {
+    if (el.kind !== "furniture" || !isSymbolElement(el)) continue;
+    for (let i = from; i < to; i++) {
+      const prim = nodes[i]!.prim;
+      if (prim.t === "text") out.push(primBBox(prim)!);
+    }
+  }
+  return out;
 }
 
 /** The joint extent of some rings. */
@@ -410,8 +422,15 @@ export function fitLabels(
     // Clamped: the clip's rounding can read a text wholly on its floor a hair below nothing.
     return work > budget ? null : Math.max(0, rectAreaOutside(t.ink, ring) / (t.ink.w * t.ink.h));
   };
-  /** What a text stands on, for the label of group `owner`; null once the count is spent. */
-  const read = (t: TextBoxes, off: number, owner: number, clearance: number): Reading | null => {
+  /** What a text stands on, for the label of group `owner`; null once the count is spent. `hits`,
+   *  when given, collects each thing it stands on past {@link COLLIDE_MIN}: a mark, `"wall"`, `"off"`. */
+  const read = (
+    t: TextBoxes,
+    off: number,
+    owner: number,
+    clearance: number,
+    hits?: Set<Mark | "wall" | "off">,
+  ): Reading | null => {
     const inkArea = t.ink.w * t.ink.h;
     const estimateArea = t.estimate.w * t.estimate.h;
     const inkRing = rectRing(t.ink);
@@ -431,8 +450,11 @@ export function fitLabels(
       if (m.kind === "wall") {
         walls += overlapArea(t.ink, m.box) / inkArea;
         nearWalls += overlapArea(roomy, m.box) / inkArea;
-      } else if (m.kind === "text") text += overlapArea(t.ink, m.box) / inkArea;
-      else {
+      } else if (m.kind === "text") {
+        const share = overlapArea(t.ink, m.box) / inkArea;
+        text += share;
+        if (hits && share > COLLIDE_MIN) hits.add(m);
+      } else {
         const symbol = m.kind === "symbol";
         if (!(overlapArea(symbol ? t.estimate : t.ink, m.box) > 0)) return;
         let best = 0;
@@ -444,9 +466,12 @@ export function fitLabels(
         const share = best / (symbol ? estimateArea : inkArea);
         worst = Math.max(worst, share);
         total += share;
+        if (hits && share > COLLIDE_MIN) hits.add(m);
       }
     });
     if (work > budget) return null;
+    if (hits && walls > COLLIDE_MIN) hits.add("wall");
+    if (hits && off > COLLIDE_MIN) hits.add("off");
     return {
       off,
       fabric: Math.max(worst, walls),
@@ -494,6 +519,8 @@ export function fitLabels(
   for (const m of marks) if (m.kind === "text" && moving.has(m.owner)) m.stale = true;
   misfits.sort((a, b) => placeOrder(a, b, groups));
 
+  /** Each label this pass redrew, its form and the marks it left: what the last step reads. */
+  const landed: { misfit: Misfit; form: Required<Form>; own: Mark[] }[] = [];
   for (const misfit of misfits) {
     const { gi, name, area } = misfit;
     const g = groups[gi]!;
@@ -574,7 +601,11 @@ export function fitLabels(
           }
         }
         if (!best) continue;
-        const form = { name: { ...namePrim, at: nameAt(best.p) }, area: { ...areaPrim, at: areaAt(best.p) } };
+        const form = {
+          name: { ...namePrim, at: nameAt(best.p) },
+          area: { ...areaPrim, at: areaAt(best.p) },
+          p: best.p,
+        };
         if (best.tier === 0) {
           roomy = form;
           break search;
@@ -593,11 +624,95 @@ export function fitLabels(
       nodes[misfit.areaAt] = { ...areaNode, prim: chosen.area };
     }
     // Where it landed, even if that is where it stood, is now a place the next label must leave.
+    const own: Mark[] = [];
     for (const prim of chosen ? [chosen.name, chosen.area] : [name, area]) {
+      const box = primBBox(prim)!;
+      const m: Mark = { kind: "text", box, shapes: [], owner: gi, stale: false, seen: 0 };
+      grid.insert(boxOf(box), m);
+      own.push(m);
+    }
+    if (work > budget) return work;
+    if (chosen?.p) landed.push({ misfit, form: chosen as Required<Form>, own });
+  }
+
+  // Off a piece's own label (card AL4), once every label stands where it will. The search above never
+  // reads a piece's label, so it decides each label's height, lines and place exactly as it would with
+  // no such label; this only moves a label it redrew that stands on one, and only to a place of the
+  // lattice where the same form is no worse by any measure the search reads (no further off its
+  // floor, over nothing new, in no worse tier, no more buried) and clear of every piece's label. A label
+  // is never shrunk, unwrapped or put over anything for it. The rule reports what is left.
+  const pieces = pieceLabelBoxes(nodes, drawn);
+  if (pieces.length === 0) return work;
+  const pieceGrid = new GridIndex<BBox>(meanExtent(pieces));
+  for (const b of pieces) pieceGrid.insert(boxOf(b), b);
+  /** The largest share of a text's box (the estimate, as the rule boxes it) any piece's label covers. */
+  const onPieceLabel = (t: TextBoxes): number => {
+    const area = t.estimate.w * t.estimate.h;
+    let worst = 0;
+    pieceGrid.forEach(boxOf(t.estimate), (b) => {
+      work++;
+      worst = Math.max(worst, overlapArea(t.estimate, b) / area);
+    });
+    return worst;
+  };
+  for (const { misfit, form, own } of landed) {
+    const { gi } = misfit;
+    const g = groups[gi]!;
+    const size = form.name.size;
+    const pitch = form.name.block?.pitch ?? 0;
+    const mid = form.name.block ? (form.name.block.lines.length - 1) / 2 : 0;
+    const nameAt = (p: Point): Point => ({ x: p.x, y: p.y - size * LABEL_NAME_RISE });
+    const areaAt = (p: Point): Point => ({ x: p.x, y: p.y + size * LABEL_AREA_DROP + mid * pitch });
+    const nameBoxes = boxesOf(form.name, { x: 0, y: 0 });
+    const areaBoxes = boxesOf(form.area, { x: 0, y: 0 });
+    const clearance = size * CLEARANCE;
+    /** The form at `p`: its tier, total, hits and how far it stands on a piece's label; null past the count. */
+    const at = (p: Point) => {
+      const nameHere = moved(nameBoxes, nameAt(p));
+      const areaHere = moved(areaBoxes, areaAt(p));
+      const nameOff = offFloor(nameHere, g.ring);
+      const areaOff = offFloor(areaHere, g.ring);
+      if (nameOff === null || areaOff === null) return null;
+      const hits = new Set<Mark | "wall" | "off">();
+      const n = read(nameHere, nameOff, gi, clearance, hits);
+      const a = read(areaHere, areaOff, gi, clearance, hits);
+      if (!n || !a) return null;
+      const tier =
+        Math.max(n.roomy, n.text, a.roomy, a.text) <= COLLIDE_MIN
+          ? 0
+          : Math.max(n.fabric, n.text, a.fabric, a.text) <= COLLIDE_MIN
+            ? 1
+            : 2;
+      const total = Math.round((n.total + a.total) * BURIED_STEPS);
+      const piece = Math.max(onPieceLabel(nameHere), onPieceLabel(areaHere));
+      if (work > budget) return null;
+      return { nameOff, areaOff, hits, tier, total, piece };
+    };
+    const now = at(form.p);
+    if (!now) return work;
+    if (now.piece <= COLLIDE_MIN) continue;
+    let to: Point | undefined;
+    for (const { p } of placesFor(g)) {
+      if (p.x === form.p.x && p.y === form.p.y) continue;
+      const there = at(p);
+      if (!there) return work;
+      if (there.piece > COLLIDE_MIN || there.tier > now.tier || there.total > now.total) continue;
+      if (there.nameOff > Math.max(COLLIDE_MIN, now.nameOff) + 1e-9) continue;
+      if (there.areaOff > Math.max(COLLIDE_MIN, now.areaOff) + 1e-9) continue;
+      if ([...there.hits].some((h) => !now.hits.has(h))) continue;
+      to = p;
+      break;
+    }
+    if (!to) continue;
+    const name = { ...form.name, at: nameAt(to) };
+    const area = { ...form.area, at: areaAt(to) };
+    nodes[misfit.nameAt] = { ...nodes[misfit.nameAt]!, prim: name };
+    nodes[misfit.areaAt] = { ...nodes[misfit.areaAt]!, prim: area };
+    for (const m of own) m.stale = true;
+    for (const prim of [name, area]) {
       const box = primBBox(prim)!;
       grid.insert(boxOf(box), { kind: "text", box, shapes: [], owner: gi, stale: false, seen: 0 });
     }
-    if (work > budget) return work;
   }
   return work;
 }

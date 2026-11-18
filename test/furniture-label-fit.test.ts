@@ -5,10 +5,13 @@
  * label or a `dims auto` number must not sit on, for `fitLabels` and `W_ANNOTATION_OVERLAP` as for
  * `relocateLabels`.
  *
- * "Fits" is the shared width estimate by the size ({@link textExtent}), the box every label pass
- * measures a text by. A label that fits upright is the node the drawing has always drawn, byte for
- * byte: over the corpus every drawn piece label fits so (31 in 9 sources, measured for the card), and
- * the corpus sweep moved no byte for this part. The label is a fact of the plan, not of the drawing:
+ * "Fits" is the wider of the shared width estimate ({@link textExtent}, the box every label pass
+ * measures a text by) and the width the text draws ({@link inkExtent}), by the size, so both the box
+ * and the ink stay in the piece; the containment case below measures the ink. A label that fits
+ * upright is the node the drawing has always drawn, byte for byte: over the corpus every drawn piece
+ * label fits so (31 in 9 sources, measured for the card), and the corpus sweep moved no byte for this
+ * part. The rule reads a piece's label only for a text already over its piece, so a plan of many
+ * labelled pieces is linted exactly as far as before (the last case). The label is a fact of the plan, not of the drawing:
  * `describe()` lists it whether or not it is drawn. Text is never mirrored, so a mirrored piece draws
  * the same label (`test/glyph-chirality.test.ts` pins that). The witness
  * (`test/fixtures/dense-office.arch`) carries the case that started the card: "IT Rack", "Supplies"
@@ -20,9 +23,9 @@ import { describe as suite, expect, it } from "vitest";
 import { furnitureLabelPrim } from "../src/elements/furniture.js";
 import { toDxf } from "../src/export/dxf.js";
 import { clippedArea } from "../src/geometry/polygon.js";
-import { compile, type Diagnostic, describe, diagnosticOverprint, lint } from "../src/index.js";
+import { compile, type Diagnostic, describe, diagnosticOverprint, lint, lintWithCoverage } from "../src/index.js";
 import type { SceneNode, ScenePrim } from "../src/scene.js";
-import { textBox, textExtent } from "../src/text-layout.js";
+import { inkExtent, textBox, textExtent } from "../src/text-layout.js";
 
 type Text = Extract<ScenePrim, { t: "text" }>;
 
@@ -59,17 +62,31 @@ suite("drawing the label of an uncatalogued word", () => {
 
   it("the trigger is strict: a label exactly as wide as its piece stays upright", () => {
     const size = 100;
-    const label = "Abc";
-    const { w, h } = textExtent({
-      t: "text",
-      at: { x: 0, y: 0 },
-      value: label,
-      size,
-      anchor: "middle",
-      baseline: "central",
-    });
-    expect(furnitureLabelPrim(label, { x: 0, y: 0 }, { w, h }, size)?.rotate).toBeUndefined();
-    expect(furnitureLabelPrim(label, { x: 0, y: 0 }, { w: w - 1e-6, h }, size)).toBeNull();
+    for (const label of ["Abc", "ill"]) {
+      const prim: Text = { t: "text", at: { x: 0, y: 0 }, value: label, size, anchor: "middle", baseline: "central" };
+      const { h } = textExtent(prim);
+      const w = Math.max(textExtent(prim).w, inkExtent(prim).w);
+      expect(furnitureLabelPrim(label, { x: 0, y: 0 }, { w, h }, size)?.rotate, label).toBeUndefined();
+      expect(furnitureLabelPrim(label, { x: 0, y: 0 }, { w: w - 1e-6, h }, size), label).toBeNull();
+    }
+  });
+
+  it("fits by the ink too, where the ink is wider than the estimate", () => {
+    // At 100 mm "MMWWMMWW" is 496 mm by the estimate and 727 mm in ink; six CJK characters are 372
+    // and 600. Each is left out of a piece the estimate alone would have it fit, and drawn in one
+    // that holds its ink.
+    for (const [label, size, drawn] of [
+      ["MMWWMMWW", "150x700", undefined],
+      ["MMWWMMWW", "150x800", -90],
+      ["储物柜储物柜", "550x150", undefined],
+      ["储物柜储物柜", "650x150", 0],
+    ] as const) {
+      const ts = pieceTexts(room(`  furniture id=p screen at (1000,900) size ${size} label "${label}" in r`), "p");
+      expect(
+        ts.map((t) => t.rotate ?? 0),
+        `${label} ${size}`,
+      ).toEqual(drawn === undefined ? [] : [drawn]);
+    }
   });
 
   it("turned along a tall piece when only that fits, reading bottom to top, inside the piece", () => {
@@ -116,15 +133,18 @@ suite("drawing the label of an uncatalogued word", () => {
   it("a piece's ink stays inside its footprint at every aspect", () => {
     for (const w of [150, 300, 600, 900, 1500, 2400])
       for (const h of [150, 300, 600, 900, 1500, 2400])
-        for (const label of ["A", "TV", "Display", "Stationery cupboard"]) {
+        for (const label of ["A", "TV", "ill", "Display", "MMWWMMWW", "储物柜储物柜", "Stationery cupboard"]) {
           const src = room(`  furniture id=p kiosk at (500,500) size ${w}x${h} label "${label}" in r`);
           for (const t of pieceTexts(src, "p")) {
-            const b = textBox(t).box;
-            const e = 1e-9;
-            expect(
-              b.minX >= 500 - e && b.maxX <= 500 + w + e && b.minY >= 500 - e && b.maxY <= 500 + h + e,
-              `${w}x${h} ${label}`,
-            ).toBe(true);
+            // The text's box at the width it draws (the faces' own advances), turned with it; and
+            // the estimate's box, which every label pass reads.
+            for (const b of [textBox(t, inkExtent(t).w).box, textBox(t).box]) {
+              const e = 1e-9;
+              expect(
+                b.minX >= 500 - e && b.maxX <= 500 + w + e && b.minY >= 500 - e && b.maxY <= 500 + h + e,
+                `${w}x${h} ${label}`,
+              ).toBe(true);
+            }
           }
         }
   });
@@ -225,5 +245,29 @@ suite("a drawn piece label is an obstacle", () => {
     const [d, ...rest] = overlaps(src);
     expect(rest).toEqual([]);
     expect(diagnosticOverprint(d!)!.over.map((o) => o.kind)).toEqual(["symbol"]);
+  });
+
+  it("costs the rule no pair: 300 rooms over 900 labelled pieces are all still reported", () => {
+    // A piece's label is read only for a text already over its piece, so the rule's pair count is the
+    // one a plan without labels has: 600 texts by 900 pieces, 540,000, under MAX_ANNOTATION_WORK. Read
+    // as pairs of their own the labels doubled it past the count, and the storey was skipped whole
+    // (`annotation-budget`) with not one of these reports.
+    const L = ["units mm", "paper A0 landscape", "scale 1:100"];
+    let k = 0;
+    for (let i = 0; i < 20; i++)
+      for (let j = 0; j < 15; j++) {
+        const x = i * 3000;
+        const y = j * 3000;
+        L.push(`room id=r${i}_${j} at (${x},${y}) size 3000x3000 label "R" at (${x + 1500},${y + 1500})`);
+        L.push(`furniture id=f${k++} widget at (${x + 1100},${y + 1250}) size 800x500 label "A"`);
+        L.push(`furniture id=f${k++} widget at (${x + 200},${y + 200}) size 800x500 label "A"`);
+        L.push(`furniture id=f${k++} widget at (${x + 2000},${y + 2300}) size 800x500 label "A"`);
+      }
+    const src = `plan "Big" {\n  ${L.join("\n  ")}\n}`;
+    const { diagnostics, coverage } = lintWithCoverage(src);
+    expect(JSON.stringify(coverage)).not.toContain("annotation-budget");
+    const ds = diagnostics.filter((d) => d.code === OVERLAP);
+    expect(ds).toHaveLength(300);
+    for (const d of ds) expect(diagnosticOverprint(d)!.over.map((o) => o.kind)).toEqual(["symbol", "furniture-label"]);
   });
 });

@@ -19,7 +19,7 @@ import { FURNITURE_ANCHORS } from "../ast.js";
 import type { Diagnostic, Span } from "../diagnostics.js";
 import type { ElementDef, ParseCtx, RenderCtx, ResolveCtx, TransformCtx } from "../registry.js";
 import type { CadPart, CadTurn, RenderSizes, SceneNode, ScenePrim } from "../scene.js";
-import { textExtent } from "../text-layout.js";
+import { inkExtent, textExtent } from "../text-layout.js";
 import type { FurnitureAuthored, ResolvedElement, RFurniture, RRoom, RWall } from "../ir.js";
 import { rectCorners, segmentsOfWall, unit, normal, add, mul, sub, length, type WallSegment } from "../geometry.js";
 import type { BBox } from "../geometry/rect.js";
@@ -1442,9 +1442,12 @@ function rotatePoint(p: Point, c: Point, deg: number): Point {
  */
 /**
  * An uncatalogued piece's label (card AL4): the text centred on the piece at the furniture-label
- * size, or `null` when it fits the piece in no direction. "Fits" is the box the label passes and
- * `W_ANNOTATION_OVERLAP` measure a text by ({@link textExtent}: the shared width estimate by the
- * size) within the piece's footprint as the sheet draws it (`size`, already quarter-turned).
+ * size, or `null` when it fits the piece in no direction. "Fits" means within the piece's footprint
+ * as the sheet draws it (`size`, already quarter-turned), at the WIDER of the two widths a text is
+ * measured by: the shared estimate the label passes and `W_ANNOTATION_OVERLAP` box a text with
+ * ({@link textExtent}, 0.62 em a character) and the width it can draw ({@link inkExtent}, the faces'
+ * own advances, a full em for a CJK character), by the size. So both the box every pass reads and
+ * the ink stay inside the piece: `MMWW` is wider in ink than estimated, CJK wider still.
  *
  *  1. Upright, when it fits so: the label as it was always drawn, byte for byte.
  *  2. Else turned a quarter along the piece, when the piece is taller than it is wide and the
@@ -1453,8 +1456,8 @@ function rotatePoint(p: Point, c: Point, deg: number): Point {
  *     `mirror`: text is never mirrored, so a reflected piece draws the same label (no glyph gains
  *     handedness, `test/glyph-chirality.test.ts`).
  *  3. Else nothing: the label is never set below the furniture-label size, the smallest lettering
- *     the sheet draws (ruling AL-D2). It stays in `describe()` and `schedule fixtures`, which read
- *     the plan, not the drawing.
+ *     the sheet draws (ruling AL-D2). It stays in `describe()`, which reads the plan, not the
+ *     drawing.
  *
  * Either text stands wholly inside the footprint, so the ink stays within `bounds()`.
  */
@@ -1472,7 +1475,8 @@ export function furnitureLabelPrim(
     anchor: "middle",
     baseline: "central",
   };
-  const { w, h } = textExtent(prim);
+  const { w: estimate, h } = textExtent(prim);
+  const w = Math.max(estimate, inkExtent(prim).w);
   if (w <= size.w && h <= size.h) return prim;
   if (size.h > size.w && w <= size.h && h <= size.w) return { ...prim, rotate: -90 };
   return null;

@@ -85,6 +85,7 @@ AL5（#959）第二轮红队留下的三项。
 - 让 `relocateLabels` 与房间的书写顺序无关。它现在按元素顺序逐组处理，已知结果随顺序变化的平面：`test/fixtures/chain30.arch`、`star30.arch`、`dense-office.arch`，以及 `test/plans/plan-soundness/audits/first-contact-plans/` 下的 `2026-10-24-rerun/2-house.arch` 和 `2026-10-26-walls-first/6-clinic.arch`。本卡合并时，两份所有者批准的名单（`test/label-fit.test.ts` 的 `ORDER_EXCUSED`、`test/label-wrap.test.ts` 的 knock-on 名单）都必须缩小。
 - **变化面**：7 个"放不下"的语料文件（`test/fixtures/chain30.arch`、`star30.arch`，以及 5 个首次接触审计平面）的 SVG 和 drafting lint 会变，预计约 70 条报告消失。示例不变。要守住 `test/label-fit.test.ts`、`test/annotation-small-rooms.test.ts`、`test/annotation-collisions.test.ts`、`test/opening-tags-corpus.test.ts`（其 `ALLOWED` 只能缩小）和工作量表。
 - 同时部分回应 N.3、L.2。
+- 规则还不报的相撞（AL4 #961 的模糊测试记下）：房间名压在另一个房间名上；开口编号压在家具文字上；家具互相叠放时家具文字压在家具文字上。
 - **发布**：minor。
 
 ### AL2a · 尺寸数字放不下时外推或滑开 — `todo` · 3 日 · opus
