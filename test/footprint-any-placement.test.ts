@@ -87,10 +87,10 @@ const BASELINE: [string, string][] = [
   ["e5a170e01d15451ed5a322d6eb9f8267a356f208fea829dfce19cd6d3e1a43ce", "examples/courtyard-house.arch"],
   ["cdb42b5c1bee8dd931d9b99b1e338dd895e4cb5d2de1915de8a85f04a3fd444a", "examples/furnished-flat.arch"],
   ["0e8f7696890b8f3e01211ecbc873996f49ba22fff103e349e8f4660b1417a1c2", "examples/gallery-l.arch"],
-  ["55ad2593f768d91a282b6cde6e8a06f6ee5dbd5701fe1858aa8905431432767a", "examples/garden-house.arch"],
+  ["72528a5f6784a5c5d9527299a5abb330423c747bafb17458716dc336cc9a3eb3", "examples/garden-house.arch"], // RM9.2, see ./byte-identity-baseline.ts
   ["f273e4717a1afae1cd94ae0f62a7390ae603c7418fbe434e061e191aa98231a0", "examples/garden-loft.arch"],
   ["3078765cf03974518e0f2b3ea13585cca69ffbb86438f0899218c8a1c24a09a8", "examples/hexagon-pavilion.arch"],
-  ["36397208c3c6ea06f9bbc3efba156b33de2189455086852e290890f3c8784884", "examples/hillside-villa.arch"],
+  ["a297769a6679a3b1a5fff9f4146b0eb01a71ad80c35aca165ed82ec8c46a5755", "examples/hillside-villa.arch"], // RM9.2, see ./byte-identity-baseline.ts
   ["3aa7b2d5f953e6df63059c368e391ee3ea58c097cd7dff358197a940f4946252", "examples/imports.arch"],
   ["f4f0ed59cff4dd7b970fe069579044226fcb0e4f68f24a85845e648875ed17e5", "examples/knob-flat.arch"],
   ["21459ebc71dbc508de2faae421b59ac48afd068dd1813adb6bf0595b9963fb3e", "examples/laneway-house.arch"],
@@ -113,11 +113,11 @@ const BASELINE: [string, string][] = [
   ["6667da00528cdd4ee4f155586a049ad877f81b83178f5a18c85afef7a76a781d", "examples/terrace-row.arch"],
   ["edd65eb6b725687bb30a7c956132e01bc2b9c57d772afaa9c234745af332f8bf", "examples/themed.arch"],
   ["7dec52e5621d9af9dbdcf7cb73e58791705e6d976bbecf5ae59419c1c9a9ea17", "examples/tiny-house.arch"],
-  ["4ebf99f3ba158cc7652424c413c94f9f837f6afd24546d8bbac0f080bb281652", "examples/townhouse.arch"],
+  ["e3a0dd96778a4b6bca5c3a3363a7583a9508be5b87cedd65638f81b7670795a8", "examples/townhouse.arch"], // RM9.2, see ./byte-identity-baseline.ts
   ["a9145858f1fb7a7f1a0f0aa86d53e115bfda51e68c2101b822913d7bdc97eed5", "examples/transit-hall.arch"],
-  ["a60a7362582085a80c577e970a5139fc01d12ec4600af7ad8f4ed8a4ede897aa", "examples/turning-stair.arch"],
+  ["4d2fb9dcc6a44640a4d0e52d202df14909c73a5743799af8c25cb1f117dc87a8", "examples/turning-stair.arch"], // RM9.2, see ./byte-identity-baseline.ts
   ["fe871cbb3d60c1594495e38b1ad0dc30ce3f71904c27b85fa60f276d3aa182bd", "examples/two-bed.arch"],
-  ["9bad4f64cdc450219b6adac2c6de7a4790d0b48917ef88358b9c54c78b57a90f", "examples/two-storey.arch"],
+  ["3b39a946ba68d2d386deb2ddf2ac70e647e841754137c64b076c6a74c43247b2", "examples/two-storey.arch"], // RM9.2, see ./byte-identity-baseline.ts
 ];
 
 /** A 10 m square room, walled on its four edges (`walled`) or standing alone, on an optional grid. */

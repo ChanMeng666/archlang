@@ -297,8 +297,8 @@ const LAW: [string, string, string][] = [
     "quarter-turn winders 4 placed rotate 90",
   ],
   [
-    "7a56bb92adc11215e22987d8cc1b52a6cd71f1aa363afa48b534e49bf21b91df",
-    "ed637b4a143fe55a0e990eaad9365d71f72b37993f18612e6eceff2bc2598a26",
+    "bd9dd9bcef182af4e22f874cdaab594f23ab7729c35981f62d0ca61d835683bf", // RM9.2, see ./byte-identity-baseline.ts
+    "abf61c0826fada7f5225f40be796bb2fd4533d7a414be6a6a05b026db26c5221", // RM9.2, see ./byte-identity-baseline.ts
     "shaft winders 4, up below and down above",
   ],
 ];

@@ -111,10 +111,10 @@ const BASELINE: [string, string][] = [
   ["b763e113515203306d321fb2021b87dcf75432fdc98c3712808288227a6db91b", "examples/courtyard-house.arch"],
   ["4cc9df18d329f19f7291bb1942317741494f08df82d7357623effb66f4012cf9", "examples/furnished-flat.arch"],
   ["94ed5dea82a84d559a97e2b179f81509ce710cccb82ea1c2a54d87e6cac4669b", "examples/gallery-l.arch"],
-  ["ae33abb73acdf48838d21fcc6bd92e072287a3cc1fa608bf52e4e018fb9bc078", "examples/garden-house.arch"], // RM1.3a, see ./byte-identity-baseline.ts
+  ["f751c9de83b8ea36f902bd5160f7c17b99b8a7b503c48b6ba091ce77ae8f9e23", "examples/garden-house.arch"], // RM1.3a, see ./byte-identity-baseline.ts; RM9.2, see ./byte-identity-baseline.ts
   ["2621494eb04015b448fa01ed95fb9aa4ad2b03170a5822f616e61b4b4fe7dd2e", "examples/garden-loft.arch"],
   ["8bd6a37eaeb951c8fa11e547eee4ae9727f32c3189c5a79f168e461f01012f08", "examples/hexagon-pavilion.arch"],
-  ["845adcd1009d5987a08d77f187c5f17885b9c40ea9402dd2014ab1d454d8af33", "examples/hillside-villa.arch"], // RM1.3a, see ./byte-identity-baseline.ts
+  ["387315aaae9a8a1727a27304a802a1e0631b32f2607ef0e94175c6c1f30c4634", "examples/hillside-villa.arch"], // RM1.3a, see ./byte-identity-baseline.ts; RM9.2, see ./byte-identity-baseline.ts
   ["b3ed32c98852d61c69c521cf756843e3d950dbff3bf5bbe45dabe997336ceb86", "examples/imports.arch"],
   ["b70f7455f644b327a4b36f56d283a7eb2397d5ed84523363c2f0df92cf0f2f96", "examples/knob-flat.arch"], // new example (P4, the knobs example)
   ["913ed13bd8dd60b02816e127ef1a347bdcae49c7e944cee0925db120015d6ece", "examples/laneway-house.arch"],
@@ -133,11 +133,11 @@ const BASELINE: [string, string][] = [
   ["7784e0a77b26d646d188f9f8c3bdef276a7de207da696a02345d499f9c36321f", "examples/terrace-row.arch"],
   ["78d8e4b1ef3ca7afd21a9ec05a638b1d426299d7fb57e7bf09f1b4bcd17e58d8", "examples/themed.arch"],
   ["1183ede6f8a3a1ebf83e9b2c3614d88155e37613c4d5fc3f6acd3f80defa7f6c", "examples/tiny-house.arch"],
-  ["5bbc2cc26f425dc7d5d7c37c425b837b476b8fb0f68c7626ebcb49c17304f0b8", "examples/townhouse.arch"], // RM1.3a, see ./byte-identity-baseline.ts
+  ["9834e13fa4d951235a25ce47be48f3f75da1ae3090109a1d882ec1911638d242", "examples/townhouse.arch"], // RM1.3a, see ./byte-identity-baseline.ts; RM9.2, see ./byte-identity-baseline.ts
   ["d4389ceea35c71a0a73b9e3a7e47c770531d15c038ac69ac0bda89bc8099ced0", "examples/transit-hall.arch"],
-  ["97b2cbeb7be94176916a59e6bc99f12d5573e424e953b29d17b155b8a52f23d4", "examples/turning-stair.arch"], // RM1.3a, see ./byte-identity-baseline.ts; RM1.2a, see ./byte-identity-baseline.ts
+  ["9914c01d77860216fda528327da5290168a75b9a21925f46838852db606ebd93", "examples/turning-stair.arch"], // RM1.3a, see ./byte-identity-baseline.ts; RM1.2a, see ./byte-identity-baseline.ts; RM9.2, see ./byte-identity-baseline.ts
   ["1e2e65d06cd1b4c7a2c89b94365dcc51980b85044242fb45dd7da177aa2fe93f", "examples/two-bed.arch"],
-  ["2e311efeb95e9a6a200474ac116b1d2ae704f419dd5fb40fd08008c0b0bc6e00", "examples/two-storey.arch"], // RM1.3a, see ./byte-identity-baseline.ts; RM1.2a, see ./byte-identity-baseline.ts
+  ["6cc88874f5fb592c93bbb02c7f096d6e5341818e0b2729eb6e274ae510b4b8a8", "examples/two-storey.arch"], // RM1.3a, see ./byte-identity-baseline.ts; RM1.2a, see ./byte-identity-baseline.ts; RM9.2, see ./byte-identity-baseline.ts
   ["20f6d2fdea1167d15fb58cdf5100eba2b5ef8f608c4d4af0ff2a5ddf6211620c", "inline:families-before-legend"],
   ["79b5ba0efe233640ad18646b6ee13070309315ef6240feb73d46b4ad55299e72", "inline:near-words"],
 ];
