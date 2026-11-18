@@ -91,10 +91,10 @@ RM-D66（`README.md` §6.29）。版本号 PR 是 #953（合并提交 `27bcead8`
 - **MCP 注册表：** latest 是 0.2.47，带托管 remote，以及 #926 加的 title 和 icons。
 - **VS Code：** Marketplace 0.52.0（经 Chrome 上传，vspackage 返回 200）；Open VSX 0.52.0（`publish-openvsx.yml` 在 tag 上运行，成功）。
 - **ClawHub：** `archlang@1.64.0` 已提交，等安全扫描。
-- **OpenAI 目录：** 已从 ZIP 建好 1.64.0 的草稿，等技能扫描；Submit 和 Publish 由代理做（RM-D44）。
+- **OpenAI 目录：** 1.64.0 已发布。代理从 ZIP 建草稿，5 个技能的检查全部通过，没有 finding；按 RM-D44 由代理勾选六项声明、提交，因为是已批准插件的更新，直接成为"可发布"，随即发布，取代 1.63.0。
 - **Docker：** 目录条目（docker/mcp-registry#6704，仍未合并）的 `source.commit` 已移到 `27bcead8`。
 
-发布 PR 第一次 CI 红过一次：Playground E2E engines 在 `apt` 装浏览器依赖时超时，与代码无关，重跑后通过。AF3（#951）在 tag 之后合并，所以进 1.65.0；它第一次 CI 的 release-compat 红，是因为当时 npm 上还没有 1.64.0，发布完成后重跑通过。
+发布 PR 第一次 CI 红过一次：Playground E2E engines 在 `apt` 装浏览器依赖时超时，与代码无关，重跑后通过。AF3（#951）在 tag 之后合并，所以进 1.65.0；它第一次 CI 的 release-compat 红，是因为 npm 的传播延迟：失败的 `npm pack` 在核心发布后约 69 秒运行，tarball 还取不到。重跑通过。
 
 ### 1.2 已发布（1.63.0，2026-11-17；协调者用 `npm view`、`gh`、`curl`、门户页面读）
 

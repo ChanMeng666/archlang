@@ -2295,10 +2295,10 @@ first use's, so all three were re-taken down by their own rule, measured × 1.02
 thousand, to keep a glTF-Transform-sized leak tripping them: the coordinator's ruling and review),
 and `growthBudget` still met.
 
-## Review residue of the v3 night (PRs #936–#948, 2026-11-18)
+## Review residue of the v3 night (PRs #936–#953, 2026-11-18)
 
 Non-blocking findings of that night's fresh-context reviews (the review-loop cap: residue becomes cards).
-Each names the PR whose review found it.
+Each names the PR whose review found it; NR.16 is a downstream application's request, not review residue.
 
 ### NR.1 · `finish` drops a gridded kitchen's fridge without a word (#941) — `todo`
 
