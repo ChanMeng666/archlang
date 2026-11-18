@@ -21,7 +21,11 @@
 
 **2026-11-19**：AL3 拆成三个 PR（协调方裁定），依次合并：AL3w（宽度）→ AL3a（与书写顺序无关）→ AL3b（引出线）。AL3w 进入审阅（#962）：房间名和面积数字对符号、对家具文字，按估算宽度和墨迹宽度中较大的一个判断（`symbolExtent`），`relocateLabels`、`fitLabels` 和 `W_ANNOTATION_OVERLAP` 用同一个宽度（第一轮红队后 `relocateLabels` 也改用它，名字因此能在原字号下挪到空处，而不是被缩小）。墙、门扇、地面边缘和 `dims auto` 数字的判断不变。语料：见证夹具的 WC 1、WC 2 改成一行；`examples/laneway-house.arch` 和 `eval/goldens/anchor-furniture.arch` 的卧室名按墨迹宽度读后挤到了旁边的家具，现在以原字号移到更空的地方；`describe()`、`lint()` 不变。
 
-下一步：AL4 合并后做 AL3。依次做下去，每张卡一个 PR；卡合并后在这里记一行，并从 `cards.md` 删掉那张卡。
+**2026-11-19**：AL4 完成（#961，合并提交 `287e19f8`）。AL3w 完成（#962，合并提交 `db1acefd`）。第二轮红队后（同一 PR）：`relocateLabels` 读符号时也按较宽的宽度，所以 `test/taste-corpus/r6-bed-in-kitchen.good.arch` 的卧室名也移动；一个对称小屋的内联测试平面，名字移到另一个下角（两个角只差舍入误差）。
+
+**2026-11-19**：AL3a 进入审阅（#PRNUM）。`relocateLabels` 按从平面读出的顺序处理标签（`plotOrder`：先 y 后 x，与 `fitLabels` 相同），站在自己地面之外的房间标签不再挡后面的标签。`ORDER_EXCUSED` 从 5 个平面减到 0（名单删除），knock-on 名单从 4 个名字减到 2 个。语料：`chain30`、`star30` 的房间文字重放，20 和 14 条报告改了措辞（条数不变）；walls-first `6-clinic` 的 Staff Room 名字从 300 变成 350。#962 第二轮红队的 S1（邻居过宽的名字把一个本来放得下的名字挤走、再被缩小）由这一条消除，并钉成测试。红队给的另一个例子 case475（"MASTER BEDROOM" 175 → 150）不是邻居的问题，是 `fitLabels` 宁要贴墙余量（tier 0）的小字号，也不要原字号的 tier 1；没有在这个 PR 里改，交给协调方裁定。镜像平局由舍入决定（N2）仍是单独的卡。
+
+下一步：AL3a 合并后做 AL3b（引出线）。依次做下去，每张卡一个 PR；卡合并后在这里记一行，并从 `cards.md` 删掉那张卡。
 
 | 卡 | PR | 状态 |
 |---|---|---|
@@ -30,9 +34,10 @@
 | AL1 | #958 | 完成 |
 | AL5 | #959 | 完成 |
 | AL5b | — | todo |
-| AL4 | #961 | 审阅中 |
-| AL3w | #962 | 审阅中 |
-| AL3 | — | todo |
+| AL4 | #961 | 完成 |
+| AL3w | #962 | 完成 |
+| AL3a | #PRNUM | 审阅中 |
+| AL3b | — | todo |
 | AL2a | — | todo |
 | AL2b | — | blocked（AL-D1） |
 | AL2c | — | todo |
