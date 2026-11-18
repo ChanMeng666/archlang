@@ -2374,7 +2374,7 @@ Only worth doing when headroom is short again.
 `test/dim-swap-reprint.test.ts`'s header quotes wall-clock and RSS figures, and `src/elements/dim.ts` cites
 `(backlog RR.24)`, which will be archived. Replace with what the test pins. **Gate:** no figure or backlog id left in either.
 
-### NR.12 · The primary checkout's dependencies lag `main` (night of 2026-11-18) — `todo`
+### NR.12 · The primary checkout's dependencies lag `main` (night of 2026-11-18): done by #955, waiting to be archived — `note`
 
 Worktrees junction `node_modules` to the primary checkout, whose copy had `@modelcontextprotocol/ext-apps`
 1.7.5 (main pins 2.1.0), so the mcp-worker typecheck failed locally. Separately, the root `vite` is 6 by main's
@@ -2382,6 +2382,8 @@ own override (`package.json`) while the playground needs 8, so `npm run size:emb
 `playground/node_modules` is junctioned too. Both were proven by CI only. One way: `npm ci` in the primary when
 no peer session uses it, and a line in `docs/agents/orchestration.md` about the `playground/node_modules`
 junction. **Gate:** a fresh worktree runs `check:quick` and `size:embed` with the documented junctions.
+
+Done: `npm ci` ran in the primary during the 1.64.0 release (ext-apps 2.1.0, playground vite 8.3.5); `orchestration.md` and `gotchas.md` name the `playground/node_modules` junction (#955).
 
 ### NR.13 · RM9.2 leftovers (#950) — `todo`
 
