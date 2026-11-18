@@ -90,7 +90,7 @@ describe("the width a room's text is read at against a symbol", () => {
     for (const value of ["Store / IT", "Kitchenette / Break", "4.5 m²", "Bedroom 2"]) {
       const t = text(value);
       expect(inkExtent(t).w, value).toBeLessThan(textExtent(t).w);
-      // The very object `textExtent` returns: no rounding of a width that did not change.
+      // The estimate's own width and height, unrounded: a width that did not change is not touched.
       expect(symbolExtent(t), value).toEqual(textExtent(t));
     }
   });
@@ -123,9 +123,51 @@ describe("the width a room's text is read at against a symbol", () => {
 `;
     const { ir } = resolvePlan(src, {});
     const name = toScene(ir!, {}).nodes.find((n) => n.prim.t === "text" && n.prim.value === "WWWWWW")!.prim as Text;
-    expect(name.at.x).not.toBe(1500);
+    // Moved by the relocation, which reads the same width (card AL3w), at the full size (175 mm at
+    // 1:50): not shrunk by the fit for want of a place it never looked for.
+    expect(name.at).not.toEqual({ x: 1500, y: 965 });
+    expect(name.size).toBe(175);
     expect(overSymbols(src)).toEqual([]);
     expect(lint(src).filter((d) => d.code === OVERLAP)).toEqual([]);
+  });
+
+  it("keeps a one-word name at full size when its ink alone is over a bed and a lattice place is clear", () => {
+    // The red team's case: at the estimate the name stood clear of the bed, at the ink it does not;
+    // a full-size place one step along is clear, and the relocation takes it.
+    const src = `plan "p" {
+  units mm
+  paper A4 landscape
+  scale 1:50
+  room id=r0 at (0,0) size 6000x5000 label "BEDROOM"
+  furniture bed at (3440,1500) size 1500x2000
+}
+`;
+    const { ir } = resolvePlan(src, {});
+    const name = toScene(ir!, {}).nodes.find((n) => n.prim.t === "text" && n.prim.value === "BEDROOM")!.prim as Text;
+    expect(name.size).toBe(175);
+    expect(name.at.x).not.toBe(3000);
+    expect(overSymbols(src)).toEqual([]);
+  });
+
+  it("reads a piece's own label at the wider width too", () => {
+    // The name's ink, not its estimate, reaches the plinth's "Rack": the overprint lists the label.
+    const src = `plan "p" {
+  units mm
+  paper A4 landscape
+  scale 1:50
+  room id=r at (0,0) size 3000x2000 label "WWWWWW" at (1000,1000)
+  furniture plinth at (1305,750) size 500x500 label "Rack"
+}
+`;
+    const [d, ...rest] = lint(src).filter((x) => x.code === OVERLAP);
+    expect(rest).toEqual([]);
+    expect(diagnosticOverprint(d!)).toEqual({
+      subject: { kind: "room-label", room: "r", text: "WWWWWW" },
+      over: [
+        { kind: "symbol", id: "plinth_1", parts: ["name"] },
+        { kind: "furniture-label", id: "plinth_1", text: "Rack", parts: ["name"] },
+      ],
+    });
   });
 
   it("clears the witness's two WCs, which nothing read before", () => {

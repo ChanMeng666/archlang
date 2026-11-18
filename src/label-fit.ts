@@ -44,8 +44,9 @@
  * places `relocateLabels` tries, from the room's anchor out; the first form with a clear place
  * wins, at its best place. A form that also keeps `relocateLabels`' clearance from the walls at the
  * height tried beats one that does not, so a label that shrinks does not end up touching one. A
- * wrapped form comes first because a name that reached this pass did not
- * fit on one line. Breaking stays {@link balancedLines}'s: only at a space, by a count of
+ * wrapped form comes first: `relocateLabels` has already tried the one-line name at the full size
+ * on the same lattice, reading it at the width this pass reads it against a symbol (card AL3w), so
+ * a name that reached this pass did not stand clear there on one line. Breaking stays {@link balancedLines}'s: only at a space, by a count of
  * characters, so the same name breaks the same way on every run and no word is ever split or
  * hyphenated. The full size is tried for wrapped forms too: `wrapLabels` asks for clearance from
  * the walls at the generous width, and leaves `Abstell- raum` on one line for want of 1.25 mm.
@@ -258,6 +259,8 @@ interface Form {
  *  (card AL3w: "WC" draws 1.67 em of ink against an estimate of 1.24 em). */
 interface TextBoxes {
   ink: BBox;
+  /** The box a symbol or a piece's label is read against: {@link symbolExtent}, which is the
+   *  estimate itself except where the ink is wider (the field keeps its name from before AL3w). */
   estimate: BBox;
 }
 

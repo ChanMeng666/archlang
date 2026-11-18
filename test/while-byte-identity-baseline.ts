@@ -370,7 +370,7 @@ export const BASELINE: ReadonlyArray<readonly [string, string]> = [
   ["examples/hillside-villa.arch", "123f2af228faf039c29d9861b60cfff3574b3cd04bc0057d5549cd02e67066fb"], // re-measured, see header; PS2.11e, see header; RM1.3a, see ./byte-identity-baseline.ts; RM9.2, see ./byte-identity-baseline.ts
   ["examples/imports.arch", "3aa7b2d5f953e6df63059c368e391ee3ea58c097cd7dff358197a940f4946252"],
   ["examples/knob-flat.arch", "578ec7551025df65b704f453b7af3493bf4abcfb19737fdece206e4c85fd2586"], // new example (P4, the knobs example), see header
-  ["examples/laneway-house.arch", "5b411f773f980c1a09770a438dea5cd288de50e67655a1c6df255245b4e406f0"], // PS2.11e, see header
+  ["examples/laneway-house.arch", "958934b402346348371464d60abc57c5bffde8eb7b5bcda1890a2bf6036b2749"], // PS2.11e, see header
   ["examples/library.arch", "acbc3325a38dea3132c2e6898df4c40ac2df5e85684fab1531409ba397e3b506"], // PS2.11e, see header
   ["examples/materials.arch", "b3d629675b1a43d4d1113f10b38e732d0b826fdb2b019fcf14ac4b166abd435d"],
   ["examples/museum-wing.arch", "add9b13a425ec75dd2b88c4eba087465228822c37321b3d1952db6f0795ef6c7"],

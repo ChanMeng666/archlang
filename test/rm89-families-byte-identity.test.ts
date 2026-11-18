@@ -131,7 +131,7 @@ const BASELINE: [string, string][] = [
   ["a7f940b31da42e963c8a9632117ac1ed320aa11220090d4c70d236cc931dff1d", "examples/hillside-villa.arch"], // RM9.2, see ./byte-identity-baseline.ts
   ["b3ed32c98852d61c69c521cf756843e3d950dbff3bf5bbe45dabe997336ceb86", "examples/imports.arch"],
   ["d9a87f3402f1a99d4113e036a6a72de30a84826e8317a840cd353b0013c3bd5b", "examples/knob-flat.arch"],
-  ["ade6cb2c0d185671a4fc243dbc65cf92d255da0326b88709dc837268a6350ccf", "examples/laneway-house.arch"],
+  ["b9093b9215982c898a94a3d7ab738aec713265cf1bc87ef9a3fcef1ad853c34a", "examples/laneway-house.arch"],
   ["664bacc1ef9be51bc128910ff9b42f45c322ef981ed05a85ae7ab89ec34afad6", "examples/library.arch"],
   ["f7dd7ef9a52f8da5a49f25f36428bbc33d754b113c1b4964e3508b5b8c65d43f", "examples/materials.arch"],
   ["b82630a3e096c4328d93982f581c817698e4ac5c9cb965b56562b320f54b80b5", "examples/museum-wing.arch"],

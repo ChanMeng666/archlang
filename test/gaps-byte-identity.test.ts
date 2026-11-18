@@ -117,7 +117,7 @@ const BASELINE: [string, string][] = [
   ["c9f89e9a93be96447f124e7eb52ca32594d06c8e9341e0438a74e3698992ce43", "examples/hillside-villa.arch"], // RM1.3a, see ./byte-identity-baseline.ts; RM1.3b, see ./byte-identity-baseline.ts; RM1.3b overlay, see ./byte-identity-baseline.ts; CO.1: the example writes its 3 snapped `against` sizes out (+40 bytes), so only spans and the steps of the written clauses (+12) moved; see the header (was 6a0a3529); RM9.2, see ./byte-identity-baseline.ts
   ["943cb8dbb7c0438d4f7d62160dafba83a6861b912a5c8cbf70db47e11ec80be7", "examples/imports.arch"],
   ["5ab98e5edbb819a917045eeeec6448af5fbb7d08837f644769b75274e744fbc8", "examples/knob-flat.arch"], // new example (P4, the knobs example), as in ./block-stair-byte-identity.test.ts
-  ["a44cdeef3b22c74f620fd8c66b31ccc54f2a92072d4b78c6dae2d98958b5d44b", "examples/laneway-house.arch"],
+  ["9613d6242ead61c0b7c42a45cbd3f3ac348c3fed0e1045511bcddf27b7b7cf3d", "examples/laneway-house.arch"],
   ["84bf35da4ec0c7f7bd5d522951d07a34e0d69f870fa86a6cacc2b24ebf5a67b8", "examples/library.arch"],
   ["cff60bd4ed0f2ed238f0837b5d0a51193d69f1cc46956891b8b5af3db846c21f", "examples/materials.arch"],
   ["289fb16b2c4e880275b772afb4a730decc12702d72cb286b0fcd7ac97579be97", "examples/museum-wing.arch"],

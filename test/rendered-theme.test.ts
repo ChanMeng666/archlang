@@ -79,7 +79,7 @@ const BASELINE: [string, string][] = [
   ["c4da52d86fc11e959b68f38d0cf484564b73f902c8c2807f6fcdc6d3fc8a8b79", "examples/hillside-villa.arch"], // RM1.3a, see ./byte-identity-baseline.ts; RM9.2, see ./byte-identity-baseline.ts
   ["dcc2b4674edc4f74db43a3ad65d1402290786ff9fcf45c21447db95fafae5ac7", "examples/imports.arch"],
   ["54ef5cae9feda0abc8176f144ab34ae2d7977ce0200b7e50fc7c3a44613dfdf0", "examples/knob-flat.arch"], // new example (P4, the knobs example)
-  ["f79687a470750720145d49d44f94df5dee45cb16959175fc8e0cd3482c6012fa", "examples/laneway-house.arch"],
+  ["9216c7fc9a8fa7db8d624eaa2a96462d756713494953cdbd056cffc7a1bd7bce", "examples/laneway-house.arch"],
   ["0f9aca3e79f48da02fec3eb91979f22d2a7a3b32f40a56f58d6ad2d454726d13", "examples/library.arch"],
   ["e7c86098ac9d2a454e3f1eafd04e937edb957b4344e7875d9006266c673fbad8", "examples/materials.arch"],
   ["5012abb624b8e5dd911e089260dc277f165b0458c605abc4b9538d3492194d64", "examples/museum-wing.arch"],

@@ -36,14 +36,17 @@
  *  - the title block's row geometry from {@link titleBlockMetrics}, the one formula the chrome
  *    is laid out and drawn with.
  *
- * Every width is the one shared estimate, {@link textWidth} (`characters × size × 0.62`), through
+ * Widths start from the one shared estimate, {@link textWidth} (`characters × size × 0.62`), through
  * {@link textExtent}: the same model the label placer, the `dims auto` stagger and
- * `W_DIM_OVERLAP` measure with. There is no font, canvas or Node API anywhere in it. The walls, the
- * swings and the floor's edge are the exception: a label sits right up to them on every plan with
- * a small room, and that estimate's slack read a name with clear floor on both sides as buried in
- * both walls (`two-bed-min-area`'s "Bathroom"), so those three use {@link inkExtent}, the width the
- * text can draw in the PNG's Roboto or a browser's Helvetica Bold, character by character.
- * `fitLabels` reads the same two widths.
+ * `W_DIM_OVERLAP` measure with. There is no font, canvas or Node API anywhere in it. A room's
+ * name or area figure departs from it twice. Against the walls, the swings and the floor's edge it
+ * is read at {@link inkExtent}, the width the text can draw in the PNG's Roboto or a browser's
+ * Helvetica Bold, character by character: a label sits right up to them on every plan with a small
+ * room, and the estimate's slack read a name with clear floor on both sides as buried in both
+ * walls (`two-bed-min-area`'s "Bathroom"). Against a symbol or a piece's own label it is read at
+ * {@link symbolExtent}, the wider of the estimate and that ink (card AL3w), since a short name of
+ * wide letters draws past the estimate. `relocateLabels` and `fitLabels` read the same widths. A
+ * `dims auto` number, and a room's label under one, are read at the estimate.
  *
  * ## What "over" means
  *

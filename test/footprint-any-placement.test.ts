@@ -99,7 +99,7 @@ const BASELINE: [string, string][] = [
   ["123f2af228faf039c29d9861b60cfff3574b3cd04bc0057d5549cd02e67066fb", "examples/hillside-villa.arch"], // RM9.2, see ./byte-identity-baseline.ts
   ["3aa7b2d5f953e6df63059c368e391ee3ea58c097cd7dff358197a940f4946252", "examples/imports.arch"],
   ["578ec7551025df65b704f453b7af3493bf4abcfb19737fdece206e4c85fd2586", "examples/knob-flat.arch"],
-  ["5b411f773f980c1a09770a438dea5cd288de50e67655a1c6df255245b4e406f0", "examples/laneway-house.arch"],
+  ["958934b402346348371464d60abc57c5bffde8eb7b5bcda1890a2bf6036b2749", "examples/laneway-house.arch"],
   ["f57eaea084d2e6e62b85b8450ef96675e9f1466bea9aff24e2869f2d6f0c9804", "examples/lib/doors.arch"],
   ["57d6c78e2eea8451a9b32a5828f3babb24b0251cc5c3b72675b431be22b3f310", "examples/lib/fixtures.arch"],
   ["adf16d60e17d76d76f092f95fb24dab4b7ba5ebaa977ed32bcc3a8eaddc7e05b", "examples/lib/furniture.arch"],

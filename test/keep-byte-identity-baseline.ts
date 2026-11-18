@@ -10,7 +10,7 @@
  * PR legitimately moves a hashed output (never keep code), the table is re-taken by the generator, the
  * reason recorded below and the moved files listed in that commit's message.
  *
- * Taken: AL1 (the north arrow keeps off the dimension and axis bands) on feat/al1-north-arrow from origin/main a9db286e: 77 rows move, every one a plan whose arrow moved off a band. With every moved page's SVG put back to main's in the payload (exactly one line per page moved, the arrow's <g>) all 77 reproduce main's digest; every step count is unchanged
+ * Taken: AL3w review round 1 on feat/al3w-symbol-ink-width (the relocation reads a label at the wider of its estimate and its ink): 3 rows move, examples/laneway-house.arch, eval/goldens/anchor-furniture.arch and test/taste-corpus/r6-bed-in-kitchen.good.arch, each a room name placed on clearer floor at the same size; with every page's SVG put back to the previous head's (6f928fdc) each payload agrees; describe, lint, validate, impact and the steps are unchanged
  */
 
 /** `[path from the repository root, SHA-256 of the payload, evaluation steps]`, sorted by root. */
@@ -103,7 +103,7 @@ export const KEEP_WEAK_BASELINE: readonly (readonly [string, string, number])[] 
   ],
   [
     "examples/laneway-house.arch",
-    "fc1dddbd4a1ee69b728aad718ec5dc2e2231bc29341146f9541539bbb1f4190c",
+    "ead935d76442f16be213930438fda93925317bbbc38a17b3dc1ee78203fc8918",
     535,
   ],
   [
@@ -223,7 +223,7 @@ export const KEEP_WEAK_BASELINE: readonly (readonly [string, string, number])[] 
   ],
   [
     "eval/goldens/anchor-furniture.arch",
-    "fc1020f92adf935dd1609f76cb501943c97b86101e5c15f11c48f6d11a2f3f78",
+    "e86622128a5e6ebf5c12a9ada486b56a8fbb138aef4155ba710679fee229026f",
     285,
   ],
   [
@@ -1338,7 +1338,7 @@ export const KEEP_WEAK_BASELINE: readonly (readonly [string, string, number])[] 
   ],
   [
     "test/taste-corpus/r6-bed-in-kitchen.good.arch",
-    "7f1435a0e55cd019aa7d5664b652442f2777a510bc69e79a26c679cef27d58fe",
+    "2acc4c18811e76bd5246d4503b474210a016aef83d09d9afa583b39e3a2cb125",
     505,
   ],
   [

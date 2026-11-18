@@ -138,7 +138,7 @@ const BASELINE: [string, string][] = [
   ["5522225a6edf30fd1601818f33de5444700044308366d5903cf702a006e816b4", "examples/hillside-villa.arch"], // H10: +32 ring scan, +0 overlap; RM1.3a, see ./byte-identity-baseline.ts; CO.1: the example writes its 3 snapped `against` sizes out (+40 bytes), so only spans and the steps of the written clauses (+12) moved; see the header (was c0385530); RM9.2, see ./byte-identity-baseline.ts
   ["7d331b6506b22f2f3b347f7cd69066691419d8ce179543e995880159f3fd9781", "examples/imports.arch"],
   ["26816d797d510816465174bbf098dea5d5cc5be66d04a41ab3d7e7c7a4c6eb51", "examples/knob-flat.arch"], // new example (P4, the knobs example)
-  ["62335f52177f148116eb6bbc2a2d294c3fcee7ff6edb1e02cc2864af42ac2078", "examples/laneway-house.arch"],
+  ["fee16d243f2eda1c1b39f08dcb0830765e3b88c28b159cee43bd9df6ff501f63", "examples/laneway-house.arch"],
   ["3f563f5e8b43e8d881767e76f0d290dc1cd313b2030e31063dfb7bd58a116bca", "examples/library.arch"],
   ["f44cf859229b71e72bbbdeb81012ff8ef9345d3cf43a80d3efb3a7e4f2968f3c", "examples/materials.arch"],
   ["e949de01e019689e380fadbf6801c76b79b1f184a8e327f3dd9f67ba5179280c", "examples/museum-wing.arch"],

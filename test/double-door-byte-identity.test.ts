@@ -212,7 +212,7 @@ const MAIN_SOURCES: [path: string, payload: string, source: string, undo: [branc
   ],
   [
     "examples/laneway-house.arch",
-    "bb8fde692c133530cf38bc453a660e7769d49c867be25b195f13e9223728ac08",
+    "4d5dee59cb273cb1678682393b4d630794591ff04a0723dac3ceff4cd28ac0d8",
     "cd383a3a7c334d9e7979a99724e7d8ba3d2fee67be9f8b09a76e0b84ba141ef9",
     [
       [
