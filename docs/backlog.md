@@ -269,6 +269,15 @@ required) is added only when a brief needs it. Reported by the ArchCanvas eval, 
 ask (a combined kitchen and living room credited once); that ask is withdrawn because its eval inputs
 were wrong (one room meets one requirement, so a caller asserts a combined room once).
 
+### 3.17 · Frozen public tables: residue of #968 — `todo`
+
+Non-blockers from the second review of #968:
+
+1. `test/ast-values-frozen.test.ts` walks `Object.entries`, so a future frozen `Set` or `Map` table passes while staying mutable.
+2. 40 of the 72 object-valued root exports are still not deep-frozen (`ROOM_TYPES`, `ERROR_CODES`, `PAPER_SIZES`, `THEMES`, `DEFAULT_THEME`, `PLAN_JSON_SCHEMA` and others). This predates #968, but the same reason for freezing applies to them. Freezing them is a behaviour change for a consumer that mutates them, so decide the release class first.
+3. PR CI never runs `test/index-values.test.ts` on Windows. Standalone on a Windows laptop, its program build took 9.8 s over 912 files against its 60 s timeout; `types: []` cuts that to 4–6 s with the same result.
+4. The new top-level `Object.freeze` calls carry no `@__PURE__` mark (`src/pure.ts`), like 27 other freezes in `src`. No measured effect.
+
 ## Found while redrawing the showcase
 
 Five things the twelve new examples ran into. None is a regression and none blocked an example from
