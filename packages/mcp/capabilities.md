@@ -32,6 +32,14 @@ The hosted server (https://mcp.archlang.uk/mcp) adds:
 - Draw a plan from an image or PDF: https://archlang.uk/from-an-image
 - Change one room without moving the others: https://archlang.uk/edit-one-room
 
+## What `fix` resolves
+
+`fix` resolves the codes below; any other code is edited by hand (`archlang explain <code>` says how). The `fix` tool reads `compile`'s diagnostics; `archlang fix` also reads `lint`'s and proves a `while` rewrite, so it alone resolves the codes marked CLI. A code in two groups says when its edit takes each.
+
+- `machine-applicable`, applied by default: `E_ARC_RADIUS`, `E_ATTACH_POS_RANGE`, `E_DOOR_KIND_CLAUSE`, `E_DOOR_OPEN_RANGE`, `E_HEIGHT_RANGE`, `E_OPENING_ABOVE_WALL`, `E_ROOM_ALIGN`, `E_ROOM_ALIGN_AXIS`, `E_SILL_ABOVE_HEAD`, `E_WINDOW_KIND_CLAUSE`, `W_ALIAS_MATCH` (CLI), `W_DIM_INSIDE` (CLI), `W_DIM_OVERLAP` (CLI), `W_DOOR_OFF_WALL` (one wall is nearest), `W_FIXTURE_BACK_TO_ROOM` (CLI), `W_OPENING_OFF_WALL` (one wall is nearest), `W_POCKET_RUN` (CLI), `W_SWING_OBSTRUCTED` (CLI), `W_WHILE_DEPRECATED` (CLI; outside any component), `W_WINDOW_OFF_WALL` (one wall is nearest)
+- `maybe-incorrect`, applied only with `unsafe:true` (`archlang fix --unsafe`): `W_DIM_TEXT_MISMATCH` (CLI), `W_DOOR_OFF_WALL` (two or more walls tie for nearest), `W_FOOTPRINT_TRANSPOSED` (CLI), `W_OPENING_OFF_WALL` (two or more walls tie for nearest), `W_UNKNOWN_FURNITURE`, `W_WHILE_DEPRECATED` (CLI; inside a component), `W_WINDOW_OFF_WALL` (two or more walls tie for nearest)
+- `has-placeholders`, never applied (the edit holds a `<…>` to fill in): `E_DOOR_WIDTH`, `E_OPENING_WIDTH`, `E_WINDOW_WIDTH`
+
 ## Export formats
 
 - `svg`: no dependency
