@@ -12,7 +12,8 @@ import { SYNONYMS_VERSION } from "../eval/synonyms.js";
  * Judge fixture — the byte-equivalence proof for the T4 intent lift.
  *
  * `eval/judge-fixture.json` pins the FULL `Score` this judge (`scoreSource`) produces
- * for every corpus golden under the current scoring core (judge v2 · synonyms v1). Its
+ * for every corpus golden under the current scoring core (judge v2 · synonyms v2; the v1→v2
+ * bump, NR.16, moved only the fixture's `synonymsVersion` tag, every Score stayed). Its
  * purpose is to keep JUDGE_VERSION at "2" honest across the planned refactor that lifts
  * `eval/assertions.ts` into `src/intent.ts`: after that lift, this suite must still pass
  * unchanged — same predicates, same passes, same detail strings, same subscores — which

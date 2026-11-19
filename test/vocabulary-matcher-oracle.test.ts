@@ -46,6 +46,17 @@
  * guest room, kids room, children's room and master suite, with a bare "master" as an alias that
  * gives way to any other fallback row. `oldFallback` mirrors exactly that, per word; the new
  * words reach the generated labels through `USE_WORDS`.
+ *
+ * ## Advanced again on 2026-11-19 for NR.16 (product-roadmap RM-D68)
+ *
+ * Tokens now compare without accents: the matcher folds a synonym's and a label's normal form
+ * (NFD, then every combining mark U+0300–U+036F dropped) before splitting it. The oracle gained
+ * exactly that, as `fold` inside `oldSynonymMatchesLabel`, written without the new code's ASCII
+ * fast path; `normalizeLabel` itself is unchanged in both. The tables gained Spanish and
+ * Portuguese words, which reach the oracle through the shared tables and `USE_WORDS`, and one
+ * guard phrase, "quarto de banho", which keeps "quarto" from giving a bedroom; the oracle's
+ * `oldClassifyLabelUses` gained that guard in its own per-word style. The code-unit sweep now
+ * expects the combining marks to extend "bed" too, since "bed" + U+0301 folds to "bed".
  */
 
 import { walkFiles as walk } from "./helpers/corpus.js";
@@ -96,9 +107,12 @@ function tokenEq(synTok: string, labTok: string): boolean {
   return hit;
 }
 
+/** NR.16: accents folded for comparison (canonical decomposition, combining marks dropped). */
+const fold = (s: string): string => s.normalize("NFD").replace(/[̀-ͯ]/g, "");
+
 function oldSynonymMatchesLabel(syn: string, label: string): boolean {
-  const synToks = normalizeLabel(syn).split(" ").filter(Boolean);
-  const labToks = normalizeLabel(label).split(" ").filter(Boolean);
+  const synToks = fold(normalizeLabel(syn)).split(" ").filter(Boolean);
+  const labToks = fold(normalizeLabel(label)).split(" ").filter(Boolean);
   if (synToks.length === 0) return false;
   let i = 0;
   for (const lt of labToks) {
@@ -127,7 +141,10 @@ function oldClassifyLabelUses(text: string): { uses: UseKind[]; aliases: AliasMa
     if (!m.canonical) aliases.push({ kind, word: m.word });
   };
 
-  const bedroom = oldMatchVocabulary(text, USE_VOCABULARY.bedroom);
+  // NR.16: "quarto" gives no bedroom inside "quarto de banho".
+  const bedroomHit = oldMatchVocabulary(text, USE_VOCABULARY.bedroom);
+  const guarded = bedroomHit?.word === "quarto" && oldSynonymMatchesLabel("quarto de banho", text);
+  const bedroom = guarded ? null : bedroomHit;
   if (bedroom) add("bedroom", bedroom);
 
   const bath = oldMatchVocabulary(text, USE_VOCABULARY.bath);
@@ -415,11 +432,15 @@ describe("label classification: the one-split matcher against the per-word one",
       for (const [syn, label] of pairs(ch)) compareSynonyms([syn], label);
       if (synonymMatchesLabel("bed", `bed${ch}`)) extended.push(c);
     }
-    // "bed" + one code unit: the ten digits, and the code units that normalise away (the
-    // separators `-_/` and whitespace, which leave the token "bed").
+    // "bed" + one code unit: the ten digits, the code units that normalise away (the
+    // separators `-_/` and whitespace, which leave the token "bed"), and (NR.16) the combining
+    // marks U+0300–U+036F, which the accent fold drops.
     const digits = extended.filter((c) => c >= 0x30 && c <= 0x39);
     expect(digits).toHaveLength(10);
-    expect(extended.every((c) => (c >= 0x30 && c <= 0x39) || /[-_/\s]/.test(String.fromCharCode(c)))).toBe(true);
+    const mark = (c: number): boolean => c >= 0x300 && c <= 0x36f;
+    expect(extended.filter(mark)).toHaveLength(0x70);
+    const sep = (c: number): boolean => /[-_/\s]/.test(String.fromCharCode(c));
+    expect(extended.every((c) => (c >= 0x30 && c <= 0x39) || mark(c) || sep(c))).toBe(true);
   }, 120_000);
 
   it("property: labels assembled from mixed scripts, digits, separators and punctuation", () => {

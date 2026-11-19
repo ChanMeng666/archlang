@@ -2431,7 +2431,7 @@ count (`rooms: 2` while `roomsInclude` needs 3) is not reported as infeasible. *
 POISON-site guard regex in `test/error-value-law.test.ts` misses `= POISON` and `=> POISON` forms (no such
 site today). **Gate:** (1) those errors reported beside the root, with a test; (2) the regex widened.
 
-### NR.16 · Room words only in English (downstream ask, 2026-11-18) — `todo`
+### NR.16 · Room words only in English (downstream ask, 2026-11-18): done by #<pr>, waiting to be archived — `note`
 
 A downstream application reports that brief-check concept matching and the label classifier know only
 English room words: Spanish and Portuguese labels ("Dormitorio", "Baño", "Cocina", "Quarto", "Banheiro",
@@ -2440,7 +2440,8 @@ that exist. About one in five of its recent briefs is in Spanish or Portuguese. 
 accent-insensitive es/pt vocabulary in the concept table and the label classifier; (b) state that `uses`
 tags and concepts are the language-neutral channel, never label words, with a lint when a room has no
 `uses`. Until decided, the downstream app writes `uses` on every room. **Gate:** a decision recorded,
-then the chosen form with a test per language.
+then the chosen form with a test per language. Decided (a) by RM-D68 (product-roadmap §6.31), built
+with `SYNONYMS_VERSION` 2 and `test/vocabulary-es-pt.test.ts`.
 
 ## Test-programme findings (promo-credit programme, 2026-11-16)
 

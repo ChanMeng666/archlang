@@ -85,7 +85,8 @@ describe("eval — committed goldens still author correctly", () => {
   });
 
   it("pins the scoring-core and synonym versions", () => {
-    expect(SYNONYMS_VERSION).toBe(1);
+    // 2 since NR.16 (Spanish and Portuguese room words, accent-insensitive comparison).
+    expect(SYNONYMS_VERSION).toBe(2);
     expect(JUDGE_VERSION).toBe("2");
   });
 

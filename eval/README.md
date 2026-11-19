@@ -335,8 +335,10 @@ the hook stays closed.)
 ## Versioning discipline
 
 Three pinned versions stamp every result: `JUDGE_VERSION` (`assertions.ts`, currently `"2"`),
-`SYNONYMS_VERSION` (`synonyms.ts`, currently `1`), and the rubric version (`rubric.md`, currently
-`1`). Tests pin the first two; `live-baseline.json` carries a `judge` field.
+`SYNONYMS_VERSION` (`synonyms.ts`, currently `2`), and the rubric version (`rubric.md`, currently
+`1`). Tests pin the first two; `live-baseline.json` carries a `judge` field. Synonyms v2 (NR.16)
+added Spanish and Portuguese room words and accent-insensitive comparison; every committed
+golden's score is unchanged by it (`judge-fixture.json` moved only its `synonymsVersion` tag).
 
 **The iron rule: never compare rates across a judge (or synonyms) change.** A judge change
 re-defines what "pass"/"sound" *mean*, so a delta straddling one compares two different measurements.

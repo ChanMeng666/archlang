@@ -1,6 +1,6 @@
 # ArchLang authorability scorecard
 
-Mode: **offline** · 26 prompts · judge v2 · synonyms v1.
+Mode: **offline** · 26 prompts · judge v2 · synonyms v2.
 
 - **Valid (compiles):** 26/26 (100%)
 - **Intent match (semantic):** 23/26 (88%)

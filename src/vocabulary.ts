@@ -19,6 +19,11 @@
  * re-expression of the old substring regexes: the two behave identically on the
  * committed corpus (pinned by `test/vocabulary-equivalence.test.ts`) and the
  * token form only ever refuses a spurious substring hit the regex would have taken.
+ *
+ * Tokens are compared **accent-insensitively** ({@link foldAccents}): "Baño" and "Bano" are one
+ * word. Besides English, the tables carry a small, closed set of Spanish and Portuguese room words
+ * (backlog NR.16, product-roadmap RM-D68). A label word is a convenience: an authored `uses` is the
+ * language-neutral channel and always wins over this table.
  */
 
 import type { UseKind } from "./ast.js";
@@ -28,8 +33,27 @@ export function normalizeLabel(s: string): string {
   return s.toLowerCase().replace(/[-_/]/g, " ").replace(/\s+/g, " ").trim();
 }
 
-/** A string's tokens: its {@link normalizeLabel} form split on spaces, empties dropped. */
-const tokensOf = (s: string): string[] => normalizeLabel(s).split(" ").filter(Boolean);
+/** The combining diacritical marks (U+0300–U+036F) that {@link foldAccents} strips. */
+const COMBINING_MARKS = /[̀-ͯ]/g;
+
+/**
+ * Accents folded away for COMPARISON only: canonical decomposition (NFD), then every combining
+ * diacritical mark dropped, so "baño", "bano" and "bañ" + U+0303 all read "bano", and "dormitório"
+ * reads "dormitorio". An all-ASCII string is returned as it is (no mark to strip). Never part of
+ * {@link normalizeLabel}'s output, which stays the public normal form; only the matcher's tokens are
+ * folded, a synonym's and a label's alike. `String.prototype.normalize` is ES2015, in every browser
+ * and Node, and Unicode normalization is stable by policy, so the fold is deterministic.
+ */
+function foldAccents(s: string): string {
+  for (let k = 0; k < s.length; k++) {
+    if (s.charCodeAt(k) > 0x7f) return s.normalize("NFD").replace(COMBINING_MARKS, "");
+  }
+  return s;
+}
+
+/** A string's matcher tokens: its {@link normalizeLabel} form, accents folded
+ *  ({@link foldAccents}), split on spaces, empties dropped. */
+const tokensOf = (s: string): string[] => foldAccents(normalizeLabel(s)).split(" ").filter(Boolean);
 
 /** One synonym token, with whether a fused numeric suffix may follow it. */
 interface SynToken {
@@ -162,27 +186,44 @@ function matchPrepared(labToks: readonly string[], vocab: PreparedEntry): VocabM
  * NOTE: "wet room" is deliberately NOT a bath word — the old `WET_RE` never matched it,
  * so a plan labelled only "Wet Room" (with no authored `uses`) stays unclassified, as
  * it did at HEAD. Authored `uses` always wins over this table.
+ *
+ * Spanish and Portuguese (NR.16): each row's English words come first and the es/pt words after
+ * them, so a label that matched before matches the same word now. One spelling stands for both
+ * languages where they fold alike ("dormitorio" is also the Portuguese "dormitório"). Left out on
+ * purpose: a bare "sala" (any room: "sala de reuniones", "sala de máquinas"), "salón" (it folds
+ * to the English "salon", a hair salon), "suite"/"suíte" (a Brazilian suíte is a bedroom, while
+ * "Banheiro da suíte" is its bathroom, and the fold makes it the English "suite" of an office
+ * building) and "cuarto" (any room: "cuarto de baño" is a bathroom). "Habitación" is an alias: it
+ * is a bedroom in a Spanish flat and any room elsewhere. "Quarto" is canonical, but not in
+ * "quarto de banho", the European Portuguese bathroom ({@link classifyLabelUses}). "Cochera" is
+ * an alias as "carport" is (it is often open), "aseo" and "lavabo" as "powder" is.
  */
 export const USE_VOCABULARY = Object.freeze({
-  bedroom: { canonical: ["bed", "bedroom"], aliases: [] },
+  bedroom: { canonical: ["bed", "bedroom", "dormitorio", "recámara", "quarto"], aliases: ["habitación"] },
   bath: {
-    canonical: ["bath", "bathroom", "shower"],
+    canonical: ["bath", "bathroom", "shower", "baño", "banheiro", "casa de banho", "quarto de banho"],
     aliases: ["ensuite", "en suite", "washroom"],
   },
-  wc: { canonical: ["wc", "toilet"], aliases: ["powder"] },
-  kitchen: { canonical: ["kitchen", "kitchenette"], aliases: [] },
-  entry: { canonical: ["entry", "entrance"], aliases: ["foyer", "vestibule", "mudroom"] },
-  hall: { canonical: ["hall", "hallway", "corridor"], aliases: ["landing"] },
+  wc: { canonical: ["wc", "toilet"], aliases: ["powder", "aseo", "lavabo"] },
+  kitchen: { canonical: ["kitchen", "kitchenette", "cocina", "cozinha"], aliases: [] },
+  entry: {
+    canonical: ["entry", "entrance", "entrada", "recibidor"],
+    aliases: ["foyer", "vestibule", "mudroom", "vestíbulo"],
+  },
+  hall: {
+    canonical: ["hall", "hallway", "corridor", "pasillo", "corredor"],
+    aliases: ["landing", "distribuidor", "rellano", "patamar"],
+  },
   // `living` and `dining` were once one row (`LIVING_DINING_RE`'s words); they are two because
   // `dining` is a use of its own, so "Dining Room" classifies as `dining`, not `living`. The
   // word set is unchanged; see {@link classifyLabelUses} for the one rule an alias obeys.
-  living: { canonical: ["living", "lounge"], aliases: ["sitting", "family"] },
-  dining: { canonical: ["dining"], aliases: [] },
+  living: { canonical: ["living", "lounge", "sala de estar"], aliases: ["sitting", "family"] },
+  dining: { canonical: ["dining", "comedor", "sala de jantar"], aliases: [] },
   // The aliases are
   // aliases and not canonical words on purpose: a carport is not enclosed and a "Parking" room
   // in a large building is a floor, not a garage, so both are reasonable inferences that an
   // author should be advised (W_ALIAS_MATCH) to pin with an explicit `uses garage`.
-  garage: { canonical: ["garage"], aliases: ["carport", "car port", "parking"] },
+  garage: { canonical: ["garage", "garaje", "garagem"], aliases: ["carport", "car port", "parking", "cochera"] },
 }) satisfies Record<string, VocabEntry>;
 
 /**
@@ -218,6 +259,13 @@ export const USE_VOCABULARY = Object.freeze({
  * stays unclassified, so no use-reading rule judges it as a room people live in, and the lint
  * coverage report names it. "Studio" and "Gallery" are absent too: a studio is a flat, a
  * workroom or a dance floor, and a gallery a corridor or an exhibition room.
+ *
+ * Spanish and Portuguese (NR.16), after the English words as in {@link USE_VOCABULARY}: a pantry
+ * ("despensa"), a box room ("trastero"), a wardrobe ("armario", "roupeiro") or walk-in closet
+ * ("vestidor") is storage; "escritorio" (also the Portuguese "escritório") is an office, while
+ * "estudio" (a studio flat as often as a study) and "oficina" (a workshop in Portuguese) are
+ * aliases; a laundry ("lavandería", also "lavanderia"; "lavadero"; the Brazilian "área de
+ * serviço") is a utility room.
  */
 export const FALLBACK_USE_VOCABULARY = Object.freeze({
   bedroom: {
@@ -226,11 +274,28 @@ export const FALLBACK_USE_VOCABULARY = Object.freeze({
   },
   wc: { canonical: [], aliases: ["water closet"] },
   storage: {
-    canonical: ["storage", "store", "stores", "storeroom", "closet", "wardrobe", "pantry", "larder"],
+    canonical: [
+      "storage",
+      "store",
+      "stores",
+      "storeroom",
+      "closet",
+      "wardrobe",
+      "pantry",
+      "larder",
+      "despensa",
+      "trastero",
+      "armario",
+      "roupeiro",
+      "vestidor",
+    ],
     aliases: ["dressing", "linen", "cellar"],
   },
-  office: { canonical: ["office", "study"], aliases: ["consulting"] },
-  utility: { canonical: ["utility", "laundry"], aliases: ["plant", "boiler"] },
+  office: { canonical: ["office", "study", "escritorio"], aliases: ["consulting", "estudio", "oficina"] },
+  utility: {
+    canonical: ["utility", "laundry", "lavandería", "lavadero", "área de serviço"],
+    aliases: ["plant", "boiler"],
+  },
   living: { canonical: ["great room", "reception room", "drawing room"], aliases: ["snug", "den"] },
 }) satisfies Partial<Record<UseKind, VocabEntry>>;
 
@@ -242,6 +307,9 @@ const PREPARED_USE = Object.freeze(
 
 /** The one phrase that keeps "nursery" from reading as a bedroom: a day nursery is childcare. */
 const PREPARED_DAY_NURSERY = prepareEntry({ canonical: ["day nursery"], aliases: [] });
+
+/** The one phrase that keeps "quarto" from reading as a bedroom: a quarto de banho is a bathroom. */
+const PREPARED_QUARTO_DE_BANHO = prepareEntry({ canonical: ["quarto de banho"], aliases: [] });
 
 /** {@link FALLBACK_USE_VOCABULARY}, prepared the same way. */
 const PREPARED_FALLBACK = Object.freeze(
@@ -288,6 +356,8 @@ export interface LabelClassification {
  * label empty: "Store" is `[storage]`, "Study" `[office]`, "Laundry" `[utility]`, "Nursery"
  * `[bedroom]` (alias flagged), while "Kitchen Store" stays `[kitchen]` and "Family Store"
  * `[living]`, as they were.
+ *
+ * One guard is Portuguese: "quarto" gives no bedroom inside "quarto de banho" (a bathroom).
  */
 export function classifyLabelUses(text: string): LabelClassification {
   const uses: UseKind[] = [];
@@ -299,8 +369,10 @@ export function classifyLabelUses(text: string): LabelClassification {
   // Normalised and split once for every entry below, not once per word.
   const toks = tokensOf(text);
 
+  // A European Portuguese "quarto de banho" is a bathroom, not a bedroom: when "quarto" is the
+  // bedroom word that matched, that phrase keeps it from giving one (the bath row reads it).
   const bedroom = matchPrepared(toks, PREPARED_USE.bedroom);
-  if (bedroom) add("bedroom", bedroom);
+  if (bedroom && !(bedroom.word === "quarto" && matchPrepared(toks, PREPARED_QUARTO_DE_BANHO))) add("bedroom", bedroom);
 
   // Wet room: bath OR WC words detect it; a WC word discriminates it to a WC.
   const bath = matchPrepared(toks, PREPARED_USE.bath);
@@ -380,7 +452,8 @@ export function matchesLivingDining(text: string): boolean {
  *
  * "Loggia" and "carport" are here: each is open on a side by design, so that side is no gap. "Porch"
  * is not: a porch is closed as often as open (a closed porch is the annex this reading exists for),
- * so it answers as a room does. English only, as the rest of this vocabulary is.
+ * so it answers as a room does. English only: it reads the head noun where English puts it (last),
+ * and the Spanish and Portuguese head noun comes first, so their words would need a reading of their own.
  */
 const PREPARED_OPEN_AIR = prepareEntry({
   canonical: [
