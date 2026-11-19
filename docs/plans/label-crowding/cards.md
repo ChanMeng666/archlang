@@ -29,32 +29,6 @@ AL6（#957）第二轮红队的三条测试缺口，只改测试，不改 `src/`
 - **变化面**：只有测试。两份所有者批准的名单（`ORDER_EXCUSED` 和 label-wrap 的 knock-on 名单）只能缩小。
 - **发布**：不发布（只改测试）。
 
-### AL1 · 指北针避开尺寸链 — `todo` · 1.5 日 · opus
-现在 `src/backends/svg.ts:370–391` 和 `src/export/pdf.ts:387–403` 各自算一遍位置：`cx = b.maxX − r`，`cy = b.minY − margin·0.55`，不看任何尺寸。
-
-- 在 `src/chrome-layout.ts` 加一个共用的 `northArrowBox(...)`（照 `titleBlockMetrics` 的写法），结果放在可选字段 `ChromeLayout.north` 里，两个后端都从它取位置。
-- 按顺序取第一个空位（协调方 2026-11-18 裁定，方案 C）：
-  1. 原位置的框不碰 `dims`/`axes` 节点时留在原位，这类平面字节不变；
-  2. 否则放进页面右上角的方块：`x > b.maxX + reach.right`、`y < b.minY − reach.top`。尺寸链止于建筑转角，这里不会有尺寸链；
-  3. 角上的方块放不下时，放到右侧尺寸带以外那一条的顶端；
-  4. 再放不下，放到顶部尺寸带以上那一条的右端；
-  5. 都放不下时，没有图纸的平面把上边距和右边距加大到刚好能放进角上的方块；图纸模式留在原位置。
-- 2–4 还要避开已画的其他节点、比例尺和图签，并在页面之内。量过：语料 33 个需要移动的页面里，角上方块放不下的有 10 页（见证夹具在内），这正是 3、4 两步的用处。回退一步在语料上从不触发。
-- **不要**加大图纸模式的任何边距。那样页面会超出图纸，而 `describe().sheet.fits` 仍报为真（`sheet.ts:235–237` 警告过这个问题）。
-- 用一条语料不变式测试钉住"指北针框与尺寸、轴线不相交"，不加 lint 码。
-- **变化面**：示例首页 22 页的 SVG 和 PNG 金样会变（多层平面另量），`describe()`/`lint()` 不变。
-- **发布**：`ChromeLayout.north` 经公开的 `Scene.chrome` 可读到，所以算 minor；如果字段不公开，算 patch。
-
-### AL5 · 墙厚数字避开房间文字 — `todo` · 2 日 · opus
-`thicknessStation`（`scene-build.ts:524–613`）在房间名定位之前就运行，看不到房间文字。之后 `relocateLabels` 按名字加面积的合框判断，而 lint 把每段文字单独、转向后再判断，两者的判断不一致。
-
-- `fitLabels` 之后，对每个按规则自己的谓词与最终标签框相撞的墙厚数字，重新选位：把标签框加进障碍物，重跑各级候选位；还不行就换同厚度次长的墙段，再换另一侧。
-- `autoDimensions(ir, sizes, registry, labelBoxes?)` 增加一个参数。lint 把它从 Scene 读到的标签框传进去（`annotations.ts:175–186`），这样画图和 lint 由同一个纯函数决定。
-- **补充（下游应用的请求，2026-11-18）**：所有候选位都避不开时，不画这个墙厚数字，并由一条 drafting 层 lint 指出哪一个没画。用 `new-lint-rule` 技能加。示例必须保持零警告；语料里墙厚数字的报告现在是 0 条，这条 lint 在语料上预计不报，要量过再说。
-- **变化面**：语料里没有墙厚数字的报告，预计语料零变化，用计数器证明；只有见证夹具变化。要守住 `test/dim-thickness-callout.test.ts` 和 `test/annotation-collisions.test.ts`（墙厚数字避开楼梯）。
-- 同时完成 PS2.39 中"墙厚数字压房间文字"这一部分。
-- **发布**：minor。新增 lint 码 `W_DIM_THICKNESS_UNPLACED`（`.claude/commands/release-check.md`：新增 `W_*` 码至少 minor）；`autoDimensions` 不从 `src/index.ts` 导出。
-
 ### AL5b · AL5 的后续 — `todo` · 1 日 · opus
 AL5（#959）第二轮红队留下的三项。
 
@@ -64,29 +38,59 @@ AL5（#959）第二轮红队留下的三项。
 - **变化面**：S1 若加跳过记录，会改变超大平面的 lint 覆盖说明；S2 只加测试；细节项若扩展规则，会改变 drafting lint，需量语料。
 - **发布**：S1/细节按实际改动定；S2 不发布。
 
-### AL4 · 比家具宽的家具文字 — `todo` · 1.5 日 · opus
-只有没进目录的家具词会画文字：一个矩形加居中的 `furnFont` 文字（`src/elements/furniture.ts:620–653`），不检查放不放得下。
+### AL3b · 小房间标签用引出线 — `todo`（在 AL3a #964 之后）· 3 日 · opus · ADR 0035
+AL3 拆成三个 PR（协调方 2026-11-19 裁定）：AL3w（#962，宽度）与 AL3a（#964，与书写顺序无关）已做，本卡是剩下的引出线。在 `fitLabels` 和 AL4 那一步之后加一个后处理。
 
-- 放不下时先转到长边；还放不下就不画文字（AL-D2 的建议默认）。图元数量不变，墨迹不超出 `bounds()`。
-- 家具文字在 `fitLabels` 里和规则里都算障碍，三处判断从此一致。规则加入 `furniture-label` 作为可被压住的对象。
-- 转向的文字不能引入左右手性，`mirror` 时的处理要写明（`test/glyph-chirality.test.ts`）。
-- **变化面**：画文字这部分不改语料任何字节。障碍改动可能挪动那 18 个写了家具文字的文件里的标签位置和 drafting lint，要先量，不能直接声称为零。要守住 `test/label-fit.test.ts` 和 `test/fixture-byte-identity.test.ts`。
+- 触发：仍按规则自己的判断（符号、墙、门扇、家具文字、跑出地面）相撞的标签。只处理有名字、没被钉住的房间。
+- 位置：
+  - 以房间锚点为中心的方格点，间距为房间名字号，最远 16 格；按整数键排名（`i²+j²`、`max(|i|,|j|)`、`j`、`i`），键相同时优先 `uses circulation` 的房间。
+  - 只放在同一层房间的地面上：先在本房间地面上（不画引出线），再到别的房间。不放到楼外。
+- 障碍物：`relocateLabels` 用的全部，加上已放好的标签、开口编号标签和家具文字。
+- 引出线：一条直线加一个实心点（`drawCost` +2），指向房间自己的锚点（`roomLabelAnchor`/`polygonLabelPoint`，从形状取）。
+  - 点不落在符号上：落在本房间地面上按同一整数键排第一的空格点；没有空点时才用锚点。
+  - 可以穿门扇，但排在最后。不穿第三个房间，不压文字，不与别的引出线相交。
+- 预算：每个标签有尝试次数上限，引出线另有一份计数预算（都是计数，不计时），与 `MAX_FIT_WORK` 共用上限。用完时标签留在 `fitLabels` 放的位置，规则照常报告。14×14 小房间网格基准要重新计时；重新生成工作量表（`npx tsx test/work-counts-gen.ts "<why>"`），加一列 `labelLeaders`（表结构不允许时写在表头）。
+- 规则：带引出线的标签按它所在的地面判断，不再报"跑出房间"；消息文字不提宿主房间；`dims auto` 数字或文字压过引出线时，AL6 附加信息里用 `leader`。改写 `W_ANNOTATION_OVERLAP` 的原因与修复文字（`src/error-catalog/drafting.ts`，用 `gen:*` 重新生成）。
+- 默认开启，不加语法。ADR 0035 改为 accepted。
+- **变化面**：分支 `feat/al3b-leaders` 的初版是在 AL3a 的旧版本（带"让出地面"，已撤回）上量的：`W_ANNOTATION_OVERLAP` 101 → 91 条，8 个房间画引出线（5 个文件），`chain30`、`star30` 帮不上（没写 `paper`，最小的字也有 1.5 m 高）。必须在合并了 AL3a 的 `main` 上重量。示例不变，`describe()` 不变。要守住 `test/label-fit.test.ts`、`test/annotation-small-rooms.test.ts`、`test/annotation-collisions.test.ts`、`test/opening-tags-corpus.test.ts`（其 `ALLOWED` 只能缩小）和工作量表。
+- AL4（#961）留下的 knock-on（5100 个平面中 14 个房间文字被缩小、5 个取消换行、2 个新报告，少量新的 `W_DIM_THICKNESS_UNPLACED`）是 `main` 对没写文字的家具的原有行为；引出线才是真正的修复。规则还不报的相撞（AL4 的模糊测试记下）：开口编号压在被转向的家具文字上；被丢掉的家具文字空出的地方被开口编号占住，而旁边的房间名挪不动。
+- 同时部分回应 N.3、L.2。
+- **发布**：minor。
+
+### AL3c · 房间名压在另一个房间的名字上时报告 — `todo`（在 AL3b 之后）· 1 日 · opus
+- `W_ANNOTATION_OVERLAP` 不报房间名压在另一个房间名上（#964 第一轮红队：AL3a 的旧版本因此新增了两标签相压，lint 一条都没看见）。把另一个房间的标签作为可被压住的对象（overprint `over` 的种类用 `room-label`）。
+- 另一项，来自 AL3w（#962）第一轮红队 N3：`dims auto` 数字与房间标签、房间标签与相邻标签之间的判断仍按估算宽度读房间文字（`src/lint/rules/annotations.ts` 中 `over(nb.text, [l.text.rect], l.text.box)`，`src/scene-build.ts` 中 `restationThickness` 的 `textBox(prim)`）。像 "WC" 这样墨迹宽于估算宽度的名字，被数字或邻名压住时可能漏报、漏挪。本卡一并决定这两处是否也改用 `symbolExtent`（画图和 lint 同时改，并量语料）。
+- **变化面**：先在合并了 AL3b 的 `main` 上量。示例必须保持零警告。
+- **发布**：minor（行为变化，无新码）。
+
+### AL3d · `fitLabels` 宁要贴墙余量的小字号 — `todo`（需协调方定取舍）· 1 日 · opus
+`fitLabels` 在"缩小一号但离墙有余量"（tier 0）与"原字号放得下但贴墙"（tier 1）之间选前者。例：#962 第二轮红队的 case475，"MASTER BEDROOM" 175 → 150；同类还有 #358、#1808（Kitchen 与 Common Room 互相影响）。这是取舍问题，不是错误；改之前先在语料与模糊测试上量两种排序各自的结果，由协调方定。**发布**：按实际改动定。
+
+### AL3e · 被挤出自己地面的标签仍占着地面，邻居因此缩小 — `todo` · 1.5 日 · opus
+- **问题**：`relocateLabels` 把它放好的每个标签都当作后面标签的障碍，包括站在自己地面之外、`fitLabels` 之后会缩小或换行的标签。它原字号的框能伸到邻室，邻室只好离开本来放得下的锚点，再被缩小。例：#962 第二轮红队的 case352："NEWSROOM" 比房间宽，隔壁 "GYM" 画成 300（4075, 1015），而不是锚点上的 350（4075, 1005）。`test/label-fit.test.ts` 把现状钉成测试，以本卡命名。
+- **试过并排除（AL3a，#964）**："让出地面"，即 fit 会重画的出地面标签不占地方。被让出的标签互相压在一起（红队的 `over.mts`：带让出时，base 干净的平面中新增相压的，条带 seed 11 / 网格 seed 13 为 1 / 3，不让出为 0 / 0；`star30` 新增相压）。裁定：两标签相压比 GYM 小一号更糟。
+- **方向**：让重定位按 fit 将要画的大小看这个标签（在占位之前先跑 fit 的字号与换行选择，或按 fit 可能选的最小形式占位），占的既不是原字号的框，也不是什么都不占。
+- **验收**：case352 的 GYM 在锚点上是 350；base 干净而新增相压的平面数不增加；语料字节恒等律，每个变化的行都用对调律证明。
 - **发布**：patch。
 
-### AL3 · 小房间标签用引出线 — `todo` · 4 日 · opus · 需 ADR
-在 `fitLabels` 之后加一个后处理，只处理 `fitLabels` 处理完仍然相撞的标签组。
+### AL3f · 墙厚数字的选位与书写顺序无关 — `todo` · 1 日 · opus
+- **问题**：AL3a 让两个标签处理步骤在给定输入时与书写顺序无关，但 `walls from rooms` 加 `dims auto` 的平面仍随顺序变化：墙厚数字（`src/scene-build.ts` 的选位）在两个标签步骤之前、按派生墙的顺序选位，而派生墙的顺序跟着房间的书写顺序。例：三个空房间倒过来写，标签相同，"100" 分别在 x=4407.5 和 x=8407.5（base 和 head 都如此）。#964 第一轮红队的房间打乱测试：`dims auto` + `walls from rooms` 有 96/391 个平面的标签随顺序变化，其他组合为 0。
+- **做法**：墙厚选位的处理顺序从平面上读（按墙段几何，如站点中点的 y、再 x，最后墙 id），同 AL3a 对标签的做法。
+- **字节恒等律**：不同时写 `walls from rooms` 与 `dims auto` 的平面逐字节不变（SVG + `describe()` + `lint()` + 诊断）；两者都写的平面重量。钉住：红队的打乱样例两种顺序画得相同。本卡合并时删掉 CHANGELOG（AL3a 条目）、`src/label-fit.ts` 与 `src/label-placement.ts` 文件头里为这一残余写的限定语。
+- **发布**：patch。
 
-- 把名字和面积放到相邻房间或最近空地上的一个空格点，按格点排名，并画一条引出线（可带一个点）指向房间自己的锚点（`roomLabelAnchor`/`polygonLabelPoint`，从形状取）。
-- 障碍物：`relocateLabels` 用的全部，加上已放好的标签、开口编号标签和家具文字（依赖 AL4）。
-- 工作量与 `MAX_FIT_WORK` 共用一个上限。房间的 `drawCost` 从 3（有地面时 4）提到新的上限，重新生成工作量表（`npx tsx test/work-counts-gen.ts "<why>"`）。
-- 规则认定带引出线的标签已解决：按它实际所在的地面检查，不再报"跑出房间"。
-- 改写 `W_ANNOTATION_OVERLAP` 的原因与修复文字（`src/error-catalog/drafting.ts:126–131`，用 `gen:*` 重新生成）。
-- 写 ADR（AL-D3）。默认开启，不加语法；要加 `[语法]` 开关，就得等 PS7.9，并附字节恒等律。
-- 让 `relocateLabels` 与房间的书写顺序无关。它现在按元素顺序逐组处理，已知结果随顺序变化的平面：`test/fixtures/chain30.arch`、`star30.arch`、`dense-office.arch`，以及 `test/plans/plan-soundness/audits/first-contact-plans/` 下的 `2026-10-24-rerun/2-house.arch` 和 `2026-10-26-walls-first/6-clinic.arch`。本卡合并时，两份所有者批准的名单（`test/label-fit.test.ts` 的 `ORDER_EXCUSED`、`test/label-wrap.test.ts` 的 knock-on 名单）都必须缩小。
-- **变化面**：7 个"放不下"的语料文件（`test/fixtures/chain30.arch`、`star30.arch`，以及 5 个首次接触审计平面）的 SVG 和 drafting lint 会变，预计约 70 条报告消失。示例不变。要守住 `test/label-fit.test.ts`、`test/annotation-small-rooms.test.ts`、`test/annotation-collisions.test.ts`、`test/opening-tags-corpus.test.ts`（其 `ALLOWED` 只能缩小）和工作量表。
-- 同时部分回应 N.3、L.2。
-- 规则还不报的相撞（AL4 #961 的模糊测试记下）：房间名压在另一个房间名上；开口编号压在家具文字上；家具互相叠放时家具文字压在家具文字上。
-- **发布**：minor。
+### AL3g · 对称角之间的平局由舍入误差决定 — `todo`（需协调方定）· 0.5 日 · opus
+`relocateLabels` 在两个对称位置之间的平局，由约 1e-13 的浮点误差决定（#962：一个对称小屋的内联快照里，名字从一个下角翻到另一个，300 → 2700）。做法：比较加容差，再用稳定的键打破平局。会挪动摘要，所以要量语料，并逐行对调证明。**发布**：patch。
+
+### AL4b · AL4 的后续 — `todo` · 1 日 · opus
+AL4（#961）第二轮红队留下的项：
+
+- **S3 残余**：读家具文字仍计入 `W_ANNOTATION_OVERLAP` 的计数（`annotations.ts` 中 `work += sh.length`）。见证：408 个房间、1,224 件带文字家具、接近上限的平面，`main` 报 140–152 条，分支报 0 条外加一条 annotation-budget 跳过。文件头的说法与 `test/furniture-label-fit.test.ts` 的测试标题在这个边界上不成立。
+- 没有测试钉住 S1 的性质：最后一步从不缩小、不取消换行、不改行数。
+- `label-fit.ts` 允许再多跑出地面 2%，而注释说"不再更远"，两者不一致。
+- `pieceLabelBoxes` 的准备工作没有计数（线性）。
+- 墨迹模型把 Щ、Œ、— 当作 0.62 em（`text-metrics.ts`，早已如此）。
+- **发布**：按实际改动定；只改测试与注释时不发布。
 
 ### AL2a · 尺寸数字放不下时外推或滑开 — `todo` · 3 日 · opus
 - 尺寸链首、尾段的数字，如果宽度加两倍 `DIM_TEXT_GAP` 超过跨度，就写到链端站点之外的延长线上（把 `outsideStations` 推广到尺寸链）。
@@ -118,5 +122,6 @@ AL5（#959）第二轮红队留下的三项。
 
 - 改那一行注释，写明每种模式画哪几条链，并点出 `rooms` 没有总尺寸。
 - `spec.llm.md` 有铁律上限：渲染结果少于 30,000 个 UTF-16 码元（`test/llm-spec-drift.test.ts`，不是按字节量）。2026-11-18 的 `main` 上是 29,665 码元（`wc -c` 量出 29,968 字节，多出的是多字节字符），余量约 335。新字要用同一文件里可证明重复的内容换出来（`docs/agents/gotchas.md` 的 spec 删减规则：删之前 grep 确认同一事实仍在文件里），换不出来就等 PS7.9。动手前在合并后的树上重量一次。
+- **范围扩大（下游应用的请求，低优先，排在本卡与 PS7.9 之后）**：`spec.llm.md` 还应写明 (a) 定位短语自己的词紧跟其后、顺序固定（`against wall <id> [segment] [offset] [side]`、`anchor <a> [flush] [inset]`）；(b) 门窗的种类词能放在哪里（`door`/`window`/`id=` 之后，或 `at <pos>` 之后；不能在 `on <ref>` 与 `at` 之间）。1.64 上探过。每一句能让下游删掉一句自己的说明。同样受码元上限约束。
 - `gen:spec`、`gen:llms`、`gen:cli` 按顺序重新生成。
 - **发布**：patch（只改文档）。

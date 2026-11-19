@@ -259,6 +259,15 @@ which also matches `eval/g1/generate.ts` if that script ever imports it; the `re
 `scripts/risk-tier.mjs` is the narrower replacement for all three entry-point checks; (4) no run of
 `check:quick` from a checkout under a path with spaces has been recorded.
 
+### 3.6 · The `bathroom` concept counts a room with only a WC — by design — `note`
+
+Owner ruling, 2026-11-18: the `bathroom` concept (`src/intent-concepts.ts`) is met by a room with a bath
+or shower and a toilet, or by a toilet alone. The Chinese 卫生间 means either, so this is a question of
+meaning, not a bug, and the behaviour stays. A stricter concept for a full bathroom (bath or shower
+required) is added only when a brief needs it. Reported by the ArchCanvas eval, together with a second
+ask (a combined kitchen and living room credited once); that ask is withdrawn because its eval inputs
+were wrong (one room meets one requirement, so a caller asserts a combined room once).
+
 ## Found while redrawing the showcase
 
 Five things the twelve new examples ran into. None is a regression and none blocked an example from

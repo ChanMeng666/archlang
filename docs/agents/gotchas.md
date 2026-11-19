@@ -233,6 +233,10 @@ coordinator's own notes (merging, registries, browser and social automation, the
 - **Card tests under `test/` and the playground specs are typed and run by CI's `typecheck:all` and
   the playground e2e.** In a worktree whose `node_modules` is a junction both would resolve an
   older core and be invalid, so read them from the PR's CI.
+- **The 3D assets (`docs-site/public/3d/` PNGs and `manifest.json`) measured in a junctioned worktree
+  come from the primary's `dist/`, not from the worktree's core**, so a drawing change re-measured
+  there reproduces `main`'s images. Take moved 3D assets from the PR's CI, or build in a checkout
+  with its own `node_modules`.
 - **Remove a worktree's `node_modules` junctions with `[System.IO.Directory]::Delete(<junction>)`** (never recursive; the PowerShell tool blocks `cmd /c rmdir`) before
   `git worktree remove --force` or any recursive delete, or the delete follows them into the primary.
   (guarded: hook rule `delete-through-link` refuses the delete while a link sits within six levels of the target)
