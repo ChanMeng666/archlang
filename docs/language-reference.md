@@ -1466,6 +1466,16 @@ The fallback never adds to a label that already classified: "Kitchen Store" is a
 (a balcony is an `outdoor` surface, and the others name more than one kind of room), so tag
 them with `uses`; `lint --json` lists rooms left unclassified in its `coverage` block.
 
+Besides English, a small closed list of Spanish and Portuguese room words classifies, compared
+whole-word and, in this classification alone, without accents ("Baño" and "Bano" are one word):
+"Dormitorio", "Quarto", "Baño", "Banheiro", "Cocina", "Cozinha", "Comedor", "Sala de estar",
+"Pasillo", "Corredor", "Garaje", "Despensa", "Lavandería" and others like them; "Habitación",
+"Aseo" and "Lavabo" through an alias. A bare "Sala", "Salón", "Suíte", "Estudio", "Oficina" and
+"Escritorio" classify to nothing (no Spanish or Portuguese word gives `office`), and "Quarto de
+banho" is a bathroom and "Quarto de arrumos" a store, not bedrooms, unless another "Quarto" in
+the label names one. The label words are a convenience: `uses` is the language-neutral channel,
+so tag rooms whose labels are in any other language, or that the list does not cover.
+
 **Relational placement (v1.0).** Instead of an absolute `at (x,y)`, a room may be
 positioned **relative to another room** with `right-of` / `left-of` / `below` /
 `above`. The compiler resolves the absolute corner by pure arithmetic in

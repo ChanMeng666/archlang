@@ -913,6 +913,20 @@ fix is a table change (a `dining-room` key or alias), which bumps `SYNONYMS_VERS
 version is pinned by a test and the eval scores through the same table, so the bump is the
 owner's call.
 
+### M.20a · Spanish and Portuguese label words in the concept table (NR.16's second half; needs an owner-approved `SYNONYMS_VERSION` bump) — `decision`
+
+NR.16 (ruling RM-D68) asked for es/pt words in both the use classifier and `CONCEPTS`
+(`src/intent-concepts.ts`). #973 built the classifier half only: a room labelled "Dormitorio" or
+"Cozinha" reads as `uses bedroom` / `uses kitchen` and meets every concept that carries a room
+kind or a `room_type`. Six concepts carry neither, `consulting-room`, `meeting-room`,
+`private-office`, `reception`, `suite` and `unit`, and match by their English label words alone,
+so "Recepción", "Sala de reuniones", "Consultorio" or "Apartamento" never meets one; nor does a
+master-bedroom phrase ("Dormitorio principal", "Quarto principal") count by its label. Adding
+those words (and an accent fold to `synonymMatchesLabel`) changes the eval's table, so it bumps
+`SYNONYMS_VERSION`, which is the owner's call (as M.20). #973's first round carried such a table
+change and its body lists the words; the false friends found there (a pt-PT "Quarto de banho
+principal" read as a master bedroom, "Suíte" as the commercial `suite`) need guarding first.
+
 ### M.21 · `format()` writes the plan name with `JSON.stringify`, which the lexer cannot read back: done by #872, waiting to be archived — `note`
 
 The lexer knows only the escapes `\n`, `\"` and `\\` (`src/lexer.ts`, the string-literal
@@ -2431,7 +2445,7 @@ count (`rooms: 2` while `roomsInclude` needs 3) is not reported as infeasible. *
 POISON-site guard regex in `test/error-value-law.test.ts` misses `= POISON` and `=> POISON` forms (no such
 site today). **Gate:** (1) those errors reported beside the root, with a test; (2) the regex widened.
 
-### NR.16 · Room words only in English (downstream ask, 2026-11-18) — `todo`
+### NR.16 · Room words only in English (downstream ask, 2026-11-18): classifier half done by #973; concept-table half is M.20a — `todo`
 
 A downstream application reports that brief-check concept matching and the label classifier know only
 English room words: Spanish and Portuguese labels ("Dormitorio", "Baño", "Cocina", "Quarto", "Banheiro",
@@ -2440,7 +2454,10 @@ that exist. About one in five of its recent briefs is in Spanish or Portuguese. 
 accent-insensitive es/pt vocabulary in the concept table and the label classifier; (b) state that `uses`
 tags and concepts are the language-neutral channel, never label words, with a lint when a room has no
 `uses`. Until decided, the downstream app writes `uses` on every room. **Gate:** a decision recorded,
-then the chosen form with a test per language.
+then the chosen form with a test per language. Decided (a) by RM-D68 (product-roadmap §6.31). #973
+built the use-classifier half (`test/vocabulary-es-pt.test.ts`), through which the concepts that
+carry a room kind or a `room_type` are met. The concept-table half is not built: it changes the
+eval's table, so it needs an owner-approved `SYNONYMS_VERSION` bump, and it is M.20a.
 
 ## Test-programme findings (promo-credit programme, 2026-11-16)
 

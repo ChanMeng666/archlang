@@ -46,6 +46,19 @@
  * guest room, kids room, children's room and master suite, with a bare "master" as an alias that
  * gives way to any other fallback row. `oldFallback` mirrors exactly that, per word; the new
  * words reach the generated labels through `USE_WORDS`.
+ *
+ * ## Advanced again on 2026-11-20 for NR.16 (product-roadmap RM-D68)
+ *
+ * The use classifier (`classifyLabelUses`) alone now compares without accents: it folds the
+ * label's normal form and its tables' words (NFD, then the combining marks U+0300 to U+036F
+ * dropped) before splitting them. The oracle's two classification functions gained exactly that,
+ * as a `folded` argument to their per-word matches (`fold`, written without the new code's ASCII
+ * fast path). `synonymMatchesLabel` and `matchVocabulary` do not fold, and the oracle compares them
+ * unfolded, so the code-unit sweep is unchanged. The tables gained Spanish and Portuguese words,
+ * which reach the oracle through the shared tables and `USE_WORDS`, and one guard: "quarto" gives
+ * no bedroom when every "quarto" of the label starts a phrase that names another room, read as
+ * consecutive tokens (`oldEveryQuartoGuarded`, in the oracle's own per-word style). The guard
+ * phrases reach the generated labels through `FRAGMENTS`.
  */
 
 import { walkFiles as walk } from "./helpers/corpus.js";
@@ -96,9 +109,18 @@ function tokenEq(synTok: string, labTok: string): boolean {
   return hit;
 }
 
-function oldSynonymMatchesLabel(syn: string, label: string): boolean {
-  const synToks = normalizeLabel(syn).split(" ").filter(Boolean);
-  const labToks = normalizeLabel(label).split(" ").filter(Boolean);
+/** NR.16: the use classifier's accent fold (canonical decomposition, then the combining marks
+ *  U+0300 to U+036F dropped), written without the new code's ASCII fast path. */
+const MARKS = new RegExp(`[${String.fromCharCode(0x300)}-${String.fromCharCode(0x36f)}]`, "g");
+const fold = (s: string): string => s.normalize("NFD").replace(MARKS, "");
+
+/** The split tokens of `s`; folded when `folded` (NR.16: the use classifier only). */
+const oldTokens = (s: string, folded: boolean): string[] =>
+  (folded ? fold(normalizeLabel(s)) : normalizeLabel(s)).split(" ").filter(Boolean);
+
+function oldSynonymMatchesLabel(syn: string, label: string, folded = false): boolean {
+  const synToks = oldTokens(syn, folded);
+  const labToks = oldTokens(label, folded);
   if (synToks.length === 0) return false;
   let i = 0;
   for (const lt of labToks) {
@@ -108,10 +130,34 @@ function oldSynonymMatchesLabel(syn: string, label: string): boolean {
   return i === synToks.length;
 }
 
-function oldMatchVocabulary(label: string, vocab: VocabEntry): VocabMatch | null {
-  for (const word of vocab.canonical) if (oldSynonymMatchesLabel(word, label)) return { word, canonical: true };
-  for (const word of vocab.aliases) if (oldSynonymMatchesLabel(word, label)) return { word, canonical: false };
+function oldMatchVocabulary(label: string, vocab: VocabEntry, folded = false): VocabMatch | null {
+  for (const word of vocab.canonical) if (oldSynonymMatchesLabel(word, label, folded)) return { word, canonical: true };
+  for (const word of vocab.aliases) if (oldSynonymMatchesLabel(word, label, folded)) return { word, canonical: false };
   return null;
+}
+
+/** NR.16: the phrases in which "quarto" is not a bedroom. */
+const QUARTO_PHRASES = [
+  "quarto de banho",
+  "quarto de banhos",
+  "quarto de arrumos",
+  "quarto de arrumação",
+  "quarto de despejo",
+  "quarto de vestir",
+  "quarto de lavar",
+  "quarto de costura",
+  "quarto escuro",
+  "quarto andar",
+];
+
+/** NR.16: does EVERY "quarto" token of the label start one of the phrases, as CONSECUTIVE tokens
+ *  (folded)? Per word, as above; false when the label has no "quarto". */
+function oldEveryQuartoGuarded(label: string): boolean {
+  const l = oldTokens(label, true);
+  const starts = l.map((_, i) => i).filter((i) => tokenEq("quarto", l[i]!));
+  const phraseAt = (i: number, phrase: string): boolean =>
+    oldTokens(phrase, true).every((t, k) => l[i + k] !== undefined && tokenEq(t, l[i + k]!));
+  return starts.length > 0 && starts.every((i) => QUARTO_PHRASES.some((p) => phraseAt(i, p)));
 }
 
 interface AliasMatch {
@@ -127,32 +173,35 @@ function oldClassifyLabelUses(text: string): { uses: UseKind[]; aliases: AliasMa
     if (!m.canonical) aliases.push({ kind, word: m.word });
   };
 
-  const bedroom = oldMatchVocabulary(text, USE_VOCABULARY.bedroom);
+  // NR.16: "quarto" gives no bedroom inside a consecutive phrase naming another room.
+  const bedroomHit = oldMatchVocabulary(text, USE_VOCABULARY.bedroom, true);
+  const guarded = bedroomHit?.word === "quarto" && oldEveryQuartoGuarded(text);
+  const bedroom = guarded ? null : bedroomHit;
   if (bedroom) add("bedroom", bedroom);
 
-  const bath = oldMatchVocabulary(text, USE_VOCABULARY.bath);
-  const wc = oldMatchVocabulary(text, USE_VOCABULARY.wc);
+  const bath = oldMatchVocabulary(text, USE_VOCABULARY.bath, true);
+  const wc = oldMatchVocabulary(text, USE_VOCABULARY.wc, true);
   if (wc) add("wc", wc);
   else if (bath) add("bath", bath);
 
-  const kitchen = oldMatchVocabulary(text, USE_VOCABULARY.kitchen);
+  const kitchen = oldMatchVocabulary(text, USE_VOCABULARY.kitchen, true);
   if (kitchen) add("kitchen", kitchen);
 
-  const entry = oldMatchVocabulary(text, USE_VOCABULARY.entry);
+  const entry = oldMatchVocabulary(text, USE_VOCABULARY.entry, true);
   if (entry) add("entry", entry);
   else {
-    const hall = oldMatchVocabulary(text, USE_VOCABULARY.hall);
+    const hall = oldMatchVocabulary(text, USE_VOCABULARY.hall, true);
     if (hall) add("hall", hall);
   }
 
-  const garage = oldMatchVocabulary(text, USE_VOCABULARY.garage);
+  const garage = oldMatchVocabulary(text, USE_VOCABULARY.garage, true);
   if (garage) add("garage", garage);
 
   // PS0.7 (2026-10-18): living, then dining, appended; a living alias yields to any earlier kind.
-  const others = [bedroom, wc ?? bath, kitchen, entry ?? oldMatchVocabulary(text, USE_VOCABULARY.hall), garage];
-  const living = oldMatchVocabulary(text, USE_VOCABULARY.living);
+  const others = [bedroom, wc ?? bath, kitchen, entry ?? oldMatchVocabulary(text, USE_VOCABULARY.hall, true), garage];
+  const living = oldMatchVocabulary(text, USE_VOCABULARY.living, true);
   if (living && (living.canonical || others.every((m) => m === null))) add("living", living);
-  const dining = oldMatchVocabulary(text, USE_VOCABULARY.dining);
+  const dining = oldMatchVocabulary(text, USE_VOCABULARY.dining, true);
   if (dining) add("dining", dining);
 
   return { uses, aliases };
@@ -166,19 +215,20 @@ function oldFallback(text: string): { uses: UseKind[]; aliases: AliasMatch[] } {
     uses.push(kind);
     if (!m.canonical) aliases.push({ kind, word: m.word });
   };
-  const wc = oldMatchVocabulary(text, FALLBACK_USE_VOCABULARY.wc);
-  const storage = wc ? null : oldMatchVocabulary(text, FALLBACK_USE_VOCABULARY.storage);
-  const office = oldMatchVocabulary(text, FALLBACK_USE_VOCABULARY.office);
-  const utility = oldMatchVocabulary(text, FALLBACK_USE_VOCABULARY.utility);
+  const wc = oldMatchVocabulary(text, FALLBACK_USE_VOCABULARY.wc, true);
+  const storage = wc ? null : oldMatchVocabulary(text, FALLBACK_USE_VOCABULARY.storage, true);
+  const office = oldMatchVocabulary(text, FALLBACK_USE_VOCABULARY.office, true);
+  const utility = oldMatchVocabulary(text, FALLBACK_USE_VOCABULARY.utility, true);
   // PS2.18: a bare "master" gives way to any other fallback row; living is read last, alone.
   const other = [wc, storage, office, utility].some((m) => m !== null);
-  const bed = oldMatchVocabulary(text, FALLBACK_USE_VOCABULARY.bedroom);
-  if (bed && !oldSynonymMatchesLabel("day nursery", text) && !(bed.word === "master" && other)) add("bedroom", bed);
+  const bed = oldMatchVocabulary(text, FALLBACK_USE_VOCABULARY.bedroom, true);
+  if (bed && !oldSynonymMatchesLabel("day nursery", text, true) && !(bed.word === "master" && other))
+    add("bedroom", bed);
   if (wc) add("wc", wc);
   if (storage) add("storage", storage);
   if (office) add("office", office);
   if (utility) add("utility", utility);
-  const living = uses.length === 0 && !other ? oldMatchVocabulary(text, FALLBACK_USE_VOCABULARY.living) : null;
+  const living = uses.length === 0 && !other ? oldMatchVocabulary(text, FALLBACK_USE_VOCABULARY.living, true) : null;
   if (living) add("living", living);
   return { uses, aliases };
 }
@@ -270,6 +320,9 @@ const FRAGMENTS: readonly string[] = [
   "Day Nursery",
   "day-nursery",
   "Night nursery",
+  ...QUARTO_PHRASES,
+  "Quarto de casal",
+  "Quarto 2",
   "Hallmark",
   "bedrooms",
   "2",
