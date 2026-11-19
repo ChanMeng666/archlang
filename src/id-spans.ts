@@ -1,6 +1,7 @@
 /**
- * The byte span of an element statement's `id=<name>` name, kept beside the AST. A leaf: the
- * parser records spans here and the resolver reads them, so reading one never loads the parser.
+ * The byte span of an element statement's `id=<name>` name, and of the one word a did-you-mean
+ * fix rewrites (AF2), kept beside the AST. A leaf: the parser records spans here and the resolver
+ * reads them, so reading one never loads the parser.
  */
 
 import type { Span } from "./diagnostics.js";
@@ -20,4 +21,21 @@ export function idSpanOf(node: object): Span | undefined {
 /** Record the span of a parsed element's authored `id=` name. */
 export function recordIdSpan(node: object, span: Span): void {
   ID_SPANS.set(node, span);
+}
+
+/**
+ * The byte span of the one word a did-you-mean fix rewrites (AF2), kept beside the AST for the
+ * same reason: a furniture statement's kind word (keyed by its node) and a relational room's
+ * reference id (keyed by its `rel`).
+ */
+const WORD_SPANS = new WeakMap<object, Span>();
+
+/** The span of the word recorded for `key`, when the parser recorded one. */
+export function wordSpanOf(key: object): Span | undefined {
+  return WORD_SPANS.get(key);
+}
+
+/** Record the span of the word a fix for `key` would rewrite. */
+export function recordWordSpan(key: object, span: Span): void {
+  WORD_SPANS.set(key, span);
 }

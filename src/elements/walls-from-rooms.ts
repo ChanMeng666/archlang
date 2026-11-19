@@ -44,6 +44,7 @@ import {
   type TileRoom,
   type TileWallSeg,
 } from "../room-tiling.js";
+import { failNear } from "../clause-order.js";
 import { opening } from "./opening.js";
 import { parseWallStatus, wall } from "./wall.js";
 
@@ -103,8 +104,11 @@ export const wallsFromRooms: ElementDef = {
           continue;
         }
         const t = ctx.peek();
-        ctx.fail(
+        failNear(
+          ctx,
           `Expected "except", "open" or "between" in the \`walls from rooms\` body but found ${t.type === "eof" ? "end of input" : `"${t.value}"`}`,
+          BODY_CLAUSES,
+          t,
         );
       }
       ctx.eat("rcurly");

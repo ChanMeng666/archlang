@@ -80,6 +80,17 @@ const REACH: Record<string, string> = {
       ),
     ]),
   ),
+  // AF2's did-you-mean: a misspelt room use, the one word a position expected, a room id.
+  "E_PARSE|machine-applicable": plan("  room id=a at (0,0) size 3000x3000 uses bedrom"),
+  "E_PARSE|maybe-incorrect": plan(
+    "  room id=a at (0,0) size 3000x3000",
+    "  room id=b right-of a size 3000x3000",
+    "  walls from rooms exterior 200 partition 100 { open betwen a and b }",
+  ),
+  "E_LAYOUT_REF|maybe-incorrect": plan(
+    "  room id=hall at (0,0) size 3000x3000",
+    "  room id=b right-of hal size 2000x3000",
+  ),
   // The loop is inside a component body.
   "W_WHILE_DEPRECATED|maybe-incorrect": plan(
     "  component c() {\n    let i = 0\n    while i < 3 {\n      column at (i * 300, 0) size 100x100\n      i = i + 1\n    }\n  }\n  c()",
