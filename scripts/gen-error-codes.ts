@@ -101,12 +101,13 @@ ${rows.join("\n")}
 export function renderCatalogFixes(): string {
   return fixModule(
     `/**
- * Each catalogue code's \`fix\`, apart from the rest of its entry: what \`diagnosticToJson\` attaches
- * to a diagnostic, and so what the \`--error-svg\` card \`compile()\` can draw. Kept out of
- * \`ERROR_CATALOG\`'s module so that a bundle which compiles but never explains (the playground's
- * compiler chunk, card RM0.7) carries the remedies without the messages, causes and examples.
- * Every code but the intent violations' (\`E_INTENT_*\`, card NR.10), which \`compile()\` never
- * raises: theirs are in \`src/error-catalog-fixes-intent.ts\`, which only \`diagnosticToJson\` reads.
+ * Each catalogue code's \`fix\` but the intent violations', apart from the rest of its entry: what
+ * the \`--error-svg\` card \`compile()\` draws reads it (\`catalogFix\`, \`src/catalog-fix.ts\`), and
+ * \`diagnosticToJson\` and \`renderErrorSvg\` read it with the intent table (\`anyCatalogFix\`,
+ * \`src/any-catalog-fix.ts\`). Kept out of \`ERROR_CATALOG\`'s module so that a bundle which compiles
+ * but never explains (the playground's compiler chunk, card RM0.7) carries the remedies without the
+ * messages, causes and examples. The intent violations' (\`E_INTENT_*\`, card NR.10), which
+ * \`compile()\` never raises, are in \`src/error-catalog-fixes-intent.ts\`, off the compile path.
  * Generated from \`ERROR_CATALOG\`, never typed: \`test/explain.test.ts\` and \`check:drift\` fail when
  * it goes stale.
  */`,
@@ -125,7 +126,8 @@ export function renderIntentCatalogFixes(): string {
  * The intent violations' (\`E_INTENT_*\`) \`fix\` column, apart from every other code's
  * (\`src/error-catalog-fixes.ts\`, card NR.10): only \`validateIntent\` raises these codes, never
  * \`compile()\`, so the compile path's column (the playground's compiler chunk, which the
- * \`--error-svg\` card reads) leaves them out, and only \`diagnosticToJson\` reads this one.
+ * \`--error-svg\` card reads) leaves them out. \`anyCatalogFix\` (\`src/any-catalog-fix.ts\`) reads
+ * this one after it, for \`diagnosticToJson\` and \`renderErrorSvg\`; nothing on the compile path does.
  * Generated from \`ERROR_CATALOG\`, never typed: \`test/explain.test.ts\` and \`check:drift\` fail when
  * it goes stale.
  */`,

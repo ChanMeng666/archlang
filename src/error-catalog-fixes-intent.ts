@@ -4,7 +4,8 @@
  * The intent violations' (`E_INTENT_*`) `fix` column, apart from every other code's
  * (`src/error-catalog-fixes.ts`, card NR.10): only `validateIntent` raises these codes, never
  * `compile()`, so the compile path's column (the playground's compiler chunk, which the
- * `--error-svg` card reads) leaves them out, and only `diagnosticToJson` reads this one.
+ * `--error-svg` card reads) leaves them out. `anyCatalogFix` (`src/any-catalog-fix.ts`) reads
+ * this one after it, for `diagnosticToJson` and `renderErrorSvg`; nothing on the compile path does.
  * Generated from `ERROR_CATALOG`, never typed: `test/explain.test.ts` and `check:drift` fail when
  * it goes stale.
  */

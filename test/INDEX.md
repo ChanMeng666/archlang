@@ -5,7 +5,7 @@
 Where the tests of a `src` module are, and what each test file is for. Generated; `npm run check:drift`
 fails when it is stale. How to add a test: `docs/testing.md` § 4.
 
-555 test files in `test/`, 294 `src` modules, 108 modules no test imports.
+556 test files in `test/`, 294 `src` modules, 108 modules no test imports.
 
 ## `src` module → tests that import it
 
@@ -125,7 +125,7 @@ Nearest first, then by name; `(+n)` is the rest. Test names are `test/<name>.tes
 - `src/impact.ts` (2) — `rectilinear-doors`, `rectilinear-rooms`
 - `src/import.ts` (34) — `block-stair-byte-identity`, `corner-window-byte-identity`, `dim-swap-reprint`, `dim-thickness-callout`, `drawing-budget`, `error-value-law`, `floor-materials-byte-identity`, `furniture-relations` (+26)
 - `src/import/limits.ts` (1) — `openplan3d-malformed`
-- `src/index.ts` (413) — `acc-metadata`, `access-graph`, `access-policy`, `accessible-svg`, `agent-gallery`, `alias-match`, `anchors`, `annotate` (+405)
+- `src/index.ts` (414) — `acc-metadata`, `access-graph`, `access-policy`, `accessible-svg`, `agent-gallery`, `alias-match`, `anchors`, `annotate` (+406)
 - `src/input-limit.ts` (2) — `import-rooted`, `workspace-seams`
 - `src/intent-concepts.ts` (2) — `vocabulary-living-dining`, `vocabulary-matcher-oracle`
 - `src/intent-feasibility.ts` (1) — `intent-infeasible`
@@ -295,6 +295,7 @@ The first sentence of each file's header comment.
 - `test/cli-validate-next.test.ts` — validate --json · next is purely additive; validate · next tiers through the CLI.
 - `test/cli.test.ts` — CLI — agent contract; CLI — compile file-writing side effects.
 - `test/closed-vocabularies.test.ts` — Every CLOSED value set in the language must be highlightable.
+- `test/compile-path-intent.test.ts` — Card NR.10's premise, pinned: `compile()` never raises an intent violation (`E_INTENT_*`, only `validateIntent` does), so the compile path's fix column (`src/error-catalog-fixes.ts`) leaves those rows out and `compile...
 - `test/compile.test.ts` — compile — valid studio; compile — determinism; compile — grid snap; compile — string escaping; compile — error cases.
 - `test/compose-assoc.test.ts` — `place` composes ASSOCIATIVELY: every level reaches into its own descendants the way the root does, and none reaches out (ADR 0016 §3, backlog E.16).
 - `test/context-size.test.ts` — Every stated size of the agent bundle (`llms-full.txt`, what `archlang context` prints) is true.

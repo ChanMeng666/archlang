@@ -561,7 +561,12 @@ describe("planTests: what the gate runs for a change set", () => {
       expect(key).toBeDefined();
       expect(whys([key!])).toEqual([[OPAQUE_GUARD, `the published IndexNow key changed (${key})`]]);
       expect(guards(["docs-site/public/robots.txt"])).toEqual([]);
-      for (const f of ["src/error-catalog.ts", "src/error-catalog-fixes.ts", "src/error-catalog/layout.ts"]) {
+      for (const f of [
+        "src/error-catalog.ts",
+        "src/error-catalog-fixes.ts",
+        "src/error-catalog-fixes-intent.ts",
+        "src/error-catalog/layout.ts",
+      ]) {
         expect(files, f).toContain(f);
         expect(guards([f]), f).toEqual([FIX_TEXTS, OPAQUE_GUARD].sort());
       }

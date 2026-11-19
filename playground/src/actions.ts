@@ -13,6 +13,7 @@ import { buildChatPrompt, buildLlmPrompt, CHAT_HOSTS, type ChatHost, chatHostUrl
 import { createShortLink, encodeSrc, set3dFlag, shareableHref, updateHash } from "./share.js";
 import { mountSnapshots } from "./snapshots.js";
 import { KEYS, readStr, writeStr } from "./storage.js";
+import { lazyOnce, sparesData } from "./lazy-once.js";
 import { levelFileName } from "./levels.js";
 import { paperSizeMm, saveBlob, svgToCanvas } from "./raster-export.js";
 
@@ -20,17 +21,18 @@ import { paperSizeMm, saveBlob, svgToCanvas } from "./raster-export.js";
  * The core code behind Format, Finish, Repair furniture and the DXF and TXT downloads
  * (press-core.ts, card 3.18): loaded on the first press of one of them, or when a menu holding
  * them opens, never with the actions themselves. Every use awaits it; a failed load is forgotten,
- * so the next press tries again.
+ * so the next press tries again (`lazyOnce`).
  */
 type ActionsCore = typeof import("./press-core.js");
-let actionsCoreP: Promise<ActionsCore> | undefined;
-const loadActionsCore = (): Promise<ActionsCore> =>
-  (actionsCoreP ??= import("./press-core.js").catch((err: unknown) => {
-    actionsCoreP = undefined;
-    throw err;
-  }));
-/** Start loading it ahead of a press (a menu opened, the pointer on the button); a failure is silent here. */
-const warmActionsCore = () => void loadActionsCore().catch(() => {});
+const loadActionsCore = lazyOnce((): Promise<ActionsCore> => import("./press-core.js"));
+/**
+ * Start loading it ahead of a press (a menu opened, the pointer on the button), unless the browser
+ * asks to spare data (Save-Data or 2g: then only a press loads it, ruling MP-D4). A failure is
+ * silent here; the press that needs it says so.
+ */
+const warmActionsCore = () => {
+  if (!sparesData(navigator)) void loadActionsCore().catch(() => {});
+};
 /** The message of a load failure, for the status. */
 const reason = (err: unknown) => (err as { message?: string })?.message ?? err;
 
@@ -129,16 +131,33 @@ export function mountActions(ctx: ActionsCtx): ActionsHandle {
     });
   for (const type of ["pointerenter", "focus"]) els.repairBtn?.addEventListener(type, warmActionsCore);
 
-  // Format (idempotent, comment-preserving) — rewrite the source in place.
-  els.formatBtn?.addEventListener("click", async () => {
+  /**
+   * What a press of Format, Finish or Repair works on: the source as it was when pressed, and the
+   * core once loaded. Undefined (and the status says why) when the core did not load, or when the
+   * document changed while it loaded: a result for the pressed text must not replace an edit made
+   * after the press, so that press applies nothing and asks for another.
+   */
+  async function pressed(what: string): Promise<{ core: ActionsCore; src: string } | undefined> {
+    const src = getSource();
     let core: ActionsCore;
     try {
       core = await loadActionsCore();
     } catch (err) {
-      flash(`Format did not load: ${reason(err)}`);
-      return;
+      flash(`${what} did not load: ${reason(err)}`);
+      return undefined;
     }
-    const src = getSource();
+    if (getSource() !== src) {
+      flash(`${what} not applied: the plan changed while it loaded; press it again`);
+      return undefined;
+    }
+    return { core, src };
+  }
+
+  // Format (idempotent, comment-preserving) — rewrite the source in place.
+  els.formatBtn?.addEventListener("click", async () => {
+    const press = await pressed("Format");
+    if (!press) return;
+    const { core, src } = press;
     const out = core.format(src);
     if (out === src) {
       flash("Already formatted");
@@ -159,14 +178,9 @@ export function mountActions(ctx: ActionsCtx): ActionsHandle {
    * is rendered AFTER it. A rerun with nothing to do leaves a showing log in place.
    */
   async function runFinish(reissue: boolean) {
-    let core: ActionsCore;
-    try {
-      core = await loadActionsCore();
-    } catch (err) {
-      flash(`Finish did not load: ${reason(err)}`);
-      return;
-    }
-    const src = getSource();
+    const press = await pressed("Finish");
+    if (!press) return;
+    const { core, src } = press;
     const result = core.finish(src, reissue ? { reissue: true } : {});
     const n = result.changes.length;
     const m = declined(result).length;
@@ -447,14 +461,9 @@ export function mountActions(ctx: ActionsCtx): ActionsHandle {
   async function showRepair() {
     const repairPanel = els.repairPanel;
     if (!repairPanel) return;
-    let core: ActionsCore;
-    try {
-      core = await loadActionsCore();
-    } catch (err) {
-      flash(`Repair did not load: ${reason(err)}`);
-      return;
-    }
-    const result = core.repair(getSource());
+    const press = await pressed("Repair");
+    if (!press) return;
+    const result = press.core.repair(press.src);
     if (!result.changed && result.unresolved.length === 0) {
       repairPanel.hidden = false;
       repairPanel.innerHTML = `<p class="repair-none">Nothing to repair — furniture placement is already sound.</p>`;
@@ -584,6 +593,20 @@ export function mountActions(ctx: ActionsCtx): ActionsHandle {
     if (failed) onExportError("glb", error);
   }
 
+  /**
+   * The press-only core for a DXF or TXT download, saying on the stage that it is being prepared
+   * while it loads (as the GLB does); the status goes back once it is in. A failed load throws to
+   * `downloadCurrent`, which reports it as that export's failure.
+   */
+  async function coreForExport(format: string): Promise<ActionsCore> {
+    working(`Preparing ${format}…`);
+    try {
+      return await loadActionsCore();
+    } finally {
+      working(null);
+    }
+  }
+
   // ---- multi-format download (SVG vector · DXF vector · TXT ascii · PNG/PDF raster · GLB) ----
   async function downloadCurrent(format: string) {
     if (format === "glb") {
@@ -599,13 +622,13 @@ export function mountActions(ctx: ActionsCtx): ActionsHandle {
       } else if (format === "dxf") {
         const scene = getScene();
         if (!scene) return;
-        const { toDxf } = await loadActionsCore();
+        const { toDxf } = await coreForExport("DXF");
         saveBlob(new Blob([toDxf(scene)], { type: "application/dxf" }), "dxf", level);
       } else if (format === "txt") {
         // The zero-dep ASCII plan — the same bytes `arch compile -f txt` emits.
         const scene = getScene();
         if (!scene) return;
-        const { renderAscii } = await loadActionsCore();
+        const { renderAscii } = await coreForExport("TXT");
         saveBlob(new Blob([renderAscii(scene)], { type: "text/plain" }), "txt", level);
       } else if (format === "png") {
         const canvas = await svgToCanvas(clean);

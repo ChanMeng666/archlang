@@ -25,7 +25,7 @@ import { fmt2 as fmt } from "../num-format.js";
 import { textWidth } from "../text-metrics.js";
 import { xml } from "./svg.js";
 
-/** Options for `renderErrorSvg` (`backends/error-svg-public.ts`). All have deterministic defaults. */
+/** Options for {@link renderErrorSvg}. All have deterministic defaults. */
 export interface ErrorSvgOptions {
   /** Card width in px (default 800). Height is derived from the diagnostic count. */
   width?: number;

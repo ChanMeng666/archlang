@@ -1816,17 +1816,32 @@ test.describe("startup chunks", () => {
     expect(imports(actionsChunk, DYNAMIC), "the header actions import press-core.js dynamically").toContain(pressCore);
     expect(firstUsePath, "the press-only core is not on the first use's path").not.toContain(pressCore);
     expect(booted, "the press-only core is loaded by no boot import").not.toContain(pressCore);
-    // Its code, not only its door: a note only finish's furnishing writes, checked in its source
-    // first, is in what press-core.js reaches and in nothing a first use or a boot import loads.
-    const FINISH_ONLY = "is outside the furnish table";
-    expect(
-      readFileSync(join(dirname(fileURLToPath(import.meta.url)), "..", "..", "src", "furnish.ts"), "utf8"),
-      `the finish sentinel "${FINISH_ONLY}" is in src/furnish.ts`,
-    ).toContain(FINISH_ONLY);
-    const holds = (file: string) => readFileSync(join(DIST, file), "utf8").includes(FINISH_ONLY);
-    expect(reach([pressCore]).filter(holds), "press-core.js reaches finish's code").not.toEqual([]);
-    for (const file of new Set([...firstUsePath, ...booted]))
-      expect(holds(file), `${file} carries finish's code, which only a press loads`).toBe(false);
+    // Its code, not only its door: for each of the five, a string only it writes, checked in its
+    // source first, is in what press-core.js reaches and in nothing a first use or a boot import loads.
+    const PRESS_ONLY: [string, string, string][] = [
+      ["finish", "src/furnish.ts", "is outside the furnish table"],
+      ["repair", "src/repair.ts", "is centred on a wall"],
+      ["format", "src/format.ts", "title hidden"],
+      ["toDxf", "src/export/dxf.ts", "AcDbAlignedDimension"],
+      ["renderAscii", "src/backends/ascii.ts", "┼"],
+    ];
+    const pressReach = reach([pressCore]);
+    const firstUseOrBooted = new Set([...firstUsePath, ...booted]);
+    for (const [fn, src, sentinel] of PRESS_ONLY) {
+      expect(
+        readFileSync(join(dirname(fileURLToPath(import.meta.url)), "..", "..", src), "utf8"),
+        `the ${fn} sentinel "${sentinel}" is in ${src}`,
+      ).toContain(sentinel);
+      const holds = (file: string) => readFileSync(join(DIST, file), "utf8").includes(sentinel);
+      expect(pressReach.filter(holds), `press-core.js reaches ${fn}'s code`).not.toEqual([]);
+      for (const file of firstUseOrBooted)
+        expect(holds(file), `${file} carries ${fn}'s code ("${sentinel}"), which only a press loads`).toBe(false);
+    }
+    // Card NR.10: the compile path neither raises nor carries an intent violation's code; their
+    // fixes are a table off it (src/error-catalog-fixes-intent.ts, test/compile-path-intent.test.ts).
+    expect(readFileSync(join(DIST, compiler), "utf8"), "the compiler chunk carries no E_INTENT_ code").not.toContain(
+      "E_INTENT_",
+    );
 
     // The embed (embed.html, the iframe other pages show): it imports the core statically
     // (embed.ts), so it walks into the compiler the way index.html's preload does.

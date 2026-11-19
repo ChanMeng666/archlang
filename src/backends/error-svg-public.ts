@@ -1,11 +1,11 @@
-/**
- * The public error-card renderer, `renderErrorSvg` (the card itself is `backends/error-svg.ts`).
- * A module of its own (card NR.10): it reads every catalogue code's fix, the intent violations'
- * (`E_INTENT_*`) too, so a consumer's card for a `validateIntent` diagnostic draws its fix as it
- * always did, while the card `compile()` draws (`renderCompileErrorSvg`) reads only the codes
- * `compile()` raises and keeps the intent table off the compile path (the playground's compiler
- * chunk, `playground/e2e/startup-chunks.baseline.json`). Nothing on the compile path imports it.
- */
+// The public error-card renderer, `renderErrorSvg` (the card itself is `backends/error-svg.ts`).
+// A module of its own (card NR.10): it reads every catalogue code's fix, the intent violations'
+// (`E_INTENT_*`) too, so a consumer's card for a `validateIntent` diagnostic draws its fix as it
+// always did, while the card `compile()` draws (`renderCompileErrorSvg`) reads only the codes
+// `compile()` raises and keeps the intent table off the compile path (the playground's compiler
+// chunk, `playground/e2e/startup-chunks.baseline.json`). Nothing on the compile path imports it.
+// Line comments, not a doc comment: the declaration bundle would print one into the public
+// `index.d.ts`, and these names are internal.
 
 import { anyCatalogFix } from "../any-catalog-fix.js";
 import type { Diagnostic } from "../diagnostics.js";
