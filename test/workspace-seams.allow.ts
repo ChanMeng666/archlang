@@ -184,6 +184,11 @@ export const ALLOW: readonly Seam[] = [
     why: "the capabilities resource lists the tools only the hosted server adds, read off createHostedServer's tools/list",
   },
   {
+    file: "packages/mcp/scripts/gen-capabilities.ts",
+    specifier: "../../../src/fixable-codes.js",
+    why: "the capabilities resource lists the codes fix resolves from FIX_PRODUCERS, a table of the fix producers that is held to their source by a test and is not a package export (no library API)",
+  },
+  {
     file: "packages/mcp/scripts/tsconfig.gen.json",
     specifier: "paths @chanmeng666/archlang",
     why: "gen:mcp-capabilities runs the tool registry under tsx with the core's source, as the root vitest alias does, so check:drift needs no build",

@@ -46,6 +46,7 @@ other direction: `src/` never imports `archlang-3d` or `three`.
 | `packages/mcp-worker/tsconfig.json` | `paths @chanmeng666/archlang/share` | types the Worker's ./share import from the same build the bundler inlines, as for /link |
 | `packages/mcp/scripts/gen-capabilities.ts` | `../../mcp-worker/src/limits.js` | the capabilities resource states the hosted caps from the Worker's own constants, not a retyped copy |
 | `packages/mcp/scripts/gen-capabilities.ts` | `../../mcp-worker/src/server.js` | the capabilities resource lists the tools only the hosted server adds, read off createHostedServer's tools/list |
+| `packages/mcp/scripts/gen-capabilities.ts` | `../../../src/fixable-codes.js` | the capabilities resource lists the codes fix resolves from FIX_PRODUCERS, a table of the fix producers that is held to their source by a test and is not a package export (no library API) |
 | `packages/mcp/scripts/tsconfig.gen.json` | `paths @chanmeng666/archlang` | gen:mcp-capabilities runs the tool registry under tsx with the core's source, as the root vitest alias does, so check:drift needs no build |
 | `packages/mcp/scripts/tsconfig.gen.json` | `paths @chanmeng666/archlang/share` | the Worker's limits, which gen:mcp-capabilities reads, import the core's ./share; resolved to its source as the root vitest alias does |
 | `packages/web-component/tsconfig.json` | `paths @chanmeng666/archlang` | the core is a peer dependency; in the monorepo it is the root's source, typechecking without a build |

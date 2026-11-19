@@ -72,7 +72,8 @@ export const GENERATORS: readonly {
   // The `<arch-plan>` element the docs site serves, built by packages/web-component/scripts/build.ts.
   { script: "gen:arch-plan", artifacts: ["docs-site/public/arch-plan.js"] },
   { script: "gen:doors", artifacts: DOORS_SURFACES.map((s) => s.file), partial: true },
-  // The `archlang://capabilities` MCP resource, from the tool registry, the CLI manifest and EXPORT_FORMATS.
+  // The `archlang://capabilities` MCP resource, from the tool registry, the CLI manifest, EXPORT_FORMATS and
+  // the fix producers' FIX_PRODUCERS (src/fixable-codes.ts).
   { script: "gen:mcp-capabilities", artifacts: ["packages/mcp/capabilities.md"] },
   // The public-surface map: every export of `src/index.ts`, its declaring module and in-repo consumers.
   { script: "gen:surface", artifacts: ["docs/agents/public-surface.md"] },
