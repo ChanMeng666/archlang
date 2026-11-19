@@ -262,9 +262,9 @@ Totals: 408 modules in 34 directories.
 | `identity.ts` | 33 | 3 | Process-local stable identity tokens for cache keying. | none |
 | `impact.ts` | 1405 | 3 | `impact(before, after)` (plan-soundness card PS4.2): change one number, see what follows, what stays put, and what breaks. The executable answer to "what changes, what must not". | none |
 | `import.ts` | 349 | 35 | Module linking — the `import` system. | none |
-| `index.ts` | 758 | 457 | ArchLang — compile declarative floor-plan source to a professional SVG. | none |
+| `index.ts` | 758 | 456 | ArchLang — compile declarative floor-plan source to a professional SVG. | none |
 | `input-limit.ts` | 77 | 5 | A host's refusals, as catalogued diagnostics. | none |
-| `intent-concepts.ts` | 339 | 7 | The intent channel's concept vocabulary — production name resolution for the NL→ArchLang intent contract. | none |
+| `intent-concepts.ts` | 238 | 7 | The intent channel's concept vocabulary — production name resolution for the NL→ArchLang intent contract. | none |
 | `intent-feasibility.ts` | 388 | 3 | Infeasibility of a brief's stated numbers: the arithmetic that makes "this brief is impossible" checkable, before any plan exists. | none |
 | `intent.ts` | 1762 | 8 | The intent channel — author-time checking of a brief's INTENT against a plan. | none |
 | `ir.ts` | 2011 | 260 | Intermediate representation + `resolve(ast)`. | charges the step meter |
@@ -313,7 +313,7 @@ Totals: 408 modules in 34 directories.
 | `types.ts` | 203 | 14 | Public types for the ArchLang compiler. | none |
 | `unified-diff.ts` | 120 | 1 | A tiny, zero-dependency line-based unified diff (LCS backtrack + hunk grouping). | none |
 | `vertical.ts` | 960 | 44 | **Vertical circulation** as facts: the one place the shared semantics of `stair`, `elevator` and `escalator` live, so the three element modules, the nav grid, `lint` and `describe()` can never disagree about them. | none |
-| `vocabulary.ts` | 532 | 18 | Closed-vocabulary, token-bounded label matching — the one place ArchLang turns a free-text room label into a controlled classification. | none |
+| `vocabulary.ts` | 570 | 18 | Closed-vocabulary, token-bounded label matching — the one place ArchLang turns a free-text room label into a controlled classification. | none |
 | `wall-lowering.ts` | 428 | 9 | **The one wall-lowering path** — a set of resolved walls to the Scene nodes that draw them: one poché fill per material group, and ONE outline for the whole set. | none |
 | `wall-ref.ts` | 114 | 19 | How a diagnostic, a hint, a fix or a suggestion names a wall (ADR 0028 §3, "Addressing"). | none |
 | `wall-relation.ts` | 166 | 1 | The pairwise wall forms (ADR 0028 §4, plan decision D1): an authored wall whose geometry is written against the rooms rather than as points. | charges the step meter |
@@ -338,7 +338,7 @@ Totals: 408 modules in 34 directories.
 | `connectors.ts` | 475 | 2 | Connector (door / opening / window) helpers of the analysis layer: which rooms a connector joins, the wall faces it opens onto, and which room a window serves. | none |
 | `contacts.ts` | 259 | 4 | Contact facts (plan-soundness card PS4.5): which room edges an element written at fixed coordinates lies ON, so `arch impact` can say it stayed while that edge moved. | none |
 | `depends.ts` | 362 | 5 | `describe --facts depends` (plan-soundness card PS4.1): per element, what it is derived from. Opt-in; a summary that does not ask for it is unchanged by a byte. | none |
-| `dwelling.ts` | 52 | 5 | Does the plan read as a dwelling? (plan-soundness PS2.18.) | none |
+| `dwelling.ts` | 52 | 6 | Does the plan read as a dwelling? (plan-soundness PS2.18.) | none |
 | `entrance.ts` | 381 | 11 | A storey's ways in from outside, and its MAIN entrance (plan-soundness PS0.10). | none |
 | `grid.ts` | 27 | 3 | The 4-neighbourhood of a row-major cell grid, shared by the nav grid (`circulation.ts`) and the occupancy grid (`occupancy.ts`). | none |
 | `gross-area.ts` | 252 | 7 | **Gross internal area** (GIA) — the floor enclosed by the exterior walls' inner faces (`describe().totals.gross_internal_area_m2`, plan-soundness PS4.4). | none |
@@ -573,7 +573,7 @@ Totals: 408 modules in 34 directories.
 | `check-graph.ts` | 158 | 1 | `checkGraph` (T3b) — compare an intended adjacency dict to a compiled plan's interior-door connectivity (moved verbatim from `src/plan-json.ts`, which re-exports every name it exported). | none |
 | `emit.ts` | 320 | 1 | Canonical `.arch` emission from validated Plan JSON, and the two entry points built on it, `planJsonToArch` and `planFromJson` (validate, emit, run the real parser) (moved verbatim from `src/plan-json.ts`, which re-exports every name it… | none |
 | `from-json.ts` | 800 | 2 | The Plan JSON validator `planFromJson` runs first: the shape and kind checks that stamp a JSON path on every `E_JSON_*` diagnostic, capped at `MAX_DIAGNOSTICS` (moved verbatim from `src/plan-json.ts`, which re-exports every name it… | none |
-| `room-types.ts` | 133 | 7 | Room-type mapping (uses ⇄ RPLAN-style `room_type`) — ONE source of truth for Plan JSON and `describe()`'s `room_type` (moved verbatim from `src/plan-json.ts`, which re-exports every name it exported). | none |
+| `room-types.ts` | 133 | 8 | Room-type mapping (uses ⇄ RPLAN-style `room_type`) — ONE source of truth for Plan JSON and `describe()`'s `room_type` (moved verbatim from `src/plan-json.ts`, which re-exports every name it exported). | none |
 | `schema.ts` | 642 | 1 | The Plan JSON Schema (2020-12), {@link PLAN_JSON_SCHEMA} — ONE source of truth; `scripts/gen-plan-schema.ts` only writes it to `schemas/plan.schema.json` (moved verbatim from `src/plan-json.ts`, which re-exports every name it exported). | none |
 | `source-tokens.ts` | 26 | 2 | The two source-token formatters Plan JSON's projector and emitter share: a leaf module (no parser, no validator), so `to-json.ts` can print a token without loading `from-json.ts`. | none |
 | `to-json.ts` | 791 | 3 | `planToJson` — parse + resolve a plan, then project it OUT to the wire shape with the output-only enrichments (areas, `edges`, `input_graph`, `dropped`) (moved verbatim from `src/plan-json.ts`, which re-exports every name it exported). | none |
