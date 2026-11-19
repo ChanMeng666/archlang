@@ -1195,13 +1195,13 @@ TR6：生成物漂移与 backlog 索引过时的红（rr24、rr9、ev7、co1、r
 
 ## 第 10 轨 · AI 优先语言（2026-11-18 加；设计与证据见 `../ai-first-language/README.md` §7，裁定 RM-D60…D64 见 `README.md` §6.27）
 
-**已开工（RM-D65，2026-11-18）：** 本轨标着 `blocked`（RM-D64）的卡，按 `v3.md` §3 的顺序解锁。下面这句是 RM-D64 原来的范围，留作记录：现在只能做 AF21、AF22（离线测量）、AF26（语法审计，只出文档）、AF9 的设计稿和 AF12 的 ADR 草稿；这两张卡的代码部分，以及其余 `blocked` 的卡，都等所有者一句"开工"。开工之后按下面的顺序做：先 A 波（便宜、纯增量），再做 AF9，然后按 AF21、AF22 的结果定 D 波的形态。这一轨不是新车道：它的卡在核心车道两张卡之间占用核心执行者的位置，一次一张（RM-D22 的两个执行者不变）。
+**已开工（RM-D65，2026-11-18）：** 本轨标着 `todo`（RM-D64 的 blocked 已由 RM-D65 解除）的卡，按 `v3.md` §3 的顺序解锁。下面这句是 RM-D64 原来的范围，留作记录：现在只能做 AF21、AF22（离线测量）、AF26（语法审计，只出文档）、AF9 的设计稿和 AF12 的 ADR 草稿；这两张卡的代码部分，以及其余 `blocked` 的卡，都等所有者一句"开工"。开工之后按下面的顺序做：先 A 波（便宜、纯增量），再做 AF9，然后按 AF21、AF22 的结果定 D 波的形态。这一轨不是新车道：它的卡在核心车道两张卡之间占用核心执行者的位置，一次一张（RM-D22 的两个执行者不变）。
 
 **每张卡做什么写在调研记录 §7 的同号一行；这里只写状态、规模、依赖、门和不许做什么。** 所有卡都跑 `cards.md` §0 的门禁。**动 `describe()`、`lint()`、`compile().diagnostics` 的卡：** 先用字节恒等载荷证明语料不动；会动就停下报告，不重钉（AGENTS.md "Never bless a golden to green a suite"）。**`[语法]` 卡**（AF12、AF15）：带字节恒等律，并且先确认 spec 的余量（2026-11-18：29,629 个 UTF-16 单位，上限 30,000，`test/llm-spec-drift.test.ts:87`）。
 
 ### A 波 · 诊断的信息密度
 
-### AF0 · 记录对账：两条过期的测试注释，U.2 与 U.5 的实际状态 — `blocked`（RM-D64） · 0.3 日 · sonnet · 依赖无（线下）
+### AF0 · 记录对账：两条过期的测试注释，U.2 与 U.5 的实际状态 — `todo`（RM-D64 的 blocked 已由 RM-D65 解除） · 0.3 日 · sonnet · 依赖无（线下）
 
 不许：没重新读代码就关卡。
 
@@ -1209,7 +1209,7 @@ TR6：生成物漂移与 backlog 索引过时的红（rr24、rr9、ev7、co1、r
 
 带走 backlog M.15 的第一条。证明：一份带相关位置的 `lint --json` 的前后对照，再加上述载荷检查。不许：把相关位置压平成散文；删改已有的键（`CompileResult` 只增不删）。
 
-### AF2 · 一个 did-you-mean 生产者，词级 span 加修复 — `blocked`（RM-D64） · 2 日 · opus · 依赖 AF1
+### AF2 · 一个 did-you-mean 生产者，词级 span 加修复 — `todo`（RM-D64 的 blocked 已由 RM-D65 解除） · 2 日 · opus · 依赖 AF1
 
 不许：手抄词表（闭集取自 `src/grammar/tokens.ts`）；span 或修复覆盖整条语句（今天 `sofaa` 的修复就是这样，要一并收窄）。
 
@@ -1217,11 +1217,11 @@ TR6：生成物漂移与 backlog 索引过时的红（rr24、rr9、ev7、co1、r
 
 只有已经失败的方案，诊断会变；给这些诊断钉值。不许：动任何能编译的方案的输出。
 
-### AF4 · `E_PARSE` 带结构化的 `expected[]` 和建议 — `blocked`（RM-D64） · 2 日 · opus · 依赖 AF2
+### AF4 · `E_PARSE` 带结构化的 `expected[]` 和建议 — `todo`（RM-D64 的 blocked 已由 RM-D65 解除） · 2 日 · opus · 依赖 AF2
 
 不许：只给散文版本。
 
-### AF5 · 错误目录的错例与正例成对，`explain` 进 MCP — `blocked`（RM-D64） · 2 日 · sonnet · 依赖无
+### AF5 · 错误目录的错例与正例成对，`explain` 进 MCP — `todo`（RM-D64 的 blocked 已由 RM-D65 解除） · 2 日 · sonnet · 依赖无
 
 MCP 工具用 `new-mcp-tool` skill 加；`docs/error-codes.md` 经 `gen:*` 生成。不许：增加豁免（今天 66 条，只减不增）。
 
@@ -1229,11 +1229,11 @@ MCP 工具用 `new-mcp-tool` skill 加；`docs/error-codes.md` 经 `gen:*` 生�
 
 做完时 M.8 在同一 PR 里裁掉。
 
-### AF7 · 冲突带上每条有贡献的语句 — `blocked`（RM-D64） · 1 日 · sonnet · 依赖 AF1
+### AF7 · 冲突带上每条有贡献的语句 — `todo`（RM-D64 的 blocked 已由 RM-D65 解除） · 1 日 · sonnet · 依赖 AF1
 
 载荷检查同 AF1。
 
-### AF8 · capabilities 公布 `fix` 能解决哪些码 — `blocked`（RM-D64） · 0.5 日 · sonnet · 依赖无
+### AF8 · capabilities 公布 `fix` 能解决哪些码 — `todo`（RM-D64 的 blocked 已由 RM-D65 解除） · 0.5 日 · sonnet · 依赖无
 
 不许：手写列表（从修复生产者生成）。
 
@@ -1243,11 +1243,11 @@ MCP 工具用 `new-mcp-tool` skill 加；`docs/error-codes.md` 经 `gen:*` 生�
 
 EV.5 的门照旧：先有设计稿或 ADR，代码在后。PR 里如实写 L1 数字是否移动（L1 只应用 machine-applicable 的修复）。不许：跨房间边界移动开口，除非设计稿明确允许；把不能证明唯一的移动标成 machine-applicable。
 
-### AF10 · 量纲：先管过大，再数维度 — `blocked`（RM-D64） · 第一步 1 日、第二步 3 日 · opus · 依赖无（第二步的警告也不依赖；升为错误要等 AF15）
+### AF10 · 量纲：先管过大，再数维度 — `todo`（RM-D64 的 blocked 已由 RM-D65 解除） · 第一步 1 日、第二步 3 日 · opus · 依赖无（第二步的警告也不依赖；升为错误要等 AF15）
 
 第一步用 `new-lint-rule` skill，带规则卡的公开夹具；阈值要有 `V` 或 `S-full` 的出处（原则 10），否则只做提示、不进新规则。不许：自动换算单位。
 
-### AF11 · lint 的可信度类别（RM-D60） — `blocked`（RM-D64） · 1 日 · opus · 依赖无
+### AF11 · lint 的可信度类别（RM-D60） — `todo`（RM-D64 的 blocked 已由 RM-D65 解除） · 1 日 · opus · 依赖无
 
 归类表逐条写进 PR，经新上下文评审。不许：类别进入 `lint()` 的序列化。
 
@@ -1257,11 +1257,11 @@ EV.5 的门照旧：先有设计稿或 ADR，代码在后。PR 里如实写 L1 �
 
 ### C 波 · 编辑与变更
 
-### AF13 · `arch edit` 与 MCP `edit`：按元素修改，核对旧值 — `blocked`（RM-D64） · 5 日 · opus · 依赖 AF14
+### AF13 · `arch edit` 与 MCP `edit`：按元素修改，核对旧值 — `todo`（RM-D64 的 blocked 已由 RM-D65 解除） · 5 日 · opus · 依赖 AF14
 
 用 `new-cli-flag`、`new-mcp-tool` 两个 skill。不许：把编辑放进 `compile()`（它保持纯函数）。
 
-### AF14 · `impact`/`diff` 报告 `id_deltas`（RM-D62） — `blocked`（RM-D64） · 1 日 · sonnet · 依赖无
+### AF14 · `impact`/`diff` 报告 `id_deltas`（RM-D62） — `todo`（RM-D64 的 blocked 已由 RM-D65 解除） · 1 日 · sonnet · 依赖无
 
 不许：改自动 id 的生成方式。
 
@@ -1269,25 +1269,25 @@ EV.5 的门照旧：先有设计稿或 ADR，代码在后。PR 里如实写 L1 �
 
 范围按 RM-D61：backlog 的 2.0 bucket 加两个已弃用形式，本卡不增不减。
 
-### AF16 · 保持意图的命名重构 — `blocked`（RM-D64） · 3 日 · opus · 依赖 AF13
+### AF16 · 保持意图的命名重构 — `todo`（RM-D64 的 blocked 已由 RM-D65 解除） · 3 日 · opus · 依赖 AF13
 
 不许：前后的 SVG、`describe()`、`lint()` 字节不同时仍然执行重构（这种情况必须拒绝）。
 
-### AF17 · 放置出处，只走可选入口（RM-D62） — `blocked`（RM-D64） · 2 日 · opus · 依赖无
+### AF17 · 放置出处，只走可选入口（RM-D62） — `todo`（RM-D64 的 blocked 已由 RM-D65 解除） · 2 日 · opus · 依赖无
 
 带字节恒等律。不许：改默认的 `describe()`。
 
 ### D 波 · 上下文与编辑器
 
-### AF18 · 生成的类型化签名表与 `context --for` — `blocked`（RM-D64） · 3 日 · opus · 依赖 AF5、AF21
+### AF18 · 生成的类型化签名表与 `context --for` — `todo`（RM-D64 的 blocked 已由 RM-D65 解除） · 3 日 · opus · 依赖 AF5、AF21
 
 带漂移测试。不许：手写第三份语言描述。
 
-### AF19 · VS Code 对齐 LSP 3.18 — `blocked`（RM-D64） · 2 日 · sonnet · 依赖 AF1
+### AF19 · VS Code 对齐 LSP 3.18 — `todo`（RM-D64 的 blocked 已由 RM-D65 解除） · 2 日 · sonnet · 依赖 AF1
 
 只改 `editors/vscode`。
 
-### AF20 · Lark 语法与"每个文件一处违例"的语料 — `blocked`（RM-D64，低优先） · 2 日 · sonnet · 依赖无
+### AF20 · Lark 语法与"每个文件一处违例"的语料 — `todo`（RM-D64 的 blocked 已由 RM-D65 解除；低优先） · 2 日 · sonnet · 依赖无
 
 不许：手写语法（与 GBNF 从同一张 token 表生成）。
 
@@ -1311,11 +1311,11 @@ EV.5 的门照旧：先有设计稿或 ADR，代码在后。PR 里如实写 L1 �
 
 ### F 波 · 卫生与 MCP 对齐（2026-11-18 补档时加）
 
-### AF24 · 剩下的字符串字面量诊断迁到 `diag()` — `blocked`（RM-D64） · 每批 0.5 日 · sonnet · 依赖无（线下）
+### AF24 · 剩下的字符串字面量诊断迁到 `diag()` — `todo`（RM-D64 的 blocked 已由 RM-D65 解除） · 每批 0.5 日 · sonnet · 依赖无（线下）
 
 `src/` 里约 440 处 `code: "…"`。一批一个 PR，每批都用字节恒等载荷证明输出不动（迁移会改诊断 JSON 的键序，`src/diagnostics.ts:159-161`），移动了就停下报告。不许：一个 PR 迁完全部；重钉载荷。
 
-### AF25 · MCP 补上 `fmt`、`impact`、`ast`、`reroll` — `blocked`（RM-D64） · 每个工具 1 日 · sonnet · 依赖无
+### AF25 · MCP 补上 `fmt`、`impact`、`ast`、`reroll` — `todo`（RM-D64 的 blocked 已由 RM-D65 解除） · 每个工具 1 日 · sonnet · 依赖无
 
 `explain` 归 AF5。一个工具一个 PR，用 `new-mcp-tool` skill，stdio shim 和托管 Worker 一起改。不许：新工具的行为与 CLI 不同。
 
@@ -1323,7 +1323,7 @@ EV.5 的门照旧：先有设计稿或 ADR，代码在后。PR 里如实写 L1 �
 
 ## 第 11 轨 · v3：说对数字、查得出、改得动、交得出去（2026-11-18 加；排期、证据与原则见 `v3.md`）
 
-**已开工（RM-D65，2026-11-18）：** 标着 `blocked`（RM-D64）的卡，按下面的顺序解锁。顺序按 `v3.md` §3 的阶段走：阶段 1 是 RM9.1、RM9.2、EV.8、RM9.3、RM9.4、A 波、RM9.5；阶段 2 是 RM9.6、AF9、RM9.10、RM9.11；阶段 3 是 RM9.7；阶段 4 是其余各卡。这一轨不是新车道，它的卡占用核心执行者的位置（RM-D22）。每张卡都跑 §0 的门禁。**动 `describe()`、`lint()`、`compile().diagnostics` 或 SVG 字节的卡，按 RM-D56 的证明方法做：** 逐行证明只有本卡说明的那些项移动了；去掉这些移动之后，要能复现旧的摘要；其他任何东西移动就停下报告，不重钉。`[语法]` 卡先确认 spec 余量（2026-11-18 是 371 个 UTF-16 单位）。
+**已开工（RM-D65，2026-11-18）：** 标着 `todo`（RM-D64 的 blocked 已由 RM-D65 解除）的卡，按下面的顺序解锁。顺序按 `v3.md` §3 的阶段走：阶段 1 是 RM9.1、RM9.2、EV.8、RM9.3、RM9.4、A 波、RM9.5；阶段 2 是 RM9.6、AF9、RM9.10、RM9.11；阶段 3 是 RM9.7；阶段 4 是其余各卡。这一轨不是新车道，它的卡占用核心执行者的位置（RM-D22）。每张卡都跑 §0 的门禁。**动 `describe()`、`lint()`、`compile().diagnostics` 或 SVG 字节的卡，按 RM-D56 的证明方法做：** 逐行证明只有本卡说明的那些项移动了；去掉这些移动之后，要能复现旧的摘要；其他任何东西移动就停下报告，不重钉。`[语法]` 卡先确认 spec 余量（2026-11-18 是 371 个 UTF-16 单位）。
 
 ### RM9.0 · 覆盖率回归集的设计（N1、N3） — `todo`（调研阶段可做，只出文档） · 1 日 · opus · 依赖无
 
@@ -1341,51 +1341,51 @@ EV.5 的门照旧：先有设计稿或 ADR，代码在后。PR 里如实写 L1 �
 
 先做一次纯搬移：把 `eval/fidelity.ts` 的 `proveInfeasible` 搬进 `src/`，eval 改为 import 它，字节恒等。然后 `validate --intent` 在判任何平面之前先跑它，给出一条带算式的 E（错误目录条目、示例、`explain`）。不许：在 `compile()` 里求解；把"不可能"判给拿不出算式的 brief。
 
-### RM9.4 · 连锁错误，根因排第一（N8） — `blocked`（RM-D64） · 2 日 · opus · 依赖 AF3
+### RM9.4 · 连锁错误，根因排第一（N8） — `todo`（RM-D64 的 blocked 已由 RM-D65 解除） · 2 日 · opus · 依赖 AF3
 
 一处错误（例如 1 mm 的重叠）引出一串诊断时，根因排在最前，其余诊断引用它。消息里的数字一律经 `src/num-format.ts` 打印，不再出现 `3657.6000000000004` 这样的浮点噪声。只会改变已经失败的平面的诊断顺序，给这些诊断钉值。不许：删掉连带的诊断（排序和引用就够了）。
 
-### RM9.5 · 代理引导：局部编辑、`keep`、`impact --lock`、楼梯从哪一端进、先确认单位（N2、N8） — `blocked`（RM-D64） · 1 日 · sonnet · 依赖无
+### RM9.5 · 代理引导：局部编辑、`keep`、`impact --lock`、楼梯从哪一端进、先确认单位（N2、N8） — `todo`（RM-D64 的 blocked 已由 RM-D65 解除） · 1 日 · sonnet · 依赖无
 
 写进 `skills/archlang/SKILL.md` 的开头和 `arch context` 的 workflow 一节；spec 只在余量允许时加一句。内容包括：先确认单位，以及用户给的尺寸是标称还是净尺寸。经 `gen:*` 生成。不许：抬高 spec 的上限；手抄生成的内容。
 
-### RM9.6 · 检查覆盖率冲刺（N1、N3） — `blocked`（RM-D64） · 10–15 日 · opus · 依赖 RM9.0
+### RM9.6 · 检查覆盖率冲刺（N1、N3） — `todo`（RM-D64 的 blocked 已由 RM-D65 解除） · 10–15 日 · opus · 依赖 RM9.0
 
 按 RM9.0 的判定逐类实施：加 lint 的那些类，每条规则一张小卡，带 §0 规则卡的门（公开的一对夹具，留出的一对放私有仓库，跑遍 `examples/**` 的报出数）；声明不查的那些类，写进一份公开的"不检查清单"（`docs/says-no.md` 或参考文档里）。验收：RM1.1b 的报出数。不许：为了拉高报出数去放宽规则的误报标准；把留出集写进公开仓库。
 
-### RM9.7 · 整图缩放或变换写成一句（N2） — `blocked`（RM-D64） · 3 日 · opus · 依赖 AF14
+### RM9.7 · 整图缩放或变换写成一句（N2） — `todo`（RM-D64 的 blocked 已由 RM-D65 解除） · 3 日 · opus · 依赖 AF14
 
 先做 CLI 版（`arch transform --scale <k> --keep <id>…`），输出改写后的源码和 `impact` 报告；是否再加语言形式（`place … scale`）要另开一张 `[语法]` 卡。证明：2026-11-18 试用的 H2 用一条命令做完，并且 `validate --strict` 干净。不许：改写源码时丢掉注释或 `let`；不经 `impact` 就静默移动被 `keep` 锁定的值。
 
-### RM9.8 · 英尺英寸作为真正的单位（N9；并入 RM3.4；下游请求 5） — `blocked`（RM-D64） · 4 日 · opus · 依赖 PS7.9 已做、spec 余量 · `[语法]`
+### RM9.8 · 英尺英寸作为真正的单位（N9；并入 RM3.4；下游请求 5） — `todo`（RM-D64 的 blocked 已由 RM-D65 解除） · 4 日 · opus · 依赖 PS7.9 已做、spec 余量 · `[语法]`
 
 `units ft-in`（或 RM3.4 原定的形式）：内部用 1/16 in 的整数表示，相加精确，尺寸以英尺英寸显示，面积用 sq ft。公制平面字节不动。做完时 RM3.4 在同一 PR 里裁掉。不许：把英尺换算成毫米再舍入后存储（这正是今天的缺陷）。
 
-### RM9.9 · 场地包络，advisory（N7） — `blocked`（RM-D64） · 3 日 · opus · 依赖 PS4.9 的卡位 · `[语法]`
+### RM9.9 · 场地包络，advisory（N7） — `todo`（RM-D64 的 blocked 已由 RM-D65 解除） · 3 日 · opus · 依赖 PS4.9 的卡位 · `[语法]`
 
 按 RM-D5：`keep site setback front 5m side 1.5m rear 3m`、`keep site coverage max 40%`、`keep site far max 1.2`，默认 advisory 等级，触发 `W_KEEP_VIOLATED`。事实模块与 DS3 共用。不许：加 `site` 字段；新开 W 码族；任何"符合"字样。
 
-### RM9.10 · 层级感知（N3；下游请求 1 与待提的四条） — `blocked`（RM-D64） · 4 日 · opus · 依赖无
+### RM9.10 · 层级感知（N3；下游请求 1 与待提的四条） — `todo`（RM-D64 的 blocked 已由 RM-D65 解除） · 4 日 · opus · 依赖无
 
 覆盖五处：`suggestTopology` 按楼层工作（把配对的楼梯或电梯算作该层的入口，插入点写在该层的块里）；`validateIntent` 的 `reachable` 按楼层读；入口层以上的外门要报；`vertical.reachable_levels` 只从入口层的入口播种；`W_ROOM_UNREACHABLE` 在 `level` 平面上也要报。backlog M.4 中相关的那几条一并核对。证明：单层平面字节不动；多层平面上新增的诊断逐条列出。不许：给半空中加外门（今天按单层去修多层平面，就会出这种事）。
 
-### RM9.11 · `repair()` 对家具给出确定的选择（N3；下游请求 3） — `blocked`（RM-D64） · 2 日 · opus · 依赖无
+### RM9.11 · `repair()` 对家具给出确定的选择（N3；下游请求 3） — `todo`（RM-D64 的 blocked 已由 RM-D65 解除） · 2 日 · opus · 依赖无
 
 覆盖两类拒绝："equidistant from two walls" 取最近的墙，再按最小的墙 id；"no wall to back onto" 给出一条稳定的规则，或者给出带占位符的修复。另做跨楼层的连通修复。不许：`repair` 加门窗（`spec.llm.md` 的既定规则）。
 
-### RM9.12 · Plan JSON 带每层的楼梯、洞口、井道占地（N3、N5；下游请求 2） — `blocked`（RM-D64） · 2 日 · opus · 依赖 RM3.1 后半
+### RM9.12 · Plan JSON 带每层的楼梯、洞口、井道占地（N3、N5；下游请求 2） — `todo`（RM-D64 的 blocked 已由 RM-D65 解除） · 2 日 · opus · 依赖 RM3.1 后半
 
 只新增字段；schema 照 `design/schema-policy.md` 处理。不许：改已有字段。
 
-### RM9.13 · `W_GRID_SNAPPED` 的数量（N8；下游请求 7） — `blocked`（RM-D64） · 1 日 · opus · 依赖无
+### RM9.13 · `W_GRID_SNAPPED` 的数量（N8；下游请求 7） — `todo`（RM-D64 的 blocked 已由 RM-D65 解除） · 1 日 · opus · 依赖无
 
 每张图聚合成一条（把各处列成相关位置），或者降为 info 级。先与 RM1.4c、CO.1（RM-D56）对齐。按 RM-D56 的方法证明。
 
-### RM9.14 · 3D 查看器的钩子（N4；下游请求 9） — `blocked`（RM-D64） · 2 日 · opus · 依赖无（在 `packages/archlang-3d`）
+### RM9.14 · 3D 查看器的钩子（N4；下游请求 9） — `todo`（RM-D64 的 blocked 已由 RM-D65 解除） · 2 日 · opus · 依赖无（在 `packages/archlang-3d`）
 
 包括 `onContextLost` 选项或句柄上的 `gl` 字段、单独显示一层、导出 `renderStill`。只改 archlang-3d，随下一次核心 tag 发布。不许：核心依赖 3D 包。
 
-### RM9.15 · 用户能读到的文字（N1） — `blocked`（RM-D64） · 2 日 · sonnet · 依赖无
+### RM9.15 · 用户能读到的文字（N1） — `todo`（RM-D64 的 blocked 已由 RM-D65 解除） · 2 日 · sonnet · 依赖无
 
 包括 `W_KEEP_VIOLATED` 的 "A keep moves nothing."、`W_ANNOTATION_OVERLAP` 里的 `dims auto all`、`describe()` 写进 `<desc>` 的原始 id、尺寸文字的 `aria-label`（opt-in 输出）。消息规则照 §0：lint 的 `message` 不含 id。按 RM-D56 的方法证明。不许：改诊断码。
 
