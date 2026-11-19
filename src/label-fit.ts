@@ -49,7 +49,7 @@
  * the width this pass reads it at against a symbol (card AL3w), and left it where its own reading
  * scored best. That reading is coarser than this pass's: it boxes what is drawn rather than
  * clipping its shapes, and reads another room's label where the relocation left it, at the full
- * size. Off its own floor, such a label claims no floor (card AL3a). So it is no proof that no
+ * size, even one off its own floor (card AL3e). So it is no proof that no
  * full-size one-line place stands clear by this pass's reading, only the reason this pass does not
  * search those places again. Breaking stays {@link balancedLines}'s: only at a space, by a count of
  * characters, so the same name breaks the same way on every run and no word is ever split or
@@ -98,9 +98,7 @@ import {
   CLEARANCE,
   COLLIDE_MIN,
   FRACTIONS,
-  fitTexts,
   type LabelGroup,
-  labelHeights,
   meanExtent,
   overlapArea,
   primBBox,
@@ -126,6 +124,9 @@ type TextPrim = Extract<ScenePrim, { t: "text" }>;
  *  percent of the true curve, which is far inside the 2 % trigger. */
 const ARC_STEPS = 8;
 
+/** Steps from the room-name size down to the furniture-label size. */
+const HEIGHT_STEPS = 3;
+
 /**
  * The counted work of the pass over a whole plan: marks visited plus vertices clipped or read off
  * a ring, under a second at the worst measured (a pile of symbols, every label searched to the end).
@@ -150,8 +151,20 @@ const W_TIER = 1_000_000;
 export const isSymbolElement = (el: ResolvedElement): boolean =>
   (el.kind === "furniture" && !isUnderlay((el as RFurniture).category)) || isVertical(el);
 
-// The heights a label steps through live with the relocation, which reads them too (card AL3a).
-export { labelHeights } from "./label-placement.js";
+/**
+ * The heights a label steps through, largest first: the drawing's own name and area sizes, then
+ * the steps down to the furniture-label size. The area figure stays at its size until the name
+ * reaches it, and no further: it never stands larger than the name.
+ */
+export function labelHeights(sizes: RenderSizes): { name: number; area: number }[] {
+  const { roomFont, furnFont, areaFont } = sizes;
+  const out = [{ name: roomFont, area: areaFont }];
+  for (let i = 1; i <= HEIGHT_STEPS; i++) {
+    const name = i === HEIGHT_STEPS ? furnFont : roomFont - ((roomFont - furnFont) * i) / HEIGHT_STEPS;
+    out.push({ name, area: Math.min(areaFont, name) });
+  }
+  return out;
+}
 
 /** The quarter-disc a door leaf sweeps, hinge first, its arc walked in {@link ARC_STEPS} chords. */
 export function sectorOf(s: DoorSwing): Point[] {
@@ -488,10 +501,16 @@ export function fitLabels(
   const misfits: Misfit[] = [];
   for (let gi = 0; gi < groups.length && work <= budget; gi++) {
     const g = groups[gi]!;
-    // The groups the fit takes; the relocation's claim rule reads the same ones (card AL3a).
-    const own = fitTexts(nodes, g);
-    if (!own) continue;
-    const { name, area } = own;
+    if (!g.wrap || g.fixed) continue;
+    const texts: number[] = [];
+    for (let i = g.from; i < g.to; i++) {
+      const n = nodes[i]!;
+      if (n.layer === "labels" && n.prim.t === "text") texts.push(i);
+    }
+    if (texts.length !== 2) continue;
+    const name = nodes[texts[0]!]!.prim;
+    const area = nodes[texts[1]!]!.prim;
+    if (name.t !== "text" || area.t !== "text" || name.rotate !== undefined) continue;
 
     const nameBoxesNow = boxesOf(name, name.at);
     const areaBoxesNow = boxesOf(area, area.at);
@@ -502,7 +521,7 @@ export function fitLabels(
     const areaNow = read(areaBoxesNow, areaOffNow, gi, clearanceNow);
     if (!nameNow || !areaNow) break;
     if (nameNow.fabric > COLLIDE_MIN || areaNow.fabric > COLLIDE_MIN) {
-      misfits.push({ gi, nameAt: own.nameAt, areaAt: own.areaAt, name, area, buried: nameNow.total + areaNow.total });
+      misfits.push({ gi, nameAt: texts[0]!, areaAt: texts[1]!, name, area, buried: nameNow.total + areaNow.total });
     }
   }
 
@@ -553,8 +572,7 @@ export function fitLabels(
         const nameBoxes = boxesOf(namePrim, { x: 0, y: 0 });
         const areaBoxes = boxesOf(areaPrim, { x: 0, y: 0 });
         // Wider or taller than the room's whole extent: it can stand clear nowhere. Only the
-        // smallest height is worth drawing then, and only where the label stands. The relocation
-        // reads the same test ({@link import("./label-placement.js").fitCanRedraw}).
+        // smallest height is worth drawing then, and only where the label stands.
         const tooBig = [nameBoxes.ink, areaBoxes.ink].some((b) => b.w > bb.w || b.h > bb.h);
         if (tooBig && hi < heights.length - 1) continue;
         // Never further off the floor than the label stands now.

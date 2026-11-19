@@ -583,11 +583,13 @@ describe("the order of the source", () => {
   );
 });
 
-// A red-team case from AL3w's review (S1). "NEWSROOM" is wider than its room, so it stands off its
-// floor wherever the relocation puts it, and `fitLabels` will change it. Read at its full size, its box
-// reached into the gym, so the relocation moved "GYM", which stood clear at the room's anchor, and
-// the fit then shrank it (350 to 300). A label off its own floor claims no floor (card AL3a), so the
-// gym's label is drawn as it is with no name next door.
+// A red-team case from AL3w's review (S1), kept as a record of what is drawn: card AL3e, "a label
+// pushed off its floor still claims it, so its neighbour shrinks (case352)". "NEWSROOM" is wider than
+// its room, so it stands off its floor wherever the relocation puts it, and `fitLabels` will change
+// it. Read at its full size, its box reaches into the gym, so the relocation moves "GYM", which stood
+// clear at the room's anchor, and the fit then shrinks it (350 to 300). Letting such a label give up
+// its floor was tried in card AL3a and ruled out: the labels it released were then printed over each
+// other. Until AL3e, this pins the shrunk GYM; a fix turns it back to the room's full size.
 describe("a neighbour's label that does not fit", () => {
   const plan = (newsroom: string) => `plan "p" {
   units mm
@@ -617,20 +619,26 @@ describe("a neighbour's label that does not fit", () => {
 }
 `;
 
-  it("does not move or shrink a name that stands clear where it is drawn", () => {
+  it("moves and shrinks the gym's name for its neighbour's full-size box (card AL3e)", () => {
     const { texts, sizes } = drawn(plan(` label "NEWSROOM"`), "r2");
-    expect(texts.map((t) => t.value)).toEqual(["GYM", "3.1 m²"]);
-    expect(texts[0]!.size).toBe(sizes.roomFont);
-    expect(texts).toEqual(drawn(plan(""), "r2").texts);
+    expect(texts.map((t) => [t.value, t.size, t.at])).toEqual([
+      ["GYM", 300, { x: 4075, y: 1015 }],
+      ["3.1 m²", 250, { x: 4075, y: 1345 }],
+    ]);
+    // With no name next door it is drawn at the full size, at the room's anchor.
+    const alone = drawn(plan(""), "r2").texts;
+    expect(alone.map((t) => [t.value, t.size, t.at])).toEqual([
+      ["GYM", sizes.roomFont, { x: 4075, y: 1005 }],
+      ["3.1 m²", 250, { x: 4075, y: 1390 }],
+    ]);
   });
 });
 
-// The limit of that rule (CI on #964). Only a label `fitLabels` takes, a name and an area figure, gives
-// up its floor when it stands off it; the fit never redraws an area figure drawn alone, so a neighbour
-// that ignored one would stay drawn over it. In the relational-openings table's `frames` (one unit in
-// eight turns and mirrors on one sheet, its text 1,610 mm high) rooms `a` and `b` draw only an area
-// figure, each wider than its room. Before this rule was narrowed, `b`'s stood over `a`'s by 29 % in
-// four of the copies; one dodging the other leaves 1.25 %.
+// Why every placed label keeps its floor (CI on #964): at `1fdd5dee` a label off its own floor gave it
+// up, but the fit never redraws an area figure drawn alone, so the neighbour that ignored one stayed
+// drawn over it. In the relational-openings table's `frames` (one unit in eight turns and mirrors on
+// one sheet, its text 1,610 mm high) rooms `a` and `b` draw only an area figure, each wider than its
+// room; `b`'s stood over `a`'s by 29 % in four of the copies. One dodging the other leaves 1.25 %.
 describe("an area figure drawn alone", () => {
   it("keeps its floor, so the next room's figure is placed off it", () => {
     const src = OPENINGS_BETWEEN_PLANS.find((p) => p[0] === "frames")![1];

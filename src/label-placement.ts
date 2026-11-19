@@ -50,15 +50,11 @@
  * in), so the same rooms written in any order draw the same (card AL3a, label-crowding). Not yet in
  * a plan that draws `walls from rooms` with `dims auto`: the wall-thickness figures this pass dodges
  * are stationed before it, in an order of their own. An authored label (`label "…" at (x,y)`) stands
- * in the way from the first turn. And a room's label that `fitLabels` will redraw claims no floor: one the fit
- * takes ({@link fitTexts}: a name and an area figure) with a text standing off its own floor where it
- * is drawn does not fit, the fit will shrink, wrap or move it, and a neighbour must not dodge a box
- * that is about to change (`fitLabels`' own rule). Any other label, an area figure on its own among
- * them, is never redrawn, so it keeps its floor however far off it stands, and so does one too big
- * for its room at every height ({@link fitCanRedraw}), which the fit can only draw smaller. Before,
- * the turns went by
- * element order, and each placed label was an obstacle for the next, so five corpus plans, written
- * the other way round, drew differently.
+ * in the way from the first turn. Every label placed claims its box, even one off its own floor that
+ * `fitLabels` will shrink later, so a neighbour can be moved, and then shrunk, for a box that is
+ * about to change (card AL3e, `case352`); that is kept, because two labels printed over each other are
+ * worse. Before, the turns went by element order, and each placed label was an obstacle for the
+ * next, so five corpus plans, written the other way round, drew differently.
  *
  * Prior art: planscript-rust's `best_area_label_candidate` / `label_score`
  * (`src/exporters.rs`, MIT) — the candidate lattice, the distance-from-centre preference
@@ -637,10 +633,8 @@ export function underLabels(n: SceneNode): boolean {
  * Mutates `nodes` in place (replacing, never editing, the text nodes it moves), which is
  * safe: every node in the list was freshly built by this `toScene` call. Groups are
  * visited in {@link plotOrder}, never element order, and each placed label becomes an obstacle
- * for the next, so two labels can never be relocated onto each other; a label `fitLabels` will redraw
- * ({@link fitTexts}, with a text more than {@link COLLIDE_MIN} of its ink off its own floor where it
- * lands, read as the fit reads it) is the one exception, and claims no floor. An `outdoor` surface
- * takes its turn among the rooms, by the same order.
+ * for the next, so two labels can never be relocated onto each other; an authored label is one from
+ * the first turn. An `outdoor` surface takes its turn among the rooms, by the same order.
  *
  * `work`, when given, counts every place scored (`labelRelocations`, `src/compile-work.ts`); an
  * out-parameter only.
@@ -688,22 +682,6 @@ export function relocateLabels(
   }
   const placed = new BoxSums(meanExtent(labelBoxes));
   const probes = new Map<string, Probe[]>();
-  /** A label claims the floor it stands on unless `fitLabels` will redraw it: the fit takes it
-   *  ({@link fitTexts}) and one of its two texts, where it now stands, is more than
-   *  {@link COLLIDE_MIN} of its ink off its own floor, read as the fit reads it (each text's own ink
-   *  box, which makes it a misfit there). A label the fit never takes keeps its claim, and so does
-   *  one too big for its room at every height ({@link fitCanRedraw}), which the fit can only draw
-   *  smaller (see the turns below). */
-  const claims = (g: LabelGroup): boolean => {
-    const own = fitTexts(nodes, g);
-    if (!own) return true;
-    for (const prim of [own.name, own.area]) {
-      const { w, h } = inkExtent(prim);
-      const ink = { x: prim.at.x - w / 2, y: prim.at.y - h / 2, w, h };
-      if (Math.max(0, rectAreaOutside(ink, g.ring) / (ink.w * ink.h)) > COLLIDE_MIN) return false;
-    }
-    return true;
-  };
   /** The fractions of `rect` buried in obstacles and in placed labels, the placed sum
    *  continued from where `probe` last stood. */
   const crowd = (rect: BBox, probe: Probe): { obstacles: number; placed: number } => {
@@ -732,12 +710,6 @@ export function relocateLabels(
       if (n.layer === "labels" && n.prim.t === "text") texts.push(i);
     }
     if (texts.length === 0) continue;
-    // The width the group draws: every text of a group is centred on one line, so the widest.
-    let inkW = 0;
-    for (const i of texts) {
-      const prim = nodes[i]!.prim;
-      if (prim.t === "text") inkW = Math.max(inkW, inkExtent(prim).w);
-    }
     let rect0: BBox | null = null;
     for (const i of texts) {
       const b = labelBox(nodes[i]!.prim);
@@ -752,11 +724,6 @@ export function relocateLabels(
     // first turn.
     if (g.fixed) continue;
 
-    // A label too big for its room at every height ({@link fitCanRedraw}) stands clear nowhere, and
-    // `fitLabels` can only draw it at the smallest height, so it keeps its claim (card AL3a).
-    const own = fitTexts(nodes, g);
-    const tooBig = own !== null && !fitCanRedraw(own, g.ring, sizes);
-
     const { ring, anchor } = g;
     // Probe 0 is the trigger, 1 the incumbent, 2 + k the k-th lattice point.
     let sig = `${numKey(rect0.x)},${numKey(rect0.y)},${numKey(rect0.w)},${numKey(rect0.h)}|${numKey(anchor.x)},${numKey(anchor.y)}|`;
@@ -770,7 +737,7 @@ export function relocateLabels(
 
     const trigger = crowd(rect0, probe(0));
     if (trigger.obstacles + trigger.placed <= COLLIDE_MIN) {
-      if (tooBig || claims(g)) placed.push(rect0);
+      placed.push(rect0);
       continue;
     }
 
@@ -787,7 +754,13 @@ export function relocateLabels(
     let best = anchor;
     let bestScore = score(anchor, 0, 1);
     // How far off its floor the label already stands, the most a place may be. The slack is for
-    // the clip's own rounding: two places the same distance off must read as equal.
+    // the clip's own rounding: two places the same distance off must read as equal. Every text
+    // of a group is centred on one line, so the widest text is the block's width.
+    let inkW = 0;
+    for (const i of texts) {
+      const prim = nodes[i]!.prim;
+      if (prim.t === "text") inkW = Math.max(inkW, inkExtent(prim).w);
+    }
     const inkRect = inkOf(rect0, inkW);
     const offFloor = rectAreaOutside(inkRect, ring) + inkRect.w * inkRect.h * 1e-9;
     let k = 2;
@@ -813,87 +786,8 @@ export function relocateLabels(
         nodes[i] = { ...n, prim: { ...n.prim, at: { x: n.prim.at.x + dx, y: n.prim.at.y + dy } } };
       }
     }
-    const landed = shiftBBox(rect0, dx, dy);
-    if (tooBig || claims(g)) placed.push(landed);
+    placed.push(shiftBBox(rect0, dx, dy));
   }
-}
-
-/**
- * The two texts of a group `fitLabels` (`src/label-fit.ts`) takes: a room's (`wrap`), not authored
- * (`fixed`), drawing exactly a name and an area figure, the name not turned. Null for any other group,
- * which the fit never reads and never redraws. The fit takes its candidates from here and the
- * relocation lets only such a label give up its floor (card AL3a), so the two cannot disagree on
- * which labels are about to change.
- */
-export function fitTexts(nodes: readonly SceneNode[], g: LabelGroup): FitTexts | null {
-  if (!g.wrap || g.fixed) return null;
-  const texts: number[] = [];
-  for (let i = g.from; i < g.to; i++) {
-    const n = nodes[i]!;
-    if (n.layer === "labels" && n.prim.t === "text") texts.push(i);
-  }
-  if (texts.length !== 2) return null;
-  const name = nodes[texts[0]!]!.prim;
-  const area = nodes[texts[1]!]!.prim;
-  if (name.t !== "text" || area.t !== "text" || name.rotate !== undefined) return null;
-  return { nameAt: texts[0]!, areaAt: texts[1]!, name, area };
-}
-
-/** Steps from the room-name size down to the furniture-label size. */
-const HEIGHT_STEPS = 3;
-
-/**
- * The heights a label steps through, largest first: the drawing's own name and area sizes, then
- * the steps down to the furniture-label size. The area figure stays at its size until the name
- * reaches it, and no further: it never stands larger than the name. `fitLabels` steps through
- * them; the relocation reads them to know whether the fit can redraw a label ({@link fitCanRedraw}).
- */
-export function labelHeights(sizes: RenderSizes): { name: number; area: number }[] {
-  const { roomFont, furnFont, areaFont } = sizes;
-  const out = [{ name: roomFont, area: areaFont }];
-  for (let i = 1; i <= HEIGHT_STEPS; i++) {
-    const name = i === HEIGHT_STEPS ? furnFont : roomFont - ((roomFont - furnFont) * i) / HEIGHT_STEPS;
-    out.push({ name, area: Math.min(areaFont, name) });
-  }
-  return out;
-}
-
-/**
- * Whether `fitLabels` can place this label somewhere else: one of the forms it tries (the name
- * wrapped onto two or more lines at any height, or on one line below the full size, the area figure
- * at that height's size) is no wider and no taller than the room's whole extent. A label too big at
- * every height can stand clear nowhere; the fit only draws it at the smallest height, so the
- * relocation keeps its claim (card AL3a). The forms and the test are `fitLabels`' own (its
- * `tooBig`), in the same order.
- */
-export function fitCanRedraw(own: FitTexts, ring: readonly Point[], sizes: RenderSizes): boolean {
-  const bb = polygonBounds(ring);
-  const { block: _drawnLines, ...oneLine } = own.name;
-  const wrapped: string[][] = [];
-  for (let n = 2; n < 2 + WRAP_TRIES; n++) {
-    const lines = balancedLines(own.name.value, n);
-    if (!lines) break;
-    wrapped.push(lines);
-  }
-  const heights = labelHeights(sizes);
-  for (let hi = 0; hi < heights.length; hi++) {
-    const h = heights[hi]!;
-    const pitch = h.name * LABEL_LINE_PITCH;
-    for (const lines of hi > 0 ? [...wrapped, null] : wrapped) {
-      const name = inkExtent({ ...oneLine, size: h.name, ...(lines ? { block: { lines, pitch } } : {}) });
-      const area = inkExtent({ ...own.area, size: h.area });
-      if (![name, area].some((b) => b.w > bb.w || b.h > bb.h)) return true;
-    }
-  }
-  return false;
-}
-
-/** A group's name and area figure as {@link fitTexts} finds them: their node indices and texts. */
-export interface FitTexts {
-  nameAt: number;
-  areaAt: number;
-  name: Extract<ScenePrim, { t: "text" }>;
-  area: Extract<ScenePrim, { t: "text" }>;
 }
 
 /**
