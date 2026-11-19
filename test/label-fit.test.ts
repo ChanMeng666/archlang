@@ -10,18 +10,23 @@ import { walkFiles as walk } from "./helpers/corpus.js";
 import { worldFor } from "./helpers/world.js";
 import { readFileSync } from "node:fs";
 import { dirname, join, relative, resolve as resolvePath, sep } from "node:path";
+import fc from "fast-check";
 import { describe, expect, it, vi } from "vitest";
 import { resolvePlan } from "../src/analyze.js";
 import { toDxf } from "../src/export/dxf.js";
 import { clearCache, compile, lint } from "../src/index.js";
 import type { ResolvedPlan, RRoom } from "../src/ir.js";
 import { fitWork, labelHeights, MAX_FIT_WORK } from "../src/label-fit.js";
+import { COLLIDE_MIN } from "../src/label-placement.js";
 import { extractArchBlocks } from "../src/markdown.js";
 import type { RenderSizes, ScenePrim } from "../src/scene.js";
 import { toScene } from "../src/scene-build.js";
 import { SHEET_MM } from "../src/sheet.js";
+import { inkExtent, textExtent } from "../src/text-layout.js";
 import type { World } from "../src/world.js";
 import { NULL_WORLD } from "../src/world.js";
+import { runs } from "./setup/fast-check.js";
+import { OPENINGS_BETWEEN_PLANS } from "./tables/openings-between-plans.js";
 
 const { state } = vi.hoisted(() => ({ state: { off: false } }));
 
@@ -480,22 +485,19 @@ describe("the order of the source", () => {
     }
   });
 
-  it("holds over the corpus: where the passes before it agree, this one does", () => {
+  it("holds over the corpus, before this pass and after it", () => {
     let held = 0;
     let acted = 0;
-    const before: string[] = [];
     for (const { name, src, world } of corpus()) {
       const other = roomsReversed(src, world);
       if (other === null) continue;
-      // `relocateLabels` visits in element order: where its result differs, the order is its own.
+      // `relocateLabels` takes its turns in an order read off the plan (`plotOrder`, card AL3a), so
+      // what it leaves this pass agrees too. Five plans were excused here before it did.
       const a = off(() => textsOf(src, world));
-      const b = off(() => textsOf(other, world));
-      if (JSON.stringify(a) !== JSON.stringify(b)) {
-        before.push(name);
-        // Excused is the pass before this one, never this one's result where it does agree.
-        if (ORDER_EXCUSED[name] === "agrees") expect(textsOf(other, world), name).toEqual(textsOf(src, world));
-        continue;
-      }
+      expect(
+        off(() => textsOf(other, world)),
+        name,
+      ).toEqual(a);
       const after = textsOf(src, world);
       expect(textsOf(other, world), name).toEqual(after);
       held++;
@@ -503,33 +505,288 @@ describe("the order of the source", () => {
     }
     expect(held).toBeGreaterThan(200);
     expect(acted).toBeGreaterThan(5);
-    // Exactly the plans named, or the comparison above is excusing what it is meant to hold: a plan
-    // that newly depends on the order fails here, and so does one that stops depending on it.
-    expect(before.sort()).toEqual(Object.keys(ORDER_EXCUSED).sort());
   }, 300_000);
+
+  // Generated strips of rooms whose names are often wider than the room, beside a corridor, the room
+  // statements in two orders: the same texts, with this pass and without it (card AL3a).
+  it("draws the same texts in any order of the room statements, generated", () => {
+    const NAMES = [
+      "Store / IT",
+      "Kitchenette / Break",
+      "Accessible WC",
+      "WC",
+      "Hauswirtschaftsraum",
+      "Dressing",
+      "Office",
+    ];
+    const spec = fc.record({ w: fc.constantFrom(1200, 1500, 1800, 2400, 3000), name: fc.constantFrom(...NAMES) });
+    fc.assert(
+      fc.property(
+        fc.array(spec, { minLength: 2, maxLength: 7 }),
+        fc.constantFrom("", "  paper A3 landscape\n  scale 1:50\n", "  paper A4 landscape\n  scale 1:100\n"),
+        fc.integer({ min: 0, max: 1_000_000 }),
+        (rooms, paper, shuffleSeed) => {
+          let x = 0;
+          const lines = rooms.map((r, i) => {
+            const line = `  room id=r${i} at (${x},0) size ${r.w}x3000 label "${r.name}" uses storage`;
+            x += r.w;
+            return line;
+          });
+          lines.push(`  room id=hall at (0,3000) size ${x}x1500 label "Corridor" uses circulation`);
+          let state = shuffleSeed;
+          const other = [...lines];
+          for (let i = other.length - 1; i > 0; i--) {
+            state = (state * 1103515245 + 12345) % 2147483648;
+            const j = state % (i + 1);
+            [other[i], other[j]] = [other[j]!, other[i]!];
+          }
+          const plan = (ls: readonly string[]) =>
+            `plan "o" {\n  units mm\n${paper}${ls.join("\n")}\n  walls from rooms exterior 200 partition 100\n}\n`;
+          expect(textsOf(plan(other), NULL_WORLD)).toEqual(textsOf(plan(lines), NULL_WORLD));
+          expect(off(() => textsOf(plan(other), NULL_WORLD))).toEqual(off(() => textsOf(plan(lines), NULL_WORLD)));
+        },
+      ),
+      { numRuns: runs(40), seed: 3141 },
+    );
+  }, 120_000);
+
+  // The five plans the corpus law excused until card AL3a, in every rotation of their room lines,
+  // not only reversed: each is a plan whose names do not fit their rooms, so every label's place
+  // depends on its neighbours'.
+  it.each(FORMERLY_EXCUSED)(
+    "%s draws the same in every rotation of its rooms",
+    (file) => {
+      const src = readFileSync(file, "utf8");
+      const world = worldFor(dirname(resolvePath(ROOT, file)));
+      const lines = src.split("\n");
+      const rooms = lines.flatMap((l, i) => (/^\s*room\b/.test(l) ? [i] : []));
+      const rotated = (k: number): string => {
+        const out = [...lines];
+        rooms.forEach((i, j) => {
+          out[i] = lines[rooms[(j + k) % rooms.length]!]!;
+        });
+        return out.join("\n");
+      };
+      const first = textsOf(src, world);
+      const unfitted = off(() => textsOf(src, world));
+      for (const k of [1, 2, Math.floor(rooms.length / 2), rooms.length - 1]) {
+        const other = rotated(k);
+        expect(roomsOf(other, world), `${file} rotated ${k}`).toBe(roomsOf(src, world));
+        expect(textsOf(other, world), `${file} rotated ${k}`).toEqual(first);
+        expect(
+          off(() => textsOf(other, world)),
+          `${file} rotated ${k}, unfitted`,
+        ).toEqual(unfitted);
+      }
+    },
+    120_000,
+  );
 });
 
-/**
- * The corpus plans whose labels `relocateLabels` places differently when the rooms are written in
- * reverse (it visits groups in element order, as its doc comment says), each with whether this
- * pass's result then agrees across both orders anyway ("agrees", asserted above) or inherits the
- * difference ("differs": this pass is order-free only GIVEN what relocation left). Each is a plan
- * whose names do not fit their rooms; measured by reversing the room lines, as `roomsReversed` does.
- */
-const ORDER_EXCUSED: Readonly<Record<string, "agrees" | "differs">> = {
-  // Thirty 3 m rooms in series, each with a 2.7 m label: every room's label depends on its neighbours'.
-  "test/fixtures/chain30.arch": "differs",
-  // The label-crowding witness: Store / IT, Kitchenette / Break and Boardroom, a name wider than
-  // its room between them.
-  "test/fixtures/dense-office.arch": "agrees",
-  // A corridor with thirty such rooms off it: all thirty-one labels depend on their neighbours'.
-  "test/fixtures/star30.arch": "differs",
-  // The bathroom's label, off the bathtub, and the hall's land by the order; once fitted they agree.
-  "test/plans/plan-soundness/audits/first-contact-plans/2026-10-24-rerun/2-house.arch": "agrees",
-  // The Staff Room's and the Accessible WC's labels land by the order; the staff room's fitted name
-  // inherits it.
-  "test/plans/plan-soundness/audits/first-contact-plans/2026-10-26-walls-first/6-clinic.arch": "differs",
-};
+// A red-team case from AL3w's review (S1), kept as a record of what is drawn: card AL3e, "a label
+// pushed off its floor still claims it, so its neighbour shrinks (case352)". "NEWSROOM" is wider than
+// its room, so it stands off its floor wherever the relocation puts it, and `fitLabels` will change
+// it. Read at its full size, its box reaches into the gym, so the relocation moves "GYM", which stood
+// clear at the room's anchor, and the fit then shrinks it (350 to 300). Letting such a label give up
+// its floor was tried in card AL3a and ruled out: the labels it released were then printed over each
+// other. Until AL3e, this pins the shrunk GYM; a fix turns it back to the room's full size.
+describe("a neighbour's label that does not fit", () => {
+  const plan = (newsroom: string) => `plan "p" {
+  units mm
+  paper A3 landscape
+  scale 1:100
+  dims auto
+  wall id=wn exterior thickness 200 { (0,0) (6550,0) }
+  wall id=we exterior thickness 200 { (6550,0) (6550,2150) }
+  wall id=ws exterior thickness 200 { (0,2150) (6550,2150) }
+  wall id=ww exterior thickness 200 { (0,0) (0,2150) }
+  room id=r0 at (0,0) size 1900x2150 label "Lobby"
+  door on wn at 400 width 800 hinge near start swing into r0
+  window on ws at 800 width 800
+  wall id=wp1 partition thickness 100 { (1900,0) (1900,2150) }
+  room id=r1 at (1900,0) size 1450x2150${newsroom}
+  furniture table at (2250,150) size 800x1250
+  furniture table at (2050,200) size 1050x1350
+  door on wn at 2100 width 800 hinge near start swing into r1
+  wall id=wp2 partition thickness 100 { (3350,0) (3350,2150) }
+  room id=r2 at (3350,0) size 1450x2150 label "GYM"
+  furniture plinth at (4669,-50) size 650x1900
+  door on wn at 3600 width 800 hinge near start swing into r2
+  wall id=wp3 partition thickness 100 { (4800,0) (4800,2150) }
+  room id=r3 at (4800,0) size 1750x2150 label "Workroom"
+  furniture sofa at (5050,100) size 1200x1800
+  furniture fridge at (6132,200) size 400x1850
+}
+`;
+
+  it("moves and shrinks the gym's name for its neighbour's full-size box (card AL3e)", () => {
+    const { texts, sizes } = drawn(plan(` label "NEWSROOM"`), "r2");
+    expect(texts.map((t) => [t.value, t.size, t.at])).toEqual([
+      ["GYM", 300, { x: 4075, y: 1015 }],
+      ["3.1 m²", 250, { x: 4075, y: 1345 }],
+    ]);
+    // With no name next door it is drawn at the full size, at the room's anchor.
+    const alone = drawn(plan(""), "r2").texts;
+    expect(alone.map((t) => [t.value, t.size, t.at])).toEqual([
+      ["GYM", sizes.roomFont, { x: 4075, y: 1005 }],
+      ["3.1 m²", 250, { x: 4075, y: 1390 }],
+    ]);
+  });
+});
+
+// Why every placed label keeps its floor (CI on #964): at `1fdd5dee` a label off its own floor gave it
+// up, but the fit never redraws an area figure drawn alone, so the neighbour that ignored one stayed
+// drawn over it. In the relational-openings table's `frames` (one unit in eight turns and mirrors on
+// one sheet, its text 1,610 mm high) rooms `a` and `b` draw only an area figure, each wider than its
+// room; `b`'s stood over `a`'s by 29 % in four of the copies. One dodging the other leaves 1.25 %.
+describe("an area figure drawn alone", () => {
+  it("keeps its floor, so the next room's figure is placed off it", () => {
+    const src = OPENINGS_BETWEEN_PLANS.find((p) => p[0] === "frames")![1];
+    const { ir } = resolvePlan(src);
+    const scene = toScene(ir!, { annotate: true });
+    const ink = (id: string) => {
+      const texts = scene.nodes.filter((n) => n.elementId === id && n.prim.t === "text").map((n) => n.prim as Text);
+      expect(
+        texts.map((t) => t.value),
+        id,
+      ).toEqual(["20.0 m²"]);
+      const { w, h } = inkExtent(texts[0]!);
+      return { x: texts[0]!.at.x - w / 2, y: texts[0]!.at.y - h / 2, w, h };
+    };
+    for (const copy of ["r0", "m0", "r90", "m90", "r180", "m180", "r270", "m270"]) {
+      const a = ink(`${copy}.a`);
+      const b = ink(`${copy}.b`);
+      const w = Math.max(0, Math.min(a.x + a.w, b.x + b.w) - Math.max(a.x, b.x));
+      const h = Math.max(0, Math.min(a.y + a.h, b.y + b.h) - Math.max(a.y, b.y));
+      expect(w * h, copy).toBeLessThanOrEqual(COLLIDE_MIN * a.w * a.h);
+    }
+  });
+});
+
+// The red team's first round on #964, each case a pin that fails on `1fdd5dee`. Overprints are read
+// as the red team read them: two rooms' texts whose ink boxes (drawn width, estimated height) share
+// more than `COLLIDE_MIN` of the smaller.
+describe("order-free placement: the red team's cases (#964)", () => {
+  const labels = (src: string, dx = 0, dy = 0) => {
+    const { ir } = resolvePlan(src);
+    const scene = toScene(ir!, { annotate: true });
+    return scene.nodes
+      .filter(
+        (n) => (n.elementKind === "room" || n.elementKind === "outdoor") && n.layer === "labels" && n.prim.t === "text",
+      )
+      .map((n) => ({ id: n.elementId!, prim: n.prim as Text, dx, dy }));
+  };
+  /** Each label as drawn, relative to the plan's offset, in a fixed order. */
+  const drawnAs = (src: string, dx = 0, dy = 0): string[] =>
+    labels(src, dx, dy)
+      .map(({ id, prim }) =>
+        [
+          id,
+          prim.value,
+          (prim.at.x - dx).toFixed(3),
+          (prim.at.y - dy).toFixed(3),
+          prim.size,
+          prim.block?.lines.join("/") ?? "",
+        ].join(" "),
+      )
+      .sort();
+  const overprints = (src: string): string[] => {
+    const ls = labels(src);
+    const box = (p: Text) => {
+      const w = inkExtent(p).w;
+      const h = textExtent(p).h;
+      return { x0: p.at.x - w / 2, x1: p.at.x + w / 2, y0: p.at.y - h / 2, y1: p.at.y + h / 2, a: w * h };
+    };
+    const out: string[] = [];
+    for (let i = 0; i < ls.length; i++)
+      for (let j = i + 1; j < ls.length; j++) {
+        if (ls[i]!.id === ls[j]!.id) continue;
+        const a = box(ls[i]!.prim);
+        const b = box(ls[j]!.prim);
+        const w = Math.max(0, Math.min(a.x1, b.x1) - Math.max(a.x0, b.x0));
+        const h = Math.max(0, Math.min(a.y1, b.y1) - Math.max(a.y0, b.y0));
+        if (w * h > COLLIDE_MIN * Math.min(a.a, b.a)) out.push(`${ls[i]!.prim.value} x ${ls[j]!.prim.value}`);
+      }
+    return out;
+  };
+  const plan = (name: string, rooms: string[], tail = "  walls from rooms exterior 200 partition 100\n") =>
+    `plan "${name}" {\n  units mm\n  paper A3 landscape\n  scale 1:100\n${rooms.map((r) => `  ${r}\n`).join("")}${tail}}\n`;
+  /** The same rooms in both orders: no overprint in either, and the same labels. */
+  const bothOrders = (name: string, rooms: string[], tail?: string) => {
+    const ab = plan(name, rooms, tail);
+    const ba = plan(name, [...rooms].reverse(), tail);
+    expect(overprints(ab), "as written").toEqual([]);
+    expect(overprints(ba), "reversed").toEqual([]);
+    expect(drawnAs(ba)).toEqual(drawnAs(ab));
+  };
+
+  it("a room with no name keeps its floor (S1 a)", () => {
+    bothOrders("unnamed", [
+      "room id=a at (0,0) size 500x3000 uses storage",
+      'room id=b at (500,0) size 900x3000 label "Bath" uses bath',
+      'room id=c at (1400,0) size 3000x3000 label "Bedroom" uses bedroom',
+    ]);
+  });
+
+  it("a name too wide for its room at every height keeps its floor (S1 b)", () => {
+    bothOrders("wide", [
+      'room id=a at (0,0) size 650x2400 label "Wardrobe" uses storage',
+      'room id=b at (650,0) size 900x2400 label "Bath" uses bath',
+      'room id=c at (1550,0) size 3000x2400 label "Bedroom" uses bedroom',
+    ]);
+  });
+
+  it("an authored label is an obstacle from the first turn (S2)", () => {
+    bothOrders("pin", [
+      'room id=a at (0,0) size 2000x3000 label "Bath" uses bath',
+      'room id=b at (2000,0) size 3000x3000 label "Living Room" at (2300,1700) uses living',
+    ]);
+  });
+
+  it("a room's label and a surface's alike take the same turns in either order (N1)", () => {
+    bothOrders(
+      "tie",
+      [
+        'room id=a at (0,0) size 4000x3000 label "Deck" uses living',
+        'outdoor deck id=o at (0,0) size 4000x3000 label "Deck"',
+        'room id=c at (4000,0) size 3000x3000 label "Bath" uses bath',
+      ],
+      "",
+    );
+  });
+
+  it("the same plan moved by a decimal offset draws the same labels relative to it (S4)", () => {
+    const strip = (dx: number, dy: number) => {
+      const xs = [0, 1200, 1950, 4100, 6250];
+      const names = ["Den", "MASTER BEDROOM", "MASTER BEDROOM", "Accessible WC"];
+      const p = (x: number, y: number) => `(${x + dx},${y + dy})`;
+      const rooms = names.map(
+        (name, k) =>
+          `room id=r${k} polygon ${p(xs[k]!, 0)} ${p(xs[k + 1]!, 0)} ${p(xs[k + 1]!, 2350)} ${p(xs[k]!, 2350)} label "${name}" uses storage`,
+      );
+      const tables = [
+        [1400, 1200, 350, 550],
+        [3000, 350, 750, 1500],
+        [4200, 700, 750, 400],
+      ].map(([x, y, w, h]) => `furniture table at ${p(x!, y!)} size ${w}x${h}`);
+      return `plan "t" {\n  units mm\n  paper A2 landscape\n  scale 1:100\n${[...rooms, ...tables].map((l) => `  ${l}\n`).join("")}}\n`;
+    };
+    expect(drawnAs(strip(1234.7, 777.3), 1234.7, 777.3)).toEqual(drawnAs(strip(0, 0)));
+    // Ten kilometres out, where a coordinate carries about 1e-9 mm of rounding: the order is read on a
+    // micrometre grid, so the noise never decides a turn (#964 round 2).
+    expect(drawnAs(strip(10000001.2, 9000000.9), 10000001.2, 9000000.9)).toEqual(drawnAs(strip(0, 0)));
+  });
+});
+
+/** The corpus plans whose labels depended on the order of the source until card AL3a (the owner-
+ *  approved `ORDER_EXCUSED` list, now empty and gone). */
+const FORMERLY_EXCUSED = [
+  "test/fixtures/chain30.arch",
+  "test/fixtures/dense-office.arch",
+  "test/fixtures/star30.arch",
+  "test/plans/plan-soundness/audits/first-contact-plans/2026-10-24-rerun/2-house.arch",
+  "test/plans/plan-soundness/audits/first-contact-plans/2026-10-26-walls-first/6-clinic.arch",
+];
 
 describe("the count", () => {
   it("shrinks every label of an honest plan of many rooms", () => {
