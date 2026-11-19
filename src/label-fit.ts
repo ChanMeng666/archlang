@@ -1181,9 +1181,10 @@ export function fitLabels(
       if (!ok) return false;
       // The walls it crosses: only those between the two floors, and off the floors it runs only
       // inside one of those (ADR 0035 §2: never out of the building, never through a third wall). A
-      // wall band is between them when it runs along each (grown by a millimetre, so rooms drawn to a
-      // wall's faces count) for more than its thickness: a wall that meets one of them only at a
-      // corner is that room's own, and the ground beyond the corner is outside.
+      // wall band is between them when each floor overlaps the band's box, grown by a millimetre (so
+      // rooms drawn to a wall's faces count), by more than t², t the band's thickness: a wall that
+      // meets one of them only at a corner overlaps it by about (t/2)², so it is that room's own,
+      // and the ground beyond the corner is outside.
       const ownRing = groups[own]!.ring;
       const hostRing = groups[host]!.ring;
       const between: BBox[] = [];
@@ -1198,10 +1199,14 @@ export function fitLabels(
       });
       if (!ok) return false;
       work += 2 * (ownRing.length + hostRing.length);
-      for (const p of segmentPieces(a, b, [ownRing, hostRing])) {
+      // A piece off both floors lies wholly inside one such wall: both its ends in the same band (by a
+      // millimetre), not only its middle, so it cannot run along the wall out past the floors' ends.
+      const inside = (q: Point, w: BBox): boolean =>
+        q.x >= w.x - 1 && q.x <= w.x + w.w + 1 && q.y >= w.y - 1 && q.y <= w.y + w.h + 1;
+      for (const { from, to, mid } of segmentPieces(a, b, [ownRing, hostRing])) {
         work++;
-        if (pointInPolygon(p.x, p.y, ownRing) || pointInPolygon(p.x, p.y, hostRing)) continue;
-        if (!between.some((w) => p.x >= w.x && p.x <= w.x + w.w && p.y >= w.y && p.y <= w.y + w.h)) return false;
+        if (pointInPolygon(mid.x, mid.y, ownRing) || pointInPolygon(mid.x, mid.y, hostRing)) continue;
+        if (!between.some((w) => inside(from, w) && inside(to, w) && inside(mid, w))) return false;
       }
       return true;
     }
@@ -1306,11 +1311,15 @@ function segmentsCross(a: Point, b: Point, c: Point, d: Point): boolean {
 }
 
 /**
- * The segment `a`–`b` cut where it meets an edge of any of `rings`: the middle of each piece, in
- * order from `a`. A piece's middle is on one ring or off all of them, so a test of each says where
- * the whole segment runs.
+ * The segment `a`–`b` cut where it meets an edge of any of `rings`: each piece's two ends and its
+ * middle, in order from `a`. A piece is on one ring or off all of them, so a test of its middle says
+ * where the whole piece runs.
  */
-function segmentPieces(a: Point, b: Point, rings: readonly (readonly Point[])[]): Point[] {
+function segmentPieces(
+  a: Point,
+  b: Point,
+  rings: readonly (readonly Point[])[],
+): { from: Point; to: Point; mid: Point }[] {
   const dx = b.x - a.x;
   const dy = b.y - a.y;
   const ts = [0, 1];
@@ -1327,11 +1336,11 @@ function segmentPieces(a: Point, b: Point, rings: readonly (readonly Point[])[])
       if (t > 0 && t < 1 && u >= 0 && u <= 1) ts.push(t);
     }
   ts.sort((p, q) => p - q);
-  const out: Point[] = [];
+  const at = (t: number): Point => ({ x: a.x + dx * t, y: a.y + dy * t });
+  const out: { from: Point; to: Point; mid: Point }[] = [];
   for (let k = 1; k < ts.length; k++) {
     if (!(ts[k]! > ts[k - 1]!)) continue;
-    const m = (ts[k - 1]! + ts[k]!) / 2;
-    out.push({ x: a.x + dx * m, y: a.y + dy * m });
+    out.push({ from: at(ts[k - 1]!), to: at(ts[k]!), mid: at((ts[k - 1]! + ts[k]!) / 2) });
   }
   return out;
 }

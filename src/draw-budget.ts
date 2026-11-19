@@ -4,15 +4,19 @@
  * {@link MAX_DRAW_UNITS} is one `E_DRAWING_LIMIT` instead of a drawing that exhausts memory.
  *
  * The estimate is a tight UPPER bound, kind by kind. Each element contributes its kind's
- * `ElementDef.drawCost` (an upper bound on what its `render()` emits: a room 3, a door 5, a
+ * `ElementDef.drawCost` (an upper bound on what its `render()` emits: a room 3 (4 with a floor finish, and 2 more, a leader's line and dot, when it is named and
+ * its label is not pinned), a door 5, a
  * run its treads, a fixture its own glyph, counted) plus one unit per point its `bounds()`
  * reports (the vertices a polygon or a wall path carries, which the primitive count alone
  * does not see). Each storey adds what the plan-wide passes draw: the `dims auto` chains
  * (counted by the same `synthDims` the drawing calls), the `axes` bubbles, the lot line and
  * the margin tables. A kind with no `drawCost` (a plugin's) is estimated at
  * {@link DEFAULT_DRAW_COST}. `test/drawing-budget.test.ts` holds the estimate at or above what
- * is drawn for every kind, every fixture category and every corpus plan, and at most four
- * times it over the corpus, so it can neither undercount nor drift loose.
+ * is drawn for every kind, every fixture category and every corpus plan, and at most 4.25 times
+ * it over the corpus, so it can neither undercount nor drift loose. It was four until card AL3b
+ * charged each named room whose label is not pinned the line and dot of a leader, which it draws
+ * only when its label is led off its floor; the owner approved 4.25 on 2026-11-19. A looser
+ * over-estimate never lets a drawing past the budget: it only refuses a plan earlier.
  *
  * Only `compile()` draws, so only `compile()` checks it (`src/pipeline.ts`); `describe()` and
  * `lint()` draw nothing and are unaffected.
@@ -76,7 +80,8 @@ export const DEFAULT_DRAW_COST = 72;
  * 1.1 KB before collection (cabinets), so 300,000 units hold under 0.2 GB and peak under
  * about 0.35 GB: the worst case stays under 0.5 GB with room for the drawing's own chrome.
  * A real building is far inside it: the 24-storey tower of 200 flats a floor with a wall and a
- * door each is 108,120 units (29,352 primitives drawn), the corpus's largest plan a few
+ * door each is 117,720 units (29,352 primitives drawn; 108,120 before card AL3b charged each named,
+ * unpinned room a leader's line and dot), the corpus's largest plan a few
  * thousand.
  */
 export const MAX_DRAW_UNITS = 300_000;

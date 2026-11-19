@@ -217,7 +217,7 @@ function checkLeaders(name: string, ir: ResolvedPlan, scene: Scene): string[] {
         false,
       );
     }
-    // Off the two floors, only through a wall between them (one touching both): never out of the
+    // Off the two floors, only through a gap between them no wider than a wall: never out of the
     // building, never through a third room's wall.
     expect(
       lineOffFloors(ir, l.a, l.b, ringOf(room), ringOf(host)),
@@ -406,6 +406,24 @@ describe("what it never does", () => {
 `;
     const [two] = storeys(corner) as [{ ir: ResolvedPlan; scene: Scene }];
     checkLeaders("plain-grid 223 #125", two.ir, two.scene);
+
+    // The AL3b red team's second round, mid2: the wall between the two rooms runs past both, and the
+    // line's piece off the floors had its middle in that wall and its end in the open ground beside it.
+    const mid2 = `plan "mid2" {
+  units mm
+  paper A2 landscape
+  scale 1:50
+  wall id=w interior thickness 200 { (3000,0) (3000,6000) }
+  wall id=n exterior thickness 200 { (1900,0) (3000,0) }
+  wall id=e exterior thickness 200 { (1900,0) (1900,2000) }
+  room id=a at (1900,0) size 1100x2000 label "Store" uses storage
+  furniture wc at (2050,150) size 800x1700
+  room id=b at (3000,2600) size 3000x3400 label "Hall" uses circulation
+  wall id=s exterior thickness 200 { (3000,6000) (6000,6000) (6000,2600) }
+}
+`;
+    const [three] = storeys(mid2) as [{ ir: ResolvedPlan; scene: Scene }];
+    checkLeaders("mid2", three.ir, three.scene);
   });
 
   it("chooses between two floors that hold a place by the plan, not by the order of the source", () => {

@@ -1,12 +1,12 @@
 {
-  "_reason": "AL3b leaders on e7083747: a named unpinned room is charged 2 more drawing units (the leader's line and dot), a door that names no kind 2 fewer (its one leaf)",
+  "_reason": "AL3b leaders on e7083747: a named room whose label is not pinned is charged 2 more drawing units (the leader's line and dot)",
   "_tolerance": 0.1,
   "_totalTolerance": 0.03,
   "_floor": 8,
   "rows": {
     "examples/accessible.arch": {
       "steps": 221,
-      "drawUnits": 123,
+      "drawUnits": 125,
       "elements": 14,
       "leafDoorPairs": 0,
       "boundaryRunTests": 4,
@@ -17,7 +17,7 @@
     },
     "examples/aquarium.arch": {
       "steps": 3350,
-      "drawUnits": 1748,
+      "drawUnits": 1752,
       "elements": 46,
       "leafDoorPairs": 0,
       "boundaryRunTests": 41,
@@ -28,7 +28,7 @@
     },
     "examples/attached.arch": {
       "steps": 264,
-      "drawUnits": 110,
+      "drawUnits": 114,
       "elements": 13,
       "leafDoorPairs": 0,
       "boundaryRunTests": 4,
@@ -39,7 +39,7 @@
     },
     "examples/bungalow.arch": {
       "steps": 777,
-      "drawUnits": 934,
+      "drawUnits": 940,
       "elements": 46,
       "leafDoorPairs": 0,
       "boundaryRunTests": 67,
@@ -50,7 +50,7 @@
     },
     "examples/classroom-block.arch": {
       "steps": 2413,
-      "drawUnits": 1561,
+      "drawUnits": 1579,
       "elements": 90,
       "leafDoorPairs": 0,
       "boundaryRunTests": 57,
@@ -61,7 +61,7 @@
     },
     "examples/clinic.arch": {
       "steps": 2066,
-      "drawUnits": 2327,
+      "drawUnits": 2333,
       "elements": 96,
       "leafDoorPairs": 0,
       "boundaryRunTests": 152,
@@ -72,7 +72,7 @@
     },
     "examples/corner-cafe.arch": {
       "steps": 1394,
-      "drawUnits": 1903,
+      "drawUnits": 1917,
       "elements": 65,
       "leafDoorPairs": 0,
       "boundaryRunTests": 46,
@@ -83,7 +83,7 @@
     },
     "examples/courtyard-family.arch": {
       "steps": 9359,
-      "drawUnits": 4366,
+      "drawUnits": 4386,
       "elements": 90,
       "leafDoorPairs": 0,
       "boundaryRunTests": 123,
@@ -94,7 +94,7 @@
     },
     "examples/courtyard-house.arch": {
       "steps": 1277,
-      "drawUnits": 2734,
+      "drawUnits": 2748,
       "elements": 74,
       "leafDoorPairs": 0,
       "boundaryRunTests": 96,
@@ -105,7 +105,7 @@
     },
     "examples/furnished-flat.arch": {
       "steps": 969,
-      "drawUnits": 908,
+      "drawUnits": 920,
       "elements": 69,
       "leafDoorPairs": 0,
       "boundaryRunTests": 52,
@@ -116,7 +116,7 @@
     },
     "examples/gallery-l.arch": {
       "steps": 294,
-      "drawUnits": 265,
+      "drawUnits": 267,
       "elements": 15,
       "leafDoorPairs": 0,
       "boundaryRunTests": 8,
@@ -127,7 +127,7 @@
     },
     "examples/garden-house.arch": {
       "steps": 3884,
-      "drawUnits": 4665,
+      "drawUnits": 4681,
       "elements": 115,
       "leafDoorPairs": 0,
       "boundaryRunTests": 60,
@@ -138,7 +138,7 @@
     },
     "examples/garden-loft.arch": {
       "steps": 411,
-      "drawUnits": 432,
+      "drawUnits": 438,
       "elements": 27,
       "leafDoorPairs": 0,
       "boundaryRunTests": 14,
@@ -160,7 +160,7 @@
     },
     "examples/hillside-villa.arch": {
       "steps": 5306,
-      "drawUnits": 5894,
+      "drawUnits": 5926,
       "elements": 152,
       "leafDoorPairs": 0,
       "boundaryRunTests": 206,
@@ -171,7 +171,7 @@
     },
     "examples/imports.arch": {
       "steps": 261,
-      "drawUnits": 86,
+      "drawUnits": 88,
       "elements": 8,
       "leafDoorPairs": 0,
       "boundaryRunTests": 0,
@@ -182,7 +182,7 @@
     },
     "examples/knob-flat.arch": {
       "steps": 965,
-      "drawUnits": 376,
+      "drawUnits": 382,
       "elements": 20,
       "leafDoorPairs": 0,
       "boundaryRunTests": 30,
@@ -193,7 +193,7 @@
     },
     "examples/laneway-house.arch": {
       "steps": 535,
-      "drawUnits": 527,
+      "drawUnits": 531,
       "elements": 29,
       "leafDoorPairs": 0,
       "boundaryRunTests": 14,
@@ -204,7 +204,7 @@
     },
     "examples/library.arch": {
       "steps": 2687,
-      "drawUnits": 3581,
+      "drawUnits": 3595,
       "elements": 133,
       "leafDoorPairs": 0,
       "boundaryRunTests": 110,
@@ -215,7 +215,7 @@
     },
     "examples/materials.arch": {
       "steps": 687,
-      "drawUnits": 1425,
+      "drawUnits": 1433,
       "elements": 38,
       "leafDoorPairs": 0,
       "boundaryRunTests": 44,
@@ -226,7 +226,7 @@
     },
     "examples/museum-wing.arch": {
       "steps": 291,
-      "drawUnits": 310,
+      "drawUnits": 312,
       "elements": 17,
       "leafDoorPairs": 0,
       "boundaryRunTests": 12,
@@ -237,7 +237,7 @@
     },
     "examples/museum-wings.arch": {
       "steps": 781,
-      "drawUnits": 940,
+      "drawUnits": 948,
       "elements": 42,
       "leafDoorPairs": 0,
       "boundaryRunTests": 42,
@@ -248,7 +248,7 @@
     },
     "examples/museum.arch": {
       "steps": 1878,
-      "drawUnits": 1313,
+      "drawUnits": 1329,
       "elements": 105,
       "leafDoorPairs": 0,
       "boundaryRunTests": 130,
@@ -259,7 +259,7 @@
     },
     "examples/one-room.arch": {
       "steps": 63,
-      "drawUnits": 52,
+      "drawUnits": 54,
       "elements": 4,
       "leafDoorPairs": 0,
       "boundaryRunTests": 0,
@@ -270,7 +270,7 @@
     },
     "examples/parametric.arch": {
       "steps": 1015,
-      "drawUnits": 175,
+      "drawUnits": 181,
       "elements": 20,
       "leafDoorPairs": 0,
       "boundaryRunTests": 12,
@@ -281,7 +281,7 @@
     },
     "examples/practice-office.arch": {
       "steps": 1001,
-      "drawUnits": 1335,
+      "drawUnits": 1353,
       "elements": 55,
       "leafDoorPairs": 0,
       "boundaryRunTests": 64,
@@ -292,7 +292,7 @@
     },
     "examples/relational.arch": {
       "steps": 1020,
-      "drawUnits": 285,
+      "drawUnits": 291,
       "elements": 26,
       "leafDoorPairs": 0,
       "boundaryRunTests": 32,
@@ -303,7 +303,7 @@
     },
     "examples/remodel.arch": {
       "steps": 1293,
-      "drawUnits": 1473,
+      "drawUnits": 1483,
       "elements": 37,
       "leafDoorPairs": 1,
       "boundaryRunTests": 41,
@@ -314,7 +314,7 @@
     },
     "examples/sheet-notes.arch": {
       "steps": 192,
-      "drawUnits": 453,
+      "drawUnits": 457,
       "elements": 12,
       "leafDoorPairs": 0,
       "boundaryRunTests": 11,
@@ -325,7 +325,7 @@
     },
     "examples/studio.arch": {
       "steps": 484,
-      "drawUnits": 241,
+      "drawUnits": 247,
       "elements": 28,
       "leafDoorPairs": 0,
       "boundaryRunTests": 23,
@@ -336,7 +336,7 @@
     },
     "examples/terrace-row.arch": {
       "steps": 5198,
-      "drawUnits": 936,
+      "drawUnits": 960,
       "elements": 110,
       "leafDoorPairs": 0,
       "boundaryRunTests": 232,
@@ -347,7 +347,7 @@
     },
     "examples/themed.arch": {
       "steps": 256,
-      "drawUnits": 118,
+      "drawUnits": 122,
       "elements": 13,
       "leafDoorPairs": 0,
       "boundaryRunTests": 4,
@@ -358,7 +358,7 @@
     },
     "examples/tiny-house.arch": {
       "steps": 485,
-      "drawUnits": 274,
+      "drawUnits": 276,
       "elements": 29,
       "leafDoorPairs": 0,
       "boundaryRunTests": 5,
@@ -369,7 +369,7 @@
     },
     "examples/townhouse.arch": {
       "steps": 3824,
-      "drawUnits": 1226,
+      "drawUnits": 1242,
       "elements": 72,
       "leafDoorPairs": 0,
       "boundaryRunTests": 59,
@@ -380,7 +380,7 @@
     },
     "examples/transit-hall.arch": {
       "steps": 2678,
-      "drawUnits": 1990,
+      "drawUnits": 1998,
       "elements": 116,
       "leafDoorPairs": 0,
       "boundaryRunTests": 125,
@@ -391,7 +391,7 @@
     },
     "examples/turning-stair.arch": {
       "steps": 1186,
-      "drawUnits": 484,
+      "drawUnits": 490,
       "elements": 16,
       "leafDoorPairs": 0,
       "boundaryRunTests": 8,
@@ -402,7 +402,7 @@
     },
     "examples/two-bed.arch": {
       "steps": 1312,
-      "drawUnits": 335,
+      "drawUnits": 343,
       "elements": 31,
       "leafDoorPairs": 0,
       "boundaryRunTests": 45,
@@ -413,7 +413,7 @@
     },
     "examples/two-storey.arch": {
       "steps": 1822,
-      "drawUnits": 756,
+      "drawUnits": 768,
       "elements": 39,
       "leafDoorPairs": 0,
       "boundaryRunTests": 28,
@@ -424,7 +424,7 @@
     },
     "bench:BALANCED": {
       "steps": 15880,
-      "drawUnits": 7100,
+      "drawUnits": 7500,
       "elements": 1000,
       "leafDoorPairs": 0,
       "boundaryRunTests": 0,
@@ -435,7 +435,7 @@
     },
     "bench:OPENING_HEAVY": {
       "steps": 13872,
-      "drawUnits": 6736,
+      "drawUnits": 7336,
       "elements": 1004,
       "leafDoorPairs": 0,
       "boundaryRunTests": 0,

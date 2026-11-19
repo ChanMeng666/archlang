@@ -11,7 +11,9 @@
  * (a loose bound refuses real buildings: a 24-storey tower of 200 flats a floor draws 29,352
  * primitives and must compile). So the suite holds it from both sides: for every kind's
  * shapes, every fixture category and every corpus plan the primitives drawn never exceed the
- * estimate, and over the corpus the estimate's primitive part is at most four times them.
+ * estimate, and over the corpus the estimate's primitive part is at most 4.25 times them (four until
+ * card AL3b charged each named room whose label is not pinned a leader's line and dot; owner-approved
+ * on 2026-11-19).
  */
 import { corpusFiles } from "./helpers/corpus.js";
 import { worldFor } from "./helpers/world.js";
@@ -244,7 +246,7 @@ suite("the estimate is an upper bound on what is drawn", () => {
     expect(sited.drawn).toBeLessThanOrEqual(sited.primitives);
   }, 120_000);
 
-  it("over the corpus: never under what is drawn, never more than four times it, far below the budget", () => {
+  it("over the corpus: never under what is drawn, never more than 4.25 times it, far below the budget", () => {
     let max = 0;
     let n = 0;
     let loosest = 0;
@@ -253,7 +255,11 @@ suite("the estimate is an upper bound on what is drawn", () => {
       expect(m.errors, p).not.toContain("E_DRAWING_LIMIT");
       if (m.drawn === 0) continue; // a plan with an error draws nothing to compare against
       expect(m.drawn, p).toBeLessThanOrEqual(m.primitives);
-      expect(m.primitives, p).toBeLessThanOrEqual(4 * m.drawn);
+      // 4.25, owner-approved on 2026-11-19 for card AL3b: a named room whose label is not pinned is
+      // charged the line and dot of a leader it draws only when its label is led off its floor, so the
+      // loosest plan (examples/remodel.arch) went from 3.99 to 4.01. A looser over-estimate never lets a
+      // drawing past the budget; it only refuses a plan earlier.
+      expect(m.primitives, p).toBeLessThanOrEqual(4.25 * m.drawn);
       loosest = Math.max(loosest, m.primitives / m.drawn);
       max = Math.max(max, m.estimate);
       n++;
