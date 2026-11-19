@@ -32,8 +32,10 @@
  *      All of it is in `scripts/gate-select.mjs`.
  *
  * Flags: `--base <ref>` (default origin/main), `--max <n>` (default 20), `--pins <secs>` (default 30),
- * `--fix` (let Biome write its fixes), `--no-drift`, `--no-tests`, `--list` (print the plan, run
- * nothing). One child process at a time. Exit code is the first failing step's.
+ * `--fix` (let Biome write its fixes), `--no-drift`, `--no-tests`, `--digests` (last, also run
+ * `npm run digest:preview`: every pinned byte-identity row, without vitest, minutes not seconds; card TR12),
+ * `--list` (print the plan, run nothing). Without `--digests`, a change under `src/` prints the line that
+ * names it. One child process at a time. Exit code is the first failing step's.
  */
 import { execFileSync, spawnSync } from "node:child_process";
 import { existsSync } from "node:fs";
@@ -197,6 +199,21 @@ if (!flag("--no-tests")) {
       env: { FC_SCALE: process.env.FC_SCALE ?? "0.25" },
     });
   }
+}
+
+// The byte-identity rows the corpus-pin budget leaves to CI (card TR12): opt-in, as it takes minutes.
+const srcCodeChanged = changed.some((f) => f.startsWith("src/") && CODE.test(f));
+if (flag("--digests")) {
+  steps.push({
+    name: "digest:preview (every pinned digest row, no vitest)",
+    cmd: "npm",
+    args: ["run", "-s", "digest:preview"],
+  });
+} else if (srcCodeChanged) {
+  guardNotes.push(
+    "a src/ change can move pinned digest rows this gate does not run: `npm run check:quick -- --digests` " +
+      "(or `npm run digest:preview`) lists every moved row before CI does",
+  );
 }
 
 console.log(`check:quick: ${changed.length} changed files against ${BASE} (${mergeBase.slice(0, 8)})`);

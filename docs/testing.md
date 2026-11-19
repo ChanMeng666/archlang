@@ -155,6 +155,12 @@ table literal. Record the measured tree and the patch in the baseline's header.
   The "before" side is a `git archive` of the integration tip, never a rebuilt working tree; plant a
   change first, and cross-check with a differently-shaped second measurement.
 - **That corpus is not every plan a digest pins.** Inline plan tables in `test/*.ts` are outside it, and `test/import-module-lets.test.ts` keeps its own table. Evaluation steps and `compile().scene` are payloads too: K1 pins steps. Run every test that hashes output before calling a change byte-identical.
+- **`npm run digest:preview` runs every pinned row, without vitest.** It loads each digest test file (a
+  `test/` file that imports the core and holds a 64-hex pin, or imports a module that does) with `vitest`
+  resolved to a stand-in, so the digest bodies, inline tables and pins are the tests' own, and lists each
+  moved row with its pinned and new hex; a table loop reports every row, not the first. It takes about
+  8 minutes in one process (under 5 with `--jobs 2`, on an idle machine); `check:quick -- --digests` runs it
+  last. It is a preview of CI, not a "before" side: a listed row is still a finding to explain.
 - **Zero corpus movement is not evidence the new path ran.** Instrument it with a counter, show which
   examples reach it, then remove the counter.
 
