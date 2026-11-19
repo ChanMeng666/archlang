@@ -172,21 +172,22 @@ describe("the width a room's text is read at against a symbol", () => {
 
   it("clears the witness's two WCs, which nothing read before", () => {
     const src = readFileSync("test/fixtures/dense-office.arch", "utf8");
-    const over = overSymbols(src);
-    expect(over.filter((o) => o.room === "r_wc1" || o.room === "r_wc2")).toEqual([]);
-    expect([...new Set(over.map((o) => o.value))].sort()).toEqual(["Kitchenette / Break", "Store / IT"]);
-    expect(
-      lint(src)
-        .filter((d) => d.code === OVERLAP)
-        .map((d) => diagnosticOverprint(d)!.subject.text)
-        .sort(),
-    ).toEqual(["Kitchenette / Break", "Store / IT"]);
+    // Its other two names over fixtures are led into the corridor since card AL3b, so none is left.
+    expect(overSymbols(src)).toEqual([]);
+    expect(lint(src).filter((d) => d.code === OVERLAP)).toEqual([]);
   });
 });
 
 describe("over the corpus", () => {
   it("every room text over a symbol at the wider width is reported as over that symbol", () => {
-    const files = [...corpusFiles(), ...walkFiles("test/plans").map((p) => p.replace(/\\/g, "/"))];
+    // The defect corpus too (card AL3b): the leader step clears most of the corpus's labels over a
+    // symbol, and its annotation-collision plans keep theirs (pinned, or with no clear place), so the
+    // count below still reads more than ten pairs: 11 when it was set (8 in the corpus and test/plans).
+    const files = [
+      ...corpusFiles(),
+      ...walkFiles("test/plans").map((p) => p.replace(/\\/g, "/")),
+      ...walkFiles("test/defect-corpus").map((p) => p.replace(/\\/g, "/")),
+    ];
     let pairs = 0;
     for (const file of files) {
       const src = readFileSync(file, "utf8");

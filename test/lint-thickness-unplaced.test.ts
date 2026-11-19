@@ -15,7 +15,7 @@
 
 import { readFileSync } from "node:fs";
 import { describe as suite, expect, it } from "vitest";
-import { compile, type Diagnostic, diagnosticOverprint, lint } from "../src/index.js";
+import { compile, type Diagnostic, lint } from "../src/index.js";
 import { resolvePlan } from "../src/analyze.js";
 import { autoDimCount, autoDimensions, drawnAutoDims, toScene } from "../src/scene-build.js";
 import { dimTextPrim } from "../src/elements/dim.js";
@@ -191,16 +191,16 @@ function audit(src: string): { over: string[]; laidOut: number; drawn: number; u
 }
 
 suite("a figure over a label is taken elsewhere", () => {
-  it("the witness: the 200 figure leaves the boardroom for the south wall, the next-longest 200 run", () => {
+  it("the witness: the 200 figure keeps its first station once the kitchenette's name is led away", () => {
     const at = figure(sceneOf(WITNESS), "200")!;
-    // The longest 200 run is the north wall (y 0); the next is the south wall (y 12500), and the
-    // figure is written into the open-plan floor beside it, between its windows.
-    expect(at.y).toBeGreaterThan(11000);
-    expect(at.y).toBeLessThan(12500);
-    expect(at.x).toBeGreaterThan(11500);
-    expect(at.x).toBeLessThan(14500);
-    const subjects = of(WITNESS, OVERLAP).map((d) => diagnosticOverprint(d)?.subject.kind);
-    expect(subjects).toEqual(["room-label", "room-label"]);
+    // The longest 200 run is the north wall (y 0), and the figure is written into the boardroom
+    // beside it. The kitchenette's name, which ran past its wall over that station, now stands in
+    // the corridor at the end of a leader (card AL3b), so the figure meets no label and is not moved
+    // (the move itself: CROWDED, below).
+    expect(at.x).toBe(8325);
+    expect(at.y).toBeGreaterThan(0);
+    expect(at.y).toBeLessThan(3000);
+    expect(of(WITNESS, OVERLAP)).toEqual([]);
     expect(of(WITNESS, UNPLACED)).toEqual([]);
   });
 

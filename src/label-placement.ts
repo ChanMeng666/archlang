@@ -29,7 +29,8 @@
  * name wider than its room may slide along the room, off a piece, and cannot walk out through a
  * wall, which a flat {@link W_OUTSIDE} let the search trade for less overlap (#367). A room's label
  * this pass cannot clear goes to `fitLabels` (`src/label-fit.ts`), which runs next and may shrink
- * it; what is left over something after that is `W_ANNOTATION_OVERLAP`'s to report. That rule
+ * it, and whose leader step may then lead a label it still cannot clear off its floor (card AL3b,
+ * ADR 0035); what is left over something after that is `W_ANNOTATION_OVERLAP`'s to report. That rule
  * reads rooms only, so an `outdoor` surface's label is not reported.
  *
  * ### Determinism, and the order of the source
@@ -162,7 +163,7 @@ export const W_DISTANCE = 4;
  * shrink a name that a full-size place one lattice step away holds clear. Every other text is its
  * {@link primBBox} exactly.
  */
-function labelBox(prim: ScenePrim): BBox | null {
+export function labelBox(prim: ScenePrim): BBox | null {
   const b = primBBox(prim);
   if (!b || prim.t !== "text" || prim.rotate !== undefined) return b;
   const w = symbolExtent(prim).w;

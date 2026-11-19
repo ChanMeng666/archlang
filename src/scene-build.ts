@@ -53,7 +53,15 @@ import { type Box, boxesMeet, type TextBox, textBox } from "./text-layout.js";
 import { dimTextPrim } from "./elements/dim.js";
 import type { LabelGroup } from "./label-placement.js";
 import type { ElementNodes } from "./label-fit.js";
-import { fitLabels, fitWork, isSymbolElement, sectorOf, shapesOf } from "./label-fit.js";
+import {
+  type DrawnLeader,
+  fitLabels,
+  fitWork,
+  isSymbolElement,
+  sectorOf,
+  segmentEntersRing,
+  shapesOf,
+} from "./label-fit.js";
 import { COLLIDE_MIN, meanExtent, relocateLabels, underLabels, wallBands, wrapLabels } from "./label-placement.js";
 import { GridIndex } from "./geometry/grid-index.js";
 import type { BBox } from "./geometry/rect.js";
@@ -202,6 +210,29 @@ export function drawnAutoDims(scene: object): DrawnAutoDims | undefined {
 export function carryDrawnAutoDims(from: object, to: object, copy: (laid: DrawnAutoDims) => DrawnAutoDims): void {
   const laid = DRAWN_AUTO_DIMS.get(from);
   if (laid) DRAWN_AUTO_DIMS.set(to, copy(laid));
+}
+
+/** {@link drawnLeaders} beside the Scene that drew them: data kept off the Scene, so its bytes are unchanged. */
+const DRAWN_LEADERS = new WeakMap<object, readonly DrawnLeader[]>();
+
+/**
+ * The room labels `scene` led off their floors (card AL3b, `fitLabels`' leader step): each room, the
+ * room whose floor its label stands on, and the line. `W_ANNOTATION_OVERLAP` judges a led label on
+ * the floor it stands on, never by matching coordinates. `undefined` for an object no
+ * {@link toScene} drew; a Scene that led nothing has an empty list.
+ */
+export function drawnLeaders(scene: object): readonly DrawnLeader[] | undefined {
+  return DRAWN_LEADERS.get(scene);
+}
+
+/** Carry {@link drawnLeaders} from a Scene to a copy of it (`src/scene-memo.ts`), through `copy`. */
+export function carryDrawnLeaders(
+  from: object,
+  to: object,
+  copy: (led: readonly DrawnLeader[]) => readonly DrawnLeader[],
+): void {
+  const led = DRAWN_LEADERS.get(from);
+  if (led) DRAWN_LEADERS.set(to, copy(led));
 }
 
 /**
@@ -919,6 +950,7 @@ function restationThickness(
   drawn: readonly ElementNodes[],
   figures: readonly DrawnFigure[],
   budget: number,
+  leaders: readonly DrawnLeader[] = [],
 ): { dims: (RDim | null)[]; changed: boolean; unplaced: UnplacedThickness[] } {
   const out: (RDim | null)[] = figures.map((f) => f.dm);
   const unplaced: UnplacedThickness[] = [];
@@ -1020,6 +1052,11 @@ function restationThickness(
         if (j === k || !o) continue;
         if (!spend(1)) return null;
         if (over(c, o.rect, o.box)) return false;
+      }
+      // A label's leader (card AL3b): a line, so no ink above holds it.
+      for (const l of leaders) {
+        if (!spend(c.rect.length)) return null;
+        if (segmentEntersRing(l.a, l.b, c.rect)) return false;
       }
       return true;
     };
@@ -1543,7 +1580,10 @@ function drawStorey(
   // reads the storey after the demolition, as `W_ANNOTATION_OVERLAP` does.
   wrapLabels(nodes, labelGroups, ir, sizes);
   relocateLabels(nodes, labelGroups, ir, sizes, work);
-  const fitSpent = fitLabels(nodes, labelGroups, drawnElements, plan, sizes);
+  // A label the fit could not clear may leave its floor, with a leader (card AL3b), on a count of
+  // its own; what it led is kept beside the Scene for the rule.
+  const leaders: DrawnLeader[] = [];
+  const fitSpent = fitLabels(nodes, labelGroups, drawnElements, plan, sizes, leaders, work);
 
   // A wall-thickness figure `dims auto` wrote over a room's name or area figure, as the labels
   // finally stand, moves to a place clear of everything drawn so far, or is not drawn (card AL5,
@@ -1567,6 +1607,7 @@ function drawStorey(
       drawnElements,
       figures,
       fitWork(plan) - fitSpent,
+      leaders,
     );
     if (placed.changed) {
       const dimCtx = ctxFor("dim");
@@ -1726,6 +1767,7 @@ function drawStorey(
   attachSceneWalls(scene, demolished.length > 0 ? [...standing, ...demolished] : ir.walls);
   attachSceneParts(scene, drawnElements, autoDims, registry);
   DRAWN_AUTO_DIMS.set(scene, { dims: autoDims.map((e) => e.el as RDim), unplaced: unplacedThickness });
+  DRAWN_LEADERS.set(scene, leaders);
   return scene;
 }
 

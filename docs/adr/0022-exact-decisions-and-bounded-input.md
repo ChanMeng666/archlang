@@ -380,7 +380,7 @@ is measured in the cited tests; the backlog holds the measurements.
 4. **One drawing budget over every storey, before rendering** (`MAX_DRAW_UNITS`, 300,000,
    `src/draw-budget.ts`; `E_DRAWING_LIMIT`, a new code because the total is across every kind,
    not one run), checked by `compile()` only: `describe()` and `lint()` draw nothing. The estimate
-   is a tight upper bound per kind: each `ElementDef` declares its `drawCost` (a room 3, a door 5,
+   is a tight upper bound per kind: each `ElementDef` declares its `drawCost` (a room 3, a door 5; since card AL3b a named room whose label is not pinned 5, with a leader's line and dot,
    a run its treads, a fixture its own glyph, counted), plus one unit per point of its `bounds()`,
    plus each storey's plan-wide passes (`dims auto`, axes, the lot line, the tables); a kind with
    none is 72. A first version charged a flat 72 per element and refused real buildings, which is

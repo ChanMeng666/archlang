@@ -450,6 +450,11 @@ const PAGE_META = [
     "ADR 34 — playground short links",
     "A short link stores a plan when the user asks for one, under a content-addressed id; the playground runs a script for /s/ and /api/ alone, static paths unchanged.",
   ],
+  [
+    "/adr/0035-room-label-leaders",
+    "ADR 35 — room label leaders",
+    "A room label no pass can clear moves to clear floor nearby, inside the building, with a leader to its room; label placement no longer depends on source order.",
+  ],
 ] as const;
 
 type PageMeta = { readonly title: string; readonly description: string };

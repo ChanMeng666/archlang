@@ -225,7 +225,8 @@ export type ScenePrim =
   /**
    * A full circle (an axis bubble). Kept distinct from `arc` so a CAD backend emits one
    * native `CIRCLE` entity rather than two half-arcs, and so a raster/vector backend
-   * needs no sweep bookkeeping. Nothing else emits one.
+   * needs no sweep bookkeeping. The only other is the dot that ends a room label's leader (card
+   * AL3b, `src/label-fit.ts`), filled.
    */
   | { t: "circle"; center: Point; r: number }
   /**

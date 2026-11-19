@@ -20,9 +20,12 @@
  * The positions are the drawn ones, from the code that draws them, never re-derived:
  *
  *  - the room labels where the Scene put them, AFTER `wrapLabels` and `relocateLabels` moved
- *    them off whatever they could and `fitLabels` shrank what still did not fit (`toScene`,
- *    `src/label-placement.ts`, `src/label-fit.ts`). A label the placer could clear is never
- *    reported; one it could not, or one the author pinned with `label … at (x,y)`, is;
+ *    them off whatever they could, `fitLabels` shrank what still did not fit, and its leader step
+ *    led what was still over something to clear floor nearby (`toScene`, `src/label-placement.ts`,
+ *    `src/label-fit.ts`, card AL3b). A label the placer could clear is never reported; one it could
+ *    not, or one the author pinned with `label … at (x,y)`, is. A label led off its floor is read
+ *    on the floor it stands on (`drawnLeaders`, kept beside the Scene), so it does not "run out of
+ *    the room"; and a text or a `dims auto` number that crosses a leader is over it;
  *  - the `dims auto` numbers the Scene was drawn with (`drawnAutoDims`, kept beside it by
  *    `toScene`) placed by {@link dimTextPrim} (the arithmetic `dim.render` letters them with), at
  *    the Scene's own `sizes`: every wall-thickness figure where card AL5's re-station left it (off
@@ -123,12 +126,12 @@ import {
 } from "../../ir.js";
 import type { ScenePrim } from "../../scene.js";
 import { BUILTIN_RUNTIME } from "../../registry.js";
-import { autoDimensions, type DrawnAutoDims, drawnAutoDims } from "../../scene-build.js";
+import { autoDimensions, type DrawnAutoDims, drawnAutoDims, drawnLeaders } from "../../scene-build.js";
 import { memoScene } from "../../scene-memo.js";
 import { dimTextPrim } from "../../elements/dim.js";
 import { titleBlockMetrics, titleRows } from "../../chrome-layout.js";
 import { drawBudgetDiagnostic } from "../../draw-budget.js";
-import { isSymbolElement, sectorOf, shapesOf } from "../../label-fit.js";
+import { type DrawnLeader, isSymbolElement, sectorOf, segmentEntersRing, shapesOf } from "../../label-fit.js";
 import { COLLIDE_MIN, meanExtent, wallBands } from "../../label-placement.js";
 import {
   type Box,
@@ -180,6 +183,8 @@ interface FurnitureLabel {
 interface DrawnStorey {
   scene: ReturnType<typeof memoScene>;
   layout: DrawnAutoDims;
+  /** The labels the drawing led off their floors (card AL3b). */
+  leaders: readonly DrawnLeader[];
 }
 
 /** The storey's {@link DrawnStorey} per `lint()` run (one context per storey), `null` past the drawing budget. */
@@ -206,7 +211,7 @@ function drawnStorey(ctx: LintContext): DrawnStorey | null {
     // Every Scene `toScene` draws carries its layout, and the memo's copy carries it over; the
     // fallback (the layout before the labels) is for a Scene from elsewhere, which none is.
     const layout = drawnAutoDims(scene) ?? { dims: autoDimensions(ir, scene.sizes, registry), unplaced: [] };
-    out = { scene, layout };
+    out = { scene, layout, leaders: drawnLeaders(scene) ?? [] };
   }
   drawnByRun.set(ctx, out);
   return out;
@@ -312,7 +317,14 @@ export const annotationOverlap: LintRule = {
         return { door, ring, box };
       }),
     );
-    const pairs = (numbers.length + labels.length) * syms.length + numbers.length * labels.length;
+    // The labels led off their floors (card AL3b): which floor each stands on, and the lines.
+    const leaders = drawn.leaders.flatMap((l) => {
+      const room = roomById.get(l.room);
+      const host = roomById.get(l.host);
+      return room && host ? [{ ...l, ledRoom: room, host }] : [];
+    });
+    const floorOf = (room: RRoom): RRoom => leaders.find((l) => l.ledRoom === room)?.host ?? room;
+    const pairs = (numbers.length + labels.length) * (syms.length + leaders.length) + numbers.length * labels.length;
     if (pairs > MAX_ANNOTATION_WORK) {
       ctx.skip("annotation-budget");
       return [];
@@ -382,6 +394,8 @@ export const annotationOverlap: LintRule = {
       nameTight: boolean;
       /** Which of the label's texts each thing is under, as each hit was found (AL6). */
       parts: Map<UnderKey, Set<LabelPart>>;
+      /** The rooms whose leader it is printed over (card AL3b). */
+      leaders: RRoom[];
     }
     const perRoom = new Map<RRoom, RoomHit>();
     const hitOn = (l: (typeof labels)[number]): RoomHit => {
@@ -397,6 +411,7 @@ export const annotationOverlap: LintRule = {
           furnitureLabels: [],
           nameTight: false,
           parts: new Map(),
+          leaders: [],
         };
         perRoom.set(l.room, e);
       }
@@ -426,6 +441,13 @@ export const annotationOverlap: LintRule = {
           mark(e, fl, l);
         }
       }
+      // Another room's leader under it (card AL3b): a line, so it crosses the text's box or not.
+      for (const ld of leaders) {
+        if (ld.ledRoom === l.room || !segmentEntersRing(ld.a, ld.b, l.text.rect)) continue;
+        const e = hitOn(l);
+        if (!e.leaders.includes(ld.ledRoom)) e.leaders.push(ld.ledRoom);
+        mark(e, ld.ledRoom, l);
+      }
     }
     // Measured whole or not at all, and merged only once it is known to be whole. A label pinned off
     // its floor is `W_ROOM_LABEL_OUTSIDE`'s report, whatever it landed on.
@@ -434,7 +456,7 @@ export const annotationOverlap: LintRule = {
       if (l.room.labelAt && !pointInRoomFloor(l.room.labelAt, l.room)) continue;
       const doors = swings.filter((s) => overSwing(l.ink, s)).map((s) => s.door);
       const wall = overWall(l.ink);
-      const outside = leaves(l.ink, l.room);
+      const outside = leaves(l.ink, floorOf(l.room));
       if (doors.length > 0 || wall || outside) fabric.push({ l, doors, wall, outside });
     }
     if (fabricWork > MAX_ANNOTATION_WORK) ctx.skip("annotation-budget");
@@ -459,6 +481,8 @@ export const annotationOverlap: LintRule = {
       hits: ResolvedElement[];
       furnitureLabels: FurnitureLabel[];
       over: typeof labels;
+      /** The rooms whose leader it crosses (card AL3b). */
+      leaders: RRoom[];
     }[] = [];
     for (const nb of numbers) {
       const hits: ResolvedElement[] = [];
@@ -471,7 +495,8 @@ export const annotationOverlap: LintRule = {
           if (over(nb.text, [fl.text.rect], fl.text.box)) onTexts.push(fl);
       }
       for (const l of labels) if (over(nb.text, [l.text.rect], l.text.box)) onLabels.push(l);
-      if (hits.length + onLabels.length > 0)
+      const onLeaders = leaders.filter((ld) => segmentEntersRing(ld.a, ld.b, nb.text.rect)).map((ld) => ld.ledRoom);
+      if (hits.length + onLabels.length + onLeaders.length > 0)
         perNumber.push({
           dm: nb.dm,
           value: wording.plain(nb.prim.value),
@@ -480,6 +505,7 @@ export const annotationOverlap: LintRule = {
           hits,
           furnitureLabels: onTexts,
           over: onLabels,
+          leaders: onLeaders,
         });
     }
     if (spent) {
@@ -501,10 +527,11 @@ export const annotationOverlap: LintRule = {
         ...e.hits.map(symbolWord),
         ...(e.wall ? ["a wall"] : []),
         ...e.doors.map((d) => `the swing of ${openingName(ctx, d)}`),
+        ...e.leaders.map((r) => `the leader of ${ctx.nameOf(r)}`),
       ]);
       const printed = things === "" ? "" : `${both ? "are" : "is"} printed over ${things}`;
       const off = e.outside ? `${printed === "" ? "" : " and "}${both ? "run" : "runs"} out of the room` : "";
-      const onlySymbols = !e.wall && e.doors.length === 0 && !e.outside;
+      const onlySymbols = !e.wall && e.doors.length === 0 && !e.outside && e.leaders.length === 0;
       const after = onlySymbols
         ? "so the label and the symbol overprint each other on the drawing."
         : printed === ""
@@ -527,6 +554,7 @@ export const annotationOverlap: LintRule = {
         ...(e.wall ? [{ kind: "wall", parts: parts("wall") } as const] : []),
         ...e.doors.map((d): OverprintItemJson => ({ kind: "door-swing", id: d.id, parts: parts(d) })),
         ...(e.outside ? [{ kind: "floor-edge", room: room.id, parts: parts("floor-edge") } as const] : []),
+        ...e.leaders.map((r): OverprintItemJson => ({ kind: "leader", room: r.id, parts: parts(r) })),
       ];
       const warning: Diagnostic = {
         severity: "warning",
@@ -573,7 +601,10 @@ export const annotationOverlap: LintRule = {
           : `the area figure (${plainArea(l.prim.value)}) of ${ctx.nameOf(l.room)}`,
       );
       const mixed = where !== "" && nb.over.some((l) => l.room !== floor);
-      const things = mixed ? listOf([`${listOf(pieces)}${where}`, ...labelWords]) : listOf([...pieces, ...labelWords]);
+      const leaderWords = nb.leaders.map((r) => `the leader of ${ctx.nameOf(r)}`);
+      const things = mixed
+        ? listOf([`${listOf(pieces)}${where}`, ...labelWords, ...leaderWords])
+        : listOf([...pieces, ...labelWords, ...leaderWords]);
       const tail = mixed ? "" : where;
       const pinnedLabel = nb.over.find((l) => l.room.labelAt !== undefined);
       const subject = {
@@ -586,7 +617,7 @@ export const annotationOverlap: LintRule = {
         ? `Move the \`label "${pinnedLabel.room.label}" at (x,y)\` point of ${roomRef(ctx, pinnedLabel.room)} clear of it`
         : nb.hits.length > 0
           ? `Move ${listOf(nb.hits.map(symbolWithId))} clear of it`
-          : `Give the label of ${roomRef(ctx, nb.over[0]!.room)} a clear point with \`label "…" at (x,y)\``;
+          : `Give the label of ${roomRef(ctx, nb.over[0]?.room ?? nb.leaders[0]!)} a clear point with \`label "…" at (x,y)\``;
       const why = {
         thickness:
           "`dims auto all` letters each wall thickness once, on the longest straight wall of that thickness, at a run no crossing wall, opening, piece of furniture or stair stands on; this wall has no such run.",
@@ -594,7 +625,7 @@ export const annotationOverlap: LintRule = {
         diameter: "The `φ` call-out is lettered at the circle's centre.",
         chain: "A chain number sits outside the building's outer faces.",
       }[kind];
-      const anchor = pinnedLabel?.room ?? nb.hits[0] ?? nb.over[0]!.room;
+      const anchor = pinnedLabel?.room ?? nb.hits[0] ?? nb.over[0]?.room ?? nb.leaders[0]!;
       const figure: OverprintItemJson & { text: string } = {
         kind: FIGURE_KIND[kind],
         ...(floor ? { room: floor.id } : {}),
@@ -618,6 +649,7 @@ export const annotationOverlap: LintRule = {
             parts: partsOf(found),
           }),
         ),
+        ...nb.leaders.map((r): OverprintItemJson => ({ kind: "leader", room: r.id })),
       ];
       const warning: Diagnostic = {
         severity: "warning",
@@ -805,7 +837,8 @@ const furnitureLabelItem = (fl: FurnitureLabel): OverprintItemJson => ({
   text: fl.prim.value,
 });
 
-/** What a room's label can be printed over: a symbol's element, a piece's label, a door, a wall, its floor's edge. */
+/** What a room's label can be printed over: a symbol's element, a piece's label, a door, a wall, its
+ *  floor's edge, or the leader of a room (card AL3b), keyed by that room. */
 type UnderKey = ResolvedElement | FurnitureLabel | RDoor | "wall" | "floor-edge";
 
 /** The texts of a room's label, in the order it draws them (AL6). */

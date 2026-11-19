@@ -24,6 +24,10 @@
  *    whose labels are all clear, which a row may be. 12 of the 40 rows (all three bench rows
  *    among them) pin `labelRelocations` at 0, inside the table's `_floor` of 8, so those rows
  *    carry no label-placement signal: the bench rows pin the joinery only.
+ *  - `labelLeaders`: the places the leader step (`fitLabels`, card AL3b) tried for a label the fit
+ *    left over something. No shipped example has such a label, so every row pins it at 0: the
+ *    column holds that no example starts leading labels unseen; the step's own count is pinned by
+ *    `test/label-leaders.test.ts`.
  *
  * Every row must be a clean resolution with work in it ({@link rowProblems}).
  *
@@ -58,6 +62,7 @@ export interface WorkCounts {
   navCells: number;
   joinerySplitTests: number;
   labelRelocations: number;
+  labelLeaders: number;
 }
 
 export interface WorkCountsTable {
@@ -113,6 +118,7 @@ export function workCounts(src: string, world: World = NULL_WORLD): WorkMeasure 
         navCells: 0,
         joinerySplitTests: 0,
         labelRelocations: 0,
+        labelLeaders: 0,
       },
       errors,
     };
@@ -129,7 +135,7 @@ export function workCounts(src: string, world: World = NULL_WORLD): WorkMeasure 
     elements += s.elements.length;
   }
   const { leafDoorPairs, boundaryRunTests, navCells } = lintWork(src, { world });
-  const { joinerySplitTests, labelRelocations } = compileWork(src, { world });
+  const { joinerySplitTests, labelRelocations, labelLeaders } = compileWork(src, { world });
   return {
     counts: {
       steps: evaluationSteps(res),
@@ -140,6 +146,7 @@ export function workCounts(src: string, world: World = NULL_WORLD): WorkMeasure 
       navCells,
       joinerySplitTests,
       labelRelocations,
+      labelLeaders,
     },
     errors: [...new Set(errors)],
   };

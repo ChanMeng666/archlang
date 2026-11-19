@@ -1,138 +1,151 @@
 {
-  "_reason": "RM8.5 review: examples/courtyard-family.arch source changed (deeper garage, unclassified gym), on 14458fac",
+  "_reason": "AL3b leaders on e7083747: a named room whose label is not pinned is charged 2 more drawing units (the leader's line and dot)",
   "_tolerance": 0.1,
   "_totalTolerance": 0.03,
   "_floor": 8,
   "rows": {
     "examples/accessible.arch": {
       "steps": 221,
-      "drawUnits": 121,
+      "drawUnits": 125,
       "elements": 14,
       "leafDoorPairs": 0,
       "boundaryRunTests": 4,
       "navCells": 2400,
       "joinerySplitTests": 78,
-      "labelRelocations": 36
+      "labelRelocations": 36,
+      "labelLeaders": 0
     },
     "examples/aquarium.arch": {
       "steps": 3350,
-      "drawUnits": 1740,
+      "drawUnits": 1752,
       "elements": 46,
       "leafDoorPairs": 0,
       "boundaryRunTests": 41,
       "navCells": 240000,
       "joinerySplitTests": 346,
-      "labelRelocations": 0
+      "labelRelocations": 0,
+      "labelLeaders": 0
     },
     "examples/attached.arch": {
       "steps": 264,
-      "drawUnits": 110,
+      "drawUnits": 114,
       "elements": 13,
       "leafDoorPairs": 0,
       "boundaryRunTests": 4,
       "navCells": 2800,
       "joinerySplitTests": 115,
-      "labelRelocations": 36
+      "labelRelocations": 36,
+      "labelLeaders": 0
     },
     "examples/bungalow.arch": {
       "steps": 777,
-      "drawUnits": 924,
+      "drawUnits": 940,
       "elements": 46,
       "leafDoorPairs": 0,
       "boundaryRunTests": 67,
       "navCells": 10200,
       "joinerySplitTests": 369,
-      "labelRelocations": 163
+      "labelRelocations": 163,
+      "labelLeaders": 0
     },
     "examples/classroom-block.arch": {
       "steps": 2413,
-      "drawUnits": 1559,
+      "drawUnits": 1579,
       "elements": 90,
       "leafDoorPairs": 0,
       "boundaryRunTests": 57,
       "navCells": 31500,
       "joinerySplitTests": 400,
-      "labelRelocations": 114
+      "labelRelocations": 114,
+      "labelLeaders": 0
     },
     "examples/clinic.arch": {
       "steps": 2066,
-      "drawUnits": 2307,
+      "drawUnits": 2333,
       "elements": 96,
       "leafDoorPairs": 0,
       "boundaryRunTests": 152,
       "navCells": 29412,
       "joinerySplitTests": 805,
-      "labelRelocations": 154
+      "labelRelocations": 154,
+      "labelLeaders": 0
     },
     "examples/corner-cafe.arch": {
       "steps": 1394,
-      "drawUnits": 1905,
+      "drawUnits": 1917,
       "elements": 65,
       "leafDoorPairs": 0,
       "boundaryRunTests": 46,
       "navCells": 15000,
       "joinerySplitTests": 295,
-      "labelRelocations": 88
+      "labelRelocations": 88,
+      "labelLeaders": 0
     },
     "examples/courtyard-family.arch": {
-      "steps": 9357,
-      "drawUnits": 4366,
+      "steps": 9359,
+      "drawUnits": 4386,
       "elements": 90,
       "leafDoorPairs": 0,
       "boundaryRunTests": 123,
       "navCells": 32000,
       "joinerySplitTests": 987,
-      "labelRelocations": 244
+      "labelRelocations": 244,
+      "labelLeaders": 0
     },
     "examples/courtyard-house.arch": {
       "steps": 1277,
-      "drawUnits": 2728,
+      "drawUnits": 2748,
       "elements": 74,
       "leafDoorPairs": 0,
       "boundaryRunTests": 96,
       "navCells": 18400,
       "joinerySplitTests": 712,
-      "labelRelocations": 136
+      "labelRelocations": 136,
+      "labelLeaders": 0
     },
     "examples/furnished-flat.arch": {
       "steps": 969,
-      "drawUnits": 906,
+      "drawUnits": 920,
       "elements": 69,
       "leafDoorPairs": 0,
       "boundaryRunTests": 52,
       "navCells": 9072,
       "joinerySplitTests": 367,
-      "labelRelocations": 158
+      "labelRelocations": 158,
+      "labelLeaders": 0
     },
     "examples/gallery-l.arch": {
       "steps": 294,
-      "drawUnits": 265,
+      "drawUnits": 267,
       "elements": 15,
       "leafDoorPairs": 0,
       "boundaryRunTests": 8,
       "navCells": 16800,
       "joinerySplitTests": 108,
-      "labelRelocations": 0
+      "labelRelocations": 0,
+      "labelLeaders": 0
     },
     "examples/garden-house.arch": {
-      "steps": 3876,
-      "drawUnits": 4659,
+      "steps": 3884,
+      "drawUnits": 4681,
       "elements": 115,
       "leafDoorPairs": 0,
       "boundaryRunTests": 60,
       "navCells": 25650,
       "joinerySplitTests": 462,
-      "labelRelocations": 687
+      "labelRelocations": 687,
+      "labelLeaders": 0
     },
     "examples/garden-loft.arch": {
       "steps": 411,
-      "drawUnits": 432,
+      "drawUnits": 438,
       "elements": 27,
       "leafDoorPairs": 0,
       "boundaryRunTests": 14,
       "navCells": 3500,
       "joinerySplitTests": 180,
-      "labelRelocations": 115
+      "labelRelocations": 115,
+      "labelLeaders": 0
     },
     "examples/hexagon-pavilion.arch": {
       "steps": 773,
@@ -142,277 +155,305 @@
       "boundaryRunTests": 25,
       "navCells": 18000,
       "joinerySplitTests": 433,
-      "labelRelocations": 0
+      "labelRelocations": 0,
+      "labelLeaders": 0
     },
     "examples/hillside-villa.arch": {
-      "steps": 5294,
-      "drawUnits": 5882,
+      "steps": 5306,
+      "drawUnits": 5926,
       "elements": 152,
       "leafDoorPairs": 0,
       "boundaryRunTests": 206,
       "navCells": 33762,
       "joinerySplitTests": 1374,
-      "labelRelocations": 473
+      "labelRelocations": 473,
+      "labelLeaders": 0
     },
     "examples/imports.arch": {
       "steps": 261,
-      "drawUnits": 86,
+      "drawUnits": 88,
       "elements": 8,
       "leafDoorPairs": 0,
       "boundaryRunTests": 0,
       "navCells": 2000,
       "joinerySplitTests": 46,
-      "labelRelocations": 50
+      "labelRelocations": 50,
+      "labelLeaders": 0
     },
     "examples/knob-flat.arch": {
       "steps": 965,
-      "drawUnits": 374,
+      "drawUnits": 382,
       "elements": 20,
       "leafDoorPairs": 0,
       "boundaryRunTests": 30,
       "navCells": 5850,
       "joinerySplitTests": 267,
-      "labelRelocations": 86
+      "labelRelocations": 86,
+      "labelLeaders": 0
     },
     "examples/laneway-house.arch": {
       "steps": 535,
-      "drawUnits": 525,
+      "drawUnits": 531,
       "elements": 29,
       "leafDoorPairs": 0,
       "boundaryRunTests": 14,
       "navCells": 4875,
       "joinerySplitTests": 202,
-      "labelRelocations": 58
+      "labelRelocations": 58,
+      "labelLeaders": 0
     },
     "examples/library.arch": {
       "steps": 2687,
-      "drawUnits": 3573,
+      "drawUnits": 3595,
       "elements": 133,
       "leafDoorPairs": 0,
       "boundaryRunTests": 110,
       "navCells": 160000,
       "joinerySplitTests": 995,
-      "labelRelocations": 99
+      "labelRelocations": 99,
+      "labelLeaders": 0
     },
     "examples/materials.arch": {
       "steps": 687,
-      "drawUnits": 1425,
+      "drawUnits": 1433,
       "elements": 38,
       "leafDoorPairs": 0,
       "boundaryRunTests": 44,
       "navCells": 12800,
       "joinerySplitTests": 260,
-      "labelRelocations": 100
+      "labelRelocations": 100,
+      "labelLeaders": 0
     },
     "examples/museum-wing.arch": {
       "steps": 291,
-      "drawUnits": 304,
+      "drawUnits": 312,
       "elements": 17,
       "leafDoorPairs": 0,
       "boundaryRunTests": 12,
       "navCells": 21600,
       "joinerySplitTests": 168,
-      "labelRelocations": 0
+      "labelRelocations": 0,
+      "labelLeaders": 0
     },
     "examples/museum-wings.arch": {
       "steps": 781,
-      "drawUnits": 930,
+      "drawUnits": 948,
       "elements": 42,
       "leafDoorPairs": 0,
       "boundaryRunTests": 42,
       "navCells": 50400,
       "joinerySplitTests": 473,
-      "labelRelocations": 0
+      "labelRelocations": 0,
+      "labelLeaders": 0
     },
     "examples/museum.arch": {
-      "steps": 1868,
-      "drawUnits": 1299,
+      "steps": 1878,
+      "drawUnits": 1329,
       "elements": 105,
       "leafDoorPairs": 0,
       "boundaryRunTests": 130,
       "navCells": 250648,
       "joinerySplitTests": 551,
-      "labelRelocations": 55
+      "labelRelocations": 55,
+      "labelLeaders": 0
     },
     "examples/one-room.arch": {
       "steps": 63,
-      "drawUnits": 52,
+      "drawUnits": 54,
       "elements": 4,
       "leafDoorPairs": 0,
       "boundaryRunTests": 0,
       "navCells": 2000,
       "joinerySplitTests": 46,
-      "labelRelocations": 0
+      "labelRelocations": 0,
+      "labelLeaders": 0
     },
     "examples/parametric.arch": {
       "steps": 1015,
-      "drawUnits": 175,
+      "drawUnits": 181,
       "elements": 20,
       "leafDoorPairs": 0,
       "boundaryRunTests": 12,
       "navCells": 6000,
       "joinerySplitTests": 278,
-      "labelRelocations": 108
+      "labelRelocations": 108,
+      "labelLeaders": 0
     },
     "examples/practice-office.arch": {
       "steps": 1001,
-      "drawUnits": 1335,
+      "drawUnits": 1353,
       "elements": 55,
       "leafDoorPairs": 0,
       "boundaryRunTests": 64,
       "navCells": 22500,
       "joinerySplitTests": 405,
-      "labelRelocations": 116
+      "labelRelocations": 116,
+      "labelLeaders": 0
     },
     "examples/relational.arch": {
       "steps": 1020,
-      "drawUnits": 281,
+      "drawUnits": 291,
       "elements": 26,
       "leafDoorPairs": 0,
       "boundaryRunTests": 32,
       "navCells": 6000,
       "joinerySplitTests": 301,
-      "labelRelocations": 36
+      "labelRelocations": 36,
+      "labelLeaders": 0
     },
     "examples/remodel.arch": {
-      "steps": 1291,
-      "drawUnits": 1477,
+      "steps": 1293,
+      "drawUnits": 1483,
       "elements": 37,
       "leafDoorPairs": 1,
       "boundaryRunTests": 41,
       "navCells": 8360,
       "joinerySplitTests": 300,
-      "labelRelocations": 16
+      "labelRelocations": 16,
+      "labelLeaders": 0
     },
     "examples/sheet-notes.arch": {
       "steps": 192,
-      "drawUnits": 451,
+      "drawUnits": 457,
       "elements": 12,
       "leafDoorPairs": 0,
       "boundaryRunTests": 11,
       "navCells": 5400,
       "joinerySplitTests": 106,
-      "labelRelocations": 0
+      "labelRelocations": 0,
+      "labelLeaders": 0
     },
     "examples/studio.arch": {
       "steps": 484,
-      "drawUnits": 239,
+      "drawUnits": 247,
       "elements": 28,
       "leafDoorPairs": 0,
       "boundaryRunTests": 23,
       "navCells": 4200,
       "joinerySplitTests": 179,
-      "labelRelocations": 36
+      "labelRelocations": 36,
+      "labelLeaders": 0
     },
     "examples/terrace-row.arch": {
       "steps": 5198,
-      "drawUnits": 952,
+      "drawUnits": 960,
       "elements": 110,
       "leafDoorPairs": 0,
       "boundaryRunTests": 232,
       "navCells": 21312,
       "joinerySplitTests": 1068,
-      "labelRelocations": 44
+      "labelRelocations": 44,
+      "labelLeaders": 0
     },
     "examples/themed.arch": {
       "steps": 256,
-      "drawUnits": 118,
+      "drawUnits": 122,
       "elements": 13,
       "leafDoorPairs": 0,
       "boundaryRunTests": 4,
       "navCells": 2400,
       "joinerySplitTests": 81,
-      "labelRelocations": 36
+      "labelRelocations": 36,
+      "labelLeaders": 0
     },
     "examples/tiny-house.arch": {
       "steps": 485,
-      "drawUnits": 274,
+      "drawUnits": 276,
       "elements": 29,
       "leafDoorPairs": 0,
       "boundaryRunTests": 5,
       "navCells": 1960,
       "joinerySplitTests": 233,
-      "labelRelocations": 0
+      "labelRelocations": 0,
+      "labelLeaders": 0
     },
     "examples/townhouse.arch": {
       "steps": 3824,
-      "drawUnits": 1218,
+      "drawUnits": 1242,
       "elements": 72,
       "leafDoorPairs": 0,
       "boundaryRunTests": 59,
       "navCells": 16692,
       "joinerySplitTests": 473,
-      "labelRelocations": 144
+      "labelRelocations": 144,
+      "labelLeaders": 0
     },
     "examples/transit-hall.arch": {
       "steps": 2678,
-      "drawUnits": 1974,
+      "drawUnits": 1998,
       "elements": 116,
       "leafDoorPairs": 0,
       "boundaryRunTests": 125,
       "navCells": 250500,
       "joinerySplitTests": 637,
-      "labelRelocations": 84
+      "labelRelocations": 84,
+      "labelLeaders": 0
     },
     "examples/turning-stair.arch": {
       "steps": 1186,
-      "drawUnits": 484,
+      "drawUnits": 490,
       "elements": 16,
       "leafDoorPairs": 0,
       "boundaryRunTests": 8,
       "navCells": 6080,
       "joinerySplitTests": 154,
-      "labelRelocations": 0
+      "labelRelocations": 0,
+      "labelLeaders": 0
     },
     "examples/two-bed.arch": {
-      "steps": 1310,
-      "drawUnits": 333,
+      "steps": 1312,
+      "drawUnits": 343,
       "elements": 31,
       "leafDoorPairs": 0,
       "boundaryRunTests": 45,
       "navCells": 8000,
       "joinerySplitTests": 311,
-      "labelRelocations": 57
+      "labelRelocations": 57,
+      "labelLeaders": 0
     },
     "examples/two-storey.arch": {
       "steps": 1822,
-      "drawUnits": 750,
+      "drawUnits": 768,
       "elements": 39,
       "leafDoorPairs": 0,
       "boundaryRunTests": 28,
       "navCells": 11200,
       "joinerySplitTests": 249,
-      "labelRelocations": 179
+      "labelRelocations": 179,
+      "labelLeaders": 0
     },
     "bench:BALANCED": {
       "steps": 15880,
-      "drawUnits": 6900,
+      "drawUnits": 7500,
       "elements": 1000,
       "leafDoorPairs": 0,
       "boundaryRunTests": 0,
       "navCells": 0,
       "joinerySplitTests": 4800,
-      "labelRelocations": 0
+      "labelRelocations": 0,
+      "labelLeaders": 0
     },
     "bench:OPENING_HEAVY": {
       "steps": 13872,
-      "drawUnits": 7328,
+      "drawUnits": 7336,
       "elements": 1004,
       "leafDoorPairs": 0,
       "boundaryRunTests": 0,
       "navCells": 0,
       "joinerySplitTests": 7600,
-      "labelRelocations": 0
+      "labelRelocations": 0,
+      "labelLeaders": 0
     },
     "bench:ROOM_HEAVY": {
       "steps": 19950,
-      "drawUnits": 7040,
+      "drawUnits": 9040,
       "elements": 1004,
       "leafDoorPairs": 0,
       "boundaryRunTests": 0,
       "navCells": 0,
       "joinerySplitTests": 18,
-      "labelRelocations": 0
+      "labelRelocations": 0,
+      "labelLeaders": 0
     }
   }
 }

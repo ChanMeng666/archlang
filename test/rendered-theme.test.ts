@@ -101,7 +101,7 @@ const BASELINE: [string, string][] = [
   ["caf049e313e65045103b6010eebb5244380ddcb5c484b09f522ed1a6128a0331", "examples/two-bed.arch"],
   ["48ac5c2d3b8d1b286aabd159c2d657379d384d22326569a740fdcaf349344a9b", "examples/two-storey.arch"], // RM1.3a, see ./byte-identity-baseline.ts; RM1.2a, see ./byte-identity-baseline.ts; RM9.2, see ./byte-identity-baseline.ts
   ["9bf244567364f85ea64f1aa4bc8ee19e63c1edc34ed5fe340ed116a54a8c0c84", "inline:every-family-1:50"],
-  ["120aa7ba79080410ded56455aeedc2c16945f0704f0603d74742de93e48e8766", "inline:every-family-unscaled"],
+  ["bf7b18dd8444e5103a8726224ce84ad92e0944ff80bd743620c1ae8695ff2463", "inline:every-family-unscaled"], // AL3b: one label placed again on its own floor, its report gone
   ["f710bc7958bde0aa45a0543fc9759e169a0a42e2fc122da01cb3fcc8e5f0ad27", "inline:style-furniture"],
   ["e9c2a013c6a38997b1cd572c7928e2225e64fa91fcb910963f75e6a2ed2de701", "inline:theme-override"],
   ["92ea18e1ca9fb80fbefac0afd13212c17bfcb84efb7977381adad1c8144064b5", "inline:uncatalogued"],

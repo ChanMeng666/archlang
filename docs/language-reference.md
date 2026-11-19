@@ -782,7 +782,8 @@ while i < COUNT {
   polygon or round rooms whose boxes overlap stop with `E_STEP_LIMIT` at the statement
   or the pair of rooms that crossed the budget, in about a second or two. And before
   anything is drawn, `compile` estimates the drawing over every
-  storey (an upper bound per kind: a room 3 primitives, a door 5, a run one or two lines
+  storey (an upper bound per kind: a room 3 primitives, 4 with a floor finish and 2 more
+  for a leader's line and dot when it is named and its label is not pinned; a door 5; a run one or two lines
   per tread, a fixture its own symbol, plus one per point of each outline and what
   `dims auto`, the axes and the tables add): past 300,000 the plan is
   `E_DRAWING_LIMIT`, which keeps the largest drawing under about 0.35 GB of memory.

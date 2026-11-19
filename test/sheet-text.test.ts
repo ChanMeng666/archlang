@@ -402,7 +402,8 @@ suite("sheet text: what it never reaches", () => {
   // What the sheet draws decides what collides, and may change a verdict: that is the rule reading
   // the drawing. What it says stays English, so these read the message and not the twin's.
   it("an overprint no fit clears quotes the area stamp in English", () => {
-    const filled = stairAt("at (3200,200) size 2600x3600"); // nothing clears a stair that fills the floor
+    // Nothing clears a stair that fills the floor, and a pinned label is never led off it (card AL3b).
+    const filled = stairAt("at (3200,200) size 2600x3600").replace('label "Bad"', 'label "Bad" at (4500,2000)');
     expect(drawn(filled)).toContain("10,4 m² netto");
     const [d] = lint(filled).filter((x) => x.code === "W_ANNOTATION_OVERLAP");
     expect(d?.message).toContain("the area figure (10.4 m² net)");
