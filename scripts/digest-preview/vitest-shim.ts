@@ -293,8 +293,6 @@ class AssertionError extends Error {
 
 // ---- expect ----------------------------------------------------------------------------------
 
-type Matchers = Record<string, (...args: never[]) => void> & { not: Record<string, (...args: never[]) => void> };
-
 /**
  * A failed equality on pinned digests: when every differing leaf pins a 64-hex string and measured a string,
  * record each as a moved row and return true (the caller does not throw).
@@ -309,7 +307,7 @@ function recordMoved(got: unknown, want: unknown): boolean {
   return true;
 }
 
-function matchers(got: unknown, msg: string | undefined, negated: boolean): Record<string, (...args: never[]) => void> {
+function matchers(got: unknown, msg: string | undefined, negated: boolean) {
   const check = (pass: boolean, what: string, soft?: () => boolean): void => {
     if (pass !== negated) return;
     if (!negated && soft?.()) return;
@@ -389,11 +387,14 @@ function matchers(got: unknown, msg: string | undefined, negated: boolean): Reco
       check(ok, `to throw ${want === undefined ? "" : String(want)}`);
     },
   };
-  return m as unknown as Record<string, (...args: never[]) => void>;
+  return m;
 }
 
+/** The matchers on `expect(x)`, and on `expect(x).not`. */
+export type Matchers = ReturnType<typeof matchers> & { not: ReturnType<typeof matchers> };
+
 function expectFn(got: unknown, msg?: string): Matchers {
-  return Object.assign(matchers(got, msg, false), { not: matchers(got, msg, true) }) as Matchers;
+  return Object.assign(matchers(got, msg, false), { not: matchers(got, msg, true) });
 }
 
 /** The type test `expect.any` makes: a primitive's wrapper by `typeof`, any other class by `instanceof`. */
