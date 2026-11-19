@@ -12,6 +12,25 @@ agents: deterministic, self-correcting (errors carry a machine code, a prose `fi
 **machine-applicable** fix `archlang fix` can apply), and verifiable without ever looking at an image
 (`archlang describe`).
 
+## Before you write or edit
+
+- **Ask the units, and whether each size is nominal (to wall centrelines), outside or clear (net),
+  before the first room.** Plan numbers are millimetres on centrelines: `size 10000x8000` ringed by
+  `walls from rooms exterior 200` is 10,200 x 8,200 outside and 9,800 x 7,800 clear. For 10 x 8 m
+  clear write `10200x8200`; for 10 x 8 m outside, `9800x7800`. Check with `archlang describe
+  plan.arch --json --select bbox,bbox_outer,rooms` (`net_area_m2` is the clear floor).
+- **Edit in place, never redraw.** Change the fewest statements the request needs, and lock the
+  authored ids (`id=`) it does not name: `archlang impact plan.arch --set W=3600 --lock bedroom`
+  before, `archlang impact new.arch --against plan.arch --lock bedroom` after. Exit `2`
+  (`E_LOCKED_ELEMENT_CHANGED`) means change the edit, not the lock. Put sizes a brief may change in
+  top-level `let`s, so a resize is one `--set`, not a coordinate hunt.
+- **A number the brief fixes is a `keep`** (`keep min clear living 3800`): it moves nothing, and a
+  broken one is `W_KEEP_VIOLATED` with a signed residual, failing `--strict`.
+- **A straight `stair` is entered at one end:** with `dir up` the end of its long axis with the
+  larger coordinate (the bottom of a portrait footprint, the right of a landscape one), with `dir
+  down` the other. Keep a landing clear there (`W_STAIR_NO_LANDING`); to enter from the other end,
+  `place` it mirrored (`archlang spec`, `stair`).
+
 ## What ArchLang can do
 
 - Compile `.arch` to SVG, DXF, TXT, PDF, PNG or Plan JSON; it never reads images, so a plan from a photo is written by you.
@@ -377,7 +396,7 @@ facts into context just to filter them yourself.
   *unfiltered* set, so reading less can never turn a failing plan green. A filtered result carries
   `filtered: true` + `total_diagnostics`.
 - **`archlang context --section spec|workflow|cli|errors`** prints one section of the bundle
-  instead of all of it (about 160 KB in all) — `errors` for the diagnostic catalog, `cli` for the
+  instead of all of it (about 180 KB in all) — `errors` for the diagnostic catalog, `cli` for the
   command reference.
 - **`archlang fix --dry-run`** prints the exact unified diff it would write (to stderr; `--json` also
   carries it as `diff`) and touches nothing. When you do apply in place, **`--backup`** keeps the
