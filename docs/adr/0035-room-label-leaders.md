@@ -59,6 +59,7 @@ Where a place may be:
 - **On a room's floor on the same storey, inside the building only.** Places on the room's own floor take their turn by the same key and draw no leader: a finer search than `fitLabels`' 7 × 7 lattice. They do not leave the floor, so they are within AL-D3. The others draw a leader.
 - **Never anywhere else.** Not outside the building, in the dimension bands or on an `outdoor` surface: a label there would grow the page, and the page size feeds `describe().sheet`, which a drawing change may not move.
 - **Clear by the rule's own test, on the floor it lands on.** Both texts lie on that floor (no more than 2 % off it). They stand over no symbol, wall, door swing, label, opening tag, `dims auto` figure or piece label.
+- **Clear of every text as it prints.** Each of the two texts, boxed at the width it prints (`symbolExtent`: the wider of the estimate and the ink), meets no other text the drawing holds when the step runs, boxed the same way (`labelBox`): no other room's label as it now stands, no tag, no figure and no piece label. It also meets no leader drawn before it. A leader's line is read against the same boxes. The fit's own reading compares a text's ink with the estimate of the text beside it. A short name of wide letters prints wider than its estimate, and an area figure prints narrower. So the two can overprint while each reads clear: on a generated strip, a led "2.2 m²" stood 57 mm over "MW".
 
 The search:
 - **Order of forms.** The heights `fitLabels` steps through are tried largest first. At each height the one-line name is tried first, then its wrapped forms.
@@ -124,7 +125,7 @@ The compile's work counters gain `labelLeaders`, the places tried. The work-coun
 
 ## Consequences
 
-Measured on the built branch against `main` 287e19f8, over the same corpus:
+Measured on the built branch against `main` b1e73f98 (AL3w and AL3a merged), over the same corpus (332 `.arch` files in the corpus folders, 101 reports on `main`, as above):
 
 - **Labels re-placed.** 72 labels are candidates, in 8 files.
   - 8 get a leader, in 5 files: `dense-office` (Store / IT and Kitchenette / Break, into the corridor), `2026-10-24-rerun/2-house` (Dressing into the passage, Bathroom into the garage), `2026-10-24-rerun/5-townhouse` (both stairs), `2026-10-26-rerun-row6/5-townhouse` (one stair) and `2026-10-27-rerun-arm1/5-townhouse` (Bathroom).
@@ -134,14 +135,15 @@ Measured on the built branch against `main` 287e19f8, over the same corpus:
   - The plan estimated about 70 fewer. The difference is the two no-`paper` fixtures, which no leader can help.
   - The shipped examples stay free of warnings and their drawings do not change.
   - The witness's "200" thickness figure keeps its first station, because the kitchenette's name no longer runs over it.
-  - The other 152 `.arch` files in the tests' and packages' fixture folders go from 9 reports to 2: `test/keep-corpus/min-clear-joins.arch` (6 to 0: three labels led, three placed again on their own floor) and `test/finish-fixtures/agent-ux-prefinish.arch` (1 to 0, led).
+  - The other 187 `.arch` files in the tests' and packages' fixture folders go from 9 reports to 2: `test/keep-corpus/min-clear-joins.arch` (6 to 0: three labels led, three placed again on their own floor) and `test/finish-fixtures/agent-ux-prefinish.arch` (1 to 0, led).
+- **Text over text.** On the red team's generated plans (300 a set; strips and grids, with and without fixtures), no plan clean on `main` gains an overprint of one room's text on another's. The pairs fall on every set: 8 to 4, 15 to 10, 28 to 12 and 42 to 29. Before the step read texts at the width they print, 17 plans gained one. `W_ANNOTATION_OVERLAP` does not read one room's text against another's (card AL3c), so those overprints were silent.
 - **Order.**
   - `ORDER_EXCUSED` goes from five plans to none.
   - The label-wrap knock-on list stays at four (§3).
   - On generated strips with shuffled room statements, no plan draws differently.
 - **Ink width.** Card AL3w moved one corpus drawing, `dense-office`'s "WC 1" and "WC 2", now on one line beside the basin, and no lint line.
 - **Cost.**
-  - A generated 14 × 14 grid of 1.5 m rooms, every label a candidate and none with anywhere to go, spends the step's whole count. Its compile goes from about 0.10 s to 0.17 s on the measuring machine (median of three); the design's first prototype, with no count of its own, took it from 0.23 s to 1.1 s.
+  - A generated 14 × 14 grid of 1.5 m rooms, every label a candidate and none with anywhere to go, spends the step's whole count: 161,312 places tried, the same on every run. On a quiet machine its compile went from 0.11–0.13 s to 0.16–0.18 s (two rounds, median of three each), before the step read texts at the width they print. With that check, the machine was loaded: 0.14–0.24 s on `main` against 0.23–0.26 s, in the same rounds. The design's first prototype, with no count of its own, took it from 0.23 s to 1.1 s.
   - Across the corpus, the most places the step tries for one plan is 4,264 (`star30`, where it
-    finds none), and 2,289 for the witness.
+    finds none), and 2,616 for the witness.
 - **What a reader sees.** A drawing can now carry a label on another room's floor, and a reader follows the leader. A corridor can take several such labels. A leader may cross the room's door swing when no other route is clear.
