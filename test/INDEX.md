@@ -5,7 +5,7 @@
 Where the tests of a `src` module are, and what each test file is for. Generated; `npm run check:drift`
 fails when it is stale. How to add a test: `docs/testing.md` § 4.
 
-558 test files in `test/`, 295 `src` modules, 107 modules no test imports.
+559 test files in `test/`, 295 `src` modules, 107 modules no test imports.
 
 ## `src` module → tests that import it
 
@@ -48,10 +48,10 @@ Nearest first, then by name; `(+n)` is the rest. Test names are `test/<name>.tes
 - `src/cli/commands-render.ts` (3) — `keep-impact-depends`, `plan-json-dropped`, `watch-arming`
 - `src/cli/context-starter.ts` (1) — `context-starter`
 - `src/cli/help.ts` (1) — `cli-help`
-- `src/cli/io.ts` (87) — `block-stair-byte-identity`, `clause-order-byte-identity`, `cli-contract`, `cli-exit-parse`, `cli-expected-hash`, `cli-flag-matrix`, `cli-help`, `cli-output-format` (+79)
+- `src/cli/io.ts` (88) — `block-stair-byte-identity`, `clause-order-byte-identity`, `cli-contract`, `cli-exit-parse`, `cli-expected-hash`, `cli-flag-matrix`, `cli-help`, `cli-output-format` (+80)
 - `src/cli/link.ts` (1) — `cli-link`
 - `src/cli/review.ts` (1) — `cli-preview-review`
-- `src/cli/run.ts` (53) — `annotation-overprint`, `axes`, `cli-batch`, `cli-commands`, `cli-context`, `cli-contract`, `cli-exit-parse`, `cli-expected-hash` (+45)
+- `src/cli/run.ts` (54) — `annotation-overprint`, `axes`, `cli-batch`, `cli-commands`, `cli-context`, `cli-contract`, `cli-exit-parse`, `cli-expected-hash` (+46)
 - `src/cli/serialize.ts` (8) — `cli-batch`, `cli-plan-json-roundtrip`, `element-facets`, `plan-json-arcs-paper`, `plan-json-dropped`, `plan-json-instances`, `plan-json-roundtrip-law`, `walls-from-rooms`
 - `src/cli/source-hash.ts` (1) — `cli-expected-hash`
 - `src/cli/summary.ts` (1) — `lint-summary`
@@ -61,7 +61,7 @@ Nearest first, then by name; `(+n)` is the rest. Test names are `test/<name>.tes
 - `src/datum.ts` (11) — `access-policy`, `cursor-exhaustive`, `describe-depends`, `diff-laws`, `emit-opening-oracle`, `equivariance-fuzz`, `fix-printer`, `fuzz` (+3)
 - `src/describe.ts` (50) — `acc-metadata`, `accessible-svg`, `d4`, `describe`, `diff-laws`, `diff`, `room-adjacency-oracle`, `vocabulary-es-pt` (+42)
 - `src/diagnostic-json.ts` (1) — `explain`
-- `src/diagnostics.ts` (53) — `diagnostic-json-related`, `diagnostics-volume`, `diagnostics`, `error-catalog-families`, `export-font-cjk`, `expr`, `fix-pullback`, `lint-file-provenance` (+45)
+- `src/diagnostics.ts` (54) — `diagnostic-json-related`, `diagnostics-volume`, `diagnostics`, `error-catalog-families`, `export-font-cjk`, `expr`, `fix-pullback`, `lint-file-provenance` (+46)
 - `src/diff.ts` (3) — `diff-fabric`, `diff-laws`, `diff`
 - `src/doc.ts` (2) — `fix-printer`, `format`
 - `src/draw-budget.ts` (5) — `drawing-budget`, `sheet-annotations`, `walls-from-rooms-clauses`, `window-kinds`, `work-counts`
@@ -126,7 +126,7 @@ Nearest first, then by name; `(+n)` is the rest. Test names are `test/<name>.tes
 - `src/impact.ts` (2) — `rectilinear-doors`, `rectilinear-rooms`
 - `src/import.ts` (34) — `block-stair-byte-identity`, `corner-window-byte-identity`, `dim-swap-reprint`, `dim-thickness-callout`, `drawing-budget`, `error-value-law`, `floor-materials-byte-identity`, `furniture-relations` (+26)
 - `src/import/limits.ts` (1) — `openplan3d-malformed`
-- `src/index.ts` (416) — `acc-metadata`, `access-graph`, `access-policy`, `accessible-svg`, `agent-gallery`, `alias-match`, `anchors`, `annotate` (+408)
+- `src/index.ts` (417) — `acc-metadata`, `access-graph`, `access-policy`, `accessible-svg`, `agent-gallery`, `alias-match`, `anchors`, `annotate` (+409)
 - `src/input-limit.ts` (2) — `import-rooted`, `workspace-seams`
 - `src/intent-concepts.ts` (3) — `vocabulary-es-pt`, `vocabulary-living-dining`, `vocabulary-matcher-oracle`
 - `src/intent-feasibility.ts` (1) — `intent-infeasible`
@@ -161,7 +161,7 @@ Nearest first, then by name; `(+n)` is the rest. Test names are `test/<name>.tes
 - `src/markdown.ts` (7) — `label-fit`, `label-placement-oracle`, `label-wrap`, `room-adjacency-oracle`, `room-overlap-oracle`, `step-budget`, `vocabulary-matcher-oracle`
 - `src/naming.ts` (3) — `grid-index`, `lint-messages-id-free`, `room-overlap-oracle`
 - `src/next.ts` (3) — `cli-validate-next`, `next`, `silent-accepts`
-- `src/num-format.ts` (16) — `annotation-collisions`, `dim-thickness-callout`, `emit-opening-oracle`, `fmt-lossless`, `imperial-input`, `keep`, `lint-ruleset-values`, `lint-thickness-unplaced` (+8)
+- `src/num-format.ts` (17) — `annotation-collisions`, `dim-thickness-callout`, `emit-opening-oracle`, `fmt-lossless`, `imperial-input`, `keep`, `lint-ruleset-values`, `lint-thickness-unplaced` (+9)
 - `src/opening-relation.ts` (3) — `openings-between`, `rectilinear-doors`, `rectilinear-sides`
 - `src/opening-schedule.ts` (2) — `sheet-annotations`, `window-kinds`
 - `src/parser.ts` (154) — `arc-radius-exact`, `attach`, `axes`, `block-stair-byte-identity`, `block-stair`, `chrome-hidden`, `circle-enclosure`, `circulation-concave` (+146)
@@ -200,7 +200,7 @@ Nearest first, then by name; `(+n)` is the rest. Test names are `test/<name>.tes
 - `src/wall-lowering.ts` (2) — `joinery-split`, `open-crossing`
 - `src/wall-ref.ts` (2) — `rectilinear-rooms`, `walls-from-rooms`
 - `src/while-fix.ts` (2) — `fixable-codes`, `while-fix`
-- `src/world.ts` (126) — `block-stair-byte-identity`, `circulation-unmeasured`, `clause-order-byte-identity`, `corner-window-byte-identity`, `corner-window`, `dim-thickness-callout`, `drawing-budget`, `drawing-overflow` (+118)
+- `src/world.ts` (127) — `block-stair-byte-identity`, `circulation-unmeasured`, `clause-order-byte-identity`, `corner-window-byte-identity`, `corner-window`, `dim-thickness-callout`, `drawing-budget`, `drawing-overflow` (+119)
 
 ## Test files
 
@@ -655,6 +655,7 @@ The first sentence of each file's header comment.
 - `test/room-too-small-by-use.test.ts` — W_ROOM_TOO_SMALL — the floor follows the room's use.
 - `test/room-uses.test.ts` — room uses.
 - `test/rooms-tiling-probe.test.ts` — The `walls from rooms` tiling-precondition probe (ADR 0028 Acceptance, plan card PS3.0 part A).
+- `test/root-cause-first.test.ts` — Card RM9.4: when one error causes a chain of diagnostics, the root is listed first and every diagnostic that follows from it names it (`Diagnostic.cause`, `cause` in the JSON); numbers in messages print through `src/n...
 - `test/route-source-floor.test.ts` — a key route is capped by the door it crosses, whatever the source order or frame.
 - `test/sanitize.test.ts` — T4.5 — sanitizeConfig utility; T4.5 — sanitization routed through the compiler.
 - `test/scene-memo.test.ts` — The Scene memo (`src/scene-memo.ts`, engineering-health EH2.6): `lint()`'s `annotation-overlap` reads the annotated Scene the compile already drew, and nothing a caller does to `compile().scene` can reach lint through...

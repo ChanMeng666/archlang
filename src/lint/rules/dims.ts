@@ -49,7 +49,7 @@ import type { RDim, RDoor, ROpening, RWindow } from "../../ir.js";
 import { unchainedOpenings } from "../../facade.js";
 import { dimBumpFix, dimSwapFix, dimTextFix, fixesFrom } from "../../fix-producers.js";
 import { CHAIN_STEP, SHEET_MM } from "../../sheet.js";
-import { fmt2, fmt3 } from "../../num-format.js";
+import { fmt2, fmt3, fmtMessage } from "../../num-format.js";
 import { textWidth } from "../../text-metrics.js";
 import type { LintContext, LintRule } from "../context.js";
 import { openingName, wallPhrase } from "../element-phrases.js";
@@ -99,7 +99,7 @@ export const dimInside: LintRule = {
         code: "W_DIM_INSIDE",
         ...ctx.at(dm),
         // The offset as WRITTEN: a reflecting frame negated it on the way into plan space.
-        message: `The dimension from ${pointWords(dm.from)} to ${pointWords(dm.to)} draws its line inside the building — the \`offset ${(offsetSign(ctx, dm) ?? 1) * dm.offset}\` pushes it into the plan, not out to the margin.`,
+        message: `The dimension from ${pointWords(dm.from)} to ${pointWords(dm.to)} draws its line inside the building — the \`offset ${fmtMessage((offsetSign(ctx, dm) ?? 1) * dm.offset)}\` pushes it into the plan, not out to the margin.`,
         hints: [
           swapHelps
             ? "Swap the two endpoints (or negate the offset) so the dimension reads outside the building."

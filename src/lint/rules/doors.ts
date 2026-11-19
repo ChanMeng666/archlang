@@ -42,6 +42,7 @@ import { entranceInputs, entranceWays } from "../../analyze/entrance.js";
 import { solidFurniture } from "../../fixtures-catalog.js";
 import { isServiceCounter } from "../clearance-measure.js";
 import { approachGapMm, deficitMm, distPointToRect, mm, shortfall } from "../measure.js";
+import { fmtMessage } from "../../num-format.js";
 import { cite } from "../rule-ref.js";
 
 /**
@@ -530,7 +531,7 @@ export const doorClearance: LintRule = {
           severity: "warning",
           code: "W_DOOR_CLEARANCE",
           ...at(d),
-          message: `Door is ${d.width} mm wide (under the ${rules.minDoorWidthMm} mm minimum nominal width).`,
+          message: `Door is ${fmtMessage(d.width)} mm wide (under the ${rules.minDoorWidthMm} mm minimum nominal width).`,
           hints: [`Widen it to at least ${rules.minDoorWidthMm} mm.`],
         }),
       );

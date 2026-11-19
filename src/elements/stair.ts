@@ -35,7 +35,7 @@ import type { ElementDef, ParseCtx, RenderCtx, ResolveCtx, TransformCtx } from "
 import type { SceneNode } from "../scene.js";
 import type { RStair, RStairFlight, RStairPiece } from "../ir.js";
 import { rectCorners } from "../geometry.js";
-import { fmt3 } from "../num-format.js";
+import { fmt3, fmtMessage } from "../num-format.js";
 import { flightAxis, flightsOf, isBlockStair, MAX_WINDERS, piecesOf, tailEdge } from "../vertical.js";
 import { breakLineEnds, runTooLong, runTreads, stairGlyph } from "./vertical-glyphs.js";
 
@@ -404,7 +404,7 @@ export const stair: ElementDef = {
       if (width <= 0 || width > cross) {
         ctx.diag({
           severity: "error",
-          message: `Stair "${id}" flight \`width\` must be between 0 and the footprint's cross extent (${cross} mm)`,
+          message: `Stair "${id}" flight \`width\` must be between 0 and the footprint's cross extent (${fmtMessage(cross)} mm)`,
           code: "E_STAIR_WIDTH",
           span: n.span,
         });

@@ -18,7 +18,7 @@
 
 import type { Diagnostic } from "../diagnostics.js";
 import { offsetToLineCol } from "../diagnostics.js";
-import { catalogFix } from "../catalog-fix.js";
+import { catalogFix, diagnosticFix } from "../catalog-fix.js";
 import type { Theme } from "../theme.js";
 import { DEFAULT_THEME } from "../theme.js";
 import { fmt2 as fmt } from "../num-format.js";
@@ -160,11 +160,13 @@ export function renderErrorCard(
   const overflow = diagnostics.length - shown.length;
 
   const rows: Row[] = shown.map((d) => {
-    // What `diagnosticToJson` would give for `line`/`col` and `fix`, read without loading it: the
-    // card is on the compile path, the JSON projection is not (card AF1). `line`/`col` exist only
-    // for a span measured in `source` (no `file`).
+    // What `diagnosticToJson` gives for `line`/`col` and `fix`, read through the same small modules
+    // (`diagnosticFix`, the root-first remedy of a diagnostic that names a cause included) without
+    // loading the JSON projection: the card is on the compile path, the projection is not (card
+    // AF1). `line`/`col` exist only for a span measured in `source` (no `file`).
     const at = d.span && d.file === undefined ? offsetToLineCol(source, d.span.start) : undefined;
-    const fix = fixOf(d.code);
+    // The table `fixOf` names (the compile card's or the public one's), or the root-first fix (RM9.4).
+    const fix = diagnosticFix(d, fixOf);
     const accent = d.severity === "error" ? ERROR_ACCENT : WARN_ACCENT;
     const location = at ? `line ${at.line}:${at.col}` : "";
     const msgLines = wrapText(d.message, msgBudget);

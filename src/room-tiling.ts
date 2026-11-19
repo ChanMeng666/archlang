@@ -72,7 +72,7 @@
 import type { Point } from "./ast.js";
 import { chargeSteps } from "./expr.js";
 import { RING_READS_PER_STEP } from "./geometry/polygon.js";
-import { fmt3 as numStr } from "./num-format.js";
+import { fmtMessage, fmt3 as numStr } from "./num-format.js";
 
 /** An axis-aligned rectangle `[x0, x1] × [y0, y1]`. */
 export interface TileRect {
@@ -148,6 +148,8 @@ export interface TilingRefusal {
   clause?: number;
   /** A clause on a pair with several runs: what picks each run, in the order they number. */
   picks?: RunPick[];
+  /** `E_ROOMS_OVERLAP`: each pair that overlaps, as `"a b"` (RM9.4: the root of a door between them). */
+  overlaps?: string[];
 }
 
 /** The opening an `open` pair derives: centred at `at`, `width` along its run. */
@@ -485,7 +487,7 @@ export function deriveWallsFromRooms(
           rooms: [...s.between!],
           why:
             clear > 0
-              ? `an opening ${width} mm wide does not fit the ${clear} mm clear between the walls that meet the edge "${p.a}" and "${p.b}" share`
+              ? `an opening ${fmtMessage(width)} mm wide does not fit the ${fmtMessage(clear)} mm clear between the walls that meet the edge "${p.a}" and "${p.b}" share`
               : `the walls that meet the edge "${p.a}" and "${p.b}" share leave no clear span on it to open`,
           clause,
         });
@@ -609,6 +611,7 @@ export function sweepRooms(rooms: readonly TileRoom[]): { ok: false; refusals: T
           code: "E_ROOMS_OVERLAP",
           rooms: named(once.flat()),
           why: once.map(([a, b]) => `"${ids[a]}" overlaps "${ids[b]}"`).join("; "),
+          overlaps: once.map(([a, b]) => `${ids[a]} ${ids[b]}`),
         },
       ],
     };
@@ -749,7 +752,7 @@ export function linkRings(
       tilingRooms.push(...h.owners);
       const xs = h.pts.map((p) => p.x);
       const ys = h.pts.map((p) => p.y);
-      const box = `x ${Math.min(...xs)}–${Math.max(...xs)}, y ${Math.min(...ys)}–${Math.max(...ys)}`;
+      const box = `x ${fmtMessage(Math.min(...xs))}–${fmtMessage(Math.max(...xs))}, y ${fmtMessage(Math.min(...ys))}–${fmtMessage(Math.max(...ys))}`;
       const by = named(h.owners)
         .map((x) => `"${x}"`)
         .join(", ");
@@ -811,7 +814,7 @@ export function deriveBetween(
       refusal: {
         code: "E_PARTITION_TOO_SHORT",
         rooms: [a.id, b.id],
-        why: `"${a.id}" and "${b.id}" share a run of ${len} mm, from (${run.a.x}, ${run.a.y}) to (${run.b.x}, ${run.b.y}), shorter than the ${thickness} mm wall`,
+        why: `"${a.id}" and "${b.id}" share a run of ${fmtMessage(len)} mm, from (${fmtMessage(run.a.x)}, ${fmtMessage(run.a.y)}) to (${fmtMessage(run.b.x)}, ${fmtMessage(run.b.y)}), shorter than the ${fmtMessage(thickness)} mm wall`,
       },
     };
   }
@@ -881,7 +884,7 @@ function shortRuns(
     why: short
       .map(
         (r) =>
-          `"${ids[r.p]}" and "${ids[r.q]}" share a run of ${Math.abs(r.b.x - r.a.x) + Math.abs(r.b.y - r.a.y)} mm, from (${r.a.x}, ${r.a.y}) to (${r.b.x}, ${r.b.y}), shorter than the ${r.t} mm partition`,
+          `"${ids[r.p]}" and "${ids[r.q]}" share a run of ${fmtMessage(Math.abs(r.b.x - r.a.x) + Math.abs(r.b.y - r.a.y))} mm, from (${fmtMessage(r.a.x)}, ${fmtMessage(r.a.y)}) to (${fmtMessage(r.b.x)}, ${fmtMessage(r.b.y)}), shorter than the ${fmtMessage(r.t)} mm partition`,
       )
       .join("; "),
   };
