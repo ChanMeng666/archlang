@@ -25,40 +25,67 @@
  * carries one `W_ANNOTATION_OVERLAP` where it carried six. The keep rows (`describe().keeps`),
  * `compile().diagnostics`, the exit code and the `validate --json` output with those reports taken
  * out are the same on `main` (`e7083747`) and this branch; `main` gives the old digest exactly.
+ *
+ * re-measured by AF7 (#PR_AF7): only added related notes; strip==old proven (RM-D69; the check is the
+ * `AF7_MAIN` test below: `k3DigestOf(…, true)` takes the notes out, `test/helpers/af7-notes.ts`). K3b did not move.
  */
 
 import { describe as suite, expect, it } from "vitest";
 import { k3bDigestOf, k3DigestOf, keepCorpus } from "./helpers/keep-harness.js";
 
 const K3_DIGESTS: [string, string][] = [
-  ["align-equal", "55af8ab086b4e78bb06062cd549ff704d3a94728a8e06e04a3b70c63bbeb2b52"],
-  ["grid50-cx", "e795fbb0dda8d8a957c8e5668a2773a84793e5ca30bb3a9daa708342e8e8a637"],
-  ["instance", "90cc05d69bd661d54820ff53d76aa86ea7ec739de0bcdbd7de1f1d239186fc07"],
+  ["align-equal", "fb107b95c634dd09911133a1b45d18d5b9cb089b2da02b4f2bdbc59604a64255"], // AF7 (RM-D69): only added related notes (was 55af8ab0, AF7_MAIN)
+  ["grid50-cx", "228ee2ace2ddb073968fb94ba4373256f03c6f2155fbd51ac21f987a9a536132"], // AF7 (RM-D69): only added related notes (was e795fbb0, AF7_MAIN)
+  ["instance", "663f52ba9b557ccad7bcc2f66525c45f048e5cba13bd536ea2d9651c52602b70"], // AF7 (RM-D69): only added related notes (was 90cc05d6, AF7_MAIN)
   ["loops", "9e6d4833ecd871d814eb1555d848f54a3ad90957a018c54795141cf061eb9dec"],
   ["min-clear-arcbbox", "0c2e5d959babb03fa8a41b522c68646e3dbe69d270d319b0d6a518f246c899eb"], // #367, see the header
   ["min-clear-derived", "50217fb42eed03770f6adab3455b56d8f160d25a845872f6499006a3b56ef192"],
-  ["min-clear-joins", "b3c96b56aa7568964fbaeb9428f4cdf93f2b8f0c95a122f3da964ce122ec67fc"], // round 2: the `skipped` reasons; #367 and AL3b, see the header
-  ["min-clear-lining300", "6e792240271d43879ea9fe432c93a1c26390a664cc89317caa7c3b6ca6c10902"],
-  ["min-clear-nib100", "4db5ed0e35604fca30f61b4adb18aed1f9e0230df3d6e63264772b9479bbe9c7"],
+  ["min-clear-joins", "4b5fb812414d4d0f650a1c0449c4531540fbf84d9479aee38a4ae145002a1be5"], // round 2: the `skipped` reasons; #367 and AL3b, see the header // AF7 (RM-D69): only added related notes (was b3c96b56, AF7_MAIN)
+  ["min-clear-lining300", "1a329c0703b658bb4e2f7c5cfd5b83e29bb8f946dbfb684945119ca5327b9f83"], // AF7 (RM-D69): only added related notes (was 6e792240, AF7_MAIN)
+  ["min-clear-nib100", "d608f87f1e5714bcf85eea6539857d4d10fb49a4c579d1f44a4421e3cd5b9bdf"], // AF7 (RM-D69): only added related notes (was 4db5ed0e, AF7_MAIN)
   ["min-clear-t45", "da04ce990baae33b4b2fd03d392030fdfbf90c9e425fefe45620ca2d7a46cc8d"],
-  ["min-clear-thick2face", "a27d860cc0c4905d0a25759634c5a6eb4cf4bcbac66711f875996e7833b5ee5d"],
-  ["min-clear-thick2full", "a27d860cc0c4905d0a25759634c5a6eb4cf4bcbac66711f875996e7833b5ee5d"],
-  ["min-clear-thick4b", "9a2208ab93ca520ecdee3cbc11c9dec72952c82767c15401f4838e2714e2c613"],
+  ["min-clear-thick2face", "7c3bc7cfb07f92a2a2819275f8f8e17b52b906b0b924d1b516fbee79c0fa5e61"], // AF7 (RM-D69): only added related notes (was a27d860c, AF7_MAIN)
+  ["min-clear-thick2full", "7c3bc7cfb07f92a2a2819275f8f8e17b52b906b0b924d1b516fbee79c0fa5e61"], // AF7 (RM-D69): only added related notes (was a27d860c, AF7_MAIN)
+  ["min-clear-thick4b", "a675bb5727c99cab6f817a8b87f70dc323b8917094a891ed884a79c84d4defdd"], // AF7 (RM-D69): only added related notes (was 9a2208ab, AF7_MAIN)
   ["min-clear", "367f2a9efad686f70a06504e9dbc2b5665195590d8553a4df762f8dc50118c78"], // round 2: the `skipped` reasons beside skipped_walls (round 1: the nib no longer counts in the hall)
-  ["offset-fixed", "084509601305bc7bf6b27649efd0c3124fdbac2ab6e97daaf69e22aa05ed021e"],
-  ["on-axis", "1a2d6ca631da7360538737b946c0e143b5586b5a905d10497d270f30e0c9890c"],
+  ["offset-fixed", "f8afef106464365ae24ae204ed60ac392b2bb90d25913872d7acc47cd85ce29c"], // AF7 (RM-D69): only added related notes (was 08450960, AF7_MAIN)
+  ["on-axis", "fa54ca816608e2c83b235ecf8327db9fad097880213b18db4f85be001d0b7934"], // AF7 (RM-D69): only added related notes (was 1a2d6ca6, AF7_MAIN)
   ["paper", "eb8f3fea25c43c9f4bded46dcf5f573e8b5948891e70c186483ff5108cce29b7"],
   ["refused-limit", "8744e79cb97e882640c5f1feda1291407d108e8e1348b5b7075df6a2df182a9f"],
   ["refused-placement", "8f764cae04d74f29fc9e39ae9f369a9aaf8005c7f71e71cb47347e4b733e434f"], // round 1: a keep in a component is refused where it is written
-  ["refused", "99ea1ef2a3b9baaac3d6a9502c4f1c5552f3f7404afe2bf98a336a889293ecf0"], // round 1: numbers through num-format
+  ["refused", "b09fe49611372c979f0888ecd20eb3d58877509fbc094cce01d249ec73dc0529"], // round 1: numbers through num-format // AF7 (RM-D69): only added related notes (was 99ea1ef2, AF7_MAIN)
   ["single-storey-stacked", "df3b4580f7dab78c06067120477533dabf0bd64f8489c4a951ca2bc1a7a7dd78"],
-  ["widen-after", "510134f7df24b91da3e61818102bdac8a8afc929d6ff88ce2762ccb28b99bbb7"], // round 2: the `skipped` reasons, and the hint lists them
+  ["widen-after", "e08ae400d983402cd725cf33ee0a8d4771a6148273df20bd195af0e30fc815fb"], // round 2: the `skipped` reasons, and the hint lists them // AF7 (RM-D69): only added related notes (was 510134f7, AF7_MAIN)
   ["widen-before", "a4620b68f1174873d84676b230bb3cbc348a31b47cc73d3c05e9cf8054cbd0d9"],
+];
+
+/** AF7 (RM-D69): `main`'s K3 digest of each row AF7 re-measured; `k3DigestOf` with AF7's related
+ *  notes taken out of every part gives it back. */
+const AF7_MAIN: [string, string][] = [
+  ["align-equal", "55af8ab086b4e78bb06062cd549ff704d3a94728a8e06e04a3b70c63bbeb2b52"],
+  ["grid50-cx", "e795fbb0dda8d8a957c8e5668a2773a84793e5ca30bb3a9daa708342e8e8a637"],
+  ["instance", "90cc05d69bd661d54820ff53d76aa86ea7ec739de0bcdbd7de1f1d239186fc07"],
+  ["min-clear-joins", "b3c96b56aa7568964fbaeb9428f4cdf93f2b8f0c95a122f3da964ce122ec67fc"],
+  ["min-clear-lining300", "6e792240271d43879ea9fe432c93a1c26390a664cc89317caa7c3b6ca6c10902"],
+  ["min-clear-nib100", "4db5ed0e35604fca30f61b4adb18aed1f9e0230df3d6e63264772b9479bbe9c7"],
+  ["min-clear-thick2face", "a27d860cc0c4905d0a25759634c5a6eb4cf4bcbac66711f875996e7833b5ee5d"],
+  ["min-clear-thick2full", "a27d860cc0c4905d0a25759634c5a6eb4cf4bcbac66711f875996e7833b5ee5d"],
+  ["min-clear-thick4b", "9a2208ab93ca520ecdee3cbc11c9dec72952c82767c15401f4838e2714e2c613"],
+  ["offset-fixed", "084509601305bc7bf6b27649efd0c3124fdbac2ab6e97daaf69e22aa05ed021e"],
+  ["on-axis", "1a2d6ca631da7360538737b946c0e143b5586b5a905d10497d270f30e0c9890c"],
+  ["refused", "99ea1ef2a3b9baaac3d6a9502c4f1c5552f3f7404afe2bf98a336a889293ecf0"],
+  ["widen-after", "510134f7df24b91da3e61818102bdac8a8afc929d6ff88ce2762ccb28b99bbb7"],
 ];
 
 suite("keep · K3, the keep rows: a digest table over the corpus", () => {
   it("pins every corpus plan", () => {
     expect(K3_DIGESTS.map(([n]) => n)).toEqual(keepCorpus().map(([n]) => n));
+  });
+  it("AF7: each re-measured row moved by its added related notes alone (strip==old)", () => {
+    for (const [name, digest] of AF7_MAIN) {
+      const src = keepCorpus().find(([n]) => n === name)![1];
+      expect(k3DigestOf(name, src, true), name).toBe(digest);
+    }
   });
   for (const [name, digest] of K3_DIGESTS) {
     it(name, () => {

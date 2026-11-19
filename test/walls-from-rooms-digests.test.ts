@@ -7,10 +7,13 @@
  * (`allStoreysDigestWithDiagnostics`). A moved row is a finding to explain
  * (`docs/testing.md` §3), never a re-pin. CO.1 (RM-D56) re-measured `two-bed-twin` after proof: it
  * gains one `W_GRID_SNAPPED` and nothing else (its row says how that was shown).
+ * re-measured by AF7 (#PR_AF7): only added related notes; strip==old proven (RM-D69; the check is the
+ * `AF7_MAIN` test below, through `test/helpers/af7-notes.ts`).
  */
 
 import { describe as suite, expect, it } from "vitest";
 import { compile, describe, lint } from "../src/index.js";
+import { af7StrippedApi } from "./helpers/af7-notes.js";
 import { allStoreysDigestWithDiagnostics, type CompilerApi } from "./helpers/byte-identity-digest.js";
 import { WALLS_FROM_ROOMS_PLANS } from "./tables/walls-from-rooms-plans.js";
 
@@ -31,7 +34,7 @@ const DIGESTS: [string, string][] = [
   ["void-hole", "1f2cc21de6c54b4c5fda96e2ca562ce248ba50c65e8100dc70ca348931f2e30b"], // PS2.29: message text only, same code, same span
   ["instances", "9cee7cee0d0fcdf4a673ef1ebd3dd085bc570542fb857da1b7efd1b7c4fdfde2"], // PS2.29: message text only, same code, same span
   ["coexist", "edbb7e715c8919e1128ff4bb6376d16f3f491cceb3729ef6627c4461b1173957"], // PS2.29: message text only, same code, same span
-  ["refused", "76e0b4711a8d03cafc6ce4271a2fb765a9280b9d332ffec2eeb350ef93bf67f7"], // PS2.29: message text only, same code, same span
+  ["refused", "5175630e99b1863600e2ab57f5b803c7ea953d08e7d5264b52612b31b87c8052"], // PS2.29: message text only, same code, same span // AF7 (RM-D69): only added related notes (was 76e0b471, AF7_MAIN)
   // Part C, the pair clauses: pinned after the twins held (`test/walls-from-rooms-clauses.test.ts`).
   // Re-pinned in red team round 1 (S1): the first pin carried a false W_OPENING_AT_JUNCTION (a
   // 25 mm "nib" beside the thinner wall at the a|c (150) / b|c (100) end); with the HEAD rule
@@ -42,9 +45,21 @@ const DIGESTS: [string, string][] = [
   ["clauses-refused", "2ee033192ebca84b6e8d593937ed348915530b2805b38f8d339ad7a5a6d6fe02"],
 ];
 
+/** AF7 (RM-D69): `main`'s digest of each row AF7 re-measured. The row's own digest body, with AF7's
+ *  related notes taken out of `compile().diagnostics` and `describe()`, gives it back. */
+const AF7_MAIN: [string, string][] = [
+  ["refused", "76e0b4711a8d03cafc6ce4271a2fb765a9280b9d332ffec2eeb350ef93bf67f7"],
+];
+
 suite("walls from rooms: digest table", () => {
   it("pins every plan", () => {
     expect(DIGESTS.map((d) => d[0])).toEqual(WALLS_FROM_ROOMS_PLANS.map((p) => p[0]));
+  });
+  it("AF7: each re-measured row moved by its added related notes alone (strip==old)", () => {
+    for (const [name, digest] of AF7_MAIN) {
+      const src = WALLS_FROM_ROOMS_PLANS.find((p) => p[0] === name)![1];
+      expect(allStoreysDigestWithDiagnostics(af7StrippedApi(API), src), name).toBe(digest);
+    }
   });
   for (const [name, digest] of DIGESTS) {
     it(name, () => {

@@ -54,10 +54,14 @@
  * arrow's `<g>`, and where the body hashes the Scene, the added `chrome.north` with it; `describe()`,
  * `lint()`, the diagnostics and the steps did not move. Put `main`'s SVG back (`a9db286e`) and drop
  * `chrome.north`, and this body reproduces every old digest; the new ones are this body on the branch.
+ *
+ * re-measured by AF7 (#PR_AF7): only added related notes; strip==old proven (RM-D69; the check is the
+ * `AF7_MAIN` test below, through `test/helpers/af7-notes.ts`).
  */
 
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
+import { af7StrippedApi } from "./helpers/af7-notes.js";
 import { describe as suite, expect, it } from "vitest";
 import { compile, describe, lint } from "../src/index.js";
 import { makeNodeWorld } from "../src/cli/io.js";
@@ -182,7 +186,7 @@ const BASELINE: [string, string][] = [
   ["bc452991d3ed362cdc36ff1f97938f1c917a9503f05c40ebdb286484a85f7034", "plans:void-hole"],
   ["01402210432235dd8c87a3b8f9ffff66d1839272a5fb649b181c91d9ea87cf5b", "plans:instances"],
   ["27fd4888416deb84501c64dc2d2ebad10776ac3f5c53e780e5eea8f2f0a4f05c", "plans:coexist"],
-  ["f48b445c3d8f3499ece29b70d20c50207c34adc80e430edccc3d9f6cd36eb114", "plans:refused"],
+  ["7be9dcaea4b587b54406854ef539cadc05716ccb4433818abac8a9b4ba18815d", "plans:refused"], // AF7 (RM-D69): only added related notes (was f48b445c, AF7_MAIN)
   ["3242407cca3e68167000ae30159a28d3f1d87f74a911adaed34c5458100f5d78", "plans:open-plan"],
   ["51d28947008155d90908b371a8900b873d87ab9a0fc785479df6f179b94b0e87", "plans:open-width"],
   ["fc878a600854ad99f69ecf8577176006056f301a90106de53452b97da71bd4a5", "plans:open-instances"],
@@ -288,13 +292,21 @@ const BASELINE: [string, string][] = [
   ["802586e9b7cf3f6927c1441481a0e2d14699e57b6b7a50ddb48b71a9b4a902d5", "inline:stair-arrival"], // RM1.2a, see ./byte-identity-baseline.ts; RM1.2a review, see ./byte-identity-baseline.ts; RM1.3b overlay, see ./byte-identity-baseline.ts; RM9.2, see ./byte-identity-baseline.ts
   ["e6eed958e1d4cea68f7981fce9964af4b5a26fa3d09ad3eafebb0992ce5cb727", "inline:stair-refusals"],
   ["57879436768cab2c738430d6586f0e88de6cb79c178799a011c9d09f73e553df", "inline:stair-parse-refusals"],
-  ["7fa38724de8f8f22ec5dde6df8e9d8e2f027ccf18c2068f69ef2d4761b81c5e6", "inline:slab-clear-words-as-names"],
-  ["9dd469250c48ce89b59c495b4205d65d055a6cad5a72e64a2c5b3d03aa053347", "inline:section-words-as-names"], // RM9.2, see ./byte-identity-baseline.ts
+  ["4ccf78bc9248faa384524972217b04930f6943d814fb33c8873c8a50009f0245", "inline:slab-clear-words-as-names"], // AF7 (RM-D69): only added related notes (was 7fa38724, AF7_MAIN)
+  ["6852f6abf4fbf33c80fe5d27e6880586a12f2c12726f1e15f8c02eddf1eec64c", "inline:section-words-as-names"], // RM9.2, see ./byte-identity-baseline.ts; AF7 (RM-D69): only added related notes (was 9dd46925, AF7_MAIN)
   ["a99e77bd8df64e89959fb92f93aff9fa2428527390ffa9a07c12291da1ddbff5", "inline:slab-clear-macro-after-height"],
   ["d1e9abba7d5c3e58e190713683263d24a3d1670b5eded0475bcc9f507c12afa3", "inline:slab-clear-storeys-without"], // RM9.2, see ./byte-identity-baseline.ts
 ];
 
 const pinned = new Map(BASELINE.map(([digest, name]) => [name, digest]));
+
+/** AF7 (RM-D69): `main`'s digest of each row AF7 re-measured. The law's own digest body, with AF7's
+ *  related notes taken out of `compile().diagnostics` and `describe()`, gives it back. */
+const AF7_MAIN: [string, string][] = [
+  ["plans:refused", "f48b445c3d8f3499ece29b70d20c50207c34adc80e430edccc3d9f6cd36eb114"],
+  ["inline:slab-clear-words-as-names", "7fa38724de8f8f22ec5dde6df8e9d8e2f027ccf18c2068f69ef2d4761b81c5e6"],
+  ["inline:section-words-as-names", "9dd469250c48ce89b59c495b4205d65d055a6cad5a72e64a2c5b3d03aa053347"],
+];
 
 suite("slab, clear and section: the byte-identity law", () => {
   it("the table pins every row, and no row writes any of the forms", () => {
@@ -326,6 +338,13 @@ suite("slab, clear and section: the byte-identity law", () => {
     expect(unmarked).not.toBe(marks);
     expect(writes(unmarked, "section")).toBe(false);
     expect(stairLawDigest(API, marks, undefined)).not.toBe(stairLawDigest(API, unmarked, undefined));
+  });
+
+  it("AF7: each re-measured row moved by its added related notes alone (strip==old)", () => {
+    for (const [name, digest] of AF7_MAIN) {
+      const row = ROWS.find((r) => r.name === name)!;
+      expect(stairLawDigest(af7StrippedApi(API), row.src, worldOf(row.dir)), name).toBe(digest);
+    }
   });
 
   // One law per form: every row that does not write the form is byte-identical to `21d3e0f4`.

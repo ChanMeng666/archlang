@@ -41,10 +41,14 @@
  * arrow's `<g>`, and where the body hashes the Scene, the added `chrome.north` with it; `describe()`,
  * `lint()`, the diagnostics and the steps did not move. Put `main`'s SVG back (`a9db286e`) and drop
  * `chrome.north`, and this body reproduces every old digest; the new ones are this body on the branch.
+ *
+ * re-measured by AF7 (#PR_AF7): only added related notes; strip==old proven (RM-D69; the check is the
+ * `AF7_MAIN` test below, through `test/helpers/af7-notes.ts`).
  */
 
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
+import { af7StrippedApi } from "./helpers/af7-notes.js";
 import { describe as suite, expect, it } from "vitest";
 import { compile, describe, lint } from "../src/index.js";
 import { makeNodeWorld } from "../src/cli/io.js";
@@ -171,7 +175,7 @@ const BASELINE: [string, string][] = [
   ["bc452991d3ed362cdc36ff1f97938f1c917a9503f05c40ebdb286484a85f7034", "plans:void-hole"],
   ["01402210432235dd8c87a3b8f9ffff66d1839272a5fb649b181c91d9ea87cf5b", "plans:instances"],
   ["27fd4888416deb84501c64dc2d2ebad10776ac3f5c53e780e5eea8f2f0a4f05c", "plans:coexist"],
-  ["f48b445c3d8f3499ece29b70d20c50207c34adc80e430edccc3d9f6cd36eb114", "plans:refused"],
+  ["7be9dcaea4b587b54406854ef539cadc05716ccb4433818abac8a9b4ba18815d", "plans:refused"], // AF7 (RM-D69): only added related notes (was f48b445c, AF7_MAIN)
   ["3242407cca3e68167000ae30159a28d3f1d87f74a911adaed34c5458100f5d78", "plans:open-plan"],
   ["51d28947008155d90908b371a8900b873d87ab9a0fc785479df6f179b94b0e87", "plans:open-width"],
   ["fc878a600854ad99f69ecf8577176006056f301a90106de53452b97da71bd4a5", "plans:open-instances"],
@@ -282,7 +286,7 @@ const BASELINE: [string, string][] = [
   ["66f1a0191a85f145e79df5545d2f1f8de004f6f41a5615d6fbaeb5301187a908", "inline:grid-at-axis-the-binding"],
   ["c06c80cb319f610b374af4cf1ee340e2b63944f8f8cfe9952cfb0bf118f6dc7d", "inline:grid-at-axis-the-datum"],
   ["8361e005a8553219462eae1a6a60a0cd92ce5176239a09aeeaf4b4b025627f96", "inline:grid-at-axis-unknown"],
-  ["e08f3bc04f8a91ddab84c053cdf530ee43a8a2fdc7a4c51a1674a4cac0391c1b", "inline:grid-keep-on-a-wall"],
+  ["ab57eb4025d85feef54d6eb856bb619711ca5f10ac5fd626190c49545a31d8af", "inline:grid-keep-on-a-wall"], // AF7 (RM-D69): only added related notes (was e08f3bc0, AF7_MAIN)
   ["ac4f2e05e3dc56b667b48d9c186bdb6ce3f545e74dd0bb256a079cf104c630e9", "inline:grid-keep-a-column-aligned"],
   ["4fe84962b3516be8567ead2ebfc660ce0ab2e557f3a9cda5b28eccb5abdcf9a1", "inline:grid-keep-a-column-fixed"],
   ["6325c4f4289cfda123811182522813a128973d53e1633f086a92884a4d9da7bc", "inline:grid-keep-a-room"],
@@ -304,6 +308,13 @@ const BASELINE: [string, string][] = [
   ["c11dcd909964181b03b13568c7ec679106c95ac98b41ad30ea48f9d4f94d82d9", "inline:grid-a-datum-in-a-function"],
 ];
 
+/** AF7 (RM-D69): `main`'s digest of each row AF7 re-measured. The law's own digest body, with AF7's
+ *  related notes taken out of `compile().diagnostics` and `describe()`, gives it back. */
+const AF7_MAIN: [string, string][] = [
+  ["plans:refused", "f48b445c3d8f3499ece29b70d20c50207c34adc80e430edccc3d9f6cd36eb114"],
+  ["inline:grid-keep-on-a-wall", "e08f3bc04f8a91ddab84c053cdf530ee43a8a2fdc7a4c51a1674a4cac0391c1b"],
+];
+
 suite("the shared grid: the byte-identity law", () => {
   it("the table pins every row, and no row reaches the form", () => {
     expect(BASELINE.map((b) => b[1])).toEqual(ROWS.map((r) => r.name));
@@ -321,6 +332,13 @@ suite("the shared grid: the byte-identity law", () => {
     const written = row.src.replace("(6100,0) (6100,2000)", "(axis.2,0) (axis.2,2000)");
     expect(written).not.toBe(row.src);
     expect(stairLawDigest(API, written, undefined)).not.toBe(stairLawDigest(API, row.src, undefined));
+  });
+
+  it("AF7: each re-measured row moved by its added related notes alone (strip==old)", () => {
+    for (const [name, digest] of AF7_MAIN) {
+      const row = ROWS.find((r) => r.name === name)!;
+      expect(stairLawDigest(af7StrippedApi(API), row.src, worldOf(row.dir)), name).toBe(digest);
+    }
   });
 
   it.each(BASELINE)("%s %s", (digest, name) => {

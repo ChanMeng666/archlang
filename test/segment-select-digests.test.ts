@@ -5,10 +5,13 @@
  * unchanged by the selectors) and after the twins in `test/segment-select.test.ts`. Measured
  * with the test's own digest body (`allStoreysDigestWithDiagnostics`). A moved row is a finding
  * to explain (`docs/testing.md` §3), never a re-pin.
+ * re-measured by AF7 (#PR_AF7): only added related notes; strip==old proven (RM-D69; the check is the
+ * `AF7_MAIN` test below, through `test/helpers/af7-notes.ts`).
  */
 
 import { describe as suite, expect, it } from "vitest";
 import { compile, describe, lint } from "../src/index.js";
+import { af7StrippedApi } from "./helpers/af7-notes.js";
 import { allStoreysDigestWithDiagnostics, type CompilerApi } from "./helpers/byte-identity-digest.js";
 import { SEGMENT_SELECT_PLANS } from "./tables/segment-select-plans.js";
 
@@ -22,8 +25,14 @@ const DIGESTS: [string, string][] = [
   ["frames", "fa90e92405b3198a736d6f7c9da05847bd679947c95e7b16b8da63be94a03822"], // PS2.29: message text only, same code, same span
   // A slanted polygon's datum refusal now reads "rectangular or rectilinear": message text only. With the old
   // words put back this plan's payload hashes to the digest before it, 81a19f28.
-  ["refused", "6735289270fe0fa8fcee6d6adabc593c177e7f5673b4787a629801a8442f1967"],
+  ["refused", "6018d8a035d705bb75fcc144f5aa378b64074eefe2f9c9e11e98389eca14ecee"], // AF7 (RM-D69): only added related notes (was 67352892, AF7_MAIN)
   ["compass-refused", "bdfa0c557e5c3653610eee94b8f9f9c1983a262b0f91b31ea86e1a7f4708e741"],
+];
+
+/** AF7 (RM-D69): `main`'s digest of each row AF7 re-measured. The row's own digest body, with AF7's
+ *  related notes taken out of `compile().diagnostics` and `describe()`, gives it back. */
+const AF7_MAIN: [string, string][] = [
+  ["refused", "6735289270fe0fa8fcee6d6adabc593c177e7f5673b4787a629801a8442f1967"],
 ];
 
 suite("segment selectors: digest table", () => {
@@ -38,6 +47,12 @@ suite("segment selectors: digest table", () => {
       new Set(["E_SEGMENT_SELECT", "E_UNKNOWN_REF", "E_ROOM_NOT_RECTANGLE"]),
     );
     expect(codesOf("compass-refused").map((d) => d.code)).toEqual(["E_DATUM_COMPASS"]);
+  });
+  it("AF7: each re-measured row moved by its added related notes alone (strip==old)", () => {
+    for (const [name, digest] of AF7_MAIN) {
+      const src = SEGMENT_SELECT_PLANS.find((p) => p[0] === name)![1];
+      expect(allStoreysDigestWithDiagnostics(af7StrippedApi(API), src), name).toBe(digest);
+    }
   });
   for (const [name, digest] of DIGESTS) {
     it(name, () => {
