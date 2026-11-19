@@ -597,3 +597,86 @@ cross-repository handoff pointer at `docs/plans/product-roadmap/handoff.md`; the
 (`ChanMeng666/docs/ecosystem/archlang-context.md`) needed no change (generated, topology only, versions
 matched). The session's scratch data is archived at
 `D:\github_repository\claude-kept\2026-11-15-archlang-ci-speedup\` (not a git repository).
+
+## 13. 2026-11-19: TR6 re-measure, and what followed
+
+Data: merged PRs 2026-11-15T21:39 to 2026-11-18T16:00 (120), and the last 120 `ci.yml` runs
+(2026-11-17T10:43 to 2026-11-18T15:56; 92 `pull_request`, 28 `push`), with their jobs and the logs of the
+failed ones, fetched with the § 9 commands. Times are UTC; every number is measured. The analysis scripts
+were not kept in the repository; refetch with `gh api`.
+
+### 13.1 Measured
+
+| Measure | Baseline (§ 12.2) | 2026-11-19 |
+|---|---|---|
+| Open to merge, all merged PRs | median 35.8 min (n=27, non-records) | median 25.8, P75 69.5, P90 111.9 (n=120) |
+| … train PRs | | median 9.5, P90 10.3 (n=28) |
+| … docs and records PRs | | median 15.1 (n=32) |
+| … code PRs, not trains | | median 64, P90 190 (n=60); median 72 for the 17 opened after 2026-11-17 11:00 |
+| PR code run, wall clock | 4.7 min (one run) | median 6.5–6.8, P90 13.7–15.5 (the tail is apt, § 13.2) |
+| `main` push run | 24–30 s proven; 12.3 min unproven | 2 of 26 successful pushes proven (0.5, 0.6 min); the other 24 median 8.9, P90 20.6 |
+| Merge to deploy finished | 2 min 5 s (a train) | about 10–11 min for a direct merge: the deploy waits for the push run (`deploy.yml` `workflow_run`), then takes about 1.5 min |
+| Trains | seven on 2026-11-15 | 2 (11-15, after 21:39), 24 (11-16), 2 (11-17), 0 (11-18) |
+| `main` red rate | | 0 failed of 28 push runs; 2 cancelled (apt timeouts) |
+| Reverts | | 0 of 120 |
+| PR CI failure rate | | 22 failed and 15 cancelled of 92 `pull_request` runs |
+| Job queue | median 3 s | median 3 s, P90 219 s (TR5's trigger, "median above 1 min", is not met) |
+| `check:quick` wall clock on a typical change | 30–35 s (estimate) | not measured (TR8 (d) is still open) |
+
+Not measured: members per train and train reds (too few trains in the window).
+
+### 13.2 Findings
+
+- **CI wall time is not where a code PR's time goes.** For the 17 code PRs opened after 2026-11-17 11:00,
+  CI ran 366 of their 1,340 open-to-merge minutes (27 %). They took 56 CI attempts, 25 of them red (45 %), so a
+  code PR needed about 3.3 runs. The rest of the time is fixing reds, review and waiting for a session.
+- **What the reds were** (first failing step, then the log):
+  - 6 were apt timeouts: the archive mirror served 139 MB at about 128 kB/s for up to 18 min. The slow part
+    was the download, not `apt-get update` (20 s). Steps that only install packages took more than 3 min in
+    about 10 % of jobs; the engines install took 16–19.6 min and ffmpeg 8.6–13.8 min.
+  - The largest group of real failures: a drawing change moved a pinned corpus digest (byte-identity laws)
+    that `check:quick`'s corpus-pin budget does not select. This happened on co1, rm9.2, al1, al6 and al4, and after the window on al3w and al3a. On al3a the digests were for plans held inline in `test/tables/*.ts`, which a sweep of
+    `.arch` files and docs fences does not see.
+  - Generated drift or a stale backlog index after `main` moved under the PR: rr24, rr9, ev7, co1, rm9.2, af3.
+  - Ordinary unit regressions: af3, al5, a docs-table pipe.
+- **Most code merges skipped the train.** 28 of 30 merges after 2026-11-17 10:43 were direct
+  (`gh pr merge --match-head-commit`), so each `main` push ran the full matrix, and the deploy waited about
+  9 min for it. The `main` red rate stayed at 0, so this cost deploy latency, not safety.
+- **The Node 22 test shards were the last job** in 30 of 43 PR runs. The slowest shard took 302 s against a
+  fastest of 159 s, because the table that balances them (`test/.durations.json`) held only each file's
+  run time. One file, `test/no-duplicate-helpers.test.ts`, spent 54–163 s collecting: a regex without an
+  anchor (quadratic) ran at describe time.
+- **The repository's Actions cache is over its cap:** 10.46 GB of 10 GB in 41 entries; 14
+  `codeql-overlay-*` entries on `main` hold 5.3 GB and evict the Playwright and apt caches.
+
+### 13.3 What was built (merged)
+
+- **#963** (merge `ac2657e7`): `.github/actions/apt-debs` restores and saves apt's downloaded `.deb` files,
+  keyed on the image, its version and a hash of the install commands. A save writes a run-suffixed key and a
+  restore takes the newest by prefix, so an incomplete entry is repaired by the next save.
+  `apt-cache-warm.yml` fills the four sets on `main` (scheduled, on push and by hand), because a PR's cache is
+  not shared with other PRs. PR runs after the warm-up download 0 B of the 139 MB.
+- **#965** (merge `bf3c33de`):
+  - `test/durations-reporter.ts` records each file's collect, setup and environment time beside its run time.
+  - The Node 22 shards upload the table, and `scripts/gen-test-durations.mjs` merges three runs by median.
+  - The sequencer starts a shard's longest recorded file first.
+  - `check:quick`'s budgets were rescaled to the new table and pinned so that it selects at least what
+    `main` selected before.
+  - The regex is anchored and its scan moved to `beforeAll` (0.3 s).
+  - Shard maximum and minimum went from 302/159 s to 196/136 s and 225/151 s on the next two runs. What is
+    left is runner speed (0.88–1.32× between jobs), which § 12.3 already found.
+
+### 13.4 Proposals (cards TR12–TR15)
+
+Ordered by expected effect on a code PR's open to merge time:
+
+1. **TR12, a corpus digest preview before push.** Byte-identity reds are the largest group of real failures,
+   and each costs a full CI cycle plus a fix.
+2. **TR13, sync with `main` just before the last push.** This targets the drift and backlog-index reds.
+3. **Review at PR open, in parallel with CI.** This is a coordinator habit, not a card; it is in use since
+   2026-11-19.
+4. **TR14, keep the cache under its cap**, by pruning `codeql-overlay-*`.
+5. **TR15, the residue of #965's review.**
+
+Not proposed: more CI parallelism. The wall clock is 27 % of a code PR's time, the queue median is 3 s, and
+TR5 is untriggered.
