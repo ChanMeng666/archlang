@@ -2431,7 +2431,7 @@ count (`rooms: 2` while `roomsInclude` needs 3) is not reported as infeasible. *
 POISON-site guard regex in `test/error-value-law.test.ts` misses `= POISON` and `=> POISON` forms (no such
 site today). **Gate:** (1) those errors reported beside the root, with a test; (2) the regex widened.
 
-### NR.16 · Room words only in English (downstream ask, 2026-11-18): done by #<pr>, waiting to be archived — `note`
+### NR.16 · Room words only in English (downstream ask, 2026-11-18): done by #973, waiting to be archived — `note`
 
 A downstream application reports that brief-check concept matching and the label classifier know only
 English room words: Spanish and Portuguese labels ("Dormitorio", "Baño", "Cocina", "Quarto", "Banheiro",
