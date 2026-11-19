@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { lazyOnce, sparesData } from "../src/lazy-once.js";
+import { lazyOnce } from "../src/lazy-once.js";
 
 describe("lazyOnce (the header actions' press-only core loader, card 3.18)", () => {
   it("loads once, and every call shares the load", async () => {
@@ -40,17 +40,5 @@ describe("lazyOnce (the header actions' press-only core loader, card 3.18)", () 
     await expect(load()).rejects.toThrow("offline 1");
     await expect(load()).rejects.toThrow("offline 2");
     expect(calls).toBe(2);
-  });
-});
-
-describe("sparesData (no warm-up under Save-Data or 2g, ruling MP-D4)", () => {
-  const nav = (connection?: { saveData?: boolean; effectiveType?: string }) => ({ connection }) as unknown as Navigator;
-  it("spares data under Save-Data and on 2g, and only then", () => {
-    expect(sparesData(nav({ saveData: true, effectiveType: "4g" }))).toBe(true);
-    expect(sparesData(nav({ effectiveType: "2g" }))).toBe(true);
-    expect(sparesData(nav({ effectiveType: "slow-2g" }))).toBe(true);
-    expect(sparesData(nav({ saveData: false, effectiveType: "3g" }))).toBe(false);
-    expect(sparesData(nav({ effectiveType: "4g" }))).toBe(false);
-    expect(sparesData(nav())).toBe(false);
   });
 });

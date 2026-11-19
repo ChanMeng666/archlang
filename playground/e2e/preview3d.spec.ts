@@ -1821,7 +1821,9 @@ test.describe("startup chunks", () => {
     const PRESS_ONLY: [string, string, string][] = [
       ["finish", "src/furnish.ts", "is outside the furnish table"],
       ["repair", "src/repair.ts", "is centred on a wall"],
-      ["format", "src/format.ts", "title hidden"],
+      // The blank-line test's regex source, not formatter output: what format() prints is ArchLang,
+      // which the example sources on the first use's path could hold verbatim.
+      ["format", "src/format.ts", String.raw`\r?\n[ \t]*\r?\n`],
       ["toDxf", "src/export/dxf.ts", "AcDbAlignedDimension"],
       ["renderAscii", "src/backends/ascii.ts", "┼"],
     ];

@@ -55,6 +55,7 @@ import { mountGallery } from "./gallery.js";
 import { mountNudge } from "./nudge.js";
 import { mountShell } from "./shell.js";
 import { fillGlbNote } from "./glb-note.js";
+import { sparesData } from "./save-data.js";
 import { KEYS, readStr, writeStr } from "./storage.js";
 // Self-hosted brand fonts (no CDN) — shared with the docs site.
 import "@fontsource-variable/archivo/wdth.css";
@@ -1384,9 +1385,7 @@ async function start({ sharedSrc, tooLarge, savedSrc, built }: Choice): Promise<
  */
 const IDLE_FALLBACK_MS = 3000;
 function importWhenIdle() {
-  const connection = (navigator as Navigator & { connection?: { saveData?: boolean; effectiveType?: string } })
-    .connection;
-  if (connection?.saveData === true || /^(?:slow-)?2g$/.test(connection?.effectiveType ?? "")) return;
+  if (sparesData(navigator)) return;
   const warm = () =>
     void Promise.all([loadCore(), loadExamples(), loadJobs(), loadActions()]).then(
       ([, examples]) => {

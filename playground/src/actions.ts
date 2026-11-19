@@ -13,7 +13,8 @@ import { buildChatPrompt, buildLlmPrompt, CHAT_HOSTS, type ChatHost, chatHostUrl
 import { createShortLink, encodeSrc, set3dFlag, shareableHref, updateHash } from "./share.js";
 import { mountSnapshots } from "./snapshots.js";
 import { KEYS, readStr, writeStr } from "./storage.js";
-import { lazyOnce, sparesData } from "./lazy-once.js";
+import { lazyOnce } from "./lazy-once.js";
+import { sparesData } from "./save-data.js";
 import { levelFileName } from "./levels.js";
 import { paperSizeMm, saveBlob, svgToCanvas } from "./raster-export.js";
 
@@ -132,40 +133,35 @@ export function mountActions(ctx: ActionsCtx): ActionsHandle {
   for (const type of ["pointerenter", "focus"]) els.repairBtn?.addEventListener(type, warmActionsCore);
 
   /**
-   * What a press of Format, Finish or Repair works on: the source as it was when pressed, and the
-   * core once loaded. Undefined (and the status says why) when the core did not load, or when the
-   * document changed while it loaded: a result for the pressed text must not replace an edit made
-   * after the press, so that press applies nothing and asks for another.
+   * Run a press of Format, Finish or Repair: await the core, then read the source as it is THEN and
+   * apply, in one synchronous step with no await between the read and the apply. So a press applies
+   * to the current document, and two presses during one load apply in turn, the second to the
+   * first's result (each continuation runs whole before the next). When the core did not load, the
+   * status says so and nothing runs.
    */
-  async function pressed(what: string): Promise<{ core: ActionsCore; src: string } | undefined> {
-    const src = getSource();
+  async function onPress(what: string, run: (core: ActionsCore, src: string) => void): Promise<void> {
     let core: ActionsCore;
     try {
       core = await loadActionsCore();
     } catch (err) {
       flash(`${what} did not load: ${reason(err)}`);
-      return undefined;
+      return;
     }
-    if (getSource() !== src) {
-      flash(`${what} not applied: the plan changed while it loaded; press it again`);
-      return undefined;
-    }
-    return { core, src };
+    run(core, getSource());
   }
 
   // Format (idempotent, comment-preserving) — rewrite the source in place.
-  els.formatBtn?.addEventListener("click", async () => {
-    const press = await pressed("Format");
-    if (!press) return;
-    const { core, src } = press;
-    const out = core.format(src);
-    if (out === src) {
-      flash("Already formatted");
-      return;
-    }
-    loadSource(out, false);
-    flash("Formatted");
-  });
+  els.formatBtn?.addEventListener("click", () =>
+    onPress("Format", (core, src) => {
+      const out = core.format(src);
+      if (out === src) {
+        flash("Already formatted");
+        return;
+      }
+      loadSource(out, false);
+      flash("Formatted");
+    }),
+  );
 
   // Finish — the core's `finish()` (the same transform as `arch finish`) adds what a
   // finished sheet needs and replaces the source as ONE undo step (Ctrl+Z reverts
@@ -177,10 +173,12 @@ export function mountActions(ctx: ActionsCtx): ActionsHandle {
    * `loadSource` hides the panel — it describes the previous document — so the panel
    * is rendered AFTER it. A rerun with nothing to do leaves a showing log in place.
    */
-  async function runFinish(reissue: boolean) {
-    const press = await pressed("Finish");
-    if (!press) return;
-    const { core, src } = press;
+  function runFinish(reissue: boolean): Promise<void> {
+    return onPress("Finish", (core, src) => finishNow(core, src, reissue));
+  }
+
+  /** {@link runFinish}'s apply, synchronous: `src` is the source as it is now. */
+  function finishNow(core: ActionsCore, src: string, reissue: boolean) {
     const result = core.finish(src, reissue ? { reissue: true } : {});
     const n = result.changes.length;
     const m = declined(result).length;
@@ -458,12 +456,15 @@ export function mountActions(ctx: ActionsCtx): ActionsHandle {
 
   /** Run `repair` on the current source and render its change log into the Lint
    *  tab, with an "Apply fixes" action that swaps the corrected source in. */
-  async function showRepair() {
+  function showRepair(): Promise<void> {
+    return onPress("Repair", repairNow);
+  }
+
+  /** {@link showRepair}'s apply, synchronous: `src` is the source as it is now. */
+  function repairNow(core: ActionsCore, src: string) {
     const repairPanel = els.repairPanel;
     if (!repairPanel) return;
-    const press = await pressed("Repair");
-    if (!press) return;
-    const result = press.core.repair(press.src);
+    const result = core.repair(src);
     if (!result.changed && result.unresolved.length === 0) {
       repairPanel.hidden = false;
       repairPanel.innerHTML = `<p class="repair-none">Nothing to repair — furniture placement is already sound.</p>`;
