@@ -616,7 +616,8 @@ describe("plan-json — schema object", () => {
  * `planToJson` projects the quarter-turn a `place` frame imposes on a fixture as `rotate`,
  * and — since handed-symbol mirroring made some catalogued families genuinely handed
  * (19 of the 83 when it was measured) — the reflection as `mirror: true` (the IR's
- * `_mirror`). The quarter-turn alone cannot say it: `M · R(l) = R(m − l) · Fx`, and the `Fx` is the part `rotate` drops.
+ * `_mirror`). The quarter-turn alone cannot say it: `M · R(l) = R(m − l) · Fx`, and the `Fx`
+ * is the part `rotate` drops.
  *
  * The way back prints the piece's own `mirror` clause, the same bit (issue #405), for a piece the
  * document holds as written. A piece with a dotted id came flattened out of a `place`: it stays

@@ -1330,18 +1330,37 @@ tiny value (a hairline, a model in another scale) may be noise.
 **Gate:** a catalogued code with a `fix` that names millimetres, fired on the audit's two
 inputs and on no example (`arch lint --json` over `examples/`); the error-catalog example test
 and `gen:errors` stay green. **Size:** S.
-**Done by PR #704** (RM1.4): `W_LENGTH_IN_METRES` (`src/ir/silent-accepts.ts`) warns on a room
-`size` with both sides under 100 mm and on a wall thickness under 10 mm (`walls from rooms`
-included), and its catalogue `fix` reads "Write the length in millimetres; the hint gives the clause
-times 1000." Re-checked for AF0 with `arch compile --json` on the audit's two inputs
-(`test/silent-accepts/length-in-metres.arch`): `ok: true` and two warnings, `Wall "shell" thickness
-0.2 is read as 0.2 mm: lengths are millimetres` (its hint: write `thickness 200`) and `Room "main"
-size 4 x 3 is read as 4 mm x 3 mm: lengths are millimetres` (its hint: write `size 4000x3000`).
-`test/silent-accepts.test.ts` pins both, the quiet thresholds, and that no example raises the
-code (its byte-identity law over `examples/`). A length that is too LARGE (a size built from a
-product of two lengths, `ai-first-language` README §6 finding 3) is a dimension check, not this
-entry. The entry is closed and waits to be archived to `archlang-lab` with
+**Done by PR #704** (RM1.4), for the audit's two inputs only. `W_LENGTH_IN_METRES`
+(`src/ir/silent-accepts.ts`) covers three places: a rectangle room's `size` with both sides under
+100 mm, a wall `thickness` under 10 mm, and the two thicknesses of `walls from rooms`. Its
+catalogue `fix` reads "Write the length in millimetres; the hint gives the clause times 1000."
+Every other length still compiles silently; that remainder is U.2a. Re-checked for AF0 with
+`arch compile --json` on the audit's two inputs (`test/silent-accepts/length-in-metres.arch`):
+`ok: true` and two warnings, `Wall "shell" thickness 0.2 is read as 0.2 mm: lengths are
+millimetres` (its hint: write `thickness 200`) and `Room "main" size 4 x 3 is read as 4 mm x 3 mm:
+lengths are millimetres` (its hint: write `size 4000x3000`). `test/silent-accepts.test.ts` pins
+both and the quiet thresholds. Its byte-identity law over `examples/` checks the "no example"
+clause through `compile().diagnostics`, not through `arch lint --json` as the gate wrote: the code
+is raised by the compile channel, which `lint()` does not report. A length that is too LARGE (a
+size built from a product of two lengths, `ai-first-language` README §6 finding 3) is a dimension
+check, not this entry. The entry is closed and waits to be archived to `archlang-lab` with
 `scripts/backlog-archive.mjs`.
+
+### U.2a · Metres still compile silently outside a room size and a wall thickness — `todo`
+
+**Observed (AF0 probe on `main` at `7fd0c469`, `arch compile --json` then `arch lint --json`).**
+In one plan with a 200 mm wall, these compile with `ok: true` and no `W_LENGTH_IN_METRES`:
+`door … width 0.9`, `window … width 1.2`, `furniture bed … size 1.6x2`, `room … polygon (0,0) (4,0)
+(4,3) (0,3)`, and the mixed `room … size 4x3000` (one side is not under 100 mm, so the room rule
+stays quiet by design). Only lint reaches any of them, each in its own terms: `W_DOOR_CLEARANCE`
+("Door is 0.9 mm wide"), `W_BED_UNDERSIZED` ("The bed is 2 mm long"), and `W_ROOM_TOO_SMALL` for
+the two rooms ("only 0.01 m²", "only 0 m²"). The window's 1.2 mm width draws no word at all. None
+of these findings says the cause is the unit. **Gate:** decide per clause which lengths get a
+metres floor (a door or window `width`, a furniture `size` with both sides under its own floor, a
+polygon whose every coordinate is under 100 mm), and record the choice here. Each chosen clause
+then raises `W_LENGTH_IN_METRES` with a clause-times-1000 hint, pinned in
+`test/silent-accepts.test.ts`, and that file's byte-identity law over `examples/` stays green.
+**Size:** S.
 
 ### U.3 · A misspelt furniture category passes `validate --strict`: done by #848, waiting to be archived — `note`
 
@@ -1380,7 +1399,7 @@ label on a drawn symbol). **Size:** S.
 
 **Narrowed (AF0, re-checked against the code).** The rule-6 half is done by PR #790 (CO-1):
 `id=` may follow the kind word of `furniture`, `door`, `window`, `outdoor` and `wall`
-(`idAfterKind`, `src/clause-order.ts`; the wall calls it at `src/elements/wall.ts:53`), so both
+(`idAfterKind`, `src/clause-order.ts`; the wall calls it at `src/elements/wall.ts:54`), so both
 forms the audit wrote now compile instead of failing. Probe, `arch compile --json` on
 `wall exterior id=w1 thickness 200 { … }` with a room, a `door on w1 at 50% width 900` and
 `furniture bed id=b1 at (500,500) size 1600x2000`: `ok: true`, no diagnostic, the door resolves on
