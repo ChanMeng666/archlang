@@ -278,6 +278,9 @@ describe("digest:preview end to end on a synthetic tree", () => {
   const zero = "0".repeat(64);
   const okHex = createHash("sha256").update("ok").digest("hex");
   mkdirSync(join(dir, "test"));
+  // An ES-module package, as the repository is: without it tsx compiles the files as CommonJS, whose
+  // `require("vitest")` never meets the preview's resolve hook.
+  writeFileSync(join(dir, "package.json"), '{ "type": "module" }\n');
   const head = `import { createHash } from "node:crypto";\nimport { describe, expect, it } from "vitest";\nconst sha = (s: string) => createHash("sha256").update(s).digest("hex");\n`;
   writeFileSync(
     join(dir, "test", "law.test.ts"),

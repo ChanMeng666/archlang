@@ -26,7 +26,10 @@ const posix = (p: string) => p.replace(/\\/g, "/");
  * Test files that hold or reach a pin and are NOT run, each with its reason. Only shrinks: an entry whose
  * file is gone or no longer reaches a pin fails `test/digest-preview.test.ts`.
  */
-export const EXCLUDED: Record<string, string> = {};
+export const EXCLUDED: Record<string, string> = {
+  "test/digest-preview.test.ts":
+    "the preview's own test: it names the JSON pin table to check that it is reached, and it runs the preview itself",
+};
 
 /** Every `.ts`/`.json` file under `dir`, as a forward-slash repo path, sorted. */
 function treeFiles(root: string, dir: string, out: string[] = []): string[] {
