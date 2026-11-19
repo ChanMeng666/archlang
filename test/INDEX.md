@@ -5,7 +5,7 @@
 Where the tests of a `src` module are, and what each test file is for. Generated; `npm run check:drift`
 fails when it is stale. How to add a test: `docs/testing.md` § 4.
 
-552 test files in `test/`, 290 `src` modules, 109 modules no test imports.
+554 test files in `test/`, 290 `src` modules, 109 modules no test imports.
 
 ## `src` module → tests that import it
 
@@ -30,7 +30,7 @@ Nearest first, then by name; `(+n)` is the rest. Test names are `test/<name>.tes
 - `src/analyze/quantities.ts` (2) — `describe-quantities`, `net-area-budget`
 - `src/analyze/symmetry.ts` (1) — `rect-ring`
 - `src/analyze/wall-faces.ts` (2) — `lint-space-enclosure`, `wall-status`
-- `src/ast.ts` (117) — `arc-radius-exact`, `band`, `circulation-concave`, `circulation-translation`, `closed-vocabularies`, `corner-window`, `cursor-exhaustive`, `d4` (+109)
+- `src/ast.ts` (118) — `arc-radius-exact`, `ast-values-frozen`, `band`, `circulation-concave`, `circulation-translation`, `closed-vocabularies`, `corner-window`, `cursor-exhaustive` (+110)
 - `src/attach.ts` (1) — `attach`
 - `src/axes.ts` (1) — `axes`
 - `src/backends/ascii.ts` (10) — `axes`, `fence`, `furniture-curves-backends`, `opening`, `outdoor`, `room-floor`, `scene-path-prim`, `schedule` (+2)
@@ -120,7 +120,7 @@ Nearest first, then by name; `(+n)` is the rest. Test names are `test/<name>.tes
 - `src/impact.ts` (2) — `rectilinear-doors`, `rectilinear-rooms`
 - `src/import.ts` (34) — `block-stair-byte-identity`, `corner-window-byte-identity`, `dim-swap-reprint`, `dim-thickness-callout`, `drawing-budget`, `error-value-law`, `floor-materials-byte-identity`, `furniture-relations` (+26)
 - `src/import/limits.ts` (1) — `openplan3d-malformed`
-- `src/index.ts` (411) — `acc-metadata`, `access-graph`, `access-policy`, `accessible-svg`, `agent-gallery`, `alias-match`, `anchors`, `annotate` (+403)
+- `src/index.ts` (412) — `acc-metadata`, `access-graph`, `access-policy`, `accessible-svg`, `agent-gallery`, `alias-match`, `anchors`, `annotate` (+404)
 - `src/input-limit.ts` (2) — `import-rooted`, `workspace-seams`
 - `src/intent-concepts.ts` (2) — `vocabulary-living-dining`, `vocabulary-matcher-oracle`
 - `src/intent-feasibility.ts` (1) — `intent-infeasible`
@@ -219,6 +219,7 @@ The first sentence of each file's header comment.
 - `test/arc-window-attribution.test.ts` — PS0.12 — a window on an arc edge is attributed from the shape.
 - `test/arch-highlight.test.ts` — The docs site's ArchLang highlighter — the vocabulary weld and the three properties that make it safe to render through `v-html`.
 - `test/ascii.test.ts` — ascii backend — golden text plans; ascii backend — determinism & invariants; ascii backend — degenerate scenes.
+- `test/ast-values-frozen.test.ts` — the tables ast.ts exports are deep-frozen: they are public values, so no consumer can edit them for everyone.
 - `test/attach.test.ts` — T1a — opening attachment; T1b — swing into / hinge near; S.2 — an attachment position is an expression; S.2 — every refusal in the slot is coded; PS0.19 — `at <…
 - `test/axes.test.ts` — axes — GB/T 50001 numbering (derived, never authored); axes — parsing; axes — render pass; axes — the `dims auto` middle chain becomes the axis chain; axes — de…
 - `test/backlog-index.test.ts` — The backlog holds open work only, and `docs/backlog-index.md` lists exactly its entries (card EH3.2).
@@ -456,6 +457,7 @@ The first sentence of each file's header comment.
 - `test/import-rooted.test.ts` — a module outside the import root is refused, never read; only `.arch`, only up to the cap; what the root allows; the CLI: default root is the working directory;…
 - `test/import-world-fuzz.test.ts` — S-FZ-2 — hostile import specs against a rooted Node World.
 - `test/import.test.ts` — T4.3 — import in a virtual-FS (browser-like) World; T4.3 — import in a Node (real-fs) World; T4.3 — diagnostics.
+- `test/index-values.test.ts` — every value the package root declares is defined at runtime (`export type *` once hid ast.ts's constants).
 - `test/indexnow-script.test.ts` — `scripts/indexnow.mjs` — the post-deploy IndexNow ping.
 - `test/input-limit.test.ts` — `inputTooLarge()` and `rateLimited()` — a host's refusals as catalogued diagnostics.
 - `test/instruction-budget.test.ts` — the instruction files stay inside their byte budget (EH3.9).
