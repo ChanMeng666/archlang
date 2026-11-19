@@ -182,7 +182,7 @@ describe("FIX_PRODUCERS declares what the fix producers emit (AF8)", () => {
         all.some((e) => e.where === `REACH ${name}` && `${e.code}|${e.applicability}` === name),
         name,
       ).toBe(true);
-  }, 180_000);
+  }, 120_000);
 
   it("groups by applicability, most confidently applicable first, a two-tier code in both groups", () => {
     const groups = fixableCodes();
