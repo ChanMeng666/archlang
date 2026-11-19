@@ -13,7 +13,8 @@
  */
 
 /** The wording of an AF7 note, exactly. */
-export const AF7_NOTE = /^(?:`[^`]*` placed (?:here|(?:right-of|left-of|below|above) `[^`]*` here)|the other room placed here)$/;
+export const AF7_NOTE =
+  /^(?:`[^`]*` placed (?:here|(?:right-of|left-of|below|above) `[^`]*` here)|the other room placed here)$/;
 
 const isAf7 = (x: unknown): boolean =>
   typeof x === "object" && x !== null && AF7_NOTE.test(String((x as { message?: unknown }).message ?? ""));

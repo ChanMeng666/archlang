@@ -31,9 +31,7 @@ const DIGESTS: [string, string][] = [
 
 /** AF7 (RM-D69): `main`'s digest of each row AF7 re-measured. The row's own digest body, with AF7's
  *  related notes taken out of `compile().diagnostics` and `describe()`, gives it back. */
-const AF7_MAIN: [string, string][] = [
-  ["refused", "6735289270fe0fa8fcee6d6adabc593c177e7f5673b4787a629801a8442f1967"],
-];
+const AF7_MAIN: [string, string][] = [["refused", "6735289270fe0fa8fcee6d6adabc593c177e7f5673b4787a629801a8442f1967"]];
 
 suite("segment selectors: digest table", () => {
   it("pins every plan", () => {
