@@ -127,7 +127,7 @@ describe("a refused `walls from rooms` is listed before the openings it leaves w
     expect(Object.keys(j.cause!)).toEqual(["code", "line", "col", "span"]);
     expect(Object.keys(j).slice(-2)).toEqual(["related", "cause"]);
     // The catalogue's "Add the wall …" would contradict the hint: the dependent's `fix` names the root.
-    expect(j.fix).toBe("Fix the diagnostic `cause` names first: this one follows from it.");
+    expect(j.fix).toBe("Fix the `E_ROOMS_OVERLAP` this follows from first.");
     const root_ = diagnosticToJson(FEET, root);
     expect(Object.keys(root_)).not.toContain("cause");
     expect(root_.fix).toMatch(/^Move or resize the rooms/);
@@ -364,26 +364,26 @@ describe("a root that goes with its statement (out of the modelling range) is ne
 describe("the CLI text and the error card give the root-first fix too", () => {
   it("`arch compile` prints `= fix:` naming the cause, not the catalogue's", async () => {
     const r = await runArch(["compile", "-", "-o", "-"], { input: OVERLAP });
-    expect(r.stderr).toContain("= fix: Fix the diagnostic `cause` names first: this one follows from it.");
+    expect(r.stderr).toContain("= fix: Fix the `E_ROOMS_OVERLAP` this follows from first.");
     expect(r.stderr).not.toContain("= fix: Add the wall");
     // The root keeps its own catalogued fix.
     expect(r.stderr).toContain("= fix: Move or resize the rooms");
   });
 
-  it("the public renderErrorSvg draws it too, and an intent violation keeps its own fix (NR.10's table)", () => {
+  it("the public renderErrorSvg draws the root-first fix; JSON keeps an intent violation's own fix and gives its dependent the root-first one", () => {
     const svg = renderErrorSvg(OVERLAP, compile(OVERLAP, { noCache: true }).diagnostics);
-    expect(svg).toContain("Fix: Fix the diagnostic");
+    expect(svg).toContain("Fix: Fix the `E_ROOMS_OVERLAP` this follows");
     expect(svg).toContain("Fix: Move or resize the rooms");
     const intent: Diagnostic = { severity: "error", message: "m", code: "E_INTENT_INFEASIBLE" };
     expect(diagnosticToJson("", intent).fix).toBeDefined();
     expect(diagnosticToJson("", { ...intent, cause: { code: "E_X", span: { start: 0, end: 0 } } }).fix).toBe(
-      "Fix the diagnostic `cause` names first: this one follows from it.",
+      "Fix the `E_X` this follows from first.",
     );
   });
 
   it("the error card draws the same fix", () => {
     const svg = compile(OVERLAP, { noCache: true, onError: "svg" }).svg;
-    expect(svg).toContain("Fix: Fix the diagnostic");
+    expect(svg).toContain("Fix: Fix the `E_ROOMS_OVERLAP` this follows");
     expect(svg).not.toContain("Fix: Add the wall");
   });
 });

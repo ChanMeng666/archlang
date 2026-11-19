@@ -24,12 +24,13 @@ export function catalogFix(code: string | undefined): string | undefined {
  * The remedy shown for `d`, wherever it is shown (`fix` in the JSON, the CLI's `= fix:` line, both
  * error cards): its code's fix in `fixOf`, the table that place reads (this module's for the card
  * `compile()` draws, `anyCatalogFix` for the JSON and the public `renderErrorSvg`), except that a
- * diagnostic which names a {@link Diagnostic.cause} says to fix that root first (RM9.4). The
+ * diagnostic which names a {@link Diagnostic.cause} says to fix that root first, by its code (RM9.4). The
  * catalogue is unchanged.
  */
 export function diagnosticFix(
   d: Pick<Diagnostic, "code" | "cause">,
   fixOf: (code: string | undefined) => string | undefined,
 ): string | undefined {
-  return d.cause ? "Fix the diagnostic `cause` names first: this one follows from it." : fixOf(d.code);
+  // The root's code, as the hint says it: a card or a prompt that prints no `cause` still names it.
+  return d.cause ? `Fix the \`${d.cause.code}\` this follows from first.` : fixOf(d.code);
 }
