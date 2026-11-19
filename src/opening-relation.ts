@@ -101,6 +101,8 @@ export interface RelationCtx {
   rootDiag?(d: Diagnostic): void;
   /** {@link import("./registry.js").ResolveCtx.sameFile}; absent: every span is taken as this source's. */
   sameFile?(file: string | undefined): boolean;
+  /** {@link import("./registry.js").ResolveCtx.refusedDerivation}; absent: no root is named. */
+  refusedDerivation?(rooms: readonly string[]): NonNullable<Diagnostic["cause"]> | undefined;
   eval(e: Expr): number;
   datums?: DatumAccess;
 }
@@ -899,14 +901,24 @@ function placeOnRun(
   const centre = placed.c;
   const bodies = bodiesOn(run, ctx.walls);
   if (bodies.length === 0) {
+    // The wall `walls from rooms` would have derived here, had it not refused (RM9.4): that
+    // refusal is the root, listed first; this one names it and keeps its own report.
+    const named = relation.between ?? [splitDatum(relation.edge ?? "")?.room ?? ""];
+    const cause = ctx.refusedDerivation?.(named);
     ctx.diag({
       severity: "error",
       message: `${what} has no wall to stand in: no wall lies on the ${runWord} \`${where}\` names (on ${lineText(run)}, ${alongText(run, run.r0)}–${numStr(run.r1)})`,
       code: "E_OPENING_NO_SHARED_WALL",
       span,
       hints: [
-        "Add the wall (`walls from rooms` derives it, or write it by hand on that line), or place the opening on a wall that exists.",
+        cause
+          ? `Fix the \`${cause.code}\` this follows from first: \`walls from rooms\` refused, so it derived no wall here.`
+          : "Add the wall (`walls from rooms` derives it, or write it by hand on that line), or place the opening on a wall that exists.",
       ],
+      ...(cause && (ctx.sameFile?.(cause.file) ?? true)
+        ? { relatedSpans: [{ span: cause.span, message: `follows from the ${cause.code} here` }] }
+        : {}),
+      ...(cause ? { cause } : {}),
     });
     return null;
   }

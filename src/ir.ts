@@ -33,7 +33,7 @@ import { statementReadIds } from "./analyze/depends.js";
 import { numberAxes } from "./axes.js";
 import type { Frame } from "./frame.js";
 import { tryTransformElement } from "./frame.js";
-import type { Diagnostic, Span } from "./diagnostics.js";
+import { type Diagnostic, rootsFirst, type Span } from "./diagnostics.js";
 import type { Env, Expr, Value } from "./expr.js";
 import { fmt0, fmt3, MODEL_RANGE_MM } from "./num-format.js";
 import {
@@ -829,12 +829,14 @@ function resolveImpl(
   );
   if ("value" in run) {
     stepsSpent.set(run.value.ir, { used: run.used, exhausted: false });
-    return run.value;
+    // A root is listed before what follows from it (RM9.4); a plan with no `cause` keeps its list.
+    const sorted = rootsFirst(run.value.diagnostics);
+    return sorted === run.value.diagnostics ? run.value : { ...run.value, diagnostics: sorted };
   }
   diagnostics.push(stepLimitDiagnostic(run.signal));
   const ir = unresolvedPlan(ast, extras);
   stepsSpent.set(ir, { used: run.used, exhausted: true });
-  return { ir, diagnostics };
+  return { ir, diagnostics: rootsFirst(diagnostics) };
 }
 
 /** The one `E_STEP_LIMIT`, at the statement that crossed the budget. */
@@ -1087,6 +1089,9 @@ function resolveBody(
     activeEnv = envBefore;
   }
 
+  /** The refusals `walls from rooms` reported in the group resolving now (RM9.4,
+   *  `ResolveCtx.derivationRefused`): emptied as each group starts. */
+  let refusals: { cause: NonNullable<Diagnostic["cause"]>; rooms: ReadonlySet<string> }[] = [];
   const ctx: ResolveCtx = {
     grid: g,
     snap,
@@ -1113,6 +1118,13 @@ function resolveBody(
     ...(world.now ? { now: () => world.now!() } : {}),
     diag: pushDiag,
     rootDiag: evalDiag,
+    derivationRefused: (d, rooms) => {
+      const out = pushDiag(d);
+      if (out.code === undefined || out.span === undefined) return;
+      const cause = { code: out.code, span: out.span, ...(out.file !== undefined ? { file: out.file } : {}) };
+      refusals.push({ cause, rooms: new Set(rooms) });
+    },
+    refusedDerivation: (rooms) => refusals.find((r) => rooms.some((x) => r.rooms.has(x)))?.cause,
     north: ast.north,
   };
   /** A wall went for the error value (AF3: an authored wall that read it, or a `walls from
@@ -1209,6 +1221,7 @@ function resolveBody(
     ctx.unplacedWall = (ref) => refusedWalls.has(ref);
     ctx.rooms = grpRooms;
     delete ctx.datums;
+    if (refusals.length > 0) refusals = [];
     // The group's OWN elements resolved so far, in source order (never a descendant's).
     ctx.group = () => {
       chargeSteps(grp.entries.length + 1);

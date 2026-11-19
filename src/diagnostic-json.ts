@@ -76,6 +76,12 @@ export interface DiagnosticJson {
    */
   related?: RelatedSpanJson[];
   /**
+   * The root diagnostic this one follows from (RM9.4, {@link import("./diagnostics.js").Diagnostic.cause}):
+   * its `code`, then its location by the rule `related` follows. Present only on a diagnostic that
+   * carries one, which is listed after its root; after `related`.
+   */
+  cause?: { code: string; line?: number; col?: number; span: [number, number]; file?: string };
+  /**
    * The lint ruleset number this warning was raised against (card RM1.6b): its key, value, units,
    * who set it, its document, clause, edition and verification grade, and the profile the run
    * used. Present only when the caller asks for it ({@link DiagnosticJsonOptions.rule}) and a
@@ -268,6 +274,18 @@ export function diagnosticToJson(source: string, d: Diagnostic, opts?: Diagnosti
       if (r.file !== undefined) j.file = r.file;
       return j;
     });
+  if (d.cause) {
+    const c = d.cause;
+    const j = { code: c.code } as NonNullable<DiagnosticJson["cause"]>;
+    if (c.file === undefined) {
+      const { line, col } = offsetToLineCol(source, c.span.start);
+      j.line = line;
+      j.col = col;
+    }
+    j.span = [c.span.start, c.span.end];
+    if (c.file !== undefined) j.file = c.file;
+    out.cause = j;
+  }
   const rule = opts?.rule?.(d);
   if (rule) out.rule = rule;
   const overprint = opts?.overprint?.(d);

@@ -52,7 +52,7 @@ import type { Diagnostic, Span } from "./diagnostics.js";
 import type { Expr } from "./expr.js";
 import type { WallSegment } from "./geometry.js";
 import type { RWall } from "./ir.js";
-import { fmt3 } from "./num-format.js";
+import { fmt3, fmtMessage } from "./num-format.js";
 import type { ParseCtx, ResolveCtx } from "./registry.js";
 import type { TailClause } from "./clause-order.js";
 
@@ -146,7 +146,7 @@ export function heightRangeDiagnostic(subject: string, clause: string, value: nu
   return {
     severity: "error",
     code: "E_HEIGHT_RANGE",
-    message: `${subject} has a \`${clause}\` of ${value} mm — ${bound} and no more than ${MAX_HEIGHT} mm (100 m)`,
+    message: `${subject} has a \`${clause}\` of ${fmtMessage(value)} mm — ${bound} and no more than ${MAX_HEIGHT} mm (100 m)`,
     ...(span ? { span } : {}),
     ...(span
       ? {
@@ -284,14 +284,14 @@ export function resolveOpeningHeights(
       severity: "error",
       code: "E_SILL_ABOVE_HEAD",
       message:
-        `${subject} has a \`sill\` of ${sill} mm at or above its \`head\` of ${head} mm — ` +
+        `${subject} has a \`sill\` of ${fmtMessage(sill)} mm at or above its \`head\` of ${fmtMessage(head)} mm — ` +
         `there is no opening between them`,
       ...(span ? { span } : {}),
       ...(clauses.sillSpan
         ? {
             fixes: [
               {
-                title: `drop the \`sill\` clause and inherit ${defaults.sill} mm`,
+                title: `drop the \`sill\` clause and inherit ${fmtMessage(defaults.sill)} mm`,
                 applicability: "machine-applicable" as const,
                 edits: [{ span: clauses.sillSpan, newText: "" }],
               },
@@ -310,15 +310,15 @@ export function resolveOpeningHeights(
     const authoredHere = hostHeightAuthored(host, ctx.walls);
     const inheritedNote = authoredHere
       ? "Raise the host wall's own `height`, or lower this `head`."
-      : `The host wall does NOT declare a height — the ${wallHeight} mm is inherited from the ` +
-        `storey's \`height ${ctx.storeyHeight}\` setting, so that plan-level line is what to change ` +
+      : `The host wall does NOT declare a height — the ${fmtMessage(wallHeight)} mm is inherited from the ` +
+        `storey's \`height ${fmtMessage(ctx.storeyHeight)}\` setting, so that plan-level line is what to change ` +
         `(every opening on this storey is measured against it). Giving this wall its own \`height\` ` +
         "clause overrides it for this wall alone.";
     ctx.diag({
       severity: "error",
       code: "E_OPENING_ABOVE_WALL",
       message:
-        `${subject} has a \`head\` of ${head} mm but its host wall is only ${wallHeight} mm tall — ` +
+        `${subject} has a \`head\` of ${fmtMessage(head)} mm but its host wall is only ${fmtMessage(wallHeight)} mm tall — ` +
         `the opening would run out through the top of the wall`,
       hints: [inheritedNote],
       ...(span ? { span } : {}),
@@ -326,7 +326,7 @@ export function resolveOpeningHeights(
         ? {
             fixes: [
               {
-                title: `lower the head to the wall's own height (${wallHeight} mm)`,
+                title: `lower the head to the wall's own height (${fmtMessage(wallHeight)} mm)`,
                 applicability: "machine-applicable" as const,
                 edits: [{ span: clauses.headSpan, newText: `head ${wallHeight}` }],
               },

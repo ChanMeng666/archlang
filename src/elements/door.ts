@@ -40,6 +40,7 @@ import {
 } from "../datum.js";
 import { idAfterKind, kindClause, missingClause, parseIdWithSpan, readClauses } from "../clause-order.js";
 import { noteSnap } from "../ir/silent-accepts.js";
+import { fmtMessage } from "../num-format.js";
 import { reprint } from "./reprint.js";
 
 /**
@@ -559,10 +560,10 @@ export const door: ElementDef = {
       const clamped = Number.isNaN(openRaw) ? 0 : clamp01(openRaw);
       ctx.diag({
         severity: "error",
-        message: `Door "${id}" has \`open ${openRaw}\`, which is outside the 0–1 range a panel can travel`,
+        message: `Door "${id}" has \`open ${fmtMessage(openRaw)}\`, which is outside the 0–1 range a panel can travel`,
         code: "E_DOOR_OPEN_RANGE",
         span: n.span,
-        hints: [`Use a fraction in [0,1] — \`open ${clamped}\` is the nearest legal value.`],
+        hints: [`Use a fraction in [0,1] — \`open ${fmtMessage(clamped)}\` is the nearest legal value.`],
         ...fixesFrom(reprint(ctx, n, "open", `open:${clamped}`, () => doorOpenRangeFix(n, clamped))),
       });
     }

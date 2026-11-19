@@ -21,7 +21,7 @@
  */
 
 import type { Point, WallsFromRoomsNode, WallsPairClause, WallsPairRoom } from "../ast.js";
-import type { Span } from "../diagnostics.js";
+import type { Diagnostic, Span } from "../diagnostics.js";
 import type { Expr } from "../expr.js";
 import type { ElementDef, ParseCtx, ResolveCtx, TransformCtx } from "../registry.js";
 import type { DerivedWallRow, ROpening, ROutdoor, RRoom, RVoid, RWall, RWallsFromRooms } from "../ir.js";
@@ -127,6 +127,11 @@ export const wallsFromRooms: ElementDef = {
 
   resolve(node, ctx: ResolveCtx): RWallsFromRooms {
     const n = node as WallsFromRoomsNode;
+    const own = ctx.group?.() ?? [];
+    /** A refusal that leaves `rooms` with no derived wall: the root of each opening there that
+     *  finds no wall to stand in (RM9.4, `ResolveCtx.derivationRefused`). */
+    const refuse = (d: Diagnostic, rooms: () => string[]): void =>
+      ctx.derivationRefused ? ctx.derivationRefused(d, rooms()) : ctx.diag(d);
     const thick = (
       e: WallsFromRoomsNode["exterior"],
       what: string,
@@ -136,12 +141,18 @@ export const wallsFromRooms: ElementDef = {
       const v = ctx.eval(e);
       const t = ctx.snap(v) || v;
       if (!(t > 0)) {
-        ctx.diag({
-          severity: "error",
-          message: `\`walls from rooms\` needs a positive ${what} thickness`,
-          code: "E_WALL_THICKNESS",
-          span,
-        });
+        // No wall is derived at all (below), for any room of the group it does not leave out.
+        const kept = (): string[] =>
+          own.flatMap((e) => (e.kind === "room" && !n.except.some((x) => x.id === e.id) ? [e.id] : []));
+        refuse(
+          {
+            severity: "error",
+            message: `\`walls from rooms\` needs a positive ${what} thickness`,
+            code: "E_WALL_THICKNESS",
+            span,
+          },
+          kept,
+        );
       }
       noteThickness(ctx, "`walls from rooms`", v, t, valueSpan ?? span, what);
       return t;
@@ -160,7 +171,6 @@ export const wallsFromRooms: ElementDef = {
       span: n.span,
       ...(n.status !== undefined ? { status: n.status } : {}),
     };
-    const own = ctx.group?.() ?? [];
     if (own.some((e) => e.kind === "walls")) {
       ctx.diag({
         severity: "error",
@@ -238,7 +248,13 @@ export const wallsFromRooms: ElementDef = {
         if (broken.size > 0 && r.code === "E_ROOMS_NOT_TILING") continue;
         const clause = r.clause === undefined ? undefined : clauses[r.clause]!;
         const onEdge = r.picks ? openOneEdge(r.picks, r.clause!, clauses, pairs, tExt, tInt, ctx) : [];
-        ctx.diag({ severity: "error", ...refusalText(r, onEdge), code: r.code, span: clause?.span ?? n.span });
+        const d: Diagnostic = {
+          severity: "error",
+          ...refusalText(r, onEdge),
+          code: r.code,
+          span: clause?.span ?? n.span,
+        };
+        refuse(d, () => set.map((x) => x.id));
       }
       return out;
     }

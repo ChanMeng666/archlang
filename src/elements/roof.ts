@@ -48,6 +48,7 @@ import { weightWidth } from "../scene.js";
 import type { RRoof, RWall } from "../ir.js";
 import { wallHasArc } from "../geometry.js";
 import { effectiveVertices, polygonSelfIntersects, polygonSignedArea2 } from "../geometry/polygon.js";
+import { fmtMessage } from "../num-format.js";
 import { dashedPattern } from "./glyph-lib.js";
 
 /**
@@ -291,7 +292,7 @@ export const roof: ElementDef = {
     if (overhang <= 0) {
       ctx.diag({
         severity: "error",
-        message: `Roof "${id}" must have a positive \`overhang\` (got ${overhang} mm)`,
+        message: `Roof "${id}" must have a positive \`overhang\` (got ${fmtMessage(overhang)} mm)`,
         code: "E_ROOF_OVERHANG",
         span: n.span,
       });
@@ -319,7 +320,7 @@ export const roof: ElementDef = {
       ctx.diag({
         severity: "error",
         message:
-          `Roof "${id}" self-intersects at ${overhang} mm of overhang — the projection is wide enough to swallow ` +
+          `Roof "${id}" self-intersects at ${fmtMessage(overhang)} mm of overhang — the projection is wide enough to swallow ` +
           `a notch in ${wallPhraseOf(wall)}. Reduce the overhang, or state the outline with \`roof polygon …\`.`,
         code: "E_ROOF_SELF_INTERSECT",
         span: n.span,

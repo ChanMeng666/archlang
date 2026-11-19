@@ -165,7 +165,18 @@ export function fmtLiteral(n: number): string {
  */
 export function fmtWritten(n: number): string {
   const s = fmt3(n);
-  return Number(s) === n ? s : plainDigits(n);
+  return Number(s) === n ? s : fmtMessage(n);
+}
+
+/**
+ * A number as a diagnostic's message prints it (RM9.4): the shortest decimal of at most 15
+ * significant digits, no exponent ({@link plainDigits}). 15 is the most digits every decimal keeps
+ * through a double (DBL_DIG), so a value with a short form prints exactly as `plainDigits(n)` does
+ * (a literal the author wrote, `2749.9999`, in full), and only the noise a float sum or product leaves
+ * in the 16th and 17th digits is dropped: `12 * 304.8` prints `3657.6`, not `3657.6000000000004`.
+ */
+export function fmtMessage(n: number): string {
+  return plainDigits(Number(n.toPrecision(15)));
 }
 
 /**

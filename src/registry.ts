@@ -114,6 +114,19 @@ export interface ResolveCtx {
    *  error value (AF3), where a {@link diag} report goes with the element. Absent: `diag`. */
   rootDiag?(d: Diagnostic): void;
   /**
+   * Report `d`, the error with which a wall-deriving statement (`walls from rooms`) refused to
+   * derive any wall from `rooms` (RM9.4): a later "no wall to stand in" on an edge of one of them,
+   * in this group, follows from it ({@link refusedDerivation}). Optional (append-only); absent:
+   * `diag`.
+   */
+  derivationRefused?(d: Diagnostic, rooms: readonly string[]): void;
+  /**
+   * The root an opening's missing wall follows from: the first error {@link derivationRefused}
+   * reported in this group for a set holding one of `rooms`, as a {@link Diagnostic.cause}.
+   * Undefined when there is none. Optional (append-only).
+   */
+  refusedDerivation?(rooms: readonly string[]): NonNullable<Diagnostic["cause"]> | undefined;
+  /**
    * The elements of the group being resolved (the root plan, or one `place`d instance) that
    * have resolved so far, in source order, in the group's own frame: its own statements
    * only, never a descendant's (ADR 0016). Optional because this interface is append-only;
