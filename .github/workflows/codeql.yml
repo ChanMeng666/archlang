@@ -66,7 +66,9 @@ jobs:
   # instead of ~4 min), so the older entries only crowd the 10 GB repository cache and push the
   # Playwright and apt-debs caches out. This job keeps the newest two per key group (the part before
   # the CodeQL version), so a PR that started restoring just before this run's upload still finds
-  # its entry. Not a required check; it touches no other cache and checks out nothing.
+  # its entry. Not a required check; it touches no other cache and checks out nothing. A key that no
+  # longer fits GROUP_RE is never deleted, only warned about, so a change in the action's key shape
+  # shows up as a `::warning::` on the run instead of silently stopping the pruning.
   prune-overlay-cache:
     name: Prune CodeQL overlay-base caches
     needs: analyze
@@ -74,35 +76,53 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     permissions:
-      actions: write # list and delete Actions caches; nothing else
+      # Minimum scope for cache deletion; it also allows workflow dispatch, run cancel/rerun and
+      # artifact deletion, none of which this job does.
+      actions: write
     env:
       GH_TOKEN: ${{ github.token }}
       GH_REPO: ${{ github.repository }}
       KEEP: "2"
+      # `codeql-overlay-base-database-<format>-<hash>-<languages>-`, the key up to the CodeQL version.
+      GROUP_RE: "^(?<p>codeql-overlay-base-database-[^-]+-[^-]+-[^-]+-)"
     steps:
       - name: Delete all but the newest overlay-base caches on main
         run: |
           set -euo pipefail
-          # The single-quoted filter is jq's, read by gh's built-in jq ($ENV.KEEP is jq, not shell).
+          # The single-quoted filters are jq's, read by gh's built-in jq ($ENV.* is jq, not shell).
+          # Newest first by parsed creation time, the fraction trimmed because its length varies (so a
+          # string sort can misorder two entries made within the same second), ties broken by the id.
           # shellcheck disable=SC2016
-          ids=$(gh cache list --ref refs/heads/main --key codeql-overlay-base-database- \
-            --sort created_at --order desc --limit 100 --json id,key,createdAt,sizeInBytes \
-            --jq '[ .[] | . + {group: ((.key | capture("^(?<p>codeql-overlay-base-database-[^-]+-[^-]+-[^-]+-)").p) // .key)} ]
-              | group_by(.group)
-              | map(sort_by(.createdAt) | reverse | .[($ENV.KEEP | tonumber):])
-              | flatten | .[] | "\(.id) \(.sizeInBytes) \(.key)"')
+          defs='def grouped: [ .[] | . + {
+                  group: ((.key | capture($ENV.GROUP_RE).p) // null),
+                  t: (.createdAt | sub("\\.[0-9]+"; "") | fromdateiso8601) } ];
+                def groups: map(select(.group != null)) | group_by(.group)
+                  | map(sort_by([.t, .id]) | reverse);'
+          list() {
+            gh cache list --ref refs/heads/main --key codeql-overlay-base-database- \
+              --sort created_at --order desc --limit 100 --json id,key,createdAt,sizeInBytes --jq "$defs $1"
+          }
+          # shellcheck disable=SC2016
+          ids=$(list 'grouped | groups | map(.[($ENV.KEEP | tonumber):]) | flatten | .[] | "\(.id) \(.sizeInBytes) \(.key)"')
           if [ -z "$ids" ]; then
             echo "Nothing to prune: at most $KEEP overlay-base caches per group."
-            exit 0
+          else
+            while read -r id size key; do
+              echo "Deleting $key ($size bytes)"
+              # A concurrent run of this job may have deleted it first: gh's not-found is fine,
+              # anything else (a permission error, say) fails the job.
+              if ! out=$(gh cache delete "$id" 2>&1); then
+                case "$out" in
+                  *"Could not find a cache matching"*) echo "Already gone: $id" ;;
+                  *) echo "$out" >&2; exit 1 ;;
+                esac
+              fi
+            done <<< "$ids"
           fi
-          while read -r id size key; do
-            echo "Deleting $key ($size bytes)"
-            # A concurrent run of this job may have deleted it first: gh's not-found (a 404) is fine,
-            # anything else (a permission error, say) fails the job.
-            if ! out=$(gh cache delete "$id" 2>&1); then
-              case "$out" in
-                *"Could not find a cache matching"* | *"HTTP 404"*) echo "Already gone: $id" ;;
-                *) echo "$out" >&2; exit 1 ;;
-              esac
-            fi
-          done <<< "$ids"
+          # Re-read: warn when a key escaped the grouping or a group still holds more than KEEP.
+          # shellcheck disable=SC2016
+          list 'grouped
+            | (.[] | select(.group == null)
+                | "::warning::Overlay-base cache key does not match GROUP_RE, so it is never pruned: \(.key)"),
+              (groups | .[] | select(length > ($ENV.KEEP | tonumber))
+                | "::warning::\(length) overlay-base caches remain in group \(.[0].group) (KEEP=\($ENV.KEEP))")'
