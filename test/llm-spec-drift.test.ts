@@ -39,7 +39,7 @@ describe("spec.llm.md is in sync with the token source + examples", () => {
     expect(spec).toMatch(/^strip </m);
   });
 
-  it("stays small enough to drop into a system prompt (< ~4.6k tokens)", () => {
+  it("stays under its character cap (UTF-16 units of the rendered spec), so it fits a system prompt", () => {
     const spec = renderLlmSpec(exampleSources());
     // ~4 chars/token. What the cap is FOR: `spec.llm.md` is injected VERBATIM into agent
     // system prompts (`arch spec`, `arch context --section spec`, the MCP shim's baked

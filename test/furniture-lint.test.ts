@@ -453,10 +453,10 @@ describe("W_UNKNOWN_FURNITURE offers the nearest kind as a fix (U.3)", () => {
   const unknown = (src: string) =>
     compile(src, { noCache: true }).diagnostics.filter((d) => d.code === "W_UNKNOWN_FURNITURE");
 
-  // The fix re-prints the statement through the shared printer, so a canonically written one
-  // changes only in its kind word.
-  it("rewrites the statement with only the kind changed, and never auto-applies it", () => {
-    const src = room(`furniture grand_pianno at (500, 500) size 1500x1500
+  // The fix rewrites the kind word alone (AF2; it re-printed the whole statement), so even a
+  // statement not written canonically (`(500,500)`) keeps every other byte.
+  it("rewrites only the kind word, and never auto-applies it", () => {
+    const src = room(`furniture grand_pianno at (500,500) size 1500x1500
     furniture WC at (3000, 500) size 400x700`);
     const fixes = unknown(src).map((d) =>
       d.fixes!.map((f) => ({
@@ -468,18 +468,13 @@ describe("W_UNKNOWN_FURNITURE offers the nearest kind as a fix (U.3)", () => {
       [
         {
           a: "maybe-incorrect",
-          edits: [
-            [
-              "furniture grand_pianno at (500, 500) size 1500x1500",
-              "furniture grand_piano at (500, 500) size 1500x1500",
-            ],
-          ],
+          edits: [["grand_pianno", "grand_piano"]],
         },
       ],
       [
         {
           a: "maybe-incorrect",
-          edits: [["furniture WC at (3000, 500) size 400x700", "furniture wc at (3000, 500) size 400x700"]],
+          edits: [["WC", "wc"]],
         },
       ],
     ]);
@@ -496,8 +491,8 @@ describe("W_UNKNOWN_FURNITURE offers the nearest kind as a fix (U.3)", () => {
     expect(after.diagnostics.filter((d) => d.severity === "error" || d.code === "W_UNKNOWN_FURNITURE")).toEqual([]);
   });
 
-  // The reprint is as long as the statement, so a looped piece builds it once for its shared
-  // parse node (charged to the step meter), not once per iteration (#848 review round 2).
+  // A looped piece builds its fix once for its shared parse node (charged to the step meter),
+  // not once per iteration (#848 review round 2).
   it("a looped piece shares one fix across its iterations", () => {
     const src = room(`for i in 0..3 {
       furniture grand_pianno at (500 + i * 100, 500) size 300x300
@@ -518,8 +513,9 @@ describe("W_UNKNOWN_FURNITURE offers the nearest kind as a fix (U.3)", () => {
     const unsafe = JSON.parse((await runArch(["fix", FIXTURE, "--dry-run", "--unsafe", "--json"])).stdout) as {
       diff: string;
     };
-    expect(unsafe.diff).toContain("furniture grand_piano at (500, 500) size 1500x1500 in main");
-    expect(unsafe.diff).toContain("furniture wc at (3000, 500) size 400x700 in main");
+    // Only the kind word is rewritten: the fixture's `(500,500)` keeps its bytes (AF2).
+    expect(unsafe.diff).toContain("+  furniture grand_piano at (500,500) size 1500x1500 in main");
+    expect(unsafe.diff).toContain("+  furniture wc at (3000,500) size 400x700 in main");
   }, 60000);
 
   it("`arch validate --strict --json` carries the fix (U.3 gate)", async () => {
@@ -528,9 +524,6 @@ describe("W_UNKNOWN_FURNITURE offers the nearest kind as a fix (U.3)", () => {
     const texts = j.diagnostics
       .filter((d) => d.code === "W_UNKNOWN_FURNITURE")
       .map((d) => d.fixes?.[0]?.edits[0]?.newText);
-    expect(texts).toEqual([
-      "furniture grand_piano at (500, 500) size 1500x1500 in main",
-      "furniture wc at (3000, 500) size 400x700 in main",
-    ]);
+    expect(texts).toEqual(["grand_piano", "wc"]);
   }, 60000);
 });

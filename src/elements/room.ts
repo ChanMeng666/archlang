@@ -21,13 +21,14 @@ import {
 import type { Diagnostic, Span } from "../diagnostics.js";
 import type { Expr } from "../expr.js";
 import type { ElementDef, ParseCtx, RenderCtx, ResolveCtx, TransformCtx } from "../registry.js";
-import { missingClause, readClauses, type TailClause } from "../clause-order.js";
+import { failNear, missingClause, readClauses, type TailClause } from "../clause-order.js";
 import { PLAIN_SHEET_TEXT } from "../sheet-text.js";
 import type { SceneNode } from "../scene.js";
-import type { RRoom } from "../ir.js";
+import type { RelConstraint, RRoom } from "../ir.js";
 import { rectCorners } from "../geometry.js";
 import { closest } from "../expr.js";
 import { fixesFrom, roomAlignAxisFix, roomAlignFix } from "../fix-producers.js";
+import { recordWordSpan, wordSpanOf } from "../id-spans.js";
 import { arcTessellate, fullCircleArc } from "../geometry/arc.js";
 import {
   effectiveVertices,
@@ -272,7 +273,7 @@ function parseTail(ctx: ParseCtx, node: RoomNode, start: number, sized = false):
           uses.push(ctx.next().value as UseKind);
         }
         if (uses.length === 0) {
-          ctx.fail(roomUsesExpected(ctx.peek().value || undefined, ctx.peek().type), ctx.peek());
+          failNear(ctx, roomUsesExpected(ctx.peek().value || undefined, ctx.peek().type), USE_KINDS);
         }
         if (keep) node.uses = uses;
       },
@@ -347,6 +348,15 @@ function floorOf(n: RoomNode, ctx: ResolveCtx): Pick<RRoom, "floor"> {
     ...(hint ? { hints: [`Did you mean "${hint}"?`] } : {}),
   });
   return {};
+}
+
+/** A room's resolved relational clause, its reference id's span kept beside it (AF2), so the
+ *  resolved room (and `resolve()`'s output) carries no new key. */
+function relConstraint(rel: NonNullable<RoomNode["rel"]>, gap: number, span: Span | undefined): RelConstraint {
+  const out: RelConstraint = { dir: rel.dir, ref: rel.ref, align: rel.align, gap, span };
+  const refSpan = wordSpanOf(rel);
+  if (refSpan) recordWordSpan(out, refSpan);
+  return out;
 }
 
 export const room: ElementDef = {
@@ -448,12 +458,15 @@ export const room: ElementDef = {
       // Relational clause: DIR REF [align EDGE] [gap EXPR].
       const dirTok = ctx.next();
       if (!REL_DIRS.has(dirTok.value)) {
-        ctx.fail(
+        failNear(
+          ctx,
           `Expected "at" or a relational direction (${REL_DIR_LIST.join("|")}) but found "${dirTok.value}"`,
+          ["at", ...REL_DIR_LIST],
           dirTok,
         );
       }
-      const ref = ctx.eatIdent().value;
+      const refTok = ctx.eatIdent();
+      const ref = refTok.value;
       let align: RelAlign | undefined;
       let alignSpan: Span | undefined;
       let alignBad: { word: string; span: Span } | undefined;
@@ -482,6 +495,7 @@ export const room: ElementDef = {
         gap = ctx.parseExpr();
       }
       rel = { dir: dirTok.value as RelDir, ref, align, alignSpan, alignBad, gap };
+      recordWordSpan(rel, { start: refTok.start, end: refTok.end });
     }
     // `size` is read with the other clauses, so it may follow them; its key keeps its place.
     const node: RoomNode = { kind: "room", id, at, rel, size: undefined, sizeSpan: undefined, line: kw.line };
@@ -609,7 +623,7 @@ export const room: ElementDef = {
       ...(n.uses ? { uses: n.uses } : {}),
       ...floorOf(n, ctx),
       span: n.span,
-      _rel: { dir: rel.dir, ref: rel.ref, align: rel.align, gap, span: n.span },
+      _rel: relConstraint(rel, gap, n.span),
     };
   },
 

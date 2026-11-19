@@ -27,10 +27,11 @@ import { pointInPolygon } from "../geometry/polygon.js";
 import { FIXTURE_CATEGORIES, fixtureGlyph } from "./fixtures-glyphs.js";
 import { noteSnap } from "../ir/silent-accepts.js";
 import { fixesFrom, furnitureCategoryFix } from "../fix-producers.js";
+import { wordSpanOf, recordWordSpan } from "../id-spans.js";
 import { mirrorGlyph } from "./glyph-chirality.js";
 import { mapSceneNode } from "./glyph-lib.js";
 import { CATALOG_CATEGORIES, defaultFootprint, fixtureSpec, orientationMatters } from "../fixtures-catalog.js";
-import { chargeSteps } from "../expr.js";
+import { chargeSteps, indelDistance } from "../expr.js";
 import { COMPASS_DATUM_ALIASES, edgeOfRoom, splitDatum } from "../room-datums.js";
 import { rectilinear, rectInRing, runRect } from "../room-tiling.js";
 import { parseSegmentSelect, segmentSelectText, selectSegment } from "../segment-select.js";
@@ -100,7 +101,8 @@ export const furniture: ElementDef = {
   parse(ctx: ParseCtx): FurnitureNode {
     const kw = ctx.eatKeyword("furniture");
     const lead = parseIdWithSpan(ctx);
-    const category = ctx.eatIdent().value;
+    const kindTok = ctx.eatIdent();
+    const category = kindTok.value;
     const id = idAfterKind(ctx, "furniture", lead.id, lead.idSpan);
     // Position: absolute `at (x,y)`, wall-anchored `against wall <id> …`, or
     // room-relative `in <room> centered|anchor …`.
@@ -327,6 +329,7 @@ export const furniture: ElementDef = {
     }
     if (clear) node.clear = clear;
     if (node.room === undefined && trailingRoom !== undefined) node.room = trailingRoom;
+    recordWordSpan(node, { start: kindTok.start, end: kindTok.end });
     return node;
   },
 
@@ -1541,6 +1544,11 @@ function deletions(w: string, n: number): Set<string> {
   return out;
 }
 
+/** Every catalogued furniture and fixture kind (the parser's did-you-mean asks, AF2). */
+export function furnitureKinds(): ReadonlySet<string> {
+  return known().set;
+}
+
 function known(): KnownFurniture {
   if (!knownFurniture) {
     const set = new Set([...FIXTURE_CATEGORIES, ...CATALOG_CATEGORIES]);
@@ -1557,19 +1565,6 @@ function known(): KnownFurniture {
     knownFurniture = { set, rank: new Map([...set].map((w, i) => [w, i])), byDeletion, maxLen };
   }
   return knownFurniture;
-}
-
-/** Added or dropped characters between two short words: `a.length + b.length - 2 * LCS`, so a
- *  changed letter counts two. */
-function indelDistance(a: string, b: string): number {
-  let row = new Array<number>(b.length + 1).fill(0);
-  for (let i = 1; i <= a.length; i++) {
-    const next = [0];
-    for (let j = 1; j <= b.length; j++)
-      next[j] = a[i - 1] === b[j - 1] ? row[j - 1]! + 1 : Math.max(row[j]!, next[j - 1]!);
-    row = next;
-  }
-  return a.length + b.length - 2 * row[b.length]!;
 }
 
 /**
@@ -1607,8 +1602,8 @@ function nearestFurniture(word: string): string | null {
  * kind but is one in another case or within {@link nearEdits} edits of one (`WC`,
  * `grand_pianno`). Furniture is open on purpose, so an unknown word stays legal and still draws
  * its rectangle; this only says so when the word looks like a slip. A piece with a `label` is a
- * custom one by intent and is never reported. It offers the nearest kind as a rewrite of the
- * statement ({@link furnitureCategoryFix}), never auto-applied.
+ * custom one by intent and is never reported. Spanned on the kind word, it offers the nearest kind
+ * as a rewrite of that word alone ({@link furnitureCategoryFix}, AF2), never auto-applied.
  */
 function noteUnknownCategory(ctx: ResolveCtx, id: string, n: FurnitureNode): void {
   const { set } = known();
@@ -1617,6 +1612,7 @@ function noteUnknownCategory(ctx: ResolveCtx, id: string, n: FurnitureNode): voi
   const lower = category.toLowerCase();
   const near = set.has(lower) ? lower : nearestFurniture(category);
   if (near === null) return;
+  const span = wordSpanOf(n) ?? n.span;
   ctx.diag({
     severity: "warning",
     code: "W_UNKNOWN_FURNITURE",
@@ -1624,16 +1620,17 @@ function noteUnknownCategory(ctx: ResolveCtx, id: string, n: FurnitureNode): voi
     hints: [
       `Write \`furniture ${near} …\` for the catalogued symbol, or add a \`label\` if "${category}" is a piece of your own.`,
     ],
-    ...(n.span ? { span: n.span } : {}),
+    ...(span ? { span } : {}),
     ...fixesFrom(categoryFix(ctx, n, near)),
   });
 }
 
 /**
- * The reprinted statement is as long as the source statement, so it is built once per parse node
- * per storey's {@link ResolveCtx} (a looped piece shares its node, so a loop does not multiply it)
- * and charged to the step meter by its source length before it is built. Keyed on the ctx, so the
- * charge never depends on an earlier compile.
+ * Built once per parse node per storey's {@link ResolveCtx} (a looped piece shares its node, so a
+ * loop does not multiply it) and charged to the step meter by its statement's source length before
+ * it is built. The fix was a reprint of the statement when that charge was set; it is the kind word
+ * alone since AF2, and the charge, an upper bound, is kept so no plan's step count moves. Keyed on
+ * the ctx, so the charge never depends on an earlier compile.
  */
 const CATEGORY_FIXES = new WeakMap<ResolveCtx, Map<FurnitureNode, ReturnType<typeof furnitureCategoryFix>>>();
 
@@ -1646,7 +1643,7 @@ function categoryFix(ctx: ResolveCtx, n: FurnitureNode, near: string): ReturnTyp
   const cached = byNode.get(n);
   if (cached !== undefined) return cached;
   chargeSteps(1 + (n.span ? n.span.end - n.span.start : 0));
-  const fix = furnitureCategoryFix(n, near);
+  const fix = furnitureCategoryFix(wordSpanOf(n), near);
   byNode.set(n, fix);
   return fix;
 }

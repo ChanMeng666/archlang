@@ -340,7 +340,11 @@ and cannot board a train.
 6. Unlink a worktree's `node_modules` junction before removing the worktree (`--land` and `--abandon`
    do it for the train's own).
 
-`codeql.yml` `analyze` gates too (and runs weekly). `nightly.yml`: `prod-smoke`
+`codeql.yml` `analyze` gates too (and runs weekly). Its `prune-overlay-cache` job runs after it on a
+`main` push and the weekly run only (skipped on PRs, not a required check). It is the repo's first
+job with `actions: write`, scoped to that job, and it deletes all but the newest two
+`codeql-overlay-base-database-*` caches (~400 MB each, one per `main` run, never pruned by CodeQL).
+`nightly.yml`: `prod-smoke`
 (`scripts/smoke.mjs`), `audit` (report-only), `secrets` (gitleaks over full history),
 `full-matrix` (CI runs `npm test` + `check:drift`), `coverage` (`test:coverage`, the coverage summary and artifact; report-only, `continue-on-error`, outside `report`), `mutants` (`scripts/mutants.mjs --mutants 40`: sampled mutants against their nearest tests, the table in the job summary and the `mutants-report` artifact; report-only, `continue-on-error`, outside `report`), `cross-engine` (`digest:engines`, advisory: never fails the night, a divergence updates
 the pinned issue; its report is an
