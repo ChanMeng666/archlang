@@ -404,7 +404,10 @@ export const door: ElementDef = {
           } else {
             // One read and one message for every bare word, so the refusal names all four.
             const word = ctx.peek();
-            const v = eatEnumValue(ctx, [...DOOR_ENUMS.swing, ...DOOR_SWING_BUILDING], "swing", "`into <room>`");
+            const v = eatEnumValue(ctx, [...DOOR_ENUMS.swing, ...DOOR_SWING_BUILDING], "swing", {
+              form: "`into <room>`",
+              word: "into",
+            });
             if ((DOOR_SWING_BUILDING as readonly string[]).includes(v)) {
               s.swingBuilding = v as DoorSwingBuilding;
               s.swingBuildingSpan = { start: word.start, end: word.end };

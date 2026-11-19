@@ -314,7 +314,7 @@ const BASELINE: [string, string][] = [
   ["0ba9460627a738d65c7d5235e533ad8410bf7a548bfedc69dca44f987793ee91", "inline:stair-placed"],
   ["802586e9b7cf3f6927c1441481a0e2d14699e57b6b7a50ddb48b71a9b4a902d5", "inline:stair-arrival"], // RM1.3b overlay, see ./byte-identity-baseline.ts; RM9.2, see ./byte-identity-baseline.ts
   ["e6eed958e1d4cea68f7981fce9964af4b5a26fa3d09ad3eafebb0992ce5cb727", "inline:stair-refusals"],
-  ["57879436768cab2c738430d6586f0e88de6cb79c178799a011c9d09f73e553df", "inline:stair-parse-refusals"],
+  ["aa029d64da9548ccbdd930324780fa9e855f30bfe4e2b305b27d2c8d0c0ecf8c", "inline:stair-parse-refusals"], // AF4 (was 57879436): its `E_PARSE` now carries `expected` (what the parser would have read there); SVG, lint() and every other key are unchanged, and deleting `expected` gives 57879436
   ["d4fb3835237b1b989e0e45c992f7e4a0c61663d603c62e89de5deb96a2167047", "examples/turning-stair.arch"], // RM1.3b overlay, see ./byte-identity-baseline.ts; RM9.2, see ./byte-identity-baseline.ts
   ["0545c17080e7f460aacef3ed290df0f1d0ae9dd91403dacfbc1f5108bfcf2fe3", "inline:floor-words-as-names"],
   ["8d3b15bc029b1499bac84456b2c464f72b6a42c059a22875841f2a0338236588", "inline:floor-old-words-rendered"],

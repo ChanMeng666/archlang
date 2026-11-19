@@ -68,6 +68,7 @@ import {
   KEYWORDS,
   STATEMENT_STARTS,
   TITLE_FIELDS,
+  TOKEN_TEXT,
   type TitleField,
 } from "./grammar/tokens.js";
 import type { KeepGrade, KeepNode, KeepRef } from "./ast.js";
@@ -87,6 +88,28 @@ export interface ParseOutcome {
  *  per-parse, so recovery is plugin-aware). Sourced from the one grammar file
  *  (`src/grammar/tokens.ts`) so the parser and the editor grammars stay in sync. */
 const FIXED_STATEMENT_STARTS: readonly string[] = STATEMENT_STARTS;
+
+/**
+ * The words of {@link STATEMENT_STARTS} that {@link Parser.parseOneBodyStatement} reads inside a
+ * block (a `level`, a `component`, a control-flow body); every other one is the plan's own and is
+ * an unknown statement there. Read only for a parse error's `expected` list (AF4);
+ * `test/parse-expected.test.ts` holds it to what the parser does with each word.
+ */
+const BLOCK_STARTS: ReadonlySet<string> = new Set(["let", "for", "if", "while", "set", "zone", "place", "keep"]);
+
+/**
+ * A word of `near` glued to the number after it (`x3000` where `x` belongs, `width900`): the lexer
+ * reads the two as one name. The split is the suggestion, never unique: the name may be meant.
+ */
+function glued(word: string, near: readonly string[]): { word: string; unique: boolean } | null {
+  for (const w of near) {
+    const rest = word.slice(w.length);
+    if (!rest || !word.startsWith(w)) continue;
+    const toks = lexUnmemoised(rest).tokens;
+    if (toks.length === 2 && toks[0]!.type === "number") return { word: `${w} ${rest}`, unique: false };
+  }
+  return null;
+}
 
 /**
  * Clause words agents write where a statement must start (live runs): each names the
@@ -109,6 +132,9 @@ const STRAY_CLAUSE_HINTS: ReadonlyMap<string, string> = new Map([
   ],
 ]);
 
+/** What a `theme` or `style` key takes when its key is unknown (AF4). */
+const KEY_VALUE = [TOKEN_TEXT.string, TOKEN_TEXT.number];
+
 /** Thrown internally by `eat*` helpers; always caught within the parser. */
 class ParseError extends Error {
   constructor(
@@ -117,6 +143,8 @@ class ParseError extends Error {
     public hints?: string[],
     /** A did-you-mean for the word at `word` (AF2), and whether its fix may be machine-applicable. */
     public spelt?: { word: Span; s: { word: string; unique: boolean }; closed: boolean },
+    /** What the grammar would have read at the failing token (AF4, `Diagnostic.expected`). */
+    public expected?: readonly string[],
   ) {
     super(message);
   }
@@ -237,9 +265,9 @@ class Parser {
       parseStringExpr: () => this.parseStringExpr(),
       parseIdOpt: () => this.parseIdOpt(),
       spanFrom: (start) => this.spanFrom(start),
-      fail: (msg, t) => this.fail(msg, t),
-      failAt: (msg, span) => this.fail(msg, this.peek(), span),
-      failNear: (msg, near, t, span) => this.fail(msg, t, span, near),
+      fail: (msg, t, expected) => this.fail(msg, t, undefined, undefined, expected),
+      failAt: (msg, span, expected) => this.fail(msg, this.peek(), span, undefined, expected),
+      failNear: (msg, near, t, span, expected) => this.fail(msg, t, span, near, expected),
       diag: (d) => this.report(d),
       report: (code, message, span) => this.report({ severity: "error", message, code, span }),
     };
@@ -263,21 +291,65 @@ class Parser {
    * source, and `near` is a closed list of words, not the one word a position expected. Parsing is
    * not metered, so the search runs only while the error can still be reported: past
    * `MAX_DIAGNOSTICS` it is dropped, and so the work is bounded whatever the source's size.
+   * A word of `near` glued to the number after it (`x3000`, which the lexer reads as one name) gets
+   * the same hint and a `maybe-incorrect` fix that splits it (AF4, {@link glued}).
+   *
+   * `expected` (AF4, `Diagnostic.expected`) is what the grammar would have read at `t`: `near` by
+   * default, which is the list of words that position takes.
    */
   private fail(
     msg: string,
     t = this.peek(),
     span: Span = { start: t.start, end: t.end },
     near?: readonly string[],
+    expected = near,
   ): never {
     const hints = this.parseHints(t);
-    const s = near && t.type === "ident" && this.reportable() ? spelling(t.value, near) : null;
-    if (!s) throw new ParseError(msg, span, hints);
-    throw new ParseError(msg, span, [...(hints ?? []), `did you mean \`${s.word}\`?`], {
-      word: { start: t.start, end: t.end },
-      s,
-      closed: near!.length > 1 && !this.isLanguageWord(t.value) && !this.elsewhere(t.value),
+    const s =
+      near && t.type === "ident" && this.reportable() ? (spelling(t.value, near) ?? glued(t.value, near)) : null;
+    if (!s) throw new ParseError(msg, span, hints, undefined, expected);
+    throw new ParseError(
+      msg,
+      span,
+      [...(hints ?? []), `did you mean \`${s.word}\`?`],
+      {
+        word: { start: t.start, end: t.end },
+        s,
+        closed: near!.length > 1 && !this.isLanguageWord(t.value) && !this.elsewhere(t.value),
+      },
+      expected,
+    );
+  }
+
+  /** The `E_PARSE` a caught {@link ParseError} reports, with its did-you-mean fix (AF2) and its
+   *  `expected` list (AF4). */
+  private parseErrorDiag(e: ParseError): Diagnostic {
+    return {
+      severity: "error",
+      message: e.message,
+      code: "E_PARSE",
+      span: e.span,
+      ...(e.hints ? { hints: e.hints } : {}),
+      ...fixesFrom(spellingFix(e.spelt?.word, e.spelt?.s ?? null, e.spelt?.closed === true)),
+      ...(e.expected?.length ? { expected: [...e.expected] } : {}),
+    };
+  }
+
+  /**
+   * What may begin a statement here (AF4): a statement keyword, a name (`x = …`, `part(…)`) or the
+   * `}` that closes the block. Inside a block the plan's settings are refused as unknown
+   * statements (`units` in a `component`), and a plan-level element is too, so neither is listed.
+   * Built only while the error can still be reported ({@link reportable}), as {@link wordsAt} is:
+   * past `MAX_DIAGNOSTICS` a flood of failing statements costs no list each.
+   */
+  private statementExpected(): string[] {
+    if (!this.reportable()) return [];
+    const words = [...this.statementStarts].filter((w) => {
+      if (this.blockDepth === 0 || BLOCK_STARTS.has(w)) return true;
+      const def = this.registry.byKeyword.get(w);
+      return def !== undefined && def.planLevelOnly === undefined;
     });
+    return [...words, TOKEN_TEXT.ident, TOKEN_TEXT.rcurly];
   }
 
   /** How many times each word stands in this source as a name, counted once off the tokens: a
@@ -497,7 +569,13 @@ class Parser {
     const t = this.peek();
     const message = `Expected rcurly but found ${describe(t)}`;
     if (this.diagnostics.some((d) => d.message === message && d.span?.start === t.start)) return;
-    this.report({ severity: "error", message, code: "E_PARSE", span: { start: t.start, end: t.end } });
+    this.report({
+      severity: "error",
+      message,
+      code: "E_PARSE",
+      span: { start: t.start, end: t.end },
+      expected: [TOKEN_TEXT.rcurly],
+    });
   }
 
   private isKeyword(kw: string, o = 0): boolean {
@@ -512,7 +590,8 @@ class Parser {
   }
   private eat(type: Token["type"]): Token {
     const t = this.peek();
-    if (t.type !== type) this.fail(`Expected ${type} but found ${describe(t)}`);
+    if (t.type !== type)
+      this.fail(`Expected ${type} but found ${describe(t)}`, t, undefined, undefined, [TOKEN_TEXT[type]]);
     return this.next();
   }
   private eatIdent(): Token {
@@ -550,14 +629,7 @@ class Parser {
       plan.bodyStart = this.eat("lcurly").end;
     } catch (e) {
       if (!(e instanceof ParseError)) throw e;
-      this.report({
-        severity: "error",
-        message: e.message,
-        code: "E_PARSE",
-        span: e.span,
-        ...(e.hints ? { hints: e.hints } : {}),
-        ...fixesFrom(spellingFix(e.spelt?.word, e.spelt?.s ?? null, e.spelt?.closed === true)),
-      });
+      this.report(this.parseErrorDiag(e));
       while (!this.isType("eof") && !this.isType("lcurly")) {
         const t = this.peek();
         if (t.type === "ident" && this.statementStarts.has(t.value)) break;
@@ -570,7 +642,8 @@ class Parser {
       const t = this.peek();
       const start = t.start;
       try {
-        if (t.type !== "ident") this.fail(`Expected a statement but found ${describe(t)}`);
+        if (t.type !== "ident")
+          this.fail(`Expected a statement but found ${describe(t)}`, t, undefined, undefined, this.statementExpected());
         if (this.atSheetText()) {
           plan.sheetText = this.parseSheetText(plan, start);
           continue;
@@ -720,14 +793,7 @@ class Parser {
         }
       } catch (e) {
         if (e instanceof ParseError) {
-          this.report({
-            severity: "error",
-            message: e.message,
-            code: "E_PARSE",
-            span: e.span,
-            ...(e.hints ? { hints: e.hints } : {}),
-            ...fixesFrom(spellingFix(e.spelt?.word, e.spelt?.s ?? null, e.spelt?.closed === true)),
-          });
+          this.report(this.parseErrorDiag(e));
           this.synchronize(start);
           plan.body.push({ kind: "error", id: "", line: t.line, message: e.message, span: this.spanFrom(start) });
         } else {
@@ -745,15 +811,7 @@ class Parser {
     } catch (e) {
       if (!(e instanceof ParseError)) throw e;
       if (this.isType("eof")) this.missingClose();
-      else
-        this.report({
-          severity: "error",
-          message: e.message,
-          code: "E_PARSE",
-          span: e.span,
-          ...(e.hints ? { hints: e.hints } : {}),
-          ...fixesFrom(spellingFix(e.spelt?.word, e.spelt?.s ?? null, e.spelt?.closed === true)),
-        });
+      else this.report(this.parseErrorDiag(e));
     }
     this.checkLevels(plan);
     return plan;
@@ -779,6 +837,7 @@ class Parser {
       code: "E_PARSE",
       span: { start: t.start, end: t.end },
       relatedSpans: [{ span: { start: close.start, end: close.end }, message: "the plan was closed here" }],
+      expected: [TOKEN_TEXT.eof],
     });
   }
 
@@ -925,7 +984,7 @@ class Parser {
   private parseUnitsSetting(plan: PlanNode, t: Token): void {
     this.next();
     const u = this.eatIdent().value;
-    if (u !== "mm") this.fail(`Unsupported units "${u}" (only "mm" is supported)`, t);
+    if (u !== "mm") this.fail(`Unsupported units "${u}" (only "mm" is supported)`, t, undefined, undefined, ["mm"]);
     plan.units = "mm";
   }
 
@@ -1004,7 +1063,13 @@ class Parser {
     const sizeTok = this.eatIdent();
     const size = sizeTok.value.toUpperCase();
     if (!(PAPER_SIZES as readonly string[]).includes(size)) {
-      this.fail(`Unknown paper size "${sizeTok.value}" (expected ${PAPER_SIZES.join("|")})`, sizeTok);
+      this.fail(
+        `Unknown paper size "${sizeTok.value}" (expected ${PAPER_SIZES.join("|")})`,
+        sizeTok,
+        undefined,
+        undefined,
+        PAPER_SIZES,
+      );
     }
     let orientation: PaperOrientation = "landscape";
     if (this.isType("ident") && (PAPER_ORIENTATIONS as readonly string[]).includes(this.peek().value)) {
@@ -1017,7 +1082,7 @@ class Parser {
   private parseDimsSetting(plan: PlanNode, t: Token): void {
     this.next();
     const a = this.eatIdent().value;
-    if (a !== "auto") this.fail(`Expected "auto" after "dims" but found "${a}"`, t);
+    if (a !== "auto") this.fail(`Expected "auto" after "dims" but found "${a}"`, t, undefined, undefined, ["auto"]);
     let mode: AutoDimsMode = "all";
     // `walls` is both a mode and a statement keyword (`walls from rooms`): a mode word that
     // starts a statement on the next line (`dims auto` then `walls from rooms …`) is left
@@ -1051,6 +1116,9 @@ class Parser {
         `Unknown schedule subject "${subject}"${hint ? ` — did you mean "${hint}"?` : ""}` +
           ` (available: ${SCHEDULE_SUBJECTS.join(", ")})`,
         st,
+        undefined,
+        undefined,
+        SCHEDULE_SUBJECTS,
       );
     }
     if ((subject as ScheduleSubject) === "openings") plan.openingSchedule = true;
@@ -1108,14 +1176,24 @@ class Parser {
     const entries: SheetTextEntry[] = [];
     while (!this.isType("rcurly") && !this.isType("eof")) {
       const k = this.peek();
-      if (k.type !== "ident") this.fail(`Expected a sheet text key but found ${describe(k)}`, k);
+      if (k.type !== "ident")
+        this.fail(`Expected a sheet text key but found ${describe(k)}`, k, undefined, undefined, [
+          ...sheetTextKeys(),
+          TOKEN_TEXT.rcurly,
+        ]);
       if (!isSheetTextKey(k.value)) {
         // One hint a parse, on a word a key's length: this search reads every key, and no step meter
         // runs here, so a source of a million bad keys must not pay for a million searches.
         const near = !this.sheetKeyHinted && k.value.length <= MAX_SHEET_WORD;
         const hint = near ? closest(k.value, [...sheetTextKeys()]) : null;
         this.sheetKeyHinted = true;
-        this.fail(`Unknown sheet text key "${k.value}"${hint ? ` — did you mean "${hint}"?` : ""}`, k);
+        this.fail(
+          `Unknown sheet text key "${k.value}"${hint ? ` — did you mean "${hint}"?` : ""}`,
+          k,
+          undefined,
+          undefined,
+          [...sheetTextKeys()],
+        );
       }
       if (entries.some((e) => e.key === k.value)) this.fail(`\`${k.value}\` is written twice in \`sheet text\``, k);
       this.next();
@@ -1142,6 +1220,9 @@ class Parser {
       this.fail(
         `Unknown ${what} "${t.value}"${hint ? ` — did you mean "${hint}"?` : ""} (available: ${values.join(", ")})`,
         t,
+        undefined,
+        undefined,
+        values,
       );
     }
     return t.value as T;
@@ -1175,7 +1256,13 @@ class Parser {
     while (!this.isType("rcurly") && !this.isType("eof")) {
       const f = this.peek();
       if (f.type !== "ident") {
-        this.fail(`Expected a site field (${FIELDS.map((x) => `"${x}"`).join(", ")}) but found ${describe(f)}`, f);
+        this.fail(
+          `Expected a site field (${FIELDS.map((x) => `"${x}"`).join(", ")}) but found ${describe(f)}`,
+          f,
+          undefined,
+          undefined,
+          [...FIELDS, TOKEN_TEXT.rcurly],
+        );
       }
       if (f.value === "street") {
         this.next();
@@ -1198,6 +1285,9 @@ class Parser {
           `Unknown site field "${f.value}"${hint ? ` — did you mean "${hint}"?` : ""} ` +
             `(available: ${FIELDS.join(", ")})`,
           f,
+          undefined,
+          undefined,
+          FIELDS,
         );
       }
     }
@@ -1289,7 +1379,13 @@ class Parser {
       this.next();
       return t.value as NorthCardinal;
     }
-    this.fail(`Expected a north direction (${NORTH_DIRS.join("|")}|<degrees>) but found ${describe(t)}`);
+    this.fail(
+      `Expected a north direction (${NORTH_DIRS.join("|")}|<degrees>) but found ${describe(t)}`,
+      t,
+      undefined,
+      NORTH_DIRS,
+      [...NORTH_DIRS, TOKEN_TEXT.number],
+    );
   }
 
   private parsePoint(): ExprPoint {
@@ -1309,7 +1405,10 @@ class Parser {
     }
     const w = parseExprPratt(this.ctx);
     if (this.isKeyword("x")) this.next();
-    else this.fail(`Expected "x" between width and height but found ${describe(this.peek())}`);
+    else
+      this.fail(`Expected "x" between width and height but found ${describe(this.peek())}`, undefined, undefined, [
+        "x",
+      ]);
     const h = parseExprPratt(this.ctx);
     return { w, h };
   }
@@ -1320,9 +1419,14 @@ class Parser {
     const node: TitleNode = { line: kw.line };
     while (!this.isType("rcurly") && !this.isType("eof")) {
       const t = this.peek();
-      if (t.type !== "ident") this.fail(`Expected a title field but found ${describe(t)}`);
+      if (t.type !== "ident")
+        this.fail(`Expected a title field but found ${describe(t)}`, t, undefined, undefined, [
+          ...TITLE_FIELDS,
+          TOKEN_TEXT.rcurly,
+        ]);
       // One case per word of `TITLE_FIELDS`, each filling its `TitleNode` key.
-      if (!(TITLE_FIELDS as readonly string[]).includes(t.value)) this.fail(`Unknown title field "${t.value}"`, t);
+      if (!(TITLE_FIELDS as readonly string[]).includes(t.value))
+        this.fail(`Unknown title field "${t.value}"`, t, undefined, TITLE_FIELDS);
       this.next();
       node[TITLE_FIELD_KEY[t.value as TitleField]] = this.eatString();
     }
@@ -1343,7 +1447,11 @@ class Parser {
     while (!this.isType("rcurly") && !this.isType("eof")) {
       const t = this.peek();
       if (t.type !== "ident" || (t.value !== "x" && t.value !== "y")) {
-        this.fail(`Expected an axis direction ("x" or "y") but found ${describe(t)}`, t);
+        this.fail(`Expected an axis direction ("x" or "y") but found ${describe(t)}`, t, undefined, undefined, [
+          "x",
+          "y",
+          TOKEN_TEXT.rcurly,
+        ]);
       }
       this.next();
       this.eatKeyword("at");
@@ -1389,7 +1497,8 @@ class Parser {
             span: { start: keyTok.start, end: keyTok.end },
           });
           if (this.isType("string") || this.isType("number")) this.next();
-          else this.fail(`Expected a value for theme key "${keyTok.value}"`);
+          else
+            this.fail(`Expected a value for theme key "${keyTok.value}"`, undefined, undefined, undefined, KEY_VALUE);
           continue;
         }
         if (isNumericThemeKey(resolved)) {
@@ -1445,7 +1554,7 @@ class Parser {
           span: { start: keyTok.start, end: keyTok.end },
         });
         if (this.isType("string") || this.isType("number")) this.next();
-        else this.fail(`Expected a value for style key "${keyTok.value}"`);
+        else this.fail(`Expected a value for style key "${keyTok.value}"`, undefined, undefined, undefined, KEY_VALUE);
         continue;
       }
       (style as Record<string, unknown>)[resolved] = this.sanitizedStringValue(keyTok, "style");
@@ -1493,6 +1602,8 @@ class Parser {
         this.fail(
           `\`keep equal\` takes ${KEEP_WORDS.measures.join(" or ")} first, then the rooms or openings it compares (found ${describe(m)})`,
           m,
+          undefined,
+          KEEP_WORDS.measures,
         );
       }
       this.next();
@@ -1533,6 +1644,8 @@ class Parser {
       this.fail(
         `Expected a keep form (align, equal, offset, min clear, on axis, stacked or fixed) after "keep" but found ${describe(w)}`,
         w,
+        undefined,
+        Object.values(forms).map((f) => f[0]),
       );
     }
     if (this.isType("ident") && isKeepGrade(this.peek().value)) node.grade = this.next().value as KeepGrade;
@@ -1577,6 +1690,9 @@ class Parser {
       this.fail(
         `Expected a keep target (a room datum such as \`a.left\`, \`axis <label>\`, or an authored id) but found ${describe(t)}`,
         t,
+        undefined,
+        undefined,
+        [TOKEN_TEXT.ident, "axis"],
       );
     }
     this.next();
@@ -1639,13 +1755,21 @@ class Parser {
     if (!this.isKeyword("as")) {
       this.fail(
         `\`place ${nameTok.value}(…)\` needs \`as <name>\` — a placed instance is addressable (write \`${nameTok.value}(…)\` for the legacy inline macro)`,
+        undefined,
+        undefined,
+        ["as"],
       );
     }
     this.next();
     const aliasTok = this.eatIdent();
     const alias = this.declName(aliasTok);
     if (!this.isKeyword("at")) {
-      this.fail(`\`place ${nameTok.value}(…) as ${alias}\` needs \`at (x, y)\` — a component is authored from (0,0)`);
+      this.fail(
+        `\`place ${nameTok.value}(…) as ${alias}\` needs \`at (x, y)\` — a component is authored from (0,0)`,
+        undefined,
+        undefined,
+        ["at"],
+      );
     }
     this.next();
     const at = this.parsePoint();
@@ -1664,7 +1788,12 @@ class Parser {
       const rt = this.peek();
       const deg = this.eatNumber();
       if (deg !== 0 && deg !== 90 && deg !== 180 && deg !== 270) {
-        this.fail(`\`place … rotate\` must be 0, 90, 180 or 270 (got ${deg})`, rt);
+        this.fail(`\`place … rotate\` must be 0, 90, 180 or 270 (got ${deg})`, rt, undefined, undefined, [
+          "0",
+          "90",
+          "180",
+          "270",
+        ]);
       }
       node.rotate = deg as PlaceRotate;
     }
@@ -1672,7 +1801,13 @@ class Parser {
       this.next();
       const mt = this.eatIdent();
       if (mt.value !== "x" && mt.value !== "y") {
-        this.fail(`\`place … mirror\` must be "x" (flip left↔right) or "y" (flip top↔bottom)`, mt);
+        this.fail(
+          `\`place … mirror\` must be "x" (flip left↔right) or "y" (flip top↔bottom)`,
+          mt,
+          undefined,
+          undefined,
+          ["x", "y"],
+        );
       }
       node.mirror = mt.value;
     }
@@ -1708,7 +1843,8 @@ class Parser {
   private parseOneBodyStatement(components: Map<string, ComponentDef>, selfName?: string): Statement {
     const t = this.peek();
     const start = t.start;
-    if (t.type !== "ident") this.fail(`Expected a statement but found ${describe(t)}`);
+    if (t.type !== "ident")
+      this.fail(`Expected a statement but found ${describe(t)}`, t, undefined, undefined, this.statementExpected());
     // `accTitle`/`accDescr` are plan-level only. Reaching here means one appeared
     // inside a component or control-flow block: consume it (with its string arg, if
     // present) and report a catalogued error so recovery is clean and the message is
@@ -1822,8 +1958,15 @@ class Parser {
       else if (this.peek(1).type === "lparen") node = this.parseInstance();
       else {
         const stray = STRAY_CLAUSE_HINTS.get(t.value);
-        if (stray === undefined) this.fail(`Unknown statement "${t.value}"`, t, undefined, this.wordsAt(t));
-        throw new ParseError(`Unknown statement "${t.value}"`, { start: t.start, end: t.end }, [stray]);
+        const expected = this.statementExpected();
+        if (stray === undefined) this.fail(`Unknown statement "${t.value}"`, t, undefined, this.wordsAt(t), expected);
+        throw new ParseError(
+          `Unknown statement "${t.value}"`,
+          { start: t.start, end: t.end },
+          [stray],
+          undefined,
+          expected,
+        );
       }
     }
     node.span = this.spanFrom(start);
@@ -1871,14 +2014,7 @@ class Parser {
         body.push(this.parseOneBodyStatement(components, selfName));
       } catch (e) {
         if (e instanceof ParseError) {
-          this.report({
-            severity: "error",
-            message: e.message,
-            code: "E_PARSE",
-            span: e.span,
-            ...(e.hints ? { hints: e.hints } : {}),
-            ...fixesFrom(spellingFix(e.spelt?.word, e.spelt?.s ?? null, e.spelt?.closed === true)),
-          });
+          this.report(this.parseErrorDiag(e));
           this.synchronize(stmtTok.start);
           body.push({
             kind: "error",
@@ -1980,7 +2116,10 @@ class Parser {
     const kw = this.eatKeyword("set");
     const targetTok = this.eatIdent();
     const def = this.registry.byKeyword.get(targetTok.value);
-    if (!def) this.fail(`Unknown element kind "${targetTok.value}" in "set" rule`, targetTok);
+    if (!def)
+      this.fail(`Unknown element kind "${targetTok.value}" in "set" rule`, targetTok, undefined, [
+        ...this.registry.byKeyword.keys(),
+      ]);
     this.eat("lparen");
     const over: SetOverride[] = [];
     while (!this.isType("rparen") && !this.isType("eof")) {
@@ -2006,7 +2145,8 @@ class Parser {
   /** Parse a string literal as a (possibly interpolated) template expression. */
   private parseStringExpr(): Expr {
     const t = this.peek();
-    if (t.type !== "string") this.fail(`Expected a string but found ${describe(t)}`);
+    if (t.type !== "string")
+      this.fail(`Expected a string but found ${describe(t)}`, t, undefined, undefined, [TOKEN_TEXT.string]);
     return parseExprPratt(this.ctx);
   }
 
@@ -2091,7 +2231,12 @@ class Parser {
     const dirTok = this.eatIdent();
     const dir = dirTok.value as StripDir;
     if (!(STRIP_DIRS as readonly string[]).includes(dir)) {
-      this.fail(`Expected a strip direction (${STRIP_DIRS.join("|")}) but found "${dirTok.value}"`, dirTok);
+      this.fail(
+        `Expected a strip direction (${STRIP_DIRS.join("|")}) but found "${dirTok.value}"`,
+        dirTok,
+        undefined,
+        STRIP_DIRS,
+      );
     }
     this.eatKeyword("at");
     const at = this.parsePoint();

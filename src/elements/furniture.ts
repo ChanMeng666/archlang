@@ -51,7 +51,7 @@ import {
 } from "../fixture-orientation.js";
 import { mod360 } from "../algebra/d4.js";
 import { DEFAULT_THEME } from "../theme.js";
-import { idAfterKind, parseIdWithSpan, readClauses } from "../clause-order.js";
+import { failNear, idAfterKind, parseIdWithSpan, readClauses } from "../clause-order.js";
 
 /** Canonical pens for counting a glyph's primitives: a count never depends on the pens, so
  *  any will do. A literal, so the element layer stays out of the sheet layer's load graph. */
@@ -163,8 +163,10 @@ export const furniture: ElementDef = {
         place = { mode: "centered", ...eatFlushOpt(ctx) };
       } else if (ctx.isKeyword("anchor")) {
         ctx.next();
-        const a = ctx.eatIdent().value;
-        if (!ANCHOR_SET.has(a)) ctx.fail(`Expected an anchor (${FURNITURE_ANCHORS.join("|")}) but found "${a}"`);
+        const at = ctx.eatIdent();
+        const a = at.value;
+        if (!ANCHOR_SET.has(a))
+          failNear(ctx, `Expected an anchor (${FURNITURE_ANCHORS.join("|")}) but found "${a}"`, FURNITURE_ANCHORS, at);
         const p: Extract<FurniturePlace, { mode: "anchor" }> = {
           mode: "anchor",
           anchor: a as FurnitureAnchor,
@@ -178,7 +180,7 @@ export const furniture: ElementDef = {
         }
         place = p;
       } else {
-        ctx.fail(`Expected "centered" or "anchor" after \`in ${room}\``);
+        failNear(ctx, `Expected "centered" or "anchor" after \`in ${room}\``, ["centered", "anchor"]);
       }
     } else {
       ctx.eatKeyword("at");
@@ -275,7 +277,12 @@ export const furniture: ElementDef = {
           const kw = ctx.next();
           const z = ctx.eatIdent();
           if (z.value !== "front" && z.value !== "sides")
-            ctx.fail(`Expected \`front\` or \`sides\` after \`clear\` but found "${z.value}"`, z);
+            failNear(
+              ctx,
+              `Expected \`front\` or \`sides\` after \`clear\` but found "${z.value}"`,
+              ["front", "sides"],
+              z,
+            );
           const v = ctx.parseExpr();
           const span = { start: kw.start, end: ctx.peek(-1).end };
           const c: FurnitureClear = clear ?? {};

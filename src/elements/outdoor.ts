@@ -311,6 +311,7 @@ export const outdoor: ElementDef = {
         `Unknown outdoor kind "${kindTok.value}"${hint ? ` — did you mean "${hint}"?` : ""} ` +
           `(available: ${OUTDOOR_KINDS.join(", ")})`,
         kindTok,
+        OUTDOOR_KINDS,
       );
     }
     const surface = kindTok.value as OutdoorKind;
@@ -380,7 +381,7 @@ export const outdoor: ElementDef = {
             if (ctx.isType("comma")) ctx.next();
           }
           if (words.length === 0) {
-            ctx.fail(`A \`rail\` clause needs at least one edge (${RAIL_EDGES.join("|")})`, ctx.peek());
+            ctx.fail(`A \`rail\` clause needs at least one edge (${RAIL_EDGES.join("|")})`, ctx.peek(), RAIL_EDGES);
           }
           if (!keep) return;
           rail.rail = words;

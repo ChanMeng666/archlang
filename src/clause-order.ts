@@ -23,11 +23,19 @@ import type { ParseCtx } from "./registry.js";
 /**
  * {@link ParseCtx.failNear} where the context has it (the built-in parser does), else
  * {@link ParseCtx.fail} at `t` or {@link ParseCtx.failAt} at `span`: a parse error where `t`
- * should have been one of `near` (AF2).
+ * should have been one of `near` (AF2), which is also what the grammar expected there (AF4) unless
+ * `expected` says otherwise.
  */
-export function failNear(ctx: ParseCtx, msg: string, near: readonly string[], t?: Token, span?: Span): never {
-  if (ctx.failNear) return ctx.failNear(msg, near, t, span);
-  return span ? ctx.failAt(msg, span) : ctx.fail(msg, t);
+export function failNear(
+  ctx: ParseCtx,
+  msg: string,
+  near: readonly string[],
+  t?: Token,
+  span?: Span,
+  expected: readonly string[] = near,
+): never {
+  if (ctx.failNear) return ctx.failNear(msg, near, t, span, expected);
+  return span ? ctx.failAt(msg, span, expected) : ctx.fail(msg, t, expected);
 }
 
 export interface TailClause {

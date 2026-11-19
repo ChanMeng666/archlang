@@ -87,6 +87,12 @@ export interface DiagnosticJson {
    */
   cause?: { code: string; line?: number; col?: number; span: [number, number]; file?: string };
   /**
+   * What the grammar would have read at `span` (card AF4, {@link import("./diagnostics.js").Diagnostic.expected}):
+   * words as written, punctuation as typed, and token classes in `<…>` (`<number>`, `<name>`).
+   * Present only on an `E_PARSE` whose alternatives the parser knows; after `cause`.
+   */
+  expected?: string[];
+  /**
    * The lint ruleset number this warning was raised against (card RM1.6b): its key, value, units,
    * who set it, its document, clause, edition and verification grade, and the profile the run
    * used. Present only when the caller asks for it ({@link DiagnosticJsonOptions.rule}) and a
@@ -280,6 +286,7 @@ export function diagnosticToJson(source: string, d: Diagnostic, opts?: Diagnosti
   if (d.component !== undefined) out.component = d.component;
   if (d.relatedSpans?.length) out.related = d.relatedSpans.map((r) => located(source, { message: r.message }, r));
   if (d.cause) out.cause = located(source, { code: d.cause.code }, d.cause);
+  if (d.expected?.length) out.expected = [...d.expected];
   const rule = opts?.rule?.(d);
   if (rule) out.rule = rule;
   const overprint = opts?.overprint?.(d);

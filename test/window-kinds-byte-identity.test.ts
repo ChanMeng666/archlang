@@ -273,7 +273,7 @@ const BASELINE: [string, string][] = [
   ["0ba9460627a738d65c7d5235e533ad8410bf7a548bfedc69dca44f987793ee91", "inline:stair-placed"],
   ["802586e9b7cf3f6927c1441481a0e2d14699e57b6b7a50ddb48b71a9b4a902d5", "inline:stair-arrival"], // RM1.3a, see ./byte-identity-baseline.ts; RM1.2a, see ./byte-identity-baseline.ts; RM1.2a review, see ./byte-identity-baseline.ts; RM1.3b overlay, see ./byte-identity-baseline.ts; RM9.2, see ./byte-identity-baseline.ts
   ["e6eed958e1d4cea68f7981fce9964af4b5a26fa3d09ad3eafebb0992ce5cb727", "inline:stair-refusals"],
-  ["57879436768cab2c738430d6586f0e88de6cb79c178799a011c9d09f73e553df", "inline:stair-parse-refusals"],
+  ["aa029d64da9548ccbdd930324780fa9e855f30bfe4e2b305b27d2c8d0c0ecf8c", "inline:stair-parse-refusals"], // AF4 (was 57879436): its `E_PARSE` now carries `expected` (what the parser would have read there); SVG, lint() and every other key are unchanged, and deleting `expected` gives 57879436
   ["bdda2e03bfff883bb488687a60cb5c3fbcb2b5457e11cc942eb767038e85a81c", "inline:window-words-as-names"], // RM1.4: the unknown-furniture search is charged to the step meter (+46 steps: `tilt_turn`, 107 -> 153) (was 53c5af7d)
   ["d847b604cec5fdd07a0234e04f3b760930f72c2474f4c0bc8ca1f06c16fdfd7f", "inline:window-every-path"],
   ["ba22fde79e6bf00b978a12cf0d002456839cf6e501fa81b7c08d1878c7ba729c", "inline:window-placed-and-curved"],
@@ -286,7 +286,7 @@ const BASELINE: [string, string][] = [
   ["0c5d380bace0d59e32db429d00df9acc4224ec0e1f0df05cfe041ac63a8c06a5", "inline:balcony-windows"],
   ["e17bbe8214ce8a348edbdc2fd581fec9c14cf02d8c913166ef06f60f6cc311ce", "inline:door-narrow-and-double"],
   ["f795d7565b9c1e60f7e27f8fd067c030ef15c504152e4b57baf656b846fb00a3", "inline:window-refusals"],
-  ["4685983c90fb78c663624ebf6be63932cad94f313e6d54bca7f6a8048c5d846d", "inline:window-parse-refusal"],
+  ["71f8697b3ccf7b6123358c69763e2606f6ee9c39e28baaa3233001332d057bc0", "inline:window-parse-refusal"], // AF4 (was 4685983c): its `E_PARSE` now carries `expected` (what the parser would have read there); SVG, lint() and every other key are unchanged, and deleting `expected` gives 4685983c
 ];
 
 suite("window kinds: the byte-identity law", () => {

@@ -5,7 +5,7 @@ import type { Span } from "../diagnostics.js";
 import { heightRangeDiagnostic, isDrawableHeight } from "../datum.js";
 import { ARC_DIRS } from "../ast.js";
 import type { ElementDef, ParseCtx, RenderCtx, ResolveCtx, TransformCtx } from "../registry.js";
-import { idAfterKind, parseIdWithSpan } from "../clause-order.js";
+import { failNear, idAfterKind, parseIdWithSpan } from "../clause-order.js";
 import type { SceneNode } from "../scene.js";
 import type { RWall } from "../ir.js";
 import { segmentFaceExtremes, segmentsOfWall } from "../geometry.js";
@@ -18,7 +18,7 @@ import { fmt3, MAX_ANGLE_DEG, outOfRangeDiagnostic } from "../num-format.js";
 import { noteThickness } from "../ir/silent-accepts.js";
 import { exprSpan } from "../expr.js";
 import { resolveWallRelation } from "../wall-relation.js";
-import { enumList, WALL_STATUSES, type WallStatus } from "../grammar/tokens.js";
+import { enumList, TOKEN_TEXT, WALL_STATUSES, type WallStatus } from "../grammar/tokens.js";
 
 export const wall: ElementDef = {
   kind: "wall",
@@ -154,7 +154,11 @@ export const wall: ElementDef = {
         points.push(ctx.parsePoint());
         continue;
       }
-      ctx.fail(`Expected a point "(x,y)", "arc (x,y) radius R" or "close" in wall body but found ${describe(ctx)}`);
+      ctx.fail(
+        `Expected a point "(x,y)", "arc (x,y) radius R" or "close" in wall body but found ${describe(ctx)}`,
+        undefined,
+        POLYLINE_BODY,
+      );
     }
     ctx.eat("rcurly");
     if (points.length < 2) ctx.fail("A wall needs at least two points", kw);
@@ -455,7 +459,7 @@ export function parseWallStatus(ctx: ParseCtx): WallStatus | undefined {
   ctx.next();
   const t = ctx.peek();
   if (t.type !== "ident" || !(WALL_STATUSES as readonly string[]).includes(t.value)) {
-    ctx.fail(`Expected ${enumList(WALL_STATUSES)} after \`status\` but found ${describe(ctx)}`);
+    failNear(ctx, `Expected ${enumList(WALL_STATUSES)} after \`status\` but found ${describe(ctx)}`, WALL_STATUSES, t);
   }
   return ctx.next().value as WallStatus;
 }
@@ -480,6 +484,9 @@ function parseRelation(ctx: ParseCtx): WallRelationNode {
   const close = ctx.eat("rbracket");
   return { kind: "around", rooms, span: { start: kw.start, end: close.end } };
 }
+
+/** What a `wall`'s or a `fence`'s `{ … }` body reads next (AF4): a point, an `arc`, `close`, or its `}`. */
+export const POLYLINE_BODY = [TOKEN_TEXT.lparen, "arc", "close", TOKEN_TEXT.rcurly];
 
 function describe(ctx: ParseCtx): string {
   const t = ctx.peek();

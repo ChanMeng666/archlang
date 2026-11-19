@@ -266,7 +266,7 @@ const BASELINE: [string, string][] = [
   ["0ba9460627a738d65c7d5235e533ad8410bf7a548bfedc69dca44f987793ee91", "inline:stair-placed"],
   ["802586e9b7cf3f6927c1441481a0e2d14699e57b6b7a50ddb48b71a9b4a902d5", "inline:stair-arrival"], // RM1.3a, see ./byte-identity-baseline.ts; RM1.2a, see ./byte-identity-baseline.ts; RM1.2a review, see ./byte-identity-baseline.ts; RM1.3b overlay, see ./byte-identity-baseline.ts; RM9.2, see ./byte-identity-baseline.ts
   ["e6eed958e1d4cea68f7981fce9964af4b5a26fa3d09ad3eafebb0992ce5cb727", "inline:stair-refusals"],
-  ["57879436768cab2c738430d6586f0e88de6cb79c178799a011c9d09f73e553df", "inline:stair-parse-refusals"],
+  ["aa029d64da9548ccbdd930324780fa9e855f30bfe4e2b305b27d2c8d0c0ecf8c", "inline:stair-parse-refusals"], // AF4 (was 57879436): its `E_PARSE` now carries `expected` (what the parser would have read there); SVG, lint() and every other key are unchanged, and deleting `expected` gives 57879436
   ["e1b33e456fe8469b496c7d487499ec35cd3d100657563ecf26c5026b715bdb74", "inline:windows-on-edges"],
   ["a5f01ce457b26833e36383c9fcfed89f8823e692e6b3c447114625d4ac699640", "inline:windows-at-the-junction"],
   ["a02cac393ebefd7c151682913f035e1900887b12a404ec416a0c2382dbc53728", "inline:windows-past-the-junction"],

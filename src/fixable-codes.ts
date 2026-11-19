@@ -102,7 +102,7 @@ export const FIX_PRODUCERS: readonly FixProducer[] = [
     codes: { E_PARSE: "spelling" },
     when: {
       [MA]: "the word is none the language or the plan knows and one word of a closed list alone is within the distance limit",
-      [MI]: "the position expected one word or the word is one the language or the plan knows or another candidate is within the limit",
+      [MI]: "the position expected one word or the word is one the language or the plan knows or another candidate is within the limit or the word is a closed-list word glued to the number after it",
     },
   },
   {

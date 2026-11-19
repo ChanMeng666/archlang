@@ -54,15 +54,18 @@ export interface ParseCtx {
   parseIdOpt(): string;
   /** The span from byte `start` to the end of the last token read. */
   spanFrom(start: number): Span;
-  /** Report a fatal parse error at `t` (defaults to the current token); never returns. */
-  fail(msg: string, t?: Token): never;
+  /** Report a fatal parse error at `t` (defaults to the current token); never returns. `expected`
+   *  is what the grammar would have read there (AF4, `Diagnostic.expected`): words as written,
+   *  punctuation as typed, token classes as `TOKEN_TEXT` writes them (`src/grammar/tokens.ts`). */
+  fail(msg: string, t?: Token, expected?: readonly string[]): never;
   /** {@link fail} reported at `span` (a whole statement), with the current token's hints. */
-  failAt(msg: string, span: Span): never;
+  failAt(msg: string, span: Span, expected?: readonly string[]): never;
   /** {@link fail} where `t` (the current token by default) should have been one of `near`,
    *  reported at `span` (`t`'s own by default): a misspelling of one of them gets a did-you-mean
-   *  hint and a fix that rewrites `t` alone (AF2). Optional, so a caller's own `ParseCtx` stays
-   *  valid; the built-in elements fall back to `fail`/`failAt` without it. */
-  failNear?(msg: string, near: readonly string[], t?: Token, span?: Span): never;
+   *  hint and a fix that rewrites `t` alone (AF2). `expected` is `near` unless given (AF4).
+   *  Optional, so a caller's own `ParseCtx` stays valid; the built-in elements fall back to
+   *  `fail`/`failAt` without it. */
+  failNear?(msg: string, near: readonly string[], t?: Token, span?: Span, expected?: readonly string[]): never;
   /** Report a catalogued diagnostic and keep parsing (a duplicate clause, `E_DUP_CLAUSE`). */
   diag(d: Diagnostic): void;
 }

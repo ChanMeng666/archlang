@@ -38,14 +38,21 @@ import { rectCorners } from "../geometry.js";
 import { fmt3, fmtMessage } from "../num-format.js";
 import { flightAxis, flightsOf, isBlockStair, MAX_WINDERS, piecesOf, tailEdge } from "../vertical.js";
 import { breakLineEnds, runTooLong, runTreads, stairGlyph } from "./vertical-glyphs.js";
+import { failNear } from "../clause-order.js";
+import { TOKEN_TEXT } from "../grammar/tokens.js";
+
+/** The pieces a block `stair`'s `{ … }` holds, each read by its word. */
+const STAIR_PIECES = ["flight", "landing"] as const;
 
 /** Parse the mandatory `dir up|down` clause shared by `stair` and `escalator`. */
 export function parseVerticalDir(ctx: ParseCtx, keyword: string): VerticalDir {
   ctx.eatKeyword("dir");
   const t = ctx.eatIdent();
   if (!(VERTICAL_DIRS as readonly string[]).includes(t.value))
-    ctx.fail(
+    failNear(
+      ctx,
       `Expected ${VERTICAL_DIRS.map((d) => `\`dir ${d}\``).join(" or ")} after \`${keyword}\` but found "${t.value}"`,
+      VERTICAL_DIRS,
       t,
     );
   return t.value as VerticalDir;
@@ -63,14 +70,21 @@ function parseBlock(ctx: ParseCtx, id: string, line: number): StairNode {
   if (!ctx.isType("lcurly")) {
     ctx.fail(
       `Expected "{" to open the stair's flights and landings; a straight stair takes \`at\` and \`size\` before \`dir\``,
+      undefined,
+      [TOKEN_TEXT.lcurly],
     );
   }
   ctx.next();
   while (!ctx.isType("rcurly") && !ctx.isType("eof")) {
     const t = ctx.peek();
     if (!ctx.isKeyword("flight") && !ctx.isKeyword("landing")) {
-      ctx.fail(
+      failNear(
+        ctx,
         `Expected "flight" or "landing" in the \`stair\` block but found ${t.type === "eof" ? "end of input" : `"${t.value}"`}`,
+        STAIR_PIECES,
+        t,
+        undefined,
+        [...STAIR_PIECES, TOKEN_TEXT.rcurly],
       );
     }
     ctx.next();

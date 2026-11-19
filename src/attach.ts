@@ -21,6 +21,7 @@ import type { Expr, ParseExprOpts } from "./expr.js";
 import { chargeSteps } from "./expr.js";
 import type { ParseCtx, ResolveCtx } from "./registry.js";
 import type { TailClause } from "./clause-order.js";
+import { failNear } from "./clause-order.js";
 import type { WallLike, WallSegment } from "./geometry.js";
 import { segmentLength, segmentPointAlong, segmentsOfWall } from "./geometry.js";
 import type { OpeningRelation, WindowCorner } from "./ir.js";
@@ -65,10 +66,24 @@ function attachClampFix(attach: OpeningAttach, valueText: string): FixSuggestion
  * and the diagnostic name another. `ctx.fail` returns `never`, which narrows the
  * result to the member type.
  */
-export function eatEnumValue<T extends string>(ctx: ParseCtx, allowed: readonly T[], what: string, orForm?: string): T {
-  const v = ctx.eatIdent().value;
+export function eatEnumValue<T extends string>(
+  ctx: ParseCtx,
+  allowed: readonly T[],
+  what: string,
+  or?: { form: string; word: string },
+): T {
+  const t = ctx.eatIdent();
+  const v = t.value;
+  // Spanned on the word, where a did-you-mean rewrites it (AF2); `or`'s word is expected too (AF4).
   if (!(allowed as readonly string[]).includes(v))
-    ctx.fail(`Expected ${what} ${enumList(allowed)}${orForm ? ` or ${orForm}` : ""} but found "${v}"`);
+    failNear(
+      ctx,
+      `Expected ${what} ${enumList(allowed)}${or ? ` or ${or.form}` : ""} but found "${v}"`,
+      allowed,
+      t,
+      undefined,
+      or ? [...allowed, or.word] : allowed,
+    );
   return v as T;
 }
 

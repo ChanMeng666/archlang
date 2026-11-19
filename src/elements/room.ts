@@ -463,6 +463,9 @@ export const room: ElementDef = {
           `Expected "at" or a relational direction (${REL_DIR_LIST.join("|")}) but found "${dirTok.value}"`,
           ["at", ...REL_DIR_LIST],
           dirTok,
+          undefined,
+          // In the order the statement tries its placements (AF4).
+          ["polygon", "circle", "at", ...REL_DIR_LIST],
         );
       }
       const refTok = ctx.eatIdent();

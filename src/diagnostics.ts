@@ -158,6 +158,14 @@ export interface Diagnostic {
    * ({@link rootsFirst}). Append-only field.
    */
   cause?: { code: string; span: Span; file?: string };
+  /**
+   * What the grammar would have read at `span` (card AF4, after rustc's "expected one of"), set on
+   * an `E_PARSE` only where the parser knows its alternatives: each entry is a word as it is written
+   * (`at`, `right-of`), punctuation as it is typed (`}`, `,`), or a class of tokens in `<…>`
+   * (`<number>`, `<name>`, `<string>`; the lexer's token types, `TOKEN_TEXT` in
+   * `src/grammar/tokens.ts`), in the order the parser tries them. Append-only field.
+   */
+  expected?: string[];
 }
 
 type Cause = NonNullable<Diagnostic["cause"]>;
