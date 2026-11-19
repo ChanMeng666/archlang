@@ -1985,11 +1985,11 @@
  * gone from it (its line, two ticks and number moved back). Of `lint()` under both profiles the two
  * `W_ANNOTATION_OVERLAP` reports are gone and nothing else moved; `describe()`, the diagnostics and
  * the steps did not move. The fixture's header comment was rewritten at the same byte length, and
- * `main`'s (`b1e73f98`) compiler gives the old digests on the edited fixture exactly. Put
+ * `main`'s (`e7083747`) compiler gives the old digests on the edited fixture exactly. Put
  * `main`'s drawing (every page's SVG and Scene) and its `lint()` back into this branch's
  * payload and each old digest is reproduced; the drawing alone reproduces none, which is the two
- * reports. A per-payload sweep of 13,622 sources (519 `.arch` files, 411 fences, 8,512 literals, 280 table values, 3,900 fragments) and the 9 runtime-built family rows moved this plan, five audit plans under
- * `test/plans/` (`keep`'s weak-law table pins them), `min-clear-joins` and `agent-ux-prefinish`, three test literals and `rendered-theme`'s `inline:every-family-unscaled` (one label placed again, its report gone; re-pinned, main's drawing and `lint()` reproduce the old digest), and nothing else.
+ * reports. A per-payload sweep of 13,664 sources (519 `.arch` files, 411 fences, 8,539 literals, 280 table values, 3,915 fragments) and the 9 runtime-built family rows moved this plan, five audit plans under
+ * `test/plans/` (`keep`'s weak-law table pins them), `min-clear-joins` and `agent-ux-prefinish`, three test literals and the two plans `test/label-leaders.test.ts` pins for the red team's cases, and `rendered-theme`'s `inline:every-family-unscaled` (one label placed again, its report gone; re-pinned, main's drawing and `lint()` reproduce the old digest), and nothing else.
  *
  * Re-measured for AL3w (a room's text is read against a symbol at the wider of its estimate and its
  * ink), the same 14 rows. "WC 1" and "WC 2" were wrapped over their basins: "WC" draws 1.67 em of

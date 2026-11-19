@@ -136,7 +136,7 @@ const BASELINE: [string, string][] = [
   ["429d048d147ff95c56bf15fe655fb6a2e7870b21b111d82109e7d9fbc25a8655", "test/fixtures/axes-grid.arch"],
   ["8b201a108d4f8cf901579b200c92b809000d77b9550cda3e092994c09fbba1d5", "test/fixtures/chain30.arch"], // #367, see test/byte-identity-baseline.ts
   ["c08051d0ac804cb6ddbc6d6a073934ce248aab2951f1b3bcbb05e242ec1f4c22", "test/fixtures/dense-bays.arch"],
-  ["af509b00707312b1ae99bfc728fcc355ad0cbc77041c75446fe2e904b6a25af8", "test/fixtures/dense-office.arch"], // AL6: a new row, see ./byte-identity-baseline.ts
+  ["d3a5dfbb8963ec5b0d78d9328467d911e2bc36f40fcc30e5370702014546e181", "test/fixtures/dense-office.arch"], // AL6: a new row, see ./byte-identity-baseline.ts
   ["b9215930403c72e737b6486d949354fc8162cf96ec5d53897edfab5f21835e4f", "test/fixtures/diff-a.arch"],
   ["cc20d6821e47c1a45a5c0b94d86a15eda2e2e684a66c096c06ef8071b21bf20b", "test/fixtures/diff-b.arch"],
   ["035414348be6c178ae7688e584bf7e8ff4e43461e2d70c40894682db0347acd2", "test/fixtures/diff-circ-a.arch"],

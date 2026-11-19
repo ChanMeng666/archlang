@@ -10,7 +10,7 @@
  * PR legitimately moves a hashed output (never keep code), the table is re-taken by the generator, the
  * reason recorded below and the moved files listed in that commit's message.
  *
- * Taken: AL3b leaders, re-taken on b1e73f98: labels led or placed again, and W_ANNOTATION_OVERLAP's catalogue fix text
+ * Taken: AL3b leaders on e7083747, red-team round 1 fixes: labels led or placed again, and W_ANNOTATION_OVERLAP's catalogue fix text
  */
 
 /** `[path from the repository root, SHA-256 of the payload, evaluation steps]`, sorted by root. */
@@ -1378,7 +1378,7 @@ export const KEEP_WEAK_BASELINE: readonly (readonly [string, string, number])[] 
   ],
   [
     "test/plans/plan-soundness/audits/first-contact-plans/2026-10-24-rerun/2-house.arch",
-    "f18078c4b43f8a24f6efc17aa77c998500e222425073ddfeedbbc00ecdc4936c",
+    "88492e441e8049d20ad821c3efcd4b6f900b6f667d8a74a09ad26fb2c93bee04",
     4980,
   ],
   [
