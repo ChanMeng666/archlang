@@ -58,8 +58,7 @@
  *
  * Which labels do not fit is read first, from the fabric alone. A label that does not fit then
  * claims no floor until its turn comes, so a neighbour never dodges a box that is about to shrink,
- * unless it is too big for its room at every height, which may well stay as it is and so keeps its
- * floor; the turns go by the room's anchor. `relocateLabels` takes its turns in the same order (card
+ * and the turns go by the room's anchor. `relocateLabels` takes its turns in the same order (card
  * AL3a), so the two passes together are order-free: the same rooms written in any order draw the
  * same. Not yet in a plan that draws `walls from rooms` with `dims auto`: the wall-thickness figures
  * are stationed before either pass, in an order of their own, and both passes read them as drawn.
@@ -99,7 +98,6 @@ import {
   CLEARANCE,
   COLLIDE_MIN,
   FRACTIONS,
-  fitCanRedraw,
   fitTexts,
   type LabelGroup,
   labelHeights,
@@ -509,11 +507,8 @@ export function fitLabels(
   }
 
   // A label that may yet shrink or move claims no floor: a neighbour must not dodge a box about to
-  // go. One too big for its room at every height may well stay as it is (its search reads only where
-  // it stands and the room's first place, at the smallest height), so it keeps its floor, as it does
-  // in the relocation ({@link fitCanRedraw}, card AL3a). Each takes its place in an order read off
-  // the plan, never the source's.
-  const moving = new Set(misfits.filter((f) => fitCanRedraw(f, groups[f.gi]!.ring, sizes)).map((f) => f.gi));
+  // go. Each takes its place in an order read off the plan, never the source's.
+  const moving = new Set(misfits.map((f) => f.gi));
   for (const m of marks) if (m.kind === "text" && moving.has(m.owner)) m.stale = true;
   misfits.sort((a, b) => placeOrder(a, b, groups));
 

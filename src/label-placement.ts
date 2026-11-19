@@ -54,9 +54,9 @@
  * takes ({@link fitTexts}: a name and an area figure) with a text standing off its own floor where it
  * is drawn does not fit, the fit will shrink, wrap or move it, and a neighbour must not dodge a box
  * that is about to change (`fitLabels`' own rule). Any other label, an area figure on its own among
- * them, is never redrawn, so it keeps its floor however far off it stands; one too big for its room
- * at every height ({@link fitCanRedraw}) is drawn smaller where it is left or at its anchor, so it
- * keeps its floor at both. Before, the turns went by
+ * them, is never redrawn, so it keeps its floor however far off it stands, and so does one too big
+ * for its room at every height ({@link fitCanRedraw}), which the fit can only draw smaller. Before,
+ * the turns went by
  * element order, and each placed label was an obstacle for the next, so five corpus plans, written
  * the other way round, drew differently.
  *
@@ -692,8 +692,8 @@ export function relocateLabels(
    *  ({@link fitTexts}) and one of its two texts, where it now stands, is more than
    *  {@link COLLIDE_MIN} of its ink off its own floor, read as the fit reads it (each text's own ink
    *  box, which makes it a misfit there). A label the fit never takes keeps its claim, and so does
-   *  one too big for its room at every height ({@link fitCanRedraw}): the fit draws it smaller where
-   *  it is left or at its anchor, so it claims both (see the turns below). */
+   *  one too big for its room at every height ({@link fitCanRedraw}), which the fit can only draw
+   *  smaller (see the turns below). */
   const claims = (g: LabelGroup): boolean => {
     const own = fitTexts(nodes, g);
     if (!own) return true;
@@ -752,9 +752,8 @@ export function relocateLabels(
     // first turn.
     if (g.fixed) continue;
 
-    // A label too big for its room at every height ({@link fitCanRedraw}) stands clear nowhere:
-    // `fitLabels` draws it at the smallest height either where this pass leaves it or at its anchor,
-    // the room's first place. So it claims the floor at both, each at its full size (card AL3a).
+    // A label too big for its room at every height ({@link fitCanRedraw}) stands clear nowhere, and
+    // `fitLabels` can only draw it at the smallest height, so it keeps its claim (card AL3a).
     const own = fitTexts(nodes, g);
     const tooBig = own !== null && !fitCanRedraw(own, g.ring, sizes);
 
@@ -816,7 +815,6 @@ export function relocateLabels(
     }
     const landed = shiftBBox(rect0, dx, dy);
     if (tooBig || claims(g)) placed.push(landed);
-    if (tooBig && (dx !== 0 || dy !== 0)) placed.push(rect0);
   }
 }
 
@@ -864,9 +862,9 @@ export function labelHeights(sizes: RenderSizes): { name: number; area: number }
  * Whether `fitLabels` can place this label somewhere else: one of the forms it tries (the name
  * wrapped onto two or more lines at any height, or on one line below the full size, the area figure
  * at that height's size) is no wider and no taller than the room's whole extent. A label too big at
- * every height can stand clear nowhere; the fit draws it at the smallest height where it stands, or
- * at the room's own first place, so the relocation keeps its claim (card AL3a). The forms and the
- * test are `fitLabels`' own (its `tooBig`), in the same order.
+ * every height can stand clear nowhere; the fit only draws it at the smallest height, so the
+ * relocation keeps its claim (card AL3a). The forms and the test are `fitLabels`' own (its
+ * `tooBig`), in the same order.
  */
 export function fitCanRedraw(own: FitTexts, ring: readonly Point[], sizes: RenderSizes): boolean {
   const bb = polygonBounds(ring);

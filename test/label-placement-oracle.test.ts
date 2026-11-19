@@ -33,8 +33,8 @@
  * stays the pass's input. A fifth (card AL3a): the groups take their turns in `plotOrder`, an order
  * read off the plan (`plotOrder`), rather than element order. A label the fit will redraw
  * (`fitTexts`, with a text more than `COLLIDE_MIN` of its own ink box off its floor) claims no floor;
- * one too big for its room at every height (`fitCanRedraw`) claims both where it is left and its
- * anchor; an authored label claims its box before the first turn. Which group goes when, and which
+ * one too big for its room at every height (`fitCanRedraw`) keeps its claim; an authored label
+ * claims its box before the first turn. Which group goes when, and which
  * labels are obstacles, are the pass's input; the sums under test are not.
  */
 
@@ -352,7 +352,7 @@ function relocateLabelsBefore(
     // clause, so its groups are never `fixed`; the field is the room's.) Placed above.
     if (g.fixed) continue;
 
-    // Card AL3a: a label too big for its room at every height claims where it is left and its anchor.
+    // Card AL3a: a label too big for its room at every height keeps its claim.
     const own = fitTexts(nodes, g);
     const tooBig = own !== null && !fitCanRedraw(own, g.ring, sizes);
 
@@ -419,7 +419,6 @@ function relocateLabelsBefore(
     }
     const landed = shiftBBox(rect0, dx, dy);
     if (tooBig || claims()) placed.push(landed);
-    if (tooBig && (dx !== 0 || dy !== 0)) placed.push(rect0);
   }
 }
 
