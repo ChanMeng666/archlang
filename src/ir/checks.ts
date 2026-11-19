@@ -376,6 +376,12 @@ export function checkRoomOverlaps(
       code: "W_ROOM_OVERLAP",
       span: r2.span,
       ...(withinOneStep(r1, r2, grid) ? { hints: [gridOverlapHint(grid)] } : {}),
+      // AF7: the statement that placed the other room. Both in the compiled source only (the
+      // warning carries no `file`, so a note from a module would address the importer's bytes),
+      // and not one statement twice (a component placed twice overlapping itself).
+      ...(r1.span && r1.span.start !== r2.span?.start && r1._file === undefined && r2._file === undefined
+        ? { relatedSpans: [{ span: r1.span, message: "the other room placed here" }] }
+        : {}),
     });
   };
 

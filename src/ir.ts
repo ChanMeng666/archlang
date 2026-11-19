@@ -1394,8 +1394,10 @@ function resolveBody(
       withDatumReader(beforeRoomsReader("rooms", axisScope), () => {
         if (roomKind >= 0) resolveKind(roomKind);
         activeEntry = undefined;
-        placeRelational(relational.rooms(), snapPt, (d, room) => {
-          const out = relational.stamp(d);
+        placeRelational(relational.rooms(), snapPt, (d, room, note) => {
+          const stamped = relational.stamp(d);
+          // AF7: the statement the error waits on, first, after the stamp (so a stamped key keeps its place).
+          const out = note ? { ...stamped, relatedSpans: [note, ...(stamped.relatedSpans ?? [])] } : stamped;
           placement.push(out);
           ownRoomDiag(out, room);
         });

@@ -20,13 +20,33 @@
  */
 
 import type { Point } from "./ast.js";
-import type { Diagnostic } from "./diagnostics.js";
+import type { Diagnostic, RelatedSpan } from "./diagnostics.js";
 import { rectLabelOutsideDiag } from "./elements/room.js";
 import type { RelConstraint, RRoom } from "./ir.js";
 import { type EdgeLine, extremeRuns, rectilinear, runsText, type SideWord } from "./room-tiling.js";
 
 /** A room that definitely carries a relational constraint. */
 type RelRoom = RRoom & { _rel: RelConstraint };
+
+/**
+ * The statement that placed `room`, as the one related span of `r`'s layout error (AF7): its
+ * relational clause ("`b` placed right-of `a` here") or, for a room with no clause, its statement.
+ * Only when both statements are in the compiled source: a layout error from an imported body
+ * carries no `file` (its group stamps none), so a note there could not say where it is measured,
+ * as AF1 left `E_DUP_ID` in an imported body without one. Never `r`'s own clause. One note per
+ * error, so a cycle of `k` rooms carries `k` notes, never `k²`. Handed to the sink beside the
+ * diagnostic, not on it, so the sink adds it after its own stamp and an instance's diagnostic
+ * keeps its key order.
+ */
+function placedNote(r: RelRoom, room: RRoom | undefined): RelatedSpan | undefined {
+  if (!room || room._file !== undefined || r._file !== undefined) return undefined;
+  const span = room._rel?.span ?? room.span;
+  if (!span || span === r._rel.span) return undefined;
+  const message = room._rel
+    ? `\`${room.id}\` placed ${room._rel.dir} \`${room._rel.ref}\` here`
+    : `\`${room.id}\` placed here`;
+  return { span, message };
+}
 
 /**
  * Cross-axis alignment offset. For horizontal placement (`right-of`/`left-of`)
@@ -124,7 +144,9 @@ function referenceRun(room: RelRoom, ref: RRoom & { poly: Point[] }): EdgeLine |
  * @param rooms   All resolved rooms, in declaration order.
  * @param snapPt  Grid-snap used for absolute coords (computed coords snap too).
  * @param diag    Sink for `E_LAYOUT_REF` / `E_PLACE_POLY` / `E_LAYOUT_UNPLACED` /
- *                `E_LAYOUT_CYCLE`, emitted in declaration order of the offending room.
+ *                `E_LAYOUT_CYCLE`, emitted in declaration order of the offending room;
+ *                `note` is the statement a cycle or an unplaced room waits on (AF7), for the
+ *                sink to add as a related span after its own stamp.
  *
  * Every room left without a real position (failed, unplaced or on a cycle) is marked
  * `_unplaced`. The mark survives `room.transform`, so an enclosing plan's pass sees an
@@ -134,7 +156,7 @@ function referenceRun(room: RelRoom, ref: RRoom & { poly: Point[] }): EdgeLine |
 export function placeRelational(
   rooms: RRoom[],
   snapPt: (p: Point) => Point,
-  diag: (d: Diagnostic, room?: RRoom) => void,
+  diag: (d: Diagnostic, room?: RRoom, note?: RelatedSpan) => void,
 ): void {
   const rel = rooms.filter((r): r is RelRoom => r._rel !== undefined);
   if (rel.length === 0) return;
@@ -155,6 +177,7 @@ export function placeRelational(
   // Layout errors are buffered per room and flushed in declaration order at the end, so
   // the phases (fixpoint, then leftover walk) cannot invert the order.
   const pending = new Map<string, Diagnostic>();
+  const notes = new Map<string, RelatedSpan>();
 
   // Fixpoint: keep placing any room whose reference is resolved. Declaration
   // order within each sweep makes the result deterministic.
@@ -224,6 +247,8 @@ export function placeRelational(
           code: "E_LAYOUT_UNPLACED",
           span: r._rel.span,
         });
+        const note = placedNote(r, byId.get(next));
+        if (note) notes.set(r.id, note);
         break;
       }
       if (next === r.id) {
@@ -233,6 +258,8 @@ export function placeRelational(
           code: "E_LAYOUT_CYCLE",
           span: r._rel.span,
         });
+        const note = placedNote(r, byId.get(r._rel.ref));
+        if (note) notes.set(r.id, note);
         break;
       }
       walked.add(next);
@@ -244,6 +271,6 @@ export function placeRelational(
     const d = pending.get(r.id);
     if (!d) continue;
     r._unplaced = true;
-    diag(d, r);
+    diag(d, r, notes.get(r.id));
   }
 }

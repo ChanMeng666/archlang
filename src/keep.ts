@@ -30,7 +30,7 @@
  */
 
 import type { KeepGrade, KeepNode, KeepRef, Point } from "./ast.js";
-import type { Diagnostic, Span } from "./diagnostics.js";
+import type { Diagnostic, RelatedSpan, Span } from "./diagnostics.js";
 import { chargeSteps, closest, stepSite } from "./expr.js";
 import { segmentsOfWall, type WallSegment } from "./geometry.js";
 import { arcExtremes } from "./geometry/arc.js";
@@ -359,6 +359,9 @@ export interface KeepResult {
   valueH?: number;
   /** The same value in mm, as evaluated. */
   value?: number;
+  /** Internal, read by {@link violationOf}: on a broken hard keep, where each element it names was
+   *  placed (AF7), in the compiled source only. Never in a serialised row. */
+  placed?: RelatedSpan[];
 }
 
 const FORM_WORDS: Record<KeepNode["form"], string> = {
@@ -379,7 +382,26 @@ export function violationOf(r: KeepResult): Diagnostic {
     message: r.message!,
     ...(r.node.span ? { span: r.node.span } : {}),
     hints: r.hints!,
+    ...(r.placed ? { relatedSpans: r.placed } : {}),
   };
+}
+
+/**
+ * Where each element a broken keep names was placed (AF7): the statement of every distinct room or
+ * element target, as related spans of its `W_KEEP_VIOLATED`. A keep is written only in the compiled
+ * source (a component body refuses one), so an element whose statement came in through an `import`
+ * gets no note (AF1's same-file rule). Bounded by the keep's own targets (`MAX_KEEP_TARGETS`), which
+ * the measure has already charged; nothing is allocated per element of the plan.
+ */
+function placedSpans(ix: StoreyIndex, node: KeepNode): RelatedSpan[] | undefined {
+  const out: RelatedSpan[] = [];
+  for (const ref of refsOf(node)) {
+    const id = ref.t === "room" ? ref.room : ref.t === "el" ? ref.id : undefined;
+    const e = id === undefined ? undefined : ix.byId.get(id);
+    if (!e?.span || e._file !== undefined || out.some((x) => x.span.start === e.span!.start)) continue;
+    out.push({ span: e.span, message: `\`${id}\` placed here` });
+  }
+  return out.length > 0 ? out : undefined;
 }
 
 // ---- measuring one storey ------------------------------------------------------------------
@@ -926,7 +948,13 @@ export function evaluateKeeps(records: readonly KeepRecord[], ctx: KeepStoreyCtx
       refuseAt(ctx, node, r);
       continue;
     }
-    out.push({ ...base, ...r, ...(rec.mm !== undefined ? { value: rec.mm, valueH: halfOf(rec.mm) } : {}) });
+    const placed = !r.holds && base.grade === "hard" ? placedSpans(ix, node) : undefined;
+    out.push({
+      ...base,
+      ...r,
+      ...(rec.mm !== undefined ? { value: rec.mm, valueH: halfOf(rec.mm) } : {}),
+      ...(placed ? { placed } : {}),
+    });
   }
   return out;
 }
