@@ -6,7 +6,7 @@
  * only the new language-reference fence; the twins in `test/wall-between-around.test.ts`).
  * Measured with the test's own digest body (`allStoreysDigestWithDiagnostics`). A moved row is
  * a finding to explain (`docs/testing.md` §3), never a re-pin.
- * re-measured by AF7 (#PR_AF7): only added related notes; strip==old proven (RM-D69; the check is the
+ * re-measured by AF7 (#977): only added related notes; strip==old proven (RM-D69; the check is the
  * `AF7_MAIN` test below, through `test/helpers/af7-notes.ts`).
  */
 

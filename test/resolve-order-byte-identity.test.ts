@@ -33,7 +33,7 @@
  * what its absolute twin (`kitchen at (5000,0)`) draws, and that an unplaced room is still
  * refused by every reader.
  *
- * re-measured by AF7 (#PR_AF7): only added related notes; strip==old proven (RM-D69; the check is the
+ * re-measured by AF7 (#977): only added related notes; strip==old proven (RM-D69; the check is the
  * `AF7_MAIN` test below, through `test/helpers/af7-notes.ts`).
  */
 

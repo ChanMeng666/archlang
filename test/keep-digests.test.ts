@@ -26,7 +26,7 @@
  * `compile().diagnostics`, the exit code and the `validate --json` output with those reports taken
  * out are the same on `main` (`e7083747`) and this branch; `main` gives the old digest exactly.
  *
- * re-measured by AF7 (#PR_AF7): only added related notes; strip==old proven (RM-D69; the check is the
+ * re-measured by AF7 (#977): only added related notes; strip==old proven (RM-D69; the check is the
  * `AF7_MAIN` test below: `k3DigestOf(…, true)` takes the notes out, `test/helpers/af7-notes.ts`). K3b did not move.
  */
 

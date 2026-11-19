@@ -42,7 +42,7 @@
  * `lint()`, the diagnostics and the steps did not move. Put `main`'s SVG back (`a9db286e`) and drop
  * `chrome.north`, and this body reproduces every old digest; the new ones are this body on the branch.
  *
- * re-measured by AF7 (#PR_AF7): only added related notes; strip==old proven (RM-D69; the check is the
+ * re-measured by AF7 (#977): only added related notes; strip==old proven (RM-D69; the check is the
  * `AF7_MAIN` test below, through `test/helpers/af7-notes.ts`).
  */
 
