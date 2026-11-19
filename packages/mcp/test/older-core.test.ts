@@ -43,9 +43,13 @@ vi.mock("@chanmeng666/archlang", async (importOriginal) => {
     isOptionalDepError: undefined,
     diagnosticRule: undefined,
     diagnosticOverprint: undefined,
-    // A core before card AF5: no catalogue entry has `fixed`.
+    // A core before card AF5: no catalogue entry has `fixed`. Widened, not destructured by type:
+    // typed against a core older than AF5 (a worktree's), `CatalogEntry` has no such key.
     ERROR_CATALOG: Object.fromEntries(
-      Object.entries(core.ERROR_CATALOG).map(([code, { fixed: _f, ...entry }]) => [code, entry]),
+      Object.entries(core.ERROR_CATALOG).map(([code, e]) => {
+        const { fixed: _f, ...entry } = e as typeof e & { fixed?: string };
+        return [code, entry];
+      }),
     ),
     planToJson: (...args: Parameters<typeof core.planToJson>) => {
       const { pages: _pages, ...projection } = core.planToJson(...args);
