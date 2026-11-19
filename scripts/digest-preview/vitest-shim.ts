@@ -7,10 +7,12 @@
  * so a missing export is never a silent pass.
  *
  * One deliberate difference from vitest, and the reason the preview exists: a failed `toBe`/`toEqual`
- * whose every difference is a pinned 64-hex digest against a string is recorded as a MOVED ROW and does not
- * throw, so a loop that pins a whole table reports every row that moved, not the first. Any other failure
- * throws as in vitest. The digest bodies themselves are the test files' own code: this module replaces
- * the harness, never a measurement.
+ * whose every difference is a PIN (a 64-hex literal in the file's reach, `setPins`) against a measured
+ * string is recorded as a MOVED ROW and does not throw, so a loop that pins a whole table reports every row
+ * that moved, not the first. Two measured digests that differ are a failed law, and throw as such; any
+ * other failure throws as in vitest. Snapshot matchers compare nothing (they are counted, and the report
+ * names the snapshot laws as not covered). The digest bodies themselves are the test files' own code: this
+ * module replaces the harness, never a measurement.
  */
 
 /** A pinned digest: 64 lowercase hex characters, the shape of every byte-identity pin in `test/`. */
@@ -48,6 +50,12 @@ interface ShimState {
   scopes: Scope[];
   /** The rows the running test recorded; `null` outside a test. */
   moved: MovedRow[] | null;
+  /** The 64-hex literals in the running file's reach: a wanted value in here is a pin. */
+  pins: Set<string>;
+  /** `describe` blocks whose body returned a promise since the last `takeNotes` (not supported). */
+  asyncDescribes: string[];
+  /** Snapshot assertions seen since the last `takeNotes` (compared by nothing here). */
+  snapshots: number;
 }
 
 const newScope = (): Scope => ({ beforeAll: [], afterAll: [], beforeEach: [], afterEach: [] });
@@ -55,8 +63,21 @@ const newScope = (): Scope => ({ beforeAll: [], afterAll: [], beforeEach: [], af
 // On `globalThis`, so the runner and the test files share one state whichever URL each resolved the module by.
 const KEY = Symbol.for("archlang.digest-preview.vitest-shim");
 const holder = globalThis as unknown as Record<symbol, ShimState | undefined>;
-const state: ShimState = holder[KEY] ?? { tests: [], prefix: [], scopes: [newScope()], moved: null };
+const state: ShimState = holder[KEY] ?? {
+  tests: [],
+  prefix: [],
+  scopes: [newScope()],
+  moved: null,
+  pins: new Set(),
+  asyncDescribes: [],
+  snapshots: 0,
+};
 holder[KEY] = state;
+
+/** The pins of the file about to run (`pinsOf`, `scripts/digest-preview/select.ts`). */
+export function setPins(pins: Set<string>): void {
+  state.pins = pins;
+}
 
 /** The tests registered since the last call, in declaration order (the runner calls it after each import). */
 export function takeTests(): ShimTest[] {
@@ -67,27 +88,39 @@ export function takeTests(): ShimTest[] {
   return t;
 }
 
+/** The async `describe` bodies and the snapshot assertions seen since the last call. */
+export function takeNotes(): { asyncDescribes: string[]; snapshots: number } {
+  const n = { asyncDescribes: state.asyncDescribes, snapshots: state.snapshots };
+  state.asyncDescribes = [];
+  state.snapshots = 0;
+  return n;
+}
+
 const started = new WeakSet<Scope>();
 
 /**
- * Run one test under its hooks; returns the moved rows it recorded (a thrown failure propagates). A scope's
- * `beforeAll` runs before its first test; `finishFile` runs the `afterAll`s.
+ * Run one test under its hooks: the moved rows it recorded, and what it threw, if it threw. Rows recorded
+ * before a later failure in the same test are kept. A scope's `beforeAll` runs before its first test;
+ * `finishFile` runs the `afterAll`s.
  */
-export async function runTest(t: ShimTest): Promise<MovedRow[]> {
-  for (const s of t.scopes) {
-    if (started.has(s)) continue;
-    started.add(s);
-    for (const h of s.beforeAll) await h();
-  }
-  state.moved = [];
+export async function runTest(t: ShimTest): Promise<{ moved: MovedRow[]; error?: unknown }> {
+  const moved: MovedRow[] = [];
+  state.moved = moved;
   try {
+    for (const s of t.scopes) {
+      if (started.has(s)) continue;
+      started.add(s);
+      for (const h of s.beforeAll) await h();
+    }
     for (const s of t.scopes) for (const h of s.beforeEach) await h();
     try {
       await t.fn?.();
     } finally {
       for (const s of [...t.scopes].reverse()) for (const h of s.afterEach) await h();
     }
-    return state.moved;
+    return { moved };
+  } catch (error) {
+    return { moved, error };
   } finally {
     state.moved = null;
   }
@@ -159,16 +192,27 @@ function makeIt(skip: boolean) {
   });
 }
 
-export const it = Object.assign(makeIt(false), { skip: makeIt(true) });
+const itRun = makeIt(false);
+const itSkip = makeIt(true);
+export const it = Object.assign(itRun, {
+  skip: itSkip,
+  skipIf: (cond: unknown) => (cond ? itSkip : itRun),
+  runIf: (cond: unknown) => (cond ? itRun : itSkip),
+});
 export const test = it;
 
 function makeDescribe(skip: boolean) {
-  const d = (name: string, fn?: () => void): void => {
+  const d = (name: string, fn?: () => unknown): void => {
     state.prefix.push(name);
     state.scopes.push(newScope());
     const before = state.tests.length;
     try {
-      fn?.();
+      const body = fn?.();
+      // vitest awaits an async body while it collects; the stand-in cannot, so the file is flagged instead.
+      if (body instanceof Promise) {
+        state.asyncDescribes.push(state.prefix.join(" > "));
+        body.catch(() => {});
+      }
     } finally {
       state.prefix.pop();
       state.scopes.pop();
@@ -208,6 +252,9 @@ class Asymmetric {
 export function equals(a: unknown, b: unknown, strict = false): boolean {
   if (b instanceof Asymmetric) return b.asymmetricMatch(a);
   if (a instanceof Asymmetric) return a.asymmetricMatch(b);
+  // vitest 2: two Errors are equal when their messages are, two URLs when their hrefs are.
+  if (a instanceof Error && b instanceof Error) return a.message === b.message;
+  if (a instanceof URL && b instanceof URL) return a.href === b.href;
   if (Object.is(a, b)) return true;
   if (!isObj(a) || !isObj(b)) return false;
   if (a instanceof Date || b instanceof Date) return a instanceof Date && b instanceof Date && +a === +b;
@@ -222,7 +269,10 @@ export function equals(a: unknown, b: unknown, strict = false): boolean {
   }
   if (Array.isArray(a) !== Array.isArray(b)) return false;
   if (Array.isArray(a) && Array.isArray(b)) {
-    return a.length === b.length && a.every((x, i) => equals(x, b[i], strict));
+    // An index loop, not `every`: a hole reads as `undefined`, as vitest's iteration sees it.
+    if (a.length !== b.length) return false;
+    for (let i = 0; i < a.length; i++) if (!equals(a[i], b[i], strict)) return false;
+    return true;
   }
   if (strict && Object.getPrototypeOf(a) !== Object.getPrototypeOf(b)) return false;
   const keys = (o: Record<string, unknown>) => Object.keys(o).filter((k) => strict || o[k] !== undefined);
@@ -294,18 +344,26 @@ class AssertionError extends Error {
 // ---- expect ----------------------------------------------------------------------------------
 
 /**
- * A failed equality on pinned digests: when every differing leaf pins a 64-hex string and measured a string,
- * record each as a moved row and return true (the caller does not throw).
+ * A failed equality on pinned digests: when every differing leaf wants a PIN (a 64-hex literal in the file's
+ * reach) and measured a string, record each as a moved row and return true (the caller does not throw).
+ * `label` (the `expect(x, label)` message) names the row when the value has no path of its own.
  */
-function recordMoved(got: unknown, want: unknown): boolean {
+function recordMoved(got: unknown, want: unknown, label: string | undefined): boolean {
   if (state.moved === null) return false;
   const d: Diff[] = [];
   diffs(got, want, "", d);
-  if (d.length === 0 || !d.every((x) => typeof x.want === "string" && HEX64.test(x.want) && typeof x.got === "string"))
-    return false;
-  for (const x of d) state.moved.push({ where: x.where, pinned: x.want as string, now: x.got as string });
+  const isPin = (x: Diff) => typeof x.want === "string" && state.pins.has(x.want) && typeof x.got === "string";
+  if (d.length === 0 || !d.every(isPin)) return false;
+  for (const x of d) {
+    const where = x.where || (label ? `(${label})` : "");
+    state.moved.push({ where, pinned: x.want as string, now: x.got as string });
+  }
   return true;
 }
+
+/** Two measured digests that differ: a failed law between them, not a moved pin. */
+const lawFailed = (got: unknown, want: unknown): boolean =>
+  typeof got === "string" && typeof want === "string" && HEX64.test(got) && HEX64.test(want) && !state.pins.has(want);
 
 function matchers(got: unknown, msg: string | undefined, negated: boolean) {
   const check = (pass: boolean, what: string, soft?: () => boolean): void => {
@@ -313,25 +371,35 @@ function matchers(got: unknown, msg: string | undefined, negated: boolean) {
     if (!negated && soft?.()) return;
     throw new AssertionError(`${msg ? `${msg}: ` : ""}expected ${show(got)} ${negated ? "not " : ""}${what}`);
   };
+  /** An equality: a moved pin is recorded; two measured digests that differ fail as a law. */
+  const equality = (pass: boolean, want: unknown, what: string): void => {
+    if (!negated && !pass && lawFailed(got, want)) {
+      throw new AssertionError(
+        `${msg ? `${msg}: ` : ""}law failed: two measured digests differ, ${show(got)} and ${show(want)}`,
+      );
+    }
+    check(pass, what, () => recordMoved(got, want, msg));
+  };
+  const snapshot = (): void => {
+    state.snapshots++;
+  };
   const num = (v: unknown) => v as number;
   const m = {
-    toBe: (want: unknown) => check(Object.is(got, want), `to be ${show(want)}`, () => recordMoved(got, want)),
-    toEqual: (want: unknown) => check(equals(got, want), `to equal ${show(want)}`, () => recordMoved(got, want)),
-    toStrictEqual: (want: unknown) =>
-      check(equals(got, want, true), `to strictly equal ${show(want)}`, () => recordMoved(got, want)),
+    toBe: (want: unknown) => equality(Object.is(got, want), want, `to be ${show(want)}`),
+    toEqual: (want: unknown) => equality(equals(got, want), want, `to equal ${show(want)}`),
+    toStrictEqual: (want: unknown) => equality(equals(got, want, true), want, `to strictly equal ${show(want)}`),
     toMatchObject: (want: unknown) => check(matchesObject(got, want), `to match object ${show(want)}`),
     toMatch: (want: RegExp | string) =>
       check(
         typeof got === "string" && (typeof want === "string" ? got.includes(want) : want.test(got)),
         `to match ${String(want)}`,
       ),
+    // vitest: a string searches a string; anything else non-null is read with `Array.from` (an iterator too).
     toContain: (want: unknown) =>
       check(
         typeof got === "string"
           ? got.includes(String(want))
-          : got instanceof Set
-            ? got.has(want)
-            : Array.isArray(got) && got.includes(want),
+          : got !== null && got !== undefined && Array.from(got as Iterable<unknown>).includes(want),
         `to contain ${show(want)}`,
       ),
     toContainEqual: (want: unknown) =>
@@ -386,6 +454,11 @@ function matchers(got: unknown, msg: string | undefined, negated: boolean) {
               : thrown instanceof want));
       check(ok, `to throw ${want === undefined ? "" : String(want)}`);
     },
+    toMatchSnapshot: snapshot,
+    toMatchInlineSnapshot: snapshot,
+    toMatchFileSnapshot: snapshot,
+    toThrowErrorMatchingSnapshot: snapshot,
+    toThrowErrorMatchingInlineSnapshot: snapshot,
   };
   return m;
 }

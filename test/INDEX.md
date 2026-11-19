@@ -327,7 +327,7 @@ The first sentence of each file's header comment.
 - `test/diff-fabric.test.ts` — PS0.4 (plan-soundness): three `diffPlans` defects found by `research/associativity.md` §1.2, fixed additively in `src/diff.ts`.
 - `test/diff-laws.test.ts` — Laws `diffPlans` (`src/diff.ts`) must hold regardless of which side is "before": - **Reflexivity.** `diffPlans(A, A)` reports no change of any kind.
 - `test/diff.test.ts` — diffPlans — structural; diffPlans — summary & circulation; diffPlans — circulation deltas (entrance-bearing fixtures); diffPlans — auto-id rooms pair by unique…
-- `test/digest-preview.test.ts` — `npm run digest:preview` (card TR12): the file selection and the vitest stand-in it loads them with.
+- `test/digest-preview.test.ts` — `npm run digest:preview` (card TR12): the file selection, the vitest stand-in it loads them with, and the runner end to end on a tiny synthetic tree.
 - `test/dim-faces.test.ts` — `dim faces` / `dim clear` — endpoint projection onto the wall faces; W_DIM_INSIDE — a hand dim whose line reads inside the building; W_DIM_OVERLAP — two hand di…
 - `test/dim-stagger.test.ts` — dims auto — number staggering on a crowded chain; text width — one estimate, one place; chain geometry constants stay welded to the drawing.
 - `test/dim-swap-reprint.test.ts` — RR.24: a dim carries its endpoint-swapped statement for `W_DIM_INSIDE`'s fix, printed whether or not the warning fires and as long as the statement's source.
