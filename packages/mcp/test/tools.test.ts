@@ -16,7 +16,7 @@ import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { PLAN_JSON_SCHEMA, PNG_PREVIEW_WIDTH, planToJson } from "@chanmeng666/archlang";
+import { ERROR_CATALOG, PLAN_JSON_SCHEMA, PNG_PREVIEW_WIDTH, planToJson } from "@chanmeng666/archlang";
 import { PNG_MAX_WIDTH, PNG_MIN_WIDTH } from "../src/png.js";
 import { decodePlanHash, PLAYGROUND_ORIGIN, planLinks } from "@chanmeng666/archlang/link";
 import { describe, expect, it } from "vitest";
@@ -216,6 +216,39 @@ describe("complete tool", () => {
     const out = await call(await connect(), "complete", { source: 'plan "X" { room at (', at: 20 });
     expect(out.ok).toBe(true);
     expect(Array.isArray(out.items)).toBe(true);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// explain
+// ---------------------------------------------------------------------------
+
+describe("explain tool", () => {
+  it("returns the catalogue entry, the example and its fixed pair, as `explain --json` does", async () => {
+    const out = await call(await connect(), "explain", { code: "e_room_size" });
+    expect(out.ok).toBe(true);
+    expect(out.code).toBe("E_ROOM_SIZE");
+    const entry = out.entry as Record<string, string>;
+    expect(entry).toEqual(ERROR_CATALOG.E_ROOM_SIZE);
+    expect(entry.severity).toBe("error");
+    for (const k of ["message", "cause", "fix", "example", "fixed"]) expect(entry[k], k).toBeTruthy();
+    // The pair itself (the fixed half compiles without the code) is the core's test,
+    // test/error-catalog-examples.test.ts; here it is enough that the tool carries both halves.
+    expect(entry.fixed).not.toBe(entry.example);
+  });
+
+  it("an unknown code is data, never an exception", async () => {
+    const client = await connect();
+    expect(await call(client, "explain", { code: "E_NOPE" })).toEqual({ ok: false, code: "E_NOPE" });
+    // A name the prototype chain carries is not an entry either.
+    expect(await call(client, "explain", { code: "constructor" })).toEqual({ ok: false, code: "CONSTRUCTOR" });
+  });
+
+  it("a malformed argument is an error result", async () => {
+    const result = (await (await connect()).callTool({ name: "explain", arguments: { code: 42 } })) as {
+      isError?: boolean;
+    };
+    expect(result.isError).toBe(true);
   });
 });
 

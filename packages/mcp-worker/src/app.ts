@@ -135,6 +135,7 @@ export const KNOWN_TOOLS: ReadonlySet<string> = new Set([
   "finish",
   "suggest",
   "complete",
+  "explain",
   "link",
   "read_me",
 ]);

@@ -790,7 +790,7 @@ $ archlang import --from openplan3d scan-openplan3d.json --json
 
 ### `archlang explain`
 
-look up an error code (cause / fix / example)
+look up an error code (cause / fix / example / fixed)
 
 **Input:** `<CODE>` · **Output:** catalog entry
 
@@ -801,6 +801,6 @@ look up an error code (cause / fix / example)
 **Examples**
 
 ```bash
-# the catalog entry for a diagnostic code: cause, fix, example
+# the catalog entry for a diagnostic code: cause, fix, example and the example fixed
 $ archlang explain E_ROOM_SIZE --json
 ```

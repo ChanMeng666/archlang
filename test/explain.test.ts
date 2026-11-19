@@ -161,7 +161,21 @@ describe("T5.5 — explain", () => {
       expect(e.cause.length).toBeGreaterThan(0);
       expect(e.fix.length).toBeGreaterThan(0);
       expect(e.example.length).toBeGreaterThan(0);
+      // `fixed` is optional (card AF5), but never present and empty.
+      if ("fixed" in e) expect(e.fixed!.trim().length, c).toBeGreaterThan(0);
     }
+  });
+
+  it("prints an entry's `fixed` under `Fixed:`, after the example, and nothing for an entry without one", () => {
+    const e = ERROR_CATALOG.E_ROOM_SIZE!;
+    expect(e.fixed).toBeDefined();
+    const text = explain("E_ROOM_SIZE")!;
+    const block = ["", "Fixed:", ...e.fixed!.split("\n").map((l) => `  ${l}`)].join("\n");
+    expect(text.endsWith(block)).toBe(true);
+    expect(text.indexOf("Example:")).toBeLessThan(text.indexOf("Fixed:"));
+    // A code with no pair (it has no `fixed`): the block is absent, the rest as before.
+    expect(ERROR_CATALOG.E_IMPORT_NOT_FOUND!.fixed).toBeUndefined();
+    expect(explain("E_IMPORT_NOT_FOUND")).not.toContain("Fixed:");
   });
 });
 
