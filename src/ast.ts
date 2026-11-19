@@ -1482,13 +1482,14 @@ export interface ImportNode {
 }
 
 /** The {@link TitleNode} key each `title { … }` field word (`TITLE_FIELDS`) fills. */
-export const TITLE_FIELD_KEY: Readonly<Record<TitleField, "project" | "drawnBy" | "date" | "number" | "revision">> = Object.freeze({
-  project: "project",
-  drawn_by: "drawnBy",
-  date: "date",
-  number: "number",
-  revision: "revision",
-});
+export const TITLE_FIELD_KEY: Readonly<Record<TitleField, "project" | "drawnBy" | "date" | "number" | "revision">> =
+  Object.freeze({
+    project: "project",
+    drawn_by: "drawnBy",
+    date: "date",
+    number: "number",
+    revision: "revision",
+  });
 
 export interface TitleNode {
   project?: string;

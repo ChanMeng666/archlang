@@ -30,8 +30,8 @@ function compilerOptions(): ts.CompilerOptions {
 }
 
 describe("package root: declared values exist at runtime", () => {
-  let declared: string[] = [];
-  let unresolved: string[] = [];
+  const declared: string[] = [];
+  const unresolved: string[] = [];
 
   beforeAll(() => {
     const program = ts.createProgram([INDEX], compilerOptions());
