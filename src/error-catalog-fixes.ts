@@ -5,6 +5,8 @@
  * to a diagnostic, and so what the `--error-svg` card `compile()` can draw. Kept out of
  * `ERROR_CATALOG`'s module so that a bundle which compiles but never explains (the playground's
  * compiler chunk, card RM0.7) carries the remedies without the messages, causes and examples.
+ * Every code but the intent violations' (`E_INTENT_*`, card NR.10), which `compile()` never
+ * raises: theirs are in `src/error-catalog-fixes-intent.ts`, which only `diagnosticToJson` reads.
  * Generated from `ERROR_CATALOG`, never typed: `test/explain.test.ts` and `check:drift` fail when
  * it goes stale.
  */
@@ -67,19 +69,6 @@ export const CATALOG_FIXES: Readonly<Record<string, string>> = {
   E_INDEX: "Clamp or check the index against `len(arr)`.",
   E_INPUT_TOO_LARGE: "Compile it locally, where there is no cap: `npx -y @chanmeng666/archlang compile plan.arch`, or the stdio MCP server `npx -y @chanmeng666/archlang-mcp`. Or send a smaller plan.",
   E_INSTANCE_NO_TRANSFORM: "Give the plugin's `ElementDef` a `transform(el, t)` that maps its geometry with the `TransformCtx` it is handed (`t.point`, `t.rect`, `t.side`, `t.id`, …) — or write the element at plan level instead of inside the component.",
-  E_INTENT_GROSS_AREA: "Grow or shrink the shell so the enclosed floor lands in the band; partitions inside the shell do not change the figure. Gating tier: this failure fails `validateIntent`'s `ok`. Assert a band only where the brief states a number.",
-  E_INTENT_INFEASIBLE: "Relax one of the numbers the message names (ask whoever wrote the brief which one gives); no edit to the plan clears it. Gating tier: listed first, and the plan already fails `validateIntent`'s `ok`.",
-  E_INTENT_NOT_ADJACENT: "Add a `door` (or `opening`) on the wall the two rooms share so they are directly connected. Advisory tier: this is scored and reported by `validateIntent` but does NOT fail `ok` (gate: false) — one-shot topology is what the loop tools address.",
-  E_INTENT_NO_DOOR: "Add an exterior entrance `door` on a perimeter wall. Advisory tier: reported and scored by `validateIntent` but does NOT fail `ok` (gate: false).",
-  E_INTENT_NO_SITE: "Declare `site { street … }` in the plan (that is what gives the derived names their letters), or assert a plain compass letter instead. Gating tier: this failure fails `validateIntent`'s `ok` — it is a refusal, never a silent pass and never a silent miss.",
-  E_INTENT_NO_WINDOW: "Add a `window` on one of that room's walls. Gating tier: this failure DOES fail `validateIntent`'s `ok`.",
-  E_INTENT_ROOM_AREA: "Resize the room so its floor area lands in the band. Gating tier: this failure fails `validateIntent`'s `ok`. Assert a band only where the brief states a number — qualitative size words license none.",
-  E_INTENT_ROOM_COUNT: "Add or remove rooms to reach the enumerated count. Gating tier: this failure fails `validateIntent`'s `ok`.",
-  E_INTENT_ROOM_DIMENSION: "Resize that room's `size` to the stated dimension; every number the brief does not state is free to flex. Gating tier: this failure fails `validateIntent`'s `ok`.",
-  E_INTENT_ROOM_MISSING: "Add a `room` whose label, `uses`, or type matches the concept. Gating tier: this failure fails `validateIntent`'s `ok`.",
-  E_INTENT_TOTAL_AREA: "Grow or shrink rooms so the total lands in the band. Gating tier: this failure fails `validateIntent`'s `ok`. Assert a band only where the brief states a number.",
-  E_INTENT_UNMEASURED: "Bind the room by its id or a unique label, give it a rectangular `size`, or close the shell with one `exterior` wall ring (`walls from rooms` derives one). Gating tier: this failure fails `validateIntent`'s `ok` — a refusal, never a silent pass.",
-  E_INTENT_UNREACHABLE: "Add interior doors so every room connects back to the entrance. Advisory tier: reported and scored by `validateIntent` but does NOT fail `ok` (gate: false).",
   E_JSON_DERIVED_IN_INSTANCE: "Keep the plan in `.arch` source; or flatten the nesting, give each differing instance its own component, or copy the imported component into the file; or write that component's walls by hand.",
   E_JSON_KIND: "Use one of the supported kinds: opening `kind` must be `door` | `window` | `opening`.",
   E_JSON_MIRROR: "Keep the instance in `.arch` source (the `place … mirror x|y` that produced it), or drop `mirror` from the element if the unreflected drawing is what you want.",

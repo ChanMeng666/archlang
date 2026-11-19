@@ -5,7 +5,7 @@
 Where the tests of a `src` module are, and what each test file is for. Generated; `npm run check:drift`
 fails when it is stale. How to add a test: `docs/testing.md` § 4.
 
-555 test files in `test/`, 290 `src` modules, 109 modules no test imports.
+555 test files in `test/`, 294 `src` modules, 108 modules no test imports.
 
 ## `src` module → tests that import it
 
@@ -30,13 +30,16 @@ Nearest first, then by name; `(+n)` is the rest. Test names are `test/<name>.tes
 - `src/analyze/quantities.ts` (2) — `describe-quantities`, `net-area-budget`
 - `src/analyze/symmetry.ts` (1) — `rect-ring`
 - `src/analyze/wall-faces.ts` (2) — `lint-space-enclosure`, `wall-status`
+- `src/any-catalog-fix.ts` (1) — `explain`
 - `src/ast.ts` (119) — `arc-radius-exact`, `ast-values-frozen`, `band`, `circulation-concave`, `circulation-translation`, `closed-vocabularies`, `corner-window`, `cursor-exhaustive` (+111)
 - `src/attach.ts` (1) — `attach`
 - `src/axes.ts` (1) — `axes`
 - `src/backends/ascii.ts` (10) — `axes`, `fence`, `furniture-curves-backends`, `opening`, `outdoor`, `room-floor`, `scene-path-prim`, `schedule` (+2)
+- `src/backends/error-svg.ts` (1) — `error-svg`
 - `src/backends/font.ts` (1) — `export-font-cjk`
 - `src/backends/png.ts` (1) — `export-font-cjk`
 - `src/backends/svg.ts` (5) — `furniture-curves-backends`, `glyph-lib`, `scene-path-prim`, `scene`, `style`
+- `src/catalog-fix.ts` (1) — `explain`
 - `src/chrome-layout.ts` (5) — `bbox-derived-position`, `chrome-hidden`, `export-pdf`, `north-arrow`, `sheet`
 - `src/clause-order.ts` (2) — `clause-order-byte-identity`, `door-enums`
 - `src/cli/commands-analyze.ts` (12) — `cli-narrow`, `describe-clearances`, `keep-impact-depends`, `lint-summary`, `schedule`, `sheet`, `stages`, `cli-validate-next` (+4)
@@ -57,6 +60,7 @@ Nearest first, then by name; `(+n)` is the rest. Test names are `test/<name>.tes
 - `src/cursor.ts` (3) — `block-stair`, `cursor-exhaustive`, `reroll-findrun-oracle`
 - `src/datum.ts` (11) — `access-policy`, `cursor-exhaustive`, `describe-depends`, `diff-laws`, `emit-opening-oracle`, `equivariance-fuzz`, `fix-printer`, `fuzz` (+3)
 - `src/describe.ts` (49) — `acc-metadata`, `accessible-svg`, `d4`, `describe`, `diff-laws`, `diff`, `room-adjacency-oracle`, `window-facing-probe` (+41)
+- `src/diagnostic-json.ts` (1) — `explain`
 - `src/diagnostics.ts` (53) — `diagnostic-json-related`, `diagnostics-volume`, `diagnostics`, `error-catalog-families`, `export-font-cjk`, `expr`, `fix-pullback`, `lint-file-provenance` (+45)
 - `src/diff.ts` (3) — `diff-fabric`, `diff-laws`, `diff`
 - `src/doc.ts` (2) — `fix-printer`, `format`
@@ -85,6 +89,7 @@ Nearest first, then by name; `(+n)` is the rest. Test names are `test/<name>.tes
 - `src/elements/void.ts` (3) — `v129-cross`, `void-rail`, `void`
 - `src/elements/wall.ts` (1) — `room-datums`
 - `src/elements/window.ts` (1) — `corner-window`
+- `src/error-catalog-fixes-intent.ts` (1) — `explain`
 - `src/error-catalog-fixes.ts` (1) — `explain`
 - `src/error-catalog.ts` (20) — `cli-context`, `context-starter`, `element-cap`, `error-catalog-families`, `fix-coverage`, `garage`, `levels`, `lint-rule-order` (+12)
 - `src/export/dxf.ts` (11) — `curves`, `export-dxf`, `furniture-curves-backends`, `furniture-label-fit`, `label-fit`, `label-wrap`, `opening`, `room-floor` (+3)
@@ -760,6 +765,7 @@ The first sentence of each file's header comment.
 Imported directly by no test of the root `test/` suite (it may still run through `src/index.ts` or another `src`
 module); adding a test that imports it removes it from this list.
 
+- `src/actions-path.ts`
 - `src/analyze/connectors.ts`
 - `src/analyze/depends.ts`
 - `src/analyze/keep-facts.ts`
@@ -768,10 +774,9 @@ module); adding a test that imports it removes it from this list.
 - `src/analyze/rooms.ts`
 - `src/analyze/syntax.ts`
 - `src/analyze/takeoff.ts`
-- `src/backends/error-svg.ts`
+- `src/backends/error-svg-public.ts`
 - `src/backends/png-defaults.ts`
 - `src/builtins.ts`
-- `src/catalog-fix.ts`
 - `src/cli.ts`
 - `src/cli/commands-import.ts`
 - `src/cli/commands-share.ts`
@@ -787,7 +792,6 @@ module); adding a test that imports it removes it from this list.
 - `src/describe/shared.ts`
 - `src/describe/types.ts`
 - `src/describe/verticals.ts`
-- `src/diagnostic-json.ts`
 - `src/elements/column.ts`
 - `src/elements/door-panels.ts`
 - `src/elements/elevator.ts`

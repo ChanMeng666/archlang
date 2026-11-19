@@ -55,3 +55,51 @@ export function coreFiles(read, exists) {
   seen.delete(ENTRY);
   return seen;
 }
+
+/** The build entry whose imports beyond the compiler chunk are the `first-use` chunk (src/first-use-path.ts). */
+export const FIRST_USE_ENTRY = "first-use-path.js";
+
+/**
+ * The built core's files that make the playground's `first-use` chunk (card 3.18): the chunks
+ * `first-use-path.js` imports, transitively, that are not the compiler chunk's (`compiler`, the
+ * {@link coreFiles} set, whose own imports are all in it, so the walk stops there).
+ * `first-use-path.js` (src/first-use-path.ts) names the core values a first use loads beyond the
+ * compiler: what the header actions import statically (`diagnosticToJson`) and the compile worker's
+ * `lint`. esbuild splits them into chunks by the set of entries that reach each module, and that
+ * set differs between them (`finish`, which only a press loads, reads `lint` too: card 3.18's
+ * `src/actions-path.ts`), so left to the bundler the worker's `lint` landed in a chunk the actions
+ * do not import, off the first use's path its budget counts while the worker fetched it on that
+ * use. vite.config.js puts exactly these files in one chunk, which the actions and the worker both
+ * import. The entry itself holds only imports and exports and nothing imports it, so it is not in
+ * the set. Empty when there is no `index.js`; a dist/ with `index.js` and no `first-use-path.js`
+ * is refused, as {@link coreFiles} refuses one without `compile-path.js`. Pure over `read`/`exists`.
+ *
+ * @param {(rel: string) => string} read the text of a file under dist/, by its relative path
+ * @param {(rel: string) => boolean} exists whether that file exists
+ * @param {ReadonlySet<string>} compiler the compiler chunk's files ({@link coreFiles})
+ * @returns {Set<string>} the relative paths, in walk order
+ */
+export function firstUseFiles(read, exists, compiler) {
+  const seen = new Set();
+  if (!exists("index.js")) return seen;
+  if (!exists(FIRST_USE_ENTRY))
+    throw new Error(
+      `playground/scripts/core-files.mjs: dist/${FIRST_USE_ENTRY} is missing beside dist/index.js; rebuild the ` +
+        "core (`npm run build` in the repo root): the first use's chunk is the walk from it.",
+    );
+  const visit = (rel) => {
+    if (seen.has(rel) || compiler.has(rel) || !exists(rel)) return;
+    seen.add(rel);
+    const text = read(rel);
+    const reexport = /^export\s[^;]*?from\s*"\.\/([\w./-]+)";?$/m.exec(text);
+    if (reexport)
+      throw new Error(
+        `playground/scripts/core-files.mjs: dist/${rel} re-exports from "./${reexport[1]}"; the first use's ` +
+          "chunk is found by following imports only. Follow re-exports here too (and check what lands in `first-use`).",
+      );
+    for (const m of text.matchAll(/^import\s(?:[^;]*?from\s*)?"\.\/([\w.-]+\.js)";?$/gm)) visit(m[1]);
+  };
+  visit(FIRST_USE_ENTRY);
+  seen.delete(FIRST_USE_ENTRY);
+  return seen;
+}

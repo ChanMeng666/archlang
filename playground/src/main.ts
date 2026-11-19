@@ -106,9 +106,11 @@ let jobs: Jobs | undefined;
 let compiler: CompileClient | undefined;
 /**
  * The header actions (actions.ts), mounted by `up` before its first render. Their chunk imports the
- * core's lazy chunk statically (finish, repair, format, the exports: card RM0.7f split it out of the
- * compiler chunk), so the idle import warms it too, and a first use after an idle visit waits on
- * neither. A failed load is forgotten.
+ * core's lazy chunk statically (`diagnosticToJson`, and with it the compile worker's `lint`: card
+ * RM0.7f split it out of the compiler chunk), so the idle import warms it too, and a first use
+ * after an idle visit waits on neither. What the actions run only on a press (Format, Finish,
+ * Repair, the DXF and TXT downloads) loads with the press (press-core.ts, card 3.18). A failed
+ * load is forgotten.
  */
 type Actions = typeof import("./actions.js");
 let actionsP: Promise<Actions> | undefined;

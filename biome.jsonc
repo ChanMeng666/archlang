@@ -14,6 +14,7 @@
       "!spec.llm.md",
       "!src/context-size.ts",
       "!src/error-catalog-fixes.ts",
+      "!src/error-catalog-fixes-intent.ts",
       "!docs/error-codes.md",
       "!plugins/archlang/.claude-plugin/plugin.json",
       "!plugins/archlang/plugin.json",

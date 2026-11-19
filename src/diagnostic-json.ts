@@ -12,7 +12,7 @@
 
 import type { Applicability, Diagnostic, Severity } from "./diagnostics.js";
 import { offsetToLineCol } from "./diagnostics.js";
-import { catalogFix } from "./catalog-fix.js";
+import { anyCatalogFix } from "./any-catalog-fix.js";
 
 /** A {@link import("./diagnostics.js").FixSuggestion} projected to JSON — edit
  *  spans become `[start, end]` tuples (like the diagnostic's own `span`). */
@@ -237,7 +237,7 @@ export function diagnosticToJson(source: string, d: Diagnostic, opts?: Diagnosti
     out.span = [d.span.start, d.span.end];
   }
   if (d.file !== undefined) out.file = d.file;
-  const fix = catalogFix(d.code);
+  const fix = anyCatalogFix(d.code);
   if (fix) out.fix = fix;
   if (d.hints?.length) out.hints = d.hints;
   if (d.fixes?.length)

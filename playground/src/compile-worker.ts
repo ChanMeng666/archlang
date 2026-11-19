@@ -36,7 +36,8 @@ import type { CompileOptions, Diagnostic, DescribeOptions, LintOptions, PlanNode
 import { compile, describe, THEMES } from "./compiler.js";
 // `lint` is the editor's alone (no compile, embed or view-mode render runs it), so it is not in the
 // compiler chunk (card EB.2, src/compile-path.ts): it comes from the core's lazy chunk, which the
-// header actions load on the page with the first use anyway (an HTTP-cache hit here). That chunk
+// header actions load on the page with the first use anyway (their `diagnosticToJson`,
+// src/first-use-path.ts; an HTTP-cache hit here). That chunk
 // imports the compiler chunk and nothing of the page's (e2e/preview3d.spec.ts, "startup chunks").
 import { lint } from "archlang";
 

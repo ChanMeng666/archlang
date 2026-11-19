@@ -5,18 +5,7 @@
  * sheet's, which the shell hands over once the sheet is drawn), and the draggable pane divider.
  * Each is wired from an explicit context so main.ts stays composition-only.
  */
-import {
-  compile,
-  describe,
-  diagnosticToJson,
-  finish,
-  format,
-  renderAscii,
-  repair,
-  toDxf,
-  type FinishResult,
-  type Scene,
-} from "archlang";
+import { compile, describe, diagnosticToJson, type FinishResult, type Scene } from "archlang";
 import { escapeHtml } from "./escape.js";
 import { embedSnippets, exampleImageUrl } from "./embed-snippets.js";
 import { exampleNameFor } from "./examples.js";
@@ -26,6 +15,24 @@ import { mountSnapshots } from "./snapshots.js";
 import { KEYS, readStr, writeStr } from "./storage.js";
 import { levelFileName } from "./levels.js";
 import { paperSizeMm, saveBlob, svgToCanvas } from "./raster-export.js";
+
+/**
+ * The core code behind Format, Finish, Repair furniture and the DXF and TXT downloads
+ * (press-core.ts, card 3.18): loaded on the first press of one of them, or when a menu holding
+ * them opens, never with the actions themselves. Every use awaits it; a failed load is forgotten,
+ * so the next press tries again.
+ */
+type ActionsCore = typeof import("./press-core.js");
+let actionsCoreP: Promise<ActionsCore> | undefined;
+const loadActionsCore = (): Promise<ActionsCore> =>
+  (actionsCoreP ??= import("./press-core.js").catch((err: unknown) => {
+    actionsCoreP = undefined;
+    throw err;
+  }));
+/** Start loading it ahead of a press (a menu opened, the pointer on the button); a failure is silent here. */
+const warmActionsCore = () => void loadActionsCore().catch(() => {});
+/** The message of a load failure, for the status. */
+const reason = (err: unknown) => (err as { message?: string })?.message ?? err;
 
 /** The `finish` notes that ask something of the author: all but a room it has no pieces for. */
 const declined = (result: FinishResult): FinishResult["unresolved"] =>
@@ -114,10 +121,25 @@ export function mountActions(ctx: ActionsCtx): ActionsHandle {
     els,
   } = ctx;
 
+  // The menus that hold Format, Finish and the downloads load their code when they open, and the
+  // Repair button when the pointer or the focus reaches it, so a press seldom waits on it.
+  for (const menu of new Set([els.shareMenu, els.formatBtn?.closest("details"), els.finishBtn?.closest("details")]))
+    menu?.addEventListener("toggle", () => {
+      if (menu.open) warmActionsCore();
+    });
+  for (const type of ["pointerenter", "focus"]) els.repairBtn?.addEventListener(type, warmActionsCore);
+
   // Format (idempotent, comment-preserving) — rewrite the source in place.
-  els.formatBtn?.addEventListener("click", () => {
+  els.formatBtn?.addEventListener("click", async () => {
+    let core: ActionsCore;
+    try {
+      core = await loadActionsCore();
+    } catch (err) {
+      flash(`Format did not load: ${reason(err)}`);
+      return;
+    }
     const src = getSource();
-    const out = format(src);
+    const out = core.format(src);
     if (out === src) {
       flash("Already formatted");
       return;
@@ -129,20 +151,27 @@ export function mountActions(ctx: ActionsCtx): ActionsHandle {
   // Finish — the core's `finish()` (the same transform as `arch finish`) adds what a
   // finished sheet needs and replaces the source as ONE undo step (Ctrl+Z reverts
   // it); what it added and what it declined are listed in the Checks tab's Lint section.
-  els.finishBtn?.addEventListener("click", () => runFinish(false));
+  els.finishBtn?.addEventListener("click", () => void runFinish(false));
 
   /**
    * Run `finish` (with `reissue` from the panel's "Reissue sheet" button) and report.
    * `loadSource` hides the panel — it describes the previous document — so the panel
    * is rendered AFTER it. A rerun with nothing to do leaves a showing log in place.
    */
-  function runFinish(reissue: boolean) {
+  async function runFinish(reissue: boolean) {
+    let core: ActionsCore;
+    try {
+      core = await loadActionsCore();
+    } catch (err) {
+      flash(`Finish did not load: ${reason(err)}`);
+      return;
+    }
     const src = getSource();
-    const result = finish(src, reissue ? { reissue: true } : {});
+    const result = core.finish(src, reissue ? { reissue: true } : {});
     const n = result.changes.length;
     const m = declined(result).length;
     if (result.changed) loadSource(result.source, false);
-    if (result.changed || m > 0 || els.finishPanel?.hidden !== false) showFinish(result);
+    if (result.changed || m > 0 || els.finishPanel?.hidden !== false) showFinish(core, result);
     const added = `${n} change${n === 1 ? "" : "s"}`;
     flash(
       result.changed
@@ -159,7 +188,7 @@ export function mountActions(ctx: ActionsCtx): ActionsHandle {
 
   // Repair furniture (ADR 0006) — run the deterministic corrector, show the change
   // log, and let the user apply the new source. Never auto-applied.
-  els.repairBtn?.addEventListener("click", () => showRepair());
+  els.repairBtn?.addEventListener("click", () => void showRepair());
 
   // Embed — build an <iframe> snippet pointing at the chrome-less embed page.
   els.embedBtn?.addEventListener("click", () => void showEmbed());
@@ -355,7 +384,7 @@ export function mountActions(ctx: ActionsCtx): ActionsHandle {
 
   /** Render what `finish` added and what it declined into the Checks tab's Lint section, in the
    *  same change-log form Repair uses. */
-  function showFinish(result: FinishResult) {
+  function showFinish(core: ActionsCore, result: FinishResult) {
     const panel = els.finishPanel;
     if (!panel) return;
     panel.hidden = false;
@@ -393,7 +422,7 @@ export function mountActions(ctx: ActionsCtx): ActionsHandle {
       .join("");
     // The notes may say "rerun with --reissue", a CLI flag. Offer it here when — and only
     // when — reissuing would actually change the sheet (`paper`/`scale`, nothing else).
-    const canReissue = asked.length > 0 && finish(getSource(), { reissue: true }).changed;
+    const canReissue = asked.length > 0 && core.finish(getSource(), { reissue: true }).changed;
     const n = result.changes.length;
     panel.innerHTML =
       `<div class="repair-head"><strong>Finish — ${n} change${n === 1 ? "" : "s"}` +
@@ -410,15 +439,22 @@ export function mountActions(ctx: ActionsCtx): ActionsHandle {
       outside +
       // The core's note names the CLI flag; say what it is called here.
       (canReissue ? `<p class="repair-un-h">Here, Reissue sheet does what <code>--reissue</code> does.</p>` : "");
-    panel.querySelector(".finish-reissue")?.addEventListener("click", () => runFinish(true));
+    panel.querySelector(".finish-reissue")?.addEventListener("click", () => void runFinish(true));
   }
 
   /** Run `repair` on the current source and render its change log into the Lint
    *  tab, with an "Apply fixes" action that swaps the corrected source in. */
-  function showRepair() {
+  async function showRepair() {
     const repairPanel = els.repairPanel;
     if (!repairPanel) return;
-    const result = repair(getSource());
+    let core: ActionsCore;
+    try {
+      core = await loadActionsCore();
+    } catch (err) {
+      flash(`Repair did not load: ${reason(err)}`);
+      return;
+    }
+    const result = core.repair(getSource());
     if (!result.changed && result.unresolved.length === 0) {
       repairPanel.hidden = false;
       repairPanel.innerHTML = `<p class="repair-none">Nothing to repair — furniture placement is already sound.</p>`;
@@ -563,11 +599,13 @@ export function mountActions(ctx: ActionsCtx): ActionsHandle {
       } else if (format === "dxf") {
         const scene = getScene();
         if (!scene) return;
+        const { toDxf } = await loadActionsCore();
         saveBlob(new Blob([toDxf(scene)], { type: "application/dxf" }), "dxf", level);
       } else if (format === "txt") {
         // The zero-dep ASCII plan — the same bytes `arch compile -f txt` emits.
         const scene = getScene();
         if (!scene) return;
+        const { renderAscii } = await loadActionsCore();
         saveBlob(new Blob([renderAscii(scene)], { type: "text/plain" }), "txt", level);
       } else if (format === "png") {
         const canvas = await svgToCanvas(clean);

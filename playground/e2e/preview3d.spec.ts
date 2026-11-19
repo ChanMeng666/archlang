@@ -1692,10 +1692,11 @@ type Marked = Window & { __preview3d?: Handle & { __old?: boolean } };
  *   statically). A hard ceiling, set the same way.
  * - `firstUsePathBudget` (card RM0.7f): that compiler path and the header actions with what they
  *   import, the JS a first use has loaded before its first render (main.ts `up` awaits the actions
- *   first, and the idle import warms them). The actions' chunk imports the core's lazy chunk
- *   (finish, repair, the exports, …, split out of the compiler chunk), so this is the gate a leak
- *   into that chunk trips, as `compilerPathBudget` did before the split. A hard ceiling, set the
- *   same way.
+ *   first, and the idle import warms them). The actions' chunk imports the core's `first-use`
+ *   chunk (`diagnosticToJson` and the compile worker's `lint`, split out of the compiler chunk;
+ *   since card 3.18 finish, repair, format and the DXF/TXT exports load on a press, not here), so
+ *   this is the gate a leak into that chunk trips, as `compilerPathBudget` did before the split.
+ *   A hard ceiling, set the same way.
  * - `growthBudget` (20,000 B): that compiler path, against the baseline. The 3D
  *   chunk is ~150,500 B gzip (three.js and the package, measured at A8), so a leak of even an eighth
  *   of it trips the gate, while ordinary core growth (hundreds of bytes per feature) takes dozens of
@@ -1808,6 +1809,24 @@ test.describe("startup chunks", () => {
     for (const file of inWorker)
       if (file !== workerChunk)
         expect(firstUsePath, `the compile worker's ${file} is on the first use's path`).toContain(file);
+    // What the header actions run only on a press (card 3.18: Format, Finish, Repair, the DXF and TXT
+    // downloads) is their dynamic import of press-core.ts, off the first use's path and loaded by no
+    // boot import.
+    const pressCore = one(/^press-core-[\w-]+\.js$/, "one press-core chunk");
+    expect(imports(actionsChunk, DYNAMIC), "the header actions import press-core.js dynamically").toContain(pressCore);
+    expect(firstUsePath, "the press-only core is not on the first use's path").not.toContain(pressCore);
+    expect(booted, "the press-only core is loaded by no boot import").not.toContain(pressCore);
+    // Its code, not only its door: a note only finish's furnishing writes, checked in its source
+    // first, is in what press-core.js reaches and in nothing a first use or a boot import loads.
+    const FINISH_ONLY = "is outside the furnish table";
+    expect(
+      readFileSync(join(dirname(fileURLToPath(import.meta.url)), "..", "..", "src", "furnish.ts"), "utf8"),
+      `the finish sentinel "${FINISH_ONLY}" is in src/furnish.ts`,
+    ).toContain(FINISH_ONLY);
+    const holds = (file: string) => readFileSync(join(DIST, file), "utf8").includes(FINISH_ONLY);
+    expect(reach([pressCore]).filter(holds), "press-core.js reaches finish's code").not.toEqual([]);
+    for (const file of new Set([...firstUsePath, ...booted]))
+      expect(holds(file), `${file} carries finish's code, which only a press loads`).toBe(false);
 
     // The embed (embed.html, the iframe other pages show): it imports the core statically
     // (embed.ts), so it walks into the compiler the way index.html's preload does.

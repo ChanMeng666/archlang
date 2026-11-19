@@ -19,7 +19,7 @@ module's remaining facts are in its own header.
 invariants; this file holds every module. The exports of `src/index.ts` are in the sibling
 [`public-surface.md`](public-surface.md).
 
-Totals: 408 modules in 34 directories.
+Totals: 413 modules in 34 directories.
 
 ## `packages/archlang-3d/src/`
 
@@ -151,11 +151,11 @@ Totals: 408 modules in 34 directories.
 
 | Module | Lines | Importers | Summary | Budget |
 | --- | ---: | ---: | --- | --- |
-| `actions.ts` | 662 | 1 | The header/panel action buttons: Format, Finish and Saved (the More menu), Repair furniture, the Share menu (Copy link, short or full; Embed; Export: Copy SVG / PNG and the downloads, SVG · PNG · PDF · DXF · TXT · GLB, ruling PG-D5), Copy… | none |
+| `actions.ts` | 700 | 1 | The header/panel action buttons: Format, Finish and Saved (the More menu), Repair furniture, the Share menu (Copy link, short or full; Embed; Export: Copy SVG / PNG and the downloads, SVG · PNG · PDF · DXF · TXT · GLB, ruling PG-D5), Copy… | none |
 | `arch-completion.ts` | 63 | 2 | CodeMirror 6 autocompletion for ArchLang, backed by the core's pure `completion()` language service (the same engine the LSP/editor use). | none |
 | `checks-overlay.ts` | 68 | 2 | The Checks overlay's string work, pure (unit-tested in Node): lifting the review rings out of the sheet `arch preview --review` draws, and laying them over the drawing on screen. | none |
 | `checks-panel.ts` | 211 | 1 | Checks (public-surfaces P6): the Checks layer toggle on the drawing's toolbar (beside Paths, ruling PG-D3) draws, over the drawing, the review rings `arch preview --review` draws, from the same function (src/cli/review.ts, built as… | none |
-| `compile-worker.ts` | 328 | 2 | The playground's compile job, and the Web Worker it runs in (card MP6, ruling MP-D6: typing never freezes the page). A playground file, not core: `compile()`, `describe()` and `lint()` are the core's, called exactly as the page called… | none |
+| `compile-worker.ts` | 329 | 2 | The playground's compile job, and the Web Worker it runs in (card MP6, ruling MP-D6: typing never freezes the page). A playground file, not core: `compile()`, `describe()` and `lint()` are the core's, called exactly as the page called… | none |
 | `compiler.ts` | 10 | 2 | The compiler functions the view path calls (main.ts, and the compile job it runs in a worker, compile-worker.ts), behind the one dynamic import that keeps the core out of the startup chunk. Named, not `import("archlang")`: a dynamic… | none |
 | `describe-panel.ts` | 69 | 1 | Describe, the Facts tab's first section: a compact access-graph diagram from `describe().access` with the raw describe JSON tucked into a <details>. Zero-dep — pure DOM/CSS strings, no graph library. | none |
 | `diagnostics-panel.ts` | 73 | 1 | Render the compiler diagnostics into the `#errors` panel as clickable rows: the catalogued remedy (`fix`) shows inline under each row so the fix is visible without a click; clicking a row jumps the editor caret to the diagnostic's source… | none |
@@ -178,12 +178,13 @@ Totals: 408 modules in 34 directories.
 | `levels.ts` | 80 | 6 | The storey-switcher arithmetic — which page of a multi-storey plan the preview is showing, what its button says, and what a download of it is called. | none |
 | `lint-panel.ts` | 70 | 1 | The Lint section of the Checks tab — architectural soundness warnings (habitability rules) for the current plan, under the chosen advisory profile. The repair-button visibility (keyed off the same diagnostics) is wired in actions.ts. | none |
 | `llm-prompt.ts` | 144 | 3 | Assemble a single paste-ready prompt for an AI assistant from the current plan: an intro line, the source in an ```arch fence, the compact `describe()` facts (rooms/areas/adjacency + an access summary), the diagnostics with line/col/fix… | none |
-| `main.ts` | 1420 | 0 | The playground's startup module: the view path. It shows the drawing (the one built into the page first, then the compiled one), pans and zooms it, reports its facts, switches storeys and plans (the plan gallery in the header) and runs… | none |
+| `main.ts` | 1422 | 0 | The playground's startup module: the view path. It shows the drawing (the one built into the page first, then the compiled one), pans and zooms it, reports its facts, switches storeys and plans (the plan gallery in the header) and runs… | none |
 | `make-own.ts` | 299 | 2 | The Make-your-own sheet: every way to get a plan of your own, at equal weight, in the order `site-shared/doors.json` gives the playground (`order.playground`). Every URL, command and the agent prompt are read from that file, the one… | none |
 | `mobile-views.ts` | 67 | 2 | The phone-width view switcher of edit mode (Code · Plan · 3D · Facts · Checks). Below the 900px breakpoint the workspace shows one view at a time, and this switcher is its ONE control: the output tab row is hidden there, so each function… | none |
 | `nudge.ts` | 80 | 2 | The one quiet pointer at Make your own: a small toast, after a visitor has shown interest (the third plan switch, or the first knob let go), never a modal and never focused. It is shown at most once: the first showing is remembered in… | none |
 | `pan-zoom.ts` | 199 | 5 | Pan / zoom / fit for the SVG preview — a tiny zero-dependency controller. | none |
 | `plan3d.ts` | 21 | 4 | The 3D preview's one way from a plan's source to its Mesh3D (card X5), apart from the DOM so a Node test runs it exactly as the page does (`playground/test/glb-export.test.ts`): what the 3D preview shows and what Download GLB writes both… | none |
+| `press-core.ts` | 11 | 1 | The core functions the header actions run only when a button is pressed (card 3.18): Format, Finish, Repair furniture and the DXF and TXT downloads. actions.ts reaches them through one dynamic import of this door (`loadActionsCore`), so a… | none |
 | `preview.ts` | 112 | 1 | The SVG preview: the pan/zoom controller, the SVG-into-stage display, the floating toolbar (zoom / fit / fullscreen and the Paths layer; copying and downloading the drawing are Share → Export since card PG4, ruling PG-D5), and the… | none |
 | `preview3d.ts` | 821 | 1 | The "3D preview" output tab (card A5). Loaded on first open only (`main.ts` imports this module dynamically), so three.js and the separate archlang-3d package never reach the startup chunks. | none |
 | `raster-export.ts` | 92 | 2 | Client-side rasterization + download helpers shared by the preview (copy PNG) and the multi-format download (PNG/PDF). The core's PNG/PDF backends are Node-only, so the playground rasterizes the SVG through a <canvas> instead. | none |
@@ -216,12 +217,14 @@ Totals: 408 modules in 34 directories.
 
 | Module | Lines | Importers | Summary | Budget |
 | --- | ---: | ---: | --- | --- |
+| `actions-path.ts` | 20 | 0 | A build entry, not a package export (card 3.18), the third of the playground's three (after `src/compile-path.ts` and `src/first-use-path.ts`): the core values the header actions run only when a button is pressed… | none |
 | `analyze.ts` | 1087 | 132 | Shared semantic-analysis layer for the agent-facing tools. | none |
+| `any-catalog-fix.ts` | 20 | 3 | The catalogued remediation for any catalogue code (card NR.10): {@link catalogFix}'s table, the codes `compile()` raises, then the intent violations' (`E_INTENT_*`, which only `validateIntent` raises). The two generated tables are… | none |
 | `ast.ts` | 1749 | 227 | Abstract syntax tree for an ArchLang `plan`. All distances are in millimetres. | none |
 | `attach.ts` | 481 | 6 | Opening attachment (`door\|window\|opening … on <wall> at <pos>`). | charges the step meter |
 | `axes.ts` | 161 | 4 | **Positioning axes** (定位轴线) — GB/T 50001's structural datum grid. | none |
 | `builtins.ts` | 129 | 3 | Built-in functions: a frozen, pure map injected into the global scope as `builtin` Values. Each is total — bad arity / types emit a diagnostic and return a safe default, never throw — and deterministic (no I/O, no clock). | none |
-| `catalog-fix.ts` | 15 | 2 | The catalogued remediation for a diagnostic code: one row of the catalogue's fix column (`CATALOG_FIXES`, generated from `ERROR_CATALOG`). `diagnosticToJson` attaches it as `fix`, and the error card (`backends/error-svg.ts`) draws it. It… | none |
+| `catalog-fix.ts` | 20 | 3 | The catalogued remediation for a diagnostic code: one row of the catalogue's fix column (`CATALOG_FIXES`, generated from `ERROR_CATALOG`). The error card `compile()` draws (`backends/error-svg.ts`) reads it here. It has a module of its… | none |
 | `chrome-layout.ts` | 626 | 17 | Shared page-chrome layout — the deterministic geometry of the **scale bar** and **title block** in the bottom page margin, and how far the bottom margin must grow to contain them. Both the SVG and PDF backends build their chrome from this… | none |
 | `clause-order.ts` | 242 | 15 | Order-free trailing clauses. A statement's optional keyword-led clauses (`size`, `label`, `rotate`, `clear`, … after a `furniture`'s placement) may come in any order, each once. | none |
 | `cli.ts` | 91 | 0 | ArchLang CLI — agent-native. | none |
@@ -234,18 +237,19 @@ Totals: 408 modules in 34 directories.
 | `cursor.ts` | 425 | 8 | Read-only navigation over the parsed AST (a `LinkedNode`-style cursor). | none |
 | `datum.ts` | 545 | 18 | The **vertical datum layer** — the heights a floor plan implies but has never written down. | none |
 | `describe.ts` | 1191 | 26 | `describe(source)` — a pure, semantic summary of a floor plan. | none |
-| `diagnostic-json.ts` | 276 | 7 | Agent-facing JSON projection of a {@link Diagnostic}. | none |
-| `diagnostics.ts` | 410 | 116 | Diagnostics for the ArchLang compiler. | none |
+| `diagnostic-json.ts` | 276 | 8 | Agent-facing JSON projection of a {@link Diagnostic}. | none |
+| `diagnostics.ts` | 410 | 117 | Diagnostics for the ArchLang compiler. | none |
 | `diff.ts` | 736 | 5 | `diffPlans(sourceA, sourceB)` — a pure, structural semantic diff of two plans. | none |
 | `doc.ts` | 157 | 7 | A tiny Wadler/Prettier "Doc" intermediate representation and printer. | none |
 | `draw-budget.ts` | 207 | 7 | The drawing budget: before `toScene()` runs, the primitives a plan will draw are estimated over EVERY storey (a multi-storey compile holds all its pages at once), and a plan past {@link MAX_DRAW_UNITS} is one `E_DRAWING_LIMIT` instead of… | none |
-| `error-catalog-fixes.ts` | 284 | 3 | GENERATED by scripts/gen-error-codes.ts from src/error-catalog.ts — do not edit by hand. Run `npm run gen:errors`. | none |
+| `error-catalog-fixes-intent.ts` | 25 | 2 | GENERATED by scripts/gen-error-codes.ts from src/error-catalog.ts — do not edit by hand. Run `npm run gen:errors`. | none |
+| `error-catalog-fixes.ts` | 273 | 3 | GENERATED by scripts/gen-error-codes.ts from src/error-catalog.ts — do not edit by hand. Run `npm run gen:errors`. | none |
 | `error-catalog.ts` | 117 | 29 | The ArchLang diagnostic catalog: every `E_*` / `W_*` code with its cause, fix, and a tiny example. One source for `arch explain <CODE>` and the generated `docs/error-codes.md` (see `scripts/gen-error-codes.ts`). The codes themselves are… | none |
 | `expr-source.ts` | 114 | 7 | `exprToSource(e)` — render an {@link Expr} back to canonical ArchLang source text (single-line, precedence-correct parenthesisation). | none |
 | `expr.ts` | 1228 | 66 | Arithmetic expressions: a small Pratt parser + a pure evaluator. | charges the step meter |
 | `facade.ts` | 496 | 3 | The facade model behind `dims auto`: which wall line each of the four sides reads, the per-axis outline a witness line terminates on, and — the one question both the renderer and `lint()` ask — which openings a side's openings chain… | none |
 | `finish.ts` | 1043 | 9 | `finish()` — make a plan a complete DRAWING: the furniture its empty rooms imply (the `furnish` stage, `src/furnish.ts`, `docs/adr/0025-furnish-as-explicit-transform.md`), then the sheet statements its author left out (the `sheet` stage… | none |
-| `first-use-path.ts` | 26 | 0 | A build entry, not a package export (card EB.2), the second of the playground's two (the first is `src/compile-path.ts`): the core values a first use on the playground loads beyond the compiler chunk, which are what the header actions… | none |
+| `first-use-path.ts` | 22 | 0 | A build entry, not a package export (card EB.2), the second of the playground's three (the first is `src/compile-path.ts`, the third `src/actions-path.ts`): the core values a first use on the playground loads beyond the compiler chunk… | none |
 | `fix-apply.ts` | 251 | 5 | Deterministic, pure application of {@link FixSuggestion}s to source text. | none |
 | `fix-producers.ts` | 604 | 11 | Fix producers — the functions that attach {@link FixSuggestion}s to specific diagnostics at their raise site (T2c). | none |
 | `fixture-orientation.ts` | 341 | 12 | Which way does a fixture face, and which of a rectangle's edges have a wall behind them. | none |
@@ -360,7 +364,8 @@ Totals: 408 modules in 34 directories.
 | Module | Lines | Importers | Summary | Budget |
 | --- | ---: | ---: | --- | --- |
 | `ascii.ts` | 387 | 12 | ASCII backend — a pure, zero-dependency serializer of the {@link Scene} to a fixed-width text floor plan. | none |
-| `error-svg.ts` | 253 | 2 | Error-card SVG backend — a pure, deterministic serializer of a list of {@link Diagnostic}s into a self-describing "error card" SVG. | none |
+| `error-svg-public.ts` | 30 | 1 | The public error-card renderer, `renderErrorSvg` (the card itself is `backends/error-svg.ts`). A module of its own (card NR.10): it reads every catalogue code's fix, the intent violations' (`E_INTENT_*`) too, so a consumer's card for a… | none |
+| `error-svg.ts` | 272 | 4 | Error-card SVG backend — a pure, deterministic serializer of a list of {@link Diagnostic}s into a self-describing "error card" SVG. | none |
 | `font.ts` | 395 | 3 | The fonts every Node-only backend embeds, resolved once. | none |
 | `png-defaults.ts` | 8 | 2 | The page width, in pixels, of a PNG meant to be LOOKED AT (on a screen, or by a model's vision) when the caller names none. The native render is thousands of pixels wide; this keeps the image legible and small. `archlang preview` and the… | none |
 | `png.ts` | 113 | 2 | PNG backend — a **deterministic raster** serializer of the {@link Scene}. | none |

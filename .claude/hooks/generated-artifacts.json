@@ -6,6 +6,7 @@
     "docs-site/.vitepress/theme/arch-highlight.js": "gen:grammars",
     "docs/error-codes.md": "gen:errors",
     "src/error-catalog-fixes.ts": "gen:errors",
+    "src/error-catalog-fixes-intent.ts": "gen:errors",
     "spec.llm.md": "gen:spec",
     "llms-full.txt": "gen:llms",
     "src/context-size.ts": "gen:llms",
