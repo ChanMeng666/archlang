@@ -60,8 +60,10 @@
  * claims no floor until its turn comes, so a neighbour never dodges a box that is about to shrink,
  * and the turns go by the room's anchor. `relocateLabels` takes its turns in the same order (card
  * AL3a), so the two passes together are order-free: the same rooms written in any order draw the
- * same. Not yet in a plan that draws `walls from rooms` with `dims auto`: the wall-thickness figures
- * are stationed before either pass, in an order of their own, and both passes read them as drawn.
+ * same. Not yet in a plan that draws `walls from rooms`: under `dims auto` its wall-thickness figures
+ * are stationed before either pass, in an order of their own, and both passes read them as drawn
+ * (card AL3f); and its derived walls reach the relocation in their own order, so a mirror tie can
+ * fall the other way by a rounding step (card AL3g).
  * A place is ranked off the lattice, never by a
  * measured distance, so an edit too small to matter cannot flip a label across its room.
  *

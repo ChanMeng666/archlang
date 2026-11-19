@@ -2024,10 +2024,10 @@
  *   plan's order (both at one height) the one further left goes first and stays, so in the copies
  *   `m0` and `r180` `b` stays and `a` dodges, by the same offset. Main's SVG in the branch's payload
  *   reproduces the old digest. Overprints 0 on both trees.
- * - `wall-between-around-digests` `frames`: SVG and `lint()`. The labels take other turns in five
- *   copies: room `C` in `r90` and `m270`, `A` and `B` in `r180`, `B` in `m180`, each placed again.
- *   Four `W_ANNOTATION_OVERLAP` reports are worded for that (40 before and after, same codes and
- *   spans): two on `C`, now its name and area figure over a wall and off the room, no swing; two on
+ * - `wall-between-around-digests` `frames`: SVG and `lint()`. Five labels in four copies are placed
+ *   again: room `C` in `r90` and `m270`, `A` and `B` in `r180`, `B` in `m180`. Four
+ *   `W_ANNOTATION_OVERLAP` reports are worded for that, their `hints` with them (40 before and
+ *   after, same codes and spans): two on `C`, now its name and area figure over a wall and off the room, no swing; two on
  *   `B`, now its area figure over a wall, no swing. Main's SVG and `lint()` in the branch's payload
  *   reproduce the old digest; its SVG alone does not. Label-on-label overprints 6 on `main`, 2 here,
  *   none new.

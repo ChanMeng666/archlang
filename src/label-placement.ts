@@ -48,8 +48,10 @@
  * ({@link plotOrder}: the anchor's y, then its x, read on a micrometre grid, then the texts, a
  * room's before a surface's, the texts' sizes, then the ring; the order `fitLabels` takes its turns
  * in), so the same rooms written in any order draw the same (card AL3a, label-crowding). Not yet in
- * a plan that draws `walls from rooms` with `dims auto`: the wall-thickness figures this pass dodges
- * are stationed before it, in an order of their own. An authored label (`label "…" at (x,y)`) stands
+ * a plan that draws `walls from rooms`: under `dims auto` its wall-thickness figures are stationed
+ * before this pass, in an order of their own (card AL3f), and its derived walls reach this pass in
+ * their own order, so the wall bands of two places a mirror makes equal can sum a rounding step
+ * apart and the label settle on the other one (card AL3g). An authored label (`label "…" at (x,y)`) stands
  * in the way from the first turn. Every label placed claims its box, even one off its own floor that
  * `fitLabels` will shrink later, so a neighbour can be moved, and then shrunk, for a box that is
  * about to change (card AL3e, `case352`); that is kept, because two labels printed over each other are
@@ -835,7 +837,7 @@ export function plotOrder(nodes: readonly SceneNode[], groups: readonly LabelGro
  * can be computed a rounding error apart (a label point of a ring moved by a decimal offset), and
  * must sort as equal so the next key decides, the same on every copy of the plan.
  */
-const snap = (v: number): number => Math.round(v * 1e6);
+const snap = (v: number): number => Math.round(v * 1e3);
 
 /** Two lists of numbers, element by element, then by length. */
 function numbers(a: readonly number[], b: readonly number[]): number {

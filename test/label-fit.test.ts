@@ -772,6 +772,9 @@ describe("order-free placement: the red team's cases (#964)", () => {
       return `plan "t" {\n  units mm\n  paper A2 landscape\n  scale 1:100\n${[...rooms, ...tables].map((l) => `  ${l}\n`).join("")}}\n`;
     };
     expect(drawnAs(strip(1234.7, 777.3), 1234.7, 777.3)).toEqual(drawnAs(strip(0, 0)));
+    // Ten kilometres out, where a coordinate carries about 1e-9 mm of rounding: the order is read on a
+    // micrometre grid, so the noise never decides a turn (#964 round 2).
+    expect(drawnAs(strip(10000001.2, 9000000.9), 10000001.2, 9000000.9)).toEqual(drawnAs(strip(0, 0)));
   });
 });
 
