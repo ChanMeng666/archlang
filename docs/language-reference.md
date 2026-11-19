@@ -4050,6 +4050,18 @@ statement) — so a scripted collision can never read as a clean run. Every entr
 or note, carries the statement's byte `span`. A wall-anchored fixture is also an
 *obstacle*: a movable piece placed after it is separated off it.
 
+**Where two walls are equally good, it chooses by one stated order** and says which key
+decided in the change's `reason`. That covers a wall fixture floating equally far from two walls
+(it is snapped onto one) and a fixture in a corner with its back to the room (it is turned onto
+one). The order is: the nearest wall face (for a snap, the length of the move; for a turn, the gap
+behind that edge of the piece), then a wall the piece's size lets it back onto, then the smallest
+wall id (an unnamed wall's `<category>_<n>` id sorts by `n`), then the run of that wall written
+first. `lint` still attaches no fix in those cases: a choice is not a proof. A piece standing
+side-on to a wall is left alone, as `W_FIXTURE_BACK_TO_ROOM` leaves it, and a piece whose `size`
+runs the wrong way for its wall is reported with "swap W and H". A piece on a stair's flight or
+landing (`W_FURNITURE_ON_STAIR`) is moved off it by the shortest move that clears the whole stair,
+so the stair joins its storeys again. Rooms a missing door cuts off are `archlang suggest`'s.
+
 ### Completing the drawing — `archlang finish`
 
 A sound plan is not yet a complete drawing. Rooms may hold no furniture, and `paper`, `scale`,

@@ -24,8 +24,11 @@
  * A global fixpoint iterates every piece (in source order, so overlap separation has a
  * deterministic mover) until nothing moves. A piece that sits with no majority side or
  * floats too far is left where it stands and **reported**, and one that cycles is parked
- * on that cycle's canonical member and reported — repair never guesses among equal
- * options, and never lets which of them it ships depend on where it started.
+ * on that cycle's canonical member and reported — repair never lets which of several
+ * answers it ships depend on where it started. Two choices between equally good walls are
+ * made, by one stated order that reads only the plan ({@link wallChoiceOrder}), and the
+ * change log names the rule that made each: the wall a floating fixture snaps to when two
+ * are equally near, and the wall a corner fixture is turned to back onto (RM9.11).
  *
  * **The result is never worse than the input**: it holds no hard conflict (an overlap, a
  * piece through a wall, in a door's landing or in its swing) the input did not. A piece
@@ -57,7 +60,7 @@
  */
 
 import { isServiceCounter } from "./lint/clearance-measure.js";
-import { wallRef } from "./wall-ref.js";
+import { wallPhraseOf, wallRef } from "./wall-ref.js";
 import { CLI_NAME } from "./command-name.js";
 import { parse } from "./parser.js";
 import { formatPlan } from "./format.js";
@@ -75,6 +78,7 @@ import {
   innerFaceOfRoomEdge,
   isAgainstWall,
   rectInRoomBox,
+  RECT_EDGES,
   type RectEdge,
   resolvePlan,
   buildingRoomReach,
@@ -97,8 +101,17 @@ import {
   wallIntrusionDepth,
 } from "./geometry/rect.js";
 import { segmentsOfWall, doorLeaves, sectorIntersectsRect, type DoorSwing } from "./geometry.js";
-import { DEFAULT_RULESET } from "./lint.js";
-import { cutPlaneLayer, defaultFootprint, orientationMatters, requiresWall } from "./fixtures-catalog.js";
+import { DEFAULT_RULESET, LINT_RULES } from "./lint.js";
+import { type BuildingContext, buildLintContext } from "./lint/context.js";
+import { onStairZones, type StairZone, zoneReads } from "./lint/rules/stairs.js";
+import { lintStoreys } from "./lint/storeys.js";
+import {
+  backsOntoWall,
+  cutPlaneLayer,
+  defaultFootprint,
+  orientationMatters,
+  requiresWall,
+} from "./fixtures-catalog.js";
 import type { ResolvedPlan, RWall, RDoor, RRoom, ROpening, RFurniture, RVoid } from "./ir.js";
 import { keepResultsOf } from "./ir.js";
 import type { ComponentDef, FurnitureAnchor, FurnitureNode, FurniturePlace, PlanNode, Statement } from "./ast.js";
@@ -295,16 +308,179 @@ function computeDoorwayPush(
   return { dx: best.dx, dy: best.dy };
 }
 
-/** Snap a floating wall-fixture onto its nearest wall face. "ambiguous" on an exact
- *  tie between two walls, "too-far" when no wall is within MAX_SNAP_MM, null when the
- *  piece already backs onto a wall span. */
+/**
+ * The minimal axis move that takes `fr` off every rectangle in `zones` at once (a stair's flight
+ * and the landings it owes touch end to end, so clearing one zone at a time walks a piece from a
+ * landing onto the flight and back). Each of the four directions is extended until the moved
+ * piece overlaps no zone; the shortest such move wins, preferring one that does not drive the
+ * piece into a wall, and an exact tie between two different moves is "ambiguous" (as
+ * {@link computeDoorwayPush}), as is a piece no axis move takes off. null when `fr` stands on no zone.
+ */
+function computeZonesPush(
+  fr: BBox,
+  zones: readonly BBox[],
+  walls: RWall[],
+  grid: number,
+): { dx: number; dy: number } | "ambiguous" | null {
+  const on = (r: BBox): BBox | undefined => zones.find((z) => rectsOverlap(r, z));
+  if (on(fr) === undefined) return null;
+  const dirs: ReadonlyArray<{ ux: number; uy: number; need: (z: BBox) => number }> = [
+    { ux: -1, uy: 0, need: (z) => fr.x + fr.w - z.x },
+    { ux: 1, uy: 0, need: (z) => z.x + z.w - fr.x },
+    { ux: 0, uy: -1, need: (z) => fr.y + fr.h - z.y },
+    { ux: 0, uy: 1, need: (z) => z.y + z.h - fr.y },
+  ];
+  let best: { shift: number; clean: boolean; dx: number; dy: number } | null = null;
+  let tie = false;
+  for (const d of dirs) {
+    let at = { x: fr.x, y: fr.y };
+    let shift = 0;
+    // Each step clears one more zone and only ever lengthens the move, so it ends within
+    // `zones.length` steps; a zone it cannot clear in this direction ends the direction.
+    for (let k = 0; k <= zones.length; k++) {
+      const hit = on({ x: at.x, y: at.y, w: fr.w, h: fr.h });
+      if (hit === undefined) break;
+      const need = d.need(hit);
+      if (need <= shift) {
+        shift = -1;
+        break;
+      }
+      shift = need;
+      at = {
+        x: d.ux === 0 ? fr.x : snapOut(fr.x + d.ux * need, d.ux, grid),
+        y: d.uy === 0 ? fr.y : snapOut(fr.y + d.uy * need, d.uy, grid),
+      };
+    }
+    if (shift <= 0 || on({ x: at.x, y: at.y, w: fr.w, h: fr.h }) !== undefined) continue;
+    const moved = Math.abs(at.x - fr.x) + Math.abs(at.y - fr.y);
+    const clean = !hitsWall({ x: at.x, y: at.y, w: fr.w, h: fr.h }, walls);
+    const cand = { shift: moved, clean, dx: at.x - fr.x, dy: at.y - fr.y };
+    const better =
+      (cand.clean && !(best?.clean ?? false)) ||
+      (best !== null && cand.clean === best.clean && cand.shift < best.shift - 1e-6);
+    const equal = best !== null && cand.clean === best.clean && Math.abs(cand.shift - best.shift) <= 1e-6;
+    if (!best || better) {
+      best = cand;
+      tie = false;
+    } else if (equal && (cand.dx !== best.dx || cand.dy !== best.dy)) tie = true;
+  }
+  // On a zone with no axis move off it (a piece wider than the gap every way): say so.
+  if (!best || tie) return "ambiguous";
+  return { dx: best.dx, dy: best.dy };
+}
+
+/** A wall a choice can fall on: its id, the segment's index in that wall's point list, and the
+ *  edge of the piece it stands against. */
+interface WallChoice {
+  wallId: string;
+  index: number;
+  edge: RectEdge;
+}
+
+/**
+ * Two ids in "smallest first" order, reading each run of digits as a number: an unnamed wall's
+ * id is `<category>_<n>` with `n` its place among the plan's walls (`assignIds`), so
+ * `partition_2` comes before `partition_10`, which plain code-unit order would reverse. Everything
+ * else compares by UTF-16 code unit (never `localeCompare`, whose order is the host's). A digit run
+ * compares by its value (by length once leading zeros are gone, then digit by digit, so a run of
+ * any length is exact), then by its leading zeros, so two different ids never compare equal.
+ */
+function compareIds(a: string, b: string): number {
+  const runs = (s: string): string[] => s.match(/\d+|\D+/g) ?? [];
+  const ra = runs(a);
+  const rb = runs(b);
+  for (let i = 0; i < Math.min(ra.length, rb.length); i++) {
+    const x = ra[i]!;
+    const y = rb[i]!;
+    if (x === y) continue;
+    const dx = /^\d/.test(x);
+    const dy = /^\d/.test(y);
+    if (dx && dy) {
+      const vx = x.replace(/^0+(?=\d)/, "");
+      const vy = y.replace(/^0+(?=\d)/, "");
+      if (vx.length !== vy.length) return vx.length - vy.length;
+      if (vx !== vy) return vx < vy ? -1 : 1;
+      return x.length - y.length;
+    }
+    return x < y ? -1 : 1;
+  }
+  return ra.length - rb.length;
+}
+
+/**
+ * The order a tie between equally near walls is broken in (RM9.11, downstream request 3), shared
+ * by {@link computeFloatingSnap} and {@link orientationVerdict} so the two choices cannot disagree:
+ *
+ *   1. a wall the piece's catalogued footprint lets it back onto (`shapeFits`, the
+ *      {@link backCandidateEdges} test): a 400×700 WC snapped onto a wall beside it would stand
+ *      side-on, and the orientation pass could then turn it onto nothing;
+ *   2. the smallest wall id ({@link compareIds}: an unnamed wall's `<category>_<n>` id sorts by
+ *      `n`, its place among the plan's walls);
+ *   3. the segment's index in its wall's point list (two edges of one closed ring share an id);
+ *   4. the edge, in {@link RECT_EDGES} order (reached only by two walls that share an id and an
+ *      index, an `E_DUP_ID` plan).
+ *
+ * Every key reads the resolved walls and the piece, never the order a pass met them in, and a
+ * derived wall's id (`exterior`, `A|B`) is a function of the rooms it was derived from, so the
+ * choice is a property of the plan. It is total, so a tie always has one answer.
+ */
+function wallChoiceOrder(shapeFits: (e: RectEdge) => boolean): (a: WallChoice, b: WallChoice) => number {
+  return (a, b) => {
+    const fa = shapeFits(a.edge) ? 0 : 1;
+    const fb = shapeFits(b.edge) ? 0 : 1;
+    if (fa !== fb) return fa - fb;
+    const byId = compareIds(a.wallId, b.wallId);
+    if (byId !== 0) return byId;
+    if (a.index !== b.index) return a.index - b.index;
+    return RECT_EDGES.indexOf(a.edge) - RECT_EDGES.indexOf(b.edge);
+  };
+}
+
+/**
+ * Break a tie among `near` by {@link wallChoiceOrder}: the winner, and the words the change log
+ * gives for it, naming the key that separated it from the runner-up so the author can check the
+ * choice against the rule.
+ */
+function chooseWall(
+  near: readonly WallChoice[],
+  shapeFits: (e: RectEdge) => boolean,
+  walls: readonly RWall[],
+): { pick: WallChoice; words: string } {
+  const sorted = [...near].sort(wallChoiceOrder(shapeFits));
+  const pick = sorted[0]!;
+  const next = sorted[1];
+  const w = walls.find((x) => x.id === pick.wallId);
+  const name = w ? wallPhraseOf(w) : `wall "${pick.wallId}"`;
+  const words =
+    next === undefined
+      ? `took ${name}`
+      : shapeFits(pick.edge) !== shapeFits(next.edge)
+        ? `took ${name}, the only one it can back onto by its size`
+        : pick.wallId !== next.wallId
+          ? `took ${name}, by the smallest wall id`
+          : pick.index !== next.index
+            ? `took the run of ${name} written first in its points`
+            : `took the one on its ${pick.edge} side, by edge order (top, bottom, left, right)`;
+  return { pick, words };
+}
+
+/** Snap a floating wall-fixture onto its nearest wall face. "too-far" when no wall is
+ *  within MAX_SNAP_MM, null when the piece already backs onto a wall span.
+ *
+ *  "Nearest" is the length of the move: the gap between the piece's edge and the wall's
+ *  FACE (centreline ± half its thickness), so it is measured on the drawn solid the piece
+ *  will stand against, and it is the distance the piece's new back travels. Not its
+ *  centre's distance, which adds half the piece's own depth and so would favour whichever
+ *  axis the piece is thin along. When two different moves are equally near (to 1e-6 mm),
+ *  the move is chosen by {@link wallChoiceOrder} and `tie` names the edges that tied; a
+ *  plan with one nearest move takes exactly the move it always took. */
 function computeFloatingSnap(
   fr: BBox,
   walls: RWall[],
   grid: number,
-): { dx: number; dy: number } | "ambiguous" | "too-far" | null {
-  let best: { dist: number; dx: number; dy: number } | null = null;
-  let tie = false;
+  category: string,
+): { dx: number; dy: number; tie?: { edges: RectEdge[]; words: string } } | "too-far" | null {
+  const cands: Array<WallChoice & { dist: number; dx: number; dy: number }> = [];
   const cx = fr.x + fr.w / 2;
   const cy = fr.y + fr.h / 2;
   for (const w of walls)
@@ -313,12 +489,13 @@ function computeFloatingSnap(
       const vert = s.a.x === s.b.x;
       if (horiz === vert) continue;
       const h2 = s.thickness / 2;
-      let dist: number, dx: number, dy: number;
+      let dist: number, dx: number, dy: number, edge: RectEdge;
       if (horiz) {
         const segLo = Math.min(s.a.x, s.b.x),
           segHi = Math.max(s.a.x, s.b.x);
         if (Math.min(fr.x + fr.w, segHi) - Math.max(fr.x, segLo) <= 0) continue; // no shared span
         dy = cy >= s.a.y ? s.a.y + h2 - fr.y : s.a.y - h2 - fr.h - fr.y;
+        edge = cy >= s.a.y ? "top" : "bottom";
         dx = 0;
         dist = Math.abs(dy);
       } else {
@@ -326,20 +503,27 @@ function computeFloatingSnap(
           segHi = Math.max(s.a.y, s.b.y);
         if (Math.min(fr.y + fr.h, segHi) - Math.max(fr.y, segLo) <= 0) continue;
         dx = cx >= s.a.x ? s.a.x + h2 - fr.x : s.a.x - h2 - fr.w - fr.x;
+        edge = cx >= s.a.x ? "left" : "right";
         dy = 0;
         dist = Math.abs(dx);
       }
-      if (!best || dist < best.dist - 1e-6) {
-        best = { dist, dx, dy };
-        tie = false;
-      } else if (Math.abs(dist - best.dist) <= 1e-6 && (dx !== best.dx || dy !== best.dy)) tie = true;
+      cands.push({ dist, dx, dy, wallId: w.id, index: s.index, edge });
     }
-  if (!best) return null;
-  if (best.dist <= 1) return null; // already flush
-  if (best.dist > MAX_SNAP_MM) return "too-far";
-  if (tie) return "ambiguous";
+  if (cands.length === 0) return null;
+  let min = cands[0]!.dist;
+  for (const c of cands) if (c.dist < min) min = c.dist;
+  if (min <= 1) return null; // already flush
+  if (min > MAX_SNAP_MM) return "too-far";
   void grid; // faces land on-grid (on-grid walls + grid-multiple sizes); no re-snap
-  return { dx: best.dx, dy: best.dy };
+  const near = cands.filter((c) => Math.abs(c.dist - min) <= 1e-6);
+  const first = near[0]!;
+  // One move, however many segments reach it (a run drawn as two collinear walls): no tie.
+  if (near.every((c) => c.dx === first.dx && c.dy === first.dy)) return { dx: first.dx, dy: first.dy };
+  const shape = backCandidateEdges({ w: fr.w, h: fr.h }, defaultFootprint(category));
+  const { pick, words } = chooseWall(near, (e) => shape.includes(e), walls);
+  const won = near.find((c) => c === pick)!;
+  const edges = RECT_EDGES.filter((e) => near.some((c) => c.edge === e));
+  return { dx: won.dx, dy: won.dy, tie: { edges, words } };
 }
 
 /** Move `fr` out of every door-swing quarter-disc it sits in. The swing is a 90°
@@ -468,6 +652,8 @@ interface FixCtx {
   landings: BBox[];
   swings: DoorSwing[];
   grid: number;
+  /** The storey's stair floor ({@link onStairZones}); absent on a storey with no stair. */
+  stairs?: readonly StairZone[];
 }
 
 /**
@@ -554,27 +740,51 @@ function nextFix(fr: BBox, ctx: FixCtx): NextFix {
   if (swing)
     return { dx: swing.dx, dy: swing.dy, reason: "moved out of a door's swing", problem: "sits in a door's swing" };
 
-  if (requiresWall(ctx.category) && !isAgainstWall(fr, ctx.walls, DEFAULT_RULESET.fixtureWallTolMm)) {
-    const snap = computeFloatingSnap(fr, ctx.walls, ctx.grid);
-    if (snap === "ambiguous")
+  // Off a stair's flight or the landings it owes, as `W_FURNITURE_ON_STAIR` reads them (the
+  // flight only where headroom is short, a landing only for a body-layer piece): a piece there
+  // cuts the stair, so on a multi-storey plan the storeys it joins. Clearing it is the one
+  // connectivity repair a furniture mover can make; a missing door is `arch suggest`'s.
+  if (ctx.stairs && ctx.stairs.length > 0) {
+    const zones = ctx.stairs.filter((z) => zoneReads(z, ctx.category)).map((z) => z.rect);
+    const off = computeZonesPush(fr, zones, ctx.walls, ctx.grid);
+    if (off === "ambiguous")
       return {
-        ambiguous: "is equidistant from two walls — give it an explicit place",
-        problem: "is not against a wall",
+        ambiguous: "stands on a stair with no single shortest way off it — move it aside manually",
+        problem: "stands on a stair's flight or landing",
       };
+    if (off)
+      return {
+        dx: off.dx,
+        dy: off.dy,
+        reason: "moved off the stair's flight or landing",
+        problem: "stands on a stair's flight or landing",
+      };
+  }
+
+  if (requiresWall(ctx.category) && !isAgainstWall(fr, ctx.walls, DEFAULT_RULESET.fixtureWallTolMm)) {
+    const snap = computeFloatingSnap(fr, ctx.walls, ctx.grid, ctx.category);
     if (snap === "too-far")
       return { ambiguous: "floats too far from any wall to snap automatically", problem: "is not against a wall" };
     if (snap)
-      return { dx: snap.dx, dy: snap.dy, reason: "snapped against the nearest wall", problem: "is not against a wall" };
+      return {
+        dx: snap.dx,
+        dy: snap.dy,
+        reason: snap.tie
+          ? `snapped against the nearest wall (the walls on its ${snap.tie.edges.join("/")} side were equally near; ${snap.tie.words})`
+          : "snapped against the nearest wall",
+        problem: "is not against a wall",
+      };
   }
   return null;
 }
 
 /**
  * The orientation verdict for a fixture standing at `fr` with quarter-turn `rotate`:
- * the turn that puts its back on the one wall it stands against, a message when there
- * is no single answer (a corner), or null when nothing is wrong. Shared by the
+ * the turn that puts its back on the wall it stands against (in a corner, the one
+ * {@link wallChoiceOrder} picks among the nearest faces), a message when no `rotate` can
+ * do it (its size runs the wrong way), or null when nothing is wrong. Shared by the
  * orientation pass and the final report, so a fixture repair may not turn is described
- * with the same geometry that would have turned it (ADR 0005 — never guess).
+ * with the same geometry that would have turned it.
  */
 function orientationVerdict(
   fr: BBox,
@@ -591,14 +801,51 @@ function orientationVerdict(
   // only back onto a horizontal edge, so a corner often has one valid answer after all.
   const shape = backCandidateEdges({ w: fr.w, h: fr.h }, defaultFootprint(category));
   const targets = walled.filter((e) => shape.includes(e));
-  if (targets.length !== 1)
+  const problem = `has its back to the room (the wall is on its ${walled.join("/")} side)`;
+  if (targets.length === 0) {
+    // No walled edge can be its back. A piece whose drawn front is off the wall too stands
+    // side-on or end-on to it (a bed lengthwise along it): a layout, not a back turned to the
+    // room, and `W_FIXTURE_BACK_TO_ROOM` declines it (PS2.50) unless its back must reach any wall
+    // it touches. Read the same way here, so repair reports exactly what lint flags.
+    const front = backEdgeForRotate(rotate + 180);
+    if (!backsOntoWall(category) && !walled.includes(front)) return null;
     return {
-      ambiguous: `faces the room with no single wall to back onto (walls on its ${walled.join(
+      ambiguous: `has its back to the room, and its \`size\` puts its depth along the wall on its ${walled.join(
         "/",
-      )} side) — set \`rotate\` yourself`,
-      problem: `has its back to the room (the wall is on its ${walled.join("/")} side)`,
+      )} side, so no \`rotate\` backs it onto that wall without squashing its symbol — swap W and H in \`size\`, then re-run repair`,
+      problem,
     };
-  const to = rotateForBackEdge(targets[0]!);
+  }
+  // A corner (or a square piece between walls): more than one wall it could back onto. Take
+  // the nearest wall FACE by the gap between that edge of the piece and the face of the solid
+  // behind it ({@link innerFaceOfRoomEdge}, the plane `W_FURNITURE_WALL_COLLISION` measures),
+  // then {@link wallChoiceOrder}. The rotation is written into the source and logged with the
+  // rule that chose it, for the author to review (ADR 0006); `lint` still attaches no
+  // machine-applicable fix here, because a choice is not a proof (ADR 0011).
+  let target = targets[0]!;
+  if (targets.length > 1) {
+    const gap = (e: RectEdge): number => {
+      const face = innerFaceOfRoomEdge(fr, e, walls, DEFAULT_RULESET.fixtureWallTolMm);
+      const at = e === "top" ? fr.y : e === "bottom" ? fr.y + fr.h : e === "left" ? fr.x : fr.x + fr.w;
+      return face === null ? Infinity : Math.abs(face - at);
+    };
+    const gaps = targets.map((e) => ({ e, gap: gap(e) }));
+    let min = gaps[0]!.gap;
+    for (const g of gaps) if (g.gap < min) min = g.gap;
+    const near = gaps.filter((g) => Math.abs(g.gap - min) <= 1e-6).map(({ e }) => e);
+    const choice = (e: RectEdge): WallChoice => ({ wallId: backing[e]!.wallId, index: backing[e]!.index, edge: e });
+    const { pick, words } = chooseWall(near.map(choice), () => true, walls);
+    target = pick.edge;
+    const to = rotateForBackEdge(target);
+    if (to === rotate) return null;
+    const how = near.length === 1 ? "took the nearest wall face" : `their faces were equally near; ${words}`;
+    return {
+      to,
+      reason: `turned to put its back against the wall on its ${target} side (walls on its ${targets.join("/")} side; ${how})`,
+      problem,
+    };
+  }
+  const to = rotateForBackEdge(target);
   if (to === rotate) return null;
   return {
     to,
@@ -1374,8 +1621,18 @@ function repairPass(source: string, book: SpanBook, record: boolean, pins: Pins)
           buildingRoomReach(inputs, DEFAULT_TOL),
         )
       : new Map<number, ArrivingRun[]>();
+  // The building each storey is linted in, read only when a storey has a stair, so the stair
+  // floor a piece is moved off is the one `W_FURNITURE_ON_STAIR` reads: on a multi-storey plan
+  // that includes the head of a flight arriving from below. A plan without a stair reads none.
+  const hasStair = storeys.some((st) => verticalsOf(st.ir).some((v) => v.kind === "stair"));
+  const buildings = new Map<number | undefined, BuildingContext | undefined>(
+    hasStair ? lintStoreys(ir, levels, DEFAULT_RULESET.tolMm).map((s) => [s.level, s.building] as const) : [],
+  );
   const changes: RepairChange[] = [];
   for (const st of storeys) {
+    const stairs = hasStair
+      ? (onStairZones(buildLintContext(st.ir, DEFAULT_RULESET, LINT_RULES, buildings.get(st.level)))?.zones ?? [])
+      : [];
     const seenIds = new Set<string>();
     changes.push(
       ...repairStorey(
@@ -1388,6 +1645,7 @@ function repairPass(source: string, book: SpanBook, record: boolean, pins: Pins)
         record,
         st.level !== undefined ? (arrivals.get(st.level) ?? []) : [],
         pins,
+        stairs,
       ),
     );
   }
@@ -1418,6 +1676,8 @@ function repairStorey(
   arrivals: readonly ArrivingRun[] = [],
   /** Pieces {@link repair}'s no-worse check holds where they stand, keyed `${level}|${id}`. */
   pins: Pins = new Map(),
+  /** This storey's stair floor, as `W_FURNITURE_ON_STAIR` reads it ({@link onStairZones}). */
+  stairs: readonly StairZone[] = [],
 ): RepairChange[] {
   const spanKeyFor = (id: string): string => `${level ?? ""}|${id}`;
   /** The span to report for `id`. The first round records each statement's ORIGINAL
@@ -1653,6 +1913,7 @@ function repairStorey(
         landings: landingsFor(p.f.category),
         swings,
         grid,
+        stairs,
       });
       if (fix === null) continue;
       if ("ambiguous" in fix) {
@@ -1737,8 +1998,8 @@ function repairStorey(
   // Positions are final, so "which wall is this piece standing on?" now has a stable
   // answer. A fixture whose facing means something (a WC's cistern, a basin's tap —
   // not a symmetric shower tray) that sits against exactly ONE wall with its back to
-  // the room is turned to face that wall. A corner piece has two equally valid walls,
-  // so it is reported, never guessed (ADR 0005). A turn moves nothing, so it can't
+  // the room is turned to face that wall. A corner piece has two valid walls; it is turned
+  // onto the one `orientationVerdict`'s stated order picks, and the log says why. A turn moves nothing, so it can't
   // pinch a walk — the circulation guard has nothing to re-check. A scripted `rotate`
   // is left alone, exactly as a scripted position is.
   for (const p of pieces) {
@@ -1817,6 +2078,7 @@ function repairStorey(
       landings: landingsFor(o.category),
       swings,
       grid,
+      stairs,
     });
     if (fix !== null) {
       note(o.id, say(fix), spanOf(o.id, o.span));
