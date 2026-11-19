@@ -294,6 +294,13 @@ Every diagnostic carries a stable code. Look one up with `arch explain <CODE>`
 component c() { accDescr "x" }   # error: only allowed at plan level
 ```
 
+**Fixed.**
+
+```arch static
+component c() { }
+accDescr "x"   # fixed: at plan level, beside units
+```
+
 ## E_ARC_RADIUS
 
 *error* — Arc radius too small for its chord.
@@ -304,6 +311,12 @@ component c() { accDescr "x" }   # error: only allowed at plan level
 
 ```arch static
 wall exterior thickness 200 { (0,0) arc (10000,0) radius 3000 }   # error: needs R >= 5000
+```
+
+**Fixed.**
+
+```arch static
+wall exterior thickness 200 { (0,0) arc (10000,0) radius 5000 }   # fixed: R is half the 10000 mm chord
 ```
 
 ## E_ARGCOUNT
@@ -319,6 +332,13 @@ component bed(x, y) { … }
 bed(300)        # error: expects 2 arguments
 ```
 
+**Fixed.**
+
+```arch static
+component bed(x, y) { furniture bed at (x, y) size 1500x2000 }
+bed(300, 300)   # fixed: one argument per parameter
+```
+
 ## E_ARITY
 
 *error* — Built-in function called with the wrong number of arguments.
@@ -331,6 +351,12 @@ bed(300)        # error: expects 2 arguments
 let x = abs(1, 2)   # error: abs expects 1 argument
 ```
 
+**Fixed.**
+
+```arch static
+let x = abs(-1)   # fixed: one argument
+```
+
 ## E_ASSIGN_UNDEF
 
 *error* — Assignment to an undeclared name.
@@ -341,6 +367,12 @@ let x = abs(1, 2)   # error: abs expects 1 argument
 
 ```arch static
 x = 5           # error: declare with `let x = …` first
+```
+
+**Fixed.**
+
+```arch static
+let x = 5   # fixed: declared with let
 ```
 
 ## E_ATTACH_POS_RANGE
@@ -365,6 +397,13 @@ door on w1 at 150% width 900   # error: 150% is past the wall end
 
 ```arch static
 door on w1 at 40% width 900   # error if no wall id=w1 (or several match)
+```
+
+**Fixed.**
+
+```arch static
+wall id=w1 exterior thickness 200 { (0,0) (4000,0) }
+door on w1 at 40% width 900   # fixed: one wall has id=w1
 ```
 
 ## E_CALL_DEPTH
@@ -392,6 +431,12 @@ height 3000 clear 2400   # error: the plan has levels
   level 1 "Ground" { }
 ```
 
+**Fixed.**
+
+```arch static
+level 1 "Ground" height 3000 clear 2400 { }   # fixed: in the level header
+```
+
 ## E_COLUMN_SIZE
 
 *error* — Column must have a positive size.
@@ -402,6 +447,12 @@ height 3000 clear 2400   # error: the plan has levels
 
 ```arch static
 column at (0,0) size 0x300   # error: width is 0
+```
+
+**Fixed.**
+
+```arch static
+column at (0,0) size 300x300   # fixed: both sides positive
 ```
 
 ## E_DATUM_BEFORE_ROOMS
@@ -415,6 +466,13 @@ column at (0,0) size 0x300   # error: width is 0
 ```arch static
 room id=hall at (0,0) size 4000x3000
 let x = hall.right   # error: read when the plan expands
+```
+
+**Fixed.**
+
+```arch static
+room id=hall at (0,0) size 4000x3000
+wall interior thickness 100 { (hall.right, 0) (hall.right, 3000) }   # fixed: read in a wall point
 ```
 
 ## E_DATUM_COMPASS
@@ -431,6 +489,14 @@ room id=hall at (0,0) size 4000x3000
 wall interior thickness 100 { (0, hall.north) (4000, hall.north) }   # error: write hall.top
 ```
 
+**Fixed.**
+
+```arch static
+north right
+room id=hall at (0,0) size 4000x3000
+wall interior thickness 100 { (0, hall.top) (4000, hall.top) }   # fixed: the frame word
+```
+
 ## E_DATUM_NAME
 
 *error* — A dotted name reads both as a room-edge datum and as an element inside an instance.
@@ -443,6 +509,14 @@ wall interior thickness 100 { (0, hall.north) (4000, hall.north) }   # error: wr
 component wing() { room id=top at (0,0) size 3000x3000 }
 place wing() as west at (0,0)
 wall interior thickness 100 { (0, west.top) (3000, west.top) }   # error: `west.top` is also an element
+```
+
+**Fixed.**
+
+```arch static
+component wing() { room id=main at (0,0) size 3000x3000 }
+place wing() as west at (0,0)
+wall interior thickness 100 { (0, west.main.top) (3000, west.main.top) }   # fixed: the room is no datum word
 ```
 
 ## E_DATUM_UNPLACED
@@ -458,6 +532,14 @@ room id=a right-of ghost size 3000x3000
 wall interior thickness 100 { (a.left, 0) (a.left, 3000) }   # error: a could not be placed
 ```
 
+**Fixed.**
+
+```arch static
+room id=ghost at (0,0) size 3000x3000
+room id=a right-of ghost size 3000x3000
+wall interior thickness 100 { (a.left, 0) (a.left, 3000) }   # fixed: the room a names is placed
+```
+
 ## E_DIAGNOSTIC_LIMIT
 
 *error* — More than 500 diagnostics; further diagnostics were not collected.
@@ -468,6 +550,12 @@ wall interior thickness 100 { (a.left, 0) (a.left, 3000) }   # error: a could no
 
 ```arch static
 for i in 0..600 { let x = 1 / 0 }   # error: 500 E_DIV_ZERO, then E_DIAGNOSTIC_LIMIT
+```
+
+**Fixed.**
+
+```arch static
+for i in 1..600 { let x = 1 / i }   # fixed: no division by zero, so no flood
 ```
 
 ## E_DIM_CURVE_REF
@@ -482,6 +570,13 @@ for i in 0..600 { let x = 1 / 0 }   # error: 500 E_DIV_ZERO, then E_DIAGNOSTIC_L
 dim radius w1   # error if w1 is straight, unknown, or has two arc edges
 ```
 
+**Fixed.**
+
+```arch static
+wall id=w1 exterior thickness 200 { (0,0) arc (6000,0) radius 4000 }
+dim radius w1   # fixed: w1 has one arc edge
+```
+
 ## E_DIV_ZERO
 
 *error* — Division or modulo by zero.
@@ -492,6 +587,12 @@ dim radius w1   # error if w1 is straight, unknown, or has two arc edges
 
 ```arch static
 let x = 10 / 0   # error
+```
+
+**Fixed.**
+
+```arch static
+let x = 10 / 2   # fixed: a non-zero divisor
 ```
 
 ## E_DOMAIN
@@ -506,6 +607,12 @@ let x = 10 / 0   # error
 let x = sqrt(-1)   # error
 ```
 
+**Fixed.**
+
+```arch static
+let x = sqrt(4)   # fixed: within the domain
+```
+
 ## E_DOOR_KIND_CLAUSE
 
 *error* — That clause is not available on this kind of door.
@@ -516,6 +623,13 @@ let x = sqrt(-1)   # error
 
 ```arch static
 door pocket on w1 at 50% width 900 hinge left   # error: a pocket door has no hinge
+```
+
+**Fixed.**
+
+```arch static
+wall id=w1 exterior thickness 200 { (0,0) (4000,0) }
+door pocket on w1 at 50% width 900   # fixed: no hinge clause
 ```
 
 ## E_DOOR_KIND_CURVED
@@ -531,6 +645,13 @@ wall w1 thickness 200 { (0,0) arc (6000,0) radius 4000 }
 door pocket on w1 at 50% width 900   # error: curved host
 ```
 
+**Fixed.**
+
+```arch static
+wall w1 thickness 200 { (0,0) arc (6000,0) radius 4000 }
+door on w1 at 50% width 900   # fixed: a hinged door, the default
+```
+
 ## E_DOOR_OPEN_RANGE
 
 *error* — `open` must be between 0 and 1.
@@ -543,6 +664,13 @@ door pocket on w1 at 50% width 900   # error: curved host
 door sliding on w1 at 50% width 1200 open 1.5   # error: outside [0,1]
 ```
 
+**Fixed.**
+
+```arch static
+wall id=w1 exterior thickness 200 { (0,0) (4000,0) }
+door sliding on w1 at 50% width 1200 open 1   # fixed: within [0,1]
+```
+
 ## E_DOOR_WIDTH
 
 *error* — Door must have a positive width.
@@ -553,6 +681,12 @@ door sliding on w1 at 50% width 1200 open 1.5   # error: outside [0,1]
 
 ```arch static
 door at (0,0) width 0   # error
+```
+
+**Fixed.**
+
+```arch static
+door at (0,0) width 900   # fixed: a positive width
 ```
 
 ## E_DOTTED_DECL
@@ -579,6 +713,12 @@ room id=main at (0,0) size 3000x3000   # then, in the plan: furniture bed in wes
 for i in 0..200 { escalator at (0, i * 2000) size 300000x1200 dir up }   # error: 429,800 units
 ```
 
+**Fixed.**
+
+```arch static
+for i in 0..20 { escalator at (0, i * 2000) size 30000x1200 dir up }   # fixed: fewer, shorter runs
+```
+
 ## E_DUP_CLAUSE
 
 *error* — A statement writes the same clause twice.
@@ -589,6 +729,12 @@ for i in 0..200 { escalator at (0, i * 2000) size 300000x1200 dir up }   # error
 
 ```arch static
 furniture bed at (500,500) size 1500x2000 label "Bed" size 1600x2000   # error: `size` twice
+```
+
+**Fixed.**
+
+```arch static
+furniture bed at (500,500) size 1600x2000 label "Bed"   # fixed: one size
 ```
 
 ## E_DUP_ID
@@ -602,6 +748,13 @@ furniture bed at (500,500) size 1500x2000 label "Bed" size 1600x2000   # error: 
 ```arch static
 room id=a at (0,0) size 1x1
 room id=a at (1,0) size 1x1   # error: duplicate id "a"
+```
+
+**Fixed.**
+
+```arch static
+room id=a at (0,0) size 1x1
+room id=b at (1,0) size 1x1   # fixed: each id once
 ```
 
 ## E_DUP_INSTANCE
@@ -629,6 +782,12 @@ place wing() as west at (9000,0)   # error: instance "west" already used
 for i in 0..6000 { column at (i,0) size 1x1 }   # error: more than 5,000 elements
 ```
 
+**Fixed.**
+
+```arch static
+for i in 0..50 { column at (i * 600, 0) size 300x300 }   # fixed: well under 5,000 elements
+```
+
 ## E_FACING_CONFLICT
 
 *error* — A piece states its turn twice.
@@ -640,6 +799,13 @@ for i in 0..6000 { column at (i,0) size 1x1 }   # error: more than 5,000 element
 ```arch static
 furniture id=t table at (0,0) size 800x800
 furniture chair at (175,850) size 450x450 rotate 180 facing t   # error: two turns
+```
+
+**Fixed.**
+
+```arch static
+furniture id=t table at (0,0) size 800x800
+furniture chair at (175,850) size 450x450 facing t   # fixed: facing alone turns it
 ```
 
 ## E_FACING_MISS
@@ -655,6 +821,13 @@ furniture id=t table at (0,0) size 800x800
 furniture chair at (2000,2000) size 450x450 facing t   # error: the chair is diagonal to the table
 ```
 
+**Fixed.**
+
+```arch static
+furniture id=t table at (0,0) size 800x800
+furniture chair at (175,850) size 450x450 facing t   # fixed: in line with the table
+```
+
 ## E_FACING_SYMMETRIC
 
 *error* — A piece with no front cannot face anything.
@@ -668,6 +841,13 @@ furniture id=c chair at (0,0) size 450x450
 furniture table at (0,900) size 800x800 facing c   # error: a table has no front
 ```
 
+**Fixed.**
+
+```arch static
+furniture id=c chair at (0,0) size 450x450
+furniture table at (0,900) size 800x800   # fixed: facing dropped from the piece with no front
+```
+
 ## E_FACING_TARGET
 
 *error* — `facing` names no rectangle to face.
@@ -678,6 +858,13 @@ furniture table at (0,900) size 800x800 facing c   # error: a table has no front
 
 ```arch static
 furniture chair at (0,0) size 450x450 facing nowhere   # error: no element has that id
+```
+
+**Fixed.**
+
+```arch static
+furniture id=t table at (0,0) size 800x800
+furniture chair at (175,850) size 450x450 facing t   # fixed: t exists
 ```
 
 ## E_FACING_TIE
@@ -693,6 +880,13 @@ furniture id=t table at (0,0) size 800x800
 furniture chair at (175,175) size 450x450 facing t   # error: the chair stands inside the table
 ```
 
+**Fixed.**
+
+```arch static
+furniture id=t table at (0,0) size 800x800
+furniture chair at (175,850) size 450x450 facing t   # fixed: the chair stands south of the table
+```
+
 ## E_FACING_TRANSPOSED
 
 *error* — Facing the target would put the piece's back on its short side.
@@ -704,6 +898,13 @@ furniture chair at (175,175) size 450x450 facing t   # error: the chair stands i
 ```arch static
 furniture id=b bed at (0,0) size 1500x2000
 furniture tv_unit at (2500,800) size 1500x450 facing b   # error: write size 450x1500
+```
+
+**Fixed.**
+
+```arch static
+furniture id=b bed at (0,0) size 1500x2000
+furniture tv_unit at (2500,800) size 450x1500 facing b   # fixed: the long side across the facing
 ```
 
 ## E_FENCE_CURVED
@@ -718,6 +919,12 @@ furniture tv_unit at (2500,800) size 1500x450 facing b   # error: write size 450
 fence picket { (0,0) arc (3000,3000) radius 3000 }   # error: curved edge
 ```
 
+**Fixed.**
+
+```arch static
+fence picket { (0,0) (1000,300) (2000,1000) (2700,2000) (3000,3000) }   # fixed: short straight runs
+```
+
 ## E_FURN_AGAINST
 
 *error* — Invalid `against wall` or `against <room>.<edge>` fixture placement.
@@ -728,6 +935,13 @@ fence picket { (0,0) arc (3000,3000) radius 3000 }   # error: curved edge
 
 ```arch static
 furniture wc against wall w1 side left size 400x700   # error if w1 is unknown or multi-segment
+```
+
+**Fixed.**
+
+```arch static
+wall id=w1 interior thickness 100 { (0,0) (3000,0) }
+furniture wc against wall w1 side left size 400x700   # fixed: one straight segment
 ```
 
 ## E_FURN_AGAINST_DEMOLISHED_WALL
@@ -743,6 +957,13 @@ wall id=p partition thickness 100 status demolish { (4000,0) (4000,5000) }
   furniture wardrobe against wall p side left size 1200x600   # error: the wall is being demolished
 ```
 
+**Fixed.**
+
+```arch static
+wall id=p partition thickness 100 { (4000,0) (4000,5000) }
+  furniture wardrobe against wall p side left size 1200x600   # fixed: the wall stays
+```
+
 ## E_FURN_CLEAR
 
 *error* — Invalid `clear` depth.
@@ -753,6 +974,12 @@ wall id=p partition thickness 100 status demolish { (4000,0) (4000,5000) }
 
 ```arch static
 furniture wardrobe at (0,0) size 1800x600 clear front 0   # error: a clear depth must be positive
+```
+
+**Fixed.**
+
+```arch static
+furniture wardrobe at (0,0) size 1800x600 clear front 600   # fixed: a positive depth
 ```
 
 ## E_FURN_FLUSH
@@ -779,6 +1006,13 @@ furniture wc in bath centered flush size 400x700   # error: centred, so nothing 
 furniture bed at (0,0) size 1500x2000 in bedrm   # error: no room id=bedrm
 ```
 
+**Fixed.**
+
+```arch static
+room id=bedrm at (0,0) size 4000x4000
+furniture bed at (0,0) size 1500x2000 in bedrm   # fixed: the room exists
+```
+
 ## E_FURN_ROTATE
 
 *error* — Furniture rotation must be a quarter-turn.
@@ -789,6 +1023,12 @@ furniture bed at (0,0) size 1500x2000 in bedrm   # error: no room id=bedrm
 
 ```arch static
 furniture wc at (0,0) size 400x700 rotate 45   # error: not a quarter-turn
+```
+
+**Fixed.**
+
+```arch static
+furniture wc at (0,0) size 400x700 rotate 180   # fixed: a quarter-turn
 ```
 
 ## E_FURN_SIZE
@@ -803,6 +1043,12 @@ furniture wc at (0,0) size 400x700 rotate 45   # error: not a quarter-turn
 furniture bed at (0,0) size 0x2000   # error
 ```
 
+**Fixed.**
+
+```arch static
+furniture bed at (0,0) size 900x2000   # fixed: a positive size
+```
+
 ## E_HEIGHT_RANGE
 
 *error* — A height is outside the range a storey can be built at.
@@ -815,6 +1061,12 @@ furniture bed at (0,0) size 0x2000   # error
 wall id=w1 exterior thickness 200 height 0 { (0,0) (4000,0) close }   # error: a wall with no height
 ```
 
+**Fixed.**
+
+```arch static
+wall id=w1 exterior thickness 200 height 2700 { (0,0) (4000,0) close }   # fixed: 2700 mm
+```
+
 ## E_IMPERIAL_FORM
 
 *error* — An imperial length is written in a form the language does not read.
@@ -825,6 +1077,12 @@ wall id=w1 exterior thickness 200 height 0 { (0,0) (4000,0) close }   # error: a
 
 ```arch static
 room id=r at (0,0) size 12'6"x10ft   # error: write 12ft6inx10ft
+```
+
+**Fixed.**
+
+```arch static
+room id=r at (0,0) size 12ft6inx10ft   # fixed: feet then inches, in words
 ```
 
 ## E_IMPORT_BAD_SPEC
@@ -970,6 +1228,13 @@ import "huge.arch" as h   # error: the module is larger than the cap
 ```arch static
 let a = [1, 2]
 let x = a[5]   # error
+```
+
+**Fixed.**
+
+```arch static
+let a = [1, 2]
+let x = a[min(5, len(a) - 1)]   # fixed: clamped against len(a)
 ```
 
 ## E_INPUT_TOO_LARGE
@@ -1224,6 +1489,16 @@ plan "K" {
 }
 ```
 
+**Fixed.**
+
+```arch static
+plan "K" {
+  units mm
+  room id=a at (0,0) size 3000x3000
+  for i in 0..10 { keep fixed a.left at 0 }   # fixed: ten keeps, under the 1000
+}
+```
+
 ## E_KEEP_MEASURE
 
 *error* — The keep's measure is not defined for what it names.
@@ -1237,6 +1512,17 @@ plan "K" {
   units mm
   room id=a polygon (0,0) (3000,0) (0,3000)
   keep fixed a.left at 0   # error: a polygon room has no left edge
+}
+```
+
+**Fixed.**
+
+```arch static
+plan "K" {
+  units mm
+  room id=a polygon (0,0) (3000,0) (0,3000)
+  wall id=w interior thickness 100 { (0,0) (0,3000) }
+  keep fixed w at 0   # fixed: a straight wall has a line to measure
 }
 ```
 
@@ -1257,6 +1543,17 @@ plan "K" {
 }
 ```
 
+**Fixed.**
+
+```arch static
+plan "K" {
+  units mm
+  component bay() { room id=r at (0,0) size 3000x3000 }
+  place bay() as w at (0,0)
+  keep min clear w.r 2800   # fixed: the keep is at plan level
+}
+```
+
 ## E_KEEP_SELF
 
 *error* — A keep compares something with itself.
@@ -1270,6 +1567,17 @@ plan "K" {
   units mm
   room id=a at (0,0) size 3000x3000
   keep align a.left a.left   # error: the same edge twice
+}
+```
+
+**Fixed.**
+
+```arch static
+plan "K" {
+  units mm
+  room id=a at (0,0) size 3000x3000
+  room id=b at (0,3000) size 3000x3000
+  keep align a.left b.left   # fixed: two edges
 }
 ```
 
@@ -1289,6 +1597,17 @@ plan "K" {
 }
 ```
 
+**Fixed.**
+
+```arch static
+plan "K" {
+  units mm
+  room id=a at (0,0) size 3000x3000
+  room id=b at (4000,0) size 3000x3000
+  keep fixed b.left at 4000   # fixed: b is an element's own id
+}
+```
+
 ## E_KEEP_VALUE
 
 *error* — A keep's value is out of its domain.
@@ -1305,6 +1624,16 @@ plan "K" {
 }
 ```
 
+**Fixed.**
+
+```arch static
+plan "K" {
+  units mm
+  room id=a at (0,0) size 3000x3000
+  keep min clear a 2800   # fixed: a positive span
+}
+```
+
 ## E_LAYOUT_CYCLE
 
 *error* — Relational room placement forms a cycle.
@@ -1318,6 +1647,13 @@ room id=a right-of b size 100x100
 room id=b left-of a size 100x100   # error: a ↔ b cycle
 ```
 
+**Fixed.**
+
+```arch static
+room id=a at (0,0) size 100x100
+room id=b left-of a size 100x100   # fixed: a is anchored
+```
+
 ## E_LAYOUT_REF
 
 *error* — Relational placement references an unknown room.
@@ -1328,6 +1664,13 @@ room id=b left-of a size 100x100   # error: a ↔ b cycle
 
 ```arch static
 room id=k right-of ghost size 100x100   # error: no room "ghost"
+```
+
+**Fixed.**
+
+```arch static
+room id=ghost at (0,0) size 100x100
+room id=k right-of ghost size 100x100   # fixed: the room exists
 ```
 
 ## E_LAYOUT_UNPLACED
@@ -1343,6 +1686,13 @@ room id=e right-of ghost size 100x100
 room id=f below e size 100x100   # error: e could not be placed
 ```
 
+**Fixed.**
+
+```arch static
+room id=e at (0,0) size 100x100
+room id=f below e size 100x100   # fixed: e is placed
+```
+
 ## E_LEVEL_DUP
 
 *error* — Two `level` blocks declare the same storey number.
@@ -1354,6 +1704,13 @@ room id=f below e size 100x100   # error: e could not be placed
 ```arch static
 level 1 { room at (0,0) size 3000x3000 }
 level 1 { room at (0,0) size 3000x3000 }   # error: level 1 twice
+```
+
+**Fixed.**
+
+```arch static
+level 1 { room at (0,0) size 3000x3000 }
+level 2 { room at (0,0) size 3000x3000 }   # fixed: each level once
 ```
 
 ## E_LEVEL_MIX
@@ -1371,6 +1728,17 @@ plan "H" {
 }
 ```
 
+**Fixed.**
+
+```arch static
+plan "H" {
+  level 1 {
+    room at (0,0) size 3000x3000   # fixed: inside the level
+    wall exterior thickness 200 { (0,0) (3000,0) close }
+  }
+}
+```
+
 ## E_LEVEL_NEST
 
 *error* — `level` used inside a block or component.
@@ -1381,6 +1749,13 @@ plan "H" {
 
 ```arch static
 component c() { level 1 { } }   # error: only allowed at plan level
+```
+
+**Fixed.**
+
+```arch static
+component c() { }
+level 1 { }   # fixed: at plan level
 ```
 
 ## E_LOCKED_ELEMENT_CHANGED
@@ -1420,6 +1795,13 @@ let k = 1000000000000000000000000000000000000000000000000000000000000
 let x = k * k * k * k * k * k   # error: 1e360 overflows
 ```
 
+**Fixed.**
+
+```arch static
+let k = 1000000000000000000000000000000000000000000000000000000000000
+let x = k * 2   # fixed: stays finite
+```
+
 ## E_OPENING_ABOVE_WALL
 
 *error* — An opening's head is above the wall it is cut in.
@@ -1431,6 +1813,13 @@ let x = k * k * k * k * k * k   # error: 1e360 overflows
 ```arch static
 wall id=w1 exterior thickness 200 height 2200 { (0,0) (4000,0) close }
   door id=d on w1 at 50% width 900 head 2400   # error: head above a 2200 wall
+```
+
+**Fixed.**
+
+```arch static
+wall id=w1 exterior thickness 200 height 2200 { (0,0) (4000,0) close }
+  door id=d on w1 at 50% width 900 head 2100   # fixed: the head is under the wall top
 ```
 
 ## E_OPENING_DATUM
@@ -1446,6 +1835,15 @@ room id=a at (0,0) size 4000x3000
 room id=b at (4000,0) size 3000x3000
 walls from rooms exterior 200 partition 100
 door between a and b width 800   # error: a door needs a position
+```
+
+**Fixed.**
+
+```arch static
+room id=a at (0,0) size 4000x3000
+room id=b at (4000,0) size 3000x3000
+walls from rooms exterior 200 partition 100
+door between a and b at 1500 from start width 800   # fixed: the door has a position
 ```
 
 ## E_OPENING_HOST_AMBIGUOUS
@@ -1464,6 +1862,15 @@ walls from rooms exterior 200 partition 100
 door between a and b at 600 from end width 800   # error: the authored half beside the derived remainder
 ```
 
+**Fixed.**
+
+```arch static
+room id=a at (0,0) size 4000x3000
+room id=b at (4000,0) size 3000x3000
+walls from rooms exterior 200 partition 100
+door between a and b at 600 from end width 800   # fixed: one derived wall on the edge
+```
+
 ## E_OPENING_NIB
 
 *error* — A relational opening leaves too short a nib of wall at a junction; it is refused, never moved.
@@ -1477,6 +1884,15 @@ room id=a at (0,0) size 4000x3000
 room id=b at (4000,0) size 3000x3000
 walls from rooms exterior 200 partition 100
 door between a and b at 500 from start width 800   # error: the jamb is on the ring's face, with no nib
+```
+
+**Fixed.**
+
+```arch static
+room id=a at (0,0) size 4000x3000
+room id=b at (4000,0) size 3000x3000
+walls from rooms exterior 200 partition 100
+door between a and b at 1500 from start width 800   # fixed: a nib each side
 ```
 
 ## E_OPENING_NO_SHARED_WALL
@@ -1494,6 +1910,16 @@ wall id=shell exterior thickness 200 { (0,0) (7000,0) (7000,3000) (0,3000) close
 door between a and b at 600 from start width 800   # error: no wall on x 4000
 ```
 
+**Fixed.**
+
+```arch static
+room id=a at (0,0) size 4000x3000
+room id=b at (4000,0) size 3000x3000
+wall id=shell exterior thickness 200 { (0,0) (7000,0) (7000,3000) (0,3000) close }
+wall id=mid partition thickness 100 { (4000,0) (4000,3000) }
+door between a and b at 1500 from start width 800   # fixed: a wall on x 4000
+```
+
 ## E_OPENING_ON_DEMOLISHED_WALL
 
 *error* — A door, window or opening stands in a wall marked `status demolish`.
@@ -1505,6 +1931,13 @@ door between a and b at 600 from start width 800   # error: no wall on x 4000
 ```arch static
 wall id=p partition thickness 100 status demolish { (4000,0) (4000,5000) }
   door id=d on p at 50% width 800   # error: the wall is being demolished
+```
+
+**Fixed.**
+
+```arch static
+wall id=p partition thickness 100 { (4000,0) (4000,5000) }
+  door id=d on p at 50% width 800   # fixed: the wall stays
 ```
 
 ## E_OPENING_WIDTH
@@ -1519,6 +1952,12 @@ wall id=p partition thickness 100 status demolish { (4000,0) (4000,5000) }
 opening at (0,0) width 0   # error
 ```
 
+**Fixed.**
+
+```arch static
+opening at (0,0) width 900   # fixed: a positive width
+```
+
 ## E_OUTDOOR_POLY_DEGENERATE
 
 *error* — An outdoor ring is degenerate, or a balcony was given one.
@@ -1529,6 +1968,12 @@ opening at (0,0) width 0   # error
 
 ```arch static
 outdoor paving polygon (0,0) (1000,0) (2000,0)   # error: all three are collinear
+```
+
+**Fixed.**
+
+```arch static
+outdoor paving polygon (0,0) (1000,0) (2000,1000)   # fixed: the third point turns a corner
 ```
 
 ## E_OUTDOOR_POLY_SELF_INTERSECT
@@ -1543,6 +1988,12 @@ outdoor paving polygon (0,0) (1000,0) (2000,0)   # error: all three are collinea
 outdoor deck polygon (0,0) (4000,4000) (4000,0) (0,4000)   # error: a bow-tie
 ```
 
+**Fixed.**
+
+```arch static
+outdoor deck polygon (0,0) (4000,0) (4000,4000) (0,4000)   # fixed: traced once around
+```
+
 ## E_OUTDOOR_RAIL
 
 *error* — A `rail` clause on something that is not a balcony, or an unknown edge word.
@@ -1553,6 +2004,12 @@ outdoor deck polygon (0,0) (4000,4000) (4000,0) (0,4000)   # error: a bow-tie
 
 ```arch static
 outdoor deck at (0,0) size 3000x2000 rail all   # error: a deck has no railing
+```
+
+**Fixed.**
+
+```arch static
+outdoor deck at (0,0) size 3000x2000   # fixed: the clause deleted
 ```
 
 ## E_OUTDOOR_SIZE
@@ -1567,6 +2024,12 @@ outdoor deck at (0,0) size 3000x2000 rail all   # error: a deck has no railing
 outdoor lawn at (0,0) size 0x4000   # error: zero width
 ```
 
+**Fixed.**
+
+```arch static
+outdoor lawn at (0,0) size 4000x4000   # fixed: a positive width
+```
+
 ## E_OUT_OF_RANGE
 
 *error* — A coordinate, length or drawing setting is outside the modelling range.
@@ -1579,6 +2042,12 @@ outdoor lawn at (0,0) size 0x4000   # error: zero width
 stair id=s at (0,0) size 1000000000000x3000 dir up   # error: a 1e12 mm flight
 ```
 
+**Fixed.**
+
+```arch static
+stair id=s at (0,0) size 1000x3000 dir up   # fixed: a 3 m flight
+```
+
 ## E_PARSE
 
 *error* — The source could not be read: its SHAPE is wrong.
@@ -1589,6 +2058,13 @@ stair id=s at (0,0) size 1000000000000x3000 dir up   # error: a 1e12 mm flight
 
 ```arch static
 door on w1 at 40% width 900 wall w1   # error: `wall` pairs with the `at (x,y)` form only
+```
+
+**Fixed.**
+
+```arch static
+wall id=w1 exterior thickness 200 { (0,0) (4000,0) }
+door on w1 at 40% width 900   # fixed: the on form names its wall once
 ```
 
 ## E_PARTITION_TOO_SHORT
@@ -1606,6 +2082,15 @@ walls from rooms exterior 200 partition 100   # error: a and b share 50 mm
 wall partition thickness 100 between a and b   # error: the same run
 ```
 
+**Fixed.**
+
+```arch static
+room id=a at (0,0) size 4000x3000
+room id=b at (4000,0) size 3000x3000
+walls from rooms exterior 200 partition 100   # fixed: a and b share 3000 mm
+wall partition thickness 100 between a and b   # fixed: the same run
+```
+
 ## E_PLACE_POLY
 
 *error* — A placement clause aimed at a polygon room that has no one edge or corner to stand on.
@@ -1619,6 +2104,13 @@ room id=L polygon (0,0) (6000,0) (6000,4000) (3000,4000) (3000,6000) (0,6000)
 furniture wc in L anchor bottom-right size 400x700   # error: that corner is in the L's notch
 ```
 
+**Fixed.**
+
+```arch static
+room id=L polygon (0,0) (6000,0) (6000,4000) (3000,4000) (3000,6000) (0,6000)
+furniture wc in L anchor bottom-left size 400x700   # fixed: a corner the L has
+```
+
 ## E_PLACE_REF
 
 *error* — Furniture placed in an unknown or unplaced room.
@@ -1629,6 +2121,13 @@ furniture wc in L anchor bottom-right size 400x700   # error: that corner is in 
 
 ```arch static
 furniture bed in bedrm centered size 1500x2000   # error: no room id=bedrm
+```
+
+**Fixed.**
+
+```arch static
+room id=bedrm at (0,0) size 4000x4000
+furniture bed in bedrm centered size 1500x2000   # fixed: the room exists
 ```
 
 ## E_PNG_DEPENDENCY
@@ -1653,6 +2152,12 @@ archlang preview plan.arch --install   # fetches @resvg/resvg-js, then renders t
 
 ```arch static
 for i in 0..1000000 { … }   # error: range too large
+```
+
+**Fixed.**
+
+```arch static
+for i in 0..10 { column at (i * 600, 0) size 300x300 }   # fixed: a small range
 ```
 
 ## E_RATE_LIMITED
@@ -1692,6 +2197,13 @@ let x = 1
 let x = 2   # error: redefinition
 ```
 
+**Fixed.**
+
+```arch static
+let x = 1
+let y = 2   # fixed: a new name
+```
+
 ## E_ROOF_AMBIGUOUS
 
 *error* — `roof overhang` cannot tell which wall ring to follow.
@@ -1708,6 +2220,16 @@ plan "H" {
 }
 ```
 
+**Fixed.**
+
+```arch static
+plan "H" {
+  units mm
+  room id=r1 at (0,0) size 4000x3000
+  roof polygon (0,0) (4000,0) (4000,3000) (0,3000)   # fixed: the outline stated
+}
+```
+
 ## E_ROOF_CURVED
 
 *error* — `roof overhang` on a wall with a curved edge.
@@ -1719,6 +2241,13 @@ plan "H" {
 ```arch static
 wall id=drum exterior thickness 200 { (0,0) arc (6000,0) radius 4000 (6000,4000) (0,4000) close }
 roof overhang 600 wall drum   # error: arc edge
+```
+
+**Fixed.**
+
+```arch static
+wall id=drum exterior thickness 200 { (0,0) arc (6000,0) radius 4000 (6000,4000) (0,4000) close }
+roof polygon (0,0) (6000,0) (6000,4000) (0,4000)   # fixed: the outline stated
 ```
 
 ## E_ROOF_OVERHANG
@@ -1733,6 +2262,13 @@ roof overhang 600 wall drum   # error: arc edge
 roof overhang 0   # error: must be positive
 ```
 
+**Fixed.**
+
+```arch static
+wall exterior thickness 200 { (0,0) (4000,0) (4000,3000) (0,3000) close }
+roof overhang 600   # fixed: a positive overhang
+```
+
 ## E_ROOF_PLACEMENT
 
 *error* — `roof` used inside a component body.
@@ -1743,6 +2279,14 @@ roof overhang 0   # error: must be positive
 
 ```arch static
 component wing() { roof overhang 600 }   # error: only allowed at plan level
+```
+
+**Fixed.**
+
+```arch static
+component wing() { }
+wall exterior thickness 200 { (0,0) (4000,0) (4000,3000) (0,3000) close }
+roof overhang 600   # fixed: at plan level
 ```
 
 ## E_ROOF_POLY_DEGENERATE
@@ -1757,6 +2301,12 @@ component wing() { roof overhang 600 }   # error: only allowed at plan level
 roof polygon (0,0) (4000,0) (8000,0)   # error: all three are collinear
 ```
 
+**Fixed.**
+
+```arch static
+roof polygon (0,0) (4000,0) (4000,3000)   # fixed: the third point turns a corner
+```
+
 ## E_ROOF_SELF_INTERSECT
 
 *error* — The roof outline crosses itself.
@@ -1767,6 +2317,12 @@ roof polygon (0,0) (4000,0) (8000,0)   # error: all three are collinear
 
 ```arch static
 roof polygon (0,0) (4000,4000) (4000,0) (0,4000)   # error: bow-tie
+```
+
+**Fixed.**
+
+```arch static
+roof polygon (0,0) (4000,0) (4000,4000) (0,4000)   # fixed: traced once around
 ```
 
 ## E_ROOF_WALL
@@ -1780,6 +2336,13 @@ roof polygon (0,0) (4000,4000) (4000,0) (0,4000)   # error: bow-tie
 ```arch static
 wall id=w1 exterior thickness 200 { (0,0) (8000,0) }
 roof overhang 600 wall w1   # error: not a closed ring
+```
+
+**Fixed.**
+
+```arch static
+wall id=w1 exterior thickness 200 { (0,0) (8000,0) (8000,5000) (0,5000) close }
+roof overhang 600 wall w1   # fixed: a closed ring
 ```
 
 ## E_ROOMS_NOT_TILING
@@ -1797,6 +2360,15 @@ walls from rooms exterior 200 partition 100   # error: a and b do not touch
 wall exterior thickness 200 around [a b]   # error: the same, as one ring
 ```
 
+**Fixed.**
+
+```arch static
+room id=a at (0,0) size 4000x3000
+room id=b at (4000,0) size 3000x3000
+walls from rooms exterior 200 partition 100   # fixed: a and b meet edge to edge
+wall exterior thickness 200 around [a b]   # fixed: the same, as one ring
+```
+
 ## E_ROOMS_OVERLAP
 
 *error* — `walls from rooms`, a `wall … between`/`wall … around`, or a door or opening `between` a polygon and a room, meets two rooms that overlap.
@@ -1812,6 +2384,15 @@ walls from rooms exterior 200 partition 100   # error: a and b overlap by 1000 m
 wall partition thickness 100 between a and b   # error: the same pair
 ```
 
+**Fixed.**
+
+```arch static
+room id=a at (0,0) size 4000x3000
+room id=b at (4000,0) size 3000x3000
+walls from rooms exterior 200 partition 100   # fixed: a and b meet edge to edge
+wall partition thickness 100 between a and b   # fixed: the same pair
+```
+
 ## E_ROOM_ALIGN
 
 *error* — Unknown relational alignment edge.
@@ -1824,6 +2405,13 @@ wall partition thickness 100 between a and b   # error: the same pair
 room id=b right-of a align sideways size 3000x3000   # error: not an edge (did you mean `bottom`?)
 ```
 
+**Fixed.**
+
+```arch static
+room id=a at (0,0) size 3000x3000
+room id=b right-of a align bottom size 3000x3000   # fixed: an edge word
+```
+
 ## E_ROOM_ALIGN_AXIS
 
 *error* — Relational alignment edge belongs to the other axis.
@@ -1834,6 +2422,13 @@ room id=b right-of a align sideways size 3000x3000   # error: not an edge (did y
 
 ```arch static
 room id=b right-of a align right size 3000x3000   # error: `right` is horizontal (did you mean `bottom`?)
+```
+
+**Fixed.**
+
+```arch static
+room id=a at (0,0) size 3000x3000
+room id=b right-of a align bottom size 3000x3000   # fixed: a vertical edge for right-of
 ```
 
 ## E_ROOM_NOT_RECTANGLE
@@ -1849,6 +2444,13 @@ room id=T polygon (0,0) (6000,0) (3000,4000)
 wall interior thickness 100 { (T.left, 0) (T.left, 4000) }   # error: T has a slanted edge
 ```
 
+**Fixed.**
+
+```arch static
+room id=T polygon (0,0) (6000,0) (3000,4000)
+wall interior thickness 100 { (3000, 0) (3000, 4000) }   # fixed: a number, not a datum the triangle lacks
+```
+
 ## E_ROOM_POLY_DEGENERATE
 
 *error* — Polygon room has fewer than three effective vertices.
@@ -1859,6 +2461,12 @@ wall interior thickness 100 { (T.left, 0) (T.left, 4000) }   # error: T has a sl
 
 ```arch static
 room polygon (0,0) (4000,0) (8000,0)   # error: all three are collinear
+```
+
+**Fixed.**
+
+```arch static
+room polygon (0,0) (4000,0) (4000,3000)   # fixed: the third point turns a corner
 ```
 
 ## E_ROOM_POLY_SELF_INTERSECT
@@ -1873,6 +2481,12 @@ room polygon (0,0) (4000,0) (8000,0)   # error: all three are collinear
 room polygon (0,0) (4000,4000) (4000,0) (0,4000)   # error: bow-tie
 ```
 
+**Fixed.**
+
+```arch static
+room polygon (0,0) (4000,0) (4000,4000) (0,4000)   # fixed: traced once around
+```
+
 ## E_ROOM_RADIUS
 
 *error* — Circular room needs a positive radius.
@@ -1885,6 +2499,12 @@ room polygon (0,0) (4000,4000) (4000,0) (0,4000)   # error: bow-tie
 room circle at (5000,5000) radius 0   # error: no floor
 ```
 
+**Fixed.**
+
+```arch static
+room circle at (5000,5000) radius 2000   # fixed: a positive radius
+```
+
 ## E_ROOM_SIZE
 
 *error* — Room must have a positive size.
@@ -1895,6 +2515,12 @@ room circle at (5000,5000) radius 0   # error: no floor
 
 ```arch static
 room at (0,0) size 0x4000   # error: width is 0
+```
+
+**Fixed.**
+
+```arch static
+room at (0,0) size 3000x4000   # fixed: a positive width
 ```
 
 ## E_RULESET_VALUE
@@ -1921,6 +2547,12 @@ lint(source, { ruleset: { doorwayLandingMm: Number.NaN } })   # error: `doorwayL
 escalator id=e at (0,0) size 400000x1200 dir up   # error: a 400 m run
 ```
 
+**Fixed.**
+
+```arch static
+escalator id=e at (0,0) size 12000x1200 dir up   # fixed: a 12 m run
+```
+
 ## E_SECTION_AXIS
 
 *error* — A section mark's cut line is slanted or has no length.
@@ -1931,6 +2563,12 @@ escalator id=e at (0,0) size 400000x1200 dir up   # error: a 400 m run
 
 ```arch static
 section A (0,0)->(6000,4000) look east   # error: a slanted cut line
+```
+
+**Fixed.**
+
+```arch static
+section A (0,2000)->(6000,2000) look north   # fixed: a horizontal cut line
 ```
 
 ## E_SECTION_DUP
@@ -1946,6 +2584,13 @@ section A (3000,-1000)->(3000,7000) look east
   section A (0,2000)->(8000,2000) look north   # error: A is marked twice
 ```
 
+**Fixed.**
+
+```arch static
+section A (3000,-1000)->(3000,7000) look east
+  section B (0,2000)->(8000,2000) look north   # fixed: each letter once
+```
+
 ## E_SECTION_LOOK
 
 *error* — A section mark looks along its own cut line.
@@ -1956,6 +2601,12 @@ section A (3000,-1000)->(3000,7000) look east
 
 ```arch static
 section A (3000,-1000)->(3000,7000) look north   # error under north up: a vertical cut looks east or west
+```
+
+**Fixed.**
+
+```arch static
+section A (3000,-1000)->(3000,7000) look east   # fixed: a vertical cut looks east or west
 ```
 
 ## E_SECTION_SCOPE
@@ -1972,6 +2623,13 @@ level 1 "Ground" {
   }
 ```
 
+**Fixed.**
+
+```arch static
+section A (3000,-1000)->(3000,7000) look east   # fixed: at plan level
+  level 1 "Ground" { }
+```
+
 ## E_SEGMENT_SELECT
 
 *error* — A segment selector (`segment north`, `segment containing <room>.<edge>`) does not name exactly one segment.
@@ -1983,6 +2641,13 @@ level 1 "Ground" {
 ```arch static
 wall id=w exterior thickness 200 { (0,0) (3000,0) (3000,1000) (6000,1000) (6000,4000) (0,4000) close }
 furniture wardrobe against wall w segment north side right   # error: segments 0 and 2 both face north
+```
+
+**Fixed.**
+
+```arch static
+wall id=w exterior thickness 200 { (0,0) (3000,0) (3000,1000) (6000,1000) (6000,4000) (0,4000) close }
+furniture wardrobe against wall w segment 0 side right   # fixed: one segment, by number
 ```
 
 ## E_SET_OVERRIDE
@@ -2008,6 +2673,13 @@ room id=a at (0,0) size W x 3000   # archlang impact plan.arch --set D=4500: err
 
 ```arch static
 window id=w on wall1 at 50% width 1200 sill 2400 head 2100   # error: sill above head
+```
+
+**Fixed.**
+
+```arch static
+wall id=wall1 exterior thickness 200 { (0,0) (4000,0) }
+window id=w on wall1 at 50% width 1200 sill 900 head 2100   # fixed: sill under head
 ```
 
 ## E_SITE_BOUNDARY_DEGENERATE
@@ -2036,6 +2708,13 @@ site { street north
   boundary (0,0) (10000,10000) (10000,0) (0,10000) }   # error: a bow-tie
 ```
 
+**Fixed.**
+
+```arch static
+site { street north
+  boundary (0,0) (10000,0) (10000,10000) (0,10000) }   # fixed: traced once around
+```
+
 ## E_SITE_DUP
 
 *error* — Two `site` blocks in one plan.
@@ -2049,6 +2728,15 @@ plan "H" {
   units mm
   site { street south }
   site { street north }   # error: site already declared
+}
+```
+
+**Fixed.**
+
+```arch static
+plan "H" {
+  units mm
+  site { street south }   # fixed: one site
 }
 ```
 
@@ -2067,6 +2755,16 @@ plan "H" {
 }
 ```
 
+**Fixed.**
+
+```arch static
+plan "H" {
+  units mm
+  site { street north
+    hemisphere south }   # fixed: the street named
+}
+```
+
 ## E_STAIR_PIECES
 
 *error* — A stair's flights and landings do not make one stair.
@@ -2079,6 +2777,12 @@ plan "H" {
 stair id=s dir up width 1000 { flight at (0,1000) size 1000x1000 flight at (0,0) size 1000x1000 }   # error: two flights with no landing between
 ```
 
+**Fixed.**
+
+```arch static
+stair id=s dir up width 1000 { flight at (0,2000) size 1000x1000 landing at (0,1000) size 1000x1000 flight at (0,0) size 1000x1000 }   # fixed: a landing between
+```
+
 ## E_STAIR_WIDTH
 
 *error* — Stair flight `width` is outside the footprint.
@@ -2089,6 +2793,12 @@ stair id=s dir up width 1000 { flight at (0,1000) size 1000x1000 flight at (0,0)
 
 ```arch static
 stair id=s at (0,0) size 900x2600 dir up width 1200   # error: cross extent is 900
+```
+
+**Fixed.**
+
+```arch static
+stair id=s at (0,0) size 900x2600 dir up width 900   # fixed: within the cross extent
 ```
 
 ## E_STALE_SOURCE
@@ -2115,6 +2825,12 @@ archlang fix plan.arch --expected-hash 9f86d081884c…   # error: plan.arch chan
 for i in 0..100000 { for j in 0..1000 { let x = i } }   # error: 100 million iterations
 ```
 
+**Fixed.**
+
+```arch static
+for i in 0..100 { for j in 0..100 { let x = i } }   # fixed: ten thousand iterations
+```
+
 ## E_STRIP_NEST
 
 *error* — Illegal `strip` nesting.
@@ -2125,6 +2841,13 @@ for i in 0..100000 { for j in 0..1000 { let x = i } }   # error: 100 million ite
 
 ```arch static
 component c() { strip right at (0,0) gap 0 { … } }   # error: nested strip
+```
+
+**Fixed.**
+
+```arch static
+component c() { }
+strip right at (0,0) gap 0 { room size 3000x3000 room size 3000x3000 }   # fixed: at plan level
 ```
 
 ## E_STRIP_SIZE
@@ -2154,6 +2877,15 @@ room id=b at (3000,0) size 3000x3000
 door on w1 at 50% width 800 swing inward   # error: floor on both faces
 ```
 
+**Fixed.**
+
+```arch static
+wall id=w1 partition thickness 100 { (3000,0) (3000,3000) }
+room id=a at (0,0) size 3000x3000
+room id=b at (3000,0) size 3000x3000
+door on w1 at 50% width 800 swing into a   # fixed: the room the leaf opens into
+```
+
 ## E_TYPE
 
 *error* — Type mismatch.
@@ -2164,6 +2896,12 @@ door on w1 at 50% width 800 swing inward   # error: floor on both faces
 
 ```arch static
 room at (0,0) size "big" x 10   # error: size needs numbers
+```
+
+**Fixed.**
+
+```arch static
+room at (0,0) size 4000 x 3000   # fixed: numbers
 ```
 
 ## E_UNKNOWN_COMPONENT
@@ -2178,6 +2916,13 @@ room at (0,0) size "big" x 10   # error: size needs numbers
 sofa(0, 0)   # error if no `component sofa` is in scope
 ```
 
+**Fixed.**
+
+```arch static
+component sofa(x, y) { furniture sofa at (x, y) size 2000x900 }
+sofa(0, 0)   # fixed: the component is in scope
+```
+
 ## E_UNKNOWN_FN
 
 *error* — Unknown function.
@@ -2188,6 +2933,13 @@ sofa(0, 0)   # error if no `component sofa` is in scope
 
 ```arch static
 let x = frobnicate(2)   # error
+```
+
+**Fixed.**
+
+```arch static
+let frobnicate(n) = n * 2
+let x = frobnicate(2)   # fixed: defined with let
 ```
 
 ## E_UNKNOWN_REF
@@ -2202,6 +2954,13 @@ let x = frobnicate(2)   # error
 let x = y + 1   # error if `y` is undefined
 ```
 
+**Fixed.**
+
+```arch static
+let y = 1
+let x = y + 1   # fixed: y is defined
+```
+
 ## E_VERT_SIZE
 
 *error* — Vertical circulation must have a positive size.
@@ -2212,6 +2971,12 @@ let x = y + 1   # error if `y` is undefined
 
 ```arch static
 stair id=s at (0,0) size 900x0 dir up   # error: zero depth
+```
+
+**Fixed.**
+
+```arch static
+stair id=s at (0,0) size 900x2600 dir up   # fixed: a positive depth
 ```
 
 ## E_VOID_POLY
@@ -2226,6 +2991,12 @@ stair id=s at (0,0) size 900x0 dir up   # error: zero depth
 void id=well polygon (0,0) (3000,0) (2000,2000) (0,2000)   # error: a slanted edge
 ```
 
+**Fixed.**
+
+```arch static
+void id=well polygon (0,0) (3000,0) (3000,2000) (0,2000)   # fixed: horizontal and vertical edges
+```
+
 ## E_VOID_RAIL
 
 *error* — A void's `rail` clause names an edge the void does not have.
@@ -2236,6 +3007,12 @@ void id=well polygon (0,0) (3000,0) (2000,2000) (0,2000)   # error: a slanted ed
 
 ```arch static
 void id=well polygon (0,0) (3000,0) (3000,1000) (1000,1000) (1000,3000) (0,3000) rail 6   # error: edges are 0 to 5
+```
+
+**Fixed.**
+
+```arch static
+void id=well polygon (0,0) (3000,0) (3000,1000) (1000,1000) (1000,3000) (0,3000) rail 5   # fixed: edges are 0 to 5
 ```
 
 ## E_VOID_SIZE
@@ -2250,6 +3027,12 @@ void id=well polygon (0,0) (3000,0) (3000,1000) (1000,1000) (1000,3000) (0,3000)
 void id=well at (2000,1000) size 0x3000   # error: zero width
 ```
 
+**Fixed.**
+
+```arch static
+void id=well at (2000,1000) size 1000x3000   # fixed: a positive width
+```
+
 ## E_WALLS_FROM_NO_ROOMS
 
 *error* — A `walls from rooms` statement has no room to derive walls from.
@@ -2261,6 +3044,13 @@ void id=well at (2000,1000) size 0x3000   # error: zero width
 ```arch static
 room id=a at (0,0) size 4000x3000
 walls from rooms exterior 200 partition 100 { except a }   # error: every room is excepted
+```
+
+**Fixed.**
+
+```arch static
+room id=a at (0,0) size 4000x3000
+walls from rooms exterior 200 partition 100   # fixed: a room is left to wall
 ```
 
 ## E_WALLS_FROM_ROOMS_DUP
@@ -2277,6 +3067,13 @@ walls from rooms exterior 200 partition 100
 walls from rooms exterior 250 partition 100   # error: a second statement
 ```
 
+**Fixed.**
+
+```arch static
+room id=a at (0,0) size 4000x3000
+walls from rooms exterior 200 partition 100   # fixed: one statement
+```
+
 ## E_WALL_BETWEEN_DUP
 
 *error* — A `walls from rooms` statement names one pair of rooms in two clauses.
@@ -2289,6 +3086,14 @@ walls from rooms exterior 250 partition 100   # error: a second statement
 room id=a at (0,0) size 4000x3000
 room id=b at (4000,0) size 3000x3000
 walls from rooms exterior 200 partition 100 { open between a and b  between b and a thickness 200 }   # error: the pair twice
+```
+
+**Fixed.**
+
+```arch static
+room id=a at (0,0) size 4000x3000
+room id=b at (4000,0) size 3000x3000
+walls from rooms exterior 200 partition 100 { open between a and b }   # fixed: the pair once
 ```
 
 ## E_WALL_BETWEEN_NOT_ADJACENT
@@ -2308,6 +3113,17 @@ walls from rooms exterior 200 partition 100 { open between a and d }   # error: 
 wall partition thickness 100 between a and d   # error: the same pair
 ```
 
+**Fixed.**
+
+```arch static
+room id=a at (0,0) size 4000x3000
+room id=b at (4000,0) size 3000x3000
+room id=c at (0,3000) size 7000x2000
+room id=d at (7000,0) size 2000x5000
+walls from rooms exterior 200 partition 100 { open between a and c }   # fixed: a and c meet
+wall partition thickness 100 between b and d   # fixed: b and d meet
+```
+
 ## E_WALL_BETWEEN_OPEN
 
 *error* — A wall, door, window or opening is written on an edge a `walls from rooms` clause declares open.
@@ -2323,6 +3139,15 @@ walls from rooms exterior 200 partition 100 { open between a and b }
 door at (4000,1500) width 800 wall partition   # error: the edge is open
 ```
 
+**Fixed.**
+
+```arch static
+room id=a at (0,0) size 4000x3000
+room id=b at (4000,0) size 3000x3000
+walls from rooms exterior 200 partition 100
+door at (4000,1500) width 800 wall partition   # fixed: the wall is kept, with a door in it
+```
+
 ## E_WALL_BETWEEN_ROOM
 
 *error* — A `walls from rooms` clause names a room it cannot act on.
@@ -2334,6 +3159,14 @@ door at (4000,1500) width 800 wall partition   # error: the edge is open
 ```arch static
 room id=a at (0,0) size 4000x3000
 walls from rooms exterior 200 partition 100 { except terrace }   # error: no room `terrace`
+```
+
+**Fixed.**
+
+```arch static
+room id=a at (0,0) size 4000x3000
+room id=terrace at (4000,0) size 3000x3000
+walls from rooms exterior 200 partition 100 { except terrace }   # fixed: the room exists
 ```
 
 ## E_WALL_BETWEEN_WIDTH
@@ -2350,6 +3183,14 @@ room id=b at (4000,0) size 3000x3000
 walls from rooms exterior 200 partition 100 { open between a and b width 3000 }   # error: the clear span is 2800
 ```
 
+**Fixed.**
+
+```arch static
+room id=a at (0,0) size 4000x3000
+room id=b at (4000,0) size 3000x3000
+walls from rooms exterior 200 partition 100 { open between a and b width 2000 }   # fixed: within the clear span
+```
+
 ## E_WALL_ID_RESERVED
 
 *error* — An authored wall takes the id the derived exterior ring has in this plan or component.
@@ -2361,6 +3202,14 @@ walls from rooms exterior 200 partition 100 { open between a and b width 3000 } 
 ```arch static
 room id=a at (0,0) size 4000x3000
 wall id=exterior partition thickness 100 { (2000,0) (2000,3000) }   # error: the derived ring's name
+walls from rooms exterior 200 partition 100
+```
+
+**Fixed.**
+
+```arch static
+room id=a at (0,0) size 4000x3000
+wall id=spine partition thickness 100 { (2000,0) (2000,3000) }   # fixed: an id of its own
 walls from rooms exterior 200 partition 100
 ```
 
@@ -2376,6 +3225,12 @@ walls from rooms exterior 200 partition 100
 wall exterior thickness 0 { (0,0) (1,0) }   # error
 ```
 
+**Fixed.**
+
+```arch static
+wall exterior thickness 200 { (0,0) (1,0) }   # fixed: a positive thickness
+```
+
 ## E_WHILE_LIMIT
 
 *error* — `while` exceeded its iteration cap.
@@ -2387,6 +3242,13 @@ wall exterior thickness 0 { (0,0) (1,0) }   # error
 ```arch static
 let i = 0
 while i < 1 { let y = i }   # error: i never changes
+```
+
+**Fixed.**
+
+```arch static
+let i = 0
+while i < 1 { i = i + 1 }   # fixed: the body updates i, so the condition fails
 ```
 
 ## E_WINDOW_CORNER
@@ -2403,6 +3265,15 @@ room id=r at (0,0) size 4000x3000
   window id=n on r.top at corner r.right width 1500   # error: no window on r.right
 ```
 
+**Fixed.**
+
+```arch static
+room id=r at (0,0) size 4000x3000
+  walls from rooms exterior 200 partition 100
+  window id=n on r.top at corner r.right width 1500
+  window id=e on r.right at corner r.top width 1500   # fixed: the window on r.right
+```
+
 ## E_WINDOW_KIND_CLAUSE
 
 *error* — That clause is not available on this kind of window.
@@ -2415,6 +3286,13 @@ room id=r at (0,0) size 4000x3000
 window fixed on w1 at 50% width 1500 hinge left   # error: a fixed window has no hinge
 ```
 
+**Fixed.**
+
+```arch static
+wall id=w1 exterior thickness 200 { (0,0) (4000,0) }
+window fixed on w1 at 50% width 1500   # fixed: no hinge clause
+```
+
 ## E_WINDOW_WIDTH
 
 *error* — Window must have a positive width.
@@ -2425,6 +3303,12 @@ window fixed on w1 at 50% width 1500 hinge left   # error: a fixed window has no
 
 ```arch static
 window at (0,0) width 0   # error
+```
+
+**Fixed.**
+
+```arch static
+window at (0,0) width 1200   # fixed: a positive width
 ```
 
 ## W_ACCESSIBLE_WC_SIDE_WALL
@@ -2441,6 +3325,14 @@ room id=r at (0,0) size 3000x2500 label "Accessible WC" uses wc
 furniture wc against wall w segment 0 offset 1500 in r   # lint: centreline 1400 mm from either side wall
 ```
 
+**Fixed.**
+
+```arch static
+wall id=w exterior thickness 200 { (0,0) (3000,0) (3000,2500) (0,2500) close }
+room id=r at (0,0) size 3000x2500 label "Accessible WC" uses wc
+furniture wc against wall w segment 0 offset 550 in r   # fixed: centreline 450 mm from the side wall
+```
+
 ## W_ALIAS_MATCH
 
 *warning* — A room's use was inferred from an indirect alias, not stated.
@@ -2451,6 +3343,12 @@ furniture wc against wall w segment 0 offset 1500 in r   # lint: centreline 1400
 
 ```arch static
 room at (0,0) size 2000x1500 label "Powder"   # warning: WC inferred from the alias "powder"; add `uses wc`
+```
+
+**Fixed.**
+
+```arch static
+room at (0,0) size 2000x1500 label "Powder" uses wc   # fixed: the use stated
 ```
 
 ## W_ANNOTATION_OVERLAP
@@ -2466,6 +3364,15 @@ paper A4 landscape
 scale 1:100
 room id=bed at (0,0) size 3250x3000 label "Bedroom 4" at (2400,1900) uses bedroom
 furniture bed at (1650,900) size 1500x2000   # lint: the pinned name is printed over the bed
+```
+
+**Fixed.**
+
+```arch static
+paper A4 landscape
+scale 1:100
+room id=bed at (0,0) size 3250x3000 label "Bedroom 4" at (1600,450) uses bedroom
+furniture bed at (1650,900) size 1500x2000   # fixed: the pinned point moved clear of the bed
 ```
 
 ## W_AXES_DIFFER
@@ -2484,6 +3391,17 @@ plan "G" {
 }
 ```
 
+**Fixed.**
+
+```arch static
+plan "G" {
+  let BAY = 6000
+  axes { x at 0, BAY }
+  level 1 { }
+  level 2 { }   # fixed: one BAY for every storey
+}
+```
+
 ## W_BALCONY_NO_DOOR
 
 *warning* — A balcony with no way onto it.
@@ -2494,6 +3412,14 @@ plan "G" {
 
 ```arch static
 outdoor balcony at (2000,7200) size 4000x1600   # warning: no opening within reach
+```
+
+**Fixed.**
+
+```arch static
+wall id=w exterior thickness 200 { (0,0) (8000,0) (8000,7200) (0,7200) close }
+door at (4000,7200) width 900 wall w
+outdoor balcony at (2000,7200) size 4000x1600   # fixed: a door opens onto it
 ```
 
 ## W_BATH_VIA_BEDROOM
@@ -2520,6 +3446,14 @@ door id=d_bath at (5200,4000) width 800 wall partition   # lint: bath only off t
 room at (0,0) size 3000x4000 label "Bedroom"   # lint: no window
 ```
 
+**Fixed.**
+
+```arch static
+wall id=w exterior thickness 200 { (0,0) (3000,0) (3000,4000) (0,4000) close }
+room at (0,0) size 3000x4000 label "Bedroom"
+window on w at 1500 width 1200   # fixed: a window on its wall
+```
+
 ## W_BED_UNDERSIZED
 
 *warning* — A bed is drawn smaller than the smallest standard bed.
@@ -2531,6 +3465,13 @@ room at (0,0) size 3000x4000 label "Bedroom"   # lint: no window
 ```arch static
 room id=b at (0,0) size 3000x3000 label "Bedroom"
 furniture bed at (200,200) size 900x1500   # lint: 1500 mm long, 400 mm under the 1900 mm of a UK single
+```
+
+**Fixed.**
+
+```arch static
+room id=b at (0,0) size 3000x3000 label "Bedroom"
+furniture bed at (200,200) size 900x1900   # fixed: a UK single
 ```
 
 ## W_BOUNDARY_NO_WALL
@@ -2545,6 +3486,15 @@ furniture bed at (200,200) size 900x1500   # lint: 1500 mm long, 400 mm under th
 wall exterior thickness 200 { (0,0) (6000,0) (6000,7000) (0,7000) close }
 room at (0,0) size 6000x4000 label "Living" uses living
 room at (0,4000) size 6000x3000 label "Bedroom" uses bedroom   # lint: no wall on y 4000
+```
+
+**Fixed.**
+
+```arch static
+wall exterior thickness 200 { (0,0) (6000,0) (6000,7000) (0,7000) close }
+wall partition thickness 100 { (0,4000) (6000,4000) }
+room at (0,0) size 6000x4000 label "Living" uses living
+room at (0,4000) size 6000x3000 label "Bedroom" uses bedroom   # fixed: a wall on y 4000
 ```
 
 ## W_CIRCUITOUS_PATH
@@ -2584,6 +3534,13 @@ level 1 height 3000 clear 2400 { }
   level 2 slab 300 { }   # warning: 3000 - 300 = 2700
 ```
 
+**Fixed.**
+
+```arch static
+level 1 height 3000 clear 2700 { }
+  level 2 slab 300 { }   # fixed: 3000 - 300 = 2700
+```
+
 ## W_CONNECTOR_AMBIGUOUS
 
 *warning* — A door or cased opening does not join two rooms cleanly.
@@ -2598,6 +3555,17 @@ wall partition thickness 100 { (4000,0) (4000,5000) }
 room at (0,0) size 4000x5000
 room at (4000,0) size 4000x5000
 door on shell at 4000 width 900   # lint: its inner side spans both rooms
+```
+
+**Fixed.**
+
+```arch static
+wall id=shell exterior thickness 200 { (0,0) (8000,0) (8000,5000) (0,5000) close }
+wall partition thickness 100 { (4000,0) (4000,5000) }
+room at (0,0) size 4000x5000
+room at (4000,0) size 4000x5000
+door on shell at 2000 width 900   # fixed: its inner side is in one room
+door at (4000,2500) width 800 wall partition
 ```
 
 ## W_DIAGNOSTIC_LIMIT
@@ -2639,6 +3607,13 @@ wall exterior thickness 200 { (0,0) (5000,0) (5000,4000) (0,4000) close }
 dim faces (0,9000)->(5000,9000) offset 600   # warning: nothing to project onto at y9000
 ```
 
+**Fixed.**
+
+```arch static
+wall exterior thickness 200 { (0,0) (5000,0) (5000,4000) (0,4000) close }
+dim faces (0,2000)->(5000,2000) offset 600   # fixed: each endpoint on the centreline of a wall it runs into
+```
+
 ## W_DIM_OVERLAP
 
 *warning* — Two hand-written dimensions are drawn on top of each other.
@@ -2652,6 +3627,13 @@ dim (0,-100)->(7000,-100) offset -300 text "7000"
 dim (0,-100)->(4000,-100) offset -300 text "4000"   # warning: both in the same tier
 ```
 
+**Fixed.**
+
+```arch static
+dim (0,-100)->(7000,-100) offset -600 text "7000"
+dim (0,-100)->(4000,-100) offset -300 text "4000"   # fixed: one tier each
+```
+
 ## W_DIM_TEXT_MISMATCH
 
 *warning* — A hand-written dimension's number is not the span it measures.
@@ -2662,6 +3644,12 @@ dim (0,-100)->(4000,-100) offset -300 text "4000"   # warning: both in the same 
 
 ```arch static
 dim (0,-100)->(4000,-100) offset -300 text "4500"   # lint: the line spans 4000 mm
+```
+
+**Fixed.**
+
+```arch static
+dim (0,-100)->(4000,-100) offset -300 text "4000"   # fixed: the text says the span
 ```
 
 ## W_DIM_THICKNESS_UNPLACED
@@ -2678,6 +3666,17 @@ scale 1:100
 dims auto all
 wall id=shell exterior thickness 200 { (0,0) (1200,0) (1200,1200) (0,1200) close }
 room id=r at (0,0) size 1200x1200 label "WC" at (600,600)   # lint: the 200 figure has no clear place
+```
+
+**Fixed.**
+
+```arch static
+paper A4 landscape
+scale 1:100
+dims auto rooms
+wall id=shell exterior thickness 200 { (0,0) (1200,0) (1200,1200) (0,1200) close }
+room id=r at (0,0) size 1200x1200 label "WC" at (600,600)
+dim (300,-100)->(300,100) offset 0   # fixed: room chains, and the thickness by hand, face to face
 ```
 
 ## W_DOORWAY_BLOCKED
@@ -2705,6 +3704,12 @@ furniture wc at (5800,3050) size 700x400   # lint: WC blocks the doorway
 door at (0,0) width 500 wall exterior   # lint: under 700 mm
 ```
 
+**Fixed.**
+
+```arch static
+door at (0,0) width 800 wall exterior   # fixed: 800 mm
+```
+
 ## W_DOOR_NEAR_CORNER
 
 *warning* — A door leaves less wall between its jamb and a corner than the wall is thick.
@@ -2716,6 +3721,13 @@ door at (0,0) width 500 wall exterior   # lint: under 700 mm
 ```arch static
 wall w1 thickness 250 { (0,0) (5000,0) (5000,4000) }
 door on w1 at 4400 width 900   # lint: a 150 mm nib on a 250 mm wall
+```
+
+**Fixed.**
+
+```arch static
+wall w1 thickness 250 { (0,0) (5000,0) (5000,4000) }
+door on w1 at 3000 width 900   # fixed: clear of the corner
 ```
 
 ## W_DOOR_OFF_WALL
@@ -2744,6 +3756,14 @@ scale 1:100
 outdoor lawn at (0,3500) size 4000x40000 label "Yard"   # warning on a 4 m cottage: the yard is 40 m long
 ```
 
+**Fixed.**
+
+```arch static
+paper A4 portrait
+scale 1:100
+outdoor lawn at (0,3500) size 4000x4000 label "Yard"   # fixed: a 4 m yard fits the sheet
+```
+
 ## W_DUP_ACC_METADATA
 
 *warning* — Duplicate `accTitle`/`accDescr`.
@@ -2757,6 +3777,12 @@ accTitle "A"
 accTitle "B"   # warning: "A" is discarded
 ```
 
+**Fixed.**
+
+```arch static
+accTitle "A"   # fixed: one title
+```
+
 ## W_EMPTY_PLAN
 
 *warning* — Empty plan.
@@ -2767,6 +3793,13 @@ accTitle "B"   # warning: "A" is discarded
 
 ```arch static
 plan "Empty" { units mm }   # warning
+```
+
+**Fixed.**
+
+```arch static
+plan "Empty" { units mm
+  column at (0,0) size 300x300 }   # fixed: the plan draws something
 ```
 
 ## W_ENTRANCE_INTO_PRIVATE
@@ -2789,6 +3822,20 @@ plan "Front door into a bedroom" {
 }
 ```
 
+**Fixed.**
+
+```arch static
+plan "Front door into the living room" {
+  units mm
+  wall exterior thickness 200 { (0,0) (8000,0) (8000,4000) (0,4000) close }
+  wall partition thickness 100 { (4000,0) (4000,4000) }
+  room at (0,0) size 4000x4000 label "Bedroom"
+  room at (4000,0) size 4000x4000 label "Living"
+  door at (6000,4000) width 1000 wall exterior   # fixed: the way in opens into the living room
+  door at (4000,2000) width 900 wall partition
+}
+```
+
 ## W_EXIT_APPROACH_BLOCKED
 
 *warning* — Furniture stands in the clear floor inside an exterior exit.
@@ -2804,6 +3851,15 @@ door at (3000,4000) width 1200 wall w swing outward
 furniture sofa at (1200,2600) size 1800x900   # lint: 400 mm inside the exit, 600 mm of its 1200 mm clear
 ```
 
+**Fixed.**
+
+```arch static
+wall id=w exterior thickness 200 { (0,0) (6000,0) (6000,4000) (0,4000) close }
+room id=hall at (0,0) size 6000x4000 label "Hall" uses entry
+door at (3000,4000) width 1200 wall w swing outward
+furniture sofa at (1200,500) size 1800x900   # fixed: the exit's approach is clear
+```
+
 ## W_EXTERIOR_RING_OPEN
 
 *warning* — Exterior walls that stand on a room close nothing: the shell has a gap.
@@ -2814,6 +3870,14 @@ furniture sofa at (1200,2600) size 1800x900   # lint: 400 mm inside the exit, 60
 
 ```arch static
 wall id=w exterior thickness 200 { (0,0) (6000,0) (6000,4000) (0,4000) (0,1000) }   # lint: 1000 mm open on the line x 0
+room id=a at (0,0) size 6000x4000 label "A" uses living
+door on w at 3000 width 900 swing inward
+```
+
+**Fixed.**
+
+```arch static
+wall id=w exterior thickness 200 { (0,0) (6000,0) (6000,4000) (0,4000) close }   # fixed: the ring closes
 room id=a at (0,0) size 6000x4000 label "A" uses living
 door on w at 3000 width 900 swing inward
 ```
@@ -2842,6 +3906,13 @@ furniture wc at (5200,5200) size 400x700   # warning: south wall behind it, cist
 furniture wc at (3000,3000) size 400x700   # lint: no wall behind it
 ```
 
+**Fixed.**
+
+```arch static
+wall id=w interior thickness 100 { (2000,3000) (4000,3000) }
+furniture wc against wall w side left size 400x700   # fixed: a wall behind it
+```
+
 ## W_FIXTURE_WRONG_ROOM
 
 *warning* — Fixture is not inside its declared room.
@@ -2867,6 +3938,13 @@ wall exterior thickness 200 { (0,0) (3800,0) (3800,2400) (0,2400) close }
 room circle at (2500,1200) radius 1200 label "Snug" uses living   # lint: the corners are in no room
 ```
 
+**Fixed.**
+
+```arch static
+wall exterior thickness 200 { (0,0) (3800,0) (3800,2400) (0,2400) close }
+room at (0,0) size 3800x2400 label "Snug" uses living   # fixed: the room fills the shell
+```
+
 ## W_FOOTPRINT_TRANSPOSED
 
 *warning* — A piece is drawn turned a quarter: its long side is on the wrong axis.
@@ -2878,6 +3956,13 @@ room circle at (2500,1200) radius 1200 label "Snug" uses living   # lint: the co
 ```arch static
 room id=lounge at (0,0) size 5000x4000 label "Lounge"
 furniture sofa_l at (500,500) size 900x2400   # lint: a sofa_l is 2600 wide and 1600 deep; this one is drawn 900 wide and 2400 deep
+```
+
+**Fixed.**
+
+```arch static
+room id=lounge at (0,0) size 5000x4000 label "Lounge"
+furniture sofa_l at (500,500) size 2600x1600   # fixed: 2600 wide and 1600 deep
 ```
 
 ## W_FURNITURE_ON_STAIR
@@ -2894,6 +3979,14 @@ stair id=s1 at (3000,500) size 1000x3000 dir up
 furniture sofa at (2500,1000) size 900x2000 rotate 90   # lint: stands on the flight
 ```
 
+**Fixed.**
+
+```arch static
+room id=liv at (0,0) size 5000x4000 label "Living"
+stair id=s1 at (3000,500) size 1000x3000 dir up
+furniture sofa at (500,1000) size 900x2000 rotate 90   # fixed: moved clear of the flight
+```
+
 ## W_FURNITURE_ON_VOID
 
 *warning* — Furniture stands on a void, a lift shaft or an escalator.
@@ -2906,6 +3999,14 @@ furniture sofa at (2500,1000) size 900x2000 rotate 90   # lint: stands on the fl
 room id=liv at (0,0) size 6000x5000 label "Living"
 void id=v at (0,0) size 3000x2500
 furniture sofa at (1000,500) size 2000x900   # lint: stands on the void
+```
+
+**Fixed.**
+
+```arch static
+room id=liv at (0,0) size 6000x5000 label "Living"
+void id=v at (0,0) size 3000x2500
+furniture sofa at (3500,3500) size 2000x900   # fixed: on floor
 ```
 
 ## W_FURNITURE_OVERLAP
@@ -2921,6 +4022,13 @@ furniture sofa at (300,300) size 2000x900
 furniture bed  at (1000,500) size 1500x2000   # lint: overlaps the sofa
 ```
 
+**Fixed.**
+
+```arch static
+furniture sofa at (300,300) size 2000x900
+furniture bed  at (2600,500) size 1500x2000   # fixed: beside the sofa
+```
+
 ## W_FURNITURE_OVER_WINDOW
 
 *warning* — A tall unit stands in front of a window, or a low piece against a floor-length one.
@@ -2933,6 +4041,14 @@ furniture bed  at (1000,500) size 1500x2000   # lint: overlaps the sofa
 wall id=w exterior thickness 200 { (0,0) (4000,0) }
 window at (2000,0) width 1200 wall w
 furniture fridge at (1700,100) size 600x650   # lint: in front of 600 mm of the window
+```
+
+**Fixed.**
+
+```arch static
+wall id=w exterior thickness 200 { (0,0) (4000,0) }
+window at (2000,0) width 1200 wall w
+furniture fridge at (3000,100) size 600x650   # fixed: beside the window
 ```
 
 ## W_FURNITURE_WALL_COLLISION
@@ -2960,6 +4076,13 @@ furniture stove at (0,0) size 600x600
 furniture sofa at (0,650) size 2000x900   # lint: sofa blocks the stove front
 ```
 
+**Fixed.**
+
+```arch static
+furniture stove at (0,0) size 600x600
+furniture sofa at (0,1500) size 2000x900   # fixed: the stove front is clear
+```
+
 ## W_FURN_CLEAR_FRONT
 
 *warning* — A declared `clear front` is not free.
@@ -2973,6 +4096,13 @@ furniture wardrobe at (0,0) size 1800x600 clear front 600
 furniture bed at (0,900) size 1500x2000   # lint: the bed leaves 300 mm
 ```
 
+**Fixed.**
+
+```arch static
+furniture wardrobe at (0,0) size 1800x600 clear front 600
+furniture bed at (0,1200) size 1500x2000   # fixed: the bed leaves 600 mm
+```
+
 ## W_FURN_CLEAR_SIDES
 
 *warning* — A declared `clear sides` is not free.
@@ -2984,6 +4114,13 @@ furniture bed at (0,900) size 1500x2000   # lint: the bed leaves 300 mm
 ```arch static
 furniture bed at (0,0) size 1500x2000 clear sides 500
 furniture wardrobe at (1700,0) size 600x1800   # lint: 200 mm on the right side
+```
+
+**Fixed.**
+
+```arch static
+furniture bed at (0,0) size 1500x2000 clear sides 500
+furniture wardrobe at (2000,0) size 600x1800   # fixed: 500 mm on the right side
 ```
 
 ## W_GARAGE_OPENING_UNDERSIZED
@@ -3000,6 +4137,14 @@ room id=g at (0,0) size 6400x3800 label "Garage" uses garage
 door id=d garage at (0,1900) width 2000 wall shell   # lint: 2000 mm wide, one car wants 2400
 ```
 
+**Fixed.**
+
+```arch static
+wall id=shell exterior thickness 200 { (0,0) (6400,0) (6400,3800) (0,3800) close }
+room id=g at (0,0) size 6400x3800 label "Garage" uses garage
+door id=d garage at (0,1900) width 2400 wall shell   # fixed: 2400 mm for one car
+```
+
 ## W_GARAGE_TOO_NARROW
 
 *warning* — A garage is too narrow, or too shallow, to park in.
@@ -3011,6 +4156,13 @@ door id=d garage at (0,1900) width 2000 wall shell   # lint: 2000 mm wide, one c
 ```arch static
 room id=g at (0,0) size 2500x6000 label "Garage" uses garage
 furniture car at (300,300) size 1800x4600 in g   # lint: 2500 mm across, one bay wants 2700
+```
+
+**Fixed.**
+
+```arch static
+room id=g at (0,0) size 3000x6000 label "Garage" uses garage
+furniture car at (300,300) size 1800x4600 in g   # fixed: 3000 mm across
 ```
 
 ## W_GLYPH_UNSUPPORTED
@@ -3038,6 +4190,13 @@ grid 100
 room at (0,0) size 2750x3000   # warning: size 2750 x 3000 was snapped to 2800 x 3000
 ```
 
+**Fixed.**
+
+```arch static
+grid 100
+room at (0,0) size 2800x3000   # fixed: on the grid
+```
+
 ## W_HABITABLE_NO_WINDOW
 
 *warning* — A living room, dining room or kitchen has no window.
@@ -3050,6 +4209,14 @@ room at (0,0) size 2750x3000   # warning: size 2750 x 3000 was snapped to 2800 x
 room id=liv at (0,0) size 4000x4000 label "Living"   # lint: no window on its walls
 ```
 
+**Fixed.**
+
+```arch static
+wall id=w exterior thickness 200 { (0,0) (4000,0) (4000,4000) (0,4000) close }
+room id=liv at (0,0) size 4000x4000 label "Living"
+window on w at 2000 width 1500   # fixed: a window on its wall
+```
+
 ## W_HATCH_SCALE
 
 *warning* — Hatch scale must be positive; using 1.
@@ -3060,6 +4227,12 @@ room id=liv at (0,0) size 4000x4000 label "Living"   # lint: no window on its wa
 
 ```arch static
 wall exterior thickness 200 material brick scale 0 { (0,0) (1,0) }
+```
+
+**Fixed.**
+
+```arch static
+wall exterior thickness 200 material brick scale 1 { (0,0) (1,0) }   # fixed: a positive scale
 ```
 
 ## W_HOB_FRIDGE_GAP
@@ -3076,6 +4249,14 @@ furniture stove at (1600,100) size 600x600
 furniture fridge at (2300,100) size 600x650   # lint: 100 mm from the hob, 200 mm short
 ```
 
+**Fixed.**
+
+```arch static
+room id=k at (0,0) size 4000x2400 label "Kitchen"
+furniture stove at (1600,100) size 600x600
+furniture fridge at (2600,100) size 600x650   # fixed: 400 mm from the hob
+```
+
 ## W_HOB_UNDER_WINDOW
 
 *warning* — A hob stands under a window.
@@ -3088,6 +4269,14 @@ furniture fridge at (2300,100) size 600x650   # lint: 100 mm from the hob, 200 m
 wall id=w exterior thickness 200 { (0,0) (4000,0) }
 window at (2000,0) width 1200 wall w
 furniture stove at (1700,100) size 600x600   # lint: under 600 mm of the window
+```
+
+**Fixed.**
+
+```arch static
+wall id=w exterior thickness 200 { (0,0) (4000,0) }
+window at (2000,0) width 1200 wall w
+furniture stove at (3000,100) size 600x600   # fixed: beside the window
 ```
 
 ## W_IMPORT_DROPPED
@@ -3130,6 +4319,16 @@ plan "K" {
 }
 ```
 
+**Fixed.**
+
+```arch static
+plan "K" {
+  units mm
+  room id=a at (100,0) size 3000x3000
+  keep fixed a.left at 100   # fixed: the room moves to where the keep holds it
+}
+```
+
 ## W_LABEL_PIECE_MISSING
 
 *warning* — A room's label names a piece the room does not hold.
@@ -3140,6 +4339,13 @@ plan "K" {
 
 ```arch static
 room id=r_nook at (0,0) size 2500x4000 label "Desk Nook"   # lint: no desk in the room
+```
+
+**Fixed.**
+
+```arch static
+room id=r_nook at (0,0) size 2500x4000 label "Desk Nook"
+furniture desk in r_nook anchor top flush size 1200x600   # fixed: the desk the name promises
 ```
 
 ## W_LEAF_ACROSS_DOORWAY
@@ -3159,6 +4365,17 @@ door id=front at (3700,0) width 900 wall shell hinge near start swing into hall 
 door id=bed_door at (3000,650) width 800 wall mid swing into bed
 ```
 
+**Fixed.**
+
+```arch static
+wall id=shell exterior thickness 200 { (0,0) (6000,0) (6000,5000) (0,5000) close }
+wall id=mid partition thickness 100 { (3000,0) (3000,5000) }
+room id=bed at (0,0) size 3000x5000 label "Bedroom"
+room id=hall at (3000,0) size 3000x5000 label "Hall"
+door id=front at (3700,0) width 900 wall shell hinge near start swing into hall
+door id=bed_door at (3000,3000) width 800 wall mid swing into bed   # fixed: clear of the open front leaf
+```
+
 ## W_LEAF_TOO_WIDE
 
 *warning* — A swinging door leaf is wider than a door is made.
@@ -3172,6 +4389,13 @@ wall id=w exterior thickness 200 { (0,0) (8000,0) }
 door at (4000,0) width 2400 wall w   # lint: one 2400 mm leaf; `door double … width 2400` is two of 1200
 ```
 
+**Fixed.**
+
+```arch static
+wall id=w exterior thickness 200 { (0,0) (8000,0) }
+door double at (4000,0) width 2400 wall w   # fixed: two leaves of 1200
+```
+
 ## W_LENGTH_IN_METRES
 
 *warning* — A length reads as metres where millimetres are the unit.
@@ -3182,6 +4406,12 @@ door at (4000,0) width 2400 wall w   # lint: one 2400 mm leaf; `door double … 
 
 ```arch static
 room at (0,0) size 4x3   # warning: read as 4 mm x 3 mm; write `size 4000x3000`
+```
+
+**Fixed.**
+
+```arch static
+room at (0,0) size 4000x3000   # fixed: in millimetres
 ```
 
 ## W_NO_ENTRANCE
@@ -3210,6 +4440,14 @@ wall partition thickness 100 { (4000,0) (4000,5000) }
 window on shell at 4500 width 2000   # lint: the partition stands inside the window's span
 ```
 
+**Fixed.**
+
+```arch static
+wall id=shell exterior thickness 200 { (0,0) (8000,0) (8000,5000) (0,5000) close }
+wall partition thickness 100 { (4000,0) (4000,5000) }
+window on shell at 6000 width 2000   # fixed: clear of the partition
+```
+
 ## W_OPENING_NOT_DIMENSIONED
 
 *warning* — An opening on the outside of the building is on no `dims auto all` chain.
@@ -3222,6 +4460,15 @@ window on shell at 4500 width 2000   # lint: the partition stands inside the win
 dims auto all
 wall id=w1 exterior thickness 200 { (0,0) (6000,0) (6000,4000) (2000,6000) (0,4000) close }
 window on w1 at 12000 width 1200   # lint: on the angled wall, no chain can measure it
+```
+
+**Fixed.**
+
+```arch static
+dims auto all
+wall id=w1 exterior thickness 200 { (0,0) (6000,0) (6000,3000) (2000,6000) (0,4000) close }
+window on w1 at 11500 width 1200
+dim (4360,4230)->(3640,5190) offset 0   # fixed: a hand dim, jamb to jamb, on the angled wall
 ```
 
 ## W_OPENING_OFF_WALL
@@ -3250,6 +4497,14 @@ door on shell at 4600 width 900
 window on shell at 3800 width 1200   # lint: 250 mm of the window's span is the door's
 ```
 
+**Fixed.**
+
+```arch static
+wall id=shell exterior thickness 200 { (0,0) (8000,0) (8000,5000) (0,5000) close }
+door on shell at 4600 width 900
+window on shell at 2500 width 1200   # fixed: clear of the door
+```
+
 ## W_OUTDOOR_OVERLAPS_ROOM
 
 *warning* — A ground surface is laid over a room's floor.
@@ -3261,6 +4516,13 @@ window on shell at 3800 width 1200   # lint: 250 mm of the window's span is the 
 ```arch static
 room id=liv at (0,0) size 5000x4000 label "Living"
 outdoor paving at (1000,1000) size 3000x2000   # warning: on the living-room floor
+```
+
+**Fixed.**
+
+```arch static
+room id=liv at (0,0) size 5000x4000 label "Living"
+outdoor paving at (0,4000) size 5000x2000   # fixed: beside the floor
 ```
 
 ## W_PATH_TOO_NARROW
@@ -3289,6 +4551,13 @@ wall w1 thickness 200 { (0,0) (3000,0) }
 door pocket on w1 at 80% width 900 slide right   # lint: only ~600 mm of run
 ```
 
+**Fixed.**
+
+```arch static
+wall w1 thickness 200 { (0,0) (3000,0) }
+door pocket on w1 at 30% width 900 slide right   # fixed: a run to slide into
+```
+
 ## W_REASSIGN_DEPRECATED
 
 *warning* — Reassignment (`NAME = expr`) is deprecated and will be removed in a future major version.
@@ -3300,6 +4569,13 @@ door pocket on w1 at 80% width 900 slide right   # lint: only ~600 mm of run
 ```arch static
 let total = 0
 total = total + 100   # warning: deprecated reassignment; bind a new name instead
+```
+
+**Fixed.**
+
+```arch static
+let total = 0
+let total2 = total + 100   # fixed: a new name
 ```
 
 ## W_ROOM_DISCONNECTED
@@ -3314,6 +4590,14 @@ total = total + 100   # warning: deprecated reassignment; bind a new name instea
 room id=r at (0,0) size 3000x3000   # lint: no door on its perimeter
 ```
 
+**Fixed.**
+
+```arch static
+wall id=w exterior thickness 200 { (0,0) (3000,0) (3000,3000) (0,3000) close }
+room id=r at (0,0) size 3000x3000
+door on w at 1500 width 900   # fixed: a door on its perimeter
+```
+
 ## W_ROOM_LABEL_OUTSIDE
 
 *warning* — A room's explicit label anchor falls outside the room.
@@ -3324,6 +4608,12 @@ room id=r at (0,0) size 3000x3000   # lint: no door on its perimeter
 
 ```arch static
 room polygon (0,0) (6000,0) (6000,6000) (0,6000) label "Hall" at (9000,9000)   # warning
+```
+
+**Fixed.**
+
+```arch static
+room polygon (0,0) (6000,0) (6000,6000) (0,6000) label "Hall" at (3000,3000)   # fixed: inside
 ```
 
 ## W_ROOM_MISSING_DEFINING
@@ -3337,6 +4627,14 @@ room polygon (0,0) (6000,0) (6000,6000) (0,6000) label "Hall" at (9000,9000)   #
 ```arch static
 room id=r_bed at (0,0) size 4000x4000 label "Bedroom 2" uses bedroom
 furniture wardrobe in r_bed anchor top flush size 1800x600   # lint: furnished, but no bed
+```
+
+**Fixed.**
+
+```arch static
+room id=r_bed at (0,0) size 4000x4000 label "Bedroom 2" uses bedroom
+furniture wardrobe in r_bed anchor top flush size 1800x600
+furniture bed in r_bed anchor bottom flush size 1500x2000   # fixed: the bed
 ```
 
 ## W_ROOM_NOT_ENCLOSED
@@ -3389,6 +4687,14 @@ furniture shower at (5000,3000) size 2000x2000   # lint: fills the bathroom agai
 room at (4000,4000) size 3000x2000 label "Bath"   # lint: no fixtures inside
 ```
 
+**Fixed.**
+
+```arch static
+wall id=w interior thickness 100 { (4000,4000) (7000,4000) }
+room at (4000,4000) size 3000x2000 label "Bath"
+furniture bathtub against wall w side left size 1700x700   # fixed: a fixture inside
+```
+
 ## W_ROOM_OUTSIDE_SHELL
 
 *warning* — A room lies partly outside the building's walls.
@@ -3400,6 +4706,13 @@ room at (4000,4000) size 3000x2000 label "Bath"   # lint: no fixtures inside
 ```arch static
 wall exterior thickness 200 { (0,0) (8000,0) (8000,5000) (0,5000) close }
 room at (4000,0) size 4600x5000 label "Bedroom" uses bedroom   # lint: 600 mm past the east wall
+```
+
+**Fixed.**
+
+```arch static
+wall exterior thickness 200 { (0,0) (8000,0) (8000,5000) (0,5000) close }
+room at (4000,0) size 4000x5000 label "Bedroom" uses bedroom   # fixed: inside the east wall
 ```
 
 ## W_ROOM_OVERLAP
@@ -3415,6 +4728,13 @@ room at (0,0) size 2000x2000
 room at (1000,0) size 2000x2000   # warning
 ```
 
+**Fixed.**
+
+```arch static
+room at (0,0) size 2000x2000
+room at (3000,0) size 2000x2000   # fixed: apart
+```
+
 ## W_ROOM_TOO_NARROW
 
 *warning* — A room is narrower than its profile asks of its use.
@@ -3427,6 +4747,12 @@ room at (1000,0) size 2000x2000   # warning
 room id=b at (0,0) size 2100x4000 label "Bedroom" uses bedroom   # lint --profile uk-residential-advisory: 2100 mm, under the 2150 mm a bedroom is asked
 ```
 
+**Fixed.**
+
+```arch static
+room id=b at (0,0) size 2200x4000 label "Bedroom" uses bedroom   # lint --profile uk-residential-advisory: fixed: 2200 mm
+```
+
 ## W_ROOM_TOO_SMALL
 
 *warning* — Room is implausibly small.
@@ -3437,6 +4763,12 @@ room id=b at (0,0) size 2100x4000 label "Bedroom" uses bedroom   # lint --profil
 
 ```arch static
 room at (0,0) size 1000x1000 label "Nook"     # lint: 1 m²
+```
+
+**Fixed.**
+
+```arch static
+room at (0,0) size 2000x2000 label "Nook"     # fixed: 4 m²
 ```
 
 ## W_ROOM_UNREACHABLE
@@ -3474,6 +4806,24 @@ plan "Through a bedroom" {
 }
 ```
 
+**Fixed.**
+
+```arch static
+plan "Living with a door of its own" {
+  units mm
+  wall exterior thickness 200 { (0,0) (9000,0) (9000,4000) (0,4000) close }
+  wall id=p1 partition thickness 100 { (3000,0) (3000,4000) }
+  wall id=p2 partition thickness 100 { (6000,0) (6000,4000) }
+  room at (0,0) size 3000x4000 label "Hall"
+  room at (3000,0) size 3000x4000 label "Bedroom"
+  room at (6000,0) size 3000x4000 label "Living"
+  door at (1500,4000) width 1000 wall exterior
+  door at (3000,2000) width 900 wall p1
+  door at (6000,2000) width 900 wall p2
+  door at (7500,4000) width 1000 wall exterior   # fixed: Living has a way in that passes no bedroom
+}
+```
+
 ## W_SANITIZED_CONFIG
 
 *warning* — A disallowed config value was stripped.
@@ -3484,6 +4834,12 @@ plan "Through a bedroom" {
 
 ```arch static
 theme { wall: "<script>" }   # warning: stripped
+```
+
+**Fixed.**
+
+```arch static
+theme { wall: "#333333" }   # fixed: a colour
 ```
 
 ## W_SCALE_OVERFLOW
@@ -3512,6 +4868,13 @@ furniture table at (0,0) size 800x800
 furniture chair at (175,850) size 450x450   # lint: south of the table, facing south
 ```
 
+**Fixed.**
+
+```arch static
+furniture table at (0,0) size 800x800
+furniture chair at (175,850) size 450x450 rotate 180   # fixed: the rotate that turns its front to the table
+```
+
 ## W_SET_VALUE_WORD
 
 *warning* — A bare word in `set <kind>(…)` was taken as text and does nothing.
@@ -3525,6 +4888,15 @@ let W = 900
 set door(width: W)   # warning: takes `W` as the text "W"; the rule does nothing
 ```
 
+**Fixed.**
+
+```arch static
+let W = 900
+wall id=w1 interior thickness 100 { (0,0) (4000,0) }
+set door(swing: out)   # fixed: a word the key reads
+door on w1 at 50% width W   # fixed: the value written on the element
+```
+
 ## W_SHAFT_FOOTPRINT_MISMATCH
 
 *warning* — A shaft's runs on two neighbouring storeys do not stand over each other.
@@ -3536,6 +4908,13 @@ set door(width: W)   # warning: takes `W` as the text "W"; the rule does nothing
 ```arch static
 level 1 "G" { stair id=s at (0,0) size 900x2600 dir up }
 level 2 "1" { stair id=s at (3000,0) size 900x2600 dir down }   # lint: the footprints do not overlap
+```
+
+**Fixed.**
+
+```arch static
+level 1 "G" { stair id=s at (0,0) size 900x2600 dir up }
+level 2 "1" { stair id=s at (0,0) size 900x2600 dir down }   # fixed: one footprint
 ```
 
 ## W_STAIR_HEAD_VOID
@@ -3553,6 +4932,15 @@ level 2 "First" {
 }
 ```
 
+**Fixed.**
+
+```arch static
+level 2 "First" {
+  stair id=s at (100,1500) size 900x2600 dir down
+  void id=g at (1100,200) size 900x1100   # fixed: beside the flight
+}
+```
+
 ## W_STAIR_NO_LANDING
 
 *warning* — A flight has no landing at its foot or head, or a landing between two flights is too short.
@@ -3566,6 +4954,13 @@ wall id=p partition thickness 100 { (0,3000) (4000,3000) }
 stair id=s at (500,200) size 900x2350 dir up   # lint: the partition stands 400 mm past the bottom step, where 900 mm is needed
 ```
 
+**Fixed.**
+
+```arch static
+wall id=p partition thickness 100 { (0,3600) (4000,3600) }
+stair id=s at (500,200) size 900x2350 dir up   # fixed: 1000 mm past the bottom step
+```
+
 ## W_STAIR_RISER_TOO_HIGH
 
 *warning* — A stair's drawn treads climb its storey on risers that are too high.
@@ -3577,6 +4972,13 @@ stair id=s at (500,200) size 900x2350 dir up   # lint: the partition stands 400 
 ```arch static
 height 2700
 stair id=s at (200,200) size 900x2900 dir up   # lint: 10 treads, so 11 risers of about 245 mm
+```
+
+**Fixed.**
+
+```arch static
+height 2700
+stair id=s at (200,200) size 900x3220 dir up   # fixed: 12 treads, 13 risers of about 208 mm
 ```
 
 ## W_STAIR_SIDE_ENTRY
@@ -3593,6 +4995,14 @@ door id=d at (4000,1450) width 800 wall w
 stair id=s at (4200,300) size 1100x2400 dir up   # lint: the doorway is 150 mm from the flight
 ```
 
+**Fixed.**
+
+```arch static
+wall id=w partition thickness 100 { (4000,0) (4000,3000) }
+door id=d at (4000,1450) width 800 wall w
+stair id=s at (5200,300) size 1100x2400 dir up   # fixed: clear of the doorway
+```
+
 ## W_STAIR_TOO_STEEP
 
 *warning* — A stair is too short to climb its storey.
@@ -3606,6 +5016,13 @@ height 2800
 stair id=s at (200,200) size 1000x2000 dir up   # lint: 13 risers and 12 goings of 220 mm need a 2640 mm run
 ```
 
+**Fixed.**
+
+```arch static
+height 2800
+stair id=s at (200,200) size 1000x3220 dir up   # fixed: 12 treads, 13 risers of about 215 mm
+```
+
 ## W_STAIR_UNMATCHED
 
 *warning* — A run of vertical circulation appears on only one storey.
@@ -3617,6 +5034,13 @@ stair id=s at (200,200) size 1000x2000 dir up   # lint: 13 risers and 12 goings 
 ```arch static
 level 1 "G" { stair id=s at (0,0) size 900x2600 dir up }
 level 2 "1" { }   # warning: "s" is on level 1 only
+```
+
+**Fixed.**
+
+```arch static
+level 1 "G" { stair id=s at (0,0) size 900x2600 dir up }
+level 2 "1" { stair id=s at (0,0) size 900x2600 dir down }   # fixed: "s" on both levels
 ```
 
 ## W_SWING_OBSTRUCTED
@@ -3646,6 +5070,15 @@ door id=d at (4900,2600) width 700 wall w hinge near start swing into land   # l
 stair id=s at (4900,2700) size 2200x1000 dir down
 ```
 
+**Fixed.**
+
+```arch static
+wall id=w partition thickness 100 { (0,2600) (8000,2600) }
+room id=land at (0,2600) size 8000x1900 label "Landing"
+door id=d at (1000,2600) width 700 wall w hinge near start swing into land   # fixed: clear of the flight
+stair id=s at (4900,2700) size 2200x1000 dir down
+```
+
 ## W_SWING_ROOM_NOT_ADJACENT
 
 *warning* — `swing into <room>` names a room the door does not border.
@@ -3657,6 +5090,13 @@ stair id=s at (4900,2700) size 2200x1000 dir down
 ```arch static
 wall id=w1 partition thickness 100 { (0,0) (4000,0) }
 door on w1 at 50% width 800 swing into faraway   # warning: not on this wall
+```
+
+**Fixed.**
+
+```arch static
+wall id=w1 partition thickness 100 { (0,0) (4000,0) }
+door on w1 at 50% width 800 swing in   # fixed: the wall-relative swing
 ```
 
 ## W_TITLE_OVERFLOW
@@ -3673,6 +5113,14 @@ title {
 }
 ```
 
+**Fixed.**
+
+```arch static
+title {
+  project "742 Evergreen Terrace"   # fixed: fits the row
+}
+```
+
 ## W_UNKNOWN_FURNITURE
 
 *warning* — A furniture word is not a catalogued kind but is close to one.
@@ -3683,6 +5131,12 @@ title {
 
 ```arch static
 furniture grand_pianno at (0,0) size 1500x1500   # warning: did you mean "grand_piano"?
+```
+
+**Fixed.**
+
+```arch static
+furniture grand_piano at (0,0) size 1500x1500   # fixed: the catalogue spelling
 ```
 
 ## W_UNKNOWN_MATERIAL
@@ -3697,6 +5151,12 @@ furniture grand_pianno at (0,0) size 1500x1500   # warning: did you mean "grand_
 wall exterior thickness 200 material marble { (0,0) (1,0) }   # warning
 ```
 
+**Fixed.**
+
+```arch static
+wall exterior thickness 200 material brick { (0,0) (1,0) }   # fixed: a known material
+```
+
 ## W_UNKNOWN_STYLE_KEY
 
 *warning* — Unknown style key.
@@ -3707,6 +5167,12 @@ wall exterior thickness 200 material marble { (0,0) (1,0) }   # warning
 
 ```arch static
 style room { nope: "#000" }   # warning
+```
+
+**Fixed.**
+
+```arch static
+style room { fill: "#eeeeee" }   # fixed: a known key
 ```
 
 ## W_UNKNOWN_THEME
@@ -3721,6 +5187,12 @@ style room { nope: "#000" }   # warning
 theme Rendered   # warning: did you mean "rendered"?
 ```
 
+**Fixed.**
+
+```arch static
+theme rendered   # fixed: the theme's name
+```
+
 ## W_UNKNOWN_THEME_KEY
 
 *warning* — Unknown theme key.
@@ -3731,6 +5203,12 @@ theme Rendered   # warning: did you mean "rendered"?
 
 ```arch static
 theme { nope: "#000" }   # warning
+```
+
+**Fixed.**
+
+```arch static
+theme { wall: "#000" }   # fixed: a known key
 ```
 
 ## W_WALL_END_SHORT
@@ -3747,6 +5225,14 @@ wall id=a exterior thickness 200 { (0,0) (8000,0) (8000,5000) (0,5000) close }
 wall id=p partition thickness 100 { (4000,230) (4000,5000) }   # lint: drawn end at y 180, 80 mm from the top wall's inner face
 ```
 
+**Fixed.**
+
+```arch static
+grid 10
+wall id=a exterior thickness 200 { (0,0) (8000,0) (8000,5000) (0,5000) close }
+wall id=p partition thickness 100 { (4000,0) (4000,5000) }   # fixed: it meets the top wall
+```
+
 ## W_WC_SIDE_CLEARANCE
 
 *warning* — A WC's centreline is too close to a wall or fixture at its side.
@@ -3758,6 +5244,13 @@ wall id=p partition thickness 100 { (4000,230) (4000,5000) }   # lint: drawn end
 ```arch static
 furniture wc at (0,0) size 400x700
 furniture basin at (500,0) size 600x450   # lint: centreline 300 mm from the basin
+```
+
+**Fixed.**
+
+```arch static
+furniture wc at (0,0) size 400x700
+furniture basin at (700,0) size 600x450   # fixed: centreline 500 mm from the basin
 ```
 
 ## W_WET_ROOM_DOOR
@@ -3780,6 +5273,23 @@ plan "Bath off the kitchen" {
 }
 ```
 
+**Fixed.**
+
+```arch static
+plan "Bath off the hall" {
+  units mm
+  wall exterior thickness 200 { (0,0) (6000,0) (6000,3000) (0,3000) close }
+  wall partition thickness 100 { (4000,0) (4000,3000) }
+  wall partition thickness 100 { (2800,0) (2800,3000) }
+  room at (0,0) size 2800x3000 label "Kitchen"
+  room at (2800,0) size 1200x3000 label "Hall"
+  room at (4000,0) size 2000x3000 label "Bathroom"
+  door at (2000,3000) width 900 wall exterior
+  door at (2800,1500) width 900 wall partition
+  door at (4000,1500) width 700 wall partition   # fixed: the bath opens off a hall, not the kitchen
+}
+```
+
 ## W_WHILE_DEPRECATED
 
 *warning* — `while` is deprecated and will be removed in a future major version.
@@ -3794,6 +5304,14 @@ while i < 5 {
   room at (0, i * 3000) size 3000x3000
   i = i + 1
 }   # warning: deprecated; rewrites to `for i in 0..5 { … }`
+```
+
+**Fixed.**
+
+```arch static
+for i in 0..5 {
+  room at (0, i * 3000) size 3000x3000
+}   # fixed: a for loop
 ```
 
 ## W_WINDOW_OFF_WALL

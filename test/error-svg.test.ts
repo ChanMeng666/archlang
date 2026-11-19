@@ -1,7 +1,8 @@
 /** onError: 'svg' (opt-in error card). */
 
 import { describe, expect, it } from "vitest";
-import { compile, renderErrorSvg } from "../src/index.js";
+import { renderCompileErrorSvg } from "../src/backends/error-svg.js";
+import { compile, ERROR_CATALOG, renderErrorSvg } from "../src/index.js";
 
 /**
  * `onError: "svg"` — the opt-in error card (T2.1).
@@ -82,5 +83,23 @@ describe("onError: 'svg' (opt-in error card)", () => {
     const { diagnostics } = compile(BROKEN, { noCache: true });
     const svg = renderErrorSvg(BROKEN, diagnostics);
     expect(svg).toMatchSnapshot();
+  });
+
+  // Card NR.10: compile()'s card reads the compile path's fix column, which leaves out the intent
+  // violations' (`E_INTENT_*`, raised only by validateIntent); the public renderErrorSvg reads both.
+  it("compile()'s card is renderErrorSvg's for compile()'s own diagnostics", () => {
+    for (const src of [BROKEN, BROKEN_MULTI]) {
+      const { svg, diagnostics } = compile(src, { onError: "svg", noCache: true });
+      expect(svg).toBe(renderErrorSvg(src, diagnostics));
+      expect(svg).toBe(renderCompileErrorSvg(src, diagnostics));
+    }
+  });
+
+  it("renderErrorSvg still draws an intent violation's catalogued fix; compile()'s card has none to draw", () => {
+    const d = { code: "E_INTENT_ROOM_MISSING", severity: "error", message: "No bedroom." } as const;
+    const fix = ERROR_CATALOG.E_INTENT_ROOM_MISSING!.fix;
+    const lead = `Fix: ${fix.slice(0, 20)}`;
+    expect(renderErrorSvg("", [d])).toContain(lead);
+    expect(renderCompileErrorSvg("", [d])).not.toContain("Fix:");
   });
 });

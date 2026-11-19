@@ -27,7 +27,7 @@ import { drawBudgetDiagnostic } from "./draw-budget.js";
 import type { PlanNode } from "./ast.js";
 import { toIso } from "./view/iso.js";
 import { renderSvg } from "./backends/svg.js";
-import { renderErrorSvg } from "./backends/error-svg.js";
+import { renderCompileErrorSvg } from "./backends/error-svg.js";
 import { capDiagnostics, offsetToLineCol } from "./diagnostics.js";
 import { createRegistry, BUILTIN_REGISTRY } from "./registry.js";
 import type { Runtime } from "./registry.js";
@@ -203,7 +203,7 @@ export function compileUncached(source: string, opts: CompileOptions, work?: Com
     // Opt-in only: a broken plan yields a self-describing error card instead of
     // a blank. Default (no `onError`) leaves `svg === ""`, byte-identical to the
     // historical behavior. Errors/warnings/diagnostics are untouched.
-    svg = renderErrorSvg(source, diagnostics);
+    svg = renderCompileErrorSvg(source, diagnostics);
   }
 
   // `pages` is spread so a single-storey result has no such key at all (append-only).

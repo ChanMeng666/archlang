@@ -85,6 +85,7 @@ ends included) the MCP hash and the CLI's agree.
 | `fix` | Apply the machine-applicable fixes on a plan's diagnostics (syntactic corrector; bounded fixpoint). `unsafe` widens to `maybe-incorrect`. |
 | `suggest` | Advisory door/window statements (each referencing its wall by a stable ref — an authored id or a unique category — or absolute coordinates, never a re-bindable positional id) to resolve unreachable rooms / windowless bedrooms — data, never applied. |
 | `complete` | LSP completion items in scope at a source byte offset. |
+| `explain` | A diagnostic code's catalogue entry: message, cause, fix, an example that raises it and, for most codes, `fixed`, the example corrected (the CLI's `explain --json`). |
 | `link` | Two URLs that show the plan in a browser with nothing to install: `playground` (the hosted editor, rendered) and `embed` (the plan alone, for an iframe), plus `bytes`, the compressed plan's size, and `ok` (with an `errors` count when the plan does not compile; it still links and the page shows the diagnostics). The plan rides in the URL fragment. Needs a core that exports `./link`; an older one gets `ok:false` and the version it needs. |
 
 ### What `compile`'s `accessible` does here — and what it does not

@@ -46,7 +46,7 @@ describe("MCPB manifest generator", () => {
     const live = await registryTools();
     const m = buildManifest(pkg, serverJson, live);
     expect(m.tools.map((t) => t.name)).toEqual(live.map((t) => t.name));
-    expect(m.tools.length).toBe(11);
+    expect(m.tools.length).toBe(12);
     // The npm description is the canonical one-line pitch (site-shared/doors.json), so it no longer
     // names the tools; the manifest's own `tools` list is the registry (asserted above).
     for (const t of m.tools) {

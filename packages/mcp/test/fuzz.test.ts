@@ -24,7 +24,7 @@ import { describe, expect, it } from "vitest";
 import { runs } from "../../../test/setup/fast-check.js";
 import { call, connect, TINY } from "./helpers.js";
 
-/** Bounded so the whole file stays well under ~30s: 11 tools × NUM_RUNS calls. */
+/** Bounded so the whole file stays well under ~30s: 12 tools × NUM_RUNS calls. */
 const NUM_RUNS = 25;
 
 /** Every tool the server registers, with the param names its schema declares. */
@@ -39,6 +39,7 @@ const TOOLS: Array<{ name: string; params: string[] }> = [
   { name: "fix", params: ["source", "unsafe"] },
   { name: "suggest", params: ["source"] },
   { name: "complete", params: ["source", "at"] },
+  { name: "explain", params: ["code"] },
   { name: "link", params: ["source"] },
 ];
 
@@ -134,7 +135,7 @@ describe("malformed tool arguments", () => {
     );
     await fc.assert(
       fc.asyncProperty(source, fc.constantFrom(...TOOLS.map((t) => t.name)), async (src, name) => {
-        const result = await client.callTool({ name, arguments: { source: src, at: 0, brief: {} } });
+        const result = await client.callTool({ name, arguments: { source: src, at: 0, brief: {}, code: src } });
         assertWellFormed(result, `${name}(source=${JSON.stringify(src).slice(0, 60)})`);
         const text = (result as { content: Array<{ text: string }> }).content[0]!.text;
         expect(() => JSON.parse(text)).not.toThrow();
@@ -154,11 +155,16 @@ describe("malformed tool arguments", () => {
       for (const source of [huge, hugeGarbage]) {
         const result = await client.callTool({
           name,
-          // `at`/`brief` are required by their schemas — supply them so the call reaches
-          // the handler rather than stopping at zod (both shapes are still exercised).
-          arguments: { source, at: 0, brief: {} },
+          // `at`/`brief`/`code` are required by their schemas — supply them so the call
+          // reaches the handler rather than stopping at zod (both shapes are still exercised);
+          // `code` carries the same ~100KB, so `explain` meets the huge text too.
+          arguments: { source, at: 0, brief: {}, code: source },
         });
         assertWellFormed(result, `${name}(~100KB)`);
+        if (name === "explain") {
+          const text = (result as { content: Array<{ text: string }> }).content[0]!.text;
+          expect(JSON.parse(text).ok, "explain(~100KB) reached its handler").toBe(false);
+        }
       }
     }
     await assertTransportAlive(client, "huge-source");

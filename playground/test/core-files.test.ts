@@ -1,8 +1,8 @@
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
-import { coreFiles, ENTRY } from "../scripts/core-files.mjs";
+import { coreFiles, ENTRY, FIRST_USE_ENTRY, firstUseFiles } from "../scripts/core-files.mjs";
 
 /** An in-memory dist/: relative path → text. */
 const dist = (files: Record<string, string>) =>
@@ -69,6 +69,45 @@ describe("coreFiles (vite.config.js's compiler chunk)", () => {
     expect(() => dist(deep)).toThrow(/dist\/chunk-A\.js re-exports/);
   });
 
+  it("firstUseFiles is first-use-path.js's imports, transitively, stopping at the compiler chunk's files", () => {
+    // Card 3.18: diagnosticToJson and lint in two dist chunks (their entry sets differ) still make
+    // one `first-use` chunk; what only a press or edit mode reaches is not in it.
+    const files = {
+      "index.js":
+        'import { compile } from "./chunk-A.js";\nimport { d } from "./chunk-D.js";\nexport { compile, d };\n',
+      [ENTRY]: 'import { compile } from "./chunk-A.js";\nexport { compile };\n',
+      [FIRST_USE_ENTRY]:
+        'import { d } from "./chunk-D.js";\nimport { lint } from "./chunk-L.js";\nexport { d, lint };\n',
+      "chunk-A.js": "var compile = 1;\nexport { compile };\n",
+      "chunk-D.js": 'import { compile } from "./chunk-A.js";\nvar d = 2;\nexport { d };\n',
+      "chunk-L.js": 'import { s } from "./chunk-S.js";\nvar lint = 3;\nexport { lint };\n',
+      "chunk-S.js": "var s = 4;\nexport { s };\n",
+      // Only a press (src/actions-path.ts) reaches it.
+      "chunk-F.js": 'import { lint } from "./chunk-L.js";\nvar finish = 5;\nexport { finish };\n',
+    };
+    const read = (rel: string) => (files as Record<string, string>)[rel]!;
+    const exists = (rel: string) => rel in files;
+    const compiler = coreFiles(read, exists);
+    expect([...firstUseFiles(read, exists, compiler)]).toEqual(["chunk-D.js", "chunk-L.js", "chunk-S.js"]);
+    const withoutEntry = Object.fromEntries(Object.entries(files).filter(([rel]) => rel !== FIRST_USE_ENTRY));
+    expect(() =>
+      firstUseFiles(
+        (rel) => withoutEntry[rel]!,
+        (rel) => rel in withoutEntry,
+        compiler,
+      ),
+    ).toThrow(/first-use-path\.js is missing/);
+    expect([...firstUseFiles(read, () => false, new Set())]).toEqual([]);
+    const reexporting = { ...files, "chunk-L.js": 'export { s } from "./chunk-S.js";\n' };
+    expect(() =>
+      firstUseFiles(
+        (rel) => (reexporting as Record<string, string>)[rel]!,
+        (rel) => rel in reexporting,
+        compiler,
+      ),
+    ).toThrow(/dist\/chunk-L\.js re-exports/);
+  });
+
   it("src/compile-path.ts names exactly what the playground's compiler door re-exports", () => {
     // A name the door adds without the entry would land in a lazy-only core chunk, which the
     // compiler chunk would then import statically: the startup gate's walk would count it.
@@ -111,8 +150,33 @@ describe("coreFiles (vite.config.js's compiler chunk)", () => {
     const door = new Set(reexported(text("compiler.ts")));
     const used = [...new Set([...reached].flatMap(imported))];
     const entry = reexported(readFileSync(join(REPO, "src/first-use-path.ts"), "utf8"));
-    expect(used).toContain("finish");
+    expect(used).toContain("diagnosticToJson");
     expect(used).toContain("lint");
+    // Card 3.18: what the actions run only on a press comes through their lazy door, never here.
+    expect(reached.has("press-core.ts"), "press-core.ts is imported dynamically only").toBe(false);
+    expect(used).not.toContain("finish");
     expect(entry.sort()).toEqual(used.filter((n) => !door.has(n)).sort());
+  });
+
+  it("src/actions-path.ts names exactly what the header actions' lazy door re-exports, which only a dynamic import reaches", () => {
+    // Card 3.18: Format, Finish, Repair and the DXF/TXT downloads load their core code on a press.
+    // A name the door adds without the entry would sit in a chunk with another entry's code (edit
+    // mode's, or the first use's, which would then carry it); a static import of the door anywhere
+    // in the playground would put it back on the first use's path.
+    const SRC = join(REPO, "playground/src");
+    const door = reexported(readFileSync(join(SRC, "press-core.ts"), "utf8"));
+    const entry = reexported(readFileSync(join(REPO, "src/actions-path.ts"), "utf8"));
+    expect(door).toEqual(expect.arrayContaining(["finish", "repair", "format", "toDxf", "renderAscii"]));
+    expect([...entry].sort()).toEqual([...door].sort());
+    const firstUse = new Set(reexported(readFileSync(join(REPO, "src/first-use-path.ts"), "utf8")));
+    expect(door.filter((n) => firstUse.has(n))).toEqual([]);
+    const importers = readdirSync(SRC)
+      .filter((f) => /\.[jt]s$/.test(f))
+      .filter((f) => /\bimport\s*\(\s*"\.\/press-core\.js"\s*\)/.test(readFileSync(join(SRC, f), "utf8")));
+    expect(importers).toEqual(["actions.ts"]);
+    for (const f of readdirSync(SRC).filter((f) => /\.[jt]s$/.test(f)))
+      expect(readFileSync(join(SRC, f), "utf8"), `${f} imports press-core.js statically`).not.toMatch(
+        /^(?:import|export)\s[^;]*?from\s*"\.\/press-core\.js"/m,
+      );
   });
 });

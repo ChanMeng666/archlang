@@ -1,7 +1,7 @@
 /**
  * The helpers every error-catalogue family module writes its entries with. A family is one
- * `defineEntries({ E_X: e(message, cause, fix, example), … })`: the code is written once, as the
- * key, and `defineEntries` copies it into the entry. `src/error-catalog.ts` merges the families
+ * `defineEntries({ E_X: e(message, cause, fix, example, fixed?), … })`: the code is written once, as
+ * the key, and `defineEntries` copies it into the entry. `src/error-catalog.ts` merges the families
  * into `ERROR_CATALOG`.
  *
  * All three helpers build a value and touch nothing else, and are marked `@__NO_SIDE_EFFECTS__` to
@@ -16,38 +16,42 @@ import type { CatalogEntry } from "../error-catalog.js";
 /** A catalogue entry before its code is filled in from its key. */
 export type EntryBody = Omit<CatalogEntry, "code">;
 
-/** An `E_*` entry. */
+/** An `E_*` entry. `fixed`, when given, is `example` corrected (card AF5). */
 export const e = /* @__NO_SIDE_EFFECTS__ */ (
   message: string,
   cause: string,
   fix: string,
   example: string,
+  fixed?: string,
 ): EntryBody => ({
   severity: "error",
   message,
   cause,
   fix,
   example,
+  ...(fixed === undefined ? {} : { fixed }),
 });
 
-/** A `W_*` entry. */
+/** A `W_*` entry. `fixed`, when given, is `example` corrected (card AF5). */
 export const w = /* @__NO_SIDE_EFFECTS__ */ (
   message: string,
   cause: string,
   fix: string,
   example: string,
+  fixed?: string,
 ): EntryBody => ({
   severity: "warning",
   message,
   cause,
   fix,
   example,
+  ...(fixed === undefined ? {} : { fixed }),
 });
 
 /**
  * A family's entries, keyed by code, each with `code` filled in from its key (first, so an entry
- * keeps the property order `code, severity, message, cause, fix, example`). The keys stay literal
- * in the type, which is what `CatalogCode` is built from.
+ * keeps the property order `code, severity, message, cause, fix, example`, then `fixed` when it has
+ * one). The keys stay literal in the type, which is what `CatalogCode` is built from.
  */
 export const defineEntries = /* @__NO_SIDE_EFFECTS__ */ <T extends Record<string, EntryBody>>(
   bodies: T,
