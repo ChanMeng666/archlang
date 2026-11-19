@@ -15,9 +15,11 @@ import { describe as suite, expect, it } from "vitest";
 import { applyFixes, compile } from "../src/index.js";
 import type { Diagnostic } from "../src/diagnostics.js";
 import { spelling } from "../src/expr.js";
-import { STATEMENT_STARTS } from "../src/grammar/tokens.js";
+import { KEYWORDS, STATEMENT_STARTS } from "../src/grammar/tokens.js";
 import { USE_KINDS } from "../src/ast.js";
 
+/** The words a statement can start with: the fixed ones and the element keywords. */
+const STARTS = [...STATEMENT_STARTS, ...KEYWORDS.element];
 const plan = (...lines: string[]): string => `plan "p" {\n${lines.map((l) => `  ${l}`).join("\n")}\n}\n`;
 const ROOMS = [
   'room id=hall at (0,0) size 4000x3000 label "Hall" uses hall',
@@ -51,7 +53,7 @@ function fixed(src: string): { out: string; codes: string[] } {
 
 suite("spelling(): TypeScript's getSpellingSuggestion rules", () => {
   it("finds the near word, and calls it unique when no other word is under the limit", () => {
-    expect(spelling("dor", STATEMENT_STARTS)).toEqual({ word: "door", unique: true });
+    expect(spelling("dor", STARTS)).toEqual({ word: "door", unique: true });
     expect(spelling("bedrom", USE_KINDS)).toEqual({ word: "bedroom", unique: true });
     // A changed letter counts two (`dor` is not one edit from `for`), as in TypeScript.
     expect(spelling("dor", ["for"])).toBeNull();
@@ -65,14 +67,14 @@ suite("spelling(): TypeScript's getSpellingSuggestion rules", () => {
   });
 
   it("offers nothing for a word of the set, a far word, or a two-letter word in the same case", () => {
-    expect(spelling("door", STATEMENT_STARTS)).toBeNull();
-    expect(spelling("zzqqxx", STATEMENT_STARTS)).toBeNull();
+    expect(spelling("door", STARTS)).toBeNull();
+    expect(spelling("zzqqxx", STARTS)).toBeNull();
     expect(spelling("wx", ["wc"])).toBeNull();
     expect(spelling("WC", ["wc"])).toEqual({ word: "wc", unique: true });
   });
 
   it("is a function of its input: the same answer every time", () => {
-    const words = [...STATEMENT_STARTS];
+    const words = [...STARTS];
     const first = spelling("wal", words);
     for (let i = 0; i < 5; i++) expect(spelling("wal", words)).toEqual(first);
   });
@@ -80,7 +82,7 @@ suite("spelling(): TypeScript's getSpellingSuggestion rules", () => {
 
 suite("the producers: a word-level span and a fix that rewrites that word alone", () => {
   it("an unknown statement word", () => {
-    expect(spelt(plan(...ROOMS, "dor on hall.bottom at 1000 width 900"))).toEqual([
+    expect(spelt(plan(...ROOMS, "dor on hall.bottom at 1000 from start width 900"))).toEqual([
       { code: "E_PARSE", span: "dor", hint: "did you mean `door`?", fix: ["machine-applicable", "dor", "door"] },
     ]);
   });
@@ -141,10 +143,10 @@ suite("the producers: a word-level span and a fix that rewrites that word alone"
       },
     ]);
     // A missing clause is spanned on its statement, as it was; the fix still rewrites the word.
-    expect(spelt(plan(...ROOMS, "door on hall.bottom at 1000 widht 900"))).toEqual([
+    expect(spelt(plan(...ROOMS, "door on hall.bottom at 1000 from start widht 900"))).toEqual([
       {
         code: "E_PARSE",
-        span: "door on hall.bottom at 1000",
+        span: "door on hall.bottom at 1000 from start",
         hint: "did you mean `width`?",
         fix: ["machine-applicable", "widht", "width"],
       },
@@ -194,14 +196,14 @@ suite("the producers: a word-level span and a fix that rewrites that word alone"
 
 suite("`arch fix` applies each machine-applicable fix cleanly: fix, recompile, the error is gone", () => {
   it.each([
-    ["dor", plan(...ROOMS, "dor on hall.bottom at 1000 width 900")],
+    ["dor", plan(...ROOMS, "dor on hall.bottom at 1000 from start width 900")],
     ["lable", plan('room id=a at (0,0) size 4000x3000 lable "A"', "walls from rooms exterior 200 partition 100")],
     ["hal", plan(ROOMS[0]!, 'room id=b right-of hal size 3000x3000 label "B"', ROOMS[2]!)],
     [
       "betwen",
       plan(ROOMS[0]!, ROOMS[1]!, "walls from rooms exterior 200 partition 100 {\n    open betwen hall and bed\n  }"),
     ],
-    ["widht", plan(...ROOMS, "door on hall.bottom at 1000 widht 900")],
+    ["widht", plan(...ROOMS, "door on hall.bottom at 1000 from start widht 900")],
     ["bedrom", plan("room id=a at (0,0) size 4000x3000 uses bedrom", "walls from rooms exterior 200 partition 100")],
   ])("%s", (_word, src) => {
     expect(compile(src, { noCache: true }).diagnostics.some((d) => d.severity === "error")).toBe(true);

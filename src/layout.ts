@@ -9,6 +9,8 @@
  * a cycle is a user error (`E_LAYOUT_CYCLE`, members only), an unknown reference is
  * `E_LAYOUT_REF`, a reference with no one run on that side `E_PLACE_POLY`, and a room that
  * merely depends on one of those (directly, along a chain, or into a cycle) `E_LAYOUT_UNPLACED`.
+ * An unknown reference's did-you-mean search over the other room ids (AF2) is charged to the
+ * step meter before it runs, so only a plan that already fails pays it.
  *
  * A rectilinear polygon is a reference through the ring's extreme run on that side, never its
  * box: the run's line is where the room stands, and its ends are what `align` reads.
