@@ -21,7 +21,13 @@
 
 **2026-11-19**：AL3 拆成三个 PR（协调方裁定），依次合并：AL3w（宽度）→ AL3a（与书写顺序无关）→ AL3b（引出线）。AL3w 进入审阅（#962）：房间名和面积数字对符号、对家具文字，按估算宽度和墨迹宽度中较大的一个判断（`symbolExtent`），`relocateLabels`、`fitLabels` 和 `W_ANNOTATION_OVERLAP` 用同一个宽度（第一轮红队后 `relocateLabels` 也改用它，名字因此能在原字号下挪到空处，而不是被缩小）。墙、门扇、地面边缘和 `dims auto` 数字的判断不变。语料：见证夹具的 WC 1、WC 2 改成一行；`examples/laneway-house.arch` 和 `eval/goldens/anchor-furniture.arch` 的卧室名按墨迹宽度读后挤到了旁边的家具，现在以原字号移到更空的地方；`describe()`、`lint()` 不变。
 
-下一步：AL4 合并后做 AL3。依次做下去，每张卡一个 PR；卡合并后在这里记一行，并从 `cards.md` 删掉那张卡。
+**2026-11-19**：AL4 完成（#961，合并提交 `287e19f8`）。AL3w 完成（#962，合并提交 `db1acefd`）。第二轮红队后（同一 PR）：`relocateLabels` 读符号时也按较宽的宽度，所以 `test/taste-corpus/r6-bed-in-kitchen.good.arch` 的卧室名也移动；一个对称小屋的内联测试平面，名字移到另一个下角（两个角只差舍入误差）。
+
+**2026-11-19**：AL3a 进入审阅（#964）。`relocateLabels` 按从平面读出的顺序处理标签（`plotOrder`：先 y 后 x，与 `fitLabels` 相同；坐标按微米网格比较，所以平面平移一个小数偏移画法不变；同位置时房间标签排在室外面标签前，再比字号），用 `label "…" at (x,y)` 钉住的标签在第一轮之前就占位。每个放下的标签都占着自己的位置，包括站在自己地面之外、`fitLabels` 之后会缩小的那种（红队第一轮后试过让它们让位，结果标签互相压字，协调方裁定不采用）。`ORDER_EXCUSED` 从 5 个平面减到 0（名单删除，这 5 个平面改为断言与顺序无关）；knock-on 名单仍是 4 个名字（没有缩小）。语料：没有任何 `.arch` 文件变（`chain30`、`star30`、walls-first `6-clinic` 与 `main` 字节相同）；只有测试内联的两个 `frames` 平面变：`test/tables/openings-between-plans.ts` 只变 SVG，`test/tables/wall-between-around-plans.ts` 变 SVG（四个副本里的五个标签重放）和 4 条 `W_ANNOTATION_OVERLAP` 的措辞及 `hints`（条数、代码、位置不变）。#962 第二轮红队的 S1（case352：邻居过宽的名字把 GYM 挤走、再被缩小到 300）没有修，钉成现状测试，另立卡 AL3e。画 `walls from rooms` 的平面仍可能随顺序变：`dims auto` 的墙厚数字在标签之前按自己的顺序放（卡 AL3f）；派生墙按自己的顺序累加墙带，镜像平局可能差一个舍入而落到另一边（卡 AL3g）。红队给的另一个例子 case475（"MASTER BEDROOM" 175 → 150）不是邻居的问题，是 `fitLabels` 宁要贴墙余量（tier 0）的小字号，也不要原字号的 tier 1；没有在这个 PR 里改，交给协调方裁定。这一条记为 AL3d；镜像平局由舍入决定（N2）记为 AL3g。第二轮红队的其余项记为 AL3h。
+
+**2026-11-19**：AL3a 完成（#964，合并提交 `b1e73f98`）。第二轮红队后（同一 PR）：顺序键的网格从纳米改成微米（文档本来就写微米；离原点 10 km 的平移也不再改变画法，钉成测试），并写明 `walls from rooms` 的例外。AL4 第二轮红队的残余记为 AL4b。
+
+下一步：AL3b（引出线），从分支 `feat/al3b-leaders` 变基到 `main` 后重量。依次做下去，每张卡一个 PR；卡合并后在这里记一行，并从 `cards.md` 删掉那张卡。
 
 | 卡 | PR | 状态 |
 |---|---|---|
@@ -30,9 +36,17 @@
 | AL1 | #958 | 完成 |
 | AL5 | #959 | 完成 |
 | AL5b | — | todo |
-| AL4 | #961 | 审阅中 |
-| AL3w | #962 | 审阅中 |
-| AL3 | — | todo |
+| AL4 | #961 | 完成 |
+| AL3w | #962 | 完成 |
+| AL3a | #964 | 完成 |
+| AL3b | — | todo |
+| AL3c | — | todo |
+| AL3d | — | blocked（协调方） |
+| AL3e | — | todo |
+| AL3f | — | todo |
+| AL3g | — | blocked（协调方） |
+| AL3h | — | todo |
+| AL4b | — | todo |
 | AL2a | — | todo |
 | AL2b | — | blocked（AL-D1） |
 | AL2c | — | todo |

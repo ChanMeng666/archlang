@@ -32,13 +32,31 @@
  * it; what is left over something after that is `W_ANNOTATION_OVERLAP`'s to report. That rule
  * reads rooms only, so an `outdoor` surface's label is not reported.
  *
- * ### Determinism
+ * ### Determinism, and the order of the source
  *
  * Candidates are visited in one fixed order — the incumbent anchor **first**, then a 7×7
  * lattice of bounding-box fractions — and only a **strictly** better score displaces the
- * incumbent. Same rule as {@link import("./geometry/polygon.js").polygonLabelPoint}: no
- * float comparison picks a winner among equals, so a tie always keeps the label where it
- * was. Pure arithmetic, one pass, no iteration to a tolerance.
+ * incumbent. Same rule as {@link import("./geometry/polygon.js").polygonLabelPoint}: an exact
+ * tie keeps the label where it was, or at the place visited first. Pure arithmetic, one pass, no
+ * iteration to a tolerance, so the same plan always draws the same. What is not promised is
+ * symmetry: the scores are compared exactly, so two places that a mirror of the room makes equal
+ * in exact arithmetic can score a rounding error apart (the two bottom corners of a symmetric shed
+ * differ by about 1e-13), and then the lower one wins. Which one that is depends on the rounding,
+ * so a mirrored plan, or a change to a label's width, can move the label to the other twin.
+ *
+ * The labels take their turns in an order read off the plan, never the source's
+ * ({@link plotOrder}: the anchor's y, then its x, read on a micrometre grid, then the texts, a
+ * room's before a surface's, the texts' sizes, then the ring; the order `fitLabels` takes its turns
+ * in), so the same rooms written in any order draw the same (card AL3a, label-crowding). Not yet in
+ * a plan that draws `walls from rooms`: under `dims auto` its wall-thickness figures are stationed
+ * before this pass, in an order of their own (card AL3f), and its derived walls reach this pass in
+ * their own order, so the wall bands of two places a mirror makes equal can sum a rounding step
+ * apart and the label settle on the other one (card AL3g). An authored label (`label "…" at (x,y)`) stands
+ * in the way from the first turn. Every label placed claims its box, even one off its own floor that
+ * `fitLabels` will shrink later, so a neighbour can be moved, and then shrunk, for a box that is
+ * about to change (card AL3e, `case352`); that is kept, because two labels printed over each other are
+ * worse. Before, the turns went by element order, and each placed label was an obstacle for the
+ * next, so five corpus plans, written the other way round, drew differently.
  *
  * Prior art: planscript-rust's `best_area_label_candidate` / `label_score`
  * (`src/exporters.rs`, MIT) — the candidate lattice, the distance-from-centre preference
@@ -616,10 +634,9 @@ export function underLabels(n: SceneNode): boolean {
  *
  * Mutates `nodes` in place (replacing, never editing, the text nodes it moves), which is
  * safe: every node in the list was freshly built by this `toScene` call. Groups are
- * visited in ELEMENT order and each placed label becomes an obstacle for the next, so two
- * labels can never be relocated onto each other — and an `outdoor` surface takes its turn
- * among the rooms rather than after them, which is what keeps a plan with no ground on
- * exactly the group list, and therefore exactly the bytes, it would have without ground.
+ * visited in {@link plotOrder}, never element order, and each placed label becomes an obstacle
+ * for the next, so two labels can never be relocated onto each other; an authored label is one from
+ * the first turn. An `outdoor` surface takes its turn among the rooms, by the same order.
  *
  * `work`, when given, counts every place scored (`labelRelocations`, `src/compile-work.ts`); an
  * out-parameter only.
@@ -675,7 +692,20 @@ export function relocateLabels(
     probe.placedN = placed.boxes.length;
     return { obstacles: buried(rect, probe.obstacles), placed: buried(rect, probe.placed) };
   };
-  for (const g of groups) {
+  const order = plotOrder(nodes, groups);
+  // An authored label (`label "…" at (x,y)`) never moves, so it stands where it is drawn from the
+  // first turn: a label that takes its turn before it must not be placed over it (card AL3a).
+  for (const g of order) {
+    if (!g.fixed) continue;
+    let rect: BBox | null = null;
+    for (let i = g.from; i < g.to; i++) {
+      const n = nodes[i]!;
+      const b = n.layer === "labels" && n.prim.t === "text" ? labelBox(n.prim) : null;
+      if (b) rect = rect ? unionBBox(rect, b) : b;
+    }
+    if (rect) placed.push(rect);
+  }
+  for (const g of order) {
     const texts: number[] = [];
     for (let i = g.from; i < g.to; i++) {
       const n = nodes[i]!;
@@ -692,11 +722,9 @@ export function relocateLabels(
     // An explicit `label "…" at (x,y)` is the author's decision and is never overruled —
     // it is also the anchor `W_ROOM_LABEL_OUTSIDE` reports on, so moving it would make
     // that diagnostic describe a position nothing is drawn at. (`outdoor` has no such
-    // clause, so its groups are never `fixed`; the field is the room's.)
-    if (g.fixed) {
-      placed.push(rect0);
-      continue;
-    }
+    // clause, so its groups are never `fixed`; the field is the room's.) It was placed before the
+    // first turn.
+    if (g.fixed) continue;
 
     const { ring, anchor } = g;
     // Probe 0 is the trigger, 1 the incumbent, 2 + k the k-th lattice point.
@@ -762,4 +790,78 @@ export function relocateLabels(
     }
     placed.push(shiftBBox(rect0, dx, dy));
   }
+}
+
+/**
+ * The groups in the order the relocation takes them: by the anchor's y, then its x (the order
+ * `fitLabels` takes its turns in), each read on a micrometre grid ({@link snap}), then the texts as
+ * drawn, then a room's label before a surface's, then the texts' sizes, then the ring vertex by
+ * vertex, then an authored label after a placed one. Read off the plan, never the source, so the same
+ * rooms written in any order take the same turns. Only two groups alike in all of that, which draw
+ * the same texts at the same size at the same place in the same ring, keep their element order
+ * between them (the sort is stable).
+ * Exported for the relocation's oracle (`test/label-placement-oracle.test.ts`), which takes its turns
+ * the same way.
+ */
+export function plotOrder(nodes: readonly SceneNode[], groups: readonly LabelGroup[]): LabelGroup[] {
+  const keyed = groups.map((g) => {
+    const texts: string[] = [];
+    const sizes: number[] = [];
+    for (let i = g.from; i < g.to; i++) {
+      const prim = nodes[i]!.prim;
+      if (nodes[i]!.layer === "labels" && prim.t === "text") {
+        texts.push(prim.value);
+        sizes.push(prim.size);
+      }
+    }
+    return { g, texts, sizes };
+  });
+  keyed.sort((a, b) => {
+    const pa = a.g.anchor;
+    const pb = b.g.anchor;
+    return (
+      snap(pa.y) - snap(pb.y) ||
+      snap(pa.x) - snap(pb.x) ||
+      strings(a.texts, b.texts) ||
+      Number(!a.g.wrap) - Number(!b.g.wrap) ||
+      numbers(a.sizes, b.sizes) ||
+      ring(a.g.ring, b.g.ring) ||
+      Number(a.g.fixed) - Number(b.g.fixed)
+    );
+  });
+  return keyed.map((k) => k.g);
+}
+
+/**
+ * A coordinate on a micrometre grid, for ordering only: two points the same in exact arithmetic
+ * can be computed a rounding error apart (a label point of a ring moved by a decimal offset), and
+ * must sort as equal so the next key decides, the same on every copy of the plan.
+ */
+const snap = (v: number): number => Math.round(v * 1e3);
+
+/** Two lists of numbers, element by element, then by length. */
+function numbers(a: readonly number[], b: readonly number[]): number {
+  for (let i = 0; i < Math.min(a.length, b.length); i++) {
+    const d = a[i]! - b[i]!;
+    if (d !== 0) return d;
+  }
+  return a.length - b.length;
+}
+
+/** Two lists of strings, element by element by code unit, then by length. */
+function strings(a: readonly string[], b: readonly string[]): number {
+  for (let i = 0; i < Math.min(a.length, b.length); i++) {
+    if (a[i]! < b[i]!) return -1;
+    if (a[i]! > b[i]!) return 1;
+  }
+  return a.length - b.length;
+}
+
+/** Two rings, vertex by vertex (x, then y), then by length. */
+function ring(a: readonly Point[], b: readonly Point[]): number {
+  for (let i = 0; i < Math.min(a.length, b.length); i++) {
+    const d = snap(a[i]!.x) - snap(b[i]!.x) || snap(a[i]!.y) - snap(b[i]!.y);
+    if (d !== 0) return d;
+  }
+  return a.length - b.length;
 }

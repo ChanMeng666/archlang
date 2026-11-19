@@ -19,7 +19,7 @@ const DIGESTS: [string, string][] = [
   // PS4.4: every row whose plan resolves re-measured once for the new totals key (gross internal area); see test/byte-identity-baseline.ts.
   ["relational-forms", "d7d72933de585adc081be67bc34e06207e2f46bf6bf431d9464972ac6f3aa8bb"], // `centreline_at`, see ./byte-identity-baseline.ts
   ["hosted-datums", "ed32136bcef7682f957e05a5c5c44aa6c731c54b56baae7c9fe9b212b832e666"],
-  ["frames", "33ddec55acca93b96ea3aeeba550373cf5b467dea8242746fbb10e83c37dc65f"], // PS2.29: message text only, same code, same span; `centreline_at`, see ./byte-identity-baseline.ts
+  ["frames", "d0465c153512aa5150b0ec944bf5f0fb6e6d875e94901e1876b3d26acce37cc8"], // PS2.29: message text only, same code, same span; `centreline_at`, see ./byte-identity-baseline.ts; AL3a: SVG only, see ./byte-identity-baseline.ts
   ["widen-4000", "ac27ff053cfb837ae4fc316afc384ea897760bfa49fbedd691f0e8e81a003f31"], // `centreline_at`, see ./byte-identity-baseline.ts
   ["widen-4500", "a0ad0823865adef94aad0633cc8e5614b4d7cba015dbaaf26a1f3de2645bccfa"], // `centreline_at`, see ./byte-identity-baseline.ts
   ["refused", "8f8d8a2ccb3150bb6998eda99ae95acc80f577e04744e17992f2507f6324d7d2"],
