@@ -98,7 +98,8 @@ export function noteSnap(
   // Reported when the value prints differently once snapped, and then quoted as written: a
   // value `fmt3` would round (`2749.9999`) is printed in full, never as the `2750` it is not.
   if (written.every((v, i) => fmt3(v) === b[i])) return;
-  const a = written.map(fmtWritten);
+  // Quoted without float noise only where the shorter form snaps where the value does (RM9.4).
+  const a = written.map((v) => fmtWritten(v, (x) => Math.round(x / ctx.grid) * ctx.grid));
   const show = (xs: string[]): string => (point ? `(${xs.join(", ")})` : xs.join(" x "));
   const g = fmt3(ctx.grid);
   ctx.diag({

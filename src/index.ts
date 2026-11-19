@@ -53,6 +53,9 @@ export type {
   Severity,
 } from "./types.js";
 export { formatDiagnostic, offsetToLineCol } from "./diagnostics.js";
+// The remedy a diagnostic shows: its code's fix in the caller's table, or the root-first one when it
+// names a `cause` (RM9.4) — what the JSON, the CLI, the error cards and the playground panel show.
+export { diagnosticFix } from "./catalog-fix.js";
 // Agent-facing JSON projection of a diagnostic (line/col + catalogued `fix`) —
 // the canonical shape the CLI's `--json` output emits, exposed for programmatic
 // consumers (playground, LSP embedders, SDK users).

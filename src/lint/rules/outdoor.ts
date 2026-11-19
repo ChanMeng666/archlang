@@ -20,6 +20,7 @@ import {
 } from "../../geometry/polygon.js";
 import type { LintContext, LintRule } from "../context.js";
 import { mm } from "../measure.js";
+import { fmtMessage } from "../../num-format.js";
 import { capFirst } from "../../naming.js";
 
 /** The ring a surface actually occupies — its own polygon, or its rectangle. */
@@ -240,13 +241,13 @@ export const balconyNoDoor: LintRule = {
         severity: "warning",
         message:
           sealed.length === 0
-            ? `${capFirst(names.get(b)!)} has no door or window within ${reach} mm of any of its edges, so there is ` +
+            ? `${capFirst(names.get(b)!)} has no door or window within ${fmtMessage(reach)} mm of any of its edges, so there is ` +
               `no way onto it. Add a door (or a full-height window) on the wall it hangs off.`
             : sealed.some(shutToWalking)
-              ? `${capFirst(names.get(b)!)} has no door within ${reach} mm of any of its edges, and ` +
+              ? `${capFirst(names.get(b)!)} has no door within ${fmtMessage(reach)} mm of any of its edges, and ` +
                 `${sealed.length === 1 ? "the window there is not one to walk through" : "no window there is one to walk through"}, ` +
                 `so there is no way onto it. Add a door, or make the window a kind that opens.`
-              : `${capFirst(names.get(b)!)} has no door within ${reach} mm of any of its edges, and ${sillPhrase(sealed)}, ` +
+              : `${capFirst(names.get(b)!)} has no door within ${fmtMessage(reach)} mm of any of its edges, and ${sillPhrase(sealed)}, ` +
                 `so there is no way onto it. Add a door, or bring the window down to the floor.`,
         code: "W_BALCONY_NO_DOOR",
         ...ctx.at(b),

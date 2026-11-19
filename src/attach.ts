@@ -26,7 +26,7 @@ import { segmentLength, segmentPointAlong, segmentsOfWall } from "./geometry.js"
 import type { OpeningRelation, WindowCorner } from "./ir.js";
 import { enumList } from "./grammar/tokens.js";
 import { axisRead, EDGE_WORDS } from "./room-datums.js";
-import { fmt3 as numStr } from "./num-format.js";
+import { fmtMessage, fmt3 as numStr } from "./num-format.js";
 import {
   axisArithmeticDiag,
   axisCrossingDistance,
@@ -369,7 +369,7 @@ export function resolveAttachment(
     if (!(d >= 0 && d <= total)) {
       diag({
         severity: "error",
-        message: `${what} attachment position is ${numStr(d)} mm along the wall run, outside it (0…${total})`,
+        message: `${what} attachment position is ${numStr(d)} mm along the wall run, outside it (0…${fmtMessage(total)})`,
         code: "E_ATTACH_POS_RANGE",
         span: attach.span,
       });
@@ -385,7 +385,7 @@ export function resolveAttachment(
       const fixes = attachClampFix(attach, `${numStr(clamped)}%`);
       diag({
         severity: "error",
-        message: `${what} attachment position ${pct}% is outside 0–100%`,
+        message: `${what} attachment position ${fmtMessage(pct)}% is outside 0–100%`,
         code: "E_ATTACH_POS_RANGE",
         span: attach.span,
         ...(fixes ? { fixes } : {}),
@@ -400,7 +400,7 @@ export function resolveAttachment(
       const fixes = attachClampFix(attach, numStr(clamped));
       diag({
         severity: "error",
-        message: `${what} attachment position ${mm} mm is outside the wall run (0…${total})`,
+        message: `${what} attachment position ${fmtMessage(mm)} mm is outside the wall run (0…${fmtMessage(total)})`,
         code: "E_ATTACH_POS_RANGE",
         span: attach.span,
         ...(fixes ? { fixes } : {}),
@@ -450,6 +450,7 @@ export function resolveOpeningLead(
     diag: ctx.diag,
     ...(ctx.rootDiag ? { rootDiag: ctx.rootDiag } : {}),
     sameFile: ctx.sameFile,
+    ...(ctx.refusedDerivation ? { refusedDerivation: ctx.refusedDerivation } : {}),
     eval: (e) => ctx.eval(e),
     ...(ctx.datums ? { datums: ctx.datums } : {}),
   };

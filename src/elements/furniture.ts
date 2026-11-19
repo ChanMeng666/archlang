@@ -35,7 +35,7 @@ import { chargeSteps, indelDistance } from "../expr.js";
 import { COMPASS_DATUM_ALIASES, edgeOfRoom, splitDatum } from "../room-datums.js";
 import { rectilinear, rectInRing, runRect } from "../room-tiling.js";
 import { parseSegmentSelect, segmentSelectText, selectSegment } from "../segment-select.js";
-import { fmt3, MODEL_RANGE_MM } from "../num-format.js";
+import { fmt3, fmtMessage, MODEL_RANGE_MM } from "../num-format.js";
 import { facingTurn, openingBody, TURNS } from "../furniture-relation.js";
 import {
   ANCHOR_BACK_EDGES,
@@ -779,7 +779,8 @@ function placeAgainst(
     return err(`segment ${segIdx} of wall "${ag.wall}" is not axis-aligned (placement supports quarter-turns only)`);
   const segLen = length(sub(seg.b, seg.a));
   const off = ag.offset !== undefined ? ctx.eval(ag.offset) : segLen / 2;
-  if (off < 0 || off > segLen) return err(`offset ${off} is outside the segment run (0..${segLen})`);
+  if (off < 0 || off > segLen)
+    return err(`offset ${fmtMessage(off)} is outside the segment run (0..${fmtMessage(segLen)})`);
   const nL = normal(d); // left normal of a→b (into the room for `side left`)
 
   // Which face to back onto: explicit `side`, else inferred from `in <room>` (the

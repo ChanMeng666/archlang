@@ -38,7 +38,7 @@ import {
   polygonLabelPoint,
   polygonSelfIntersects,
 } from "../geometry/polygon.js";
-import { fmtTenthsOf2dp } from "../num-format.js";
+import { fmtMessage, fmtTenthsOf2dp } from "../num-format.js";
 import { noteMetres, noteSnap, roomSizeLooksMetric } from "../ir/silent-accepts.js";
 import { FLOOR_MATERIALS, type FloorMaterial, floorHatch, hatchId, isFloorMaterial } from "../hatches.js";
 import { LABEL_AREA_DROP, LABEL_NAME_RISE } from "../text-layout.js";
@@ -196,7 +196,7 @@ export function roomLabelAnchor(r: RRoom): Point {
 function labelOutsideDiag(id: string, labelAt: Point, span: Span | undefined): Diagnostic {
   return {
     severity: "warning",
-    message: `Room "${id}" pins its label at (${labelAt.x}, ${labelAt.y}), which is outside the room`,
+    message: `Room "${id}" pins its label at (${fmtMessage(labelAt.x)}, ${fmtMessage(labelAt.y)}), which is outside the room`,
     code: "W_ROOM_LABEL_OUTSIDE",
     span,
   };
