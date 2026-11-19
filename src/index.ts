@@ -86,6 +86,38 @@ export type { Applicability, FixEdit, FixSuggestion } from "./diagnostics.js";
 export { applyFixes, rankFixes } from "./fix-apply.js";
 export type { ApplyReport, ApplyFixesOptions } from "./fix-apply.js";
 export type * from "./ast.js";
+// Every value export of ast.ts is public API: the declaration bundler advertises each in the d.ts
+// (`export type *` above carries types only in the JS), so each is listed here by name and the
+// JS export matches the declaration. test/index-values.test.ts pins d.ts values == runtime keys;
+// test/ast-values-frozen.test.ts pins that the tables are frozen.
+export {
+  ARC_DIRS,
+  AUTO_DIMS_MODES,
+  AXIS_ALIGNS,
+  CLEAR_ZONES,
+  COMPASS_DIRECTIONS,
+  DIM_REFS,
+  FENCE_STYLES,
+  FURNITURE_ANCHORS,
+  HEMISPHERES,
+  LEVEL_MIX_STAYS_OUTSIDE,
+  LEVEL_SHARED_KINDS,
+  NORTH_DIRS,
+  OUTDOOR_KINDS,
+  PLAN_SETTING_KEYWORDS,
+  RAIL_EDGES,
+  RAIL_SIDES,
+  REL_ALIGNS,
+  REL_ALIGN_CENTERS,
+  REL_DIRS,
+  REL_DIR_AXIS,
+  SCHEDULE_SUBJECTS,
+  STRIP_DIRS,
+  TITLE_FIELD_KEY,
+  USE_KINDS,
+  VERTICAL_DIRS,
+  relAlignCounterpart,
+} from "./ast.js";
 // Source formatter: pure text→text, comment-preserving, idempotent.
 export { format } from "./format.js";
 // `reroll`: detect ≥3 consecutive statements in arithmetic progression and offer

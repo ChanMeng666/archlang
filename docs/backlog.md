@@ -259,6 +259,25 @@ which also matches `eval/g1/generate.ts` if that script ever imports it; the `re
 `scripts/risk-tier.mjs` is the narrower replacement for all three entry-point checks; (4) no run of
 `check:quick` from a checkout under a path with spaces has been recorded.
 
+### 3.16 · The `bathroom` concept counts a room with only a WC — by design — `note`
+
+Owner ruling, 2026-11-18: the `bathroom` concept (`src/intent-concepts.ts`) matches a room by its label
+("bath", "shower room", …), its room type `Bathroom`, or `uses bath` or `uses wc`, so a WC-only room
+matches; it reads no fixtures. The Chinese 卫生间 means either, so this is a question of
+meaning, not a bug, and the behaviour stays. A stricter concept for a full bathroom (bath or shower
+required) is added only when a brief needs it. Reported by the ArchCanvas eval, together with a second
+ask (a combined kitchen and living room credited once); that ask is withdrawn because its eval inputs
+were wrong (one room meets one requirement, so a caller asserts a combined room once).
+
+### 3.17 · Frozen public tables: residue of #968 — `todo`
+
+Non-blockers from the second review of #968:
+
+1. `test/ast-values-frozen.test.ts` walks `Object.entries`, so a future frozen `Set` or `Map` table passes while staying mutable.
+2. 40 of the 72 object-valued root exports are still not deep-frozen (`ROOM_TYPES`, `ERROR_CODES`, `PAPER_SIZES`, `THEMES`, `DEFAULT_THEME`, `PLAN_JSON_SCHEMA` and others). This predates #968, but the same reason for freezing applies to them. Freezing them is a behaviour change for a consumer that mutates them, so decide the release class first.
+3. PR CI never runs `test/index-values.test.ts` on Windows. Standalone on a Windows laptop, its program build took 9.8 s over 912 files against its 60 s timeout; `types: []` cuts that to 4–6 s with the same result.
+4. The new top-level `Object.freeze` calls carry no `@__PURE__` mark (`src/pure.ts`), like 27 other freezes in `src`. No measured effect.
+
 ## Found while redrawing the showcase
 
 Five things the twelve new examples ran into. None is a regression and none blocked an example from

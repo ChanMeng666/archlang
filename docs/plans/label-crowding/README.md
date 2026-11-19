@@ -44,7 +44,7 @@
 
 ## 4. 工作顺序
 
-AL6 → AL1 → AL5 → AL4 → AL3 → AL2a → AL2c。AL2b 等 AL-D1 裁定。
+AL6 → AL1 → AL5 → AL4 → AL3（拆成 AL3w → AL3a → AL3b）→ AL2a → AL2c。AL2b 等 AL-D1 裁定。AL3c–AL3h、AL4b、AL5b、AL6b 是这些卡的后续，排在 AL3b 之后。
 
 - AL6 先做：后面各卡都用它来写测试。
 - AL1、AL5 先于 AL2：这两张也会挪动尺寸和图框，放在 AL2 之前，可以避免金样改两次。
@@ -55,7 +55,7 @@ AL6 → AL1 → AL5 → AL4 → AL3 → AL2a → AL2c。AL2b 等 AL-D1 裁定。
 | 编号 | 问题 | 建议 |
 |---|---|---|
 | AL-D1 | 尺寸文字加底色遮罩（类似 AutoCAD 的 DIMTFILL）：所有带 `dims auto` 的 SVG/PNG 都会变 | 先不做。AL2a 之后再量剩下多少数字压在线上，再决定 |
-| AL-D2 | 家具文字放不下时，能否缩到 `furnFont` 以下。`label-fit.ts` 把 `furnFont` 定为"图上最小的字" | 不缩。先试转到长边；还放不下就不画文字，文字仍留在 `describe()` 和 `schedule fixtures` 里 |
+| AL-D2 | 家具文字放不下时，能否缩到 `furnFont` 以下。`label-fit.ts` 把 `furnFont` 定为"图上最小的字" | 不缩。先试转到长边；还放不下就不画文字，文字仍留在 `describe()` 里（`schedule fixtures` 还没有，见 RM4.2） |
 | AL-D3 | 房间名允许离开自己的地面，用引出线指回：这改变了"标签留在自己地面上"的约定（`label-placement.ts`） | 允许，只限 `fitLabels` 之后仍然相撞的标签，并写一份 ADR |
 
 所有者 2026-11-18 批准实施全部修复。上表三项是实施中的具体取舍，表里的建议是默认做法，所有者可以改。
