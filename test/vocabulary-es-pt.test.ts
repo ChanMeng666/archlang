@@ -308,7 +308,7 @@ describe("NR.16: brief concepts are reached through uses, never through es/pt la
     it(`${concept}: "${es}" and "${pt}" match by uses alone, and by label not at all`, () => {
       for (const l of [es, pt]) {
         expect(matches(concept, room(l)), l).toBe(true);
-        expect(matches(concept, { id: "r", label: l, uses: [], room_type: "Room" } as RoomSummary), l).toBe(false);
+        expect(matches(concept, { ...room(l), uses: [], room_type: "Room" }), l).toBe(false);
       }
     });
 
