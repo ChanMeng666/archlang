@@ -31,9 +31,11 @@
  * fourth (card AL3w): a labelled area's own text is boxed at the wider of the estimate and its ink
  * (`symbolExtent`), the width the fit and the rule read it at against a symbol. How big a label is
  * stays the pass's input. A fifth (card AL3a): the groups take their turns in `plotOrder`, an order
- * read off the plan, rather than element order, and a label the fit will redraw (`fitTexts`, with a
- * text more than `COLLIDE_MIN` of its own ink box off its floor) claims no floor. Which group goes
- * when, and which labels are obstacles, are the pass's input; the sums under test are not.
+ * read off the plan (`plotOrder`), rather than element order. A label the fit will redraw
+ * (`fitTexts`, with a text more than `COLLIDE_MIN` of its own ink box off its floor) claims no floor;
+ * one too big for its room at every height (`fitCanRedraw`) claims both where it is left and its
+ * anchor; an authored label claims its box before the first turn. Which group goes when, and which
+ * labels are obstacles, are the pass's input; the sums under test are not.
  */
 
 import { corpusFiles, walkFiles as walk } from "./helpers/corpus.js";
@@ -57,6 +59,7 @@ import {
   CLEARANCE,
   COLLIDE_MIN,
   FRACTIONS,
+  fitCanRedraw,
   fitTexts,
   type LabelGroup,
   plotOrder,
@@ -314,34 +317,44 @@ function relocateLabelsBefore(
 
   tally.obstacles = obstacles.length;
   const placed: BBox[] = [];
-  for (const g of plotOrder(nodes, groups)) {
+  /** A group's texts and the box they draw, the wider of the estimate and the ink (card AL3w). */
+  const boxOf = (g: LabelGroup): { texts: number[]; rect: BBox | null } => {
     const texts: number[] = [];
     for (let i = g.from; i < g.to; i++) {
       const n = nodes[i]!;
       if (n.layer === "labels" && n.prim.t === "text") texts.push(i);
     }
-    if (texts.length === 0) continue;
-    let rect0: BBox | null = null;
+    let rect: BBox | null = null;
     for (const i of texts) {
       const prim = nodes[i]!.prim;
       let b = primBBox(prim);
-      // Card AL3w: the wider of the estimate and the ink, as the pass reads its own labels.
       if (b && prim.t === "text" && prim.rotate === undefined) {
         const w = symbolExtent(prim).w;
         if (w > b.w) b = { x: b.x + (b.w - w) / 2, y: b.y, w, h: b.h };
       }
-      if (b) rect0 = rect0 ? unionBBox(rect0, b) : b;
+      if (b) rect = rect ? unionBBox(rect, b) : b;
     }
-    if (!rect0) continue;
+    return { texts, rect };
+  };
+  const order = plotOrder(nodes, groups);
+  // Card AL3a: an authored label stands where it is drawn from the first turn.
+  for (const g of order) {
+    const { rect } = boxOf(g);
+    if (g.fixed && rect) placed.push(rect);
+  }
+  for (const g of order) {
+    const { texts, rect: rect0 } = boxOf(g);
+    if (texts.length === 0 || !rect0) continue;
 
     // An explicit `label "…" at (x,y)` is the author's decision and is never overruled —
     // it is also the anchor `W_ROOM_LABEL_OUTSIDE` reports on, so moving it would make
     // that diagnostic describe a position nothing is drawn at. (`outdoor` has no such
-    // clause, so its groups are never `fixed`; the field is the room's.)
-    if (g.fixed) {
-      placed.push(rect0);
-      continue;
-    }
+    // clause, so its groups are never `fixed`; the field is the room's.) Placed above.
+    if (g.fixed) continue;
+
+    // Card AL3a: a label too big for its room at every height claims where it is left and its anchor.
+    const own = fitTexts(nodes, g);
+    const tooBig = own !== null && !fitCanRedraw(own, g.ring, sizes);
 
     // Card AL3a: a label the fit will redraw (a name and an area figure, one of them off its own
     // floor where it stands, each read at its own ink box) claims none; any other keeps its claim.
@@ -357,7 +370,7 @@ function relocateLabelsBefore(
     };
 
     if (buried(rect0, obstacles) + buried(rect0, placed) <= COLLIDE_MIN) {
-      if (claims()) placed.push(rect0);
+      if (tooBig || claims()) placed.push(rect0);
       continue;
     }
 
@@ -405,7 +418,8 @@ function relocateLabelsBefore(
       }
     }
     const landed = shiftBBox(rect0, dx, dy);
-    if (claims()) placed.push(landed);
+    if (tooBig || claims()) placed.push(landed);
+    if (tooBig && (dx !== 0 || dy !== 0)) placed.push(rect0);
   }
 }
 
@@ -516,8 +530,9 @@ describe("relocateLabels: the indexed pass against the full scan", () => {
   const degenerate: Record<string, string> = {
     "300 coincident rooms": plan(`  for i in 0..300 { room at (0,0) size 4000x3000 label "Room" }`),
     "200 near-coincident rooms": plan(`  for i in 0..200 { room at (i*7, i*3) size 4000x3000 label "R{i}" }`),
-    // Card AL3a: a label wider than its room claims no floor, so a lattice of such rooms searches
-    // nothing; this one's rooms overlap by half, each label on its own floor and over its neighbours'.
+    // Card AL3a: a label off its own floor that the fit will redraw claims no floor, so a lattice of
+    // such rooms searches little; this one's rooms overlap by half, each label on its own floor and
+    // over its neighbours'.
     "a crowded lattice (rooms overlapping by half)": plan(
       `  paper A1 landscape\n  scale 1:100\n` +
         `  for i in 0..14 { for j in 0..14 { room at (i*900, j*900) size 1800x1800 label "Room" } }`,

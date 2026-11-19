@@ -58,9 +58,12 @@
  *
  * Which labels do not fit is read first, from the fabric alone. A label that does not fit then
  * claims no floor until its turn comes, so a neighbour never dodges a box that is about to shrink,
- * and the turns go by the room's anchor. `relocateLabels` takes its turns in the same order (card
+ * unless it is too big for its room at every height, which may well stay as it is and so keeps its
+ * floor; the turns go by the room's anchor. `relocateLabels` takes its turns in the same order (card
  * AL3a), so the two passes together are order-free: the same rooms written in any order draw the
- * same. A place is ranked off the lattice, never by a
+ * same. Not yet in a plan that draws `walls from rooms` with `dims auto`: the wall-thickness figures
+ * are stationed before either pass, in an order of their own, and both passes read them as drawn.
+ * A place is ranked off the lattice, never by a
  * measured distance, so an edit too small to matter cannot flip a label across its room.
  *
  * When no height clears it, the form that leaves the least of the label buried is drawn, and an
@@ -96,8 +99,10 @@ import {
   CLEARANCE,
   COLLIDE_MIN,
   FRACTIONS,
+  fitCanRedraw,
   fitTexts,
   type LabelGroup,
+  labelHeights,
   meanExtent,
   overlapArea,
   primBBox,
@@ -123,9 +128,6 @@ type TextPrim = Extract<ScenePrim, { t: "text" }>;
  *  percent of the true curve, which is far inside the 2 % trigger. */
 const ARC_STEPS = 8;
 
-/** Steps from the room-name size down to the furniture-label size. */
-const HEIGHT_STEPS = 3;
-
 /**
  * The counted work of the pass over a whole plan: marks visited plus vertices clipped or read off
  * a ring, under a second at the worst measured (a pile of symbols, every label searched to the end).
@@ -150,20 +152,8 @@ const W_TIER = 1_000_000;
 export const isSymbolElement = (el: ResolvedElement): boolean =>
   (el.kind === "furniture" && !isUnderlay((el as RFurniture).category)) || isVertical(el);
 
-/**
- * The heights a label steps through, largest first: the drawing's own name and area sizes, then
- * the steps down to the furniture-label size. The area figure stays at its size until the name
- * reaches it, and no further: it never stands larger than the name.
- */
-export function labelHeights(sizes: RenderSizes): { name: number; area: number }[] {
-  const { roomFont, furnFont, areaFont } = sizes;
-  const out = [{ name: roomFont, area: areaFont }];
-  for (let i = 1; i <= HEIGHT_STEPS; i++) {
-    const name = i === HEIGHT_STEPS ? furnFont : roomFont - ((roomFont - furnFont) * i) / HEIGHT_STEPS;
-    out.push({ name, area: Math.min(areaFont, name) });
-  }
-  return out;
-}
+// The heights a label steps through live with the relocation, which reads them too (card AL3a).
+export { labelHeights } from "./label-placement.js";
 
 /** The quarter-disc a door leaf sweeps, hinge first, its arc walked in {@link ARC_STEPS} chords. */
 export function sectorOf(s: DoorSwing): Point[] {
@@ -519,8 +509,11 @@ export function fitLabels(
   }
 
   // A label that may yet shrink or move claims no floor: a neighbour must not dodge a box about to
-  // go. Each takes its place in an order read off the plan, never the source's.
-  const moving = new Set(misfits.map((f) => f.gi));
+  // go. One too big for its room at every height may well stay as it is (its search reads only where
+  // it stands and the room's first place, at the smallest height), so it keeps its floor, as it does
+  // in the relocation ({@link fitCanRedraw}, card AL3a). Each takes its place in an order read off
+  // the plan, never the source's.
+  const moving = new Set(misfits.filter((f) => fitCanRedraw(f, groups[f.gi]!.ring, sizes)).map((f) => f.gi));
   for (const m of marks) if (m.kind === "text" && moving.has(m.owner)) m.stale = true;
   misfits.sort((a, b) => placeOrder(a, b, groups));
 
@@ -565,7 +558,8 @@ export function fitLabels(
         const nameBoxes = boxesOf(namePrim, { x: 0, y: 0 });
         const areaBoxes = boxesOf(areaPrim, { x: 0, y: 0 });
         // Wider or taller than the room's whole extent: it can stand clear nowhere. Only the
-        // smallest height is worth drawing then, and only where the label stands.
+        // smallest height is worth drawing then, and only where the label stands. The relocation
+        // reads the same test ({@link import("./label-placement.js").fitCanRedraw}).
         const tooBig = [nameBoxes.ink, areaBoxes.ink].some((b) => b.w > bb.w || b.h > bb.h);
         if (tooBig && hi < heights.length - 1) continue;
         // Never further off the floor than the label stands now.

@@ -45,13 +45,18 @@
  * so a mirrored plan, or a change to a label's width, can move the label to the other twin.
  *
  * The labels take their turns in an order read off the plan, never the source's
- * ({@link plotOrder}: the anchor's y, then its x, then the texts, then the ring; the order
- * `fitLabels` takes its turns in), so the same rooms written in any order draw the same (card AL3a,
- * label-crowding). And a room's label that `fitLabels` will redraw claims no floor: one the fit
+ * ({@link plotOrder}: the anchor's y, then its x, read on a micrometre grid, then the texts, a
+ * room's before a surface's, the texts' sizes, then the ring; the order `fitLabels` takes its turns
+ * in), so the same rooms written in any order draw the same (card AL3a, label-crowding). Not yet in
+ * a plan that draws `walls from rooms` with `dims auto`: the wall-thickness figures this pass dodges
+ * are stationed before it, in an order of their own. An authored label (`label "…" at (x,y)`) stands
+ * in the way from the first turn. And a room's label that `fitLabels` will redraw claims no floor: one the fit
  * takes ({@link fitTexts}: a name and an area figure) with a text standing off its own floor where it
  * is drawn does not fit, the fit will shrink, wrap or move it, and a neighbour must not dodge a box
  * that is about to change (`fitLabels`' own rule). Any other label, an area figure on its own among
- * them, is never redrawn, so it keeps its floor however far off it stands. Before, the turns went by
+ * them, is never redrawn, so it keeps its floor however far off it stands; one too big for its room
+ * at every height ({@link fitCanRedraw}) is drawn smaller where it is left or at its anchor, so it
+ * keeps its floor at both. Before, the turns went by
  * element order, and each placed label was an obstacle for the next, so five corpus plans, written
  * the other way round, drew differently.
  *
@@ -686,7 +691,9 @@ export function relocateLabels(
   /** A label claims the floor it stands on unless `fitLabels` will redraw it: the fit takes it
    *  ({@link fitTexts}) and one of its two texts, where it now stands, is more than
    *  {@link COLLIDE_MIN} of its ink off its own floor, read as the fit reads it (each text's own ink
-   *  box, which makes it a misfit there). A label the fit never takes keeps its claim. */
+   *  box, which makes it a misfit there). A label the fit never takes keeps its claim, and so does
+   *  one too big for its room at every height ({@link fitCanRedraw}): the fit draws it smaller where
+   *  it is left or at its anchor, so it claims both (see the turns below). */
   const claims = (g: LabelGroup): boolean => {
     const own = fitTexts(nodes, g);
     if (!own) return true;
@@ -705,7 +712,20 @@ export function relocateLabels(
     probe.placedN = placed.boxes.length;
     return { obstacles: buried(rect, probe.obstacles), placed: buried(rect, probe.placed) };
   };
-  for (const g of plotOrder(nodes, groups)) {
+  const order = plotOrder(nodes, groups);
+  // An authored label (`label "…" at (x,y)`) never moves, so it stands where it is drawn from the
+  // first turn: a label that takes its turn before it must not be placed over it (card AL3a).
+  for (const g of order) {
+    if (!g.fixed) continue;
+    let rect: BBox | null = null;
+    for (let i = g.from; i < g.to; i++) {
+      const n = nodes[i]!;
+      const b = n.layer === "labels" && n.prim.t === "text" ? labelBox(n.prim) : null;
+      if (b) rect = rect ? unionBBox(rect, b) : b;
+    }
+    if (rect) placed.push(rect);
+  }
+  for (const g of order) {
     const texts: number[] = [];
     for (let i = g.from; i < g.to; i++) {
       const n = nodes[i]!;
@@ -728,11 +748,15 @@ export function relocateLabels(
     // An explicit `label "…" at (x,y)` is the author's decision and is never overruled —
     // it is also the anchor `W_ROOM_LABEL_OUTSIDE` reports on, so moving it would make
     // that diagnostic describe a position nothing is drawn at. (`outdoor` has no such
-    // clause, so its groups are never `fixed`; the field is the room's.)
-    if (g.fixed) {
-      placed.push(rect0);
-      continue;
-    }
+    // clause, so its groups are never `fixed`; the field is the room's.) It was placed before the
+    // first turn.
+    if (g.fixed) continue;
+
+    // A label too big for its room at every height ({@link fitCanRedraw}) stands clear nowhere:
+    // `fitLabels` draws it at the smallest height either where this pass leaves it or at its anchor,
+    // the room's first place. So it claims the floor at both, each at its full size (card AL3a).
+    const own = fitTexts(nodes, g);
+    const tooBig = own !== null && !fitCanRedraw(own, g.ring, sizes);
 
     const { ring, anchor } = g;
     // Probe 0 is the trigger, 1 the incumbent, 2 + k the k-th lattice point.
@@ -747,7 +771,7 @@ export function relocateLabels(
 
     const trigger = crowd(rect0, probe(0));
     if (trigger.obstacles + trigger.placed <= COLLIDE_MIN) {
-      if (claims(g)) placed.push(rect0);
+      if (tooBig || claims(g)) placed.push(rect0);
       continue;
     }
 
@@ -791,7 +815,8 @@ export function relocateLabels(
       }
     }
     const landed = shiftBBox(rect0, dx, dy);
-    if (claims(g)) placed.push(landed);
+    if (tooBig || claims(g)) placed.push(landed);
+    if (tooBig && (dx !== 0 || dy !== 0)) placed.push(rect0);
   }
 }
 
@@ -816,6 +841,55 @@ export function fitTexts(nodes: readonly SceneNode[], g: LabelGroup): FitTexts |
   return { nameAt: texts[0]!, areaAt: texts[1]!, name, area };
 }
 
+/** Steps from the room-name size down to the furniture-label size. */
+const HEIGHT_STEPS = 3;
+
+/**
+ * The heights a label steps through, largest first: the drawing's own name and area sizes, then
+ * the steps down to the furniture-label size. The area figure stays at its size until the name
+ * reaches it, and no further: it never stands larger than the name. `fitLabels` steps through
+ * them; the relocation reads them to know whether the fit can redraw a label ({@link fitCanRedraw}).
+ */
+export function labelHeights(sizes: RenderSizes): { name: number; area: number }[] {
+  const { roomFont, furnFont, areaFont } = sizes;
+  const out = [{ name: roomFont, area: areaFont }];
+  for (let i = 1; i <= HEIGHT_STEPS; i++) {
+    const name = i === HEIGHT_STEPS ? furnFont : roomFont - ((roomFont - furnFont) * i) / HEIGHT_STEPS;
+    out.push({ name, area: Math.min(areaFont, name) });
+  }
+  return out;
+}
+
+/**
+ * Whether `fitLabels` can place this label somewhere else: one of the forms it tries (the name
+ * wrapped onto two or more lines at any height, or on one line below the full size, the area figure
+ * at that height's size) is no wider and no taller than the room's whole extent. A label too big at
+ * every height can stand clear nowhere; the fit draws it at the smallest height where it stands, or
+ * at the room's own first place, so the relocation keeps its claim (card AL3a). The forms and the
+ * test are `fitLabels`' own (its `tooBig`), in the same order.
+ */
+export function fitCanRedraw(own: FitTexts, ring: readonly Point[], sizes: RenderSizes): boolean {
+  const bb = polygonBounds(ring);
+  const { block: _drawnLines, ...oneLine } = own.name;
+  const wrapped: string[][] = [];
+  for (let n = 2; n < 2 + WRAP_TRIES; n++) {
+    const lines = balancedLines(own.name.value, n);
+    if (!lines) break;
+    wrapped.push(lines);
+  }
+  const heights = labelHeights(sizes);
+  for (let hi = 0; hi < heights.length; hi++) {
+    const h = heights[hi]!;
+    const pitch = h.name * LABEL_LINE_PITCH;
+    for (const lines of hi > 0 ? [...wrapped, null] : wrapped) {
+      const name = inkExtent({ ...oneLine, size: h.name, ...(lines ? { block: { lines, pitch } } : {}) });
+      const area = inkExtent({ ...own.area, size: h.area });
+      if (![name, area].some((b) => b.w > bb.w || b.h > bb.h)) return true;
+    }
+  }
+  return false;
+}
+
 /** A group's name and area figure as {@link fitTexts} finds them: their node indices and texts. */
 export interface FitTexts {
   nameAt: number;
@@ -826,34 +900,58 @@ export interface FitTexts {
 
 /**
  * The groups in the order the relocation takes them: by the anchor's y, then its x (the order
- * `fitLabels` takes its turns in), then the texts as drawn, then the ring vertex by vertex, then an
- * authored label after a placed one. Read off the plan, never the source, so the same rooms written
- * in any order take the same turns. Only two groups alike in all of that, which draw the same texts
- * at the same place in the same ring, keep their element order between them (the sort is stable).
+ * `fitLabels` takes its turns in), each read on a micrometre grid ({@link snap}), then the texts as
+ * drawn, then a room's label before a surface's, then the texts' sizes, then the ring vertex by
+ * vertex, then an authored label after a placed one. Read off the plan, never the source, so the same
+ * rooms written in any order take the same turns. Only two groups alike in all of that, which draw
+ * the same texts at the same size at the same place in the same ring, keep their element order
+ * between them (the sort is stable).
  * Exported for the relocation's oracle (`test/label-placement-oracle.test.ts`), which takes its turns
  * the same way.
  */
 export function plotOrder(nodes: readonly SceneNode[], groups: readonly LabelGroup[]): LabelGroup[] {
   const keyed = groups.map((g) => {
     const texts: string[] = [];
+    const sizes: number[] = [];
     for (let i = g.from; i < g.to; i++) {
       const prim = nodes[i]!.prim;
-      if (nodes[i]!.layer === "labels" && prim.t === "text") texts.push(prim.value);
+      if (nodes[i]!.layer === "labels" && prim.t === "text") {
+        texts.push(prim.value);
+        sizes.push(prim.size);
+      }
     }
-    return { g, texts };
+    return { g, texts, sizes };
   });
   keyed.sort((a, b) => {
     const pa = a.g.anchor;
     const pb = b.g.anchor;
     return (
-      pa.y - pb.y ||
-      pa.x - pb.x ||
+      snap(pa.y) - snap(pb.y) ||
+      snap(pa.x) - snap(pb.x) ||
       strings(a.texts, b.texts) ||
+      Number(!a.g.wrap) - Number(!b.g.wrap) ||
+      numbers(a.sizes, b.sizes) ||
       ring(a.g.ring, b.g.ring) ||
       Number(a.g.fixed) - Number(b.g.fixed)
     );
   });
   return keyed.map((k) => k.g);
+}
+
+/**
+ * A coordinate on a micrometre grid, for ordering only: two points the same in exact arithmetic
+ * can be computed a rounding error apart (a label point of a ring moved by a decimal offset), and
+ * must sort as equal so the next key decides, the same on every copy of the plan.
+ */
+const snap = (v: number): number => Math.round(v * 1e6);
+
+/** Two lists of numbers, element by element, then by length. */
+function numbers(a: readonly number[], b: readonly number[]): number {
+  for (let i = 0; i < Math.min(a.length, b.length); i++) {
+    const d = a[i]! - b[i]!;
+    if (d !== 0) return d;
+  }
+  return a.length - b.length;
 }
 
 /** Two lists of strings, element by element by code unit, then by length. */
@@ -868,7 +966,7 @@ function strings(a: readonly string[], b: readonly string[]): number {
 /** Two rings, vertex by vertex (x, then y), then by length. */
 function ring(a: readonly Point[], b: readonly Point[]): number {
   for (let i = 0; i < Math.min(a.length, b.length); i++) {
-    const d = a[i]!.x - b[i]!.x || a[i]!.y - b[i]!.y;
+    const d = snap(a[i]!.x) - snap(b[i]!.x) || snap(a[i]!.y) - snap(b[i]!.y);
     if (d !== 0) return d;
   }
   return a.length - b.length;

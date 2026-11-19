@@ -22,7 +22,7 @@ import { extractArchBlocks } from "../src/markdown.js";
 import type { RenderSizes, ScenePrim } from "../src/scene.js";
 import { toScene } from "../src/scene-build.js";
 import { SHEET_MM } from "../src/sheet.js";
-import { inkExtent } from "../src/text-layout.js";
+import { inkExtent, textExtent } from "../src/text-layout.js";
 import type { World } from "../src/world.js";
 import { NULL_WORLD } from "../src/world.js";
 import { runs } from "./setup/fast-check.js";
@@ -652,6 +652,118 @@ describe("an area figure drawn alone", () => {
       const h = Math.max(0, Math.min(a.y + a.h, b.y + b.h) - Math.max(a.y, b.y));
       expect(w * h, copy).toBeLessThanOrEqual(COLLIDE_MIN * a.w * a.h);
     }
+  });
+});
+
+// The red team's first round on #964, each case a pin that fails on `1fdd5dee`. Overprints are read
+// as the red team read them: two rooms' texts whose ink boxes (drawn width, estimated height) share
+// more than `COLLIDE_MIN` of the smaller.
+describe("order-free placement: the red team's cases (#964)", () => {
+  const labels = (src: string, dx = 0, dy = 0) => {
+    const { ir } = resolvePlan(src);
+    const scene = toScene(ir!, { annotate: true });
+    return scene.nodes
+      .filter(
+        (n) => (n.elementKind === "room" || n.elementKind === "outdoor") && n.layer === "labels" && n.prim.t === "text",
+      )
+      .map((n) => ({ id: n.elementId!, prim: n.prim as Text, dx, dy }));
+  };
+  /** Each label as drawn, relative to the plan's offset, in a fixed order. */
+  const drawnAs = (src: string, dx = 0, dy = 0): string[] =>
+    labels(src, dx, dy)
+      .map(({ id, prim }) =>
+        [
+          id,
+          prim.value,
+          (prim.at.x - dx).toFixed(3),
+          (prim.at.y - dy).toFixed(3),
+          prim.size,
+          prim.block?.lines.join("/") ?? "",
+        ].join(" "),
+      )
+      .sort();
+  const overprints = (src: string): string[] => {
+    const ls = labels(src);
+    const box = (p: Text) => {
+      const w = inkExtent(p).w;
+      const h = textExtent(p).h;
+      return { x0: p.at.x - w / 2, x1: p.at.x + w / 2, y0: p.at.y - h / 2, y1: p.at.y + h / 2, a: w * h };
+    };
+    const out: string[] = [];
+    for (let i = 0; i < ls.length; i++)
+      for (let j = i + 1; j < ls.length; j++) {
+        if (ls[i]!.id === ls[j]!.id) continue;
+        const a = box(ls[i]!.prim);
+        const b = box(ls[j]!.prim);
+        const w = Math.max(0, Math.min(a.x1, b.x1) - Math.max(a.x0, b.x0));
+        const h = Math.max(0, Math.min(a.y1, b.y1) - Math.max(a.y0, b.y0));
+        if (w * h > COLLIDE_MIN * Math.min(a.a, b.a)) out.push(`${ls[i]!.prim.value} x ${ls[j]!.prim.value}`);
+      }
+    return out;
+  };
+  const plan = (name: string, rooms: string[], tail = "  walls from rooms exterior 200 partition 100\n") =>
+    `plan "${name}" {\n  units mm\n  paper A3 landscape\n  scale 1:100\n${rooms.map((r) => `  ${r}\n`).join("")}${tail}}\n`;
+  /** The same rooms in both orders: no overprint in either, and the same labels. */
+  const bothOrders = (name: string, rooms: string[], tail?: string) => {
+    const ab = plan(name, rooms, tail);
+    const ba = plan(name, [...rooms].reverse(), tail);
+    expect(overprints(ab), "as written").toEqual([]);
+    expect(overprints(ba), "reversed").toEqual([]);
+    expect(drawnAs(ba)).toEqual(drawnAs(ab));
+  };
+
+  it("a room with no name keeps its floor (S1 a)", () => {
+    bothOrders("unnamed", [
+      "room id=a at (0,0) size 500x3000 uses storage",
+      'room id=b at (500,0) size 900x3000 label "Bath" uses bath',
+      'room id=c at (1400,0) size 3000x3000 label "Bedroom" uses bedroom',
+    ]);
+  });
+
+  it("a name too wide for its room at every height keeps its floor (S1 b)", () => {
+    bothOrders("wide", [
+      'room id=a at (0,0) size 650x2400 label "Wardrobe" uses storage',
+      'room id=b at (650,0) size 900x2400 label "Bath" uses bath',
+      'room id=c at (1550,0) size 3000x2400 label "Bedroom" uses bedroom',
+    ]);
+  });
+
+  it("an authored label is an obstacle from the first turn (S2)", () => {
+    bothOrders("pin", [
+      'room id=a at (0,0) size 2000x3000 label "Bath" uses bath',
+      'room id=b at (2000,0) size 3000x3000 label "Living Room" at (2300,1700) uses living',
+    ]);
+  });
+
+  it("a room's label and a surface's alike take the same turns in either order (N1)", () => {
+    bothOrders(
+      "tie",
+      [
+        'room id=a at (0,0) size 4000x3000 label "Deck" uses living',
+        'outdoor deck id=o at (0,0) size 4000x3000 label "Deck"',
+        'room id=c at (4000,0) size 3000x3000 label "Bath" uses bath',
+      ],
+      "",
+    );
+  });
+
+  it("the same plan moved by a decimal offset draws the same labels relative to it (S4)", () => {
+    const strip = (dx: number, dy: number) => {
+      const xs = [0, 1200, 1950, 4100, 6250];
+      const names = ["Den", "MASTER BEDROOM", "MASTER BEDROOM", "Accessible WC"];
+      const p = (x: number, y: number) => `(${x + dx},${y + dy})`;
+      const rooms = names.map(
+        (name, k) =>
+          `room id=r${k} polygon ${p(xs[k]!, 0)} ${p(xs[k + 1]!, 0)} ${p(xs[k + 1]!, 2350)} ${p(xs[k]!, 2350)} label "${name}" uses storage`,
+      );
+      const tables = [
+        [1400, 1200, 350, 550],
+        [3000, 350, 750, 1500],
+        [4200, 700, 750, 400],
+      ].map(([x, y, w, h]) => `furniture table at ${p(x!, y!)} size ${w}x${h}`);
+      return `plan "t" {\n  units mm\n  paper A2 landscape\n  scale 1:100\n${[...rooms, ...tables].map((l) => `  ${l}\n`).join("")}}\n`;
+    };
+    expect(drawnAs(strip(1234.7, 777.3), 1234.7, 777.3)).toEqual(drawnAs(strip(0, 0)));
   });
 });
 
