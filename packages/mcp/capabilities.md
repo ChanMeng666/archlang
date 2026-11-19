@@ -2,7 +2,7 @@
 
 ArchLang compiles `.arch` text to floor-plan drawings and checks them. This page is generated from the tool list both MCP servers serve and the CLI manifest.
 
-## Tools on both servers (11)
+## Tools on both servers (12)
 
 - `compile`: Compile a floor plan to a drawing
 - `describe`: Describe a plan (facts, no render)
@@ -14,6 +14,7 @@ ArchLang compiles `.arch` text to floor-plan drawings and checks them. This page
 - `finish`: Finish the drawing
 - `suggest`: Suggest topology fixes (advisory)
 - `complete`: Completions at a source offset
+- `explain`: Explain a diagnostic code
 - `link`: Share link to the rendered plan
 
 The hosted server (https://mcp.archlang.uk/mcp) adds:
@@ -82,4 +83,3 @@ With a shell, `archlang <cmd>` (or `npx -y @chanmeng666/archlang <cmd>`) runs th
 - `archlang context`: print the full bundled agent context (spec + workflow + CLI + errors)
 - `archlang new`: scaffold a starter .arch
 - `archlang import`: convert an OpenPlan3D plan (JSON) to .arch source, reporting what it left out
-- `archlang explain`: look up an error code (cause / fix / example)

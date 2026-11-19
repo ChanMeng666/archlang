@@ -43,6 +43,13 @@ export interface CatalogEntry {
   fix: string;
   /** A minimal snippet illustrating the cause (or the fix). */
   example: string;
+  /**
+   * `example` corrected, the "use instead" half of the pair (card AF5): it compiles with no error
+   * and without this code (`test/error-catalog-examples.test.ts` runs both halves). Absent where
+   * no snippet can show the fix honestly, every code whose example is excused from running there
+   * among them.
+   */
+  fixed?: string;
 }
 
 /** Every key of every family in a union of family types (`keyof (A | B)` would keep only the shared ones). */
@@ -113,5 +120,6 @@ export function explain(code: string): string | null {
     "",
     "Example:",
     ...e.example.split("\n").map((l) => `  ${l}`),
+    ...(e.fixed === undefined ? [] : ["", "Fixed:", ...e.fixed.split("\n").map((l) => `  ${l}`)]),
   ].join("\n");
 }

@@ -17,6 +17,7 @@ describe("archlang mcp server", () => {
         "compile",
         "complete",
         "describe",
+        "explain",
         "finish",
         "fix",
         "link",
