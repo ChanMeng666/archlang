@@ -278,7 +278,9 @@ Non-blockers from the second review of #968:
 3. PR CI never runs `test/index-values.test.ts` on Windows. Standalone on a Windows laptop, its program build took 9.8 s over 912 files against its 60 s timeout; `types: []` cuts that to 4–6 s with the same result.
 4. The new top-level `Object.freeze` calls carry no `@__PURE__` mark (`src/pure.ts`), like 27 other freezes in `src`. No measured effect.
 
-### 3.18 · The playground's first-use bundle has about 1.9 KB of headroom left — `todo`
+### 3.18 · The playground's first-use bundle has about 1.9 KB of headroom left: done by #976, waiting to be archived — `note`
+
+Done by #976, with no budget raised: Format, Finish, Repair furniture and the DXF/TXT downloads load their core code on a press (`playground/src/press-core.ts`, build entry `src/actions-path.ts`), and a `first-use` chunk group keeps the worker's `lint` on the first use's path. `npm run size:embed` on `main` 0368511c → #976: first use 484,137 → 455,604 B (−28,533, 30,396 B headroom), compiler path 324,519 → 323,488 B, embed 310,743 → 309,691 B. The target was 3 KB, so this is well past it. The first-use headroom is now wider than glTF-Transform (~19,900 B), so re-taking `firstUsePathBudget` down by its rule (455,604 × 1.025 → 467,000 B) is the owner's call. The card text below is kept for the record.
 
 After AL3b (#969) the first-use path (`firstUsePathBudget`, `playground/e2e/startup-chunks.baseline.json`) measures 484,137 B gzip against 486,000 B. The next few KB of compiler growth trip `Playground E2E chromium`. Two ways out: move code a first use need not load out of the compiler chunk or the lazy core chunk (as EB.2 did, #947), or re-take the budget by the file's own rule (measured × 1.025, rounded up to a thousand). A re-take raises a ceiling, a relaxed check that needs the owner's word for that PR (`REVIEW.md`; the owner approved the compiler-path and embed raises on #969, 2026-11-19, not this one). Measure with `npm run size:embed` (`scripts/embed-path-size.mjs`) on `main` and the branch; `docs/agents/iron-laws.md` still quotes `embedPathBudget` as 310,000 B (319,000 since #969), and editing that line is the owner's call (NR.9 (3)).
 
@@ -2386,7 +2388,9 @@ down. (2) `growthBudget` (ceiling 458,980 B over a 438,980 B baseline) guards no
 path, 315,282 B, is ~124 KB under the baseline): re-baseline it by its rule or retire it. (3) `docs/agents/iron-laws.md`'s RM-D57 line could point at
 `npm run size:embed` (#937 review). **Gate:** (1) and (2) fixed in the baseline file; (3) the owner's call.
 
-### NR.10 · Moving the `E_INTENT_*` rows out of the compiler chunk's fix table (#948) — `todo`
+### NR.10 · Moving the `E_INTENT_*` rows out of the compiler chunk's fix table (#948): done by #976, waiting to be archived — `note`
+
+Done by #976: the 13 rows are generated into `src/error-catalog-fixes-intent.ts`. `compile()`'s error card reads the compile table only, and `diagnosticToJson` and the public `renderErrorSvg` read both (`src/any-catalog-fix.ts`). The `test/explain.test.ts` pin now proves the two tables are disjoint and together every catalogue code. The compiler chunk is 1,052 B smaller. The first use gained nothing from it: `diagnosticToJson` is on that path and carries the rows there.
 
 Twelve today (thirteen once #948 lands), they are never compile diagnostics; dropping them from `src/error-catalog-fixes.ts`'s compile-path copy
 saves about 633 B gzip. Needs the `test/explain.test.ts` pin (its keys equal every catalogue code) reworked.
