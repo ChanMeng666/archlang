@@ -422,9 +422,8 @@ describe("ruler isolation — the refusal protocol never reaches the 26-brief pr
   it("pins the scoring-core versions this slice deliberately does NOT move", () => {
     // The fidelity measure is deterministic and judge-free — pure arithmetic over
     // `describe()` — which is exactly what keeps these two still.
-    // (NR.16 moved the synonym table to v2, Spanish and Portuguese words; this slice did not.)
     expect(JUDGE_VERSION).toBe("2");
-    expect(SYNONYMS_VERSION).toBe(2);
+    expect(SYNONYMS_VERSION).toBe(1);
     expect(FIDELITY_VERSION).toBe("1");
   });
 });

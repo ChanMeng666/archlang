@@ -34,9 +34,8 @@ import { normalizeLabel, synonymMatchesLabel } from "./vocabulary.js";
 // concept table and re-exports `normalizeLabel` for the eval's `synonyms.ts` shim.
 export { normalizeLabel } from "./vocabulary.js";
 
-/** Bump when the concept table or matching semantics change (pinned by a test).
- *  2: Spanish and Portuguese room words, and accent-insensitive token comparison (NR.16, RM-D68). */
-export const SYNONYMS_VERSION = 2;
+/** Bump when the concept table or matching semantics change (pinned by a test). */
+export const SYNONYMS_VERSION = 1;
 
 /** One brief-level room concept. All three matcher inputs are optional but `labels`
  *  is always present (a concept is named, first, by the words a brief would use). */
@@ -58,16 +57,6 @@ export interface Concept {
  *     labelled like "Office 1"/"Office 2" and NOT sibling `StudyRoom`s such as a
  *     Reception or Meeting Room (which the golden also types `StudyRoom`). Needed by
  *     the `reception-suite` brief's "two private offices".
- *
- * Spanish and Portuguese (backlog NR.16, product-roadmap RM-D68): each concept's English labels
- * come first and its es/pt words after them; tokens compare without accents ("Baño" = "Bano";
- * `vocabulary.ts`). Only words that name the concept's room unambiguously are labels here.
- * "Quarto" and "habitación" (any room as well as a bedroom), "estudio" (a studio flat as well as
- * a study) and "oficina" (a workshop in Portuguese) are not: they reach a concept only through the
- * use classifier (`USE_VOCABULARY`), where an authored `uses` overrides them, so a label-only
- * "Quarto 2" still satisfies `bedroom` by `uses`/`room_type`. A bare "sala", "salón" and
- * "suíte" are in neither table (see `USE_VOCABULARY`). A label word is a convenience; `uses` is
- * the language-neutral channel.
  */
 export const CONCEPTS: Readonly<Record<string, Concept>> = Object.freeze({
   bathroom: {
@@ -84,41 +73,24 @@ export const CONCEPTS: Readonly<Record<string, Concept>> = Object.freeze({
       "restroom",
       "ensuite",
       "en suite",
-      "baño",
-      "banheiro",
-      "casa de banho",
-      "quarto de banho",
-      "aseo",
-      "lavabo",
     ],
     roomTypes: ["Bathroom"],
     uses: ["bath", "wc"],
   },
   bedroom: {
-    labels: ["bedroom", "bed room", "dormitorio", "recámara"],
+    labels: ["bedroom", "bed room"],
     roomTypes: ["MasterRoom", "SecondRoom", "ChildRoom", "GuestRoom"],
     uses: ["bedroom"],
   },
   "consulting-room": {
-    labels: ["consulting room", "consult", "treatment room", "exam room", "room", "consultorio"],
+    labels: ["consulting room", "consult", "treatment room", "exam room", "room"],
   },
   corridor: {
-    labels: [
-      "corridor",
-      "hall",
-      "hallway",
-      "passage",
-      "circulation",
-      "pasillo",
-      "corredor",
-      "circulación",
-      "circulação",
-      "distribuidor",
-    ],
+    labels: ["corridor", "hall", "hallway", "passage", "circulation"],
     roomTypes: ["Entrance"],
   },
   dining: {
-    labels: ["dining", "dining room", "dining area", "comedor", "sala de jantar"],
+    labels: ["dining", "dining room", "dining area"],
     roomTypes: ["DiningRoom"],
   },
   hall: {
@@ -133,25 +105,17 @@ export const CONCEPTS: Readonly<Record<string, Concept>> = Object.freeze({
       "corridor",
       "passage",
       "landing",
-      "entrada",
-      "recibidor",
-      "vestíbulo",
-      "pasillo",
-      "corredor",
-      "distribuidor",
-      "rellano",
-      "patamar",
     ],
     roomTypes: ["Entrance"],
     uses: ["hall"],
   },
   kitchen: {
-    labels: ["kitchen", "kitchenette", "galley", "cocina", "cozinha"],
+    labels: ["kitchen", "kitchenette", "galley"],
     roomTypes: ["Kitchen"],
     uses: ["kitchen"],
   },
   kitchenette: {
-    labels: ["kitchenette", "kitchen", "tea point", "pantry", "cocina", "cozinha"],
+    labels: ["kitchenette", "kitchen", "tea point", "pantry"],
     roomTypes: ["Kitchen"],
   },
   "living-room": {
@@ -164,78 +128,37 @@ export const CONCEPTS: Readonly<Record<string, Concept>> = Object.freeze({
       "family room",
       "living dining",
       "kitchen living",
-      "sala de estar",
     ],
     roomTypes: ["LivingRoom"],
     uses: ["living"],
   },
   "main-bathroom": {
-    labels: [
-      "main bathroom",
-      "family bathroom",
-      "bathroom 1",
-      "bathroom",
-      "master bath",
-      "baño principal",
-      "banheiro social",
-      "baño",
-      "banheiro",
-      "casa de banho",
-    ],
+    labels: ["main bathroom", "family bathroom", "bathroom 1", "bathroom", "master bath"],
     roomTypes: ["Bathroom"],
   },
   "master-bedroom": {
-    labels: [
-      "master bedroom",
-      "main bedroom",
-      "primary bedroom",
-      "principal bedroom",
-      "bedroom 1",
-      "master suite",
-      "dormitorio principal",
-      "recámara principal",
-      "habitación principal",
-      "quarto principal",
-      "quarto casal",
-    ],
+    labels: ["master bedroom", "main bedroom", "primary bedroom", "principal bedroom", "bedroom 1", "master suite"],
     roomTypes: ["MasterRoom"],
   },
   "meeting-room": {
-    labels: [
-      "meeting room",
-      "meeting",
-      "conference room",
-      "boardroom",
-      "sala de reuniones",
-      "sala de reuniões",
-      "sala de juntas",
-    ],
+    labels: ["meeting room", "meeting", "conference room", "boardroom"],
   },
   "open-office": {
-    labels: [
-      "open office",
-      "open plan",
-      "open work area",
-      "work area",
-      "workspace",
-      "open area",
-      "office",
-      "escritorio",
-    ],
+    labels: ["open office", "open plan", "open work area", "work area", "workspace", "open area", "office"],
     uses: ["office"],
   },
   "private-office": {
-    labels: ["office", "private office", "escritorio"],
+    labels: ["office", "private office"],
   },
   reception: {
-    labels: ["reception", "lobby", "waiting area", "front desk", "recepción", "recepção"],
+    labels: ["reception", "lobby", "waiting area", "front desk"],
   },
   "studio-room": {
     labels: ["studio", "studio room", "living", "main room", "living space", "bedsit"],
     roomTypes: ["LivingRoom"],
   },
   study: {
-    labels: ["study", "office", "home office", "den", "workroom", "escritorio"],
+    labels: ["study", "office", "home office", "den", "workroom"],
     roomTypes: ["StudyRoom"],
     uses: ["office"],
   },
@@ -247,42 +170,18 @@ export const CONCEPTS: Readonly<Record<string, Concept>> = Object.freeze({
     uses: ["kitchen"],
   },
   unit: {
-    labels: ["unit", "studio", "apartment", "flat", "apartamento"],
+    labels: ["unit", "studio", "apartment", "flat"],
   },
   utility: {
-    labels: ["utility", "utility room", "laundry", "lavandería", "lavadero", "área de serviço"],
+    labels: ["utility", "utility room", "laundry"],
     roomTypes: ["Storage"],
   },
   wc: {
-    labels: [
-      "wc",
-      "toilet",
-      "restroom",
-      "lavatory",
-      "cloakroom",
-      "washroom",
-      "bathroom",
-      "aseo",
-      "lavabo",
-      "baño",
-      "banheiro",
-      "casa de banho",
-      "quarto de banho",
-    ],
+    labels: ["wc", "toilet", "restroom", "lavatory", "cloakroom", "washroom", "bathroom"],
     roomTypes: ["Bathroom"],
   },
   "wet-room": {
-    labels: [
-      "wet room",
-      "wetroom",
-      "shower room",
-      "accessible bathroom",
-      "bathroom",
-      "baño",
-      "banheiro",
-      "casa de banho",
-      "quarto de banho",
-    ],
+    labels: ["wet room", "wetroom", "shower room", "accessible bathroom", "bathroom"],
     roomTypes: ["Bathroom"],
   },
 });

@@ -52,7 +52,7 @@ const HERE = dirname(fileURLToPath(import.meta.url));
 const ROOT = resolve(HERE, "..");
 
 /** The judge/concept-table version tag stamped into every result header
- *  (`judge v2 · synonyms v2`). Exported so the L2 harness (`eval/l2-run.ts`) can stamp
+ *  (`judge v2 · synonyms v1`). Exported so the L2 harness (`eval/l2-run.ts`) can stamp
  *  the same tag without importing the private oracle module directly — keeping its own
  *  source free of any reference to that table (oracle isolation is source-checked). */
 export const VERSION_TAG = `judge v${JUDGE_VERSION} · synonyms v${SYNONYMS_VERSION}`;

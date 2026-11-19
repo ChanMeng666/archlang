@@ -2440,8 +2440,12 @@ that exist. About one in five of its recent briefs is in Spanish or Portuguese. 
 accent-insensitive es/pt vocabulary in the concept table and the label classifier; (b) state that `uses`
 tags and concepts are the language-neutral channel, never label words, with a lint when a room has no
 `uses`. Until decided, the downstream app writes `uses` on every room. **Gate:** a decision recorded,
-then the chosen form with a test per language. Decided (a) by RM-D68 (product-roadmap §6.31), built
-with `SYNONYMS_VERSION` 2 and `test/vocabulary-es-pt.test.ts`.
+then the chosen form with a test per language. Decided (a) by RM-D68 (product-roadmap §6.31); #973
+built the use-classifier half (`test/vocabulary-es-pt.test.ts`), through which the concepts that
+carry a room kind or a `room_type` are met. The concept-table half (es/pt label words for the
+label-only concepts `reception`, `meeting-room`, `consulting-room`, `private-office`, `suite`,
+`unit`, and master-bedroom phrases) changes the eval's table, so it needs an owner-approved
+`SYNONYMS_VERSION` bump (as M.20) and is not built.
 
 ## Test-programme findings (promo-credit programme, 2026-11-16)
 
