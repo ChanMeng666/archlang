@@ -18,20 +18,23 @@
  * A literal with no `code` of its own that is spread into one (`...(ok ? { fixes } : {})`) takes
  * that one's codes. A pass-through re-maps fixes already attached to the diagnostic it copies and is
  * not a site: `{ ...d, fixes: d.fixes.map(…) }` (the literal spreads the same `d`), and
- * `out.fixes = d.fixes.map((f) => ({ ...f, … }))` (each fix is kept whole). A site none of these
- * names is reported in `unattributed`; `test/fix-coverage.test.ts` requires that list to hold only
- * the non-diagnostic sites named in {@link NOT_A_DIAGNOSTIC}, so a new fix site is never silently
- * left out of the count.
+ * `out.fixes = d.fixes.map((f) => ({ ...f, … }))` (each fix is kept whole). A site of one of these
+ * shapes that no code is read for is reported in `unattributed`; `test/fix-coverage.test.ts` requires
+ * that list to hold only the non-diagnostic sites named in {@link NOT_A_DIAGNOSTIC}.
  *
  * Each site also records the names of the functions it lies in and an `expanded` text: its own text
  * with the initializers of the local constants it names and the bodies of the same-file functions
  * it calls, two levels deep, so a check can see which producer a site calls through a local
  * (`const fix = dimTextFix(…); …fixesFrom(fix)`). {@link applicabilityLiterals} lists every
- * `applicability:` string literal in `src/`. `test/fixable-codes.test.ts` holds `FIX_PRODUCERS`
- * (`src/fixable-codes.ts`) to both.
+ * `applicability` property in `src/`, and whether its value is written out as literals.
+ * `test/fixable-codes.test.ts` holds `FIX_PRODUCERS` (`src/fixable-codes.ts`) to both.
  *
- * What it does not prove: that the fix is reachable on some input. It counts codes whose raise
- * site can attach a span edit.
+ * What it does not see: a fix attached in any other shape. A spread of a call to a helper that
+ * returns fixes (`...openRemedy(n)`), a helper in another file that builds the diagnostic or spreads
+ * its fixes, `Object.assign`, a spread parameter, and a producer that hands part of its work to
+ * another function all escape it. A `code` written partly through a name (`ok ? "E_A" : B`) credits
+ * only its literals (a `code` with none is `unattributed`). What it does not prove: that the fix is reachable on some input. It counts codes
+ * whose raise site, in one of the shapes above, can attach a span edit.
  *
  *   npx tsx scripts/fix-coverage.ts          print "N of M codes have a span edit" and the codes
  */
@@ -317,32 +320,69 @@ export function fixCoverage(root: string = REPO): FixCoverage {
   };
 }
 
-/** One `applicability: …` property whose initializer holds an applicability string literal. */
+/** One `applicability` property of an object literal. */
 export interface ApplicabilityLiteral {
   file: string;
   line: number;
   /** As {@link FixSite.fns}. */
   fns: string[];
-  /** The applicability literals in the initializer (`a ? "maybe-incorrect" : "machine-applicable"` gives both). */
+  /**
+   * Whether the value is written out: a string literal, or a conditional whose every branch is one
+   * (through parentheses and `as const`). False for a name, a call, a shorthand `{ applicability }`
+   * or anything else whose value the scan cannot read.
+   */
+  literal: boolean;
+  /** The applicability literals of a written-out value (`a ? "maybe-incorrect" : "machine-applicable"` gives both). */
   values: string[];
 }
 
 const APPLICABILITY_RE = /^(machine-applicable|maybe-incorrect|has-placeholders|unspecified)$/;
 
-/** Every `applicability:` property in `src/` that writes an applicability as a string literal. */
+/** `e`'s applicability literals when it is written out (see {@link ApplicabilityLiteral.literal}), else null. */
+function writtenOut(e: ts.Expression): string[] | null {
+  if (ts.isParenthesizedExpression(e) || ts.isAsExpression(e) || ts.isSatisfiesExpression(e))
+    return writtenOut(e.expression);
+  if (ts.isStringLiteral(e) || ts.isNoSubstitutionTemplateLiteral(e))
+    return APPLICABILITY_RE.test(e.text) ? [e.text] : null;
+  if (ts.isConditionalExpression(e)) {
+    const a = writtenOut(e.whenTrue);
+    const b = writtenOut(e.whenFalse);
+    return a && b ? [...a, ...b] : null;
+  }
+  return null;
+}
+
+/** Whether a property's key is `applicability`: a name, a quoted key or a computed string key. */
+function isApplicabilityKey(name: ts.PropertyName): boolean {
+  if (ts.isIdentifier(name) || ts.isStringLiteral(name) || ts.isNoSubstitutionTemplateLiteral(name))
+    return name.text === "applicability";
+  return (
+    ts.isComputedPropertyName(name) &&
+    (ts.isStringLiteral(name.expression) || ts.isNoSubstitutionTemplateLiteral(name.expression)) &&
+    name.expression.text === "applicability"
+  );
+}
+
+/**
+ * Every `applicability` property of an object literal in `src/`, whatever its key's form (a name, a
+ * quoted or computed string key, a shorthand) and wherever the literal sits (a spread object too).
+ * A computed key that is not a string literal (`[KEY]`) is not seen.
+ */
 export function applicabilityLiterals(root: string = REPO): ApplicabilityLiteral[] {
   const out: ApplicabilityLiteral[] = [];
   for (const { file, sf } of parsed(root)) {
     const visit = (n: ts.Node): void => {
-      if (ts.isPropertyAssignment(n) && ts.isIdentifier(n.name) && n.name.text === "applicability") {
-        const values = [...new Set(stringLiterals(n.initializer, APPLICABILITY_RE))].sort();
-        if (values.length > 0)
-          out.push({
-            file,
-            line: sf.getLineAndCharacterOfPosition(n.getStart(sf)).line + 1,
-            fns: functionNames(n),
-            values,
-          });
+      const assign = ts.isPropertyAssignment(n) && isApplicabilityKey(n.name);
+      const shorthand = ts.isShorthandPropertyAssignment(n) && n.name.text === "applicability";
+      if (assign || shorthand) {
+        const values = assign ? writtenOut((n as ts.PropertyAssignment).initializer) : null;
+        out.push({
+          file,
+          line: sf.getLineAndCharacterOfPosition(n.getStart(sf)).line + 1,
+          fns: functionNames(n),
+          literal: values !== null,
+          values: [...new Set(values ?? [])].sort(),
+        });
       }
       ts.forEachChild(n, visit);
     };

@@ -3,23 +3,31 @@
  * source and to what they emit. The capabilities resource lists the codes `fix` can resolve from that
  * table, so a row that lies there lies to every agent that reads it.
  *
- * From the source ({@link sourceProblems}, read by `scripts/fix-coverage.ts`), every field:
- * - codes: exactly the codes some fix site attaches a fix to, so a new site with a code the table
- *   does not declare fails even when no plan reaches it; and a site no code is read for fails;
+ * From the source (`sourceProblems`, `test/helpers/fixable-codes-check.ts`), over the fix sites
+ * `scripts/fix-coverage.ts` sees:
+ * - codes: exactly the catalogued codes those sites attach a fix to, so a new site with a code the
+ *   table does not declare fails even when no plan reaches it; a site no code is read for fails, and
+ *   so does a site whose code the catalogue lacks;
  * - producer: each code's sites call its row's producer (directly, or through a local constant or a
  *   same-file function) or lie in it, and a site calls no producer declared for another code;
  * - stage: read from the site's file (`src/lint/rules/` is lint, `src/cli/commands-author.ts` is
  *   `arch fix`'s own proof, anything else compile);
- * - applicability: the `applicability:` string literals in the producer (its function, or its file
- *   when the row names no function) are exactly the row's, and no such literal in `src/` lies outside
- *   every producer but the one {@link NOT_A_FIX_LITERAL};
- * - `when`: given for each applicability of a two-tier row, and only there.
- * Two plants show the checks can fail: a producer that gains a second tier, and a code that gains a
- * fix through a local constant.
+ * - applicability: every `applicability` property in the producer (its function, or its file when
+ *   the row names no function), whatever its key's form, is written out as a string literal or a
+ *   conditional of them, and their set is exactly the row's; no such literal in `src/` lies outside
+ *   every producer but `cmdReroll`'s (`NOT_A_FIX_LITERAL`);
+ * - `when`: given for each applicability of a two-tier row, and only there (its text is not read).
+ * Not seen there, so left to the output check below: a fix attached through a helper's spread, a
+ * helper in another file, `Object.assign`, a spread parameter, a producer that hands part of its work
+ * to another function, a renamed `fixId`, and which branch of a conditional gives which tier.
+ * Four plants show the source checks can fail: a producer that gains a second tier; a tier set
+ * through a variable and through a spread object; a code that gains a fix through a local constant;
+ * and a row with a wrong stage or producer.
  *
  * From the output: every fix that `compile()`, `lint()` and `arch fix`'s `while` proof emit over the
  * corpus, the catalogue's examples and fixed snippets, and the reach plans below matches a row in code,
  * `fixId`, applicability and stage, and every declared code and applicability is seen at least once.
+ * A fix no plan reaches is checked by neither half.
  */
 
 import { cpSync, existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
@@ -171,6 +179,35 @@ describe("FIX_PRODUCERS agrees with the source in every field (AF8)", () => {
       expect(sourceProblems(root)).toEqual([
         "src/fix-producers.ts#doorOpenRangeFix: its source writes applicability machine-applicable/maybe-incorrect, its row says machine-applicable",
       ]);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  }, 60_000);
+
+  it("plant: a producer that sets a tier the source does not write out fails (a variable, a spread object)", () => {
+    const root = plantedTree("src/fix-producers.ts", (t) => {
+      // V2: doorOpenRangeFix returns a maybe-incorrect fix through a variable.
+      const at = t.indexOf("export function doorOpenRangeFix(");
+      const ret = t.indexOf("  return [", at);
+      const v2 = `${t.slice(0, ret)}  const a = clamped === 0 ? "maybe-incorrect" : "machine-applicable";
+  if (clamped === 0) return [{ title: "x", applicability: a, fixId: "door-open-range", edits: [] }];
+${t.slice(ret)}`;
+      // V4: offWallFix turns has-placeholders at 0% through a spread object and a constant.
+      const tier = 'applicability: near.unique ? "machine-applicable" : "maybe-incorrect",';
+      const i = v2.indexOf(tier) + tier.length;
+      return `const PLACEHOLDER = "has-placeholders" as const;
+${v2.slice(0, i)}
+      ...(pct === 0 ? { applicability: PLACEHOLDER } : {}),${v2.slice(i)}`;
+    });
+    try {
+      const problems = sourceProblems(root);
+      expect(problems).toHaveLength(2);
+      expect(problems[0]).toMatch(
+        /^src\/fix-producers\.ts:\d+: src\/fix-producers\.ts#offWallFix sets an applicability the source does not write out$/,
+      );
+      expect(problems[1]).toMatch(
+        /^src\/fix-producers\.ts:\d+: src\/fix-producers\.ts#doorOpenRangeFix sets an applicability the source does not write out$/,
+      );
     } finally {
       rmSync(root, { recursive: true, force: true });
     }

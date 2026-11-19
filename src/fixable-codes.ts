@@ -5,13 +5,20 @@
  * `packages/mcp/scripts/gen-capabilities.ts` renders it into the `archlang://capabilities` resource,
  * grouped by applicability.
  *
- * `test/fixable-codes.test.ts` pins every field to the source (`scripts/fix-coverage.ts` reads it):
- * the codes are exactly the codes some fix site attaches a fix to, each code's sites call its row's
- * producer or lie in it, each site's file gives its row's stage, and the `applicability:` literals in
- * the producer are exactly the row's. It pins them to the output too: every fix `compile()`, `lint()`
- * and `arch fix`'s `while` proof emit over the corpus, the catalogue's examples and the test's reach
- * plans matches a row in code, `fixId`, applicability and stage, and every row's every code and
- * applicability is seen. Nothing on the compile path imports it.
+ * `test/fixable-codes.test.ts` holds it to the source, over the fix sites `scripts/fix-coverage.ts`
+ * sees: the codes are exactly the catalogued codes those sites attach a fix to; each code's sites call
+ * its row's producer or lie in it, and call no other code's producer; each site's file gives its
+ * row's stage; and every `applicability` inside the producer is written out as literals (a string, or
+ * a conditional of strings), whose set is exactly the row's. A `fixId` and a `when` text are not read
+ * from the source, and neither is which branch of a conditional gives which tier.
+ *
+ * The source check does not see a fix attached through a helper's spread (`...openRemedy(n)`), a
+ * helper in another file, `Object.assign`, a spread parameter, or a producer that hands part of its
+ * work to another function (`scripts/fix-coverage.ts` lists the shapes it reads). The backstop is
+ * the output check: every fix `compile()`, `lint()` and `arch fix`'s `while` proof emit over the
+ * corpus, the catalogue's examples and the test's reach plans must match a row in code, `fixId`,
+ * applicability and stage, and every row's every code and applicability must be seen. A fix no such
+ * plan reaches is checked by neither. Nothing on the compile path imports this module.
  */
 
 import type { Applicability } from "./diagnostics.js";
@@ -50,7 +57,7 @@ export const FIX_PRODUCERS: readonly FixProducer[] = [
       W_WINDOW_OFF_WALL: "window-off-wall",
       W_OPENING_OFF_WALL: "opening-off-wall",
     },
-    when: { [MA]: "one wall is nearest", [MI]: "two walls tie for nearest" },
+    when: { [MA]: "one wall is nearest", [MI]: "two or more walls tie for nearest" },
   },
   {
     producer: "src/fix-producers.ts#openingWidthFix",

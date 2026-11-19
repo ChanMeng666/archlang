@@ -25,6 +25,8 @@ export function sourceProblems(root: string, producers: readonly FixProducer[] =
   const out: string[] = [];
   const cov = fixCoverage(root);
   for (const s of cov.unattributed) out.push(`${s.file}:${s.line}: a fix site no code is read for`);
+  for (const c of cov.uncatalogued)
+    out.push(`${c}: a fix site attaches a fix to it, and the catalogue has no such code`);
   const rowOf = new Map(producers.flatMap((p) => Object.keys(p.codes).map((c) => [c, p] as const)));
   for (const c of cov.withEdit.filter((c) => !rowOf.has(c)))
     out.push(`${c}: a fix site attaches a fix to it, and no row declares it`);
@@ -59,6 +61,9 @@ export function sourceProblems(root: string, producers: readonly FixProducer[] =
     return l.file === file && (name === undefined || l.fns.includes(name));
   };
   for (const p of producers) {
+    // Inside a producer every applicability is written out, so the set below is all it can take.
+    for (const l of literals.filter((l) => inScope(p, l) && !l.literal))
+      out.push(`${l.file}:${l.line}: ${p.producer} sets an applicability the source does not write out`);
     const found = [...new Set(literals.filter((l) => inScope(p, l)).flatMap((l) => l.values))].sort();
     const want = [...p.applicability].sort();
     if (found.join("/") !== want.join("/"))
@@ -66,7 +71,7 @@ export function sourceProblems(root: string, producers: readonly FixProducer[] =
         `${p.producer}: its source writes applicability ${found.join("/") || "(none)"}, its row says ${want.join("/")}`,
       );
   }
-  for (const l of literals) {
+  for (const l of literals.filter((l) => l.literal)) {
     if (producers.some((p) => inScope(p, l))) continue;
     if (NOT_A_FIX_LITERAL.some((x) => x.file === l.file && l.fns.includes(x.fn))) continue;
     out.push(`${l.file}:${l.line}: an applicability literal outside every producer`);

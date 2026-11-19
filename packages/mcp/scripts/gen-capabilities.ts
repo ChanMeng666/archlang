@@ -26,13 +26,12 @@
 import { readFileSync, writeFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { buildManifest, ERROR_CATALOG, EXPORT_FORMATS } from "@chanmeng666/archlang";
+import { type Applicability, buildManifest, ERROR_CATALOG, EXPORT_FORMATS } from "@chanmeng666/archlang";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { MCP_PER_PERIOD, RATE_PERIOD_SECONDS, SOURCE_CAP_BYTES } from "../../mcp-worker/src/limits.js";
 import { createHostedServer, PNG_HOSTED } from "../../mcp-worker/src/server.js";
-import type { Applicability } from "../../../src/diagnostics.js";
 import { type FixStage, fixableCodes } from "../../../src/fixable-codes.js";
 import { INSTRUCTIONS, RESOURCE_DEFS, type ResourceName, registerTools } from "../src/tools.js";
 
