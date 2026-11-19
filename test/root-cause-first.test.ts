@@ -18,7 +18,7 @@ import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import fc from "fast-check";
 import { describe, expect, it } from "vitest";
-import { compile, diagnosticToJson, formatDiagnostic, lint, makeVirtualWorld } from "../src/index.js";
+import { compile, diagnosticToJson, formatDiagnostic, lint, makeVirtualWorld, renderErrorSvg } from "../src/index.js";
 import { type Diagnostic, MAX_DIAGNOSTICS, rootsFirst } from "../src/diagnostics.js";
 import { fmtMessage, fmtWritten } from "../src/num-format.js";
 import { runArch } from "./helpers/cli.js";
@@ -368,6 +368,17 @@ describe("the CLI text and the error card give the root-first fix too", () => {
     expect(r.stderr).not.toContain("= fix: Add the wall");
     // The root keeps its own catalogued fix.
     expect(r.stderr).toContain("= fix: Move or resize the rooms");
+  });
+
+  it("the public renderErrorSvg draws it too, and an intent violation keeps its own fix (NR.10's table)", () => {
+    const svg = renderErrorSvg(OVERLAP, compile(OVERLAP, { noCache: true }).diagnostics);
+    expect(svg).toContain("Fix: Fix the diagnostic");
+    expect(svg).toContain("Fix: Move or resize the rooms");
+    const intent: Diagnostic = { severity: "error", message: "m", code: "E_INTENT_INFEASIBLE" };
+    expect(diagnosticToJson("", intent).fix).toBeDefined();
+    expect(diagnosticToJson("", { ...intent, cause: { code: "E_X", span: { start: 0, end: 0 } } }).fix).toBe(
+      "Fix the diagnostic `cause` names first: this one follows from it.",
+    );
   });
 
   it("the error card draws the same fix", () => {

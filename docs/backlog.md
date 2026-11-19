@@ -278,7 +278,9 @@ Non-blockers from the second review of #968:
 3. PR CI never runs `test/index-values.test.ts` on Windows. Standalone on a Windows laptop, its program build took 9.8 s over 912 files against its 60 s timeout; `types: []` cuts that to 4–6 s with the same result.
 4. The new top-level `Object.freeze` calls carry no `@__PURE__` mark (`src/pure.ts`), like 27 other freezes in `src`. No measured effect.
 
-### 3.18 · The playground's first-use bundle has about 1.9 KB of headroom left — `todo`
+### 3.18 · The playground's first-use bundle has about 1.9 KB of headroom left: done by #976, waiting to be archived — `note`
+
+Done by #976, with no budget raised: Format, Finish, Repair furniture and the DXF/TXT downloads load their core code on a press (`playground/src/press-core.ts`, build entry `src/actions-path.ts`), and a `first-use` chunk group keeps the worker's `lint` on the first use's path. `npm run size:embed` on `main` 5f3606f5 → #976's head merged with it: first use 484,715 → 456,244 B (−28,471), compiler path 325,093 → 324,065 B, embed 311,313 → 310,260 B. The target was 3 KB, so this is well past it. `firstUsePathBudget` was re-taken DOWN in the same PR by the file's own rule (measured × 1.025, rounded up to a thousand): 486,000 → 468,000 B (11,756 B headroom), so a press-core or glTF-Transform leak now trips it. For the compiler and embed paths the rule gives the budgets as they stand (333,000 and 319,000 B), so those are unchanged. `docs/agents/iron-laws.md` still quotes an older `embedPathBudget`; editing that line is the owner's call (NR.9 (3)). The card text below is kept for the record.
 
 After AL3b (#969) the first-use path (`firstUsePathBudget`, `playground/e2e/startup-chunks.baseline.json`) measures 484,137 B gzip against 486,000 B. The next few KB of compiler growth trip `Playground E2E chromium`. Two ways out: move code a first use need not load out of the compiler chunk or the lazy core chunk (as EB.2 did, #947), or re-take the budget by the file's own rule (measured × 1.025, rounded up to a thousand). A re-take raises a ceiling, a relaxed check that needs the owner's word for that PR (`REVIEW.md`; the owner approved the compiler-path and embed raises on #969, 2026-11-19, not this one). Measure with `npm run size:embed` (`scripts/embed-path-size.mjs`) on `main` and the branch; `docs/agents/iron-laws.md` still quotes `embedPathBudget` as 310,000 B (319,000 since #969), and editing that line is the owner's call (NR.9 (3)).
 
@@ -912,6 +914,20 @@ gives `satisfied: 0` and `E_INTENT_ROOM_MISSING`; the same plan against `dining`
 fix is a table change (a `dining-room` key or alias), which bumps `SYNONYMS_VERSION`; the
 version is pinned by a test and the eval scores through the same table, so the bump is the
 owner's call.
+
+### M.20a · Spanish and Portuguese label words in the concept table (NR.16's second half; needs an owner-approved `SYNONYMS_VERSION` bump) — `decision`
+
+NR.16 (ruling RM-D68) asked for es/pt words in both the use classifier and `CONCEPTS`
+(`src/intent-concepts.ts`). #973 built the classifier half only: a room labelled "Dormitorio" or
+"Cozinha" reads as `uses bedroom` / `uses kitchen` and meets every concept that carries a room
+kind or a `room_type`. Six concepts carry neither, `consulting-room`, `meeting-room`,
+`private-office`, `reception`, `suite` and `unit`, and match by their English label words alone,
+so "Recepción", "Sala de reuniones", "Consultorio" or "Apartamento" never meets one; nor does a
+master-bedroom phrase ("Dormitorio principal", "Quarto principal") count by its label. Adding
+those words (and an accent fold to `synonymMatchesLabel`) changes the eval's table, so it bumps
+`SYNONYMS_VERSION`, which is the owner's call (as M.20). #973's first round carried such a table
+change and its body lists the words; the false friends found there (a pt-PT "Quarto de banho
+principal" read as a master bedroom, "Suíte" as the commercial `suite`) need guarding first.
 
 ### M.21 · `format()` writes the plan name with `JSON.stringify`, which the lexer cannot read back: done by #872, waiting to be archived — `note`
 
@@ -2386,7 +2402,9 @@ down. (2) `growthBudget` (ceiling 458,980 B over a 438,980 B baseline) guards no
 path, 315,282 B, is ~124 KB under the baseline): re-baseline it by its rule or retire it. (3) `docs/agents/iron-laws.md`'s RM-D57 line could point at
 `npm run size:embed` (#937 review). **Gate:** (1) and (2) fixed in the baseline file; (3) the owner's call.
 
-### NR.10 · Moving the `E_INTENT_*` rows out of the compiler chunk's fix table (#948) — `todo`
+### NR.10 · Moving the `E_INTENT_*` rows out of the compiler chunk's fix table (#948): done by #976, waiting to be archived — `note`
+
+Done by #976: the 13 rows are generated into `src/error-catalog-fixes-intent.ts`. `compile()`'s error card reads the compile table only, and `diagnosticToJson` and the public `renderErrorSvg` read both (`src/any-catalog-fix.ts`). The `test/explain.test.ts` pin now proves the two tables are disjoint and together every catalogue code. The compiler chunk is 1,052 B smaller. The first use gained nothing from it: `diagnosticToJson` is on that path and carries the rows there.
 
 Twelve today (thirteen once #948 lands), they are never compile diagnostics; dropping them from `src/error-catalog-fixes.ts`'s compile-path copy
 saves about 633 B gzip. Needs the `test/explain.test.ts` pin (its keys equal every catalogue code) reworked.
@@ -2431,7 +2449,7 @@ count (`rooms: 2` while `roomsInclude` needs 3) is not reported as infeasible. *
 POISON-site guard regex in `test/error-value-law.test.ts` misses `= POISON` and `=> POISON` forms (no such
 site today). **Gate:** (1) those errors reported beside the root, with a test; (2) the regex widened.
 
-### NR.16 · Room words only in English (downstream ask, 2026-11-18) — `todo`
+### NR.16 · Room words only in English (downstream ask, 2026-11-18): classifier half done by #973; concept-table half is M.20a — `todo`
 
 A downstream application reports that brief-check concept matching and the label classifier know only
 English room words: Spanish and Portuguese labels ("Dormitorio", "Baño", "Cocina", "Quarto", "Banheiro",
@@ -2440,7 +2458,10 @@ that exist. About one in five of its recent briefs is in Spanish or Portuguese. 
 accent-insensitive es/pt vocabulary in the concept table and the label classifier; (b) state that `uses`
 tags and concepts are the language-neutral channel, never label words, with a lint when a room has no
 `uses`. Until decided, the downstream app writes `uses` on every room. **Gate:** a decision recorded,
-then the chosen form with a test per language.
+then the chosen form with a test per language. Decided (a) by RM-D68 (product-roadmap §6.31). #973
+built the use-classifier half (`test/vocabulary-es-pt.test.ts`), through which the concepts that
+carry a room kind or a `room_type` are met. The concept-table half is not built: it changes the
+eval's table, so it needs an owner-approved `SYNONYMS_VERSION` bump, and it is M.20a.
 
 ## Test-programme findings (promo-credit programme, 2026-11-16)
 

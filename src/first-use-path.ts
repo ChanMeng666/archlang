@@ -1,13 +1,14 @@
 /**
- * A build entry, not a package export (card EB.2), the second of the playground's two (the first
- * is `src/compile-path.ts`): the core values a first use on the playground loads beyond the
- * compiler chunk, which are what the header actions call (`playground/src/actions.ts`: `finish`,
- * `repair`, `format`, `toDxf`, `renderAscii`, `diagnosticToJson`) and the compile worker's `lint`
- * (`playground/src/compile-worker.ts`). Each is imported from its declaring module, never through
- * `index.ts`.
+ * A build entry, not a package export (card EB.2), the second of the playground's three (the first
+ * is `src/compile-path.ts`, the third `src/actions-path.ts`): the core values a first use on the
+ * playground loads beyond the compiler chunk, which are what the header actions import statically
+ * (`playground/src/actions.ts`: `diagnosticToJson`, for Copy for LLM) and the compile worker's
+ * `lint` (`playground/src/compile-worker.ts`). Each is imported from its declaring module, never
+ * through `index.ts`. What the actions run only on a press (`finish`, `repair`, `format`, `toDxf`,
+ * `renderAscii`) is `src/actions-path.ts`'s (card 3.18).
  *
  * esbuild puts code in a chunk by the set of entries that reach it, so as an entry of its own this
- * file splits the core's lazy code in two: what it reaches (beyond `compile-path.ts`'s chunks) in
+ * file splits the core's lazy code: what it reaches (beyond `compile-path.ts`'s chunks) in
  * chunks it imports, and what only the rest of `dist/index.js` reaches (edit mode's `completion`,
  * `suggestTopology` and `applyFixes`, the intent panel's `validateIntent`, takeoff's `takeoffCsv`,
  * the 3D preview's `planToJson`, …) in chunks of their own. The header actions then import only
@@ -17,10 +18,5 @@
  * package.json). Nothing changes for a consumer of `dist/index.js`, which exports the same values
  * from the same code.
  */
-export { renderAscii } from "./backends/ascii.js";
 export { diagnosticToJson } from "./diagnostic-json.js";
-export { toDxf } from "./export/dxf.js";
-export { finish } from "./finish.js";
-export { format } from "./format.js";
 export { lint } from "./lint.js";
-export { repair } from "./repair.js";

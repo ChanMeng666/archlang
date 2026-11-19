@@ -4,6 +4,7 @@ import { copyFileSync, mkdtempSync, readFileSync, readdirSync, writeFileSync } f
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { describe, expect, it } from "vitest";
+import { ERROR_CATALOG } from "../src/index.js";
 import { runArch } from "./helpers/cli.js";
 
 /**
@@ -108,6 +109,16 @@ describe("CLI — agent contract", () => {
     const r = await run(["explain", "E_NOPE", "--json"]);
     expect(r.status).toBe(3);
     expect(JSON.parse(r.stdout).ok).toBe(false);
+  }, 30000);
+
+  it("`explain --json` returns the entry with its example and the fixed one (card AF5)", async () => {
+    const r = await run(["explain", "e_room_size", "--json"]);
+    expect(r.status).toBe(0);
+    const j = JSON.parse(r.stdout);
+    expect(j).toMatchObject({ ok: true, code: "E_ROOM_SIZE" });
+    expect(Object.keys(j.entry)).toEqual(["code", "severity", "message", "cause", "fix", "example", "fixed"]);
+    expect(j.entry.fixed).toBe(ERROR_CATALOG.E_ROOM_SIZE!.fixed);
+    expect(j.entry.fixed).not.toBe(j.entry.example);
   }, 30000);
 
   it("`new` scaffolds a plan that itself validates clean", async () => {

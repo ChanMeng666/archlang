@@ -682,7 +682,7 @@ export type { PngOptions } from "./backends/png.js";
 // `--error-svg` flag route a broken plan's diagnostics through this instead of
 // leaving `svg === ""`, so agent loops/embeds always get visual feedback. Pure,
 // deterministic, zero-dep; never touches the default (error-free) output.
-export { renderErrorSvg } from "./backends/error-svg.js";
+export { renderErrorSvg } from "./backends/error-svg-public.js";
 export type { ErrorSvgOptions } from "./backends/error-svg.js";
 // ASCII text backend. `renderAscii(scene)` serializes a Scene to a
 // fixed-width text floor plan — the channel a sandboxed, text-only agent uses to

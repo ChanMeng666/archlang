@@ -85,6 +85,7 @@ connector, with no authentication. In claude.ai, and other hosts that support MC
 | `finish` | Furnishes empty rooms and adds paper, scale, dimensions, title, schedule and legend. |
 | `suggest` | Door and window statements that would fix an unreachable room or a windowless bedroom. |
 | `complete` | Completion items at a position in the source. |
+| `explain` | What a diagnostic code means and how to fix it, with an example and the same example corrected. |
 | `link` | A playground URL that opens the plan in a browser. |
 
 The hosted server adds `read_me`, which says what the server is and what it keeps. Both servers

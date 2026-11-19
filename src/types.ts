@@ -64,7 +64,7 @@ export interface CompileOptions {
   /**
    * What to render when the plan has fatal errors. Default (unset): `svg` is
    * left `""` — the historical, byte-identical behavior. `"svg"` opts in to a
-   * self-describing **error card** SVG (via `renderErrorSvg`) listing every
+   * self-describing **error card** SVG (the card `renderErrorSvg` draws) listing every
    * diagnostic (severity, code, line:col, message, fix), so an agent loop or an
    * embed always has visual feedback instead of a blank. This only affects the
    * error path: `errors`/`warnings`/`diagnostics`/`ok` semantics are unchanged,
