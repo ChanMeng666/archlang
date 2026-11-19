@@ -23,10 +23,10 @@
 ### AL6b · AL6 的测试加固 — `todo` · 0.5 日 · opus
 AL6（#957）第二轮红队的三条测试缺口，只改测试，不改 `src/`。
 
-- **N-1**：`test/label-fit.test.ts` 的 `ORDER_EXCUSED` 只对 `"agrees"` 断言两种房间顺序的结果相等；`"differs"` 的条目什么都不断言。给 `"differs"` 加上"不相等"的断言，否则一个已经不再依赖顺序的平面仍被名单放过。
+- **N-1**：~~`ORDER_EXCUSED` 的 `"differs"` 条目什么都不断言~~。AL3a（#964）删掉了这份名单：五个平面现在都断言与书写顺序无关，此项随之作废。
 - **N-2**：`dim-chain`、`dim-diameter` 两种主体和"无名房间"的主体（`room-label` 的 `text` 取面积数字）没有测试，语料里也没有例子。`src/lint/rules/annotations.ts` 的 `FIGURE_KIND` 即使两行写反，测试也全绿。为每种主体各写一个最小平面，断言 `overprint.subject.kind` 和 `text`。
 - **N-3**：`test/label-wrap.test.ts` 里 `expect(t.knockOns).toBe(t.knocked!.length)` 是同义反复：两个计数在同一处一起加一。删掉它，或改成一个能失败的断言（例如与独立数出的 knock-on 数比较）。
-- **变化面**：只有测试。两份所有者批准的名单（`ORDER_EXCUSED` 和 label-wrap 的 knock-on 名单）只能缩小。
+- **变化面**：只有测试。label-wrap 的 knock-on 名单（所有者批准）只能缩小。
 - **发布**：不发布（只改测试）。
 
 ### AL5b · AL5 的后续 — `todo` · 1 日 · opus
