@@ -606,7 +606,10 @@ export function furnitureCategoryFix(word: Span | undefined, near: string): FixS
  * `machine-applicable` only when no other word of the set was as near (`unique`); the source is
  * an error, so nothing downstream measures it yet. Otherwise `maybe-incorrect`.
  */
-export function spellingFix(span: Span | undefined, s: { word: string; unique: boolean } | null): FixSuggestion[] | null {
+export function spellingFix(
+  span: Span | undefined,
+  s: { word: string; unique: boolean } | null,
+): FixSuggestion[] | null {
   if (!span || !s) return null;
   return [
     {

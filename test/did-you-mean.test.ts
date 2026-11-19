@@ -91,7 +91,12 @@ suite("the producers: a word-level span and a fix that rewrites that word alone"
     ]);
     expect(spelt(plan("uses bedrom"))).toEqual([]);
     expect(spelt(plan('room id=a at (0,0) size 4000x3000 label "A" uses living bedrom'))).toEqual([
-      { code: "E_PARSE", span: "bedrom", hint: "did you mean `bedroom`?", fix: ["machine-applicable", "bedrom", "bedroom"] },
+      {
+        code: "E_PARSE",
+        span: "bedrom",
+        hint: "did you mean `bedroom`?",
+        fix: ["machine-applicable", "bedrom", "bedroom"],
+      },
     ]);
   });
 
@@ -120,10 +125,20 @@ suite("the producers: a word-level span and a fix that rewrites that word alone"
     const body = (clause: string): string =>
       plan(ROOMS[0]!, ROOMS[1]!, `walls from rooms exterior 200 partition 100 {\n    ${clause}\n  }`);
     expect(spelt(body("open betwen hall and bed"))).toEqual([
-      { code: "E_PARSE", span: "betwen", hint: "did you mean `between`?", fix: ["machine-applicable", "betwen", "between"] },
+      {
+        code: "E_PARSE",
+        span: "betwen",
+        hint: "did you mean `between`?",
+        fix: ["machine-applicable", "betwen", "between"],
+      },
     ]);
     expect(spelt(body("betwen hall and bed thickness 150"))).toEqual([
-      { code: "E_PARSE", span: "betwen", hint: "did you mean `between`?", fix: ["machine-applicable", "betwen", "between"] },
+      {
+        code: "E_PARSE",
+        span: "betwen",
+        hint: "did you mean `between`?",
+        fix: ["machine-applicable", "betwen", "between"],
+      },
     ]);
     // A missing clause is spanned on its statement, as it was; the fix still rewrites the word.
     expect(spelt(plan(...ROOMS, "door on hall.bottom at 1000 widht 900"))).toEqual([
@@ -138,10 +153,20 @@ suite("the producers: a word-level span and a fix that rewrites that word alone"
 
   it("a `uses` word, in a room and in a strip", () => {
     expect(spelt(plan("room id=a at (0,0) size 4000x3000 uses bedrom"))).toEqual([
-      { code: "E_PARSE", span: "bedrom", hint: "did you mean `bedroom`?", fix: ["machine-applicable", "bedrom", "bedroom"] },
+      {
+        code: "E_PARSE",
+        span: "bedrom",
+        hint: "did you mean `bedroom`?",
+        fix: ["machine-applicable", "bedrom", "bedroom"],
+      },
     ]);
     expect(spelt(plan("strip right at (0,0) gap 0 height 3000 {\n    room size 3000 uses kitchn\n  }"))).toEqual([
-      { code: "E_PARSE", span: "kitchn", hint: "did you mean `kitchen`?", fix: ["machine-applicable", "kitchn", "kitchen"] },
+      {
+        code: "E_PARSE",
+        span: "kitchn",
+        hint: "did you mean `kitchen`?",
+        fix: ["machine-applicable", "kitchn", "kitchen"],
+      },
     ]);
   });
 
@@ -172,7 +197,10 @@ suite("`arch fix` applies each machine-applicable fix cleanly: fix, recompile, t
     ["dor", plan(...ROOMS, "dor on hall.bottom at 1000 width 900")],
     ["lable", plan('room id=a at (0,0) size 4000x3000 lable "A"', "walls from rooms exterior 200 partition 100")],
     ["hal", plan(ROOMS[0]!, 'room id=b right-of hal size 3000x3000 label "B"', ROOMS[2]!)],
-    ["betwen", plan(ROOMS[0]!, ROOMS[1]!, "walls from rooms exterior 200 partition 100 {\n    open betwen hall and bed\n  }")],
+    [
+      "betwen",
+      plan(ROOMS[0]!, ROOMS[1]!, "walls from rooms exterior 200 partition 100 {\n    open betwen hall and bed\n  }"),
+    ],
     ["widht", plan(...ROOMS, "door on hall.bottom at 1000 widht 900")],
     ["bedrom", plan("room id=a at (0,0) size 4000x3000 uses bedrom", "walls from rooms exterior 200 partition 100")],
   ])("%s", (_word, src) => {

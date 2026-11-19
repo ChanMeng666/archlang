@@ -58,7 +58,14 @@ import type { ElementDef, ParseCtx, Registry } from "./registry.js";
 import { BUILTIN_REGISTRY } from "./registry.js";
 import { floorClause, roomUsesExpected, roomUsesOutdoorHint } from "./elements/room.js";
 import { missingClause, readClauses, type TailClause } from "./clause-order.js";
-import { KEEP_GRADES, KEEP_WORDS, KEYWORDS, STATEMENT_STARTS, TITLE_FIELDS, type TitleField } from "./grammar/tokens.js";
+import {
+  KEEP_GRADES,
+  KEEP_WORDS,
+  KEYWORDS,
+  STATEMENT_STARTS,
+  TITLE_FIELDS,
+  type TitleField,
+} from "./grammar/tokens.js";
 import type { KeepGrade, KeepNode, KeepRef } from "./ast.js";
 import { splitDatum } from "./room-datums.js";
 import type { PaperOrientation, PaperSize } from "./grammar/tokens.js";
@@ -248,7 +255,12 @@ class Parser {
    * metered, so the search runs only while the error can still be reported: past
    * `MAX_DIAGNOSTICS` it is dropped, and so the work is bounded whatever the source's size.
    */
-  private fail(msg: string, t = this.peek(), span: Span = { start: t.start, end: t.end }, near?: readonly string[]): never {
+  private fail(
+    msg: string,
+    t = this.peek(),
+    span: Span = { start: t.start, end: t.end },
+    near?: readonly string[],
+  ): never {
     const hints = this.parseHints(t);
     const s = near && t.type === "ident" && this.reportable() ? spelling(t.value, near) : null;
     if (!s) throw new ParseError(msg, span, hints);
@@ -452,7 +464,8 @@ class Parser {
   }
   private eatKeyword(kw: string): Token {
     const t = this.peek();
-    if (t.type !== "ident" || t.value !== kw) this.fail(`Expected "${kw}" but found ${describe(t)}`, t, undefined, [kw]);
+    if (t.type !== "ident" || t.value !== kw)
+      this.fail(`Expected "${kw}" but found ${describe(t)}`, t, undefined, [kw]);
     return this.next();
   }
   private eat(type: Token["type"]): Token {
@@ -2129,7 +2142,12 @@ class Parser {
             uses.push(this.next().value as UseKind);
           }
           if (uses.length === 0)
-            this.fail(roomUsesExpected(this.peek().value || undefined, this.peek().type), undefined, undefined, USE_KINDS);
+            this.fail(
+              roomUsesExpected(this.peek().value || undefined, this.peek().type),
+              undefined,
+              undefined,
+              USE_KINDS,
+            );
           if (keep) tail.uses = uses;
         },
       },
