@@ -5,7 +5,7 @@
 Where the tests of a `src` module are, and what each test file is for. Generated; `npm run check:drift`
 fails when it is stale. How to add a test: `docs/testing.md` § 4.
 
-555 test files in `test/`, 290 `src` modules, 109 modules no test imports.
+556 test files in `test/`, 290 `src` modules, 109 modules no test imports.
 
 ## `src` module → tests that import it
 
@@ -56,7 +56,7 @@ Nearest first, then by name; `(+n)` is the rest. Test names are `test/<name>.tes
 - `src/context-size.ts` (1) — `context-size`
 - `src/cursor.ts` (3) — `block-stair`, `cursor-exhaustive`, `reroll-findrun-oracle`
 - `src/datum.ts` (11) — `access-policy`, `cursor-exhaustive`, `describe-depends`, `diff-laws`, `emit-opening-oracle`, `equivariance-fuzz`, `fix-printer`, `fuzz` (+3)
-- `src/describe.ts` (49) — `acc-metadata`, `accessible-svg`, `d4`, `describe`, `diff-laws`, `diff`, `room-adjacency-oracle`, `window-facing-probe` (+41)
+- `src/describe.ts` (50) — `acc-metadata`, `accessible-svg`, `d4`, `describe`, `diff-laws`, `diff`, `room-adjacency-oracle`, `vocabulary-es-pt` (+42)
 - `src/diagnostics.ts` (53) — `diagnostic-json-related`, `diagnostics-volume`, `diagnostics`, `error-catalog-families`, `export-font-cjk`, `expr`, `fix-pullback`, `lint-file-provenance` (+45)
 - `src/diff.ts` (3) — `diff-fabric`, `diff-laws`, `diff`
 - `src/doc.ts` (2) — `fix-printer`, `format`
@@ -120,9 +120,9 @@ Nearest first, then by name; `(+n)` is the rest. Test names are `test/<name>.tes
 - `src/impact.ts` (2) — `rectilinear-doors`, `rectilinear-rooms`
 - `src/import.ts` (34) — `block-stair-byte-identity`, `corner-window-byte-identity`, `dim-swap-reprint`, `dim-thickness-callout`, `drawing-budget`, `error-value-law`, `floor-materials-byte-identity`, `furniture-relations` (+26)
 - `src/import/limits.ts` (1) — `openplan3d-malformed`
-- `src/index.ts` (413) — `acc-metadata`, `access-graph`, `access-policy`, `accessible-svg`, `agent-gallery`, `alias-match`, `anchors`, `annotate` (+405)
+- `src/index.ts` (414) — `acc-metadata`, `access-graph`, `access-policy`, `accessible-svg`, `agent-gallery`, `alias-match`, `anchors`, `annotate` (+406)
 - `src/input-limit.ts` (2) — `import-rooted`, `workspace-seams`
-- `src/intent-concepts.ts` (2) — `vocabulary-living-dining`, `vocabulary-matcher-oracle`
+- `src/intent-concepts.ts` (3) — `vocabulary-es-pt`, `vocabulary-living-dining`, `vocabulary-matcher-oracle`
 - `src/intent-feasibility.ts` (1) — `intent-infeasible`
 - `src/intent.ts` (1) — `site`
 - `src/ir.ts` (177) — `access-policy`, `arc-radius-exact`, `attach`, `axes`, `between-face-probes`, `block-stair-byte-identity`, `block-stair-frames`, `block-stair-winders` (+169)
@@ -189,7 +189,7 @@ Nearest first, then by name; `(+n)` is the rest. Test names are `test/<name>.tes
 - `src/view/camera.ts` (5) — `iso-camera`, `iso-mixed-heights`, `iso-painter-order`, `iso-projection`, `iso-sort`
 - `src/view/extrude.ts` (4) — `iso-mixed-heights`, `iso-painter-order`, `iso-projection`, `iso-sort`
 - `src/view/paint.ts` (4) — `iso-cli`, `iso-mixed-heights`, `iso-painter-order`, `iso-sort`
-- `src/vocabulary.ts` (8) — `alias-match`, `garage`, `grid-index`, `lint-label-piece-missing`, `room-overlap-oracle`, `vocabulary-fallback`, `vocabulary-living-dining`, `vocabulary-matcher-oracle`
+- `src/vocabulary.ts` (9) — `alias-match`, `garage`, `grid-index`, `lint-label-piece-missing`, `room-overlap-oracle`, `vocabulary-es-pt`, `vocabulary-fallback`, `vocabulary-living-dining` (+1)
 - `src/wall-lowering.ts` (2) — `joinery-split`, `open-crossing`
 - `src/wall-ref.ts` (2) — `rectilinear-rooms`, `walls-from-rooms`
 - `src/while-fix.ts` (1) — `while-fix`
@@ -724,6 +724,7 @@ The first sentence of each file's header comment.
 - `test/vertical.test.ts` — Vertical circulation: `stair`, `elevator`, `escalator`.
 - `test/visual.test.ts` — visual regression — golden PNG pixel-diff.
 - `test/vocabulary-equivalence.test.ts` — Equivalence pin for the room-label → `uses` / `room_type` classifier.
+- `test/vocabulary-es-pt.test.ts` — Spanish and Portuguese room words (backlog NR.16, product-roadmap RM-D68): the label classifier (`USE_VOCABULARY` / `FALLBACK_USE_VOCABULARY`, `src/vocabulary.ts`) and the intent concept table (`CONCEPTS`, `src/intent...
 - `test/vocabulary-fallback.test.ts` — The fallback use vocabulary (plan-soundness PS2.19): storage, office, utility, a nursery and a water closet, read only for a label the primary vocabulary leaves with no use at all.
 - `test/vocabulary-living-dining.test.ts` — The label classifier emits `living` and `dining` (plan-soundness PS0.7).
 - `test/vocabulary-matcher-oracle.test.ts` — The label classifier (`src/vocabulary.ts`) against the form it replaced, kept here VERBATIM as the oracle (`docs/backlog.md` M.19).
