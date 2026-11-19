@@ -15,13 +15,16 @@ the refusal names the nearest legal position).
 |---|---|---|---|
 | `E_OPENING_NIB` (`nibRefusal`, `src/opening-relation.ts:1045`) | none (no legal position: "narrow it" is never a fix) | two equally near positions; a position past a meeting wall; an expression, an axis, a component or a loop; another opening within a mullion | phase B only: the one nearest legal centre **in the bay the written centre lies in**, on the host the clause names (§3) |
 | `E_OPENING_HOST_AMBIGUOUS`, room-edge branch (`refusalOnEdge`, `:1316`) | none | each exterior body's nearest position (`edgeHints`, `:1364`) when two or more fit, or one fits past a meeting wall | phase B only: one exterior body takes it, and in the written centre's bay (§3) |
-| `E_OPENING_NO_SHARED_WALL`, partition branch (`placeOnRun`, `:990-1001`) | a window: `on <exterior edge of "a">` when the room has two or more exterior edges | a door or opening on a derived partition: `between <room> and <other room>` (same wall); a window: the room's one exterior edge | never: it changes the wall |
-| `E_OPENING_DATUM` (`positionOnRun`, `:686-760`) | no position written: ` at <mm> from start` inserted | a parallel edge: each edge of the **same room** that meets the run at an end (`a.left` becomes `a.top` or `a.bottom`); `at <mm>` with no datum: `at <mm> from start` | never: which end the author meant is not in the source |
+| `E_OPENING_NO_SHARED_WALL`, partition branch (`placeOnRun`, `:990-1001`) | a window: `on <exterior edge of "a">` when the room has two or more exterior edges, or its one exterior edge does not take the window | a door or opening on a derived partition: `between <room> and <other room>` (same wall); a window: the room's one exterior edge | never: it changes the wall |
+| `E_OPENING_DATUM` (`positionOnRun`, `:686-760`) | no position written: ` at <mm> from start` inserted; `at <mm>` or `at <pct>%` with no datum: ` from <start or end>` | a parallel edge: each edge of the **same room** that meets the run at an end (`a.left` becomes `a.top` or `a.bottom`) | never: which end the author meant is not in the source |
 | `W_DOORWAY_BLOCKED` (`doorwayBlocked`, `src/lint/rules/doors.ts:282`) | none | the door moved along its own bay until its landing misses every piece (both directions when they tie) | never: which one moves, the door or the piece, is a design decision |
 
 Phase A (one code PR) ships the skeletons and every maybe-incorrect move, plus the three hint
-corrections in §8. Phase B (a later PR, after a ruling on §10 Q1 and Q2) promotes the two
-machine-applicable rows. Phase A cannot move any L1 number (§6).
+corrections in §8, F1 and F2 among them. Phase B (a later PR) promotes the two
+machine-applicable rows under §3's rules. It starts only after phase A has landed and a fuzz over
+the examples (§9 item 3) shows 0 wrong machine-applicable fixes. Phase A cannot move any L1 number.
+Phase B may, and its PR reports the measured offline L1 numbers (§6). The rulings behind this are in
+§12.
 
 ## 1. A design note, not an ADR
 
@@ -42,9 +45,9 @@ One precedent leans the other way. `src/lint/rules/openings.ts:16-21` says of
 the author placed, and there are always at least two (either direction, or the other wall)." That
 rule is about hand-placed openings that compile. A refused relational opening draws nothing, and its
 relation fixes the run, so "the other wall" does not exist. The bay rule (§3) also removes "either
-direction" in the machine-applicable case. That is why phase B is a ruling (§10 Q1), not a
-default. If the ruling makes phase B an ADR matter, the amendment is one dated line under ADR 0028
-§5: "A refusal's nearest position is also carried as a fix; it is machine-applicable only under
+direction" in the machine-applicable case. That is why phase B needed a ruling (§10 Q1), not a
+default. It was ruled yes (§12). Phase B's PR also adds one dated line under ADR 0028 §5 (§12 Q8):
+"A refusal's nearest position is also carried as a fix; it is machine-applicable only under
 `docs/plans/ai-first-language/af9-design.md` §3."
 
 ## 2. The diagnostics in scope, reproduced
@@ -254,11 +257,16 @@ make (ADR 0028 §5), and none is EV.5's.
   judged by §3, and there is no fix if it fails. It stands in the same wall, but it changes an
   exterior opening into an interior one, so it is never machine-applicable. An authored partition
   names no pair, so it gets no fix.
-- A window: the room's edges that carry an exterior body where the same position words land
-  legally (datum table edges, `bodiesOn`, `judgeLanding`; charged). With exactly one, it is a
-  maybe-incorrect `on a.<edge>`. With two or more, it is `has-placeholders`: the edge is replaced by
-  `<exterior edge of "a">`, and the title lists them. With none, there is no fix. Never
-  machine-applicable: another wall faces another way, which is the author's decision (ADR 0005).
+- A window (§12 Q5): first count the room's exterior edges, the edges that carry an exterior body
+  (datum table edges and `bodiesOn`; charged).
+  - Exactly one: a maybe-incorrect `on a.<edge>`, judged by §3 with the same position words
+    (`judgeLanding`). If those words do not land legally there, it gets the placeholder instead.
+  - Two or more: `has-placeholders`. The edge is replaced by `<exterior edge of "a">`, and the title
+    lists the edges.
+  - None: no fix, since no edge could fill the placeholder.
+
+  Never machine-applicable: another wall faces another way, which is the author's decision
+  (ADR 0005).
 - The other branch of this code (no wall on the run at all, `:937-956`) stays hint-only. Adding a
   wall is not an opening move.
 
@@ -270,8 +278,9 @@ make (ADR 0028 §5), and none is EV.5's.
   is legal (or `R` meets the run at no end), the fallback is `from start` and `from end` the same
   way. With no legal alternative there is no fix. Which end the author measured from is not in the
   source, so this is never machine-applicable.
-- `at <mm>` / `at <pct>%` with no datum: maybe-incorrect ` from start` inserted after an `<mm>`,
-  read the way `on <wall> at <mm>` reads; `<pct>%` gets no fix.
+- `at <mm>` / `at <pct>%` with no datum (§12 Q6): `has-placeholders`. After an `<mm>`, the fix
+  inserts ` from <start or end>`. A `<pct>%` position is replaced by `at <mm> from <start or end>`.
+  It is never applied.
 - No position (a door or cased opening): `has-placeholders`, ` at <mm> from start` inserted at the
   end of the `between` clause. This is the rustc `HasPlaceholders` case the card names. It is never
   applied.
@@ -338,15 +347,17 @@ AF2's discipline, applied:
 - **MCP `fix`** (`packages/mcp/src/tools.ts:760-790`) reads **compile** diagnostics only, and does
   **not** call `rankFixes`. With several alternatives on one diagnostic and `unsafe:true`, it
   applies the first by array order and reports the next as skipped ("overlaps an earlier fix"). AF9
-  is the first producer to emit more than one alternative per diagnostic (F3, §10 Q3). The doorway
-  move (lint) never reaches it.
+  is the first producer to emit more than one alternative per diagnostic (F3). Making MCP `fix`
+  and L1 call `rankFixes` is a separate small card (§12 Q3). The doorway move (lint) never reaches
+  MCP `fix`.
 - **LSP** shows every alternative as a quick-fix. A lone machine-applicable fix is the preferred
   action.
 - **L1** (`eval/l1.ts:50-60`) applies compile-stage machine-applicable fixes only, with no
   `rankFixes`. **Phase A moves no L1 number**: it adds no machine-applicable fix. **Phase B can**: a
-  draft that hits a refusal with a unique bay-nearest position would heal one step further. Nothing
-  is claimed either way (`docs/agents/iron-laws.md` eval bounds; no live run is proposed). Phase B
-  re-runs the offline gates that call `l1Pipeline` (`test/fault-injection.test.ts`,
+  draft that hits a refusal with a unique bay-nearest position would heal one step further. That is
+  reported honestly (§12 Q2). Phase B's PR states the L1 numbers measured offline before and after
+  the change: the offline L1 tier only, never a paid or live run. It makes no loop-gain claim
+  either way (`docs/agents/iron-laws.md` eval bounds). Phase B also re-runs the offline gates that call `l1Pipeline` (`test/fault-injection.test.ts`,
   `test/eval-offline.test.ts`, `test/dataset.test.ts` § e's in-repo regeneration). It adds an
   `eval/faults/` fixture for the nib refusal, so the gate proves the healed plan compiles and is a
   fixpoint. The published dataset bytes are not regenerated (`.claude/rules/eval-dataset.md`).
@@ -428,8 +439,16 @@ live, as AF2's were.
 
    Every maybe-incorrect fix applied alone must also remove its diagnostic. A fix that cannot help
    is not offered. The fuzz also counts, without failing, new `W_SWING_OBSTRUCTED` and
-   `W_DOORWAY_BLOCKED` on moved doors (§10 Q4). Seeded, with the case count bounded at PR scale and
+   `W_DOORWAY_BLOCKED` on moved doors (§12 Q4). Seeded, with the case count bounded at PR scale and
    widened by `FC_SCALE` in `fuzz-deep`.
+
+   **Gate for phase B (§12 Q1).** Phase B starts only after phase A has landed and this fuzz over the
+   examples shows 0 wrong machine-applicable fixes. Phase A emits none, so the fuzz checks the
+   candidates instead. For each maybe-incorrect move, the test calls §3's proof directly. The proof is
+   an exported function of the producer's module, not a field on the fix, so no output moves. The
+   fuzz then applies every move that passes as if it were machine-applicable.
+   The 0 is therefore measured before any tier is switched on. Phase B's PR re-runs the fuzz on the
+   real tier.
 4. **Byte-identity law** (`test/af9-byte-identity.test.ts`). SHA-256 of SVG, `describe()`, `lint()`,
    `compile().diagnostics` and steps over every shipped plan and every digest table's inline plans:
    unchanged for each plan that raises none of the five codes. The moved rows of §7 are re-pinned in
@@ -441,7 +460,7 @@ live, as AF2's were.
    `E_STEP_LIMIT` deterministically, never a hang. The refusal path's charges are pinned.
 7. **Size.** CI's `startup-chunks` e2e, held to §7's stop rule.
 
-## 10. Open questions for the coordinator
+## 10. Open questions for the coordinator (ruled in §12)
 
 1. **Phase B at all?** May a refused relational opening's single bay-nearest position be
    machine-applicable (ADR 0011's bar)? Or do the lint precedent (`src/lint/rules/openings.ts:21`,
@@ -483,3 +502,23 @@ live, as AF2's were.
   producer emits one fix per diagnostic.
 - **F4.** For `blocked.arch`, `arch repair` cannot clear the doorway: the WC cycles between two
   positions. A door move is the only remedy left, and today it is only a hint.
+
+## 12. Rulings (coordinator, 2026-11-19)
+
+The coordinator ruled on the eight questions of §10. The owner delegated these rulings for that
+session and can overturn any of them. The text above follows them.
+
+1. **Q1, phase B: yes**, under §3's rules. It starts only after phase A has landed and a fuzz over
+   the examples (§9 item 3) shows 0 wrong machine-applicable fixes.
+2. **Q2, "AF9 may move no L1 number": it means "report honestly".** Phase B may change L1 output.
+   Its PR states the L1 numbers measured before and after the change, from the offline L1 tier only
+   and never a paid run. It makes no loop-gain claim either way (`docs/agents/iron-laws.md`).
+3. **Q3, several alternatives: yes, a separate small card.** MCP `fix` and L1 call `rankFixes`.
+4. **Q4, furniture: no check inside `compile()`.** If the fuzz finds a new swing or landing warning
+   on a moved door, doors drop to maybe-incorrect.
+5. **Q5, a window on a single partition edge:** a maybe-incorrect move when the room has exactly
+   one exterior edge; otherwise the placeholder (§4).
+6. **Q6, `E_OPENING_DATUM`'s no-position and no-datum cases: yes, kept in AF9, as placeholders**
+   (§4).
+7. **Q7, F1 and F2: yes**, shipped with phase A (§8).
+8. **Q8, the ADR line: yes.** Phase B's PR adds the ADR 0028 §5 line drafted in §1.
