@@ -40,7 +40,7 @@ export interface ExprPoint {
  * inside a generator reproduces the same wrong text forever while `check:drift` stays
  * green (the standing "a generator's TEMPLATE can go stale" law).
  */
-export const NORTH_DIRS = ["up", "down", "left", "right"] as const;
+export const NORTH_DIRS = Object.freeze(["up", "down", "left", "right"] as const);
 /** A `north <word>` page direction — the non-numeric half of {@link NorthDir}. */
 export type NorthCardinal = (typeof NORTH_DIRS)[number];
 
@@ -52,7 +52,7 @@ export type NorthDir = NorthCardinal | { deg: number };
  * order; `all` is the default when the mode word is omitted. One source for the
  * parser's accept-list and the spec's grammar line.
  */
-export const AUTO_DIMS_MODES = ["overall", "rooms", "walls", "all"] as const;
+export const AUTO_DIMS_MODES = Object.freeze(["overall", "rooms", "walls", "all"] as const);
 /** A `dims auto <mode>` selector. */
 export type AutoDimsMode = (typeof AUTO_DIMS_MODES)[number];
 
@@ -145,7 +145,7 @@ export type WallRelationNode =
 /** The two rotational directions an `arc` clause may name, as the reader sees them on
  *  the sheet. Canonical order — the wall parser, `geometry/arc.ts`'s `ArcDir` and the
  *  spec's `wall` grammar line all derive from this one array. */
-export const ARC_DIRS = ["cw", "ccw"] as const;
+export const ARC_DIRS = Object.freeze(["cw", "ccw"] as const);
 /** Which way round the plan an `arc` edge travels. */
 export type ArcDirWord = (typeof ARC_DIRS)[number];
 
@@ -166,7 +166,7 @@ export interface WallArcNode {
 /** Relational-placement direction: the side of the reference room to sit on.
  *  Canonical order — the parser's accept-set, the element's own parameter doc and the
  *  spec's `room` grammar line all read this array. */
-export const REL_DIRS = ["right-of", "left-of", "below", "above"] as const;
+export const REL_DIRS = Object.freeze(["right-of", "left-of", "below", "above"] as const);
 /** Relational-placement direction: the side of the reference room to sit on. */
 export type RelDir = (typeof REL_DIRS)[number];
 
@@ -183,9 +183,9 @@ export type RelDir = (typeof REL_DIRS)[number];
  */
 export const AXIS_ALIGNS = Object.freeze({
   /** Vertical cross axis — used by the HORIZONTAL relations `right-of`/`left-of`. */
-  v: ["top", "middle", "bottom"],
+  v: Object.freeze(["top", "middle", "bottom"] as const),
   /** Horizontal cross axis — used by the VERTICAL relations `below`/`above`. */
-  h: ["left", "center", "right"],
+  h: Object.freeze(["left", "center", "right"] as const),
 } as const);
 
 /** The cross axis each relational direction aligns ON. A horizontal relation
@@ -207,12 +207,12 @@ export const REL_DIR_AXIS = Object.freeze({
  * deliberately overlap, and the reason the per-direction accept-sets are 4/4 rather
  * than a clean 3/3 split.
  */
-export const REL_ALIGN_CENTERS: readonly string[] = [AXIS_ALIGNS.v[1], AXIS_ALIGNS.h[1]];
+export const REL_ALIGN_CENTERS: readonly string[] = Object.freeze([AXIS_ALIGNS.v[1], AXIS_ALIGNS.h[1]]);
 
 /** Every {@link RelAlign}, canonical order — one source for the element's parameter
  *  doc, the spec's grammar line, and the parser's ACCEPT-SET (`E_ROOM_ALIGN`).
  *  Concatenated from {@link AXIS_ALIGNS} so the set has exactly one owner. */
-export const REL_ALIGNS = [...AXIS_ALIGNS.v, ...AXIS_ALIGNS.h] as const;
+export const REL_ALIGNS = Object.freeze([...AXIS_ALIGNS.v, ...AXIS_ALIGNS.h] as const);
 
 /** Edge to align with the reference room. Horizontal placement
  *  (`right-of`/`left-of`) uses `top|middle|bottom`; vertical placement
@@ -268,7 +268,7 @@ export type UseKind =
   | "garage";
 
 /** Every {@link UseKind}, in canonical order — the parser/formatter/grammar source. */
-export const USE_KINDS: readonly UseKind[] = [
+export const USE_KINDS: readonly UseKind[] = Object.freeze([
   "living",
   "kitchen",
   "dining",
@@ -285,7 +285,7 @@ export const USE_KINDS: readonly UseKind[] = [
   // middle re-orders a published grammar for nothing.
   "entry",
   "garage",
-];
+]);
 
 /** `DIR REF [align EDGE] [gap EXPR]` — a room's position relative to another room.
  *  Resolved to absolute coordinates by pure arithmetic in dependency order. */
@@ -568,7 +568,7 @@ export type FurnitureAnchor =
   | "bottom-right";
 
 /** Every {@link FurnitureAnchor}, canonical order — parser/formatter/grammar source. */
-export const FURNITURE_ANCHORS: readonly FurnitureAnchor[] = [
+export const FURNITURE_ANCHORS: readonly FurnitureAnchor[] = Object.freeze([
   "top-left",
   "top",
   "top-right",
@@ -578,7 +578,7 @@ export const FURNITURE_ANCHORS: readonly FurnitureAnchor[] = [
   "bottom-left",
   "bottom",
   "bottom-right",
-];
+]);
 
 /**
  * `in <room> centered` | `in <room> anchor <a> [flush] [inset N]` — closed-form
@@ -670,12 +670,12 @@ export interface FurnitureClear {
 }
 
 /** The two `clear` zones, canonical order (`clear front <mm>`, `clear sides <mm>`). */
-export const CLEAR_ZONES = ["front", "sides"] as const;
+export const CLEAR_ZONES = Object.freeze(["front", "sides"] as const);
 export type ClearZone = (typeof CLEAR_ZONES)[number];
 
 /** The two endpoint-reference words a `dim` may lead with, canonical order — one source
  *  for the `dim` parser and the spec's grammar line. */
-export const DIM_REFS = ["faces", "clear"] as const;
+export const DIM_REFS = Object.freeze(["faces", "clear"] as const);
 
 /** How a `dim`'s endpoints are referenced to the walls they touch.
  *  Absent = the written points are used verbatim (the historical behaviour). */
@@ -744,7 +744,7 @@ export interface ColumnNode extends NodeBase {
  * the only cross-level inference ArchLang makes is identity (same id ⇒ same shaft), see
  * ADR 0005.
  */
-export const VERTICAL_DIRS = ["up", "down"] as const;
+export const VERTICAL_DIRS = Object.freeze(["up", "down"] as const);
 /** See {@link VERTICAL_DIRS}. */
 export type VerticalDir = (typeof VERTICAL_DIRS)[number];
 
@@ -870,7 +870,7 @@ export interface VoidNode extends NodeBase {
  * material hatch. A separate keyword would have duplicated the whole statement grammar to
  * express one extra clause.
  */
-export const OUTDOOR_KINDS = [
+export const OUTDOOR_KINDS = Object.freeze([
   "lawn",
   "planting",
   "paving",
@@ -882,7 +882,7 @@ export const OUTDOOR_KINDS = [
   "balcony",
   "sand",
   "soil",
-] as const;
+] as const);
 /** One `outdoor <kind>` ground surface. */
 export type OutdoorKind = (typeof OUTDOOR_KINDS)[number];
 
@@ -895,13 +895,13 @@ export type OutdoorKind = (typeof OUTDOOR_KINDS)[number];
  * them. Under a `place … rotate`/`mirror` they are remapped by the frame — see
  * `src/frame.ts` — because an edge name is a page fact and a frame turns the page.
  */
-export const RAIL_EDGES = ["top", "bottom", "left", "right", "all", "none"] as const;
+export const RAIL_EDGES = Object.freeze(["top", "bottom", "left", "right", "all", "none"] as const);
 /** One `rail` edge word. */
 export type RailEdge = (typeof RAIL_EDGES)[number];
 
 /** The four sides of a balcony rectangle, the subset {@link RAIL_EDGES} that names an
  *  actual edge (`all`/`none` are quantifiers over these four, not members of them). */
-export const RAIL_SIDES = ["top", "bottom", "left", "right"] as const;
+export const RAIL_SIDES = Object.freeze(["top", "bottom", "left", "right"] as const);
 /** One side of a balcony rectangle. */
 export type RailSide = (typeof RAIL_SIDES)[number];
 
@@ -945,7 +945,7 @@ export interface OutdoorNode extends NodeBase {
  * duplicates). `post` names what the style draws — posts at a derived pitch carrying one
  * line — so the drawing and the word agree.
  */
-export const FENCE_STYLES = ["picket", "panel", "post"] as const;
+export const FENCE_STYLES = Object.freeze(["picket", "panel", "post"] as const);
 /** One `fence <style>` word. */
 export type FenceStyle = (typeof FENCE_STYLES)[number];
 
@@ -1002,7 +1002,7 @@ export interface StripRoomChild {
 
 /** The four fill axes a `strip` may run along, canonical order — one source for the
  *  parser's accept-list, its diagnostic and the spec's grammar line. */
-export const STRIP_DIRS = ["right", "left", "down", "up"] as const;
+export const STRIP_DIRS = Object.freeze(["right", "left", "down", "up"] as const);
 /** A `strip <dir>` fill axis. */
 export type StripDir = (typeof STRIP_DIRS)[number];
 
@@ -1371,7 +1371,14 @@ export type Statement =
  * `import`s are not body statements at all — they are plan fields — so they are always
  * shared.)
  */
-export const LEVEL_SHARED_KINDS: readonly Statement["kind"][] = ["let", "set", "assign", "error", "level", "keep"];
+export const LEVEL_SHARED_KINDS: readonly Statement["kind"][] = Object.freeze([
+  "let",
+  "set",
+  "assign",
+  "error",
+  "level",
+  "keep",
+]);
 
 /**
  * The plan-level **settings**: every keyword the plan-body switch in `src/parser.ts` reads into a
@@ -1380,7 +1387,7 @@ export const LEVEL_SHARED_KINDS: readonly Statement["kind"][] = ["let", "set", "
  * `E_LEVEL_MIX`'s remedy is built from this list, and `test/levels.test.ts` fails when the
  * parser's switch reads a setting this list does not name.
  */
-export const PLAN_SETTING_KEYWORDS = [
+export const PLAN_SETTING_KEYWORDS = Object.freeze([
   "units",
   "grid",
   "paper",
@@ -1399,7 +1406,7 @@ export const PLAN_SETTING_KEYWORDS = [
   "theme",
   "style",
   "sheet text",
-] as const;
+] as const);
 
 /**
  * What may stay beside the `level` blocks, as one phrase: the settings ({@link PLAN_SETTING_KEYWORDS}),
@@ -1475,13 +1482,13 @@ export interface ImportNode {
 }
 
 /** The {@link TitleNode} key each `title { … }` field word (`TITLE_FIELDS`) fills. */
-export const TITLE_FIELD_KEY: Readonly<Record<TitleField, "project" | "drawnBy" | "date" | "number" | "revision">> = {
+export const TITLE_FIELD_KEY: Readonly<Record<TitleField, "project" | "drawnBy" | "date" | "number" | "revision">> = Object.freeze({
   project: "project",
   drawn_by: "drawnBy",
   date: "date",
   number: "number",
   revision: "revision",
-};
+});
 
 export interface TitleNode {
   project?: string;
@@ -1533,7 +1540,7 @@ export interface AxesNode {
  * unrecognised subject is a parse error with a did-you-mean over this list, never a
  * silently ignored word. The two subjects are independent opt-ins: a plan may write both.
  */
-export const SCHEDULE_SUBJECTS = ["rooms", "openings"] as const;
+export const SCHEDULE_SUBJECTS = Object.freeze(["rooms", "openings"] as const);
 export type ScheduleSubject = (typeof SCHEDULE_SUBJECTS)[number];
 
 /**
@@ -1546,13 +1553,13 @@ export type ScheduleSubject = (typeof SCHEDULE_SUBJECTS)[number];
  * deliberately NOT in `KEYWORDS.enum` (it already lives in `KEYWORDS.attribute`, because
  * `north up` is a statement — see that test for why the asymmetry is on purpose).
  */
-export const COMPASS_DIRECTIONS = ["north", "south", "east", "west"] as const;
+export const COMPASS_DIRECTIONS = Object.freeze(["north", "south", "east", "west"] as const);
 export type CompassWord = (typeof COMPASS_DIRECTIONS)[number];
 
 /** Which hemisphere the building sits in — the ONE input that decides which way the
  *  equator lies (`south` in the north, `north` in the south). Not a latitude: no number
  *  here, and nothing downstream computes a sun path from it (see `src/site.ts`). */
-export const HEMISPHERES = ["north", "south"] as const;
+export const HEMISPHERES = Object.freeze(["north", "south"] as const);
 export type Hemisphere = (typeof HEMISPHERES)[number];
 
 /**

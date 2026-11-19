@@ -86,9 +86,10 @@ export type { Applicability, FixEdit, FixSuggestion } from "./diagnostics.js";
 export { applyFixes, rankFixes } from "./fix-apply.js";
 export type { ApplyReport, ApplyFixesOptions } from "./fix-apply.js";
 export type * from "./ast.js";
-// The value constants and `relAlignCounterpart` that the built d.ts already declares as runtime
-// values (`export type *` above carries types only). Listed by name so no other ast.ts value
-// becomes public by accident; test/index-values.test.ts pins d.ts == runtime.
+// Every value export of ast.ts is public API: the declaration bundler advertises each in the d.ts
+// (`export type *` above carries types only in the JS), so each is listed here by name and the
+// JS export matches the declaration. test/index-values.test.ts pins d.ts values == runtime keys;
+// test/ast-values-frozen.test.ts pins that the tables are frozen.
 export {
   ARC_DIRS,
   AUTO_DIMS_MODES,
