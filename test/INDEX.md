@@ -5,7 +5,7 @@
 Where the tests of a `src` module are, and what each test file is for. Generated; `npm run check:drift`
 fails when it is stale. How to add a test: `docs/testing.md` § 4.
 
-552 test files in `test/`, 290 `src` modules, 109 modules no test imports.
+553 test files in `test/`, 290 `src` modules, 109 modules no test imports.
 
 ## `src` module → tests that import it
 
@@ -120,7 +120,7 @@ Nearest first, then by name; `(+n)` is the rest. Test names are `test/<name>.tes
 - `src/impact.ts` (2) — `rectilinear-doors`, `rectilinear-rooms`
 - `src/import.ts` (34) — `block-stair-byte-identity`, `corner-window-byte-identity`, `dim-swap-reprint`, `dim-thickness-callout`, `drawing-budget`, `error-value-law`, `floor-materials-byte-identity`, `furniture-relations` (+26)
 - `src/import/limits.ts` (1) — `openplan3d-malformed`
-- `src/index.ts` (411) — `acc-metadata`, `access-graph`, `access-policy`, `accessible-svg`, `agent-gallery`, `alias-match`, `anchors`, `annotate` (+403)
+- `src/index.ts` (412) — `acc-metadata`, `access-graph`, `access-policy`, `accessible-svg`, `agent-gallery`, `alias-match`, `anchors`, `annotate` (+404)
 - `src/input-limit.ts` (2) — `import-rooted`, `workspace-seams`
 - `src/intent-concepts.ts` (2) — `vocabulary-living-dining`, `vocabulary-matcher-oracle`
 - `src/intent-feasibility.ts` (1) — `intent-infeasible`
@@ -456,6 +456,7 @@ The first sentence of each file's header comment.
 - `test/import-rooted.test.ts` — a module outside the import root is refused, never read; only `.arch`, only up to the cap; what the root allows; the CLI: default root is the working directory;…
 - `test/import-world-fuzz.test.ts` — S-FZ-2 — hostile import specs against a rooted Node World.
 - `test/import.test.ts` — T4.3 — import in a virtual-FS (browser-like) World; T4.3 — import in a Node (real-fs) World; T4.3 — diagnostics.
+- `test/index-values.test.ts` — every value the package root declares is defined at runtime (`export type *` once hid ast.ts's constants).
 - `test/indexnow-script.test.ts` — `scripts/indexnow.mjs` — the post-deploy IndexNow ping.
 - `test/input-limit.test.ts` — `inputTooLarge()` and `rateLimited()` — a host's refusals as catalogued diagnostics.
 - `test/instruction-budget.test.ts` — the instruction files stay inside their byte budget (EH3.9).

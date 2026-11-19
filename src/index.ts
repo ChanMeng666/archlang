@@ -86,6 +86,37 @@ export type { Applicability, FixEdit, FixSuggestion } from "./diagnostics.js";
 export { applyFixes, rankFixes } from "./fix-apply.js";
 export type { ApplyReport, ApplyFixesOptions } from "./fix-apply.js";
 export type * from "./ast.js";
+// The value constants and `relAlignCounterpart` that the built d.ts already declares as runtime
+// values (`export type *` above carries types only). Listed by name so no other ast.ts value
+// becomes public by accident; test/index-values.test.ts pins d.ts == runtime.
+export {
+  ARC_DIRS,
+  AUTO_DIMS_MODES,
+  AXIS_ALIGNS,
+  CLEAR_ZONES,
+  COMPASS_DIRECTIONS,
+  DIM_REFS,
+  FENCE_STYLES,
+  FURNITURE_ANCHORS,
+  HEMISPHERES,
+  LEVEL_MIX_STAYS_OUTSIDE,
+  LEVEL_SHARED_KINDS,
+  NORTH_DIRS,
+  OUTDOOR_KINDS,
+  PLAN_SETTING_KEYWORDS,
+  RAIL_EDGES,
+  RAIL_SIDES,
+  REL_ALIGNS,
+  REL_ALIGN_CENTERS,
+  REL_DIRS,
+  REL_DIR_AXIS,
+  SCHEDULE_SUBJECTS,
+  STRIP_DIRS,
+  TITLE_FIELD_KEY,
+  USE_KINDS,
+  VERTICAL_DIRS,
+  relAlignCounterpart,
+} from "./ast.js";
 // Source formatter: pure text→text, comment-preserving, idempotent.
 export { format } from "./format.js";
 // `reroll`: detect ≥3 consecutive statements in arithmetic progression and offer
