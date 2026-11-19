@@ -170,6 +170,20 @@ maps common concept keys (`bathroom`, `bedroom`, `living-room`, `hall`, …) to 
 literal match — the plan's room `id` → `label` → `uses` → `room_type` — so a niche concept
 still works, it just matches by name.
 
+Label words are a convenience, and a concept's label words are English, compared whole-word
+and exactly (an accent counts). **`uses` is the language-neutral channel**: a room's `uses`, and
+the `room_type` they imply, satisfy a concept whatever the label says, in any language. A room
+with no authored `uses` takes them from its label through the use classifier, which reads
+English and a small, closed set of Spanish and Portuguese room words and alone compares
+without accents ("Baño" and "Bano" are one word; see [`uses`](language-reference.md)). So a
+room labelled "Dormitorio" reads as `uses bedroom` and satisfies `bedroom`.
+
+Six concepts carry neither a room kind nor a `room_type` and match by their English label words
+alone: `consulting-room`, `meeting-room`, `private-office`, `reception`, `suite` and `unit`. A
+room labelled in another language never satisfies one of those; name such a requirement with
+a concept that has a room kind, or label the room in English. With labels in another language,
+write `uses` on every room.
+
 Matching is a **one-room-one-concept assignment**: a room is credited to at most one
 concept. The assignment first gives every concept the number of distinct rooms its `count`
 asks for (a bipartite matching), wherever the plan's rooms allow it, then hands each spare
