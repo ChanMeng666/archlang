@@ -111,11 +111,13 @@ export function missingClause(
     ? `: the \`${word}\` after it reads as the start of a statement (\`${word} = …\` or \`${word}(…)\`)`
     : `: expected "${word}" but found ${describeToken(t)}`;
   // Spanned on the statement that lacks the clause, never on the token after it; the hints are
-  // the token's, as they were when the parse failed on it.
-  return ctx.failAt(`${name[0]!.toUpperCase()}${name.slice(1)} has no \`${form}\`${found}`, {
-    start: stmt.start,
-    end: ctx.peek(-1).end,
-  });
+  // the token's, as they were when the parse failed on it, and a misspelt `word` (`widht`) gets
+  // a did-you-mean fix on that token alone (AF2).
+  return ctx.failAt(
+    `${name[0]!.toUpperCase()}${name.slice(1)} has no \`${form}\`${found}`,
+    { start: stmt.start, end: ctx.peek(-1).end },
+    [word],
+  );
 }
 
 /** A token as a parse message names it (the parser's own wording). */

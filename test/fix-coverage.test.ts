@@ -11,7 +11,8 @@ import { describe, expect, it } from "vitest";
 import { fixCoverage, renderFixCoverage } from "../scripts/fix-coverage.js";
 import { ERROR_CATALOG } from "../src/error-catalog.js";
 
-/** The codes with a span edit when U.17 measured them (26 of 270). */
+/** The codes with a span edit when U.17 measured them (26 of 270), plus AF2's did-you-mean
+ *  fix on `E_LAYOUT_REF` and `E_PARSE`. */
 const WITH_EDIT_FLOOR = [
   "E_ARC_RADIUS",
   "E_ATTACH_POS_RANGE",
@@ -19,8 +20,10 @@ const WITH_EDIT_FLOOR = [
   "E_DOOR_OPEN_RANGE",
   "E_DOOR_WIDTH",
   "E_HEIGHT_RANGE",
+  "E_LAYOUT_REF",
   "E_OPENING_ABOVE_WALL",
   "E_OPENING_WIDTH",
+  "E_PARSE",
   "E_ROOM_ALIGN",
   "E_ROOM_ALIGN_AXIS",
   "E_SILL_ABOVE_HEAD",

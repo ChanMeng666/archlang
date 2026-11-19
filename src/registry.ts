@@ -54,10 +54,12 @@ export interface ParseCtx {
   parseIdOpt(): string;
   /** The span from byte `start` to the end of the last token read. */
   spanFrom(start: number): Span;
-  /** Report a fatal parse error at `t` (defaults to the current token); never returns. */
-  fail(msg: string, t?: Token): never;
-  /** {@link fail} reported at `span` (a whole statement), with the current token's hints. */
-  failAt(msg: string, span: Span): never;
+  /** Report a fatal parse error at `t` (defaults to the current token); never returns. With
+   *  `near`, a misspelling of one of its words gets a did-you-mean hint and fix on `t` (AF2). */
+  fail(msg: string, t?: Token, near?: readonly string[]): never;
+  /** {@link fail} reported at `span` (a whole statement), with the current token's hints and
+   *  `near`'s did-you-mean fix on the current token. */
+  failAt(msg: string, span: Span, near?: readonly string[]): never;
   /** Report a catalogued diagnostic and keep parsing (a duplicate clause, `E_DUP_CLAUSE`). */
   diag(d: Diagnostic): void;
 }

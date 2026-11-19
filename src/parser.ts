@@ -2,7 +2,7 @@
 
 import type { LexResult, Token } from "./lexer.js";
 import { lex, lexUnmemoised } from "./lexer.js";
-import type { Diagnostic, Span } from "./diagnostics.js";
+import type { Diagnostic, FixSuggestion, Span } from "./diagnostics.js";
 import { recordIdSpan } from "./id-spans.js";
 import { CATALOG_FIXES } from "./error-catalog-fixes.js";
 import { capDiagnostics, isLimitClass, MAX_DIAGNOSTICS } from "./diagnostics.js";
@@ -46,7 +46,8 @@ import {
 } from "./ast.js";
 import type { Expr } from "./expr.js";
 import type { ExprTokens } from "./expr.js";
-import { closest, MAX_NEST_DEPTH, parseExpr as parseExprPratt } from "./expr.js";
+import { closest, MAX_NEST_DEPTH, parseExpr as parseExprPratt, spelling } from "./expr.js";
+import { fixesFrom, spellingFix } from "./fix-producers.js";
 import type { Theme } from "./theme.js";
 import { isNumericThemeKey, resolveThemeKey, resolveStyleKey, THEMES } from "./theme.js";
 import { fmt3, MAX_ANGLE_DEG, MODEL_RANGE_MM, outOfRangeDiagnostic, plainDigits } from "./num-format.js";
@@ -57,7 +58,7 @@ import type { ElementDef, ParseCtx, Registry } from "./registry.js";
 import { BUILTIN_REGISTRY } from "./registry.js";
 import { floorClause, roomUsesExpected, roomUsesOutdoorHint } from "./elements/room.js";
 import { missingClause, readClauses, type TailClause } from "./clause-order.js";
-import { KEEP_GRADES, KEEP_WORDS, STATEMENT_STARTS, TITLE_FIELDS, type TitleField } from "./grammar/tokens.js";
+import { KEEP_GRADES, KEEP_WORDS, KEYWORDS, STATEMENT_STARTS, TITLE_FIELDS, type TitleField } from "./grammar/tokens.js";
 import type { KeepGrade, KeepNode, KeepRef } from "./ast.js";
 import { splitDatum } from "./room-datums.js";
 import type { PaperOrientation, PaperSize } from "./grammar/tokens.js";
@@ -103,6 +104,7 @@ class ParseError extends Error {
     public override message: string,
     public span: Span,
     public hints?: string[],
+    public fixes?: FixSuggestion[] | null,
   ) {
     super(message);
   }
@@ -223,8 +225,8 @@ class Parser {
       parseStringExpr: () => this.parseStringExpr(),
       parseIdOpt: () => this.parseIdOpt(),
       spanFrom: (start) => this.spanFrom(start),
-      fail: (msg, t) => this.fail(msg, t),
-      failAt: (msg, span) => this.fail(msg, this.peek(), span),
+      fail: (msg, t, near) => this.fail(msg, t, undefined, near),
+      failAt: (msg, span, near) => this.fail(msg, this.peek(), span, near),
       diag: (d) => this.report(d),
       report: (code, message, span) => this.report({ severity: "error", message, code, span }),
     };
@@ -239,8 +241,23 @@ class Parser {
   private next(): Token {
     return this.toks[Math.min(this.pos++, this.toks.length - 1)]!;
   }
-  private fail(msg: string, t = this.peek(), span: Span = { start: t.start, end: t.end }): never {
-    throw new ParseError(msg, span, this.parseHints(t));
+  /**
+   * Throw a parse error at `t`. With `near`, the closed set of words that could stand at `t`, a
+   * misspelling of one of them (AF2, {@link spelling}) adds a did-you-mean hint and a fix that
+   * rewrites `t` alone, even when the error is spanned on a whole statement. Parsing is not
+   * metered, so the search runs only while the error can still be reported: past
+   * `MAX_DIAGNOSTICS` it is dropped, and so the work is bounded whatever the source's size.
+   */
+  private fail(msg: string, t = this.peek(), span: Span = { start: t.start, end: t.end }, near?: readonly string[]): never {
+    const hints = this.parseHints(t);
+    const s = near && t.type === "ident" && this.reportable() ? spelling(t.value, near) : null;
+    if (!s) throw new ParseError(msg, span, hints);
+    throw new ParseError(
+      msg,
+      span,
+      [...(hints ?? []), `did you mean \`${s.word}\`?`],
+      spellingFix({ start: t.start, end: t.end }, s),
+    );
   }
 
   /**
@@ -284,6 +301,23 @@ class Parser {
     const end = i;
     while (i >= 0 && toks[i]!.type === "ident" && USE_SET.has(toks[i]!.value)) i--;
     return i < end && toks[i]?.type === "ident" && toks[i]!.value === "uses";
+  }
+
+  /**
+   * The words an unknown statement word `t` may be a slip of (AF2), in order: on the line of the
+   * token before it, where a statement ended early at a misspelt word, a room use (after a `uses`
+   * list) and a clause word; then a statement keyword. Each set is read from its one source. A
+   * word of the language (`sheet` out of place) is spelled right, so it has none.
+   */
+  private wordsAt(t: Token): readonly string[] {
+    if (!this.reportable() || Object.values(KEYWORDS).some((ws: readonly string[]) => ws.includes(t.value))) return [];
+    if (this.toks[this.pos - 1]?.line !== t.line) return [...this.statementStarts];
+    return [...(this.afterUses(t, true) ? USE_KINDS : []), ...KEYWORDS.attribute, ...this.statementStarts];
+  }
+
+  /** Whether a diagnostic reported now is kept ({@link report}'s own test). */
+  private reportable(): boolean {
+    return this.diagnostics.length <= MAX_DIAGNOSTICS;
   }
 
   /** Span from a start offset to the end of the last consumed token. */
@@ -418,7 +452,7 @@ class Parser {
   }
   private eatKeyword(kw: string): Token {
     const t = this.peek();
-    if (t.type !== "ident" || t.value !== kw) this.fail(`Expected "${kw}" but found ${describe(t)}`);
+    if (t.type !== "ident" || t.value !== kw) this.fail(`Expected "${kw}" but found ${describe(t)}`, t, undefined, [kw]);
     return this.next();
   }
   private eat(type: Token["type"]): Token {
@@ -467,6 +501,7 @@ class Parser {
         code: "E_PARSE",
         span: e.span,
         ...(e.hints ? { hints: e.hints } : {}),
+        ...fixesFrom(e.fixes ?? null),
       });
       while (!this.isType("eof") && !this.isType("lcurly")) {
         const t = this.peek();
@@ -636,6 +671,7 @@ class Parser {
             code: "E_PARSE",
             span: e.span,
             ...(e.hints ? { hints: e.hints } : {}),
+            ...fixesFrom(e.fixes ?? null),
           });
           this.synchronize(start);
           plan.body.push({ kind: "error", id: "", line: t.line, message: e.message, span: this.spanFrom(start) });
@@ -661,6 +697,7 @@ class Parser {
           code: "E_PARSE",
           span: e.span,
           ...(e.hints ? { hints: e.hints } : {}),
+          ...fixesFrom(e.fixes ?? null),
         });
     }
     this.checkLevels(plan);
@@ -1730,7 +1767,7 @@ class Parser {
       else if (this.peek(1).type === "lparen") node = this.parseInstance();
       else {
         const stray = STRAY_CLAUSE_HINTS.get(t.value);
-        if (stray === undefined) this.fail(`Unknown statement "${t.value}"`, t);
+        if (stray === undefined) this.fail(`Unknown statement "${t.value}"`, t, undefined, this.wordsAt(t));
         throw new ParseError(`Unknown statement "${t.value}"`, { start: t.start, end: t.end }, [stray]);
       }
     }
@@ -1785,6 +1822,7 @@ class Parser {
             code: "E_PARSE",
             span: e.span,
             ...(e.hints ? { hints: e.hints } : {}),
+            ...fixesFrom(e.fixes ?? null),
           });
           this.synchronize(stmtTok.start);
           body.push({
@@ -2090,7 +2128,8 @@ class Parser {
           while (this.peek().type === "ident" && USE_SET.has(this.peek().value)) {
             uses.push(this.next().value as UseKind);
           }
-          if (uses.length === 0) this.fail(roomUsesExpected(this.peek().value || undefined, this.peek().type));
+          if (uses.length === 0)
+            this.fail(roomUsesExpected(this.peek().value || undefined, this.peek().type), undefined, undefined, USE_KINDS);
           if (keep) tail.uses = uses;
         },
       },

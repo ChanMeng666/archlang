@@ -15,7 +15,7 @@
  * parser/registry in.
  */
 
-import type { DoorNode, FurnitureNode, OpeningNode, Point, WindowNode } from "./ast.js";
+import type { DoorNode, OpeningNode, Point, WindowNode } from "./ast.js";
 import type { FixSuggestion, Span } from "./diagnostics.js";
 import type { DoorHinge } from "./grammar/tokens.js";
 import type { Bounds, DimLike, WallLike } from "./geometry.js";
@@ -583,22 +583,37 @@ export function roomAlignAxisFix(span: Span, counterpart: string): FixSuggestion
 }
 
 /**
- * The fix for `W_UNKNOWN_FURNITURE` (U.3): write the nearest catalogued kind. The replacement is
- * the whole statement re-emitted from a clone of the AST with only the category changed (the
- * `emitOpening` seam), so the parse node records nothing for it. Always `maybe-incorrect`, so a
- * plain `arch fix` never applies it: the word may be a custom piece, the auto id follows the kind
+ * The fix for `W_UNKNOWN_FURNITURE` (U.3): write the nearest catalogued kind over the kind word
+ * alone (AF2), so the rest of the statement keeps its bytes. Always `maybe-incorrect`, so a plain
+ * `arch fix` never applies it: the word may be a custom piece, the auto id follows the kind
  * (`Sofa_1` becomes `sofa_1`, breaking a `facing Sofa_1`), and the kind carries semantics (a
- * symmetric `table` refuses `facing`). Returns `null` without a span to write into.
+ * symmetric `table` refuses `facing`). Returns `null` without the word's span to write into.
  */
-export function furnitureCategoryFix(node: FurnitureNode, near: string): FixSuggestion[] | null {
-  if (!node.span) return null;
-  const clone = structuredClone(node);
-  clone.category = near;
+export function furnitureCategoryFix(word: Span | undefined, near: string): FixSuggestion[] | null {
+  if (!word) return null;
   return [
     {
       title: `write the catalogued kind \`${near}\``,
       applicability: "maybe-incorrect",
-      edits: [{ span: node.span, newText: printDoc(statementText(clone)) }],
+      edits: [{ span: word, newText: near }],
+    },
+  ];
+}
+
+/**
+ * AF2's one did-you-mean fix (TypeScript's spelling codefix): write the word
+ * {@link import("./expr.js").spelling} found over the misspelt word at `span`, and nothing else.
+ * `machine-applicable` only when no other word of the set was as near (`unique`); the source is
+ * an error, so nothing downstream measures it yet. Otherwise `maybe-incorrect`.
+ */
+export function spellingFix(span: Span | undefined, s: { word: string; unique: boolean } | null): FixSuggestion[] | null {
+  if (!span || !s) return null;
+  return [
+    {
+      title: `write \`${s.word}\``,
+      applicability: s.unique ? "machine-applicable" : "maybe-incorrect",
+      fixId: "spelling",
+      edits: [{ span, newText: s.word }],
     },
   ];
 }

@@ -28,6 +28,7 @@ import type { RRoom } from "../ir.js";
 import { rectCorners } from "../geometry.js";
 import { closest } from "../expr.js";
 import { fixesFrom, roomAlignAxisFix, roomAlignFix } from "../fix-producers.js";
+import { recordWordSpan, wordSpanOf } from "../id-spans.js";
 import { arcTessellate, fullCircleArc } from "../geometry/arc.js";
 import {
   effectiveVertices,
@@ -272,7 +273,7 @@ function parseTail(ctx: ParseCtx, node: RoomNode, start: number, sized = false):
           uses.push(ctx.next().value as UseKind);
         }
         if (uses.length === 0) {
-          ctx.fail(roomUsesExpected(ctx.peek().value || undefined, ctx.peek().type), ctx.peek());
+          ctx.fail(roomUsesExpected(ctx.peek().value || undefined, ctx.peek().type), ctx.peek(), USE_KINDS);
         }
         if (keep) node.uses = uses;
       },
@@ -451,9 +452,11 @@ export const room: ElementDef = {
         ctx.fail(
           `Expected "at" or a relational direction (${REL_DIR_LIST.join("|")}) but found "${dirTok.value}"`,
           dirTok,
+          ["at", ...REL_DIR_LIST],
         );
       }
-      const ref = ctx.eatIdent().value;
+      const refTok = ctx.eatIdent();
+      const ref = refTok.value;
       let align: RelAlign | undefined;
       let alignSpan: Span | undefined;
       let alignBad: { word: string; span: Span } | undefined;
@@ -482,6 +485,7 @@ export const room: ElementDef = {
         gap = ctx.parseExpr();
       }
       rel = { dir: dirTok.value as RelDir, ref, align, alignSpan, alignBad, gap };
+      recordWordSpan(rel, { start: refTok.start, end: refTok.end });
     }
     // `size` is read with the other clauses, so it may follow them; its key keeps its place.
     const node: RoomNode = { kind: "room", id, at, rel, size: undefined, sizeSpan: undefined, line: kw.line };
@@ -609,7 +613,7 @@ export const room: ElementDef = {
       ...(n.uses ? { uses: n.uses } : {}),
       ...floorOf(n, ctx),
       span: n.span,
-      _rel: { dir: rel.dir, ref: rel.ref, align: rel.align, gap, span: n.span },
+      _rel: { dir: rel.dir, ref: rel.ref, align: rel.align, gap, span: n.span, refSpan: wordSpanOf(rel) },
     };
   },
 

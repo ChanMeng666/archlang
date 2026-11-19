@@ -102,7 +102,7 @@ export const LANGUAGE_ENTRIES = defineEntries({
   E_PARSE: e(
     "The source could not be read: its SHAPE is wrong.",
     "The lexer or the parser could not make a statement out of the bytes at this span — a missing or misspelled keyword, a value where a keyword belongs, an unterminated string, an unbalanced brace, a clause written before the placement it follows, or blocks and expressions nested past the parser's limit (256 levels — far beyond any real plan; the deeper block is skipped, not read). It is the one code that says nothing about what the plan MEANS: resolution never ran here, so no measurement, no geometry and no soundness rule had a chance to speak.",
-    "Read the message: it names what was expected and what was found, at a byte span. Compare the statement against `archlang spec`'s one line for that keyword: the placement comes first, and the clauses after it in any order. Unlike every other code in this catalog, there is no machine-applicable fix to apply, because the compiler has no reading of the text to correct.",
+    "Read the message: it names what was expected and what was found, at a byte span. Compare the statement against `archlang spec`'s one line for that keyword: the placement comes first, and the clauses after it in any order. A word one slip from the word that belongs there (`dor`, `betwen`, `bedrom`) gets a did-you-mean hint and a fix that rewrites that word alone, machine-applicable when no other word is as near.",
     "door on w1 at 40% width 900 wall w1   # error: `wall` pairs with the `at (x,y)` form only",
   ),
   E_RECURSION: e(

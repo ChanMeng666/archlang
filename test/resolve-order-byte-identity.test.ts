@@ -53,32 +53,37 @@ const BASELINE: [string, string, string[]][] = [
   ],
   [
     "instance-relational.arch",
-    "7fbcfec92546d856201caa046b460e0744cb3c4d4df0ecd05cabdf8236d1a07e",
+    // AF2 (was 7fbcfec9): `E_LAYOUT_REF` is spanned on the unknown id `nowhere`, 579-586 (was the
+    // room statement from 557), in each of the three instances; no room is near enough for a fix.
+    // Code, message, order, SVG and lint() are unchanged; main's span put back gives 7fbcfec9.
+    "1bd0d9216ba6f56aa290161ffcea6e15d40a1ca6da3dcfeb422221e771b4f609",
     [
       "W_UNKNOWN_MATERIAL@353",
       "E_WALL_THICKNESS@618",
       "E_ROOM_SIZE@683",
-      "E_LAYOUT_REF@557",
+      "E_LAYOUT_REF@579",
       "W_UNKNOWN_MATERIAL@353",
       "E_WALL_THICKNESS@618",
       "E_ROOM_SIZE@683",
-      "E_LAYOUT_REF@557",
+      "E_LAYOUT_REF@579",
       "W_UNKNOWN_MATERIAL@353",
       "E_WALL_THICKNESS@618",
       "E_ROOM_SIZE@683",
-      "E_LAYOUT_REF@557",
+      "E_LAYOUT_REF@579",
       "W_ROOM_LABEL_OUTSIDE@925",
     ],
   ],
   [
     "relational-errors.arch",
-    "28a1ff7cee53d7ff853183c05f6b3176e055438967370dd1b30eea5650248e71",
+    // AF2 (was 28a1ff7c): `E_LAYOUT_REF` is spanned on the unknown id, from 506 (was the room
+    // statement from 483), with no fix; the rest as above, and main's span put back gives 28a1ff7c.
+    "b44edcc4fa6e1f0c7f7b1b55e6d3a1206d0f8fcd8a0df1a45b32782a450bcc79",
     [
       "E_WALL_THICKNESS@384",
       "W_UNKNOWN_MATERIAL@778",
       "E_ROOM_SIZE@859",
       "W_ROOM_LABEL_OUTSIDE@764",
-      "E_LAYOUT_REF@483",
+      "E_LAYOUT_REF@506",
       "E_LAYOUT_CYCLE@544",
       "E_LAYOUT_CYCLE@592",
       "E_LAYOUT_UNPLACED@640",

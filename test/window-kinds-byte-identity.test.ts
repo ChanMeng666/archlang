@@ -179,7 +179,7 @@ const BASELINE: [string, string][] = [
   ["6e4367336a461f79b8927cdb2671f2571c0d5e029ca95b26448cf70bd39eb058", "inline:clauses"],
   ["ffcbcbe475c12edbcf2713a4449a06d4eed619f415d3d08ea57428e3cea4bca9", "inline:door-beside-excepted-L"],
   ["9a461091afe9fe608b6f1ad40d02a6a366df5884bf1af8b178b1d03c4011b40b", "inline:door-positions"],
-  ["b699986d9e7a9fd640cba2cc7fd75cd76eb213bf5b01fec1730e1b60fb57f725", "inline:door-refusals"],
+  ["8e3ec0060b11a5bc4289965b3ce5dcbe073e66a27260c169d04d6ef0e0a3f5eb", "inline:door-refusals"], // AF2 (was b699986d): `E_LAYOUT_REF` on room e is spanned on its unknown id `nowhere`, not the statement, and the search for a near room id charges 7 steps (1027 -> 1034); SVG, lint() and every other diagnostic are unchanged, and main's span and steps put back give b699986d
   [
     "c393511a4734b76c5a878d1666ab6e36e638b84abcc963a6e01c97a2bbe1b97e",
     "test/defect-corpus/stair-safety/door-onto-flank.arch",

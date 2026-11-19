@@ -105,6 +105,8 @@ export const wallsFromRooms: ElementDef = {
         const t = ctx.peek();
         ctx.fail(
           `Expected "except", "open" or "between" in the \`walls from rooms\` body but found ${t.type === "eof" ? "end of input" : `"${t.value}"`}`,
+          t,
+          BODY_CLAUSES,
         );
       }
       ctx.eat("rcurly");

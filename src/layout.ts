@@ -21,6 +21,8 @@
 
 import type { Point } from "./ast.js";
 import type { Diagnostic } from "./diagnostics.js";
+import { chargeSteps, spelling } from "./expr.js";
+import { fixesFrom, spellingFix } from "./fix-producers.js";
 import { rectLabelOutsideDiag } from "./elements/room.js";
 import type { RelConstraint, RRoom } from "./ir.js";
 import { type EdgeLine, extremeRuns, rectilinear, runsText, type SideWord } from "./room-tiling.js";
@@ -165,11 +167,20 @@ export function placeRelational(
       if (!unresolved.has(r.id)) continue;
       const ref = byId.get(r._rel.ref);
       if (!ref) {
+        // Spanned on the reference id, with a did-you-mean among the other rooms (AF2), whose
+        // list is charged before it is built.
+        chargeSteps(rooms.length);
+        const near = spelling(
+          r._rel.ref,
+          rooms.map((x) => x.id).filter((id) => id !== r.id),
+        );
         pending.set(r.id, {
           severity: "error",
           message: `Room "${r.id}" is placed relative to unknown room "${r._rel.ref}"`,
           code: "E_LAYOUT_REF",
-          span: r._rel.span,
+          span: r._rel.refSpan ?? r._rel.span,
+          ...(near ? { hints: [`did you mean \`${near.word}\`?`] } : {}),
+          ...fixesFrom(spellingFix(r._rel.refSpan, near)),
         });
         unresolved.delete(r.id); // can't place it; stop revisiting
         failed.add(r.id);
