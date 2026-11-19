@@ -160,7 +160,7 @@ const BASELINE: [string, string][] = [
   ["8b28b25e441d1f053afb7f245c0f4ff8b791fea8139b5dd031e58831a8c659a2", "examples/two-bed.arch"], // H10: +6 ring scan, +0 overlap; `centreline_at`, see ./byte-identity-baseline.ts; CO.1: the example writes its snapped `against` size out (+13 bytes), so only spans and the steps of the written clauses (+2) moved; see the header (was 8f5ccdac)
   ["cd9e3706411887efcaaad62e23d821c886b4827ca48e083021b3beedc7172cd1", "examples/two-storey.arch"], // H10: +12 ring scan, +0 overlap; RM1.3a, see ./byte-identity-baseline.ts; RM1.2a, see ./byte-identity-baseline.ts; RM9.2, see ./byte-identity-baseline.ts
   ["c4a585b5e4993d13f8eb5450544c3c6ac314d685a5a8edb92e7f9939aba83e9d", "test/fixtures/axes-grid.arch"],
-  ["5c82790aaa2243536f8616abb821b9bb4a26dd9c09efbbc8034b615965371a0c", "test/fixtures/chain30.arch"], // #367, see test/byte-identity-baseline.ts
+  ["5336af359d30144ea7f14a069b605773dab5615c8a72f5182a07dfd03d318ada", "test/fixtures/chain30.arch"], // #367, see test/byte-identity-baseline.ts
   ["cbfb99f4c6105f1dc4686f8c90aae852f5c78f87bbf40cfdcf3271bbf3e1bb04", "test/fixtures/dense-bays.arch"],
   ["c14a2df523562016922c43e4cc6f9bb1f9f4f211a9cd154368c297736e2c71b0", "test/fixtures/dense-office.arch"], // AL6: a new row, see ./byte-identity-baseline.ts
   ["3f9b93799a04497b79ad1a64e8a9ab39396afc6f3cc2e7926b166c22932b40cd", "test/fixtures/diff-a.arch"],
@@ -172,7 +172,7 @@ const BASELINE: [string, string][] = [
   ["911b2c771e68c9931bab3f95995873a2027f757705140f4bbcd53e4a3fb9df76", "test/fixtures/lock-window-moved.arch"],
   ["ffa5f189efd9d7fbaa321a32a24e7942a74be753b443a73bd78b8ea382cbbfe5", "test/fixtures/off-path-bypass.arch"], // RM1.4: the unknown-furniture search is charged to the step meter (+29 steps: `cabinet`, 234 -> 263) (was 947c91d4)
   ["26996528ae8fe4896d15f7cb23558c03be88e1b7dde573ff36ea95a0f0f2432d", "test/fixtures/schedule-sheet.arch"],
-  ["2717c064f4cb119853384497470e5b55d7e300fe0e557cc3fcf758b11e01e653", "test/fixtures/star30.arch"], // #367, see test/byte-identity-baseline.ts
+  ["fc3036320106ef437309071ea41a1f51038dc5470904bb53026689ce30a19987", "test/fixtures/star30.arch"], // #367, see test/byte-identity-baseline.ts
   ["c4068bcffcf2d16649187db428d6287195d49735d1a9e8e001ef62d7b27cec69", "test/fixtures/storeys-eaves-overflow.arch"], // H10: +12 ring scan, +0 overlap; RM1.3a, see ./byte-identity-baseline.ts; RM1.2a, see ./byte-identity-baseline.ts; RM1.2a review, see ./byte-identity-baseline.ts; RM9.2, see ./byte-identity-baseline.ts
   // was 5c3ce8b3. D27: this plan's stair stands in no wall, so `bounds()` reaching its break line widens the
   // drawing 156 mm. Only the SVG, the Scene and the overlay moved: with the old ones put back the old digest returns.

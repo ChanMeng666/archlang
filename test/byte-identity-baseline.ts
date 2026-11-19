@@ -2004,32 +2004,33 @@
  * fences, 152 more fixture files) moved these two and `test/taste-corpus/r6-bed-in-kitchen.good.arch`
  * (pinned only by `keep`'s weak-law table, re-taken), and nothing else.
  *
- * ## `test/fixtures/chain30.arch` and `star30.arch`: re-measured for AL3a (order-free label placement)
+ * ## `test/fixtures/star30.arch`: re-measured for AL3a (order-free label placement)
  *
- * The relocation now takes its turns in an order read off the plan, and a room's name and area figure
- * that `fitLabels` takes, standing off their floor, claim no floor (they do not fit; the fit will
- * redraw them). An area figure drawn alone is never taken by the fit, so it keeps its claim. In these two
- * fixtures every name is wider than its 3 m room, so none claims a floor any more and each settles
- * without dodging its neighbours'. Only the rooms' texts moved: each name and area figure is placed
- * again, and most names now wrap, so `<tspan>` lines are added. Of `lint()`, only the wording of
- * `W_ANNOTATION_OVERLAP` moved (20 reports in `chain30`, 14 in `star30`, the count unchanged: which
- * neighbours' door swings a label, placed again, stands over). `describe()`, the diagnostics and the
- * steps did not move. Their 30 pinned rows in 15 files (6 distinct digests) were re-measured with
- * each suite's own body. Put `main`'s (`db1acefd`) drawing (every page's SVG and Scene) and its
- * `lint()` back into this branch's payload and each old digest is reproduced; the drawing alone
- * reproduces none, which is the lint's rewording. A per-payload sweep of 734 corpus rows (379 files,
- * 355 docs `arch` fences) and 152 more fixture files, `main`'s compiler against the branch's, moved
- * these two and
+ * The relocation now takes its turns in an order read off the plan (the anchor on a micrometre
+ * grid, then the texts, a room's before a surface's, their sizes, the ring), an authored label
+ * stands in the way from the first turn, and a room's name and area figure that `fitLabels` takes,
+ * standing off their floor, claim no floor (the fit will redraw them). An area figure drawn alone,
+ * which the fit never takes, and a label too big for its room at every height, which it can only
+ * draw smaller, keep their claim. In `star30` one label moved: room 13's name and area figure stand
+ * 1,200 mm higher (y 4,193 to 2,993 for the name), same size. SVG only; `describe()`, `lint()`, the
+ * diagnostics and the steps did not move. Its 12 pinned rows in 15 files (3 digests, each under 2
+ * worlds) were re-measured with each suite's own body (from `1fdd5dee`'s values); `main`'s
+ * (`db1acefd`) drawing alone in this branch's payload reproduces `main`'s digest in every one.
+ * `chain30`, re-measured at `1fdd5dee`, draws as on `main` again and its rows are `main`'s.
+ * Label-on-label overprints (more than 2 % of the smaller ink box) in `star30`: 104 on `main`, 106
+ * here (room 13's against rooms 11, 12, 14 and 15); left as a finding, not fixed here.
  * `test/plans/plan-soundness/audits/first-contact-plans/2026-10-26-walls-first/6-clinic.arch`'s SVG
- * (its Staff Room's name and area figure placed again, the name at 350 rather than 300; pinned only
- * by `keep`'s weak-law table, one row re-taken). A planted change (the wrap step off) moved 19 rows.
+ * moves too (its Staff Room's name and area figure placed again, the name at 350 rather than 300;
+ * pinned only by `keep`'s weak-law table, one row re-taken; no overprint on either tree).
  *
  * ## The `frames` rows of the relational-openings and pairwise-walls tables: re-measured for AL3a
  *
- * That sweep read files and fences only, not the plans the tests hold inline, and two of those moved
- * (CI on #964). The sweep since reads every plan-like string in `test/` (13,583 sources: 519 `.arch`
- * files, 411 markdown fences, 8,486 literals, 280 values of the plan tables, 3,887 fragments wrapped
- * in a plan) and moves these two `frames` rows of `test/tables/` and nothing else pinned. Each places
+ * The first sweep read files and fences only, not the plans the tests hold inline, and two of those
+ * moved (CI on #964). The sweep since reads every plan-like string in the repository (13,618 sources:
+ * 519 `.arch` files, 411 markdown fences, 8,506 literals in `test/`, 280 values of the plan tables,
+ * 3,902 fragments wrapped in a plan), `main` against this branch, per payload. Pinned, it moves
+ * `star30`, `6-clinic` (above) and these two `frames` rows of `test/tables/`; unpinned, three of the
+ * label oracle's own fragments and one spec-forms fragment (SVG only). Each places
  * one unit eight times (four turns, each mirrored) on one sheet, so its text is drawn at 1,227 to
  * 1,610 mm and no label fits its room.
  *
@@ -2037,14 +2038,15 @@
  *   wider than its room; one must dodge the other. By element order `a` stayed and `b` dodged; by the
  *   plan's order (both at one height) the one further left goes first and stays, so in the copies turned 180° or mirrored (`m0`, `r180`)
  *   `b` stays and `a` dodges, by the same offset. Main's (`db1acefd`) SVG in the branch's payload
- *   reproduces the old digest.
+ *   reproduces the old digest. No overprint on either tree.
  * - `wall-between-around-digests` `frames`: SVG and `lint()`. Room `C` in the copies `r90` and `m270`.
  *   The labels of `A` and `B` stand off their floors, so they claim none, and `C`'s is no longer
  *   lifted off them. `fitLabels` then keeps it where the relocation left it, the less buried of its
  *   two places by its own reading (1.2054 rather than the room's centre at 1.3404): its area figure
  *   comes off the door swing between `A` and `B`, its name stands 27 % off the floor. Two
  *   `W_ANNOTATION_OVERLAP` reports are worded for that (same count, code and span). Main's SVG and
- *   `lint()` in the branch's payload reproduce the old digest; its SVG alone does not.
+ *   `lint()` in the branch's payload reproduce the old digest; its SVG alone does not. Overprints
+ *   6 on `main`, 4 here, none new.
  *
  * `describe()` and the diagnostics did not move in either.
  */
