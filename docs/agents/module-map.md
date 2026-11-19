@@ -217,7 +217,7 @@ Totals: 408 modules in 34 directories.
 | Module | Lines | Importers | Summary | Budget |
 | --- | ---: | ---: | --- | --- |
 | `analyze.ts` | 1087 | 131 | Shared semantic-analysis layer for the agent-facing tools. | none |
-| `ast.ts` | 1748 | 225 | Abstract syntax tree for an ArchLang `plan`. All distances are in millimetres. | none |
+| `ast.ts` | 1749 | 226 | Abstract syntax tree for an ArchLang `plan`. All distances are in millimetres. | none |
 | `attach.ts` | 481 | 6 | Opening attachment (`door\|window\|opening … on <wall> at <pos>`). | charges the step meter |
 | `axes.ts` | 161 | 4 | **Positioning axes** (定位轴线) — GB/T 50001's structural datum grid. | none |
 | `builtins.ts` | 129 | 3 | Built-in functions: a frozen, pure map injected into the global scope as `builtin` Values. Each is total — bad arity / types emit a diagnostic and return a safe default, never throw — and deterministic (no I/O, no clock). | none |
