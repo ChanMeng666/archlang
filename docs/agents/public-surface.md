@@ -375,7 +375,7 @@ Totals: 659 exports (230 values, 429 types), 418 flagged (75 values).
 
 | Export | Kind | In-repo consumers |
 | --- | --- | --- |
-| `Applicability` | type | `test` |
+| `Applicability` | type | `packages/mcp`, `test` |
 | `Diagnostic` | type | `packages/archlang-3d`, `packages/mcp`, `packages/mcp-worker`, `playground`, `scripts`, `src/cli`, `test` |
 | `FixEdit` | type | `test` |
 | `FixSuggestion` | type | `packages/mcp`, `src/cli`, `test` |
