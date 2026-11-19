@@ -186,7 +186,7 @@ suite("the resolve order: rooms, then the table, then walls", () => {
     const at = (i: number) => src.slice(out.diagnostics[i]!.span!.start).split("\n")[0]!.trim();
     expect(out.diagnostics.map((d) => d.code)).toEqual(["E_ROOM_SIZE", "E_LAYOUT_REF", "E_STEP_LIMIT"]);
     expect(at(0)).toMatch(/^room id=a /);
-    expect(at(1)).toMatch(/^room id=b /);
+    expect(at(1)).toMatch(/^nowhere /); // AF2: spanned on the unknown id of room b's `right-of`
     expect(at(2)).toMatch(/^wall exterior /);
   }, 60_000);
 });

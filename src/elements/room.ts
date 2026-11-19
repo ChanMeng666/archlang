@@ -273,7 +273,7 @@ function parseTail(ctx: ParseCtx, node: RoomNode, start: number, sized = false):
           uses.push(ctx.next().value as UseKind);
         }
         if (uses.length === 0) {
-          ctx.fail(roomUsesExpected(ctx.peek().value || undefined, ctx.peek().type), ctx.peek(), USE_KINDS);
+          ctx.failNear(roomUsesExpected(ctx.peek().value || undefined, ctx.peek().type), USE_KINDS);
         }
         if (keep) node.uses = uses;
       },
@@ -449,10 +449,10 @@ export const room: ElementDef = {
       // Relational clause: DIR REF [align EDGE] [gap EXPR].
       const dirTok = ctx.next();
       if (!REL_DIRS.has(dirTok.value)) {
-        ctx.fail(
+        ctx.failNear(
           `Expected "at" or a relational direction (${REL_DIR_LIST.join("|")}) but found "${dirTok.value}"`,
-          dirTok,
           ["at", ...REL_DIR_LIST],
+          dirTok,
         );
       }
       const refTok = ctx.eatIdent();

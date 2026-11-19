@@ -232,8 +232,9 @@ class Parser {
       parseStringExpr: () => this.parseStringExpr(),
       parseIdOpt: () => this.parseIdOpt(),
       spanFrom: (start) => this.spanFrom(start),
-      fail: (msg, t, near) => this.fail(msg, t, undefined, near),
-      failAt: (msg, span, near) => this.fail(msg, this.peek(), span, near),
+      fail: (msg, t) => this.fail(msg, t),
+      failAt: (msg, span) => this.fail(msg, this.peek(), span),
+      failNear: (msg, near, t, span) => this.fail(msg, t, span, near),
       diag: (d) => this.report(d),
       report: (code, message, span) => this.report({ severity: "error", message, code, span }),
     };
@@ -324,7 +325,8 @@ class Parser {
    */
   private wordsAt(t: Token): readonly string[] {
     const word = t.value;
-    if (!this.reportable() || this.registry.byKeyword.has(word) || ATTRIBUTE_KEYWORDS.some((w) => w === word)) return [];
+    if (!this.reportable() || this.registry.byKeyword.has(word) || ATTRIBUTE_KEYWORDS.some((w) => w === word))
+      return [];
     if (this.toks[this.pos - 1]?.line !== t.line) return [...this.statementStarts];
     return [...(this.afterUses(t, true) ? USE_KINDS : []), ...ATTRIBUTE_KEYWORDS, ...this.statementStarts];
   }
