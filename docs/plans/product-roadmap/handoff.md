@@ -83,6 +83,17 @@ RM1.1a 也在本场做完（纯测量，没有 PR，见 §6）。
 - **开着的 issue：** #544、#680、#681、#682、#684。#544（剖切线与楼板基准）：RM6.1 在 #721 里交付了，说明已贴在 #532；关 #544 留给所有者或下一场（那是所有者在 #532 里的线程，代理也可以关）。
 - 移除任何 worktree 之前，先用 `[System.IO.Directory]::Delete(<junction>)` 解开其中的 `node_modules` junction（不递归），再 `git worktree remove`（`docs/agents/gotchas.md` § Tooling & process）；被正在运行的会话锁定的 worktree 拒绝 `git worktree remove`（`docs/agents/orchestration.md`）。
 
+### 1.2c 已发布（1.65.0，2026-11-19；协调者用 `npm view`、`gh`、`curl` 和门户页面读）
+
+RM-D67（`README.md` §6.30）。版本号 PR 是 #970（合并提交 `877bf25c`；`main` 的 push run 44483028375 全绿），tag `v1.65.0` 打在这个提交上，`release.yml` run 44484178520 各 job 全部 success。tag 之前在主检出跑了 release-check 第 6 项（build、`mcp:build:only`、`check-dist-resources`、`vscode:build:only`、`editors/vscode` 62/62、MCP lockstep 14/14），`c1d133c4` 的 push run 上 Node 18、Node 20、Windows 18 条腿全绿。
+- **npm：** 核心 1.65.0、`archlang-mcp` 0.2.48；`archlang-3d` 0.9.0、`arch-plan` 0.1.2、`font-cjk` 1.0.0 不变。
+- **jsDelivr：** `@1.65.0/+esm` 返回 200。**MCP 注册表：** latest 0.2.48，托管 remote 不变。
+- **VS Code：** Marketplace 0.53.0（经 Chrome 上传，vspackage 返回 200）；Open VSX 0.53.0（`publish-openvsx.yml` run 44484864611 在 tag 上成功）。
+- **OpenAI 目录：** 1.65.0 已发布。5 个技能检查全过、没有 finding（`archlang-export` 的检查约 20 分钟才完成）；按 RM-D44 勾选六项声明（与上一版相同）、提交，直接"可发布"，随即发布，取代 1.64.0。
+- **没做：** ClawHub 的 `archlang@1.65.0` 与 Docker 目录条目的 `source.commit`（release-check 的 "After the tag" 两项）。留给下一场。
+- **所有者在 #969 里的两次批准（只对那个 PR）：** playground 的 `compilerPathBudget` 324,000 → 333,000 B、`embedPathBudget` 310,000 → 319,000 B（按 baseline 文件自己的"实测 × 1.025"规则）；`test/drawing-budget.test.ts` 的宽松度上限 4 → 4.25。首次使用路径 486,000 B 没动，只剩约 1,863 B 余量（backlog 3.18）。
+- **下游：** 发布通知发给了 archcanvas-89（archcanvas-03 当时不在线）。ArchCanvas `main` 在 `677b99b`，仍用核心 1.64.0；升级要等它的所有者对一次定价运行的决定。
+
 ### 1.2a 已发布（1.64.0，2026-11-18；协调者用 `npm view`、`gh`、`curl` 和门户页面读）
 
 RM-D66（`README.md` §6.29）。版本号 PR 是 #953（合并提交 `27bcead8`；`main` 的 push run 44212688197 全绿），tag `v1.64.0` 打在这个提交上，`release.yml` run 44218917453 各 job 全部 success。
@@ -177,7 +188,14 @@ RM-D66（`README.md` §6.29）。版本号 PR 是 #953（合并提交 `27bcead8`
 - A 波：AF1（#944）、AF6（#946）；
 - **EB.2（#947）：** 把 `lint()` 移出 playground 的共享编译器 chunk（−49.5 KB gzip），三条体积上限按规则往下重取（embed 310,000 B、编译器路径 324,000 B、首次使用 486,000 B）。embed 与编译器路径各留约 8.5 KB 余量，首次使用留约 12.4 KB。#945（为 RM9.1 抬高上限）在找到更便宜的位置之后关掉了，没有合并。
 
-在途：RM9.3（#948，评审第 1 轮的修复中）、RM9.2、AF3。评审余项都写成了 backlog 的 NR.1–NR.12。下一步按 `v3.md` §3：先把阶段 1 剩下的做完（RM9.2、RM9.3、RM9.4 依赖 AF3、A 波的 AF0/AF2/AF4/AF5/AF7/AF8、RM9.5），再做阶段 2。
+之后合并的：RM9.3（#948，列车 #952）、RM9.2（#950）、AF3（#951）；1.64.0 发布（#953）。评审余项都写成了 backlog 的 NR.1–NR.16。
+
+**2026-11-19 一场（协调者记录，按 `gh` 读）：** 这一场没有做 v3 的卡，做了三件插进来的事：
+- **标签拥挤（`../label-crowding/`，所有者 2026-11-18 批准）：** AL6（#957）、AL1（#958）、AL5（#959）、AL4（#961）、AL3w（#962）、AL3a（#964）、AL3b（#969，引出线，ADR 0035 accepted）全部合并；卡与余项（AL2a/b/c、AL3c–AL3p、AL4b、AL5b、AL6b、AL7、AL8）在 `../label-crowding/cards.md`。
+- **CI 提速（第 9 轨）：** #963 缓存 apt 下载的 deb（`.github/actions/apt-debs`、`apt-cache-warm.yml`），apt 慢镜像造成的超时不再出现；#965 让分片表记录每个文件的收集时间、按最长先跑，Node 22 最慢/最快分片 302/159 s → 约 225/151 s；#966 写下 TR6 复测（`../ci-throughput-research.md` §13）和卡 TR12–TR15。另有 #968（26 个 `ast.ts` 值在运行时真正导出并冻结）、#967（标签拥挤的计划文档更正）。
+- **1.65.0 发布**（§1.2c）。
+
+**下一步不变：** 按 `v3.md` §3，先把阶段 1 剩下的做完（RM9.4、A 波的 AF0/AF2/AF4/AF5/AF7/AF8、RM9.5），再做阶段 2（RM9.0 → RM9.6、AF9、AF10 第一步、RM9.10、RM9.11、RM1.2b → RM1.1b 验收）。这些卡标的 `blocked`（RM-D64）都已由 RM-D65 解除。
 
 **1.64.0（RM-D66，`README.md` §6.29）：** 所有者 2026-11-18 同意发布，版本号受托定为 1.64.0（次版本，带 Breaking）；切点在 `b36f6995`（RM9.2 合并之后），AF3 不进本版。之前写下的发布说明保留在下面，作为历史记录。
 
@@ -207,13 +225,13 @@ RM-D66（`README.md` §6.29）。版本号 PR 是 #953（合并提交 `27bcead8`
 
 **线下，有余量才做：** RM0.7b、RM0.7c、RM1.2d–RM1.2f、RM1.2h、RM1.4c、RM5.1b、RM0.6、RM7.4、RM1.6c、RM6.1b–RM6.1d、RM8.6c，以及上面的余项卡。CHANGELOG 1.60.0 的 `A-ANNO` 措辞更正已在 1.61.0 的发布说明里做了。
 
-**编译器路径预算：** `compilerPathBudget` 401,000 B gzip，`embedPathBudget` 387,000。RM0.7f 之后的余量没有在 `f76af65b` 上重量：**动词表或新家族的卡先量。**
+**playground 体积上限（2026-11-19，`playground/e2e/startup-chunks.baseline.json`）：** `compilerPathBudget` 333,000 B gzip（实测 324,520），`embedPathBudget` 319,000（实测 310,743），`firstUsePathBudget` 486,000（实测 484,137，**只剩约 1,863 B**，backlog 3.18）。动编译器路径的卡在 PR 里写出 `npm run size:embed` 在 `main` 和分支上的数字；能放进惰性 chunk 的放进去。抬任何一条上限都是放松检查，要所有者那一次的批准（`REVIEW.md`）。
 
 **CI 吞吐（第 9 轨，RM-D37，2026-11-14 加；不是第三条车道）：** TP 卡在核心车道两张卡之间占用核心执行者（RM-D22 不变）。TP1（#754）与 TP2（#755）已合并：`npm run sync:main -- --push` 是同步的做法；`main` 的 push 运行 28 → 12.8 分钟，PR 约 9 → 7.3（各一次运行）；列车之后的现读数：push 24–30 s，PR 代码运行 4.7 min，完整运行 7.0–8.7 min（`../ci-throughput-research.md` §12.2），截至 2026-11-16 十趟列车落地（#789–#827）；后三趟（#812、#820、#827）的读数：列车运行 7.7–8.8 min，已证明的 push 28–31 s。2026-11-15 之后：TP6 已由 #794 完成，合并列车、已证明的 push 与更多分片都已合并（FT1–FT3，RM-D48，`../ci-throughput-research.md` §12），FT4（#795）已由列车 #801 合并（`4f432ca1`）；TP5 由 TR6 取代。未完的是 TR1–TR5、TR8 与 TR11（列车脚本加固、证明加固、记录类 push 判定、守卫、40 个 job 的上限；本地门禁的残余 TR8；发布与夜间机器的层级 TR11；TR7 已由 #802、#806 做完）；TR6 是 7 天后的复测，TR9、TR10 已由 RM-D49 裁定并做完；TP3、TP1b 在空档里做；TP4 等触发。卡在 `cards.md` 第 9 轨。
 
-**AI 优先语言（第 10 轨，2026-11-18 加；不是新车道）：** 调研记录在 `../ai-first-language/README.md`，卡 AF0…AF26 在 `cards.md` 第 10 轨。**调研阶段（RM-D64，所有者）：** 现在只做 AF21、AF22（离线测量）、AF26（语法审计，只出文档）、AF9 的设计稿和 AF12 的 ADR 草稿，其余卡等所有者一句"开工"。所有者开工之后，A 波（AF0–AF8）先做，然后做 AF9。
+**AI 优先语言（第 10 轨，2026-11-18 加；不是新车道）：** 调研记录在 `../ai-first-language/README.md`，卡 AF0…AF26 在 `cards.md` 第 10 轨。调研阶段（RM-D64）已由 RM-D65（所有者 2026-11-18）结束：A 波（AF0–AF8）按阶段 1 的顺序做（AF1、AF3、AF6 已做），然后做 AF9。
 
-**发布：** 1.63.0 已发布（§1.2，RM-D59）。1.64.0 要所有者对那一次的决定（没有决定就不切；VS Code Marketplace 与 OpenAI 目录的发布由代理做，含 OpenAI 的 Submit 与 Publish，RM-D41、RM-D44）。2026-12-01 所有者亲自发 Show HN；`main` 一直保持绿。RM5.4（#603）已由 #781 做完（RM-D43）。
+**发布：** 1.65.0 已发布（§1.2c，RM-D67），`main` 上暂时没有未发布的用户可见改动。下一次发布要所有者对那一次的决定（没有决定就不切；VS Code Marketplace 与 OpenAI 目录的发布由代理做，含 OpenAI 的 Submit 与 Publish，RM-D41、RM-D44）。2026-12-01 所有者亲自发 Show HN；`main` 一直保持绿。RM5.4（#603）已由 #781 做完（RM-D43）。
 
 **运维小项（不占车道，2026-11-17 加）：** Search Console 的 "Not found (404)" 复验 2026-11-17 重新开始（6 个待验、0 失败；账号见协调者记忆，不写进本公开仓库）。Google 来信或约两周后读结果，记进 `../geo-seo/handoff.md` 的 G7c 行；失败就先 `curl` 那几个网址看是否仍 301。
 
@@ -399,3 +417,15 @@ RM1.1a 的兜底：1.59.0 到 2026-11-23 还没打 tag，就量当时 `main` 的
 - **(as) 新规则上传后几秒内可能答 404：** #929 的部署 smoke 因此红过一次，重跑即绿；#930 加了重试（每条至多 25 s）。原因没证实：同一瞬间 `.html` 变体已答 301。下一次加规则的部署若重试后仍红，要另查。
 - **(at) 评审每轮都抓到了真问题：** #321 的边界卡顿漏记、#929 的斜杠、#324/#325 的文档政策。小改动也照风险层级走一轮新上下文评审。
 
+### 2026-11-19 一场（标签拥挤 AL、CI 提速、1.65.0；协调者记录）
+
+- **(au) 绘图改动的摘要也藏在测试文件里：** AL3a 第一次 CI 红在 `test/tables/*.ts` 的内联计划（`openings-between`、`wall-between-around` 的 `frames`），执行者只扫了 `.arch` 文件和文档围栏。扫描要包括每张摘要表的内联计划（`gotchas.md`）。
+- **(av) 让标签互相压字的取舍要量：** AL3a 试过让出地面之外的标签放弃占位，模糊测试里出现了 `main` 没有的标签压标签，而 `W_ANNOTATION_OVERLAP` 不查房间文字压房间文字（AL3c），lint 一条也没报。撤回，余项记为 AL3e。用 `over` 这类按画出宽度量压字的模糊测试，而不是只看报告条数。
+- **(aw) 两种宽度混用会放过压字：** AL3b 的引出步骤拿候选文字的墨迹宽度去比别的文字的估算框；每段文字都按画出的宽度量（`labelBox`）。
+- **(ax) 为了让测试回到原来的上限而改核心预算是错的：** AL3b 第一轮把没有种类词的门的 `drawCost` 从 5 改成 3，iso 视图下画 5 个，低估，也让 `E_DRAWING_LIMIT` 的判定悄悄移动。撤回，改为请所有者批准放宽测试上限（4 → 4.25）。放宽检查、抬体积上限都要所有者那一次的话，越早问越好。
+- **(ay) 执行者的 `git push --force-with-lease` 可能被权限拒绝：** 协调者用钉住旧头的 `--force-with-lease=<branch>:<旧 sha>` 代推。
+- **(az) 发布评审抓到生成文字的丢失：** #969 的一个提交把 `E_DRAWING_LIMIT` 原因里的"a room 3, a door 5"删掉了，测试没有察觉；版本号 PR 的新上下文评审和执行者都看到了，tag 前修好。
+- **(ba) OpenAI 门户点了 Publish 立刻离开页面，发布没有生效：** 停在页面上等"Plugin published!"出现。
+- **(bb) 直接合并让部署多等：** 2026-11-17 之后 30 个合并只有 2 个走列车，每次 `main` push 跑完整矩阵约 9 分钟，部署等它（TR13）。
+- **(bc) 新开的 worktree 里 `check:quick` 的 docs-site 类型检查要 `dist/`：** 先 `npm run build`。
+- **(bd) 主检出里的 `npm ci` 会重写所有 junction 过去的 worktree 的依赖：** 只在没有执行者运行时做。

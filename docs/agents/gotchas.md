@@ -63,6 +63,10 @@ coordinator's own notes (merging, registries, browser and social automation, the
   `apt-debs` cache serves those debs (`Need to get 0 B/…` on a hit); a cold or incomplete one still
   downloads: `gh run rerun <id> --failed`. A wrong cached deb is reset with `gh cache delete`
   (`docs/agents/commands.md` § CI).
+- **A drawing change's digests also live in plans written inside test files** (`test/tables/*.ts`, the
+  `frames` rows of `openings-between` and `wall-between-around`): a sweep of `.arch` files and docs fences
+  misses them, and CI reds on them (AL3a, #964). Sweep every digest table's inline plans too, and prove
+  each moved row by swap-back like any other.
 - **For about a minute after a release publishes, every PR's `test/release-compat.test.ts` is red**: it
   resolves the registry's `latest` (`scripts/compat-check.mjs`), which npm lists before that tarball can be fetched. Re-run the
   failed job; never touch the test.
@@ -239,6 +243,9 @@ coordinator's own notes (merging, registries, browser and social automation, the
   resolves to the primary's last build; under vitest the same module reads the worktree's source).
   So a drawing change re-measured there reproduces whatever the primary last built. Take moved 3D assets from the PR's CI, or build in a checkout
   with its own `node_modules`.
+- **`npm ci` in the primary rewrites the dependencies under every junctioned worktree**, so an executor's
+  running gate can fail mid-run. Run it only when no executor is running. A fresh worktree's
+  `check:quick` also needs `npm run build` first: the docs-site type check reads `dist/`.
 - **Remove a worktree's `node_modules` junctions with `[System.IO.Directory]::Delete(<junction>)`** (never recursive; the PowerShell tool blocks `cmd /c rmdir`) before
   `git worktree remove --force` or any recursive delete, or the delete follows them into the primary.
   (guarded: hook rule `delete-through-link` refuses the delete while a link sits within six levels of the target)
