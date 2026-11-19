@@ -174,9 +174,11 @@ export function fmtWritten(n: number): string {
  * through a double (DBL_DIG), so a value with a short form prints exactly as `plainDigits(n)` does
  * (a literal the author wrote, `2749.9999`, in full), and only the noise a float sum or product leaves
  * in the 16th and 17th digits is dropped: `12 * 304.8` prints `3657.6`, not `3657.6000000000004`.
+ * Near the largest double the 15-digit form rounds past it, so that value keeps all its digits.
  */
 export function fmtMessage(n: number): string {
-  return plainDigits(Number(n.toPrecision(15)));
+  const short = Number(n.toPrecision(15));
+  return plainDigits(Number.isFinite(short) || !Number.isFinite(n) ? short : n);
 }
 
 /**

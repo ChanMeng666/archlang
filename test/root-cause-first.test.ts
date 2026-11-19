@@ -232,6 +232,9 @@ describe("fmtMessage: a message's number, without float noise", () => {
     expect(fmtMessage(0.1 + 0.2)).toBe("0.3");
     expect(fmtMessage(2749.9999)).toBe("2749.9999");
     expect(fmtMessage(1e-7)).toBe("0.0000001");
+    // The 15-digit form of the largest doubles rounds past them: never `Infinity`, all digits kept.
+    expect(fmtMessage(-Number.MAX_VALUE)).toBe(plainDigits(-Number.MAX_VALUE));
+    expect(fmtMessage(-1.7976931348623151e308)).toBe(plainDigits(-1.7976931348623151e308));
     expect(fmtWritten(12 * 304.8)).toBe("3657.6");
     expect(fmtWritten(2749.9999)).toBe("2749.9999");
     expect(fmtWritten(2750)).toBe("2750");
