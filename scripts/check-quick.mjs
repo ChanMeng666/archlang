@@ -120,9 +120,7 @@ for (const chunk of biomeChunks) {
   steps.push({
     name: `biome (${chunk.length} files${biomeChunks.length > 1 ? `, ${biomeDone + 1}-${biomeDone + chunk.length} of ${lintFiles.length}` : ""})`,
     cmd: "npx",
-    // `--no-errors-on-unmatched`: a chunk made only of files `biome.jsonc` excludes (a generated
-    // `src/context-size.ts` alone) is "No files were processed", an error; there is nothing to lint.
-    args: ["biome", "check", "--no-errors-on-unmatched", ...(flag("--fix") ? ["--write"] : []), ...chunk],
+    args: ["biome", "check", ...(flag("--fix") ? ["--write"] : []), ...chunk],
   });
   biomeDone += chunk.length;
 }
