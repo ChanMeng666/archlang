@@ -59,9 +59,9 @@ import { BUILTIN_REGISTRY } from "./registry.js";
 import { floorClause, roomUsesExpected, roomUsesOutdoorHint } from "./elements/room.js";
 import { missingClause, readClauses, type TailClause } from "./clause-order.js";
 import {
+  ATTRIBUTE_KEYWORDS,
   KEEP_GRADES,
   KEEP_WORDS,
-  KEYWORDS,
   STATEMENT_STARTS,
   TITLE_FIELDS,
   type TitleField,
@@ -319,12 +319,14 @@ class Parser {
    * The words an unknown statement word `t` may be a slip of (AF2), in order: on the line of the
    * token before it, where a statement ended early at a misspelt word, a room use (after a `uses`
    * list) and a clause word; then a statement keyword. Each set is read from its one source. A
-   * word of the language (`sheet` out of place) is spelled right, so it has none.
+   * clause or element word (`sheet`, `slab` or `section` out of place) is spelled right, so it has
+   * none; a statement keyword is refused by {@link spelling} itself.
    */
   private wordsAt(t: Token): readonly string[] {
-    if (!this.reportable() || Object.values(KEYWORDS).some((ws: readonly string[]) => ws.includes(t.value))) return [];
+    const word = t.value;
+    if (!this.reportable() || this.registry.byKeyword.has(word) || ATTRIBUTE_KEYWORDS.some((w) => w === word)) return [];
     if (this.toks[this.pos - 1]?.line !== t.line) return [...this.statementStarts];
-    return [...(this.afterUses(t, true) ? USE_KINDS : []), ...KEYWORDS.attribute, ...this.statementStarts];
+    return [...(this.afterUses(t, true) ? USE_KINDS : []), ...ATTRIBUTE_KEYWORDS, ...this.statementStarts];
   }
 
   /** Whether a diagnostic reported now is kept ({@link report}'s own test). */

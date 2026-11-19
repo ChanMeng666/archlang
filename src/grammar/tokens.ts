@@ -22,6 +22,139 @@
 export const TITLE_FIELDS = ["project", "drawn_by", "date", "number", "revision"] as const;
 export type TitleField = (typeof TITLE_FIELDS)[number];
 
+/**
+ * Setting / attribute keywords → `keyword.other`, CM `propertyName`: the words that lead a clause
+ * ({@link KEYWORDS}`.attribute`). Their own constant, so the parser can read them (AF2: a
+ * misspelt clause word is one slip from one of these) without bundling the other categories.
+ */
+export const ATTRIBUTE_KEYWORDS = [
+  "units",
+  "grid",
+  "paper",
+  "scale",
+  "north",
+  "dims",
+  "accTitle",
+  "accDescr",
+  "material",
+  "angle",
+  "at",
+  "size",
+  "polygon",
+  "circle",
+  "arc",
+  "radius",
+  "width",
+  "thickness",
+  "label",
+  "hinge",
+  "swing",
+  "slide",
+  "open",
+  "offset",
+  "text",
+  "close",
+  "id",
+  // The pieces of a block `stair`, read only inside its `{ … }`: never `STATEMENT_STARTS`, or
+  // `room id=landing` would stop parsing.
+  "flight",
+  "landing",
+  "winders",
+  // The `title { … }` field words, from their one list.
+  ...TITLE_FIELDS,
+  "from",
+  "as",
+  "right-of",
+  "left-of",
+  "below",
+  "above",
+  "align",
+  "gap",
+  "uses",
+  // `room … floor tile`: leads a clause of the `room` line. Its values are in `enum` below or
+  // are the hatch words. `floor(x)`, the built-in, reads the same word in an expression.
+  "floor",
+  "rotate",
+  "against",
+  "segment",
+  "side",
+  "on",
+  "into",
+  "near",
+  "anchor",
+  "inset",
+  "flush",
+  "mirror",
+  "height",
+  "faces",
+  "clear",
+  "dir",
+  // `site { street <compass> [hemisphere <h>] }` — the two clause introducers inside
+  // the site block. They belong here, beside `north`, for the same reason: a word
+  // that LEADS a clause is a setting keyword, not one of its values (the values —
+  // `south`/`east`/`west` — are in `enum` below). Absent from this table, every
+  // renderer would draw them as bare identifiers.
+  "street",
+  "hemisphere",
+  // `roof overhang <len>` — the clause that introduces the projection distance. A word
+  // that LEADS a clause is a setting keyword, so it sits here beside `thickness` and
+  // `width` rather than in `enum` (which holds the VALUES a clause takes).
+  "overhang",
+  // `rail <edges>` leads a clause of the `outdoor balcony` line and `boundary
+  // (x,y) …` leads one of the `site` block, so both are settings, not values — the same
+  // rule that put `street`/`hemisphere`/`overhang` here and their VALUES in `enum`.
+  "rail",
+  "boundary",
+  // The vertical datum layer. `sill` and `head` LEAD a clause of a `window` /
+  // `door` / `opening` line (`window … sill 900 head 2100`), which is the rule that put
+  // `thickness` and `overhang` here rather than in `enum`: those hold the VALUES a
+  // clause takes, and a height's value is a number, not a word.
+  //
+  // `height` itself is NOT added — it has been in this table since `strip … height <mm>`
+  // shipped, and the datum layer reuses that same word at three new sites (a plan
+  // setting, a `level` header and a `wall` clause) rather than inventing a fourth
+  // spelling for the same idea.
+  "sill",
+  "head",
+  // `walls from rooms … { except <room> … }` — leads the one body clause of the statement.
+  "except",
+  // `walls from rooms … { open between <A> and <B> … between <A> and <B> thickness <t> }`:
+  // `between` leads a pair clause, `and` joins its two rooms (ADR 0028 §3).
+  "between",
+  "and",
+  // `door … at axis <label>` (ADR 0028 §5): leads a position that stands on a positioning axis.
+  "axis",
+  // `wall … around [<A> <B> …]` (ADR 0028 §4): the wall is the outline of the listed rooms.
+  "around",
+  // `furniture … facing <id>` (ADR 0029 §3): the quarter-turn is derived from the target.
+  "facing",
+  // `segment containing <room>.<edge>` (plan card PS3.5): a segment selector. The compass
+  // selector words (`segment north`) are already here or in `enum`.
+  "containing",
+  // The `keep` form words that lead a clause (ADR 0033; `KEEP_WORDS`). Contextual: read as
+  // form words only in position after `keep`, so a binding of the same name keeps its
+  // meaning everywhere else. `align`, `offset`, `clear`, `on`, `axis`, `from`, `at`,
+  // `width` and `segment` are already here; `min` stays the built-in function.
+  "equal",
+  "depth",
+  "stacked",
+  "levels",
+  "fixed",
+  // `wall … status existing|demolish|new` and `walls from rooms … status <s>` (preview-and-remodel
+  // B3a): leads the clause; its values (`WALL_STATUSES`) are in `enum`.
+  "status",
+  // `sheet text { … }`: read only when `text {` follows it, so never a `STATEMENT_STARTS` word and
+  // not a `control` one: `room id=sheet` keeps parsing. `text` is already here.
+  "sheet",
+  // `level <n> … slab <mm>` (MF-D1): read only in a `level` header, so contextual, never a
+  // `STATEMENT_STARTS` word: `room id=slab` and `let slab = 200` keep parsing. Its partner
+  // `clear` (RM-D17) is already here.
+  "slab",
+  // `section … look <compass>` (RM6.1): read only after a section mark's second point, so
+  // contextual like `slab`: `let look = 1` keeps parsing.
+  "look",
+] as const;
+
 /** Keyword categories, by highlighting role. Order within each is stable. */
 export const KEYWORDS = {
   /** Statement / declaration keywords → TextMate `keyword.control`, CM `keyword`. */
@@ -81,134 +214,8 @@ export const KEYWORDS = {
     // a statement start and `room id=section` keeps parsing.
     "section",
   ],
-  /** Setting / attribute keywords → `keyword.other`, CM `propertyName`. */
-  attribute: [
-    "units",
-    "grid",
-    "paper",
-    "scale",
-    "north",
-    "dims",
-    "accTitle",
-    "accDescr",
-    "material",
-    "angle",
-    "at",
-    "size",
-    "polygon",
-    "circle",
-    "arc",
-    "radius",
-    "width",
-    "thickness",
-    "label",
-    "hinge",
-    "swing",
-    "slide",
-    "open",
-    "offset",
-    "text",
-    "close",
-    "id",
-    // The pieces of a block `stair`, read only inside its `{ … }`: never `STATEMENT_STARTS`, or
-    // `room id=landing` would stop parsing.
-    "flight",
-    "landing",
-    "winders",
-    // The `title { … }` field words, from their one list.
-    ...TITLE_FIELDS,
-    "from",
-    "as",
-    "right-of",
-    "left-of",
-    "below",
-    "above",
-    "align",
-    "gap",
-    "uses",
-    // `room … floor tile`: leads a clause of the `room` line. Its values are in `enum` below or
-    // are the hatch words. `floor(x)`, the built-in, reads the same word in an expression.
-    "floor",
-    "rotate",
-    "against",
-    "segment",
-    "side",
-    "on",
-    "into",
-    "near",
-    "anchor",
-    "inset",
-    "flush",
-    "mirror",
-    "height",
-    "faces",
-    "clear",
-    "dir",
-    // `site { street <compass> [hemisphere <h>] }` — the two clause introducers inside
-    // the site block. They belong here, beside `north`, for the same reason: a word
-    // that LEADS a clause is a setting keyword, not one of its values (the values —
-    // `south`/`east`/`west` — are in `enum` below). Absent from this table, every
-    // renderer would draw them as bare identifiers.
-    "street",
-    "hemisphere",
-    // `roof overhang <len>` — the clause that introduces the projection distance. A word
-    // that LEADS a clause is a setting keyword, so it sits here beside `thickness` and
-    // `width` rather than in `enum` (which holds the VALUES a clause takes).
-    "overhang",
-    // `rail <edges>` leads a clause of the `outdoor balcony` line and `boundary
-    // (x,y) …` leads one of the `site` block, so both are settings, not values — the same
-    // rule that put `street`/`hemisphere`/`overhang` here and their VALUES in `enum`.
-    "rail",
-    "boundary",
-    // The vertical datum layer. `sill` and `head` LEAD a clause of a `window` /
-    // `door` / `opening` line (`window … sill 900 head 2100`), which is the rule that put
-    // `thickness` and `overhang` here rather than in `enum`: those hold the VALUES a
-    // clause takes, and a height's value is a number, not a word.
-    //
-    // `height` itself is NOT added — it has been in this table since `strip … height <mm>`
-    // shipped, and the datum layer reuses that same word at three new sites (a plan
-    // setting, a `level` header and a `wall` clause) rather than inventing a fourth
-    // spelling for the same idea.
-    "sill",
-    "head",
-    // `walls from rooms … { except <room> … }` — leads the one body clause of the statement.
-    "except",
-    // `walls from rooms … { open between <A> and <B> … between <A> and <B> thickness <t> }`:
-    // `between` leads a pair clause, `and` joins its two rooms (ADR 0028 §3).
-    "between",
-    "and",
-    // `door … at axis <label>` (ADR 0028 §5): leads a position that stands on a positioning axis.
-    "axis",
-    // `wall … around [<A> <B> …]` (ADR 0028 §4): the wall is the outline of the listed rooms.
-    "around",
-    // `furniture … facing <id>` (ADR 0029 §3): the quarter-turn is derived from the target.
-    "facing",
-    // `segment containing <room>.<edge>` (plan card PS3.5): a segment selector. The compass
-    // selector words (`segment north`) are already here or in `enum`.
-    "containing",
-    // The `keep` form words that lead a clause (ADR 0033; `KEEP_WORDS`). Contextual: read as
-    // form words only in position after `keep`, so a binding of the same name keeps its
-    // meaning everywhere else. `align`, `offset`, `clear`, `on`, `axis`, `from`, `at`,
-    // `width` and `segment` are already here; `min` stays the built-in function.
-    "equal",
-    "depth",
-    "stacked",
-    "levels",
-    "fixed",
-    // `wall … status existing|demolish|new` and `walls from rooms … status <s>` (preview-and-remodel
-    // B3a): leads the clause; its values (`WALL_STATUSES`) are in `enum`.
-    "status",
-    // `sheet text { … }`: read only when `text {` follows it, so never a `STATEMENT_STARTS` word and
-    // not a `control` one: `room id=sheet` keeps parsing. `text` is already here.
-    "sheet",
-    // `level <n> … slab <mm>` (MF-D1): read only in a `level` header, so contextual, never a
-    // `STATEMENT_STARTS` word: `room id=slab` and `let slab = 200` keep parsing. Its partner
-    // `clear` (RM-D17) is already here.
-    "slab",
-    // `section … look <compass>` (RM6.1): read only after a section mark's second point, so
-    // contextual like `slab`: `let look = 1` keeps parsing.
-    "look",
-  ],
+  /** Setting / attribute keywords → `keyword.other`, CM `propertyName` ({@link ATTRIBUTE_KEYWORDS}). */
+  attribute: ATTRIBUTE_KEYWORDS,
   /** Enum value keywords → `constant.language`, CM `atom`. */
   enum: [
     "up",
