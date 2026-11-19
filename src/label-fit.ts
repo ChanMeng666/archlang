@@ -44,19 +44,27 @@
  * places `relocateLabels` tries, from the room's anchor out; the first form with a clear place
  * wins, at its best place. A form that also keeps `relocateLabels`' clearance from the walls at the
  * height tried beats one that does not, so a label that shrinks does not end up touching one. A
- * wrapped form comes first: `relocateLabels` has already tried the one-line name at the full size
- * on the same lattice, reading it at the width this pass reads it against a symbol (card AL3w), so
- * a name that reached this pass did not stand clear there on one line. Breaking stays {@link balancedLines}'s: only at a space, by a count of
+ * wrapped form comes first, and the one-line name is not tried at the full size: `relocateLabels`
+ * has already searched the lattice with the name as `wrapLabels` left it, at the full size and at
+ * the width this pass reads it at against a symbol (card AL3w), and left it where its own reading
+ * scored best. That reading is coarser than this pass's: it boxes what is drawn rather than
+ * clipping its shapes, and reads another room's label where the relocation left it, at the full
+ * size, even one off its own floor (card AL3e). So it is no proof that no
+ * full-size one-line place stands clear by this pass's reading, only the reason this pass does not
+ * search those places again. Breaking stays {@link balancedLines}'s: only at a space, by a count of
  * characters, so the same name breaks the same way on every run and no word is ever split or
  * hyphenated. The full size is tried for wrapped forms too: `wrapLabels` asks for clearance from
  * the walls at the generous width, and leaves `Abstell- raum` on one line for want of 1.25 mm.
  *
  * Which labels do not fit is read first, from the fabric alone. A label that does not fit then
  * claims no floor until its turn comes, so a neighbour never dodges a box that is about to shrink,
- * and the turns go by the room's anchor. So this pass is order-free GIVEN what `relocateLabels` left,
- * and that pass is not: it visits in element order, and the rooms of
- * `test/plans/plan-soundness/audits/first-contact-plans/6-clinic.arch`, written the other way
- * round, settle differently before this pass sees them. A place is ranked off the lattice, never by a
+ * and the turns go by the room's anchor. `relocateLabels` takes its turns in the same order (card
+ * AL3a), so the two passes together are order-free: the same rooms written in any order draw the
+ * same. Not yet in a plan that draws `walls from rooms`: under `dims auto` its wall-thickness figures
+ * are stationed before either pass, in an order of their own, and both passes read them as drawn
+ * (card AL3f); and its derived walls reach the relocation in their own order, so a mirror tie can
+ * fall the other way by a rounding step (card AL3g).
+ * A place is ranked off the lattice, never by a
  * measured distance, so an edit too small to matter cannot flip a label across its room.
  *
  * When no height clears it, the form that leaves the least of the label buried is drawn, and an

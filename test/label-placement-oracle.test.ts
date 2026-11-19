@@ -30,7 +30,10 @@
  * the box, because the estimate behind it went per character. It too is input, not the search. A
  * fourth (card AL3w): a labelled area's own text is boxed at the wider of the estimate and its ink
  * (`symbolExtent`), the width the fit and the rule read it at against a symbol. How big a label is
- * stays the pass's input.
+ * stays the pass's input. A fifth (card AL3a): the groups take their turns in `plotOrder`, an order
+ * read off the plan, rather than element order, and an authored label claims its box before the
+ * first turn. Which group goes when, and which
+ * labels are obstacles, are the pass's input; the sums under test are not.
  */
 
 import { corpusFiles, walkFiles as walk } from "./helpers/corpus.js";
@@ -49,7 +52,15 @@ import type { BBox } from "../src/geometry/rect.js";
 import { overlap1d } from "../src/geometry/rect.js";
 import { compile } from "../src/index.js";
 import type { ResolvedPlan } from "../src/ir.js";
-import { BoxSums, CLEARANCE, COLLIDE_MIN, FRACTIONS, type LabelGroup, relocateLabels } from "../src/label-placement.js";
+import {
+  BoxSums,
+  CLEARANCE,
+  COLLIDE_MIN,
+  FRACTIONS,
+  type LabelGroup,
+  plotOrder,
+  relocateLabels,
+} from "../src/label-placement.js";
 import { extractArchBlocks } from "../src/markdown.js";
 import type { RenderSizes, SceneNode, ScenePrim } from "../src/scene.js";
 import { inkExtent, symbolExtent, textExtent } from "../src/text-layout.js";
@@ -235,7 +246,7 @@ function crowding(rect: BBox, obstacles: readonly BBox[], placed: readonly BBox[
  *
  * Mutates `nodes` in place (replacing, never editing, the text nodes it moves), which is
  * safe: every node in the list was freshly built by this `toScene` call. Groups are
- * visited in ELEMENT order and each placed label becomes an obstacle for the next, so two
+ * visited in `plotOrder` (card AL3a) and each placed label becomes an obstacle for the next, so two
  * labels can never be relocated onto each other — and an `outdoor` surface takes its turn
  * among the rooms rather than after them, which is what keeps a plan with no ground on
  * exactly the group list, and therefore exactly the bytes, it would have without ground.
@@ -302,34 +313,40 @@ function relocateLabelsBefore(
 
   tally.obstacles = obstacles.length;
   const placed: BBox[] = [];
-  for (const g of groups) {
+  /** A group's texts and the box they draw, the wider of the estimate and the ink (card AL3w). */
+  const boxOf = (g: LabelGroup): { texts: number[]; rect: BBox | null } => {
     const texts: number[] = [];
     for (let i = g.from; i < g.to; i++) {
       const n = nodes[i]!;
       if (n.layer === "labels" && n.prim.t === "text") texts.push(i);
     }
-    if (texts.length === 0) continue;
-    let rect0: BBox | null = null;
+    let rect: BBox | null = null;
     for (const i of texts) {
       const prim = nodes[i]!.prim;
       let b = primBBox(prim);
-      // Card AL3w: the wider of the estimate and the ink, as the pass reads its own labels.
       if (b && prim.t === "text" && prim.rotate === undefined) {
         const w = symbolExtent(prim).w;
         if (w > b.w) b = { x: b.x + (b.w - w) / 2, y: b.y, w, h: b.h };
       }
-      if (b) rect0 = rect0 ? unionBBox(rect0, b) : b;
+      if (b) rect = rect ? unionBBox(rect, b) : b;
     }
-    if (!rect0) continue;
+    return { texts, rect };
+  };
+  const order = plotOrder(nodes, groups);
+  // Card AL3a: an authored label stands where it is drawn from the first turn.
+  for (const g of order) {
+    const { rect } = boxOf(g);
+    if (g.fixed && rect) placed.push(rect);
+  }
+  for (const g of order) {
+    const { texts, rect: rect0 } = boxOf(g);
+    if (texts.length === 0 || !rect0) continue;
 
     // An explicit `label "…" at (x,y)` is the author's decision and is never overruled —
     // it is also the anchor `W_ROOM_LABEL_OUTSIDE` reports on, so moving it would make
     // that diagnostic describe a position nothing is drawn at. (`outdoor` has no such
-    // clause, so its groups are never `fixed`; the field is the room's.)
-    if (g.fixed) {
-      placed.push(rect0);
-      continue;
-    }
+    // clause, so its groups are never `fixed`; the field is the room's.) Placed above.
+    if (g.fixed) continue;
 
     if (buried(rect0, obstacles) + buried(rect0, placed) <= COLLIDE_MIN) {
       placed.push(rect0);
