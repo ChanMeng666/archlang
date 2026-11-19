@@ -8,7 +8,7 @@
  * click wiring lives in main.ts (it needs the editor's jump-to-source).
  */
 import { escapeHtml } from "./escape.js";
-import { offsetToLineCol, rankFixes, type Diagnostic } from "archlang";
+import { diagnosticFix, offsetToLineCol, rankFixes, type Diagnostic } from "archlang";
 // The catalogue from its own built file, not from `archlang`: so it loads with this panel (edit
 // mode), not with every first compile (card RM0.7; vite.config.js says why).
 import { ERROR_CATALOG } from "archlang/error-catalog";
@@ -34,9 +34,9 @@ export function renderDiagnostics(el: HTMLElement, diagnostics: Diagnostic[], so
       const loc = offset != null ? offsetToLineCol(source, offset) : null;
       const locText = loc ? `${loc.line}:${loc.col}` : "";
       const cat = d.code ? (ERROR_CATALOG[d.code] ?? null) : null;
-      // Prefer the diagnostic's own fix, else the catalog's; shown inline (always
-      // visible) so the remedy needs no click.
-      const fix = (d as { fix?: string }).fix ?? cat?.fix ?? d.hints?.[0] ?? "";
+      // Prefer the diagnostic's own fix, else the catalog's (or, for one that names a `cause`, the
+      // root-first fix, RM9.4); shown inline (always visible) so the remedy needs no click.
+      const fix = (d as { fix?: string }).fix ?? diagnosticFix(d, () => cat?.fix) ?? d.hints?.[0] ?? "";
       // A machine-applicable fix (ADR 0011) can be applied for real, not just read.
       // `rankFixes` picks the same best candidate `arch fix` would take, so the button
       // and the CLI agree. Multiple fixes on one diagnostic are ALTERNATIVES — offer one.

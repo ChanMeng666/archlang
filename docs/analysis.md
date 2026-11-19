@@ -1779,7 +1779,7 @@ The two feedback channels an agent relies on are both public, structured API:
   import { compile, diagnosticToJson } from "@chanmeng666/archlang";
   const { diagnostics } = compile(src);
   const asJson = diagnostics.map((d) => diagnosticToJson(src, d));
-  // → { code, severity, message, line, col, span: [start,end], fix?, hints?, …, instance?, component?, related? }
+  // → { code, severity, message, line, col, span: [start,end], fix?, hints?, …, instance?, component?, related?, cause? }
   ```
 
 - **The opt-in error card.** By default a plan that fails to compile produces **no image** —

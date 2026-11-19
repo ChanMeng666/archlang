@@ -114,6 +114,20 @@ export interface ResolveCtx {
    *  error value (AF3), where a {@link diag} report goes with the element. Absent: `diag`. */
   rootDiag?(d: Diagnostic): void;
   /**
+   * Record `d`, an error already reported with which a wall-deriving statement (`walls from rooms`)
+   * refused to derive any wall from `rooms` (RM9.4), as the root of what follows from it in this
+   * group ({@link refusedDerivation}); `overlaps` are the pairs of rooms it refused for overlapping,
+   * as `"a b"`. Optional (append-only).
+   */
+  derivationRefused?(d: Diagnostic, rooms: ReadonlySet<string>, overlaps?: ReadonlySet<string>): void;
+  /**
+   * The root, as a {@link Diagnostic.cause}, of an opening with no wall to stand in on an edge of one
+   * of `rooms`: the first refusal {@link derivationRefused} recorded in this group whose rooms hold
+   * one; with `overlap`, of two rooms that share no edge: the first that refused `rooms[0]` and
+   * `rooms[1]` for overlapping. Undefined when there is none. Optional (append-only).
+   */
+  refusedDerivation?(rooms: readonly string[], overlap?: boolean): NonNullable<Diagnostic["cause"]> | undefined;
+  /**
    * The elements of the group being resolved (the root plan, or one `place`d instance) that
    * have resolved so far, in source order, in the group's own frame: its own statements
    * only, never a descendant's (ADR 0016). Optional because this interface is append-only;

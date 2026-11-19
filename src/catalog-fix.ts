@@ -11,10 +11,26 @@
  * public `renderErrorSvg`, so the compile path does not carry them.
  */
 
+import type { Diagnostic } from "./diagnostics.js";
 import { CATALOG_FIXES } from "./error-catalog-fixes.js";
 
 /** The catalogued fix for `code` among the codes `compile()` raises, or `undefined` when it has none. */
 export function catalogFix(code: string | undefined): string | undefined {
   // An own key only, as `ERROR_CATALOG[code]?.fix` was: an inherited name (`constructor`) has no fix.
   return code && Object.hasOwn(CATALOG_FIXES, code) ? CATALOG_FIXES[code] : undefined;
+}
+
+/**
+ * The remedy shown for `d`, wherever it is shown (`fix` in the JSON, the CLI's `= fix:` line, both
+ * error cards): its code's fix in `fixOf`, the table that place reads (this module's for the card
+ * `compile()` draws, `anyCatalogFix` for the JSON and the public `renderErrorSvg`), except that a
+ * diagnostic which names a {@link Diagnostic.cause} says to fix that root first, by its code (RM9.4). The
+ * catalogue is unchanged.
+ */
+export function diagnosticFix(
+  d: Pick<Diagnostic, "code" | "cause">,
+  fixOf: (code: string | undefined) => string | undefined,
+): string | undefined {
+  // The root's code, as the hint says it: a card or a prompt that prints no `cause` still names it.
+  return d.cause ? `Fix the \`${d.cause.code}\` this follows from first.` : fixOf(d.code);
 }
