@@ -2,7 +2,7 @@
 
 ArchLang is a text language for floor plans: `.arch` source compiles to SVG, DXF or PDF. Its MCP
 server gives an agent the tools `compile`, `describe`, `lint`, `validate`, `score`, `repair`, `fix`,
-`finish`, `suggest`, `complete` and `link`. There are two servers with the same tools; pick one.
+`finish`, `suggest`, `complete`, `explain` and `link`. There are two servers with the same tools; pick one.
 
 | Server | Transport | Needs |
 | --- | --- | --- |
@@ -70,7 +70,7 @@ OpenClaw: the ArchLang skill is on ClawHub (<https://clawhub.ai/chanmeng666/skil
 ## Verify
 
 Ask the host to list the server's tools, or call `tools/list` yourself. The list holds `compile`,
-`describe`, `lint`, `validate`, `score`, `repair`, `fix`, `finish`, `suggest`, `complete` and
+`describe`, `lint`, `validate`, `score`, `repair`, `fix`, `finish`, `suggest`, `complete`, `explain` and
 `link`; the hosted server adds `read_me`.
 
 ```bash

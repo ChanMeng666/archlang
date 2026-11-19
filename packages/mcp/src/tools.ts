@@ -17,6 +17,7 @@ import {
   describe,
   diagnosticToJson,
   type Diagnostic,
+  ERROR_CATALOG,
   feedbackForResult,
   finish,
   type FixSuggestion,
@@ -840,6 +841,22 @@ export function registerTools(server: McpServer, opts: ToolOptions): void {
       },
     },
     hashingSource(async ({ source, at }) => json({ ok: true, items: completion(source, at) })),
+  );
+
+  server.registerTool(
+    "explain",
+    {
+      title: "Explain a diagnostic code",
+      annotations: TOOL_ANNOTATIONS,
+      description:
+        "Look up an E_/W_ diagnostic code in the catalogue: what it means, why it is raised and how to resolve it, with an example that raises it and, for most codes, `fixed`, the same example corrected. Returns { ok:true, code, entry: { code, severity, message, cause, fix, example, fixed? } }, the `explain --json` of the CLI; an unknown code returns { ok:false, code }. The code is matched case-insensitively.",
+      inputSchema: { code: z.string().describe("A diagnostic code, e.g. E_ROOM_SIZE or W_DOOR_CLEARANCE.") },
+    },
+    async ({ code }) => {
+      const upper = code.toUpperCase();
+      const entry = Object.hasOwn(ERROR_CATALOG, upper) ? ERROR_CATALOG[upper] : undefined;
+      return json(entry ? { ok: true, code: upper, entry } : { ok: false, code: upper });
+    },
   );
 
   server.registerTool(

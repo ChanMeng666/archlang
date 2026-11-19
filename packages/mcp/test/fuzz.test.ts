@@ -24,7 +24,7 @@ import { describe, expect, it } from "vitest";
 import { runs } from "../../../test/setup/fast-check.js";
 import { call, connect, TINY } from "./helpers.js";
 
-/** Bounded so the whole file stays well under ~30s: 11 tools × NUM_RUNS calls. */
+/** Bounded so the whole file stays well under ~30s: 12 tools × NUM_RUNS calls. */
 const NUM_RUNS = 25;
 
 /** Every tool the server registers, with the param names its schema declares. */
@@ -39,6 +39,7 @@ const TOOLS: Array<{ name: string; params: string[] }> = [
   { name: "fix", params: ["source", "unsafe"] },
   { name: "suggest", params: ["source"] },
   { name: "complete", params: ["source", "at"] },
+  { name: "explain", params: ["code"] },
   { name: "link", params: ["source"] },
 ];
 

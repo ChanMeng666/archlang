@@ -60,6 +60,9 @@ export function renderErrorCodes(): string {
       e.example,
       "```",
       "",
+      // The corrected half of the pair (card AF5), `arch static` for the same reason: most are
+      // fragments too, run by test/error-catalog-examples.test.ts wrapped in the smallest plan.
+      ...(e.fixed === undefined ? [] : ["**Fixed.**", "", "```arch static", e.fixed, "```", ""]),
     );
   }
   return out.join("\n").replace(/\n+$/, "\n");

@@ -86,8 +86,8 @@ const FRAGMENT =
 /**
  * Every code whose example does not reproduce it, with why.
  *
- * 50 of 155, so **105 catalog examples are now executed and held to their own code**. That
- * ratio is the honest state of a field documented as illustrative, not a to-do list: adding a
+ * 67 of 272 when last counted (card AF5; the cap in the last test below is the live bound), so
+ * **205 catalog examples are executed and held to their own code**. That ratio is the honest state of a field documented as illustrative, not a to-do list: adding a
  * building to each fragment would make the catalog's snippets longer than the prose they
  * illustrate, which is the opposite of what `arch explain` is for.
  */
@@ -264,5 +264,81 @@ suite("error catalog — every example that can raise its code does", () => {
     // code, `validateIntent()` raises it on the intent channel, from the contract alone; raised
     // in test/intent-infeasible.test.ts.
     expect(NOT_REPRODUCED.size).toBeLessThanOrEqual(67);
+  });
+});
+
+/**
+ * Executed codes whose entry has no `fixed`, with why (card AF5). Every other executed example is
+ * paired with its correction; a code excused from running above has no `fixed` at all, since a
+ * snippet this file cannot run raising the code proves nothing by running clean of it.
+ */
+const NO_FIXED: ReadonlyMap<string, string> = new Map([
+  [
+    "E_IMPORT_NOT_FOUND",
+    "the fix is a module that exists, and a bare snippet has no World to serve one (the IMPORT excuse above); every import compiled here is not found",
+  ],
+]);
+
+/** The error-severity diagnostics `compile()` returns for a snippet wrapped as {@link codesRaisedBy} wraps it. */
+function errorsRaisedBy(snippet: string): string[] {
+  const src = /^\s*plan\b/.test(snippet) ? snippet : wrap(snippet);
+  return compile(src, { noCache: true })
+    .diagnostics.filter((d) => d.severity === "error")
+    .map((d) => `${d.code ?? "<uncoded>"}: ${d.message}`);
+}
+
+/** What is wrong with `fixed` as the correction of `code`'s example, or nothing. */
+function fixedProblems(code: string, fixed: string): string[] {
+  const entry = ERROR_CATALOG[code]!;
+  const raised = codesRaisedBy(fixed);
+  const problems: string[] = [];
+  if (raised.includes(code)) problems.push(`still raises ${code}`);
+  for (const e of errorsRaisedBy(fixed)) problems.push(`raises the error ${e}`);
+  // A warning's correction may not trade one warning for another: whatever else it raises, the
+  // example raised too. An error's example stops at the error (`lint()` reads no plan that does not
+  // resolve), so its correction is held to compiling clean of errors and of its code.
+  if (entry.severity === "warning") {
+    const before = new Set(codesRaisedBy(entry.example));
+    for (const c of new Set(raised)) if (!before.has(c)) problems.push(`raises ${c}, which the example did not`);
+  }
+  return problems;
+}
+
+suite("error catalog — every example is paired with a fixed one (card AF5)", () => {
+  const withFixed = ERROR_CODES.filter((c) => ERROR_CATALOG[c]!.fixed !== undefined);
+
+  it("every `fixed` compiles with no error and without its code", () => {
+    const broken = withFixed.flatMap((c) => fixedProblems(c, ERROR_CATALOG[c]!.fixed!).map((p) => `${c}: fixed ${p}`));
+    expect(
+      broken,
+      "These `fixed` snippets do not correct their example: `arch explain` shows them as the way out. " +
+        "Fix the snippet, never the compiler, or drop `fixed` and add the code to NO_FIXED with the reason.",
+    ).toEqual([]);
+  });
+
+  it("only an executed example has a `fixed`, and every executed example has one or a reason", () => {
+    const excused = withFixed.filter((c) => NOT_REPRODUCED.has(c));
+    expect(excused, "A `fixed` for an example this file cannot run is unchecked: drop it.").toEqual([]);
+    const unpaired = ERROR_CODES.filter(
+      (c) => !NOT_REPRODUCED.has(c) && ERROR_CATALOG[c]!.fixed === undefined && !NO_FIXED.has(c),
+    );
+    expect(unpaired, "Give these entries a `fixed` (the 5th argument of e()/w()), or a NO_FIXED reason.").toEqual([]);
+    const stale = [...NO_FIXED.keys()].filter(
+      (c) => !(c in ERROR_CATALOG) || ERROR_CATALOG[c]!.fixed !== undefined || NOT_REPRODUCED.has(c),
+    );
+    expect(stale, "NO_FIXED names a code that is gone, has a `fixed` now, or is excused above: delete it.").toEqual([]);
+    // A count, not a target, as the cap above: the pairs only grow.
+    expect(withFixed.length).toBeGreaterThanOrEqual(204);
+  });
+
+  it("is not vacuous: a `fixed` that is the example, or that trades the warning for another, is caught", () => {
+    expect(fixedProblems("E_HEIGHT_RANGE", ERROR_CATALOG.E_HEIGHT_RANGE!.example)).toContain(
+      "still raises E_HEIGHT_RANGE",
+    );
+    // A 1 mm room is no longer 1 m², but it is a length in metres now.
+    expect(fixedProblems("W_ROOM_TOO_SMALL", 'room at (0,0) size 1x1 label "Nook"')).toContain(
+      "raises W_LENGTH_IN_METRES, which the example did not",
+    );
+    expect(fixedProblems("E_ROOM_SIZE", "room at (0,0) size 0x4000\nlet x = 1 / 0").length).toBeGreaterThan(0);
   });
 });
