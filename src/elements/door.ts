@@ -660,8 +660,14 @@ export const door: ElementDef = {
    * far jamb, minor-arc orientation) is computed **once**, by `doorSwing` — every backend
    * (SVG, DXF, PDF) serializes the same `arc` primitive rather than re-deriving it.
    */
-  /** At most 5 primitives (the drawing budget, `MAX_DRAW_UNITS`): the opening cover, then a leaf slab and its swing arc (two of each for a `double` door), or at most four panel strokes for a sliding, barn, bifold, pocket, garage or glazed sliding door. */
-  drawCost: () => 5,
+  /**
+   * At most 5 primitives (the drawing budget, `MAX_DRAW_UNITS`): the opening cover, then a leaf slab
+   * and its swing arc (two of each for a `double` door), or at most four panel strokes for a
+   * sliding, barn, bifold, pocket, garage or glazed sliding door. A door that names no kind has one
+   * leaf at most (`doorLeaves`), so it is charged its 3 (card AL3b: the bound stays within four times
+   * what the corpus draws, the room's leader charged).
+   */
+  drawCost: (resolved) => ((resolved as RDoor).doorKind === undefined ? 3 : 5),
 
   render(resolved, ctx: RenderCtx): SceneNode[] {
     const dr = resolved as RDoor;

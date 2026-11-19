@@ -82,30 +82,38 @@
  *
  * A label this pass has redrawn and that still stands, by the rule's own test at no clearance, over a
  * symbol, a wall, a door's swing or a piece's label, or off its floor, is placed once more, and may
- * leave its floor ({@link LEADER_REACH}). The places are a square lattice about the room's anchor, its
- * pitch the drawing's room-name size, ranked by a whole-number key and never by a measured distance:
- * `i² + j²`, then `max(|i|, |j|)`, then a host of `uses circulation` before any other, then `j`, then
- * `i`. A place is on the floor of a room of this storey, the room's own first by rank (no leader
- * then: a finer lattice than the search above), and never outside the building, where a label would
- * grow the page and so `describe().sheet`. The label must stand on that floor and clear of every
- * symbol, wall, swing, label, tag, figure and piece's label, read as the search above reads them,
- * and each of its texts, at the width it prints ({@link labelBox}), clear of every other text the
- * drawing holds, boxed the same way, and of every leader drawn before it; the
- * heights are tried largest first, the one-line name then its wrapped forms, and the first place that
- * keeps the walls' clearance with a clean leader wins. A label led off its floor is joined to its room
- * by one straight line from the edge of its box, ending in a dot on the room's own floor: on the first
- * place of the same lattice, ranked by the same key, whose dot is clear of every symbol, label and
- * wall, or the room's anchor when none is. The line never crosses a third room's floor, a text or
- * another leader; one that crosses a door's swing or a symbol ranks below one that crosses neither.
- * Pinned labels, labels that fit and labels with no such place keep the form and place given above,
- * and the rule reports what is left. What was led is kept beside the Scene (`drawnLeaders`,
- * `src/scene-build.ts`) for `W_ANNOTATION_OVERLAP`, which judges a led label on the floor it stands on.
+ * leave its floor ({@link LEADER_REACH}). Its own marks are retired first (where the pass put it, and
+ * where the step off a piece's label moved it), so its old place blocks neither its dot nor another
+ * label. The places are a square lattice about the room's anchor, its pitch the drawing's room-name
+ * size, every floor's places ranked together by a whole-number key and never by a measured distance:
+ * `i² + j²`, then `max(|i|, |j|)`, then a host of `uses circulation` before any other (so it wins
+ * only among places at the same two distances), then `j`, then `i`. A place stands on the floor of a
+ * room of this storey, never outside the building, where a label would grow the page and so
+ * `describe().sheet`; where two floors hold it, the smaller one (a room drawn inside another), then
+ * the anchors' y and x, never the order of the source. A place on the room's own floor draws no
+ * leader. The label must stand on that floor and clear of every symbol, wall, swing, label, tag,
+ * figure and piece's label, read as the search above reads them, and each of its texts, at the width
+ * it prints ({@link labelBox}), clear of every other text the drawing holds, boxed the same way, and
+ * of every leader drawn before it. The heights are tried largest first, at each the one-line name and
+ * then its wrapped forms, and at each form the places in their rank: the first place that keeps the
+ * walls' clearance, with no leader or one that crosses no swing or symbol, stops the search;
+ * failing one, the first place found at the best rank of clearance wins. So a smaller size is tried
+ * only once no place at a larger one stops the search, and a place on the room's own floor wins only
+ * by coming first in that order. A label led off its floor is joined to its room by one straight line
+ * from the edge of its box, ending in a dot on the room's own floor: on the first place of the same
+ * lattice, ranked by the same key, whose dot is clear of every symbol, label and wall, or the room's
+ * anchor when none is. The line never crosses a third room's floor, a text, another leader or any
+ * wall but one between the two floors, and off the two floors it runs only inside such a wall; one
+ * that crosses a door's swing or a symbol ranks below one that crosses neither. Pinned labels,
+ * labels that fit and labels with no such place keep the form and place given above, and the rule
+ * reports what is left. What was led is kept beside the Scene (`drawnLeaders`, `src/scene-build.ts`)
+ * for `W_ANNOTATION_OVERLAP`, which judges a led label on the floor it stands on.
  *
  * The step counts on a count of its own, {@link leaderWork}, shared out by storey as the fit's is, so
  * the fit's count and the thickness figures' share of it are as they were; and no label may spend more
  * than {@link LEADER_LABEL_WORK} of it. A label that reaches its own cap keeps its place; past the
- * step's count the step stops, and every label not yet placed keeps its place. Both are counts, the
- * same on every machine.
+ * step's count the step stops, and every label not yet placed keeps its place, and is reported as any
+ * label the step could not place is. Both are counts, the same on every machine.
  *
  * ### Bounds
  *
@@ -121,7 +129,14 @@
 import type { Point } from "./ast.js";
 import { doorLeaves, type DoorSwing } from "./geometry.js";
 import { GridIndex, type GridBox } from "./geometry/grid-index.js";
-import { clippedArea, pointInPolygon, polygonBounds, rectAreaOutside, rectRing } from "./geometry/polygon.js";
+import {
+  clippedArea,
+  pointInPolygon,
+  polygonArea,
+  polygonBounds,
+  rectAreaOutside,
+  rectRing,
+} from "./geometry/polygon.js";
 import type { BBox } from "./geometry/rect.js";
 import type { CompileWork } from "./compile-work.js";
 import type { RDoor, ResolvedElement, ResolvedPlan, RFurniture, RRoom } from "./ir.js";
@@ -698,10 +713,13 @@ export function fitLabels(
       nodes[misfit.areaAt] = { ...areaNode, prim: chosen.area };
     }
     // Where it landed, even if that is where it stood, is now a place the next label must leave.
+    // Kept in `marks` too, so the leader step can retire it when it moves this label (card AL3b);
+    // nothing here reads `marks` again, only the grid.
     const own: Mark[] = [];
     for (const prim of chosen ? [chosen.name, chosen.area] : [name, area]) {
       const box = primBBox(prim)!;
       const m: Mark = { kind: "text", box, shapes: [], owner: gi, stale: false, seen: 0 };
+      marks.push(m);
       grid.insert(boxOf(box), m);
       own.push(m);
     }
@@ -785,7 +803,9 @@ export function fitLabels(
     for (const m of own) m.stale = true;
     for (const prim of [name, area]) {
       const box = primBBox(prim)!;
-      grid.insert(boxOf(box), { kind: "text", box, shapes: [], owner: gi, stale: false, seen: 0 });
+      const m: Mark = { kind: "text", box, shapes: [], owner: gi, stale: false, seen: 0 };
+      marks.push(m);
+      grid.insert(boxOf(box), m);
     }
   }
   return leaderStep();
@@ -815,16 +835,20 @@ export function fitLabels(
       ring: readonly Point[];
       /** The ring's extent: a text that stands off it stands off the ring, without a clip. */
       box: BBox;
+      /** The floor's area to a whole mm², for {@link hostOrder}. */
+      area: number;
       circulation: boolean;
     }
     const hosts: Host[] = [];
     for (let gi = 0; gi < groups.length; gi++) {
       const g = groups[gi]!;
       if (!g.wrap) continue;
+      work += g.ring.length;
       hosts.push({
         gi,
         ring: g.ring,
         box: polygonBounds(g.ring),
+        area: Math.round(polygonArea(g.ring)),
         circulation: roomOf.get(g.from)?.uses?.includes("circulation") === true,
       });
     }
@@ -834,13 +858,31 @@ export function fitLabels(
     /** More of `t` than the trigger stands outside the host's extent, so off its floor. */
     const offExtent = (t: TextBoxes, host: Host): boolean =>
       t.ink.w * t.ink.h - overlapArea(t.ink, host.box) > COLLIDE_MIN * t.ink.w * t.ink.h;
-    /** The room whose floor holds `p`, or null; charged by the vertices read. */
+    /** Two floors that both hold a point, ordered by the plan's geometry, never the source's: the
+     *  smaller floor first (a room drawn inside another is the one the point stands in), then the
+     *  label anchor's y and x, then the ring's vertices. Order-free up to rooms identical in all four. */
+    const hostOrder = (u: Host, v: Host): number => {
+      if (u.area !== v.area) return u.area - v.area;
+      const a = groups[u.gi]!.anchor;
+      const b = groups[v.gi]!.anchor;
+      if (a.y !== b.y) return a.y - b.y;
+      if (a.x !== b.x) return a.x - b.x;
+      if (u.ring.length !== v.ring.length) return u.ring.length - v.ring.length;
+      for (let k = 0; k < u.ring.length; k++) {
+        const p = u.ring[k]!;
+        const q = v.ring[k]!;
+        if (p.y !== q.y) return p.y - q.y;
+        if (p.x !== q.x) return p.x - q.x;
+      }
+      return 0;
+    };
+    /** The room whose floor holds `p` ({@link hostOrder} among several), or null; charged by the vertices read. */
     const hostAt = (p: Point): Host | null => {
       let found: Host | null = null;
       hostGrid.forEach({ minX: p.x, minY: p.y, maxX: p.x, maxY: p.y }, (h) => {
-        if (found) return;
+        if (h === found) return;
         work += h.ring.length;
-        if (pointInPolygon(p.x, p.y, h.ring)) found = h;
+        if (pointInPolygon(p.x, p.y, h.ring) && (found === null || hostOrder(h, found) < 0)) found = h;
       });
       return found;
     };
@@ -990,6 +1032,12 @@ export function fitLabels(
             }
           } else if (m.kind === "text" || m.kind === "wall") clear = false;
         });
+        // And every text as it prints, but the label's own (it is leaving).
+        if (clear)
+          textGrid.forEach(boxOf(disc), (d) => {
+            work++;
+            if (clear && !d.stale && d.owner !== gi && overlapArea(disc, d.box) > 0) clear = false;
+          });
         if (clear) {
           dot = p;
           break;
@@ -1098,7 +1146,8 @@ export function fitLabels(
     }
 
     /** The line from `a` to `b` crosses no text but the label's own, no piece's label, no floor but
-     *  the label's own room's and its host's, and no leader drawn before it. */
+     *  the label's own room's and its host's, no leader drawn before it and no wall but one between
+     *  those two floors; off the two floors it runs only inside such a wall. */
     function leaderClear(a: Point, b: Point, own: number, host: number): boolean {
       const box = {
         minX: Math.min(a.x, b.x),
@@ -1129,7 +1178,32 @@ export function fitLabels(
         if (segmentEntersRing(a, b, h.ring)) ok = false;
       });
       for (const l of drawnLines) if (ok && segmentsCross(a, b, l.a, l.b)) ok = false;
-      return ok;
+      if (!ok) return false;
+      // The walls it crosses: only those between the two floors, and off the floors it runs only
+      // inside one of those (ADR 0035 §2: never out of the building, never through a third wall). A
+      // wall band is between them when it runs along each (grown by a millimetre, so rooms drawn to a
+      // wall's faces count) for more than its thickness: a wall that meets one of them only at a
+      // corner is that room's own, and the ground beyond the corner is outside.
+      const ownRing = groups[own]!.ring;
+      const hostRing = groups[host]!.ring;
+      const between: BBox[] = [];
+      grid.forEach(box, (m) => {
+        work++;
+        if (!ok || m.kind !== "wall" || !segmentMeetsRect(a, b, m.box)) return;
+        const band = rectRing(grown(m.box, 1));
+        const t = Math.min(m.box.w, m.box.h);
+        work += ownRing.length + hostRing.length;
+        if (clippedArea(band, ownRing) > t * t && clippedArea(band, hostRing) > t * t) between.push(m.box);
+        else ok = false;
+      });
+      if (!ok) return false;
+      work += 2 * (ownRing.length + hostRing.length);
+      for (const p of segmentPieces(a, b, [ownRing, hostRing])) {
+        work++;
+        if (pointInPolygon(p.x, p.y, ownRing) || pointInPolygon(p.x, p.y, hostRing)) continue;
+        if (!between.some((w) => p.x >= w.x && p.x <= w.x + w.w && p.y >= w.y && p.y <= w.y + w.h)) return false;
+      }
+      return true;
     }
 
     /** The line from `a` to `b` crosses a door's swing or a symbol. */
@@ -1229,6 +1303,37 @@ const turn = (a: Point, b: Point, c: Point): number => (b.x - a.x) * (c.y - a.y)
 /** The segments `a`–`b` and `c`–`d` cross at a point inside both. */
 function segmentsCross(a: Point, b: Point, c: Point, d: Point): boolean {
   return turn(a, b, c) * turn(a, b, d) < 0 && turn(c, d, a) * turn(c, d, b) < 0;
+}
+
+/**
+ * The segment `a`–`b` cut where it meets an edge of any of `rings`: the middle of each piece, in
+ * order from `a`. A piece's middle is on one ring or off all of them, so a test of each says where
+ * the whole segment runs.
+ */
+function segmentPieces(a: Point, b: Point, rings: readonly (readonly Point[])[]): Point[] {
+  const dx = b.x - a.x;
+  const dy = b.y - a.y;
+  const ts = [0, 1];
+  for (const ring of rings)
+    for (let i = 0; i < ring.length; i++) {
+      const c = ring[i]!;
+      const d = ring[(i + 1) % ring.length]!;
+      const ex = d.x - c.x;
+      const ey = d.y - c.y;
+      const den = dx * ey - dy * ex;
+      if (den === 0) continue;
+      const t = ((c.x - a.x) * ey - (c.y - a.y) * ex) / den;
+      const u = ((c.x - a.x) * dy - (c.y - a.y) * dx) / den;
+      if (t > 0 && t < 1 && u >= 0 && u <= 1) ts.push(t);
+    }
+  ts.sort((p, q) => p - q);
+  const out: Point[] = [];
+  for (let k = 1; k < ts.length; k++) {
+    if (!(ts[k]! > ts[k - 1]!)) continue;
+    const m = (ts[k - 1]! + ts[k]!) / 2;
+    out.push({ x: a.x + dx * m, y: a.y + dy * m });
+  }
+  return out;
 }
 
 /** The segment from `a` to `b` crosses an edge of `ring`, or one of its quarter points is inside it. */

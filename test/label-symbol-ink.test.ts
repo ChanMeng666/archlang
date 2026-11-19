@@ -180,7 +180,14 @@ describe("the width a room's text is read at against a symbol", () => {
 
 describe("over the corpus", () => {
   it("every room text over a symbol at the wider width is reported as over that symbol", () => {
-    const files = [...corpusFiles(), ...walkFiles("test/plans").map((p) => p.replace(/\\/g, "/"))];
+    // The defect corpus too (card AL3b): the leader step clears most of the corpus's labels over a
+    // symbol, and its annotation-collision plans keep theirs (pinned, or with no clear place), so the
+    // count below still reads more than ten pairs: 11 when it was set (8 in the corpus and test/plans).
+    const files = [
+      ...corpusFiles(),
+      ...walkFiles("test/plans").map((p) => p.replace(/\\/g, "/")),
+      ...walkFiles("test/defect-corpus").map((p) => p.replace(/\\/g, "/")),
+    ];
     let pairs = 0;
     for (const file of files) {
       const src = readFileSync(file, "utf8");
@@ -199,6 +206,6 @@ describe("over the corpus", () => {
         expect(reported.has(`${o.room}|${o.symbol}`), `${file}: "${o.value}" over ${o.symbol}`).toBe(true);
       }
     }
-    expect(pairs).toBeGreaterThan(5);
+    expect(pairs).toBeGreaterThan(10);
   }, 60_000);
 });
