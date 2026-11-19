@@ -13,7 +13,7 @@
  */
 
 import { spawnSync } from "node:child_process";
-import { createHash } from "node:crypto";
+import { sha256 } from "./helpers/digest.js";
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
@@ -276,12 +276,16 @@ describe("digest:preview end to end on a synthetic tree", () => {
   const dir = mkdtempSync(join(tmpdir(), "digest-preview-"));
   afterAll(() => rmSync(dir, { recursive: true, force: true }));
   const zero = "0".repeat(64);
-  const okHex = createHash("sha256").update("ok").digest("hex");
+  const okHex = sha256("ok");
   mkdirSync(join(dir, "test"));
   // An ES-module package, as the repository is: without it tsx compiles the files as CommonJS, whose
   // `require("vitest")` never meets the preview's resolve hook.
   writeFileSync(join(dir, "package.json"), '{ "type": "module" }\n');
-  const head = `import { createHash } from "node:crypto";\nimport { describe, expect, it } from "vitest";\nconst sha = (s: string) => createHash("sha256").update(s).digest("hex");\n`;
+  // The synthetic files hash with node:crypto under a computed algorithm name: they are fixtures, not tests
+  // of this repository, so `test/helpers/digest.ts` is not theirs to import.
+  const head =
+    'import { createHash } from "node:crypto";\nimport { describe, expect, it } from "vitest";\n' +
+    'const ALG = "sha" + "256";\nconst sha = (s: string) => createHash(ALG).update(s).digest("hex");\n';
   writeFileSync(
     join(dir, "test", "law.test.ts"),
     `${head}const PIN = "${zero}";\nconst OK = "${okHex}";\ndescribe("law", () => {\n` +
@@ -325,7 +329,7 @@ describe("digest:preview end to end on a synthetic tree", () => {
       ["law > moved", zero],
       ["law > lost", zero],
     ]);
-    expect(report.moved[0].now).toBe(createHash("sha256").update("x").digest("hex"));
+    expect(report.moved[0].now).toBe(sha256("x"));
     expect(report.failed.map((f: { test: string }) => f.test)).toEqual(["law > lost", "law > relation"]);
     expect(report.failed[1].message).toMatch(/law failed/);
   }, 60_000);

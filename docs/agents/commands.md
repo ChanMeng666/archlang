@@ -87,8 +87,8 @@
   pinned hex, new hex) and exits 1 on one, or on any other failure (two measured digests that differ
   are labelled a failed law); zero work (an `--only` matching nothing, a file with no test, an async
   `describe` body, a file it cannot load) exits 2. Not covered: laws pinned by a vitest snapshot, which
-  it names, and tests outside `test/`. Measured on this laptop: 8.7 minutes in one process (one run), 4.6–5.9
-  with `--jobs 2` (six runs); `--jobs <n>` splits the files by recorded seconds, `--only <part>` narrows them,
+  it names, and tests outside `test/`. Measured on this laptop: 8.7 minutes in one process (one run), 4.6–6.0
+  with `--jobs 2` (eight runs); `--jobs <n>` splits the files by recorded seconds, `--only <part>` narrows them,
   `--list` prints them. `check:quick` runs it only with `--digests`; without it, a `src/` change prints
   the line naming it.
 - `npm run digest:engines` (ADVISORY, always exits 0, last line `status=` clean, diverged, incomplete or

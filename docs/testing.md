@@ -160,8 +160,8 @@ table literal. Record the measured tree and the patch in the baseline's header.
   64-hex literal with `vitest` resolved to a stand-in, so the digest bodies, inline tables and pins are the
   tests' own, and lists each moved row with its pinned and new hex; a table loop reports every row, not the
   first. It does not cover snapshot-pinned laws (`fixture-byte-identity`, `snapshot`, `iso-snapshot`, …;
-  it names them) or tests outside `test/`. It took 8.7 minutes in one process (one run) and 4.6–5.9 with
-  `--jobs 2` (six runs) on this laptop; `check:quick -- --digests` runs it last. It is a preview of CI, not a "before" side: a listed
+  it names them) or tests outside `test/`. It took 8.7 minutes in one process (one run) and 4.6–6.0 with
+  `--jobs 2` (eight runs) on this laptop; `check:quick -- --digests` runs it last. It is a preview of CI, not a "before" side: a listed
   row is still a finding to explain.
 - **Zero corpus movement is not evidence the new path ran.** Instrument it with a counter, show which
   examples reach it, then remove the counter.
