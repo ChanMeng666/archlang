@@ -44,7 +44,7 @@
 
 ## 4. 工作顺序
 
-AL6 → AL1 → AL5 → AL4 → AL3 → AL2a → AL2c。AL2b 等 AL-D1 裁定。
+AL6 → AL1 → AL5 → AL4 → AL3（拆成 AL3w → AL3a → AL3b）→ AL2a → AL2c。AL2b 等 AL-D1 裁定。AL3c–AL3h、AL4b、AL5b、AL6b 是这些卡的后续，排在 AL3b 之后。
 
 - AL6 先做：后面各卡都用它来写测试。
 - AL1、AL5 先于 AL2：这两张也会挪动尺寸和图框，放在 AL2 之前，可以避免金样改两次。
