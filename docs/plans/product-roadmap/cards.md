@@ -1145,7 +1145,7 @@ Playground：Chromium `--shard=1/2`、`2/2` 两个 job，Firefox 与 WebKit 的 
 
 选项：每次运行的 job 更少（合并很小的 job）；Windows 分 7 片（峰值 40）；把仅 `main` 的一条腿移出列车（削弱门禁：需所有者裁定）。触发：列车运行上 job 排队时间的中位数超过 1 分钟。
 
-### TR6 · 复测（2026-11-15 加，取代 TP5） — `todo` · 0.5 日 · sonnet · 依赖 FT1–FT3 合并后又过了 7 天的合并
+### TR6 · 复测（2026-11-15 加，取代 TP5） — `done`（2026-11-19，结果在 `../ci-throughput-research.md` §13；数据窗口不到 7 天但有 120 个合并；成员数、列车红与 `check:quick` 墙钟未量） · 0.5 日 · sonnet · 依赖 FT1–FT3 合并后又过了 7 天的合并
 
 照 `../ci-throughput-research.md` §9 的命令重取，量：PR 运行与列车运行的中位数、开 → 合的中位数与 P90、每天几列车、每列车几个成员、`main` push 中已证明的占比、列车红了几次及原因、`main` 红率、回滚率、PR 的 CI 失败率、典型改动上 `check:quick` 的墙钟（取 TR8 的成对计时）。护栏同 §7：`main` 红率或回滚率升高，就是时间挪走了而不是省下了。写在 `../ci-throughput-research.md` §12 下面。之前的基线在 `D:\github_repository\claude-kept\2026-11-15-archlang-ci-speedup\baseline-measurements\` 与 `pr-ci-failures\`（分析脚本与 TSV；原始 API 分页没有留，要用 `gh api` 重取）。
 
@@ -1174,6 +1174,22 @@ Playground：Chromium `--shard=1/2`、`2/2` 两个 job，Firefox 与 WebKit 的 
 ### TR11 · 发布与夜间机器的风险层级（2026-11-16 加，出自 #811 的评审） — `todo` · 不需所有者裁定（下一位协调者判断） · 依赖无（线下）
 
 按 TR9 的同一逻辑，有意留在 medium 的候选，因为它们是发布或夜间的机器，不是合并机器：`scripts/release-guard.sh`（发布门；它只查 10 个必需名里的 7 个，那一项归 TR2）与 `scripts/playwright-flaky.mjs`（夜间用 `--fail-on-flaky` 卡门）。判断：要不要升成 high（改 `scripts/risk-tier.mjs` 的 `RULES`、`test/risk-tier.test.ts` 与 `docs/agents/commands.md` 第 0 步，高层级 PR）。
+
+### TR12 · 推之前预看语料摘要（2026-11-19 加，出自 TR6） — `todo` · 未估 · opus · 依赖无（线下）
+
+TR6（`../ci-throughput-research.md` §13.2）：代码 PR 的真失败里最大的一类，是画图改动挪了 `check:quick` 的语料钉预算没选上的字节一致律摘要（co1、rm9.2、al1、al6、al4、al3w、al3a），每次多一整轮 CI 加修。做法待定，候选：(a) 一个不跑 vitest 的脚本，对改了 `src/` 绘图模块的改动，算出全部钉住的摘要表（含 `test/tables/*.ts` 里内联的计划）并列出挪了的行；(b) CI 里把字节一致律放进一个最先跑、最先失败的 job。不许：为了让它变绿而重钉（铁律）；把整个 vitest 放回本地门禁。验收：在 al1、al4、al3a 的改动上重放，挪了的行都列出来。
+
+### TR13 · 最后一次推之前先同步 `main`（2026-11-19 加，出自 TR6） — `todo` · 未估 · sonnet · 依赖无（线下）
+
+TR6：生成物漂移与 backlog 索引过时的红（rr24、rr9、ev7、co1、rm9.2、af3）都是 `main` 在 PR 底下挪了。做法：执行者的简报与 `docs/agents/commands.md` 写明“最后一次推之前 `git merge origin/main` 并跑 `gen:all` 里改动涉及的生成器”；或者让 `check:quick` 在分支落后 `origin/main` 时提示。另记：§13.2 量到 2026-11-17 后 30 个合并只有 2 个走列车，直接合并让部署多等约 9 分钟（`main` 红率仍为 0）；要不要回到“代码 PR 走列车”，由下一位协调者判断。
+
+### TR14 · Actions 缓存不超上限（2026-11-19 加，出自 #963 评审） — `todo` · 未估 · sonnet · 依赖无（线下）
+
+仓库缓存 10.46 GB / 10 GB，41 项；`main` 上 14 个 `codeql-overlay-*` 占 5.3 GB，挤掉 Playwright 与 apt 缓存（夜间的 `playwright-all` 已经被重建过一次）。做法：定时 job 用 `gh cache delete` 只留最新 1–2 个 overlay，或关掉 CodeQL 的 overlay 缓存。验收：一周后缓存总量低于 8 GB，`apt-debs-*` 四组都还在。
+
+### TR15 · 分片平衡的残余（2026-11-19 加，出自 #965 第二轮评审） — `todo` · 未估 · sonnet · 依赖无（线下）
+
+(SF1) `test/gate-select.test.ts` 的 ×1.3 钉只取 {1, 1.3} 两点，而 dataset 与 docs-fences 在 ×1.24–1.27 处不单调；五棵树的期望列表漏了 dataset；中位数刷新后 ×1.3 那行可能变红。(SF2) 低于 1 s 的免费扫描器在 `TREE_MAX_FILES=30` 的上限下能把 ≥1 s 的专门扫描器挤出去（五棵树已有 30 个候选）。(N1) 改 `examples/` 时漏选 `no-duplicate-helpers`，下次刷新表格前一直如此。(N2) 只改测试也会跑 `new-families-byte-identity`（19.7 s）。(N3) `scripts/gen-test-durations.mjs` 对 `--median` 只给一个运行、给父目录、`--drop` 用反斜杠、`-o` 与输入同名、缺一片，都不报错。(N4) 夜间的耗时上传没有 `continue-on-error`，失败会跳过漂移检查。(N5) 表头写 729 个文件，实为 684。(N6) `gate-select.test.ts` 在 describe 时做的工作（16.4 s，对比 8.5 s）。
 
 ---
 
