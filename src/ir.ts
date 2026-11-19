@@ -33,7 +33,7 @@ import { statementReadIds } from "./analyze/depends.js";
 import { numberAxes } from "./axes.js";
 import type { Frame } from "./frame.js";
 import { tryTransformElement } from "./frame.js";
-import type { Diagnostic, Span } from "./diagnostics.js";
+import { causeToDomain, type Diagnostic, rootsFirst, type Span } from "./diagnostics.js";
 import type { Env, Expr, Value } from "./expr.js";
 import { fmt0, fmt3, MODEL_RANGE_MM } from "./num-format.js";
 import {
@@ -120,6 +120,7 @@ import {
   farthest,
   outOfRange,
   checkNumberDomain,
+  domainOf,
   checkDrawnSizes,
   lineWeightOutOfRange,
   checkPlanDrawable,
@@ -829,12 +830,14 @@ function resolveImpl(
   );
   if ("value" in run) {
     stepsSpent.set(run.value.ir, { used: run.used, exhausted: false });
-    return run.value;
+    // A root is listed before what follows from it (RM9.4); a plan with no `cause` keeps its list.
+    const sorted = rootsFirst(run.value.diagnostics);
+    return sorted === run.value.diagnostics ? run.value : { ...run.value, diagnostics: sorted };
   }
   diagnostics.push(stepLimitDiagnostic(run.signal));
   const ir = unresolvedPlan(ast, extras);
   stepsSpent.set(ir, { used: run.used, exhausted: true });
-  return { ir, diagnostics };
+  return { ir, diagnostics: rootsFirst(diagnostics) };
 }
 
 /** The one `E_STEP_LIMIT`, at the statement that crossed the budget. */
@@ -1087,6 +1090,13 @@ function resolveBody(
     activeEnv = envBefore;
   }
 
+  /** The refusals `walls from rooms` reported in the group resolving now (RM9.4,
+   *  `ResolveCtx.derivationRefused`): emptied as each group starts. */
+  let refusals: {
+    cause: NonNullable<Diagnostic["cause"]>;
+    rooms: ReadonlySet<string>;
+    overlaps?: ReadonlySet<string> | undefined;
+  }[] = [];
   const ctx: ResolveCtx = {
     grid: g,
     snap,
@@ -1113,6 +1123,21 @@ function resolveBody(
     ...(world.now ? { now: () => world.now!() } : {}),
     diag: pushDiag,
     rootDiag: evalDiag,
+    derivationRefused: (d, rooms, overlaps) => {
+      if (d.code === undefined || d.span === undefined) return;
+      const file = activeEntry?.file;
+      refusals.push({
+        cause: { code: d.code, span: d.span, ...(file !== undefined ? { file } : {}) },
+        rooms,
+        overlaps,
+      });
+    },
+    refusedDerivation: (rooms, overlap) =>
+      refusals.find((r) =>
+        overlap
+          ? r.overlaps?.has(rooms.join(" ")) || r.overlaps?.has(`${rooms[1]} ${rooms[0]}`)
+          : rooms.some((x) => r.rooms.has(x)),
+      )?.cause,
     north: ast.north,
   };
   /** A wall went for the error value (AF3: an authored wall that read it, or a `walls from
@@ -1209,6 +1234,7 @@ function resolveBody(
     ctx.unplacedWall = (ref) => refusedWalls.has(ref);
     ctx.rooms = grpRooms;
     delete ctx.datums;
+    if (refusals.length > 0) refusals = [];
     // The group's OWN elements resolved so far, in source order (never a descendant's).
     ctx.group = () => {
       chargeSteps(grp.entries.length + 1);
@@ -1765,13 +1791,20 @@ function resolveBody(
       else if (poisoned.has(e.resolved)) poisonedEntries.add(e);
     }
     let kept = 0;
+    const gone: Diagnostic[] = [];
     for (const d of diagnostics) {
       const owner = ownerOf.get(d);
       if (owner === undefined || (!droppedEntries.has(owner) && (!poisonedEntries.has(owner) || rootCauses.has(d)))) {
         diagnostics[kept++] = d;
-      }
+      } else gone.push(d);
     }
     diagnostics.length = kept;
+    // A root that went with its statement (RM9.4): what lacks that statement's walls follows from its range error.
+    if (gone.length > 0)
+      causeToDomain(diagnostics, gone, (r) => {
+        const el = ownerOf.get(r)?.resolved;
+        return el && domainOf.get(el);
+      });
     for (const el of poisoned) outside.add(el);
     const keptWalls = walls.filter((w) => !outside.has(w));
     walls.length = 0;
