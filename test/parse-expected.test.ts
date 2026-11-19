@@ -31,11 +31,14 @@ const expectedAt = (src: string): string[] | undefined => parseError(src).expect
 /** The words a statement may start with, plan level: the fixed ones, then the registry's own. */
 const reserved = [...BUILTIN_REGISTRY.byKeyword.values()].filter((d) => !d.contextual).map((d) => d.keyword);
 
+/** A class row names a kind of token in words (`<number>`); a typed row is punctuation (`<=`). */
+const isClass = (text: string): boolean => /[A-Za-z]/.test(text);
+
 suite("TOKEN_TEXT is the lexer's", () => {
   it("every typed row lexes back to one token of its own type; every other row is a `<class>`", () => {
     for (const [type, text] of Object.entries(TOKEN_TEXT)) {
-      if (text.startsWith("<")) {
-        expect(text.endsWith(">"), type).toBe(true);
+      if (isClass(text)) {
+        expect(text.startsWith("<") && text.endsWith(">"), type).toBe(true);
         continue;
       }
       const { tokens, errors } = lex(text);
@@ -49,7 +52,7 @@ suite("TOKEN_TEXT is the lexer's", () => {
 
   it("a `<class>` row names a token no word of the language can be", () => {
     for (const text of Object.values(TOKEN_TEXT))
-      if (text.startsWith("<")) expect(lex(text).tokens[0]!.type).not.toBe("ident");
+      if (isClass(text)) expect(lex(text).tokens[0]!.type).not.toBe("ident");
   });
 });
 
