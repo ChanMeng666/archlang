@@ -74,7 +74,7 @@ export const LIMITS_ENTRIES = defineEntries({
     "A `while` ran more times than the safety cap allows (usually a condition that never becomes false).",
     "Ensure the loop body updates a binding so the condition eventually fails.",
     "let i = 0\nwhile i < 1 { let y = i }   # error: i never changes",
-    "for i in 0..1 { let y = i }   # fixed: a bounded loop",
+    "let i = 0\nwhile i < 1 { i = i + 1 }   # fixed: the body updates i, so the condition fails",
   ),
   W_DIAGNOSTIC_LIMIT: w(
     "More than 500 diagnostics, all warnings; further diagnostics were not collected.",

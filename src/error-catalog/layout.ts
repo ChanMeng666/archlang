@@ -68,7 +68,7 @@ export const LAYOUT_ENTRIES = defineEntries({
     "A datum reads the room's placed rectangle, and so does an opening placed `between` two rooms. A relationally placed room that could not be placed (its own `E_LAYOUT_*` error says why) has no position, and a room of zero or negative size has no edge to read.",
     "Fix the named room's placement or size first; the datum then reads it.",
     "room id=a right-of ghost size 3000x3000\nwall interior thickness 100 { (a.left, 0) (a.left, 3000) }   # error: a could not be placed",
-    "room id=hall at (0,0) size 3000x3000\nroom id=a right-of hall size 3000x3000\nwall interior thickness 100 { (a.left, 0) (a.left, 3000) }   # fixed: a is placed",
+    "room id=ghost at (0,0) size 3000x3000\nroom id=a right-of ghost size 3000x3000\nwall interior thickness 100 { (a.left, 0) (a.left, 3000) }   # fixed: the room a names is placed",
   ),
   E_STRIP_SIZE: e(
     "Room in a `strip` is missing a size.",

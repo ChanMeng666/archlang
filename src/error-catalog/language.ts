@@ -95,7 +95,7 @@ export const LANGUAGE_ENTRIES = defineEntries({
     "`arr[i]` used an index outside `0 .. len(arr) - 1`.",
     "Clamp or check the index against `len(arr)`.",
     "let a = [1, 2]\nlet x = a[5]   # error",
-    "let a = [1, 2]\nlet x = a[1]   # fixed: within the list",
+    "let a = [1, 2]\nlet x = a[min(5, len(a) - 1)]   # fixed: clamped against len(a)",
   ),
   E_INSTANCE_NO_TRANSFORM: e(
     "A plugin element inside a `place`d component has no `transform()`.",
@@ -149,7 +149,7 @@ export const LANGUAGE_ENTRIES = defineEntries({
     "A call uses a name that is neither a built-in nor a value-function in scope.",
     "Define it with `let f(…) = …`, or fix the name.",
     "let x = frobnicate(2)   # error",
-    "let x = abs(2)   # fixed: a built-in",
+    "let frobnicate(n) = n * 2\nlet x = frobnicate(2)   # fixed: defined with let",
   ),
   E_UNKNOWN_REF: e(
     "Unknown reference.",
@@ -205,6 +205,6 @@ export const LANGUAGE_ENTRIES = defineEntries({
     'A bare word in a `set` rule is read as text, never as the value of a name, so `set door(width: W)` sets the text "W" and does nothing; so does a word the key does not read (`set door(swing: inward)`). `set door(…)` reads a word only for `hinge` and `swing`. An error at 2.0.',
     "Write the value on the element, or a word the key reads.",
     'let W = 900\nset door(width: W)   # warning: takes `W` as the text "W"; the rule does nothing',
-    "set door(width: 900)   # fixed: a number",
+    "let W = 900\nset door(width: 900)   # fixed: the value written, not the name",
   ),
 });

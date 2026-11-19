@@ -89,7 +89,7 @@ export const FURNITURE_ENTRIES = defineEntries({
     "The catalogue marks a category `symmetric` when its symbol has no front or back (a table, a stool, a rug), so a derived turn would change nothing anyone could see (ADR 0029 §3).",
     "Drop `facing` from the symmetric piece; put `facing` on the pieces that face it instead.",
     "furniture id=c chair at (0,0) size 450x450\nfurniture table at (0,900) size 800x800 facing c   # error: a table has no front",
-    "furniture id=t table at (0,0) size 800x800\nfurniture chair at (175,850) size 450x450 facing t   # fixed: the chair faces the table",
+    "furniture id=c chair at (0,0) size 450x450 facing t\nfurniture id=t table at (0,900) size 800x800   # fixed: the chair faces the table, the table faces nothing",
   ),
   E_FACING_TRANSPOSED: e(
     "Facing the target would put the piece's back on its short side.",

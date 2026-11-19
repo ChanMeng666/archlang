@@ -1192,14 +1192,14 @@ const COMMANDS: ManifestCommand[] = /* @__PURE__ */ pure(() => [
   },
   {
     name: "explain",
-    summary: "look up an error code (cause / fix / example)",
+    summary: "look up an error code (cause / fix / example, and the example fixed)",
     flags: [JSON_FLAG],
     input: "<CODE>",
     output: "catalog entry",
     examples: [
       {
         cmd: "archlang explain E_ROOM_SIZE --json",
-        note: "the catalog entry for a diagnostic code: cause, fix, example",
+        note: "the catalog entry for a diagnostic code: cause, fix, example, and `fixed`, the example corrected, where the catalogue has one",
       },
     ],
   },

@@ -98,7 +98,7 @@ export const INTENT_ENTRIES = defineEntries({
     "A `keep` names something its measure cannot read: an edge, centre, width, depth, clear span or footprint of a `polygon` or `circle` room; datums of two orientations in one `align`, `offset` or `on axis` (a vertical line and a horizontal one); a column anywhere but `on axis`, which reads it at its centre; a wall that is not one straight segment (an arc, an oblique run, or a wall of several segments without `segment <n>`); the depth of an opening; an `offset` measured from something that is not a datum; a bare room where a line is needed. The keep is refused rather than approximated (ADR 0033).",
     "Name what the measure reads: a rectangular room's `left`/`right`/`top`/`bottom`/`cx`/`cy`, `axis <label>`, a straight wall or `<wall> segment <n>`; compare widths of openings with `keep equal width`.",
     'plan "K" {\n  units mm\n  room id=a polygon (0,0) (3000,0) (0,3000)\n  keep fixed a.left at 0   # error: a polygon room has no left edge\n}',
-    'plan "K" {\n  units mm\n  room id=a at (0,0) size 3000x3000\n  keep fixed a.left at 0   # fixed: a rectangle has a left edge\n}',
+    'plan "K" {\n  units mm\n  room id=a polygon (0,0) (3000,0) (0,3000)\n  wall id=w interior thickness 100 { (0,0) (0,3000) }\n  keep fixed w at 0   # fixed: a straight wall has a line to measure\n}',
   ),
   E_KEEP_PLACEMENT: e(
     "A keep where it cannot be checked.",
@@ -133,6 +133,6 @@ export const INTENT_ENTRIES = defineEntries({
     "A `keep` (grade `hard`, the default) states an invariant the resolved plan breaks: datums that should lie on one line do not, two extents differ, an offset or a fixed position is off, a room's clear span is short, a wall is off its axis, or an element's footprint moves between storeys. The message names what the keep holds and the signed residual in mm (`+` is right of, below, wider or a margin), and the first hint the ids and the measured values. Compile channel: it fails `validate --strict` and every source-rewriting transform's never-worse law counts it, but it never fails plain `validate`, never caps taste and never reaches `lint()`. A `soft` keep that breaks is named by `validate --json`'s `next` (tier `intent`) instead, and an `advisory` one is only reported (`describe`, `validate --json`). **Why:** a keep is checked, never solved: nothing moves to satisfy it (ADR 0033).",
     "Edit the source so the keep holds (move what it names, or derive it from the rooms so it follows them), or remove the keep if the relation no longer applies. There is no machine fix: which side follows is a design decision.",
     'plan "K" {\n  units mm\n  room id=a at (0,0) size 3000x3000\n  keep fixed a.left at 100   # warning: the left edge is at 0, 100 mm left of where the keep holds it\n}',
-    'plan "K" {\n  units mm\n  room id=a at (0,0) size 3000x3000\n  keep fixed a.left at 0   # fixed: the keep holds where the edge is\n}',
+    'plan "K" {\n  units mm\n  room id=a at (100,0) size 3000x3000\n  keep fixed a.left at 100   # fixed: the room moves to where the keep holds it\n}',
   ),
 });

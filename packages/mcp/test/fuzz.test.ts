@@ -155,11 +155,16 @@ describe("malformed tool arguments", () => {
       for (const source of [huge, hugeGarbage]) {
         const result = await client.callTool({
           name,
-          // `at`/`brief` are required by their schemas — supply them so the call reaches
-          // the handler rather than stopping at zod (both shapes are still exercised).
-          arguments: { source, at: 0, brief: {} },
+          // `at`/`brief`/`code` are required by their schemas — supply them so the call
+          // reaches the handler rather than stopping at zod (both shapes are still exercised);
+          // `code` carries the same ~100KB, so `explain` meets the huge text too.
+          arguments: { source, at: 0, brief: {}, code: source },
         });
         assertWellFormed(result, `${name}(~100KB)`);
+        if (name === "explain") {
+          const text = (result as { content: Array<{ text: string }> }).content[0]!.text;
+          expect(JSON.parse(text).ok, "explain(~100KB) reached its handler").toBe(false);
+        }
       }
     }
     await assertTransportAlive(client, "huge-source");

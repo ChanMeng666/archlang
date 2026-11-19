@@ -146,7 +146,7 @@ export const OPENINGS_ENTRIES = defineEntries({
     "A door's `swing into <room>` points the leaf toward a room, but that room does not share the door's host wall (its box does not touch the wall within tolerance), so which side it means is undefined. A door whose placement was refused is not told this as well: the refusal is the report.",
     "Point `swing into` at a room the door actually opens onto, or use explicit `swing in|out`. The door falls back to its default swing.",
     "wall id=w1 partition thickness 100 { (0,0) (4000,0) }\ndoor on w1 at 50% width 800 swing into faraway   # warning: not on this wall",
-    "wall id=w1 partition thickness 100 { (0,0) (4000,0) }\ndoor on w1 at 50% width 800   # fixed: no room named that is not on this wall",
+    "wall id=w1 partition thickness 100 { (0,0) (4000,0) }\ndoor on w1 at 50% width 800 swing in   # fixed: the wall-relative swing",
   ),
   W_DOOR_OFF_WALL: w(
     "Door does not lie on any wall.",

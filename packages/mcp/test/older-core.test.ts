@@ -3,8 +3,8 @@
  * the two calls that need something newer say so as data.
  *
  * The mock is the real core minus what this shim's release added to it: no `PNG_PREVIEW_WIDTH`,
- * no `isOptionalDepError`, no `diagnosticRule`, no `diagnosticOverprint`, and a `planToJson` without
- * per-storey `pages`. The removed exports are present as `undefined`, which is what an ESM namespace
+ * no `isOptionalDepError`, no `diagnosticRule`, no `diagnosticOverprint`, a `planToJson` without
+ * per-storey `pages`, and an `ERROR_CATALOG` whose entries have no `fixed`. The removed exports are present as `undefined`, which is what an ESM namespace
  * yields for an export a module lacks (vitest would otherwise throw on reading a key its mock
  * factory did not return).
  */
@@ -43,6 +43,10 @@ vi.mock("@chanmeng666/archlang", async (importOriginal) => {
     isOptionalDepError: undefined,
     diagnosticRule: undefined,
     diagnosticOverprint: undefined,
+    // A core before card AF5: no catalogue entry has `fixed`.
+    ERROR_CATALOG: Object.fromEntries(
+      Object.entries(core.ERROR_CATALOG).map(([code, { fixed: _f, ...entry }]) => [code, entry]),
+    ),
     planToJson: (...args: Parameters<typeof core.planToJson>) => {
       const { pages: _pages, ...projection } = core.planToJson(...args);
       return projection;
@@ -88,5 +92,13 @@ describe("the shim on a core older than its release", () => {
     expect(multi).toMatchObject({ ok: false, error: JSON_PAGES_NEED_NEWER_CORE });
     expect(JSON_PAGES_NEED_NEWER_CORE).not.toMatch(/\d+\.\d+\.\d+/);
     expect((await call(client, "compile", { source: TWO_ROOMS, format: "json" })).ok).toBe(true);
+  });
+
+  it("explain still answers, with the entry the core has and no `fixed` (AF5)", async () => {
+    const out = await call(await connect(), "explain", { code: "E_ROOM_SIZE" });
+    expect(out).toMatchObject({ ok: true, code: "E_ROOM_SIZE" });
+    const entry = out.entry as Record<string, unknown>;
+    expect(typeof entry.example).toBe("string");
+    expect("fixed" in entry).toBe(false);
   });
 });

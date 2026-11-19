@@ -534,9 +534,9 @@ wall interior thickness 100 { (a.left, 0) (a.left, 3000) }   # error: a could no
 **Fixed.**
 
 ```arch static
-room id=hall at (0,0) size 3000x3000
-room id=a right-of hall size 3000x3000
-wall interior thickness 100 { (a.left, 0) (a.left, 3000) }   # fixed: a is placed
+room id=ghost at (0,0) size 3000x3000
+room id=a right-of ghost size 3000x3000
+wall interior thickness 100 { (a.left, 0) (a.left, 3000) }   # fixed: the room a names is placed
 ```
 
 ## E_DIAGNOSTIC_LIMIT
@@ -843,8 +843,8 @@ furniture table at (0,900) size 800x800 facing c   # error: a table has no front
 **Fixed.**
 
 ```arch static
-furniture id=t table at (0,0) size 800x800
-furniture chair at (175,850) size 450x450 facing t   # fixed: the chair faces the table
+furniture id=c chair at (0,0) size 450x450 facing t
+furniture id=t table at (0,900) size 800x800   # fixed: the chair faces the table, the table faces nothing
 ```
 
 ## E_FACING_TARGET
@@ -1233,7 +1233,7 @@ let x = a[5]   # error
 
 ```arch static
 let a = [1, 2]
-let x = a[1]   # fixed: within the list
+let x = a[min(5, len(a) - 1)]   # fixed: clamped against len(a)
 ```
 
 ## E_INPUT_TOO_LARGE
@@ -1519,8 +1519,9 @@ plan "K" {
 ```arch static
 plan "K" {
   units mm
-  room id=a at (0,0) size 3000x3000
-  keep fixed a.left at 0   # fixed: a rectangle has a left edge
+  room id=a polygon (0,0) (3000,0) (0,3000)
+  wall id=w interior thickness 100 { (0,0) (0,3000) }
+  keep fixed w at 0   # fixed: a straight wall has a line to measure
 }
 ```
 
@@ -2084,6 +2085,7 @@ wall partition thickness 100 between a and b   # error: the same run
 room id=a at (0,0) size 4000x3000
 room id=b at (4000,0) size 3000x3000
 walls from rooms exterior 200 partition 100   # fixed: a and b share 3000 mm
+wall partition thickness 100 between a and b   # fixed: the same run
 ```
 
 ## E_PLACE_POLY
@@ -2361,6 +2363,7 @@ wall exterior thickness 200 around [a b]   # error: the same, as one ring
 room id=a at (0,0) size 4000x3000
 room id=b at (4000,0) size 3000x3000
 walls from rooms exterior 200 partition 100   # fixed: a and b meet edge to edge
+wall exterior thickness 200 around [a b]   # fixed: the same, as one ring
 ```
 
 ## E_ROOMS_OVERLAP
@@ -2384,6 +2387,7 @@ wall partition thickness 100 between a and b   # error: the same pair
 room id=a at (0,0) size 4000x3000
 room id=b at (4000,0) size 3000x3000
 walls from rooms exterior 200 partition 100   # fixed: a and b meet edge to edge
+wall partition thickness 100 between a and b   # fixed: the same pair
 ```
 
 ## E_ROOM_ALIGN
@@ -2930,7 +2934,8 @@ let x = frobnicate(2)   # error
 **Fixed.**
 
 ```arch static
-let x = abs(2)   # fixed: a built-in
+let frobnicate(n) = n * 2
+let x = frobnicate(2)   # fixed: defined with let
 ```
 
 ## E_UNKNOWN_REF
@@ -3112,6 +3117,7 @@ room id=b at (4000,0) size 3000x3000
 room id=c at (0,3000) size 7000x2000
 room id=d at (7000,0) size 2000x5000
 walls from rooms exterior 200 partition 100 { open between a and c }   # fixed: a and c meet
+wall partition thickness 100 between b and d   # fixed: b and d meet
 ```
 
 ## E_WALL_BETWEEN_OPEN
@@ -3237,7 +3243,8 @@ while i < 1 { let y = i }   # error: i never changes
 **Fixed.**
 
 ```arch static
-for i in 0..1 { let y = i }   # fixed: a bounded loop
+let i = 0
+while i < 1 { i = i + 1 }   # fixed: the body updates i, so the condition fails
 ```
 
 ## E_WINDOW_CORNER
@@ -3360,8 +3367,8 @@ furniture bed at (1650,900) size 1500x2000   # lint: the pinned name is printed 
 ```arch static
 paper A4 landscape
 scale 1:100
-room id=bed at (0,0) size 3250x3000 label "Bedroom 4" uses bedroom
-furniture bed at (1650,900) size 1500x2000   # fixed: the name finds its own clear point
+room id=bed at (0,0) size 3250x3000 label "Bedroom 4" at (1600,450) uses bedroom
+furniture bed at (1650,900) size 1500x2000   # fixed: the pinned point moved clear of the bed
 ```
 
 ## W_AXES_DIFFER
@@ -3600,7 +3607,7 @@ dim faces (0,9000)->(5000,9000) offset 600   # warning: nothing to project onto 
 
 ```arch static
 wall exterior thickness 200 { (0,0) (5000,0) (5000,4000) (0,4000) close }
-dim faces (0,4000)->(5000,4000) offset 600   # fixed: the endpoints on a wall's centreline
+dim faces (0,2000)->(5000,2000) offset 600   # fixed: each endpoint on the centreline of a wall it runs into
 ```
 
 ## W_DIM_OVERLAP
@@ -3664,7 +3671,8 @@ paper A4 landscape
 scale 1:100
 dims auto rooms
 wall id=shell exterior thickness 200 { (0,0) (1200,0) (1200,1200) (0,1200) close }
-room id=r at (0,0) size 1200x1200 label "WC" at (600,600)   # fixed: room chains only, no thickness figure
+room id=r at (0,0) size 1200x1200 label "WC" at (600,600)
+dim (300,-100)->(300,100) offset 0   # fixed: room chains, and the thickness by hand, face to face
 ```
 
 ## W_DOORWAY_BLOCKED
@@ -3972,7 +3980,7 @@ furniture sofa at (2500,1000) size 900x2000 rotate 90   # lint: stands on the fl
 ```arch static
 room id=liv at (0,0) size 5000x4000 label "Living"
 stair id=s1 at (3000,500) size 1000x3000 dir up
-furniture sofa at (200,1000) size 900x2000   # fixed: clear of the flight
+furniture sofa at (500,1000) size 900x2000 rotate 90   # fixed: moved clear of the flight
 ```
 
 ## W_FURNITURE_ON_VOID
@@ -4312,8 +4320,8 @@ plan "K" {
 ```arch static
 plan "K" {
   units mm
-  room id=a at (0,0) size 3000x3000
-  keep fixed a.left at 0   # fixed: the keep holds where the edge is
+  room id=a at (100,0) size 3000x3000
+  keep fixed a.left at 100   # fixed: the room moves to where the keep holds it
 }
 ```
 
@@ -4455,7 +4463,8 @@ window on w1 at 12000 width 1200   # lint: on the angled wall, no chain can meas
 ```arch static
 dims auto all
 wall id=w1 exterior thickness 200 { (0,0) (6000,0) (6000,4000) (2000,6000) (0,4000) close }
-window on w1 at 3000 width 1200   # fixed: on a straight run a chain measures
+window on w1 at 12000 width 1200
+dim (4748,4626)->(3674,5163) offset 0   # fixed: a hand dim, jamb to jamb, on the angled wall
 ```
 
 ## W_OPENING_OFF_WALL
@@ -4796,17 +4805,18 @@ plan "Through a bedroom" {
 **Fixed.**
 
 ```arch static
-plan "Through a hall" {
+plan "Through a bedroom" {
   units mm
   wall exterior thickness 200 { (0,0) (9000,0) (9000,4000) (0,4000) close }
   wall id=p1 partition thickness 100 { (3000,0) (3000,4000) }
   wall id=p2 partition thickness 100 { (6000,0) (6000,4000) }
-  room at (0,0) size 3000x4000 label "Bedroom"
-  room at (3000,0) size 3000x4000 label "Hall"
+  room at (0,0) size 3000x4000 label "Hall"
+  room at (3000,0) size 3000x4000 label "Bedroom"
   room at (6000,0) size 3000x4000 label "Living"
-  door at (4500,4000) width 1000 wall exterior
+  door at (1500,4000) width 1000 wall exterior
   door at (3000,2000) width 900 wall p1
-  door at (6000,2000) width 900 wall p2   # fixed: each room is reached from the hall
+  door at (6000,2000) width 900 wall p2
+  door at (7500,4000) width 1000 wall exterior   # fixed: Living has a way in that passes no bedroom
 }
 ```
 
@@ -4877,7 +4887,8 @@ set door(width: W)   # warning: takes `W` as the text "W"; the rule does nothing
 **Fixed.**
 
 ```arch static
-set door(width: 900)   # fixed: a number
+let W = 900
+set door(width: 900)   # fixed: the value written, not the name
 ```
 
 ## W_SHAFT_FOOTPRINT_MISMATCH
@@ -5079,7 +5090,7 @@ door on w1 at 50% width 800 swing into faraway   # warning: not on this wall
 
 ```arch static
 wall id=w1 partition thickness 100 { (0,0) (4000,0) }
-door on w1 at 50% width 800   # fixed: no room named that is not on this wall
+door on w1 at 50% width 800 swing in   # fixed: the wall-relative swing
 ```
 
 ## W_TITLE_OVERFLOW

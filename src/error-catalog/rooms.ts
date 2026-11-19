@@ -34,14 +34,14 @@ export const ROOMS_ENTRIES = defineEntries({
     "`walls from rooms` draws the exterior ring on the outline of the rooms' union and a partition on every shared edge, so the rooms must form one edge-connected floor: two rooms touching only at a corner, a union pinched at a single point, or a gap between rooms (a hole, or a corridor left as 'the leftover') has no single outline to wall. A hole is legal only when `outdoor` surfaces (a courtyard, which gets an inner ring) or a `void` (no wall) of the same plan or component cover it exactly. `wall … around [<rooms>]` draws the same outline as one wall, so the same rule holds, except that it refuses every hole: one wall is one ring, and a courtyard needs `walls from rooms`. The compiler refuses and names the rooms rather than guess where the missing floor is (ADR 0028 §3, §4, ADR 0005).",
     "Write the leftover floor as a room of its own (a corridor, a lobby), move the rooms so they meet edge to edge, or cover a courtyard exactly with an `outdoor` surface (under `walls from rooms`; round a hole, type the rings' points).",
     "room id=a at (0,0) size 4000x3000\nroom id=b at (5000,0) size 3000x3000\nwalls from rooms exterior 200 partition 100   # error: a and b do not touch\nwall exterior thickness 200 around [a b]   # error: the same, as one ring",
-    "room id=a at (0,0) size 4000x3000\nroom id=b at (4000,0) size 3000x3000\nwalls from rooms exterior 200 partition 100   # fixed: a and b meet edge to edge",
+    "room id=a at (0,0) size 4000x3000\nroom id=b at (4000,0) size 3000x3000\nwalls from rooms exterior 200 partition 100   # fixed: a and b meet edge to edge\nwall exterior thickness 200 around [a b]   # fixed: the same, as one ring",
   ),
   E_ROOMS_OVERLAP: e(
     "`walls from rooms`, a `wall … between`/`wall … around`, or a door or opening `between` a polygon and a room, meets two rooms that overlap.",
     "Two rooms of the set share floor with positive area, so the edge between them is not one line and no partition (nor a `wall … between` the pair, nor one outline `around` them, nor a door on a polygon's edge) can be derived on it. A room listed twice in `around [ … ]` would overlap itself and is refused the same way, on the repeated name. The compiler refuses and names every overlapping pair rather than choose which room owns the shared floor (ADR 0028 §3, §4).",
     "Move or resize the rooms so they meet edge to edge; the shared edge becomes the partition. Name each room once.",
     "room id=a at (0,0) size 4000x3000\nroom id=b at (3000,0) size 3000x3000\nwalls from rooms exterior 200 partition 100   # error: a and b overlap by 1000 mm\nwall partition thickness 100 between a and b   # error: the same pair",
-    "room id=a at (0,0) size 4000x3000\nroom id=b at (4000,0) size 3000x3000\nwalls from rooms exterior 200 partition 100   # fixed: a and b meet edge to edge",
+    "room id=a at (0,0) size 4000x3000\nroom id=b at (4000,0) size 3000x3000\nwalls from rooms exterior 200 partition 100   # fixed: a and b meet edge to edge\nwall partition thickness 100 between a and b   # fixed: the same pair",
   ),
   E_ROOM_POLY_DEGENERATE: e(
     "Polygon room has fewer than three effective vertices.",

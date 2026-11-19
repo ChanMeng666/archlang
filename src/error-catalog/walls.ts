@@ -20,7 +20,7 @@ export const WALLS_ENTRIES = defineEntries({
     "Two rooms share a run of edge shorter than the derived partition (or the `wall … between` written on it) is thick, so the wall would be wider than it is long: almost always two edges that were meant to line up and miss by a few millimetres. The compiler refuses and names the pair and the run rather than draw a sliver of wall (ADR 0028 §3, §4).",
     "Line the two rooms' edges up so they meet at a corner, or make the shared edge at least as long as the wall is thick.",
     "room id=a at (0,0) size 4000x3000\nroom id=b at (4000,2950) size 3000x3000\nwalls from rooms exterior 200 partition 100   # error: a and b share 50 mm\nwall partition thickness 100 between a and b   # error: the same run",
-    "room id=a at (0,0) size 4000x3000\nroom id=b at (4000,0) size 3000x3000\nwalls from rooms exterior 200 partition 100   # fixed: a and b share 3000 mm",
+    "room id=a at (0,0) size 4000x3000\nroom id=b at (4000,0) size 3000x3000\nwalls from rooms exterior 200 partition 100   # fixed: a and b share 3000 mm\nwall partition thickness 100 between a and b   # fixed: the same run",
   ),
   E_ROOF_AMBIGUOUS: e(
     "`roof overhang` cannot tell which wall ring to follow.",
@@ -90,7 +90,7 @@ export const WALLS_ENTRIES = defineEntries({
     "`open between A and B` and `between A and B thickness t` act on the partition the statement derives on the edge run two rooms share, `wall … between A and B` stands on that run, and `door|opening … between A and B` stands in the wall on that run (ADR 0028 §3, §4, §5). Two rooms that do not meet along an edge (apart, or touching only at a corner), or a room named twice, have no such run, so the clause would act on nothing. The span points at the clause.",
     "Name two rooms that meet along an edge, or remove the clause (place the door `on <wall> at …` or `at (x,y)` instead).",
     "room id=a at (0,0) size 4000x3000\nroom id=b at (4000,0) size 3000x3000\nroom id=c at (0,3000) size 7000x2000\nroom id=d at (7000,0) size 2000x5000\nwalls from rooms exterior 200 partition 100 { open between a and d }   # error: a and d do not meet\nwall partition thickness 100 between a and d   # error: the same pair",
-    "room id=a at (0,0) size 4000x3000\nroom id=b at (4000,0) size 3000x3000\nroom id=c at (0,3000) size 7000x2000\nroom id=d at (7000,0) size 2000x5000\nwalls from rooms exterior 200 partition 100 { open between a and c }   # fixed: a and c meet",
+    "room id=a at (0,0) size 4000x3000\nroom id=b at (4000,0) size 3000x3000\nroom id=c at (0,3000) size 7000x2000\nroom id=d at (7000,0) size 2000x5000\nwalls from rooms exterior 200 partition 100 { open between a and c }   # fixed: a and c meet\nwall partition thickness 100 between b and d   # fixed: b and d meet",
   ),
   E_WALL_BETWEEN_OPEN: e(
     "A wall, door, window or opening is written on an edge a `walls from rooms` clause declares open.",

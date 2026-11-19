@@ -270,7 +270,8 @@ suite("error catalog — every example that can raise its code does", () => {
 /**
  * Executed codes whose entry has no `fixed`, with why (card AF5). Every other executed example is
  * paired with its correction; a code excused from running above has no `fixed` at all, since a
- * snippet this file cannot run raising the code proves nothing by running clean of it.
+ * snippet this file cannot run raising the code proves nothing by running clean of it. Capped, as
+ * NOT_REPRODUCED is: the list only shrinks.
  */
 const NO_FIXED: ReadonlyMap<string, string> = new Map([
   [
@@ -278,6 +279,24 @@ const NO_FIXED: ReadonlyMap<string, string> = new Map([
     "the fix is a module that exists, and a bare snippet has no World to serve one (the IMPORT excuse above); every import compiled here is not found",
   ],
 ]);
+const NO_FIXED_CAP = 1;
+
+/**
+ * The pairs whose fix IS a deletion: the entry's own `fix` says to delete the repeated statement or
+ * the authored wall, so the corrected snippet is the example less some of its lines. Every other
+ * `fixed` must not be a line-subset of its example, so that deleting the line that raises the code
+ * (or keeping the example and only rewriting its comment) is never a "fix". Capped: it only shrinks.
+ */
+const DELETION_IS_THE_FIX: ReadonlyMap<string, string> = new Map([
+  ["E_SITE_DUP", "fix: delete one of the blocks"],
+  ["E_WALLS_FROM_ROOMS_DUP", "fix: keep one statement per plan"],
+  ["W_DUP_ACC_METADATA", "fix: delete the extra line(s)"],
+  ["E_OPENING_HOST_AMBIGUOUS", "fix: drop the authored wall lying on the derived line"],
+]);
+const DELETION_CAP = 4;
+
+/** The most lines a correction may add to or take from its example: it edits it, it does not replace it. */
+const MAX_LINE_DELTA = 3;
 
 /** The error-severity diagnostics `compile()` returns for a snippet wrapped as {@link codesRaisedBy} wraps it. */
 function errorsRaisedBy(snippet: string): string[] {
@@ -287,19 +306,61 @@ function errorsRaisedBy(snippet: string): string[] {
     .map((d) => `${d.code ?? "<uncoded>"}: ${d.message}`);
 }
 
+/**
+ * A snippet's statements: each line with its `#` comment cut (one outside a string literal, so a
+ * `"#333"` colour stays) and its spacing collapsed, blank lines dropped. What a snippet says, apart
+ * from what its comments claim.
+ */
+function codeLines(snippet: string): string[] {
+  return snippet
+    .split("\n")
+    .map((line) => {
+      let inString = false;
+      let end = 0;
+      for (; end < line.length; end++) {
+        if (line[end] === '"') inString = !inString;
+        else if (line[end] === "#" && !inString) break;
+      }
+      return line.slice(0, end).replace(/\s+/g, " ").trim();
+    })
+    .filter((l) => l !== "");
+}
+
+/** The words (names and keywords) of a snippet's statements. */
+const codeWords = (snippet: string): string[] =>
+  codeLines(snippet)
+    .join(" ")
+    .match(/[A-Za-z_]\w*/g) ?? [];
+
 /** What is wrong with `fixed` as the correction of `code`'s example, or nothing. */
 function fixedProblems(code: string, fixed: string): string[] {
   const entry = ERROR_CATALOG[code]!;
-  const raised = codesRaisedBy(fixed);
   const problems: string[] = [];
+  // Tied to its example first: a correction is an edit of the example, so it has statements, shares
+  // a word with it, is not the example less some of its lines (unless deleting is the entry's fix),
+  // and adds or takes at most MAX_LINE_DELTA lines. So an empty or comment-only `fixed`, the
+  // example itself with a new comment, and the example with its offending line deleted all fail
+  // here, before anything is compiled.
+  const before = codeLines(entry.example);
+  const after = codeLines(fixed);
+  if (after.length === 0) problems.push("has no statement, only comments");
+  else {
+    const words = new Set(codeWords(entry.example));
+    if (!codeWords(fixed).some((w) => words.has(w))) problems.push("shares no word with its example");
+    if (after.every((l) => before.includes(l)) && !DELETION_IS_THE_FIX.has(code))
+      problems.push("is its example with lines deleted (or unchanged)");
+    if (Math.abs(after.length - before.length) > MAX_LINE_DELTA)
+      problems.push(`has ${after.length} statement lines to its example's ${before.length}`);
+  }
+  const raised = codesRaisedBy(fixed);
   if (raised.includes(code)) problems.push(`still raises ${code}`);
   for (const e of errorsRaisedBy(fixed)) problems.push(`raises the error ${e}`);
   // A warning's correction may not trade one warning for another: whatever else it raises, the
   // example raised too. An error's example stops at the error (`lint()` reads no plan that does not
   // resolve), so its correction is held to compiling clean of errors and of its code.
   if (entry.severity === "warning") {
-    const before = new Set(codesRaisedBy(entry.example));
-    for (const c of new Set(raised)) if (!before.has(c)) problems.push(`raises ${c}, which the example did not`);
+    const was = new Set(codesRaisedBy(entry.example));
+    for (const c of new Set(raised)) if (!was.has(c)) problems.push(`raises ${c}, which the example did not`);
   }
   return problems;
 }
@@ -307,7 +368,7 @@ function fixedProblems(code: string, fixed: string): string[] {
 suite("error catalog — every example is paired with a fixed one (card AF5)", () => {
   const withFixed = ERROR_CODES.filter((c) => ERROR_CATALOG[c]!.fixed !== undefined);
 
-  it("every `fixed` compiles with no error and without its code", () => {
+  it("every `fixed` is an edit of its example that compiles with no error and without its code", () => {
     const broken = withFixed.flatMap((c) => fixedProblems(c, ERROR_CATALOG[c]!.fixed!).map((p) => `${c}: fixed ${p}`));
     expect(
       broken,
@@ -327,18 +388,48 @@ suite("error catalog — every example is paired with a fixed one (card AF5)", (
       (c) => !(c in ERROR_CATALOG) || ERROR_CATALOG[c]!.fixed !== undefined || NOT_REPRODUCED.has(c),
     );
     expect(stale, "NO_FIXED names a code that is gone, has a `fixed` now, or is excused above: delete it.").toEqual([]);
+    expect(NO_FIXED.size).toBeLessThanOrEqual(NO_FIXED_CAP);
     // A count, not a target, as the cap above: the pairs only grow.
     expect(withFixed.length).toBeGreaterThanOrEqual(204);
   });
 
-  it("is not vacuous: a `fixed` that is the example, or that trades the warning for another, is caught", () => {
-    expect(fixedProblems("E_HEIGHT_RANGE", ERROR_CATALOG.E_HEIGHT_RANGE!.example)).toContain(
-      "still raises E_HEIGHT_RANGE",
+  it("the deletion list does not rot: each entry is still a pair whose fixed is a line-subset of its example", () => {
+    expect(DELETION_IS_THE_FIX.size).toBeLessThanOrEqual(DELETION_CAP);
+    const stale = [...DELETION_IS_THE_FIX.keys()].filter((c) => {
+      const fixed = ERROR_CATALOG[c]?.fixed;
+      if (fixed === undefined) return true;
+      const before = codeLines(ERROR_CATALOG[c]!.example);
+      return !codeLines(fixed).every((l) => before.includes(l));
+    });
+    expect(stale, "DELETION_IS_THE_FIX names a code whose fixed is no longer a deletion: delete it.").toEqual([]);
+  });
+
+  it("is not vacuous: a `fixed` that is empty, a comment, a deletion, or a trade of one warning for another is caught", () => {
+    const heightExample = ERROR_CATALOG.E_HEIGHT_RANGE!.example;
+    expect(fixedProblems("E_HEIGHT_RANGE", heightExample)).toContain("still raises E_HEIGHT_RANGE");
+    // The example, its comment rewritten: no edit.
+    expect(fixedProblems("E_HEIGHT_RANGE", heightExample.replace(/#.*$/, "# fixed"))).toContain(
+      "is its example with lines deleted (or unchanged)",
     );
+    // Empty, and comment-only: compiles clean of every code, says nothing.
+    for (const nothing of ["", "# fixed: nothing to see"])
+      expect(fixedProblems("E_ROOM_SIZE", nothing)).toContain("has no statement, only comments");
+    // The example with the line that raises the code deleted, for a one-line and a two-line example.
+    expect(fixedProblems("E_DUP_ID", "room id=a at (0,0) size 1x1")).toContain(
+      "is its example with lines deleted (or unchanged)",
+    );
+    expect(fixedProblems("E_ROOMS_OVERLAP", "room id=a at (0,0) size 4000x3000")).toContain(
+      "is its example with lines deleted (or unchanged)",
+    );
+    // A snippet that has nothing to do with the example.
+    expect(fixedProblems("E_ROOM_SIZE", "let k = 1")).toContain("shares no word with its example");
     // A 1 mm room is no longer 1 m², but it is a length in metres now.
     expect(fixedProblems("W_ROOM_TOO_SMALL", 'room at (0,0) size 1x1 label "Nook"')).toContain(
       "raises W_LENGTH_IN_METRES, which the example did not",
     );
-    expect(fixedProblems("E_ROOM_SIZE", "room at (0,0) size 0x4000\nlet x = 1 / 0").length).toBeGreaterThan(0);
+    // The code is gone, but another error came in: only the "raises the error" branch fires.
+    expect(fixedProblems("E_ROOM_SIZE", "room at (0,0) size 3000x4000\nlet x = 1 / 0")).toEqual([
+      expect.stringMatching(/^raises the error E_DIV_ZERO: /),
+    ]);
   });
 });
