@@ -22,8 +22,8 @@
  * Re-measured for AL3b (label-crowding; ADR 0035), `min-clear-joins`: of its six labels that no fit
  * cleared, three are led to a neighbouring room's floor and three placed again on their own, so its
  * `validate --json` carries no `W_ANNOTATION_OVERLAP` (6 reports to 0). The keep rows (`describe().keeps`), `compile().diagnostics`, the exit code and
- * the `validate --json` output with those reports taken out are the same on the previous branch and
- * this one; that branch gives the old digest exactly.
+ * the `validate --json` output with those reports taken out are the same on `main` (`b1e73f98`) and
+ * this branch; `main` gives the old digest exactly.
  */
 
 import { describe as suite, expect, it } from "vitest";

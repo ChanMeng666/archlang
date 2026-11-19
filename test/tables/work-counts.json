@@ -1,5 +1,5 @@
 {
-  "_reason": "AL3b on feat/al3b-leaders: a named, unpinned room's drawCost gains 2 (a leader's line and dot), moving drawUnits rows; the new labelLeaders column is 0 in every row; 6 steps rows (courtyard-family, garden-house, hillside-villa, museum, remodel, two-bed) are the generator's output on main 287e19f8 too, a drift there inside the tolerance",
+  "_reason": "AL3b leaders on b1e73f98: a named room whose label is not pinned is charged 2 more drawing units (the leader's line and dot)",
   "_tolerance": 0.1,
   "_totalTolerance": 0.03,
   "_floor": 8,
