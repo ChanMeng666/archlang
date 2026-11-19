@@ -444,7 +444,12 @@ describe("planTests: what the gate runs for a change set", () => {
 
     it("lint-fix-texts: every error-catalogue file and the fix producers (the catalogue wakes the opaque guard too, RR.16 (5))", () => {
       const fixTexts = (changed: string[]) => whys(changed).filter(([f]) => f === FIX_TEXTS);
-      for (const f of ["src/error-catalog.ts", "src/error-catalog-fixes.ts", "src/error-catalog/layout.ts"])
+      for (const f of [
+        "src/error-catalog.ts",
+        "src/error-catalog-fixes.ts",
+        "src/error-catalog-fixes-intent.ts",
+        "src/error-catalog/layout.ts",
+      ])
         expect(fixTexts([f]), f).toEqual([[FIX_TEXTS, `the error catalogue changed (${f})`]]);
       expect(guards(["src/fix-producers.ts"])).toEqual([FIX_TEXTS]);
       expect(whys(["src/fix-producers.ts"])).toEqual([[FIX_TEXTS, "the fix producers changed (src/fix-producers.ts)"]]);
@@ -556,7 +561,12 @@ describe("planTests: what the gate runs for a change set", () => {
       expect(key).toBeDefined();
       expect(whys([key!])).toEqual([[OPAQUE_GUARD, `the published IndexNow key changed (${key})`]]);
       expect(guards(["docs-site/public/robots.txt"])).toEqual([]);
-      for (const f of ["src/error-catalog.ts", "src/error-catalog-fixes.ts", "src/error-catalog/layout.ts"]) {
+      for (const f of [
+        "src/error-catalog.ts",
+        "src/error-catalog-fixes.ts",
+        "src/error-catalog-fixes-intent.ts",
+        "src/error-catalog/layout.ts",
+      ]) {
         expect(files, f).toContain(f);
         expect(guards([f]), f).toEqual([FIX_TEXTS, OPAQUE_GUARD].sort());
       }

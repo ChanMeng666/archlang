@@ -100,7 +100,20 @@ interface Row {
 }
 
 /**
- * Render a deterministic "error card" SVG describing `diagnostics`.
+ * The card `compile(src, { onError: "svg" })` draws: the public `renderErrorSvg`
+ * (`backends/error-svg-public.ts`) with default options, but reading the fix column of the codes
+ * `compile()` raises only ({@link catalogFix}; card NR.10: the intent violations' `E_INTENT_*`,
+ * which only `validateIntent` raises, stay off the compile path, so the playground's compiler
+ * chunk does not carry their fixes). For `compile()`'s own diagnostics it is byte for byte
+ * `renderErrorSvg`'s card (`test/error-svg.test.ts`).
+ */
+export function renderCompileErrorSvg(source: string, diagnostics: Diagnostic[]): string {
+  return renderErrorCard(source, diagnostics, {}, catalogFix);
+}
+
+/**
+ * Render a deterministic "error card" SVG describing `diagnostics`, each row's catalogued fix read
+ * through `fixOf` (the public `renderErrorSvg` and {@link renderCompileErrorSvg} pass their tables).
  *
  * The card is a fixed-width panel (default 800px) with a title summarising the
  * error/warning counts and one bordered row per diagnostic (severity accent, a
@@ -112,8 +125,14 @@ interface Row {
  *                      resolve byte spans to `line:col`; never rendered verbatim).
  * @param diagnostics  The problems to display (errors and/or warnings).
  * @param opts         Width / max rows / theme overrides.
+ * @param fixOf        A code's catalogued fix, or `undefined` for none.
  */
-export function renderErrorSvg(source: string, diagnostics: Diagnostic[], opts: ErrorSvgOptions = {}): string {
+export function renderErrorCard(
+  source: string,
+  diagnostics: Diagnostic[],
+  opts: ErrorSvgOptions,
+  fixOf: (code: string | undefined) => string | undefined,
+): string {
   const theme = opts.theme ?? DEFAULT_THEME;
   const W = opts.width ?? 800;
   const maxRows = opts.maxRows ?? 20;
@@ -145,7 +164,7 @@ export function renderErrorSvg(source: string, diagnostics: Diagnostic[], opts: 
     // card is on the compile path, the JSON projection is not (card AF1). `line`/`col` exist only
     // for a span measured in `source` (no `file`).
     const at = d.span && d.file === undefined ? offsetToLineCol(source, d.span.start) : undefined;
-    const fix = catalogFix(d.code);
+    const fix = fixOf(d.code);
     const accent = d.severity === "error" ? ERROR_ACCENT : WARN_ACCENT;
     const location = at ? `line ${at.line}:${at.col}` : "";
     const msgLines = wrapText(d.message, msgBudget);
