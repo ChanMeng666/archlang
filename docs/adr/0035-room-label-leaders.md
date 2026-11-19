@@ -25,7 +25,7 @@ A room's name and area figure are placed by four passes:
 
 Until now every one of them kept the label on its own floor. A label in a room too small or too full for it stayed where it was, overprinting a symbol, a wall or a door swing. `W_ANNOTATION_OVERLAP` reported it, with the hint that "the drawing does not draw a leader".
 
-On `main` (287e19f8) the corpus has 101 `W_ANNOTATION_OVERLAP` reports. The corpus is 379 `.arch` files and 355 Markdown fences. The reports split three ways:
+On `main` (b1e73f98) the corpus has 101 `W_ANNOTATION_OVERLAP` reports, counted over the 332 `.arch` files of its folders: the examples, the test fixtures, the recovery and defect corpora, the eval plans and `test/plans/`. The reports split three ways:
 - 27 on labels the author pinned;
 - 2 on `dims auto` figures;
 - 72 where the placer found no clear place, in 8 files.
@@ -53,25 +53,27 @@ Card AL3w made the symbol test read a room's text at the wider of its estimated 
 The label is placed once more, at a point of a square lattice centred on the room's anchor (`roomLabelAnchor`, from the shape):
 - **Pitch:** the drawing's room-name size.
 - **Reach:** the room's larger extent in pitches, plus two, at most 16.
-- **Ranking:** a whole-number key, never a measured distance: `i² + j²`, then `max(|i|, |j|)`, then a host room of `uses circulation` before any other, then `j`, then `i`.
+- **Ranking:** a whole-number key, never a measured distance: `i² + j²`, then `max(|i|, |j|)`, then a host room of `uses circulation` before any other, then `j`, then `i`. Every floor's places are ranked together, so a circulation host wins only among places at the same two distances.
 
 Where a place may be:
-- **On a room's floor on the same storey, inside the building only.** Places on the room's own floor take their turn by the same key and draw no leader: a finer search than `fitLabels`' 7 × 7 lattice. They do not leave the floor, so they are within AL-D3. The others draw a leader.
+- **On a room's floor on the same storey, inside the building only.** Places on the room's own floor take their turn among the others by the same key and draw no leader: a finer search than `fitLabels`' 7 × 7 lattice. They do not leave the floor, so they are within AL-D3. The others draw a leader.
+- **One floor per place.** Where two floors hold a place (a room drawn inside another), it stands on the smaller, then on the one whose anchor is higher, then further left: read off the plan, never the order of the source.
+- **The label's old place is retired.** Before its search, the boxes the fit left the label at (and where its step off a piece's label moved it) stop counting as text, so they block neither the label's own dot nor another label.
 - **Never anywhere else.** Not outside the building, in the dimension bands or on an `outdoor` surface: a label there would grow the page, and the page size feeds `describe().sheet`, which a drawing change may not move.
 - **Clear by the rule's own test, on the floor it lands on.** Both texts lie on that floor (no more than 2 % off it). They stand over no symbol, wall, door swing, label, opening tag, `dims auto` figure or piece label.
 - **Clear of every text as it prints.** Each of the two texts, boxed at the width it prints (`symbolExtent`: the wider of the estimate and the ink), meets no other text the drawing holds when the step runs, boxed the same way (`labelBox`): no other room's label as it now stands, no tag, no figure and no piece label. It also meets no leader drawn before it. A leader's line is read against the same boxes. The fit's own reading compares a text's ink with the estimate of the text beside it. A short name of wide letters prints wider than its estimate, and an area figure prints narrower. So the two can overprint while each reads clear: on a generated strip, a led "2.2 m²" stood 57 mm over "MW".
 
 The search:
-- **Order of forms.** The heights `fitLabels` steps through are tried largest first. At each height the one-line name is tried first, then its wrapped forms.
+- **Order.** The heights `fitLabels` steps through are tried largest first. At each height the one-line name is tried first, then its wrapped forms. At each form the places are tried in their rank, every floor's together.
 - **Ranking places.** A place that keeps the walls' clearance beats one that does not. Either beats every place whose leader crosses a door swing or a symbol.
-- **When it stops.** At the first place that keeps the clearance with a clean leader (or with no leader), or at the end of the first form that has any clean place. Failing both, the first form and place with the best rank win.
+- **When it stops.** Tier 0 stops: the first place, in that order, that keeps the walls' clearance with no leader or with one that crosses no swing or symbol. Failing one, the first place found at the best rank wins, at whatever size. So a smaller size is tried only once no larger one has a tier-0 place, and a place on the label's own floor wins only by coming first in this order (at a larger size, or before a led place by rank at the same size).
 
 The leader:
 - **Where it starts.** One straight line from the edge of the label's box, grown by a quarter of its height.
 - **Where it ends.** In a filled dot on the room's own floor. The dot sits at the first place of the same lattice, ranked by the same key, whose dot is clear of every symbol, label and wall. It sits at `roomLabelAnchor` only when no place is clear (a stair room whose flight fills it).
 - **How it is drawn.** On the `labels` pass, in the room label's ink, with the thin pen.
-- **What it may cross.** The walls between the two floors, and a door swing (ranked last).
-- **What it never crosses.** A third room's floor, a text or another leader.
+- **What it may cross.** The walls between the two floors (a wall band that touches both), and a door swing (ranked last). Off the two floors it runs only inside such a wall.
+- **What it never crosses.** A third room's floor, any other wall (so never out of the building), a text or another leader.
 
 **No place, no change.** A label with no acceptable place keeps the form and place `fitLabels` gave it, and the rule reports it as before.
 
@@ -85,7 +87,9 @@ The leader:
 
 Nothing else about the pass changed. The leader step takes its labels in the same order.
 
-What is left is order-free up to exact ties: two rooms with the same anchor, texts and ring are told apart only by element order. Neither the corpus nor the generated plans has such a pair.
+What is left is order-free up to exact ties: two rooms with the same anchor, texts and ring (and, for a place two floors hold, the same area and ring) are told apart only by element order. Neither the corpus nor the generated plans has such a pair.
+
+Plans whose only order dependence is a `dims auto` wall-thickness figure belong to card AL3f, not here: the figures are placed before the labels, in their own order, and a label then reads the figure where it stands. The red team's shuffled strips seed 313 plans 38 and 97 and seed 319 plan 146 are such plans: on `main` their "100" figure already moves with the order, and with `dims auto` taken out each pair draws the same.
 
 A second clause was considered and **not taken**: "a room's label that stands off its own floor claims no floor during the relocation". It would have let the label-wrap knock-on list shrink from four names to two. But on 312 generated strips it raised the unreported overprints of one room's text over another's from 103 to 127, against 99 with the shape order alone. So the knock-on list stays at four, and `ORDER_EXCUSED` is empty and gone.
 
@@ -94,7 +98,7 @@ A second clause was considered and **not taken**: "a room's label that stands of
 - It never moves a label that fits, or a pinned label.
 - It never places a label outside the building or off a room floor of the same storey.
 - It never puts the leader's dot on a symbol while the room's floor has a clear place for it.
-- It never draws a leader through a third room, over a text, or across another leader.
+- It never draws a leader through a third room, out of the building, through a wall but one between its two floors, over a text, or across another leader.
 - It never shrinks a label below the furniture-label size (ruling AL-D2 stands).
 - It never changes `describe()`, Plan JSON or a validity-layer lint rule. It never runs in `describe()` or `lint()`: the rule reads the Scene `toScene` drew.
 - It adds no syntax. A future opt-out (for example a `labels inside` setting) waits for PS7.9 and would need its own byte-identity law.
@@ -103,18 +107,19 @@ A second clause was considered and **not taken**: "a room's label that stands of
 
 The leader step counts on a count of its own, `MAX_LEADER_WORK`: 1,000,000 units per plan, shared out by storey as `fitWork` is. Units are one per mark visited and per ring or shape vertex read, charged before the read. No label may spend more than `LEADER_LABEL_WORK` (400,000) of it.
 - A label that reaches its own cap keeps the place `fitLabels` gave it and is reported.
-- Past the step's count the step stops, and every label not yet placed keeps its place.
+- Past the step's count the step stops, and every label not yet placed keeps its place. It is still measured, and `W_ANNOTATION_OVERLAP` reports it as any label the step could not place; no lint skip is filed, because nothing is left unmeasured.
+- Both caps are reached by a test of their own (`test/label-leaders.test.ts`, "the count"): a strip of 60 WC rooms of 1.1 × 2 m off a 2.4 m corridor tries 37 of its 60 labels before the step's count is spent (36 led; with no count, 59), and a room packed with chairs whose name has no place stops at its own cap, so the WC room after it is still led (with no cap it is never tried).
 - Both are counts, the same on every machine.
 
 `fitLabels`' own count, and the share of it the `dims auto` thickness re-station (card AL5) spends after it, are as they were. The re-station keeps its figures off the leaders.
 
-A named room whose label is not pinned may draw two more primitives (the line and the dot), so its `drawCost` rises from 3 (4 with a floor finish) to 5 (6). Only such a room can be led, so no other room is charged. The drawing budget's test of its own looseness (the estimate's primitives at most a multiple of what the corpus draws) moves from 4 to 4.25, because `examples/remodel.arch`, the loosest plan, went from 3.99 to 4.01. Everything the step draws lies on the floors of the storey's rooms, so it is inside the drawing's extent and `MODEL_RANGE_MM`.
+A named room whose label is not pinned may draw two more primitives (the line and the dot), so its `drawCost` rises from 3 (4 with a floor finish) to 5 (6). Only such a room can be led, so no other room is charged. The drawing budget's test of its own looseness (the estimate's primitives at most four times what the corpus draws) stands at four: a door that names no kind draws one leaf at most (`doorLeaves`), so its `drawCost` falls from 5 to its 3. `examples/remodel.arch`, the loosest plan, goes from 3.99 to 3.98, and the 24-storey tower of the drawing-budget test is 108,120 units as before (each flat's room +2, its door −2). Everything the step draws lies on the floors of the storey's rooms, so it is inside the drawing's extent and `MODEL_RANGE_MM`.
 
 The compile's work counters gain `labelLeaders`, the places tried. The work-count table pins it as 0 for every example: no shipped example has a label to lead.
 
 ### 6. What `describe()` and `lint()` see
 
-`describe()` sees nothing. `lint()` changes only in the drafting layer, as ADR 0032 §4 and `docs/agents/iron-laws.md` allow a drawing change to.
+`describe()` sees nothing. `lint()` changes only in the drafting layer, as ADR 0032 §4 and `docs/agents/iron-laws.md` allow a drawing change to. Besides `W_ANNOTATION_OVERLAP`, `W_DIM_THICKNESS_UNPLACED` can move: the `dims auto` thickness re-station (card AL5) keeps its figures off the labels where they now stand and off the leaders, so a figure can be placed, or left out, where it was not before.
 
 `W_ANNOTATION_OVERLAP`:
 - **Where a led label is judged.** On the floor it stands on: over that floor's symbols, walls and swings, and off that floor. A label at the end of a leader is resolved and does not "run out of the room".
@@ -125,7 +130,7 @@ The compile's work counters gain `labelLeaders`, the places tried. The work-coun
 
 ## Consequences
 
-Measured on the built branch against `main` b1e73f98 (AL3w and AL3a merged), over the same corpus (332 `.arch` files in the corpus folders, 101 reports on `main`, as above):
+Measured on the built branch against `main` e7083747 (AL3w and AL3a merged), over the same corpus (the 332 `.arch` files of its folders, 101 reports on `main`, as above):
 
 - **Labels re-placed.** 72 labels are candidates, in 8 files.
   - 8 get a leader, in 5 files: `dense-office` (Store / IT and Kitchenette / Break, into the corridor), `2026-10-24-rerun/2-house` (Dressing into the passage, Bathroom into the garage), `2026-10-24-rerun/5-townhouse` (both stairs), `2026-10-26-rerun-row6/5-townhouse` (one stair) and `2026-10-27-rerun-arm1/5-townhouse` (Bathroom).
@@ -135,15 +140,15 @@ Measured on the built branch against `main` b1e73f98 (AL3w and AL3a merged), ove
   - The plan estimated about 70 fewer. The difference is the two no-`paper` fixtures, which no leader can help.
   - The shipped examples stay free of warnings and their drawings do not change.
   - The witness's "200" thickness figure keeps its first station, because the kitchenette's name no longer runs over it.
-  - The other 187 `.arch` files in the tests' and packages' fixture folders go from 9 reports to 2: `test/keep-corpus/min-clear-joins.arch` (6 to 0: three labels led, three placed again on their own floor) and `test/finish-fixtures/agent-ux-prefinish.arch` (1 to 0, led).
-- **Text over text.** On the red team's generated plans (300 a set; strips and grids, with and without fixtures), no plan clean on `main` gains an overprint of one room's text on another's. The pairs fall on every set: 8 to 4, 15 to 10, 28 to 12 and 42 to 29. Before the step read texts at the width they print, 17 plans gained one. `W_ANNOTATION_OVERLAP` does not read one room's text against another's (card AL3c), so those overprints were silent.
+  - The other 187 `.arch` files in the tests' and packages' fixture folders go from 9 reports to 3: `test/keep-corpus/min-clear-joins.arch` (6 to 1: five labels placed again on their own floor; each of its six rooms stands in a shell of its own, so no leader may cross the open ground to another) and `test/finish-fixtures/agent-ux-prefinish.arch` (1 to 0, led into the living room).
+- **Text over text.** On the red team's generated plans (300 a set; strips and grids, with and without fixtures; ten sets), no plan clean on `main` gains an overprint of one room's text on another's, and no plan gains a report. The pairs fall on every set: 8 to 5, 15 to 13, 28 to 12 and 42 to 30 (seeds 11 and 13); 10 to 8, 28 to 25, 36 to 27, 29 to 24, 12 to 7 and 13 to 9 (seeds 211, 223, 227, 229, 401 and 409). Before the step read texts at the width they print, 17 plans of the first four sets gained one. `W_ANNOTATION_OVERLAP` does not read one room's text against another's (card AL3c), so those overprints were silent.
 - **Order.**
   - `ORDER_EXCUSED` goes from five plans to none.
   - The label-wrap knock-on list stays at four (§3).
-  - On generated strips with shuffled room statements, no plan draws differently.
+  - On the red team's strips with shuffled room statements (seed 313: 185 plans, three orders each), 13 plans draw differently by order on `main` and 15 here. The two more are seed 313 plans 38 and 97, whose only order dependence is a `dims auto` thickness figure (§3, card AL3f).
 - **Ink width.** Card AL3w moved one corpus drawing, `dense-office`'s "WC 1" and "WC 2", now on one line beside the basin, and no lint line.
 - **Cost.**
-  - A generated 14 × 14 grid of 1.5 m rooms, every label a candidate and none with anywhere to go, spends the step's whole count: 161,312 places tried, the same on every run. On a quiet machine its compile went from 0.11–0.13 s to 0.16–0.18 s (two rounds, median of three each), before the step read texts at the width they print. With that check, the machine was loaded: 0.14–0.24 s on `main` against 0.23–0.26 s, in the same rounds. The design's first prototype, with no count of its own, took it from 0.23 s to 1.1 s.
+  - A generated 14 × 14 grid of 1.5 m rooms, every label a candidate and none with anywhere to go, tries all 196 labels within the step's count (the last starts at 535,569 of its 1,000,000 units): 161,312 places, the same on every run. It does not reach the count; the tests that do are §5's. Its compile took 0.139 s on `main` against 0.169 s here (median of three, one round; 0.11–0.13 s against 0.16–0.18 s on a quiet machine before this round's checks). The design's first prototype, with no count of its own, took it from 0.23 s to 1.1 s.
   - Across the corpus, the most places the step tries for one plan is 4,264 (`star30`, where it
     finds none), and 2,616 for the witness.
 - **What a reader sees.** A drawing can now carry a label on another room's floor, and a reader follows the leader. A corridor can take several such labels. A leader may cross the room's door swing when no other route is clear.
