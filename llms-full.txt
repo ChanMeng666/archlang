@@ -175,7 +175,7 @@ arch spec  # print the one-prompt language spec (spec.llm.md)
 arch context  # print the full bundled agent context (spec + workflow + CLI + errors)
 arch new  # scaffold a starter .arch
 arch import  # convert an OpenPlan3D plan (JSON) to .arch source, reporting what it left out
-arch explain  # look up an error code (cause / fix / example)
+arch explain  # look up an error code (cause / fix / example / fixed)
 ```
 
 The flags that matter:
@@ -863,10 +863,10 @@ from a file or stdin (`-`). This CLI is the primary agent interface; an optional
   - flags: `--from <openplan3d>` the format of the input file (required); openplan3d is the one there is · `--format <web|handoff>` read the file as an OpenPlan3D web project (centimetres) or prepared RoomPlan interchange file (metres) instead of detecting which, as OpenPlan3D does · `--out|-o <file|->` output file for the .arch source, or '-' for stdout (default: stdout) · `--json` structured result on stdout, messages on stderr · `--quiet|-q` suppress human messages on stderr
   - example: `archlang import --from openplan3d plan.openplan.json -o plan.arch` — convert an OpenPlan3D export, then `archlang lint plan.arch` checks it
 
-**`archlang explain`** — look up an error code (cause / fix / example, and the example fixed)
+**`archlang explain`** — look up an error code (cause / fix / example / fixed)
   - input: <CODE> → output: catalog entry
   - flags: `--json` structured result on stdout, messages on stderr
-  - example: `archlang explain E_ROOM_SIZE --json` — the catalog entry for a diagnostic code: cause, fix, example, and `fixed`, the example corrected, where the catalogue has one
+  - example: `archlang explain E_ROOM_SIZE --json` — the catalog entry for a diagnostic code: cause, fix, example and the example fixed
 
 ---
 
