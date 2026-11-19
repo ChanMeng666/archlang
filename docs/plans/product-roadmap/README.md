@@ -693,6 +693,14 @@ RM-D38、RM-D39 属于另一场的裁定（winder 台阶可到达、楼梯建造
 |---|---|---|---|
 | RM-D66 | 版本号；切点；渠道 | **核心 1.64.0，次版本，CHANGELOG 带 Breaking 一节**（`arch fmt` 拒绝时退出码由 0 改为 2，AF6 #946）。**切点在 RM9.2 #950 合并之后**（`b36f6995`，包括 RM9.3 #948）；AF3 #951 不进本版，tag 打出之前不合并。**随版发出：** `archlang-mcp` 0.2.47、VS Code 扩展 0.52.0；`archlang-3d` 0.9.0、`arch-plan` 0.1.2、`font-cjk` 1.0.0 都不变。**渠道：** 按 `.claude/commands/release-check.md` 走完全部：npm（tag 触发 OIDC 发布）、MCP 注册表、VS Code Marketplace（经 Chrome 上传）、Open VSX、OpenAI 目录（Submit 与 Publish 按 RM-D44 由代理做）、ClawHub、Docker 注册表的提交钉 | 有先例：1.58.0 按 RM-D25 把破坏性变更放进次版本；2.0 留给 2.0 bucket（RM-D61）。EV.8、RM9.1、RM9.2 正是下游应用升级编译器在等的改动 |
 
+### 6.30 所有者裁定：发布 1.65.0（RM-D67，2026-11-18）
+
+所有者原话（2026-11-18，回答协调者"AL1、AL5、AL4、AL3 合并之后发一次核心版本，让下游应用拿到标签修复"的提议；协调者转述）："发版我批准了。"只对这一次发布有效，不是长期委托。所有者批准的是发布本身；下表的版本号、次版本的判断、没有 Breaking 与切点，都是协调者照 `.claude/commands/release-check.md` 定的，所有者一句话可以改。提议里的"AL3"后来拆成 AL3w（#962）、AL3a（#964）、AL3b（#969），三者都已合并；AL3c–AL3h、AL4b、AL5b 是后续卡，不在这次发布里。
+
+| 编号 | 问题 | 裁定 | 理由 |
+|---|---|---|---|
+| RM-D67 | 版本号；切点；渠道 | **核心 1.65.0，次版本，没有 Breaking**（新的 `W_DIM_THICKNESS_UNPLACED`、新的导出 `diagnosticOverprint`、`historicalNorth` 等，以及 26 个改为运行时导出的值）。**切点在 AL3b #969 合并之后**（`c1d133c4`），即 1.64.0 之后的全部：AF3 #951、AL6 #957、AL1 #958、AL5 #959、AL4 #961、AL3w #962、AL3a #964、#968、AL3b #969。**随版发出：** `archlang-mcp` 0.2.48、VS Code 扩展 0.53.0；`archlang-3d` 0.9.0、`arch-plan` 0.1.2、`font-cjk` 1.0.0 都不变（1.64.0 以来三个包没有改动，`archlang-3d` 也不需要新的核心导出）。**渠道：** 同 RM-D66，按 `.claude/commands/release-check.md` 走完全部 | 新的 `W_` 码与公开导出按 `release-check.md` 至少是次版本。AL6、AL5 正是下游应用的 AC-3 和墙厚数字压字在等的改动。AL2、AL6b、AL7、AL8 不在这次批准里，下一次发布要所有者另作决定 |
+
 ---
 
 ## 7. 与已有计划的关系

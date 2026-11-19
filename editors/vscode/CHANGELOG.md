@@ -14,6 +14,21 @@ are documented here. The format is based on
 
 ## [Unreleased]
 
+## [0.53.0] - 2026-11-19
+
+### Changed
+
+- **Rebundled the core at `@chanmeng666/archlang@1.65.0`**: an unknown name in an expression is
+  one diagnostic in the Problems panel, its `E_UNKNOWN_REF` with the "did you mean" hint, no longer
+  followed by an `E_ROOM_SIZE` "positive size" error for the 0 it read as. The plans an ` ```arch `
+  fence draws in the Markdown preview place their labels as the core now does: a room's name keeps
+  off the symbols at the width it prints, whatever order the rooms are written in, and one no
+  placement can clear moves to clear floor nearby with a thin leader to its room; the north arrow
+  keeps off the dimension chains; a `dims auto` wall-thickness figure keeps off the room names; and
+  an uncatalogued piece's label is turned, or left out, when it does not fit the piece. The lint
+  warning `W_DIM_THICKNESS_UNPLACED` and the `overprint` detail of `W_ANNOTATION_OVERLAP` are new
+  in `archlang lint`; the extension, which shows compile diagnostics, does not run the lint.
+
 ## [0.52.0] - 2026-11-18
 
 ### Changed
