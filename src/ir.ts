@@ -1224,7 +1224,7 @@ function resolveBody(
     grp: ResolveGroup,
     grpWalls: RWall[],
     grpRooms: RRoom[],
-    relational: { rooms: () => RRoom[]; stamp: (d: Diagnostic) => Diagnostic },
+    relational: { rooms: () => RRoom[]; stamp: (d: Diagnostic, room?: RRoom) => Diagnostic },
     axes: readonly RAxis[] | undefined,
     /** The ids of the walls this group sees that a pairwise form refused (no points), as the
      *  group names them; its own refused walls join as they resolve. */
@@ -1421,7 +1421,7 @@ function resolveBody(
         if (roomKind >= 0) resolveKind(roomKind);
         activeEntry = undefined;
         placeRelational(relational.rooms(), snapPt, (d, room) => {
-          const out = relational.stamp(d);
+          const out = relational.stamp(d, room);
           placement.push(out);
           ownRoomDiag(out, room);
         });
@@ -1530,7 +1530,9 @@ function resolveBody(
       grp,
       view.walls,
       view.rooms,
-      { rooms: () => view.rooms, stamp: (d) => stampProvenance(d, grp.frame, undefined) },
+      // A placement diagnostic names the module its room was written in (`_file`), so its fix is
+      // never applied to the importing file (AF2).
+      { rooms: () => view.rooms, stamp: (d, room) => stampProvenance(d, grp.frame, room?._file) },
       undefined,
       new Set(view.refusedWalls),
     );
@@ -1666,7 +1668,7 @@ function resolveBody(
       {
         rooms: () =>
           entries.filter((e) => !dropped.has(e) && e.resolved?.kind === "room").map((e) => e.resolved as RRoom),
-        stamp: (d) => d,
+        stamp: (d, room) => (room?._file !== undefined ? stampProvenance(d, undefined, room._file) : d),
       },
       axes,
       rootRefusedWalls,

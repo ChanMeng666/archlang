@@ -111,7 +111,7 @@ suite("PS0.5 — readers of a relational room", () => {
     ].join("\n");
     const out = compile(src, { noCache: true }).diagnostics;
     expect(out.map((d) => `${d.code}@${src.slice(d.span!.start).split(" ")[0]!.trim()}`)).toEqual([
-      "E_LAYOUT_REF@room",
+      "E_LAYOUT_REF@nowhere", // AF2: spanned on the unknown id (it was the whole room statement)
       "W_SWING_ROOM_NOT_ADJACENT@door",
       "E_PLACE_REF@furniture",
       "E_FURN_AGAINST@furniture",

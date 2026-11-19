@@ -96,6 +96,22 @@ export const FIX_PRODUCERS: readonly FixProducer[] = [
     codes: { E_ROOM_ALIGN_AXIS: "room-align-axis" },
   },
   {
+    producer: "src/fix-producers.ts#spellingFix",
+    stage: "compile",
+    applicability: [MA, MI],
+    codes: { E_PARSE: "spelling" },
+    when: {
+      [MA]: "the word is none the language or the plan knows and one word of a closed list alone is within the distance limit",
+      [MI]: "the position expected one word or the word is one the language or the plan knows or another candidate is within the limit",
+    },
+  },
+  {
+    producer: "src/fix-producers.ts#idSpellingFix",
+    stage: "compile",
+    applicability: [MI],
+    codes: { E_LAYOUT_REF: "spelling" },
+  },
+  {
     producer: "src/fix-producers.ts#furnitureCategoryFix",
     stage: "compile",
     applicability: [MI],
