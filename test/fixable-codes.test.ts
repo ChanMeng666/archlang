@@ -47,11 +47,16 @@ const REACH: Record<string, string> = {
     "  door at (3000,4000) width 1000 wall exterior hinge left swing in",
     '  furniture box at (3400,2900) size 600x500 label "X"',
   ),
-  // Two walls tie for nearest.
-  "W_DOOR_OFF_WALL|maybe-incorrect": plan(
-    "  wall id=a partition thickness 100 { (0,0) (1000,0) }",
-    "  wall id=b partition thickness 100 { (1000,0) (1000,800) }",
-    "  door id=d at (600,400) width 900",
+  // Two walls tie for nearest, for each of the three opening kinds.
+  ...Object.fromEntries(
+    ["door", "window", "opening"].map((kind) => [
+      `W_${kind.toUpperCase()}_OFF_WALL|maybe-incorrect`,
+      plan(
+        "  wall id=a partition thickness 100 { (0,0) (1000,0) }",
+        "  wall id=b partition thickness 100 { (1000,0) (1000,800) }",
+        `  ${kind} id=d at (600,400) width 900`,
+      ),
+    ]),
   ),
   // The loop is inside a component body.
   "W_WHILE_DEPRECATED|maybe-incorrect": plan(
