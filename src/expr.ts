@@ -1218,7 +1218,7 @@ export function closest(name: string, candidates: string[]): string | null {
  * letter is two, as in TypeScript; another case is none), and one under 3 letters only in
  * another case (two-letter words are all close). A name in the set is spelled right, so it gets
  * none. Ties keep the first candidate in the set's own order. `unique` says no other candidate
- * is under the limit at all, the one case a fix may be `machine-applicable`. `exclude` is a
+ * is at or under the limit, the one case a fix may be `machine-applicable`. `exclude` is a
  * candidate never offered (a room is no reference of its own). Charged per candidate and per
  * edit-distance cell, as {@link closest} is; with `budget`, a search that would spend more steps
  * than it holds is not made (null), and what is spent comes off it.
@@ -1250,7 +1250,8 @@ export function spelling(
   let within = 0;
   for (const c of near) {
     const d = indelDistance(name.toLowerCase(), c.toLowerCase());
-    if (d >= limit) continue;
+    if (d > limit) continue;
+    // A candidate at the limit itself is no suggestion, but it is near enough to doubt one.
     within++;
     if (d < bestDist) {
       bestDist = d;
@@ -1262,6 +1263,12 @@ export function spelling(
 
 /** Added or dropped characters between two short words: `a.length + b.length - 2 * LCS`, so a
  *  changed letter counts two. */
+/** The steps the current resolution has spent (0 outside one): a search that must stay within a
+ *  share of the whole run's budget reads it (AF2). */
+export function currentSteps(): number {
+  return meter === null ? 0 : meter.used;
+}
+
 export function indelDistance(a: string, b: string): number {
   let row = new Array<number>(b.length + 1).fill(0);
   for (let i = 1; i <= a.length; i++) {

@@ -601,12 +601,14 @@ export function furnitureCategoryFix(word: Span | undefined, near: string): FixS
 }
 
 /**
- * AF2's one did-you-mean fix (TypeScript's spelling codefix): write the word
- * {@link import("./expr.js").spelling} found over the misspelt word at `span`, and nothing else.
- * `machine-applicable` only when the caller vouches for the position (`closed`: the misspelt word
- * is no word of the language, and the candidates are every word of a closed set that can stand
- * there, never one expected word and never a user's ids) and no other candidate was as near
- * (`unique`); the source is an error, so nothing downstream measures it yet. Otherwise
+ * AF2's did-you-mean fix (TypeScript's spelling codefix) for a word of a closed list (a keyword,
+ * a clause word, a room use): write the word {@link import("./expr.js").spelling} found over the
+ * misspelt word at `span`, and nothing else. `machine-applicable` only when the caller vouches for
+ * the position (`closed`: the misspelt word is no word of the language and stands nowhere else in
+ * the source, and the candidates are a closed list of words for that position, never the one word
+ * it expected) and no other candidate was as near (`unique`); the source is an error, so nothing
+ * downstream measures it yet. A list is not a grammar: its candidate can still be a word that
+ * statement does not take (`room … widt` reads `width`), and recompiling says so. Otherwise
  * `maybe-incorrect`.
  */
 export function spellingFix(
@@ -619,6 +621,22 @@ export function spellingFix(
     {
       title: `write \`${s.word}\``,
       applicability: closed && s.unique ? "machine-applicable" : "maybe-incorrect",
+      fixId: "spelling",
+      edits: [{ span, newText: s.word }],
+    },
+  ];
+}
+
+/**
+ * The did-you-mean fix for a misspelt user id (AF2): a room's ids are an open set, so the author's
+ * word may name a room still to be written, and the fix is always `maybe-incorrect`.
+ */
+export function idSpellingFix(span: Span | undefined, s: { word: string } | null): FixSuggestion[] | null {
+  if (!span || !s) return null;
+  return [
+    {
+      title: `write \`${s.word}\``,
+      applicability: "maybe-incorrect",
       fixId: "spelling",
       edits: [{ span, newText: s.word }],
     },

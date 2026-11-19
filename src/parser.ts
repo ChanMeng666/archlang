@@ -2,7 +2,7 @@
 
 import type { LexResult, Token } from "./lexer.js";
 import { lex, lexUnmemoised } from "./lexer.js";
-import type { Diagnostic, FixSuggestion, Span } from "./diagnostics.js";
+import type { Diagnostic, Span } from "./diagnostics.js";
 import { recordIdSpan } from "./id-spans.js";
 import { CATALOG_FIXES } from "./error-catalog-fixes.js";
 import { capDiagnostics, isLimitClass, MAX_DIAGNOSTICS } from "./diagnostics.js";
@@ -115,7 +115,8 @@ class ParseError extends Error {
     public override message: string,
     public span: Span,
     public hints?: string[],
-    public fixes?: FixSuggestion[] | null,
+    /** A did-you-mean for the word at `word` (AF2), and whether its fix may be machine-applicable. */
+    public spelt?: { word: Span; s: { word: string; unique: boolean }; closed: boolean },
   ) {
     super(message);
   }
@@ -258,10 +259,10 @@ class Parser {
    * misspelling of one of them (AF2, {@link spelling}) adds a did-you-mean hint and a fix that
    * rewrites `t` alone, even when the error is spanned on a whole statement. The fix is
    * machine-applicable only when `t` is no word of the language ({@link isLanguageWord}: a word
-   * spelled right in the wrong place is never rewritten) and `near` is a whole closed set, not the
-   * one word a position expected, and `t` is no name the plan declares. Parsing is not metered, so the search runs only while the error
-   * can still be reported: past `MAX_DIAGNOSTICS` it is dropped, and so the work is bounded
-   * whatever the source's size.
+   * spelled right in the wrong place is never rewritten), its word stands nowhere else in the
+   * source, and `near` is a closed list of words, not the one word a position expected. Parsing is
+   * not metered, so the search runs only while the error can still be reported: past
+   * `MAX_DIAGNOSTICS` it is dropped, and so the work is bounded whatever the source's size.
    */
   private fail(
     msg: string,
@@ -272,35 +273,24 @@ class Parser {
     const hints = this.parseHints(t);
     const s = near && t.type === "ident" && this.reportable() ? spelling(t.value, near) : null;
     if (!s) throw new ParseError(msg, span, hints);
-    throw new ParseError(
-      msg,
-      span,
-      [...(hints ?? []), `did you mean \`${s.word}\`?`],
-      spellingFix(
-        { start: t.start, end: t.end },
-        s,
-        near!.length > 1 && !this.isLanguageWord(t.value) && !this.declaredNames().has(t.value),
-      ),
-    );
+    throw new ParseError(msg, span, [...(hints ?? []), `did you mean \`${s.word}\`?`], {
+      word: { start: t.start, end: t.end },
+      s,
+      closed: near!.length > 1 && !this.isLanguageWord(t.value) && !this.elsewhere(t.value),
+    });
   }
 
-  /** The names this source declares (`let x`, `component c`, `for i`, `as u`, `id=r`, `x = …`),
-   *  read once off the tokens: a name of the plan's own is never a misspelt keyword (AF2). */
-  private declared: Set<string> | undefined;
-  private declaredNames(): ReadonlySet<string> {
-    if (this.declared) return this.declared;
-    const out = new Set<string>();
-    const toks = this.toks;
-    for (let i = 1; i < toks.length; i++) {
-      const t = toks[i]!;
-      if (t.type !== "ident") continue;
-      const p = toks[i - 1]!;
-      if (p.type === "ident" && ["let", "component", "for", "as"].includes(p.value)) out.add(t.value);
-      else if (p.type === "equals" && toks[i - 2]?.value === "id") out.add(t.value);
-      else if (toks[i + 1]?.type === "equals" && t.value !== "id") out.add(t.value);
+  /** How many times each word stands in this source as a name, counted once off the tokens: a
+   *  word written anywhere else (a parameter, an imported name, a binding, an id) is one the plan
+   *  knows, so it is never machine-respelt (AF2). */
+  private wordCounts: Map<string, number> | undefined;
+  private elsewhere(word: string): boolean {
+    if (!this.wordCounts) {
+      this.wordCounts = new Map();
+      for (const t of this.toks)
+        if (t.type === "ident") this.wordCounts.set(t.value, (this.wordCounts.get(t.value) ?? 0) + 1);
     }
-    this.declared = out;
-    return out;
+    return (this.wordCounts.get(word) ?? 0) > 1;
   }
 
   /** Whether `word` is a word of the language: a keyword of any category, a statement start, a
@@ -364,13 +354,19 @@ class Parser {
   /**
    * The words an unknown statement word `t` may be a slip of (AF2), in order: on the line of the
    * token before it, where a statement ended early at a misspelt word, a room use (after a `uses`
-   * list) and a clause word; then a statement keyword. Each set is read from its one source. A
-   * word of the language out of place (`sheet`, `left`, `closet`) is spelled right, so it has none.
+   * list), a clause word and a value word (`dims auto roomss`); then a statement keyword. Each set
+   * is read from its one source. A word of the language out of place (`sheet`, `left`, `closet`) is
+   * spelled right, so it has none.
    */
   private wordsAt(t: Token): readonly string[] {
     if (!this.reportable() || this.isLanguageWord(t.value)) return [];
     if (this.toks[this.pos - 1]?.line !== t.line) return [...this.statementStarts];
-    return [...(this.afterUses(t, true) ? USE_KINDS : []), ...ATTRIBUTE_KEYWORDS, ...this.statementStarts];
+    return [
+      ...(this.afterUses(t, true) ? USE_KINDS : []),
+      ...ATTRIBUTE_KEYWORDS,
+      ...KEYWORDS.enum,
+      ...this.statementStarts,
+    ];
   }
 
   /** Whether a diagnostic reported now is kept ({@link report}'s own test). */
@@ -560,7 +556,7 @@ class Parser {
         code: "E_PARSE",
         span: e.span,
         ...(e.hints ? { hints: e.hints } : {}),
-        ...fixesFrom(e.fixes ?? null),
+        ...fixesFrom(spellingFix(e.spelt?.word, e.spelt?.s ?? null, e.spelt?.closed === true)),
       });
       while (!this.isType("eof") && !this.isType("lcurly")) {
         const t = this.peek();
@@ -730,7 +726,7 @@ class Parser {
             code: "E_PARSE",
             span: e.span,
             ...(e.hints ? { hints: e.hints } : {}),
-            ...fixesFrom(e.fixes ?? null),
+            ...fixesFrom(spellingFix(e.spelt?.word, e.spelt?.s ?? null, e.spelt?.closed === true)),
           });
           this.synchronize(start);
           plan.body.push({ kind: "error", id: "", line: t.line, message: e.message, span: this.spanFrom(start) });
@@ -756,7 +752,7 @@ class Parser {
           code: "E_PARSE",
           span: e.span,
           ...(e.hints ? { hints: e.hints } : {}),
-          ...fixesFrom(e.fixes ?? null),
+          ...fixesFrom(spellingFix(e.spelt?.word, e.spelt?.s ?? null, e.spelt?.closed === true)),
         });
     }
     this.checkLevels(plan);
@@ -1881,7 +1877,7 @@ class Parser {
             code: "E_PARSE",
             span: e.span,
             ...(e.hints ? { hints: e.hints } : {}),
-            ...fixesFrom(e.fixes ?? null),
+            ...fixesFrom(spellingFix(e.spelt?.word, e.spelt?.s ?? null, e.spelt?.closed === true)),
           });
           this.synchronize(stmtTok.start);
           body.push({

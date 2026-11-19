@@ -10,8 +10,8 @@
  * `E_LAYOUT_REF`, a reference with no one run on that side `E_PLACE_POLY`, and a room that
  * merely depends on one of those (directly, along a chain, or into a cycle) `E_LAYOUT_UNPLACED`.
  * An unknown reference's did-you-mean search over the other room ids (AF2) is charged to the
- * step meter before it runs, so only a plan that already fails pays it, and runs at most
- * `MAX_DIAGNOSTICS` times per pass.
+ * step meter before it runs, so only a plan that already fails pays it, at most `MAX_DIAGNOSTICS`
+ * times per pass and only while the whole resolution has spent under `SEARCH_STEPS`.
  *
  * A rectilinear polygon is a reference through the ring's extreme run on that side, never its
  * box: the run's line is where the room stands, and its ends are what `align` reads.
@@ -25,8 +25,8 @@
 import type { Point } from "./ast.js";
 import { type Diagnostic, MAX_DIAGNOSTICS } from "./diagnostics.js";
 import { wordSpanOf } from "./id-spans.js";
-import { chargeSteps, spelling } from "./expr.js";
-import { fixesFrom, spellingFix } from "./fix-producers.js";
+import { chargeSteps, currentSteps, spelling } from "./expr.js";
+import { fixesFrom, idSpellingFix } from "./fix-producers.js";
 import { rectLabelOutsideDiag } from "./elements/room.js";
 import type { RelConstraint, RRoom } from "./ir.js";
 import { type EdgeLine, extremeRuns, rectilinear, runsText, type SideWord } from "./room-tiling.js";
@@ -137,8 +137,8 @@ function referenceRun(room: RelRoom, ref: RRoom & { poly: Point[] }): EdgeLine |
  * instance's unplaced room as unplaced rather than as an absolute room at its placeholder,
  * and `checkRoomOverlaps` skips such rooms (their `at` is a placeholder, not geometry).
  */
-/** The steps one relational pass may spend on did-you-mean searches: a fifth of
- *  `MAX_EVAL_STEPS` (AF2). */
+/** The steps a resolution may have spent, in all, for a did-you-mean search still to run: a
+ *  fifth of `MAX_EVAL_STEPS` (AF2). */
 const SEARCH_STEPS = 1_000_000;
 
 export function placeRelational(
@@ -166,13 +166,12 @@ export function placeRelational(
   // the phases (fixpoint, then leftover walk) cannot invert the order.
   const pending = new Map<string, Diagnostic>();
   // AF2's did-you-mean for an unknown reference: the ids are a user's, an open set, so its fix is
-  // never machine-applicable. The list is built (and charged) once, and searched only as many
-  // times as a plan's diagnostics can be reported (`MAX_DIAGNOSTICS`) and only within a fixed
-  // share of the step budget (`SEARCH_STEPS`), so a plan of many bad references spends on them
-  // at most that share more than it did before.
+  // never machine-applicable. The list is built (and charged) once per pass, and searched only as
+  // many times as a plan's diagnostics can be reported (`MAX_DIAGNOSTICS`), and only while the
+  // whole resolution (every group and storey on its one step meter) has spent under
+  // `SEARCH_STEPS`: so however many passes a plan makes, its searches spend at most that.
   let ids: string[] | undefined;
   let searches = 0;
-  const budget = { steps: SEARCH_STEPS };
 
   // Fixpoint: keep placing any room whose reference is resolved. Declaration
   // order within each sweep makes the result deterministic.
@@ -191,7 +190,7 @@ export function placeRelational(
             chargeSteps(rooms.length);
             ids = rooms.map((x) => x.id);
           }
-          near = spelling(r._rel.ref, ids, r.id, budget);
+          near = spelling(r._rel.ref, ids, r.id, { steps: Math.max(0, SEARCH_STEPS - currentSteps()) });
         }
         pending.set(r.id, {
           severity: "error",
@@ -199,7 +198,7 @@ export function placeRelational(
           code: "E_LAYOUT_REF",
           span: refSpan ?? r._rel.span,
           ...(near ? { hints: [`did you mean \`${near.word}\`?`] } : {}),
-          ...fixesFrom(spellingFix(refSpan, near, false)),
+          ...fixesFrom(idSpellingFix(refSpan, near)),
         });
         unresolved.delete(r.id); // can't place it; stop revisiting
         failed.add(r.id);

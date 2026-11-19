@@ -24,8 +24,8 @@ export type TitleField = (typeof TITLE_FIELDS)[number];
 
 /**
  * Setting / attribute keywords → `keyword.other`, CM `propertyName`: the words that lead a clause
- * ({@link KEYWORDS}`.attribute`). Their own constant, so the parser can read them (AF2: a
- * misspelt clause word is one slip from one of these) without bundling the other categories.
+ * ({@link KEYWORDS}`.attribute`). Their own constant because the parser's did-you-mean reads them
+ * on their own, as the clause words a misspelt word on a statement's line is one slip from (AF2).
  */
 export const ATTRIBUTE_KEYWORDS = [
   "units",

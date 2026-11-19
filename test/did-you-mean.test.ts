@@ -25,6 +25,7 @@ import type { Diagnostic } from "../src/diagnostics.js";
 import { spelling } from "../src/expr.js";
 import { KEYWORDS, STATEMENT_STARTS } from "../src/grammar/tokens.js";
 import { USE_KINDS } from "../src/ast.js";
+import { makeVirtualWorld } from "../src/world.js";
 import { runArch } from "./helpers/cli.js";
 
 /** The words a statement can start with: the fixed ones and the element keywords. */
@@ -67,7 +68,9 @@ function fixed(src: string, unsafe = false): { out: string; codes: string[] } {
 
 suite("spelling(): TypeScript's getSpellingSuggestion rules", () => {
   it("finds the near word, and calls it unique when no other word is under the limit", () => {
-    expect(spelling("dor", STARTS)).toEqual({ word: "door", unique: true });
+    // `for` stands at the limit (a changed letter counts two): no suggestion itself, but near enough
+    // to make `door` a guess (fix round 2 of #978).
+    expect(spelling("dor", STARTS)).toEqual({ word: "door", unique: false });
     expect(spelling("bedrom", USE_KINDS)).toEqual({ word: "bedroom", unique: true });
     // A changed letter counts two (`dor` is not one edit from `for`), as in TypeScript.
     expect(spelling("dor", ["for"])).toBeNull();
@@ -106,14 +109,28 @@ suite("spelling(): TypeScript's getSpellingSuggestion rules", () => {
 
 suite("the producers: a word-level span and a fix that rewrites that word alone", () => {
   it("an unknown statement word", () => {
+    // `for` at the distance limit makes `door` a guess: the hint, and a fix for `--unsafe`.
     expect(spelt(plan(...ROOMS, "dor on hall.bottom at 1000 from start width 900"))).toEqual([
-      { code: "E_PARSE", span: "dor", hint: "did you mean `door`?", fix: [MA, "dor", "door"] },
+      { code: "E_PARSE", span: "dor", hint: "did you mean `door`?", fix: [MI, "dor", "door"] },
+    ]);
+    expect(spelt(plan("levle 1 {", "  room id=a at (0,0) size 4000x3000", "}"))).toEqual([
+      { code: "E_PARSE", span: "levle", hint: "did you mean `level`?", fix: [MA, "levle", "level"] },
     ]);
   });
 
+  it("a candidate at the distance limit makes the nearest a guess (`dism`, `siet`, `ste`)", () => {
+    const pre = 'room id=a at (0,0) size 4000x3000 label "A" uses living';
+    expect(spelt(plan("dism auto all", pre)).map((x) => x.fix)).toEqual([[MI, "dism", "dim"]]);
+    expect(spelt(plan("siet { street north hemisphere north }", pre)).map((x) => x.fix)).toEqual([[MI, "siet", "set"]]);
+    expect(spelt(plan(pre, "ste door(width: 900)")).map((x) => x.fix)).toEqual([[MI, "ste", "site"]]);
+    // A value word can stand on a statement's line: `roomss` after `dims auto` is one slip from `rooms`.
+    expect(spelt(plan("dims auto roomss", pre)).map((x) => x.fix)).toEqual([[MI, "roomss", "rooms"]]);
+  });
+
   it("a misspelt clause word that ended its statement early", () => {
+    // `slab` stands at the limit of `lable`: the hint, and a fix for `--unsafe`.
     expect(spelt(plan('room id=a at (0,0) size 4000x3000 lable "A"'))).toEqual([
-      { code: "E_PARSE", span: "lable", hint: "did you mean `label`?", fix: [MA, "lable", "label"] },
+      { code: "E_PARSE", span: "lable", hint: "did you mean `label`?", fix: [MI, "lable", "label"] },
     ]);
     expect(spelt(plan("uses bedrom"))).toEqual([]);
     expect(spelt(plan('room id=a at (0,0) size 4000x3000 label "A" uses living bedrom'))).toEqual([
@@ -205,11 +222,29 @@ suite("the producers: a word-level span and a fix that rewrites that word alone"
     ]);
   });
 
-  it("a name the plan declares is never rewritten by a machine fix", () => {
+  it("a word the source writes anywhere else is never rewritten by a machine fix", () => {
     expect(
       tiers(plan(...ROOMS, "component wal() {", "  furniture sofa at (500,500) size 1500x900", "}", "wal")),
     ).toEqual([MI]);
     expect(tiers(plan(...ROOMS, "let rom = 3", "rom"))).toEqual([MI]);
+    // A component parameter, and an imported name (fix round 2 of #978).
+    const param = plan(
+      "component c(labl) {",
+      "  room id=r at (0,0) size 3000x3000 labl",
+      "}",
+      "place c(3000) as u at (0,0)",
+    );
+    expect(spelt(param).map((x) => x.fix)).toEqual([[MI, "labl", "label"]]);
+    const lib = plan("component stairs() {", "  stair at (500,500) size 1000x2500 dir up", "}");
+    const main = plan('import "lib.arch": stairs', ...ROOMS, "stairs");
+    const d = compile(main, { noCache: true, world: makeVirtualWorld({ "lib.arch": lib }) }).diagnostics.find((x) =>
+      x.fixes?.some((f) => f.fixId === "spelling"),
+    )!;
+    expect(d.fixes!.map((f) => [f.applicability, f.edits[0]!.newText])).toEqual([[MI, "stair"]]);
+    // The red team's swap fuzz: two neighbouring words exchanged leave a word the plan uses elsewhere.
+    expect(tiers(plan(...ROOMS, "DOOR let = 900", "door on hall.bottom at 1000 from start width DOOR"))).toEqual([MI]);
+    const swapped = plan("unit component(w) {", "  room id=r at (0,0) size w x 3000", "}", "unit(4000)");
+    expect(tiers(swapped).filter((t) => t === MA)).toEqual([]);
   });
 
   it("`W_UNKNOWN_FURNITURE` is spanned on the kind word and its fix rewrites only that word", () => {
@@ -235,17 +270,35 @@ suite("the search is bounded like the diagnostics it enriches", () => {
       "room id=anchor at (0,0) size 1000x1000",
       ...Array.from({ length: n }, (_, i) => `room id=rm${i} right-of ghost${i} size 1000x1000`),
     );
-  it.each([1000, 3000])("%i bad references keep main's 500 E_LAYOUT_REF and E_DIAGNOSTIC_LIMIT", (n) => {
-    const codes = compile(badRefs(n), { noCache: true }).diagnostics.map((d) => d.code);
+  const pad = (i: number): string => String(i).padStart(4, "0");
+  const refs = (k: number, ind: string): string[] => [
+    `${ind}room id=r0000 at (0,0) size 1000x1000`,
+    ...Array.from({ length: k - 1 }, (_, i) => `${ind}room id=r${pad(i + 1)} right-of q${pad(i + 1)} size 1000x1000`),
+  ];
+  const keepsMain = (src: string): void => {
+    const codes = compile(src, { noCache: true }).diagnostics.map((d) => d.code);
     expect(codes.filter((c) => c === "E_LAYOUT_REF")).toHaveLength(500);
     expect(codes.filter((c) => c !== "E_LAYOUT_REF")).toEqual(["E_DIAGNOSTIC_LIMIT"]);
+  };
+  it.each([1000, 3000])("%i bad references keep main's 500 E_LAYOUT_REF and E_DIAGNOSTIC_LIMIT", (n) => {
+    keepsMain(badRefs(n));
+  });
+  // The search budget is the whole resolution's, not each pass's (fix round 2 of #978).
+  it("a component of 250 bad references placed 6 times keeps main's report, no E_STEP_LIMIT", () => {
+    const places = [0, 1, 2, 3, 4, 5].map((i) => `place c() as u${i} at (0,${i * 5000})`);
+    keepsMain(plan("component c() {", ...refs(250, "  "), "}", ...places));
+  });
+  it("6 storeys of 250 bad references keep main's report, no E_STEP_LIMIT", () => {
+    keepsMain(plan(...[1, 2, 3, 4, 5, 6].flatMap((l) => [`level ${l} {`, ...refs(250, "  "), "}"])));
   });
 });
 
 suite("`arch fix` applies each machine-applicable fix cleanly: fix, recompile, the error is gone", () => {
   it.each([
-    ["dor", plan(...ROOMS, "dor on hall.bottom at 1000 from start width 900")],
-    ["lable", plan('room id=a at (0,0) size 4000x3000 lable "A"', "walls from rooms exterior 200 partition 100")],
+    [
+      "levle",
+      plan("levle 1 {", "  room id=a at (0,0) size 4000x3000", "  walls from rooms exterior 200 partition 100", "}"),
+    ],
     [
       "betwen",
       plan(
@@ -263,6 +316,8 @@ suite("`arch fix` applies each machine-applicable fix cleanly: fix, recompile, t
   });
 
   it.each([
+    ["dor", plan(...ROOMS, "dor on hall.bottom at 1000 from start width 900")],
+    ["lable", plan('room id=a at (0,0) size 4000x3000 lable "A"', "walls from rooms exterior 200 partition 100")],
     ["hal", plan(ROOMS[0]!, 'room id=b right-of hal size 3000x3000 label "B"', ROOMS[2]!)],
     [
       "open betwen",
@@ -289,6 +344,19 @@ suite("a fix inside an imported module is never applied to the importing file (#
     'room id=kitchen at (20000,0) size 4000x3000 label "Kitchen and family dining room"',
     "place unit() as u at (0,0)",
   );
+
+  it("a compiling plan's warning on an imported relational room names its module too", () => {
+    const lib = plan(
+      "component unit() {",
+      "  room id=a at (0,0) size 3000x3000",
+      '  room id=b right-of a size 2000x3000 label "B" at (90000,0)',
+      "}",
+    );
+    const main = plan('import "lib.arch": unit', "place unit() as u at (0,0)");
+    const ds = compile(main, { noCache: true, world: makeVirtualWorld({ "lib.arch": lib }) }).diagnostics;
+    // On main the warning had no `file`, so a reader looked for its span in the importing file.
+    expect(ds.map((d) => [d.code, d.file])).toEqual([["W_ROOM_LABEL_OUTSIDE", "lib.arch"]]);
+  });
 
   it("the diagnostic and its fix name the module; `arch fix` and `--unsafe` leave both files as they are", async () => {
     const dir = mkdtempSync(join(tmpdir(), "af2-import-"));
