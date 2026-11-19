@@ -234,8 +234,10 @@ coordinator's own notes (merging, registries, browser and social automation, the
   the playground e2e.** In a worktree whose `node_modules` is a junction both would resolve an
   older core and be invalid, so read them from the PR's CI.
 - **The 3D assets (`docs-site/public/3d/` PNGs and `manifest.json`) measured in a junctioned worktree
-  come from the primary's `dist/`, not from the worktree's core**, so a drawing change re-measured
-  there reproduces `main`'s images. Take moved 3D assets from the PR's CI, or build in a checkout
+  come from the primary's `dist/`, not from the worktree's core**, when made with
+  `npm run gen:3d-assets` (its script imports the bare `@chanmeng666/archlang`, which the junction
+  resolves to the primary's last build; under vitest the same module reads the worktree's source).
+  So a drawing change re-measured there reproduces whatever the primary last built. Take moved 3D assets from the PR's CI, or build in a checkout
   with its own `node_modules`.
 - **Remove a worktree's `node_modules` junctions with `[System.IO.Directory]::Delete(<junction>)`** (never recursive; the PowerShell tool blocks `cmd /c rmdir`) before
   `git worktree remove --force` or any recursive delete, or the delete follows them into the primary.
