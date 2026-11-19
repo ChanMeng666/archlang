@@ -249,12 +249,17 @@ Totals: 658 exports (229 values, 429 types), 418 flagged (75 values).
 | `AsciiOptions` | type | none |
 | `renderAscii` | value | `packages/mcp`, `playground`, `src/cli`, `test` |
 
+## `src/backends/error-svg-public.ts`
+
+| Export | Kind | In-repo consumers |
+| --- | --- | --- |
+| `renderErrorSvg` | value | `test` |
+
 ## `src/backends/error-svg.ts`
 
 | Export | Kind | In-repo consumers |
 | --- | --- | --- |
 | `ErrorSvgOptions` | type | none |
-| `renderErrorSvg` | value | `test` |
 
 ## `src/backends/png-defaults.ts`
 

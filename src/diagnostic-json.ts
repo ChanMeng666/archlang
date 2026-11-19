@@ -4,15 +4,17 @@
  * `diagnosticToJson` is the **canonical** shape emitted by the CLI's `--json`
  * output for every diagnostic: it resolves the byte `span` to 1-based
  * `line`/`col` (via {@link offsetToLineCol}) and attaches the catalogued `fix`
- * (from {@link CATALOG_FIXES}, the catalogue's fix column generated from `ERROR_CATALOG`) so a
- * self-correcting agent needs no docs lookup. It reads that column, never the catalogue itself, so a
- * bundle that compiles (the `--error-svg` card draws these fixes) need not carry every message,
- * cause and example (card RM0.7). Pure and isomorphic — it only maps data, no I/O.
+ * (the catalogue's fix column, generated from `ERROR_CATALOG` as two tables: every code `compile()`
+ * can raise, and the intent violations' `E_INTENT_*`, which only `validateIntent` raises; this reads
+ * both, so every catalogue code gets its fix) so a self-correcting agent needs no docs lookup. It
+ * reads that column, never the catalogue itself, so a bundle that compiles (the `--error-svg` card
+ * draws the first table's fixes) need not carry every message, cause and example (card RM0.7), nor
+ * the intent table (card NR.10). Pure and isomorphic — it only maps data, no I/O.
  */
 
 import type { Applicability, Diagnostic, Severity } from "./diagnostics.js";
 import { offsetToLineCol } from "./diagnostics.js";
-import { catalogFix } from "./catalog-fix.js";
+import { anyCatalogFix } from "./any-catalog-fix.js";
 
 /** A {@link import("./diagnostics.js").FixSuggestion} projected to JSON — edit
  *  spans become `[start, end]` tuples (like the diagnostic's own `span`). */
@@ -237,7 +239,7 @@ export function diagnosticToJson(source: string, d: Diagnostic, opts?: Diagnosti
     out.span = [d.span.start, d.span.end];
   }
   if (d.file !== undefined) out.file = d.file;
-  const fix = catalogFix(d.code);
+  const fix = anyCatalogFix(d.code);
   if (fix) out.fix = fix;
   if (d.hints?.length) out.hints = d.hints;
   if (d.fixes?.length)

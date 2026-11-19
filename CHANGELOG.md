@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- The playground's first use loads about 28 KB (gzip) less (card 3.18). Format, Finish, Repair furniture and the DXF and TXT downloads now load their code when one of them is first pressed, or when the menu that holds it opens, not with the first compile. The intent violations' fixes (`E_INTENT_*`, which only `validateIntent` raises) are no longer in the compiler chunk (card NR.10). What every function returns is unchanged: `diagnosticToJson` and `renderErrorSvg` still give every code's catalogued fix.
+
 ### Added
 
 - Each diagnostic code's catalogue example is paired with a corrected one (card AF5): `CatalogEntry` gains an optional `fixed`, the example edited as the entry's own `fix` says, so that it compiles with no error and without the code (a warning's correction also raises nothing its example did not, and no correction is the example with its offending line deleted unless deleting is the fix). A test runs both halves. 204 of the 205 codes whose example is run have one; `E_IMPORT_NOT_FOUND` has none, since its fix is a module that exists and a bare snippet has no file system to serve one. The 67 codes whose example the test cannot run have none either: those raised off the `.arch` channel (an intent, a JSON payload, a foreign import, a host's caps, the CLI's file system, a render-time font, a plugin, an `impact` option) and the one-line fragments whose code needs a whole building around them (a wall to be off, rooms to be unreachable between, a sheet to overflow). `arch explain <CODE>` prints it under `Fixed:`, `explain --json` returns it in `entry`, and `docs/error-codes.md` shows it under each example. The new MCP tool `explain` (stdio and hosted) returns the same `{ ok, code, entry }` as `explain --json`, `{ ok:false, code }` for an unknown code. `compile()`, `describe()` and `lint()` are unchanged, and the catalogue text stays out of the playground's compiler chunk.
