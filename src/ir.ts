@@ -33,7 +33,7 @@ import { statementReadIds } from "./analyze/depends.js";
 import { numberAxes } from "./axes.js";
 import type { Frame } from "./frame.js";
 import { tryTransformElement } from "./frame.js";
-import { type Diagnostic, rootsFirst, type Span } from "./diagnostics.js";
+import { causeToDomain, type Diagnostic, rootsFirst, type Span } from "./diagnostics.js";
 import type { Env, Expr, Value } from "./expr.js";
 import { fmt0, fmt3, MODEL_RANGE_MM } from "./num-format.js";
 import {
@@ -120,6 +120,7 @@ import {
   farthest,
   outOfRange,
   checkNumberDomain,
+  domainOf,
   checkDrawnSizes,
   lineWeightOutOfRange,
   checkPlanDrawable,
@@ -1790,13 +1791,20 @@ function resolveBody(
       else if (poisoned.has(e.resolved)) poisonedEntries.add(e);
     }
     let kept = 0;
+    const gone: Diagnostic[] = [];
     for (const d of diagnostics) {
       const owner = ownerOf.get(d);
       if (owner === undefined || (!droppedEntries.has(owner) && (!poisonedEntries.has(owner) || rootCauses.has(d)))) {
         diagnostics[kept++] = d;
-      }
+      } else gone.push(d);
     }
     diagnostics.length = kept;
+    // A root that went with its statement (RM9.4): what lacks that statement's walls follows from its range error.
+    if (gone.length > 0)
+      causeToDomain(diagnostics, gone, (r) => {
+        const el = ownerOf.get(r)?.resolved;
+        return el && domainOf.get(el);
+      });
     for (const el of poisoned) outside.add(el);
     const keptWalls = walls.filter((w) => !outside.has(w));
     walls.length = 0;

@@ -160,12 +160,17 @@ export function fmtLiteral(n: number): string {
 
 /**
  * `n` as a message quotes a value the author wrote: {@link fmt3} when that reads back as `n`, else
- * the shortest decimal that does ({@link plainDigits}), without float noise ({@link fmtMessage}). So
- * `2749.9999` is never shown as `2750` (RM1.4: a value `grid` moved, quoted as written).
+ * the shortest decimal that does ({@link plainDigits}). So `2749.9999` is never shown as `2750`
+ * (RM1.4: a value `grid` moved, quoted as written). Float noise is dropped ({@link fmtMessage})
+ * only where that cannot mislead: given the `snap` that moved `n`, the shorter form is shown only
+ * when it snaps where `n` does, so `322.5 * 25.4` (8191.499999999999, snapped to 8191 on `grid 1`)
+ * is never shown as the 8191.5 that would snap to 8192.
  */
-export function fmtWritten(n: number): string {
+export function fmtWritten(n: number, snap?: (v: number) => number): string {
   const s = fmt3(n);
-  return Number(s) === n ? s : plainDigits(Number(fmtMessage(n)));
+  if (Number(s) === n) return s;
+  const short = Number(fmtMessage(n));
+  return plainDigits(!snap || snap(short) === snap(n) ? short : n);
 }
 
 /**

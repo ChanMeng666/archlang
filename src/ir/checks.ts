@@ -64,6 +64,9 @@ export function outOfRange(what: string, value: number, span: Span | undefined, 
  * (an opening's hole, the overlap check, the sheet fit, the drawing) forms a product from it.
  * `fmt3`'s `"0"` for a non-finite number stays only as a backstop.
  */
+/** The range error (`E_NON_FINITE`, `E_OUT_OF_RANGE`) {@link checkNumberDomain} dropped each element for. */
+export const domainOf = new WeakMap<ResolvedElement, Diagnostic>();
+
 export function checkNumberDomain(
   elements: ResolvedElement[],
   registry: Registry,
@@ -89,19 +92,23 @@ export function checkNumberDomain(
     }
     const span = (el as { span?: Span }).span;
     if (what !== undefined) {
-      diagnostics.push({
+      const d: Diagnostic = {
         severity: "error",
         message: `${what} is not finite (the dimensions overflow the number range)`,
         code: "E_NON_FINITE",
         span,
         ...(el._file ? { file: el._file } : {}),
-      });
+      };
+      diagnostics.push(d);
+      domainOf.set(el, d);
       outside.add(el);
       continue;
     }
     const far = farthest([...pts.flatMap((p) => [p.x, p.y]), ...values]);
     if (far !== undefined) {
-      diagnostics.push(outOfRange(`The geometry of ${el.kind} "${name}"`, far, span, el._file));
+      const d = outOfRange(`The geometry of ${el.kind} "${name}"`, far, span, el._file);
+      diagnostics.push(d);
+      domainOf.set(el, d);
       outside.add(el);
       continue;
     }

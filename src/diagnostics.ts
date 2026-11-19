@@ -160,20 +160,71 @@ export interface Diagnostic {
   cause?: { code: string; span: Span; file?: string };
 }
 
+type Cause = NonNullable<Diagnostic["cause"]>;
+
+/** A cause's root key: its code, span, file and the dependent's instance, as JSON (no collisions). */
+const rootKey = (code?: string, span?: Span, file?: string, instance?: string): string =>
+  JSON.stringify([code, span?.start, span?.end, file ?? null, instance ?? null]);
+
+/**
+ * What a dependent says without its cause (RM9.4), keyed by its own `cause` object: its own hints,
+ * and `wall`, when what it lacks is a wall the refused statement would have derived. Set where the
+ * dependent is raised; read when its root does not reach the final list.
+ */
+export const plainOf = new WeakMap<Cause, { hints: string[]; wall: boolean }>();
+
+/** The related note a dependent carries on its root. */
+export const rootNote = (code: string): string => `follows from the ${code} here`;
+
+/**
+ * A dependent whose root was dropped with its statement (`gone`: the statement went out of the
+ * modelling range) and which lacks a wall that statement would have derived now follows from the
+ * statement's own range error, `domainOf(root)`, when that is in `list` in the same instance (RM9.4):
+ * nothing the statement would derive exists, whatever else it refused. Rewritten in place.
+ */
+export function causeToDomain(
+  list: Diagnostic[],
+  gone: readonly Diagnostic[],
+  domainOf: (root: Diagnostic) => Diagnostic | undefined,
+): void {
+  list.forEach((d, i) => {
+    const c = d.cause;
+    const plain = c && plainOf.get(c);
+    if (!c || !plain?.wall) return;
+    const k = rootKey(c.code, c.span, c.file, d.instance);
+    const root = gone.find((r) => rootKey(r.code, r.span, r.file, r.instance) === k);
+    const to = root && domainOf(root);
+    if (!to?.code || !to.span || to.instance !== d.instance || !list.includes(to)) return;
+    const cause: Cause = { code: to.code, span: to.span, ...(to.file !== undefined ? { file: to.file } : {}) };
+    plainOf.set(cause, plain);
+    list[i] = {
+      ...d,
+      ...(d.hints ? { hints: d.hints.map((h) => h.replace(`\`${c.code}\``, `\`${to.code}\``)) } : {}),
+      ...(d.relatedSpans
+        ? {
+            relatedSpans: d.relatedSpans.map((r) =>
+              r.message === rootNote(c.code) ? { ...r, span: to.span!, message: rootNote(to.code!) } : r,
+            ),
+          }
+        : {}),
+      cause,
+    };
+  });
+}
+
 /**
  * The diagnostics in their order, but with every ROOT moved to just before the first diagnostic that
  * names it as its {@link Diagnostic.cause} (RM9.4). A root is each diagnostic of the cause's `code`,
  * `span` and `file`, in the dependent's `instance`; the roots of one cause move together, in their
  * own order, and one already before its dependents stays put. A root never names a cause of its own
- * (no chain). A list without a `cause` is returned as it is, the same array.
+ * (no chain). A dependent whose root is not in the list names none: it is put back as it is without
+ * one (its own hints, no note, no `cause`). A list without a `cause` is returned as it is.
  */
 export function rootsFirst(list: Diagnostic[]): Diagnostic[] {
   if (!list.some((d) => d.cause)) return list;
-  const key = (code?: string, span?: Span, file?: string, instance?: string): string =>
-    `${code}@${span?.start}-${span?.end}@${file}@${instance}`;
   const roots = new Map<string, Diagnostic[]>();
   for (const d of list) {
-    const k = key(d.code, d.span, d.file, d.instance);
+    const k = rootKey(d.code, d.span, d.file, d.instance);
     const at = roots.get(k);
     if (at) at.push(d);
     else roots.set(k, [d]);
@@ -181,10 +232,20 @@ export function rootsFirst(list: Diagnostic[]): Diagnostic[] {
   const out = new Set<Diagnostic>();
   for (const d of list) {
     const c = d.cause;
-    if (c) for (const r of roots.get(key(c.code, c.span, c.file, d.instance)) ?? []) out.add(r);
-    out.add(d);
+    const rs = c && roots.get(rootKey(c.code, c.span, c.file, d.instance));
+    if (rs) for (const r of rs) out.add(r);
+    out.add(c && !rs ? withoutCause(d, c) : d);
   }
   return [...out];
+}
+
+/** `d` as it was raised before it named `c`: in its own key order, the note on the root left out. */
+function withoutCause(d: Diagnostic, c: Cause): Diagnostic {
+  const { cause: _c, relatedSpans, ...rest } = d;
+  const plain = plainOf.get(c);
+  if (plain) rest.hints = plain.hints;
+  const kept = relatedSpans?.filter((r) => r.message !== rootNote(c.code));
+  return kept?.length ? { ...rest, relatedSpans: kept } : rest;
 }
 
 /**

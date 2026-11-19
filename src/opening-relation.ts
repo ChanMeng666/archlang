@@ -37,7 +37,7 @@
  */
 
 import type { AttachPos, OpeningAttach, OpeningBetween, Point, WallsPairRoom } from "./ast.js";
-import type { Diagnostic, Span } from "./diagnostics.js";
+import { type Diagnostic, plainOf, rootNote, type Span } from "./diagnostics.js";
 import { exprChildren } from "./cursor.js";
 import { chargeSteps } from "./expr.js";
 import type { Expr } from "./expr.js";
@@ -110,21 +110,25 @@ export interface RelationCtx {
 type Cause = NonNullable<Diagnostic["cause"]>;
 
 /**
- * What a diagnostic that follows from `cause` (RM9.4) carries: the `cause`, a related note on the root
+ * What a diagnostic that follows from `found` (RM9.4) carries: the `cause`, a related note on the root
  * when it is measured in this statement's source, and a hint to fix the root first (`why` says what it
- * did); with no cause, the diagnostic's own `hints`.
+ * did); with no cause, the diagnostic's own `hints`, which `plainOf` keeps for a root that does not
+ * reach the final list. `wall`: what it lacks is a wall the refused statement would have derived.
  */
 function followsFrom(
   ctx: RelationCtx,
-  cause: Cause | undefined,
+  found: Cause | undefined,
   why: string,
   hints: string[],
+  wall: boolean,
 ): Pick<Diagnostic, "hints" | "relatedSpans" | "cause"> {
-  if (!cause) return { hints };
+  if (!found) return { hints };
+  const cause = { ...found };
+  plainOf.set(cause, { hints, wall });
   return {
     hints: [`Fix the \`${cause.code}\` this follows from first: ${why}.`],
     ...((ctx.sameFile?.(cause.file) ?? true)
-      ? { relatedSpans: [{ span: cause.span, message: `follows from the ${cause.code} here` }] }
+      ? { relatedSpans: [{ span: cause.span, message: rootNote(cause.code) }] }
       : {}),
     cause,
   };
@@ -867,9 +871,13 @@ export function placeBetween(
       code: "E_WALL_BETWEEN_NOT_ADJACENT",
       span: b.span,
       // Two rooms that overlap share no edge: the overlap `walls from rooms` refused is the root (RM9.4).
-      ...followsFrom(ctx, ctx.refusedDerivation?.([b.a.id, b.b.id], true), "the rooms overlap, so they share no edge", [
-        "Name two rooms that meet along an edge, or place the opening `on <wall> at …` or `at (x,y)`.",
-      ]),
+      ...followsFrom(
+        ctx,
+        ctx.refusedDerivation?.([b.a.id, b.b.id], true),
+        "the rooms overlap, so they share no edge",
+        ["Name two rooms that meet along an edge, or place the opening `on <wall> at …` or `at (x,y)`."],
+        false,
+      ),
     });
     return null;
   }
@@ -935,9 +943,15 @@ function placeOnRun(
       message: `${what} has no wall to stand in: no wall lies on the ${runWord} \`${where}\` names (on ${lineText(run)}, ${alongText(run, run.r0)}–${numStr(run.r1)})`,
       code: "E_OPENING_NO_SHARED_WALL",
       span,
-      ...followsFrom(ctx, ctx.refusedDerivation?.(named), "`walls from rooms` refused, so it derived no wall here", [
-        "Add the wall (`walls from rooms` derives it, or write it by hand on that line), or place the opening on a wall that exists.",
-      ]),
+      ...followsFrom(
+        ctx,
+        ctx.refusedDerivation?.(named),
+        "`walls from rooms` refused, so it derived no wall here",
+        [
+          "Add the wall (`walls from rooms` derives it, or write it by hand on that line), or place the opening on a wall that exists.",
+        ],
+        true,
+      ),
     });
     return null;
   }

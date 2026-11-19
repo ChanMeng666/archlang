@@ -12,7 +12,7 @@
 
 import type { Applicability, Diagnostic, Severity, Span } from "./diagnostics.js";
 import { offsetToLineCol } from "./diagnostics.js";
-import { catalogFix } from "./catalog-fix.js";
+import { diagnosticFix } from "./catalog-fix.js";
 
 /** A {@link import("./diagnostics.js").FixSuggestion} projected to JSON — edit
  *  spans become `[start, end]` tuples (like the diagnostic's own `span`). */
@@ -223,9 +223,6 @@ export interface DiagnosticJsonOptions {
   overprint?: (d: Diagnostic) => DiagnosticOverprintJson | undefined;
 }
 
-/** A diagnostic's {@link DiagnosticJson.fix} when it names a cause (RM9.4). */
-const CAUSE_FIX = "Fix the diagnostic `cause` names first: this one follows from it.";
-
 /** `head`, then where `at` lies: `line`/`col` when it is in `source` (none in another `file`), `span`, `file`. */
 function located<T extends object>(
   source: string,
@@ -258,7 +255,7 @@ export function diagnosticToJson(source: string, d: Diagnostic, opts?: Diagnosti
   // rather than a confidently-wrong location in the file the caller is reading.
   if (d.span) Object.assign(out, located(source, {}, { span: d.span, file: d.file }));
   else if (d.file !== undefined) out.file = d.file;
-  const fix = d.cause ? CAUSE_FIX : catalogFix(d.code);
+  const fix = diagnosticFix(d);
   if (fix) out.fix = fix;
   if (d.hints?.length) out.hints = d.hints;
   if (d.fixes?.length)

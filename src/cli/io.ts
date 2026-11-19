@@ -8,7 +8,8 @@
 import { readFileSync, existsSync, mkdirSync, realpathSync, statSync, writeFileSync } from "node:fs";
 import { resolve as resolvePath, dirname, isAbsolute, relative, sep } from "node:path";
 import { fileURLToPath } from "node:url";
-import { formatDiagnostic, EXPORT_FORMATS, planFromJson, buildManifest, ERROR_CATALOG } from "../index.js";
+import { formatDiagnostic, EXPORT_FORMATS, planFromJson, buildManifest } from "../index.js";
+import { diagnosticFix } from "../catalog-fix.js";
 import type { Diagnostic, World, ExportFormat, ManifestCommand, ManifestFlag, ViewName, Theme } from "../index.js";
 import type { WorldRefusal } from "../world.js";
 import { VIEW_NAMES, isViewName, THEMES } from "../index.js";
@@ -516,7 +517,8 @@ export function emitJson(io: CliIo, obj: unknown): void {
  * have to run `archlang explain <CODE>` to learn the remedy.
  */
 function catalogFixLine(d: Diagnostic): string {
-  const fix = d.code ? ERROR_CATALOG[d.code]?.fix : undefined;
+  // A diagnostic that names a cause says to fix that root first, as its JSON `fix` does (RM9.4).
+  const fix = diagnosticFix(d);
   return fix ? `\n  = fix: ${fix}` : "";
 }
 

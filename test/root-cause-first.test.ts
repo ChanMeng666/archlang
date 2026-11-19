@@ -8,7 +8,8 @@
  * edge of a room the statement derives from, and a door between two rooms it refused for
  * overlapping, follow from it (`refusedDerivation`). `rootsFirst` moves each root to just before its
  * first dependent and leaves every other diagnostic in its order. Nothing is deleted: each dependent
- * keeps its own report. Only a failing plan's ORDER moves; a message's NUMBER moves on any plan,
+ * keeps its own report, and a dependent whose root does not reach the final list is put back as it
+ * was raised, or follows from its statement's range error. Only a failing plan's ORDER moves; a message's NUMBER moves on any plan,
  * compiling ones included, where the old text printed float noise (the table at the end pins one
  * plan per message).
  */
@@ -180,7 +181,8 @@ describe("two rooms that overlap share no edge: a door between them follows from
     ]);
   });
 
-  it("with no `walls from rooms` there is no root: the door's error is the plan's only one, unchanged", () => {
+  it("with walls drawn by hand a 1 mm overlap raises nothing of its own: the door's error stays the plan's only one", () => {
+    // `W_ROOM_OVERLAP` starts at 2 mm; linking it (and `wall … between|around`'s E_ROOMS_OVERLAP) is residue.
     const src = OVERLAP.replace("  walls from rooms exterior 150 partition 100\n", "").replace(
       "  window on a.top width 900\n",
       "  wall exterior thickness 150 { (0,0) (5999,0) (5999,3000) (0,3000) close }\n",
@@ -250,15 +252,128 @@ describe("a refused thickness is the root too, only for the rooms the statement 
   });
 
   it("a duplicate statement is never a root, whatever its thickness", () => {
-    const src = OVERLAP.replace(
-      "  walls from rooms exterior 150 partition 100\n",
-      "  walls from rooms exterior 150 partition 100\n  walls from rooms exterior 0 partition 100\n",
-    );
+    // The first statement leaves `b` out and derives fine; the duplicate's thickness is refused. Had the
+    // duplicate been recorded as a root, the window on `b`, a room it holds, would name it.
+    const src = `plan "Dup" {
+  room id=a at (0, 0) size 3000x3000 label "A"
+  room id=b at (3000, 0) size 3000x3000 label "B"
+  walls from rooms exterior 150 partition 100 { except b }
+  walls from rooms exterior 0 partition 100
+  window on b.top width 900
+}
+`;
     const ds = compile(src, { noCache: true }).diagnostics;
-    const thin = ds.find((d) => d.code === "E_WALL_THICKNESS")!;
-    expect(ds.some((d) => d.code === "E_WALLS_FROM_ROOMS_DUP" && d.span!.start === thin.span!.start)).toBe(true);
-    const causes = ds.flatMap((d) => (d.cause ? [d.cause.code] : []));
-    expect(causes).toEqual(["E_ROOMS_OVERLAP", "E_ROOMS_OVERLAP"]);
+    expect(ds.map((d) => d.code).sort()).toEqual([
+      "E_OPENING_NO_SHARED_WALL",
+      "E_WALLS_FROM_ROOMS_DUP",
+      "E_WALL_THICKNESS",
+    ]);
+    const window = ds.find((d) => d.code === "E_OPENING_NO_SHARED_WALL")!;
+    expect(window.cause).toBeUndefined();
+    expect(window.relatedSpans).toBeUndefined();
+  });
+});
+
+describe("a root that goes with its statement (out of the modelling range) is never named", () => {
+  /** No `cause` may name a diagnostic missing from the list (in the dependent's instance). */
+  const noOrphans = (ds: readonly Diagnostic[]) => {
+    for (const d of ds) {
+      const c = d.cause;
+      if (!c) continue;
+      const root = ds.findIndex(
+        (r) =>
+          r.code === c.code &&
+          r.span?.start === c.span.start &&
+          r.span?.end === c.span.end &&
+          r.file === c.file &&
+          r.instance === d.instance,
+      );
+      expect(root, `${d.code}@${d.span?.start} names ${c.code}`).toBeGreaterThanOrEqual(0);
+      expect(root).toBeLessThan(ds.indexOf(d));
+    }
+  };
+
+  it("a partition past the range: the openings follow from the statement's E_OUT_OF_RANGE, listed first", async () => {
+    const src = `plan "p" {
+  room id=a at (0, 0) size 3000x3000 label "A"
+  room id=b at (3000, 0) size 3000x3000 label "B"
+  walls from rooms exterior 150 partition 100000000
+  door between a and b at center width 800
+  window on a.top width 900
+}
+`;
+    const ds = compile(src, { noCache: true }).diagnostics;
+    noOrphans(ds);
+    // main (a7924a73) listed E_OPENING_NO_SHARED_WALL ×2 then E_OUT_OF_RANGE; the E_PARTITION_TOO_SHORT
+    // the statement raised went with it.
+    expect(ds.map((d) => d.code)).toEqual(["E_OUT_OF_RANGE", "E_OPENING_NO_SHARED_WALL", "E_OPENING_NO_SHARED_WALL"]);
+    const root = ds[0]!;
+    expect(root.span!.start).toBe(at(src, "walls from rooms"));
+    for (const d of ds.slice(1)) {
+      expect(d.cause).toEqual({ code: "E_OUT_OF_RANGE", span: root.span });
+      expect(d.relatedSpans).toEqual([{ span: root.span, message: ROOT_NOTE("E_OUT_OF_RANGE") }]);
+      expect(d.hints![0]).toMatch(/^Fix the `E_OUT_OF_RANGE` this follows from first/);
+    }
+    const r = await runArch(["validate", "-", "--json"], { input: src });
+    expect((JSON.parse(r.stdout) as { next: { code: string } }).next.code).toBe("E_OUT_OF_RANGE");
+  });
+
+  it("an exterior past the range on overlapping rooms: the door is put back as it was, the window follows the range error", () => {
+    const src = `plan "p" {
+  room id=a at (0, 0) size 3000x3000 label "A"
+  room id=b at (2999, 0) size 3000x3000 label "B"
+  walls from rooms exterior 1000000000000 partition 100
+  door between a and b at center width 800
+  window on a.top width 900
+}
+`;
+    const ds = compile(src, { noCache: true }).diagnostics;
+    noOrphans(ds);
+    // The overlap's own report went with the statement, and "share no edge" follows from the overlap,
+    // not from the range: the door names no root, as on main. The window lacks a wall the statement
+    // would derive, which nothing it derives can give now: it follows from the range error.
+    expect(ds.map((d) => d.code)).toEqual([
+      "E_WALL_BETWEEN_NOT_ADJACENT",
+      "E_OUT_OF_RANGE",
+      "E_OPENING_NO_SHARED_WALL",
+    ]);
+    const [door, root, window] = ds;
+    expect(door!.cause).toBeUndefined();
+    expect(door!.relatedSpans).toBeUndefined();
+    expect(door!.hints).toEqual([
+      "Name two rooms that meet along an edge, or place the opening `on <wall> at …` or `at (x,y)`.",
+    ]);
+    expect(Object.keys(door!)).toEqual(["severity", "message", "code", "span", "hints"]);
+    expect(window!.cause).toEqual({ code: "E_OUT_OF_RANGE", span: root!.span });
+  });
+
+  it("rootsFirst puts a dependent whose root is missing back as it was raised", () => {
+    const ds = compile(OVERLAP, { noCache: true }).diagnostics;
+    const without = rootsFirst(ds.filter((d) => d.code !== "E_ROOMS_OVERLAP"));
+    expect(without.map((d) => d.cause)).toEqual([undefined, undefined]);
+    expect(without.map((d) => d.hints)).toEqual([
+      ["Name two rooms that meet along an edge, or place the opening `on <wall> at …` or `at (x,y)`."],
+      [
+        "Add the wall (`walls from rooms` derives it, or write it by hand on that line), or place the opening on a wall that exists.",
+      ],
+    ]);
+    expect(without.map((d) => d.relatedSpans)).toEqual([undefined, undefined]);
+  });
+});
+
+describe("the CLI text and the error card give the root-first fix too", () => {
+  it("`arch compile` prints `= fix:` naming the cause, not the catalogue's", async () => {
+    const r = await runArch(["compile", "-", "-o", "-"], { input: OVERLAP });
+    expect(r.stderr).toContain("= fix: Fix the diagnostic `cause` names first: this one follows from it.");
+    expect(r.stderr).not.toContain("= fix: Add the wall");
+    // The root keeps its own catalogued fix.
+    expect(r.stderr).toContain("= fix: Move or resize the rooms");
+  });
+
+  it("the error card draws the same fix", () => {
+    const svg = compile(OVERLAP, { noCache: true, onError: "svg" }).svg;
+    expect(svg).toContain("Fix: Fix the diagnostic");
+    expect(svg).not.toContain("Fix: Add the wall");
   });
 });
 
@@ -319,8 +434,30 @@ describe("rootsFirst", () => {
   it("leaves a root already before its dependents where it is, and a cause with no root alone", () => {
     const list = [d("E_ROOT", 9), d("W_A", 1), d("E_DEP", 5, { cause: cause("E_ROOT", 9) })];
     expect(rootsFirst(list)).toEqual(list);
+    // A cause whose root is not in the list is dropped: the dependent comes back without it.
     const orphan = [d("W_A", 1), d("E_DEP", 5, { cause: cause("E_GONE", 3) })];
-    expect(rootsFirst(orphan)).toEqual(orphan);
+    expect(rootsFirst(orphan)).toEqual([d("W_A", 1), d("E_DEP", 5)]);
+  });
+
+  it("tells an instance named `undefined` from a bare component call", () => {
+    const src = `plan "p" {
+  component wing() {
+  room id=a at (0, 0) size 3000x3000 label "A"
+  room id=b at (2999, 0) size 3000x3000 label "B"
+  walls from rooms exterior 150 partition 100
+  door between a and b at center width 800
+  }
+  place wing() as undefined at (20000, 0)
+  wing()
+}
+`;
+    const ds = compile(src, { noCache: true }).diagnostics;
+    expect(ds.map((d) => `${d.code}[${d.instance ?? "-"}]`)).toEqual([
+      "E_ROOMS_OVERLAP[undefined]",
+      "E_WALL_BETWEEN_NOT_ADJACENT[undefined]",
+      "E_ROOMS_OVERLAP[-]",
+      "E_WALL_BETWEEN_NOT_ADJACENT[-]",
+    ]);
   });
 
   it("matches the root in the dependent's own instance and file", () => {
@@ -423,8 +560,8 @@ const SITES: { code: string; compiles?: true; src: string; says: string }[] = [
   {
     code: "W_ROOM_LABEL_OUTSIDE",
     compiles: true,
-    src: `${WALL}\n room id=a at (0,0) size 3000x4000 label "A" at (20000/3, 100)\n room id=b at (3000,0) size 3000x4000 label "B"`,
-    says: "pins its label at (6666.66666666667, 100)",
+    src: `${WALL}\n room id=a at (0,0) size 3000x4000 label "A" at (20000/3, 10000/3)\n room id=b at (3000,0) size 3000x4000 label "B"`,
+    says: "pins its label at (6666.66666666667, 3333.33333333333)",
   },
   {
     code: "W_DIM_INSIDE",
@@ -437,6 +574,18 @@ const SITES: { code: string; compiles?: true; src: string; says: string }[] = [
     compiles: true,
     src: `wall id=w exterior thickness 0.1*3*1000 { (0,0) (6000,0) (6000,4000) (0,4000) close }\n room id=a at (0,0) size 6000x4000 label "A"\n outdoor balcony at (0,4000) size 3000x1200`,
     says: "within 300 mm of any of its edges",
+  },
+  {
+    code: "W_BALCONY_NO_DOOR",
+    compiles: true,
+    src: `wall id=w exterior thickness 0.1*3*1000 { (0,0) (6000,0) (6000,4000) (0,4000) close }\n room id=a at (0,0) size 6000x4000 label "A"\n outdoor balcony at (0,4000) size 3000x1200\n window fixed on w at 14500 width 900`,
+    says: "has no door within 300 mm of any of its edges, and the window there is not one to walk through",
+  },
+  {
+    code: "W_BALCONY_NO_DOOR",
+    compiles: true,
+    src: `wall id=w exterior thickness 0.1*3*1000 { (0,0) (6000,0) (6000,4000) (0,4000) close }\n room id=a at (0,0) size 6000x4000 label "A"\n outdoor balcony at (0,4000) size 3000x1200\n window on w at 14500 width 900 sill 600`,
+    says: "has no door within 300 mm of any of its edges, and the window there has its sill at 600 mm",
   },
   {
     code: "E_ATTACH_POS_RANGE",
@@ -501,13 +650,13 @@ const SITES: { code: string; compiles?: true; src: string; says: string }[] = [
   },
   {
     code: "E_PARTITION_TOO_SHORT",
-    src: `let FT = 304.8\n room id=a at (0,0) size 3000 x 12*FT label "A"\n room id=b at (3000, 12*FT - 3*FT) size 3000x3000 label "B"\n walls from rooms exterior 200 partition 6*FT`,
-    says: "share a run of 914.4 mm, from (3000, 2743.2) to (3000, 3657.6), shorter than the 1828.8 mm partition",
+    src: `let FT = 304.8\n room id=a at (0,0) size 3*FT x 12*FT label "A"\n room id=b at (3*FT, 12*FT - 3*FT) size 3000x3000 label "B"\n walls from rooms exterior 200 partition 6*FT`,
+    says: "share a run of 914.4 mm, from (914.4, 2743.2) to (914.4, 3657.6), shorter than the 1828.8 mm partition",
   },
   {
     code: "E_PARTITION_TOO_SHORT",
-    src: `let FT = 304.8\n room id=a at (0,0) size 3000 x 12*FT label "A"\n room id=b at (3000, 12*FT - 3*FT) size 3000x3000 label "B"\n wall partition thickness 6*FT between a and b`,
-    says: "share a run of 914.4 mm, from (3000, 2743.2) to (3000, 3657.6), shorter than the 1828.8 mm wall",
+    src: `let FT = 304.8\n room id=a at (0,0) size 3*FT x 12*FT label "A"\n room id=b at (3*FT, 12*FT - 3*FT) size 3000x3000 label "B"\n wall partition thickness 6*FT between a and b`,
+    says: "share a run of 914.4 mm, from (914.4, 2743.2) to (914.4, 3657.6), shorter than the 1828.8 mm wall",
   },
 ];
 
@@ -533,8 +682,41 @@ describe("every number a message prints through fmtMessage is free of float nois
   });
 });
 
+describe("W_GRID_SNAPPED never quotes a shorter value that would snap elsewhere", () => {
+  it.each([
+    [
+      "322.5 inches on grid 1 (8191.499999999999, snapped to 8191)",
+      "grid 1\n let IN = 25.4",
+      "322.5*IN",
+      "size 8191.499999999999 x 3000 was snapped to 8191 x 3000 by `grid 1`",
+    ],
+    [
+      "1.005 m on grid 10 (1004.9999999999999, snapped to 1000)",
+      "grid 10",
+      "1.005*1000",
+      "size 1004.9999999999999 x 3000 was snapped to 1000 x 3000 by `grid 10`",
+    ],
+    [
+      "12 feet on grid 1 (3657.6000000000004, snapped to 3658)",
+      "grid 1\n let FT = 304.8",
+      "12*FT",
+      "size 3657.6 x 3000 was snapped to 3658 x 3000 by `grid 1`",
+    ],
+  ])("%s", (_, head, w, says) => {
+    const src = `plan "p" {\n ${head}\n room id=a at (0,0) size ${w} x 3000 label "A"\n}\n`;
+    const d = compile(src, { noCache: true }).diagnostics.find((x) => x.code === "W_GRID_SNAPPED")!;
+    expect(d.message).toBe(`Room "a" ${says}`);
+  });
+  it("fmtWritten keeps every digit when the shorter form snaps elsewhere", () => {
+    const g1 = (x: number) => Math.round(x);
+    expect(fmtWritten(322.5 * 25.4, g1)).toBe("8191.499999999999");
+    expect(fmtWritten(1.005 * 1000, (x) => Math.round(x / 10) * 10)).toBe("1004.9999999999999");
+    expect(fmtWritten(12 * 304.8, g1)).toBe("3657.6");
+  });
+});
+
 describe("over the corpus", () => {
-  it("a plan that compiles names no cause, so its diagnostics keep their order", () => {
+  it("no corpus plan that compiles carries a cause (over more than 50 such plans)", () => {
     let compiled = 0;
     for (const f of corpusFiles()) {
       const src = readFileSync(join(REPO_ROOT, f), "utf8");
