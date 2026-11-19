@@ -244,8 +244,9 @@ coordinator's own notes (merging, registries, browser and social automation, the
   So a drawing change re-measured there reproduces whatever the primary last built. Take moved 3D assets from the PR's CI, or build in a checkout
   with its own `node_modules`.
 - **`npm ci` in the primary rewrites the dependencies under every junctioned worktree**, so an executor's
-  running gate can fail mid-run. Run it only when no executor is running. A fresh worktree's
-  `check:quick` also needs `npm run build` first: the docs-site type check reads `dist/`.
+  running gate can fail mid-run. Run it only when no executor is running. In a fresh worktree,
+  `check:quick` type-checks a workspace whose files changed (`docs-site`, `playground`, `packages/mcp-worker`,
+  `packages/archlang-3d`), and those read the root `dist/`: run `npm run build` first when the change touches one.
 - **Remove a worktree's `node_modules` junctions with `[System.IO.Directory]::Delete(<junction>)`** (never recursive; the PowerShell tool blocks `cmd /c rmdir`) before
   `git worktree remove --force` or any recursive delete, or the delete follows them into the primary.
   (guarded: hook rule `delete-through-link` refuses the delete while a link sits within six levels of the target)
