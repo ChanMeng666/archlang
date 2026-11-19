@@ -1091,7 +1091,11 @@ function resolveBody(
 
   /** The refusals `walls from rooms` reported in the group resolving now (RM9.4,
    *  `ResolveCtx.derivationRefused`): emptied as each group starts. */
-  let refusals: { cause: NonNullable<Diagnostic["cause"]>; rooms: ReadonlySet<string> }[] = [];
+  let refusals: {
+    cause: NonNullable<Diagnostic["cause"]>;
+    rooms: ReadonlySet<string>;
+    overlaps?: ReadonlySet<string> | undefined;
+  }[] = [];
   const ctx: ResolveCtx = {
     grid: g,
     snap,
@@ -1118,13 +1122,21 @@ function resolveBody(
     ...(world.now ? { now: () => world.now!() } : {}),
     diag: pushDiag,
     rootDiag: evalDiag,
-    derivationRefused: (d, rooms) => {
-      const out = pushDiag(d);
-      if (out.code === undefined || out.span === undefined) return;
-      const cause = { code: out.code, span: out.span, ...(out.file !== undefined ? { file: out.file } : {}) };
-      refusals.push({ cause, rooms: new Set(rooms) });
+    derivationRefused: (d, rooms, overlaps) => {
+      if (d.code === undefined || d.span === undefined) return;
+      const file = activeEntry?.file;
+      refusals.push({
+        cause: { code: d.code, span: d.span, ...(file !== undefined ? { file } : {}) },
+        rooms,
+        overlaps,
+      });
     },
-    refusedDerivation: (rooms) => refusals.find((r) => rooms.some((x) => r.rooms.has(x)))?.cause,
+    refusedDerivation: (rooms, overlap) =>
+      refusals.find((r) =>
+        overlap
+          ? r.overlaps?.has(rooms.join(" ")) || r.overlaps?.has(`${rooms[1]} ${rooms[0]}`)
+          : rooms.some((x) => r.rooms.has(x)),
+      )?.cause,
     north: ast.north,
   };
   /** A wall went for the error value (AF3: an authored wall that read it, or a `walls from

@@ -160,25 +160,26 @@ export function fmtLiteral(n: number): string {
 
 /**
  * `n` as a message quotes a value the author wrote: {@link fmt3} when that reads back as `n`, else
- * the shortest decimal that does ({@link plainDigits}). So `2749.9999` is never shown as `2750`
- * (RM1.4: a value `grid` moved, quoted as written).
+ * the shortest decimal that does ({@link plainDigits}), without float noise ({@link fmtMessage}). So
+ * `2749.9999` is never shown as `2750` (RM1.4: a value `grid` moved, quoted as written).
  */
 export function fmtWritten(n: number): string {
   const s = fmt3(n);
-  return Number(s) === n ? s : fmtMessage(n);
+  return Number(s) === n ? s : plainDigits(Number(fmtMessage(n)));
 }
 
 /**
- * A number as a diagnostic's message prints it (RM9.4): the shortest decimal of at most 15
- * significant digits, no exponent ({@link plainDigits}). 15 is the most digits every decimal keeps
- * through a double (DBL_DIG), so a value with a short form prints exactly as `plainDigits(n)` does
- * (a literal the author wrote, `2749.9999`, in full), and only the noise a float sum or product leaves
- * in the 16th and 17th digits is dropped: `12 * 304.8` prints `3657.6`, not `3657.6000000000004`.
- * Near the largest double the 15-digit form rounds past it, so that value keeps all its digits.
+ * A number as a diagnostic's message prints it (RM9.4): `String(n)`, except that a non-integer in
+ * [1e-6, 1e21) whose `String(n)` has more than 15 significant digits prints its 15-digit form. 15 is
+ * the most digits every decimal keeps through a double (DBL_DIG), so a value with a short form (a
+ * literal the author wrote, `2749.9999`) prints as it did, and only the noise a float sum or product
+ * leaves in the 16th and 17th digits is dropped: `12 * 304.8` prints `3657.6`, not
+ * `3657.6000000000004`. An integer (`2 ** 53`), a value outside that range, and a non-finite one
+ * print exactly as `String(n)`.
  */
 export function fmtMessage(n: number): string {
-  const short = Number(n.toPrecision(15));
-  return plainDigits(Number.isFinite(short) || !Number.isFinite(n) ? short : n);
+  const a = Math.abs(n);
+  return Number.isInteger(n) || !(a >= 1e-6 && a < 1e21) ? String(n) : String(Number(n.toPrecision(15)));
 }
 
 /**

@@ -127,11 +127,8 @@ export const wallsFromRooms: ElementDef = {
 
   resolve(node, ctx: ResolveCtx): RWallsFromRooms {
     const n = node as WallsFromRoomsNode;
-    const own = ctx.group?.() ?? [];
-    /** A refusal that leaves `rooms` with no derived wall: the root of each opening there that
-     *  finds no wall to stand in (RM9.4, `ResolveCtx.derivationRefused`). */
-    const refuse = (d: Diagnostic, rooms: () => string[]): void =>
-      ctx.derivationRefused ? ctx.derivationRefused(d, rooms()) : ctx.diag(d);
+    /** The thickness refusals, each the root of what the statement then fails to derive (RM9.4). */
+    const thin: Diagnostic[] = [];
     const thick = (
       e: WallsFromRoomsNode["exterior"],
       what: string,
@@ -141,18 +138,14 @@ export const wallsFromRooms: ElementDef = {
       const v = ctx.eval(e);
       const t = ctx.snap(v) || v;
       if (!(t > 0)) {
-        // No wall is derived at all (below), for any room of the group it does not leave out.
-        const kept = (): string[] =>
-          own.flatMap((e) => (e.kind === "room" && !n.except.some((x) => x.id === e.id) ? [e.id] : []));
-        refuse(
-          {
-            severity: "error",
-            message: `\`walls from rooms\` needs a positive ${what} thickness`,
-            code: "E_WALL_THICKNESS",
-            span,
-          },
-          kept,
-        );
+        const d: Diagnostic = {
+          severity: "error",
+          message: `\`walls from rooms\` needs a positive ${what} thickness`,
+          code: "E_WALL_THICKNESS",
+          span,
+        };
+        ctx.diag(d);
+        thin.push(d);
       }
       noteThickness(ctx, "`walls from rooms`", v, t, valueSpan ?? span, what);
       return t;
@@ -171,6 +164,7 @@ export const wallsFromRooms: ElementDef = {
       span: n.span,
       ...(n.status !== undefined ? { status: n.status } : {}),
     };
+    const own = ctx.group?.() ?? [];
     if (own.some((e) => e.kind === "walls")) {
       ctx.diag({
         severity: "error",
@@ -217,7 +211,13 @@ export const wallsFromRooms: ElementDef = {
           : { kind: "thickness", between: [p.a, p.b], thickness: p.thickness },
       );
     }
-    if (!(tExt > 0) || !(tInt > 0)) return out;
+    if (!(tExt > 0) || !(tInt > 0)) {
+      // No wall is derived, for any room the statement does not leave out (not one it duplicates:
+      // that one returned above).
+      const kept = new Set(rooms.flatMap((r) => (excluded.has(r.id) ? [] : [r.id])));
+      for (const d of thin) ctx.derivationRefused?.(d, kept);
+      return out;
+    }
     const set: TileRoom[] = rooms.filter((r) => !excluded.has(r.id) && !broken.has(r.id)).map(tileRoom);
     if (set.length === 0) {
       if (broken.size > 0) return out;
@@ -244,6 +244,7 @@ export const wallsFromRooms: ElementDef = {
     );
     const res = deriveWallsFromRooms(set, covers, authored, tInt, ctx.elementBudget, { tExt, pairs });
     if (!res.ok) {
+      let derives: Set<string> | undefined;
       for (const r of res.refusals) {
         if (broken.size > 0 && r.code === "E_ROOMS_NOT_TILING") continue;
         const clause = r.clause === undefined ? undefined : clauses[r.clause]!;
@@ -254,7 +255,10 @@ export const wallsFromRooms: ElementDef = {
           code: r.code,
           span: clause?.span ?? n.span,
         };
-        refuse(d, () => set.map((x) => x.id));
+        ctx.diag(d);
+        // The root of each opening the statement leaves with no wall (RM9.4): one set per statement.
+        derives ??= new Set(set.map((x) => x.id));
+        ctx.derivationRefused?.(d, derives, r.overlaps && new Set(r.overlaps));
       }
       return out;
     }

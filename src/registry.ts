@@ -114,18 +114,19 @@ export interface ResolveCtx {
    *  error value (AF3), where a {@link diag} report goes with the element. Absent: `diag`. */
   rootDiag?(d: Diagnostic): void;
   /**
-   * Report `d`, the error with which a wall-deriving statement (`walls from rooms`) refused to
-   * derive any wall from `rooms` (RM9.4): a later "no wall to stand in" on an edge of one of them,
-   * in this group, follows from it ({@link refusedDerivation}). Optional (append-only); absent:
-   * `diag`.
+   * Record `d`, an error already reported with which a wall-deriving statement (`walls from rooms`)
+   * refused to derive any wall from `rooms` (RM9.4), as the root of what follows from it in this
+   * group ({@link refusedDerivation}); `overlaps` are the pairs of rooms it refused for overlapping,
+   * as `"a b"`. Optional (append-only).
    */
-  derivationRefused?(d: Diagnostic, rooms: readonly string[]): void;
+  derivationRefused?(d: Diagnostic, rooms: ReadonlySet<string>, overlaps?: ReadonlySet<string>): void;
   /**
-   * The root an opening's missing wall follows from: the first error {@link derivationRefused}
-   * reported in this group for a set holding one of `rooms`, as a {@link Diagnostic.cause}.
-   * Undefined when there is none. Optional (append-only).
+   * The root, as a {@link Diagnostic.cause}, of an opening with no wall to stand in on an edge of one
+   * of `rooms`: the first refusal {@link derivationRefused} recorded in this group whose rooms hold
+   * one; with `overlap`, of two rooms that share no edge: the first that refused `rooms[0]` and
+   * `rooms[1]` for overlapping. Undefined when there is none. Optional (append-only).
    */
-  refusedDerivation?(rooms: readonly string[]): NonNullable<Diagnostic["cause"]> | undefined;
+  refusedDerivation?(rooms: readonly string[], overlap?: boolean): NonNullable<Diagnostic["cause"]> | undefined;
   /**
    * The elements of the group being resolved (the root plan, or one `place`d instance) that
    * have resolved so far, in source order, in the group's own frame: its own statements

@@ -291,7 +291,7 @@ export function resolveOpeningHeights(
         ? {
             fixes: [
               {
-                title: `drop the \`sill\` clause and inherit ${fmtMessage(defaults.sill)} mm`,
+                title: `drop the \`sill\` clause and inherit ${defaults.sill} mm`,
                 applicability: "machine-applicable" as const,
                 edits: [{ span: clauses.sillSpan, newText: "" }],
               },

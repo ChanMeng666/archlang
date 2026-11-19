@@ -236,7 +236,7 @@ function printedLength(v: Value): number {
 }
 
 /** Deterministic number → string (trim to 3 dp, non-finite → "0"). */
-import { fmt3 as fmtNum, fmtMessage } from "./num-format.js";
+import { fmt3 as fmtNum } from "./num-format.js";
 
 /** Minimal token-stream the expression parser needs (satisfied by ParseCtx). */
 export interface ExprTokens {
@@ -990,7 +990,7 @@ export function evalExpr(e: Expr, env: Env, onError: (d: Diagnostic) => void, de
         if (!(k >= 0 && k < base.v.length)) {
           onError({
             severity: "error",
-            message: `Index ${fmtMessage(k)} out of range for array of length ${base.v.length}`,
+            message: `Index ${k} out of range for array of length ${base.v.length}`,
             code: "E_INDEX",
             span: e.span,
           });

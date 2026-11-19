@@ -164,13 +164,13 @@ export interface Diagnostic {
  * The diagnostics in their order, but with every ROOT moved to just before the first diagnostic that
  * names it as its {@link Diagnostic.cause} (RM9.4). A root is each diagnostic of the cause's `code`,
  * `span` and `file`, in the dependent's `instance`; the roots of one cause move together, in their
- * own order, and one already before its dependents stays put. A list without a `cause` is returned
- * as it is, the same array.
+ * own order, and one already before its dependents stays put. A root never names a cause of its own
+ * (no chain). A list without a `cause` is returned as it is, the same array.
  */
 export function rootsFirst(list: Diagnostic[]): Diagnostic[] {
   if (!list.some((d) => d.cause)) return list;
-  const key = (code: string | undefined, span: Span | undefined, file?: string, instance?: string): string =>
-    `${code}@${span?.start}-${span?.end}@${file ?? ""}@${instance ?? ""}`;
+  const key = (code?: string, span?: Span, file?: string, instance?: string): string =>
+    `${code}@${span?.start}-${span?.end}@${file}@${instance}`;
   const roots = new Map<string, Diagnostic[]>();
   for (const d of list) {
     const k = key(d.code, d.span, d.file, d.instance);
@@ -178,19 +178,13 @@ export function rootsFirst(list: Diagnostic[]): Diagnostic[] {
     if (at) at.push(d);
     else roots.set(k, [d]);
   }
-  const out: Diagnostic[] = [];
-  const placed = new Set<Diagnostic>();
-  // A root that has a cause of its own is placed after that one (a chain); `placed` is set first,
-  // so a cycle ends.
-  const place = (d: Diagnostic): void => {
-    if (placed.has(d)) return;
-    placed.add(d);
+  const out = new Set<Diagnostic>();
+  for (const d of list) {
     const c = d.cause;
-    if (c) for (const r of roots.get(key(c.code, c.span, c.file, d.instance)) ?? []) place(r);
-    out.push(d);
-  };
-  for (const d of list) place(d);
-  return out;
+    if (c) for (const r of roots.get(key(c.code, c.span, c.file, d.instance)) ?? []) out.add(r);
+    out.add(d);
+  }
+  return [...out];
 }
 
 /**

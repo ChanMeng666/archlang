@@ -10,7 +10,7 @@
  * cause and example (card RM0.7). Pure and isomorphic — it only maps data, no I/O.
  */
 
-import type { Applicability, Diagnostic, Severity } from "./diagnostics.js";
+import type { Applicability, Diagnostic, Severity, Span } from "./diagnostics.js";
 import { offsetToLineCol } from "./diagnostics.js";
 import { catalogFix } from "./catalog-fix.js";
 
@@ -52,7 +52,8 @@ export interface DiagnosticJson {
    * against `file` instead, and see {@link import("./diagnostics.js").Diagnostic.file}.
    */
   file?: string;
-  /** Catalogued remediation for `code`; present only when the code has a `fix`. */
+  /** Catalogued remediation for `code`; present only when the code has a `fix`. On a diagnostic
+   *  that names a {@link cause}, it says to fix that root first instead (RM9.4). */
   fix?: string;
   /** Follow-up suggestions; present only when the diagnostic carries hints. */
   hints?: string[];
@@ -77,7 +78,8 @@ export interface DiagnosticJson {
   related?: RelatedSpanJson[];
   /**
    * The root diagnostic this one follows from (RM9.4, {@link import("./diagnostics.js").Diagnostic.cause}):
-   * its `code`, then its location by the rule `related` follows. Present only on a diagnostic that
+   * its `code`, then its location by the rule `related` follows. The root is the diagnostic of that
+   * `code`, `span` and `file` with this one's own `instance`. Present only on a diagnostic that
    * carries one, which is listed after its root; after `related`.
    */
   cause?: { code: string; line?: number; col?: number; span: [number, number]; file?: string };
@@ -221,6 +223,26 @@ export interface DiagnosticJsonOptions {
   overprint?: (d: Diagnostic) => DiagnosticOverprintJson | undefined;
 }
 
+/** A diagnostic's {@link DiagnosticJson.fix} when it names a cause (RM9.4). */
+const CAUSE_FIX = "Fix the diagnostic `cause` names first: this one follows from it.";
+
+/** `head`, then where `at` lies: `line`/`col` when it is in `source` (none in another `file`), `span`, `file`. */
+function located<T extends object>(
+  source: string,
+  head: T,
+  at: { span: Span; file?: string | undefined },
+): T & { line?: number; col?: number; span: [number, number]; file?: string } {
+  const j: T & { line?: number; col?: number; span?: [number, number]; file?: string } = { ...head };
+  if (at.file === undefined) {
+    const { line, col } = offsetToLineCol(source, at.span.start);
+    j.line = line;
+    j.col = col;
+  }
+  j.span = [at.span.start, at.span.end];
+  if (at.file !== undefined) j.file = at.file;
+  return j as T & { span: [number, number] };
+}
+
 /**
  * Project a {@link Diagnostic} into the agent-friendly JSON shape (with `fix`). The two-argument
  * call is the canonical shape; `opts` only appends keys (`rule`, then `overprint`, after every
@@ -231,19 +253,12 @@ export function diagnosticToJson(source: string, d: Diagnostic, opts?: Diagnosti
   if (d.code) out.code = d.code;
   out.severity = d.severity;
   out.message = d.message;
-  if (d.span) {
-    // `line`/`col` are only meaningful for offsets into `source`. A diagnostic carrying a
-    // `file` is measured in ANOTHER module, so it gets `span` + `file` and no line/col
-    // rather than a confidently-wrong location in the file the caller is reading.
-    if (d.file === undefined) {
-      const { line, col } = offsetToLineCol(source, d.span.start);
-      out.line = line;
-      out.col = col;
-    }
-    out.span = [d.span.start, d.span.end];
-  }
-  if (d.file !== undefined) out.file = d.file;
-  const fix = catalogFix(d.code);
+  // `line`/`col` are only meaningful for offsets into `source`. A diagnostic carrying a
+  // `file` is measured in ANOTHER module, so it gets `span` + `file` and no line/col
+  // rather than a confidently-wrong location in the file the caller is reading.
+  if (d.span) Object.assign(out, located(source, {}, { span: d.span, file: d.file }));
+  else if (d.file !== undefined) out.file = d.file;
+  const fix = d.cause ? CAUSE_FIX : catalogFix(d.code);
   if (fix) out.fix = fix;
   if (d.hints?.length) out.hints = d.hints;
   if (d.fixes?.length)
@@ -262,30 +277,8 @@ export function diagnosticToJson(source: string, d: Diagnostic, opts?: Diagnosti
   // diagnostic that carries none of these projects to exactly the bytes it did before.
   if (d.instance !== undefined) out.instance = d.instance;
   if (d.component !== undefined) out.component = d.component;
-  if (d.relatedSpans?.length)
-    out.related = d.relatedSpans.map((r) => {
-      const j = { message: r.message } as RelatedSpanJson;
-      if (r.file === undefined) {
-        const { line, col } = offsetToLineCol(source, r.span.start);
-        j.line = line;
-        j.col = col;
-      }
-      j.span = [r.span.start, r.span.end];
-      if (r.file !== undefined) j.file = r.file;
-      return j;
-    });
-  if (d.cause) {
-    const c = d.cause;
-    const j = { code: c.code } as NonNullable<DiagnosticJson["cause"]>;
-    if (c.file === undefined) {
-      const { line, col } = offsetToLineCol(source, c.span.start);
-      j.line = line;
-      j.col = col;
-    }
-    j.span = [c.span.start, c.span.end];
-    if (c.file !== undefined) j.file = c.file;
-    out.cause = j;
-  }
+  if (d.relatedSpans?.length) out.related = d.relatedSpans.map((r) => located(source, { message: r.message }, r));
+  if (d.cause) out.cause = located(source, { code: d.cause.code }, d.cause);
   const rule = opts?.rule?.(d);
   if (rule) out.rule = rule;
   const overprint = opts?.overprint?.(d);

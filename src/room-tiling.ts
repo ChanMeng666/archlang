@@ -148,6 +148,8 @@ export interface TilingRefusal {
   clause?: number;
   /** A clause on a pair with several runs: what picks each run, in the order they number. */
   picks?: RunPick[];
+  /** `E_ROOMS_OVERLAP`: each pair that overlaps, as `"a b"` (RM9.4: the root of a door between them). */
+  overlaps?: string[];
 }
 
 /** The opening an `open` pair derives: centred at `at`, `width` along its run. */
@@ -609,6 +611,7 @@ export function sweepRooms(rooms: readonly TileRoom[]): { ok: false; refusals: T
           code: "E_ROOMS_OVERLAP",
           rooms: named(once.flat()),
           why: once.map(([a, b]) => `"${ids[a]}" overlaps "${ids[b]}"`).join("; "),
+          overlaps: once.map(([a, b]) => `${ids[a]} ${ids[b]}`),
         },
       ],
     };

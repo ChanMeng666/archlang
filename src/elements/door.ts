@@ -563,7 +563,7 @@ export const door: ElementDef = {
         message: `Door "${id}" has \`open ${fmtMessage(openRaw)}\`, which is outside the 0–1 range a panel can travel`,
         code: "E_DOOR_OPEN_RANGE",
         span: n.span,
-        hints: [`Use a fraction in [0,1] — \`open ${fmtMessage(clamped)}\` is the nearest legal value.`],
+        hints: [`Use a fraction in [0,1] — \`open ${clamped}\` is the nearest legal value.`],
         ...fixesFrom(reprint(ctx, n, "open", `open:${clamped}`, () => doorOpenRangeFix(n, clamped))),
       });
     }
