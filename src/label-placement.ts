@@ -163,7 +163,7 @@ export const W_DISTANCE = 4;
  * shrink a name that a full-size place one lattice step away holds clear. Every other text is its
  * {@link primBBox} exactly.
  */
-function labelBox(prim: ScenePrim): BBox | null {
+export function labelBox(prim: ScenePrim): BBox | null {
   const b = primBBox(prim);
   if (!b || prim.t !== "text" || prim.rotate !== undefined) return b;
   const w = symbolExtent(prim).w;

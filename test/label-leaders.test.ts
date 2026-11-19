@@ -23,7 +23,7 @@ import { roomLabelAnchor } from "../src/elements/room.js";
 import { isSymbolElement, LEADER_LABEL_WORK, MAX_LEADER_WORK, shapesOf } from "../src/label-fit.js";
 import type { Scene, SceneNode } from "../src/scene.js";
 import { drawnLeaders, toScene } from "../src/scene-build.js";
-import { inkExtent, textBox } from "../src/text-layout.js";
+import { inkExtent, textBox, textExtent } from "../src/text-layout.js";
 import type { World } from "../src/world.js";
 import { corpusFiles, walkFiles } from "./helpers/corpus.js";
 import { worldFor } from "./helpers/world.js";
@@ -56,6 +56,34 @@ function segmentHits(a: Point, b: Point, ring: readonly Point[]): boolean {
   for (const t of [0.25, 0.5, 0.75])
     if (pointInPolygon(a.x + (b.x - a.x) * t, a.y + (b.y - a.y) * t, ring)) return true;
   return false;
+}
+
+/** A text's box as it draws: centred on its point, the wider of the estimate and the ink. */
+function drawnBox(prim: Extract<SceneNode["prim"], { t: "text" }>): { x0: number; x1: number; y0: number; y1: number } {
+  const w = Math.max(textExtent(prim).w, inkExtent(prim).w);
+  const h = textExtent(prim).h;
+  return { x0: prim.at.x - w / 2, x1: prim.at.x + w / 2, y0: prim.at.y - h / 2, y1: prim.at.y + h / 2 };
+}
+
+/** Every pair of two rooms' label texts whose drawn boxes overlap, measured here. */
+function roomTextOverprints(scene: Scene, of?: ReadonlySet<string>): string[] {
+  const texts = scene.nodes.filter(
+    (n): n is SceneNode & { prim: Extract<SceneNode["prim"], { t: "text" }> } =>
+      n.elementKind === "room" && n.layer === "labels" && n.prim.t === "text",
+  );
+  const out: string[] = [];
+  for (let i = 0; i < texts.length; i++)
+    for (let j = i + 1; j < texts.length; j++) {
+      const [p, q] = [texts[i]!, texts[j]!];
+      if (p.elementId === q.elementId) continue;
+      if (of && !of.has(p.elementId!) && !of.has(q.elementId!)) continue;
+      const a = drawnBox(p.prim);
+      const b = drawnBox(q.prim);
+      const w = Math.min(a.x1, b.x1) - Math.max(a.x0, b.x0);
+      const h = Math.min(a.y1, b.y1) - Math.max(a.y0, b.y0);
+      if (w > 0 && h > 0) out.push(`${p.elementId}:"${p.prim.value}" x ${q.elementId}:"${q.prim.value}"`);
+    }
+  return out;
 }
 
 /**
@@ -118,6 +146,11 @@ function checkLeaders(name: string, ir: ResolvedPlan, scene: Scene): string[] {
       expect(cross, `${name}: ${l.room}'s leader across ${o.room}'s`).toBe(false);
     }
   }
+  // A led label stands clear of every other room's label, at the width each draws.
+  expect(
+    roomTextOverprints(scene, new Set(led.map((l) => l.room))),
+    `${name}: a led label over a room's label`,
+  ).toEqual([]);
   return led.map((l) => l.room);
 }
 
@@ -161,6 +194,39 @@ describe("what it never does", () => {
         .filter((d) => d.code === OVERLAP)
         .map((d) => diagnosticOverprint(d)!.subject.room),
     ).toEqual(["r"]);
+  });
+
+  it("never stands a label it places over another room's label, at the width each draws", () => {
+    // Generated strip plain-strip seed 11, plan 68 (the AL3b red team): the step led Den's label into
+    // MW's room and stood its area figure over "MW", each read narrower than it draws.
+    const src = `plan "p" {
+  units mm
+  paper A2 landscape
+  scale 1:100
+  dims auto all
+  room id=r0 at (0,0) size 1100x2000 label "Den" uses storage
+  furniture wc at (550,150) size 350x1700
+  room id=r1 at (1100,0) size 2250x2000 label "MW" uses storage
+  room id=r2 at (3350,0) size 1050x2000 label "Plant Room" uses storage
+  furniture desk at (3500,100) size 600x950
+  room id=r3 at (4400,0) size 1750x2000 label "Store / IT" uses storage
+  furniture table at (4600,400) size 1400x1450
+  furniture plinth at (4650,150) size 1000x1650
+  room id=r4 at (6150,0) size 1900x2000 label "GYM" uses storage
+  room id=r5 at (8050,0) size 2400x2000 label "GYM" uses storage
+  furniture bed at (8750,1350) size 1400x400
+  furniture sofa at (8300,850) size 550x450
+  wall id=wn exterior thickness 200 { (0,0) (10450,0) }
+  wall id=ww exterior thickness 200 { (0,0) (0,2000) }
+  wall partition thickness 100 { (1100,0) (1100,2000) }
+  wall partition thickness 100 { (3350,0) (3350,2000) }
+  wall partition thickness 100 { (4400,0) (4400,2000) }
+  wall partition thickness 100 { (8050,0) (8050,2000) }
+  door at (9250,0) width 800
+}
+`;
+    const [{ scene }] = storeys(src) as [{ ir: ResolvedPlan; scene: Scene }];
+    expect(roomTextOverprints(scene)).toEqual([]);
   });
 
   it("over the corpus: leads only in the plans named, and every leader holds", () => {

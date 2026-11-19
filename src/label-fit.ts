@@ -88,7 +88,9 @@
  * `i`. A place is on the floor of a room of this storey, the room's own first by rank (no leader
  * then: a finer lattice than the search above), and never outside the building, where a label would
  * grow the page and so `describe().sheet`. The label must stand on that floor and clear of every
- * symbol, wall, swing, label, tag, figure and piece's label, read as the search above reads them; the
+ * symbol, wall, swing, label, tag, figure and piece's label, read as the search above reads them,
+ * and each of its texts, at the width it prints ({@link labelBox}), clear of every other text the
+ * drawing holds, boxed the same way, and of every leader drawn before it; the
  * heights are tried largest first, the one-line name then its wrapped forms, and the first place that
  * keeps the walls' clearance with a clean leader wins. A label led off its floor is joined to its room
  * by one straight line from the edge of its box, ending in a dot on the room's own floor: on the first
@@ -128,6 +130,7 @@ import {
   CLEARANCE,
   COLLIDE_MIN,
   FRACTIONS,
+  labelBox,
   type LabelGroup,
   meanExtent,
   overlapArea,
@@ -857,6 +860,48 @@ export function fitLabels(
       return worst;
     };
 
+    // Every text the Scene draws, boxed at the width it prints ({@link labelBox}: the wider of the
+    // estimate and the ink), as the labels now stand: a room's label is its group's, any other text
+    // (an opening's tag, a figure, a piece's label) no room's. A place stands its label's texts clear
+    // of all of them but its own, and of every leader drawn; read at the estimate alone, or at the
+    // ink alone, a text can print over another the step never saw (the AL3b red team, plain-strip
+    // seed 11 plan 68).
+    /** The leaders drawn so far, each from the edge of its label's box to its dot. */
+    const drawnLines: { a: Point; b: Point }[] = [];
+    interface DrawnText {
+      box: BBox;
+      owner: number;
+      stale: boolean;
+    }
+    const ownerOf = new Int32Array(nodes.length).fill(-1);
+    for (let gi = 0; gi < groups.length; gi++) for (let i = groups[gi]!.from; i < groups[gi]!.to; i++) ownerOf[i] = gi;
+    work += nodes.length;
+    const drawnTexts: DrawnText[] = [];
+    for (let i = 0; i < nodes.length; i++) {
+      const n = nodes[i]!;
+      if (n.prim.t !== "text" || underLabels(n)) continue;
+      const box = labelBox(n.prim);
+      if (box) drawnTexts.push({ box, owner: ownerOf[i]!, stale: false });
+    }
+    const textGrid = new GridIndex<DrawnText>(
+      meanExtent(drawnTexts.length > 0 ? drawnTexts.map((d) => d.box) : [{ x: 0, y: 0, w: 1, h: 1 }]),
+    );
+    for (const d of drawnTexts) textGrid.insert(boxOf(d.box), d);
+    /** `b` overlaps a drawn text of any group but `own`'s, or a leader drawn so far. */
+    const overDrawn = (b: BBox, own: number): boolean => {
+      let hit = false;
+      textGrid.forEach(boxOf(b), (d) => {
+        work++;
+        if (!hit && !d.stale && d.owner !== own && overlapArea(b, d.box) > 0) hit = true;
+      });
+      for (const l of drawnLines) {
+        if (hit) break;
+        work++;
+        if (segmentMeetsRect(l.a, l.b, b)) hit = true;
+      }
+      return hit;
+    };
+
     // Which labels are led is read first, as the fit left them: the rule's test at no clearance.
     const triggered: Misfit[] = [];
     for (const misfit of [...misfits].sort((a, b) => placeOrder(a, b, groups))) {
@@ -887,7 +932,6 @@ export function fitLabels(
       return out;
     };
     const key = (i: number, j: number) => [i * i + j * j, Math.max(Math.abs(i), Math.abs(j))] as const;
-    const drawnLines: { a: Point; b: Point }[] = [];
     const ownMarks = (gi: number): Mark[] => marks.filter((m) => m.kind === "text" && m.owner === gi && !m.stale);
 
     for (const misfit of triggered) {
@@ -992,6 +1036,7 @@ export function fitLabels(
             if (!n || !a) break search;
             if (Math.max(n.fabric, n.text, a.fabric, a.text) > COLLIDE_MIN) continue;
             if (Math.max(onPiece(nh), onPiece(ah)) > COLLIDE_MIN) continue;
+            if (overDrawn(nh.estimate, gi) || overDrawn(ah.estimate, gi)) continue;
             let tier = Math.max(n.roomy, a.roomy) <= COLLIDE_MIN ? 0 : 1;
             let from = dot;
             if (host.gi !== gi) {
@@ -1026,6 +1071,14 @@ export function fitLabels(
         marks.push(m);
         grid.insert(boxOf(box), m);
       }
+      // The drawn texts: the label's own as it now stands, at the width it prints.
+      work += drawnTexts.length;
+      for (const d of drawnTexts) if (d.owner === gi) d.stale = true;
+      for (const prim of [best.name, best.area]) {
+        const d: DrawnText = { box: labelBox(prim)!, owner: gi, stale: false };
+        drawnTexts.push(d);
+        textGrid.insert(boxOf(d.box), d);
+      }
       if (best.host.gi === gi) continue;
       const hostRoom = roomOf.get(groups[best.host.gi]!.from);
       if (!hostRoom) continue;
@@ -1054,10 +1107,17 @@ export function fitLabels(
         maxY: Math.max(a.y, b.y),
       };
       let ok = true;
+      // What the fit reads as text: every text, and every other drawn thing no pass measures its own way.
       grid.forEach(box, (m) => {
         work++;
         if (!ok || m.stale || m.owner === own || m.kind !== "text") return;
         if (segmentMeetsRect(a, b, m.box)) ok = false;
+      });
+      // And every text as it prints ({@link labelBox}), the labels as they now stand.
+      textGrid.forEach(box, (d) => {
+        work++;
+        if (!ok || d.stale || d.owner === own) return;
+        if (segmentMeetsRect(a, b, d.box)) ok = false;
       });
       pieceGrid.forEach(box, (rect) => {
         work++;
