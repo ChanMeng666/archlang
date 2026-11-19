@@ -64,7 +64,7 @@ describe("a refused `walls from rooms` is listed before the openings it leaves w
     const walls = at(FEET, "walls from rooms");
     expect(rows(ds)).toEqual([
       `W_GRID_SNAPPED@${at(FEET, "12*FT x 10*FT")}`,
-      `W_GRID_SNAPPED@${at(FEET, "12*FT x 10*FT label \"B\"")}`,
+      `W_GRID_SNAPPED@${at(FEET, '12*FT x 10*FT label "B"')}`,
       `W_GRID_SNAPPED@${at(FEET, "6*FT x 10*FT")}`,
       `E_ROOMS_OVERLAP@${walls}`,
       `E_OPENING_NO_SHARED_WALL@${at(FEET, "between a and b")}`,
@@ -76,7 +76,7 @@ describe("a refused `walls from rooms` is listed before the openings it leaves w
     const before = rows(ds).filter((r) => !r.startsWith("E_ROOMS_OVERLAP"));
     expect([...before, `E_ROOMS_OVERLAP@${walls}`]).toEqual([
       `W_GRID_SNAPPED@${at(FEET, "12*FT x 10*FT")}`,
-      `W_GRID_SNAPPED@${at(FEET, "12*FT x 10*FT label \"B\"")}`,
+      `W_GRID_SNAPPED@${at(FEET, '12*FT x 10*FT label "B"')}`,
       `W_GRID_SNAPPED@${at(FEET, "6*FT x 10*FT")}`,
       `E_OPENING_NO_SHARED_WALL@${at(FEET, "between a and b")}`,
       `E_OPENING_NO_SHARED_WALL@${at(FEET, "on a.bottom")}`,
@@ -238,7 +238,15 @@ describe("fmtMessage: a message's number, without float noise", () => {
   });
 
   it("is plainDigits exactly for every double whose shortest form has at most 15 significant digits", () => {
-    const sig = (s: string): number => s.replace(/^-?0*\.?0*/, "").replace(/\./, "").replace(/0+$/, "").length;
+    /** Significant digits of a decimal (no exponent): its digits, less the zeros at either end. */
+    const sig = (s: string): number => {
+      const digits = Array.from(s).filter((c) => c >= "0" && c <= "9");
+      const first = digits.findIndex((c) => c !== "0");
+      if (first < 0) return 0;
+      let last = digits.length - 1;
+      while (digits[last] === "0") last--;
+      return last - first + 1;
+    };
     fc.assert(
       fc.property(fc.double({ noNaN: true, noDefaultInfinity: true }), (n) => {
         const p = plainDigits(n);
