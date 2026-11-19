@@ -1218,21 +1218,33 @@ export function closest(name: string, candidates: string[]): string | null {
  * letter is two, as in TypeScript; another case is none), and one under 3 letters only in
  * another case (two-letter words are all close). A name in the set is spelled right, so it gets
  * none. Ties keep the first candidate in the set's own order. `unique` says no other candidate
- * is under the limit at all, the one case a fix may be `machine-applicable`. Charged per
- * candidate and per edit-distance cell, as {@link closest} is.
+ * is under the limit at all, the one case a fix may be `machine-applicable`. `exclude` is a
+ * candidate never offered (a room is no reference of its own). Charged per candidate and per
+ * edit-distance cell, as {@link closest} is; with `budget`, a search that would spend more steps
+ * than it holds is not made (null), and what is spent comes off it.
  */
-export function spelling(name: string, candidates: readonly string[]): { word: string; unique: boolean } | null {
+export function spelling(
+  name: string,
+  candidates: readonly string[],
+  exclude?: string,
+  budget?: { steps: number },
+): { word: string; unique: boolean } | null {
   const limit = Math.floor(name.length * 0.4) + 1;
+  if (budget && budget.steps < candidates.length) return null;
   chargeSteps(candidates.length);
+  if (budget) budget.steps -= candidates.length;
   if (candidates.includes(name)) return null;
   const near = [...new Set(candidates)].filter(
     (c) =>
+      c !== exclude &&
       Math.abs(c.length - name.length) <= Math.max(2, Math.floor(name.length * 0.34)) &&
       (c.length >= 3 || c.toLowerCase() === name.toLowerCase()),
   );
   let cells = 0;
   for (const c of near) cells += (name.length + 1) * (c.length + 1);
+  if (budget && budget.steps < cells) return null;
   chargeSteps(cells);
+  if (budget) budget.steps -= cells;
   let best: string | null = null;
   let bestDist = limit;
   let within = 0;

@@ -17,7 +17,18 @@
  */
 
 import type { Span } from "./diagnostics.js";
+import type { Token } from "./lexer.js";
 import type { ParseCtx } from "./registry.js";
+
+/**
+ * {@link ParseCtx.failNear} where the context has it (the built-in parser does), else
+ * {@link ParseCtx.fail} at `t` or {@link ParseCtx.failAt} at `span`: a parse error where `t`
+ * should have been one of `near` (AF2).
+ */
+export function failNear(ctx: ParseCtx, msg: string, near: readonly string[], t?: Token, span?: Span): never {
+  if (ctx.failNear) return ctx.failNear(msg, near, t, span);
+  return span ? ctx.failAt(msg, span) : ctx.fail(msg, t);
+}
 
 export interface TailClause {
   /** The word that leads the clause. */
@@ -113,7 +124,7 @@ export function missingClause(
   // Spanned on the statement that lacks the clause, never on the token after it; the hints are
   // the token's, as they were when the parse failed on it, and a misspelt `word` (`widht`) gets
   // a did-you-mean fix on that token alone (AF2).
-  return ctx.failNear(`${name[0]!.toUpperCase()}${name.slice(1)} has no \`${form}\`${found}`, [word], t, {
+  return failNear(ctx, `${name[0]!.toUpperCase()}${name.slice(1)} has no \`${form}\`${found}`, [word], t, {
     start: stmt.start,
     end: ctx.peek(-1).end,
   });

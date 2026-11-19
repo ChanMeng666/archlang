@@ -41,9 +41,12 @@ import {
   NORTH_DIRS,
   SCHEDULE_SUBJECTS,
   STRIP_DIRS,
+  REL_DIRS,
   TITLE_FIELD_KEY,
   USE_KINDS,
 } from "./ast.js";
+import { furnitureKinds } from "./elements/furniture.js";
+import { FLOOR_MATERIALS, KNOWN_MATERIALS } from "./hatches.js";
 import type { Expr } from "./expr.js";
 import type { ExprTokens } from "./expr.js";
 import { closest, MAX_NEST_DEPTH, parseExpr as parseExprPratt, spelling } from "./expr.js";
@@ -62,6 +65,7 @@ import {
   ATTRIBUTE_KEYWORDS,
   KEEP_GRADES,
   KEEP_WORDS,
+  KEYWORDS,
   STATEMENT_STARTS,
   TITLE_FIELDS,
   type TitleField,
@@ -252,9 +256,12 @@ class Parser {
   /**
    * Throw a parse error at `t`. With `near`, the closed set of words that could stand at `t`, a
    * misspelling of one of them (AF2, {@link spelling}) adds a did-you-mean hint and a fix that
-   * rewrites `t` alone, even when the error is spanned on a whole statement. Parsing is not
-   * metered, so the search runs only while the error can still be reported: past
-   * `MAX_DIAGNOSTICS` it is dropped, and so the work is bounded whatever the source's size.
+   * rewrites `t` alone, even when the error is spanned on a whole statement. The fix is
+   * machine-applicable only when `t` is no word of the language ({@link isLanguageWord}: a word
+   * spelled right in the wrong place is never rewritten) and `near` is a whole closed set, not the
+   * one word a position expected, and `t` is no name the plan declares. Parsing is not metered, so the search runs only while the error
+   * can still be reported: past `MAX_DIAGNOSTICS` it is dropped, and so the work is bounded
+   * whatever the source's size.
    */
   private fail(
     msg: string,
@@ -269,8 +276,46 @@ class Parser {
       msg,
       span,
       [...(hints ?? []), `did you mean \`${s.word}\`?`],
-      spellingFix({ start: t.start, end: t.end }, s),
+      spellingFix(
+        { start: t.start, end: t.end },
+        s,
+        near!.length > 1 && !this.isLanguageWord(t.value) && !this.declaredNames().has(t.value),
+      ),
     );
+  }
+
+  /** The names this source declares (`let x`, `component c`, `for i`, `as u`, `id=r`, `x = …`),
+   *  read once off the tokens: a name of the plan's own is never a misspelt keyword (AF2). */
+  private declared: Set<string> | undefined;
+  private declaredNames(): ReadonlySet<string> {
+    if (this.declared) return this.declared;
+    const out = new Set<string>();
+    const toks = this.toks;
+    for (let i = 1; i < toks.length; i++) {
+      const t = toks[i]!;
+      if (t.type !== "ident") continue;
+      const p = toks[i - 1]!;
+      if (p.type === "ident" && ["let", "component", "for", "as"].includes(p.value)) out.add(t.value);
+      else if (p.type === "equals" && toks[i - 2]?.value === "id") out.add(t.value);
+      else if (toks[i + 1]?.type === "equals" && t.value !== "id") out.add(t.value);
+    }
+    this.declared = out;
+    return out;
+  }
+
+  /** Whether `word` is a word of the language: a keyword of any category, a statement start, a
+   *  registry element, a room use, a relational direction, a furniture or fixture kind, a material. */
+  private isLanguageWord(word: string): boolean {
+    LANGUAGE_WORDS ??= new Set<string>([
+      ...Object.values(KEYWORDS).flat(),
+      ...STATEMENT_STARTS,
+      ...USE_KINDS,
+      ...REL_DIRS,
+      ...furnitureKinds(),
+      ...FLOOR_MATERIALS,
+      ...KNOWN_MATERIALS,
+    ]);
+    return LANGUAGE_WORDS.has(word) || this.registry.byKeyword.has(word);
   }
 
   /**
@@ -320,13 +365,10 @@ class Parser {
    * The words an unknown statement word `t` may be a slip of (AF2), in order: on the line of the
    * token before it, where a statement ended early at a misspelt word, a room use (after a `uses`
    * list) and a clause word; then a statement keyword. Each set is read from its one source. A
-   * clause or element word (`sheet`, `slab` or `section` out of place) is spelled right, so it has
-   * none; a statement keyword is refused by {@link spelling} itself.
+   * word of the language out of place (`sheet`, `left`, `closet`) is spelled right, so it has none.
    */
   private wordsAt(t: Token): readonly string[] {
-    const word = t.value;
-    if (!this.reportable() || this.registry.byKeyword.has(word) || ATTRIBUTE_KEYWORDS.some((w) => w === word))
-      return [];
+    if (!this.reportable() || this.isLanguageWord(t.value)) return [];
     if (this.toks[this.pos - 1]?.line !== t.line) return [...this.statementStarts];
     return [...(this.afterUses(t, true) ? USE_KINDS : []), ...ATTRIBUTE_KEYWORDS, ...this.statementStarts];
   }
@@ -2171,6 +2213,9 @@ class Parser {
 
 /** Room use-kind keywords, for the strip-child `uses` clause. */
 const USE_SET: ReadonlySet<string> = new Set<string>(USE_KINDS);
+
+/** Every word of the language, built on the first misspelling a parse reports (AF2). */
+let LANGUAGE_WORDS: Set<string> | undefined;
 
 /**
  * Line `a`'s indentation relative to line `b`'s, compared as whitespace STRINGS (Python's

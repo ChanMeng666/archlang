@@ -60,8 +60,9 @@ export interface ParseCtx {
   failAt(msg: string, span: Span): never;
   /** {@link fail} where `t` (the current token by default) should have been one of `near`,
    *  reported at `span` (`t`'s own by default): a misspelling of one of them gets a did-you-mean
-   *  hint and a fix that rewrites `t` alone (AF2). */
-  failNear(msg: string, near: readonly string[], t?: Token, span?: Span): never;
+   *  hint and a fix that rewrites `t` alone (AF2). Optional, so a caller's own `ParseCtx` stays
+   *  valid; the built-in elements fall back to `fail`/`failAt` without it. */
+  failNear?(msg: string, near: readonly string[], t?: Token, span?: Span): never;
   /** Report a catalogued diagnostic and keep parsing (a duplicate clause, `E_DUP_CLAUSE`). */
   diag(d: Diagnostic): void;
 }

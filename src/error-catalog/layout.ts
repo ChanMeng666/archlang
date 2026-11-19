@@ -100,7 +100,7 @@ export const LAYOUT_ENTRIES = defineEntries({
   E_LAYOUT_REF: e(
     "Relational placement references an unknown room.",
     "A `right-of`/`below`/… clause names a room id that does not exist in the plan.",
-    "Reference an existing room id, or fix the typo: an id one slip from a room's (`hal` for `hall`) gets a fix that rewrites it.",
+    "Reference an existing room id, or fix the typo: an id one slip from a room's (`hal` for `hall`) gets a hint and a maybe-incorrect fix (`archlang fix --unsafe`) that rewrites it.",
     'room id=k right-of ghost size 100x100   # error: no room "ghost"',
     "room id=ghost at (0,0) size 100x100\nroom id=k right-of ghost size 100x100   # fixed: the room exists",
   ),

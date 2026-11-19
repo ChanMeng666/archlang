@@ -1543,6 +1543,11 @@ function deletions(w: string, n: number): Set<string> {
   return out;
 }
 
+/** Every catalogued furniture and fixture kind (the parser's did-you-mean asks, AF2). */
+export function furnitureKinds(): ReadonlySet<string> {
+  return known().set;
+}
+
 function known(): KnownFurniture {
   if (!knownFurniture) {
     const set = new Set([...FIXTURE_CATEGORIES, ...CATALOG_CATEGORIES]);

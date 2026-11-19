@@ -262,8 +262,6 @@ export interface RelConstraint {
   /** Resolved spacing (mm) along the placement axis. */
   gap: number;
   span?: Span;
-  /** The reference id's own bytes, where an unknown one is reported and respelt (AF2). */
-  refSpan?: Span;
 }
 
 /**

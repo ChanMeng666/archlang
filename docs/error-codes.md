@@ -1660,7 +1660,7 @@ room id=b left-of a size 100x100   # fixed: a is anchored
 
 **Cause.** A `right-of`/`below`/… clause names a room id that does not exist in the plan.
 
-**Fix.** Reference an existing room id, or fix the typo: an id one slip from a room's (`hal` for `hall`) gets a fix that rewrites it.
+**Fix.** Reference an existing room id, or fix the typo: an id one slip from a room's (`hal` for `hall`) gets a hint and a maybe-incorrect fix (`archlang fix --unsafe`) that rewrites it.
 
 ```arch static
 room id=k right-of ghost size 100x100   # error: no room "ghost"
@@ -2054,7 +2054,7 @@ stair id=s at (0,0) size 1000x3000 dir up   # fixed: a 3 m flight
 
 **Cause.** The lexer or the parser could not make a statement out of the bytes at this span — a missing or misspelled keyword, a value where a keyword belongs, an unterminated string, an unbalanced brace, a clause written before the placement it follows, or blocks and expressions nested past the parser's limit (256 levels — far beyond any real plan; the deeper block is skipped, not read). It is the one code that says nothing about what the plan MEANS: resolution never ran here, so no measurement, no geometry and no soundness rule had a chance to speak.
 
-**Fix.** Read the message: it names what was expected and what was found, at a byte span. Compare the statement against `archlang spec`'s one line for that keyword: the placement comes first, and the clauses after it in any order. A word one slip from the word that belongs there (`dor`, `betwen`, `bedrom`) gets a did-you-mean hint and a fix that rewrites that word alone, machine-applicable when no other word is as near.
+**Fix.** Read the message: it names what was expected and what was found, at a byte span. Compare the statement against `archlang spec`'s one line for that keyword: the placement comes first, and the clauses after it in any order. A word one slip from the word that belongs there (`dor`, `betwen`, `bedrom`) gets a did-you-mean hint and a fix that rewrites that word alone, machine-applicable only when the word is none the language or the plan already knows and no other word that can stand there is as near.
 
 ```arch static
 door on w1 at 40% width 900 wall w1   # error: `wall` pairs with the `at (x,y)` form only
