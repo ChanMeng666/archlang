@@ -196,8 +196,10 @@ function matchPrepared(labToks: readonly string[], vocab: PreparedEntry): VocabM
  * it did at HEAD. Authored `uses` always wins over this table.
  *
  * Spanish and Portuguese (NR.16): each row's English words come first, exactly as before, and the
- * es/pt words after them, so a label that matched before matches the same word now
- * (`test/vocabulary-es-pt.test.ts` pins the English prefix). One spelling stands for both
+ * es/pt words after them (`test/vocabulary-es-pt.test.ts` pins the English prefix), so an
+ * English-only label classifies exactly as before. A label that mixes the languages can gain a
+ * use, or, since entry wins over hall, change one ("Hall de entrada" read `hall` and now reads
+ * `entry`); no tracked plan carries such a label. One spelling stands for both
  * languages where they fold alike ("dormitorio" is also the Portuguese "dormitório"). Left out on
  * purpose: a bare "sala" (any room: "sala de reuniones", "sala de máquinas"), "salón" (it folds
  * to the English "salon", a hair salon), "suíte" (a Brazilian suíte is a bedroom, while "Banheiro
@@ -212,7 +214,16 @@ function matchPrepared(labToks: readonly string[], vocab: PreparedEntry): VocabM
 export const USE_VOCABULARY = Object.freeze({
   bedroom: { canonical: ["bed", "bedroom", "dormitorio", "recámara", "quarto"], aliases: ["habitación"] },
   bath: {
-    canonical: ["bath", "bathroom", "shower", "baño", "banheiro", "casa de banho", "quarto de banho"],
+    canonical: [
+      "bath",
+      "bathroom",
+      "shower",
+      "baño",
+      "banheiro",
+      "casa de banho",
+      "quarto de banho",
+      "quarto de banhos",
+    ],
     aliases: ["ensuite", "en suite", "washroom"],
   },
   wc: { canonical: ["wc", "toilet"], aliases: ["powder", "aseo", "lavabo"] },
@@ -272,13 +283,15 @@ export const USE_VOCABULARY = Object.freeze({
  * workroom or a dance floor, and a gallery a corridor or an exhibition room.
  *
  * Spanish and Portuguese (NR.16), after the English words as in {@link USE_VOCABULARY}: a pantry
- * ("despensa"), a box room ("trastero", "arrumos", "quarto de despejo"), a wardrobe ("armario",
- * "roupeiro") or walk-in closet ("vestidor") is storage, and a dressing room ("quarto de vestir")
- * is storage through an alias, as "dressing" is; "escritorio" (also the Portuguese "escritório")
- * is an office; a laundry ("lavandería", also "lavanderia"; "lavadero"; the Brazilian "área de
- * serviço") is a utility room. "Estudio" and "oficina" are absent, as "studio" is: a Spanish
- * estudio is a studio flat as often as a study, and a Portuguese oficina is a workshop, and an
- * office use is the evidence `dwellingReading` reads a plan as non-residential by.
+ * ("despensa"), a box room ("trastero", "arrumos", "arrumação", "quarto de despejo"), a wardrobe
+ * ("armario", "roupeiro") or walk-in closet ("vestidor") is storage, and a dressing room ("quarto
+ * de vestir") is storage through an alias, as "dressing" is; a laundry ("lavandería", also the
+ * Brazilian "lavanderia"; the European Portuguese "lavandaria"; "lavadero"; "quarto de lavar";
+ * the Brazilian "área de serviço" and the Spanish "área de servicio") is a utility room. The
+ * office row has no Spanish or Portuguese word: "estudio" is a studio flat as often as a study, a
+ * Portuguese "oficina" is a workshop and "escritorio" is a desk in Spain, and an office use is the
+ * evidence `dwellingReading` reads a plan as non-residential by, so a flat whose bedroom is
+ * labelled "Suíte" would read as an office.
  */
 export const FALLBACK_USE_VOCABULARY = Object.freeze({
   bedroom: {
@@ -299,6 +312,7 @@ export const FALLBACK_USE_VOCABULARY = Object.freeze({
       "despensa",
       "trastero",
       "arrumos",
+      "arrumação",
       "quarto de despejo",
       "armario",
       "roupeiro",
@@ -306,9 +320,18 @@ export const FALLBACK_USE_VOCABULARY = Object.freeze({
     ],
     aliases: ["dressing", "linen", "cellar", "quarto de vestir"],
   },
-  office: { canonical: ["office", "study", "escritorio"], aliases: ["consulting"] },
+  office: { canonical: ["office", "study"], aliases: ["consulting"] },
   utility: {
-    canonical: ["utility", "laundry", "lavandería", "lavadero", "área de serviço"],
+    canonical: [
+      "utility",
+      "laundry",
+      "lavandería",
+      "lavandaria",
+      "lavadero",
+      "quarto de lavar",
+      "área de serviço",
+      "área de servicio",
+    ],
     aliases: ["plant", "boiler"],
   },
   living: { canonical: ["great room", "reception room", "drawing room"], aliases: ["snug", "den"] },
@@ -329,25 +352,46 @@ const PREPARED_FALLBACK = Object.freeze(
 ) as Readonly<Record<keyof typeof FALLBACK_USE_VOCABULARY, PreparedEntry>>;
 
 /**
- * The Portuguese phrases in which "quarto" names a room that is not a bedroom: a bathroom
- * ("quarto de banho", European Portuguese), a box room ("quarto de arrumos", "quarto de despejo"),
- * a dressing room ("quarto de vestir"), and the fourth floor ("quarto andar"). Read as ADJACENT
- * tokens, unlike a vocabulary word, so "Quarto de casal com casa de banho" is still a bedroom.
+ * The Portuguese phrases in which "quarto" names something that is not a bedroom: a bathroom
+ * ("quarto de banho", "quarto de banhos", European Portuguese), a box room ("quarto de arrumos",
+ * "quarto de arrumação", "quarto de despejo"), a dressing room ("quarto de vestir"), a laundry
+ * ("quarto de lavar"), a sewing room ("quarto de costura"), a darkroom ("quarto escuro") and the
+ * fourth floor ("quarto andar"). Each is read as ADJACENT tokens starting at a "quarto", unlike a
+ * vocabulary word, so "Quarto de casal com casa de banho" is still a bedroom.
  */
 const QUARTO_NOT_BEDROOM: readonly (readonly SynToken[])[] = Object.freeze(
-  ["quarto de banho", "quarto de arrumos", "quarto de despejo", "quarto de vestir", "quarto andar"].map((p) =>
-    synTokens(p, true),
-  ),
+  [
+    "quarto de banho",
+    "quarto de banhos",
+    "quarto de arrumos",
+    "quarto de arrumação",
+    "quarto de despejo",
+    "quarto de vestir",
+    "quarto de lavar",
+    "quarto de costura",
+    "quarto escuro",
+    "quarto andar",
+  ].map((p) => synTokens(p, true)),
 );
 
-/** Whether `run` stands in `labToks` as consecutive tokens (each by {@link tokenEq}). */
-function hasRun(labToks: readonly string[], run: readonly SynToken[]): boolean {
-  for (let i = 0; i + run.length <= labToks.length; i++) {
-    let k = 0;
-    while (k < run.length && tokenEq(run[k]!, labToks[i + k]!)) k++;
-    if (k === run.length) return true;
+/** Whether `run` stands in `labToks` as consecutive tokens from index `at` (each by {@link tokenEq}). */
+function runAt(labToks: readonly string[], at: number, run: readonly SynToken[]): boolean {
+  if (at + run.length > labToks.length) return false;
+  for (let k = 0; k < run.length; k++) if (!tokenEq(run[k]!, labToks[at + k]!)) return false;
+  return true;
+}
+
+/** Whether EVERY "quarto" token of the label starts one of {@link QUARTO_NOT_BEDROOM}'s phrases, so
+ *  that no "quarto" in it names a bedroom: "Quarto de banho" yes, "Quarto 1 / Quarto de banho" no. */
+function everyQuartoGuarded(labToks: readonly string[]): boolean {
+  const quarto = QUARTO_NOT_BEDROOM[0]![0]!;
+  let seen = false;
+  for (let i = 0; i < labToks.length; i++) {
+    if (!tokenEq(quarto, labToks[i]!)) continue;
+    seen = true;
+    if (!QUARTO_NOT_BEDROOM.some((run) => runAt(labToks, i, run))) return false;
   }
-  return false;
+  return seen;
 }
 
 /** One alias-sourced classification: a use kind inferred from a non-canonical (indirect)
@@ -392,9 +436,10 @@ export interface LabelClassification {
  * `[living]`, as they were.
  *
  * NR.16: the label's tokens and the table's words are compared without accents ({@link foldAccents}),
- * here alone. One guard is Portuguese: "quarto" gives no bedroom inside a phrase that names another
- * room, read as consecutive words ("Quarto de banho" is `[bath]`, "Quarto de arrumos" `[storage]`,
- * while "Quarto de casal com casa de banho" is `[bedroom, bath]`, as "Bedroom with en suite" is).
+ * here alone. One guard is Portuguese: "quarto" gives no bedroom when every "quarto" in the label
+ * starts a phrase, read as consecutive words, that names something else ("Quarto de banho" is
+ * `[bath]`, "Quarto de arrumos" `[storage]`), so "Quarto de casal com casa de banho" and "Quarto 1
+ * / Quarto de banho" are `[bedroom, bath]`, as "Bedroom with en suite" is.
  */
 export function classifyLabelUses(text: string): LabelClassification {
   const uses: UseKind[] = [];
@@ -406,10 +451,9 @@ export function classifyLabelUses(text: string): LabelClassification {
   // Normalised, accent-folded and split once for every entry below, not once per word.
   const toks = foldedTokensOf(text);
 
-  // "Quarto" gives no bedroom inside a phrase that names another room ("quarto de banho").
+  // "Quarto" gives no bedroom when every "quarto" starts a phrase naming another room.
   const bedroom = matchPrepared(toks, PREPARED_USE.bedroom);
-  if (bedroom && !(bedroom.word === "quarto" && QUARTO_NOT_BEDROOM.some((run) => hasRun(toks, run))))
-    add("bedroom", bedroom);
+  if (bedroom && !(bedroom.word === "quarto" && everyQuartoGuarded(toks))) add("bedroom", bedroom);
 
   // Wet room: bath OR WC words detect it; a WC word discriminates it to a WC.
   const bath = matchPrepared(toks, PREPARED_USE.bath);

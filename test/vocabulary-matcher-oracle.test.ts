@@ -56,8 +56,9 @@
  * fast path). `synonymMatchesLabel` and `matchVocabulary` do not fold, and the oracle compares them
  * unfolded, so the code-unit sweep is unchanged. The tables gained Spanish and Portuguese words,
  * which reach the oracle through the shared tables and `USE_WORDS`, and one guard: "quarto" gives
- * no bedroom inside a phrase that names another room, read as consecutive tokens
- * (`oldHasPhrase`, in the oracle's own per-word style).
+ * no bedroom when every "quarto" of the label starts a phrase that names another room, read as
+ * consecutive tokens (`oldEveryQuartoGuarded`, in the oracle's own per-word style). The guard
+ * phrases reach the generated labels through `FRAGMENTS`.
  */
 
 import { walkFiles as walk } from "./helpers/corpus.js";
@@ -135,22 +136,29 @@ function oldMatchVocabulary(label: string, vocab: VocabEntry, folded = false): V
   return null;
 }
 
-/** NR.16: does the phrase stand in the label as CONSECUTIVE tokens (folded)? Per word, as above. */
-function oldHasPhrase(phrase: string, label: string): boolean {
-  const p = oldTokens(phrase, true);
-  const l = oldTokens(label, true);
-  for (let i = 0; i + p.length <= l.length; i++) if (p.every((t, k) => tokenEq(t, l[i + k]!))) return true;
-  return false;
-}
-
 /** NR.16: the phrases in which "quarto" is not a bedroom. */
 const QUARTO_PHRASES = [
   "quarto de banho",
+  "quarto de banhos",
   "quarto de arrumos",
+  "quarto de arrumação",
   "quarto de despejo",
   "quarto de vestir",
+  "quarto de lavar",
+  "quarto de costura",
+  "quarto escuro",
   "quarto andar",
 ];
+
+/** NR.16: does EVERY "quarto" token of the label start one of the phrases, as CONSECUTIVE tokens
+ *  (folded)? Per word, as above; false when the label has no "quarto". */
+function oldEveryQuartoGuarded(label: string): boolean {
+  const l = oldTokens(label, true);
+  const starts = l.map((_, i) => i).filter((i) => tokenEq("quarto", l[i]!));
+  const phraseAt = (i: number, phrase: string): boolean =>
+    oldTokens(phrase, true).every((t, k) => l[i + k] !== undefined && tokenEq(t, l[i + k]!));
+  return starts.length > 0 && starts.every((i) => QUARTO_PHRASES.some((p) => phraseAt(i, p)));
+}
 
 interface AliasMatch {
   kind: UseKind;
@@ -167,7 +175,7 @@ function oldClassifyLabelUses(text: string): { uses: UseKind[]; aliases: AliasMa
 
   // NR.16: "quarto" gives no bedroom inside a consecutive phrase naming another room.
   const bedroomHit = oldMatchVocabulary(text, USE_VOCABULARY.bedroom, true);
-  const guarded = bedroomHit?.word === "quarto" && QUARTO_PHRASES.some((p) => oldHasPhrase(p, text));
+  const guarded = bedroomHit?.word === "quarto" && oldEveryQuartoGuarded(text);
   const bedroom = guarded ? null : bedroomHit;
   if (bedroom) add("bedroom", bedroom);
 
@@ -312,6 +320,9 @@ const FRAGMENTS: readonly string[] = [
   "Day Nursery",
   "day-nursery",
   "Night nursery",
+  ...QUARTO_PHRASES,
+  "Quarto de casal",
+  "Quarto 2",
   "Hallmark",
   "bedrooms",
   "2",

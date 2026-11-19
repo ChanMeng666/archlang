@@ -25,6 +25,7 @@ import {
   USE_VOCABULARY,
   classifyLabelUses,
   matchesLivingDining,
+  namesOpenAir,
   nonResidentialWord,
   normalizeLabel,
   synonymMatchesLabel,
@@ -59,9 +60,9 @@ const USES: Record<"es" | "pt", readonly (readonly [string, readonly string[]])[
     ["Trastero", ["storage"]],
     ["Armario", ["storage"]],
     ["Vestidor", ["storage"]],
-    ["Escritorio", ["office"]],
     ["Lavandería", ["utility"]],
     ["Lavadero", ["utility"]],
+    ["Área de servicio", ["utility"]],
   ],
   pt: [
     ["Quarto 1", ["bedroom"]],
@@ -81,10 +82,11 @@ const USES: Record<"es" | "pt", readonly (readonly [string, readonly string[]])[
     ["Garagem", ["garage"]],
     ["Despensa", ["storage"]],
     ["Arrumos", ["storage"]],
+    ["Arrumação", ["storage"]],
     ["Roupeiro", ["storage"]],
     ["Armário", ["storage"]],
-    ["Escritório", ["office"]],
     ["Lavanderia", ["utility"]],
+    ["Lavandaria", ["utility"]],
     ["Área de serviço", ["utility"]],
   ],
 };
@@ -108,7 +110,7 @@ describe("NR.16: the use classifier reads Spanish and Portuguese labels", () => 
       ["Quarto de vestir", "storage", "quarto de vestir"],
     ] as const)
       expect(classifyLabelUses(l), l).toEqual({ uses: [kind], aliases: [{ kind, word }] });
-    for (const l of ["Dormitorio", "Quarto", "Baño", "Cocina", "Garagem", "Despensa", "Escritório"])
+    for (const l of ["Dormitorio", "Quarto", "Baño", "Cocina", "Garagem", "Despensa", "Lavandaria"])
       expect(classifyLabelUses(l).aliases, l).toEqual([]);
   });
 
@@ -135,12 +137,28 @@ describe("NR.16: 'quarto' and the phrases that name another room", () => {
     expect(usesOf("Quarto andar")).toEqual([]);
   });
 
+  it("each further phrase: a bathroom, a box room, a laundry, a sewing room and a darkroom", () => {
+    expect(classifyLabelUses("Quarto de banhos")).toEqual({ uses: ["bath"], aliases: [] });
+    expect(classifyLabelUses("Quarto de arrumação")).toEqual({ uses: ["storage"], aliases: [] });
+    expect(classifyLabelUses("Quarto de lavar")).toEqual({ uses: ["utility"], aliases: [] });
+    expect(usesOf("Quarto de costura")).toEqual([]);
+    expect(usesOf("Quarto escuro")).toEqual([]);
+  });
+
   it("the guard reads consecutive words only: a bedroom with a bathroom is both, as in English", () => {
     expect(usesOf("Bedroom with en suite")).toEqual(["bedroom", "bath"]);
     expect(usesOf("Quarto de casal com casa de banho")).toEqual(["bedroom", "bath"]);
     expect(usesOf("Quarto com casa de banho privativa")).toEqual(["bedroom", "bath"]);
     expect(usesOf("Quarto de casal")).toEqual(["bedroom"]);
     expect(usesOf("Quarto de hóspedes")).toEqual(["bedroom"]);
+  });
+
+  it("a bedroom stays when any 'quarto' of the label starts no guarded phrase", () => {
+    expect(usesOf("Quarto com quarto de banho")).toEqual(["bedroom", "bath"]);
+    expect(usesOf("Quarto 1 / Quarto de banho")).toEqual(["bedroom", "bath"]);
+    expect(usesOf("Quarto de casal com quarto de vestir")).toEqual(["bedroom"]);
+    // Every "quarto" guarded: still no bedroom.
+    expect(usesOf("Quarto de banho / Quarto de arrumos")).toEqual(["bath"]);
   });
 });
 
@@ -169,6 +187,11 @@ describe("NR.16: accents are folded in the use classifier, and only there", () =
     expect(synonymMatchesLabel("cafe", "Café")).toBe(false);
     expect(nonResidentialWord("Café")).toEqual({ word: "café", ambiguous: false });
     expect(nonResidentialWord("Cafe")).toEqual({ word: "cafe", ambiguous: false });
+    // The open-air words too: an accented spelling is not the English word, as on main.
+    expect(namesOpenAir("Patio")).toBe(true);
+    expect(namesOpenAir("Pátio")).toBe(false);
+    expect(namesOpenAir("Veranda")).toBe(true);
+    expect(namesOpenAir("Véranda")).toBe(false);
   });
 
   it("normalizeLabel's public output keeps its accents", () => {
@@ -204,10 +227,11 @@ describe("NR.16: token-bounded, never a substring", () => {
 });
 
 describe("NR.16: the deliberate absences", () => {
-  it("'sala', 'salón', 'suíte', 'cuarto', 'estudio', 'oficina' and outdoor words classify to nothing", () => {
+  it("'sala', 'salón', 'suíte', 'cuarto', the office words and outdoor words classify to nothing", () => {
     // "Sala" and "cuarto" are any room, "salón" folds to the English "salon", a Brazilian suíte
     // is a bedroom while "Banheiro da suíte" is its bathroom, an estudio is a studio flat as often
-    // as a study, a Portuguese oficina is a workshop, and a balcony is an `outdoor` surface.
+    // as a study, a Portuguese oficina is a workshop, a Spanish escritorio a desk, and a balcony is
+    // an `outdoor` surface.
     for (const l of [
       "Sala",
       "Sala 2",
@@ -216,6 +240,8 @@ describe("NR.16: the deliberate absences", () => {
       "Cuarto",
       "Estudio",
       "Oficina",
+      "Escritorio",
+      "Escritório",
       "Balcón",
       "Varanda",
       "Sala de máquinas",
@@ -301,7 +327,6 @@ describe("NR.16: brief concepts are reached through uses, never through es/pt la
     ["hall", "Pasillo", "Corredor"],
     ["kitchen", "Cocina", "Cozinha"],
     ["living-room", "Sala de estar", "Sala de estar"],
-    ["study", "Escritorio", "Escritório"],
     ["tea-point", "Cocina", "Cozinha"],
   ];
   for (const [concept, es, pt] of BY_USES)
@@ -319,6 +344,7 @@ describe("NR.16: brief concepts are reached through uses, never through es/pt la
     ["main-bathroom", "Baño", "Banheiro"],
     ["wet-room", "Baño", "Casa de banho"],
     ["utility", "Lavandería", "Área de serviço"],
+    ["utility", "Área de servicio", "Lavandaria"],
     ["corridor", "Pasillo", "Corredor"],
     ["kitchenette", "Cocina", "Cozinha"],
   ];
@@ -336,6 +362,7 @@ describe("NR.16: brief concepts are reached through uses, never through es/pt la
       ["meeting-room", "Sala de reuniones"],
       ["consulting-room", "Consultorio"],
       ["private-office", "Escritório"],
+      ["study", "Escritorio"],
       ["unit", "Apartamento"],
     ] as const)
       expect(matches(concept, room(l, "fromUses")), l).toBe(false);
@@ -351,10 +378,15 @@ describe("NR.16: an es or pt flat reads as a dwelling", () => {
     expect(dwellingReading(rooms(["Quarto", "Banheiro", "Cozinha", "Sala de estar", "Escritório"]))).toBe("dwelling");
   });
 
-  it("a studio flat: 'Estudio' and 'Oficina' are no office, so nothing reads it as non-residential", () => {
+  it("a flat whose bedroom and living room carry no classified word ('Suíte', 'Sala')", () => {
+    expect(dwellingReading(rooms(["Sala", "Suíte", "Cozinha", "Banheiro", "Escritório"]))).toBe("dwelling");
+  });
+
+  it("a studio flat: 'Estudio', 'Oficina' and 'Escritorio' are no office, so nothing reads it as non-residential", () => {
     expect(dwellingReading(rooms(["Estudio", "Baño", "Cocina"]))).toBe("dwelling");
     expect(dwellingReading(rooms(["Oficina", "Banheiro", "Cozinha"]))).toBe("dwelling");
-    // The contrast that makes the two lines above mean something: an office and no home room.
-    expect(dwellingReading(rooms(["Escritorio", "Baño", "Cocina"]))).toBe("non-residential");
+    expect(dwellingReading(rooms(["Escritorio", "Baño", "Cocina"]))).toBe("dwelling");
+    // The contrast that makes the lines above mean something: an office and no home room.
+    expect(dwellingReading(rooms(["Office", "Baño", "Cocina"]))).toBe("non-residential");
   });
 });
