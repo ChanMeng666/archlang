@@ -57,7 +57,8 @@ describe("--theme: without the flag the render is what it was", () => {
       expect(sha256(r.stdout), file).toBe(sha256(expected));
       compared++;
     }
-    // 32 of the 37 examples stream; the five multi-storey ones are covered by the next case.
+    // Every single-storey example that compiles is compared; the multi-storey ones are covered by the next case. The
+    // floor below only proves the loop compared something, it is not the example count.
     expect(compared).toBeGreaterThanOrEqual(30);
   }, 120000);
 

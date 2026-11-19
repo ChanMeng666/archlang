@@ -1314,7 +1314,7 @@ the front door as `entranceId` for every room under `arch describe --json`; the 
 and `lint()` rows over the examples are byte-identical unless an example has such a door (list
 any that move, with the reason). **Size:** S.
 
-### U.2 · Metres compile silently — `todo`
+### U.2 · Metres compile silently: done by #704, waiting to be archived — `note`
 
 **Observed (audit finding 11, Appendix B).** `size 4x3` and `thickness 0.2` (metres written
 where millimetres are the unit) compile `ok:true` with no diagnostic. Only lint reaches the
@@ -1330,6 +1330,18 @@ tiny value (a hairline, a model in another scale) may be noise.
 **Gate:** a catalogued code with a `fix` that names millimetres, fired on the audit's two
 inputs and on no example (`arch lint --json` over `examples/`); the error-catalog example test
 and `gen:errors` stay green. **Size:** S.
+**Done by PR #704** (RM1.4): `W_LENGTH_IN_METRES` (`src/ir/silent-accepts.ts`) warns on a room
+`size` with both sides under 100 mm and on a wall thickness under 10 mm (`walls from rooms`
+included), and its catalogue `fix` reads "Write the length in millimetres; the hint gives the clause
+times 1000." Re-checked for AF0 with `arch compile --json` on the audit's two inputs
+(`test/silent-accepts/length-in-metres.arch`): `ok: true` and two warnings, `Wall "shell" thickness
+0.2 is read as 0.2 mm: lengths are millimetres` (its hint: write `thickness 200`) and `Room "main"
+size 4 x 3 is read as 4 mm x 3 mm: lengths are millimetres` (its hint: write `size 4000x3000`).
+`test/silent-accepts.test.ts` pins both, the quiet thresholds, and that no example raises the
+code (its byte-identity law over `examples/`). A length that is too LARGE (a size built from a
+product of two lengths, `ai-first-language` README §6 finding 3) is a dimension check, not this
+entry. The entry is closed and waits to be archived to `archlang-lab` with
+`scripts/backlog-archive.mjs`.
 
 ### U.3 · A misspelt furniture category passes `validate --strict`: done by #848, waiting to be archived — `note`
 
@@ -1364,7 +1376,21 @@ a new diagnostic moves `lint()` only for plans that write such a label.
 `describe()`/`lint()` over the examples are byte-identical (verify that no example writes a
 label on a drawn symbol). **Size:** S.
 
-### U.5 · A parse error does not use what the spec already predicts — `todo`
+### U.5 · A parse error that drops a plan's only drawable statement adds a `W_EMPTY_PLAN` (narrowed) — `todo`
+
+**Narrowed (AF0, re-checked against the code).** The rule-6 half is done by PR #790 (CO-1):
+`id=` may follow the kind word of `furniture`, `door`, `window`, `outdoor` and `wall`
+(`idAfterKind`, `src/clause-order.ts`; the wall calls it at `src/elements/wall.ts:53`), so both
+forms the audit wrote now compile instead of failing. Probe, `arch compile --json` on
+`wall exterior id=w1 thickness 200 { … }` with a room, a `door on w1 at 50% width 900` and
+`furniture bed id=b1 at (500,500) size 1600x2000`: `ok: true`, no diagnostic, the door resolves on
+`w1` and `describe().furniture` lists `b1`. What remains is the cascade, for any parse error and not
+only rule 6. Probe, a plan whose only statement is `wall exterior id=w1 thick 200 { … }`: exit 2,
+`E_PARSE Expected "thickness" but found "thick"` and then `W_EMPTY_PLAN Plan has no walls, rooms,
+or furniture — nothing to draw`. With a room beside the same wall line, only the `E_PARSE` is
+reported, because `checkPlanDrawable` (`src/ir/checks.ts`) counts what resolved and the room did.
+The remaining gate is the cascade half of the gate below; the `fix`-is-the-reordered-line half no
+longer applies, since the reordered line is now legal. The text below is the original entry.
 
 **Observed (audit finding 12, Appendix B).** `wall exterior id=w1 …` gives
 `E_PARSE Expected "thickness" but found "id"` plus a cascading `W_EMPTY_PLAN`. Spec rule 6 says
