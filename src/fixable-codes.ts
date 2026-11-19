@@ -101,8 +101,8 @@ export const FIX_PRODUCERS: readonly FixProducer[] = [
     applicability: [MA, MI],
     codes: { E_PARSE: "spelling" },
     when: {
-      [MA]: "the misspelt word is no word of the language and stands nowhere else in the source, the candidates are a closed list for that position, and no other is as near",
-      [MI]: "the position expected one word, the word is one the language or the plan knows, or another candidate is as near",
+      [MA]: "the misspelt word is no word of the language and stands nowhere else in the source, the candidates are a closed list for that position, and no other is within the distance limit",
+      [MI]: "the position expected one word, the word is one the language or the plan knows, or another candidate is within the limit",
     },
   },
   {
