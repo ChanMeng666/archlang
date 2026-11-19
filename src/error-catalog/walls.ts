@@ -27,7 +27,7 @@ export const WALLS_ENTRIES = defineEntries({
     "The `overhang` sugar offsets ONE closed wall ring, and with no `wall <id>` clause it infers that ring as the plan's single closed `exterior` wall. The plan has none (a ring marked `status demolish` is coming out, so it does not count), or has more than one, so there is nothing to infer — and picking the first would silently draw a roof over part of the building.",
     "Name the ring (`roof overhang 600 wall <id>`), or state the outline yourself with `roof polygon (x,y) (x,y) (x,y) …`.",
     'plan "H" {\n  units mm\n  room id=r1 at (0,0) size 4000x3000\n  roof overhang 600   # error: no closed exterior wall to follow\n}',
-    'plan "H" {\n  units mm\n  wall exterior thickness 200 { (0,0) (4000,0) (4000,3000) (0,3000) close }\n  room id=r1 at (0,0) size 4000x3000\n  roof overhang 600   # fixed: a closed exterior ring to follow\n}',
+    'plan "H" {\n  units mm\n  room id=r1 at (0,0) size 4000x3000\n  roof polygon (0,0) (4000,0) (4000,3000) (0,3000)   # fixed: the outline stated\n}',
   ),
   E_ROOF_CURVED: e(
     "`roof overhang` on a wall with a curved edge.",
@@ -48,7 +48,7 @@ export const WALLS_ENTRIES = defineEntries({
     "A roof belongs to a building, not to a reusable part of one: `roof overhang` is offset from the plan's closed exterior wall ring, and a component is authored in its own local frame with no such ring. Two `place`d copies would each derive an outline and the plan would draw two roofs.",
     "Move the `roof` line out to the plan body (or into the `level` block it belongs to).",
     "component wing() { roof overhang 600 }   # error: only allowed at plan level",
-    "wall exterior thickness 200 { (0,0) (4000,0) (4000,3000) (0,3000) close }\nroof overhang 600   # fixed: at plan level",
+    "component wing() { }\nwall exterior thickness 200 { (0,0) (4000,0) (4000,3000) (0,3000) close }\nroof overhang 600   # fixed: at plan level",
   ),
   E_ROOF_POLY_DEGENERATE: e(
     "`roof polygon` outline has fewer than 3 effective vertices.",

@@ -48,7 +48,7 @@ export const SITE_ENTRIES = defineEntries({
     "`rail` names which edges carry a railing, and only a `balcony` has one. Written on any other ground surface it has no meaning — and a clause with no meaning is refused rather than silently dropped, so a plan never draws differently from what it says. The same code covers an edge word outside `top|bottom|left|right|all|none`.",
     "Delete the clause, or make the surface an `outdoor balcony`. For an unknown word, use one of the six edge words.",
     "outdoor deck at (0,0) size 3000x2000 rail all   # error: a deck has no railing",
-    "outdoor balcony at (0,0) size 3000x2000 rail all   # fixed: a balcony has a railing",
+    "outdoor deck at (0,0) size 3000x2000   # fixed: the clause deleted",
   ),
   E_FENCE_CURVED: e(
     "A fence cannot have a curved (`arc`) edge.",

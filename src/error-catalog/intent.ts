@@ -91,7 +91,7 @@ export const INTENT_ENTRIES = defineEntries({
     "A plan declares more than 1,000 `keep` statements (counted as they expand, every storey and loop iteration included), or one keep names more than 64 targets or levels. The cap bounds the size of what a keep reports; the work is bounded by the evaluation-step budget. It is raised once, at the first keep past the cap, and that keep and every later one past it are not checked (their expansion is still counted, so the cap cannot skip work).",
     "Keep fewer: a keep states an invariant an edit must not break, not every coordinate of the plan. Split a long `keep align` into two.",
     'plan "K" {\n  units mm\n  room id=a at (0,0) size 3000x3000\n  for i in 0..1001 { keep fixed a.left at 0 }   # error: more than 1000 keeps\n}',
-    'plan "K" {\n  units mm\n  room id=a at (0,0) size 3000x3000\n  keep fixed a.left at 0   # fixed: one keep says it once\n}',
+    'plan "K" {\n  units mm\n  room id=a at (0,0) size 3000x3000\n  for i in 0..10 { keep fixed a.left at 0 }   # fixed: ten keeps, under the 1000\n}',
   ),
   E_KEEP_MEASURE: e(
     "The keep's measure is not defined for what it names.",
@@ -119,7 +119,7 @@ export const INTENT_ENTRIES = defineEntries({
     "A `keep` target is not an authored id on its storey (or, for `stacked`, on every listed level): an unknown name, an auto id (`room_3`, which renumbers when an earlier element is named), an element that could not be placed, an undeclared `axis <label>`, a wall `segment <n>` past the wall's last segment, or a level the plan does not have. A keep is the statement that must survive edits, so it names only what the author named.",
     "Give the element its own `id=` and name that, declare the axis in `axes`, or list only the levels the plan has.",
     'plan "K" {\n  units mm\n  room id=a at (0,0) size 3000x3000\n  keep fixed b.left at 0   # error: no element b\n}',
-    'plan "K" {\n  units mm\n  room id=a at (0,0) size 3000x3000\n  keep fixed a.left at 0   # fixed: a exists\n}',
+    'plan "K" {\n  units mm\n  room id=a at (0,0) size 3000x3000\n  room id=b at (4000,0) size 3000x3000\n  keep fixed b.left at 4000   # fixed: b is an element\'s own id\n}',
   ),
   E_KEEP_VALUE: e(
     "A keep's value is out of its domain.",

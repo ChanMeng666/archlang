@@ -268,10 +268,25 @@ suite("error catalog — every example that can raise its code does", () => {
 });
 
 /**
- * Executed codes whose entry has no `fixed`, with why (card AF5). Every other executed example is
- * paired with its correction; a code excused from running above has no `fixed` at all, since a
- * snippet this file cannot run raising the code proves nothing by running clean of it. Capped, as
- * NOT_REPRODUCED is: the list only shrinks.
+ * # The fixed half (card AF5)
+ *
+ * Each executed example is paired with `fixed`: the example edited as the entry's own `fix` says.
+ * What is checked mechanically: the edit compiles with no error and without the code; a warning's
+ * correction raises nothing its example did not; and the correction is tied to its example (it has
+ * statements, keeps at least half of the example's statements verbatim, uses every statement kind
+ * the example uses, is not the example with lines deleted, and changes a bounded number of lines).
+ * Those rules refuse an empty or comment-only `fixed`, a deletion of the offending line (with or
+ * without its spacing changed), and an unrelated snippet or a replacement plan.
+ *
+ * What cannot be checked mechanically, and is reviewed instead: whether the edit is the one the
+ * entry's `fix` describes. A correction that relabels a room the fix says never to relabel, or
+ * silences a check by thinning a wall, compiles clean and passes every rule here.
+ */
+
+/**
+ * Executed codes whose entry has no `fixed`, with why. A code excused from running above has no
+ * `fixed` at all, since a snippet this file cannot run raising the code proves nothing by running
+ * clean of it. Capped, as NOT_REPRODUCED is: the list only shrinks.
  */
 const NO_FIXED: ReadonlyMap<string, string> = new Map([
   [
@@ -283,9 +298,8 @@ const NO_FIXED_CAP = 1;
 
 /**
  * The pairs whose fix IS a deletion: the entry's own `fix` says to delete the repeated statement or
- * the authored wall, so the corrected snippet is the example less some of its lines. Every other
- * `fixed` must not be a line-subset of its example, so that deleting the line that raises the code
- * (or keeping the example and only rewriting its comment) is never a "fix". Capped: it only shrinks.
+ * the authored wall, so the corrected snippet is the example less some of its lines. Exempt from
+ * the deletion, survival and statement-kind rules. Capped: it only shrinks.
  */
 const DELETION_IS_THE_FIX: ReadonlyMap<string, string> = new Map([
   ["E_SITE_DUP", "fix: delete one of the blocks"],
@@ -295,8 +309,32 @@ const DELETION_IS_THE_FIX: ReadonlyMap<string, string> = new Map([
 ]);
 const DELETION_CAP = 4;
 
-/** The most lines a correction may add to or take from its example: it edits it, it does not replace it. */
-const MAX_LINE_DELTA = 3;
+/**
+ * The pairs whose fix replaces a statement with one of another kind, so the example's statement
+ * cannot survive verbatim and its keyword goes. Exempt from the survival and statement-kind rules
+ * only. Capped: it only shrinks.
+ */
+const REWRITE_IS_THE_FIX: ReadonlyMap<string, string> = new Map([
+  [
+    "W_WHILE_DEPRECATED",
+    "fix: rewrite the loop as `for I in A..B { … }`; the `let`, the `while` and the reassignment go",
+  ],
+  ["E_DATUM_BEFORE_ROOMS", "fix: write the datum in the statement that uses it; the `let` becomes a wall point"],
+  [
+    "E_CLEAR_SCOPE",
+    "fix: move the clause into the `level` header; both the plan's `height` line and the header change",
+  ],
+]);
+const REWRITE_CAP = 3;
+
+/**
+ * The most lines a correction may change, removed plus added (an edited line counts twice): two
+ * more than the example has, and at least four. A fix edits its example's lines and may add the
+ * one or two statements a fragment needs around it (the wall an opening stands on, the room a
+ * piece names): one line edited and two added is four. A correction that changes more lines than
+ * that is a new plan, not an edit.
+ */
+const maxChangedLines = (exampleStatements: number): number => Math.max(4, exampleStatements + 2);
 
 /** The error-severity diagnostics `compile()` returns for a snippet wrapped as {@link codesRaisedBy} wraps it. */
 function errorsRaisedBy(snippet: string): string[] {
@@ -307,9 +345,9 @@ function errorsRaisedBy(snippet: string): string[] {
 }
 
 /**
- * A snippet's statements: each line with its `#` comment cut (one outside a string literal, so a
- * `"#333"` colour stays) and its spacing collapsed, blank lines dropped. What a snippet says, apart
- * from what its comments claim.
+ * A snippet's statements: each line with its `#` comment cut (a `#` inside a string literal is
+ * kept, and so is a `\"` escaped quote inside one) and trimmed, blank lines dropped. What a
+ * snippet says, apart from what its comments claim.
  */
 function codeLines(snippet: string): string[] {
   return snippet
@@ -318,13 +356,17 @@ function codeLines(snippet: string): string[] {
       let inString = false;
       let end = 0;
       for (; end < line.length; end++) {
-        if (line[end] === '"') inString = !inString;
+        if (inString && line[end] === "\\") end++;
+        else if (line[end] === '"') inString = !inString;
         else if (line[end] === "#" && !inString) break;
       }
-      return line.slice(0, end).replace(/\s+/g, " ").trim();
+      return line.slice(0, end).trim();
     })
     .filter((l) => l !== "");
 }
+
+/** A statement with ALL its whitespace removed: two lines that differ only in spacing are one line. */
+const squashed = (line: string): string => line.replace(/\s+/g, "");
 
 /** The words (names and keywords) of a snippet's statements. */
 const codeWords = (snippet: string): string[] =>
@@ -332,26 +374,50 @@ const codeWords = (snippet: string): string[] =>
     .join(" ")
     .match(/[A-Za-z_]\w*/g) ?? [];
 
+/** A statement's kind: its first word (`room`, `wall`, `let`, `furniture` …). */
+const statementKind = (line: string): string | undefined => /^[A-Za-z_]\w*/.exec(line)?.[0];
+
+/** How `fixed` fails to be an edit of `code`'s example, or nothing. Compiles nothing. */
+function editProblems(
+  code: string,
+  fixed: string,
+  rewrites: ReadonlyMap<string, string> = REWRITE_IS_THE_FIX,
+): string[] {
+  const example = ERROR_CATALOG[code]!.example;
+  const before = codeLines(example);
+  const after = codeLines(fixed);
+  if (after.length === 0) return ["has no statement, only comments"];
+  const problems: string[] = [];
+  const was = before.map(squashed);
+  const now = after.map(squashed);
+  const exampleWords = new Set(codeWords(example));
+  if (!codeWords(fixed).some((w) => exampleWords.has(w))) problems.push("shares no word with its example");
+  const deletion = DELETION_IS_THE_FIX.has(code);
+  if (now.every((l) => was.includes(l)) && !deletion) problems.push("is its example with lines deleted (or unchanged)");
+  if (!deletion && !rewrites.has(code)) {
+    // At least half of the example's statements survive verbatim (spacing aside). A line holding
+    // the catalogue's `…` placeholder is no statement to keep.
+    const statements = was.filter((l) => !l.includes("…"));
+    const kept = statements.filter((l) => now.includes(l)).length;
+    const need = Math.floor(statements.length / 2);
+    if (kept < need) problems.push(`keeps ${kept} of its example's ${statements.length} statements, under ${need}`);
+    // Every kind of statement the example writes is still written.
+    const fixedWords = new Set(codeWords(fixed));
+    const lost = [...new Set(before.map(statementKind))].filter((k) => k !== undefined && !fixedWords.has(k));
+    if (lost.length) problems.push(`drops the example's ${lost.map((k) => `\`${k}\``).join(", ")} statement`);
+  }
+  const changed = was.filter((l) => !now.includes(l)).length + now.filter((l) => !was.includes(l)).length;
+  if (changed > maxChangedLines(before.length))
+    problems.push(
+      `changes ${changed} lines, over ${maxChangedLines(before.length)} for a ${before.length}-line example`,
+    );
+  return problems;
+}
+
 /** What is wrong with `fixed` as the correction of `code`'s example, or nothing. */
 function fixedProblems(code: string, fixed: string): string[] {
   const entry = ERROR_CATALOG[code]!;
-  const problems: string[] = [];
-  // Tied to its example first: a correction is an edit of the example, so it has statements, shares
-  // a word with it, is not the example less some of its lines (unless deleting is the entry's fix),
-  // and adds or takes at most MAX_LINE_DELTA lines. So an empty or comment-only `fixed`, the
-  // example itself with a new comment, and the example with its offending line deleted all fail
-  // here, before anything is compiled.
-  const before = codeLines(entry.example);
-  const after = codeLines(fixed);
-  if (after.length === 0) problems.push("has no statement, only comments");
-  else {
-    const words = new Set(codeWords(entry.example));
-    if (!codeWords(fixed).some((w) => words.has(w))) problems.push("shares no word with its example");
-    if (after.every((l) => before.includes(l)) && !DELETION_IS_THE_FIX.has(code))
-      problems.push("is its example with lines deleted (or unchanged)");
-    if (Math.abs(after.length - before.length) > MAX_LINE_DELTA)
-      problems.push(`has ${after.length} statement lines to its example's ${before.length}`);
-  }
+  const problems = editProblems(code, fixed);
   const raised = codesRaisedBy(fixed);
   if (raised.includes(code)) problems.push(`still raises ${code}`);
   for (const e of errorsRaisedBy(fixed)) problems.push(`raises the error ${e}`);
@@ -359,8 +425,8 @@ function fixedProblems(code: string, fixed: string): string[] {
   // example raised too. An error's example stops at the error (`lint()` reads no plan that does not
   // resolve), so its correction is held to compiling clean of errors and of its code.
   if (entry.severity === "warning") {
-    const was = new Set(codesRaisedBy(entry.example));
-    for (const c of new Set(raised)) if (!was.has(c)) problems.push(`raises ${c}, which the example did not`);
+    const before = new Set(codesRaisedBy(entry.example));
+    for (const c of new Set(raised)) if (!before.has(c)) problems.push(`raises ${c}, which the example did not`);
   }
   return problems;
 }
@@ -393,36 +459,63 @@ suite("error catalog — every example is paired with a fixed one (card AF5)", (
     expect(withFixed.length).toBeGreaterThanOrEqual(204);
   });
 
-  it("the deletion list does not rot: each entry is still a pair whose fixed is a line-subset of its example", () => {
+  it("the exemption lists do not rot: each entry still needs its exemption", () => {
     expect(DELETION_IS_THE_FIX.size).toBeLessThanOrEqual(DELETION_CAP);
-    const stale = [...DELETION_IS_THE_FIX.keys()].filter((c) => {
+    expect(REWRITE_IS_THE_FIX.size).toBeLessThanOrEqual(REWRITE_CAP);
+    const isDeletion = (c: string): boolean => {
+      const fixed = ERROR_CATALOG[c]?.fixed;
+      if (fixed === undefined) return false;
+      const was = codeLines(ERROR_CATALOG[c]!.example).map(squashed);
+      return codeLines(fixed).every((l) => was.includes(squashed(l)));
+    };
+    const staleDeletions = [...DELETION_IS_THE_FIX.keys()].filter((c) => !isDeletion(c));
+    expect(staleDeletions, "DELETION_IS_THE_FIX names a code whose fixed is no longer a deletion: delete it.").toEqual(
+      [],
+    );
+    // A rewrite entry that would pass without its exemption no longer needs it.
+    const staleRewrites = [...REWRITE_IS_THE_FIX.keys()].filter((c) => {
       const fixed = ERROR_CATALOG[c]?.fixed;
       if (fixed === undefined) return true;
-      const before = codeLines(ERROR_CATALOG[c]!.example);
-      return !codeLines(fixed).every((l) => before.includes(l));
+      const without = new Map([...REWRITE_IS_THE_FIX].filter(([k]) => k !== c));
+      return editProblems(c, fixed, without).length === 0;
     });
-    expect(stale, "DELETION_IS_THE_FIX names a code whose fixed is no longer a deletion: delete it.").toEqual([]);
+    expect(staleRewrites, "REWRITE_IS_THE_FIX names a code whose fixed passes without it: delete it.").toEqual([]);
   });
 
-  it("is not vacuous: a `fixed` that is empty, a comment, a deletion, or a trade of one warning for another is caught", () => {
-    const heightExample = ERROR_CATALOG.E_HEIGHT_RANGE!.example;
-    expect(fixedProblems("E_HEIGHT_RANGE", heightExample)).toContain("still raises E_HEIGHT_RANGE");
-    // The example, its comment rewritten: no edit.
-    expect(fixedProblems("E_HEIGHT_RANGE", heightExample.replace(/#.*$/, "# fixed"))).toContain(
-      "is its example with lines deleted (or unchanged)",
-    );
+  it("is not vacuous: each rule refuses the shortcut it is there for", () => {
+    const example = (c: string): string => ERROR_CATALOG[c]!.example;
+    // The example itself, its comment rewritten: no edit, and the code is still raised.
+    const height = fixedProblems("E_HEIGHT_RANGE", example("E_HEIGHT_RANGE").replace(/#.*$/, "# fixed"));
+    expect(height).toContain("is its example with lines deleted (or unchanged)");
+    expect(height).toContain("still raises E_HEIGHT_RANGE");
     // Empty, and comment-only: compiles clean of every code, says nothing.
     for (const nothing of ["", "# fixed: nothing to see"])
-      expect(fixedProblems("E_ROOM_SIZE", nothing)).toContain("has no statement, only comments");
-    // The example with the line that raises the code deleted, for a one-line and a two-line example.
-    expect(fixedProblems("E_DUP_ID", "room id=a at (0,0) size 1x1")).toContain(
+      expect(fixedProblems("E_ROOM_SIZE", nothing)).toEqual(["has no statement, only comments"]);
+    // The offending line deleted, for a one-line and a two-line example; and the space trick: the
+    // line that survives respaced (`(0, 0)`), which is still the example's line.
+    expect(editProblems("E_DUP_ID", "room id=a at (0,0) size 1x1")).toContain(
       "is its example with lines deleted (or unchanged)",
     );
-    expect(fixedProblems("E_ROOMS_OVERLAP", "room id=a at (0,0) size 4000x3000")).toContain(
+    expect(editProblems("E_DUP_ID", "room id=a at (0, 0) size 1x1")).toContain(
       "is its example with lines deleted (or unchanged)",
     );
-    // A snippet that has nothing to do with the example.
-    expect(fixedProblems("E_ROOM_SIZE", "let k = 1")).toContain("shares no word with its example");
+    expect(editProblems("E_ROOMS_OVERLAP", "room id=a at (0, 0) size 4000x3000")).toContain(
+      "is its example with lines deleted (or unchanged)",
+    );
+    // An unrelated statement that shares words with the example: another kind of statement.
+    expect(editProblems("E_ROOM_SIZE", "furniture bed at (0,0) size 1500x2000")).toEqual([
+      "drops the example's `room` statement",
+    ]);
+    // A filler binding for a two-line example: none of its statements kept.
+    expect(editProblems("E_INDEX", "let zz = 0")).toEqual(["keeps 0 of its example's 2 statements, under 1"]);
+    // Nothing in common at all.
+    expect(editProblems("E_ROOM_SIZE", "column at (0,0) size 300x300").length).toBeGreaterThan(0);
+    expect(editProblems("E_ROOM_SIZE", "theme rendered")).toContain("shares no word with its example");
+    // Four unrelated lines for a one-line example: only the line-change bound catches it, since
+    // it keeps the example's `let`, needs to keep none of a one-line example, and is no deletion.
+    expect(editProblems("E_UNKNOWN_FN", "let a = 1\nlet b = 2\nlet c = 3\nlet x = 4")).toEqual([
+      "changes 5 lines, over 4 for a 1-line example",
+    ]);
     // A 1 mm room is no longer 1 m², but it is a length in metres now.
     expect(fixedProblems("W_ROOM_TOO_SMALL", 'room at (0,0) size 1x1 label "Nook"')).toContain(
       "raises W_LENGTH_IN_METRES, which the example did not",
@@ -430,6 +523,10 @@ suite("error catalog — every example is paired with a fixed one (card AF5)", (
     // The code is gone, but another error came in: only the "raises the error" branch fires.
     expect(fixedProblems("E_ROOM_SIZE", "room at (0,0) size 3000x4000\nlet x = 1 / 0")).toEqual([
       expect.stringMatching(/^raises the error E_DIV_ZERO: /),
+    ]);
+    // An escaped quote inside a string does not end it, so a `#` after it is still in the string.
+    expect(codeLines('room at (0,0) size 1x1 label "a \\" # b"   # note')).toEqual([
+      'room at (0,0) size 1x1 label "a \\" # b"',
     ]);
   });
 });

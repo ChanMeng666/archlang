@@ -27,7 +27,7 @@ export const FURNITURE_ENTRIES = defineEntries({
     "A furniture item's `rotate` is not one of 0, 90, 180, or 270 degrees.",
     "Use a quarter-turn: `rotate 0|90|180|270`.",
     "furniture wc at (0,0) size 400x700 rotate 45   # error: not a quarter-turn",
-    "furniture wc at (0,0) size 400x700 rotate 90   # fixed: a quarter-turn",
+    "furniture wc at (0,0) size 400x700 rotate 180   # fixed: a quarter-turn",
   ),
   E_FURN_AGAINST: e(
     "Invalid `against wall` or `against <room>.<edge>` fixture placement.",
@@ -89,7 +89,7 @@ export const FURNITURE_ENTRIES = defineEntries({
     "The catalogue marks a category `symmetric` when its symbol has no front or back (a table, a stool, a rug), so a derived turn would change nothing anyone could see (ADR 0029 §3).",
     "Drop `facing` from the symmetric piece; put `facing` on the pieces that face it instead.",
     "furniture id=c chair at (0,0) size 450x450\nfurniture table at (0,900) size 800x800 facing c   # error: a table has no front",
-    "furniture id=c chair at (0,0) size 450x450 facing t\nfurniture id=t table at (0,900) size 800x800   # fixed: the chair faces the table, the table faces nothing",
+    "furniture id=c chair at (0,0) size 450x450\nfurniture table at (0,900) size 800x800   # fixed: facing dropped from the piece with no front",
   ),
   E_FACING_TRANSPOSED: e(
     "Facing the target would put the piece's back on its short side.",

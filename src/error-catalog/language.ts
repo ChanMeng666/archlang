@@ -14,7 +14,7 @@ export const LANGUAGE_ENTRIES = defineEntries({
     "An `accTitle` or `accDescr` accessibility-metadata statement appeared inside a component or a control-flow block. They describe the whole plan, so they are only legal as direct plan-level statements.",
     "Move the `accTitle`/`accDescr` line up to the plan body, alongside `units`/`north`.",
     'component c() { accDescr "x" }   # error: only allowed at plan level',
-    'accDescr "x"   # fixed: at plan level, beside units',
+    'component c() { }\naccDescr "x"   # fixed: at plan level, beside units',
   ),
   E_ARGCOUNT: e(
     "Component called with the wrong number of arguments.",
@@ -205,6 +205,6 @@ export const LANGUAGE_ENTRIES = defineEntries({
     'A bare word in a `set` rule is read as text, never as the value of a name, so `set door(width: W)` sets the text "W" and does nothing; so does a word the key does not read (`set door(swing: inward)`). `set door(…)` reads a word only for `hinge` and `swing`. An error at 2.0.',
     "Write the value on the element, or a word the key reads.",
     'let W = 900\nset door(width: W)   # warning: takes `W` as the text "W"; the rule does nothing',
-    "let W = 900\nset door(width: 900)   # fixed: the value written, not the name",
+    "let W = 900\nwall id=w1 interior thickness 100 { (0,0) (4000,0) }\nset door(swing: out)   # fixed: a word the key reads\ndoor on w1 at 50% width W   # fixed: the value written on the element",
   ),
 });

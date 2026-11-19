@@ -297,6 +297,7 @@ component c() { accDescr "x" }   # error: only allowed at plan level
 **Fixed.**
 
 ```arch static
+component c() { }
 accDescr "x"   # fixed: at plan level, beside units
 ```
 
@@ -843,8 +844,8 @@ furniture table at (0,900) size 800x800 facing c   # error: a table has no front
 **Fixed.**
 
 ```arch static
-furniture id=c chair at (0,0) size 450x450 facing t
-furniture id=t table at (0,900) size 800x800   # fixed: the chair faces the table, the table faces nothing
+furniture id=c chair at (0,0) size 450x450
+furniture table at (0,900) size 800x800   # fixed: facing dropped from the piece with no front
 ```
 
 ## E_FACING_TARGET
@@ -1027,7 +1028,7 @@ furniture wc at (0,0) size 400x700 rotate 45   # error: not a quarter-turn
 **Fixed.**
 
 ```arch static
-furniture wc at (0,0) size 400x700 rotate 90   # fixed: a quarter-turn
+furniture wc at (0,0) size 400x700 rotate 180   # fixed: a quarter-turn
 ```
 
 ## E_FURN_SIZE
@@ -1494,7 +1495,7 @@ plan "K" {
 plan "K" {
   units mm
   room id=a at (0,0) size 3000x3000
-  keep fixed a.left at 0   # fixed: one keep says it once
+  for i in 0..10 { keep fixed a.left at 0 }   # fixed: ten keeps, under the 1000
 }
 ```
 
@@ -1602,7 +1603,8 @@ plan "K" {
 plan "K" {
   units mm
   room id=a at (0,0) size 3000x3000
-  keep fixed a.left at 0   # fixed: a exists
+  room id=b at (4000,0) size 3000x3000
+  keep fixed b.left at 4000   # fixed: b is an element's own id
 }
 ```
 
@@ -1752,6 +1754,7 @@ component c() { level 1 { } }   # error: only allowed at plan level
 **Fixed.**
 
 ```arch static
+component c() { }
 level 1 { }   # fixed: at plan level
 ```
 
@@ -2006,7 +2009,7 @@ outdoor deck at (0,0) size 3000x2000 rail all   # error: a deck has no railing
 **Fixed.**
 
 ```arch static
-outdoor balcony at (0,0) size 3000x2000 rail all   # fixed: a balcony has a railing
+outdoor deck at (0,0) size 3000x2000   # fixed: the clause deleted
 ```
 
 ## E_OUTDOOR_SIZE
@@ -2222,9 +2225,8 @@ plan "H" {
 ```arch static
 plan "H" {
   units mm
-  wall exterior thickness 200 { (0,0) (4000,0) (4000,3000) (0,3000) close }
   room id=r1 at (0,0) size 4000x3000
-  roof overhang 600   # fixed: a closed exterior ring to follow
+  roof polygon (0,0) (4000,0) (4000,3000) (0,3000)   # fixed: the outline stated
 }
 ```
 
@@ -2282,6 +2284,7 @@ component wing() { roof overhang 600 }   # error: only allowed at plan level
 **Fixed.**
 
 ```arch static
+component wing() { }
 wall exterior thickness 200 { (0,0) (4000,0) (4000,3000) (0,3000) close }
 roof overhang 600   # fixed: at plan level
 ```
@@ -2843,6 +2846,7 @@ component c() { strip right at (0,0) gap 0 { … } }   # error: nested strip
 **Fixed.**
 
 ```arch static
+component c() { }
 strip right at (0,0) gap 0 { room size 3000x3000 room size 3000x3000 }   # fixed: at plan level
 ```
 
@@ -3557,11 +3561,11 @@ door on shell at 4000 width 900   # lint: its inner side spans both rooms
 
 ```arch static
 wall id=shell exterior thickness 200 { (0,0) (8000,0) (8000,5000) (0,5000) close }
-wall id=p partition thickness 100 { (4000,0) (4000,5000) }
+wall partition thickness 100 { (4000,0) (4000,5000) }
 room at (0,0) size 4000x5000
 room at (4000,0) size 4000x5000
 door on shell at 2000 width 900   # fixed: its inner side is in one room
-door on p at 2500 width 800
+door at (4000,2500) width 800 wall partition
 ```
 
 ## W_DIAGNOSTIC_LIMIT
@@ -4462,9 +4466,9 @@ window on w1 at 12000 width 1200   # lint: on the angled wall, no chain can meas
 
 ```arch static
 dims auto all
-wall id=w1 exterior thickness 200 { (0,0) (6000,0) (6000,4000) (2000,6000) (0,4000) close }
-window on w1 at 12000 width 1200
-dim (4748,4626)->(3674,5163) offset 0   # fixed: a hand dim, jamb to jamb, on the angled wall
+wall id=w1 exterior thickness 200 { (0,0) (6000,0) (6000,3000) (2000,6000) (0,4000) close }
+window on w1 at 11500 width 1200
+dim (4360,4230)->(3640,5190) offset 0   # fixed: a hand dim, jamb to jamb, on the angled wall
 ```
 
 ## W_OPENING_OFF_WALL
@@ -4805,7 +4809,7 @@ plan "Through a bedroom" {
 **Fixed.**
 
 ```arch static
-plan "Through a bedroom" {
+plan "Living with a door of its own" {
   units mm
   wall exterior thickness 200 { (0,0) (9000,0) (9000,4000) (0,4000) close }
   wall id=p1 partition thickness 100 { (3000,0) (3000,4000) }
@@ -4867,8 +4871,8 @@ furniture chair at (175,850) size 450x450   # lint: south of the table, facing s
 **Fixed.**
 
 ```arch static
-furniture id=t table at (0,0) size 800x800
-furniture chair at (175,850) size 450x450 facing t   # fixed: it faces the table
+furniture table at (0,0) size 800x800
+furniture chair at (175,850) size 450x450 rotate 180   # fixed: the rotate that turns its front to the table
 ```
 
 ## W_SET_VALUE_WORD
@@ -4888,7 +4892,9 @@ set door(width: W)   # warning: takes `W` as the text "W"; the rule does nothing
 
 ```arch static
 let W = 900
-set door(width: 900)   # fixed: the value written, not the name
+wall id=w1 interior thickness 100 { (0,0) (4000,0) }
+set door(swing: out)   # fixed: a word the key reads
+door on w1 at 50% width W   # fixed: the value written on the element
 ```
 
 ## W_SHAFT_FOOTPRINT_MISMATCH
@@ -4972,7 +4978,7 @@ stair id=s at (200,200) size 900x2900 dir up   # lint: 10 treads, so 11 risers o
 
 ```arch static
 height 2700
-stair id=s at (200,200) size 900x3800 dir up   # fixed: a longer flight, lower risers
+stair id=s at (200,200) size 900x3220 dir up   # fixed: 12 treads, 13 risers of about 208 mm
 ```
 
 ## W_STAIR_SIDE_ENTRY
@@ -5014,7 +5020,7 @@ stair id=s at (200,200) size 1000x2000 dir up   # lint: 13 risers and 12 goings 
 
 ```arch static
 height 2800
-stair id=s at (200,200) size 1000x3640 dir up   # fixed: the run the risers need
+stair id=s at (200,200) size 1000x3220 dir up   # fixed: 12 treads, 13 risers of about 215 mm
 ```
 
 ## W_STAIR_UNMATCHED
@@ -5272,15 +5278,15 @@ plan "Bath off the kitchen" {
 ```arch static
 plan "Bath off the hall" {
   units mm
-  wall exterior thickness 200 { (0,0) (7500,0) (7500,3000) (0,3000) close }
+  wall exterior thickness 200 { (0,0) (6000,0) (6000,3000) (0,3000) close }
   wall partition thickness 100 { (4000,0) (4000,3000) }
-  wall partition thickness 100 { (5500,0) (5500,3000) }
-  room at (0,0) size 4000x3000 label "Kitchen"
-  room at (4000,0) size 1500x3000 label "Hall"
-  room at (5500,0) size 2000x3000 label "Bathroom"
-  door at (4750,3000) width 900 wall exterior
-  door at (4000,1500) width 800 wall partition
-  door at (5500,1500) width 700 wall partition   # fixed: the bath opens off the hall
+  wall partition thickness 100 { (2800,0) (2800,3000) }
+  room at (0,0) size 2800x3000 label "Kitchen"
+  room at (2800,0) size 1200x3000 label "Hall"
+  room at (4000,0) size 2000x3000 label "Bathroom"
+  door at (2000,3000) width 900 wall exterior
+  door at (2800,1500) width 900 wall partition
+  door at (4000,1500) width 700 wall partition   # fixed: the bath opens off a hall, not the kitchen
 }
 ```
 

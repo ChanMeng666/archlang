@@ -72,7 +72,7 @@ export const FURNITURE_CHECKS_ENTRIES = defineEntries({
     "A chair, office chair or outdoor chair stands within reach of a table or desk in the same room (600 mm on both axes, `seatTableReachMm`), but its front ray, from the middle of its front edge, enters no such table within that reach: it is drawn with its back to the table it is sat at. At `rotate 0` a symbol's back is to the north. A chair that declares `facing` is not judged.",
     "Add `facing <table id>` to the chair (the hint names the nearest table and the turn it derives), or give it the `rotate` that turns its front to the table.",
     "furniture table at (0,0) size 800x800\nfurniture chair at (175,850) size 450x450   # lint: south of the table, facing south",
-    "furniture id=t table at (0,0) size 800x800\nfurniture chair at (175,850) size 450x450 facing t   # fixed: it faces the table",
+    "furniture table at (0,0) size 800x800\nfurniture chair at (175,850) size 450x450 rotate 180   # fixed: the rotate that turns its front to the table",
   ),
   W_WC_SIDE_CLEARANCE: w(
     "A WC's centreline is too close to a wall or fixture at its side.",

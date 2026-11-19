@@ -81,7 +81,7 @@ export const LAYOUT_ENTRIES = defineEntries({
     "A `strip` block appears inside a component, a control-flow block, or another `strip`. Strips place rooms and are only legal as direct plan-level statements.",
     "Move the `strip` to the plan body, alongside the other elements.",
     "component c() { strip right at (0,0) gap 0 { … } }   # error: nested strip",
-    "strip right at (0,0) gap 0 { room size 3000x3000 room size 3000x3000 }   # fixed: at plan level",
+    "component c() { }\nstrip right at (0,0) gap 0 { room size 3000x3000 room size 3000x3000 }   # fixed: at plan level",
   ),
   E_LAYOUT_CYCLE: e(
     "Relational room placement forms a cycle.",
