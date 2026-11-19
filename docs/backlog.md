@@ -2575,6 +2575,8 @@ the `hinged` hint (EV.4) kept for a kind written as its own statement.
 ### EV.5 · A refused opening offers no move (design first) — `todo`
 
 **Carded as** AF9 (`docs/plans/product-roadmap/cards.md` track 10, 2026-11-18).
+**Design:** `docs/plans/ai-first-language/af9-design.md` (2026-11-20) meets the gate below; the code
+waits for its open questions (§10).
 
 Six of EV.1's seven compile-error losses are opening-placement refusals (`refused, not moved`, a
 window on a partition edge, a parallel edge with no offset; ADR 0028 § 5). They return no fix. L1 (`eval/l1.ts`) applies only the machine-applicable tier, so
