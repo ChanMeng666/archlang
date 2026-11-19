@@ -365,7 +365,7 @@ export const RESOURCE_DEFS = [
     "capabilities",
     "archlang://capabilities",
     "What ArchLang can and cannot do",
-    "Every tool both servers serve and the ones only the hosted server adds, every CLI command, the export formats, the limits, what it does not do, and the authoring loop, generated from the tool lists and the CLI manifest.",
+    "Every tool both servers serve and the ones only the hosted server adds, every CLI command, the codes `fix` resolves by applicability, the export formats, the limits, what it does not do, and the authoring loop, generated from the tool lists, the CLI manifest and the fix producers.",
     "text/markdown",
   ],
 ] as const;

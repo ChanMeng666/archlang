@@ -13,9 +13,9 @@
  * constants (`packages/mcp-worker/src/limits.ts`), its png sentence and `server.json`'s remote; the
  * loop is the numbered lines of `INSTRUCTIONS`; the two guide links are the docs pages' own H1s, at
  * the route `docs-site/sync-docs.mjs`'s `PAGES` table gives them under the root package's
- * `homepage`; the codes `fix` resolves are `fixableCodes()` (`src/fixable-codes.ts`), the fix producers'
- * own declaration, which `test/fixable-codes.test.ts` holds to what they emit. Only the headings and
- * the sentences that join the lists are written here.
+ * `homepage`; the codes `fix` resolves are `fixableCodes()` (`src/fixable-codes.ts`), a table of the
+ * fix producers, held to their source by a test (`test/fixable-codes.test.ts`), with each two-tier
+ * row's `when`. Only the headings and the sentences that join the lists are written here.
  *
  * The generator runs from source under tsx with `tsconfig.gen.json`, which maps the core's package
  * name (and its `./share` subpath, which the Worker's limits read) to the core's source (as
@@ -141,14 +141,17 @@ function fixLines(fixTool: ListedTool | undefined, invoke: string, fixFlags: rea
   const unsafe = `\`unsafe:true\` (\`${invoke} fix --unsafe\`)`;
   const groups = fixableCodes();
   if (groups.length === 0) throw new Error("no fix producer declares a code");
-  const cliOnly = (stages: readonly FixStage[]): boolean => !stages.some((s) => TOOL_STAGES.includes(s));
+  const note = (c: { stage: FixStage; when?: string }): string => {
+    const parts = [...(TOOL_STAGES.includes(c.stage) ? [] : ["CLI"]), ...(c.when !== undefined ? [c.when] : [])];
+    return parts.length > 0 ? ` (${parts.join("; ")})` : "";
+  };
   return [
-    `\`fix\` resolves the codes below; any other code is edited by hand (\`${invoke} explain <code>\` says how). The \`fix\` tool reads \`compile\`'s diagnostics; \`${invoke} fix\` also reads \`lint\`'s and proves a \`while\` rewrite, so it alone resolves the codes marked (CLI).`,
+    `\`fix\` resolves the codes below; any other code is edited by hand (\`${invoke} explain <code>\` says how). The \`fix\` tool reads \`compile\`'s diagnostics; \`${invoke} fix\` also reads \`lint\`'s and proves a \`while\` rewrite, so it alone resolves the codes marked CLI. A code in two groups says when its edit takes each.`,
     "",
     ...groups.map(
       (g) =>
         `- \`${g.applicability}\`, ${APPLIES[g.applicability](unsafe)}: ${g.codes
-          .map((c) => `\`${c.code}\`${cliOnly(c.stages) ? " (CLI)" : ""}`)
+          .map((c) => `\`${c.code}\`${note(c)}`)
           .join(", ")}`,
     ),
   ];

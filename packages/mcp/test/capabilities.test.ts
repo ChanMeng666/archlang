@@ -12,8 +12,8 @@
  *   catalogue, the Worker's limits), not from the generator, so an entry the generator stopped
  *   rendering, or a tool the Worker gains, fails. Every code a fix producer declares
  *   (`FIX_PRODUCERS`, `src/fixable-codes.ts`, card AF8) is on the line of each applicability it
- *   declares, marked (CLI) exactly when it is not a `compile` fix, and a `lint` fix put to the `fix`
- *   tool shows the tool cannot reach it.
+ *   declares, marked CLI exactly when it is not a `compile` fix and with its row's `when` for that
+ *   applicability; a `lint` fix and the `while` rewrite put to the `fix` tool show it reaches neither.
  * - **Wording.** No promise of design, layout, furniture, IFC, BIM or 3D (the card's "do not"). One
  *   allowance, by ruling on PR #703: the `repair` tool's own title, "Repair furniture placement",
  *   is a factual title read off the registry, not a promise; only that one derived line may say
@@ -30,8 +30,9 @@ import { MCP_PER_PERIOD, RATE_PERIOD_SECONDS, SOURCE_CAP_BYTES } from "../../mcp
 import { createHostedServer } from "../../mcp-worker/src/server.js";
 import { CAPABILITIES_PATH, renderCapabilities } from "../scripts/gen-capabilities.js";
 import { FIX_PRODUCERS } from "../../../src/fixable-codes.js";
+import { proveWhileFixes } from "../../../src/while-fix.js";
 import { INSTRUCTIONS, RESOURCE_DEFS, type ResourceName } from "../src/tools.js";
-import { call, connect } from "./helpers.js";
+import { call, codes, connect } from "./helpers.js";
 
 const REPO = resolve(dirname(fileURLToPath(import.meta.url)), "..", "..", "..");
 const committed = (): string => readFileSync(resolve(REPO, CAPABILITIES_PATH), "utf8").replace(/\r\n/g, "\n");
@@ -106,12 +107,12 @@ describe("archlang://capabilities", () => {
     expect(text).toContain("## Limits");
   });
 
-  it("lists every code a fix producer declares under each applicability it declares, (CLI) unless a compile fix", () => {
+  it("lists every code a fix producer declares under each applicability it declares, CLI unless a compile fix", () => {
     const text = committed();
     const start = text.indexOf("\n## What `fix` resolves\n");
     expect(start, "no section on what `fix` resolves").toBeGreaterThan(0);
     const section = text.slice(start + 1, text.indexOf("\n## ", start + 1));
-    /** The items of the line for `a`: `code` → the item as written (`` `E_X` `` or `` `W_Y` (CLI) ``). */
+    /** The items of the line for `a`: `code` → the item as written (`` `E_X` ``, `` `W_Y` (CLI; when) ``). */
     const items = (a: string): Map<string, string> => {
       const line = section.split("\n").find((l) => l.startsWith(`- \`${a}\`, `));
       expect(line, `no line for ${a}`).toBeDefined();
@@ -123,7 +124,8 @@ describe("archlang://capabilities", () => {
       for (const a of p.applicability)
         for (const code of Object.keys(p.codes)) {
           const m = want.get(a) ?? new Map<string, string>();
-          m.set(code, `\`${code}\`${p.stage === "compile" ? "" : " (CLI)"}`);
+          const notes = [...(p.stage === "compile" ? [] : ["CLI"]), ...(p.when?.[a] !== undefined ? [p.when[a]] : [])];
+          m.set(code, `\`${code}\`${notes.length > 0 ? ` (${notes.join("; ")})` : ""}`);
           want.set(a, m);
         }
     expect(want.size).toBeGreaterThan(0);
@@ -132,7 +134,29 @@ describe("archlang://capabilities", () => {
     expect(section.split("\n").filter((l) => l.startsWith("- ")).length).toBe(want.size);
   });
 
-  it("the fix tool leaves a lint fix alone, which is what (CLI) says", async () => {
+  it("the fix tool leaves the `while` rewrite to `archlang fix`, which is what CLI says", async () => {
+    const source = [
+      'plan "P" {',
+      "  units mm",
+      "  let i = 0",
+      "  while i < 4 {",
+      "    column at (i * 300, 0) size 100x100",
+      "    i = i + 1",
+      "  }",
+      "}",
+    ].join("\n");
+    expect(FIX_PRODUCERS.find((p) => Object.hasOwn(p.codes, "W_WHILE_DEPRECATED"))?.stage).toBe("fix");
+    // `archlang fix` proves and attaches it…
+    expect(proveWhileFixes(source).map((p) => p.fix.fixId)).toEqual(["while-to-for"]);
+    // …the tool sees the warning and no fix.
+    const client = await connect();
+    expect(codes(await call(client, "compile", { source }))).toContain("W_WHILE_DEPRECATED");
+    const out = await call(client, "fix", { source, unsafe: true });
+    expect(out.applied).toEqual([]);
+    expect(out.source).toBe(source);
+  });
+
+  it("the fix tool leaves a lint fix alone, which is what CLI says", async () => {
     // W_SWING_OBSTRUCTED's hinge flip is a `lint` fix: `archlang fix` applies it, the tool never sees it.
     const source = [
       'plan "P" {',

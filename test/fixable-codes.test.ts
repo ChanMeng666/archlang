@@ -1,23 +1,37 @@
 /**
- * The fix producers' declaration (`FIX_PRODUCERS`, `src/fixable-codes.ts`, card AF8) against what
- * they emit. The capabilities resource lists the codes `fix` can resolve from that table, so a row
- * that lies there lies to every agent that reads it.
+ * `FIX_PRODUCERS` (`src/fixable-codes.ts`, card AF8), a table of the fix producers, held to their
+ * source and to what they emit. The capabilities resource lists the codes `fix` can resolve from that
+ * table, so a row that lies there lies to every agent that reads it.
  *
- * From the source: its codes are exactly the ones `scripts/fix-coverage.ts` reads a fix site for, so
- * a new site with a code the table does not declare fails here even when no plan reaches it. From the
- * output: every fix that `compile()`, `lint()` and `arch fix`'s `while` proof emit over the corpus,
- * the catalogue's examples and fixed snippets, and the reach plans below matches a row in code,
+ * From the source ({@link sourceProblems}, read by `scripts/fix-coverage.ts`), every field:
+ * - codes: exactly the codes some fix site attaches a fix to, so a new site with a code the table
+ *   does not declare fails even when no plan reaches it; and a site no code is read for fails;
+ * - producer: each code's sites call its row's producer (directly, or through a local constant or a
+ *   same-file function) or lie in it, and a site calls no producer declared for another code;
+ * - stage: read from the site's file (`src/lint/rules/` is lint, `src/cli/commands-author.ts` is
+ *   `arch fix`'s own proof, anything else compile);
+ * - applicability: the `applicability:` string literals in the producer (its function, or its file
+ *   when the row names no function) are exactly the row's, and no such literal in `src/` lies outside
+ *   every producer but the one {@link NOT_A_FIX_LITERAL};
+ * - `when`: given for each applicability of a two-tier row, and only there.
+ * Two plants show the checks can fail: a producer that gains a second tier, and a code that gains a
+ * fix through a local constant.
+ *
+ * From the output: every fix that `compile()`, `lint()` and `arch fix`'s `while` proof emit over the
+ * corpus, the catalogue's examples and fixed snippets, and the reach plans below matches a row in code,
  * `fixId`, applicability and stage, and every declared code and applicability is seen at least once.
  */
 
-import { existsSync, readFileSync } from "node:fs";
-import { dirname } from "node:path";
+import { cpSync, existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { dirname, join } from "node:path";
 import { describe, expect, it } from "vitest";
-import { fixCoverage } from "../scripts/fix-coverage.js";
-import { type Diagnostic, ERROR_CATALOG, compile, lint } from "../src/index.js";
+import { REPO } from "../scripts/fix-coverage.js";
 import { FIX_PRODUCERS, type FixStage, fixableCodes } from "../src/fixable-codes.js";
+import { type Diagnostic, ERROR_CATALOG, compile, lint } from "../src/index.js";
 import { proveWhileFixes } from "../src/while-fix.js";
 import { corpusFiles } from "./helpers/corpus.js";
+import { sourceProblems } from "./helpers/fixable-codes-check.js";
 import { worldFor } from "./helpers/world.js";
 
 const plan = (...body: string[]): string => ['plan "R" {', "  units mm", ...body, "}"].join("\n");
@@ -129,21 +143,78 @@ function undeclared(e: Emitted): string | undefined {
     .join("; ")}`;
 }
 
-describe("FIX_PRODUCERS declares what the fix producers emit (AF8)", () => {
-  it("declares exactly the codes a fix site in src/ attaches a fix to", () => {
-    const declared = [...new Set(FIX_PRODUCERS.flatMap((p) => Object.keys(p.codes)))].sort();
-    const read = fixCoverage();
-    expect(read.unattributed).toEqual([]);
-    expect(
-      read.withEdit.filter((c) => !declared.includes(c)),
-      "a fix site attaches a fix to a code FIX_PRODUCERS does not declare: add it to its producer's row",
-    ).toEqual([]);
-    expect(
-      declared.filter((c) => !read.withEdit.includes(c)),
-      "a declared code has no fix site: drop it",
-    ).toEqual([]);
+/** A copy of `src/` with `edit` applied to one file, for a plant; removed by the caller. */
+function plantedTree(file: string, edit: (text: string) => string): string {
+  const root = mkdtempSync(join(tmpdir(), "fixable-codes-"));
+  cpSync(join(REPO, "src"), join(root, "src"), { recursive: true });
+  const path = join(root, file);
+  const before = readFileSync(path, "utf8");
+  const after = edit(before);
+  expect(after, `the plant changed nothing in ${file}`).not.toBe(before);
+  writeFileSync(path, after);
+  return root;
+}
+
+describe("FIX_PRODUCERS agrees with the source in every field (AF8)", () => {
+  it("codes, producer, stage and applicability: no disagreement", () => {
+    expect(sourceProblems(REPO)).toEqual([]);
   });
 
+  it("plant: a producer that gains a second tier fails (doorOpenRangeFix gains maybe-incorrect)", () => {
+    const root = plantedTree("src/fix-producers.ts", (t) => {
+      const at = t.indexOf("export function doorOpenRangeFix(");
+      const lit = 'applicability: "machine-applicable",';
+      const i = t.indexOf(lit, at);
+      return `${t.slice(0, i)}applicability: clamped === 0 ? "maybe-incorrect" : "machine-applicable",${t.slice(i + lit.length)}`;
+    });
+    try {
+      expect(sourceProblems(root)).toEqual([
+        "src/fix-producers.ts#doorOpenRangeFix: its source writes applicability machine-applicable/maybe-incorrect, its row says machine-applicable",
+      ]);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  }, 60_000);
+
+  it("plant: a code that gains a fix through a local constant fails (E_DOOR_KIND_CURVED)", () => {
+    const root = plantedTree("src/elements/door.ts", (t) => {
+      const code = 'code: "E_DOOR_KIND_CURVED",';
+      const i = t.lastIndexOf("ctx.diag({", t.indexOf(code));
+      return `${t.slice(0, i)}const extra = fixesFrom(doorOpenRangeFix(n, 0));\n      ctx.diag({\n        ...extra,${t.slice(i + "ctx.diag({".length)}`;
+    });
+    try {
+      const problems = sourceProblems(root);
+      expect(problems).toContain("E_DOOR_KIND_CURVED: a fix site attaches a fix to it, and no row declares it");
+      expect(
+        problems.some((p) => /E_DOOR_KIND_CURVED calls doorOpenRangeFix, the producer of other codes/.test(p)),
+      ).toBe(true);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  }, 60_000);
+
+  it("plant: a row whose stage or producer is wrong fails", () => {
+    const rows = FIX_PRODUCERS.map((p) =>
+      p.producer.endsWith("#pocketRunFix")
+        ? { ...p, stage: "compile" as const }
+        : p.producer.endsWith("#dimSwapFix")
+          ? { ...p, producer: "src/fix-producers.ts#dimBumpFix" }
+          : p,
+    );
+    const problems = sourceProblems(REPO, rows);
+    expect(problems.some((p) => /W_POCKET_RUN's site gives stage lint, its row says compile/.test(p))).toBe(true);
+    expect(problems.some((p) => /W_DIM_INSIDE's site neither calls nor lies in its producer/.test(p))).toBe(true);
+  });
+
+  it("a two-tier row says when each tier applies, and a one-tier row says nothing", () => {
+    for (const p of FIX_PRODUCERS) {
+      const when = Object.keys(p.when ?? {}).sort();
+      expect(when, p.producer).toEqual(p.applicability.length > 1 ? [...p.applicability].sort() : []);
+    }
+  });
+});
+
+describe("FIX_PRODUCERS declares what the fix producers emit (AF8)", () => {
   it("names each producer where it is, with catalogued codes and no repeated code", () => {
     for (const p of FIX_PRODUCERS) {
       const [file, name] = p.producer.split("#") as [string, string | undefined];

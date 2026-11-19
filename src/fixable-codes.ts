@@ -1,14 +1,17 @@
 /**
- * The codes `fix` can resolve, declared by their fix producers: one row per producer, naming the codes
- * it attaches a span edit to, the applicability its edit can carry and the stage that raises it (card
- * AF8, after TypeScript's `getSupportedErrorCodes()`). `packages/mcp/scripts/gen-capabilities.ts`
- * renders it into the `archlang://capabilities` resource, grouped by applicability.
+ * The codes `fix` can resolve: a table of the fix producers, held to their source by a test. One row
+ * per producer names the codes it attaches a span edit to, the applicability its edit can carry and
+ * the stage that raises it (card AF8, after TypeScript's `getSupportedErrorCodes()`).
+ * `packages/mcp/scripts/gen-capabilities.ts` renders it into the `archlang://capabilities` resource,
+ * grouped by applicability.
  *
- * A declaration, held to the producers from both sides by `test/fixable-codes.test.ts`: its codes are
- * exactly the codes `scripts/fix-coverage.ts` reads a fix site for in `src/`, and every fix that
- * `compile()`, `lint()` and `arch fix`'s `while` proof emit over the corpus, the catalogue's examples
- * and the test's own reach plans matches a row in code, `fixId`, applicability and stage, while every
- * row's every code and applicability is seen at least once. Nothing on the compile path imports it.
+ * `test/fixable-codes.test.ts` pins every field to the source (`scripts/fix-coverage.ts` reads it):
+ * the codes are exactly the codes some fix site attaches a fix to, each code's sites call its row's
+ * producer or lie in it, each site's file gives its row's stage, and the `applicability:` literals in
+ * the producer are exactly the row's. It pins them to the output too: every fix `compile()`, `lint()`
+ * and `arch fix`'s `while` proof emit over the corpus, the catalogue's examples and the test's reach
+ * plans matches a row in code, `fixId`, applicability and stage, and every row's every code and
+ * applicability is seen. Nothing on the compile path imports it.
  */
 
 import type { Applicability } from "./diagnostics.js";
@@ -29,6 +32,8 @@ export interface FixProducer {
   readonly applicability: readonly Applicability[];
   /** Each code the producer attaches its fix to, with the `fixId` that fix carries (`null`: none). */
   readonly codes: Readonly<Record<string, string | null>>;
+  /** When the edit takes each applicability: given for every one of them when there are two or more. */
+  readonly when?: Readonly<Partial<Record<Applicability, string>>>;
 }
 
 const MA = "machine-applicable";
@@ -39,13 +44,13 @@ export const FIX_PRODUCERS: readonly FixProducer[] = [
   {
     producer: "src/fix-producers.ts#offWallFix",
     stage: "compile",
-    // maybe-incorrect when two walls tie for nearest.
     applicability: [MA, MI],
     codes: {
       W_DOOR_OFF_WALL: "door-off-wall",
       W_WINDOW_OFF_WALL: "window-off-wall",
       W_OPENING_OFF_WALL: "opening-off-wall",
     },
+    when: { [MA]: "one wall is nearest", [MI]: "two walls tie for nearest" },
   },
   {
     producer: "src/fix-producers.ts#openingWidthFix",
@@ -164,37 +169,37 @@ export const FIX_PRODUCERS: readonly FixProducer[] = [
   {
     producer: "src/while-fix.ts#proveWhileFixes",
     stage: "fix",
-    // maybe-incorrect when the loop sits inside a component body.
     applicability: [MA, MI],
     codes: { W_WHILE_DEPRECATED: "while-to-for" },
+    when: { [MA]: "outside any component", [MI]: "inside a component" },
   },
 ];
 
 /** The applicabilities in the order `applyFixes` ranks them, most confidently applicable first. */
 export const APPLICABILITY_ORDER: readonly Applicability[] = [MA, MI, HP, "unspecified"];
 
-/** One applicability's codes, sorted, each with the stages that raise it. */
+/** One applicability's codes, sorted, each with its row's stage and, for a two-tier row, when. */
 export interface FixableGroup {
   applicability: Applicability;
-  codes: { code: string; stages: FixStage[] }[];
+  codes: { code: string; stage: FixStage; when?: string }[];
 }
 
 /**
  * {@link FIX_PRODUCERS} grouped by applicability ({@link APPLICABILITY_ORDER}; an applicability no
  * producer declares is left out). A code whose fix can carry two applicabilities is in both groups.
+ * A code is declared by one row (the test holds it).
  */
 export function fixableCodes(producers: readonly FixProducer[] = FIX_PRODUCERS): FixableGroup[] {
   return APPLICABILITY_ORDER.flatMap((applicability) => {
-    const stages = new Map<string, Set<FixStage>>();
-    for (const p of producers) {
-      if (!p.applicability.includes(applicability)) continue;
-      for (const code of Object.keys(p.codes)) {
-        const s = stages.get(code) ?? new Set<FixStage>();
-        s.add(p.stage);
-        stages.set(code, s);
-      }
-    }
-    const codes = [...stages.keys()].sort().map((code) => ({ code, stages: [...stages.get(code)!].sort() }));
+    const codes = producers
+      .filter((p) => p.applicability.includes(applicability))
+      .flatMap((p) =>
+        Object.keys(p.codes).map((code) => {
+          const when = p.when?.[applicability];
+          return { code, stage: p.stage, ...(when !== undefined ? { when } : {}) };
+        }),
+      )
+      .sort((a, b) => (a.code < b.code ? -1 : a.code > b.code ? 1 : 0));
     return codes.length > 0 ? [{ applicability, codes }] : [];
   });
 }
