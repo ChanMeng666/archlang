@@ -725,7 +725,7 @@ print the full bundled agent context (spec + workflow + CLI + errors)
 | Flag | Does |
 | --- | --- |
 | `--level <starter\|full>` | starter = one screen (at most 4000 characters) for a small model: the lead example, the statements a plan needs, the loop and five errors with their fixes; full = the whole 179 KB bundle (default, unchanged) |
-| `--section <spec\|workflow\|cli\|errors>` | print only one section of the bundle instead of all 179 KB of it (spec = the language, 30 KB; workflow = the agent loop, 35 KB; cli = every command, 38 KB; errors = the diagnostic catalog, 75 KB) |
+| `--section <spec\|workflow\|cli\|errors>` | print only one section of the bundle instead of all 179 KB of it (spec = the language, 30 KB; workflow = the agent loop, 36 KB; cli = every command, 38 KB; errors = the diagnostic catalog, 75 KB) |
 | `--json` | structured result on stdout, messages on stderr |
 
 **Examples**
