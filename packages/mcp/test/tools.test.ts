@@ -16,7 +16,7 @@ import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { compile, ERROR_CATALOG, PLAN_JSON_SCHEMA, PNG_PREVIEW_WIDTH, planToJson } from "@chanmeng666/archlang";
+import { ERROR_CATALOG, PLAN_JSON_SCHEMA, PNG_PREVIEW_WIDTH, planToJson } from "@chanmeng666/archlang";
 import { PNG_MAX_WIDTH, PNG_MIN_WIDTH } from "../src/png.js";
 import { decodePlanHash, PLAYGROUND_ORIGIN, planLinks } from "@chanmeng666/archlang/link";
 import { describe, expect, it } from "vitest";
@@ -232,11 +232,9 @@ describe("explain tool", () => {
     expect(entry).toEqual(ERROR_CATALOG.E_ROOM_SIZE);
     expect(entry.severity).toBe("error");
     for (const k of ["message", "cause", "fix", "example", "fixed"]) expect(entry[k], k).toBeTruthy();
-    // The pair is the CLI's: the fixed half compiles without the code its example raises.
-    const wrap = (b: string) => `plan "E" {\n  units mm\n${b}\n}\n`;
-    const raised = (s: string) => compile(wrap(s), { noCache: true }).diagnostics.map((d) => d.code);
-    expect(raised(entry.example!)).toContain("E_ROOM_SIZE");
-    expect(raised(entry.fixed!)).not.toContain("E_ROOM_SIZE");
+    // The pair itself (the fixed half compiles without the code) is the core's test,
+    // test/error-catalog-examples.test.ts; here it is enough that the tool carries both halves.
+    expect(entry.fixed).not.toBe(entry.example);
   });
 
   it("an unknown code is data, never an exception", async () => {

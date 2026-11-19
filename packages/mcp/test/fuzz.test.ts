@@ -135,7 +135,7 @@ describe("malformed tool arguments", () => {
     );
     await fc.assert(
       fc.asyncProperty(source, fc.constantFrom(...TOOLS.map((t) => t.name)), async (src, name) => {
-        const result = await client.callTool({ name, arguments: { source: src, at: 0, brief: {} } });
+        const result = await client.callTool({ name, arguments: { source: src, at: 0, brief: {}, code: src } });
         assertWellFormed(result, `${name}(source=${JSON.stringify(src).slice(0, 60)})`);
         const text = (result as { content: Array<{ text: string }> }).content[0]!.text;
         expect(() => JSON.parse(text)).not.toThrow();
