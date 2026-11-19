@@ -62,7 +62,7 @@ function everySummary(s: SceneSummary): SceneSummary[] {
 }
 
 describe("G.5 — circulation reports every room it cannot measure", () => {
-  it("rooms[] / blocked[] / unmeasured[] partition the plan's rooms, on all 30 examples", () => {
+  it("rooms[] / blocked[] / unmeasured[] partition the plan's rooms, on every example", () => {
     const offenders: string[] = [];
     for (const f of EXAMPLES) {
       const s = describePlan(readFileSync(`examples/${f}`, "utf8"), { world: exampleWorld });
