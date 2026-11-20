@@ -64,7 +64,7 @@
 import type { ExprPoint, OutdoorKind, OutdoorNode, Point, RailEdge, RailSide } from "../ast.js";
 import { OUTDOOR_KINDS, RAIL_EDGES, RAIL_SIDES } from "../ast.js";
 import type { ElementDef, ParseCtx, RenderCtx, ResolveCtx, TransformCtx } from "../registry.js";
-import { idAfterKind, missingClause, parseIdWithSpan, readClauses } from "../clause-order.js";
+import { failExpected, idAfterKind, missingClause, parseIdWithSpan, readClauses } from "../clause-order.js";
 import { PLAIN_SHEET_TEXT } from "../sheet-text.js";
 import type { SceneNode } from "../scene.js";
 import { weightWidth } from "../scene.js";
@@ -307,10 +307,12 @@ export const outdoor: ElementDef = {
     const kindTok = ctx.eatIdent();
     if (!(OUTDOOR_KINDS as readonly string[]).includes(kindTok.value)) {
       const hint = closest(kindTok.value, [...OUTDOOR_KINDS]);
-      ctx.fail(
+      failExpected(
+        ctx,
         `Unknown outdoor kind "${kindTok.value}"${hint ? ` — did you mean "${hint}"?` : ""} ` +
           `(available: ${OUTDOOR_KINDS.join(", ")})`,
-        kindTok,
+        OUTDOOR_KINDS,
+        { t: kindTok },
       );
     }
     const surface = kindTok.value as OutdoorKind;
@@ -380,7 +382,7 @@ export const outdoor: ElementDef = {
             if (ctx.isType("comma")) ctx.next();
           }
           if (words.length === 0) {
-            ctx.fail(`A \`rail\` clause needs at least one edge (${RAIL_EDGES.join("|")})`, ctx.peek());
+            failExpected(ctx, `A \`rail\` clause needs at least one edge (${RAIL_EDGES.join("|")})`, RAIL_EDGES);
           }
           if (!keep) return;
           rail.rail = words;

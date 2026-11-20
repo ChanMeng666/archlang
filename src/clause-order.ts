@@ -26,8 +26,23 @@ import type { ParseCtx } from "./registry.js";
  * should have been one of `near` (AF2).
  */
 export function failNear(ctx: ParseCtx, msg: string, near: readonly string[], t?: Token, span?: Span): never {
-  if (ctx.failNear) return ctx.failNear(msg, near, t, span);
-  return span ? ctx.failAt(msg, span) : ctx.fail(msg, t);
+  return failExpected(ctx, msg, near, { t, span, near });
+}
+
+/**
+ * {@link ParseCtx.failExpected} where the context has it (the built-in parser does), else
+ * {@link ParseCtx.failNear} when `at.near` is given, else {@link ParseCtx.fail} at `at.t` or
+ * {@link ParseCtx.failAt} at `at.span`: a parse error that says what the position takes (AF4).
+ */
+export function failExpected(
+  ctx: ParseCtx,
+  msg: string,
+  expected: readonly string[],
+  at: { t?: Token | undefined; span?: Span | undefined; near?: readonly string[] } = {},
+): never {
+  if (ctx.failExpected) return ctx.failExpected(msg, expected, at);
+  if (at.near && ctx.failNear) return ctx.failNear(msg, at.near, at.t, at.span);
+  return at.span ? ctx.failAt(msg, at.span) : ctx.fail(msg, at.t);
 }
 
 export interface TailClause {
@@ -200,7 +215,8 @@ export function kindClause<K extends string>(
     word: "kind",
     // Before the placement in the old order, so reading it never puts a later clause out of order.
     rank: 0,
-    at: () => word() !== undefined && ctx.peek().line === ctx.peek(-1).line && !begins(),
+    // The line first, so a kind word is looked for only where it can be this clause (AF4).
+    at: () => ctx.peek().line === ctx.peek(-1).line && word() !== undefined && !begins(),
     startsStatement: begins,
     // A second kind word is a different word from the first, so this clause checks its own repeats.
     repeats: true,

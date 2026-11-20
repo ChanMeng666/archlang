@@ -15,6 +15,8 @@
  * mirror, not a table the lexer indexes at runtime.
  */
 
+import type { TokenType } from "../lexer.js";
+
 /**
  * The `title { … }` block's field words, in the order the title block draws them — the one
  * list the parser, the formatter, Plan JSON, the GBNF and the spec all read.
@@ -560,6 +562,45 @@ export const OPERATORS = [
   "[",
   "]",
 ] as const;
+
+/**
+ * How a parse error's `expected` list (card AF4) writes each token the lexer emits: punctuation and
+ * operators as they are typed, and a class of tokens in `<…>`, which no word of the language
+ * contains. `satisfies` makes `tsc` fail on a token type with no row; `test/parse-expected.test.ts`
+ * lexes every typed row back to its own type.
+ */
+export const TOKEN_TEXT = {
+  ident: "<name>",
+  number: "<number>",
+  string: "<string>",
+  dimension: "<W>x<H>",
+  lparen: "(",
+  rparen: ")",
+  lcurly: "{",
+  rcurly: "}",
+  comma: ",",
+  equals: "=",
+  colon: ":",
+  arrow: "->",
+  plus: "+",
+  minus: "-",
+  star: "*",
+  slash: "/",
+  percent: "%",
+  lbracket: "[",
+  rbracket: "]",
+  lt: "<",
+  gt: ">",
+  le: "<=",
+  ge: ">=",
+  eq: "==",
+  ne: "!=",
+  bang: "!",
+  and: "&&",
+  or: "||",
+  dotdot: "..",
+  eof: "<end of input>",
+} as const satisfies Record<TokenType, string>;
 
 /** One numeric literal with its optional unit suffix (`scanNum` in `src/lexer.ts`): digits, an
  *  optional fraction, then `mm`|`cm`|`m`, `ft`, `in`, or the compound `<ft>ft<in>in`. */
