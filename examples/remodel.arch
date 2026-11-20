@@ -62,8 +62,8 @@ plan "Apartment Remodel" {
   furniture wc     against r_bath.bottom offset 1400 size 400x700
   furniture basin  against r_bath.top offset 500 size 600x500
   furniture washing_machine against r_util.right offset 1500 size 600x600
-  furniture chair at (4075,800)  size 450x450 in r_living
-  furniture chair at (4075,2250) size 450x450 rotate 180 in r_living
+  furniture chair at (4100,700)  size 500x500 in r_living
+  furniture chair at (4100,2300) size 500x500 rotate 180 in r_living
 
   title {
     project "Apartment Remodel"

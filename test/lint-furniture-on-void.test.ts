@@ -215,12 +215,13 @@ suite("W_FURNITURE_ON_VOID", () => {
 
   it("was appended after every rule before it, so no existing diagnostic moves within the array", () => {
     // Every rule after it was appended later (RM1.2a's `stair-riser-too-high`, RM1.2c's `label-piece-missing`,
-    // AL5's `thickness-unplaced`); the full order is pinned by test/lint-rule-order.test.ts.
+    // AL5's `thickness-unplaced`, RM9.6's `table-no-seat`); the full order is pinned by test/lint-rule-order.test.ts.
     const at = LINT_RULES.findIndex((r) => r.name === "furniture-on-void");
     expect(LINT_RULES.slice(at + 1).map((r) => r.name)).toEqual([
       "stair-riser-too-high",
       "label-piece-missing",
       "thickness-unplaced",
+      "table-no-seat",
     ]);
     expect(LINT_RULES[at]!.codes).toEqual([CODE]);
   });
