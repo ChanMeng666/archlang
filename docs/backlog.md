@@ -2506,6 +2506,158 @@ built the use-classifier half (`test/vocabulary-es-pt.test.ts`), through which t
 carry a room kind or a `room_type` are met. The concept-table half is not built: it changes the
 eval's table, so it needs an owner-approved `SYNONYMS_VERSION` bump, and it is M.20a.
 
+## Review residue of the v3 stage-1/2 session (PRs #972–#993, 2026-11-19…21)
+
+Non-blocking findings of that session's reviews and the PRs' own residue lists (the review-loop cap:
+residue becomes cards). Each names its PR. Already carded elsewhere, so not repeated: M.20a (#973's
+concept half), U.2a and U.5 (#983), RR.22 (2) (#979's code-comparison over-credit), NR.9 (3) (#976's
+iron-laws budget line). SR.13 and SR.14 come from PRs still open on 2026-11-21.
+
+### SR.1 · NR.16 classifier leftovers (#973) — `todo`
+
+(1) No es/pt outdoor words for `namesOpenAir` (its reading looks for the head noun last), and
+`NON_RESIDENTIAL_VOCABULARY` stays English. (2) A label mixing English and es/pt words ("Hall de
+entrada") can classify differently from before (no tracked plan has one). (3) "quarto de X" phrases
+outside the guard read as a bedroom. **Gate:** each fixed with a test, or stated as a limit in
+`docs/intent.md`.
+
+### SR.2 · AF5 leftovers (#974) — `todo`
+
+(1) The playground's diagnostics panel shows `cause` and `example` but not `fixed`
+(`playground/src/diagnostics-panel.ts`). (2) `llms.txt`'s MCP tool list names nine tools; the
+server registers twelve (`finish`, `explain` and `link` are missing; `packages/mcp/src/tools.ts`).
+(3) `E_IMPORT_NOT_FOUND` has no pair (it needs a World-serving harness); the 67 excused examples
+have none either. **Gate:** (1) and (2) fixed, (2) with a guard that reads the registered names;
+(3) a stated decision.
+
+### SR.3 · RM9.4 leftovers (#975) — `todo`
+
+(1) Chains still unlinked: a room whose ring is refused, a `wall … between|around` that refuses (its
+id is "unplaced"), a step-limit stop; `W_ROOM_OVERLAP` to the `E_WALL_BETWEEN_NOT_ADJACENT` of a
+door between the pair; `wall … between|around`'s `E_ROOMS_OVERLAP` to the openings on the edge it
+leaves unwalled. (2) One `walls from rooms` refusing with two codes moves only the first code's
+diagnostics to the front. (3) A difference of two noisy values keeps its error
+(`12*FT - (12*FT - 3*FT/10)` prints `91.4400000000001`). (4) A fix's `newText` built from source text
+(`src/datum.ts`'s `head ${wallHeight}`) does not go through `fmtSource`. **Gate:** each linked or fixed with
+a test, or stated as a limit at its site.
+
+### SR.4 · 3.18 leftovers (#976) — `todo`
+
+(1) On a phone's Code view the status flash ("… did not load", "Preparing DXF…") may not be
+visible. (2) Edit mode loads the 29,638 B press chunk on entry, because `applyFixes` shares a dist
+chunk with `finish`; a build entry of its own would split them. (3) No e2e for an aborted
+press-core fetch (the loader's reset and retry are unit-tested). **Gate:** (1) an e2e on a phone
+viewport; (2) edit mode's bytes measured with `npm run size:embed`, no budget raised.
+
+### SR.5 · AF2 leftovers (#978) — `todo`
+
+(1) A four-letter transposition is not caught (a swap counts as two edits, over a four-letter
+word's limit of 1). (2) A closed list is not a grammar: `room … widt 900` gets the machine fix
+`width`, and the recompile reports that a room takes no `width`. (3) A relational typo inside an
+imported module is fixed by hand only (`arch fix` refuses a fix whose `file` is another module).
+(4) `rigth-of` lexes as three tokens, so a misspelt hyphenated direction gets no fix. (5) Other
+unknown-id sites hint through `closest()` with no word-level fix: `wall between|around`,
+`<room>.<edge>` datums, `E_UNKNOWN_REF`, `E_UNKNOWN_COMPONENT`. **Gate:** each with a test; (5)
+pins the failing plans it moves.
+
+### SR.6 · AF8 leftovers (#979) — `todo`
+
+(1) The fixable-codes source check is blind to helper spreads, `Object.assign`, spread parameters,
+partial delegation and a ternary that credits a code; the output sweep is the backstop. (2) `arch explain`
+and MCP `explain` could say whether `fix` resolves a code, and at which tier, from the same
+table. (3) `test/fix-coverage.test.ts`'s `WITH_EDIT_FLOOR` duplicates the declared code set; it
+could read `FIX_PRODUCERS`. **Gate:** (1) each form caught by a planted case, or stated in the
+checker's header.
+
+### SR.7 · RM9.0 coverage-note leftovers (#980) — `todo`
+
+Its §5 (`docs/plans/product-roadmap/design/rm9.0-coverage-classes.md`): (1) multi-storey messages
+name the storey twice ("in the hall on level 0 on level 0", `W_STAIR_TOO_STEEP`,
+`W_STAIR_NO_LANDING`, `W_STAIR_RISER_TOO_HIGH`, `W_STAIR_SIDE_ENTRY`); (2) `spec.llm.md` does not
+say `anchor` never turns a `sofa` (PS2.32's second half); (3) `anchor … flush` turns a
+`reception_desk` the wrong way (PS2.43); (4) a wall that `open between` removed whole still gets a
+thickness figure; (5) a corner `anchor`'s `inset` pulls in from both edges. **Gate:** (1) and (4)
+fixed with a test (a drawing change for (4): byte identity per RM-D56); (2), (3), (5) a fix or a
+stated limit.
+
+### SR.8 · `check:quick` stops on an excluded generated file (#981) — `todo`
+
+When the changed files are only biome-excluded ones (`src/context-size.ts`), `check:quick` runs
+`biome (1 files)`, biome says "No files were processed in the specified paths", and the gate stops
+before tsc, drift and vitest. Same class as RM0.11 (2) (a lockfile-only change). The fix: hand
+biome only paths its config does not exclude, skip it when none are left, and quote the path
+arguments. **Gate:** a test of the selection; a change touching only that file runs the later
+steps.
+
+### SR.9 · TR12 leftovers (#985) — `todo`
+
+`npm run digest:preview`: (1) its selection is blind to pins reached by a dynamic import, a
+concatenated path, a `.mjs` file or a file outside the tree; (2) a file whose tests are all skipped
+reads as green; (3) a `process.exit(0)` inside a test is silent at `--jobs 1`; (4) the shared
+module registry makes the report depend on `--jobs`; (5) its matcher diverges from vitest's in
+places; (6) the two `git ls-files` premise tests fail inside a `git archive` tree. Not done: (b),
+a CI job that runs the digest files first. **Gate:** (1)–(4) each with a planted case.
+
+### SR.10 · AF4 leftovers (#987) — `todo`
+
+(1) The anchor respell fix across a hyphen leaves the plan broken. (2) Sheet-text suggestions past
+the first 16 are prose only. (3) At a missing clause only the first `expected` entry clears the
+error. (4) The contextual starts (`sheet text`, `section A (`) are not in the plan-level list. (5)
+The nine count or semantic `E_PARSE` sites and the lexer's carry no `expected`. (6) The prose
+`closest()` hints (schedule, site field, sheet text key, outdoor kind, look direction) could move
+onto the AF2 producer. The catalogue's `E_PARSE` fix text naming `expected` moves every `E_PARSE`
+JSON `fix`: an owner call. **Gate:** (1) and (3) fixed with a test; the rest fixed or stated.
+
+### SR.11 · RM9.11 leftovers (#988) — `todo`
+
+(1) A tied snap ignores a door's approach and walls at the destination. (2) The free-destination key
+reads live positions, so the answer depends on the order pieces are repaired. (3) A moved `facing`
+piece can break its own `facing` (pre-existing). (4) Ties in the doorway, swing and stair pushes
+are reported, not chosen (no wall id to order by). (5) A wrong-size fixture ("swap W and H") is not
+changed. **Gate:** (1)–(3) each with a test; (4) and (5) a ruling (new policy; ADR 0006 addendum).
+
+### SR.12 · RM9.10 leftovers (#990) — `todo`
+
+(1) A door into thin air on a storey stacked over an identical one is not reported (the language
+states no ground level; a ground datum is a language change). (2) A curved lower exterior ring is
+not read as a footprint. (3) `W_EXIT_APPROACH_BLOCKED`, `W_ENTRANCE_INTO_PRIVATE` and the
+circulation walk still treat a door that is no way in as a door to the outside. (4) `W_NO_ENTRANCE`
+stands down on a storey with any exterior door, including one onto a balcony only. (5)
+`validateIntent` `reachable` reads the lowest storey's entrance (a basement plan fails), and its
+pass wording counts the lowest storey only. (6) `spec.llm.md` says nothing about doors onto roofs.
+(7) The held-out pair for `W_EXTERIOR_DOOR_ONTO_ROOF` is owed in private `archlang-lab`. M.4's other
+items are untouched. **Gate:** (2)–(5) each with a test; (1) a language card; (6) within spec
+headroom.
+
+### SR.13 · AF9 phase A leftovers (#992, open on 2026-11-21) — `todo`
+
+(1) A fix title does not say "moves every instance" for a span a component's instances or a `for`
+body share. (2) MCP `fix` and L1 call `rankFixes` (RM-D70 Q3): AF9 is the first producer with
+several alternatives per diagnostic; its own small card. (3) The nib move ignores sibling openings
+and fixtures: 9 of 155 fuzz moves leave an overlap, a hob under a window or a blocked swing.
+**Gate:** each with a test, after #992 lands.
+
+### SR.14 · RM9.6 CV13 split by RM-D73 (#993, draft) — `todo`
+
+`W_TABLE_NO_SEAT` fires on nine shipped examples; adding their chairs moves about 400 pinned rows,
+3D GLB, mesh and asset pins among them. Order: (1) an examples-only drawing-change PR (the chairs
+from #993's branch), on an idle machine, every asset regenerated in the primary checkout, each moved
+row listed with its source change; (2) #993 rebased onto it, so only the rule's rows move. CV08 and
+CV14 follow the same split. Also owed: the held-out pair in private `archlang-lab`; whether
+`docs/gallery/*.arch` gain chairs (a docs card); `eval/goldens/anchor-furniture.arch` (an
+eval-owner decision); the reach version waits for a sourced `seatTableReachMm`; a `table` labelled
+"Island" (`docs/gallery/family-of-four`). **Gate:** both PRs merged.
+
+### SR.15 · A wrapped room label loses its space in the SVG text (downstream report, 2026-11-21) — `todo`
+
+A downstream application reads "EntranceHall" from a production drawing whose schedule says
+"Entrance Hall". Repro (MCP `compile`, 2026-11-21): a 1200 × 2400 room labelled "Entrance Hall"
+next to a 4000 × 2400 one draws `<text …><tspan …>Entrance</tspan><tspan …>Hall</tspan></text>`, so
+the element's text content is "EntranceHall"; at 1800 wide the label stays on one line. A reader of
+the SVG text (a screen reader, search, the downstream schedule check) gets one word. **Gate:** a
+wrapped label's text content equals the label; a drawing change, so byte identity per RM-D56 over
+every plan with a wrapped label.
+
 ## Test-programme findings (promo-credit programme, 2026-11-16)
 
 From `docs/plans/product-roadmap/2026-11-test-findings.md` (§ 3, § 4, § 5). RR.8 (2), the

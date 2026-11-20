@@ -1,8 +1,8 @@
 # AI-first language: what ArchLang can borrow from TypeScript, Rust and AI-native languages
 
-Research record, 2026-11-18. **Status: research stage.** Analysis, research and measurement
-only; no card here changes product code until the owner says so (RM-D64,
-`../product-roadmap/README.md` §6.27). The cards are queued as track 10 of
+Research record, 2026-11-18. **Status: building since RM-D65** (the owner, 2026-11-18,
+`../product-roadmap/README.md` §6.28), which ended the research stage of RM-D64 (§6.27). AF9 is
+phase A only (RM-D70, §6.32). The cards are queued as track 10 of
 `../product-roadmap/cards.md` (RM-D15: one queue). The four decisions this research raised are
 RM-D60…RM-D63 (same section). Card designs live here; status, size, dependencies and gates live in
 `cards.md`.
@@ -280,6 +280,11 @@ bytes and is a place a model can guess wrong; P4 and Gleam's "one way to do it" 
 - The kind word after `width` is still a parse error (backlog EV.8).
 
 AF26 audits them; any change to the grammar they lead to is a separate, ruled card.
+
+**Fixed since (read 2026-11-21):** finding 1 by AF1 (#944); finding 2 by AF6 (#946); the `dor`,
+`sofaa` and `right-of hal` items by AF2 (#978); `wdth`'s spurious error by AF3 (#951); the stale
+counts by AF5 (#974) and AF0 (#983); U.2/U.5 by AF0 (U.2a holds U.2's rest, U.5 is narrowed); the kind word after
+`width` by EV.8 (#943, same line only). Finding 3 is AF10's, not started.
 
 ## 7. Card design (AF0…AF26)
 

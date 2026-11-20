@@ -1175,7 +1175,7 @@ Playground：Chromium `--shard=1/2`、`2/2` 两个 job，Firefox 与 WebKit 的 
 
 按 TR9 的同一逻辑，有意留在 medium 的候选，因为它们是发布或夜间的机器，不是合并机器：`scripts/release-guard.sh`（发布门；它只查 10 个必需名里的 7 个，那一项归 TR2）与 `scripts/playwright-flaky.mjs`（夜间用 `--fail-on-flaky` 卡门）。判断：要不要升成 high（改 `scripts/risk-tier.mjs` 的 `RULES`、`test/risk-tier.test.ts` 与 `docs/agents/commands.md` 第 0 步，高层级 PR）。
 
-### TR12 · 推之前预看语料摘要（2026-11-19 加，出自 TR6） — `todo` · 未估 · opus · 依赖无（线下）
+### TR12 · 推之前预看语料摘要（2026-11-19 加，出自 TR6） — `done` · #985（`4e514311`，2026-11-20；做了 (a)：`npm run digest:preview`，可选，`check:quick` 的默认路径不变；(b) 没做；余项 backlog SR.9） · 未估 · opus · 依赖无（线下）
 
 TR6（`../ci-throughput-research.md` §13.2）：代码 PR 的真失败里最大的一类，是画图改动挪了 `check:quick` 的语料钉预算没选上的字节一致律摘要（co1、rm9.2、al1、al6、al4、al3w、al3a），每次多一整轮 CI 加修。做法待定，候选：(a) 一个不跑 vitest 的脚本，对改了 `src/` 绘图模块的改动，算出全部钉住的摘要表（含 `test/tables/*.ts` 里内联的计划）并列出挪了的行；(b) CI 里把字节一致律放进一个最先跑、最先失败的 job。不许：为了让它变绿而重钉（铁律）；把整个 vitest 放回本地门禁。验收：在 al1、al4、al3a 的改动上重放，挪了的行都列出来。
 
@@ -1183,7 +1183,7 @@ TR6（`../ci-throughput-research.md` §13.2）：代码 PR 的真失败里最大
 
 TR6：生成物漂移与 backlog 索引过时的红（rr24、rr9、ev7、co1、rm9.2、af3）都是 `main` 在 PR 底下挪了。做法：执行者的简报与 `docs/agents/commands.md` 写明“最后一次推之前 `git merge origin/main` 并跑 `gen:all` 里改动涉及的生成器”；或者让 `check:quick` 在分支落后 `origin/main` 时提示。另记：§13.2 量到 2026-11-17 后 30 个合并只有 2 个走列车，直接合并让部署多等约 9 分钟（`main` 红率仍为 0）；要不要回到“代码 PR 走列车”，由下一位协调者判断。
 
-### TR14 · Actions 缓存不超上限（2026-11-19 加，出自 #963 评审） — `todo` · 未估 · sonnet · 依赖无（线下）
+### TR14 · Actions 缓存不超上限（2026-11-19 加，出自 #963 评审） — `done` · #982（列车 #984，`0d9e27c7`，2026-11-19；`main` 的 push 与定时运行裁掉旧的 CodeQL overlay 缓存；2026-11-21 读数 39 项、6.96 GB，验收要的一周后读数还没到） · 未估 · sonnet · 依赖无（线下）
 
 仓库缓存 10.46 GB / 10 GB，41 项；`main` 上 14 个 `codeql-overlay-*` 占 5.3 GB，挤掉 Playwright 与 apt 缓存（夜间的 `playwright-all` 已经被重建过一次）。做法：定时 job 用 `gh cache delete` 只留最新 1–2 个 overlay，或关掉 CodeQL 的 overlay 缓存。验收：一周后缓存总量低于 8 GB，`apt-debs-*` 四组都还在。
 
@@ -1201,7 +1201,7 @@ TR6：生成物漂移与 backlog 索引过时的红（rr24、rr9、ev7、co1、r
 
 ### A 波 · 诊断的信息密度
 
-### AF0 · 记录对账：两条过期的测试注释，U.2 与 U.5 的实际状态 — `todo`（RM-D64 的 blocked 已由 RM-D65 解除） · 0.3 日 · sonnet · 依赖无（线下）
+### AF0 · 记录对账：两条过期的测试注释，U.2 与 U.5 的实际状态 — `done` · #983（`978f8efc`，2026-11-19；U.2 由 #704 做完，余下的拆成 U.2a；U.5 收窄为 `W_EMPTY_PLAN` 的连带） · 0.3 日 · sonnet · 依赖无（线下）
 
 不许：没重新读代码就关卡。
 
@@ -1209,7 +1209,7 @@ TR6：生成物漂移与 backlog 索引过时的红（rr24、rr9、ev7、co1、r
 
 带走 backlog M.15 的第一条。证明：一份带相关位置的 `lint --json` 的前后对照，再加上述载荷检查。不许：把相关位置压平成散文；删改已有的键（`CompileResult` 只增不删）。
 
-### AF2 · 一个 did-you-mean 生产者，词级 span 加修复 — `todo`（RM-D64 的 blocked 已由 RM-D65 解除） · 2 日 · opus · 依赖 AF1
+### AF2 · 一个 did-you-mean 生产者，词级 span 加修复 — `done` · #978（`cc1709bf`，2026-11-19；余项 backlog SR.5） · 2 日 · opus · 依赖 AF1
 
 不许：手抄词表（闭集取自 `src/grammar/tokens.ts`）；span 或修复覆盖整条语句（今天 `sofaa` 的修复就是这样，要一并收窄）。
 
@@ -1217,11 +1217,11 @@ TR6：生成物漂移与 backlog 索引过时的红（rr24、rr9、ev7、co1、r
 
 只有已经失败的方案，诊断会变；给这些诊断钉值。不许：动任何能编译的方案的输出。
 
-### AF4 · `E_PARSE` 带结构化的 `expected[]` 和建议 — `todo`（RM-D64 的 blocked 已由 RM-D65 解除） · 2 日 · opus · 依赖 AF2
+### AF4 · `E_PARSE` 带结构化的 `expected[]` 和建议 — `done` · #987（`45d0ddda`，2026-11-20；16 行字节恒等律按 RM-D69 逐行换回后重量；余项 backlog SR.10） · 2 日 · opus · 依赖 AF2
 
 不许：只给散文版本。
 
-### AF5 · 错误目录的错例与正例成对，`explain` 进 MCP — `todo`（RM-D64 的 blocked 已由 RM-D65 解除） · 2 日 · sonnet · 依赖无
+### AF5 · 错误目录的错例与正例成对，`explain` 进 MCP — `done` · #974（`5f3606f5`，2026-11-19；余项 backlog SR.2） · 2 日 · sonnet · 依赖无
 
 MCP 工具用 `new-mcp-tool` skill 加；`docs/error-codes.md` 经 `gen:*` 生成。不许：增加豁免（今天 66 条，只减不增）。
 
@@ -1229,17 +1229,17 @@ MCP 工具用 `new-mcp-tool` skill 加；`docs/error-codes.md` 经 `gen:*` 生�
 
 做完时 M.8 在同一 PR 里裁掉。
 
-### AF7 · 冲突带上每条有贡献的语句 — `todo`（RM-D64 的 blocked 已由 RM-D65 解除） · 1 日 · sonnet · 依赖 AF1
+### AF7 · 冲突带上每条有贡献的语句 — `todo`（在审 #977，2026-11-21 读时没合并；语料重量按 RM-D69） · 1 日 · sonnet · 依赖 AF1
 
 载荷检查同 AF1。
 
-### AF8 · capabilities 公布 `fix` 能解决哪些码 — `todo`（RM-D64 的 blocked 已由 RM-D65 解除） · 0.5 日 · sonnet · 依赖无
+### AF8 · capabilities 公布 `fix` 能解决哪些码 — `done` · #979（`7fd0c469`，2026-11-19；余项 backlog SR.6） · 0.5 日 · sonnet · 依赖无
 
 不许：手写列表（从修复生产者生成）。
 
 ### B 波 · 修复推进到语义失分
 
-### AF9 · 被拒的开口与门道堵塞：带占位符的修复（并入 EV.5） — `todo`（调研阶段只做设计稿；代码等 RM-D64） · 设计 1 日、代码 4 日 · opus · 代码依赖设计稿
+### AF9 · 被拒的开口与门道堵塞：带占位符的修复（并入 EV.5） — `todo`（设计稿已做：#986，`9da321b7`，2026-11-19，`../ai-first-language/af9-design.md`；只做阶段 A，阶段 B 不排，RM-D70；阶段 A 在审 #992，2026-11-21 读时没合并） · 设计 1 日、代码 4 日 · opus · 代码依赖设计稿
 
 EV.5 的门照旧：先有设计稿或 ADR，代码在后。PR 里如实写 L1 数字是否移动（L1 只应用 machine-applicable 的修复）。不许：跨房间边界移动开口，除非设计稿明确允许；把不能证明唯一的移动标成 machine-applicable。
 
@@ -1325,7 +1325,7 @@ EV.5 的门照旧：先有设计稿或 ADR，代码在后。PR 里如实写 L1 �
 
 **已开工（RM-D65，2026-11-18）：** 标着 `todo`（RM-D64 的 blocked 已由 RM-D65 解除）的卡，按下面的顺序解锁。顺序按 `v3.md` §3 的阶段走：阶段 1 是 RM9.1、RM9.2、EV.8、RM9.3、RM9.4、A 波、RM9.5；阶段 2 是 RM9.6、AF9、RM9.10、RM9.11；阶段 3 是 RM9.7；阶段 4 是其余各卡。这一轨不是新车道，它的卡占用核心执行者的位置（RM-D22）。每张卡都跑 §0 的门禁。**动 `describe()`、`lint()`、`compile().diagnostics` 或 SVG 字节的卡，按 RM-D56 的证明方法做：** 逐行证明只有本卡说明的那些项移动了；去掉这些移动之后，要能复现旧的摘要；其他任何东西移动就停下报告，不重钉。`[语法]` 卡先确认 spec 余量（2026-11-18 是 371 个 UTF-16 单位）。
 
-### RM9.0 · 覆盖率回归集的设计（N1、N3） — `todo`（调研阶段可做，只出文档） · 1 日 · opus · 依赖无
+### RM9.0 · 覆盖率回归集的设计（N1、N3） — `done` · #980（列车 #984，`0d9e27c7`，2026-11-19；`design/rm9.0-coverage-classes.md`：57 个缺陷分 27 类，9 类加 lint；余项 backlog SR.7） · 1 日 · opus · 依赖无
 
 读 RM1.1a 的审计材料（所有者本机，`handoff.md` §6 那一行写着位置），把 57 个缺陷按缺陷类归档，每一类判为"加 lint"（写出候选规则、证据等级、误报风险）或"声明不查"（写出理由和公开的说法）。产物是一份报告，进 `../ai-first-language/` 或本目录的 `design/`。公开仓库只写类、计数和判定，不写原文。不许：把审计原文、模型名或私有夹具写进公开仓库；在本卡里加任何规则。
 
@@ -1341,15 +1341,15 @@ EV.5 的门照旧：先有设计稿或 ADR，代码在后。PR 里如实写 L1 �
 
 先做一次纯搬移：把 `eval/fidelity.ts` 的 `proveInfeasible` 搬进 `src/`，eval 改为 import 它，字节恒等。然后 `validate --intent` 在判任何平面之前先跑它，给出一条带算式的 E（错误目录条目、示例、`explain`）。不许：在 `compile()` 里求解；把"不可能"判给拿不出算式的 brief。
 
-### RM9.4 · 连锁错误，根因排第一（N8） — `todo`（RM-D64 的 blocked 已由 RM-D65 解除） · 2 日 · opus · 依赖 AF3
+### RM9.4 · 连锁错误，根因排第一（N8） — `done` · #975（`86c744e2`，2026-11-19；新导出 `diagnosticFix`；余项 backlog SR.3） · 2 日 · opus · 依赖 AF3
 
 一处错误（例如 1 mm 的重叠）引出一串诊断时，根因排在最前，其余诊断引用它。消息里的数字一律经 `src/num-format.ts` 打印，不再出现 `3657.6000000000004` 这样的浮点噪声。只会改变已经失败的平面的诊断顺序，给这些诊断钉值。不许：删掉连带的诊断（排序和引用就够了）。
 
-### RM9.5 · 代理引导：局部编辑、`keep`、`impact --lock`、楼梯从哪一端进、先确认单位（N2、N8） — `todo`（RM-D64 的 blocked 已由 RM-D65 解除） · 1 日 · sonnet · 依赖无
+### RM9.5 · 代理引导：局部编辑、`keep`、`impact --lock`、楼梯从哪一端进、先确认单位（N2、N8） — `done` · #981（列车 #984，`0d9e27c7`，2026-11-19；余项 backlog SR.8） · 1 日 · sonnet · 依赖无
 
 写进 `skills/archlang/SKILL.md` 的开头和 `arch context` 的 workflow 一节；spec 只在余量允许时加一句。内容包括：先确认单位，以及用户给的尺寸是标称还是净尺寸。经 `gen:*` 生成。不许：抬高 spec 的上限；手抄生成的内容。
 
-### RM9.6 · 检查覆盖率冲刺（N1、N3） — `todo`（RM-D64 的 blocked 已由 RM-D65 解除） · 10–15 日 · opus · 依赖 RM9.0
+### RM9.6 · 检查覆盖率冲刺（N1、N3） — `todo`（进行中：CV13 `W_TABLE_NO_SEAT` 是草稿 #993，按 RM-D73 拆成先改示例、再加规则两个 PR，见 backlog SR.14） · 10–15 日 · opus · 依赖 RM9.0
 
 按 RM9.0 的判定逐类实施：加 lint 的那些类，每条规则一张小卡，带 §0 规则卡的门（公开的一对夹具，留出的一对放私有仓库，跑遍 `examples/**` 的报出数）；声明不查的那些类，写进一份公开的"不检查清单"（`docs/says-no.md` 或参考文档里）。验收：RM1.1b 的报出数。不许：为了拉高报出数去放宽规则的误报标准；把留出集写进公开仓库。
 
@@ -1365,11 +1365,11 @@ EV.5 的门照旧：先有设计稿或 ADR，代码在后。PR 里如实写 L1 �
 
 按 RM-D5：`keep site setback front 5m side 1.5m rear 3m`、`keep site coverage max 40%`、`keep site far max 1.2`，默认 advisory 等级，触发 `W_KEEP_VIOLATED`。事实模块与 DS3 共用。不许：加 `site` 字段；新开 W 码族；任何"符合"字样。
 
-### RM9.10 · 层级感知（N3；下游请求 1 与待提的四条） — `todo`（RM-D64 的 blocked 已由 RM-D65 解除） · 4 日 · opus · 依赖无
+### RM9.10 · 层级感知（N3；下游请求 1 与待提的四条） — `done` · #990（`35d97da0`，2026-11-20；新警告 `W_EXTERIOR_DOOR_ONTO_ROOF`，RM-D72；余项 backlog SR.12） · 4 日 · opus · 依赖无
 
 覆盖五处：`suggestTopology` 按楼层工作（把配对的楼梯或电梯算作该层的入口，插入点写在该层的块里）；`validateIntent` 的 `reachable` 按楼层读；入口层以上的外门要报；`vertical.reachable_levels` 只从入口层的入口播种；`W_ROOM_UNREACHABLE` 在 `level` 平面上也要报。backlog M.4 中相关的那几条一并核对。证明：单层平面字节不动；多层平面上新增的诊断逐条列出。不许：给半空中加外门（今天按单层去修多层平面，就会出这种事）。
 
-### RM9.11 · `repair()` 对家具给出确定的选择（N3；下游请求 3） — `todo`（RM-D64 的 blocked 已由 RM-D65 解除） · 2 日 · opus · 依赖无
+### RM9.11 · `repair()` 对家具给出确定的选择（N3；下游请求 3） — `done` · #988（`f27346de`，2026-11-20；按公开的全序取舍，RM-D71，ADR 0006 附录；余项 backlog SR.11） · 2 日 · opus · 依赖无
 
 覆盖两类拒绝："equidistant from two walls" 取最近的墙，再按最小的墙 id；"no wall to back onto" 给出一条稳定的规则，或者给出带占位符的修复。另做跨楼层的连通修复。不许：`repair` 加门窗（`spec.llm.md` 的既定规则）。
 
