@@ -109,7 +109,7 @@ describe("W_KEEP_VIOLATED names where each element it compares was placed", () =
     ]);
   });
 
-  it("an imported component placed in the compiled source is noted at its `place`; a `place` inside a module is not", () => {
+  it("an imported component placed in the compiled source is noted at its `place`; a `place` inside a module, at the enclosing one", () => {
     const lib = `plan "lib" {
   component box() {
     room id=r at (0,0) size 3000x3000 label "R"
@@ -133,10 +133,43 @@ describe("W_KEEP_VIOLATED names where each element it compares was placed", () =
       ["`b1` placed here", "place box() as b1 at (0,0)"],
       ["`s` placed here", 'room id=s at (3000,0) size 3000x3500 label "S"'],
     ]);
-    // `p1.inner` was placed by a statement in lib.arch: its bytes are not the compiled source's.
-    expect(notes(main, ds[1]!)).toEqual([["`s` placed here", 'room id=s at (3000,0) size 3000x3500 label "S"']]);
+    // `p1.inner` was placed by a statement in lib.arch: the note is at the enclosing `place`, which is here.
+    expect(notes(main, ds[1]!)).toEqual([
+      ["`p1` placed here", "place pair() as p1 at (9000,0)"],
+      ["`s` placed here", 'room id=s at (3000,0) size 3000x3500 label "S"'],
+    ]);
+  });
+
+  it("a bare imported call's element gets no note; the local room beside it does", () => {
+    const main = `plan "M4" {
+  import "lib.arch": box
+  box()
+  room id=s at (3000,0) size 3000x3500 label "S"
+  keep align r.bottom s.bottom
+}
+`;
+    const d = diags(main, makeVirtualWorld({ "lib.arch": LIB })).find((x) => x.code === "W_KEEP_VIOLATED");
+    expect(d, "the keep is broken").toBeDefined();
+    expect(notes(main, d!)).toEqual([["`s` placed here", 'room id=s at (3000,0) size 3000x3500 label "S"']]);
   });
 });
+
+/** One module for the same-file plans below: a room at the origin, a room placed against no room,
+ *  a room placed against a room the importer declares, and an instance placed inside the module. */
+const LIB = `plan "lib" {
+  component box() {
+    room id=r at (0,0) size 3000x3000 label "R"
+  }
+  component rel() {
+    room id=ghost right-of nobody size 2000x2000 label "G"
+  }
+  component waits() {
+    room id=b right-of hostroom size 2000x2000 label "B"
+  }
+  component pair() {
+    place rel() as inner at (0,0)
+  }
+}`;
 
 describe("relational placement errors name the statement they wait on", () => {
   const src = `plan "L" {
@@ -169,6 +202,86 @@ describe("relational placement errors name the statement they wait on", () => {
   it("a room placed against itself repeats nothing, and E_LAYOUT_REF has no second statement", () => {
     expect(of("E_LAYOUT_CYCLE", "self").relatedSpans).toBeUndefined();
     expect(of("E_LAYOUT_REF", "ghost").relatedSpans).toBeUndefined();
+  });
+
+  it("a room waiting on an instance's room points at that instance's `place`, not the shared body", () => {
+    const src = `plan "P" {
+  component rel() {
+    room id=ghost right-of nobody size 2000x2000 label "G"
+  }
+  place rel() as k1 at (0,0)
+  place rel() as k2 at (9000,0)
+  room id=x below k1.ghost size 2000x2000 label "X"
+  room id=y below k2.ghost size 2000x2000 label "Y"
+}
+`;
+    const ds = diags(src);
+    const unplaced = (room: string): Diagnostic =>
+      ds.find((d) => d.code === "E_LAYOUT_UNPLACED" && d.message.includes(`"${room}"`))!;
+    expect(notes(src, unplaced("x"))).toEqual([["`k1` placed here", "place rel() as k1 at (0,0)"]]);
+    expect(notes(src, unplaced("y"))).toEqual([["`k2` placed here", "place rel() as k2 at (9000,0)"]]);
+  });
+
+  it("inside a component, a room waiting on a nested instance's room points at the nested `place`", () => {
+    const src = `plan "Q" {
+  component rel() {
+    room id=ghost right-of nobody size 2000x2000 label "G"
+  }
+  component wing() {
+    place rel() as inner at (0,0)
+    room id=x below inner.ghost size 2000x2000 label "X"
+  }
+  place wing() as west at (0,0)
+}
+`;
+    const d = diags(src).find((x) => x.code === "E_LAYOUT_UNPLACED")!;
+    expect(d.instance).toBe("west");
+    // AF7's note first, at the nested `place` (named from the root), then AF1's at the outer `place`.
+    expect(notes(src, d)).toEqual([
+      ["`west.inner` placed here", "place rel() as inner at (0,0)"],
+      ['in instance "west" placed here', "place wing() as west at (0,0)"],
+    ]);
+  });
+
+  it("an imported instance's room is noted at its `place` here; one whose `place` is in the module, at the enclosing one", () => {
+    const main = `plan "M5" {
+  import "lib.arch": rel, pair
+  place rel() as k at (0,0)
+  place pair() as p1 at (9000,0)
+  room id=x below k.ghost size 2000x2000 label "X"
+  room id=y below p1.inner.ghost size 2000x2000 label "Y"
+}
+`;
+    const ds = diags(main, makeVirtualWorld({ "lib.arch": LIB })).filter((x) => x.code === "E_LAYOUT_UNPLACED");
+    expect(ds).toHaveLength(2);
+    expect(notes(main, ds[0]!)).toEqual([["`k` placed here", "place rel() as k at (0,0)"]]);
+    expect(notes(main, ds[1]!)).toEqual([["`p1` placed here", "place pair() as p1 at (9000,0)"]]);
+  });
+
+  it("a local room waiting on a bare imported call's room gets no note (that statement is in the module)", () => {
+    const main = `plan "M6" {
+  import "lib.arch": rel
+  rel()
+  room id=x below ghost size 2000x2000 label "X"
+}
+`;
+    const d = diags(main, makeVirtualWorld({ "lib.arch": LIB })).find((x) => x.code === "E_LAYOUT_UNPLACED");
+    expect(d, "x waits on ghost").toBeDefined();
+    expect(d!.file).toBeUndefined();
+    expect(d!.relatedSpans).toBeUndefined();
+  });
+
+  it("a bare imported call's room waiting on a local room gets no note (the error is measured in the module)", () => {
+    const main = `plan "M7" {
+  import "lib.arch": waits
+  room id=hostroom right-of nobody size 2000x2000 label "H"
+  waits()
+}
+`;
+    const d = diags(main, makeVirtualWorld({ "lib.arch": LIB })).find((x) => x.code === "E_LAYOUT_UNPLACED");
+    expect(d, "b waits on hostroom").toBeDefined();
+    expect(d!.file).toBe("lib.arch");
+    expect(d!.relatedSpans).toBeUndefined();
   });
 
   it("a cycle and an unplaced room inside an imported body get no AF7 note; in the compiled source they do", () => {
@@ -228,6 +341,18 @@ describe("W_ROOM_OVERLAP names the other room's statement", () => {
     const local = `plan "local" {\n${body}\n  place box() as b1 at (0,0)\n}\n`;
     const l = diags(local).find((x) => x.code === "W_ROOM_OVERLAP")!;
     expect(notes(local, l)).toEqual([["the other room placed here", 'room id=a at (0,0) size 3000x3000 label "A"']]);
+  });
+
+  it("an imported instance's room and a local room overlap: no note, whichever is declared first", () => {
+    const world = makeVirtualWorld({ "lib.arch": LIB });
+    for (const main of [
+      `plan "M1" {\n  import "lib.arch": box\n  room id=s at (1000,0) size 3000x3000 label "S"\n  place box() as b1 at (0,0)\n}\n`,
+      `plan "M2" {\n  import "lib.arch": box\n  place box() as b1 at (0,0)\n  room id=s at (1000,0) size 3000x3000 label "S"\n}\n`,
+    ]) {
+      const d = diags(main, world).find((x) => x.code === "W_ROOM_OVERLAP");
+      expect(d, main).toBeDefined();
+      expect(d!.relatedSpans, main).toBeUndefined();
+    }
   });
 
   it("a component placed twice over itself has one statement for both rooms: no note", () => {

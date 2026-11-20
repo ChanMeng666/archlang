@@ -951,6 +951,21 @@ function resolveBody(
   //    every entry — including every legacy bare component call — so everything below is
   //    the historical single pass, byte for byte.
   const groups = groupEntries(entries);
+  /**
+   * AF7: where a conflict notes an element of instance `path` (dotted, from this plan's root): the
+   * `place` statement that made the instance, or, when that one is in a module, the nearest
+   * enclosing `place` that is in the compiled source (AF1's same-file rule), never `stop`'s or
+   * above it (the group a pass resolves, whose `place` its diagnostics already carry). Only a plan
+   * that raised a conflict reads it; the prefix map is built at the first read.
+   */
+  let frameOfPrefix: Map<string, Frame> | undefined;
+  const placeOfInstance = (path: string, stop?: Frame): { span: Span; instance: string } | undefined => {
+    frameOfPrefix ??= new Map(groups.flatMap((g) => (g.frame ? [[g.frame.prefix, g.frame] as const] : [])));
+    for (let f = frameOfPrefix.get(path); f !== undefined && f !== stop; f = f.parent) {
+      if (f.span && f.file === undefined) return { span: f.span, instance: f.prefix };
+    }
+    return undefined;
+  };
   /** What each wall-deriving statement was charged at expansion (`ctx.elementBudget`). */
   const precharged = chargeDerivedElements(entries, groups, registry, budget, diagnostics);
 
@@ -1224,7 +1239,12 @@ function resolveBody(
     grp: ResolveGroup,
     grpWalls: RWall[],
     grpRooms: RRoom[],
-    relational: { rooms: () => RRoom[]; stamp: (d: Diagnostic, room?: RRoom) => Diagnostic },
+    relational: {
+      rooms: () => RRoom[];
+      stamp: (d: Diagnostic, room?: RRoom) => Diagnostic;
+      /** Where a layout error notes a room of instance `instance` (as the group names it), AF7. */
+      placeOf: (instance: string) => { span: Span; instance: string } | undefined;
+    },
     axes: readonly RAxis[] | undefined,
     /** The ids of the walls this group sees that a pairwise form refused (no points), as the
      *  group names them; its own refused walls join as they resolve. */
@@ -1420,13 +1440,18 @@ function resolveBody(
       withDatumReader(beforeRoomsReader("rooms", axisScope), () => {
         if (roomKind >= 0) resolveKind(roomKind);
         activeEntry = undefined;
-        placeRelational(relational.rooms(), snapPt, (d, room, note) => {
-          const stamped = relational.stamp(d, room);
-          // AF7: the statement the error waits on, first, after the stamp (so a stamped key keeps its place).
-          const out = note ? { ...stamped, relatedSpans: [note, ...(stamped.relatedSpans ?? [])] } : stamped;
-          placement.push(out);
-          ownRoomDiag(out, room);
-        });
+        placeRelational(
+          relational.rooms(),
+          snapPt,
+          (d, room, note) => {
+            const stamped = relational.stamp(d, room);
+            // AF7: the statement the error waits on, first, after the stamp (so a stamped key keeps its place).
+            const out = note ? { ...stamped, relatedSpans: [note, ...(stamped.relatedSpans ?? [])] } : stamped;
+            placement.push(out);
+            ownRoomDiag(out, room);
+          },
+          relational.placeOf,
+        );
       });
       // A room left unplaced because what it is placed against read the error value (AF3) is
       // gone with it, to the end of the chain: one step per room per round, before the round.
@@ -1534,7 +1559,12 @@ function resolveBody(
       view.rooms,
       // A placement diagnostic names the module its room was written in (`_file`), so its fix is
       // never applied to the importing file (AF2).
-      { rooms: () => view.rooms, stamp: (d, room) => stampProvenance(d, grp.frame, room?._file) },
+      {
+        rooms: () => view.rooms,
+        stamp: (d, room) => stampProvenance(d, grp.frame, room?._file),
+        // A descendant's room names its instance from this group (`inner`); the map is the root's.
+        placeOf: (instance) => placeOfInstance(`${f.prefix}.${instance}`, f),
+      },
       undefined,
       new Set(view.refusedWalls),
     );
@@ -1599,7 +1629,6 @@ function resolveBody(
     instanceBodies.set(grp.frame!.prefix, {
       local: grp.entries.flatMap((e, i) => (dropped.has(e) ? [] : [done.local[i]!])),
       imported: grp.entries.some((e) => e.file !== undefined),
-      ...(grp.frame!.span && grp.frame!.file === undefined ? { place: grp.frame!.span } : {}),
     });
     instances.push({
       name: grp.frame!.prefix,
@@ -1672,6 +1701,7 @@ function resolveBody(
         rooms: () =>
           entries.filter((e) => !dropped.has(e) && e.resolved?.kind === "room").map((e) => e.resolved as RRoom),
         stamp: (d, room) => (room?._file !== undefined ? stampProvenance(d, undefined, room._file) : d),
+        placeOf: (instance) => placeOfInstance(instance),
       },
       axes,
       rootRefusedWalls,
@@ -2022,7 +2052,7 @@ function resolveBody(
       ir,
       snap,
       authored: keepState.authored ?? authoredOf(),
-      placeOf: (instance) => instanceBodies.get(instance)?.place,
+      placeOf: (instance) => placeOfInstance(instance),
       compass: {
         aliases: north === "up",
         why:

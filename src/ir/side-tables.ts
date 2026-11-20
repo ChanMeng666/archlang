@@ -10,7 +10,6 @@
  */
 
 import type { CeilingFacts } from "../datum.js";
-import type { Span } from "../diagnostics.js";
 import type { DatumTable } from "../room-datums.js";
 import type { KeepRecord, KeepResult } from "../keep.js";
 import type { ResolvedElement, ResolvedPlan, ResolvedLevel, PlanResolution } from "./types.js";
@@ -52,9 +51,6 @@ export interface InstanceBody {
   local: readonly ResolvedElement[];
   /** True when the component body came in through an `import` (some entry's `file` is set). */
   imported: boolean;
-  /** The `place … as <name>` statement that made the instance, when it is in the compiled source:
-   *  where a broken keep notes an element of the instance (AF7, `src/keep.ts`). */
-  place?: Span;
 }
 
 /** Each resolved storey's instance bodies, by instance prefix, in commit order. */
