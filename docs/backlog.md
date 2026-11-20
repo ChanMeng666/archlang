@@ -284,6 +284,19 @@ Done by #976, with no budget raised: Format, Finish, Repair furniture and the DX
 
 After AL3b (#969) the first-use path (`firstUsePathBudget`, `playground/e2e/startup-chunks.baseline.json`) measures 484,137 B gzip against 486,000 B. The next few KB of compiler growth trip `Playground E2E chromium`. Two ways out: move code a first use need not load out of the compiler chunk or the lazy core chunk (as EB.2 did, #947), or re-take the budget by the file's own rule (measured × 1.025, rounded up to a thousand). A re-take raises a ceiling, a relaxed check that needs the owner's word for that PR (`REVIEW.md`; the owner approved the compiler-path and embed raises on #969, 2026-11-19, not this one). Measure with `npm run size:embed` (`scripts/embed-path-size.mjs`) on `main` and the branch; `docs/agents/iron-laws.md` still quotes `embedPathBudget` as 310,000 B (319,000 since #969), and editing that line is the owner's call (NR.9 (3)).
 
+### 3.19 · After #992 the compiler path has about 1.3 KB of headroom left (do first, before any compiler-path card) — `todo`
+
+AF9 phase A's PR (#992, open on 2026-11-21; `npm run size:embed`, base `35d97da0` → head) measures the compiler path
+329,665 → 331,689 B gzip against `compilerPathBudget` 333,000 (1,311 B left), the embed path
+317,875 B against 319,000 (1,125 B) and the first use 465,748 B against 468,000 (2,252 B).
+AF4 (#987) and RM9.10 (#990) took most of the earlier headroom. The next compiler-path card would
+trip `Playground E2E`. Do this before any further compiler-path card: move code a first compile
+does not need out of the compiler chunk (as EB.2, #947, and 3.18, #976, did), measured with
+`npm run size:embed` on `main` and the branch, with a corpus digest of SVG, `describe()`, `lint()`
+and diagnostics proving no change of behaviour. Raising a budget stays the owner's call for that PR
+(`REVIEW.md`; RM-D57). **Gate:** at least ~3,000 B gzip off the compiler path and the embed path, no
+budget raised, the digest unmoved.
+
 ## Found while redrawing the showcase
 
 Five things the twelve new examples ran into. None is a regression and none blocked an example from
