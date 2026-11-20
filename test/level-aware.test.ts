@@ -30,7 +30,8 @@ const POCKET = upper(BED2_DOOR + BATH_DOOR, "    door id=d_bb on hall_w at 6000 
 /** Level 2 with Bedroom 2's way in replaced by a door through the shell onto nothing. */
 const AIR = upper(BED2_DOOR, "    door id=d_air on shell at 18000 width 900 swing into bed2\n");
 const REACHABLE = intentFromJson({ reachable: true }).intent!;
-const reachableRow = (src: string) => validateIntent(src, REACHABLE).assertions.find((a) => a.predicate.kind === "reachable")!;
+const reachableRow = (src: string) =>
+  validateIntent(src, REACHABLE).assertions.find((a) => a.predicate.kind === "reachable")!;
 
 suite("RM9.10 · suggestTopology per storey", () => {
   it("suggests for an upper storey, inside that storey's block, and the statement it gives clears it", () => {

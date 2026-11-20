@@ -831,7 +831,8 @@ export function outdoorOutside(
   const onMinus = rooms.some((r) => pointInRoomBox(minus, roomBox(r)));
   if (onPlus === onMinus) return undefined;
   const p = onPlus ? minus : plus;
-  for (let i = outdoors.length - 1; i >= 0; i--) if (pointInPolygon(p.x, p.y, outdoorRing(outdoors[i]!))) return outdoors[i]!;
+  for (let i = outdoors.length - 1; i >= 0; i--)
+    if (pointInPolygon(p.x, p.y, outdoorRing(outdoors[i]!))) return outdoors[i]!;
   return null;
 }
 

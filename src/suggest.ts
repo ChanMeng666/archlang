@@ -373,7 +373,11 @@ export function suggestTopology(source: string, opts: SuggestOptions = {}): Sugg
       ? { ...OUTSIDE, exteriorOk: l.level === doorStorey }
       : { from: arrivals.length > 0 ? "arrivals" : "nowhere", arrivals, exteriorOk: l.level === doorStorey };
     const insertAt = closes.get(l.level);
-    return suggestStorey(l.ir, view).map((x) => ({ ...x, level: l.level, ...(insertAt !== undefined ? { insertAt } : {}) }));
+    return suggestStorey(l.ir, view).map((x) => ({
+      ...x,
+      level: l.level,
+      ...(insertAt !== undefined ? { insertAt } : {}),
+    }));
   });
 }
 
@@ -504,7 +508,9 @@ function suggestStorey(ir: ResolvedPlan, view: StoreyView): Suggestion[] {
     // Only meaningful when an entrance exists — with no way into the building the
     // lint emits W_NO_ENTRANCE for the whole plan, not per-room unreachability, so
     // this builder stays silent to fire iff the lint fires (see W_NO_ENTRANCE below).
-    const sealed = fromArrivals ? !reachable.has(room.id) : view.from === "outside" && access.hasEntrance && node && !node.reachable;
+    const sealed = fromArrivals
+      ? !reachable.has(room.id)
+      : view.from === "outside" && access.hasEntrance && node && !node.reachable;
     if (sealed) {
       // Interior candidates connect to a room that already reaches the entrance;
       // exterior candidates cut a brand-new outside door. For a PRIVATE room
