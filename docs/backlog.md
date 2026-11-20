@@ -284,17 +284,22 @@ Done by #976, with no budget raised: Format, Finish, Repair furniture and the DX
 
 After AL3b (#969) the first-use path (`firstUsePathBudget`, `playground/e2e/startup-chunks.baseline.json`) measures 484,137 B gzip against 486,000 B. The next few KB of compiler growth trip `Playground E2E chromium`. Two ways out: move code a first use need not load out of the compiler chunk or the lazy core chunk (as EB.2 did, #947), or re-take the budget by the file's own rule (measured × 1.025, rounded up to a thousand). A re-take raises a ceiling, a relaxed check that needs the owner's word for that PR (`REVIEW.md`; the owner approved the compiler-path and embed raises on #969, 2026-11-19, not this one). Measure with `npm run size:embed` (`scripts/embed-path-size.mjs`) on `main` and the branch; `docs/agents/iron-laws.md` still quotes `embedPathBudget` as 310,000 B (319,000 since #969), and editing that line is the owner's call (NR.9 (3)).
 
-### 3.19 · The compiler path has about 0.8 KB of headroom left (do first, before any compiler-path card) — `todo`
+### 3.19 · The compiler path has about 0.8 KB of headroom left — `todo`
 
 AF9 phase A's PR (#992, merged 2026-11-20; `npm run size:embed`, base `c749ac4e` → head `1babd94d`)
 measures the compiler path 330,147 → 332,209 B gzip against `compilerPathBudget` 333,000 (791 B
 left), the embed path 318,401 B against 319,000 (599 B) and the first use 466,271 B against 468,000
-(1,729 B). AF4 (#987), RM9.10 (#990), AF7 (#977) and AF9 took most of the earlier headroom. The next compiler-path card would
-trip `Playground E2E`. Do this before any further compiler-path card: move code a first compile
-does not need out of the compiler chunk (as EB.2, #947, and 3.18, #976, did), measured with
-`npm run size:embed` on `main` and the branch, with a corpus digest of SVG, `describe()`, `lint()`
-and diagnostics proving no change of behaviour. Raising a budget stays the owner's call for that PR
-(`REVIEW.md`; RM-D57). **Gate:** at least ~3,000 B gzip off the compiler path and the embed path, no
+(1,729 B). AF4 (#987), RM9.10 (#990), AF7 (#977) and AF9 took most of the earlier headroom. The
+next compiler-path card would trip `Playground E2E`. This is the first card of the next session
+(`docs/plans/product-roadmap/handoff.md` §2, RM-D74), before any further compiler-path card: move
+code a first compile does not need out of the compiler chunk (as EB.2, #947, and 3.18, #976, did),
+measured with `npm run size:embed` on `main` and the branch, with a corpus digest of SVG,
+`describe()`, `lint()` and diagnostics proving no change of behaviour. Raising a budget stays the
+owner's call for that PR (`REVIEW.md`), with one exception: RM-D57's by-rule re-take of
+`embedPathBudget` (`docs/agents/iron-laws.md`, owner-ratified 2026-11-17) merges on the
+coordinator's judgement after a fresh-context review, as its own re-take PR, for a card that needs
+the bytes and has shown no cheaper cut, by the file's × 1.025 rule. It covers `embedPathBudget`
+only, not `compilerPathBudget`. **Gate:** at least ~3,000 B gzip off the compiler path and the embed path, no
 budget raised, the digest unmoved.
 
 ## Found while redrawing the showcase
@@ -2576,7 +2581,10 @@ imported module is fixed by hand only (`arch fix` refuses a fix whose `file` is 
 (4) `rigth-of` lexes as three tokens, so a misspelt hyphenated direction gets no fix. (5) Other
 unknown-id sites hint through `closest()` with no word-level fix: `wall between|around`,
 `<room>.<edge>` datums, `E_UNKNOWN_REF`, `E_UNKNOWN_COMPONENT`. **Gate:** each with a test; (5)
-pins the failing plans it moves.
+pins the failing plans it moves. (6) An enum value at a statement start (`living` on its own line)
+is not excluded as a language word: `KEYWORDS.enum` stays out of the compiler chunk for size; it
+matters only if such a word is one slip from a statement keyword (#978's residue). **Gate** for (6):
+a test, or a stated limit.
 
 ### SR.6 · AF8 leftovers (#979) — `todo`
 
@@ -2594,9 +2602,11 @@ name the storey twice ("in the hall on level 0 on level 0", `W_STAIR_TOO_STEEP`,
 `W_STAIR_NO_LANDING`, `W_STAIR_RISER_TOO_HIGH`, `W_STAIR_SIDE_ENTRY`); (2) `spec.llm.md` does not
 say `anchor` never turns a `sofa` (PS2.32's second half); (3) `anchor … flush` turns a
 `reception_desk` the wrong way (PS2.43); (4) a wall that `open between` removed whole still gets a
-thickness figure; (5) a corner `anchor`'s `inset` pulls in from both edges. **Gate:** (1) and (4)
-fixed with a test (a drawing change for (4): byte identity per RM-D56); (2), (3), (5) a fix or a
-stated limit.
+thickness figure; (5) a corner `anchor`'s `inset` pulls in from both edges; (6) a tool fact of the
+audit was already false on 1.60.0: it recorded `table` as not in the catalogue, but `table` has
+been there since 2026-08-26 (CV13), so RM1.1b's auditors must not record it so. **Gate:** (1) and
+(4) fixed with a test (a drawing change for (4): byte identity per RM-D56); (2), (3), (5) a fix or
+a stated limit; (6) the RM1.1b audit brief says it.
 
 ### SR.8 · `check:quick` stops on an excluded generated file (#981) — `todo`
 
@@ -2614,7 +2624,10 @@ concatenated path, a `.mjs` file or a file outside the tree; (2) a file whose te
 reads as green; (3) a `process.exit(0)` inside a test is silent at `--jobs 1`; (4) the shared
 module registry makes the report depend on `--jobs`; (5) its matcher diverges from vitest's in
 places; (6) the two `git ls-files` premise tests fail inside a `git archive` tree. Not done: (b),
-a CI job that runs the digest files first. **Gate:** (1)–(4) each with a planted case.
+a CI job that runs the digest files first. (7) #985 leaves to the coordinator whether executor
+briefs should ask for `npm run check:quick -- --digests` before the first push of a drawing change.
+**Gate:** (1)–(4) each with a planted case; (7) a decision written into the brief guidance
+(`docs/agents/orchestration.md`) or declined with its reason.
 
 ### SR.10 · AF4 leftovers (#987) — `todo`
 
@@ -2632,7 +2645,10 @@ JSON `fix`: an owner call. **Gate:** (1) and (3) fixed with a test; the rest fix
 reads live positions, so the answer depends on the order pieces are repaired. (3) A moved `facing`
 piece can break its own `facing` (pre-existing). (4) Ties in the doorway, swing and stair pushes
 are reported, not chosen (no wall id to order by). (5) A wrong-size fixture ("swap W and H") is not
-changed. **Gate:** (1)–(3) each with a test; (4) and (5) a ruling (new policy; ADR 0006 addendum).
+changed. (6) "Test gaps": the coordinator's final review of #988 lists them as residue without
+saying which; read them from #988's round-2 red-team report before carding. **Gate:** (1)–(3) each
+with a test; (4) and (5) a ruling (new policy; ADR 0006 addendum); (6) its content recorded here or
+carded.
 
 ### SR.12 · RM9.10 leftovers (#990) — `todo`
 
@@ -2687,9 +2703,10 @@ every plan with a wrapped label.
 of an imported body carries no `Diagnostic.file` (the gap AF1 noted for `E_DUP_ID`, NR.6 (1)); a
 `RelatedSpan.file` would let a note point into a module. (4) The sweep cannot see plans built by
 functions inside test files or helpers; CI's full suite covers them. **Gate:** (1)–(3) each with a
-test; any moved pin under RM-D69 as ruled for #977 (`docs/plans/product-roadmap/README.md` §6.32):
-a committed per-row swap-back check, a header note on each touched table, SVG, `lint()`, steps and
-parse unmoved (steps only on the refusal path), and no other digest touched.
+test; any moved pin under RM-D69's four conditions as ruled for #977
+(`docs/plans/product-roadmap/README.md` §6.32): "every row is proven strip==old by a committed
+check; each touched table carries a header note; SVG, `lint()`, steps and parse stay unmoved; no
+other digest is touched."
 
 ### SR.17 · MCP `fix` and L1 take the ranked fix (#992, RM-D70 Q3) — `todo`
 

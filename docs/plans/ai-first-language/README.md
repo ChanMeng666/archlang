@@ -4,7 +4,7 @@ Research record, 2026-11-18. **Status: building since RM-D65** (the owner, 2026-
 `../product-roadmap/README.md` §6.28), which ended the research stage of RM-D64 (§6.27). AF9 is
 phase A only (RM-D70, §6.32). The cards are queued as track 10 of
 `../product-roadmap/cards.md` (RM-D15: one queue). The four decisions this research raised are
-RM-D60…RM-D63 (same section). Card designs live here; status, size, dependencies and gates live in
+RM-D60…RM-D63 (§6.27). Card designs live here; status, size, dependencies and gates live in
 `cards.md`.
 
 **Origin.** The owner asked (2026-11-18) whether the claim "TypeScript and Rust are the best

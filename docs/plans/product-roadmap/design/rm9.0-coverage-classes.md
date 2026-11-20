@@ -1,6 +1,6 @@
 # 设计稿：首次接触缺陷的分类与判定（RM9.0）
 
-**状态：** 2026-11-20 写成，基线 `main@dad33f02`（1.65.0 之后）。对应卡 RM9.0（`../cards.md` 第 11 轨），给 RM9.6 排队。本稿只写文档，不加任何规则。
+**状态：** 2026-11-19 写成（UTC），基线 `main@dad33f02`（1.65.0 之后）。对应卡 RM9.0（`../cards.md` 第 11 轨），给 RM9.6 排队。本稿只写文档，不加任何规则。
 
 **一句话：** RM1.1a 量出的 57 个缺陷分成 27 类：7 类（9 个）今天的默认 lint 已经报出；9 类（17 个）判为"加 lint"，按 §4 的顺序交给 RM9.6，其中几类要等出处读到才能加；11 类（31 个）判为"声明不查"，给出理由和公开的说法。
 
@@ -97,7 +97,7 @@
 **CV13 · 餐桌没有座位（1 个，N；PS2.31 记了多次）**
 - *候选规则：* `W_TABLE_NO_SEAT`。同一个房间里有餐桌，却一把椅子都没有时报出。先做不带距离阈值的版本；按 `seatTableReachMm` 判断够不够得着的版本，要等这个数字有了出处（今天它是 `convention`）。
 - *出处等级：* 无新数字（房间里有没有座位）。
-- *误报风险：* 低，前提是只认餐桌：`dining_table`，以及目录里 `serves: "dining_table"` 的 `table`。`table` 与 `chair` 自 2026-08-26 起就在目录里（`9f4a9566`），`table` 的 `serves: "dining_table"` 是 2026-10-13 加的（`729732b3`），都早于 1.60.0，所以审计把 `table` 记成"未入目录"在 1.60.0 上就不成立。今天不报的原因在别处：`W_ROOM_MISSING_DEFINING` 的 dining 一行只在 `uses dining` 的房间运行，而且只要一张桌子，不要椅子（`src/furnish-table.ts`）。茶几、边桌（`coffee_table`、`side_table`）不算餐桌。
+- *误报风险：* 本稿原判为低，前提是只认餐桌：`dining_table`，以及目录里 `serves: "dining_table"` 的 `table`。**#993 实测之后更正：** 风险不低。`dining_table` 不能读：它的图形把椅子画在自己的占地里，所以永远不是"没有座位的桌子"，读它就是误报（下面用 `dining_table` 的公开夹具也因此是误报，#993 改用 `table`）；只读 `table` 并限在住宅房间里，它仍落在九个已发布的示例上（11 处），补椅子约移动 400 个钉值，所以按 RM-D73 拆开：先开只改示例的 PR，再开规则 PR（backlog SR.14）。`table` 与 `chair` 自 2026-08-26 起就在目录里（`9f4a9566`），`table` 的 `serves: "dining_table"` 是 2026-10-13 加的（`729732b3`），都早于 1.60.0，所以审计把 `table` 记成"未入目录"在 1.60.0 上就不成立。今天不报的原因在别处：`W_ROOM_MISSING_DEFINING` 的 dining 一行只在 `uses dining` 的房间运行，而且只要一张桌子，不要椅子（`src/furnish-table.ts`）。茶几、边桌（`coffee_table`、`side_table`）不算餐桌。
 - *公开夹具：* `missing-defining-contents/table-no-chairs`：起居室里放一张 `dining_table`，没有椅子；孪生图在桌边加两把椅子。
 
 **CV14 · 上层在楼梯上方没有洞口（1 个，m）**
@@ -144,7 +144,7 @@
 | 序 | 类 | 本次个数（N） | 候选规则 | 出处 | 误报 | 先决 |
 |---|---|---|---|---|---|---|
 | 1 | CV12 | 1（1） | 推断用途后跑 `W_ROOM_MISSING_DEFINING`，或 `W_ROOM_USE_MISSING` | 无新数字 | 低到中 | PS2.30 的验收（洗白路线） |
-| 2 | CV13 | 1（1） | `W_TABLE_NO_SEAT` | 无新数字 | 低 | 只认餐桌词（`dining_table`、`table`） |
+| 2 | CV13 | 1（1） | `W_TABLE_NO_SEAT` | 无新数字 | 不低（#993：落在九个示例上） | 只认 `serves: "dining_table"` 的 `table`，不读 `dining_table`（它自带椅子，读它是误报）；按 RM-D73 拆开，先开只改示例的 PR，再开规则 PR |
 | 3 | CV08 | 3（3） | `W_SEAT_FACING_WALL` | 无新数字 | 中（落在示例上） | 跑遍 `examples/**`；按 RM-D73 拆开，先开只改示例的 PR，再开规则 PR |
 | 4 | CV11 | 2（1） | `W_HOB_NO_LANDING` | `V`（NKBA 第 17 条，381 mm 补记一行） | 中 | 与 `W_HOB_FRIDGE_GAP` 分工；侧墙的情况留给 PS2.59 |
 | 5 | CV16 | 1（0） | PS2.42 的入口语境 | 无新数字 | 低 | 在警告与改读入口之间二选一 |

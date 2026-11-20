@@ -308,7 +308,7 @@ RM5.4（#603）已由 #781 做完（RM-D43）。
 - **2026-11-19 UTC 的委托（所有者那边是 2026-11-20；协调者的记录写于 2026-11-19T12:48Z）：**
   所有者说"直接帮我做出最佳决策，然后实施，不要打扰我"（协调者转述）。
   只对这一场；所有者一句话可以推翻。
-  据此有 RM-D70…D75（`README.md` §6.32）。
+  据此有 RM-D69…D75（`README.md` §6.32）。
   仍不在委托里：发布、付费评测、铁律、`SYNONYMS_VERSION` 与 `JUDGE_VERSION` 的 bump、放宽检查或抬体积上限。
 - **仍是所有者的（2026-11-20 UTC 更新）：** 下一次发布的决定；放宽检查或抬体积上限（每个 PR 各问一次）；NR.16 概念表那一半要的 `SYNONYMS_VERSION` bump（backlog M.20a）；AF9 的阶段 B（RM-D70）；2026-12-01 Show HN；登录/2FA/条款（见上）；Docker 的 docker/mcp-registry#6704 等 Docker 合并；关 #544（代理也可以关，那是所有者在 #532 的线程）。
 - **2026-11-15 CI 文档同步留给所有者的四件，2026-11-16 受托裁定（RM-D49，`README.md` §6.19；可推翻）：** #807 — 裁定：措辞并入本 PR（#811），#807 已关闭（被 #811 取代）（`docs/agents/iron-laws.md` 的 "set auto-merge" 改为由协调者经列车或钉住的直接合并落地）；archcanvas #295 — 裁定合并，已合并（2026-11-15T13:48:54Z，squash `d974d9e2`；生产部署 run 43720962301 成功，站点返回 200）；TR9 — 已做（#811）；TR10 — 已做一半（#811：放行 `sync:main`，不放行 `train`）。另两件 `archcanvas-growth` 的，都由 archcanvas-growth #86 做完、已合并（2026-11-15T13:57:30Z）：`prompts/outreach-finder.md` 的版本事实（取自 npm）；`investor/**` 的数字标为带日期的快照。#86 有意留下一处：提示词仍说 3D 把 winder 平台建成水平的（3D changelog 说 0.8.0 已改），留给下一次完整的事实核对。
