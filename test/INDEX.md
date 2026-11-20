@@ -5,7 +5,7 @@
 Where the tests of a `src` module are, and what each test file is for. Generated; `npm run check:drift`
 fails when it is stale. How to add a test: `docs/testing.md` § 4.
 
-562 test files in `test/`, 295 `src` modules, 107 modules no test imports.
+563 test files in `test/`, 295 `src` modules, 107 modules no test imports.
 
 ## `src` module → tests that import it
 
@@ -126,7 +126,7 @@ Nearest first, then by name; `(+n)` is the rest. Test names are `test/<name>.tes
 - `src/impact.ts` (2) — `rectilinear-doors`, `rectilinear-rooms`
 - `src/import.ts` (34) — `block-stair-byte-identity`, `corner-window-byte-identity`, `dim-swap-reprint`, `dim-thickness-callout`, `drawing-budget`, `error-value-law`, `floor-materials-byte-identity`, `furniture-relations` (+26)
 - `src/import/limits.ts` (1) — `openplan3d-malformed`
-- `src/index.ts` (420) — `acc-metadata`, `access-graph`, `access-policy`, `accessible-svg`, `agent-gallery`, `alias-match`, `anchors`, `annotate` (+412)
+- `src/index.ts` (421) — `acc-metadata`, `access-graph`, `access-policy`, `accessible-svg`, `agent-gallery`, `alias-match`, `anchors`, `annotate` (+413)
 - `src/input-limit.ts` (2) — `import-rooted`, `workspace-seams`
 - `src/intent-concepts.ts` (3) — `vocabulary-es-pt`, `vocabulary-living-dining`, `vocabulary-matcher-oracle`
 - `src/intent-feasibility.ts` (1) — `intent-infeasible`
@@ -200,7 +200,7 @@ Nearest first, then by name; `(+n)` is the rest. Test names are `test/<name>.tes
 - `src/wall-lowering.ts` (2) — `joinery-split`, `open-crossing`
 - `src/wall-ref.ts` (2) — `rectilinear-rooms`, `walls-from-rooms`
 - `src/while-fix.ts` (2) — `fixable-codes`, `while-fix`
-- `src/world.ts` (128) — `block-stair-byte-identity`, `circulation-unmeasured`, `clause-order-byte-identity`, `corner-window-byte-identity`, `corner-window`, `did-you-mean`, `dim-thickness-callout`, `drawing-budget` (+120)
+- `src/world.ts` (129) — `block-stair-byte-identity`, `circulation-unmeasured`, `clause-order-byte-identity`, `corner-window-byte-identity`, `corner-window`, `did-you-mean`, `dim-thickness-callout`, `drawing-budget` (+121)
 
 ## Test files
 
@@ -328,6 +328,7 @@ The first sentence of each file's header comment.
 - `test/diff-fabric.test.ts` — PS0.4 (plan-soundness): three `diffPlans` defects found by `research/associativity.md` §1.2, fixed additively in `src/diff.ts`.
 - `test/diff-laws.test.ts` — Laws `diffPlans` (`src/diff.ts`) must hold regardless of which side is "before": - **Reflexivity.** `diffPlans(A, A)` reports no change of any kind.
 - `test/diff.test.ts` — diffPlans — structural; diffPlans — summary & circulation; diffPlans — circulation deltas (entrance-bearing fixtures); diffPlans — auto-id rooms pair by unique…
+- `test/digest-preview.test.ts` — `npm run digest:preview` (card TR12): the file selection, the vitest stand-in it loads them with, and the runner end to end on a tiny synthetic tree.
 - `test/dim-faces.test.ts` — `dim faces` / `dim clear` — endpoint projection onto the wall faces; W_DIM_INSIDE — a hand dim whose line reads inside the building; W_DIM_OVERLAP — two hand di…
 - `test/dim-stagger.test.ts` — dims auto — number staggering on a crowded chain; text width — one estimate, one place; chain geometry constants stay welded to the drawing.
 - `test/dim-swap-reprint.test.ts` — RR.24: a dim carries its endpoint-swapped statement for `W_DIM_INSIDE`'s fix, printed whether or not the warning fires and as long as the statement's source.
