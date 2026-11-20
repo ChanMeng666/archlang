@@ -115,12 +115,13 @@ export const fence: ElementDef = {
     const id = ctx.parseIdOpt();
     // The style word LEADS and is optional — the `door` kind precedent. Peeking for
     // membership (rather than eating an ident and checking it) is what lets the word be
-    // omitted without a lookahead special case.
+    // omitted without a lookahead special case. Each word is looked for (`isKeyword`), so a
+    // failure at the token lists the styles in its `expected` (AF4).
     let style: FenceStyle = FENCE_STYLES[0];
-    const t = ctx.peek();
-    if (t.type === "ident" && (FENCE_STYLES as readonly string[]).includes(t.value)) {
+    const word = FENCE_STYLES.find((w) => ctx.isKeyword(w));
+    if (word !== undefined) {
       ctx.next();
-      style = t.value as FenceStyle;
+      style = word;
     }
     ctx.eat("lcurly");
     const points: ExprPoint[] = [];

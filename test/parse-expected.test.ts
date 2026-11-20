@@ -4,7 +4,8 @@
  * (`TOKEN_TEXT`, `src/grammar/tokens.ts`) and the closed word lists the parser checks against, then
  * every word and token the parser looked for at that token (the branches it tried, a clause the
  * statement before would still have read, `}`), then the operators that continue an expression
- * that stopped there, then the did-you-mean word. `expectedAt` gives the token's offset when the
+ * that stopped there. A did-you-mean word is listed only when it is one of those (a hint is a
+ * guess at what was meant, not the grammar). `expectedAt` gives the token's offset when the
  * error is spanned elsewhere; `expectedMore` counts the entries a long list leaves out. A word of
  * the list glued to the number after it (`size (A)x3000`) gets the AF2 did-you-mean and a
  * `maybe-incorrect` fix that splits it.
@@ -20,7 +21,7 @@ import { exprContinuations } from "../src/expr.js";
 import { lex } from "../src/lexer.js";
 import { parse } from "../src/parser.js";
 import { PAPER_SIZES, STATEMENT_STARTS, TITLE_FIELDS, TOKEN_TEXT } from "../src/grammar/tokens.js";
-import { USE_KINDS } from "../src/ast.js";
+import { FENCE_STYLES, USE_KINDS } from "../src/ast.js";
 import { BUILTIN_REGISTRY } from "../src/registry.js";
 import { sheetTextKeys } from "../src/sheet-text.js";
 
@@ -89,6 +90,11 @@ suite("expected at each kind of failure", () => {
     expect(expectedOf(plan("north upp"))).toEqual(["up", "down", "left", "right", TOKEN_TEXT.number, "hidden"]);
     expect(expectedOf(door("swing upward"))).toEqual(["in", "out", "inward", "outward", "into"]);
     expect(expectedOf(plan("wall id=w exterior thickness 200 { (0,0) foo }"))).toEqual(["(", "arc", "close", "}"]);
+    // A fence's optional leading style word is looked for word by word, so a failure there lists
+    // the styles (the oracle's `garden-house` site), and `id` while no id is written.
+    const FENCE = "{ (0,0) (1000,0) }";
+    expect(expectedOf(plan(`fence id=f pickets ${FENCE}`))).toEqual(["{", ...FENCE_STYLES]);
+    expect(expectedOf(plan(`fence =f panel ${FENCE}`))).toEqual(["{", "id", ...FENCE_STYLES]);
   });
 
   it("the branches a statement tried before the one it failed in (the red team's twelve sites)", () => {
@@ -147,6 +153,36 @@ suite("expected at each kind of failure", () => {
     // After a `uses` list, any use, on any line.
     const after = parseError(plan("room id=r at (0,0) size 10x10 uses living", ","));
     for (const u of USE_KINDS) expect(after.expected).toContain(u);
+  });
+
+  it("a did-you-mean word the position does not read is hinted, not listed (`silde`, `r_kitchen`)", () => {
+    const SHELL = [
+      "wall id=s exterior thickness 200 { (0,0) (6000,0) (6000,4000) (0,4000) close }",
+      'room id=a at (0,0) size 6000x4000 label "Hall" uses hall',
+    ];
+    const cases: [string[], string, string][] = [
+      [["door id=d sliding on s at 2700 width 1800 silde left"], "silde", "side"],
+      [
+        ["room id=r_kitchen at (6000,0) size 3000x3000", "furniture counter at (6100,100) size 600x600 r_kitchen"],
+        "r_kitchen",
+        "kitchen",
+      ],
+    ];
+    for (const [body, word, hint] of cases) {
+      const src = plan(...SHELL, ...body);
+      const d = parseError(src);
+      expect(d.hints, word).toEqual([`did you mean \`${hint}\`?`]);
+      expect(d.expected, word).not.toContain(hint);
+      // Outside the grammar there: the hinted word in the misspelling's place fails at it too.
+      const at = src.lastIndexOf(word);
+      const put = src.slice(0, at) + hint + src.slice(at + word.length);
+      expect(
+        parse(put).diagnostics.some((x) => x.severity === "error" && x.span?.start === at),
+        word,
+      ).toBe(true);
+    }
+    // The clause the door would still have read is listed.
+    expect(parseError(plan(...SHELL, cases[0]![0][0]!)).expected).toContain("slide");
   });
 
   it("no `expected` where the parser has no list (a count, a lexical error)", () => {

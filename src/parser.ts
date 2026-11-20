@@ -270,8 +270,16 @@ function parseImpl(src: string, registry: Registry, lexer: (src: string) => LexR
   // parsePlan never throws on user source: it recovers from a malformed header
   // and from per-statement errors, so a PlanNode (possibly partial) is always
   // produced — `CompileResult.ast` is present even on broken input.
-  const p = new Parser(tokens, registry, src);
-  const plan = p.parsePlan();
+  let p = new Parser(tokens, registry, src, false);
+  let plan = p.parsePlan();
+  // AF4: a parse that raised an error with an `expected` list runs again, recording what it
+  // looked for at each token (`Parser.probe`), and that second parse is the one returned. A
+  // source that parses records nothing. The parser reads only its tokens and its own fields, so
+  // the second parse is the first one, but for the lists.
+  if (p.wantsProbes) {
+    p = new Parser(tokens, registry, src, true);
+    plan = p.parsePlan();
+  }
   plan.comments = comments;
   const diagnostics = [...lexDiags, ...p.diagnostics];
   // W7: `while`/reassignment soft-deprecation — purely syntactic, over the plan body
@@ -308,6 +316,8 @@ class Parser {
     /** The source the tokens came from — read only by {@link synchronize}, for the
      *  leading whitespace of a line (a token's `col` cannot tell a tab from a space). */
     private readonly src = "",
+    /** Whether to record what the parser looks for at each token (AF4, {@link probe}). */
+    private readonly recording = false,
   ) {
     // A contextual element keyword (`section`) is no statement start: `room id=section` keeps parsing.
     const reserved = [...registry.byKeyword.values()].filter((d) => !d.contextual).map((d) => d.keyword);
@@ -374,7 +384,7 @@ class Parser {
     const live = this.reportable();
     const s = near && t.type === "ident" && live ? suggestion(t.value, near) : null;
     const site = at.expected ?? near;
-    const expected = site && live ? this.expectedAt(t, span, site, s?.word.split(" ")[0]) : undefined;
+    const expected = site && live ? this.expectedAt(t, span, site) : undefined;
     if (!s) throw new ParseError(msg, span, hints, undefined, expected);
     throw new ParseError(
       msg,
@@ -394,10 +404,13 @@ class Parser {
    * {@link EXPECTED_PREFIX} past {@link EXPECTED_MAX}), then every word or token the parser looked
    * for at `t` before it failed ({@link probe}: a clause the statement before would still have
    * read, `hidden` before a setting's value, `}` closing a block), then the operators that would
-   * have continued an expression ending just before `t`, then the did-you-mean word, so the hint
-   * always names an entry. `at` is `t`'s offset when the error is spanned elsewhere.
+   * have continued an expression ending just before `t`. A did-you-mean word is listed only when
+   * it is one of those: a hint is a guess at what was meant, not a word the grammar reads at `t`.
+   * `at` is `t`'s offset when the error is spanned elsewhere. On a parse that is not recording
+   * the probes, the list lacks them, so the source is parsed again ({@link wantsProbes}).
    */
-  private expectedAt(t: Token, span: Span, site: readonly string[], hint: string | undefined): Expected {
+  private expectedAt(t: Token, span: Span, site: readonly string[]): Expected {
+    if (!this.recording) this.wantsProbes = true;
     const i = this.indexOf(t);
     const more = site.length > EXPECTED_MAX ? site.length - EXPECTED_PREFIX : 0;
     const list = new Set(more ? site.slice(0, EXPECTED_PREFIX) : site);
@@ -409,7 +422,6 @@ class Parser {
       const before = this.toks[i - 1];
       if (before?.type === "ident" && before.value !== "true" && before.value !== "false") list.add(TOKEN_TEXT.lparen);
     }
-    if (hint !== undefined) list.add(hint);
     const e: Expected = { list: [...list], more };
     if (span.start !== t.start || span.end !== t.end) e.at = t.start;
     return e;
@@ -429,18 +441,24 @@ class Parser {
   }
 
   /**
-   * The words and tokens the parser looked for at each token index (AF4): every `isKeyword` and
+   * The words and tokens the parser looked for at each token index (AF4): every `isKeyword` at the
+   * cursor (a word looked for at an offset is a lookahead, not an alternative at the cursor) and
    * every `isType` but `ident`'s and the end's (a name or the end is no alternative a list can
    * name). A failure at that token lists them, so an `expected` follows the parser's own branches.
-   * Recorded only while an error can still be reported, for the tokens at or past the cursor: two
-   * flat arrays (a token's index, the word), compacted when the cursor moves, so a parse that never
-   * fails pays one comparison and one push a look. At most 256 are held.
+   * Recorded only on a {@link recording} parse, the second parse of a source whose first raised an
+   * error that lists them ({@link wantsProbes}), so a source that parses pays one boolean test a
+   * look; and there only while an error can still be reported, for the tokens at or past the
+   * cursor: two flat arrays (a token's index, the word), compacted when the cursor moves. At most
+   * 256 are held.
    */
   private readonly probeAt: number[] = [];
   private readonly probeWhat: string[] = [];
   private probePos = -1;
-  private probe(i: number, what: string): void {
+  /** Set when an error's `expected` was built on a parse that was not recording: parse again, recording. */
+  public wantsProbes = false;
+  private probe(what: string): void {
     if (!this.reportable()) return;
+    const i = Math.min(this.pos, this.toks.length - 1);
     if (this.probePos !== this.pos) {
       this.probePos = this.pos;
       let k = 0;
@@ -736,8 +754,9 @@ class Parser {
   }
 
   private isKeyword(kw: string, o = 0): boolean {
+    // Only the current token's: a word looked for further on is a lookahead, no alternative here (AF4).
+    if (this.recording && o === 0) this.probe(kw);
     const t = this.peek(o);
-    this.probe(Math.min(this.pos + o, this.toks.length - 1), kw);
     return t.type === "ident" && t.value === kw;
   }
   private eatKeyword(kw: string): Token {
@@ -852,13 +871,12 @@ class Parser {
             this.parseDimsSetting(plan);
             break;
           case "title": {
-            // `title hidden = 3` was an error, and stays the error `parseTitle` reports.
-            if (this.peek(1).line === t.line && this.isKeyword("hidden", 1) && !this.isTrailer(this.peek(2))) {
-              this.next();
-              this.eatHidden(plan, "title");
-              break;
-            }
-            const n = this.parseTitle();
+            // `title hidden = 3` was an error, and stays the error `parseTitle` reports. `title` is
+            // read first, so `hidden` is looked for at the cursor, the token an error after
+            // `title` stops at, and is listed in its `expected` (AF4).
+            const kw = this.next();
+            if (this.eatHidden(plan, "title")) break;
+            const n = this.parseTitle(kw);
             n.span = this.spanFrom(start);
             plan.title = n;
             break;
@@ -1123,7 +1141,7 @@ class Parser {
   }
 
   private isType(type: Token["type"]): boolean {
-    if (type !== "ident" && type !== "eof") this.probe(Math.min(this.pos, this.toks.length - 1), TOKEN_TEXT[type]);
+    if (this.recording && type !== "ident" && type !== "eof") this.probe(TOKEN_TEXT[type]);
     return this.peek().type === type;
   }
 
@@ -1556,8 +1574,8 @@ class Parser {
     return { w, h };
   }
 
-  private parseTitle(): TitleNode {
-    const kw = this.eatKeyword("title");
+  /** `title { … }`, its keyword `kw` already read. */
+  private parseTitle(kw: Token): TitleNode {
     this.eat("lcurly");
     const node: TitleNode = { line: kw.line };
     while (!this.isType("rcurly") && !this.isType("eof")) {
@@ -2142,7 +2160,7 @@ class Parser {
           { start: t.start, end: t.end },
           [stray],
           undefined,
-          this.reportable() ? this.expectedAt(t, { start: t.start, end: t.end }, expected, undefined) : undefined,
+          this.reportable() ? this.expectedAt(t, { start: t.start, end: t.end }, expected) : undefined,
         );
       }
     }

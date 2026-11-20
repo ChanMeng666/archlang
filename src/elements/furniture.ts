@@ -69,9 +69,10 @@ const COUNT_SIZES: RenderSizes = {
 
 const ANCHOR_SET: ReadonlySet<string> = new Set<FurnitureAnchor>(FURNITURE_ANCHORS);
 
-/** `mirror` as a clause, on the piece's line: a statement that starts with the word (`mirror = 2`, `mirror()`) stays one. */
+/** `mirror` as a clause, on the piece's line: a statement that starts with the word (`mirror = 2`, `mirror()`) stays one.
+ *  The line first, so the word is looked for only where it would be the clause (AF4, `expected`). */
 function isMirrorClause(ctx: ParseCtx): boolean {
-  if (!ctx.isKeyword("mirror") || ctx.peek().line !== ctx.peek(-1).line) return false;
+  if (ctx.peek().line !== ctx.peek(-1).line || !ctx.isKeyword("mirror")) return false;
   const after = ctx.peek(1).type;
   return after !== "equals" && after !== "lparen";
 }
@@ -240,7 +241,7 @@ export const furniture: ElementDef = {
           const m = ctx.next();
           if (keep) turn.mirror = true;
           const axis = ctx.peek();
-          if ((ctx.isKeyword("x") || ctx.isKeyword("y")) && axis.line === m.line && ctx.peek(1).type !== "equals")
+          if (axis.line === m.line && (ctx.isKeyword("x") || ctx.isKeyword("y")) && ctx.peek(1).type !== "equals")
             ctx.fail(
               `\`mirror\` on a piece takes no axis: it swaps the piece's left and right and its back stays. \`place … mirror x|y\` reflects a whole instance`,
               axis,

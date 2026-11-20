@@ -595,7 +595,7 @@ The first sentence of each file's header comment.
 - `test/outdoor.test.ts` — The `outdoor` ground-surface layer.
 - `test/overhead-furniture.test.ts` — `FixtureSpec.overhead` — the piece that hangs ABOVE the plane a floor plan is cut at.
 - `test/overlay.test.ts` — circulation overlay (opt-in render); circulation overlay — drawn on the grid the facts were measured on (backlog C.2).
-- `test/parse-expected-oracle.test.ts` — AF4 (fix round 1 of #987): a parse error's `expected` lists every token the parser accepts at the position it stopped at.
+- `test/parse-expected-oracle.test.ts` — AF4 (fix rounds 1 and 2 of #987): a parse error's `expected` lists exactly the tokens the parser accepts at the position it stopped at.
 - `test/parse-expected.test.ts` — AF4: an `E_PARSE` carries `expected`, what the parser would have read at the token it stopped at (after rustc's "expected one of"): the position's own alternatives, read from the token table (`TOKEN_TEXT`, `src/gramma...
 - `test/parse-hints.test.ts` — Parse hints (issue #370): three inputs that gave a bare `E_PARSE` now carry a `= help:` line.
 - `test/parser-recovery-metric.test.ts` — The parser's error-recovery METRIC, pinned as floors over a FROZEN corpus.
