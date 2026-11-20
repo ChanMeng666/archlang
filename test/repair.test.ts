@@ -1,7 +1,7 @@
 /** arch repair. */
 
 import { describe, expect, it } from "vitest";
-import { format, repair, lint } from "../src/index.js";
+import { compile, format, repair, lint } from "../src/index.js";
 import { resolvePlan } from "../src/analyze.js";
 import type { RFurniture } from "../src/ir.js";
 
@@ -432,5 +432,168 @@ describe("arch repair — deterministic choices (RM9.11)", () => {
     expect(count(r.source, "door")).toBe(count(src, "door"));
     expect(count(r.source, "window")).toBe(count(src, "window"));
     fixpoint(src);
+  });
+});
+
+/**
+ * RM9.11 review round 1: the cases where a choice must NOT be made, or must not stand. Each plan is
+ * a red-team probe (`rt988`), pinned by what repair now does with it.
+ */
+describe("arch repair — what a choice may not do (RM9.11)", () => {
+  /** Two storeys; the upper stairwell is enclosed by the shell, `hall_w` and a guard wall. */
+  const well = (furn: string, opts: { guard?: boolean; l1?: string } = {}) => `plan "Stair" {
+  units mm
+  grid 50
+  height 2700
+  level 1 "Ground" {
+    wall id=shell exterior thickness 200 { (0,0) (8000,0) (8000,7000) (0,7000) close }
+    wall id=hall_w partition thickness 100 { (1050,0) (1050,7000) }
+    room id=hall at (0,0) size 1050x7000 label "Hall" uses hall
+    room id=living at (1050,0) size 6950x7000 label "Living" uses living
+    door id=front on shell at 22500 width 800 swing into hall
+    door id=d_living on hall_w at 5800 width 900 swing into living
+    window id=w1 on shell at 5000 width 1800
+    stair id=stair at (100,1000) size 900x3250 dir up
+    ${opts.l1 ?? ""}
+  }
+  level 2 "First" {
+    wall id=shell exterior thickness 200 { (0,0) (8000,0) (8000,7000) (0,7000) close }
+    wall id=hall_w partition thickness 100 { (1050,0) (1050,7000) }
+    ${opts.guard === false ? "" : "wall id=guard partition thickness 100 { (0,4300) (1050,4300) }"}
+    room id=landing at (0,0) size 1050x4300 label "Landing" uses circulation
+    room id=store at (0,4300) size 1050x2700 label "Store" uses storage
+    room id=bed at (1050,0) size 6950x7000 label "Bed" uses bedroom
+    door id=d_bed on hall_w at 500 width 800 swing into bed
+    door id=d_store on hall_w at 5800 width 800 swing into bed
+    window id=w2 on shell at 5000 width 1500
+    stair id=stair at (100,1000) size 900x3250 dir down
+    void id=well at (100,1000) size 900x3250
+    furniture bed at (5000,3000) size 1600x2000 rotate 90
+    ${furn}
+  }
+}`;
+  const bath = (furn: string) => `plan "P" {
+  units mm
+  grid 50
+  wall id=ext exterior thickness 200 { (0,0) (4000,0) (4000,4000) (0,4000) close }
+  room id=r at (0,0) size 4000x4000 label "Bath" uses bath
+  door at (3000,4000) width 900 wall exterior hinge left swing out
+  ${furn}
+}`;
+  const furnitureLines = (s: string) =>
+    s
+      .split("\n")
+      .filter((l) => l.trim().startsWith("furniture"))
+      .map((l) => l.trim().replace(/\s+/g, " ").replace(/, /g, ","));
+  const errorsOf = (s: string) => compile(s, { noCache: true }).diagnostics.filter((d) => d.severity === "error");
+
+  for (const [name, at] of [
+    ["against the shell (E1)", "(150,2000)"],
+    ["against `hall_w` (p2)", "(600,2000)"],
+  ] as const) {
+    it(`never carries a piece in an enclosed stairwell through a wall: ${name}`, () => {
+      const src = well(`furniture cabinet at ${at} size 300x300`);
+      const r = repair(src);
+      expect(r.changes).toEqual([]);
+      expect(r.unresolved.map((u) => u.reason)).toEqual([
+        "stands on a stair, and every axis move off it runs into a wall — move it by hand",
+      ]);
+      expect(furnitureLines(r.source)).toEqual(furnitureLines(src));
+    });
+  }
+
+  it("puts a piece back when a later fix undoes its move off a stair, and says so (E5)", () => {
+    // Off the foot landing is the front door's approach, which pushes the cabinet back on.
+    const src = well("", { l1: "furniture cabinet at (100,4300) size 900x500" });
+    const r = repair(src);
+    expect(r.changes).toEqual([]);
+    expect(r.unresolved.map((u) => u.reason)).toEqual([
+      "stands on a stair's flight or landing, and every way off it that repair found ran into another fault (a wall, a doorway, another piece) — left in place; move it by hand",
+    ]);
+    expect(r.unresolved.some((u) => u.reason.includes("parked"))).toBe(false);
+  });
+
+  it("keeps a moved piece inside the room it stands in", () => {
+    // The top wall is nearer by 50 mm, but the bathtub stands there: the overlap push takes the
+    // basin into the shell and the wall push clears it to the far side, out of the building.
+    // main shipped (900,-600) with lint silent; the no-worse check now holds it.
+    const src = bath("furniture bathtub at (300,100) size 1700x700\nfurniture basin at (900,850) size 500x500");
+    const r = repair(src);
+    expect(r.changes).toEqual([]);
+    expect(r.unresolved.map((u) => u.reason)).toEqual([
+      'moving it to (900,-600) would take it out of "Bath", the room it stands in now — left in place; adjust manually',
+    ]);
+    expect(r.source).toBe(src);
+  });
+
+  it("breaks a tie toward the wall whose side of the room is free", () => {
+    // 800 mm from the top face and from the left one; the bathtub stands on the top wall.
+    const src = bath("furniture bathtub at (300,100) size 1700x700\nfurniture basin at (900,900) size 500x500");
+    const r = repair(src);
+    const moved = r.changes.find((c) => c.kind === "moved")!;
+    expect(moved.to).toEqual({ x: 100, y: 900 });
+    expect(moved.reason).toContain('took wall "ext", the one whose side of the room is free');
+    expect(r.unresolved).toEqual([]);
+  });
+
+  it("never writes a `rotate` onto a piece whose turn `facing` states", () => {
+    for (const [furn, win] of [
+      [
+        "furniture counter at (100,3300) size 600x600 facing win",
+        "window id=win at (400,4000) width 500 wall exterior",
+      ],
+      [
+        "furniture counter at (1500,3300) size 600x600 facing win",
+        "window id=win at (1800,4000) width 500 wall exterior",
+      ],
+    ] as const) {
+      const src = bath(`${win}\n  ${furn}`);
+      const r = repair(src);
+      expect(r.changes).toEqual([]);
+      expect(r.unresolved.map((u) => u.reason)).toEqual([
+        "has its back to the room, and its turn is stated by `facing` — point the `facing` at something on its bottom side, or replace it with `rotate 180`",
+      ]);
+      expect(errorsOf(r.source)).toEqual([]);
+    }
+  });
+
+  it("lets the snap move a wall fixture that stands on a stair with no single way off", () => {
+    const src = `plan "P" {
+  units mm
+  room id=hall at (0,0) size 6000x5000 label "Hall" uses hall
+  walls from rooms exterior 200 partition 100
+  door on hall.bottom at 4500 from start width 1000 swing into hall
+  window on hall.top at 4500 from start width 1500
+  stair id=s1 at (1000,500) size 1000x3000 dir up
+  furniture wc at (1300,2400) size 400x700
+}`;
+    const r = repair(src);
+    expect(r.changes.map((c) => [c.kind, c.to, c.reason])).toEqual([
+      ["moved", { x: 100, y: 2400 }, "snapped against the nearest wall"],
+    ]);
+    expect(lint(r.source).some((d) => d.code === "W_FURNITURE_ON_STAIR")).toBe(false);
+  });
+
+  it("names the side it turned the piece to", () => {
+    // Walls on its top and left; a 700×400 WC can back onto a vertical edge only, so the left.
+    const r = repair(bath("furniture wc at (150,100) size 700x400 rotate 90"));
+    expect(r.changes.map((c) => [c.toRotate, c.reason])).toEqual([
+      [270, "turned to put its back against the wall on its left side"],
+    ]);
+  });
+
+  it("does not turn a piece in a polygon room, which lint does not judge", () => {
+    const src = `plan "P" {
+  units mm
+  grid 50
+  wall id=ext exterior thickness 200 { (0,0) (4000,0) (4000,4000) (0,4000) close }
+  room id=r polygon (0,0) (4000,0) (4000,4000) (0,4000) label "Kitchen" uses kitchen
+  door at (3000,4000) width 900 wall exterior hinge left swing out
+  furniture counter at (100,3300) size 600x600 rotate 0
+}`;
+    expect(lint(src).some((d) => d.code === "W_FIXTURE_BACK_TO_ROOM")).toBe(false);
+    const r = repair(src);
+    expect(r.changed).toBe(false);
+    expect(r.unresolved).toEqual([]);
   });
 });

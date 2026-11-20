@@ -489,7 +489,7 @@ export function mountActions(ctx: ActionsCtx): ActionsHandle {
       `</div>` +
       (changeRows ? `<ul class="repair-list">${changeRows}</ul>` : "") +
       (unresolvedRows
-        ? `<p class="repair-un-h">Left for you to resolve (repair never guesses):</p><ul class="repair-list">${unresolvedRows}</ul>`
+        ? `<p class="repair-un-h">Left for you to resolve (repair follows a stated rule and reports what it cannot decide):</p><ul class="repair-list">${unresolvedRows}</ul>`
         : "");
     repairPanel.querySelector(".repair-apply")?.addEventListener("click", () => {
       loadSource(result.source, false);

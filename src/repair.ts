@@ -15,7 +15,9 @@
  *   4. a piece in a **door's clear landing** → pushed out, preferring an exit that
  *      doesn't drive it into a wall;
  *   5. a piece in a **door's swing arc** → moved out of the quarter-disc the leaf sweeps;
- *   6. a wall-requiring **fixture floating** mid-room → snapped onto the nearest wall.
+ *   6. a piece on a **stair** (its flight, or a landing it owes) → moved off every part of it
+ *      at once, by a move that runs into no wall;
+ *   7. a wall-requiring **fixture floating** mid-room → snapped onto the nearest wall.
  *
  * Then, once every position is final, one **orientation** pass: a fixture standing
  * flush against a single wall but with its back to the room is turned to face it
@@ -31,8 +33,9 @@
  * are equally near, and the wall a corner fixture is turned to back onto (RM9.11).
  *
  * **The result is never worse than the input**: it holds no hard conflict (an overlap, a
- * piece through a wall, in a door's landing or in its swing) the input did not. A piece
- * whose move would add one is left where it stands and reported — see `checkedRun`.
+ * piece through a wall, in a door's landing or in its swing) the input did not, and no piece
+ * leaves the room it stood in. A piece whose move would do either is left where it stands and
+ * reported — see `checkedRun`.
  *
  * That pass is run to a **cycle** and the cycle's canonical member is what ships, so
  * `repair(repair(s))` equals `repair(s)` byte for byte. See {@link repair} for why one
@@ -77,9 +80,11 @@ import {
   FIXTURE_WALL_TOL_MM,
   innerFaceOfRoomEdge,
   isAgainstWall,
+  pointInRoomBox,
   rectInRoomBox,
   RECT_EDGES,
   type RectEdge,
+  type RoomBox,
   resolvePlan,
   buildingRoomReach,
   storeyGrounded,
@@ -101,6 +106,7 @@ import {
   wallIntrusionDepth,
 } from "./geometry/rect.js";
 import { segmentsOfWall, doorLeaves, sectorIntersectsRect, type DoorSwing } from "./geometry.js";
+import { pointInPolygon } from "./geometry/polygon.js";
 import { DEFAULT_RULESET, LINT_RULES } from "./lint.js";
 import { type BuildingContext, buildLintContext } from "./lint/context.js";
 import { onStairZones, type StairZone, zoneReads } from "./lint/rules/stairs.js";
@@ -312,16 +318,18 @@ function computeDoorwayPush(
  * The minimal axis move that takes `fr` off every rectangle in `zones` at once (a stair's flight
  * and the landings it owes touch end to end, so clearing one zone at a time walks a piece from a
  * landing onto the flight and back). Each of the four directions is extended until the moved
- * piece overlaps no zone; the shortest such move wins, preferring one that does not drive the
- * piece into a wall, and an exact tie between two different moves is "ambiguous" (as
- * {@link computeDoorwayPush}), as is a piece no axis move takes off. null when `fr` stands on no zone.
+ * piece overlaps no zone; only a move that does not put the piece into a wall counts (a move
+ * into one would hand it to the wall push, which can carry it through to the far side: out of
+ * the building, from a stairwell drawn against the shell), and the shortest of those wins. An
+ * exact tie between two different moves is "ambiguous" (as {@link computeDoorwayPush}); a piece
+ * with no clean move off is "blocked". null when `fr` stands on no zone.
  */
 function computeZonesPush(
   fr: BBox,
   zones: readonly BBox[],
   walls: RWall[],
   grid: number,
-): { dx: number; dy: number } | "ambiguous" | null {
+): { dx: number; dy: number } | "ambiguous" | "blocked" | null {
   const on = (r: BBox): BBox | undefined => zones.find((z) => rectsOverlap(r, z));
   if (on(fr) === undefined) return null;
   const dirs: ReadonlyArray<{ ux: number; uy: number; need: (z: BBox) => number }> = [
@@ -330,7 +338,7 @@ function computeZonesPush(
     { ux: 0, uy: -1, need: (z) => fr.y + fr.h - z.y },
     { ux: 0, uy: 1, need: (z) => z.y + z.h - fr.y },
   ];
-  let best: { shift: number; clean: boolean; dx: number; dy: number } | null = null;
+  let best: { shift: number; dx: number; dy: number } | null = null;
   let tie = false;
   for (const d of dirs) {
     let at = { x: fr.x, y: fr.y };
@@ -352,20 +360,15 @@ function computeZonesPush(
       };
     }
     if (shift <= 0 || on({ x: at.x, y: at.y, w: fr.w, h: fr.h }) !== undefined) continue;
-    const moved = Math.abs(at.x - fr.x) + Math.abs(at.y - fr.y);
-    const clean = !hitsWall({ x: at.x, y: at.y, w: fr.w, h: fr.h }, walls);
-    const cand = { shift: moved, clean, dx: at.x - fr.x, dy: at.y - fr.y };
-    const better =
-      (cand.clean && !(best?.clean ?? false)) ||
-      (best !== null && cand.clean === best.clean && cand.shift < best.shift - 1e-6);
-    const equal = best !== null && cand.clean === best.clean && Math.abs(cand.shift - best.shift) <= 1e-6;
-    if (!best || better) {
+    if (hitsWall({ x: at.x, y: at.y, w: fr.w, h: fr.h }, walls)) continue;
+    const cand = { shift: Math.abs(at.x - fr.x) + Math.abs(at.y - fr.y), dx: at.x - fr.x, dy: at.y - fr.y };
+    if (!best || cand.shift < best.shift - 1e-6) {
       best = cand;
       tie = false;
-    } else if (equal && (cand.dx !== best.dx || cand.dy !== best.dy)) tie = true;
+    } else if (Math.abs(cand.shift - best.shift) <= 1e-6 && (cand.dx !== best.dx || cand.dy !== best.dy)) tie = true;
   }
-  // On a zone with no axis move off it (a piece wider than the gap every way): say so.
-  if (!best || tie) return "ambiguous";
+  if (!best) return "blocked";
+  if (tie) return "ambiguous";
   return { dx: best.dx, dy: best.dy };
 }
 
@@ -411,24 +414,37 @@ function compareIds(a: string, b: string): number {
  * The order a tie between equally near walls is broken in (RM9.11, downstream request 3), shared
  * by {@link computeFloatingSnap} and {@link orientationVerdict} so the two choices cannot disagree:
  *
+ * (the caller has already kept only the nearest walls):
+ *
  *   1. a wall the piece's catalogued footprint lets it back onto (`shapeFits`, the
  *      {@link backCandidateEdges} test): a 400×700 WC snapped onto a wall beside it would stand
- *      side-on, and the orientation pass could then turn it onto nothing;
- *   2. the smallest wall id ({@link compareIds}: an unnamed wall's `<category>_<n>` id sorts by
+ *      side-on, and the orientation pass could then turn it onto nothing (a turn reads only such
+ *      walls, so this key never separates two of them);
+ *   2. a free destination (`isFree`): a snap whose footprint would land on another piece or
+ *      leave the piece's room loses to one that lands clear (a turn moves nothing, so every one
+ *      of its candidates is free);
+ *   3. the smallest wall id ({@link compareIds}: an unnamed wall's `<category>_<n>` id sorts by
  *      `n`, its place among the plan's walls);
- *   3. the segment's index in its wall's point list (two edges of one closed ring share an id);
- *   4. the edge, in {@link RECT_EDGES} order (reached only by two walls that share an id and an
- *      index, an `E_DUP_ID` plan).
+ *   4. the segment's index in its wall's point list (two edges of one closed ring share an id);
+ *   5. the edge, in {@link RECT_EDGES} order. A resolvable plan has no duplicate wall id, so this
+ *      key separates only one run standing behind two opposite edges of a turned piece thinner
+ *      than twice the backing tolerance; it keeps the order total.
  *
- * Every key reads the resolved walls and the piece, never the order a pass met them in, and a
+ * Every key reads the resolved walls and the pieces, never the order a pass met them in, and a
  * derived wall's id (`exterior`, `A|B`) is a function of the rooms it was derived from, so the
- * choice is a property of the plan. It is total, so a tie always has one answer.
+ * choice is a property of the plan.
  */
-function wallChoiceOrder(shapeFits: (e: RectEdge) => boolean): (a: WallChoice, b: WallChoice) => number {
+function wallChoiceOrder(
+  shapeFits: (e: RectEdge) => boolean,
+  isFree: (c: WallChoice) => boolean,
+): (a: WallChoice, b: WallChoice) => number {
   return (a, b) => {
     const fa = shapeFits(a.edge) ? 0 : 1;
     const fb = shapeFits(b.edge) ? 0 : 1;
     if (fa !== fb) return fa - fb;
+    const ga = isFree(a) ? 0 : 1;
+    const gb = isFree(b) ? 0 : 1;
+    if (ga !== gb) return ga - gb;
     const byId = compareIds(a.wallId, b.wallId);
     if (byId !== 0) return byId;
     if (a.index !== b.index) return a.index - b.index;
@@ -441,12 +457,13 @@ function wallChoiceOrder(shapeFits: (e: RectEdge) => boolean): (a: WallChoice, b
  * gives for it, naming the key that separated it from the runner-up so the author can check the
  * choice against the rule.
  */
-function chooseWall(
-  near: readonly WallChoice[],
+function chooseWall<C extends WallChoice>(
+  near: readonly C[],
   shapeFits: (e: RectEdge) => boolean,
+  isFree: (c: WallChoice) => boolean,
   walls: readonly RWall[],
-): { pick: WallChoice; words: string } {
-  const sorted = [...near].sort(wallChoiceOrder(shapeFits));
+): { pick: C; words: string } {
+  const sorted = [...near].sort(wallChoiceOrder(shapeFits, isFree));
   const pick = sorted[0]!;
   const next = sorted[1];
   const w = walls.find((x) => x.id === pick.wallId);
@@ -456,11 +473,13 @@ function chooseWall(
       ? `took ${name}`
       : shapeFits(pick.edge) !== shapeFits(next.edge)
         ? `took ${name}, the only one it can back onto by its size`
-        : pick.wallId !== next.wallId
-          ? `took ${name}, by the smallest wall id`
-          : pick.index !== next.index
-            ? `took the run of ${name} written first in its points`
-            : `took the one on its ${pick.edge} side, by edge order (top, bottom, left, right)`;
+        : isFree(pick) !== isFree(next)
+          ? `took ${name}, the one whose side of the room is free`
+          : pick.wallId !== next.wallId
+            ? `took ${name}, by the smallest wall id`
+            : pick.index !== next.index
+              ? `took the run of ${name} written first in its points`
+              : `took the one on its ${pick.edge} side, by edge order (top, bottom, left, right)`;
   return { pick, words };
 }
 
@@ -479,6 +498,9 @@ function computeFloatingSnap(
   walls: RWall[],
   grid: number,
   category: string,
+  /** Would the piece's footprint at `r` stand clear of every other piece and inside its room?
+   *  Read only to break a tie ({@link wallChoiceOrder} key 2). */
+  isFreeAt: (r: BBox) => boolean = () => true,
 ): { dx: number; dy: number; tie?: { edges: RectEdge[]; words: string } } | "too-far" | null {
   const cands: Array<WallChoice & { dist: number; dx: number; dy: number }> = [];
   const cx = fr.x + fr.w / 2;
@@ -520,10 +542,15 @@ function computeFloatingSnap(
   // One move, however many segments reach it (a run drawn as two collinear walls): no tie.
   if (near.every((c) => c.dx === first.dx && c.dy === first.dy)) return { dx: first.dx, dy: first.dy };
   const shape = backCandidateEdges({ w: fr.w, h: fr.h }, defaultFootprint(category));
-  const { pick, words } = chooseWall(near, (e) => shape.includes(e), walls);
-  const won = near.find((c) => c === pick)!;
+  const free = new Set<WallChoice>(near.filter((c) => isFreeAt({ x: fr.x + c.dx, y: fr.y + c.dy, w: fr.w, h: fr.h })));
+  const { pick, words } = chooseWall(
+    near,
+    (e) => shape.includes(e),
+    (c) => free.has(c),
+    walls,
+  );
   const edges = RECT_EDGES.filter((e) => near.some((c) => c.edge === e));
-  return { dx: won.dx, dy: won.dy, tie: { edges, words } };
+  return { dx: pick.dx, dy: pick.dy, tie: { edges, words } };
 }
 
 /** Move `fr` out of every door-swing quarter-disc it sits in. The swing is a 90°
@@ -654,12 +681,14 @@ interface FixCtx {
   grid: number;
   /** The storey's stair floor ({@link onStairZones}); absent on a storey with no stair. */
   stairs?: readonly StairZone[];
+  /** Is a footprint clear of every other piece and inside the piece's room? Breaks a snap tie. */
+  isFreeAt?: (r: BBox) => boolean;
 }
 
 /**
  * The single highest-priority fix for a piece at rect `fr`, in order: out of a wall,
- * into its declared room, off an overlapping neighbour, out of a doorway, then (for a
- * wall-fixture) snapped to a wall.
+ * into its declared room, off an overlapping neighbour, out of a doorway, out of a door's
+ * swing, off a stair, then (for a wall-fixture) snapped to a wall.
  *
  * It is also the *diagnosis*: every branch carries a `problem` phrase, so a piece whose
  * position repair may not rewrite is reported with exactly the fault the mover would
@@ -744,27 +773,35 @@ function nextFix(fr: BBox, ctx: FixCtx): NextFix {
   // flight only where headroom is short, a landing only for a body-layer piece): a piece there
   // cuts the stair, so on a multi-storey plan the storeys it joins. Clearing it is the one
   // connectivity repair a furniture mover can make; a missing door is `arch suggest`'s.
+  // A stair with no single clean way off does not end the list: the snap below may still have
+  // a move for a wall fixture standing on it, and is tried first; only when it has none is the
+  // stair reported.
+  let stairStuck: Ambiguous | null = null;
   if (ctx.stairs && ctx.stairs.length > 0) {
     const zones = ctx.stairs.filter((z) => zoneReads(z, ctx.category)).map((z) => z.rect);
     const off = computeZonesPush(fr, zones, ctx.walls, ctx.grid);
     if (off === "ambiguous")
-      return {
-        ambiguous: "stands on a stair with no single shortest way off it — move it aside manually",
-        problem: "stands on a stair's flight or landing",
+      stairStuck = {
+        ambiguous: "stands on a stair with two equally short ways off it — move it aside manually",
+        problem: STAIR_PROBLEM,
       };
-    if (off)
-      return {
-        dx: off.dx,
-        dy: off.dy,
-        reason: "moved off the stair's flight or landing",
-        problem: "stands on a stair's flight or landing",
+    else if (off === "blocked")
+      stairStuck = {
+        ambiguous: "stands on a stair, and every axis move off it runs into a wall — move it by hand",
+        problem: STAIR_PROBLEM,
       };
+    else if (off) return { dx: off.dx, dy: off.dy, reason: STAIR_REASON, problem: STAIR_PROBLEM };
   }
 
   if (requiresWall(ctx.category) && !isAgainstWall(fr, ctx.walls, DEFAULT_RULESET.fixtureWallTolMm)) {
-    const snap = computeFloatingSnap(fr, ctx.walls, ctx.grid, ctx.category);
+    const snap = computeFloatingSnap(fr, ctx.walls, ctx.grid, ctx.category, ctx.isFreeAt);
     if (snap === "too-far")
-      return { ambiguous: "floats too far from any wall to snap automatically", problem: "is not against a wall" };
+      return (
+        stairStuck ?? {
+          ambiguous: "floats too far from any wall to snap automatically",
+          problem: "is not against a wall",
+        }
+      );
     if (snap)
       return {
         dx: snap.dx,
@@ -775,8 +812,13 @@ function nextFix(fr: BBox, ctx: FixCtx): NextFix {
         problem: "is not against a wall",
       };
   }
-  return null;
+  return stairStuck;
 }
+
+/** The change-log words for a move off a stair, and the fault, stated once: the pass reads the
+ *  reason back to check that a piece it gave it to really ended off the stair. */
+const STAIR_REASON = "moved off the stair's flight or landing";
+const STAIR_PROBLEM = "stands on a stair's flight or landing";
 
 /**
  * The orientation verdict for a fixture standing at `fr` with quarter-turn `rotate`:
@@ -791,8 +833,17 @@ function orientationVerdict(
   category: string,
   rotate: number,
   walls: RWall[],
+  /** The storey's polygon rooms: a piece standing in one is not judged, as lint does not. */
+  polyRooms: readonly RRoom[] = [],
+  /** True when the statement states its turn with `facing`, so no `rotate` may be written. */
+  faced = false,
 ): { to: number; reason: string; problem: string } | Ambiguous | null {
   if (!orientationMatters(category)) return null;
+  // A POLYGON room has no north/south/east/west sides: `W_FIXTURE_BACK_TO_ROOM` declines a piece
+  // whose centre stands in one (`lint/rules/furniture.ts`), and so does repair.
+  const cx = fr.x + fr.w / 2;
+  const cy = fr.y + fr.h / 2;
+  if (polyRooms.some((r) => r.poly !== undefined && pointInPolygon(cx, cy, r.poly))) return null;
   const backing = wallBackedEdges(fr, walls, DEFAULT_RULESET.fixtureWallTolMm);
   if (backing[backEdgeForRotate(rotate)] !== null) return null; // already facing its wall
   const walled = backedEdgeList(backing);
@@ -834,11 +885,17 @@ function orientationVerdict(
     for (const g of gaps) if (g.gap < min) min = g.gap;
     const near = gaps.filter((g) => Math.abs(g.gap - min) <= 1e-6).map(({ e }) => e);
     const choice = (e: RectEdge): WallChoice => ({ wallId: backing[e]!.wallId, index: backing[e]!.index, edge: e });
-    const { pick, words } = chooseWall(near.map(choice), () => true, walls);
+    const { pick, words } = chooseWall(
+      near.map(choice),
+      () => true,
+      () => true,
+      walls,
+    );
     target = pick.edge;
     const to = rotateForBackEdge(target);
     if (to === rotate) return null;
     const how = near.length === 1 ? "took the nearest wall face" : `their faces were equally near; ${words}`;
+    if (faced) return facedTurn(target, problem);
     return {
       to,
       reason: `turned to put its back against the wall on its ${target} side (walls on its ${targets.join("/")} side; ${how})`,
@@ -847,12 +904,20 @@ function orientationVerdict(
   }
   const to = rotateForBackEdge(target);
   if (to === rotate) return null;
+  if (faced) return facedTurn(target, problem);
   return {
     to,
-    reason: `turned to put its back against the wall on its ${walled[0]} side`,
-    problem: `has its back to the room (the wall is on its ${walled.join("/")} side)`,
+    reason: `turned to put its back against the wall on its ${target} side`,
+    problem,
   };
 }
+
+/** A piece whose turn `facing <id>` states (ADR 0029 §3) takes no `rotate`: writing one would
+ *  state the turn twice (`E_FACING_CONFLICT`), so the turn is reported, as lint offers no fix. */
+const facedTurn = (target: RectEdge, problem: string): Ambiguous => ({
+  ambiguous: `has its back to the room, and its turn is stated by \`facing\` — point the \`facing\` at something on its ${target} side, or replace it with \`rotate ${rotateForBackEdge(target)}\``,
+  problem,
+});
 
 // ---- statement scan: every furniture statement, however deeply nested ----------
 
@@ -1094,6 +1159,9 @@ interface Piece {
   stuck: boolean;
   /** Set by the orientation pass: the quarter-turn before/after, and why. */
   turn?: { from: number; to: number; reason: string };
+  /** A cycle note held back until the pass knows whether a move off a stair stands: a piece
+   *  parked back on the stair is put where it was, and the cycle note would then misstate it. */
+  heldNote?: string;
 }
 
 /** Anything the arrangement must respect: a live movable piece or a fixed obstacle. */
@@ -1284,6 +1352,54 @@ function culpritsOf(before: SourceConflicts, after: SourceConflicts): Map<string
   return out;
 }
 
+/** Each piece of a source, keyed `${level}|${resolved id}`: its footprint, and the room it
+ *  belongs to (the one it declares, else the rectangular or polygon room whose floor holds its
+ *  centre, first in element order; a circular room is not read). */
+type Homes = Map<string, { rect: BBox; home?: { box: RoomBox; name: string } }>;
+
+function homesOf(source: string): Homes {
+  const { ir, levels } = resolvePlan(source);
+  const out: Homes = new Map();
+  const storeys: Array<{ level?: number; ir: ResolvedPlan }> =
+    levels.length > 0 ? levels.map((l) => ({ level: l.level, ir: l.ir })) : ir ? [{ ir }] : [];
+  for (const st of storeys) {
+    const rooms = st.ir.elements.filter((e): e is RRoom => e.kind === "room" && !e.circle);
+    for (const e of st.ir.elements) {
+      if (e.kind !== "furniture") continue;
+      const f = e as RFurniture;
+      const rect = { x: f.at.x, y: f.at.y, w: f.size.w, h: f.size.h };
+      const c = { x: rect.x + rect.w / 2, y: rect.y + rect.h / 2 };
+      const room =
+        f.room !== undefined ? rooms.find((r) => r.id === f.room) : rooms.find((r) => pointInRoomBox(c, roomBox(r)));
+      out.set(`${st.level ?? ""}|${f.id}`, {
+        rect,
+        ...(room ? { home: { box: roomBox(room), name: room.label ?? room.id } } : {}),
+      });
+    }
+  }
+  return out;
+}
+
+/**
+ * The pieces to pin for leaving their room: each one that MOVED out of the room it stood in
+ * (its footprint on that room's floor before, {@link rectInRoomBox}, and not after). No single
+ * mover checks this: a push off a stairwell drawn against the shell lands in the wall, and the
+ * wall push then clears it to the far side, out of the building, where no lint rule looks.
+ */
+function leftHomeOf(before: Homes, after: Homes): Map<string, string> {
+  const out = new Map<string, string>();
+  for (const [k, a] of after) {
+    const b = before.get(k);
+    if (!b?.home || (b.rect.x === a.rect.x && b.rect.y === a.rect.y)) continue;
+    if (!rectInRoomBox(b.rect, b.home.box) || rectInRoomBox(a.rect, b.home.box)) continue;
+    out.set(
+      k,
+      `moving it to (${a.rect.x},${a.rect.y}) would take it out of "${b.home.name}", the room it stands in now — left in place; adjust manually`,
+    );
+  }
+  return out;
+}
+
 /**
  * How many times {@link repair} may re-run its own pass while looking for the cycle it
  * settles in.
@@ -1363,7 +1479,8 @@ export function repair(source: string): RepairResult {
 /**
  * One run of the passes, held to **THE NO-WORSE LAW**: the source it returns has no hard
  * conflict its input did not ({@link hardConflictsOf} — no new `W_FURNITURE_OVERLAP`,
- * `W_FURNITURE_WALL_COLLISION`, `W_DOORWAY_BLOCKED` or `W_SWING_OBSTRUCTED` instance).
+ * `W_FURNITURE_WALL_COLLISION`, `W_DOORWAY_BLOCKED` or `W_SWING_OBSTRUCTED` instance), and no
+ * piece it moved has left the room it stood in ({@link leftHomeOf}).
  *
  * The movers each clear ONE fault while looking at part of the room: overlap separation
  * yields to EARLIER pieces only, so a piece can be pushed into a LATER one repair may not
@@ -1378,6 +1495,7 @@ export function repair(source: string): RepairResult {
  */
 function checkedRun(source: string, book: SpanBook, record: boolean): { r: RepairResult; settled: boolean } {
   const before = sourceConflicts(source);
+  const homes = homesOf(source);
   const pins: Pins = new Map();
   for (;;) {
     const r = settleOrbit(
@@ -1387,7 +1505,7 @@ function checkedRun(source: string, book: SpanBook, record: boolean): { r: Repai
       "repair's passes did not settle",
     );
     let grew = false;
-    for (const [k, why] of culpritsOf(before, sourceConflicts(r.source)))
+    for (const [k, why] of [...culpritsOf(before, sourceConflicts(r.source)), ...leftHomeOf(homes, homesOf(r.source))])
       if (!pins.has(k)) {
         pins.set(k, why);
         grew = true;
@@ -1805,7 +1923,9 @@ function repairStorey(
       w: rf.size.w,
       h: rf.size.h,
       rotate: rf.rotate ?? 0,
-      rotateDerived: f.rotate === undefined && rf.rotate !== undefined,
+      // A turn `facing` derives is not written out: the clause stays and keeps deriving it, and a
+      // `rotate` beside it would state the turn twice (`E_FACING_CONFLICT`).
+      rotateDerived: f.rotate === undefined && f.facing === undefined && rf.rotate !== undefined,
       ...(room ? { room } : {}),
       ...(f.place
         ? {
@@ -1843,6 +1963,7 @@ function repairStorey(
   // a front door, or on a storey without one, a shaft arriving from a reachable storey.
   const minPathClear = DEFAULT_RULESET.minPathClearWidthMm;
   const roomEls = ir.elements.filter((e): e is RRoom => e.kind === "room");
+  const polyRoomEls = roomEls.filter((r) => r.poly !== undefined);
   const openingEls = ir.elements.filter((e): e is ROpening => e.kind === "opening");
   // Walked from the ways a person arrives by, as `describe().circulation` is (U.1).
   const access = arrivalAccess(
@@ -1898,6 +2019,34 @@ function repairStorey(
   const earlierThan = (ord: number): Array<{ id: string; rect: BBox }> =>
     occupants.filter((o) => o.ord < ord).map((o) => ({ id: o.ref, rect: rectOfOccupant(o) }));
 
+  /** The room a piece belongs to: the one it declares, else the one whose floor holds its centre
+   *  where the input has it (first in element order). Read to break a snap tie toward a free side. */
+  const homeOf = (p: Piece): RoomBox | undefined => {
+    const rooms = roomEls.filter((r) => !r.circle);
+    const declared = irFurniture[p.ord]!.room;
+    const c = { x: p.orig.x + p.w / 2, y: p.orig.y + p.h / 2 };
+    const at =
+      declared !== undefined ? rooms.find((r) => r.id === declared) : rooms.find((r) => pointInRoomBox(c, roomBox(r)));
+    return at ? roomBox(at) : undefined;
+  };
+  /** Would `p` at footprint `r` stand clear of every other piece on its cut-plane layer, and
+   *  inside its room? */
+  const freeFor =
+    (p: Piece) =>
+    (r: BBox): boolean => {
+      const layer = cutPlaneLayer(p.f.category);
+      const home = homeOf(p);
+      return (
+        occupants.every(
+          (o) => o.ord === p.ord || cutPlaneLayer(o.category) !== layer || !rectsOverlap(r, rectOfOccupant(o)),
+        ) &&
+        (home === undefined || rectInRoomBox(r, home))
+      );
+    };
+  /** Does `p` at its live position stand on the stair floor it reads? */
+  const onStair = (p: Piece): boolean =>
+    stairs.some((z) => zoneReads(z, p.f.category) && rectsOverlap(rectOfPiece(p), z.rect));
+
   const MAX_PASSES = Math.min(64, pieces.length * 6 + 8);
   for (let pass = 0; pass < MAX_PASSES; pass++) {
     let moved = false;
@@ -1914,6 +2063,7 @@ function repairStorey(
         swings,
         grid,
         stairs,
+        isFreeAt: freeFor(p),
       });
       if (fix === null) continue;
       if ("ambiguous" in fix) {
@@ -1942,13 +2092,11 @@ function repairStorey(
           p.cur = canon;
           moved = true;
         }
-        note(
-          p.id,
-          `can't be placed without conflict — it cycles between ${cycle.length} positions (${cycle
-            .map((c) => `(${c.x},${c.y})`)
-            .join(" ↔ ")}); parked on the lowest of them, adjust manually`,
-          spanOf(p.id, p.f.span),
-        );
+        const cycleNote = `can't be placed without conflict — it cycles between ${cycle.length} positions (${cycle
+          .map((c) => `(${c.x},${c.y})`)
+          .join(" ↔ ")}); parked on the lowest of them, adjust manually`;
+        if (p.reasons.includes(STAIR_REASON)) p.heldNote = cycleNote;
+        else note(p.id, cycleNote, spanOf(p.id, p.f.span));
         p.stuck = true;
         continue;
       }
@@ -1975,6 +2123,25 @@ function repairStorey(
       moved = true;
     }
     if (!moved) break;
+  }
+
+  // ---- a move off a stair that did not get off it -----------------------------
+  // A piece moved off a stair can be pushed back onto it by a later fix (a doorway's approach
+  // beside the landing), and cycle there. Its log would then say "moved off the stair" of a
+  // piece still on it, so it is put back where the input has it and reported instead; the
+  // no-worse check sees to anything that had moved around it.
+  for (const p of pieces) {
+    if (!p.reasons.includes(STAIR_REASON) || !onStair(p)) {
+      if (p.heldNote !== undefined) note(p.id, p.heldNote, spanOf(p.id, p.f.span));
+      continue;
+    }
+    p.cur = { ...p.orig };
+    p.reasons = [];
+    note(
+      p.id,
+      `${STAIR_PROBLEM}, and every way off it that repair found ran into another fault (a wall, a doorway, another piece) — left in place; move it by hand`,
+      spanOf(p.id, p.f.span),
+    );
   }
 
   // ---- realise every move -----------------------------------------------------
@@ -2004,7 +2171,14 @@ function repairStorey(
   // is left alone, exactly as a scripted position is.
   for (const p of pieces) {
     if (p.f.rotate !== undefined && litNum(p.f.rotate) === null) continue;
-    const verdict = orientationVerdict(rectOfPiece(p), p.f.category, p.rotate, walls);
+    const verdict = orientationVerdict(
+      rectOfPiece(p),
+      p.f.category,
+      p.rotate,
+      walls,
+      polyRoomEls,
+      p.f.facing !== undefined,
+    );
     if (verdict === null) continue;
     if ("ambiguous" in verdict) {
       note(p.id, verdict.ambiguous, spanOf(p.id, p.f.span));
@@ -2084,7 +2258,14 @@ function repairStorey(
       note(o.id, say(fix), spanOf(o.id, o.span));
       continue;
     }
-    const verdict = orientationVerdict(fr, o.category, o.rotate, walls);
+    const verdict = orientationVerdict(
+      fr,
+      o.category,
+      o.rotate,
+      walls,
+      polyRoomEls,
+      irFurniture[o.ord]!._facing !== undefined,
+    );
     if (verdict === null) continue;
     note(o.id, say(verdict), spanOf(o.id, o.span));
   }
