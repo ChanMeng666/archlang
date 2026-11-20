@@ -387,19 +387,34 @@ export function violationOf(r: KeepResult): Diagnostic {
 }
 
 /**
- * Where each element a broken keep names was placed (AF7): the statement of every distinct room or
- * element target, as related spans of its `W_KEEP_VIOLATED`. A keep is written only in the compiled
- * source (a component body refuses one), so an element whose statement came in through an `import`
- * gets no note (AF1's same-file rule). Bounded by the keep's own targets (`MAX_KEEP_TARGETS`), which
- * the measure has already charged; nothing is allocated per element of the plan.
+ * Where each element a broken keep names was placed (AF7), as related spans of its
+ * `W_KEEP_VIOLATED`: a root element at its own statement ("`w1` placed here"), an element of a
+ * `place`d instance at the `place … as <name>` statement that made the instance ("`east` placed
+ * here"), never at the component body, whose one statement every instance shares. One note per
+ * root statement and per instance, so two elements of one instance are one note and `east.shell`
+ * beside `west.shell` are two (as are `east.inner` and `west.inner`, whose one `place` statement is in
+ * the component body: two notes there, each naming its instance). A keep is written only in the
+ * compiled source (a component body refuses one), so a
+ * statement that came in through an `import` gets no note (AF1's same-file rule): a root element
+ * with a `file`, or an instance whose `place` is in a module. Bounded by the keep's own targets
+ * (`MAX_KEEP_TARGETS`), which the measure has already charged; nothing is allocated per element of
+ * the plan, and an instance's `place` is read from the resolver's own map ({@link KeepStoreyCtx.placeOf}).
  */
-function placedSpans(ix: StoreyIndex, node: KeepNode): RelatedSpan[] | undefined {
+function placedSpans(ix: StoreyIndex, node: KeepNode, placeOf: KeepStoreyCtx["placeOf"]): RelatedSpan[] | undefined {
   const out: RelatedSpan[] = [];
+  // What each note is one of: an instance path, or a root statement's start.
+  const seen: (string | number)[] = [];
   for (const ref of refsOf(node)) {
     const id = ref.t === "room" ? ref.room : ref.t === "el" ? ref.id : undefined;
     const e = id === undefined ? undefined : ix.byId.get(id);
-    if (!e?.span || e._file !== undefined || out.some((x) => x.span.start === e.span!.start)) continue;
-    out.push({ span: e.span, message: `\`${id}\` placed here` });
+    if (!e) continue;
+    const inst = e._instance;
+    const span = inst !== undefined ? placeOf?.(inst) : e._file === undefined ? e.span : undefined;
+    if (!span) continue;
+    const key = inst ?? span.start;
+    if (seen.includes(key)) continue;
+    seen.push(key);
+    out.push({ span, message: `\`${inst ?? id}\` placed here` });
   }
   return out.length > 0 ? out : undefined;
 }
@@ -412,6 +427,9 @@ export interface KeepStoreyCtx {
   snap(v: number): number;
   /** Whether `id` is an element id the author wrote (never an auto id). */
   authored(id: string): boolean;
+  /** The `place` statement that made instance `instance` (its dotted path), when it is in the
+   *  compiled source: where a broken keep notes the instance's elements (AF7). */
+  placeOf?(instance: string): Span | undefined;
   /** Compass words alias the frame words (a root plan whose `north` is `up`), and why not. */
   compass: { aliases: boolean; why: string };
   /** The storey, on a multi-storey plan (the results carry it). */
@@ -948,7 +966,7 @@ export function evaluateKeeps(records: readonly KeepRecord[], ctx: KeepStoreyCtx
       refuseAt(ctx, node, r);
       continue;
     }
-    const placed = !r.holds && base.grade === "hard" ? placedSpans(ix, node) : undefined;
+    const placed = !r.holds && base.grade === "hard" ? placedSpans(ix, node, ctx.placeOf) : undefined;
     out.push({
       ...base,
       ...r,

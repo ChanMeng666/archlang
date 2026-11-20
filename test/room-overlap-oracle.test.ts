@@ -15,6 +15,7 @@
  * cannot be a vacuous one.
  */
 
+import { AF7_NOTE, withoutAf7Notes } from "./helpers/af7-notes.js";
 import { corpusFiles, walkFiles as walk } from "./helpers/corpus.js";
 import { worldFor } from "./helpers/world.js";
 import { readFileSync, readdirSync } from "node:fs";
@@ -174,11 +175,70 @@ const run = (rule: (e: ResolvedElement[], d: Diagnostic[]) => void, elements: Re
   return d;
 };
 
-/** Compare the three forms; `pairs` false skips the double loop (too slow for a large pile). */
+/** AF7 notes seen by {@link expectAf7Notes}, so a green run is not a vacuous one. */
+let af7Notes = 0;
+
+/**
+ * AF7 (RM-D69): the class pass adds one related note to each listed pair, "the other room placed
+ * here" at the statement of the pair's first room, when both rooms are in the compiled source and
+ * are not one statement (a component placed twice). The oracles predate AF7 and stay verbatim, so
+ * the note is checked here, not by editing them: the `i`-th listed diagnostic names the `i`-th
+ * overlapping pair of the double loop (`a < b`, ascending), whose first room it must point at.
+ * With `pairs` false (a pile too large for the double loop) the pair is found by the second room's
+ * span alone, and the note must point at a room earlier in the list.
+ */
+function expectAf7Notes(now: Diagnostic[], elements: ResolvedElement[], pairs: boolean): void {
+  const rooms = elements.filter((e): e is RRoom => e.kind === "room" && !e._unplaced);
+  const first: (RRoom | undefined)[] = [];
+  if (pairs) {
+    for (let a = 0; a < rooms.length && first.length < 2 * MAX_OVERLAP_PAIRS_LISTED; a++) {
+      for (let b = a + 1; b < rooms.length && first.length < 2 * MAX_OVERLAP_PAIRS_LISTED; b++) {
+        const r1 = rooms[a]!;
+        const r2 = rooms[b]!;
+        const b1 = { x: r1.at.x, y: r1.at.y, w: r1.size.w, h: r1.size.h };
+        const b2 = { x: r2.at.x, y: r2.at.y, w: r2.size.w, h: r2.size.h };
+        const overlapping =
+          r1.poly || r2.poly
+            ? rectsOverlap(b1, b2) && polygonsOverlap(r1.poly ?? rectRing(b1), r2.poly ?? rectRing(b2))
+            : rectsOverlap(b1, b2);
+        if (overlapping) first.push(r1, r2);
+      }
+    }
+  }
+  const index = new Map<number, number>();
+  rooms.forEach((r, i) => {
+    if (r.span && !index.has(r.span.start)) index.set(r.span.start, i);
+  });
+  const listed = now.filter((d) => d.span !== undefined);
+  listed.forEach((d, i) => {
+    const notes = (d.relatedSpans ?? []).filter((r) => AF7_NOTE.test(r.message));
+    // AF7's are the only notes a `W_ROOM_OVERLAP` carries.
+    expect(notes.length, d.message).toBe((d.relatedSpans ?? []).length);
+    if (pairs) {
+      const r1 = first[2 * i]!;
+      const r2 = first[2 * i + 1]!;
+      expect(d.span).toBe(r2.span);
+      const noted = r1.span && r1.span.start !== r2.span?.start && r1._file === undefined && r2._file === undefined;
+      expect(notes, d.message).toStrictEqual(noted ? [{ span: r1.span, message: "the other room placed here" }] : []);
+    } else {
+      expect(notes.length, d.message).toBe(1);
+      expect(notes[0]!.message).toBe("the other room placed here");
+      expect(index.get(notes[0]!.span.start)!).toBeLessThan(index.get(d.span!.start)!);
+    }
+    af7Notes += notes.length;
+  });
+  // The summary past the cap carries no span and so no note.
+  for (const d of now) if (d.span === undefined) expect(d.relatedSpans).toBeUndefined();
+}
+
+/** Compare the three forms; `pairs` false skips the double loop (too slow for a large pile). The
+ *  class pass is compared with AF7's notes taken out ({@link withoutAf7Notes}); the notes are
+ *  asserted on their own ({@link expectAf7Notes}). */
 function compare(elements: ResolvedElement[], pairs = true): Outcome {
   const now = run(checkRoomOverlaps, elements);
   const grid = run(checkRoomOverlapsGrid, elements);
-  expect(now).toStrictEqual(grid);
+  expect(withoutAf7Notes(now)).toStrictEqual(grid);
+  expectAf7Notes(now, elements, pairs);
   if (pairs) expect(grid).toStrictEqual(run(checkRoomOverlapsPairs, elements));
   return {
     same: true,
@@ -298,6 +358,8 @@ describe("W_ROOM_OVERLAP: the class pass against the grid pass and the double lo
       if (compare(mixed).counted) counted++;
     }
     expect(counted).toBeGreaterThanOrEqual(10);
+    // AF7: every listed pair of a pile is two statements, so each carries its note.
+    expect(af7Notes).toBeGreaterThan(1000);
   }, 120_000);
 
   it("near-coincident and overlapping rooms: distinct boxes, all in one cell", () => {

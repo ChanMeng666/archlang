@@ -6,7 +6,8 @@
  * digest back.
  *
  * A note is recognised by its wording, which AF7 owns: "`<id>` placed here" (`src/keep.ts`
- * `placedSpans`, and an unplaced room's absolute reference in `src/layout.ts`), "`<id>` placed
+ * `placedSpans`, where `<id>` is an instance's path for an element of a `place`d instance, and an
+ * unplaced room's absolute reference in `src/layout.ts`), "`<id>` placed
  * <dir> `<ref>` here" (`src/layout.ts` `placedNote`) and "the other room placed here"
  * (`src/ir/checks.ts`). AF1's notes ("placed here", "in instance "n1" placed here", "first declared
  * here", …) never match, so they are kept.

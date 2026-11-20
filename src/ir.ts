@@ -1599,6 +1599,7 @@ function resolveBody(
     instanceBodies.set(grp.frame!.prefix, {
       local: grp.entries.flatMap((e, i) => (dropped.has(e) ? [] : [done.local[i]!])),
       imported: grp.entries.some((e) => e.file !== undefined),
+      ...(grp.frame!.span && grp.frame!.file === undefined ? { place: grp.frame!.span } : {}),
     });
     instances.push({
       name: grp.frame!.prefix,
@@ -2021,6 +2022,7 @@ function resolveBody(
       ir,
       snap,
       authored: keepState.authored ?? authoredOf(),
+      placeOf: (instance) => instanceBodies.get(instance)?.place,
       compass: {
         aliases: north === "up",
         why:

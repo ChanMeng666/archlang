@@ -36,7 +36,7 @@ import { k3bDigestOf, k3DigestOf, keepCorpus } from "./helpers/keep-harness.js";
 const K3_DIGESTS: [string, string][] = [
   ["align-equal", "fb107b95c634dd09911133a1b45d18d5b9cb089b2da02b4f2bdbc59604a64255"], // AF7 (RM-D69): only added related notes (was 55af8ab0, AF7_MAIN)
   ["grid50-cx", "228ee2ace2ddb073968fb94ba4373256f03c6f2155fbd51ac21f987a9a536132"], // AF7 (RM-D69): only added related notes (was e795fbb0, AF7_MAIN)
-  ["instance", "663f52ba9b557ccad7bcc2f66525c45f048e5cba13bd536ea2d9651c52602b70"], // AF7 (RM-D69): only added related notes (was 90cc05d6, AF7_MAIN)
+  ["instance", "23b38922d5e070ea652b1560cc3f22e0129891cc0cf8f025f92be4c6d374f2b3"], // AF7 (RM-D69): only added related notes (was 90cc05d6, AF7_MAIN); AF7 round 1: `east.shell` and `west.shell` are noted at their two `place` statements, not once at the body (was 663f52ba)
   ["loops", "9e6d4833ecd871d814eb1555d848f54a3ad90957a018c54795141cf061eb9dec"],
   ["min-clear-arcbbox", "0c2e5d959babb03fa8a41b522c68646e3dbe69d270d319b0d6a518f246c899eb"], // #367, see the header
   ["min-clear-derived", "50217fb42eed03770f6adab3455b56d8f160d25a845872f6499006a3b56ef192"],
