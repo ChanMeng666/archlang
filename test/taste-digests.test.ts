@@ -219,6 +219,12 @@
  * its score. Measured with `tasteDigest`; with the rule taken out of `LINT_RULES` each reproduces the
  * value it replaces, on the case's old source and on its new header. Its twin, and every other row, held:
  * the rule fires on no other source here.
+ *
+ * RM9.10 (`W_EXTERIOR_DOOR_ABOVE_ENTRANCE`, an upstairs door onto nothing the plan draws, and the
+ * storeys walked from the entrance storey) added six rows, the new
+ * `circulation-privacy/upper-door-into-air` pair under each of the three profiles, measured with
+ * `tasteDigest`. No existing row moved: no other source here has a door to the outside above its
+ * entrance storey that opens onto nothing.
  */
 
 import { describe, expect, it } from "vitest";
@@ -426,6 +432,16 @@ const TABLE: ReadonlyArray<[string, string, string]> = [
     "b54520e551b01ba1456edc3758472edb421ce257c9275a6eff7a55b0fc642051",
     "generic",
     "test/defect-corpus/circulation-privacy/two-bed-chain.clean.arch",
+  ],
+  [
+    "f3c2680fe355a12b42249bbd382ed168bb744d2d059719f0a7082a27169fd5ea",
+    "generic",
+    "test/defect-corpus/circulation-privacy/upper-door-into-air.arch",
+  ],
+  [
+    "b517c0ee42843d8bd1cd803cca7c0a2cdf7b827a625aee0bee3ae5aa8abcd55e",
+    "generic",
+    "test/defect-corpus/circulation-privacy/upper-door-into-air.clean.arch",
   ],
   [
     "c368f0523412903c6978f8b03082e2a7ee7d11d577c396f98161dbb491f84dbb",
@@ -1648,6 +1664,16 @@ const TABLE: ReadonlyArray<[string, string, string]> = [
     "test/defect-corpus/circulation-privacy/two-bed-chain.clean.arch",
   ],
   [
+    "2b141ba9dc9b12516bfc0ba5e4a4c9f369f3be56ec152948ff1306bfcf2f9bcb",
+    "cn-residential-advisory",
+    "test/defect-corpus/circulation-privacy/upper-door-into-air.arch",
+  ],
+  [
+    "b8689b39d1a2abb615ae1627c039c2c0bacea7d233584cf5962b283002204c76",
+    "cn-residential-advisory",
+    "test/defect-corpus/circulation-privacy/upper-door-into-air.clean.arch",
+  ],
+  [
     "dc1efb9479eef27f3a80cffed7459987ff467cc60a1dfcea815bcab1df3401e8",
     "cn-residential-advisory",
     "test/defect-corpus/circulation-privacy/wc-off-dining.arch",
@@ -2866,6 +2892,16 @@ const TABLE: ReadonlyArray<[string, string, string]> = [
     "fb3a89dd6aa5f8902539935dd300fdb054c06b53ea69ad7740c4c10f9bcbe2f8",
     "us-residential-advisory",
     "test/defect-corpus/circulation-privacy/two-bed-chain.clean.arch",
+  ],
+  [
+    "23e4df5d701cbb05ed08a0a8311754caf0e27a12a29aea355aee2dc92d8aacdf",
+    "us-residential-advisory",
+    "test/defect-corpus/circulation-privacy/upper-door-into-air.arch",
+  ],
+  [
+    "ce72fc0a18351f77c1adc83b87ac29c84587fd5b16d487051ad78f8a93fd7c60",
+    "us-residential-advisory",
+    "test/defect-corpus/circulation-privacy/upper-door-into-air.clean.arch",
   ],
   [
     "1788df36a61c75ebeccc0c58d856b1790c890c39120a47712bc5b7edaca3bd26",

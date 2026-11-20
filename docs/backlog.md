@@ -758,16 +758,14 @@ person arrives by (ADR 0008's addendum). Left out, each re-run unless noted:
 - `two-storey`'s upper landing is a 200 mm strip between the void and the stair head, a
   one-cell pinch: re-run, the landing reads 900 and every room past it 700, narrower than any
   door on the way (740, 840).
-- Per-room reachability on an upper storey for intent `reachable` needs a new describe fact (the
-  rooms reached per storey from its arrival rooms); `levels[i].access.rooms[].reachable` counts
-  exterior doors only. Re-run: the intent now fails a storey with no way in, but removing an
-  upper room's only door still passes it.
-- `suggestTopology` reads the lowest storey only (`resolvePlan().ir`) and so never seeds from
-  arrival rooms. Re-run: removing the kitchen door on `two-storey`'s ground floor gets
-  suggestions; removing the upper bath door (`W_ROOM_DISCONNECTED` on level 2) gets none. It
-  also fixes its tolerance at `DEFAULT_TOL` (`src/suggest.ts`), while lint's access graph reads
-  the ruleset's `tolMm`, so under a custom tolerance the two can disagree on what connects
-  (code read).
+- Per-room reachability on an upper storey for intent `reachable`: done by RM9.10, waiting to
+  be archived (`levels[i].access.rooms[].reachable` is read per storey; a storey nobody arrives
+  on reaches none of its rooms).
+- `suggestTopology` per storey: done by RM9.10, waiting to be archived (each storey walked as
+  lint walks it, `level` and `insertAt` on a level plan, no door to the outside above the
+  entrance storey). Still open: it fixes its tolerance at `DEFAULT_TOL` (`src/suggest.ts`), while
+  lint's access graph reads the ruleset's `tolMm`, so under a custom tolerance the two can
+  disagree on what connects (code read).
 - `diffPlans` compares the lowest storey only (documented), so upper storeys are never diffed.
 - An ungrounded storey's balcony doors share one exterior node, so a room opening only onto
   balcony B counts as reachable from a room opening onto balcony A, and the room-aware fixpoint

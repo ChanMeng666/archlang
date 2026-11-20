@@ -688,8 +688,15 @@ in another room than `room`, the room it is boarded in: `{ below?, above? }`, th
 from the stop on that side, `null` where that flight ends in no room and absent where there is no
 such stop.
 
-**Reachability through a shaft.** A storey is *grounded* when its own access graph has an
-exterior entrance. Reachability then spreads along the connections to a fixpoint over
+**Reachability through a shaft.** A storey is *grounded* when it has a way in from the ground
+of its own. The **entrance storey** is the lowest storey with an exterior door that does not open
+onto an `outdoor balcony` (level numbers say nothing about where the ground is, so a basement
+with no door of its own is below it); it is grounded. A storey above it is grounded only by a
+door onto ground the plan draws outside it: an `outdoor` surface other than a balcony (a deck,
+paving, the lawn of a hillside). An upstairs door onto nothing the plan draws is no way in
+(`W_EXTERIOR_DOOR_ABOVE_ENTRANCE` names it): the storey is walked from its shafts, and a storey
+no shaft reaches, whatever doors it has, has no room reached (`levels[i].access.rooms[]`).
+Reachability then spreads along the connections to a fixpoint over
 storeys **and rooms**: a shaft carries you on only from a stop whose room you can walk to
 on its own storey — from the front door if the storey is grounded, or from a room another
 live shaft lands in. The rooms it lands in become **arrival rooms** — the floor's entrance,
