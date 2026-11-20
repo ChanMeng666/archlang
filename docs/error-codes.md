@@ -205,7 +205,7 @@ Every diagnostic carries a stable code. Look one up with `arch explain <CODE>`
 | [`W_EMPTY_PLAN`](#w_empty_plan) | warning | Empty plan. |
 | [`W_ENTRANCE_INTO_PRIVATE`](#w_entrance_into_private) | warning | The way in from outside opens into a bedroom, bathroom or WC. |
 | [`W_EXIT_APPROACH_BLOCKED`](#w_exit_approach_blocked) | warning | Furniture stands in the clear floor inside an exterior exit. |
-| [`W_EXTERIOR_DOOR_ONTO_ROOF`](#w_exterior_door_onto_roof) | warning | An exterior door opens onto the roof of the storey below. |
+| [`W_EXTERIOR_DOOR_ONTO_ROOF`](#w_exterior_door_onto_roof) | warning | An exterior door opens over a lower storey's footprint while its storey has another way in. |
 | [`W_EXTERIOR_RING_OPEN`](#w_exterior_ring_open) | warning | Exterior walls that stand on a room close nothing: the shell has a gap. |
 | [`W_FIXTURE_BACK_TO_ROOM`](#w_fixture_back_to_room) | warning | A fixture stands against a wall but faces the wrong way. |
 | [`W_FIXTURE_FLOATING`](#w_fixture_floating) | warning | A plumbing/kitchen fixture is not against a wall. |
@@ -3863,11 +3863,11 @@ furniture sofa at (1200,500) size 1800x900   # fixed: the exit's approach is cle
 
 ## W_EXTERIOR_DOOR_ONTO_ROOF
 
-*warning* — An exterior door opens onto the roof of the storey below.
+*warning* — An exterior door opens over a lower storey's footprint while its storey has another way in.
 
-**Cause.** On a multi-storey plan, a door or cased `opening` to the outside whose point just outside it (one wall thickness off the wall at its centre) lies on the footprint of a LOWER storey (one of its rooms, or inside its closed exterior wall ring) opens onto that storey's roof, and its own storey draws no `outdoor` surface there: no balcony, deck or terrace to stand on. It is no way in: the storey is walked from its stairs, lifts and escalators, so a room reached only through this door is `W_ROOM_UNREACHABLE`, and a storey no shaft reaches has no way in. The plan states no ground level, so a door that opens beyond every storey below (a walk-out storey, a garage under the house, a bridge, an upper flat reached by an outside stair) is a door from the ground and is not reported. A connector whose outward side cannot be told (a room on both sides, or on neither) is not reported either.
+**Cause.** On a multi-storey plan, a door or cased `opening` to the outside opens over a lower storey's footprint when the point just outside it (one wall thickness off the wall at its centre) lies on one of that storey's rooms, or inside its closed exterior wall rings read even-odd (a courtyard is a hole; a curved ring is not read), edges included, and its own storey draws no `outdoor` surface there. Such a door stops being a way in only when its storey still has another arrival: a door from the ground that opens over no footprint, or a stair, lift or escalator from a storey grounded by such a door. This warning names it then: the storey is walked from its other arrivals, so a room reached only through this door is `W_ROOM_UNREACHABLE`. Where the door is the storey's only arrival it keeps the role it always had (a bridge, an upper flat with no stair) and is not reported. The plan states no ground level, so the footprint may be a roof or the part of a lower storey that reaches further into a hill: if that is a roof, nobody arrives through the door. A connector whose outward side cannot be told (a room on both sides, or on neither) is not reported.
 
-**Fix.** Draw what it opens onto, an `outdoor balcony` or `deck` over the roof below (a roof terrace), or make it a window.
+**Fix.** Draw a deck or balcony there if it is a roof, or the ground (`outdoor paving`, `lawn`) if the site meets this storey there; or make it a window.
 
 ```arch static
 plan "P" {

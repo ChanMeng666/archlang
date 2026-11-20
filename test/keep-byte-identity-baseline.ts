@@ -10,7 +10,7 @@
  * PR legitimately moves a hashed output (never keep code), the table is re-taken by the generator, the
  * reason recorded below and the moved files listed in that commit's message.
  *
- * Taken: RM9.10 fix round 1 (RM-D72 revised) on feat/rm9.10-level-aware after merging f27346de: the defect-corpus pair circulation-privacy/door-onto-roof adds two rows; every other row held
+ * Taken: RM9.10 final round (RM-D72 second revision) on feat/rm9.10-level-aware: the defect-corpus pair circulation-privacy/door-onto-roof adds two rows; every other row held
  */
 
 /** `[path from the repository root, SHA-256 of the payload, evaluation steps]`, sorted by root. */
@@ -453,7 +453,7 @@ export const KEEP_WEAK_BASELINE: readonly (readonly [string, string, number])[] 
   ],
   [
     "test/defect-corpus/circulation-privacy/door-onto-roof.arch",
-    "bf88fdf79aaab9c94f88f47248c18a7a67832477bc9d77e41c1c3d6f03d791cf",
+    "64d715adab2db4c644141a48332c2830cff7c4406b5bc516bed6e683c68097f9",
     155,
   ],
   [
