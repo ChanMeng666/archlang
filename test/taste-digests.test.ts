@@ -219,6 +219,11 @@
  * its score. Measured with `tasteDigest`; with the rule taken out of `LINT_RULES` each reproduces the
  * value it replaces, on the case's old source and on its new header. Its twin, and every other row, held:
  * the rule fires on no other source here.
+ *
+ * RM9.10 (`W_EXTERIOR_DOOR_ONTO_ROOF`, a door onto the roof of a storey below, which grounds
+ * nothing) added six rows, the new `circulation-privacy/door-onto-roof` pair under each of the three
+ * profiles, measured with `tasteDigest`. No existing row moved: no other source here has a door onto
+ * a roof.
  */
 
 import { describe, expect, it } from "vitest";
@@ -386,6 +391,16 @@ const TABLE: ReadonlyArray<[string, string, string]> = [
     "81364ac9aba22562868f632fa05972c6f89e1a16db3b228817a8b7eda38c3879",
     "generic",
     "test/defect-corpus/circulation-privacy/bedroom-via-bedroom.clean.arch",
+  ],
+  [
+    "e9d8131808a2fd23949df880fdda2a2d938cbc4baa9bd0c1fab009c5cd92628f",
+    "generic",
+    "test/defect-corpus/circulation-privacy/door-onto-roof.arch",
+  ],
+  [
+    "b517c0ee42843d8bd1cd803cca7c0a2cdf7b827a625aee0bee3ae5aa8abcd55e",
+    "generic",
+    "test/defect-corpus/circulation-privacy/door-onto-roof.clean.arch",
   ],
   [
     "f71aaba4520f59654a7567bb3d7b1f3c2e6dce71cb2b20d93c262b95ca5b743b",
@@ -1608,6 +1623,16 @@ const TABLE: ReadonlyArray<[string, string, string]> = [
     "test/defect-corpus/circulation-privacy/bedroom-via-bedroom.clean.arch",
   ],
   [
+    "b1be1fc4cdf5b3738c7a06c57c55141d1e4786e86bc6c29e05e796e0ae428445",
+    "cn-residential-advisory",
+    "test/defect-corpus/circulation-privacy/door-onto-roof.arch",
+  ],
+  [
+    "b8689b39d1a2abb615ae1627c039c2c0bacea7d233584cf5962b283002204c76",
+    "cn-residential-advisory",
+    "test/defect-corpus/circulation-privacy/door-onto-roof.clean.arch",
+  ],
+  [
     "f29c63e5796e1d1865258f733313c15569aaf609c48c1425d762eebab6db4aba",
     "cn-residential-advisory",
     "test/defect-corpus/circulation-privacy/entry-into-bedroom.arch",
@@ -2826,6 +2851,16 @@ const TABLE: ReadonlyArray<[string, string, string]> = [
     "e90e7f3ac0a1f38e6b4c0cf270c0841977561f2cab8ccb9093c3effb854f1788",
     "us-residential-advisory",
     "test/defect-corpus/circulation-privacy/bedroom-via-bedroom.clean.arch",
+  ],
+  [
+    "9a7c72035e48a403031b458d3f6573f1eeb545b13840126aba43413bcbefb49f",
+    "us-residential-advisory",
+    "test/defect-corpus/circulation-privacy/door-onto-roof.arch",
+  ],
+  [
+    "ce72fc0a18351f77c1adc83b87ac29c84587fd5b16d487051ad78f8a93fd7c60",
+    "us-residential-advisory",
+    "test/defect-corpus/circulation-privacy/door-onto-roof.clean.arch",
   ],
   [
     "6a9d69a1463af5722188605a8c54bfe27355ca10985b37d479e74663b6a42d87",

@@ -23,7 +23,7 @@
  * about the plan, which is true of them.
  */
 
-import type { AccessEdge } from "../../analyze.js";
+import { type AccessEdge, EXTERIOR_NODE } from "../../analyze.js";
 import type { Diagnostic } from "../../diagnostics.js";
 import { capFirst } from "../../naming.js";
 import {
@@ -185,5 +185,52 @@ export const noEntrance: LintRule = {
       return [{ severity: "warning", code: "W_NO_ENTRANCE", message: gap.message, hints: [gap.hint] }];
     }
     return [];
+  },
+};
+
+/**
+ * A door or cased opening to the outside that opens over a lower storey's footprint while its
+ * storey has another arrival (RM9.10, ruling RM-D72): the point just outside it, one host-wall
+ * thickness off the wall at its centre (`pointOutside`, the probe `doorFacesBalcony` uses), lies on
+ * a LOWER storey's drawn footprint (one of its rooms, or inside its closed exterior rings read
+ * even-odd), its own storey draws no `outdoor` surface there, and the storey also has a door from
+ * the ground that opens over no footprint or a shaft from a storey grounded by one. Such a door is
+ * no way in (`buildingGround().notWayIn`): every walk leaves it out as a start. Where it is the
+ * storey's only arrival it keeps the role it always had and is not reported.
+ *
+ * The plan states no ground level, so the footprint below may be a roof or the part of a storey
+ * that reaches further into a hill: the message says what follows if it is a roof, never that it
+ * is one. A connector whose outward side the probe cannot tell (a room on both sides, or on
+ * neither) is not reported: nothing is guessed. A plan of one storey has none.
+ */
+export const exteriorDoorOntoRoof: LintRule = {
+  name: "exterior-door-onto-roof",
+  family: "reachability",
+  layer: "validity",
+  stage: "openings",
+  codes: ["W_EXTERIOR_DOOR_ONTO_ROOF"],
+  check(ctx: LintContext): Diagnostic[] {
+    const roof = ctx.building.roofDoors;
+    if (!roof || roof.size === 0) return [];
+    const { rooms, connectors, access, at, nameOf } = ctx;
+    const out: Diagnostic[] = [];
+    for (const c of connectors) {
+      const below = roof.get(c.id);
+      if (below === undefined) continue;
+      const e = access().edges.find((x) => x.exterior && x.doorId === c.id);
+      const roomId = e ? (e.between[0] === EXTERIOR_NODE ? e.between[1] : e.between[0]) : undefined;
+      const room = rooms.find((r) => r.id === roomId);
+      const what = c.kind === "door" ? "door" : "opening";
+      out.push({
+        severity: "warning",
+        code: "W_EXTERIOR_DOOR_ONTO_ROOF",
+        ...at(c),
+        message: `The exterior ${what}${room ? ` from ${nameOf(room)}` : ""} opens over the footprint of level ${below}; if that is a roof, nobody arrives through it: draw a deck or balcony there, or make it a window.`,
+        hints: [
+          `\`${c.id}\` opens over level ${below}: draw an \`outdoor deck\` or \`balcony\` outside it if that is a roof, or the ground (an \`outdoor paving\` or \`lawn\`) if the site meets this storey there; or make it a window. Until then nobody arrives through it: the storey is walked from its other ways in.`,
+        ],
+      });
+    }
+    return out;
   },
 };

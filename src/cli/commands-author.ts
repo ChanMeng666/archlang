@@ -607,7 +607,7 @@ export function cmdSuggest(args: Args, io: CliIo): number {
     }
     const lines: string[] = [];
     for (const s of suggestions) {
-      lines.push(`${s.code}: ${s.problem}`);
+      lines.push(`${s.code}: ${s.problem}${s.level !== undefined ? ` (level ${s.level})` : ""}`);
       for (const c of s.candidates) lines.push(`  ${c.insertText}\n    → ${c.rationale}`);
     }
     io.stdout.write(lines.join("\n") + "\n");

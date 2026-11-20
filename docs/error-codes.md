@@ -5,7 +5,7 @@
 Every diagnostic carries a stable code. Look one up with `arch explain <CODE>`
 (e.g. `arch explain E_ROOM_SIZE`). Errors abort rendering; warnings do not.
 
-**168 errors** · **104 warnings**
+**168 errors** · **105 warnings**
 
 | Code | Severity | Summary |
 | --- | --- | --- |
@@ -205,6 +205,7 @@ Every diagnostic carries a stable code. Look one up with `arch explain <CODE>`
 | [`W_EMPTY_PLAN`](#w_empty_plan) | warning | Empty plan. |
 | [`W_ENTRANCE_INTO_PRIVATE`](#w_entrance_into_private) | warning | The way in from outside opens into a bedroom, bathroom or WC. |
 | [`W_EXIT_APPROACH_BLOCKED`](#w_exit_approach_blocked) | warning | Furniture stands in the clear floor inside an exterior exit. |
+| [`W_EXTERIOR_DOOR_ONTO_ROOF`](#w_exterior_door_onto_roof) | warning | An exterior door opens over a lower storey's footprint while its storey has another way in. |
 | [`W_EXTERIOR_RING_OPEN`](#w_exterior_ring_open) | warning | Exterior walls that stand on a room close nothing: the shell has a gap. |
 | [`W_FIXTURE_BACK_TO_ROOM`](#w_fixture_back_to_room) | warning | A fixture stands against a wall but faces the wrong way. |
 | [`W_FIXTURE_FLOATING`](#w_fixture_floating) | warning | A plumbing/kitchen fixture is not against a wall. |
@@ -3858,6 +3859,53 @@ wall id=w exterior thickness 200 { (0,0) (6000,0) (6000,4000) (0,4000) close }
 room id=hall at (0,0) size 6000x4000 label "Hall" uses entry
 door at (3000,4000) width 1200 wall w swing outward
 furniture sofa at (1200,500) size 1800x900   # fixed: the exit's approach is clear
+```
+
+## W_EXTERIOR_DOOR_ONTO_ROOF
+
+*warning* — An exterior door opens over a lower storey's footprint while its storey has another way in.
+
+**Cause.** On a multi-storey plan, a door or cased `opening` to the outside opens over a lower storey's footprint when the point just outside it (one wall thickness off the wall at its centre) lies on one of that storey's rooms, or inside its closed exterior wall rings read even-odd (a courtyard is a hole; a curved ring is not read), edges included, and its own storey draws no `outdoor` surface there. Such a door stops being a way in only when its storey still has another arrival: a door from the ground that opens over no footprint, or a stair, lift or escalator from a storey grounded by such a door. This warning names it then: the storey is walked from its other arrivals, so a room reached only through this door is `W_ROOM_UNREACHABLE`. Where the door is the storey's only arrival it keeps the role it always had (a bridge, an upper flat with no stair) and is not reported. The plan states no ground level, so the footprint may be a roof or the part of a lower storey that reaches further into a hill: if that is a roof, nobody arrives through the door. A connector whose outward side cannot be told (a room on both sides, or on neither) is not reported.
+
+**Fix.** Draw a deck or balcony there if it is a roof, or the ground (`outdoor paving`, `lawn`) if the site meets this storey there; or make it a window.
+
+```arch static
+plan "P" {
+  units mm
+  level 1 {
+    wall id=s exterior thickness 200 { (0,0) (6000,0) (6000,5000) (0,5000) close }
+    room id=a at (0,0) size 6000x5000 label "Hall"
+    door id=front on s at 14000 width 900
+    stair id=st at (2000,200) size 2600x900 dir up
+  }
+  level 2 {
+    wall id=s exterior thickness 200 { (0,0) (6000,0) (6000,3000) (0,3000) close }
+    room id=b at (0,0) size 6000x3000 label "Study"
+    door id=d_out on s at 12000 width 900   # lint: a door onto the roof of level 1
+    stair id=st at (2000,200) size 2600x900 dir down
+  }
+}
+```
+
+**Fixed.**
+
+```arch static
+plan "P" {
+  units mm
+  level 1 {
+    wall id=s exterior thickness 200 { (0,0) (6000,0) (6000,5000) (0,5000) close }
+    room id=a at (0,0) size 6000x5000 label "Hall"
+    door id=front on s at 14000 width 900
+    stair id=st at (2000,200) size 2600x900 dir up
+  }
+  level 2 {
+    wall id=s exterior thickness 200 { (0,0) (6000,0) (6000,3000) (0,3000) close }
+    room id=b at (0,0) size 6000x3000 label "Study"
+    door id=d_out on s at 12000 width 900
+    outdoor deck at (0,3000) size 6000x2000 label "Roof terrace"   # fixed: a terrace on that roof
+    stair id=st at (2000,200) size 2600x900 dir down
+  }
+}
 ```
 
 ## W_EXTERIOR_RING_OPEN
