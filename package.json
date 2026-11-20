@@ -122,6 +122,7 @@
     "check:drift": "tsx scripts/check-drift.ts",
     "check:quick": "node scripts/check-quick.mjs",
     "digest:engines": "tsx scripts/engine-digests.ts",
+    "digest:preview": "tsx scripts/digest-preview.ts",
     "check:test-wiring": "node scripts/check-test-wiring.mjs",
     "sync:main": "node scripts/sync-main.mjs",
     "train": "node scripts/merge-train.mjs",
