@@ -11,9 +11,11 @@
  * On a storey with no door from the ground that a shaft nevertheless reaches, the room
  * the shaft lands in is the source — coming down the stairs and out of the front door
  * below IS a way out — so the same search answers the same question one storey up. Such a
- * storey's exterior doors open onto balconies: walked through, never started from (PS0.3,
- * `describe().access` counts from the same sources). A single-storey plan has no such
- * source and is unchanged.
+ * storey's exterior doors open onto balconies (or over a lower storey's footprint: RM9.10,
+ * `buildingGround`), each its own node: walked through, never started from (PS0.3, `describe().access`
+ * counts from the same sources). On a storey walked from the outside, a door over a lower storey's
+ * footprint that is no way in (`BuildingContext.roofDoors`) is no start either. A single-storey
+ * plan has no such source and is unchanged.
  */
 
 import {
@@ -69,15 +71,20 @@ export const reachability: LintRule = {
       // of one room and in at another), not ways in from the street (PS0.3).
       // Walked through, each balcony is its own node: a room opening only onto one balcony is not
       // reached from a room opening onto another (RM1.3b, `separateBalconies`).
+      // Walked from the outside, a door over a lower storey's footprint that is no way in (RM9.10,
+      // `BuildingContext.roofDoors`) is no start: nothing is reached through it.
       const exterior = arrivals.length === 0;
-      const walk = exterior
-        ? g
-        : storeyWalkDigraph(
-            rooms.map((r) => r.id),
-            access().edges,
-            ir,
-            false,
-          );
+      const roofDoors = building.roofDoors;
+      const walk =
+        exterior && (roofDoors === undefined || roofDoors.size === 0)
+          ? g
+          : storeyWalkDigraph(
+              rooms.map((r) => r.id),
+              access().edges,
+              ir,
+              exterior,
+              roofDoors,
+            );
       const reachAll = reachFrom(walk, { extraSources: arrivals, exterior });
       const reachNoBed = reachFrom(walk, { extraSources: arrivals, avoid: isBedroomId, exterior });
       // Per storey, as every rule here runs: a wet room on another floor excuses nothing.

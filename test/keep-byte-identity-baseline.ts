@@ -10,7 +10,7 @@
  * PR legitimately moves a hashed output (never keep code), the table is re-taken by the generator, the
  * reason recorded below and the moved files listed in that commit's message.
  *
- * Taken: AL3b leaders on e7083747, red-team round 1 fixes: labels led or placed again, and W_ANNOTATION_OVERLAP's catalogue fix text
+ * Taken: RM9.10 final round (RM-D72 second revision) on feat/rm9.10-level-aware: the defect-corpus pair circulation-privacy/door-onto-roof adds two rows; every other row held
  */
 
 /** `[path from the repository root, SHA-256 of the payload, evaluation steps]`, sorted by root. */
@@ -450,6 +450,16 @@ export const KEEP_WEAK_BASELINE: readonly (readonly [string, string, number])[] 
     "test/defect-corpus/circulation-privacy/bedroom-via-bedroom.clean.arch",
     "90ee8540836915f0d7f88c0238457d9b8acb1c5c30723ac3bc75c5c0d029a10c",
     204,
+  ],
+  [
+    "test/defect-corpus/circulation-privacy/door-onto-roof.arch",
+    "64d715adab2db4c644141a48332c2830cff7c4406b5bc516bed6e683c68097f9",
+    155,
+  ],
+  [
+    "test/defect-corpus/circulation-privacy/door-onto-roof.clean.arch",
+    "2584b5526aeab25bf33d5a2fe06995d51a505836a7a564ce6c90f4f9bd68beb0",
+    182,
   ],
   [
     "test/defect-corpus/circulation-privacy/entry-into-bedroom.arch",

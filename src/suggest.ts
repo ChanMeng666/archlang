@@ -43,15 +43,19 @@ import {
   roomBox,
   resolvePlan,
   wetRoomsOnlyViaBedroom,
+  storeyWalkDigraph,
+  buildingGround,
   type AnalyzeOptions,
 } from "./analyze.js";
+import { buildingContexts } from "./lint/storeys.js";
+import type { LevelNode } from "./ast.js";
 import type { BBox } from "./geometry/rect.js";
 import { segmentsOfWall, type WallSegment } from "./geometry.js";
 import { collinearOverlapLength, polygonEdges } from "./geometry/polygon.js";
 import { projectPointOntoWall, type AttachableWall } from "./fix-producers.js";
 import { fmt3 as numStr } from "./num-format.js";
 import type { Point } from "./ast.js";
-import type { RDoor, RFurniture, ROpening, RRoom, RWall, RWindow } from "./ir.js";
+import type { RDoor, RFurniture, ROpening, RRoom, RWall, RWindow, ResolvedPlan } from "./ir.js";
 import { openRunsOf } from "./analyze.js";
 import { isLivingOrDining } from "./analyze/nav-grid.js";
 
@@ -75,6 +79,13 @@ export interface Suggestion {
   /** Id of the room the suggestion is about. */
   roomId: string;
   candidates: SuggestionCandidate[];
+  /** On a plan of `level` blocks only: the storey the room is on (RM9.10). Ids repeat across
+   *  storeys, so this says which storey's room `roomId` names. */
+  level?: number;
+  /** On a plan of `level` blocks only: where a candidate statement goes, the source offset of that
+   *  storey's closing `}` (insert the statement and a newline before it). A plan-level statement
+   *  beside `level` blocks is `E_LEVEL_MIX`, so the plan's own closing brace is no place for it. */
+  insertAt?: number;
 }
 
 /** Preferred nominal widths for a suggested opening (mm). */
@@ -340,9 +351,65 @@ export type SuggestOptions = AnalyzeOptions;
  * when the plan has errors (nothing to reason about) or no faults. Deterministic.
  */
 export function suggestTopology(source: string, opts: SuggestOptions = {}): Suggestion[] {
-  const { ir } = resolvePlan(source, opts);
+  const { ir, levels, plan } = resolvePlan(source, opts);
   if (!ir) return [];
+  if (levels.length === 0) return suggestStorey(ir, OUTSIDE);
+  // A plan of `level` blocks, storey by storey (RM9.10), each read as `lint` reads it: walked from
+  // its own doors on a storey with a way in from the ground, from the rooms the shafts land in on a
+  // storey reached by one, and not at all on a storey nobody arrives on. A door to the outside is
+  // offered only on a storey with a way in from the ground (or, when no storey has one, the
+  // lowest), and never onto the roof of a storey below (`W_EXTERIOR_DOOR_ONTO_ROOF`). One `level`
+  // block reads as the same plan without it; only where its statements go differs.
+  const contexts = levels.length > 1 ? buildingContexts(levels, DEFAULT_TOL) : undefined;
+  const ground = levels.length > 1 ? buildingGround(levels, DEFAULT_TOL) : undefined;
+  const anyGrounded = levels.some((l) => contexts?.get(l.level)?.grounded === true);
+  const closes = new Map<number, number>();
+  for (const st of plan?.body ?? []) {
+    if (st.kind !== "level" || !st.span) continue;
+    const at = source.lastIndexOf("}", st.span.end - 1);
+    if (at >= st.span.start) closes.set((st as LevelNode).level, at);
+  }
+  return levels.flatMap((l) => {
+    const b = contexts?.get(l.level);
+    const arrivals = b?.arrivalRooms ?? [];
+    const ontoRoof = (c: Pick<RDoor, "host" | "at">): boolean => ground?.roofUnder(l.level, c) != null;
+    const view: StoreyView =
+      b === undefined
+        ? OUTSIDE
+        : b.grounded
+          ? { ...OUTSIDE, ontoRoof, notWayIn: ground?.notWayIn(l.level) }
+          : {
+              from: arrivals.length > 0 ? "arrivals" : "nowhere",
+              arrivals,
+              exteriorOk: !anyGrounded && l === levels[0],
+              ontoRoof,
+            };
+    const insertAt = closes.get(l.level);
+    return suggestStorey(l.ir, view).map((x) => ({
+      ...x,
+      level: l.level,
+      ...(insertAt !== undefined ? { insertAt } : {}),
+    }));
+  });
+}
 
+/** How one storey is walked ({@link suggestTopology}): from the outside (a single-storey plan, or
+ *  a storey with a way in from the ground), from the rooms shafts land in, or from nowhere; and
+ *  whether a door to the outside may be offered there. */
+interface StoreyView {
+  from: "outside" | "arrivals" | "nowhere";
+  arrivals: readonly string[];
+  exteriorOk: boolean;
+  /** Would a door at this place open over a lower storey's footprint? Never offered there. */
+  ontoRoof?: (c: Pick<RDoor, "host" | "at">) => boolean;
+  /** The storey's doors over a lower storey's footprint that are no way in (RM9.10). */
+  notWayIn?: ReadonlyMap<string, number>;
+}
+const OUTSIDE: StoreyView = { from: "outside", arrivals: [], exteriorOk: true };
+
+/** {@link suggestTopology} for one resolved storey, walked as `view` says. A single-storey plan is
+ *  {@link OUTSIDE}, exactly the walk it always had. */
+function suggestStorey(ir: ResolvedPlan, view: StoreyView): Suggestion[] {
   const rooms = ir.elements.filter((e): e is RRoom => e.kind === "room");
   // Every candidate this module composes is derived from a room's four RECTANGLE edges
   // (`edgesOf`) — where on that side a door or window could go. A polygon room has no
@@ -365,20 +432,50 @@ export function suggestTopology(source: string, opts: SuggestOptions = {}): Sugg
   const categoryCount = new Map<string, number>();
   for (const w of walls) categoryCount.set(w.category, (categoryCount.get(w.category) ?? 0) + 1);
   const access = buildDoorAccessGraph(rooms, doors, tol, undefined, openings, openRunsOf(ir, tol), outdoorsOf(ir));
-  const reachable = new Set(access.rooms.filter((r) => r.reachable).map((r) => r.id));
+  // Walked from the rooms shafts land in, a storey's doors to the outside are ways through, never
+  // starts, one node per balcony (`storeyWalkDigraph`, as `lint`'s reachability walks it).
+  const fromArrivals = view.from === "arrivals";
+  const seeds = fromArrivals ? { extraSources: view.arrivals, exterior: false } : {};
+  // Walked from the outside, a door over a lower storey's footprint that is no way in (RM9.10) is
+  // no start, as `lint` walks it.
+  const notWayIn = view.notWayIn ?? new Set<string>();
+  const graph =
+    fromArrivals || notWayIn.size > 0
+      ? storeyWalkDigraph(
+          rooms.map((r) => r.id),
+          access.edges,
+          ir,
+          !fromArrivals,
+          notWayIn,
+        )
+      : accessDigraph(
+          rooms.map((r) => r.id),
+          access.edges,
+        );
+  const reachable =
+    fromArrivals || notWayIn.size > 0
+      ? reachFrom(graph, seeds)
+      : new Set(access.rooms.filter((r) => r.reachable).map((r) => r.id));
   // What a new door gives access THROUGH (PS0.6): a neighbour reached only by passing a bedroom
   // (or a wet room) is as private as one, whatever it is itself.
-  const graph = accessDigraph(
-    rooms.map((r) => r.id),
-    access.edges,
-  );
   const byId = new Map(rooms.map((r) => [r.id, r]));
   const avoiding = (test: (r: RRoom) => boolean) =>
-    reachFrom(graph, { avoid: (id) => (byId.has(id) ? test(byId.get(id)!) : false) });
+    reachFrom(graph, { ...seeds, avoid: (id) => (byId.has(id) ? test(byId.get(id)!) : false) });
   const noBedroom = avoiding(isBedroom);
   const noWetRoom = avoiding(isWetRoom);
   const throughTier = (n: RRoom): number =>
     !noBedroom.has(n.id) ? 4 : !noWetRoom.has(n.id) ? Math.max(3, wayInTier(n)) : wayInTier(n);
+  // Would a door on `wall` at `point` of room edge `e` open onto the roof of a storey below? Read
+  // on the segment of the wall that stands there, as a placed door's host would be.
+  const onRoof = (wall: RWall, e: Edge, point: Point): boolean => {
+    if (!view.ontoRoof) return false;
+    const t = e.axis === "h" ? point.x : point.y;
+    const seg = segmentsOfWall(wall).find((x) => {
+      const on = segOnEdge(x, e, tol);
+      return on !== null && t >= on.lo && t <= on.hi;
+    });
+    return seg !== undefined && view.ontoRoof({ host: seg, at: point });
+  };
   // Every connector (door/opening) that can block a new opening's site.
   const connectors = [...doors, ...openings, ...windows].map((c) => ({ at: c.at, width: c.width }));
 
@@ -394,7 +491,7 @@ export function suggestTopology(source: string, opts: SuggestOptions = {}): Sugg
   // resolves onto an exterior wall), the same definition the W_ROOM_UNREACHABLE gate
   // below uses — not entrance.ts's declared host-category check. They agree except on
   // contrived geometry (e.g. a door declared `wall exterior` but sited off every one).
-  if (!access.hasEntrance && hasExteriorWall) {
+  if (!access.hasEntrance && hasExteriorWall && view.exteriorOk && view.from !== "arrivals") {
     const suitable: Array<RawCandidate & { roomId: string }> = [];
     const rest: Array<RawCandidate & { roomId: string }> = [];
     for (const room of rectRooms) {
@@ -409,6 +506,7 @@ export function suggestTopology(source: string, opts: SuggestOptions = {}): Sugg
         const free = longestFreeRun(e.lo, e.hi, blocked);
         if (!free || free.len < DOOR_WIDTH) continue;
         const point = edgePoint(e, free.mid);
+        if (onRoof(host.wall, e, point)) continue;
         const { pct } = projectPointOntoWall(host.wall as AttachableWall, point);
         bucket.push({
           insertText: composeOpening("door", host.wall, pct, point, DOOR_WIDTH, categoryCount),
@@ -444,7 +542,10 @@ export function suggestTopology(source: string, opts: SuggestOptions = {}): Sugg
     // Only meaningful when an entrance exists — with no way into the building the
     // lint emits W_NO_ENTRANCE for the whole plan, not per-room unreachability, so
     // this builder stays silent to fire iff the lint fires (see W_NO_ENTRANCE below).
-    if (access.hasEntrance && node && !node.reachable) {
+    const sealed = fromArrivals
+      ? !reachable.has(room.id)
+      : view.from === "outside" && access.hasEntrance && node && !reachable.has(room.id);
+    if (sealed) {
       // Interior candidates connect to a room that already reaches the entrance;
       // exterior candidates cut a brand-new outside door. For a PRIVATE room
       // (bedroom/wet room) the interior reconnection is architecturally preferred,
@@ -461,7 +562,7 @@ export function suggestTopology(source: string, opts: SuggestOptions = {}): Sugg
         if (!host) continue;
         const outward = e.fixed === (e.axis === "h" ? rect.y : rect.x) ? -1 : 1;
         const across = neighbourRunsOnEdge(e, rooms, room.id, tol, outward);
-        const isExteriorEdge = across.length === 0 && host.wall.category === "exterior";
+        const isExteriorEdge = across.length === 0 && host.wall.category === "exterior" && view.exteriorOk;
         const blocked = [...blockedRuns(e, connectors, tol), ...furnitureBlockedRuns(e, rect, furniture)];
         const runs: Array<{ to: string | null; lo: number; hi: number }> = isExteriorEdge
           ? [{ to: null, lo: e.lo, hi: e.hi }]
@@ -479,6 +580,7 @@ export function suggestTopology(source: string, opts: SuggestOptions = {}): Sugg
         }
         for (const [to, { host, ...free }] of best) {
           const point = edgePoint(e, free.mid);
+          if (to === null && onRoof(host.wall, e, point)) continue;
           const { pct } = projectPointOntoWall(host.wall as AttachableWall, point);
           const via = to
             ? `connects "${label}" to "${to}" (which reaches the entrance)`
@@ -564,17 +666,14 @@ export function suggestTopology(source: string, opts: SuggestOptions = {}): Sugg
   // door on a wall it shares with a non-bedroom space that still reaches the entrance
   // (preferred), with exterior-wall doors as a fallback. Only runs when an entrance exists.
   // The same `"probe"` graph and search as the lint rule.
-  const g = accessDigraph(
-    rooms.map((r) => r.id),
-    access.edges,
-  );
+  const g = graph;
   const isBedroomId = (id: string): boolean => {
     const r = rooms.find((x) => x.id === id);
     return r ? isBedroom(r) : false;
   };
-  if (g.out(EXTERIOR_NODE).length > 0) {
-    const reachAll = reachFrom(g);
-    const reachNoBed = reachFrom(g, { avoid: isBedroomId });
+  if (fromArrivals || (view.from === "outside" && g.out(EXTERIOR_NODE).length > 0)) {
+    const reachAll = reachFrom(g, seeds);
+    const reachNoBed = reachFrom(g, { ...seeds, avoid: isBedroomId });
     const viaBedroom = wetRoomsOnlyViaBedroom(rooms, reachAll, reachNoBed);
     for (const room of rectRooms) {
       if (!viaBedroom.has(room.id)) continue;
@@ -587,12 +686,13 @@ export function suggestTopology(source: string, opts: SuggestOptions = {}): Sugg
         if (!host) continue;
         const neighbours = neighboursOnEdge(e, rooms, room.id, tol);
         const goodNeighbour = neighbours.find((id) => reachNoBed.has(id) && !isBedroomId(id));
-        const isExteriorEdge = neighbours.length === 0 && host.wall.category === "exterior";
+        const isExteriorEdge = neighbours.length === 0 && host.wall.category === "exterior" && view.exteriorOk;
         if (!goodNeighbour && !isExteriorEdge) continue;
         const blocked = [...blockedRuns(e, connectors, tol), ...furnitureBlockedRuns(e, rect, furniture)];
         const free = longestFreeRun(e.lo, e.hi, blocked);
         if (!free || free.len < DOOR_WIDTH) continue;
         const point = edgePoint(e, free.mid);
+        if (!goodNeighbour && onRoof(host.wall, e, point)) continue;
         const { pct } = projectPointOntoWall(host.wall as AttachableWall, point);
         const rationale = goodNeighbour
           ? `A door on ${named(host.wall, false)} links "${label}" to "${goodNeighbour}", giving it a route that avoids the bedroom.`
