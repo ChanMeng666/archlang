@@ -1183,7 +1183,7 @@ TR6（`../ci-throughput-research.md` §13.2）：代码 PR 的真失败里最大
 
 TR6：生成物漂移与 backlog 索引过时的红（rr24、rr9、ev7、co1、rm9.2、af3）都是 `main` 在 PR 底下挪了。做法：执行者的简报与 `docs/agents/commands.md` 写明“最后一次推之前 `git merge origin/main` 并跑 `gen:all` 里改动涉及的生成器”；或者让 `check:quick` 在分支落后 `origin/main` 时提示。另记：§13.2 量到 2026-11-17 后 30 个合并只有 2 个走列车，直接合并让部署多等约 9 分钟（`main` 红率仍为 0）；要不要回到“代码 PR 走列车”，由下一位协调者判断。
 
-### TR14 · Actions 缓存不超上限（2026-11-19 加，出自 #963 评审） — `done` · #982（列车 #984，`0d9e27c7`，2026-11-19；`main` 的 push 与定时运行裁掉旧的 CodeQL overlay 缓存；2026-11-21 读数 39 项、6.96 GB，验收要的一周后读数还没到） · 未估 · sonnet · 依赖无（线下）
+### TR14 · Actions 缓存不超上限（2026-11-19 加，出自 #963 评审） — `doing` · #982 已合并（列车 #984，`0d9e27c7`，2026-11-19T19:40Z UTC；`main` 的 push 与定时运行裁掉旧的 CodeQL overlay 缓存；2026-11-20 UTC 读数 39 项、6.96 GB）；验收要的一周后读数约 2026-11-26 到期，读到并满足才改 `done` · 未估 · sonnet · 依赖无（线下）
 
 仓库缓存 10.46 GB / 10 GB，41 项；`main` 上 14 个 `codeql-overlay-*` 占 5.3 GB，挤掉 Playwright 与 apt 缓存（夜间的 `playwright-all` 已经被重建过一次）。做法：定时 job 用 `gh cache delete` 只留最新 1–2 个 overlay，或关掉 CodeQL 的 overlay 缓存。验收：一周后缓存总量低于 8 GB，`apt-debs-*` 四组都还在。
 
@@ -1239,7 +1239,7 @@ MCP 工具用 `new-mcp-tool` skill 加；`docs/error-codes.md` 经 `gen:*` 生�
 
 ### B 波 · 修复推进到语义失分
 
-### AF9 · 被拒的开口与门道堵塞：带占位符的修复（并入 EV.5） — `done`（阶段 A） · 设计稿 #986（`9da321b7`，2026-11-19，`../ai-first-language/af9-design.md`）；阶段 A #992（`91ed1210`，2026-11-20；没有 machine-applicable 的修复，L1 不动；最终模糊测试 188 个修复、0 个硬性失败、11 个留下警告）；阶段 B 不排（RM-D70）；余项 backlog SR.13 · 设计 1 日、代码 4 日 · opus · 代码依赖设计稿
+### AF9 · 被拒的开口与门道堵塞：带占位符的修复（并入 EV.5） — `done`（阶段 A） · 设计稿 #986（`9da321b7`，2026-11-19，`../ai-first-language/af9-design.md`）；阶段 A #992（`91ed1210`，2026-11-20；没有 machine-applicable 的修复，L1 不动；最终模糊测试 188 个修复、0 个硬性失败、11 个留下警告）；阶段 B 不排（RM-D70）；余项 backlog SR.13，`rankFixes` 的小卡是 SR.17 · 设计 1 日、代码 4 日 · opus · 代码依赖设计稿
 
 EV.5 的门照旧：先有设计稿或 ADR，代码在后。PR 里如实写 L1 数字是否移动（L1 只应用 machine-applicable 的修复）。不许：跨房间边界移动开口，除非设计稿明确允许；把不能证明唯一的移动标成 machine-applicable。
 
@@ -1349,7 +1349,7 @@ EV.5 的门照旧：先有设计稿或 ADR，代码在后。PR 里如实写 L1 �
 
 写进 `skills/archlang/SKILL.md` 的开头和 `arch context` 的 workflow 一节；spec 只在余量允许时加一句。内容包括：先确认单位，以及用户给的尺寸是标称还是净尺寸。经 `gen:*` 生成。不许：抬高 spec 的上限；手抄生成的内容。
 
-### RM9.6 · 检查覆盖率冲刺（N1、N3） — `todo`（进行中：CV13 `W_TABLE_NO_SEAT` 是草稿 #993，按 RM-D73 拆成先改示例、再加规则两个 PR，见 backlog SR.14） · 10–15 日 · opus · 依赖 RM9.0
+### RM9.6 · 检查覆盖率冲刺（N1、N3） — `doing`（CV13 `W_TABLE_NO_SEAT` 是草稿 #993，按 RM-D73 拆成先改示例、再加规则两个 PR，见 backlog SR.14） · 10–15 日 · opus · 依赖 RM9.0
 
 按 RM9.0 的判定逐类实施：加 lint 的那些类，每条规则一张小卡，带 §0 规则卡的门（公开的一对夹具，留出的一对放私有仓库，跑遍 `examples/**` 的报出数）；声明不查的那些类，写进一份公开的"不检查清单"（`docs/says-no.md` 或参考文档里）。验收：RM1.1b 的报出数。不许：为了拉高报出数去放宽规则的误报标准；把留出集写进公开仓库。
 

@@ -64,7 +64,7 @@
 **CV08 · 沙发正面贴着墙（3 个，全是 N）**
 - *候选规则：* `W_SEAT_FACING_WALL`。`sofa`、`sofa_l`、`loveseat`、`armchair` 的正面贴着墙面（按画出的几何，中间没有地板）时报出。正面按画出的转角读（`rotate 0` 背朝北），不按包围盒读。不用 `tolMm`：它在默认规则集里是 200 mm（`arch lint --rules`），对"贴住"来说太宽。
 - *出处等级：* 无新数字。正面贴墙时人坐不进去，这是几何事实。PS2.32 提的 600 mm 版本没有读过的出处，按原则 10 不能进新规则。
-- *误报风险：* 中等，所以排在第 3。这个写法在已发布的示例里就有：`examples/townhouse.arch:93`（`sofa … anchor bottom flush`）会报，`examples/terrace-row.arch:125` 也贴着底边，要读它的转角再定。`garden-loft`、`relational`、`laneway-house` 的沙发离墙 250–300 mm，贴住版本不报，600 mm 版本会报。规则卡要先跑遍 `examples/**`：如果这些确实是面朝墙的沙发，就像 ST.1 那样在同一个 PR 里修好示例，逐张列出 digest 的变化。
+- *误报风险：* 中等，所以排在第 3。这个写法在已发布的示例里就有：`examples/townhouse.arch:93`（`sofa … anchor bottom flush`）会报，`examples/terrace-row.arch:125` 也贴着底边，要读它的转角再定。`garden-loft`、`relational`、`laneway-house` 的沙发离墙 250–300 mm，贴住版本不报，600 mm 版本会报。规则卡要先跑遍 `examples/**`：如果这些确实是面朝墙的沙发，就按 RM-D73（`../README.md` §6.32，取代了原来"在同一个 PR 里修"的写法）拆开：先开一个只改示例的 PR，逐张列出 digest 的变化，规则 PR 再变基到它上面。
 - *与目录的关系：* `sofa` 不是 `directional`，这是有意的：沙发是摆的，不是装的，背朝房间可以是隔断式的布置，不算缺陷（`src/fixtures-catalog.ts:76-79`）。所以 `anchor bottom` 不给沙发转向，沙发停在 `rotate 0`，正面贴着它所靠的墙；这一类的 3 个缺陷都是这样写出来的。这条规则只管正面贴墙，不碰"背朝房间"的判断，与目录的那条决定不冲突。
 - *公开夹具：* `clearances/seat-faces-wall`：一张 `loveseat` 的正面贴着一面隔墙；孪生图把它转 180°，背靠这面隔墙。
 
@@ -103,7 +103,7 @@
 **CV14 · 上层在楼梯上方没有洞口（1 个，m）**
 - *候选规则：* `W_STAIR_NO_VOID`。一段楼梯从下层爬到上层，上层在梯段上方没有 `void` 时报出，报在上层的楼梯上。
 - *出处等级：* 无新数字。上层的楼板盖在梯段上，人就上不去，这是几何事实。
-- *误报风险：* 规则本身的误报低，但它会落在已发布的示例上：`examples/` 里有三张多层、有楼梯而不写 `void` 的图（`garden-house`、`townhouse`、`turning-stair`）。规则卡要先用 `arch lint --json` 跑遍 `examples/**`，如果这三张确实缺洞口，就在同一个 PR 里修好示例，逐张列出 digest 的变化。
+- *误报风险：* 规则本身的误报低，但它会落在已发布的示例上：`examples/` 里有三张多层、有楼梯而不写 `void` 的图（`garden-house`、`townhouse`、`turning-stair`）。规则卡要先用 `arch lint --json` 跑遍 `examples/**`，如果这三张确实缺洞口，就按 RM-D73 拆开：先开一个只改示例的 PR，逐张列出 digest 的变化，规则 PR 再变基到它上面。
 - *公开夹具：* `stair-safety/no-void-at-head`：一段 `winders` 转角楼梯从 0 层到 1 层，1 层不写 `void`；孪生图在梯段上方写 `void`。
 
 **CV15 · 无障碍卫生间的转移空间、门的开向与坐便位置（2 个，1 N / 1 m）**
@@ -145,10 +145,10 @@
 |---|---|---|---|---|---|---|
 | 1 | CV12 | 1（1） | 推断用途后跑 `W_ROOM_MISSING_DEFINING`，或 `W_ROOM_USE_MISSING` | 无新数字 | 低到中 | PS2.30 的验收（洗白路线） |
 | 2 | CV13 | 1（1） | `W_TABLE_NO_SEAT` | 无新数字 | 低 | 只认餐桌词（`dining_table`、`table`） |
-| 3 | CV08 | 3（3） | `W_SEAT_FACING_WALL` | 无新数字 | 中（落在示例上） | 跑遍 `examples/**`，同一个 PR 修示例 |
+| 3 | CV08 | 3（3） | `W_SEAT_FACING_WALL` | 无新数字 | 中（落在示例上） | 跑遍 `examples/**`；按 RM-D73 拆开，先开只改示例的 PR，再开规则 PR |
 | 4 | CV11 | 2（1） | `W_HOB_NO_LANDING` | `V`（NKBA 第 17 条，381 mm 补记一行） | 中 | 与 `W_HOB_FRIDGE_GAP` 分工；侧墙的情况留给 PS2.59 |
 | 5 | CV16 | 1（0） | PS2.42 的入口语境 | 无新数字 | 低 | 在警告与改读入口之间二选一 |
-| 6 | CV14 | 1（0） | `W_STAIR_NO_VOID` | 无新数字 | 低（但会落在三个示例上） | 同一个 PR 修示例，逐张列 digest |
+| 6 | CV14 | 1（0） | `W_STAIR_NO_VOID` | 无新数字 | 低（但会落在三个示例上） | 按 RM-D73 拆开：先开只改示例的 PR（逐张列 digest），再开规则 PR |
 | 7 | CV10 | 1（1；衣柜一半不算） | `W_WC_FRONT_CLEARANCE` | 目标 `V`（Diagram 2.5） | 低到中 | 先读出正前方的数字 |
 | 8 | CV09 | 4（2） | `W_BED_SIDE_ACCESS`（只在 profile 下） | 目标 `V`，今天是 `M` | 默认下中等，所以只放 profile | 先读 M4(2) 原文 |
 | 9 | CV15 | 2（1） | `W_ACCESSIBLE_WC_TRANSFER`，加坐便后墙距离（只在 profile 下） | 要另找：第 2 卷没读过 | 低 | 先读 Approved Document M 第 2 卷；与 PS2.36 合并 |

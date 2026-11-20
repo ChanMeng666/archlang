@@ -281,10 +281,12 @@ bytes and is a place a model can guess wrong; P4 and Gleam's "one way to do it" 
 
 AF26 audits them; any change to the grammar they lead to is a separate, ruled card.
 
-**Fixed since (read 2026-11-21):** finding 1 by AF1 (#944); finding 2 by AF6 (#946); the `dor`,
-`sofaa` and `right-of hal` items by AF2 (#978); `wdth`'s spurious error by AF3 (#951); the stale
-counts by AF5 (#974) and AF0 (#983); U.2/U.5 by AF0 (U.2a holds U.2's rest, U.5 is narrowed); the kind word after
-`width` by EV.8 (#943, same line only). Finding 3 is AF10's, not started.
+**Fixed since (read 2026-11-20 UTC):** finding 1 by AF1 (#944); finding 2 by AF6 (#946); the `dor`,
+`sofaa` and `right-of hal` items by AF2 (#978); `wdth`'s spurious error by AF3 (#951);
+`size (A)x3000` by AF4 (#987: the E_PARSE carries `expected` and a maybe-incorrect split fix, `x 3000`);
+the stale counts by AF5 (#974) and AF0 (#983); U.2/U.5 by AF0 (U.2a holds U.2's rest, U.5 is
+narrowed); the kind word after `width` by EV.8 (#943, same line only). Finding 3 is AF10's, not
+started.
 
 ## 7. Card design (AF0…AF26)
 

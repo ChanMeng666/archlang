@@ -85,7 +85,7 @@ README 退出条件（"每条诉求都能指向一张 `done` 卡、一条等待�
 |---|---|---|
 | §1.3 分发与可信度，收入其次 | `DEC/2026-10-09-archlang-distribution-first-and-open-finish.md` (a)；重申于 `DEC/2026-11-01-day-90-verdict-stop.md`、`DEC/2026-11-01-archlang-keeps-being-built.md` | |
 | §1.3 可按价值新增语言形式（D29） | `DEC/2026-11-01-archlang-keeps-being-built.md` | 风险句见 `strategy/master-plan.md` §1 |
-| §1.3 消费者产品曾 STOP；ArchCanvas 自 2026-11-16 重启，依赖核心 `^1.64.0`、3D `^0.9.0` | `DEC/2026-11-01-day-90-verdict-stop.md`；本仓库 D28（`docs/agents/iron-laws.md` Owner policies） | 2026-11-01 时钉在 core 1.48；2026-11-16 起开发重启，版本取自其依赖声明（2026-11-21 读它 `main` 的 `package.json`） |
+| §1.3 消费者产品曾 STOP；ArchCanvas 自 2026-11-16 重启，依赖核心 `^1.64.0`、3D `^0.9.0` | `DEC/2026-11-01-day-90-verdict-stop.md`；本仓库 D28（`docs/agents/iron-laws.md` Owner policies） | 2026-11-01 时钉在 core 1.48；2026-11-16 起开发重启，版本取自其依赖声明（2026-11-20 读它 `main` 的 `package.json`） |
 | §1.3 3D 只在 `archlang-3d`，Tier B 等 N10 | `DEC/2026-10-28-3d-preview-exposure-and-positioning-row-8.md`；`DEC/2026-10-31-archlang-3d-on-npm-tier-b-gates.md` | 包边界仍有效 |
 | §1.3 Show HN 保持 2D；核心 README 在 Tier C 前不提 3D | 同上（10-28 Tier C 门） | **已被本仓库 PS-D11 取代**（`docs/plans/public-surfaces/3d.md` §1，所有者 2026-11-06）：README 已放 3D 预览，Show HN 材料也要放；N10 照读但记为受干扰 |
 | §1.3 只有三件可作度量：可达性、精确面积、字节恒等 | `strategy/positioning.md` §Two banned phrasings | |
@@ -142,7 +142,7 @@ README 退出条件（"每条诉求都能指向一张 `done` 卡、一条等待�
 | 7 | playground 讲清楚：精确输入长度、剖切、带尺寸面积标签 | knobs 已有；剖切未做 | 剖切等 D3；其余仍无卡（playground 归 public-surfaces，本计划未取） |
 | 8 | 读图只能产出可 lint 的 `.arch` | 实验 mask 工具已有（`docs/import.md`） | RM3.3 |
 | 9 | 文档里的"拒绝并解释"示例 | 未做 | RM0.2 |
-| 10 | ArchCanvas 只保留写 → 查 → 诚实残差循环 | 2026-11-16 起开发重启（依赖核心 `^1.64.0`，2026-11-21 读） | 不在本仓库 |
+| 10 | ArchCanvas 只保留写 → 查 → 诚实残差循环 | 2026-11-16 起开发重启（依赖核心 `^1.64.0`，2026-11-20 读） | 不在本仓库 |
 
 ---
 

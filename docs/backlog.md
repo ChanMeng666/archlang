@@ -2519,12 +2519,12 @@ built the use-classifier half (`test/vocabulary-es-pt.test.ts`), through which t
 carry a room kind or a `room_type` are met. The concept-table half is not built: it changes the
 eval's table, so it needs an owner-approved `SYNONYMS_VERSION` bump, and it is M.20a.
 
-## Review residue of the v3 stage-1/2 session (PRs #972–#993, 2026-11-19…21)
+## Review residue of the v3 stage-1/2 session (PRs #972–#993, 2026-11-19…20 UTC)
 
 Non-blocking findings of that session's reviews and the PRs' own residue lists (the review-loop cap:
 residue becomes cards). Each names its PR. Already carded elsewhere, so not repeated: M.20a (#973's
 concept half), U.2a and U.5 (#983), RR.22 (2) (#979's code-comparison over-credit), NR.9 (3) (#976's
-iron-laws budget line). SR.14 comes from a draft PR.
+iron-laws budget line). SR.14 comes from a draft PR. Dates in this section are UTC.
 
 ### SR.1 · NR.16 classifier leftovers (#973) — `todo`
 
@@ -2539,6 +2539,11 @@ outside the guard read as a bedroom. **Gate:** each fixed with a test, or stated
 (1) The playground's diagnostics panel shows `cause` and `example` but not `fixed`
 (`playground/src/diagnostics-panel.ts`). (2) `llms.txt`'s MCP tool list names nine tools; the
 server registers twelve (`finish`, `explain` and `link` are missing; `packages/mcp/src/tools.ts`).
+An agent cannot edit it as is: `llms.txt` is listed in `.claude/hooks/generated-artifacts.json`
+(`gen:doors` owns one block of it), so the hook rule `generated-edit` refuses any Edit/Write of the
+file, the hand-written tool list included; the `partial` list there is not read by the hook. The
+fix needs `ARCHLANG_ALLOW_GENERATED_EDIT=1` in the shell that starts Claude Code, or an allow-list
+entry (a hook change) for the hand-written part of a partial artifact.
 (3) `E_IMPORT_NOT_FOUND` has no pair (it needs a World-serving harness); the 67 excused examples
 have none either. **Gate:** (1) and (2) fixed, (2) with a guard that reads the registered names;
 (3) a stated decision.
@@ -2645,13 +2650,14 @@ headroom.
 ### SR.13 · AF9 phase A leftovers (#992) — `todo`
 
 (1) A fix title does not say "moves every instance" for a span a component's instances or a `for`
-body share. (2) MCP `fix` and L1 call `rankFixes` (RM-D70 Q3): AF9 is the first producer with
-several alternatives per diagnostic; its own small card. (3) The nib move ignores sibling openings
-and fixtures: in the final full fuzz (124 plans, 3,655 shifted cases) 11 of 188 fixes leave a
+body share. (2) MCP `fix` and L1 calling `rankFixes` is its own card, SR.17. (3) The nib move
+ignores sibling openings and fixtures: in the final full fuzz (124 plans, 3,655 shifted cases) 11 of 188 fixes leave a
 warning, all `E_OPENING_NIB` moves (`W_OPENING_OVERLAP` 6, `W_HOB_UNDER_WINDOW` 3,
 `W_FURNITURE_OVER_WINDOW` 1, a blocked swing and doorway 1); no error and 0 hard-property failures.
 (4) Slanted meeting walls: their footprint on the host is read as `standingJunctionSpans` reads it,
-not probed further (round-2 red team). **Gate:** each with a test.
+not probed further (round-2 red team). (5) #992's body lists "N2 (red team, round 1)" as residue
+but does not state what N2 is; read it from the round-1 review before carding it. **Gate:** (1),
+(3), (4) each with a test; (5) its content recorded here or carded.
 
 ### SR.14 · RM9.6 CV13 split by RM-D73 (#993, draft) — `todo`
 
@@ -2664,10 +2670,10 @@ CV14 follow the same split. Also owed: the held-out pair in private `archlang-la
 eval-owner decision); the reach version waits for a sourced `seatTableReachMm`; a `table` labelled
 "Island" (`docs/gallery/family-of-four`). **Gate:** both PRs merged.
 
-### SR.15 · A wrapped room label loses its space in the SVG text (downstream report, 2026-11-21) — `todo`
+### SR.15 · A wrapped room label loses its space in the SVG text (downstream report, 2026-11-20) — `todo`
 
 A downstream application reads "EntranceHall" from a production drawing whose schedule says
-"Entrance Hall". Repro (MCP `compile`, 2026-11-21): a 1200 × 2400 room labelled "Entrance Hall"
+"Entrance Hall". Repro (MCP `compile`, 2026-11-20): a 1200 × 2400 room labelled "Entrance Hall"
 next to a 4000 × 2400 one draws `<text …><tspan …>Entrance</tspan><tspan …>Hall</tspan></text>`, so
 the element's text content is "EntranceHall"; at 1800 wide the label stays on one line. A reader of
 the SVG text (a screen reader, search, the downstream schedule check) gets one word. **Gate:** a
@@ -2681,7 +2687,19 @@ every plan with a wrapped label.
 of an imported body carries no `Diagnostic.file` (the gap AF1 noted for `E_DUP_ID`, NR.6 (1)); a
 `RelatedSpan.file` would let a note point into a module. (4) The sweep cannot see plans built by
 functions inside test files or helpers; CI's full suite covers them. **Gate:** (1)–(3) each with a
-test and RM-D69's per-row swap-back for any moved pin.
+test; any moved pin under RM-D69 as ruled for #977 (`docs/plans/product-roadmap/README.md` §6.32):
+a committed per-row swap-back check, a header note on each touched table, SVG, `lint()`, steps and
+parse unmoved (steps only on the refusal path), and no other digest touched.
+
+### SR.17 · MCP `fix` and L1 take the ranked fix (#992, RM-D70 Q3) — `todo`
+
+AF9 is the first producer with several alternatives on one diagnostic. `arch fix` takes the top of
+`rankFixes` (`src/fix-apply.ts`) and the LSP lists the alternatives in its order, but MCP `fix` and L1
+apply them in array order without it (`packages/mcp/src/tools.ts`, `eval/l1.ts`;
+`docs/plans/ai-first-language/af9-design.md` F3 and §12 Q3): with `unsafe:true`, MCP `fix` applies
+the first alternative and reports the next as skipped. **Gate:** both call `rankFixes`; a test that a
+diagnostic with two alternatives gets the same fix from `arch fix --unsafe` and MCP `fix`, and a unit
+test of L1's choice (no live run: `--l1` needs `--live`, paid and owner-only).
 
 ## Test-programme findings (promo-credit programme, 2026-11-16)
 
