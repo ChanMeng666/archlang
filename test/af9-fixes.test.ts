@@ -109,6 +109,30 @@ describe("AF9: the design's plans (§2)", () => {
     expect(centreOf(out, "y")).toBe(550);
   });
 
+  // Red team round 2, S-A: a meeting wall wholly outside the host's extent is no bay end. On `midwall`
+  // the host (the shell's top) starts at x 0, the edge `b.top` at x 4000 with no wall there, so the
+  // span may run to 4000 (main's hint, 400); and past a host's far end likewise (the corpus cases,
+  // which the search now serves itself: the hint's position is no longer tried as a fallback).
+  it("S-A: a meeting wall beyond the host's extent leaves its end free (midwall: 400, as main says)", () => {
+    const src = AF9_PLANS.midwall;
+    const d = one(src, "E_OPENING_NIB");
+    expect(edits(src, d)).toEqual([["at 300 from start", "at 400 from start", "maybe-incorrect"]]);
+    expect(d.hints).toEqual(["The nearest legal position is `on b.top at 400 from start` (centre at x 4400)."]);
+    expect(errors(paste(src, d.fixes![0]!))).toEqual([]);
+  });
+
+  it.each([
+    ["examples/courtyard-family.arch", 54, 9000, "at 3800 from start"],
+    ["examples/remodel.arch", 43, 9200, "at 4900 from start"],
+  ] as const)("S-A: %s:%i written at %i, past its host's far end, is offered %s", (file, line, at, to) => {
+    const lines = readFileSync(file, "utf8").split("\n");
+    lines[line - 1] = lines[line - 1]!.replace(/( at )(-?\d+(?:\.\d+)?)/, `$1${at}`);
+    const src = lines.join("\n");
+    const d = errors(src).find((x) => x.code === "E_OPENING_NIB")!;
+    expect((d.fixes ?? []).map((f) => f.edits[0]!.newText)).toEqual([to]);
+    expect(errors(paste(src, d.fixes![0]!))).toEqual([]);
+  });
+
   it("E_OPENING_HOST_AMBIGUOUS on a room's edge: each exterior wall's position, saying it replaces `at center`", () => {
     const src = AF9_PLANS.extPart;
     const d = one(src, "E_OPENING_HOST_AMBIGUOUS");
@@ -395,11 +419,11 @@ describe("AF9: the corpus fuzz (§9 item 3), bounded", () => {
 
 /** The bounded run's count, measured with `fuzzRun` (`test/helpers/opening-moves.ts`). */
 const PR_SCALE = {
-  fixes: 85,
+  fixes: 89,
   byCode: {
     E_OPENING_DATUM: 8,
     E_OPENING_HOST_AMBIGUOUS: 1,
-    E_OPENING_NIB: 38,
+    E_OPENING_NIB: 42,
     E_OPENING_NO_SHARED_WALL: 8,
     W_DOORWAY_BLOCKED: 30,
   },
@@ -422,14 +446,26 @@ describe("AF9: refusal paths are charged and bounded", () => {
    *  refusal path charges, the AF9 search included (`nibMoves`, `otherEdge`, the datum swap, and
    *  each candidate judged by `judgeLanding`). Measured; a charge removed or added moves its row. */
   const REFUSAL_COST: Array<[string, string, string, number]> = [
-    ["nib (nibMoves)", P.nib, P.nib.replace("at 500 from start", "at 600 from start"), 104],
-    ["nib on a tee", P.nibTie, P.nibTie.replace("at 1500 from start", "at 950 from start"), 139],
-    ["cased opening's flush jamb", P.flush, P.flush.replace("at 450 from start", "at 500 from start"), 139],
+    ["nib (nibMoves)", P.nib, P.nib.replace("at 500 from start", "at 600 from start"), 107],
+    ["nib on a tee", P.nibTie, P.nibTie.replace("at 1500 from start", "at 950 from start"), 147],
+    ["cased opening's flush jamb", P.flush, P.flush.replace("at 450 from start", "at 500 from start"), 137],
     [
       "cased opening past a narrow bay",
       P.casedNarrowBay,
       P.casedNarrowBay.replace("at 575 from start", "at 1600 from start"),
-      202,
+      210,
+    ],
+    [
+      "nib with a meeting wall beyond the host's extent",
+      P.midwall,
+      P.midwall.replace("at 300 from start", "at 400 from start"),
+      106,
+    ],
+    [
+      "on a room's edge with two walls (edgeHints)",
+      P.extPart,
+      P.extPart.replace("at center", "at 2100 from start"),
+      110,
     ],
     ["door on a partition (otherEdge)", P.extDoor, P.extDoor.replace("on a.right", "between a and b"), 74],
     ["window, one exterior edge (otherEdge)", P.oneEdge, P.oneEdge.replace("on b.left", "on b.top"), 197],
@@ -460,6 +496,95 @@ describe("AF9: refusal paths are charged and bounded", () => {
     expect(a).toEqual(b);
     expect(a).toContain("E_STEP_LIMIT");
   }, 120_000);
+});
+
+// ─── 6. an imported module's statements ───────────────────────────────────────────────
+
+/**
+ * Design §3 and red team round 2, S-B: a statement written in an imported module gets no fix from any
+ * AF9 producer (its offsets are the module's, which `applyFixes` would splice into the importer), while
+ * its hint still names the positions (S-C). Each refusal and the warning are raised from a component the
+ * root calls inline; the control writes the same statement in the root.
+ */
+describe("AF9: no fix for an imported module's statement, from every producer (red team round 2, S-B)", () => {
+  const LIB = [
+    'plan "lib" {',
+    "  units mm",
+    "  component nib() {\n    door between a and b at 500 from start width 800\n  }",
+    "  component tie() {\n    wall id=t partition thickness 100 { (4000,1500) (7000,1500) }\n    door between a and b at 1500 from start width 800\n  }",
+    "  component amb() {\n    window on a.right at center width 800\n  }",
+    "  component part() {\n    door on a.right at 600 from start width 800\n  }",
+    "  component win() {\n    window on a.right width 1200\n  }",
+    "  component par() {\n    door between a and b at 600 from a.left width 800\n  }",
+    "  component nopos() {\n    door between a and b width 800\n  }",
+    "  component nodatum() {\n    door between a and b at 600 width 800\n  }",
+    "  component blocked() {\n    door between a and b at 1500 from start width 800\n    furniture sofa at (3300,1200) size 600x600\n  }",
+    "}",
+    "",
+  ].join("\n");
+  const world = makeVirtualWorld({ "lib.arch": LIB });
+  const root = (call: string, bHeight = 3000) =>
+    plan(
+      "m",
+      'import "lib.arch": nib, tie, amb, part, win, par, nopos, nodatum, blocked',
+      "room id=a at (0,0) size 4000x3000",
+      `room id=b at (4000,0) size 3000x${bHeight}`,
+      "walls from rooms exterior 200 partition 100",
+      `${call}()`,
+    );
+  const CASES: Array<[string, string, string, number?]> = [
+    ["nib", "E_OPENING_NIB", "door between a and b at 500 from start width 800"],
+    [
+      "tie",
+      "E_OPENING_NIB",
+      "wall id=t partition thickness 100 { (4000,1500) (7000,1500) }\n  door between a and b at 1500 from start width 800",
+    ],
+    ["amb", "E_OPENING_HOST_AMBIGUOUS", "window on a.right at center width 800", 1500],
+    ["part", "E_OPENING_NO_SHARED_WALL", "door on a.right at 600 from start width 800"],
+    ["win", "E_OPENING_NO_SHARED_WALL", "window on a.right width 1200"],
+    ["par", "E_OPENING_DATUM", "door between a and b at 600 from a.left width 800"],
+    ["nopos", "E_OPENING_DATUM", "door between a and b width 800"],
+    ["nodatum", "E_OPENING_DATUM", "door between a and b at 600 width 800"],
+    [
+      "blocked",
+      "W_DOORWAY_BLOCKED",
+      "door between a and b at 1500 from start width 800\n  furniture sofa at (3300,1200) size 600x600",
+    ],
+  ];
+  const raised = (src: string, code: string, w?: ReturnType<typeof makeVirtualWorld>): Diagnostic[] => {
+    const o = w ? { world: w } : {};
+    const c = compile(src, { noCache: true, ...o }).diagnostics;
+    const ds = c.some((d) => d.severity === "error")
+      ? c
+      : [...c, ...lint(src, o), ...lint(src, { ...o, profile: "accessibility-advisory" })];
+    return ds.filter((d) => d.code === code);
+  };
+  it.each(CASES)(
+    "%s: %s raised in the module carries no fix; written in the root it does",
+    (call, code, stmt, h = 3000) => {
+      const imported = raised(root(call, h), code, world);
+      expect(imported.length, "raised").toBeGreaterThan(0);
+      for (const d of imported) {
+        expect(d.file).toBe("lib.arch");
+        expect(d.fixes ?? []).toEqual([]);
+      }
+      const local = plan(
+        "m",
+        "room id=a at (0,0) size 4000x3000",
+        `room id=b at (4000,0) size 3000x${h}`,
+        "walls from rooms exterior 200 partition 100",
+        stmt,
+      );
+      expect(raised(local, code).flatMap((d) => d.fixes ?? []).length, "the control").toBeGreaterThan(0);
+    },
+  );
+
+  it("S-C: the module's nib refusal still names both tied positions", () => {
+    const [d] = raised(root("tie"), "E_OPENING_NIB", world);
+    expect(d!.hints).toEqual([
+      "Two positions are equally near, 550 mm either way: `between a and b at 950 from start` (centre at y 950) and `between a and b at 2050 from start` (centre at y 2050).",
+    ]);
+  });
 });
 
 // ─── 5. off the compiler chunk ────────────────────────────────────────────────────────

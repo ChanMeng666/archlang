@@ -47,6 +47,13 @@ export const AF9_PLANS = {
     "wall partition thickness 100 { (4000,1100) (7000,1100) }",
     "opening between a and b at 575 from start width 900",
   ),
+  /** Red team round 2, S-A: a door on `b.top`, whose host (the shell's top) runs on past the edge's start. */
+  midwall: plan(
+    "midwall",
+    ...PAIR,
+    "wall id=shell exterior thickness 200 { (0,0) (7000,0) (7000,3000) (0,3000) close }",
+    "door on b.top at 300 from start width 800",
+  ),
   casedFillsBay: plan(
     "cased-fills-bay",
     ...PAIR,

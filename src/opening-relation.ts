@@ -1117,8 +1117,9 @@ function placeOnRun(
       return j.host !== undefined && !j.why && j.wall?.status !== "demolish";
     };
     const words = placed.alts.map((a) => a.word);
-    let ok = words.filter((w) => w !== "start" && w !== "end" && fits(w));
-    if (ok.length === 0) ok = ["start", "end"].filter(fits);
+    // Only where a fix may edit: the statement is the compiled source's own (red team round 2, S-B).
+    let ok = clause ? words.filter((w) => w !== "start" && w !== "end" && fits(w)) : [];
+    if (clause && ok.length === 0) ok = ["start", "end"].filter(fits);
     ctx.diag({
       ...placed.refused,
       code: "E_OPENING_DATUM",
@@ -1163,15 +1164,19 @@ function placeOnRun(
   const c = run.vertical ? at.y : at.x;
   const j = judgeLanding(c, width, bodies, run, exterior, flushOk, ctx);
   /** AF9: a fix's move to `t`, in `host` when given, as an edit of the position clause. */
-  const move = (t: number, host?: WallSegment): (PosEdit & { s: number }) | undefined => {
-    const q = clause && legalQuote(t, placed.anchor, run, bodies, exterior, width, flushOk, ctx, host);
-    if (!q || !clause) return undefined;
-    const to = `${where} at ${q.text}`;
-    return {
+  /** A position a fix or the hint may quote for `t` (see {@link legalQuote}); a hint quotes it
+   *  whatever source the statement is in, a fix only in the compiled one (red team round 2, S-C). */
+  const quote = (t: number, host?: WallSegment) =>
+    legalQuote(t, placed.anchor, run, bodies, exterior, width, flushOk, ctx, host);
+  const edit = (q: { s: number; text: string }): (PosEdit & { s: number }) | undefined =>
+    clause && {
       s: q.s,
       ...atEdit(clause, q.text),
-      title: `move it to \`${to}\` (centre at ${alongText(run, q.s)})${replaces(pos)}`,
+      title: `move it to \`${where} at ${q.text}\` (centre at ${alongText(run, q.s)})${replaces(pos)}`,
     };
+  const move = (t: number, host?: WallSegment): (PosEdit & { s: number }) | undefined => {
+    const q = clause && quote(t, host);
+    return q ? edit(q) : undefined;
   };
   const host = j.host;
   if (host === undefined) {
@@ -1238,13 +1243,11 @@ function placeOnRun(
     const alone = legal === undefined || bodies.length === 1 || bodiesUnder(bodies, legal, width, run).length === 1;
     // Nor is a position in a demolished wall legal: it hosts nothing, wherever the span stands.
     const gone = hostWall?.status === "demolish";
-    const found =
+    const positions =
       gone || !alone || legal === undefined
         ? []
-        : nibMoves(c, width, j.fit!, flushOk, ctx, run).flatMap((t) => move(t, host) ?? []);
-    // With none the bays give, the position the hint quotes is tried too (red team S1).
-    const fallback = found.length === 0 && !gone && alone && legal !== undefined ? move(legal, host) : undefined;
-    const moves = fallback ? [fallback] : found;
+        : nibMoves(c, width, j.fit!, flushOk, ctx, run).flatMap((t) => quote(t, host) ?? []);
+    const moves = positions.flatMap((q) => edit(q) ?? []);
     ctx.diag(
       nibRefusal(
         j.fault,
@@ -1260,7 +1263,7 @@ function placeOnRun(
               ? ONE_WALL_HINT
               : legal === undefined
                 ? `No position along the ${runWord} \`${where}\` names fits a ${numStr(width)} mm opening with its nibs: narrow it, or move a wall that meets the ${runWord}.`
-                : movesHint(moves.length > 0 ? moves : [{ s: legal }], c, where, run, placed.anchor),
+                : movesHint(positions.length > 0 ? positions : [{ s: legal }], c, where, run, placed.anchor),
         ],
         moves,
       ),
@@ -1370,14 +1373,17 @@ function movesHint(
 
 /**
  * The centres a nib refusal's fix may offer (card AF9, design §3), before the round trip and the
- * judge: the walls meeting the host cut it into bays, a move stays in its bay, and a bay's legal
- * centres are one interval (its ends a free host end, or a meeting wall's face plus the nib), each
- * end rounded inward to the grid, and, for a cased opening, the centre whose jamb is exactly flush
- * with each meeting wall's face (finding F2), when its whole span passes there. The written centre inside a bay gets the nearest legal centre on each
- * side of it there; on a meeting wall's body, the nearest in each bay beside it; with none in its
- * bay, the nearest in the next bay with one, either way. Nearer first, then the smaller coordinate.
- * Charged one step per meeting wall before the bays are built, and for a cased opening the flush
- * checks too.
+ * judge: the walls meeting the host within its extent `[R0, R1]` cut it into bays, a move stays in
+ * its bay, and a bay's legal centres are one interval, each end rounded inward to the grid, and, for
+ * a cased opening, the centre whose jamb is exactly flush with each meeting wall's face (finding F2),
+ * when its whole span passes there. An interval's low end is the bay's start plus half the width,
+ * and the nib past every meeting wall's face at or before that start (a wall lying wholly before
+ * `R0` included, which leaves the host's own end free: red team round 2, S-A); its high end
+ * mirrors that. The written centre inside a bay gets the nearest legal centre on each side of it
+ * there; on a meeting wall's body, the nearest in each bay beside it; with none in its bay, the
+ * nearest in the next bay with one, either way. Nearer first, then the smaller coordinate. Every
+ * scan is charged before it runs: one step per meeting wall to sort them, one per wall a bay's ends
+ * read, and each flush check's own scan.
  */
 function nibMoves(c: number, width: number, fit: HostFit, flushOk: boolean, ctx: RelationCtx, run: Run): number[] {
   const { R0, R1, need } = fit;
@@ -1389,28 +1395,32 @@ function nibMoves(c: number, width: number, fit: HostFit, flushOk: boolean, ctx:
     g > 0 ? [Math.ceil(lo / g) * g, Math.floor(hi / g) * g] : [lo, hi];
   // A cased opening's jamb exactly flush with a face, when that centre is on the grid and its whole
   // span passes the nibs there; never a sliver of wall up to `FLUSH_MM` thick. Judged before the bay
-  // counts it, so a bay too short for the opening does not stop the search (red team S1, AF9).
-  if (flushOk) chargeSteps((js.length + 1) * (2 * js.length + 1));
-  const flush = (t: number): Array<[number, number]> =>
-    flushOk && (g <= 0 || Math.round(t / g) * g === t) && !nibFault(t, width, R0, R1, js, need, true, run)
-      ? [[t, t]]
-      : [];
-  // Each bay: its faces, and its legal intervals.
+  // counts it, so a bay too short for the opening does not stop the search (red team S1, AF9). Each
+  // check is charged its own scan (`nibFault` reads every meeting wall twice) before it runs.
+  const flush = (t: number): Array<[number, number]> => {
+    if (!flushOk || (g > 0 && Math.round(t / g) * g !== t)) return [];
+    chargeSteps(2 * js.length + 1);
+    return nibFault(t, width, R0, R1, js, need, true, run) ? [] : [[t, t]];
+  };
+  // The bays: the host's extent, cut by the meeting walls that lie in it.
+  const cuts = js.filter((j) => j.hi > R0 && j.lo < R1);
   const bays: Array<{ a: number; b: number; ok: Array<[number, number]> }> = [];
   let a = R0;
-  let aWall = false;
-  for (const j of [...js, undefined]) {
-    const b = j ? j.lo : R1;
+  for (const j of [...cuts, undefined]) {
+    const b = j ? Math.min(j.lo, R1) : R1;
     if (b > a) {
-      const lo = a + (aWall ? need : 0) + w2;
-      const hi = b - (j ? need : 0) - w2;
-      const ok = [inward(lo, hi), ...(aWall ? flush(a + w2) : []), ...(j ? flush(b - w2) : [])];
+      // The nib past every face at or before the bay's start, and before every face at or after its end.
+      chargeSteps(js.length + 1);
+      const before = js.filter((x) => x.hi <= a + JUNCTION_EPS).map((x) => x.hi + need + w2);
+      const after = js.filter((x) => x.lo >= b - JUNCTION_EPS).map((x) => x.lo - need - w2);
+      const lo = Math.max(a + w2, ...before);
+      const hi = Math.min(b - w2, ...after);
+      const walled = (t: number): boolean =>
+        js.some((x) => Math.abs(x.hi - t) <= JUNCTION_EPS || Math.abs(x.lo - t) <= JUNCTION_EPS);
+      const ok = [inward(lo, hi), ...(walled(a) ? flush(a + w2) : []), ...(walled(b) ? flush(b - w2) : [])];
       bays.push({ a, b, ok: ok.filter(([p, q]) => p <= q) });
     }
-    if (j) {
-      a = Math.max(a, j.hi);
-      aWall = true;
-    }
+    if (j) a = Math.max(a, Math.min(j.hi, R1));
   }
   /** The nearest legal centre on one side of `c`, from bay `k` outward (`walk`) or in it alone.
    *  The written centre is illegal, so no interval holds it: a side's interval lies wholly there. */
