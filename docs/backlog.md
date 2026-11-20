@@ -1314,7 +1314,7 @@ the front door as `entranceId` for every room under `arch describe --json`; the 
 and `lint()` rows over the examples are byte-identical unless an example has such a door (list
 any that move, with the reason). **Size:** S.
 
-### U.2 · Metres compile silently — `todo`
+### U.2 · Metres compile silently: done by #704, waiting to be archived — `note`
 
 **Observed (audit finding 11, Appendix B).** `size 4x3` and `thickness 0.2` (metres written
 where millimetres are the unit) compile `ok:true` with no diagnostic. Only lint reaches the
@@ -1330,6 +1330,37 @@ tiny value (a hairline, a model in another scale) may be noise.
 **Gate:** a catalogued code with a `fix` that names millimetres, fired on the audit's two
 inputs and on no example (`arch lint --json` over `examples/`); the error-catalog example test
 and `gen:errors` stay green. **Size:** S.
+**Done by PR #704** (RM1.4), for the audit's two inputs only. `W_LENGTH_IN_METRES`
+(`src/ir/silent-accepts.ts`) covers three places: a rectangle room's `size` with both sides under
+100 mm, a wall `thickness` under 10 mm, and the two thicknesses of `walls from rooms`. Its
+catalogue `fix` reads "Write the length in millimetres; the hint gives the clause times 1000."
+Every other length still compiles silently; that remainder is U.2a. Re-checked for AF0 with
+`arch compile --json` on the audit's two inputs (`test/silent-accepts/length-in-metres.arch`):
+`ok: true` and two warnings, `Wall "shell" thickness 0.2 is read as 0.2 mm: lengths are
+millimetres` (its hint: write `thickness 200`) and `Room "main" size 4 x 3 is read as 4 mm x 3 mm:
+lengths are millimetres` (its hint: write `size 4000x3000`). `test/silent-accepts.test.ts` pins
+both and the quiet thresholds. Its byte-identity law over `examples/` checks the "no example"
+clause through `compile().diagnostics`, not through `arch lint --json` as the gate wrote: the code
+is raised by the compile channel, which `lint()` does not report. A length that is too LARGE (a
+size built from a product of two lengths, `ai-first-language` README §6 finding 3) is a dimension
+check, not this entry. The entry is closed and waits to be archived to `archlang-lab` with
+`scripts/backlog-archive.mjs`.
+
+### U.2a · Metres still compile silently outside a room size and a wall thickness — `todo`
+
+**Observed (AF0 probe on `main` at `7fd0c469`, `arch compile --json` then `arch lint --json`).**
+In one plan with a 200 mm wall, these compile with `ok: true` and no `W_LENGTH_IN_METRES`:
+`door … width 0.9`, `window … width 1.2`, `furniture bed … size 1.6x2`, `room … polygon (0,0) (4,0)
+(4,3) (0,3)`, and the mixed `room … size 4x3000` (one side is not under 100 mm, so the room rule
+stays quiet by design). Only lint reaches any of them, each in its own terms: `W_DOOR_CLEARANCE`
+("Door is 0.9 mm wide"), `W_BED_UNDERSIZED` ("The bed is 2 mm long"), and `W_ROOM_TOO_SMALL` for
+the two rooms ("only 0.01 m²", "only 0 m²"). The window's 1.2 mm width draws no word at all. None
+of these findings says the cause is the unit. **Gate:** decide per clause which lengths get a
+metres floor (a door or window `width`, a furniture `size` with both sides under its own floor, a
+polygon whose every coordinate is under 100 mm), and record the choice here. Each chosen clause
+then raises `W_LENGTH_IN_METRES` with a clause-times-1000 hint, pinned in
+`test/silent-accepts.test.ts`, and that file's byte-identity law over `examples/` stays green.
+**Size:** S.
 
 ### U.3 · A misspelt furniture category passes `validate --strict`: done by #848, waiting to be archived — `note`
 
@@ -1364,7 +1395,21 @@ a new diagnostic moves `lint()` only for plans that write such a label.
 `describe()`/`lint()` over the examples are byte-identical (verify that no example writes a
 label on a drawn symbol). **Size:** S.
 
-### U.5 · A parse error does not use what the spec already predicts — `todo`
+### U.5 · A parse error that drops a plan's only drawable statement adds a `W_EMPTY_PLAN` (narrowed) — `todo`
+
+**Narrowed (AF0, re-checked against the code).** The rule-6 half is done by PR #790 (CO-1):
+`id=` may follow the kind word of `furniture`, `door`, `window`, `outdoor` and `wall`
+(`idAfterKind`, `src/clause-order.ts`; the wall calls it at `src/elements/wall.ts:54`), so both
+forms the audit wrote now compile instead of failing. Probe, `arch compile --json` on
+`wall exterior id=w1 thickness 200 { … }` with a room, a `door on w1 at 50% width 900` and
+`furniture bed id=b1 at (500,500) size 1600x2000`: `ok: true`, no diagnostic, the door resolves on
+`w1` and `describe().furniture` lists `b1`. What remains is the cascade, for any parse error and not
+only rule 6. Probe, a plan whose only statement is `wall exterior id=w1 thick 200 { … }`: exit 2,
+`E_PARSE Expected "thickness" but found "thick"` and then `W_EMPTY_PLAN Plan has no walls, rooms,
+or furniture — nothing to draw`. With a room beside the same wall line, only the `E_PARSE` is
+reported, because `checkPlanDrawable` (`src/ir/checks.ts`) counts what resolved and the room did.
+The remaining gate is the cascade half of the gate below; the `fix`-is-the-reordered-line half no
+longer applies, since the reordered line is now legal. The text below is the original entry.
 
 **Observed (audit finding 12, Appendix B).** `wall exterior id=w1 …` gives
 `E_PARSE Expected "thickness" but found "id"` plus a cascading `W_EMPTY_PLAN`. Spec rule 6 says
@@ -2575,6 +2620,9 @@ the `hinged` hint (EV.4) kept for a kind written as its own statement.
 ### EV.5 · A refused opening offers no move (design first) — `todo`
 
 **Carded as** AF9 (`docs/plans/product-roadmap/cards.md` track 10, 2026-11-18).
+**Design:** `docs/plans/ai-first-language/af9-design.md` (2026-11-20) meets the gate below. Its
+questions are ruled (RM-D70, revised; its §12): maybe-incorrect moves and placeholder skeletons
+only, with no machine-applicable fix, so L1 cannot move.
 
 Six of EV.1's seven compile-error losses are opening-placement refusals (`refused, not moved`, a
 window on a partition edge, a parallel edge with no offset; ADR 0028 § 5). They return no fix. L1 (`eval/l1.ts`) applies only the machine-applicable tier, so
