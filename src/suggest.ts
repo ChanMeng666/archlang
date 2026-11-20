@@ -377,7 +377,7 @@ export function suggestTopology(source: string, opts: SuggestOptions = {}): Sugg
       b === undefined
         ? OUTSIDE
         : b.grounded
-          ? { ...OUTSIDE, ontoRoof }
+          ? { ...OUTSIDE, ontoRoof, notWayIn: ground?.notWayIn(l.level) }
           : {
               from: arrivals.length > 0 ? "arrivals" : "nowhere",
               arrivals,
@@ -400,8 +400,10 @@ interface StoreyView {
   from: "outside" | "arrivals" | "nowhere";
   arrivals: readonly string[];
   exteriorOk: boolean;
-  /** Would a door at this place open onto the roof of a storey below? Never offered there. */
+  /** Would a door at this place open over a lower storey's footprint? Never offered there. */
   ontoRoof?: (c: Pick<RDoor, "host" | "at">) => boolean;
+  /** The storey's doors over a lower storey's footprint that are no way in (RM9.10). */
+  notWayIn?: ReadonlyMap<string, number>;
 }
 const OUTSIDE: StoreyView = { from: "outside", arrivals: [], exteriorOk: true };
 
@@ -434,20 +436,26 @@ function suggestStorey(ir: ResolvedPlan, view: StoreyView): Suggestion[] {
   // starts, one node per balcony (`storeyWalkDigraph`, as `lint`'s reachability walks it).
   const fromArrivals = view.from === "arrivals";
   const seeds = fromArrivals ? { extraSources: view.arrivals, exterior: false } : {};
-  const graph = fromArrivals
-    ? storeyWalkDigraph(
-        rooms.map((r) => r.id),
-        access.edges,
-        ir,
-        false,
-      )
-    : accessDigraph(
-        rooms.map((r) => r.id),
-        access.edges,
-      );
-  const reachable = fromArrivals
-    ? reachFrom(graph, seeds)
-    : new Set(access.rooms.filter((r) => r.reachable).map((r) => r.id));
+  // Walked from the outside, a door over a lower storey's footprint that is no way in (RM9.10) is
+  // no start, as `lint` walks it.
+  const notWayIn = view.notWayIn ?? new Set<string>();
+  const graph =
+    fromArrivals || notWayIn.size > 0
+      ? storeyWalkDigraph(
+          rooms.map((r) => r.id),
+          access.edges,
+          ir,
+          !fromArrivals,
+          notWayIn,
+        )
+      : accessDigraph(
+          rooms.map((r) => r.id),
+          access.edges,
+        );
+  const reachable =
+    fromArrivals || notWayIn.size > 0
+      ? reachFrom(graph, seeds)
+      : new Set(access.rooms.filter((r) => r.reachable).map((r) => r.id));
   // What a new door gives access THROUGH (PS0.6): a neighbour reached only by passing a bedroom
   // (or a wet room) is as private as one, whatever it is itself.
   const byId = new Map(rooms.map((r) => [r.id, r]));
@@ -536,7 +544,7 @@ function suggestStorey(ir: ResolvedPlan, view: StoreyView): Suggestion[] {
     // this builder stays silent to fire iff the lint fires (see W_NO_ENTRANCE below).
     const sealed = fromArrivals
       ? !reachable.has(room.id)
-      : view.from === "outside" && access.hasEntrance && node && !node.reachable;
+      : view.from === "outside" && access.hasEntrance && node && !reachable.has(room.id);
     if (sealed) {
       // Interior candidates connect to a room that already reaches the entrance;
       // exterior candidates cut a brand-new outside door. For a PRIVATE room

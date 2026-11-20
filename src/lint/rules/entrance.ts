@@ -189,18 +189,19 @@ export const noEntrance: LintRule = {
 };
 
 /**
- * A door or cased opening to the outside that opens onto the roof of a storey below (RM9.10): the
- * point just outside it, one host-wall thickness off the wall at its centre (`pointOutside`, the
- * probe `doorFacesBalcony` uses), lies on a LOWER storey's drawn footprint (one of its rooms, or
- * inside its closed exterior ring), and its own storey draws no `outdoor` surface there (no
- * balcony, deck or terrace). The plan states no ground level, so a door that opens beyond every
- * storey below (a walk-out storey, a garage under the house, a bridge, an upper flat reached by an
- * outside stair) is not read: only a door over a roof is evidence of a door into thin air.
+ * A door or cased opening to the outside that opens over a lower storey's footprint while its
+ * storey has another arrival (RM9.10, ruling RM-D72): the point just outside it, one host-wall
+ * thickness off the wall at its centre (`pointOutside`, the probe `doorFacesBalcony` uses), lies on
+ * a LOWER storey's drawn footprint (one of its rooms, or inside its closed exterior rings read
+ * even-odd), its own storey draws no `outdoor` surface there, and the storey also has a door from
+ * the ground that opens over no footprint or a shaft from a storey grounded by one. Such a door is
+ * no way in (`buildingGround().notWayIn`): every walk leaves it out as a start. Where it is the
+ * storey's only arrival it keeps the role it always had and is not reported.
  *
- * Such a door is no entrance (`buildingGround`): its storey is walked from its stairs and lifts.
- * The building context names the doors (`BuildingContext.roofDoors`); a plan of one storey has
- * none. A connector whose outward side the probe cannot tell (a room on both sides, or on neither)
- * is not reported: nothing is guessed.
+ * The plan states no ground level, so the footprint below may be a roof or the part of a storey
+ * that reaches further into a hill: the message says what follows if it is a roof, never that it
+ * is one. A connector whose outward side the probe cannot tell (a room on both sides, or on
+ * neither) is not reported: nothing is guessed. A plan of one storey has none.
  */
 export const exteriorDoorOntoRoof: LintRule = {
   name: "exterior-door-onto-roof",
@@ -224,9 +225,9 @@ export const exteriorDoorOntoRoof: LintRule = {
         severity: "warning",
         code: "W_EXTERIOR_DOOR_ONTO_ROOF",
         ...at(c),
-        message: `The exterior ${what}${room ? ` from ${nameOf(room)}` : ""} opens onto the roof of level ${below}: no balcony, deck or terrace is drawn outside it, so it leads nowhere a person can stand.`,
+        message: `The exterior ${what}${room ? ` from ${nameOf(room)}` : ""} opens over the footprint of level ${below}; if that is a roof, nobody arrives through it: draw a deck or balcony there, or make it a window.`,
         hints: [
-          `Draw what \`${c.id}\` opens onto, an \`outdoor balcony\` or \`deck\` over the roof of level ${below} (a roof terrace), or make it a window. Nobody arrives through it: the storey is walked from its stairs and lifts.`,
+          `\`${c.id}\` opens over level ${below}: draw an \`outdoor deck\` or \`balcony\` outside it if that is a roof, or the ground (an \`outdoor paving\` or \`lawn\`) if the site meets this storey there; or make it a window. Until then nobody arrives through it: the storey is walked from its other ways in.`,
         ],
       });
     }

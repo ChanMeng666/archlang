@@ -5,7 +5,7 @@
  * `describe --facts clearances` facet (PS2.72), builds the same contexts.
  */
 
-import { buildingGround, buildingRoomReach, DEFAULT_TOL } from "../analyze.js";
+import { buildingGround, DEFAULT_TOL } from "../analyze.js";
 import { dwellingReading } from "../analyze/dwelling.js";
 import { storeyHasEntranceCandidate } from "../analyze/entrance.js";
 import type { ResolvedLevel, ResolvedPlan, RRoom } from "../ir.js";
@@ -57,13 +57,13 @@ export function buildingContexts(levels: readonly ResolvedLevel[], tolMm: number
   const inputs = levels.map((l) => ({ level: l.level, ir: l.ir }));
   const connections = verticalConnections(inputs);
   const peerIds = new Set(connections.map((c) => c.id));
-  // Which storeys have a way in from the ground, and which doors open onto a roof (RM9.10), as
-  // `describe().vertical` reads them.
+  // Which storeys have a way in from the ground, and which doors over a lower storey's footprint
+  // are no way in (RM9.10), as `describe().vertical` reads them.
   const ground = buildingGround(inputs, tolMm ?? DEFAULT_TOL);
   const grounded = ground.grounded;
   // Room-aware: a shaft relays only from a stop whose room is walkable on its storey, on
   // the same tolerance `grounded` uses, so lint and `describe().vertical` agree.
-  const roomReach = buildingRoomReach(inputs, tolMm ?? DEFAULT_TOL);
+  const roomReach = ground.roomReach;
   const reach = verticalReach(inputs, grounded, roomReach);
   const runs = arrivalRuns(inputs, grounded, roomReach);
   const fromBelow = levelsEnteredFromBelow(connections, (n) => {
@@ -112,9 +112,8 @@ export function buildingContexts(levels: readonly ResolvedLevel[], tolMm: number
       reachableLevels: reach.reachable,
       landedShafts: reach.landed?.get(l.level) ?? new Set<string>(),
       connections,
-      // Only a building of two storeys or more reads a storey's grounding (one `level` block lints
-      // as the same plan without the wrapper).
-      ...(levels.length > 1 ? { grounded: grounded(l.level), roofDoors: ground.onRoof(l.level) } : {}),
+      grounded: grounded(l.level),
+      roofDoors: ground.notWayIn(l.level),
     });
   }
   return out;

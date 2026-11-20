@@ -3,13 +3,19 @@
  * names. Each is shown on `examples/two-storey.arch` with one edit, beside the plan without it.
  *
  *  1. `suggestTopology` reads every storey, walks an upper one from the rooms its shafts land in,
- *     never offers a door to the outside on a storey reached only by a shaft nor onto the roof of
- *     a storey below, and says which storey's block a statement goes in (`level`, `insertAt`).
+ *     never offers a door to the outside on a storey reached only by a shaft nor over a lower
+ *     storey's footprint, and says which storey's block a statement goes in (`level`, `insertAt`).
  *  2. `validateIntent`'s `reachable` reads each storey's rooms.
- *  3. (`W_EXTERIOR_DOOR_ONTO_ROOF`: `test/lint-exterior-door-onto-roof.test.ts`.)
- *  4. `vertical.reachable_levels` is seeded only from doors from the ground: a door onto the roof
- *     of a storey below reaches no storey.
- *  5. `W_ROOM_UNREACHABLE` on an upper storey starts from where a person arrives.
+ *  3. (`W_EXTERIOR_DOOR_ONTO_ROOF`: `test/lint-exterior-door-onto-roof.test.ts`.) A door to the
+ *     outside opens over a lower storey's footprint when the point just outside it lies on one of
+ *     that storey's rooms or inside its closed exterior rings (even-odd, edges included) and its own
+ *     storey draws no `outdoor` surface there. It stops being a way in ONLY when its storey still
+ *     has another arrival: a door from the ground over no footprint, or a shaft from a storey
+ *     grounded by one. Otherwise it keeps the role it always had.
+ *  4. `vertical.reachable_levels` is seeded only from ways in: a stair standing in a room only such
+ *     a door opens carries nobody up.
+ *  5. `W_ROOM_UNREACHABLE` on an upper storey starts from where a person arrives, and a storey
+ *     nobody arrives on keeps the warnings it always had.
  *
  * And a plan of one `level` block reads as the same plan without the wrapper (red team S2).
  */
@@ -114,21 +120,51 @@ suite("RM9.10 · reachable_levels and per-storey access from the doors from the 
     expect(d.vertical!.reachable_levels).toEqual([1, 2]);
   });
 
-  it("a storey whose only way in is a door onto a roof is not reached, and no room on it is", () => {
-    // The stair stops on level 2 under another id: nothing joins the storeys, so before RM9.10 the
-    // door made level 2 reachable on its own.
+  it("a storey whose only arrival is a door over a roof keeps it as its way in, as on main", () => {
+    // The stair stops on level 2 under another id: nothing joins the storeys, so the door over
+    // level 1's footprint is level 2's only arrival and keeps that role.
     const cut = ROOF.replace(
       "stair id=st at (2000,200) size 2600x900 dir down",
       "stair id=st2 at (2000,200) size 2600x900 dir down",
     );
     const d = describe(cut);
     expect(d.vertical).toBeUndefined();
-    expect(d.levels![1]!.access.hasEntrance).toBe(true);
-    expect(d.levels![1]!.access.rooms.every((r) => !r.reachable)).toBe(true);
+    expect(d.levels![1]!.access.rooms.filter((r) => !r.reachable)).toEqual([]);
     const codes = lint(cut).map((x) => `${x.code}@${x.level}`);
-    expect(codes).toContain("W_EXTERIOR_DOOR_ONTO_ROOF@2");
+    expect(codes).not.toContain("W_EXTERIOR_DOOR_ONTO_ROOF@2");
     expect(codes.filter((c) => c.startsWith("W_ROOM_UNREACHABLE"))).toEqual([]);
-    expect(reachableRow(cut).detail).toBe("reachable: unreachable on level 2: study");
+    expect(reachableRow(cut).pass).toBe(true);
+  });
+
+  it("a storey nobody arrives on keeps the warnings it always had (red team M3)", () => {
+    // Level 2 has a door onto a balcony only, and no stair: on main it is walked from the
+    // balcony, and its Bedroom and Bath, joined only to each other, are both unreachable.
+    const upperPocket = `plan "C" {
+  units mm
+  level 1 "Ground" {
+    wall id=shell exterior thickness 200 { (0,0) (9000,0) (9000,3000) (0,3000) close }
+    room id=hall at (0,0) size 9000x3000 label "Hall" uses hall
+    door id=front on shell at 1000 width 900
+  }
+  level 2 "Upper" {
+    wall id=shell exterior thickness 200 { (0,0) (9000,0) (9000,3000) (0,3000) close }
+    wall id=p1 partition thickness 100 { (3000,0) (3000,3000) }
+    wall id=p2 partition thickness 100 { (6000,0) (6000,3000) }
+    room id=a at (0,0) size 3000x3000 label "Living" uses living
+    room id=b at (3000,0) size 3000x3000 label "Bedroom" uses bedroom
+    room id=c at (6000,0) size 3000x3000 label "Bath" uses bath
+    door id=slider on shell at 19500 width 900
+    door id=d_bc on p2 at 1500 width 800
+    outdoor balcony at (500,3000) size 2000x1200 rail all
+  }
+}
+`;
+    const unreachable = lint(upperPocket).filter((x) => x.code === "W_ROOM_UNREACHABLE");
+    expect(unreachable.map((x) => [x.level, upperPocket.slice(x.span!.start, x.span!.end).split(" ")[1]])).toEqual([
+      [2, "id=b"],
+      [2, "id=c"],
+    ]);
+    expect(describe(upperPocket).levels![1]!.access.rooms.find((r) => r.id === "a")!.reachable).toBe(true);
   });
 
   it("a door onto a deck upstairs is still a way in, as it always was", () => {

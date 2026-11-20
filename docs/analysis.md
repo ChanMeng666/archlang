@@ -689,13 +689,13 @@ from the stop on that side, `null` where that flight ends in no room and absent 
 such stop.
 
 **Reachability through a shaft.** A storey is *grounded* when it has a way in from the ground
-of its own: an exterior door that opens neither onto an `outdoor balcony` nor onto the roof of a
-storey below. A door opens onto a roof when the point just outside it (one wall thickness off the
-wall at its centre) lies on a lower storey's rooms or inside its closed exterior wall ring, and its
-own storey draws no `outdoor` surface there (`W_EXTERIOR_DOOR_ONTO_ROOF` names it). The plan states
-no ground level, so every other door to the outside, a walk-out storey's or a garage-under house's
-front door included, grounds its storey. On a building of two storeys or more, a storey no shaft
-reaches and with no such door has no room reached (`levels[i].access.rooms[]`).
+of its own: an exterior door that does not open onto an `outdoor balcony`. A door opens over a
+lower storey's footprint when the point just outside it (one wall thickness off the wall at its
+centre) lies on one of that storey's rooms or inside its closed exterior wall rings (even-odd,
+edges included), and its own storey draws no `outdoor` surface there. Such a door stops being a
+way in only when its storey still has another arrival: a door from the ground over no footprint,
+or a shaft from a storey grounded by one (`W_EXTERIOR_DOOR_ONTO_ROOF` names it, and no walk
+starts from it). Where it is the storey's only arrival it grounds the storey as it always did.
 Reachability then spreads along the connections to a fixpoint over
 storeys **and rooms**: a shaft carries you on only from a stop whose room you can walk to
 on its own storey — from the front door if the storey is grounded, or from a room another

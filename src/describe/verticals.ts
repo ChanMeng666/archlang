@@ -8,7 +8,7 @@
  */
 
 import type { ResolvedLevel, RRoom } from "../ir.js";
-import { rectOf, buildingGround, buildingRoomReach, type ShaftArrivalSeed } from "../analyze.js";
+import { rectOf, buildingGround, type ShaftArrivalSeed } from "../analyze.js";
 import { landedOn, runWidth } from "../analyze/nav-grid.js";
 import { storeyHasEntranceCandidate } from "../analyze/entrance.js";
 import {
@@ -54,8 +54,8 @@ export function buildingArrivals(
 ): ReadonlyMap<number, readonly ArrivingRun[]> {
   const inputs = levels.map((l) => ({ level: l.level, ir: l.ir }));
   if (verticalConnections(inputs).length === 0) return new Map();
-  const { grounded } = buildingGround(inputs, tol);
-  return arrivalRuns(inputs, grounded, buildingRoomReach(inputs, tol));
+  const { grounded, roomReach } = buildingGround(inputs, tol);
+  return arrivalRuns(inputs, grounded, roomReach);
 }
 
 /**
@@ -91,8 +91,7 @@ export function buildVerticalReport(
   const inputs = levels.map((l) => ({ level: l.level, ir: l.ir }));
   const connections = verticalConnections(inputs);
   if (connections.length === 0) return undefined;
-  const { grounded } = ground ?? buildingGround(inputs, tol);
-  const roomReach = buildingRoomReach(inputs, tol);
+  const { grounded, roomReach } = ground ?? buildingGround(inputs, tol);
   const reach = verticalReach(inputs, grounded, roomReach);
   const arrivals = arrivalRuns(inputs, grounded, roomReach);
   return {
