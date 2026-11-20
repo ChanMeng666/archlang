@@ -148,7 +148,7 @@ const BASELINE: [string, string][] = [
   ["d2e33f0f08e06930824942bb36faf1a439459483a3335cd78063e3ef51b021b6", "test/fixtures/lock-before.arch"],
   ["a5b010590ff37b31382b353c37001f3541ef26e5f9c8bd531f2121dd1a9d4fa2", "test/fixtures/lock-partition-moved.arch"],
   ["bfe79454671a15f63522c0a770453a819328df15f90b01154d028f5161350046", "test/fixtures/lock-window-moved.arch"],
-  ["d340196f446839ceda4c324efb5c2c29abab79551b673a72b95abeabc64d3fe2", "test/fixtures/off-path-bypass.arch"], // RM1.4: the unknown-furniture search is charged to the step meter (+29 steps: `cabinet`, 234 -> 263) (was ff686ab3)
+  ["da9e863c8ccd68d88aaf48423bcc3a43bb517f157c6dbf2479c2e8916bbe3b1e", "test/fixtures/off-path-bypass.arch"], // RM1.4: the unknown-furniture search is charged to the step meter (+29 steps: `cabinet`, 234 -> 263) (was ff686ab3); AF9 (was d340196f): `W_DOORWAY_BLOCKED` on d_d gains a maybe-incorrect move to `on w_dmid at 1570` in lint() (both profiles); SVG, describe(), the diagnostics and the steps are unchanged, and with that fix taken out the old digest returns
   ["2a9bdda5124d6cc976419991440ccccedb9ee1bcbcba18da2098319f271fe1f3", "test/fixtures/schedule-sheet.arch"],
   ["ac6b7954d2cefaa2461c5e8111d1004603b931ef133597f0971e07db78c6dd42", "test/fixtures/star30.arch"],
   ["143ddd7bfd82d51b4527ba8607803a99e38c4f1bd4997d9cf8acf95fb216e29d", "test/fixtures/storeys-eaves-overflow.arch"], // RM1.3a, see ./byte-identity-baseline.ts; RM1.2a, see ./byte-identity-baseline.ts; RM1.2a review, see ./byte-identity-baseline.ts; RM1.3b overlay, see ./byte-identity-baseline.ts; RM9.2, see ./byte-identity-baseline.ts
@@ -181,7 +181,7 @@ const BASELINE: [string, string][] = [
   ["6e4367336a461f79b8927cdb2671f2571c0d5e029ca95b26448cf70bd39eb058", "inline:clauses"],
   ["ffcbcbe475c12edbcf2713a4449a06d4eed619f415d3d08ea57428e3cea4bca9", "inline:door-beside-excepted-L"],
   ["9a461091afe9fe608b6f1ad40d02a6a366df5884bf1af8b178b1d03c4011b40b", "inline:door-positions"],
-  ["49ed81b6cac95c97df6056fa406a7de294634e03b0f05ca1d680d4ee7f0b59de", "inline:door-refusals"], // AF2 (was b699986d): `E_LAYOUT_REF` on room e is spanned on its unknown id `nowhere`, not the statement, and the search for a near room id charges 8 steps (1027 -> 1035); SVG, lint() and every other diagnostic are unchanged, and main's span and steps put back give b699986d
+  ["59e1119eaa6414bc7d24408bc78cadc98cb609147b487d5e46ae0cc64e0f84a0", "inline:door-refusals"], // AF2 (was b699986d): `E_LAYOUT_REF` on room e is spanned on its unknown id `nowhere`, not the statement, and the search for a near room id charges 8 steps (1027 -> 1035); SVG, lint() and every other diagnostic are unchanged, and main's span and steps put back give b699986d; AF9 (was 49ed81b6): `E_OPENING_DATUM` on d4 (no position) and d5 (`at 800`, no datum) gains a has-placeholders fix and `E_OPENING_NIB` on d7 a maybe-incorrect move to `at 600 from start`, in `compile().diagnostics` and `describe().diagnostics`, and the refusal paths' search charges 46 steps (1035 -> 1081); SVG, lint(), every message and hint are unchanged, and with those fixes taken out and main's steps put back the old digest returns
   [
     "c393511a4734b76c5a878d1666ab6e36e638b84abcc963a6e01c97a2bbe1b97e",
     "test/defect-corpus/stair-safety/door-onto-flank.arch",

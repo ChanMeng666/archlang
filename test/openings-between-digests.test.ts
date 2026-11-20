@@ -22,7 +22,7 @@ const DIGESTS: [string, string][] = [
   ["frames", "d0465c153512aa5150b0ec944bf5f0fb6e6d875e94901e1876b3d26acce37cc8"], // PS2.29: message text only, same code, same span; `centreline_at`, see ./byte-identity-baseline.ts; AL3a: SVG only, see ./byte-identity-baseline.ts
   ["widen-4000", "ac27ff053cfb837ae4fc316afc384ea897760bfa49fbedd691f0e8e81a003f31"], // `centreline_at`, see ./byte-identity-baseline.ts
   ["widen-4500", "a0ad0823865adef94aad0633cc8e5614b4d7cba015dbaaf26a1f3de2645bccfa"], // `centreline_at`, see ./byte-identity-baseline.ts
-  ["refused", "8f8d8a2ccb3150bb6998eda99ae95acc80f577e04744e17992f2507f6324d7d2"],
+  ["refused", "f12efd78a1cc6cf8e1f8550364bdddd7a6567dd0c77a20a0d61a7a0b3cf94591"], // AF9 (was 8f8d8a2c): the no-position `E_OPENING_DATUM` gains a placeholder fix, `E_OPENING_NIB` a maybe-incorrect move to `on a.bottom at 650 from start`, and the window's `E_OPENING_NO_SHARED_WALL` a placeholder fix and a hint that no longer offers `between` (which a window cannot take); with those fixes taken out and main's hints put back the old digest returns
 ];
 
 suite("relational openings: digest table", () => {

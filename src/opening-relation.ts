@@ -39,6 +39,7 @@
 import type { AttachPos, OpeningAttach, OpeningBetween, Point, WallsPairRoom } from "./ast.js";
 import { type Diagnostic, plainOf, rootNote, type Span } from "./diagnostics.js";
 import { exprChildren } from "./cursor.js";
+import { exteriorEdgeFix, fixesFrom, openingDatumFix, openingMoveFix, type PosEdit } from "./fix-producers.js";
 import { chargeSteps } from "./expr.js";
 import type { Expr } from "./expr.js";
 import { distPointToWallSegment, segmentsOfWall, type WallSegment } from "./geometry.js";
@@ -662,16 +663,37 @@ const lineText = (r: { vertical: boolean; c: number }): string => `${r.vertical 
 /** A coordinate along a run: `y 1200` on a vertical run. */
 const alongText = (r: Run, t: number): string => `${r.vertical ? "y" : "x"} ${numStr(t)}`;
 
-/**
- * Where on `run` the position puts the opening's centre (a coordinate along the run), or
- * `undefined` after a diagnostic.
- */
-/** A position on a run: its centre, and the end it is measured from with the word written. */
+/** A position on a run: its centre, the end it is measured from with the word written, and the
+ *  offset a `from` position evaluated to (AF9's moves keep it). */
 interface OnRun {
   c: number;
   anchor: { end: "r0" | "r1"; word: string };
+  v?: number;
 }
 
+/**
+ * Where an AF9 fix writes a position: bytes `[start, end)` of the source, replaced by `lead` and
+ * ` at <pos>`. On `between a and b` `lead` is empty and `start` is the end of the second room's
+ * name; `on <room>.<edge>` is written out whole.
+ */
+interface Clause {
+  start: number;
+  end: number;
+  lead: string;
+}
+
+/** A parallel datum edge's refusal, not yet pushed: its fix judges the other edges of the room on
+ *  the run's walls, which the caller reads. `alts`: the datum words to try, with the centre each gives. */
+interface DatumRefusal {
+  refused: Diagnostic;
+  alts: Array<{ word: string; c: number }>;
+  span: Span;
+}
+
+/**
+ * Where on `run` the position puts the opening's centre (a coordinate along the run), or
+ * `undefined` after a diagnostic, or a parallel datum edge's {@link DatumRefusal}.
+ */
 function positionOnRun(
   pos: AttachPos,
   posSpan: Span,
@@ -680,28 +702,45 @@ function positionOnRun(
   ctx: RelationCtx,
   what: string,
   runWord: string,
-): OnRun | undefined {
+  clause: Clause | undefined,
+): OnRun | DatumRefusal | undefined {
   const start = { end: "r0", word: "start" } as const;
+  /** AF9's placeholder skeleton: `text` over `[from, clause end)`. */
+  const skeleton = (from: number | undefined, text: string, title: string): PosEdit[] =>
+    clause && from !== undefined ? [{ span: { start: from, end: clause.end }, text, title }] : [];
   switch (pos.kind) {
     case "default":
       if (kind === "window") return { c: (run.r0 + run.r1) / 2, anchor: start };
-      ctx.diag(
-        datumDiag(
-          `${what} has no position: a ${kind === "door" ? "door" : "cased opening"} is held to an end of the ${runWord} or to a room edge, never centred by default; write \`at <mm> from start|end\`, \`at <mm> from <room>.<edge>\`, \`at axis <label>\` or \`at center\``,
-          posSpan,
-        ),
-      );
+      ctx.diag({
+        severity: "error",
+        message: `${what} has no position: a ${kind === "door" ? "door" : "cased opening"} is held to an end of the ${runWord} or to a room edge, never centred by default; write \`at <mm> from start|end\`, \`at <mm> from <room>.<edge>\`, \`at axis <label>\` or \`at center\``,
+        code: "E_OPENING_DATUM",
+        span: posSpan,
+        ...fixesFrom(openingDatumFix(skeleton(clause?.end, " at <mm> from start", "give it a position"), true)),
+      });
       return undefined;
     case "center":
       return { c: (run.r0 + run.r1) / 2, anchor: start };
     case "mm":
     case "percent":
-      ctx.diag(
-        datumDiag(
-          `${what} is placed \`at ${posText(pos)}\`, which names no datum: along ${runWord === "edge" ? "an" : "a"} ${runWord} write \`at <mm> from start|end\`, \`at <mm> from <room>.<edge>\`, \`at axis <label>\` or \`at center\``,
-          posSpan,
+      ctx.diag({
+        severity: "error",
+        message: `${what} is placed \`at ${posText(pos)}\`, which names no datum: along ${runWord === "edge" ? "an" : "a"} ${runWord} write \`at <mm> from start|end\`, \`at <mm> from <room>.<edge>\`, \`at axis <label>\` or \`at center\``,
+        code: "E_OPENING_DATUM",
+        span: posSpan,
+        ...fixesFrom(
+          openingDatumFix(
+            pos.kind === "mm"
+              ? skeleton(clause?.end, " from <start or end>", "name the end of the run it is measured from")
+              : skeleton(
+                  clause?.start,
+                  `${clause?.lead} at <mm> from <start or end>`,
+                  "write it in mm from an end of the run",
+                ),
+            true,
+          ),
         ),
-      );
+      });
       return undefined;
     case "axis": {
       const line = axisLine(pos.label, pos.span, ctx, what);
@@ -738,19 +777,38 @@ function positionOnRun(
       }
       if ("word" in pos.from) {
         return pos.from.word === "start"
-          ? { c: run.r0 + v, anchor: start }
-          : { c: run.r1 - v, anchor: { end: "r1", word: "end" } };
+          ? { c: run.r0 + v, anchor: start, v }
+          : { c: run.r1 - v, anchor: { end: "r1", word: "end" }, v };
       }
       const edge = readEdge(pos.from.datum, pos.from.span, ctx, what);
       if (!edge) return undefined;
       const end = runEndMet(edge, run);
-      if (end === "r0") return { c: run.r0 + v, anchor: { end: "r0", word: pos.from.datum } };
-      if (end === "r1") return { c: run.r1 - v, anchor: { end: "r1", word: pos.from.datum } };
+      if (end === "r0") return { c: run.r0 + v, anchor: { end: "r0", word: pos.from.datum }, v };
+      if (end === "r1") return { c: run.r1 - v, anchor: { end: "r1", word: pos.from.datum }, v };
+      if (edge.vertical === run.vertical) {
+        // AF9: the edges of the same room that meet the run at an end, else the run's own ends.
+        const room = splitDatum(pos.from.datum)!.room;
+        const at = (e: "r0" | "r1"): number => (e === "r0" ? run.r0 + v : run.r1 - v);
+        const alts: DatumRefusal["alts"] = [];
+        chargeSteps(4);
+        for (const side of ["top", "bottom", "left", "right"] as const) {
+          const met = ctx.datums ? edgeOfRoom(ctx.datums.table, room, side) : undefined;
+          const e = met && runEndMet(met, run);
+          if (e) alts.push({ word: `${room}.${side}`, c: at(e) });
+        }
+        alts.push({ word: "start", c: at("r0") }, { word: "end", c: at("r1") });
+        return {
+          refused: datumDiag(
+            `\`${pos.from.datum}\` runs parallel to the ${runWord}, so an offset cannot be measured from it: name an edge that meets one of its ends, or write \`from start|end\``,
+            pos.from.span,
+          ),
+          alts,
+          span: pos.from.span,
+        };
+      }
       ctx.diag(
         datumDiag(
-          edge.vertical === run.vertical
-            ? `\`${pos.from.datum}\` runs parallel to the ${runWord}, so an offset cannot be measured from it: name an edge that meets one of its ends, or write \`from start|end\``
-            : `\`${pos.from.datum}\` meets the ${runWord} (on ${lineText(run)}, ${alongText(run, run.r0)}–${numStr(run.r1)}) at neither of its ends, so an offset cannot be measured from it: name an edge through an end, or write \`from start|end\``,
+          `\`${pos.from.datum}\` meets the ${runWord} (on ${lineText(run)}, ${alongText(run, run.r0)}–${numStr(run.r1)}) at neither of its ends, so an offset cannot be measured from it: name an edge through an end, or write \`from start|end\``,
           pos.from.span,
         ),
       );
@@ -883,7 +941,20 @@ export function placeBetween(
   }
   const run = runs.length === 1 ? runs[0] : pickRun(b, A, B, runs, ctx, what);
   if (!run) return null;
-  return placeOnRun(run, b.pos, b.span, kind, width, ctx, what, "shared edge", relationOf({ between: b }), false);
+  const clause = { start: b.b.span.end, end: b.span.end, lead: "" };
+  return placeOnRun(
+    run,
+    b.pos,
+    b.span,
+    kind,
+    width,
+    ctx,
+    what,
+    "shared edge",
+    relationOf({ between: b }),
+    false,
+    clause,
+  );
 }
 
 /**
@@ -914,8 +985,88 @@ export function placeOnEdge(
     "edge",
     relationOf({ edge: attach }),
     true,
+    span && { start: span.start, end: span.end, lead: `on ${attach.wall}` },
   );
 }
+
+/**
+ * Where a span centred on `c` lands on a run's bodies, and the first check of {@link placeOnRun}'s
+ * that it fails there (card AF9): one judge for the written position and every position a fix
+ * quotes. Its checks, their order and their charges are the placement's own: the body under the
+ * span (a room's edge only, where the run carries several), an exterior body on a room's edge, no
+ * `open between` boundary, then the nibs ({@link hostFit}, {@link nibFault}). With no single body
+ * `host` is absent, and `under` is what a room's edge has under the span.
+ */
+interface Judged {
+  host?: WallSegment;
+  under?: WallSegment[];
+  wall?: RWall;
+  why?: "partition" | "open" | "nib";
+  fit?: HostFit;
+  fault?: NonNullable<ReturnType<typeof nibFault>>;
+}
+
+function judgeLanding(
+  c: number,
+  width: number,
+  bodies: readonly WallSegment[],
+  run: Run,
+  exterior: boolean,
+  flushOk: boolean,
+  ctx: RelationCtx,
+): Judged {
+  let host = bodies[0]!;
+  if (bodies.length > 1) {
+    // On a room's edge the position has already named a point of it, so where the span lands can
+    // settle the wall. A shared run keeps its one-wall rule: two bodies there are never told apart.
+    const under = exterior ? bodiesUnder(bodies, c, width, run) : undefined;
+    const lands = under?.length === 1 && under[0]!.category === "exterior" ? under[0] : undefined;
+    if (lands === undefined) return under ? { under } : {};
+    host = lands;
+  }
+  const wall = wallOfSeg(ctx.walls, host);
+  if (exterior && host.category !== "exterior") return { host, wall, why: "partition" };
+  if (wall?._derived?.open) return { host, wall, why: "open" };
+  const fit = hostFit(host, run, meetingWalls(ctx));
+  const fault = nibFault(c, width, fit.R0, fit.R1, fit.js, fit.need, flushOk, run) ?? undefined;
+  return fault ? { host, wall, fit, fault, why: "nib" } : { host, wall, fit };
+}
+
+/** A plan point on a run, at `t` along it. */
+const pointOn = (run: Run, t: number): Point => (run.vertical ? { x: run.c, y: t } : { x: t, y: run.c });
+
+/**
+ * The centre a fix may quote for `t` on `run`, measured from `anchor`, or `undefined`: the snapped
+ * centre, whose printed offset read back and snapped is that centre again, standing in `host` (or
+ * in any body when `host` is absent) and passing every check of {@link judgeLanding}, in a wall that
+ * stays. A hint must quote the position the plan resolves (`docs/agents/gotchas.md` § Core).
+ */
+function legalQuote(
+  t: number,
+  anchor: OnRun["anchor"],
+  run: Run,
+  bodies: readonly WallSegment[],
+  exterior: boolean,
+  width: number,
+  flushOk: boolean,
+  ctx: RelationCtx,
+  host?: WallSegment,
+): { s: number; text: string } | undefined {
+  const along = (p: Point): number => (run.vertical ? p.y : p.x);
+  const s = along(ctx.snapPt(pointOn(run, t)));
+  const text = legalText(anchor, s, run);
+  const v = Number(text.slice(0, text.indexOf(" ")));
+  if (along(ctx.snapPt(pointOn(run, anchor.end === "r0" ? run.r0 + v : run.r1 - v))) !== s) return undefined;
+  const j = judgeLanding(s, width, bodies, run, exterior, flushOk, ctx);
+  const ok = j.host && !j.why && j.wall?.status !== "demolish" && (!host || sameSeg(j.host, host));
+  return ok ? { s, text } : undefined;
+}
+
+/** The words a move's title adds when the position it replaces was a relation, not an offset. */
+const replaces = (pos: AttachPos): string =>
+  pos.kind === "from" && pos.value.t === "num"
+    ? ""
+    : `; this replaces \`at ${posText(pos) ?? "center"}\` with a fixed offset, which no longer follows it`;
 
 function placeOnRun(
   run: Run,
@@ -928,10 +1079,37 @@ function placeOnRun(
   runWord: string,
   relation: OpeningRelation,
   exterior: boolean,
+  clause?: Clause,
 ): Placed | null {
   const where = relationText({ ...relation, at: undefined });
-  const placed = positionOnRun(pos, span, run, kind, ctx, what, runWord);
+  const placed = positionOnRun(pos, span, run, kind, ctx, what, runWord, clause);
   if (placed === undefined) return null;
+  const flushOk = kind === "opening";
+  if ("refused" in placed) {
+    // AF9: the datum words that put the same offset on a run's walls legally (the room's own edges
+    // first), each its own alternative. On a refusal path only, so its charges move nothing else.
+    const bodies = bodiesOn(run, ctx.walls);
+    const fits = (word: string): boolean => {
+      const a = placed.alts.find((x) => x.word === word)!;
+      const s = run.vertical ? ctx.snapPt(pointOn(run, a.c)).y : ctx.snapPt(pointOn(run, a.c)).x;
+      const j = bodies.length > 0 ? judgeLanding(s, width, bodies, run, exterior, flushOk, ctx) : {};
+      return j.host !== undefined && !j.why && j.wall?.status !== "demolish";
+    };
+    const words = placed.alts.map((a) => a.word);
+    let ok = words.filter((w) => w !== "start" && w !== "end" && fits(w));
+    if (ok.length === 0) ok = ["start", "end"].filter(fits);
+    ctx.diag({
+      ...placed.refused,
+      code: "E_OPENING_DATUM",
+      ...fixesFrom(
+        openingDatumFix(
+          ok.map((w) => ({ span: placed.span, text: w, title: `measure it from \`${w}\`` })),
+          false,
+        ),
+      ),
+    });
+    return null;
+  }
   const centre = placed.c;
   const bodies = bodiesOn(run, ctx.walls);
   if (bodies.length === 0) {
@@ -960,56 +1138,70 @@ function placeOnRun(
     return w ? wallPhraseOf(w) : `wall "${s.wallId}"`;
   };
   // The position, snapped as every coordinate is (ADR 0004), then judged where it lands.
-  const at = ctx.snapPt(run.vertical ? { x: run.c, y: centre } : { x: centre, y: run.c });
+  const at = ctx.snapPt(pointOn(run, centre));
   const c = run.vertical ? at.y : at.x;
-  const flushOk = kind === "opening";
-  let host = bodies[0]!;
-  if (bodies.length > 1) {
-    // On a room's edge the position has already named a point of it, so where the span lands can
-    // settle the wall. A shared run keeps its one-wall rule: two bodies there are never told apart.
-    const under = exterior ? bodiesUnder(bodies, c, width, run) : undefined;
-    const lands = under?.length === 1 && under[0]!.category === "exterior" ? under[0] : undefined;
-    if (lands === undefined) {
-      if (under) {
-        const landing = { c, width, flushOk, kind, anchor: placed.anchor, where, runWord, run };
-        ctx.diag(refusalOnEdge(bodies, under, landing, what, span, ctx));
-      } else {
-        ctx.diag({
-          severity: "error",
-          message: `${what} cannot tell which wall to stand in: the ${runWord} \`${where}\` names carries ${wallRuns(bodies, phrase)}`,
-          code: "E_OPENING_HOST_AMBIGUOUS",
-          span,
-          hints: [ONE_WALL_HINT],
-        });
-      }
-      return null;
+  const j = judgeLanding(c, width, bodies, run, exterior, flushOk, ctx);
+  /** AF9: a fix's move to `t`, in `host` when given, as an edit of the position clause. */
+  const move = (t: number, host?: WallSegment): (PosEdit & { s: number }) | undefined => {
+    const q = clause && legalQuote(t, placed.anchor, run, bodies, exterior, width, flushOk, ctx, host);
+    if (!q || !clause) return undefined;
+    const to = `${where} at ${q.text}`;
+    return {
+      s: q.s,
+      span: { start: clause.start, end: clause.end },
+      text: `${clause.lead} at ${q.text}`,
+      title: `move it to \`${to}\` (centre at ${alongText(run, q.s)})${replaces(pos)}`,
+    };
+  };
+  const host = j.host;
+  if (host === undefined) {
+    if (j.under) {
+      const landing = { c, width, flushOk, kind, anchor: placed.anchor, where, runWord, run, move };
+      ctx.diag(refusalOnEdge(bodies, j.under, landing, what, span, ctx));
+    } else {
+      ctx.diag({
+        severity: "error",
+        message: `${what} cannot tell which wall to stand in: the ${runWord} \`${where}\` names carries ${wallRuns(bodies, phrase)}`,
+        code: "E_OPENING_HOST_AMBIGUOUS",
+        span,
+        hints: [ONE_WALL_HINT],
+      });
     }
-    host = lands;
+    return null;
   }
-  const hostWall = wallOfSeg(ctx.walls, host);
-  if (exterior && host.category !== "exterior") {
+  const hostWall = j.wall;
+  if (j.why === "partition") {
+    const window = kind === "window";
+    const alt = clause ? otherEdge(hostWall, pos, placed, relation, width, flushOk, kind, ctx) : undefined;
     ctx.diag({
       severity: "error",
       message: `${what} needs an exterior wall on \`${where}\`, but the wall there is ${phrase(host)}, a ${host.category}: the edge is shared with another room`,
       code: "E_OPENING_NO_SHARED_WALL",
       span,
       hints: [
-        "Place it `between <room> and <room>` for an opening into the neighbouring room, or on an edge of the room that faces outside.",
+        window
+          ? "Place it on an edge of the room that faces outside."
+          : "Place it `between <room> and <room>` for an opening into the neighbouring room, or on an edge of the room that faces outside.",
       ],
+      ...fixesFrom(
+        exteriorEdgeFix(
+          alt && clause ? [{ span: { start: clause.start, end: clause.end }, text: alt.text, title: alt.title }] : [],
+          alt?.placeholder === true,
+        ),
+      ),
     });
     return null;
   }
-  const open = hostWall?._derived?.open;
-  if (open) {
-    const [a, b] = hostWall._derived!.between!;
+  if (j.why === "open") {
+    const [a, b] = hostWall!._derived!.between!;
     ctx.diag({
       severity: "error",
       message: `${what} cannot stand between "${a}" and "${b}": \`walls from rooms\` declares that pair open, so the edge they share is already voided`,
       code: "E_WALL_BETWEEN_OPEN",
       span,
       // The clause is in the deriving statement's file; offered only where this opening's is (AF1).
-      ...(open.span && (ctx.sameFile?.(hostWall._file) ?? true)
-        ? { relatedSpans: [{ span: open.span, message: "the `open between` clause" }] }
+      ...(hostWall!._derived!.open!.span && (ctx.sameFile?.(hostWall!._file) ?? true)
+        ? { relatedSpans: [{ span: hostWall!._derived!.open!.span, message: "the `open between` clause" }] }
         : {}),
       hints: [
         `Remove the ${kind} (the edge is already open), or remove the \`open between\` clause and keep the wall with the ${kind} in it.`,
@@ -1017,28 +1209,196 @@ function placeOnRun(
     });
     return null;
   }
-  const { R0, R1, js, need } = hostFit(host, run, meetingWalls(ctx));
-  const fault = nibFault(c, width, R0, R1, js, need, flushOk, run);
-  if (fault) {
+  if (j.fault) {
+    const { R0, R1, js, need } = j.fit!;
     const legal = nearestLegal(c, width, R0, R1, js, need, flushOk, ctx.grid, run);
     // A wall lying on part of this host can take the nearest legal span too, and then it would refuse.
     const alone = legal === undefined || bodies.length === 1 || bodiesUnder(bodies, legal, width, run).length === 1;
     // Nor is a position in a demolished wall legal: it hosts nothing, wherever the span stands.
     const gone = hostWall?.status === "demolish";
+    const moves =
+      gone || !alone || legal === undefined
+        ? []
+        : nibMoves(c, width, j.fit!, flushOk, ctx).flatMap((t) => move(t, host) ?? []);
     ctx.diag(
-      nibRefusal(fault, host, need, what, span, ctx, [
-        gone
-          ? DEMOLISHED_HINT
-          : !alone
-            ? ONE_WALL_HINT
-            : legal === undefined
-              ? `No position along the ${runWord} \`${where}\` names fits a ${numStr(width)} mm opening with its nibs: narrow it, or move a wall that meets the ${runWord}.`
-              : `The nearest legal position is \`${where} at ${legalText(placed.anchor, legal, run)}\` (centre at ${alongText(run, legal)}).`,
-      ]),
+      nibRefusal(
+        j.fault,
+        host,
+        need,
+        what,
+        span,
+        ctx,
+        [
+          gone
+            ? DEMOLISHED_HINT
+            : !alone
+              ? ONE_WALL_HINT
+              : legal === undefined
+                ? `No position along the ${runWord} \`${where}\` names fits a ${numStr(width)} mm opening with its nibs: narrow it, or move a wall that meets the ${runWord}.`
+                : movesHint(moves.length > 0 ? moves : [{ s: legal }], c, where, run, placed.anchor),
+        ],
+        moves,
+      ),
     );
     return null;
   }
   return { at, host, relation };
+}
+
+/**
+ * AF9's alternative for an opening on one partition of a room's edge (`E_OPENING_NO_SHARED_WALL`),
+ * as the clause that replaces `on <room>.<edge> …`, or `undefined`. A door or cased opening on a
+ * partition `walls from rooms` derived between two rectangles: `between` them, which stands in the
+ * same wall. A window: the room's one exterior edge, when the same position words land it legally
+ * there; with several exterior edges, or when they do not, the placeholder skeleton. Each position
+ * is judged by {@link judgeLanding}; every scan is charged before it runs, on this refusal path only.
+ */
+function otherEdge(
+  hostWall: RWall | undefined,
+  pos: AttachPos,
+  placed: OnRun,
+  relation: OpeningRelation,
+  width: number,
+  flushOk: boolean,
+  kind: Kind,
+  ctx: RelationCtx,
+): { text: string; title: string; placeholder?: true } | undefined {
+  const room = splitDatum(relation.edge ?? "")?.room;
+  const table = ctx.datums?.table;
+  if (room === undefined || table === undefined) return undefined;
+  const at = posText(pos);
+  const tail = at === undefined ? "" : ` at ${at}`;
+  /** Is a span the same words put on `r` legal there? Only words that name no other datum are read. */
+  const lands = (r: Run, ext: boolean): boolean => {
+    const v = placed.v;
+    const t =
+      pos.kind === "default" || pos.kind === "center"
+        ? (r.r0 + r.r1) / 2
+        : pos.kind === "from" && "word" in pos.from && v !== undefined
+          ? pos.from.word === "start"
+            ? r.r0 + v
+            : r.r1 - v
+          : undefined;
+    const bodies = t === undefined ? [] : bodiesOn(r, ctx.walls);
+    if (t === undefined || bodies.length === 0) return false;
+    const p = ctx.snapPt(pointOn(r, t));
+    const j = judgeLanding(r.vertical ? p.y : p.x, width, bodies, r, ext, flushOk, ctx);
+    return j.host !== undefined && !j.why && j.wall?.status !== "demolish";
+  };
+  if (kind !== "window") {
+    const pair = hostWall?._derived?.between;
+    const other = pair?.[0] === room ? pair[1] : pair?.[1] === room ? pair[0] : undefined;
+    const A = table.rooms.get(room);
+    const B = other === undefined ? undefined : table.rooms.get(other);
+    const run = A && B ? sharedRun(A, B) : undefined;
+    if (!run || !lands(run, false)) return undefined;
+    const to = `between ${room} and ${other}${tail}`;
+    return { text: to, title: `make it an opening into "${other}": \`${to}\` stands in the same wall` };
+  }
+  chargeSteps(4);
+  const edges = (["top", "bottom", "left", "right"] as const).flatMap((side) => {
+    const e = edgeOfRoom(table, room, side);
+    if (!e) return [];
+    const r: Run = { vertical: e.vertical, c: e.c, r0: e.lo, r1: e.hi };
+    const bodies = bodiesOn(r, ctx.walls);
+    chargeSteps(bodies.length * ctx.walls.length);
+    const ext = bodies.some((s) => s.category === "exterior" && wallOfSeg(ctx.walls, s)?.status !== "demolish");
+    return ext ? [{ side, r }] : [];
+  });
+  if (edges.length === 0) return undefined;
+  const [one] = edges;
+  if (edges.length === 1 && lands(one!.r, true)) {
+    const to = `on ${room}.${one!.side}${tail}`;
+    return { text: to, title: `move the window to \`${to}\`, the room's one exterior edge` };
+  }
+  return {
+    text: `on <exterior edge of "${room}">${tail}`,
+    title: `put the window on an exterior edge of "${room}" (${edges.map((e) => `${room}.${e.side}`).join(", ")})`,
+    placeholder: true,
+  };
+}
+
+/**
+ * The nib refusal's hint (finding F1): one position, or each of two with its distance from the
+ * written centre, nearer first, saying so when they are equally near.
+ */
+function movesHint(
+  moves: ReadonlyArray<{ s: number }>,
+  c: number,
+  where: string,
+  run: Run,
+  anchor: OnRun["anchor"],
+): string {
+  const q = (m: { s: number }): string =>
+    `\`${where} at ${legalText(anchor, m.s, run)}\` (centre at ${alongText(run, m.s)}`;
+  const [m, n] = moves;
+  if (n === undefined) return `The nearest legal position is ${q(m!)}).`;
+  const d = (x: { s: number }): string => numStr(Math.abs(x.s - c));
+  return d(m!) === d(n)
+    ? `Two positions are equally near, ${d(m!)} mm either way: ${q(m!)}) and ${q(n)}).`
+    : `The nearest legal positions are ${q(m!)}, ${d(m!)} mm away) and ${q(n)}, ${d(n)} mm away).`;
+}
+
+/**
+ * The centres a nib refusal's fix may offer (card AF9, design §3), before the round trip and the
+ * judge: the walls meeting the host cut it into bays, a move stays in its bay, and a bay's legal
+ * centres are one interval (its ends a free host end, or a meeting wall's face plus the nib) and,
+ * for a cased opening, a 0.5 mm band flush with each meeting wall's face (finding F2), each end
+ * rounded inward to the grid. The written centre inside a bay gets the nearest legal centre on each
+ * side of it there; on a meeting wall's body, the nearest in each bay beside it; with none in its
+ * bay, the nearest in the next bay with one, either way. Nearer first, then the smaller coordinate.
+ * Charged one step per meeting wall, before the bays are built.
+ */
+function nibMoves(c: number, width: number, fit: HostFit, flushOk: boolean, ctx: RelationCtx): number[] {
+  const { R0, R1, need } = fit;
+  const js = [...fit.js].sort((p, q) => p.lo - q.lo);
+  chargeSteps(js.length + 1);
+  const w2 = width / 2;
+  const g = ctx.grid;
+  const inward = (lo: number, hi: number): [number, number] =>
+    g > 0 ? [Math.ceil(lo / g) * g, Math.floor(hi / g) * g] : [lo, hi];
+  // Each bay: its faces, and its legal intervals.
+  const bays: Array<{ a: number; b: number; ok: Array<[number, number]> }> = [];
+  let a = R0;
+  let aWall = false;
+  for (const j of [...js, undefined]) {
+    const b = j ? j.lo : R1;
+    if (b > a) {
+      const ok: Array<[number, number]> = [];
+      const lo = a + (aWall ? need : 0) + w2;
+      const hi = b - (j ? need : 0) - w2;
+      ok.push(inward(lo, hi));
+      if (flushOk && aWall) ok.push(inward(a + w2, a + w2 + FLUSH_MM));
+      if (flushOk && j) ok.push(inward(b - w2 - FLUSH_MM, b - w2));
+      bays.push({ a, b, ok: ok.filter(([p, q]) => p <= q) });
+    }
+    if (j) {
+      a = Math.max(a, j.hi);
+      aWall = true;
+    }
+  }
+  /** The nearest legal centre on one side of `c`, from bay `k` outward (`walk`) or in it alone.
+   *  The written centre is illegal, so no interval holds it: a side's interval lies wholly there. */
+  const side = (k: number, dir: 1 | -1, walk: boolean): number | undefined => {
+    for (let i = k; i >= 0 && i < bays.length; i += dir) {
+      const xs = bays[i]!.ok.flatMap(([p, q]) => (dir < 0 ? (q <= c ? [q] : []) : p >= c ? [p] : []));
+      if (xs.length > 0) return dir < 0 ? Math.max(...xs) : Math.min(...xs);
+      if (!walk) return undefined;
+    }
+    return undefined;
+  };
+  // The bay the written centre stands in, or (on a wall's body, or off the host's start) the one after it.
+  let k = bays.findIndex((y) => y.b >= c);
+  if (k < 0) k = bays.length - 1;
+  if (k < 0) return [];
+  const inBay = bays[k]!.a <= c;
+  const out =
+    inBay && bays[k]!.ok.length > 0
+      ? [side(k, -1, false), side(k, 1, false)]
+      : [side(k - 1, -1, true), side(inBay ? k + 1 : k, 1, true)];
+  return [...new Set(out.filter((x): x is number => x !== undefined))].sort(
+    (p, q) => Math.abs(p - c) - Math.abs(q - c) || p - q,
+  );
 }
 
 /** `E_OPENING_NIB` for a span {@link nibFault} found wanting. */
@@ -1050,6 +1410,7 @@ function nibRefusal(
   span: Span,
   ctx: RelationCtx,
   hints: string[],
+  moves: readonly PosEdit[] = [],
 ): Diagnostic {
   const phrase = (s: WallSegment): string => {
     const w = wallOfSeg(ctx.walls, s);
@@ -1067,6 +1428,7 @@ function nibRefusal(
     code: "E_OPENING_NIB",
     span,
     hints,
+    ...fixesFrom(openingMoveFix(moves)),
   };
 }
 
@@ -1290,6 +1652,8 @@ interface Landing {
   where: string;
   runWord: string;
   run: Run;
+  /** AF9: the fix's move to `t` in `host` (see `placeOnRun`). */
+  move(t: number, host?: WallSegment): PosEdit | undefined;
 }
 
 /** Why a span on a room's edge has no wall of its own, given the bodies it lies on. */
@@ -1333,6 +1697,7 @@ function refusalOnEdge(
   const carries = wallRuns(bodies, phrase);
   const { where, runWord, kind } = landing;
   const one = under.length === 1 ? wallOfSeg(ctx.walls, under[0]!) : undefined;
+  const fit = standing.length === 0 ? { hints: [], moves: [] } : edgeHints(bodies, standing, landing, walls, ctx);
   // `between` refuses an open pair whatever `width` left of the wall, and a demolished wall hosts nothing.
   const between =
     kind !== "window" && one !== undefined && one._derived?.open === undefined && one.status !== "demolish"
@@ -1352,7 +1717,8 @@ function refusalOnEdge(
     message: `${what} cannot tell which wall to stand in: the ${runWord} \`${where}\` names carries ${carries}, and ${landingText(under, landing, phrase)}`,
     code: "E_OPENING_HOST_AMBIGUOUS",
     span,
-    hints: [...edgeHints(bodies, standing, landing, walls, ctx), ...between],
+    hints: [...fit.hints, ...between],
+    ...fixesFrom(openingMoveFix(fit.moves)),
   };
 }
 
@@ -1364,12 +1730,13 @@ function refusalOnEdge(
 function edgeHints(
   bodies: readonly WallSegment[],
   standing: readonly WallSegment[],
-  { c, width, flushOk, where, runWord, anchor, run }: Landing,
+  { c, width, flushOk, where, runWord, anchor, run, move }: Landing,
   walls: ReturnType<typeof meetingWalls>,
   ctx: RelationCtx,
-): string[] {
+): { hints: string[]; moves: PosEdit[] } {
   const exteriors = [...standing].sort((p, q) => extent(p, run.vertical)[0] - extent(q, run.vertical)[0]);
   const fits: string[] = [];
+  const moves: PosEdit[] = [];
   let doubled = false;
   for (const s of exteriors) {
     const { R0, R1, js, need } = hostFit(s, run, walls);
@@ -1378,13 +1745,18 @@ function edgeHints(
     if (bodiesUnder(bodies, legal, width, run).length === 1) {
       const on = `${alongText(run, R0)}–${numStr(R1)}`;
       fits.push(`\`${where} at ${legalText(anchor, legal, run)}\` stands in the exterior wall on ${on}.`);
+      const m = move(legal, s);
+      if (m) moves.push(m);
     } else doubled = true;
   }
-  if (fits.length > 0) return fits;
-  if (doubled) return [ONE_WALL_HINT];
-  return [
-    `No position along the ${runWord} \`${where}\` names fits a ${numStr(width)} mm opening with its nibs in an exterior wall: narrow it, or move a wall that meets the ${runWord}.`,
-  ];
+  if (fits.length > 0) return { hints: fits, moves };
+  if (doubled) return { hints: [ONE_WALL_HINT], moves };
+  return {
+    hints: [
+      `No position along the ${runWord} \`${where}\` names fits a ${numStr(width)} mm opening with its nibs in an exterior wall: narrow it, or move a wall that meets the ${runWord}.`,
+    ],
+    moves,
+  };
 }
 
 /** Why a span fails its nibs (a phrase builder, and whether it reads an open boundary, which has
@@ -1454,7 +1826,8 @@ function nearestLegal(
 ): number | undefined {
   const w2 = width / 2;
   const raw = [R0 + w2, R1 - w2];
-  for (const j of js) raw.push(j.hi + need + w2, j.lo - need - w2);
+  // A cased opening may stand flush with a meeting wall's face (finding F2, AF9).
+  for (const j of js) raw.push(j.hi + need + w2, j.lo - need - w2, ...(flushOk ? [j.hi + w2, j.lo - w2] : []));
   chargeSteps(raw.length * (2 * js.length + 1) + 1);
   let best: number | undefined;
   for (const t of raw) {

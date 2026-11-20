@@ -21,6 +21,7 @@ import {
 import type { Point } from "../../ast.js";
 import type { Diagnostic } from "../../diagnostics.js";
 import { doorHingeFlipFix, fixesFrom, pocketRunFix } from "../../fix-producers.js";
+import { doorwayMoveFix, doorwayMoves } from "../doorway-move.js";
 import {
   doorLeaves,
   doorSwing,
@@ -29,12 +30,9 @@ import {
   swingsCollideAsIndependent,
   type DoorLike,
   type DoorSwing,
-  type WallSegment,
   wallFaceProbes,
 } from "../../geometry.js";
-import { arcOpeningVoid } from "../../geometry/arc-band.js";
 import { type GridBox, overlapIndex } from "../../geometry/grid-index.js";
-import { type Arc, arcLength, arcTangentAt } from "../../geometry/arc.js";
 import { type BBox, DOORWAY_WIDTH_MM, doorLandingRect, openingBlock, rectsOverlap } from "../../geometry/rect.js";
 import type { RDoor, RFurniture, ROpening } from "../../ir.js";
 import type { LintContext, LintRule } from "../context.js";
@@ -44,6 +42,7 @@ import { isServiceCounter } from "../clearance-measure.js";
 import { approachGapMm, deficitMm, distPointToRect, mm, shortfall } from "../measure.js";
 import { fmtMessage } from "../../num-format.js";
 import { cite } from "../rule-ref.js";
+import { tightestCorner } from "../corner-nib.js";
 
 /**
  * A door whose swing arc is blocked by furniture or another door's swing.
@@ -305,6 +304,13 @@ export const doorwayBlocked: LintRule = {
             `Or shrink it by ${mm(short)} mm on the axis facing the door, so it stops ${mm(depth)} mm short of the opening.`,
             `Or move the door along its wall (\`on <wall> at <pos>\`) so its landing misses "${gn}".`,
           ],
+          ...fixesFrom(
+            doorwayMoveFix(
+              doorwayMoves(ctx, d, (x) => blockedApproach(x, ctx) !== null),
+              "door",
+              gn,
+            ),
+          ),
         }),
       );
     }
@@ -315,7 +321,8 @@ export const doorwayBlocked: LintRule = {
         if (wide) out.push(wide);
         continue;
       }
-      const hit = blockedApproach(o, ctx, (f) => !isServiceCounter(f.category));
+      const counts = (f: RFurniture): boolean => !isServiceCounter(f.category);
+      const hit = blockedApproach(o, ctx, counts);
       if (!hit) continue;
       const { blocker, depth, gap, short } = hit;
       const gn = blocker.label ?? blocker.category;
@@ -334,6 +341,13 @@ export const doorwayBlocked: LintRule = {
               ? "The opening is derived by `open between` and spans the rooms' shared edge, so the piece is what moves."
               : `Or move the opening along its wall (\`on <wall> at <pos>\`) so its landing misses ${ref}.`,
           ],
+          ...fixesFrom(
+            doorwayMoveFix(
+              doorwayMoves(ctx, o, (x) => blockedApproach(x, ctx, counts) !== null, counts),
+              "opening",
+              gn,
+            ),
+          ),
         }),
       );
     }
@@ -571,7 +585,7 @@ export const doorClearance: LintRule = {
  *
  * The host segment's run has to **end** at that point and the wall has to **go somewhere
  * else** from it. So: some other segment (this wall's next edge, or a separate wall
- * meeting it) leaves the point, and none leaves it within {@link COLLINEAR_TURN_RAD} of
+ * meeting it) leaves the point, and none leaves it within `COLLINEAR_TURN_RAD` (`src/lint/corner-nib.ts`) of
  * straight on. That excludes the three shapes that are not corners and would otherwise be
  * false positives — a wall's free END (nothing to mitre into; a stub at a wall's end is a
  * different shape and, if it is worth a rule, a different rule), a redundant COLLINEAR
@@ -640,115 +654,6 @@ export const doorNearCorner: LintRule = {
     return out;
   },
 };
-
-/**
- * The tightest CORNER end of a door's host run whose nib is under `need` (the one
- * `W_DOOR_NEAR_CORNER` reports), or null when that rule is silent for the door. Exported so
- * `W_OPENING_AT_JUNCTION` defers to this rule by the same test, never a restatement of it.
- */
-export function tightestCorner(
-  d: Pick<RDoor, "at" | "width">,
-  seg: WallSegment,
-  wallSegs: readonly WallSegment[],
-  need: number,
-): { have: number; corner: Point } | null {
-  const runs = jambRuns(d, seg);
-  if (!runs || !(need > 0)) return null;
-  let worst: { have: number; corner: Point } | null = null;
-  for (const end of ["a", "b"] as const) {
-    const have = Math.max(0, end === "a" ? runs.toA : runs.toB);
-    if (have >= need) continue;
-    if (!isCorner(seg, end, wallSegs)) continue;
-    if (!worst || have < worst.have) worst = { have, corner: seg[end] };
-  }
-  return worst;
-}
-
-/**
- * Below this turn two runs are one straight wall. 5 degrees — at a wall's half-thickness
- * the mitre then moves the outer face by `h*tan(theta/2)`, i.e. 5.5 mm on a 250 mm wall,
- * which is nothing at page scale — and it comfortably absorbs the float residue in an
- * arc's tangent, so a curve that hands over to a straight run smoothly reads as smooth.
- */
-const COLLINEAR_TURN_RAD = (5 * Math.PI) / 180;
-
-/**
- * Along-run distance (mm) from each of a door's jambs to the two ends of its host
- * segment — arc length on a curve, projection on a straight run. `null` when the door is
- * not on this segment at all (a degenerate run, or an `at (x,y)` door off its own wall,
- * which `W_DOOR_OFF_WALL` owns).
- *
- * A negative result means the opening runs PAST that end; the caller floors it at zero,
- * so the warning reports the nib that exists rather than a negative length.
- */
-export function jambRuns(d: Pick<RDoor, "at" | "width">, seg: WallSegment): { toA: number; toB: number } | null {
-  if (seg.arc) {
-    // `arcOpeningVoid` is the single existing answer for where an opening lands along a
-    // curve — the same one the curved band measurement uses — so the jamb positions here
-    // cannot disagree with the ones the drawing cuts.
-    const span = arcOpeningVoid(seg.arc, d.at, d.width, seg.thickness);
-    if (!span) return null;
-    return { toA: span[0], toB: arcLength(seg.arc) - span[1] };
-  }
-  const vx = seg.b.x - seg.a.x;
-  const vy = seg.b.y - seg.a.y;
-  const len = Math.hypot(vx, vy);
-  if (!(len > 0)) return null;
-  const u = ((d.at.x - seg.a.x) * vx + (d.at.y - seg.a.y) * vy) / len;
-  return { toA: u - d.width / 2, toB: len - u - d.width / 2 };
-}
-
-/** Unit tangent at one end of a segment, pointing INTO it. Arc-aware. */
-function tangentInto(seg: { a: Point; b: Point; arc?: Arc }, end: "a" | "b"): Point | null {
-  if (seg.arc) {
-    const t = arcTangentAt(seg.arc, seg.arc[end]);
-    return end === "a" ? t : { x: -t.x, y: -t.y };
-  }
-  const vx = seg.b.x - seg.a.x;
-  const vy = seg.b.y - seg.a.y;
-  const l = Math.hypot(vx, vy);
-  if (!(l > 0)) return null;
-  const s = end === "a" ? 1 : -1;
-  return { x: (s * vx) / l, y: (s * vy) / l };
-}
-
-/** Unsigned angle (rad) between two unit vectors, via `atan2` so it stays exact near 0. */
-const angleBetween = (u: Point, v: Point): number => Math.abs(Math.atan2(u.x * v.y - u.y * v.x, u.x * v.x + u.y * v.y));
-
-/**
- * Does the wall TURN at this end of `seg` — i.e. does its run stop here and set off in
- * another direction?
- *
- * True only when at least one other segment leaves the point and NONE leaves it straight
- * on. A run that carries straight through (a collinear vertex, a tangent arc/straight
- * hand-over, or a partition teeing into a wall that continues) is not a corner however
- * many other segments meet there — nothing is mitred, so nothing reads as a chamfer. A
- * free end with no neighbour at all is not a corner either.
- *
- * Two ends count as meeting when they are within half a wall thickness of each other:
- * that is close enough that the two solids overlap and the joinery draws one corner, so
- * the test matches what a reader sees rather than demanding byte-equal coordinates.
- */
-export function isCorner(seg: WallSegment, end: "a" | "b", all: readonly WallSegment[]): boolean {
-  const into = tangentInto(seg, end);
-  if (!into) return false;
-  const p = seg[end];
-  // The direction a run continuing straight on would leave `p` in.
-  const straight = { x: -into.x, y: -into.y };
-  const tol = Math.max(1, seg.thickness / 2);
-  let turns = false;
-  for (const s of all) {
-    if (s.wallId === seg.wallId && s.index === seg.index) continue;
-    for (const oe of ["a", "b"] as const) {
-      if (Math.hypot(s[oe].x - p.x, s[oe].y - p.y) > tol) continue;
-      const away = tangentInto(s, oe);
-      if (!away) continue;
-      if (angleBetween(away, straight) <= COLLINEAR_TURN_RAD) return false; // the wall carries on
-      turns = true;
-    }
-  }
-  return turns;
-}
 
 /**
  * Door–door interference (plan-soundness PS2.11d): a hinged door whose OPEN leaf, parked where

@@ -55,7 +55,7 @@ import { arcOpeningVoid } from "../../geometry/arc-band.js";
 import type { LintContext, LintRule } from "../context.js";
 import { mm } from "../measure.js";
 import { type Hosted, KIND_WORD, openBoundaryPhrase, openingName, wallPhrase } from "../element-phrases.js";
-import { isCorner, tightestCorner } from "./doors.js";
+import { isCorner, tightestCorner } from "../corner-nib.js";
 import {
   atFreeEnd,
   FLUSH_MM,
@@ -73,7 +73,7 @@ import { cite } from "../rule-ref.js";
 const EPS = 1e-6;
 
 /** One opening placed on its host run: its along-run span on `seg`, from the shape. */
-interface OnRun {
+export interface OnRun {
   el: Hosted;
   /** Source order among doors, windows and cased openings (the `ir.elements` index). */
   order: number;
@@ -102,7 +102,7 @@ const unitOf = (v: Point): Point | null => {
  * element off its wall is `W_*_OFF_WALL`'s report). The on-host tolerance is the access
  * graph's own (`connectorConnection`).
  */
-function onRun(el: Hosted, order: number): OnRun | null {
+export function onRun(el: Hosted, order: number): OnRun | null {
   const seg = el.host;
   if (!seg) return null;
   if (seg.arc) {
@@ -118,7 +118,7 @@ function onRun(el: Hosted, order: number): OnRun | null {
 }
 
 /** Every door, window and cased opening that sits on its host, in source order. */
-function openingsOnRuns(ctx: LintContext): OnRun[] {
+export function openingsOnRuns(ctx: LintContext): OnRun[] {
   const out: OnRun[] = [];
   ctx.ir.elements.forEach((e, i) => {
     if (e.kind !== "door" && e.kind !== "window" && e.kind !== "opening") return;
@@ -156,7 +156,7 @@ const NO_OPEN_BOUNDARIES: ReadonlySet<string> = new Set();
  * set on the faces of all of them (`faceAt`, `src/room-tiling.ts`), and the thickest one's pier
  * excuses a thinner one beside it. Every other opening reads what stands.
  */
-function junctionLookup(ctx: LintContext): (o: OnRun) => Junction[] {
+export function junctionLookup(ctx: LintContext): (o: OnRun) => Junction[] {
   const cache = new Map<string, Junction[]>();
   const open = openBoundaryIds(ctx.ir.walls);
   return ({ el, seg }) => {
@@ -239,11 +239,11 @@ const distinct = (xs: readonly string[]): string[] => xs.filter((x, i) => xs.ind
 // ─── the move search ───────────────────────────────────────────────────────────────────
 
 /** An along-run interval the moved span must not enter (open intervals). */
-type Keepout = { lo: number; hi: number };
+export type Keepout = { lo: number; hi: number };
 
 /** What a move carries: one opening, or both leaves of a double door, as one along-run span
  *  in `leaves[0]`'s coordinates (`leaves[0]` is the opening the hint is about). */
-interface MoveUnit {
+export interface MoveUnit {
   leaves: OnRun[];
   lo: number;
   hi: number;
@@ -251,7 +251,7 @@ interface MoveUnit {
 
 /** `o`, with the other leaf of its double door when that leaf is on the same segment: the
  *  pair `W_OPENING_OVERLAP` treats as one opening, so a move never splits it. */
-function moveUnit(o: OnRun, all: readonly OnRun[]): MoveUnit {
+export function moveUnit(o: OnRun, all: readonly OnRun[]): MoveUnit {
   const leaves = [
     o,
     ...all.filter(
@@ -272,7 +272,13 @@ function moveUnit(o: OnRun, all: readonly OnRun[]): MoveUnit {
  * `W_DOOR_NEAR_CORNER` says; each other opening on the run grown by a mullion; and for a door
  * the corner nib `W_DOOR_NEAR_CORNER` asks for.
  */
-function keepouts(ctx: LintContext, o: OnRun, u: MoveUnit, all: readonly OnRun[], js: readonly Junction[]): Keepout[] {
+export function keepouts(
+  ctx: LintContext,
+  o: OnRun,
+  u: MoveUnit,
+  all: readonly OnRun[],
+  js: readonly Junction[],
+): Keepout[] {
   const len = segmentLength(o.seg);
   const need = nibNeed(ctx, o.seg);
   const out: Keepout[] = [
@@ -313,7 +319,7 @@ function snappedCentre(ctx: LintContext, o: OnRun, shift: number): { s: number; 
 }
 
 /** Where one leaf of a moved unit lands: its grid-snapped point and along-run centre. */
-interface Placed {
+export interface Placed {
   leaf: OnRun;
   at: Point;
   s: number;
@@ -324,7 +330,7 @@ interface Placed {
  * keep-out, or null. Walks the keep-outs it collides with, at most once each, then checks the
  * grid-snapped position (every leaf moved by the same snapped amount); a count, never a time.
  */
-function clearMove(
+export function clearMove(
   ctx: LintContext,
   u: MoveUnit,
   ks: readonly Keepout[],
@@ -372,7 +378,7 @@ function nearestNib(lo: number, hi: number, js: readonly Junction[]): { nib: num
 }
 
 /** The cumulative run position of an along-run coordinate on `seg`, for `on <wall> at`. */
-function wallPosition(ctx: LintContext, seg: WallSegment, s: number): number {
+export function wallPosition(ctx: LintContext, seg: WallSegment, s: number): number {
   let acc = 0;
   for (const t of ctx.wallSegs) {
     if (t.wallId !== seg.wallId) continue;
@@ -426,7 +432,7 @@ function joined(ctx: LintContext, between: readonly string[]): string {
  * one room? The adjacency precondition every quoted move is held to: a move that clears the
  * junction by carrying a door into a different room is a different plan, not a fix.
  */
-function servesSame(ctx: LintContext): MoveCheck {
+export function servesSame(ctx: LintContext): MoveCheck {
   const key = (b: readonly string[]): string => [...b].sort().join("|");
   return (moved) => {
     let first: readonly string[] | null = null;

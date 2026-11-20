@@ -422,6 +422,10 @@ export interface RDoor extends RBase {
    *  r.top at center`), in the frame it is written in: `describe()`, hints and Plan JSON quote
    *  it, never the internal name of its derived host. Internal. */
   _relation?: OpeningRelation;
+  /** The lead clause a `W_DOORWAY_BLOCKED` move rewrites (card AF9): `on <wall> at …`, `between … at …`
+   *  or `on <room>.<edge> at …`, present only when its position is a literal offset (a hosted lead keeps the
+   *  wall `on` names and the end `from` names). Internal: lint reads it; nothing draws or reports it. */
+  _lead?: { span: Span; on?: string; from?: "start" | "end" };
   /**
    * The whole `door` statement re-emitted with the hinge on the OTHER jamb — the
    * machine-applicable fix text for `W_SWING_OBSTRUCTED`. Computed in `door.resolve`
@@ -495,6 +499,8 @@ export interface ROpening extends RBase {
   _placement?: OpeningPlacement;
   /** See {@link RDoor._relation}. */
   _relation?: OpeningRelation;
+  /** See {@link RDoor._lead}. */
+  _lead?: RDoor["_lead"];
   /**
    * Present only on an opening an `open between` clause of `walls from rooms` DERIVED (ADR
    * 0028 §3): the two rooms it joins, in source order, and whether the clause gave it an

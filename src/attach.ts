@@ -426,6 +426,25 @@ export function resolveAttachment(
 }
 
 /**
+ * The lead clause a lint fix may rewrite to move a door or cased opening along its run (card AF9),
+ * as the IR's `_lead`: present only when the position is a literal offset, so a fix never bakes an
+ * expression, `center` or an axis into a number. A hosted wall is read only at `<mm>` or
+ * `<mm> from start|end`; a relational lead at any literal `from` position.
+ */
+export function leadOf(
+  n: { attach?: OpeningAttach; between?: OpeningBetween },
+  relational: boolean,
+): { _lead: { span: Span; on?: string; from?: "start" | "end" } } | undefined {
+  const lead = n.between ?? n.attach;
+  const p = lead?.pos;
+  if (!lead?.span || !p || !(p.kind === "from" || p.kind === "mm") || p.value?.t !== "num") return undefined;
+  const word = p.kind === "from" && "word" in p.from ? p.from.word : undefined;
+  if (relational) return p.kind === "from" ? { _lead: { span: lead.span } } : undefined;
+  if (!n.attach || (p.kind === "from" && word === undefined)) return undefined;
+  return { _lead: { span: lead.span, on: n.attach.wall, ...(word ? { from: word } : {}) } };
+}
+
+/**
  * Resolve an opening's hosted lead — `between <A> and <B> …`, `on <room>.<edge> …` (both
  * relational, ADR 0028 §5) or `on <wall> at …` — to its point and host. `undefined` for the
  * `at (x,y)` form, which each element resolves itself (its off-wall warning is its own).

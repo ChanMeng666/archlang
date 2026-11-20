@@ -41,6 +41,7 @@ import { proveWhileFixes } from "../src/while-fix.js";
 import { corpusFiles } from "./helpers/corpus.js";
 import { sourceProblems } from "./helpers/fixable-codes-check.js";
 import { worldFor } from "./helpers/world.js";
+import { AF9_PLANS } from "./helpers/opening-moves.js";
 
 const plan = (...body: string[]): string => ['plan "R" {', "  units mm", ...body, "}"].join("\n");
 const BOX = "  wall exterior thickness 200 { (0,0) (6000,0) (6000,4000) (0,4000) close }";
@@ -91,6 +92,11 @@ const REACH: Record<string, string> = {
     "  room id=hall at (0,0) size 3000x3000",
     "  room id=b right-of hal size 2000x3000",
   ),
+  // AF9's moves and skeletons for refused openings (`test/opening-moves.test.ts` holds each one).
+  "E_OPENING_HOST_AMBIGUOUS|maybe-incorrect": AF9_PLANS.extPart,
+  "E_OPENING_NO_SHARED_WALL|maybe-incorrect": AF9_PLANS.extDoor,
+  "E_OPENING_NO_SHARED_WALL|has-placeholders": AF9_PLANS.ext,
+  "E_OPENING_DATUM|maybe-incorrect": AF9_PLANS.par,
   // The loop is inside a component body.
   "W_WHILE_DEPRECATED|maybe-incorrect": plan(
     "  component c() {\n    let i = 0\n    while i < 3 {\n      column at (i * 300, 0) size 100x100\n      i = i + 1\n    }\n  }\n  c()",
@@ -240,6 +246,43 @@ ${v2.slice(0, i)}
       rmSync(root, { recursive: true, force: true });
     }
   }, 60_000);
+
+  it("plant: an AF9 producer whose tier is set outside its function fails (openingMoveFix)", () => {
+    const root = plantedTree("src/fix-producers.ts", (t) => {
+      const lit = 'applicability: "maybe-incorrect",';
+      const i = t.indexOf(lit, t.indexOf("export function openingMoveFix("));
+      return `const MOVE_TIER = "maybe-incorrect" as const;\n${t.slice(0, i)}applicability: MOVE_TIER,${t.slice(i + lit.length)}`;
+    });
+    try {
+      const problems = sourceProblems(root);
+      expect(problems.some((p) => /#openingMoveFix sets an applicability the source does not write out$/.test(p))).toBe(
+        true,
+      );
+      expect(problems).toContain(
+        "src/fix-producers.ts#openingMoveFix: its source writes applicability (none), its row says maybe-incorrect",
+      );
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  }, 60_000);
+
+  it("plant: an AF9 row that declares machine-applicable fails, for each of the four (RM-D70)", () => {
+    const AF9 = ["#openingMoveFix", "#exteriorEdgeFix", "#openingDatumFix", "#doorwayMoveFix"];
+    const rows = FIX_PRODUCERS.map((p) =>
+      AF9.some((n) => p.producer.endsWith(n))
+        ? { ...p, applicability: ["machine-applicable" as const, ...p.applicability] }
+        : p,
+    );
+    const problems = sourceProblems(REPO, rows);
+    for (const n of AF9)
+      expect(
+        problems.some((p) => p.includes(`${n}: its source writes applicability`)),
+        n,
+      ).toBe(true);
+    // And as the table stands, no AF9 row declares it.
+    for (const p of FIX_PRODUCERS.filter((r) => AF9.some((n) => r.producer.endsWith(n))))
+      expect(p.applicability, p.producer).not.toContain("machine-applicable");
+  });
 
   it("plant: a row whose stage or producer is wrong fails", () => {
     const rows = FIX_PRODUCERS.map((p) =>

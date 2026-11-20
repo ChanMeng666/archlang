@@ -627,6 +627,70 @@ export function spellingFix(
   ];
 }
 
+/** One alternative an AF9 producer turns into a fix: the edit and its title. */
+export interface PosEdit {
+  span: Span;
+  text: string;
+  title: string;
+}
+
+const editsOf = (e: PosEdit) => [{ span: e.span, newText: e.text }];
+
+/**
+ * AF9: the moves for a relational opening refused at its position (`E_OPENING_NIB`,
+ * `E_OPENING_HOST_AMBIGUOUS` on a room's edge), each a position the compiler's own check passes,
+ * nearer first. Always `maybe-incorrect`: the catalogue's other remedies (narrow it, move the wall)
+ * stay open, and the nib is enforced, never slid (ADR 0028 §5). `null` with no position to offer.
+ */
+export function openingMoveFix(moves: readonly PosEdit[]): FixSuggestion[] | null {
+  return moves.length === 0
+    ? null
+    : moves.map(
+        (m): FixSuggestion => ({
+          title: m.title,
+          applicability: "maybe-incorrect",
+          fixId: "opening-move",
+          edits: editsOf(m),
+        }),
+      );
+}
+
+/**
+ * AF9: `E_OPENING_NO_SHARED_WALL` on one partition of a room's edge. A door or cased opening is
+ * offered `between` the two rooms the partition parts, and a window the room's one exterior edge,
+ * `maybe-incorrect`; with several exterior edges a window gets the placeholder skeleton.
+ */
+export function exteriorEdgeFix(edits: readonly PosEdit[], placeholder: boolean): FixSuggestion[] | null {
+  return edits.length === 0
+    ? null
+    : edits.map(
+        (e): FixSuggestion => ({
+          title: e.title,
+          applicability: placeholder ? "has-placeholders" : "maybe-incorrect",
+          fixId: "opening-exterior-edge",
+          edits: editsOf(e),
+        }),
+      );
+}
+
+/**
+ * AF9: `E_OPENING_DATUM`. A parallel datum edge is swapped for an edge of the same room that meets
+ * the run at an end (`maybe-incorrect`: which end the author measured from is not in the source); a
+ * position with no datum, or none at all, gets the placeholder skeleton.
+ */
+export function openingDatumFix(edits: readonly PosEdit[], placeholder: boolean): FixSuggestion[] | null {
+  return edits.length === 0
+    ? null
+    : edits.map(
+        (e): FixSuggestion => ({
+          title: e.title,
+          applicability: placeholder ? "has-placeholders" : "maybe-incorrect",
+          fixId: "opening-datum",
+          edits: editsOf(e),
+        }),
+      );
+}
+
 /**
  * The did-you-mean fix for a misspelt user id (AF2): a room's ids are an open set, so the author's
  * word may name a room still to be written, and the fix is always `maybe-incorrect`.

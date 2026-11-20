@@ -5,7 +5,7 @@
 Where the tests of a `src` module are, and what each test file is for. Generated; `npm run check:drift`
 fails when it is stale. How to add a test: `docs/testing.md` § 4.
 
-561 test files in `test/`, 295 `src` modules, 107 modules no test imports.
+563 test files in `test/`, 297 `src` modules, 108 modules no test imports.
 
 ## `src` module → tests that import it
 
@@ -16,7 +16,7 @@ Nearest first, then by name; `(+n)` is the rest. Test names are `test/<name>.tes
 - `src/algebra/d4.ts` (5) — `d4`, `describe-depends`, `equivariance-corpus`, `keep`, `symmetry`
 - `src/algebra/paths.ts` (1) — `path-algebra`
 - `src/algebra/semiring.ts` (2) — `path-algebra`, `semiring`
-- `src/analyze.ts` (97) — `access-policy`, `annotation-collisions`, `annotation-small-rooms`, `between-face-probes`, `block-stair-landing`, `block-stair-lint`, `block-stair-shaft`, `block-stair-winders-walking-arc` (+89)
+- `src/analyze.ts` (100) — `access-policy`, `annotation-collisions`, `annotation-small-rooms`, `between-face-probes`, `block-stair-landing`, `block-stair-lint`, `block-stair-shaft`, `block-stair-winders-walking-arc` (+92)
 - `src/analyze/circulation-overlay.ts` (43) — `circulation-concave`, `nav-grid-residual`, `block-stair-frames`, `block-stair-landing`, `block-stair-lint`, `circulation-entrances`, `corner-window`, `describe-centreline-at` (+35)
 - `src/analyze/circulation.ts` (54) — `carve-inward-walk`, `circulation-room-bottlenecks`, `circulation-translation`, `equivariance-corpus`, `far-seed-pinch`, `lint-attribution-budget`, `lint-fix-texts`, `lint-space-enclosure` (+46)
 - `src/analyze/contacts.ts` (1) — `impact-contacts`
@@ -48,7 +48,7 @@ Nearest first, then by name; `(+n)` is the rest. Test names are `test/<name>.tes
 - `src/cli/commands-render.ts` (3) — `keep-impact-depends`, `plan-json-dropped`, `watch-arming`
 - `src/cli/context-starter.ts` (1) — `context-starter`
 - `src/cli/help.ts` (1) — `cli-help`
-- `src/cli/io.ts` (89) — `block-stair-byte-identity`, `clause-order-byte-identity`, `cli-contract`, `cli-exit-parse`, `cli-expected-hash`, `cli-flag-matrix`, `cli-help`, `cli-output-format` (+81)
+- `src/cli/io.ts` (90) — `af9-byte-identity`, `block-stair-byte-identity`, `clause-order-byte-identity`, `cli-contract`, `cli-exit-parse`, `cli-expected-hash`, `cli-flag-matrix`, `cli-help` (+82)
 - `src/cli/link.ts` (1) — `cli-link`
 - `src/cli/review.ts` (1) — `cli-preview-review`
 - `src/cli/run.ts` (55) — `annotation-overprint`, `axes`, `cli-batch`, `cli-commands`, `cli-context`, `cli-contract`, `cli-exit-parse`, `cli-expected-hash` (+47)
@@ -108,7 +108,7 @@ Nearest first, then by name; `(+n)` is the rest. Test names are `test/<name>.tes
 - `src/furnish-table.ts` (1) — `lint-label-piece-missing`
 - `src/furnish.ts` (13) — `finish-furnish-bounds`, `finish-furnish-laws`, `finish-levels`, `finish-sheet-degrade`, `fuzz`, `keep`, `lint-furniture-on-stair`, `lint-hint-paste` (+5)
 - `src/furniture-relation.ts` (2) — `furniture-relations`, `rect-ring`
-- `src/geometry.ts` (28) — `band`, `circle-enclosure`, `curves`, `dim-thickness-callout`, `doors`, `double-door-byte-identity`, `equivariance-corpus`, `frame` (+20)
+- `src/geometry.ts` (31) — `band`, `circle-enclosure`, `curves`, `dim-thickness-callout`, `doors`, `double-door-byte-identity`, `equivariance-corpus`, `frame` (+23)
 - `src/geometry/arc-band.ts` (1) — `furniture-lint`
 - `src/geometry/arc.ts` (18) — `arc-radius-exact`, `arc-tessellation-error`, `band`, `circle-enclosure`, `curves`, `frame`, `furniture-lint`, `intersect` (+10)
 - `src/geometry/backend.ts` (1) — `joinery-oracle`
@@ -124,14 +124,14 @@ Nearest first, then by name; `(+n)` is the rest. Test names are `test/<name>.tes
 - `src/grammar/tokens.ts` (35) — `arch-highlight`, `block-stair-lint`, `clause-order-byte-identity`, `closed-vocabularies`, `corner-window`, `did-you-mean`, `door-enums`, `doors` (+27)
 - `src/hatches.ts` (8) — `export-pdf`, `floor-materials-byte-identity`, `joinery-split-oracle`, `joinery-split`, `model-range`, `outdoor`, `room-floor`, `sheet-text`
 - `src/impact.ts` (2) — `rectilinear-doors`, `rectilinear-rooms`
-- `src/import.ts` (34) — `block-stair-byte-identity`, `corner-window-byte-identity`, `dim-swap-reprint`, `dim-thickness-callout`, `drawing-budget`, `error-value-law`, `floor-materials-byte-identity`, `furniture-relations` (+26)
+- `src/import.ts` (35) — `af9-byte-identity`, `block-stair-byte-identity`, `corner-window-byte-identity`, `dim-swap-reprint`, `dim-thickness-callout`, `drawing-budget`, `error-value-law`, `floor-materials-byte-identity` (+27)
 - `src/import/limits.ts` (1) — `openplan3d-malformed`
-- `src/index.ts` (419) — `acc-metadata`, `access-graph`, `access-policy`, `accessible-svg`, `agent-gallery`, `alias-match`, `anchors`, `annotate` (+411)
+- `src/index.ts` (421) — `acc-metadata`, `access-graph`, `access-policy`, `accessible-svg`, `af9-byte-identity`, `agent-gallery`, `alias-match`, `anchors` (+413)
 - `src/input-limit.ts` (2) — `import-rooted`, `workspace-seams`
 - `src/intent-concepts.ts` (3) — `vocabulary-es-pt`, `vocabulary-living-dining`, `vocabulary-matcher-oracle`
 - `src/intent-feasibility.ts` (1) — `intent-infeasible`
 - `src/intent.ts` (1) — `site`
-- `src/ir.ts` (177) — `access-policy`, `arc-radius-exact`, `attach`, `axes`, `between-face-probes`, `block-stair-byte-identity`, `block-stair-frames`, `block-stair-winders` (+169)
+- `src/ir.ts` (180) — `access-policy`, `af9-byte-identity`, `arc-radius-exact`, `attach`, `axes`, `between-face-probes`, `block-stair-byte-identity`, `block-stair-frames` (+172)
 - `src/label-fit.ts` (4) — `label-fit`, `label-leaders`, `label-symbol-ink`, `lint-thickness-unplaced`
 - `src/label-placement.ts` (7) — `label-fit`, `label-leaders`, `label-placement-oracle`, `label-placement`, `label-symbol-ink`, `label-wrap`, `north-arrow`
 - `src/lexer.ts` (12) — `clause-order-byte-identity`, `diagnostics-volume`, `diagnostics`, `error-value-law`, `expr`, `fmt-lossless`, `imperial-input`, `model-range` (+4)
@@ -162,14 +162,15 @@ Nearest first, then by name; `(+n)` is the rest. Test names are `test/<name>.tes
 - `src/naming.ts` (3) — `grid-index`, `lint-messages-id-free`, `room-overlap-oracle`
 - `src/next.ts` (3) — `cli-validate-next`, `next`, `silent-accepts`
 - `src/num-format.ts` (17) — `annotation-collisions`, `dim-thickness-callout`, `emit-opening-oracle`, `fmt-lossless`, `imperial-input`, `keep`, `lint-ruleset-values`, `lint-thickness-unplaced` (+9)
+- `src/opening-junctions.ts` (3) — `af9-byte-identity`, `fixable-codes`, `opening-moves`
 - `src/opening-relation.ts` (3) — `openings-between`, `rectilinear-doors`, `rectilinear-sides`
 - `src/opening-schedule.ts` (2) — `sheet-annotations`, `window-kinds`
-- `src/parser.ts` (154) — `arc-radius-exact`, `attach`, `axes`, `block-stair-byte-identity`, `block-stair`, `chrome-hidden`, `circle-enclosure`, `circulation-concave` (+146)
+- `src/parser.ts` (155) — `af9-byte-identity`, `arc-radius-exact`, `attach`, `axes`, `block-stair-byte-identity`, `block-stair`, `chrome-hidden`, `circle-enclosure` (+147)
 - `src/pipeline.ts` (2) — `label-leaders`, `work-counts`
 - `src/plan-json.ts` (11) — `element-facets`, `format`, `garage`, `plan-json-dropped`, `plan-json-instances`, `polygon-rooms`, `section`, `sheet-annotations` (+3)
 - `src/plan-json/room-types.ts` (1) — `vocabulary-es-pt`
 - `src/plan-json/to-json.ts` (1) — `rect-ring`
-- `src/registry.ts` (49) — `annotation-collisions`, `block-stair-byte-identity`, `block-stair-winders-walking-arc`, `block-stair`, `corner-window-byte-identity`, `corner-window`, `dim-swap-reprint`, `dim-thickness-callout` (+41)
+- `src/registry.ts` (50) — `af9-byte-identity`, `annotation-collisions`, `block-stair-byte-identity`, `block-stair-winders-walking-arc`, `block-stair`, `corner-window-byte-identity`, `corner-window`, `dim-swap-reprint` (+42)
 - `src/repair.ts` (2) — `finish-furnish-laws`, `finish-never-worse`
 - `src/reroll.ts` (3) — `keep`, `reroll-findrun-oracle`, `reroll`
 - `src/room-datums.ts` (5) — `openings-between`, `room-datums`, `segment-select`, `shared-grid-byte-identity`, `keep`
@@ -200,7 +201,7 @@ Nearest first, then by name; `(+n)` is the rest. Test names are `test/<name>.tes
 - `src/wall-lowering.ts` (2) — `joinery-split`, `open-crossing`
 - `src/wall-ref.ts` (2) — `rectilinear-rooms`, `walls-from-rooms`
 - `src/while-fix.ts` (2) — `fixable-codes`, `while-fix`
-- `src/world.ts` (129) — `block-stair-byte-identity`, `circulation-unmeasured`, `clause-order-byte-identity`, `corner-window-byte-identity`, `corner-window`, `did-you-mean`, `dim-thickness-callout`, `drawing-budget` (+121)
+- `src/world.ts` (130) — `af9-byte-identity`, `block-stair-byte-identity`, `circulation-unmeasured`, `clause-order-byte-identity`, `corner-window-byte-identity`, `corner-window`, `did-you-mean`, `dim-thickness-callout` (+122)
 
 ## Test files
 
@@ -210,6 +211,7 @@ The first sentence of each file's header comment.
 - `test/access-graph.test.ts` — door access graph.
 - `test/access-policy.test.ts` — one access policy: every surface agrees on reachability; one access policy across storeys: a shaft relays only from a reachable room.
 - `test/accessible-svg.test.ts` — Cases: default output carries no accessibility metadata (byte-identical); accessible:true emits <title>, <desc>, role and aria-labelledby; the <desc> text is ex…
+- `test/af9-byte-identity.test.ts` — Card AF9 (moves and skeletons for refused openings and blocked doorways): the byte-identity law.
 - `test/agent-docs-gate.test.ts` — agent docs name no blocked command.
 - `test/agent-gallery.test.ts` — The agent gallery (`/gallery` on the docs site): plans written by AI agents from a brief.
 - `test/agent-manifests.test.ts` — The agent-directory manifests (`npm run gen:agent-manifests`) are one skill source published in each host's shape.
@@ -586,6 +588,7 @@ The first sentence of each file's header comment.
 - `test/open-crossing.test.ts` — `open between` boundaries at one crossing (issue #368): the block left where they meet is removed from the drawing, whole where every run is open, all but the wall left where one stands, and nothing else moves.
 - `test/openai-plugin-zip.test.ts` — The OpenAI plugin directory ZIP (`npm run build:openai-plugin`).
 - `test/opening-host-on-edge.test.ts` — `door|window|opening … on <room>.<edge>` on an edge that carries several walls (issue #401; ADR 0028 §5 as amended 2026-11-02).
+- `test/opening-moves.test.ts` — Card AF9 (phase A, ruling RM-D70): moves and skeletons for refused relational openings and blocked doorways (`docs/plans/ai-first-language/af9-design.md`).
 - `test/opening-tags-corpus.test.ts` — The corpus guard for `schedule openings` tags: inject the statement into every shipped example that has a door or a window, draw every storey, and look at what each tag's frame covers.
 - `test/opening.test.ts` — opening element; cased opening rendering — never repaint the void the wall union opened; interior doorway rendering — the same white-band fix.
 - `test/openings-between-digests.test.ts` — The relational-opening digest table (ADR 0028 §5; card PS3.4): SHA-256 over SVG, `describe()`, `lint()` and `compile().diagnostics` of every storey of each plan in `test/tables/openings-between-plans.ts`, pinned in it...
@@ -842,6 +845,8 @@ module); adding a test that imports it removes it from this list.
 - `src/keep.ts`
 - `src/layout.ts`
 - `src/lint/clearance-facts.ts`
+- `src/lint/corner-nib.ts`
+- `src/lint/doorway-move.ts`
 - `src/lint/element-phrases.ts`
 - `src/lint/overprint-ref.ts`
 - `src/lint/report.ts`
@@ -860,7 +865,6 @@ module); adding a test that imports it removes it from this list.
 - `src/lint/rules/vertical.ts`
 - `src/lint/work.ts`
 - `src/lock.ts`
-- `src/opening-junctions.ts`
 - `src/overlays/circulation.ts`
 - `src/plan-json/ast-json.ts`
 - `src/plan-json/check-graph.ts`

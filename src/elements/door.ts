@@ -21,7 +21,7 @@ import { pointInPolygon, pointOnPolygonEdge } from "../geometry/polygon.js";
 import type { DoorClauseName, DoorKind, DoorSwingDir } from "../grammar/tokens.js";
 import type { DoorSwingBuilding } from "../grammar/tokens.js";
 import { DOOR_ENUMS, DOOR_HINGE_NEAR, DOOR_KIND_CLAUSES, DOOR_KINDS, DOOR_SWING_BUILDING } from "../grammar/tokens.js";
-import { eatEnumValue, parseAttachTarget, resolveOpeningLead, wallClause } from "../attach.js";
+import { eatEnumValue, leadOf, parseAttachTarget, resolveOpeningLead, wallClause } from "../attach.js";
 import {
   doorKindClauseFix,
   doorOpenRangeFix,
@@ -625,6 +625,7 @@ export const door: ElementDef = {
       ...(flipText ? { _flipHingeText: flipText } : {}),
       ...(n.swingBuilding && allowed.swing ? { _swingBuilding: n.swingBuilding } : {}),
       ...(lead?.relation ? { _placement: "relational" as const, _relation: lead.relation } : {}),
+      ...(lead?.host ? leadOf(n, lead.relation !== undefined) : {}),
       // Everything below is present ONLY on a non-hinged door, so a plan that names
       // no kind produces exactly the IR (and therefore exactly the bytes, exactly the
       // `describe()` payload and exactly the Plan JSON) as if door kinds did not exist.

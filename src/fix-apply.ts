@@ -157,9 +157,9 @@ const editMagnitude = (s: FixSuggestion): number =>
  * 3. earliest edit start offset ({@link firstEditStart});
  * 4. original array index — a stable tie-break.
  *
- * On a singleton array (today's only shape — no producer emits more than one
- * alternative per diagnostic) this is the identity, so existing behavior is
- * unchanged.
+ * On a singleton array this is the identity. AF9's moves are the first producer
+ * to emit several alternatives on one diagnostic (all `maybe-incorrect`, over one
+ * span), so among them the shorter replacement text comes first.
  */
 export function rankFixes(fixes: FixSuggestion[]): FixSuggestion[] {
   return fixes
