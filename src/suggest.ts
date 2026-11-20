@@ -362,7 +362,7 @@ export function suggestTopology(source: string, opts: SuggestOptions = {}): Sugg
   // block reads as the same plan without it; only where its statements go differs.
   const contexts = levels.length > 1 ? buildingContexts(levels, DEFAULT_TOL) : undefined;
   const ground = levels.length > 1 ? buildingGround(levels, DEFAULT_TOL) : undefined;
-  const anyGrounded = levels.some((l) => contexts?.get(l.level)!.grounded === true);
+  const anyGrounded = levels.some((l) => contexts?.get(l.level)?.grounded === true);
   const closes = new Map<number, number>();
   for (const st of plan?.body ?? []) {
     if (st.kind !== "level" || !st.span) continue;
