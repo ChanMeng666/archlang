@@ -75,3 +75,35 @@ and circulation.
 
 This ADR governs the v1.4+ roadmap (furniture-vs-wall and doorway-clearance lint, the
 circulation flood-fill, `arch validate --strict`, and the `arch repair` transform).
+
+## Addendum (2026-11-20, RM9.11, ruling RM-D71): ties are resolved by a stated order
+
+`arch repair` used to refuse two furniture choices that have more than one valid answer: a wall
+fixture floating equally far from two walls, and a fixture in a corner with its back to the room.
+Downstream callers need a deterministic answer, and "refuse" left the plan as broken as before. So
+repair now resolves those ties by a published order, and the change log says which key decided.
+
+- **Snap** (`computeFloatingSnap` in `src/repair.ts`): among the walls whose face is equally near
+  (the gap from the piece's edge to the wall's face, the length of the move), first a wall the
+  piece's catalogued size lets it back onto, then a free destination (the footprint lands clear of
+  every other piece and inside the piece's room), then the smallest wall id (digit runs read as
+  numbers, so `partition_2` sorts before `partition_10`), then the run of that wall written first
+  in its points, then edge order (top, bottom, left, right).
+- **Corner turn** (`orientationVerdict`): only the walls the piece's size lets it back onto are
+  candidates; among them the nearest face behind its edge, then the smallest wall id, then the run
+  written first, then edge order.
+
+Each change's `reason` names the key that separated the pick from the best candidate making a
+different move. The order is total, so every such tie has one answer; when that answer would put
+the piece onto another piece, onto a stair or into a wall, the no-worse check holds the piece where
+it stands and reports it in `unresolved`, as before. Whatever the mover, that check now also never
+lets a piece onto floor no room covers, nor through a wall (`leftHomeOf`); moving into the next
+room where no wall stands between them is allowed. A piece on a stair is a key of repair's census
+(`stair|s|a`, `hardConflictsOf`), so no mover parks a piece on one. A move
+off a stair (`computeZonesPush`) is a different case and is not ordered: only a move that does not
+put the piece into a wall counts, and an exact tie between two such moves, or no such move, is
+refused and reported.
+
+This does not change the line ADR 0011 draws: these choices are made by the reviewed corrector,
+never offered as a machine-applicable lint fix, because a choice is not a proof
+(`W_FIXTURE_BACK_TO_ROOM` still attaches no fix to a corner).

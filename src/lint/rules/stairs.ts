@@ -1496,6 +1496,30 @@ export function stairZones(f: StoreyStairs): StairZone[] {
 }
 
 /**
+ * The floor {@link furnitureOnStair} reads on `ctx`'s storey: {@link stairZones}, each flight cut to
+ * the part with less than {@link STAIR_HEADROOM_MM} over the floor ({@link lowParts}). `null` when the
+ * storey has no stair or its stair facts are over budget (`factsFor` files the skip). Shared with
+ * `repair`, which moves a piece off exactly the floor the rule reports it on (RM9.11).
+ */
+export function onStairZones(ctx: LintContext): { f: StoreyStairs; zones: StairZone[] } | null {
+  const f = factsFor(ctx);
+  if (f === null) return null;
+  const low = new Map(f.stairs.map((sf) => [sf, lowParts(sf, STAIR_HEADROOM_MM, ctx)]));
+  const zones = stairZones(f).flatMap((z): StairZone[] => {
+    if (z.piece === undefined) return [z];
+    const rect = low.get(z.sf)![z.piece];
+    return rect ? [{ ...z, rect }] : [];
+  });
+  return { f, zones };
+}
+
+/** Does zone `z` read a piece of `category`? A flight or a hole is read whatever stands on it; a
+ *  landing, only a piece at the cut plane's body layer (a rug on it is walked on). */
+export function zoneReads(z: StairZone, category: string): boolean {
+  return z.where === "flight" || (z.where === "mid" && z.sf.well) || cutPlaneLayer(category) === "body";
+}
+
+/**
  * `W_FURNITURE_ON_STAIR` (issue #364): a piece standing on a flight's footprint or on a landing the
  * flight owes (Approved Document K 1.21b: landings are kept clear of permanent obstructions [V]).
  *
@@ -1521,14 +1545,9 @@ export const furnitureOnStair: LintRule = {
   codes: ["W_FURNITURE_ON_STAIR"],
   check(ctx: LintContext): Diagnostic[] {
     if (ctx.furniture.length === 0) return [];
-    const f = factsFor(ctx);
-    if (f === null) return [];
-    const low = new Map(f.stairs.map((sf) => [sf, lowParts(sf, STAIR_HEADROOM_MM, ctx)]));
-    const zones = stairZones(f).flatMap((z): StairZone[] => {
-      if (z.piece === undefined) return [z];
-      const rect = low.get(z.sf)![z.piece];
-      return rect ? [{ ...z, rect }] : [];
-    });
+    const read = onStairZones(ctx);
+    if (read === null) return [];
+    const { f, zones } = read;
     if (!charge(f, ctx.furniture.length * zones.length)) {
       ctx.skip("stair-budget");
       return [];
@@ -1537,11 +1556,8 @@ export const furnitureOnStair: LintRule = {
     const out: Diagnostic[] = [];
     for (const piece of ctx.furniture) {
       const foot = rectOf(piece);
-      const body = cutPlaneLayer(piece.category) === "body";
       for (const sf of f.stairs) {
-        // A flight or a hole is read whatever stands on it; a landing, only a body.
-        const open = (z: StairZone): boolean => z.where === "flight" || (z.where === "mid" && sf.well);
-        const hit = zones.find((z) => z.sf === sf && (open(z) || body) && rectsOverlap(foot, z.rect));
+        const hit = zones.find((z) => z.sf === sf && zoneReads(z, piece.category) && rectsOverlap(foot, z.rect));
         if (hit === undefined) continue;
         const name = piece.label ?? piece.category;
         const r = hit.rect;

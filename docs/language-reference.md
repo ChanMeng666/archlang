@@ -4050,6 +4050,26 @@ statement) — so a scripted collision can never read as a clean run. Every entr
 or note, carries the statement's byte `span`. A wall-anchored fixture is also an
 *obstacle*: a movable piece placed after it is separated off it.
 
+**Where two walls are equally good, it chooses by one stated order** and says which key
+decided in the change's `reason` ([ADR 0006](adr/0006-solver-as-explicit-transform.md), addendum).
+A wall fixture floating equally far from two walls is snapped onto one: among the walls whose face
+is nearest (the length of the move), a wall the piece's size lets it back onto, then the one whose
+side of the room is free (no other piece there, still inside the piece's room), then the smallest
+wall id (an unnamed wall's `<category>_<n>` id sorts by `n`), then the run of that wall written
+first, then edge order (top, bottom, left, right); the order is total. A fixture in a corner with
+its back to the room is turned onto one: only the walls its size lets it back onto count, and among
+them the nearest face, then the smallest wall id, then the run written first, then edge order.
+`lint` still attaches no fix in those cases: a choice is not a proof. Repair never moves a piece
+onto floor no room covers, nor through a wall, nor onto a stair; a move that would is left out and
+reported (moving into the next room where no wall stands between them is allowed). A piece
+standing side-on to a wall, or in a polygon room, is left alone, as `W_FIXTURE_BACK_TO_ROOM` leaves
+it; a piece whose `size` runs the wrong way for its wall is reported with "swap W and H"; and a
+piece whose turn is stated by `facing` is reported, never given a `rotate`. A piece on a stair's
+flight or landing (`W_FURNITURE_ON_STAIR`) is moved off it by the shortest move that clears the
+whole stair without running into a wall, so the stair joins its storeys again; two equally short
+moves, no such move, or a move a later fix undoes is reported instead. Rooms a missing door cuts
+off are `archlang suggest`'s.
+
 ### Completing the drawing — `archlang finish`
 
 A sound plan is not yet a complete drawing. Rooms may hold no furniture, and `paper`, `scale`,
