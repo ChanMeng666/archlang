@@ -1229,7 +1229,7 @@ MCP 工具用 `new-mcp-tool` skill 加；`docs/error-codes.md` 经 `gen:*` 生�
 
 做完时 M.8 在同一 PR 里裁掉。
 
-### AF7 · 冲突带上每条有贡献的语句 — `todo`（在审 #977，2026-11-21 读时没合并；语料重量按 RM-D69） · 1 日 · sonnet · 依赖 AF1
+### AF7 · 冲突带上每条有贡献的语句 — `done` · #977（`c749ac4e`，2026-11-20；语料重量按 RM-D69；余项 backlog SR.16） · 1 日 · sonnet · 依赖 AF1
 
 载荷检查同 AF1。
 
@@ -1239,7 +1239,7 @@ MCP 工具用 `new-mcp-tool` skill 加；`docs/error-codes.md` 经 `gen:*` 生�
 
 ### B 波 · 修复推进到语义失分
 
-### AF9 · 被拒的开口与门道堵塞：带占位符的修复（并入 EV.5） — `todo`（设计稿已做：#986，`9da321b7`，2026-11-19，`../ai-first-language/af9-design.md`；只做阶段 A，阶段 B 不排，RM-D70；阶段 A 在审 #992，2026-11-21 读时没合并） · 设计 1 日、代码 4 日 · opus · 代码依赖设计稿
+### AF9 · 被拒的开口与门道堵塞：带占位符的修复（并入 EV.5） — `done`（阶段 A） · 设计稿 #986（`9da321b7`，2026-11-19，`../ai-first-language/af9-design.md`）；阶段 A #992（`91ed1210`，2026-11-20；没有 machine-applicable 的修复，L1 不动；最终模糊测试 188 个修复、0 个硬性失败、11 个留下警告）；阶段 B 不排（RM-D70）；余项 backlog SR.13 · 设计 1 日、代码 4 日 · opus · 代码依赖设计稿
 
 EV.5 的门照旧：先有设计稿或 ADR，代码在后。PR 里如实写 L1 数字是否移动（L1 只应用 machine-applicable 的修复）。不许：跨房间边界移动开口，除非设计稿明确允许；把不能证明唯一的移动标成 machine-applicable。
 

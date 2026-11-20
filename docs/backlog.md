@@ -284,12 +284,12 @@ Done by #976, with no budget raised: Format, Finish, Repair furniture and the DX
 
 After AL3b (#969) the first-use path (`firstUsePathBudget`, `playground/e2e/startup-chunks.baseline.json`) measures 484,137 B gzip against 486,000 B. The next few KB of compiler growth trip `Playground E2E chromium`. Two ways out: move code a first use need not load out of the compiler chunk or the lazy core chunk (as EB.2 did, #947), or re-take the budget by the file's own rule (measured × 1.025, rounded up to a thousand). A re-take raises a ceiling, a relaxed check that needs the owner's word for that PR (`REVIEW.md`; the owner approved the compiler-path and embed raises on #969, 2026-11-19, not this one). Measure with `npm run size:embed` (`scripts/embed-path-size.mjs`) on `main` and the branch; `docs/agents/iron-laws.md` still quotes `embedPathBudget` as 310,000 B (319,000 since #969), and editing that line is the owner's call (NR.9 (3)).
 
-### 3.19 · After #992 the compiler path has about 1.3 KB of headroom left (do first, before any compiler-path card) — `todo`
+### 3.19 · The compiler path has about 0.8 KB of headroom left (do first, before any compiler-path card) — `todo`
 
-AF9 phase A's PR (#992, open on 2026-11-21; `npm run size:embed`, base `35d97da0` → head) measures the compiler path
-329,665 → 331,689 B gzip against `compilerPathBudget` 333,000 (1,311 B left), the embed path
-317,875 B against 319,000 (1,125 B) and the first use 465,748 B against 468,000 (2,252 B).
-AF4 (#987) and RM9.10 (#990) took most of the earlier headroom. The next compiler-path card would
+AF9 phase A's PR (#992, merged 2026-11-20; `npm run size:embed`, base `c749ac4e` → head `1babd94d`)
+measures the compiler path 330,147 → 332,209 B gzip against `compilerPathBudget` 333,000 (791 B
+left), the embed path 318,401 B against 319,000 (599 B) and the first use 466,271 B against 468,000
+(1,729 B). AF4 (#987), RM9.10 (#990), AF7 (#977) and AF9 took most of the earlier headroom. The next compiler-path card would
 trip `Playground E2E`. Do this before any further compiler-path card: move code a first compile
 does not need out of the compiler chunk (as EB.2, #947, and 3.18, #976, did), measured with
 `npm run size:embed` on `main` and the branch, with a corpus digest of SVG, `describe()`, `lint()`
@@ -2524,7 +2524,7 @@ eval's table, so it needs an owner-approved `SYNONYMS_VERSION` bump, and it is M
 Non-blocking findings of that session's reviews and the PRs' own residue lists (the review-loop cap:
 residue becomes cards). Each names its PR. Already carded elsewhere, so not repeated: M.20a (#973's
 concept half), U.2a and U.5 (#983), RR.22 (2) (#979's code-comparison over-credit), NR.9 (3) (#976's
-iron-laws budget line). SR.13 and SR.14 come from PRs still open on 2026-11-21.
+iron-laws budget line). SR.14 comes from a draft PR.
 
 ### SR.1 · NR.16 classifier leftovers (#973) — `todo`
 
@@ -2642,13 +2642,16 @@ pass wording counts the lowest storey only. (6) `spec.llm.md` says nothing about
 items are untouched. **Gate:** (2)–(5) each with a test; (1) a language card; (6) within spec
 headroom.
 
-### SR.13 · AF9 phase A leftovers (#992, open on 2026-11-21) — `todo`
+### SR.13 · AF9 phase A leftovers (#992) — `todo`
 
 (1) A fix title does not say "moves every instance" for a span a component's instances or a `for`
 body share. (2) MCP `fix` and L1 call `rankFixes` (RM-D70 Q3): AF9 is the first producer with
 several alternatives per diagnostic; its own small card. (3) The nib move ignores sibling openings
-and fixtures: 9 of 155 fuzz moves leave an overlap, a hob under a window or a blocked swing.
-**Gate:** each with a test, after #992 lands.
+and fixtures: in the final full fuzz (124 plans, 3,655 shifted cases) 11 of 188 fixes leave a
+warning, all `E_OPENING_NIB` moves (`W_OPENING_OVERLAP` 6, `W_HOB_UNDER_WINDOW` 3,
+`W_FURNITURE_OVER_WINDOW` 1, a blocked swing and doorway 1); no error and 0 hard-property failures.
+(4) Slanted meeting walls: their footprint on the host is read as `standingJunctionSpans` reads it,
+not probed further (round-2 red team). **Gate:** each with a test.
 
 ### SR.14 · RM9.6 CV13 split by RM-D73 (#993, draft) — `todo`
 
@@ -2670,6 +2673,15 @@ the element's text content is "EntranceHall"; at 1800 wide the label stays on on
 the SVG text (a screen reader, search, the downstream schedule check) gets one word. **Gate:** a
 wrapped label's text content equals the label; a drawing change, so byte identity per RM-D56 over
 every plan with a wrapped label.
+
+### SR.16 · AF7 leftovers (#977) — `todo`
+
+(1) `E_ROOMS_OVERLAP` gets no related spans: the tiling's `TileRoom` carries no room spans. (2)
+`stacked` keeps get no notes (their targets are per storey). (3) `W_ROOM_OVERLAP` raised for a room
+of an imported body carries no `Diagnostic.file` (the gap AF1 noted for `E_DUP_ID`, NR.6 (1)); a
+`RelatedSpan.file` would let a note point into a module. (4) The sweep cannot see plans built by
+functions inside test files or helpers; CI's full suite covers them. **Gate:** (1)–(3) each with a
+test and RM-D69's per-row swap-back for any moved pin.
 
 ## Test-programme findings (promo-credit programme, 2026-11-16)
 
