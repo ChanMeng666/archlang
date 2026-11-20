@@ -12,13 +12,16 @@
  *   | `wall|L|piece`              | `W_FURNITURE_WALL_COLLISION`  | `computeWallPush`         |
  *   | `doorway|L|door|piece`      | `W_DOORWAY_BLOCKED`           | `computeDoorwayPush`      |
  *   | `swing|L|door|piece`        | `W_SWING_OBSTRUCTED`          | `computeSwingPush`        |
+ *   | `stair|L|stair|piece`       | `W_FURNITURE_ON_STAIR`        | `computeZonesPush`        |
  *
  * Each row is decided by the predicate the lint rule itself calls (`rectsOverlap` within
  * one cut-plane layer, `wallIntrusionDepth` past the 30 mm slack with the wall openings
  * subtracted, `doorLandingRect` ∩ the piece, `sectorIntersectsRect` with the ruleset's
- * swing clearance). The lint diagnostic for a code is a function of these pairs (one per
- * overlapping pair, one per colliding piece, one per door with any blocker), so a census
- * that gains no key cannot gain a diagnostic — the test also checks that directly.
+ * swing clearance, the stair rule's own floor `onStairZones` ∩ the piece where `zoneReads` reads
+ * it, on the storey's lint context). The lint diagnostic for a code is a function of these pairs
+ * (one per overlapping pair, one per colliding piece, one per door with any blocker, one per piece
+ * and stair), so a census that gains no key cannot gain a diagnostic — the test also checks that
+ * directly.
  *
  * Not in the set, on purpose: `W_FIXTURE_WRONG_ROOM`, `W_FIXTURE_FLOATING` and
  * `W_FIXTURE_BACK_TO_ROOM`. repair clears those too, but they are a piece's relation to
@@ -30,11 +33,19 @@ import { cutPlaneLayer } from "../../src/fixtures-catalog.js";
 import { doorLeaves, sectorIntersectsRect, segmentsOfWall } from "../../src/geometry.js";
 import { doorLandingRect, openingBlock, rectsOverlap, wallIntrusionDepth } from "../../src/geometry/rect.js";
 import type { RDoor, RFurniture, ROpening, ResolvedPlan } from "../../src/ir.js";
-import { DEFAULT_RULESET } from "../../src/lint.js";
+import { DEFAULT_RULESET, LINT_RULES } from "../../src/lint.js";
+import { type BuildingContext, buildLintContext } from "../../src/lint/context.js";
+import { onStairZones, zoneReads } from "../../src/lint/rules/stairs.js";
+import { lintStoreys } from "../../src/lint/storeys.js";
 
 const rectOf = (f: RFurniture) => ({ x: f.at.x, y: f.at.y, w: f.size.w, h: f.size.h });
 
-function storeyConflicts(ir: ResolvedPlan, level: number | undefined, out: Set<string>): void {
+function storeyConflicts(
+  ir: ResolvedPlan,
+  level: number | undefined,
+  out: Set<string>,
+  building: BuildingContext | undefined,
+): void {
   const L = level ?? "";
   const furniture = ir.elements.filter((e): e is RFurniture => e.kind === "furniture");
   const doors = ir.elements.filter((e): e is RDoor => e.kind === "door");
@@ -73,14 +84,20 @@ function storeyConflicts(ir: ResolvedPlan, level: number | undefined, out: Set<s
         out.add(`swing|${L}|${d.id}|${f.id}`);
     }
   }
+  // The floor `W_FURNITURE_ON_STAIR` reads, from the rule's own context: one key per piece and stair.
+  const zones = onStairZones(buildLintContext(ir, DEFAULT_RULESET, LINT_RULES, building))?.zones ?? [];
+  for (const f of furniture)
+    for (const z of zones)
+      if (zoneReads(z, f.category) && rectsOverlap(rectOf(f), z.rect)) out.add(`stair|${L}|${z.sf.v.id}|${f.id}`);
 }
 
 /** Every hard-conflict key in `source` (empty when it does not resolve). */
 export function hardConflicts(source: string): Set<string> {
   const out = new Set<string>();
   const { ir, levels } = resolvePlan(source);
-  if (levels.length > 0) for (const l of levels) storeyConflicts(l.ir, l.level, out);
-  else if (ir) storeyConflicts(ir, undefined, out);
+  if (!ir) return out;
+  // Each storey read in the building `lint()` reads it in, so a flight arriving from below counts.
+  for (const st of lintStoreys(ir, levels, DEFAULT_RULESET.tolMm)) storeyConflicts(st.ir, st.level, out, st.building);
   return out;
 }
 
@@ -96,4 +113,5 @@ export const HARD_CODES = [
   "W_FURNITURE_WALL_COLLISION",
   "W_DOORWAY_BLOCKED",
   "W_SWING_OBSTRUCTED",
+  "W_FURNITURE_ON_STAIR",
 ] as const;
