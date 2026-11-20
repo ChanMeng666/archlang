@@ -207,6 +207,14 @@ plan "Courtyard House" {
   # would ask which room it belongs to simply does not apply to it.
   furniture planter at (7250,4750) size 1500x1500 label "Planter"
 
+  # Chairs at the two tables, appended so no earlier piece's auto id moves.
+  furniture chair at (5650,2250)  size 450x450 rotate 180 in r_living
+  furniture chair at (6400,2250)  size 450x450 rotate 180 in r_living
+  furniture chair at (10250,800)  size 450x450 in r_dining
+  furniture chair at (11050,800)  size 450x450 in r_dining
+  furniture chair at (10250,2250) size 450x450 rotate 180 in r_dining
+  furniture chair at (11050,2250) size 450x450 rotate 180 in r_dining
+
   # The courtyard's ground. Walls close it on every side, so without a surface it would be
   # walled floor that belongs to nothing; `outdoor` says it is open air, not a room.
   outdoor patio at (5000,3500) size 6000x3500

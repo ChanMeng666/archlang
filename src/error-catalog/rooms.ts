@@ -160,4 +160,11 @@ export const ROOMS_ENTRIES = defineEntries({
     'room id=r_nook at (0,0) size 2500x4000 label "Desk Nook"   # lint: no desk in the room',
     'room id=r_nook at (0,0) size 2500x4000 label "Desk Nook"\nfurniture desk in r_nook anchor top flush size 1200x600   # fixed: the desk the name promises',
   ),
+  W_TABLE_NO_SEAT: w(
+    "A dining table stands in a room with no seat.",
+    "A piece that does a dining table's job (the catalogue's `serves: \"dining_table\"`: a bare `table`) stands in a room that holds no chair, office chair, outdoor chair, stool or bench, so there is nowhere to sit at it. A sofa or an armchair is a lounge seat and does not count. A piece is in a room when its footprint centre is on the room's floor, on the room's own storey; a table in no room is not read. A `dining_table` is never reported: its symbol draws its chairs inside its own footprint. A `coffee_table`, `side_table`, `desk` or `meeting_table` is not a dining table. No distance is measured: a seat anywhere in the room seats the table.",
+    "Add a chair (or a stool or bench) beside the table, its front toward it, or draw the table as a `dining_table`, whose symbol includes its chairs (its size is then the table and the chairs together). There is no machine fix: where a seat goes is a design decision.",
+    'room id=r_din at (0,0) size 4000x3500 label "Dining"\nfurniture table in r_din centered size 1400x900   # lint: a table and no seat',
+    'room id=r_din at (0,0) size 4000x3500 label "Dining"\nfurniture table in r_din centered size 1400x900\nfurniture chair at (1775,800) size 450x450 in r_din   # fixed: a chair north of the table, facing it',
+  ),
 });

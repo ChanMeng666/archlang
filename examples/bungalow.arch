@@ -138,6 +138,8 @@ plan "Bungalow" {
   furniture table at (3600,1800) size 1400x900  label "Table"
   furniture bed   against r_bed1.left size 1500x2000 label "Bed"
   furniture bed   against r_bed2.left size 1500x2000 label "Bed"
+  furniture chair at (4075,1300) size 450x450 in r_living
+  furniture chair at (4075,2750) size 450x450 rotate 180 in r_living
 
   # ---- the eaves ------------------------------------------------------------
   # A bungalow is mostly roof, and on a hot plot it is the eave that shades the north

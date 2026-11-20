@@ -343,6 +343,15 @@
       "twin": "../defect-corpus/stair-safety/swing-at-stair-foot.clean.arch"
     },
     {
+      "id": "missing-defining-contents/table-no-chairs",
+      "column": "default",
+      "profile": null,
+      "expect": "W_TABLE_NO_SEAT",
+      "rule": null,
+      "plan": "../defect-corpus/missing-defining-contents/table-no-chairs.arch",
+      "twin": "../defect-corpus/missing-defining-contents/table-no-chairs.clean.arch"
+    },
+    {
       "id": "annotation-collisions/title-overflow",
       "column": "default",
       "profile": null,

@@ -93,8 +93,9 @@ export const furnClearDeclared: LintRule = {
   },
 };
 
-/** The seats PS2.11 judges: chairs that are sat at a table, by family (aliases included). */
-const SEATS: ReadonlySet<string> = new Set(["chair", "office_chair", "outdoor_chair"]);
+/** The seats PS2.11 judges: chairs that are sat at a table, by family (aliases included).
+ *  `W_TABLE_NO_SEAT` reads them too (`src/lint/rules/room-contents.ts`). */
+export const SEATS: ReadonlySet<string> = new Set(["chair", "office_chair", "outdoor_chair"]);
 /** What a seat is sat at: tables and desks, by family. */
 const TABLES: ReadonlySet<string> = new Set([
   "table",

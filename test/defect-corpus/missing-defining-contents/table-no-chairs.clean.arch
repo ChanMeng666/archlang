@@ -1,0 +1,17 @@
+# class: missing-defining-contents
+# twin-of: table-no-chairs
+# origin: the living room with two chairs added at the table, one on each long side, each facing it
+# expect: none
+# fact: r_living holds the sofa, the table and two chairs, so the table has seats
+plan "Living room with a table and two chairs" {
+  units mm
+  grid 50
+  wall id=shell exterior thickness 200 { (0,0) (5000,0) (5000,4500) (0,4500) close }
+  room id=r_living at (0,0) size 5000x4500 label "Living / Dining" uses living
+  door id=d_entry at (4000,4500) width 900 wall shell
+  window at (2500,0) width 1500 wall shell
+  furniture sofa  at (400,3300) size 2000x850 label "Sofa" in r_living
+  furniture table at (2800,1300) size 1400x900 label "Table" in r_living
+  furniture chair at (3275,800)  size 450x450 in r_living
+  furniture chair at (3275,2250) size 450x450 rotate 180 in r_living
+}

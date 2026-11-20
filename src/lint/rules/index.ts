@@ -44,7 +44,7 @@ import { connectorAmbiguous, openingAtJunction, openingOverlap } from "./opening
 import { perRoomRules } from "./per-room.js";
 import { entranceIntoPrivate, roomViaPrivate, wetRoomDoor } from "./privacy.js";
 import { reachability } from "./reachability.js";
-import { habitableNoWindow, labelPieceMissing, roomMissingDefining } from "./room-contents.js";
+import { habitableNoWindow, labelPieceMissing, roomMissingDefining, tableNoSeat } from "./room-contents.js";
 import { balconyNoDoor, outdoorOverlapsRoom } from "./outdoor.js";
 import { roomNotEquatorFacing } from "./site.js";
 import { shaftFootprintMismatch, stairUnmatched } from "./vertical.js";
@@ -211,6 +211,9 @@ export const LINT_RULES: readonly LintRule[] = [
   // A wall-thickness figure `dims auto` leaves undrawn: no station clears the room labels (card AL5,
   // label-crowding). Appended LAST, so no existing diagnostic moves within the array.
   thicknessUnplaced,
+  // A dining table in a room with no seat (product roadmap RM9.6, coverage class CV13). Appended
+  // LAST, so no existing diagnostic moves within the array.
+  tableNoSeat,
 ];
 
 export type { LintContext, LintRule } from "../context.js";

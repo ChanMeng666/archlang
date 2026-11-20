@@ -124,6 +124,8 @@ plan "Garden Courtyard House" {
   furniture raised_bed at (1000,13000) size 2400x1200
   furniture raised_bed at (1000,14600) size 2400x1200
   furniture slide at (16000,12600) size 800x3000
+  furniture chair at (16275,2700) size 450x450 in r_kitch
+  furniture chair at (16275,4150) size 450x450 rotate 180 in r_kitch
 
   title {
     project "Garden Courtyard House"
