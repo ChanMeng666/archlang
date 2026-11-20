@@ -6,10 +6,10 @@
  * drawn outside the door, the door moved down a storey, the plan made single-storey), so a test
  * cannot pass because the rule never ran.
  */
-import { readdirSync, readFileSync } from "node:fs";
-import { join } from "node:path";
+import { readFileSync } from "node:fs";
 import { describe as suite, expect, it } from "vitest";
 import { type Diagnostic, lint } from "../src/index.js";
+import { EXAMPLE_FILES, EXAMPLES_WORLD, SHIPPED_EXAMPLES } from "./helpers/d4-oracle.js";
 
 const CODE = "W_EXTERIOR_DOOR_ABOVE_ENTRANCE";
 const of = (src: string): Diagnostic[] => lint(src).filter((d) => d.code === CODE);
@@ -90,10 +90,11 @@ suite(CODE, () => {
     ]);
   });
 
-  it("raises nothing over the shipped examples", () => {
-    const files = readdirSync("examples").filter((f) => f.endsWith(".arch"));
-    expect(files.length).toBeGreaterThan(5);
-    const fired = files.filter((f) => of(readFileSync(join("examples", f), "utf8")).length > 0);
+  it("raises nothing over the shipped examples (the rule card's count over examples/**: 0)", () => {
+    expect(SHIPPED_EXAMPLES.length).toBeGreaterThan(5);
+    const fired = SHIPPED_EXAMPLES.filter(
+      (f) => lint(EXAMPLE_FILES[f]!, { world: EXAMPLES_WORLD }).filter((d) => d.code === CODE).length > 0,
+    );
     expect(fired).toEqual([]);
   });
 });
