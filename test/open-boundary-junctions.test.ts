@@ -30,11 +30,11 @@ const REFUSED = ["E_OPENING_NIB"];
 
 /** Plans that read exactly as they did: the boundary still has wall on it, or the host stops at it. */
 const TODAY: [string, string, string][] = [
-  ["a narrower opening", NIB.narrower, "c08d05d5ad0fd43e81460a3dd5fb8ba7140078980821a99f938c417d2789100e"], // still refused, and `W_SWING_ROOM_NOT_ADJACENT` no longer follows the refusal (#401 residue); AF9 (was 894a64b8): the refusal gains a maybe-incorrect move fix, `on hall.bottom at 1632.5 from start`; with it taken out the old digest returns
-  ["no clause", NIB.closed, "f7b5ba707a2b103466239649d5b3341e7820b974b732abdebe8c82b138c22d85"], // still refused, and `W_SWING_ROOM_NOT_ADJACENT` no longer follows the refusal (#401 residue); AF9 (was ac0fea08): the refusal gains a maybe-incorrect move fix, `on hall.bottom at 1632.5 from start`; with it taken out the old digest returns
+  ["a narrower opening", NIB.narrower, "23f56a8d98643ccd2f4cac2f5cfa1dfa09fb8c84cd8eea177f42ba37cf968293"], // still refused, and `W_SWING_ROOM_NOT_ADJACENT` no longer follows the refusal (#401 residue); AF9 (was 894a64b8): the refusal gains a maybe-incorrect move fix, `at 1632.5 from start`; with it taken out the old digest returns
+  ["no clause", NIB.closed, "7f10eb9d7f700523b46a683ed2952666a829249373a244f2abe038d2562a1a9f"], // still refused, and `W_SWING_ROOM_NOT_ADJACENT` no longer follows the refusal (#401 residue); AF9 (was ac0fea08): the refusal gains a maybe-incorrect move fix, `at 1632.5 from start`; with it taken out the old digest returns
   ["by point, narrower", NIB.byPointNarrower, "f5a70b89aeeb392e320e87d42716d699f46eb48f8983cc683ab585269a97a62f"],
   ["across, narrower", NIB.acrossLineNarrower, "a80f92c33ea8b4ee1ba96ca145ccc78ee995a31392a35ac8d5965d68d10d6b5c"],
-  ["under, narrower", NIB_HOSTS.underNarrower, "8ea2ba71b4cc57e17c5bbd56223df3ca47cd7f9e4c7dd8580815e4246dee254a"], // still refused, and `W_SWING_ROOM_NOT_ADJACENT` no longer follows the refusal (#401 residue); AF9 (was 67631e9c): the refusal gains a maybe-incorrect move fix, `at 1850 from start`; with it taken out the old digest returns
+  ["under, narrower", NIB_HOSTS.underNarrower, "d11c86aac016c9ff1613fc2a243d94e7dcaa42596de926db1987d87941aa2109"], // still refused, and `W_SWING_ROOM_NOT_ADJACENT` no longer follows the refusal (#401 residue); AF9 (was 67631e9c): the refusal gains a maybe-incorrect move fix, `at 1850 from start`; with it taken out the old digest returns
 ];
 
 /**
@@ -42,7 +42,7 @@ const TODAY: [string, string, string][] = [
  * open boundary at the host's free end a partition with a face, where nothing is drawn, and now
  * names what is. One string; put it back and the old digest comes back.
  */
-const FREE_END = "4a5524b88984af4cd02268625cbe6209fa90e275fad5ebc84da55518a439fca6"; // still refused, and `W_SWING_ROOM_NOT_ADJACENT` no longer follows the refusal (#401 residue); AF9 (was 8b652497): the refusal gains a maybe-incorrect move fix, `at 560 from start`; with it taken out the old digest returns
+const FREE_END = "69900e8e55bf459092d87ab9200d203e4a8eb5479c0bd03f87f3b24d5d2fd684"; // still refused, and `W_SWING_ROOM_NOT_ADJACENT` no longer follows the refusal (#401 residue); AF9 (was 8b652497): the refusal gains a maybe-incorrect move fix, `at 560 from start`; with it taken out the old digest returns
 
 suite("a door beside an open boundary (#368)", () => {
   it("places the issue's door, on the wall the room's edge names", () => {
