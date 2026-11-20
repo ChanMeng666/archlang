@@ -49,7 +49,7 @@ import { furnitureKinds } from "./elements/furniture.js";
 import { FLOOR_MATERIALS, KNOWN_MATERIALS } from "./hatches.js";
 import type { Expr } from "./expr.js";
 import type { ExprTokens } from "./expr.js";
-import { closest, MAX_NEST_DEPTH, parseExpr as parseExprPratt, spelling } from "./expr.js";
+import { closest, exprContinuations, MAX_NEST_DEPTH, parseExpr as parseExprPratt, spelling } from "./expr.js";
 import { fixesFrom, spellingFix } from "./fix-producers.js";
 import type { Theme } from "./theme.js";
 import { isNumericThemeKey, resolveThemeKey, resolveStyleKey, THEMES } from "./theme.js";
@@ -89,26 +89,77 @@ export interface ParseOutcome {
  *  (`src/grammar/tokens.ts`) so the parser and the editor grammars stay in sync. */
 const FIXED_STATEMENT_STARTS: readonly string[] = STATEMENT_STARTS;
 
-/**
- * The words of {@link STATEMENT_STARTS} that {@link Parser.parseOneBodyStatement} reads inside a
- * block (a `level`, a `component`, a control-flow body); every other one is the plan's own and is
- * an unknown statement there. Read only for a parse error's `expected` list (AF4);
- * `test/parse-expected.test.ts` holds it to what the parser does with each word.
- */
-const BLOCK_STARTS: ReadonlySet<string> = new Set(["let", "for", "if", "while", "set", "zone", "place", "keep"]);
+/** The longest word {@link glued} splits: a number written out longer is no slip (AF4). */
+const MAX_GLUED_WORD = 40;
 
 /**
- * A word of `near` glued to the number after it (`x3000` where `x` belongs, `width900`): the lexer
- * reads the two as one name. The split is the suggestion, never unique: the name may be meant.
+ * A word of `near` glued to the number after it (`x3000` where `x` belongs, `width900`, and a
+ * size, `size3000x3000`): the lexer reads the two as one name. The split is the suggestion, never
+ * unique: the name may be meant. A word past {@link MAX_GLUED_WORD} letters is never split, so a
+ * hint and a fix never repeat a huge word.
  */
 function glued(word: string, near: readonly string[]): { word: string; unique: boolean } | null {
+  if (word.length > MAX_GLUED_WORD) return null;
   for (const w of near) {
     const rest = word.slice(w.length);
     if (!rest || !word.startsWith(w)) continue;
     const toks = lexUnmemoised(rest).tokens;
-    if (toks.length === 2 && toks[0]!.type === "number") return { word: `${w} ${rest}`, unique: false };
+    const one = toks[0]!.type;
+    if (toks.length === 2 && (one === "number" || one === "dimension")) return { word: `${w} ${rest}`, unique: false };
   }
   return null;
+}
+
+/**
+ * The did-you-mean for a word that should have been one of `near` (AF2): {@link spelling}, then
+ * {@link glued}; a word ending in a digit tries the split first (AF4), so `width90` reads as
+ * `width 90`, not as a respelling that drops the number.
+ */
+function suggestion(word: string, near: readonly string[]): { word: string; unique: boolean } | null {
+  if (/[0-9]$/.test(word)) return glued(word, near) ?? spelling(word, near);
+  return spelling(word, near) ?? glued(word, near);
+}
+
+/**
+ * The most entries a site's own closed list gives a parse error's `expected` (AF4): a longer list
+ * (the 267 `sheet text` keys) keeps its first {@link EXPECTED_PREFIX}, and `expectedMore` counts
+ * the rest. The statement position's list (about 50 words) stays whole.
+ */
+const EXPECTED_MAX = 64;
+const EXPECTED_PREFIX = 16;
+
+/** Where a parse error stands and what it knows (AF4): its `span` (the failing token's own by
+ *  default), the words the token may be a slip of (`near`, AF2), and what the position takes
+ *  (`expected`, `near` by default). */
+interface FailAt {
+  span?: Span;
+  near?: readonly string[];
+  expected?: readonly string[];
+}
+
+/** What a parse error says was expected (AF4): the list, how many entries were cut from it, and the
+ *  offset of the token the parser was looking at when that is not where the error is spanned. */
+interface Expected {
+  list: string[];
+  more: number;
+  at?: number;
+}
+
+/** A scope a body statement stands in (AF4): inside a block (a `level`, `zone`, control-flow or
+ *  `component` body), and inside a component. */
+interface BodyScope {
+  block: boolean;
+  component: boolean;
+}
+
+/**
+ * A fixed statement word the body-statement parser dispatches on (AF4): how it is read, and in which
+ * scopes it begins a statement of its own. In any other scope `read` refuses it where it stands (a
+ * `level` in a block, a `keep` in a component), so a parse error's `expected` leaves it out there.
+ */
+interface BodyForm {
+  read(start: number, t: Token, components: Map<string, ComponentDef>, selfName?: string): Statement;
+  opens(scope: BodyScope): boolean;
 }
 
 /**
@@ -132,6 +183,19 @@ const STRAY_CLAUSE_HINTS: ReadonlyMap<string, string> = new Map([
   ],
 ]);
 
+/** The plan body's own scope (AF4). */
+const PLAN_SCOPE: BodyScope = { block: false, component: false };
+
+/** A diagnostic's `expected`, `expectedAt` and `expectedMore` (AF4), in that order. */
+function expectedFields(e: Expected | undefined): Pick<Diagnostic, "expected" | "expectedAt" | "expectedMore"> {
+  if (!e || e.list.length === 0) return {};
+  return {
+    expected: e.list,
+    ...(e.at !== undefined ? { expectedAt: e.at } : {}),
+    ...(e.more ? { expectedMore: e.more } : {}),
+  };
+}
+
 /** What a `theme` or `style` key takes when its key is unknown (AF4). */
 const KEY_VALUE = [TOKEN_TEXT.string, TOKEN_TEXT.number];
 
@@ -144,7 +208,7 @@ class ParseError extends Error {
     /** A did-you-mean for the word at `word` (AF2), and whether its fix may be machine-applicable. */
     public spelt?: { word: Span; s: { word: string; unique: boolean }; closed: boolean },
     /** What the grammar would have read at the failing token (AF4, `Diagnostic.expected`). */
-    public expected?: readonly string[],
+    public expected?: Expected,
   ) {
     super(message);
   }
@@ -233,7 +297,7 @@ class Parser {
     else if (d.severity === "error") this.droppedError = true;
   }
   /** Facade passed to element parse functions (see registry.ts). */
-  private readonly ctx: ParseCtx & Pick<ExprTokens, "report">;
+  private readonly ctx: ParseCtx & Pick<ExprTokens, "report" | "exprEnd">;
   /** Statement-start keywords for recovery resync — fixed keywords + this
    *  registry's element keywords (so plugin elements resync correctly). */
   private readonly statementStarts: ReadonlySet<string>;
@@ -261,13 +325,18 @@ class Parser {
       isStatementStart: (v) => this.statementStarts.has(v),
       parsePoint: () => this.parsePoint(),
       parseExpr: (opts) => parseExprPratt(this.ctx, opts),
+      exprEnd: (noModulo) => {
+        this.exprStop = this.pos;
+        this.exprStopModulo = !noModulo;
+      },
       parseDimensions: () => this.parseDimensions(),
       parseStringExpr: () => this.parseStringExpr(),
       parseIdOpt: () => this.parseIdOpt(),
       spanFrom: (start) => this.spanFrom(start),
-      fail: (msg, t, expected) => this.fail(msg, t, undefined, undefined, expected),
-      failAt: (msg, span, expected) => this.fail(msg, this.peek(), span, undefined, expected),
-      failNear: (msg, near, t, span, expected) => this.fail(msg, t, span, near, expected),
+      fail: (msg, t) => this.fail(msg, t),
+      failAt: (msg, span) => this.fail(msg, this.peek(), { span }),
+      failNear: (msg, near, t, span) => this.fail(msg, t, { span, near }),
+      failExpected: (msg, expected, at) => this.fail(msg, at?.t, { span: at?.span, near: at?.near, expected }),
       diag: (d) => this.report(d),
       report: (code, message, span) => this.report({ severity: "error", message, code, span }),
     };
@@ -292,21 +361,20 @@ class Parser {
    * not metered, so the search runs only while the error can still be reported: past
    * `MAX_DIAGNOSTICS` it is dropped, and so the work is bounded whatever the source's size.
    * A word of `near` glued to the number after it (`x3000`, which the lexer reads as one name) gets
-   * the same hint and a `maybe-incorrect` fix that splits it (AF4, {@link glued}).
+   * the same hint and a `maybe-incorrect` fix that splits it (AF4, {@link suggestion}).
    *
-   * `expected` (AF4, `Diagnostic.expected`) is what the grammar would have read at `t`: `near` by
-   * default, which is the list of words that position takes.
+   * `at.expected` (AF4, `Diagnostic.expected`) is what the position takes at `t` (`near` by
+   * default); {@link expectedAt} adds what an earlier statement, clause or expression would still
+   * have read there. A site that names no list gets none.
    */
-  private fail(
-    msg: string,
-    t = this.peek(),
-    span: Span = { start: t.start, end: t.end },
-    near?: readonly string[],
-    expected = near,
-  ): never {
+  private fail(msg: string, t = this.peek(), at: FailAt = {}): never {
+    const span = at.span ?? { start: t.start, end: t.end };
+    const near = at.near;
     const hints = this.parseHints(t);
-    const s =
-      near && t.type === "ident" && this.reportable() ? (spelling(t.value, near) ?? glued(t.value, near)) : null;
+    const live = this.reportable();
+    const s = near && t.type === "ident" && live ? suggestion(t.value, near) : null;
+    const site = at.expected ?? near;
+    const expected = site && live ? this.expectedAt(t, span, site, s?.word.split(" ")[0]) : undefined;
     if (!s) throw new ParseError(msg, span, hints, undefined, expected);
     throw new ParseError(
       msg,
@@ -321,8 +389,80 @@ class Parser {
     );
   }
 
-  /** The `E_PARSE` a caught {@link ParseError} reports, with its did-you-mean fix (AF2) and its
-   *  `expected` list (AF4). */
+  /**
+   * The `expected` of a parse error at `t` (AF4): the site's own list (cut to its first
+   * {@link EXPECTED_PREFIX} past {@link EXPECTED_MAX}), then every word or token the parser looked
+   * for at `t` before it failed ({@link probe}: a clause the statement before would still have
+   * read, `hidden` before a setting's value, `}` closing a block), then the operators that would
+   * have continued an expression ending just before `t`, then the did-you-mean word, so the hint
+   * always names an entry. `at` is `t`'s offset when the error is spanned elsewhere.
+   */
+  private expectedAt(t: Token, span: Span, site: readonly string[], hint: string | undefined): Expected {
+    const i = this.indexOf(t);
+    const more = site.length > EXPECTED_MAX ? site.length - EXPECTED_PREFIX : 0;
+    const list = new Set(more ? site.slice(0, EXPECTED_PREFIX) : site);
+    for (let k = 0; k < this.probeAt.length; k++) if (this.probeAt[k] === i) list.add(this.probeWhat[k]!);
+    // After a `uses` list a room reads one more use, on any line (its loop reads uses by value).
+    if (t.type !== "eof" && this.afterUses(t, false)) for (const u of USE_KINDS) list.add(u);
+    if (this.exprStop === i) {
+      for (const op of exprContinuations(this.exprStopModulo)) list.add(op);
+      const before = this.toks[i - 1];
+      if (before?.type === "ident" && before.value !== "true" && before.value !== "false") list.add(TOKEN_TEXT.lparen);
+    }
+    if (hint !== undefined) list.add(hint);
+    const e: Expected = { list: [...list], more };
+    if (span.start !== t.start || span.end !== t.end) e.at = t.start;
+    return e;
+  }
+
+  /** The index of `t` in the token list: the cursor's own, else found by its offset. */
+  private indexOf(t: Token): number {
+    if (this.toks[this.pos] === t) return this.pos;
+    let lo = 0;
+    let hi = this.toks.length - 1;
+    while (lo < hi) {
+      const mid = (lo + hi) >> 1;
+      if (this.toks[mid]!.start < t.start) lo = mid + 1;
+      else hi = mid;
+    }
+    return lo;
+  }
+
+  /**
+   * The words and tokens the parser looked for at each token index (AF4): every `isKeyword` and
+   * every `isType` but `ident`'s and the end's (a name or the end is no alternative a list can
+   * name). A failure at that token lists them, so an `expected` follows the parser's own branches.
+   * Recorded only while an error can still be reported, for the tokens at or past the cursor: two
+   * flat arrays (a token's index, the word), compacted when the cursor moves, so a parse that never
+   * fails pays one comparison and one push a look. At most 256 are held.
+   */
+  private readonly probeAt: number[] = [];
+  private readonly probeWhat: string[] = [];
+  private probePos = -1;
+  private probe(i: number, what: string): void {
+    if (!this.reportable()) return;
+    if (this.probePos !== this.pos) {
+      this.probePos = this.pos;
+      let k = 0;
+      for (let j = 0; j < this.probeAt.length; j++)
+        if (this.probeAt[j]! >= this.pos) {
+          this.probeAt[k] = this.probeAt[j]!;
+          this.probeWhat[k++] = this.probeWhat[j]!;
+        }
+      this.probeAt.length = k;
+      this.probeWhat.length = k;
+    }
+    if (this.probeAt.length < 256) {
+      this.probeAt.push(i);
+      this.probeWhat.push(what);
+    }
+  }
+  /** Where the last expression the parser read stopped (AF4), and whether `%` would have continued it. */
+  private exprStop = -1;
+  private exprStopModulo = true;
+
+  /** The `E_PARSE` a caught {@link ParseError} reports, with its did-you-mean fix (AF2) and what
+   *  it expected (AF4). */
   private parseErrorDiag(e: ParseError): Diagnostic {
     return {
       severity: "error",
@@ -331,25 +471,41 @@ class Parser {
       span: e.span,
       ...(e.hints ? { hints: e.hints } : {}),
       ...fixesFrom(spellingFix(e.spelt?.word, e.spelt?.s ?? null, e.spelt?.closed === true)),
-      ...(e.expected?.length ? { expected: [...e.expected] } : {}),
+      ...expectedFields(e.expected),
     };
   }
 
   /**
-   * What may begin a statement here (AF4): a statement keyword, a name (`x = …`, `part(…)`) or the
-   * `}` that closes the block. Inside a block the plan's settings are refused as unknown
-   * statements (`units` in a `component`), and a plan-level element is too, so neither is listed.
-   * Built only while the error can still be reported ({@link reportable}), as {@link wordsAt} is:
-   * past `MAX_DIAGNOSTICS` a flood of failing statements costs no list each.
+   * What may begin a statement in `scope` (AF4): a statement keyword, a name (`x = …`, `part(…)`)
+   * or the `}` that closes the block. At plan level, every statement keyword. In a block, only the
+   * words that begin a statement there ({@link bodyForms}, {@link elementOpens}): the plan's
+   * settings are unknown statements in a `component`, and a `level`, a `keep` in a component or a
+   * plan-level element is read only to be refused. Built only while the error can still be
+   * reported, as {@link wordsAt} is: past `MAX_DIAGNOSTICS` a flood of failing statements costs no
+   * list each.
    */
-  private statementExpected(): string[] {
+  private statementExpected(scope: BodyScope): string[] {
     if (!this.reportable()) return [];
-    const words = [...this.statementStarts].filter((w) => {
-      if (this.blockDepth === 0 || BLOCK_STARTS.has(w)) return true;
+    return [...this.statementWords(scope), TOKEN_TEXT.ident, TOKEN_TEXT.rcurly];
+  }
+
+  /** The statement keywords that begin a statement in `scope` (see {@link statementExpected}). */
+  private statementWords(scope: BodyScope): string[] {
+    // At plan level a contextual element (`section A (…`) begins a statement too, where its context holds.
+    if (!scope.block) return [...new Set([...this.statementStarts, ...this.registry.byKeyword.keys()])];
+    return [...this.statementStarts].filter((w) => {
+      const form = this.bodyForms.get(w);
+      if (form) return form.opens(scope);
       const def = this.registry.byKeyword.get(w);
-      return def !== undefined && def.planLevelOnly === undefined;
+      return def !== undefined && this.elementOpens(def, scope);
     });
-    return [...words, TOKEN_TEXT.ident, TOKEN_TEXT.rcurly];
+  }
+
+  /** Whether element `def` begins a statement of its own in `scope` (AF4): a plan-level element
+   *  does not in a block, nor a `roof` in a component; there each is read only to be refused. */
+  private elementOpens(def: ElementDef, scope: BodyScope): boolean {
+    if (def.planLevelOnly !== undefined && scope.block) return false;
+    return !(def.keyword === "roof" && scope.component);
   }
 
   /** How many times each word stands in this source as a name, counted once off the tokens: a
@@ -426,18 +582,19 @@ class Parser {
   /**
    * The words an unknown statement word `t` may be a slip of (AF2), in order: on the line of the
    * token before it, where a statement ended early at a misspelt word, a room use (after a `uses`
-   * list), a clause word and a value word (`dims auto roomss`); then a statement keyword. Each set
-   * is read from its one source. A word of the language out of place (`sheet`, `left`, `closet`) is
-   * spelled right, so it has none.
+   * list), a clause word and a value word (`dims auto roomss`); then a statement keyword, of those
+   * that begin a statement in `scope` (AF4: the words its `expected` lists). Each set is read from
+   * its one source. A word of the language out of place (`sheet`, `left`, `closet`) is spelled
+   * right, so it has none.
    */
-  private wordsAt(t: Token): readonly string[] {
+  private wordsAt(t: Token, scope: BodyScope): readonly string[] {
     if (!this.reportable() || this.isLanguageWord(t.value)) return [];
-    if (this.toks[this.pos - 1]?.line !== t.line) return [...this.statementStarts];
+    if (this.toks[this.pos - 1]?.line !== t.line) return this.statementWords(scope);
     return [
       ...(this.afterUses(t, true) ? USE_KINDS : []),
       ...ATTRIBUTE_KEYWORDS,
       ...KEYWORDS.enum,
-      ...this.statementStarts,
+      ...this.statementWords(scope),
     ];
   }
 
@@ -580,18 +737,17 @@ class Parser {
 
   private isKeyword(kw: string, o = 0): boolean {
     const t = this.peek(o);
+    this.probe(Math.min(this.pos + o, this.toks.length - 1), kw);
     return t.type === "ident" && t.value === kw;
   }
   private eatKeyword(kw: string): Token {
     const t = this.peek();
-    if (t.type !== "ident" || t.value !== kw)
-      this.fail(`Expected "${kw}" but found ${describe(t)}`, t, undefined, [kw]);
+    if (t.type !== "ident" || t.value !== kw) this.fail(`Expected "${kw}" but found ${describe(t)}`, t, { near: [kw] });
     return this.next();
   }
   private eat(type: Token["type"]): Token {
     const t = this.peek();
-    if (t.type !== type)
-      this.fail(`Expected ${type} but found ${describe(t)}`, t, undefined, undefined, [TOKEN_TEXT[type]]);
+    if (t.type !== type) this.fail(`Expected ${type} but found ${describe(t)}`, t, { expected: [TOKEN_TEXT[type]] });
     return this.next();
   }
   private eatIdent(): Token {
@@ -643,14 +799,16 @@ class Parser {
       const start = t.start;
       try {
         if (t.type !== "ident")
-          this.fail(`Expected a statement but found ${describe(t)}`, t, undefined, undefined, this.statementExpected());
+          this.fail(`Expected a statement but found ${describe(t)}`, t, {
+            expected: this.statementExpected(PLAN_SCOPE),
+          });
         if (this.atSheetText()) {
           plan.sheetText = this.parseSheetText(plan, start);
           continue;
         }
         switch (t.value) {
           case "units":
-            this.parseUnitsSetting(plan, t);
+            this.parseUnitsSetting(plan);
             break;
           case "grid": {
             this.next();
@@ -691,11 +849,11 @@ class Parser {
             this.parseSiteSetting(plan, t);
             break;
           case "dims":
-            this.parseDimsSetting(plan, t);
+            this.parseDimsSetting(plan);
             break;
           case "title": {
             // `title hidden = 3` was an error, and stays the error `parseTitle` reports.
-            if (this.isKeyword("hidden", 1) && this.peek(1).line === t.line && !this.isTrailer(this.peek(2))) {
+            if (this.peek(1).line === t.line && this.isKeyword("hidden", 1) && !this.isTrailer(this.peek(2))) {
               this.next();
               this.eatHidden(plan, "title");
               break;
@@ -965,6 +1123,7 @@ class Parser {
   }
 
   private isType(type: Token["type"]): boolean {
+    if (type !== "ident" && type !== "eof") this.probe(Math.min(this.pos, this.toks.length - 1), TOKEN_TEXT[type]);
     return this.peek().type === type;
   }
 
@@ -981,10 +1140,12 @@ class Parser {
     });
   }
 
-  private parseUnitsSetting(plan: PlanNode, t: Token): void {
+  private parseUnitsSetting(plan: PlanNode): void {
     this.next();
-    const u = this.eatIdent().value;
-    if (u !== "mm") this.fail(`Unsupported units "${u}" (only "mm" is supported)`, t, undefined, undefined, ["mm"]);
+    // Spanned on the unit word, the token the error's `expected` describes (AF4).
+    const ut = this.eatIdent();
+    const u = ut.value;
+    if (u !== "mm") this.fail(`Unsupported units "${u}" (only "mm" is supported)`, ut, { expected: ["mm"] });
     plan.units = "mm";
   }
 
@@ -1031,7 +1192,13 @@ class Parser {
 
   /** The word as a clause: not the first token of an assignment or a macro call. */
   private isTrailingWord(word: string): boolean {
-    return this.isKeyword(word) && this.peek().line === this.peek(-1).line && !this.isTrailer(this.peek(1));
+    // The line first: a word on the next line is no trailing clause, so it is not looked for there (AF4).
+    return this.peek().line === this.peek(-1).line && this.isKeyword(word) && !this.isTrailer(this.peek(1));
+  }
+
+  /** Whether the next token is one of `words`, each looked for ({@link probe}, AF4). */
+  private isOneOf(words: readonly string[]): boolean {
+    return words.some((w) => this.isKeyword(w));
   }
 
   private isTrailer(t: Token): boolean {
@@ -1063,36 +1230,30 @@ class Parser {
     const sizeTok = this.eatIdent();
     const size = sizeTok.value.toUpperCase();
     if (!(PAPER_SIZES as readonly string[]).includes(size)) {
-      this.fail(
-        `Unknown paper size "${sizeTok.value}" (expected ${PAPER_SIZES.join("|")})`,
-        sizeTok,
-        undefined,
-        undefined,
-        PAPER_SIZES,
-      );
+      this.fail(`Unknown paper size "${sizeTok.value}" (expected ${PAPER_SIZES.join("|")})`, sizeTok, {
+        expected: PAPER_SIZES,
+      });
     }
     let orientation: PaperOrientation = "landscape";
-    if (this.isType("ident") && (PAPER_ORIENTATIONS as readonly string[]).includes(this.peek().value)) {
+    if (this.isOneOf(PAPER_ORIENTATIONS)) {
       orientation = this.eatIdent().value as PaperOrientation;
     }
     plan.paper = { size: size as PaperSize, orientation };
     plan.paperSpan = this.spanFrom(t.start);
   }
 
-  private parseDimsSetting(plan: PlanNode, t: Token): void {
+  private parseDimsSetting(plan: PlanNode): void {
     this.next();
-    const a = this.eatIdent().value;
-    if (a !== "auto") this.fail(`Expected "auto" after "dims" but found "${a}"`, t, undefined, undefined, ["auto"]);
+    // Spanned on the word after `dims`, the token the error's `expected` describes (AF4).
+    const at = this.eatIdent();
+    const a = at.value;
+    if (a !== "auto") this.fail(`Expected "auto" after "dims" but found "${a}"`, at, { expected: ["auto"] });
     let mode: AutoDimsMode = "all";
     // `walls` is both a mode and a statement keyword (`walls from rooms`): a mode word that
     // starts a statement on the next line (`dims auto` then `walls from rooms …`) is left
     // to that statement.
     const startsStatement = this.statementStarts.has(this.peek().value) && this.isKeyword("from", 1);
-    if (
-      this.isType("ident") &&
-      (AUTO_DIMS_MODES as readonly string[]).includes(this.peek().value) &&
-      !startsStatement
-    ) {
+    if (this.isOneOf(AUTO_DIMS_MODES) && !startsStatement) {
       mode = this.eatIdent().value as AutoDimsMode;
     }
     plan.autoDims = mode;
@@ -1116,9 +1277,7 @@ class Parser {
         `Unknown schedule subject "${subject}"${hint ? ` — did you mean "${hint}"?` : ""}` +
           ` (available: ${SCHEDULE_SUBJECTS.join(", ")})`,
         st,
-        undefined,
-        undefined,
-        SCHEDULE_SUBJECTS,
+        { expected: SCHEDULE_SUBJECTS },
       );
     }
     if ((subject as ScheduleSubject) === "openings") plan.openingSchedule = true;
@@ -1127,7 +1286,7 @@ class Parser {
       // `net` rides on `rooms` only. A word on the next line can also start a statement: an inline
       // macro call of a component named `net` (`net()`), as `dims auto` guards `walls` above. So `net`
       // is taken only when no `(` follows it.
-      if (this.isType("ident") && this.peek().value === "net" && this.peek(1).type !== "lparen") {
+      if (this.isKeyword("net") && this.peek(1).type !== "lparen") {
         this.next();
         plan.scheduleNet = true;
       }
@@ -1177,23 +1336,20 @@ class Parser {
     while (!this.isType("rcurly") && !this.isType("eof")) {
       const k = this.peek();
       if (k.type !== "ident")
-        this.fail(`Expected a sheet text key but found ${describe(k)}`, k, undefined, undefined, [
-          ...sheetTextKeys(),
-          TOKEN_TEXT.rcurly,
-        ]);
+        // The 267 keys are built only while the error can be reported, and `expected` keeps the first
+        // 16 (AF4, `EXPECTED_MAX`); the loop's own `}` is listed after them.
+        this.fail(`Expected a sheet text key but found ${describe(k)}`, k, {
+          expected: this.reportable() ? sheetTextKeys() : [],
+        });
       if (!isSheetTextKey(k.value)) {
         // One hint a parse, on a word a key's length: this search reads every key, and no step meter
         // runs here, so a source of a million bad keys must not pay for a million searches.
         const near = !this.sheetKeyHinted && k.value.length <= MAX_SHEET_WORD;
         const hint = near ? closest(k.value, [...sheetTextKeys()]) : null;
         this.sheetKeyHinted = true;
-        this.fail(
-          `Unknown sheet text key "${k.value}"${hint ? ` — did you mean "${hint}"?` : ""}`,
-          k,
-          undefined,
-          undefined,
-          [...sheetTextKeys()],
-        );
+        this.fail(`Unknown sheet text key "${k.value}"${hint ? ` — did you mean "${hint}"?` : ""}`, k, {
+          expected: this.reportable() ? sheetTextKeys() : [],
+        });
       }
       if (entries.some((e) => e.key === k.value)) this.fail(`\`${k.value}\` is written twice in \`sheet text\``, k);
       this.next();
@@ -1220,9 +1376,7 @@ class Parser {
       this.fail(
         `Unknown ${what} "${t.value}"${hint ? ` — did you mean "${hint}"?` : ""} (available: ${values.join(", ")})`,
         t,
-        undefined,
-        undefined,
-        values,
+        { expected: values },
       );
     }
     return t.value as T;
@@ -1256,13 +1410,9 @@ class Parser {
     while (!this.isType("rcurly") && !this.isType("eof")) {
       const f = this.peek();
       if (f.type !== "ident") {
-        this.fail(
-          `Expected a site field (${FIELDS.map((x) => `"${x}"`).join(", ")}) but found ${describe(f)}`,
-          f,
-          undefined,
-          undefined,
-          [...FIELDS, TOKEN_TEXT.rcurly],
-        );
+        this.fail(`Expected a site field (${FIELDS.map((x) => `"${x}"`).join(", ")}) but found ${describe(f)}`, f, {
+          expected: [...FIELDS, TOKEN_TEXT.rcurly],
+        });
       }
       if (f.value === "street") {
         this.next();
@@ -1285,9 +1435,7 @@ class Parser {
           `Unknown site field "${f.value}"${hint ? ` — did you mean "${hint}"?` : ""} ` +
             `(available: ${FIELDS.join(", ")})`,
           f,
-          undefined,
-          undefined,
-          FIELDS,
+          { expected: FIELDS },
         );
       }
     }
@@ -1379,13 +1527,10 @@ class Parser {
       this.next();
       return t.value as NorthCardinal;
     }
-    this.fail(
-      `Expected a north direction (${NORTH_DIRS.join("|")}|<degrees>) but found ${describe(t)}`,
-      t,
-      undefined,
-      NORTH_DIRS,
-      [...NORTH_DIRS, TOKEN_TEXT.number],
-    );
+    this.fail(`Expected a north direction (${NORTH_DIRS.join("|")}|<degrees>) but found ${describe(t)}`, t, {
+      near: NORTH_DIRS,
+      expected: [...NORTH_DIRS, TOKEN_TEXT.number],
+    });
   }
 
   private parsePoint(): ExprPoint {
@@ -1406,9 +1551,7 @@ class Parser {
     const w = parseExprPratt(this.ctx);
     if (this.isKeyword("x")) this.next();
     else
-      this.fail(`Expected "x" between width and height but found ${describe(this.peek())}`, undefined, undefined, [
-        "x",
-      ]);
+      this.fail(`Expected "x" between width and height but found ${describe(this.peek())}`, undefined, { near: ["x"] });
     const h = parseExprPratt(this.ctx);
     return { w, h };
   }
@@ -1420,13 +1563,12 @@ class Parser {
     while (!this.isType("rcurly") && !this.isType("eof")) {
       const t = this.peek();
       if (t.type !== "ident")
-        this.fail(`Expected a title field but found ${describe(t)}`, t, undefined, undefined, [
-          ...TITLE_FIELDS,
-          TOKEN_TEXT.rcurly,
-        ]);
+        this.fail(`Expected a title field but found ${describe(t)}`, t, {
+          expected: [...TITLE_FIELDS, TOKEN_TEXT.rcurly],
+        });
       // One case per word of `TITLE_FIELDS`, each filling its `TitleNode` key.
       if (!(TITLE_FIELDS as readonly string[]).includes(t.value))
-        this.fail(`Unknown title field "${t.value}"`, t, undefined, TITLE_FIELDS);
+        this.fail(`Unknown title field "${t.value}"`, t, { near: TITLE_FIELDS });
       this.next();
       node[TITLE_FIELD_KEY[t.value as TitleField]] = this.eatString();
     }
@@ -1447,11 +1589,9 @@ class Parser {
     while (!this.isType("rcurly") && !this.isType("eof")) {
       const t = this.peek();
       if (t.type !== "ident" || (t.value !== "x" && t.value !== "y")) {
-        this.fail(`Expected an axis direction ("x" or "y") but found ${describe(t)}`, t, undefined, undefined, [
-          "x",
-          "y",
-          TOKEN_TEXT.rcurly,
-        ]);
+        this.fail(`Expected an axis direction ("x" or "y") but found ${describe(t)}`, t, {
+          expected: ["x", "y", TOKEN_TEXT.rcurly],
+        });
       }
       this.next();
       this.eatKeyword("at");
@@ -1497,8 +1637,7 @@ class Parser {
             span: { start: keyTok.start, end: keyTok.end },
           });
           if (this.isType("string") || this.isType("number")) this.next();
-          else
-            this.fail(`Expected a value for theme key "${keyTok.value}"`, undefined, undefined, undefined, KEY_VALUE);
+          else this.fail(`Expected a value for theme key "${keyTok.value}"`, undefined, { expected: KEY_VALUE });
           continue;
         }
         if (isNumericThemeKey(resolved)) {
@@ -1554,7 +1693,7 @@ class Parser {
           span: { start: keyTok.start, end: keyTok.end },
         });
         if (this.isType("string") || this.isType("number")) this.next();
-        else this.fail(`Expected a value for style key "${keyTok.value}"`, undefined, undefined, undefined, KEY_VALUE);
+        else this.fail(`Expected a value for style key "${keyTok.value}"`, undefined, { expected: KEY_VALUE });
         continue;
       }
       (style as Record<string, unknown>)[resolved] = this.sanitizedStringValue(keyTok, "style");
@@ -1602,8 +1741,7 @@ class Parser {
         this.fail(
           `\`keep equal\` takes ${KEEP_WORDS.measures.join(" or ")} first, then the rooms or openings it compares (found ${describe(m)})`,
           m,
-          undefined,
-          KEEP_WORDS.measures,
+          { near: KEEP_WORDS.measures },
         );
       }
       this.next();
@@ -1644,8 +1782,7 @@ class Parser {
       this.fail(
         `Expected a keep form (align, equal, offset, min clear, on axis, stacked or fixed) after "keep" but found ${describe(w)}`,
         w,
-        undefined,
-        Object.values(forms).map((f) => f[0]),
+        { near: Object.values(forms).map((f) => f[0]) },
       );
     }
     if (this.isType("ident") && isKeepGrade(this.peek().value)) node.grade = this.next().value as KeepGrade;
@@ -1690,9 +1827,7 @@ class Parser {
       this.fail(
         `Expected a keep target (a room datum such as \`a.left\`, \`axis <label>\`, or an authored id) but found ${describe(t)}`,
         t,
-        undefined,
-        undefined,
-        [TOKEN_TEXT.ident, "axis"],
+        { expected: [TOKEN_TEXT.ident, "axis"] },
       );
     }
     this.next();
@@ -1756,8 +1891,7 @@ class Parser {
       this.fail(
         `\`place ${nameTok.value}(…)\` needs \`as <name>\` — a placed instance is addressable (write \`${nameTok.value}(…)\` for the legacy inline macro)`,
         undefined,
-        undefined,
-        ["as"],
+        { near: ["as"] },
       );
     }
     this.next();
@@ -1767,8 +1901,7 @@ class Parser {
       this.fail(
         `\`place ${nameTok.value}(…) as ${alias}\` needs \`at (x, y)\` — a component is authored from (0,0)`,
         undefined,
-        undefined,
-        ["at"],
+        { near: ["at"] },
       );
     }
     this.next();
@@ -1788,12 +1921,9 @@ class Parser {
       const rt = this.peek();
       const deg = this.eatNumber();
       if (deg !== 0 && deg !== 90 && deg !== 180 && deg !== 270) {
-        this.fail(`\`place … rotate\` must be 0, 90, 180 or 270 (got ${deg})`, rt, undefined, undefined, [
-          "0",
-          "90",
-          "180",
-          "270",
-        ]);
+        this.fail(`\`place … rotate\` must be 0, 90, 180 or 270 (got ${deg})`, rt, {
+          expected: ["0", "90", "180", "270"],
+        });
       }
       node.rotate = deg as PlaceRotate;
     }
@@ -1801,13 +1931,9 @@ class Parser {
       this.next();
       const mt = this.eatIdent();
       if (mt.value !== "x" && mt.value !== "y") {
-        this.fail(
-          `\`place … mirror\` must be "x" (flip left↔right) or "y" (flip top↔bottom)`,
-          mt,
-          undefined,
-          undefined,
-          ["x", "y"],
-        );
+        this.fail(`\`place … mirror\` must be "x" (flip left↔right) or "y" (flip top↔bottom)`, mt, {
+          expected: ["x", "y"],
+        });
       }
       node.mirror = mt.value;
     }
@@ -1836,6 +1962,129 @@ class Parser {
   }
 
   /**
+   * The fixed statement words {@link parseOneBodyStatement} dispatches on (AF4), one handler each,
+   * read by the dispatch and by {@link statementWords} alike. A word whose `opens` is false in a
+   * scope is read there only to be refused (`E_ACC_PLACEMENT`, `E_LEVEL_NEST`, `E_STRIP_NEST`,
+   * `E_KEEP_PLACEMENT`), so a parse error's `expected` leaves it out. A fixed word wins over a
+   * registry element of the same name.
+   */
+  private readonly bodyForms: ReadonlyMap<string, BodyForm> = new Map<string, BodyForm>([
+    ["accTitle", { opens: () => false, read: (start, t) => this.refuseAcc(start, t) }],
+    ["accDescr", { opens: () => false, read: (start, t) => this.refuseAcc(start, t) }],
+    // `level` partitions the WHOLE plan into storeys, so it is a plan-level block only.
+    // Reaching here means one appeared inside another level, a control-flow body, a strip,
+    // or a component: consume it for clean recovery and report E_LEVEL_NEST.
+    [
+      "level",
+      {
+        opens: () => false,
+        read: (start, t, components) => {
+          this.parseLevel(components);
+          const msg = `"level" is only allowed at plan level, not inside a block, component, or another level`;
+          this.report({ severity: "error", message: msg, code: "E_LEVEL_NEST", span: this.spanFrom(start) });
+          return { kind: "error", id: "", line: t.line, message: msg };
+        },
+      },
+    ],
+    // `strip` is a plan-level block only. Inside a component/control-flow block (or
+    // another strip), consume it for clean recovery and report E_STRIP_NEST.
+    [
+      "strip",
+      {
+        opens: () => false,
+        read: (start, t) => {
+          this.parseStrip();
+          const msg = `"strip" is only allowed at plan level, not inside a block, component, or another strip`;
+          this.report({ severity: "error", message: msg, code: "E_STRIP_NEST", span: this.spanFrom(start) });
+          return { kind: "error", id: "", line: t.line, message: msg };
+        },
+      },
+    ],
+    // `zone` is legal wherever a statement is — plan level, inside a `level` block, inside
+    // a control-flow body or a component — because it is a pure metadata wrapper with no
+    // geometric semantics. Handled here (not in `parsePlan`'s switch) so all of those
+    // positions get it from one place. `place` rides the same seam.
+    ["zone", { opens: () => true, read: (_s, _t, c, self) => this.parseZone(c, self) }],
+    ["place", { opens: () => true, read: () => this.parsePlace() }],
+    ["for", { opens: () => true, read: (_s, _t, c, self) => this.parseFor(c, self) }],
+    ["if", { opens: () => true, read: (_s, _t, c, self) => this.parseIf(c, self) }],
+    ["while", { opens: () => true, read: (_s, _t, c, self) => this.parseWhile(c, self) }],
+    ["set", { opens: () => true, read: () => this.parseSet() }],
+    [
+      "keep",
+      {
+        opens: (scope) => !scope.component,
+        read: (start, t, _c, self) => {
+          if (self === undefined) return this.parseKeep();
+          // A keep inside a component would be checked once per instance in its own frame (ADR 0033):
+          // refused where it is written, placed or not. Consumed for clean recovery, as `roof` is.
+          this.parseKeep();
+          const msg =
+            "A keep inside a component would be checked once per instance in its own frame; write it in the plan";
+          this.report({
+            severity: "error",
+            message: msg,
+            code: "E_KEEP_PLACEMENT",
+            span: this.spanFrom(start),
+            hints: ["move the keep to the plan or storey that places the component"],
+          });
+          return { kind: "error", id: "", line: t.line, message: msg };
+        },
+      },
+    ],
+    ["let", { opens: () => true, read: () => this.parseLet() }],
+  ]);
+
+  /** `accTitle`/`accDescr` are plan-level only. Reaching a body means one appeared inside a
+   *  component or control-flow block: consume it (with its string arg, if present) and report a
+   *  catalogued error so recovery is clean and the message is specific rather than a generic
+   *  "unknown statement". */
+  private refuseAcc(start: number, t: Token): Statement {
+    this.next();
+    if (this.isType("string")) this.next();
+    const msg = `"${t.value}" is only allowed at plan level, not inside a block or component`;
+    this.report({ severity: "error", message: msg, code: "E_ACC_PLACEMENT", span: this.spanFrom(start) });
+    return { kind: "error", id: "", line: t.line, message: msg };
+  }
+
+  /**
+   * An element read where it does not begin a statement ({@link elementOpens}), consumed and refused.
+   *
+   * A `roof` belongs to a BUILDING, not to a reusable part of one. Its `overhang` sugar
+   * asks "which closed exterior ring does this plan have?", and a component is authored
+   * in its own local frame with no answer to that — two `place`d copies would each
+   * derive their own outline and the plan would draw two roofs. `selfName` is set only
+   * inside a `component` body (control-flow and `zone` bodies inherit it, which is
+   * right: a `roof` in a loop inside a component is still inside the component), so it
+   * is the precise test. Consumed for clean recovery, exactly as `E_ACC_PLACEMENT` does.
+   *
+   * A plan-level element inside a `level`, `zone`, `component` or block: consumed, then refused, as
+   * `roof` is. The gate already read the statement as this element, so a malformed one is refused
+   * for where it stands too (its shape is moot there), consumed to where the next statement starts.
+   */
+  private refuseElement(def: ElementDef, start: number, t: Token): Statement {
+    if (def.planLevelOnly === undefined) {
+      def.parse(this.ctx);
+      const msg =
+        `"roof" is only allowed at plan level (or inside a \`level\` block), not inside a component — ` +
+        `an overhang is offset from the BUILDING's wall ring, which a component does not have`;
+      this.report({ severity: "error", message: msg, code: "E_ROOF_PLACEMENT", span: this.spanFrom(start) });
+      return { kind: "error", id: "", line: t.line, message: msg };
+    }
+    try {
+      def.parse(this.ctx);
+    } catch (e) {
+      if (!(e instanceof ParseError)) throw e;
+      this.synchronize(start);
+    }
+    const msg =
+      `"${def.keyword}" is a plan-level statement: write it outside any \`level\`, \`zone\`, ` +
+      `\`component\` or block, once for the whole plan`;
+    this.report({ severity: "error", message: msg, code: def.planLevelOnly.code, span: this.spanFrom(start) });
+    return { kind: "error", id: "", line: t.line, message: msg };
+  }
+
+  /**
    * Parse one body statement: an element, `let`, instance, `for`/`if`/`while`,
    * or assignment. Shared by the plan body, component bodies, and control-flow
    * blocks. `selfName` permits a component body to call itself recursively.
@@ -1843,19 +2092,9 @@ class Parser {
   private parseOneBodyStatement(components: Map<string, ComponentDef>, selfName?: string): Statement {
     const t = this.peek();
     const start = t.start;
+    const scope: BodyScope = { block: this.blockDepth > 0, component: selfName !== undefined };
     if (t.type !== "ident")
-      this.fail(`Expected a statement but found ${describe(t)}`, t, undefined, undefined, this.statementExpected());
-    // `accTitle`/`accDescr` are plan-level only. Reaching here means one appeared
-    // inside a component or control-flow block: consume it (with its string arg, if
-    // present) and report a catalogued error so recovery is clean and the message is
-    // specific rather than a generic "unknown statement".
-    if (t.value === "accTitle" || t.value === "accDescr") {
-      this.next();
-      if (this.isType("string")) this.next();
-      const msg = `"${t.value}" is only allowed at plan level, not inside a block or component`;
-      this.report({ severity: "error", message: msg, code: "E_ACC_PLACEMENT", span: this.spanFrom(start) });
-      return { kind: "error", id: "", line: t.line, message: msg };
-    }
+      this.fail(`Expected a statement but found ${describe(t)}`, t, { expected: this.statementExpected(scope) });
     // `sheet text` words the whole sheet, so it is plan-level only. Reaching here means one appeared
     // inside a `level`, a component or a control-flow block: consumed to its `}` without reading its
     // entries, because a key such as `legend` would otherwise read as a statement of its own.
@@ -1866,88 +2105,21 @@ class Parser {
       this.report({ severity: "error", message: msg, code: "E_PARSE", span: this.spanFrom(start) });
       return { kind: "error", id: "", line: t.line, message: msg };
     }
-    // `level` partitions the WHOLE plan into storeys, so it is a plan-level block only.
-    // Reaching here means one appeared inside another level, a control-flow body, a strip,
-    // or a component: consume it for clean recovery and report E_LEVEL_NEST.
-    if (t.value === "level") {
-      this.parseLevel(components);
-      const msg = `"level" is only allowed at plan level, not inside a block, component, or another level`;
-      this.report({ severity: "error", message: msg, code: "E_LEVEL_NEST", span: this.spanFrom(start) });
-      return { kind: "error", id: "", line: t.line, message: msg };
-    }
-    // `strip` is a plan-level block only. Inside a component/control-flow block (or
-    // another strip), consume it for clean recovery and report E_STRIP_NEST.
-    if (t.value === "strip") {
-      this.parseStrip();
-      const msg = `"strip" is only allowed at plan level, not inside a block, component, or another strip`;
-      this.report({ severity: "error", message: msg, code: "E_STRIP_NEST", span: this.spanFrom(start) });
-      return { kind: "error", id: "", line: t.line, message: msg };
-    }
-    // A `roof` belongs to a BUILDING, not to a reusable part of one. Its `overhang` sugar
-    // asks "which closed exterior ring does this plan have?", and a component is authored
-    // in its own local frame with no answer to that — two `place`d copies would each
-    // derive their own outline and the plan would draw two roofs. `selfName` is set only
-    // inside a `component` body (control-flow and `zone` bodies inherit it, which is
-    // right: a `roof` in a loop inside a component is still inside the component), so it
-    // is the precise test. Consumed for clean recovery, exactly as `E_ACC_PLACEMENT` does.
-    if (t.value === "roof" && selfName !== undefined) {
-      this.registry.byKeyword.get("roof")?.parse(this.ctx);
-      const msg =
-        `"roof" is only allowed at plan level (or inside a \`level\` block), not inside a component — ` +
-        `an overhang is offset from the BUILDING's wall ring, which a component does not have`;
-      this.report({ severity: "error", message: msg, code: "E_ROOF_PLACEMENT", span: this.spanFrom(start) });
-      return { kind: "error", id: "", line: t.line, message: msg };
-    }
+    // A fixed word (`for`, `zone`, `keep`, and the plan-level ones a block refuses): its handler
+    // reads it, or refuses it where it stands (AF4, {@link bodyForms}).
+    const form = this.bodyForms.get(t.value);
     let node: Statement;
-    // `zone` is legal wherever a statement is — plan level, inside a `level` block, inside
-    // a control-flow body or a component — because it is a pure metadata wrapper with no
-    // geometric semantics. Handled here (not in `parsePlan`'s switch) so all of those
-    // positions get it from one place. `place` rides the same seam.
-    if (t.value === "zone") node = this.parseZone(components, selfName);
-    else if (t.value === "place") node = this.parsePlace();
-    else if (t.value === "for") node = this.parseFor(components, selfName);
-    else if (t.value === "if") node = this.parseIf(components, selfName);
-    else if (t.value === "while") node = this.parseWhile(components, selfName);
-    else if (t.value === "set") node = this.parseSet();
-    else if (t.value === "keep" && selfName !== undefined) {
-      // A keep inside a component would be checked once per instance in its own frame (ADR 0033):
-      // refused where it is written, placed or not. Consumed for clean recovery, as `roof` is.
-      this.parseKeep();
-      const msg = "A keep inside a component would be checked once per instance in its own frame; write it in the plan";
-      this.report({
-        severity: "error",
-        message: msg,
-        code: "E_KEEP_PLACEMENT",
-        span: this.spanFrom(start),
-        hints: ["move the keep to the plan or storey that places the component"],
-      });
-      return { kind: "error", id: "", line: t.line, message: msg };
-    } else if (t.value === "keep") node = this.parseKeep();
+    if (form) node = form.read(start, t, components, selfName);
     else {
       const found = this.registry.byKeyword.get(t.value);
       // A contextual keyword starts its element only where the element says (`section A (`).
       const def = found && (!found.contextual || found.contextual(this.ctx)) ? found : undefined;
-      if (def?.planLevelOnly !== undefined && this.blockDepth > 0) {
-        // Inside a `level`, `zone`, `component` or block: consumed, then refused, as `roof` is. The
-        // gate already read the statement as this element, so a malformed one is refused for where it
-        // stands too (its shape is moot there), consumed to where the next statement starts.
-        try {
-          def.parse(this.ctx);
-        } catch (e) {
-          if (!(e instanceof ParseError)) throw e;
-          this.synchronize(start);
-        }
-        const msg =
-          `"${def.keyword}" is a plan-level statement: write it outside any \`level\`, \`zone\`, ` +
-          `\`component\` or block, once for the whole plan`;
-        this.report({ severity: "error", message: msg, code: def.planLevelOnly.code, span: this.spanFrom(start) });
-        return { kind: "error", id: "", line: t.line, message: msg };
-      }
+      if (def && !this.elementOpens(def, scope)) return this.refuseElement(def, start, t);
       if (def) {
         this.lastIdSpan = undefined;
         node = def.parse(this.ctx);
         if (this.lastIdSpan && (node as { id?: string }).id) recordIdSpan(node, this.lastIdSpan);
-      } else if (t.value === "let") node = this.parseLet();
+      }
       // An ident immediately followed by "=" is an assignment.
       else if (this.peek(1).type === "equals") node = this.parseAssign();
       // Any ident followed by "(" is a component call. The component may be
@@ -1958,14 +2130,16 @@ class Parser {
       else if (this.peek(1).type === "lparen") node = this.parseInstance();
       else {
         const stray = STRAY_CLAUSE_HINTS.get(t.value);
-        const expected = this.statementExpected();
-        if (stray === undefined) this.fail(`Unknown statement "${t.value}"`, t, undefined, this.wordsAt(t), expected);
+        // After a `uses` list on its line, a use is what the room would still have read (AF2, AF4).
+        const expected = [...this.statementExpected(scope), ...(this.afterUses(t, true) ? USE_KINDS : [])];
+        if (stray === undefined)
+          this.fail(`Unknown statement "${t.value}"`, t, { near: this.wordsAt(t, scope), expected });
         throw new ParseError(
           `Unknown statement "${t.value}"`,
           { start: t.start, end: t.end },
           [stray],
           undefined,
-          expected,
+          this.reportable() ? this.expectedAt(t, { start: t.start, end: t.end }, expected, undefined) : undefined,
         );
       }
     }
@@ -2117,9 +2291,9 @@ class Parser {
     const targetTok = this.eatIdent();
     const def = this.registry.byKeyword.get(targetTok.value);
     if (!def)
-      this.fail(`Unknown element kind "${targetTok.value}" in "set" rule`, targetTok, undefined, [
-        ...this.registry.byKeyword.keys(),
-      ]);
+      this.fail(`Unknown element kind "${targetTok.value}" in "set" rule`, targetTok, {
+        near: [...this.registry.byKeyword.keys()],
+      });
     this.eat("lparen");
     const over: SetOverride[] = [];
     while (!this.isType("rparen") && !this.isType("eof")) {
@@ -2146,7 +2320,7 @@ class Parser {
   private parseStringExpr(): Expr {
     const t = this.peek();
     if (t.type !== "string")
-      this.fail(`Expected a string but found ${describe(t)}`, t, undefined, undefined, [TOKEN_TEXT.string]);
+      this.fail(`Expected a string but found ${describe(t)}`, t, { expected: [TOKEN_TEXT.string] });
     return parseExprPratt(this.ctx);
   }
 
@@ -2231,12 +2405,9 @@ class Parser {
     const dirTok = this.eatIdent();
     const dir = dirTok.value as StripDir;
     if (!(STRIP_DIRS as readonly string[]).includes(dir)) {
-      this.fail(
-        `Expected a strip direction (${STRIP_DIRS.join("|")}) but found "${dirTok.value}"`,
-        dirTok,
-        undefined,
-        STRIP_DIRS,
-      );
+      this.fail(`Expected a strip direction (${STRIP_DIRS.join("|")}) but found "${dirTok.value}"`, dirTok, {
+        near: STRIP_DIRS,
+      });
     }
     this.eatKeyword("at");
     const at = this.parsePoint();
@@ -2329,12 +2500,9 @@ class Parser {
             uses.push(this.next().value as UseKind);
           }
           if (uses.length === 0)
-            this.fail(
-              roomUsesExpected(this.peek().value || undefined, this.peek().type),
-              undefined,
-              undefined,
-              USE_KINDS,
-            );
+            this.fail(roomUsesExpected(this.peek().value || undefined, this.peek().type), undefined, {
+              near: USE_KINDS,
+            });
           if (keep) tail.uses = uses;
         },
       },

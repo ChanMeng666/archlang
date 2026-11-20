@@ -31,7 +31,7 @@ import {
   toCompass,
 } from "../algebra/d4.js";
 import { closest } from "../expr.js";
-import { failNear } from "../clause-order.js";
+import { failExpected, failNear } from "../clause-order.js";
 import { fmt0 } from "../num-format.js";
 
 /** The cut stroke along the line at each end, in dimension-font heights (8 mm at a 2.5 mm font:
@@ -111,10 +111,11 @@ export const section: ElementDef = {
     const word = ctx.eatIdent();
     if (!(COMPASS_DIRECTIONS as readonly string[]).includes(word.value)) {
       const hint = closest(word.value, [...COMPASS_DIRECTIONS]);
-      ctx.fail(
+      failExpected(
+        ctx,
         `Unknown look direction "${word.value}"${hint ? ` — did you mean "${hint}"?` : ""} (available: ${COMPASS_DIRECTIONS.join(", ")})`,
-        word,
         COMPASS_DIRECTIONS,
+        { t: word },
       );
     }
     return {

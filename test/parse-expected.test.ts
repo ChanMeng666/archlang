@@ -1,24 +1,35 @@
 /**
- * AF4: an `E_PARSE` carries `expected`, what the grammar would have read at its span (after rustc's
- * "expected one of"), read from the token table (`TOKEN_TEXT`, `src/grammar/tokens.ts`) and the
- * closed word lists the parser already checks against, never retyped. A word of the list glued to
- * the number after it (`size (A)x3000`, which the lexer reads as the name `x3000`) gets the AF2
- * did-you-mean hint and a `maybe-incorrect` fix that splits it.
+ * AF4: an `E_PARSE` carries `expected`, what the parser would have read at the token it stopped at
+ * (after rustc's "expected one of"): the position's own alternatives, read from the token table
+ * (`TOKEN_TEXT`, `src/grammar/tokens.ts`) and the closed word lists the parser checks against, then
+ * every word and token the parser looked for at that token (the branches it tried, a clause the
+ * statement before would still have read, `}`), then the operators that continue an expression
+ * that stopped there, then the did-you-mean word. `expectedAt` gives the token's offset when the
+ * error is spanned elsewhere; `expectedMore` counts the entries a long list leaves out. A word of
+ * the list glued to the number after it (`size (A)x3000`) gets the AF2 did-you-mean and a
+ * `maybe-incorrect` fix that splits it.
  *
  * Only diagnostics of plans that already fail move: the corpus sweep and its RM-D56 swap-back
- * (delete `expected` and the payload is `main`'s) are in the PR.
+ * (delete the three keys and put `main`'s span back, and the payload is `main`'s) are in the PR.
+ * `test/parse-expected-oracle.test.ts` holds `expected` to what the parser accepts.
  */
 import { describe as suite, expect, it } from "vitest";
 import { applyFixes, compile, diagnosticToJson } from "../src/index.js";
 import type { Diagnostic } from "../src/diagnostics.js";
+import { exprContinuations } from "../src/expr.js";
 import { lex } from "../src/lexer.js";
 import { parse } from "../src/parser.js";
 import { PAPER_SIZES, STATEMENT_STARTS, TITLE_FIELDS, TOKEN_TEXT } from "../src/grammar/tokens.js";
 import { USE_KINDS } from "../src/ast.js";
 import { BUILTIN_REGISTRY } from "../src/registry.js";
+import { sheetTextKeys } from "../src/sheet-text.js";
 
 const plan = (...lines: string[]): string => `plan "p" {\n${lines.map((l) => `  ${l}`).join("\n")}\n}\n`;
 const MI = "maybe-incorrect";
+const WALL = "wall id=w exterior thickness 200 { (0,0) (4000,0) }";
+const door = (clause: string): string => plan(WALL, `door on w at 50% width 900 ${clause}`);
+/** The operators that continue an expression, `%` included. */
+const OPS = exprContinuations(true);
 
 /** The first `E_PARSE` of a source. */
 function parseError(src: string): Diagnostic {
@@ -26,10 +37,10 @@ function parseError(src: string): Diagnostic {
   expect(d, src).toBeDefined();
   return d!;
 }
-const expectedAt = (src: string): string[] | undefined => parseError(src).expected;
+const expectedOf = (src: string): string[] | undefined => parseError(src).expected;
 
-/** The words a statement may start with, plan level: the fixed ones, then the registry's own. */
-const reserved = [...BUILTIN_REGISTRY.byKeyword.values()].filter((d) => !d.contextual).map((d) => d.keyword);
+/** The statement keywords at plan level: the fixed ones, then every registry element's. */
+const PLAN_WORDS = [...new Set([...STATEMENT_STARTS, ...BUILTIN_REGISTRY.byKeyword.keys()])];
 
 /** A class row names a kind of token in words (`<number>`); a typed row is punctuation (`<=`). */
 const isClass = (text: string): boolean => /[A-Za-z]/.test(text);
@@ -57,24 +68,54 @@ suite("TOKEN_TEXT is the lexer's", () => {
 });
 
 suite("expected at each kind of failure", () => {
-  it("a token of the wrong type: the token's own text or class", () => {
-    expect(expectedAt(plan("grid"))).toEqual([TOKEN_TEXT.number]);
-    expect(expectedAt(plan("let x = [1, 2"))).toEqual(["]", ","]);
-    expect(expectedAt(plan("let x = (1 + 2"))).toEqual([")"]);
-    expect(expectedAt(plan("let x = max(1, 2"))).toEqual([")", ","]);
-    expect(expectedAt(plan("let x = if true { 1 } 2"))).toEqual(["else"]);
-    expect(expectedAt(plan("let x = *"))).toEqual(["<number>", "<string>", "<name>", "(", "[", "-", "+", "!"]);
-    expect(expectedAt('plan "p" {\n  units mm\n')).toEqual(["}"]);
-    expect(expectedAt('plan "p" {\n}\nroom')).toEqual([TOKEN_TEXT.eof]);
-    expect(expectedAt("plan p {\n}\n")).toEqual([TOKEN_TEXT.string]);
+  it("a token of the wrong type: its text or class, then the operators of an expression that stopped there", () => {
+    expect(expectedOf(plan("grid"))).toEqual([TOKEN_TEXT.number]);
+    expect(expectedOf(plan("let x = [1, 2"))).toEqual(["]", ",", ...OPS]);
+    expect(expectedOf(plan("let x = (1 + 2"))).toEqual([")", ...OPS]);
+    expect(expectedOf(plan("let x = max(1, 2"))).toEqual([")", ",", ...OPS]);
+    expect(expectedOf(plan("let x = if true { 1 } 2"))).toEqual(["else"]);
+    expect(expectedOf(plan("let x = *"))).toEqual(["<number>", "<string>", "<name>", "(", "[", "-", "+", "!"]);
+    expect(expectedOf('plan "p" {\n  units mm\n')).toEqual(["}"]);
+    expect(expectedOf('plan "p" {\n}\nroom')).toEqual([TOKEN_TEXT.eof]);
+    expect(expectedOf("plan p {\n}\n")).toEqual([TOKEN_TEXT.string]);
+    // A name just before the token could have been a call: `(` too.
+    expect(expectedOf(plan("let A = 3", 'room id=r at (0,0) size A "R"'))).toEqual(["x", ...OPS, "("]);
   });
 
-  it("a closed list of words: the list, in the parser's own order", () => {
-    expect(expectedAt(plan("room id=r at (0,0) size 3000x3000 uses bedrom"))).toEqual([...USE_KINDS]);
-    expect(expectedAt(plan("paper A9"))).toEqual([...PAPER_SIZES]);
-    expect(expectedAt(plan('title { projekt "x" }'))).toEqual([...TITLE_FIELDS]);
-    expect(expectedAt(plan("north upp"))).toEqual(["up", "down", "left", "right", TOKEN_TEXT.number]);
-    expect(expectedAt(plan("room id=r sise 3000x3000 at (0,0)"))).toEqual([
+  it("a closed list of words: the list, in the parser's own order, then what it looked for there", () => {
+    expect(expectedOf(plan("room id=r at (0,0) size 3000x3000 uses bedrom"))).toEqual([...USE_KINDS]);
+    expect(expectedOf(plan("paper A9"))).toEqual([...PAPER_SIZES]);
+    expect(expectedOf(plan('title { projekt "x" }'))).toEqual([...TITLE_FIELDS, "}"]);
+    expect(expectedOf(plan("north upp"))).toEqual(["up", "down", "left", "right", TOKEN_TEXT.number, "hidden"]);
+    expect(expectedOf(door("swing upward"))).toEqual(["in", "out", "inward", "outward", "into"]);
+    expect(expectedOf(plan("wall id=w exterior thickness 200 { (0,0) foo }"))).toEqual(["(", "arc", "close", "}"]);
+  });
+
+  it("the branches a statement tried before the one it failed in (the red team's twelve sites)", () => {
+    const at = ["at", "id", "hinged", "sliding", "barn", "bifold", "pocket", "garage", "double", "glazed_sliding"];
+    expect(expectedOf(plan(WALL, "door width 900"))).toEqual([...at, "on", "between"]);
+    expect(expectedOf(plan("furniture sofa size 10x10"))).toEqual(["at", "id", "against", "in"]);
+    expect(expectedOf(plan("stair id=s size 10x10"))).toEqual(["at", "dir"]);
+    expect(expectedOf(plan("stair id=s dir up 1000 {"))).toEqual(["{", "width"]);
+    expect(expectedOf(plan("scale x"))).toEqual(["<number>", "hidden"]);
+    expect(expectedOf(plan("title x"))).toEqual(["{", "hidden"]);
+    expect(expectedOf(plan("roof 300"))).toEqual(["overhang", "polygon"]);
+    expect(expectedOf(plan("wall exterior thickness 200 (0,0)"))).toEqual([
+      "{",
+      "material",
+      "height",
+      "status",
+      "between",
+      "around",
+      ...OPS,
+    ]);
+    expect(expectedOf(door("hinge lft"))).toEqual(["left", "right", "near"]);
+    expect(
+      expectedOf(
+        plan("room id=a at (0,0) size 10x10", "walls from rooms exterior 200 partition 100 { open living and hall }"),
+      ),
+    ).toEqual(["between", "id"]);
+    expect(expectedOf(plan("room id=r sise 3000x3000 at (0,0)"))).toEqual([
       "polygon",
       "circle",
       "at",
@@ -83,60 +124,78 @@ suite("expected at each kind of failure", () => {
       "below",
       "above",
     ]);
-    // `swing` takes its four words or `into <room>`.
-    const door = (clause: string): string =>
-      plan("wall id=w exterior thickness 200 { (0,0) (4000,0) }", `door on w at 50% width 900 ${clause}`);
-    expect(expectedAt(door("swing upward"))).toEqual(["in", "out", "inward", "outward", "into"]);
-    expect(expectedAt(door("hinge lft"))).toEqual(["left", "right"]);
-    expect(expectedAt(plan("wall id=w exterior thickness 200 { (0,0) foo }"))).toEqual(["(", "arc", "close", "}"]);
   });
 
-  it("a missing clause: the clause's word", () => {
-    expect(expectedAt(plan('room id=r at (0,0) label "R"'))).toEqual(["size"]);
+  it("a missing clause: the clause's word, at the token after the statement (`expectedAt`)", () => {
+    const src = plan('room id=r at (0,0) label "R"');
+    const d = parseError(src);
+    expect(d.expected![0]).toBe("size");
+    expect(src.slice(d.expectedAt, d.expectedAt! + 1)).toBe("}");
+    expect(src.slice(d.span!.start, d.span!.end)).toBe('room id=r at (0,0) label "R"');
   });
 
-  it("a statement: every statement keyword, a name and `}`; in a block, only the block's own", () => {
-    const top = expectedAt(plan("wombat 3"))!;
-    expect(top).toEqual([...STATEMENT_STARTS, ...reserved, TOKEN_TEXT.ident, TOKEN_TEXT.rcurly]);
-    expect(expectedAt(plan(", 3"))).toEqual(top);
-    const inBlock = expectedAt(plan("for i in 0..1 {", "  wombat 3", "}"))!;
-    expect(inBlock).toContain("let");
-    expect(inBlock).toContain("room");
-    expect(inBlock).not.toContain("units");
-    expect(inBlock.slice(-2)).toEqual([TOKEN_TEXT.ident, TOKEN_TEXT.rcurly]);
+  it("a statement: every statement keyword, a name and `}`", () => {
+    const top = expectedOf(plan("wombat 3"))!;
+    expect(top).toEqual([...PLAN_WORDS, TOKEN_TEXT.ident, TOKEN_TEXT.rcurly]);
+    expect(expectedOf(plan(", 3"))).toEqual(top);
   });
 
-  it("each plan-level word is listed in a block exactly when the block reads it", () => {
-    const inBlock = new Set(expectedAt(plan("for i in 0..1 {", "  wombat 3", "}")));
-    // The words a block reads only to refuse where they stand, each in a whole form.
-    const refusedForms: Record<string, string> = {
-      level: "level 1 { }",
-      strip: "strip right at (0,0) gap 0 height 3000 { }",
-      accTitle: 'accTitle "x"',
-      accDescr: 'accDescr "x"',
-    };
-    const codesIn = (stmt: string): string[] =>
-      parse(plan("for i in 0..1 {", `  ${stmt}`, "}")).diagnostics.map((d) => d.code ?? "");
-    for (const [w, form] of Object.entries(refusedForms)) {
-      expect(
-        codesIn(form).some((c) => /_(?:NEST|PLACEMENT)$/.test(c)),
-        w,
-      ).toBe(true);
-      expect(inBlock.has(w), w).toBe(false);
-    }
-    for (const w of STATEMENT_STARTS) {
-      if (w in refusedForms) continue;
-      // The word alone on its line: a block that does not read it calls it an unknown statement.
-      const unknown = parse(plan("for i in 0..1 {", `  ${w}`, "}")).diagnostics.some(
-        (d) => d.message === `Unknown statement "${w}"`,
-      );
-      expect(inBlock.has(w), w).toBe(!unknown);
-    }
+  it("on a statement's line, the clauses the statement would still have read, and the hinted word", () => {
+    const d = parseError(plan('room id=r at (0,0) size 10x10 lable "x"'));
+    expect(d.expected).toEqual([...PLAN_WORDS, "<name>", "}", "size", "label", "floor", "uses"]);
+    expect(d.hints).toEqual(["did you mean `label`?"]);
+    // After a `uses` list, any use, on any line.
+    const after = parseError(plan("room id=r at (0,0) size 10x10 uses living", ","));
+    for (const u of USE_KINDS) expect(after.expected).toContain(u);
   });
 
   it("no `expected` where the parser has no list (a count, a lexical error)", () => {
-    expect(expectedAt(plan("wall id=w exterior thickness 200 { (0,0) }"))).toBeUndefined();
-    expect(expectedAt(plan('room id=r at (0,0) size 1x1 label "oops'))).toBeUndefined();
+    expect(expectedOf(plan("wall id=w exterior thickness 200 { (0,0) }"))).toBeUndefined();
+    expect(expectedOf(plan('room id=r at (0,0) size 1x1 label "oops'))).toBeUndefined();
+  });
+});
+
+suite("a block's statement list is its dispatch's", () => {
+  /** Each body, and the words it reads only to refuse, each in a whole form. */
+  const bodies: Record<string, (stmt: string) => string> = {
+    for: (s) => plan("for i in 0..1 {", `  ${s}`, "}"),
+    level: (s) => plan("level 1 {", `  ${s}`, "}"),
+    component: (s) => plan("component c() {", `  ${s}`, "}"),
+  };
+  const forms: Record<string, string> = {
+    level: "level 1 { }",
+    strip: "strip right at (0,0) gap 0 height 3000 { }",
+    accTitle: 'accTitle "x"',
+    accDescr: 'accDescr "x"',
+    keep: "keep align a.left b.left",
+    roof: "roof overhang 300",
+  };
+  const refused = (src: string): boolean =>
+    parse(src).diagnostics.some((d) => /_(?:NEST|PLACEMENT)$/.test(d.code ?? ""));
+
+  for (const [name, body] of Object.entries(bodies))
+    it(`in a ${name} body, a word is listed exactly when the body reads it as a statement`, () => {
+      const listed = new Set(expectedOf(body("wombat 3")));
+      expect([...listed].slice(-2)).toEqual([TOKEN_TEXT.ident, TOKEN_TEXT.rcurly]);
+      for (const w of PLAN_WORDS) {
+        if (BUILTIN_REGISTRY.byKeyword.get(w)?.contextual) continue;
+        if (w in forms) {
+          expect(listed.has(w), `${name}: ${w}`).toBe(!refused(body(forms[w]!)));
+          continue;
+        }
+        // The word alone on its line: a body that does not read it calls it an unknown statement.
+        const unknown = parse(body(w)).diagnostics.some((d) => d.message === `Unknown statement "${w}"`);
+        expect(listed.has(w), `${name}: ${w}`).toBe(!unknown);
+      }
+    });
+
+  it("a component refuses `keep` and `roof`; a level and a loop read both", () => {
+    expect(expectedOf(bodies.component!("wombat"))).not.toContain("keep");
+    expect(expectedOf(bodies.component!("wombat"))).not.toContain("roof");
+    for (const b of [bodies.level!, bodies.for!]) {
+      expect(expectedOf(b("wombat"))).toContain("keep");
+      expect(expectedOf(b("wombat"))).toContain("roof");
+    }
   });
 });
 
@@ -145,7 +204,7 @@ suite("a word glued to its number", () => {
     const src = plan("let A = 3000", 'room id=r at (0,0) size (A)x3000 label "R"');
     const d = parseError(src);
     expect(src.slice(d.span!.start, d.span!.end)).toBe("x3000");
-    expect(d.expected).toEqual(["x"]);
+    expect(d.expected).toEqual(["x", ...OPS]);
     expect(d.hints).toEqual(["did you mean `x 3000`?"]);
     expect(d.fixes).toHaveLength(1);
     const f = d.fixes![0]!;
@@ -154,28 +213,89 @@ suite("a word glued to its number", () => {
     expect(compile(fixed, { noCache: true }).errors).toEqual([]);
   });
 
-  it("`width900` on a door: the same split, never machine-applicable", () => {
-    const src = plan("wall id=w exterior thickness 200 { (0,0) (4000,0) }", "door on w at 50% width900");
-    const f = parseError(src).fixes![0]!;
-    expect([f.applicability, f.edits[0]!.newText]).toEqual([MI, "width 900"]);
+  it("a word ending in digits splits before it respells: the fix keeps the number", () => {
+    const fix = (src: string): [string, string] => {
+      const f = parseError(src).fixes![0]!;
+      return [f.applicability, f.edits[0]!.newText];
+    };
+    expect(fix(plan(WALL, "door on w at 50% width900"))).toEqual([MI, "width 900"]);
+    expect(fix(plan(WALL, "door on w at 50% width90"))).toEqual([MI, "width 90"]);
+    expect(fix(plan("furniture sofa at (0,0) size 10x10 rotate90"))).toEqual([MI, "rotate 90"]);
+    expect(fix(plan("level2 {", "}"))).toEqual([MI, "level 2"]);
+    expect(fix(plan("grid50"))).toEqual([MI, "grid 50"]);
+    expect(fix(plan("wall exterior thickness200 { (0,0) (10,0) }"))).toEqual([MI, "thickness 200"]);
+    expect(fix(plan("room id=r at (0,0) size3000x3000"))).toEqual([MI, "size 3000x3000"]);
   });
 
-  it("no split when the rest is no number", () => {
-    const src = plan("let A = 3000", 'room id=r at (0,0) size (A)xB label "R"');
-    const d = parseError(src);
-    expect(d.expected).toEqual(["x"]);
+  it("no split when the rest is no number, nor for a word past 40 letters", () => {
+    const d = parseError(plan("let A = 3000", 'room id=r at (0,0) size (A)xB label "R"'));
+    expect(d.expected![0]).toBe("x");
     expect(d.fixes).toBeUndefined();
+    const long = parseError(plan(`room id=r at (0,0) size (1)x${"9".repeat(60)}`));
+    expect(long.hints).toBeUndefined();
+    expect(long.fixes).toBeUndefined();
+  });
+});
+
+suite("the token expected describes", () => {
+  it("is the error's span, or `expectedAt` when the error is spanned on its statement", () => {
+    const at = (src: string, word: string): void => {
+      const d = parseError(src);
+      expect(src.slice(d.expectedAt ?? d.span!.start).startsWith(word), src).toBe(true);
+    };
+    const dims = plan("dims all");
+    const units = plan("units cm");
+    expect(dims.slice(parseError(dims).span!.start, parseError(dims).span!.end)).toBe("all");
+    expect(units.slice(parseError(units).span!.start, parseError(units).span!.end)).toBe("cm");
+    at(dims, "all");
+    at(units, "cm");
+    const w = plan(WALL, "door on w at 50% width900");
+    expect(parseError(w).expectedAt).toBeDefined();
+    at(w, "width900");
+  });
+});
+
+suite("a long list", () => {
+  it("keeps its first 16 entries and counts the rest (`expectedMore`)", () => {
+    const d = parseError(plan('sheet text { zz "x" }'));
+    const keys = sheetTextKeys();
+    expect(d.expected).toEqual([...keys.slice(0, 16), "}"]);
+    expect(d.expectedMore).toBe(keys.length - 16);
+    // The 267 keys cost no more than a few hundred bytes of JSON.
+    const src = plan('sheet text { zz "x" }');
+    const { expected: _e, expectedMore: _m, ...bare } = d;
+    const grew = JSON.stringify(diagnosticToJson(src, d)).length - JSON.stringify(diagnosticToJson(src, bare)).length;
+    expect(grew).toBeLessThan(300);
   });
 });
 
 suite("JSON", () => {
-  it("`expected` is appended after every other key, and only an E_PARSE that has one carries it", () => {
+  it("`expected`, `expectedAt`, `expectedMore` follow every other key, before `rule` and `overprint`", () => {
+    const src = plan('sheet text { zz "x" }');
+    const d = { ...parseError(src), expectedAt: 3 };
+    const j = diagnosticToJson(src, d, {
+      rule: () => ({
+        profile: null,
+        key: "k",
+        value: 1,
+        units: null,
+        from: "default",
+        verification: "convention",
+        document: null,
+        clause: null,
+        edition: null,
+      }),
+      overprint: () => ({ subject: { kind: "room-label", text: "A" }, over: [] }),
+    });
+    expect(Object.keys(j).slice(-5)).toEqual(["expected", "expectedAt", "expectedMore", "rule", "overprint"]);
+  });
+
+  it("deleting the keys gives the bytes of the diagnostic without them; a plan that compiles carries none", () => {
     const src = plan("grid");
     const d = parseError(src);
     const j = diagnosticToJson(src, d);
     expect(Object.keys(j).at(-1)).toBe("expected");
     expect(j.expected).toEqual(["<number>"]);
-    // Delete it and the bytes are the diagnostic's without the field.
     const { expected: _e, ...rest } = d;
     const { expected: _j, ...restJson } = j;
     expect(JSON.stringify(restJson)).toBe(JSON.stringify(diagnosticToJson(src, rest)));

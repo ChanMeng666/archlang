@@ -87,11 +87,17 @@ export interface DiagnosticJson {
    */
   cause?: { code: string; line?: number; col?: number; span: [number, number]; file?: string };
   /**
-   * What the grammar would have read at `span` (card AF4, {@link import("./diagnostics.js").Diagnostic.expected}):
-   * words as written, punctuation as typed, and token classes in `<…>` (`<number>`, `<name>`).
-   * Present only on an `E_PARSE` whose alternatives the parser knows; after `cause`.
+   * What the parser would have read at the token it stopped at: the one at {@link expectedAt}, else
+   * the one `span` starts at (card AF4, {@link import("./diagnostics.js").Diagnostic.expected}):
+   * words as written, punctuation and operators as typed, and token classes in `<…>` (`<number>`,
+   * `<name>`). Present only on an `E_PARSE` whose alternatives the parser knows; after `cause`.
    */
   expected?: string[];
+  /** The byte offset of that token, when the diagnostic is spanned elsewhere (a missing clause);
+   *  after `expected`. */
+  expectedAt?: number;
+  /** How many entries of a long list `expected` leaves out (it keeps the first 16); last of the three. */
+  expectedMore?: number;
   /**
    * The lint ruleset number this warning was raised against (card RM1.6b): its key, value, units,
    * who set it, its document, clause, edition and verification grade, and the profile the run
@@ -286,7 +292,11 @@ export function diagnosticToJson(source: string, d: Diagnostic, opts?: Diagnosti
   if (d.component !== undefined) out.component = d.component;
   if (d.relatedSpans?.length) out.related = d.relatedSpans.map((r) => located(source, { message: r.message }, r));
   if (d.cause) out.cause = located(source, { code: d.cause.code }, d.cause);
-  if (d.expected?.length) out.expected = [...d.expected];
+  if (d.expected?.length) {
+    out.expected = [...d.expected];
+    if (d.expectedAt !== undefined) out.expectedAt = d.expectedAt;
+    if (d.expectedMore !== undefined) out.expectedMore = d.expectedMore;
+  }
   const rule = opts?.rule?.(d);
   if (rule) out.rule = rule;
   const overprint = opts?.overprint?.(d);

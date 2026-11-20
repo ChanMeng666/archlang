@@ -21,7 +21,7 @@ import type { Expr, ParseExprOpts } from "./expr.js";
 import { chargeSteps } from "./expr.js";
 import type { ParseCtx, ResolveCtx } from "./registry.js";
 import type { TailClause } from "./clause-order.js";
-import { failNear } from "./clause-order.js";
+import { failExpected } from "./clause-order.js";
 import type { WallLike, WallSegment } from "./geometry.js";
 import { segmentLength, segmentPointAlong, segmentsOfWall } from "./geometry.js";
 import type { OpeningRelation, WindowCorner } from "./ir.js";
@@ -76,13 +76,11 @@ export function eatEnumValue<T extends string>(
   const v = t.value;
   // Spanned on the word, where a did-you-mean rewrites it (AF2); `or`'s word is expected too (AF4).
   if (!(allowed as readonly string[]).includes(v))
-    failNear(
+    failExpected(
       ctx,
       `Expected ${what} ${enumList(allowed)}${or ? ` or ${or.form}` : ""} but found "${v}"`,
-      allowed,
-      t,
-      undefined,
       or ? [...allowed, or.word] : allowed,
+      { t, near: allowed },
     );
   return v as T;
 }

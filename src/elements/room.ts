@@ -21,7 +21,7 @@ import {
 import type { Diagnostic, Span } from "../diagnostics.js";
 import type { Expr } from "../expr.js";
 import type { ElementDef, ParseCtx, RenderCtx, ResolveCtx, TransformCtx } from "../registry.js";
-import { failNear, missingClause, readClauses, type TailClause } from "../clause-order.js";
+import { failExpected, failNear, missingClause, readClauses, type TailClause } from "../clause-order.js";
 import { PLAIN_SHEET_TEXT } from "../sheet-text.js";
 import type { SceneNode } from "../scene.js";
 import type { RelConstraint, RRoom } from "../ir.js";
@@ -458,14 +458,12 @@ export const room: ElementDef = {
       // Relational clause: DIR REF [align EDGE] [gap EXPR].
       const dirTok = ctx.next();
       if (!REL_DIRS.has(dirTok.value)) {
-        failNear(
+        failExpected(
           ctx,
           `Expected "at" or a relational direction (${REL_DIR_LIST.join("|")}) but found "${dirTok.value}"`,
-          ["at", ...REL_DIR_LIST],
-          dirTok,
-          undefined,
           // In the order the statement tries its placements (AF4).
           ["polygon", "circle", "at", ...REL_DIR_LIST],
+          { t: dirTok, near: ["at", ...REL_DIR_LIST] },
         );
       }
       const refTok = ctx.eatIdent();

@@ -38,7 +38,7 @@ import { rectCorners } from "../geometry.js";
 import { fmt3, fmtMessage } from "../num-format.js";
 import { flightAxis, flightsOf, isBlockStair, MAX_WINDERS, piecesOf, tailEdge } from "../vertical.js";
 import { breakLineEnds, runTooLong, runTreads, stairGlyph } from "./vertical-glyphs.js";
-import { failNear } from "../clause-order.js";
+import { failExpected, failNear } from "../clause-order.js";
 import { TOKEN_TEXT } from "../grammar/tokens.js";
 
 /** The pieces a block `stair`'s `{ … }` holds, each read by its word. */
@@ -68,9 +68,9 @@ function parseBlock(ctx: ParseCtx, id: string, line: number): StairNode {
     node.width = ctx.parseExpr();
   }
   if (!ctx.isType("lcurly")) {
-    ctx.fail(
+    failExpected(
+      ctx,
       `Expected "{" to open the stair's flights and landings; a straight stair takes \`at\` and \`size\` before \`dir\``,
-      undefined,
       [TOKEN_TEXT.lcurly],
     );
   }
@@ -78,13 +78,11 @@ function parseBlock(ctx: ParseCtx, id: string, line: number): StairNode {
   while (!ctx.isType("rcurly") && !ctx.isType("eof")) {
     const t = ctx.peek();
     if (!ctx.isKeyword("flight") && !ctx.isKeyword("landing")) {
-      failNear(
+      failExpected(
         ctx,
         `Expected "flight" or "landing" in the \`stair\` block but found ${t.type === "eof" ? "end of input" : `"${t.value}"`}`,
-        STAIR_PIECES,
-        t,
-        undefined,
         [...STAIR_PIECES, TOKEN_TEXT.rcurly],
+        { t, near: STAIR_PIECES },
       );
     }
     ctx.next();

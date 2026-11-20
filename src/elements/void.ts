@@ -76,6 +76,7 @@ import { rectilinear, ringParts, sortSteps } from "../room-tiling.js";
 import { dashedPattern, MAX_RAIL_POSTS, railRun } from "./glyph-lib.js";
 import { railSides } from "./outdoor.js";
 import { TOKEN_TEXT } from "../grammar/tokens.js";
+import { failExpected } from "../clause-order.js";
 
 /** The CAD layer a floor void lands on — AIA's "overhead/open" floor layer. */
 export const VOID_LAYER = "A-FLOR-OVHD";
@@ -266,7 +267,7 @@ export const voidEl: ElementDef = {
         if (ctx.isType("comma")) ctx.next();
       }
       if (words.length === 0) {
-        ctx.fail(`A \`rail\` clause needs at least one edge (${RAIL_EDGES.join("|")}, or an edge number)`, ctx.peek(), [
+        failExpected(ctx, `A \`rail\` clause needs at least one edge (${RAIL_EDGES.join("|")}, or an edge number)`, [
           ...RAIL_EDGES,
           TOKEN_TEXT.number,
         ]);

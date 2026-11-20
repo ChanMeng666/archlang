@@ -15,7 +15,7 @@ import type {
   FurniturePlace,
   Point,
 } from "../ast.js";
-import { FURNITURE_ANCHORS } from "../ast.js";
+import { CLEAR_ZONES, FURNITURE_ANCHORS } from "../ast.js";
 import type { Diagnostic, Span } from "../diagnostics.js";
 import type { ElementDef, ParseCtx, RenderCtx, ResolveCtx, TransformCtx } from "../registry.js";
 import type { CadPart, CadTurn, RenderSizes, SceneNode, ScenePrim } from "../scene.js";
@@ -277,12 +277,7 @@ export const furniture: ElementDef = {
           const kw = ctx.next();
           const z = ctx.eatIdent();
           if (z.value !== "front" && z.value !== "sides")
-            failNear(
-              ctx,
-              `Expected \`front\` or \`sides\` after \`clear\` but found "${z.value}"`,
-              ["front", "sides"],
-              z,
-            );
+            failNear(ctx, `Expected \`front\` or \`sides\` after \`clear\` but found "${z.value}"`, CLEAR_ZONES, z);
           const v = ctx.parseExpr();
           const span = { start: kw.start, end: ctx.peek(-1).end };
           const c: FurnitureClear = clear ?? {};

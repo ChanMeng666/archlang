@@ -243,8 +243,13 @@ import { fmt3 as fmtNum } from "./num-format.js";
 export interface ExprTokens {
   peek(o?: number): Token;
   next(): Token;
-  /** `expected`: what the grammar would have read at `t` (AF4, `Diagnostic.expected`). */
-  fail(msg: string, t?: Token, expected?: readonly string[]): never;
+  fail(msg: string, t?: Token): never;
+  /** {@link fail} with what the grammar would have read at `at.t` (AF4, `Diagnostic.expected`).
+   *  Optional: without it, {@link failWith} falls back to `fail`. */
+  failExpected?(msg: string, expected: readonly string[], at?: { t?: Token }): never;
+  /** Told where each expression the parser reads stops, and whether `%` would have continued it
+   *  (AF4: an error there lists the operators, {@link exprContinuations}). Optional. */
+  exprEnd?(noModulo: boolean): void;
   /** Recovery hook: is `value` a keyword that begins a plan/body statement?
    *  Lets the atom parser refuse to swallow the next statement's keyword as a
    *  bare reference when a previous statement is incomplete. */
@@ -344,7 +349,9 @@ export function parseExpr(ts: ExprTokens, opts?: ParseExprOpts): Expr {
   if (exprDepth >= MAX_NEST_DEPTH) tooDeep(ts);
   exprDepth++;
   try {
-    return parseBin(ts, 1, opts);
+    const e = parseBin(ts, 1, opts);
+    ts.exprEnd?.(opts?.noModulo === true);
+    return e;
   } finally {
     exprDepth--;
   }
@@ -408,7 +415,8 @@ function parsePostfix(ts: ExprTokens): Expr {
     ts.next();
     const idx = parseExpr(ts);
     const close = ts.peek();
-    if (close.type !== "rbracket") ts.fail(`Expected "]" but found ${describe(close)}`, close, [TOKEN_TEXT.rbracket]);
+    if (close.type !== "rbracket")
+      failWith(ts, `Expected "]" but found ${describe(close)}`, close, [TOKEN_TEXT.rbracket]);
     ts.next();
     e = sealed(ts, { t: "index", base: e, idx, span: { start: t.start, end: close.end } } as Expr, [e, idx]);
   }
@@ -417,7 +425,7 @@ function parsePostfix(ts: ExprTokens): Expr {
 
 function eatType(ts: ExprTokens, type: TokenType): Token {
   const t = ts.peek();
-  if (t.type !== type) ts.fail(`Expected ${type} but found ${describe(t)}`, t, [TOKEN_TEXT[type]]);
+  if (t.type !== type) failWith(ts, `Expected ${type} but found ${describe(t)}`, t, [TOKEN_TEXT[type]]);
   return ts.next();
 }
 
@@ -441,7 +449,7 @@ function parseAtom(ts: ExprTokens): Expr {
     }
     const close = ts.peek();
     if (close.type !== "rbracket")
-      ts.fail(`Expected "]" or "," in array but found ${describe(close)}`, close, [
+      failWith(ts, `Expected "]" or "," in array but found ${describe(close)}`, close, [
         TOKEN_TEXT.rbracket,
         TOKEN_TEXT.comma,
       ]);
@@ -466,7 +474,7 @@ function parseAtom(ts: ExprTokens): Expr {
       }
       const close = ts.peek();
       if (close.type !== "rparen")
-        ts.fail(`Expected ")" or "," in call but found ${describe(close)}`, close, [
+        failWith(ts, `Expected ")" or "," in call but found ${describe(close)}`, close, [
           TOKEN_TEXT.rparen,
           TOKEN_TEXT.comma,
         ]);
@@ -479,7 +487,7 @@ function parseAtom(ts: ExprTokens): Expr {
     // same-line keyword-named binding (`let grid = 5; … grid x grid`) still works.
     if (ts.isStatementStart?.(t.value)) {
       const prev = ts.peek(-1);
-      if (!prev || prev.line < t.line) ts.fail(`Expected a value but found "${t.value}"`, t, valueStart());
+      if (!prev || prev.line < t.line) failWith(ts, `Expected a value but found "${t.value}"`, t, valueStart());
     }
     ts.next();
     return { t: "ref", name: t.value, span: { start: t.start, end: t.end } };
@@ -488,11 +496,26 @@ function parseAtom(ts: ExprTokens): Expr {
     ts.next();
     const e = parseExpr(ts);
     const close = ts.peek();
-    if (close.type !== "rparen") ts.fail(`Expected ")" but found ${describe(close)}`, close, [TOKEN_TEXT.rparen]);
+    if (close.type !== "rparen") failWith(ts, `Expected ")" but found ${describe(close)}`, close, [TOKEN_TEXT.rparen]);
     ts.next();
     return e;
   }
-  return ts.fail(`Expected a value but found ${describe(t)}`, t, valueStart());
+  return failWith(ts, `Expected a value but found ${describe(t)}`, t, valueStart());
+}
+
+/** {@link ExprTokens.failExpected} where the stream has it, else {@link ExprTokens.fail} (AF4). */
+function failWith(ts: ExprTokens, msg: string, t: Token, expected: readonly string[]): never {
+  return ts.failExpected ? ts.failExpected(msg, expected, { t }) : ts.fail(msg, t);
+}
+
+/**
+ * The tokens that continue an expression that has stopped (AF4): an index `[`, every binary
+ * operator of {@link BIN_PREC} (but `%` where it is a suffix, {@link ParseExprOpts.noModulo}) and
+ * the range `..`, as `TOKEN_TEXT` writes them. A parse error just after an expression lists them.
+ */
+export function exprContinuations(modulo: boolean): string[] {
+  const ops = (Object.keys(BIN_PREC) as TokenType[]).filter((k) => modulo || k !== "percent");
+  return [TOKEN_TEXT.lbracket, ...ops.map((k) => TOKEN_TEXT[k]), TOKEN_TEXT.dotdot];
 }
 
 /** The tokens a value can start with (AF4): `parseAtom`'s, and `parseUnary`'s signs. */
@@ -508,7 +531,7 @@ function parseIfExpr(ts: ExprTokens): Expr {
   eatType(ts, "rcurly");
   const elseKw = ts.peek();
   if (!(elseKw.type === "ident" && elseKw.value === "else")) {
-    ts.fail(`Expected "else" in if-expression but found ${describe(elseKw)}`, elseKw, ["else"]);
+    failWith(ts, `Expected "else" in if-expression but found ${describe(elseKw)}`, elseKw, ["else"]);
   }
   ts.next();
   eatType(ts, "lcurly");
@@ -596,7 +619,8 @@ function tokensOver(toks: Token[], shift: number, outer: ExprTokens): ExprTokens
   return {
     peek: (o = 0) => shifted(at(o)),
     next: () => shifted(toks[Math.min(pos++, toks.length - 1)]!),
-    fail: (msg, _t, expected) => outer.fail(msg, undefined, expected),
+    fail: (msg) => outer.fail(msg),
+    ...(outer.failExpected ? { failExpected: (msg: string, e: readonly string[]) => outer.failExpected!(msg, e) } : {}),
     ...(outer.report ? { report: outer.report } : {}),
   };
 }

@@ -23,19 +23,26 @@ import type { ParseCtx } from "./registry.js";
 /**
  * {@link ParseCtx.failNear} where the context has it (the built-in parser does), else
  * {@link ParseCtx.fail} at `t` or {@link ParseCtx.failAt} at `span`: a parse error where `t`
- * should have been one of `near` (AF2), which is also what the grammar expected there (AF4) unless
- * `expected` says otherwise.
+ * should have been one of `near` (AF2).
  */
-export function failNear(
+export function failNear(ctx: ParseCtx, msg: string, near: readonly string[], t?: Token, span?: Span): never {
+  return failExpected(ctx, msg, near, { t, span, near });
+}
+
+/**
+ * {@link ParseCtx.failExpected} where the context has it (the built-in parser does), else
+ * {@link ParseCtx.failNear} when `at.near` is given, else {@link ParseCtx.fail} at `at.t` or
+ * {@link ParseCtx.failAt} at `at.span`: a parse error that says what the position takes (AF4).
+ */
+export function failExpected(
   ctx: ParseCtx,
   msg: string,
-  near: readonly string[],
-  t?: Token,
-  span?: Span,
-  expected: readonly string[] = near,
+  expected: readonly string[],
+  at: { t?: Token | undefined; span?: Span | undefined; near?: readonly string[] } = {},
 ): never {
-  if (ctx.failNear) return ctx.failNear(msg, near, t, span, expected);
-  return span ? ctx.failAt(msg, span, expected) : ctx.fail(msg, t, expected);
+  if (ctx.failExpected) return ctx.failExpected(msg, expected, at);
+  if (at.near && ctx.failNear) return ctx.failNear(msg, at.near, at.t, at.span);
+  return at.span ? ctx.failAt(msg, at.span) : ctx.fail(msg, at.t);
 }
 
 export interface TailClause {
@@ -208,7 +215,8 @@ export function kindClause<K extends string>(
     word: "kind",
     // Before the placement in the old order, so reading it never puts a later clause out of order.
     rank: 0,
-    at: () => word() !== undefined && ctx.peek().line === ctx.peek(-1).line && !begins(),
+    // The line first, so a kind word is looked for only where it can be this clause (AF4).
+    at: () => ctx.peek().line === ctx.peek(-1).line && word() !== undefined && !begins(),
     startsStatement: begins,
     // A second kind word is a different word from the first, so this clause checks its own repeats.
     repeats: true,

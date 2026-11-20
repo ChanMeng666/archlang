@@ -5,7 +5,7 @@ import type { Span } from "../diagnostics.js";
 import { heightRangeDiagnostic, isDrawableHeight } from "../datum.js";
 import { ARC_DIRS } from "../ast.js";
 import type { ElementDef, ParseCtx, RenderCtx, ResolveCtx, TransformCtx } from "../registry.js";
-import { failNear, idAfterKind, parseIdWithSpan } from "../clause-order.js";
+import { failExpected, failNear, idAfterKind, parseIdWithSpan } from "../clause-order.js";
 import type { SceneNode } from "../scene.js";
 import type { RWall } from "../ir.js";
 import { segmentFaceExtremes, segmentsOfWall } from "../geometry.js";
@@ -154,9 +154,9 @@ export const wall: ElementDef = {
         points.push(ctx.parsePoint());
         continue;
       }
-      ctx.fail(
+      failExpected(
+        ctx,
         `Expected a point "(x,y)", "arc (x,y) radius R" or "close" in wall body but found ${describe(ctx)}`,
-        undefined,
         POLYLINE_BODY,
       );
     }

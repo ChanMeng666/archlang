@@ -52,6 +52,7 @@ import { weightWidth } from "../scene.js";
 import type { RFence } from "../ir.js";
 import { SITE_LAYER } from "./outdoor.js";
 import { POLYLINE_BODY } from "./wall.js";
+import { failExpected } from "../clause-order.js";
 
 /**
  * Nominal post spacing in mm, per style. A picket fence is posted densely because that is
@@ -151,9 +152,9 @@ export const fence: ElementDef = {
         points.push(ctx.parsePoint());
         continue;
       }
-      ctx.fail(
+      failExpected(
+        ctx,
         `Expected a point "(x,y)", "arc (x,y) radius R" or "close" in a fence body but found ${describeTok(ctx)}`,
-        undefined,
         POLYLINE_BODY,
       );
     }
