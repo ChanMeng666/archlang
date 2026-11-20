@@ -395,13 +395,23 @@ describe("W_FIXTURE_BACK_TO_ROOM", () => {
       expect(twice.source).toBe(once);
     });
 
-    it("reports, never guesses, when no single wall is the back", () => {
+    it("turns a corner fixture by the stated tie rule when two walls are equally near (RM9.11)", () => {
       // The south-west corner, away from the door: in the south-east corner (3300,3300) the
       // counter stands in the door's approach, which since PS2.54 is measured from the wall's
       // face, and repair's push to clear it leaves one wall behind it, which it then turns to.
-      const r = repair(southWall(`furniture counter at (100,3300) size 600x600 rotate 0`));
-      expect(r.changes.filter((c) => c.kind === "rotated")).toEqual([]);
-      expect(r.unresolved.some((u) => u.reason.includes("faces the room"))).toBe(true);
+      // Both faces touch it and both are runs of `exterior_1`; its south run comes first in the
+      // ring's points, so it backs onto the south wall. It used to be reported, not turned.
+      const src = southWall(`furniture counter at (100,3300) size 600x600 rotate 0`);
+      const r = repair(src);
+      const turns = r.changes.filter((c) => c.kind === "rotated");
+      expect(turns.map((c) => c.toRotate)).toEqual([180]);
+      expect(turns[0]!.reason).toContain("their faces were equally near");
+      expect(turns[0]!.reason).toContain('took the run of wall "exterior_1" written first in its points');
+      expect(r.unresolved).toEqual([]);
+      // lint still offers no machine-applicable fix for the corner: a choice is not a proof (ADR 0011).
+      const diag = lint(src).find((d) => d.code === "W_FIXTURE_BACK_TO_ROOM");
+      expect(diag?.fixes).toBeUndefined();
+      expect(lint(r.source).filter((d) => d.code === "W_FIXTURE_BACK_TO_ROOM")).toEqual([]);
     });
 
     it("leaves a correctly-oriented fixture alone", () => {

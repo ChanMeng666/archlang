@@ -118,15 +118,36 @@ describe("repair — the no-worse law", () => {
     );
   });
 
-  it("the census agrees with lint, and sees all four kinds (the oracle is not vacuous)", () => {
-    // Per plan, the census implies lint's count exactly for three codes — one diagnostic
-    // per overlapping pair, per colliding piece, per door with a blocker — and bounds the
-    // fourth from below (a swing is also obstructed by another door's swing, which no
-    // piece is party to). So a census that silently returned nothing, or keyed the wrong
-    // thing, would disagree with `lint()` here rather than keep the law above green.
+  it("the census agrees with lint, and sees all five kinds (the oracle is not vacuous)", () => {
+    // Per plan, the census implies lint's count exactly for four codes — one diagnostic
+    // per overlapping pair, per colliding piece, per door with a blocker, per piece and stair —
+    // and bounds the fifth from below (a swing is also obstructed by another door's swing,
+    // which no piece is party to). So a census that silently returned nothing, or keyed the
+    // wrong thing, would disagree with `lint()` here rather than keep the law above green.
+    // No shipped plan stands a piece on a stair, so one two-storey plan does: a cabinet on the
+    // foot landing below and a wardrobe on the head landing of the flight arriving above.
+    const STAIRS = `plan "Stairs" {
+  units mm
+  grid 50
+  level 1 "Ground" {
+    wall id=shell exterior thickness 200 { (0,0) (8000,0) (8000,7000) (0,7000) close }
+    room id=hall at (0,0) size 8000x7000 label "Hall" uses hall
+    door id=front on shell at 21900 width 1000 swing into hall
+    stair id=stair at (100,1000) size 900x3250 dir up
+    furniture cabinet at (100,4300) size 900x500
+  }
+  level 2 "First" {
+    wall id=shell exterior thickness 200 { (0,0) (8000,0) (8000,7000) (0,7000) close }
+    room id=landing at (0,0) size 8000x7000 label "Landing" uses circulation
+    stair id=stair at (100,1000) size 900x3250 dir down
+    void id=well at (100,1000) size 900x3250
+    furniture wardrobe at (100,450) size 900x500
+  }
+}`;
     const plans = [
       ...corpus(),
       ...fc.sample(archPlan, { numRuns: runs(150), seed: 20261005 }).map((src) => ({ name: "<generated>", src })),
+      { name: "<stairs>", src: STAIRS },
     ];
     const kinds = new Set<string>();
     for (const { name, src } of plans) {
@@ -139,8 +160,9 @@ describe("repair — the no-worse law", () => {
       expect(n("wall", false), name).toBe(c("W_FURNITURE_WALL_COLLISION"));
       expect(n("doorway", true), name).toBe(c("W_DOORWAY_BLOCKED"));
       expect(n("swing", true), name).toBeLessThanOrEqual(c("W_SWING_OBSTRUCTED"));
+      expect(n("stair", false), name).toBe(c("W_FURNITURE_ON_STAIR"));
     }
-    expect([...kinds].sort()).toEqual(["doorway", "overlap", "swing", "wall"]);
+    expect([...kinds].sort()).toEqual(["doorway", "overlap", "stair", "swing", "wall"]);
   });
 });
 
