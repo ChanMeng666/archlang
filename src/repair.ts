@@ -86,8 +86,7 @@ import {
   type RectEdge,
   type RoomBox,
   resolvePlan,
-  buildingRoomReach,
-  storeyGrounded,
+  buildingGround,
   rotateForBackEdge,
   roomBox,
   wallBackedEdges,
@@ -1855,14 +1854,10 @@ function repairPass(
   const inputs = levels.map((l) => ({ level: l.level, ir: l.ir }));
   const arrivals =
     levels.length > 0
-      ? arrivalRuns(
-          inputs,
-          (n) => {
-            const l = inputs.find((x) => x.level === n);
-            return l ? storeyGrounded(l.ir, DEFAULT_TOL) : false;
-          },
-          buildingRoomReach(inputs, DEFAULT_TOL),
-        )
+      ? (() => {
+          const ground = buildingGround(inputs, DEFAULT_TOL);
+          return arrivalRuns(inputs, ground.grounded, ground.roomReach);
+        })()
       : new Map<number, ArrivingRun[]>();
   // The stair floor a piece is moved off is the one `W_FURNITURE_ON_STAIR` reads: on a
   // multi-storey plan that includes the head of a flight arriving from below. A plan without a

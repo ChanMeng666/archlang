@@ -37,7 +37,7 @@ import { BOOLEAN, MAX_MIN, MIN_PLUS } from "./algebra/semiring.js";
 // Type-only (erased): a value import of `vertical.ts` from here is harmless, but the
 // reverse direction is the cycle `levelIsGrounded`'s comment describes, and keeping this
 // edge type-only keeps the two modules' load order trivially acyclic.
-import type { StoreyRoomReach, StoreySeeds } from "./vertical.js";
+import { type StoreyRoomReach, type StoreySeeds, verticalReach } from "./vertical.js";
 import {
   ANCHOR_BACK_EDGES,
   BACK_EDGE_ROTATE,
@@ -681,7 +681,10 @@ export const balconyNode = (balconyId: string): string => `${EXTERIOR_NODE}#${ba
  */
 export function separateBalconies(edges: readonly AccessEdge[], ir: ResolvedPlan): readonly AccessEdge[] {
   const balconies = ir.elements.filter((e): e is ROutdoor => e.kind === "outdoor" && e.surface === "balcony");
-  if (balconies.length === 0) return edges;
+  // Every other way out on such a storey is a door onto the roof of a storey below (RM9.10,
+  // `buildingGround`; a door from the ground would have grounded it): each leads nowhere, so each
+  // is its own node, and two of them never join two rooms through the air.
+  if (balconies.length === 0 && !edges.some((e) => e.exterior && e.between.includes(EXTERIOR_NODE))) return edges;
   const rooms = ir.elements.filter((e): e is RRoom => e.kind === "room");
   const doors = new Map(ir.elements.filter((e): e is RDoor => e.kind === "door").map((d) => [d.id, d]));
   // Balconies whose shapes overlap or share a run of edge are one slab to walk across (a balcony
@@ -702,10 +705,10 @@ export function separateBalconies(edges: readonly AccessEdge[], ir: ResolvedPlan
   const groupOf = new Map(balconies.map((b, i) => [b.id, balconies[find(i)]!.id]));
   let out: AccessEdge[] | null = null;
   edges.forEach((e, i) => {
-    const d = e.exterior ? doors.get(e.doorId) : undefined;
+    if (!e.exterior || !e.between.includes(EXTERIOR_NODE)) return;
+    const d = doors.get(e.doorId);
     const b = d ? balconyOfDoor(d, rooms, balconies) : undefined;
-    if (!b) return;
-    const node = balconyNode(groupOf.get(b.id)!);
+    const node = b ? balconyNode(groupOf.get(b.id)!) : doorNode(e.doorId);
     out ??= [...edges];
     out[i] = { ...e, between: e.between.map((n) => (n === EXTERIOR_NODE ? node : n)) as [string, string] };
   });
@@ -727,9 +730,24 @@ export function storeyWalkDigraph(
   edges: readonly AccessEdge[],
   ir: ResolvedPlan,
   fromOutside: boolean,
+  /** Walked from the outside, doors that are no start (RM9.10, `buildingGround().notWayIn`): each
+   *  is its own node, so nothing is reached through one from the outside. */
+  notWayIn: IdSet = NO_IDS,
 ): Digraph<string, AccessEdge> {
-  return accessDigraph(roomIds, fromOutside ? edges : separateBalconies(edges, ir));
+  if (!fromOutside) return accessDigraph(roomIds, separateBalconies(edges, ir));
+  if (notWayIn.size === 0) return accessDigraph(roomIds, edges);
+  return accessDigraph(
+    roomIds,
+    edges.map((e) =>
+      e.exterior && notWayIn.has(e.doorId) && e.between.includes(EXTERIOR_NODE)
+        ? { ...e, between: e.between.map((n) => (n === EXTERIOR_NODE ? doorNode(e.doorId) : n)) as [string, string] }
+        : e,
+    ),
+  );
 }
+
+/** The node a door to the outside that leads nowhere stands for in a walk (RM9.10). */
+const doorNode = (doorId: string): string => `${EXTERIOR_NODE}#door#${doorId}`;
 
 /** How near two balconies' edges must lie (mm) to be one slab ({@link separateBalconies}). */
 const BALCONY_TOUCH_MM = 1;
@@ -751,14 +769,16 @@ const BALCONY_TOUCH_MM = 1;
  * door — including one onto an upper-storey deck that is NOT a `balcony` surface, and a
  * hillside entrance with no balcony in sight — keeps today's behaviour exactly. A storey
  * grounds as soon as ONE of its entrance doors survives the discount, so a balcony door
- * beside a real front door changes nothing.
+ * beside a real front door changes nothing. The doors `onRoof` names (a door onto the roof of
+ * a storey below, {@link buildingGround}, RM9.10) are no entrance at all: they are discounted
+ * too, and with none named the answer is exactly the one above.
  *
  * This governs the internal `grounded()` predicate `verticalReach` is built on — never
  * `describe()`'s per-storey `access.hasEntrance`, which stays the HONEST, undiscounted
  * fact that this floor has an exterior door (a reader asking "does this floor have its
  * own door" should not have the answer laundered by what that door opens onto). The two
  * are read together deliberately: `lint.ts` and `describe.ts` both reach this function
- * through {@link storeyGrounded}, so the cross-storey answer (`vertical.reachable_levels`,
+ * through {@link buildingGround}, so the cross-storey answer (`vertical.reachable_levels`,
  * and the reachability lint rules that key off it) can never disagree with itself between
  * the CLI and the lint pass.
  *
@@ -772,29 +792,196 @@ export function levelIsGrounded(
   rooms: readonly RRoom[],
   doors: readonly RDoor[],
   outdoors: readonly ROutdoor[],
+  /** Connectors that are no entrance: doors onto the roof of a storey below (RM9.10). */
+  onRoof: IdSet = NO_IDS,
 ): boolean {
   if (!graph.hasEntrance) return false;
+  const entrances = onRoof.size === 0 ? graph.entrances : graph.entrances.filter((id) => !onRoof.has(id));
+  if (entrances.length === 0) return false;
   const balconies = outdoors.filter((o) => o.surface === "balcony");
   if (balconies.length === 0) return true;
   const byId = new Map(doors.map((d) => [d.id, d]));
-  return graph.entrances.some((id) => {
+  return entrances.some((id) => {
     const d = byId.get(id);
     return !d || !doorFacesBalcony(d, rooms, balconies);
   });
 }
 
+/** The ids {@link levelIsGrounded} discounts: a set, or a map keyed by them. */
+type IdSet = Pick<ReadonlySet<string>, "has" | "size">;
+const NO_IDS: IdSet = new Set<string>();
+const NO_ROOF: ReadonlyMap<string, number> = new Map();
+
 /**
- * {@link levelIsGrounded} for one resolved storey: the `grounded()` callback `lint` and
- * `describe` both hand to `verticalReach`. The tolerance is explicit because the two
+ * {@link levelIsGrounded} for one resolved storey. The tolerance is explicit because the
  * callers use their own (`LintRuleset.tolMm`, `DescribeOptions.adjacencyTolMm`).
  */
-export function storeyGrounded(ir: ResolvedPlan, tol: number): boolean {
+export function storeyGrounded(ir: ResolvedPlan, tol: number, onRoof: IdSet = NO_IDS): boolean {
   const rooms = ir.elements.filter((e): e is RRoom => e.kind === "room");
   const doors = ir.elements.filter((e): e is RDoor => e.kind === "door");
   const openings = ir.elements.filter((e): e is ROpening => e.kind === "opening");
   const outdoors = ir.elements.filter((e): e is ROutdoor => e.kind === "outdoor");
   const graph = buildDoorAccessGraph(rooms, doors, tol, undefined, openings, openRunsOf(ir, tol), outdoors);
-  return levelIsGrounded(graph, rooms, doors, outdoors);
+  return levelIsGrounded(graph, rooms, doors, outdoors, onRoof);
+}
+
+/**
+ * The point just outside connector `c` on a wall with a room on one face only: one host-wall
+ * thickness off the wall's centreline at the connector's centre, on the face with no room (the
+ * {@link doorFacesBalcony} probe). `null` when the probe cannot tell which side is outward (a
+ * room on both faces, or on neither) or `c` has no host.
+ */
+export function pointOutside(c: Pick<RDoor, "host" | "at">, rooms: readonly RRoom[]): Point | null {
+  if (!c.host) return null;
+  const { plus, minus } = wallFaceProbes(c.host, c.at, Math.max(c.host.thickness, 1));
+  const onPlus = rooms.some((r) => pointInRoomBox(plus, roomBox(r)));
+  const onMinus = rooms.some((r) => pointInRoomBox(minus, roomBox(r)));
+  if (onPlus === onMinus) return null;
+  return onPlus ? minus : plus;
+}
+
+/**
+ * Does a point lie on a storey's drawn footprint: on one of its rooms (the shape, never a box),
+ * or inside its closed `exterior` wall rings read even-odd, so a ring inside another is a hole (a
+ * courtyard)? Edges count as inside. A curved ring is not read: its centreline is no polygon of
+ * its points.
+ */
+function onFootprint(p: Point, ir: ResolvedPlan): boolean {
+  for (const e of ir.elements) if (e.kind === "room" && pointInRoomBox(p, roomBox(e as RRoom))) return true;
+  let inside = false;
+  for (const w of ir.walls)
+    if (w.category === "exterior" && w.closed && !(w.arcs ?? []).some((a) => a !== undefined))
+      if (pointInPolygon(p.x, p.y, w.points)) inside = !inside;
+  return inside;
+}
+
+/**
+ * Which storeys of a building have a way in from the ground of their own, and which doors open
+ * over a lower storey's footprint (RM9.10, ruling RM-D72): the `grounded()` predicate and the
+ * room reach `describe().vertical`, `lint()`, `repair()` and `suggestTopology` hand to
+ * `verticalReach`, stated once so they cannot disagree.
+ *
+ * The plan states no ground level (0 and negative levels are legal, a walk-out basement and a
+ * garage under the house both have doors at grade), so no storey is called the entrance storey.
+ * What the geometry does say: a door to the outside whose point just outside ({@link pointOutside})
+ * lies on a LOWER storey's drawn footprint ({@link onFootprint}, any storey below, the nearest
+ * named) opens over that storey, unless its own storey draws an `outdoor` surface there (a
+ * balcony, a deck, a terrace's paving, the ground of a hillside): {@link onRoof}.
+ *
+ * Such a door may be a roof door or the front door of a storey whose lower neighbour reaches
+ * further into a hill, and only the rest of the building tells them apart. So it stops being a way
+ * in ONLY when its storey still has another arrival: a door from the ground that opens over no
+ * footprint, or a shaft from a storey grounded by such a door ({@link notWayIn},
+ * `W_EXTERIOR_DOOR_ONTO_ROOF`). Otherwise it keeps the role it always had: it grounds its storey
+ * and is walked from. The shaft is read on the building whose storeys are grounded by doors over
+ * no footprint alone, and the answer is not iterated. A building with no door over a lower
+ * storey's footprint has exactly the grounded storeys and the room reach it always had.
+ */
+export function buildingGround(
+  levels: readonly { level: number; ir: ResolvedPlan }[],
+  tol: number,
+): {
+  grounded(level: number): boolean;
+  /** Storey `level`'s doors and cased openings to the outside that open over a lower storey's
+   *  footprint, each with the level of the nearest storey below whose footprint holds the point. */
+  onRoof(level: number): ReadonlyMap<string, number>;
+  /** The doors of {@link onRoof} that are no way in, because the storey has another arrival:
+   *  the ones `W_EXTERIOR_DOOR_ONTO_ROOF` names and every walk leaves out as a start. */
+  notWayIn(level: number): ReadonlyMap<string, number>;
+  /** The room reach `verticalReach` is handed, walked with {@link notWayIn} left out. */
+  roomReach: StoreyRoomReach;
+  /** The level whose footprint a connector at `c` on storey `level` would open over, or `null`
+   *  (`suggestTopology` asks before it offers a door). */
+  roofUnder(level: number, c: Pick<RDoor, "host" | "at">): number | null;
+} {
+  const index = new Map(levels.map((l, i) => [l.level, i]));
+  const roofUnder = (level: number, c: Pick<RDoor, "host" | "at">): number | null => {
+    const i = index.get(level);
+    if (i === undefined || i === 0) return null;
+    const ir = levels[i]!.ir;
+    const p = pointOutside(
+      c,
+      ir.elements.filter((e): e is RRoom => e.kind === "room"),
+    );
+    if (p === null) return null;
+    const outdoors = ir.elements.filter((e): e is ROutdoor => e.kind === "outdoor");
+    if (outdoors.some((o) => pointInPolygon(p.x, p.y, outdoorRing(o)))) return null;
+    for (let j = i - 1; j >= 0; j--) if (onFootprint(p, levels[j]!.ir)) return levels[j]!.level;
+    return null;
+  };
+  const roofMemo = new Map<number, ReadonlyMap<string, number>>();
+  const onRoof = (level: number): ReadonlyMap<string, number> => {
+    let s = roofMemo.get(level);
+    if (s) return s;
+    const i = index.get(level);
+    s = NO_ROOF;
+    if (i !== undefined && i > 0) {
+      const ir = levels[i]!.ir;
+      const ways = new Map<string, RDoor | ROpening>(
+        ir.elements
+          .filter((e): e is RDoor | ROpening => e.kind === "door" || e.kind === "opening")
+          .map((c) => [c.id, c]),
+      );
+      const rooms = ir.elements.filter((e): e is RRoom => e.kind === "room");
+      const graph = buildDoorAccessGraph(
+        rooms,
+        ir.elements.filter((e): e is RDoor => e.kind === "door"),
+        tol,
+        undefined,
+        ir.elements.filter((e): e is ROpening => e.kind === "opening"),
+        openRunsOf(ir, tol),
+        outdoorsOf(ir),
+      );
+      const ids = new Map<string, number>();
+      for (const e of graph.edges) {
+        const c = e.exterior ? ways.get(e.doorId) : undefined;
+        const roof = c && !ids.has(c.id) ? roofUnder(level, c) : null;
+        if (c && roof !== null) ids.set(c.id, roof);
+      }
+      if (ids.size > 0) s = ids;
+    }
+    roofMemo.set(level, s);
+    return s;
+  };
+  // Grounded by a door that opens over no footprint (and not onto a balcony).
+  const strictMemo = new Map<number, boolean>();
+  const strict = (level: number): boolean => {
+    let g = strictMemo.get(level);
+    if (g === undefined) {
+      const i = index.get(level);
+      g = i === undefined ? false : storeyGrounded(levels[i]!.ir, tol, onRoof(level));
+      strictMemo.set(level, g);
+    }
+    return g;
+  };
+  // The storeys whose doors over a footprint keep their role: no other door from the ground, and no
+  // shaft from a storey `strict` grounds. Decided once, on first use.
+  let keep: ReadonlySet<number> | null = null;
+  const kept = (): ReadonlySet<number> => {
+    if (keep !== null) return keep;
+    const flagged = levels.filter((l) => onRoof(l.level).size > 0);
+    if (flagged.length === 0) {
+      keep = new Set();
+      return keep;
+    }
+    const reached = verticalReach(
+      levels,
+      strict,
+      buildingRoomReach(levels, tol, (lv) => (strict(lv) ? onRoof(lv) : NO_ROOF)),
+    ).reachable;
+    keep = new Set(
+      flagged.filter((l) => !strict(l.level) && !reached.has(l.level) && storeyGrounded(l.ir, tol)).map((l) => l.level),
+    );
+    return keep;
+  };
+  const notWayIn = (level: number): ReadonlyMap<string, number> => (kept().has(level) ? NO_ROOF : onRoof(level));
+  return {
+    grounded: (level) => strict(level) || kept().has(level),
+    onRoof,
+    notWayIn,
+    roomReach: buildingRoomReach(levels, tol, notWayIn),
+    roofUnder,
+  };
 }
 
 /**
@@ -804,8 +991,13 @@ export function storeyGrounded(ir: ResolvedPlan, tol: number): boolean {
  * `exterior: false` the outside is not a start but stays walkable through, one node per
  * balcony ({@link separateBalconies}, RM1.3b): a stair in a room reachable only from
  * balcony B is no longer counted reachable from a landing whose bedroom opens onto balcony A.
+ * `notWayIn` (RM9.10, {@link buildingGround}) names doors that are no start from the outside.
  */
-export function storeyRoomReach(ir: ResolvedPlan, tol: number): (seeds: StoreySeeds) => ReadonlySet<string> {
+export function storeyRoomReach(
+  ir: ResolvedPlan,
+  tol: number,
+  notWayIn: IdSet = NO_IDS,
+): (seeds: StoreySeeds) => ReadonlySet<string> {
   const rooms = ir.elements.filter((e): e is RRoom => e.kind === "room");
   const doors = ir.elements.filter((e): e is RDoor => e.kind === "door");
   const openings = ir.elements.filter((e): e is ROpening => e.kind === "opening");
@@ -819,7 +1011,7 @@ export function storeyRoomReach(ir: ResolvedPlan, tol: number): (seeds: StoreySe
     outdoorsOf(ir),
   );
   const ids = rooms.map((r) => r.id);
-  const g = storeyWalkDigraph(ids, edges, ir, true);
+  const g = storeyWalkDigraph(ids, edges, ir, true, notWayIn);
   // Walked through but not from, the outside is one node per balcony (`separateBalconies`).
   let through: Digraph<string, AccessEdge> | undefined;
   return (seeds) => {
@@ -838,6 +1030,8 @@ export function storeyRoomReach(ir: ResolvedPlan, tol: number): (seeds: StoreySe
 export function buildingRoomReach(
   levels: readonly { level: number; ir: ResolvedPlan }[],
   tol: number,
+  /** Per storey, the doors that are no start from the outside ({@link buildingGround}). */
+  notWayIn: (level: number) => IdSet = () => NO_IDS,
 ): StoreyRoomReach {
   const byLevel = new Map<number, (seeds: StoreySeeds) => ReadonlySet<string>>();
   return (level, seeds) => {
@@ -845,7 +1039,7 @@ export function buildingRoomReach(
     if (!reach) {
       const l = levels.find((x) => x.level === level);
       if (!l) return new Set<string>();
-      reach = storeyRoomReach(l.ir, tol);
+      reach = storeyRoomReach(l.ir, tol, notWayIn(level));
       byLevel.set(level, reach);
     }
     return reach(seeds);

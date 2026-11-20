@@ -53,6 +53,7 @@ import {
   roomBox,
   accessGraphOf,
   buildDoorAccessGraph,
+  buildingGround,
   outdoorsOf,
   DEFAULT_TOL,
   separateBalconies,
@@ -61,7 +62,7 @@ import {
 } from "./analyze.js";
 import { outerFaceBounds, segmentsOfWall, type WallSegment } from "./geometry.js";
 import { computeCirculation, walkedFromShafts } from "./analyze/circulation.js";
-import { arrivalAccess, entranceInputs, withMainEntrance } from "./analyze/entrance.js";
+import { arrivalAccess, entranceInputs, walkAccessGraph, withMainEntrance } from "./analyze/entrance.js";
 import { symmetryFacts } from "./analyze/symmetry.js";
 import { syntaxFacts } from "./analyze/syntax.js";
 import { dependsFacts, indexStatements, type StatementIndex } from "./analyze/depends.js";
@@ -529,6 +530,9 @@ function summarize(...args: Parameters<typeof summarizeStorey>): ReturnType<type
   return withNetAreaBudget(() => summarizeStorey(...args));
 }
 
+/** No door left out of a storey's `access` count (RM9.10). */
+const NO_DOORS: ReadonlyMap<string, number> = new Map();
+
 function summarizeStorey(
   ir: ResolvedPlan,
   tol: number,
@@ -545,6 +549,9 @@ function summarizeStorey(
    *  `VerticalReach.arrivalRooms` an arriving shaft stops in (`arrivalSeedRooms`,
    *  `src/describe/verticals.ts`): where `access` counts that storey's rooms from (PS0.3). */
   arrivalRooms: readonly string[] = [],
+  /** The storey's doors over a lower storey's footprint that are no way in (RM9.10,
+   *  `buildingGround().notWayIn`): `access` counts no room from them. */
+  notWayIn: ReadonlyMap<string, number> = NO_DOORS,
 ): Omit<SceneSummary, "ok" | "diagnostics"> {
   const roomEls = ir.elements.filter((e): e is RRoom => e.kind === "room");
   const doorEls = ir.elements.filter((e): e is RDoor => e.kind === "door");
@@ -733,7 +740,9 @@ function summarizeStorey(
           [...separateBalconies(arrivalGraph.edges, ir)],
           seeds,
         ).rooms
-      : arrivalGraph.rooms;
+      : notWayIn.size > 0
+        ? walkAccessGraph(arrivalGraph, new Set(arrivalGraph.entrances.filter((id) => !notWayIn.has(id)))).rooms
+        : arrivalGraph.rooms;
   const access = withMainEntrance(counted === doorGraph.rooms ? doorGraph : { ...doorGraph, rooms: counted }, inputs);
   const circulation = computeCirculation(
     roomEls,
@@ -1016,10 +1025,14 @@ function summarizeResolved(
   // are computed once from the whole level set and never per level — and BEFORE the
   // storeys are summarised, because a storey reached only by a shaft is walked from the
   // runs that arrive on it (its `circulation`).
-  const building = levels.length > 0 ? buildVerticalReport(levels, tol) : undefined;
+  const ground = levels.length > 0 ? buildingGround(levels, tol) : undefined;
+  const building = levels.length > 0 ? buildVerticalReport(levels, tol, ground) : undefined;
   const vertical = building?.report;
   const arrivalsOn = (level: number): readonly ArrivingRun[] => building?.arrivals.get(level) ?? [];
   const arrivalRoomsOn = (level: number): readonly string[] => building?.arrivalSeedRooms.get(level) ?? [];
+  // The doors over a lower storey's footprint that are no way in on each storey (RM9.10): `access`
+  // counts no room from them, as `lint`'s reachability walks no room from them.
+  const notWayInOn = (level: number): ReadonlyMap<string, number> => ground?.notWayIn(level) ?? NO_DOORS;
 
   // Multi-storey: the top-level facts are the LOWEST storey (`levels[0].ir === ir`), and
   // `levels` adds one same-shaped summary per storey. `summarize` is reused verbatim per
@@ -1037,6 +1050,7 @@ function summarizeResolved(
             statements,
             true,
             arrivalRoomsOn(l.level),
+            notWayInOn(l.level),
           );
           return { level: l.level, ...(l.name !== undefined ? { name: l.name } : {}), ...facts };
         })
@@ -1052,6 +1066,7 @@ function summarizeResolved(
     statements,
     true,
     levels.length > 0 ? arrivalRoomsOn(levels[0]!.level) : [],
+    levels.length > 0 ? notWayInOn(levels[0]!.level) : NO_DOORS,
   );
   // RM9.2: on two or more storeys every caption leads with the building's figures; the top level
   // repeats the lowest storey's, as every top-level fact does. Assigned in place, so the key keeps

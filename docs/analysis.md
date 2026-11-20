@@ -688,8 +688,15 @@ in another room than `room`, the room it is boarded in: `{ below?, above? }`, th
 from the stop on that side, `null` where that flight ends in no room and absent where there is no
 such stop.
 
-**Reachability through a shaft.** A storey is *grounded* when its own access graph has an
-exterior entrance. Reachability then spreads along the connections to a fixpoint over
+**Reachability through a shaft.** A storey is *grounded* when it has a way in from the ground
+of its own: an exterior door that does not open onto an `outdoor balcony`. A door opens over a
+lower storey's footprint when the point just outside it (one wall thickness off the wall at its
+centre) lies on one of that storey's rooms or inside its closed exterior wall rings (even-odd,
+edges included), and its own storey draws no `outdoor` surface there. Such a door stops being a
+way in only when its storey still has another arrival: a door from the ground over no footprint,
+or a shaft from a storey grounded by one (`W_EXTERIOR_DOOR_ONTO_ROOF` names it, and no walk
+starts from it). Where it is the storey's only arrival it grounds the storey as it always did.
+Reachability then spreads along the connections to a fixpoint over
 storeys **and rooms**: a shaft carries you on only from a stop whose room you can walk to
 on its own storey — from the front door if the storey is grounded, or from a room another
 live shaft lands in. The rooms it lands in become **arrival rooms** — the floor's entrance,
@@ -1267,7 +1274,7 @@ What it cannot tell you:
 | Room | `W_ROOM_TOO_SMALL`, `W_ROOM_DISCONNECTED`, `W_BEDROOM_NO_WINDOW`, `W_HABITABLE_NO_WINDOW`, `W_ROOM_MISSING_DEFINING`, `W_LABEL_PIECE_MISSING`, `W_ROOM_OVERLAP`, `W_ROOM_NOT_EQUATOR_FACING` |
 | Placement | `W_DOOR_OFF_WALL`, `W_WINDOW_OFF_WALL`, `W_OPENING_OFF_WALL` |
 | Door / circulation | `W_DOOR_CLEARANCE`, `W_SWING_OBSTRUCTED`, `W_DOORWAY_BLOCKED`, `W_LEAF_ACROSS_DOORWAY`, `W_LEAF_TOO_WIDE`, `W_NO_ENTRANCE` |
-| Reachability | `W_ROOM_UNREACHABLE`, `W_BATH_VIA_BEDROOM` |
+| Reachability | `W_ROOM_UNREACHABLE`, `W_BATH_VIA_BEDROOM`, `W_EXTERIOR_DOOR_ONTO_ROOF` |
 | Wet rooms | `W_ROOM_NOT_ENCLOSED`, `W_ROOM_NO_FIXTURE` |
 | Garage | `W_GARAGE_TOO_NARROW` |
 | Stairs | `W_STAIR_TOO_STEEP`, `W_STAIR_RISER_TOO_HIGH`, `W_STAIR_NO_LANDING`, `W_SWING_OVER_STAIR` |
