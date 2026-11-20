@@ -100,7 +100,7 @@ const BASELINE: [string, string, string[]][] = [
     // ["W_SWING_ROOM_NOT_ADJACENT@678", "E_FURN_AGAINST@734", "E_PLACE_REF@795"].
     // Re-measured for PS2.54 (6e7386f0…e8a7): its `W_DOORWAY_BLOCKED` counter, measured from the
     // wall's face, leaves 0 mm (50 mm from the centreline); `lint()` text only.
-    "44c7f50a4e0ed98d42f48c15b00ad99d670e95888bab16c0ea00bb4bec8da0b1",
+    "90ccbdd60412673e028a72778d960502fa07b9e164c4e712113de3b0bc5415b3", // AF9 (was 44c7f50a): `W_DOORWAY_BLOCKED` gains a maybe-incorrect move to `at 1250` (its position alone) in lint(); SVG, describe() and the diagnostics, in their order, are unchanged, and with that fix taken out the old digest returns
     [],
   ],
   [

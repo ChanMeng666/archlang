@@ -8,30 +8,10 @@
  * importing (`src/intent.ts`), fails here; the built chunk is held to the same by the startup-chunks
  * spec (`playground/e2e/preview3d.spec.ts`).
  */
-import { existsSync, readFileSync } from "node:fs";
-import { posix } from "node:path";
+import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { ERROR_CODES } from "../src/index.js";
-
-/** Value imports and re-exports (`import { a } from "./x.js"`, `import "./x.js"`, `export … from`); never `import type`. */
-const EDGE = /^(?:import|export)\s+(?!type\s)(?:[^;]*?\sfrom\s*)?["'](\.{1,2}\/[^"']+)["']/gm;
-
-/** The modules `entry` reaches, as repository paths. */
-function reach(entry: string): string[] {
-  const seen = new Set<string>();
-  const visit = (file: string) => {
-    if (seen.has(file)) return;
-    seen.add(file);
-    for (const m of readFileSync(file, "utf8").matchAll(EDGE)) {
-      const spec = m[1]!.replace(/\.js$/, ".ts");
-      const next = posix.normalize(posix.join(posix.dirname(file), spec));
-      if (!existsSync(next)) throw new Error(`${file} imports ${m[1]}, which is no src file`);
-      visit(next);
-    }
-  };
-  visit(entry);
-  return [...seen];
-}
+import { reach } from "./helpers/import-walk.js";
 
 describe("NR.10: the compile path raises no intent violation", () => {
   const files = reach("src/compile-path.ts");

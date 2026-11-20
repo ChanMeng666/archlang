@@ -141,7 +141,7 @@ const BASELINE: [string, string][] = [
   ["d2e33f0f08e06930824942bb36faf1a439459483a3335cd78063e3ef51b021b6", "test/fixtures/lock-before.arch"],
   ["a5b010590ff37b31382b353c37001f3541ef26e5f9c8bd531f2121dd1a9d4fa2", "test/fixtures/lock-partition-moved.arch"],
   ["bfe79454671a15f63522c0a770453a819328df15f90b01154d028f5161350046", "test/fixtures/lock-window-moved.arch"],
-  ["d340196f446839ceda4c324efb5c2c29abab79551b673a72b95abeabc64d3fe2", "test/fixtures/off-path-bypass.arch"], // RM1.4: the unknown-furniture search is charged to the step meter (+29 steps: `cabinet`, 234 -> 263) (was ff686ab3)
+  ["c80e318bf3434440c98e5c1053396ec945bd717a91c54a79497954cd03f2d820", "test/fixtures/off-path-bypass.arch"], // RM1.4: the unknown-furniture search is charged to the step meter (+29 steps: `cabinet`, 234 -> 263) (was ff686ab3); AF9 (was d340196f): `W_DOORWAY_BLOCKED` on d_d gains a maybe-incorrect move to `at 1570` (its position alone) in lint() (both profiles); SVG, describe(), the diagnostics and the steps are unchanged, and with that fix taken out the old digest returns
   ["2a9bdda5124d6cc976419991440ccccedb9ee1bcbcba18da2098319f271fe1f3", "test/fixtures/schedule-sheet.arch"],
   ["ac6b7954d2cefaa2461c5e8111d1004603b931ef133597f0971e07db78c6dd42", "test/fixtures/star30.arch"],
   ["143ddd7bfd82d51b4527ba8607803a99e38c4f1bd4997d9cf8acf95fb216e29d", "test/fixtures/storeys-eaves-overflow.arch"], // RM1.3a, see ./byte-identity-baseline.ts; RM1.2a, see ./byte-identity-baseline.ts; RM1.2a review, see ./byte-identity-baseline.ts; RM1.3b overlay, see ./byte-identity-baseline.ts; RM9.2, see ./byte-identity-baseline.ts
@@ -149,7 +149,7 @@ const BASELINE: [string, string][] = [
   // reaching its break line widens the drawing 156 mm. No `sheet text` moved it: the form's rows stay as measured.
   ["5febcfb91b9a3e7bc23705df313a0ac218fb64f35aae5a19b607b313ddca79fb", "test/fixtures/zones-levels.arch"], // RM9.2, see ./byte-identity-baseline.ts
   ["ee9f057b82b717e4b7c0753daef62a2baa9b3df5c5d8aa617079c3dedce0081e", "test/fixtures/zones-wings.arch"],
-  ["edc62a570b76ff9877ab4515a7a83826cc91bf70328a315fe62f42ff17f3a843", "test/walls-from-rooms/relational.arch"],
+  ["61565f3850374e2db98b80a12890579d8899928f2e32c7ddc45fb5b43169f7c9", "test/walls-from-rooms/relational.arch"], // AF9 (was edc62a57): under `accessibility-advisory` (a 450 mm landing) `W_DOORWAY_BLOCKED` gains a maybe-incorrect move of the door; SVG, describe(), the diagnostics, the default lint() and the steps are unchanged, and with that fix taken out the old digest returns
   ["beff13e3b3255103bc80d0698d9bf7b9052f66bf78bf8d0626033bfeeb02adc5", "test/walls-from-rooms/studio.arch"],
   ["4a1ab38ed28c696ef0c713c4227dd30efb828fb60a7d3dd5b4b4e1d0e40f68ef", "test/walls-from-rooms/two-bed.arch"], // RM1.4: snapping is now reported (this test plan's 850x2000 sofa and 450x600 basin under grid 100 raise W_GRID_SNAPPED; steps 629 -> 757, +128 = two DIAGNOSTIC_STEPS) (was 73d42f0e); CO.1: +1 W_GRID_SNAPPED (a sizeless `against` piece on a grid), steps +64 = 1 x 64; see the header (was cd33c0b4)
   [
@@ -176,7 +176,7 @@ const BASELINE: [string, string][] = [
   ["6e4367336a461f79b8927cdb2671f2571c0d5e029ca95b26448cf70bd39eb058", "inline:clauses"],
   ["ffcbcbe475c12edbcf2713a4449a06d4eed619f415d3d08ea57428e3cea4bca9", "inline:door-beside-excepted-L"],
   ["9a461091afe9fe608b6f1ad40d02a6a366df5884bf1af8b178b1d03c4011b40b", "inline:door-positions"],
-  ["49ed81b6cac95c97df6056fa406a7de294634e03b0f05ca1d680d4ee7f0b59de", "inline:door-refusals"], // AF2 (was b699986d): `E_LAYOUT_REF` on room e is spanned on its unknown id `nowhere`, not the statement, and the search for a near room id charges 8 steps (1027 -> 1035); SVG, lint() and every other diagnostic are unchanged, and main's span and steps put back give b699986d
+  ["b5fc44cd1e1965550c229a17a86e73cbd08d8e1fabf53659616c7a5b1ef7eacd", "inline:door-refusals"], // AF2 (was b699986d): `E_LAYOUT_REF` on room e is spanned on its unknown id `nowhere`, not the statement, and the search for a near room id charges 8 steps (1027 -> 1035); SVG, lint() and every other diagnostic are unchanged, and main's span and steps put back give b699986d; AF9 (was 49ed81b6): `E_OPENING_DATUM` on d4 (no position) and d5 (`at 800`, no datum) gains a has-placeholders fix and `E_OPENING_NIB` on d7 a maybe-incorrect move to `at 600 from start`, in `compile().diagnostics` and `describe().diagnostics`, and the refusal paths' search charges 49 steps (1035 -> 1084); SVG, lint(), every message and hint are unchanged, and with those fixes taken out and main's steps put back the old digest returns
   [
     "c393511a4734b76c5a878d1666ab6e36e638b84abcc963a6e01c97a2bbe1b97e",
     "test/defect-corpus/stair-safety/door-onto-flank.arch",

@@ -382,8 +382,10 @@ suite("the step budget", () => {
       return steps(on("center")) - steps(on("1500 from start"));
     };
     // Each far wall costs 3 steps for reading the 3 bodies' status, and 1 because a refusal scans
-    // the two exterior runs where a placement scans its one host.
-    expect(refusalCost(800) - refusalCost(400)).toBe(4 * 400);
+    // the two exterior runs where a placement scans its one host; and 2 since card AF9, because
+    // each position the refusal quotes is judged again before it becomes a fix (one host scan per
+    // exterior run, `judgeLanding`).
+    expect(refusalCost(800) - refusalCost(400)).toBe(6 * 400);
   });
 
   it("a hostile edge of refusals returns a diagnostic, each hint paid for", () => {

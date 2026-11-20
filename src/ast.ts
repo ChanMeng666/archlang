@@ -378,6 +378,11 @@ export interface OpeningAttach {
    *  what keeps every pre-existing plan byte-identical. */
   pos: AttachPos;
   span?: Span;
+  /** The byte span of the {@link wall} name, and of the `at <pos>` clause when one is written
+   *  (from `at` to the position's end): where a fix rewrites one without touching the rest
+   *  (card AF9). No semantics. */
+  wallSpan?: Span;
+  posSpan?: Span;
 }
 
 /**
@@ -412,6 +417,8 @@ export interface OpeningBetween {
   pos: AttachPos;
   /** From `between` to the end of the position. */
   span: Span;
+  /** The `at <pos>` clause, when one is written: see {@link OpeningAttach.posSpan}. */
+  posSpan?: Span;
 }
 
 export interface DoorNode extends NodeBase {

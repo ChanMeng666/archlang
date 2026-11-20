@@ -32,6 +32,12 @@
  * begin the next statement, so no row above moved; the sweep at the end moves every example's lead
  * kind word to the end of its statement and holds the drawing, the summary and the lint to it.
  *
+ * AF9 (review round 1) records, on an opening's `on …`/`between …` lead, the span of the wall's
+ * name (`wallSpan`) and of its `at <pos>` clause (`posSpan`), where a fix rewrites one alone. 32
+ * PARSE digests moved by those two fields and nothing else: a scratch script running `astPayload`'s
+ * body over this branch's parse with exactly those two keys left out (on an object holding `pos`)
+ * reproduces `main`'s digest for each of the 32 (`35d97da0`); no surface digest moved.
+ *
  * Re-measured for AL1 (the north arrow keeps off the dimension and axis bands): 22 digests, of the
  * 22 plans here whose arrow moved off a band. On each moved page exactly one SVG line moved, the
  * arrow's `<g>`, and where the body hashes the Scene, the added `chrome.north` with it; `describe()`,
@@ -94,75 +100,89 @@ const BASELINE: [string, string, string][] = [
   ],
   [
     "eee3dc30bd94b5f31c7189f719ff38e09d6f56a3d5484f443432591f8f1e737e",
-    "295d276e58e73e06965138c13e787c33e01f4941de5b9b86a80cf21e39773ae7",
+    // AF9: the parse holds the `posSpan` and `wallSpan` an opening's lead now records (no semantics); without them it is the parse pinned here (was 295d276e)
+    "8ed143c564a6a56e077dd4ca1ba3e87bc0e9164525b125e3d0e0950f884db2cd",
     "examples/aquarium.arch",
   ],
   [
     "07995653257dff5785f4fe210e3c4f6f9d6fc35165be2e5ae34df364079029dc",
-    "d336cda91acc4449950dea987c79949b1283e67912aa6187448ee5c4c2275197",
+    // AF9: the parse holds the `posSpan` and `wallSpan` an opening's lead now records (no semantics); without them it is the parse pinned here (was d336cda9)
+    "4851b9eb63cc3719aa25b1a9b96ad9e080d2445f6ae8012db6f0514ae43e16ac",
     "examples/attached.arch",
   ],
   [
     "074d553112362b1bcc8c67536edf075b07c8657746b3429e4bedbcb401b15b55",
-    "37e4e7f995fba8c2b54e1761670ed57e081e7b8c71d3160e986464eb067d1c5f",
+    // AF9: the parse holds the `posSpan` and `wallSpan` an opening's lead now records (no semantics); without them it is the parse pinned here (was 37e4e7f9)
+    "4f704af6e2da2dde162fb185f534573d11efcf92b4e6a5ad60504f51f87d5d0f",
     "examples/bungalow.arch",
   ],
   [
     "cca7c3dfef6593e826303c88878fbfb5537bded8a6bb9323696ae4b446ac046a",
-    "3418a51e7e362baa5e3c4db04201d2b58e5d16f47620bd4bcb16c2b0a87cf1d2",
+    // AF9: the parse holds the `posSpan` and `wallSpan` an opening's lead now records (no semantics); without them it is the parse pinned here (was 3418a51e)
+    "bb6dfd67e62f7145186102f4051cd70c98fa1b59d231371aedde152a32ce4967",
     "examples/classroom-block.arch",
   ],
   [
     "b31aad2c2f0c0d1b7e63498f8844570f16c700846d533288de7e43bf5ad56e63",
-    "c23e64a1e7cfcb3a4c83184fb3585b731dff2faa82e3b05af29c1d3881c82de3",
+    // AF9: the parse holds the `posSpan` and `wallSpan` an opening's lead now records (no semantics); without them it is the parse pinned here (was c23e64a1)
+    "7b3e95106ff67570b2ab399073f9b4857a497b397b93b0dbab769f560b753571",
     "examples/clinic.arch",
   ],
   [
     "d669e11a11740a841311fe359a3d5bc650343ba1f16e827bc4d869dc65206bd5",
-    "492b9b4b92658c91fa125ff4fb3d732c366eaf70d18d16417af3728cd8f9d201",
+    // AF9: the parse holds the `posSpan` and `wallSpan` an opening's lead now records (no semantics); without them it is the parse pinned here (was 492b9b4b)
+    "e8a6df5589fc37f425524228a7b5554834044e7df2bc630ec4cf610b35c71a44",
     "examples/corner-cafe.arch",
   ],
   [
     "50c9cc316efda2bf16183e877d4be16443df160c9c13fc2a0210d62945c4bd67",
     // CO.1: the parse holds the `size` clause the example now writes; without them, offsets mapped back, it is the parse pinned here (was d98a3db2)
-    "e466b6cbab0709528fea51543f3a63fe936e6b622221285f0c5432314d62a46a",
+    // AF9: the parse holds the `posSpan` and `wallSpan` an opening's lead now records (no semantics); without them it is the parse pinned here (was e466b6cb)
+    "5dc7f53b3c8b4f699474d8a84528a6e084f27abf041dde5e9dbff4d14f5f8405",
     "examples/courtyard-family.arch",
   ],
   [
     "0f6dddac275250a710e3f37d7c0fc74818389bef1c32d8929df2a747bbad63c3",
-    "25a92395c7fa23a45a061ddd8a518ed4b75da1ed9f7efe943a7ca2e2d6b3a7e4",
+    // AF9: the parse holds the `posSpan` and `wallSpan` an opening's lead now records (no semantics); without them it is the parse pinned here (was 25a92395)
+    "c6d8fe29380bfda7807b945bebdb8ac729ad24f8d69c4f52931c4a6b7fe65f7c",
     "examples/courtyard-house.arch",
   ],
   [
     "cdb42b5c1bee8dd931d9b99b1e338dd895e4cb5d2de1915de8a85f04a3fd444a",
-    "0242baf0a82d59d6310bccacff80d71952e5e751bae6ce0edd53eb77e8589c4b",
+    // AF9: the parse holds the `posSpan` and `wallSpan` an opening's lead now records (no semantics); without them it is the parse pinned here (was 0242baf0)
+    "b75a96f881dcda401b6a9d76d8c080117f5f72b0617fcc04cb3d9263272cc857",
     "examples/furnished-flat.arch",
   ],
   [
     "f3d86da1d7aed260f386efa6ca98b440c89ee7b2b84b0d0937401c72d7bb113e",
-    "1f836a0a72557fb27fa676de33f2f610135ed17801c8aeea864cccc02dac834b",
+    // AF9: the parse holds the `posSpan` and `wallSpan` an opening's lead now records (no semantics); without them it is the parse pinned here (was 1f836a0a)
+    "3a198fce335394ccecdd77e17656095a1f821b22ac1ae3fca184b029b0db1e56",
     "examples/gallery-l.arch",
   ],
   [
     "72528a5f6784a5c5d9527299a5abb330423c747bafb17458716dc336cc9a3eb3", // RM9.2, see ./byte-identity-baseline.ts
     // CO.1: the parse holds the 2 `size` clauses the example now writes; without them, offsets mapped back, it is the parse pinned here (was c7dbe7c1)
-    "93f0b4a6783c3f4db608a63eed304f6c4a4d9bc750f86575da0122b4ab4deb1c",
+    // AF9: the parse holds the `posSpan` and `wallSpan` an opening's lead now records (no semantics); without them it is the parse pinned here (was 93f0b4a6)
+    "26740b1a4fdfa883d870cdf10097d0a9a2d533784fa141bc26656e0bb7c7da57",
     "examples/garden-house.arch",
   ],
   [
     "e0ce8a5f9a6bd4b5b5e72bb23c77a149cc412e40aff10930807e7b5c960a13db",
-    "0b5dc494c902deae80b99ee963db3a559500c513971ebcd09f84568e0abf0e0e",
+    // AF9: the parse holds the `posSpan` and `wallSpan` an opening's lead now records (no semantics); without them it is the parse pinned here (was 0b5dc494)
+    "5e89d1d72b4b1946b85a6cc8cc4aaa3dcc4498c8363c60dd4d3c5dc00b527931",
     "examples/garden-loft.arch",
   ],
   [
     "3078765cf03974518e0f2b3ea13585cca69ffbb86438f0899218c8a1c24a09a8",
-    "5358bb59844ac0ec76855f3df547cac866652423aa970318c98530551f0efb96",
+    // AF9: the parse holds the `posSpan` and `wallSpan` an opening's lead now records (no semantics); without them it is the parse pinned here (was 5358bb59)
+    "49686f4f067352d4ccebf8605a93422e28d92e4b0136597b500eaa3aab1ff333",
     "examples/hexagon-pavilion.arch",
   ],
   [
     "123f2af228faf039c29d9861b60cfff3574b3cd04bc0057d5549cd02e67066fb", // RM9.2, see ./byte-identity-baseline.ts
     // CO.1: the parse holds the 3 `size` clauses the example now writes; without them, offsets mapped back, it is the parse pinned here (was db3a5d1e)
-    "664292dca8bb269674094cf7e5f83be38addc1c7f81074b19e7bf444d2f9593e",
+    // AF9: the parse holds the `posSpan` and `wallSpan` an opening's lead now records (no semantics); without them it is the parse pinned here (was 664292dc)
+    "b122bb73e93ba947f92f83570f5b4232aad492f29528c8b4b23099999478fd23",
     "examples/hillside-villa.arch",
   ],
   [
@@ -172,12 +192,14 @@ const BASELINE: [string, string, string][] = [
   ],
   [
     "578ec7551025df65b704f453b7af3493bf4abcfb19737fdece206e4c85fd2586",
-    "861d0bfad44daeb5aca964024702d0c5ecdb6e0de3c9ded952fa4ddb8f9e7704",
+    // AF9: the parse holds the `posSpan` and `wallSpan` an opening's lead now records (no semantics); without them it is the parse pinned here (was 861d0bfa)
+    "e6b9f7049932590eff5c7ad67ef68ec3b7e726a288068150626a93ed844ffd15",
     "examples/knob-flat.arch",
   ],
   [
     "958934b402346348371464d60abc57c5bffde8eb7b5bcda1890a2bf6036b2749",
-    "d282238093b245e45aaa9532ec851a819efef14a1bc4bb16021c6c6cf65d04d3",
+    // AF9: the parse holds the `posSpan` and `wallSpan` an opening's lead now records (no semantics); without them it is the parse pinned here (was d2822380)
+    "4fb3e26fcb72557f3f329466bea51e932f3652d1aaa827219bd833002ef3c7d8",
     "examples/laneway-house.arch",
   ],
   [
@@ -197,17 +219,20 @@ const BASELINE: [string, string, string][] = [
   ],
   [
     "acbc3325a38dea3132c2e6898df4c40ac2df5e85684fab1531409ba397e3b506",
-    "2656d94df54442b0936f0506bd4764479a09beebbc51eb8a681877b6aa05a4a0",
+    // AF9: the parse holds the `posSpan` and `wallSpan` an opening's lead now records (no semantics); without them it is the parse pinned here (was 2656d94d)
+    "6e737b9180bb6c0cc5f9276ca1547e0d0bd6f6f252ac87019b80837cdf41aabb",
     "examples/library.arch",
   ],
   [
     "b3d629675b1a43d4d1113f10b38e732d0b826fdb2b019fcf14ac4b166abd435d",
-    "b5bbeb04654ba6c882d13379eedf22a33d314ba2455909da3b840a93a787ceb9",
+    // AF9: the parse holds the `posSpan` and `wallSpan` an opening's lead now records (no semantics); without them it is the parse pinned here (was b5bbeb04)
+    "ebd76a681ea6814fa5434be13bc86c2ed2baba383326c4907a404790534b4b3a",
     "examples/materials.arch",
   ],
   [
     "add9b13a425ec75dd2b88c4eba087465228822c37321b3d1952db6f0795ef6c7",
-    "581493cdcfee7476e66c720831b2606d0361cab972c16bde90bf2eda4d00cbe8",
+    // AF9: the parse holds the `posSpan` and `wallSpan` an opening's lead now records (no semantics); without them it is the parse pinned here (was 581493cd)
+    "a72166e067573e40945a4da25e9441b148a58a333c5e4098327eccb58fdb0c1d",
     "examples/museum-wing.arch",
   ],
   [
@@ -223,7 +248,8 @@ const BASELINE: [string, string, string][] = [
   ],
   [
     "8c47e263f778993d69c2f85d07a24b3a62c0b96d9f17ccb5cd9ebf2af6fa0120",
-    "b4c2ad1db6b2f1dc99f8334cb8daddcc5a31cb3ca2452364b96a8b32ed8c6692",
+    // AF9: the parse holds the `posSpan` and `wallSpan` an opening's lead now records (no semantics); without them it is the parse pinned here (was b4c2ad1d)
+    "95e94b8411ed83b82f45d8eeeb725d43659b5cd69f030f8c85d7f61455a09397",
     "examples/one-room.arch",
   ],
   [
@@ -233,29 +259,34 @@ const BASELINE: [string, string, string][] = [
   ],
   [
     "f655cd0dfaa4ec152a2effa51cd2a3fb6254d46c8fb7e29529cbd3c7b78491cb",
-    "7166b9fa609e198e936988b8d61fb098d5df8b69d4de68b4137af0295ae5b869",
+    // AF9: the parse holds the `posSpan` and `wallSpan` an opening's lead now records (no semantics); without them it is the parse pinned here (was 7166b9fa)
+    "8ab3a59a531a168d1c07389e0ab8ea5a78f9bfeae2e7aa499f4fc53550f2f2a9",
     "examples/practice-office.arch",
   ],
   [
     "d99a898c06b322f203c7f9f3d34740be351b523712bb04fe7b0d846e85811084",
-    "7e457015a044240cc328795c2f5ec96ba5fe77542d56dd38ef61224f52536a54",
+    // AF9: the parse holds the `posSpan` and `wallSpan` an opening's lead now records (no semantics); without them it is the parse pinned here (was 7e457015)
+    "5b148e27a57bd530b390e3337dc9bc3fb824381e07de94cda7d6517f61489a96",
     "examples/relational.arch",
   ],
   [
     "f0f4a5aa4758c3f9feb14449b6a9be0b7afd020fb925619c6d83e66f7cb95f2d",
     // CO.1: the parse holds the `size` clause the example now writes; without them, offsets mapped back, it is the parse pinned here (was 32255022)
-    "efcd35205789be7eabf3601ee5bb0710736afe32c21b585a76727e77cee6913e",
+    // AF9: the parse holds the `posSpan` and `wallSpan` an opening's lead now records (no semantics); without them it is the parse pinned here (was efcd3520)
+    "a6ed253f103c333b320b13d27acb6f7fdc49d8a394c8104800dab8a350976121",
     "examples/remodel.arch",
   ],
   [
     "708332c1a3f4cf35989718277b996af6f718d2e5fb8bd3d2912d8f87f7d61a2a",
-    "bc6256ca802a3ea17c2a1cb2b0f1e4f7b4bca01bb571cc5147831d7b4021448c",
+    // AF9: the parse holds the `posSpan` and `wallSpan` an opening's lead now records (no semantics); without them it is the parse pinned here (was bc6256ca)
+    "afd2570d57eb2e1444a7da7b2b173c59bd59a63adc952b827a2783ab80c5ebf4",
     "examples/sheet-notes.arch",
   ],
   [
     "54adc1b89e5472644f55bc3f33f9aa6fd1576b39b324eb6afd8370d8e3cb796f",
     // CO.1: the parse holds the `size` clause the example now writes; without them, offsets mapped back, it is the parse pinned here (was 03e2e2c2)
-    "d73f013d20fa721c51394f80187840ef24307659d7353e84999c1c46e3c0f22f",
+    // AF9: the parse holds the `posSpan` and `wallSpan` an opening's lead now records (no semantics); without them it is the parse pinned here (was d73f013d)
+    "ad0129d517542b9e077a68da9df9d2a4936fc95d1964c873563678280f646dc8",
     "examples/showcase/garden-courtyard.arch",
   ],
   [
@@ -265,7 +296,8 @@ const BASELINE: [string, string, string][] = [
   ],
   [
     "6667da00528cdd4ee4f155586a049ad877f81b83178f5a18c85afef7a76a781d",
-    "3d73f2d0badd83e6b426bcd008e1fb6d73262934944765e578fbea5ddb4c72e5",
+    // AF9: the parse holds the `posSpan` and `wallSpan` an opening's lead now records (no semantics); without them it is the parse pinned here (was 3d73f2d0)
+    "4833269df69f0768bfcf1dabc6012cec8f8dc73e3eeaf22079cef3e59ea6d5ad",
     "examples/terrace-row.arch",
   ],
   [
@@ -275,33 +307,39 @@ const BASELINE: [string, string, string][] = [
   ],
   [
     "7dec52e5621d9af9dbdcf7cb73e58791705e6d976bbecf5ae59419c1c9a9ea17",
-    "f9d5547a931d3a9bb9dc4d00180cb1c71bd82c498e75415d4bcf11eb92d266de",
+    // AF9: the parse holds the `posSpan` and `wallSpan` an opening's lead now records (no semantics); without them it is the parse pinned here (was f9d5547a)
+    "7bbc51323f944115bd415a3dc8cfbe32dd721aa2b7dd628b8f8294b735d289e2",
     "examples/tiny-house.arch",
   ],
   [
     "3657648f9aa2ed74e7babc743d4f7129bb0cc657cca631695784a6bf0615364e", // RM9.2, see ./byte-identity-baseline.ts
-    "355d36bd5d1cf39a9694d70ffba4532ec12f63cd25ae9132c5f4198ca071bd3a",
+    // AF9: the parse holds the `posSpan` and `wallSpan` an opening's lead now records (no semantics); without them it is the parse pinned here (was 355d36bd)
+    "15248124ae5c21133029781f928537039648b66cdb5a6d9c0f32c951e1e448e2",
     "examples/townhouse.arch",
   ],
   [
     "649e39d370d434467bee6f23ad8c7fc0bef578d44081f18d96ec82ed2532c5be",
-    "1d864acd2807f9551f1fea419578ebeadb11971a6865b5916d8e3ed75d8a0d7a",
+    // AF9: the parse holds the `posSpan` and `wallSpan` an opening's lead now records (no semantics); without them it is the parse pinned here (was 1d864acd)
+    "9f31aba2701e1be11a7bf5205e4503d92e92c6e455e1510a358b30ad81663e3a",
     "examples/transit-hall.arch",
   ],
   [
     "4d2fb9dcc6a44640a4d0e52d202df14909c73a5743799af8c25cb1f117dc87a8", // RM9.2, see ./byte-identity-baseline.ts
-    "9846048edccb900827a20a6de7d258f356688609aa11a1272d338b92c863eac8",
+    // AF9: the parse holds the `posSpan` and `wallSpan` an opening's lead now records (no semantics); without them it is the parse pinned here (was 9846048e)
+    "c73923d73d730766aee424479a48287ab5ad5f941c7b72d64626224f99a6b851",
     "examples/turning-stair.arch",
   ],
   [
     "fe871cbb3d60c1594495e38b1ad0dc30ce3f71904c27b85fa60f276d3aa182bd",
     // CO.1: the parse holds the `size` clause the example now writes; without them, offsets mapped back, it is the parse pinned here (was a1f390c9)
-    "f38a754378d2d9630dc74064e8c99212938d9cf5c904c96b9dc6bede56a7af8e",
+    // AF9: the parse holds the `posSpan` and `wallSpan` an opening's lead now records (no semantics); without them it is the parse pinned here (was f38a7543)
+    "5d4929522ba05baf589f0f443240c59fd837b31b1a274911c8c5cab370b3f9cd",
     "examples/two-bed.arch",
   ],
   [
     "92a71843b7de0b87acb1ef3ea1b859d1c0bedbe4ef35025f3524ecea1d674aa8", // RM9.2, see ./byte-identity-baseline.ts
-    "a2400915472bf50c8146ee82ad9e09b2cf4d64e2887565c5b33975f90c8abc4b",
+    // AF9: the parse holds the `posSpan` and `wallSpan` an opening's lead now records (no semantics); without them it is the parse pinned here (was a2400915)
+    "26bcf83dc033b49cea2a5dd4acc9c16c946af221d3408cd80149d6b437334680",
     "examples/two-storey.arch",
   ],
 ];
