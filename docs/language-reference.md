@@ -4056,10 +4056,12 @@ A wall fixture floating equally far from two walls is snapped onto one: among th
 is nearest (the length of the move), a wall the piece's size lets it back onto, then the one whose
 side of the room is free (no other piece there, still inside the piece's room), then the smallest
 wall id (an unnamed wall's `<category>_<n>` id sorts by `n`), then the run of that wall written
-first. A fixture in a corner with its back to the room is turned onto one: only the walls its size
-lets it back onto count, and among them the nearest face, then the smallest wall id, then the run
-written first. `lint` still attaches no fix in those cases: a choice is not a proof. Repair never
-moves a piece out of the room it stands in; a move that would is left out and reported. A piece
+first, then edge order (top, bottom, left, right); the order is total. A fixture in a corner with
+its back to the room is turned onto one: only the walls its size lets it back onto count, and among
+them the nearest face, then the smallest wall id, then the run written first, then edge order.
+`lint` still attaches no fix in those cases: a choice is not a proof. Repair never moves a piece
+onto floor no room covers, nor through a wall, nor onto a stair; a move that would is left out and
+reported (moving into the next room where no wall stands between them is allowed). A piece
 standing side-on to a wall, or in a polygon room, is left alone, as `W_FIXTURE_BACK_TO_ROOM` leaves
 it; a piece whose `size` runs the wrong way for its wall is reported with "swap W and H"; and a
 piece whose turn is stated by `facing` is reported, never given a `rotate`. A piece on a stair's

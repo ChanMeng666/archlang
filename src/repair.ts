@@ -33,9 +33,9 @@
  * are equally near, and the wall a corner fixture is turned to back onto (RM9.11).
  *
  * **The result is never worse than the input**: it holds no hard conflict (an overlap, a
- * piece through a wall, in a door's landing or in its swing) the input did not, and no piece
- * leaves the room it stood in. A piece whose move would do either is left where it stands and
- * reported — see `checkedRun`.
+ * piece through a wall, in a door's landing or in its swing, or on a stair) the input did not,
+ * and no piece goes onto floor no room covers or through a wall. A piece whose move would do
+ * either is left where it stands and reported — see `checkedRun`.
  *
  * That pass is run to a **cycle** and the cycle's canonical member is what ships, so
  * `repair(repair(s))` equals `repair(s)` byte for byte. See {@link repair} for why one
@@ -118,9 +118,17 @@ import {
   orientationMatters,
   requiresWall,
 } from "./fixtures-catalog.js";
-import type { ResolvedPlan, RWall, RDoor, RRoom, ROpening, RFurniture, RVoid } from "./ir.js";
+import type { ResolvedLevel, ResolvedPlan, RWall, RDoor, RRoom, ROpening, RFurniture, RVoid } from "./ir.js";
 import { keepResultsOf } from "./ir.js";
-import type { ComponentDef, FurnitureAnchor, FurnitureNode, FurniturePlace, PlanNode, Statement } from "./ast.js";
+import type {
+  ComponentDef,
+  FurnitureAnchor,
+  FurnitureNode,
+  FurniturePlace,
+  PlanNode,
+  Point,
+  Statement,
+} from "./ast.js";
 import type { Span } from "./diagnostics.js";
 import type { Expr } from "./expr.js";
 import { openRunsOf } from "./analyze.js";
@@ -462,10 +470,14 @@ function chooseWall<C extends WallChoice>(
   shapeFits: (e: RectEdge) => boolean,
   isFree: (c: WallChoice) => boolean,
   walls: readonly RWall[],
+  /** Do two candidates make the same move (two collinear runs behind one edge)? */
+  sameMove: (a: C, b: C) => boolean,
 ): { pick: C; words: string } {
   const sorted = [...near].sort(wallChoiceOrder(shapeFits, isFree));
   const pick = sorted[0]!;
-  const next = sorted[1];
+  // The words name the key that separated the pick from the best candidate that would have
+  // done something else; a twin run behind the same edge decides nothing.
+  const next = sorted.find((c) => !sameMove(c, pick));
   const w = walls.find((x) => x.id === pick.wallId);
   const name = w ? wallPhraseOf(w) : `wall "${pick.wallId}"`;
   const words =
@@ -548,6 +560,7 @@ function computeFloatingSnap(
     (e) => shape.includes(e),
     (c) => free.has(c),
     walls,
+    (a, b) => a.dx === b.dx && a.dy === b.dy,
   );
   const edges = RECT_EDGES.filter((e) => near.some((c) => c.edge === e));
   return { dx: pick.dx, dy: pick.dy, tie: { edges, words } };
@@ -819,6 +832,8 @@ function nextFix(fr: BBox, ctx: FixCtx): NextFix {
  *  reason back to check that a piece it gave it to really ended off the stair. */
 const STAIR_REASON = "moved off the stair's flight or landing";
 const STAIR_PROBLEM = "stands on a stair's flight or landing";
+/** The note for a piece whose move off a stair a later fix undid. */
+const STAIR_UNDONE = `${STAIR_PROBLEM}, and every way off it that repair found ran into another fault (a wall, a doorway, another piece) — left in place; move it by hand`;
 
 /**
  * The orientation verdict for a fixture standing at `fr` with quarter-turn `rotate`:
@@ -890,6 +905,7 @@ function orientationVerdict(
       () => true,
       () => true,
       walls,
+      (a, b) => a.edge === b.edge,
     );
     target = pick.edge;
     const to = rotateForBackEdge(target);
@@ -1235,7 +1251,11 @@ const isGarageDoor = (d: RDoor | ROpening): boolean => d.kind === "door" && d.do
  *   * `wall|a` — a piece into a wall solid past the slack (`W_FURNITURE_WALL_COLLISION`);
  *   * `doorway|d|a` — a piece in door or cased opening `d`'s clear landing (`W_DOORWAY_BLOCKED`;
  *     an opening wider than a doorway only while it is blocked, `openingBlock`);
- *   * `swing|d|a` — a piece in door `d`'s swing, with clearance (`W_SWING_OBSTRUCTED`).
+ *   * `swing|d|a` — a piece in door `d`'s swing, with clearance (`W_SWING_OBSTRUCTED`);
+ *   * `stair|s|a` — a piece on stair `s`'s flight or a landing it owes, as
+ *     `W_FURNITURE_ON_STAIR` reads it ({@link onStairZones}, {@link zoneReads}); only when the
+ *     caller passes the storey's stair floor (repair does, `finish`/`furnish` do not: their own
+ *     lint comparison already refuses a new `W_FURNITURE_ON_STAIR`).
  *
  * `test/helpers/repair-conflicts.ts` re-derives the same census from the lint side, independently.
  */
@@ -1244,6 +1264,7 @@ function hardConflictsOf(
   walls: RWall[],
   doors: RDoor[],
   cased: ROpening[] = [],
+  stairs: readonly StairZone[] = [],
 ): Map<string, HardConflict> {
   const out = new Map<string, HardConflict>();
   const rect = (f: RFurniture): BBox => ({ x: f.at.x, y: f.at.y, w: f.size.w, h: f.size.h });
@@ -1282,6 +1303,33 @@ function hardConflictsOf(
         out.set(`swing|${d.id}|${f.id}`, { refs: [f.id], would: () => `put it in door "${d.id}"'s swing` });
     }
   }
+  for (const f of furniture)
+    for (const z of stairs)
+      if (zoneReads(z, f.category) && rectsOverlap(rect(f), z.rect)) {
+        const s = z.sf.v.id;
+        out.set(`stair|${s}|${f.id}`, { refs: [f.id], would: () => `put it on stair "${s}"` });
+      }
+  return out;
+}
+
+/**
+ * Each storey's stair floor as `W_FURNITURE_ON_STAIR` reads it ({@link onStairZones}), keyed by
+ * level (`undefined` for a single-storey plan), read with the building `lint()` reads the storey
+ * in, so the head of a flight arriving from below is on it. Empty for a plan with no stair.
+ */
+function stairFloorsOf(ir: ResolvedPlan, levels: readonly ResolvedLevel[]): Map<number | undefined, StairZone[]> {
+  const out = new Map<number | undefined, StairZone[]>();
+  const storeys: Array<{ level?: number; ir: ResolvedPlan }> =
+    levels.length > 0 ? levels.map((l) => ({ level: l.level, ir: l.ir })) : [{ ir }];
+  if (!storeys.some((st) => verticalsOf(st.ir).some((v) => v.kind === "stair"))) return out;
+  const buildings = new Map<number | undefined, BuildingContext | undefined>(
+    lintStoreys(ir, levels, DEFAULT_RULESET.tolMm).map((s) => [s.level, s.building] as const),
+  );
+  for (const st of storeys)
+    out.set(
+      st.level,
+      onStairZones(buildLintContext(st.ir, DEFAULT_RULESET, LINT_RULES, buildings.get(st.level)))?.zones ?? [],
+    );
   return out;
 }
 
@@ -1292,19 +1340,20 @@ export interface SourceConflicts {
   at: Map<string, { x: number; y: number }>;
 }
 
-export function sourceConflicts(source: string, opts: AnalyzeOptions = {}): SourceConflicts {
+export function sourceConflicts(source: string, opts: AnalyzeOptions = {}, withStairs = false): SourceConflicts {
   const { ir, levels } = resolvePlan(source, opts);
   const conflicts: SourceConflicts["conflicts"] = new Map();
   const at: SourceConflicts["at"] = new Map();
   const storeys: Array<{ level?: number; ir: ResolvedPlan }> =
     levels.length > 0 ? levels.map((l) => ({ level: l.level, ir: l.ir })) : ir ? [{ ir }] : [];
+  const floors = withStairs && ir ? stairFloorsOf(ir, levels) : new Map<number | undefined, StairZone[]>();
   for (const st of storeys) {
     const level = `${st.level ?? ""}`;
     const furniture = st.ir.elements.filter((e): e is RFurniture => e.kind === "furniture");
     for (const f of furniture) at.set(`${level}|${f.id}`, f.at);
     const doors = st.ir.elements.filter((e): e is RDoor => e.kind === "door");
     const cased = st.ir.elements.filter((e): e is ROpening => e.kind === "opening");
-    for (const [k, c] of hardConflictsOf(furniture, st.ir.walls, doors, cased))
+    for (const [k, c] of hardConflictsOf(furniture, st.ir.walls, doors, cased, floors.get(st.level) ?? []))
       conflicts.set(`${level}|${k}`, { ...c, level });
   }
   // A broken hard keep (ADR 0033, `W_KEEP_VIOLATED`) counts in the no-worse law as every
@@ -1352,50 +1401,109 @@ function culpritsOf(before: SourceConflicts, after: SourceConflicts): Map<string
   return out;
 }
 
-/** Each piece of a source, keyed `${level}|${resolved id}`: its footprint, and the room it
- *  belongs to (the one it declares, else the rectangular or polygon room whose floor holds its
- *  centre, first in element order; a circular room is not read). */
-type Homes = Map<string, { rect: BBox; home?: { box: RoomBox; name: string } }>;
+/** Each piece of a source, keyed `${level}|${resolved id}`, with its footprint; and each
+ *  storey's rooms and walls, keyed by level. */
+interface Homes {
+  pieces: Map<string, { rect: BBox; level: string; room?: string }>;
+  storeys: Map<string, { rooms: RRoom[]; walls: RWall[] }>;
+}
 
 function homesOf(source: string): Homes {
   const { ir, levels } = resolvePlan(source);
-  const out: Homes = new Map();
+  const out: Homes = { pieces: new Map(), storeys: new Map() };
   const storeys: Array<{ level?: number; ir: ResolvedPlan }> =
     levels.length > 0 ? levels.map((l) => ({ level: l.level, ir: l.ir })) : ir ? [{ ir }] : [];
   for (const st of storeys) {
-    const rooms = st.ir.elements.filter((e): e is RRoom => e.kind === "room" && !e.circle);
+    const level = `${st.level ?? ""}`;
+    out.storeys.set(level, {
+      rooms: st.ir.elements.filter((e): e is RRoom => e.kind === "room"),
+      walls: st.ir.walls,
+    });
     for (const e of st.ir.elements) {
       if (e.kind !== "furniture") continue;
       const f = e as RFurniture;
-      const rect = { x: f.at.x, y: f.at.y, w: f.size.w, h: f.size.h };
-      const c = { x: rect.x + rect.w / 2, y: rect.y + rect.h / 2 };
-      const room =
-        f.room !== undefined ? rooms.find((r) => r.id === f.room) : rooms.find((r) => pointInRoomBox(c, roomBox(r)));
-      out.set(`${st.level ?? ""}|${f.id}`, {
-        rect,
-        ...(room ? { home: { box: roomBox(room), name: room.label ?? room.id } } : {}),
+      out.pieces.set(`${level}|${f.id}`, {
+        rect: { x: f.at.x, y: f.at.y, w: f.size.w, h: f.size.h },
+        level,
+        ...(f.room !== undefined ? { room: f.room } : {}),
       });
     }
   }
   return out;
 }
 
+/** Is the footprint on floor some room covers: its centre and its four corners (each taken in by
+ *  100 mm, the overhang a piece pushed flush to a wall face legitimately has), each on the
+ *  floor of a room, not necessarily the same one (an open-plan pair, an L-shaped room's nook)? */
+function onSomeFloor(r: BBox, rooms: readonly RRoom[]): boolean {
+  const m = Math.min(100, r.w / 2, r.h / 2);
+  const pts: Point[] = [
+    { x: r.x + r.w / 2, y: r.y + r.h / 2 },
+    { x: r.x + m, y: r.y + m },
+    { x: r.x + r.w - m, y: r.y + m },
+    { x: r.x + m, y: r.y + r.h - m },
+    { x: r.x + r.w - m, y: r.y + r.h - m },
+  ];
+  const on = (p: Point): boolean =>
+    rooms.some((room) =>
+      room.circle
+        ? (p.x - room.circle.c.x) ** 2 + (p.y - room.circle.c.y) ** 2 <= room.circle.r ** 2
+        : pointInRoomBox(p, roomBox(room)),
+    );
+  return pts.every(on);
+}
+
+/** The wall a move from `p` to `q` (the piece's centre before and after) crosses, outside every
+ *  door and cased opening in it, or null. A curved run is not read: its chord is not the wall. */
+function wallCrossed(p: Point, q: Point, walls: readonly RWall[]): RWall | null {
+  const dx = q.x - p.x;
+  const dy = q.y - p.y;
+  for (const w of walls)
+    for (const s of segmentsOfWall(w)) {
+      if (s.arc) continue;
+      const ex = s.b.x - s.a.x;
+      const ey = s.b.y - s.a.y;
+      const den = dx * ey - dy * ex;
+      if (den === 0) continue; // parallel: a move along a wall does not cross it
+      const t = ((s.a.x - p.x) * ey - (s.a.y - p.y) * ex) / den;
+      const u = ((s.a.x - p.x) * dy - (s.a.y - p.y) * dx) / den;
+      if (t <= 0 || t >= 1 || u < 0 || u > 1) continue;
+      const x = { x: p.x + t * dx, y: p.y + t * dy };
+      const through = w.openings.some(
+        (o) => o.kind !== "window" && Math.hypot(x.x - o.at.x, x.y - o.at.y) <= o.width / 2,
+      );
+      if (!through) return w;
+    }
+  return null;
+}
+
 /**
- * The pieces to pin for leaving their room: each one that MOVED out of the room it stood in
- * (its footprint on that room's floor before, {@link rectInRoomBox}, and not after). No single
- * mover checks this: a push off a stairwell drawn against the shell lands in the wall, and the
- * wall push then clears it to the far side, out of the building, where no lint rule looks.
+ * The pieces to pin for leaving the building's floor: each one that MOVED from floor a room
+ * covers ({@link onSomeFloor}) onto floor none covers, or whose centre crossed a wall on the way
+ * ({@link wallCrossed}; through a doorway is not through a wall, nor is a move back onto the floor
+ * of the room the piece declares). Moving into the next room with
+ * no wall between (an open-plan pair, an L-shaped room's nook, a zone line) is not leaving. No
+ * single mover checks this: a push lands a piece in a wall, and the wall push then clears it to
+ * the far side, out of the building, where no lint rule looks.
  */
 function leftHomeOf(before: Homes, after: Homes): Map<string, string> {
   const out = new Map<string, string>();
-  for (const [k, a] of after) {
-    const b = before.get(k);
-    if (!b?.home || (b.rect.x === a.rect.x && b.rect.y === a.rect.y)) continue;
-    if (!rectInRoomBox(b.rect, b.home.box) || rectInRoomBox(a.rect, b.home.box)) continue;
-    out.set(
-      k,
-      `moving it to (${a.rect.x},${a.rect.y}) would take it out of "${b.home.name}", the room it stands in now — left in place; adjust manually`,
-    );
+  for (const [k, a] of after.pieces) {
+    const b = before.pieces.get(k);
+    const st = before.storeys.get(a.level);
+    if (!b || !st || (b.rect.x === a.rect.x && b.rect.y === a.rect.y)) continue;
+    const to = `moving it to (${a.rect.x},${a.rect.y}) would`;
+    if (onSomeFloor(b.rect, st.rooms) && !onSomeFloor(a.rect, st.rooms)) {
+      out.set(k, `${to} put it on floor no room covers — left in place; adjust manually`);
+      continue;
+    }
+    // The one move meant to cross a wall: a piece standing outside the room it declares, put
+    // back on that room's floor ("moved into its declared room").
+    const declared = a.room !== undefined ? st.rooms.find((r) => r.id === a.room && !r.circle) : undefined;
+    if (declared && !rectInRoomBox(b.rect, roomBox(declared)) && rectInRoomBox(a.rect, roomBox(declared))) continue;
+    const centre = (r: BBox): Point => ({ x: r.x + r.w / 2, y: r.y + r.h / 2 });
+    const w = wallCrossed(centre(b.rect), centre(a.rect), st.walls);
+    if (w) out.set(k, `${to} carry it through ${wallPhraseOf(w)} — left in place; adjust manually`);
   }
   return out;
 }
@@ -1479,8 +1587,10 @@ export function repair(source: string): RepairResult {
 /**
  * One run of the passes, held to **THE NO-WORSE LAW**: the source it returns has no hard
  * conflict its input did not ({@link hardConflictsOf} — no new `W_FURNITURE_OVERLAP`,
- * `W_FURNITURE_WALL_COLLISION`, `W_DOORWAY_BLOCKED` or `W_SWING_OBSTRUCTED` instance), and no
- * piece it moved has left the room it stood in ({@link leftHomeOf}).
+ * `W_FURNITURE_WALL_COLLISION`, `W_DOORWAY_BLOCKED`, `W_SWING_OBSTRUCTED` or
+ * `W_FURNITURE_ON_STAIR` instance), and no piece it moved went onto floor no room covers or
+ * through a wall ({@link leftHomeOf}); a piece whose move off a stair a later push undid is
+ * pinned too, so the pieces it pushed are back where the input has them.
  *
  * The movers each clear ONE fault while looking at part of the room: overlap separation
  * yields to EARLIER pieces only, so a piece can be pushed into a LATER one repair may not
@@ -1494,18 +1604,26 @@ export function repair(source: string): RepairResult {
  * pinned returns the input's positions, so this terminates.
  */
 function checkedRun(source: string, book: SpanBook, record: boolean): { r: RepairResult; settled: boolean } {
-  const before = sourceConflicts(source);
+  const before = sourceConflicts(source, {}, true);
   const homes = homesOf(source);
   const pins: Pins = new Map();
   for (;;) {
+    // A piece a pass moved off a stair that ended on it again (a later push put it back) is
+    // pinned like a culprit, so the run is repeated with it where the input has it and every
+    // piece it pushed on the way is back where the input has it too.
+    const stairFails: Pins = new Map();
     const r = settleOrbit(
       source,
       book,
-      (src, first) => ({ r: repairPass(src, book, record && first, pins), settled: false }),
+      (src, first) => ({ r: repairPass(src, book, record && first, pins, stairFails), settled: false }),
       "repair's passes did not settle",
     );
     let grew = false;
-    for (const [k, why] of [...culpritsOf(before, sourceConflicts(r.source)), ...leftHomeOf(homes, homesOf(r.source))])
+    for (const [k, why] of [
+      ...stairFails,
+      ...culpritsOf(before, sourceConflicts(r.source, {}, true)),
+      ...leftHomeOf(homes, homesOf(r.source)),
+    ])
       if (!pins.has(k)) {
         pins.set(k, why);
         grew = true;
@@ -1683,7 +1801,14 @@ function cycleNotes(members: string[], book: SpanBook): RepairNote[] {
  * reported; a piece that returns to a position it has already held is parked on the
  * canonical member of the cycle it is walking, and reported.
  */
-function repairPass(source: string, book: SpanBook, record: boolean, pins: Pins): RepairResult {
+function repairPass(
+  source: string,
+  book: SpanBook,
+  record: boolean,
+  pins: Pins,
+  /** Filled with the pieces whose move off a stair did not stand ({@link checkedRun} pins them). */
+  stairFails: Pins = new Map(),
+): RepairResult {
   const unresolved: RepairNote[] = [];
   const noted = new Set<string>();
   /**
@@ -1739,18 +1864,13 @@ function repairPass(source: string, book: SpanBook, record: boolean, pins: Pins)
           buildingRoomReach(inputs, DEFAULT_TOL),
         )
       : new Map<number, ArrivingRun[]>();
-  // The building each storey is linted in, read only when a storey has a stair, so the stair
-  // floor a piece is moved off is the one `W_FURNITURE_ON_STAIR` reads: on a multi-storey plan
-  // that includes the head of a flight arriving from below. A plan without a stair reads none.
-  const hasStair = storeys.some((st) => verticalsOf(st.ir).some((v) => v.kind === "stair"));
-  const buildings = new Map<number | undefined, BuildingContext | undefined>(
-    hasStair ? lintStoreys(ir, levels, DEFAULT_RULESET.tolMm).map((s) => [s.level, s.building] as const) : [],
-  );
+  // The stair floor a piece is moved off is the one `W_FURNITURE_ON_STAIR` reads: on a
+  // multi-storey plan that includes the head of a flight arriving from below. A plan without a
+  // stair reads none.
+  const floors = stairFloorsOf(ir, levels);
   const changes: RepairChange[] = [];
   for (const st of storeys) {
-    const stairs = hasStair
-      ? (onStairZones(buildLintContext(st.ir, DEFAULT_RULESET, LINT_RULES, buildings.get(st.level)))?.zones ?? [])
-      : [];
+    const stairs = floors.get(st.level) ?? [];
     const seenIds = new Set<string>();
     changes.push(
       ...repairStorey(
@@ -1764,6 +1884,7 @@ function repairPass(source: string, book: SpanBook, record: boolean, pins: Pins)
         st.level !== undefined ? (arrivals.get(st.level) ?? []) : [],
         pins,
         stairs,
+        stairFails,
       ),
     );
   }
@@ -1796,6 +1917,8 @@ function repairStorey(
   pins: Pins = new Map(),
   /** This storey's stair floor, as `W_FURNITURE_ON_STAIR` reads it ({@link onStairZones}). */
   stairs: readonly StairZone[] = [],
+  /** Filled with the pieces whose move off a stair did not stand ({@link repairPass}). */
+  stairFails: Pins = new Map(),
 ): RepairChange[] {
   const spanKeyFor = (id: string): string => `${level ?? ""}|${id}`;
   /** The span to report for `id`. The first round records each statement's ORIGINAL
@@ -2128,20 +2251,19 @@ function repairStorey(
   // ---- a move off a stair that did not get off it -----------------------------
   // A piece moved off a stair can be pushed back onto it by a later fix (a doorway's approach
   // beside the landing), and cycle there. Its log would then say "moved off the stair" of a
-  // piece still on it, so it is put back where the input has it and reported instead; the
-  // no-worse check sees to anything that had moved around it.
+  // piece still on it. It is handed to `stairFails`, and {@link checkedRun} pins it and runs
+  // again, so it stays where the input has it from the start and no piece it pushed on the
+  // way stays pushed; this pass puts it back too, so its own output never states the false
+  // reason.
   for (const p of pieces) {
     if (!p.reasons.includes(STAIR_REASON) || !onStair(p)) {
       if (p.heldNote !== undefined) note(p.id, p.heldNote, spanOf(p.id, p.f.span));
       continue;
     }
+    stairFails.set(spanKeyFor(irFurniture[p.ord]!.id), STAIR_UNDONE);
     p.cur = { ...p.orig };
     p.reasons = [];
-    note(
-      p.id,
-      `${STAIR_PROBLEM}, and every way off it that repair found ran into another fault (a wall, a doorway, another piece) — left in place; move it by hand`,
-      spanOf(p.id, p.f.span),
-    );
+    note(p.id, STAIR_UNDONE, spanOf(p.id, p.f.span));
   }
 
   // ---- realise every move -----------------------------------------------------

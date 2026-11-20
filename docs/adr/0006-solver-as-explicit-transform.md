@@ -88,15 +88,18 @@ repair now resolves those ties by a published order, and the change log says whi
   piece's catalogued size lets it back onto, then a free destination (the footprint lands clear of
   every other piece and inside the piece's room), then the smallest wall id (digit runs read as
   numbers, so `partition_2` sorts before `partition_10`), then the run of that wall written first
-  in its points.
+  in its points, then edge order (top, bottom, left, right).
 - **Corner turn** (`orientationVerdict`): only the walls the piece's size lets it back onto are
   candidates; among them the nearest face behind its edge, then the smallest wall id, then the run
-  written first.
+  written first, then edge order.
 
-Each change's `reason` names the deciding key. The order is total, so every such tie has one
-answer; when that answer would put the piece onto another piece or out of its room, the no-worse
-check holds the piece where it stands and reports it in `unresolved`, as before. Whatever the
-mover, that check now also keeps every piece inside the room it stands in (`leftHomeOf`). A move
+Each change's `reason` names the key that separated the pick from the best candidate making a
+different move. The order is total, so every such tie has one answer; when that answer would put
+the piece onto another piece, onto a stair or into a wall, the no-worse check holds the piece where
+it stands and reports it in `unresolved`, as before. Whatever the mover, that check now also never
+lets a piece onto floor no room covers, nor through a wall (`leftHomeOf`); moving into the next
+room where no wall stands between them is allowed. A piece on a stair is a key of repair's census
+(`stair|s|a`, `hardConflictsOf`), so no mover parks a piece on one. A move
 off a stair (`computeZonesPush`) is a different case and is not ordered: only a move that does not
 put the piece into a wall counts, and an exact tie between two such moves, or no such move, is
 refused and reported.

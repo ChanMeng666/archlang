@@ -513,7 +513,7 @@ describe("arch repair — what a choice may not do (RM9.11)", () => {
     expect(r.unresolved.some((u) => u.reason.includes("parked"))).toBe(false);
   });
 
-  it("keeps a moved piece inside the room it stands in", () => {
+  it("never moves a piece onto floor no room covers, nor through a wall", () => {
     // The top wall is nearer by 50 mm, but the bathtub stands there: the overlap push takes the
     // basin into the shell and the wall push clears it to the far side, out of the building.
     // main shipped (900,-600) with lint silent; the no-worse check now holds it.
@@ -521,9 +521,70 @@ describe("arch repair — what a choice may not do (RM9.11)", () => {
     const r = repair(src);
     expect(r.changes).toEqual([]);
     expect(r.unresolved.map((u) => u.reason)).toEqual([
-      'moving it to (900,-600) would take it out of "Bath", the room it stands in now — left in place; adjust manually',
+      "moving it to (900,-600) would put it on floor no room covers — left in place; adjust manually",
     ]);
     expect(r.source).toBe(src);
+    // With no room drawn at all, the crossing of the shell is what holds it.
+    const bare = src.replace(/\n\s*room id=r[^\n]*/, "");
+    expect(repair(bare).unresolved.map((u) => u.reason)).toEqual([
+      'moving it to (900,-600) would carry it through wall "ext" — left in place; adjust manually',
+    ]);
+  });
+
+  it("lets a move cross into the next room where no wall stands between them", () => {
+    // An open-plan kitchen and dining room: the chair is pushed 300 mm across the zone line, as
+    // main pushed it; the room check fires only off every room's floor or through a wall.
+    const src = `plan "Open" {
+  units mm
+  grid 50
+  wall id=ext exterior thickness 200 { (0,0) (8000,0) (8000,4000) (0,4000) close }
+  room id=kitchen at (0,0) size 4000x4000 label "Kitchen" uses kitchen
+  room id=dining at (4000,0) size 4000x4000 label "Dining" uses dining
+  door at (6000,4000) width 900 wall exterior hinge left swing out
+  furniture table at (2800,1000) size 800x800
+  furniture chair at (3300,1100) size 600x600
+}`;
+    const r = repair(src);
+    expect(r.changes.map((c) => [c.id, c.to, c.reason])).toEqual([
+      ["chair#2", { x: 3600, y: 1100 }, "separated from an overlapping piece"],
+    ]);
+    expect(r.unresolved).toEqual([]);
+  });
+
+  it("returns every piece a failed move off a stair pushed, and parks none on the stair (q5b)", () => {
+    for (const plant of ["(700,5150) size 300x150", "(100,5150) size 300x150"]) {
+      const src = well("", {
+        l1: `furniture id=cab cabinet at (100,4300) size 900x500\n    furniture id=nb plant at ${plant}`,
+      });
+      const onStair = (s: string) => lint(s).filter((d) => d.code === "W_FURNITURE_ON_STAIR").length;
+      const r = repair(src);
+      expect(r.changed, plant).toBe(false);
+      expect(r.source, plant).toBe(src);
+      expect(onStair(r.source), plant).toBe(onStair(src));
+      expect(r.unresolved.find((u) => u.id === "cab")?.reason, plant).toBe(
+        "stands on a stair's flight or landing, and every way off it that repair found ran into another fault (a wall, a doorway, another piece) — left in place; move it by hand",
+      );
+    }
+  });
+
+  it("names the key that decided against a different move, not a twin run behind the same edge (q3)", () => {
+    // The top run is drawn as two collinear walls `t1`, `t2`; the left wall `a` (smallest id)
+    // has a bathtub on it. The top wins because its side is free, not because `t1` < `t2`.
+    const src = `plan "P" {
+  units mm
+  grid 50
+  wall id=a partition thickness 200 { (0,0) (0,4000) }
+  wall id=t1 partition thickness 200 { (0,0) (1150,0) }
+  wall id=t2 partition thickness 200 { (1150,0) (4000,0) }
+  wall id=rest partition thickness 200 { (4000,0) (4000,4000) (0,4000) }
+  room id=r at (0,0) size 4000x4000 label "Bath" uses bath
+  door id=d1 at (3000,4000) width 900 wall rest hinge left swing out
+  furniture bathtub at (100,300) size 700x1700
+  furniture basin at (900,900) size 500x500
+}`;
+    const moved = repair(src).changes.find((c) => c.kind === "moved")!;
+    expect(moved.to).toEqual({ x: 900, y: 100 });
+    expect(moved.reason).toContain('took wall "t1", the one whose side of the room is free');
   });
 
   it("breaks a tie toward the wall whose side of the room is free", () => {
