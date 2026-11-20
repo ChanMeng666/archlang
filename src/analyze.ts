@@ -960,15 +960,19 @@ export function buildingGround(
   const kept = (): ReadonlySet<number> => {
     if (keep !== null) return keep;
     const flagged = levels.filter((l) => onRoof(l.level).size > 0);
-    if (flagged.length === 0) return (keep = new Set());
+    if (flagged.length === 0) {
+      keep = new Set();
+      return keep;
+    }
     const reached = verticalReach(
       levels,
       strict,
       buildingRoomReach(levels, tol, (lv) => (strict(lv) ? onRoof(lv) : NO_ROOF)),
     ).reachable;
-    return (keep = new Set(
+    keep = new Set(
       flagged.filter((l) => !strict(l.level) && !reached.has(l.level) && storeyGrounded(l.ir, tol)).map((l) => l.level),
-    ));
+    );
+    return keep;
   };
   const notWayIn = (level: number): ReadonlyMap<string, number> => (kept().has(level) ? NO_ROOF : onRoof(level));
   return {
