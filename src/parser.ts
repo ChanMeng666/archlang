@@ -2106,11 +2106,14 @@ class Parser {
       return { kind: "error", id: "", line: t.line, message: msg };
     }
     // A fixed word (`for`, `zone`, `keep`, and the plan-level ones a block refuses): its handler
-    // reads it, or refuses it where it stands (AF4, {@link bodyForms}).
+    // reads it, or refuses it where it stands (AF4, {@link bodyForms}). A refusal's error node is
+    // returned as it was built, with no span, as every refusal here has always returned it.
     const form = this.bodyForms.get(t.value);
     let node: Statement;
-    if (form) node = form.read(start, t, components, selfName);
-    else {
+    if (form) {
+      node = form.read(start, t, components, selfName);
+      if (node.kind === "error") return node;
+    } else {
       const found = this.registry.byKeyword.get(t.value);
       // A contextual keyword starts its element only where the element says (`section A (`).
       const def = found && (!found.contextual || found.contextual(this.ctx)) ? found : undefined;
