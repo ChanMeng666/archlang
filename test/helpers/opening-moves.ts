@@ -38,6 +38,22 @@ export const AF9_PLANS = {
   par: plan("par", ...PAIR, WALLS, "door between a and b at 600 from a.left width 800"),
   nopos: plan("nopos", ...PAIR, WALLS, "door between a and b width 800", "door between a and b at 600 width 800"),
   pct: plan("pct", ...PAIR, WALLS, "door between a and b at 40% width 800"),
+  /** Red team S1: a 900 mm cased opening in a 950 mm bay (a partition at y 1100), and in a bay it
+   *  fills jamb to jamb (a partition at y 1050). */
+  casedNarrowBay: plan(
+    "cased-narrow-bay",
+    ...PAIR,
+    WALLS,
+    "wall partition thickness 100 { (4000,1100) (7000,1100) }",
+    "opening between a and b at 575 from start width 900",
+  ),
+  casedFillsBay: plan(
+    "cased-fills-bay",
+    ...PAIR,
+    WALLS,
+    "wall partition thickness 100 { (4000,1050) (7000,1050) }",
+    "opening between a and b at 500 from start width 900",
+  ),
   /** A room with one exterior edge (`b`, its top): a window on its partition moves there. */
   oneEdge: plan(
     "one-edge",
@@ -76,6 +92,7 @@ export const WATCHED = [
   "W_SWING_OBSTRUCTED",
   "W_DOORWAY_BLOCKED",
   "W_HOB_UNDER_WINDOW",
+  "W_FURNITURE_OVER_WINDOW",
 ] as const;
 
 /** Every diagnostic `arch fix` reads: `compile()`'s, then `lint()`'s when it compiles. */
@@ -324,3 +341,41 @@ export const AF9_NEAR_MISS: ReadonlyArray<{ name: string; src: string }> = [
     ),
   },
 ];
+
+/** What a fuzz run over `sources` saw: the fixes judged, the property failures, the watched warnings. */
+export interface FuzzReport {
+  cases: number;
+  fixes: number;
+  byCode: Record<string, number>;
+  /** Fixes judged per source plan, its twins included. */
+  bySource: Record<string, number>;
+  failures: string[];
+  /** Fixes that leave an error or a new watched warning: applied as if machine-applicable, wrong. */
+  wrong: number;
+  newWarnings: Record<string, number>;
+}
+
+/**
+ * The design's §9 item 3 run: each source and at most `perPlan` of its shifted twins, every
+ * maybe-incorrect AF9 fix applied alone and judged ({@link judgeFix}). One body for the test's
+ * bounded run and the PR's full count.
+ */
+export function fuzzRun(sources: ReadonlyArray<{ name: string; src: string }>, perPlan: number): FuzzReport {
+  const r: FuzzReport = { cases: 0, fixes: 0, byCode: {}, bySource: {}, failures: [], wrong: 0, newWarnings: {} };
+  for (const { name, src } of sources) {
+    for (const c of [{ name, src }, ...fuzzCases(name, src)].slice(0, perPlan + 1)) {
+      r.cases++;
+      for (const { d, f } of af9Fixes(c.src)) {
+        r.fixes++;
+        r.byCode[d.code!] = (r.byCode[d.code!] ?? 0) + 1;
+        r.bySource[name] = (r.bySource[name] ?? 0) + 1;
+        const v = judgeFix(c.src, d, f, src);
+        for (const k of ["gone", "fewerErrors", "landed", "sameRooms", "settled"] as const)
+          if (!v[k]) r.failures.push(`${c.name} ${d.code} ${k}: ${f.title}`);
+        for (const w of v.newWarnings) r.newWarnings[w] = (r.newWarnings[w] ?? 0) + 1;
+        if (v.errors.length > 0 || v.newWarnings.length > 0) r.wrong++;
+      }
+    }
+  }
+  return r;
+}

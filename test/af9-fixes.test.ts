@@ -19,17 +19,14 @@
 
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
-import { compile, type Diagnostic, type FixSuggestion, lint } from "../src/index.js";
-import {
-  AF9_FIX_IDS,
-  AF9_PLANS,
-  af9Fixes,
-  fuzzCases,
-  judgeFix,
-  openingsOf,
-  paste,
-  plan,
-} from "./helpers/opening-moves.js";
+import { compile, type Diagnostic, lint } from "../src/index.js";
+import { link } from "../src/import.js";
+import { evaluationSteps, resolveAll } from "../src/ir.js";
+import { parse } from "../src/parser.js";
+import { BUILTIN_REGISTRY } from "../src/registry.js";
+import { makeVirtualWorld } from "../src/world.js";
+import { AF9_FIX_IDS, AF9_PLANS, fuzzRun, openingsOf, paste, plan } from "./helpers/opening-moves.js";
+import { reach } from "./helpers/import-walk.js";
 import { corpusFiles } from "./helpers/corpus.js";
 import { FC_SCALE, runs } from "./setup/fast-check.js";
 
@@ -59,7 +56,7 @@ describe("AF9: the design's plans (§2)", () => {
   it("E_OPENING_NIB: the nearest legal centre, as one maybe-incorrect move that pastes clean", () => {
     const src = AF9_PLANS.nib;
     const d = one(src, "E_OPENING_NIB");
-    expect(edits(src, d)).toEqual([[" at 500 from start", " at 600 from start", "maybe-incorrect"]]);
+    expect(edits(src, d)).toEqual([["at 500 from start", "at 600 from start", "maybe-incorrect"]]);
     expect(d.hints).toEqual(["The nearest legal position is `between a and b at 600 from start` (centre at y 600)."]);
     const out = paste(src, d.fixes![0]!);
     expect(errors(out)).toEqual([]);
@@ -70,8 +67,8 @@ describe("AF9: the design's plans (§2)", () => {
     const src = AF9_PLANS.nibTie;
     const d = one(src, "E_OPENING_NIB");
     expect(edits(src, d)).toEqual([
-      [" at 1500 from start", " at 950 from start", "maybe-incorrect"],
-      [" at 1500 from start", " at 2050 from start", "maybe-incorrect"],
+      ["at 1500 from start", "at 950 from start", "maybe-incorrect"],
+      ["at 1500 from start", "at 2050 from start", "maybe-incorrect"],
     ]);
     expect(d.hints).toEqual([
       "Two positions are equally near, 550 mm either way: `between a and b at 950 from start` (centre at y 950) and `between a and b at 2050 from start` (centre at y 2050).",
@@ -89,15 +86,33 @@ describe("AF9: the design's plans (§2)", () => {
   it("F2: a cased opening is offered its flush jamb, the nearest centre that compiles", () => {
     const src = AF9_PLANS.flush;
     const d = one(src, "E_OPENING_NIB");
-    expect(edits(src, d)).toEqual([[" at 450 from start", " at 500 from start", "maybe-incorrect"]]);
+    expect(edits(src, d)).toEqual([["at 450 from start", "at 500 from start", "maybe-incorrect"]]);
     expect(d.hints![0]).toContain("`between a and b at 500 from start` (centre at y 500)");
     expect(errors(paste(src, d.fixes![0]!))).toEqual([]);
+  });
+
+  // Red team S1: a flush centre that the far jamb's nib refuses no longer stands for a legal one.
+  it("S1: a cased opening too wide for its bay is offered the next bay's flush centre, judged first", () => {
+    const src = AF9_PLANS.casedNarrowBay;
+    const d = one(src, "E_OPENING_NIB");
+    expect(edits(src, d)).toEqual([["at 575 from start", "at 1600 from start", "maybe-incorrect"]]);
+    expect(centreOf(paste(src, d.fixes![0]!), "y")).toBe(1600);
+  });
+
+  it("S1: a cased opening that fills its bay jamb to jamb is offered that flush centre", () => {
+    const src = AF9_PLANS.casedFillsBay;
+    const d = one(src, "E_OPENING_NIB");
+    expect(edits(src, d)).toEqual([["at 500 from start", "at 550 from start", "maybe-incorrect"]]);
+    expect(d.hints).toEqual(["The nearest legal position is `between a and b at 550 from start` (centre at y 550)."]);
+    const out = paste(src, d.fixes![0]!);
+    expect(errors(out)).toEqual([]);
+    expect(centreOf(out, "y")).toBe(550);
   });
 
   it("E_OPENING_HOST_AMBIGUOUS on a room's edge: each exterior wall's position, saying it replaces `at center`", () => {
     const src = AF9_PLANS.extPart;
     const d = one(src, "E_OPENING_HOST_AMBIGUOUS");
-    expect(edits(src, d)).toEqual([["on a.right at center", "on a.right at 2100 from start", "maybe-incorrect"]]);
+    expect(edits(src, d)).toEqual([["at center", "at 2100 from start", "maybe-incorrect"]]);
     expect(d.fixes![0]!.title).toContain("replaces `at center` with a fixed offset");
     const out = paste(src, d.fixes![0]!);
     expect(errors(out)).toEqual([]);
@@ -107,9 +122,7 @@ describe("AF9: the design's plans (§2)", () => {
   it("E_OPENING_NO_SHARED_WALL: a door on a partition becomes `between` the two rooms, in the same wall", () => {
     const src = AF9_PLANS.extDoor;
     const d = one(src, "E_OPENING_NO_SHARED_WALL");
-    expect(edits(src, d)).toEqual([
-      ["on a.right at 1500 from start", "between a and b at 1500 from start", "maybe-incorrect"],
-    ]);
+    expect(edits(src, d)).toEqual([["on a.right", "between a and b", "maybe-incorrect"]]);
     const out = paste(src, d.fixes![0]!);
     expect(errors(out)).toEqual([]);
     expect(centreOf(out, "y")).toBe(1500);
@@ -118,7 +131,7 @@ describe("AF9: the design's plans (§2)", () => {
   it("E_OPENING_NO_SHARED_WALL: a window gets the room's one exterior edge, or the skeleton when it has several", () => {
     const one1 = AF9_PLANS.oneEdge;
     const d = one(one1, "E_OPENING_NO_SHARED_WALL");
-    expect(edits(one1, d)).toEqual([["on b.left", "on b.top", "maybe-incorrect"]]);
+    expect(edits(one1, d)).toEqual([["b.left", "b.top", "maybe-incorrect"]]);
     expect(d.hints).toEqual(["Place it on an edge of the room that faces outside."]);
     const out = paste(one1, d.fixes![0]!);
     expect(errors(out)).toEqual([]);
@@ -126,7 +139,7 @@ describe("AF9: the design's plans (§2)", () => {
 
     const many = AF9_PLANS.ext;
     const e = one(many, "E_OPENING_NO_SHARED_WALL");
-    expect(edits(many, e)).toEqual([["on a.right", 'on <exterior edge of "a">', "has-placeholders"]]);
+    expect(edits(many, e)).toEqual([["a.right", '<exterior edge of "a">', "has-placeholders"]]);
     expect(e.fixes![0]!.title).toContain("(a.top, a.bottom, a.left)");
     // A placeholder is never applied.
     expect(paste(many, e.fixes![0]!)).toBe(many);
@@ -149,14 +162,14 @@ describe("AF9: the design's plans (§2)", () => {
     expect(edits(nopos, ds[1]!)).toEqual([["", " from <start or end>", "has-placeholders"]]);
     expect(nopos.slice(0, ds[1]!.fixes![0]!.edits[0]!.span.start).endsWith("at 600")).toBe(true);
     const pct = one(AF9_PLANS.pct, "E_OPENING_DATUM");
-    expect(edits(AF9_PLANS.pct, pct)).toEqual([[" at 40%", " at <mm> from <start or end>", "has-placeholders"]]);
+    expect(edits(AF9_PLANS.pct, pct)).toEqual([["at 40%", "at <mm> from <start or end>", "has-placeholders"]]);
   });
 
   it("W_DOORWAY_BLOCKED: the door moved along its bay only where its landing and its swing are both clear", () => {
     const src = AF9_PLANS.blocked;
     const d = one(src, "W_DOORWAY_BLOCKED");
     // 2400 and 3600 are equally near; at 3600 the swing still meets the WC, so only 2400 is offered.
-    expect(edits(src, d)).toEqual([["on shell at 3000", "on shell at 2400", "maybe-incorrect"]]);
+    expect(edits(src, d)).toEqual([["at 3000", "at 2400", "maybe-incorrect"]]);
     const after = lint(paste(src, d.fixes![0]!)).map((x) => x.code);
     expect(after).not.toContain("W_DOORWAY_BLOCKED");
     expect(after).not.toContain("W_SWING_OBSTRUCTED");
@@ -260,6 +273,27 @@ function oracleCases(): OracleCase[] {
       grid: 0,
     });
   }
+  // A cased opening outside the wide bay (red team S1): too wide for a bay by a jamb's nib, or filling
+  // one jamb to jamb, on the plan's grid or none.
+  for (const [y, written, grid] of [
+    [1100, 575, 0],
+    [1050, 500, 0],
+    [1100, 600, 50],
+    [1050, 450, 50],
+  ] as const) {
+    out.push({
+      name: `cased opening, partition at y ${y}, ${written} grid ${grid}`,
+      src: shell(3000, "opening", 900, [`wall partition thickness 100 { (4000,${y}) (7000,${y}) }`], grid),
+      written,
+      walls: [
+        [-100, 100],
+        [y - 50, y + 50],
+        [2900, 3100],
+      ],
+      r1: 3000,
+      grid,
+    });
+  }
   // A free host end: an authored partition stopping short of the far ring.
   const free = (at: number) =>
     plan(
@@ -336,46 +370,76 @@ const FUZZ_PLANS = [
 
 describe("AF9: the corpus fuzz (§9 item 3), bounded", () => {
   it("every maybe-incorrect AF9 fix, applied alone, clears its diagnostic, lands, and settles", () => {
-    const budget = runs(160);
+    // Each source and its first `PER_PLAN` shifted twins, so the bounded run reaches every plan.
+    const PER_PLAN = runs(16);
     const sources = [
-      ...Object.entries(AF9_PLANS).map(([n, s]) => ({ n: `af9:${n}`, s })),
+      ...Object.entries(AF9_PLANS).map(([n, s]) => ({ name: `af9:${n}`, src: s })),
       ...(FC_SCALE > 1
         ? corpusFiles().filter((f) => /^(examples|test\/fixtures|eval\/faults|eval\/goldens)\//.test(f))
         : FUZZ_PLANS
       )
-        .map((f) => ({ n: f, s: readFileSync(f, "utf8") }))
-        .filter((x) => !/^\s*import\b/m.test(x.s)),
+        .map((f) => ({ name: f, src: readFileSync(f, "utf8") }))
+        .filter((x) => !/^\s*import\b/m.test(x.src)),
     ];
-    let seen = 0;
-    let fixes = 0;
-    const counted: Record<string, number> = {};
-    for (const { n, s } of sources) {
-      for (const c of [{ name: n, src: s }, ...fuzzCases(n, s)]) {
-        if (seen >= budget) break;
-        seen++;
-        const fs: Array<{ d: Diagnostic; f: FixSuggestion }> = af9Fixes(c.src);
-        for (const { d, f } of fs) {
-          fixes++;
-          const v = judgeFix(c.src, d, f, s);
-          const where = `${c.name} ${d.code}: ${f.title}`;
-          expect(v.gone, where).toBe(true);
-          expect(v.fewerErrors, where).toBe(true);
-          expect(v.landed, where).toBe(true);
-          expect(v.sameRooms, where).toBe(true);
-          expect(v.settled, where).toBe(true);
-          for (const w of v.newWarnings) counted[w] = (counted[w] ?? 0) + 1;
-        }
-      }
+    const r = fuzzRun(sources, PER_PLAN);
+    expect(r.failures).toEqual([]);
+    for (const f of FUZZ_PLANS) expect(r.bySource[f] ?? 0, f).toBeGreaterThan(0);
+    if (FC_SCALE === 1) {
+      // Counted, never failed (design §9 item 3): applied as if machine-applicable, a move that
+      // leaves an error or a new watched warning is wrong. The PR states the full corpus's count.
+      expect({ fixes: r.fixes, byCode: r.byCode, wrong: r.wrong, newWarnings: r.newWarnings }).toEqual(PR_SCALE);
     }
-    expect(fixes).toBeGreaterThan(10);
-    // Counted, never failed: the watched warnings a move leaves (design §9 item 3).
-    expect(typeof counted).toBe("object");
   }, 120_000);
 });
+
+/** The bounded run's count, measured with `fuzzRun` (`test/helpers/opening-moves.ts`). */
+const PR_SCALE = {
+  fixes: 85,
+  byCode: {
+    E_OPENING_DATUM: 8,
+    E_OPENING_HOST_AMBIGUOUS: 1,
+    E_OPENING_NIB: 38,
+    E_OPENING_NO_SHARED_WALL: 8,
+    W_DOORWAY_BLOCKED: 30,
+  },
+  // One nib move (`examples/remodel.arch`) lands where a swing and a doorway's landing meet furniture.
+  wrong: 1,
+  newWarnings: { W_DOORWAY_BLOCKED: 1, W_SWING_OBSTRUCTED: 1 },
+};
 
 // ─── 4. the bound ─────────────────────────────────────────────────────────────────────
 
 describe("AF9: refusal paths are charged and bounded", () => {
+  const steps = (src: string): number => {
+    const world = makeVirtualWorld({});
+    return evaluationSteps(
+      resolveAll(link(parse(src, BUILTIN_REGISTRY).plan!, world, BUILTIN_REGISTRY).plan, BUILTIN_REGISTRY, world),
+    );
+  };
+  const P = AF9_PLANS;
+  /** Each refusal's steps beyond the same plan with the written position its fix offers: what the
+   *  refusal path charges, the AF9 search included (`nibMoves`, `otherEdge`, the datum swap, and
+   *  each candidate judged by `judgeLanding`). Measured; a charge removed or added moves its row. */
+  const REFUSAL_COST: Array<[string, string, string, number]> = [
+    ["nib (nibMoves)", P.nib, P.nib.replace("at 500 from start", "at 600 from start"), 104],
+    ["nib on a tee", P.nibTie, P.nibTie.replace("at 1500 from start", "at 950 from start"), 139],
+    ["cased opening's flush jamb", P.flush, P.flush.replace("at 450 from start", "at 500 from start"), 139],
+    [
+      "cased opening past a narrow bay",
+      P.casedNarrowBay,
+      P.casedNarrowBay.replace("at 575 from start", "at 1600 from start"),
+      202,
+    ],
+    ["door on a partition (otherEdge)", P.extDoor, P.extDoor.replace("on a.right", "between a and b"), 74],
+    ["window, one exterior edge (otherEdge)", P.oneEdge, P.oneEdge.replace("on b.left", "on b.top"), 197],
+    ["window, several exterior edges (otherEdge)", P.ext, P.ext.replace("on a.right", "on a.top"), 106],
+    ["parallel datum edge (the datum swap)", P.par, P.par.replace("from a.left", "from a.top"), 74],
+  ];
+  it.each(REFUSAL_COST)("%s charges its pinned steps", (_n, refused, placed, cost) => {
+    expect(errors(placed)).toEqual([]);
+    expect(steps(refused) - steps(placed)).toBe(cost);
+  });
+
   it("many refused doors beside many meeting walls end in E_STEP_LIMIT, the same way each time", () => {
     const tees = Array.from(
       { length: 400 },
@@ -395,4 +459,18 @@ describe("AF9: refusal paths are charged and bounded", () => {
     expect(a).toEqual(b);
     expect(a).toContain("E_STEP_LIMIT");
   }, 120_000);
+});
+
+// ─── 5. off the compiler chunk ────────────────────────────────────────────────────────
+
+describe("AF9: the lint-only modules stay off the compile path (red team S3)", () => {
+  const LINT_ONLY = ["src/lint/doorway-move.ts", "src/lint/rules/doorway.ts", "src/lint/rules/openings.ts"];
+  it("src/compile-path.ts reaches none of them; the first use's path reaches each", () => {
+    const compilePath = reach("src/compile-path.ts");
+    expect(compilePath).toContain("src/opening-relation.ts");
+    expect(compilePath).toContain("src/lint/rules/doors.ts");
+    expect(LINT_ONLY.filter((f) => compilePath.includes(f))).toEqual([]);
+    const firstUse = reach("src/first-use-path.ts");
+    for (const f of LINT_ONLY) expect(firstUse, f).toContain(f);
+  });
 });

@@ -459,7 +459,7 @@ export const doorClearance: LintRule = {
  * ## On a curve
  *
  * The remaining wall is an **arc length, not a chord**, and the jambs are **radial** — so
- * the along-run coordinate comes from {@link arcOpeningVoid}, which is built on
+ * the along-run coordinate comes from `arcOpeningVoid` (`src/geometry/arc-band.ts`), which is built on
  * `arcAngleOffset`, the one rule in the codebase for "how far round is this?". Nothing
  * tessellates: the arc's facet count is a rendering decision and a measurement must not
  * move with it (the same reason a circular room's area is exact `piR^2`). The nib is

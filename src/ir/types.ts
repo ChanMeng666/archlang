@@ -422,10 +422,10 @@ export interface RDoor extends RBase {
    *  r.top at center`), in the frame it is written in: `describe()`, hints and Plan JSON quote
    *  it, never the internal name of its derived host. Internal. */
   _relation?: OpeningRelation;
-  /** The lead clause a `W_DOORWAY_BLOCKED` move rewrites (card AF9): `on <wall> at …`, `between … at …`
-   *  or `on <room>.<edge> at …`, present only when its position is a literal offset (a hosted lead keeps the
-   *  wall `on` names and the end `from` names). Internal: lint reads it; nothing draws or reports it. */
-  _lead?: { span: Span; on?: string; from?: "start" | "end" };
+  /** The `at <pos>` clause a `W_DOORWAY_BLOCKED` move rewrites (card AF9), present only when the
+   *  position is a literal offset (`from` names the end of a hosted wall it is measured from).
+   *  Internal: lint reads it; nothing draws or reports it. */
+  _lead?: { span: Span; from?: "start" | "end" };
   /**
    * The whole `door` statement re-emitted with the hinge on the OTHER jamb — the
    * machine-applicable fix text for `W_SWING_OBSTRUCTED`. Computed in `door.resolve`

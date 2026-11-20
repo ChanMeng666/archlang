@@ -672,15 +672,24 @@ interface OnRun {
 }
 
 /**
- * Where an AF9 fix writes a position: bytes `[start, end)` of the source, replaced by `lead` and
- * ` at <pos>`. On `between a and b` `lead` is empty and `start` is the end of the second room's
- * name; `on <room>.<edge>` is written out whole.
+ * Where an AF9 fix writes, in the source the statement is written in: the `at <pos>` clause when
+ * one is written, the lead before it (`between a and b`, or `on` and the edge's name), the edge's
+ * name alone (`on <room>.<edge>`), and the end of the whole clause, where a missing position is
+ * inserted. Every edit replaces one of these alone, so the author's spacing and every other byte
+ * stay as written. Absent for a statement of an imported module (its offsets are that module's).
  */
 interface Clause {
-  start: number;
   end: number;
-  lead: string;
+  head: Span;
+  pos?: Span;
+  wall?: Span;
 }
+
+/** The edit that writes `at <text>` as the clause's position: over the written one, or inserted. */
+const atEdit = (clause: Clause, text: string): Pick<PosEdit, "span" | "text"> =>
+  clause.pos
+    ? { span: clause.pos, text: `at ${text}` }
+    : { span: { start: clause.end, end: clause.end }, text: ` at ${text}` };
 
 /** A parallel datum edge's refusal, not yet pushed: its fix judges the other edges of the room on
  *  the run's walls, which the caller reads. `alts`: the datum words to try, with the centre each gives. */
@@ -705,9 +714,13 @@ function positionOnRun(
   clause: Clause | undefined,
 ): OnRun | DatumRefusal | undefined {
   const start = { end: "r0", word: "start" } as const;
-  /** AF9's placeholder skeleton: `text` over `[from, clause end)`. */
-  const skeleton = (from: number | undefined, text: string, title: string): PosEdit[] =>
-    clause && from !== undefined ? [{ span: { start: from, end: clause.end }, text, title }] : [];
+  /** AF9's placeholder skeleton: `at <text>` as the position, or `text` inserted after it. */
+  const skeleton = (text: string, title: string, after = false): PosEdit[] =>
+    !clause
+      ? []
+      : after
+        ? [{ span: { start: clause.end, end: clause.end }, text, title }]
+        : [{ ...atEdit(clause, text), title }];
   switch (pos.kind) {
     case "default":
       if (kind === "window") return { c: (run.r0 + run.r1) / 2, anchor: start };
@@ -716,7 +729,7 @@ function positionOnRun(
         message: `${what} has no position: a ${kind === "door" ? "door" : "cased opening"} is held to an end of the ${runWord} or to a room edge, never centred by default; write \`at <mm> from start|end\`, \`at <mm> from <room>.<edge>\`, \`at axis <label>\` or \`at center\``,
         code: "E_OPENING_DATUM",
         span: posSpan,
-        ...fixesFrom(openingDatumFix(skeleton(clause?.end, " at <mm> from start", "give it a position"), true)),
+        ...fixesFrom(openingDatumFix(skeleton("<mm> from start", "give it a position"), true)),
       });
       return undefined;
     case "center":
@@ -731,12 +744,8 @@ function positionOnRun(
         ...fixesFrom(
           openingDatumFix(
             pos.kind === "mm"
-              ? skeleton(clause?.end, " from <start or end>", "name the end of the run it is measured from")
-              : skeleton(
-                  clause?.start,
-                  `${clause?.lead} at <mm> from <start or end>`,
-                  "write it in mm from an end of the run",
-                ),
+              ? skeleton(" from <start or end>", "name the end of the run it is measured from", true)
+              : skeleton("<mm> from <start or end>", "write it in mm from an end of the run"),
             true,
           ),
         ),
@@ -941,7 +950,9 @@ export function placeBetween(
   }
   const run = runs.length === 1 ? runs[0] : pickRun(b, A, B, runs, ctx, what);
   if (!run) return null;
-  const clause = { start: b.b.span.end, end: b.span.end, lead: "" };
+  const head = { start: b.span.start, end: b.b.span.end };
+  const local = ctx.sameFile?.(undefined) ?? true;
+  const clause = local ? { end: b.span.end, head, ...(b.posSpan ? { pos: b.posSpan } : {}) } : undefined;
   return placeOnRun(
     run,
     b.pos,
@@ -985,7 +996,15 @@ export function placeOnEdge(
     "edge",
     relationOf({ edge: attach }),
     true,
-    span && { start: span.start, end: span.end, lead: `on ${attach.wall}` },
+    // Fixes only where the statement is the compiled source's own (design §3; red team N6).
+    span && attach.wallSpan && (ctx.sameFile?.(undefined) ?? true)
+      ? {
+          end: span.end,
+          head: { start: span.start, end: attach.wallSpan.end },
+          wall: attach.wallSpan,
+          ...(attach.posSpan ? { pos: attach.posSpan } : {}),
+        }
+      : undefined,
   );
 }
 
@@ -1066,7 +1085,9 @@ function legalQuote(
 const replaces = (pos: AttachPos): string =>
   pos.kind === "from" && pos.value.t === "num"
     ? ""
-    : `; this replaces \`at ${posText(pos) ?? "center"}\` with a fixed offset, which no longer follows it`;
+    : pos.kind === "default"
+      ? "; this writes a fixed offset where none was written, so it no longer follows the edge's centre"
+      : `; this replaces \`at ${posText(pos)}\` with a fixed offset, which no longer follows it`;
 
 function placeOnRun(
   run: Run,
@@ -1148,8 +1169,7 @@ function placeOnRun(
     const to = `${where} at ${q.text}`;
     return {
       s: q.s,
-      span: { start: clause.start, end: clause.end },
-      text: `${clause.lead} at ${q.text}`,
+      ...atEdit(clause, q.text),
       title: `move it to \`${to}\` (centre at ${alongText(run, q.s)})${replaces(pos)}`,
     };
   };
@@ -1172,7 +1192,7 @@ function placeOnRun(
   const hostWall = j.wall;
   if (j.why === "partition") {
     const window = kind === "window";
-    const alt = clause ? otherEdge(hostWall, pos, placed, relation, width, flushOk, kind, ctx) : undefined;
+    const alt = clause?.wall ? otherEdge(hostWall, pos, placed, relation, width, flushOk, kind, ctx) : undefined;
     ctx.diag({
       severity: "error",
       message: `${what} needs an exterior wall on \`${where}\`, but the wall there is ${phrase(host)}, a ${host.category}: the edge is shared with another room`,
@@ -1185,7 +1205,9 @@ function placeOnRun(
       ],
       ...fixesFrom(
         exteriorEdgeFix(
-          alt && clause ? [{ span: { start: clause.start, end: clause.end }, text: alt.text, title: alt.title }] : [],
+          alt && clause?.wall
+            ? [{ span: alt.between ? clause.head : clause.wall, text: alt.text, title: alt.title }]
+            : [],
           alt?.placeholder === true,
         ),
       ),
@@ -1216,10 +1238,13 @@ function placeOnRun(
     const alone = legal === undefined || bodies.length === 1 || bodiesUnder(bodies, legal, width, run).length === 1;
     // Nor is a position in a demolished wall legal: it hosts nothing, wherever the span stands.
     const gone = hostWall?.status === "demolish";
-    const moves =
+    const found =
       gone || !alone || legal === undefined
         ? []
-        : nibMoves(c, width, j.fit!, flushOk, ctx).flatMap((t) => move(t, host) ?? []);
+        : nibMoves(c, width, j.fit!, flushOk, ctx, run).flatMap((t) => move(t, host) ?? []);
+    // With none the bays give, the position the hint quotes is tried too (red team S1).
+    const fallback = found.length === 0 && !gone && alone && legal !== undefined ? move(legal, host) : undefined;
+    const moves = fallback ? [fallback] : found;
     ctx.diag(
       nibRefusal(
         j.fault,
@@ -1262,7 +1287,7 @@ function otherEdge(
   flushOk: boolean,
   kind: Kind,
   ctx: RelationCtx,
-): { text: string; title: string; placeholder?: true } | undefined {
+): { text: string; title: string; placeholder?: true; between?: true } | undefined {
   const room = splitDatum(relation.edge ?? "")?.room;
   const table = ctx.datums?.table;
   if (room === undefined || table === undefined) return undefined;
@@ -1292,8 +1317,12 @@ function otherEdge(
     const B = other === undefined ? undefined : table.rooms.get(other);
     const run = A && B ? sharedRun(A, B) : undefined;
     if (!run || !lands(run, false)) return undefined;
-    const to = `between ${room} and ${other}${tail}`;
-    return { text: to, title: `make it an opening into "${other}": \`${to}\` stands in the same wall` };
+    const to = `between ${room} and ${other}`;
+    return {
+      text: to,
+      title: `make it an opening into "${other}": \`${to}${tail}\` stands in the same wall`,
+      between: true,
+    };
   }
   chargeSteps(4);
   const edges = (["top", "bottom", "left", "right"] as const).flatMap((side) => {
@@ -1308,11 +1337,11 @@ function otherEdge(
   if (edges.length === 0) return undefined;
   const [one] = edges;
   if (edges.length === 1 && lands(one!.r, true)) {
-    const to = `on ${room}.${one!.side}${tail}`;
-    return { text: to, title: `move the window to \`${to}\`, the room's one exterior edge` };
+    const to = `${room}.${one!.side}`;
+    return { text: to, title: `move the window to \`on ${to}${tail}\`, the room's one exterior edge` };
   }
   return {
-    text: `on <exterior edge of "${room}">${tail}`,
+    text: `<exterior edge of "${room}">`,
     title: `put the window on an exterior edge of "${room}" (${edges.map((e) => `${room}.${e.side}`).join(", ")})`,
     placeholder: true,
   };
@@ -1342,21 +1371,30 @@ function movesHint(
 /**
  * The centres a nib refusal's fix may offer (card AF9, design §3), before the round trip and the
  * judge: the walls meeting the host cut it into bays, a move stays in its bay, and a bay's legal
- * centres are one interval (its ends a free host end, or a meeting wall's face plus the nib) and,
- * for a cased opening, a 0.5 mm band flush with each meeting wall's face (finding F2), each end
- * rounded inward to the grid. The written centre inside a bay gets the nearest legal centre on each
+ * centres are one interval (its ends a free host end, or a meeting wall's face plus the nib), each
+ * end rounded inward to the grid, and, for a cased opening, the centre whose jamb is exactly flush
+ * with each meeting wall's face (finding F2), when its whole span passes there. The written centre inside a bay gets the nearest legal centre on each
  * side of it there; on a meeting wall's body, the nearest in each bay beside it; with none in its
  * bay, the nearest in the next bay with one, either way. Nearer first, then the smaller coordinate.
- * Charged one step per meeting wall, before the bays are built.
+ * Charged one step per meeting wall before the bays are built, and for a cased opening the flush
+ * checks too.
  */
-function nibMoves(c: number, width: number, fit: HostFit, flushOk: boolean, ctx: RelationCtx): number[] {
+function nibMoves(c: number, width: number, fit: HostFit, flushOk: boolean, ctx: RelationCtx, run: Run): number[] {
   const { R0, R1, need } = fit;
+  chargeSteps(fit.js.length + 1);
   const js = [...fit.js].sort((p, q) => p.lo - q.lo);
-  chargeSteps(js.length + 1);
   const w2 = width / 2;
   const g = ctx.grid;
   const inward = (lo: number, hi: number): [number, number] =>
     g > 0 ? [Math.ceil(lo / g) * g, Math.floor(hi / g) * g] : [lo, hi];
+  // A cased opening's jamb exactly flush with a face, when that centre is on the grid and its whole
+  // span passes the nibs there; never a sliver of wall up to `FLUSH_MM` thick. Judged before the bay
+  // counts it, so a bay too short for the opening does not stop the search (red team S1, AF9).
+  if (flushOk) chargeSteps((js.length + 1) * (2 * js.length + 1));
+  const flush = (t: number): Array<[number, number]> =>
+    flushOk && (g <= 0 || Math.round(t / g) * g === t) && !nibFault(t, width, R0, R1, js, need, true, run)
+      ? [[t, t]]
+      : [];
   // Each bay: its faces, and its legal intervals.
   const bays: Array<{ a: number; b: number; ok: Array<[number, number]> }> = [];
   let a = R0;
@@ -1364,12 +1402,9 @@ function nibMoves(c: number, width: number, fit: HostFit, flushOk: boolean, ctx:
   for (const j of [...js, undefined]) {
     const b = j ? j.lo : R1;
     if (b > a) {
-      const ok: Array<[number, number]> = [];
       const lo = a + (aWall ? need : 0) + w2;
       const hi = b - (j ? need : 0) - w2;
-      ok.push(inward(lo, hi));
-      if (flushOk && aWall) ok.push(inward(a + w2, a + w2 + FLUSH_MM));
-      if (flushOk && j) ok.push(inward(b - w2 - FLUSH_MM, b - w2));
+      const ok = [inward(lo, hi), ...(aWall ? flush(a + w2) : []), ...(j ? flush(b - w2) : [])];
       bays.push({ a, b, ok: ok.filter(([p, q]) => p <= q) });
     }
     if (j) {
@@ -1826,13 +1861,23 @@ function nearestLegal(
 ): number | undefined {
   const w2 = width / 2;
   const raw = [R0 + w2, R1 - w2];
-  // A cased opening may stand flush with a meeting wall's face (finding F2, AF9).
-  for (const j of js) raw.push(j.hi + need + w2, j.lo - need - w2, ...(flushOk ? [j.hi + w2, j.lo - w2] : []));
+  // A cased opening may stand exactly flush with a meeting wall's face (finding F2, AF9): never moved
+  // onto the grid, which would leave a sliver of wall.
+  const flush = new Set<number>();
+  for (const j of js) {
+    raw.push(j.hi + need + w2, j.lo - need - w2);
+    if (flushOk) {
+      for (const t of [j.hi + w2, j.lo - w2]) {
+        raw.push(t);
+        flush.add(t);
+      }
+    }
+  }
   chargeSteps(raw.length * (2 * js.length + 1) + 1);
   let best: number | undefined;
   for (const t of raw) {
     const s = grid > 0 ? (t >= c ? Math.ceil(t / grid) : Math.floor(t / grid)) * grid : t;
-    if (nibFault(s, width, R0, R1, js, need, flushOk, run)) continue;
+    if ((flush.has(t) && s !== t) || nibFault(s, width, R0, R1, js, need, flushOk, run)) continue;
     if (
       best === undefined ||
       Math.abs(s - c) < Math.abs(best - c) ||

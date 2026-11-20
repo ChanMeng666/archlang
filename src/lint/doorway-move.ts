@@ -24,7 +24,7 @@ import type { FixSuggestion } from "../diagnostics.js";
 import { doorLeaves, sectorIntersectsRect, segmentLength, swingsCollide } from "../geometry.js";
 import type { RDoor, RFurniture, ROpening } from "../ir.js";
 import { fmt3 as numStr } from "../num-format.js";
-import { relationalClause } from "../opening-relation.js";
+import { relationalClause, relationText } from "../opening-relation.js";
 import type { LintContext } from "./context.js";
 import { mm } from "./measure.js";
 import {
@@ -57,7 +57,8 @@ export function doorwayMoves(
 ): DoorwayMove[] {
   const lead = el._lead;
   const seg = el.host;
-  if (!lead || !seg || seg.arc || el._instance !== undefined) return [];
+  // Not an imported module's statement: its offsets are that module's (design §3; red team N6).
+  if (!lead || !seg || seg.arc || el._instance !== undefined || ctx.at(el).file !== undefined) return [];
   const all = openingsOnRuns(ctx);
   const o = all.find((r) => r.el === el);
   if (!o) return [];
@@ -102,12 +103,16 @@ export function doorwayMoves(
       )
     )
       continue;
+    // The position alone (`at <pos>`), so the rest of the statement keeps its bytes (red team N9).
     let text: string | undefined;
-    if (el._relation) text = relationalClause(el._relation, ctx.rooms, at);
-    else if (lead.on !== undefined) {
+    if (el._relation) {
+      const clause = relationalClause(el._relation, ctx.rooms, at);
+      const lead = `${relationText({ ...el._relation, at: undefined })} `;
+      text = clause?.startsWith(lead) ? clause.slice(lead.length) : undefined;
+    } else {
       const pos = wallPosition(ctx, seg, s);
       const total = ctx.wallSegs.filter((t) => t.wallId === seg.wallId).reduce((a, t) => a + segmentLength(t), 0);
-      text = `on ${lead.on} at ${numStr(lead.from === "end" ? total - pos : pos)}${lead.from ? ` from ${lead.from}` : ""}`;
+      text = `at ${numStr(lead.from === "end" ? total - pos : pos)}${lead.from ? ` from ${lead.from}` : ""}`;
     }
     if (text !== undefined) found.push({ span: lead.span, text, shift: m.shift });
   }
@@ -125,7 +130,7 @@ export function doorwayMoveFix(moves: readonly DoorwayMove[], what: string, piec
     ? null
     : moves.map(
         (m): FixSuggestion => ({
-          title: `move the ${what} ${mm(m.shift)} mm along its wall, to \`${m.text}\`, so its landing misses "${piece}"`,
+          title: `move the ${what} ${mm(m.shift)} mm along its wall (\`${m.text}\`), so its landing misses "${piece}"`,
           applicability: "maybe-incorrect",
           fixId: "doorway-move",
           edits: [{ span: m.span, newText: m.text }],

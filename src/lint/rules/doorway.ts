@@ -25,7 +25,7 @@ import { blockedApproach } from "./doors.js";
  * opening), so you can't pass through even with the leaf open. Distinct from the swing arc above
  * — this is the walk-through path, the thing that piles fixtures at a bathroom door. Built as an
  * AABB straddling the opening on orthogonal host walls, its depth measured from the wall's face
- * on each side (PS2.54, {@link doorLandingRect}).
+ * on each side (PS2.54, `doorLandingRect`, `src/geometry/rect.ts`).
  *
  * A leaf-less (cased) opening is read too (plan-soundness PS2.11e), after every door, with the
  * same landing: an opening has no leaf, so nothing but the approach can block it, and a sofa
