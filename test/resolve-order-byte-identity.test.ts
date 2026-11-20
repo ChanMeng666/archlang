@@ -32,12 +32,16 @@
  * is untouched. `test/relational-readers.test.ts` proves the plan now draws byte for byte
  * what its absolute twin (`kitchen at (5000,0)`) draws, and that an unplaced room is still
  * refused by every reader.
+ *
+ * re-measured by AF7 (#977): only added related notes; strip==old proven (RM-D69; the check is the
+ * `AF7_MAIN` test below, through `test/helpers/af7-notes.ts`).
  */
 
 import { readdirSync, readFileSync } from "node:fs";
 import { join, resolve as resolvePath } from "node:path";
 import { describe as suite, expect, it } from "vitest";
 import { compile, describe as describePlan, lint } from "../src/index.js";
+import { af7StrippedApi } from "./helpers/af7-notes.js";
 import { allStoreysDigestWithDiagnostics, type CompilerApi } from "./helpers/byte-identity-digest.js";
 
 const API: CompilerApi = { compile, describe: describePlan, lint };
@@ -77,7 +81,8 @@ const BASELINE: [string, string, string[]][] = [
     "relational-errors.arch",
     // AF2 (was 28a1ff7c): `E_LAYOUT_REF` is spanned on the unknown id, from 506 (was the room
     // statement from 483), with no fix; the rest as above, and main's span put back gives 28a1ff7c.
-    "b44edcc4fa6e1f0c7f7b1b55e6d3a1206d0f8fcd8a0df1a45b32782a450bcc79",
+    // AF7 (RM-D69, was b44edcc4): only added related notes (`AF7_MAIN` below); the order is unchanged.
+    "fe1d11f6dc86ef8c640927de981273ed4132d23d527fb8e14c817b89dddd4907",
     [
       "E_WALL_THICKNESS@384",
       "W_UNKNOWN_MATERIAL@778",
@@ -126,12 +131,23 @@ const BASELINE: [string, string, string[]][] = [
 
 const read = (name: string): string => readFileSync(join(DIR, name), "utf8");
 
+/** AF7 (RM-D69): `main`'s digest of each row AF7 re-measured. The row's own digest body, with AF7's
+ *  related notes taken out of `compile().diagnostics` and `describe()`, gives it back. */
+const AF7_MAIN: [string, string][] = [
+  ["relational-errors.arch", "b44edcc4fa6e1f0c7f7b1b55e6d3a1206d0f8fcd8a0df1a45b32782a450bcc79"],
+];
+
 suite("resolve order — byte identity with compile().diagnostics, order included", () => {
   it("covers every file in test/resolve-order — the corpus cannot silently shrink", () => {
     const files = readdirSync(DIR)
       .filter((f) => f.endsWith(".arch"))
       .sort();
     expect(BASELINE.map(([n]) => n)).toEqual(files);
+  });
+
+  it("AF7: each re-measured row moved by its added related notes alone (strip==old)", () => {
+    for (const [name, digest] of AF7_MAIN)
+      expect(allStoreysDigestWithDiagnostics(af7StrippedApi(API), read(name)), name).toBe(digest);
   });
 
   it.each(BASELINE)("digest unchanged: %s", (name, hash) => {

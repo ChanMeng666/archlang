@@ -5,7 +5,7 @@
 Where the tests of a `src` module are, and what each test file is for. Generated; `npm run check:drift`
 fails when it is stale. How to add a test: `docs/testing.md` § 4.
 
-567 test files in `test/`, 298 `src` modules, 109 modules no test imports.
+568 test files in `test/`, 298 `src` modules, 109 modules no test imports.
 
 ## `src` module → tests that import it
 
@@ -61,7 +61,7 @@ Nearest first, then by name; `(+n)` is the rest. Test names are `test/<name>.tes
 - `src/datum.ts` (11) — `access-policy`, `cursor-exhaustive`, `describe-depends`, `diff-laws`, `emit-opening-oracle`, `equivariance-fuzz`, `fix-printer`, `fuzz` (+3)
 - `src/describe.ts` (51) — `acc-metadata`, `accessible-svg`, `d4`, `describe`, `diff-laws`, `diff`, `room-adjacency-oracle`, `vocabulary-es-pt` (+43)
 - `src/diagnostic-json.ts` (1) — `explain`
-- `src/diagnostics.ts` (58) — `diagnostic-json-related`, `diagnostics-volume`, `diagnostics`, `did-you-mean`, `error-catalog-families`, `export-font-cjk`, `expr`, `fix-pullback` (+50)
+- `src/diagnostics.ts` (59) — `conflict-related-spans`, `diagnostic-json-related`, `diagnostics-volume`, `diagnostics`, `did-you-mean`, `error-catalog-families`, `export-font-cjk`, `expr` (+51)
 - `src/diff.ts` (3) — `diff-fabric`, `diff-laws`, `diff`
 - `src/doc.ts` (2) — `fix-printer`, `format`
 - `src/draw-budget.ts` (5) — `drawing-budget`, `sheet-annotations`, `walls-from-rooms-clauses`, `window-kinds`, `work-counts`
@@ -126,7 +126,7 @@ Nearest first, then by name; `(+n)` is the rest. Test names are `test/<name>.tes
 - `src/impact.ts` (2) — `rectilinear-doors`, `rectilinear-rooms`
 - `src/import.ts` (36) — `af9-byte-identity`, `af9-fixes`, `block-stair-byte-identity`, `corner-window-byte-identity`, `dim-swap-reprint`, `dim-thickness-callout`, `drawing-budget`, `error-value-law` (+28)
 - `src/import/limits.ts` (1) — `openplan3d-malformed`
-- `src/index.ts` (424) — `acc-metadata`, `access-graph`, `access-policy`, `accessible-svg`, `af9-byte-identity`, `af9-fixes`, `agent-gallery`, `alias-match` (+416)
+- `src/index.ts` (425) — `acc-metadata`, `access-graph`, `access-policy`, `accessible-svg`, `af9-byte-identity`, `af9-fixes`, `agent-gallery`, `alias-match` (+417)
 - `src/input-limit.ts` (2) — `import-rooted`, `workspace-seams`
 - `src/intent-concepts.ts` (3) — `vocabulary-es-pt`, `vocabulary-living-dining`, `vocabulary-matcher-oracle`
 - `src/intent-feasibility.ts` (1) — `intent-infeasible`
@@ -303,6 +303,7 @@ The first sentence of each file's header comment.
 - `test/compile-path-intent.test.ts` — Card NR.10's premise, pinned: `compile()` never raises an intent violation (`E_INTENT_*`, only `validateIntent` does), so the compile path's fix column (`src/error-catalog-fixes.ts`) leaves those rows out and `compile...
 - `test/compile.test.ts` — compile — valid studio; compile — determinism; compile — grid snap; compile — string escaping; compile — error cases.
 - `test/compose-assoc.test.ts` — `place` composes ASSOCIATIVELY: every level reaches into its own descendants the way the root does, and none reaches out (ADR 0016 §3, backlog E.16).
+- `test/conflict-related-spans.test.ts` — Card AF7: a conflict names the statements behind it.
 - `test/context-size.test.ts` — Every stated size of the agent bundle (`llms-full.txt`, what `archlang context` prints) is true.
 - `test/context-starter.test.ts` — `archlang context --level starter` (PS7.2): one screen for a weak model, with the same truth as the full context.
 - `test/core-no-3d.test.ts` — Boundary: 3D lives only in `packages/archlang-3d`, never a core dependency (AGENTS.md hard rules).

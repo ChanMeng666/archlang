@@ -42,10 +42,14 @@
  * arrow's `<g>`, and where the body hashes the Scene, the added `chrome.north` with it; `describe()`,
  * `lint()`, the diagnostics and the steps did not move. Put `main`'s SVG back (`a9db286e`) and drop
  * `chrome.north`, and this body reproduces every old digest; the new ones are this body on the branch.
+ *
+ * re-measured by AF7 (#977): only added related notes; strip==old proven (RM-D69; the check is the
+ * `AF7_MAIN` test below, through `test/helpers/af7-notes.ts`).
  */
 
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
+import { af7StrippedApi } from "./helpers/af7-notes.js";
 import { describe as suite, expect, it } from "vitest";
 import { compile, describe, lint } from "../src/index.js";
 import { makeNodeWorld } from "../src/cli/io.js";
@@ -168,7 +172,7 @@ const BASELINE: [string, string][] = [
   ["bc452991d3ed362cdc36ff1f97938f1c917a9503f05c40ebdb286484a85f7034", "plans:void-hole"],
   ["01402210432235dd8c87a3b8f9ffff66d1839272a5fb649b181c91d9ea87cf5b", "plans:instances"],
   ["27fd4888416deb84501c64dc2d2ebad10776ac3f5c53e780e5eea8f2f0a4f05c", "plans:coexist"],
-  ["f48b445c3d8f3499ece29b70d20c50207c34adc80e430edccc3d9f6cd36eb114", "plans:refused"],
+  ["7be9dcaea4b587b54406854ef539cadc05716ccb4433818abac8a9b4ba18815d", "plans:refused"], // AF7 (RM-D69): only added related notes (was f48b445c, AF7_MAIN)
   ["3242407cca3e68167000ae30159a28d3f1d87f74a911adaed34c5458100f5d78", "plans:open-plan"],
   ["51d28947008155d90908b371a8900b873d87ab9a0fc785479df6f179b94b0e87", "plans:open-width"],
   ["fc878a600854ad99f69ecf8577176006056f301a90106de53452b97da71bd4a5", "plans:open-instances"],
@@ -289,6 +293,12 @@ const BASELINE: [string, string][] = [
   ["66f56890c7a4ae8a8fe793f3e0543028b6c1078327041f6ca528173224a85772", "inline:window-parse-refusal"], // AF4 (was 4685983c): its `E_PARSE` now says what the parser expected at the token it stopped at (`expected`); SVG, lint() and every other key are unchanged, and deleting that key gives 4685983c
 ];
 
+/** AF7 (RM-D69): `main`'s digest of each row AF7 re-measured. The law's own digest body, with AF7's
+ *  related notes taken out of `compile().diagnostics` and `describe()`, gives it back. */
+const AF7_MAIN: [string, string][] = [
+  ["plans:refused", "f48b445c3d8f3499ece29b70d20c50207c34adc80e430edccc3d9f6cd36eb114"],
+];
+
 suite("window kinds: the byte-identity law", () => {
   it("the table pins every row, and no row reaches the forms", () => {
     expect(BASELINE.map((b) => b[1])).toEqual(ROWS.map((r) => r.name));
@@ -311,6 +321,13 @@ suite("window kinds: the byte-identity law", () => {
     const kinded = row.src.replace("window on a.top at 1500", "window fixed on a.top at 1500");
     expect(kinded).not.toBe(row.src);
     expect(stairLawDigest(API, kinded, undefined)).not.toBe(stairLawDigest(API, row.src, undefined));
+  });
+
+  it("AF7: each re-measured row moved by its added related notes alone (strip==old)", () => {
+    for (const [name, digest] of AF7_MAIN) {
+      const row = ROWS.find((r) => r.name === name)!;
+      expect(stairLawDigest(af7StrippedApi(API), row.src, worldOf(row.dir)), name).toBe(digest);
+    }
   });
 
   it.each(BASELINE)("%s %s", (digest, name) => {

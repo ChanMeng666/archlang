@@ -23,7 +23,7 @@
  */
 
 import type { Point } from "./ast.js";
-import { type Diagnostic, MAX_DIAGNOSTICS } from "./diagnostics.js";
+import { type Diagnostic, MAX_DIAGNOSTICS, type RelatedSpan, type Span } from "./diagnostics.js";
 import { wordSpanOf } from "./id-spans.js";
 import { chargeSteps, currentSteps, spelling } from "./expr.js";
 import { fixesFrom, idSpellingFix } from "./fix-producers.js";
@@ -33,6 +33,37 @@ import { type EdgeLine, extremeRuns, rectilinear, runsText, type SideWord } from
 
 /** A room that definitely carries a relational constraint. */
 type RelRoom = RRoom & { _rel: RelConstraint };
+
+/** Where a layout error notes a room of a `place`d instance: the `place … as` statement, and the
+ *  instance it names (an enclosing one when the instance's own `place` is in a module). */
+export type PlaceOf = (instance: string) => { span: Span; instance: string } | undefined;
+
+/**
+ * The statement that placed `room`, as the one related span of `r`'s layout error (AF7): its
+ * relational clause ("`b` placed right-of `a` here"), for a room with no clause its statement, and
+ * for a room of a `place`d instance the `place … as` statement that made the instance ("`k` placed
+ * here", as a broken keep notes it, `src/keep.ts`), never the component body every instance
+ * shares. Only when both statements are in the compiled source (AF1's same-file rule): a room of an
+ * imported body is measured in its own file, and the sink adds the note after the stamp that
+ * names that file, so a note there could not say where it is measured. Never `r`'s own clause. One note per
+ * error, so a cycle of `k` rooms carries `k` notes, never `k²`. Handed to the sink beside the
+ * diagnostic, not on it, so the sink adds it after its own stamp and an instance's diagnostic
+ * keeps its key order.
+ */
+function placedNote(r: RelRoom, room: RRoom | undefined, placeOf: PlaceOf | undefined): RelatedSpan | undefined {
+  if (!room || r._file !== undefined) return undefined;
+  if (room._instance !== undefined) {
+    const at = placeOf?.(room._instance);
+    return at && { span: at.span, message: `\`${at.instance}\` placed here` };
+  }
+  if (room._file !== undefined) return undefined;
+  const span = room._rel?.span ?? room.span;
+  if (!span || span === r._rel.span) return undefined;
+  const message = room._rel
+    ? `\`${room.id}\` placed ${room._rel.dir} \`${room._rel.ref}\` here`
+    : `\`${room.id}\` placed here`;
+  return { span, message };
+}
 
 /**
  * Cross-axis alignment offset. For horizontal placement (`right-of`/`left-of`)
@@ -130,7 +161,10 @@ function referenceRun(room: RelRoom, ref: RRoom & { poly: Point[] }): EdgeLine |
  * @param rooms   All resolved rooms, in declaration order.
  * @param snapPt  Grid-snap used for absolute coords (computed coords snap too).
  * @param diag    Sink for `E_LAYOUT_REF` / `E_PLACE_POLY` / `E_LAYOUT_UNPLACED` /
- *                `E_LAYOUT_CYCLE`, emitted in declaration order of the offending room.
+ *                `E_LAYOUT_CYCLE`, emitted in declaration order of the offending room;
+ *                `note` is the statement a cycle or an unplaced room waits on (AF7), for the
+ *                sink to add as a related span after its own stamp.
+ * @param placeOf Where a room of a `place`d instance was placed, for that note (AF7).
  *
  * Every room left without a real position (failed, unplaced or on a cycle) is marked
  * `_unplaced`. The mark survives `room.transform`, so an enclosing plan's pass sees an
@@ -144,7 +178,8 @@ const SEARCH_STEPS = 1_000_000;
 export function placeRelational(
   rooms: RRoom[],
   snapPt: (p: Point) => Point,
-  diag: (d: Diagnostic, room?: RRoom) => void,
+  diag: (d: Diagnostic, room?: RRoom, note?: RelatedSpan) => void,
+  placeOf?: PlaceOf,
 ): void {
   const rel = rooms.filter((r): r is RelRoom => r._rel !== undefined);
   if (rel.length === 0) return;
@@ -165,6 +200,7 @@ export function placeRelational(
   // Layout errors are buffered per room and flushed in declaration order at the end, so
   // the phases (fixpoint, then leftover walk) cannot invert the order.
   const pending = new Map<string, Diagnostic>();
+  const notes = new Map<string, RelatedSpan>();
   // AF2's did-you-mean for an unknown reference: the ids are a user's, an open set, so its fix is
   // never machine-applicable. The list is built (and charged) once per pass, and searched only as
   // many times as a plan's diagnostics can be reported (`MAX_DIAGNOSTICS`), and only while the
@@ -253,6 +289,8 @@ export function placeRelational(
           code: "E_LAYOUT_UNPLACED",
           span: r._rel.span,
         });
+        const note = placedNote(r, byId.get(next), placeOf);
+        if (note) notes.set(r.id, note);
         break;
       }
       if (next === r.id) {
@@ -262,6 +300,8 @@ export function placeRelational(
           code: "E_LAYOUT_CYCLE",
           span: r._rel.span,
         });
+        const note = placedNote(r, byId.get(r._rel.ref), placeOf);
+        if (note) notes.set(r.id, note);
         break;
       }
       walked.add(next);
@@ -273,6 +313,6 @@ export function placeRelational(
     const d = pending.get(r.id);
     if (!d) continue;
     r._unplaced = true;
-    diag(d, r);
+    diag(d, r, notes.get(r.id));
   }
 }
