@@ -10,7 +10,7 @@ import { PLUGIN_MANIFEST, allPluginSkillFiles } from "./gen-plugin.js";
 import { allOutputs } from "./gen-agent-manifests.js";
 import { SURFACES as DOORS_SURFACES } from "./gen-doors.js";
 import { README_SVGS, VIEW_SVGS, svgPath } from "./gen-example-svgs.js";
-import { CATALOG_FIXES_PATH } from "./gen-error-codes.js";
+import { CATALOG_FIXES_PATH, INTENT_CATALOG_FIXES_PATH } from "./gen-error-codes.js";
 
 /** Where `npm run gen:generated-artifacts` writes this table for `.claude/hooks/local-gate.mjs`. */
 export const GENERATED_ARTIFACTS_JSON = ".claude/hooks/generated-artifacts.json";
@@ -37,7 +37,7 @@ export const GENERATORS: readonly {
       "docs-site/.vitepress/theme/arch-highlight.js",
     ],
   },
-  { script: "gen:errors", artifacts: ["docs/error-codes.md", CATALOG_FIXES_PATH] },
+  { script: "gen:errors", artifacts: ["docs/error-codes.md", CATALOG_FIXES_PATH, INTENT_CATALOG_FIXES_PATH] },
   { script: "gen:spec", artifacts: ["spec.llm.md"] },
   // `gen:llms` also measures the bundle into `src/context-size.ts`, which the manifest's
   // `context` help states, so `gen:cli` (rendered from that manifest) runs after it.
@@ -72,7 +72,8 @@ export const GENERATORS: readonly {
   // The `<arch-plan>` element the docs site serves, built by packages/web-component/scripts/build.ts.
   { script: "gen:arch-plan", artifacts: ["docs-site/public/arch-plan.js"] },
   { script: "gen:doors", artifacts: DOORS_SURFACES.map((s) => s.file), partial: true },
-  // The `archlang://capabilities` MCP resource, from the tool registry, the CLI manifest and EXPORT_FORMATS.
+  // The `archlang://capabilities` MCP resource, from the tool registry, the CLI manifest, EXPORT_FORMATS and
+  // the fix producers' FIX_PRODUCERS (src/fixable-codes.ts).
   { script: "gen:mcp-capabilities", artifacts: ["packages/mcp/capabilities.md"] },
   // The public-surface map: every export of `src/index.ts`, its declaring module and in-repo consumers.
   { script: "gen:surface", artifacts: ["docs/agents/public-surface.md"] },

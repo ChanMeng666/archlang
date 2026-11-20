@@ -11,7 +11,8 @@ import { describe, expect, it } from "vitest";
 import { fixCoverage, renderFixCoverage } from "../scripts/fix-coverage.js";
 import { ERROR_CATALOG } from "../src/error-catalog.js";
 
-/** The codes with a span edit when U.17 measured them (26 of 270). */
+/** The codes with a span edit when U.17 measured them (26 of 270), plus AF2's did-you-mean
+ *  fix on `E_LAYOUT_REF` and `E_PARSE`. */
 const WITH_EDIT_FLOOR = [
   "E_ARC_RADIUS",
   "E_ATTACH_POS_RANGE",
@@ -19,8 +20,10 @@ const WITH_EDIT_FLOOR = [
   "E_DOOR_OPEN_RANGE",
   "E_DOOR_WIDTH",
   "E_HEIGHT_RANGE",
+  "E_LAYOUT_REF",
   "E_OPENING_ABOVE_WALL",
   "E_OPENING_WIDTH",
+  "E_PARSE",
   "E_ROOM_ALIGN",
   "E_ROOM_ALIGN_AXIS",
   "E_SILL_ABOVE_HEAD",
@@ -80,11 +83,28 @@ describe("fix coverage (U.17)", () => {
           "const e = { ...d, fixes: d.fixes.map((f) => f) };",
           'const g = { code: "W_DOOR_CLEARANCE", message: "no fix" };',
           "const h = { fixes: [f] };",
+          // The three shapes the AF8 review found the scan blind to: a spread local, an assignment
+          // and a copy of another object's fixes (a push is the assignment's sibling).
+          'function i() { const x = fixesFrom(f); return { code: "E_ROOM_ALIGN", ...x }; }',
+          "function j(d) { d.fixes = made; }",
+          'const k = { code: "W_DIM_INSIDE", fixes: r.fixes };',
+          "function l(d) { d.fixes.push(f); }",
+          // …and the two pass-throughs that stay out: a spread whole diagnostic, and fixes re-mapped whole.
+          "function m(d) { return { ...d, message: m }; }",
+          "function o(d, out) { out.fixes = d.fixes.map((f) => ({ ...f, file })); }",
         ].join("\n"),
       );
       const t = fixCoverage(root);
-      expect(t.withEdit).toEqual(["E_ARC_RADIUS", "E_DOOR_WIDTH", "E_HEIGHT_RANGE", "E_WINDOW_WIDTH", "W_POCKET_RUN"]);
-      expect(t.unattributed.map((s) => s.text)).toEqual(["{ fixes: [f] }"]);
+      expect(t.withEdit).toEqual([
+        "E_ARC_RADIUS",
+        "E_DOOR_WIDTH",
+        "E_HEIGHT_RANGE",
+        "E_ROOM_ALIGN",
+        "E_WINDOW_WIDTH",
+        "W_DIM_INSIDE",
+        "W_POCKET_RUN",
+      ]);
+      expect(t.unattributed.map((s) => s.text)).toEqual(["{ fixes: [f] }", "d.fixes = made", "d.fixes.push(f)"]);
     } finally {
       rmSync(root, { recursive: true, force: true });
     }

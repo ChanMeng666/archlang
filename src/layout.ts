@@ -9,6 +9,9 @@
  * a cycle is a user error (`E_LAYOUT_CYCLE`, members only), an unknown reference is
  * `E_LAYOUT_REF`, a reference with no one run on that side `E_PLACE_POLY`, and a room that
  * merely depends on one of those (directly, along a chain, or into a cycle) `E_LAYOUT_UNPLACED`.
+ * An unknown reference's did-you-mean search over the other room ids (AF2) is charged to the
+ * step meter before it runs, so only a plan that already fails pays it, at most `MAX_DIAGNOSTICS`
+ * times per pass and only while the whole resolution has spent under `SEARCH_STEPS`.
  *
  * A rectilinear polygon is a reference through the ring's extreme run on that side, never its
  * box: the run's line is where the room stands, and its ends are what `align` reads.
@@ -20,7 +23,10 @@
  */
 
 import type { Point } from "./ast.js";
-import type { Diagnostic, RelatedSpan } from "./diagnostics.js";
+import { type Diagnostic, MAX_DIAGNOSTICS, type RelatedSpan } from "./diagnostics.js";
+import { wordSpanOf } from "./id-spans.js";
+import { chargeSteps, currentSteps, spelling } from "./expr.js";
+import { fixesFrom, idSpellingFix } from "./fix-producers.js";
 import { rectLabelOutsideDiag } from "./elements/room.js";
 import type { RelConstraint, RRoom } from "./ir.js";
 import { type EdgeLine, extremeRuns, rectilinear, runsText, type SideWord } from "./room-tiling.js";
@@ -31,9 +37,9 @@ type RelRoom = RRoom & { _rel: RelConstraint };
 /**
  * The statement that placed `room`, as the one related span of `r`'s layout error (AF7): its
  * relational clause ("`b` placed right-of `a` here") or, for a room with no clause, its statement.
- * Only when both statements are in the compiled source: a layout error from an imported body
- * carries no `file` (its group stamps none), so a note there could not say where it is measured,
- * as AF1 left `E_DUP_ID` in an imported body without one. Never `r`'s own clause. One note per
+ * Only when both statements are in the compiled source (AF1's same-file rule): a room of an
+ * imported body is measured in its own file, and the sink adds the note after the stamp that
+ * names that file, so a note there could not say where it is measured. Never `r`'s own clause. One note per
  * error, so a cycle of `k` rooms carries `k` notes, never `k²`. Handed to the sink beside the
  * diagnostic, not on it, so the sink adds it after its own stamp and an instance's diagnostic
  * keeps its key order.
@@ -153,6 +159,10 @@ function referenceRun(room: RelRoom, ref: RRoom & { poly: Point[] }): EdgeLine |
  * instance's unplaced room as unplaced rather than as an absolute room at its placeholder,
  * and `checkRoomOverlaps` skips such rooms (their `at` is a placeholder, not geometry).
  */
+/** The steps a resolution may have spent, in all, for a did-you-mean search still to run: a
+ *  fifth of `MAX_EVAL_STEPS` (AF2). */
+const SEARCH_STEPS = 1_000_000;
+
 export function placeRelational(
   rooms: RRoom[],
   snapPt: (p: Point) => Point,
@@ -178,6 +188,13 @@ export function placeRelational(
   // the phases (fixpoint, then leftover walk) cannot invert the order.
   const pending = new Map<string, Diagnostic>();
   const notes = new Map<string, RelatedSpan>();
+  // AF2's did-you-mean for an unknown reference: the ids are a user's, an open set, so its fix is
+  // never machine-applicable. The list is built (and charged) once per pass, and searched only as
+  // many times as a plan's diagnostics can be reported (`MAX_DIAGNOSTICS`), and only while the
+  // whole resolution (every group and storey on its one step meter) has spent under
+  // `SEARCH_STEPS`: so however many passes a plan makes, its searches spend at most that.
+  let ids: string[] | undefined;
+  let searches = 0;
 
   // Fixpoint: keep placing any room whose reference is resolved. Declaration
   // order within each sweep makes the result deterministic.
@@ -188,11 +205,23 @@ export function placeRelational(
       if (!unresolved.has(r.id)) continue;
       const ref = byId.get(r._rel.ref);
       if (!ref) {
+        // Spanned on the reference id, with a did-you-mean among the other rooms (AF2).
+        const refSpan = wordSpanOf(r._rel);
+        let near: ReturnType<typeof spelling> = null;
+        if (searches++ < MAX_DIAGNOSTICS) {
+          if (!ids) {
+            chargeSteps(rooms.length);
+            ids = rooms.map((x) => x.id);
+          }
+          near = spelling(r._rel.ref, ids, r.id, { steps: Math.max(0, SEARCH_STEPS - currentSteps()) });
+        }
         pending.set(r.id, {
           severity: "error",
           message: `Room "${r.id}" is placed relative to unknown room "${r._rel.ref}"`,
           code: "E_LAYOUT_REF",
-          span: r._rel.span,
+          span: refSpan ?? r._rel.span,
+          ...(near ? { hints: [`did you mean \`${near.word}\`?`] } : {}),
+          ...fixesFrom(idSpellingFix(refSpan, near)),
         });
         unresolved.delete(r.id); // can't place it; stop revisiting
         failed.add(r.id);

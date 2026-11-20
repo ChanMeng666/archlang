@@ -161,11 +161,30 @@ export function fmtLiteral(n: number): string {
 /**
  * `n` as a message quotes a value the author wrote: {@link fmt3} when that reads back as `n`, else
  * the shortest decimal that does ({@link plainDigits}). So `2749.9999` is never shown as `2750`
- * (RM1.4: a value `grid` moved, quoted as written).
+ * (RM1.4: a value `grid` moved, quoted as written). Float noise is dropped ({@link fmtMessage})
+ * only where that cannot mislead: given the `snap` that moved `n`, the shorter form is shown only
+ * when it snaps where `n` does, so `322.5 * 25.4` (8191.499999999999, snapped to 8191 on `grid 1`)
+ * is never shown as the 8191.5 that would snap to 8192.
  */
-export function fmtWritten(n: number): string {
+export function fmtWritten(n: number, snap?: (v: number) => number): string {
   const s = fmt3(n);
-  return Number(s) === n ? s : plainDigits(n);
+  if (Number(s) === n) return s;
+  const short = Number(fmtMessage(n));
+  return plainDigits(!snap || snap(short) === snap(n) ? short : n);
+}
+
+/**
+ * A number as a diagnostic's message prints it (RM9.4): `String(n)`, except that a non-integer in
+ * [1e-6, 1e21) whose `String(n)` has more than 15 significant digits prints its 15-digit form. 15 is
+ * the most digits every decimal keeps through a double (DBL_DIG), so a value with a short form (a
+ * literal the author wrote, `2749.9999`) prints as it did, and only the noise a float sum or product
+ * leaves in the 16th and 17th digits is dropped: `12 * 304.8` prints `3657.6`, not
+ * `3657.6000000000004`. An integer (`2 ** 53`), a value outside that range, and a non-finite one
+ * print exactly as `String(n)`.
+ */
+export function fmtMessage(n: number): string {
+  const a = Math.abs(n);
+  return Number.isInteger(n) || !(a >= 1e-6 && a < 1e21) ? String(n) : String(Number(n.toPrecision(15)));
 }
 
 /**

@@ -53,6 +53,9 @@ export type {
   Severity,
 } from "./types.js";
 export { formatDiagnostic, offsetToLineCol } from "./diagnostics.js";
+// The remedy a diagnostic shows: its code's fix in the caller's table, or the root-first one when it
+// names a `cause` (RM9.4) — what the JSON, the CLI, the error cards and the playground panel show.
+export { diagnosticFix } from "./catalog-fix.js";
 // Agent-facing JSON projection of a diagnostic (line/col + catalogued `fix`) —
 // the canonical shape the CLI's `--json` output emits, exposed for programmatic
 // consumers (playground, LSP embedders, SDK users).
@@ -682,7 +685,7 @@ export type { PngOptions } from "./backends/png.js";
 // `--error-svg` flag route a broken plan's diagnostics through this instead of
 // leaving `svg === ""`, so agent loops/embeds always get visual feedback. Pure,
 // deterministic, zero-dep; never touches the default (error-free) output.
-export { renderErrorSvg } from "./backends/error-svg.js";
+export { renderErrorSvg } from "./backends/error-svg-public.js";
 export type { ErrorSvgOptions } from "./backends/error-svg.js";
 // ASCII text backend. `renderAscii(scene)` serializes a Scene to a
 // fixed-width text floor plan — the channel a sandboxed, text-only agent uses to

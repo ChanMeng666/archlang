@@ -1211,6 +1211,75 @@ export function closest(name: string, candidates: string[]): string | null {
   return best !== null && bestDist <= limit ? best : null;
 }
 
+/**
+ * The did-you-mean word for a misspelt one from a closed set (AF2), after TypeScript's
+ * `getSpellingSuggestion`: a candidate is at most `max(2, ⌊0.34·|name|⌋)` letters longer or
+ * shorter, under `⌊0.4·|name|⌋ + 1` added or dropped letters ({@link indelDistance}: a changed
+ * letter is two, as in TypeScript; another case is none), and one under 3 letters only in
+ * another case (two-letter words are all close). A name in the set is spelled right, so it gets
+ * none. Ties keep the first candidate in the set's own order. `unique` says no other candidate
+ * is at or under the limit, the one case a fix may be `machine-applicable`. `exclude` is a
+ * candidate never offered (a room is no reference of its own). Charged per candidate and per
+ * edit-distance cell, as {@link closest} is; with `budget`, a search that would spend more steps
+ * than it holds is not made (null), and what is spent comes off it.
+ */
+export function spelling(
+  name: string,
+  candidates: readonly string[],
+  exclude?: string,
+  budget?: { steps: number },
+): { word: string; unique: boolean } | null {
+  const limit = Math.floor(name.length * 0.4) + 1;
+  if (budget && budget.steps < candidates.length) return null;
+  chargeSteps(candidates.length);
+  if (budget) budget.steps -= candidates.length;
+  if (candidates.includes(name)) return null;
+  const near = [...new Set(candidates)].filter(
+    (c) =>
+      c !== exclude &&
+      Math.abs(c.length - name.length) <= Math.max(2, Math.floor(name.length * 0.34)) &&
+      (c.length >= 3 || c.toLowerCase() === name.toLowerCase()),
+  );
+  let cells = 0;
+  for (const c of near) cells += (name.length + 1) * (c.length + 1);
+  if (budget && budget.steps < cells) return null;
+  chargeSteps(cells);
+  if (budget) budget.steps -= cells;
+  let best: string | null = null;
+  let bestDist = limit;
+  let within = 0;
+  for (const c of near) {
+    const d = indelDistance(name.toLowerCase(), c.toLowerCase());
+    if (d > limit) continue;
+    // A candidate at the limit itself is no suggestion, but it is near enough to doubt one.
+    within++;
+    if (d < bestDist) {
+      bestDist = d;
+      best = c;
+    }
+  }
+  return best === null ? null : { word: best, unique: within === 1 };
+}
+
+/** Added or dropped characters between two short words: `a.length + b.length - 2 * LCS`, so a
+ *  changed letter counts two. */
+/** The steps the current resolution has spent (0 outside one): a search that must stay within a
+ *  share of the whole run's budget reads it (AF2). */
+export function currentSteps(): number {
+  return meter === null ? 0 : meter.used;
+}
+
+export function indelDistance(a: string, b: string): number {
+  let row = new Array<number>(b.length + 1).fill(0);
+  for (let i = 1; i <= a.length; i++) {
+    const next = [0];
+    for (let j = 1; j <= b.length; j++)
+      next[j] = a[i - 1] === b[j - 1] ? row[j - 1]! + 1 : Math.max(row[j]!, next[j - 1]!);
+    row = next;
+  }
+  return a.length + b.length - 2 * row[b.length]!;
+}
+
 function levenshtein(a: string, b: string): number {
   const m = a.length;
   const n = b.length;

@@ -182,6 +182,16 @@ describe("hosted MCP over Streamable HTTP", () => {
     expect(out.embed).toBe(`https://playground.archlang.uk/embed.html#z=${encodePlanHash(TINY)}`);
   });
 
+  it("explain returns the catalogue entry with its fixed example, as the stdio server does (card AF5)", async () => {
+    const out = toolText(await rpc("tools/call", { name: "explain", arguments: { code: "w_door_clearance" } }));
+    expect(out).toEqual({ ok: true, code: "W_DOOR_CLEARANCE", entry: ERROR_CATALOG.W_DOOR_CLEARANCE });
+    expect(typeof out.entry.fixed).toBe("string");
+    expect(toolText(await rpc("tools/call", { name: "explain", arguments: { code: "W_NOPE" } }))).toEqual({
+      ok: false,
+      code: "W_NOPE",
+    });
+  });
+
   it("read_me explains the server: its caps, its images, and what it keeps", async () => {
     const text = (await rpc("tools/call", { name: "read_me", arguments: {} })).content[0].text as string;
     expect(text).toContain(`${ORIGIN}/svg/`);
@@ -247,7 +257,7 @@ describe("the input cap: a Diagnostic envelope before any compile work, never a 
     expect(out.diagnostics[0].message).toMatch(/^plan_json is /);
   });
 
-  it("every other argument is capped by the same rule: intent, brief, graph, profile", async () => {
+  it("every other argument is capped by the same rule: intent, brief, graph, profile, code", async () => {
     const bigObject = { rooms: Array.from({ length: 3000 }, (_, i) => ({ name: `room-${i}`, min_m2: 12 })) };
     expect(JSON.stringify(bigObject).length).toBeGreaterThan(SOURCE_CAP_BYTES);
     const cases: Array<[string, Record<string, unknown>, string]> = [
@@ -255,6 +265,7 @@ describe("the input cap: a Diagnostic envelope before any compile work, never a 
       ["score", { source: TINY, brief: bigObject }, "brief"],
       ["validate", { source: TINY, graph: { a: Array.from({ length: 20000 }, (_, i) => `n${i}`) } }, "graph"],
       ["lint", { source: TINY, profile: over }, "profile"],
+      ["explain", { code: over }, "code"],
     ];
     for (const [name, args, arg] of cases) {
       const out = toolText(await rpc("tools/call", { name, arguments: args }));

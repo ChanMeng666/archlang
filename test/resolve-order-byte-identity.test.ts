@@ -57,33 +57,38 @@ const BASELINE: [string, string, string[]][] = [
   ],
   [
     "instance-relational.arch",
-    "7fbcfec92546d856201caa046b460e0744cb3c4d4df0ecd05cabdf8236d1a07e",
+    // AF2 (was 7fbcfec9): `E_LAYOUT_REF` is spanned on the unknown id `nowhere`, 579-586 (was the
+    // room statement from 557), in each of the three instances; no room is near enough for a fix.
+    // Code, message, order, SVG and lint() are unchanged; main's span put back gives 7fbcfec9.
+    "1bd0d9216ba6f56aa290161ffcea6e15d40a1ca6da3dcfeb422221e771b4f609",
     [
       "W_UNKNOWN_MATERIAL@353",
       "E_WALL_THICKNESS@618",
       "E_ROOM_SIZE@683",
-      "E_LAYOUT_REF@557",
+      "E_LAYOUT_REF@579",
       "W_UNKNOWN_MATERIAL@353",
       "E_WALL_THICKNESS@618",
       "E_ROOM_SIZE@683",
-      "E_LAYOUT_REF@557",
+      "E_LAYOUT_REF@579",
       "W_UNKNOWN_MATERIAL@353",
       "E_WALL_THICKNESS@618",
       "E_ROOM_SIZE@683",
-      "E_LAYOUT_REF@557",
+      "E_LAYOUT_REF@579",
       "W_ROOM_LABEL_OUTSIDE@925",
     ],
   ],
   [
     "relational-errors.arch",
-    // AF7 (RM-D69, was 28a1ff7c): only added related notes (`AF7_MAIN` below); the order is unchanged.
-    "eec65b7bbcfcf39f289619437c8f91cd2d875a5da66ac8aa90a0dd348a14d646",
+    // AF2 (was 28a1ff7c): `E_LAYOUT_REF` is spanned on the unknown id, from 506 (was the room
+    // statement from 483), with no fix; the rest as above, and main's span put back gives 28a1ff7c.
+    // AF7 (RM-D69, was b44edcc4): only added related notes (`AF7_MAIN` below); the order is unchanged.
+    "fe1d11f6dc86ef8c640927de981273ed4132d23d527fb8e14c817b89dddd4907",
     [
       "E_WALL_THICKNESS@384",
       "W_UNKNOWN_MATERIAL@778",
       "E_ROOM_SIZE@859",
       "W_ROOM_LABEL_OUTSIDE@764",
-      "E_LAYOUT_REF@483",
+      "E_LAYOUT_REF@506",
       "E_LAYOUT_CYCLE@544",
       "E_LAYOUT_CYCLE@592",
       "E_LAYOUT_UNPLACED@640",
@@ -129,7 +134,7 @@ const read = (name: string): string => readFileSync(join(DIR, name), "utf8");
 /** AF7 (RM-D69): `main`'s digest of each row AF7 re-measured. The row's own digest body, with AF7's
  *  related notes taken out of `compile().diagnostics` and `describe()`, gives it back. */
 const AF7_MAIN: [string, string][] = [
-  ["relational-errors.arch", "28a1ff7cee53d7ff853183c05f6b3176e055438967370dd1b30eea5650248e71"],
+  ["relational-errors.arch", "b44edcc4fa6e1f0c7f7b1b55e6d3a1206d0f8fcd8a0df1a45b32782a450bcc79"],
 ];
 
 suite("resolve order — byte identity with compile().diagnostics, order included", () => {

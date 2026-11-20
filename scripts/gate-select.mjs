@@ -312,7 +312,10 @@ export function guardImports(ROOT, guard) {
 
 /** The error catalogue: its index, its fix texts and every entry module. */
 export const isErrorCatalogue = (f) =>
-  f === "src/error-catalog.ts" || f === "src/error-catalog-fixes.ts" || f.startsWith("src/error-catalog/");
+  f === "src/error-catalog.ts" ||
+  f === "src/error-catalog-fixes.ts" ||
+  f === "src/error-catalog-fixes-intent.ts" ||
+  f.startsWith("src/error-catalog/");
 
 /** A property that carries diagnostic text: `message:`, `fix:`, `hint:` or `hints:` (optional ones too). */
 const TEXT_PROP = /(?:^|[\s{,(])(message|fix|hint|hints)\??\s*:/m;

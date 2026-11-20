@@ -278,7 +278,9 @@ Non-blockers from the second review of #968:
 3. PR CI never runs `test/index-values.test.ts` on Windows. Standalone on a Windows laptop, its program build took 9.8 s over 912 files against its 60 s timeout; `types: []` cuts that to 4–6 s with the same result.
 4. The new top-level `Object.freeze` calls carry no `@__PURE__` mark (`src/pure.ts`), like 27 other freezes in `src`. No measured effect.
 
-### 3.18 · The playground's first-use bundle has about 1.9 KB of headroom left — `todo`
+### 3.18 · The playground's first-use bundle has about 1.9 KB of headroom left: done by #976, waiting to be archived — `note`
+
+Done by #976, with no budget raised: Format, Finish, Repair furniture and the DXF/TXT downloads load their core code on a press (`playground/src/press-core.ts`, build entry `src/actions-path.ts`), and a `first-use` chunk group keeps the worker's `lint` on the first use's path. `npm run size:embed` on `main` 5f3606f5 → #976's head merged with it: first use 484,715 → 456,244 B (−28,471), compiler path 325,093 → 324,065 B, embed 311,313 → 310,260 B. The target was 3 KB, so this is well past it. `firstUsePathBudget` was re-taken DOWN in the same PR by the file's own rule (measured × 1.025, rounded up to a thousand): 486,000 → 468,000 B (11,756 B headroom), so a press-core or glTF-Transform leak now trips it. For the compiler and embed paths the rule gives the budgets as they stand (333,000 and 319,000 B), so those are unchanged. `docs/agents/iron-laws.md` still quotes an older `embedPathBudget`; editing that line is the owner's call (NR.9 (3)). The card text below is kept for the record.
 
 After AL3b (#969) the first-use path (`firstUsePathBudget`, `playground/e2e/startup-chunks.baseline.json`) measures 484,137 B gzip against 486,000 B. The next few KB of compiler growth trip `Playground E2E chromium`. Two ways out: move code a first use need not load out of the compiler chunk or the lazy core chunk (as EB.2 did, #947), or re-take the budget by the file's own rule (measured × 1.025, rounded up to a thousand). A re-take raises a ceiling, a relaxed check that needs the owner's word for that PR (`REVIEW.md`; the owner approved the compiler-path and embed raises on #969, 2026-11-19, not this one). Measure with `npm run size:embed` (`scripts/embed-path-size.mjs`) on `main` and the branch; `docs/agents/iron-laws.md` still quotes `embedPathBudget` as 310,000 B (319,000 since #969), and editing that line is the owner's call (NR.9 (3)).
 
@@ -1312,7 +1314,7 @@ the front door as `entranceId` for every room under `arch describe --json`; the 
 and `lint()` rows over the examples are byte-identical unless an example has such a door (list
 any that move, with the reason). **Size:** S.
 
-### U.2 · Metres compile silently — `todo`
+### U.2 · Metres compile silently: done by #704, waiting to be archived — `note`
 
 **Observed (audit finding 11, Appendix B).** `size 4x3` and `thickness 0.2` (metres written
 where millimetres are the unit) compile `ok:true` with no diagnostic. Only lint reaches the
@@ -1328,6 +1330,37 @@ tiny value (a hairline, a model in another scale) may be noise.
 **Gate:** a catalogued code with a `fix` that names millimetres, fired on the audit's two
 inputs and on no example (`arch lint --json` over `examples/`); the error-catalog example test
 and `gen:errors` stay green. **Size:** S.
+**Done by PR #704** (RM1.4), for the audit's two inputs only. `W_LENGTH_IN_METRES`
+(`src/ir/silent-accepts.ts`) covers three places: a rectangle room's `size` with both sides under
+100 mm, a wall `thickness` under 10 mm, and the two thicknesses of `walls from rooms`. Its
+catalogue `fix` reads "Write the length in millimetres; the hint gives the clause times 1000."
+Every other length still compiles silently; that remainder is U.2a. Re-checked for AF0 with
+`arch compile --json` on the audit's two inputs (`test/silent-accepts/length-in-metres.arch`):
+`ok: true` and two warnings, `Wall "shell" thickness 0.2 is read as 0.2 mm: lengths are
+millimetres` (its hint: write `thickness 200`) and `Room "main" size 4 x 3 is read as 4 mm x 3 mm:
+lengths are millimetres` (its hint: write `size 4000x3000`). `test/silent-accepts.test.ts` pins
+both and the quiet thresholds. Its byte-identity law over `examples/` checks the "no example"
+clause through `compile().diagnostics`, not through `arch lint --json` as the gate wrote: the code
+is raised by the compile channel, which `lint()` does not report. A length that is too LARGE (a
+size built from a product of two lengths, `ai-first-language` README §6 finding 3) is a dimension
+check, not this entry. The entry is closed and waits to be archived to `archlang-lab` with
+`scripts/backlog-archive.mjs`.
+
+### U.2a · Metres still compile silently outside a room size and a wall thickness — `todo`
+
+**Observed (AF0 probe on `main` at `7fd0c469`, `arch compile --json` then `arch lint --json`).**
+In one plan with a 200 mm wall, these compile with `ok: true` and no `W_LENGTH_IN_METRES`:
+`door … width 0.9`, `window … width 1.2`, `furniture bed … size 1.6x2`, `room … polygon (0,0) (4,0)
+(4,3) (0,3)`, and the mixed `room … size 4x3000` (one side is not under 100 mm, so the room rule
+stays quiet by design). Only lint reaches any of them, each in its own terms: `W_DOOR_CLEARANCE`
+("Door is 0.9 mm wide"), `W_BED_UNDERSIZED` ("The bed is 2 mm long"), and `W_ROOM_TOO_SMALL` for
+the two rooms ("only 0.01 m²", "only 0 m²"). The window's 1.2 mm width draws no word at all. None
+of these findings says the cause is the unit. **Gate:** decide per clause which lengths get a
+metres floor (a door or window `width`, a furniture `size` with both sides under its own floor, a
+polygon whose every coordinate is under 100 mm), and record the choice here. Each chosen clause
+then raises `W_LENGTH_IN_METRES` with a clause-times-1000 hint, pinned in
+`test/silent-accepts.test.ts`, and that file's byte-identity law over `examples/` stays green.
+**Size:** S.
 
 ### U.3 · A misspelt furniture category passes `validate --strict`: done by #848, waiting to be archived — `note`
 
@@ -1362,7 +1395,21 @@ a new diagnostic moves `lint()` only for plans that write such a label.
 `describe()`/`lint()` over the examples are byte-identical (verify that no example writes a
 label on a drawn symbol). **Size:** S.
 
-### U.5 · A parse error does not use what the spec already predicts — `todo`
+### U.5 · A parse error that drops a plan's only drawable statement adds a `W_EMPTY_PLAN` (narrowed) — `todo`
+
+**Narrowed (AF0, re-checked against the code).** The rule-6 half is done by PR #790 (CO-1):
+`id=` may follow the kind word of `furniture`, `door`, `window`, `outdoor` and `wall`
+(`idAfterKind`, `src/clause-order.ts`; the wall calls it at `src/elements/wall.ts:54`), so both
+forms the audit wrote now compile instead of failing. Probe, `arch compile --json` on
+`wall exterior id=w1 thickness 200 { … }` with a room, a `door on w1 at 50% width 900` and
+`furniture bed id=b1 at (500,500) size 1600x2000`: `ok: true`, no diagnostic, the door resolves on
+`w1` and `describe().furniture` lists `b1`. What remains is the cascade, for any parse error and not
+only rule 6. Probe, a plan whose only statement is `wall exterior id=w1 thick 200 { … }`: exit 2,
+`E_PARSE Expected "thickness" but found "thick"` and then `W_EMPTY_PLAN Plan has no walls, rooms,
+or furniture — nothing to draw`. With a room beside the same wall line, only the `E_PARSE` is
+reported, because `checkPlanDrawable` (`src/ir/checks.ts`) counts what resolved and the room did.
+The remaining gate is the cascade half of the gate below; the `fix`-is-the-reordered-line half no
+longer applies, since the reordered line is now legal. The text below is the original entry.
 
 **Observed (audit finding 12, Appendix B).** `wall exterior id=w1 …` gives
 `E_PARSE Expected "thickness" but found "id"` plus a cascading `W_EMPTY_PLAN`. Spec rule 6 says
@@ -2400,7 +2447,9 @@ down. (2) `growthBudget` (ceiling 458,980 B over a 438,980 B baseline) guards no
 path, 315,282 B, is ~124 KB under the baseline): re-baseline it by its rule or retire it. (3) `docs/agents/iron-laws.md`'s RM-D57 line could point at
 `npm run size:embed` (#937 review). **Gate:** (1) and (2) fixed in the baseline file; (3) the owner's call.
 
-### NR.10 · Moving the `E_INTENT_*` rows out of the compiler chunk's fix table (#948) — `todo`
+### NR.10 · Moving the `E_INTENT_*` rows out of the compiler chunk's fix table (#948): done by #976, waiting to be archived — `note`
+
+Done by #976: the 13 rows are generated into `src/error-catalog-fixes-intent.ts`. `compile()`'s error card reads the compile table only, and `diagnosticToJson` and the public `renderErrorSvg` read both (`src/any-catalog-fix.ts`). The `test/explain.test.ts` pin now proves the two tables are disjoint and together every catalogue code. The compiler chunk is 1,052 B smaller. The first use gained nothing from it: `diagnosticToJson` is on that path and carries the rows there.
 
 Twelve today (thirteen once #948 lands), they are never compile diagnostics; dropping them from `src/error-catalog-fixes.ts`'s compile-path copy
 saves about 633 B gzip. Needs the `test/explain.test.ts` pin (its keys equal every catalogue code) reworked.
@@ -2571,6 +2620,9 @@ the `hinged` hint (EV.4) kept for a kind written as its own statement.
 ### EV.5 · A refused opening offers no move (design first) — `todo`
 
 **Carded as** AF9 (`docs/plans/product-roadmap/cards.md` track 10, 2026-11-18).
+**Design:** `docs/plans/ai-first-language/af9-design.md` (2026-11-20) meets the gate below. Its
+questions are ruled (RM-D70, revised; its §12): maybe-incorrect moves and placeholder skeletons
+only, with no machine-applicable fix, so L1 cannot move.
 
 Six of EV.1's seven compile-error losses are opening-placement refusals (`refused, not moved`, a
 window on a partition edge, a parallel edge with no offset; ADR 0028 § 5). They return no fix. L1 (`eval/l1.ts`) applies only the machine-applicable tier, so

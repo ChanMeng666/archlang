@@ -5,18 +5,7 @@
  * sheet's, which the shell hands over once the sheet is drawn), and the draggable pane divider.
  * Each is wired from an explicit context so main.ts stays composition-only.
  */
-import {
-  compile,
-  describe,
-  diagnosticToJson,
-  finish,
-  format,
-  renderAscii,
-  repair,
-  toDxf,
-  type FinishResult,
-  type Scene,
-} from "archlang";
+import { compile, describe, diagnosticToJson, type FinishResult, type Scene } from "archlang";
 import { escapeHtml } from "./escape.js";
 import { embedSnippets, exampleImageUrl } from "./embed-snippets.js";
 import { exampleNameFor } from "./examples.js";
@@ -24,8 +13,29 @@ import { buildChatPrompt, buildLlmPrompt, CHAT_HOSTS, type ChatHost, chatHostUrl
 import { createShortLink, encodeSrc, set3dFlag, shareableHref, updateHash } from "./share.js";
 import { mountSnapshots } from "./snapshots.js";
 import { KEYS, readStr, writeStr } from "./storage.js";
+import { lazyOnce } from "./lazy-once.js";
+import { sparesData } from "./save-data.js";
 import { levelFileName } from "./levels.js";
 import { paperSizeMm, saveBlob, svgToCanvas } from "./raster-export.js";
+
+/**
+ * The core code behind Format, Finish, Repair furniture and the DXF and TXT downloads
+ * (press-core.ts, card 3.18): loaded on the first press of one of them, or when a menu holding
+ * them opens, never with the actions themselves. Every use awaits it; a failed load is forgotten,
+ * so the next press tries again (`lazyOnce`).
+ */
+type ActionsCore = typeof import("./press-core.js");
+const loadActionsCore = lazyOnce((): Promise<ActionsCore> => import("./press-core.js"));
+/**
+ * Start loading it ahead of a press (a menu opened, the pointer on the button), unless the browser
+ * asks to spare data (Save-Data or 2g: then only a press loads it, ruling MP-D4). A failure is
+ * silent here; the press that needs it says so.
+ */
+const warmActionsCore = () => {
+  if (!sparesData(navigator)) void loadActionsCore().catch(() => {});
+};
+/** The message of a load failure, for the status. */
+const reason = (err: unknown) => (err as { message?: string })?.message ?? err;
 
 /** The `finish` notes that ask something of the author: all but a room it has no pieces for. */
 const declined = (result: FinishResult): FinishResult["unresolved"] =>
@@ -114,35 +124,66 @@ export function mountActions(ctx: ActionsCtx): ActionsHandle {
     els,
   } = ctx;
 
-  // Format (idempotent, comment-preserving) — rewrite the source in place.
-  els.formatBtn?.addEventListener("click", () => {
-    const src = getSource();
-    const out = format(src);
-    if (out === src) {
-      flash("Already formatted");
+  // The menus that hold Format, Finish and the downloads load their code when they open, and the
+  // Repair button when the pointer or the focus reaches it, so a press seldom waits on it.
+  for (const menu of new Set([els.shareMenu, els.formatBtn?.closest("details"), els.finishBtn?.closest("details")]))
+    menu?.addEventListener("toggle", () => {
+      if (menu.open) warmActionsCore();
+    });
+  for (const type of ["pointerenter", "focus"]) els.repairBtn?.addEventListener(type, warmActionsCore);
+
+  /**
+   * Run a press of Format, Finish or Repair: await the core, then read the source as it is THEN and
+   * apply, in one synchronous step with no await between the read and the apply. So a press applies
+   * to the current document, and two presses during one load apply in turn, the second to the
+   * first's result (each continuation runs whole before the next). When the core did not load, the
+   * status says so and nothing runs.
+   */
+  async function onPress(what: string, run: (core: ActionsCore, src: string) => void): Promise<void> {
+    let core: ActionsCore;
+    try {
+      core = await loadActionsCore();
+    } catch (err) {
+      flash(`${what} did not load: ${reason(err)}`);
       return;
     }
-    loadSource(out, false);
-    flash("Formatted");
-  });
+    run(core, getSource());
+  }
+
+  // Format (idempotent, comment-preserving) — rewrite the source in place.
+  els.formatBtn?.addEventListener("click", () =>
+    onPress("Format", (core, src) => {
+      const out = core.format(src);
+      if (out === src) {
+        flash("Already formatted");
+        return;
+      }
+      loadSource(out, false);
+      flash("Formatted");
+    }),
+  );
 
   // Finish — the core's `finish()` (the same transform as `arch finish`) adds what a
   // finished sheet needs and replaces the source as ONE undo step (Ctrl+Z reverts
   // it); what it added and what it declined are listed in the Checks tab's Lint section.
-  els.finishBtn?.addEventListener("click", () => runFinish(false));
+  els.finishBtn?.addEventListener("click", () => void runFinish(false));
 
   /**
    * Run `finish` (with `reissue` from the panel's "Reissue sheet" button) and report.
    * `loadSource` hides the panel — it describes the previous document — so the panel
    * is rendered AFTER it. A rerun with nothing to do leaves a showing log in place.
    */
-  function runFinish(reissue: boolean) {
-    const src = getSource();
-    const result = finish(src, reissue ? { reissue: true } : {});
+  function runFinish(reissue: boolean): Promise<void> {
+    return onPress("Finish", (core, src) => finishNow(core, src, reissue));
+  }
+
+  /** {@link runFinish}'s apply, synchronous: `src` is the source as it is now. */
+  function finishNow(core: ActionsCore, src: string, reissue: boolean) {
+    const result = core.finish(src, reissue ? { reissue: true } : {});
     const n = result.changes.length;
     const m = declined(result).length;
     if (result.changed) loadSource(result.source, false);
-    if (result.changed || m > 0 || els.finishPanel?.hidden !== false) showFinish(result);
+    if (result.changed || m > 0 || els.finishPanel?.hidden !== false) showFinish(core, result);
     const added = `${n} change${n === 1 ? "" : "s"}`;
     flash(
       result.changed
@@ -159,7 +200,7 @@ export function mountActions(ctx: ActionsCtx): ActionsHandle {
 
   // Repair furniture (ADR 0006) — run the deterministic corrector, show the change
   // log, and let the user apply the new source. Never auto-applied.
-  els.repairBtn?.addEventListener("click", () => showRepair());
+  els.repairBtn?.addEventListener("click", () => void showRepair());
 
   // Embed — build an <iframe> snippet pointing at the chrome-less embed page.
   els.embedBtn?.addEventListener("click", () => void showEmbed());
@@ -355,7 +396,7 @@ export function mountActions(ctx: ActionsCtx): ActionsHandle {
 
   /** Render what `finish` added and what it declined into the Checks tab's Lint section, in the
    *  same change-log form Repair uses. */
-  function showFinish(result: FinishResult) {
+  function showFinish(core: ActionsCore, result: FinishResult) {
     const panel = els.finishPanel;
     if (!panel) return;
     panel.hidden = false;
@@ -393,7 +434,7 @@ export function mountActions(ctx: ActionsCtx): ActionsHandle {
       .join("");
     // The notes may say "rerun with --reissue", a CLI flag. Offer it here when — and only
     // when — reissuing would actually change the sheet (`paper`/`scale`, nothing else).
-    const canReissue = asked.length > 0 && finish(getSource(), { reissue: true }).changed;
+    const canReissue = asked.length > 0 && core.finish(getSource(), { reissue: true }).changed;
     const n = result.changes.length;
     panel.innerHTML =
       `<div class="repair-head"><strong>Finish — ${n} change${n === 1 ? "" : "s"}` +
@@ -410,15 +451,20 @@ export function mountActions(ctx: ActionsCtx): ActionsHandle {
       outside +
       // The core's note names the CLI flag; say what it is called here.
       (canReissue ? `<p class="repair-un-h">Here, Reissue sheet does what <code>--reissue</code> does.</p>` : "");
-    panel.querySelector(".finish-reissue")?.addEventListener("click", () => runFinish(true));
+    panel.querySelector(".finish-reissue")?.addEventListener("click", () => void runFinish(true));
   }
 
   /** Run `repair` on the current source and render its change log into the Lint
    *  tab, with an "Apply fixes" action that swaps the corrected source in. */
-  function showRepair() {
+  function showRepair(): Promise<void> {
+    return onPress("Repair", repairNow);
+  }
+
+  /** {@link showRepair}'s apply, synchronous: `src` is the source as it is now. */
+  function repairNow(core: ActionsCore, src: string) {
     const repairPanel = els.repairPanel;
     if (!repairPanel) return;
-    const result = repair(getSource());
+    const result = core.repair(src);
     if (!result.changed && result.unresolved.length === 0) {
       repairPanel.hidden = false;
       repairPanel.innerHTML = `<p class="repair-none">Nothing to repair — furniture placement is already sound.</p>`;
@@ -548,6 +594,20 @@ export function mountActions(ctx: ActionsCtx): ActionsHandle {
     if (failed) onExportError("glb", error);
   }
 
+  /**
+   * The press-only core for a DXF or TXT download, saying on the stage that it is being prepared
+   * while it loads (as the GLB does); the status goes back once it is in. A failed load throws to
+   * `downloadCurrent`, which reports it as that export's failure.
+   */
+  async function coreForExport(format: string): Promise<ActionsCore> {
+    working(`Preparing ${format}…`);
+    try {
+      return await loadActionsCore();
+    } finally {
+      working(null);
+    }
+  }
+
   // ---- multi-format download (SVG vector · DXF vector · TXT ascii · PNG/PDF raster · GLB) ----
   async function downloadCurrent(format: string) {
     if (format === "glb") {
@@ -563,11 +623,13 @@ export function mountActions(ctx: ActionsCtx): ActionsHandle {
       } else if (format === "dxf") {
         const scene = getScene();
         if (!scene) return;
+        const { toDxf } = await coreForExport("DXF");
         saveBlob(new Blob([toDxf(scene)], { type: "application/dxf" }), "dxf", level);
       } else if (format === "txt") {
         // The zero-dep ASCII plan — the same bytes `arch compile -f txt` emits.
         const scene = getScene();
         if (!scene) return;
+        const { renderAscii } = await coreForExport("TXT");
         saveBlob(new Blob([renderAscii(scene)], { type: "text/plain" }), "txt", level);
       } else if (format === "png") {
         const canvas = await svgToCanvas(clean);

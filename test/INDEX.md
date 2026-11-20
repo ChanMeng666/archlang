@@ -5,7 +5,7 @@
 Where the tests of a `src` module are, and what each test file is for. Generated; `npm run check:drift`
 fails when it is stale. How to add a test: `docs/testing.md` § 4.
 
-557 test files in `test/`, 290 `src` modules, 108 modules no test imports.
+561 test files in `test/`, 295 `src` modules, 107 modules no test imports.
 
 ## `src` module → tests that import it
 
@@ -30,13 +30,16 @@ Nearest first, then by name; `(+n)` is the rest. Test names are `test/<name>.tes
 - `src/analyze/quantities.ts` (2) — `describe-quantities`, `net-area-budget`
 - `src/analyze/symmetry.ts` (1) — `rect-ring`
 - `src/analyze/wall-faces.ts` (2) — `lint-space-enclosure`, `wall-status`
-- `src/ast.ts` (119) — `arc-radius-exact`, `ast-values-frozen`, `band`, `circulation-concave`, `circulation-translation`, `closed-vocabularies`, `corner-window`, `cursor-exhaustive` (+111)
+- `src/any-catalog-fix.ts` (1) — `explain`
+- `src/ast.ts` (120) — `arc-radius-exact`, `ast-values-frozen`, `band`, `circulation-concave`, `circulation-translation`, `closed-vocabularies`, `corner-window`, `cursor-exhaustive` (+112)
 - `src/attach.ts` (1) — `attach`
 - `src/axes.ts` (1) — `axes`
 - `src/backends/ascii.ts` (10) — `axes`, `fence`, `furniture-curves-backends`, `opening`, `outdoor`, `room-floor`, `scene-path-prim`, `schedule` (+2)
+- `src/backends/error-svg.ts` (1) — `error-svg`
 - `src/backends/font.ts` (1) — `export-font-cjk`
 - `src/backends/png.ts` (1) — `export-font-cjk`
 - `src/backends/svg.ts` (5) — `furniture-curves-backends`, `glyph-lib`, `scene-path-prim`, `scene`, `style`
+- `src/catalog-fix.ts` (1) — `explain`
 - `src/chrome-layout.ts` (5) — `bbox-derived-position`, `chrome-hidden`, `export-pdf`, `north-arrow`, `sheet`
 - `src/clause-order.ts` (2) — `clause-order-byte-identity`, `door-enums`
 - `src/cli/commands-analyze.ts` (12) — `cli-narrow`, `describe-clearances`, `keep-impact-depends`, `lint-summary`, `schedule`, `sheet`, `stages`, `cli-validate-next` (+4)
@@ -45,10 +48,10 @@ Nearest first, then by name; `(+n)` is the rest. Test names are `test/<name>.tes
 - `src/cli/commands-render.ts` (3) — `keep-impact-depends`, `plan-json-dropped`, `watch-arming`
 - `src/cli/context-starter.ts` (1) — `context-starter`
 - `src/cli/help.ts` (1) — `cli-help`
-- `src/cli/io.ts` (87) — `block-stair-byte-identity`, `clause-order-byte-identity`, `cli-contract`, `cli-exit-parse`, `cli-expected-hash`, `cli-flag-matrix`, `cli-help`, `cli-output-format` (+79)
+- `src/cli/io.ts` (89) — `block-stair-byte-identity`, `clause-order-byte-identity`, `cli-contract`, `cli-exit-parse`, `cli-expected-hash`, `cli-flag-matrix`, `cli-help`, `cli-output-format` (+81)
 - `src/cli/link.ts` (1) — `cli-link`
 - `src/cli/review.ts` (1) — `cli-preview-review`
-- `src/cli/run.ts` (53) — `annotation-overprint`, `axes`, `cli-batch`, `cli-commands`, `cli-context`, `cli-contract`, `cli-exit-parse`, `cli-expected-hash` (+45)
+- `src/cli/run.ts` (55) — `annotation-overprint`, `axes`, `cli-batch`, `cli-commands`, `cli-context`, `cli-contract`, `cli-exit-parse`, `cli-expected-hash` (+47)
 - `src/cli/serialize.ts` (8) — `cli-batch`, `cli-plan-json-roundtrip`, `element-facets`, `plan-json-arcs-paper`, `plan-json-dropped`, `plan-json-instances`, `plan-json-roundtrip-law`, `walls-from-rooms`
 - `src/cli/source-hash.ts` (1) — `cli-expected-hash`
 - `src/cli/summary.ts` (1) — `lint-summary`
@@ -57,7 +60,8 @@ Nearest first, then by name; `(+n)` is the rest. Test names are `test/<name>.tes
 - `src/cursor.ts` (3) — `block-stair`, `cursor-exhaustive`, `reroll-findrun-oracle`
 - `src/datum.ts` (11) — `access-policy`, `cursor-exhaustive`, `describe-depends`, `diff-laws`, `emit-opening-oracle`, `equivariance-fuzz`, `fix-printer`, `fuzz` (+3)
 - `src/describe.ts` (50) — `acc-metadata`, `accessible-svg`, `d4`, `describe`, `diff-laws`, `diff`, `room-adjacency-oracle`, `vocabulary-es-pt` (+42)
-- `src/diagnostics.ts` (54) — `conflict-related-spans`, `diagnostic-json-related`, `diagnostics-volume`, `diagnostics`, `error-catalog-families`, `export-font-cjk`, `expr`, `fix-pullback` (+46)
+- `src/diagnostic-json.ts` (1) — `explain`
+- `src/diagnostics.ts` (56) — `conflict-related-spans`, `diagnostic-json-related`, `diagnostics-volume`, `diagnostics`, `did-you-mean`, `error-catalog-families`, `export-font-cjk`, `expr` (+48)
 - `src/diff.ts` (3) — `diff-fabric`, `diff-laws`, `diff`
 - `src/doc.ts` (2) — `fix-printer`, `format`
 - `src/draw-budget.ts` (5) — `drawing-budget`, `sheet-annotations`, `walls-from-rooms-clauses`, `window-kinds`, `work-counts`
@@ -85,16 +89,18 @@ Nearest first, then by name; `(+n)` is the rest. Test names are `test/<name>.tes
 - `src/elements/void.ts` (3) — `v129-cross`, `void-rail`, `void`
 - `src/elements/wall.ts` (1) — `room-datums`
 - `src/elements/window.ts` (1) — `corner-window`
+- `src/error-catalog-fixes-intent.ts` (1) — `explain`
 - `src/error-catalog-fixes.ts` (1) — `explain`
 - `src/error-catalog.ts` (20) — `cli-context`, `context-starter`, `element-cap`, `error-catalog-families`, `fix-coverage`, `garage`, `levels`, `lint-rule-order` (+12)
 - `src/export/dxf.ts` (11) — `curves`, `export-dxf`, `furniture-curves-backends`, `furniture-label-fit`, `label-fit`, `label-wrap`, `opening`, `room-floor` (+3)
 - `src/export/pdf.ts` (8) — `export-font-cjk`, `export-pdf`, `furniture-curves-backends`, `label-wrap`, `roof`, `scene-path-prim`, `sheet`, `v129-cross`
 - `src/expr-source.ts` (1) — `emit-opening-oracle`
-- `src/expr.ts` (16) — `block-stair`, `cursor-exhaustive`, `error-value`, `expr`, `furniture-relations`, `import-module-lets`, `keep`, `non-finite` (+8)
+- `src/expr.ts` (17) — `block-stair`, `cursor-exhaustive`, `did-you-mean`, `error-value`, `expr`, `furniture-relations`, `import-module-lets`, `keep` (+9)
 - `src/facade.ts` (1) — `equivariance-corpus`
 - `src/finish.ts` (5) — `finish-levels`, `finish-sheet-degrade`, `keep`, `lint-dwelling-reading`, `lint-furniture-on-stair`
 - `src/fix-apply.ts` (1) — `fix-apply`
 - `src/fix-producers.ts` (2) — `emit-opening-oracle`, `fix-printer`
+- `src/fixable-codes.ts` (1) — `fixable-codes`
 - `src/fixture-orientation.ts` (2) — `fixture-orientation`, `rectilinear-sides`
 - `src/fixtures-catalog.ts` (35) — `catalogue-images`, `equivariance-corpus`, `export-dxf-blocks`, `finish-furnish-bounds`, `finish-furnish`, `fixture-classifier-drift`, `fixture-orientation`, `footprint-any-placement` (+27)
 - `src/format.ts` (58) — `axes`, `dim-faces`, `fence`, `furniture-against`, `furniture-lint`, `furniture-rotate`, `opening`, `openings-between` (+50)
@@ -115,12 +121,12 @@ Nearest first, then by name; `(+n)` is the rest. Test names are `test/<name>.tes
 - `src/geometry/polygon.ts` (20) — `circulation-concave`, `dim-thickness-callout`, `furniture-label-fit`, `label-leaders`, `label-placement-oracle`, `label-placement`, `label-symbol-ink`, `label-wrap` (+12)
 - `src/geometry/rect.ts` (10) — `between-face-probes`, `block-stair-winders`, `finish-furnish-laws`, `finish-levels`, `label-placement-oracle`, `label-wrap`, `lint-clearances-kitchen-doors`, `lint-measure` (+2)
 - `src/geometry/union.ts` (3) — `band`, `joinery-oracle`, `union`
-- `src/grammar/tokens.ts` (34) — `arch-highlight`, `block-stair-lint`, `clause-order-byte-identity`, `closed-vocabularies`, `corner-window`, `door-enums`, `doors`, `element-facets` (+26)
+- `src/grammar/tokens.ts` (35) — `arch-highlight`, `block-stair-lint`, `clause-order-byte-identity`, `closed-vocabularies`, `corner-window`, `did-you-mean`, `door-enums`, `doors` (+27)
 - `src/hatches.ts` (8) — `export-pdf`, `floor-materials-byte-identity`, `joinery-split-oracle`, `joinery-split`, `model-range`, `outdoor`, `room-floor`, `sheet-text`
 - `src/impact.ts` (2) — `rectilinear-doors`, `rectilinear-rooms`
 - `src/import.ts` (34) — `block-stair-byte-identity`, `corner-window-byte-identity`, `dim-swap-reprint`, `dim-thickness-callout`, `drawing-budget`, `error-value-law`, `floor-materials-byte-identity`, `furniture-relations` (+26)
 - `src/import/limits.ts` (1) — `openplan3d-malformed`
-- `src/index.ts` (414) — `acc-metadata`, `access-graph`, `access-policy`, `accessible-svg`, `agent-gallery`, `alias-match`, `anchors`, `annotate` (+406)
+- `src/index.ts` (419) — `acc-metadata`, `access-graph`, `access-policy`, `accessible-svg`, `agent-gallery`, `alias-match`, `anchors`, `annotate` (+411)
 - `src/input-limit.ts` (2) — `import-rooted`, `workspace-seams`
 - `src/intent-concepts.ts` (3) — `vocabulary-es-pt`, `vocabulary-living-dining`, `vocabulary-matcher-oracle`
 - `src/intent-feasibility.ts` (1) — `intent-infeasible`
@@ -155,7 +161,7 @@ Nearest first, then by name; `(+n)` is the rest. Test names are `test/<name>.tes
 - `src/markdown.ts` (7) — `label-fit`, `label-placement-oracle`, `label-wrap`, `room-adjacency-oracle`, `room-overlap-oracle`, `step-budget`, `vocabulary-matcher-oracle`
 - `src/naming.ts` (3) — `grid-index`, `lint-messages-id-free`, `room-overlap-oracle`
 - `src/next.ts` (3) — `cli-validate-next`, `next`, `silent-accepts`
-- `src/num-format.ts` (16) — `annotation-collisions`, `dim-thickness-callout`, `emit-opening-oracle`, `fmt-lossless`, `imperial-input`, `keep`, `lint-ruleset-values`, `lint-thickness-unplaced` (+8)
+- `src/num-format.ts` (17) — `annotation-collisions`, `dim-thickness-callout`, `emit-opening-oracle`, `fmt-lossless`, `imperial-input`, `keep`, `lint-ruleset-values`, `lint-thickness-unplaced` (+9)
 - `src/opening-relation.ts` (3) — `openings-between`, `rectilinear-doors`, `rectilinear-sides`
 - `src/opening-schedule.ts` (2) — `sheet-annotations`, `window-kinds`
 - `src/parser.ts` (154) — `arc-radius-exact`, `attach`, `axes`, `block-stair-byte-identity`, `block-stair`, `chrome-hidden`, `circle-enclosure`, `circulation-concave` (+146)
@@ -193,8 +199,8 @@ Nearest first, then by name; `(+n)` is the rest. Test names are `test/<name>.tes
 - `src/vocabulary.ts` (9) — `alias-match`, `garage`, `grid-index`, `lint-label-piece-missing`, `room-overlap-oracle`, `vocabulary-es-pt`, `vocabulary-fallback`, `vocabulary-living-dining` (+1)
 - `src/wall-lowering.ts` (2) — `joinery-split`, `open-crossing`
 - `src/wall-ref.ts` (2) — `rectilinear-rooms`, `walls-from-rooms`
-- `src/while-fix.ts` (1) — `while-fix`
-- `src/world.ts` (125) — `block-stair-byte-identity`, `circulation-unmeasured`, `clause-order-byte-identity`, `corner-window-byte-identity`, `corner-window`, `dim-thickness-callout`, `drawing-budget`, `drawing-overflow` (+117)
+- `src/while-fix.ts` (2) — `fixable-codes`, `while-fix`
+- `src/world.ts` (128) — `block-stair-byte-identity`, `circulation-unmeasured`, `clause-order-byte-identity`, `corner-window-byte-identity`, `corner-window`, `did-you-mean`, `dim-thickness-callout`, `drawing-budget` (+120)
 
 ## Test files
 
@@ -291,6 +297,7 @@ The first sentence of each file's header comment.
 - `test/cli-validate-next.test.ts` — validate --json · next is purely additive; validate · next tiers through the CLI.
 - `test/cli.test.ts` — CLI — agent contract; CLI — compile file-writing side effects.
 - `test/closed-vocabularies.test.ts` — Every CLOSED value set in the language must be highlightable.
+- `test/compile-path-intent.test.ts` — Card NR.10's premise, pinned: `compile()` never raises an intent violation (`E_INTENT_*`, only `validateIntent` does), so the compile path's fix column (`src/error-catalog-fixes.ts`) leaves those rows out and `compile...
 - `test/compile.test.ts` — compile — valid studio; compile — determinism; compile — grid snap; compile — string escaping; compile — error cases.
 - `test/compose-assoc.test.ts` — `place` composes ASSOCIATIVELY: every level reaches into its own descendants the way the root does, and none reaches out (ADR 0016 §3, backlog E.16).
 - `test/conflict-related-spans.test.ts` — Card AF7: a conflict names the statements behind it.
@@ -318,6 +325,7 @@ The first sentence of each file's header comment.
 - `test/diagnostic-json.test.ts` — diagnosticToJson.
 - `test/diagnostics-volume.test.ts` — offsetToLineCol — line-start table agrees with the scan; diagnostics are capped at MAX_DIAGNOSTICS, then one E_DIAGNOSTIC_LIMIT (EH-D8).
 - `test/diagnostics.test.ts` — lexer — byte-offset spans; offsetToLineCol; formatDiagnostic — codespan frames; parser — error recovery + multi-error collection; compile — warnings never block…
+- `test/did-you-mean.test.ts` — AF2: one did-you-mean producer (`spelling`, `src/expr.ts`; `spellingFix`, `src/fix-producers.ts`), after TypeScript's `getSpellingSuggestion` and its one spelling codefix.
 - `test/diff-fabric.test.ts` — PS0.4 (plan-soundness): three `diffPlans` defects found by `research/associativity.md` §1.2, fixed additively in `src/diff.ts`.
 - `test/diff-laws.test.ts` — Laws `diffPlans` (`src/diff.ts`) must hold regardless of which side is "before": - **Reflexivity.** `diffPlans(A, A)` reports no change of any kind.
 - `test/diff.test.ts` — diffPlans — structural; diffPlans — summary & circulation; diffPlans — circulation deltas (entrance-bearing fixtures); diffPlans — auto-id rooms pair by unique…
@@ -401,6 +409,7 @@ The first sentence of each file's header comment.
 - `test/fix-printer.test.ts` — `emitOpening` (W4b) rebuilds a whole door/window/opening statement through the shared printer (`printDoc(statementText(...))`) instead of a second, hand-written enumeration of clauses, precisely so a rebuild never sil...
 - `test/fix-producers.test.ts` — off-wall opening fix (W_*_OFF_WALL → attachment form); opening width fix (E_*_WIDTH → has-placeholders); attach-position clamp fix (E_ATTACH_POS_RANGE → machine…
 - `test/fix-pullback.test.ts` — Lint fixes pulled back through the instance frame (backlog E.1, `fix-pullback`).
+- `test/fixable-codes.test.ts` — `FIX_PRODUCERS` (`src/fixable-codes.ts`, card AF8), a table of the fix producers, held to their source and to what they emit.
 - `test/fixture-byte-identity.test.ts` — Full-SVG pins for the fixture-symbol layer.
 - `test/fixture-classifier-drift.test.ts` — Drift guards for the fixture classifier lists.
 - `test/fixture-orientation.test.ts` — the shared back-edge ⇄ quarter-turn mapping; backingWallForRoomEdge / wallBackedEdges; backCandidateEdges — the footprint's aspect constrains the back; derived…
@@ -648,6 +657,7 @@ The first sentence of each file's header comment.
 - `test/room-too-small-by-use.test.ts` — W_ROOM_TOO_SMALL — the floor follows the room's use.
 - `test/room-uses.test.ts` — room uses.
 - `test/rooms-tiling-probe.test.ts` — The `walls from rooms` tiling-precondition probe (ADR 0028 Acceptance, plan card PS3.0 part A).
+- `test/root-cause-first.test.ts` — Card RM9.4: when one error causes a chain of diagnostics, the root is listed first and every diagnostic that follows from it names it (`Diagnostic.cause`, `cause` in the JSON); numbers in messages print through `src/n...
 - `test/route-source-floor.test.ts` — a key route is capped by the door it crosses, whatever the source order or frame.
 - `test/sanitize.test.ts` — T4.5 — sanitizeConfig utility; T4.5 — sanitization routed through the compiler.
 - `test/scene-memo.test.ts` — The Scene memo (`src/scene-memo.ts`, engineering-health EH2.6): `lint()`'s `annotation-overlap` reads the annotated Scene the compile already drew, and nothing a caller does to `compile().scene` can reach lint through...
@@ -763,6 +773,7 @@ The first sentence of each file's header comment.
 Imported directly by no test of the root `test/` suite (it may still run through `src/index.ts` or another `src`
 module); adding a test that imports it removes it from this list.
 
+- `src/actions-path.ts`
 - `src/analyze/connectors.ts`
 - `src/analyze/depends.ts`
 - `src/analyze/keep-facts.ts`
@@ -771,10 +782,9 @@ module); adding a test that imports it removes it from this list.
 - `src/analyze/rooms.ts`
 - `src/analyze/syntax.ts`
 - `src/analyze/takeoff.ts`
-- `src/backends/error-svg.ts`
+- `src/backends/error-svg-public.ts`
 - `src/backends/png-defaults.ts`
 - `src/builtins.ts`
-- `src/catalog-fix.ts`
 - `src/cli.ts`
 - `src/cli/commands-import.ts`
 - `src/cli/commands-share.ts`
@@ -790,7 +800,6 @@ module); adding a test that imports it removes it from this list.
 - `src/describe/shared.ts`
 - `src/describe/types.ts`
 - `src/describe/verticals.ts`
-- `src/diagnostic-json.ts`
 - `src/elements/column.ts`
 - `src/elements/door-panels.ts`
 - `src/elements/elevator.ts`

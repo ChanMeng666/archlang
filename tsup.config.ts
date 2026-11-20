@@ -30,7 +30,9 @@ export default defineConfig({
   // `src/first-use-path.ts` (card EB.2) does the same for the rest: what the header actions and
   // the compile worker's `lint` reach goes in chunks apart from what only edit mode, the intent
   // panel, takeoff and the 3D preview reach, so a first use loads only the first. Not exported,
-  // not in the tarball either.
+  // not in the tarball either. `src/actions-path.ts` (card 3.18) splits off what the header actions
+  // run only on a press (`finish`, `repair`, `format`, `toDxf`, `renderAscii`), which the
+  // playground loads with the press, not with the first use. Not exported, not in the tarball.
   entry: [
     "src/index.ts",
     "src/cli.ts",
@@ -39,6 +41,7 @@ export default defineConfig({
     "src/share.ts",
     "src/compile-path.ts",
     "src/first-use-path.ts",
+    "src/actions-path.ts",
   ],
   format: ["esm"],
   dts: { entry: ["src/index.ts", "src/cli.ts", "src/cli/link.ts", "src/share.ts"] },

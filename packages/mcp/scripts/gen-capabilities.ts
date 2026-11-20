@@ -13,7 +13,9 @@
  * constants (`packages/mcp-worker/src/limits.ts`), its png sentence and `server.json`'s remote; the
  * loop is the numbered lines of `INSTRUCTIONS`; the two guide links are the docs pages' own H1s, at
  * the route `docs-site/sync-docs.mjs`'s `PAGES` table gives them under the root package's
- * `homepage`. Only the headings and the sentences that join the lists are written here.
+ * `homepage`; the codes `fix` resolves are `fixableCodes()` (`src/fixable-codes.ts`), a table of the
+ * fix producers, held to their source by a test (`test/fixable-codes.test.ts`), with each two-tier
+ * row's `when`. Only the headings and the sentences that join the lists are written here.
  *
  * The generator runs from source under tsx with `tsconfig.gen.json`, which maps the core's package
  * name (and its `./share` subpath, which the Worker's limits read) to the core's source (as
@@ -24,12 +26,13 @@
 import { readFileSync, writeFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { buildManifest, ERROR_CATALOG, EXPORT_FORMATS } from "@chanmeng666/archlang";
+import { type Applicability, buildManifest, ERROR_CATALOG, EXPORT_FORMATS } from "@chanmeng666/archlang";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { MCP_PER_PERIOD, RATE_PERIOD_SECONDS, SOURCE_CAP_BYTES } from "../../mcp-worker/src/limits.js";
 import { createHostedServer, PNG_HOSTED } from "../../mcp-worker/src/server.js";
+import { type FixStage, fixableCodes } from "../../../src/fixable-codes.js";
 import { INSTRUCTIONS, RESOURCE_DEFS, type ResourceName, registerTools } from "../src/tools.js";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
@@ -118,6 +121,41 @@ function firstSentence(rel: string): string {
 
 const ids = (xs: readonly string[]): string => xs.map((x) => `\`${x}\``).join(", ");
 
+/** What each applicability means to `fix`, joined to its group of codes. */
+const APPLIES: Record<Applicability, (unsafe: string) => string> = {
+  "machine-applicable": () => "applied by default",
+  "maybe-incorrect": (unsafe) => `applied only with ${unsafe}`,
+  "has-placeholders": () => "never applied (the edit holds a `<…>` to fill in)",
+  unspecified: () => "never applied",
+};
+
+/** The stages whose fixes the `fix` tool reads (it compiles, and lints nothing). */
+const TOOL_STAGES: readonly FixStage[] = ["compile"];
+
+/** The "What `fix` resolves" lines: every code a fix producer declares, by applicability. */
+function fixLines(fixTool: ListedTool | undefined, invoke: string, fixFlags: readonly string[]): string[] {
+  if (!fixTool) throw new Error("no `fix` tool: reword the section on what it resolves");
+  if (!fixTool.inputSchema.properties?.unsafe) throw new Error("the `fix` tool has no `unsafe` argument");
+  if (!fixFlags.includes("--unsafe")) throw new Error(`\`${invoke} fix\` has no --unsafe flag`);
+  const unsafe = `\`unsafe:true\` (\`${invoke} fix --unsafe\`)`;
+  const groups = fixableCodes();
+  if (groups.length === 0) throw new Error("no fix producer declares a code");
+  const note = (c: { stage: FixStage; when?: string }): string => {
+    const parts = [...(TOOL_STAGES.includes(c.stage) ? [] : ["CLI"]), ...(c.when !== undefined ? [c.when] : [])];
+    return parts.length > 0 ? ` (${parts.join("; ")})` : "";
+  };
+  return [
+    `\`fix\` resolves the codes below; any other code is edited by hand (\`${invoke} explain <code>\` says how). The \`fix\` tool reads \`compile\`'s diagnostics; \`${invoke} fix\` also reads \`lint\`'s and proves a \`while\` rewrite, so it alone resolves the codes marked CLI. A code in two groups says when its edit takes each.`,
+    "",
+    ...groups.map(
+      (g) =>
+        `- \`${g.applicability}\`, ${APPLIES[g.applicability](unsafe)}: ${g.codes
+          .map((c) => `\`${c.code}\`${note(c)}`)
+          .join(", ")}`,
+    ),
+  ];
+}
+
 /** The resource's exact text (LF, one trailing newline). */
 export async function renderCapabilities(): Promise<string> {
   const tools = await listToolsOf(sharedServer());
@@ -142,6 +180,13 @@ export async function renderCapabilities(): Promise<string> {
       t.annotations.openWorldHint === false,
   );
   if (!readOnly) throw new Error("a tool is no longer read-only and closed-world: reword the line that says so");
+
+  const fixFlags = manifest.commands.find((c) => c.name === "fix")?.flags.map((f) => f.flag) ?? [];
+  const fixes = fixLines(
+    tools.find((t) => t.name === "fix"),
+    invoke,
+    fixFlags,
+  );
 
   const loop = INSTRUCTIONS.split("\n").filter((l) => /^\d+\. /.test(l));
   if (loop.length === 0) throw new Error("INSTRUCTIONS has no numbered loop");
@@ -177,6 +222,10 @@ export async function renderCapabilities(): Promise<string> {
     "",
     `- ${image.title}: ${image.url}`,
     `- ${oneRoom.title}: ${oneRoom.url}`,
+    "",
+    "## What `fix` resolves",
+    "",
+    ...fixes,
     "",
     "## Export formats",
     "",

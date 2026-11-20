@@ -58,6 +58,11 @@ export interface ParseCtx {
   fail(msg: string, t?: Token): never;
   /** {@link fail} reported at `span` (a whole statement), with the current token's hints. */
   failAt(msg: string, span: Span): never;
+  /** {@link fail} where `t` (the current token by default) should have been one of `near`,
+   *  reported at `span` (`t`'s own by default): a misspelling of one of them gets a did-you-mean
+   *  hint and a fix that rewrites `t` alone (AF2). Optional, so a caller's own `ParseCtx` stays
+   *  valid; the built-in elements fall back to `fail`/`failAt` without it. */
+  failNear?(msg: string, near: readonly string[], t?: Token, span?: Span): never;
   /** Report a catalogued diagnostic and keep parsing (a duplicate clause, `E_DUP_CLAUSE`). */
   diag(d: Diagnostic): void;
 }
@@ -113,6 +118,20 @@ export interface ResolveCtx {
    *  declared axis): it stands as a root cause when its element is dropped for reading the
    *  error value (AF3), where a {@link diag} report goes with the element. Absent: `diag`. */
   rootDiag?(d: Diagnostic): void;
+  /**
+   * Record `d`, an error already reported with which a wall-deriving statement (`walls from rooms`)
+   * refused to derive any wall from `rooms` (RM9.4), as the root of what follows from it in this
+   * group ({@link refusedDerivation}); `overlaps` are the pairs of rooms it refused for overlapping,
+   * as `"a b"`. Optional (append-only).
+   */
+  derivationRefused?(d: Diagnostic, rooms: ReadonlySet<string>, overlaps?: ReadonlySet<string>): void;
+  /**
+   * The root, as a {@link Diagnostic.cause}, of an opening with no wall to stand in on an edge of one
+   * of `rooms`: the first refusal {@link derivationRefused} recorded in this group whose rooms hold
+   * one; with `overlap`, of two rooms that share no edge: the first that refused `rooms[0]` and
+   * `rooms[1]` for overlapping. Undefined when there is none. Optional (append-only).
+   */
+  refusedDerivation?(rooms: readonly string[], overlap?: boolean): NonNullable<Diagnostic["cause"]> | undefined;
   /**
    * The elements of the group being resolved (the root plan, or one `place`d instance) that
    * have resolved so far, in source order, in the group's own frame: its own statements

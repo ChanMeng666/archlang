@@ -175,7 +175,7 @@ arch spec  # print the one-prompt language spec (spec.llm.md)
 arch context  # print the full bundled agent context (spec + workflow + CLI + errors)
 arch new  # scaffold a starter .arch
 arch import  # convert an OpenPlan3D plan (JSON) to .arch source, reporting what it left out
-arch explain  # look up an error code (cause / fix / example)
+arch explain  # look up an error code (cause / fix / example / fixed)
 ```
 
 The flags that matter:
@@ -273,6 +273,30 @@ ArchLang turns a small `.arch` text file into a professional floor-plan drawing.
 agents: deterministic, self-correcting (errors carry a machine code, a prose `fix`, and often a
 **machine-applicable** fix `archlang fix` can apply), and verifiable without ever looking at an image
 (`archlang describe`).
+
+## Before you write or edit
+
+- **Ask the units, and whether each size is nominal (to wall centrelines), outside or clear (net),
+  before the first room.** Plan numbers are millimetres on centrelines: one room `size 10000x8000`
+  with `walls from rooms exterior 200 partition 100` is 10,200 x 8,200 outside and 9,800 x 7,800
+  clear, so 10 x 8 m clear is `10200x8200` and 10 x 8 m outside is `9800x7800`. That one-thickness
+  rule holds for a room ringed by the shell; a room beside a partition loses half of each wall it
+  stands on. `archlang describe plan.arch --json --select bbox,bbox_outer` gives the centreline and
+  outside sizes, `net_area_m2` the clear floor, and `keep min clear <room> <mm>` checks a room's
+  narrower clear span (a broken one quotes both spans).
+- **Edit in place, never redraw.** Change the fewest statements the request needs, and lock the
+  authored ids (`id=`) it does not name. `archlang impact plan.arch --set W=3600 --lock bedroom`
+  previews a change to a `let` and writes nothing; `archlang impact new.arch --against plan.arch
+  --lock bedroom` checks an edited copy. Exit `2` is `E_LOCKED_ELEMENT_CHANGED` (change the edit, not
+  the lock) or `E_LOCK_UNNAMED` (the lock names no authored id, or one only above the lowest storey,
+  which locks do not compare yet). Put sizes a brief may change in `let`s inside `plan`, so a resize
+  is one `--set`, not a coordinate hunt.
+- **A number the brief fixes is a `keep`** (`keep min clear living 3800`): it moves nothing, and a
+  broken one is `W_KEEP_VIOLATED` with a signed residual, failing `validate --strict`.
+- **A straight `stair` is entered at one end:** with `dir up` the end of its long axis with the
+  larger coordinate (the bottom of a portrait footprint, the right of a landscape one), with `dir
+  down` the other. Keep a landing clear there (`W_STAIR_NO_LANDING`); to enter from the other end,
+  `place` it mirrored (`archlang spec`, `stair`).
 
 ## What ArchLang can do
 
@@ -639,7 +663,7 @@ facts into context just to filter them yourself.
   *unfiltered* set, so reading less can never turn a failing plan green. A filtered result carries
   `filtered: true` + `total_diagnostics`.
 - **`archlang context --section spec|workflow|cli|errors`** prints one section of the bundle
-  instead of all of it (about 160 KB in all) — `errors` for the diagnostic catalog, `cli` for the
+  instead of all of it (about 180 KB in all) — `errors` for the diagnostic catalog, `cli` for the
   command reference.
 - **`archlang fix --dry-run`** prints the exact unified diff it would write (to stderr; `--json` also
   carries it as `diff`) and touches nothing. When you do apply in place, **`--backup`** keeps the
@@ -850,7 +874,7 @@ from a file or stdin (`-`). This CLI is the primary agent interface; an optional
 
 **`archlang context`** — print the full bundled agent context (spec + workflow + CLI + errors)
   - input: none → output: the full agent context (llms-full.txt), one --section of it, or the one-screen --level starter
-  - flags: `--level <starter|full>` starter = one screen (at most 4000 characters) for a small model: the lead example, the statements a plan needs, the loop and five errors with their fixes; full = the whole 177 KB bundle (default, unchanged) · `--section <spec|workflow|cli|errors>` print only one section of the bundle instead of all 177 KB of it (spec = the language, 30 KB; workflow = the agent loop, 34 KB; cli = every command, 38 KB; errors = the diagnostic catalog, 75 KB) · `--json` structured result on stdout, messages on stderr
+  - flags: `--level <starter|full>` starter = one screen (at most 4000 characters) for a small model: the lead example, the statements a plan needs, the loop and five errors with their fixes; full = the whole 180 KB bundle (default, unchanged) · `--section <spec|workflow|cli|errors>` print only one section of the bundle instead of all 180 KB of it (spec = the language, 30 KB; workflow = the agent loop, 36 KB; cli = every command, 38 KB; errors = the diagnostic catalog, 75 KB) · `--json` structured result on stdout, messages on stderr
   - example: `archlang context` — the cold-start bundle: spec + workflow + CLI reference + every diagnostic
 
 **`archlang new`** (aliases: `init`) — scaffold a starter .arch
@@ -863,10 +887,10 @@ from a file or stdin (`-`). This CLI is the primary agent interface; an optional
   - flags: `--from <openplan3d>` the format of the input file (required); openplan3d is the one there is · `--format <web|handoff>` read the file as an OpenPlan3D web project (centimetres) or prepared RoomPlan interchange file (metres) instead of detecting which, as OpenPlan3D does · `--out|-o <file|->` output file for the .arch source, or '-' for stdout (default: stdout) · `--json` structured result on stdout, messages on stderr · `--quiet|-q` suppress human messages on stderr
   - example: `archlang import --from openplan3d plan.openplan.json -o plan.arch` — convert an OpenPlan3D export, then `archlang lint plan.arch` checks it
 
-**`archlang explain`** — look up an error code (cause / fix / example)
+**`archlang explain`** — look up an error code (cause / fix / example / fixed)
   - input: <CODE> → output: catalog entry
   - flags: `--json` structured result on stdout, messages on stderr
-  - example: `archlang explain E_ROOM_SIZE --json` — the catalog entry for a diagnostic code: cause, fix, example
+  - example: `archlang explain E_ROOM_SIZE --json` — the catalog entry for a diagnostic code: cause, fix, example and the example fixed
 
 ---
 
@@ -959,7 +983,7 @@ Every diagnostic carries a stable code and a `fix`. Look one up with `archlang e
 - `E_KEEP_TARGET` — A keep names something that is not there. **Fix:** Give the element its own `id=` and name that, declare the axis in `axes`, or list only the levels the plan has.
 - `E_KEEP_VALUE` — A keep's value is out of its domain. **Fix:** Give the keep a length within the range (a positive one for `min clear`) and whole storey numbers.
 - `E_LAYOUT_CYCLE` — Relational room placement forms a cycle. **Fix:** Break the cycle by giving one of the rooms absolute `at (x,y)` coordinates.
-- `E_LAYOUT_REF` — Relational placement references an unknown room. **Fix:** Reference an existing room id, or fix the typo.
+- `E_LAYOUT_REF` — Relational placement references an unknown room. **Fix:** Reference an existing room id, or fix the typo: an id one slip from a room's (`hal` for `hall`) gets a hint and a maybe-incorrect fix (`archlang fix --unsafe`) that rewrites it.
 - `E_LAYOUT_UNPLACED` — A relational room depends on a room that could not be placed. **Fix:** Fix the room it names (give it a valid reference or absolute `at (x,y)`), or place this room with `at (x,y)`.
 - `E_LEVEL_DUP` — Two `level` blocks declare the same storey number. **Fix:** Renumber one of them, or merge the two bodies into a single `level` block.
 - `E_LEVEL_MIX` — A drawable statement sits beside `level` blocks. **Fix:** Move the statement inside the `level` block it belongs to. Only settings (`units`/`grid`/`paper`/`scale`/`height`/`north`/`site`/`dims`/`title`/`axes`/`schedule`/`legend`/`notes`/`accTitle`/`accDescr`/`theme`/`style`/`sheet text`), `component`/`import` declarations, the plan-global `let`/`set`, a `keep stacked` and a plan-level `section` mark stay outside — they apply to every level.
@@ -979,7 +1003,7 @@ Every diagnostic carries a stable code and a `fix`. Look one up with `archlang e
 - `E_OUTDOOR_RAIL` — A `rail` clause on something that is not a balcony, or an unknown edge word. **Fix:** Delete the clause, or make the surface an `outdoor balcony`. For an unknown word, use one of the six edge words.
 - `E_OUTDOOR_SIZE` — An outdoor surface must have a positive size. **Fix:** Give it a positive `size W x H` — the surface's extent in plan. For a shape that is not a rectangle, use the `polygon` spelling instead.
 - `E_OUT_OF_RANGE` — A coordinate, length or drawing setting is outside the modelling range. **Fix:** Use a realistic dimension. A plan is measured in millimetres (a 30 m wall is `30000`, or `30m`), so a value in the millions is usually a unit slip; a site larger than about 33 km is several plans, not one.
-- `E_PARSE` — The source could not be read: its SHAPE is wrong. **Fix:** Read the message: it names what was expected and what was found, at a byte span. Compare the statement against `archlang spec`'s one line for that keyword: the placement comes first, and the clauses after it in any order. Unlike every other code in this catalog, there is no machine-applicable fix to apply, because the compiler has no reading of the text to correct.
+- `E_PARSE` — The source could not be read: its SHAPE is wrong. **Fix:** Read the message: it names what was expected and what was found, at a byte span. Compare the statement against `archlang spec`'s one line for that keyword: the placement comes first, and the clauses after it in any order. A word one slip from the word that belongs there (`dor`, `betwen`, `bedrom`) gets a did-you-mean hint and a fix that rewrites that word alone, machine-applicable only when the word is none the language or the plan already knows and no other word of that position's closed list is as near.
 - `E_PARTITION_TOO_SHORT` — `walls from rooms`, or a `wall … between`, meets a shared edge shorter than the wall's thickness. **Fix:** Line the two rooms' edges up so they meet at a corner, or make the shared edge at least as long as the wall is thick.
 - `E_PLACE_POLY` — A placement clause aimed at a polygon room that has no one edge or corner to stand on. **Fix:** Name a side with one run or a corner that is a vertex of the ring, or give the room or the fixture explicit `at (x,y)` coordinates (a fixture may add `rotate`).
 - `E_PLACE_REF` — Furniture placed in an unknown or unplaced room. **Fix:** Reference an existing room, and fix the placement error of the room it names.

@@ -9,8 +9,19 @@
 import { readFileSync, readdirSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { compile, explain, ERROR_CATALOG, ERROR_CODES, formatDiagnostic } from "../src/index.js";
-import { CATALOG_FIXES_PATH, renderCatalogFixes, renderErrorCodes } from "../scripts/gen-error-codes.js";
+import {
+  CATALOG_FIXES_PATH,
+  INTENT_CATALOG_FIXES_PATH,
+  isIntentCode,
+  renderCatalogFixes,
+  renderErrorCodes,
+  renderIntentCatalogFixes,
+} from "../scripts/gen-error-codes.js";
+import { anyCatalogFix } from "../src/any-catalog-fix.js";
+import { catalogFix } from "../src/catalog-fix.js";
+import { diagnosticToJson } from "../src/diagnostic-json.js";
 import { CATALOG_FIXES } from "../src/error-catalog-fixes.js";
+import { INTENT_CATALOG_FIXES } from "../src/error-catalog-fixes-intent.js";
 
 /**
  * Read every `code: "E_…"/"W_…"` literal, and every `diag("E_…", …)` call (the typed helper new
@@ -150,7 +161,21 @@ describe("T5.5 — explain", () => {
       expect(e.cause.length).toBeGreaterThan(0);
       expect(e.fix.length).toBeGreaterThan(0);
       expect(e.example.length).toBeGreaterThan(0);
+      // `fixed` is optional (card AF5), but never present and empty.
+      if ("fixed" in e) expect(e.fixed!.trim().length, c).toBeGreaterThan(0);
     }
+  });
+
+  it("prints an entry's `fixed` under `Fixed:`, after the example, and nothing for an entry without one", () => {
+    const e = ERROR_CATALOG.E_ROOM_SIZE!;
+    expect(e.fixed).toBeDefined();
+    const text = explain("E_ROOM_SIZE")!;
+    const block = ["", "Fixed:", ...e.fixed!.split("\n").map((l) => `  ${l}`)].join("\n");
+    expect(text.endsWith(block)).toBe(true);
+    expect(text.indexOf("Example:")).toBeLessThan(text.indexOf("Fixed:"));
+    // A code with no pair (it has no `fixed`): the block is absent, the rest as before.
+    expect(ERROR_CATALOG.E_IMPORT_NOT_FOUND!.fixed).toBeUndefined();
+    expect(explain("E_IMPORT_NOT_FOUND")).not.toContain("Fixed:");
   });
 });
 
@@ -163,11 +188,32 @@ describe("T5.5 — generated docs/error-codes.md has no drift", () => {
   // Card RM0.7: diagnosticToJson reads the fix column from its own generated module, so a bundle
   // that compiles need not carry the whole catalogue. The column must be the catalogue's, code for
   // code and byte for byte, or a diagnostic's `fix` would quietly differ from `arch explain`.
-  it("src/error-catalog-fixes.ts matches the catalog (run npm run gen:errors)", () => {
+  // Card NR.10: the column is two tables, the intent violations' (`E_INTENT_*`, raised only by
+  // validateIntent) apart from the compile path's. Together they still hold every catalogue code
+  // exactly once, in catalogue order, each fix byte for byte.
+  it("src/error-catalog-fixes.ts and src/error-catalog-fixes-intent.ts match the catalog (run npm run gen:errors)", () => {
     const committed = readFileSync(CATALOG_FIXES_PATH, "utf8").replace(/\r\n/g, "\n");
     expect(renderCatalogFixes()).toBe(committed);
-    expect(Object.keys(CATALOG_FIXES)).toEqual([...ERROR_CODES]);
-    for (const c of ERROR_CODES) expect(CATALOG_FIXES[c], c).toBe(ERROR_CATALOG[c]!.fix);
+    const committedIntent = readFileSync(INTENT_CATALOG_FIXES_PATH, "utf8").replace(/\r\n/g, "\n");
+    expect(renderIntentCatalogFixes()).toBe(committedIntent);
+    const compileKeys = Object.keys(CATALOG_FIXES);
+    const intentKeys = Object.keys(INTENT_CATALOG_FIXES);
+    // Every catalogue code in one of the two, none in both, nothing that is no code.
+    expect(compileKeys.filter((c) => Object.hasOwn(INTENT_CATALOG_FIXES, c))).toEqual([]);
+    expect([...compileKeys, ...intentKeys].sort()).toEqual([...ERROR_CODES].sort());
+    // Each table in catalogue order, and split by the rule alone.
+    expect(compileKeys).toEqual(ERROR_CODES.filter((c) => !isIntentCode(c)));
+    expect(intentKeys).toEqual(ERROR_CODES.filter(isIntentCode));
+    expect(intentKeys.length).toBeGreaterThan(0);
+    for (const c of ERROR_CODES) expect(CATALOG_FIXES[c] ?? INTENT_CATALOG_FIXES[c], c).toBe(ERROR_CATALOG[c]!.fix);
+    // What a reader sees: diagnosticToJson attaches every code's catalogued fix, an intent
+    // violation's too; the compile path's lookup has every code but those.
+    for (const c of ERROR_CODES) {
+      const d = { code: c, severity: ERROR_CATALOG[c]!.severity, message: "m" } as const;
+      expect(diagnosticToJson("", d).fix, c).toBe(ERROR_CATALOG[c]!.fix);
+      expect(anyCatalogFix(c), c).toBe(ERROR_CATALOG[c]!.fix);
+      expect(catalogFix(c), c).toBe(isIntentCode(c) ? undefined : ERROR_CATALOG[c]!.fix);
+    }
   });
 });
 

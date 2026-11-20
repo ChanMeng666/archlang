@@ -85,6 +85,7 @@ ends included) the MCP hash and the CLI's agree.
 | `fix` | Apply the machine-applicable fixes on a plan's diagnostics (syntactic corrector; bounded fixpoint). `unsafe` widens to `maybe-incorrect`. |
 | `suggest` | Advisory door/window statements (each referencing its wall by a stable ref — an authored id or a unique category — or absolute coordinates, never a re-bindable positional id) to resolve unreachable rooms / windowless bedrooms — data, never applied. |
 | `complete` | LSP completion items in scope at a source byte offset. |
+| `explain` | A diagnostic code's catalogue entry: message, cause, fix, an example that raises it and, for most codes, `fixed`, the example corrected (the CLI's `explain --json`). |
 | `link` | Two URLs that show the plan in a browser with nothing to install: `playground` (the hosted editor, rendered) and `embed` (the plan alone, for an iframe), plus `bytes`, the compressed plan's size, and `ok` (with an `errors` count when the plan does not compile; it still links and the page shows the diagnostics). The plan rides in the URL fragment. Needs a core that exports `./link`; an older one gets `ok:false` and the version it needs. |
 
 ### What `compile`'s `accessible` does here — and what it does not
@@ -117,7 +118,7 @@ the [language reference](https://archlang.uk/reference#keyboard-and-screen-reade
 | `archlang://schema` | JSON Schema (2020-12) for the Plan-JSON compile input. |
 | `archlang://grammar` | GBNF constrained-decoding grammar for guaranteed-parseable generation. |
 | `archlang://intent-schema` | JSON Schema (2020-12) for a brief's Intent — the shape `validate`'s `intent` and `score`'s `brief` take. |
-| `archlang://capabilities` | Every tool (and the hosted server's extra `read_me`) and CLI command, the export formats, the limits, what ArchLang does not do, and the authoring loop, generated from the tool lists and the CLI manifest. |
+| `archlang://capabilities` | Every tool (and the hosted server's extra `read_me`) and CLI command, the codes `fix` resolves by applicability, the export formats, the limits, what ArchLang does not do, and the authoring loop, generated from the tool lists, the CLI manifest and the fix producers. |
 
 ## Install
 

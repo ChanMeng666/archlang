@@ -2,7 +2,7 @@
 
 ArchLang compiles `.arch` text to floor-plan drawings and checks them. This page is generated from the tool list both MCP servers serve and the CLI manifest.
 
-## Tools on both servers (11)
+## Tools on both servers (12)
 
 - `compile`: Compile a floor plan to a drawing
 - `describe`: Describe a plan (facts, no render)
@@ -14,6 +14,7 @@ ArchLang compiles `.arch` text to floor-plan drawings and checks them. This page
 - `finish`: Finish the drawing
 - `suggest`: Suggest topology fixes (advisory)
 - `complete`: Completions at a source offset
+- `explain`: Explain a diagnostic code
 - `link`: Share link to the rendered plan
 
 The hosted server (https://mcp.archlang.uk/mcp) adds:
@@ -30,6 +31,14 @@ The hosted server (https://mcp.archlang.uk/mcp) adds:
 
 - Draw a plan from an image or PDF: https://archlang.uk/from-an-image
 - Change one room without moving the others: https://archlang.uk/edit-one-room
+
+## What `fix` resolves
+
+`fix` resolves the codes below; any other code is edited by hand (`archlang explain <code>` says how). The `fix` tool reads `compile`'s diagnostics; `archlang fix` also reads `lint`'s and proves a `while` rewrite, so it alone resolves the codes marked CLI. A code in two groups says when its edit takes each.
+
+- `machine-applicable`, applied by default: `E_ARC_RADIUS`, `E_ATTACH_POS_RANGE`, `E_DOOR_KIND_CLAUSE`, `E_DOOR_OPEN_RANGE`, `E_HEIGHT_RANGE`, `E_OPENING_ABOVE_WALL`, `E_PARSE` (the word is none the language or the plan knows and one word of a closed list alone is within the distance limit), `E_ROOM_ALIGN`, `E_ROOM_ALIGN_AXIS`, `E_SILL_ABOVE_HEAD`, `E_WINDOW_KIND_CLAUSE`, `W_ALIAS_MATCH` (CLI), `W_DIM_INSIDE` (CLI), `W_DIM_OVERLAP` (CLI), `W_DOOR_OFF_WALL` (one wall is nearest), `W_FIXTURE_BACK_TO_ROOM` (CLI), `W_OPENING_OFF_WALL` (one wall is nearest), `W_POCKET_RUN` (CLI), `W_SWING_OBSTRUCTED` (CLI), `W_WHILE_DEPRECATED` (CLI; outside any component), `W_WINDOW_OFF_WALL` (one wall is nearest)
+- `maybe-incorrect`, applied only with `unsafe:true` (`archlang fix --unsafe`): `E_LAYOUT_REF`, `E_PARSE` (the position expected one word or the word is one the language or the plan knows or another candidate is within the limit), `W_DIM_TEXT_MISMATCH` (CLI), `W_DOOR_OFF_WALL` (two or more walls tie for nearest), `W_FOOTPRINT_TRANSPOSED` (CLI), `W_OPENING_OFF_WALL` (two or more walls tie for nearest), `W_UNKNOWN_FURNITURE`, `W_WHILE_DEPRECATED` (CLI; inside a component), `W_WINDOW_OFF_WALL` (two or more walls tie for nearest)
+- `has-placeholders`, never applied (the edit holds a `<…>` to fill in): `E_DOOR_WIDTH`, `E_OPENING_WIDTH`, `E_WINDOW_WIDTH`
 
 ## Export formats
 
@@ -82,4 +91,3 @@ With a shell, `archlang <cmd>` (or `npx -y @chanmeng666/archlang <cmd>`) runs th
 - `archlang context`: print the full bundled agent context (spec + workflow + CLI + errors)
 - `archlang new`: scaffold a starter .arch
 - `archlang import`: convert an OpenPlan3D plan (JSON) to .arch source, reporting what it left out
-- `archlang explain`: look up an error code (cause / fix / example)

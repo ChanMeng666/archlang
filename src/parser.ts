@@ -41,12 +41,16 @@ import {
   NORTH_DIRS,
   SCHEDULE_SUBJECTS,
   STRIP_DIRS,
+  REL_DIRS,
   TITLE_FIELD_KEY,
   USE_KINDS,
 } from "./ast.js";
+import { furnitureKinds } from "./elements/furniture.js";
+import { FLOOR_MATERIALS, KNOWN_MATERIALS } from "./hatches.js";
 import type { Expr } from "./expr.js";
 import type { ExprTokens } from "./expr.js";
-import { closest, MAX_NEST_DEPTH, parseExpr as parseExprPratt } from "./expr.js";
+import { closest, MAX_NEST_DEPTH, parseExpr as parseExprPratt, spelling } from "./expr.js";
+import { fixesFrom, spellingFix } from "./fix-producers.js";
 import type { Theme } from "./theme.js";
 import { isNumericThemeKey, resolveThemeKey, resolveStyleKey, THEMES } from "./theme.js";
 import { fmt3, MAX_ANGLE_DEG, MODEL_RANGE_MM, outOfRangeDiagnostic, plainDigits } from "./num-format.js";
@@ -57,7 +61,15 @@ import type { ElementDef, ParseCtx, Registry } from "./registry.js";
 import { BUILTIN_REGISTRY } from "./registry.js";
 import { floorClause, roomUsesExpected, roomUsesOutdoorHint } from "./elements/room.js";
 import { missingClause, readClauses, type TailClause } from "./clause-order.js";
-import { KEEP_GRADES, KEEP_WORDS, STATEMENT_STARTS, TITLE_FIELDS, type TitleField } from "./grammar/tokens.js";
+import {
+  ATTRIBUTE_KEYWORDS,
+  KEEP_GRADES,
+  KEEP_WORDS,
+  KEYWORDS,
+  STATEMENT_STARTS,
+  TITLE_FIELDS,
+  type TitleField,
+} from "./grammar/tokens.js";
 import type { KeepGrade, KeepNode, KeepRef } from "./ast.js";
 import { splitDatum } from "./room-datums.js";
 import type { PaperOrientation, PaperSize } from "./grammar/tokens.js";
@@ -103,6 +115,8 @@ class ParseError extends Error {
     public override message: string,
     public span: Span,
     public hints?: string[],
+    /** A did-you-mean for the word at `word` (AF2), and whether its fix may be machine-applicable. */
+    public spelt?: { word: Span; s: { word: string; unique: boolean }; closed: boolean },
   ) {
     super(message);
   }
@@ -225,6 +239,7 @@ class Parser {
       spanFrom: (start) => this.spanFrom(start),
       fail: (msg, t) => this.fail(msg, t),
       failAt: (msg, span) => this.fail(msg, this.peek(), span),
+      failNear: (msg, near, t, span) => this.fail(msg, t, span, near),
       diag: (d) => this.report(d),
       report: (code, message, span) => this.report({ severity: "error", message, code, span }),
     };
@@ -239,8 +254,58 @@ class Parser {
   private next(): Token {
     return this.toks[Math.min(this.pos++, this.toks.length - 1)]!;
   }
-  private fail(msg: string, t = this.peek(), span: Span = { start: t.start, end: t.end }): never {
-    throw new ParseError(msg, span, this.parseHints(t));
+  /**
+   * Throw a parse error at `t`. With `near`, the closed set of words that could stand at `t`, a
+   * misspelling of one of them (AF2, {@link spelling}) adds a did-you-mean hint and a fix that
+   * rewrites `t` alone, even when the error is spanned on a whole statement. The fix is
+   * machine-applicable only when `t` is no word of the language ({@link isLanguageWord}: a word
+   * spelled right in the wrong place is never rewritten), its word stands nowhere else in the
+   * source, and `near` is a closed list of words, not the one word a position expected. Parsing is
+   * not metered, so the search runs only while the error can still be reported: past
+   * `MAX_DIAGNOSTICS` it is dropped, and so the work is bounded whatever the source's size.
+   */
+  private fail(
+    msg: string,
+    t = this.peek(),
+    span: Span = { start: t.start, end: t.end },
+    near?: readonly string[],
+  ): never {
+    const hints = this.parseHints(t);
+    const s = near && t.type === "ident" && this.reportable() ? spelling(t.value, near) : null;
+    if (!s) throw new ParseError(msg, span, hints);
+    throw new ParseError(msg, span, [...(hints ?? []), `did you mean \`${s.word}\`?`], {
+      word: { start: t.start, end: t.end },
+      s,
+      closed: near!.length > 1 && !this.isLanguageWord(t.value) && !this.elsewhere(t.value),
+    });
+  }
+
+  /** How many times each word stands in this source as a name, counted once off the tokens: a
+   *  word written anywhere else (a parameter, an imported name, a binding, an id) is one the plan
+   *  knows, so it is never machine-respelt (AF2). */
+  private wordCounts: Map<string, number> | undefined;
+  private elsewhere(word: string): boolean {
+    if (!this.wordCounts) {
+      this.wordCounts = new Map();
+      for (const t of this.toks)
+        if (t.type === "ident") this.wordCounts.set(t.value, (this.wordCounts.get(t.value) ?? 0) + 1);
+    }
+    return (this.wordCounts.get(word) ?? 0) > 1;
+  }
+
+  /** Whether `word` is a word of the language: a keyword of any category, a statement start, a
+   *  registry element, a room use, a relational direction, a furniture or fixture kind, a material. */
+  private isLanguageWord(word: string): boolean {
+    LANGUAGE_WORDS ??= new Set<string>([
+      ...Object.values(KEYWORDS).flat(),
+      ...STATEMENT_STARTS,
+      ...USE_KINDS,
+      ...REL_DIRS,
+      ...furnitureKinds(),
+      ...FLOOR_MATERIALS,
+      ...KNOWN_MATERIALS,
+    ]);
+    return LANGUAGE_WORDS.has(word) || this.registry.byKeyword.has(word);
   }
 
   /**
@@ -284,6 +349,29 @@ class Parser {
     const end = i;
     while (i >= 0 && toks[i]!.type === "ident" && USE_SET.has(toks[i]!.value)) i--;
     return i < end && toks[i]?.type === "ident" && toks[i]!.value === "uses";
+  }
+
+  /**
+   * The words an unknown statement word `t` may be a slip of (AF2), in order: on the line of the
+   * token before it, where a statement ended early at a misspelt word, a room use (after a `uses`
+   * list), a clause word and a value word (`dims auto roomss`); then a statement keyword. Each set
+   * is read from its one source. A word of the language out of place (`sheet`, `left`, `closet`) is
+   * spelled right, so it has none.
+   */
+  private wordsAt(t: Token): readonly string[] {
+    if (!this.reportable() || this.isLanguageWord(t.value)) return [];
+    if (this.toks[this.pos - 1]?.line !== t.line) return [...this.statementStarts];
+    return [
+      ...(this.afterUses(t, true) ? USE_KINDS : []),
+      ...ATTRIBUTE_KEYWORDS,
+      ...KEYWORDS.enum,
+      ...this.statementStarts,
+    ];
+  }
+
+  /** Whether a diagnostic reported now is kept ({@link report}'s own test). */
+  private reportable(): boolean {
+    return this.diagnostics.length <= MAX_DIAGNOSTICS;
   }
 
   /** Span from a start offset to the end of the last consumed token. */
@@ -418,7 +506,8 @@ class Parser {
   }
   private eatKeyword(kw: string): Token {
     const t = this.peek();
-    if (t.type !== "ident" || t.value !== kw) this.fail(`Expected "${kw}" but found ${describe(t)}`);
+    if (t.type !== "ident" || t.value !== kw)
+      this.fail(`Expected "${kw}" but found ${describe(t)}`, t, undefined, [kw]);
     return this.next();
   }
   private eat(type: Token["type"]): Token {
@@ -467,6 +556,7 @@ class Parser {
         code: "E_PARSE",
         span: e.span,
         ...(e.hints ? { hints: e.hints } : {}),
+        ...fixesFrom(spellingFix(e.spelt?.word, e.spelt?.s ?? null, e.spelt?.closed === true)),
       });
       while (!this.isType("eof") && !this.isType("lcurly")) {
         const t = this.peek();
@@ -636,6 +726,7 @@ class Parser {
             code: "E_PARSE",
             span: e.span,
             ...(e.hints ? { hints: e.hints } : {}),
+            ...fixesFrom(spellingFix(e.spelt?.word, e.spelt?.s ?? null, e.spelt?.closed === true)),
           });
           this.synchronize(start);
           plan.body.push({ kind: "error", id: "", line: t.line, message: e.message, span: this.spanFrom(start) });
@@ -661,6 +752,7 @@ class Parser {
           code: "E_PARSE",
           span: e.span,
           ...(e.hints ? { hints: e.hints } : {}),
+          ...fixesFrom(spellingFix(e.spelt?.word, e.spelt?.s ?? null, e.spelt?.closed === true)),
         });
     }
     this.checkLevels(plan);
@@ -1730,7 +1822,7 @@ class Parser {
       else if (this.peek(1).type === "lparen") node = this.parseInstance();
       else {
         const stray = STRAY_CLAUSE_HINTS.get(t.value);
-        if (stray === undefined) this.fail(`Unknown statement "${t.value}"`, t);
+        if (stray === undefined) this.fail(`Unknown statement "${t.value}"`, t, undefined, this.wordsAt(t));
         throw new ParseError(`Unknown statement "${t.value}"`, { start: t.start, end: t.end }, [stray]);
       }
     }
@@ -1785,6 +1877,7 @@ class Parser {
             code: "E_PARSE",
             span: e.span,
             ...(e.hints ? { hints: e.hints } : {}),
+            ...fixesFrom(spellingFix(e.spelt?.word, e.spelt?.s ?? null, e.spelt?.closed === true)),
           });
           this.synchronize(stmtTok.start);
           body.push({
@@ -2090,7 +2183,13 @@ class Parser {
           while (this.peek().type === "ident" && USE_SET.has(this.peek().value)) {
             uses.push(this.next().value as UseKind);
           }
-          if (uses.length === 0) this.fail(roomUsesExpected(this.peek().value || undefined, this.peek().type));
+          if (uses.length === 0)
+            this.fail(
+              roomUsesExpected(this.peek().value || undefined, this.peek().type),
+              undefined,
+              undefined,
+              USE_KINDS,
+            );
           if (keep) tail.uses = uses;
         },
       },
@@ -2110,6 +2209,9 @@ class Parser {
 
 /** Room use-kind keywords, for the strip-child `uses` clause. */
 const USE_SET: ReadonlySet<string> = new Set<string>(USE_KINDS);
+
+/** Every word of the language, built on the first misspelling a parse reports (AF2). */
+let LANGUAGE_WORDS: Set<string> | undefined;
 
 /**
  * Line `a`'s indentation relative to line `b`'s, compared as whitespace STRINGS (Python's

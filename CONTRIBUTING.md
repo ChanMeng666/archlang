@@ -312,7 +312,8 @@ the `GENERATORS` table in `scripts/generators.ts` (which `check:drift` runs) —
 |--------------------|-----------|-----------------|
 | `editors/archlang.tmLanguage.json`, `playground/src/arch-language.js`, `docs-site/.vitepress/theme/arch-highlight.js` | `gen:grammars` | `src/grammar/tokens.ts` |
 | `docs/error-codes.md` | `gen:errors` | `src/error-catalog.ts` |
-| `src/error-catalog-fixes.ts` (the catalogue's `fix` column, which `diagnosticToJson` reads) | `gen:errors` | `src/error-catalog.ts` |
+| `src/error-catalog-fixes.ts` (the catalogue's `fix` column but the `E_INTENT_*` rows: what `compile()`'s error card reads, and `diagnosticToJson` with the next file) | `gen:errors` | `src/error-catalog.ts` |
+| `src/error-catalog-fixes-intent.ts` (the `E_INTENT_*` rows of the `fix` column, which only `validateIntent` raises; read by `diagnosticToJson` and `renderErrorSvg`, never on the compile path) | `gen:errors` | `src/error-catalog.ts` |
 | `spec.llm.md` | `gen:spec` | `src/grammar/tokens.ts` + `examples/` |
 | `llms-full.txt` | `gen:llms` | `spec.llm.md` + `skills/archlang/SKILL.md` + `src/manifest.ts` + `src/error-catalog.ts` |
 | `src/context-size.ts` | `gen:llms` | the byte size of the rendered `llms-full.txt` and of each `--section` |

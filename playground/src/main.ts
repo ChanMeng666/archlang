@@ -55,6 +55,7 @@ import { mountGallery } from "./gallery.js";
 import { mountNudge } from "./nudge.js";
 import { mountShell } from "./shell.js";
 import { fillGlbNote } from "./glb-note.js";
+import { sparesData } from "./save-data.js";
 import { KEYS, readStr, writeStr } from "./storage.js";
 // Self-hosted brand fonts (no CDN) — shared with the docs site.
 import "@fontsource-variable/archivo/wdth.css";
@@ -106,9 +107,11 @@ let jobs: Jobs | undefined;
 let compiler: CompileClient | undefined;
 /**
  * The header actions (actions.ts), mounted by `up` before its first render. Their chunk imports the
- * core's lazy chunk statically (finish, repair, format, the exports: card RM0.7f split it out of the
- * compiler chunk), so the idle import warms it too, and a first use after an idle visit waits on
- * neither. A failed load is forgotten.
+ * core's lazy chunk statically (`diagnosticToJson`, and with it the compile worker's `lint`: card
+ * RM0.7f split it out of the compiler chunk), so the idle import warms it too, and a first use
+ * after an idle visit waits on neither. What the actions run only on a press (Format, Finish,
+ * Repair, the DXF and TXT downloads) loads with the press (press-core.ts, card 3.18). A failed
+ * load is forgotten.
  */
 type Actions = typeof import("./actions.js");
 let actionsP: Promise<Actions> | undefined;
@@ -1382,9 +1385,7 @@ async function start({ sharedSrc, tooLarge, savedSrc, built }: Choice): Promise<
  */
 const IDLE_FALLBACK_MS = 3000;
 function importWhenIdle() {
-  const connection = (navigator as Navigator & { connection?: { saveData?: boolean; effectiveType?: string } })
-    .connection;
-  if (connection?.saveData === true || /^(?:slow-)?2g$/.test(connection?.effectiveType ?? "")) return;
+  if (sparesData(navigator)) return;
   const warm = () =>
     void Promise.all([loadCore(), loadExamples(), loadJobs(), loadActions()]).then(
       ([, examples]) => {
