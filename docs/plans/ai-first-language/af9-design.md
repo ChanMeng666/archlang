@@ -1,9 +1,9 @@
 # AF9 design: moves and skeletons for refused openings and blocked doorways
 
 Design note for card AF9 (track 10 of `../product-roadmap/cards.md`; design row in `README.md` §7
-Wave B), written 2026-11-20 to meet EV.5's gate (`docs/backlog.md` § EV.5: "a design note in the
-card or an ADR before code"). **No code changes here.** `file:line` anchors are `main@cc1709bf`;
-re-read them before building. The rulings are RM-D70 (revised), §12.
+Wave B), written 2026-11-19 (UTC, as every date here) to meet EV.5's gate (`docs/backlog.md`
+§ EV.5: "a design note in the card or an ADR before code"). **No code changes here.** `file:line`
+anchors are `main@cc1709bf`; re-read them before building. The rulings are RM-D70 (revised), §12.
 
 Bounds: ADR 0005 (the core never chooses among valid placements), ADR 0011 (four tiers;
 machine-applicable only on proof; "the *moment* there is a choice, it emits `maybe-incorrect`
@@ -51,7 +51,7 @@ No ADR line is added (§12 Q8).
 
 ## 2. The diagnostics in scope, reproduced
 
-Every plan below was compiled on 2026-11-20 with `npx tsx src/cli.ts compile <file>` from this
+Every plan below was compiled on 2026-11-19 with `npx tsx src/cli.ts compile <file>` from this
 branch's base (`main@cc1709bf`). The plans live in the executor's scratch folder and are copied into
 the tests (§9). Each body is wrapped in `plan "<name>" { … }`. Output is quoted as printed. The
 `= fix:` catalogue line is cut where it is long.
@@ -317,7 +317,7 @@ both directions clear at equal distance, both are offered. `repair` keeps the fu
 In `blocked.arch` the door at 3000 must clear the WC's 2800–3200, so the candidates are 2400 and
 3600, equally near. Only **2400** is offered. Lint of the door at 2400 gives only
 `W_ROOM_MISSING_DEFINING`. At 3600 the door still lints `W_SWING_OBSTRUCTED`, so that direction is
-dropped (both measured 2026-11-20 with `arch lint --json` on this branch's base). Lint has no step
+dropped (both measured 2026-11-19 with `arch lint --json` on this branch's base). Lint has no step
 meter. This search is bounded by `2 × (pieces + openings + walls on the host) + 4` iterations per
 blocked door (`clearMove`'s own bound).
 
@@ -510,10 +510,10 @@ live, as AF2's were.
   positions. The catalogue's other remedies (shrink the piece, move it by hand, move the door) stay
   open. The door move is the one AF9 can turn into an edit, and today it is only a hint.
 
-## 12. Rulings (RM-D70, revised; coordinator, 2026-11-20)
+## 12. Rulings (RM-D70, revised; coordinator, 2026-11-19 UTC)
 
-The coordinator ruled on the eight questions of §10 on 2026-11-20. After a red-team round on this
-note the same day, it revised Q1, Q2 and Q8. The coordinator records RM-D70 in
+The coordinator ruled on the eight questions of §10 on 2026-11-19. After a red-team round on
+this note the same day, it revised Q1, Q2 and Q8. The coordinator records RM-D70 in
 `../product-roadmap/README.md` §6. The owner delegated these rulings for this session and can
 overturn any of them. The text above follows them.
 

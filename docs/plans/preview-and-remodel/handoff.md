@@ -22,7 +22,7 @@ signal moved at 4 signups or 1 first frame a week. n is tiny. Posts 2–4 are re
 
 **Released:** core 1.53.0, MCP shim 0.2.36 and `@chanmeng666/archlang-3d` 0.1.2 with provenance (D20). VS Code extension 0.41.0 is on the Marketplace and Open VSX. The J round is done: `research/2026-11-02-as-built.md`.
 
-**Day 90 is read as STOP on the consumer product (D26):** ArchCanvas is in maintenance. ArchLang keeps being built on its merit (D29), which replaces the line that nothing new opens before the reads. The question to the user is deferred by the owner.
+**Day 90 is read as STOP on the consumer product (D26):** ArchCanvas is in maintenance (superseded: its development restarted 2026-11-16, `../product-roadmap/README.md` §1.3). ArchLang keeps being built on its merit (D29), which replaces the line that nothing new opens before the reads. The question to the user is deferred by the owner.
 
 ArchCanvas stays on core 1.48 (D28); the draft bump PR there is not to be merged. *(Superseded 2026-11-16: D47.)*
 
