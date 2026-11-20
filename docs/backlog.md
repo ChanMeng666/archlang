@@ -2792,7 +2792,7 @@ order-free clause of `door` and `window` (once, `E_DUP_CLAUSE` on a second kind 
 `describe()`, `lint()` and diagnostics byte-identical), a test per kind word in each position, and
 the `hinged` hint (EV.4) kept for a kind written as its own statement.
 
-### EV.5 · A refused opening offers no move (design first) — `todo`
+### EV.5 · A refused opening offers no move (design first): done by #992 (AF9 phase A), waiting to be archived — `note`
 
 **Carded as** AF9 (`docs/plans/product-roadmap/cards.md` track 10, 2026-11-18).
 **Design:** `docs/plans/ai-first-language/af9-design.md` (2026-11-20) meets the gate below. Its

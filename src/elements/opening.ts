@@ -7,7 +7,7 @@ import type { ElementDef, ParseCtx, ResolveCtx, TransformCtx } from "../registry
 import type { SceneNode } from "../scene.js";
 import type { ROpening } from "../ir.js";
 import { add, mul, nearestWallNote, normal, segmentDirAt } from "../geometry.js";
-import { parseAttachTarget, resolveOpeningLead, wallClause } from "../attach.js";
+import { leadOf, parseAttachTarget, resolveOpeningLead, wallClause } from "../attach.js";
 import { fixesFrom, offWallFix, openingWidthFix } from "../fix-producers.js";
 import { reprint } from "./reprint.js";
 import {
@@ -107,6 +107,7 @@ export const opening: ElementDef = {
         ...heights(host),
         span: n.span,
         ...(relation ? { _placement: "relational" as const, _relation: relation } : {}),
+        ...(host ? leadOf(n, relation !== undefined) : {}),
       };
     }
     const at = ctx.snapPt(ctx.evalPt(n.at!));

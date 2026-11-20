@@ -30,7 +30,7 @@
  */
 
 import type { KeepGrade, KeepNode, KeepRef, Point } from "./ast.js";
-import type { Diagnostic, Span } from "./diagnostics.js";
+import type { Diagnostic, RelatedSpan, Span } from "./diagnostics.js";
 import { chargeSteps, closest, stepSite } from "./expr.js";
 import { segmentsOfWall, type WallSegment } from "./geometry.js";
 import { arcExtremes } from "./geometry/arc.js";
@@ -359,6 +359,9 @@ export interface KeepResult {
   valueH?: number;
   /** The same value in mm, as evaluated. */
   value?: number;
+  /** Internal, read by {@link violationOf}: on a broken hard keep, where each element it names was
+   *  placed (AF7), in the compiled source only. Never in a serialised row. */
+  placed?: RelatedSpan[];
 }
 
 const FORM_WORDS: Record<KeepNode["form"], string> = {
@@ -379,7 +382,47 @@ export function violationOf(r: KeepResult): Diagnostic {
     message: r.message!,
     ...(r.node.span ? { span: r.node.span } : {}),
     hints: r.hints!,
+    ...(r.placed ? { relatedSpans: r.placed } : {}),
   };
+}
+
+/**
+ * Where each element a broken keep names was placed (AF7), as related spans of its
+ * `W_KEEP_VIOLATED`: a root element at its own statement ("`w1` placed here"), an element of a
+ * `place`d instance at the `place … as <name>` statement that made the instance ("`east` placed
+ * here"), never at the component body, whose one statement every instance shares. One note per
+ * root statement and per instance, so two elements of one instance are one note and `east.shell`
+ * beside `west.shell` are two (as are `east.inner` and `west.inner`, whose one `place` statement is in
+ * the component body: two notes there, each naming its instance). A keep is written only in the
+ * compiled source (a component body refuses one), so a
+ * statement that came in through an `import` gets no note (AF1's same-file rule): a root element
+ * with a `file`. An instance whose `place` is in a module is noted at the nearest enclosing `place`
+ * in the compiled source (`p1.inner` at `place pair() as p1`, "`p1` placed here"), and two
+ * instances noted at one such `place` are one note. Bounded by the keep's own targets
+ * (`MAX_KEEP_TARGETS`), which the measure has already charged; nothing is allocated per element of
+ * the plan, and an instance's `place` is read from the resolver's frames ({@link KeepStoreyCtx.placeOf}).
+ */
+function placedSpans(ix: StoreyIndex, node: KeepNode, placeOf: KeepStoreyCtx["placeOf"]): RelatedSpan[] | undefined {
+  const out: RelatedSpan[] = [];
+  // What each note is one of: the instance path it names, or a root statement's start.
+  const seen: (string | number)[] = [];
+  for (const ref of refsOf(node)) {
+    const id = ref.t === "room" ? ref.room : ref.t === "el" ? ref.id : undefined;
+    const e = id === undefined ? undefined : ix.byId.get(id);
+    if (!e) continue;
+    const at =
+      e._instance !== undefined
+        ? placeOf?.(e._instance)
+        : e._file === undefined && e.span
+          ? { span: e.span, instance: undefined }
+          : undefined;
+    if (!at) continue;
+    const key = at.instance ?? at.span.start;
+    if (seen.includes(key)) continue;
+    seen.push(key);
+    out.push({ span: at.span, message: `\`${at.instance ?? id}\` placed here` });
+  }
+  return out.length > 0 ? out : undefined;
 }
 
 // ---- measuring one storey ------------------------------------------------------------------
@@ -390,6 +433,10 @@ export interface KeepStoreyCtx {
   snap(v: number): number;
   /** Whether `id` is an element id the author wrote (never an auto id). */
   authored(id: string): boolean;
+  /** The `place` statement that made instance `instance` (its dotted path), or the nearest
+   *  enclosing one when that is in a module, and the instance it made: where a broken keep notes
+   *  the instance's elements (AF7). Absent when no `place` on the path is in the compiled source. */
+  placeOf?(instance: string): { span: Span; instance: string } | undefined;
   /** Compass words alias the frame words (a root plan whose `north` is `up`), and why not. */
   compass: { aliases: boolean; why: string };
   /** The storey, on a multi-storey plan (the results carry it). */
@@ -926,7 +973,13 @@ export function evaluateKeeps(records: readonly KeepRecord[], ctx: KeepStoreyCtx
       refuseAt(ctx, node, r);
       continue;
     }
-    out.push({ ...base, ...r, ...(rec.mm !== undefined ? { value: rec.mm, valueH: halfOf(rec.mm) } : {}) });
+    const placed = !r.holds && base.grade === "hard" ? placedSpans(ix, node, ctx.placeOf) : undefined;
+    out.push({
+      ...base,
+      ...r,
+      ...(rec.mm !== undefined ? { value: rec.mm, valueH: halfOf(rec.mm) } : {}),
+      ...(placed ? { placed } : {}),
+    });
   }
   return out;
 }

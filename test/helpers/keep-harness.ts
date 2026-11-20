@@ -10,6 +10,7 @@ import type { KeepNode, Statement } from "../../src/ast.js";
 import { compile, describe, lint } from "../../src/index.js";
 import { parse } from "../../src/parser.js";
 import { applyLetOverride, impact } from "../../src/index.js";
+import { af7StrippedApi, withoutAf7RelatedText } from "./af7-notes.js";
 import { firstLetBump } from "./keep-weak-law.js";
 import { runValidate, validateDigestView } from "./validate-json-run.js";
 
@@ -90,13 +91,17 @@ export function k2Parts(src: string, strip: boolean): Record<string, string> {
 }
 
 /** K3's digest for one corpus plan: SHA-256 of its keep rows in every surface that carries them —
- *  `describe().keeps`, `compile().diagnostics` and `validate --json` with its exit code. */
-export function k3DigestOf(name: string, src: string): string {
+ *  `describe().keeps`, `compile().diagnostics` and `validate --json` with its exit code.
+ *  `withoutAf7` takes AF7's related notes out of every part (`./af7-notes.ts`): the evidence that a
+ *  row AF7 re-measured moved by those notes alone (RM-D69). */
+export function k3DigestOf(name: string, src: string, withoutAf7 = false): string {
   const v = runValidate([KEEP_CORPUS_DIR + "/" + name + ".arch", "--json"]);
+  const api = withoutAf7 ? af7StrippedApi({ compile, describe }) : { compile, describe };
+  const view = validateDigestView(v.stdout);
   const payload = [
-    JSON.stringify(describe(src).keeps ?? null),
-    JSON.stringify(compile(src, { noCache: true }).diagnostics),
-    String(v.exit) + String.fromCharCode(10) + validateDigestView(v.stdout),
+    JSON.stringify(api.describe(src).keeps ?? null),
+    JSON.stringify(api.compile(src, { noCache: true }).diagnostics),
+    String(v.exit) + String.fromCharCode(10) + (withoutAf7 ? withoutAf7RelatedText(view) : view),
   ].join(" ");
   return sha256(payload);
 }
