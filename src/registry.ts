@@ -63,6 +63,16 @@ export interface ParseCtx {
    *  hint and a fix that rewrites `t` alone (AF2). Optional, so a caller's own `ParseCtx` stays
    *  valid; the built-in elements fall back to `fail`/`failAt` without it. */
   failNear?(msg: string, near: readonly string[], t?: Token, span?: Span): never;
+  /** {@link fail} with what the grammar would have read at `at.t` (the current token by default;
+   *  AF4, `Diagnostic.expected`): words as written, punctuation as typed and token classes as
+   *  `TOKEN_TEXT` writes them (`src/grammar/tokens.ts`). `at.span` is reported (the token's own by
+   *  default), and `at.near` gives {@link failNear}'s did-you-mean. Optional, as `failNear` is:
+   *  `failExpected` (`src/clause-order.ts`) falls back to `fail`/`failAt`/`failNear` without it. */
+  failExpected?(
+    msg: string,
+    expected: readonly string[],
+    at?: { t?: Token; span?: Span; near?: readonly string[] },
+  ): never;
   /** Report a catalogued diagnostic and keep parsing (a duplicate clause, `E_DUP_CLAUSE`). */
   diag(d: Diagnostic): void;
 }

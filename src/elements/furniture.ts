@@ -15,7 +15,7 @@ import type {
   FurniturePlace,
   Point,
 } from "../ast.js";
-import { FURNITURE_ANCHORS } from "../ast.js";
+import { CLEAR_ZONES, FURNITURE_ANCHORS } from "../ast.js";
 import type { Diagnostic, Span } from "../diagnostics.js";
 import type { ElementDef, ParseCtx, RenderCtx, ResolveCtx, TransformCtx } from "../registry.js";
 import type { CadPart, CadTurn, RenderSizes, SceneNode, ScenePrim } from "../scene.js";
@@ -51,7 +51,7 @@ import {
 } from "../fixture-orientation.js";
 import { mod360 } from "../algebra/d4.js";
 import { DEFAULT_THEME } from "../theme.js";
-import { idAfterKind, parseIdWithSpan, readClauses } from "../clause-order.js";
+import { failNear, idAfterKind, parseIdWithSpan, readClauses } from "../clause-order.js";
 
 /** Canonical pens for counting a glyph's primitives: a count never depends on the pens, so
  *  any will do. A literal, so the element layer stays out of the sheet layer's load graph. */
@@ -69,9 +69,10 @@ const COUNT_SIZES: RenderSizes = {
 
 const ANCHOR_SET: ReadonlySet<string> = new Set<FurnitureAnchor>(FURNITURE_ANCHORS);
 
-/** `mirror` as a clause, on the piece's line: a statement that starts with the word (`mirror = 2`, `mirror()`) stays one. */
+/** `mirror` as a clause, on the piece's line: a statement that starts with the word (`mirror = 2`, `mirror()`) stays one.
+ *  The line first, so the word is looked for only where it would be the clause (AF4, `expected`). */
 function isMirrorClause(ctx: ParseCtx): boolean {
-  if (!ctx.isKeyword("mirror") || ctx.peek().line !== ctx.peek(-1).line) return false;
+  if (ctx.peek().line !== ctx.peek(-1).line || !ctx.isKeyword("mirror")) return false;
   const after = ctx.peek(1).type;
   return after !== "equals" && after !== "lparen";
 }
@@ -163,8 +164,10 @@ export const furniture: ElementDef = {
         place = { mode: "centered", ...eatFlushOpt(ctx) };
       } else if (ctx.isKeyword("anchor")) {
         ctx.next();
-        const a = ctx.eatIdent().value;
-        if (!ANCHOR_SET.has(a)) ctx.fail(`Expected an anchor (${FURNITURE_ANCHORS.join("|")}) but found "${a}"`);
+        const at = ctx.eatIdent();
+        const a = at.value;
+        if (!ANCHOR_SET.has(a))
+          failNear(ctx, `Expected an anchor (${FURNITURE_ANCHORS.join("|")}) but found "${a}"`, FURNITURE_ANCHORS, at);
         const p: Extract<FurniturePlace, { mode: "anchor" }> = {
           mode: "anchor",
           anchor: a as FurnitureAnchor,
@@ -178,7 +181,7 @@ export const furniture: ElementDef = {
         }
         place = p;
       } else {
-        ctx.fail(`Expected "centered" or "anchor" after \`in ${room}\``);
+        failNear(ctx, `Expected "centered" or "anchor" after \`in ${room}\``, ["centered", "anchor"]);
       }
     } else {
       ctx.eatKeyword("at");
@@ -238,7 +241,7 @@ export const furniture: ElementDef = {
           const m = ctx.next();
           if (keep) turn.mirror = true;
           const axis = ctx.peek();
-          if ((ctx.isKeyword("x") || ctx.isKeyword("y")) && axis.line === m.line && ctx.peek(1).type !== "equals")
+          if (axis.line === m.line && (ctx.isKeyword("x") || ctx.isKeyword("y")) && ctx.peek(1).type !== "equals")
             ctx.fail(
               `\`mirror\` on a piece takes no axis: it swaps the piece's left and right and its back stays. \`place … mirror x|y\` reflects a whole instance`,
               axis,
@@ -275,7 +278,7 @@ export const furniture: ElementDef = {
           const kw = ctx.next();
           const z = ctx.eatIdent();
           if (z.value !== "front" && z.value !== "sides")
-            ctx.fail(`Expected \`front\` or \`sides\` after \`clear\` but found "${z.value}"`, z);
+            failNear(ctx, `Expected \`front\` or \`sides\` after \`clear\` but found "${z.value}"`, CLEAR_ZONES, z);
           const v = ctx.parseExpr();
           const span = { start: kw.start, end: ctx.peek(-1).end };
           const c: FurnitureClear = clear ?? {};

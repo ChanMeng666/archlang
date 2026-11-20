@@ -158,6 +158,24 @@ export interface Diagnostic {
    * ({@link rootsFirst}). Append-only field.
    */
   cause?: { code: string; span: Span; file?: string };
+  /**
+   * What the parser would have read at the token it stopped at (card AF4, after rustc's "expected
+   * one of"): the token at {@link expectedAt} when that is given, else the one `span` starts at. Set
+   * on an `E_PARSE` only where the parser knows the position's alternatives. Each entry is a word as
+   * it is written (`at`, `right-of`), punctuation or an operator as it is typed (`}`, `,`, `+`), a
+   * literal value as it is typed (`90` after `place … rotate`), or a class of tokens in `<…>`
+   * (`<number>`, `<name>`, `<string>`, `<W>x<H>`; the lexer's token types, `TOKEN_TEXT` in
+   * `src/grammar/tokens.ts`). First the position's own alternatives, then what an earlier clause,
+   * statement or expression would still have read there (a room's next clause, `}`, the operators
+   * that continue an expression), then the did-you-mean word when there is one. Append-only field.
+   */
+  expected?: string[];
+  /** The byte offset of the token {@link expected} describes, when the diagnostic is spanned
+   *  elsewhere (a missing clause is spanned on its statement; card AF4). Append-only field. */
+  expectedAt?: number;
+  /** How many entries of a long closed list (the `sheet text` keys) {@link expected} leaves out:
+   *  it keeps the list's first 16 (card AF4). Append-only field. */
+  expectedMore?: number;
 }
 
 type Cause = NonNullable<Diagnostic["cause"]>;
