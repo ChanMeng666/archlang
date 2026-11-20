@@ -587,11 +587,11 @@ function checkOne(
       // Multi-storey: the top-level `access` is the LOWEST storey only, so every storey must
       // also have a way in — its own exterior door, or a shaft from a reachable storey
       // (`vertical.reachable_levels`, the room-aware fixpoint in `src/vertical.ts`).
-      // KNOWN LIMIT: per-room reachability on an upper storey is not checked here. Its
-      // `levels[i].access.rooms[].reachable` counts shaft arrivals (PS0.3), so it
-      // could now be read; doing so changes this judge's verdicts and waits for a judge-version
-      // decision (eval comparability). A single-storey summary has no `levels` and is judged
-      // exactly as before.
+      // Per room on every other storey too (RM9.10): `levels[i].access.rooms[].reachable` counts
+      // from where a person arrives there (its own door from the ground, or the rooms a shaft
+      // lands in, PS0.3), and none of a storey's rooms when nobody arrives on it. The eval corpus
+      // holds no multi-storey plan, so no judged verdict moves (`JUDGE_VERSION` stays). A
+      // single-storey summary has no `levels` and is judged exactly as before.
       //
       // The storey check runs only when the base check found an entrance. Without one the
       // assertion already fails as "no modeled entrance" (and the lowest storey — the one
@@ -603,7 +603,18 @@ function checkOne(
             .filter((l) => !reachableLevels.has(l.level) && !l.access.hasEntrance)
             .map((l) => l.level)
         : [];
-      const pass = summary.access.hasEntrance && unreachable.length === 0 && cutOff.length === 0;
+      // The rooms nobody reaches on each storey above the lowest that is not cut off (a cut-off
+      // storey is named once, below, as a storey). Ids repeat across storeys, so each list is
+      // named by its storey.
+      const upstairs = summary.access.hasEntrance
+        ? (summary.levels ?? []).slice(1).flatMap((l) => {
+            if (cutOff.includes(l.level)) return [];
+            const ids = l.access.rooms.filter((r) => !r.reachable).map((r) => r.id);
+            return ids.length > 0 ? [`unreachable on level ${l.level}: ${ids.join(", ")}`] : [];
+          })
+        : [];
+      const pass =
+        summary.access.hasEntrance && unreachable.length === 0 && upstairs.length === 0 && cutOff.length === 0;
       // Each cause that holds, in a fixed order; with no storey cut off this is exactly the
       // single-storey wording.
       const causes = !summary.access.hasEntrance
@@ -611,6 +622,7 @@ function checkOne(
         : unreachable.length > 0
           ? [`unreachable: ${unreachable.join(", ")}`]
           : [];
+      causes.push(...upstairs);
       if (cutOff.length > 0) {
         // A shaft can join a cut-off storey and still not count: it is live only from a
         // room you can reach on its other storey (a stair in a sealed store is dead).

@@ -3,12 +3,12 @@
  * and turn) and the building-level vertical report of a multi-storey plan (moved verbatim from
  * `src/describe.ts`).
  *
- * Invariant: the report asks the predicates `lint` asks (`storeyGrounded`, `buildingRoomReach`),
+ * Invariant: the report asks the predicates `lint` asks (`buildingGround`, `buildingRoomReach`),
  * never a second copy of them. It charges nothing to the step meter.
  */
 
 import type { ResolvedLevel, RRoom } from "../ir.js";
-import { rectOf, storeyGrounded, buildingRoomReach, type ShaftArrivalSeed } from "../analyze.js";
+import { rectOf, buildingGround, buildingRoomReach, type ShaftArrivalSeed } from "../analyze.js";
 import { landedOn, runWidth } from "../analyze/nav-grid.js";
 import { storeyHasEntranceCandidate } from "../analyze/entrance.js";
 import {
@@ -44,7 +44,7 @@ export function blockStairFacts(v: RBlockStair): Pick<VerticalSummary, "flights"
 
 /**
  * Per storey a shaft reaches and no door from the ground does, the runs a person arrives by
- * ({@link arrivalRuns}, on the same `storeyGrounded` and `buildingRoomReach` predicates
+ * ({@link arrivalRuns}, on the same `buildingGround` and `buildingRoomReach` predicates
  * {@link buildVerticalReport} hands it): what `compile()` gives the circulation overlay of each
  * page, so the drawing walks a storey from where `describe().circulation` measures it (M.4).
  */
@@ -54,18 +54,17 @@ export function buildingArrivals(
 ): ReadonlyMap<number, readonly ArrivingRun[]> {
   const inputs = levels.map((l) => ({ level: l.level, ir: l.ir }));
   if (verticalConnections(inputs).length === 0) return new Map();
-  const grounded = (n: number): boolean => {
-    const l = levels.find((x) => x.level === n);
-    return l ? storeyGrounded(l.ir, tol) : false;
-  };
+  const { grounded } = buildingGround(inputs, tol);
   return arrivalRuns(inputs, grounded, buildingRoomReach(inputs, tol));
 }
 
 /**
  * The building-level vertical report for a multi-storey plan, or `undefined` when no run
  * spans two storeys. A storey is *grounded* when it has its own exterior entrance that is
- * a real arrival point — {@link storeyGrounded}, the same predicate `lint` builds its
- * `grounded()` callback from, discounting a door that opens onto an `outdoor balcony`.
+ * a real arrival point — {@link buildingGround}, the same predicate `lint` hands
+ * `verticalReach`, discounting a door that opens onto an `outdoor balcony` and, above the
+ * entrance storey, a door onto nothing the plan draws (RM9.10): so `reachable_levels` is seeded
+ * from the entrance storey's doors, and from an upper door only where ground is drawn outside it.
  * Reachability then spreads along the shafts — room-aware: a shaft carries you on only
  * from a stop whose room is walkable on its storey ({@link buildingRoomReach}, the same
  * probe access graph `access` reports), so a stair in a door-less store reaches nothing.
@@ -75,6 +74,8 @@ export function buildingArrivals(
 export function buildVerticalReport(
   levels: readonly ResolvedLevel[],
   tol: number,
+  /** The building's {@link buildingGround}, when the caller has it already. */
+  ground?: ReturnType<typeof buildingGround>,
 ):
   | {
       report: VerticalReport;
@@ -91,10 +92,7 @@ export function buildVerticalReport(
   const inputs = levels.map((l) => ({ level: l.level, ir: l.ir }));
   const connections = verticalConnections(inputs);
   if (connections.length === 0) return undefined;
-  const grounded = (n: number): boolean => {
-    const l = levels.find((x) => x.level === n);
-    return l ? storeyGrounded(l.ir, tol) : false;
-  };
+  const { grounded } = ground ?? buildingGround(inputs, tol);
   const roomReach = buildingRoomReach(inputs, tol);
   const reach = verticalReach(inputs, grounded, roomReach);
   const arrivals = arrivalRuns(inputs, grounded, roomReach);

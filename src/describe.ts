@@ -53,6 +53,7 @@ import {
   roomBox,
   accessGraphOf,
   buildDoorAccessGraph,
+  buildingGround,
   outdoorsOf,
   DEFAULT_TOL,
   separateBalconies,
@@ -545,6 +546,9 @@ function summarizeStorey(
    *  `VerticalReach.arrivalRooms` an arriving shaft stops in (`arrivalSeedRooms`,
    *  `src/describe/verticals.ts`): where `access` counts that storey's rooms from (PS0.3). */
   arrivalRooms: readonly string[] = [],
+  /** A storey of a building with no way in from the ground and no shaft reaching it (RM9.10):
+   *  `access` counts none of its rooms reached. */
+  cutOff = false,
 ): Omit<SceneSummary, "ok" | "diagnostics"> {
   const roomEls = ir.elements.filter((e): e is RRoom => e.kind === "room");
   const doorEls = ir.elements.filter((e): e is RDoor => e.kind === "door");
@@ -725,8 +729,9 @@ function summarizeStorey(
   );
   const arrivalGraph = arrivalAccess(doorGraph, inputs);
   const seeds = shaftArrivalSeeds(arrivalRooms, arrivals, roomEls);
-  const counted =
-    seeds.length > 0
+  const counted = cutOff
+    ? doorGraph.rooms.map((r) => ({ ...r, reachable: false, depthFromEntrance: null, bottleneckClearWidth: null }))
+    : seeds.length > 0
       ? accessGraphOf(
           roomEls.map((r) => r.id),
           // Walked through, not from: one node per balcony (RM1.3b, `separateBalconies`).
@@ -1016,10 +1021,16 @@ function summarizeResolved(
   // are computed once from the whole level set and never per level — and BEFORE the
   // storeys are summarised, because a storey reached only by a shaft is walked from the
   // runs that arrive on it (its `circulation`).
-  const building = levels.length > 0 ? buildVerticalReport(levels, tol) : undefined;
+  const ground = levels.length > 0 ? buildingGround(levels, tol) : undefined;
+  const building = levels.length > 0 ? buildVerticalReport(levels, tol, ground) : undefined;
   const vertical = building?.report;
   const arrivalsOn = (level: number): readonly ArrivingRun[] => building?.arrivals.get(level) ?? [];
   const arrivalRoomsOn = (level: number): readonly string[] => building?.arrivalSeedRooms.get(level) ?? [];
+  // A storey with no way in from the ground of its own that no shaft reaches (RM9.10): nobody
+  // arrives on it, so none of its rooms is reached, whatever its doors to the outside open onto
+  // (a balcony, or thin air above the entrance storey). `lint`'s reachability skips it alike.
+  const cutOffOn = (level: number): boolean =>
+    ground !== undefined && !ground.grounded(level) && (building?.arrivalRooms.get(level) ?? []).length === 0;
 
   // Multi-storey: the top-level facts are the LOWEST storey (`levels[0].ir === ir`), and
   // `levels` adds one same-shaped summary per storey. `summarize` is reused verbatim per
@@ -1037,6 +1048,7 @@ function summarizeResolved(
             statements,
             true,
             arrivalRoomsOn(l.level),
+            cutOffOn(l.level),
           );
           return { level: l.level, ...(l.name !== undefined ? { name: l.name } : {}), ...facts };
         })
@@ -1052,6 +1064,7 @@ function summarizeResolved(
     statements,
     true,
     levels.length > 0 ? arrivalRoomsOn(levels[0]!.level) : [],
+    levels.length > 0 ? cutOffOn(levels[0]!.level) : false,
   );
   // RM9.2: on two or more storeys every caption leads with the building's figures; the top level
   // repeats the lowest storey's, as every top-level fact does. Assigned in place, so the key keeps

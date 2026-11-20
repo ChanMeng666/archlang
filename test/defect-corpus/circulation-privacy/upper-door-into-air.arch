@@ -1,0 +1,23 @@
+# class: circulation-privacy
+# origin: product-roadmap v3.md section 1.5 (the downstream app's pending ask: an exterior door above the entry storey raises nothing; card RM9.10), reduced from the two-storey shape a per-storey repair writes when it gives every floor a front door
+# expect: W_EXTERIOR_DOOR_ABOVE_ENTRANCE
+# status: done
+# fact: level 1 is the entrance storey (its front door is the lowest door from the ground); level 2's d_out opens from the study through the exterior wall at y 3000 onto no outdoor surface (describe: levels[1].access.entrances is [d_out], outdoor is []), so it leads into thin air
+plan "Upstairs door into thin air" {
+  units mm
+  grid 50
+  level 1 "Ground" {
+    wall id=shell exterior thickness 200 { (0,0) (6000,0) (6000,3000) (0,3000) close }
+    room id=hall at (0,0) size 6000x3000 label "Hall" uses hall
+    door id=front on shell at 12000 width 900
+    window id=w1 on shell at 1500 width 1200
+    stair id=st at (2000,200) size 2600x900 dir up
+  }
+  level 2 "Upper" {
+    wall id=shell exterior thickness 200 { (0,0) (6000,0) (6000,3000) (0,3000) close }
+    room id=study at (0,0) size 6000x3000 label "Study" uses office
+    door id=d_out on shell at 12000 width 900
+    window id=w2 on shell at 1500 width 1200
+    stair id=st at (2000,200) size 2600x900 dir down
+  }
+}

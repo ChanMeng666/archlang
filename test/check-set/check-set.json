@@ -91,6 +91,15 @@
       "twin": "../defect-corpus/circulation-privacy/entry-into-bedroom.clean.arch"
     },
     {
+      "id": "circulation-privacy/upper-door-into-air",
+      "column": "default",
+      "profile": null,
+      "expect": "W_EXTERIOR_DOOR_ABOVE_ENTRANCE",
+      "rule": null,
+      "plan": "../defect-corpus/circulation-privacy/upper-door-into-air.arch",
+      "twin": "../defect-corpus/circulation-privacy/upper-door-into-air.clean.arch"
+    },
+    {
       "id": "space-not-enclosed/exterior-ring-open",
       "column": "default",
       "profile": null,

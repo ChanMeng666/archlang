@@ -27,6 +27,12 @@ export const CIRCULATION_ENTRIES = defineEntries({
     "Add a `door` on an `exterior` wall.",
     "wall exterior thickness 200 { (0,0) (4000,0) (4000,3000) (0,3000) close }   # lint: no way in",
   ),
+  W_EXTERIOR_DOOR_ABOVE_ENTRANCE: w(
+    "An exterior door above the entrance storey opens onto nothing.",
+    "On a multi-storey plan the entrance storey is the lowest storey with a door from the ground (a door to the outside that does not open onto an `outdoor balcony`); level numbers say nothing about where the ground is, so it is read off the doors. A door or cased `opening` to the outside on a storey above it is a way out onto something only where the plan draws it: an `outdoor` surface (a balcony, a deck, paving, the lawn of a hillside) at the point one wall thickness outside it. This one opens onto no surface at all, so it leads into thin air. It is no way in: the storey is walked from its stairs, lifts and escalators, so a room reached only through this door is `W_ROOM_UNREACHABLE`, and a storey no shaft reaches has no way in. It is what a repair writes when it reasons about one storey as if it stood alone (a front door per storey). A connector whose outward side cannot be told (a room on both sides, or on neither) is not reported.",
+    "Draw what it opens onto (an `outdoor balcony` or `deck`, or the ground where the site meets this storey), make it a window, or move it to the entrance storey.",
+    'plan "P" {\n  units mm\n  level 1 {\n    wall id=s exterior thickness 200 { (0,0) (6000,0) (6000,3000) (0,3000) close }\n    room id=a at (0,0) size 6000x3000 label "Hall"\n    door id=front on s at 12000 width 900\n    stair id=st at (2000,200) size 2600x900 dir up\n  }\n  level 2 {\n    wall id=s exterior thickness 200 { (0,0) (6000,0) (6000,3000) (0,3000) close }\n    room id=b at (0,0) size 6000x3000 label "Study"\n    door id=d_out on s at 12000 width 900   # lint: an upstairs door into thin air\n    stair id=st at (2000,200) size 2600x900 dir down\n  }\n}',
+  ),
   W_BATH_VIA_BEDROOM: w(
     "Bathroom is reachable only through a bedroom.",
     "Every door path from the entrance to this bathroom/WC passes through a bedroom, and no other bathroom/WC on the same storey is reachable from the entrance without passing through one. A private en-suite is fine — and is not flagged — once another bathroom or WC on the same storey is reached without passing through a bedroom.",

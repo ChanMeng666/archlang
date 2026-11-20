@@ -23,7 +23,7 @@
  * about the plan, which is true of them.
  */
 
-import type { AccessEdge } from "../../analyze.js";
+import { type AccessEdge, EXTERIOR_NODE, outdoorOutside, outdoorsOf } from "../../analyze.js";
 import type { Diagnostic } from "../../diagnostics.js";
 import { capFirst } from "../../naming.js";
 import {
@@ -185,5 +185,53 @@ export const noEntrance: LintRule = {
       return [{ severity: "warning", code: "W_NO_ENTRANCE", message: gap.message, hints: [gap.hint] }];
     }
     return [];
+  },
+};
+
+/**
+ * An exterior door or cased opening on a storey ABOVE the building's entrance storey that opens
+ * onto nothing the plan draws (RM9.10): no `outdoor` surface (a balcony, a deck, a terrace's
+ * paving, the ground of a hillside) holds the point one host-wall thickness outside it
+ * ({@link outdoorOutside}, the probe `doorFacesBalcony` uses). It is a door into thin air: it
+ * grounds nothing (`buildingGround`), so the storey is walked from its stairs and lifts, and a
+ * repair that reasons as if the storey stood alone (a front door per storey) is what writes it.
+ *
+ * The entrance storey is the lowest with a door from the ground (`BuildingContext.entranceStorey`);
+ * a storey at or below it, and a single-storey plan, are never read. A connector whose outward side
+ * the probe cannot tell (a room on both sides, or on neither) is not reported: nothing is guessed.
+ * A plan whose upper doors all open onto a balcony, a deck or drawn ground raises nothing.
+ */
+export const exteriorDoorAboveEntrance: LintRule = {
+  name: "exterior-door-above-entrance",
+  family: "reachability",
+  layer: "validity",
+  stage: "openings",
+  codes: ["W_EXTERIOR_DOOR_ABOVE_ENTRANCE"],
+  check(ctx: LintContext): Diagnostic[] {
+    const { building, ir, rooms, connectors, access, at, nameOf } = ctx;
+    const entrance = building.entranceStorey;
+    if (entrance === undefined || ir.level === undefined || ir.level <= entrance) return [];
+    const outdoors = outdoorsOf(ir);
+    const out: Diagnostic[] = [];
+    const seen = new Set<string>();
+    for (const e of access().edges) {
+      if (!e.exterior || seen.has(e.doorId)) continue;
+      seen.add(e.doorId);
+      const c = connectors.find((x) => x.id === e.doorId);
+      if (!c || outdoorOutside(c, rooms, outdoors) !== null) continue;
+      const roomId = e.between[0] === EXTERIOR_NODE ? e.between[1] : e.between[0];
+      const room = rooms.find((r) => r.id === roomId);
+      const what = c.kind === "door" ? "door" : "opening";
+      out.push({
+        severity: "warning",
+        code: "W_EXTERIOR_DOOR_ABOVE_ENTRANCE",
+        ...at(c),
+        message: `The exterior ${what}${room ? ` from ${nameOf(room)}` : ""} on level ${ir.level} opens above the entrance storey (level ${entrance}) onto nothing the plan draws: no ground, deck or balcony is outside it, so it leads into thin air.`,
+        hints: [
+          `Draw what \`${c.id}\` opens onto (an \`outdoor balcony\` or \`deck\`, or the ground, such as \`outdoor paving\`, where the site meets this storey), make it a window, or move it to level ${entrance}. Nobody arrives through it: the storey is walked from its stairs and lifts.`,
+        ],
+      });
+    }
+    return out;
   },
 };

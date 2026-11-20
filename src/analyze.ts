@@ -748,10 +748,15 @@ const BALCONY_TOUCH_MM = 1;
  *
  * The fix is narrow, on purpose: an entrance door whose {@link doorFacesBalcony} probe
  * lands inside an `outdoor balcony` is discounted from grounding; every other exterior
- * door — including one onto an upper-storey deck that is NOT a `balcony` surface, and a
- * hillside entrance with no balcony in sight — keeps today's behaviour exactly. A storey
- * grounds as soon as ONE of its entrance doors survives the discount, so a balcony door
- * beside a real front door changes nothing.
+ * door keeps today's behaviour exactly on the ENTRANCE storey (the lowest one that grounds:
+ * {@link buildingGround}). A storey grounds as soon as ONE of its entrance doors survives the
+ * discount, so a balcony door beside a real front door changes nothing.
+ *
+ * ABOVE the entrance storey (`above`, RM9.10) a door is a way in from the ground only where the
+ * plan draws ground outside it: an `outdoor` surface other than a `balcony` (a deck, a terrace's
+ * paving, a hillside's lawn) at the {@link outdoorOutside} probe. An upper door onto nothing the
+ * plan draws opens into thin air (`W_EXTERIOR_DOOR_ABOVE_ENTRANCE`): it grounds nothing, so the
+ * storey is walked from the shafts that reach it, as a storey with no door is.
  *
  * This governs the internal `grounded()` predicate `verticalReach` is built on — never
  * `describe()`'s per-storey `access.hasEntrance`, which stays the HONEST, undiscounted
@@ -772,8 +777,19 @@ export function levelIsGrounded(
   rooms: readonly RRoom[],
   doors: readonly RDoor[],
   outdoors: readonly ROutdoor[],
+  /** The storey is above the building's entrance storey (RM9.10): see above. */
+  above = false,
+  openings: readonly ROpening[] = [],
 ): boolean {
   if (!graph.hasEntrance) return false;
+  if (above) {
+    const ways = new Map<string, RDoor | ROpening>([...doors, ...openings].map((c) => [c.id, c]));
+    return graph.entrances.some((id) => {
+      const c = ways.get(id);
+      const out = c ? outdoorOutside(c, rooms, outdoors) : undefined;
+      return out !== undefined && out !== null && out.surface !== "balcony";
+    });
+  }
   const balconies = outdoors.filter((o) => o.surface === "balcony");
   if (balconies.length === 0) return true;
   const byId = new Map(doors.map((d) => [d.id, d]));
@@ -788,13 +804,82 @@ export function levelIsGrounded(
  * `describe` both hand to `verticalReach`. The tolerance is explicit because the two
  * callers use their own (`LintRuleset.tolMm`, `DescribeOptions.adjacencyTolMm`).
  */
-export function storeyGrounded(ir: ResolvedPlan, tol: number): boolean {
+export function storeyGrounded(ir: ResolvedPlan, tol: number, above = false): boolean {
   const rooms = ir.elements.filter((e): e is RRoom => e.kind === "room");
   const doors = ir.elements.filter((e): e is RDoor => e.kind === "door");
   const openings = ir.elements.filter((e): e is ROpening => e.kind === "opening");
   const outdoors = ir.elements.filter((e): e is ROutdoor => e.kind === "outdoor");
   const graph = buildDoorAccessGraph(rooms, doors, tol, undefined, openings, openRunsOf(ir, tol), outdoors);
-  return levelIsGrounded(graph, rooms, doors, outdoors);
+  return levelIsGrounded(graph, rooms, doors, outdoors, above, openings);
+}
+
+/**
+ * What lies outside connector `c` on an exterior wall: the topmost `outdoor` surface (the last
+ * in element order, as {@link unwalkableGroundAt} reads it) whose SHAPE holds the probe one
+ * host-wall thickness off the wall's outward face ({@link doorFacesBalcony}'s probe), `null`
+ * when the plan draws none there, or `undefined` when the probe cannot tell which side is
+ * outward (a room on both sides, or on neither) or `c` has no host.
+ */
+export function outdoorOutside(
+  c: Pick<RDoor, "host" | "at">,
+  rooms: readonly RRoom[],
+  outdoors: readonly ROutdoor[],
+): ROutdoor | null | undefined {
+  if (!c.host) return undefined;
+  const { plus, minus } = wallFaceProbes(c.host, c.at, Math.max(c.host.thickness, 1));
+  const onPlus = rooms.some((r) => pointInRoomBox(plus, roomBox(r)));
+  const onMinus = rooms.some((r) => pointInRoomBox(minus, roomBox(r)));
+  if (onPlus === onMinus) return undefined;
+  const p = onPlus ? minus : plus;
+  for (let i = outdoors.length - 1; i >= 0; i--) if (pointInPolygon(p.x, p.y, outdoorRing(outdoors[i]!))) return outdoors[i]!;
+  return null;
+}
+
+/**
+ * Which storeys of a building have a way in from the ground of their own (RM9.10): the
+ * `grounded()` predicate `describe().vertical`, `lint()` and `suggestTopology` hand to
+ * `verticalReach`, stated once so they cannot disagree.
+ *
+ * The ENTRANCE storey is the lowest storey {@link storeyGrounded} grounds: a door from the ground
+ * that does not open onto a balcony. Level numbers say nothing about where the ground is (0 and
+ * negative are legal, and a basement with no door of its own is entered from the storey above),
+ * so the entrance storey is read off the doors. It is grounded; a storey below it has no such
+ * door by construction and is not; a storey above it is grounded only by a door onto ground the
+ * plan draws ({@link levelIsGrounded}'s `above`). `entrance` is `null` when no storey grounds
+ * (the building has no way in), and then no storey is grounded.
+ *
+ * A building whose doors to the outside are all on its entrance storey, or open onto balconies,
+ * decks and drawn ground above it, has exactly the grounded storeys it always had.
+ */
+export function buildingGround(
+  levels: readonly { level: number; ir: ResolvedPlan }[],
+  tol: number,
+): { entrance: number | null; grounded(level: number): boolean } {
+  const own = new Map<number, boolean>();
+  const ownOf = (l: { level: number; ir: ResolvedPlan }): boolean => {
+    let g = own.get(l.level);
+    if (g === undefined) {
+      g = storeyGrounded(l.ir, tol);
+      own.set(l.level, g);
+    }
+    return g;
+  };
+  const entrance = levels.find((l) => ownOf(l))?.level ?? null;
+  const above = new Map<number, boolean>();
+  return {
+    entrance,
+    grounded(level) {
+      const l = levels.find((x) => x.level === level);
+      if (!l || entrance === null || level < entrance || !ownOf(l)) return false;
+      if (level === entrance) return true;
+      let g = above.get(level);
+      if (g === undefined) {
+        g = storeyGrounded(l.ir, tol, true);
+        above.set(level, g);
+      }
+      return g;
+    },
+  };
 }
 
 /**

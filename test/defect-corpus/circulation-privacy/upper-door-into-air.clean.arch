@@ -1,0 +1,24 @@
+# class: circulation-privacy
+# twin-of: upper-door-into-air
+# origin: product-roadmap RM9.10 with the balcony the upstairs door opens onto drawn outside it
+# expect: none
+# fact: d_out now opens onto an outdoor balcony (2000 x 1200 mm, outside the wall at y 3000), a way out onto a slab that grounds nothing; the storey is still walked from the stair
+plan "Upstairs door onto a balcony" {
+  units mm
+  grid 50
+  level 1 "Ground" {
+    wall id=shell exterior thickness 200 { (0,0) (6000,0) (6000,3000) (0,3000) close }
+    room id=hall at (0,0) size 6000x3000 label "Hall" uses hall
+    door id=front on shell at 12000 width 900
+    window id=w1 on shell at 1500 width 1200
+    stair id=st at (2000,200) size 2600x900 dir up
+  }
+  level 2 "Upper" {
+    wall id=shell exterior thickness 200 { (0,0) (6000,0) (6000,3000) (0,3000) close }
+    room id=study at (0,0) size 6000x3000 label "Study" uses office
+    door id=d_out on shell at 12000 width 900
+    window id=w2 on shell at 1500 width 1200
+    stair id=st at (2000,200) size 2600x900 dir down
+    outdoor balcony at (2000,3000) size 2000x1200 label "Balcony" rail all
+  }
+}

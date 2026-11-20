@@ -179,9 +179,11 @@ export function mountEditMode(ctx: EditCtx): EditMode {
     const btn = (e.target as Element | null)?.closest<HTMLElement>(".sug-insert");
     const stmt = btn?.dataset.stmt;
     if (!stmt) return;
-    // Insert just inside the plan's closing brace — the statement is plan-level.
+    // Insert just inside the plan's closing brace — the statement is plan-level — or, on a plan
+    // of `level` blocks, inside the brace of the storey the suggestion is about (`insertAt`).
     const src = currentSource();
-    const close = src.lastIndexOf("}");
+    const at = btn?.dataset.at;
+    const close = at !== undefined ? Number(at) : src.lastIndexOf("}");
     if (close < 0) return;
     loadSource(`${src.slice(0, close)}  ${stmt}\n${src.slice(close)}`, false);
     flash("Statement inserted");

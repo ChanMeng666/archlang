@@ -78,7 +78,7 @@ import {
   type RectEdge,
   resolvePlan,
   buildingRoomReach,
-  storeyGrounded,
+  buildingGround,
   rotateForBackEdge,
   roomBox,
   wallBackedEdges,
@@ -1365,14 +1365,7 @@ function repairPass(source: string, book: SpanBook, record: boolean, pins: Pins)
   const inputs = levels.map((l) => ({ level: l.level, ir: l.ir }));
   const arrivals =
     levels.length > 0
-      ? arrivalRuns(
-          inputs,
-          (n) => {
-            const l = inputs.find((x) => x.level === n);
-            return l ? storeyGrounded(l.ir, DEFAULT_TOL) : false;
-          },
-          buildingRoomReach(inputs, DEFAULT_TOL),
-        )
+      ? arrivalRuns(inputs, buildingGround(inputs, DEFAULT_TOL).grounded, buildingRoomReach(inputs, DEFAULT_TOL))
       : new Map<number, ArrivingRun[]>();
   const changes: RepairChange[] = [];
   for (const st of storeys) {

@@ -5,7 +5,7 @@
 Where the tests of a `src` module are, and what each test file is for. Generated; `npm run check:drift`
 fails when it is stale. How to add a test: `docs/testing.md` § 4.
 
-560 test files in `test/`, 295 `src` modules, 107 modules no test imports.
+562 test files in `test/`, 295 `src` modules, 107 modules no test imports.
 
 ## `src` module → tests that import it
 
@@ -126,7 +126,7 @@ Nearest first, then by name; `(+n)` is the rest. Test names are `test/<name>.tes
 - `src/impact.ts` (2) — `rectilinear-doors`, `rectilinear-rooms`
 - `src/import.ts` (34) — `block-stair-byte-identity`, `corner-window-byte-identity`, `dim-swap-reprint`, `dim-thickness-callout`, `drawing-budget`, `error-value-law`, `floor-materials-byte-identity`, `furniture-relations` (+26)
 - `src/import/limits.ts` (1) — `openplan3d-malformed`
-- `src/index.ts` (418) — `acc-metadata`, `access-graph`, `access-policy`, `accessible-svg`, `agent-gallery`, `alias-match`, `anchors`, `annotate` (+410)
+- `src/index.ts` (420) — `acc-metadata`, `access-graph`, `access-policy`, `accessible-svg`, `agent-gallery`, `alias-match`, `anchors`, `annotate` (+412)
 - `src/input-limit.ts` (2) — `import-rooted`, `workspace-seams`
 - `src/intent-concepts.ts` (3) — `vocabulary-es-pt`, `vocabulary-living-dining`, `vocabulary-matcher-oracle`
 - `src/intent-feasibility.ts` (1) — `intent-infeasible`
@@ -505,6 +505,7 @@ The first sentence of each file's header comment.
 - `test/label-symbol-ink.test.ts` — Card AL3w (label-crowding): a room's name or area figure is read against a symbol, and against a piece's own label, at the wider of the shared estimate and the width it draws (`symbolExtent`, `src/text-layout.ts`), in...
 - `test/label-wrap.test.ts` — A room name too wide for its room on one line is drawn on several (`wrapLabels`, `src/label-placement.ts`) — and nothing else about any drawing moves.
 - `test/lang.test.ts` — let bindings; components; control flow (T2.3); scope chain (T2.4); value-functions / closures (T2.5); built-ins (T2.6); set rules (T2.7); string-interpolated la…
+- `test/level-aware.test.ts` — Product roadmap RM9.10: level awareness on a plan of `level` blocks, the five places the card names.
 - `test/level-filename-lockstep.test.ts` — ONE per-storey file-naming scheme, two implementations — welded here.
 - `test/levels.test.ts` — Multi-storey `level` blocks: one drawing per storey.
 - `test/lint-accessible-wc-side-wall.test.ts` — `W_ACCESSIBLE_WC_SIDE_WALL` (plan-soundness PS2.74, `src/lint/rules/clearances.ts`): a WC in a room whose label says accessible, with its centreline farther than `wcAccessibleSideWallMaxMm` (500 mm, Approved Document...
@@ -518,6 +519,7 @@ The first sentence of each file's header comment.
 - `test/lint-coverage.test.ts` — lint coverage: beside lint(), never inside it; lint coverage: the seam; lint coverage: the skips rules declare; lint coverage: review round 1 (the reviewer's re…
 - `test/lint-deficits.test.ts` — W_SWING_OBSTRUCTED states the measured deficit; W_SWING_OBSTRUCTED on a double door (backlog 6.8); W_SWING_OBSTRUCTED's hinge-flip fix; W_DOORWAY_BLOCKED / W_FU…
 - `test/lint-dwelling-reading.test.ts` — dwellingReading; W_WET_ROOM_DOOR on a plan that reads as non-residential; W_HABITABLE_NO_WINDOW's kitchen arm; W_ENTRANCE_INTO_PRIVATE; the non-dwelling reason;…
+- `test/lint-exterior-door-above-entrance.test.ts` — Product roadmap RM9.10: `W_EXTERIOR_DOOR_ABOVE_ENTRANCE`, an exterior door on a storey above the building's entrance storey that opens onto nothing the plan draws.
 - `test/lint-exterior-ring.test.ts` — `W_EXTERIOR_RING_OPEN` (issues #346 and #370): exterior walls that should enclose a room and do not, read end by end (`src/analyze/open-shell.ts`), so a ring closing elsewhere hides nothing.
 - `test/lint-file-provenance.test.ts` — Lint-raised fixes must carry the FILE their spans are measured in.
 - `test/lint-fix-texts.test.ts` — W_ROOM_NO_FIXTURE — the hint's statement compiles, clears it, and raises nothing new; W_FIXTURE_BACK_TO_ROOM — the size's aspect decides the wall; the hint swap…
