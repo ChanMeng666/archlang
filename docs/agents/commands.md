@@ -79,6 +79,18 @@
   RM-D46), whose numbers are compared with neither. `npm run dataset:model-authoring -- submit` (the
   dataset's model-authoring config; product-roadmap RM-D47) is paid and owner-only too; its `plan`,
   `collect` and `build` phases spend nothing (`collect` only downloads what was paid for).
+- `npm run digest:preview` (`scripts/digest-preview.ts`, card TR12) is optional; `check:quick` stays the
+  local gate (AGENTS.md) and CI is the merge evidence. It runs the 64-hex digest pins of the tests under
+  `test/` without vitest: every test file whose reach (its local imports, transitively, and the JSON
+  tables they name) holds a 64-hex literal, loaded under a vitest stand-in
+  (`scripts/digest-preview/vitest-shim.ts`), one file at a time. It lists each moved row (file, test,
+  pinned hex, new hex) and exits 1 on one, or on any other failure (two measured digests that differ
+  are labelled a failed law); zero work (an `--only` matching nothing, a file with no test, an async
+  `describe` body, a file it cannot load) exits 2. Not covered: laws pinned by a vitest snapshot, which
+  it names, and tests outside `test/`. Measured on this laptop: 8.7 minutes in one process (one run), 4.6–6.0
+  with `--jobs 2` (eight runs); `--jobs <n>` splits the files by recorded seconds, `--only <part>` narrows them,
+  `--list` prints them. `check:quick` runs it only with `--digests`; without it, a `src/` change prints
+  the line naming it.
 - `npm run digest:engines` (ADVISORY, always exits 0, last line `status=` clean, diverged, incomplete or
   baseline-stale) measures cross-engine determinism: the built `dist/` is run in Playwright chromium,
   firefox and webkit over examples, fixtures, recovery and eval plans plus transcendental probes, and
