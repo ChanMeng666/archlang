@@ -1,0 +1,24 @@
+# class: circulation-privacy
+# twin-of: door-onto-roof
+# origin: product-roadmap RM9.10 with the roof terrace the upstairs door opens onto drawn over the roof of level 1
+# expect: none
+# fact: an outdoor deck (6000 x 2000 mm, on level 2 outside the wall at y 3000) now holds the point outside d_out: the door opens onto a roof terrace
+plan "Upstairs door onto a roof terrace" {
+  units mm
+  grid 50
+  level 1 "Ground" {
+    wall id=shell exterior thickness 200 { (0,0) (6000,0) (6000,5000) (0,5000) close }
+    room id=hall at (0,0) size 6000x5000 label "Hall" uses hall
+    door id=front on shell at 14000 width 900
+    window id=w1 on shell at 1500 width 1200
+    stair id=st at (2000,200) size 2600x900 dir up
+  }
+  level 2 "Upper" {
+    wall id=shell exterior thickness 200 { (0,0) (6000,0) (6000,3000) (0,3000) close }
+    room id=study at (0,0) size 6000x3000 label "Study" uses office
+    door id=d_out on shell at 12000 width 900
+    window id=w2 on shell at 1500 width 1200
+    stair id=st at (2000,200) size 2600x900 dir down
+    outdoor deck at (0,3000) size 6000x2000 label "Roof terrace"
+  }
+}

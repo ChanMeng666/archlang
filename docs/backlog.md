@@ -762,8 +762,8 @@ person arrives by (ADR 0008's addendum). Left out, each re-run unless noted:
   be archived (`levels[i].access.rooms[].reachable` is read per storey; a storey nobody arrives
   on reaches none of its rooms).
 - `suggestTopology` per storey: done by RM9.10, waiting to be archived (each storey walked as
-  lint walks it, `level` and `insertAt` on a level plan, no door to the outside above the
-  entrance storey). Still open: it fixes its tolerance at `DEFAULT_TOL` (`src/suggest.ts`), while
+  lint walks it, `level` and `insertAt` on a level plan, no door to the outside on a storey
+  reached only by a shaft nor onto a roof). Still open: it fixes its tolerance at `DEFAULT_TOL` (`src/suggest.ts`), while
   lint's access graph reads the ruleset's `tolMm`, so under a custom tolerance the two can
   disagree on what connects (code read).
 - `diffPlans` compares the lowest storey only (documented), so upper storeys are never diffed.

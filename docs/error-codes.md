@@ -205,7 +205,7 @@ Every diagnostic carries a stable code. Look one up with `arch explain <CODE>`
 | [`W_EMPTY_PLAN`](#w_empty_plan) | warning | Empty plan. |
 | [`W_ENTRANCE_INTO_PRIVATE`](#w_entrance_into_private) | warning | The way in from outside opens into a bedroom, bathroom or WC. |
 | [`W_EXIT_APPROACH_BLOCKED`](#w_exit_approach_blocked) | warning | Furniture stands in the clear floor inside an exterior exit. |
-| [`W_EXTERIOR_DOOR_ABOVE_ENTRANCE`](#w_exterior_door_above_entrance) | warning | An exterior door above the entrance storey opens onto nothing. |
+| [`W_EXTERIOR_DOOR_ONTO_ROOF`](#w_exterior_door_onto_roof) | warning | An exterior door opens onto the roof of the storey below. |
 | [`W_EXTERIOR_RING_OPEN`](#w_exterior_ring_open) | warning | Exterior walls that stand on a room close nothing: the shell has a gap. |
 | [`W_FIXTURE_BACK_TO_ROOM`](#w_fixture_back_to_room) | warning | A fixture stands against a wall but faces the wrong way. |
 | [`W_FIXTURE_FLOATING`](#w_fixture_floating) | warning | A plumbing/kitchen fixture is not against a wall. |
@@ -3861,27 +3861,48 @@ door at (3000,4000) width 1200 wall w swing outward
 furniture sofa at (1200,500) size 1800x900   # fixed: the exit's approach is clear
 ```
 
-## W_EXTERIOR_DOOR_ABOVE_ENTRANCE
+## W_EXTERIOR_DOOR_ONTO_ROOF
 
-*warning* — An exterior door above the entrance storey opens onto nothing.
+*warning* — An exterior door opens onto the roof of the storey below.
 
-**Cause.** On a multi-storey plan the entrance storey is the lowest storey with a door from the ground (a door to the outside that does not open onto an `outdoor balcony`); level numbers say nothing about where the ground is, so it is read off the doors. A door or cased `opening` to the outside on a storey above it is a way out onto something only where the plan draws it: an `outdoor` surface (a balcony, a deck, paving, the lawn of a hillside) at the point one wall thickness outside it. This one opens onto no surface at all, so it leads into thin air. It is no way in: the storey is walked from its stairs, lifts and escalators, so a room reached only through this door is `W_ROOM_UNREACHABLE`, and a storey no shaft reaches has no way in. It is what a repair writes when it reasons about one storey as if it stood alone (a front door per storey). A connector whose outward side cannot be told (a room on both sides, or on neither) is not reported.
+**Cause.** On a multi-storey plan, a door or cased `opening` to the outside whose point just outside it (one wall thickness off the wall at its centre) lies on the footprint of a LOWER storey (one of its rooms, or inside its closed exterior wall ring) opens onto that storey's roof, and its own storey draws no `outdoor` surface there: no balcony, deck or terrace to stand on. It is no way in: the storey is walked from its stairs, lifts and escalators, so a room reached only through this door is `W_ROOM_UNREACHABLE`, and a storey no shaft reaches has no way in. The plan states no ground level, so a door that opens beyond every storey below (a walk-out storey, a garage under the house, a bridge, an upper flat reached by an outside stair) is a door from the ground and is not reported. A connector whose outward side cannot be told (a room on both sides, or on neither) is not reported either.
 
-**Fix.** Draw what it opens onto (an `outdoor balcony` or `deck`, or the ground where the site meets this storey), make it a window, or move it to the entrance storey.
+**Fix.** Draw what it opens onto, an `outdoor balcony` or `deck` over the roof below (a roof terrace), or make it a window.
 
 ```arch static
 plan "P" {
   units mm
   level 1 {
-    wall id=s exterior thickness 200 { (0,0) (6000,0) (6000,3000) (0,3000) close }
-    room id=a at (0,0) size 6000x3000 label "Hall"
-    door id=front on s at 12000 width 900
+    wall id=s exterior thickness 200 { (0,0) (6000,0) (6000,5000) (0,5000) close }
+    room id=a at (0,0) size 6000x5000 label "Hall"
+    door id=front on s at 14000 width 900
     stair id=st at (2000,200) size 2600x900 dir up
   }
   level 2 {
     wall id=s exterior thickness 200 { (0,0) (6000,0) (6000,3000) (0,3000) close }
     room id=b at (0,0) size 6000x3000 label "Study"
-    door id=d_out on s at 12000 width 900   # lint: an upstairs door into thin air
+    door id=d_out on s at 12000 width 900   # lint: a door onto the roof of level 1
+    stair id=st at (2000,200) size 2600x900 dir down
+  }
+}
+```
+
+**Fixed.**
+
+```arch static
+plan "P" {
+  units mm
+  level 1 {
+    wall id=s exterior thickness 200 { (0,0) (6000,0) (6000,5000) (0,5000) close }
+    room id=a at (0,0) size 6000x5000 label "Hall"
+    door id=front on s at 14000 width 900
+    stair id=st at (2000,200) size 2600x900 dir up
+  }
+  level 2 {
+    wall id=s exterior thickness 200 { (0,0) (6000,0) (6000,3000) (0,3000) close }
+    room id=b at (0,0) size 6000x3000 label "Study"
+    door id=d_out on s at 12000 width 900
+    outdoor deck at (0,3000) size 6000x2000 label "Roof terrace"   # fixed: a terrace on that roof
     stair id=st at (2000,200) size 2600x900 dir down
   }
 }

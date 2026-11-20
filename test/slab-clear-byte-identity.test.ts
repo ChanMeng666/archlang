@@ -289,9 +289,9 @@ const BASELINE: [string, string][] = [
   ["e6eed958e1d4cea68f7981fce9964af4b5a26fa3d09ad3eafebb0992ce5cb727", "inline:stair-refusals"],
   ["57879436768cab2c738430d6586f0e88de6cb79c178799a011c9d09f73e553df", "inline:stair-parse-refusals"],
   ["7fa38724de8f8f22ec5dde6df8e9d8e2f027ccf18c2068f69ef2d4761b81c5e6", "inline:slab-clear-words-as-names"],
-  ["0500e94465db850d1f7f00a458ceded4f65ec5ea45f00bc19c9af0d5dc10dd44", "inline:section-words-as-names"], // RM9.2, see ./byte-identity-baseline.ts; RM9.10 (#990, RM-D72): was 9dd469250c48ce89b59c495b4205d65d055a6cad5a72e64a2c5b3d03aa053347; moved only by W_EXTERIOR_DOOR_ABOVE_ENTRANCE and the upper storeys' rooms reading unreached; swap-back reproduces the old digest
+  ["9dd469250c48ce89b59c495b4205d65d055a6cad5a72e64a2c5b3d03aa053347", "inline:section-words-as-names"], // RM9.2, see ./byte-identity-baseline.ts
   ["a99e77bd8df64e89959fb92f93aff9fa2428527390ffa9a07c12291da1ddbff5", "inline:slab-clear-macro-after-height"],
-  ["88bc7524814c4fe679a06ae70f8fcc5f803f833ff586221f44d0b5b5b193f4e5", "inline:slab-clear-storeys-without"], // RM9.2, see ./byte-identity-baseline.ts; RM9.10 (#990, RM-D72): was d1e9abba7d5c3e58e190713683263d24a3d1670b5eded0475bcc9f507c12afa3; moved only by W_EXTERIOR_DOOR_ABOVE_ENTRANCE and the upper storeys' rooms reading unreached; swap-back reproduces the old digest
+  ["d1e9abba7d5c3e58e190713683263d24a3d1670b5eded0475bcc9f507c12afa3", "inline:slab-clear-storeys-without"], // RM9.2, see ./byte-identity-baseline.ts
 ];
 
 const pinned = new Map(BASELINE.map(([digest, name]) => [name, digest]));

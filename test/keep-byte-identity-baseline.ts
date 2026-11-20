@@ -10,7 +10,7 @@
  * PR legitimately moves a hashed output (never keep code), the table is re-taken by the generator, the
  * reason recorded below and the moved files listed in that commit's message.
  *
- * Taken: RM9.10 on dbf4f0ee (feat/rm9.10-level-aware): the new defect-corpus pair circulation-privacy/upper-door-into-air adds two rows; every other row held
+ * Taken: RM9.10 fix round 1 (RM-D72 revised) on feat/rm9.10-level-aware: the defect-corpus pair is now circulation-privacy/door-onto-roof (two rows replace upper-door-into-air's); every other row held
  */
 
 /** `[path from the repository root, SHA-256 of the payload, evaluation steps]`, sorted by root. */
@@ -452,6 +452,16 @@ export const KEEP_WEAK_BASELINE: readonly (readonly [string, string, number])[] 
     204,
   ],
   [
+    "test/defect-corpus/circulation-privacy/door-onto-roof.arch",
+    "24c938791bad4f0174af3b38f63b0821a676dc94d772914e9cdc7a7919b10b61",
+    155,
+  ],
+  [
+    "test/defect-corpus/circulation-privacy/door-onto-roof.clean.arch",
+    "2584b5526aeab25bf33d5a2fe06995d51a505836a7a564ce6c90f4f9bd68beb0",
+    182,
+  ],
+  [
     "test/defect-corpus/circulation-privacy/entry-into-bedroom.arch",
     "9eb932c6ac162a45833f1bedb7b200bf36cd614f21cc93c0fc94b11c3baee981",
     136,
@@ -490,16 +500,6 @@ export const KEEP_WEAK_BASELINE: readonly (readonly [string, string, number])[] 
     "test/defect-corpus/circulation-privacy/two-bed-chain.clean.arch",
     "365659b60921976b2cbd1e9b09247468dd9b3e9fbcfbd85477ba7b6ee5293fad",
     299,
-  ],
-  [
-    "test/defect-corpus/circulation-privacy/upper-door-into-air.arch",
-    "71adc734f6df7838e005052c88db95b91bed621a09507453b96bbb4cd251cb7d",
-    155,
-  ],
-  [
-    "test/defect-corpus/circulation-privacy/upper-door-into-air.clean.arch",
-    "d46319c8a7236ca4798867e6d805ea3fbadf7aa910a39d494fc9ab02fd1ac57e",
-    177,
   ],
   [
     "test/defect-corpus/circulation-privacy/wc-off-dining.arch",

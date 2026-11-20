@@ -44,6 +44,7 @@ import {
   resolvePlan,
   wetRoomsOnlyViaBedroom,
   storeyWalkDigraph,
+  buildingGround,
   type AnalyzeOptions,
 } from "./analyze.js";
 import { buildingContexts } from "./lint/storeys.js";
@@ -356,10 +357,12 @@ export function suggestTopology(source: string, opts: SuggestOptions = {}): Sugg
   // A plan of `level` blocks, storey by storey (RM9.10), each read as `lint` reads it: walked from
   // its own doors on a storey with a way in from the ground, from the rooms the shafts land in on a
   // storey reached by one, and not at all on a storey nobody arrives on. A door to the outside is
-  // offered only on the entrance storey (or, when no storey has a way in, the lowest): anywhere
-  // else it would open into thin air (`W_EXTERIOR_DOOR_ABOVE_ENTRANCE`).
-  const contexts = buildingContexts(levels, DEFAULT_TOL);
-  const doorStorey = contexts.get(levels[0]!.level)!.entranceStorey ?? levels[0]!.level;
+  // offered only on a storey with a way in from the ground (or, when no storey has one, the
+  // lowest), and never onto the roof of a storey below (`W_EXTERIOR_DOOR_ONTO_ROOF`). One `level`
+  // block reads as the same plan without it; only where its statements go differs.
+  const contexts = levels.length > 1 ? buildingContexts(levels, DEFAULT_TOL) : undefined;
+  const ground = levels.length > 1 ? buildingGround(levels, DEFAULT_TOL) : undefined;
+  const anyGrounded = levels.some((l) => contexts?.get(l.level)!.grounded === true);
   const closes = new Map<number, number>();
   for (const st of plan?.body ?? []) {
     if (st.kind !== "level" || !st.span) continue;
@@ -367,11 +370,20 @@ export function suggestTopology(source: string, opts: SuggestOptions = {}): Sugg
     if (at >= st.span.start) closes.set((st as LevelNode).level, at);
   }
   return levels.flatMap((l) => {
-    const b = contexts.get(l.level)!;
-    const arrivals = b.arrivalRooms;
-    const view: StoreyView = b.grounded
-      ? { ...OUTSIDE, exteriorOk: l.level === doorStorey }
-      : { from: arrivals.length > 0 ? "arrivals" : "nowhere", arrivals, exteriorOk: l.level === doorStorey };
+    const b = contexts?.get(l.level);
+    const arrivals = b?.arrivalRooms ?? [];
+    const ontoRoof = (c: Pick<RDoor, "host" | "at">): boolean => ground?.roofUnder(l.level, c) != null;
+    const view: StoreyView =
+      b === undefined
+        ? OUTSIDE
+        : b.grounded
+          ? { ...OUTSIDE, ontoRoof }
+          : {
+              from: arrivals.length > 0 ? "arrivals" : "nowhere",
+              arrivals,
+              exteriorOk: !anyGrounded && l === levels[0],
+              ontoRoof,
+            };
     const insertAt = closes.get(l.level);
     return suggestStorey(l.ir, view).map((x) => ({
       ...x,
@@ -388,6 +400,8 @@ interface StoreyView {
   from: "outside" | "arrivals" | "nowhere";
   arrivals: readonly string[];
   exteriorOk: boolean;
+  /** Would a door at this place open onto the roof of a storey below? Never offered there. */
+  ontoRoof?: (c: Pick<RDoor, "host" | "at">) => boolean;
 }
 const OUTSIDE: StoreyView = { from: "outside", arrivals: [], exteriorOk: true };
 
@@ -443,6 +457,17 @@ function suggestStorey(ir: ResolvedPlan, view: StoreyView): Suggestion[] {
   const noWetRoom = avoiding(isWetRoom);
   const throughTier = (n: RRoom): number =>
     !noBedroom.has(n.id) ? 4 : !noWetRoom.has(n.id) ? Math.max(3, wayInTier(n)) : wayInTier(n);
+  // Would a door on `wall` at `point` of room edge `e` open onto the roof of a storey below? Read
+  // on the segment of the wall that stands there, as a placed door's host would be.
+  const onRoof = (wall: RWall, e: Edge, point: Point): boolean => {
+    if (!view.ontoRoof) return false;
+    const t = e.axis === "h" ? point.x : point.y;
+    const seg = segmentsOfWall(wall).find((x) => {
+      const on = segOnEdge(x, e, tol);
+      return on !== null && t >= on.lo && t <= on.hi;
+    });
+    return seg !== undefined && view.ontoRoof({ host: seg, at: point });
+  };
   // Every connector (door/opening) that can block a new opening's site.
   const connectors = [...doors, ...openings, ...windows].map((c) => ({ at: c.at, width: c.width }));
 
@@ -473,6 +498,7 @@ function suggestStorey(ir: ResolvedPlan, view: StoreyView): Suggestion[] {
         const free = longestFreeRun(e.lo, e.hi, blocked);
         if (!free || free.len < DOOR_WIDTH) continue;
         const point = edgePoint(e, free.mid);
+        if (onRoof(host.wall, e, point)) continue;
         const { pct } = projectPointOntoWall(host.wall as AttachableWall, point);
         bucket.push({
           insertText: composeOpening("door", host.wall, pct, point, DOOR_WIDTH, categoryCount),
@@ -546,6 +572,7 @@ function suggestStorey(ir: ResolvedPlan, view: StoreyView): Suggestion[] {
         }
         for (const [to, { host, ...free }] of best) {
           const point = edgePoint(e, free.mid);
+          if (to === null && onRoof(host.wall, e, point)) continue;
           const { pct } = projectPointOntoWall(host.wall as AttachableWall, point);
           const via = to
             ? `connects "${label}" to "${to}" (which reaches the entrance)`
@@ -657,6 +684,7 @@ function suggestStorey(ir: ResolvedPlan, view: StoreyView): Suggestion[] {
         const free = longestFreeRun(e.lo, e.hi, blocked);
         if (!free || free.len < DOOR_WIDTH) continue;
         const point = edgePoint(e, free.mid);
+        if (!goodNeighbour && onRoof(host.wall, e, point)) continue;
         const { pct } = projectPointOntoWall(host.wall as AttachableWall, point);
         const rationale = goodNeighbour
           ? `A door on ${named(host.wall, false)} links "${label}" to "${goodNeighbour}", giving it a route that avoids the bedroom.`

@@ -1,0 +1,23 @@
+# class: circulation-privacy
+# origin: product-roadmap v3.md section 1.5 (the downstream app's pending ask: an exterior door above the entry storey raises nothing; card RM9.10, ruling RM-D72 revised), reduced to the shape the geometry can prove: an upper storey set back over the storey below, with a door out onto that roof
+# expect: W_EXTERIOR_DOOR_ONTO_ROOF
+# status: done
+# fact: level 2 (6000 x 3000) stands on level 1 (6000 x 5000); d_out opens from the study through level 2's wall at y 3000, and the point 200 mm outside it, (3000, 3200), lies on level 1's hall and on no outdoor surface of level 2 (describe: levels[1].outdoor is []), so it opens onto the roof of level 1
+plan "Upstairs door onto a roof" {
+  units mm
+  grid 50
+  level 1 "Ground" {
+    wall id=shell exterior thickness 200 { (0,0) (6000,0) (6000,5000) (0,5000) close }
+    room id=hall at (0,0) size 6000x5000 label "Hall" uses hall
+    door id=front on shell at 14000 width 900
+    window id=w1 on shell at 1500 width 1200
+    stair id=st at (2000,200) size 2600x900 dir up
+  }
+  level 2 "Upper" {
+    wall id=shell exterior thickness 200 { (0,0) (6000,0) (6000,3000) (0,3000) close }
+    room id=study at (0,0) size 6000x3000 label "Study" uses office
+    door id=d_out on shell at 12000 width 900
+    window id=w2 on shell at 1500 width 1200
+    stair id=st at (2000,200) size 2600x900 dir down
+  }
+}

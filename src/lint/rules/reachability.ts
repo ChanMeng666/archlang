@@ -11,8 +11,8 @@
  * On a storey with no door from the ground that a shaft nevertheless reaches, the room
  * the shaft lands in is the source — coming down the stairs and out of the front door
  * below IS a way out — so the same search answers the same question one storey up. Such a
- * storey's exterior doors open onto balconies (or, above the entrance storey, into thin air:
- * RM9.10, `buildingGround`): walked through, never started from (PS0.3, `describe().access`
+ * storey's exterior doors open onto balconies (or onto the roof of a storey below: RM9.10,
+ * `buildingGround`), each its own node: walked through, never started from (PS0.3, `describe().access`
  * counts from the same sources). A storey with no way in of its own that no shaft reaches is
  * skipped as one with no entrance. A single-storey plan has no such source and is unchanged.
  */
@@ -65,8 +65,8 @@ export const reachability: LintRule = {
       return r ? isBedroom(r) : false;
     };
     // A storey of a building with no way in from the ground of its own and no shaft reaching it
-    // (RM9.10): its doors to the outside open onto a balcony or into thin air above the entrance
-    // storey, so nothing is walked from them.
+    // (RM9.10): its doors to the outside open onto a balcony or onto the roof of a storey below,
+    // so nothing is walked from them. Set only on a building of two storeys or more.
     const cutOff = building.grounded === false && arrivals.length === 0;
     if (!cutOff && (g.out(EXTERIOR_NODE).length > 0 || arrivals.length > 0)) {
       // Where a shaft arrives, the storey has no door from the ground (`arrivalRooms` is empty on

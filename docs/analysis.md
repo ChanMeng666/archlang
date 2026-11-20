@@ -689,13 +689,13 @@ from the stop on that side, `null` where that flight ends in no room and absent 
 such stop.
 
 **Reachability through a shaft.** A storey is *grounded* when it has a way in from the ground
-of its own. The **entrance storey** is the lowest storey with an exterior door that does not open
-onto an `outdoor balcony` (level numbers say nothing about where the ground is, so a basement
-with no door of its own is below it); it is grounded. A storey above it is grounded only by a
-door onto ground the plan draws outside it: an `outdoor` surface other than a balcony (a deck,
-paving, the lawn of a hillside). An upstairs door onto nothing the plan draws is no way in
-(`W_EXTERIOR_DOOR_ABOVE_ENTRANCE` names it): the storey is walked from its shafts, and a storey
-no shaft reaches, whatever doors it has, has no room reached (`levels[i].access.rooms[]`).
+of its own: an exterior door that opens neither onto an `outdoor balcony` nor onto the roof of a
+storey below. A door opens onto a roof when the point just outside it (one wall thickness off the
+wall at its centre) lies on a lower storey's rooms or inside its closed exterior wall ring, and its
+own storey draws no `outdoor` surface there (`W_EXTERIOR_DOOR_ONTO_ROOF` names it). The plan states
+no ground level, so every other door to the outside, a walk-out storey's or a garage-under house's
+front door included, grounds its storey. On a building of two storeys or more, a storey no shaft
+reaches and with no such door has no room reached (`levels[i].access.rooms[]`).
 Reachability then spreads along the connections to a fixpoint over
 storeys **and rooms**: a shaft carries you on only from a stop whose room you can walk to
 on its own storey — from the front door if the storey is grounded, or from a room another
@@ -1274,7 +1274,7 @@ What it cannot tell you:
 | Room | `W_ROOM_TOO_SMALL`, `W_ROOM_DISCONNECTED`, `W_BEDROOM_NO_WINDOW`, `W_HABITABLE_NO_WINDOW`, `W_ROOM_MISSING_DEFINING`, `W_LABEL_PIECE_MISSING`, `W_ROOM_OVERLAP`, `W_ROOM_NOT_EQUATOR_FACING` |
 | Placement | `W_DOOR_OFF_WALL`, `W_WINDOW_OFF_WALL`, `W_OPENING_OFF_WALL` |
 | Door / circulation | `W_DOOR_CLEARANCE`, `W_SWING_OBSTRUCTED`, `W_DOORWAY_BLOCKED`, `W_LEAF_ACROSS_DOORWAY`, `W_LEAF_TOO_WIDE`, `W_NO_ENTRANCE` |
-| Reachability | `W_ROOM_UNREACHABLE`, `W_BATH_VIA_BEDROOM`, `W_EXTERIOR_DOOR_ABOVE_ENTRANCE` |
+| Reachability | `W_ROOM_UNREACHABLE`, `W_BATH_VIA_BEDROOM`, `W_EXTERIOR_DOOR_ONTO_ROOF` |
 | Wet rooms | `W_ROOM_NOT_ENCLOSED`, `W_ROOM_NO_FIXTURE` |
 | Garage | `W_GARAGE_TOO_NARROW` |
 | Stairs | `W_STAIR_TOO_STEEP`, `W_STAIR_RISER_TOO_HIGH`, `W_STAIR_NO_LANDING`, `W_SWING_OVER_STAIR` |

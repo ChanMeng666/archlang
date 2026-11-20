@@ -180,12 +180,25 @@ export function mountEditMode(ctx: EditCtx): EditMode {
     const stmt = btn?.dataset.stmt;
     if (!stmt) return;
     // Insert just inside the plan's closing brace — the statement is plan-level — or, on a plan
-    // of `level` blocks, inside the brace of the storey the suggestion is about (`insertAt`).
+    // of `level` blocks, inside the brace of the storey the suggestion is about (`insertAt`). The
+    // offset is read again from the source as it is now (it may have been edited since the panel
+    // was drawn), and an insert that would not land on that storey's `}` is refused.
     const src = currentSource();
-    const at = btn?.dataset.at;
-    const close = at !== undefined ? Number(at) : src.lastIndexOf("}");
+    const level = btn?.dataset.level;
+    let close = src.lastIndexOf("}");
+    if (level !== undefined) {
+      const now = suggestTopology(src).find((s) => s.level === Number(level) && s.insertAt !== undefined);
+      if (!now || src[now.insertAt!] !== "}") {
+        flash("The plan changed: press Suggest again");
+        return;
+      }
+      close = now.insertAt!;
+    }
     if (close < 0) return;
-    loadSource(`${src.slice(0, close)}  ${stmt}\n${src.slice(close)}`, false);
+    const next = `${src.slice(0, close)}  ${stmt}\n${src.slice(close)}`;
+    loadSource(next, false);
+    // The suggestions are the plan's, so they are drawn again for the plan the insert made.
+    if (suggestPanel) renderSuggest(suggestPanel, suggestTopology(next));
     flash("Statement inserted");
   });
 

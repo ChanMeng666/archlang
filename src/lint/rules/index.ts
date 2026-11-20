@@ -28,7 +28,7 @@ import {
   swingObstructed,
 } from "./doors.js";
 import { bedUndersized, footprintTransposed } from "./footprint.js";
-import { exteriorDoorAboveEntrance, noEntrance } from "./entrance.js";
+import { exteriorDoorOntoRoof, noEntrance } from "./entrance.js";
 import {
   fixtureBackToRoom,
   fixtureFloating,
@@ -211,9 +211,9 @@ export const LINT_RULES: readonly LintRule[] = [
   // A wall-thickness figure `dims auto` leaves undrawn: no station clears the room labels (card AL5,
   // label-crowding). Appended LAST, so no existing diagnostic moves within the array.
   thicknessUnplaced,
-  // An exterior door above the entrance storey onto nothing the plan draws (product roadmap
-  // RM9.10). Appended LAST, so no existing diagnostic moves within the array.
-  exteriorDoorAboveEntrance,
+  // An exterior door onto the roof of a storey below, with nothing drawn there to stand on (product
+  // roadmap RM9.10). Appended LAST, so no existing diagnostic moves within the array.
+  exteriorDoorOntoRoof,
 ];
 
 export type { LintContext, LintRule } from "../context.js";

@@ -220,11 +220,10 @@
  * value it replaces, on the case's old source and on its new header. Its twin, and every other row, held:
  * the rule fires on no other source here.
  *
- * RM9.10 (`W_EXTERIOR_DOOR_ABOVE_ENTRANCE`, an upstairs door onto nothing the plan draws, and the
- * storeys walked from the entrance storey) added six rows, the new
- * `circulation-privacy/upper-door-into-air` pair under each of the three profiles, measured with
- * `tasteDigest`. No existing row moved: no other source here has a door to the outside above its
- * entrance storey that opens onto nothing.
+ * RM9.10 (`W_EXTERIOR_DOOR_ONTO_ROOF`, a door onto the roof of a storey below, which grounds
+ * nothing) added six rows, the new `circulation-privacy/door-onto-roof` pair under each of the three
+ * profiles, measured with `tasteDigest`. No existing row moved: no other source here has a door onto
+ * a roof.
  */
 
 import { describe, expect, it } from "vitest";
@@ -394,6 +393,16 @@ const TABLE: ReadonlyArray<[string, string, string]> = [
     "test/defect-corpus/circulation-privacy/bedroom-via-bedroom.clean.arch",
   ],
   [
+    "e9d8131808a2fd23949df880fdda2a2d938cbc4baa9bd0c1fab009c5cd92628f",
+    "generic",
+    "test/defect-corpus/circulation-privacy/door-onto-roof.arch",
+  ],
+  [
+    "b517c0ee42843d8bd1cd803cca7c0a2cdf7b827a625aee0bee3ae5aa8abcd55e",
+    "generic",
+    "test/defect-corpus/circulation-privacy/door-onto-roof.clean.arch",
+  ],
+  [
     "f71aaba4520f59654a7567bb3d7b1f3c2e6dce71cb2b20d93c262b95ca5b743b",
     "generic",
     "test/defect-corpus/circulation-privacy/entry-into-bedroom.arch",
@@ -432,16 +441,6 @@ const TABLE: ReadonlyArray<[string, string, string]> = [
     "b54520e551b01ba1456edc3758472edb421ce257c9275a6eff7a55b0fc642051",
     "generic",
     "test/defect-corpus/circulation-privacy/two-bed-chain.clean.arch",
-  ],
-  [
-    "f3c2680fe355a12b42249bbd382ed168bb744d2d059719f0a7082a27169fd5ea",
-    "generic",
-    "test/defect-corpus/circulation-privacy/upper-door-into-air.arch",
-  ],
-  [
-    "b517c0ee42843d8bd1cd803cca7c0a2cdf7b827a625aee0bee3ae5aa8abcd55e",
-    "generic",
-    "test/defect-corpus/circulation-privacy/upper-door-into-air.clean.arch",
   ],
   [
     "c368f0523412903c6978f8b03082e2a7ee7d11d577c396f98161dbb491f84dbb",
@@ -1624,6 +1623,16 @@ const TABLE: ReadonlyArray<[string, string, string]> = [
     "test/defect-corpus/circulation-privacy/bedroom-via-bedroom.clean.arch",
   ],
   [
+    "b1be1fc4cdf5b3738c7a06c57c55141d1e4786e86bc6c29e05e796e0ae428445",
+    "cn-residential-advisory",
+    "test/defect-corpus/circulation-privacy/door-onto-roof.arch",
+  ],
+  [
+    "b8689b39d1a2abb615ae1627c039c2c0bacea7d233584cf5962b283002204c76",
+    "cn-residential-advisory",
+    "test/defect-corpus/circulation-privacy/door-onto-roof.clean.arch",
+  ],
+  [
     "f29c63e5796e1d1865258f733313c15569aaf609c48c1425d762eebab6db4aba",
     "cn-residential-advisory",
     "test/defect-corpus/circulation-privacy/entry-into-bedroom.arch",
@@ -1662,16 +1671,6 @@ const TABLE: ReadonlyArray<[string, string, string]> = [
     "3c4234054db1539de307623b8b571d51c0f1fdadb9940f0321313ac69ada2ba7",
     "cn-residential-advisory",
     "test/defect-corpus/circulation-privacy/two-bed-chain.clean.arch",
-  ],
-  [
-    "2b141ba9dc9b12516bfc0ba5e4a4c9f369f3be56ec152948ff1306bfcf2f9bcb",
-    "cn-residential-advisory",
-    "test/defect-corpus/circulation-privacy/upper-door-into-air.arch",
-  ],
-  [
-    "b8689b39d1a2abb615ae1627c039c2c0bacea7d233584cf5962b283002204c76",
-    "cn-residential-advisory",
-    "test/defect-corpus/circulation-privacy/upper-door-into-air.clean.arch",
   ],
   [
     "dc1efb9479eef27f3a80cffed7459987ff467cc60a1dfcea815bcab1df3401e8",
@@ -2854,6 +2853,16 @@ const TABLE: ReadonlyArray<[string, string, string]> = [
     "test/defect-corpus/circulation-privacy/bedroom-via-bedroom.clean.arch",
   ],
   [
+    "9a7c72035e48a403031b458d3f6573f1eeb545b13840126aba43413bcbefb49f",
+    "us-residential-advisory",
+    "test/defect-corpus/circulation-privacy/door-onto-roof.arch",
+  ],
+  [
+    "ce72fc0a18351f77c1adc83b87ac29c84587fd5b16d487051ad78f8a93fd7c60",
+    "us-residential-advisory",
+    "test/defect-corpus/circulation-privacy/door-onto-roof.clean.arch",
+  ],
+  [
     "6a9d69a1463af5722188605a8c54bfe27355ca10985b37d479e74663b6a42d87",
     "us-residential-advisory",
     "test/defect-corpus/circulation-privacy/entry-into-bedroom.arch",
@@ -2892,16 +2901,6 @@ const TABLE: ReadonlyArray<[string, string, string]> = [
     "fb3a89dd6aa5f8902539935dd300fdb054c06b53ea69ad7740c4c10f9bcbe2f8",
     "us-residential-advisory",
     "test/defect-corpus/circulation-privacy/two-bed-chain.clean.arch",
-  ],
-  [
-    "23e4df5d701cbb05ed08a0a8311754caf0e27a12a29aea355aee2dc92d8aacdf",
-    "us-residential-advisory",
-    "test/defect-corpus/circulation-privacy/upper-door-into-air.arch",
-  ],
-  [
-    "ce72fc0a18351f77c1adc83b87ac29c84587fd5b16d487051ad78f8a93fd7c60",
-    "us-residential-advisory",
-    "test/defect-corpus/circulation-privacy/upper-door-into-air.clean.arch",
   ],
   [
     "1788df36a61c75ebeccc0c58d856b1790c890c39120a47712bc5b7edaca3bd26",

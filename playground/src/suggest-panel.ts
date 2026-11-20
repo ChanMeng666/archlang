@@ -32,7 +32,7 @@ export function renderSuggest(el: HTMLElement, suggestions: Suggestion[]): void 
                 `<li class="sug-cand">` +
                 `<code class="sug-stmt">${escapeHtml(c.insertText)}</code>` +
                 `<span class="sug-why">${escapeHtml(c.rationale)}</span>` +
-                `<button class="sug-insert" type="button" data-stmt="${escapeHtml(c.insertText)}"${s.insertAt !== undefined ? ` data-at="${s.insertAt}"` : ""}>Insert</button>` +
+                `<button class="sug-insert" type="button" data-stmt="${escapeHtml(c.insertText)}"${s.level !== undefined ? ` data-level="${s.level}"` : ""}>Insert</button>` +
                 `</li>`,
             )
             .join("") +

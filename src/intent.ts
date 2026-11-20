@@ -589,9 +589,9 @@ function checkOne(
       // (`vertical.reachable_levels`, the room-aware fixpoint in `src/vertical.ts`).
       // Per room on every other storey too (RM9.10): `levels[i].access.rooms[].reachable` counts
       // from where a person arrives there (its own door from the ground, or the rooms a shaft
-      // lands in, PS0.3), and none of a storey's rooms when nobody arrives on it. The eval corpus
-      // holds no multi-storey plan, so no judged verdict moves (`JUDGE_VERSION` stays). A
-      // single-storey summary has no `levels` and is judged exactly as before.
+      // lands in, PS0.3), and none of a storey's rooms when nobody arrives on it. A single-storey
+      // summary has no `levels` and is judged exactly as before.
+      // Judge comparability: no `level` block under eval/, so no judged verdict moves (`JUDGE_VERSION` stays).
       //
       // The storey check runs only when the base check found an entrance. Without one the
       // assertion already fails as "no modeled entrance" (and the lowest storey — the one

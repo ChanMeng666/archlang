@@ -1026,11 +1026,15 @@ function summarizeResolved(
   const vertical = building?.report;
   const arrivalsOn = (level: number): readonly ArrivingRun[] => building?.arrivals.get(level) ?? [];
   const arrivalRoomsOn = (level: number): readonly string[] => building?.arrivalSeedRooms.get(level) ?? [];
-  // A storey with no way in from the ground of its own that no shaft reaches (RM9.10): nobody
-  // arrives on it, so none of its rooms is reached, whatever its doors to the outside open onto
-  // (a balcony, or thin air above the entrance storey). `lint`'s reachability skips it alike.
+  // A storey of a building of two storeys or more with no way in from the ground of its own that
+  // no shaft reaches (RM9.10): nobody arrives on it, so none of its rooms is reached, whatever its
+  // doors to the outside open onto (a balcony, or the roof of a storey below). `lint`'s
+  // reachability skips it alike. One `level` block reads as the same plan without it.
   const cutOffOn = (level: number): boolean =>
-    ground !== undefined && !ground.grounded(level) && (building?.arrivalRooms.get(level) ?? []).length === 0;
+    ground !== undefined &&
+    levels.length > 1 &&
+    !ground.grounded(level) &&
+    (building?.arrivalRooms.get(level) ?? []).length === 0;
 
   // Multi-storey: the top-level facts are the LOWEST storey (`levels[0].ir === ir`), and
   // `levels` adds one same-shaped summary per storey. `summarize` is reused verbatim per

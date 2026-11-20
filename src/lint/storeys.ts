@@ -57,7 +57,7 @@ export function buildingContexts(levels: readonly ResolvedLevel[], tolMm: number
   const inputs = levels.map((l) => ({ level: l.level, ir: l.ir }));
   const connections = verticalConnections(inputs);
   const peerIds = new Set(connections.map((c) => c.id));
-  // The entrance storey and which storeys have a way in from the ground (RM9.10), as
+  // Which storeys have a way in from the ground, and which doors open onto a roof (RM9.10), as
   // `describe().vertical` reads them.
   const ground = buildingGround(inputs, tolMm ?? DEFAULT_TOL);
   const grounded = ground.grounded;
@@ -112,8 +112,9 @@ export function buildingContexts(levels: readonly ResolvedLevel[], tolMm: number
       reachableLevels: reach.reachable,
       landedShafts: reach.landed?.get(l.level) ?? new Set<string>(),
       connections,
-      grounded: grounded(l.level),
-      ...(ground.entrance !== null ? { entranceStorey: ground.entrance } : {}),
+      // Only a building of two storeys or more reads a storey's grounding (one `level` block lints
+      // as the same plan without the wrapper).
+      ...(levels.length > 1 ? { grounded: grounded(l.level), roofDoors: ground.onRoof(l.level) } : {}),
     });
   }
   return out;

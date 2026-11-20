@@ -62,9 +62,8 @@ export function buildingArrivals(
  * The building-level vertical report for a multi-storey plan, or `undefined` when no run
  * spans two storeys. A storey is *grounded* when it has its own exterior entrance that is
  * a real arrival point — {@link buildingGround}, the same predicate `lint` hands
- * `verticalReach`, discounting a door that opens onto an `outdoor balcony` and, above the
- * entrance storey, a door onto nothing the plan draws (RM9.10): so `reachable_levels` is seeded
- * from the entrance storey's doors, and from an upper door only where ground is drawn outside it.
+ * `verticalReach`, discounting a door that opens onto an `outdoor balcony` and a door onto the
+ * roof of a storey below (RM9.10): `reachable_levels` is seeded only from doors from the ground.
  * Reachability then spreads along the shafts — room-aware: a shaft carries you on only
  * from a stop whose room is walkable on its storey ({@link buildingRoomReach}, the same
  * probe access graph `access` reports), so a stair in a door-less store reaches nothing.

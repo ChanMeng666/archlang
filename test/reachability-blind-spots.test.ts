@@ -137,8 +137,6 @@ describe("PS0.3 — a storey a stair reaches", () => {
     // Levels 1 and 3 each have a door from the ground, level 2 none. The block stair `s` lands in
     // `a` at one end and `b` at the other on level 2, and people step off it there from both
     // sides; the arriving run names only one end as its landing, but both rooms are arrivals.
-    // Level 3 is above the entrance storey, so its door is a door from the ground only where the
-    // plan draws the ground outside it (RM9.10): the paving says the site meets that storey there.
     const bothSides = `plan "Case bothsides_nodoor" {
   units mm
   grid 10
@@ -177,7 +175,6 @@ describe("PS0.3 — a storey a stair reaches", () => {
     door between a and c at 3100 from start width 900 swing into c
     door between b and a at 3100 from start width 900 swing into a
     door on c.bottom at 1000 from start width 900 swing inward
-    outdoor paving at (3700,3800) size 4300x1500
     stair id=s dir down width 1000 {
       flight at (2630,1100) size 1000x1530
       landing at (2630,100) size 1000x1000

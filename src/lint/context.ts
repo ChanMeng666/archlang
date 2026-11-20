@@ -84,14 +84,16 @@ export interface BuildingContext {
   landedShafts?: ReadonlySet<string>;
   /** The building's shafts ({@link verticalConnections}). Absent on a single-storey plan. */
   connections?: readonly VerticalConnection[];
-  /** THIS storey has a way in from the ground of its own (`buildingGround`, RM9.10): the
-   *  entrance storey, or a storey above it with a door onto ground the plan draws. A storey
-   *  that is not is walked from the shafts that reach it, or not at all. Absent on a
-   *  single-storey plan. */
+  /** THIS storey has a way in from the ground of its own (`buildingGround`, RM9.10): a door to
+   *  the outside that opens neither onto a balcony nor onto the roof of a storey below. A storey
+   *  that has none is walked from the shafts that reach it, or not at all. Absent on a plan of
+   *  fewer than two storeys. */
   grounded?: boolean;
-  /** The building's entrance storey (`buildingGround`): the lowest with a door from the
-   *  ground. Absent on a single-storey plan, and when no storey has one. */
-  entranceStorey?: number;
+  /** The ids of THIS storey's doors and cased openings to the outside that open onto the roof of
+   *  a storey below, each with the level whose roof it is (`buildingGround`,
+   *  `W_EXTERIOR_DOOR_ONTO_ROOF`). Absent on a plan of fewer
+   *  than two storeys. */
+  roofDoors?: ReadonlyMap<string, number>;
 }
 
 /** One neighbouring stop of a shaft: the storey and the run as drawn there. */
