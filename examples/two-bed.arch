@@ -51,6 +51,8 @@ plan "Two-Bedroom Flat" {
   furniture shower in r_bath anchor bottom-left flush size 900x900
   furniture wc     against r_bath.bottom offset 1600 size 400x700
   furniture basin  in r_bath anchor right flush size 500x600
+  furniture chair  at (1200,5200) size 500x500 in r_living
+  furniture chair  at (1200,6700) size 500x500 rotate 180 in r_living
 
   # The eaves: the derived shell is the plan's one closed exterior ring.
   roof overhang 500

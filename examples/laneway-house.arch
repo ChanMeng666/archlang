@@ -52,6 +52,8 @@ plan "Laneway House" {
   furniture shower in r_bath anchor top-right    flush size 900x900
   furniture wc     against r_bath.bottom offset 750 size 400x700
   furniture basin  in r_bath anchor bottom-right flush size 600x450
+  furniture chair  at (1875,2300) size 450x450 in r_live
+  furniture chair  at (1875,3750) size 450x450 rotate 180 in r_live
 
   title { project "Laneway House" drawn_by "ArchLang" date "2026-08-16" }
 }
