@@ -45,8 +45,8 @@ plan "Garden Loft" {
   furniture shower in r_bath anchor top-right    flush size 900x900
   furniture wc     in r_bath anchor bottom       flush size 400x700
   furniture basin  in r_bath anchor bottom-right flush size 600x450
-  furniture chair  at (1875,1550) size 450x450 in r_live
-  furniture chair  at (1875,3000) size 450x450 rotate 180 in r_live
+  furniture chair  at (r_live.cx - 225, r_live.cy - 950) size 450x450 in r_live
+  furniture chair  at (r_live.cx - 225, r_live.cy + 500) size 450x450 rotate 180 in r_live
 
   title { project "Garden Loft" drawn_by "ArchLang" date "2026-08-16" }
 }
