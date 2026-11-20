@@ -6,10 +6,13 @@
  * only the new language-reference fence; the twins in `test/wall-between-around.test.ts`).
  * Measured with the test's own digest body (`allStoreysDigestWithDiagnostics`). A moved row is
  * a finding to explain (`docs/testing.md` §3), never a re-pin.
+ * re-measured by AF7 (#977): only added related notes; strip==old proven (RM-D69; the check is the
+ * `AF7_MAIN` test below, through `test/helpers/af7-notes.ts`).
  */
 
 import { describe as suite, expect, it } from "vitest";
 import { compile, describe, lint } from "../src/index.js";
+import { af7StrippedApi } from "./helpers/af7-notes.js";
 import { allStoreysDigestWithDiagnostics, type CompilerApi } from "./helpers/byte-identity-digest.js";
 import { WALL_BETWEEN_AROUND_PLANS } from "./tables/wall-between-around-plans.js";
 
@@ -26,8 +29,12 @@ const DIGESTS: [string, string][] = [
   ["frames", "d9f1e88db137b675160809642a6328430e363e4c76ded86c71e0eef57695a1d9"], // `centreline_at`, see ./byte-identity-baseline.ts; #367, see test/byte-identity-baseline.ts; AL3a: SVG + lint, see ./byte-identity-baseline.ts
   ["widen-4000", "c728d0c567f3b3b116fd00b8870ae67ff5ca525f490f51d7d1dae511ab77e3e3"], // `centreline_at`, see ./byte-identity-baseline.ts
   ["widen-4500", "867ccff0da3eb30c562df83da26c5ef86835cd62e16486efe3fdf61f3d91e0a2"], // `centreline_at`, see ./byte-identity-baseline.ts
-  ["refused", "7e18b4bff41d18b98b0f0457e0f0488a8ce0bb34792e7194d8144c42e88dc901"], // PS2.29: message text only, same code, same span
+  ["refused", "1f4fb408b16b085005e80e9768e4f6b1c4e13e13eb8041750d808a7b622e6328"], // PS2.29: message text only, same code, same span // AF7 (RM-D69): only added related notes (was 7e18b4bf, AF7_MAIN)
 ];
+
+/** AF7 (RM-D69): `main`'s digest of each row AF7 re-measured. The row's own digest body, with AF7's
+ *  related notes taken out of `compile().diagnostics` and `describe()`, gives it back. */
+const AF7_MAIN: [string, string][] = [["refused", "7e18b4bff41d18b98b0f0457e0f0488a8ce0bb34792e7194d8144c42e88dc901"]];
 
 suite("pairwise walls: digest table", () => {
   it("pins every plan", () => {
@@ -57,6 +64,12 @@ suite("pairwise walls: digest table", () => {
         "W_ROOM_OVERLAP",
       ]),
     );
+  });
+  it("AF7: each re-measured row moved by its added related notes alone (strip==old)", () => {
+    for (const [name, digest] of AF7_MAIN) {
+      const src = WALL_BETWEEN_AROUND_PLANS.find((p) => p[0] === name)![1];
+      expect(allStoreysDigestWithDiagnostics(af7StrippedApi(API), src), name).toBe(digest);
+    }
   });
   for (const [name, digest] of DIGESTS) {
     it(name, () => {
