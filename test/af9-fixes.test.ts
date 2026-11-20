@@ -371,7 +371,8 @@ const FUZZ_PLANS = [
 describe("AF9: the corpus fuzz (§9 item 3), bounded", () => {
   it("every maybe-incorrect AF9 fix, applied alone, clears its diagnostic, lands, and settles", () => {
     // Each source and its first `PER_PLAN` shifted twins, so the bounded run reaches every plan.
-    const PER_PLAN = runs(16);
+    // Never under 16 (check:quick runs at FC_SCALE 0.25), so the pinned count below is the one measured.
+    const PER_PLAN = Math.max(16, runs(16));
     const sources = [
       ...Object.entries(AF9_PLANS).map(([n, s]) => ({ name: `af9:${n}`, src: s })),
       ...(FC_SCALE > 1
@@ -384,7 +385,7 @@ describe("AF9: the corpus fuzz (§9 item 3), bounded", () => {
     const r = fuzzRun(sources, PER_PLAN);
     expect(r.failures).toEqual([]);
     for (const f of FUZZ_PLANS) expect(r.bySource[f] ?? 0, f).toBeGreaterThan(0);
-    if (FC_SCALE === 1) {
+    if (FC_SCALE <= 1) {
       // Counted, never failed (design §9 item 3): applied as if machine-applicable, a move that
       // leaves an error or a new watched warning is wrong. The PR states the full corpus's count.
       expect({ fixes: r.fixes, byCode: r.byCode, wrong: r.wrong, newWarnings: r.newWarnings }).toEqual(PR_SCALE);
