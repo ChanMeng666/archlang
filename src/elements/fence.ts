@@ -51,6 +51,8 @@ import type { SceneNode } from "../scene.js";
 import { weightWidth } from "../scene.js";
 import type { RFence } from "../ir.js";
 import { SITE_LAYER } from "./outdoor.js";
+import { POLYLINE_BODY } from "./wall.js";
+import { failExpected } from "../clause-order.js";
 
 /**
  * Nominal post spacing in mm, per style. A picket fence is posted densely because that is
@@ -113,12 +115,13 @@ export const fence: ElementDef = {
     const id = ctx.parseIdOpt();
     // The style word LEADS and is optional — the `door` kind precedent. Peeking for
     // membership (rather than eating an ident and checking it) is what lets the word be
-    // omitted without a lookahead special case.
+    // omitted without a lookahead special case. Each word is looked for (`isKeyword`), so a
+    // failure at the token lists the styles in its `expected` (AF4).
     let style: FenceStyle = FENCE_STYLES[0];
-    const t = ctx.peek();
-    if (t.type === "ident" && (FENCE_STYLES as readonly string[]).includes(t.value)) {
+    const word = FENCE_STYLES.find((w) => ctx.isKeyword(w));
+    if (word !== undefined) {
       ctx.next();
-      style = t.value as FenceStyle;
+      style = word;
     }
     ctx.eat("lcurly");
     const points: ExprPoint[] = [];
@@ -150,8 +153,10 @@ export const fence: ElementDef = {
         points.push(ctx.parsePoint());
         continue;
       }
-      ctx.fail(
+      failExpected(
+        ctx,
         `Expected a point "(x,y)", "arc (x,y) radius R" or "close" in a fence body but found ${describeTok(ctx)}`,
+        POLYLINE_BODY,
       );
     }
     ctx.eat("rcurly");

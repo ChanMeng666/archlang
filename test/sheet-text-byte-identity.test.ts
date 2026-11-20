@@ -266,20 +266,20 @@ const BASELINE: [string, string][] = [
   ["0ba9460627a738d65c7d5235e533ad8410bf7a548bfedc69dca44f987793ee91", "inline:stair-placed"],
   ["802586e9b7cf3f6927c1441481a0e2d14699e57b6b7a50ddb48b71a9b4a902d5", "inline:stair-arrival"], // RM1.3a, see ./byte-identity-baseline.ts; RM1.2a, see ./byte-identity-baseline.ts; RM1.2a review, see ./byte-identity-baseline.ts; RM1.3b overlay, see ./byte-identity-baseline.ts; RM9.2, see ./byte-identity-baseline.ts
   ["e6eed958e1d4cea68f7981fce9964af4b5a26fa3d09ad3eafebb0992ce5cb727", "inline:stair-refusals"],
-  ["57879436768cab2c738430d6586f0e88de6cb79c178799a011c9d09f73e553df", "inline:stair-parse-refusals"],
+  ["1e9d114fa6522be3335f490693d677a052fc7363fd0bbc2b07b2f0849fe16494", "inline:stair-parse-refusals"], // AF4 (was 57879436): its `E_PARSE` now says what the parser expected at the token it stopped at (`expected`); SVG, lint() and every other key are unchanged, and deleting that key gives 57879436
   ["4ee5b0cc65a55f8a21b0dfdbac7c3d3a513cd912f2a54693ad59a1fba85435b2", "inline:sheet-word-as-names"],
   ["77ecc92eac7412e138fc1a1fd3d3541e26b27d9a9497c7d9bb1c7a1b679bdf07", "inline:sheet-macro"],
   ["9d996ce459b88fc3b5405d0e7fd29df3d9ac7b452a5c0c865f9efa3718749259", "inline:every-table"], // RM1.3a, see ./byte-identity-baseline.ts; RM1.3b overlay, see ./byte-identity-baseline.ts; RM9.2, see ./byte-identity-baseline.ts
   ["c3bd0b213038578a15a84f8031adaf7461a5a76f1ce406e189e1de434b5954b2", "inline:fractional-sites"],
   ["4df881b97667921f10ebabdc0ef5a593c8f5fbc8724a8fba1bd396d9554b8d05", "inline:curve-call-outs"],
-  ["1f92cd16e9aaeaa19f81a01ddd2d74c4fd634dc6ca80f568e815bcab0cde07d8", "inline:sheet-near-miss-0"],
-  ["1f92cd16e9aaeaa19f81a01ddd2d74c4fd634dc6ca80f568e815bcab0cde07d8", "inline:sheet-near-miss-1"],
-  ["1f92cd16e9aaeaa19f81a01ddd2d74c4fd634dc6ca80f568e815bcab0cde07d8", "inline:sheet-near-miss-2"],
-  ["1f92cd16e9aaeaa19f81a01ddd2d74c4fd634dc6ca80f568e815bcab0cde07d8", "inline:sheet-near-miss-3"],
-  ["1f92cd16e9aaeaa19f81a01ddd2d74c4fd634dc6ca80f568e815bcab0cde07d8", "inline:sheet-near-miss-4"],
-  ["03f61da770c3d28fd642e62610d82438f2bfbb55131890a4401e2ff058960e63", "inline:sheet-near-miss-in-a-level-0"],
-  ["03f61da770c3d28fd642e62610d82438f2bfbb55131890a4401e2ff058960e63", "inline:sheet-near-miss-in-a-level-1"],
-  ["03f61da770c3d28fd642e62610d82438f2bfbb55131890a4401e2ff058960e63", "inline:sheet-near-miss-in-a-level-2"],
+  ["0b8eca736d1f78e7fde5515fd5263cc03166fadb9615dd96571ae14d3627b3f0", "inline:sheet-near-miss-0"], // AF4 (was 1f92cd16): its `E_PARSE` now says what the parser expected at the token it stopped at (`expected`); SVG, lint() and every other key are unchanged, and deleting that key gives 1f92cd16
+  ["0b8eca736d1f78e7fde5515fd5263cc03166fadb9615dd96571ae14d3627b3f0", "inline:sheet-near-miss-1"], // AF4 (was 1f92cd16): its `E_PARSE` now says what the parser expected at the token it stopped at (`expected`); SVG, lint() and every other key are unchanged, and deleting that key gives 1f92cd16
+  ["0b8eca736d1f78e7fde5515fd5263cc03166fadb9615dd96571ae14d3627b3f0", "inline:sheet-near-miss-2"], // AF4 (was 1f92cd16): its `E_PARSE` now says what the parser expected at the token it stopped at (`expected`); SVG, lint() and every other key are unchanged, and deleting that key gives 1f92cd16
+  ["0b8eca736d1f78e7fde5515fd5263cc03166fadb9615dd96571ae14d3627b3f0", "inline:sheet-near-miss-3"], // AF4 (was 1f92cd16): its `E_PARSE` now says what the parser expected at the token it stopped at (`expected`); SVG, lint() and every other key are unchanged, and deleting that key gives 1f92cd16
+  ["0b8eca736d1f78e7fde5515fd5263cc03166fadb9615dd96571ae14d3627b3f0", "inline:sheet-near-miss-4"], // AF4 (was 1f92cd16): its `E_PARSE` now says what the parser expected at the token it stopped at (`expected`); SVG, lint() and every other key are unchanged, and deleting that key gives 1f92cd16
+  ["93c71098bef6e6816ebe9bbc8d464f1ff60b3e7af7c58e675feb08935babc6db", "inline:sheet-near-miss-in-a-level-0"], // AF4 (was 03f61da7): its `E_PARSE` now says what the parser expected at the token it stopped at (`expected`); SVG, lint() and every other key are unchanged, and deleting that key gives 03f61da7
+  ["93c71098bef6e6816ebe9bbc8d464f1ff60b3e7af7c58e675feb08935babc6db", "inline:sheet-near-miss-in-a-level-1"], // AF4 (was 03f61da7): its `E_PARSE` now says what the parser expected at the token it stopped at (`expected`); SVG, lint() and every other key are unchanged, and deleting that key gives 03f61da7
+  ["93c71098bef6e6816ebe9bbc8d464f1ff60b3e7af7c58e675feb08935babc6db", "inline:sheet-near-miss-in-a-level-2"], // AF4 (was 03f61da7): its `E_PARSE` now says what the parser expected at the token it stopped at (`expected`); SVG, lint() and every other key are unchanged, and deleting that key gives 03f61da7
 ];
 
 suite("sheet text: the byte-identity law", () => {
