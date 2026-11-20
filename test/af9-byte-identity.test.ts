@@ -55,16 +55,27 @@ const API: StairLawApi = {
   },
 };
 
-/** The five codes a plan raises, compile and lint. */
+/** The five codes a plan raises: compile, and lint under both profiles (the law hashes both). */
 function raised(src: string, world: World | undefined): string[] {
   const o = world ? { world } : {};
-  const ds = [...compile(src, { noCache: true, ...o }).diagnostics, ...lint(src, o)];
+  const ds = [
+    ...compile(src, { noCache: true, ...o }).diagnostics,
+    ...lint(src, o),
+    ...lint(src, { ...o, profile: "accessibility-advisory" }),
+  ];
   return [...new Set(ds.flatMap((d) => (d.code && AF9_CODES.has(d.code) ? [d.code] : [])))].sort();
 }
 
 /** The law rows that raise one of the five, and which: the rows AF9 may move. */
 const RAISING: [string, string[]][] = [
+  // `W_DOORWAY_BLOCKED` under `accessibility-advisory` only (its 450 mm landing), but for off-path-bypass.
+  ["examples/courtyard-family.arch", ["W_DOORWAY_BLOCKED"]],
+  ["examples/hillside-villa.arch", ["W_DOORWAY_BLOCKED"]],
+  ["examples/laneway-house.arch", ["W_DOORWAY_BLOCKED"]],
+  ["examples/relational.arch", ["W_DOORWAY_BLOCKED"]],
+  ["examples/tiny-house.arch", ["W_DOORWAY_BLOCKED"]],
   ["test/fixtures/off-path-bypass.arch", ["W_DOORWAY_BLOCKED"]],
+  ["test/walls-from-rooms/relational.arch", ["W_DOORWAY_BLOCKED"]],
   ["inline:door-refusals", ["E_OPENING_DATUM", "E_OPENING_NIB"]],
 ];
 
@@ -84,13 +95,14 @@ const BASELINE: [string, string][] = [
 const worldOf = (dir: string | undefined): World | undefined => (dir ? makeNodeWorld(dir) : undefined);
 
 suite("AF9: the byte-identity law", () => {
-  it("of the law's rows, exactly the pinned ones raise one of the five codes", () => {
-    const got = stairLawRows(ROOT).flatMap((r): [string, string[]][] => {
-      const codes = raised(r.src, worldOf(r.dir));
-      return codes.length > 0 ? [[r.name, codes]] : [];
-    });
-    expect(got).toEqual(RAISING);
-  }, 300_000);
+  const ROWS = stairLawRows(ROOT);
+  it("the pinned raising rows are rows of the law", () => {
+    expect(RAISING.map(([n]) => n).filter((n) => !ROWS.some((r) => r.name === n))).toEqual([]);
+  });
+
+  it.each(ROWS.map((r) => [r.name, r] as const))("%s raises exactly the pinned ones of the five", (name, r) => {
+    expect(raised(r.src, worldOf(r.dir))).toEqual(RAISING.find(([n]) => n === name)?.[1] ?? []);
+  });
 
   it("the premise can fail: the same check sees each of the design's plans raise its code", () => {
     expect(raised(AF9_PLANS.nib, undefined)).toEqual(["E_OPENING_NIB"]);

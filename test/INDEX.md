@@ -5,7 +5,7 @@
 Where the tests of a `src` module are, and what each test file is for. Generated; `npm run check:drift`
 fails when it is stale. How to add a test: `docs/testing.md` § 4.
 
-563 test files in `test/`, 297 `src` modules, 108 modules no test imports.
+563 test files in `test/`, 298 `src` modules, 109 modules no test imports.
 
 ## `src` module → tests that import it
 
@@ -126,7 +126,7 @@ Nearest first, then by name; `(+n)` is the rest. Test names are `test/<name>.tes
 - `src/impact.ts` (2) — `rectilinear-doors`, `rectilinear-rooms`
 - `src/import.ts` (35) — `af9-byte-identity`, `block-stair-byte-identity`, `corner-window-byte-identity`, `dim-swap-reprint`, `dim-thickness-callout`, `drawing-budget`, `error-value-law`, `floor-materials-byte-identity` (+27)
 - `src/import/limits.ts` (1) — `openplan3d-malformed`
-- `src/index.ts` (421) — `acc-metadata`, `access-graph`, `access-policy`, `accessible-svg`, `af9-byte-identity`, `agent-gallery`, `alias-match`, `anchors` (+413)
+- `src/index.ts` (421) — `acc-metadata`, `access-graph`, `access-policy`, `accessible-svg`, `af9-byte-identity`, `af9-fixes`, `agent-gallery`, `alias-match` (+413)
 - `src/input-limit.ts` (2) — `import-rooted`, `workspace-seams`
 - `src/intent-concepts.ts` (3) — `vocabulary-es-pt`, `vocabulary-living-dining`, `vocabulary-matcher-oracle`
 - `src/intent-feasibility.ts` (1) — `intent-infeasible`
@@ -162,7 +162,7 @@ Nearest first, then by name; `(+n)` is the rest. Test names are `test/<name>.tes
 - `src/naming.ts` (3) — `grid-index`, `lint-messages-id-free`, `room-overlap-oracle`
 - `src/next.ts` (3) — `cli-validate-next`, `next`, `silent-accepts`
 - `src/num-format.ts` (17) — `annotation-collisions`, `dim-thickness-callout`, `emit-opening-oracle`, `fmt-lossless`, `imperial-input`, `keep`, `lint-ruleset-values`, `lint-thickness-unplaced` (+9)
-- `src/opening-junctions.ts` (3) — `af9-byte-identity`, `fixable-codes`, `opening-moves`
+- `src/opening-junctions.ts` (3) — `af9-byte-identity`, `af9-fixes`, `fixable-codes`
 - `src/opening-relation.ts` (3) — `openings-between`, `rectilinear-doors`, `rectilinear-sides`
 - `src/opening-schedule.ts` (2) — `sheet-annotations`, `window-kinds`
 - `src/parser.ts` (155) — `af9-byte-identity`, `arc-radius-exact`, `attach`, `axes`, `block-stair-byte-identity`, `block-stair`, `chrome-hidden`, `circle-enclosure` (+147)
@@ -212,6 +212,7 @@ The first sentence of each file's header comment.
 - `test/access-policy.test.ts` — one access policy: every surface agrees on reachability; one access policy across storeys: a shaft relays only from a reachable room.
 - `test/accessible-svg.test.ts` — Cases: default output carries no accessibility metadata (byte-identical); accessible:true emits <title>, <desc>, role and aria-labelledby; the <desc> text is ex…
 - `test/af9-byte-identity.test.ts` — Card AF9 (moves and skeletons for refused openings and blocked doorways): the byte-identity law.
+- `test/af9-fixes.test.ts` — Card AF9 (phase A, ruling RM-D70): moves and skeletons for refused relational openings and blocked doorways (`docs/plans/ai-first-language/af9-design.md`).
 - `test/agent-docs-gate.test.ts` — agent docs name no blocked command.
 - `test/agent-gallery.test.ts` — The agent gallery (`/gallery` on the docs site): plans written by AI agents from a brief.
 - `test/agent-manifests.test.ts` — The agent-directory manifests (`npm run gen:agent-manifests`) are one skill source published in each host's shape.
@@ -588,7 +589,6 @@ The first sentence of each file's header comment.
 - `test/open-crossing.test.ts` — `open between` boundaries at one crossing (issue #368): the block left where they meet is removed from the drawing, whole where every run is open, all but the wall left where one stands, and nothing else moves.
 - `test/openai-plugin-zip.test.ts` — The OpenAI plugin directory ZIP (`npm run build:openai-plugin`).
 - `test/opening-host-on-edge.test.ts` — `door|window|opening … on <room>.<edge>` on an edge that carries several walls (issue #401; ADR 0028 §5 as amended 2026-11-02).
-- `test/opening-moves.test.ts` — Card AF9 (phase A, ruling RM-D70): moves and skeletons for refused relational openings and blocked doorways (`docs/plans/ai-first-language/af9-design.md`).
 - `test/opening-tags-corpus.test.ts` — The corpus guard for `schedule openings` tags: inject the statement into every shipped example that has a door or a window, draw every storey, and look at what each tag's frame covers.
 - `test/opening.test.ts` — opening element; cased opening rendering — never repaint the void the wall union opened; interior doorway rendering — the same white-band fix.
 - `test/openings-between-digests.test.ts` — The relational-opening digest table (ADR 0028 §5; card PS3.4): SHA-256 over SVG, `describe()`, `lint()` and `compile().diagnostics` of every storey of each plan in `test/tables/openings-between-plans.ts`, pinned in it...
@@ -852,6 +852,7 @@ module); adding a test that imports it removes it from this list.
 - `src/lint/report.ts`
 - `src/lint/rules/alias-match.ts`
 - `src/lint/rules/circulation.ts`
+- `src/lint/rules/doorway.ts`
 - `src/lint/rules/entrance.ts`
 - `src/lint/rules/floor-gaps.ts`
 - `src/lint/rules/footprint.ts`

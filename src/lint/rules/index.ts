@@ -20,13 +20,13 @@ import {
 import {
   doorClearance,
   doorNearCorner,
-  doorwayBlocked,
   exitApproachBlocked,
   leafAcrossDoorway,
   leafTooWide,
   pocketRun,
   swingObstructed,
 } from "./doors.js";
+import { doorwayBlocked } from "./doorway.js";
 import { bedUndersized, footprintTransposed } from "./footprint.js";
 import { noEntrance } from "./entrance.js";
 import {

@@ -352,7 +352,13 @@ describe("FIX_PRODUCERS declares what the fix producers emit (AF8)", () => {
     const inGroup = (a: string) => groups.find((g) => g.applicability === a)!.codes.map((c) => c.code);
     expect(inGroup("machine-applicable")).toContain("W_DOOR_OFF_WALL");
     expect(inGroup("maybe-incorrect")).toContain("W_DOOR_OFF_WALL");
-    expect(inGroup("has-placeholders")).toEqual(["E_DOOR_WIDTH", "E_OPENING_WIDTH", "E_WINDOW_WIDTH"]);
+    expect(inGroup("has-placeholders")).toEqual([
+      "E_DOOR_WIDTH",
+      "E_OPENING_DATUM",
+      "E_OPENING_NO_SHARED_WALL",
+      "E_OPENING_WIDTH",
+      "E_WINDOW_WIDTH",
+    ]);
     for (const g of groups) expect(g.codes.map((c) => c.code)).toEqual(g.codes.map((c) => c.code).sort());
   });
 });

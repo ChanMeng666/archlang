@@ -31,7 +31,7 @@ import {
   plan,
 } from "./helpers/opening-moves.js";
 import { corpusFiles } from "./helpers/corpus.js";
-import { runs } from "./setup/fast-check.js";
+import { FC_SCALE, runs } from "./setup/fast-check.js";
 
 const errors = (src: string): Diagnostic[] =>
   compile(src, { noCache: true }).diagnostics.filter((d) => d.severity === "error");
@@ -162,15 +162,17 @@ describe("AF9: the design's plans (§2)", () => {
     expect(after).not.toContain("W_SWING_OBSTRUCTED");
   });
 
-  it("no AF9 fix is machine-applicable, over the §2 plans and the corpus (RM-D70)", () => {
+  // The corpus is `test/fixable-codes.test.ts`'s: it fails on any tier a row does not declare, and no
+  // AF9 row declares `machine-applicable`.
+  it("no AF9 fix is machine-applicable, over the §2 plans and the warned fixtures (RM-D70)", () => {
     const tiers = new Set<string>();
-    const sources = [...Object.values(AF9_PLANS), ...corpusFiles().map((f) => readFileSync(f, "utf8"))];
+    const sources = [...Object.values(AF9_PLANS), ...FUZZ_PLANS.map((f) => readFileSync(f, "utf8"))];
     for (const src of sources) {
       const ds = [...compile(src, { noCache: true }).diagnostics, ...(errors(src).length ? [] : lint(src))];
       for (const f of ds.flatMap((d) => d.fixes ?? [])) if (AF9_FIX_IDS.has(f.fixId ?? "")) tiers.add(f.applicability);
     }
     expect([...tiers].sort()).toEqual(["has-placeholders", "maybe-incorrect"]);
-  }, 120_000);
+  });
 });
 
 // ─── 2. the oracle ────────────────────────────────────────────────────────────────────
@@ -319,13 +321,28 @@ describe("AF9: the nib moves against a brute-force oracle", () => {
 
 // ─── 3. the fuzz ──────────────────────────────────────────────────────────────────────
 
+/**
+ * The plans the PR-scale fuzz shifts: the corpus plans whose shifted twins the full run found fixes
+ * on (relational and hosted doors, windows and cased openings, a blocked doorway). The full run, over
+ * every plan of the five corpus directories, is this body at `FC_SCALE` and is quoted in the PR.
+ */
+const FUZZ_PLANS = [
+  "examples/relational.arch",
+  "examples/remodel.arch",
+  "examples/two-bed.arch",
+  "test/fixtures/off-path-bypass.arch",
+  "test/fixtures/gaps/gaps.arch",
+];
+
 describe("AF9: the corpus fuzz (§9 item 3), bounded", () => {
   it("every maybe-incorrect AF9 fix, applied alone, clears its diagnostic, lands, and settles", () => {
-    const budget = runs(120);
+    const budget = runs(160);
     const sources = [
       ...Object.entries(AF9_PLANS).map(([n, s]) => ({ n: `af9:${n}`, s })),
-      ...corpusFiles()
-        .filter((f) => /^(examples|test\/fixtures|eval\/faults|eval\/goldens)\//.test(f))
+      ...(FC_SCALE > 1
+        ? corpusFiles().filter((f) => /^(examples|test\/fixtures|eval\/faults|eval\/goldens)\//.test(f))
+        : FUZZ_PLANS
+      )
         .map((f) => ({ n: f, s: readFileSync(f, "utf8") }))
         .filter((x) => !/^\s*import\b/m.test(x.s)),
     ];
@@ -335,9 +352,8 @@ describe("AF9: the corpus fuzz (§9 item 3), bounded", () => {
     for (const { n, s } of sources) {
       for (const c of [{ name: n, src: s }, ...fuzzCases(n, s)]) {
         if (seen >= budget) break;
-        const fs: Array<{ d: Diagnostic; f: FixSuggestion }> = af9Fixes(c.src);
-        if (fs.length === 0) continue;
         seen++;
+        const fs: Array<{ d: Diagnostic; f: FixSuggestion }> = af9Fixes(c.src);
         for (const { d, f } of fs) {
           fixes++;
           const v = judgeFix(c.src, d, f, s);
@@ -354,7 +370,7 @@ describe("AF9: the corpus fuzz (§9 item 3), bounded", () => {
     expect(fixes).toBeGreaterThan(10);
     // Counted, never failed: the watched warnings a move leaves (design §9 item 3).
     expect(typeof counted).toBe("object");
-  }, 600_000);
+  }, 120_000);
 });
 
 // ─── 4. the bound ─────────────────────────────────────────────────────────────────────

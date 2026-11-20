@@ -19,7 +19,7 @@ module's remaining facts are in its own header.
 invariants; this file holds every module. The exports of `src/index.ts` are in the sibling
 [`public-surface.md`](public-surface.md).
 
-Totals: 418 modules in 34 directories.
+Totals: 419 modules in 34 directories.
 
 ## `packages/archlang-3d/src/`
 
@@ -220,7 +220,7 @@ Totals: 418 modules in 34 directories.
 | Module | Lines | Importers | Summary | Budget |
 | --- | ---: | ---: | --- | --- |
 | `actions-path.ts` | 20 | 0 | A build entry, not a package export (card 3.18), the third of the playground's three (after `src/compile-path.ts` and `src/first-use-path.ts`): the core values the header actions run only when a button is pressed… | none |
-| `analyze.ts` | 1087 | 134 | Shared semantic-analysis layer for the agent-facing tools. | none |
+| `analyze.ts` | 1087 | 135 | Shared semantic-analysis layer for the agent-facing tools. | none |
 | `any-catalog-fix.ts` | 20 | 3 | The catalogued remediation for any catalogue code (card NR.10): {@link catalogFix}'s table, the codes `compile()` raises, then the intent violations' (`E_INTENT_*`, which only `validateIntent` raises). The two generated tables are… | none |
 | `ast.ts` | 1749 | 229 | Abstract syntax tree for an ArchLang `plan`. All distances are in millimetres. | none |
 | `attach.ts` | 501 | 6 | Opening attachment (`door\|window\|opening … on <wall> at <pos>`). | charges the step meter |
@@ -230,7 +230,7 @@ Totals: 418 modules in 34 directories.
 | `chrome-layout.ts` | 626 | 17 | Shared page-chrome layout — the deterministic geometry of the **scale bar** and **title block** in the bottom page margin, and how far the bottom margin must grow to contain them. Both the SVG and PDF backends build their chrome from this… | none |
 | `clause-order.ts` | 254 | 16 | Order-free trailing clauses. A statement's optional keyword-led clauses (`size`, `label`, `rotate`, `clear`, … after a `furniture`'s placement) may come in any order, each once. | none |
 | `cli.ts` | 91 | 0 | ArchLang CLI — agent-native. | none |
-| `command-name.ts` | 11 | 4 | The command name every help line, example and doc writes. `package.json` installs two bins, `archlang` and `arch`, for the same `dist/cli.js`; `arch` stays as an alias, but coreutils ships an `arch` on Linux, macOS and Git Bash, so a bare… | none |
+| `command-name.ts` | 11 | 5 | The command name every help line, example and doc writes. `package.json` installs two bins, `archlang` and `arch`, for the same `dist/cli.js`; `arch` stays as an alias, but coreutils ships an `arch` on Linux, macOS and Git Bash, so a bare… | none |
 | `compile-path.ts` | 22 | 0 | A build entry, not a package export (card RM0.7f): the values the playground's compiler chunk serves, `compile`, `describe`, `describeLevel` and `THEMES` (`playground/src/compiler.ts`, the compile worker's and the page's door, and the… | none |
 | `compile-work.ts` | 44 | 6 | Work counters for one `compile()` drawing: how many geometric tests the costliest drawing loops made, as COUNTS (engineering-health EH2.14). The compile-side sibling of `LintWork` (`src/lint/work.ts`): an out-parameter handed down the one… | none |
 | `compile.ts` | 85 | 3 | `compile()`, the public entry point, and its result memo. Moved out of `src/index.ts` (card RM0.7f) so that `src/compile-path.ts` can reach it without reaching the whole barrel; the body is the one `index.ts` held, byte for byte.… | none |
@@ -240,7 +240,7 @@ Totals: 418 modules in 34 directories.
 | `datum.ts` | 545 | 18 | The **vertical datum layer** — the heights a floor plan implies but has never written down. | none |
 | `describe.ts` | 1191 | 27 | `describe(source)` — a pure, semantic summary of a floor plan. | none |
 | `diagnostic-json.ts` | 288 | 8 | Agent-facing JSON projection of a {@link Diagnostic}. | none |
-| `diagnostics.ts` | 506 | 122 | Diagnostics for the ArchLang compiler. | none |
+| `diagnostics.ts` | 506 | 123 | Diagnostics for the ArchLang compiler. | none |
 | `diff.ts` | 736 | 5 | `diffPlans(sourceA, sourceB)` — a pure, structural semantic diff of two plans. | none |
 | `doc.ts` | 157 | 7 | A tiny Wadler/Prettier "Doc" intermediate representation and printer. | none |
 | `draw-budget.ts` | 207 | 7 | The drawing budget: before `toScene()` runs, the primitives a plan will draw are estimated over EVERY storey (a multi-storey compile holds all its pages at once), and a plan past {@link MAX_DRAW_UNITS} is one `E_DRAWING_LIMIT` instead of… | none |
@@ -253,7 +253,7 @@ Totals: 418 modules in 34 directories.
 | `finish.ts` | 1043 | 9 | `finish()` — make a plan a complete DRAWING: the furniture its empty rooms imply (the `furnish` stage, `src/furnish.ts`, `docs/adr/0025-furnish-as-explicit-transform.md`), then the sheet statements its author left out (the `sheet` stage… | none |
 | `first-use-path.ts` | 22 | 0 | A build entry, not a package export (card EB.2), the second of the playground's three (the first is `src/compile-path.ts`, the third `src/actions-path.ts`): the core values a first use on the playground loads beyond the compiler chunk… | none |
 | `fix-apply.ts` | 251 | 5 | Deterministic, pure application of {@link FixSuggestion}s to source text. | none |
-| `fix-producers.ts` | 708 | 14 | Fix producers — the functions that attach {@link FixSuggestion}s to specific diagnostics at their raise site (T2c). | none |
+| `fix-producers.ts` | 708 | 15 | Fix producers — the functions that attach {@link FixSuggestion}s to specific diagnostics at their raise site (T2c). | none |
 | `fixable-codes.ts` | 260 | 4 | The codes `fix` can resolve: a table of the fix producers, held to their source by a test. One row per producer names the codes it attaches a span edit to, the applicability its edit can carry and the stage that raises it (card AF8, after… | none |
 | `fixture-orientation.ts` | 341 | 12 | Which way does a fixture face, and which of a rectangle's edges have a wall behind them. | none |
 | `fixtures-catalog.ts` | 1110 | 53 | Frozen fixture catalog — tacit architectural knowledge about furniture/fixtures as pure, deterministic data. Today it records which fixtures conventionally sit **against a wall** (plumbing fixtures and kitchen runs need a wall behind them… | none |
@@ -274,7 +274,7 @@ Totals: 418 modules in 34 directories.
 | `intent-concepts.ts` | 238 | 7 | The intent channel's concept vocabulary — production name resolution for the NL→ArchLang intent contract. | none |
 | `intent-feasibility.ts` | 388 | 3 | Infeasibility of a brief's stated numbers: the arithmetic that makes "this brief is impossible" checkable, before any plan exists. | none |
 | `intent.ts` | 1762 | 8 | The intent channel — author-time checking of a brief's INTENT against a plan. | none |
-| `ir.ts` | 2046 | 264 | Intermediate representation + `resolve(ast)`. | charges the step meter |
+| `ir.ts` | 2046 | 265 | Intermediate representation + `resolve(ast)`. | charges the step meter |
 | `keep.ts` | 1849 | 11 | `keep`: declared invariants, checked by `compile()` and never solved (ADR 0033; plan-soundness PS4.3, design `archlang-lab/plans/plan-soundness/research/2026-10-26-ps43-keep-design.md`). | charges the step meter |
 | `label-fit.ts` | 1355 | 6 | A room's label that does not fit shrinks: a **post-pass over the lowered Scene**, after `wrapLabels` and `relocateLabels` (`src/label-placement.ts`) have done what they can at the drawing's label size (#367). | none |
 | `label-placement.ts` | 868 | 12 | Obstacle-aware relocation of room labels — a **post-pass over the lowered Scene**. | none |
@@ -488,7 +488,7 @@ Totals: 418 modules in 34 directories.
 | `joinery.ts` | 1251 | 7 | **Wall joinery** — one boundary for a whole set of walls, with no line drawn inside another wall's solid. | none |
 | `min-rect.ts` | 169 | 2 | The exact minimum-area enclosing rectangle of a point set on the 0.001 mm lattice (plan-soundness PS5.1b; design `archlang-lab/plans/plan-soundness/research/2026-10-24-ps5-taste-design.md` §3 R9, R18). | none |
 | `polygon.ts` | 669 | 74 | Simple-polygon math for **polygonal rooms**. | charges the step meter |
-| `rect.ts` | 502 | 40 | Shared axis-aligned rectangle math for the analysis/repair layer. | none |
+| `rect.ts` | 502 | 41 | Shared axis-aligned rectangle math for the analysis/repair layer. | none |
 | `union.ts` | 193 | 3 | Boolean of axis-aligned rectangles (union, and difference of "holes") → boundary loops. | none |
 
 ## `src/grammar/`
@@ -525,18 +525,18 @@ Totals: 418 modules in 34 directories.
 | --- | ---: | ---: | --- | --- |
 | `clearance-facts.ts` | 405 | 2 | `describe --facts clearances` (plan-soundness PS2.72): what each clearance rule measured, per storey, so a reviewer can check a warning, or its absence, from the CLI instead of re-measuring the resolved geometry in a script. | none |
 | `clearance-measure.ts` | 489 | 9 | The measures behind the clearance family of plan-soundness PS2.11 (`rules/clearances.ts`): a WC's two side strips, and the band a window's span makes on its host wall. Stated once here so the rules and the placement check every quoted… | none |
-| `context.ts` | 420 | 45 | The shared, precomputed context every lint rule checks against — element subsets, room rectangles and the hoisted wall-segment list are built exactly once per `lint()` run, so no rule re-derives them. | none |
+| `context.ts` | 420 | 46 | The shared, precomputed context every lint rule checks against — element subsets, room rectangles and the hoisted wall-segment list are built exactly once per `lint()` run, so no rule re-derives them. | none |
 | `corner-nib.ts` | 122 | 2 | Whether a wall turns at the end of a run, and the tightest corner nib a door leaves there: the test `W_DOOR_NEAR_CORNER` reports by, shared with `W_OPENING_AT_JUNCTION` and its move search so they defer to that rule by the same test… | none |
 | `coverage.ts` | 366 | 11 | The lint coverage report (plan-soundness PS2.13): which rule families ran on a plan, which were skipped and why, and which rooms no use-reading rule could judge. | none |
 | `defining.ts` | 496 | 6 | The pieces that define a room of each use, read from `FURNISH_TABLE` (the table `finish` furnishes from), and the checked statements that place them. Shared by `W_ROOM_MISSING_DEFINING` (which reports a furnished room lacking one) and… | none |
 | `doorway-move.ts` | 134 | 1 | The move `W_DOORWAY_BLOCKED` offers as a fix (card AF9): the door or cased opening moved along its own wall until its landing misses every piece. Lint-only, so it stays off the compiler path (the rules import it; no compile module does). | none |
-| `element-phrases.ts` | 96 | 6 | How a lint MESSAGE names a wall or a door, window or opening (PS2.29: a message never quotes an id). A wall is named by its kind and the line it runs on ("the exterior wall at y 0"), a connector by the rooms it joins ("the door between… | none |
+| `element-phrases.ts` | 96 | 7 | How a lint MESSAGE names a wall or a door, window or opening (PS2.29: a message never quotes an id). A wall is named by its kind and the line it runs on ("the exterior wall at y 0"), a connector by the rooms it joins ("the door between… | none |
 | `fixture-paste.ts` | 254 | 5 | A pasteable fixture statement for an empty wet room or kitchen (`W_ROOM_NO_FIXTURE`'s hint), placed from the room's own shape and CHECKED before it is quoted. | none |
-| `measure.ts` | 95 | 20 | The measured half of an advisory placement warning: **required, available, shortfall**. | none |
+| `measure.ts` | 95 | 21 | The measured half of an advisory placement warning: **required, available, shortfall**. | none |
 | `overprint-ref.ts` | 42 | 5 | Which text a `W_ANNOTATION_OVERLAP` warning reports, and what it is printed over (card AL6), kept BESIDE the diagnostic in a `WeakMap`, never on it, as the ruleset reference is (`rule-ref.ts`, RM1.6b): `lint()` returns the same objects… | none |
 | `provenance.ts` | 488 | 7 | Where each lint ruleset number comes from, as data: a table parallel to {@link DEFAULT_RULESET} and {@link LINT_PROFILES}, keyed by profile and ruleset key, with the document, clause, edition and verification grade of every number.… | none |
 | `report.ts` | 108 | 2 | The `arch lint --json` document as a pure function (card CR10): what the CLI's `lint` reports for one source, built here once so the hosted `POST /check` (`packages/mcp-worker`) returns the same document for the same input. `cmdLint`… | none |
-| `rule-ref.ts` | 84 | 13 | Which ruleset number a lint diagnostic was raised against (card RM1.6b), kept BESIDE the diagnostic in a `WeakMap`, never on it: `lint()` returns the same objects, with the same keys, and `JSON.stringify(lint(src))` is unchanged. A rule… | none |
+| `rule-ref.ts` | 84 | 14 | Which ruleset number a lint diagnostic was raised against (card RM1.6b), kept BESIDE the diagnostic in a `WeakMap`, never on it: `lint()` returns the same objects, with the same keys, and `JSON.stringify(lint(src))` is unchanged. A rule… | none |
 | `ruleset.ts` | 879 | 24 | The lint ruleset: tunable thresholds, named advisory profiles, and the options type. Split from `lint.ts` so individual rule modules (`./rules/*.ts`) can import the types without a cycle through the `lint()` entry point; `lint.ts`… | none |
 | `storeys.ts` | 118 | 10 | The storeys `lint()` reads and the building fact each is read with: the per-storey {@link BuildingContext} of a multi-storey plan ({@link buildingContexts}) and the plan's dwelling reading (PS2.18). Stated once here so every reader of a… | none |
 | `work.ts` | 33 | 2 | Work counters for one `lint()` run: how many geometric tests the costliest rules made, as COUNTS (engineering-health EH2.10). They are an out-parameter on the per-run {@link import("./context.js").LintContext}, never module state, so… | none |
@@ -551,7 +551,8 @@ Totals: 418 modules in 34 directories.
 | `circulation.ts` | 43 | 1 | Circulation: a room whose doorways can't reach a usable patch of clear floor — technically reachable (it has a door) but so packed that you can't step in. A grid flood-fill fact (see analyze/occupancy.ts); only fires when there *is*… | none |
 | `clearances.ts` | 473 | 2 | The clearance family of plan-soundness PS2.11, beyond the seat check: a WC whose centreline stands too near a side obstacle (PS2.11a) and a tall unit standing in front of a window (PS2.11b). Both measure the drawn shapes — a fixture's… | none |
 | `dims.ts` | 613 | 3 | Annotation-quality advisories over the plan's HAND-WRITTEN dimensions: `W_DIM_INSIDE` (a dimension line landing inside the building) and `W_DIM_OVERLAP` (two dimensions drawn on top of each other). Both are advisory with a… | none |
-| `doors.ts` | 1114 | 6 | Door rules: obstructed swing arcs, blocked walk-through landings, sub-passable widths, a pocket panel with nowhere to go, and a jamb that leaves too little wall at a corner — in that (pinned) order via `rules/index.ts`. | none |
+| `doors.ts` | 976 | 7 | Door rules: obstructed swing arcs, blocked walk-through landings, sub-passable widths, a pocket panel with nowhere to go, and a jamb that leaves too little wall at a corner — in that (pinned) order via `rules/index.ts`. | none |
+| `doorway.ts` | 157 | 1 | The walk-through landing rule, `W_DOORWAY_BLOCKED` (`doorwayBlocked`), and the move it offers as a fix (card AF9, `src/lint/doorway-move.ts`). It stands apart from the other door rules (`./doors.ts`) because those are on `describe()`'s… | none |
 | `enclosure.ts` | 1063 | 4 | Space-enclosure rules (plan-soundness PS2.4): floor the walls and the rooms disagree about. | none |
 | `entrance.ts` | 189 | 1 | The building has rooms but no way in. | none |
 | `floor-gaps.ts` | 99 | 2 | Floor a piece cannot stand on: a storey's own `void`s, lift shafts and escalators (CR2 group D). | none |

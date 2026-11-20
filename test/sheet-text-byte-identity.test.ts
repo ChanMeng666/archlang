@@ -145,7 +145,7 @@ const BASELINE: [string, string][] = [
   // reaching its break line widens the drawing 156 mm. No `sheet text` moved it: the form's rows stay as measured.
   ["5febcfb91b9a3e7bc23705df313a0ac218fb64f35aae5a19b607b313ddca79fb", "test/fixtures/zones-levels.arch"], // RM9.2, see ./byte-identity-baseline.ts
   ["ee9f057b82b717e4b7c0753daef62a2baa9b3df5c5d8aa617079c3dedce0081e", "test/fixtures/zones-wings.arch"],
-  ["edc62a570b76ff9877ab4515a7a83826cc91bf70328a315fe62f42ff17f3a843", "test/walls-from-rooms/relational.arch"],
+  ["d4f13165ba5c704df63306f255e062d6e3ac5a3cd4ce888d1f31c8302ae1c630", "test/walls-from-rooms/relational.arch"], // AF9 (was edc62a57): under `accessibility-advisory` (a 450 mm landing) `W_DOORWAY_BLOCKED` gains a maybe-incorrect move of the door; SVG, describe(), the diagnostics, the default lint() and the steps are unchanged, and with that fix taken out the old digest returns
   ["beff13e3b3255103bc80d0698d9bf7b9052f66bf78bf8d0626033bfeeb02adc5", "test/walls-from-rooms/studio.arch"],
   ["4a1ab38ed28c696ef0c713c4227dd30efb828fb60a7d3dd5b4b4e1d0e40f68ef", "test/walls-from-rooms/two-bed.arch"], // RM1.4: snapping is now reported (this test plan's 850x2000 sofa and 450x600 basin under grid 100 raise W_GRID_SNAPPED; steps 629 -> 757, +128 = two DIAGNOSTIC_STEPS) (was 73d42f0e); CO.1: +1 W_GRID_SNAPPED (a sizeless `against` piece on a grid), steps +64 = 1 x 64; see the header (was cd33c0b4)
   [
