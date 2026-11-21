@@ -143,7 +143,9 @@ export function workCounts(src: string, world: World = NULL_WORLD): WorkMeasure 
     units += storeyPassUnits(s, BUILTIN_REGISTRY);
     elements += s.elements.length;
   }
-  const { leafDoorPairs, boundaryRunTests, navCells, tableSeatTests, stairVoidTests, seatWallTests } = lintWork(src, { world });
+  const { leafDoorPairs, boundaryRunTests, navCells, tableSeatTests, stairVoidTests, seatWallTests } = lintWork(src, {
+    world,
+  });
   const { joinerySplitTests, labelRelocations, labelLeaders } = compileWork(src, { world });
   return {
     counts: {
