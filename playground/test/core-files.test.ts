@@ -275,10 +275,17 @@ describe("coreFiles (vite.config.js's compiler chunk)", () => {
     expect(text("lint-core.ts")).toMatch(/^export const LINT_URL = import\.meta\.url;$/m);
     const statically = files.filter((f) => /^import\s[^;]*?from\s*"\.\/lint-core\.js"/m.test(text(f)));
     expect(statically).toEqual(["edit-mode.ts"]);
-    for (const f of files)
-      expect(text(f), `${f} imports lint-core.js with a literal import()`).not.toMatch(
-        /\bimport\s*\(\s*["'`]\.\/lint-core\.js/,
-      );
+    // A value `import()`, not a type (`typeof import("./lint-core.js")` loads nothing).
+    const LITERAL = /(?<!\btypeof\s+)\bimport\s*\(\s*["'`]\.\/lint-core\.js/;
+    expect(LITERAL.test('const m = await import("./lint-core.js");'), "the probe is live").toBe(true);
+    expect(LITERAL.test('type T = typeof import("./lint-core.js");')).toBe(false);
+    // Read in code, not comments (lint-core.ts's own header names the form it avoids).
+    const code = (f: string) =>
+      text(f)
+        .split("\n")
+        .filter((l) => !/^\s*(?:\/\/|\/\*|\*)/.test(l))
+        .join("\n");
+    for (const f of files) expect(code(f), `${f} imports lint-core.js with a literal import()`).not.toMatch(LITERAL);
     // The job's import is by URL, and only the door takes `lint` from the core.
     expect(text("compile-worker.ts")).toMatch(/\bimport\(\/\* @vite-ignore \*\/ url\)/);
     const takesLint = files.filter((f) =>

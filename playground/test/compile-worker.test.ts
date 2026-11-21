@@ -44,7 +44,9 @@ suite("lint loads with the editor's first request (card 3.19b)", () => {
   afterEach(() => {
     (globalThis as { Worker?: unknown }).Worker = original;
   });
-  const src = example("laneway-house");
+  // A plan that compiles and that lint reports on (a bedroom with no door and no window), so the
+  // lint result below is not an empty list either way.
+  const src = `plan "E2E" {\n  units mm\n  wall exterior thickness 150 { (0,0) (6000,0) (6000,4000) (0,4000) close }\n  room id=a at (0,0) size 6000x4000 label "Bedroom"\n}`;
 
   it("a request without the editor runs with no lint loaded; one from the editor waits for it", async () => {
     // No module has loaded it: a view-mode render needs none, an editor's render does.
@@ -63,7 +65,7 @@ suite("lint loads with the editor's first request (card 3.19b)", () => {
     expect(jobReady(req(src, { lintProfile: "" }))).toBe(false);
     // With the door's URL, the page's job loads lint and lints as the core does.
     const got = await client.run(req(src, { seq: 2, lintProfile: "", lintUrl: LINT_URL }));
-    expect(got?.lint).toEqual(lint(src, { noCache: true } as never));
+    expect(got?.lint).toEqual(lint(src, { profile: "", noCache: true } as never));
     expect(got?.lint?.length).toBeGreaterThan(0);
     expect(jobReady(req(src, { lintProfile: "" }))).toBe(true);
   });
