@@ -77,7 +77,7 @@ Totals: 419 modules in 34 directories.
 | `t0-office.ts` | 429 | 1 | T0 batch V7 (visual-assets), office and commercial: the meeting table, the reception desk, the filing cabinet, the locker, the pool table and the treadmill. Declared like V5 (`t0-living.ts`); local frame, units and the clip: `t0.ts`. Back… | none |
 | `t0-outdoor.ts` | 1468 | 1 | T0 batch V7 (visual-assets), the site: planting, garden furniture, the things parked on a driveway, the terrace and lawn pieces and the small standing objects a survey records. Declared like V5 (`t0-living.ts`); local frame, units and the… | none |
 | `t0-utility.ts` | 492 | 1 | T0 batch V6 (visual-assets): kitchen, bath and utility. Declared like V5 (`t0-living.ts`); local frame, units and the clip: `t0.ts`. Back is −z (the wall a service stands against), front +z. | none |
-| `t0.ts` | 661 | 4 | T0 parametric furniture (archlang-3d plan §4.4, §5.1–5.3; card A2b; visual-assets V1–V3, V5–V7): pure generators that build a piece from a few parts, fitted EXACTLY to the plan's footprint. The twelve families laneway-house uses are here… | none |
+| `t0.ts` | 662 | 4 | T0 parametric furniture (archlang-3d plan §4.4, §5.1–5.3; card A2b; visual-assets V1–V3, V5–V7): pure generators that build a piece from a few parts, fitted EXACTLY to the plan's footprint. The twelve families laneway-house first used are… | none |
 | `types.ts` | 64 | 15 | Mesh3D v0: the ONE triangulation the viewer and the GLB both read (archlang-3d amendment v0.7; principle 1 of the preview-and-remodel programme). Built from a Scene3D alone, deterministically: same Scene3D, same bytes. | none |
 
 ## `packages/archlang-3d/src/replay/`
