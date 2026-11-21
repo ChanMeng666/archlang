@@ -8,6 +8,7 @@
 import { describe as suite, expect, it } from "vitest";
 import { type Diagnostic, ERROR_CATALOG, lint, lintWithCoverage } from "../src/index.js";
 import { CATALOG_CATEGORIES, fixtureSpec } from "../src/fixtures-catalog.js";
+import { EXAMPLE_FILES, EXAMPLES_WORLD } from "./helpers/d4-oracle.js";
 
 const CODE = "W_TABLE_NO_SEAT";
 const of = (src: string, profile?: string): Diagnostic[] =>
@@ -116,6 +117,16 @@ suite("W_TABLE_NO_SEAT", () => {
     expect(of(cafe)).toEqual([]);
     expect(skipsOf(cafe)).toContain("non-dwelling");
     expect(of(cafe, "residential-basic")).toHaveLength(1);
+  });
+
+  it("reports nothing over the shipped examples under the default ruleset (RM-D73: their tables were seated first)", () => {
+    const hits = Object.entries(EXAMPLE_FILES).flatMap(([name, src]) =>
+      lint(src, { world: EXAMPLES_WORLD })
+        .filter((d) => d.code === CODE)
+        .map(() => name),
+    );
+    expect(Object.keys(EXAMPLE_FILES).length).toBeGreaterThan(40);
+    expect(hits).toEqual([]);
   });
 
   it("has a catalogue entry whose example reports it and whose fixed form does not", () => {

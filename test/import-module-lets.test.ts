@@ -617,7 +617,7 @@ const BASELINE: [string, string][] = [
   ["eval/goldens/accessible-bath.arch", "d92fb8bf1dafde517a579409ff32602a06687a29149d3c2e7e1de69bd4cc4fce"],
   ["eval/goldens/accessible-flat.arch", "3809f58573d9685eb190389ae026bdbafa161dd57bdbf109a90048f4bb3e802a"],
   ["eval/goldens/against-wall-bath.arch", "731d8f1fc40ba19a5f431d54a643f236d70e4ae92aca19368cea2a38f29d734e"], // PS2.11e, see header
-  ["eval/goldens/anchor-furniture.arch", "9be77fd0784c0098f976f4248acdff7dac9290df6161c61f456554455b293b30"],
+  ["eval/goldens/anchor-furniture.arch", "1c74cefb3f9ba5d3cbd789635c42e8313c58c1365ef3b78d888b60b609e7586e"], // RM9.6 CV13 (was 9be77fd0): W_TABLE_NO_SEAT reports its table (a table in a home's day room with nothing to sit on); with the rule taken out the old digest returns
   ["eval/goldens/attach-openings.arch", "658dd5a6589283292b8269548c0f38d01e57503ed244e40cd1084add86c290c1"], // PS2.11e, see header
   ["eval/goldens/bungalow.arch", "8c685c18b9651a339158e040310869881ee190ead53c7309913f86e171c09d71"], // RM1.4: snapping is now reported (eval golden, not edited: W_GRID_SNAPPED x2) (was 4271ab6f); RM1.4: the W_GRID_SNAPPED span points at the written value (was a85eb29f); steps 465 -> 593, +128 = two DIAGNOSTIC_STEPS
   ["eval/goldens/compact-studio.arch", "36b588ea8e25c29f6be7523de08b31c41ec63fe4ab8bd1a40a93daca4885f784"], // PS2.11e, see header
