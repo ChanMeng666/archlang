@@ -13,6 +13,20 @@ e2e/keyframes.e2e.ts` in `packages/archlang-3d`, which writes the file with the 
 in. Never rewrite it to turn a red run green: a changed hash needs the reason (a Mesh3D, viewer or
 Chromium change) in the commit that re-pins it.
 
+Re-pinned by the RM9.6 CV13 split (2026-11-21, PR #996, ruling RM-D73): the source of
+`examples/laneway-house.arch` and `examples/courtyard-house.arch` changed. The first gains two chairs
+at its table and the second six at its two tables. No viewer, Mesh3D code or Chromium changed.
+Exactly 4 frames moved, the ones in which the standing furniture shows: laneway-house `tilted`
+(`7879c0ae…` → `59f44d3e…`) and `end` (`d29a8530…` → `f155942e…`), and courtyard-house `tilted`
+(`af052e3f…` → `241dd709…`) and `end` (`c1a32ed2…` → `d9551668…`). Every other hash is unchanged:
+laneway-house's five `stage:*` frames and every two-storey frame. The 4 new hashes are the ones CI's
+`check-3d` job printed for the PR's head `62b8d17f` (GitHub Actions run
+https://github.com/ChanMeng666/archlang/actions/runs/44848152276, job 136672909016, ubuntu x64),
+where the key-frame comparison failed on exactly these. The test's own `render` (the same calls, run
+from a script against this tree's core) on Windows 11 x64 with the same Chromium build gives back
+all 9 pinned hashes of both plans from `origin/main`'s two texts, and the 4 new ones from the
+branch's. So both `taken` entries stay, and each moved frame moved by the source edit alone.
+
 Re-pinned by product-roadmap card RM8.8 (2026-11-12, PR #737, the soft contact shadows): bands
 along the walls' feet, up their inside corners and round the standing furniture fade in over the
 last quarter of each caster's rise (a storey's walls by its last wall; a fence, a stair or a piece
