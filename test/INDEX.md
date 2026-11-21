@@ -86,7 +86,7 @@ Nearest first, then by name; `(+n)` is the rest. Test names are `test/<name>.tes
 - `src/elements/room.ts` (7) — `export-pdf`, `label-leaders`, `label-placement`, `net-area-stamp`, `rect-label-anchor`, `room-floor`, `room-uses`
 - `src/elements/section.ts` (1) — `section`
 - `src/elements/vertical-glyphs.ts` (5) — `diagnostics-volume`, `drawing-budget`, `export-dxf-blocks`, `model-range`, `vertical`
-- `src/elements/void.ts` (3) — `v129-cross`, `void-rail`, `void`
+- `src/elements/void.ts` (4) — `shaft-circulation`, `v129-cross`, `void-rail`, `void`
 - `src/elements/wall.ts` (1) — `room-datums`
 - `src/elements/window.ts` (1) — `corner-window`
 - `src/error-catalog-fixes-intent.ts` (1) — `explain`
