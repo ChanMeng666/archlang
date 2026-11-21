@@ -47,9 +47,11 @@
 
 import fc from "fast-check";
 import { describe, expect, it } from "vitest";
+import { resolvePlan } from "../src/analyze.js";
 import type { PlaceRotate } from "../src/ast.js";
 import { composeFrame, makeFrame } from "../src/frame.js";
 import { compile, type Diagnostic, describe as describePlan, lint } from "../src/index.js";
+import { drawnLeaders, toScene } from "../src/scene-build.js";
 import { type PlanSpec, planSpec, withInstance } from "./helpers/arbitrary-plan.js";
 import {
   D4_ELEMENTS,
@@ -264,6 +266,78 @@ describe("pinned fuzz counterexamples", () => {
         uncovered.map((v) => v.key),
         `${g.name}:\n${explain(uncovered, 4)}`,
       ).toEqual([]);
+    }
+  }, 60_000);
+
+  /**
+   * E.18 (fast-check seed 533254921, path "58:0:5:6:13:13:13:12:12:12:15:17:16:10:14:14:15:15:17:15:
+   * 18:18:18:18:19:1:8:13:17:19:17:17:20:21:21:21:21:21:22:22:22:22", g = t): `W_ANNOTATION_OVERLAP`
+   * ("Living" over the wc) on P₀ and not 20 m out. The leader step (`src/label-fit.ts`) ends a led
+   * label's line on the first lattice place whose dot stands wholly on its floor, and read that as
+   * `rectAreaOutside(dot, floor) > 0` at the plan's absolute positions: a dot wholly on its floor read
+   * 1e-10 to 1e-9 mm² off it, a different place each time, so P₀ ended the line on another dot, whose
+   * line was blocked, and the label stayed on the wc. It is now read in the dot's own frame, against a
+   * slack (`DOT_SLACK`).
+   */
+  const e18 = (at: number, g: { rotate?: number; mirror?: "x" | "y" } = {}): string => `plan "P" {
+  units mm
+  dims auto walls
+  component body() {
+    wall id=w_shell exterior thickness 100 { (0,0) (9400,0) (9400,2000) (0,2000) close }
+    wall id=w_v1 partition thickness 80 { (2900,0) (2900,2000) }
+    wall id=w_v2 partition thickness 80 { (7400,0) (7400,2000) }
+    room id=r0 at (0,0) size 2900x2000 label "Living"
+    room id=r1 at (2900,0) size 4500x2000
+    room id=r2 at (7400,0) size 2000x2000
+    furniture id=f0 wc in r0 centered size 900x600
+    furniture id=f1 wc at (0,0) size 900x1100 rotate 90
+    room id=r_base at (12400,16000) size 3000x2500
+    room id=r_rel right-of r_base align top gap 0 size 2000x2000
+    dim (0,-800)->(9400,-800)
+  }
+  place body() as g at (${at},${at}) rotate ${g.rotate ?? 0}${g.mirror ? ` mirror ${g.mirror}` : ""}
+}`;
+
+  it("E.18: the led label of the three-room strip lints the same translated", () => {
+    const { vs } = instanceCase((h) => e18(h?.translate ? translationFor(0) : 0), elementNamed("t"), 0, "up");
+    expect(
+      vs.map((v) => v.key),
+      `t:\n${explain(vs, 4)}`,
+    ).toEqual([]);
+  });
+
+  it("E.18: at every offset, turned or flipped, the label is led from the same dot", () => {
+    const overlap = (src: string) => lint(src).filter((d) => d.code === "W_ANNOTATION_OVERLAP").length;
+    /** The leader's dot, relative to the instance's origin. */
+    const dots = (src: string, at: number) => {
+      const { ir } = resolvePlan(src);
+      return (drawnLeaders(toScene(ir!, { annotate: true })) ?? []).map((l) => ({
+        room: l.room,
+        host: l.host,
+        x: Math.round((l.b.x - at) * 1e6) / 1e6,
+        y: Math.round((l.b.y - at) * 1e6) / 1e6,
+      }));
+    };
+    const offsets = [0, 0.5, 333.3, 1000, 7300, 20000, -20000, 1_000_000];
+    // Turned, the passes before the leader step clear the name (text stays upright), so none is led.
+    const cases = [
+      { g: {}, led: 1 },
+      { g: { mirror: "x" as const }, led: 1 },
+      { g: { rotate: 90 }, led: 0 },
+      { g: { rotate: 180 }, led: 0 },
+      { g: { rotate: 270 }, led: 0 },
+    ];
+    for (const { g, led } of cases) {
+      const base = { overlap: overlap(e18(0, g)), dots: dots(e18(0, g), 0) };
+      // Not vacuous: unturned, the label is led off the wc into the next room, so nothing is reported.
+      expect(base.overlap, JSON.stringify(g)).toBe(0);
+      expect(base.dots, JSON.stringify(g)).toHaveLength(led);
+      for (const d of base.dots) expect([d.room, d.host], JSON.stringify(g)).toEqual(["g.r0", "g.r1"]);
+      for (const at of offsets) {
+        expect({ overlap: overlap(e18(at, g)), dots: dots(e18(at, g), at) }, `${JSON.stringify(g)} at ${at}`).toEqual(
+          base,
+        );
+      }
     }
   }, 60_000);
 });
