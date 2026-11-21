@@ -16,7 +16,7 @@
  *    (`lintWork()`, `src/lint/work.ts`; engineering-health EH2.10): the (leaf, door) pairs
  *    `W_LEAF_ACROSS_DOORWAY` measured, the elements `W_BOUNDARY_NO_WALL` measured against shared
  *    runs, the cells of every circulation nav grid the run built, and the (room, piece) centre
- *    tests `W_TABLE_NO_SEAT` made (RM9.6), and the (stair, void piece) tests `W_STAIR_NO_VOID` charged
+ *    tests `W_TABLE_NO_SEAT` made (RM9.6), and `W_STAIR_NO_VOID`'s void-piece and footprint reads
  *    (RM9.6). 0 on a plan that does not
  *    reach the rule, which a row may be.
  *  - `joinerySplitTests`, `labelRelocations`: one uncached compile's drawing work counters

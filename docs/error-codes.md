@@ -264,7 +264,7 @@ Every diagnostic carries a stable code. Look one up with `arch explain <CODE>`
 | [`W_SHAFT_FOOTPRINT_MISMATCH`](#w_shaft_footprint_mismatch) | warning | A shaft's runs on two neighbouring storeys do not stand over each other. |
 | [`W_STAIR_HEAD_VOID`](#w_stair_head_void) | warning | A void opens on the landing at the head of a flight. |
 | [`W_STAIR_NO_LANDING`](#w_stair_no_landing) | warning | A flight has no landing at its foot or head, or a landing between two flights is too short. |
-| [`W_STAIR_NO_VOID`](#w_stair_no_void) | warning | No void opens over a flight that climbs from the storey below. |
+| [`W_STAIR_NO_VOID`](#w_stair_no_void) | warning | The floor of a storey covers the head of a flight that climbs to it from the storey below. |
 | [`W_STAIR_RISER_TOO_HIGH`](#w_stair_riser_too_high) | warning | A stair's drawn treads climb its storey on risers that are too high. |
 | [`W_STAIR_SIDE_ENTRY`](#w_stair_side_entry) | warning | A doorway opens onto the side of a flight. |
 | [`W_STAIR_TOO_STEEP`](#w_stair_too_steep) | warning | A stair is too short to climb its storey. |
@@ -3906,6 +3906,7 @@ plan "P" {
     door id=d_out on s at 12000 width 900
     outdoor deck at (0,3000) size 6000x2000 label "Roof terrace"   # fixed: a terrace on that roof
     stair id=st at (2000,200) size 2600x900 dir down
+    void id=well at (2000,200) size 2600x900
   }
 }
 ```
@@ -4973,7 +4974,7 @@ level 2 "1" { stair id=s at (0,0) size 900x2600 dir down }   # fixed: one footpr
 
 **Cause.** On the storey a flight arrives at (the `dir down` stop of its id, or the head of a flight from below that continues upward), a `void` overlaps the landing a person steps off the flight onto: the square beyond the head as wide as the flight and as deep (Approved Document K (2013) 1.20; 1200 mm deep outside a dwelling, 1.23a). The top step meets a hole. The stairwell itself may be a void; only the floor beyond the head is judged.
 
-**Fix.** Move the void beside the flight or past its foot end, or shrink it, so the landing beyond the head is floor. There is no machine-applicable fix.
+**Fix.** Draw the void over the flight itself, ending at its head (the stairwell, which `W_STAIR_NO_VOID` asks for), or move it past the foot end or shrink it, so the landing beyond the head is floor. There is no machine-applicable fix.
 
 ```arch static
 level 2 "First" {
@@ -4987,7 +4988,7 @@ level 2 "First" {
 ```arch static
 level 2 "First" {
   stair id=s at (100,1500) size 900x2600 dir down
-  void id=g at (1100,200) size 900x1100   # fixed: beside the flight
+  void id=g at (100,1500) size 900x2600   # fixed: the stairwell, ending at the head
 }
 ```
 
@@ -5013,18 +5014,20 @@ stair id=s at (500,200) size 900x2350 dir up   # fixed: 1000 mm past the bottom 
 
 ## W_STAIR_NO_VOID
 
-*warning* — No void opens over a flight that climbs from the storey below.
+*warning* — The floor of a storey covers the head of a flight that climbs to it from the storey below.
 
-**Cause.** A `stair` going `up` on one storey has its next stop, the same id, on this storey, and no `void` of this storey overlaps the flight that climb ends on (a straight stair's footprint; a block stair's last flight, never the box round its pieces). This storey's floor then covers the flight, so a person climbing it meets the floor above. Reported on this storey's stop. A geometric fact: no figure is read. Where the void stands beside the flight's head, `W_STAIR_HEAD_VOID` reads it.
+**Cause.** A `stair` going `up` on one storey has its next stop, the same id, on this storey, and the `void` pieces of this storey do not cover the head of the flight that climb ends on (a straight stair's footprint; a block stair's last flight, never the box round its pieces) across the flight's whole width: the line just inside its head edge. Where that line is left open and this storey's footprint stands there (a room's shape, or inside a closed exterior wall ring, as the 3D preview builds its slab), the floor covers the flight, so a person climbing it meets the floor. A sliver at a corner or a strip down one side does not clear it; a floor over the flight's low end is no defect. Reported on this storey's stop. A geometric fact: no figure is read. A void on the landing beyond the head is `W_STAIR_HEAD_VOID`'s.
 
-**Fix.** Draw a `void` on this storey over the flight (its `at` and `size`, or a `polygon` over a block stair's pieces), clear of the landing beyond its head. There is no machine-applicable fix.
+**Fix.** Draw a `void` on this storey over the flight (its `at` and `size`, or a `polygon` over a block stair's pieces), across its whole width at its head and clear of the landing beyond the head. There is no machine-applicable fix.
 
 ```arch static
 level 1 "Ground" {
+  room id=h at (0,0) size 3000x5000
   stair id=s at (100,1500) size 900x2600 dir up
 }
 level 2 "First" {
-  stair id=s at (100,1500) size 900x2600 dir down   # lint: no void over the flight
+  room id=l at (0,0) size 3000x5000
+  stair id=s at (100,1500) size 900x2600 dir down   # lint: the floor covers the head of the flight
 }
 ```
 
@@ -5032,9 +5035,11 @@ level 2 "First" {
 
 ```arch static
 level 1 "Ground" {
+  room id=h at (0,0) size 3000x5000
   stair id=s at (100,1500) size 900x2600 dir up
 }
 level 2 "First" {
+  room id=l at (0,0) size 3000x5000
   stair id=s at (100,1500) size 900x2600 dir down
   void id=well at (100,1500) size 900x2600   # fixed: the stairwell
 }

@@ -297,8 +297,8 @@ const LAW: [string, string, string][] = [
     "quarter-turn winders 4 placed rotate 90",
   ],
   [
-    "33ac296c8b14332c7fd7b1323b42569fbb9983df7d0deab4b422eb2b6cb8c4d6", // RM9.2, see ./byte-identity-baseline.ts; RM9.6 CV14: W_STAIR_NO_VOID reports this plan (was bd9dd9bc)
-    "8e00080152698a6eea27dcbe282065eabbc4675e31fb783497aed520f903e9c6", // RM9.2, see ./byte-identity-baseline.ts; RM9.6 CV14: W_STAIR_NO_VOID reports this plan (was abf61c08)
+    "12473f94cdf3160bc5627616f3f2d364aba9cb072ad7034d664d61eb2f324298", // RM9.2, see ./byte-identity-baseline.ts; RM9.6 CV14: W_STAIR_NO_VOID reports this plan (was bd9dd9bc)
+    "9eeca3bb144bf0db2e649d3179227c15988ae25c511114b04a752bfe019034c6", // RM9.2, see ./byte-identity-baseline.ts; RM9.6 CV14: W_STAIR_NO_VOID reports this plan (was abf61c08)
     "shaft winders 4, up below and down above",
   ],
 ];

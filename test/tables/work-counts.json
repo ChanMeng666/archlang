@@ -1,5 +1,5 @@
 {
-  "_reason": "RM9.6 CV14 rule PR (feat/cv14-stair-no-void): W_STAIR_NO_VOID adds the stairVoidTests column (lint work)",
+  "_reason": "RM9.6 CV14 rule PR (#1004 round 1): W_STAIR_NO_VOID reads the head band and the floor; stairVoidTests counts void-piece and footprint reads",
   "_tolerance": 0.1,
   "_totalTolerance": 0.03,
   "_floor": 8,

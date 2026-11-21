@@ -245,6 +245,9 @@ describe("planted violations — the oracle and the pin table go red", () => {
     expect(out.get(storeyScope(rel, 1))!.vs).toEqual([]);
     // L3 sees only the one cross-storey rule (PS2.15): its stair no longer stands over the turned
     // L2's, and `W_SHAFT_FOOTPRINT_MISMATCH` reports a pair on its UPPER stop. Nothing of L3's own.
+    // The other cross-storey stair rule, `W_STAIR_NO_VOID` (RM9.6 CV14), stays quiet: the turned L2
+    // flight's head lands off L3's footprint (x -5800…-2600, y 4150…5050 against L3's x -5200…0,
+    // y -10700…0), where there is no floor to cover it.
     const l3 = out.get(storeyScope(rel, 3))!.vs;
     expect(l3.length).toBeGreaterThan(0);
     expect(l3.every((v) => v.key.startsWith("lint.shaft-footprint-mismatch"))).toBe(true);

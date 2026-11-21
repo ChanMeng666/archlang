@@ -55,7 +55,7 @@
  */
 
 import type { Point } from "../../ast.js";
-import { pointInRoomBox } from "../../analyze.js";
+import { onFootprint, pointInRoomBox } from "../../analyze.js";
 import { det, oppositeSide, type Side } from "../../algebra/d4.js";
 import type { Diagnostic } from "../../diagnostics.js";
 import { TREAD_GOING_MM, treadCount } from "../../elements/vertical-glyphs.js";
@@ -949,13 +949,23 @@ export const stairHeadVoid: LintRule = {
 
 // ── W_STAIR_NO_VOID ─────────────────────────────────────────────────────────
 
+/** The points of an open stretch of a flight's head band read for floor: its ends, 1 mm in (a
+ *  quarter of a stretch under 4 mm), and its middle. A sample, as `landingBlock` reads the floor. */
+const HEAD_SAMPLES = 3;
+
 /**
  * `W_STAIR_NO_VOID` (product roadmap RM9.6, coverage class CV14): a flight climbs from the storey
- * below to this one, and no `void` of this storey reaches over it, so this storey's floor covers the
- * flight a person climbs. The flight is the one the climb ends on (`flightEnd`, the same head
- * `W_STAIR_HEAD_VOID` reads), on its own footprint, never a block stair's box. Its work, one test
- * per (stair, void piece) of the storey at most, is charged to the stair work before it runs and
- * counted (`stairVoidTests`).
+ * below to this one, and this storey's floor covers it at its head, so a person climbing it meets the
+ * floor. The flight is the one the climb ends on (`flightEnd`, the same head `W_STAIR_HEAD_VOID`
+ * reads), on its own footprint, never a block stair's box. Its head band is the line 1 mm inside its
+ * head edge, across the flight's whole width (centred, as the flight is drawn): the void pieces that
+ * cross that line must cover all of it, so a sliver at a corner or a strip down one side does not
+ * clear it (coordinator ruling on #1004; no figure is read). Where they leave some of it open, it is
+ * reported only if the floor stands there: the storey's drawn footprint (`onFootprint`: a room's
+ * shape, or inside a closed exterior ring, as the 3D preview builds its slab), read at
+ * {@link HEAD_SAMPLES} points of each open stretch. Its work, one test per (stair, void piece) and
+ * one footprint read per sample (each reading every element and wall), is charged to the stair work
+ * before it runs and counted (`stairVoidTests`).
  */
 export const stairNoVoid: LintRule = {
   name: "stair-no-void",
@@ -966,25 +976,57 @@ export const stairNoVoid: LintRule = {
   check(ctx: LintContext): Diagnostic[] {
     const f = factsFor(ctx);
     if (f === null) return [];
-    const n = f.stairs.length * ctx.voids.length;
-    if (!charge(f, n)) {
+    const arrivals = f.stairs.flatMap(({ v }) => {
+      const below = ctx.building.shaftNeighbours?.get(v.id)?.below;
+      return below?.run.kind === "stair" && below.run.dir === "up" ? [{ v, below: below.run, level: below.level }] : [];
+    });
+    const m = ctx.voids.length;
+    const read = ctx.ir.elements.length + ctx.ir.walls.length;
+    if (!charge(f, arrivals.length * (m + HEAD_SAMPLES * (m + 1) * read))) {
       ctx.skip("stair-budget");
       return [];
     }
-    ctx.work.stairVoidTests += n;
     const out: Diagnostic[] = [];
-    for (const { v } of f.stairs) {
-      const below = ctx.building.shaftNeighbours?.get(v.id)?.below;
-      if (below?.run.kind !== "stair" || below.run.dir !== "up") continue;
-      const flight = rectOf(flightEnd(below.run, true).flight);
-      if (ctx.voids.some((vd) => rectsOverlap(rectOf(vd), flight))) continue;
+    for (const { v, below, level } of arrivals) {
+      const { flight: fl, edge } = flightEnd(below, true);
+      const r = rectOf(fl);
+      // The head band: the line 1 mm inside the head edge, from `a` to `b` along it.
+      const across = edge === "top" || edge === "bottom";
+      const mid = across ? r.x + r.w / 2 : r.y + r.h / 2;
+      const [a, b] = [mid - below.width / 2, mid + below.width / 2];
+      const line = edge === "top" ? r.y + 1 : edge === "bottom" ? r.y + r.h - 1 : edge === "left" ? r.x + 1 : r.x + r.w - 1;
+      const spans: Array<[number, number]> = [];
+      for (const vd of ctx.voids) {
+        ctx.work.stairVoidTests++;
+        const [lo, hi, s0, s1] = across
+          ? [vd.at.y, vd.at.y + vd.size.h, vd.at.x, vd.at.x + vd.size.w]
+          : [vd.at.x, vd.at.x + vd.size.w, vd.at.y, vd.at.y + vd.size.h];
+        if (lo < line && line < hi && Math.min(s1, b) > Math.max(s0, a)) spans.push([Math.max(s0, a), Math.min(s1, b)]);
+      }
+      // The stretches of the band no void piece covers, each longer than 1 mm.
+      spans.sort((p, q) => p[0] - q[0]);
+      const open: Array<[number, number]> = [];
+      let at = a;
+      for (const [s0, s1] of spans) {
+        if (s0 - at > 1) open.push([at, s0]);
+        at = Math.max(at, s1);
+      }
+      if (b - at > 1) open.push([at, b]);
+      const onFloor = open.some(([s0, s1]) => {
+        const d = Math.min(1, (s1 - s0) / 4);
+        return [s0 + d, (s0 + s1) / 2, s1 - d].some((s) => {
+          ctx.work.stairVoidTests += read;
+          return onFootprint(across ? { x: s, y: line } : { x: line, y: s }, ctx.ir);
+        });
+      });
+      if (!onFloor) continue;
       out.push({
         severity: "warning",
         code: "W_STAIR_NO_VOID",
         ...ctx.at(v),
-        message: `No void opens over the flight that climbs from level ${below.level} to ${stairName(v, ctx)}: this storey's floor covers it, so a person climbing it meets the floor.`,
+        message: `No void opens across the head of the flight that climbs from level ${level} to ${stairName(v, ctx)}: this storey's floor covers it there, so a person climbing it meets the floor.`,
         hints: [
-          `Draw a \`void\` on this storey over the flight of \`${v.id}\` that climbs from level ${below.level} (over its pieces, never the box round a turning stair), clear of the landing beyond its head.`,
+          `Draw a \`void\` on this storey over the flight of \`${v.id}\` that climbs from level ${level}, across its whole width at its head (over its pieces, never the box round a turning stair), clear of the landing beyond its head.`,
         ],
       });
     }

@@ -31,8 +31,8 @@ export interface LintWork {
    */
   tableSeatTests: number;
   /**
-   * `W_STAIR_NO_VOID`: the (stair, void piece) overlap tests the rule may make on a storey, at most
-   * one per pair, charged before it runs (product roadmap RM9.6).
+   * `W_STAIR_NO_VOID`: per flight arriving on a storey, one test per void piece, and one per element
+   * and wall for each point of its head band read for floor (product roadmap RM9.6).
    */
   stairVoidTests: number;
 }

@@ -90,6 +90,8 @@ suite("keep · the widening drill (design §9), through the CLI", () => {
       "W_HABITABLE_NO_WINDOW",
       "W_BOUNDARY_NO_WALL",
       "W_ROOM_OUTSIDE_SHELL",
+      // RM9.6 CV14: level 2 draws no void over the stair `st` climbing to it (the drill plan has none).
+      "W_STAIR_NO_VOID",
     ]);
     const message =
       'This keep holds the right edge of "Living", the left edge of "Bed" and the partition in "Living" on one line; that partition is 500 mm left of the right edge of "Living". A keep moves nothing.';

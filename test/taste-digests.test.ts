@@ -1243,7 +1243,7 @@ const TABLE: ReadonlyArray<[string, string, string]> = [
     "test/defect-corpus/stair-safety/void-at-stair-head.arch",
   ],
   [
-    "86c7ae7097e700864da9eb5a35247911dc9c9c2d9aaaaba420979620e68f2ea1", // RM9.6 CV14: W_STAIR_NO_VOID reports this plan (was 54a2e39b)
+    "54a2e39be1bae97889726c08d5b6aab242482c8b5eec571c8aa55c23c9a77e9d", // RM9.6 CV14: the twin draws its void as the stairwell (was 54a2e39b)
     "generic",
     "test/defect-corpus/stair-safety/void-at-stair-head.clean.arch",
   ],
@@ -2493,7 +2493,7 @@ const TABLE: ReadonlyArray<[string, string, string]> = [
     "test/defect-corpus/stair-safety/void-at-stair-head.arch",
   ],
   [
-    "4dae111f57790cf86bfd16bc0146e0e066577082fbfb447322d9e7c1201a8cc6", // RM9.6 CV14: W_STAIR_NO_VOID reports this plan (was 687d0c20)
+    "687d0c20b2e44deec8277160870c42ef9873fa4a14398019fa422713c16e622b", // RM9.6 CV14: the twin draws its void as the stairwell (was 687d0c20)
     "cn-residential-advisory",
     "test/defect-corpus/stair-safety/void-at-stair-head.clean.arch",
   ],
@@ -3743,7 +3743,7 @@ const TABLE: ReadonlyArray<[string, string, string]> = [
     "test/defect-corpus/stair-safety/void-at-stair-head.arch",
   ],
   [
-    "9e324165db4adfaf9a663dfc3a0df7fe90de8083b25ce23285c0dc5f878196bf", // RM9.6 CV14: W_STAIR_NO_VOID reports this plan (was 8c668e03)
+    "8c668e03e46b867b811098fc6268eed2e8ea63c3bc02b4d06855e4284a4b1af1", // RM9.6 CV14: the twin draws its void as the stairwell (was 8c668e03)
     "us-residential-advisory",
     "test/defect-corpus/stair-safety/void-at-stair-head.clean.arch",
   ],

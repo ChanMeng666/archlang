@@ -154,9 +154,9 @@ Nearest first, then by name; `(+n)` is the rest. Test names are `test/<name>.tes
 - `src/lint/rules/index.ts` (12) — `block-stair-landing`, `block-stair-lint`, `error-catalog-families`, `lint-back-to-room-side-on`, `lint-clearances-kitchen-doors`, `lint-clearances-wc-window`, `lint-exterior-ring`, `lint-fix-texts` (+4)
 - `src/lint/rules/per-room.ts` (2) — `fixture-classifier-drift`, `lint-fix-texts`
 - `src/lint/rules/room-contents.ts` (2) — `lint-label-piece-missing`, `lint-table-no-seat`
-- `src/lint/rules/stairs.ts` (6) — `block-stair-landing`, `block-stair-lint`, `block-stair-winders-walking-arc`, `lint-stair-riser-too-high`, `lint-stairs`, `repair-no-worse`
-- `src/lint/ruleset.ts` (16) — `block-stair-landing`, `block-stair-lint`, `block-stair-shaft`, `block-stair`, `circle-enclosure`, `lint-clearances-kitchen-doors`, `lint-clearances-wc-window`, `lint-exterior-ring` (+8)
-- `src/lint/storeys.ts` (48) — `block-stair-landing`, `block-stair-lint`, `block-stair-shaft`, `block-stair`, `lint-index-superset`, `lint-table-no-seat`, `block-stair-frames`, `circulation-entrances` (+40)
+- `src/lint/rules/stairs.ts` (7) — `block-stair-landing`, `block-stair-lint`, `block-stair-winders-walking-arc`, `lint-stair-no-void`, `lint-stair-riser-too-high`, `lint-stairs`, `repair-no-worse`
+- `src/lint/ruleset.ts` (17) — `block-stair-landing`, `block-stair-lint`, `block-stair-shaft`, `block-stair`, `circle-enclosure`, `lint-clearances-kitchen-doors`, `lint-clearances-wc-window`, `lint-exterior-ring` (+9)
+- `src/lint/storeys.ts` (48) — `block-stair-landing`, `block-stair-lint`, `block-stair-shaft`, `block-stair`, `lint-index-superset`, `lint-stair-no-void`, `lint-table-no-seat`, `block-stair-frames` (+40)
 - `src/lsp.ts` (2) — `block-stair-lint`, `lsp-codeactions`
 - `src/manifest.ts` (9) — `cli-context`, `cli-manifest`, `cli-storey-names`, `context-starter`, `describe-depends`, `docs-flags`, `llms-full-drift`, `site-doors` (+1)
 - `src/markdown.ts` (7) — `label-fit`, `label-placement-oracle`, `label-wrap`, `room-adjacency-oracle`, `room-overlap-oracle`, `step-budget`, `vocabulary-matcher-oracle`
@@ -546,7 +546,7 @@ The first sentence of each file's header comment.
 - `test/lint-rule-order.test.ts` — a lint rule is registered in every place a rule is listed.
 - `test/lint-ruleset-values.test.ts` — A lint ruleset value that is not a finite number within the modelling range (or `null` where the field allows it) is refused with `E_RULESET_VALUE` before any rule runs (engineering-health EH2.12).
 - `test/lint-space-enclosure.test.ts` — W_BOUNDARY_NO_WALL; W_FLOOR_UNASSIGNED; W_ROOM_OUTSIDE_SHELL; circulation-reachable implies access-reachable, on the corpus; review round 1 — W_BOUNDARY_NO_WALL…
-- `test/lint-stair-no-void.test.ts` — Product roadmap RM9.6, coverage class CV14: `W_STAIR_NO_VOID`, a flight that climbs from the storey below to a storey that draws no `void` over it, so that storey's floor covers the flight.
+- `test/lint-stair-no-void.test.ts` — Product roadmap RM9.6, coverage class CV14: `W_STAIR_NO_VOID`, a flight that climbs from the storey below to a storey whose floor covers it at its head: no `void` across the head of the flight, over its whole width (t...
 - `test/lint-stair-riser-too-high.test.ts` — Product roadmap RM1.2a (backlog ST.1): `W_STAIR_RISER_TOO_HIGH`, the riser a stair's drawn treads climb its storey on.
 - `test/lint-stairs.test.ts` — Plan-soundness PS2.11e (the stair bullets), PS2.34 and PS2.15: the six stair-safety codes.
 - `test/lint-storey-way-in.test.ts` — `W_NO_ENTRANCE` on a multi-storey plan (#404): each storey it fires on is told which storey it is and what is missing there, because the building may have a front door on another floor.
