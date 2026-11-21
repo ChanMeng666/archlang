@@ -83,21 +83,17 @@ RM1.1a 也在本场做完（纯测量，没有 PR，见 §6）。
 - **开着的 issue：** #544、#680、#681、#682、#684。#544（剖切线与楼板基准）：RM6.1 在 #721 里交付了，说明已贴在 #532；关 #544 留给所有者或下一场（那是所有者在 #532 里的线程，代理也可以关）。
 - 移除任何 worktree 之前，先用 `[System.IO.Directory]::Delete(<junction>)` 解开其中的 `node_modules` junction（不递归），再 `git worktree remove`（`docs/agents/gotchas.md` § Tooling & process）；被正在运行的会话锁定的 worktree 拒绝 `git worktree remove`（`docs/agents/orchestration.md`）。
 
-### 1.2c 已发布（1.65.0，2026-11-19；协调者用 `npm view`、`gh`、`curl` 和门户页面读）
+### 1.2c 已发布（1.66.0，2026-11-21；协调者用 `npm view`、`gh`、`curl` 和门户页面读）
 
-RM-D67（`README.md` §6.30）。版本号 PR 是 #970（合并提交 `877bf25c`；`main` 的 push run 44483028375 全绿），tag `v1.65.0` 打在这个提交上，`release.yml` run 44484178520 各 job 全部 success。tag 之前在主检出跑了 release-check 第 6 项（build、`mcp:build:only`、`check-dist-resources`、`vscode:build:only`、`editors/vscode` 62/62、MCP lockstep 14/14），`c1d133c4` 的 push run 上 Node 18、Node 20、Windows 18 条腿全绿。
-- **npm：** 核心 1.65.0、`archlang-mcp` 0.2.48；`archlang-3d` 0.9.0、`arch-plan` 0.1.2、`font-cjk` 1.0.0 不变。
-- **jsDelivr：** `@1.65.0/+esm` 返回 200。**MCP 注册表：** latest 0.2.48，托管 remote 不变。
-- **VS Code：** Marketplace 0.53.0（经 Chrome 上传，vspackage 返回 200）；Open VSX 0.53.0（`publish-openvsx.yml` run 44484864611 在 tag 上成功）。
-- **OpenAI 目录：** 1.65.0 已发布。5 个技能检查全过、没有 finding（`archlang-export` 的检查约 20 分钟才完成）；按 RM-D44 勾选六项声明（与上一版相同）、提交，直接"可发布"，随即发布，取代 1.64.0。
-- **"After the tag" 两项，下一场补做：** ClawHub 的 `archlang@1.65.0` 已提交（协调者记录）；Docker 目录条目（docker/mcp-registry#6704，仍未合并）的 `source.commit` 已移到 `877bf25c`（fork 提交 `08cc7400`，2026-11-19T10:27Z，`gh pr view` 读）。
-- **所有者在 #969 里的两次批准（只对那个 PR）：** playground 的 `compilerPathBudget` 324,000 → 333,000 B、`embedPathBudget` 310,000 → 319,000 B（按 baseline 文件自己的"实测 × 1.025"规则）；`test/drawing-budget.test.ts` 的宽松度上限 4 → 4.25。首次使用路径 486,000 B 没动，只剩约 1,863 B 余量（backlog 3.18）。
-  之后 #976 削减了首次使用路径，把它往下重取到 468,000 B（RM-D75，`README.md` §6.32）。
-- **下游：** 发布通知发给了一个在线的 ArchCanvas 会话（原来对接的会话当时不在线）。
-  ArchCanvas 的 `package.json` 仍钉核心 `^1.64.0`、`archlang-3d` `^0.9.0`（`main` 在 `267c0a22`，2026-11-20T17:14Z 用 `gh` 读）；
-  升级到 1.65.0 要等它的所有者对一次定价运行的决定。
-  2026-11-20 它发布了重做的公开页面与首次使用流程。
-  ArchCanvas 的所有者 2026-11-20 定了它下一阶段的评判标准（在私有的 `archcanvas-lab` 里；交接记录随 archcanvas-lab #29 于 2026-11-20T13:45Z 合并）。
+RM-D76（`README.md` §6.33）。版本号 PR 是 #997（合并提交 `94540c92`，切点 `594c1a93`），tag `v1.66.0`，`release.yml` run 44853484285 全绿。`main` 在 `94540c92` 的 push run 44852541827 全绿，含 Node 18、Node 20、Windows。
+- **npm：** 核心 1.66.0、`archlang-mcp` 0.2.49（新增工具 `explain`）；`archlang-3d` 0.9.0、`arch-plan` 0.1.2、`font-cjk` 1.0.0 不变。
+- **jsDelivr：** `@1.66.0/+esm` 返回 200；`archlang.uk/arch-plan.js` 指向 1.66.0；`@prod` 的 arch-plan e2e 通过（1 passed）。
+- **MCP 注册表：** latest 0.2.49，托管 remote https://mcp.archlang.uk/mcp。**GitHub Release：** v1.66.0，附 `archlang-mcp-0.2.49.mcpb`。
+- **VS Code：** Marketplace 0.54.0（经 Chrome 上传，vspackage 返回 200）；Open VSX 经 `publish-openvsx.yml` run 44858054445 成功。
+- **ClawHub：** `archlang@1.66.0` 已提交，扫描待出。**Docker 目录**（docker/mcp-registry#6704，仍未合并）：`source.commit` 已移到 `94540c92`（分支 `add-archlang`，提交 `967457d4`）。
+- **OpenAI 目录：** 协调者把 1.66.0 的 ZIP 作为草稿上传，5 个技能"Checks passed"，元数据没有 finding；六项声明的勾选被会话的权限分类器挡住，**所有者在 2026-11-21 亲手提交并发布了 1.66.0**。RM-D44 仍然有效，只是分类器挡住勾选这一步时要所有者来做。
+- **发布 PR 的评审：** 两轮都抓到了发布说明里的不实之处（VS Code 面板文字、过时的计数、意图检查 `reachable` 的范围），见 §12 (bj)。
+- **1.65.0（历史，RM-D67，2026-11-19，#970 `877bf25c`）：** 核心 1.65.0、`archlang-mcp` 0.2.48、VS Code 0.53.0，所有渠道发布；所有者在 #969 批准了编译器路径与 embed 的上限抬高（333,000 / 319,000 B），#976 后首次使用上限重取为 468,000 B（RM-D75）；ArchCanvas 的 `package.json` 仍钉核心 `^1.64.0`、`archlang-3d` `^0.9.0`（2026-11-20 读），升级要等它的所有者对一次定价运行的决定。
 
 ### 1.2a 已发布（1.64.0，2026-11-18；协调者用 `npm view`、`gh`、`curl` 和门户页面读）
 
@@ -198,7 +194,7 @@ RM-D66（`README.md` §6.29）。版本号 PR 是 #953（合并提交 `27bcead8`
 **2026-11-18 晚至 11-19 一场（协调者记录，按 `gh` 读）：** 这一场没有做 v3 的卡，做了三件插进来的事：
 - **标签拥挤（`../label-crowding/`，所有者 2026-11-18 批准）：** AL6（#957）、AL1（#958）、AL5（#959）、AL4（#961）、AL3w（#962）、AL3a（#964）、AL3b（#969，引出线，ADR 0035 accepted）全部合并；卡与余项（AL2a/b/c、AL3c–AL3p、AL4b、AL5b、AL6b、AL7、AL8）在 `../label-crowding/cards.md`。
 - **CI 提速（第 9 轨）：** #963 缓存 apt 下载的 deb（`.github/actions/apt-debs`、`apt-cache-warm.yml`），#963 合并后还没再出现 apt 慢镜像造成的超时（缓存冷了或被挤出时仍会下载，`gotchas.md`；仓库缓存超上限见 TR14）；#965 让分片表记录每个文件的收集时间、按最长先跑，Node 22 最慢/最快分片 302/159 s → 约 225/151 s；#966 写下 TR6 复测（`../ci-throughput-research.md` §13）和卡 TR12–TR15。另有 #968（`.d.ts` 早已声明的 26 个 `ast.ts` 值在运行时真正导出，其中 24 张表冻结）、#967（标签拥挤的计划文档更正）。
-- **1.65.0 发布**（§1.2c）。
+- **1.65.0 发布**（RM-D67，历史，见 §1.2c 末行）。
 
 **2026-11-19 至 11-20 一场（协调者记录，按 `gh` 读；日期都是 UTC）：** 合并到 `main` 的有：
 - 阶段 1：RM9.4（#975，`86c744e2`）、RM9.5（#981，列车 #984 `0d9e27c7`）；
@@ -212,14 +208,17 @@ RM-D66（`README.md` §6.29）。版本号 PR 是 #953（合并提交 `27bcead8`
 裁定 RM-D69…D75 在 `README.md` §6.32。
 AF9 阶段 A 的最终模糊测试（#992）：188 个修复，0 个硬性失败，11 个留下警告（都不是错误）。
 #993（RM9.6 的 CV13）按 RM-D73 停在草稿。
-1.65.0 的 ClawHub 与 Docker 两项已补（§1.2c）。
+1.65.0 的 ClawHub 与 Docker 两项已补。
 评审余项写成 backlog SR.1–SR.17。
 
+**2026-11-21 一场（协调者记录，按 `gh` 读；日期都是 UTC）：**
+- **1.66.0 发布**（RM-D76，#997，`94540c92`；发布的事实见 §1.2c）。发布 PR 的说明经两轮评审才对得上代码。
+- **CV13 拆成两个 PR（RM-D73），各过两轮红队：** 示例 #996（`e4d36045`）给九个示例补椅子，每把 500 × 500 mm、在网格上、用 `facing <桌子 id>` 朝向桌子；规则 `W_TABLE_NO_SEAT` #993（`f48633ff`）只动规则自己的行，但八个非住宅示例的 lint 覆盖报告随 `non-dwelling` 声明变了（`contents` 族由 ran 变 partial，drawing、`describe()` 与 lint 诊断不变）。标签读法按 RM-D77（`README.md` §6.34）；扩展写成 backlog SR.18。
+- #993 之后的体积（`npm run size:embed`，gzip）：编译器路径 332,303 / 333,000 B（余 697）、首次使用 467,775 / 468,000 B（余 225）、embed 318,494 / 319,000 B（余 506）。
+
 **下一步：**
-- 第一张卡是编译器路径的体积回收（backlog 3.19，RM-D74）：#992 之后编译器路径只剩约 0.8 KB（332,209 / 333,000 B）。
-  把首次编译用不到的代码移出编译器 chunk（同 EB.2 #947、3.18 #976），在它之前不开动别的编译器路径卡；抬上限仍归所有者。
-- RM9.6（`doing`）按 RM-D73 先开 CV13 的示例 PR（空闲的机器，资产在主检出里重新生成），再把 #993 变基上去；
-  然后是 RM9.6 的其余各类（CV08、CV14 也照 RM-D73 拆），AF10 第一步，RM1.2b → RM1.1b 验收（`v3.md` §3）。
+- 第一张卡是编译器路径的体积回收（backlog 3.19，RM-D74），编译器路径只剩 697 B：见上面的数字。在它之前不开动别的编译器路径卡；抬上限仍归所有者。
+- 然后 RM9.6 的其余各类（CV08、CV14 按 RM-D73 拆，`design/rm9.0-coverage-classes.md` §4），E.18（等变性模糊测试的 `W_ANNOTATION_OVERLAP`），AF10 第一步，RM1.2b、RM1.1b 验收（`v3.md` §3）。
 - 约 2026-11-26 读 TR14 的一周读数（#982 在 2026-11-19T19:40Z 合并）：缓存总量低于 8 GB，`apt-debs-*` 四组都还在，才改 `done`。
 - 仍开着、没开工的卡：TR13、TR15、backlog 3.17、NR.1–NR.9、NR.11、NR.13–NR.15、AL3c/e/f（AL3d/g/l 先要协调者的裁定）。
 - 标签拥挤的视觉车道接着是 AL2a → AL2c（`../label-crowding/README.md` §4）。
@@ -267,9 +266,9 @@ TR7、TR9、TR10 已做；TP3、TP1b 在空档里做；TP4 等触发。
 **AI 优先语言（第 10 轨，2026-11-18 加；不是新车道）：** 调研记录在 `../ai-first-language/README.md`，卡 AF0…AF26 在 `cards.md` 第 10 轨。
 调研阶段（RM-D64）已由 RM-D65（所有者 2026-11-18）结束：A 波（AF0–AF8）按阶段 1 的顺序做（2026-11-20：都已做），然后做 AF9（设计稿 #986；按 RM-D70 只做阶段 A，#992 已合并）。
 
-**发布：** 1.65.0 已发布（§1.2c，RM-D67）。
-之后 `main` 上攒了用户可见的改动（例如 MCP `explain`、AF2 的拼写修复、AF4 的 `expected`、新警告 `W_EXTERIOR_DOOR_ONTO_ROOF`；清单以 `CHANGELOG.md` 的 `[Unreleased]` 为准）。
-下一次发布要所有者对那一次的决定（没有决定就不切；VS Code Marketplace 与 OpenAI 目录的发布由代理做，含 OpenAI 的 Submit 与 Publish，RM-D41、RM-D44）。
+**发布：** 1.66.0 已发布（§1.2c，RM-D76）。
+1.66.0 之后 `main` 上新攒的用户可见改动（清单以 `CHANGELOG.md` 的 `[Unreleased]` 为准）。
+下一次发布要所有者对那一次的决定（没有决定就不切，除非所有者像 RM-D76 那样把判断交给协调者；VS Code Marketplace 与 OpenAI 目录的发布由代理做，含 OpenAI 的 Submit 与 Publish，RM-D41、RM-D44）。
 2026-12-01 所有者亲自发 Show HN；`main` 一直保持绿。
 RM5.4（#603）已由 #781 做完（RM-D43）。
 
@@ -292,8 +291,8 @@ RM5.4（#603）已由 #781 做完（RM-D43）。
 | 2026-11-15 | **1.62.0 已发布**（`3e711f3c`，各渠道见 §1.2） | RM-D42（所有者）；VS Code Marketplace 与 OpenAI 目录按 RM-D41 |
 | 2026-11-17 | **1.63.0 已发布**（`5b4d13bf`，各渠道见 §1.2） | RM-D59（受托）；VS Code Marketplace 与 OpenAI 目录由代理发布（RM-D41、RM-D44） |
 | 2026-11-18 | 1.64.0 | 已发布（RM-D66，§1.2a） |
-| 2026-11-19 | 1.65.0 | 已发布（RM-D67，§1.2c） |
-| 2026-11-21 | 1.66.0 | 受托发布（RM-D76，`README.md` §6.33；版本号 PR #997） |
+| 2026-11-19 | 1.65.0 | 已发布（RM-D67，§1.2c 末行） |
+| 2026-11-21 | 1.66.0 | 已发布（RM-D76，`README.md` §6.33；版本号 PR #997，§1.2c） |
 | 参考：之后 | 下一个版本 | 要所有者对那一次的决定 |
 | 2027-01-09 | agent-reach 读数（窗口到 01-05） | 附 RM7.3 的三项自检 |
 | 2027-01-31 | RM-D2 读数（窗口到 01-28） | 附 RM7.3 的三项自检；不足两项时收缩到轨 1、4、7 |
@@ -485,3 +484,6 @@ RM1.1a 的兜底：1.59.0 到 2026-11-23 还没打 tag，就量当时 `main` 的
 - **(bg) 会落在已发布示例上的规则卡，会移动几百个钉值：** #993 补椅子约 400 个，含 3D 资产；按 RM-D73 先拆出示例 PR。
 - **(bh) 第二轮红队一再抓到真问题：** #988 一个被推回楼梯上的旁观家具；#990 只有屋顶门能进的楼层（M1–M3）；#987 解析多付的探测开销（改为只在重解析时探测，`62e8a084`）。第二轮要保留。
 - **(bi) AF8 的可修复码源码检查能抓到并行落地的 PR 漏的行：** #979 先合并，#978 的第二轮就得给 `spellingFix`、`idSpellingFix` 补 `FIX_PRODUCERS` 行（`a64d67be`）。
+- **(bj) 发布 PR 的说明要在切点对着代码重读一遍：** 两轮评审都找到了不实的说法（VS Code 面板文字、过时的计数、意图检查 `reachable` 的范围）。
+- **(bk) 示例里手写的偏离网格的坐标，家具和标签会被静默吸附，没有 `W_GRID_SNAPPED`：** 改示例的坐标必须落在网格上（#996 两次：remodel 的标签 `(4500,3450)` 在 100 mm 网格上被吸到 3500）。
+- **(bl) 规则里每个元素的循环都要算进计数的工作量：** #993 第一轮是立方，第二轮是经过一个没记忆化的分类器藏起来的平方；用 `tableSeatTests` 计数器加稠密平面的测试钉住。

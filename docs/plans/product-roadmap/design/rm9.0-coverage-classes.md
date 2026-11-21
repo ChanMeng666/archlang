@@ -94,10 +94,10 @@
 - *误报风险：* 低到中等。起居室里的吧台水槽、杂物间的水槽会被读成厨房，所以推断要求至少两件厨房家具，或者一个灶台。这一类同时是一条洗白路线：删掉 `uses kitchen` 就能让 `W_ROOM_MISSING_DEFINING` 闭嘴（PS2.30 的验收）。
 - *公开夹具：* `missing-defining-contents/kitchen-untyped`：一个不标用途的房间，放着灶台和水槽，没有台面；孪生图补上台面（不是改标签：改标签不算修复）。
 
-**CV13 · 餐桌没有座位（1 个，N；PS2.31 记了多次）**
+**CV13 · 餐桌没有座位（1 个，N；PS2.31 记了多次）** — **已做（2026-11-21）：** 九个示例补椅子 #996（`e4d36045`），规则 `W_TABLE_NO_SEAT` #993（`f48633ff`），各过两轮红队；标签读法按 RM-D77（`../README.md` §6.34）
 - *候选规则：* `W_TABLE_NO_SEAT`。同一个房间里有餐桌，却一把椅子都没有时报出。先做不带距离阈值的版本；按 `seatTableReachMm` 判断够不够得着的版本，要等这个数字有了出处（今天它是 `convention`）。
 - *出处等级：* 无新数字（房间里有没有座位）。
-- *误报风险：* 本稿原判为低，前提是只认餐桌：`dining_table`，以及目录里 `serves: "dining_table"` 的 `table`。**#993 实测之后更正：** 风险不低。`dining_table` 不能读：它的图形把椅子画在自己的占地里，所以永远不是"没有座位的桌子"，读它就是误报（下面用 `dining_table` 的公开夹具也因此是误报，#993 改用 `table`）；只读 `table` 并限在住宅房间里，它仍落在九个已发布的示例上（11 处），补椅子约移动 400 个钉值，所以按 RM-D73 拆开：先开只改示例的 PR，再开规则 PR（backlog SR.14）。`table` 与 `chair` 自 2026-08-26 起就在目录里（`9f4a9566`），`table` 的 `serves: "dining_table"` 是 2026-10-13 加的（`729732b3`），都早于 1.60.0，所以审计把 `table` 记成"未入目录"在 1.60.0 上就不成立。今天不报的原因在别处：`W_ROOM_MISSING_DEFINING` 的 dining 一行只在 `uses dining` 的房间运行，而且只要一张桌子，不要椅子（`src/furnish-table.ts`）。茶几、边桌（`coffee_table`、`side_table`）不算餐桌。
+- *误报风险：* 本稿原判为低，前提是只认餐桌：`dining_table`，以及目录里 `serves: "dining_table"` 的 `table`。**#993 实测之后更正：** 风险不低。`dining_table` 不能读：它的图形把椅子画在自己的占地里，所以永远不是"没有座位的桌子"，读它就是误报（下面用 `dining_table` 的公开夹具也因此是误报，#993 改用 `table`）；只读 `table` 并限在住宅房间里，它仍落在九个已发布的示例上（11 处），补椅子约移动 400 个钉值，所以按 RM-D73 拆开：先开只改示例的 PR（#996），再开规则 PR（#993）（backlog SR.14）。`table` 与 `chair` 自 2026-08-26 起就在目录里（`9f4a9566`），`table` 的 `serves: "dining_table"` 是 2026-10-13 加的（`729732b3`），都早于 1.60.0，所以审计把 `table` 记成"未入目录"在 1.60.0 上就不成立。今天不报的原因在别处：`W_ROOM_MISSING_DEFINING` 的 dining 一行只在 `uses dining` 的房间运行，而且只要一张桌子，不要椅子（`src/furnish-table.ts`）。茶几、边桌（`coffee_table`、`side_table`）不算餐桌。
 - *公开夹具：* `missing-defining-contents/table-no-chairs`：起居室里放一张 `table`（目录里 `serves: "dining_table"` 的那一种，不是 `dining_table`），旁边有沙发，没有椅子；孪生图在桌子两条长边各加一把椅子，都朝向桌子（#993）。
 
 **CV14 · 上层在楼梯上方没有洞口（1 个，m）**
