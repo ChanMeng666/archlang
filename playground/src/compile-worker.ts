@@ -55,13 +55,17 @@ export function loadLint(url: string | undefined): Promise<Lint> {
   // Only this build's own modules: the page that made the worker sends the URL, and it is the door's.
   if (new URL(url, import.meta.url).origin !== new URL(import.meta.url).origin)
     return Promise.reject(new Error(`lint loads only from this build's origin, not ${url}`));
-  return (lintP ??= (import(/* @vite-ignore */ url) as Promise<LintCore>).then(
-    (m) => (loadedLint = m.lint),
+  lintP ??= (import(/* @vite-ignore */ url) as Promise<LintCore>).then(
+    (m) => {
+      loadedLint = m.lint;
+      return m.lint;
+    },
     (err: unknown) => {
       lintP = undefined;
       throw err;
     },
-  ));
+  );
+  return lintP;
 }
 /** Whether `runCompileJob` can run `req` now: it asks for no lint, or `lint` has loaded. */
 export const jobReady = (req: Pick<CompileRequest, "lintProfile">): boolean =>
@@ -279,10 +283,12 @@ export function createCompileClient(
 
   // A job that throws on the page settles its promise anyway (rejected), so nothing waits for ever,
   // and so does a request from the editor whose `lint` would not load (card 3.19b).
-  const onPage = (p: Pending): void => {
+  const onPage = (p: Pending) => {
     if (p.req.seq < latest) return p.resolve(null);
     if (!jobReady(p.req)) {
-      loadLint(p.req.lintUrl).then(() => onPage(p), p.reject);
+      loadLint(p.req.lintUrl).then(() => {
+        onPage(p);
+      }, p.reject);
       return;
     }
     let result: CompileResult;

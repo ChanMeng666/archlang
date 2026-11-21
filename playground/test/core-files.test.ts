@@ -117,7 +117,8 @@ describe("coreFiles (vite.config.js's compiler chunk)", () => {
       [FIRST_USE_ENTRY]: 'import { d } from "./chunk-D.js";\nexport { d };\n',
       [LINT_ENTRY]: 'import { lint } from "./chunk-L.js";\nexport { lint };\n',
       "chunk-A.js": "var compile = 1;\nexport { compile };\n",
-      "chunk-D.js": 'import { compile } from "./chunk-A.js";\nimport { s } from "./chunk-S.js";\nvar d = 2;\nexport { d };\n',
+      "chunk-D.js":
+        'import { compile } from "./chunk-A.js";\nimport { s } from "./chunk-S.js";\nvar d = 2;\nexport { d };\n',
       "chunk-L.js":
         'import { s } from "./chunk-S.js";\nimport { r } from "./chunk-R.js";\nvar lint = 3;\nexport { lint };\n',
       "chunk-S.js": "var s = 4;\nexport { s };\n",
