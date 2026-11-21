@@ -167,7 +167,7 @@
       "name": "laneway-house",
       "source": {
         "path": "examples/laneway-house.arch",
-        "sha256": "acabcb9222330632142ac5ce4e8a12e411f877e38ca2f6fa259c7a52d41f6618"
+        "sha256": "038c53aaa05f7cf7c16c2bdc1f68bd3fdf655b3e752003c8fbba77abe9bc34e2"
       },
       "posters": [
         {
@@ -178,7 +178,7 @@
           "t": 1,
           "theme": "light",
           "supersample": 3,
-          "frameSha256": "b7bbe8753b8bdacc3ae55942030663c654445c0c25575e5ef177476598c0c3e9",
+          "frameSha256": "245c1f2aa5a514c81fed87ee43499c460b423f26c3c054c1d70baeb12f1ccafa",
           "webpQuality": 0.9,
           "environment": {
             "platform": "win32",
@@ -196,8 +196,8 @@
         "supersample": 2
       },
       "glb": {
-        "sha256": "8af12bcd6f01a98cb07101e364bbf4406389820ab89578996b98e8953e1a480e",
-        "contentSha256": "b263141e03d4818867476fe213d987b63ea414c63cac48cba50d76eb1d3982a2",
+        "sha256": "0c81fd4ffb880b58625d8e34f5c3cccb750ffecceec5e511931ec942904a3378",
+        "contentSha256": "c9125cc09f6c7fadc2a77e6afac59db95f980752b1413df34eef65ef83edfd16",
         "doors": "closed",
         "validator": {
           "errors": 0,
@@ -208,38 +208,38 @@
         "width": 1600,
         "height": 1667,
         "sheet": false,
-        "sha256": "34e24719dc61cc991fba9940205d52d5a75649a9d2556d4fa2611db424f08f22",
-        "pixelsSha256": "bd8cc8930286661df100e99cdb7534889c19eca5e25ee46c1df3731c531eca63"
+        "sha256": "a8f8c7706925b98ddc43078c5045e7baf0b654ced38de41379347a6e6319f702",
+        "pixelsSha256": "a6c07316d91fab35f43a451f27dd6dffad13ccadc22665c945c9219ef59a01fb"
       },
       "files": [
         {
           "path": "laneway-house.poster.webp",
-          "bytes": 41884,
-          "archlang": "1.65.0",
+          "bytes": 42036,
+          "archlang": "1.66.0",
           "archlang3d": "0.9.0"
         },
         {
           "path": "laneway-house.poster.png",
-          "bytes": 198118,
-          "archlang": "1.65.0",
+          "bytes": 198273,
+          "archlang": "1.66.0",
           "archlang3d": "0.9.0"
         },
         {
           "path": "laneway-house.replay.mp4",
-          "bytes": 548011,
-          "archlang": "1.65.0",
+          "bytes": 549074,
+          "archlang": "1.66.0",
           "archlang3d": "0.9.0"
         },
         {
           "path": "laneway-house.glb",
-          "bytes": 156248,
-          "archlang": "1.65.0",
+          "bytes": 156224,
+          "archlang": "1.66.0",
           "archlang3d": "0.9.0"
         },
         {
           "path": "laneway-house.plan.png",
-          "bytes": 189192,
-          "archlang": "1.65.0",
+          "bytes": 189413,
+          "archlang": "1.66.0",
           "archlang3d": "0.9.0"
         }
       ]
@@ -549,7 +549,7 @@
       "name": "bungalow",
       "source": {
         "path": "examples/bungalow.arch",
-        "sha256": "53acec0109000ad4cb6ddd6c84f62bacc04ad9a3dc6c626c818ad28d07b58010"
+        "sha256": "7b2f3cfc7f83f76d84152e964686757338b4b63a364c8a9d35ed96e405e8c841"
       },
       "posters": [
         {
@@ -560,7 +560,7 @@
           "t": 1,
           "theme": "light",
           "supersample": 3,
-          "frameSha256": "00965c27324cbac646f1fe1be02c8f782b7a019bd4606ce8fd9a16cc94d8e1eb",
+          "frameSha256": "a60937030f45ae494436df18e9d247532bd5f2521338169054ee922eb397da6a",
           "webpQuality": 0.9,
           "environment": {
             "platform": "win32",
@@ -570,8 +570,8 @@
         }
       ],
       "glb": {
-        "sha256": "30b9567652c1794a6b8fe75d8d54b38b0391983aba6100c254c0808cf4bd122a",
-        "contentSha256": "41d5664069f8a6875750a3a74658cd4879d0fbda274acae6924f59c56a6e7fa4",
+        "sha256": "54c32babe9abb04bc5440146ae84b3de02af1d1f1676865735b9b415c14076b6",
+        "contentSha256": "d8bf3e4d2a30e43aa87d9d2576716e94bd3b3a842493574b7da33cca560ddb51",
         "doors": "closed",
         "validator": {
           "errors": 0,
@@ -582,32 +582,32 @@
         "width": 1600,
         "height": 1131,
         "sheet": true,
-        "sha256": "8ad529ec422059a7068df783ec0db946d345ce294ef32e081bdf5ef9212834d2",
-        "pixelsSha256": "1d063d78de4fa1b1623032084414f169db7c45ec2771d733ec419676de6871bc"
+        "sha256": "571fc9a5ac4c0259b19af45310c249c2cf5346bc3f1eaccd75eb696f404f2bbd",
+        "pixelsSha256": "10324b21f3d8d6bbf9909e54340283672d0856b35173670070e283a0db63df29"
       },
       "files": [
         {
           "path": "bungalow.poster.webp",
-          "bytes": 50016,
-          "archlang": "1.65.0",
+          "bytes": 50060,
+          "archlang": "1.66.0",
           "archlang3d": "0.9.0"
         },
         {
           "path": "bungalow.poster.png",
-          "bytes": 232422,
-          "archlang": "1.65.0",
+          "bytes": 232665,
+          "archlang": "1.66.0",
           "archlang3d": "0.9.0"
         },
         {
           "path": "bungalow.glb",
-          "bytes": 207236,
-          "archlang": "1.65.0",
+          "bytes": 207212,
+          "archlang": "1.66.0",
           "archlang3d": "0.9.0"
         },
         {
           "path": "bungalow.plan.png",
-          "bytes": 121052,
-          "archlang": "1.65.0",
+          "bytes": 121069,
+          "archlang": "1.66.0",
           "archlang3d": "0.9.0"
         }
       ]
@@ -616,7 +616,7 @@
       "name": "courtyard-house",
       "source": {
         "path": "examples/courtyard-house.arch",
-        "sha256": "51fffad9c74b46f21560629cd77b8ceefaca7087caee2b890eb763f828b16e05"
+        "sha256": "04b92f1b524be3fcb5702024c00c3f05ef7389019f54c804a4d4767e7956b240"
       },
       "posters": [
         {
@@ -627,7 +627,7 @@
           "t": 1,
           "theme": "light",
           "supersample": 3,
-          "frameSha256": "004f13f7988f0167f0c8f08fbc8a0969ac1cd98fc50cf008f4af216c366ea7a7",
+          "frameSha256": "e8978116fbef69265e8adb0b7d14ee9a6f770d370cf44cc9edad85bbef71f161",
           "webpQuality": 0.9,
           "environment": {
             "platform": "win32",
@@ -637,8 +637,8 @@
         }
       ],
       "glb": {
-        "sha256": "1383b96c820dcad1f056851287a7cb9db3017771c9b86543ff3c47f4faf580f7",
-        "contentSha256": "847fff38ba676c43d8ce67c340eed63f4f59e69e84f696e18d1879ccffaccf88",
+        "sha256": "94d5b132e8c2126f4817a9a1143e42ba62e48936ad75bf612816f61e7a444e25",
+        "contentSha256": "1f85f4b00c7c97f3f2452be9ab2d214e8c32e596cc8c94911378531e9ac504cd",
         "doors": "closed",
         "validator": {
           "errors": 0,
@@ -649,32 +649,32 @@
         "width": 1600,
         "height": 1131,
         "sheet": true,
-        "sha256": "da6ee48c2d064676b6a43052928bba3e0a7cba90a5c82ddc25baa648535fb41e",
-        "pixelsSha256": "4d13fb2a104eab86139ee10b3394b01b42a755d07fbf510cefb55fc4b5748b09"
+        "sha256": "ef760424078ee7730562e0b73ef5904b921ed25130cc5cd6a29eee6795d02b92",
+        "pixelsSha256": "388ff676d74b803496c55d202338eb8327f068fb7bb85c9ddcd612ebba6d4f0f"
       },
       "files": [
         {
           "path": "courtyard-house.poster.webp",
-          "bytes": 60996,
-          "archlang": "1.65.0",
+          "bytes": 60846,
+          "archlang": "1.66.0",
           "archlang3d": "0.9.0"
         },
         {
           "path": "courtyard-house.poster.png",
-          "bytes": 272618,
-          "archlang": "1.65.0",
+          "bytes": 272845,
+          "archlang": "1.66.0",
           "archlang3d": "0.9.0"
         },
         {
           "path": "courtyard-house.glb",
-          "bytes": 375344,
-          "archlang": "1.65.0",
+          "bytes": 356892,
+          "archlang": "1.66.0",
           "archlang3d": "0.9.0"
         },
         {
           "path": "courtyard-house.plan.png",
-          "bytes": 210926,
-          "archlang": "1.65.0",
+          "bytes": 210636,
+          "archlang": "1.66.0",
           "archlang3d": "0.9.0"
         }
       ]
