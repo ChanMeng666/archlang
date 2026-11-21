@@ -100,7 +100,7 @@ const BASELINE: [string, string, string[]][] = [
     // ["W_SWING_ROOM_NOT_ADJACENT@678", "E_FURN_AGAINST@734", "E_PLACE_REF@795"].
     // Re-measured for PS2.54 (6e7386f0…e8a7): its `W_DOORWAY_BLOCKED` counter, measured from the
     // wall's face, leaves 0 mm (50 mm from the centreline); `lint()` text only.
-    "beafc1219ee4234d75e5e24dcd217b1cb6eb2420dd708a1876fe16e369a4e578", // AF9 (was 44c7f50a): `W_DOORWAY_BLOCKED` gains a maybe-incorrect move to `at 1250` (its position alone) in lint(); SVG, describe() and the diagnostics, in their order, are unchanged, and with that fix taken out the old digest returns; RM9.6 CV13 (was 90ccbdd6): W_TABLE_NO_SEAT reports its table (a table in a home's day room with nothing to sit on); with the rule taken out the old digest returns
+    "0698dc56bed03e017c13cb985d76f845b257385f18cad85a69f50ed9d1de43fd", // AF9 (was 44c7f50a): `W_DOORWAY_BLOCKED` gains a maybe-incorrect move to `at 1250` (its position alone) in lint(); SVG, describe() and the diagnostics, in their order, are unchanged, and with that fix taken out the old digest returns; RM9.6 CV13 (was 90ccbdd6): W_TABLE_NO_SEAT reports its table (a table in a home's day room with nothing to sit on); with the rule taken out the old digest returns
     [],
   ],
   [
