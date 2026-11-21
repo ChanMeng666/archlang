@@ -122,7 +122,7 @@ plan "Terrace Row" {
     furniture id=f_basin  basin  in bath anchor top-right    flush size 600x450
     furniture id=f_wc     wc     against bath.bottom offset 1625 size 400x700
 
-    furniture id=f_sofa  sofa  in living anchor bottom-left flush size 800x1800 label "Sofa"
+    furniture id=f_sofa  sofa  in living anchor bottom-left flush size 800x1800 rotate 270 label "Sofa"
 
     # The galley run rides the party wall: `against` derives position, depth and the
     # quarter-turn from the wall, and each catalogued fixture brings its own footprint.

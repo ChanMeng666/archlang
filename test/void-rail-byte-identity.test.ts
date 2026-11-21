@@ -135,10 +135,10 @@ const BASELINE: [string, string][] = [
   ["478656af7841418f829fad4541e079203df12d9afc77e74a00a3500e42e6748b", "examples/remodel.arch"], // CO.1: the example writes its snapped `against` size out (+13 bytes), so only spans and the steps of the written clauses (+2) moved; see the header (was a4a2014e); CV13 (was 0e04f3b7): example source edited (chairs added)
   ["76ddb8d12efbead64517024344615685c65b65652b9ab457851117796db72f6d", "examples/sheet-notes.arch"],
   ["f6a6a81fa57cd5183bfbb7c607bdb9599ddf2eebfbc657c0cc4e69c7c0bcae7a", "examples/studio.arch"],
-  ["bd6056a84ec5d55dee071e9101fea8d157ce72e0830211a1f66b11291f0e0ef7", "examples/terrace-row.arch"],
+  ["4cf26b4a1904c5041ee1f653efbbf549f487e90af5bed197628d93fe5bdd55ce", "examples/terrace-row.arch"], // CV08 (was bd6056a8): example source edited (sofa turned to face the room)
   ["503b89ecf0ca78f6c1100f1fd059c0b63080a9bdb3b9401c675c74971816cd21", "examples/themed.arch"],
   ["1a78c5532e6c4bb783da712f6f27c83f5c771765278ec8552940d4f73e32beaa", "examples/tiny-house.arch"],
-  ["8643a4e35b560b5fa8c9d4acc99281dc6082d4b8b8c77318a8572d83f13e38e1", "examples/townhouse.arch"], // RM1.3a, see ./byte-identity-baseline.ts; RM1.3b overlay, see ./byte-identity-baseline.ts; RM9.2, see ./byte-identity-baseline.ts; CV13 (was efcb311a): example source edited (chairs added)
+  ["b217f5437945699b6aa83a0ec7f2a4f26b793c2d3e51ddf3295bd06720a7ae3f", "examples/townhouse.arch"], // RM1.3a, see ./byte-identity-baseline.ts; RM1.3b overlay, see ./byte-identity-baseline.ts; RM9.2, see ./byte-identity-baseline.ts; CV13 (was efcb311a): example source edited (chairs added); CV08 (was 8643a4e3): example source edited (sofa turned to face the room)
   ["0fd9ba46a50b7e9438b7f3be5472c52c44a58219a29f22b493f3bd653766a971", "examples/transit-hall.arch"],
   ["6fa4bd1d0de5cc6aa3bc3434687929ece4ac4052356462caecb5e55109480d6a", "examples/two-bed.arch"], // CO.1: the example writes its snapped `against` size out (+13 bytes), so only spans and the steps of the written clauses (+2) moved; see the header (was f220acec); CV13 (was ea10c4f2): example source edited (chairs added)
   ["9c3489d30cb4bcdea2d3ef3272820bba64eee730f4123585e19f4be3a440ccf3", "examples/two-storey.arch"], // RM1.3a, see ./byte-identity-baseline.ts; RM1.2a, see ./byte-identity-baseline.ts; RM1.3b overlay, see ./byte-identity-baseline.ts; RM9.2, see ./byte-identity-baseline.ts

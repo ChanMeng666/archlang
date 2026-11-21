@@ -155,10 +155,10 @@ const BASELINE: [string, string][] = [
   ["a00d49a428a2be7fd6f65115f10a558072827799e460e687f4523b3b41d63042", "examples/remodel.arch"], // `centreline_at`, see ./byte-identity-baseline.ts; CO.1: the example writes its snapped `against` size out (+13 bytes), so only spans and the steps of the written clauses (+2) moved; see the header (was facbd0d5); CV13 (was 5cbb6abf): example source edited (chairs added)
   ["8e4e97e34d32dc441f15d2daba75078563009745add61aa21959de8495f9d9a3", "examples/sheet-notes.arch"],
   ["aadd36ceb57aa3def298e2052e3eb75e6a0adffda89582598c87996b26d6f043", "examples/studio.arch"],
-  ["2177671f90a2b15d52e9448a4d53d0d8378ff9d2f8ad609843f598ca6f0287da", "examples/terrace-row.arch"],
+  ["0b3070e384a93e749ba66f862a1ddea039c97756f423893d5b77f2e0ce51813a", "examples/terrace-row.arch"], // CV08 (was 2177671f): example source edited (sofa turned to face the room)
   ["581409daa1ba3e4a05cf5faf0e9b88b139941b6c33ae4d9cbc89a1b44d690f01", "examples/themed.arch"],
   ["d3dbf4f8bf57cb0b7b5f0a1e7aba17ca7513e2da8a007f31d6259c60dbde6269", "examples/tiny-house.arch"], // H10: +6 ring scan, +0 overlap
-  ["c13d8f5109d88cfb18478ffe7d8e71baa82f6815f6674002dee6bf0a407b43d4", "examples/townhouse.arch"], // H10: +12 ring scan, +0 overlap; RM1.3a, see ./byte-identity-baseline.ts; RM9.2, see ./byte-identity-baseline.ts; CV13 (was bffa8d8c): example source edited (chairs added)
+  ["318761bc99ee1de5a245bf516edf7ced73af76154808daa643368c8336fd42cc", "examples/townhouse.arch"], // H10: +12 ring scan, +0 overlap; RM1.3a, see ./byte-identity-baseline.ts; RM9.2, see ./byte-identity-baseline.ts; CV13 (was bffa8d8c): example source edited (chairs added); CV08 (was c13d8f51): example source edited (sofa turned to face the room)
   ["1582b2276e4992205c712bdac6678bf27056c2ae5c1b26a13d6ed29f41cb877b", "examples/transit-hall.arch"],
   ["9be220d7fa5b952acb7469b79a7f1d10b98af354edffc3b578c2c4652ba555ed", "examples/turning-stair.arch"], // new example (S2): no rectilinear room; `centreline_at`, see ./byte-identity-baseline.ts; RM1.3a, see ./byte-identity-baseline.ts; RM1.2a, see ./byte-identity-baseline.ts; RM9.2, see ./byte-identity-baseline.ts
   ["42c3560476007089d5c918e2e5c8ed9a77a7f4136be2abc58dc1d8873ef1fda1", "examples/two-bed.arch"], // H10: +6 ring scan, +0 overlap; `centreline_at`, see ./byte-identity-baseline.ts; CO.1: the example writes its snapped `against` size out (+13 bytes), so only spans and the steps of the written clauses (+2) moved; see the header (was 8f5ccdac); CV13 (was 8b28b25e): example source edited (chairs added)

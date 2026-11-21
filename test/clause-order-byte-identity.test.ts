@@ -295,9 +295,9 @@ const BASELINE: [string, string, string][] = [
     "examples/studio.arch",
   ],
   [
-    "6667da00528cdd4ee4f155586a049ad877f81b83178f5a18c85afef7a76a781d",
+    "3e8d6696f955b554411c7379e3a8bc9ce5cbf83a9521930129f18915bca585d0", // CV08 (was 6667da00): example source edited (sofa turned to face the room)
     // AF9: the parse holds the `posSpan` and `wallSpan` an opening's lead now records (no semantics); without them it is the parse pinned here (was 3d73f2d0)
-    "4833269df69f0768bfcf1dabc6012cec8f8dc73e3eeaf22079cef3e59ea6d5ad",
+    "293020ff50d53c6ce3f54985b8ae63325282e63ba35e88e722c1390417fa029d", // CV08 (was 4833269d): example source edited (sofa turned to face the room)
     "examples/terrace-row.arch",
   ],
   [
@@ -312,9 +312,9 @@ const BASELINE: [string, string, string][] = [
     "examples/tiny-house.arch",
   ],
   [
-    "3395a3ebb754ef6e7283d75a3b3794fed306d370d0644882b253124abeebee46", // RM9.2, see ./byte-identity-baseline.ts; CV13 (was 3657648f): example source edited (chairs added)
+    "e51de067c879ba64272632c73dc6794dae996df3307fa8a0b16fa1b9d1a44915", // RM9.2, see ./byte-identity-baseline.ts; CV13 (was 3657648f): example source edited (chairs added); CV08 (was 3395a3eb): example source edited (sofa turned to face the room)
     // AF9: the parse holds the `posSpan` and `wallSpan` an opening's lead now records (no semantics); without them it is the parse pinned here (was 355d36bd)
-    "fe0538412135336fa97fba46f44a20487c926dd9609ab224ae0832ff30447367", // CV13 (was 15248124): example source edited (chairs added)
+    "b1a3d92548adccfcc3812a7023b0c1b9d665ee368220fcc9b788441c0415d89c", // CV13 (was 15248124): example source edited (chairs added); CV08 (was fe053841): example source edited (sofa turned to face the room)
     "examples/townhouse.arch",
   ],
   [
