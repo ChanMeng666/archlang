@@ -51,7 +51,7 @@ import { lex, type Token } from "./lexer.js";
 import { ADVISORY_CODE_PROFILES, LINT_PROFILES, lint } from "./lint.js";
 import { fmt3 } from "./num-format.js";
 import { parse } from "./parser.js";
-import { compileUncached } from "./pipeline.js";
+import { compileUncached } from "./compile-uncached.js";
 import { BUILTIN_REGISTRY, createRegistry, type Registry } from "./registry.js";
 import { sourceConflicts } from "./repair.js";
 import {

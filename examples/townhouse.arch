@@ -146,6 +146,8 @@ plan "Townhouse" {
     furniture chest    at (4550,9200) size 500x1000 label "Chest" in r_bed2
 
     stair id=st at (4150,2600) size 900x3200 dir up
+    # The stairwell: this floor stops over the flight that climbs to it from below.
+    void id=v_stair at (4150,2600) size 900x3200
   }
 
   level 3 "Second floor" {
@@ -181,6 +183,8 @@ plan "Townhouse" {
     furniture chest    at (4550,8500) size 500x1000   label "Chest" in r_master
 
     stair id=st at (4150,2600) size 900x3200 dir down
+    # The stairwell: this floor stops over the flight that climbs to it from below.
+    void id=v_stair at (4150,2600) size 900x3200
 
     # The eaves, on the top storey only — `roof` is per-level like everything else
     # here, and this level's `shell` is the plan's one closed exterior ring on THIS

@@ -4929,7 +4929,7 @@ furniture chair at (175,850) size 450x450 rotate 180   # fixed: the rotate that 
 
 *warning* — A sofa or armchair has its front against a wall.
 
-**Cause.** A `sofa`, `sofa_l`, `loveseat` or `armchair` (or an alias) has its drawn front on a wall's face, with no floor between, so nobody can sit on it. The front is read off its turn (at `rotate 0` its back is to the north), and an L-sofa's two fronts are the inner edges of its L. A wall counts when its solid covers half the front or more. No distance is measured, and a seat with its back to the room is not judged.
+**Cause.** A `sofa`, `sofa_l`, `loveseat` or `armchair` (or an alias) has its drawn front on a wall's face, with no floor between, so nobody can sit on it. The front is read off its turn (at `rotate 0` its back is to the north), and an L-sofa's two fronts are the inner edges of its L. A wall counts when its solid covers half the front or more; a door or cased opening in it is floor. No distance is measured, and a seat with its back to the room is not judged.
 
 **Fix.** Turn the seat so its back is on that wall (the hint gives the `rotate`), or move it into the room. There is no machine fix.
 

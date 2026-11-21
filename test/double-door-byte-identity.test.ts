@@ -86,12 +86,12 @@ const BASELINE: [string, string][] = [
   ["examples/parametric.arch", "7cceeb1be4622a8b84e1625a124d31f44fdfc15cd5362c4f4f25fa67f5560989"],
   ["examples/remodel.arch", "5fd914bb04d3d2c03d590844eb51dd3039763bab16b26d24e141b2c54b32fcfc"], // `centreline_at`, see ./byte-identity-baseline.ts; CV13 (was f0f4a5aa): example source edited (chairs added)
   ["examples/sheet-notes.arch", "708332c1a3f4cf35989718277b996af6f718d2e5fb8bd3d2912d8f87f7d61a2a"],
-  ["examples/turning-stair.arch", "4d2fb9dcc6a44640a4d0e52d202df14909c73a5743799af8c25cb1f117dc87a8"], // new example (S2), see header; `centreline_at`, see ./byte-identity-baseline.ts; RM1.3a, see ./byte-identity-baseline.ts; RM1.2a, see ./byte-identity-baseline.ts; RM9.2, see ./byte-identity-baseline.ts
+  ["examples/turning-stair.arch", "4278a96ba7b215a43f121d04bd47fd94c94ab0c145cb7f7a2a7aba5201e2c6a2"], // new example (S2), see header; `centreline_at`, see ./byte-identity-baseline.ts; RM1.3a, see ./byte-identity-baseline.ts; RM1.2a, see ./byte-identity-baseline.ts; RM9.2, see ./byte-identity-baseline.ts; CV14: example source edited (stairwell void added) (was 4d2fb9dc)
   ["examples/two-storey.arch", "92a71843b7de0b87acb1ef3ea1b859d1c0bedbe4ef35025f3524ecea1d674aa8"], // RM1.3a, see ./byte-identity-baseline.ts; RM1.2a, see ./byte-identity-baseline.ts; RM9.2, see ./byte-identity-baseline.ts
   ["test/fixtures/axes-grid.arch", "32dad3e21d1e5c40424473fdf05896088a2f848fd7f90d395d6cbd70169a0655"],
   ["test/fixtures/chain30.arch", "ce81264ecdc3a086f99708f90aee5dd929c71b9e8ccaaa54a1da5ce5aa213325"], // #367, see test/byte-identity-baseline.ts
   ["test/fixtures/dense-bays.arch", "9f4ad4538851a27b463113cd7e563823d185bc7e18b342fd9eebb45f2887992f"],
-  ["test/fixtures/dense-office.arch", "46d130d3ac0004161924647cc89592c404499b2c5625ff13d695e1cfbf358e0b"], // AL6: a new row, see ./byte-identity-baseline.ts
+  ["test/fixtures/dense-office.arch", "344ce7a8de19a7a9aad470e2e253c8751b5bfbefb39443f7f13033ca8ce81367"], // AL6: a new row; E.18 (was 46d130d3), see ./byte-identity-baseline.ts
   ["test/fixtures/diff-a.arch", "33a377ed414748c1262bdfbd057d657f8dda607ff77be9d944d2daa5feb12b2a"],
   ["test/fixtures/diff-b.arch", "1d4aaebab314c77742fc16d68c8925aa629ae42e1253a2167e240a2f25849ab1"],
   ["test/fixtures/diff-circ-a.arch", "e5bebcb2ebee7d35409f726a36c6da902eb7f414cadc9b93adb6e5d8a014235d"],
@@ -179,8 +179,8 @@ const MAIN_SOURCES: [path: string, payload: string, source: string, undo: [branc
   ],
   [
     "examples/garden-house.arch",
-    "f6ce8908e0b86afd1862d36269334682052ecd99e01c3c40fb707e9570eff6b0", // RM1.3a, see ./byte-identity-baseline.ts; RM9.2, see ./byte-identity-baseline.ts
-    "52ea794853ab388d2497d18ad2d1efc6e38768c55ca2ba63eabc96033515c3b1", // source: RM1.4 writes the four snapped sizes (same length; was 7b0be7cc); CO.1 writes its snapped `against` sizes out, here and in the undo block: less those clauses the rebuilt source is main's, and the payload is unchanged (was 6ad0c1d8)
+    "a9cf2cb37c2b3db8e44c101a4f2a47bd0e855514b00435ddf5b11fbcd319835d", // RM1.3a, see ./byte-identity-baseline.ts; RM9.2, see ./byte-identity-baseline.ts; CV14: example source edited (stairwell void added) (was f6ce8908)
+    "847c9b74bf2f5f2b771c9fc1c96796af0c8f4b3fe3ec432ff314090d7eb4cb9a", // source: RM1.4 writes the four snapped sizes (same length; was 7b0be7cc); CO.1 writes its snapped `against` sizes out, here and in the undo block: less those clauses the rebuilt source is main's, and the payload is unchanged (was 6ad0c1d8); CV14: example source edited (stairwell void added) (was 52ea7948)
     [
       [
         "    furniture fridge       against wall w_e1 offset 3200 size 600x700 in r_kitchen\n    furniture counter      against wall w_e1 offset 2500 in r_kitchen",
@@ -201,8 +201,8 @@ const MAIN_SOURCES: [path: string, payload: string, source: string, undo: [branc
   ],
   [
     "examples/hillside-villa.arch",
-    "9e118d9f68ca353f4e637ffca1770c5d956c784c8994fd9c5ed33c7b34945645", // RM1.3a, see ./byte-identity-baseline.ts; RM9.2, see ./byte-identity-baseline.ts
-    "44fdb87ebd3a403a9c3289db5a7cdf9250f7c683213dbe8159474a48197815c5", // source: RM1.4 writes the 17 snapped values and its comment of one (same length; was 8aff5c59); CO.1 writes its snapped `against` sizes out, here and in the undo block: less those clauses the rebuilt source is main's, and the payload is unchanged (was 743e5cde)
+    "8c7c81af5502498ca1e7555deb6101212399dabd757070e9051f7a885f5e610e", // RM1.3a, see ./byte-identity-baseline.ts; RM9.2, see ./byte-identity-baseline.ts; CV14: example source edited (stairwell void added) (was 9e118d9f)
+    "9e212d075b7d8e9375e09477d79926f9552ae0f19631ee7b4c0e8f4b8590f7a9", // source: RM1.4 writes the 17 snapped values and its comment of one (same length; was 8aff5c59); CO.1 writes its snapped `against` sizes out, here and in the undo block: less those clauses the rebuilt source is main's, and the payload is unchanged (was 743e5cde); CV14: example source edited (stairwell void added) (was 44fdb87e)
     [
       [
         "    furniture stove          against wall shell segment 1 offset 7400 in r_kitchen\n    furniture dishwasher     against wall shell segment 1 offset 6600 in r_kitchen\n    furniture fridge         against wall w_l1_band_e offset 4700 size 600x700 in r_kitchen",
@@ -303,8 +303,8 @@ const MAIN_SOURCES: [path: string, payload: string, source: string, undo: [branc
   ],
   [
     "examples/townhouse.arch",
-    "b5f2d17b5990faae81ec5bdcc69c8d2ae05f3aab52a7533ee327c5b6be9c4770", // RM1.3a, see ./byte-identity-baseline.ts; RM9.2, see ./byte-identity-baseline.ts; CV13 (was 2cdbb29b): example source edited (chairs added); CV08 (was e741d25e): example source edited (sofa turned to face the room)
-    "8953b6916a5c634df963eb8bfb3ea8d520e6de0043b97dfefa30c8f68474c993", // CV13 (was 6173926c): example source edited (chairs added); CV08 (was 5ef67caa): example source edited (sofa turned to face the room)
+    "53ab5829ca96ac492af9b093da70a72746417d6da5fb6aa6d8b1fd0f69ca03b6", // RM1.3a, see ./byte-identity-baseline.ts; RM9.2, see ./byte-identity-baseline.ts; CV13 (was 2cdbb29b): example source edited (chairs added); CV08 (was e741d25e): example source edited (sofa turned to face the room); CV14: example source edited (stairwell void added) (was b5f2d17b)
+    "472a5c8b60c55b709fe3c96b77a6de995d789129afdc843e4aaf009f7fbe4568", // CV13 (was 6173926c): example source edited (chairs added); CV08 (was 5ef67caa): example source edited (sofa turned to face the room); CV14: example source edited (stairwell void added) (was 8953b691)
     [
       [
         "    furniture fridge       against wall shell segment 3 offset 3200 in r_kitchen",

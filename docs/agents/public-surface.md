@@ -253,7 +253,7 @@ Totals: 659 exports (230 values, 429 types), 418 flagged (75 values).
 
 | Export | Kind | In-repo consumers |
 | --- | --- | --- |
-| `renderErrorSvg` | value | `test` |
+| `renderErrorSvg` | value | `playground`, `test` |
 
 ## `src/backends/error-svg.ts`
 

@@ -439,7 +439,7 @@
       "name": "turning-stair",
       "source": {
         "path": "examples/turning-stair.arch",
-        "sha256": "bc98b4d2ad3c17d06051ec99c7106317c7989b0788f48eafd29c2a25f747d9af"
+        "sha256": "98f3b242e80731e4a0ef0aa33de50a92be0b35d3c5e3842b1b498ef55a0a9823"
       },
       "posters": [
         {
@@ -466,7 +466,7 @@
           "t": 1,
           "theme": "light",
           "supersample": 3,
-          "frameSha256": "c54cab3c4a89a04ded186ac1dfe1c1eebd2fc2303961e08575fd99a5743238f0",
+          "frameSha256": "3e53d45a54304ebd60cecfcf29930af3e6659ece5236d427e8b283eed5204c80",
           "webpQuality": 0.9,
           "environment": {
             "platform": "win32",
@@ -484,8 +484,8 @@
         "supersample": 2
       },
       "glb": {
-        "sha256": "8e1f45dfc28bd326af532775cfe42bcb44b5eb8fd56498df7dbfa0eac67f060a",
-        "contentSha256": "24e6728074b2558fc5f789385dda28b0218da4901e5eccc033cfb3a977956eb8",
+        "sha256": "8a46a8cb1bf77ac0b6710353b2a84226b767da0d455a56653db7cd0eb27cb251",
+        "contentSha256": "a59575c6ab006419985189545f6493b7f1f0c213914fea6d43a4db6e656934f8",
         "doors": "closed",
         "validator": {
           "errors": 0,
@@ -515,27 +515,27 @@
         },
         {
           "path": "turning-stair.poster-full.webp",
-          "bytes": 32600,
-          "archlang": "1.60.0",
-          "archlang3d": "0.7.0"
+          "bytes": 33390,
+          "archlang": "1.66.0",
+          "archlang3d": "0.9.0"
         },
         {
           "path": "turning-stair.poster-full.png",
-          "bytes": 149689,
-          "archlang": "1.60.0",
-          "archlang3d": "0.7.0"
+          "bytes": 151431,
+          "archlang": "1.66.0",
+          "archlang3d": "0.9.0"
         },
         {
           "path": "turning-stair.replay.mp4",
-          "bytes": 337768,
-          "archlang": "1.60.0",
-          "archlang3d": "0.7.0"
+          "bytes": 341476,
+          "archlang": "1.66.0",
+          "archlang3d": "0.9.0"
         },
         {
           "path": "turning-stair.glb",
-          "bytes": 56672,
-          "archlang": "1.60.0",
-          "archlang3d": "0.7.0"
+          "bytes": 58360,
+          "archlang": "1.66.0",
+          "archlang3d": "0.9.0"
         },
         {
           "path": "turning-stair.plan.png",
@@ -683,7 +683,7 @@
       "name": "hillside-villa",
       "source": {
         "path": "examples/hillside-villa.arch",
-        "sha256": "9d805124ca39f077443096272798f3098d5a17084b1b263ba1a7073981e719c5"
+        "sha256": "a2bba533d1729272aceb3d32b88ba85845b31fa2e92400b209cd8460d508f920"
       },
       "posters": [
         {
@@ -710,7 +710,7 @@
           "t": 1,
           "theme": "light",
           "supersample": 3,
-          "frameSha256": "0dd014e2029f06af6d79a4958dc75e404cb56fa0109ec8db25d27ce5ab062b04",
+          "frameSha256": "1486277cf556c30de521f3420b726d8902ebe0cb67ebe40208f114de3d72127a",
           "webpQuality": 0.9,
           "environment": {
             "platform": "win32",
@@ -720,8 +720,8 @@
         }
       ],
       "glb": {
-        "sha256": "9882f906510548210cd48e2faa8444d84d63925b566b2bdb174cdafb9cf44f0f",
-        "contentSha256": "ae0650e80deb67b6ae1d655b935692606d42337aed0fdf8958b37312c1e1dbfa",
+        "sha256": "390814fad65076d519e01cebddeba45dce6a19890e7c2355c087aad1138d4465",
+        "contentSha256": "8e5d4aeba4489cbe32f4d8d788d47737100c3a51fba241a4509faea62dec0fc7",
         "doors": "closed",
         "validator": {
           "errors": 0,
@@ -751,21 +751,21 @@
         },
         {
           "path": "hillside-villa.poster-full.webp",
-          "bytes": 55958,
-          "archlang": "1.60.0",
-          "archlang3d": "0.7.0"
+          "bytes": 55858,
+          "archlang": "1.66.0",
+          "archlang3d": "0.9.0"
         },
         {
           "path": "hillside-villa.poster-full.png",
-          "bytes": 249447,
-          "archlang": "1.60.0",
-          "archlang3d": "0.7.0"
+          "bytes": 248968,
+          "archlang": "1.66.0",
+          "archlang3d": "0.9.0"
         },
         {
           "path": "hillside-villa.glb",
-          "bytes": 695132,
-          "archlang": "1.60.0",
-          "archlang3d": "0.7.0"
+          "bytes": 695804,
+          "archlang": "1.66.0",
+          "archlang3d": "0.9.0"
         },
         {
           "path": "hillside-villa.plan.png",

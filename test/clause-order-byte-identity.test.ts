@@ -160,10 +160,10 @@ const BASELINE: [string, string, string][] = [
     "examples/gallery-l.arch",
   ],
   [
-    "72528a5f6784a5c5d9527299a5abb330423c747bafb17458716dc336cc9a3eb3", // RM9.2, see ./byte-identity-baseline.ts
+    "5b0ec567a174809bd4d5a7c62907b611741e3537577e9552026d400c28cedcd6", // RM9.2, see ./byte-identity-baseline.ts; CV14: example source edited (stairwell void added) (was 72528a5f)
     // CO.1: the parse holds the 2 `size` clauses the example now writes; without them, offsets mapped back, it is the parse pinned here (was c7dbe7c1)
     // AF9: the parse holds the `posSpan` and `wallSpan` an opening's lead now records (no semantics); without them it is the parse pinned here (was 93f0b4a6)
-    "26740b1a4fdfa883d870cdf10097d0a9a2d533784fa141bc26656e0bb7c7da57",
+    "619ba02298d75b3de27b5c8129bd0d1531db86f2226b3083cae174342d32be12", // CV14: example source edited (stairwell void added) (was 26740b1a)
     "examples/garden-house.arch",
   ],
   [
@@ -179,10 +179,10 @@ const BASELINE: [string, string, string][] = [
     "examples/hexagon-pavilion.arch",
   ],
   [
-    "123f2af228faf039c29d9861b60cfff3574b3cd04bc0057d5549cd02e67066fb", // RM9.2, see ./byte-identity-baseline.ts
+    "bde21bc8c7ea02b91b55d17623eac370428f9aef0f2c16f0fb8f7fd00ae369ce", // RM9.2, see ./byte-identity-baseline.ts; CV14: example source edited (stairwell void added) (was 123f2af2)
     // CO.1: the parse holds the 3 `size` clauses the example now writes; without them, offsets mapped back, it is the parse pinned here (was db3a5d1e)
     // AF9: the parse holds the `posSpan` and `wallSpan` an opening's lead now records (no semantics); without them it is the parse pinned here (was 664292dc)
-    "b122bb73e93ba947f92f83570f5b4232aad492f29528c8b4b23099999478fd23",
+    "4b224a4d653928c62587dc39cf7b7d3f4446fd2fe8139eeb7639f6a488f93a5a", // CV14: example source edited (stairwell void added) (was b122bb73)
     "examples/hillside-villa.arch",
   ],
   [
@@ -312,9 +312,9 @@ const BASELINE: [string, string, string][] = [
     "examples/tiny-house.arch",
   ],
   [
-    "e51de067c879ba64272632c73dc6794dae996df3307fa8a0b16fa1b9d1a44915", // RM9.2, see ./byte-identity-baseline.ts; CV13 (was 3657648f): example source edited (chairs added); CV08 (was 3395a3eb): example source edited (sofa turned to face the room)
+    "42be4e4d302a36d2a95f93fe215539d45739f5f21c9dbca3a96089b8f6c18afd", // RM9.2, see ./byte-identity-baseline.ts; CV13 (was 3657648f): example source edited (chairs added); CV08 (was 3395a3eb): example source edited (sofa turned to face the room); CV14: example source edited (stairwell void added) (was e51de067)
     // AF9: the parse holds the `posSpan` and `wallSpan` an opening's lead now records (no semantics); without them it is the parse pinned here (was 355d36bd)
-    "b1a3d92548adccfcc3812a7023b0c1b9d665ee368220fcc9b788441c0415d89c", // CV13 (was 15248124): example source edited (chairs added); CV08 (was fe053841): example source edited (sofa turned to face the room)
+    "2a4a5862de988788b1fdaa8e1e7bef3df068b25cad5ee432b77233013b3f18b8", // CV13 (was 15248124): example source edited (chairs added); CV08 (was fe053841): example source edited (sofa turned to face the room); CV14: example source edited (stairwell void added) (was b1a3d925)
     "examples/townhouse.arch",
   ],
   [
@@ -324,9 +324,9 @@ const BASELINE: [string, string, string][] = [
     "examples/transit-hall.arch",
   ],
   [
-    "4d2fb9dcc6a44640a4d0e52d202df14909c73a5743799af8c25cb1f117dc87a8", // RM9.2, see ./byte-identity-baseline.ts
+    "4278a96ba7b215a43f121d04bd47fd94c94ab0c145cb7f7a2a7aba5201e2c6a2", // RM9.2, see ./byte-identity-baseline.ts; CV14: example source edited (stairwell void added) (was 4d2fb9dc)
     // AF9: the parse holds the `posSpan` and `wallSpan` an opening's lead now records (no semantics); without them it is the parse pinned here (was 9846048e)
-    "c73923d73d730766aee424479a48287ab5ad5f941c7b72d64626224f99a6b851",
+    "031d280d381c88f85f342f381f5cd82c20ba76c500b6f50b31070bf8f3371d6d", // CV14: example source edited (stairwell void added) (was c73923d7)
     "examples/turning-stair.arch",
   ],
   [

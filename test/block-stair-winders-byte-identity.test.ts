@@ -35,7 +35,7 @@ const API: CompilerApi = { compile, describe: describePlan, lint };
 
 /** Measured at `5593484d` (see the header): `[digest, row]`. */
 const BASELINE: [string, string][] = [
-  ["4d2fb9dcc6a44640a4d0e52d202df14909c73a5743799af8c25cb1f117dc87a8", "examples/turning-stair.arch"], // RM1.3a, see ./byte-identity-baseline.ts; RM1.2a, see ./byte-identity-baseline.ts; RM9.2, see ./byte-identity-baseline.ts
+  ["4278a96ba7b215a43f121d04bd47fd94c94ab0c145cb7f7a2a7aba5201e2c6a2", "examples/turning-stair.arch"], // RM1.3a, see ./byte-identity-baseline.ts; RM1.2a, see ./byte-identity-baseline.ts; RM9.2, see ./byte-identity-baseline.ts; CV14: example source edited (stairwell void added) (was 4d2fb9dc)
   ["575e7d3daa85f52c3902fb0f3f8dbdd4abeabda0c57da5db85c1ca06046616ed", "quarter-turn dir up, no height"],
   ["f03bc7c44e2cb44e8a8127c4f98c8424da352684171c564c47ccad788a08c261", "quarter-turn dir up, height 2750"], // RM1.2a review, see ./byte-identity-baseline.ts
   ["2955a883162ea99165881ad2f4e433af2cf994297015db70eaccdfb81ac463b3", "quarter-turn dir down, no height"],

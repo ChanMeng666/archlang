@@ -284,7 +284,9 @@ Done by #976, with no budget raised: Format, Finish, Repair furniture and the DX
 
 After AL3b (#969) the first-use path (`firstUsePathBudget`, `playground/e2e/startup-chunks.baseline.json`) measures 484,137 B gzip against 486,000 B. The next few KB of compiler growth trip `Playground E2E chromium`. Two ways out: move code a first use need not load out of the compiler chunk or the lazy core chunk (as EB.2 did, #947), or re-take the budget by the file's own rule (measured × 1.025, rounded up to a thousand). A re-take raises a ceiling, a relaxed check that needs the owner's word for that PR (`REVIEW.md`; the owner approved the compiler-path and embed raises on #969, 2026-11-19, not this one). Measure with `npm run size:embed` (`scripts/embed-path-size.mjs`) on `main` and the branch; `docs/agents/iron-laws.md` still quotes `embedPathBudget` as 310,000 B (319,000 since #969), and editing that line is the owner's call (NR.9 (3)).
 
-### 3.19 · The compiler path has about 0.7 KB of headroom left — `todo`
+### 3.19 · The compiler path has about 0.7 KB of headroom left: done by #1002, waiting to be archived — `note`
+
+Done by #1002: the compiler chunk no longer carries `compile()`'s `onError: "svg"` error card and the catalogue's fix column it prints. `src/compile-path.ts` serves `compileWithoutErrorCard` (`src/compile-memo.ts`), and `compile()` draws the card through `src/compile-uncached.ts`, which nothing on the compile path imports. The parser's `E_LEVEL_MIX` message reads `LEVEL_MIX_FIX` (`src/level-mix-fix.ts`), not the generated column. The playground's door serves that function as its `compile`, and the embed draws the card on a broken plan with `renderErrorSvg`, loaded through `playground/src/error-card.ts`. `npm run size:embed` on `main` 44c16e12 → #1002: compiler path 332,355 → 312,481 B (−19,874), embed path 318,546 → 299,840 B (−18,706), first use 467,832 → 466,680 B (−1,152; the fix column now rides `first-use` for Copy for LLM's `diagnosticToJson`). The corpus digest of SVG, `describe()`, `lint()`, diagnostics and the error card is unchanged, and `digest:preview` moved 0 rows. By the file's rule (ruling RM-D78) the PR re-takes `compilerPathBudget` down to 321,000 B and `embedPathBudget` to 308,000 B; `firstUsePathBudget` stays at 468,000 B, which the rule would raise. A broken embed now loads about 126 KB gzip to draw its card (#1002's residue). The card text below is kept for the record.
 
 AF9 phase A's PR (#992, merged 2026-11-20; `npm run size:embed`, base `c749ac4e` → head `1babd94d`)
 measured the compiler path 330,147 → 332,209 B gzip against `compilerPathBudget` 333,000. After
@@ -453,7 +455,22 @@ other diagonal. Not a defect; the pin moves only if the tick convention does.
 - E.16 · `nested-ref` — a reference into a nested instance fails once its plan is placed — closed by W8 → archived (lab)
 - E.17 · `facade-probe-order` — placing a storey moved its `dims auto` chains — closed → archived (lab)
 
-### E.18 · `annotation-overlap-translation` — `W_ANNOTATION_OVERLAP` changes under a pure translation — `todo`
+### E.18 · `annotation-overlap-translation` — `W_ANNOTATION_OVERLAP` changes under a pure translation: done by #999, waiting to be archived — `note`
+
+Done by #999. The cause was not the label passes' positions but the leader step's dot (`src/label-fit.ts`).
+The dot must stand wholly on its floor and meet no wall's or text's box and no symbol's shape (a
+symbol's box only gates the shape test), and that was read as `rectAreaOutside(dot, floor) > 0`,
+`overlapArea(dot, box) > 0` and `clippedArea(shape, dot) > 0` in absolute floats. A dot wholly on its
+floor reads 1e-10 to 1e-9 mm² off it, at different lattice places for different coordinates, and a
+dot can meet a wall band's box or a symbol's shape by rounding alone. So P₀ ended the line on another
+dot, whose line was blocked. All three readings now run in the dot's own frame against `DOT_SLACK`
+(1e-9 of the dot's box). The result is translation-invariant over the fuzz's range: tested at offsets
+up to ±20 m and at 10⁶ mm, under every turn and flip (`test/equivariance-fuzz.test.ts` § pinned fuzz
+counterexamples: this plan, a 1324.3 mm-deep strip whose dot met a wall band's box, and the same
+strip with a wc whose shape met the dot). Further out, E.19. The CI seed passes all 60 runs (main
+fails at run 59). Over the corpus only `test/fixtures/dense-office.arch`'s SVG moves (14 rows re-pinned
+with a swap-back); `describe()` and `lint()` do not move. The store's line there now runs about 339 mm
+through its cabinet symbol: E.20. The card text below is kept for the record.
 
 Found by `test/equivariance-fuzz.test.ts` on `main`'s push run for `91ed1210` (Node 20, shard 3/5;
 seed 533254921, the path in the run log): a three-room strip (`cols [2900,4500,2000]`, rows
@@ -465,6 +482,40 @@ whenever its random seed reaches such a plan (the next push run, `594c1a93`, was
 label passes compare absolute float positions (as circulation did before E.11's extent-frame snap).
 Gate: the counterexample's P₀ and gP lint the same; the fuzz has no `NEW` on that seed. Do not pin
 it as a known class to green the suite; fix the comparison.
+
+### E.19 · `annotation-overlap-far-translation` — `W_ANNOTATION_OVERLAP` changes under a translation of 1.5 × 10⁶ mm or more — `todo`
+
+Found by #999's red team, after E.18's fix: E.18 holds over the fuzz's range (offsets up to ±20 m, and
+10⁶ mm), but placed further out some plans still lint differently. Over 400 plans of `planSpec`
+(`fc.sample(planSpec, { seed: 7, numRuns: 400 })`, each drawn through `withInstance(spec, { rotate: 0,
+at: { x: T, y: T } })`, `T` rounded up to the plan's grid) the share that differs is 1/400 at `T` =
+1,500,000, 11/400 at 3,000,000 and 18/400 at 5,000,000. Reproducers: case #137 at 1,500,000 (the
+rule reports a label far out that P₀ does not) and case #4 at 25,000,000 (P₀ reports one that far
+out is led clear, `g.r1 → g.r0`). `main` before E.18 differs on the same cases at 25,000,000 and
+33,000,000, so it predates the fix. Not yet traced to a pass: at those magnitudes an ulp of a
+coordinate is 2⁻³²–2⁻²⁸ mm, so any label pass that compares absolute positions can flip. Gate: those
+two cases lint the same as P₀; then widen the fuzz's translation or add a far-offset row.
+
+### E.20 · `leader-dot-ignores-line` — the leader's dot is chosen before, and apart from, whether its line is clear — `todo`
+
+Found while landing E.18 (#999). The leader step (`src/label-fit.ts`, ADR 0035) takes the dot first: the
+first lattice place on the room's own floor, by key, that is clear of walls, texts and symbols. Only
+then does it search the label's places, and it accepts a line only if it runs from the label to that
+one dot. So a clear dot can force a poor line, or a blocked one, while another clear dot further down
+the key would give a clean line. Two reproducers:
+
+- `test/fixtures/dense-office.arch`: since E.18 the store's dot is its anchor (3750,1500), and its
+  line `(4249.67,3597.77)→(3750,1500)` runs about 339 mm through the store's cabinet symbol
+  (3850,1800–4450,2250; `segmentEntersRing` is true). Before E.18 the dot was (3144,894), and that
+  line crossed neither the cabinet nor the shelving. The step ranks both lines in the same tier (each
+  crosses a swing or a symbol), so it never compares them.
+- The E.18 counterexample (`test/equivariance-fuzz.test.ts`, template `e18`) placed `rotate 90 mirror
+  x` (or `rotate 270 mirror y`): the label is not led and `W_ANNOTATION_OVERLAP` reports it at every
+  offset, where before E.18 a dot picked by rounding happened to give a clear line.
+
+Gate: choose the dot together with the line (for example, try the dots in key order for each place,
+or rank a place's line by the best dot), and keep it order-free and D4-symmetric. This moves drawings
+that draw a leader (6 corpus plans), so it needs a swap-back of each moved row.
 
 ## Circulation findings (found while landing W3b)
 

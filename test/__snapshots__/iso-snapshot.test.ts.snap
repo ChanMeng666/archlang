@@ -874,7 +874,7 @@ exports[`iso snapshots > hillside-villa — axon 1`] = `
 <path d="M 8666.21,7435.35 L 8533.49,7586.95 L 8533.49,6686.95 L 8666.21,6535.35 Z" fill="#ffffff" fill-rule="nonzero" stroke="#1b1b1b" stroke-width="41.82" stroke-linejoin="miter"/>
 <path d="M 14441.47,613.36 L 14291.47,353.56 L 14291.47,-2646.44 L 14441.47,-2386.64 Z" fill="#ffffff" fill-rule="nonzero" stroke="#1b1b1b" stroke-width="41.82" stroke-linejoin="miter"/>
 <path d="M 14874.48,363.36 L 14441.47,613.36 L 14441.47,-2386.64 L 14874.48,-2636.64 Z" fill="#ffffff" fill-rule="nonzero" stroke="#1b1b1b" stroke-width="41.82" stroke-linejoin="miter"/>
-<path d="M 2100,637.31 L 6256.92,-1762.69 L 9256.92,3433.46 L 5100,5833.46 Z M 5429.42,4604.04 L 8027.5,3104.04 L 5927.5,-533.27 L 3329.42,966.73 Z" fill="#fbfaf7" fill-rule="nonzero" stroke="#1b1b1b" stroke-width="39.83"/>
+<path d="M 2100,637.31 L 6256.92,-1762.69 L 9256.92,3433.46 L 5100,5833.46 Z M 5429.42,4604.04 L 8027.5,3104.04 L 5927.5,-533.27 L 3329.42,966.73 Z M 3416.03,916.73 L 5927.5,-533.27 L 5527.5,-1226.09 L 3016.03,223.91 Z" fill="#fbfaf7" fill-rule="nonzero" stroke="#1b1b1b" stroke-width="39.83"/>
 <path d="M 9591.73,6413.36 L 9037.45,6733.38 L 9037.45,3733.38 L 9591.73,3413.36 Z" fill="#ffffff" fill-rule="nonzero" stroke="#1b1b1b" stroke-width="41.82" stroke-linejoin="miter"/>
 <path d="M 8533.49,7586.95 L 8387.17,7725.46 L 8387.17,6825.46 L 8533.49,6686.95 Z" fill="#ffffff" fill-rule="nonzero" stroke="#1b1b1b" stroke-width="41.82" stroke-linejoin="miter"/>
 <path d="M 2409.81,573.91 L 2279.9,648.91 L 2279.9,-2351.09 L 2409.81,-2426.09 Z" fill="#ffffff" fill-rule="nonzero" stroke="#1b1b1b" stroke-width="41.82" stroke-linejoin="miter"/>
@@ -1315,7 +1315,7 @@ exports[`iso snapshots > hillside-villa — iso 1`] = `
 <path d="M 12480.43,-1939.18 L 11207.64,-1204.33 L 10995.51,-1326.81 L 12268.3,-2061.65 Z" fill="#ffffff" fill-rule="nonzero" stroke="#1b1b1b" stroke-width="35.76" stroke-linejoin="miter"/>
 <path d="M 4348.71,183.71 L -212.13,-2449.49 L -212.13,-4898.98 L 4348.71,-2265.78 Z" fill="#ffffff" fill-rule="nonzero" stroke="#1b1b1b" stroke-width="35.76" stroke-linejoin="miter"/>
 <path d="M 10455.21,2519.41 L 10439.8,2576.36 L 10439.8,126.87 L 10455.21,69.92 Z" fill="#ffffff" fill-rule="nonzero" stroke="#1b1b1b" stroke-width="35.76" stroke-linejoin="miter"/>
-<path d="M 2969.85,-734.85 L 6363.96,-2694.44 L 10606.6,-244.95 L 7212.49,1714.64 Z M 7212.49,979.8 L 9333.81,-244.95 L 6363.96,-1959.59 L 4242.64,-734.85 Z" fill="#fbfaf7" fill-rule="nonzero" stroke="#1b1b1b" stroke-width="34.05"/>
+<path d="M 2969.85,-734.85 L 6363.96,-2694.44 L 10606.6,-244.95 L 7212.49,1714.64 Z M 7212.49,979.8 L 9333.81,-244.95 L 6363.96,-1959.59 L 4242.64,-734.85 Z M 4313.35,-775.67 L 6363.96,-1959.59 L 5798.28,-2286.19 L 3747.67,-1102.27 Z" fill="#fbfaf7" fill-rule="nonzero" stroke="#1b1b1b" stroke-width="34.05"/>
 <path d="M 10206.37,2955.92 L 10100.88,3055.03 L 10100.88,2320.18 L 10206.37,2221.07 Z" fill="#ffffff" fill-rule="nonzero" stroke="#1b1b1b" stroke-width="35.76" stroke-linejoin="miter"/>
 <path d="M 10439.8,2576.36 L 10419.83,2632.82 L 10419.83,183.33 L 10439.8,126.87 Z" fill="#ffffff" fill-rule="nonzero" stroke="#1b1b1b" stroke-width="35.76" stroke-linejoin="miter"/>
 <path d="M 10419.83,2632.82 L 10395.34,2688.7 L 10395.34,239.21 L 10419.83,183.33 Z" fill="#ffffff" fill-rule="nonzero" stroke="#1b1b1b" stroke-width="35.76" stroke-linejoin="miter"/>

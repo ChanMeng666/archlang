@@ -2,7 +2,8 @@
 
 import { describe, expect, it } from "vitest";
 import { renderCompileErrorSvg } from "../src/backends/error-svg.js";
-import { compile, ERROR_CATALOG, renderErrorSvg } from "../src/index.js";
+import { compileWithoutErrorCard } from "../src/compile-memo.js";
+import { clearCache, compile, ERROR_CATALOG, renderErrorSvg } from "../src/index.js";
 
 /**
  * `onError: "svg"` — the opt-in error card (T2.1).
@@ -101,5 +102,45 @@ describe("onError: 'svg' (opt-in error card)", () => {
     const lead = `Fix: ${fix.slice(0, 20)}`;
     expect(renderErrorSvg("", [d])).toContain(lead);
     expect(renderCompileErrorSvg("", [d])).not.toContain("Fix:");
+  });
+});
+
+// Card 3.19: the playground's compiler chunk serves `compileWithoutErrorCard` (src/compile-path.ts),
+// `compile()` without the card, so the chunk carries neither the card's renderer nor the fix column.
+describe("compileWithoutErrorCard (card 3.19)", () => {
+  const SOURCES = [BROKEN, BROKEN_MULTI, VALID];
+  /** The result as JSON, without the parse tree and the Scene (compared by the SVG drawn from it). */
+  const facts = (r: object) => JSON.stringify({ ...r, ast: undefined, scene: undefined });
+
+  it("is compile() with onError unset, field for field, whatever onError it is handed", () => {
+    for (const src of SOURCES)
+      for (const onError of [undefined, "svg"] as const) {
+        const cardless = compileWithoutErrorCard(src, { noCache: true, onError });
+        const plain = compile(src, { noCache: true });
+        expect(facts(cardless)).toBe(facts(plain));
+        expect(Object.keys(cardless)).toEqual(Object.keys(plain));
+      }
+  });
+
+  it("an error leaves svg empty, and renderErrorSvg over its diagnostics is compile()'s card", () => {
+    for (const src of [BROKEN, BROKEN_MULTI]) {
+      const cardless = compileWithoutErrorCard(src, { onError: "svg", noCache: true });
+      expect(cardless.svg).toBe("");
+      expect(renderErrorSvg(src, cardless.diagnostics)).toBe(compile(src, { onError: "svg", noCache: true }).svg);
+    }
+  });
+
+  it("shares compile()'s memo without poisoning it: the card stays compile()'s alone", () => {
+    clearCache();
+    // Cached under the key with onError unset, the key a cardless compile() shares.
+    const first = compileWithoutErrorCard(BROKEN, { onError: "svg" });
+    expect(compile(BROKEN)).toBe(first);
+    expect(compile(BROKEN, { onError: "svg" }).svg).toContain("<svg");
+    expect(compileWithoutErrorCard(BROKEN, { onError: "svg" }).svg).toBe("");
+    clearCache();
+    const carded = compile(BROKEN, { onError: "svg" });
+    expect(carded.svg).toContain("<svg");
+    expect(compileWithoutErrorCard(BROKEN, { onError: "svg" })).not.toBe(carded);
+    clearCache();
   });
 });

@@ -5,7 +5,7 @@
 Where the tests of a `src` module are, and what each test file is for. Generated; `npm run check:drift`
 fails when it is stale. How to add a test: `docs/testing.md` § 4.
 
-570 test files in `test/`, 298 `src` modules, 109 modules no test imports.
+570 test files in `test/`, 301 `src` modules, 111 modules no test imports.
 
 ## `src` module → tests that import it
 
@@ -55,6 +55,7 @@ Nearest first, then by name; `(+n)` is the rest. Test names are `test/<name>.tes
 - `src/cli/serialize.ts` (8) — `cli-batch`, `cli-plan-json-roundtrip`, `element-facets`, `plan-json-arcs-paper`, `plan-json-dropped`, `plan-json-instances`, `plan-json-roundtrip-law`, `walls-from-rooms`
 - `src/cli/source-hash.ts` (1) — `cli-expected-hash`
 - `src/cli/summary.ts` (1) — `lint-summary`
+- `src/compile-memo.ts` (1) — `error-svg`
 - `src/compile.ts` (1) — `cache`
 - `src/context-size.ts` (1) — `context-size`
 - `src/cursor.ts` (3) — `block-stair`, `cursor-exhaustive`, `reroll-findrun-oracle`
@@ -86,7 +87,7 @@ Nearest first, then by name; `(+n)` is the rest. Test names are `test/<name>.tes
 - `src/elements/room.ts` (7) — `export-pdf`, `label-leaders`, `label-placement`, `net-area-stamp`, `rect-label-anchor`, `room-floor`, `room-uses`
 - `src/elements/section.ts` (1) — `section`
 - `src/elements/vertical-glyphs.ts` (5) — `diagnostics-volume`, `drawing-budget`, `export-dxf-blocks`, `model-range`, `vertical`
-- `src/elements/void.ts` (3) — `v129-cross`, `void-rail`, `void`
+- `src/elements/void.ts` (4) — `shaft-circulation`, `v129-cross`, `void-rail`, `void`
 - `src/elements/wall.ts` (1) — `room-datums`
 - `src/elements/window.ts` (1) — `corner-window`
 - `src/error-catalog-fixes-intent.ts` (1) — `explain`
@@ -175,7 +176,7 @@ Nearest first, then by name; `(+n)` is the rest. Test names are `test/<name>.tes
 - `src/reroll.ts` (3) — `keep`, `reroll-findrun-oracle`, `reroll`
 - `src/room-datums.ts` (5) — `openings-between`, `room-datums`, `segment-select`, `shared-grid-byte-identity`, `keep`
 - `src/room-tiling.ts` (7) — `rectilinear-doors`, `rectilinear-rooms-byte-identity`, `rectilinear-rooms`, `rectilinear-sides`, `wall-between-around`, `walls-from-rooms-clauses`, `walls-from-rooms`
-- `src/scene-build.ts` (26) — `annotation-collisions`, `annotation-small-rooms`, `export-dxf`, `export-font-cjk`, `export-pdf`, `furniture-curves-backends`, `furniture-rotate`, `glyph-chirality` (+18)
+- `src/scene-build.ts` (27) — `annotation-collisions`, `annotation-small-rooms`, `equivariance-fuzz`, `export-dxf`, `export-font-cjk`, `export-pdf`, `furniture-curves-backends`, `furniture-rotate` (+19)
 - `src/scene-memo.ts` (1) — `scene-memo`
 - `src/scene.ts` (65) — `arc-radius-exact`, `axes`, `band`, `bbox-derived-position`, `block-stair-winders-walking-arc`, `block-stair`, `corner-window`, `dim-stagger` (+57)
 - `src/segment-select.ts` (1) — `segment-select`
@@ -800,6 +801,7 @@ module); adding a test that imports it removes it from this list.
 - `src/cli/commands-share.ts`
 - `src/command-name.ts`
 - `src/compile-path.ts`
+- `src/compile-uncached.ts`
 - `src/compile-work.ts`
 - `src/context-levels.ts`
 - `src/describe/adjacency.ts`
@@ -851,6 +853,7 @@ module); adding a test that imports it removes it from this list.
 - `src/ir/types.ts`
 - `src/keep.ts`
 - `src/layout.ts`
+- `src/level-mix-fix.ts`
 - `src/lint/clearance-facts.ts`
 - `src/lint/corner-nib.ts`
 - `src/lint/doorway-move.ts`

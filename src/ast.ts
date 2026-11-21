@@ -1418,9 +1418,8 @@ export const PLAN_SETTING_KEYWORDS = Object.freeze([
 /**
  * What may stay beside the `level` blocks, as one phrase: the settings ({@link PLAN_SETTING_KEYWORDS}),
  * the declarations, the plan-global scope ({@link LEVEL_SHARED_KINDS}), a `keep stacked` and the
- * plan-level-only element (the `section` mark). `E_LEVEL_MIX`'s catalogue remedy reads it and the
- * parser message quotes that remedy from the generated `CATALOG_FIXES` (the shipped chunk holds the
- * phrase once), and `test/levels.test.ts` fails when a plan-level form is missing from it.
+ * plan-level-only element (the `section` mark). `E_LEVEL_MIX`'s catalogue remedy (`LEVEL_MIX_FIX`,
+ * `src/level-mix-fix.ts`) reads it, and `test/levels.test.ts` fails when a plan-level form is missing from it.
  */
 export const LEVEL_MIX_STAYS_OUTSIDE =
   `settings (${PLAN_SETTING_KEYWORDS.map((k) => `\`${k}\``).join("/")}), \`component\`/\`import\` declarations, ` +
