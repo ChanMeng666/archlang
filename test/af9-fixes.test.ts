@@ -591,12 +591,17 @@ describe("AF9: no fix for an imported module's statement, from every producer (r
 
 describe("AF9: the lint-only modules stay off the compile path (red team S3)", () => {
   const LINT_ONLY = ["src/lint/doorway-move.ts", "src/lint/rules/doorway.ts", "src/lint/rules/openings.ts"];
-  it("src/compile-path.ts reaches none of them; the first use's path reaches each", () => {
+  it("src/compile-path.ts and src/first-use-path.ts reach none of them; lint's entry reaches each", () => {
     const compilePath = reach("src/compile-path.ts");
     expect(compilePath).toContain("src/opening-relation.ts");
     expect(compilePath).toContain("src/lint/rules/doors.ts");
     expect(LINT_ONLY.filter((f) => compilePath.includes(f))).toEqual([]);
+    // Card 3.19b: `lint` is src/lint-path.ts's (the playground's `lint` chunk), no longer the first
+    // use's; the positive control follows it, and the first use's path carries none of them.
+    const lintPath = reach("src/lint-path.ts");
+    for (const f of LINT_ONLY) expect(lintPath, f).toContain(f);
     const firstUse = reach("src/first-use-path.ts");
-    for (const f of LINT_ONLY) expect(firstUse, f).toContain(f);
+    expect(firstUse).toContain("src/diagnostic-json.ts");
+    expect(LINT_ONLY.filter((f) => firstUse.includes(f))).toEqual([]);
   });
 });

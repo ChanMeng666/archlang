@@ -11,13 +11,15 @@
 import {
   applyFixes,
   LINT_PROFILE_NAMES,
-  lint,
   rankFixes,
   suggestTopology,
   type Diagnostic,
   type LintOptions,
   type SceneSummary,
 } from "archlang";
+// `lint` through its door (card 3.19b), whose chunk the compile worker imports by `LINT_URL` for
+// the editor's requests: the page fetches it with edit mode, before the editor's first request.
+import { lint, LINT_URL } from "./lint-core.js";
 import { isolateHistory } from "@codemirror/commands";
 import type { EditorView } from "@codemirror/view";
 import { createEditor } from "./editor-setup.js";
@@ -67,6 +69,8 @@ export interface EditMode {
   ): void;
   /** The diagnostics drawer, its count and a live Intent verdict (from main.ts's `render`). */
   afterCompile(source: string, diagnostics: Diagnostic[]): void;
+  /** Where the compile job loads `lint` from for the editor's requests (lint-core.ts, card 3.19b). */
+  readonly lintUrl: string;
 }
 
 export function mountEditMode(ctx: EditCtx): EditMode {
@@ -233,6 +237,7 @@ export function mountEditMode(ctx: EditCtx): EditMode {
   });
 
   return {
+    lintUrl: LINT_URL,
     getDoc: currentSource,
     replaceDoc(src) {
       // Its own undo step: one Ctrl+Z reverts exactly this replacement (Format, Repair,

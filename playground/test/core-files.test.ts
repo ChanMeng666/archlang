@@ -2,7 +2,7 @@ import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
-import { coreFiles, ENTRY, FIRST_USE_ENTRY, firstUseFiles } from "../scripts/core-files.mjs";
+import { coreFiles, ENTRY, FIRST_USE_ENTRY, firstUseFiles, LINT_ENTRY, lintFiles } from "../scripts/core-files.mjs";
 
 /** An in-memory dist/: relative path → text. */
 const dist = (files: Record<string, string>) =>
@@ -105,6 +105,41 @@ describe("coreFiles (vite.config.js's compiler chunk)", () => {
         compiler,
       ),
     ).toThrow(/dist\/chunk-L\.js re-exports/);
+  });
+
+  it("lintFiles is lint-path.js's imports, transitively, stopping at the compiler and first-use chunks' files", () => {
+    // Card 3.19b: lint's own chunks make the `lint` chunk; what the compiler or the first use has
+    // loaded already is theirs, and what only a press reaches is in neither.
+    const files = {
+      "index.js":
+        'import { compile } from "./chunk-A.js";\nimport { d } from "./chunk-D.js";\nimport { lint } from "./chunk-L.js";\nexport { compile, d, lint };\n',
+      [ENTRY]: 'import { compile } from "./chunk-A.js";\nexport { compile };\n',
+      [FIRST_USE_ENTRY]: 'import { d } from "./chunk-D.js";\nexport { d };\n',
+      [LINT_ENTRY]: 'import { lint } from "./chunk-L.js";\nexport { lint };\n',
+      "chunk-A.js": "var compile = 1;\nexport { compile };\n",
+      "chunk-D.js":
+        'import { compile } from "./chunk-A.js";\nimport { s } from "./chunk-S.js";\nvar d = 2;\nexport { d };\n',
+      "chunk-L.js":
+        'import { s } from "./chunk-S.js";\nimport { r } from "./chunk-R.js";\nvar lint = 3;\nexport { lint };\n',
+      "chunk-S.js": "var s = 4;\nexport { s };\n",
+      "chunk-R.js": 'import { compile } from "./chunk-A.js";\nvar r = 5;\nexport { r };\n',
+      "chunk-F.js": 'import { lint } from "./chunk-L.js";\nvar finish = 6;\nexport { finish };\n',
+    };
+    const read = (rel: string) => (files as Record<string, string>)[rel]!;
+    const exists = (rel: string) => rel in files;
+    const compiler = coreFiles(read, exists);
+    const firstUse = firstUseFiles(read, exists, compiler);
+    expect([...firstUse]).toEqual(["chunk-D.js", "chunk-S.js"]);
+    expect([...lintFiles(read, exists, new Set([...compiler, ...firstUse]))]).toEqual(["chunk-L.js", "chunk-R.js"]);
+    const withoutEntry = Object.fromEntries(Object.entries(files).filter(([rel]) => rel !== LINT_ENTRY));
+    expect(() =>
+      lintFiles(
+        (rel) => withoutEntry[rel]!,
+        (rel) => rel in withoutEntry,
+        compiler,
+      ),
+    ).toThrow(/lint-path\.js is missing/);
+    expect([...lintFiles(read, () => false, new Set())]).toEqual([]);
   });
 
   it("src/compile-path.ts names exactly what the playground's compiler door re-exports", () => {
@@ -214,11 +249,56 @@ describe("coreFiles (vite.config.js's compiler chunk)", () => {
     const used = [...new Set([...reached].flatMap(imported))];
     const entry = reexported(readFileSync(join(REPO, "src/first-use-path.ts"), "utf8"));
     expect(used).toContain("diagnosticToJson");
-    expect(used).toContain("lint");
     // Card 3.18: what the actions run only on a press comes through their lazy door, never here.
     expect(reached.has("press-core.ts"), "press-core.ts is imported dynamically only").toBe(false);
     expect(used).not.toContain("finish");
+    // Card 3.19b: the compile job's `lint` loads with the editor, through lint-core.ts, never here.
+    expect(reached.has("lint-core.ts"), "the actions and the compile job do not import lint-core.ts").toBe(false);
+    expect(used).not.toContain("lint");
     expect(entry.sort()).toEqual(used.filter((n) => !door.has(n)).sort());
+  });
+
+  it("src/lint-path.ts names exactly what lint-core.ts re-exports, which edit mode alone imports and the compile job loads by URL", () => {
+    // Card 3.19b: no view-mode render runs `lint`. A playground module that took it from `archlang`
+    // would put its rules in that module's chunk (the compile job's, on the first use's path, as
+    // before this card); a literal `import("./lint-core.js")` would be wrapped in Vite's preload
+    // helper, which needs a document the worker lacks and is a view-path chunk the worker must not
+    // import, so the job imports the door by the URL edit mode sends (`LINT_URL`).
+    const SRC = join(REPO, "playground/src");
+    const files = readdirSync(SRC).filter((f) => /\.[jt]s$/.test(f));
+    const text = (f: string) => readFileSync(join(SRC, f), "utf8");
+    const door = reexported(text("lint-core.ts"));
+    expect(door).toEqual(["lint"]);
+    expect(reexported(readFileSync(join(REPO, "src/lint-path.ts"), "utf8"))).toEqual(door);
+    const firstUse = new Set(reexported(readFileSync(join(REPO, "src/first-use-path.ts"), "utf8")));
+    expect(door.filter((n) => firstUse.has(n))).toEqual([]);
+    expect(text("lint-core.ts")).toMatch(/^export const LINT_URL = import\.meta\.url;$/m);
+    const statically = files.filter((f) => /^import\s[^;]*?from\s*"\.\/lint-core\.js"/m.test(text(f)));
+    expect(statically).toEqual(["edit-mode.ts"]);
+    // A value `import()`, not a type (`typeof import("./lint-core.js")` loads nothing).
+    const LITERAL = /(?<!\btypeof\s+)\bimport\s*\(\s*["'`]\.\/lint-core\.js/;
+    expect(LITERAL.test('const m = await import("./lint-core.js");'), "the probe is live").toBe(true);
+    expect(LITERAL.test('type T = typeof import("./lint-core.js");')).toBe(false);
+    // Read in code, not comments (lint-core.ts's own header names the form it avoids).
+    const code = (f: string) =>
+      text(f)
+        .split("\n")
+        .filter((l) => !/^\s*(?:\/\/|\/\*|\*)/.test(l))
+        .join("\n");
+    for (const f of files) expect(code(f), `${f} imports lint-core.js with a literal import()`).not.toMatch(LITERAL);
+    // The job's import is by URL, and it reads `lint` where the door publishes it, under one key
+    // spelt the same in both (a chunk's export names are the bundler's to rename).
+    expect(text("compile-worker.ts")).toMatch(/\bimport\(\/\* @vite-ignore \*\/ target\.href\)/);
+    const key = (f: string) => /^(?:export )?const LINT_KEY = "([\w$]+)";$/m.exec(text(f))?.[1];
+    expect(key("lint-core.ts")).toBeTruthy();
+    expect(key("compile-worker.ts")).toBe(key("lint-core.ts"));
+    expect(text("lint-core.ts")).toMatch(/^\(globalThis as Record<string, unknown>\)\[LINT_KEY\] = lint;$/m);
+    const takesLint = files.filter((f) =>
+      [...text(f).matchAll(/^(?:import|export)\s*\{([^}]*)\}\s*from\s*"archlang";$/gm)].some((m) =>
+        m[1]!.split(",").some((n) => n.trim() === "lint"),
+      ),
+    );
+    expect(takesLint).toEqual(["lint-core.ts"]);
   });
 
   it("src/actions-path.ts names exactly what the header actions' lazy door re-exports, which only a dynamic import reaches", () => {
