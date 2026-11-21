@@ -7,16 +7,19 @@
  */
 import { readFileSync } from "node:fs";
 import { compile, describe, lint, THEMES } from "archlang";
-import { afterEach, describe as suite, expect, it } from "vitest";
+import { afterEach, beforeAll, describe as suite, expect, it } from "vitest";
 import {
   type CompileRequest,
   type CompileResult,
   compileOptionsFor,
   createCompileClient,
+  jobReady,
+  loadLint,
   runCompileJob,
   sceneFor,
 } from "../src/compile-worker.js";
 import { extractKnobs } from "../src/knobs.js";
+import { LINT_URL } from "../src/lint-core.js";
 
 const example = (name: string) =>
   readFileSync(new URL(`../../examples/${name}.arch`, import.meta.url), "utf8").replace(/\r\n?/g, "\n");
@@ -35,7 +38,41 @@ const req = (source: string, over: Partial<CompileRequest> = {}): CompileRequest
   ...over,
 });
 
+// First in the file: it sees the module before anything has loaded `lint`.
+suite("lint loads with the editor's first request (card 3.19b)", () => {
+  const original = (globalThis as { Worker?: unknown }).Worker;
+  afterEach(() => {
+    (globalThis as { Worker?: unknown }).Worker = original;
+  });
+  const src = example("laneway-house");
+
+  it("a request without the editor runs with no lint loaded; one from the editor waits for it", async () => {
+    // No module has loaded it: a view-mode render needs none, an editor's render does.
+    expect(jobReady(req(src))).toBe(true);
+    expect(jobReady(req(src, { lintProfile: "" }))).toBe(false);
+    expect(runCompileJob(req(src)).lint).toBeNull();
+    expect(() => runCompileJob(req(src, { lintProfile: "" }))).toThrow(/lint has not loaded/);
+    (globalThis as { Worker?: unknown }).Worker = undefined;
+    const client = createCompileClient();
+    // A request from the editor with no URL to load lint from is refused, and settles.
+    await expect(client.run(req(src, { lintProfile: "" }))).rejects.toThrow(/carries no lintUrl/);
+    // …and so is one from anywhere but this build's own origin.
+    await expect(
+      client.run(req(src, { lintProfile: "", lintUrl: "https://example.com/lint-core.js" })),
+    ).rejects.toThrow(/this build's origin/);
+    expect(jobReady(req(src, { lintProfile: "" }))).toBe(false);
+    // With the door's URL, the page's job loads lint and lints as the core does.
+    const got = await client.run(req(src, { seq: 2, lintProfile: "", lintUrl: LINT_URL }));
+    expect(got?.lint).toEqual(lint(src, { noCache: true } as never));
+    expect(got?.lint?.length).toBeGreaterThan(0);
+    expect(jobReady(req(src, { lintProfile: "" }))).toBe(true);
+  });
+});
+
 suite("runCompileJob", () => {
+  beforeAll(async () => {
+    await loadLint(LINT_URL); // not returned: a function beforeAll resolves to is its teardown
+  });
   for (const name of NAMES) {
     it(`${name}: is the page's compile, describe and lint, call for call`, () => {
       const source = example(name);
@@ -121,6 +158,9 @@ class FakeWorker extends EventTarget {
 }
 
 suite("createCompileClient", () => {
+  beforeAll(async () => {
+    await loadLint(LINT_URL); // not returned: a function beforeAll resolves to is its teardown
+  });
   const original = (globalThis as { Worker?: unknown }).Worker;
   afterEach(() => {
     (globalThis as { Worker?: unknown }).Worker = original;

@@ -4,10 +4,13 @@ import {
   ARC_RADIUS_ERROR_PLAN,
   AUTOSAVE_KEY,
   BROKEN_PLAN,
+  enterEdit,
   gotoEdit,
+  pickPlan,
   RESIZED_PLAN,
   SIMPLE_PLAN,
   setEditorSource,
+  waitForPlan,
 } from "./fixtures.js";
 
 const example = (name: string) =>
@@ -169,6 +172,33 @@ test.describe("compiling in a worker", () => {
       Math.max(0, ...longTasks),
       `main-thread long tasks while typing: ${longTasks.map(Math.round).join(", ")} ms`,
     ).toBeLessThanOrEqual(100);
+  });
+
+  test("a first use in view mode fetches no lint; entering edit mode does, and the worker lints", async ({ page }) => {
+    // Card 3.19b: `lint` is the `lint` chunk, which edit mode imports and the worker imports by its
+    // URL for the editor's first request (lint-core.ts); the startup-chunks gate in
+    // preview3d.spec.ts reads the build, and this reads the network and the page.
+    const LINT_CHUNK = /\/assets\/lint-[\w-]{8}\.js$/;
+    const fetched: string[] = [];
+    page.on("request", (r) => {
+      if (LINT_CHUNK.test(new URL(r.url()).pathname)) fetched.push(r.url());
+    });
+    await page.goto("/");
+    await waitForPlan(page);
+    await expect(page.locator("html")).toHaveAttribute("data-mode", "view");
+    // A first use: a plan picked compiles in the worker, with no lint.
+    await pickPlan(page, "Two-bed flat");
+    await expect(page.locator("html")).toHaveAttribute("data-compiler", "worker");
+    expect(fetched, "a view-mode first use fetches no lint chunk").toEqual([]);
+    await enterEdit(page);
+    await page.locator("#tab-checks").click();
+    await expect(page.locator("#lint")).toBeVisible();
+    await expect(page.locator("#lintOutput .lintrow, #lintOutput .ok")).not.toHaveCount(0);
+    await expect(page.locator("html[data-rendering]")).toHaveCount(0, { timeout: 30_000 });
+    // The editor's render was answered by the worker (a worker that could not load lint would have
+    // handed it to the page, and `data-compiler` would say so).
+    await expect(page.locator("html")).toHaveAttribute("data-compiler", "worker");
+    expect(fetched.length, "entering edit mode fetched the lint chunk").toBeGreaterThan(0);
   });
 
   test("the worker draws what the page draws, byte for byte", async ({ browser }) => {

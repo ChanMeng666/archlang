@@ -84,8 +84,8 @@ describe("npm tarball (npm pack --dry-run)", () => {
     expect(paths.filter((p) => p.startsWith("dist/error-catalog"))).toEqual([]);
   });
 
-  it("keeps dist/compile-path.js, dist/first-use-path.js, dist/actions-path.js and their maps out of the tarball, and nothing the package loads", () => {
-    // Build entries for the repository's playground alone (cards RM0.7f, EB.2 and 3.18, tsup.config.ts):
+  it("keeps dist/compile-path.js, dist/first-use-path.js, dist/actions-path.js, dist/lint-path.js and their maps out of the tarball, and nothing the package loads", () => {
+    // Build entries for the repository's playground alone (cards RM0.7f, EB.2, 3.18 and 3.19b, tsup.config.ts):
     // each holds only imports and exports, no `exports` entry names it and nothing imports it.
     // Their chunks are imported by dist/index.js too, so they must ship. Checked from the sources,
     // which this suite can read without a build: the `files` negations are exactly the
@@ -108,6 +108,8 @@ describe("npm tarball (npm pack --dry-run)", () => {
         "!dist/first-use-path.js.map",
         "!dist/actions-path.js",
         "!dist/actions-path.js.map",
+        "!dist/lint-path.js",
+        "!dist/lint-path.js.map",
         "!dist/error-catalog.js",
         "!dist/error-catalog.js.map",
       ].sort(),
@@ -116,7 +118,7 @@ describe("npm tarball (npm pack --dry-run)", () => {
     const list = (re: RegExp) => [...(re.exec(tsup)?.[1] ?? "").matchAll(/"([^"]+)"/g)].map((m) => m[1] as string);
     const entries = list(/\n {2}entry: \[([^\]]*)\]/);
     const dtsEntries = list(/\n {2}dts: \{ entry: \[([^\]]*)\]/);
-    const BUILD_ONLY = ["compile-path", "first-use-path", "actions-path"];
+    const BUILD_ONLY = ["compile-path", "first-use-path", "actions-path", "lint-path"];
     for (const buildOnly of BUILD_ONLY.map((name) => `src/${name}.ts`)) {
       expect(entries).toContain(buildOnly);
       expect(dtsEntries, `no declaration file for the build-only entry ${buildOnly}`).not.toContain(buildOnly);

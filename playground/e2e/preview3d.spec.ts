@@ -1693,8 +1693,9 @@ type Marked = Window & { __preview3d?: Handle & { __old?: boolean } };
  * - `firstUsePathBudget` (card RM0.7f): that compiler path and the header actions with what they
  *   import, the JS a first use has loaded before its first render (main.ts `up` awaits the actions
  *   first, and the idle import warms them). The actions' chunk imports the core's `first-use`
- *   chunk (`diagnosticToJson` and the compile worker's `lint`, split out of the compiler chunk;
- *   since card 3.18 finish, repair, format and the DXF/TXT exports load on a press, not here), so
+ *   chunk (`diagnosticToJson`, split out of the compiler chunk; since card 3.18 finish, repair,
+ *   format and the DXF/TXT exports load on a press, and since card 3.19b the compile worker's
+ *   `lint` with edit mode, not here), so
  *   this is the gate a leak into that chunk trips, as `compilerPathBudget` did before the split.
  *   A hard ceiling, set the same way.
  * - `growthBudget` (20,000 B): that compiler path, against the baseline. The 3D
@@ -1788,10 +1789,10 @@ test.describe("startup chunks", () => {
       return found[0] as string;
     });
     expect(boot, "the boot import of ./compiler.js is the compiler chunk").toContain(compiler);
-    // The worker runs the compile job's chunk and what it imports statically: the compiler and,
-    // for `lint` (card EB.2), the core's lazy chunk the header actions import too, and no page
-    // code (the entry and the startup chunks run page code, which needs a document), so it never
-    // runs the view path in a worker.
+    // The worker runs the compile job's chunk and what it imports statically: the compiler, and no
+    // page code (the entry and the startup chunks run page code, which needs a document), so it
+    // never runs the view path in a worker. Its `lint` it imports by URL for the editor (card 3.19b,
+    // below).
     const workerChunk = boot[boot.length - 1] as string;
     const inWorker = reach([workerChunk]);
     expect(inWorker, "the compile worker imports the compiler").toContain(compiler);
@@ -1804,8 +1805,9 @@ test.describe("startup chunks", () => {
     expect(actionsChunk, "the boot imports name the header actions' chunk").toBeDefined();
     expect(paths.actions, "the shared walk's actions are the header actions' chunk").toBe(actionsChunk);
     const { firstUsePath } = paths;
-    // The worker loads nothing a first use has not loaded on the page already (card EB.2: its
-    // `lint` rides the actions' lazy core chunk), so no budget misses what it fetches but its own chunk.
+    // The worker loads nothing a first use has not loaded on the page already, so no budget misses
+    // what it fetches on a first use but its own chunk (its `lint` loads only for the editor, with
+    // edit mode's chunks: card 3.19b).
     for (const file of inWorker)
       if (file !== workerChunk)
         expect(firstUsePath, `the compile worker's ${file} is on the first use's path`).toContain(file);
@@ -1839,6 +1841,34 @@ test.describe("startup chunks", () => {
       for (const file of firstUseOrBooted)
         expect(holds(file), `${file} carries ${fn}'s code ("${sentinel}"), which only a press loads`).toBe(false);
     }
+    // Card 3.19b: `lint` (the compile job's, which only the editor asks for) is the `lint` chunk,
+    // which edit mode imports statically and which no boot import or first use reaches: the job
+    // imports it by its URL (lint-core.ts `LINT_URL`) for the editor's first request, so not even a
+    // dynamic import names it. The worker runs it, so it imports no view-path chunk either.
+    const lintChunk = one(/^lint-[\w-]{8}\.js$/, "one lint chunk");
+    expect(reach([editor]), "edit mode imports the lint chunk statically").toContain(lintChunk);
+    expect(firstUsePath, "lint is not on the first use's path").not.toContain(lintChunk);
+    expect(booted, "lint is loaded by no boot import").not.toContain(lintChunk);
+    for (const file of booted)
+      expect(imports(file, DYNAMIC), `${file} imports the lint chunk by name`).not.toContain(lintChunk);
+    const lintReach = reach([lintChunk]);
+    for (const file of viewPath)
+      expect(lintReach, `the lint chunk (the worker runs it) imports the view path's ${file}`).not.toContain(file);
+    // Its code, not only its door: a string only a lint rule (and the catalogue and suggest, which
+    // edit mode loads) writes, checked in its source first, is in what the lint chunk reaches and
+    // in nothing a first use or a boot import loads.
+    const LINT_ONLY = "is reachable only through a bedroom.";
+    expect(
+      readFileSync(
+        join(dirname(fileURLToPath(import.meta.url)), "..", "..", "src", "lint", "rules", "reachability.ts"),
+        "utf8",
+      ),
+      `the lint sentinel "${LINT_ONLY}" is in src/lint/rules/reachability.ts`,
+    ).toContain(LINT_ONLY);
+    const holdsLint = (file: string) => readFileSync(join(DIST, file), "utf8").includes(LINT_ONLY);
+    expect(lintReach.filter(holdsLint), "the lint chunk reaches lint's rules").not.toEqual([]);
+    for (const file of firstUseOrBooted)
+      expect(holdsLint(file), `${file} carries lint's rules ("${LINT_ONLY}"), which only the editor loads`).toBe(false);
     // Card NR.10: the compile path neither raises nor carries an intent violation's code; their
     // fixes are a table off it (src/error-catalog-fixes-intent.ts, test/compile-path-intent.test.ts).
     expect(readFileSync(join(DIST, compiler), "utf8"), "the compiler chunk carries no E_INTENT_ code").not.toContain(

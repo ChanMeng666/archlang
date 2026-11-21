@@ -1,7 +1,7 @@
 import { defineConfig } from "vite";
 import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
-import { coreFiles, firstUseFiles } from "./scripts/core-files.mjs";
+import { coreFiles, firstUseFiles, lintFiles } from "./scripts/core-files.mjs";
 
 /** The built core's directory, as rolldown spells module ids (forward slashes). */
 const CORE_DIST = `${resolve(__dirname, "../dist").replace(/\\/g, "/")}/`;
@@ -22,16 +22,27 @@ const CORE_FILES = coreFiles(
 const isCompiler = (id) => id === CORE_DOOR || (id.startsWith(CORE_DIST) && CORE_FILES.has(id.slice(CORE_DIST.length)));
 // The built core's files the first use loads beyond the compiler (scripts/core-files.mjs, card
 // 3.18): the chunks `first-use-path.js` imports (src/first-use-path.ts: `diagnosticToJson`, which the
-// header actions import statically, and the compile worker's `lint`), in one `first-use` chunk, so
-// the actions and the worker load the same file. Left to the bundler they were split by who imports
-// each, and the worker's `lint` fell off the first use's path (firstUsePathBudget) while the worker
-// fetched it on that use. What the actions run only on a press (press-core.ts) is no such file.
+// header actions import statically), in one `first-use` chunk. What the actions run only on a press
+// (press-core.ts) is no such file, nor, since card 3.19b, the compile worker's `lint`.
 const FIRST_USE_FILES = firstUseFiles(
   (rel) => readFileSync(CORE_DIST + rel, "utf8"),
   (rel) => existsSync(CORE_DIST + rel),
   CORE_FILES,
 );
 const isFirstUse = (id) => id.startsWith(CORE_DIST) && FIRST_USE_FILES.has(id.slice(CORE_DIST.length));
+// `lint`'s built files beyond those two (card 3.19b: the chunks `lint-path.js` imports,
+// src/lint-path.ts) and the playground's door to them (src/lint-core.ts), in one `lint` chunk: edit
+// mode imports the door statically, and the compile worker imports that chunk by its own URL
+// (`LINT_URL`) for the editor's first request, so a first use in view mode loads none of it
+// (firstUsePathBudget). The door must be the chunk's own module: inlined into edit mode's chunk, its
+// URL would be edit mode's, which the worker cannot run.
+const LINT_FILES = lintFiles(
+  (rel) => readFileSync(CORE_DIST + rel, "utf8"),
+  (rel) => existsSync(CORE_DIST + rel),
+  new Set([...CORE_FILES, ...FIRST_USE_FILES]),
+);
+const LINT_DOOR = resolve(__dirname, "src/lint-core.ts").replace(/\\/g, "/");
+const isLint = (id) => id === LINT_DOOR || (id.startsWith(CORE_DIST) && LINT_FILES.has(id.slice(CORE_DIST.length)));
 
 /*
  * The compiler is its own chunk (`compiler-*.js`, the codeSplitting group below), which main.ts
@@ -187,13 +198,15 @@ export default defineConfig({
         // the startup gate (playground/e2e/preview3d.spec.ts, "startup chunks"), which walks the
         // static imports from both pages and fails when jsPDF or another lazy chunk is reached.
         // `first-use` (card 3.18) is the core the header actions and the compile worker share
-        // beyond the compiler (FIRST_USE_FILES above), one chunk so both import the same file.
+        // beyond the compiler (FIRST_USE_FILES above); `lint` (card 3.19b) is `lint()` and its door,
+        // which edit mode and the compile worker share (LINT_FILES above).
         codeSplitting: {
           groups: [
             { name: "preload-helper", test: (id) => id.includes("vite/preload-helper") },
             { name: "jspdf", test: /node_modules[\\/]jspdf[\\/]/ },
             { name: "compiler", test: (id) => isCompiler(id.replace(/\\/g, "/")) },
             { name: "first-use", test: (id) => isFirstUse(id.replace(/\\/g, "/")) },
+            { name: "lint", test: (id) => isLint(id.replace(/\\/g, "/")) },
           ],
         },
       },

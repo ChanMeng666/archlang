@@ -27,19 +27,45 @@
  * The page and the worker run the same function on the same compiler build, so a request gives
  * byte-identical results in both (playground/test/compile-worker.test.ts, e2e/editing.spec.ts).
  *
- * Its static imports are the compiler (and, for `lint`, the core's lazy chunk) and nothing of the
- * page's: a worker that imported the
+ * Its static imports are the compiler and nothing of the page's: a worker that imported the
  * page's entry chunk would run the page's code, which needs a document, and fail
  * (e2e/preview3d.spec.ts, "startup chunks", walks this chunk's imports).
  */
 import type { CompileOptions, Diagnostic, DescribeOptions, LintOptions, PlanNode, Scene, SceneSummary } from "archlang";
 import { compile, describe, THEMES } from "./compiler.js";
-// `lint` is the editor's alone (no compile, embed or view-mode render runs it), so it is not in the
-// compiler chunk (card EB.2, src/compile-path.ts): it comes from the core's lazy chunk, which the
-// header actions load on the page with the first use anyway (their `diagnosticToJson`,
-// src/first-use-path.ts; an HTTP-cache hit here). That chunk
-// imports the compiler chunk and nothing of the page's (e2e/preview3d.spec.ts, "startup chunks").
-import { lint } from "archlang";
+
+// `lint` is the editor's alone (no compile, embed or view-mode render runs it), so it is neither in
+// the compiler chunk (card EB.2, src/compile-path.ts) nor on the first use's path (card 3.19b): the
+// job imports its door (lint-core.ts) by the URL the first request that asks for lint carries,
+// which only the editor makes. Edit mode imports the same door statically, so by then the page has
+// fetched it and the worker's import is an HTTP-cache hit. By URL, never a literal `import()`:
+// Vite wraps those in its preload helper, which needs a document and is a view-path chunk
+// (lint-core.ts says more). That chunk imports the compiler chunk and nothing of the page's
+// (e2e/preview3d.spec.ts, "startup chunks").
+type LintCore = typeof import("./lint-core.js");
+type Lint = LintCore["lint"];
+let loadedLint: Lint | undefined;
+let lintP: Promise<Lint> | undefined;
+/**
+ * Load `lint` (once) from its door's URL (lint-core.ts `LINT_URL`) for the requests that ask for it.
+ * A failed load is forgotten, so the next request asks again.
+ */
+export function loadLint(url: string | undefined): Promise<Lint> {
+  if (url === undefined) return Promise.reject(new Error("a request that asks for lint carries no lintUrl"));
+  // Only this build's own modules: the page that made the worker sends the URL, and it is the door's.
+  if (new URL(url, import.meta.url).origin !== new URL(import.meta.url).origin)
+    return Promise.reject(new Error(`lint loads only from this build's origin, not ${url}`));
+  return (lintP ??= (import(/* @vite-ignore */ url) as Promise<LintCore>).then(
+    (m) => (loadedLint = m.lint),
+    (err: unknown) => {
+      lintP = undefined;
+      throw err;
+    },
+  ));
+}
+/** Whether `runCompileJob` can run `req` now: it asks for no lint, or `lint` has loaded. */
+export const jobReady = (req: Pick<CompileRequest, "lintProfile">): boolean =>
+  req.lintProfile === null || loadedLint !== undefined;
 
 /** One render's request: the source and every setting that changes what the compiler returns. */
 export interface CompileRequest {
@@ -57,6 +83,11 @@ export interface CompileRequest {
    * Lint section and no lint gutter to feed.
    */
   lintProfile: string | null;
+  /**
+   * Where `lint` loads from (lint-core.ts `LINT_URL`, which edit mode gives): present with a
+   * `lintProfile`, so the job loads lint's code only for the editor (card 3.19b).
+   */
+  lintUrl?: string;
 }
 
 /** A storey's drawing, as the page reads it (the core's `CompilePage` without its Scene). */
@@ -108,8 +139,14 @@ export function compileOptionsFor(req: Pick<CompileRequest, "theme" | "accessibl
 const drawnPages = (pages: { level: number; name?: string; svg: string }[] | undefined): DrawnPage[] | undefined =>
   pages?.map(({ level, name, svg }) => (name === undefined ? { level, svg } : { level, name, svg }));
 
-/** Run one render's compile, describe, lint and Paths compile. Pure: the same request, the same result. */
+/**
+ * Run one render's compile, describe, lint and Paths compile. Pure: the same request, the same
+ * result. A request that asks for lint (`lintProfile` not null) needs `loadLint` settled first
+ * (`jobReady`); the worker and the page's fallback wait for it, so this throws only for a caller
+ * that did not.
+ */
 export function runCompileJob(req: CompileRequest): CompileResult {
+  if (!jobReady(req)) throw new Error("runCompileJob: lint has not loaded; await loadLint() first");
   const opts = compileOptionsFor(req);
   const { svg, errors, diagnostics, pages, ast } = compile(req.source, opts);
   const ok = errors.length === 0;
@@ -119,7 +156,7 @@ export function runCompileJob(req: CompileRequest): CompileResult {
   // (`src/scene-memo.ts`) when the render has no theme and no a11y; otherwise it draws its own.
   const lintDiags =
     ok && req.lintProfile !== null
-      ? lint(req.source, { profile: req.lintProfile, noCache: true } as LintOptions & { noCache?: boolean })
+      ? loadedLint!(req.source, { profile: req.lintProfile, noCache: true } as LintOptions & { noCache?: boolean })
       : null;
   const result: CompileResult = { svg, errors, diagnostics: diagnostics ?? [], whole, lint: lintDiags };
   const drawn = drawnPages(pages);
@@ -172,21 +209,28 @@ const scope = globalThis as unknown as { WorkerGlobalScope?: abstract new () => 
 if (typeof scope.WorkerGlobalScope === "function" && globalThis instanceof scope.WorkerGlobalScope) {
   const self = globalThis as unknown as WorkerScope;
   self.addEventListener("message", (e) => {
-    const { seq } = e.data;
+    const req = e.data;
+    const { seq } = req;
     const fail = (err: unknown) =>
       self.postMessage({ seq, ok: false, error: String((err as { message?: string })?.message ?? err) });
-    let result: CompileResult;
-    try {
-      result = runCompileJob(e.data);
-    } catch (err) {
-      fail(err);
-      return;
-    }
-    try {
-      self.postMessage({ seq, ok: true, result });
-    } catch (err) {
-      fail(err); // a result that would not clone: the page compiles this one itself
-    }
+    const answer = () => {
+      let result: CompileResult;
+      try {
+        result = runCompileJob(req);
+      } catch (err) {
+        fail(err);
+        return;
+      }
+      try {
+        self.postMessage({ seq, ok: true, result });
+      } catch (err) {
+        fail(err); // a result that would not clone: the page compiles this one itself
+      }
+    };
+    // The editor's first request loads `lint` first (card 3.19b). A load that fails is a worker
+    // that cannot answer, so the page compiles this request itself, as for any failure here.
+    if (jobReady(req)) answer();
+    else loadLint(req.lintUrl).then(answer, fail);
   });
 }
 
@@ -233,9 +277,14 @@ export function createCompileClient(
   /** The watchdog on the request in the worker. */
   let timer: ReturnType<typeof setTimeout> | undefined;
 
-  // A job that throws on the page settles its promise anyway (rejected), so nothing waits for ever.
-  const onPage = (p: Pending) => {
+  // A job that throws on the page settles its promise anyway (rejected), so nothing waits for ever,
+  // and so does a request from the editor whose `lint` would not load (card 3.19b).
+  const onPage = (p: Pending): void => {
     if (p.req.seq < latest) return p.resolve(null);
+    if (!jobReady(p.req)) {
+      loadLint(p.req.lintUrl).then(() => onPage(p), p.reject);
+      return;
+    }
     let result: CompileResult;
     try {
       result = runCompileJob(p.req);

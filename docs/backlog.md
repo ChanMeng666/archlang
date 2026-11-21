@@ -305,6 +305,12 @@ the bytes and has shown no cheaper cut, by the file's × 1.025 rule. It covers `
 only, not `compilerPathBudget`. **Gate:** at least ~3,000 B gzip off the compiler path and the embed path, no
 budget raised, the digest unmoved.
 
+### 3.19b · The first use has about 1.3 KB of headroom left after 3.19: done by #PRNUM, waiting to be archived — `note`
+
+Done by #PRNUM, with no budget raised: the compile worker's `lint`, which only the editor runs, left the `first-use` chunk for a `lint` chunk of its own (build entry `src/lint-path.ts`, door `playground/src/lint-core.ts`, the `lint` group in `playground/vite.config.js`). Edit mode imports it statically. The worker imports it by that chunk's own URL (`LINT_URL`) with the editor's first request: a literal `import()` would be wrapped in Vite's preload helper, which reads `document`. `npm run size:embed` on `main` 519c2189 → #PRNUM: first use 466,680 → 411,728 B (−54,952), compiler path 312,481 → 312,468 B, embed path 299,840 → 299,818 B. The corpus digest of SVG, `describe()`, `lint()`, diagnostics and the error card is unchanged. `firstUsePathBudget` is re-taken DOWN by the file's rule, 468,000 → 423,000 B (11,272 B headroom), so a lint leak back onto the path trips it. Residue: a first press of Format, Finish, Repair furniture or a DXF/TXT download now fetches the lint chunk (55,358 B) with `press-core`, since `finish` reads `lint`; Copy for LLM's fix column (in `first-use`, ~19 KB) is still on the path. The card text below is kept for the record.
+
+After #1002 (3.19) the first use measured 466,680 B against `firstUsePathBudget` 468,000 (1,320 B left), and three open PRs add to it: #1001 (`W_SEAT_FACING_WALL`, ~+954 B), #1003 (CV14 examples, ~+165 B) and #1004 (`W_STAIR_NO_VOID`, ~+281 B), about 80 B over together. #1002's residue named what is left on the path: the fix column Copy for LLM reads and the worker's `lint`, which only the editor runs. **Gate:** at least ~3,000 B gzip off the first use, the compiler and embed budgets met and not raised, the digest unmoved, the playground's behaviour the same.
+
 ## Found while redrawing the showcase
 
 Five things the twelve new examples ran into. None is a regression and none blocked an example from

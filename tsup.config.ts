@@ -33,6 +33,9 @@ export default defineConfig({
   // not in the tarball either. `src/actions-path.ts` (card 3.18) splits off what the header actions
   // run only on a press (`finish`, `repair`, `format`, `toDxf`, `renderAscii`), which the
   // playground loads with the press, not with the first use. Not exported, not in the tarball.
+  // `src/lint-path.ts` (card 3.19b) splits `lint` off both: only the playground's editor runs it,
+  // so the playground loads it with edit mode, not with the first use, and not with a press either.
+  // Not exported, not in the tarball.
   entry: [
     "src/index.ts",
     "src/cli.ts",
@@ -42,6 +45,7 @@ export default defineConfig({
     "src/compile-path.ts",
     "src/first-use-path.ts",
     "src/actions-path.ts",
+    "src/lint-path.ts",
   ],
   format: ["esm"],
   dts: { entry: ["src/index.ts", "src/cli.ts", "src/cli/link.ts", "src/share.ts"] },
