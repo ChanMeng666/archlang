@@ -5,7 +5,7 @@
 Where the tests of a `src` module are, and what each test file is for. Generated; `npm run check:drift`
 fails when it is stale. How to add a test: `docs/testing.md` § 4.
 
-568 test files in `test/`, 298 `src` modules, 109 modules no test imports.
+569 test files in `test/`, 298 `src` modules, 109 modules no test imports.
 
 ## `src` module → tests that import it
 
@@ -102,7 +102,7 @@ Nearest first, then by name; `(+n)` is the rest. Test names are `test/<name>.tes
 - `src/fix-producers.ts` (2) — `emit-opening-oracle`, `fix-printer`
 - `src/fixable-codes.ts` (1) — `fixable-codes`
 - `src/fixture-orientation.ts` (2) — `fixture-orientation`, `rectilinear-sides`
-- `src/fixtures-catalog.ts` (35) — `catalogue-images`, `equivariance-corpus`, `export-dxf-blocks`, `finish-furnish-bounds`, `finish-furnish`, `fixture-classifier-drift`, `fixture-orientation`, `footprint-any-placement` (+27)
+- `src/fixtures-catalog.ts` (36) — `catalogue-images`, `equivariance-corpus`, `export-dxf-blocks`, `finish-furnish-bounds`, `finish-furnish`, `fixture-classifier-drift`, `fixture-orientation`, `footprint-any-placement` (+28)
 - `src/format.ts` (59) — `axes`, `dim-faces`, `fence`, `furniture-against`, `furniture-lint`, `furniture-rotate`, `opening`, `openings-between` (+51)
 - `src/frame.ts` (45) — `compose-assoc`, `d4`, `equivariance-corpus`, `equivariance-fuzz`, `equivariance-scene`, `frame`, `furniture-mirror`, `symmetry` (+37)
 - `src/furnish-table.ts` (1) — `lint-label-piece-missing`
@@ -126,7 +126,7 @@ Nearest first, then by name; `(+n)` is the rest. Test names are `test/<name>.tes
 - `src/impact.ts` (2) — `rectilinear-doors`, `rectilinear-rooms`
 - `src/import.ts` (36) — `af9-byte-identity`, `af9-fixes`, `block-stair-byte-identity`, `corner-window-byte-identity`, `dim-swap-reprint`, `dim-thickness-callout`, `drawing-budget`, `error-value-law` (+28)
 - `src/import/limits.ts` (1) — `openplan3d-malformed`
-- `src/index.ts` (425) — `acc-metadata`, `access-graph`, `access-policy`, `accessible-svg`, `af9-byte-identity`, `af9-fixes`, `agent-gallery`, `alias-match` (+417)
+- `src/index.ts` (426) — `acc-metadata`, `access-graph`, `access-policy`, `accessible-svg`, `af9-byte-identity`, `af9-fixes`, `agent-gallery`, `alias-match` (+418)
 - `src/input-limit.ts` (2) — `import-rooted`, `workspace-seams`
 - `src/intent-concepts.ts` (3) — `vocabulary-es-pt`, `vocabulary-living-dining`, `vocabulary-matcher-oracle`
 - `src/intent-feasibility.ts` (1) — `intent-infeasible`
@@ -155,7 +155,7 @@ Nearest first, then by name; `(+n)` is the rest. Test names are `test/<name>.tes
 - `src/lint/rules/room-contents.ts` (1) — `lint-label-piece-missing`
 - `src/lint/rules/stairs.ts` (6) — `block-stair-landing`, `block-stair-lint`, `block-stair-winders-walking-arc`, `lint-stair-riser-too-high`, `lint-stairs`, `repair-no-worse`
 - `src/lint/ruleset.ts` (15) — `block-stair-landing`, `block-stair-lint`, `block-stair-shaft`, `block-stair`, `circle-enclosure`, `lint-clearances-kitchen-doors`, `lint-clearances-wc-window`, `lint-exterior-ring` (+7)
-- `src/lint/storeys.ts` (6) — `block-stair-landing`, `block-stair-lint`, `block-stair-shaft`, `block-stair`, `lint-index-superset`, `repair-no-worse`
+- `src/lint/storeys.ts` (46) — `block-stair-landing`, `block-stair-lint`, `block-stair-shaft`, `block-stair`, `lint-index-superset`, `block-stair-frames`, `circulation-entrances`, `corner-window` (+38)
 - `src/lsp.ts` (2) — `block-stair-lint`, `lsp-codeactions`
 - `src/manifest.ts` (9) — `cli-context`, `cli-manifest`, `cli-storey-names`, `context-starter`, `describe-depends`, `docs-flags`, `llms-full-drift`, `site-doors` (+1)
 - `src/markdown.ts` (7) — `label-fit`, `label-placement-oracle`, `label-wrap`, `room-adjacency-oracle`, `room-overlap-oracle`, `step-budget`, `vocabulary-matcher-oracle`
@@ -549,6 +549,7 @@ The first sentence of each file's header comment.
 - `test/lint-stairs.test.ts` — Plan-soundness PS2.11e (the stair bullets), PS2.34 and PS2.15: the six stair-safety codes.
 - `test/lint-storey-way-in.test.ts` — `W_NO_ENTRANCE` on a multi-storey plan (#404): each storey it fires on is told which storey it is and what is missing there, because the building may have a front door on another floor.
 - `test/lint-summary.test.ts` — diagnosticsSummary; the diagnostics are what lint() returns; a wide summary and a failing later tier; the text report opens with the line; withoutSummary (the d…
+- `test/lint-table-no-seat.test.ts` — Product roadmap RM9.6, coverage class CV13 (plan-soundness PS2.31): `W_TABLE_NO_SEAT`, a dining table in a home's living room, dining room or kitchen that holds no seat.
 - `test/lint-thickness-unplaced.test.ts` — Card AL5: a `dims auto` wall-thickness figure printed over a room's label moves to a place clear of everything drawn, or is not drawn and `W_DIM_THICKNESS_UNPLACED` says so.
 - `test/lint.test.ts` — lint — clean plans; lint — rules fire on the right violation; lint — architectural-soundness rules (v1.1); lint — configurable ruleset; lint — W_NO_ENTRANCE ask…
 - `test/llm-spec-drift.test.ts` — Drift guard for `spec.llm.md` (the one-prompt agent spec).
