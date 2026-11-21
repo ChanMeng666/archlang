@@ -450,6 +450,7 @@ sense relative to the line — a drafting convention, like a hatch angle. Its mi
 other diagonal. Not a defect; the pin moves only if the tick convention does.
 
 - E.16 · `nested-ref` — a reference into a nested instance fails once its plan is placed — closed by W8 → archived (lab)
+- E.17 · `facade-probe-order` — placing a storey moved its `dims auto` chains — closed → archived (lab)
 
 ### E.18 · `annotation-overlap-translation` — `W_ANNOTATION_OVERLAP` changes under a pure translation — `todo`
 
@@ -463,7 +464,6 @@ whenever its random seed reaches such a plan (the next push run, `594c1a93`, was
 label passes compare absolute float positions (as circulation did before E.11's extent-frame snap).
 Gate: the counterexample's P₀ and gP lint the same; the fuzz has no `NEW` on that seed. Do not pin
 it as a known class to green the suite; fix the comparison.
-- E.17 · `facade-probe-order` — placing a storey moved its `dims auto` chains — closed → archived (lab)
 
 ## Circulation findings (found while landing W3b)
 
