@@ -2004,19 +2004,24 @@
  *
  * Re-measured for E.18 (the leader's dot is read in its own frame, against a slack), the same 14
  * rows (19 tests: `floor-materials` and `slab-clear` read one row several times). The leader step
- * ends a led label's line on the first lattice place whose dot stands wholly on its room's floor; it
- * read that as `rectAreaOutside(dot, floor) > 0` in the plan's absolute floats, and the store's first
- * five places, the room's anchor (3750,1500) among them, each read 5.2e-10 mm² off a floor they
- * stand wholly on, so its line ended on the sixth, (3144,894). It now ends on the anchor, and the
- * kitchenette's name moves one lattice pitch east, (6150 → 6756, 3249.32), because the store's new
- * line runs through the box its name had at 6150; the kitchenette's dot stays (6150,894). Exactly
- * those SVG nodes moved (the two lines, the store's dot, the kitchenette's two texts); `describe()`,
- * `lint()` and the diagnostics did not move, and the labels' text-on-text overprints at the width
- * they print are the same nine (all `dims auto` figures) before and after. Put `main`'s floor
- * reading back into the branch and every old digest is reproduced (the symbol half of the change
- * moves no row). A per-payload sweep of 1,133 sources (535 `.arch` files and 598 docs fences; SVG
- * per storey, `describe()`, `lint()`) moved this plan's SVG alone, and a planted change (the dot's
- * radius 0.1 → 0.11) moved the 6 that draw a leader.
+ * ends a led label's line on the first lattice place whose dot stands wholly on its room's floor and
+ * meets no wall, text or symbol box; it read the floor as `rectAreaOutside(dot, floor) > 0` in the
+ * plan's absolute floats, and the store's first five places, the room's anchor (3750,1500) among
+ * them, each read 5.2e-10 mm² off a floor they stand wholly on, so its line ended on the sixth,
+ * (3144,894). It now ends on the anchor, and the kitchenette's name moves one lattice pitch east,
+ * (6150 → 6756, 3249.32), because the store's new line runs through the box its name had at 6150;
+ * the kitchenette's dot stays (6150,894). Exactly those SVG nodes moved (the two lines, the store's
+ * dot, the kitchenette's two texts); `describe()`, `lint()` and the diagnostics did not move, and the
+ * labels' text-on-text overprints at the width they print are the same nine (all `dims auto`
+ * figures) before and after. The drawing is not better for it: the store's new line runs about 339 mm
+ * through the store's cabinet symbol (3850,1800–4450,2250), where `main`'s crossed neither the
+ * cabinet nor the shelving. The step ranks both lines alike (each crosses a swing or a symbol, the
+ * same tier), so it kept the first dot the rule allows: the dot is chosen without regard to the line
+ * it forces (backlog residue). Put `main`'s floor reading back into the branch and every old digest
+ * is reproduced; the box reading (the dot meeting a wall, text or symbol box, also read in its frame)
+ * moves no row. A per-payload sweep of 1,133 sources (535 `.arch` files and 598 docs fences; SVG per
+ * storey, `describe()`, `lint()`) moved this plan's SVG alone, and a planted change (the dot's radius
+ * 0.1 → 0.11) moved the 6 that draw a leader.
  *
  * ## `examples/laneway-house.arch` and `eval/goldens/anchor-furniture.arch`: re-measured for AL3w's review
  *

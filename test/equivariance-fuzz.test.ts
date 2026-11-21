@@ -273,11 +273,14 @@ describe("pinned fuzz counterexamples", () => {
    * E.18 (fast-check seed 533254921, path "58:0:5:6:13:13:13:12:12:12:15:17:16:10:14:14:15:15:17:15:
    * 18:18:18:18:19:1:8:13:17:19:17:17:20:21:21:21:21:21:22:22:22:22", g = t): `W_ANNOTATION_OVERLAP`
    * ("Living" over the wc) on P₀ and not 20 m out. The leader step (`src/label-fit.ts`) ends a led
-   * label's line on the first lattice place whose dot stands wholly on its floor, and read that as
-   * `rectAreaOutside(dot, floor) > 0` at the plan's absolute positions: a dot wholly on its floor read
-   * 1e-10 to 1e-9 mm² off it, a different place each time, so P₀ ended the line on another dot, whose
-   * line was blocked, and the label stayed on the wc. It is now read in the dot's own frame, against a
-   * slack (`DOT_SLACK`).
+   * label's line on the first lattice place whose dot stands wholly on its floor and meets no wall,
+   * text or symbol, and read that as `rectAreaOutside(dot, floor) > 0` and `overlapArea(dot, box) > 0`
+   * at the plan's absolute positions: a dot wholly on its floor read 1e-10 to 1e-9 mm² off it, a
+   * different place each time, so P₀ ended the line on another dot, whose line was blocked, and the
+   * label stayed on the wc. Both are now read in the dot's own frame, against a slack (`DOT_SLACK`).
+   * `strip` is the same rooms 1324.3 mm deep with only the centred wc (the red team's case): there
+   * the dot's box met a wall band's by rounding alone, so the line ended at (893.5,662.15) at the
+   * origin and at (1450,105.65) from 333.3 mm out.
    */
   const e18 = (at: number, g: { rotate?: number; mirror?: "x" | "y" } = {}): string => `plan "P" {
   units mm
@@ -297,6 +300,20 @@ describe("pinned fuzz counterexamples", () => {
   }
   place body() as g at (${at},${at}) rotate ${g.rotate ?? 0}${g.mirror ? ` mirror ${g.mirror}` : ""}
 }`;
+  const strip = (at: number, g: { rotate?: number; mirror?: "x" | "y" } = {}): string => `plan "P" {
+  units mm
+  component body() {
+    wall id=w_shell exterior thickness 100 { (0,0) (9400,0) (9400,1324.3) (0,1324.3) close }
+    wall id=w_v1 partition thickness 80 { (2900,0) (2900,1324.3) }
+    wall id=w_v2 partition thickness 80 { (7400,0) (7400,1324.3) }
+    room id=r0 at (0,0) size 2900x1324.3 label "Living"
+    room id=r1 at (2900,0) size 4500x1324.3
+    room id=r2 at (7400,0) size 2000x1324.3
+    furniture id=f0 wc in r0 centered size 900x600
+    room id=r_base at (12400,16000) size 3000x2500
+  }
+  place body() as g at (${at},${at}) rotate ${g.rotate ?? 0}${g.mirror ? ` mirror ${g.mirror}` : ""}
+}`;
 
   it("E.18: the led label of the three-room strip lints the same translated", () => {
     const { vs } = instanceCase((h) => e18(h?.translate ? translationFor(0) : 0), elementNamed("t"), 0, "up");
@@ -306,38 +323,43 @@ describe("pinned fuzz counterexamples", () => {
     ).toEqual([]);
   });
 
-  it("E.18: at every offset, turned or flipped, the label is led from the same dot", () => {
+  it("E.18: at every offset, under every turn and flip, a label is led along the same line", () => {
     const overlap = (src: string) => lint(src).filter((d) => d.code === "W_ANNOTATION_OVERLAP").length;
-    /** The leader's dot, relative to the instance's origin. */
-    const dots = (src: string, at: number) => {
+    const rel = (v: number, at: number) => Math.round((v - at) * 1e6) / 1e6;
+    /** Every leader, both its ends relative to the instance's origin. */
+    const leaders = (src: string, at: number) => {
       const { ir } = resolvePlan(src);
       return (drawnLeaders(toScene(ir!, { annotate: true })) ?? []).map((l) => ({
         room: l.room,
         host: l.host,
-        x: Math.round((l.b.x - at) * 1e6) / 1e6,
-        y: Math.round((l.b.y - at) * 1e6) / 1e6,
+        a: [rel(l.a.x, at), rel(l.a.y, at)],
+        b: [rel(l.b.x, at), rel(l.b.y, at)],
       }));
     };
     const offsets = [0, 0.5, 333.3, 1000, 7300, 20000, -20000, 1_000_000];
-    // Turned, the passes before the leader step clear the name (text stays upright), so none is led.
-    const cases = [
-      { g: {}, led: 1 },
-      { g: { mirror: "x" as const }, led: 1 },
-      { g: { rotate: 90 }, led: 0 },
-      { g: { rotate: 180 }, led: 0 },
-      { g: { rotate: 270 }, led: 0 },
-    ];
-    for (const { g, led } of cases) {
-      const base = { overlap: overlap(e18(0, g)), dots: dots(e18(0, g), 0) };
+    const spellings: { rotate: number; mirror?: "x" | "y" }[] = [0, 90, 180, 270].flatMap((rotate) => [
+      { rotate },
+      { rotate, mirror: "x" as const },
+      { rotate, mirror: "y" as const },
+    ]);
+    for (const [name, plan] of [
+      ["e18", e18],
+      ["strip", strip],
+    ] as const) {
       // Not vacuous: unturned, the label is led off the wc into the next room, so nothing is reported.
-      expect(base.overlap, JSON.stringify(g)).toBe(0);
-      expect(base.dots, JSON.stringify(g)).toHaveLength(led);
-      for (const d of base.dots) expect([d.room, d.host], JSON.stringify(g)).toEqual(["g.r0", "g.r1"]);
-      for (const at of offsets) {
-        expect({ overlap: overlap(e18(at, g)), dots: dots(e18(at, g), at) }, `${JSON.stringify(g)} at ${at}`).toEqual(
-          base,
-        );
+      expect({ overlap: overlap(plan(0)), led: leaders(plan(0), 0).map((l) => [l.room, l.host]) }, name).toEqual({
+        overlap: 0,
+        led: [["g.r0", "g.r1"]],
+      });
+      for (const g of spellings) {
+        const base = { overlap: overlap(plan(0, g)), leaders: leaders(plan(0, g), 0) };
+        for (const at of offsets) {
+          expect(
+            { overlap: overlap(plan(at, g)), leaders: leaders(plan(at, g), at) },
+            `${name} ${JSON.stringify(g)} at ${at}`,
+          ).toEqual(base);
+        }
       }
     }
-  }, 60_000);
+  }, 120_000);
 });

@@ -456,14 +456,18 @@ other diagonal. Not a defect; the pin moves only if the tick convention does.
 ### E.18 · `annotation-overlap-translation` — `W_ANNOTATION_OVERLAP` changes under a pure translation: done by #999, waiting to be archived — `note`
 
 Done by #999. The cause was not the label passes' positions but the leader step's dot (`src/label-fit.ts`).
-The dot must stand wholly on its floor, and that was read as `rectAreaOutside(dot, floor) > 0` in
-absolute floats, where a dot wholly on its floor reads 1e-10 to 1e-9 mm² off it, at different lattice
-places for different coordinates. So P₀ ended the line on another dot, whose line was blocked. The
-floor test and the symbol test are now clipped in the dot's own frame against `DOT_SLACK` (1e-9 of the
-dot's box). The CI seed passes all 60 runs (main fails at run 59). Over the corpus only
-`test/fixtures/dense-office.arch`'s SVG moves (14 rows re-pinned with a swap-back); `describe()` and
-`lint()` do not move. Pinned in `test/equivariance-fuzz.test.ts` § pinned fuzz counterexamples. The
-card text below is kept for the record.
+The dot must stand wholly on its floor and meet no wall, text or symbol box, and that was read as
+`rectAreaOutside(dot, floor) > 0` and `overlapArea(dot, box) > 0` in absolute floats. A dot wholly on
+its floor reads 1e-10 to 1e-9 mm² off it, at different lattice places for different coordinates, and
+a dot's box can meet a wall band's by rounding alone. So P₀ ended the line on another dot, whose line
+was blocked. Both readings now run in the dot's own frame against `DOT_SLACK` (1e-9 of the dot's
+box). The result is translation-invariant over the fuzz's range: tested at offsets up to ±20 m and at
+10⁶ mm, under every turn and flip (`test/equivariance-fuzz.test.ts` § pinned fuzz counterexamples,
+this plan and a 1324.3 mm-deep strip whose dot met a wall band's box). Further out, E.19. The CI seed
+passes all 60 runs (main fails at run 59). Over the corpus only `test/fixtures/dense-office.arch`'s SVG
+moves (14 rows re-pinned with a swap-back); `describe()` and `lint()` do not move. The store's line
+there now runs about 339 mm through its cabinet symbol: the dot is chosen without regard to the line it
+forces (residue). The card text below is kept for the record.
 
 Found by `test/equivariance-fuzz.test.ts` on `main`'s push run for `91ed1210` (Node 20, shard 3/5;
 seed 533254921, the path in the run log): a three-room strip (`cols [2900,4500,2000]`, rows
@@ -475,6 +479,19 @@ whenever its random seed reaches such a plan (the next push run, `594c1a93`, was
 label passes compare absolute float positions (as circulation did before E.11's extent-frame snap).
 Gate: the counterexample's P₀ and gP lint the same; the fuzz has no `NEW` on that seed. Do not pin
 it as a known class to green the suite; fix the comparison.
+
+### E.19 · `annotation-overlap-far-translation` — `W_ANNOTATION_OVERLAP` changes under a translation of 1.5 × 10⁶ mm or more — `todo`
+
+Found by #999's red team, after E.18's fix: E.18 holds over the fuzz's range (offsets up to ±20 m, and
+10⁶ mm), but placed further out some plans still lint differently. Over 400 plans of `planSpec`
+(`fc.sample(planSpec, { seed: 7, numRuns: 400 })`, each drawn through `withInstance(spec, { rotate: 0,
+at: { x: T, y: T } })`, `T` rounded up to the plan's grid) the share that differs is 1/400 at `T` =
+1,500,000, 11/400 at 3,000,000 and 18/400 at 5,000,000. Reproducers: case #137 at 1,500,000 (the
+rule reports a label far out that P₀ does not) and case #4 at 25,000,000 (P₀ reports one that far
+out is led clear, `g.r1 → g.r0`). `main` before E.18 differs on the same cases at 25,000,000 and
+33,000,000, so it predates the fix. Not yet traced to a pass: at those magnitudes an ulp of a
+coordinate is 2⁻³²–2⁻²⁸ mm, so any label pass that compares absolute positions can flip. Gate: those
+two cases lint the same as P₀; then widen the fuzz's translation or add a far-offset row.
 
 ## Circulation findings (found while landing W3b)
 
