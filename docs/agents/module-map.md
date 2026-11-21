@@ -155,7 +155,7 @@ Totals: 425 modules in 34 directories.
 | `arch-completion.ts` | 63 | 2 | CodeMirror 6 autocompletion for ArchLang, backed by the core's pure `completion()` language service (the same engine the LSP/editor use). | none |
 | `checks-overlay.ts` | 68 | 2 | The Checks overlay's string work, pure (unit-tested in Node): lifting the review rings out of the sheet `arch preview --review` draws, and laying them over the drawing on screen. | none |
 | `checks-panel.ts` | 211 | 1 | Checks (public-surfaces P6): the Checks layer toggle on the drawing's toolbar (beside Paths, ruling PG-D3) draws, over the drawing, the review rings `arch preview --review` draws, from the same function (src/cli/review.ts, built as… | none |
-| `compile-worker.ts` | 384 | 2 | The playground's compile job, and the Web Worker it runs in (card MP6, ruling MP-D6: typing never freezes the page). A playground file, not core: `compile()`, `describe()` and `lint()` are the core's, called exactly as the page called… | none |
+| `compile-worker.ts` | 405 | 2 | The playground's compile job, and the Web Worker it runs in (card MP6, ruling MP-D6: typing never freezes the page). A playground file, not core: `compile()`, `describe()` and `lint()` are the core's, called exactly as the page called… | none |
 | `compiler.ts` | 23 | 7 | The compiler functions the view path calls (main.ts, and the compile job it runs in a worker, compile-worker.ts), behind the one dynamic import that keeps the core out of the startup chunk. Named, not `import("archlang")`: a dynamic… | none |
 | `describe-panel.ts` | 69 | 1 | Describe, the Facts tab's first section: a compact access-graph diagram from `describe().access` with the raw describe JSON tucked into a <details>. Zero-dep — pure DOM/CSS strings, no graph library. | none |
 | `diagnostics-panel.ts` | 73 | 1 | Render the compiler diagnostics into the `#errors` panel as clickable rows: the catalogued remedy (`fix`) shows inline under each row so the fix is visible without a click; clicking a row jumps the editor caret to the diagnostic's source… | none |
@@ -178,7 +178,7 @@ Totals: 425 modules in 34 directories.
 | `lazy-once.ts` | 16 | 2 | A lazy load that runs once and is shared: every call before it settles gets the same promise, and every call after it resolves gets the same value. A rejected load is forgotten, so the next call tries again, which retries the chunk on the… | none |
 | `level-switcher.ts` | 105 | 1 | The storey switcher — one `L<n>` button per `level` block of a multi-storey plan. | none |
 | `levels.ts` | 80 | 6 | The storey-switcher arithmetic — which page of a multi-storey plan the preview is showing, what its button says, and what a download of it is called. | none |
-| `lint-core.ts` | 21 | 3 | `lint`, which only the editor runs (card 3.19b): the door edit mode imports statically, and the module the compile job (compile-worker.ts) imports by its own URL, `LINT_URL`, for the first request that asks for lint (edit mode sends that… | none |
+| `lint-core.ts` | 31 | 2 | `lint`, which no view-mode render runs (card 3.19b; edit mode, the Checks overlay and a press of Finish or Repair load its chunk): the door edit mode imports statically, and the module the compile job (compile-worker.ts) imports by its… | none |
 | `lint-panel.ts` | 70 | 1 | The Lint section of the Checks tab — architectural soundness warnings (habitability rules) for the current plan, under the chosen advisory profile. The repair-button visibility (keyed off the same diagnostics) is wired in actions.ts. | none |
 | `llm-prompt.ts` | 144 | 3 | Assemble a single paste-ready prompt for an AI assistant from the current plan: an intro line, the source in an ```arch fence, the compact `describe()` facts (rooms/areas/adjacency + an access summary), the diagnostics with line/col/fix… | none |
 | `main.ts` | 1424 | 0 | The playground's startup module: the view path. It shows the drawing (the one built into the page first, then the compiled one), pans and zooms it, reports its facts, switches storeys and plans (the plan gallery in the header) and runs… | none |
@@ -221,7 +221,7 @@ Totals: 425 modules in 34 directories.
 
 | Module | Lines | Importers | Summary | Budget |
 | --- | ---: | ---: | --- | --- |
-| `actions-path.ts` | 20 | 0 | A build entry, not a package export (card 3.18), the third of the playground's three (after `src/compile-path.ts` and `src/first-use-path.ts`): the core values the header actions run only when a button is pressed… | none |
+| `actions-path.ts` | 21 | 0 | A build entry, not a package export (card 3.18), the third of the playground's four (after `src/compile-path.ts` and `src/first-use-path.ts`, before `src/lint-path.ts`): the core values the header actions run only when a button is pressed… | none |
 | `analyze.ts` | 1281 | 136 | Shared semantic-analysis layer for the agent-facing tools. | none |
 | `any-catalog-fix.ts` | 20 | 3 | The catalogued remediation for any catalogue code (card NR.10): {@link catalogFix}'s table, the codes `compile()` raises, then the intent violations' (`E_INTENT_*`, which only `validateIntent` raises). The two generated tables are… | none |
 | `ast.ts` | 1755 | 230 | Abstract syntax tree for an ArchLang `plan`. All distances are in millimetres. | none |
@@ -285,7 +285,7 @@ Totals: 425 modules in 34 directories.
 | `layout.ts` | 318 | 1 | Relational placement (T6.2) — the optional layout seam. | charges the step meter |
 | `level-mix-fix.ts` | 12 | 2 | `E_LEVEL_MIX`'s catalogued remedy, written once (card 3.19): the catalogue entry's `fix` (`src/error-catalog/vertical.ts`) and the parser's message, which quotes it, both read it here. The parser once quoted it from the generated… | none |
 | `lexer.ts` | 613 | 31 | Hand-written lexer for ArchLang. Zero dependencies; tracks line/col. | none |
-| `lint-path.ts` | 18 | 0 | A build entry, not a package export (card 3.19b), the fourth of the playground's four (after `src/compile-path.ts`, `src/first-use-path.ts` and `src/actions-path.ts`): `lint`, which only the playground's editor runs… | none |
+| `lint-path.ts` | 19 | 0 | A build entry, not a package export (card 3.19b), the fourth of the playground's four (after `src/compile-path.ts`, `src/first-use-path.ts` and `src/actions-path.ts`): `lint`, which no view-mode render runs (`playground/src/lint-core.ts`… | none |
 | `lint.ts` | 380 | 34 | `lint(source)` — architectural soundness rules, as diagnostics. | none |
 | `lock.ts` | 197 | 2 | The lock check (preview-and-remodel card B1, decision D6): `impact(before, after, { lock })` and `arch impact --against old.arch --lock <id,…>`. A lock names elements that must not change between two versions of a plan; it is checked… | none |
 | `lsp.ts` | 688 | 3 | Pure language-services core for the ArchLang LSP (T5.3). | none |
