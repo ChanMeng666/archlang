@@ -10,7 +10,7 @@
  * PR legitimately moves a hashed output (never keep code), the table is re-taken by the generator, the
  * reason recorded below and the moved files listed in that commit's message.
  *
- * Taken: RM9.6 #993 red team 1: W_TABLE_NO_SEAT's message and hint reworded (no auto id quoted), a table labelled as another piece not read; on feat/rm9.6-table-no-seat
+ * Taken: RM9.6 #993 red team 2: masked-route-balcony-door's twin header no longer says lint is silent (it raises W_TABLE_NO_SEAT); on feat/rm9.6-table-no-seat
  */
 
 /** `[path from the repository root, SHA-256 of the payload, evaluation steps]`, sorted by root. */
@@ -698,7 +698,7 @@ export const KEEP_WEAK_BASELINE: readonly (readonly [string, string, number])[] 
   ],
   [
     "test/defect-corpus/clearances/masked-route-balcony-door.clean.arch",
-    "6164298af8941121a7d371a9cbb7f5af150f5bbe180027371e93626a1f182e58",
+    "a9cb8d9beca3ea31fa61af5db428175a18a520196e5e3e28620cde895d22167f",
     239,
   ],
   [
