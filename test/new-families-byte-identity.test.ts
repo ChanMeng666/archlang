@@ -144,10 +144,10 @@ const BASELINE: [string, string][] = [
   ["131d7956a2ed43a35efdc3df8cdef9b0b8a27d44aff5f529e0403884aa7d2b20", "examples/remodel.arch"], // CV13 (was e034f7f8): example source edited (chairs added)
   ["157e38a1404dbc2adddd0832783a7424abaea04e111f44c467ec1fa9b7b70f12", "examples/sheet-notes.arch"],
   ["1d9c8a9a57e9b4104d8aceb7a1ea5f23cea6963680037270195115d99e70d7cd", "examples/studio.arch"],
-  ["7784e0a77b26d646d188f9f8c3bdef276a7de207da696a02345d499f9c36321f", "examples/terrace-row.arch"],
+  ["c43011c1e3e15d3eb1e821186fade0fcd25ad697dc1da9c0ed52ed43d2ad5eb0", "examples/terrace-row.arch"], // CV08 (was 7784e0a7): example source edited (sofa turned to face the room)
   ["78d8e4b1ef3ca7afd21a9ec05a638b1d426299d7fb57e7bf09f1b4bcd17e58d8", "examples/themed.arch"],
   ["1183ede6f8a3a1ebf83e9b2c3614d88155e37613c4d5fc3f6acd3f80defa7f6c", "examples/tiny-house.arch"],
-  ["067489db63330fb64fb0d30d6cf21d180401091bc0baae8621e80001b9602fbe", "examples/townhouse.arch"], // RM1.3a, see ./byte-identity-baseline.ts; RM9.2, see ./byte-identity-baseline.ts; CV13 (was 3b76fb02): example source edited (chairs added)
+  ["d33a7ae4cda984d7e619d2dc9afa998a6deff3fbcb6abe117a3562ae9ae5df90", "examples/townhouse.arch"], // RM1.3a, see ./byte-identity-baseline.ts; RM9.2, see ./byte-identity-baseline.ts; CV13 (was 3b76fb02): example source edited (chairs added); CV08 (was 067489db): example source edited (sofa turned to face the room)
   ["7d9680366da7f54a92ac8d224fe3fa46dc36385030e87365d0e9158494c52961", "examples/transit-hall.arch"],
   ["9914c01d77860216fda528327da5290168a75b9a21925f46838852db606ebd93", "examples/turning-stair.arch"], // RM1.3a, see ./byte-identity-baseline.ts; RM1.2a, see ./byte-identity-baseline.ts; RM9.2, see ./byte-identity-baseline.ts
   ["5befb53fade12044aa9301705c74141fe204c4f7f6ec48344492abf599faf22c", "examples/two-bed.arch"], // CV13 (was 1e2e65d0): example source edited (chairs added)

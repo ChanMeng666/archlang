@@ -266,8 +266,8 @@ const MAIN_SOURCES: [path: string, payload: string, source: string, undo: [branc
   ],
   [
     "examples/terrace-row.arch",
-    "5b45dd460a3dbb1e788b8a839ee1f7fb594a0b1efe92118c84e1bf4639edca87",
-    "ce926d751443bccbbbe8dd6290271f5766d7e3fb740cca7251fbe1d41a0251f3",
+    "682a2584e4fbc1b5cd6463b00c6ecf47df8470b36dd98cf22ba6471f59142769", // CV08 (was 5b45dd46): example source edited (sofa turned to face the room)
+    "c4385d43d9030ec79ae4779b307dabf19d43cbe3c4660e43c74c27de44fc41c9", // CV08 (was ce926d75): example source edited (sofa turned to face the room)
     [
       [
         "    furniture id=f_fridge fridge       against wall shell segment 1 offset 8150 in living",
@@ -303,8 +303,8 @@ const MAIN_SOURCES: [path: string, payload: string, source: string, undo: [branc
   ],
   [
     "examples/townhouse.arch",
-    "e741d25e342c9142e839084a7c4fed7fc1fcfec49269dd5de70afda21fbf88a6", // RM1.3a, see ./byte-identity-baseline.ts; RM9.2, see ./byte-identity-baseline.ts; CV13 (was 2cdbb29b): example source edited (chairs added)
-    "5ef67caa9e75d52850fe26edc4aeac49e8b92684c4e22e1746e336bb85c69bae", // CV13 (was 6173926c): example source edited (chairs added)
+    "b5f2d17b5990faae81ec5bdcc69c8d2ae05f3aab52a7533ee327c5b6be9c4770", // RM1.3a, see ./byte-identity-baseline.ts; RM9.2, see ./byte-identity-baseline.ts; CV13 (was 2cdbb29b): example source edited (chairs added); CV08 (was e741d25e): example source edited (sofa turned to face the room)
+    "8953b6916a5c634df963eb8bfb3ea8d520e6de0043b97dfefa30c8f68474c993", // CV13 (was 6173926c): example source edited (chairs added); CV08 (was 5ef67caa): example source edited (sofa turned to face the room)
     [
       [
         "    furniture fridge       against wall shell segment 3 offset 3200 in r_kitchen",

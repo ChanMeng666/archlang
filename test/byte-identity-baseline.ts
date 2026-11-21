@@ -2081,10 +2081,10 @@ export const BASELINE: [string, string][] = [
   ["remodel", "f76c772b4a502d7d6aba79cb963a115e842880aaa8839455d077c30f75979133"], // added with the example, see header; `centreline_at`, see header; CV13 (was ac397a1a): example source edited (chairs added)
   ["sheet-notes", "3178042f5c9770726dbf700add62817f0522b662585cfc4a971e43d41f853c7a"], // re-measured, see header
   ["studio", "c1b79a49af3ad31cddf82e88632624d46663c804f134b6e172e585cad36ed969"], // PS2.11e, see header
-  ["terrace-row", "ec839a417cb57b6bce80a592a144bd98a216b175edb92c67df3260ab5ce9c33d"], // re-measured, see header
+  ["terrace-row", "1a7bbcde47500c0e8abfedf8e22f2305e14c0a5bb2f2c71c88535ebf1f453211"], // re-measured, see header; CV08 (was ec839a41): example source edited (sofa turned to face the room)
   ["themed", "24c18315c2fcc753391aa01a506f69f611f6d9ac8512053981dc8ce75f36f746"], // PS2.11e, see header
   ["tiny-house", "8236b2c882cc2ff9f21a7b0d5a715f773d300b7432e5746987f2e3809e430ce9"], // PS2.11e, see header
-  ["townhouse", "374746a1d7cca2c7eb52b6f3c90b85987bee633f14bca141a4d0987b1455b4bd"], // re-measured, see header; PS2.11e, see header; RM1.3a, see header; RM9.2, see header; CV13 (was 65bb836a): example source edited (chairs added)
+  ["townhouse", "63c9943ba5863da9dbfdeeb194763193c380ef8172b4966e76563aaf93e90d2b"], // re-measured, see header; PS2.11e, see header; RM1.3a, see header; RM9.2, see header; CV13 (was 65bb836a): example source edited (chairs added); CV08 (was 374746a1): example source edited (sofa turned to face the room)
   ["transit-hall", "84d3e195a6c9ffb9687fbe345b1a902672a024a67a6b8f57b35c1151aba7424e"], // PS2.11e, see header
   ["turning-stair", "f14a63c239831bd0136b7b1f3c4310241d0f87328e52b39cf7d9489909426b2d"], // added with the example, see header; `centreline_at`, see header; RM1.3a, see header; RM1.2a, see header; RM9.2, see header
   ["two-bed", "4235a55f56feecae0935f8760ab50fb8b650696ac8aaa8eff7c76bebca8ebbf8"], // PS3.6 source rewrite, see header; PS2.11e, see header; `centreline_at`, see header; CV13 (was 21101fea): example source edited (chairs added)
@@ -2133,10 +2133,10 @@ export const SEMANTIC_BASELINE: [string, string][] = [
   ["remodel", "98186703c1c8c05c8fa3de5e52ba14cc9a570c97f6be98f21e6ad40c3674e727"], // added with the example, see header; `centreline_at`, see header; CV13 (was b6eba3f1): example source edited (chairs added)
   ["sheet-notes", "148de5f5a58fb9533999df816a742074ec901216e3b9fb78eff338b91633a4b8"], // added with the example, see header
   ["studio", "8ec08c91405139bf3d9979ad20d712299e82409bbec8d6ec9e70e89a856973e4"],
-  ["terrace-row", "0c37d23bb8dfa83ce746869724ff62952637f1acb8a6ca353bfe8f7a440941a7"],
+  ["terrace-row", "816ee27f71dc78671909db34ad59d2196fe1d779f0ebd904fee49170320dede3"], // CV08 (was 0c37d23b): example source edited (sofa turned to face the room)
   ["themed", "7e222ca408876d502b7e8662d90b695bfa3e8712c855023a6dacc3d21a3bbacd"],
   ["tiny-house", "3513ef53a1064ff6b4435f4a8f05db2578aa258a1bb6c55c90df0517a638190b"], // PS2.11e, see header
-  ["townhouse", "ee07e827ddb5997de412f8e2d9010f888bac31263c17f176094b9eace1906542"], // re-measured, see header; RM1.3a, see header; RM9.2, see header; CV13 (was 147c8167): example source edited (chairs added)
+  ["townhouse", "d97b1c020cae6f58569f761d5e0af8225540c6a5a403bf7c850d3c08990838f5"], // re-measured, see header; RM1.3a, see header; RM9.2, see header; CV13 (was 147c8167): example source edited (chairs added); CV08 (was ee07e827): example source edited (sofa turned to face the room)
   ["transit-hall", "4092fd0a7d88401cc49781d8021f0863300e8cbe65804d5735a9271a0c6c3eff"], // PS2.11e, see header
   ["turning-stair", "95a956232914bc2728140f0b649392e11b9873fe176b16d66d9e3fedd71712fc"], // added with the example, see header; `centreline_at`, see header; RM1.3a, see header; RM1.2a, see header; RM9.2, see header
   ["two-bed", "51c6bbc05ab18c7c7680dd728a03ab2f6be914768a654b6f89124817b6954101"], // PS3.6 source rewrite, see header; `centreline_at`, see header; CV13 (was 436fadba): example source edited (chairs added)
