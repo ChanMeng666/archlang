@@ -453,7 +453,17 @@ other diagonal. Not a defect; the pin moves only if the tick convention does.
 - E.16 · `nested-ref` — a reference into a nested instance fails once its plan is placed — closed by W8 → archived (lab)
 - E.17 · `facade-probe-order` — placing a storey moved its `dims auto` chains — closed → archived (lab)
 
-### E.18 · `annotation-overlap-translation` — `W_ANNOTATION_OVERLAP` changes under a pure translation — `todo`
+### E.18 · `annotation-overlap-translation` — `W_ANNOTATION_OVERLAP` changes under a pure translation: done by #999, waiting to be archived — `note`
+
+Done by #999. The cause was not the label passes' positions but the leader step's dot (`src/label-fit.ts`).
+The dot must stand wholly on its floor, and that was read as `rectAreaOutside(dot, floor) > 0` in
+absolute floats, where a dot wholly on its floor reads 1e-10 to 1e-9 mm² off it, at different lattice
+places for different coordinates. So P₀ ended the line on another dot, whose line was blocked. The
+floor test and the symbol test are now clipped in the dot's own frame against `DOT_SLACK` (1e-9 of the
+dot's box). The CI seed passes all 60 runs (main fails at run 59). Over the corpus only
+`test/fixtures/dense-office.arch`'s SVG moves (14 rows re-pinned with a swap-back); `describe()` and
+`lint()` do not move. Pinned in `test/equivariance-fuzz.test.ts` § pinned fuzz counterexamples. The
+card text below is kept for the record.
 
 Found by `test/equivariance-fuzz.test.ts` on `main`'s push run for `91ed1210` (Node 20, shard 3/5;
 seed 533254921, the path in the run log): a three-room strip (`cols [2900,4500,2000]`, rows
