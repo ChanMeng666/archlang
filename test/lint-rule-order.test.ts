@@ -85,6 +85,7 @@ const EXPECTED_ORDER = [
   "thickness-unplaced",
   "exterior-door-onto-roof",
   "table-no-seat",
+  "seat-facing-wall",
 ];
 
 const decidedCodes = new Set(Object.values(DECIDED).flat());

@@ -939,7 +939,7 @@ const DIGESTS: [string, string][] = [
   ["4fcb697a9ca1bba1bcbcb0dbf13b8408a036eac7d7cf11a3b49f893f60858533", "door-u"], // `centreline_at`, see ./byte-identity-baseline.ts
   ["7f8fd6e2ab3e0d3e05cc6654f5d18fa1d28e16e19b612f82d05d3aa42240d957", "door-one-run"], // `centreline_at`, see ./byte-identity-baseline.ts
   ["39215ac149ddd3cb84ca0b8211d54b2d5385e2b51bcb319636a9966f2e8ad82d", "sides"],
-  ["816e177d627645e2ff64163379bdb0133a75b7310563d4ce92edcf3412a10dc4", "issue-whole"],
+  ["8b299f20bcb8620df36e3d3fc35092136b12ca99f4c884742f97cfb521a74268", "issue-whole"], // RM9.6 CV08 (was 816e177d): lint() gains W_SEAT_FACING_WALL (its sofa, `anchor bottom-left flush` at rotate 0)
   ["46f0683fb76364297815f3e2830e4d9814db366bcecb577be04eec9c0f59f351", "doors-placed"], // `centreline_at`, see ./byte-identity-baseline.ts
 ];
 

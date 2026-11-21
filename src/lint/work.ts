@@ -30,9 +30,14 @@ export interface LintWork {
    * storey that has a table it reads, never once per table (product roadmap RM9.6).
    */
   tableSeatTests: number;
+  /**
+   * `W_SEAT_FACING_WALL`: the (seat front, wall segment) tests the rule made, one per straight
+   * wall segment of the storey for each drawn front of a lounge seat (product roadmap RM9.6).
+   */
+  seatWallTests: number;
 }
 
 /** A fresh set of counters, all 0. */
 export function newLintWork(): LintWork {
-  return { leafDoorPairs: 0, boundaryRunTests: 0, navCells: 0, tableSeatTests: 0 };
+  return { leafDoorPairs: 0, boundaryRunTests: 0, navCells: 0, tableSeatTests: 0, seatWallTests: 0 };
 }

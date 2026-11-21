@@ -11,6 +11,9 @@ import { actOnQuarterTurn, inverse } from "../../algebra/d4.js";
 import { pointInRoomBox, rectInRoomBox, rectOf } from "../../analyze.js";
 import type { Diagnostic } from "../../diagnostics.js";
 import { canonicalFixture } from "../../elements/fixtures-glyphs.js";
+import { sofaLRunDepth } from "../../elements/glyphs-living.js";
+import type { WallSegment } from "../../geometry.js";
+import { mergedLength, overlap1d } from "../../geometry/rect.js";
 import {
   type ClearWorld,
   clearWorldOf,
@@ -23,6 +26,7 @@ import type { RFurniture } from "../../ir.js";
 import { wallRef } from "../../wall-ref.js";
 import type { LintContext, LintRule } from "../context.js";
 import { mm } from "../measure.js";
+import type { LintWork } from "../work.js";
 
 /** The room a piece is in, as a person names it: its declared room, else the room whose floor
  *  holds its centre; `""` when none does. */
@@ -183,6 +187,164 @@ export const seatFacingAway: LintRule = {
         ...at(s),
         message: `${/^[aeiou]/i.test(pieceName(s)) ? "An" : "A"} ${pieceName(s)}${inRoomPhrase(s, ctx)} faces away from the ${pieceName(nearest)} beside it.`,
         hints: [hint],
+      });
+    }
+    return out;
+  },
+};
+
+/** The lounge seats `W_SEAT_FACING_WALL` judges, by family (aliases included: `couch`,
+ *  `corner_sofa`, `sofa_2`). A chair is not one: `W_SEAT_FACING_AWAY` judges it at its table. */
+const LOUNGE_SEATS: ReadonlySet<string> = new Set(["sofa", "sofa_l", "loveseat", "armchair"]);
+
+/** One drawn seat front of a piece: a run on a fixed axis, and the side (`out`, +1 or −1 along
+ *  that axis) a sitter's legs go. `axis: "h"` is a horizontal edge at `y = at`. */
+interface SeatFront {
+  axis: "h" | "v";
+  at: number;
+  lo: number;
+  hi: number;
+  out: 1 | -1;
+}
+
+/**
+ * The drawn fronts of a lounge seat, in plan. Every seat is drawn back-on-top and quarter-turned
+ * clockwise about its footprint centre (`furniture.render`); a `mirror` reflects it about its own
+ * vertical centre line before the turn. A sofa, loveseat or armchair has one front, the edge
+ * opposite its back. An L-sofa has two, the inner edges of the L, {@link sofaLRunDepth} in from
+ * the back edge and from the return's back: its open quadrant is floor, so its box's edge is no
+ * front (`drawSofaL`). Exact on resolved coordinates: a quarter-turn only swaps and negates.
+ */
+function seatFronts(f: RFurniture): SeatFront[] {
+  const k = ((f.rotate ?? 0) / 90) % 4;
+  const cx = f.at.x + f.size.w / 2;
+  const cy = f.at.y + f.size.h / 2;
+  const pw = k % 2 === 1 ? f.size.h : f.size.w;
+  const ph = k % 2 === 1 ? f.size.w : f.size.h;
+  // The drawing frame, relative to the centre: the back edge at y = −ph/2, the front at +ph/2.
+  const left = -pw / 2;
+  const right = pw / 2;
+  const top = -ph / 2;
+  const bottom = ph / 2;
+  // [x0, y0, x1, y1, nx, ny] in the drawing frame, centre-relative.
+  let runs: Array<[number, number, number, number, number, number]>;
+  if (canonicalFixture(f.category) === "sofa_l") {
+    const d = sofaLRunDepth(pw, ph);
+    runs = f._mirror
+      ? [
+          [left, top + d, right - d, top + d, 0, 1],
+          [right - d, top + d, right - d, bottom, -1, 0],
+        ]
+      : [
+          [left + d, top + d, right, top + d, 0, 1],
+          [left + d, top + d, left + d, bottom, 1, 0],
+        ];
+  } else runs = [[left, bottom, right, bottom, 0, 1]];
+  // A clockwise quarter-turn on the sheet (+y down): (x, y) → (−y, x).
+  const turn = (x: number, y: number): [number, number] => {
+    let p: [number, number] = [x, y];
+    for (let i = 0; i < k; i++) p = [-p[1], p[0]];
+    return p;
+  };
+  return runs.map(([ax, ay, bx, by, nx, ny]): SeatFront => {
+    const [px, py] = turn(ax, ay);
+    const [qx, qy] = turn(bx, by);
+    const [ux, uy] = turn(nx, ny);
+    return ux === 0
+      ? { axis: "h", at: cy + py, lo: cx + Math.min(px, qx), hi: cx + Math.max(px, qx), out: uy > 0 ? 1 : -1 }
+      : { axis: "v", at: cx + px, lo: cy + Math.min(py, qy), hi: cy + Math.max(py, qy), out: ux > 0 ? 1 : -1 };
+  });
+}
+
+/** Float noise a front-to-face comparison absorbs: a millionth of a millimetre, never a gap of floor. */
+const FLOAT_EPS_MM = 1e-6;
+
+/**
+ * Is a seat front against a wall face, with no floor between it and a wall solid? A straight wall
+ * parallel to the front counts when its solid reaches the front line from the sitter's side (its
+ * near face at or behind the line, its far face beyond it) and, merged, such walls cover at least
+ * half the front's run, the share a backed edge needs (`isAgainstWall`). No tolerance: a front
+ * any distance off the face has floor in front of it, and `fixtureWallTolMm` (200 mm by default)
+ * is far too wide for "against". An arc never counts, as for a backed edge. Each (front, wall
+ * segment) test is charged to `work.seatWallTests`. The comparisons allow {@link FLOAT_EPS_MM} of
+ * float noise, a millionth of a millimetre, which no grid can write.
+ */
+function frontAgainstWall(front: SeatFront, segs: readonly WallSegment[], work: LintWork): boolean {
+  const len = front.hi - front.lo;
+  if (len <= 0) return false;
+  work.seatWallTests += segs.length;
+  const line = front.out * front.at;
+  const covered: Array<[number, number]> = [];
+  for (const s of segs) {
+    if (s.arc) continue;
+    const horizontal = Math.abs(s.a.y - s.b.y) < 1e-6;
+    const vertical = Math.abs(s.a.x - s.b.x) < 1e-6;
+    if (front.axis === "h" ? !horizontal : !vertical) continue;
+    const c = front.out * (front.axis === "h" ? (s.a.y + s.b.y) / 2 : (s.a.x + s.b.x) / 2);
+    const half = s.thickness / 2;
+    // FLOAT_EPS_MM absorbs float noise only (an L-sofa's `D` is 0.56 x 1600 = 896.0000000000001), never a gap.
+    if (!(c - half <= line + FLOAT_EPS_MM && line < c + half - FLOAT_EPS_MM)) continue;
+    const slo = front.axis === "h" ? Math.min(s.a.x, s.b.x) : Math.min(s.a.y, s.b.y);
+    const shi = front.axis === "h" ? Math.max(s.a.x, s.b.x) : Math.max(s.a.y, s.b.y);
+    if (overlap1d(slo, shi, front.lo, front.hi) <= 0) continue;
+    covered.push([Math.max(slo, front.lo), Math.min(shi, front.hi)]);
+  }
+  return mergedLength(covered) >= len * 0.5;
+}
+
+/**
+ * `W_SEAT_FACING_WALL` (product roadmap RM9.6, coverage class CV08; plan-soundness PS2.32): a
+ * sofa, L-sofa, loveseat or armchair ({@link LOUNGE_SEATS}) whose drawn front is against a wall
+ * face, with no floor between ({@link seatFronts}, {@link frontAgainstWall}): nobody can sit on
+ * it. The front is read off the drawn turn (`rotate 0` puts the back to the north), never off the
+ * box or off which side is nearer a wall. A seat's back to the room is not judged: seating is
+ * arranged, and a sofa backing into the room is a room-divider layout (`src/fixtures-catalog.ts`).
+ * No distance: the 600 mm version of PS2.32 has no read source. One warning per seat, at the
+ * seat. No machine fix: half a turn may put the seat's front on another piece, so the hint names
+ * the turn and the author decides.
+ */
+export const seatFacingWall: LintRule = {
+  name: "seat-facing-wall",
+  family: "furniture",
+  layer: "validity",
+  stage: "fixtures",
+  codes: ["W_SEAT_FACING_WALL"],
+  check(ctx: LintContext): Diagnostic[] {
+    const { furniture, wallSegs, at, frameOf, work } = ctx;
+    const out: Diagnostic[] = [];
+    for (const f of furniture) {
+      const family = canonicalFixture(f.category) ?? "";
+      if (!LOUNGE_SEATS.has(family)) continue;
+      if (!seatFronts(f).some((front) => frontAgainstWall(front, wallSegs, work))) continue;
+      const name = pieceName(f);
+      // An auto id is never quoted: naming any earlier piece renumbers it (ADR 0029 §6).
+      const which = f._idAuthored === true ? `"${f.id}"` : `the ${name}`;
+      const g = frameOf(f);
+      const mode = f._authored?.mode;
+      // Half a turn puts the back where the front was, on that wall. Not offered for an L-sofa
+      // (its fronts are inside its box), a piece whose turn `facing` states, or one placed
+      // `against` a wall, whose turn is derived; pulled back into a placed component's frame.
+      const turnable =
+        family !== "sofa_l" && f._facing === undefined && mode !== "against" && mode !== "against-edge" && g !== null;
+      const rot = f.rotate ?? 0;
+      const local = (deg: number): number => actOnQuarterTurn(inverse(g!), deg % 360);
+      // A sofa or loveseat drawn deeper than it is wide is a row of seats stretched along its
+      // depth: half a turn keeps it so, and a quarter turn puts a long side to its back. (An
+      // armchair is about square either way.)
+      const deep = family !== "armchair" && (rot % 180 === 0 ? f.size.h > f.size.w : f.size.w > f.size.h);
+      const quarter = turnable && deep ? [local(rot + 90), local(rot + 270)].sort((a, b) => a - b) : null;
+      out.push({
+        severity: "warning",
+        code: "W_SEAT_FACING_WALL",
+        ...at(f),
+        message: `${/^[aeiou]/i.test(name) ? "An" : "A"} ${name}${inRoomPhrase(f, ctx)} has its front against a wall, with no floor in front of it to sit down from.`,
+        hints: [
+          quarter !== null
+            ? `Turn ${which} a quarter turn (\`rotate ${quarter[0]}\` or \`rotate ${quarter[1]}\`, whichever puts its back on a wall): it is drawn deeper than it is wide, so a long side is its back. Or move it off the wall.`
+            : turnable
+              ? `Turn ${which} to \`rotate ${local(rot + 180)}\` so its back is on that wall and it faces the room, or move it off the wall.`
+              : `Move ${which} so its front faces open floor (\`rotate 0\` puts its back to the north).`,
+        ],
       });
     }
     return out;

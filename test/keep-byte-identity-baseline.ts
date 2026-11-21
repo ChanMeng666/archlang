@@ -10,7 +10,7 @@
  * PR legitimately moves a hashed output (never keep code), the table is re-taken by the generator, the
  * reason recorded below and the moved files listed in that commit's message.
  *
- * Taken: RM9.6 CV08 (feat/cv08-examples-seats, on 6d758f7c): examples/terrace-row.arch and examples/townhouse.arch turn their sofa to face the room (source edits)
+ * Taken: RM9.6 CV08 (feat/cv08-seat-facing-wall, on ec842ab5): W_SEAT_FACING_WALL reports on the new defect pair, docs/gallery/l-shape, six audit plans and test/recovery-corpus/terrace-row
  */
 
 /** `[path from the repository root, SHA-256 of the payload, evaluation steps]`, sorted by root. */
@@ -710,6 +710,16 @@ export const KEEP_WEAK_BASELINE: readonly (readonly [string, string, number])[] 
     "test/defect-corpus/clearances/masked-route-patio-door.clean.arch",
     "464bbf9f0254e7bc1aa44eb97c9cb05d6824fbda257a2f0d2e9831c85e4798f9",
     211,
+  ],
+  [
+    "test/defect-corpus/clearances/seat-faces-wall.arch",
+    "64d7acdc817450e446038626c31fa1ff86af91f33e89e5588a53c81b7f404819",
+    139,
+  ],
+  [
+    "test/defect-corpus/clearances/seat-faces-wall.clean.arch",
+    "791d0fdda38f4bf3a054897ec0c4d9e4c2d53c4452efb54df9fe5603888f545e",
+    138,
   ],
   [
     "test/defect-corpus/clearances/seat-facing-away.arch",
@@ -1473,7 +1483,7 @@ export const KEEP_WEAK_BASELINE: readonly (readonly [string, string, number])[] 
   ],
   [
     "test/plans/plan-soundness/audits/first-contact-plans/2026-10-26-rerun-armA/5-townhouse.arch",
-    "0f8e54e554aa2dc02bae0921729bd9a0dc3420535ffc010e66840e02b3fe4a9f",
+    "8e319ba2a1db4eb6a9c092be77c274b27d0b11308ede7072ca71473423a16d6b",
     3706,
   ],
   [
@@ -1543,7 +1553,7 @@ export const KEEP_WEAK_BASELINE: readonly (readonly [string, string, number])[] 
   ],
   [
     "test/plans/plan-soundness/audits/first-contact-plans/2026-10-26-walls-first/1-apartment.arch",
-    "b87b47f1cc36e4c0c99c907de3ad6ec8c5d85c61c7f82aeef471a463fbd97597",
+    "4d35c07088648f80ce6b4d1899338499607a8cec552927910a6e0ac0d7270854",
     784,
   ],
   [
@@ -1563,12 +1573,12 @@ export const KEEP_WEAK_BASELINE: readonly (readonly [string, string, number])[] 
   ],
   [
     "test/plans/plan-soundness/audits/first-contact-plans/2026-10-26-walls-first/5-townhouse.arch",
-    "e0dfaa17f8841925e5e2fde3e8824570b41a1dea9e198b167fe73664e58b61e5",
+    "d254424d687dbbd30e85527db79e9b87db484a44bea770aa63c519c032cdfb8d",
     1702,
   ],
   [
     "test/plans/plan-soundness/audits/first-contact-plans/2026-10-26-walls-first/6-clinic.arch",
-    "7d742d390ea662bd011d41982268d92f559f285946d93ad0521f872c57766245",
+    "09aed4f5fab031c6dadeaa8fb9190d82532a02a47b35049f2c50197f7f6caf33",
     722,
   ],
   [
@@ -1583,7 +1593,7 @@ export const KEEP_WEAK_BASELINE: readonly (readonly [string, string, number])[] 
   ],
   [
     "test/plans/plan-soundness/audits/first-contact-plans/2026-10-27-rerun-arm1/3-studio.arch",
-    "5bc11ca8c12aa3d3821e85e4ba7a49cb8a8b8a4de65ac453a3faf9423acde181",
+    "5e4edc3adab062fd2659430aba774dd6f5bc6da3d0a6cff1fb985162be69da4f",
     1122,
   ],
   [

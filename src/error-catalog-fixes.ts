@@ -250,6 +250,7 @@ export const CATALOG_FIXES: Readonly<Record<string, string>> = {
   W_SANITIZED_CONFIG: "Use a plain colour/string value (no `<`, `>`, or `url(data:…)`).",
   W_SCALE_OVERFLOW: "Pick a coarser scale (a larger denominator draws the building smaller), move up a paper size, drop a margin table you can do without, or drop the `scale` line and let the sheet auto-fit choose the finest scale from 1:50 / 1:100 / 1:200 / 1:500.",
   W_SEAT_FACING_AWAY: "Add `facing <table id>` to the chair (the hint names the nearest table and the turn it derives), or give it the `rotate` that turns its front to the table.",
+  W_SEAT_FACING_WALL: "Turn the seat so its back is on that wall (the hint gives the `rotate`), or move it into the room. There is no machine fix.",
   W_SET_VALUE_WORD: "Write the value on the element, or a word the key reads.",
   W_SHAFT_FOOTPRINT_MISMATCH: "Draw the run with the same `at` and `size` on both storeys (the hint quotes both), or give two unrelated runs different ids. There is no machine-applicable fix: which storey is right is the author's call.",
   W_STAIR_HEAD_VOID: "Move the void beside the flight or past its foot end, or shrink it, so the landing beyond the head is floor. There is no machine-applicable fix.",
