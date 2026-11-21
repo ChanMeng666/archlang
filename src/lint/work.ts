@@ -31,8 +31,10 @@ export interface LintWork {
    */
   tableSeatTests: number;
   /**
-   * `W_SEAT_FACING_WALL`: the (seat front, wall segment) tests the rule made, one per straight
-   * wall segment of the storey for each drawn front of a lounge seat (product roadmap RM9.6).
+   * `W_SEAT_FACING_WALL`: the (seat front, wall segment) tests the rule made, one per wall
+   * segment of the storey (arcs included, which it then skips) for each drawn front of a lounge
+   * seat it tests (an L-sofa's second front only when its first is clear of every wall), plus one per room of the storey for each seat it reports (the room its message
+   * names is looked up there) (product roadmap RM9.6).
    */
   seatWallTests: number;
 }

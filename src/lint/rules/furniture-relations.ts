@@ -25,8 +25,10 @@ import {
 import type { RFurniture } from "../../ir.js";
 import { wallRef } from "../../wall-ref.js";
 import type { LintContext, LintRule } from "../context.js";
+import type { Hosted } from "../element-phrases.js";
 import { mm } from "../measure.js";
 import type { LintWork } from "../work.js";
+import { onRun } from "./openings.js";
 
 /** The room a piece is in, as a person names it: its declared room, else the room whose floor
  *  holds its centre; `""` when none does. */
@@ -197,6 +199,72 @@ export const seatFacingAway: LintRule = {
  *  `corner_sofa`, `sofa_2`). A chair is not one: `W_SEAT_FACING_AWAY` judges it at its table. */
 const LOUNGE_SEATS: ReadonlySet<string> = new Set(["sofa", "sofa_l", "loveseat", "armchair"]);
 
+/** Float noise a front-to-face comparison absorbs: a millionth of a millimetre, never a gap of floor. */
+const FLOAT_EPS_MM = 1e-6;
+
+/** Is `category` a lounge seat `W_SEAT_FACING_WALL` judges ({@link LOUNGE_SEATS}, aliases included)? */
+export const isLoungeSeat = (category: string): boolean => LOUNGE_SEATS.has(canonicalFixture(category) ?? "");
+
+/** What {@link seatFronts} reads of a piece: `repair` asks it of a footprint it has moved. */
+export type SeatPiece = Pick<RFurniture, "category" | "at" | "size" | "rotate" | "_mirror">;
+
+/**
+ * The spans of each straight wall segment that are no wall to sit against, keyed by
+ * {@link segKey}, as along-axis `[lo, hi]` coordinates: every door and cased opening on its host
+ * ({@link onRun}), an `open between` opening included. A window is not one: the wall stands
+ * below its sill.
+ */
+export type WallCuts = ReadonlyMap<string, readonly (readonly [number, number])[]>;
+
+/** The key of a wall segment in {@link WallCuts}: its wall and its index in that wall. */
+const segKey = (s: Pick<WallSegment, "wallId" | "index">): string => `${s.wallId}#${s.index}`;
+
+/** {@link WallCuts} of a storey's elements. */
+export function wallCutsOf(elements: readonly { kind: string }[]): WallCuts {
+  const cuts = new Map<string, [number, number][]>();
+  elements.forEach((e, i) => {
+    if (e.kind !== "door" && e.kind !== "opening") return;
+    const r = onRun(e as Hosted, i);
+    if (!r || r.seg.arc) return;
+    const { a, b } = r.seg;
+    const len = Math.hypot(b.x - a.x, b.y - a.y);
+    if (len <= 0) return;
+    // Along the segment's own axis (it is straight; a diagonal one is never a seat's wall).
+    const horizontal = Math.abs(a.y - b.y) < FLOAT_EPS_MM;
+    const p0 = horizontal ? a.x : a.y;
+    const dir = (horizontal ? b.x - a.x : b.y - a.y) / len;
+    const ends = [p0 + r.lo * dir, p0 + r.hi * dir];
+    const span: [number, number] = [Math.min(...ends), Math.max(...ends)];
+    const key = segKey(r.seg);
+    const list = cuts.get(key);
+    if (list) list.push(span);
+    else cuts.set(key, [span]);
+  });
+  return cuts;
+}
+
+/** `[lo, hi]` with every cut taken out of it: the pieces left, in order. */
+function minusCuts(
+  lo: number,
+  hi: number,
+  cuts: readonly (readonly [number, number])[] | undefined,
+): [number, number][] {
+  let parts: [number, number][] = [[lo, hi]];
+  for (const [clo, chi] of cuts ?? []) {
+    const next: [number, number][] = [];
+    for (const [plo, phi] of parts) {
+      if (chi <= plo || clo >= phi) {
+        next.push([plo, phi]);
+        continue;
+      }
+      if (clo > plo) next.push([plo, clo]);
+      if (chi < phi) next.push([chi, phi]);
+    }
+    parts = next;
+  }
+  return parts;
+}
+
 /** One drawn seat front of a piece: a run on a fixed axis, and the side (`out`, +1 or −1 along
  *  that axis) a sitter's legs go. `axis: "h"` is a horizontal edge at `y = at`. */
 interface SeatFront {
@@ -215,7 +283,7 @@ interface SeatFront {
  * the back edge and from the return's back: its open quadrant is floor, so its box's edge is no
  * front (`drawSofaL`). Exact on resolved coordinates: a quarter-turn only swaps and negates.
  */
-function seatFronts(f: RFurniture): SeatFront[] {
+function seatFronts(f: SeatPiece): SeatFront[] {
   const k = ((f.rotate ?? 0) / 90) % 4;
   const cx = f.at.x + f.size.w / 2;
   const cy = f.at.y + f.size.h / 2;
@@ -256,25 +324,30 @@ function seatFronts(f: RFurniture): SeatFront[] {
   });
 }
 
-/** Float noise a front-to-face comparison absorbs: a millionth of a millimetre, never a gap of floor. */
-const FLOAT_EPS_MM = 1e-6;
-
 /**
  * Is a seat front against a wall face, with no floor between it and a wall solid? A straight wall
  * parallel to the front counts when its solid reaches the front line from the sitter's side (its
  * near face at or behind the line, its far face beyond it) and, merged, such walls cover at least
  * half the front's run, the share a backed edge needs (`isAgainstWall`). No tolerance: a front
  * any distance off the face has floor in front of it, and `fixtureWallTolMm` (200 mm by default)
- * is far too wide for "against". An arc never counts, as for a backed edge. Each (front, wall
- * segment) test is charged to `work.seatWallTests`. The comparisons allow {@link FLOAT_EPS_MM} of
- * float noise, a millionth of a millimetre, which no grid can write.
+ * is far too wide for "against". An arc never counts, as for a backed edge, and neither does a
+ * door or a cased opening in the wall ({@link WallCuts}): there is floor through it. Each (front,
+ * wall segment) test is charged to `work.seatWallTests`, arcs included. The comparisons allow
+ * {@link FLOAT_EPS_MM} of float noise, a millionth of a millimetre, which no grid can write.
+ * Returns the segment covering most of the front, or null.
  */
-function frontAgainstWall(front: SeatFront, segs: readonly WallSegment[], work: LintWork): boolean {
+function frontAgainstWall(
+  front: SeatFront,
+  segs: readonly WallSegment[],
+  cuts: WallCuts,
+  work?: LintWork,
+): WallSegment | null {
   const len = front.hi - front.lo;
-  if (len <= 0) return false;
-  work.seatWallTests += segs.length;
+  if (len <= 0) return null;
+  if (work) work.seatWallTests += segs.length;
   const line = front.out * front.at;
   const covered: Array<[number, number]> = [];
+  let best: { s: WallSegment; along: number } | null = null;
   for (const s of segs) {
     if (s.arc) continue;
     const horizontal = Math.abs(s.a.y - s.b.y) < 1e-6;
@@ -287,9 +360,30 @@ function frontAgainstWall(front: SeatFront, segs: readonly WallSegment[], work: 
     const slo = front.axis === "h" ? Math.min(s.a.x, s.b.x) : Math.min(s.a.y, s.b.y);
     const shi = front.axis === "h" ? Math.max(s.a.x, s.b.x) : Math.max(s.a.y, s.b.y);
     if (overlap1d(slo, shi, front.lo, front.hi) <= 0) continue;
-    covered.push([Math.max(slo, front.lo), Math.min(shi, front.hi)]);
+    const parts = minusCuts(Math.max(slo, front.lo), Math.min(shi, front.hi), cuts.get(segKey(s)));
+    covered.push(...parts);
+    const along = mergedLength(parts);
+    if (along > 0 && (best === null || along > best.along)) best = { s, along };
   }
-  return mergedLength(covered) >= len * 0.5;
+  return best !== null && mergedLength(covered) >= len * 0.5 ? best.s : null;
+}
+
+/**
+ * The wall segment a lounge seat's drawn front is against ({@link seatFronts},
+ * {@link frontAgainstWall}), or null: `W_SEAT_FACING_WALL`'s question, and repair's when it has
+ * pushed a seat flush to a face (ruling RM-D80).
+ */
+export function seatFrontWall(
+  f: SeatPiece,
+  segs: readonly WallSegment[],
+  cuts: WallCuts,
+  work?: LintWork,
+): WallSegment | null {
+  for (const front of seatFronts(f)) {
+    const s = frontAgainstWall(front, segs, cuts, work);
+    if (s !== null) return s;
+  }
+  return null;
 }
 
 /**
@@ -311,21 +405,31 @@ export const seatFacingWall: LintRule = {
   codes: ["W_SEAT_FACING_WALL"],
   check(ctx: LintContext): Diagnostic[] {
     const { furniture, wallSegs, at, frameOf, work } = ctx;
+    const seats = furniture.filter((f) => isLoungeSeat(f.category));
+    if (seats.length === 0) return [];
+    const cuts = wallCutsOf(ctx.ir.elements);
     const out: Diagnostic[] = [];
-    for (const f of furniture) {
+    for (const f of seats) {
       const family = canonicalFixture(f.category) ?? "";
-      if (!LOUNGE_SEATS.has(family)) continue;
-      if (!seatFronts(f).some((front) => frontAgainstWall(front, wallSegs, work))) continue;
-      const name = pieceName(f);
+      if (seatFrontWall(f, wallSegs, cuts, work) === null) continue;
+      // An empty label draws nothing and names nothing: the category names the piece.
+      const name = f.label || f.category;
       // An auto id is never quoted: naming any earlier piece renumbers it (ADR 0029 §6).
       const which = f._idAuthored === true ? `"${f.id}"` : `the ${name}`;
       const g = frameOf(f);
-      const mode = f._authored?.mode;
       // Half a turn puts the back where the front was, on that wall. Not offered for an L-sofa
       // (its fronts are inside its box), a piece whose turn `facing` states, or one placed
-      // `against` a wall, whose turn is derived; pulled back into a placed component's frame.
-      const turnable =
-        family !== "sofa_l" && f._facing === undefined && mode !== "against" && mode !== "against-edge" && g !== null;
+      // `against` a wall or a room edge, whose turn is derived (`E_FURN_AGAINST` refuses a
+      // `rotate` there; a placed component's piece keeps `_againstWall`/`_relation`, not
+      // `_authored`); pulled back into a placed component's frame.
+      const derived =
+        f._authored?.mode === "against" ||
+        f._authored?.mode === "against-edge" ||
+        f._againstWall !== undefined ||
+        f._relation !== undefined;
+      const turnable = family !== "sofa_l" && f._facing === undefined && !derived && g !== null;
+      // The room phrase scans the storey's rooms once per reported seat (lesson bl: counted work).
+      work.seatWallTests += ctx.rooms.length;
       const rot = f.rotate ?? 0;
       const local = (deg: number): number => actOnQuarterTurn(inverse(g!), deg % 360);
       // A sofa or loveseat drawn deeper than it is wide is a row of seats stretched along its

@@ -21,7 +21,9 @@
  *
  * Then, once every position is final, one **orientation** pass: a fixture standing
  * flush against a single wall but with its back to the room is turned to face it
- * (a `rotate` rewrite, not a move — the `W_FIXTURE_BACK_TO_ROOM` correction).
+ * (a `rotate` rewrite, not a move — the `W_FIXTURE_BACK_TO_ROOM` correction). A sofa or armchair
+ * the movers pushed so that its drawn front lies on a wall face is turned half a turn onto its
+ * back, so a push never manufactures `W_SEAT_FACING_WALL` (ruling RM-D80).
  *
  * A global fixpoint iterates every piece (in source order, so overlap separation has a
  * deterministic mover) until nothing moves. A piece that sits with no majority side or
@@ -108,6 +110,7 @@ import { segmentsOfWall, doorLeaves, sectorIntersectsRect, type DoorSwing } from
 import { pointInPolygon } from "./geometry/polygon.js";
 import { DEFAULT_RULESET, LINT_RULES } from "./lint.js";
 import { type BuildingContext, buildLintContext } from "./lint/context.js";
+import { isLoungeSeat, seatFrontWall, wallCutsOf } from "./lint/rules/furniture-relations.js";
 import { onStairZones, type StairZone, zoneReads } from "./lint/rules/stairs.js";
 import { lintStoreys } from "./lint/storeys.js";
 import {
@@ -2302,6 +2305,29 @@ function repairStorey(
       continue;
     }
     p.turn = { from: p.rotate, to: verdict.to, reason: verdict.reason };
+  }
+  // A lounge seat repair MOVED (a push out of a wall lands it flush on the face) whose drawn
+  // front now lies on a wall face is turned half a turn, its footprint unchanged, so its back is
+  // on that wall: the push must not manufacture `W_SEAT_FACING_WALL` (ruling RM-D80). A half turn
+  // that would put the front on another wall (a seat between two walls) is not made; the rule
+  // reports it. A scripted `rotate` or a `facing` is left alone.
+  const seatSegs = walls.flatMap((w) => segmentsOfWall(w));
+  const seatCuts = wallCutsOf(ir.elements);
+  for (const p of pieces) {
+    if (p.turn || (p.cur.x === p.orig.x && p.cur.y === p.orig.y) || !isLoungeSeat(p.f.category)) continue;
+    if ((p.f.rotate !== undefined && litNum(p.f.rotate) === null) || p.f.facing !== undefined) continue;
+    const seat = {
+      category: p.f.category,
+      at: p.cur,
+      size: { w: p.w, h: p.h },
+      rotate: p.rotate,
+      ...(irFurniture[p.ord]!._mirror ? { _mirror: true as const } : {}),
+    };
+    const wall = seatFrontWall(seat, seatSegs, seatCuts);
+    if (wall === null) continue;
+    const to = (p.rotate + 180) % 360;
+    if (seatFrontWall({ ...seat, rotate: to }, seatSegs, seatCuts) !== null) continue;
+    p.turn = { from: p.rotate, to, reason: `turned so its back is on ${wallRef(walls, wall)}` };
   }
 
   // ---- emit -------------------------------------------------------------------

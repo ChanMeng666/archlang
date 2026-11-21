@@ -6,7 +6,7 @@
  * the wall by one millimetre), so a test cannot pass because the rule never ran.
  */
 import { describe as suite, expect, it } from "vitest";
-import { type Diagnostic, ERROR_CATALOG, lint, makeVirtualWorld } from "../src/index.js";
+import { type Diagnostic, ERROR_CATALOG, lint, makeVirtualWorld, repair } from "../src/index.js";
 import { sofaLRunDepth } from "../src/elements/glyphs-living.js";
 import { lintWork } from "../src/lint.js";
 import { D4_ELEMENTS, EXAMPLE_FILES, EXAMPLES_WORLD } from "./helpers/d4-oracle.js";
@@ -178,6 +178,91 @@ suite("W_SEAT_FACING_WALL", () => {
     }
   });
 
+  it("holds an L-sofa's run, return and mirrored return under the eight turns and mirrors (a witness)", () => {
+    // 2600 x 1250: D = min(0.56 x 1250, 0.35 x 2600) = 700, so every face below is on the 50 mm grid.
+    const L = "  furniture sofa_l at (1000,1000) size 2600x1250";
+    const cases: [string, string, string, string][] = [
+      // [case, seat, a wall whose face is on that front, the same wall 50 mm off it]
+      [
+        "run",
+        `${L} in r`,
+        "  wall id=p partition thickness 100 { (1800,1750) (3700,1750) }",
+        "  wall id=p partition thickness 100 { (1800,1800) (3700,1800) }",
+      ],
+      [
+        "return",
+        `${L} in r`,
+        "  wall id=p partition thickness 100 { (1750,1750) (1750,2250) }",
+        "  wall id=p partition thickness 100 { (1800,1750) (1800,2250) }",
+      ],
+      [
+        "mirrored return",
+        `${L} mirror in r`,
+        "  wall id=p partition thickness 100 { (2850,1750) (2850,2250) }",
+        "  wall id=p partition thickness 100 { (2800,1750) (2800,2250) }",
+      ],
+    ];
+    for (const [name, seat, on, off] of cases)
+      for (const [wall, want] of [
+        [on, 1],
+        [off, 0],
+      ] as const) {
+        const world = makeVirtualWorld({ "w.arch": plan(SHELL, wall, seat) });
+        expect(of(plan(SHELL, wall, seat)), `${name} (${want})`).toHaveLength(want);
+        for (const g of D4_ELEMENTS) {
+          const turn = `${g.rotate !== 0 ? ` rotate ${g.rotate}` : ""}${g.mirror ? ` mirror ${g.mirror}` : ""}`;
+          const placed = `plan "p" {\n  units mm\n  grid 50\n  import "w.arch" as w\n  place w() as g at (0, 0)${turn}\n}\n`;
+          expect(of(placed, world), `${name}, ${g.name} (${want})`).toHaveLength(want);
+        }
+      }
+  });
+
+  it("reads a door or cased opening in the wall as floor, an `open between` boundary too, and a window as wall", () => {
+    // The sofa's front runs x 1000…3000 on the south face; the shell's door (x 2550…3450) is under 450 of it.
+    const sofa = "  furniture sofa at (1000,4050) size 2000x850 in r";
+    expect(of(plan(SHELL, sofa))).toHaveLength(1);
+    // A 1600 opening (x 1200…2800) leaves 400 of the 2000 on a wall, under half: silent. An 800 one leaves 1200.
+    expect(of(plan(SHELL, "  opening at (2000,5000) width 1600 wall shell", sofa))).toEqual([]);
+    expect(of(plan(SHELL, "  opening at (2000,5000) width 800 wall shell", sofa))).toHaveLength(1);
+    expect(of(plan(SHELL, "  door at (2000,5000) width 1600 wall shell", sofa))).toEqual([]);
+    // A window's wall stands below its sill.
+    expect(of(plan(SHELL, "  window at (2000,5000) width 1600 wall shell", sofa))).toHaveLength(1);
+    const twoRooms = (clause: string, door: string) =>
+      plan(
+        '  room id=a at (0,0) size 6000x3000 label "Living" uses living',
+        '  room id=b at (0,3000) size 6000x2000 label "Dining" uses dining',
+        `  walls from rooms exterior 200 partition 100${clause}`,
+        door,
+        "  furniture sofa at (1000,2100) size 2000x850 in a",
+      );
+    expect(of(twoRooms("", "  door between a and b at 4500 from a.left width 900"))).toHaveLength(1);
+    expect(of(twoRooms(" { open between a and b }", ""))).toEqual([]);
+  });
+
+  it("names a piece with an empty label by its category, and offers no `rotate` to a piece placed `against` a wall", () => {
+    const [d] = of(plan(SHELL, '  furniture sofa at (1000,4050) size 2000x850 label "" in r'));
+    expect(d!.message).toBe(
+      "A sofa in Living has its front against a wall, with no floor in front of it to sit down from.",
+    );
+    expect(d!.hints![0]).toMatch(/^Turn the sofa to `rotate 180`/);
+    // 1850 deep `against` the partition's north face: its front lands on the shell's north face. Its turn is
+    // derived (`E_FURN_AGAINST` refuses a `rotate`), at root and in a placed component alike.
+    const against = plan(
+      SHELL,
+      "  wall id=p partition thickness 100 { (0,2000) (6000,2000) }",
+      "  furniture sofa against wall p segment 0 offset 3000 side right size 2000x1850 in r",
+    );
+    const world = makeVirtualWorld({ "w.arch": against });
+    for (const src of [
+      against,
+      `plan "p" {\n  units mm\n  grid 50\n  import "w.arch" as w\n  place w() as g at (0, 0) rotate 90\n}\n`,
+    ]) {
+      const ds = of(src, world);
+      expect(ds).toHaveLength(1);
+      expect(ds[0]!.hints![0]).toMatch(/^Move the sofa so its front faces open floor/);
+    }
+  });
+
   it("tests each drawn front once against each wall segment of its storey (fronts x segments)", () => {
     for (const n of [5, 10, 20]) {
       const lines = [SHELL];
@@ -187,6 +272,8 @@ suite("W_SEAT_FACING_WALL", () => {
       expect(lintWork(plan(...lines)).seatWallTests, `n = ${n}`).toBe((n + 2) * 4);
     }
     expect(lintWork(plan(SHELL)).seatWallTests).toBe(0);
+    // A reported seat also scans the storey's rooms once for the room its message names: 4 + 1.
+    expect(lintWork(plan(SHELL, FRONT_ON_SOUTH)).seatWallTests).toBe(5);
   });
 
   it("reports nothing over the shipped examples under the default ruleset (RM-D73: their sofas were turned first)", () => {
@@ -204,5 +291,48 @@ suite("W_SEAT_FACING_WALL", () => {
     expect(e.severity).toBe("warning");
     expect(of(plan(e.example!))).toHaveLength(1);
     expect(of(plan(e.fixed!))).toEqual([]);
+  });
+});
+
+suite("repair never manufactures W_SEAT_FACING_WALL (ruling RM-D80)", () => {
+  const ROOM = [
+    "  wall id=shell exterior thickness 200 { (0,0) (6000,0) (6000,5000) (0,5000) close }",
+    "  door id=d at (5000,0) width 900 wall shell",
+    "  window at (2000,0) width 1500 wall shell",
+    '  room id=r at (0,0) size 6000x5000 label "Living" uses living',
+  ].join("\n");
+  const grid50 = (...lines: string[]): string => `plan "t" {\n  units mm\n  grid 50\n${lines.join("\n")}\n}\n`;
+
+  it("turns a seat it pushed out of a wall half a turn when the push leaves its front on the face", () => {
+    // Drawn through the south wall at rotate 0: the push lands it flush, its front on that face.
+    const src = grid50(ROOM, "  furniture sofa at (1000,4300) size 2000x850 in r");
+    const r = repair(src);
+    expect(r.changes.map((c) => [c.kind, c.toRotate ?? null, c.reason])).toEqual([
+      ["moved", null, 'pushed clear of wall "shell"'],
+      ["rotated", 180, 'turned so its back is on wall "shell"'],
+    ]);
+    expect(r.source).toContain("furniture sofa at (1000, 4050) size 2000x850 rotate 180 in r");
+    expect(lint(r.source)).toEqual([]);
+    // A second repair changes nothing.
+    const again = repair(r.source);
+    expect(again.changes).toEqual([]);
+    expect(again.source).toBe(r.source);
+    // A seat already backed onto that wall is only pushed.
+    const backed = repair(grid50(ROOM, "  furniture sofa at (1000,4300) size 2000x850 rotate 180 in r"));
+    expect(backed.changes.map((c) => c.kind)).toEqual(["moved"]);
+    expect(of(backed.source)).toEqual([]);
+  });
+
+  it("leaves a seat between two walls unturned, for the rule to report", () => {
+    // A 1050-deep nook: after the push the front is on the south face, and half a turn would put it on the north one.
+    const nook = grid50(
+      "  wall id=shell exterior thickness 200 { (0,0) (6000,0) (6000,1050) (0,1050) close }",
+      "  door id=d at (5000,0) width 900 wall shell",
+      '  room id=r at (0,0) size 6000x1050 label "Nook" uses living',
+      "  furniture sofa at (1000,200) size 2000x850 in r",
+    );
+    const r = repair(nook);
+    expect(r.changes.map((c) => c.kind)).toEqual(["moved"]);
+    expect(of(r.source)).toHaveLength(1);
   });
 });
