@@ -57,5 +57,7 @@ plan "Turning stair" {
       landing at (2630,100) size 1000x1000
       flight at (1100,100) size 1530x1000
     }
+    # The stairwell, over the pieces and not the box round them: the notch is floor.
+    void id=well polygon (1100,100) (3630,100) (3630,2640) (2630,2640) (2630,1100) (1100,1100)
   }
 }
