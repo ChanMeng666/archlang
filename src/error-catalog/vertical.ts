@@ -103,9 +103,16 @@ export const VERTICAL_ENTRIES = defineEntries({
   W_STAIR_HEAD_VOID: w(
     "A void opens on the landing at the head of a flight.",
     "On the storey a flight arrives at (the `dir down` stop of its id, or the head of a flight from below that continues upward), a `void` overlaps the landing a person steps off the flight onto: the square beyond the head as wide as the flight and as deep (Approved Document K (2013) 1.20; 1200 mm deep outside a dwelling, 1.23a). The top step meets a hole. The stairwell itself may be a void; only the floor beyond the head is judged.",
-    "Move the void beside the flight or past its foot end, or shrink it, so the landing beyond the head is floor. There is no machine-applicable fix.",
+    "Draw the void over the flight itself, ending at its head (the stairwell, which `W_STAIR_NO_VOID` asks for), or move it past the foot end or shrink it, so the landing beyond the head is floor. There is no machine-applicable fix.",
     'level 2 "First" {\n  stair id=s at (100,1500) size 900x2600 dir down\n  void id=g at (100,200) size 900x1100   # lint: the floor ends 200 mm past the top step\n}',
-    'level 2 "First" {\n  stair id=s at (100,1500) size 900x2600 dir down\n  void id=g at (1100,200) size 900x1100   # fixed: beside the flight\n}',
+    'level 2 "First" {\n  stair id=s at (100,1500) size 900x2600 dir down\n  void id=g at (100,1500) size 900x2600   # fixed: the stairwell, ending at the head\n}',
+  ),
+  W_STAIR_NO_VOID: w(
+    "The floor of a storey covers the head of a flight that climbs to it from the storey below.",
+    "A `stair` going `up` on one storey has its next stop, the same id, on this storey, and the `void` pieces of this storey do not cover the head of the flight that climb ends on (a straight stair's footprint; a block stair's last flight, never the box round its pieces) across the flight's whole width: the line just inside its head edge. Where that line is left open and this storey's footprint stands there (a room's shape, or inside a closed exterior wall ring: the footprint W_EXTERIOR_DOOR_ONTO_ROOF reads), the floor covers the flight, so a person climbing it meets the floor. A sliver at a corner or a strip down one side does not clear it; a floor over the flight's low end is no defect. Reported on this storey's stop. A geometric fact: no figure is read. A void on the landing beyond the head is `W_STAIR_HEAD_VOID`'s.",
+    "Draw a `void` on this storey over the flight (its `at` and `size`, or a `polygon` over a block stair's pieces), across its whole width at its head and clear of the landing beyond the head. There is no machine-applicable fix.",
+    'level 1 "Ground" {\n  room id=h at (0,0) size 3000x5000\n  stair id=s at (100,1500) size 900x2600 dir up\n}\nlevel 2 "First" {\n  room id=l at (0,0) size 3000x5000\n  stair id=s at (100,1500) size 900x2600 dir down   # lint: the floor covers the head of the flight\n}',
+    'level 1 "Ground" {\n  room id=h at (0,0) size 3000x5000\n  stair id=s at (100,1500) size 900x2600 dir up\n}\nlevel 2 "First" {\n  room id=l at (0,0) size 3000x5000\n  stair id=s at (100,1500) size 900x2600 dir down\n  void id=well at (100,1500) size 900x2600   # fixed: the stairwell\n}',
   ),
   W_STAIR_TOO_STEEP: w(
     "A stair is too short to climb its storey.",

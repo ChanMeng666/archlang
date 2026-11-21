@@ -482,6 +482,9 @@ export const RULE_CLASS: Readonly<Record<string, RuleClass>> = {
   // RM9.6 (CV13): the tables and seats whose footprint centre is on a room's floor, read off the
   // room's shape; no compass, no sheet.
   "table-no-seat": "invariant",
+  // RM9.6 (CV14): a flight of the storey below against this storey's voids, overlap of footprints
+  // turned or mirrored together; no compass, no sheet.
+  "stair-no-void": "invariant",
 };
 
 /**

@@ -28,5 +28,6 @@ plan "Upper terrace" {
     window id=w2 at (8000,1800) width 1200 wall shell
     window id=w3 at (8000,5300) width 1200 wall shell
     stair id=stair at (100,1500) size 900x2600 dir down
+    void id=well at (100,1500) size 900x2600
   }
 }

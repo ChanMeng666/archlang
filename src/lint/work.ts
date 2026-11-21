@@ -30,9 +30,14 @@ export interface LintWork {
    * storey that has a table it reads, never once per table (product roadmap RM9.6).
    */
   tableSeatTests: number;
+  /**
+   * `W_STAIR_NO_VOID`: per flight arriving on a storey, one test per void piece, and one per element
+   * and wall for each point of its head band read for floor (product roadmap RM9.6).
+   */
+  stairVoidTests: number;
 }
 
 /** A fresh set of counters, all 0. */
 export function newLintWork(): LintWork {
-  return { leafDoorPairs: 0, boundaryRunTests: 0, navCells: 0, tableSeatTests: 0 };
+  return { leafDoorPairs: 0, boundaryRunTests: 0, navCells: 0, tableSeatTests: 0, stairVoidTests: 0 };
 }

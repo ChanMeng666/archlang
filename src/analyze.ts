@@ -846,7 +846,7 @@ export function pointOutside(c: Pick<RDoor, "host" | "at">, rooms: readonly RRoo
  * courtyard)? Edges count as inside. A curved ring is not read: its centreline is no polygon of
  * its points.
  */
-function onFootprint(p: Point, ir: ResolvedPlan): boolean {
+export function onFootprint(p: Point, ir: ResolvedPlan): boolean {
   for (const e of ir.elements) if (e.kind === "room" && pointInRoomBox(p, roomBox(e as RRoom))) return true;
   let inside = false;
   for (const w of ir.walls)

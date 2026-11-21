@@ -258,35 +258,35 @@ const BASELINE: [string, string][] = [
     "test/defect-corpus/stair-safety/furniture-on-landing.clean.arch",
   ],
   [
-    "a823dc7289226e3b5fed12d7c3c09c77018a89121bc68b2bb272ed0234918150", // RM1.3b overlay, see ./byte-identity-baseline.ts; RM9.2, see ./byte-identity-baseline.ts
+    "684112f5fbdd7d76fa8d49d582afc896b190fbeb2e2789f86741d04d59805e12", // RM1.3b overlay, see ./byte-identity-baseline.ts; RM9.2, see ./byte-identity-baseline.ts; RM9.6 CV14: W_STAIR_NO_VOID reports this plan (was a823dc72)
     "test/defect-corpus/stair-safety/head-against-wall.arch",
   ],
   [
-    "7f034ceb5b31408d50ab0296138ad95d752ca272141c6ee7ff18539c5e206f3f", // RM1.3b overlay, see ./byte-identity-baseline.ts; RM9.2, see ./byte-identity-baseline.ts
+    "cdb6141343bd6772db5b3f10704d68a96fe0e211dc96a3b6be88b5dbed74f539", // RM1.3b overlay, see ./byte-identity-baseline.ts; RM9.2, see ./byte-identity-baseline.ts; RM9.6 CV14: W_STAIR_NO_VOID reports this plan (was 7f034ceb)
     "test/defect-corpus/stair-safety/head-against-wall.clean.arch",
   ],
   [
-    "353f62418808f03e9a65ba5868a456fe4af337a37bdb19fb0af16f98dcc789c0", // RM1.3b overlay, see ./byte-identity-baseline.ts; RM9.2, see ./byte-identity-baseline.ts
+    "62fd398e42233b810b79c42cf5b89b18077112dcf2f8f02dccc6e79f36bde2a1", // RM1.3b overlay, see ./byte-identity-baseline.ts; RM9.2, see ./byte-identity-baseline.ts; RM9.6 CV14: W_STAIR_NO_VOID reports this plan (was 353f6241)
     "test/defect-corpus/stair-safety/riser-too-high.arch",
   ],
   [
-    "1fe18c7d4e81e2167b88554bd42f8f8a6c491b526b822d19a812548ba6cc79ca", // RM1.3b overlay, see ./byte-identity-baseline.ts; RM9.2, see ./byte-identity-baseline.ts
+    "7ed8985efc55a72d7f84f4c79ca0dc80a2469233247681627542a663749278ef", // RM1.3b overlay, see ./byte-identity-baseline.ts; RM9.2, see ./byte-identity-baseline.ts; RM9.6 CV14: W_STAIR_NO_VOID reports this plan (was 1fe18c7d)
     "test/defect-corpus/stair-safety/riser-too-high.clean.arch",
   ],
   [
-    "4c04ddec3195a65a5d06714e23b904ae8a7abfacae6e463d788ca887b66c1e96", // RM1.3b overlay, see ./byte-identity-baseline.ts; RM9.2, see ./byte-identity-baseline.ts
+    "93b8b328d4e5e97d6beef8c89335ef863c22c7b757d9d2a632740c96b4141087", // RM1.3b overlay, see ./byte-identity-baseline.ts; RM9.2, see ./byte-identity-baseline.ts; RM9.6 CV14: W_STAIR_NO_VOID reports this plan (was 4c04ddec)
     "test/defect-corpus/stair-safety/shaft-footprint-mismatch.arch",
   ],
   [
-    "ef8de37a85d16d8fd54a0639d0ea09f37301a1a26859c07b617614a331ef9c09", // RM1.3b overlay, see ./byte-identity-baseline.ts; RM9.2, see ./byte-identity-baseline.ts
+    "8169fd8dffb63bdd46daa0a42ca76646b2920720aed4c1698a167d109ecac598", // RM1.3b overlay, see ./byte-identity-baseline.ts; RM9.2, see ./byte-identity-baseline.ts; RM9.6 CV14: W_STAIR_NO_VOID reports this plan (was ef8de37a)
     "test/defect-corpus/stair-safety/shaft-footprint-mismatch.clean.arch",
   ],
   [
-    "0f46a66f24bfd3296658a585aff0dcdaead10138a7fd004dc74995f4ce873d49", // RM1.3b overlay, see ./byte-identity-baseline.ts; RM9.2, see ./byte-identity-baseline.ts
+    "548d00e050ad8c906e80de160526a664ba99dc11cb7a59994ac12cac3be715d6", // RM1.3b overlay, see ./byte-identity-baseline.ts; RM9.2, see ./byte-identity-baseline.ts; RM9.6 CV14: W_STAIR_NO_VOID reports this plan (was 0f46a66f)
     "test/defect-corpus/stair-safety/stair-too-steep.arch",
   ],
   [
-    "7c6caa77f96e277544acd54ded74ca682c017b2f2f4fa91a3fa659ada81e0131", // RM1.3b overlay, see ./byte-identity-baseline.ts; RM9.2, see ./byte-identity-baseline.ts
+    "5d44365d2a3611fa8ba680986e126dbb11542b2d7d794ebb68aa8c8f58e8babf", // RM1.3b overlay, see ./byte-identity-baseline.ts; RM9.2, see ./byte-identity-baseline.ts; RM9.6 CV14: W_STAIR_NO_VOID reports this plan (was 7c6caa77)
     "test/defect-corpus/stair-safety/stair-too-steep.clean.arch",
   ],
   [
@@ -306,17 +306,17 @@ const BASELINE: [string, string][] = [
     "test/defect-corpus/stair-safety/swing-over-stair.clean.arch",
   ],
   [
-    "444444d968b7e432931e7a1218a7f2f43bbd1c5079d9335d3fe213b94ec3cfb4", // RM1.3b overlay, see ./byte-identity-baseline.ts; RM9.2, see ./byte-identity-baseline.ts
+    "d290dcee45f5619daca37dd791816d20dd904917fecf53f180846674437c3b4b", // RM1.3b overlay, see ./byte-identity-baseline.ts; RM9.2, see ./byte-identity-baseline.ts; RM9.6 CV14: W_STAIR_NO_VOID reports this plan (was 444444d9)
     "test/defect-corpus/stair-safety/void-at-stair-head.arch",
   ],
   [
-    "4d4bfb32187b2a0b26e687f4c2784905b4802b22135e3e3b26239c6240eaffa8", // RM1.3b overlay, see ./byte-identity-baseline.ts; RM9.2, see ./byte-identity-baseline.ts
+    "ef258a64d1873a3e60e30b7b93389fd745854adc657e00b2fd33705863c5e55a", // RM1.3b overlay, see ./byte-identity-baseline.ts; RM9.2, see ./byte-identity-baseline.ts; RM9.6 CV14: the twin draws its void as the stairwell (was 4d4bfb32)
     "test/defect-corpus/stair-safety/void-at-stair-head.clean.arch",
   ],
   ["803382568b44d2abe330873b5b788636b5dae38beea8416ea9da39a9fb3a12ab", "inline:stair-words-as-names"],
   ["f1497554533ffa39becdfaf8494d14a9d2aa84d8eee0455a4eaf4feffa213aba", "inline:stair-square-and-narrow"],
   ["0ba9460627a738d65c7d5235e533ad8410bf7a548bfedc69dca44f987793ee91", "inline:stair-placed"],
-  ["802586e9b7cf3f6927c1441481a0e2d14699e57b6b7a50ddb48b71a9b4a902d5", "inline:stair-arrival"], // RM1.3b overlay, see ./byte-identity-baseline.ts; RM9.2, see ./byte-identity-baseline.ts
+  ["68d65af3a0d0c6cbaf11c3b72f80cdc31fbb381fa5fa0a4e628196a0fa9ee288", "inline:stair-arrival"], // RM1.3b overlay, see ./byte-identity-baseline.ts; RM9.2, see ./byte-identity-baseline.ts; RM9.6 CV14: W_STAIR_NO_VOID reports this plan (was 802586e9)
   ["e6eed958e1d4cea68f7981fce9964af4b5a26fa3d09ad3eafebb0992ce5cb727", "inline:stair-refusals"],
   ["1e9d114fa6522be3335f490693d677a052fc7363fd0bbc2b07b2f0849fe16494", "inline:stair-parse-refusals"], // AF4 (was 57879436): its `E_PARSE` now says what the parser expected at the token it stopped at (`expected`); SVG, lint() and every other key are unchanged, and deleting that key gives 57879436
   ["ec36dffbd6f489fbd80110c6757cb57178986174793e984629510bdee55c510e", "examples/turning-stair.arch"], // RM1.3b overlay, see ./byte-identity-baseline.ts; RM9.2, see ./byte-identity-baseline.ts; CV14: example source edited (stairwell void added) (was d4fb3835)
