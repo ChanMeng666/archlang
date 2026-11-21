@@ -26,6 +26,7 @@ import { join, resolve as resolvePath } from "node:path";
 import { describe, expect, it } from "vitest";
 import { buildDoorAccessGraph, buildingRoomReach, DEFAULT_TOL, resolvePlan, storeyGrounded } from "../src/analyze.js";
 import { type CirculationModel, computeCirculation, walkedFromShafts } from "../src/analyze/circulation.js";
+import { voidPieces } from "../src/elements/void.js";
 import { compile, describe as describePlan, lint, repair } from "../src/index.js";
 import type { RDoor, RFurniture, ROpening, RRoom, RVoid, ResolvedPlan } from "../src/ir.js";
 import { type ArrivingRun, arrivalRuns, entryEdges, verticalsOf } from "../src/vertical.js";
@@ -458,7 +459,8 @@ function circulationOf(
   const doors = ir.elements.filter((e): e is RDoor => e.kind === "door");
   const openings = ir.elements.filter((e): e is ROpening => e.kind === "opening");
   const furniture = ir.elements.filter((e): e is RFurniture => e.kind === "furniture");
-  const voids = ir.elements.filter((e): e is RVoid => e.kind === "void");
+  // A `void … polygon` as its rectangle pieces, as `describe()` hands them (not its box).
+  const voids = ir.elements.filter((e): e is RVoid => e.kind === "void").flatMap(voidPieces);
   const graph = buildDoorAccessGraph(rooms, doors, DEFAULT_TOL, undefined, openings);
   const access = own && arrivals ? walkedFromShafts(graph, arrivals, rooms) : graph;
   const args = [

@@ -10,7 +10,7 @@
  * PR legitimately moves a hashed output (never keep code), the table is re-taken by the generator, the
  * reason recorded below and the moved files listed in that commit's message.
  *
- * Taken: RM9.6 CV08 (feat/cv08-examples-seats, on 6d758f7c): examples/terrace-row.arch and examples/townhouse.arch turn their sofa to face the room (source edits)
+ * Taken: RM9.6 CV14 examples PR (feat/cv14-examples-voids, on b59d3abc): a stairwell void drawn on the upper storeys of garden-house, hillside-villa, townhouse and turning-stair
  */
 
 /** `[path from the repository root, SHA-256 of the payload, evaluation steps]`, sorted by root. */
@@ -73,8 +73,8 @@ export const KEEP_WEAK_BASELINE: readonly (readonly [string, string, number])[] 
   ],
   [
     "examples/garden-house.arch",
-    "bab18355523400b3879bdbe8364ef1c4576a9326d308751a9c4cfd4dd5fff5e2",
-    3884,
+    "1dca916ac008c1f398ed926ccc43a72fb10ec7a1bb5a70eb74c2eb6f1d7bfd57",
+    3914,
   ],
   [
     "examples/garden-loft.arch",
@@ -88,8 +88,8 @@ export const KEEP_WEAK_BASELINE: readonly (readonly [string, string, number])[] 
   ],
   [
     "examples/hillside-villa.arch",
-    "211450a21fc2d78479bcca848924355f4096a2e2f784c5d90ed996d4ac755b4c",
-    5306,
+    "042e0557e2f5550d8bc7e4dd0607014cd8f48eb38fa0184f8fab195435f2fd98",
+    5336,
   ],
   [
     "examples/imports.arch",
@@ -183,8 +183,8 @@ export const KEEP_WEAK_BASELINE: readonly (readonly [string, string, number])[] 
   ],
   [
     "examples/townhouse.arch",
-    "a95d2e2e744a5f99722f3670c754b7eb54671f9233cdca7c0943e24034a04b16",
-    4050,
+    "669fd62de1440d25208d255dc78629c262766fc341f574c61e6434c32750fcbd",
+    4130,
   ],
   [
     "examples/transit-hall.arch",
@@ -193,8 +193,8 @@ export const KEEP_WEAK_BASELINE: readonly (readonly [string, string, number])[] 
   ],
   [
     "examples/turning-stair.arch",
-    "d6c204dd3522bc58268b8805090c81d6eec054ae959e94df0074f9c356bb9a87",
-    1186,
+    "9b1349b4cfc1a316eff4e45312629c56f87ac5ac451dfd0ea0d72999289e5b16",
+    1434,
   ],
   [
     "examples/two-bed.arch",

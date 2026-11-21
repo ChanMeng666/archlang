@@ -178,6 +178,25 @@ suite("W_STAIR_NO_LANDING", () => {
     ]);
   });
 
+  it("a void that ends at the foot is the stairwell below, beside the landing; one past the step is in it", () => {
+    // examples/townhouse.arch's middle storey: the flight rises from the same footprint the flight
+    // below climbs through, and that storey draws the stairwell under it, ending at the foot.
+    const lower = "    stair id=st at (1000,1500) size 1000x3000 dir up";
+    const upper = (v: string) => `    stair id=st at (1000,1500) size 1000x3000 dir up\n    ${v}`;
+    expect(of(twoStorey(lower, upper("void id=g at (1000,1500) size 1000x3000")), "W_STAIR_NO_LANDING")).toEqual([]);
+    expect(
+      of(twoStorey(lower, upper("void id=g at (1000,1500) size 1000x3200")), "W_STAIR_NO_LANDING").map((d) => [
+        d.level,
+        d.message,
+      ]),
+    ).toEqual([
+      [
+        2,
+        'The stair in "Landing" on level 2 has no landing at its foot: a void opens 0 mm past the bottom step, where a landing as long as the flight is wide needs 1000 mm (1000 mm short).',
+      ],
+    ]);
+  });
+
   it("a building other than a dwelling asks 1200 mm (AD K 1.23a); `residential-basic` reads every plan as one", () => {
     const office = house("  stair id=st at (200,200) size 1000x1700 dir up").replace(
       'label "Bedroom" uses bedroom',

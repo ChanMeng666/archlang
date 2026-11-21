@@ -6535,6 +6535,9 @@ exports[`golden SVG snapshots > renders hillside-villa.arch as one page per leve
 <polygon points="900,5100 3900,5100 3900,9300 900,9300" fill="none" stroke="#333333" stroke-width="9" stroke-dasharray="54 36"/>
 <line x1="900" y1="5100" x2="3900" y2="9300" stroke="#333333" stroke-width="9" stroke-dasharray="54 36"/>
 <line x1="3900" y1="5100" x2="900" y2="9300" stroke="#333333" stroke-width="9" stroke-dasharray="54 36"/>
+<polygon points="1000,4300 3900,4300 3900,5100 1000,5100" fill="none" stroke="#333333" stroke-width="9" stroke-dasharray="54 36"/>
+<line x1="1000" y1="4300" x2="3900" y2="5100" stroke="#333333" stroke-width="9" stroke-dasharray="54 36"/>
+<line x1="3900" y1="4300" x2="1000" y2="5100" stroke="#333333" stroke-width="9" stroke-dasharray="54 36"/>
 </g>
 <g id="A-FLOR-STRS" inkscape:groupmode="layer" inkscape:label="A-FLOR-STRS">
 <polygon points="1000,4300 3900,4300 3900,5100 1000,5100" fill="#f4f2ee" stroke="#6c6864" stroke-width="9"/>
@@ -13945,6 +13948,11 @@ exports[`golden SVG snapshots > renders townhouse.arch as one page per level > t
 <line x1="4600" y1="2716.36" x2="4448.8" y2="2968.36" stroke="#6c6864" stroke-width="9"/>
 <text x="4600" y="5654.55" font-size="100" fill="#333333" text-anchor="middle" dominant-baseline="central">UP</text>
 </g>
+<g id="A-FLOR-OVHD" inkscape:groupmode="layer" inkscape:label="A-FLOR-OVHD">
+<polygon points="4150,2600 5050,2600 5050,5800 4150,5800" fill="none" stroke="#333333" stroke-width="9" stroke-dasharray="54 36"/>
+<line x1="4150" y1="2600" x2="5050" y2="5800" stroke="#333333" stroke-width="9" stroke-dasharray="54 36"/>
+<line x1="5050" y1="2600" x2="4150" y2="5800" stroke="#333333" stroke-width="9" stroke-dasharray="54 36"/>
+</g>
 <g id="A-WALL" inkscape:groupmode="layer" inkscape:label="A-WALL">
 <path d="M -150,-150 L 800,-150 L 800,150 L 150,150 L 150,4550 L 3100,4550 L 3100,2200 L 3300,2200 L 3300,4800 L 3100,4800 L 3100,4650 L 150,4650 L 150,6950 L 3100,6950 L 3100,5600 L 3300,5600 L 3300,6950 L 3800,6950 L 3800,7050 L 3300,7050 L 3300,7100 L 3100,7100 L 3100,7050 L 150,7050 L 150,10550 L 1700,10550 L 1700,10850 L -150,10850 Z M 2400,-150 L 3600,-150 L 3600,150 L 3300,150 L 3300,1400 L 3100,1400 L 3100,150 L 2400,150 Z M 3500,10550 L 5050,10550 L 5050,7050 L 4600,7050 L 4600,6950 L 5050,6950 L 5050,150 L 4800,150 L 4800,-150 L 5350,-150 L 5350,10850 L 3500,10850 Z" fill="url(#poche)" fill-rule="nonzero"/>
 <path d="M -150,-150 L 800,-150 L 800,150 L 150,150 L 150,4550 L 3100,4550 L 3100,2200 L 3300,2200 L 3300,4800 L 3100,4800 L 3100,4650 L 150,4650 L 150,6950 L 3100,6950 L 3100,5600 L 3300,5600 L 3300,6950 L 3800,6950 L 3800,7050 L 3300,7050 L 3300,7100 L 3100,7100 L 3100,7050 L 150,7050 L 150,10550 L 1700,10550 L 1700,10850 L -150,10850 Z M 2400,-150 L 3600,-150 L 3600,150 L 3300,150 L 3300,1400 L 3100,1400 L 3100,150 L 2400,150 Z M 3500,10550 L 5050,10550 L 5050,7050 L 4600,7050 L 4600,6950 L 5050,6950 L 5050,150 L 4800,150 L 4800,-150 L 5350,-150 L 5350,10850 L 3500,10850 Z" fill="none" stroke="#1b1b1b" stroke-width="25" stroke-linejoin="miter" stroke-miterlimit="4"/>
@@ -14218,6 +14226,11 @@ exports[`golden SVG snapshots > renders townhouse.arch as one page per level > t
 <line x1="4600" y1="5683.64" x2="4448.8" y2="5431.64" stroke="#6c6864" stroke-width="9"/>
 <line x1="4600" y1="5683.64" x2="4751.2" y2="5431.64" stroke="#6c6864" stroke-width="9"/>
 <text x="4600" y="2745.45" font-size="100" fill="#333333" text-anchor="middle" dominant-baseline="central">DN</text>
+</g>
+<g id="A-FLOR-OVHD" inkscape:groupmode="layer" inkscape:label="A-FLOR-OVHD">
+<polygon points="4150,2600 5050,2600 5050,5800 4150,5800" fill="none" stroke="#333333" stroke-width="9" stroke-dasharray="54 36"/>
+<line x1="4150" y1="2600" x2="5050" y2="5800" stroke="#333333" stroke-width="9" stroke-dasharray="54 36"/>
+<line x1="5050" y1="2600" x2="4150" y2="5800" stroke="#333333" stroke-width="9" stroke-dasharray="54 36"/>
 </g>
 <g id="A-WALL" inkscape:groupmode="layer" inkscape:label="A-WALL">
 <path d="M -150,-150 L 800,-150 L 800,150 L 150,150 L 150,4550 L 3100,4550 L 3100,2200 L 3300,2200 L 3300,4800 L 3100,4800 L 3100,4650 L 150,4650 L 150,6950 L 3100,6950 L 3100,5600 L 3300,5600 L 3300,6950 L 3750,6950 L 3750,7050 L 3300,7050 L 3300,7100 L 3100,7100 L 3100,7050 L 150,7050 L 150,10550 L 1700,10550 L 1700,10850 L -150,10850 Z M 2400,-150 L 3600,-150 L 3600,150 L 3300,150 L 3300,1400 L 3100,1400 L 3100,150 L 2400,150 Z M 3500,10550 L 5050,10550 L 5050,7050 L 4650,7050 L 4650,6950 L 5050,6950 L 5050,150 L 4800,150 L 4800,-150 L 5350,-150 L 5350,10850 L 3500,10850 Z" fill="url(#poche)" fill-rule="nonzero"/>

@@ -73,10 +73,10 @@ const BASELINE: [string, string][] = [
   ["59ba7adeb9de4f1a6745c1ba7ee2ceaa2d252a7825a678406e2ccefd578960bb", "examples/courtyard-house.arch"], // CV13 (was 15c1cd92): example source edited (chairs added)
   ["fe32076533f5e888264999eaafb466ef70adcf4aae03b028b428d747781f51ac", "examples/furnished-flat.arch"],
   ["7c2d19e317d8182f97d3a3364aab6c61054dbcf154f356f792e07951fb4cc9e8", "examples/gallery-l.arch"],
-  ["5e8ad00226b341b838403c97925d54fd544a2ff143c72f5fd03d8ea07c5b0f40", "examples/garden-house.arch"], // RM1.3a, see ./byte-identity-baseline.ts; RM9.2, see ./byte-identity-baseline.ts
+  ["5b1833f6a5535ef4092199f884fb0fc5a53dc95cd18943778c7ce58d4c83b234", "examples/garden-house.arch"], // RM1.3a, see ./byte-identity-baseline.ts; RM9.2, see ./byte-identity-baseline.ts; CV14: example source edited (stairwell void added) (was 5e8ad002)
   ["05a0e987ab75be9820173cb2c7703c44da82fe58bfc3fd104a9f17bc59115a24", "examples/garden-loft.arch"], // CV13 (was f878ff2a): example source edited (chairs added)
   ["286d7778a9d765d08623e89227a9aaf866f19bdc4e75794df14a998364524f44", "examples/hexagon-pavilion.arch"], // CV13 (was 2184afc6): example source edited (chairs added)
-  ["c4da52d86fc11e959b68f38d0cf484564b73f902c8c2807f6fcdc6d3fc8a8b79", "examples/hillside-villa.arch"], // RM1.3a, see ./byte-identity-baseline.ts; RM9.2, see ./byte-identity-baseline.ts
+  ["37035f9edcb16f1355ee1e020e8548dd546fa881b0d8f3a6c3f211af9276ddfa", "examples/hillside-villa.arch"], // RM1.3a, see ./byte-identity-baseline.ts; RM9.2, see ./byte-identity-baseline.ts; CV14: example source edited (stairwell void added) (was c4da52d8)
   ["dcc2b4674edc4f74db43a3ad65d1402290786ff9fcf45c21447db95fafae5ac7", "examples/imports.arch"],
   ["54ef5cae9feda0abc8176f144ab34ae2d7977ce0200b7e50fc7c3a44613dfdf0", "examples/knob-flat.arch"], // new example (P4, the knobs example)
   ["c8fc6c4319c3acac47673c9373c563903944b6210fcf5db75ce9bdbdc4ffecf2", "examples/laneway-house.arch"], // CV13 (was 9216c7fc): example source edited (chairs added)
@@ -95,9 +95,9 @@ const BASELINE: [string, string][] = [
   ["7aaf67c64e1cfaa57c27c35208fa0d4ab71ed283e3ecd962d1eefe78165c3541", "examples/terrace-row.arch"], // CV08 (was d311b42f): example source edited (sofa turned to face the room)
   ["fb713c6aa3be4a324d1f2256c817fa787f9a5373d47c7990f21c8eb0ee0956b2", "examples/themed.arch"],
   ["9691a3cc4ffbf7602ba945647cd2453376e39715c55dbd7f7a9934ef15186fc8", "examples/tiny-house.arch"],
-  ["b20c150c52a28a2b07b3abaa6f74a1023c85fbab456793a04c60e6d6c8b7f64e", "examples/townhouse.arch"], // RM1.3a, see ./byte-identity-baseline.ts; RM9.2, see ./byte-identity-baseline.ts; CV13 (was 99d00adc): example source edited (chairs added); CV08 (was dbae02ed): example source edited (sofa turned to face the room)
+  ["2202f2120f1f844f3700c836be0fb7ef43f91e18e6482d048d949d16618e2116", "examples/townhouse.arch"], // RM1.3a, see ./byte-identity-baseline.ts; RM9.2, see ./byte-identity-baseline.ts; CV13 (was 99d00adc): example source edited (chairs added); CV08 (was dbae02ed): example source edited (sofa turned to face the room); CV14: example source edited (stairwell void added) (was b20c150c)
   ["bd690a3b8e33326a36ef8361614e0f5704b778e0a93e68ced4d385d40ea6bf85", "examples/transit-hall.arch"],
-  ["2b978c23113572effc904e2840da68bde001d22e211fcd5b11b58a6791aeb047", "examples/turning-stair.arch"], // RM1.3a, see ./byte-identity-baseline.ts; RM1.2a, see ./byte-identity-baseline.ts; RM9.2, see ./byte-identity-baseline.ts
+  ["b8a1663c354d7e7867d052b0d1ba5e7c722284e10dd50bc5b1f944a69ae75dcc", "examples/turning-stair.arch"], // RM1.3a, see ./byte-identity-baseline.ts; RM1.2a, see ./byte-identity-baseline.ts; RM9.2, see ./byte-identity-baseline.ts; CV14: example source edited (stairwell void added) (was 2b978c23)
   ["a8f1f8b207085a8144988362d6dafa5c02d56862ccd7c47111c6376ee9e7f90d", "examples/two-bed.arch"], // CV13 (was caf049e3): example source edited (chairs added)
   ["48ac5c2d3b8d1b286aabd159c2d657379d384d22326569a740fdcaf349344a9b", "examples/two-storey.arch"], // RM1.3a, see ./byte-identity-baseline.ts; RM1.2a, see ./byte-identity-baseline.ts; RM9.2, see ./byte-identity-baseline.ts
   ["9bf244567364f85ea64f1aa4bc8ee19e63c1edc34ed5fe340ed116a54a8c0c84", "inline:every-family-1:50"],

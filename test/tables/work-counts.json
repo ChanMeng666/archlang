@@ -1,5 +1,5 @@
 {
-  "_reason": "RM9.6 CV08 (feat/cv08-examples-seats, on 6d758f7c): terrace-row and townhouse turn their sofa (a rotate literal each: evaluation steps)",
+  "_reason": "RM9.6 CV14 examples PR (feat/cv14-examples-voids, on b59d3abc): a stairwell void drawn on the upper storeys of garden-house, hillside-villa, townhouse and turning-stair",
   "_tolerance": 0.1,
   "_totalTolerance": 0.03,
   "_floor": 8,
@@ -137,9 +137,9 @@
       "labelLeaders": 0
     },
     "examples/garden-house.arch": {
-      "steps": 3884,
-      "drawUnits": 4681,
-      "elements": 115,
+      "steps": 3914,
+      "drawUnits": 4688,
+      "elements": 116,
       "leafDoorPairs": 0,
       "boundaryRunTests": 60,
       "navCells": 25650,
@@ -173,9 +173,9 @@
       "labelLeaders": 0
     },
     "examples/hillside-villa.arch": {
-      "steps": 5306,
-      "drawUnits": 5926,
-      "elements": 152,
+      "steps": 5336,
+      "drawUnits": 5933,
+      "elements": 153,
       "leafDoorPairs": 0,
       "boundaryRunTests": 206,
       "navCells": 33762,
@@ -401,9 +401,9 @@
       "labelLeaders": 0
     },
     "examples/townhouse.arch": {
-      "steps": 4050,
-      "drawUnits": 1254,
-      "elements": 74,
+      "steps": 4130,
+      "drawUnits": 1268,
+      "elements": 76,
       "leafDoorPairs": 0,
       "boundaryRunTests": 59,
       "navCells": 16692,
@@ -425,9 +425,9 @@
       "labelLeaders": 0
     },
     "examples/turning-stair.arch": {
-      "steps": 1186,
-      "drawUnits": 490,
-      "elements": 16,
+      "steps": 1434,
+      "drawUnits": 503,
+      "elements": 17,
       "leafDoorPairs": 0,
       "boundaryRunTests": 8,
       "navCells": 6080,

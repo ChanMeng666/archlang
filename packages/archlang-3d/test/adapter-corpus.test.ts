@@ -22,7 +22,11 @@ describe("every shipped example adapts to a valid Scene3D, or is refused by name
         if (!ir) return;
         // Nothing is dropped: each collection is counted against the core's own facts, never
         // against another view of the scene (PR #325 review round 1).
-        const n = (k: string): number => ir.elements.filter((e) => e.kind === k).length;
+        // A `void … polygon` is one element and as many scene voids as it has rectangle `parts`.
+        const n = (k: string): number =>
+          ir.elements
+            .filter((e) => e.kind === k)
+            .reduce((a, e) => a + (e.kind === "void" && e.parts ? e.parts.length : 1), 0);
         expect(lv.openings.length, "openings = the joinery's cuts").toBe(wallOwnership(ir.walls).cuts.length);
         expect(lv.walls.length).toBe(ir.walls.length);
         const kinds = ["room", "furniture", "stair", "void", "column", "outdoor", "fence", "roof"];

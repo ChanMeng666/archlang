@@ -712,8 +712,9 @@ function landingBlock(
   const consider = (poly: readonly Point[], what: LandingBlock["what"]): void => {
     const clipped = clipToRect(poly, probe);
     if (clipped.length < 3) return;
-    // A touch is not an overlap: a wall whose face is the landing's edge stands beside it, not in it.
-    if (l.end === "turn" && !hasArea(clipped)) return;
+    // A touch is not an overlap: a wall whose face is the landing's edge stands beside it, not in it,
+    // and so does a void that ends at the step (the stairwell of a flight below, under this one).
+    if ((l.end === "turn" || "void" in what) && !hasArea(clipped)) return;
     let d = Infinity;
     for (const p of clipped) d = Math.min(d, pastEdge(r, l.edge, p));
     d = Math.max(0, d);

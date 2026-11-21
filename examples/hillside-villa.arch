@@ -291,6 +291,7 @@ plan "Hillside Villa" {
     roof overhang 700 wall shell
 
     stair id=stair at (1000,4300) size 2900x800 dir down
+    void id=v_stair at (1000,4300) size 2900x800
   }
 
   axes {

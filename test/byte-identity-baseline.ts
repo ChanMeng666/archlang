@@ -2084,10 +2084,10 @@ export const BASELINE: [string, string][] = [
   ["courtyard-house", "5bdb37b5e2b37a4f8fd9a9a5c2c9025611c267a5c321b29e094cfea6a79d3ef4"], // re-measured for PS2.4, see header; PS2.11e, see header; CV13 (was b9cd8746): example source edited (chairs added)
   ["furnished-flat", "52b8bee1afff224fca393b2fd77bf7a4720009b91d0a625da434648220a5eb87"], // PS2.11e, see header
   ["gallery-l", "7ac8620f4d47923ca075d1e1affb925326e50f520a71bb7b2cb2107375b4816d"], // PS2.10 dim fixed, see header; PS2.11e, see header
-  ["garden-house", "b364b3a1a66a02657b1c845eb36338df5d434d8599d05294de2591bb785c7663"], // re-measured, see header; RM1.3a, see header; RM9.2, see header
+  ["garden-house", "dc284c378e90179cbaa1944f71fc242b9871e664401625495b10cc5ba4ee6b60"], // re-measured, see header; RM1.3a, see header; RM9.2, see header; CV14: example source edited (stairwell void added) (was b364b3a1)
   ["garden-loft", "823ca475790e000a0637ea97df36d38831a30171bf85063da60cc13d4f19cc57"], // PS2.11e, see header; CV13 (was 18475d2c): example source edited (chairs added)
   ["hexagon-pavilion", "de1b01e8330cae5415fbfc9c8d609804880af169d112977d260c6ff979c53ae4"], // CV13 (was c9feff36): example source edited (chairs added)
-  ["hillside-villa", "38fbb6c938ce81e4403a6508e522f944602665da35cb126ee352341e647876d4"], // re-measured, see header; PS2.11e, see header; RM1.3a, see header; RM9.2, see header
+  ["hillside-villa", "a9b7d7a3c4db4a4412ea25543a9d5b00885bb0ff4f38198e614da7dd18cd4b2c"], // re-measured, see header; PS2.11e, see header; RM1.3a, see header; RM9.2, see header; CV14: example source edited (stairwell void added) (was 38fbb6c9)
   ["imports", "1de644a1f7abfb2b5cc67269fac11a191810d959379f7b04e14c259014d1e9f4"],
   ["knob-flat", "a99858f74f98ab0ed82ec056df9b76543ee62e4c6692036f80ff301cf701a5c9"], // added with the example, see header
   ["laneway-house", "eb03b3f22a4c9f1b47482311ad6cf5ebffad12d38003dfa48ba56494366528f3"], // PS2.11e, see header; CV13 (was 8ede769d): example source edited (chairs added)
@@ -2106,9 +2106,9 @@ export const BASELINE: [string, string][] = [
   ["terrace-row", "1a7bbcde47500c0e8abfedf8e22f2305e14c0a5bb2f2c71c88535ebf1f453211"], // re-measured, see header; CV08 (was ec839a41): example source edited (sofa turned to face the room)
   ["themed", "24c18315c2fcc753391aa01a506f69f611f6d9ac8512053981dc8ce75f36f746"], // PS2.11e, see header
   ["tiny-house", "8236b2c882cc2ff9f21a7b0d5a715f773d300b7432e5746987f2e3809e430ce9"], // PS2.11e, see header
-  ["townhouse", "63c9943ba5863da9dbfdeeb194763193c380ef8172b4966e76563aaf93e90d2b"], // re-measured, see header; PS2.11e, see header; RM1.3a, see header; RM9.2, see header; CV13 (was 65bb836a): example source edited (chairs added); CV08 (was 374746a1): example source edited (sofa turned to face the room)
+  ["townhouse", "f3904d3f0e7193eca934bcb3747f6e2c71c941f51c6f0eda3a9c35f6f1fa3284"], // re-measured, see header; PS2.11e, see header; RM1.3a, see header; RM9.2, see header; CV13 (was 65bb836a): example source edited (chairs added); CV08 (was 374746a1): example source edited (sofa turned to face the room); CV14: example source edited (stairwell void added) (was 63c9943b)
   ["transit-hall", "84d3e195a6c9ffb9687fbe345b1a902672a024a67a6b8f57b35c1151aba7424e"], // PS2.11e, see header
-  ["turning-stair", "f14a63c239831bd0136b7b1f3c4310241d0f87328e52b39cf7d9489909426b2d"], // added with the example, see header; `centreline_at`, see header; RM1.3a, see header; RM1.2a, see header; RM9.2, see header
+  ["turning-stair", "dd208e665d3cab5ce3f72cc35adcbe569dbc47bde9ec7bba4dbbecb49358c579"], // added with the example, see header; `centreline_at`, see header; RM1.3a, see header; RM1.2a, see header; RM9.2, see header; CV14: example source edited (stairwell void added) (was f14a63c2)
   ["two-bed", "4235a55f56feecae0935f8760ab50fb8b650696ac8aaa8eff7c76bebca8ebbf8"], // PS3.6 source rewrite, see header; PS2.11e, see header; `centreline_at`, see header; CV13 (was 21101fea): example source edited (chairs added)
   ["two-storey", "f71d76a6e6dfc9bdd5642533783cd6d611de8cf680e46d4348ac1aa76bc7ff56"], // re-measured, see header; RM1.3a, see header; RM1.2a, see header; RM9.2, see header
 ];
@@ -2136,10 +2136,10 @@ export const SEMANTIC_BASELINE: [string, string][] = [
   ["courtyard-house", "7bd900ef189a3e039942f81bbc475d883d6411ecf788ce50534757bcb3b059ce"], // re-measured for PS2.4, see header; CV13 (was cbbeb130): example source edited (chairs added)
   ["furnished-flat", "d4f5194c4a9f26337646b7bf28a05645fc083fe1e1ec7eb4b6e3cd93b0f32641"],
   ["gallery-l", "5dec4904ac00c1d5a20747336ec0acaa4b6682f40b02008aad554ccfa87f0025"], // PS2.11e, see header
-  ["garden-house", "17d99286bab8445d7613d7454f3e8e38a6a9f171d69d5bb3f12730a1e2bb1274"], // re-measured, see header; RM1.3a, see header; RM9.2, see header
+  ["garden-house", "8a7d9bce019a5c8fdf5122ac014beebe69ff10f2f3df3fbc6fd22d815862cfb9"], // re-measured, see header; RM1.3a, see header; RM9.2, see header; CV14: example source edited (stairwell void added) (was 17d99286)
   ["garden-loft", "4789446934c5cccffbca37139f7f7fc7e6679ec62da1c256a0d7166ce50053ed"], // CV13 (was d37d7f67): example source edited (chairs added)
   ["hexagon-pavilion", "4380bb63e797b577f2678fff1d699a24b20e7eeca9297beb3d3960e1189e51a9"], // CV13 (was 435b9fb0): example source edited (chairs added)
-  ["hillside-villa", "3e74b76a22ec1f41361641266bac7e36fcbdd385a32e142ccf170abe1965e6df"], // re-measured, see header; PS2.11e, see header; RM1.3a, see header; RM9.2, see header
+  ["hillside-villa", "3400f55793f20e35103fd526378d25854dde49db93b5312e229ef7b56d476c73"], // re-measured, see header; PS2.11e, see header; RM1.3a, see header; RM9.2, see header; CV14: example source edited (stairwell void added) (was 3e74b76a)
   ["imports", "85b77c3fa1a9961a884cf5966ae5f87af436edf6adf3c16f2e426f72ed2b1b2f"],
   ["knob-flat", "0649d38e9f1df5f91c531d84b75d19e3268df59b4e7e9220471c9ed4419eb6c7"], // added with the example, see header
   ["laneway-house", "505ec5dc09a07758dd953ebd0b0dc885bdf746d8ccfbd28fdeb0dbbdcf5e94ce"], // CV13 (was 55f68cc6): example source edited (chairs added)
@@ -2158,9 +2158,9 @@ export const SEMANTIC_BASELINE: [string, string][] = [
   ["terrace-row", "816ee27f71dc78671909db34ad59d2196fe1d779f0ebd904fee49170320dede3"], // CV08 (was 0c37d23b): example source edited (sofa turned to face the room)
   ["themed", "7e222ca408876d502b7e8662d90b695bfa3e8712c855023a6dacc3d21a3bbacd"],
   ["tiny-house", "3513ef53a1064ff6b4435f4a8f05db2578aa258a1bb6c55c90df0517a638190b"], // PS2.11e, see header
-  ["townhouse", "d97b1c020cae6f58569f761d5e0af8225540c6a5a403bf7c850d3c08990838f5"], // re-measured, see header; RM1.3a, see header; RM9.2, see header; CV13 (was 147c8167): example source edited (chairs added); CV08 (was ee07e827): example source edited (sofa turned to face the room)
+  ["townhouse", "7e355438a241aa51b4913b93bb9c0df0cb4688e480d9cfe0a92636391a91522c"], // re-measured, see header; RM1.3a, see header; RM9.2, see header; CV13 (was 147c8167): example source edited (chairs added); CV08 (was ee07e827): example source edited (sofa turned to face the room); CV14: example source edited (stairwell void added) (was d97b1c02)
   ["transit-hall", "4092fd0a7d88401cc49781d8021f0863300e8cbe65804d5735a9271a0c6c3eff"], // PS2.11e, see header
-  ["turning-stair", "95a956232914bc2728140f0b649392e11b9873fe176b16d66d9e3fedd71712fc"], // added with the example, see header; `centreline_at`, see header; RM1.3a, see header; RM1.2a, see header; RM9.2, see header
+  ["turning-stair", "f8bdc06303120e15484b7a570c47f6ae7ce4783e4f93bd8d9e102e1b596f9911"], // added with the example, see header; `centreline_at`, see header; RM1.3a, see header; RM1.2a, see header; RM9.2, see header; CV14: example source edited (stairwell void added) (was 95a95623)
   ["two-bed", "51c6bbc05ab18c7c7680dd728a03ab2f6be914768a654b6f89124817b6954101"], // PS3.6 source rewrite, see header; `centreline_at`, see header; CV13 (was 436fadba): example source edited (chairs added)
   ["two-storey", "9ef96f2f94e981a208d90683b26fba3edaf6d41a18704a337c68bd5b49a50273"], // re-measured, see header; RM1.3a, see header; RM1.2a, see header; RM9.2, see header
 ];
