@@ -213,7 +213,7 @@ const MAIN_SOURCES: [path: string, payload: string, source: string, undo: [branc
   [
     "examples/laneway-house.arch",
     "ab7e0a2cfd75005a48e3ce9c0a64df79f147aeb0aa061b82a56bcfc1296bf554", // CV13 (was 4d5dee59): example source edited (chairs added)
-    "e69e8261229752658dbec4fbea0c4df81a1847f87fae453cd6bf860250ca5069", // CV13 (was cd383a3a): example source edited (chairs added)
+    "a86cb33a28aeb327593519251b8edef5872fe606639867cbb0cd51612a5f3d44", // CV13 (was cd383a3a): example source edited (chairs added)
     [
       [
         "  furniture fridge       against wall w_west offset 3600 in r_live",

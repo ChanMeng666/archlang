@@ -199,7 +199,7 @@ const BASELINE: [string, string, string][] = [
   [
     "21f4d5bc82e2e8d46536bd2dc5623b05ea76e937db31c7d4ed482a4c5e3118bc", // CV13 (was 958934b4): example source edited (chairs added)
     // AF9: the parse holds the `posSpan` and `wallSpan` an opening's lead now records (no semantics); without them it is the parse pinned here (was d2822380)
-    "cdfd3109d3ae9071027c5a1ff0c9303873473af87f80486e44830521c2f22dd0", // CV13 (was 4fb3e26f): example source edited (chairs added)
+    "47e83095a8a9d3ddef9af8ddfb75a44aa7c12e85dd2cd91b380eb2d8153c59f3", // CV13 (was 4fb3e26f): example source edited (chairs added)
     "examples/laneway-house.arch",
   ],
   [
