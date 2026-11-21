@@ -103,6 +103,8 @@ plan "Townhouse" {
     furniture fridge       against wall shell segment 3 offset 3200 in r_kitchen
     furniture counter      against wall shell segment 3 offset 500 in r_kitchen
     furniture id=t_dining table in r_kitchen centered size 1400x900 label "Table"
+    # Its chairs, 50 mm off its long sides: 1000 and 500 are half its 900 mm depth plus 550, and
+    # plus 50, from the room's centre, so a deeper table needs these two numbers changed with it.
     furniture chair at (r_kitchen.cx - 250, r_kitchen.cy - 1000) size 500x500 facing t_dining in r_kitchen
     furniture chair at (r_kitchen.cx - 250, r_kitchen.cy + 500)  size 500x500 facing t_dining in r_kitchen
 

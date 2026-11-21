@@ -210,7 +210,8 @@ plan "Courtyard House" {
   # Two chairs at each centred table, on its south side, 50 mm off its edge and 400 mm either
   # side of its axis, placed from the room's centre; `facing` turns each to its table. The
   # living room's north side is the sofa's; the dining room's is the walk from the living
-  # room's opening to the kitchen door, and it keeps the room's name.
+  # room's opening to the kitchen door, and it keeps the room's name. The 500 is half the
+  # tables' 900 mm depth plus 50, so a deeper table needs it changed with it.
   furniture chair at (r_living.cx - 650, r_living.cy + 500) size 500x500 facing t_living in r_living
   furniture chair at (r_living.cx + 150, r_living.cy + 500) size 500x500 facing t_living in r_living
   furniture chair at (r_dining.cx - 650, r_dining.cy + 500) size 500x500 facing t_dining in r_dining

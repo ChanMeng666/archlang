@@ -26,7 +26,7 @@ plan "Apartment Remodel" {
   # In: the study's wall.
   wall id=n_study partition thickness 100 status new { (9200,0) (9200,4000) }
 
-  room id=r_living at (0,0)      size 6000x7600 label "Kitchen / Living" at (4500,3450) uses kitchen living
+  room id=r_living at (0,0)      size 6000x7600 label "Kitchen / Living" at (4500,3500) uses kitchen living
   room id=r_bed    at (6000,0)   size 3200x4000 label "Bedroom" at (7600,2800) uses bedroom
   room id=r_study  at (9200,0)   size 1800x4000 label "Study" uses office
   room id=r_hall   at (6000,4000) size 5000x1400 label "Hall" uses hall
