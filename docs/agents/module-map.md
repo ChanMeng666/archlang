@@ -19,7 +19,7 @@ module's remaining facts are in its own header.
 invariants; this file holds every module. The exports of `src/index.ts` are in the sibling
 [`public-surface.md`](public-surface.md).
 
-Totals: 419 modules in 34 directories.
+Totals: 423 modules in 34 directories.
 
 ## `packages/archlang-3d/src/`
 
@@ -151,19 +151,20 @@ Totals: 419 modules in 34 directories.
 
 | Module | Lines | Importers | Summary | Budget |
 | --- | ---: | ---: | --- | --- |
-| `actions.ts` | 724 | 1 | The header/panel action buttons: Format, Finish and Saved (the More menu), Repair furniture, the Share menu (Copy link, short or full; Embed; Export: Copy SVG / PNG and the downloads, SVG · PNG · PDF · DXF · TXT · GLB, ruling PG-D5), Copy… | none |
+| `actions.ts` | 725 | 1 | The header/panel action buttons: Format, Finish and Saved (the More menu), Repair furniture, the Share menu (Copy link, short or full; Embed; Export: Copy SVG / PNG and the downloads, SVG · PNG · PDF · DXF · TXT · GLB, ruling PG-D5), Copy… | none |
 | `arch-completion.ts` | 63 | 2 | CodeMirror 6 autocompletion for ArchLang, backed by the core's pure `completion()` language service (the same engine the LSP/editor use). | none |
 | `checks-overlay.ts` | 68 | 2 | The Checks overlay's string work, pure (unit-tested in Node): lifting the review rings out of the sheet `arch preview --review` draws, and laying them over the drawing on screen. | none |
 | `checks-panel.ts` | 211 | 1 | Checks (public-surfaces P6): the Checks layer toggle on the drawing's toolbar (beside Paths, ruling PG-D3) draws, over the drawing, the review rings `arch preview --review` draws, from the same function (src/cli/review.ts, built as… | none |
 | `compile-worker.ts` | 329 | 2 | The playground's compile job, and the Web Worker it runs in (card MP6, ruling MP-D6: typing never freezes the page). A playground file, not core: `compile()`, `describe()` and `lint()` are the core's, called exactly as the page called… | none |
-| `compiler.ts` | 10 | 2 | The compiler functions the view path calls (main.ts, and the compile job it runs in a worker, compile-worker.ts), behind the one dynamic import that keeps the core out of the startup chunk. Named, not `import("archlang")`: a dynamic… | none |
+| `compiler.ts` | 23 | 7 | The compiler functions the view path calls (main.ts, and the compile job it runs in a worker, compile-worker.ts), behind the one dynamic import that keeps the core out of the startup chunk. Named, not `import("archlang")`: a dynamic… | none |
 | `describe-panel.ts` | 69 | 1 | Describe, the Facts tab's first section: a compact access-graph diagram from `describe().access` with the raw describe JSON tucked into a <details>. Zero-dep — pure DOM/CSS strings, no graph library. | none |
 | `diagnostics-panel.ts` | 73 | 1 | Render the compiler diagnostics into the `#errors` panel as clickable rows: the catalogued remedy (`fix`) shows inline under each row so the fix is visible without a click; clicking a row jumps the editor caret to the diagnostic's source… | none |
 | `edit-mode.ts` | 305 | 1 | Edit mode: the CodeMirror editor and the panels that read the source — diagnostics, Describe, Lint (with Repair and Suggest), Intent. Loaded on the first entry into edit mode (the Source button, `&edit` in the hash, or a More (⋯) item… | none |
 | `editor-setup.ts` | 124 | 1 | CodeMirror 6 editor construction for the playground: the ArchLang language support, compiler-backed autocompletion and linting, history, and the doc-change listener that drives the live recompile. Pure builder — no app state. | none |
-| `embed-params.ts` | 72 | 2 | The chrome-less embed page's pure decisions, split out of `embed.ts` so they can be unit-tested in Node. | none |
+| `embed-params.ts` | 121 | 2 | The chrome-less embed page's pure decisions, split out of `embed.ts` so they can be unit-tested in Node. | none |
 | `embed-snippets.ts` | 46 | 3 | The snippets the Embed dialog offers, built from the playground's base URL and a `#z=` share hash. Pure so it can be unit-tested; the dialog lives in actions.ts. | none |
-| `embed.ts` | 109 | 0 | Chrome-less embed page. Renders an ArchLang plan from the URL hash — the same `#z=` share codec the main playground writes — so a floor plan can be dropped into any blog / Confluence / GitHub-Pages via a single <iframe>. Client-side only… | none |
+| `embed.ts` | 131 | 0 | Chrome-less embed page. Renders an ArchLang plan from the URL hash — the same `#z=` share codec the main playground writes — so a floor plan can be dropped into any blog / Confluence / GitHub-Pages via a single <iframe>. Client-side only… | none |
+| `error-card.ts` | 9 | 1 | The error card the embed shows for a plan that is broken on first load (embed.ts), behind one dynamic import, so the embed path does not carry the card's renderer and the catalogue's fix column it prints (card 3.19, `embedPathBudget` in… | none |
 | `escape.ts` | 7 | 10 | Minimal HTML-escaping for the innerHTML the playground panels build by hand. | none |
 | `examples.ts` | 393 | 4 | Playground example plans. | none |
 | `facts-strip.ts` | 27 | 1 | The facts line under the drawing: one plain sentence of how much source drew how much plan, "57 lines of ArchLang → 3 rooms · 45.05 m² (net)", computed from the source and describe()'s totals of the storey on screen (room-facts.ts… | none |
@@ -222,18 +223,20 @@ Totals: 419 modules in 34 directories.
 | `actions-path.ts` | 20 | 0 | A build entry, not a package export (card 3.18), the third of the playground's three (after `src/compile-path.ts` and `src/first-use-path.ts`): the core values the header actions run only when a button is pressed… | none |
 | `analyze.ts` | 1281 | 136 | Shared semantic-analysis layer for the agent-facing tools. | none |
 | `any-catalog-fix.ts` | 20 | 3 | The catalogued remediation for any catalogue code (card NR.10): {@link catalogFix}'s table, the codes `compile()` raises, then the intent violations' (`E_INTENT_*`, which only `validateIntent` raises). The two generated tables are… | none |
-| `ast.ts` | 1756 | 230 | Abstract syntax tree for an ArchLang `plan`. All distances are in millimetres. | none |
+| `ast.ts` | 1755 | 230 | Abstract syntax tree for an ArchLang `plan`. All distances are in millimetres. | none |
 | `attach.ts` | 521 | 6 | Opening attachment (`door\|window\|opening … on <wall> at <pos>`). | charges the step meter |
 | `axes.ts` | 161 | 4 | **Positioning axes** (定位轴线) — GB/T 50001's structural datum grid. | none |
 | `builtins.ts` | 129 | 3 | Built-in functions: a frozen, pure map injected into the global scope as `builtin` Values. Each is total — bad arity / types emit a diagnostic and return a safe default, never throw — and deterministic (no I/O, no clock). | none |
-| `catalog-fix.ts` | 36 | 6 | The catalogued remediation for a diagnostic code: one row of the catalogue's fix column (`CATALOG_FIXES`, generated from `ERROR_CATALOG`). The error card `compile()` draws (`backends/error-svg.ts`) reads it here. It has a module of its… | none |
+| `catalog-fix.ts` | 38 | 6 | The catalogued remediation for a diagnostic code: one row of the catalogue's fix column (`CATALOG_FIXES`, generated from `ERROR_CATALOG`). The error card `compile()` draws (`backends/error-svg.ts`) reads it here. It has a module of its… | none |
 | `chrome-layout.ts` | 626 | 17 | Shared page-chrome layout — the deterministic geometry of the **scale bar** and **title block** in the bottom page margin, and how far the bottom margin must grow to contain them. Both the SVG and PDF backends build their chrome from this… | none |
 | `clause-order.ts` | 270 | 20 | Order-free trailing clauses. A statement's optional keyword-led clauses (`size`, `label`, `rotate`, `clear`, … after a `furniture`'s placement) may come in any order, each once. | none |
 | `cli.ts` | 91 | 0 | ArchLang CLI — agent-native. | none |
 | `command-name.ts` | 11 | 5 | The command name every help line, example and doc writes. `package.json` installs two bins, `archlang` and `arch`, for the same `dist/cli.js`; `arch` stays as an alias, but coreutils ships an `arch` on Linux, macOS and Git Bash, so a bare… | none |
-| `compile-path.ts` | 22 | 0 | A build entry, not a package export (card RM0.7f): the values the playground's compiler chunk serves, `compile`, `describe`, `describeLevel` and `THEMES` (`playground/src/compiler.ts`, the compile worker's and the page's door, and the… | none |
-| `compile-work.ts` | 44 | 6 | Work counters for one `compile()` drawing: how many geometric tests the costliest drawing loops made, as COUNTS (engineering-health EH2.14). The compile-side sibling of `LintWork` (`src/lint/work.ts`): an out-parameter handed down the one… | none |
-| `compile.ts` | 85 | 3 | `compile()`, the public entry point, and its result memo. Moved out of `src/index.ts` (card RM0.7f) so that `src/compile-path.ts` can reach it without reaching the whole barrel; the body is the one `index.ts` held, byte for byte.… | none |
+| `compile-memo.ts` | 81 | 4 | `compile()`'s result memo, and `compileWithoutErrorCard`, the compile the playground's compiler chunk serves. Split out of `compile.ts` (card 3.19) so that `src/compile-path.ts` reaches the memo and the pipeline without the `onError… | none |
+| `compile-path.ts` | 28 | 0 | A build entry, not a package export (card RM0.7f): the values the playground's compiler chunk serves, `compileWithoutErrorCard`, `describe`, `describeLevel` and `THEMES` (`playground/src/compiler.ts`, the compile worker's and the page's… | none |
+| `compile-uncached.ts` | 30 | 4 | `compileUncached`: one compile, uncached, with `onError: "svg"`'s error card: the pipeline's result ({@link compileUncachedWithoutErrorCard}, `pipeline.ts`), with the card drawn into `svg` when there is an error. `compile()`… | none |
+| `compile-work.ts` | 44 | 7 | Work counters for one `compile()` drawing: how many geometric tests the costliest drawing loops made, as COUNTS (engineering-health EH2.14). The compile-side sibling of `LintWork` (`src/lint/work.ts`): an out-parameter handed down the one… | none |
+| `compile.ts` | 43 | 2 | `compile()`, the public entry point. Moved out of `src/index.ts` (card RM0.7f); its memo moved on to `compile-memo.ts` (card 3.19), beside `compileWithoutErrorCard`, the compile the playground's compiler chunk serves… | none |
 | `context-levels.ts` | 10 | 2 | The `archlang context --level` words and the starter's size cap. A leaf module (no imports) so the manifest can state the cap without importing the CLI; `src/cli/context-starter.ts` re-exports both. | none |
 | `context-size.ts` | 9 | 3 | GENERATED by scripts/gen-llms-full.ts — do not edit by hand. Run `npm run gen:llms`. | none |
 | `cursor.ts` | 425 | 8 | Read-only navigation over the parsed AST (a `LinkedNode`-style cursor). | none |
@@ -245,7 +248,7 @@ Totals: 419 modules in 34 directories.
 | `doc.ts` | 157 | 7 | A tiny Wadler/Prettier "Doc" intermediate representation and printer. | none |
 | `draw-budget.ts` | 207 | 7 | The drawing budget: before `toScene()` runs, the primitives a plan will draw are estimated over EVERY storey (a multi-storey compile holds all its pages at once), and a plan past {@link MAX_DRAW_UNITS} is one `E_DRAWING_LIMIT` instead of… | none |
 | `error-catalog-fixes-intent.ts` | 26 | 2 | GENERATED by scripts/gen-error-codes.ts from src/error-catalog.ts — do not edit by hand. Run `npm run gen:errors`. | none |
-| `error-catalog-fixes.ts` | 276 | 3 | GENERATED by scripts/gen-error-codes.ts from src/error-catalog.ts — do not edit by hand. Run `npm run gen:errors`. | none |
+| `error-catalog-fixes.ts` | 277 | 2 | GENERATED by scripts/gen-error-codes.ts from src/error-catalog.ts — do not edit by hand. Run `npm run gen:errors`. | none |
 | `error-catalog.ts` | 125 | 29 | The ArchLang diagnostic catalog: every `E_*` / `W_*` code with its cause, fix, and a tiny example. One source for `arch explain <CODE>` and the generated `docs/error-codes.md` (see `scripts/gen-error-codes.ts`). The codes themselves are… | none |
 | `expr-source.ts` | 114 | 7 | `exprToSource(e)` — render an {@link Expr} back to canonical ArchLang source text (single-line, precedence-correct parenthesisation). | none |
 | `expr.ts` | 1335 | 69 | Arithmetic expressions: a small Pratt parser + a pure evaluator. | charges the step meter |
@@ -279,6 +282,7 @@ Totals: 419 modules in 34 directories.
 | `label-fit.ts` | 1373 | 6 | A room's label that does not fit shrinks: a **post-pass over the lowered Scene**, after `wrapLabels` and `relocateLabels` (`src/label-placement.ts`) have done what they can at the drawing's label size (#367). | none |
 | `label-placement.ts` | 868 | 12 | Obstacle-aware relocation of room labels — a **post-pass over the lowered Scene**. | none |
 | `layout.ts` | 318 | 1 | Relational placement (T6.2) — the optional layout seam. | charges the step meter |
+| `level-mix-fix.ts` | 12 | 2 | `E_LEVEL_MIX`'s catalogued remedy, written once (card 3.19): the catalogue entry's `fix` (`src/error-catalog/vertical.ts`) and the parser's message, which quotes it, both read it here. The parser once quoted it from the generated… | none |
 | `lexer.ts` | 613 | 31 | Hand-written lexer for ArchLang. Zero dependencies; tracks line/col. | none |
 | `lint.ts` | 380 | 34 | `lint(source)` — architectural soundness rules, as diagnostics. | none |
 | `lock.ts` | 197 | 2 | The lock check (preview-and-remodel card B1, decision D6): `impact(before, after, { lock })` and `arch impact --against old.arch --lock <id,…>`. A lock names elements that must not change between two versions of a plan; it is checked… | none |
@@ -292,7 +296,7 @@ Totals: 419 modules in 34 directories.
 | `opening-relation.ts` | 1906 | 12 | Openings by relation (ADR 0028 §5): where a `door\|window\|opening` stands when its position is written against the rooms rather than against a wall. | charges the step meter |
 | `opening-schedule.ts` | 610 | 6 | **`schedule openings`** — the door and window TAGS drawn beside each opening, and the rows of the DOOR & WINDOW SCHEDULE table the sheet carries (`sheet-tables.ts` lays the table out and lowers it; this module derives what it says and… | none |
 | `parser.ts` | 2571 | 144 | Recursive-descent parser: tokens -> PlanNode. Registry-driven element dispatch. | none |
-| `pipeline.ts` | 211 | 8 | The one `compile()` pipeline: parse → link → resolve → render. | none |
+| `pipeline.ts` | 219 | 6 | The one `compile()` pipeline: parse → link → resolve → render. | none |
 | `plan-json.ts` | 75 | 16 | Structured JSON I/O for ArchLang plans — the machine-native channel an LLM uses to author and read a floor plan without touching `.arch` syntax. | none |
 | `pure.ts` | 28 | 15 | `pure(() => value)` returns `value`, built once at module load exactly as written. It marks a top-level constant whose initializer has no effect outside the value it builds, but whose shape a bundler cannot prove that of: a spread… | none |
 | `registry.ts` | 577 | 98 | Element registry: the single extension point. Each element type is one module exporting an {@link ElementDef}; parse/resolve/render iterate the registry rather than a hard-coded switch. Adding an element = one new module + one `register`… | none |
@@ -317,7 +321,7 @@ Totals: 419 modules in 34 directories.
 | `text-metrics.ts` | 151 | 20 | The closed-form text widths in the tree: {@link textWidth}, the one shared estimate, and {@link inkWidth}, from the advances of the two faces a label is drawn in, for a test a label stands right up against. | none |
 | `text-safe.ts` | 63 | 7 | Output-text safety — the single place a string that came from user source is made safe to embed in a **container format**. | none |
 | `theme.ts` | 489 | 59 | Theme: colours, line-weight, and font for the rendered drawing. | none |
-| `types.ts` | 203 | 14 | Public types for the ArchLang compiler. | none |
+| `types.ts` | 203 | 16 | Public types for the ArchLang compiler. | none |
 | `unified-diff.ts` | 120 | 1 | A tiny, zero-dependency line-based unified diff (LCS backtrack + hunk grouping). | none |
 | `vertical.ts` | 960 | 44 | **Vertical circulation** as facts: the one place the shared semantics of `stair`, `elevator` and `escalator` live, so the three element modules, the nav grid, `lint` and `describe()` can never disagree about them. | none |
 | `vocabulary.ts` | 614 | 18 | Closed-vocabulary, token-bounded label matching — the one place ArchLang turns a free-text room label into a controlled classification. | none |
@@ -368,7 +372,7 @@ Totals: 419 modules in 34 directories.
 | --- | ---: | ---: | --- | --- |
 | `ascii.ts` | 387 | 12 | ASCII backend — a pure, zero-dependency serializer of the {@link Scene} to a fixed-width text floor plan. | none |
 | `error-svg-public.ts` | 30 | 1 | The public error-card renderer, `renderErrorSvg` (the card itself is `backends/error-svg.ts`). A module of its own (card NR.10): it reads every catalogue code's fix, the intent violations' (`E_INTENT_*`) too, so a consumer's card for a… | none |
-| `error-svg.ts` | 274 | 4 | Error-card SVG backend — a pure, deterministic serializer of a list of {@link Diagnostic}s into a self-describing "error card" SVG. | none |
+| `error-svg.ts` | 275 | 4 | Error-card SVG backend — a pure, deterministic serializer of a list of {@link Diagnostic}s into a self-describing "error card" SVG. | none |
 | `font.ts` | 395 | 3 | The fonts every Node-only backend embeds, resolved once. | none |
 | `png-defaults.ts` | 8 | 2 | The page width, in pixels, of a PNG meant to be LOOKED AT (on a screen, or by a model's vision) when the caller names none. The native render is thousands of pixels wide; this keeps the image legible and small. `archlang preview` and the… | none |
 | `png.ts` | 113 | 2 | PNG backend — a **deterministic raster** serializer of the {@link Scene}. | none |

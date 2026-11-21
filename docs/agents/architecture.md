@@ -28,8 +28,10 @@ source (.arch)
   └─ src/view/           toIso(): the axonometric, a sibling of toScene (DEPRECATED, ADR 0021)
   └─ src/backends/       svg (default) · png (optional resvg) · ascii · error-svg
   └─ src/export/         dxf · pdf (optional pdfkit)
-  └─ src/pipeline.ts     compileUncached(): the one parse→link→resolve→render pipeline
-  └─ src/compile.ts      compile() wraps it with the memo cache
+  └─ src/pipeline.ts     compileUncachedWithoutErrorCard(): the one parse→link→resolve→render pipeline
+  └─ src/compile-uncached.ts  compileUncached(): that pipeline plus onError's error card
+  └─ src/compile-memo.ts the memo cache; compileWithoutErrorCard() (the playground's compile)
+  └─ src/compile.ts      compile() wraps compileUncached with the memo cache
   └─ src/index.ts        the public surface (plus the
                          Node-only `/link` subpath, src/cli/link.ts: share links, zlib)
 ```

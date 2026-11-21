@@ -56,7 +56,7 @@
  * which builds it through the same `plan3d.ts` path, without this chunk or three.js, whether or not
  * this tab was ever opened.
  */
-import { compile } from "archlang";
+import { compile } from "./compiler.js";
 import { storeysOf, viewMesh } from "@chanmeng666/archlang-3d";
 import {
   mountReplay,

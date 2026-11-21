@@ -48,6 +48,11 @@ export const ALLOW: readonly Seam[] = [
   },
   {
     file: "playground/tsconfig.json",
+    specifier: "paths archlang/compile-path",
+    why: "types for the compiler door's build entry come from src/: the build emits no declaration for dist/compile-path.js (card 3.19)",
+  },
+  {
+    file: "playground/tsconfig.json",
     specifier: "paths @chanmeng666/archlang-3d",
     why: "mirrors the Vite alias: archlang-3d is read from source, its published exports name a dist/ that may not be built",
   },
@@ -75,6 +80,11 @@ export const ALLOW: readonly Seam[] = [
     file: "playground/vite.config.js",
     specifier: "alias archlang/error-catalog",
     why: "the edit-mode diagnostics panel reads the catalogue from its own built file with no export (dist/error-catalog.js), so it stays out of the compiler chunk; listed before the bare name (prefix match)",
+  },
+  {
+    file: "playground/vite.config.js",
+    specifier: "alias archlang/compile-path",
+    why: "the compiler door reads compileWithoutErrorCard from its build entry (dist/compile-path.js), which dist/index.js does not export, so the compiler chunk carries no error card (card 3.19); listed before the bare name (prefix match)",
   },
   {
     file: "playground/vite.config.js",
@@ -282,6 +292,11 @@ export const ALLOW: readonly Seam[] = [
     file: "vitest.config.ts",
     specifier: "alias archlang/error-catalog",
     why: "the playground's diagnostics panel imports the catalogue by name; to src/error-catalog.ts, listed before the bare name (prefix match)",
+  },
+  {
+    file: "vitest.config.ts",
+    specifier: "alias archlang/compile-path",
+    why: "the playground's compiler door imports its build entry by name; to src/compile-path.ts, listed before the bare name (prefix match)",
   },
   {
     file: "vitest.config.ts",

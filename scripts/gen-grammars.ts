@@ -103,7 +103,8 @@ export function renderPlayground(): string {
 import { StreamLanguage, LanguageSupport, syntaxHighlighting, HighlightStyle } from "@codemirror/language";
 import { linter } from "@codemirror/lint";
 import { tags as t } from "@lezer/highlight";
-import { compile } from "archlang";
+// The compiler door's compile (card 3.19: compile() without the error card, which the gutter never draws).
+import { compile } from "./compiler.js";
 
 const CONTROL = ${setLiteral(KEYWORDS.control)};
 const ELEMENT = ${setLiteral(KEYWORDS.element)};

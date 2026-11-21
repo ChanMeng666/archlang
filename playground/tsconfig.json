@@ -31,6 +31,9 @@
       // The diagnostic catalogue (vite.config.js aliases it to `dist/error-catalog.js`, which the
       // build gives no declaration file, card RM0.7): its types are read from the source.
       "archlang/error-catalog": ["../src/error-catalog.ts"],
+      // The compiler door's build entry (vite.config.js aliases it to `dist/compile-path.js`, which
+      // the build gives no declaration file, card 3.19): its types are read from the source.
+      "archlang/compile-path": ["../src/compile-path.ts"],
       "@chanmeng666/archlang-3d": ["../packages/archlang-3d/src/index.ts"],
       "@chanmeng666/archlang-3d/browser": ["../packages/archlang-3d/src/browser.ts"]
     }

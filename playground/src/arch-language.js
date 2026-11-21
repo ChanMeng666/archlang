@@ -9,7 +9,8 @@
 import { StreamLanguage, LanguageSupport, syntaxHighlighting, HighlightStyle } from "@codemirror/language";
 import { linter } from "@codemirror/lint";
 import { tags as t } from "@lezer/highlight";
-import { compile } from "archlang";
+// The compiler door's compile (card 3.19: compile() without the error card, which the gutter never draws).
+import { compile } from "./compiler.js";
 
 const CONTROL = new Set(["plan", "component", "let", "theme", "title", "style", "import", "for", "if", "while", "else", "set", "strip", "level", "zone", "place", "axes", "schedule", "legend", "site", "notes", "keep"]);
 const ELEMENT = new Set(["wall", "room", "door", "window", "opening", "furniture", "dim", "column", "stair", "elevator", "escalator", "roof", "void", "outdoor", "fence", "walls", "section"]);
