@@ -95,6 +95,8 @@
   "test/access-graph.test.ts": 0.6,
   "test/access-policy.test.ts": 11.9,
   "test/accessible-svg.test.ts": 0.8,
+  "test/af9-byte-identity.test.ts": 10.5,
+  "test/af9-fixes.test.ts": 10,
   "test/agent-docs-gate.test.ts": 0.2,
   "test/agent-gallery.test.ts": 2.5,
   "test/agent-manifests.test.ts": 0.8,

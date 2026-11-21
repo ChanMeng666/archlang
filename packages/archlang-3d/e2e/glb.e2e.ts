@@ -4,7 +4,8 @@
  *   1. every corpus plan passes S1–S4: V-SCH-01, V-GEO-02, V-GLTF-01 (Khronos glTF-Validator, 0
  *      errors / 0 warnings) and V-GLTF-02; the GLB's node set is the Mesh3D's and the viewer's;
  *   2. laneway-house's element counts per kind are the hand-built model's (6 walls, 3 floors,
- *      4 doors, 4 windows, 12 furniture; V-GEO-04 8/8 is `test/mesh.test.ts`'s opening probes);
+ *      4 doors, 4 windows, 14 furniture since its table gained two chairs (12 before); V-GEO-04 8/8 is
+ *      `test/mesh.test.ts`'s opening probes);
  *   3. V-DET-01: three builds, one SHA-256, for every corpus plan;
  *   4. `build --json` answers plan §7.2's contract, and exit codes 0/1/2/3 hold, in-process and
  *      through a real process;
@@ -158,7 +159,8 @@ describe("archlang3d build / check (§9.2 criteria 2, 4 and 5)", () => {
     const bytes = readFileSync(out);
     expect(rep.outputs).toEqual([{ path: out, format: "glb", bytes: bytes.byteLength, sha256: sha(bytes) }]);
     // Criterion 2: the hand-built model's counts (plan §7.2's example, the spike's laneway).
-    expect(rep.scene.levels[0].counts).toMatchObject({ wall: 6, floor: 3, door: 4, window: 4, furniture: 12 });
+    // RM9.6 CV13 split (PR #996): the example source was edited, two chairs at its table (furniture 12 -> 14).
+    expect(rep.scene.levels[0].counts).toMatchObject({ wall: 6, floor: 3, door: 4, window: 4, furniture: 14 });
     expect(rep.scene.levels[0]).toMatchObject({ level: 1, elevation_mm: 0, storey_height_mm: 3000 });
     expect(rep.scene.bbox_mm.min).toHaveLength(3);
     expect(rep.assumptions.some((a: { rule: string }) => a.rule === "slab-default-200")).toBe(true);

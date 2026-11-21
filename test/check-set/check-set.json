@@ -91,6 +91,15 @@
       "twin": "../defect-corpus/circulation-privacy/entry-into-bedroom.clean.arch"
     },
     {
+      "id": "circulation-privacy/door-onto-roof",
+      "column": "default",
+      "profile": null,
+      "expect": "W_EXTERIOR_DOOR_ONTO_ROOF",
+      "rule": null,
+      "plan": "../defect-corpus/circulation-privacy/door-onto-roof.arch",
+      "twin": "../defect-corpus/circulation-privacy/door-onto-roof.clean.arch"
+    },
+    {
       "id": "space-not-enclosed/exterior-ring-open",
       "column": "default",
       "profile": null,

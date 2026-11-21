@@ -20,15 +20,15 @@ import {
 import {
   doorClearance,
   doorNearCorner,
-  doorwayBlocked,
   exitApproachBlocked,
   leafAcrossDoorway,
   leafTooWide,
   pocketRun,
   swingObstructed,
 } from "./doors.js";
+import { doorwayBlocked } from "./doorway.js";
 import { bedUndersized, footprintTransposed } from "./footprint.js";
-import { noEntrance } from "./entrance.js";
+import { exteriorDoorOntoRoof, noEntrance } from "./entrance.js";
 import {
   fixtureBackToRoom,
   fixtureFloating,
@@ -211,6 +211,9 @@ export const LINT_RULES: readonly LintRule[] = [
   // A wall-thickness figure `dims auto` leaves undrawn: no station clears the room labels (card AL5,
   // label-crowding). Appended LAST, so no existing diagnostic moves within the array.
   thicknessUnplaced,
+  // An exterior door onto the roof of a storey below, with nothing drawn there to stand on (product
+  // roadmap RM9.10). Appended LAST, so no existing diagnostic moves within the array.
+  exteriorDoorOntoRoof,
   // A dining table in a room with no seat (product roadmap RM9.6, coverage class CV13). Appended
   // LAST, so no existing diagnostic moves within the array.
   tableNoSeat,

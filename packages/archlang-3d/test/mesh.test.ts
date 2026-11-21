@@ -426,5 +426,12 @@ describe("Mesh3D determinism and budget", () => {
  * band's width rule, the stair's thickness, the light and dark alphas; design `visual-language.md`
  * §1.2). No node moved: with that row taken out, the Mesh3D hashes to 25483efd… exactly. Its GLB
  * (no ledger) is unchanged (`LANEWAY_GLB_SHA256` 73182a46…, `test/pins.ts`) and so is its event table.
+ *
+ * Moved by RM9.6 CV13 split (PR #996, ruling RM-D73): the example source was edited, laneway-house gains
+ * two chairs at its table (`chair_13`, `chair_14`) (was 0c2d1825…): two nodes (`L1/furniture:chair_13`, `L1/furniture:chair_14`)
+ * and two ledger rows (`height_mm(chair)` 880, `furniture-height-t0`; `material(chair)`,
+ * `furniture-material-default`); its table is named `t_dining` (was the auto id `table_6`), so the
+ * chairs can face it. With those two nodes and two rows taken out and the table's id put back, the
+ * Mesh3D hashes to 0c2d1825… exactly: no other node or row moved. Its GLB and its event table move with the two nodes.
  */
-const LANEWAY_MESH_SHA256 = "0c2d1825840610183d2fd64f371b3e6a61b82234381454c472c327e63fbf3f9a";
+const LANEWAY_MESH_SHA256 = "781b9bc71cb700de9f3e2d7edcbd8dbb3fd802333eb6e0a4d2e0f39a5c296146";

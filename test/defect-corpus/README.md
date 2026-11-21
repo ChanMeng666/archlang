@@ -102,6 +102,7 @@ Two classes from `evidence.md` §3 have no cases, because no core lint rule can 
 | `W_FURNITURE_ON_STAIR` | issue #364 (G9) |
 | `W_EXTERIOR_RING_OPEN` | issues #346, #370 (H1) |
 | `W_GARAGE_OPENING_UNDERSIZED` | B6 (preview-and-remodel) |
+| `W_EXTERIOR_DOOR_ONTO_ROOF` | product-roadmap RM9.10 |
 
 ## Proposed codes
 

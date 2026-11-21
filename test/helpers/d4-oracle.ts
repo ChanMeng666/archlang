@@ -476,6 +476,9 @@ export const RULE_CLASS: Readonly<Record<string, RuleClass>> = {
   // AL5: reads the drawn sheet, as `annotation-overlap` does: the room labels where the label passes
   // left them and the thickness figure's station, both laid out at the sheet's text sizes.
   "thickness-unplaced": "sheet",
+  // RM9.10: a door's outward probe against its storey's `outdoor` shapes and the lower storeys' room and
+  // shell shapes, all turned or mirrored together; no compass, no sheet.
+  "exterior-door-onto-roof": "invariant",
   // RM9.6 (CV13): the tables and seats whose footprint centre is on a room's floor, read off the
   // room's shape; no compass, no sheet.
   "table-no-seat": "invariant",

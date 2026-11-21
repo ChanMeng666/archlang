@@ -142,6 +142,32 @@ export const FIX_PRODUCERS: readonly FixProducer[] = [
     codes: { E_ARC_RADIUS: "arc-radius-min" },
   },
   {
+    producer: "src/fix-producers.ts#openingMoveFix",
+    stage: "compile",
+    applicability: [MI],
+    codes: { E_OPENING_NIB: "opening-move", E_OPENING_HOST_AMBIGUOUS: "opening-move" },
+  },
+  {
+    producer: "src/fix-producers.ts#exteriorEdgeFix",
+    stage: "compile",
+    applicability: [MI, HP],
+    codes: { E_OPENING_NO_SHARED_WALL: "opening-exterior-edge" },
+    when: {
+      [MI]: "a door moves between the two rooms or a window to the room's one exterior edge",
+      [HP]: "a window on a room with two or more exterior edges",
+    },
+  },
+  {
+    producer: "src/fix-producers.ts#openingDatumFix",
+    stage: "compile",
+    applicability: [MI, HP],
+    codes: { E_OPENING_DATUM: "opening-datum" },
+    when: {
+      [MI]: "a parallel datum edge is swapped for an edge that meets the run at an end",
+      [HP]: "the position names no datum or there is no position",
+    },
+  },
+  {
     producer: "src/fix-producers.ts#fixtureRotateFix",
     stage: "lint",
     applicability: [MA],
@@ -158,6 +184,12 @@ export const FIX_PRODUCERS: readonly FixProducer[] = [
     stage: "lint",
     applicability: [MA],
     codes: { W_POCKET_RUN: "pocket-run" },
+  },
+  {
+    producer: "src/lint/doorway-move.ts#doorwayMoveFix",
+    stage: "lint",
+    applicability: [MI],
+    codes: { W_DOORWAY_BLOCKED: "doorway-move" },
   },
   {
     producer: "src/fix-producers.ts#dimSwapFix",

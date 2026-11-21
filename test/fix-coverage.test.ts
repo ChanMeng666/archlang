@@ -12,7 +12,8 @@ import { fixCoverage, renderFixCoverage } from "../scripts/fix-coverage.js";
 import { ERROR_CATALOG } from "../src/error-catalog.js";
 
 /** The codes with a span edit when U.17 measured them (26 of 270), plus AF2's did-you-mean
- *  fix on `E_LAYOUT_REF` and `E_PARSE`. */
+ *  fix on `E_LAYOUT_REF` and `E_PARSE`, and AF9's moves and skeletons for refused openings and
+ *  blocked doorways. */
 const WITH_EDIT_FLOOR = [
   "E_ARC_RADIUS",
   "E_ATTACH_POS_RANGE",
@@ -22,6 +23,10 @@ const WITH_EDIT_FLOOR = [
   "E_HEIGHT_RANGE",
   "E_LAYOUT_REF",
   "E_OPENING_ABOVE_WALL",
+  "E_OPENING_DATUM",
+  "E_OPENING_HOST_AMBIGUOUS",
+  "E_OPENING_NIB",
+  "E_OPENING_NO_SHARED_WALL",
   "E_OPENING_WIDTH",
   "E_PARSE",
   "E_ROOM_ALIGN",
@@ -34,6 +39,7 @@ const WITH_EDIT_FLOOR = [
   "W_DIM_OVERLAP",
   "W_DIM_TEXT_MISMATCH",
   "W_DOOR_OFF_WALL",
+  "W_DOORWAY_BLOCKED",
   "W_FIXTURE_BACK_TO_ROOM",
   "W_FOOTPRINT_TRANSPOSED",
   "W_OPENING_OFF_WALL",

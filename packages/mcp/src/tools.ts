@@ -822,7 +822,7 @@ export function registerTools(server: McpServer, opts: ToolOptions): void {
       title: "Suggest topology fixes (advisory)",
       annotations: TOOL_ANNOTATIONS,
       description:
-        "Suggest the doors and windows a plan's room graph needs, as data; nothing is applied. For a room with no path back, a building with no entrance, a bath reachable only through a bedroom, or a windowless bedroom, it returns ready-to-paste `door`/`window` statements with a rationale, for you to choose among and insert. Each names its wall by an authored id or a unique wall category, else by absolute `at (x, y)` coordinates. Door candidates avoid furniture in the door's approach; window candidates do not consider furniture.",
+        "Suggest the doors and windows a plan's room graph needs, as data; nothing is applied. For a room with no path back, a building with no entrance, a bath reachable only through a bedroom, or a windowless bedroom, it returns ready-to-paste `door`/`window` statements with a rationale, for you to choose among and insert. Each names its wall by an authored id or a unique wall category, else by absolute `at (x, y)` coordinates. Door candidates avoid furniture in the door's approach; window candidates do not consider furniture. On a plan of `level` blocks each suggestion also carries `level` (its storey) and `insertAt` (the offset of that storey's closing `}`, where its statements go), and no door to the outside is offered on a storey reached only by a stair or lift, nor onto the roof of a storey below.",
       inputSchema: { source: z.string().describe("ArchLang source.") },
     },
     hashingSource(async ({ source }) => json({ ok: true, suggestions: suggestTopology(source) })),

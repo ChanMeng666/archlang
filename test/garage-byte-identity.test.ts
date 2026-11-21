@@ -187,8 +187,8 @@ const BASELINE: Readonly<Record<string, string>> = {
   "studio.arch": "c1b79a49af3ad31cddf82e88632624d46663c804f134b6e172e585cad36ed969",
   // laneway-house, bungalow and two-bed re-measured 2026-10-20 (PS2.17), a worktop in each kitchen;
   // see `byte-identity-baseline.ts`, "a worktop in every example kitchen", for the swap-back proof.
-  "laneway-house.arch": "8ede769dc35da44c182237feaa51d1c6f8648ec7310326a53843ea3d09b0d617",
-  "bungalow.arch": "ee5c69442b4fe458063ae5e6cbafd3192d6acdb09b7f132ccc10a4e55a44de67",
+  "laneway-house.arch": "eb03b3f22a4c9f1b47482311ad6cf5ebffad12d38003dfa48ba56494366528f3", // CV13 (was 8ede769d): example source edited (chairs added)
+  "bungalow.arch": "4fd27a7c5a0e9471f433b0fde903479a0863ee5fdcd0443906033ebea65a2496", // CV13 (was ee5c6944): example source edited (chairs added)
   // Re-measured for the `overhead` flag. Its SOURCE gained two statements —
   // a `range_hood` over the stove and a `mirror` over the basin, the two correct drawings
   // the missing flag had kept out of the flagship — so this plan is a different building
@@ -203,7 +203,7 @@ const BASELINE: Readonly<Record<string, string>> = {
   // `describe()` moves (uses + room_type) and nothing else; see ./byte-identity-baseline.ts,
   // "the label classifier emits living", for the swap-back proof. Re-measured again the same day
   // (PS2.5): `lint()` gains three W_ROOM_VIA_PRIVATE; see "the circulation-and-privacy rules".
-  "two-bed.arch": "21101fea33b149201d58eddfc32d024b4a939a682cf7e4f37c859d717a8e8eca", // PS3.6 source rewrite, see ./byte-identity-baseline.ts; `centreline_at`, see ./byte-identity-baseline.ts
+  "two-bed.arch": "4235a55f56feecae0935f8760ab50fb8b650696ac8aaa8eff7c76bebca8ebbf8", // PS3.6 source rewrite, see ./byte-identity-baseline.ts; `centreline_at`, see ./byte-identity-baseline.ts; CV13 (was 21101fea): example source edited (chairs added)
 };
 
 /**
@@ -217,8 +217,8 @@ const SEMANTIC_BASELINE: Readonly<Record<string, string>> = {
   // PS4.4: every row whose plan resolves re-measured once for the new totals key (gross internal area); see test/byte-identity-baseline.ts.
   "studio.arch": "8ec08c91405139bf3d9979ad20d712299e82409bbec8d6ec9e70e89a856973e4",
   // laneway-house, bungalow and two-bed re-measured 2026-10-20 (PS2.17), as above.
-  "laneway-house.arch": "55f68cc66a633508a2442aafa4dcf60d38076c2f54470c3a56ad3107493839d0",
-  "bungalow.arch": "54cc6dddab36f2688d241d31db27070f342b71ec762502c9b00b67742df5e4d4",
+  "laneway-house.arch": "505ec5dc09a07758dd953ebd0b0dc885bdf746d8ccfbd28fdeb0dbbdcf5e94ce", // CV13 (was 55f68cc6): example source edited (chairs added)
+  "bungalow.arch": "3460c52bc1279e573d0639376bab918ed0931918946c227ed65559fe4f27ccd9", // CV13 (was 54cc6ddd): example source edited (chairs added)
   // `furnished-flat.arch` is the ONE value in this table that is not the original `5298b99`
   // measurement, and the exception proves the rule rather than bending it. Its SOURCE keeps
   // being edited -- seven of the new families in the furniture pass, then a `range_hood` and a `mirror`
@@ -237,7 +237,7 @@ const SEMANTIC_BASELINE: Readonly<Record<string, string>> = {
   // Re-measured 2026-10-20 (PS2.19), `describe()` only: see `byte-identity-baseline.ts`.
   "furnished-flat.arch": "d4f5194c4a9f26337646b7bf28a05645fc083fe1e1ec7eb4b6e3cd93b0f32641",
   // Re-measured 2026-10-18 (PS0.7, then PS2.5), the same causes as BASELINE's two-bed row.
-  "two-bed.arch": "436fadbabbba67d12d667cfca3dc435a7be1e5d131d27f5a523caf9584b26454", // PS3.6 source rewrite, see ./byte-identity-baseline.ts; `centreline_at`, see ./byte-identity-baseline.ts
+  "two-bed.arch": "51c6bbc05ab18c7c7680dd728a03ab2f6be914768a654b6f89124817b6954101", // PS3.6 source rewrite, see ./byte-identity-baseline.ts; `centreline_at`, see ./byte-identity-baseline.ts; CV13 (was 436fadba): example source edited (chairs added)
 };
 
 suite("the outdoor tranche — the byte-identity law", () => {

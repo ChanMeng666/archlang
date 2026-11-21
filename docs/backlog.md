@@ -284,6 +284,24 @@ Done by #976, with no budget raised: Format, Finish, Repair furniture and the DX
 
 After AL3b (#969) the first-use path (`firstUsePathBudget`, `playground/e2e/startup-chunks.baseline.json`) measures 484,137 B gzip against 486,000 B. The next few KB of compiler growth trip `Playground E2E chromium`. Two ways out: move code a first use need not load out of the compiler chunk or the lazy core chunk (as EB.2 did, #947), or re-take the budget by the file's own rule (measured × 1.025, rounded up to a thousand). A re-take raises a ceiling, a relaxed check that needs the owner's word for that PR (`REVIEW.md`; the owner approved the compiler-path and embed raises on #969, 2026-11-19, not this one). Measure with `npm run size:embed` (`scripts/embed-path-size.mjs`) on `main` and the branch; `docs/agents/iron-laws.md` still quotes `embedPathBudget` as 310,000 B (319,000 since #969), and editing that line is the owner's call (NR.9 (3)).
 
+### 3.19 · The compiler path has about 0.8 KB of headroom left — `todo`
+
+AF9 phase A's PR (#992, merged 2026-11-20; `npm run size:embed`, base `c749ac4e` → head `1babd94d`)
+measures the compiler path 330,147 → 332,209 B gzip against `compilerPathBudget` 333,000 (791 B
+left), the embed path 318,401 B against 319,000 (599 B) and the first use 466,271 B against 468,000
+(1,729 B). AF4 (#987), RM9.10 (#990), AF7 (#977) and AF9 took most of the earlier headroom. The
+next compiler-path card would trip `Playground E2E`. This is the first card of the next session
+(`docs/plans/product-roadmap/handoff.md` §2, RM-D74), before any further compiler-path card: move
+code a first compile does not need out of the compiler chunk (as EB.2, #947, and 3.18, #976, did),
+measured with `npm run size:embed` on `main` and the branch, with a corpus digest of SVG,
+`describe()`, `lint()` and diagnostics proving no change of behaviour. Raising a budget stays the
+owner's call for that PR (`REVIEW.md`), with one exception: RM-D57's by-rule re-take of
+`embedPathBudget` (`docs/agents/iron-laws.md`, owner-ratified 2026-11-17) merges on the
+coordinator's judgement after a fresh-context review, as its own re-take PR, for a card that needs
+the bytes and has shown no cheaper cut, by the file's × 1.025 rule. It covers `embedPathBudget`
+only, not `compilerPathBudget`. **Gate:** at least ~3,000 B gzip off the compiler path and the embed path, no
+budget raised, the digest unmoved.
+
 ## Found while redrawing the showcase
 
 Five things the twelve new examples ran into. None is a regression and none blocked an example from
@@ -433,6 +451,19 @@ other diagonal. Not a defect; the pin moves only if the tick convention does.
 
 - E.16 · `nested-ref` — a reference into a nested instance fails once its plan is placed — closed by W8 → archived (lab)
 - E.17 · `facade-probe-order` — placing a storey moved its `dims auto` chains — closed → archived (lab)
+
+### E.18 · `annotation-overlap-translation` — `W_ANNOTATION_OVERLAP` changes under a pure translation — `todo`
+
+Found by `test/equivariance-fuzz.test.ts` on `main`'s push run for `91ed1210` (Node 20, shard 3/5;
+seed 533254921, the path in the run log): a three-room strip (`cols [2900,4500,2000]`, rows
+`[2000]`, a centred 900×600 `wc` in the first room and a second `wc` at its corner turned 90°, a
+relational annex `right-of`) raises `W_ANNOTATION_OVERLAP` ("The name "Living" is printed over the
+wc") on P₀ and not when the same plan is placed 20 m out (`g = t`). Published 1.65.0 does the same,
+so it predates the AF and RM9 cards; no pinned class accounts for it, so the fuzz reports it `NEW`
+whenever its random seed reaches such a plan (the next push run, `594c1a93`, was green). Likely the
+label passes compare absolute float positions (as circulation did before E.11's extent-frame snap).
+Gate: the counterexample's P₀ and gP lint the same; the fuzz has no `NEW` on that seed. Do not pin
+it as a known class to green the suite; fix the comparison.
 
 ## Circulation findings (found while landing W3b)
 
@@ -758,16 +789,14 @@ person arrives by (ADR 0008's addendum). Left out, each re-run unless noted:
 - `two-storey`'s upper landing is a 200 mm strip between the void and the stair head, a
   one-cell pinch: re-run, the landing reads 900 and every room past it 700, narrower than any
   door on the way (740, 840).
-- Per-room reachability on an upper storey for intent `reachable` needs a new describe fact (the
-  rooms reached per storey from its arrival rooms); `levels[i].access.rooms[].reachable` counts
-  exterior doors only. Re-run: the intent now fails a storey with no way in, but removing an
-  upper room's only door still passes it.
-- `suggestTopology` reads the lowest storey only (`resolvePlan().ir`) and so never seeds from
-  arrival rooms. Re-run: removing the kitchen door on `two-storey`'s ground floor gets
-  suggestions; removing the upper bath door (`W_ROOM_DISCONNECTED` on level 2) gets none. It
-  also fixes its tolerance at `DEFAULT_TOL` (`src/suggest.ts`), while lint's access graph reads
-  the ruleset's `tolMm`, so under a custom tolerance the two can disagree on what connects
-  (code read).
+- Per-room reachability on an upper storey for intent `reachable`: done by RM9.10, waiting to
+  be archived (`levels[i].access.rooms[].reachable` is read per storey; a storey nobody arrives
+  on reaches none of its rooms).
+- `suggestTopology` per storey: done by RM9.10, waiting to be archived (each storey walked as
+  lint walks it, `level` and `insertAt` on a level plan, no door to the outside on a storey
+  reached only by a shaft nor onto a roof). Still open: it fixes its tolerance at `DEFAULT_TOL` (`src/suggest.ts`), while
+  lint's access graph reads the ruleset's `tolMm`, so under a custom tolerance the two can
+  disagree on what connects (code read).
 - `diffPlans` compares the lowest storey only (documented), so upper storeys are never diffed.
 - An ungrounded storey's balcony doors share one exterior node, so a room opening only onto
   balcony B counts as reachable from a room opening onto balcony A, and the room-aware fixpoint
@@ -2508,6 +2537,200 @@ built the use-classifier half (`test/vocabulary-es-pt.test.ts`), through which t
 carry a room kind or a `room_type` are met. The concept-table half is not built: it changes the
 eval's table, so it needs an owner-approved `SYNONYMS_VERSION` bump, and it is M.20a.
 
+## Review residue of the v3 stage-1/2 session (PRs #972–#993, 2026-11-19…20 UTC)
+
+Non-blocking findings of that session's reviews and the PRs' own residue lists (the review-loop cap:
+residue becomes cards). Each names its PR. Already carded elsewhere, so not repeated: M.20a (#973's
+concept half), U.2a and U.5 (#983), RR.22 (2) (#979's code-comparison over-credit), NR.9 (3) (#976's
+iron-laws budget line). SR.14 comes from a draft PR. Dates in this section are UTC.
+
+### SR.1 · NR.16 classifier leftovers (#973) — `todo`
+
+(1) No es/pt outdoor words for `namesOpenAir` (its reading looks for the head noun last), and
+`NON_RESIDENTIAL_VOCABULARY` stays English. (2) A label mixing English and es/pt words ("Hall de
+entrada") can classify differently from before (no tracked plan has one). (3) "quarto de X" phrases
+outside the guard read as a bedroom. **Gate:** each fixed with a test, or stated as a limit in
+`docs/intent.md`.
+
+### SR.2 · AF5 leftovers (#974) — `todo`
+
+(1) The playground's diagnostics panel shows `cause` and `example` but not `fixed`
+(`playground/src/diagnostics-panel.ts`). (2) `llms.txt`'s MCP tool list names nine tools; the
+server registers twelve (`finish`, `explain` and `link` are missing; `packages/mcp/src/tools.ts`).
+An agent cannot edit it as is: `llms.txt` is listed in `.claude/hooks/generated-artifacts.json`
+(`gen:doors` owns one block of it), so the hook rule `generated-edit` refuses any Edit/Write of the
+file, the hand-written tool list included; the `partial` list there is not read by the hook. The
+fix needs `ARCHLANG_ALLOW_GENERATED_EDIT=1` in the shell that starts Claude Code, or an allow-list
+entry (a hook change) for the hand-written part of a partial artifact.
+(3) `E_IMPORT_NOT_FOUND` has no pair (it needs a World-serving harness); the 67 excused examples
+have none either. **Gate:** (1) and (2) fixed, (2) with a guard that reads the registered names;
+(3) a stated decision.
+
+### SR.3 · RM9.4 leftovers (#975) — `todo`
+
+(1) Chains still unlinked: a room whose ring is refused, a `wall … between|around` that refuses (its
+id is "unplaced"), a step-limit stop; `W_ROOM_OVERLAP` to the `E_WALL_BETWEEN_NOT_ADJACENT` of a
+door between the pair; `wall … between|around`'s `E_ROOMS_OVERLAP` to the openings on the edge it
+leaves unwalled. (2) One `walls from rooms` refusing with two codes moves only the first code's
+diagnostics to the front. (3) A difference of two noisy values keeps its error
+(`12*FT - (12*FT - 3*FT/10)` prints `91.4400000000001`). (4) A fix's `newText` built from source text
+(`src/datum.ts`'s `head ${wallHeight}`) does not go through `fmtSource`. **Gate:** each linked or fixed with
+a test, or stated as a limit at its site.
+
+### SR.4 · 3.18 leftovers (#976) — `todo`
+
+(1) On a phone's Code view the status flash ("… did not load", "Preparing DXF…") may not be
+visible. (2) Edit mode loads the 29,638 B press chunk on entry, because `applyFixes` shares a dist
+chunk with `finish`; a build entry of its own would split them. (3) No e2e for an aborted
+press-core fetch (the loader's reset and retry are unit-tested). **Gate:** (1) an e2e on a phone
+viewport; (2) edit mode's bytes measured with `npm run size:embed`, no budget raised.
+
+### SR.5 · AF2 leftovers (#978) — `todo`
+
+(1) A four-letter transposition is not caught (a swap counts as two edits, over a four-letter
+word's limit of 1). (2) A closed list is not a grammar: `room … widt 900` gets the machine fix
+`width`, and the recompile reports that a room takes no `width`. (3) A relational typo inside an
+imported module is fixed by hand only (`arch fix` refuses a fix whose `file` is another module).
+(4) `rigth-of` lexes as three tokens, so a misspelt hyphenated direction gets no fix. (5) Other
+unknown-id sites hint through `closest()` with no word-level fix: `wall between|around`,
+`<room>.<edge>` datums, `E_UNKNOWN_REF`, `E_UNKNOWN_COMPONENT`. **Gate:** each with a test; (5)
+pins the failing plans it moves. (6) An enum value at a statement start (`living` on its own line)
+is not excluded as a language word: `KEYWORDS.enum` stays out of the compiler chunk for size; it
+matters only if such a word is one slip from a statement keyword (#978's residue). **Gate** for (6):
+a test, or a stated limit.
+
+### SR.6 · AF8 leftovers (#979) — `todo`
+
+(1) The fixable-codes source check is blind to helper spreads, `Object.assign`, spread parameters,
+partial delegation and a ternary that credits a code; the output sweep is the backstop. (2) `arch explain`
+and MCP `explain` could say whether `fix` resolves a code, and at which tier, from the same
+table. (3) `test/fix-coverage.test.ts`'s `WITH_EDIT_FLOOR` duplicates the declared code set; it
+could read `FIX_PRODUCERS`. **Gate:** (1) each form caught by a planted case, or stated in the
+checker's header.
+
+### SR.7 · RM9.0 coverage-note leftovers (#980) — `todo`
+
+Its §5 (`docs/plans/product-roadmap/design/rm9.0-coverage-classes.md`): (1) multi-storey messages
+name the storey twice ("in the hall on level 0 on level 0", `W_STAIR_TOO_STEEP`,
+`W_STAIR_NO_LANDING`, `W_STAIR_RISER_TOO_HIGH`, `W_STAIR_SIDE_ENTRY`); (2) `spec.llm.md` does not
+say `anchor` never turns a `sofa` (PS2.32's second half); (3) `anchor … flush` turns a
+`reception_desk` the wrong way (PS2.43); (4) a wall that `open between` removed whole still gets a
+thickness figure; (5) a corner `anchor`'s `inset` pulls in from both edges; (6) a tool fact of the
+audit was already false on 1.60.0: it recorded `table` as not in the catalogue, but `table` has
+been there since 2026-08-26 (CV13), so RM1.1b's auditors must not record it so. **Gate:** (1) and
+(4) fixed with a test (a drawing change for (4): byte identity per RM-D56); (2), (3), (5) a fix or
+a stated limit; (6) the RM1.1b audit brief says it.
+
+### SR.8 · `check:quick` stops on an excluded generated file (#981) — `todo`
+
+When the changed files are only biome-excluded ones (`src/context-size.ts`), `check:quick` runs
+`biome (1 files)`, biome says "No files were processed in the specified paths", and the gate stops
+before tsc, drift and vitest. Same class as RM0.11 (2) (a lockfile-only change). The fix: hand
+biome only paths its config does not exclude, skip it when none are left, and quote the path
+arguments. **Gate:** a test of the selection; a change touching only that file runs the later
+steps.
+
+### SR.9 · TR12 leftovers (#985) — `todo`
+
+`npm run digest:preview`: (1) its selection is blind to pins reached by a dynamic import, a
+concatenated path, a `.mjs` file or a file outside the tree; (2) a file whose tests are all skipped
+reads as green; (3) a `process.exit(0)` inside a test is silent at `--jobs 1`; (4) the shared
+module registry makes the report depend on `--jobs`; (5) its matcher diverges from vitest's in
+places; (6) the two `git ls-files` premise tests fail inside a `git archive` tree. Not done: (b),
+a CI job that runs the digest files first. (7) #985 leaves to the coordinator whether executor
+briefs should ask for `npm run check:quick -- --digests` before the first push of a drawing change.
+**Gate:** (1)–(4) each with a planted case; (7) a decision written into the brief guidance
+(`docs/agents/orchestration.md`) or declined with its reason.
+
+### SR.10 · AF4 leftovers (#987) — `todo`
+
+(1) The anchor respell fix across a hyphen leaves the plan broken. (2) Sheet-text suggestions past
+the first 16 are prose only. (3) At a missing clause only the first `expected` entry clears the
+error. (4) The contextual starts (`sheet text`, `section A (`) are not in the plan-level list. (5)
+The nine count or semantic `E_PARSE` sites and the lexer's carry no `expected`. (6) The prose
+`closest()` hints (schedule, site field, sheet text key, outdoor kind, look direction) could move
+onto the AF2 producer. The catalogue's `E_PARSE` fix text naming `expected` moves every `E_PARSE`
+JSON `fix`: an owner call. **Gate:** (1) and (3) fixed with a test; the rest fixed or stated.
+
+### SR.11 · RM9.11 leftovers (#988) — `todo`
+
+(1) A tied snap ignores a door's approach and walls at the destination. (2) The free-destination key
+reads live positions, so the answer depends on the order pieces are repaired. (3) A moved `facing`
+piece can break its own `facing` (pre-existing). (4) Ties in the doorway, swing and stair pushes
+are reported, not chosen (no wall id to order by). (5) A wrong-size fixture ("swap W and H") is not
+changed. (6) "Test gaps": the coordinator's final review of #988 lists them as residue without
+saying which; read them from #988's round-2 red-team report before carding. **Gate:** (1)–(3) each
+with a test; (4) and (5) a ruling (new policy; ADR 0006 addendum); (6) its content recorded here or
+carded.
+
+### SR.12 · RM9.10 leftovers (#990) — `todo`
+
+(1) A door into thin air on a storey stacked over an identical one is not reported (the language
+states no ground level; a ground datum is a language change). (2) A curved lower exterior ring is
+not read as a footprint. (3) `W_EXIT_APPROACH_BLOCKED`, `W_ENTRANCE_INTO_PRIVATE` and the
+circulation walk still treat a door that is no way in as a door to the outside. (4) `W_NO_ENTRANCE`
+stands down on a storey with any exterior door, including one onto a balcony only. (5)
+`validateIntent` `reachable` reads the lowest storey's entrance (a basement plan fails), and its
+pass wording counts the lowest storey only. (6) `spec.llm.md` says nothing about doors onto roofs.
+(7) The held-out pair for `W_EXTERIOR_DOOR_ONTO_ROOF` is owed in private `archlang-lab`. M.4's other
+items are untouched. **Gate:** (2)–(5) each with a test; (1) a language card; (6) within spec
+headroom.
+
+### SR.13 · AF9 phase A leftovers (#992) — `todo`
+
+(1) A fix title does not say "moves every instance" for a span a component's instances or a `for`
+body share. (2) MCP `fix` and L1 calling `rankFixes` is its own card, SR.17. (3) The nib move
+ignores sibling openings and fixtures: in the final full fuzz (124 plans, 3,655 shifted cases) 11 of 188 fixes leave a
+warning, all `E_OPENING_NIB` moves (`W_OPENING_OVERLAP` 6, `W_HOB_UNDER_WINDOW` 3,
+`W_FURNITURE_OVER_WINDOW` 1, a blocked swing and doorway 1); no error and 0 hard-property failures.
+(4) Slanted meeting walls: their footprint on the host is read as `standingJunctionSpans` reads it,
+not probed further (round-2 red team). (5) #992's body lists "N2 (red team, round 1)" as residue
+but does not state what N2 is; read it from the round-1 review before carding it. **Gate:** (1),
+(3), (4) each with a test; (5) its content recorded here or carded.
+
+### SR.14 · RM9.6 CV13 split by RM-D73 (#993, draft) — `todo`
+
+`W_TABLE_NO_SEAT` fires on nine shipped examples; adding their chairs moves about 400 pinned rows,
+3D GLB, mesh and asset pins among them. Order: (1) an examples-only drawing-change PR (the chairs
+from #993's branch), on an idle machine, every asset regenerated in the primary checkout, each moved
+row listed with its source change; (2) #993 rebased onto it, so only the rule's rows move. CV08 and
+CV14 follow the same split. Also owed: the held-out pair in private `archlang-lab`; whether
+`docs/gallery/*.arch` gain chairs (a docs card); `eval/goldens/anchor-furniture.arch` (an
+eval-owner decision); the reach version waits for a sourced `seatTableReachMm`; a `table` labelled
+"Island" (`docs/gallery/family-of-four`). **Gate:** both PRs merged.
+
+### SR.15 · A wrapped room label loses its space in the SVG text (downstream report, 2026-11-20) — `todo`
+
+A downstream application reads "EntranceHall" from a production drawing whose schedule says
+"Entrance Hall". Repro (MCP `compile`, 2026-11-20): a 1200 × 2400 room labelled "Entrance Hall"
+next to a 4000 × 2400 one draws `<text …><tspan …>Entrance</tspan><tspan …>Hall</tspan></text>`, so
+the element's text content is "EntranceHall"; at 1800 wide the label stays on one line. A reader of
+the SVG text (a screen reader, search, the downstream schedule check) gets one word. **Gate:** a
+wrapped label's text content equals the label; a drawing change, so byte identity per RM-D56 over
+every plan with a wrapped label.
+
+### SR.16 · AF7 leftovers (#977) — `todo`
+
+(1) `E_ROOMS_OVERLAP` gets no related spans: the tiling's `TileRoom` carries no room spans. (2)
+`stacked` keeps get no notes (their targets are per storey). (3) `W_ROOM_OVERLAP` raised for a room
+of an imported body carries no `Diagnostic.file` (the gap AF1 noted for `E_DUP_ID`, NR.6 (1)); a
+`RelatedSpan.file` would let a note point into a module. (4) The sweep cannot see plans built by
+functions inside test files or helpers; CI's full suite covers them. **Gate:** (1)–(3) each with a
+test; any moved pin under RM-D69's four conditions as ruled for #977
+(`docs/plans/product-roadmap/README.md` §6.32): "every row is proven strip==old by a committed
+check; each touched table carries a header note; SVG, `lint()`, steps and parse stay unmoved; no
+other digest is touched."
+
+### SR.17 · MCP `fix` and L1 take the ranked fix (#992, RM-D70 Q3) — `todo`
+
+AF9 is the first producer with several alternatives on one diagnostic. `arch fix` takes the top of
+`rankFixes` (`src/fix-apply.ts`) and the LSP lists the alternatives in its order, but MCP `fix` and L1
+apply them in array order without it (`packages/mcp/src/tools.ts`, `eval/l1.ts`;
+`docs/plans/ai-first-language/af9-design.md` F3 and §12 Q3): with `unsafe:true`, MCP `fix` applies
+the first alternative and reports the next as skipped. **Gate:** both call `rankFixes`; a test that a
+diagnostic with two alternatives gets the same fix from `arch fix --unsafe` and MCP `fix`, and a unit
+test of L1's choice (no live run: `--l1` needs `--live`, paid and owner-only).
+
 ## Test-programme findings (promo-credit programme, 2026-11-16)
 
 From `docs/plans/product-roadmap/2026-11-test-findings.md` (§ 3, § 4, § 5). RR.8 (2), the
@@ -2617,7 +2840,7 @@ order-free clause of `door` and `window` (once, `E_DUP_CLAUSE` on a second kind 
 `describe()`, `lint()` and diagnostics byte-identical), a test per kind word in each position, and
 the `hinged` hint (EV.4) kept for a kind written as its own statement.
 
-### EV.5 · A refused opening offers no move (design first) — `todo`
+### EV.5 · A refused opening offers no move (design first): done by #992 (AF9 phase A), waiting to be archived — `note`
 
 **Carded as** AF9 (`docs/plans/product-roadmap/cards.md` track 10, 2026-11-18).
 **Design:** `docs/plans/ai-first-language/af9-design.md` (2026-11-20) meets the gate below. Its

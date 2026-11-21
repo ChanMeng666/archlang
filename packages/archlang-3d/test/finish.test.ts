@@ -71,13 +71,15 @@ describe("T0 parametric furniture (plan §4.4)", () => {
   const laneway = built(example("laneway-house.arch"));
   const pieces = laneway.mesh.nodes.filter((n) => n.kind === "furniture");
 
-  it("builds laneway-house's twelve pieces from the twelve V3 T0 families, one node each", () => {
-    expect(pieces.length).toBe(12);
+  it("builds laneway-house's fourteen pieces from thirteen T0 families, one node each", () => {
+    // RM9.6 CV13 split (PR #996): the example source was edited, its table gains two chairs (12 -> 14
+    // pieces), from V7's `chair` family.
+    expect(pieces.length).toBe(14);
     const families = new Set(pieces.map((p) => String(p.extras.asset)));
-    // The families card A2b built for laneway (V3 refined them); V5–V7 add families laneway does
-    // not use, so its pins stand.
+    // The families card A2b built for laneway (V3 refined them), and V7's chair; the other families
+    // V5–V7 add are ones laneway does not use.
     const v3 = ["bed", "sofa", "table", "rug", "wardrobe", "fridge", "counter", "kitchen_sink", "stove"];
-    const lanewayFamilies = [...v3, "shower", "wc", "basin"];
+    const lanewayFamilies = [...v3, "shower", "wc", "basin", "chair"];
     for (const f of lanewayFamilies) expect(T0_FAMILIES, f).toHaveProperty(f);
     expect([...families].sort()).toEqual(lanewayFamilies.map((f) => `t0:${f}`).sort());
     for (const p of pieces) if (p.extras.category !== "rug") expect(p.shells.length, p.id).toBeGreaterThan(1);

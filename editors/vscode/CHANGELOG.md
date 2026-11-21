@@ -14,6 +14,18 @@ are documented here. The format is based on
 
 ## [Unreleased]
 
+## [0.54.0] - 2026-11-21
+
+### Changed
+
+- **Rebundled the core at `@chanmeng666/archlang@1.66.0`**: a misspelt word gets a quick-fix that
+  rewrites that word alone (the Problems panel's message is unchanged; the suggested word is in the
+  quick-fix's title); a refused relational opening (`E_OPENING_NIB` and its kin) offers the nearest
+  legal positions as quick-fixes; a conflict (a broken keep, a placement cycle, an unplaced room, two
+  overlapping rooms) points at the statements behind it as related information; and when `walls
+  from rooms` refuses, the errors it causes name it as related information. Lint warnings,
+  which the extension does not run, are unchanged here.
+
 ## [0.53.0] - 2026-11-19
 
 ### Changed

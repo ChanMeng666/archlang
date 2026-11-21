@@ -137,7 +137,7 @@ describe("GLB from Mesh3D", () => {
         ).toBe(v?.indices.length);
       } else if (v) expect(v.groups, n.key).toBeUndefined();
     }
-    expect(slotted).toBe(12);
+    expect(slotted).toBe(14); // RM9.6 CV13 split (PR #996): laneway-house's two new chairs (was 12)
     // Every slot material reads the one palette; glass is translucent.
     for (const m of json.materials.filter((x) => x.name.startsWith("fixture:"))) {
       const p = PALETTE[m.name.slice("fixture:".length) as keyof typeof PALETTE];

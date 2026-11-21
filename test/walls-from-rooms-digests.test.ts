@@ -7,10 +7,13 @@
  * (`allStoreysDigestWithDiagnostics`). A moved row is a finding to explain
  * (`docs/testing.md` §3), never a re-pin. CO.1 (RM-D56) re-measured `two-bed-twin` after proof: it
  * gains one `W_GRID_SNAPPED` and nothing else (its row says how that was shown).
+ * re-measured by AF7 (#977): only added related notes; strip==old proven (RM-D69; the check is the
+ * `AF7_MAIN` test below, through `test/helpers/af7-notes.ts`).
  */
 
 import { describe as suite, expect, it } from "vitest";
 import { compile, describe, lint } from "../src/index.js";
+import { af7StrippedApi } from "./helpers/af7-notes.js";
 import { allStoreysDigestWithDiagnostics, type CompilerApi } from "./helpers/byte-identity-digest.js";
 import { WALLS_FROM_ROOMS_PLANS } from "./tables/walls-from-rooms-plans.js";
 
@@ -24,14 +27,14 @@ const DIGESTS: [string, string][] = [
   // Re-measured 2026-10-24 (PS2.12): the annotation-collision examples (the twin follows two-bed's bed move); why, and the swap-back proof, in `test/byte-identity-baseline.ts`'s header.
   // Re-measured 2026-10-25 (PS2.11a/b): the twin follows two-bed's window and WC moves; why, and the proof that nothing else moved, in `test/byte-identity-baseline.ts`'s header.
   // Re-measured 2026-10-26 (PS2.11e/PS2.46/PS2.54): the studio and two-bed twins follow their examples' stove moves; open-plan, open-width and open-instances move in hints only (the fixture statements a `W_ROOM_NO_FIXTURE` or `W_ROOM_MISSING_DEFINING` hint quotes are now held clear of a cased opening's approach and a window over a hob, so a different anchor, or a shower for a bathtub, is quoted); SVG, `describe()` and diagnostics unchanged.
-  ["two-bed-twin", "655771bf8e36cd1f8548a99ab8ff1ec9badbde462ae5174a28c0fff05072ad94"], // PS2.11e, see header; RM1.4: snapping is now reported (the twin's 850x2000 sofa and 450x600 basin under grid 100 raise W_GRID_SNAPPED; steps 629 -> 757, +128 = two DIAGNOSTIC_STEPS) (was a458ded6); CO.1 (RM-D56): its sizeless `against` fridge (600x650 on grid 100) raises W_GRID_SNAPPED too; with exactly that entry removed from compile() and describe() diagnostics, main's source through this compiler gives e481c569 again (was e481c569)
+  ["two-bed-twin", "4ecbf69b660c412c57ccb6b8dd7ee7b3e8b55906ab9605f25560ac622128e5c6"], // PS2.11e, see header; RM1.4: snapping is now reported (the twin's 850x2000 sofa and 450x600 basin under grid 100 raise W_GRID_SNAPPED; steps 629 -> 757, +128 = two DIAGNOSTIC_STEPS) (was a458ded6); CO.1 (RM-D56): its sizeless `against` fridge (600x650 on grid 100) raises W_GRID_SNAPPED too; with exactly that entry removed from compile() and describe() diagnostics, main's source through this compiler gives e481c569 again (was e481c569); CV13 (was 655771bf): twin source edited (the two chairs examples/two-bed gained)
   ["widen-4000", "caaf25e6f0f27dc2409f4d81d2434d83c7c75b62e5bcad55cd8a08d5a8dbce19"],
   ["widen-4500", "5756d730cbb5d2bb27471d50e24023b29b6826aa359bf76a4cd43b2a156afef9"],
   ["courtyard", "ddab523168af17603cb23ef2ade5be2c433e2f48992a8cdf7b6e5e7a71d00d59"], // PS2.29: message text only, same code, same span
   ["void-hole", "1f2cc21de6c54b4c5fda96e2ca562ce248ba50c65e8100dc70ca348931f2e30b"], // PS2.29: message text only, same code, same span
   ["instances", "9cee7cee0d0fcdf4a673ef1ebd3dd085bc570542fb857da1b7efd1b7c4fdfde2"], // PS2.29: message text only, same code, same span
   ["coexist", "edbb7e715c8919e1128ff4bb6376d16f3f491cceb3729ef6627c4461b1173957"], // PS2.29: message text only, same code, same span
-  ["refused", "76e0b4711a8d03cafc6ce4271a2fb765a9280b9d332ffec2eeb350ef93bf67f7"], // PS2.29: message text only, same code, same span
+  ["refused", "5175630e99b1863600e2ab57f5b803c7ea953d08e7d5264b52612b31b87c8052"], // PS2.29: message text only, same code, same span // AF7 (RM-D69): only added related notes (was 76e0b471, AF7_MAIN)
   // Part C, the pair clauses: pinned after the twins held (`test/walls-from-rooms-clauses.test.ts`).
   // Re-pinned in red team round 1 (S1): the first pin carried a false W_OPENING_AT_JUNCTION (a
   // 25 mm "nib" beside the thinner wall at the a|c (150) / b|c (100) end); with the HEAD rule
@@ -42,9 +45,19 @@ const DIGESTS: [string, string][] = [
   ["clauses-refused", "2ee033192ebca84b6e8d593937ed348915530b2805b38f8d339ad7a5a6d6fe02"],
 ];
 
+/** AF7 (RM-D69): `main`'s digest of each row AF7 re-measured. The row's own digest body, with AF7's
+ *  related notes taken out of `compile().diagnostics` and `describe()`, gives it back. */
+const AF7_MAIN: [string, string][] = [["refused", "76e0b4711a8d03cafc6ce4271a2fb765a9280b9d332ffec2eeb350ef93bf67f7"]];
+
 suite("walls from rooms: digest table", () => {
   it("pins every plan", () => {
     expect(DIGESTS.map((d) => d[0])).toEqual(WALLS_FROM_ROOMS_PLANS.map((p) => p[0]));
+  });
+  it("AF7: each re-measured row moved by its added related notes alone (strip==old)", () => {
+    for (const [name, digest] of AF7_MAIN) {
+      const src = WALLS_FROM_ROOMS_PLANS.find((p) => p[0] === name)![1];
+      expect(allStoreysDigestWithDiagnostics(af7StrippedApi(API), src), name).toBe(digest);
+    }
   });
   for (const [name, digest] of DIGESTS) {
     it(name, () => {

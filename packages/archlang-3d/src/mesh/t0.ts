@@ -1,7 +1,8 @@
 /**
  * T0 parametric furniture (archlang-3d plan §4.4, §5.1–5.3; card A2b; visual-assets V1–V3,
  * V5–V7): pure generators that build a piece from a few parts, fitted EXACTLY to the plan's
- * footprint. The twelve families laneway-house uses are here; the living, bedroom, dining and
+ * footprint. The twelve families laneway-house first used are here (its chairs, since RM9.6, are
+ * `t0-living.ts`'s); the living, bedroom, dining and
  * office batch is `t0-living.ts` (V5), the kitchen, bath and utility batch `t0-utility.ts` (V6),
  * the site (planting, garden, vehicles, terrace, the small standing objects) `t0-outdoor.ts` and
  * the office and commercial pieces `t0-office.ts` (V7). Every catalogued family is built; a word

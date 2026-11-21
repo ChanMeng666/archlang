@@ -54,10 +54,14 @@
  * arrow's `<g>`, and where the body hashes the Scene, the added `chrome.north` with it; `describe()`,
  * `lint()`, the diagnostics and the steps did not move. Put `main`'s SVG back (`a9db286e`) and drop
  * `chrome.north`, and this body reproduces every old digest; the new ones are this body on the branch.
+ *
+ * re-measured by AF7 (#977): only added related notes; strip==old proven (RM-D69; the check is the
+ * `AF7_MAIN` test below, through `test/helpers/af7-notes.ts`).
  */
 
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
+import { af7StrippedApi } from "./helpers/af7-notes.js";
 import { describe as suite, expect, it } from "vitest";
 import { compile, describe, lint } from "../src/index.js";
 import { makeNodeWorld } from "../src/cli/io.js";
@@ -115,21 +119,21 @@ const BASELINE: [string, string][] = [
   ["e33e9923337208c91bf7093a0fa63040f132db455f3e3e85d584740a18a8f611", "examples/accessible.arch"],
   ["3471b341d64b36f8ebd0d3786f07d8a912f610d324eaea35d938375e9c647d1f", "examples/aquarium.arch"],
   ["90680592ce7aef9b99598ec8e547044bedf53cebf2edbf890d7fac8db64763ef", "examples/attached.arch"],
-  ["6f42bf9ecde9ce3263c295e9c5a38b20f76b3f4c4da22f1ff439e37453d03952", "examples/bungalow.arch"],
+  ["199a5fd1b547984cb93e2302d7d896516c3ab4ebb5b09266f5d78c1f24480cee", "examples/bungalow.arch"], // CV13 (was 6f42bf9e): example source edited (chairs added)
   ["4f7bf7282832cdf101db083d17d436221eeb0ac7002d0289e20ce3a7864da163", "examples/classroom-block.arch"],
   ["b6cd385c2dd3c10ad400acb22f9147c2f308a6e7c2e5657f90ec692b35f251d5", "examples/clinic.arch"],
   ["eaa167d41d7272aaae9866cfd38f24392fb9cb768640f0c8efb0d13cb5fac7b0", "examples/corner-cafe.arch"],
   ["c6b64e3fa5815d6b9cbeb2e272f64c23d973fbb059c83ea6e57cc41d9b7195f2", "examples/courtyard-family.arch"], // CO.1: the example writes its snapped `against` size out (+14 bytes), so only spans and the steps of the written clauses (+2) moved; see the header (was 64e5593c)
-  ["e9866c6c03d26af0b56f67a753f6e15fcca3972a94b91c6d875a6a8c07e96582", "examples/courtyard-house.arch"],
+  ["5f557f7ac891e6d732cbcc24ac46b5b337beda47a890eba2528dc8998f8e1efb", "examples/courtyard-house.arch"], // CV13 (was e9866c6c): example source edited (chairs added)
   ["fcb5a98c9bf892177daef2174831cb56be4314d6c9ac66526b1046cd6618438b", "examples/furnished-flat.arch"],
   ["5ebdd5ec17e7e29eeab8413c31506ebca7b1afc26168d4455e29ddf45d4f65a5", "examples/gallery-l.arch"],
   ["6d5955224cdfaff62510ebf2f5a676098617e78f2938c962bac59434d83fb05d", "examples/garden-house.arch"], // RM1.3b, see ./byte-identity-baseline.ts; RM1.3b overlay, see ./byte-identity-baseline.ts; CO.1: the example writes its 2 snapped `against` sizes out (+26 bytes), so only spans and the steps of the written clauses (+8) moved; see the header (was dd673d71); RM9.2, see ./byte-identity-baseline.ts
-  ["e9080ba7d1fced6e3d26f8bf9d18149ae781549f5343156511b62ecd6e578050", "examples/garden-loft.arch"],
-  ["6544b4c8a8dd7e8a419f1beb6ab9e3daed19bc6a972a2bb493e361dc29f05b02", "examples/hexagon-pavilion.arch"],
+  ["8be510d3825258cde0ae8e0030e44a2b76be0741860e9cc20da7720e5648586a", "examples/garden-loft.arch"], // CV13 (was e9080ba7): example source edited (chairs added)
+  ["45e2de363cdbe22f1ab55d40d968083c2181571320c028f78443aa65e80a2558", "examples/hexagon-pavilion.arch"], // CV13 (was 6544b4c8): example source edited (chairs added)
   ["c9f89e9a93be96447f124e7eb52ca32594d06c8e9341e0438a74e3698992ce43", "examples/hillside-villa.arch"], // RM1.3b, see ./byte-identity-baseline.ts; RM1.3b overlay, see ./byte-identity-baseline.ts; CO.1: the example writes its 3 snapped `against` sizes out (+40 bytes), so only spans and the steps of the written clauses (+12) moved; see the header (was 6a0a3529); RM9.2, see ./byte-identity-baseline.ts
   ["943cb8dbb7c0438d4f7d62160dafba83a6861b912a5c8cbf70db47e11ec80be7", "examples/imports.arch"],
   ["5ab98e5edbb819a917045eeeec6448af5fbb7d08837f644769b75274e744fbc8", "examples/knob-flat.arch"],
-  ["9613d6242ead61c0b7c42a45cbd3f3ac348c3fed0e1045511bcddf27b7b7cf3d", "examples/laneway-house.arch"],
+  ["d454b14329c3e568cb56b2f00143521457a1c90a2095ce46aca979651e5091a9", "examples/laneway-house.arch"], // CV13 (was 9613d624): example source edited (chairs added)
   ["84bf35da4ec0c7f7bd5d522951d07a34e0d69f870fa86a6cacc2b24ebf5a67b8", "examples/library.arch"],
   ["cff60bd4ed0f2ed238f0837b5d0a51193d69f1cc46956891b8b5af3db846c21f", "examples/materials.arch"],
   ["289fb16b2c4e880275b772afb4a730decc12702d72cb286b0fcd7ac97579be97", "examples/museum-wing.arch"],
@@ -139,15 +143,15 @@ const BASELINE: [string, string][] = [
   ["3db8c2ad95fdbed22f538d47519d500e27e08e5a600dfbe18292ed99ff24b169", "examples/parametric.arch"],
   ["ca028af82667a10d0dd44ed37f9a7f708f5ee8be4b82154d0e1d81397f353754", "examples/practice-office.arch"],
   ["02918cde41f10b126dee8f4a0a847c25168eead83c4be59553b88acabb47bd00", "examples/relational.arch"],
-  ["0e04f3b717d1c6938f1013acb953abdbbb8c154f6b6293b2a1ae20559b6a6ecc", "examples/remodel.arch"], // CO.1: the example writes its snapped `against` size out (+13 bytes), so only spans and the steps of the written clauses (+2) moved; see the header (was a4a2014e)
+  ["478656af7841418f829fad4541e079203df12d9afc77e74a00a3500e42e6748b", "examples/remodel.arch"], // CO.1: the example writes its snapped `against` size out (+13 bytes), so only spans and the steps of the written clauses (+2) moved; see the header (was a4a2014e); CV13 (was 0e04f3b7): example source edited (chairs added)
   ["76ddb8d12efbead64517024344615685c65b65652b9ab457851117796db72f6d", "examples/sheet-notes.arch"],
   ["f6a6a81fa57cd5183bfbb7c607bdb9599ddf2eebfbc657c0cc4e69c7c0bcae7a", "examples/studio.arch"],
   ["bd6056a84ec5d55dee071e9101fea8d157ce72e0830211a1f66b11291f0e0ef7", "examples/terrace-row.arch"],
   ["503b89ecf0ca78f6c1100f1fd059c0b63080a9bdb3b9401c675c74971816cd21", "examples/themed.arch"],
   ["1a78c5532e6c4bb783da712f6f27c83f5c771765278ec8552940d4f73e32beaa", "examples/tiny-house.arch"],
-  ["efcb311afa72e4a4806bcca5dde1de40eee02442538b9291bc63268f9322403b", "examples/townhouse.arch"], // RM1.3b overlay, see ./byte-identity-baseline.ts; RM9.2, see ./byte-identity-baseline.ts
+  ["8643a4e35b560b5fa8c9d4acc99281dc6082d4b8b8c77318a8572d83f13e38e1", "examples/townhouse.arch"], // RM1.3b overlay, see ./byte-identity-baseline.ts; RM9.2, see ./byte-identity-baseline.ts; CV13 (was efcb311a): example source edited (chairs added)
   ["0fd9ba46a50b7e9438b7f3be5472c52c44a58219a29f22b493f3bd653766a971", "examples/transit-hall.arch"],
-  ["ea10c4f2ef02a4edf1e91ad6b5782839346ad80f1aaa595f4a6573b79921ce65", "examples/two-bed.arch"], // CO.1: the example writes its snapped `against` size out (+13 bytes), so only spans and the steps of the written clauses (+2) moved; see the header (was f220acec)
+  ["6fa4bd1d0de5cc6aa3bc3434687929ece4ac4052356462caecb5e55109480d6a", "examples/two-bed.arch"], // CO.1: the example writes its snapped `against` size out (+13 bytes), so only spans and the steps of the written clauses (+2) moved; see the header (was f220acec); CV13 (was ea10c4f2): example source edited (chairs added)
   ["9c3489d30cb4bcdea2d3ef3272820bba64eee730f4123585e19f4be3a440ccf3", "examples/two-storey.arch"], // RM1.2a, see ./byte-identity-baseline.ts; RM1.3b overlay, see ./byte-identity-baseline.ts; RM9.2, see ./byte-identity-baseline.ts
   ["429d048d147ff95c56bf15fe655fb6a2e7870b21b111d82109e7d9fbc25a8655", "test/fixtures/axes-grid.arch"],
   ["8b201a108d4f8cf901579b200c92b809000d77b9550cda3e092994c09fbba1d5", "test/fixtures/chain30.arch"],
@@ -160,29 +164,29 @@ const BASELINE: [string, string][] = [
   ["d2e33f0f08e06930824942bb36faf1a439459483a3335cd78063e3ef51b021b6", "test/fixtures/lock-before.arch"],
   ["a5b010590ff37b31382b353c37001f3541ef26e5f9c8bd531f2121dd1a9d4fa2", "test/fixtures/lock-partition-moved.arch"],
   ["bfe79454671a15f63522c0a770453a819328df15f90b01154d028f5161350046", "test/fixtures/lock-window-moved.arch"],
-  ["d340196f446839ceda4c324efb5c2c29abab79551b673a72b95abeabc64d3fe2", "test/fixtures/off-path-bypass.arch"],
+  ["c80e318bf3434440c98e5c1053396ec945bd717a91c54a79497954cd03f2d820", "test/fixtures/off-path-bypass.arch"], // AF9 (was d340196f): `W_DOORWAY_BLOCKED` on d_d gains a maybe-incorrect move to `at 1570` (its position alone) in lint() (both profiles); SVG, describe(), the diagnostics and the steps are unchanged, and with that fix taken out the old digest returns
   ["2a9bdda5124d6cc976419991440ccccedb9ee1bcbcba18da2098319f271fe1f3", "test/fixtures/schedule-sheet.arch"],
   ["ac6b7954d2cefaa2461c5e8111d1004603b931ef133597f0971e07db78c6dd42", "test/fixtures/star30.arch"],
   ["143ddd7bfd82d51b4527ba8607803a99e38c4f1bd4997d9cf8acf95fb216e29d", "test/fixtures/storeys-eaves-overflow.arch"], // RM1.2a, see ./byte-identity-baseline.ts; RM1.2a review, see ./byte-identity-baseline.ts; RM1.3b overlay, see ./byte-identity-baseline.ts; RM9.2, see ./byte-identity-baseline.ts
   ["5febcfb91b9a3e7bc23705df313a0ac218fb64f35aae5a19b607b313ddca79fb", "test/fixtures/zones-levels.arch"], // RM9.2, see ./byte-identity-baseline.ts
   ["ee9f057b82b717e4b7c0753daef62a2baa9b3df5c5d8aa617079c3dedce0081e", "test/fixtures/zones-wings.arch"],
-  ["edc62a570b76ff9877ab4515a7a83826cc91bf70328a315fe62f42ff17f3a843", "test/walls-from-rooms/relational.arch"],
+  ["61565f3850374e2db98b80a12890579d8899928f2e32c7ddc45fb5b43169f7c9", "test/walls-from-rooms/relational.arch"], // AF9 (was edc62a57): under `accessibility-advisory` (a 450 mm landing) `W_DOORWAY_BLOCKED` gains a maybe-incorrect move of the door; SVG, describe(), the diagnostics, the default lint() and the steps are unchanged, and with that fix taken out the old digest returns
   ["beff13e3b3255103bc80d0698d9bf7b9052f66bf78bf8d0626033bfeeb02adc5", "test/walls-from-rooms/studio.arch"],
-  ["4a1ab38ed28c696ef0c713c4227dd30efb828fb60a7d3dd5b4b4e1d0e40f68ef", "test/walls-from-rooms/two-bed.arch"], // CO.1: +1 W_GRID_SNAPPED (a sizeless `against` piece on a grid), steps +64 = 1 x 64; see the header (was cd33c0b4)
+  ["ede95165106807f3d77fd531424fea9645eaedddf4078c98907567eb5aba5cdd", "test/walls-from-rooms/two-bed.arch"], // CO.1: +1 W_GRID_SNAPPED (a sizeless `against` piece on a grid), steps +64 = 1 x 64; see the header (was cd33c0b4); CV13 (was 4a1ab38e): twin source edited (the two chairs examples/two-bed gained)
   [
     "ef6b4cf52454c07cdd3c22449f6545da111fb35e7f1085d1ec15cd8c94903e4b",
     "test/walls-from-rooms/widen-after-authored.arch",
   ],
   ["218c72e6d0d121539ce5514c3cd77c9c27e13f0cbaf3a6d9b49ca20c8d502e62", "test/walls-from-rooms/widen.arch"],
   ["beff13e3b3255103bc80d0698d9bf7b9052f66bf78bf8d0626033bfeeb02adc5", "plans:studio-twin"],
-  ["4a1ab38ed28c696ef0c713c4227dd30efb828fb60a7d3dd5b4b4e1d0e40f68ef", "plans:two-bed-twin"], // CO.1: +1 W_GRID_SNAPPED (a sizeless `against` piece on a grid), steps +64 = 1 x 64; see the header (was cd33c0b4)
+  ["ede95165106807f3d77fd531424fea9645eaedddf4078c98907567eb5aba5cdd", "plans:two-bed-twin"], // CO.1: +1 W_GRID_SNAPPED (a sizeless `against` piece on a grid), steps +64 = 1 x 64; see the header (was cd33c0b4); CV13 (was 4a1ab38e): twin source edited (the two chairs examples/two-bed gained)
   ["218c72e6d0d121539ce5514c3cd77c9c27e13f0cbaf3a6d9b49ca20c8d502e62", "plans:widen-4000"],
   ["f472897ea01f13b118a0efeb189ffce7083a9629f880d9a6b9b267ad7becb10e", "plans:widen-4500"],
   ["ebc0bb540123325ca7eb8fe4fe12a3e5aa76c78cd6d451cb6a235118c92bba7a", "plans:courtyard"],
   ["bc452991d3ed362cdc36ff1f97938f1c917a9503f05c40ebdb286484a85f7034", "plans:void-hole"],
   ["01402210432235dd8c87a3b8f9ffff66d1839272a5fb649b181c91d9ea87cf5b", "plans:instances"],
   ["27fd4888416deb84501c64dc2d2ebad10776ac3f5c53e780e5eea8f2f0a4f05c", "plans:coexist"],
-  ["f48b445c3d8f3499ece29b70d20c50207c34adc80e430edccc3d9f6cd36eb114", "plans:refused"],
+  ["7be9dcaea4b587b54406854ef539cadc05716ccb4433818abac8a9b4ba18815d", "plans:refused"], // AF7 (RM-D69): only added related notes (was f48b445c, AF7_MAIN)
   ["3242407cca3e68167000ae30159a28d3f1d87f74a911adaed34c5458100f5d78", "plans:open-plan"],
   ["51d28947008155d90908b371a8900b873d87ab9a0fc785479df6f179b94b0e87", "plans:open-width"],
   ["fc878a600854ad99f69ecf8577176006056f301a90106de53452b97da71bd4a5", "plans:open-instances"],
@@ -193,7 +197,7 @@ const BASELINE: [string, string][] = [
   ["6e4367336a461f79b8927cdb2671f2571c0d5e029ca95b26448cf70bd39eb058", "inline:clauses"],
   ["ffcbcbe475c12edbcf2713a4449a06d4eed619f415d3d08ea57428e3cea4bca9", "inline:door-beside-excepted-L"],
   ["9a461091afe9fe608b6f1ad40d02a6a366df5884bf1af8b178b1d03c4011b40b", "inline:door-positions"],
-  ["49ed81b6cac95c97df6056fa406a7de294634e03b0f05ca1d680d4ee7f0b59de", "inline:door-refusals"], // AF2 (was b699986d): `E_LAYOUT_REF` on room e is spanned on its unknown id `nowhere`, not the statement, and the search for a near room id charges 8 steps (1027 -> 1035); SVG, lint() and every other diagnostic are unchanged, and main's span and steps put back give b699986d
+  ["b5fc44cd1e1965550c229a17a86e73cbd08d8e1fabf53659616c7a5b1ef7eacd", "inline:door-refusals"], // AF2 (was b699986d): `E_LAYOUT_REF` on room e is spanned on its unknown id `nowhere`, not the statement, and the search for a near room id charges 8 steps (1027 -> 1035); SVG, lint() and every other diagnostic are unchanged, and main's span and steps put back give b699986d; AF9 (was 49ed81b6): `E_OPENING_DATUM` on d4 (no position) and d5 (`at 800`, no datum) gains a has-placeholders fix and `E_OPENING_NIB` on d7 a maybe-incorrect move to `at 600 from start`, in `compile().diagnostics` and `describe().diagnostics`, and the refusal paths' search charges 49 steps (1035 -> 1084); SVG, lint(), every message and hint are unchanged, and with those fixes taken out and main's steps put back the old digest returns
   [
     "c393511a4734b76c5a878d1666ab6e36e638b84abcc963a6e01c97a2bbe1b97e",
     "test/defect-corpus/stair-safety/door-onto-flank.arch",
@@ -288,13 +292,21 @@ const BASELINE: [string, string][] = [
   ["802586e9b7cf3f6927c1441481a0e2d14699e57b6b7a50ddb48b71a9b4a902d5", "inline:stair-arrival"], // RM1.2a, see ./byte-identity-baseline.ts; RM1.2a review, see ./byte-identity-baseline.ts; RM1.3b overlay, see ./byte-identity-baseline.ts; RM9.2, see ./byte-identity-baseline.ts
   ["e6eed958e1d4cea68f7981fce9964af4b5a26fa3d09ad3eafebb0992ce5cb727", "inline:stair-refusals"],
   ["1e9d114fa6522be3335f490693d677a052fc7363fd0bbc2b07b2f0849fe16494", "inline:stair-parse-refusals"], // AF4 (was 57879436): its `E_PARSE` now says what the parser expected at the token it stopped at (`expected`); SVG, lint() and every other key are unchanged, and deleting that key gives 57879436
-  ["7fa38724de8f8f22ec5dde6df8e9d8e2f027ccf18c2068f69ef2d4761b81c5e6", "inline:slab-clear-words-as-names"],
-  ["9dd469250c48ce89b59c495b4205d65d055a6cad5a72e64a2c5b3d03aa053347", "inline:section-words-as-names"], // RM9.2, see ./byte-identity-baseline.ts
+  ["4ccf78bc9248faa384524972217b04930f6943d814fb33c8873c8a50009f0245", "inline:slab-clear-words-as-names"], // AF7 (RM-D69): only added related notes (was 7fa38724, AF7_MAIN)
+  ["6852f6abf4fbf33c80fe5d27e6880586a12f2c12726f1e15f8c02eddf1eec64c", "inline:section-words-as-names"], // RM9.2, see ./byte-identity-baseline.ts; AF7 (RM-D69): only added related notes (was 9dd46925, AF7_MAIN)
   ["a99e77bd8df64e89959fb92f93aff9fa2428527390ffa9a07c12291da1ddbff5", "inline:slab-clear-macro-after-height"],
   ["d1e9abba7d5c3e58e190713683263d24a3d1670b5eded0475bcc9f507c12afa3", "inline:slab-clear-storeys-without"], // RM9.2, see ./byte-identity-baseline.ts
 ];
 
 const pinned = new Map(BASELINE.map(([digest, name]) => [name, digest]));
+
+/** AF7 (RM-D69): `main`'s digest of each row AF7 re-measured. The law's own digest body, with AF7's
+ *  related notes taken out of `compile().diagnostics` and `describe()`, gives it back. */
+const AF7_MAIN: [string, string][] = [
+  ["plans:refused", "f48b445c3d8f3499ece29b70d20c50207c34adc80e430edccc3d9f6cd36eb114"],
+  ["inline:slab-clear-words-as-names", "7fa38724de8f8f22ec5dde6df8e9d8e2f027ccf18c2068f69ef2d4761b81c5e6"],
+  ["inline:section-words-as-names", "9dd469250c48ce89b59c495b4205d65d055a6cad5a72e64a2c5b3d03aa053347"],
+];
 
 suite("slab, clear and section: the byte-identity law", () => {
   it("the table pins every row, and no row writes any of the forms", () => {
@@ -326,6 +338,13 @@ suite("slab, clear and section: the byte-identity law", () => {
     expect(unmarked).not.toBe(marks);
     expect(writes(unmarked, "section")).toBe(false);
     expect(stairLawDigest(API, marks, undefined)).not.toBe(stairLawDigest(API, unmarked, undefined));
+  });
+
+  it("AF7: each re-measured row moved by its added related notes alone (strip==old)", () => {
+    for (const [name, digest] of AF7_MAIN) {
+      const row = ROWS.find((r) => r.name === name)!;
+      expect(stairLawDigest(af7StrippedApi(API), row.src, worldOf(row.dir)), name).toBe(digest);
+    }
   });
 
   // One law per form: every row that does not write the form is byte-identical to `21d3e0f4`.

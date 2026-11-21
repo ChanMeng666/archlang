@@ -171,7 +171,7 @@ function store(area: "localStorage" | "sessionStorage", key: string): void {
  * to the package: `createElement` is wrapped for the one synchronous call, then put back.
  */
 function withGlCanvas<T>(mount: () => T): [T, HTMLCanvasElement | undefined] {
-  const own = Object.prototype.hasOwnProperty.call(document, "createElement");
+  const own = Object.hasOwn(document, "createElement");
   const create = document.createElement;
   let made: HTMLCanvasElement | undefined;
   document.createElement = function (this: Document, tag: string, options?: ElementCreationOptions) {

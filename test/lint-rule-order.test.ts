@@ -83,6 +83,7 @@ const EXPECTED_ORDER = [
   "stair-riser-too-high",
   "label-piece-missing",
   "thickness-unplaced",
+  "exterior-door-onto-roof",
   "table-no-seat",
 ];
 

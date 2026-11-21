@@ -205,6 +205,7 @@ Every diagnostic carries a stable code. Look one up with `arch explain <CODE>`
 | [`W_EMPTY_PLAN`](#w_empty_plan) | warning | Empty plan. |
 | [`W_ENTRANCE_INTO_PRIVATE`](#w_entrance_into_private) | warning | The way in from outside opens into a bedroom, bathroom or WC. |
 | [`W_EXIT_APPROACH_BLOCKED`](#w_exit_approach_blocked) | warning | Furniture stands in the clear floor inside an exterior exit. |
+| [`W_EXTERIOR_DOOR_ONTO_ROOF`](#w_exterior_door_onto_roof) | warning | An exterior door opens over a lower storey's footprint while its storey has another way in. |
 | [`W_EXTERIOR_RING_OPEN`](#w_exterior_ring_open) | warning | Exterior walls that stand on a room close nothing: the shell has a gap. |
 | [`W_FIXTURE_BACK_TO_ROOM`](#w_fixture_back_to_room) | warning | A fixture stands against a wall but faces the wrong way. |
 | [`W_FIXTURE_FLOATING`](#w_fixture_floating) | warning | A plumbing/kitchen fixture is not against a wall. |
@@ -1829,7 +1830,7 @@ wall id=w1 exterior thickness 200 height 2200 { (0,0) (4000,0) close }
 
 **Cause.** A relational opening (`door|opening … between A and B`, `door|window|opening … on <room>.<edge>`) is placed along the shared edge run or the edge by `center`, `<mm> from start|end`, `<mm> from <room>.<edge>` or `axis <label>` (ADR 0028 §5). A door or a cased opening must write one (a door is held to an end or an edge, never centred by default); a plain `at <mm>` or `at <pct>%` names no datum there. `from <room>.<edge>` needs an edge perpendicular to the run through one of its ends (not a parallel edge, a centre line `cx|cy`, or an edge meeting the run elsewhere), and `axis <label>` an axis that crosses the run. On a pair that shares several edges only `from <room>.<edge>` picks one, so the code here means an edge that meets none of them at an end, and any other position is `E_OPENING_HOST_AMBIGUOUS`. On the existing `on <wall> at …` form the same datums are read where the datum line crosses the wall's straight run at exactly one point. Arithmetic on a positioning axis in any of these positions (`at axis.2 + 500`, under `from` or `%` too) is refused here as well: an axis is a plan coordinate and a position along a wall a distance along it, so the result would land on the axis only on a wall that starts at 0. The compiler refuses rather than pick a position (ADR 0005). The span points at the position or the datum.
 
-**Fix.** Write a position the run can read: `at 600 from start`, `at 600 from end`, `at center`, or an edge through one end of the run (`from a.top` on a vertical run). On a pair that shares several edges only the edge will do: write the position the hint quotes. For arithmetic on an axis, write `at axis <label>` to stand on it, or the distance along the wall the hint quotes.
+**Fix.** Write a position the run can read: `at 600 from start`, `at 600 from end`, `at center`, or an edge through one end of the run (`from a.top` on a vertical run). On a pair that shares several edges only the edge will do: write the position the hint quotes. For arithmetic on an axis, write `at axis <label>` to stand on it, or the distance along the wall the hint quotes. A fix, when one is found, swaps a parallel edge for one through an end of the run (maybe-incorrect), or writes a placeholder.
 
 ```arch static
 room id=a at (0,0) size 4000x3000
@@ -1853,7 +1854,7 @@ door between a and b at 1500 from start width 800   # fixed: the door has a posi
 
 **Cause.** `door|opening … between A and B` stands in the one wall body on the pair's shared edge run (ADR 0028 §5). Two authored halves, or an authored span beside a derived remainder (the `~2` pieces coexistence leaves), give more than one, and the compiler does not choose between them (ADR 0005). `… on <room>.<edge>` stands in one exterior wall body on that edge. An edge can carry several, part exterior and part partition, or exterior either side of a narrower neighbouring room: the position, measured along the whole room edge, says where the opening lands, and it stands in an exterior body when its whole span lies on that body and on no other wall. With an exterior body on the edge, a span that crosses from one body to the next, stands on a partition, stands on no body, or lies on two walls at once is refused here; with none it is `E_OPENING_NO_SHARED_WALL`. A `status demolish` wall still takes up the span it lies on, but it is no exterior body. A polygon room wrapped round its neighbour shares several edges with it, and only `at <mm> from <room>.<edge>`, with an edge that meets one of them at an end, picks one: `at center`, `from start|end`, `at axis <label>` or no position would be a choice the author did not write. `open between A and B` derives one opening on one edge, so such a pair has no single answer there either (ADR 0028 §3). The span points at the clause.
 
-**Fix.** On a room's edge with several walls: write the position the hint quotes for the exterior wall you mean, where it quotes one. On a run with more than one wall: make it one wall (drop the authored wall lying on the derived line, or join the halves), or place the opening `on <wall> at …` on the wall you mean. On a pair that shares several edges: write the position the hint quotes, `at <mm> from <room>.<edge>`, or `at (x,y)` where no room edge picks the one you mean. On an `open between` clause: write the two rooms as one room if no boundary should stand between them, or remove the clause and write the statement the hint quotes, `opening id=o between A and B at <mm> from B.<edge> width <mm>`, or `opening at (x,y) width <mm>` where no room edge picks it (a derived wall has no id to name).
+**Fix.** On a room's edge with several walls: write the position the hint quotes for the exterior wall you mean, where it quotes one (a fix, when one is found, writes each; maybe-incorrect). On a run with more than one wall: make it one wall (drop the authored wall lying on the derived line, or join the halves), or place the opening `on <wall> at …` on the wall you mean. On a pair that shares several edges: write the position the hint quotes, `at <mm> from <room>.<edge>`, or `at (x,y)` where no room edge picks the one you mean. On an `open between` clause: write the two rooms as one room if no boundary should stand between them, or remove the clause and write the statement the hint quotes, `opening id=o between A and B at <mm> from B.<edge> width <mm>`, or `opening at (x,y) width <mm>` where no room edge picks it (a derived wall has no id to name).
 
 ```arch static
 room id=a at (0,0) size 4000x3000
@@ -1878,7 +1879,7 @@ door between a and b at 600 from end width 800   # fixed: one derived wall on th
 
 **Cause.** A relational opening's jamb must stand at least `max(100 mm, host thickness / 2)` from the face of every wall meeting its host, no meeting wall may stand inside its span, and it must lie on its run and on its host wall (ADR 0028 §5). These are the default values and the measure `W_OPENING_AT_JUNCTION` warns with for a hand-placed opening, including its exemption for a cased opening flush (0 mm) with a meeting wall's face; `compile()` reads no lint profile. An `open between` boundary voided over its whole clear span is no meeting wall, unless the host stops at it with nothing carrying on: a jamb there has no wall beside it, and the message names the boundary and, where no wall stands either, the host's free end, because nothing is drawn along it. The author asked for a derived position, so the compiler refuses rather than slide it (ADR 0004, ADR 0005), and names the nearest legal position in the hint. An opening placed `on <wall> at …` is not refused: it warns, as it always did. The span points at the clause.
 
-**Fix.** Use the position the hint names, narrow the opening, or move the wall that meets the run.
+**Fix.** Use the position the hint names, narrow the opening, or move the wall that meets the run. A fix, when one is found (maybe-incorrect), writes the nearest legal position each side.
 
 ```arch static
 room id=a at (0,0) size 4000x3000
@@ -1902,7 +1903,7 @@ door between a and b at 1500 from start width 800   # fixed: a nib each side
 
 **Cause.** `door|opening … between A and B` stands in the wall on the pair's shared edge run, derived or authored, and `… on <room>.<edge>` in the exterior wall on that edge (ADR 0028 §5). With no wall on the run, or with no exterior wall standing on an edge (one partition or several, an `open between` boundary, a `status demolish` wall), there is nothing to stand in; the compiler does not invent one. The span points at the clause.
 
-**Fix.** Add the wall (`walls from rooms` derives every shared edge; or write it by hand on that line), or place the opening `between` the two rooms that share the edge.
+**Fix.** Add the wall (`walls from rooms` derives every shared edge; or write it by hand on that line), or place the opening `between` the two rooms that share the edge. On a room's partition a fix, when one is found, moves a door or an opening `between` the rooms, or a window to the room's one exterior edge (maybe-incorrect), else writes a placeholder.
 
 ```arch static
 room id=a at (0,0) size 4000x3000
@@ -3686,7 +3687,7 @@ dim (300,-100)->(300,100) offset 0   # fixed: room chains, and the thickness by 
 
 **Cause.** A piece of furniture/fixture sits in the clear landing space immediately on either side of a door or a leaf-less (cased) `opening`, so you cannot pass through the doorway even when the leaf is open. The landing runs jamb to jamb and `doorwayLandingMm` deep (300 mm; 450 under `accessibility-advisory`) past each FACE of the wall, where a person standing in the doorway stands (the datum `W_LEAF_ACROSS_DOORWAY` reads too). This is the approach path, distinct from the leaf's swing arc (`W_SWING_OBSTRUCTED`). The warning states the landing depth required, the depth actually left, and the shortfall; a cased opening is named by the rooms it joins. A cased opening up to 1200 mm wide (a doorway's width) is judged as a door is: any piece in its landing blocks it. A wider one, an open-plan join or the full shared edge an `open between` derives, is blocked only when the pieces in its landing leave no 1200 mm stretch of it clear (along the wall, jamb to jamb); its warning states the approach depth and the stretch left. A counter across a cased opening is a servery hatch and is not read, and a `garage` door is a vehicle door, not a pedestrian doorway: the car in front of it is not read.
 
-**Fix.** Move the obstruction clear of the opening by the shortfall the warning quotes (`archlang repair` computes the smallest clearing shift), shrink it by that much on the axis facing the doorway, or move the door or opening along its wall so its landing misses it (an opening `open between` derives has the rooms' shared edge as its span, so there the piece moves).
+**Fix.** Move the obstruction clear of the opening by the shortfall the warning quotes (`archlang repair` computes the smallest clearing shift), shrink it by that much on the axis facing the doorway, or move the door or opening along its wall so its landing misses it (an opening `open between` derives has the rooms' shared edge as its span, so there the piece moves). A fix, when one is found (maybe-incorrect), moves a door or an opening written at a literal position along its wall until its landing and swing are clear.
 
 ```arch static
 door at (6000,3000) width 800
@@ -3859,6 +3860,53 @@ wall id=w exterior thickness 200 { (0,0) (6000,0) (6000,4000) (0,4000) close }
 room id=hall at (0,0) size 6000x4000 label "Hall" uses entry
 door at (3000,4000) width 1200 wall w swing outward
 furniture sofa at (1200,500) size 1800x900   # fixed: the exit's approach is clear
+```
+
+## W_EXTERIOR_DOOR_ONTO_ROOF
+
+*warning* — An exterior door opens over a lower storey's footprint while its storey has another way in.
+
+**Cause.** On a multi-storey plan, a door or cased `opening` to the outside opens over a lower storey's footprint when the point just outside it (one wall thickness off the wall at its centre) lies on one of that storey's rooms, or inside its closed exterior wall rings read even-odd (a courtyard is a hole; a curved ring is not read), edges included, and its own storey draws no `outdoor` surface there. Such a door stops being a way in only when its storey still has another arrival: a door from the ground that opens over no footprint, or a stair, lift or escalator from a storey grounded by such a door. This warning names it then: the storey is walked from its other arrivals, so a room reached only through this door is `W_ROOM_UNREACHABLE`. Where the door is the storey's only arrival it keeps the role it always had (a bridge, an upper flat with no stair) and is not reported. The plan states no ground level, so the footprint may be a roof or the part of a lower storey that reaches further into a hill: if that is a roof, nobody arrives through the door. A connector whose outward side cannot be told (a room on both sides, or on neither) is not reported.
+
+**Fix.** Draw a deck or balcony there if it is a roof, or the ground (`outdoor paving`, `lawn`) if the site meets this storey there; or make it a window.
+
+```arch static
+plan "P" {
+  units mm
+  level 1 {
+    wall id=s exterior thickness 200 { (0,0) (6000,0) (6000,5000) (0,5000) close }
+    room id=a at (0,0) size 6000x5000 label "Hall"
+    door id=front on s at 14000 width 900
+    stair id=st at (2000,200) size 2600x900 dir up
+  }
+  level 2 {
+    wall id=s exterior thickness 200 { (0,0) (6000,0) (6000,3000) (0,3000) close }
+    room id=b at (0,0) size 6000x3000 label "Study"
+    door id=d_out on s at 12000 width 900   # lint: a door onto the roof of level 1
+    stair id=st at (2000,200) size 2600x900 dir down
+  }
+}
+```
+
+**Fixed.**
+
+```arch static
+plan "P" {
+  units mm
+  level 1 {
+    wall id=s exterior thickness 200 { (0,0) (6000,0) (6000,5000) (0,5000) close }
+    room id=a at (0,0) size 6000x5000 label "Hall"
+    door id=front on s at 14000 width 900
+    stair id=st at (2000,200) size 2600x900 dir up
+  }
+  level 2 {
+    wall id=s exterior thickness 200 { (0,0) (6000,0) (6000,3000) (0,3000) close }
+    room id=b at (0,0) size 6000x3000 label "Study"
+    door id=d_out on s at 12000 width 900
+    outdoor deck at (0,3000) size 6000x2000 label "Roof terrace"   # fixed: a terrace on that roof
+    stair id=st at (2000,200) size 2600x900 dir down
+  }
+}
 ```
 
 ## W_EXTERIOR_RING_OPEN
