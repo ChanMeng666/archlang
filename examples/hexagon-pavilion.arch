@@ -165,10 +165,10 @@ plan "Hexagon Pavilion" {
   furniture id=f_tea   table at (3850,5550)   size 900x900  label "Tea"   in g_nw
   furniture id=f_bench bench at (12950,8450)  size 1400x450 label "Bench" in g_se
   furniture id=f_seat  bench at (9450,12000)  size 1400x450 label "Bench" in g_s
-  furniture chair at (13375,5050) size 450x450 in g_ne
-  furniture chair at (12650,5775) size 450x450 rotate 270 in g_ne
-  furniture chair at (4075,5050)  size 450x450 in g_nw
-  furniture chair at (3350,5775)  size 450x450 rotate 270 in g_nw
+  furniture chair at (13350,5000) size 500x500 facing f_read in g_ne
+  furniture chair at (12600,5750) size 500x500 facing f_read in g_ne
+  furniture chair at (4050,5000) size 500x500 facing f_tea  in g_nw
+  furniture chair at (3300,5750) size 500x500 facing f_tea  in g_nw
 
   title {
     project "Hexagon Pavilion"

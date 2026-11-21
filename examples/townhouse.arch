@@ -102,9 +102,9 @@ plan "Townhouse" {
     furniture stove        against wall shell segment 3 offset 2100 in r_kitchen
     furniture fridge       against wall shell segment 3 offset 3200 in r_kitchen
     furniture counter      against wall shell segment 3 offset 500 in r_kitchen
-    furniture table in r_kitchen centered size 1400x900 label "Table"
-    furniture chair at (r_kitchen.cx - 225, r_kitchen.cy - 950) size 450x450 in r_kitchen
-    furniture chair at (r_kitchen.cx - 225, r_kitchen.cy + 500) size 450x450 rotate 180 in r_kitchen
+    furniture id=t_dining table in r_kitchen centered size 1400x900 label "Table"
+    furniture chair at (r_kitchen.cx - 250, r_kitchen.cy - 1000) size 500x500 facing t_dining in r_kitchen
+    furniture chair at (r_kitchen.cx - 250, r_kitchen.cy + 500)  size 500x500 facing t_dining in r_kitchen
 
     stair id=st at (4150,2600) size 900x3200 dir up
   }

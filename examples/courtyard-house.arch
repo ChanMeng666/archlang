@@ -164,9 +164,9 @@ plan "Courtyard House" {
 
   # ---- furniture ------------------------------------------------------------
   furniture sofa  in r_living anchor top flush size 2400x900 label "Sofa"
-  furniture table in r_living centered size 1600x900 label "Table"
+  furniture id=t_living table in r_living centered size 1600x900 label "Table"
 
-  furniture table in r_dining centered size 1600x900 label "Dining table"
+  furniture id=t_dining table in r_dining centered size 1600x900 label "Dining table"
 
   # The kitchen run rides the shell's north segment; `offset` is the distance of each
   # piece's CENTRE along it from (0,0), and the footprints come from the catalogue.
@@ -207,14 +207,15 @@ plan "Courtyard House" {
   # would ask which room it belongs to simply does not apply to it.
   furniture planter at (7250,4750) size 1500x1500 label "Planter"
 
-  # Chairs at the two tables, measured from the room centre the centred tables stand on,
-  # and appended so no earlier piece's auto id moves.
-  furniture chair at (r_living.cx - 600, r_living.cy + 500) size 450x450 rotate 180 in r_living
-  furniture chair at (r_living.cx + 150, r_living.cy + 500) size 450x450 rotate 180 in r_living
-  furniture chair at (r_dining.cx - 500, r_dining.cy - 950) size 450x450 in r_dining
-  furniture chair at (r_dining.cx + 300, r_dining.cy - 950) size 450x450 in r_dining
-  furniture chair at (r_dining.cx - 500, r_dining.cy + 500) size 450x450 rotate 180 in r_dining
-  furniture chair at (r_dining.cx + 300, r_dining.cy + 500) size 450x450 rotate 180 in r_dining
+  # Chairs at the two centred tables, each 50 mm off a long side and placed from its room's
+  # centre; `facing` turns each to its table. The living-room table has its two on the side
+  # away from the sofa, the dining table two on each side.
+  furniture chair at (r_living.cx - 650, r_living.cy + 500) size 500x500 facing t_living in r_living
+  furniture chair at (r_living.cx + 150, r_living.cy + 500) size 500x500 facing t_living in r_living
+  furniture chair at (r_dining.cx - 650, r_dining.cy - 1000) size 500x500 facing t_dining in r_dining
+  furniture chair at (r_dining.cx + 150, r_dining.cy - 1000) size 500x500 facing t_dining in r_dining
+  furniture chair at (r_dining.cx - 650, r_dining.cy + 500)  size 500x500 facing t_dining in r_dining
+  furniture chair at (r_dining.cx + 150, r_dining.cy + 500)  size 500x500 facing t_dining in r_dining
 
   # The courtyard's ground. Walls close it on every side, so without a surface it would be
   # walled floor that belongs to nothing; `outdoor` says it is open air, not a room.

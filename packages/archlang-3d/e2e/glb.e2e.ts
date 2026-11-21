@@ -4,7 +4,8 @@
  *   1. every corpus plan passes S1–S4: V-SCH-01, V-GEO-02, V-GLTF-01 (Khronos glTF-Validator, 0
  *      errors / 0 warnings) and V-GLTF-02; the GLB's node set is the Mesh3D's and the viewer's;
  *   2. laneway-house's element counts per kind are the hand-built model's (6 walls, 3 floors,
- *      4 doors, 4 windows, 12 furniture; V-GEO-04 8/8 is `test/mesh.test.ts`'s opening probes);
+ *      4 doors, 4 windows, 14 furniture since its table gained two chairs (12 before); V-GEO-04 8/8 is
+ *      `test/mesh.test.ts`'s opening probes);
  *   3. V-DET-01: three builds, one SHA-256, for every corpus plan;
  *   4. `build --json` answers plan §7.2's contract, and exit codes 0/1/2/3 hold, in-process and
  *      through a real process;
