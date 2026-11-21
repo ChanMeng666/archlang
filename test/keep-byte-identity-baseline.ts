@@ -10,7 +10,7 @@
  * PR legitimately moves a hashed output (never keep code), the table is re-taken by the generator, the
  * reason recorded below and the moved files listed in that commit's message.
  *
- * Taken: AF9 phase A review round 1 (feat/af9-phase-a on main 35d97da0): the 17 plans that raise W_DOORWAY_BLOCKED move in validate --json by the catalogue fix text that now says when a fix is attached, and 3 of them (first-contact 1-apartment, 5-townhouse, 2026-10-27-rerun-arm1/2-house) also by the doorway move in lint(); no step count moved
+ * Taken: CV13 split (RM-D73), red team 1: chairs 500 x 500, on-grid, centred, turned with facing; laneway-house without a let (the playground's default plan draws no knobs); example source edited; on feat/cv13-example-chairs
  */
 
 /** `[path from the repository root, SHA-256 of the payload, evaluation steps]`, sorted by root. */
@@ -33,8 +33,8 @@ export const KEEP_WEAK_BASELINE: readonly (readonly [string, string, number])[] 
   ],
   [
     "examples/bungalow.arch",
-    "2186d32a3a818a5f14e4842c78ccd8e46c82a586b856fcd3b39659d0c157804c",
-    777,
+    "935332fb935d4b119dae90c2d5137c38cdb253dae99ff5d0a03ef78eb5be2cd0",
+    911,
   ],
   [
     "examples/classroom-block.arch",
@@ -58,8 +58,8 @@ export const KEEP_WEAK_BASELINE: readonly (readonly [string, string, number])[] 
   ],
   [
     "examples/courtyard-house.arch",
-    "35be9f1cc4882278e7c3b7335214bd44ebb5283539317688cd6e3dfa218355c9",
-    1277,
+    "987f44da75e381803464e78c2ed184aa434c3568c4d9fc7007b571c682d3ac82",
+    1681,
   ],
   [
     "examples/furnished-flat.arch",
@@ -78,13 +78,13 @@ export const KEEP_WEAK_BASELINE: readonly (readonly [string, string, number])[] 
   ],
   [
     "examples/garden-loft.arch",
-    "d95c2d2ddba8c21ffd4b0a1e34c90db9f22287062afbf5f1b2056c65bfb068c5",
-    411,
+    "3063592f5b888f27b7931b5a2a57f9e89b06f4457edff6c072fa9cfb5e6bb54d",
+    562,
   ],
   [
     "examples/hexagon-pavilion.arch",
-    "6d2a5532474cec059ff104741cd0be727ee6edd9587eac028c23a61e8484705a",
-    773,
+    "8cf0e3ead96278d67bbbbb7626df0807660f7e97bc75a5300cacbcade5671632",
+    1009,
   ],
   [
     "examples/hillside-villa.arch",
@@ -103,8 +103,8 @@ export const KEEP_WEAK_BASELINE: readonly (readonly [string, string, number])[] 
   ],
   [
     "examples/laneway-house.arch",
-    "ead935d76442f16be213930438fda93925317bbbc38a17b3dc1ee78203fc8918",
-    535,
+    "6837496815361092d5eb14e66576aade7badced5637288be663d5c609b343566",
+    659,
   ],
   [
     "examples/library.arch",
@@ -153,8 +153,8 @@ export const KEEP_WEAK_BASELINE: readonly (readonly [string, string, number])[] 
   ],
   [
     "examples/remodel.arch",
-    "78d975243922030dd2607c02736450c3bb8d1b7e10271de51e4e0303feb67cc6",
-    1293,
+    "b03b9ca5d431b5e5d736bc1a880edb65e487abfb4c95079e056a3cee53bf6be6",
+    1413,
   ],
   [
     "examples/sheet-notes.arch",
@@ -183,8 +183,8 @@ export const KEEP_WEAK_BASELINE: readonly (readonly [string, string, number])[] 
   ],
   [
     "examples/townhouse.arch",
-    "81094418b17606a6019dc61159342188789c43c9e6e4928194e0f8dff54ec92e",
-    3824,
+    "54712a4adc40a71a775a73dc109008332ba687943c3bfd72f2691a4a824adcfd",
+    4048,
   ],
   [
     "examples/transit-hall.arch",
@@ -198,8 +198,8 @@ export const KEEP_WEAK_BASELINE: readonly (readonly [string, string, number])[] 
   ],
   [
     "examples/two-bed.arch",
-    "7889935300d0e5b6a1a30e9882de6e8bebd1d9cb7adfc731b0333c5f4e788ec9",
-    1312,
+    "66f1df3dc5df461789a3ed6ee73f0a35263885e257a23123ce920a56aa7584ac",
+    1418,
   ],
   [
     "examples/two-storey.arch",

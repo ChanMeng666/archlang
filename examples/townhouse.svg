@@ -58,6 +58,10 @@
 <line x1="714" y1="10500" x2="714" y2="9900" stroke="#a8a29a" stroke-width="6.5"/>
 <path d="M 1910.8,8400 L 3289.2,8400 A 10.8 10.8 0 0 1 3300,8410.8 L 3300,9289.2 A 10.8 10.8 0 0 1 3289.2,9300 L 1910.8,9300 A 10.8 10.8 0 0 1 1900,9289.2 L 1900,8410.8 A 10.8 10.8 0 0 1 1910.8,8400 Z" fill="#f4f2ee" stroke="#6c6864" stroke-width="9"/>
 <path d="M 1934.2,8427 L 3265.8,8427 A 7.2 7.2 0 0 1 3273,8434.2 L 3273,9265.8 A 7.2 7.2 0 0 1 3265.8,9273 L 1934.2,9273 A 7.2 7.2 0 0 1 1927,9265.8 L 1927,8434.2 A 7.2 7.2 0 0 1 1934.2,8427 Z" fill="none" stroke="#a8a29a" stroke-width="6.5"/>
+<path d="M 2440,7890 L 2760,7890 A 60 60 0 0 1 2820,7950 L 2820,8290 A 60 60 0 0 1 2760,8350 L 2440,8350 A 60 60 0 0 1 2380,8290 L 2380,7950 A 60 60 0 0 1 2440,7890 Z" fill="#ffffff" stroke="#6c6864" stroke-width="9"/>
+<path d="M 2380,7850 L 2820,7850 A 30 30 0 0 1 2850,7880 A 30 30 0 0 1 2820,7910 L 2380,7910 A 30 30 0 0 1 2350,7880 A 30 30 0 0 1 2380,7850 Z" fill="#f4f2ee" stroke="#6c6864" stroke-width="9"/>
+<path d="M 2760,9810 L 2440,9810 A 60 60 0 0 1 2380,9750 L 2380,9410 A 60 60 0 0 1 2440,9350 L 2760,9350 A 60 60 0 0 1 2820,9410 L 2820,9750 A 60 60 0 0 1 2760,9810 Z" fill="#ffffff" stroke="#6c6864" stroke-width="9"/>
+<path d="M 2820,9850 L 2380,9850 A 30 30 0 0 1 2350,9820 A 30 30 0 0 1 2380,9790 L 2820,9790 A 30 30 0 0 1 2850,9820 A 30 30 0 0 1 2820,9850 Z" fill="#f4f2ee" stroke="#6c6864" stroke-width="9"/>
 </g>
 <g id="A-FLOR-STRS" inkscape:groupmode="layer" inkscape:label="A-FLOR-STRS">
 <polygon points="4150,2600 5050,2600 5050,5800 4150,5800" fill="#f4f2ee" stroke="#6c6864" stroke-width="9"/>
@@ -119,8 +123,8 @@
 <text x="1600" y="2457.5" font-size="125" fill="#7a7a7a" text-anchor="middle" dominant-baseline="central">14.7 m²</text>
 <text x="1600" y="5765" font-size="175" fill="#222222" text-anchor="middle" dominant-baseline="central" font-weight="600">Cloakroom</text>
 <text x="1600" y="5957.5" font-size="125" fill="#7a7a7a" text-anchor="middle" dominant-baseline="central">7.7 m²</text>
-<text x="2600" y="7705" font-size="175" fill="#222222" text-anchor="middle" dominant-baseline="central" font-weight="600">Kitchen/Dining</text>
-<text x="2600" y="7897.5" font-size="125" fill="#7a7a7a" text-anchor="middle" dominant-baseline="central">19.2 m²</text>
+<text x="2600" y="7335" font-size="175" fill="#222222" text-anchor="middle" dominant-baseline="central" font-weight="600">Kitchen/Dining</text>
+<text x="2600" y="7527.5" font-size="125" fill="#7a7a7a" text-anchor="middle" dominant-baseline="central">19.2 m²</text>
 </g>
 <g id="A-ANNO-DIMS" inkscape:groupmode="layer" inkscape:label="A-ANNO-DIMS">
 <line x1="-150" y1="10850" x2="-150" y2="11000" stroke="#0E5484" stroke-width="6.3"/>

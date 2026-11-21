@@ -45,13 +45,19 @@ plan "Laneway House" {
   # table sit visibly on top rather than hiding it — anchored to the room, like
   # everything else here, never a coordinate.
   furniture rug   in r_live anchor bottom-left inset 400 size 2800x3400
-  furniture table  in r_live centered size 1300x900 label "Table"
+  furniture id=t_dining table in r_live centered size 1300x900 label "Table"
   furniture sofa   in r_live anchor bottom-left flush inset 250 size 900x2000  label "Sofa"
   furniture bed    against r_bed.right size 1500x2000 label "Bed"
   furniture robe   in r_bed  anchor top-left     flush inset 200 size 1800x600  label "Wardrobe"
   furniture shower in r_bath anchor top-right    flush size 900x900
   furniture wc     against r_bath.bottom offset 750 size 400x700
   furniture basin  in r_bath anchor bottom-right flush size 600x450
+  # The chairs are anchored to the room too, on the centred table's axis, 50 mm off its long
+  # sides: their insets are the room's centre less and plus half the table's 900 mm depth, so a
+  # deeper table needs these two numbers changed with it. (A `let` would carry them, but this
+  # is the playground's default plan, and its built-in page draws no knobs.)
+  furniture chair  in r_live anchor top inset r_live.cy - r_live.top - 450 - 550 size 500x500 facing t_dining
+  furniture chair  in r_live anchor top inset r_live.cy - r_live.top + 450 + 50 size 500x500 facing t_dining
 
   title { project "Laneway House" drawn_by "ArchLang" date "2026-08-16" }
 }

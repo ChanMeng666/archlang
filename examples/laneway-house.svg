@@ -119,6 +119,10 @@
 <circle cx="7100" cy="2398.25" r="15.75" fill="#a8a29a" stroke="#a8a29a" stroke-width="8.9"/>
 <line x1="7100" y1="2398.25" x2="7100" y2="2310.5" stroke="#a8a29a" stroke-width="8.9"/>
 <circle cx="7100" cy="2173.7" r="13.5" fill="#a8a29a" stroke="#a8a29a" stroke-width="8.9"/>
+<path d="M 1940,2290 L 2260,2290 A 60 60 0 0 1 2320,2350 L 2320,2690 A 60 60 0 0 1 2260,2750 L 1940,2750 A 60 60 0 0 1 1880,2690 L 1880,2350 A 60 60 0 0 1 1940,2290 Z" fill="#ffffff" stroke="#6c6864" stroke-width="12.32"/>
+<path d="M 1880,2250 L 2320,2250 A 30 30 0 0 1 2350,2280 A 30 30 0 0 1 2320,2310 L 1880,2310 A 30 30 0 0 1 1850,2280 A 30 30 0 0 1 1880,2250 Z" fill="#f4f2ee" stroke="#6c6864" stroke-width="12.32"/>
+<path d="M 2260,4210 L 1940,4210 A 60 60 0 0 1 1880,4150 L 1880,3810 A 60 60 0 0 1 1940,3750 L 2260,3750 A 60 60 0 0 1 2320,3810 L 2320,4150 A 60 60 0 0 1 2260,4210 Z" fill="#ffffff" stroke="#6c6864" stroke-width="12.32"/>
+<path d="M 2320,4250 L 1880,4250 A 30 30 0 0 1 1850,4220 A 30 30 0 0 1 1880,4190 L 2320,4190 A 30 30 0 0 1 2350,4220 A 30 30 0 0 1 2320,4250 Z" fill="#f4f2ee" stroke="#6c6864" stroke-width="12.32"/>
 </g>
 <g id="A-WALL" inkscape:groupmode="layer" inkscape:label="A-WALL">
 <path d="M -100,-100 L 1650,-100 L 1650,100 L 100,100 L 100,1800 L -100,1800 Z M -100,3000 L 100,3000 L 100,6400 L 200,6400 L 200,6600 L -100,6600 Z M 1200,6400 L 1800,6400 L 1800,6600 L 1200,6600 Z M 2550,-100 L 7600,-100 L 7600,1200 L 7400,1200 L 7400,100 L 4250,100 L 4250,500 L 4150,500 L 4150,100 L 2550,100 Z M 3600,6400 L 4150,6400 L 4150,6000 L 4250,6000 L 4250,6400 L 5050,6400 L 5050,6600 L 3600,6600 Z M 4150,1300 L 4250,1300 L 4250,2450 L 7400,2450 L 7400,1800 L 7600,1800 L 7600,6600 L 6650,6600 L 6650,6400 L 7400,6400 L 7400,2550 L 4250,2550 L 4250,5200 L 4150,5200 Z" fill="url(#poche)" fill-rule="nonzero"/>
@@ -168,8 +172,8 @@
 <polygon points="7600,1160 7640,1160 7640,1840 7600,1840" fill="none" stroke="#1b1b1b" stroke-width="12.32"/>
 </g>
 <g id="A-ANNO-TEXT" inkscape:groupmode="layer" inkscape:label="A-ANNO-TEXT">
-<text x="2100" y="2228.8" font-size="231" fill="#222222" text-anchor="middle" dominant-baseline="central" font-weight="600">Living / Kitchen</text>
-<text x="2100" y="2482.9" font-size="169.4" fill="#7a7a7a" text-anchor="middle" dominant-baseline="central">27.3 m²</text>
+<text x="2100" y="1253.8" font-size="231" fill="#222222" text-anchor="middle" dominant-baseline="central" font-weight="600">Living / Kitchen</text>
+<text x="2100" y="1507.9" font-size="169.4" fill="#7a7a7a" text-anchor="middle" dominant-baseline="central">27.3 m²</text>
 <text x="5850" y="1203.8" font-size="231" fill="#222222" text-anchor="middle" dominant-baseline="central" font-weight="600">Bath</text>
 <text x="5850" y="1457.9" font-size="169.4" fill="#7a7a7a" text-anchor="middle" dominant-baseline="central">8.3 m²</text>
 <text x="5850" y="5653.8" font-size="231" fill="#222222" text-anchor="middle" dominant-baseline="central" font-weight="600">Bedroom</text>

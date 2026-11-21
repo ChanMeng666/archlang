@@ -93,7 +93,7 @@ plan "Garden Courtyard House" {
   furniture stove against r_kitch.top offset 3900 size 600x600 in r_kitch
   furniture counter against r_kitch.top offset 4525 size 650x600 in r_kitch
   furniture pantry against r_kitch.right offset 2500 size 1200x600 in r_kitch
-  furniture table in r_kitch anchor bottom inset 900 size 1600x900 label "Table"
+  furniture id=t_dining table in r_kitch anchor bottom inset 1400 size 1600x900 label "Table"
 
   # ---- the family bath and the bedroom ----
   furniture bathtub against r_bath.right offset 1250 size 1700x700 in r_bath
@@ -124,6 +124,13 @@ plan "Garden Courtyard House" {
   furniture raised_bed at (1000,13000) size 2400x1200
   furniture raised_bed at (1000,14600) size 2400x1200
   furniture slide at (16000,12600) size 800x3000
+
+  # Back in the kitchen: the two chairs at its table, each 50 mm off a long side and placed from
+  # the room's edges, with a pull-out's room to the counters behind one and the south wall behind
+  # the other. Their 2850 and 1350 are the table's inset (1400) plus its depth (900) plus 550, and
+  # its inset less 50: a moved or deeper table needs these two numbers changed with it.
+  furniture chair at (r_kitch.cx - 250, r_kitch.bottom - 2850) size 500x500 facing t_dining in r_kitch
+  furniture chair at (r_kitch.cx - 250, r_kitch.bottom - 1350) size 500x500 facing t_dining in r_kitch
 
   title {
     project "Garden Courtyard House"

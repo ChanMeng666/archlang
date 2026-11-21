@@ -135,9 +135,11 @@ plan "Bungalow" {
   furniture counter in r_laundry anchor bottom flush size 1400x600
 
   furniture sofa  at (600,2600)  size 2200x900  label "Sofa"
-  furniture table at (3600,1800) size 1400x900  label "Table"
+  furniture id=t_dining table at (3600,1800) size 1400x900 label "Table"
   furniture bed   against r_bed1.left size 1500x2000 label "Bed"
   furniture bed   against r_bed2.left size 1500x2000 label "Bed"
+  furniture chair at (4050,1250) size 500x500 facing t_dining in r_living
+  furniture chair at (4050,2750) size 500x500 facing t_dining in r_living
 
   # ---- the eaves ------------------------------------------------------------
   # A bungalow is mostly roof, and on a hot plot it is the eave that shades the north

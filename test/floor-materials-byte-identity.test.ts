@@ -146,21 +146,21 @@ const BASELINE: [string, string][] = [
   ["e33e9923337208c91bf7093a0fa63040f132db455f3e3e85d584740a18a8f611", "examples/accessible.arch"],
   ["3471b341d64b36f8ebd0d3786f07d8a912f610d324eaea35d938375e9c647d1f", "examples/aquarium.arch"],
   ["90680592ce7aef9b99598ec8e547044bedf53cebf2edbf890d7fac8db64763ef", "examples/attached.arch"],
-  ["6f42bf9ecde9ce3263c295e9c5a38b20f76b3f4c4da22f1ff439e37453d03952", "examples/bungalow.arch"],
+  ["199a5fd1b547984cb93e2302d7d896516c3ab4ebb5b09266f5d78c1f24480cee", "examples/bungalow.arch"], // CV13 (was 6f42bf9e): example source edited (chairs added)
   ["4f7bf7282832cdf101db083d17d436221eeb0ac7002d0289e20ce3a7864da163", "examples/classroom-block.arch"],
   ["b6cd385c2dd3c10ad400acb22f9147c2f308a6e7c2e5657f90ec692b35f251d5", "examples/clinic.arch"],
   ["eaa167d41d7272aaae9866cfd38f24392fb9cb768640f0c8efb0d13cb5fac7b0", "examples/corner-cafe.arch"],
   ["c6b64e3fa5815d6b9cbeb2e272f64c23d973fbb059c83ea6e57cc41d9b7195f2", "examples/courtyard-family.arch"], // CO.1: the example writes its snapped `against` size out (+14 bytes), so only spans and the steps of the written clauses (+2) moved; see the header (was 64e5593c)
-  ["e9866c6c03d26af0b56f67a753f6e15fcca3972a94b91c6d875a6a8c07e96582", "examples/courtyard-house.arch"],
+  ["5f557f7ac891e6d732cbcc24ac46b5b337beda47a890eba2528dc8998f8e1efb", "examples/courtyard-house.arch"], // CV13 (was e9866c6c): example source edited (chairs added)
   ["fcb5a98c9bf892177daef2174831cb56be4314d6c9ac66526b1046cd6618438b", "examples/furnished-flat.arch"],
   ["5ebdd5ec17e7e29eeab8413c31506ebca7b1afc26168d4455e29ddf45d4f65a5", "examples/gallery-l.arch"],
   ["6d5955224cdfaff62510ebf2f5a676098617e78f2938c962bac59434d83fb05d", "examples/garden-house.arch"], // RM1.3b, see ./byte-identity-baseline.ts; RM1.3b overlay, see ./byte-identity-baseline.ts; CO.1: the example writes its 2 snapped `against` sizes out (+26 bytes), so only spans and the steps of the written clauses (+8) moved; see the header (was dd673d71); RM9.2, see ./byte-identity-baseline.ts
-  ["e9080ba7d1fced6e3d26f8bf9d18149ae781549f5343156511b62ecd6e578050", "examples/garden-loft.arch"],
-  ["6544b4c8a8dd7e8a419f1beb6ab9e3daed19bc6a972a2bb493e361dc29f05b02", "examples/hexagon-pavilion.arch"],
+  ["8be510d3825258cde0ae8e0030e44a2b76be0741860e9cc20da7720e5648586a", "examples/garden-loft.arch"], // CV13 (was e9080ba7): example source edited (chairs added)
+  ["45e2de363cdbe22f1ab55d40d968083c2181571320c028f78443aa65e80a2558", "examples/hexagon-pavilion.arch"], // CV13 (was 6544b4c8): example source edited (chairs added)
   ["c9f89e9a93be96447f124e7eb52ca32594d06c8e9341e0438a74e3698992ce43", "examples/hillside-villa.arch"], // RM1.3b, see ./byte-identity-baseline.ts; RM1.3b overlay, see ./byte-identity-baseline.ts; CO.1: the example writes its 3 snapped `against` sizes out (+40 bytes), so only spans and the steps of the written clauses (+12) moved; see the header (was 6a0a3529); RM9.2, see ./byte-identity-baseline.ts
   ["943cb8dbb7c0438d4f7d62160dafba83a6861b912a5c8cbf70db47e11ec80be7", "examples/imports.arch"],
   ["5ab98e5edbb819a917045eeeec6448af5fbb7d08837f644769b75274e744fbc8", "examples/knob-flat.arch"],
-  ["9613d6242ead61c0b7c42a45cbd3f3ac348c3fed0e1045511bcddf27b7b7cf3d", "examples/laneway-house.arch"],
+  ["d454b14329c3e568cb56b2f00143521457a1c90a2095ce46aca979651e5091a9", "examples/laneway-house.arch"], // CV13 (was 9613d624): example source edited (chairs added)
   ["84bf35da4ec0c7f7bd5d522951d07a34e0d69f870fa86a6cacc2b24ebf5a67b8", "examples/library.arch"],
   ["cff60bd4ed0f2ed238f0837b5d0a51193d69f1cc46956891b8b5af3db846c21f", "examples/materials.arch"],
   ["289fb16b2c4e880275b772afb4a730decc12702d72cb286b0fcd7ac97579be97", "examples/museum-wing.arch"],
@@ -170,15 +170,15 @@ const BASELINE: [string, string][] = [
   ["3db8c2ad95fdbed22f538d47519d500e27e08e5a600dfbe18292ed99ff24b169", "examples/parametric.arch"],
   ["ca028af82667a10d0dd44ed37f9a7f708f5ee8be4b82154d0e1d81397f353754", "examples/practice-office.arch"],
   ["02918cde41f10b126dee8f4a0a847c25168eead83c4be59553b88acabb47bd00", "examples/relational.arch"],
-  ["0e04f3b717d1c6938f1013acb953abdbbb8c154f6b6293b2a1ae20559b6a6ecc", "examples/remodel.arch"], // CO.1: the example writes its snapped `against` size out (+13 bytes), so only spans and the steps of the written clauses (+2) moved; see the header (was a4a2014e)
+  ["478656af7841418f829fad4541e079203df12d9afc77e74a00a3500e42e6748b", "examples/remodel.arch"], // CO.1: the example writes its snapped `against` size out (+13 bytes), so only spans and the steps of the written clauses (+2) moved; see the header (was a4a2014e); CV13 (was 0e04f3b7): example source edited (chairs added)
   ["76ddb8d12efbead64517024344615685c65b65652b9ab457851117796db72f6d", "examples/sheet-notes.arch"],
   ["f6a6a81fa57cd5183bfbb7c607bdb9599ddf2eebfbc657c0cc4e69c7c0bcae7a", "examples/studio.arch"],
   ["bd6056a84ec5d55dee071e9101fea8d157ce72e0830211a1f66b11291f0e0ef7", "examples/terrace-row.arch"],
   ["503b89ecf0ca78f6c1100f1fd059c0b63080a9bdb3b9401c675c74971816cd21", "examples/themed.arch"],
   ["1a78c5532e6c4bb783da712f6f27c83f5c771765278ec8552940d4f73e32beaa", "examples/tiny-house.arch"],
-  ["efcb311afa72e4a4806bcca5dde1de40eee02442538b9291bc63268f9322403b", "examples/townhouse.arch"], // RM1.3b overlay, see ./byte-identity-baseline.ts; RM9.2, see ./byte-identity-baseline.ts
+  ["8643a4e35b560b5fa8c9d4acc99281dc6082d4b8b8c77318a8572d83f13e38e1", "examples/townhouse.arch"], // RM1.3b overlay, see ./byte-identity-baseline.ts; RM9.2, see ./byte-identity-baseline.ts; CV13 (was efcb311a): example source edited (chairs added)
   ["0fd9ba46a50b7e9438b7f3be5472c52c44a58219a29f22b493f3bd653766a971", "examples/transit-hall.arch"],
-  ["ea10c4f2ef02a4edf1e91ad6b5782839346ad80f1aaa595f4a6573b79921ce65", "examples/two-bed.arch"], // CO.1: the example writes its snapped `against` size out (+13 bytes), so only spans and the steps of the written clauses (+2) moved; see the header (was f220acec)
+  ["6fa4bd1d0de5cc6aa3bc3434687929ece4ac4052356462caecb5e55109480d6a", "examples/two-bed.arch"], // CO.1: the example writes its snapped `against` size out (+13 bytes), so only spans and the steps of the written clauses (+2) moved; see the header (was f220acec); CV13 (was ea10c4f2): example source edited (chairs added)
   ["9c3489d30cb4bcdea2d3ef3272820bba64eee730f4123585e19f4be3a440ccf3", "examples/two-storey.arch"], // RM1.3b overlay, see ./byte-identity-baseline.ts; RM9.2, see ./byte-identity-baseline.ts
   ["429d048d147ff95c56bf15fe655fb6a2e7870b21b111d82109e7d9fbc25a8655", "test/fixtures/axes-grid.arch"],
   ["8b201a108d4f8cf901579b200c92b809000d77b9550cda3e092994c09fbba1d5", "test/fixtures/chain30.arch"],
@@ -199,14 +199,14 @@ const BASELINE: [string, string][] = [
   ["ee9f057b82b717e4b7c0753daef62a2baa9b3df5c5d8aa617079c3dedce0081e", "test/fixtures/zones-wings.arch"],
   ["61565f3850374e2db98b80a12890579d8899928f2e32c7ddc45fb5b43169f7c9", "test/walls-from-rooms/relational.arch"], // AF9 (was edc62a57): under `accessibility-advisory` (a 450 mm landing) `W_DOORWAY_BLOCKED` gains a maybe-incorrect move of the door; SVG, describe(), the diagnostics, the default lint() and the steps are unchanged, and with that fix taken out the old digest returns
   ["beff13e3b3255103bc80d0698d9bf7b9052f66bf78bf8d0626033bfeeb02adc5", "test/walls-from-rooms/studio.arch"],
-  ["4a1ab38ed28c696ef0c713c4227dd30efb828fb60a7d3dd5b4b4e1d0e40f68ef", "test/walls-from-rooms/two-bed.arch"], // CO.1: +1 W_GRID_SNAPPED (a sizeless `against` piece on a grid), steps +64 = 1 x 64; see the header (was cd33c0b4)
+  ["ede95165106807f3d77fd531424fea9645eaedddf4078c98907567eb5aba5cdd", "test/walls-from-rooms/two-bed.arch"], // CO.1: +1 W_GRID_SNAPPED (a sizeless `against` piece on a grid), steps +64 = 1 x 64; see the header (was cd33c0b4); CV13 (was 4a1ab38e): twin source edited (the two chairs examples/two-bed gained)
   [
     "ef6b4cf52454c07cdd3c22449f6545da111fb35e7f1085d1ec15cd8c94903e4b",
     "test/walls-from-rooms/widen-after-authored.arch",
   ],
   ["218c72e6d0d121539ce5514c3cd77c9c27e13f0cbaf3a6d9b49ca20c8d502e62", "test/walls-from-rooms/widen.arch"],
   ["beff13e3b3255103bc80d0698d9bf7b9052f66bf78bf8d0626033bfeeb02adc5", "plans:studio-twin"],
-  ["4a1ab38ed28c696ef0c713c4227dd30efb828fb60a7d3dd5b4b4e1d0e40f68ef", "plans:two-bed-twin"], // CO.1: +1 W_GRID_SNAPPED (a sizeless `against` piece on a grid), steps +64 = 1 x 64; see the header (was cd33c0b4)
+  ["ede95165106807f3d77fd531424fea9645eaedddf4078c98907567eb5aba5cdd", "plans:two-bed-twin"], // CO.1: +1 W_GRID_SNAPPED (a sizeless `against` piece on a grid), steps +64 = 1 x 64; see the header (was cd33c0b4); CV13 (was 4a1ab38e): twin source edited (the two chairs examples/two-bed gained)
   ["218c72e6d0d121539ce5514c3cd77c9c27e13f0cbaf3a6d9b49ca20c8d502e62", "plans:widen-4000"],
   ["f472897ea01f13b118a0efeb189ffce7083a9629f880d9a6b9b267ad7becb10e", "plans:widen-4500"],
   ["ebc0bb540123325ca7eb8fe4fe12a3e5aa76c78cd6d451cb6a235118c92bba7a", "plans:courtyard"],

@@ -42,5 +42,11 @@ export const PIN_GENERATOR = "archlang-3d 0.0.0";
  * The writer names a part's own material only where the shared palette has one
  * (`bodyMaterialName`); with the 20 nodes taken out of the Mesh3D the GLB hashes to fe9df0cb…
  * exactly. 112 436 → 137 844 bytes.
+ *
+ * Moved by RM9.6 CV13 split (PR #996, ruling RM-D73): the example source was edited, laneway-house gains
+ * two chairs at its table (`chair_13`, `chair_14`) (was 73182a46…) with the Mesh3D alone: two `furniture:chair_*` nodes; the
+ * writer is unchanged. Its table is named `t_dining` (was the auto id `table_6`), so the chairs can
+ * face it. With those two nodes and the chair's two ledger rows taken out of the Mesh3D and the table's
+ * id put back, the GLB hashes to 73182a46… exactly.
  */
-export const LANEWAY_GLB_SHA256 = "73182a460fce3840ba05a9d74e62f504311354d443617b309e7461f13999917f";
+export const LANEWAY_GLB_SHA256 = "4ed1ffaabd95ffbe145a65d3e1ae776d3b9d40cea36ba2bd77b402ae038ad68c";

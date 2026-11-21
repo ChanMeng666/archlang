@@ -1,5 +1,5 @@
 {
-  "_reason": "AL3b leaders on e7083747: a named room whose label is not pinned is charged 2 more drawing units (the leader's line and dot)",
+  "_reason": "CV13 split (RM-D73), red team 1: chairs 500 x 500, on-grid, centred, turned with facing; laneway-house without a let (the playground's default plan draws no knobs); example source edited; on feat/cv13-example-chairs",
   "_tolerance": 0.1,
   "_totalTolerance": 0.03,
   "_floor": 8,
@@ -38,9 +38,9 @@
       "labelLeaders": 0
     },
     "examples/bungalow.arch": {
-      "steps": 777,
-      "drawUnits": 940,
-      "elements": 46,
+      "steps": 911,
+      "drawUnits": 952,
+      "elements": 48,
       "leafDoorPairs": 0,
       "boundaryRunTests": 67,
       "navCells": 10200,
@@ -93,9 +93,9 @@
       "labelLeaders": 0
     },
     "examples/courtyard-house.arch": {
-      "steps": 1277,
-      "drawUnits": 2748,
-      "elements": 74,
+      "steps": 1681,
+      "drawUnits": 2848,
+      "elements": 78,
       "leafDoorPairs": 0,
       "boundaryRunTests": 96,
       "navCells": 18400,
@@ -137,9 +137,9 @@
       "labelLeaders": 0
     },
     "examples/garden-loft.arch": {
-      "steps": 411,
-      "drawUnits": 438,
-      "elements": 27,
+      "steps": 562,
+      "drawUnits": 450,
+      "elements": 29,
       "leafDoorPairs": 0,
       "boundaryRunTests": 14,
       "navCells": 3500,
@@ -148,9 +148,9 @@
       "labelLeaders": 0
     },
     "examples/hexagon-pavilion.arch": {
-      "steps": 773,
-      "drawUnits": 347,
-      "elements": 36,
+      "steps": 1009,
+      "drawUnits": 371,
+      "elements": 40,
       "leafDoorPairs": 0,
       "boundaryRunTests": 25,
       "navCells": 18000,
@@ -192,9 +192,9 @@
       "labelLeaders": 0
     },
     "examples/laneway-house.arch": {
-      "steps": 535,
-      "drawUnits": 531,
-      "elements": 29,
+      "steps": 659,
+      "drawUnits": 543,
+      "elements": 31,
       "leafDoorPairs": 0,
       "boundaryRunTests": 14,
       "navCells": 4875,
@@ -302,9 +302,9 @@
       "labelLeaders": 0
     },
     "examples/remodel.arch": {
-      "steps": 1293,
-      "drawUnits": 1483,
-      "elements": 37,
+      "steps": 1413,
+      "drawUnits": 1571,
+      "elements": 39,
       "leafDoorPairs": 1,
       "boundaryRunTests": 41,
       "navCells": 8360,
@@ -368,9 +368,9 @@
       "labelLeaders": 0
     },
     "examples/townhouse.arch": {
-      "steps": 3824,
-      "drawUnits": 1242,
-      "elements": 72,
+      "steps": 4048,
+      "drawUnits": 1254,
+      "elements": 74,
       "leafDoorPairs": 0,
       "boundaryRunTests": 59,
       "navCells": 16692,
@@ -401,9 +401,9 @@
       "labelLeaders": 0
     },
     "examples/two-bed.arch": {
-      "steps": 1312,
-      "drawUnits": 343,
-      "elements": 31,
+      "steps": 1418,
+      "drawUnits": 355,
+      "elements": 33,
       "leafDoorPairs": 0,
       "boundaryRunTests": 45,
       "navCells": 8000,

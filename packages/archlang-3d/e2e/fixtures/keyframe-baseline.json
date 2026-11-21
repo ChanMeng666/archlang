@@ -19,8 +19,8 @@
       "stage:walls": "fc9b26f9e629dc92cf56c062803b54415902f71f9ec431141abc4bbb7ea49688",
       "stage:openings": "a7ecb1876fbfd4250812195e9fadfc531742d881270bc9b9bb1a4faf9172edd2",
       "stage:fixtures": "067872cb1324e7d9b57cb5752f0a8f85a34adaad3dd1258c4d7a46ce74643748",
-      "tilted": "7879c0aefc1681f109178aa4fc326b03c302dc6d22cdac78aac9207d4a926174",
-      "end": "d29a85308d7f8ca3146e99512c9ba918b186ca3b6eb36ee659ff1cc1c27f0602"
+      "tilted": "f5fd7e1d697ed146a7ac7ca910639f701fbf318500c31454723df98a165499b3",
+      "end": "5bfc4b13eecb4fa54c9a83da03132cd2352d8fd80a8694abbffd18a00b19c7f4"
     },
     "two-storey.arch": {
       "stage:brief": "81f9acfd0706792f84121b5261bece104e63aa7d319a70295bbb12a2f74043eb",
@@ -35,8 +35,8 @@
       "end": "6b6542bdf5e2b9b8b0d20ba06a2040e630a16ecfa63e259d70d604193bb4d469"
     },
     "courtyard-house.arch": {
-      "tilted": "af052e3ffbf856ef5c65e845144dbfda98463454a03afff89523ddd210ba1761",
-      "end": "c1a32ed2f4feb07a751aaa088295bc26f5346e21761c15a43b8838682c179695"
+      "tilted": "faf20357ecbf18b80ffdd87127a84fc4d77a4dfdf56992cbd091bef442f2c19f",
+      "end": "66136771a01163be9d4b7f8cb52403bf2a5f322d3ae103537a027e3aab7b74cb"
     }
   }
 }
