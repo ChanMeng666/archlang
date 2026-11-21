@@ -6,10 +6,10 @@ import {
   BROKEN_PLAN,
   enterEdit,
   gotoEdit,
-  pickPlan,
   RESIZED_PLAN,
   SIMPLE_PLAN,
   setEditorSource,
+  shareHash,
   waitForPlan,
 } from "./fixtures.js";
 
@@ -186,17 +186,20 @@ test.describe("compiling in a worker", () => {
     page.on("request", (r) => {
       if (LINT_CHUNK.test(new URL(r.url()).pathname)) fetched.push(r.url());
     });
-    await page.goto("/");
+    // A first use: a shared plan, which the view opens and compiles in the worker, with no lint. A
+    // doorless, windowless bedroom, so its lint rows below are lint's own, never an empty verdict.
+    // (Not a gallery pick: WebKit's run never saw the gallery card as stable enough to click.)
+    const BEDROOM = `plan "E2E" {\n  units mm\n  wall exterior thickness 150 { (0,0) (6000,0) (6000,4000) (0,4000) close }\n  room id=a at (0,0) size 6000x4000 label "Bedroom"\n}`;
+    await page.goto(`/${await shareHash(BEDROOM)}`);
     await waitForPlan(page);
     await expect(page.locator("html")).toHaveAttribute("data-mode", "view");
-    // A first use: a plan picked compiles in the worker, with no lint.
-    await pickPlan(page, "Two-bed flat");
     await expect(page.locator("html")).toHaveAttribute("data-compiler", "worker");
     expect(fetched, "a view-mode first use fetches no lint chunk").toEqual([]);
     await enterEdit(page);
     await page.locator("#tab-checks").click();
     await expect(page.locator("#lint")).toBeVisible();
-    await expect(page.locator("#lintOutput .lintrow, #lintOutput .ok")).not.toHaveCount(0);
+    await expect(page.locator("#lintOutput .lintrow")).not.toHaveCount(0);
+    await expect(page.locator("#lintOutput")).toContainText("W_BEDROOM_NO_WINDOW");
     await expect(page.locator("html[data-rendering]")).toHaveCount(0, { timeout: 30_000 });
     // The editor's render was answered by the worker (a worker that could not load lint would have
     // handed it to the page, and `data-compiler` would say so).
