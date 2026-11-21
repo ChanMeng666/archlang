@@ -10,7 +10,7 @@
  * PR legitimately moves a hashed output (never keep code), the table is re-taken by the generator, the
  * reason recorded below and the moved files listed in that commit's message.
  *
- * Taken: RM9.6 #993 red team 2: masked-route-balcony-door's twin header no longer says lint is silent (it raises W_TABLE_NO_SEAT); on feat/rm9.6-table-no-seat
+ * Taken: RM9.6 CV08 (feat/cv08-examples-seats, on 6d758f7c): examples/terrace-row.arch and examples/townhouse.arch turn their sofa to face the room (source edits)
  */
 
 /** `[path from the repository root, SHA-256 of the payload, evaluation steps]`, sorted by root. */
@@ -168,8 +168,8 @@ export const KEEP_WEAK_BASELINE: readonly (readonly [string, string, number])[] 
   ],
   [
     "examples/terrace-row.arch",
-    "f9a9e395c76afe77b413fc120829bfa250a73191bf9cc9cf5f9e1aed066ce5d3",
-    5198,
+    "0a09882d9dd39017aaa2732fe6f150eee1e8ea2610bde518d443efe75aec9c42",
+    5202,
   ],
   [
     "examples/themed.arch",
@@ -183,8 +183,8 @@ export const KEEP_WEAK_BASELINE: readonly (readonly [string, string, number])[] 
   ],
   [
     "examples/townhouse.arch",
-    "54712a4adc40a71a775a73dc109008332ba687943c3bfd72f2691a4a824adcfd",
-    4048,
+    "a95d2e2e744a5f99722f3670c754b7eb54671f9233cdca7c0943e24034a04b16",
+    4050,
   ],
   [
     "examples/transit-hall.arch",

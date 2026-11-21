@@ -90,7 +90,7 @@ plan "Townhouse" {
     window id=s_kitchen at (1400,D)  width 1600 wall shell
 
     furniture media in r_living anchor top-left flush size 1200x400 label "Media"
-    furniture sofa  in r_living anchor bottom    flush size 2000x850 label "Sofa"
+    furniture sofa  in r_living anchor bottom    flush size 2000x850 rotate 180 label "Sofa"
 
     furniture wc    against r_wc.bottom offset 650 size 400x700
     furniture basin in r_wc anchor bottom-right flush size 600x450

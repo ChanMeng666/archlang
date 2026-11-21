@@ -1,5 +1,5 @@
 {
-  "_reason": "RM9.6 #993 red team 1: W_TABLE_NO_SEAT's tableSeatTests counter (rooms x pieces per storey with a table it reads) joins the lint work counters",
+  "_reason": "RM9.6 CV08 (feat/cv08-examples-seats, on 6d758f7c): terrace-row and townhouse turn their sofa (a rotate literal each: evaluation steps)",
   "_tolerance": 0.1,
   "_totalTolerance": 0.03,
   "_floor": 8,
@@ -365,8 +365,8 @@
       "labelLeaders": 0
     },
     "examples/terrace-row.arch": {
-      "steps": 5198,
-      "drawUnits": 960,
+      "steps": 5202,
+      "drawUnits": 976,
       "elements": 110,
       "leafDoorPairs": 0,
       "boundaryRunTests": 232,
@@ -401,7 +401,7 @@
       "labelLeaders": 0
     },
     "examples/townhouse.arch": {
-      "steps": 4048,
+      "steps": 4050,
       "drawUnits": 1254,
       "elements": 74,
       "leafDoorPairs": 0,
