@@ -85,21 +85,21 @@ const BASELINE: [string, string][] = [
   ["5f69fe78d45db6b096e3e7f4c44bfcdb537c4201d06fee8780e813112869f20c", "examples/accessible.arch"],
   ["eee3dc30bd94b5f31c7189f719ff38e09d6f56a3d5484f443432591f8f1e737e", "examples/aquarium.arch"],
   ["07995653257dff5785f4fe210e3c4f6f9d6fc35165be2e5ae34df364079029dc", "examples/attached.arch"],
-  ["074d553112362b1bcc8c67536edf075b07c8657746b3429e4bedbcb401b15b55", "examples/bungalow.arch"],
+  ["f30ba91cde2b7911fd26ccda178be371a4069fc2f1d195b3576f4e61f1cbc341", "examples/bungalow.arch"], // CV13 (was 074d5531): example source edited (chairs added)
   ["cca7c3dfef6593e826303c88878fbfb5537bded8a6bb9323696ae4b446ac046a", "examples/classroom-block.arch"],
   ["b31aad2c2f0c0d1b7e63498f8844570f16c700846d533288de7e43bf5ad56e63", "examples/clinic.arch"],
   ["d669e11a11740a841311fe359a3d5bc650343ba1f16e827bc4d869dc65206bd5", "examples/corner-cafe.arch"],
   ["50c9cc316efda2bf16183e877d4be16443df160c9c13fc2a0210d62945c4bd67", "examples/courtyard-family.arch"],
-  ["0f6dddac275250a710e3f37d7c0fc74818389bef1c32d8929df2a747bbad63c3", "examples/courtyard-house.arch"],
+  ["f4882dcb19c0d7c25586ccfb3c9a97d2e424448c7383c697eb8bb390ca567ed9", "examples/courtyard-house.arch"], // CV13 (was 0f6dddac): example source edited (chairs added)
   ["cdb42b5c1bee8dd931d9b99b1e338dd895e4cb5d2de1915de8a85f04a3fd444a", "examples/furnished-flat.arch"],
   ["f3d86da1d7aed260f386efa6ca98b440c89ee7b2b84b0d0937401c72d7bb113e", "examples/gallery-l.arch"],
   ["72528a5f6784a5c5d9527299a5abb330423c747bafb17458716dc336cc9a3eb3", "examples/garden-house.arch"], // RM9.2, see ./byte-identity-baseline.ts
-  ["e0ce8a5f9a6bd4b5b5e72bb23c77a149cc412e40aff10930807e7b5c960a13db", "examples/garden-loft.arch"],
-  ["3078765cf03974518e0f2b3ea13585cca69ffbb86438f0899218c8a1c24a09a8", "examples/hexagon-pavilion.arch"],
+  ["944b60b10ed318d3e50b6daaf1245d55699fe7f862603bcd82c051b20b08b69c", "examples/garden-loft.arch"], // CV13 (was e0ce8a5f): example source edited (chairs added)
+  ["ab0f8253509ddb47b660687d4523121e6f7800819f5c138aa1f5bfc4fe45b73d", "examples/hexagon-pavilion.arch"], // CV13 (was 3078765c): example source edited (chairs added)
   ["123f2af228faf039c29d9861b60cfff3574b3cd04bc0057d5549cd02e67066fb", "examples/hillside-villa.arch"], // RM9.2, see ./byte-identity-baseline.ts
   ["3aa7b2d5f953e6df63059c368e391ee3ea58c097cd7dff358197a940f4946252", "examples/imports.arch"],
   ["578ec7551025df65b704f453b7af3493bf4abcfb19737fdece206e4c85fd2586", "examples/knob-flat.arch"],
-  ["958934b402346348371464d60abc57c5bffde8eb7b5bcda1890a2bf6036b2749", "examples/laneway-house.arch"],
+  ["5731f1557597e400ef50dd7c406dba16eb2edbbb0b4f4f4378ef919878939dee", "examples/laneway-house.arch"], // CV13 (was 958934b4): example source edited (chairs added)
   ["f57eaea084d2e6e62b85b8450ef96675e9f1466bea9aff24e2869f2d6f0c9804", "examples/lib/doors.arch"],
   ["57d6c78e2eea8451a9b32a5828f3babb24b0251cc5c3b72675b431be22b3f310", "examples/lib/fixtures.arch"],
   ["adf16d60e17d76d76f092f95fb24dab4b7ba5ebaa977ed32bcc3a8eaddc7e05b", "examples/lib/furniture.arch"],
@@ -112,17 +112,17 @@ const BASELINE: [string, string][] = [
   ["7cceeb1be4622a8b84e1625a124d31f44fdfc15cd5362c4f4f25fa67f5560989", "examples/parametric.arch"],
   ["f655cd0dfaa4ec152a2effa51cd2a3fb6254d46c8fb7e29529cbd3c7b78491cb", "examples/practice-office.arch"],
   ["d99a898c06b322f203c7f9f3d34740be351b523712bb04fe7b0d846e85811084", "examples/relational.arch"],
-  ["f0f4a5aa4758c3f9feb14449b6a9be0b7afd020fb925619c6d83e66f7cb95f2d", "examples/remodel.arch"],
+  ["3a768da0e8f3cb1987160a5eccd2df84ff504a170c2abe98f4c217ba9927718f", "examples/remodel.arch"], // CV13 (was f0f4a5aa): example source edited (chairs added)
   ["708332c1a3f4cf35989718277b996af6f718d2e5fb8bd3d2912d8f87f7d61a2a", "examples/sheet-notes.arch"],
-  ["54adc1b89e5472644f55bc3f33f9aa6fd1576b39b324eb6afd8370d8e3cb796f", "examples/showcase/garden-courtyard.arch"],
+  ["a332c614fbef9fed2f9c676d6afc39e9b99717add0b4d800c6b2ddbbe29cb036", "examples/showcase/garden-courtyard.arch"], // CV13 (was 54adc1b8): example source edited (chairs added)
   ["b64f7234dddc6527a0176033e82b38b70ad4fe84ca8df22b7a2e3269a1029553", "examples/studio.arch"],
   ["6667da00528cdd4ee4f155586a049ad877f81b83178f5a18c85afef7a76a781d", "examples/terrace-row.arch"],
   ["edd65eb6b725687bb30a7c956132e01bc2b9c57d772afaa9c234745af332f8bf", "examples/themed.arch"],
   ["7dec52e5621d9af9dbdcf7cb73e58791705e6d976bbecf5ae59419c1c9a9ea17", "examples/tiny-house.arch"],
-  ["3657648f9aa2ed74e7babc743d4f7129bb0cc657cca631695784a6bf0615364e", "examples/townhouse.arch"], // RM9.2, see ./byte-identity-baseline.ts
+  ["34e3c63ec71734c63d3013e0203110cf933372bce5850b65141471292015c07a", "examples/townhouse.arch"], // RM9.2, see ./byte-identity-baseline.ts; CV13 (was 3657648f): example source edited (chairs added)
   ["649e39d370d434467bee6f23ad8c7fc0bef578d44081f18d96ec82ed2532c5be", "examples/transit-hall.arch"],
   ["4d2fb9dcc6a44640a4d0e52d202df14909c73a5743799af8c25cb1f117dc87a8", "examples/turning-stair.arch"], // RM9.2, see ./byte-identity-baseline.ts
-  ["fe871cbb3d60c1594495e38b1ad0dc30ce3f71904c27b85fa60f276d3aa182bd", "examples/two-bed.arch"],
+  ["9ac81631454efe33a25dd4c041a7439705c6377353b6e68039913906d87189d0", "examples/two-bed.arch"], // CV13 (was fe871cbb): example source edited (chairs added)
   ["92a71843b7de0b87acb1ef3ea1b859d1c0bedbe4ef35025f3524ecea1d674aa8", "examples/two-storey.arch"], // RM9.2, see ./byte-identity-baseline.ts
 ];
 

@@ -77,14 +77,14 @@ const BASELINE: [string, string][] = [
   ["examples/clinic.arch", "b31aad2c2f0c0d1b7e63498f8844570f16c700846d533288de7e43bf5ad56e63"],
   ["examples/corner-cafe.arch", "d669e11a11740a841311fe359a3d5bc650343ba1f16e827bc4d869dc65206bd5"], // #367, see test/byte-identity-baseline.ts
   ["examples/courtyard-family.arch", "50c9cc316efda2bf16183e877d4be16443df160c9c13fc2a0210d62945c4bd67"], // new example (RM8.5, the courtyard-family showcase)
-  ["examples/hexagon-pavilion.arch", "3078765cf03974518e0f2b3ea13585cca69ffbb86438f0899218c8a1c24a09a8"],
+  ["examples/hexagon-pavilion.arch", "ab0f8253509ddb47b660687d4523121e6f7800819f5c138aa1f5bfc4fe45b73d"], // CV13 (was 3078765c): example source edited (chairs added)
   ["examples/imports.arch", "a0341285f4e3699b738aa1916bba278eed61e347df4d3a2de139b9f0185d9678"],
   ["examples/knob-flat.arch", "578ec7551025df65b704f453b7af3493bf4abcfb19737fdece206e4c85fd2586"], // new example (P4, the knobs example), see header
   ["examples/materials.arch", "b3d629675b1a43d4d1113f10b38e732d0b826fdb2b019fcf14ac4b166abd435d"],
   ["examples/museum-wing.arch", "add9b13a425ec75dd2b88c4eba087465228822c37321b3d1952db6f0795ef6c7"],
   ["examples/one-room.arch", "8c47e263f778993d69c2f85d07a24b3a62c0b96d9f17ccb5cd9ebf2af6fa0120"],
   ["examples/parametric.arch", "7cceeb1be4622a8b84e1625a124d31f44fdfc15cd5362c4f4f25fa67f5560989"],
-  ["examples/remodel.arch", "f0f4a5aa4758c3f9feb14449b6a9be0b7afd020fb925619c6d83e66f7cb95f2d"], // `centreline_at`, see ./byte-identity-baseline.ts
+  ["examples/remodel.arch", "3a768da0e8f3cb1987160a5eccd2df84ff504a170c2abe98f4c217ba9927718f"], // `centreline_at`, see ./byte-identity-baseline.ts; CV13 (was f0f4a5aa): example source edited (chairs added)
   ["examples/sheet-notes.arch", "708332c1a3f4cf35989718277b996af6f718d2e5fb8bd3d2912d8f87f7d61a2a"],
   ["examples/turning-stair.arch", "4d2fb9dcc6a44640a4d0e52d202df14909c73a5743799af8c25cb1f117dc87a8"], // new example (S2), see header; `centreline_at`, see ./byte-identity-baseline.ts; RM1.3a, see ./byte-identity-baseline.ts; RM1.2a, see ./byte-identity-baseline.ts; RM9.2, see ./byte-identity-baseline.ts
   ["examples/two-storey.arch", "92a71843b7de0b87acb1ef3ea1b859d1c0bedbe4ef35025f3524ecea1d674aa8"], // RM1.3a, see ./byte-identity-baseline.ts; RM1.2a, see ./byte-identity-baseline.ts; RM9.2, see ./byte-identity-baseline.ts
@@ -138,8 +138,8 @@ suite("`double` door kind — the byte-identity law", () => {
 const MAIN_SOURCES: [path: string, payload: string, source: string, undo: [branch: string, main: string][]][] = [
   [
     "examples/bungalow.arch",
-    "4125b726f5c41900935d95fea66d118e2bcdbf67e7583f5d8e092c8a326a465f",
-    "f6ba848bd9ad0f4073876e5fbac39a4ea54bb7ef690f8d32243b5ed5d3142eef",
+    "8b49651990c02a840c12ef4e10681a1786de85ae11cedbd4d9f0d8bc07618046", // CV13 (was 4125b726): example source edited (chairs added)
+    "5a1a3d5e27563598e8b0915f950a4c3609ce2cec2039b1e84393df6b09c48e2a", // CV13 (was f6ba848b): example source edited (chairs added)
     [
       [
         "  furniture kitchen_sink against wall shell segment 3 offset 2000 in r_kitchen  # under the window\n  furniture stove        against wall shell segment 3 offset 2800 in r_kitchen",
@@ -153,8 +153,8 @@ const MAIN_SOURCES: [path: string, payload: string, source: string, undo: [branc
   ],
   [
     "examples/courtyard-house.arch",
-    "657cad4c8b08b7302671002ecc684c578b3a8fb9bcd508c85dcfd1dc1f87f931",
-    "0bc00da708cfd4f3c1ff27a675968ef37cd4d8668ceb1b1ee9f6e3fab67e4401",
+    "9958ca44e0e7883911de7770443ff721ef6e9ea2011ae7d319a1164c453d1e10", // CV13 (was 657cad4c): example source edited (chairs added)
+    "e59b1c0791cf77741bbf581f09c68563c5a345960602bf1f4ab25b417ff2c048", // CV13 (was 0bc00da7): example source edited (chairs added)
     [
       [
         "  furniture kitchen_sink against wall shell segment 0 offset 14400 in r_kitchen\n  furniture stove        against wall shell segment 0 offset 13100 in r_kitchen\n  furniture counter      against wall shell segment 0 offset 13700 in r_kitchen",
@@ -190,8 +190,8 @@ const MAIN_SOURCES: [path: string, payload: string, source: string, undo: [branc
   ],
   [
     "examples/garden-loft.arch",
-    "869e2d6aa14441c8fc1839c84b7a562b04502fa012fd3ced4e8f2a8da1697e6a",
-    "e5124b3fb7009b347c15af1daaf6c54696d250f3b0f823f0695728271e53766c",
+    "87968ce07ad3cda51ab9c31461526caa960fea8dfd51af863af0ece00573d79f", // CV13 (was 869e2d6a): example source edited (chairs added)
+    "d0d4476ae325a8d396dfc340837e6aab0f48412de6adae22650a38bd6cc29776", // CV13 (was e5124b3f): example source edited (chairs added)
     [
       [
         "  furniture stove        against wall w_west offset 1900 in r_live\n  furniture kitchen_sink against wall w_west offset 2700 in r_live\n  furniture counter      against wall w_west offset 1100 in r_live",
@@ -212,8 +212,8 @@ const MAIN_SOURCES: [path: string, payload: string, source: string, undo: [branc
   ],
   [
     "examples/laneway-house.arch",
-    "4d5dee59cb273cb1678682393b4d630794591ff04a0723dac3ceff4cd28ac0d8",
-    "cd383a3a7c334d9e7979a99724e7d8ba3d2fee67be9f8b09a76e0b84ba141ef9",
+    "b8835f1cd374304298a7d08766dc894e8c712aaa1981307072ca6770ec288a77", // CV13 (was 4d5dee59): example source edited (chairs added)
+    "035d85763e19840e0494b2947253478e3a7ba7dbcd8087abda6b6ec84afab744", // CV13 (was cd383a3a): example source edited (chairs added)
     [
       [
         "  furniture fridge       against wall w_west offset 3600 in r_live",
@@ -303,8 +303,8 @@ const MAIN_SOURCES: [path: string, payload: string, source: string, undo: [branc
   ],
   [
     "examples/townhouse.arch",
-    "2cdbb29bbd1055233ae1b91d64b798961e0b7f47cf280ef73f030b4c04c4a859", // RM1.3a, see ./byte-identity-baseline.ts; RM9.2, see ./byte-identity-baseline.ts
-    "6173926c3747eec3b2a679cf4c24c15f463a0638f56bd9d9a5d87fd53b44d091",
+    "0f67f40066b002fedd304e02300e520a4c61712836d58edfab3cf6b387e29985", // RM1.3a, see ./byte-identity-baseline.ts; RM9.2, see ./byte-identity-baseline.ts; CV13 (was 2cdbb29b): example source edited (chairs added)
+    "ca52533e8f8d7b39db23aefbfc6ab4651cae3dc4957db3c049e613469a5f8ae2", // CV13 (was 6173926c): example source edited (chairs added)
     [
       [
         "    furniture fridge       against wall shell segment 3 offset 3200 in r_kitchen",
@@ -325,8 +325,8 @@ const MAIN_SOURCES: [path: string, payload: string, source: string, undo: [branc
   ],
   [
     "examples/two-bed.arch",
-    "773304f859e2ecbbb549d24b228cf74022fbfd7d8dfc18a7125ceb2db394edcb", // `centreline_at`, see ./byte-identity-baseline.ts
-    "a0afaf247acffa4956292c55837b1691fe220d874495daaf8e5a4f44c61d9caf", // source: RM1.4 writes the two snapped sizes (same length; was 64900f55); CO.1 writes its fridge's snapped `against` size out: less that clause the rebuilt source is main's, and the payload is unchanged (was b2007915)
+    "f713080ac749ac046c46346417d6d9b1920541d7131a031bee19c13d24a53b9b", // `centreline_at`, see ./byte-identity-baseline.ts; CV13 (was 773304f8): example source edited (chairs added)
+    "c13c294891829771ccb25cb35db9a209282eb75b83cfdb072c8fa495f8fcd240", // source: RM1.4 writes the two snapped sizes (same length; was 64900f55); CO.1 writes its fridge's snapped `against` size out: less that clause the rebuilt source is main's, and the payload is unchanged (was b2007915); CV13 (was a0afaf24): example source edited (chairs added)
     [
       [
         "  furniture stove        against wall exterior segment 3 offset 5300 in r_living",

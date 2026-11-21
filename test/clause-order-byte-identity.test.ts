@@ -111,9 +111,9 @@ const BASELINE: [string, string, string][] = [
     "examples/attached.arch",
   ],
   [
-    "074d553112362b1bcc8c67536edf075b07c8657746b3429e4bedbcb401b15b55",
+    "f30ba91cde2b7911fd26ccda178be371a4069fc2f1d195b3576f4e61f1cbc341", // CV13 (was 074d5531): example source edited (chairs added)
     // AF9: the parse holds the `posSpan` and `wallSpan` an opening's lead now records (no semantics); without them it is the parse pinned here (was 37e4e7f9)
-    "4f704af6e2da2dde162fb185f534573d11efcf92b4e6a5ad60504f51f87d5d0f",
+    "7b1c902ea516f8d4feeabae37186aa05fc9340b09925d62fd76d0c2ab3b58db9", // CV13 (was 4f704af6): example source edited (chairs added)
     "examples/bungalow.arch",
   ],
   [
@@ -142,9 +142,9 @@ const BASELINE: [string, string, string][] = [
     "examples/courtyard-family.arch",
   ],
   [
-    "0f6dddac275250a710e3f37d7c0fc74818389bef1c32d8929df2a747bbad63c3",
+    "f4882dcb19c0d7c25586ccfb3c9a97d2e424448c7383c697eb8bb390ca567ed9", // CV13 (was 0f6dddac): example source edited (chairs added)
     // AF9: the parse holds the `posSpan` and `wallSpan` an opening's lead now records (no semantics); without them it is the parse pinned here (was 25a92395)
-    "c6d8fe29380bfda7807b945bebdb8ac729ad24f8d69c4f52931c4a6b7fe65f7c",
+    "8562fb7fef7f452d9b2ff3b0ef35db9e490604910ce768fb3f50354467483072", // CV13 (was c6d8fe29): example source edited (chairs added)
     "examples/courtyard-house.arch",
   ],
   [
@@ -167,15 +167,15 @@ const BASELINE: [string, string, string][] = [
     "examples/garden-house.arch",
   ],
   [
-    "e0ce8a5f9a6bd4b5b5e72bb23c77a149cc412e40aff10930807e7b5c960a13db",
+    "944b60b10ed318d3e50b6daaf1245d55699fe7f862603bcd82c051b20b08b69c", // CV13 (was e0ce8a5f): example source edited (chairs added)
     // AF9: the parse holds the `posSpan` and `wallSpan` an opening's lead now records (no semantics); without them it is the parse pinned here (was 0b5dc494)
-    "5e89d1d72b4b1946b85a6cc8cc4aaa3dcc4498c8363c60dd4d3c5dc00b527931",
+    "79c1b8be440d1b9686cb3ba8ff0ab3cc5ac6013b7844905227cc3cfb47e1a559", // CV13 (was 5e89d1d7): example source edited (chairs added)
     "examples/garden-loft.arch",
   ],
   [
-    "3078765cf03974518e0f2b3ea13585cca69ffbb86438f0899218c8a1c24a09a8",
+    "ab0f8253509ddb47b660687d4523121e6f7800819f5c138aa1f5bfc4fe45b73d", // CV13 (was 3078765c): example source edited (chairs added)
     // AF9: the parse holds the `posSpan` and `wallSpan` an opening's lead now records (no semantics); without them it is the parse pinned here (was 5358bb59)
-    "49686f4f067352d4ccebf8605a93422e28d92e4b0136597b500eaa3aab1ff333",
+    "381c760ebac788cbbfe380d79737538d595d6427ee7581b22cd2d5d24dca63d1", // CV13 (was 49686f4f): example source edited (chairs added)
     "examples/hexagon-pavilion.arch",
   ],
   [
@@ -197,9 +197,9 @@ const BASELINE: [string, string, string][] = [
     "examples/knob-flat.arch",
   ],
   [
-    "958934b402346348371464d60abc57c5bffde8eb7b5bcda1890a2bf6036b2749",
+    "5731f1557597e400ef50dd7c406dba16eb2edbbb0b4f4f4378ef919878939dee", // CV13 (was 958934b4): example source edited (chairs added)
     // AF9: the parse holds the `posSpan` and `wallSpan` an opening's lead now records (no semantics); without them it is the parse pinned here (was d2822380)
-    "4fb3e26fcb72557f3f329466bea51e932f3652d1aaa827219bd833002ef3c7d8",
+    "cefe582cc25cc12106940a6611ece1ac2ee039642e4c01daeb0524042ab84538", // CV13 (was 4fb3e26f): example source edited (chairs added)
     "examples/laneway-house.arch",
   ],
   [
@@ -270,10 +270,10 @@ const BASELINE: [string, string, string][] = [
     "examples/relational.arch",
   ],
   [
-    "f0f4a5aa4758c3f9feb14449b6a9be0b7afd020fb925619c6d83e66f7cb95f2d",
+    "3a768da0e8f3cb1987160a5eccd2df84ff504a170c2abe98f4c217ba9927718f", // CV13 (was f0f4a5aa): example source edited (chairs added)
     // CO.1: the parse holds the `size` clause the example now writes; without them, offsets mapped back, it is the parse pinned here (was 32255022)
     // AF9: the parse holds the `posSpan` and `wallSpan` an opening's lead now records (no semantics); without them it is the parse pinned here (was efcd3520)
-    "a6ed253f103c333b320b13d27acb6f7fdc49d8a394c8104800dab8a350976121",
+    "3fdad318169214dd539a1e1cbfdacc68ddfb71ff2e27908581ab9d77b7d3dd1e", // CV13 (was a6ed253f): example source edited (chairs added)
     "examples/remodel.arch",
   ],
   [
@@ -283,10 +283,10 @@ const BASELINE: [string, string, string][] = [
     "examples/sheet-notes.arch",
   ],
   [
-    "54adc1b89e5472644f55bc3f33f9aa6fd1576b39b324eb6afd8370d8e3cb796f",
+    "a332c614fbef9fed2f9c676d6afc39e9b99717add0b4d800c6b2ddbbe29cb036", // CV13 (was 54adc1b8): example source edited (chairs added)
     // CO.1: the parse holds the `size` clause the example now writes; without them, offsets mapped back, it is the parse pinned here (was 03e2e2c2)
     // AF9: the parse holds the `posSpan` and `wallSpan` an opening's lead now records (no semantics); without them it is the parse pinned here (was d73f013d)
-    "ad0129d517542b9e077a68da9df9d2a4936fc95d1964c873563678280f646dc8",
+    "949e8932a3110619ea4c55f54928fcd7339d92854b1c2b7ff43c9405350adcd8", // CV13 (was ad0129d5): example source edited (chairs added)
     "examples/showcase/garden-courtyard.arch",
   ],
   [
@@ -312,9 +312,9 @@ const BASELINE: [string, string, string][] = [
     "examples/tiny-house.arch",
   ],
   [
-    "3657648f9aa2ed74e7babc743d4f7129bb0cc657cca631695784a6bf0615364e", // RM9.2, see ./byte-identity-baseline.ts
+    "34e3c63ec71734c63d3013e0203110cf933372bce5850b65141471292015c07a", // RM9.2, see ./byte-identity-baseline.ts; CV13 (was 3657648f): example source edited (chairs added)
     // AF9: the parse holds the `posSpan` and `wallSpan` an opening's lead now records (no semantics); without them it is the parse pinned here (was 355d36bd)
-    "15248124ae5c21133029781f928537039648b66cdb5a6d9c0f32c951e1e448e2",
+    "d4ab5c5ec79a8de8e4caffbdb128cb13ff4f5e3a01b6e5db5cd4020c1dc81703", // CV13 (was 15248124): example source edited (chairs added)
     "examples/townhouse.arch",
   ],
   [
@@ -330,10 +330,10 @@ const BASELINE: [string, string, string][] = [
     "examples/turning-stair.arch",
   ],
   [
-    "fe871cbb3d60c1594495e38b1ad0dc30ce3f71904c27b85fa60f276d3aa182bd",
+    "9ac81631454efe33a25dd4c041a7439705c6377353b6e68039913906d87189d0", // CV13 (was fe871cbb): example source edited (chairs added)
     // CO.1: the parse holds the `size` clause the example now writes; without them, offsets mapped back, it is the parse pinned here (was a1f390c9)
     // AF9: the parse holds the `posSpan` and `wallSpan` an opening's lead now records (no semantics); without them it is the parse pinned here (was f38a7543)
-    "5d4929522ba05baf589f0f443240c59fd837b31b1a274911c8c5cab370b3f9cd",
+    "d4396bc036c65f54f145e83f6e56a5c90ba910a7b19fb2daa83b8ad48852d04e", // CV13 (was 5d492952): example source edited (chairs added)
     "examples/two-bed.arch",
   ],
   [
