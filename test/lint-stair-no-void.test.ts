@@ -113,7 +113,7 @@ suite("W_STAIR_NO_VOID", () => {
     );
     // A room over part of the head is floor there.
     expect(of(open("(1000,0) size 5000x5000"))).toHaveLength(1);
-    // Inside the closed exterior ring with no room there is floor too (the slab, as the 3D preview builds it).
+    // Inside the closed exterior ring with no room there is floor too (the footprint W_EXTERIOR_DOOR_ONTO_ROOF reads).
     expect(
       of(
         plan(
@@ -186,9 +186,22 @@ suite("W_STAIR_NO_VOID", () => {
         [twoStorey(), 1],
         [twoStorey(WELL), 0],
         [twoStorey("    void id=v at (500,1000) size 50x2600"), 1],
+        // Over the last flight's head end only (x 1500-2200, where the climb arrives), and over its foot
+        // end only (x 2300-3000): the head is what is read.
+        [turning("    void id=v at (1500,1000) size 700x1000"), 0],
+        [turning("    void id=v at (2300,1000) size 700x1000"), 1],
       ] as const)
         expect(of(carry(src)), `${g.name}: ${want}`).toHaveLength(want);
     }
+  });
+
+  it("reads a 1 mm gap at the head the same wherever the plan stands (float noise is no gap)", () => {
+    // The void leaves 1 mm of the head band open (x 500-501): a touch, not an opening. Moved by an
+    // offset that is not a power of two, the subtraction must not turn it into an opening.
+    const witness = twoStorey("    void id=v at (501,1000) size 899x500").replace("  grid 50\n", "");
+    const shift = (src: string, d: number): string =>
+      src.replace(/\((\d+),(\d+)\)/g, (_, x, y) => `(${+x + d},${+y + d})`);
+    for (const d of [0, 7381.3]) expect(of(shift(witness, d)), `offset ${d}`).toEqual([]);
   });
 
   it("counts its work: per arriving flight, one test per void piece and one per element and wall read for floor", () => {

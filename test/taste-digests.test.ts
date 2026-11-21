@@ -237,18 +237,19 @@
  * and the new case's digest equals its twin's. `radius-over-label` shares radius-over-piece's old values
  * and did not move. The rows carry `RM9.6 CV13` notes.
  *
- * RM9.6 (`W_STAIR_NO_VOID`, a flight from the storey below with no void over it, coverage class CV14)
- * added six rows, the new `stair-safety/no-void-at-head` pair under each of the three profiles, and
- * moved thirty-six: `circulation-privacy/door-onto-roof` and the stair-safety pairs `head-against-wall`,
- * `riser-too-high`, `shaft-footprint-mismatch`, `stair-too-steep` and `void-at-stair-head`, case and
- * twin, under each profile, each of whose plans climbs to an upper storey that draws no void over the
- * flight. In each the only change is `validity`: one more warning (0 → 1 on the six twins, 1 → 2 on
- * the six cases) and `W_STAIR_NO_VOID` in its codes. On the twins, where it is the first validity
- * warning, `validity.pass` turns false and the score is capped at 0.5: generic door-onto-roof 1,
- * head-against-wall 0.75, riser-too-high 1, shaft-footprint-mismatch 0.75, stair-too-steep 1,
- * void-at-stair-head 0.7861; cn 0.8104, 0.7399, 1, 0.7399, 1, 0.7152; us as generic. Every criterion, subscore and skip is unchanged.
- * With the rule taken out of `LINT_RULES` each moved row reproduces the value it replaces, and the new
- * case's digest equals its twin's. The rows carry `RM9.6 CV14` notes.
+ * RM9.6 (`W_STAIR_NO_VOID`, a flight from the storey below whose head the upper storey's floor covers,
+ * coverage class CV14) added six rows, the new `stair-safety/no-void-at-head` pair under each of the
+ * three profiles, and moved thirty-three: `circulation-privacy/door-onto-roof` and the stair-safety pairs
+ * `head-against-wall`, `riser-too-high`, `shaft-footprint-mismatch` and `stair-too-steep`, case and twin,
+ * and the case `void-at-stair-head`, under each profile, each of whose plans climbs to an upper storey
+ * whose floor covers the flight's head. In each the only change is `validity`: one more warning (0 → 1
+ * on the five twins, 1 → 2 on the six cases) and `W_STAIR_NO_VOID` in its codes. On the twins, where it
+ * is the first validity warning, `validity.pass` turns false and the score is capped at 0.5: generic
+ * door-onto-roof 1, head-against-wall 0.75, riser-too-high 1, shaft-footprint-mismatch 0.75,
+ * stair-too-steep 1; cn 0.8104, 0.7399, 1, 0.7399, 1; us as generic. Every criterion, subscore and skip
+ * is unchanged. The `void-at-stair-head` twin now draws its void as the stairwell and reads as on `main`
+ * (taste reads no void). With the rule taken out of `LINT_RULES` each moved row reproduces the value it
+ * replaces, and the new case's digest equals its twin's. The moved rows carry `RM9.6 CV14` notes.
  */
 
 import { describe, expect, it } from "vitest";
@@ -1243,7 +1244,7 @@ const TABLE: ReadonlyArray<[string, string, string]> = [
     "test/defect-corpus/stair-safety/void-at-stair-head.arch",
   ],
   [
-    "54a2e39be1bae97889726c08d5b6aab242482c8b5eec571c8aa55c23c9a77e9d", // RM9.6 CV14: the twin draws its void as the stairwell (was 54a2e39b)
+    "54a2e39be1bae97889726c08d5b6aab242482c8b5eec571c8aa55c23c9a77e9d",
     "generic",
     "test/defect-corpus/stair-safety/void-at-stair-head.clean.arch",
   ],
@@ -2493,7 +2494,7 @@ const TABLE: ReadonlyArray<[string, string, string]> = [
     "test/defect-corpus/stair-safety/void-at-stair-head.arch",
   ],
   [
-    "687d0c20b2e44deec8277160870c42ef9873fa4a14398019fa422713c16e622b", // RM9.6 CV14: the twin draws its void as the stairwell (was 687d0c20)
+    "687d0c20b2e44deec8277160870c42ef9873fa4a14398019fa422713c16e622b",
     "cn-residential-advisory",
     "test/defect-corpus/stair-safety/void-at-stair-head.clean.arch",
   ],
@@ -3743,7 +3744,7 @@ const TABLE: ReadonlyArray<[string, string, string]> = [
     "test/defect-corpus/stair-safety/void-at-stair-head.arch",
   ],
   [
-    "8c668e03e46b867b811098fc6268eed2e8ea63c3bc02b4d06855e4284a4b1af1", // RM9.6 CV14: the twin draws its void as the stairwell (was 8c668e03)
+    "8c668e03e46b867b811098fc6268eed2e8ea63c3bc02b4d06855e4284a4b1af1",
     "us-residential-advisory",
     "test/defect-corpus/stair-safety/void-at-stair-head.clean.arch",
   ],

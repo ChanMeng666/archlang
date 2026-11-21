@@ -1207,7 +1207,7 @@ const NEGATIVE: Negative[] = [
   {
     code: "W_STAIR_NO_VOID",
     channel: "lint",
-    note: "the storey above draws no `void` over the flight's head",
+    note: "the storey above draws no `void` over the flight",
     src: plan(
       `  level 1 { room id=r1 at (0,0) size 6000x5000\n    stair id=s1 at (1000,1000) size 1200x3000 dir up }\n` +
         `  level 2 { room id=r2 at (0,0) size 6000x5000\n    stair id=s1 at (1000,1000) size 1200x3000 dir down }`,

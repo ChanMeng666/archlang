@@ -962,7 +962,7 @@ const HEAD_SAMPLES = 3;
  * cross that line must cover all of it, so a sliver at a corner or a strip down one side does not
  * clear it (coordinator ruling on #1004; no figure is read). Where they leave some of it open, it is
  * reported only if the floor stands there: the storey's drawn footprint (`onFootprint`: a room's
- * shape, or inside a closed exterior ring, as the 3D preview builds its slab), read at
+ * shape, or inside a closed exterior ring: the footprint W_EXTERIOR_DOOR_ONTO_ROOF reads), read at
  * {@link HEAD_SAMPLES} points of each open stretch. Its work, one test per (stair, void piece) and
  * one footprint read per sample (each reading every element and wall), is charged to the stair work
  * before it runs and counted (`stairVoidTests`).
@@ -1009,10 +1009,10 @@ export const stairNoVoid: LintRule = {
       const open: Array<[number, number]> = [];
       let at = a;
       for (const [s0, s1] of spans) {
-        if (s0 - at > 1) open.push([at, s0]);
+        if (s0 - at > 1 + VERTEX_EPS) open.push([at, s0]);
         at = Math.max(at, s1);
       }
-      if (b - at > 1) open.push([at, b]);
+      if (b - at > 1 + VERTEX_EPS) open.push([at, b]);
       const onFloor = open.some(([s0, s1]) => {
         const d = Math.min(1, (s1 - s0) / 4);
         return [s0 + d, (s0 + s1) / 2, s1 - d].some((s) => {
