@@ -1849,6 +1849,30 @@ test.describe("startup chunks", () => {
     // (embed.ts), so it walks into the compiler the way index.html's preload does.
     const embedPath = embedWalk();
     expect(embedPath, "the embed reaches the compiler").toContain(compiler);
+    // Card 3.19: compile()'s error card (its renderer, and the catalogue's fix column it prints) is
+    // on neither the compiler path nor the embed path: the compiler door's `compile` draws no card
+    // and the embed loads it through its dynamic import of error-card.js on a broken plan. The fix
+    // column rides the first use's path (diagnosticToJson, Copy for LLM); the card's renderer does
+    // not. Each sentinel is checked in its source first, and found in what error-card.js reaches.
+    const errorCard = one(/^error-card-[\w-]+\.js$/, "one error-card chunk");
+    const embedChunk = embedPath.find((f) => /^assets\/embed-[\w-]+\.js$/.test(f)) as string;
+    expect(imports(embedChunk, DYNAMIC), "the embed imports error-card.js dynamically").toContain(errorCard);
+    expect(embedPath, "the error card is not on the embed path").not.toContain(errorCard);
+    const cardReach = reach([errorCard]);
+    const CARD: [string, string, readonly string[]][] = [
+      ["src/backends/error-svg.ts", "could not render", [...compilerPath, ...embedPath, ...firstUsePath]],
+      ["src/error-catalog-fixes.ts", "alongside `units`/`north`", [...compilerPath, ...embedPath]],
+    ];
+    for (const [src, sentinel, kept] of CARD) {
+      expect(
+        readFileSync(join(dirname(fileURLToPath(import.meta.url)), "..", "..", src), "utf8"),
+        `the sentinel "${sentinel}" is in ${src}`,
+      ).toContain(sentinel);
+      const holds = (file: string) => readFileSync(join(DIST, file), "utf8").includes(sentinel);
+      expect(cardReach.filter(holds), `error-card.js reaches ${src}'s code`).not.toEqual([]);
+      for (const file of new Set(kept))
+        expect(holds(file), `${file} carries ${src}'s code ("${sentinel}")`).toBe(false);
+    }
 
     const lazy: [string, string][] = [
       [lazy3d, "the 3D chunk (three.js)"],

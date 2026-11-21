@@ -113,7 +113,7 @@ import { checkLocks, type ImpactLock, type LockElement, type LockSide, lockSpanO
 import { liesOnLine, type RoomEdge, roomEdgeLine } from "./analyze/contacts.js";
 import { fmtHalfLattice } from "./num-format.js";
 import { parse } from "./parser.js";
-import { compileUncached } from "./pipeline.js";
+import { compileUncached } from "./compile-uncached.js";
 import type { CompileOptions } from "./types.js";
 import { wallPhraseOf } from "./wall-ref.js";
 

@@ -32,7 +32,7 @@
  * lexer's own count) before it is offered. Pure and synchronous — no I/O, no
  * mutation of the parsed `PlanNode`.
  *
- * The proof obligation calls `compileUncached` from `pipeline.ts` — the SAME
+ * The proof obligation calls `compileUncached` (`compile-uncached.ts`, over `pipeline.ts`) — the SAME
  * pipeline `compile()` wraps with its memoization cache — rather than
  * re-deriving parse→link→resolve→render here, so the two can never drift
  * apart (one compile pipeline). `reroll` never calls itself while proving a
@@ -59,7 +59,7 @@
 import type { PlanNode, Statement } from "./ast.js";
 import type { Diagnostic, Span } from "./diagnostics.js";
 import type { Expr } from "./expr.js";
-import { compileUncached } from "./pipeline.js";
+import { compileUncached } from "./compile-uncached.js";
 import type { CompileOptions, CompileResult } from "./types.js";
 import { describe, type SceneSummary } from "./describe.js";
 import { lint } from "./lint.js";

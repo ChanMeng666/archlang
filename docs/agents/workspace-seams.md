@@ -19,12 +19,14 @@ other direction: `src/` never imports `archlang-3d` or `three`.
 | `playground/tsconfig.json` | `paths archlang/review` | types for the review sheet come from src/: the build emits no declaration for dist/cli/review.js |
 | `playground/tsconfig.json` | `paths archlang/share` | the share-link subpath read from src/share.ts: Playwright resolves tsconfig paths at run time for the specs that import share.ts in Node, where a .d.ts would load as an empty module |
 | `playground/tsconfig.json` | `paths archlang/error-catalog` | types for the diagnostic catalogue come from src/: the build emits no declaration for dist/error-catalog.js |
+| `playground/tsconfig.json` | `paths archlang/compile-path` | types for the compiler door's build entry come from src/: the build emits no declaration for dist/compile-path.js (card 3.19) |
 | `playground/tsconfig.json` | `paths @chanmeng666/archlang-3d` | mirrors the Vite alias: archlang-3d is read from source, its published exports name a dist/ that may not be built |
 | `playground/tsconfig.json` | `paths @chanmeng666/archlang-3d/browser` | the browser entry is a second exports subpath of archlang-3d whose dist/ may not be built; without this mapping tsc cannot resolve what the Vite alias serves |
 | `playground/vite.config.js` | `alias archlang` | the playground consumes the built core (dist/index.js), keeping one import path |
 | `playground/vite.config.js` | `alias archlang/review` | Checks overlay reads the review sheet, a CLI file with no export; listed before the bare name (prefix match) |
 | `playground/vite.config.js` | `alias archlang/share` | the share-link decoder, the core's ./share export, built (dist/share.js); listed before the bare name (prefix match) |
 | `playground/vite.config.js` | `alias archlang/error-catalog` | the edit-mode diagnostics panel reads the catalogue from its own built file with no export (dist/error-catalog.js), so it stays out of the compiler chunk; listed before the bare name (prefix match) |
+| `playground/vite.config.js` | `alias archlang/compile-path` | the compiler door reads compileWithoutErrorCard from its build entry (dist/compile-path.js), which dist/index.js does not export, so the compiler chunk carries no error card (card 3.19); listed before the bare name (prefix match) |
 | `playground/vite.config.js` | `alias @chanmeng666/archlang` | archlang-3d imports the core by its published name; same built file so the lazy chunk shares the core |
 | `playground/vite.config.js` | `alias @chanmeng666/archlang-3d` | archlang-3d is read from source: its published exports name a dist/ the build has no reason to need |
 | `playground/vite.config.js` | `alias @chanmeng666/archlang-3d/browser` | the browser entry of archlang-3d, from source; longer key first |
@@ -66,6 +68,7 @@ other direction: `src/` never imports `archlang-3d` or `three`.
 | `vitest.config.ts` | `alias archlang` | every workspace's source resolves the core through this under vitest, to src/index.ts, so tests need no build and never see a stale dist/ |
 | `vitest.config.ts` | `alias archlang/share` | the playground modules import the share subpath by name; to src/share.ts, listed before the bare name (prefix match) |
 | `vitest.config.ts` | `alias archlang/error-catalog` | the playground's diagnostics panel imports the catalogue by name; to src/error-catalog.ts, listed before the bare name (prefix match) |
+| `vitest.config.ts` | `alias archlang/compile-path` | the playground's compiler door imports its build entry by name; to src/compile-path.ts, listed before the bare name (prefix match) |
 | `vitest.config.ts` | `alias @chanmeng666/archlang` | the MCP shim and archlang-3d import the core by its published name; this runs their tests against src/ |
 | `vitest.config.ts` | `alias @chanmeng666/archlang/link` | the Node-only subpath, listed before the bare name since an alias also matches name/...; to src/cli/link.ts |
 | `vitest.config.ts` | `alias @chanmeng666/archlang/share` | the mcp-worker imports the share subpath by its published name; to src/share.ts |
