@@ -75,3 +75,47 @@ export function renderDecision(hasGoodRender: boolean, errors: readonly { messag
   }
   return { error: null, showSvg: true, hasGoodRender: true };
 }
+
+/** The embed's renders over time: which one is newest, whether anything is on the stage, the card. */
+export interface EmbedRenders<T> {
+  /** A render starts: its number. A later render makes every earlier one stale. */
+  begin(): number;
+  /** Whether render `at` is still the newest, so what it draws may be shown. */
+  current(at: number): boolean;
+  /**
+   * The refit to show a drawing with, and a note that one is now shown: the caller's `refit`, or
+   * `true` while nothing has been shown yet, so the first thing on the stage is always fitted (a
+   * broken first load draws its card later than the render that asked for the fit).
+   */
+  shown(refit: boolean): boolean;
+  /** The error card's module (card 3.19): one shared load; a rejected one is forgotten, so the next call tries again. */
+  card(): Promise<T>;
+}
+
+/**
+ * The bookkeeping embed.ts does around its renders (card 3.19), pure over `load` so it can be
+ * unit-tested: the compiler chunk's `compile` draws no error card, so a broken plan's card arrives
+ * after `load` (the dynamic import of error-card.ts) settles, and by then a newer render may have
+ * run, or the render that asked for the fit may have drawn nothing. The load is lazy-once.ts's rule
+ * written out (imported, `lazyOnce` became a chunk of its own on both the embed and the first use's
+ * paths).
+ */
+export function embedRenders<T>(load: () => Promise<T>): EmbedRenders<T> {
+  let newest = 0;
+  let anything = false;
+  let pending: Promise<T> | undefined;
+  return {
+    begin: () => ++newest,
+    current: (at) => at === newest,
+    shown(refit) {
+      const fit = refit || !anything;
+      anything = true;
+      return fit;
+    },
+    card: () =>
+      (pending ??= load().catch((err: unknown) => {
+        pending = undefined;
+        throw err;
+      })),
+  };
+}

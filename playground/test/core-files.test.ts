@@ -127,18 +127,42 @@ describe("coreFiles (vite.config.js's compiler chunk)", () => {
     // loads it (the header actions are on the first use's). The embed draws the card itself, on a
     // broken plan, through its lazy door (error-card.ts).
     const SRC = join(REPO, "playground/src");
-    /** The value names `text` imports from `from` (a regex source), before any `as`. */
+    /** The value names `text` imports or re-exports from `from` (a regex source), before any `as`. */
     const names = (text: string, from: string) =>
-      [...text.matchAll(new RegExp(`^import\\s*\\{([^}]*)\\}\\s*from\\s*"${from}";?$`, "gm"))].flatMap((m) =>
+      [...text.matchAll(new RegExp(`^(?:import|export)\\s*\\{([^}]*)\\}\\s*from\\s*"${from}";?$`, "gm"))].flatMap((m) =>
         m[1]!
           .split(",")
           .map((n) => n.trim().split(/\s+as\s+/)[0]!)
           .filter((n) => n && !n.startsWith("type ")),
       );
     const CORE = "(?:archlang|@chanmeng666/archlang)";
+    // The whole core in one name, which reaches `compile` without naming it: a namespace import or
+    // re-export, `export *`, or a dynamic import of the package.
+    const WHOLE = new RegExp(
+      `^(?:import\\s*\\*\\s*as\\s+\\w+\\s*from|export\\s*\\*(?:\\s*as\\s+\\w+)?\\s*from)\\s*"${CORE}"|\\bimport\\s*\\(\\s*"${CORE}"\\s*\\)`,
+      "m",
+    );
     const files = readdirSync(SRC).filter((f) => /\.[jt]s$/.test(f));
-    const offenders = files.filter((f) => names(readFileSync(join(SRC, f), "utf8"), CORE).includes("compile"));
+    /** `text` without its comment lines (doc comments quote `import("archlang")` as the thing not to do). */
+    const code = (text: string) =>
+      text
+        .split("\n")
+        .filter((l) => !/^\s*(?:\/\/|\/\*|\*)/.test(l))
+        .join("\n");
+    const offenders = files.filter((f) => {
+      const text = code(readFileSync(join(SRC, f), "utf8"));
+      return names(text, CORE).includes("compile") || WHOLE.test(text);
+    });
     expect(offenders).toEqual([]);
+    // The probes are live.
+    expect(names('export { compile } from "archlang";', CORE)).toContain("compile");
+    for (const probe of [
+      'import * as core from "archlang";',
+      'export * from "@chanmeng666/archlang";',
+      'const core = await import("archlang");',
+    ])
+      expect(WHOLE.test(probe), probe).toBe(true);
+    expect(WHOLE.test('import * as core from "archlang/compile-path";')).toBe(false);
     // The embed's card door is a dynamic import of embed.ts alone, never a static one, so neither
     // the embed path nor any other path carries the card.
     const cardImporters = files.filter((f) =>

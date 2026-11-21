@@ -1,9 +1,11 @@
 /**
  * The catalogued remediation for a diagnostic code: one row of the catalogue's fix column
  * (`CATALOG_FIXES`, generated from `ERROR_CATALOG`). The error card `compile()` draws
- * (`backends/error-svg.ts`) reads it here. It has a module of its own so the card, which is on the
- * compile path, reads the fix without loading the whole JSON projection (card AF1: the
- * playground's compiler chunk is held to a byte budget, `playground/e2e/startup-chunks.baseline.json`).
+ * (`backends/error-svg.ts`) reads it here. It has a module of its own so the card reads the fix
+ * without loading the whole JSON projection (card AF1). Since card 3.19 neither the card nor this
+ * module is on the playground's compiler chunk: `compile()` draws the card through
+ * `src/compile-uncached.ts`, which `src/compile-path.ts` does not reach
+ * (`playground/e2e/startup-chunks.baseline.json`).
  *
  * `CATALOG_FIXES` holds every code `compile()` can raise; the intent violations' (`E_INTENT_*`,
  * raised only by `validateIntent`) are in a table of their own (card NR.10), which

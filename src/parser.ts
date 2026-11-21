@@ -4,6 +4,7 @@ import type { LexResult, Token } from "./lexer.js";
 import { lex, lexUnmemoised } from "./lexer.js";
 import type { Diagnostic, Span } from "./diagnostics.js";
 import { recordIdSpan } from "./id-spans.js";
+import { LEVEL_MIX_FIX } from "./level-mix-fix.js";
 import { capDiagnostics, isLimitClass, MAX_DIAGNOSTICS } from "./diagnostics.js";
 import type {
   AssignNode,
@@ -36,7 +37,6 @@ import {
   AUTO_DIMS_MODES,
   COMPASS_DIRECTIONS,
   HEMISPHERES,
-  LEVEL_MIX_FIX,
   LEVEL_SHARED_KINDS,
   NORTH_DIRS,
   SCHEDULE_SUBJECTS,

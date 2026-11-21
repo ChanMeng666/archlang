@@ -5,7 +5,7 @@
  * Merged into `ERROR_CATALOG` by `mergeFamilies` in `src/error-catalog.ts`; each code is written once, as its key.
  */
 
-import { LEVEL_MIX_FIX } from "../ast.js";
+import { LEVEL_MIX_FIX } from "../level-mix-fix.js";
 import { defineEntries, e, w } from "./entry.js";
 
 export const VERTICAL_ENTRIES = defineEntries({

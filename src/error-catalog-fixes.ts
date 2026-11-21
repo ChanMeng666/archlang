@@ -4,9 +4,10 @@
  * Each catalogue code's `fix` but the intent violations', apart from the rest of its entry: what
  * the `--error-svg` card `compile()` draws reads it (`catalogFix`, `src/catalog-fix.ts`), and
  * `diagnosticToJson` and `renderErrorSvg` read it with the intent table (`anyCatalogFix`,
- * `src/any-catalog-fix.ts`). Kept out of `ERROR_CATALOG`'s module so that a bundle which compiles
- * but never explains (the playground's compiler chunk, card RM0.7) carries the remedies without the
- * messages, causes and examples. The intent violations' (`E_INTENT_*`, card NR.10), which
+ * `src/any-catalog-fix.ts`). Kept out of `ERROR_CATALOG`'s module so that a bundle which reads
+ * the remedies but never explains (the playground's `first-use` chunk, for `diagnosticToJson`;
+ * card RM0.7, and card 3.19 took it off the compiler chunk) carries them without the messages,
+ * causes and examples. The intent violations' (`E_INTENT_*`, card NR.10), which
  * `compile()` never raises, are in `src/error-catalog-fixes-intent.ts`, off the compile path.
  * Generated from `ERROR_CATALOG`, never typed: `test/explain.test.ts` and `check:drift` fail when
  * it goes stale.
