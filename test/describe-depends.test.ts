@@ -470,6 +470,9 @@ suite("pinned", () => {
       "basin_13 furniture on=[r_bath] params=[]", // `in r_bath anchor right`
       "bed_1 furniture on=[r_bed1] params=[]", // `in r_bed1 anchor top-left`
       "bed_3 furniture on=[r_bed2] params=[]", // `in r_bed2 anchor bottom-right`
+      // CV13: example source edited (chairs added at table_10), `at (…) … in r_living`: membership only
+      "chair_14 furniture on=[] params=[]",
+      "chair_15 furniture on=[] params=[]",
       // `against wall exterior segment 3 … in r_living`, no `side`: the face is picked from
       // `r_living`; the derived ring is `host` only, its rooms in its own row below.
       "counter_8 furniture on=[r_living] params=[] host=exterior",
