@@ -153,6 +153,10 @@ exports[`golden SVG snapshots > renders bungalow.arch deterministically 1`] = `
 <polygon points="9650,3105 9650,1695 10765,1695 11005,1935 11005,3105" fill="#f4f2ee" stroke="#a8a29a" stroke-width="13"/>
 <polygon points="9650,3105 9650,1695 9850,1695 9850,3105" fill="#ffffff" stroke="#a8a29a" stroke-width="13"/>
 <polygon points="10765,1695 11005,1935 10765,1935" fill="#ffffff" stroke="#a8a29a" stroke-width="13"/>
+<path d="M 4181,1336 L 4469,1336 A 54 54 0 0 1 4523,1390 L 4523,1696 A 54 54 0 0 1 4469,1750 L 4181,1750 A 54 54 0 0 1 4127,1696 L 4127,1390 A 54 54 0 0 1 4181,1336 Z" fill="#ffffff" stroke="#6c6864" stroke-width="18"/>
+<path d="M 4127,1300 L 4523,1300 A 27 27 0 0 1 4550,1327 A 27 27 0 0 1 4523,1354 L 4127,1354 A 27 27 0 0 1 4100,1327 A 27 27 0 0 1 4127,1300 Z" fill="#f4f2ee" stroke="#6c6864" stroke-width="18"/>
+<path d="M 4469,3164 L 4181,3164 A 54 54 0 0 1 4127,3110 L 4127,2804 A 54 54 0 0 1 4181,2750 L 4469,2750 A 54 54 0 0 1 4523,2804 L 4523,3110 A 54 54 0 0 1 4469,3164 Z" fill="#ffffff" stroke="#6c6864" stroke-width="18"/>
+<path d="M 4523,3200 L 4127,3200 A 27 27 0 0 1 4100,3173 A 27 27 0 0 1 4127,3146 L 4523,3146 A 27 27 0 0 1 4550,3173 A 27 27 0 0 1 4523,3200 Z" fill="#f4f2ee" stroke="#6c6864" stroke-width="18"/>
 </g>
 <g id="A-WALL" inkscape:groupmode="layer" inkscape:label="A-WALL">
 <path d="M -100,-100 L 200,-100 L 200,100 L 100,100 L 100,4750 L 300,4750 L 300,4850 L 100,4850 L 100,6000 L -100,6000 Z M -100,7200 L 100,7200 L 100,8400 L 2950,8400 L 2950,6000 L 3050,6000 L 3050,6250 L 3500,6250 L 3500,6350 L 3050,6350 L 3050,8400 L 3300,8400 L 3300,8600 L -100,8600 Z M 10100,4750 L 10100,4850 L 7900,4850 L 7900,4750 L 8950,4750 L 8950,100 L 8300,100 L 8300,-100 L 9700,-100 L 9700,100 L 9050,100 L 9050,4750 Z M 10500,8400 L 11900,8400 L 11900,6350 L 10600,6350 L 10600,6250 L 11900,6250 L 11900,6000 L 12100,6000 L 12100,8600 L 10500,8600 Z M 10900,4750 L 11900,4750 L 11900,3000 L 12100,3000 L 12100,5100 L 11900,5100 L 11900,4850 L 10900,4850 Z M 11300,-100 L 12100,-100 L 12100,1800 L 11900,1800 L 11900,100 L 11300,100 Z M 1600,-100 L 3800,-100 L 3800,100 L 1600,100 Z M 2700,4750 L 3800,4750 L 3800,4850 L 3050,4850 L 3050,5100 L 2950,5100 L 2950,4850 L 2700,4850 Z M 3900,8400 L 5750,8400 L 5750,6350 L 4300,6350 L 4300,6250 L 6500,6250 L 6500,6350 L 5850,6350 L 5850,8400 L 7950,8400 L 7950,6350 L 7300,6350 L 7300,6250 L 9400,6250 L 9400,6350 L 8050,6350 L 8050,8400 L 9500,8400 L 9500,8600 L 3900,8600 Z M 5200,4750 L 5950,4750 L 5950,100 L 5800,100 L 5800,-100 L 6700,-100 L 6700,100 L 6050,100 L 6050,4750 L 7100,4750 L 7100,4850 L 5200,4850 Z" fill="url(#poche)" fill-rule="nonzero"/>
@@ -3203,6 +3207,18 @@ exports[`golden SVG snapshots > renders courtyard-house.arch deterministically 1
 <line x1="8000" y1="5197.6" x2="8000" y2="4996" stroke="#a8a29a" stroke-width="13"/>
 <line x1="8213.83" y1="5286.17" x2="8356.38" y2="5143.62" stroke="#a8a29a" stroke-width="13"/>
 <circle cx="8000" cy="5500" r="43.2" fill="#6c6864" stroke="#6c6864" stroke-width="18"/>
+<path d="M 6019,2664 L 5731,2664 A 54 54 0 0 1 5677,2610 L 5677,2304 A 54 54 0 0 1 5731,2250 L 6019,2250 A 54 54 0 0 1 6073,2304 L 6073,2610 A 54 54 0 0 1 6019,2664 Z" fill="#ffffff" stroke="#6c6864" stroke-width="18"/>
+<path d="M 6073,2700 L 5677,2700 A 27 27 0 0 1 5650,2673 A 27 27 0 0 1 5677,2646 L 6073,2646 A 27 27 0 0 1 6100,2673 A 27 27 0 0 1 6073,2700 Z" fill="#f4f2ee" stroke="#6c6864" stroke-width="18"/>
+<path d="M 6769,2664 L 6481,2664 A 54 54 0 0 1 6427,2610 L 6427,2304 A 54 54 0 0 1 6481,2250 L 6769,2250 A 54 54 0 0 1 6823,2304 L 6823,2610 A 54 54 0 0 1 6769,2664 Z" fill="#ffffff" stroke="#6c6864" stroke-width="18"/>
+<path d="M 6823,2700 L 6427,2700 A 27 27 0 0 1 6400,2673 A 27 27 0 0 1 6427,2646 L 6823,2646 A 27 27 0 0 1 6850,2673 A 27 27 0 0 1 6823,2700 Z" fill="#f4f2ee" stroke="#6c6864" stroke-width="18"/>
+<path d="M 10331,836 L 10619,836 A 54 54 0 0 1 10673,890 L 10673,1196 A 54 54 0 0 1 10619,1250 L 10331,1250 A 54 54 0 0 1 10277,1196 L 10277,890 A 54 54 0 0 1 10331,836 Z" fill="#ffffff" stroke="#6c6864" stroke-width="18"/>
+<path d="M 10277,800 L 10673,800 A 27 27 0 0 1 10700,827 A 27 27 0 0 1 10673,854 L 10277,854 A 27 27 0 0 1 10250,827 A 27 27 0 0 1 10277,800 Z" fill="#f4f2ee" stroke="#6c6864" stroke-width="18"/>
+<path d="M 11131,836 L 11419,836 A 54 54 0 0 1 11473,890 L 11473,1196 A 54 54 0 0 1 11419,1250 L 11131,1250 A 54 54 0 0 1 11077,1196 L 11077,890 A 54 54 0 0 1 11131,836 Z" fill="#ffffff" stroke="#6c6864" stroke-width="18"/>
+<path d="M 11077,800 L 11473,800 A 27 27 0 0 1 11500,827 A 27 27 0 0 1 11473,854 L 11077,854 A 27 27 0 0 1 11050,827 A 27 27 0 0 1 11077,800 Z" fill="#f4f2ee" stroke="#6c6864" stroke-width="18"/>
+<path d="M 10619,2664 L 10331,2664 A 54 54 0 0 1 10277,2610 L 10277,2304 A 54 54 0 0 1 10331,2250 L 10619,2250 A 54 54 0 0 1 10673,2304 L 10673,2610 A 54 54 0 0 1 10619,2664 Z" fill="#ffffff" stroke="#6c6864" stroke-width="18"/>
+<path d="M 10673,2700 L 10277,2700 A 27 27 0 0 1 10250,2673 A 27 27 0 0 1 10277,2646 L 10673,2646 A 27 27 0 0 1 10700,2673 A 27 27 0 0 1 10673,2700 Z" fill="#f4f2ee" stroke="#6c6864" stroke-width="18"/>
+<path d="M 11419,2664 L 11131,2664 A 54 54 0 0 1 11077,2610 L 11077,2304 A 54 54 0 0 1 11131,2250 L 11419,2250 A 54 54 0 0 1 11473,2304 L 11473,2610 A 54 54 0 0 1 11419,2664 Z" fill="#ffffff" stroke="#6c6864" stroke-width="18"/>
+<path d="M 11473,2700 L 11077,2700 A 27 27 0 0 1 11050,2673 A 27 27 0 0 1 11077,2646 L 11473,2646 A 27 27 0 0 1 11500,2673 A 27 27 0 0 1 11473,2700 Z" fill="#f4f2ee" stroke="#6c6864" stroke-width="18"/>
 </g>
 <g id="A-WALL" inkscape:groupmode="layer" inkscape:label="A-WALL">
 <path d="M -150,-150 L 5000,-150 L 5000,150 L 3550,150 L 3550,1000 L 3450,1000 L 3450,150 L 150,150 L 150,1250 L -150,1250 Z M -150,11650 L -150,6700 L 150,6700 L 150,8400 L 3425,8400 L 3425,6400 L 3575,6400 L 3575,8400 L 4050,8400 L 4050,8600 L 150,8600 L 150,11350 L 1950,11350 L 1950,11650 Z M -150,2250 L 150,2250 L 150,2450 L -150,2450 Z M -150,3250 L 150,3250 L 150,3400 L 3450,3400 L 3450,2500 L 3550,2500 L 3550,3400 L 3700,3400 L 3700,3600 L 3575,3600 L 3575,5600 L 3425,5600 L 3425,3600 L 150,3600 L 150,5300 L -150,5300 Z M 10800,3400 L 11200,3400 L 11200,3600 L 11100,3600 L 11100,4650 L 10900,4650 L 10900,3600 L 10800,3600 Z M 10900,5850 L 11100,5850 L 11100,7100 L 9000,7100 L 9000,6900 L 10900,6900 Z M 10950,11350 L 10950,8600 L 8450,8600 L 8450,8400 L 11300,8400 L 11300,8600 L 11050,8600 L 11050,11350 L 12700,11350 L 12700,11650 L 9050,11650 L 9050,11350 Z M 11550,-150 L 13550,-150 L 13550,150 L 12550,150 L 12550,1300 L 12450,1300 L 12450,150 L 11550,150 Z M 12200,8400 L 12450,8400 L 12450,7900 L 12550,7900 L 12550,8400 L 15850,8400 L 15850,7550 L 16150,7550 L 16150,11650 L 14300,11650 L 14300,11350 L 15850,11350 L 15850,8600 L 12200,8600 Z M 12300,3400 L 12450,3400 L 12450,2200 L 12550,2200 L 12550,3400 L 15850,3400 L 15850,2200 L 16150,2200 L 16150,4450 L 15850,4450 L 15850,3600 L 12550,3600 L 12550,3850 L 12450,3850 L 12450,3600 L 12300,3600 Z M 12450,4650 L 12550,4650 L 12550,5950 L 15850,5950 L 15850,5050 L 16150,5050 L 16150,6950 L 15850,6950 L 15850,6050 L 12550,6050 L 12550,7100 L 12450,7100 Z M 14950,-150 L 16150,-150 L 16150,1300 L 15850,1300 L 15850,150 L 14950,150 Z M 3550,11350 L 5450,11350 L 5450,8600 L 4950,8600 L 4950,8400 L 7550,8400 L 7550,8600 L 5550,8600 L 5550,11350 L 7450,11350 L 7450,11650 L 3550,11650 Z M 4800,3400 L 5200,3400 L 5200,3600 L 5100,3600 L 5100,4650 L 4900,4650 L 4900,3600 L 4800,3600 Z M 4900,5850 L 5100,5850 L 5100,6900 L 7000,6900 L 7000,7100 L 4900,7100 Z M 7000,-150 L 9950,-150 L 9950,150 L 9050,150 L 9050,950 L 8950,950 L 8950,150 L 7000,150 Z M 7000,3400 L 7400,3400 L 7400,3600 L 7000,3600 Z M 8600,3400 L 8950,3400 L 8950,2550 L 9050,2550 L 9050,3400 L 9200,3400 L 9200,3600 L 8600,3600 Z" fill="url(#poche)" fill-rule="nonzero"/>
@@ -3342,12 +3358,12 @@ exports[`golden SVG snapshots > renders courtyard-house.arch deterministically 1
 <polygon points="9160,3600 9160,3640 10840,3640 10840,3600" fill="none" stroke="#1b1b1b" stroke-width="18"/>
 </g>
 <g id="A-ANNO-TEXT" inkscape:groupmode="layer" inkscape:label="A-ANNO-TEXT">
-<text x="6250" y="2730" font-size="350" fill="#222222" text-anchor="middle" dominant-baseline="central" font-weight="600">Living</text>
-<text x="6250" y="3115" font-size="250" fill="#7a7a7a" text-anchor="middle" dominant-baseline="central">19.3 m²</text>
+<text x="4600" y="1680" font-size="350" fill="#222222" text-anchor="middle" dominant-baseline="central" font-weight="600">Living</text>
+<text x="4600" y="2065" font-size="250" fill="#7a7a7a" text-anchor="middle" dominant-baseline="central">19.3 m²</text>
 <text x="1750" y="1680" font-size="350" fill="#222222" text-anchor="middle" dominant-baseline="central" font-weight="600">Entry</text>
 <text x="1750" y="2065" font-size="250" fill="#7a7a7a" text-anchor="middle" dominant-baseline="central">12.3 m²</text>
-<text x="10750" y="630" font-size="350" fill="#222222" text-anchor="middle" dominant-baseline="central" font-weight="600">Dining</text>
-<text x="10750" y="1015" font-size="250" fill="#7a7a7a" text-anchor="middle" dominant-baseline="central">12.3 m²</text>
+<text x="9700" y="2730" font-size="350" fill="#222222" text-anchor="middle" dominant-baseline="central" font-weight="600">Dining</text>
+<text x="9700" y="3115" font-size="250" fill="#7a7a7a" text-anchor="middle" dominant-baseline="central">12.3 m²</text>
 <text x="8000" y="7680" font-size="350" fill="#222222" text-anchor="middle" dominant-baseline="central" font-weight="600">Gallery</text>
 <text x="8000" y="8065" font-size="250" fill="#7a7a7a" text-anchor="middle" dominant-baseline="central">24.0 m²</text>
 <text x="2750" y="9930" font-size="350" fill="#222222" text-anchor="middle" dominant-baseline="central" font-weight="600">Bedroom 1</text>
@@ -3813,7 +3829,7 @@ exports[`golden SVG snapshots > renders courtyard-house.arch deterministically 1
 <text x="-578" y="22945" font-size="190" fill="#333333" text-anchor="start" dominant-baseline="central" font-weight="600">TOTAL</text>
 <text x="4028" y="22945" font-size="190" fill="#333333" text-anchor="end" dominant-baseline="central" font-weight="600">163.00</text>
 <text x="5428" y="22945" font-size="190" fill="#333333" text-anchor="end" dominant-baseline="central" font-weight="600">144.83</text>
-<polygon points="5800,16315 8500,16315 8500,22775 5800,22775" fill="none" stroke="#333333" stroke-width="18"/>
+<polygon points="5800,16315 8500,16315 8500,23115 5800,23115" fill="none" stroke="#333333" stroke-width="18"/>
 <text x="5854" y="16485" font-size="190" fill="#333333" text-anchor="start" dominant-baseline="central" font-weight="600">LEGEND</text>
 <line x1="5800" y1="16655" x2="8500" y2="16655" stroke="#333333" stroke-width="18"/>
 <path d="M 104,198 L 496,198 L 496,402 L 104,402 Z" transform="translate(5750 16525) scale(1)" fill="url(#hatch-paving)" fill-rule="nonzero"/>
@@ -3931,54 +3947,58 @@ exports[`golden SVG snapshots > renders courtyard-house.arch deterministically 1
 <path d="M 5861.75,20809.12 L 6238.25,20809.12 A 1.63 1.63 0 0 1 6239.88,20810.75 L 6239.88,20999.25 A 1.63 1.63 0 0 1 6238.25,21000.88 L 5861.75,21000.88 A 1.63 1.63 0 0 1 5860.12,20999.25 L 5860.12,20810.75 A 1.63 1.63 0 0 1 5861.75,20809.12 Z" fill="none" stroke="#a8a29a" stroke-width="13"/>
 <text x="6354" y="20905" font-size="190" fill="#333333" text-anchor="start" dominant-baseline="central">table</text>
 <line x1="5800" y1="21075" x2="8500" y2="21075" stroke="#333333" stroke-width="13"/>
-<path d="M 5858.08,21143 L 6241.92,21143 A 4.08 4.08 0 0 1 6246,21147.08 L 6246,21342.92 A 4.08 4.08 0 0 1 6241.92,21347 L 5858.08,21347 A 4.08 4.08 0 0 1 5854,21342.92 L 5854,21147.08 A 4.08 4.08 0 0 1 5858.08,21143 Z" fill="#f4f2ee" stroke="#6c6864" stroke-width="18"/>
-<line x1="5854" y1="21177" x2="6246" y2="21177" stroke="#a8a29a" stroke-width="13"/>
-<line x1="5854" y1="21211" x2="6246" y2="21211" stroke="#a8a29a" stroke-width="13"/>
-<line x1="5854" y1="21245" x2="6246" y2="21245" stroke="#a8a29a" stroke-width="13"/>
-<line x1="5854" y1="21279" x2="6246" y2="21279" stroke="#a8a29a" stroke-width="13"/>
-<line x1="5854" y1="21313" x2="6246" y2="21313" stroke="#a8a29a" stroke-width="13"/>
-<text x="6354" y="21245" font-size="190" fill="#333333" text-anchor="start" dominant-baseline="central">bench</text>
+<path d="M 5902,21159.32 L 6198,21159.32 A 24.48 24.48 0 0 1 6222.48,21183.8 L 6222.48,21322.52 A 24.48 24.48 0 0 1 6198,21347 L 5902,21347 A 24.48 24.48 0 0 1 5877.52,21322.52 L 5877.52,21183.8 A 24.48 24.48 0 0 1 5902,21159.32 Z" fill="#ffffff" stroke="#6c6864" stroke-width="18"/>
+<path d="M 5866.24,21143 L 6233.76,21143 A 12.24 12.24 0 0 1 6246,21155.24 A 12.24 12.24 0 0 1 6233.76,21167.48 L 5866.24,21167.48 A 12.24 12.24 0 0 1 5854,21155.24 A 12.24 12.24 0 0 1 5866.24,21143 Z" fill="#f4f2ee" stroke="#6c6864" stroke-width="18"/>
+<text x="6354" y="21245" font-size="190" fill="#333333" text-anchor="start" dominant-baseline="central">chair</text>
 <line x1="5800" y1="21415" x2="8500" y2="21415" stroke="#333333" stroke-width="13"/>
-<path d="M 5856.04,21483 L 6243.96,21483 A 2.04 2.04 0 0 1 6246,21485.04 L 6246,21684.96 A 2.04 2.04 0 0 1 6243.96,21687 L 5856.04,21687 A 2.04 2.04 0 0 1 5854,21684.96 L 5854,21485.04 A 2.04 2.04 0 0 1 5856.04,21483 Z" fill="#f4f2ee" stroke="#6c6864" stroke-width="18"/>
-<path d="M 5862.77,21490.14 L 6237.23,21490.14 A 1.63 1.63 0 0 1 6238.86,21491.77 L 6238.86,21678.23 A 1.63 1.63 0 0 1 6237.23,21679.86 L 5862.77,21679.86 A 1.63 1.63 0 0 1 5861.14,21678.23 L 5861.14,21491.77 A 1.63 1.63 0 0 1 5862.77,21490.14 Z" fill="none" stroke="#a8a29a" stroke-width="13"/>
-<line x1="5861.14" y1="21507.48" x2="6238.86" y2="21507.48" stroke="#a8a29a" stroke-width="13"/>
-<polygon points="6128.4,21523.8 6226.4,21523.8 6226.4,21670.68 6128.4,21670.68" fill="none" stroke="#a8a29a" stroke-width="13" stroke-dasharray="108 72"/>
-<line x1="6128.4" y1="21572.76" x2="6226.4" y2="21572.76" stroke="#a8a29a" stroke-width="13" stroke-dasharray="108 72"/>
-<line x1="6128.4" y1="21621.72" x2="6226.4" y2="21621.72" stroke="#a8a29a" stroke-width="13" stroke-dasharray="108 72"/>
-<path d="M 5941.32,21521.76 L 6041.08,21521.76 A 5 5 0 0 1 6046.08,21526.76 L 6046.08,21531.04 A 5 5 0 0 1 6041.08,21536.04 L 5941.32,21536.04 A 5 5 0 0 1 5936.32,21531.04 L 5936.32,21526.76 A 5 5 0 0 1 5941.32,21521.76 Z" fill="#ffffff" stroke="#a8a29a" stroke-width="13"/>
-<text x="6354" y="21585" font-size="190" fill="#333333" text-anchor="start" dominant-baseline="central">desk</text>
+<path d="M 5858.08,21483 L 6241.92,21483 A 4.08 4.08 0 0 1 6246,21487.08 L 6246,21682.92 A 4.08 4.08 0 0 1 6241.92,21687 L 5858.08,21687 A 4.08 4.08 0 0 1 5854,21682.92 L 5854,21487.08 A 4.08 4.08 0 0 1 5858.08,21483 Z" fill="#f4f2ee" stroke="#6c6864" stroke-width="18"/>
+<line x1="5854" y1="21517" x2="6246" y2="21517" stroke="#a8a29a" stroke-width="13"/>
+<line x1="5854" y1="21551" x2="6246" y2="21551" stroke="#a8a29a" stroke-width="13"/>
+<line x1="5854" y1="21585" x2="6246" y2="21585" stroke="#a8a29a" stroke-width="13"/>
+<line x1="5854" y1="21619" x2="6246" y2="21619" stroke="#a8a29a" stroke-width="13"/>
+<line x1="5854" y1="21653" x2="6246" y2="21653" stroke="#a8a29a" stroke-width="13"/>
+<text x="6354" y="21585" font-size="190" fill="#333333" text-anchor="start" dominant-baseline="central">bench</text>
 <line x1="5800" y1="21755" x2="8500" y2="21755" stroke="#333333" stroke-width="13"/>
 <path d="M 5856.04,21823 L 6243.96,21823 A 2.04 2.04 0 0 1 6246,21825.04 L 6246,22024.96 A 2.04 2.04 0 0 1 6243.96,22027 L 5856.04,22027 A 2.04 2.04 0 0 1 5854,22024.96 L 5854,21825.04 A 2.04 2.04 0 0 1 5856.04,21823 Z" fill="#f4f2ee" stroke="#6c6864" stroke-width="18"/>
-<line x1="5854" y1="21851.56" x2="6246" y2="21851.56" stroke="#a8a29a" stroke-width="13"/>
-<line x1="6050" y1="21823" x2="6050" y2="22027" stroke="#a8a29a" stroke-width="13"/>
-<path d="M 5871.34,21865.84 L 6032.66,21865.84 A 3.06 3.06 0 0 1 6035.72,21868.9 L 6035.72,21950.5 A 3.06 3.06 0 0 1 6032.66,21953.56 L 5871.34,21953.56 A 3.06 3.06 0 0 1 5868.28,21950.5 L 5868.28,21868.9 A 3.06 3.06 0 0 1 5871.34,21865.84 Z" fill="#ffffff" stroke="#a8a29a" stroke-width="13"/>
-<line x1="5924.09" y1="21865.84" x2="5924.09" y2="21953.56" stroke="#a8a29a" stroke-width="13"/>
-<line x1="5979.91" y1="21865.84" x2="5979.91" y2="21953.56" stroke="#a8a29a" stroke-width="13"/>
-<path d="M 6067.34,21865.84 L 6228.66,21865.84 A 3.06 3.06 0 0 1 6231.72,21868.9 L 6231.72,21950.5 A 3.06 3.06 0 0 1 6228.66,21953.56 L 6067.34,21953.56 A 3.06 3.06 0 0 1 6064.28,21950.5 L 6064.28,21868.9 A 3.06 3.06 0 0 1 6067.34,21865.84 Z" fill="#ffffff" stroke="#a8a29a" stroke-width="13"/>
-<line x1="6120.09" y1="21865.84" x2="6120.09" y2="21953.56" stroke="#a8a29a" stroke-width="13"/>
-<line x1="6175.91" y1="21865.84" x2="6175.91" y2="21953.56" stroke="#a8a29a" stroke-width="13"/>
-<text x="6354" y="21925" font-size="190" fill="#333333" text-anchor="start" dominant-baseline="central">bookcase</text>
+<path d="M 5862.77,21830.14 L 6237.23,21830.14 A 1.63 1.63 0 0 1 6238.86,21831.77 L 6238.86,22018.23 A 1.63 1.63 0 0 1 6237.23,22019.86 L 5862.77,22019.86 A 1.63 1.63 0 0 1 5861.14,22018.23 L 5861.14,21831.77 A 1.63 1.63 0 0 1 5862.77,21830.14 Z" fill="none" stroke="#a8a29a" stroke-width="13"/>
+<line x1="5861.14" y1="21847.48" x2="6238.86" y2="21847.48" stroke="#a8a29a" stroke-width="13"/>
+<polygon points="6128.4,21863.8 6226.4,21863.8 6226.4,22010.68 6128.4,22010.68" fill="none" stroke="#a8a29a" stroke-width="13" stroke-dasharray="108 72"/>
+<line x1="6128.4" y1="21912.76" x2="6226.4" y2="21912.76" stroke="#a8a29a" stroke-width="13" stroke-dasharray="108 72"/>
+<line x1="6128.4" y1="21961.72" x2="6226.4" y2="21961.72" stroke="#a8a29a" stroke-width="13" stroke-dasharray="108 72"/>
+<path d="M 5941.32,21861.76 L 6041.08,21861.76 A 5 5 0 0 1 6046.08,21866.76 L 6046.08,21871.04 A 5 5 0 0 1 6041.08,21876.04 L 5941.32,21876.04 A 5 5 0 0 1 5936.32,21871.04 L 5936.32,21866.76 A 5 5 0 0 1 5941.32,21861.76 Z" fill="#ffffff" stroke="#a8a29a" stroke-width="13"/>
+<text x="6354" y="21925" font-size="190" fill="#333333" text-anchor="start" dominant-baseline="central">desk</text>
 <line x1="5800" y1="22095" x2="8500" y2="22095" stroke="#333333" stroke-width="13"/>
-<path d="M 5858.08,22163 L 6241.92,22163 A 4.08 4.08 0 0 1 6246,22167.08 L 6246,22362.92 A 4.08 4.08 0 0 1 6241.92,22367 L 5858.08,22367 A 4.08 4.08 0 0 1 5854,22362.92 L 5854,22167.08 A 4.08 4.08 0 0 1 5858.08,22163 Z" fill="#f4f2ee" stroke="#6c6864" stroke-width="18"/>
-<path d="M 5872.36,22177.28 L 6227.64,22177.28 A 4.08 4.08 0 0 1 6231.72,22181.36 L 6231.72,22201.76 A 4.08 4.08 0 0 1 6227.64,22205.84 L 5872.36,22205.84 A 4.08 4.08 0 0 1 5868.28,22201.76 L 5868.28,22181.36 A 4.08 4.08 0 0 1 5872.36,22177.28 Z" fill="#ffffff" stroke="#a8a29a" stroke-width="13"/>
-<circle cx="6159.76" cy="22191.56" r="8.16" fill="none" stroke="#a8a29a" stroke-width="13"/>
-<circle cx="5963.76" cy="22191.56" r="3.67" fill="#a8a29a" stroke="#a8a29a" stroke-width="13"/>
-<circle cx="6050" cy="22285.4" r="63.24" fill="none" stroke="#6c6864" stroke-width="18"/>
-<circle cx="6050" cy="22285.4" r="39.21" fill="#ffffff" stroke="#a8a29a" stroke-width="13"/>
-<text x="6354" y="22265" font-size="190" fill="#333333" text-anchor="start" dominant-baseline="central">washer</text>
+<path d="M 5856.04,22163 L 6243.96,22163 A 2.04 2.04 0 0 1 6246,22165.04 L 6246,22364.96 A 2.04 2.04 0 0 1 6243.96,22367 L 5856.04,22367 A 2.04 2.04 0 0 1 5854,22364.96 L 5854,22165.04 A 2.04 2.04 0 0 1 5856.04,22163 Z" fill="#f4f2ee" stroke="#6c6864" stroke-width="18"/>
+<line x1="5854" y1="22191.56" x2="6246" y2="22191.56" stroke="#a8a29a" stroke-width="13"/>
+<line x1="6050" y1="22163" x2="6050" y2="22367" stroke="#a8a29a" stroke-width="13"/>
+<path d="M 5871.34,22205.84 L 6032.66,22205.84 A 3.06 3.06 0 0 1 6035.72,22208.9 L 6035.72,22290.5 A 3.06 3.06 0 0 1 6032.66,22293.56 L 5871.34,22293.56 A 3.06 3.06 0 0 1 5868.28,22290.5 L 5868.28,22208.9 A 3.06 3.06 0 0 1 5871.34,22205.84 Z" fill="#ffffff" stroke="#a8a29a" stroke-width="13"/>
+<line x1="5924.09" y1="22205.84" x2="5924.09" y2="22293.56" stroke="#a8a29a" stroke-width="13"/>
+<line x1="5979.91" y1="22205.84" x2="5979.91" y2="22293.56" stroke="#a8a29a" stroke-width="13"/>
+<path d="M 6067.34,22205.84 L 6228.66,22205.84 A 3.06 3.06 0 0 1 6231.72,22208.9 L 6231.72,22290.5 A 3.06 3.06 0 0 1 6228.66,22293.56 L 6067.34,22293.56 A 3.06 3.06 0 0 1 6064.28,22290.5 L 6064.28,22208.9 A 3.06 3.06 0 0 1 6067.34,22205.84 Z" fill="#ffffff" stroke="#a8a29a" stroke-width="13"/>
+<line x1="6120.09" y1="22205.84" x2="6120.09" y2="22293.56" stroke="#a8a29a" stroke-width="13"/>
+<line x1="6175.91" y1="22205.84" x2="6175.91" y2="22293.56" stroke="#a8a29a" stroke-width="13"/>
+<text x="6354" y="22265" font-size="190" fill="#333333" text-anchor="start" dominant-baseline="central">bookcase</text>
 <line x1="5800" y1="22435" x2="8500" y2="22435" stroke="#333333" stroke-width="13"/>
-<path d="M 6120.56,22575.77 A 29.29 29.29 0 0 1 6147.92,22605 A 29.29 29.29 0 0 1 6120.56,22634.23 A 35.17 35.17 0 0 1 6079.23,22675.56 A 29.29 29.29 0 0 1 6050,22702.92 A 29.29 29.29 0 0 1 6020.77,22675.56 A 35.17 35.17 0 0 1 5979.44,22634.23 A 29.29 29.29 0 0 1 5952.08,22605 A 29.29 29.29 0 0 1 5979.44,22575.77 A 35.17 35.17 0 0 1 6020.77,22534.44 A 29.29 29.29 0 0 1 6050,22507.08 A 29.29 29.29 0 0 1 6079.23,22534.44 A 35.17 35.17 0 0 1 6120.56,22575.77 Z" fill="#eef3e7" stroke="#6c6864" stroke-width="18"/>
-<circle cx="6050" cy="22605" r="41.13" fill="none" stroke="#a8a29a" stroke-width="13"/>
-<line x1="6091.13" y1="22605" x2="6118.54" y2="22605" stroke="#a8a29a" stroke-width="13"/>
-<line x1="6079.08" y1="22634.08" x2="6098.47" y2="22653.47" stroke="#a8a29a" stroke-width="13"/>
-<line x1="6050" y1="22646.13" x2="6050" y2="22673.54" stroke="#a8a29a" stroke-width="13"/>
-<line x1="6020.92" y1="22634.08" x2="6001.53" y2="22653.47" stroke="#a8a29a" stroke-width="13"/>
-<line x1="6008.87" y1="22605" x2="5981.46" y2="22605" stroke="#a8a29a" stroke-width="13"/>
-<line x1="6020.92" y1="22575.92" x2="6001.53" y2="22556.53" stroke="#a8a29a" stroke-width="13"/>
-<line x1="6050" y1="22563.87" x2="6050" y2="22536.46" stroke="#a8a29a" stroke-width="13"/>
-<line x1="6079.08" y1="22575.92" x2="6098.47" y2="22556.53" stroke="#a8a29a" stroke-width="13"/>
-<circle cx="6050" cy="22605" r="5.88" fill="#6c6864" stroke="#6c6864" stroke-width="18"/>
-<text x="6354" y="22605" font-size="190" fill="#333333" text-anchor="start" dominant-baseline="central">planter</text>
+<path d="M 5858.08,22503 L 6241.92,22503 A 4.08 4.08 0 0 1 6246,22507.08 L 6246,22702.92 A 4.08 4.08 0 0 1 6241.92,22707 L 5858.08,22707 A 4.08 4.08 0 0 1 5854,22702.92 L 5854,22507.08 A 4.08 4.08 0 0 1 5858.08,22503 Z" fill="#f4f2ee" stroke="#6c6864" stroke-width="18"/>
+<path d="M 5872.36,22517.28 L 6227.64,22517.28 A 4.08 4.08 0 0 1 6231.72,22521.36 L 6231.72,22541.76 A 4.08 4.08 0 0 1 6227.64,22545.84 L 5872.36,22545.84 A 4.08 4.08 0 0 1 5868.28,22541.76 L 5868.28,22521.36 A 4.08 4.08 0 0 1 5872.36,22517.28 Z" fill="#ffffff" stroke="#a8a29a" stroke-width="13"/>
+<circle cx="6159.76" cy="22531.56" r="8.16" fill="none" stroke="#a8a29a" stroke-width="13"/>
+<circle cx="5963.76" cy="22531.56" r="3.67" fill="#a8a29a" stroke="#a8a29a" stroke-width="13"/>
+<circle cx="6050" cy="22625.4" r="63.24" fill="none" stroke="#6c6864" stroke-width="18"/>
+<circle cx="6050" cy="22625.4" r="39.21" fill="#ffffff" stroke="#a8a29a" stroke-width="13"/>
+<text x="6354" y="22605" font-size="190" fill="#333333" text-anchor="start" dominant-baseline="central">washer</text>
+<line x1="5800" y1="22775" x2="8500" y2="22775" stroke="#333333" stroke-width="13"/>
+<path d="M 6120.56,22915.77 A 29.29 29.29 0 0 1 6147.92,22945 A 29.29 29.29 0 0 1 6120.56,22974.23 A 35.17 35.17 0 0 1 6079.23,23015.56 A 29.29 29.29 0 0 1 6050,23042.92 A 29.29 29.29 0 0 1 6020.77,23015.56 A 35.17 35.17 0 0 1 5979.44,22974.23 A 29.29 29.29 0 0 1 5952.08,22945 A 29.29 29.29 0 0 1 5979.44,22915.77 A 35.17 35.17 0 0 1 6020.77,22874.44 A 29.29 29.29 0 0 1 6050,22847.08 A 29.29 29.29 0 0 1 6079.23,22874.44 A 35.17 35.17 0 0 1 6120.56,22915.77 Z" fill="#eef3e7" stroke="#6c6864" stroke-width="18"/>
+<circle cx="6050" cy="22945" r="41.13" fill="none" stroke="#a8a29a" stroke-width="13"/>
+<line x1="6091.13" y1="22945" x2="6118.54" y2="22945" stroke="#a8a29a" stroke-width="13"/>
+<line x1="6079.08" y1="22974.08" x2="6098.47" y2="22993.47" stroke="#a8a29a" stroke-width="13"/>
+<line x1="6050" y1="22986.13" x2="6050" y2="23013.54" stroke="#a8a29a" stroke-width="13"/>
+<line x1="6020.92" y1="22974.08" x2="6001.53" y2="22993.47" stroke="#a8a29a" stroke-width="13"/>
+<line x1="6008.87" y1="22945" x2="5981.46" y2="22945" stroke="#a8a29a" stroke-width="13"/>
+<line x1="6020.92" y1="22915.92" x2="6001.53" y2="22896.53" stroke="#a8a29a" stroke-width="13"/>
+<line x1="6050" y1="22903.87" x2="6050" y2="22876.46" stroke="#a8a29a" stroke-width="13"/>
+<line x1="6079.08" y1="22915.92" x2="6098.47" y2="22896.53" stroke="#a8a29a" stroke-width="13"/>
+<circle cx="6050" cy="22945" r="5.88" fill="#6c6864" stroke="#6c6864" stroke-width="18"/>
+<text x="6354" y="22945" font-size="190" fill="#333333" text-anchor="start" dominant-baseline="central">planter</text>
 </g>
 <g><polygon points="18700,-3195 18475,-2475 18700,-2632.5 18925,-2475" fill="#333333" transform="rotate(0 18700 -2745)"/><text x="18700" y="-3403" font-size="260" fill="#333333" text-anchor="middle" dominant-baseline="central">N</text></g>
 <g><rect x="-650" y="13975" width="1000" height="140" fill="#333333"/><rect x="350" y="13975" width="1000" height="140" fill="none" stroke="#333333" stroke-width="18"/><text x="-650" y="14315" font-size="200" fill="#333333" text-anchor="start" dominant-baseline="central">0</text><text x="1350" y="14315" font-size="200" fill="#333333" text-anchor="middle" dominant-baseline="central">2 m</text></g>
@@ -4751,6 +4771,10 @@ exports[`golden SVG snapshots > renders garden-loft.arch deterministically 1`] =
 <circle cx="6600" cy="4848.25" r="15.75" fill="#a8a29a" stroke="#a8a29a" stroke-width="8.32"/>
 <line x1="6600" y1="4848.25" x2="6600" y2="4760.5" stroke="#a8a29a" stroke-width="8.32"/>
 <circle cx="6600" cy="4623.7" r="13.5" fill="#a8a29a" stroke="#a8a29a" stroke-width="8.32"/>
+<path d="M 1981,1586 L 2269,1586 A 54 54 0 0 1 2323,1640 L 2323,1946 A 54 54 0 0 1 2269,2000 L 1981,2000 A 54 54 0 0 1 1927,1946 L 1927,1640 A 54 54 0 0 1 1981,1586 Z" fill="#ffffff" stroke="#6c6864" stroke-width="11.52"/>
+<path d="M 1927,1550 L 2323,1550 A 27 27 0 0 1 2350,1577 A 27 27 0 0 1 2323,1604 L 1927,1604 A 27 27 0 0 1 1900,1577 A 27 27 0 0 1 1927,1550 Z" fill="#f4f2ee" stroke="#6c6864" stroke-width="11.52"/>
+<path d="M 2269,3414 L 1981,3414 A 54 54 0 0 1 1927,3360 L 1927,3054 A 54 54 0 0 1 1981,3000 L 2269,3000 A 54 54 0 0 1 2323,3054 L 2323,3360 A 54 54 0 0 1 2269,3414 Z" fill="#ffffff" stroke="#6c6864" stroke-width="11.52"/>
+<path d="M 2323,3450 L 1927,3450 A 27 27 0 0 1 1900,3423 A 27 27 0 0 1 1927,3396 L 2323,3396 A 27 27 0 0 1 2350,3423 A 27 27 0 0 1 2323,3450 Z" fill="#f4f2ee" stroke="#6c6864" stroke-width="11.52"/>
 </g>
 <g id="A-WALL" inkscape:groupmode="layer" inkscape:label="A-WALL">
 <path d="M -100,-100 L 1500,-100 L 1500,100 L 100,100 L 100,2900 L -100,2900 Z M -100,4300 L 100,4300 L 100,4900 L 2750,4900 L 2750,5100 L -100,5100 Z M 3300,-100 L 5400,-100 L 5400,100 L 4250,100 L 4250,1200 L 4150,1200 L 4150,100 L 3300,100 Z M 3650,4900 L 4150,4900 L 4150,4500 L 4250,4500 L 4250,4900 L 4700,4900 L 4700,5100 L 3650,5100 Z M 4150,2000 L 4250,2000 L 4250,3150 L 6900,3150 L 6900,100 L 6600,100 L 6600,-100 L 7100,-100 L 7100,5100 L 5300,5100 L 5300,4900 L 6900,4900 L 6900,3250 L 4250,3250 L 4250,3700 L 4150,3700 Z" fill="url(#poche)" fill-rule="nonzero"/>
@@ -4794,8 +4818,8 @@ exports[`golden SVG snapshots > renders garden-loft.arch deterministically 1`] =
 <polygon points="4660,5100 4660,5140 5340,5140 5340,5100" fill="none" stroke="#1b1b1b" stroke-width="11.52"/>
 </g>
 <g id="A-ANNO-TEXT" inkscape:groupmode="layer" inkscape:label="A-ANNO-TEXT">
-<text x="2100" y="3206.8" font-size="216" fill="#222222" text-anchor="middle" dominant-baseline="central" font-weight="600">Living / Kitchen</text>
-<text x="2100" y="3444.4" font-size="158.4" fill="#7a7a7a" text-anchor="middle" dominant-baseline="central">21.0 m²</text>
+<text x="2100" y="956.8" font-size="216" fill="#222222" text-anchor="middle" dominant-baseline="central" font-weight="600">Living / Kitchen</text>
+<text x="2100" y="1194.4" font-size="158.4" fill="#7a7a7a" text-anchor="middle" dominant-baseline="central">21.0 m²</text>
 <text x="6020" y="596.8" font-size="216" fill="#222222" text-anchor="middle" dominant-baseline="central" font-weight="600">Bedroom</text>
 <text x="6020" y="834.4" font-size="158.4" fill="#7a7a7a" text-anchor="middle" dominant-baseline="central">9.0 m²</text>
 <text x="5600" y="3786.8" font-size="216" fill="#222222" text-anchor="middle" dominant-baseline="central" font-weight="600">Bath</text>
@@ -4988,6 +5012,14 @@ exports[`golden SVG snapshots > renders hexagon-pavilion.arch deterministically 
 <line x1="9450" y1="12180" x2="10850" y2="12180" stroke="#a8a29a" stroke-width="17.77"/>
 <line x1="9450" y1="12270" x2="10850" y2="12270" stroke="#a8a29a" stroke-width="17.77"/>
 <line x1="9450" y1="12360" x2="10850" y2="12360" stroke="#a8a29a" stroke-width="17.77"/>
+<path d="M 13481,5086 L 13769,5086 A 54 54 0 0 1 13823,5140 L 13823,5446 A 54 54 0 0 1 13769,5500 L 13481,5500 A 54 54 0 0 1 13427,5446 L 13427,5140 A 54 54 0 0 1 13481,5086 Z" fill="#ffffff" stroke="#748c79" stroke-width="24.6"/>
+<path d="M 13427,5050 L 13823,5050 A 27 27 0 0 1 13850,5077 A 27 27 0 0 1 13823,5104 L 13427,5104 A 27 27 0 0 1 13400,5077 A 27 27 0 0 1 13427,5050 Z" fill="#f4f2ee" stroke="#748c79" stroke-width="24.6"/>
+<path d="M 12686,6169 L 12686,5881 A 54 54 0 0 1 12740,5827 L 13046,5827 A 54 54 0 0 1 13100,5881 L 13100,6169 A 54 54 0 0 1 13046,6223 L 12740,6223 A 54 54 0 0 1 12686,6169 Z" fill="#ffffff" stroke="#748c79" stroke-width="24.6"/>
+<path d="M 12650,6223 L 12650,5827 A 27 27 0 0 1 12677,5800 A 27 27 0 0 1 12704,5827 L 12704,6223 A 27 27 0 0 1 12677,6250 A 27 27 0 0 1 12650,6223 Z" fill="#f4f2ee" stroke="#748c79" stroke-width="24.6"/>
+<path d="M 4181,5086 L 4469,5086 A 54 54 0 0 1 4523,5140 L 4523,5446 A 54 54 0 0 1 4469,5500 L 4181,5500 A 54 54 0 0 1 4127,5446 L 4127,5140 A 54 54 0 0 1 4181,5086 Z" fill="#ffffff" stroke="#748c79" stroke-width="24.6"/>
+<path d="M 4127,5050 L 4523,5050 A 27 27 0 0 1 4550,5077 A 27 27 0 0 1 4523,5104 L 4127,5104 A 27 27 0 0 1 4100,5077 A 27 27 0 0 1 4127,5050 Z" fill="#f4f2ee" stroke="#748c79" stroke-width="24.6"/>
+<path d="M 3386,6169 L 3386,5881 A 54 54 0 0 1 3440,5827 L 3746,5827 A 54 54 0 0 1 3800,5881 L 3800,6169 A 54 54 0 0 1 3746,6223 L 3440,6223 A 54 54 0 0 1 3386,6169 Z" fill="#ffffff" stroke="#748c79" stroke-width="24.6"/>
+<path d="M 3350,6223 L 3350,5827 A 27 27 0 0 1 3377,5800 A 27 27 0 0 1 3404,5827 L 3404,6223 A 27 27 0 0 1 3377,6250 A 27 27 0 0 1 3350,6223 Z" fill="#f4f2ee" stroke="#748c79" stroke-width="24.6"/>
 </g>
 <g id="A-WALL" inkscape:groupmode="layer" inkscape:label="A-WALL">
 <path d="M 10019.9,10263.42 L 9936.81,10300.85 L 9852.79,10336.16 L 9767.91,10369.33 L 9682.21,10400.35 L 9595.75,10429.19 L 9508.6,10455.83 L 9420.79,10480.25 L 9332.4,10502.44 L 9054.93,9334.96 L 9222.85,9288.55 L 9386.97,9230.09 L 9546.41,9159.87 L 9700.33,9078.27 L 9847.93,8985.72 L 9988.43,8882.7 L 10121.09,8769.77 L 10245.2,8647.51 L 11117.8,9471.26 L 11015.99,9574.84 L 10910.09,9674.22 L 10800.27,9769.25 L 10686.71,9859.78 L 10569.58,9945.65 L 10449.09,10026.72 L 10325.43,10102.87 L 10198.79,10173.97 L 11492.08,12760.56 L 12910,10870 L 13150,11050 L 11575,13150 L 9200,13150 L 9200,12850 L 11313.2,12850 Z M 10019.9,3736.58 L 11313.2,1150 L 9700,1150 L 9700,850 L 11575,850 L 13150,2950 L 12910,3130 L 11492.08,1239.44 L 10198.79,3826.03 L 10325.43,3897.13 L 10449.09,3973.28 L 10569.58,4054.35 L 10686.71,4140.22 L 10800.27,4230.75 L 10910.09,4325.78 L 11015.99,4425.16 L 11117.8,4528.74 L 10245.2,5352.49 L 10121.09,5230.23 L 9988.43,5117.3 L 9847.93,5014.28 L 9700.33,4921.73 L 9546.41,4840.13 L 9386.97,4769.91 L 9222.85,4711.45 L 9054.93,4665.04 L 9332.4,3497.56 L 9420.79,3519.75 L 9508.6,3544.17 L 9595.75,3570.81 L 9682.21,3599.65 L 9767.91,3630.67 L 9852.79,3663.84 L 9936.81,3699.15 Z M 10799.82,6313.84 L 11949.73,5970.76 L 12015.22,6223.3 L 12062.24,6479.93 L 12090.55,6739.28 L 12100,7000 L 12090.55,7260.72 L 12062.24,7520.07 L 12015.22,7776.7 L 11949.73,8029.24 L 10799.82,7686.16 L 10843.48,7517.8 L 10874.82,7346.72 L 10893.7,7173.81 L 10900,7000 L 10893.7,6826.19 L 10874.82,6653.28 L 10843.48,6482.2 Z M 12150,6900 L 15737.5,6900 L 14350,5050 L 14590,4870 L 16187.5,7000 L 14590,9130 L 14350,8950 L 15737.5,7100 L 12150,7100 Z M 1262.5,6900 L 4850,6900 L 4850,7100 L 1262.5,7100 L 2650,8950 L 2410,9130 L 812.5,7000 L 2410,4870 L 2650,5050 Z M 3850,11050 L 4090,10870 L 5507.92,12760.56 L 6801.21,10173.97 L 6674.57,10102.87 L 6550.91,10026.72 L 6430.42,9945.65 L 6313.29,9859.78 L 6199.73,9769.25 L 6089.91,9674.22 L 5984.01,9574.84 L 5882.2,9471.26 L 6754.8,8647.51 L 6878.91,8769.77 L 7011.57,8882.7 L 7152.07,8985.72 L 7299.67,9078.27 L 7453.59,9159.87 L 7613.03,9230.09 L 7777.15,9288.55 L 7945.07,9334.96 L 7667.6,10502.44 L 7579.21,10480.25 L 7491.4,10455.83 L 7404.25,10429.19 L 7317.79,10400.35 L 7232.09,10369.33 L 7147.21,10336.16 L 7063.19,10300.85 L 6980.1,10263.42 L 5686.8,12850 L 7800,12850 L 7800,13150 L 5425,13150 Z M 3850,2950 L 5425,850 L 7300,850 L 7300,1150 L 5686.8,1150 L 6980.1,3736.58 L 7063.19,3699.15 L 7147.21,3663.84 L 7232.09,3630.67 L 7317.79,3599.65 L 7404.25,3570.81 L 7491.4,3544.17 L 7579.21,3519.75 L 7667.6,3497.56 L 7945.07,4665.04 L 7777.15,4711.45 L 7613.03,4769.91 L 7453.59,4840.13 L 7299.67,4921.73 L 7152.07,5014.28 L 7011.57,5117.3 L 6878.91,5230.23 L 6754.8,5352.49 L 5882.2,4528.74 L 5984.01,4425.16 L 6089.91,4325.78 L 6199.73,4230.75 L 6313.29,4140.22 L 6430.42,4054.35 L 6550.91,3973.28 L 6674.57,3897.13 L 6801.21,3826.03 L 5507.92,1239.44 L 4090,3130 Z M 5050.27,5970.76 L 6200.18,6313.84 L 6156.52,6482.2 L 6125.18,6653.28 L 6106.3,6826.19 L 6100,7000 L 6106.3,7173.81 L 6125.18,7346.72 L 6156.52,7517.8 L 6200.18,7686.16 L 5050.27,8029.24 L 4984.78,7776.7 L 4937.76,7520.07 L 4909.45,7260.72 L 4900,7000 L 4909.45,6739.28 L 4937.76,6479.93 L 4984.78,6223.3 Z" fill="url(#poche)" fill-rule="nonzero"/>
@@ -7194,6 +7226,10 @@ exports[`golden SVG snapshots > renders laneway-house.arch deterministically 1`]
 <circle cx="7100" cy="2398.25" r="15.75" fill="#a8a29a" stroke="#a8a29a" stroke-width="8.9"/>
 <line x1="7100" y1="2398.25" x2="7100" y2="2310.5" stroke="#a8a29a" stroke-width="8.9"/>
 <circle cx="7100" cy="2173.7" r="13.5" fill="#a8a29a" stroke="#a8a29a" stroke-width="8.9"/>
+<path d="M 1981,2336 L 2269,2336 A 54 54 0 0 1 2323,2390 L 2323,2696 A 54 54 0 0 1 2269,2750 L 1981,2750 A 54 54 0 0 1 1927,2696 L 1927,2390 A 54 54 0 0 1 1981,2336 Z" fill="#ffffff" stroke="#6c6864" stroke-width="12.32"/>
+<path d="M 1927,2300 L 2323,2300 A 27 27 0 0 1 2350,2327 A 27 27 0 0 1 2323,2354 L 1927,2354 A 27 27 0 0 1 1900,2327 A 27 27 0 0 1 1927,2300 Z" fill="#f4f2ee" stroke="#6c6864" stroke-width="12.32"/>
+<path d="M 2269,4164 L 1981,4164 A 54 54 0 0 1 1927,4110 L 1927,3804 A 54 54 0 0 1 1981,3750 L 2269,3750 A 54 54 0 0 1 2323,3804 L 2323,4110 A 54 54 0 0 1 2269,4164 Z" fill="#ffffff" stroke="#6c6864" stroke-width="12.32"/>
+<path d="M 2323,4200 L 1927,4200 A 27 27 0 0 1 1900,4173 A 27 27 0 0 1 1927,4146 L 2323,4146 A 27 27 0 0 1 2350,4173 A 27 27 0 0 1 2323,4200 Z" fill="#f4f2ee" stroke="#6c6864" stroke-width="12.32"/>
 </g>
 <g id="A-WALL" inkscape:groupmode="layer" inkscape:label="A-WALL">
 <path d="M -100,-100 L 1650,-100 L 1650,100 L 100,100 L 100,1800 L -100,1800 Z M -100,3000 L 100,3000 L 100,6400 L 200,6400 L 200,6600 L -100,6600 Z M 1200,6400 L 1800,6400 L 1800,6600 L 1200,6600 Z M 2550,-100 L 7600,-100 L 7600,1200 L 7400,1200 L 7400,100 L 4250,100 L 4250,500 L 4150,500 L 4150,100 L 2550,100 Z M 3600,6400 L 4150,6400 L 4150,6000 L 4250,6000 L 4250,6400 L 5050,6400 L 5050,6600 L 3600,6600 Z M 4150,1300 L 4250,1300 L 4250,2450 L 7400,2450 L 7400,1800 L 7600,1800 L 7600,6600 L 6650,6600 L 6650,6400 L 7400,6400 L 7400,2550 L 4250,2550 L 4250,5200 L 4150,5200 Z" fill="url(#poche)" fill-rule="nonzero"/>
@@ -7243,8 +7279,8 @@ exports[`golden SVG snapshots > renders laneway-house.arch deterministically 1`]
 <polygon points="7600,1160 7640,1160 7640,1840 7600,1840" fill="none" stroke="#1b1b1b" stroke-width="12.32"/>
 </g>
 <g id="A-ANNO-TEXT" inkscape:groupmode="layer" inkscape:label="A-ANNO-TEXT">
-<text x="2100" y="2228.8" font-size="231" fill="#222222" text-anchor="middle" dominant-baseline="central" font-weight="600">Living / Kitchen</text>
-<text x="2100" y="2482.9" font-size="169.4" fill="#7a7a7a" text-anchor="middle" dominant-baseline="central">27.3 m²</text>
+<text x="2100" y="1253.8" font-size="231" fill="#222222" text-anchor="middle" dominant-baseline="central" font-weight="600">Living / Kitchen</text>
+<text x="2100" y="1507.9" font-size="169.4" fill="#7a7a7a" text-anchor="middle" dominant-baseline="central">27.3 m²</text>
 <text x="5850" y="1203.8" font-size="231" fill="#222222" text-anchor="middle" dominant-baseline="central" font-weight="600">Bath</text>
 <text x="5850" y="1457.9" font-size="169.4" fill="#7a7a7a" text-anchor="middle" dominant-baseline="central">8.3 m²</text>
 <text x="5850" y="5653.8" font-size="231" fill="#222222" text-anchor="middle" dominant-baseline="central" font-weight="600">Bedroom</text>
@@ -12208,9 +12244,9 @@ exports[`golden SVG snapshots > renders relational.arch deterministically 1`] = 
 `;
 
 exports[`golden SVG snapshots > renders remodel.arch deterministically 1`] = `
-"<svg xmlns="http://www.w3.org/2000/svg" xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"  viewBox="-2071 -2071 15142 19742.4" font-family="Helvetica, Arial, sans-serif">
+"<svg xmlns="http://www.w3.org/2000/svg" xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"  viewBox="-2071 -2071 15142 20126.6" font-family="Helvetica, Arial, sans-serif">
 <defs><pattern id="poche" patternUnits="userSpaceOnUse" width="146.9" height="146.9" patternTransform="rotate(45)"><rect width="146.9" height="146.9" fill="#e9e4db"/><line x1="0" y1="0" x2="0" y2="146.9" stroke="#b9b1a4" stroke-width="12.66"/></pattern></defs>
-<rect x="-2071" y="-2071" width="15142" height="19742.4" fill="#ffffff"/>
+<rect x="-2071" y="-2071" width="15142" height="20126.6" fill="#ffffff"/>
 <g id="A-FLOR" inkscape:groupmode="layer" inkscape:label="A-FLOR">
 <polygon points="0,0 6000,0 6000,7600 0,7600" fill="#fbfaf7"/>
 <polygon points="6000,0 9200,0 9200,4000 6000,4000" fill="#fbfaf7"/>
@@ -12305,6 +12341,10 @@ exports[`golden SVG snapshots > renders remodel.arch deterministically 1`] = `
 <circle cx="10766" cy="6768" r="10.8" fill="#a8a29a" stroke="#a8a29a" stroke-width="13.06"/>
 <circle cx="10490" cy="6900" r="186" fill="none" stroke="#6c6864" stroke-width="18.08"/>
 <circle cx="10490" cy="6900" r="115.32" fill="#ffffff" stroke="#a8a29a" stroke-width="13.06"/>
+<path d="M 4190,740 L 4510,740 A 60 60 0 0 1 4570,800 L 4570,1140 A 60 60 0 0 1 4510,1200 L 4190,1200 A 60 60 0 0 1 4130,1140 L 4130,800 A 60 60 0 0 1 4190,740 Z" fill="#ffffff" stroke="#6c6864" stroke-width="18.08"/>
+<path d="M 4130,700 L 4570,700 A 30 30 0 0 1 4600,730 A 30 30 0 0 1 4570,760 L 4130,760 A 30 30 0 0 1 4100,730 A 30 30 0 0 1 4130,700 Z" fill="#f4f2ee" stroke="#6c6864" stroke-width="18.08"/>
+<path d="M 4510,2760 L 4190,2760 A 60 60 0 0 1 4130,2700 L 4130,2360 A 60 60 0 0 1 4190,2300 L 4510,2300 A 60 60 0 0 1 4570,2360 L 4570,2700 A 60 60 0 0 1 4510,2760 Z" fill="#ffffff" stroke="#6c6864" stroke-width="18.08"/>
+<path d="M 4570,2800 L 4130,2800 A 30 30 0 0 1 4100,2770 A 30 30 0 0 1 4130,2740 L 4570,2740 A 30 30 0 0 1 4600,2770 A 30 30 0 0 1 4570,2800 Z" fill="#f4f2ee" stroke="#6c6864" stroke-width="18.08"/>
 </g>
 <g id="A-WALL" inkscape:groupmode="layer" inkscape:label="A-WALL">
 <path d="M -50,3950 L 2950,3950 L 2950,-50 L 3050,-50 L 3050,7650 L 2950,7650 L 2950,4050 L -50,4050 Z" fill="none" stroke="#1b1b1b" stroke-width="31.64" stroke-linejoin="miter" stroke-miterlimit="4" stroke-dasharray="108.48 72.32"/>
@@ -12426,7 +12466,7 @@ exports[`golden SVG snapshots > renders remodel.arch deterministically 1`] = `
 <text x="-68.64" y="14224.9" font-size="214.7" fill="#333333" text-anchor="start" dominant-baseline="central" font-weight="600">TOTAL</text>
 <text x="5136.14" y="14224.9" font-size="214.7" fill="#333333" text-anchor="end" dominant-baseline="central" font-weight="600">83.60</text>
 <text x="6718.14" y="14224.9" font-size="214.7" fill="#333333" text-anchor="end" dominant-baseline="central" font-weight="600">75.84</text>
-<polygon points="7138.5,10959.2 10189.5,10959.2 10189.5,17106.4 7138.5,17106.4" fill="none" stroke="#333333" stroke-width="18.08"/>
+<polygon points="7138.5,10959.2 10189.5,10959.2 10189.5,17490.6 7138.5,17490.6" fill="none" stroke="#333333" stroke-width="18.08"/>
 <text x="7199.52" y="11151.3" font-size="214.7" fill="#333333" text-anchor="start" dominant-baseline="central" font-weight="600">LEGEND</text>
 <line x1="7138.5" y1="11343.4" x2="10189.5" y2="11343.4" stroke="#333333" stroke-width="18.08"/>
 <path d="M 7199.52,11420.24 L 7642.48,11420.24 L 7642.48,11650.76 L 7199.52,11650.76 Z" fill="url(#poche)" fill-rule="nonzero"/>
@@ -12545,22 +12585,26 @@ exports[`golden SVG snapshots > renders remodel.arch deterministically 1`] = `
 <path d="M 7208.28,16037.56 L 7633.72,16037.56 A 1.84 1.84 0 0 1 7635.56,16039.4 L 7635.56,16252.4 A 1.84 1.84 0 0 1 7633.72,16254.24 L 7208.28,16254.24 A 1.84 1.84 0 0 1 7206.44,16252.4 L 7206.44,16039.4 A 1.84 1.84 0 0 1 7208.28,16037.56 Z" fill="none" stroke="#a8a29a" stroke-width="13.06"/>
 <text x="7764.52" y="16145.9" font-size="214.7" fill="#333333" text-anchor="start" dominant-baseline="central">table</text>
 <line x1="7138.5" y1="16338" x2="10189.5" y2="16338" stroke="#333333" stroke-width="13.06"/>
-<path d="M 7201.83,16414.84 L 7640.17,16414.84 A 2.31 2.31 0 0 1 7642.48,16417.15 L 7642.48,16643.05 A 2.31 2.31 0 0 1 7640.17,16645.36 L 7201.83,16645.36 A 2.31 2.31 0 0 1 7199.52,16643.05 L 7199.52,16417.15 A 2.31 2.31 0 0 1 7201.83,16414.84 Z" fill="#f4f2ee" stroke="#6c6864" stroke-width="18.08"/>
-<path d="M 7209.43,16422.91 L 7632.57,16422.91 A 1.84 1.84 0 0 1 7634.41,16424.75 L 7634.41,16635.45 A 1.84 1.84 0 0 1 7632.57,16637.29 L 7209.43,16637.29 A 1.84 1.84 0 0 1 7207.59,16635.45 L 7207.59,16424.75 A 1.84 1.84 0 0 1 7209.43,16422.91 Z" fill="none" stroke="#a8a29a" stroke-width="13.06"/>
-<line x1="7207.59" y1="16442.5" x2="7634.41" y2="16442.5" stroke="#a8a29a" stroke-width="13.06"/>
-<polygon points="7509.59,16460.94 7620.33,16460.94 7620.33,16626.92 7509.59,16626.92" fill="none" stroke="#a8a29a" stroke-width="13.06" stroke-dasharray="108.48 72.32"/>
-<line x1="7509.59" y1="16516.27" x2="7620.33" y2="16516.27" stroke="#a8a29a" stroke-width="13.06" stroke-dasharray="108.48 72.32"/>
-<line x1="7509.59" y1="16571.59" x2="7620.33" y2="16571.59" stroke="#a8a29a" stroke-width="13.06" stroke-dasharray="108.48 72.32"/>
-<path d="M 7298.19,16458.64 L 7410.92,16458.64 A 5.65 5.65 0 0 1 7416.57,16464.29 L 7416.57,16469.13 A 5.65 5.65 0 0 1 7410.92,16474.78 L 7298.19,16474.78 A 5.65 5.65 0 0 1 7292.54,16469.13 L 7292.54,16464.29 A 5.65 5.65 0 0 1 7298.19,16458.64 Z" fill="#ffffff" stroke="#a8a29a" stroke-width="13.06"/>
-<text x="7764.52" y="16530.1" font-size="214.7" fill="#333333" text-anchor="start" dominant-baseline="central">desk</text>
+<path d="M 7253.76,16433.28 L 7588.24,16433.28 A 27.66 27.66 0 0 1 7615.9,16460.94 L 7615.9,16617.7 A 27.66 27.66 0 0 1 7588.24,16645.36 L 7253.76,16645.36 A 27.66 27.66 0 0 1 7226.1,16617.7 L 7226.1,16460.94 A 27.66 27.66 0 0 1 7253.76,16433.28 Z" fill="#ffffff" stroke="#6c6864" stroke-width="18.08"/>
+<path d="M 7213.35,16414.84 L 7628.65,16414.84 A 13.83 13.83 0 0 1 7642.48,16428.67 A 13.83 13.83 0 0 1 7628.65,16442.5 L 7213.35,16442.5 A 13.83 13.83 0 0 1 7199.52,16428.67 A 13.83 13.83 0 0 1 7213.35,16414.84 Z" fill="#f4f2ee" stroke="#6c6864" stroke-width="18.08"/>
+<text x="7764.52" y="16530.1" font-size="214.7" fill="#333333" text-anchor="start" dominant-baseline="central">chair</text>
 <line x1="7138.5" y1="16722.2" x2="10189.5" y2="16722.2" stroke="#333333" stroke-width="13.06"/>
-<path d="M 7204.13,16799.04 L 7637.87,16799.04 A 4.61 4.61 0 0 1 7642.48,16803.65 L 7642.48,17024.95 A 4.61 4.61 0 0 1 7637.87,17029.56 L 7204.13,17029.56 A 4.61 4.61 0 0 1 7199.52,17024.95 L 7199.52,16803.65 A 4.61 4.61 0 0 1 7204.13,16799.04 Z" fill="#f4f2ee" stroke="#6c6864" stroke-width="18.08"/>
-<path d="M 7220.27,16815.18 L 7621.73,16815.18 A 4.61 4.61 0 0 1 7626.34,16819.79 L 7626.34,16842.84 A 4.61 4.61 0 0 1 7621.73,16847.45 L 7220.27,16847.45 A 4.61 4.61 0 0 1 7215.66,16842.84 L 7215.66,16819.79 A 4.61 4.61 0 0 1 7220.27,16815.18 Z" fill="#ffffff" stroke="#a8a29a" stroke-width="13.06"/>
-<circle cx="7545.03" cy="16831.31" r="9.22" fill="none" stroke="#a8a29a" stroke-width="13.06"/>
-<circle cx="7323.55" cy="16831.31" r="4.15" fill="#a8a29a" stroke="#a8a29a" stroke-width="13.06"/>
-<circle cx="7421" cy="16937.35" r="71.46" fill="none" stroke="#6c6864" stroke-width="18.08"/>
-<circle cx="7421" cy="16937.35" r="44.31" fill="#ffffff" stroke="#a8a29a" stroke-width="13.06"/>
-<text x="7764.52" y="16914.3" font-size="214.7" fill="#333333" text-anchor="start" dominant-baseline="central">washing_machine</text>
+<path d="M 7201.83,16799.04 L 7640.17,16799.04 A 2.31 2.31 0 0 1 7642.48,16801.35 L 7642.48,17027.25 A 2.31 2.31 0 0 1 7640.17,17029.56 L 7201.83,17029.56 A 2.31 2.31 0 0 1 7199.52,17027.25 L 7199.52,16801.35 A 2.31 2.31 0 0 1 7201.83,16799.04 Z" fill="#f4f2ee" stroke="#6c6864" stroke-width="18.08"/>
+<path d="M 7209.43,16807.11 L 7632.57,16807.11 A 1.84 1.84 0 0 1 7634.41,16808.95 L 7634.41,17019.65 A 1.84 1.84 0 0 1 7632.57,17021.49 L 7209.43,17021.49 A 1.84 1.84 0 0 1 7207.59,17019.65 L 7207.59,16808.95 A 1.84 1.84 0 0 1 7209.43,16807.11 Z" fill="none" stroke="#a8a29a" stroke-width="13.06"/>
+<line x1="7207.59" y1="16826.7" x2="7634.41" y2="16826.7" stroke="#a8a29a" stroke-width="13.06"/>
+<polygon points="7509.59,16845.14 7620.33,16845.14 7620.33,17011.12 7509.59,17011.12" fill="none" stroke="#a8a29a" stroke-width="13.06" stroke-dasharray="108.48 72.32"/>
+<line x1="7509.59" y1="16900.47" x2="7620.33" y2="16900.47" stroke="#a8a29a" stroke-width="13.06" stroke-dasharray="108.48 72.32"/>
+<line x1="7509.59" y1="16955.79" x2="7620.33" y2="16955.79" stroke="#a8a29a" stroke-width="13.06" stroke-dasharray="108.48 72.32"/>
+<path d="M 7298.19,16842.84 L 7410.92,16842.84 A 5.65 5.65 0 0 1 7416.57,16848.49 L 7416.57,16853.33 A 5.65 5.65 0 0 1 7410.92,16858.98 L 7298.19,16858.98 A 5.65 5.65 0 0 1 7292.54,16853.33 L 7292.54,16848.49 A 5.65 5.65 0 0 1 7298.19,16842.84 Z" fill="#ffffff" stroke="#a8a29a" stroke-width="13.06"/>
+<text x="7764.52" y="16914.3" font-size="214.7" fill="#333333" text-anchor="start" dominant-baseline="central">desk</text>
+<line x1="7138.5" y1="17106.4" x2="10189.5" y2="17106.4" stroke="#333333" stroke-width="13.06"/>
+<path d="M 7204.13,17183.24 L 7637.87,17183.24 A 4.61 4.61 0 0 1 7642.48,17187.85 L 7642.48,17409.15 A 4.61 4.61 0 0 1 7637.87,17413.76 L 7204.13,17413.76 A 4.61 4.61 0 0 1 7199.52,17409.15 L 7199.52,17187.85 A 4.61 4.61 0 0 1 7204.13,17183.24 Z" fill="#f4f2ee" stroke="#6c6864" stroke-width="18.08"/>
+<path d="M 7220.27,17199.38 L 7621.73,17199.38 A 4.61 4.61 0 0 1 7626.34,17203.99 L 7626.34,17227.04 A 4.61 4.61 0 0 1 7621.73,17231.65 L 7220.27,17231.65 A 4.61 4.61 0 0 1 7215.66,17227.04 L 7215.66,17203.99 A 4.61 4.61 0 0 1 7220.27,17199.38 Z" fill="#ffffff" stroke="#a8a29a" stroke-width="13.06"/>
+<circle cx="7545.03" cy="17215.51" r="9.22" fill="none" stroke="#a8a29a" stroke-width="13.06"/>
+<circle cx="7323.55" cy="17215.51" r="4.15" fill="#a8a29a" stroke="#a8a29a" stroke-width="13.06"/>
+<circle cx="7421" cy="17321.55" r="71.46" fill="none" stroke="#6c6864" stroke-width="18.08"/>
+<circle cx="7421" cy="17321.55" r="44.31" fill="#ffffff" stroke="#a8a29a" stroke-width="13.06"/>
+<text x="7764.52" y="17298.5" font-size="214.7" fill="#333333" text-anchor="start" dominant-baseline="central">washing_machine</text>
 </g>
 <g><polygon points="10641.5,-1715.05 10387.25,-901.45 10641.5,-1079.43 10895.75,-901.45" fill="#333333" transform="rotate(0 10641.5 -1206.55)"/><text x="10641.5" y="-1950.09" font-size="293.8" fill="#333333" text-anchor="middle" dominant-baseline="central">N</text></g>
 <g><rect x="-150" y="8315" width="1000" height="158.2" fill="#333333"/><rect x="850" y="8315" width="1000" height="158.2" fill="none" stroke="#333333" stroke-width="18.08"/><text x="-150" y="8699.2" font-size="226" fill="#333333" text-anchor="start" dominant-baseline="central">0</text><text x="1850" y="8699.2" font-size="226" fill="#333333" text-anchor="middle" dominant-baseline="central">2 m</text></g>
@@ -13589,6 +13633,10 @@ exports[`golden SVG snapshots > renders townhouse.arch as one page per level > t
 <line x1="714" y1="10500" x2="714" y2="9900" stroke="#a8a29a" stroke-width="6.5"/>
 <path d="M 1910.8,8400 L 3289.2,8400 A 10.8 10.8 0 0 1 3300,8410.8 L 3300,9289.2 A 10.8 10.8 0 0 1 3289.2,9300 L 1910.8,9300 A 10.8 10.8 0 0 1 1900,9289.2 L 1900,8410.8 A 10.8 10.8 0 0 1 1910.8,8400 Z" fill="#f4f2ee" stroke="#6c6864" stroke-width="9"/>
 <path d="M 1934.2,8427 L 3265.8,8427 A 7.2 7.2 0 0 1 3273,8434.2 L 3273,9265.8 A 7.2 7.2 0 0 1 3265.8,9273 L 1934.2,9273 A 7.2 7.2 0 0 1 1927,9265.8 L 1927,8434.2 A 7.2 7.2 0 0 1 1934.2,8427 Z" fill="none" stroke="#a8a29a" stroke-width="6.5"/>
+<path d="M 2481,7936 L 2769,7936 A 54 54 0 0 1 2823,7990 L 2823,8296 A 54 54 0 0 1 2769,8350 L 2481,8350 A 54 54 0 0 1 2427,8296 L 2427,7990 A 54 54 0 0 1 2481,7936 Z" fill="#ffffff" stroke="#6c6864" stroke-width="9"/>
+<path d="M 2427,7900 L 2823,7900 A 27 27 0 0 1 2850,7927 A 27 27 0 0 1 2823,7954 L 2427,7954 A 27 27 0 0 1 2400,7927 A 27 27 0 0 1 2427,7900 Z" fill="#f4f2ee" stroke="#6c6864" stroke-width="9"/>
+<path d="M 2769,9764 L 2481,9764 A 54 54 0 0 1 2427,9710 L 2427,9404 A 54 54 0 0 1 2481,9350 L 2769,9350 A 54 54 0 0 1 2823,9404 L 2823,9710 A 54 54 0 0 1 2769,9764 Z" fill="#ffffff" stroke="#6c6864" stroke-width="9"/>
+<path d="M 2823,9800 L 2427,9800 A 27 27 0 0 1 2400,9773 A 27 27 0 0 1 2427,9746 L 2823,9746 A 27 27 0 0 1 2850,9773 A 27 27 0 0 1 2823,9800 Z" fill="#f4f2ee" stroke="#6c6864" stroke-width="9"/>
 </g>
 <g id="A-FLOR-STRS" inkscape:groupmode="layer" inkscape:label="A-FLOR-STRS">
 <polygon points="4150,2600 5050,2600 5050,5800 4150,5800" fill="#f4f2ee" stroke="#6c6864" stroke-width="9"/>
@@ -13650,8 +13698,8 @@ exports[`golden SVG snapshots > renders townhouse.arch as one page per level > t
 <text x="1600" y="2457.5" font-size="125" fill="#7a7a7a" text-anchor="middle" dominant-baseline="central">14.7 m²</text>
 <text x="1600" y="5765" font-size="175" fill="#222222" text-anchor="middle" dominant-baseline="central" font-weight="600">Cloakroom</text>
 <text x="1600" y="5957.5" font-size="125" fill="#7a7a7a" text-anchor="middle" dominant-baseline="central">7.7 m²</text>
-<text x="2600" y="7705" font-size="175" fill="#222222" text-anchor="middle" dominant-baseline="central" font-weight="600">Kitchen/Dining</text>
-<text x="2600" y="7897.5" font-size="125" fill="#7a7a7a" text-anchor="middle" dominant-baseline="central">19.2 m²</text>
+<text x="2600" y="9925" font-size="175" fill="#222222" text-anchor="middle" dominant-baseline="central" font-weight="600">Kitchen/Dining</text>
+<text x="2600" y="10117.5" font-size="125" fill="#7a7a7a" text-anchor="middle" dominant-baseline="central">19.2 m²</text>
 </g>
 <g id="A-ANNO-DIMS" inkscape:groupmode="layer" inkscape:label="A-ANNO-DIMS">
 <line x1="-150" y1="10850" x2="-150" y2="11000" stroke="#0E5484" stroke-width="6.3"/>
@@ -15839,6 +15887,10 @@ exports[`golden SVG snapshots > renders two-bed.arch deterministically 1`] = `
 <circle cx="6292.5" cy="6500" r="17.5" fill="#a8a29a" stroke="#a8a29a" stroke-width="13.06"/>
 <line x1="6292.5" y1="6500" x2="6195" y2="6500" stroke="#a8a29a" stroke-width="13.06"/>
 <circle cx="6043" cy="6500" r="15" fill="#a8a29a" stroke="#a8a29a" stroke-width="13.06"/>
+<path d="M 1290,5240 L 1610,5240 A 60 60 0 0 1 1670,5300 L 1670,5640 A 60 60 0 0 1 1610,5700 L 1290,5700 A 60 60 0 0 1 1230,5640 L 1230,5300 A 60 60 0 0 1 1290,5240 Z" fill="#ffffff" stroke="#6c6864" stroke-width="18.08"/>
+<path d="M 1230,5200 L 1670,5200 A 30 30 0 0 1 1700,5230 A 30 30 0 0 1 1670,5260 L 1230,5260 A 30 30 0 0 1 1200,5230 A 30 30 0 0 1 1230,5200 Z" fill="#f4f2ee" stroke="#6c6864" stroke-width="18.08"/>
+<path d="M 1610,7160 L 1290,7160 A 60 60 0 0 1 1230,7100 L 1230,6760 A 60 60 0 0 1 1290,6700 L 1610,6700 A 60 60 0 0 1 1670,6760 L 1670,7100 A 60 60 0 0 1 1610,7160 Z" fill="#ffffff" stroke="#6c6864" stroke-width="18.08"/>
+<path d="M 1670,7200 L 1230,7200 A 30 30 0 0 1 1200,7170 A 30 30 0 0 1 1230,7140 L 1670,7140 A 30 30 0 0 1 1700,7170 A 30 30 0 0 1 1670,7200 Z" fill="#f4f2ee" stroke="#6c6864" stroke-width="18.08"/>
 </g>
 <g id="A-WALL" inkscape:groupmode="layer" inkscape:label="A-WALL">
 <path d="M -150,-150 L 1000,-150 L 1000,150 L 150,150 L 150,4750 L -150,4750 Z M -150,6250 L 150,6250 L 150,7850 L 3950,7850 L 3950,4950 L 4600,4950 L 4600,5050 L 4050,5050 L 4050,7850 L 6350,7850 L 6350,5050 L 5400,5050 L 5400,4950 L 6950,4950 L 6950,5050 L 6450,5050 L 6450,7850 L 7500,7850 L 7500,8150 L -150,8150 Z M 10150,-150 L 10150,3850 L 9850,3850 L 9850,3650 L 5450,3650 L 5450,3550 L 9850,3550 L 9850,150 L 8600,150 L 8600,-150 Z M 10150,4750 L 10150,8150 L 8900,8150 L 8900,7850 L 9850,7850 L 9850,5050 L 7850,5050 L 7850,4950 L 9850,4950 L 9850,4750 Z M 3000,-150 L 6200,-150 L 6200,150 L 4050,150 L 4050,3550 L 4550,3550 L 4550,3650 L 3950,3650 L 3950,150 L 3000,150 Z" fill="url(#poche)" fill-rule="nonzero"/>
