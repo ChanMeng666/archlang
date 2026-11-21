@@ -271,7 +271,7 @@ Every diagnostic carries a stable code. Look one up with `arch explain <CODE>`
 | [`W_SWING_OBSTRUCTED`](#w_swing_obstructed) | warning | Door swing is obstructed. |
 | [`W_SWING_OVER_STAIR`](#w_swing_over_stair) | warning | A door's swing sweeps a stair or the landing at its end. |
 | [`W_SWING_ROOM_NOT_ADJACENT`](#w_swing_room_not_adjacent) | warning | `swing into <room>` names a room the door does not border. |
-| [`W_TABLE_NO_SEAT`](#w_table_no_seat) | warning | A dining table stands in a room with no seat. |
+| [`W_TABLE_NO_SEAT`](#w_table_no_seat) | warning | A dining table stands in a home's day room with no seat lint counts for it. |
 | [`W_TITLE_OVERFLOW`](#w_title_overflow) | warning | A title-block value, or a `sheet text` caption with its value, is wider than its row. |
 | [`W_UNKNOWN_FURNITURE`](#w_unknown_furniture) | warning | A furniture word is not a catalogued kind but is close to one. |
 | [`W_UNKNOWN_MATERIAL`](#w_unknown_material) | warning | Unknown wall material or room floor; the wall takes the default hatch, the room none. |
@@ -5150,9 +5150,9 @@ door on w1 at 50% width 800 swing in   # fixed: the wall-relative swing
 
 ## W_TABLE_NO_SEAT
 
-*warning* — A dining table stands in a room with no seat.
+*warning* — A dining table stands in a home's day room with no seat lint counts for it.
 
-**Cause.** A piece that does a dining table's job (the catalogue's `serves: "dining_table"`: a bare `table`) stands in a room that holds no chair, office chair, outdoor chair, stool or bench, so there is nowhere to sit at it. A sofa or an armchair is a lounge seat and does not count. A piece is in a room when its footprint centre is on the room's floor, on the room's own storey; a table in no room is not read. A `dining_table` is never reported: its symbol draws its chairs inside its own footprint. A `coffee_table`, `side_table`, `desk` or `meeting_table` is not a dining table. No distance is measured: a seat anywhere in the room seats the table.
+**Cause.** A piece that does a dining table's job (the catalogue's `serves: "dining_table"`: a bare `table`) stands in a room of a home with a day use (living, dining or kitchen; a studio's `uses living bedroom` counts, a bedroom-only room never does) whose floor holds no chair, office chair, outdoor chair, stool or bench, so there is nowhere to sit at it. A sofa or an armchair is a lounge seat and does not count. A piece is in a room when its footprint centre is on the room's floor, on the room's own storey; a table in no room is not read, and neither is one whose label names another piece (coffee, desk, island, TV, side, console, bedside or dressing, as a whole word). A `dining_table` is never reported: its symbol draws its chairs inside its own footprint. A `coffee_table`, `side_table`, `desk` or `meeting_table` is not a dining table. No distance is measured: a seat anywhere in the room seats the table. Declared, not judged: a table it does not report in a room with no classified use (`no-uses` in the lint coverage), and every table of a plan that reads as non-residential (`non-dwelling`; the `residential-basic` profile judges such a plan as a home).
 
 **Fix.** Add a chair (or a stool or bench) beside the table, its front toward it, or draw the table as a `dining_table`, whose symbol includes its chairs (its size is then the table and the chairs together). There is no machine fix: where a seat goes is a design decision.
 
