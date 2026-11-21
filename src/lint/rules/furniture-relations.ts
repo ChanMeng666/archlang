@@ -209,15 +209,21 @@ export const isLoungeSeat = (category: string): boolean => LOUNGE_SEATS.has(cano
 export type SeatPiece = Pick<RFurniture, "category" | "at" | "size" | "rotate" | "_mirror">;
 
 /**
- * The spans of each straight wall segment that are no wall to sit against, keyed by
- * {@link segKey}, as along-axis `[lo, hi]` coordinates: every door and cased opening on its host
- * ({@link onRun}), an `open between` opening included. A window is not one: the wall stands
- * below its sill.
+ * The spans of each straight wall LINE that are no wall to sit against, keyed by {@link lineKey},
+ * as along-axis `[lo, hi]` coordinates: every door and cased opening on its host ({@link onRun}),
+ * an `open between` opening included. Keyed by the host's centreline, not the host segment, so a
+ * cut applies to every collinear segment on that line: a run drawn as one segment or as two meeting
+ * under the opening is read alike. A window is not one: the wall stands below its sill.
  */
 export type WallCuts = ReadonlyMap<string, readonly (readonly [number, number])[]>;
 
-/** The key of a wall segment in {@link WallCuts}: its wall and its index in that wall. */
-const segKey = (s: Pick<WallSegment, "wallId" | "index">): string => `${s.wallId}#${s.index}`;
+/** The key of an axis-aligned straight segment's centreline in {@link WallCuts}, or null for any other. */
+function lineKey(s: Pick<WallSegment, "a" | "b" | "arc">): string | null {
+  if (s.arc) return null;
+  if (Math.abs(s.a.y - s.b.y) < FLOAT_EPS_MM) return `h${(s.a.y + s.b.y) / 2}`;
+  if (Math.abs(s.a.x - s.b.x) < FLOAT_EPS_MM) return `v${(s.a.x + s.b.x) / 2}`;
+  return null;
+}
 
 /** {@link WallCuts} of a storey's elements. */
 export function wallCutsOf(elements: readonly { kind: string }[]): WallCuts {
@@ -225,17 +231,17 @@ export function wallCutsOf(elements: readonly { kind: string }[]): WallCuts {
   elements.forEach((e, i) => {
     if (e.kind !== "door" && e.kind !== "opening") return;
     const r = onRun(e as Hosted, i);
-    if (!r || r.seg.arc) return;
+    const key = r ? lineKey(r.seg) : null;
+    if (!r || key === null) return;
     const { a, b } = r.seg;
     const len = Math.hypot(b.x - a.x, b.y - a.y);
     if (len <= 0) return;
-    // Along the segment's own axis (it is straight; a diagonal one is never a seat's wall).
-    const horizontal = Math.abs(a.y - b.y) < FLOAT_EPS_MM;
+    // Along the segment's own axis: `lineKey` admits axis-aligned segments only.
+    const horizontal = key.startsWith("h");
     const p0 = horizontal ? a.x : a.y;
     const dir = (horizontal ? b.x - a.x : b.y - a.y) / len;
     const ends = [p0 + r.lo * dir, p0 + r.hi * dir];
     const span: [number, number] = [Math.min(...ends), Math.max(...ends)];
-    const key = segKey(r.seg);
     const list = cuts.get(key);
     if (list) list.push(span);
     else cuts.set(key, [span]);
@@ -243,13 +249,15 @@ export function wallCutsOf(elements: readonly { kind: string }[]): WallCuts {
   return cuts;
 }
 
-/** `[lo, hi]` with every cut taken out of it: the pieces left, in order. */
+/** `[lo, hi]` with every cut taken out of it: the pieces left, in order. Each cut walked is charged. */
 function minusCuts(
   lo: number,
   hi: number,
   cuts: readonly (readonly [number, number])[] | undefined,
+  work?: LintWork,
 ): [number, number][] {
   let parts: [number, number][] = [[lo, hi]];
+  if (work) work.seatWallTests += cuts?.length ?? 0;
   for (const [clo, chi] of cuts ?? []) {
     const next: [number, number][] = [];
     for (const [plo, phi] of parts) {
@@ -332,7 +340,8 @@ function seatFronts(f: SeatPiece): SeatFront[] {
  * any distance off the face has floor in front of it, and `fixtureWallTolMm` (200 mm by default)
  * is far too wide for "against". An arc never counts, as for a backed edge, and neither does a
  * door or a cased opening in the wall ({@link WallCuts}): there is floor through it. Each (front,
- * wall segment) test is charged to `work.seatWallTests`, arcs included. The comparisons allow
+ * wall segment) test is charged to `work.seatWallTests`, arcs included, and so is each cut walked
+ * on a segment that reaches the front ({@link minusCuts}). The comparisons allow
  * {@link FLOAT_EPS_MM} of float noise, a millionth of a millimetre, which no grid can write.
  * Returns the segment covering most of the front, or null.
  */
@@ -360,7 +369,13 @@ function frontAgainstWall(
     const slo = front.axis === "h" ? Math.min(s.a.x, s.b.x) : Math.min(s.a.y, s.b.y);
     const shi = front.axis === "h" ? Math.max(s.a.x, s.b.x) : Math.max(s.a.y, s.b.y);
     if (overlap1d(slo, shi, front.lo, front.hi) <= 0) continue;
-    const parts = minusCuts(Math.max(slo, front.lo), Math.min(shi, front.hi), cuts.get(segKey(s)));
+    const key = lineKey(s);
+    const parts = minusCuts(
+      Math.max(slo, front.lo),
+      Math.min(shi, front.hi),
+      key === null ? undefined : cuts.get(key),
+      work,
+    );
     covered.push(...parts);
     const along = mergedLength(parts);
     if (along > 0 && (best === null || along > best.along)) best = { s, along };
@@ -370,8 +385,8 @@ function frontAgainstWall(
 
 /**
  * The wall segment a lounge seat's drawn front is against ({@link seatFronts},
- * {@link frontAgainstWall}), or null: `W_SEAT_FACING_WALL`'s question, and repair's when it has
- * pushed a seat flush to a face (ruling RM-D80).
+ * {@link frontAgainstWall}), or null: `W_SEAT_FACING_WALL`'s question, and repair's for a seat it
+ * has moved (ruling RM-D80).
  */
 export function seatFrontWall(
   f: SeatPiece,

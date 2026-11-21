@@ -239,6 +239,19 @@ suite("W_SEAT_FACING_WALL", () => {
       );
     expect(of(twoRooms("", "  door between a and b at 4500 from a.left width 900"))).toHaveLength(1);
     expect(of(twoRooms(" { open between a and b }", ""))).toEqual([]);
+    // The same drawing with the south wall written as two collinear segments meeting under the opening
+    // reads alike: a cut applies to every segment on its host's line.
+    const northDoor = "  door id=dn at (5200,0) width 800 wall shell";
+    const living = '  room id=r at (0,0) size 6000x5000 label "Living" uses living';
+    const mid = "  opening id=os at (3000,5000) width 1600 wall shell";
+    const front = "  furniture sofa at (2000,4050) size 2000x850 in r";
+    for (const shell of [
+      "  wall id=shell exterior thickness 200 { (0,0) (6000,0) (6000,5000) (0,5000) close }",
+      "  wall id=shell exterior thickness 200 { (0,0) (6000,0) (6000,5000) (3000,5000) (0,5000) close }",
+    ]) {
+      expect(of(plan(shell, northDoor, living, mid, front)), shell).toEqual([]);
+      expect(of(plan(shell, northDoor, living, front)), shell).toHaveLength(1);
+    }
   });
 
   it("names a piece with an empty label by its category, and offers no `rotate` to a piece placed `against` a wall", () => {
@@ -274,8 +287,9 @@ suite("W_SEAT_FACING_WALL", () => {
       expect(lintWork(plan(...lines)).seatWallTests, `n = ${n}`).toBe((n + 2) * 4);
     }
     expect(lintWork(plan(SHELL)).seatWallTests).toBe(0);
-    // A reported seat also scans the storey's rooms once for the room its message names: 4 + 1.
-    expect(lintWork(plan(SHELL, FRONT_ON_SOUTH)).seatWallTests).toBe(5);
+    // A reported seat: 4 segments, the one cut (the shell's door) on the south face's line, which
+    // reaches its front, and one room scan for the room its message names: 4 + 1 + 1.
+    expect(lintWork(plan(SHELL, FRONT_ON_SOUTH)).seatWallTests).toBe(6);
   });
 
   it("reports nothing over the shipped examples under the default ruleset (RM-D73: their sofas were turned first)", () => {
@@ -296,7 +310,7 @@ suite("W_SEAT_FACING_WALL", () => {
   });
 });
 
-suite("repair never manufactures W_SEAT_FACING_WALL (ruling RM-D80)", () => {
+suite("repair and W_SEAT_FACING_WALL: a moved seat is turned or reported (ruling RM-D80)", () => {
   const ROOM = [
     "  wall id=shell exterior thickness 200 { (0,0) (6000,0) (6000,5000) (0,5000) close }",
     "  door id=d at (5000,0) width 900 wall shell",
@@ -325,16 +339,63 @@ suite("repair never manufactures W_SEAT_FACING_WALL (ruling RM-D80)", () => {
     expect(of(backed.source)).toEqual([]);
   });
 
-  it("leaves a seat between two walls unturned, for the rule to report", () => {
+  /** The one `unresolved` reason repair gives for the piece, and its changes' kinds. */
+  const outcome = (src: string) => {
+    const r = repair(src);
+    return { kinds: r.changes.map((c) => c.kind), reasons: r.unresolved.map((u) => u.reason), source: r.source };
+  };
+  const FAULT = 'has its front against wall "shell" where repair moved it, with no floor in front to sit down from';
+
+  it("does not turn a seat it cannot turn, and reports it with the reason", () => {
     // A 1050-deep nook: after the push the front is on the south face, and half a turn would put it on the north one.
-    const nook = grid50(
-      "  wall id=shell exterior thickness 200 { (0,0) (6000,0) (6000,1050) (0,1050) close }",
-      "  door id=d at (5000,0) width 900 wall shell",
-      '  room id=r at (0,0) size 6000x1050 label "Nook" uses living',
-      "  furniture sofa at (1000,200) size 2000x850 in r",
+    const nook = outcome(
+      grid50(
+        "  wall id=shell exterior thickness 200 { (0,0) (6000,0) (6000,1050) (0,1050) close }",
+        "  door id=d at (5000,0) width 900 wall shell",
+        '  room id=r at (0,0) size 6000x1050 label "Nook" uses living',
+        "  furniture sofa at (1000,200) size 2000x850 in r",
+      ),
     );
-    const r = repair(nook);
-    expect(r.changes.map((c) => c.kind)).toEqual(["moved"]);
-    expect(of(r.source)).toHaveLength(1);
+    expect(nook.kinds).toEqual(["moved"]);
+    expect(nook.reasons).toEqual([`${FAULT} — half a turn would put its front on another wall; move it by hand`]);
+    expect(of(nook.source)).toHaveLength(1);
+    // A scripted `rotate` is not rewritten.
+    const scripted = outcome(
+      `plan "t" {\n  units mm\n  grid 50\n  let a = 0\n${ROOM}\n  furniture sofa at (1000,4300) size 2000x850 rotate a in r\n}\n`,
+    );
+    expect(scripted.kinds).toEqual(["moved"]);
+    expect(scripted.reasons).toEqual([
+      `${FAULT} — its \`rotate\` is an expression, which repair does not rewrite; turn it by hand`,
+    ]);
+    // A seat whose turn `facing` states (at a table beyond the wall) keeps it.
+    const faced = outcome(
+      grid50(
+        ROOM,
+        "  furniture table id=t at (-2000,1700) size 600x600",
+        "  furniture sofa at (-200,1000) size 850x2000 facing t in r",
+      ),
+    );
+    expect(faced.kinds).toEqual(["moved"]);
+    expect(faced.reasons).toEqual([
+      `${FAULT} — its turn is stated by \`facing\`; face it at a piece in the room, or move it by hand`,
+    ]);
+  });
+
+  it("never turns an L-sofa: half a turn would move its open quadrant", () => {
+    // Pushed off the shell and the partition, it ends parked on a cycle with a front on the partition.
+    const src = grid50(
+      "  wall id=shell exterior thickness 200 { (0,0) (6000,0) (6000,5000) (0,5000) close }",
+      "  door id=d at (5000,5000) width 900 wall shell",
+      "  window at (2000,0) width 1500 wall shell",
+      '  room id=r at (0,0) size 6000x5000 label "Living" uses living',
+      "  wall id=p partition thickness 100 { (0,3300) (2650,3300) }",
+      "  door at (1300,3300) width 900 wall p",
+      "  furniture corner_sofa at (0,2650) size 1800x2400 rotate 90",
+    );
+    const r = outcome(src);
+    expect(r.kinds).toEqual(["moved"]);
+    expect(r.reasons.filter((x) => x.includes("L-sofa"))).toEqual([
+      'has its front against wall "p" where repair moved it, with no floor in front to sit down from — an L-sofa\'s fronts are inside its box, and half a turn would move its open quadrant; turn or move it by hand',
+    ]);
   });
 });

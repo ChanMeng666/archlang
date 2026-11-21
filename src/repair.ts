@@ -21,9 +21,10 @@
  *
  * Then, once every position is final, one **orientation** pass: a fixture standing
  * flush against a single wall but with its back to the room is turned to face it
- * (a `rotate` rewrite, not a move — the `W_FIXTURE_BACK_TO_ROOM` correction). A sofa or armchair
- * the movers pushed so that its drawn front lies on a wall face is turned half a turn onto its
- * back, so a push never manufactures `W_SEAT_FACING_WALL` (ruling RM-D80).
+ * (a `rotate` rewrite, not a move — the `W_FIXTURE_BACK_TO_ROOM` correction). A sofa, loveseat or
+ * armchair a move left with its drawn front on a wall face is turned half a turn onto its back,
+ * footprint unchanged; a seat that cannot be turned so (an L-sofa, a scripted turn, a seat between
+ * two walls) is reported instead (ruling RM-D80, `W_SEAT_FACING_WALL`).
  *
  * A global fixpoint iterates every piece (in source order, so overlap separation has a
  * deterministic mover) until nothing moves. A piece that sits with no majority side or
@@ -110,6 +111,7 @@ import { segmentsOfWall, doorLeaves, sectorIntersectsRect, type DoorSwing } from
 import { pointInPolygon } from "./geometry/polygon.js";
 import { DEFAULT_RULESET, LINT_RULES } from "./lint.js";
 import { type BuildingContext, buildLintContext } from "./lint/context.js";
+import { canonicalFixture } from "./elements/fixtures-glyphs.js";
 import { isLoungeSeat, seatFrontWall, wallCutsOf } from "./lint/rules/furniture-relations.js";
 import { onStairZones, type StairZone, zoneReads } from "./lint/rules/stairs.js";
 import { lintStoreys } from "./lint/storeys.js";
@@ -2306,28 +2308,51 @@ function repairStorey(
     }
     p.turn = { from: p.rotate, to: verdict.to, reason: verdict.reason };
   }
-  // A lounge seat repair MOVED (a push out of a wall lands it flush on the face) whose drawn
-  // front now lies on a wall face is turned half a turn, its footprint unchanged, so its back is
-  // on that wall: the push must not manufacture `W_SEAT_FACING_WALL` (ruling RM-D80). A half turn
-  // that would put the front on another wall (a seat between two walls) is not made; the rule
-  // reports it. A scripted `rotate` or a `facing` is left alone.
-  const seatSegs = walls.flatMap((w) => segmentsOfWall(w));
-  const seatCuts = wallCutsOf(ir.elements);
-  for (const p of pieces) {
-    if (p.turn || (p.cur.x === p.orig.x && p.cur.y === p.orig.y) || !isLoungeSeat(p.f.category)) continue;
-    if ((p.f.rotate !== undefined && litNum(p.f.rotate) === null) || p.f.facing !== undefined) continue;
-    const seat = {
-      category: p.f.category,
-      at: p.cur,
-      size: { w: p.w, h: p.h },
-      rotate: p.rotate,
-      ...(irFurniture[p.ord]!._mirror ? { _mirror: true as const } : {}),
-    };
-    const wall = seatFrontWall(seat, seatSegs, seatCuts);
-    if (wall === null) continue;
-    const to = (p.rotate + 180) % 360;
-    if (seatFrontWall({ ...seat, rotate: to }, seatSegs, seatCuts) !== null) continue;
-    p.turn = { from: p.rotate, to, reason: `turned so its back is on ${wallRef(walls, wall)}` };
+  // A lounge seat repair MOVED, by any of its moves (a push out of a wall lands a piece flush on
+  // the face; a containment, overlap, doorway or stair move can stop at one too), whose drawn front
+  // now lies on a wall face: repair rewrote that statement, so it does not hand it back with
+  // `W_SEAT_FACING_WALL` (ruling RM-D80). A straight seat (a sofa, loveseat or armchair) is turned
+  // half a turn, which keeps its footprint, so its back is on that wall. Any other such seat is
+  // reported in `unresolved` with why it was not turned: an L-sofa (its fronts are inside its box,
+  // and half a turn moves its open quadrant), a piece still in a wall where repair left it, a
+  // scripted `rotate`, a turn `facing` states, or a seat between two walls (half a turn would put
+  // its front on the other one).
+  const movedSeats = pieces.filter(
+    (p) => !p.turn && (p.cur.x !== p.orig.x || p.cur.y !== p.orig.y) && isLoungeSeat(p.f.category),
+  );
+  if (movedSeats.length > 0) {
+    const seatSegs = walls.flatMap((w) => segmentsOfWall(w));
+    const seatCuts = wallCutsOf(ir.elements);
+    for (const p of movedSeats) {
+      const seat = {
+        category: p.f.category,
+        at: p.cur,
+        size: { w: p.w, h: p.h },
+        rotate: p.rotate,
+        ...(irFurniture[p.ord]!._mirror ? { _mirror: true as const } : {}),
+      };
+      const wall = seatFrontWall(seat, seatSegs, seatCuts);
+      if (wall === null) continue;
+      const fault = `has its front against ${wallRef(walls, wall)} where repair moved it, with no floor in front to sit down from`;
+      const to = (p.rotate + 180) % 360;
+      const why =
+        canonicalFixture(p.f.category) === "sofa_l"
+          ? "an L-sofa's fronts are inside its box, and half a turn would move its open quadrant; turn or move it by hand"
+          : hitsWall(rectOfPiece(p), walls)
+            ? "it still stands in a wall where repair left it; move it by hand"
+            : p.f.rotate !== undefined && litNum(p.f.rotate) === null
+              ? "its `rotate` is an expression, which repair does not rewrite; turn it by hand"
+              : p.f.facing !== undefined
+                ? "its turn is stated by `facing`; face it at a piece in the room, or move it by hand"
+                : seatFrontWall({ ...seat, rotate: to }, seatSegs, seatCuts) !== null
+                  ? "half a turn would put its front on another wall; move it by hand"
+                  : null;
+      if (why !== null) {
+        note(p.id, `${fault} — ${why}`, spanOf(p.id, p.f.span));
+        continue;
+      }
+      p.turn = { from: p.rotate, to, reason: `turned so its back is on ${wallRef(walls, wall)}` };
+    }
   }
 
   // ---- emit -------------------------------------------------------------------

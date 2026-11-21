@@ -31,10 +31,16 @@ export interface LintWork {
    */
   tableSeatTests: number;
   /**
-   * `W_SEAT_FACING_WALL`: the (seat front, wall segment) tests the rule made, one per wall
-   * segment of the storey (arcs included, which it then skips) for each drawn front of a lounge
-   * seat it tests (an L-sofa's second front only when its first is clear of every wall), plus one per room of the storey for each seat it reports (the room its message
-   * names is looked up there) (product roadmap RM9.6).
+   * `W_SEAT_FACING_WALL` (product roadmap RM9.6), the sum of three counts:
+   *  - one per wall segment of the storey (arcs included, which it then skips) for each drawn
+   *    front of a lounge seat it tests (an L-sofa's second front only when its first is clear of
+   *    every wall);
+   *  - one per door or cased-opening cut on a segment's line, for each segment that reaches a
+   *    front (the cuts taken out of that wall before the half-coverage test);
+   *  - one per room of the storey for each seat it reports (the room its message names is
+   *    looked up there).
+   * The storey's cuts themselves are read once per run that has a lounge seat, one pass over
+   * its elements, which no counter charges.
    */
   seatWallTests: number;
 }
