@@ -450,6 +450,19 @@ sense relative to the line — a drafting convention, like a hatch angle. Its mi
 other diagonal. Not a defect; the pin moves only if the tick convention does.
 
 - E.16 · `nested-ref` — a reference into a nested instance fails once its plan is placed — closed by W8 → archived (lab)
+
+### E.18 · `annotation-overlap-translation` — `W_ANNOTATION_OVERLAP` changes under a pure translation — `todo`
+
+Found by `test/equivariance-fuzz.test.ts` on `main`'s push run for `91ed1210` (Node 20, shard 3/5;
+seed 533254921, the path in the run log): a three-room strip (`cols [2900,4500,2000]`, rows
+`[2000]`, a centred 900×600 `wc` in the first room and a second `wc` at its corner turned 90°, a
+relational annex `right-of`) raises `W_ANNOTATION_OVERLAP` ("The name "Living" is printed over the
+wc") on P₀ and not when the same plan is placed 20 m out (`g = t`). Published 1.65.0 does the same,
+so it predates the AF and RM9 cards; no pinned class accounts for it, so the fuzz reports it `NEW`
+whenever its random seed reaches such a plan (the next push run, `594c1a93`, was green). Likely the
+label passes compare absolute float positions (as circulation did before E.11's extent-frame snap).
+Gate: the counterexample's P₀ and gP lint the same; the fuzz has no `NEW` on that seed. Do not pin
+it as a known class to green the suite; fix the comparison.
 - E.17 · `facade-probe-order` — placing a storey moved its `dims auto` chains — closed → archived (lab)
 
 ## Circulation findings (found while landing W3b)

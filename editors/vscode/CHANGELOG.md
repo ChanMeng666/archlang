@@ -14,6 +14,18 @@ are documented here. The format is based on
 
 ## [Unreleased]
 
+## [0.54.0] - 2026-11-21
+
+### Changed
+
+- **Rebundled the core at `@chanmeng666/archlang@1.66.0`**: in the Problems panel a misspelt word
+  shows a did-you-mean hint with a quick-fix that rewrites that word alone; an `E_PARSE` names what
+  the parser would have read there; a refused relational opening offers the nearest legal positions
+  as quick-fixes; a conflict (a broken keep, a placement cycle, an unplaced room, two overlapping
+  rooms) points at the statements behind it as related information; and when `walls from rooms`
+  refuses, its error is listed first and the errors it causes name it. Spanish and Portuguese room
+  labels classify.
+
 ## [0.53.0] - 2026-11-19
 
 ### Changed
