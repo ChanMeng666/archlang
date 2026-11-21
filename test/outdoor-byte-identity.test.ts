@@ -222,7 +222,7 @@ const BASELINE: [string, string][] = [
   // PS4.4: every row whose plan resolves re-measured once for the new totals key (gross internal area); see test/byte-identity-baseline.ts.
   // Both laneway-house rows re-measured 2026-10-20 (PS2.17): its kitchen gained a worktop; the new
   // compiler on the previous source, the worktop finding removed, reproduces 1e163ea9… and f3afd6b5….
-  ["laneway-house", "297cafc614614594aa5f24f7127edb11c286045bf5687db218166883ae88f706"], // PS2.11e, see header; CV13 (was 230ec0c6): example source edited (chairs added)
+  ["laneway-house", "5fba9a6cfbff1d0cb7be1439f111ffedd1011c4cecd9716f4624f2f8452bf628"], // PS2.11e, see header; CV13 (was 230ec0c6): example source edited (chairs added)
   ["studio", "7dac86ce77ab71a1d3be8eda909e523aba3655579103db09b061e003ab8287c6"], // PS2.11e, see header
   ["gallery-l", "b523d020cbb5eaacceefae1ef43b427ba21572b918fb3886552b6adaa458a8ec"], // PS2.10 dims fixed (byte-identity-baseline.ts); PS2.11e, see header
   ["aquarium", "649197e4fc52aded85a167167ac252d4aef1bf9a0ad6ee91371b63cf4521061b"], // re-measured for PS2.4, see header; PS2.10 dims fixed (byte-identity-baseline.ts); PS2.11e, see header
@@ -231,7 +231,7 @@ const BASELINE: [string, string][] = [
 /** The SUMMARY half of the same law — see the header. Re-measured for `aquarium` twice, both times because its rooms were wrong (the second: PS2.4). */
 const SEMANTIC_BASELINE: [string, string][] = [
   // PS4.4: every row whose plan resolves re-measured once for the new totals key (gross internal area); see test/byte-identity-baseline.ts.
-  ["laneway-house", "8f22944c56bd2c56a15d2d15bbac07c6399430d7f0df373be29f724c9857bf0f"], // CV13 (was 55f68cc6): example source edited (chairs added)
+  ["laneway-house", "505ec5dc09a07758dd953ebd0b0dc885bdf746d8ccfbd28fdeb0dbbdcf5e94ce"], // CV13 (was 55f68cc6): example source edited (chairs added)
   ["studio", "8ec08c91405139bf3d9979ad20d712299e82409bbec8d6ec9e70e89a856973e4"],
   ["gallery-l", "5dec4904ac00c1d5a20747336ec0acaa4b6682f40b02008aad554ccfa87f0025"], // PS2.11e, see header
   ["aquarium", "323cc760461ca7f9461d99e3cae6d38943e844b31a4308a7830d47cc7d1ae841"], // re-measured for PS2.4, see header; PS2.11e, see header

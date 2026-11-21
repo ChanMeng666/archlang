@@ -264,9 +264,9 @@ suite("examples/remodel.arch", () => {
 });
 
 const PINS = {
-  svg: "b88e95d72c01206de56f3f4892625eee5591459ca735a89b52bab72c9be085c7", // CV13 (was 70df86ff): example source edited (chairs added)
-  dxf: "201c8b75c2def0eac58c5efd12e2894eb0a782f5fe22523901c70ceeb970c779", // CV13 (was e2aeaa84): example source edited (chairs added)
-  dxfFlat: "b017739fdf966aa4972e7dececcd9fbb480dbdfc1fd49e09954b783e3715c867", // CV13 (was 837b1718): example source edited (chairs added)
-  describe: "51fb120c007cf5d2fc0ede5dddac1bf199dcdfc616085104bb5253bb47458b04", // CV13 (was d266e4f6): example source edited (chairs added)
+  svg: "65b37f0152268d5e8fe49f14bcd9b8c142f23f94ffa0871d41acedb375810c05", // CV13 (was 70df86ff): example source edited (chairs added)
+  dxf: "8971ef0345e030f323f8c5ccc1c8e65c5278ca885bb0851e2d9b121d37c2239e", // CV13 (was e2aeaa84): example source edited (chairs added)
+  dxfFlat: "be2f52f660936088e1a4b2837dab2583d4ff82d592b7c66786976066312efbdb", // CV13 (was 837b1718): example source edited (chairs added)
+  describe: "08560cbbd51ca902e1fa7c554b2cd13ea37266fb668c2d61b333575476a48d62", // CV13 (was d266e4f6): example source edited (chairs added)
   lint: "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
 };

@@ -2054,21 +2054,21 @@ export const BASELINE: [string, string][] = [
   ["accessible", "697c11114da0d8d3b16dda0bac1e2492d550b797add8a3fe8799729a4e0b0a4f"],
   ["aquarium", "8fd4393c94a3058e3a08e4a295e8769391f24588af2c41113401ced57a1fbb42"], // re-measured for PS2.4, see header; PS2.10 dims fixed, see header; PS2.11e, see header
   ["attached", "ab37b9000bd5ca7cf5f6940241f6b6945e338b207756773a2a9712a525100d72"],
-  ["bungalow", "93e25c80be147b63304ad8f35825c80b76c8a30ba93b998c3b6c529f6b95394b"], // PS2.11e, see header; CV13 (was ee5c6944): example source edited (chairs added)
+  ["bungalow", "4fd27a7c5a0e9471f433b0fde903479a0863ee5fdcd0443906033ebea65a2496"], // PS2.11e, see header; CV13 (was ee5c6944): example source edited (chairs added)
   ["classroom-block", "aabc5d767173893764c8e180ce787cc40b8e797741441bf8e86dfe4f5dcb7515"], // added with the example, re-measured for net area, see header; PS2.11e, see header
   ["clinic", "4da5fef938c3bd0b6e05a0bae5986b9db1c1d9034542666dbf69956ecc8fcc23"],
   ["corner-cafe", "b95b03d232c72f389f254756113f5a2b3781a6bca9ab78fd4f087b0bf8fd23a3"], // added with the example, re-measured for net area, see header; #367, see test/byte-identity-baseline.ts
   ["courtyard-family", "d51fc40b1eb060f74f8c1eb95c4c859b39e70effc96607e8b42e6ac138bb680e"], // added with the example (RM8.5), see header
-  ["courtyard-house", "a13c16e5564540ebc66ebf93e2269e99233eb803242f33054786ace801ae1070"], // re-measured for PS2.4, see header; PS2.11e, see header; CV13 (was b9cd8746): example source edited (chairs added)
+  ["courtyard-house", "5bdb37b5e2b37a4f8fd9a9a5c2c9025611c267a5c321b29e094cfea6a79d3ef4"], // re-measured for PS2.4, see header; PS2.11e, see header; CV13 (was b9cd8746): example source edited (chairs added)
   ["furnished-flat", "52b8bee1afff224fca393b2fd77bf7a4720009b91d0a625da434648220a5eb87"], // PS2.11e, see header
   ["gallery-l", "7ac8620f4d47923ca075d1e1affb925326e50f520a71bb7b2cb2107375b4816d"], // PS2.10 dim fixed, see header; PS2.11e, see header
   ["garden-house", "b364b3a1a66a02657b1c845eb36338df5d434d8599d05294de2591bb785c7663"], // re-measured, see header; RM1.3a, see header; RM9.2, see header
-  ["garden-loft", "9b8f91543d0a98ec3074a2dd1a4841dea79a4d98fc0262ea1be89289a93fed6f"], // PS2.11e, see header; CV13 (was 18475d2c): example source edited (chairs added)
-  ["hexagon-pavilion", "4c391f1134006370c2118e44bbbef4b4a92a5254d0e6ed26c9ea606f9aaaeed2"], // CV13 (was c9feff36): example source edited (chairs added)
+  ["garden-loft", "823ca475790e000a0637ea97df36d38831a30171bf85063da60cc13d4f19cc57"], // PS2.11e, see header; CV13 (was 18475d2c): example source edited (chairs added)
+  ["hexagon-pavilion", "de1b01e8330cae5415fbfc9c8d609804880af169d112977d260c6ff979c53ae4"], // CV13 (was c9feff36): example source edited (chairs added)
   ["hillside-villa", "38fbb6c938ce81e4403a6508e522f944602665da35cb126ee352341e647876d4"], // re-measured, see header; PS2.11e, see header; RM1.3a, see header; RM9.2, see header
   ["imports", "1de644a1f7abfb2b5cc67269fac11a191810d959379f7b04e14c259014d1e9f4"],
   ["knob-flat", "a99858f74f98ab0ed82ec056df9b76543ee62e4c6692036f80ff301cf701a5c9"], // added with the example, see header
-  ["laneway-house", "30cee297ae5bff44abacc4c02589f39ee0cc41f7d67d38047268354d3b72bd88"], // PS2.11e, see header; CV13 (was 8ede769d): example source edited (chairs added)
+  ["laneway-house", "eb03b3f22a4c9f1b47482311ad6cf5ebffad12d38003dfa48ba56494366528f3"], // PS2.11e, see header; CV13 (was 8ede769d): example source edited (chairs added)
   ["library", "0da11bfe9ec07c1ffa8e8c902fceb0e15a20b7cd825df540d9ca5094d16f28eb"], // PS2.11e, see header
   ["materials", "26e7ea4574248ccd8f73e34cf1bfb68501eee154cbacafbfff4b861a68eed0af"],
   ["museum-wing", "9cd492d6f597fc12e2c403466488e66a36b09f035bef9a9eb4bcea1fc164d9ff"],
@@ -2078,16 +2078,16 @@ export const BASELINE: [string, string][] = [
   ["parametric", "71a3a25418add312c9e75fbc196fed30666f88f4c3a6be27d2020949baa76105"],
   ["practice-office", "c146a7f2adaf3ac63fca3bbcf25ac8612889eb138ff67c92950dc7eb587dac22"], // added with the example, re-measured for net area, see header; PS2.11e, see header; PS2.74 source edit, see header
   ["relational", "e159c8772d98b0f9d3c73e8eb08a16e8e2653bd3b470cb13e561b8b1184dc27b"], // re-measured for PS2.4, see header; PS3.6 source rewrite, see header; PS2.11e, see header; `centreline_at`, see header
-  ["remodel", "7e56e15800deecb57175f9ec513862d9ea62073eb545b0290371728eb3603e9c"], // added with the example, see header; `centreline_at`, see header; CV13 (was ac397a1a): example source edited (chairs added)
+  ["remodel", "f76c772b4a502d7d6aba79cb963a115e842880aaa8839455d077c30f75979133"], // added with the example, see header; `centreline_at`, see header; CV13 (was ac397a1a): example source edited (chairs added)
   ["sheet-notes", "3178042f5c9770726dbf700add62817f0522b662585cfc4a971e43d41f853c7a"], // re-measured, see header
   ["studio", "c1b79a49af3ad31cddf82e88632624d46663c804f134b6e172e585cad36ed969"], // PS2.11e, see header
   ["terrace-row", "ec839a417cb57b6bce80a592a144bd98a216b175edb92c67df3260ab5ce9c33d"], // re-measured, see header
   ["themed", "24c18315c2fcc753391aa01a506f69f611f6d9ac8512053981dc8ce75f36f746"], // PS2.11e, see header
   ["tiny-house", "8236b2c882cc2ff9f21a7b0d5a715f773d300b7432e5746987f2e3809e430ce9"], // PS2.11e, see header
-  ["townhouse", "de3e13f5541b0c98fd891e55e2eee1ec7071dd6a1711042d9da2f3c09b422a6d"], // re-measured, see header; PS2.11e, see header; RM1.3a, see header; RM9.2, see header; CV13 (was 65bb836a): example source edited (chairs added)
+  ["townhouse", "374746a1d7cca2c7eb52b6f3c90b85987bee633f14bca141a4d0987b1455b4bd"], // re-measured, see header; PS2.11e, see header; RM1.3a, see header; RM9.2, see header; CV13 (was 65bb836a): example source edited (chairs added)
   ["transit-hall", "84d3e195a6c9ffb9687fbe345b1a902672a024a67a6b8f57b35c1151aba7424e"], // PS2.11e, see header
   ["turning-stair", "f14a63c239831bd0136b7b1f3c4310241d0f87328e52b39cf7d9489909426b2d"], // added with the example, see header; `centreline_at`, see header; RM1.3a, see header; RM1.2a, see header; RM9.2, see header
-  ["two-bed", "71a52abde50c3eab32c3f97f678450c29c4daf40e1fd84f3c2edd385e2c0d1f7"], // PS3.6 source rewrite, see header; PS2.11e, see header; `centreline_at`, see header; CV13 (was 21101fea): example source edited (chairs added)
+  ["two-bed", "4235a55f56feecae0935f8760ab50fb8b650696ac8aaa8eff7c76bebca8ebbf8"], // PS3.6 source rewrite, see header; PS2.11e, see header; `centreline_at`, see header; CV13 (was 21101fea): example source edited (chairs added)
   ["two-storey", "f71d76a6e6dfc9bdd5642533783cd6d611de8cf680e46d4348ac1aa76bc7ff56"], // re-measured, see header; RM1.3a, see header; RM1.2a, see header; RM9.2, see header
 ];
 
@@ -2106,21 +2106,21 @@ export const SEMANTIC_BASELINE: [string, string][] = [
   ["accessible", "337d9fc2cd8075fb8c3cacb6511df291e35c5419528e9070e5348a0bc56d6d45"],
   ["aquarium", "323cc760461ca7f9461d99e3cae6d38943e844b31a4308a7830d47cc7d1ae841"], // re-measured for PS2.4, see header; PS2.11e, see header
   ["attached", "ac26cc9877820bd6591a2bb6f2ca6378c9138b5b7a2f1c73d9884c758bacb2dc"],
-  ["bungalow", "c2bbd8f2c62a4ca3be4134527cf9782738ca1e98757a27d8a5d8f735111d4209"], // CV13 (was 54cc6ddd): example source edited (chairs added)
+  ["bungalow", "3460c52bc1279e573d0639376bab918ed0931918946c227ed65559fe4f27ccd9"], // CV13 (was 54cc6ddd): example source edited (chairs added)
   ["classroom-block", "b86879c36a9484c05cae6176ef53b20f04886103aa33d4da854d2858aa5c5959"], // added with the example, re-measured for net area, see header; PS2.11e, see header
   ["clinic", "c01524dcae509c38f6eae88980c9ba715efe947991247b5494bbd51cc57e6381"],
   ["corner-cafe", "602c1cc665f97d90fadec0223e4017dab908408a1e5bf5f4c241beae1a3c30c2"], // added with the example, re-measured for net area, see header
   ["courtyard-family", "9ef08f2e6590c8ec3bc17a933076b446fe9eac6704936cba1a86148f01668b4d"], // added with the example (RM8.5), see header
-  ["courtyard-house", "cb076bc3963f6b8afeb5e984cadd6137b08aa1fd9badc3ec5cd5ad6975be2d90"], // re-measured for PS2.4, see header; CV13 (was cbbeb130): example source edited (chairs added)
+  ["courtyard-house", "7bd900ef189a3e039942f81bbc475d883d6411ecf788ce50534757bcb3b059ce"], // re-measured for PS2.4, see header; CV13 (was cbbeb130): example source edited (chairs added)
   ["furnished-flat", "d4f5194c4a9f26337646b7bf28a05645fc083fe1e1ec7eb4b6e3cd93b0f32641"],
   ["gallery-l", "5dec4904ac00c1d5a20747336ec0acaa4b6682f40b02008aad554ccfa87f0025"], // PS2.11e, see header
   ["garden-house", "17d99286bab8445d7613d7454f3e8e38a6a9f171d69d5bb3f12730a1e2bb1274"], // re-measured, see header; RM1.3a, see header; RM9.2, see header
-  ["garden-loft", "8cd58e427d5a05a19846375bd0df7ad4e7f34f3987751b3bbb972fd43f64fd0c"], // CV13 (was d37d7f67): example source edited (chairs added)
-  ["hexagon-pavilion", "0accda9176317a4325f424cdc9570d46ca555300688dbd4143a21b8253543519"], // CV13 (was 435b9fb0): example source edited (chairs added)
+  ["garden-loft", "4789446934c5cccffbca37139f7f7fc7e6679ec62da1c256a0d7166ce50053ed"], // CV13 (was d37d7f67): example source edited (chairs added)
+  ["hexagon-pavilion", "4380bb63e797b577f2678fff1d699a24b20e7eeca9297beb3d3960e1189e51a9"], // CV13 (was 435b9fb0): example source edited (chairs added)
   ["hillside-villa", "3e74b76a22ec1f41361641266bac7e36fcbdd385a32e142ccf170abe1965e6df"], // re-measured, see header; PS2.11e, see header; RM1.3a, see header; RM9.2, see header
   ["imports", "85b77c3fa1a9961a884cf5966ae5f87af436edf6adf3c16f2e426f72ed2b1b2f"],
   ["knob-flat", "0649d38e9f1df5f91c531d84b75d19e3268df59b4e7e9220471c9ed4419eb6c7"], // added with the example, see header
-  ["laneway-house", "8f22944c56bd2c56a15d2d15bbac07c6399430d7f0df373be29f724c9857bf0f"], // CV13 (was 55f68cc6): example source edited (chairs added)
+  ["laneway-house", "505ec5dc09a07758dd953ebd0b0dc885bdf746d8ccfbd28fdeb0dbbdcf5e94ce"], // CV13 (was 55f68cc6): example source edited (chairs added)
   ["library", "bb9953f94353e9c648537d0e09a839a7f8d4c24805d30cc51f8c52856e033d66"], // PS2.11e, see header
   ["materials", "076c820e1a3ec44538143118ff196db360fcbe6cf12a34b436c607cee8bd82b6"],
   ["museum-wing", "e185d55c240c1c3df463aed1665aec2b33159838277d65d2246e984bd58aed1b"],
@@ -2130,16 +2130,16 @@ export const SEMANTIC_BASELINE: [string, string][] = [
   ["parametric", "144703a7cf28e64c70cfc57451525839dd84da0f1d310135750b5d9f532d565a"],
   ["practice-office", "bf39a9a46d2635dd1cb6f14d61d222859d2e6439c9c5307dece6ae180bd62eb2"], // added with the example, re-measured for net area, see header
   ["relational", "4589a3eea239e9ac74b45a1a09c9639d1b33863e56660ca8ca0cf140a8e45be0"], // re-measured for PS2.4, see header; PS3.6 source rewrite, see header; PS2.11e, see header; `centreline_at`, see header
-  ["remodel", "e45351b5e49e8ae2e1d1a18cca85cf8192a9e07be2e68f1b58e742ced3fde0dc"], // added with the example, see header; `centreline_at`, see header; CV13 (was b6eba3f1): example source edited (chairs added)
+  ["remodel", "98186703c1c8c05c8fa3de5e52ba14cc9a570c97f6be98f21e6ad40c3674e727"], // added with the example, see header; `centreline_at`, see header; CV13 (was b6eba3f1): example source edited (chairs added)
   ["sheet-notes", "148de5f5a58fb9533999df816a742074ec901216e3b9fb78eff338b91633a4b8"], // added with the example, see header
   ["studio", "8ec08c91405139bf3d9979ad20d712299e82409bbec8d6ec9e70e89a856973e4"],
   ["terrace-row", "0c37d23bb8dfa83ce746869724ff62952637f1acb8a6ca353bfe8f7a440941a7"],
   ["themed", "7e222ca408876d502b7e8662d90b695bfa3e8712c855023a6dacc3d21a3bbacd"],
   ["tiny-house", "3513ef53a1064ff6b4435f4a8f05db2578aa258a1bb6c55c90df0517a638190b"], // PS2.11e, see header
-  ["townhouse", "834248170075164382cd1909142d6f14256bd04ad4ffdccfe69aaa0d0486c164"], // re-measured, see header; RM1.3a, see header; RM9.2, see header; CV13 (was 147c8167): example source edited (chairs added)
+  ["townhouse", "ee07e827ddb5997de412f8e2d9010f888bac31263c17f176094b9eace1906542"], // re-measured, see header; RM1.3a, see header; RM9.2, see header; CV13 (was 147c8167): example source edited (chairs added)
   ["transit-hall", "4092fd0a7d88401cc49781d8021f0863300e8cbe65804d5735a9271a0c6c3eff"], // PS2.11e, see header
   ["turning-stair", "95a956232914bc2728140f0b649392e11b9873fe176b16d66d9e3fedd71712fc"], // added with the example, see header; `centreline_at`, see header; RM1.3a, see header; RM1.2a, see header; RM9.2, see header
-  ["two-bed", "35c8af74644b000bf3b6885236d949e3ac78efb9fd3fd0e460cbc82ffa888cd0"], // PS3.6 source rewrite, see header; `centreline_at`, see header; CV13 (was 436fadba): example source edited (chairs added)
+  ["two-bed", "51c6bbc05ab18c7c7680dd728a03ab2f6be914768a654b6f89124817b6954101"], // PS3.6 source rewrite, see header; `centreline_at`, see header; CV13 (was 436fadba): example source edited (chairs added)
   ["two-storey", "9ef96f2f94e981a208d90683b26fba3edaf6d41a18704a337c68bd5b49a50273"], // re-measured, see header; RM1.3a, see header; RM1.2a, see header; RM9.2, see header
 ];
 
