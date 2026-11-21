@@ -163,32 +163,48 @@ suite("W_TABLE_NO_SEAT", () => {
     ).toEqual([]);
   });
 
-  it("does not read a table whose label names another piece, whole-word and in any case", () => {
+  it("reads a table by its label: a dining word wins, else a named other piece is not read", () => {
+    const read = (label: string): number => of(living().replace('label "Table"', `label "${label}"`)).length;
+    // Not read: the label names another piece (whole words, any case) or a two-word phrase for one.
     for (const label of [
       "Coffee",
       "coffee table",
       "Desk",
       "Kitchen island",
-      "TV",
-      "tv table",
-      "Side",
-      "Console",
+      "Nightstand",
       "Bedside",
       "Dressing table",
-    ]) {
-      expect(of(living().replace('label "Table"', `label "${label}"`)), label).toEqual([]);
-    }
+      "Console",
+      "South side table",
+      "End table",
+      "tv table",
+      "TV stand",
+    ])
+      expect(read(label), label).toBe(0);
+    // Read: a dining word wins whatever else the label says; "side" or "tv" alone names nothing.
     for (const label of [
-      "Dining table",
+      "Dining Island",
+      "Island dining table",
+      "Dining side",
+      "Dining table (window side)",
+      "Table - garden side",
+      "Dining table by TV",
+      "TV dinner table",
+      "Coffee & dining table",
+      "Dining/Desk",
+      "Console dining table",
+      "side-board",
+      "Sideboard",
+      "Side",
+      "TV",
       "Breakfast",
+      "Eat",
       "Desktop",
       "Television",
       "Islands",
-      "Sideboard",
       "Table for two",
-    ]) {
-      expect(of(living().replace('label "Table"', `label "${label}"`)), label).toHaveLength(1);
-    }
+    ])
+      expect(read(label), label).toBe(1);
   });
 
   it("files one verdict per table across overlapping rooms: a reported table files no no-uses", () => {
@@ -270,21 +286,32 @@ suite("W_TABLE_NO_SEAT", () => {
   });
 
   it("does its room reading once per room, never once per table (rooms x pieces centre tests)", () => {
-    const dense = (n: number): string => {
-      const lines = [SHELL, '  room id=r0 at (0,0) size 5000x4500 label "Living" uses living'];
-      for (let i = 1; i < n; i++)
-        lines.push(
-          `  room id=r${i} at (${(i % 5) * 100},${(i % 7) * 100}) size 4000x3500 label "Living ${i}" uses living`,
-        );
+    // n rooms over one floor and 2n tables, the rooms labelled three ways: with a day use, with a label
+    // that classifies to no use (each such room is declared once at most), and as bedrooms.
+    const dense = (n: number, label: (i: number) => string): string => {
+      const lines = [SHELL];
+      for (let i = 0; i < n; i++)
+        lines.push(`  room id=r${i} at (${(i % 5) * 100},${(i % 7) * 100}) size 4000x3500 label "${label(i)}"`);
       for (let j = 0; j < 2 * n; j++)
         lines.push(`  furniture table at (${500 + (j % 6) * 500},${500 + (j % 5) * 500}) size 400x400`);
       return plan(...lines);
     };
-    for (const n of [10, 20, 40]) {
-      const work = lintWork(dense(n));
-      // n rooms, each read once over the storey's 2n pieces: 2n^2, never 2n x n x 2n.
-      expect(work.tableSeatTests, `n = ${n}`).toBe(n * 2 * n);
-    }
+    const variants: [string, (i: number) => string][] = [
+      ["day use", (i) => `Living ${i}`],
+      ["no use", (i) => `Zone ${i}`],
+      ["bedroom", (i) => `Bedroom ${i}`],
+    ];
+    for (const [name, label] of variants)
+      for (const n of [10, 20, 40]) {
+        const src = dense(n, label);
+        // n rooms, each read once over the storey's 2n pieces: 2n^2, never 2n x n x 2n.
+        expect(lintWork(src).tableSeatTests, `${name}, n = ${n}`).toBe(n * 2 * n);
+        // Every no-use room is declared at most once, however many tables stand on it.
+        const run = ruleRun(src);
+        expect(run.skips.length, `${name}, n = ${n}`).toBeLessThanOrEqual(n);
+        expect(run.diags, `${name}, n = ${n}`).toHaveLength(name === "day use" ? 2 * n : 0);
+        if (name === "no use") expect(new Set(run.skips).size).toBe(run.skips.length);
+      }
   });
 
   it("reports nothing over the shipped examples under the default ruleset (RM-D73: their tables were seated first)", () => {
