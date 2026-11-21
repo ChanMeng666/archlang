@@ -1,5 +1,5 @@
 {
-  "_reason": "CV13 split (RM-D73): nine examples gain chairs at their dining tables (example source edited); on feat/cv13-example-chairs",
+  "_reason": "CV13 split (RM-D73), red team 1: the nine examples' chairs are 500 x 500, on-grid, centred and turned with facing; example source edited; on feat/cv13-example-chairs",
   "_tolerance": 0.1,
   "_totalTolerance": 0.03,
   "_floor": 8,
@@ -38,7 +38,7 @@
       "labelLeaders": 0
     },
     "examples/bungalow.arch": {
-      "steps": 806,
+      "steps": 911,
       "drawUnits": 952,
       "elements": 48,
       "leafDoorPairs": 0,
@@ -93,9 +93,9 @@
       "labelLeaders": 0
     },
     "examples/courtyard-house.arch": {
-      "steps": 1389,
-      "drawUnits": 2860,
-      "elements": 80,
+      "steps": 1681,
+      "drawUnits": 2848,
+      "elements": 78,
       "leafDoorPairs": 0,
       "boundaryRunTests": 96,
       "navCells": 18400,
@@ -137,7 +137,7 @@
       "labelLeaders": 0
     },
     "examples/garden-loft.arch": {
-      "steps": 448,
+      "steps": 562,
       "drawUnits": 450,
       "elements": 29,
       "leafDoorPairs": 0,
@@ -148,7 +148,7 @@
       "labelLeaders": 0
     },
     "examples/hexagon-pavilion.arch": {
-      "steps": 831,
+      "steps": 1009,
       "drawUnits": 371,
       "elements": 40,
       "leafDoorPairs": 0,
@@ -192,7 +192,7 @@
       "labelLeaders": 0
     },
     "examples/laneway-house.arch": {
-      "steps": 572,
+      "steps": 687,
       "drawUnits": 543,
       "elements": 31,
       "leafDoorPairs": 0,
@@ -302,7 +302,7 @@
       "labelLeaders": 0
     },
     "examples/remodel.arch": {
-      "steps": 1322,
+      "steps": 1413,
       "drawUnits": 1571,
       "elements": 39,
       "leafDoorPairs": 1,
@@ -368,7 +368,7 @@
       "labelLeaders": 0
     },
     "examples/townhouse.arch": {
-      "steps": 3922,
+      "steps": 4048,
       "drawUnits": 1254,
       "elements": 74,
       "leafDoorPairs": 0,
@@ -401,7 +401,7 @@
       "labelLeaders": 0
     },
     "examples/two-bed.arch": {
-      "steps": 1345,
+      "steps": 1418,
       "drawUnits": 355,
       "elements": 33,
       "leafDoorPairs": 0,
