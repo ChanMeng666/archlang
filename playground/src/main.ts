@@ -107,11 +107,11 @@ let jobs: Jobs | undefined;
 let compiler: CompileClient | undefined;
 /**
  * The header actions (actions.ts), mounted by `up` before its first render. Their chunk imports the
- * core's lazy chunk statically (`diagnosticToJson`, and with it the compile worker's `lint`: card
- * RM0.7f split it out of the compiler chunk), so the idle import warms it too, and a first use
- * after an idle visit waits on neither. What the actions run only on a press (Format, Finish,
- * Repair, the DXF and TXT downloads) loads with the press (press-core.ts, card 3.18). A failed
- * load is forgotten.
+ * core's lazy chunk statically (`diagnosticToJson`: card RM0.7f split it out of the compiler
+ * chunk), so the idle import warms it too, and a first use after an idle visit waits on neither.
+ * What the actions run only on a press (Format, Finish, Repair, the DXF and TXT downloads) loads
+ * with the press (press-core.ts, card 3.18), and the compile worker's `lint` with edit mode
+ * (lint-core.ts, card 3.19b). A failed load is forgotten.
  */
 type Actions = typeof import("./actions.js");
 let actionsP: Promise<Actions> | undefined;
@@ -720,9 +720,10 @@ function gutterReady(source: string, diags: readonly Diagnostic[]) {
 
 /** A render request for `source` with the settings on screen now. */
 function renderRequest(source: string): CompileRequest {
-  // Lint is edit mode's: a visit that never opens the editor never runs `lint()`.
+  // Lint is edit mode's: a visit that never opens the editor never runs `lint()`, nor loads its code
+  // (card 3.19b: the job loads it from the URL edit mode gives, with the editor's first request).
   const profile = edit ? ((document.getElementById("lintProfile") as HTMLSelectElement | null)?.value ?? "") : null;
-  return {
+  const req: CompileRequest = {
     seq: ++renderSeq,
     source,
     theme: themeSelect.value,
@@ -730,6 +731,8 @@ function renderRequest(source: string): CompileRequest {
     paths: previewCtl.pathsEnabled(),
     lintProfile: profile,
   };
+  if (edit) req.lintUrl = edit.lintUrl;
+  return req;
 }
 
 /**

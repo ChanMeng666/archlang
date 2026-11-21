@@ -62,6 +62,8 @@
     "!dist/first-use-path.js.map",
     "!dist/actions-path.js",
     "!dist/actions-path.js.map",
+    "!dist/lint-path.js",
+    "!dist/lint-path.js.map",
     "examples",
     "spec.llm.md",
     "llms-full.txt",
