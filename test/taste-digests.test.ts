@@ -237,6 +237,20 @@
  * and the new case's digest equals its twin's. `radius-over-label` shares radius-over-piece's old values
  * and did not move. The rows carry `RM9.6 CV13` notes.
  *
+ * RM9.6 (`W_STAIR_NO_VOID`, a flight from the storey below whose head the upper storey's floor covers,
+ * coverage class CV14) added six rows, the new `stair-safety/no-void-at-head` pair under each of the
+ * three profiles, and moved thirty-three: `circulation-privacy/door-onto-roof` and the stair-safety pairs
+ * `head-against-wall`, `riser-too-high`, `shaft-footprint-mismatch` and `stair-too-steep`, case and twin,
+ * and the case `void-at-stair-head`, under each profile, each of whose plans climbs to an upper storey
+ * whose floor covers the flight's head. In each the only change is `validity`: one more warning (0 → 1
+ * on the five twins, 1 → 2 on the six cases) and `W_STAIR_NO_VOID` in its codes. On the twins, where it
+ * is the first validity warning, `validity.pass` turns false and the score is capped at 0.5: generic
+ * door-onto-roof 1, head-against-wall 0.75, riser-too-high 1, shaft-footprint-mismatch 0.75,
+ * stair-too-steep 1; cn 0.8104, 0.7399, 1, 0.7399, 1; us as generic. Every criterion, subscore and skip
+ * is unchanged. The `void-at-stair-head` twin now draws its void as the stairwell and reads as on `main`
+ * (taste reads no void). With the rule taken out of `LINT_RULES` each moved row reproduces the value it
+ * replaces, and the new case's digest equals its twin's. The moved rows carry `RM9.6 CV14` notes.
+ *
  * RM9.6 CV08 (`W_SEAT_FACING_WALL`, a sofa or armchair whose front is on a wall face) added six rows,
  * the new `clearances/seat-faces-wall` pair under each of the three profiles, measured with
  * `tasteDigest`, and moved none: no other source here has a lounge seat whose front is on a wall (the
@@ -410,12 +424,12 @@ const TABLE: ReadonlyArray<[string, string, string]> = [
     "test/defect-corpus/circulation-privacy/bedroom-via-bedroom.clean.arch",
   ],
   [
-    "e9d8131808a2fd23949df880fdda2a2d938cbc4baa9bd0c1fab009c5cd92628f",
+    "730e54a39ada6a86bacb1d9b7538da34e49e5b07dd021d82ca2836b10effd55d", // RM9.6 CV14: W_STAIR_NO_VOID reports this plan (was e9d81318)
     "generic",
     "test/defect-corpus/circulation-privacy/door-onto-roof.arch",
   ],
   [
-    "b517c0ee42843d8bd1cd803cca7c0a2cdf7b827a625aee0bee3ae5aa8abcd55e",
+    "437aabc2a3d29b4c9b55d79468deb98d3e027daa1e05435effc50998789a119b", // RM9.6 CV14: W_STAIR_NO_VOID reports this plan (was b517c0ee)
     "generic",
     "test/defect-corpus/circulation-privacy/door-onto-roof.clean.arch",
   ],
@@ -1170,42 +1184,52 @@ const TABLE: ReadonlyArray<[string, string, string]> = [
     "test/defect-corpus/stair-safety/furniture-on-landing.clean.arch",
   ],
   [
-    "ae46cab7c8ed30dfa1f468869e9727008a49b335fc71ea0913850d29d1a97139",
+    "fc86855bd27ea2ae8cc2541684226edcac793234b07116e2d3f6624dfe0bf305", // RM9.6 CV14: W_STAIR_NO_VOID reports this plan (was ae46cab7)
     "generic",
     "test/defect-corpus/stair-safety/head-against-wall.arch",
   ],
   [
-    "64f5a3d4b94c5ede39c9f9b80a73e8092cd64db441eafb007d0c4291dc2e7070",
+    "699505ab2437c8680da58788a0cf22445e1ab8f6e3eee36b4c1b24a51aff22ce", // RM9.6 CV14: W_STAIR_NO_VOID reports this plan (was 64f5a3d4)
     "generic",
     "test/defect-corpus/stair-safety/head-against-wall.clean.arch",
   ],
   [
-    "9759383bb8852bd2f8e65c5d323cad7bb32eefb8e3e1d3a0440bb2e8817d37e9",
+    "82d24850ee78f1fc16ab1422b960d21cc818d8a19f1cc1f0f343819a2442cc10", // RM9.6 CV14: W_STAIR_NO_VOID's new defect-corpus file
+    "generic",
+    "test/defect-corpus/stair-safety/no-void-at-head.arch",
+  ],
+  [
+    "e0cffb50cab32e468b7cb5ae54955cd6219941dce3bc740ce79d921ffdceee3d", // RM9.6 CV14: W_STAIR_NO_VOID's new defect-corpus file
+    "generic",
+    "test/defect-corpus/stair-safety/no-void-at-head.clean.arch",
+  ],
+  [
+    "ff56f65dabaa6ee6e97466b9dbf10bd7048cf1a90683acf529a487cdafacc4ef", // RM9.6 CV14: W_STAIR_NO_VOID reports this plan (was 9759383b)
     "generic",
     "test/defect-corpus/stair-safety/riser-too-high.arch",
   ],
   [
-    "48b136e1e08f46e60be9c2dd1bbee43ab94df9f8da7dfd64bb42eec87455c6ca",
+    "9240243ce9d81bf30e09aac8ce0856c7bb680c99f605c54a80db0aa0e4dfd681", // RM9.6 CV14: W_STAIR_NO_VOID reports this plan (was 48b136e1)
     "generic",
     "test/defect-corpus/stair-safety/riser-too-high.clean.arch",
   ],
   [
-    "81d41f0ed00cba3433613fb96d112284646e2f8ae93b533eac69f8e6117402df",
+    "ae5321b47eb308aaaf38c33a8cd2607449db62995d4ffa52c6acbf3bd468eccf", // RM9.6 CV14: W_STAIR_NO_VOID reports this plan (was 81d41f0e)
     "generic",
     "test/defect-corpus/stair-safety/shaft-footprint-mismatch.arch",
   ],
   [
-    "64f5a3d4b94c5ede39c9f9b80a73e8092cd64db441eafb007d0c4291dc2e7070",
+    "699505ab2437c8680da58788a0cf22445e1ab8f6e3eee36b4c1b24a51aff22ce", // RM9.6 CV14: W_STAIR_NO_VOID reports this plan (was 64f5a3d4)
     "generic",
     "test/defect-corpus/stair-safety/shaft-footprint-mismatch.clean.arch",
   ],
   [
-    "104f55b834249b7df6415bc8c7cc1a2457063431c94a89ec956246a338538cce",
+    "316bd92582d68872afe87e64031d23de00a18d8868d456b616a6e9d32bbc6534", // RM9.6 CV14: W_STAIR_NO_VOID reports this plan (was 104f55b8)
     "generic",
     "test/defect-corpus/stair-safety/stair-too-steep.arch",
   ],
   [
-    "48b136e1e08f46e60be9c2dd1bbee43ab94df9f8da7dfd64bb42eec87455c6ca",
+    "9240243ce9d81bf30e09aac8ce0856c7bb680c99f605c54a80db0aa0e4dfd681", // RM9.6 CV14: W_STAIR_NO_VOID reports this plan (was 48b136e1)
     "generic",
     "test/defect-corpus/stair-safety/stair-too-steep.clean.arch",
   ],
@@ -1230,7 +1254,7 @@ const TABLE: ReadonlyArray<[string, string, string]> = [
     "test/defect-corpus/stair-safety/swing-over-stair.clean.arch",
   ],
   [
-    "8854ee3a8342978274e3bce189e95b670035267b9a7584f5fa88df759d651333",
+    "64d30faac153645b03b405ff7c9b5b4ba60496f21b89f949aebfe244115578e8", // RM9.6 CV14: W_STAIR_NO_VOID reports this plan (was 8854ee3a)
     "generic",
     "test/defect-corpus/stair-safety/void-at-stair-head.arch",
   ],
@@ -1660,12 +1684,12 @@ const TABLE: ReadonlyArray<[string, string, string]> = [
     "test/defect-corpus/circulation-privacy/bedroom-via-bedroom.clean.arch",
   ],
   [
-    "b1be1fc4cdf5b3738c7a06c57c55141d1e4786e86bc6c29e05e796e0ae428445",
+    "fbed4387eaa46cbea37fc1bf4051ad4261a84f662de36a63444ff540281b2e49", // RM9.6 CV14: W_STAIR_NO_VOID reports this plan (was b1be1fc4)
     "cn-residential-advisory",
     "test/defect-corpus/circulation-privacy/door-onto-roof.arch",
   ],
   [
-    "b8689b39d1a2abb615ae1627c039c2c0bacea7d233584cf5962b283002204c76",
+    "cbbce31d316f28d598048fdcff9d486bcf624aa76fbd8e08d20ca7d263526c97", // RM9.6 CV14: W_STAIR_NO_VOID reports this plan (was b8689b39)
     "cn-residential-advisory",
     "test/defect-corpus/circulation-privacy/door-onto-roof.clean.arch",
   ],
@@ -2420,42 +2444,52 @@ const TABLE: ReadonlyArray<[string, string, string]> = [
     "test/defect-corpus/stair-safety/furniture-on-landing.clean.arch",
   ],
   [
-    "bd332a1df56dd81f95afb9fe137c7ce21816e99506a50684839825a923e3e547",
+    "417c2e67299691102e79d6dcce0695ccae9ee1a2be382c327247a057f24184eb", // RM9.6 CV14: W_STAIR_NO_VOID reports this plan (was bd332a1d)
     "cn-residential-advisory",
     "test/defect-corpus/stair-safety/head-against-wall.arch",
   ],
   [
-    "dca4d220888a1719bf4c366185b425ea1759258a886954251f059ef6bd884872",
+    "c5953b33cfc4b5dbdb011c5652d5817e0ab4c414f87c6dfaff421212a7eeb5e8", // RM9.6 CV14: W_STAIR_NO_VOID reports this plan (was dca4d220)
     "cn-residential-advisory",
     "test/defect-corpus/stair-safety/head-against-wall.clean.arch",
   ],
   [
-    "a5c1fa17b4b2432eda2e6e874eb319336c0163d4f380f31974cfdd87ce411826",
+    "b966f954c4d857108abe9b48933d5246830e222fe95edb247d0a8f3fa8894e5d", // RM9.6 CV14: W_STAIR_NO_VOID's new defect-corpus file
+    "cn-residential-advisory",
+    "test/defect-corpus/stair-safety/no-void-at-head.arch",
+  ],
+  [
+    "6156280db69208d440e0671656705fbdb66828e0ebedfba4afb44b9fa348a893", // RM9.6 CV14: W_STAIR_NO_VOID's new defect-corpus file
+    "cn-residential-advisory",
+    "test/defect-corpus/stair-safety/no-void-at-head.clean.arch",
+  ],
+  [
+    "c94814a9c792a2963bf10ca4b99e8d729c128b2c5f9e2b1e7fb0334a34f31975", // RM9.6 CV14: W_STAIR_NO_VOID reports this plan (was a5c1fa17)
     "cn-residential-advisory",
     "test/defect-corpus/stair-safety/riser-too-high.arch",
   ],
   [
-    "8a48f181b2c51463f647815a94bdd230fea3330e9d1ba3071e2f0c1ea293482f",
+    "b4c4bf59b7295a39a96aef37c3a59ae07e74178a82b3f0bf73492051b3401658", // RM9.6 CV14: W_STAIR_NO_VOID reports this plan (was 8a48f181)
     "cn-residential-advisory",
     "test/defect-corpus/stair-safety/riser-too-high.clean.arch",
   ],
   [
-    "51e6b7df0613b1677e37aaa2b26558201eb9e00018ac326d39df5178dcd940aa",
+    "69af692cba3df5023c61d5a098ffeb2aa4eb108eee8f18627c153b3ec4175786", // RM9.6 CV14: W_STAIR_NO_VOID reports this plan (was 51e6b7df)
     "cn-residential-advisory",
     "test/defect-corpus/stair-safety/shaft-footprint-mismatch.arch",
   ],
   [
-    "dca4d220888a1719bf4c366185b425ea1759258a886954251f059ef6bd884872",
+    "c5953b33cfc4b5dbdb011c5652d5817e0ab4c414f87c6dfaff421212a7eeb5e8", // RM9.6 CV14: W_STAIR_NO_VOID reports this plan (was dca4d220)
     "cn-residential-advisory",
     "test/defect-corpus/stair-safety/shaft-footprint-mismatch.clean.arch",
   ],
   [
-    "8c1b44425df4237bf2367197195dcc630de90e6c690926de5da9d24c087bc6e9",
+    "25219313fe2e66f6e6d7ac535b15de92ff18c1a4de577355d50874a54305ed49", // RM9.6 CV14: W_STAIR_NO_VOID reports this plan (was 8c1b4442)
     "cn-residential-advisory",
     "test/defect-corpus/stair-safety/stair-too-steep.arch",
   ],
   [
-    "8a48f181b2c51463f647815a94bdd230fea3330e9d1ba3071e2f0c1ea293482f",
+    "b4c4bf59b7295a39a96aef37c3a59ae07e74178a82b3f0bf73492051b3401658", // RM9.6 CV14: W_STAIR_NO_VOID reports this plan (was 8a48f181)
     "cn-residential-advisory",
     "test/defect-corpus/stair-safety/stair-too-steep.clean.arch",
   ],
@@ -2480,7 +2514,7 @@ const TABLE: ReadonlyArray<[string, string, string]> = [
     "test/defect-corpus/stair-safety/swing-over-stair.clean.arch",
   ],
   [
-    "fe4774b9013e87ea1f1a6c2e58fa7bd2f090018a0e29a0e377b809ff60d7e517",
+    "a0d1f73c06533f31248f309129c41466746811598d6d2ea2f2c83df8c5e7425e", // RM9.6 CV14: W_STAIR_NO_VOID reports this plan (was fe4774b9)
     "cn-residential-advisory",
     "test/defect-corpus/stair-safety/void-at-stair-head.arch",
   ],
@@ -2910,12 +2944,12 @@ const TABLE: ReadonlyArray<[string, string, string]> = [
     "test/defect-corpus/circulation-privacy/bedroom-via-bedroom.clean.arch",
   ],
   [
-    "9a7c72035e48a403031b458d3f6573f1eeb545b13840126aba43413bcbefb49f",
+    "8cea8f19af786c28dcdcb1d1e25f06e11ac2213f7aba9e4d46284ffac3d44921", // RM9.6 CV14: W_STAIR_NO_VOID reports this plan (was 9a7c7203)
     "us-residential-advisory",
     "test/defect-corpus/circulation-privacy/door-onto-roof.arch",
   ],
   [
-    "ce72fc0a18351f77c1adc83b87ac29c84587fd5b16d487051ad78f8a93fd7c60",
+    "cdcda1e739e7766ea88eeb7868738c38ce3f2e6cc18678a0e333885eea378b3f", // RM9.6 CV14: W_STAIR_NO_VOID reports this plan (was ce72fc0a)
     "us-residential-advisory",
     "test/defect-corpus/circulation-privacy/door-onto-roof.clean.arch",
   ],
@@ -3670,42 +3704,52 @@ const TABLE: ReadonlyArray<[string, string, string]> = [
     "test/defect-corpus/stair-safety/furniture-on-landing.clean.arch",
   ],
   [
-    "2cd19405d5d13685b895f8fb9395131595b1173c4f8d0874f0ea4e23b1284fba",
+    "94050c3522fb0913e9ddc2c00ad0fb6ac48f71fa570b82306893bedcd4216d34", // RM9.6 CV14: W_STAIR_NO_VOID reports this plan (was 2cd19405)
     "us-residential-advisory",
     "test/defect-corpus/stair-safety/head-against-wall.arch",
   ],
   [
-    "16c2358ac9a6036453cffacc5958375cff9eda6573cb63ca221e3b40c8700d37",
+    "3e13373a3e43e68a12425da65bebe9fa31250f50dcc125760df510508a55a20e", // RM9.6 CV14: W_STAIR_NO_VOID reports this plan (was 16c2358a)
     "us-residential-advisory",
     "test/defect-corpus/stair-safety/head-against-wall.clean.arch",
   ],
   [
-    "76cb5cec021a83c0d56483821a3e0a28f4cff9de3df12365097370427fd4e624",
+    "8d43dd2d1dd77c0d2a4e2e6c631acdf12a68eafc7c733c943966dec26b02916e", // RM9.6 CV14: W_STAIR_NO_VOID's new defect-corpus file
+    "us-residential-advisory",
+    "test/defect-corpus/stair-safety/no-void-at-head.arch",
+  ],
+  [
+    "e0304a195ed770f19a1c9928e52198775821d2f46a7d861871a547ac731c03e7", // RM9.6 CV14: W_STAIR_NO_VOID's new defect-corpus file
+    "us-residential-advisory",
+    "test/defect-corpus/stair-safety/no-void-at-head.clean.arch",
+  ],
+  [
+    "15c7b7c760e66abe6e2fd702af280e9e161fb2884e14b8f8907252ae2bbd3c5f", // RM9.6 CV14: W_STAIR_NO_VOID reports this plan (was 76cb5cec)
     "us-residential-advisory",
     "test/defect-corpus/stair-safety/riser-too-high.arch",
   ],
   [
-    "c4c031a08062706ee26c38a9fc31e051b3336191fea5fc2e9db484ce1b2bb2ce",
+    "43a9b770b8baeb4a1ba9ddb6619e357755c06fdb56a22a4b77ae55fec6f8e254", // RM9.6 CV14: W_STAIR_NO_VOID reports this plan (was c4c031a0)
     "us-residential-advisory",
     "test/defect-corpus/stair-safety/riser-too-high.clean.arch",
   ],
   [
-    "3b2b1ffd5d4b8a3a0011c378a791164ba08b356f7c40b90f70102865d01eb72f",
+    "5fc660f7240758f638a07fc3511690224965f9460b1b2ec8d18f19520d58d2d4", // RM9.6 CV14: W_STAIR_NO_VOID reports this plan (was 3b2b1ffd)
     "us-residential-advisory",
     "test/defect-corpus/stair-safety/shaft-footprint-mismatch.arch",
   ],
   [
-    "16c2358ac9a6036453cffacc5958375cff9eda6573cb63ca221e3b40c8700d37",
+    "3e13373a3e43e68a12425da65bebe9fa31250f50dcc125760df510508a55a20e", // RM9.6 CV14: W_STAIR_NO_VOID reports this plan (was 16c2358a)
     "us-residential-advisory",
     "test/defect-corpus/stair-safety/shaft-footprint-mismatch.clean.arch",
   ],
   [
-    "5888b9ac9d7fc7ea89f8b5e6c404bfb2ad1b495e508feadcea86ac563dbbf8d2",
+    "46a8c5ed068c581f482b3fe2f3d94f71ce5d647dcb09351cd490ce3d15890bb0", // RM9.6 CV14: W_STAIR_NO_VOID reports this plan (was 5888b9ac)
     "us-residential-advisory",
     "test/defect-corpus/stair-safety/stair-too-steep.arch",
   ],
   [
-    "1fff16648f1bcac1eabdc83dda629f6960db269b2349a49dac5498fa7d0a0b94",
+    "6c4ea91391be37a201c166821c7a4bb03ab2b3ab79f439270b663c2201c56445", // RM9.6 CV14: W_STAIR_NO_VOID reports this plan (was 1fff1664)
     "us-residential-advisory",
     "test/defect-corpus/stair-safety/stair-too-steep.clean.arch",
   ],
@@ -3730,7 +3774,7 @@ const TABLE: ReadonlyArray<[string, string, string]> = [
     "test/defect-corpus/stair-safety/swing-over-stair.clean.arch",
   ],
   [
-    "f0d3bd06526aafd2dbf63e71771d13cd4e6af85689bce90dd1b1f509f6fbd606",
+    "dc15fa43458b38ab760becbeda569d6b96d3fad1647cf18cc49885cbdb7be904", // RM9.6 CV14: W_STAIR_NO_VOID reports this plan (was f0d3bd06)
     "us-residential-advisory",
     "test/defect-corpus/stair-safety/void-at-stair-head.arch",
   ],

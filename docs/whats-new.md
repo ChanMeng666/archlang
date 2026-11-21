@@ -222,8 +222,9 @@ plan "Stacked" {
 }
 ```
 
-As written the plan lints with two advisory warnings unrelated to stacking (the living room has no
-window, and the upper stair has no clear landing at its head). Move the upper stair to `at (3000,200)` and the keep reports `W_KEEP_VIOLATED` while the lint reports
+As written the plan lints with three warnings unrelated to stacking (the living room has no
+window, the upper stair has no clear landing at its head, and, since `W_STAIR_NO_VOID`, the upper
+storey draws no `void` over the flight). Move the upper stair to `at (3000,200)` and the keep reports `W_KEEP_VIOLATED` while the lint reports
 `W_SHAFT_FOOTPRINT_MISMATCH` ("the footprints overlap by 0% of the smaller, under half"). Remove the keep and rename it
 `cor`, and the lint reports `W_STAIR_UNMATCHED` on both storeys. The keep forms are in the
 [language reference](language-reference.md#keep--declared-invariants-checked-and-never-solved).

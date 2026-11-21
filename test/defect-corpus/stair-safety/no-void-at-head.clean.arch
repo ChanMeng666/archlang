@@ -1,0 +1,36 @@
+# class: stair-safety
+# twin-of: no-void-at-head
+# origin: the case with level 1's stairwell drawn as a void over the stair's pieces
+# expect: none
+# fact: void well on level 1 is the polygon (1100,100) (3630,100) (3630,2640) (2630,2640) (2630,1100)
+#   (1100,1100): over every piece of the stair, never its box, so the notch stays floor
+plan "A void over the stair" {
+  units mm
+  grid 10
+  level 0 "Ground floor" {
+    room id=hall at (0,0) size 3700x3800 label "Hall" at (1700,1900) uses hall
+    room id=living at (3700,0) size 4300x3800 label "Living" uses living
+    walls from rooms exterior 200 partition 100
+    door on hall.bottom at 1100 from start width 900 swing inward
+    door between hall and living at 3100 from start width 900 swing into living
+    window on living.right width 1600
+    stair id=s dir up width 1000 {
+      flight at (2630,1100) size 1000x1540
+      landing at (2630,100) size 1000x1000 winders 3
+      flight at (1100,100) size 1530x1000
+    }
+  }
+  level 1 "First floor" {
+    room id=gallery at (0,0) size 3700x3800 label "Landing" at (1700,1900) uses hall
+    room id=bed at (3700,0) size 4300x3800 label "Bedroom" uses bedroom
+    walls from rooms exterior 200 partition 100
+    door between gallery and bed at 3100 from start width 900 swing into bed
+    window on bed.right width 1600
+    stair id=s dir down width 1000 {
+      flight at (2630,1100) size 1000x1540
+      landing at (2630,100) size 1000x1000 winders 3
+      flight at (1100,100) size 1530x1000
+    }
+    void id=well polygon (1100,100) (3630,100) (3630,2640) (2630,2640) (2630,1100) (1100,1100)
+  }
+}

@@ -31,6 +31,11 @@ export interface LintWork {
    */
   tableSeatTests: number;
   /**
+   * `W_STAIR_NO_VOID`: per flight arriving on a storey, one test per void piece, and one per element
+   * and wall for each point of its head band read for floor (product roadmap RM9.6).
+   */
+  stairVoidTests: number;
+  /**
    * `W_SEAT_FACING_WALL` (product roadmap RM9.6), the sum of three counts:
    *  - one per wall segment of the storey (arcs included, which it then skips) for each drawn
    *    front of a lounge seat it tests (an L-sofa's second front only when its first is clear of
@@ -47,5 +52,5 @@ export interface LintWork {
 
 /** A fresh set of counters, all 0. */
 export function newLintWork(): LintWork {
-  return { leafDoorPairs: 0, boundaryRunTests: 0, navCells: 0, tableSeatTests: 0, seatWallTests: 0 };
+  return { leafDoorPairs: 0, boundaryRunTests: 0, navCells: 0, tableSeatTests: 0, stairVoidTests: 0, seatWallTests: 0 };
 }

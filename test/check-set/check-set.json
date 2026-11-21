@@ -316,6 +316,15 @@
       "twin": "../defect-corpus/stair-safety/foot-against-partition.clean.arch"
     },
     {
+      "id": "stair-safety/no-void-at-head",
+      "column": "default",
+      "profile": null,
+      "expect": "W_STAIR_NO_VOID",
+      "rule": null,
+      "plan": "../defect-corpus/stair-safety/no-void-at-head.arch",
+      "twin": "../defect-corpus/stair-safety/no-void-at-head.clean.arch"
+    },
+    {
       "id": "stair-safety/riser-too-high",
       "column": "default",
       "profile": null,

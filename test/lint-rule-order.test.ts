@@ -85,6 +85,7 @@ const EXPECTED_ORDER = [
   "thickness-unplaced",
   "exterior-door-onto-roof",
   "table-no-seat",
+  "stair-no-void",
   "seat-facing-wall",
 ];
 

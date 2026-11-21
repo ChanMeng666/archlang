@@ -96,7 +96,8 @@ suite("keep · impact: the widening drill (design §9), through the CLI", () => 
     ]);
     expect(lines.slice(lines.indexOf("Healed (0): none"))).toEqual([
       "Healed (0): none",
-      "Unchanged diagnostics: 1",
+      // 2 since RM9.6 CV14: W_STAIR_NO_VOID on level 2 (no void over `st`), before and after alike.
+      "Unchanged diagnostics: 2",
       "Keeps broke (3):",
       "  keep align a.right b.left p (hard, level 1): residual 0 → -500 mm at p",
       "    changed: a, b",

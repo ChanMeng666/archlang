@@ -2511,6 +2511,7 @@ plan "Two-storey" {
     room id=landing at (0,0) size 6000x6000 label "Landing" uses circulation
     window id=w on shell at 3000 width 1200
     stair id=stair at (500,2000) size 900x2600 dir down
+    void id=well at (500,2000) size 900x2600   # the stairwell over the flight
   }
 }
 ```
@@ -3506,6 +3507,7 @@ plan "Two-storey house" {
     wall id=shell exterior thickness 200 { (0,0) (W,0) (W,7000) (0,7000) close }
     room id=landing at (0,0) size 2200x4600 label "Landing" uses circulation
     stair id=stair at (100,1500) size 900x2600 dir down
+    void id=well at (100,1500) size 900x2600   # the stairwell: this floor stops over the flight
   }
 }
 ```

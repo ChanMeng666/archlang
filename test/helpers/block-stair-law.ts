@@ -104,7 +104,7 @@ ${SHELL}
 export function stairLawRows(root: string): LawRow[] {
   const dir = "test/defect-corpus/stair-safety";
   const defects = readdirSync(join(root, dir))
-    .filter((f) => f.endsWith(".arch"))
+    .filter((f) => f.endsWith(".arch") && !CORPUS_WRITES_THE_FORM.includes(`${dir}/${f}`))
     .sort()
     .map((f) => ({ name: `${dir}/${f}`, src: readFileSync(join(root, dir, f), "utf8"), dir: join(root, dir) }));
   const plans = lawRows(root).filter((r) => !WRITES_THE_FORM.includes(r.name));
@@ -114,3 +114,10 @@ export function stairLawRows(root: string): LawRow[] {
 /** The shipped plans this law cannot hold, because they use the form. Named, so that a plan
  *  reaching the form by accident fails the law's "no row reaches the form" instead of leaving it. */
 export const WRITES_THE_FORM: readonly string[] = ["examples/turning-stair.arch"];
+
+/** The stair-safety defect-corpus plans this law cannot hold, because they use the form: the turning
+ *  stair with winders of `W_STAIR_NO_VOID`'s pair (product roadmap RM9.6, CV14). Named, as above. */
+export const CORPUS_WRITES_THE_FORM: readonly string[] = [
+  "test/defect-corpus/stair-safety/no-void-at-head.arch",
+  "test/defect-corpus/stair-safety/no-void-at-head.clean.arch",
+];

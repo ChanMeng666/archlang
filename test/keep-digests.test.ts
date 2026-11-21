@@ -50,13 +50,13 @@ const K3_DIGESTS: [string, string][] = [
   ["min-clear", "367f2a9efad686f70a06504e9dbc2b5665195590d8553a4df762f8dc50118c78"], // round 2: the `skipped` reasons beside skipped_walls (round 1: the nib no longer counts in the hall)
   ["offset-fixed", "f8afef106464365ae24ae204ed60ac392b2bb90d25913872d7acc47cd85ce29c"], // AF7 (RM-D69): only added related notes (was 08450960, AF7_MAIN)
   ["on-axis", "fa54ca816608e2c83b235ecf8327db9fad097880213b18db4f85be001d0b7934"], // AF7 (RM-D69): only added related notes (was 1a2d6ca6, AF7_MAIN)
-  ["paper", "eb8f3fea25c43c9f4bded46dcf5f573e8b5948891e70c186483ff5108cce29b7"],
+  ["paper", "e9c7b5c4de85c44659d2c7ded88fddb3fc97f84220ca44524e8f69182ee38a32"], // RM9.6 CV14: W_STAIR_NO_VOID reports this plan (was eb8f3fea)
   ["refused-limit", "8744e79cb97e882640c5f1feda1291407d108e8e1348b5b7075df6a2df182a9f"],
   ["refused-placement", "8f764cae04d74f29fc9e39ae9f369a9aaf8005c7f71e71cb47347e4b733e434f"], // round 1: a keep in a component is refused where it is written
   ["refused", "b09fe49611372c979f0888ecd20eb3d58877509fbc094cce01d249ec73dc0529"], // round 1: numbers through num-format // AF7 (RM-D69): only added related notes (was 99ea1ef2, AF7_MAIN)
   ["single-storey-stacked", "df3b4580f7dab78c06067120477533dabf0bd64f8489c4a951ca2bc1a7a7dd78"],
-  ["widen-after", "e08ae400d983402cd725cf33ee0a8d4771a6148273df20bd195af0e30fc815fb"], // round 2: the `skipped` reasons, and the hint lists them // AF7 (RM-D69): only added related notes (was 510134f7, AF7_MAIN)
-  ["widen-before", "a4620b68f1174873d84676b230bb3cbc348a31b47cc73d3c05e9cf8054cbd0d9"],
+  ["widen-after", "e8f823aad15ed86b3d7cfea68aaed89612fba085a03a3b4d22b7ac7c82c00361"], // round 2: the `skipped` reasons, and the hint lists them // AF7 (RM-D69): only added related notes (was 510134f7, AF7_MAIN); RM9.6 CV14: W_STAIR_NO_VOID reports this plan (was e08ae400)
+  ["widen-before", "56eacd448b0a4e5b0da1979044a9e2118ae3bec764a7e18fcd57741c1894b622"], // RM9.6 CV14: W_STAIR_NO_VOID reports this plan (was a4620b68)
 ];
 
 /** AF7 (RM-D69): `main`'s K3 digest of each row AF7 re-measured; `k3DigestOf` with AF7's related
@@ -74,7 +74,7 @@ const AF7_MAIN: [string, string][] = [
   ["offset-fixed", "084509601305bc7bf6b27649efd0c3124fdbac2ab6e97daaf69e22aa05ed021e"],
   ["on-axis", "1a2d6ca631da7360538737b946c0e143b5586b5a905d10497d270f30e0c9890c"],
   ["refused", "99ea1ef2a3b9baaac3d6a9502c4f1c5552f3f7404afe2bf98a336a889293ecf0"],
-  ["widen-after", "510134f7df24b91da3e61818102bdac8a8afc929d6ff88ce2762ccb28b99bbb7"],
+  ["widen-after", "823939efecc4ee2159d78448d69b0d9ce59a4df3c8031a2c4b621bfacfb39ddc"], // RM9.6 CV14: W_STAIR_NO_VOID reports this plan (was 510134f7)
 ];
 
 suite("keep · K3, the keep rows: a digest table over the corpus", () => {

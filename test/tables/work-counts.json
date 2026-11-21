@@ -1,5 +1,5 @@
 {
-  "_reason": "RM9.6 CV08 #1001 round 1 (on a554a730, main 56dff28d merged): W_SEAT_FACING_WALL's seatWallTests counter joins the lint work counters",
+  "_reason": "RM9.6 CV14 rule PR (#1004 round 1): W_STAIR_NO_VOID reads the head band and the floor; stairVoidTests counts void-piece and footprint reads",
   "_tolerance": 0.1,
   "_totalTolerance": 0.03,
   "_floor": 8,
@@ -12,7 +12,7 @@
       "boundaryRunTests": 4,
       "navCells": 2400,
       "tableSeatTests": 12,
-      "seatWallTests": 5,
+      "stairVoidTests": 0,
       "joinerySplitTests": 78,
       "labelRelocations": 36,
       "labelLeaders": 0
@@ -25,7 +25,7 @@
       "boundaryRunTests": 41,
       "navCells": 240000,
       "tableSeatTests": 0,
-      "seatWallTests": 0,
+      "stairVoidTests": 0,
       "joinerySplitTests": 346,
       "labelRelocations": 0,
       "labelLeaders": 0
@@ -38,7 +38,7 @@
       "boundaryRunTests": 4,
       "navCells": 2800,
       "tableSeatTests": 0,
-      "seatWallTests": 5,
+      "stairVoidTests": 0,
       "joinerySplitTests": 115,
       "labelRelocations": 36,
       "labelLeaders": 0
@@ -51,7 +51,7 @@
       "boundaryRunTests": 67,
       "navCells": 10200,
       "tableSeatTests": 112,
-      "seatWallTests": 11,
+      "stairVoidTests": 0,
       "joinerySplitTests": 369,
       "labelRelocations": 163,
       "labelLeaders": 0
@@ -64,7 +64,7 @@
       "boundaryRunTests": 57,
       "navCells": 31500,
       "tableSeatTests": 0,
-      "seatWallTests": 0,
+      "stairVoidTests": 0,
       "joinerySplitTests": 400,
       "labelRelocations": 114,
       "labelLeaders": 0
@@ -77,7 +77,7 @@
       "boundaryRunTests": 152,
       "navCells": 29412,
       "tableSeatTests": 0,
-      "seatWallTests": 168,
+      "stairVoidTests": 0,
       "joinerySplitTests": 805,
       "labelRelocations": 154,
       "labelLeaders": 0
@@ -90,7 +90,7 @@
       "boundaryRunTests": 46,
       "navCells": 15000,
       "tableSeatTests": 0,
-      "seatWallTests": 0,
+      "stairVoidTests": 0,
       "joinerySplitTests": 295,
       "labelRelocations": 88,
       "labelLeaders": 0
@@ -103,7 +103,7 @@
       "boundaryRunTests": 123,
       "navCells": 32000,
       "tableSeatTests": 0,
-      "seatWallTests": 27,
+      "stairVoidTests": 0,
       "joinerySplitTests": 987,
       "labelRelocations": 244,
       "labelLeaders": 0
@@ -116,7 +116,7 @@
       "boundaryRunTests": 96,
       "navCells": 18400,
       "tableSeatTests": 264,
-      "seatWallTests": 17,
+      "stairVoidTests": 0,
       "joinerySplitTests": 712,
       "labelRelocations": 136,
       "labelLeaders": 0
@@ -129,7 +129,7 @@
       "boundaryRunTests": 52,
       "navCells": 9072,
       "tableSeatTests": 0,
-      "seatWallTests": 30,
+      "stairVoidTests": 0,
       "joinerySplitTests": 367,
       "labelRelocations": 158,
       "labelLeaders": 0
@@ -142,7 +142,7 @@
       "boundaryRunTests": 8,
       "navCells": 16800,
       "tableSeatTests": 0,
-      "seatWallTests": 0,
+      "stairVoidTests": 0,
       "joinerySplitTests": 108,
       "labelRelocations": 0,
       "labelLeaders": 0
@@ -155,7 +155,7 @@
       "boundaryRunTests": 60,
       "navCells": 25650,
       "tableSeatTests": 0,
-      "seatWallTests": 11,
+      "stairVoidTests": 1,
       "joinerySplitTests": 462,
       "labelRelocations": 687,
       "labelLeaders": 0
@@ -168,7 +168,7 @@
       "boundaryRunTests": 14,
       "navCells": 3500,
       "tableSeatTests": 39,
-      "seatWallTests": 6,
+      "stairVoidTests": 0,
       "joinerySplitTests": 180,
       "labelRelocations": 115,
       "labelLeaders": 0
@@ -181,7 +181,7 @@
       "boundaryRunTests": 25,
       "navCells": 18000,
       "tableSeatTests": 70,
-      "seatWallTests": 0,
+      "stairVoidTests": 0,
       "joinerySplitTests": 433,
       "labelRelocations": 0,
       "labelLeaders": 0
@@ -194,7 +194,7 @@
       "boundaryRunTests": 206,
       "navCells": 33762,
       "tableSeatTests": 0,
-      "seatWallTests": 111,
+      "stairVoidTests": 2,
       "joinerySplitTests": 1374,
       "labelRelocations": 473,
       "labelLeaders": 0
@@ -207,7 +207,7 @@
       "boundaryRunTests": 0,
       "navCells": 2000,
       "tableSeatTests": 0,
-      "seatWallTests": 4,
+      "stairVoidTests": 0,
       "joinerySplitTests": 46,
       "labelRelocations": 50,
       "labelLeaders": 0
@@ -220,7 +220,7 @@
       "boundaryRunTests": 30,
       "navCells": 5850,
       "tableSeatTests": 0,
-      "seatWallTests": 8,
+      "stairVoidTests": 0,
       "joinerySplitTests": 267,
       "labelRelocations": 86,
       "labelLeaders": 0
@@ -233,7 +233,7 @@
       "boundaryRunTests": 14,
       "navCells": 4875,
       "tableSeatTests": 42,
-      "seatWallTests": 6,
+      "stairVoidTests": 0,
       "joinerySplitTests": 202,
       "labelRelocations": 58,
       "labelLeaders": 0
@@ -246,7 +246,7 @@
       "boundaryRunTests": 110,
       "navCells": 160000,
       "tableSeatTests": 0,
-      "seatWallTests": 75,
+      "stairVoidTests": 0,
       "joinerySplitTests": 995,
       "labelRelocations": 99,
       "labelLeaders": 0
@@ -259,7 +259,7 @@
       "boundaryRunTests": 44,
       "navCells": 12800,
       "tableSeatTests": 0,
-      "seatWallTests": 0,
+      "stairVoidTests": 0,
       "joinerySplitTests": 260,
       "labelRelocations": 100,
       "labelLeaders": 0
@@ -272,7 +272,7 @@
       "boundaryRunTests": 12,
       "navCells": 21600,
       "tableSeatTests": 0,
-      "seatWallTests": 0,
+      "stairVoidTests": 0,
       "joinerySplitTests": 168,
       "labelRelocations": 0,
       "labelLeaders": 0
@@ -285,7 +285,7 @@
       "boundaryRunTests": 42,
       "navCells": 50400,
       "tableSeatTests": 0,
-      "seatWallTests": 0,
+      "stairVoidTests": 0,
       "joinerySplitTests": 473,
       "labelRelocations": 0,
       "labelLeaders": 0
@@ -298,7 +298,7 @@
       "boundaryRunTests": 130,
       "navCells": 250648,
       "tableSeatTests": 0,
-      "seatWallTests": 0,
+      "stairVoidTests": 0,
       "joinerySplitTests": 551,
       "labelRelocations": 55,
       "labelLeaders": 0
@@ -311,7 +311,7 @@
       "boundaryRunTests": 0,
       "navCells": 2000,
       "tableSeatTests": 0,
-      "seatWallTests": 0,
+      "stairVoidTests": 0,
       "joinerySplitTests": 46,
       "labelRelocations": 0,
       "labelLeaders": 0
@@ -324,7 +324,7 @@
       "boundaryRunTests": 12,
       "navCells": 6000,
       "tableSeatTests": 0,
-      "seatWallTests": 0,
+      "stairVoidTests": 0,
       "joinerySplitTests": 278,
       "labelRelocations": 108,
       "labelLeaders": 0
@@ -337,7 +337,7 @@
       "boundaryRunTests": 64,
       "navCells": 22500,
       "tableSeatTests": 0,
-      "seatWallTests": 0,
+      "stairVoidTests": 0,
       "joinerySplitTests": 405,
       "labelRelocations": 116,
       "labelLeaders": 0
@@ -350,7 +350,7 @@
       "boundaryRunTests": 32,
       "navCells": 6000,
       "tableSeatTests": 0,
-      "seatWallTests": 10,
+      "stairVoidTests": 0,
       "joinerySplitTests": 301,
       "labelRelocations": 36,
       "labelLeaders": 0
@@ -363,7 +363,7 @@
       "boundaryRunTests": 41,
       "navCells": 8360,
       "tableSeatTests": 90,
-      "seatWallTests": 9,
+      "stairVoidTests": 0,
       "joinerySplitTests": 300,
       "labelRelocations": 16,
       "labelLeaders": 0
@@ -376,7 +376,7 @@
       "boundaryRunTests": 11,
       "navCells": 5400,
       "tableSeatTests": 0,
-      "seatWallTests": 0,
+      "stairVoidTests": 0,
       "joinerySplitTests": 106,
       "labelRelocations": 0,
       "labelLeaders": 0
@@ -389,7 +389,7 @@
       "boundaryRunTests": 23,
       "navCells": 4200,
       "tableSeatTests": 0,
-      "seatWallTests": 7,
+      "stairVoidTests": 0,
       "joinerySplitTests": 179,
       "labelRelocations": 36,
       "labelLeaders": 0
@@ -402,7 +402,7 @@
       "boundaryRunTests": 232,
       "navCells": 21312,
       "tableSeatTests": 0,
-      "seatWallTests": 112,
+      "stairVoidTests": 0,
       "joinerySplitTests": 1068,
       "labelRelocations": 44,
       "labelLeaders": 0
@@ -415,7 +415,7 @@
       "boundaryRunTests": 4,
       "navCells": 2400,
       "tableSeatTests": 0,
-      "seatWallTests": 0,
+      "stairVoidTests": 0,
       "joinerySplitTests": 81,
       "labelRelocations": 36,
       "labelLeaders": 0
@@ -428,7 +428,7 @@
       "boundaryRunTests": 5,
       "navCells": 1960,
       "tableSeatTests": 0,
-      "seatWallTests": 0,
+      "stairVoidTests": 0,
       "joinerySplitTests": 233,
       "labelRelocations": 0,
       "labelLeaders": 0
@@ -441,7 +441,7 @@
       "boundaryRunTests": 59,
       "navCells": 16692,
       "tableSeatTests": 44,
-      "seatWallTests": 7,
+      "stairVoidTests": 2,
       "joinerySplitTests": 473,
       "labelRelocations": 144,
       "labelLeaders": 0
@@ -454,7 +454,7 @@
       "boundaryRunTests": 125,
       "navCells": 250500,
       "tableSeatTests": 0,
-      "seatWallTests": 0,
+      "stairVoidTests": 0,
       "joinerySplitTests": 637,
       "labelRelocations": 84,
       "labelLeaders": 0
@@ -467,7 +467,7 @@
       "boundaryRunTests": 8,
       "navCells": 6080,
       "tableSeatTests": 0,
-      "seatWallTests": 0,
+      "stairVoidTests": 3,
       "joinerySplitTests": 154,
       "labelRelocations": 0,
       "labelLeaders": 0
@@ -480,7 +480,7 @@
       "boundaryRunTests": 45,
       "navCells": 8000,
       "tableSeatTests": 75,
-      "seatWallTests": 11,
+      "stairVoidTests": 0,
       "joinerySplitTests": 311,
       "labelRelocations": 57,
       "labelLeaders": 0
@@ -493,7 +493,7 @@
       "boundaryRunTests": 28,
       "navCells": 11200,
       "tableSeatTests": 0,
-      "seatWallTests": 6,
+      "stairVoidTests": 1,
       "joinerySplitTests": 249,
       "labelRelocations": 179,
       "labelLeaders": 0
@@ -506,7 +506,7 @@
       "boundaryRunTests": 0,
       "navCells": 0,
       "tableSeatTests": 0,
-      "seatWallTests": 0,
+      "stairVoidTests": 0,
       "joinerySplitTests": 4800,
       "labelRelocations": 0,
       "labelLeaders": 0
@@ -519,7 +519,7 @@
       "boundaryRunTests": 0,
       "navCells": 0,
       "tableSeatTests": 0,
-      "seatWallTests": 0,
+      "stairVoidTests": 0,
       "joinerySplitTests": 7600,
       "labelRelocations": 0,
       "labelLeaders": 0
@@ -532,7 +532,7 @@
       "boundaryRunTests": 0,
       "navCells": 0,
       "tableSeatTests": 0,
-      "seatWallTests": 0,
+      "stairVoidTests": 0,
       "joinerySplitTests": 18,
       "labelRelocations": 0,
       "labelLeaders": 0
