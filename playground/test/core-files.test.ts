@@ -13,22 +13,19 @@ const dist = (files: Record<string, string>) =>
 
 const REPO = join(dirname(fileURLToPath(import.meta.url)), "..", "..");
 /** The value names a module re-exports (`export { a, b as c } from "…"`), in source order. */
-const reexported = (text: string) =>
+const reexported = (text: string, side: "exported" | "imported" = "exported") =>
   [...text.matchAll(/^export\s*\{([^}]*)\}\s*from\s*"[^"]+";$/gm)].flatMap((m) =>
     m[1]!
       .split(",")
-      .map(
-        (n) =>
-          n
-            .trim()
-            .split(/\s+as\s+/)
-            .pop()!,
-      )
+      .map((n) => {
+        const [imported, exported = imported] = n.trim().split(/\s+as\s+/);
+        return side === "exported" ? exported! : imported!;
+      })
       .filter((n) => n && !n.startsWith("type ")),
   );
 
 describe("coreFiles (vite.config.js's compiler chunk)", () => {
-  it("is index.js plus compile-path.js's imports, transitively, and nothing else", () => {
+  it("is index.js, compile-path.js and compile-path.js's imports, transitively, and nothing else", () => {
     const files = {
       "index.js":
         'import {\n  compile,\n  lint\n} from "./chunk-A.js";\nimport { finish } from "./chunk-L.js";\nexport { compile, finish, lint };\n',
@@ -42,7 +39,9 @@ describe("coreFiles (vite.config.js's compiler chunk)", () => {
       "cli/review.js": 'import { r } from "../chunk-R.js";\nexport { r };\n',
       "chunk-R.js": 'import { compile } from "./chunk-A.js";\nvar r = 3;\nexport { r };\n',
     };
-    expect([...dist(files)]).toEqual(["index.js", "chunk-A.js", "chunk-B.js", "chunk-side.js"]);
+    // The entry itself too (card 3.19): the compiler door imports it, for the one value it serves
+    // that index.js does not export.
+    expect([...dist(files)]).toEqual(["index.js", ENTRY, "chunk-A.js", "chunk-B.js", "chunk-side.js"]);
   });
 
   it("refuses a dist/ built before compile-path.js existed, rather than taking all of index.js", () => {
@@ -111,10 +110,50 @@ describe("coreFiles (vite.config.js's compiler chunk)", () => {
   it("src/compile-path.ts names exactly what the playground's compiler door re-exports", () => {
     // A name the door adds without the entry would land in a lazy-only core chunk, which the
     // compiler chunk would then import statically: the startup gate's walk would count it.
-    const door = reexported(readFileSync(join(REPO, "playground/src/compiler.ts"), "utf8"));
+    // The door's own names, before any `as` (card 3.19: it serves `compileWithoutErrorCard` as `compile`).
+    const doorText = readFileSync(join(REPO, "playground/src/compiler.ts"), "utf8");
+    const door = reexported(doorText, "imported");
     const entry = reexported(readFileSync(join(REPO, "src/compile-path.ts"), "utf8"));
     expect(door.length).toBeGreaterThan(0);
     expect([...entry].sort()).toEqual([...door].sort());
+    // …read from the entry itself, the one file that exports `compileWithoutErrorCard`.
+    expect(doorText).toMatch(/^export\s*\{[^}]*\}\s*from\s*"archlang\/compile-path";$/m);
+  });
+
+  it("no playground module imports compile() itself, so no path carries its error card (card 3.19)", () => {
+    // `compile` from `archlang` is the one that draws `onError: "svg"`'s card, and with it the
+    // card's renderer and the catalogue's fix column; the door's `compile` is
+    // `compileWithoutErrorCard`. A module that took the other would put them back on whichever path
+    // loads it (the header actions are on the first use's). The embed draws the card itself, on a
+    // broken plan, through its lazy door (error-card.ts).
+    const SRC = join(REPO, "playground/src");
+    /** The value names `text` imports from `from` (a regex source), before any `as`. */
+    const names = (text: string, from: string) =>
+      [...text.matchAll(new RegExp(`^import\\s*\\{([^}]*)\\}\\s*from\\s*"${from}";?$`, "gm"))].flatMap((m) =>
+        m[1]!
+          .split(",")
+          .map((n) => n.trim().split(/\s+as\s+/)[0]!)
+          .filter((n) => n && !n.startsWith("type ")),
+      );
+    const CORE = "(?:archlang|@chanmeng666/archlang)";
+    const files = readdirSync(SRC).filter((f) => /\.[jt]s$/.test(f));
+    const offenders = files.filter((f) => names(readFileSync(join(SRC, f), "utf8"), CORE).includes("compile"));
+    expect(offenders).toEqual([]);
+    // The embed's card door is a dynamic import of embed.ts alone, never a static one, so neither
+    // the embed path nor any other path carries the card.
+    const cardImporters = files.filter((f) =>
+      /\bimport\s*\(\s*"\.\/error-card\.js"\s*\)/.test(readFileSync(join(SRC, f), "utf8")),
+    );
+    expect(cardImporters).toEqual(["embed.ts"]);
+    for (const f of files)
+      expect(readFileSync(join(SRC, f), "utf8"), `${f} imports error-card.js statically`).not.toMatch(
+        /^(?:import|export)\s[^;]*?from\s*"\.\/error-card\.js"/m,
+      );
+    expect(reexported(readFileSync(join(SRC, "error-card.ts"), "utf8"))).toEqual(["renderErrorSvg"]);
+    // The probe is live: it reads a core import, and the door's callers take `compile` from the door.
+    expect(names('import { compile, describe } from "archlang";', CORE)).toContain("compile");
+    for (const f of ["actions.ts", "embed.ts", "compile-worker.ts", "arch-language.js", "preview3d.ts"])
+      expect(names(readFileSync(join(SRC, f), "utf8"), String.raw`\./compiler\.js`), f).toContain("compile");
   });
 
   it("src/first-use-path.ts names exactly what the header actions and the compile job take from the core beyond the door", () => {

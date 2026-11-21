@@ -129,6 +129,10 @@ export default defineConfig({
       // needs it, and the compiler chunk keeps only the fix column `diagnosticToJson` reads
       // (`src/error-catalog-fixes.ts`). e2e/startup-chunks.baseline.json measures both paths.
       "archlang/error-catalog": resolve(__dirname, "../dist/error-catalog.js"),
+      // The compiler door's build entry (src/compile-path.ts, card 3.19): `compileWithoutErrorCard`,
+      // which `dist/index.js` does not export, so the compiler chunk carries no error card and no
+      // catalogue fix column. A core file (scripts/core-files.mjs), likewise before the bare name.
+      "archlang/compile-path": resolve(__dirname, "../dist/compile-path.js"),
       archlang: resolve(__dirname, "../dist/index.js"),
       // archlang-3d is read from its source, as it always was: its published `exports` name a
       // dist/ this build has no reason to need. The longer key goes first (prefix match).

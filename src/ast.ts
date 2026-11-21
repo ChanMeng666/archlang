@@ -1418,13 +1418,21 @@ export const PLAN_SETTING_KEYWORDS = Object.freeze([
 /**
  * What may stay beside the `level` blocks, as one phrase: the settings ({@link PLAN_SETTING_KEYWORDS}),
  * the declarations, the plan-global scope ({@link LEVEL_SHARED_KINDS}), a `keep stacked` and the
- * plan-level-only element (the `section` mark). `E_LEVEL_MIX`'s catalogue remedy reads it and the
- * parser message quotes that remedy from the generated `CATALOG_FIXES` (the shipped chunk holds the
- * phrase once), and `test/levels.test.ts` fails when a plan-level form is missing from it.
+ * plan-level-only element (the `section` mark). `E_LEVEL_MIX`'s catalogue remedy ({@link LEVEL_MIX_FIX})
+ * reads it, and `test/levels.test.ts` fails when a plan-level form is missing from it.
  */
 export const LEVEL_MIX_STAYS_OUTSIDE =
   `settings (${PLAN_SETTING_KEYWORDS.map((k) => `\`${k}\``).join("/")}), \`component\`/\`import\` declarations, ` +
   "the plan-global `let`/`set`, a `keep stacked` and a plan-level `section` mark";
+
+/**
+ * `E_LEVEL_MIX`'s catalogued remedy, written once: the catalogue entry's `fix`
+ * (`src/error-catalog/vertical.ts`) and the parser's message, which quotes it, both read it here.
+ * The parser once quoted it from the generated `CATALOG_FIXES`, which put the whole fix column on
+ * the playground's compiler chunk for this one row (card 3.19); the compile path holds the phrase
+ * once either way.
+ */
+export const LEVEL_MIX_FIX = `Move the statement inside the \`level\` block it belongs to. Only ${LEVEL_MIX_STAYS_OUTSIDE} stay outside — they apply to every level.`;
 
 /** `component NAME(params) { body }` — a reusable parameterised sub-plan. */
 export interface ComponentDef {

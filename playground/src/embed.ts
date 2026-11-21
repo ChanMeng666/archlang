@@ -11,7 +11,7 @@
  *   editable=1    show a compact editor pane + live re-render on input
  *   theme=<key>   force a named render theme (blueprint | dark | mono | presentation | rendered)
  */
-import { compile } from "archlang";
+import { compile } from "./compiler.js";
 import { embedCompileOptions, hashParam, isEditable, renderDecision } from "./embed-params.js";
 import { createPanZoom } from "./pan-zoom.js";
 import { LINK_TOO_LARGE_NOTICE, readShared, shareIdFromHash } from "./share.js";
@@ -45,8 +45,26 @@ const opts = embedCompileOptions(hashParam(location.hash, "theme"));
  *  the error card. */
 let hasGoodRender = false;
 
+/**
+ * The error card's renderer (error-card.ts, card 3.19), loaded by the first broken plan this page
+ * shows: the compiler chunk's `compile` draws no card (compiler.ts), so the card `opts` asks for is
+ * drawn here, the same card `compile(source, opts)` draws (playground/test/embed-params.test.ts).
+ */
+let errorCardP: Promise<typeof import("./error-card.js")> | undefined;
+// lazy-once.ts's rule (one shared load; a rejected one is forgotten, so the next broken render tries
+// again), written out here: imported, lazyOnce became a chunk of its own that the first use's path
+// and this one both load.
+const loadErrorCard = () =>
+  (errorCardP ??= import("./error-card.js").catch((err: unknown) => {
+    errorCardP = undefined;
+    throw err;
+  }));
+/** The newest render's number: a card that arrives after a newer render has run is not shown. */
+let renders = 0;
+
 function render(source: string, refit: boolean): void {
-  const { svg, errors } = compile(source, opts);
+  const at = ++renders;
+  const { svg, errors, diagnostics } = compile(source, opts);
   const decision = renderDecision(hasGoodRender, errors);
   hasGoodRender = decision.hasGoodRender;
   if (decision.error !== null) {
@@ -55,7 +73,19 @@ function render(source: string, refit: boolean): void {
   } else {
     errEl.hidden = true;
   }
-  if (decision.showSvg) showSvgInStage(stage, pz, svg, refit);
+  if (!decision.showSvg) return;
+  if (errors.length === 0) {
+    showSvgInStage(stage, pz, svg, refit);
+    return;
+  }
+  // A chunk that fails to load leaves the error strip above as the whole report; the next broken
+  // render tries the load again.
+  loadErrorCard().then(
+    ({ renderErrorSvg }) => {
+      if (at === renders) showSvgInStage(stage, pz, renderErrorSvg(source, diagnostics), refit);
+    },
+    () => {},
+  );
 }
 
 toolbar?.addEventListener("click", (e) => {

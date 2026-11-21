@@ -16,12 +16,25 @@ import { reach } from "./helpers/import-walk.js";
 describe("NR.10: the compile path raises no intent violation", () => {
   const files = reach("src/compile-path.ts");
 
-  it("walks the compile path (the parser, the pipeline and the compile-path fix column are in it)", () => {
-    for (const f of ["src/compile.ts", "src/parser.ts", "src/pipeline.ts", "src/error-catalog-fixes.ts"])
-      expect(files, f).toContain(f);
+  it("walks the compile path (the memo, the parser and the pipeline are in it)", () => {
+    for (const f of ["src/compile-memo.ts", "src/parser.ts", "src/pipeline.ts"]) expect(files, f).toContain(f);
     // validateIntent's modules and the intent fix column are not.
     for (const f of ["src/intent.ts", "src/intent-feasibility.ts", "src/error-catalog-fixes-intent.ts"])
       expect(files, f).not.toContain(f);
+    // Card 3.19: nor is `compile()`'s error card, with the fix column it prints. The playground's
+    // compiler chunk serves `compileWithoutErrorCard` (`src/compile-memo.ts`); `compile()` draws the
+    // card through `src/compile-uncached.ts`, which no file on the path imports.
+    for (const f of [
+      "src/compile.ts",
+      "src/compile-uncached.ts",
+      "src/backends/error-svg.ts",
+      "src/catalog-fix.ts",
+      "src/error-catalog-fixes.ts",
+    ])
+      expect(files, f).not.toContain(f);
+    expect(reach("src/compile.ts"), "compile() itself reaches the card's fix column").toContain(
+      "src/error-catalog-fixes.ts",
+    );
   });
 
   it("no module on it writes an E_INTENT_ code in a string", () => {

@@ -34,6 +34,11 @@ export function isEditable(hash: string): boolean {
  * self-describing error CARD rather than a blank box. An unknown theme key is
  * ignored (the plan's own `theme` directive then wins) rather than being an error
  * — a stale link should still draw.
+ *
+ * The embed shows what `compile(source, options)` draws. Its compiler chunk's `compile`
+ * draws no card (compiler.ts, card 3.19), so embed.ts draws the card these options ask
+ * for itself, with `renderErrorSvg` loaded by the broken plan (error-card.ts): the same
+ * card, byte for byte (playground/test/embed-params.test.ts).
  */
 export function embedCompileOptions(themeKey: string | null): CompileOptions {
   return themeKey && THEMES[themeKey]

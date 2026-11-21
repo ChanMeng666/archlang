@@ -1,5 +1,6 @@
-import { THEMES } from "archlang";
+import { compile, renderErrorSvg, THEMES } from "archlang";
 import { describe, expect, it } from "vitest";
+import { compile as doorCompile } from "../src/compiler.js";
 import { embedCompileOptions, hashParam, isEditable, renderDecision } from "../src/embed-params.js";
 
 // A representative embed hash: the share codec's token first, params after.
@@ -83,6 +84,29 @@ describe("embedCompileOptions", () => {
 
   it("bypasses the compile memo so a re-render always reflects the current source", () => {
     expect(embedCompileOptions(null).noCache).toBe(true);
+  });
+
+  // Card 3.19: the compiler chunk's `compile` (the door's, compileWithoutErrorCard) draws no card,
+  // and embed.ts draws it with renderErrorSvg (error-card.ts). What the embed shows is still what
+  // compile() draws under these options, card or drawing, for every theme key.
+  it("the door's compile plus renderErrorSvg on an error is compile() under these options, byte for byte", () => {
+    const BROKEN = 'plan "x" {\n  units mm\n  romo at (0,0) size 4000x3000\n  door at (1,1) width -5\n}';
+    const LEVELS =
+      'plan "y" {\n  room at (0,0) size 3000x3000\n  level 1 { wall exterior thickness 200 { (0,0) (3000,0) close } }\n}';
+    const GOOD = 'plan "ok" {\n  units mm\n  room at (0,0) size 4000x3000 label "Room"\n}';
+    for (const key of [null, "blueprint", "not-a-theme"]) {
+      const opts = embedCompileOptions(key);
+      for (const src of [BROKEN, LEVELS, GOOD]) {
+        const expected = compile(src, opts);
+        const door = doorCompile(src, opts);
+        const shown = door.errors.length > 0 ? renderErrorSvg(src, door.diagnostics) : door.svg;
+        expect(shown, `${key} ${src.slice(0, 12)}`).toBe(expected.svg);
+        expect(door.svg, "the door draws no card").toBe(door.errors.length > 0 ? "" : expected.svg);
+        expect(door.diagnostics).toEqual(expected.diagnostics);
+        expect(door.errors).toEqual(expected.errors);
+      }
+      expect(compile(BROKEN, opts).svg, "the probe compiles a broken plan").toContain("<svg");
+    }
   });
 });
 

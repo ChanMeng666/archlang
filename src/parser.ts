@@ -4,7 +4,6 @@ import type { LexResult, Token } from "./lexer.js";
 import { lex, lexUnmemoised } from "./lexer.js";
 import type { Diagnostic, Span } from "./diagnostics.js";
 import { recordIdSpan } from "./id-spans.js";
-import { CATALOG_FIXES } from "./error-catalog-fixes.js";
 import { capDiagnostics, isLimitClass, MAX_DIAGNOSTICS } from "./diagnostics.js";
 import type {
   AssignNode,
@@ -37,6 +36,7 @@ import {
   AUTO_DIMS_MODES,
   COMPASS_DIRECTIONS,
   HEMISPHERES,
+  LEVEL_MIX_FIX,
   LEVEL_SHARED_KINDS,
   NORTH_DIRS,
   SCHEDULE_SUBJECTS,
@@ -1072,7 +1072,7 @@ class Parser {
       this.report({
         severity: "error",
         code: "E_LEVEL_MIX",
-        message: `"${s.kind}" cannot sit at plan level in a multi-storey plan. ${CATALOG_FIXES.E_LEVEL_MIX}`,
+        message: `"${s.kind}" cannot sit at plan level in a multi-storey plan. ${LEVEL_MIX_FIX}`,
         span: s.span,
       });
     }
