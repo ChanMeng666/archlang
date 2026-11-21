@@ -70,7 +70,11 @@ suite("W_TABLE_NO_SEAT", () => {
     expect(CATALOG_CATEGORIES.filter((c) => fixtureSpec(c)?.serves === "dining_table")).toEqual(["table"]);
     // A dining table draws its own chairs; the others are not dining tables.
     for (const piece of ["dining_table", "coffee_table", "side_table", "desk", "meeting_table", "console_table"]) {
-      const src = plan(SHELL, room("Living / Dining", "living"), `  furniture ${piece} at (2800,1300) size 1400x900 in r`);
+      const src = plan(
+        SHELL,
+        room("Living / Dining", "living"),
+        `  furniture ${piece} at (2800,1300) size 1400x900 in r`,
+      );
       expect(of(src), piece).toEqual([]);
     }
   });

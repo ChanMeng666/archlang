@@ -514,7 +514,12 @@ function withFixProvenance(d: Diagnostic): Diagnostic {
 export function lintByRule(ir: ResolvedPlan): { name: string; diags: Diagnostic[] }[] {
   // `lint()`'s own building context: inert for a dwelling, the non-residential reading (PS2.18)
   // otherwise, which the dwelling rules read (`judgesAsDwelling`).
-  const ctx = buildLintContext(ir, DEFAULT_RULESET, LINT_RULES, lintStoreys(ir, [], DEFAULT_RULESET.tolMm)[0]!.building);
+  const ctx = buildLintContext(
+    ir,
+    DEFAULT_RULESET,
+    LINT_RULES,
+    lintStoreys(ir, [], DEFAULT_RULESET.tolMm)[0]!.building,
+  );
   return LINT_RULES.map((r) => ({
     name: r.name,
     diags: reconcileSharedFixes(r.check(ctx).map(withFixProvenance), [{ ir }]),
