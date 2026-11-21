@@ -30,7 +30,7 @@ Subscores per row: **R**ooms · **L**abels · **A**rea · **Adj**acency (– = u
 | `reception-suite` | ⚠️ warns | yes | 7 | R1 L1 A– Adj1 | 7 lint warning(s) |
 | `strip-corridor` | ✅ pass | yes | 0 | R1 L1 A– Adj1 | — |
 | `attach-openings` | ⚠️ warns | yes | 2 | R1 L1 A– Adj1 | 2 lint warning(s) |
-| `anchor-furniture` | ⚠️ warns | yes | 2 | R1 L1 A– Adj– | 2 lint warning(s) |
+| `anchor-furniture` | ⚠️ warns | yes | 3 | R1 L1 A– Adj– | 3 lint warning(s) |
 | `strip-attach-clean` | ⚠️ warns | yes | 3 | R1 L1 A– Adj1 | 3 lint warning(s) |
 | `sized-kitchen-flat` | ⚠️ warns | yes | 4 | R1 L1 A1 Adj1 | 4 lint warning(s) |
 | `sized-bedrooms` | ⚠️ warns | yes | 4 | R1 L1 A1 Adj1 | 4 lint warning(s) |
