@@ -40,7 +40,7 @@ plan "Garden Loft" {
   furniture counter      against wall w_west offset 1100 in r_live
   # The table stands TABLE_Y in from the north wall's centreline, clear of the sofa; its two
   # chairs are anchored the same way, their insets taken from the table's, so they move with it.
-  let TABLE_Y = 1600
+  let TABLE_Y = 1400
   let TABLE_D = 900
   furniture id=t_dining table in r_live anchor top inset TABLE_Y size 1300 x TABLE_D label "Table"
   furniture sofa   in r_live anchor bottom-left flush inset 300 size 1900x850 label "Sofa"
