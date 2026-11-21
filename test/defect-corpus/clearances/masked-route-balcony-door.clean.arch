@@ -3,7 +3,7 @@
 # origin: audits/2026-10-18-first-contact.md A2 with the sofa and table moved 500 mm east
 # expect: none
 # fact: the west gap is 900 mm (sofa x 2950-5150, table x 5150-7700); with d_bal made a window, describe measures the
-#   laundry from d_front at 740 mm and lint is silent
+#   laundry from d_front at 740 mm, and lint raises only W_TABLE_NO_SEAT (RM9.6: the table has no seat)
 plan "Pinched route to the laundry, masked by the balcony door" {
   units mm
   grid 50

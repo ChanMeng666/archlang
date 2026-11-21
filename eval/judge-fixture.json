@@ -1594,7 +1594,7 @@
     {
       "id": "anchor-furniture",
       "valid": true,
-      "lintWarnings": 2,
+      "lintWarnings": 3,
       "physicalWarnings": 0,
       "semanticPass": true,
       "failures": [],

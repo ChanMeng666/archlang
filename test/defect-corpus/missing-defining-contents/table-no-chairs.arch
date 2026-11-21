@@ -1,0 +1,17 @@
+# class: missing-defining-contents
+# origin: product-roadmap design/rm9.0-coverage-classes.md CV13 (plan-soundness PS2.31: a dining `table` with no chairs, QA3 of the row-6 rerun; reduced)
+# expect: W_TABLE_NO_SEAT
+# status: done
+# fact: r_living (uses living) holds a sofa and a 1400x900 `table` (the catalogue's `serves: "dining_table"`)
+#   and no chair, stool or bench, so nobody can sit at the table. A `dining_table` would not be reported:
+#   its symbol draws its own chairs.
+plan "Living room with a table and no chairs" {
+  units mm
+  grid 50
+  wall id=shell exterior thickness 200 { (0,0) (5000,0) (5000,4500) (0,4500) close }
+  room id=r_living at (0,0) size 5000x4500 label "Living / Dining" uses living
+  door id=d_entry at (4000,4500) width 900 wall shell
+  window at (2500,0) width 1500 wall shell
+  furniture sofa  at (400,3300) size 2000x850 label "Sofa" in r_living
+  furniture table at (2800,1300) size 1400x900 label "Table" in r_living
+}

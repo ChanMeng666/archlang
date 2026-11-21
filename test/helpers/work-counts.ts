@@ -12,10 +12,11 @@
  *  - `drawUnits`: the drawing budget's estimate summed over every storey, `drawUnits()` of each
  *    element plus `storeyPassUnits()` of the storey (`./drawing-budget.test.ts`'s `estimate`).
  *  - `elements`: the resolved elements over every storey (what the drawing budget is charged for).
- *  - `leafDoorPairs`, `boundaryRunTests`, `navCells`: one `lint()` run's work counters
+ *  - `leafDoorPairs`, `boundaryRunTests`, `navCells`, `tableSeatTests`: one `lint()` run's work counters
  *    (`lintWork()`, `src/lint/work.ts`; engineering-health EH2.10): the (leaf, door) pairs
  *    `W_LEAF_ACROSS_DOORWAY` measured, the elements `W_BOUNDARY_NO_WALL` measured against shared
- *    runs, and the cells of every circulation nav grid the run built. 0 on a plan that does not
+ *    runs, the cells of every circulation nav grid the run built, and the (room, piece) centre
+ *    tests `W_TABLE_NO_SEAT` made (RM9.6). 0 on a plan that does not
  *    reach the rule, which a row may be.
  *  - `joinerySplitTests`, `labelRelocations`: one uncached compile's drawing work counters
  *    (`compileWork()`, `src/compile-work.ts`; engineering-health EH2.14): the (edge, edge)
@@ -60,6 +61,7 @@ export interface WorkCounts {
   leafDoorPairs: number;
   boundaryRunTests: number;
   navCells: number;
+  tableSeatTests: number;
   joinerySplitTests: number;
   labelRelocations: number;
   labelLeaders: number;
@@ -116,6 +118,7 @@ export function workCounts(src: string, world: World = NULL_WORLD): WorkMeasure 
         leafDoorPairs: 0,
         boundaryRunTests: 0,
         navCells: 0,
+        tableSeatTests: 0,
         joinerySplitTests: 0,
         labelRelocations: 0,
         labelLeaders: 0,
@@ -134,7 +137,7 @@ export function workCounts(src: string, world: World = NULL_WORLD): WorkMeasure 
     units += storeyPassUnits(s, BUILTIN_REGISTRY);
     elements += s.elements.length;
   }
-  const { leafDoorPairs, boundaryRunTests, navCells } = lintWork(src, { world });
+  const { leafDoorPairs, boundaryRunTests, navCells, tableSeatTests } = lintWork(src, { world });
   const { joinerySplitTests, labelRelocations, labelLeaders } = compileWork(src, { world });
   return {
     counts: {
@@ -144,6 +147,7 @@ export function workCounts(src: string, world: World = NULL_WORLD): WorkMeasure 
       leafDoorPairs,
       boundaryRunTests,
       navCells,
+      tableSeatTests,
       joinerySplitTests,
       labelRelocations,
       labelLeaders,

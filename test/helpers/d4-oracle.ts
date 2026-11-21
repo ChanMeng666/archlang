@@ -117,6 +117,7 @@ import {
 } from "../../src/index.js";
 import { type BuildingContext, buildLintContext } from "../../src/lint/context.js";
 import { buildingContexts, LINT_RULES, reconcileSharedFixes } from "../../src/lint.js";
+import { lintStoreys } from "../../src/lint/storeys.js";
 import { parse } from "../../src/parser.js";
 
 // ---------------------------------------------------------------------------
@@ -478,6 +479,9 @@ export const RULE_CLASS: Readonly<Record<string, RuleClass>> = {
   // RM9.10: a door's outward probe against its storey's `outdoor` shapes and the lower storeys' room and
   // shell shapes, all turned or mirrored together; no compass, no sheet.
   "exterior-door-onto-roof": "invariant",
+  // RM9.6 (CV13): the tables and seats whose footprint centre is on a room's floor, read off the
+  // room's shape; no compass, no sheet.
+  "table-no-seat": "invariant",
 };
 
 /**
@@ -508,7 +512,14 @@ function withFixProvenance(d: Diagnostic): Diagnostic {
  *  post-pass is applied per rule, which is the same thing: it groups by diagnostic code,
  *  and a code belongs to one rule. */
 export function lintByRule(ir: ResolvedPlan): { name: string; diags: Diagnostic[] }[] {
-  const ctx = buildLintContext(ir, DEFAULT_RULESET, LINT_RULES);
+  // `lint()`'s own building context: inert for a dwelling, the non-residential reading (PS2.18)
+  // otherwise, which the dwelling rules read (`judgesAsDwelling`).
+  const ctx = buildLintContext(
+    ir,
+    DEFAULT_RULESET,
+    LINT_RULES,
+    lintStoreys(ir, [], DEFAULT_RULESET.tolMm)[0]!.building,
+  );
   return LINT_RULES.map((r) => ({
     name: r.name,
     diags: reconcileSharedFixes(r.check(ctx).map(withFixProvenance), [{ ir }]),
@@ -2054,10 +2065,12 @@ export function levelPlanOf(name: string, storeys: readonly string[]): string {
  * {@link BuildingContext} per storey: `lint()`'s own `buildingContexts` (`src/lint.ts`), so
  * `test/equivariance-storeys.test.ts` holds the fold built on it to `lint()` itself, storey by
  * storey. It was retyped here while that function was private, and the copy went stale when
- * the context grew (`storeyCount`, `shaftNeighbours`, PS2.11e).
+ * the context grew (`storeyCount`, `shaftNeighbours`, PS2.11e). Read through `lintStoreys`, as
+ * `lint()` reads it, so the dwelling reading (PS2.18) is in it too (RM9.6).
  */
 function buildingContextsOf(levels: readonly ResolvedLevel[], tol: number): Map<number, BuildingContext> {
-  return buildingContexts(levels, tol);
+  if (levels.length === 0) return buildingContexts(levels, tol);
+  return new Map(lintStoreys(levels[0]!.ir, levels, tol).map((s) => [s.level!, s.building!]));
 }
 
 /**

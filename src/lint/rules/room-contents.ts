@@ -29,6 +29,8 @@ import { FALLBACK_USE_VOCABULARY, normalizeLabel, USE_VOCABULARY } from "../../v
 import { judgesAsDwelling, type LintContext, type LintRule } from "../context.js";
 import { definingItems, itemWords, pasteSet, roomDefiningItems, useNoun, washItems } from "../defining.js";
 import { capFirst } from "../../naming.js";
+import { canonicalFixture } from "../../elements/fixtures-glyphs.js";
+import { SEATS } from "./furniture-relations.js";
 import { areaM2, lacksZoneFixture, noFixturePaste, pasteFailureWhy, roomHasWindow } from "./per-room.js";
 
 // ---------------------------------------------------------------------------
@@ -590,6 +592,178 @@ export const labelPieceMissing: LintRule = {
         hints: [
           ...hints,
           `If \`${r.id}\` is not meant to hold ${one ? "one" : "them"}, change its label, which says it does.`,
+        ],
+      });
+    }
+    return out;
+  },
+};
+
+// ---------------------------------------------------------------------------
+// W_TABLE_NO_SEAT
+// ---------------------------------------------------------------------------
+
+/**
+ * The tables this rule reads: the catalogue's words that do a dining table's job (`serves:
+ * "dining_table"`, `src/fixtures-catalog.ts`), today the bare `table`. Derived, never typed. The
+ * `dining_table` itself is not one of them: its symbol draws its chairs inside its own footprint
+ * (`drawDiningTable`, `src/elements/glyphs-living.ts`), so it is never a table without a seat. A
+ * `coffee_table`, `side_table`, `desk` or `meeting_table` serves no dining table, so none is read.
+ */
+const DINING_TABLE_WORDS: ReadonlySet<string> = /* @__PURE__ */ new Set(
+  CATALOG_CATEGORIES.filter((c) => fixtureSpec(c)?.serves === "dining_table"),
+);
+
+/**
+ * The seats a table is sat at, by family: the chairs `W_SEAT_FACING_AWAY` judges ({@link SEATS}),
+ * and the two seats it leaves unjudged because neither has one front to turn to a table, a `stool`
+ * (`barstool`; its symbol is symmetric) and a `bench`. A sofa, an armchair and the like are lounge
+ * seats, set around a coffee table: a table with only a sofa in its room still has nowhere to eat.
+ */
+const TABLE_SEATS: ReadonlySet<string> = /* @__PURE__ */ new Set([...SEATS, "stool", "bench"]);
+
+/**
+ * A `table`'s label that says it IS a dining table: one of these whole words, in any case, and the
+ * table is read whatever else the label says ("Dining island", "TV dinner table", "Coffee & dining
+ * table").
+ */
+const TABLE_LABEL_DINING: ReadonlySet<string> = /* @__PURE__ */ new Set([
+  "dining",
+  "dinner",
+  "dine",
+  "eat",
+  "breakfast",
+]);
+
+/**
+ * A `table`'s label that names another piece, read only when no dining word is in it: one of these
+ * whole words, in any case ("Kitchen island", "Bedside"), or one of the two-word phrases below. "side"
+ * or "tv" alone never names a piece ("Table - garden side", "Sideboard", "side-board" are read). Its size
+ * is not read: a small table may still be a dining table.
+ */
+const TABLE_LABEL_OTHER_PIECE: ReadonlySet<string> = /* @__PURE__ */ new Set([
+  "desk",
+  "island",
+  "nightstand",
+  "bedside",
+  "dressing",
+  "console",
+  "coffee",
+]);
+const TABLE_LABEL_OTHER_PHRASES: readonly (readonly [string, string])[] = [
+  ["side", "table"],
+  ["end", "table"],
+  ["tv", "table"],
+  ["tv", "stand"],
+];
+
+/** Is a table read as a dining table by its label ({@link TABLE_LABEL_DINING}, {@link TABLE_LABEL_OTHER_PIECE})? */
+function labelReadsAsDiningTable(label: string | undefined): boolean {
+  if (!label) return true;
+  const words = label
+    .toLowerCase()
+    .split(/[^\p{L}\p{N}]+/u)
+    .filter((w) => w !== "");
+  if (words.some((w) => TABLE_LABEL_DINING.has(w))) return true;
+  if (words.some((w) => TABLE_LABEL_OTHER_PIECE.has(w))) return false;
+  for (let i = 0; i + 1 < words.length; i++)
+    if (TABLE_LABEL_OTHER_PHRASES.some(([x, y]) => words[i] === x && words[i + 1] === y)) return false;
+  return true;
+}
+
+/** The day uses of {@link HABITABLE} a table's room is judged by: living, dining, kitchen. */
+const TABLE_DAY_USES: readonly UseKind[] = HABITABLE.map(([u]) => u);
+
+/**
+ * `W_TABLE_NO_SEAT` (product roadmap RM9.6, coverage class CV13; plan-soundness PS2.31): a dining
+ * table ({@link DINING_TABLE_WORDS}, read by its label as {@link labelReadsAsDiningTable} says) in a
+ * room of a home with a day use (living, dining or kitchen, {@link TABLE_DAY_USES}; a studio's
+ * `uses living bedroom` is judged, a bedroom-only room never is) whose floor holds no seat
+ * ({@link TABLE_SEATS}). A piece is in a room when its footprint centre is on the room's floor, read
+ * off the room's shape ({@link heldIn}), on its own storey; a seat in any room that holds the table
+ * seats it, and a table in no room is not read. A room with no classified use that holds a table the
+ * rule does not report is declared once (`no-uses`), and a plan that reads as non-residential is not
+ * judged (`non-dwelling`, {@link judgesAsDwelling}): coverage class CV23 leaves a café's or a
+ * classroom's furnishing out of lint. No distance: the version that asks whether a seat is within
+ * reach of the table waits for `seatTableReachMm` to have a read source (it is a `convention`
+ * today, `src/lint/provenance.ts`). One warning per table, at the table. No machine fix: where a
+ * chair goes is the author's decision.
+ *
+ * Work: one pass per room reads its uses, its pieces (rooms × pieces centre tests, charged to
+ * `ctx.work.tableSeatTests`) and whether one of them is a seat, and files each read table under the
+ * rooms that hold it; each table then reads only its own rooms. Nothing is per (table, room).
+ */
+export const tableNoSeat: LintRule = {
+  name: "table-no-seat",
+  family: "contents",
+  layer: "validity",
+  stage: "fixtures",
+  codes: ["W_TABLE_NO_SEAT"],
+  check(ctx: LintContext): Diagnostic[] {
+    const tables = ctx.furniture.filter((f) => DINING_TABLE_WORDS.has(f.category) && labelReadsAsDiningTable(f.label));
+    if (tables.length === 0) return [];
+    // CV23: lint judges a home's furnishing; a café's, a classroom's or a workshop's tables are not.
+    if (!judgesAsDwelling(ctx)) {
+      ctx.skip("non-dwelling");
+      return [];
+    }
+    const read = new Set(tables);
+    // Once per room: its uses, whether one of its pieces is a seat, and the read tables on its floor.
+    interface Home {
+      r: RRoom;
+      seated: boolean;
+      dayUse: boolean;
+      noUses: boolean;
+    }
+    const homesOf = new Map<RFurniture, Home[]>();
+    for (const r of ctx.rooms) {
+      ctx.work.tableSeatTests += ctx.furniture.length;
+      const held = heldIn(ctx, r);
+      const uses = roomUses(r);
+      const home: Home = {
+        r,
+        seated: held.some((f) => TABLE_SEATS.has(canonicalFixture(f.category) ?? "")),
+        dayUse: TABLE_DAY_USES.some((u) => uses.has(u)),
+        noUses: uses.size === 0,
+      };
+      for (const f of held) {
+        if (!read.has(f)) continue;
+        const list = homesOf.get(f);
+        if (list) list.push(home);
+        else homesOf.set(f, [home]);
+      }
+    }
+    const out: Diagnostic[] = [];
+    const declared = new Set<RRoom>();
+    for (const t of tables) {
+      // Every room whose floor holds the table: a seat in any of them seats it, so two rooms drawn
+      // over one floor neither report it twice nor miss the other's chair.
+      const homes = homesOf.get(t) ?? [];
+      if (homes.some((h) => h.seated)) continue;
+      // A table is a dining table where a home eats: a room with a day use, a studio's included;
+      // a bedroom-only room, a study or a workshop is not read.
+      const r = homes.find((h) => h.dayUse)?.r;
+      if (r === undefined) {
+        // Not reported: a room with no classified use is declared, once, not guessed at.
+        for (const h of homes)
+          if (h.noUses && !declared.has(h.r)) {
+            declared.add(h.r);
+            ctx.skip("no-uses", h.r);
+          }
+        continue;
+      }
+      const theTable = t.label ? `the ${spoken(t.category)} "${t.label}"` : `a ${spoken(t.category)}`;
+      // An auto id is never quoted: naming the table renumbers nothing, quoting `table_6` would
+      // break the moment an earlier piece is named (ADR 0029 §6).
+      const which = t._idAuthored === true ? `"${t.id}"` : `the ${spoken(t.category)}${t.label ? ` "${t.label}"` : ""}`;
+      const inRoom = r._idAuthored === true ? ` in ${r.id}` : "";
+      out.push({
+        severity: "warning",
+        code: "W_TABLE_NO_SEAT",
+        ...ctx.at(t),
+        message: `${capFirst(theTable)} stands in ${ctx.nameOf(r)}, which holds no seat lint counts for a table (a chair, stool or bench).`,
+        hints: [
+          `Add a chair at ${which}, its front toward the table (\`furniture chair …${inRoom}\`), or draw ${which} as a \`dining_table\`, whose symbol includes its chairs (its size is then the table and the chairs together).`,
         ],
       });
     }

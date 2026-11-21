@@ -25,9 +25,14 @@ export interface LintWork {
    * and ladder when a room is sealed, and the door-attribution re-measures.
    */
   navCells: number;
+  /**
+   * `W_TABLE_NO_SEAT`: the (room, piece) footprint-centre tests the rule made, once per room of a
+   * storey that has a table it reads, never once per table (product roadmap RM9.6).
+   */
+  tableSeatTests: number;
 }
 
 /** A fresh set of counters, all 0. */
 export function newLintWork(): LintWork {
-  return { leafDoorPairs: 0, boundaryRunTests: 0, navCells: 0 };
+  return { leafDoorPairs: 0, boundaryRunTests: 0, navCells: 0, tableSeatTests: 0 };
 }

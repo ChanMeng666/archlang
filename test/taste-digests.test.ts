@@ -224,6 +224,18 @@
  * nothing) added six rows, the new `circulation-privacy/door-onto-roof` pair under each of the three
  * profiles, measured with `tasteDigest`. No existing row moved: no other source here has a door onto
  * a roof.
+ *
+ * RM9.6 (`W_TABLE_NO_SEAT`, a dining table in a home's day room with nothing to sit on, PR #993) added
+ * six rows, the new `missing-defining-contents/table-no-chairs` pair under each of the three profiles,
+ * and moved eighteen: `annotation-collisions/radius-over-piece`, `circulation-privacy/bath-off-open-plan`
+ * and `clearances/masked-route-balcony-door`, case and twin, under each profile, each of whose plans has
+ * a `table` in a living room with no seat. In each the only change is `validity`: one more warning and
+ * `W_TABLE_NO_SEAT` in its codes. Where that was the report's first validity warning (radius-over-piece
+ * and its twin, masked-route's twin, and the new case) the score is capped: generic 0.7954, 0.6939 and
+ * 0.875 → 0.5, cn 0.7204, 0.6452 and 0.7777 → 0.5, us as generic. Every criterion, subscore and skip is
+ * unchanged. With the rule taken out of `LINT_RULES` each moved row reproduces the value it replaces,
+ * and the new case's digest equals its twin's. `radius-over-label` shares radius-over-piece's old values
+ * and did not move. The rows carry `RM9.6 CV13` notes.
  */
 
 import { describe, expect, it } from "vitest";
@@ -323,12 +335,12 @@ const TABLE: ReadonlyArray<[string, string, string]> = [
     "test/defect-corpus/annotation-collisions/radius-over-label.clean.arch",
   ],
   [
-    "d99d9b755f3117933bf381eca5b07d351dd69e37b037d67d1a97aa990ef939fb",
+    "a2d22bf5f2193f5e49756f19282ba6aa4b20467493736c9702b62c90b42cf354", // RM9.6 CV13 (was d99d9b75): W_TABLE_NO_SEAT reports its table (a table in a home's day room with nothing to sit on); with the rule taken out the old digest returns
     "generic",
     "test/defect-corpus/annotation-collisions/radius-over-piece.arch",
   ],
   [
-    "9f3328c63114f9fc449d123a917b0e428ab584204070e75300d5378c0dcb8ff3",
+    "edca3e1348864c72f67dc4ccad0caa838e10caf31ff41a07979d9ad82d9eaafd", // RM9.6 CV13 (was 9f3328c6): W_TABLE_NO_SEAT reports its table (a table in a home's day room with nothing to sit on); with the rule taken out the old digest returns
     "generic",
     "test/defect-corpus/annotation-collisions/radius-over-piece.clean.arch",
   ],
@@ -363,12 +375,12 @@ const TABLE: ReadonlyArray<[string, string, string]> = [
     "test/defect-corpus/circulation-privacy/bath-leafless-to-living.clean.arch",
   ],
   [
-    "99494e384d0a000f70f29478fb06d11cc2efa51f8c0322a1f53e5b2de43d7baf",
+    "178aa6e035a256b373e01d723b14c9f0f4241065a1fe647b2e90049b82f3d740", // RM9.6 CV13 (was 99494e38): W_TABLE_NO_SEAT reports its table (a table in a home's day room with nothing to sit on); with the rule taken out the old digest returns
     "generic",
     "test/defect-corpus/circulation-privacy/bath-off-open-plan.arch",
   ],
   [
-    "7abd076d002c2381ee6007718e8c39929015fd95c9aed51cd95f1c949e7685ca",
+    "7e7e70b3f4b79345dcd4e8a45485a51f157124fe4d1e3a32128255a0fa73b4eb", // RM9.6 CV13 (was 7abd076d): W_TABLE_NO_SEAT reports its table (a table in a home's day room with nothing to sit on); with the rule taken out the old digest returns
     "generic",
     "test/defect-corpus/circulation-privacy/bath-off-open-plan.clean.arch",
   ],
@@ -633,12 +645,12 @@ const TABLE: ReadonlyArray<[string, string, string]> = [
     "test/defect-corpus/clearances/leaf-across-doorway.clean.arch",
   ],
   [
-    "2f4395c8c3c52b1c441267abb84dcd3d07dfd57b09b81c0e300d8557c5b61752",
+    "0c621e9b010d1fedc63ef2ed3c0676d26600e4025bf9210bfc08c623111ff5f4", // RM9.6 CV13 (was 2f4395c8): W_TABLE_NO_SEAT reports its table (a table in a home's day room with nothing to sit on); with the rule taken out the old digest returns
     "generic",
     "test/defect-corpus/clearances/masked-route-balcony-door.arch",
   ],
   [
-    "359ce63714596fb6d60c1fa9e4259120f7a03a2129853cece9a2f1c548c7e83c",
+    "0d06e2d595ac7afba827d0ec90169c8ab4838059435181338042bde9be0ee35a", // RM9.6 CV13 (was 359ce637): W_TABLE_NO_SEAT reports its table (a table in a home's day room with nothing to sit on); with the rule taken out the old digest returns
     "generic",
     "test/defect-corpus/clearances/masked-route-balcony-door.clean.arch",
   ],
@@ -841,6 +853,16 @@ const TABLE: ReadonlyArray<[string, string, string]> = [
     "ec31883fbf2995f71bab74a2b5899f755b2886c2974dd40d6cc5752c1285f7a8",
     "generic",
     "test/defect-corpus/missing-defining-contents/servery-no-sink.clean.arch",
+  ],
+  [
+    "cf4c94153c235ac49b29ab916a1e2c37382f5b9966b0e4639bbd410ad1997d19", // RM9.6 CV13: W_TABLE_NO_SEAT's new defect-corpus file
+    "generic",
+    "test/defect-corpus/missing-defining-contents/table-no-chairs.arch",
+  ],
+  [
+    "db4a07126b8b8f96572ed66b1ccb17cc81773c2717b15cc3ab41c35984ab8d1e", // RM9.6 CV13: W_TABLE_NO_SEAT's new defect-corpus file
+    "generic",
+    "test/defect-corpus/missing-defining-contents/table-no-chairs.clean.arch",
   ],
   [
     "166e0eb0fa7fafd9dd05b68ef90ce756c11a1d49b80875d1ea0a40fe30b5df58",
@@ -1553,12 +1575,12 @@ const TABLE: ReadonlyArray<[string, string, string]> = [
     "test/defect-corpus/annotation-collisions/radius-over-label.clean.arch",
   ],
   [
-    "2f5a765c44f8e494e74b6f6f9d7aeb1dc2cd352a185345a6fcab0cfc5b08d346",
+    "10a48453a57910388d292869ea62f71f7b56ffc53a685d355352b525fec77e44", // RM9.6 CV13 (was 2f5a765c): W_TABLE_NO_SEAT reports its table (a table in a home's day room with nothing to sit on); with the rule taken out the old digest returns
     "cn-residential-advisory",
     "test/defect-corpus/annotation-collisions/radius-over-piece.arch",
   ],
   [
-    "8a809a0a2e3b7e4f64ef65e6e99b29e79e5574ff0cad1cdaba6218431de08298",
+    "44020f1d7152c75834fddcb1882419adabf3474391b1fee440cb704f4ab1ef8e", // RM9.6 CV13 (was 8a809a0a): W_TABLE_NO_SEAT reports its table (a table in a home's day room with nothing to sit on); with the rule taken out the old digest returns
     "cn-residential-advisory",
     "test/defect-corpus/annotation-collisions/radius-over-piece.clean.arch",
   ],
@@ -1593,12 +1615,12 @@ const TABLE: ReadonlyArray<[string, string, string]> = [
     "test/defect-corpus/circulation-privacy/bath-leafless-to-living.clean.arch",
   ],
   [
-    "20a9923146b7da67d76b25f9e03c056234a93012cf6c8ee1e89e607b455448bb",
+    "857218b6a8cb688a88c2f69639ea3415f03c4971b301e72686036e9fee3e1436", // RM9.6 CV13 (was 20a99231): W_TABLE_NO_SEAT reports its table (a table in a home's day room with nothing to sit on); with the rule taken out the old digest returns
     "cn-residential-advisory",
     "test/defect-corpus/circulation-privacy/bath-off-open-plan.arch",
   ],
   [
-    "3a3ac5938fd98dfbeb1d36d3ccd4305ae0013731307a42f41f5574bde29da310",
+    "616f19b422303de935c5c6f11658181ce08ece987df889162be64aecaa76ecfd", // RM9.6 CV13 (was 3a3ac593): W_TABLE_NO_SEAT reports its table (a table in a home's day room with nothing to sit on); with the rule taken out the old digest returns
     "cn-residential-advisory",
     "test/defect-corpus/circulation-privacy/bath-off-open-plan.clean.arch",
   ],
@@ -1863,12 +1885,12 @@ const TABLE: ReadonlyArray<[string, string, string]> = [
     "test/defect-corpus/clearances/leaf-across-doorway.clean.arch",
   ],
   [
-    "e86789ada9266238c9581af5cbcb78a7ea690306e8c7ebb6426b9e57d534e412",
+    "cd18281a78e96c5778a34638f559ff4311431c78027b2cb1c58837957b5046f5", // RM9.6 CV13 (was e86789ad): W_TABLE_NO_SEAT reports its table (a table in a home's day room with nothing to sit on); with the rule taken out the old digest returns
     "cn-residential-advisory",
     "test/defect-corpus/clearances/masked-route-balcony-door.arch",
   ],
   [
-    "0099cdc7b4456b2bac2d8ed991714a272c75244b5347b96081720b8ceec4687a",
+    "8ef52dc80257f66bea5a68c021a42334ea0e924feb9fd967abb756d74783d945", // RM9.6 CV13 (was 0099cdc7): W_TABLE_NO_SEAT reports its table (a table in a home's day room with nothing to sit on); with the rule taken out the old digest returns
     "cn-residential-advisory",
     "test/defect-corpus/clearances/masked-route-balcony-door.clean.arch",
   ],
@@ -2071,6 +2093,16 @@ const TABLE: ReadonlyArray<[string, string, string]> = [
     "ee9283471a9d6d5fb60e0518f1a447415ed99856291d93ebe117dbbf236e9e76",
     "cn-residential-advisory",
     "test/defect-corpus/missing-defining-contents/servery-no-sink.clean.arch",
+  ],
+  [
+    "dc3af59626088136da5616fe9dd47195ae296eb6daf30bab3a65469e2d71ddbd", // RM9.6 CV13: W_TABLE_NO_SEAT's new defect-corpus file
+    "cn-residential-advisory",
+    "test/defect-corpus/missing-defining-contents/table-no-chairs.arch",
+  ],
+  [
+    "d7af464b648aaceb19ba12d61d6b9bd60336114fdfb46a232050cc1e0aa33826", // RM9.6 CV13: W_TABLE_NO_SEAT's new defect-corpus file
+    "cn-residential-advisory",
+    "test/defect-corpus/missing-defining-contents/table-no-chairs.clean.arch",
   ],
   [
     "c2291b77c9f84facef8eaafb3b025c52438d876a49998313aa72101fdc7ffd1a",
@@ -2783,12 +2815,12 @@ const TABLE: ReadonlyArray<[string, string, string]> = [
     "test/defect-corpus/annotation-collisions/radius-over-label.clean.arch",
   ],
   [
-    "0bcc769fb0c9e09ab5093aa3027d78d88f69a87692ba7eb8506bab214788c98b",
+    "c732a3b6d27ee6d638afe4ade1b49498db68a65a061e4161a84f6dfa76235188", // RM9.6 CV13 (was 0bcc769f): W_TABLE_NO_SEAT reports its table (a table in a home's day room with nothing to sit on); with the rule taken out the old digest returns
     "us-residential-advisory",
     "test/defect-corpus/annotation-collisions/radius-over-piece.arch",
   ],
   [
-    "363abf536839449b97452aeb82d81313db42d92c969872b0e846c6b2bbcbc1e8",
+    "5e13fad979b48e4a8d3f3bdb289483d874804e6f320b98486367e06c9357624f", // RM9.6 CV13 (was 363abf53): W_TABLE_NO_SEAT reports its table (a table in a home's day room with nothing to sit on); with the rule taken out the old digest returns
     "us-residential-advisory",
     "test/defect-corpus/annotation-collisions/radius-over-piece.clean.arch",
   ],
@@ -2823,12 +2855,12 @@ const TABLE: ReadonlyArray<[string, string, string]> = [
     "test/defect-corpus/circulation-privacy/bath-leafless-to-living.clean.arch",
   ],
   [
-    "aa873bf1536cdac38c18ba635d4bbe6d81412fb4c4f7da821328dd232c6c6bd4",
+    "fb09bee8a11b3fc0ac86a46372e9affc2844f5b86aa0b38f8647da4f6c588ede", // RM9.6 CV13 (was aa873bf1): W_TABLE_NO_SEAT reports its table (a table in a home's day room with nothing to sit on); with the rule taken out the old digest returns
     "us-residential-advisory",
     "test/defect-corpus/circulation-privacy/bath-off-open-plan.arch",
   ],
   [
-    "d1b1131690272cdd3936f9cdf7bbd0b1e734813dd9109eaa9055bcbcbc9a99bb",
+    "d4c081ed65c058b81726ce629e4363fb59a344c6d26cf4e9178bc2241c9688ad", // RM9.6 CV13 (was d1b11316): W_TABLE_NO_SEAT reports its table (a table in a home's day room with nothing to sit on); with the rule taken out the old digest returns
     "us-residential-advisory",
     "test/defect-corpus/circulation-privacy/bath-off-open-plan.clean.arch",
   ],
@@ -3093,12 +3125,12 @@ const TABLE: ReadonlyArray<[string, string, string]> = [
     "test/defect-corpus/clearances/leaf-across-doorway.clean.arch",
   ],
   [
-    "ab0ae5bd60be309f5da443c84b848200d52e4c3783bae92705f6e77f3d7ec1ec",
+    "ea2f541855da993cdf09de066c347197b82bcb7ef31d86af6dfac3dd57d12cc2", // RM9.6 CV13 (was ab0ae5bd): W_TABLE_NO_SEAT reports its table (a table in a home's day room with nothing to sit on); with the rule taken out the old digest returns
     "us-residential-advisory",
     "test/defect-corpus/clearances/masked-route-balcony-door.arch",
   ],
   [
-    "05ff8f9907de9cf2c54b3eb97f5e5623e46286b5970d17a85a81768f731a9530",
+    "5ad50917ef03dcd88dbaf3f6fa6844142c6d41b978ec15dd0eb56a7d84f7b6cf", // RM9.6 CV13 (was 05ff8f99): W_TABLE_NO_SEAT reports its table (a table in a home's day room with nothing to sit on); with the rule taken out the old digest returns
     "us-residential-advisory",
     "test/defect-corpus/clearances/masked-route-balcony-door.clean.arch",
   ],
@@ -3301,6 +3333,16 @@ const TABLE: ReadonlyArray<[string, string, string]> = [
     "d24591bad248eb09342e1f6aa86f9f95c5ab6eab9c4975fb61325f2e695daab2",
     "us-residential-advisory",
     "test/defect-corpus/missing-defining-contents/servery-no-sink.clean.arch",
+  ],
+  [
+    "0f504ca5eeeb85536162d54de65898d9c330475002712b366fc5d7261b4377c2", // RM9.6 CV13: W_TABLE_NO_SEAT's new defect-corpus file
+    "us-residential-advisory",
+    "test/defect-corpus/missing-defining-contents/table-no-chairs.arch",
+  ],
+  [
+    "fe6ebc42eb96f6c7798e9cb570ab3b1ea2c144c09f200cd7027bfe254d5a4b23", // RM9.6 CV13: W_TABLE_NO_SEAT's new defect-corpus file
+    "us-residential-advisory",
+    "test/defect-corpus/missing-defining-contents/table-no-chairs.clean.arch",
   ],
   [
     "f0861757c93cfea328601c6ee465a657ff78582d6b4c56c76f916e0af198a1b8",

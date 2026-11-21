@@ -36,6 +36,7 @@ const COUNTS: readonly (keyof WorkCounts)[] = [
   "leafDoorPairs",
   "boundaryRunTests",
   "navCells",
+  "tableSeatTests",
   "joinerySplitTests",
   "labelRelocations",
 ];
