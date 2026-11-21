@@ -156,7 +156,7 @@ const BASELINE: [string, string][] = [
   ["2a9bdda5124d6cc976419991440ccccedb9ee1bcbcba18da2098319f271fe1f3", "test/fixtures/schedule-sheet.arch"],
   ["ac6b7954d2cefaa2461c5e8111d1004603b931ef133597f0971e07db78c6dd42", "test/fixtures/star30.arch"],
   ["143ddd7bfd82d51b4527ba8607803a99e38c4f1bd4997d9cf8acf95fb216e29d", "test/fixtures/storeys-eaves-overflow.arch"], // RM1.3a, see ./byte-identity-baseline.ts; RM1.2a, see ./byte-identity-baseline.ts; RM1.2a review, see ./byte-identity-baseline.ts; RM1.3b overlay, see ./byte-identity-baseline.ts; RM9.2, see ./byte-identity-baseline.ts
-  ["5febcfb91b9a3e7bc23705df313a0ac218fb64f35aae5a19b607b313ddca79fb", "test/fixtures/zones-levels.arch"], // RM9.2, see ./byte-identity-baseline.ts
+  ["381f81e6480f96f5f1da4f5a4d6249fb102423105db27ce52c881337cdc1f721", "test/fixtures/zones-levels.arch"], // RM9.2, see ./byte-identity-baseline.ts; RM9.6 CV14: W_STAIR_NO_VOID reports this plan (was 5febcfb9)
   ["ee9f057b82b717e4b7c0753daef62a2baa9b3df5c5d8aa617079c3dedce0081e", "test/fixtures/zones-wings.arch"],
   ["61565f3850374e2db98b80a12890579d8899928f2e32c7ddc45fb5b43169f7c9", "test/walls-from-rooms/relational.arch"], // AF9 (was edc62a57): under `accessibility-advisory` (a 450 mm landing) `W_DOORWAY_BLOCKED` gains a maybe-incorrect move of the door; SVG, describe(), the diagnostics, the default lint() and the steps are unchanged, and with that fix taken out the old digest returns
   ["beff13e3b3255103bc80d0698d9bf7b9052f66bf78bf8d0626033bfeeb02adc5", "test/walls-from-rooms/studio.arch"],
@@ -219,35 +219,35 @@ const BASELINE: [string, string][] = [
     "test/defect-corpus/stair-safety/furniture-on-landing.clean.arch",
   ],
   [
-    "a823dc7289226e3b5fed12d7c3c09c77018a89121bc68b2bb272ed0234918150", // RM1.3a, see ./byte-identity-baseline.ts; RM1.3b overlay, see ./byte-identity-baseline.ts; RM9.2, see ./byte-identity-baseline.ts
+    "be39e5337c3c48223f482a2038f7ea303acbf44a7ce702f64b8fce851e518c5d", // RM1.3a, see ./byte-identity-baseline.ts; RM1.3b overlay, see ./byte-identity-baseline.ts; RM9.2, see ./byte-identity-baseline.ts; RM9.6 CV14: W_STAIR_NO_VOID reports this plan (was a823dc72)
     "test/defect-corpus/stair-safety/head-against-wall.arch",
   ],
   [
-    "7f034ceb5b31408d50ab0296138ad95d752ca272141c6ee7ff18539c5e206f3f", // RM1.3a, see ./byte-identity-baseline.ts; RM1.3b overlay, see ./byte-identity-baseline.ts; RM9.2, see ./byte-identity-baseline.ts
+    "eb72130358293dc18ee88d94335a255475348387867695eba50e9e7fb2bef15a", // RM1.3a, see ./byte-identity-baseline.ts; RM1.3b overlay, see ./byte-identity-baseline.ts; RM9.2, see ./byte-identity-baseline.ts; RM9.6 CV14: W_STAIR_NO_VOID reports this plan (was 7f034ceb)
     "test/defect-corpus/stair-safety/head-against-wall.clean.arch",
   ],
   [
-    "353f62418808f03e9a65ba5868a456fe4af337a37bdb19fb0af16f98dcc789c0", // RM1.2a, see ./byte-identity-baseline.ts; RM1.2a review, see ./byte-identity-baseline.ts; RM1.3b overlay, see ./byte-identity-baseline.ts; RM9.2, see ./byte-identity-baseline.ts
+    "ab5e244938b2883a4509384a5e79972f9480687800e12a807166c0580047222e", // RM1.2a, see ./byte-identity-baseline.ts; RM1.2a review, see ./byte-identity-baseline.ts; RM1.3b overlay, see ./byte-identity-baseline.ts; RM9.2, see ./byte-identity-baseline.ts; RM9.6 CV14: W_STAIR_NO_VOID reports this plan (was 353f6241)
     "test/defect-corpus/stair-safety/riser-too-high.arch",
   ],
   [
-    "1fe18c7d4e81e2167b88554bd42f8f8a6c491b526b822d19a812548ba6cc79ca", // RM1.2a, see ./byte-identity-baseline.ts; RM1.3b overlay, see ./byte-identity-baseline.ts; RM9.2, see ./byte-identity-baseline.ts
+    "36f7f5467ab029b3e70439ed793303024885df35a29a533297993b73c55b9fcc", // RM1.2a, see ./byte-identity-baseline.ts; RM1.3b overlay, see ./byte-identity-baseline.ts; RM9.2, see ./byte-identity-baseline.ts; RM9.6 CV14: W_STAIR_NO_VOID reports this plan (was 1fe18c7d)
     "test/defect-corpus/stair-safety/riser-too-high.clean.arch",
   ],
   [
-    "4c04ddec3195a65a5d06714e23b904ae8a7abfacae6e463d788ca887b66c1e96", // RM1.3a, see ./byte-identity-baseline.ts; RM1.3b overlay, see ./byte-identity-baseline.ts; RM9.2, see ./byte-identity-baseline.ts
+    "7102de0b9d98b68578605e02bcd4c0a9be261c56e0f26c365abb176534174ff9", // RM1.3a, see ./byte-identity-baseline.ts; RM1.3b overlay, see ./byte-identity-baseline.ts; RM9.2, see ./byte-identity-baseline.ts; RM9.6 CV14: W_STAIR_NO_VOID reports this plan (was 4c04ddec)
     "test/defect-corpus/stair-safety/shaft-footprint-mismatch.arch",
   ],
   [
-    "ef8de37a85d16d8fd54a0639d0ea09f37301a1a26859c07b617614a331ef9c09", // RM1.3a, see ./byte-identity-baseline.ts; RM1.3b overlay, see ./byte-identity-baseline.ts; RM9.2, see ./byte-identity-baseline.ts
+    "b9e2102671820d9926733c1a8a9b081cad65402fb1b0ddb96042da6cb9a5b418", // RM1.3a, see ./byte-identity-baseline.ts; RM1.3b overlay, see ./byte-identity-baseline.ts; RM9.2, see ./byte-identity-baseline.ts; RM9.6 CV14: W_STAIR_NO_VOID reports this plan (was ef8de37a)
     "test/defect-corpus/stair-safety/shaft-footprint-mismatch.clean.arch",
   ],
   [
-    "0f46a66f24bfd3296658a585aff0dcdaead10138a7fd004dc74995f4ce873d49", // RM1.3a, see ./byte-identity-baseline.ts; RM1.2a review, see ./byte-identity-baseline.ts; RM1.3b overlay, see ./byte-identity-baseline.ts; RM9.2, see ./byte-identity-baseline.ts
+    "a983523fb970fdc51345b1c0bc9219337baa65595c11525b1ce0bbfa7f097181", // RM1.3a, see ./byte-identity-baseline.ts; RM1.2a review, see ./byte-identity-baseline.ts; RM1.3b overlay, see ./byte-identity-baseline.ts; RM9.2, see ./byte-identity-baseline.ts; RM9.6 CV14: W_STAIR_NO_VOID reports this plan (was 0f46a66f)
     "test/defect-corpus/stair-safety/stair-too-steep.arch",
   ],
   [
-    "7c6caa77f96e277544acd54ded74ca682c017b2f2f4fa91a3fa659ada81e0131", // RM1.3a, see ./byte-identity-baseline.ts; RM1.3b overlay, see ./byte-identity-baseline.ts; RM9.2, see ./byte-identity-baseline.ts
+    "55c541c94e7ae16ccc6a48be39cab6b91a2b9bc6a2a0d994ee1500af7c78efea", // RM1.3a, see ./byte-identity-baseline.ts; RM1.3b overlay, see ./byte-identity-baseline.ts; RM9.2, see ./byte-identity-baseline.ts; RM9.6 CV14: W_STAIR_NO_VOID reports this plan (was 7c6caa77)
     "test/defect-corpus/stair-safety/stair-too-steep.clean.arch",
   ],
   [
@@ -267,22 +267,22 @@ const BASELINE: [string, string][] = [
     "test/defect-corpus/stair-safety/swing-over-stair.clean.arch",
   ],
   [
-    "444444d968b7e432931e7a1218a7f2f43bbd1c5079d9335d3fe213b94ec3cfb4", // RM1.3a, see ./byte-identity-baseline.ts; RM1.3b overlay, see ./byte-identity-baseline.ts; RM9.2, see ./byte-identity-baseline.ts
+    "9159f6c140c5b82b7b6c461d8f487f3ffde2c3b6d62c746d33193b686b758b54", // RM1.3a, see ./byte-identity-baseline.ts; RM1.3b overlay, see ./byte-identity-baseline.ts; RM9.2, see ./byte-identity-baseline.ts; RM9.6 CV14: W_STAIR_NO_VOID reports this plan (was 444444d9)
     "test/defect-corpus/stair-safety/void-at-stair-head.arch",
   ],
   [
-    "4d4bfb32187b2a0b26e687f4c2784905b4802b22135e3e3b26239c6240eaffa8", // RM1.3a, see ./byte-identity-baseline.ts; RM1.3b overlay, see ./byte-identity-baseline.ts; RM9.2, see ./byte-identity-baseline.ts
+    "b29842eeb0420288dc17d24472b9fd4f2828f0e6028623fa91966bed86645b6f", // RM1.3a, see ./byte-identity-baseline.ts; RM1.3b overlay, see ./byte-identity-baseline.ts; RM9.2, see ./byte-identity-baseline.ts; RM9.6 CV14: W_STAIR_NO_VOID reports this plan (was 4d4bfb32)
     "test/defect-corpus/stair-safety/void-at-stair-head.clean.arch",
   ],
   ["803382568b44d2abe330873b5b788636b5dae38beea8416ea9da39a9fb3a12ab", "inline:stair-words-as-names"],
   ["f1497554533ffa39becdfaf8494d14a9d2aa84d8eee0455a4eaf4feffa213aba", "inline:stair-square-and-narrow"],
   ["0ba9460627a738d65c7d5235e533ad8410bf7a548bfedc69dca44f987793ee91", "inline:stair-placed"],
-  ["802586e9b7cf3f6927c1441481a0e2d14699e57b6b7a50ddb48b71a9b4a902d5", "inline:stair-arrival"], // RM1.3a, see ./byte-identity-baseline.ts; RM1.2a, see ./byte-identity-baseline.ts; RM1.2a review, see ./byte-identity-baseline.ts; RM1.3b overlay, see ./byte-identity-baseline.ts; RM9.2, see ./byte-identity-baseline.ts
+  ["e0ff4db98bd226c5cbbefde8a4b8ef8a9c60d2119e266e2dc6e58e5084293c84", "inline:stair-arrival"], // RM1.3a, see ./byte-identity-baseline.ts; RM1.2a, see ./byte-identity-baseline.ts; RM1.2a review, see ./byte-identity-baseline.ts; RM1.3b overlay, see ./byte-identity-baseline.ts; RM9.2, see ./byte-identity-baseline.ts; RM9.6 CV14: W_STAIR_NO_VOID reports this plan (was 802586e9)
   ["e6eed958e1d4cea68f7981fce9964af4b5a26fa3d09ad3eafebb0992ce5cb727", "inline:stair-refusals"],
   ["1e9d114fa6522be3335f490693d677a052fc7363fd0bbc2b07b2f0849fe16494", "inline:stair-parse-refusals"], // AF4 (was 57879436): its `E_PARSE` now says what the parser expected at the token it stopped at (`expected`); SVG, lint() and every other key are unchanged, and deleting that key gives 57879436
   ["b26bc512b18857358f1d63dd780c04f84af6923145c4407d45d541b087fff4a4", "inline:sheet-word-as-names"], // AF7 (RM-D69): only added related notes (was 4ee5b0cc, AF7_MAIN)
   ["6b7f2d2d8e83f91900c427ab93ec4a8c0b78741d18f5e0040f2a7eac5d39e4cc", "inline:sheet-macro"], // AF7 (RM-D69): only added related notes (was 77ecc92e, AF7_MAIN)
-  ["9d996ce459b88fc3b5405d0e7fd29df3d9ac7b452a5c0c865f9efa3718749259", "inline:every-table"], // RM1.3a, see ./byte-identity-baseline.ts; RM1.3b overlay, see ./byte-identity-baseline.ts; RM9.2, see ./byte-identity-baseline.ts
+  ["96243386ca7dc56d543ef8cadb4cb4c68beceddd353e599aab07bb66fab4cfea", "inline:every-table"], // RM1.3a, see ./byte-identity-baseline.ts; RM1.3b overlay, see ./byte-identity-baseline.ts; RM9.2, see ./byte-identity-baseline.ts; RM9.6 CV14: W_STAIR_NO_VOID reports this plan (was 9d996ce4)
   ["c3bd0b213038578a15a84f8031adaf7461a5a76f1ce406e189e1de434b5954b2", "inline:fractional-sites"],
   ["4df881b97667921f10ebabdc0ef5a593c8f5fbc8724a8fba1bd396d9554b8d05", "inline:curve-call-outs"],
   ["0b8eca736d1f78e7fde5515fd5263cc03166fadb9615dd96571ae14d3627b3f0", "inline:sheet-near-miss-0"], // AF4 (was 1f92cd16): its `E_PARSE` now says what the parser expected at the token it stopped at (`expected`); SVG, lint() and every other key are unchanged, and deleting that key gives 1f92cd16

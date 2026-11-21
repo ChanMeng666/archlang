@@ -30,9 +30,14 @@ export interface LintWork {
    * storey that has a table it reads, never once per table (product roadmap RM9.6).
    */
   tableSeatTests: number;
+  /**
+   * `W_STAIR_NO_VOID`: the (stair, void piece) overlap tests the rule may make on a storey, at most
+   * one per pair, charged before it runs (product roadmap RM9.6).
+   */
+  stairVoidTests: number;
 }
 
 /** A fresh set of counters, all 0. */
 export function newLintWork(): LintWork {
-  return { leafDoorPairs: 0, boundaryRunTests: 0, navCells: 0, tableSeatTests: 0 };
+  return { leafDoorPairs: 0, boundaryRunTests: 0, navCells: 0, tableSeatTests: 0, stairVoidTests: 0 };
 }

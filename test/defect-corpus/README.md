@@ -54,7 +54,7 @@ The eight classes of README §1, most frequent first. The test reads the slugs f
 | `missing-defining-contents` | A bedroom without a bed, a bath without a shower, a kitchen without a worktop |
 | `clearances` | WC side clearance, wardrobe fronts, tall units over windows, blocked openings, pinches |
 | `daylight` | Windowless living rooms (labelled or typed) and bedrooms |
-| `stair-safety` | A door swing over a flight or its landing, no landing at a foot or head, a door onto a flight's side, a void at the arrival, a flight too steep, a shaft drawn in two places |
+| `stair-safety` | A door swing over a flight or its landing, no landing at a foot or head, a door onto a flight's side, a void at the arrival or none over the flight, a flight too steep, a shaft drawn in two places |
 | `annotation-collisions` | Auto dimensions inside rooms, title-block overflow, labels over furniture, lying dimension text |
 
 Two classes from `evidence.md` §3 have no cases, because no core lint rule can see them:
@@ -89,6 +89,7 @@ Two classes from `evidence.md` §3 have no cases, because no core lint rule can 
 | `W_STAIR_NO_LANDING` | PS2.11e, PS2.34 |
 | `W_STAIR_SIDE_ENTRY` | PS2.34 |
 | `W_STAIR_HEAD_VOID` | PS2.11e |
+| `W_STAIR_NO_VOID` | product-roadmap RM9.6 (coverage class CV14) |
 | `W_STAIR_TOO_STEEP` | PS2.11e |
 | `W_STAIR_RISER_TOO_HIGH` | product-roadmap RM1.2a (backlog ST.1) |
 | `W_SHAFT_FOOTPRINT_MISMATCH` | PS2.15 |

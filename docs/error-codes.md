@@ -5,7 +5,7 @@
 Every diagnostic carries a stable code. Look one up with `arch explain <CODE>`
 (e.g. `arch explain E_ROOM_SIZE`). Errors abort rendering; warnings do not.
 
-**168 errors** · **106 warnings**
+**168 errors** · **107 warnings**
 
 | Code | Severity | Summary |
 | --- | --- | --- |
@@ -264,6 +264,7 @@ Every diagnostic carries a stable code. Look one up with `arch explain <CODE>`
 | [`W_SHAFT_FOOTPRINT_MISMATCH`](#w_shaft_footprint_mismatch) | warning | A shaft's runs on two neighbouring storeys do not stand over each other. |
 | [`W_STAIR_HEAD_VOID`](#w_stair_head_void) | warning | A void opens on the landing at the head of a flight. |
 | [`W_STAIR_NO_LANDING`](#w_stair_no_landing) | warning | A flight has no landing at its foot or head, or a landing between two flights is too short. |
+| [`W_STAIR_NO_VOID`](#w_stair_no_void) | warning | No void opens over a flight that climbs from the storey below. |
 | [`W_STAIR_RISER_TOO_HIGH`](#w_stair_riser_too_high) | warning | A stair's drawn treads climb its storey on risers that are too high. |
 | [`W_STAIR_SIDE_ENTRY`](#w_stair_side_entry) | warning | A doorway opens onto the side of a flight. |
 | [`W_STAIR_TOO_STEEP`](#w_stair_too_steep) | warning | A stair is too short to climb its storey. |
@@ -5008,6 +5009,35 @@ stair id=s at (500,200) size 900x2350 dir up   # lint: the partition stands 400 
 ```arch static
 wall id=p partition thickness 100 { (0,3600) (4000,3600) }
 stair id=s at (500,200) size 900x2350 dir up   # fixed: 1000 mm past the bottom step
+```
+
+## W_STAIR_NO_VOID
+
+*warning* — No void opens over a flight that climbs from the storey below.
+
+**Cause.** A `stair` going `up` on one storey has its next stop, the same id, on this storey, and no `void` of this storey overlaps the flight that climb ends on (a straight stair's footprint; a block stair's last flight, never the box round its pieces). This storey's floor then covers the flight, so a person climbing it meets the floor above. Reported on this storey's stop. A geometric fact: no figure is read. Where the void stands beside the flight's head, `W_STAIR_HEAD_VOID` reads it.
+
+**Fix.** Draw a `void` on this storey over the flight (its `at` and `size`, or a `polygon` over a block stair's pieces), clear of the landing beyond its head. There is no machine-applicable fix.
+
+```arch static
+level 1 "Ground" {
+  stair id=s at (100,1500) size 900x2600 dir up
+}
+level 2 "First" {
+  stair id=s at (100,1500) size 900x2600 dir down   # lint: no void over the flight
+}
+```
+
+**Fixed.**
+
+```arch static
+level 1 "Ground" {
+  stair id=s at (100,1500) size 900x2600 dir up
+}
+level 2 "First" {
+  stair id=s at (100,1500) size 900x2600 dir down
+  void id=well at (100,1500) size 900x2600   # fixed: the stairwell
+}
 ```
 
 ## W_STAIR_RISER_TOO_HIGH

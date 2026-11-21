@@ -245,7 +245,7 @@ const CORPUS: [string, string][] = [
   ["test/fixtures/storeys-eaves-overflow.arch", "68492d111abcc4a0219738601073936dbd3aed2f645531ad125cb2bf083949e2"], // RM1.3a, see ./byte-identity-baseline.ts; RM1.2a, see ./byte-identity-baseline.ts; RM1.2a review, see ./byte-identity-baseline.ts; RM9.2, see ./byte-identity-baseline.ts
   // was 05693d9e. D27: this plan's stair stands in no wall, so `bounds()` reaching its break line widens the
   // drawing 156 mm. Only the SVG, the Scene and the overlay moved: with the old ones put back the old digest returns.
-  ["test/fixtures/zones-levels.arch", "21c4b504af358718519aea5578a13c3a441ea218c01732f688c8cafff5059d1c"], // RM9.2, see ./byte-identity-baseline.ts
+  ["test/fixtures/zones-levels.arch", "e210562bc76c83a60dc50f5a794ea603799286ee52e323f7f9ea22abb2c4a31a"], // RM9.2, see ./byte-identity-baseline.ts; RM9.6 CV14: W_STAIR_NO_VOID reports this plan (was 21c4b504)
   ["test/fixtures/zones-wings.arch", "392675a2abd9bc82b094fc768190979fabf814b22dbb8d4fbaf7de410570c35a"],
 ];
 

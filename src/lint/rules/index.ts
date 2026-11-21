@@ -52,6 +52,7 @@ import {
   furnitureOnStair,
   stairHeadVoid,
   stairNoLanding,
+  stairNoVoid,
   stairRiserTooHigh,
   stairSideEntry,
   stairTooSteep,
@@ -217,6 +218,9 @@ export const LINT_RULES: readonly LintRule[] = [
   // A dining table in a room with no seat (product roadmap RM9.6, coverage class CV13). Appended
   // LAST, so no existing diagnostic moves within the array.
   tableNoSeat,
+  // A flight from the storey below with no void over it on this storey (product roadmap RM9.6,
+  // coverage class CV14). Appended LAST, so no existing diagnostic moves within the array.
+  stairNoVoid,
 ];
 
 export type { LintContext, LintRule } from "../context.js";

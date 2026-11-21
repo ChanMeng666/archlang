@@ -10,7 +10,7 @@
  * PR legitimately moves a hashed output (never keep code), the table is re-taken by the generator, the
  * reason recorded below and the moved files listed in that commit's message.
  *
- * Taken: RM9.6 CV14 examples PR (feat/cv14-examples-voids, on b59d3abc): a stairwell void drawn on the upper storeys of garden-house, hillside-villa, townhouse and turning-stair
+ * Taken: RM9.6 CV14 rule PR (feat/cv14-stair-no-void): W_STAIR_NO_VOID reports the keep plans and audit plans that draw no stairwell
  */
 
 /** `[path from the repository root, SHA-256 of the payload, evaluation steps]`, sorted by root. */
@@ -453,12 +453,12 @@ export const KEEP_WEAK_BASELINE: readonly (readonly [string, string, number])[] 
   ],
   [
     "test/defect-corpus/circulation-privacy/door-onto-roof.arch",
-    "64d715adab2db4c644141a48332c2830cff7c4406b5bc516bed6e683c68097f9",
+    "0fb88dc3d506c75929926884b28359aee773e4453ec7517cccddb50d5caa4834",
     155,
   ],
   [
     "test/defect-corpus/circulation-privacy/door-onto-roof.clean.arch",
-    "2584b5526aeab25bf33d5a2fe06995d51a505836a7a564ce6c90f4f9bd68beb0",
+    "61c30697ab117b507f8bfe729e5e6f1705125b27a440eb09cceaf718b02b9f04",
     182,
   ],
   [
@@ -1203,42 +1203,52 @@ export const KEEP_WEAK_BASELINE: readonly (readonly [string, string, number])[] 
   ],
   [
     "test/defect-corpus/stair-safety/head-against-wall.arch",
-    "c0e35cc865a23849cb674e202b79d4971bc74978f711c7cac898e0c30e7488b6",
+    "a545965ed74ab037e0269597fdb5309b95185a102d428553b51c1409f47493e7",
     199,
   ],
   [
     "test/defect-corpus/stair-safety/head-against-wall.clean.arch",
-    "44d66f28401d4a6e069aaab3b7f6ed4dadbb0156e61bff78db8ba76d16e79f84",
+    "f2b49fc2cfdabb3c4be5c3ba5fd0c3bbe677dcb1ceb729182fbbbc314eb9958d",
     199,
   ],
   [
+    "test/defect-corpus/stair-safety/no-void-at-head.arch",
+    "47b3e2475c618fe481813926ec9bab1c27fafc1733eefc6ff9c826cfac6b0d36",
+    498,
+  ],
+  [
+    "test/defect-corpus/stair-safety/no-void-at-head.clean.arch",
+    "53ee6a1839d7d9e5900dcb14582893489ef1ac291ef0813c39fb83afd2ca2b5b",
+    622,
+  ],
+  [
     "test/defect-corpus/stair-safety/riser-too-high.arch",
-    "606f1a49f790fff04faa88e39bca624ce2e2ce33abee591964ecbfdf39155a1c",
+    "4518b5cfad86cafb2ea8452c9c843f65ea73ec276d432423c9f75d7bfb6035eb",
     217,
   ],
   [
     "test/defect-corpus/stair-safety/riser-too-high.clean.arch",
-    "b7c5ba0f650b6fa58494bcad7407e80c073a8f42e512bcb74f900123ac02c291",
+    "8fda2c8d722d0c4dca7cae5400c9155d494c955adc48260522fdbd0ed1e4973a",
     217,
   ],
   [
     "test/defect-corpus/stair-safety/shaft-footprint-mismatch.arch",
-    "6d82d2d71e843e1d32226d8fb521af5aee153654bb4910cf4afb24ebbf3f5ee4",
+    "9f635f718077ca4fe92d70ec90364bd8e7aaeb06db6cc4d65533b93fc0541a81",
     199,
   ],
   [
     "test/defect-corpus/stair-safety/shaft-footprint-mismatch.clean.arch",
-    "f1c7362f9ecdc28f53fcb834f60da3c4abbde5c49e61fdd84fe45f685a0ed137",
+    "deb2c117af49c826994a282fa844aded4c14fe659f7286d3c620f5a9bbd14df0",
     199,
   ],
   [
     "test/defect-corpus/stair-safety/stair-too-steep.arch",
-    "ec2931abea5802e95991604c399582837e8fc3f04b7fed9019e98ce98d828423",
+    "9471a384014cf59c11caa98e2eef888dc4b5d8f1c6aedd0abfed48fe3d55de5a",
     217,
   ],
   [
     "test/defect-corpus/stair-safety/stair-too-steep.clean.arch",
-    "a3fcb797119a9ff87e96ecac8f9e1b608504d32e543a73cfa9d4ca02ff037bdf",
+    "734e91620b68eaa3bbb1cf173ff61002093d8289819cc6bdd159bbcafc4ad0f1",
     217,
   ],
   [
@@ -1263,12 +1273,12 @@ export const KEEP_WEAK_BASELINE: readonly (readonly [string, string, number])[] 
   ],
   [
     "test/defect-corpus/stair-safety/void-at-stair-head.arch",
-    "0adfe5f2ca2bf5fb211c63e3897548c873adabd8f38b80d415fb7c4040b3aadf",
+    "5bd6b0b3f231b5d7b94436be32ee83517f5bf0880daa1daef14dc6996e31b13c",
     265,
   ],
   [
     "test/defect-corpus/stair-safety/void-at-stair-head.clean.arch",
-    "c2aacf8416c7f71fb915979849e64299f08074e8000c4bfa71274268367abd07",
+    "d61140d7ebb33afe48fbd840e8ecb34818e04e31d8578e09dd29235fdb5e4af9",
     265,
   ],
   [
@@ -1413,7 +1423,7 @@ export const KEEP_WEAK_BASELINE: readonly (readonly [string, string, number])[] 
   ],
   [
     "test/plans/plan-soundness/audits/first-contact-plans/2026-10-24-rerun/5-townhouse.arch",
-    "5427c2fba11765c55cbe71b4aaa18311d7fe66c7ed7abc9f2884ca2d6f168b31",
+    "c53fcef2b43433b9669499a116b3d669a63678a0202a583b8a118ed55cf724f8",
     5274,
   ],
   [
@@ -1443,7 +1453,7 @@ export const KEEP_WEAK_BASELINE: readonly (readonly [string, string, number])[] 
   ],
   [
     "test/plans/plan-soundness/audits/first-contact-plans/2026-10-25-rerun/5-townhouse.arch",
-    "dc7005cb640b248ccd5a8b97264ebac8dc21832f9cb6689f1474e1fc6ac730d4",
+    "dcc014f617929836d568a20d1fd5be0452c90fd7739972fbe140cd18f6c95724",
     6228,
   ],
   [
@@ -1473,7 +1483,7 @@ export const KEEP_WEAK_BASELINE: readonly (readonly [string, string, number])[] 
   ],
   [
     "test/plans/plan-soundness/audits/first-contact-plans/2026-10-26-rerun-armA/5-townhouse.arch",
-    "0f8e54e554aa2dc02bae0921729bd9a0dc3420535ffc010e66840e02b3fe4a9f",
+    "de5bbd098c5471c619cfd6f2d76c16674f314e57dfe22d371fd8f2d71ff808b0",
     3706,
   ],
   [
@@ -1503,7 +1513,7 @@ export const KEEP_WEAK_BASELINE: readonly (readonly [string, string, number])[] 
   ],
   [
     "test/plans/plan-soundness/audits/first-contact-plans/2026-10-26-rerun-armB/5-townhouse.arch",
-    "a308f846a39cc6de25536f7259041209ff11b30587faa00264b1ed1e14439858",
+    "7a1ba1d9a3eae7509f5646fc38e696625be674079bc8a03bd115899d891a09b9",
     5106,
   ],
   [
@@ -1533,7 +1543,7 @@ export const KEEP_WEAK_BASELINE: readonly (readonly [string, string, number])[] 
   ],
   [
     "test/plans/plan-soundness/audits/first-contact-plans/2026-10-26-rerun-row6/5-townhouse.arch",
-    "40996f072420979bb08b0b6808613953e40896d7fe6dbfc4969d9a9d9744fe3e",
+    "b5df1dd531ee5ef5c286db03de45c0b3295f52018b88232028330a2ebc4f6482",
     5512,
   ],
   [
@@ -1563,7 +1573,7 @@ export const KEEP_WEAK_BASELINE: readonly (readonly [string, string, number])[] 
   ],
   [
     "test/plans/plan-soundness/audits/first-contact-plans/2026-10-26-walls-first/5-townhouse.arch",
-    "e0dfaa17f8841925e5e2fde3e8824570b41a1dea9e198b167fe73664e58b61e5",
+    "7d5cf8c47209ea8ff992c9f77fb72a01b9838bc0da2546cfcbdde300953bc7ff",
     1702,
   ],
   [
@@ -1593,7 +1603,7 @@ export const KEEP_WEAK_BASELINE: readonly (readonly [string, string, number])[] 
   ],
   [
     "test/plans/plan-soundness/audits/first-contact-plans/2026-10-27-rerun-arm1/5-townhouse.arch",
-    "5b04f660b2b4270ef490dfa164988acfc04b961e6db451bc76f51203ea620c2d",
+    "aced487ca945915c988465bc70baf5d8c43981675cbc97c890a876b9a7e180fe",
     4982,
   ],
   [
@@ -1623,7 +1633,7 @@ export const KEEP_WEAK_BASELINE: readonly (readonly [string, string, number])[] 
   ],
   [
     "test/plans/plan-soundness/audits/first-contact-plans/2026-10-27-rerun-arm2/5-townhouse.arch",
-    "4b425904932ecae37913c56b181537906e9448d44549b663ab8275f0667f63f7",
+    "98881b1a914e745fc64a0512091f65f11041625c31563f7f51ab7ee320cc88b3",
     5252,
   ],
   [
@@ -1643,7 +1653,7 @@ export const KEEP_WEAK_BASELINE: readonly (readonly [string, string, number])[] 
   ],
   [
     "test/plans/plan-soundness/audits/first-contact-plans/5-townhouse.arch",
-    "f4f46057eacd4bdcadfede3145867cafbc40f7723102b3a018965b120aa98022",
+    "c7c4dcebe84044b6c309d070bf62caf234814c215a976c59ec91ff28fe4f7382",
     1942,
   ],
   [

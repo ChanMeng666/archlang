@@ -603,7 +603,7 @@ const BASELINE: [string, string][] = [
   ["test/fixtures/storeys-eaves-overflow.arch", "68492d111abcc4a0219738601073936dbd3aed2f645531ad125cb2bf083949e2"], // new fixture (PS2.77), see header; RM1.3a, see ./byte-identity-baseline.ts; RM1.2a, see ./byte-identity-baseline.ts; RM1.2a review, see ./byte-identity-baseline.ts; RM9.2, see ./byte-identity-baseline.ts
   // was 05693d9e. D27: this plan's stair stands in no wall, so `bounds()` reaching its break line widens the
   // drawing 156 mm. Only the SVG, the Scene and the overlay moved: with the old ones put back the old digest returns.
-  ["test/fixtures/zones-levels.arch", "21c4b504af358718519aea5578a13c3a441ea218c01732f688c8cafff5059d1c"], // re-measured for PS2.4, see header; RM9.2, see ./byte-identity-baseline.ts
+  ["test/fixtures/zones-levels.arch", "e210562bc76c83a60dc50f5a794ea603799286ee52e323f7f9ea22abb2c4a31a"], // re-measured for PS2.4, see header; RM9.2, see ./byte-identity-baseline.ts; RM9.6 CV14: W_STAIR_NO_VOID reports this plan (was 21c4b504)
   ["test/fixtures/zones-wings.arch", "392675a2abd9bc82b094fc768190979fabf814b22dbb8d4fbaf7de410570c35a"], // re-measured for PS2.4, see header
   ["test/recovery-corpus/attached.arch", "07995653257dff5785f4fe210e3c4f6f9d6fc35165be2e5ae34df364079029dc"],
   ["test/recovery-corpus/clinic.arch", "46e1dfe14265efde02b662857573cc5c4d32356b9cb0a2789ba9f38665ad1b90"], // PS2.74: the frozen clinic gains W_ACCESSIBLE_WC_SIDE_WALL, see header
@@ -613,7 +613,7 @@ const BASELINE: [string, string][] = [
   ["test/recovery-corpus/terrace-row.arch", "776d912f42b22e335c57392e9edb02c9207b20c53c6c6db0c118484a68cda4d0"],
   // Re-measured 2026-10-18 (PS0.7): a copy of `examples/themed.arch`, the same cause and value.
   ["test/recovery-corpus/themed.arch", "ad274a10c13b1aa035e3e32fed8b6aecc0b0d6a1b2e5112008a647f5fde638e3"], // PS2.11e, see header
-  ["test/recovery-corpus/two-storey.arch", "ea2704167d1e7000484c8cd7b9d3c7ddc92ef1597932e94809189d4715989054"], // re-measured for S2 (#362): `W_STAIR_TOO_STEEP`'s hint reworded, nothing else; was 2102a710477b9a23e3eb5a99256840119629b128297515d9603ec459c800ff99; RM1.3a, see ./byte-identity-baseline.ts; RM1.2a review, see ./byte-identity-baseline.ts; RM9.2, see ./byte-identity-baseline.ts
+  ["test/recovery-corpus/two-storey.arch", "bff9f042128652d4d5b93c73605c78bf7468301f44762c63d6ae7c03da2acfe0"], // re-measured for S2 (#362): `W_STAIR_TOO_STEEP`'s hint reworded, nothing else; was 2102a710477b9a23e3eb5a99256840119629b128297515d9603ec459c800ff99; RM1.3a, see ./byte-identity-baseline.ts; RM1.2a review, see ./byte-identity-baseline.ts; RM9.2, see ./byte-identity-baseline.ts; RM9.6 CV14: W_STAIR_NO_VOID reports this plan (was ea270416)
   ["eval/goldens/accessible-bath.arch", "d92fb8bf1dafde517a579409ff32602a06687a29149d3c2e7e1de69bd4cc4fce"],
   ["eval/goldens/accessible-flat.arch", "3809f58573d9685eb190389ae026bdbafa161dd57bdbf109a90048f4bb3e802a"],
   ["eval/goldens/against-wall-bath.arch", "731d8f1fc40ba19a5f431d54a643f236d70e4ae92aca19368cea2a38f29d734e"], // PS2.11e, see header

@@ -180,7 +180,7 @@ const BASELINE: [string, string][] = [
   ["c4068bcffcf2d16649187db428d6287195d49735d1a9e8e001ef62d7b27cec69", "test/fixtures/storeys-eaves-overflow.arch"], // H10: +12 ring scan, +0 overlap; RM1.3a, see ./byte-identity-baseline.ts; RM1.2a, see ./byte-identity-baseline.ts; RM1.2a review, see ./byte-identity-baseline.ts; RM9.2, see ./byte-identity-baseline.ts
   // was 5c3ce8b3. D27: this plan's stair stands in no wall, so `bounds()` reaching its break line widens the
   // drawing 156 mm. Only the SVG, the Scene and the overlay moved: with the old ones put back the old digest returns.
-  ["c7f59a307241b34c9bffce2308c512728493b23d3118fd33baf43bbb79b054ea", "test/fixtures/zones-levels.arch"], // RM9.2, see ./byte-identity-baseline.ts
+  ["4cb86e324e1f0dbc85859db4adb610f92516d4a3f6a409bf880ecfb3761e518f", "test/fixtures/zones-levels.arch"], // RM9.2, see ./byte-identity-baseline.ts; RM9.6 CV14: W_STAIR_NO_VOID reports this plan (was c7f59a30)
   ["3795021918eab02d38979618173a348100b1b7e0265d3a0308c8ee12dc4fb8dd", "test/fixtures/zones-wings.arch"],
   ["952eaf929d8902442dd0949e6eb4e47e96bd422839f97839d627ced86b92bfab", "test/walls-from-rooms/relational.arch"],
   ["45b54b55b05cb37250a074822e9a8663cbdb30943f9986042e2d9ff73de1e5fe", "test/walls-from-rooms/studio.arch"],

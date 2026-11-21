@@ -947,6 +947,51 @@ export const stairHeadVoid: LintRule = {
   },
 };
 
+// ── W_STAIR_NO_VOID ─────────────────────────────────────────────────────────
+
+/**
+ * `W_STAIR_NO_VOID` (product roadmap RM9.6, coverage class CV14): a flight climbs from the storey
+ * below to this one, and no `void` of this storey reaches over it, so this storey's floor covers the
+ * flight a person climbs. The flight is the one the climb ends on (`flightEnd`, the same head
+ * `W_STAIR_HEAD_VOID` reads), on its own footprint, never a block stair's box. Its work, one test
+ * per (stair, void piece) of the storey at most, is charged to the stair work before it runs and
+ * counted (`stairVoidTests`).
+ */
+export const stairNoVoid: LintRule = {
+  name: "stair-no-void",
+  family: "stairs",
+  layer: "validity",
+  stage: "rooms",
+  codes: ["W_STAIR_NO_VOID"],
+  check(ctx: LintContext): Diagnostic[] {
+    const f = factsFor(ctx);
+    if (f === null) return [];
+    const n = f.stairs.length * ctx.voids.length;
+    if (!charge(f, n)) {
+      ctx.skip("stair-budget");
+      return [];
+    }
+    ctx.work.stairVoidTests += n;
+    const out: Diagnostic[] = [];
+    for (const { v } of f.stairs) {
+      const below = ctx.building.shaftNeighbours?.get(v.id)?.below;
+      if (below?.run.kind !== "stair" || below.run.dir !== "up") continue;
+      const flight = rectOf(flightEnd(below.run, true).flight);
+      if (ctx.voids.some((vd) => rectsOverlap(rectOf(vd), flight))) continue;
+      out.push({
+        severity: "warning",
+        code: "W_STAIR_NO_VOID",
+        ...ctx.at(v),
+        message: `No void opens over the flight that climbs from level ${below.level} to ${stairName(v, ctx)}: this storey's floor covers it, so a person climbing it meets the floor.`,
+        hints: [
+          `Draw a \`void\` on this storey over the flight of \`${v.id}\` that climbs from level ${below.level} (over its pieces, never the box round a turning stair), clear of the landing beyond its head.`,
+        ],
+      });
+    }
+    return out;
+  },
+};
+
 // ── W_STAIR_TOO_STEEP ───────────────────────────────────────────────────────
 
 /** The figures {@link minimumRun} reads, from the ruleset. */
