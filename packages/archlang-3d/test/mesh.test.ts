@@ -430,7 +430,8 @@ describe("Mesh3D determinism and budget", () => {
  * Moved by RM9.6 CV13 split (PR #996, ruling RM-D73): the example source was edited, laneway-house gains
  * two chairs at its table (`chair_13`, `chair_14`) (was 0c2d1825…): two nodes (`L1/furniture:chair_13`, `L1/furniture:chair_14`)
  * and two ledger rows (`height_mm(chair)` 880, `furniture-height-t0`; `material(chair)`,
- * `furniture-material-default`). With those two nodes and two rows taken out, the Mesh3D hashes to
- * 0c2d1825… exactly: no other node or row moved. Its GLB and its event table move with the two nodes.
+ * `furniture-material-default`); its table is named `t_dining` (was the auto id `table_6`), so the
+ * chairs can face it. With those two nodes and two rows taken out and the table's id put back, the
+ * Mesh3D hashes to 0c2d1825… exactly: no other node or row moved. Its GLB and its event table move with the two nodes.
  */
-const LANEWAY_MESH_SHA256 = "4d8b0e3deaf2a1bb7ccf761128c0d8f4f03db275eace64598fa26db3fe302d12";
+const LANEWAY_MESH_SHA256 = "781b9bc71cb700de9f3e2d7edcbd8dbb3fd802333eb6e0a4d2e0f39a5c296146";

@@ -537,7 +537,8 @@ describe("replay HTML", () => {
  *
  * Moved by RM9.6 CV13 split (PR #996, ruling RM-D73): the example source was edited, laneway-house gains
  * two chairs at its table (`chair_13`, `chair_14`) (was d3e3b2ac…): the two chairs' nodes rise with the fixtures, and the
- * ranks after them shift. With the two nodes (and the chair's two ledger rows) taken out of the
- * Mesh3D, the table hashes to d3e3b2ac… exactly.
+ * ranks after them shift; the dining table is named `t_dining` (was `table_6`). With the two nodes
+ * (and the chair's two ledger rows) taken out of the Mesh3D and the table's id put back, the event
+ * table hashes to d3e3b2ac… exactly.
  */
-const LANEWAY_EVENTS_SHA256 = "6fbae5ba218f5ce4dea6ae63017013160b701899931131b0f480e29f000ae68d";
+const LANEWAY_EVENTS_SHA256 = "d8ebcd57bed278fd48524982533d36692b84ad42ad96ddd81360b0c1e9a2615d";
