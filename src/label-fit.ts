@@ -202,6 +202,18 @@ export const LEADER_REACH = 16;
 /** The leader's dot: its radius as a fraction of the room-name size. */
 const LEADER_DOT = 0.1;
 
+/**
+ * How much of a dot's box, as a share of it, may read as off its floor, over a wall's or a text's box,
+ * or under a symbol's shape (its box only gates that clip) and the dot still stand clear: the rounding
+ * of the reading, the same slack `relocateLabels` gives its off-floor reading
+ * (`src/label-placement.ts`). Each is read in the dot's own frame, so that rounding is a few ulps of a
+ * box a few millimetres across on the sheet, whatever the plan's coordinates; read at the plan's
+ * absolute positions it grew with their magnitude, and a dot wholly on its floor stood a hair off it,
+ * over a wall band's box or under a symbol at one place of the lattice and not at the next, so the
+ * same plan placed 20 m away led its label from another dot, or did not lead it (backlog E.18).
+ */
+const DOT_SLACK = 1e-9;
+
 /** What the leader step drew for one room's label (card AL3b): kept beside the Scene for the rule. */
 export interface DrawnLeader {
   /** The id of the room whose label was led. */
@@ -1014,21 +1026,27 @@ export function fitLabels(
 
       // Where the leader ends: the first place on the room's own floor, by the same key, whose dot is
       // clear of every symbol, label and wall; the room's anchor when none is.
+      // Its floor, the boxes it meets and the symbols' shapes are read in the dot's own frame, against
+      // {@link DOT_SLACK}.
       const r = pitch * LEADER_DOT;
+      const discHere: BBox = { x: -r, y: -r, w: 2 * r, h: 2 * r };
+      const discRing = rectRing(discHere);
+      const slack = discHere.w * discHere.h * DOT_SLACK;
       let dot: Point = g.anchor;
       for (const { p, host } of places) {
         if (host.gi !== gi) continue;
         const disc: BBox = { x: p.x - r, y: p.y - r, w: 2 * r, h: 2 * r };
-        if (rectAreaOutside(disc, g.ring) > 0) continue;
-        const discRing = rectRing(disc);
+        const here = (ring: readonly Point[]): Point[] => ring.map((q) => ({ x: q.x - p.x, y: q.y - p.y }));
+        const meets = (b: BBox): boolean => overlapArea(discHere, { ...b, x: b.x - p.x, y: b.y - p.y }) > slack;
+        if (rectAreaOutside(discHere, here(g.ring)) > slack) continue;
         let clear = true;
         grid.forEach(boxOf(disc), (m) => {
           work++;
-          if (!clear || m.stale || !(overlapArea(disc, m.box) > 0)) return;
+          if (!clear || m.stale || !meets(m.box)) return;
           if (m.kind === "symbol") {
             for (const sh of m.shapes) {
               work += sh.length;
-              if (clippedArea(sh, discRing) > 0) clear = false;
+              if (clippedArea(here(sh), discRing) > slack) clear = false;
             }
           } else if (m.kind === "text" || m.kind === "wall") clear = false;
         });
@@ -1036,7 +1054,7 @@ export function fitLabels(
         if (clear)
           textGrid.forEach(boxOf(disc), (d) => {
             work++;
-            if (clear && !d.stale && d.owner !== gi && overlapArea(disc, d.box) > 0) clear = false;
+            if (clear && !d.stale && d.owner !== gi && meets(d.box)) clear = false;
           });
         if (clear) {
           dot = p;
