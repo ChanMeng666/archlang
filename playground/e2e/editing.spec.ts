@@ -4,10 +4,13 @@ import {
   ARC_RADIUS_ERROR_PLAN,
   AUTOSAVE_KEY,
   BROKEN_PLAN,
+  enterEdit,
   gotoEdit,
   RESIZED_PLAN,
   SIMPLE_PLAN,
   setEditorSource,
+  shareHash,
+  waitForPlan,
 } from "./fixtures.js";
 
 const example = (name: string) =>
@@ -169,6 +172,39 @@ test.describe("compiling in a worker", () => {
       Math.max(0, ...longTasks),
       `main-thread long tasks while typing: ${longTasks.map(Math.round).join(", ")} ms`,
     ).toBeLessThanOrEqual(100);
+  });
+
+  test("a first use in view mode fetches no lint; entering edit mode does, and the worker lints", {
+    tag: "@engines",
+  }, async ({ page }) => {
+    // Card 3.19b: `lint` is the `lint` chunk, which edit mode imports and the worker imports by its
+    // URL for the editor's first request (lint-core.ts); the startup-chunks gate in
+    // preview3d.spec.ts reads the build, and this reads the network and the page. `@engines`: a
+    // module worker's import of a URL is what Firefox and WebKit may differ on.
+    const LINT_CHUNK = /\/assets\/lint-[\w-]{8}\.js$/;
+    const fetched: string[] = [];
+    page.on("request", (r) => {
+      if (LINT_CHUNK.test(new URL(r.url()).pathname)) fetched.push(r.url());
+    });
+    // A first use: a shared plan, which the view opens and compiles in the worker, with no lint. A
+    // doorless, windowless bedroom, so its lint rows below are lint's own, never an empty verdict.
+    // (Not a gallery pick: WebKit's run never saw the gallery card as stable enough to click.)
+    const BEDROOM = `plan "E2E" {\n  units mm\n  wall exterior thickness 150 { (0,0) (6000,0) (6000,4000) (0,4000) close }\n  room id=a at (0,0) size 6000x4000 label "Bedroom"\n}`;
+    await page.goto(`/${await shareHash(BEDROOM)}`);
+    await waitForPlan(page);
+    await expect(page.locator("html")).toHaveAttribute("data-mode", "view");
+    await expect(page.locator("html")).toHaveAttribute("data-compiler", "worker");
+    expect(fetched, "a view-mode first use fetches no lint chunk").toEqual([]);
+    await enterEdit(page);
+    await page.locator("#tab-checks").click();
+    await expect(page.locator("#lint")).toBeVisible();
+    await expect(page.locator("#lintOutput .lintrow")).not.toHaveCount(0);
+    await expect(page.locator("#lintOutput")).toContainText("W_BEDROOM_NO_WINDOW");
+    await expect(page.locator("html[data-rendering]")).toHaveCount(0, { timeout: 30_000 });
+    // The editor's render was answered by the worker (a worker that could not load lint would have
+    // handed it to the page, and `data-compiler` would say so).
+    await expect(page.locator("html")).toHaveAttribute("data-compiler", "worker");
+    expect(fetched.length, "entering edit mode fetched the lint chunk").toBeGreaterThan(0);
   });
 
   test("the worker draws what the page draws, byte for byte", async ({ browser }) => {

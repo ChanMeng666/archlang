@@ -4,8 +4,8 @@
  * Named, not `import("archlang")`: a dynamic import of the package itself keeps every export it
  * has, while named re-exports let the bundler drop the ones no chunk uses. Add a name here when
  * either needs one, and to `src/compile-path.ts` with it (playground/test/core-files.test.ts).
- * `lint` is not one (card EB.2): the compile job imports it from the core's lazy chunk, since only
- * the editor asks for it.
+ * `lint` is not one (card EB.2): since only the editor asks for it, the compile job loads it from
+ * its own door (lint-core.ts, card 3.19b) with the editor's first request.
  *
  * Its `compile` is the core's `compileWithoutErrorCard` (card 3.19): `compile()` without
  * `onError: "svg"`'s error card, so the compiler chunk carries neither the card's renderer nor the
