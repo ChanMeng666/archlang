@@ -34,8 +34,8 @@ export default defineConfig({
   // on a press (`finish`, `repair`, `format`, `toDxf`, `renderAscii`), which the playground loads
   // with the press, not with the first use. Not exported, not in the tarball.
   // `src/lint-path.ts` (card 3.19b) splits `lint` off both: no view-mode render runs it, so the
-  // playground loads it with edit mode (or the Checks overlay, or a press of Finish or Repair,
-  // which read it), not with the first use. Not exported, not in the tarball.
+  // playground loads it with edit mode (or the Checks overlay, or a press of Format, Finish or
+  // Repair or a DXF or TXT download, whose press-only core imports it), not with the first use. Not exported, not in the tarball.
   entry: [
     "src/index.ts",
     "src/cli.ts",

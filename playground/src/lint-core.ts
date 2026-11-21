@@ -1,6 +1,6 @@
 /**
- * `lint`, which no view-mode render runs (card 3.19b; edit mode, the Checks overlay and a press of
- * Finish or Repair load its chunk): the door edit mode imports
+ * `lint`, which no view-mode render runs (card 3.19b; edit mode, the Checks overlay, a press of
+ * Format, Finish or Repair and the DXF and TXT downloads load its chunk): the door edit mode imports
  * statically, and the module the compile job (compile-worker.ts) imports by its own URL,
  * `LINT_URL`, for the first request that asks for lint (main.ts sends that URL with every request
  * from the editor). So a first use, which renders in view mode with no lint, does not load lint's

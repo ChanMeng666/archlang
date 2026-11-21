@@ -1711,6 +1711,8 @@ test.describe("startup chunks", () => {
   test.skip(!!process.env.E2E_BASE_URL, "reads the local build");
 
   test("the startup chunks carry no 3D code and no editor, and stay within their budgets", async () => {
+    // The built lint chunk's run below loads the compiler chunk (~867 KB) through Playwright's loader.
+    test.setTimeout(90_000);
     const baseline = JSON.parse(
       readFileSync(join(dirname(fileURLToPath(import.meta.url)), "startup-chunks.baseline.json"), "utf8"),
     ) as {

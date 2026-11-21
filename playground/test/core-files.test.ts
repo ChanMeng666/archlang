@@ -259,7 +259,7 @@ describe("coreFiles (vite.config.js's compiler chunk)", () => {
   });
 
   it("src/lint-path.ts names exactly what lint-core.ts re-exports, which edit mode alone imports and the compile job loads by URL", () => {
-    // Card 3.19b: `lint` is the editor's alone. A playground module that took it from `archlang`
+    // Card 3.19b: no view-mode render runs `lint`. A playground module that took it from `archlang`
     // would put its rules in that module's chunk (the compile job's, on the first use's path, as
     // before this card); a literal `import("./lint-core.js")` would be wrapped in Vite's preload
     // helper, which needs a document the worker lacks and is a view-path chunk the worker must not
