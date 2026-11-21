@@ -221,9 +221,11 @@ suite("W_SEAT_FACING_WALL", () => {
     // The sofa's front runs x 1000…3000 on the south face; the shell's door (x 2550…3450) is under 450 of it.
     const sofa = "  furniture sofa at (1000,4050) size 2000x850 in r";
     expect(of(plan(SHELL, sofa))).toHaveLength(1);
-    // A 1600 opening (x 1200…2800) leaves 400 of the 2000 on a wall, under half: silent. An 800 one leaves 1200.
+    // With the door's 450: a 1600 opening (x 1200…2800) leaves 200 of the 2000 on a wall, under half: silent.
+    // A 400 one (x 1800…2200) leaves 1150, and a 600 one (x 1700…2300) 950, just under half.
     expect(of(plan(SHELL, "  opening at (2000,5000) width 1600 wall shell", sofa))).toEqual([]);
-    expect(of(plan(SHELL, "  opening at (2000,5000) width 800 wall shell", sofa))).toHaveLength(1);
+    expect(of(plan(SHELL, "  opening at (2000,5000) width 400 wall shell", sofa))).toHaveLength(1);
+    expect(of(plan(SHELL, "  opening at (2000,5000) width 600 wall shell", sofa))).toEqual([]);
     expect(of(plan(SHELL, "  door at (2000,5000) width 1600 wall shell", sofa))).toEqual([]);
     // A window's wall stands below its sill.
     expect(of(plan(SHELL, "  window at (2000,5000) width 1600 wall shell", sofa))).toHaveLength(1);
