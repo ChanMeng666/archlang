@@ -2543,7 +2543,7 @@ eval's table, so it needs an owner-approved `SYNONYMS_VERSION` bump, and it is M
 Non-blocking findings of that session's reviews and the PRs' own residue lists (the review-loop cap:
 residue becomes cards). Each names its PR. Already carded elsewhere, so not repeated: M.20a (#973's
 concept half), U.2a and U.5 (#983), RR.22 (2) (#979's code-comparison over-credit), NR.9 (3) (#976's
-iron-laws budget line). SR.14 comes from a draft PR, SR.18 from #993's review. Dates in this section are UTC.
+iron-laws budget line). SR.14 is the record of the CV13 split (#996, #993), SR.18 and SR.19 come from #993's review and SR.20 from its residue. Dates in this section are UTC.
 
 ### SR.1 · NR.16 classifier leftovers (#973) — `todo`
 
@@ -2691,14 +2691,15 @@ but does not state what N2 is; read it from the round-1 review before carding it
 
 ### SR.14 · RM9.6 CV13 split by RM-D73: done by #996 and #993, waiting to be archived — `note`
 
-`W_TABLE_NO_SEAT` fired on nine shipped examples; adding their chairs moved about 400 pinned rows,
-3D GLB, mesh and asset pins among them. Done in two PRs, each after two red-team rounds: (1) #996,
-the examples-only drawing-change PR (merge `e4d36045`, 2026-11-21 UTC); (2) #993, the rule
-(merge `f48633ff`), whose rows are only the rule's. CV08 and CV14 follow the same split. Residue
-still owed: the held-out pair in private `archlang-lab`; whether
-`docs/gallery/*.arch` gain chairs (a docs card); `eval/goldens/anchor-furniture.arch` (an
-eval-owner decision); the reach version waits for a sourced `seatTableReachMm`; a `table` labelled
-"Island" (`docs/gallery/family-of-four`). **Gate:** both PRs merged (done); the residue above carded when picked up.
+`W_TABLE_NO_SEAT` fired on nine shipped examples; adding their chairs moved pinned rows and assets.
+#996 measured 349 moved digest rows in 31 files (swap-back: 349 of 349 give `main`'s value), plus
+snapshots, PNGs and 3D pins. Done in two PRs, each after two red-team rounds: (1) #996, the
+examples-only drawing-change PR (merge `e4d36045`, 2026-11-21 UTC); (2) #993, the rule (merge
+`f48633ff`), whose rows are only the rule's. CV08 and CV14 follow the same split. Of the residue
+first listed here: the held-out pair exists (private `archlang-lab` `3ef34b4`; re-linted on #993's
+head, 1 and 0 reports); the `table` labelled "Island" in `docs/gallery/family-of-four` is now
+declined by the label rule (#993 red team 1, m6); and the gallery plans are accepted output, not
+edited by hand (#993's residue: 6 reports in 6 plans). The live residue is SR.20.
 
 ### SR.15 · A wrapped room label loses its space in the SVG text (downstream report, 2026-11-20) — `todo`
 
@@ -2743,7 +2744,29 @@ extend the closed list one word or phrase at a time, each with a corpus probe an
 keeping the dining-word-wins ruling; (b) read a label through the catalogue's own piece words (as
 `W_LABEL_PIECE_MISSING` reads a room label), so a label naming a catalogued non-dining piece declines
 the table. Done when the listed labels are not read, the corpus re-count names each report that moves,
-and the 12 pinned label rows in `test/lint-table-no-seat.test.ts` hold.
+and the pinned label rows in `test/lint-table-no-seat.test.ts` (32: 12 not read, 20 read) hold. Option (b)
+would flip "Sideboard", which is catalogued and is read today, so it needs its own ruling.
+
+### SR.19 · `W_TABLE_NO_SEAT`: count the label classification (`roomUses`) per room — `todo`
+
+The rule's work counter `tableSeatTests` (`src/lint/work.ts`) counts only the room x piece centre
+tests. It does not see `roomUses` calls, so the half of #993's red team 2 M1 that moved the label
+classification out of the per-(table, room) loop is pinned only by the dense test's skip-call bound
+(a count, bounded by n) and the coordinator's timing (400 overlapping rooms and 800 tables lint in
+about 1.2 s), not by a counter. **Gate:** a counter (or an existing one extended) counts the
+classifications per room, and moving `roomUses` back into the per-table loop fails a test, not only
+a timing.
+
+### SR.20 · `W_TABLE_NO_SEAT` residue that is still live (#993, #996) — `todo`
+
+(1) `eval/goldens/anchor-furniture.arch` reports once; its fixture side count was bumped under D19.
+Whether to seat the golden is an eval-owner decision. (2) The reach version (distance from table to
+seat) waits for a sourced `seatTableReachMm` (today `convention`). (3) Three defect-corpus clean
+twins of other codes now carry this warning: `annotation-collisions/radius-over-piece.clean`,
+`circulation-privacy/bath-off-open-plan.clean` and `clearances/masked-route-balcony-door.clean`;
+each has a `table` in a living room with no seat, and their `expect: none` concerns their own
+case's code. **Gate:** (1) decided by the eval owner and recorded; (3) seat each twin (or record why
+not) with its pins re-measured under the drawing-change proof; (2) when the number has a source.
 
 ## Test-programme findings (promo-credit programme, 2026-11-16)
 

@@ -735,14 +735,13 @@ RM-D65 授权协调者在所有者不在时自行裁定，所有者一句话可�
 |---|---|---|---|
 | RM-D76 | 1.65.0 之后 `main` 上积累的用户可见改动（NR.16、AF2/4/5/7/8、AF9 阶段 A、RM9.4/9.5/9.10/9.11、3.18）要不要现在发布 | **发布 1.66.0**（minor：新码 `W_EXTERIOR_DOOR_ONTO_ROOF`、新公开字段 `expected`/`cause`、新导出 `diagnosticFix`；没有破坏性改动）。`archlang-mcp` 0.2.49、VS Code 扩展 0.54.0；`archlang-3d` 0.9.0、`arch-plan` 0.1.2、`font-cjk` 1.0.0 不变 | 所有者原话（2026-11-21，所有者那边的日期）："关于下一次发布，如果现在就有必要做，那就自动实施"。协调者判断有必要：两项下游诉求（NR.16 分类器那一半、RM9.11 的 repair）只有发布后 ArchCanvas 才拿得到；用 `npx` 的智能体要发布后才拿到 AF2/AF4/AF9 的修复；不发布换不来任何东西（3.19、#993 都不等发布）。`main` 在 #992 合并后的 push run 上等变性模糊测试报出一个 `NEW`（backlog E.18），1.65.0 已有同样的行为，不是这批改动带来的，所以不挡发布 |
 
-
 ### 6.34 受托裁定：`W_TABLE_NO_SEAT` 的读法（RM-D77，2026-11-21，UTC）
 
-协调者在 #993 的评审里做的裁定，受托、可被所有者一句话推翻。
+协调者在 #993 的评审里做的裁定。受托依据：所有者 2026-11-21 的话"关于下一次发布，如果现在就有必要做，那就自动实施"（RM-D76），以及这一场开头"直接帮我做出最佳决策"的授权；**只对这一场有效**，所有者一句话可以推翻。
 
 | 编号 | 问题 | 决定 | 理由 |
 |---|---|---|---|
-| RM-D77 | `W_TABLE_NO_SEAT`（#993）：(a) `residential-basic` 要不要判非住宅平面；(b) 一张 `table` 的标签怎样决定读不读 | (a) **照旧判**，和其他住宅规则一样：`residential-basic` 把每份平面当住宅判，只判起居、餐厅、厨房这类日间房；默认 profile 下 `examples/**` 报 0 个，`residential-basic` 下 4 个非住宅示例报 20 个。(b) **有餐桌词就一定读**（dining、dinner、dine、eat、breakfast）；否则标签写了别的家具的 `table` 不读：整词 desk、island、nightstand、bedside、dressing、console、coffee，或词组 side table、end table、TV table、TV stand | (a) profile 的意思就是"当住宅判"，为这一条规则开例外会让 profile 的语义变成每条规则各说各话。(b) 餐桌词优先避免漏报（"Dining Island"、"TV dinner table"）；封闭名单只收有语料证据的词，其余留给 backlog SR.18（标签读法的扩展） |
+| RM-D77 | `W_TABLE_NO_SEAT`（#993）：(a) `residential-basic` 要不要判非住宅平面；(b) 一张 `table` 的标签怎样决定读不读 | (a) **照旧判**，和其他住宅规则一样：`residential-basic` 把每份平面当住宅判，只判起居、餐厅、厨房这类日间房；默认 profile 下 `examples/**` 报 0 个，`residential-basic` 下 4 个非住宅示例报 20 个。(b) **有餐桌词就一定读**（dining、dinner、dine、eat、breakfast）；否则标签写了别的家具的 `table` 不读：整词 desk、island、nightstand、bedside、dressing、console、coffee，或词组 side table、end table、TV table、TV stand | (a) profile 的意思就是"当住宅判"，为这一条规则开例外会让 profile 的语义变成每条规则各说各话。(b) 餐桌词优先避免漏报（"Dining Island"、"TV dinner table"）；封闭名单里的词来自两轮红队的探测，语料里只出现过一个 "Island"（`docs/gallery/family-of-four`）；其余的误报标签留给 backlog SR.18（标签读法的扩展） |
 
 ---
 
