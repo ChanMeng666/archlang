@@ -195,6 +195,16 @@ suite("W_STAIR_NO_LANDING", () => {
         'The stair in "Landing" on level 2 has no landing at its foot: a void opens 0 mm past the bottom step, where a landing as long as the flight is wide needs 1000 mm (1000 mm short).',
       ],
     ]);
+    // Any void whose clip against the landing has no area is beside it, not in it: one whose edge
+    // lies on the quarter line the landing is read across (x 1750, the middle half of the flight's
+    // width), and one touching only the landing's corner at the step. One 50 mm over that line is in it.
+    expect(of(twoStorey(lower, upper("void id=g at (1750,4500) size 500x500")), "W_STAIR_NO_LANDING")).toEqual([]);
+    expect(of(twoStorey(lower, upper("void id=g at (1750,4200) size 300x300")), "W_STAIR_NO_LANDING")).toEqual([]);
+    expect(
+      of(twoStorey(lower, upper("void id=g at (1700,4500) size 500x500")), "W_STAIR_NO_LANDING").map((d) => d.message),
+    ).toEqual([
+      'The stair in "Landing" on level 2 has no landing at its foot: a void opens 0 mm past the bottom step, where a landing as long as the flight is wide needs 1000 mm (1000 mm short).',
+    ]);
   });
 
   it("a building other than a dwelling asks 1200 mm (AD K 1.23a); `residential-basic` reads every plan as one", () => {
