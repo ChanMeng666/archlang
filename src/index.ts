@@ -32,7 +32,7 @@
 // `pipeline.ts` — `compile()` (`compile.ts`) wraps it with the memoization cache;
 // `reroll.ts`'s twin-compile proof calls the SAME function, so the two can
 // never drift apart. See that module's header.
-import { clearCompileCache } from "./compile.js";
+import { clearCompileCache } from "./compile-memo.js";
 import { clearNetAreaMemo } from "./analyze/net-area-memo.js";
 import { clearLexCache } from "./lexer.js";
 import { clearLineTableCache } from "./diagnostics.js";

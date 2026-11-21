@@ -4,7 +4,8 @@
  * Extracted verbatim from `src/index.ts` (WP: one compile pipeline for `compile()`
  * and the `reroll` twin-compile proof) so there is exactly one implementation of
  * "what does this source compile to" — `compile()` (`compile.ts`, re-exported by `index.ts`) wraps
- * {@link compileUncached} with its memoization cache and stays the public surface;
+ * `compileUncached` (`compile-uncached.ts`: {@link compileUncachedWithoutErrorCard} and the
+ * `onError: "svg"` card, card 3.19) with its memoization cache and stays the public surface;
  * `reroll.ts`'s proof obligation calls this SAME function (with `noCache: true`)
  * instead of re-deriving the pipeline, so the two can never drift apart.
  *
@@ -27,7 +28,6 @@ import { drawBudgetDiagnostic } from "./draw-budget.js";
 import type { PlanNode } from "./ast.js";
 import { toIso } from "./view/iso.js";
 import { renderSvg } from "./backends/svg.js";
-import { renderCompileErrorSvg } from "./backends/error-svg.js";
 import { capDiagnostics, offsetToLineCol } from "./diagnostics.js";
 import { createRegistry, BUILTIN_REGISTRY } from "./registry.js";
 import type { Runtime } from "./registry.js";
@@ -101,7 +101,7 @@ function apiLineWeightOutOfRange(
 }
 
 /**
- * The drawing's work counters of one uncached {@link compileUncached} run over `source`
+ * The drawing's work counters of one uncached {@link compileUncachedWithoutErrorCard} run over `source`
  * ({@link CompileWork}, summed over every storey drawn): counts of the geometric tests the
  * costliest drawing loops make, never a time. Read by the pinned work-count table
  * (`test/tables/work-counts.json`) only; `compile()` itself never reads them. Pure: a fresh set
@@ -112,12 +112,25 @@ function apiLineWeightOutOfRange(
  */
 export function compileWork(source: string, opts: CompileOptions = {}): CompileWork {
   const work = newCompileWork();
-  compileUncached(source, opts, work);
+  // The card (`onError: "svg"`, compile-uncached.ts) draws after the drawing and counts nothing,
+  // and only `work` is returned, so the pipeline without it counts the same.
+  compileUncachedWithoutErrorCard(source, opts, work);
   return work;
 }
 
-/** One compile, uncached; `work`, when given, counts the drawing's work (see {@link compileWork}). */
-export function compileUncached(source: string, opts: CompileOptions, work?: CompileWork): CompileResult {
+/**
+ * One compile, uncached, without the error card; `work`, when given, counts the drawing's work
+ * (see {@link compileWork}). `opts.onError` is not read here: a plan with an error has
+ * `svg === ""`, as it has when `onError` is unset. `compileUncached` (`compile-uncached.ts`) is
+ * this result with `onError: "svg"`'s card drawn into `svg` (card 3.19: in a module of its own, so
+ * a bundle which never asks for the card, the playground's compiler chunk, `src/compile-path.ts`,
+ * does not carry the card's renderer and the catalogue's fix column it prints).
+ */
+export function compileUncachedWithoutErrorCard(
+  source: string,
+  opts: CompileOptions,
+  work?: CompileWork,
+): CompileResult {
   // Per-call registry (built-ins + plugins) and runtime — fresh each compile, no
   // global mutation. Absent plugins/backend collapse to the built-in behavior.
   // Plugin-free compiles reuse the stable BUILTIN_REGISTRY so the parse/resolve
@@ -199,11 +212,6 @@ export function compileUncached(source: string, opts: CompileOptions, work?: Com
       offerScene(resolved.ir, opts, runtime, scene);
       svg = renderSvg(scene, opts);
     }
-  } else if (errs.length > 0 && opts.onError === "svg") {
-    // Opt-in only: a broken plan yields a self-describing error card instead of
-    // a blank. Default (no `onError`) leaves `svg === ""`, byte-identical to the
-    // historical behavior. Errors/warnings/diagnostics are untouched.
-    svg = renderCompileErrorSvg(source, diagnostics);
   }
 
   // `pages` is spread so a single-storey result has no such key at all (append-only).

@@ -1,20 +1,17 @@
 /**
- * `compile()`, the public entry point, and its result memo. Moved out of `src/index.ts` (card
- * RM0.7f) so that `src/compile-path.ts` can reach it without reaching the whole barrel; the body is
- * the one `index.ts` held, byte for byte. `clearCache()` stays in `index.ts` and empties this memo
- * through `clearCompileCache()`.
+ * `compile()`, the public entry point. Moved out of `src/index.ts` (card RM0.7f); its memo moved on
+ * to `compile-memo.ts` (card 3.19), beside `compileWithoutErrorCard`, the compile the playground's
+ * compiler chunk serves (`src/compile-path.ts` reaches that file, not this one, and so not the
+ * `onError: "svg"` error card `compileUncached` draws). `clearCache()` stays in `index.ts` and
+ * empties the memo through `clearCompileCache()`.
  *
  * The one compile pipeline (parse → link → resolve → render) lives in `pipeline.ts`; `compile()`
- * below wraps it with the memoization cache; `reroll.ts`'s twin-compile proof calls the SAME
- * function, so the two can never drift apart. See that module's header.
+ * below wraps it, with the card (`compile-uncached.ts`), in the memoization cache; `reroll.ts`'s
+ * twin-compile proof calls the SAME function, so the two can never drift apart. See that module's header.
  */
-import { compileUncached } from "./pipeline.js";
-import { idToken } from "./identity.js";
+import { memoised } from "./compile-memo.js";
+import { compileUncached } from "./compile-uncached.js";
 import type { CompileOptions, CompileResult } from "./types.js";
-
-/** Small LRU-ish memo cache keyed by source+options. Bounded to 64 entries. */
-const cache = new Map<string, CompileResult>();
-const CACHE_MAX = 64;
 
 /**
  * Compile ArchLang source to a professional SVG floor plan.
@@ -42,44 +39,5 @@ const CACHE_MAX = 64;
  * }`);
  */
 export function compile(source: string, opts: CompileOptions = {}): CompileResult {
-  // The key includes plugin/theme/backend/hatch identity so distinct extension
-  // sets never share a cache entry. Trusted, JSON-serializable `theme`/`width`
-  // are embedded directly; object plugins get a stable process-local id token
-  // (reused object → hit; different object → safe miss). Trailing tokens are 0
-  // when absent, preserving the legacy key shape for plain compiles.
-  const key = JSON.stringify([
-    source,
-    opts.width ?? null,
-    opts.theme ?? null,
-    opts.plugins?.map(idToken) ?? null,
-    idToken(opts.themes),
-    idToken(opts.backend),
-    idToken(opts.hatches),
-    idToken(opts.world),
-    opts.annotate ?? null,
-    opts.overlays ?? null,
-    opts.onError ?? null,
-    opts.accessible ?? null,
-    opts.view ?? null,
-  ]);
-  if (!opts.noCache) {
-    const hit = cache.get(key);
-    if (hit) return hit;
-  }
-
-  const result = compileUncached(source, opts);
-
-  if (!opts.noCache) {
-    if (cache.size >= CACHE_MAX) {
-      const oldest = cache.keys().next().value;
-      if (oldest !== undefined) cache.delete(oldest);
-    }
-    cache.set(key, result);
-  }
-  return result;
-}
-
-/** Empty the compile result memo (the first step of `clearCache()`, `src/index.ts`). */
-export function clearCompileCache(): void {
-  cache.clear();
+  return memoised(source, opts, compileUncached);
 }

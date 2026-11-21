@@ -5,7 +5,8 @@
  * sheet's, which the shell hands over once the sheet is drawn), and the draggable pane divider.
  * Each is wired from an explicit context so main.ts stays composition-only.
  */
-import { compile, describe, diagnosticToJson, type FinishResult, type Scene } from "archlang";
+import { describe, diagnosticToJson, type FinishResult, type Scene } from "archlang";
+import { compile } from "./compiler.js";
 import { escapeHtml } from "./escape.js";
 import { embedSnippets, exampleImageUrl } from "./embed-snippets.js";
 import { exampleNameFor } from "./examples.js";

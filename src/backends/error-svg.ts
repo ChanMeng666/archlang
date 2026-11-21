@@ -162,8 +162,9 @@ export function renderErrorCard(
   const rows: Row[] = shown.map((d) => {
     // What `diagnosticToJson` gives for `line`/`col` and `fix`, read through the same small modules
     // (`diagnosticFix`, the root-first remedy of a diagnostic that names a cause included) without
-    // loading the JSON projection: the card is on the compile path, the projection is not (card
-    // AF1). `line`/`col` exist only for a span measured in `source` (no `file`).
+    // loading the JSON projection (card AF1; since card 3.19 the card itself is off the playground's
+    // compiler chunk, `src/compile-uncached.ts`). `line`/`col` exist only for a span measured in
+    // `source` (no `file`).
     const at = d.span && d.file === undefined ? offsetToLineCol(source, d.span.start) : undefined;
     // The table `fixOf` names (the compile card's or the public one's), or the root-first fix (RM9.4).
     const fix = diagnosticFix(d, fixOf);
