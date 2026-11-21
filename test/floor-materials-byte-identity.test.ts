@@ -154,10 +154,10 @@ const BASELINE: [string, string][] = [
   ["5f557f7ac891e6d732cbcc24ac46b5b337beda47a890eba2528dc8998f8e1efb", "examples/courtyard-house.arch"], // CV13 (was e9866c6c): example source edited (chairs added)
   ["fcb5a98c9bf892177daef2174831cb56be4314d6c9ac66526b1046cd6618438b", "examples/furnished-flat.arch"],
   ["5ebdd5ec17e7e29eeab8413c31506ebca7b1afc26168d4455e29ddf45d4f65a5", "examples/gallery-l.arch"],
-  ["6d5955224cdfaff62510ebf2f5a676098617e78f2938c962bac59434d83fb05d", "examples/garden-house.arch"], // RM1.3b, see ./byte-identity-baseline.ts; RM1.3b overlay, see ./byte-identity-baseline.ts; CO.1: the example writes its 2 snapped `against` sizes out (+26 bytes), so only spans and the steps of the written clauses (+8) moved; see the header (was dd673d71); RM9.2, see ./byte-identity-baseline.ts
+  ["6b0d83c3fb0f9404d411550ed3454f988c19ab8bac61fe7cd84108b35caa51b0", "examples/garden-house.arch"], // RM1.3b, see ./byte-identity-baseline.ts; RM1.3b overlay, see ./byte-identity-baseline.ts; CO.1: the example writes its 2 snapped `against` sizes out (+26 bytes), so only spans and the steps of the written clauses (+8) moved; see the header (was dd673d71); RM9.2, see ./byte-identity-baseline.ts; CV14: example source edited (stairwell void added) (was 6d595522)
   ["8be510d3825258cde0ae8e0030e44a2b76be0741860e9cc20da7720e5648586a", "examples/garden-loft.arch"], // CV13 (was e9080ba7): example source edited (chairs added)
   ["45e2de363cdbe22f1ab55d40d968083c2181571320c028f78443aa65e80a2558", "examples/hexagon-pavilion.arch"], // CV13 (was 6544b4c8): example source edited (chairs added)
-  ["c9f89e9a93be96447f124e7eb52ca32594d06c8e9341e0438a74e3698992ce43", "examples/hillside-villa.arch"], // RM1.3b, see ./byte-identity-baseline.ts; RM1.3b overlay, see ./byte-identity-baseline.ts; CO.1: the example writes its 3 snapped `against` sizes out (+40 bytes), so only spans and the steps of the written clauses (+12) moved; see the header (was 6a0a3529); RM9.2, see ./byte-identity-baseline.ts
+  ["7f4fd7877b03b9680b0c066c87ab416a9644b01f8412f0032113e8b809e77aac", "examples/hillside-villa.arch"], // RM1.3b, see ./byte-identity-baseline.ts; RM1.3b overlay, see ./byte-identity-baseline.ts; CO.1: the example writes its 3 snapped `against` sizes out (+40 bytes), so only spans and the steps of the written clauses (+12) moved; see the header (was 6a0a3529); RM9.2, see ./byte-identity-baseline.ts; CV14: example source edited (stairwell void added) (was c9f89e9a)
   ["943cb8dbb7c0438d4f7d62160dafba83a6861b912a5c8cbf70db47e11ec80be7", "examples/imports.arch"],
   ["5ab98e5edbb819a917045eeeec6448af5fbb7d08837f644769b75274e744fbc8", "examples/knob-flat.arch"],
   ["d454b14329c3e568cb56b2f00143521457a1c90a2095ce46aca979651e5091a9", "examples/laneway-house.arch"], // CV13 (was 9613d624): example source edited (chairs added)
@@ -176,7 +176,7 @@ const BASELINE: [string, string][] = [
   ["4cf26b4a1904c5041ee1f653efbbf549f487e90af5bed197628d93fe5bdd55ce", "examples/terrace-row.arch"], // CV08 (was bd6056a8): example source edited (sofa turned to face the room)
   ["503b89ecf0ca78f6c1100f1fd059c0b63080a9bdb3b9401c675c74971816cd21", "examples/themed.arch"],
   ["1a78c5532e6c4bb783da712f6f27c83f5c771765278ec8552940d4f73e32beaa", "examples/tiny-house.arch"],
-  ["b217f5437945699b6aa83a0ec7f2a4f26b793c2d3e51ddf3295bd06720a7ae3f", "examples/townhouse.arch"], // RM1.3b overlay, see ./byte-identity-baseline.ts; RM9.2, see ./byte-identity-baseline.ts; CV13 (was efcb311a): example source edited (chairs added); CV08 (was 8643a4e3): example source edited (sofa turned to face the room)
+  ["a45a94dfe137be6cf35965d9b5b8c0e9f64eb6da40894da4e0a3065d8e7e640e", "examples/townhouse.arch"], // RM1.3b overlay, see ./byte-identity-baseline.ts; RM9.2, see ./byte-identity-baseline.ts; CV13 (was efcb311a): example source edited (chairs added); CV08 (was 8643a4e3): example source edited (sofa turned to face the room); CV14: example source edited (stairwell void added) (was b217f543)
   ["0fd9ba46a50b7e9438b7f3be5472c52c44a58219a29f22b493f3bd653766a971", "examples/transit-hall.arch"],
   ["6fa4bd1d0de5cc6aa3bc3434687929ece4ac4052356462caecb5e55109480d6a", "examples/two-bed.arch"], // CO.1: the example writes its snapped `against` size out (+13 bytes), so only spans and the steps of the written clauses (+2) moved; see the header (was f220acec); CV13 (was ea10c4f2): example source edited (chairs added)
   ["9c3489d30cb4bcdea2d3ef3272820bba64eee730f4123585e19f4be3a440ccf3", "examples/two-storey.arch"], // RM1.3b overlay, see ./byte-identity-baseline.ts; RM9.2, see ./byte-identity-baseline.ts
@@ -319,7 +319,7 @@ const BASELINE: [string, string][] = [
   ["802586e9b7cf3f6927c1441481a0e2d14699e57b6b7a50ddb48b71a9b4a902d5", "inline:stair-arrival"], // RM1.3b overlay, see ./byte-identity-baseline.ts; RM9.2, see ./byte-identity-baseline.ts
   ["e6eed958e1d4cea68f7981fce9964af4b5a26fa3d09ad3eafebb0992ce5cb727", "inline:stair-refusals"],
   ["1e9d114fa6522be3335f490693d677a052fc7363fd0bbc2b07b2f0849fe16494", "inline:stair-parse-refusals"], // AF4 (was 57879436): its `E_PARSE` now says what the parser expected at the token it stopped at (`expected`); SVG, lint() and every other key are unchanged, and deleting that key gives 57879436
-  ["d4fb3835237b1b989e0e45c992f7e4a0c61663d603c62e89de5deb96a2167047", "examples/turning-stair.arch"], // RM1.3b overlay, see ./byte-identity-baseline.ts; RM9.2, see ./byte-identity-baseline.ts
+  ["ec36dffbd6f489fbd80110c6757cb57178986174793e984629510bdee55c510e", "examples/turning-stair.arch"], // RM1.3b overlay, see ./byte-identity-baseline.ts; RM9.2, see ./byte-identity-baseline.ts; CV14: example source edited (stairwell void added) (was d4fb3835)
   ["0545c17080e7f460aacef3ed290df0f1d0ae9dd91403dacfbc1f5108bfcf2fe3", "inline:floor-words-as-names"],
   ["8d3b15bc029b1499bac84456b2c464f72b6a42c059a22875841f2a0338236588", "inline:floor-old-words-rendered"],
   ["ef4ef5ebdea707d29660779fea0c833215642abb2905346baa5cfd11a8a43bff", "inline:outdoor-old-kinds-rendered"],

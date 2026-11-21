@@ -364,10 +364,10 @@ export const BASELINE: ReadonlyArray<readonly [string, string]> = [
   // Re-measured 2026-10-20 (PS2.19), `describe()` only: "Utility" reads `utility` (`byte-identity-baseline.ts`).
   ["examples/furnished-flat.arch", "cdb42b5c1bee8dd931d9b99b1e338dd895e4cb5d2de1915de8a85f04a3fd444a"], // PS2.11e, see header
   ["examples/gallery-l.arch", "f3d86da1d7aed260f386efa6ca98b440c89ee7b2b84b0d0937401c72d7bb113e"], // PS2.10 dims fixed (byte-identity-baseline.ts); PS2.11e, see header
-  ["examples/garden-house.arch", "72528a5f6784a5c5d9527299a5abb330423c747bafb17458716dc336cc9a3eb3"], // re-measured, see header; RM1.3a, see ./byte-identity-baseline.ts; RM9.2, see ./byte-identity-baseline.ts
+  ["examples/garden-house.arch", "5b0ec567a174809bd4d5a7c62907b611741e3537577e9552026d400c28cedcd6"], // re-measured, see header; RM1.3a, see ./byte-identity-baseline.ts; RM9.2, see ./byte-identity-baseline.ts; CV14: example source edited (stairwell void added) (was 72528a5f)
   ["examples/garden-loft.arch", "2814a29269f878cd596372eafe0fdf8c1d1bc9f0c478b33f1cae2906b6db8d8d"], // PS2.11e, see header; CV13 (was e0ce8a5f): example source edited (chairs added)
   ["examples/hexagon-pavilion.arch", "847694c47f21e1660d3a4bbd70469d8fac354b2d255070478c59fe1aa83a613a"], // CV13 (was 3078765c): example source edited (chairs added)
-  ["examples/hillside-villa.arch", "123f2af228faf039c29d9861b60cfff3574b3cd04bc0057d5549cd02e67066fb"], // re-measured, see header; PS2.11e, see header; RM1.3a, see ./byte-identity-baseline.ts; RM9.2, see ./byte-identity-baseline.ts
+  ["examples/hillside-villa.arch", "bde21bc8c7ea02b91b55d17623eac370428f9aef0f2c16f0fb8f7fd00ae369ce"], // re-measured, see header; PS2.11e, see header; RM1.3a, see ./byte-identity-baseline.ts; RM9.2, see ./byte-identity-baseline.ts; CV14: example source edited (stairwell void added) (was 123f2af2)
   ["examples/imports.arch", "3aa7b2d5f953e6df63059c368e391ee3ea58c097cd7dff358197a940f4946252"],
   ["examples/knob-flat.arch", "578ec7551025df65b704f453b7af3493bf4abcfb19737fdece206e4c85fd2586"], // new example (P4, the knobs example), see header
   ["examples/laneway-house.arch", "21f4d5bc82e2e8d46536bd2dc5623b05ea76e937db31c7d4ed482a4c5e3118bc"], // PS2.11e, see header; CV13 (was 958934b4): example source edited (chairs added)
@@ -386,9 +386,9 @@ export const BASELINE: ReadonlyArray<readonly [string, string]> = [
   ["examples/terrace-row.arch", "3e8d6696f955b554411c7379e3a8bc9ce5cbf83a9521930129f18915bca585d0"], // CV08 (was 6667da00): example source edited (sofa turned to face the room)
   ["examples/themed.arch", "edd65eb6b725687bb30a7c956132e01bc2b9c57d772afaa9c234745af332f8bf"], // PS2.11e, see header
   ["examples/tiny-house.arch", "7dec52e5621d9af9dbdcf7cb73e58791705e6d976bbecf5ae59419c1c9a9ea17"], // PS2.11e, see header
-  ["examples/townhouse.arch", "e51de067c879ba64272632c73dc6794dae996df3307fa8a0b16fa1b9d1a44915"], // PS2.11e, see header; RM1.3a, see ./byte-identity-baseline.ts; RM9.2, see ./byte-identity-baseline.ts; CV13 (was 3657648f): example source edited (chairs added); CV08 (was 3395a3eb): example source edited (sofa turned to face the room)
+  ["examples/townhouse.arch", "42be4e4d302a36d2a95f93fe215539d45739f5f21c9dbca3a96089b8f6c18afd"], // PS2.11e, see header; RM1.3a, see ./byte-identity-baseline.ts; RM9.2, see ./byte-identity-baseline.ts; CV13 (was 3657648f): example source edited (chairs added); CV08 (was 3395a3eb): example source edited (sofa turned to face the room); CV14: example source edited (stairwell void added) (was e51de067)
   ["examples/transit-hall.arch", "649e39d370d434467bee6f23ad8c7fc0bef578d44081f18d96ec82ed2532c5be"], // PS2.11e, see header
-  ["examples/turning-stair.arch", "4d2fb9dcc6a44640a4d0e52d202df14909c73a5743799af8c25cb1f117dc87a8"], // new example (S2), see header; `centreline_at`, see ./byte-identity-baseline.ts; RM1.3a, see ./byte-identity-baseline.ts; RM1.2a, see header; RM9.2, see ./byte-identity-baseline.ts
+  ["examples/turning-stair.arch", "4278a96ba7b215a43f121d04bd47fd94c94ab0c145cb7f7a2a7aba5201e2c6a2"], // new example (S2), see header; `centreline_at`, see ./byte-identity-baseline.ts; RM1.3a, see ./byte-identity-baseline.ts; RM1.2a, see header; RM9.2, see ./byte-identity-baseline.ts; CV14: example source edited (stairwell void added) (was 4d2fb9dc)
   ["examples/two-bed.arch", "6393e0321cc48a44fbf17b7aa6008d89dcfbbcceea13418c4045875c5ffdf6c0"], // PS3.6 source rewrite, see ./byte-identity-baseline.ts; PS2.11e, see header; `centreline_at`, see ./byte-identity-baseline.ts; CV13 (was fe871cbb): example source edited (chairs added)
   ["examples/two-storey.arch", "92a71843b7de0b87acb1ef3ea1b859d1c0bedbe4ef35025f3524ecea1d674aa8"], // RM1.3a, see ./byte-identity-baseline.ts; RM1.2a, see header; RM9.2, see ./byte-identity-baseline.ts
   ["test/fixtures/axes-grid.arch", "32dad3e21d1e5c40424473fdf05896088a2f848fd7f90d395d6cbd70169a0655"],
