@@ -92,7 +92,9 @@ suite("W_STAIR_NO_VOID", () => {
     ])
       expect(of(twoStorey(v)), v).toEqual([]);
     // Pieces that leave a gap across the head do not clear it.
-    expect(of(twoStorey("    void id=v at (500,1000) size 400x500\n    void id=w at (1000,1000) size 400x500"))).toHaveLength(1);
+    expect(
+      of(twoStorey("    void id=v at (500,1000) size 400x500\n    void id=w at (1000,1000) size 400x500")),
+    ).toHaveLength(1);
   });
 
   it("reads the floor where the head is open: the storey's footprint, never a box", () => {
@@ -106,7 +108,9 @@ suite("W_STAIR_NO_VOID", () => {
     expect(of(open("(2000,0) size 4000x5000"))).toEqual([]);
     const fixture = readFileSync("test/fixtures/zones-levels.arch", "utf8");
     expect(lint(fixture).filter((d) => d.code === CODE)).toEqual([]);
-    expect(lint(fixture).some((d) => d.code === "W_STAIR_NO_LANDING" && /there is no floor/.test(d.message))).toBe(true);
+    expect(lint(fixture).some((d) => d.code === "W_STAIR_NO_LANDING" && /there is no floor/.test(d.message))).toBe(
+      true,
+    );
     // A room over part of the head is floor there.
     expect(of(open("(1000,0) size 5000x5000"))).toHaveLength(1);
     // Inside the closed exterior ring with no room there is floor too (the slab, as the 3D preview builds it).

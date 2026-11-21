@@ -994,7 +994,8 @@ export const stairNoVoid: LintRule = {
       const across = edge === "top" || edge === "bottom";
       const mid = across ? r.x + r.w / 2 : r.y + r.h / 2;
       const [a, b] = [mid - below.width / 2, mid + below.width / 2];
-      const line = edge === "top" ? r.y + 1 : edge === "bottom" ? r.y + r.h - 1 : edge === "left" ? r.x + 1 : r.x + r.w - 1;
+      const line =
+        edge === "top" ? r.y + 1 : edge === "bottom" ? r.y + r.h - 1 : edge === "left" ? r.x + 1 : r.x + r.w - 1;
       const spans: Array<[number, number]> = [];
       for (const vd of ctx.voids) {
         ctx.work.stairVoidTests++;
