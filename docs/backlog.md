@@ -284,13 +284,14 @@ Done by #976, with no budget raised: Format, Finish, Repair furniture and the DX
 
 After AL3b (#969) the first-use path (`firstUsePathBudget`, `playground/e2e/startup-chunks.baseline.json`) measures 484,137 B gzip against 486,000 B. The next few KB of compiler growth trip `Playground E2E chromium`. Two ways out: move code a first use need not load out of the compiler chunk or the lazy core chunk (as EB.2 did, #947), or re-take the budget by the file's own rule (measured × 1.025, rounded up to a thousand). A re-take raises a ceiling, a relaxed check that needs the owner's word for that PR (`REVIEW.md`; the owner approved the compiler-path and embed raises on #969, 2026-11-19, not this one). Measure with `npm run size:embed` (`scripts/embed-path-size.mjs`) on `main` and the branch; `docs/agents/iron-laws.md` still quotes `embedPathBudget` as 310,000 B (319,000 since #969), and editing that line is the owner's call (NR.9 (3)).
 
-### 3.19 · The compiler path has about 0.8 KB of headroom left — `todo`
+### 3.19 · The compiler path has about 0.7 KB of headroom left — `todo`
 
 AF9 phase A's PR (#992, merged 2026-11-20; `npm run size:embed`, base `c749ac4e` → head `1babd94d`)
-measures the compiler path 330,147 → 332,209 B gzip against `compilerPathBudget` 333,000 (791 B
-left), the embed path 318,401 B against 319,000 (599 B) and the first use 466,271 B against 468,000
-(1,729 B). AF4 (#987), RM9.10 (#990), AF7 (#977) and AF9 took most of the earlier headroom. The
-next compiler-path card would trip `Playground E2E`. This is the first card of the next session
+measured the compiler path 330,147 → 332,209 B gzip against `compilerPathBudget` 333,000. After
+#993 (`W_TABLE_NO_SEAT`, merge `f48633ff`, 2026-11-21 UTC) it is 332,303 B against 333,000 (697 B
+left), the embed path 318,494 B against 319,000 (506 B) and the first use 467,775 B against
+468,000 (225 B). AF4 (#987), RM9.10 (#990), AF7 (#977) and AF9 took most of the earlier headroom. The
+next compiler-path card would trip `Playground E2E`. This is the next card
 (`docs/plans/product-roadmap/handoff.md` §2, RM-D74), before any further compiler-path card: move
 code a first compile does not need out of the compiler chunk (as EB.2, #947, and 3.18, #976, did),
 measured with `npm run size:embed` on `main` and the branch, with a corpus digest of SVG,
@@ -2542,7 +2543,7 @@ eval's table, so it needs an owner-approved `SYNONYMS_VERSION` bump, and it is M
 Non-blocking findings of that session's reviews and the PRs' own residue lists (the review-loop cap:
 residue becomes cards). Each names its PR. Already carded elsewhere, so not repeated: M.20a (#973's
 concept half), U.2a and U.5 (#983), RR.22 (2) (#979's code-comparison over-credit), NR.9 (3) (#976's
-iron-laws budget line). SR.14 comes from a draft PR. Dates in this section are UTC.
+iron-laws budget line). SR.14 is the record of the CV13 split (#996, #993), SR.18 and SR.19 come from #993's review and SR.20 from its residue. Dates in this section are UTC.
 
 ### SR.1 · NR.16 classifier leftovers (#973) — `todo`
 
@@ -2688,16 +2689,17 @@ not probed further (round-2 red team). (5) #992's body lists "N2 (red team, roun
 but does not state what N2 is; read it from the round-1 review before carding it. **Gate:** (1),
 (3), (4) each with a test; (5) its content recorded here or carded.
 
-### SR.14 · RM9.6 CV13 split by RM-D73 (#993, draft) — `todo`
+### SR.14 · RM9.6 CV13 split by RM-D73: done by #996 and #993, waiting to be archived — `note`
 
-`W_TABLE_NO_SEAT` fires on nine shipped examples; adding their chairs moves about 400 pinned rows,
-3D GLB, mesh and asset pins among them. Order: (1) an examples-only drawing-change PR (the chairs
-from #993's branch), on an idle machine, every asset regenerated in the primary checkout, each moved
-row listed with its source change; (2) #993 rebased onto it, so only the rule's rows move. CV08 and
-CV14 follow the same split. Also owed: the held-out pair in private `archlang-lab`; whether
-`docs/gallery/*.arch` gain chairs (a docs card); `eval/goldens/anchor-furniture.arch` (an
-eval-owner decision); the reach version waits for a sourced `seatTableReachMm`; a `table` labelled
-"Island" (`docs/gallery/family-of-four`). **Gate:** both PRs merged.
+`W_TABLE_NO_SEAT` fired on nine shipped examples; adding their chairs moved pinned rows and assets.
+#996 measured 349 moved digest rows in 31 files (swap-back: 349 of 349 give `main`'s value), plus
+snapshots, PNGs and 3D pins. Done in two PRs, each after two red-team rounds: (1) #996, the
+examples-only drawing-change PR (merge `e4d36045`, 2026-11-21 UTC); (2) #993, the rule (merge
+`f48633ff`), whose rows are only the rule's. CV08 and CV14 follow the same split. Of the residue
+first listed here: the held-out pair exists (private `archlang-lab` `3ef34b4`; re-linted on #993's
+head, 1 and 0 reports); the `table` labelled "Island" in `docs/gallery/family-of-four` is now
+declined by the label rule (#993 red team 1, m6); and the gallery plans are accepted output, not
+edited by hand (#993's residue: 6 reports in 6 plans). The live residue is SR.20.
 
 ### SR.15 · A wrapped room label loses its space in the SVG text (downstream report, 2026-11-20) — `todo`
 
@@ -2730,6 +2732,41 @@ apply them in array order without it (`packages/mcp/src/tools.ts`, `eval/l1.ts`;
 the first alternative and reports the next as skipped. **Gate:** both call `rankFixes`; a test that a
 diagnostic with two alternatives gets the same fix from `arch fix --unsafe` and MCP `fix`, and a unit
 test of L1's choice (no live run: `--l1` needs `--live`, paid and owner-only).
+
+### SR.18 · `W_TABLE_NO_SEAT` reads a `table` whose label names a non-dining piece outside its closed list (RM9.6 follow-up) — `todo`
+
+The rule (#993) reads every bare `table` whose label has no dining word (dining, dinner, dine, eat,
+breakfast) unless the label names another piece: the whole words desk, island, nightstand, bedside,
+dressing, console or coffee, or the phrases side table, end table, TV table or TV stand (ruling RM-D77).
+Labels that are not dining tables still reach it: Hall table, Work table, Changing table, Pool table,
+Workbench, Vanity, and non-English labels such as Mesa de centro, Couchtisch and 茶几. Options: (a)
+extend the closed list one word or phrase at a time, each with a corpus probe and a both-sides test,
+keeping the dining-word-wins ruling; (b) read a label through the catalogue's own piece words (as
+`W_LABEL_PIECE_MISSING` reads a room label), so a label naming a catalogued non-dining piece declines
+the table. Done when the listed labels are not read, the corpus re-count names each report that moves,
+and the pinned label rows in `test/lint-table-no-seat.test.ts` (32: 12 not read, 20 read) hold. Option (b)
+would flip "Sideboard", which is catalogued and is read today, so it needs its own ruling.
+
+### SR.19 · `W_TABLE_NO_SEAT`: count the label classification (`roomUses`) per room — `todo`
+
+The rule's work counter `tableSeatTests` (`src/lint/work.ts`) counts only the room x piece centre
+tests. It does not see `roomUses` calls, so the half of #993's red team 2 M1 that moved the label
+classification out of the per-(table, room) loop is pinned only by the dense test's skip-call bound
+(a count, bounded by n) and the coordinator's timing (400 overlapping rooms and 800 tables lint in
+about 1.2 s), not by a counter. **Gate:** a counter (or an existing one extended) counts the
+classifications per room, and moving `roomUses` back into the per-table loop fails a test, not only
+a timing.
+
+### SR.20 · `W_TABLE_NO_SEAT` residue that is still live (#993, #996) — `todo`
+
+(1) `eval/goldens/anchor-furniture.arch` reports once; its fixture side count was bumped under D19.
+Whether to seat the golden is an eval-owner decision. (2) The reach version (distance from table to
+seat) waits for a sourced `seatTableReachMm` (today `convention`). (3) Three defect-corpus clean
+twins of other codes now carry this warning: `annotation-collisions/radius-over-piece.clean`,
+`circulation-privacy/bath-off-open-plan.clean` and `clearances/masked-route-balcony-door.clean`;
+each has a `table` in a living room with no seat, and their `expect: none` concerns their own
+case's code. **Gate:** (1) decided by the eval owner and recorded; (3) seat each twin (or record why
+not) with its pins re-measured under the drawing-change proof; (2) when the number has a source.
 
 ## Test-programme findings (promo-credit programme, 2026-11-16)
 
