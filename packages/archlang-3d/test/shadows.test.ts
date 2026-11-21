@@ -191,7 +191,7 @@ describe("contact shadows (card RM8.8)", () => {
     // laneway's table stands on its rug: the rug casts nothing and the table's ring lies on its top.
     const lw = payloadOf(sourceOf("laneway-house"), "l");
     const rug = lw.nodes.find((n) => n.key.includes("furniture:rug"));
-    const table = lw.nodes.find((n) => n.key.includes("furniture:table"));
+    const table = lw.nodes.find((n) => n.key.endsWith("furniture:t_dining")); // CV13: the table is named t_dining (was table_6)
     expect(rug?.flat).toBe(true);
     expect(rug?.band).toBeUndefined();
     const s = bake(lw);

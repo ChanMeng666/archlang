@@ -10,7 +10,7 @@
  * PR legitimately moves a hashed output (never keep code), the table is re-taken by the generator, the
  * reason recorded below and the moved files listed in that commit's message.
  *
- * Taken: CV13 split (RM-D73), red team 1: the nine examples' chairs are 500 x 500, on-grid, centred and turned with facing; example source edited; on feat/cv13-example-chairs
+ * Taken: CV13 split (RM-D73), red team 1: chairs 500 x 500, on-grid, centred, turned with facing; laneway-house without a let (the playground's default plan draws no knobs); example source edited; on feat/cv13-example-chairs
  */
 
 /** `[path from the repository root, SHA-256 of the payload, evaluation steps]`, sorted by root. */
@@ -103,8 +103,8 @@ export const KEEP_WEAK_BASELINE: readonly (readonly [string, string, number])[] 
   ],
   [
     "examples/laneway-house.arch",
-    "044bce3e05f6221e34fbadaa8c4e6f45e63a7aaa8ad8d96dc33dcf51e002d0e2",
-    687,
+    "6837496815361092d5eb14e66576aade7badced5637288be663d5c609b343566",
+    659,
   ],
   [
     "examples/library.arch",

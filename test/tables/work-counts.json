@@ -1,5 +1,5 @@
 {
-  "_reason": "CV13 split (RM-D73), red team 1: the nine examples' chairs are 500 x 500, on-grid, centred and turned with facing; example source edited; on feat/cv13-example-chairs",
+  "_reason": "CV13 split (RM-D73), red team 1: chairs 500 x 500, on-grid, centred, turned with facing; laneway-house without a let (the playground's default plan draws no knobs); example source edited; on feat/cv13-example-chairs",
   "_tolerance": 0.1,
   "_totalTolerance": 0.03,
   "_floor": 8,
@@ -192,7 +192,7 @@
       "labelLeaders": 0
     },
     "examples/laneway-house.arch": {
-      "steps": 687,
+      "steps": 659,
       "drawUnits": 543,
       "elements": 31,
       "leafDoorPairs": 0,
