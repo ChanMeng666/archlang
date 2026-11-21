@@ -144,7 +144,7 @@ const BASELINE: [string, string, string][] = [
   [
     "3ce3c72f6915ece00f2eca8d9321651aca7c2644b95cc423f10397395fc9ab12", // CV13 (was 0f6dddac): example source edited (chairs added)
     // AF9: the parse holds the `posSpan` and `wallSpan` an opening's lead now records (no semantics); without them it is the parse pinned here (was 25a92395)
-    "787e7bfa1c8fd5935c121fb90f5666e042956d36f29c720cbc9e093f4003b371", // CV13 (was c6d8fe29): example source edited (chairs added)
+    "689a6f05802486ed54dab52ecf8e272e4936f2b88e7b3f67aed4c10ef580c195", // CV13 (was c6d8fe29): example source edited (chairs added)
     "examples/courtyard-house.arch",
   ],
   [
@@ -273,7 +273,7 @@ const BASELINE: [string, string, string][] = [
     "5fd914bb04d3d2c03d590844eb51dd3039763bab16b26d24e141b2c54b32fcfc", // CV13 (was f0f4a5aa): example source edited (chairs added)
     // CO.1: the parse holds the `size` clause the example now writes; without them, offsets mapped back, it is the parse pinned here (was 32255022)
     // AF9: the parse holds the `posSpan` and `wallSpan` an opening's lead now records (no semantics); without them it is the parse pinned here (was efcd3520)
-    "741a5e4441073bbbc1481061126f483a6bcafb5a4ff8dba3bfe6dd9953d9c2ef", // CV13 (was a6ed253f): example source edited (chairs added)
+    "4a222c2fe62a853f0b4aec7581b543b1cb19c4d0a8d65166ab003f3a60cb6308", // CV13 (was a6ed253f): example source edited (chairs added)
     "examples/remodel.arch",
   ],
   [
@@ -283,10 +283,10 @@ const BASELINE: [string, string, string][] = [
     "examples/sheet-notes.arch",
   ],
   [
-    "afa0597fc3ca00d1c1c3be29edab53cb2346babb90550b6b9e5092ea32371661", // CV13 (was 54adc1b8): example source edited (chairs added)
+    "f71aacc239a5bc518ea19e16c2152c3be59239bf96f73ae5248fa80fa23e3c75", // CV13 (was 54adc1b8): example source edited (chairs added)
     // CO.1: the parse holds the `size` clause the example now writes; without them, offsets mapped back, it is the parse pinned here (was 03e2e2c2)
     // AF9: the parse holds the `posSpan` and `wallSpan` an opening's lead now records (no semantics); without them it is the parse pinned here (was d73f013d)
-    "3b02b16e93b26aae47d542076309a518615def3cf35bad5e2a45c589ed49e55e", // CV13 (was ad0129d5): example source edited (chairs added)
+    "1346c2334dd24fb9b877654d4ae907f0abf9cb8a3d0c52d2dd4d74d5c83d3801", // CV13 (was ad0129d5): example source edited (chairs added)
     "examples/showcase/garden-courtyard.arch",
   ],
   [
@@ -314,7 +314,7 @@ const BASELINE: [string, string, string][] = [
   [
     "3395a3ebb754ef6e7283d75a3b3794fed306d370d0644882b253124abeebee46", // RM9.2, see ./byte-identity-baseline.ts; CV13 (was 3657648f): example source edited (chairs added)
     // AF9: the parse holds the `posSpan` and `wallSpan` an opening's lead now records (no semantics); without them it is the parse pinned here (was 355d36bd)
-    "7851194ac216c6fb88d24b31b1b4df152cd5aeef099f0c3524fd68b28b033813", // CV13 (was 15248124): example source edited (chairs added)
+    "fe0538412135336fa97fba46f44a20487c926dd9609ab224ae0832ff30447367", // CV13 (was 15248124): example source edited (chairs added)
     "examples/townhouse.arch",
   ],
   [

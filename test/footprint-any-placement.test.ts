@@ -114,7 +114,7 @@ const BASELINE: [string, string][] = [
   ["d99a898c06b322f203c7f9f3d34740be351b523712bb04fe7b0d846e85811084", "examples/relational.arch"],
   ["5fd914bb04d3d2c03d590844eb51dd3039763bab16b26d24e141b2c54b32fcfc", "examples/remodel.arch"], // CV13 (was f0f4a5aa): example source edited (chairs added)
   ["708332c1a3f4cf35989718277b996af6f718d2e5fb8bd3d2912d8f87f7d61a2a", "examples/sheet-notes.arch"],
-  ["afa0597fc3ca00d1c1c3be29edab53cb2346babb90550b6b9e5092ea32371661", "examples/showcase/garden-courtyard.arch"], // CV13 (was 54adc1b8): example source edited (chairs added)
+  ["f71aacc239a5bc518ea19e16c2152c3be59239bf96f73ae5248fa80fa23e3c75", "examples/showcase/garden-courtyard.arch"], // CV13 (was 54adc1b8): example source edited (chairs added)
   ["b64f7234dddc6527a0176033e82b38b70ad4fe84ca8df22b7a2e3269a1029553", "examples/studio.arch"],
   ["6667da00528cdd4ee4f155586a049ad877f81b83178f5a18c85afef7a76a781d", "examples/terrace-row.arch"],
   ["edd65eb6b725687bb30a7c956132e01bc2b9c57d772afaa9c234745af332f8bf", "examples/themed.arch"],

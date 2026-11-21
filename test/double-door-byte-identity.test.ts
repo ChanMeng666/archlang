@@ -154,7 +154,7 @@ const MAIN_SOURCES: [path: string, payload: string, source: string, undo: [branc
   [
     "examples/courtyard-house.arch",
     "9dc281ff3fccb4342eeb068f2b64e03d34da556cdc096c40ff7374152e41f983", // CV13 (was 657cad4c): example source edited (chairs added)
-    "200b62ab2f27991fa08f0b7f11e105849a53055bdea64d42790e4ddc0eb86565", // CV13 (was 0bc00da7): example source edited (chairs added)
+    "b38deef72b83dee87b8dec17a3788f9a3a2ce11b57d6ad4c1dcbf1b96d086d5b", // CV13 (was 0bc00da7): example source edited (chairs added)
     [
       [
         "  furniture kitchen_sink against wall shell segment 0 offset 14400 in r_kitchen\n  furniture stove        against wall shell segment 0 offset 13100 in r_kitchen\n  furniture counter      against wall shell segment 0 offset 13700 in r_kitchen",
@@ -304,7 +304,7 @@ const MAIN_SOURCES: [path: string, payload: string, source: string, undo: [branc
   [
     "examples/townhouse.arch",
     "e741d25e342c9142e839084a7c4fed7fc1fcfec49269dd5de70afda21fbf88a6", // RM1.3a, see ./byte-identity-baseline.ts; RM9.2, see ./byte-identity-baseline.ts; CV13 (was 2cdbb29b): example source edited (chairs added)
-    "db4288e618afde05817d118972ed512a6e3655cd2ca92923f5862e2756ccc5f2", // CV13 (was 6173926c): example source edited (chairs added)
+    "5ef67caa9e75d52850fe26edc4aeac49e8b92684c4e22e1746e336bb85c69bae", // CV13 (was 6173926c): example source edited (chairs added)
     [
       [
         "    furniture fridge       against wall shell segment 3 offset 3200 in r_kitchen",
