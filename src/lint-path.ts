@@ -1,9 +1,10 @@
 /**
  * A build entry, not a package export (card 3.19b), the fourth of the playground's four (after
- * `src/compile-path.ts`, `src/first-use-path.ts` and `src/actions-path.ts`): `lint`, which only the
- * playground's editor runs (`playground/src/lint-core.ts`, the door that edit mode imports and the
- * compile job imports dynamically for a request from the editor). Imported from its declaring
- * module, never through `index.ts`.
+ * `src/compile-path.ts`, `src/first-use-path.ts` and `src/actions-path.ts`): `lint`, which no
+ * view-mode render runs (`playground/src/lint-core.ts`, the door that edit mode imports and the
+ * compile job imports by URL for a request from the editor; the Checks overlay's review sheet and
+ * the press-only `finish` and `repair` read it too). Imported from its declaring module, never
+ * through `index.ts`.
  *
  * As an entry of its own it gives lint's code chunks apart from what a first use loads
  * (`src/first-use-path.ts`, which named `lint` until this card) and from what only a press loads

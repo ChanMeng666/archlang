@@ -35,7 +35,8 @@ const isFirstUse = (id) => id.startsWith(CORE_DIST) && FIRST_USE_FILES.has(id.sl
 // mode imports the door statically, and the compile worker imports that chunk by its own URL
 // (`LINT_URL`) for the editor's first request, so a first use in view mode loads none of it
 // (firstUsePathBudget). The door must be the chunk's own module: inlined into edit mode's chunk, its
-// URL would be edit mode's, which the worker cannot run.
+// URL would be edit mode's, which the worker cannot run. The worker reads `lint` from the global the
+// door sets when it runs, not from the chunk's exports, whose names the bundler shortens.
 const LINT_FILES = lintFiles(
   (rel) => readFileSync(CORE_DIST + rel, "utf8"),
   (rel) => existsSync(CORE_DIST + rel),
@@ -197,9 +198,9 @@ export default defineConfig({
         // and a Rolldown upgrade or a new shared dependency may move it again. What holds it is
         // the startup gate (playground/e2e/preview3d.spec.ts, "startup chunks"), which walks the
         // static imports from both pages and fails when jsPDF or another lazy chunk is reached.
-        // `first-use` (card 3.18) is the core the header actions and the compile worker share
-        // beyond the compiler (FIRST_USE_FILES above); `lint` (card 3.19b) is `lint()` and its door,
-        // which edit mode and the compile worker share (LINT_FILES above).
+        // `first-use` (card 3.18) is the core the header actions load beyond the compiler
+        // (FIRST_USE_FILES above); `lint` (card 3.19b) is `lint()` and its door, which edit mode,
+        // the Checks overlay, the press-only core and the compile worker share (LINT_FILES above).
         codeSplitting: {
           groups: [
             { name: "preload-helper", test: (id) => id.includes("vite/preload-helper") },

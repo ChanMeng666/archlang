@@ -27,15 +27,15 @@ export default defineConfig({
   // the rest of `dist/index.js` reaches, so the playground's `compiler` group can take the first
   // and leave the rest (`finish`, `repair`, `toDxf`, …) to the lazy chunks that use it. Its own
   // file holds only imports and exports; it is not a package export and not in the npm tarball.
-  // `src/first-use-path.ts` (card EB.2) does the same for the rest: what the header actions and
-  // the compile worker's `lint` reach goes in chunks apart from what only edit mode, the intent
-  // panel, takeoff and the 3D preview reach, so a first use loads only the first. Not exported,
-  // not in the tarball either. `src/actions-path.ts` (card 3.18) splits off what the header actions
-  // run only on a press (`finish`, `repair`, `format`, `toDxf`, `renderAscii`), which the
-  // playground loads with the press, not with the first use. Not exported, not in the tarball.
-  // `src/lint-path.ts` (card 3.19b) splits `lint` off both: only the playground's editor runs it,
-  // so the playground loads it with edit mode, not with the first use, and not with a press either.
-  // Not exported, not in the tarball.
+  // `src/first-use-path.ts` (card EB.2) does the same for the rest: what the header actions reach
+  // (`diagnosticToJson`) goes in chunks apart from what only edit mode, the intent panel, takeoff
+  // and the 3D preview reach, so a first use loads only the first. Not exported, not in the
+  // tarball either. `src/actions-path.ts` (card 3.18) splits off what the header actions run only
+  // on a press (`finish`, `repair`, `format`, `toDxf`, `renderAscii`), which the playground loads
+  // with the press, not with the first use. Not exported, not in the tarball.
+  // `src/lint-path.ts` (card 3.19b) splits `lint` off both: no view-mode render runs it, so the
+  // playground loads it with edit mode (or the Checks overlay, or a press of Finish or Repair,
+  // which read it), not with the first use. Not exported, not in the tarball.
   entry: [
     "src/index.ts",
     "src/cli.ts",

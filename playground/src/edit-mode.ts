@@ -18,7 +18,7 @@ import {
   type SceneSummary,
 } from "archlang";
 // `lint` through its door (card 3.19b), whose chunk the compile worker imports by `LINT_URL` for
-// the editor's requests: loaded with edit mode, so the worker's import of it is a cache hit.
+// the editor's requests: the page fetches it with edit mode, before the editor's first request.
 import { lint, LINT_URL } from "./lint-core.js";
 import { isolateHistory } from "@codemirror/commands";
 import type { EditorView } from "@codemirror/view";

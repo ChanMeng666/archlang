@@ -174,10 +174,13 @@ test.describe("compiling in a worker", () => {
     ).toBeLessThanOrEqual(100);
   });
 
-  test("a first use in view mode fetches no lint; entering edit mode does, and the worker lints", async ({ page }) => {
+  test("a first use in view mode fetches no lint; entering edit mode does, and the worker lints", {
+    tag: "@engines",
+  }, async ({ page }) => {
     // Card 3.19b: `lint` is the `lint` chunk, which edit mode imports and the worker imports by its
     // URL for the editor's first request (lint-core.ts); the startup-chunks gate in
-    // preview3d.spec.ts reads the build, and this reads the network and the page.
+    // preview3d.spec.ts reads the build, and this reads the network and the page. `@engines`: a
+    // module worker's import of a URL is what Firefox and WebKit may differ on.
     const LINT_CHUNK = /\/assets\/lint-[\w-]{8}\.js$/;
     const fetched: string[] = [];
     page.on("request", (r) => {

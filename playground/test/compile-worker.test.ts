@@ -19,7 +19,12 @@ import {
   sceneFor,
 } from "../src/compile-worker.js";
 import { extractKnobs } from "../src/knobs.js";
-import { LINT_URL } from "../src/lint-core.js";
+
+/**
+ * lint-core.ts's own URL (its `LINT_URL`), spelled here rather than imported: importing it would run
+ * it, and it publishes `lint` when it runs, which the first suite must see not yet done.
+ */
+const LINT_URL = new URL("../src/lint-core.ts", import.meta.url).href;
 
 const example = (name: string) =>
   readFileSync(new URL(`../../examples/${name}.arch`, import.meta.url), "utf8").replace(/\r\n?/g, "\n");
@@ -62,6 +67,13 @@ suite("lint loads with the editor's first request (card 3.19b)", () => {
     await expect(
       client.run(req(src, { lintProfile: "", lintUrl: "https://example.com/lint-core.js" })),
     ).rejects.toThrow(/this build's origin/);
+    // …and one that is no URL at all, which settles too (a throw here would leave it waiting).
+    await expect(client.run(req(src, { lintProfile: "", lintUrl: "http://" }))).rejects.toThrow(/Invalid URL/i);
+    // A module that publishes no `lint` (as one whose exports the bundler renamed reads to the job)
+    // rejects the request once, and is forgotten: it neither spins nor sticks.
+    expect((globalThis as Record<string, unknown>).__archlangLint, "no module has published lint yet").toBeUndefined();
+    const noLint = new URL("../src/escape.ts", import.meta.url).href;
+    await expect(client.run(req(src, { lintProfile: "", lintUrl: noLint }))).rejects.toThrow(/published no lint/);
     expect(jobReady(req(src, { lintProfile: "" }))).toBe(false);
     // With the door's URL, the page's job loads lint and lints as the core does.
     const got = await client.run(req(src, { seq: 2, lintProfile: "", lintUrl: LINT_URL }));

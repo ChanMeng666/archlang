@@ -34,37 +34,54 @@
 import type { CompileOptions, Diagnostic, DescribeOptions, LintOptions, PlanNode, Scene, SceneSummary } from "archlang";
 import { compile, describe, THEMES } from "./compiler.js";
 
-// `lint` is the editor's alone (no compile, embed or view-mode render runs it), so it is neither in
-// the compiler chunk (card EB.2, src/compile-path.ts) nor on the first use's path (card 3.19b): the
-// job imports its door (lint-core.ts) by the URL the first request that asks for lint carries,
-// which only the editor makes. Edit mode imports the same door statically, so by then the page has
-// fetched it and the worker's import is an HTTP-cache hit. By URL, never a literal `import()`:
-// Vite wraps those in its preload helper, which needs a document and is a view-path chunk
-// (lint-core.ts says more). That chunk imports the compiler chunk and nothing of the page's
-// (e2e/preview3d.spec.ts, "startup chunks").
-type LintCore = typeof import("./lint-core.js");
-type Lint = LintCore["lint"];
+// `lint` is no compile's, embed's or view-mode render's (only edit mode's requests ask for it), so
+// it is neither in the compiler chunk (card EB.2, src/compile-path.ts) nor on the first use's path
+// (card 3.19b): the job imports its door (lint-core.ts) by the URL the first request that asks for
+// lint carries, which only the editor makes. Edit mode imports the same door statically, so the
+// page has fetched that file by then. By URL, never a literal `import()`: Vite wraps those in its
+// preload helper, which needs a document and is a view-path chunk (lint-core.ts says more). That
+// chunk imports the compiler chunk and nothing of the page's (e2e/preview3d.spec.ts, "startup
+// chunks").
+type Lint = typeof import("./lint-core.js").lint;
+/**
+ * Where lint-core.ts publishes `lint` when it runs (its `LINT_KEY`): a module loaded by URL is read
+ * there, not by its export names, which the bundler renames (playground/test/core-files.test.ts
+ * holds the two spellings together).
+ */
+const LINT_KEY = "__archlangLint";
 let loadedLint: Lint | undefined;
 let lintP: Promise<Lint> | undefined;
 /**
  * Load `lint` (once) from its door's URL (lint-core.ts `LINT_URL`) for the requests that ask for it.
- * A failed load is forgotten, so the next request asks again.
+ * Settles either way: it resolves only with a function, and rejects on a missing, unparseable or
+ * foreign URL, a failed import, or a module that published no `lint`. A failed load is forgotten,
+ * so the next request asks again.
  */
 export function loadLint(url: string | undefined): Promise<Lint> {
   if (url === undefined) return Promise.reject(new Error("a request that asks for lint carries no lintUrl"));
-  // Only this build's own modules: the page that made the worker sends the URL, and it is the door's.
-  if (new URL(url, import.meta.url).origin !== new URL(import.meta.url).origin)
+  let target: URL;
+  try {
+    target = new URL(url, import.meta.url);
+  } catch (err) {
+    return Promise.reject(err);
+  }
+  // A comparison of URL origins, not a security boundary: `lintUrl` has one producer, lint-core.ts's
+  // own `import.meta.url` sent by the page that made this worker. It keeps a URL on another host
+  // out; under an opaque origin (a `file:` module in the tests, `blob:` or `data:`) both sides
+  // read "null" and pass.
+  if (target.origin !== new URL(import.meta.url).origin)
     return Promise.reject(new Error(`lint loads only from this build's origin, not ${url}`));
-  lintP ??= (import(/* @vite-ignore */ url) as Promise<LintCore>).then(
-    (m) => {
-      loadedLint = m.lint;
-      return m.lint;
-    },
-    (err: unknown) => {
+  lintP ??= import(/* @vite-ignore */ target.href)
+    .then(() => {
+      const published = (globalThis as Record<string, unknown>)[LINT_KEY];
+      if (typeof published !== "function") throw new Error(`${url} published no lint function`);
+      loadedLint = published as Lint;
+      return loadedLint;
+    })
+    .catch((err: unknown) => {
       lintP = undefined;
       throw err;
-    },
-  );
+    });
   return lintP;
 }
 /** Whether `runCompileJob` can run `req` now: it asks for no lint, or `lint` has loaded. */
@@ -259,7 +276,8 @@ interface Pending {
 /**
  * How long a request may be in the worker unanswered before the worker counts as stuck. Every
  * compile returns within its step and drawing budgets (well under a second for the corpus's
- * biggest plan), so this is far past any real one.
+ * biggest plan), so this is far past any real one. The editor's first request also loads lint's
+ * chunk in the worker first (card 3.19b), which the page has fetched with edit mode by then.
  */
 export const WORKER_TIMEOUT_MS = 8_000;
 
@@ -286,8 +304,11 @@ export function createCompileClient(
   const onPage = (p: Pending) => {
     if (p.req.seq < latest) return p.resolve(null);
     if (!jobReady(p.req)) {
+      // Once: `loadLint` resolves only when lint has loaded, so the job then runs; anything else
+      // rejects the request (the page shows the render failed), never a second load from here.
       loadLint(p.req.lintUrl).then(() => {
-        onPage(p);
+        if (jobReady(p.req)) onPage(p);
+        else p.reject(new Error("lint did not load"));
       }, p.reject);
       return;
     }

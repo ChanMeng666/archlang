@@ -286,8 +286,13 @@ describe("coreFiles (vite.config.js's compiler chunk)", () => {
         .filter((l) => !/^\s*(?:\/\/|\/\*|\*)/.test(l))
         .join("\n");
     for (const f of files) expect(code(f), `${f} imports lint-core.js with a literal import()`).not.toMatch(LITERAL);
-    // The job's import is by URL, and only the door takes `lint` from the core.
-    expect(text("compile-worker.ts")).toMatch(/\bimport\(\/\* @vite-ignore \*\/ url\)/);
+    // The job's import is by URL, and it reads `lint` where the door publishes it, under one key
+    // spelt the same in both (a chunk's export names are the bundler's to rename).
+    expect(text("compile-worker.ts")).toMatch(/\bimport\(\/\* @vite-ignore \*\/ target\.href\)/);
+    const key = (f: string) => /^(?:export )?const LINT_KEY = "([\w$]+)";$/m.exec(text(f))?.[1];
+    expect(key("lint-core.ts")).toBeTruthy();
+    expect(key("compile-worker.ts")).toBe(key("lint-core.ts"));
+    expect(text("lint-core.ts")).toMatch(/^\(globalThis as Record<string, unknown>\)\[LINT_KEY\] = lint;$/m);
     const takesLint = files.filter((f) =>
       [...text(f).matchAll(/^(?:import|export)\s*\{([^}]*)\}\s*from\s*"archlang";$/gm)].some((m) =>
         m[1]!.split(",").some((n) => n.trim() === "lint"),

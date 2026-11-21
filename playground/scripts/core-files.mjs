@@ -106,7 +106,7 @@ function entryFiles(entry, chunk, read, exists, stop) {
  * use loads beyond the compiler: what the header actions import statically (`diagnosticToJson`).
  * esbuild splits them into chunks by the set of entries that reach each module; vite.config.js
  * puts exactly these files in one chunk, which the actions import. The compile worker's `lint` was
- * named there too until card 3.19b; it is {@link lintFiles}'s now, which only the editor loads.
+ * named there too until card 3.19b; it is {@link lintFiles}'s now, which no view-mode render loads.
  * Pure over `read`/`exists`.
  *
  * @param {(rel: string) => string} read the text of a file under dist/, by its relative path
@@ -125,7 +125,7 @@ export const LINT_ENTRY = "lint-path.js";
  * The built core's files that make the playground's `lint` chunk (card 3.19b): the chunks
  * `lint-path.js` imports, transitively, that are in neither the compiler chunk nor the `first-use`
  * chunk (`loaded`, {@link coreFiles} and {@link firstUseFiles} together). `lint-path.js`
- * (src/lint-path.ts) names `lint`, which only the editor runs. vite.config.js puts exactly these
+ * (src/lint-path.ts) names `lint`, which no view-mode render runs. vite.config.js puts exactly these
  * files in one chunk with the playground's door to them (playground/src/lint-core.ts), which edit
  * mode imports statically and the compile worker imports by that chunk's own URL. Left to the
  * bundler, the door would be inlined into edit mode's chunk, and the worker would then import edit

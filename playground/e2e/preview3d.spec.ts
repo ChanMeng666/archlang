@@ -1,6 +1,6 @@
 import { readdirSync, readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
-import { fileURLToPath } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
 import { expect, type Page, test } from "@playwright/test";
 // The package's own software-WebGL flags (its replay tests render with the same ones); the one
 // browser-free module of the package, so the specs' typecheck never pulls its Node entry.
@@ -1710,7 +1710,7 @@ type Marked = Window & { __preview3d?: Handle & { __old?: boolean } };
 test.describe("startup chunks", () => {
   test.skip(!!process.env.E2E_BASE_URL, "reads the local build");
 
-  test("the startup chunks carry no 3D code and no editor, and stay within their budgets", () => {
+  test("the startup chunks carry no 3D code and no editor, and stay within their budgets", async () => {
     const baseline = JSON.parse(
       readFileSync(join(dirname(fileURLToPath(import.meta.url)), "startup-chunks.baseline.json"), "utf8"),
     ) as {
@@ -1868,7 +1868,27 @@ test.describe("startup chunks", () => {
     const holdsLint = (file: string) => readFileSync(join(DIST, file), "utf8").includes(LINT_ONLY);
     expect(lintReach.filter(holdsLint), "the lint chunk reaches lint's rules").not.toEqual([]);
     for (const file of firstUseOrBooted)
-      expect(holdsLint(file), `${file} carries lint's rules ("${LINT_ONLY}"), which only the editor loads`).toBe(false);
+      expect(holdsLint(file), `${file} carries lint's rules ("${LINT_ONLY}"), which no first use loads`).toBe(false);
+    // The built chunk, run: what the worker does after its import by URL, read where it reads it.
+    // The chunk's exports carry the bundler's short names (`export { … as c }`), which is why the
+    // worker reads `globalThis.__archlangLint` (lint-core.ts `LINT_KEY`), not `.lint`; it must be
+    // the core's `lint`, giving the core's diagnostics on a plan lint reports on.
+    const KEY = "__archlangLint";
+    expect(readFileSync(join(DIST, workerChunk), "utf8"), "the worker reads lint under the door's key").toContain(KEY);
+    const published = globalThis as Record<string, unknown>;
+    delete published[KEY];
+    await import(pathToFileURL(join(DIST, lintChunk)).href);
+    const builtLint = published[KEY] as ((src: string, opts: object) => unknown[]) | undefined;
+    expect(typeof builtLint, "the built lint chunk publishes a lint function").toBe("function");
+    const core = (await import(pathToFileURL(join(DIST, "..", "..", "dist", "index.js")).href)) as {
+      lint: (src: string, opts: object) => unknown[];
+    };
+    const BEDROOM = `plan "E2E" {\n  units mm\n  wall exterior thickness 150 { (0,0) (6000,0) (6000,4000) (0,4000) close }\n  room id=a at (0,0) size 6000x4000 label "Bedroom"\n}`;
+    const got = builtLint!(BEDROOM, { profile: "", noCache: true });
+    expect(got.length, "the built lint reports on a doorless, windowless bedroom").toBeGreaterThan(0);
+    expect(JSON.stringify(got), "the built lint is the core's").toBe(
+      JSON.stringify(core.lint(BEDROOM, { profile: "", noCache: true })),
+    );
     // Card NR.10: the compile path neither raises nor carries an intent violation's code; their
     // fixes are a table off it (src/error-catalog-fixes-intent.ts, test/compile-path-intent.test.ts).
     expect(readFileSync(join(DIST, compiler), "utf8"), "the compiler chunk carries no E_INTENT_ code").not.toContain(
