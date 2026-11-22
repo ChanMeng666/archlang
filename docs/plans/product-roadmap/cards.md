@@ -854,7 +854,7 @@ U.11（10 m 图上 0–1 m 比例尺 → 按图幅与比例选 2/5/10 m 档）�
 
 不许：改标题栏布局（D.7 之前）；改默认主题颜色。
 
-### RM1.2b · 行家规则，有效性与声明 — `todo` · 9+ 日 · opus · 依赖 RM1.2a、PS7.9、RM1.6a；`[语法]` 第 3、4 条
+### RM1.2b · 行家规则，有效性与声明 — `doing`（第 2 条已由 #1007 `4b161800` 做完：taste 的 R20 `A_WET_UNSTACKED`，按 RM-D82 计分，加 `keep stacked` 配方；余项 SR.28；第 1、3、4 条未开工） · 9+ 日 · opus · 依赖 RM1.2a、PS7.9、RM1.6a；`[语法]` 第 3、4 条
 
 1. **第二疏散口**：与 PS2.16（拟议的 `W_INNER_ROOM`，UK）合并为一张。先建 M.16 的 egress 事实为 opt-in `describe --facts egress`（支配点、门不相交的第二路径），这是该事实的第一个消费者；再加 advisory W，只对 `uses` 为居住且满足读过的条文条件的图。条文只取读过的文本：Approved Document B 第 1 卷（`S-full` 第三方全文副本可接受，写明版本）；读不到则本条 `parked`。`examples/studio.arch` 的内房读法（#683）在这里判。
 2. **湿区叠放**：不做默认 W（不叠放是合法的，且语言没有"管道墙"事实）。做两件事：`score --taste` 加一条 `A_*` 建议行（跨 `level` 的湿房间投影不重叠）；`docs/edit-one-room.md` 或 keep 文档加 `keep stacked` 的配方。跨层墙检查只经 `keep stacked`（iron-laws）。
@@ -1243,7 +1243,7 @@ MCP 工具用 `new-mcp-tool` skill 加；`docs/error-codes.md` 经 `gen:*` 生�
 
 EV.5 的门照旧：先有设计稿或 ADR，代码在后。PR 里如实写 L1 数字是否移动（L1 只应用 machine-applicable 的修复）。不许：跨房间边界移动开口，除非设计稿明确允许；把不能证明唯一的移动标成 machine-applicable。
 
-### AF10 · 量纲：先管过大，再数维度 — `todo`（RM-D64 的 blocked 已由 RM-D65 解除） · 第一步 1 日、第二步 3 日 · opus · 依赖无（第二步的警告也不依赖；升为错误要等 AF15）
+### AF10 · 量纲：先管过大，再数维度 — `doing`（第一步按 RM-D81 关闭：没有 `V`/`S-full` 的尺寸上限出处，也没有可挂提示的现有诊断；第二步的第一片 `W_AREA_AS_LENGTH` 已由 #1006 `fe43738d` 做完，其余见 backlog SR.27） · 第一步 1 日、第二步 3 日 · opus · 依赖无（第二步的警告也不依赖；升为错误要等 AF15）
 
 第一步用 `new-lint-rule` skill，带规则卡的公开夹具；阈值要有 `V` 或 `S-full` 的出处（原则 10），否则只做提示、不进新规则。不许：自动换算单位。
 
@@ -1349,7 +1349,7 @@ EV.5 的门照旧：先有设计稿或 ADR，代码在后。PR 里如实写 L1 �
 
 写进 `skills/archlang/SKILL.md` 的开头和 `arch context` 的 workflow 一节；spec 只在余量允许时加一句。内容包括：先确认单位，以及用户给的尺寸是标称还是净尺寸。经 `gen:*` 生成。不许：抬高 spec 的上限；手抄生成的内容。
 
-### RM9.6 · 检查覆盖率冲刺（N1、N3） — `doing`（CV13 已做：示例 #996 `e4d36045`，规则 `W_TABLE_NO_SEAT` #993 `f48633ff`，按 RM-D73 拆成两个 PR，见 backlog SR.14；其余各类按 rm9.0 §4 的队列，CV08、CV14 也照 RM-D73 拆） · 10–15 日 · opus · 依赖 RM9.0
+### RM9.6 · 检查覆盖率冲刺（N1、N3） — `doing`（CV13 已做：示例 #996 `e4d36045`，规则 `W_TABLE_NO_SEAT` #993 `f48633ff`，按 RM-D73 拆成两个 PR，见 backlog SR.14；CV08 已做：示例 #1000 `db8e7aa3`，规则 `W_SEAT_FACING_WALL` #1001 `490f2e36`（RM-D80）；CV14 已做：示例 #1003 `56dff28d`，规则 `W_STAIR_NO_VOID` #1004 `7f093fc3`；其余各类按 rm9.0 §4 的队列，下一类 CV11（CV12 等 PS2.30 的验收）） · 10–15 日 · opus · 依赖 RM9.0
 
 按 RM9.0 的判定逐类实施：加 lint 的那些类，每条规则一张小卡，带 §0 规则卡的门（公开的一对夹具，留出的一对放私有仓库，跑遍 `examples/**` 的报出数）；声明不查的那些类，写进一份公开的"不检查清单"（`docs/says-no.md` 或参考文档里）。验收：RM1.1b 的报出数。不许：为了拉高报出数去放宽规则的误报标准；把留出集写进公开仓库。
 

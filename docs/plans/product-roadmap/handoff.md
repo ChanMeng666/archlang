@@ -216,12 +216,31 @@ AF9 阶段 A 的最终模糊测试（#992）：188 个修复，0 个硬性失败
 - **CV13 拆成两个 PR（RM-D73），各过两轮红队：** 示例 #996（`e4d36045`）给九个示例补椅子，每把 500 × 500 mm、在网格上、用 `facing <桌子 id>` 朝向桌子；规则 `W_TABLE_NO_SEAT` #993（`f48633ff`）只动规则自己的行，但八个非住宅示例的 lint 覆盖报告随 `non-dwelling` 声明变了（aquarium、classroom-block、clinic、library、materials、practice-office 六个的 `contents` 族由 ran 变 partial；corner-cafe 与 museum 本来就是 partial（no-uses），再加上 non-dwelling；drawing、`describe()` 与 lint 诊断不变）。标签读法按 RM-D77（`README.md` §6.34）；扩展写成 backlog SR.18。
 - #993 之后的体积（`npm run size:embed`，gzip）：编译器路径 332,303 / 333,000 B（余 697）、首次使用 467,775 / 468,000 B（余 225）、embed 318,494 / 319,000 B（余 506）。
 
+**2026-11-21…22 一场（协调者记录，按 `gh` 读；日期都是 UTC）：** 合并到 `main` 的有（按卡分组；合并的先后：#1000、#999、#1002、#1003、#1005、#1004、#1001、#1006、#1008、#1007、#1010、#1011）：
+- E.18（#999，`44c16e12`）：等变模糊测试的 `W_ANNOTATION_OVERLAP` 平移问题，根因在引出线落点的地板测试读绝对坐标的舍入噪声，改为在落点自己的框里比、留 `DOT_SLACK`；远距离平移（≥ 1.5 km）的余项是 E.19，落点不看引出线是 E.20。
+- CV08：示例 #1000（`db8e7aa3`，townhouse、terrace-row 的沙发转向房间）→ 规则 `W_SEAT_FACING_WALL` #1001（`490f2e36`；repair 推出墙的直排座椅转半圈，RM-D80）。
+- 3.19（#1002，`519c2189`）：`compile()` 的错误卡与修复列移出编译器 chunk，编译器路径 −19,874 B、embed −18,706 B；两条上限按文件自己的规则往下重取（RM-D78）。
+- CV14：示例 #1003（`56dff28d`，五个上层补楼梯洞口，带一个 `W_STAIR_NO_LANDING` 的贴边洞口修正）→ 规则 `W_STAIR_NO_VOID` #1004（`7f093fc3`；洞口要盖住最后一段梯段头端的全宽）。
+- 3.19b（#1005，`c539514f`）：`lint()` 有了自己的 `lint` chunk，编辑模式、Checks 叠层与按键才用的核心（Format、Finish、Repair、DXF/TXT 下载）才加载它，看图模式的首次使用不加载，首次使用 −54,963 B；`firstUsePathBudget` 468,000 → 423,000（RM-D79）。
+- AF10（#1006，`fe43738d`）：`W_AREA_AS_LENGTH`（一个名字乘自己当长度用）；第一步按 RM-D81 关闭，这是第二步的第一片。
+- SR.17（#1008，`6aa824cf`）：MCP `fix` 与 L1 取 `rankFixes` 的第一个；余项 SR.21、SR.22。
+- RM1.2b 第 2 条（#1007，`4b161800`）：taste 的 R20（`A_WET_UNSTACKED`，跨层湿房间不叠放，按 RM-D82 计分），加 `keep stacked` 配方。
+- SR.15（#1010，`1f2cbbf2`）：折行的房间名在 SVG 文本里保留空格（零字号的分隔 tspan，像素不变）；余项 SR.23、SR.24。
+- DE.1（#1011，`b350e490`）：文档站 `/examples` 的两条 E2E 贴着 30 s 默认上限（它让 `fe43738d` 的 push run 变红）；真正的成本是页面上 35 个现场编译的组件，给两条测试定了 60 s 并写明原因，DE.2 去掉页面成本。
+
+每个代码 PR 都过了新上下文红队（多数两轮）；同步过 `main` 的 PR 合并前再审了合并后的头（#1011 那次只重叠 backlog，由协调者自己核对）；第二轮之后的修复由协调者亲自探针核对。
+留出夹具（CV08、CV14、AF10、R20）只在私有 `archlang-lab`，已推送。裁定 RM-D78…D82 在 `README.md` §6.35。
+体积上限（`playground/e2e/startup-chunks.baseline.json`）现在是编译器路径 321,000、embed 308,000、首次使用 423,000 B gzip；`lint()` 在 `lint` chunk，不占首次使用；规则与编译共用的代码仍在编译器 chunk。
+
 **下一步：**
-- 第一张卡是编译器路径的体积回收（backlog 3.19，RM-D74），编译器路径只剩 697 B：见上面的数字。在它之前不开动别的编译器路径卡；抬上限仍归所有者。
-- 然后 RM9.6 的其余各类（CV08、CV14 按 RM-D73 拆，`design/rm9.0-coverage-classes.md` §4），E.18（等变性模糊测试的 `W_ANNOTATION_OVERLAP`），AF10 第一步，RM1.2b、RM1.1b 验收（`v3.md` §3）。
+- RM9.6 其余各类按 `design/rm9.0-coverage-classes.md` §4 的队列：CV12 排第 1，但先决是 PS2.30 的验收，所以先做 CV11（`W_HOB_NO_LANDING`，出处已是 `V`，补记 381 mm 一行；与 `W_HOB_FRIDGE_GAP` 分工）→ CV16 → CV10 → CV09 → CV15，PS2.30 验收后做 CV12；会落在示例上的照 RM-D73 拆。
+- 这一场新开的余项卡：E.19、E.20、SR.21–SR.29、DE.2（`docs/backlog.md`）。
+- AF10 第二步的其余部分（字面量多写了零、两个不同长度相乘、立方、`at` 位置），见 #1006 的余项。
+- RM1.2b 的第 1、3、4 条；RM1.1b 是 2027-01 在已发布版本上的复测（付费的部分归所有者）。
 - 约 2026-11-26 读 TR14 的一周读数（#982 在 2026-11-19T19:40Z 合并）：缓存总量低于 8 GB，`apt-debs-*` 四组都还在，才改 `done`。
-- 仍开着、没开工的卡：TR13、TR15、backlog 3.17、NR.1–NR.9、NR.11、NR.13–NR.15、AL3c/e/f（AL3d/g/l 先要协调者的裁定）。
+- 仍开着、没开工的卡：TR13、TR15、backlog 3.17、SR.1–SR.13、SR.16、SR.18–SR.20、NR.1–NR.9、NR.11、NR.13–NR.15、AL3c/e/f（AL3d/g/l 先要协调者的裁定）。
 - 标签拥挤的视觉车道接着是 AL2a → AL2c（`../label-crowding/README.md` §4）。
+- 发布：1.66.0 之后 `main` 上攒了用户可见的改动（`CHANGELOG.md` `[Unreleased]`）；下一次发布要所有者对那一次的决定。
 
 **1.64.0（RM-D66，`README.md` §6.29）：** 所有者 2026-11-18 同意发布，版本号受托定为 1.64.0（次版本，带 Breaking）；切点在 `b36f6995`（RM9.2 合并之后），AF3 不进本版。之前写下的发布说明保留在下面，作为历史记录。
 
@@ -251,8 +270,8 @@ AF9 阶段 A 的最终模糊测试（#992）：188 个修复，0 个硬性失败
 
 **线下，有余量才做：** RM0.7b、RM0.7c、RM1.2d–RM1.2f、RM1.2h、RM1.4c、RM5.1b、RM0.6、RM7.4、RM1.6c、RM6.1b–RM6.1d、RM8.6c，以及上面的余项卡。CHANGELOG 1.60.0 的 `A-ANNO` 措辞更正已在 1.61.0 的发布说明里做了。
 
-**playground 体积上限（2026-11-20 UTC，`playground/e2e/startup-chunks.baseline.json`）：** `compilerPathBudget` 333,000 B gzip，`embedPathBudget` 319,000，`firstUsePathBudget` 468,000（#976 往下重取，RM-D75）。
-#992 的 PR 里实测（它的头 `1babd94d`，以 `c749ac4e` 为底）：编译器路径 332,209（余 791）、embed 318,401（余 599）、首次使用 466,271（余 1,729）；所以下一场先做 backlog 3.19（RM-D74）。
+**playground 体积上限（2026-11-22 UTC，`playground/e2e/startup-chunks.baseline.json`）：** `compilerPathBudget` 321,000 B gzip，`embedPathBudget` 308,000，`firstUsePathBudget` 423,000（#1002、#1005 按规则往下重取，RM-D78、RM-D79）。
+最近一次实测在 #1006 的第一轮头（`bbcdef32`，以 `490f2e36` 为底）：编译器路径 313,631、embed 300,980、首次使用 413,224；之后合并的 #1010 在三条路径上各加约 140 B。`lint()` 本身在 `lint` chunk 里，不占首次使用；但规则与编译共用的代码（例如楼梯几何）仍在编译器 chunk，#1004 就让首次使用加了 643 B。
 动编译器路径的卡在 PR 里写出 `npm run size:embed` 在 `main` 和分支上的数字；能放进惰性 chunk 的放进去。
 抬上限是放松检查，要所有者对那个 PR 的批准（`REVIEW.md`）；唯一的例外是 `iron-laws.md` 允许的、按规则重取的 `embedPathBudget`。
 
@@ -487,3 +506,13 @@ RM1.1a 的兜底：1.59.0 到 2026-11-23 还没打 tag，就量当时 `main` 的
 - **(bj) 发布 PR 的说明要在切点对着代码重读一遍：** 两轮评审都找到了不实的说法（VS Code 面板文字、过时的计数、意图检查 `reachable` 的范围）。
 - **(bk) 示例里手写的偏离网格的坐标，家具和标签会被静默吸附，没有 `W_GRID_SNAPPED`：** 改示例的坐标必须落在网格上（#996 两次：remodel 的标签 `(4500,3450)` 在 100 mm 网格上被吸到 3500）。
 - **(bl) 规则里每个元素的循环都要算进计数的工作量：** #993 第一轮是立方，第二轮是经过一个没记忆化的分类器藏起来的平方。`tableSeatTests` 只数 房间 × 元素 的中心测试，看不见 `roomUses` 的调用：第二轮的分类器那一半只由稠密测试里的跳过次数上界和协调者的计时钉住（backlog SR.19）。
+
+### 2026-11-21…22 一场（阶段 2；协调者记录）
+
+- **(bm) 重锁行被别的执行者覆盖过两次**（CV14 覆盖 3.19b 的行约 40 秒、AF10 覆盖 SR.17 的行）：协议改为"只在读到的内容恰好是 `free` 时写自己的行，写完立刻再读一遍确认还是自己的"，写进每份简报。
+- **(bn) 执行者等锁的后台监视器会悄悄失效**（一个把 `free` 也当成被占、一个超时不报），执行者就停在原地：协调者隔一段时间读各卡的状态文件和锁，用 SendMessage 叫醒，让它直接轮询锁。
+- **(bo) 只在构建产物里出现的 bug，vitest 看不到：** #1005 第一轮的 lint chunk 导出名被压缩，worker 读到 `undefined`，编辑器死循环、19 个 e2e 红；拆 chunk 的卡要在构建出的 `dist` 上验证（无头浏览器或读构建出的 chunk），不能只靠源码测试。
+- **(bp) 按 baseline 文件自己的规则往下重取上限，协调者读作收紧并在受托下裁了**（RM-D78、RM-D79，同 RM-D75）；这是协调者的读法，`REVIEW.md` 把"降低的上限"也列为要所有者批准的项，RM-D75 写明"要所有者确认"，至今没有确认，所以不是常设规则；往上重取仍归所有者。
+- **(bq) 协调者自己第一轮的裁定也会错：** #999 第一轮让执行者撤回"没被钉住"的符号形状那一半，第二轮就找到了需要它的平面（F1）。协调者的裁定同样交给第二轮审。
+- **(br) 两张都动 lint 登记表的规则卡并行，后合并的那张同步时手工解了 13 个文件**（#1001 对 #1004）：先合一张，再让另一张同步，合并后的头必须再审（列表、计数器、表行逐项两边都在）。
+- **(bs) 串行等待的 e2e 会随语料变大慢慢超时：** 文档站 "every sheet drawing renders" 在 30 s 默认上限边上（27.9 s 过、32 s 败），把一次 `main` 的 push run 弄红；真正的成本是 `/examples` 页本身（35 个现场编译的组件），见 DE.1、DE.2。

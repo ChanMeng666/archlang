@@ -2906,6 +2906,66 @@ card's 1200-wide hall beside a 4000-wide room): `label "厨房厨房厨房 Kitch
 name (a test with a CJK first line, through `planFonts`), and every PNG with no wrapped CJK line is
 byte-identical.
 
+## Review residue of the v3 stage-2 session (PRs #999–#1011, 2026-11-21…22 UTC)
+
+SR.21–SR.24 above came from the same session; SR.25 onward were opened by its records PR.
+
+### SR.25 · R16 now judges a polygon room written with a repeated vertex (#1007 merged-head review) — `todo`
+
+#1007's round-2 fix made the shared `latticeRing` (`src/taste/criteria.ts`) drop a repeated vertex,
+which R16 reads through `cornersOf`. A rectilinear polygon room written with its closing point (for
+example `polygon (2000,0) (5000,0) (5000,3000) (2000,3000) (2000,0)`) was skipped by R16 before
+(`non-rectangular-room`) and is judged now, so such a plan can gain `A_DOOR_OFF_CORNER` and a
+different total. The records PR of 2026-11-22 adds the CHANGELOG sentence. **Gate:** an R16
+assertion on a closed ring in `test/taste.test.ts`.
+
+### SR.26 · `polygonsOverlap` misses identical or flush-aligned outlines (#1007 red team) — `todo`
+
+`polygonsOverlap` (core geometry) reads two identical polygon outlines, or a rectangle that fills
+one arm of an L, as not overlapping: every vertex and edge midpoint of each ring lies on the other's
+boundary and no edge crosses properly. So two identical polygon rooms on one storey get no
+`W_ROOM_OVERLAP`, while two identical rectangles do. R20 (#1007) stopped using it and decides on the
+0.001 mm lattice instead. **Gate:** the identical-L and arm-filling cases raise `W_ROOM_OVERLAP`;
+the corpus re-count names every report that moves (it is a shared check).
+
+### SR.27 · `W_AREA_AS_LENGTH` residue (#1006) — `todo`
+
+(1) Inside an imported component, `let A = W*W` from the module's own `W` is not reported (P1a,
+pinned silent in `test/silent-accepts.test.ts` so a fix flips it on purpose); the direct `size W*W`
+is. A fix needs a non-evaluating peek at the cached module env (`src/ir/expand.ts`). (2) When
+`E_OUT_OF_RANGE` drops the element (a square of a name over about 5.79 m), the warning goes with it.
+(3) The rest of AF10 step 2: a literal with extra zeros, two different lengths multiplied (needs
+units kept on literals), a cube, an element's `at`, circle and polygon numbers.
+
+### SR.28 · R20 and `keep stacked` residue (#1007) — `todo`
+
+(1) At a polygon's inside corner, an overlap of 1 mm or less can read either way under a mirror or
+a turn (the margin is applied to the cut pieces, not the rings); deciding it on the rings closes it.
+(2) The design's other half of R20 (wet rooms sharing walls) and R19 (a toilet over a habitable
+room) are not built. (3) `keep stacked` needs identical rectangles, so a smaller bath over a larger
+WC cannot be pinned with it.
+
+### SR.29 · Session residue of 2026-11-21…22 (#999–#1011) — `todo`
+
+Each item is small; split one off when it is picked up.
+1. #1001: repair's "still stands in a wall where repair left it" note (`src/repair.ts`) has no
+   test; repair's `rotate` for a seat inside a placed component is written in the sheet frame
+   (a pre-existing class, also for a `wc`).
+2. #1001 (CV08): seats 250–300 mm from a wall (`garden-loft:46`, `relational:42`,
+   `laneway-house:49`) and one-seat sofas stretched deep (`knob-flat:38`, `laneway-house:49`,
+   `remodel:55`, `two-bed:48`) are not reported.
+3. #1003/#1004 (CV14): `examples/hillside-villa.arch:236-237`, `:285-287` still say "the void"
+   (two now); the head band has no depth (a 2 mm strip clears it; a headroom rule needs a sourced
+   figure); floor is sampled at three points per open stretch; a gap storey and an escalator are
+   not read.
+4. #1005: a broken-plan embed loads the lint chunk with the error card; the page-side `loadLint`
+   has no bound on an import that never settles; the WebKit e2e opens a shared plan instead of a
+   gallery pick, which WebKit could not click.
+5. #1002: a broken embed loads about 126 KB gzip to draw its card; the fix column still rides the
+   first use for Copy for LLM.
+6. #1010: the K1 re-pin's moved files are listed in the merge commit `1f2cbbf2`, not in the
+   re-pin commit.
+
 ## Test-programme findings (promo-credit programme, 2026-11-16)
 
 From `docs/plans/product-roadmap/2026-11-test-findings.md` (§ 3, § 4, § 5). RR.8 (2), the

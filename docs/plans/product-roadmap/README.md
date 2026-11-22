@@ -743,6 +743,18 @@ RM-D65 授权协调者在所有者不在时自行裁定，所有者一句话可�
 |---|---|---|---|
 | RM-D77 | `W_TABLE_NO_SEAT`（#993）：(a) `residential-basic` 要不要判非住宅平面；(b) 一张 `table` 的标签怎样决定读不读 | (a) **照旧判**，和其他住宅规则一样：`residential-basic` 把每份平面当住宅判，只判起居、餐厅、厨房这类日间房；默认 profile 下 `examples/**` 报 0 个，`residential-basic` 下 4 个非住宅示例报 20 个。(b) **有餐桌词就一定读**（dining、dinner、dine、eat、breakfast）；否则标签写了别的家具的 `table` 不读：整词 desk、island、nightstand、bedside、dressing、console、coffee，或词组 side table、end table、TV table、TV stand | (a) profile 的意思就是"当住宅判"，为这一条规则开例外会让 profile 的语义变成每条规则各说各话。(b) 餐桌词优先避免漏报（"Dining Island"、"TV dinner table"）；封闭名单里的词来自两轮红队的探测，语料里只出现过一个 "Island"（`docs/gallery/family-of-four`）；其余的误报标签留给 backlog SR.18（标签读法的扩展） |
 
+### 6.35 受托裁定：体积上限往下重取、repair 转座椅、AF10 的范围、R20 计分（RM-D78…D82，2026-11-21…22，UTC）
+
+协调者在这一场的评审里做的裁定。受托依据：所有者 2026-11-18 的开工授权（RM-D65）与这一场开头的提示词（协调者转述："我不在线时，由你自行做出最佳决策，并在 PR 里写明理由"）；**只对这一场有效**，所有者一句话可以推翻。没有一条抬高上限、改铁律或动 `SYNONYMS_VERSION`/`JUDGE_VERSION`。
+
+| 编号 | 问题 | 决定 | 理由 |
+|---|---|---|---|
+| RM-D78 | 3.19（#1002）把编译器路径减了 19,874 B、embed 减了 18,706 B 之后，上限怎么办 | `compilerPathBudget` 333,000 → 321,000、`embedPathBudget` 319,000 → 308,000，按 baseline 文件自己的规则（实测 × 1.025，进到千）往下重取；`firstUsePathBudget` 不动（规则会把它抬高） | 协调者读作收紧，不是放松（同 RM-D75；这一读法要所有者确认，`REVIEW.md` 把降低的上限也列为要批准的项）；留在 333,000 时 glTF-Transform 约 19,900 B 的泄漏不再能单独触发编译器路径的门 |
+| RM-D79 | 3.19b（#1005）把首次使用减了 54,963 B 之后 | `firstUsePathBudget` 468,000 → 423,000，同一条规则 | 同上：留在 468,000 时 lint（约 55,000 B）或 glTF-Transform 漏回首次使用都触发不了它 |
+| RM-D80 | `W_SEAT_FACING_WALL`（#1001）：repair 把穿墙的座椅推到墙面上，正面正好贴墙，于是 repair 自己制造了这条警告 | repair 推完后若直排座椅的正面落在那面墙上，就转半圈（占地不变），作为一条单独的改动写出理由；L 形沙发、仍在墙里的、`rotate` 是表达式的、用 `facing` 的、两墙夹住的不转，写进 `unresolved` 并说明原因 | 转半圈只改朝向不改占地；不转的情况如实报告，不让"修复后再 lint"的循环不收敛 |
+| RM-D81 | AF10 第一步要一个"尺寸大得离谱"的阈值，阈值要 `V` 或 `S-full` 的出处 | 第一步关闭：查不到住宅或房间尺寸上限的可用出处（IRC R304 只有下限；GB 50016 的防火分区不是房间尺寸），现有诊断里也没有能挂提示的；#1006 的 `W_AREA_AS_LENGTH`（一个名字乘自己当长度用）不读任何数，所以原则 10 不要求出处，它算第二步（把面积当长度用）的第一片 | 原则 10 管的是进规则的数；没有数的规则不欠出处；把它标成第一步会让卡的状态失真 |
+| RM-D82 | RM1.2b 第 2 条要一行 `A_*` 建议；#1007 做成了计分的 R20 | 保留计分，权重 1 | `A_*` 码只作为某个判据的 `TASTE_ADVICE` 行存在，没有别的出口；权重 0 没有先例，也会让分离律分不出这一对夹具；代价是判得到的平面总分会动（hillside-villa 0.926 → 0.826），`validate --taste` 的 `next` 也会变，CHANGELOG 已写明 |
+
 ---
 
 ## 7. 与已有计划的关系
