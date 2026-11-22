@@ -7,7 +7,7 @@
  * form existed. Each digest is {@link allStoreysDigestWithDiagnostics} (every storey's SVG,
  * `describe()`, `lint()` and `compile().diagnostics`, since the form reaches the resolver),
  * **measured against `src/` at `ececc428`** (`refactor/arc2-room-ring-seam`, the tree this form is
- * built on), extracted by `git archive` and its own copy of this digest body run against it. The set
+ * built on; `main` at `64875946` is the same tree), extracted by `git archive` and its own copy of this digest body run against it. The set
  * is every plan of `examples/` and `test/fixtures/`: none writes an arc in a room ring, and none
  * moved. Cross-check that the body is the sanctioned one: `examples/accessible.arch`'s row is
  * character for character the one `wall-status-byte-identity.test.ts` carries.

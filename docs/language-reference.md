@@ -1614,6 +1614,55 @@ piece into a polygon room and says so in its `unresolved` list, and `archlang su
 no door/window candidate *on* a polygon room rather than propose one on an edge the room
 does not have.
 
+#### Curved edges in a ring — `arc`
+
+```
+room [id=<id>] polygon (x,y) … arc (x,y) radius <mm> [cw|ccw] [major] … [label "<text>"] …
+```
+
+A ring's edge may be a circular arc: the [wall's `arc` clause](#curved-walls-arc-edges-v1-24),
+written on the vertex the curved edge **arrives at**, with the same `cw`/`ccw`/`major` words.
+So a room can follow a bay, an apse or a bowed facade exactly instead of stopping at its chord.
+A ring is implicitly closed and repeats no vertex, so to curve the **closing** edge, end the
+ring with `arc (x0,y0) …` back on its first vertex: that arc is the closing edge. An `arc`
+cannot lead the ring, and a ring with an arc needs only two vertices (a segment of a circle).
+
+```arch
+plan "Bay room" {
+  units mm
+  wall id=shell exterior thickness 250 {
+    (0,0) (2400,0) arc (5400,0) radius 1900 cw (5800,0) (5800,6800) (0,6800) close
+  }
+  room id=living polygon (0,0) (2400,0) arc (5400,0) radius 1900 cw (5800,0) (5800,6800) (0,6800) label "Living" uses living
+  door on shell at 12000 width 900
+  window on shell at 4100 width 1600
+}
+```
+
+**What is exact.** The area is the vertices' shoelace plus each arc's circular segment
+`(R²/2)(θ − sin θ)`, in closed form: the living room above is 40.98 m², the 5800 × 6800
+rectangle and its bay. The floor is drawn with true arcs, the room's `bbox` reaches the bulge,
+and `describe()` reports the written vertices as `floor_polygon` and each curve as
+`floor_arcs` (`from`, `to`, `center`, `r`, `sweep` in radians, `+` clockwise on the sheet), so
+no fact is a chord. Plan JSON carries each arc on the vertex it arrives at (the closing arc on
+the first vertex) and round-trips. `dims auto` ticks the written vertices only and adds an
+`R<r>` leader per curve, none for a curve about a wall arc's centre (that wall's leader already
+dimensions it).
+
+**What reads the ring as a fine polygon.** Grids, adjacency, containment and overlap read the
+arc as chords at the 7.5° step (at least 8 per arc), as they read a `room circle`'s 48-gon; the
+net area, the label pin and the two enclosure rules (`W_ROOM_NOT_ENCLOSED`,
+`W_BOUNDARY_NO_WALL`) read the true curve. Those chords stand at most 100 mm off the curve, the
+slack a room's containment allows: R ≤ 46,705 mm at the full step (100 / (1 − cos 3.75°)), more
+for an arc under 60°, which steps finer. An arc past it is
+[`E_ROOM_ARC_SAG`](error-codes.md): write the curve as straight edges, or as shorter arcs.
+
+**Refusals.** A radius under half the chord is [`E_ROOM_ARC_RADIUS`](error-codes.md), with the
+wall's machine-applicable fix to the minimum; the edge stays straight. An arc that bulges across
+another edge is [`E_ROOM_POLY_SELF_INTERSECT`](error-codes.md). An arc-edged room is a polygon
+with a curved edge, so it refuses what a slanted polygon refuses (the table above): datums,
+relational placement against it, anchors, `walls from rooms` and `between`.
+
 ### Curved walls — `arc` edges (v1.24)
 
 ```

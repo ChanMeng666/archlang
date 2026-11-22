@@ -5,7 +5,7 @@
 Every diagnostic carries a stable code. Look one up with `arch explain <CODE>`
 (e.g. `arch explain E_ROOM_SIZE`). Errors abort rendering; warnings do not.
 
-**168 errors** · **109 warnings**
+**170 errors** · **109 warnings**
 
 | Code | Severity | Summary |
 | --- | --- | --- |
@@ -131,6 +131,8 @@ Every diagnostic carries a stable code. Look one up with `arch explain <CODE>`
 | [`E_ROOMS_OVERLAP`](#e_rooms_overlap) | error | `walls from rooms`, a `wall … between`/`wall … around`, or a door or opening `between` a polygon and a room, meets two rooms that overlap. |
 | [`E_ROOM_ALIGN`](#e_room_align) | error | Unknown relational alignment edge. |
 | [`E_ROOM_ALIGN_AXIS`](#e_room_align_axis) | error | Relational alignment edge belongs to the other axis. |
+| [`E_ROOM_ARC_RADIUS`](#e_room_arc_radius) | error | Room ring arc radius too small for its chord. |
+| [`E_ROOM_ARC_SAG`](#e_room_arc_sag) | error | Room ring arc too large for the room's tests. |
 | [`E_ROOM_NOT_RECTANGLE`](#e_room_not_rectangle) | error | A room-edge datum meets a circle, a slanted polygon, a polygon side of several runs or a polygon's centre; a `wall … between`/`wall … around` meets a polygon or circle room; or `walls from rooms` or a door or opening placed `between` two rooms meets a circle or a polygon with a slanted edge. |
 | [`E_ROOM_POLY_DEGENERATE`](#e_room_poly_degenerate) | error | Polygon room has fewer than three effective vertices. |
 | [`E_ROOM_POLY_SELF_INTERSECT`](#e_room_poly_self_intersect) | error | Polygon room intersects itself. |
@@ -2434,6 +2436,42 @@ room id=b right-of a align right size 3000x3000   # error: `right` is horizontal
 ```arch static
 room id=a at (0,0) size 3000x3000
 room id=b right-of a align bottom size 3000x3000   # fixed: a vertical edge for right-of
+```
+
+## E_ROOM_ARC_RADIUS
+
+*error* — Room ring arc radius too small for its chord.
+
+**Cause.** An `arc (x,y) radius R` edge in a `room polygon` ring asks for a circle of radius R through the previous vertex and this one, but R is less than half the straight-line distance between them (or is not positive) — no such circle exists. The edge is kept straight, so the room still has a floor.
+
+**Fix.** Raise the radius to at least half the chord (the message states the minimum), or move the vertices closer together. `archlang fix` applies the minimum for you.
+
+```arch static
+room polygon (0,0) (4000,0) arc (4000,4000) radius 1000 cw (0,4000)   # error: needs R >= 2000
+```
+
+**Fixed.**
+
+```arch static
+room polygon (0,0) (4000,0) arc (4000,4000) radius 2000 cw (0,4000)   # fixed: R is half the 4000 mm chord
+```
+
+## E_ROOM_ARC_SAG
+
+*error* — Room ring arc too large for the room's tests.
+
+**Cause.** A `room polygon` ring's arc edge is kept exact for its area, extent and drawing, and also as a fixed-step ring (7.5° chords, at least 8 per arc) that the grids, adjacency and containment tests read, as a `room circle`'s 48-gon is. Those tests allow a room 100 mm of slack, so a chord may stand at most 100 mm off its curve: radius 46,705 mm at the full 7.5° step, more for a shallow arc. This arc's chords stand further off, so the room's tests would read a floor that is not the drawn one. The edge is kept straight.
+
+**Fix.** Write a curve this large as straight edges, or split it into shorter arcs (an arc under 60° takes a finer step).
+
+```arch static
+room polygon (0,0) arc (100000,0) radius 60000 cw (100000,50000) (0,50000)   # error: its chords stand 114 mm off the curve
+```
+
+**Fixed.**
+
+```arch static
+room polygon (0,0) (50000,-26834) (100000,0) (100000,50000) (0,50000)   # fixed: the curve as straight edges
 ```
 
 ## E_ROOM_NOT_RECTANGLE
