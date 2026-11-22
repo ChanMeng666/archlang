@@ -2758,7 +2758,9 @@ head, 1 and 0 reports); the `table` labelled "Island" in `docs/gallery/family-of
 declined by the label rule (#993 red team 1, m6); and the gallery plans are accepted output, not
 edited by hand (#993's residue: 6 reports in 6 plans). The live residue is SR.20.
 
-### SR.15 · A wrapped room label loses its space in the SVG text (downstream report, 2026-11-20) — `todo`
+### SR.15 · A wrapped room label loses its space in the SVG text (downstream report, 2026-11-20): done by #1010, waiting to be archived — `note`
+
+Done by #1010: the spaces a break removed ride between a wrapped name's `<tspan>` lines in a `<tspan font-size="0" xml:space="preserve">` each (`lineGaps`, `src/text-layout.ts`), so the `<text>`'s content is the label; a visible space would shift the anchored line by half a space (measured in Chrome and resvg), the zero-size one moves no glyph (PNG and Chrome screenshots identical). The 201 moved digest rows and 33 K1 rows are SVG only: stripping the separators reproduces every old row. Residue: `arch review`'s two `dx` tspans (`src/cli/review.ts`) still read with no space. The card text below is kept for the record.
 
 A downstream application reads "EntranceHall" from a production drawing whose schedule says
 "Entrance Hall". Repro (MCP `compile`, 2026-11-20): a 1200 × 2400 room labelled "Entrance Hall"
