@@ -766,6 +766,16 @@ RM-D65 授权协调者在所有者不在时自行裁定，所有者一句话可�
 
 | RM-D85 | OpenAI 插件目录的"提交审核"含代所有者作的政策声明，1.66.0、1.67.0 都留给了所有者 | "请你从现在开始，自动实施这个步骤，也就是由你全权负责the OpenAI plugin directory发布的全流程"（2026-11-22） | **常设授权**：每次发布由代理走完 OpenAI 目录的全流程（`npm run build:openai-plugin` → "Create draft from ZIP" → 等扫描 → "Submit for review" 并如实勾选政策声明 → 通过后 "Publish"）；某一项声明不能如实勾选时停下来问；登录、2FA、站点权限仍是所有者的。1.67.0 当天按此提交、通过并发布 |
 
+### 6.37 受托裁定：数据飞轮的两项与 1.68.0 的内容（RM-D86…D88，2026-11-22，UTC）
+
+所有者读了 `docs/plans/modularity-and-flywheel.md` §8 的三项待定后说："请你帮我做出最佳决策，然后实施。"（2026-11-22）
+
+| 编号 | 问题 | 决定 | 理由 |
+|---|---|---|---|
+| RM-D86 | playground 页面要不要记录事件（FW4；推翻 2026-11-07 的"页面代码里不加埋点"） | **记录，只记封闭列表，不记内容。** 页面经 `navigator.sendBeacon` 把事件发到 playground Worker 的 `POST /api/event`，写进 Analytics Engine 数据集 `archlang_playground`（保留三个月）。只收事件名（`compile`、`export`、`view_3d`、`share`、`fix_applied`、`contribute` 之类的封闭列表）、诊断码（目录里的 `E_*`/`W_*`，最多 20 个，排序去重）、导出格式和日期；不收源码、标签、id、cookie、IP（IP 只作限流键，不存）。浏览器发出 `navigator.globalPrivacyControl` 或 `doNotTrack === "1"` 时不发。隐私页在同一个 PR 里改 | 飞轮要的是"模型和人在哪些码上失败"，这些不含内容也能拿到；2026-11-07 的顾虑是页面变重和隐私，这里一次 beacon 不过几百字节，内容一字不收 |
+| RM-D87 | 能不能让用户自愿把失败的 plan 发给我们（FW5） | **可以，逐次自愿，建在短链接上。** 编译失败或有警告时，"Send this plan to improve ArchLang" 按钮先弹出说明：会发送什么（plan 全文和诊断码）、会变成一个短链接（与 **Copy short link** 一样，任何拿到链接的人都能打开）、只用于改进 ArchLang（spec、错误目录、修复、lint，以及私有的评测语料），绝不公开发布、绝不交给第三方训练，可凭链接要求删除。点确认后才调用现有的 `POST /api/share`，再写一个 `contribute` 事件（带短链接 id，这是唯一带 id 的事件）。不新开存储 | 复用已审过的短链接存储和限流，不增加新的数据面；短链接本来就是用户主动交出的源码，口径不变 |
+| RM-D88 | 弧边房间（ARC2）进哪个版本 | **1.68.0（minor）**：与 ARC1、ARC3、FW1、FW4、FW5 同发。若到 2026-11-29（UTC）ARC2 仍未合并，就把已合并的发成 1.68.0，ARC2 进下一个 minor，不为它拖住其他修复。所有者的话含发布授权：条件满足时由代理走完发布链（tag 在内，`.claude/commands/release-check.md`） | 新语言外形是 minor（RM0.9）；ArchCanvas 首页的两个现象要 ARC1 和 ARC2 都发布才都消失，同发少走一次多渠道发布；限期是为了不让窗子的修复干等 |
+
 ---
 
 ## 7. 与已有计划的关系
