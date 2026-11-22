@@ -318,15 +318,16 @@ After #1002 (3.19) the first use measured 466,680 B against `firstUsePathBudget`
 #1019 draws a hinged or double door on a curved wall with its leaf hung on a jamb of the cut, but the
 model's swing (`doorSwing`/`doorLeaves`, read by lint, `describe --facts symmetry`, `repair()` and the
 3D package) is still the tangent construction, so the drawn leaf stands off the measured one by up to
-62.5 mm on the shipped plans (`aquarium`). Moving the model onto the arc moves `describe --facts
-symmetry`'s `full.exact` (a hinge leaves the half-millimetre lattice), which ADR 0023 decision 7 does
-not permit: it needs the owner's ruling for a second permitted movement before it is built.
+62.5 mm at the hinge (65.1 mm at the tip) on the shipped plans (`aquarium`). Moving the model onto the
+arc moves `describe --facts symmetry`'s `full.exact` (measured in #1019's first round: true to false on
+the four `radius-over-*` defect-corpus plans), which ADR 0023 decision 7 does not permit: it needs the owner's ruling for a second permitted movement before it is built.
 
 ### ARC1c · Labels may sit closer to a curved opening's ink than to the footprint they avoid — `todo`
 
 The annotation passes read a curved opening's old tangent footprint (Ruling B in #1019), so no label
 moved; the drawn ink can be up to about `w²/8R` closer (worst measured 291.9 mm, a 1700 mm double door
-on R1300, over 7,168 generated drum plans; 0 on the corpus). Give the annotation passes the true ink
+on R1300, over 7,168 generated drum plans; on the corpus no label or text newly touches opening ink,
+the closest at 145.5 mm). Give the annotation passes the true ink
 as an obstacle without moving any label on plans whose openings are straight.
 
 ### ARC2b · `W_ROOM_NOT_ENCLOSED` counts an arc wall's chord as cover for a straight room edge — `todo`
