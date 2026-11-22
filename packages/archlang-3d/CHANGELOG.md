@@ -2,6 +2,18 @@
 
 ## [Unreleased]
 
+## [0.9.1] - 2026-11-23
+
+The core peer range stays `^1.61.0` (`MIN_CORE`): nothing below reads a core export that 1.61.0 lacks.
+
+### Changed
+
+- A room whose `room polygon` ring has an arc edge (core 1.68.0, card ARC2) lays its floor finish
+  to the curve at the chord tolerance, read from the room's exact `edges` (a public `RRoom` field
+  new in core 1.68.0), the way a `room circle`'s floor is cut from its exact circle, where it took
+  the core's fixed-step ring. The read is feature-detected: a core without the field carries no arc
+  ring, and every other room builds as before.
+
 ## [0.9.0] - 2026-11-17
 
 The core peer range stays `^1.61.0` (`MIN_CORE`): nothing below reads a core export that 1.61.0 lacks.
