@@ -10,7 +10,7 @@
  * PR legitimately moves a hashed output (never keep code), the table is re-taken by the generator, the
  * reason recorded below and the moved files listed in that commit's message.
  *
- * Taken: SR.15: a wrapped room name keeps the spaces its break removed, in zero-size separator tspans between its lines; SVG only, swap-back (separators stripped) reproduces every old row, on branch fix/sr15-wrapped-label-text off 490f2e36
+ * Taken: SR.15 on #1010 after merging main 4b161800 (#1007): a wrapped room name keeps the spaces its break removed, in zero-size separator tspans; SVG only, the separators stripped reproduce every old row
  */
 
 /** `[path from the repository root, SHA-256 of the payload, evaluation steps]`, sorted by root. */
@@ -1360,6 +1360,16 @@ export const KEEP_WEAK_BASELINE: readonly (readonly [string, string, number])[] 
     "test/taste-corpus/r18-l-shaped-bedroom.good.arch",
     "b2409d6c492b9aa58f16fb4db62f387252c4d032e48dc55b203796ec95905212",
     231,
+  ],
+  [
+    "test/taste-corpus/r20-bath-off-the-stack.arch",
+    "fd59e19586c0364c3a71866b6144fb186d4f17b7aa360b7a11d5c948c5a1eb8e",
+    1518,
+  ],
+  [
+    "test/taste-corpus/r20-bath-off-the-stack.good.arch",
+    "5b37535607fcae56bc7968b2f7f1f981682202c1deae1bc8c814968bbce2bdc1",
+    1518,
   ],
   [
     "test/taste-corpus/r3-living-behind-corridor.arch",
