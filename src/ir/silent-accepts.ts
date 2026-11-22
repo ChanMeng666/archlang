@@ -58,8 +58,8 @@ export function noteMetres(
  * `W_AREA_AS_LENGTH` (AF10 step 2, first slice; ruling RM-D81): the length `e`, drawn as
  * `value`, is a binding times itself (`W*W`, or a name bound to `W*W`), which is an area when the
  * binding is a length. Reads no threshold: the square is the whole signal, whatever its size, but
- * a square of 0 is not reported (it has no size to mislead, and a zero size is its element's own
- * error). `what` names the clause without an id (`a room's size`); `subject` names the element in
+ * a square drawn as 0 is not reported (a zero size, thickness or width is its element's own error;
+ * a wall point at 0 has no size to mislead). `what` names the clause without an id (`a room's size`); `subject` names the element in
  * the hint (`Room "r"`, as the sibling helpers do). `room`: the length is a room side, so the hint
  * also offers the square room of that area. Reports only.
  */

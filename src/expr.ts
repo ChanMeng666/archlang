@@ -104,9 +104,12 @@ export function squaredName(e: Expr, env: Env): string | undefined {
   const own = env.get(e.name);
   const v = own ?? fallbacks.get(env)?.(e.name);
   if (v === undefined || v.t !== "num" || v.sq === undefined) return undefined;
-  // The squared name is read where the square's own name was found: the env itself, or (only when
-  // the name came from it) the module fallback, so the check never runs a module nobody read.
-  const x = own !== undefined ? env.get(v.sq) : fallbacks.get(env)?.(v.sq);
+  // The squared name is read as the length reads it: the env first, so an own binding (a
+  // parameter, a root `let`) that shadows a module's name is the one compared; the module
+  // fallback only when the square's own name came from it, so the check never runs a module
+  // nobody read. A square made in a body from a module name (`let A = W*W` in an imported
+  // component, `W` the module's) is therefore not reported: the carve-out the catalogue states.
+  const x = env.get(v.sq) ?? (own === undefined ? fallbacks.get(env)?.(v.sq) : undefined);
   return x !== undefined && x === v.sqOf && x !== BUDGET_SUBSTITUTE ? v.sq : undefined;
 }
 

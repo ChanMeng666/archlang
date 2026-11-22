@@ -528,11 +528,43 @@ suite("W_AREA_AS_LENGTH (AF10 step 2, first slice)", () => {
     expect(messages(same, "W_AREA_AS_LENGTH")).toEqual([
       "`S` is `x` times itself, an area if `x` is a length, but a room's size reads it as a length of 16000000 mm",
     ]);
+    // The hint names `x` too, and its square room parses (`size x x x` is 4000 x 4000).
+    const hints = compile(same, { noCache: true }).diagnostics.filter((d) => d.code === "W_AREA_AS_LENGTH");
+    expect(hints.map((d) => d.hints)).toEqual([
+      [
+        'Room "room_1": write the length itself (`x`), or, for a room of that area, `size x x x`. Lengths are millimetres and are never converted.',
+      ],
+    ]);
     // A component parameter `W` shadows the outer `W` that `A` squared: not named, not reported.
     const shadow = "  let A = W*W\n  component c(W) { room at (0,0) size A x 3000 }";
     expect(at(`${shadow}\n  c(5000)`)).toEqual([]);
     // Passed the outer `W` itself, the parameter is the same binding, and the name is true.
     expect(at(`${shadow}\n  c(W)`)).toEqual(["W_AREA_AS_LENGTH"]);
+    // A nested `let` of the name, or a reassignment after the square, makes `W` another value.
+    expect(at("  let A = W*W\n  if true {\n    let W = 3000\n    room at (0,0) size A x W\n  }")).toEqual([]);
+    expect(at("  let A = W*W\n  W = 3m\n  room at (0,0) size A x 3000")).toEqual([]);
+  });
+
+  suite("through an import (the module fallback)", () => {
+    const world = worldFor(join(REPO_ROOT, "test/silent-accepts"));
+    const viaImport = (body: string): string[] => raised(plan(body), { world });
+    it("a module `let A = W*W` read in a component body, nothing shadowing `W`, is reported (P2c)", () => {
+      expect(viaImport('  import "area-as-length-mod2.arch": e\n  e(0)')).toEqual(["W_AREA_AS_LENGTH"]);
+    });
+    it("a component parameter `W` shadowing the module's `W` is the name compared: quiet (P2a)", () => {
+      expect(viaImport('  import "area-as-length-mod2.arch": c\n  c(3000)')).toEqual([]);
+    });
+    it("a root `let W` shadowing the module's `W` is the name compared: quiet (P2b)", () => {
+      expect(viaImport('  let W = 9000\n  import "area-as-length-mod2.arch": e\n  e(0)')).toEqual([]);
+    });
+    it("`size W*W` in an imported body, `W` the module's, is reported (P1b)", () => {
+      expect(viaImport('  import "area-as-length-mod1.arch": d\n  d(0,0)')).toEqual(["W_AREA_AS_LENGTH"]);
+    });
+    it("carve-out: a body `let A = W*W` from the module's `W` is NOT reported yet (P1a; a fix flips this)", () => {
+      // Reading `W` from the module here would need a non-evaluating peek at the cached module env
+      // (`moduleFallback`, `src/ir/expand.ts`); stated in the catalogue's cause text and CHANGELOG.
+      expect(viaImport('  import "area-as-length-mod1.arch": c\n  c(0,0)')).toEqual([]);
+    });
   });
 
   it("an unknown name is its own error, with no square reported beside it", () => {
