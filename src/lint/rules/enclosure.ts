@@ -675,6 +675,7 @@ export const floorUnassigned: LintRule = {
     // does); a face it cannot afford is judged by its cover share alone, and the skip says so.
     let left = MAX_EVAL_STEPS;
     let unafforded = false;
+    let unread = false;
     const admit = (units: number): boolean => {
       if (units > left) {
         unafforded = true;
@@ -693,7 +694,8 @@ export const floorUnassigned: LintRule = {
       if (bordering.length === 0 && !faceHasOpening(ctx, wf, fi)) continue;
       if (covered >= ctx.rules.minFaceCoverRatio - EPS) {
         const s = standingRoom(ctx, wf, fi, c, pieces, admit);
-        if (s) found.push(s);
+        if (s === "unread") unread = true;
+        else if (s) found.push(s);
         continue;
       }
       const walls = wallsRound(ctx, wf, fi);
@@ -740,6 +742,7 @@ export const floorUnassigned: LintRule = {
       });
     }
     if (unafforded) ctx.skip("enclosure-budget", undefined, "point-tests");
+    if (unread) ctx.skip("enclosure-pieces");
     found.sort((p, q) => p.key[0] - q.key[0] || p.key[1] - q.key[1] || p.key[2] - q.key[2]);
     return found.map((x) => x.d);
   },
@@ -751,8 +754,10 @@ export const floorUnassigned: LintRule = {
  * least `minUnassignedM2` of floor (`src/analyze/unassigned-pieces.ts`, exact on lines and
  * arcs). A share is no width: a bay beyond a room's straight edge is a small share of a big
  * face and still a place to stand, while a strip a room drawn short of its wall leaves is
- * neither. The largest such piece is the one described; `null` when there is none, or when the
- * pieces could not be read or afforded.
+ * neither. The largest such piece is the one described (by its area as printed, then by the
+ * rooms beside it in source order, so neither the order the pieces were walked in nor a turn or a
+ * mirror of the plan chooses); `null` when there is none or the work was not afforded, and
+ * `"unread"` when the pieces did not chain into regions (the rule files `enclosure-pieces`).
  */
 function standingRoom(
   ctx: LintContext,
@@ -761,16 +766,25 @@ function standingRoom(
   c: FaceCover,
   pieces: readonly FacePiece[],
   admit: (units: number) => boolean,
-): { key: [number, number, number]; d: Diagnostic } | null {
+): { key: [number, number, number]; d: Diagnostic } | "unread" | null {
   const all = unassignedPieces(pieces, admit);
-  if (!all) return null;
+  if (all === "unread") return "unread";
+  if (all === "unafforded") return null;
   const standable: UnassignedPiece[] = [];
   for (const p of all) {
     if (p.area / 1_000_000 < ctx.rules.minUnassignedM2 - EPS) continue;
     if (holdsCircle(p, ctx.rules.minStandableMm, admit) === true) standable.push(p);
   }
   if (standable.length === 0) return null;
-  const piece = standable.reduce((best, p) => (p.area > best.area ? p : best));
+  const printed = (p: UnassignedPiece): number => Math.round(p.area / 10_000);
+  // Owners are ascending source indices: the list that comes first in source order wins a tie.
+  const earlier = (a: readonly number[], b: readonly number[]): boolean => {
+    for (let i = 0; i < Math.min(a.length, b.length); i++) if (a[i] !== b[i]) return a[i]! < b[i]!;
+    return a.length > b.length;
+  };
+  const piece = standable.reduce((best, p) =>
+    printed(p) > printed(best) || (printed(p) === printed(best) && earlier(p.owners, best.owners)) ? p : best,
+  );
   const rooms = piece.owners.filter((k) => k < ctx.rooms.length).map((k) => ctx.rooms[k]!);
   const ids = new Set<string>();
   for (const s of ctx.wallSegs)
@@ -811,7 +825,7 @@ function standingRoom(
       severity: "warning",
       code: "W_FLOOR_UNASSIGNED",
       ...(site ? ctx.at(site) : {}),
-      message: `${m2(piece.area)} m² of walled floor${where} is in no room, in one piece a person could stand in (it holds a circle ${mm(ctx.rules.minStandableMm)} mm across)${more}: the walls there enclose ${m2(c.area)} m² and rooms cover ${fmt2(pct)} % of it. Floor inside the walls that no room claims has no use, no area and no route the plan can check.`,
+      message: `${m2(piece.area)} m² of walled floor${where} is in no room, in one piece a person could stand in (it holds a circle ${fmt2(ctx.rules.minStandableMm)} mm across)${more}: the walls there enclose ${m2(c.area)} m² and rooms cover ${fmt2(pct)} % of it. Floor inside the walls that no room claims has no use, no area and no route the plan can check.`,
       hints: [
         rooms.length > 0
           ? `Extend ${listOf(rooms.map((r) => `"${ctx.labelOf(r)}"`))} over it, draw a room on it, or move the walls in to the rooms' edges.`

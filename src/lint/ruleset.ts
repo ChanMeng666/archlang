@@ -794,6 +794,12 @@ const NULLABLE: { readonly [K in NullableKey]: true } = {
   wallGapMm: true,
 };
 
+/**
+ * The numeric ruleset fields that must also be above zero: a size a rule measures a shape against,
+ * where zero or less is no size at all (`minStandableMm`: a circle of no diameter fits anywhere).
+ */
+const POSITIVE: ReadonlySet<string> = new Set(["minStandableMm"]);
+
 /** Whether each per-use table's entries accept `null` (an exempt use), checked by `tsc` against
  *  the table's entry type, as {@link NULLABLE} is. */
 const NULLABLE_ENTRIES: {
@@ -817,7 +823,13 @@ const NULLABLE_ENTRIES: {
  */
 function whatItIs(v: unknown): string {
   if (typeof v === "number")
-    return Number.isNaN(v) ? "not a number" : !Number.isFinite(v) ? "not finite" : "beyond the modelling range";
+    return Number.isNaN(v)
+      ? "not a number"
+      : !Number.isFinite(v)
+        ? "not finite"
+        : Math.abs(v) > MODEL_RANGE_MM
+          ? "beyond the modelling range"
+          : "zero or less";
   if (v === null) return "null";
   if (v === undefined) return "undefined";
   const t = typeof v;
@@ -830,7 +842,7 @@ const byCodeUnit = (a: string, b: string): number => (a < b ? -1 : a > b ? 1 : 0
 /**
  * The `E_RULESET_VALUE` errors of a resolved ruleset ({@link resolveRuleset}). A field whose
  * {@link DEFAULT_RULESET} value is a number or `null` must hold a finite number within
- * ±{@link MODEL_RANGE_MM}, whatever its unit, or `null` where its type allows it
+ * ±{@link MODEL_RANGE_MM}, whatever its unit (and above 0 for a {@link POSITIVE} field), or `null` where its type allows it
  * ({@link NULLABLE}); anything else (`undefined`, which a caller's `{ key: undefined }` spreads
  * over the default, a string, an object, a boolean, `NaN`, `Infinity`, a value past the range) is
  * one error. A per-use table (a field whose default is an object) is read entry by entry under a
@@ -843,7 +855,7 @@ const byCodeUnit = (a: string, b: string): number => (a < b ? -1 : a > b ? 1 : 0
  * the fault is the caller's option, not the source. Empty when every value is valid. Pure.
  */
 export function validateRuleset(rules: LintRuleset): Diagnostic[] {
-  const bad: [key: string, v: unknown, nullable: boolean][] = [];
+  const bad: [key: string, v: unknown, nullable: boolean, positive: boolean][] = [];
   const ok = (v: unknown, nullable: boolean): boolean =>
     (v === null && nullable) || (typeof v === "number" && Number.isFinite(v) && Math.abs(v) <= MODEL_RANGE_MM);
   const defaults = DEFAULT_RULESET as unknown as Readonly<Record<string, unknown>>;
@@ -853,26 +865,27 @@ export function validateRuleset(rules: LintRuleset): Diagnostic[] {
     const v = given[key];
     if (typeof d === "number" || d === null) {
       const nullable = Object.hasOwn(NULLABLE, key);
-      if (!ok(v, nullable)) bad.push([key, v, nullable]);
+      const positive = POSITIVE.has(key);
+      if (!ok(v, nullable) || (positive && typeof v === "number" && !(v > 0))) bad.push([key, v, nullable, positive]);
     } else if (typeof d === "object") {
       const nullable = (NULLABLE_ENTRIES as Readonly<Record<string, boolean>>)[key] === true;
       if (typeof v !== "object" || v === null) {
-        bad.push([key, v, nullable]);
+        bad.push([key, v, nullable, false]);
         continue;
       }
       const table = v as Readonly<Record<string, unknown>>;
       for (const use of Object.keys(table)) {
         const e = table[use];
-        if (e !== undefined && !ok(e, nullable)) bad.push([`${key}.${use}`, e, nullable]);
+        if (e !== undefined && !ok(e, nullable)) bad.push([`${key}.${use}`, e, nullable, false]);
       }
     }
   }
   return bad
     .sort((a, b) => byCodeUnit(a[0], b[0]))
-    .map(([key, v, nullable]) =>
+    .map(([key, v, nullable, positive]) =>
       diag(
         "E_RULESET_VALUE",
-        `The lint ruleset's \`${key}\` must be a finite number within ±${fmt3(MODEL_RANGE_MM)} ` +
+        `The lint ruleset's \`${key}\` must be a finite number ${positive ? "above 0 and " : ""}within ±${fmt3(MODEL_RANGE_MM)} ` +
           `(the modelling range, in the field's own unit)${nullable ? " or null" : ""}; it is ${whatItIs(v)}, ` +
           "so no rule ran",
         { start: 0, end: 0 },

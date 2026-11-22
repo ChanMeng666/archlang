@@ -366,7 +366,7 @@ Totals: 426 modules in 34 directories.
 | `symmetry.ts` | 975 | 3 | The plan's SYMMETRY GROUP and its REPETITION, as facts — `describe(src, { facts: ["symmetry"] })`. Opt-in: nothing here runs unless a caller asks for it. | none |
 | `syntax.ts` | 139 | 2 | SPACE SYNTAX on the access graph — `describe(src, { facts: ["syntax"] })`. Opt-in. | none |
 | `takeoff.ts` | 66 | 2 | The long form of a takeoff: every figure of `describe --facts quantities`, one row each, and the CSV `arch takeoff --format csv` and the Playground's Takeoff tab both write from it. Pure, so the two cannot disagree. | none |
-| `unassigned-pieces.ts` | 288 | 1 | **The pieces of a walled face's unassigned floor**, and whether a person could stand in one (`W_FLOOR_UNASSIGNED`, `src/lint/rules/enclosure.ts`). | none |
+| `unassigned-pieces.ts` | 342 | 1 | **The pieces of a walled face's unassigned floor**, and whether a person could stand in one (`W_FLOOR_UNASSIGNED`, `src/lint/rules/enclosure.ts`). | none |
 | `wall-faces.ts` | 544 | 6 | **Walled faces** — the closed regions of floor a storey's wall bodies enclose, and how much of each one the rooms cover (plan-soundness PS2.4: `W_FLOOR_UNASSIGNED`, `W_ROOM_OUTSIDE_SHELL`). | none |
 
 ## `src/backends/`
@@ -534,7 +534,7 @@ Totals: 426 modules in 34 directories.
 | `clearance-measure.ts` | 489 | 9 | The measures behind the clearance family of plan-soundness PS2.11 (`rules/clearances.ts`): a WC's two side strips, and the band a window's span makes on its host wall. Stated once here so the rules and the placement check every quoted… | none |
 | `context.ts` | 430 | 48 | The shared, precomputed context every lint rule checks against — element subsets, room rectangles and the hoisted wall-segment list are built exactly once per `lint()` run, so no rule re-derives them. | none |
 | `corner-nib.ts` | 122 | 2 | Whether a wall turns at the end of a run, and the tightest corner nib a door leaves there: the test `W_DOOR_NEAR_CORNER` reports by, shared with `W_OPENING_AT_JUNCTION` and its move search so they defer to that rule by the same test… | none |
-| `coverage.ts` | 366 | 11 | The lint coverage report (plan-soundness PS2.13): which rule families ran on a plan, which were skipped and why, and which rooms no use-reading rule could judge. | none |
+| `coverage.ts` | 372 | 11 | The lint coverage report (plan-soundness PS2.13): which rule families ran on a plan, which were skipped and why, and which rooms no use-reading rule could judge. | none |
 | `defining.ts` | 496 | 6 | The pieces that define a room of each use, read from `FURNISH_TABLE` (the table `finish` furnishes from), and the checked statements that place them. Shared by `W_ROOM_MISSING_DEFINING` (which reports a furnished room lacking one) and… | none |
 | `doorway-move.ts` | 139 | 1 | The move `W_DOORWAY_BLOCKED` offers as a fix (card AF9): the door or cased opening moved along its own wall until its landing misses every piece. Lint-only, so it stays off the compiler path (the rules import it; no compile module does). | none |
 | `element-phrases.ts` | 96 | 8 | How a lint MESSAGE names a wall or a door, window or opening (PS2.29: a message never quotes an id). A wall is named by its kind and the line it runs on ("the exterior wall at y 0"), a connector by the rooms it joins ("the door between… | none |
@@ -544,7 +544,7 @@ Totals: 426 modules in 34 directories.
 | `provenance.ts` | 491 | 7 | Where each lint ruleset number comes from, as data: a table parallel to {@link DEFAULT_RULESET} and {@link LINT_PROFILES}, keyed by profile and ruleset key, with the document, clause, edition and verification grade of every number.… | none |
 | `report.ts` | 108 | 2 | The `arch lint --json` document as a pure function (card CR10): what the CLI's `lint` reports for one source, built here once so the hosted `POST /check` (`packages/mcp-worker`) returns the same document for the same input. `cmdLint`… | none |
 | `rule-ref.ts` | 84 | 14 | Which ruleset number a lint diagnostic was raised against (card RM1.6b), kept BESIDE the diagnostic in a `WeakMap`, never on it: `lint()` returns the same objects, with the same keys, and `JSON.stringify(lint(src))` is unchanged. A rule… | none |
-| `ruleset.ts` | 892 | 27 | The lint ruleset: tunable thresholds, named advisory profiles, and the options type. Split from `lint.ts` so individual rule modules (`./rules/*.ts`) can import the types without a cycle through the `lint()` entry point; `lint.ts`… | none |
+| `ruleset.ts` | 905 | 27 | The lint ruleset: tunable thresholds, named advisory profiles, and the options type. Split from `lint.ts` so individual rule modules (`./rules/*.ts`) can import the types without a cycle through the `lint()` entry point; `lint.ts`… | none |
 | `storeys.ts` | 120 | 14 | The storeys `lint()` reads and the building fact each is read with: the per-storey {@link BuildingContext} of a multi-storey plan ({@link buildingContexts}) and the plan's dwelling reading (PS2.18). Stated once here so every reader of a… | none |
 | `work.ts` | 56 | 3 | Work counters for one `lint()` run: how many geometric tests the costliest rules made, as COUNTS (engineering-health EH2.10). They are an out-parameter on the per-run {@link import("./context.js").LintContext}, never module state, so… | none |
 
@@ -560,7 +560,7 @@ Totals: 426 modules in 34 directories.
 | `dims.ts` | 613 | 3 | Annotation-quality advisories over the plan's HAND-WRITTEN dimensions: `W_DIM_INSIDE` (a dimension line landing inside the building) and `W_DIM_OVERLAP` (two dimensions drawn on top of each other). Both are advisory with a… | none |
 | `doors.ts` | 976 | 7 | Door rules: obstructed swing arcs, blocked walk-through landings, sub-passable widths, a pocket panel with nowhere to go, and a jamb that leaves too little wall at a corner — in that (pinned) order via `rules/index.ts`. | none |
 | `doorway.ts` | 157 | 1 | The walk-through landing rule, `W_DOORWAY_BLOCKED` (`doorwayBlocked`), and the move it offers as a fix (card AF9, `src/lint/doorway-move.ts`). It stands apart from the other door rules (`./doors.ts`) because those are on `describe()`'s… | none |
-| `enclosure.ts` | 1168 | 4 | Space-enclosure rules (plan-soundness PS2.4): floor the walls and the rooms disagree about. | none |
+| `enclosure.ts` | 1182 | 4 | Space-enclosure rules (plan-soundness PS2.4): floor the walls and the rooms disagree about. | none |
 | `entrance.ts` | 236 | 1 | The building has rooms but no way in. | none |
 | `floor-gaps.ts` | 99 | 2 | Floor a piece cannot stand on: a storey's own `void`s, lift shafts and escalators (CR2 group D). | none |
 | `footprint.ts` | 228 | 1 | `W_FOOTPRINT_TRANSPOSED` (plan-soundness PS2.11c): a piece of a family that comes in one shape, written with its two sides the wrong way round, so its symbol draws turned a quarter and stretched (`sofa_l … size 900x2400` with no `rotate`… | none |

@@ -2,7 +2,7 @@
 
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
-import { lint } from "../src/index.js";
+import { lint, lintWithCoverage } from "../src/index.js";
 import type { LintRuleset } from "../src/lint/ruleset.js";
 
 /**
@@ -122,5 +122,144 @@ describe("an alcove a person can stand in is reported", () => {
     expect(rest).toEqual([]);
     expect(d!.message).toContain('0.46 m² of walled floor next to "Office" is in no room');
     expect(d!.message).toContain(", the largest of 2 such pieces:");
+  });
+});
+
+describe("two pieces that touch at one corner are two pieces, however the plan is written", () => {
+  /**
+   * A 10 m shell whose six rooms leave two `s` × `s` squares of floor touching at (1700, 1700),
+   * each room an axis-aligned rectangle given as its two corners, so `t` maps it through any of
+   * the square's eight symmetries (turns and mirrors) and `order` writes the rooms in any order.
+   */
+  const S = 10000;
+  const checker = (s: number, t: (x: number, y: number) => [number, number], order = [0, 1, 2, 3, 4, 5]): string => {
+    const a = 1700 - s;
+    const b = 1700 + s;
+    const rooms: Array<[number, number, number, number]> = [
+      [0, 0, S, a],
+      [0, a, a, 1700],
+      [1700, a, S, 1700],
+      [0, 1700, 1700, b],
+      [b, 1700, S, b],
+      [0, b, S, S],
+    ];
+    const lines = order.map((i) => {
+      const [x0, y0, x1, y1] = rooms[i]!;
+      const [p, q] = [t(x0, y0), t(x1, y1)];
+      const x = Math.min(p[0], q[0]);
+      const y = Math.min(p[1], q[1]);
+      return `  room id=r${i} at (${x},${y}) size ${Math.abs(p[0] - q[0])}x${Math.abs(p[1] - q[1])} label "R${i}" uses office`;
+    });
+    return plan(`  wall id=shell exterior thickness 200 { (0,0) (${S},0) (${S},${S}) (0,${S}) close }
+  door id=d_in on shell at 5000 width 900
+${lines.join("\n")}`);
+  };
+  const D4: Array<(x: number, y: number) => [number, number]> = [
+    (x, y) => [x, y],
+    (x, y) => [S - x, y],
+    (x, y) => [x, S - y],
+    (x, y) => [S - x, S - y],
+    (x, y) => [y, x],
+    (x, y) => [S - y, x],
+    (x, y) => [y, S - x],
+    (x, y) => [S - y, S - x],
+  ];
+  const messages = (src: string): string[] => unassigned(src).map((d) => d.message);
+
+  it("700 mm squares (0.49 m² each, 0.98 m² together): silent under all eight symmetries and a reordering", () => {
+    for (const t of D4) expect(messages(checker(700, t))).toEqual([]);
+    expect(messages(checker(700, D4[0]!, [2, 0, 4, 1, 5, 3]))).toEqual([]);
+    // Each is a place to stand, held only by its own area: at 0.45 m² both count.
+    expect(standing(checker(700, D4[0]!), { minUnassignedM2: 0.45 })[0]!.message).toContain(
+      "0.49 m² of walled floor next to",
+    );
+  });
+
+  it("800 mm squares: 0.64 m², the largest of 2, the same words under all eight symmetries and a reordering", () => {
+    const expected =
+      '0.64 m² of walled floor next to "R0", "R1", "R2" and "R3" is in no room, in one piece a person could stand in (it holds a circle 600 mm across), the largest of 2 such pieces: the walls there enclose 96.04 m² and rooms cover 98.6 % of it. Floor inside the walls that no room claims has no use, no area and no route the plan can check.';
+    for (const t of D4) expect(messages(checker(800, t))).toEqual([expected]);
+    // Written in another order, the rooms are named in the order written, as every warning of the rule names them.
+    expect(messages(checker(800, D4[0]!, [2, 0, 4, 1, 5, 3]))).toEqual([
+      expected.replace('"R0", "R1", "R2" and "R3"', '"R2", "R0", "R1" and "R3"'),
+    ]);
+  });
+});
+
+describe("what the standing-room test cannot read or afford is said in the coverage report", () => {
+  const enclosure = (src: string) => lintWithCoverage(src).coverage?.families.find((f) => f.family === "enclosure");
+
+  it("files `enclosure-pieces` when the empty floor does not chain into regions (a ring turned 30°)", () => {
+    // The 2 m gap between four rooms with a store in it, turned 30° about (20000, 20000) and
+    // rounded to 0.001 mm, so the rooms' edges meet a micron off coincident.
+    const th = (30 * Math.PI) / 180;
+    const T = ([x, y]: [number, number]): string => {
+      const f = (v: number) => String(Math.round(v * 1000) / 1000);
+      return `(${f(x * Math.cos(th) - y * Math.sin(th) + 20000)},${f(x * Math.sin(th) + y * Math.cos(th) + 20000)})`;
+    };
+    const box = (x: number, y: number, w: number, h: number): string =>
+      (
+        [
+          [x, y],
+          [x + w, y],
+          [x + w, y + h],
+          [x, y + h],
+        ] as Array<[number, number]>
+      )
+        .map(T)
+        .join(" ");
+    const rooms: Array<[string, number, number, number, number]> = [
+      ["r_n", 0, 0, 12000, 5000],
+      ["r_w", 0, 5000, 5000, 2000],
+      ["r_e", 7000, 5000, 5000, 2000],
+      ["r_s", 0, 7000, 12000, 5000],
+      ["r_st", 5700, 5700, 600, 600],
+    ];
+    const src = `plan "P" {\n  units mm\n  wall id=shell exterior thickness 200 { ${box(0, 0, 12000, 12000)} close }\n  door id=d_in on shell at 2000 width 900\n${rooms
+      .map(([id, x, y, w, h]) => `  room id=${id} polygon ${box(x, y, w, h)} label "${id}" uses office`)
+      .join("\n")}\n}\n`;
+    expect(unassigned(src)).toEqual([]);
+    expect(enclosure(src)?.status).toBe("partial");
+    expect(enclosure(src)?.skipped?.map((s) => s.reason)).toEqual(["enclosure-pieces"]);
+  });
+
+  it("files `enclosure-budget` (point tests) for a 0.6 m² notch whose edge is a 150-tooth saw", () => {
+    // A notch 600 mm wide under the north wall; the room's edge across its mouth zigzags 0.5 mm.
+    const notch = (teeth: number): string => {
+      const pts: string[] = [];
+      for (let i = 0; i <= teeth; i++)
+        pts.push(`(${(5300 - (600 * i) / teeth).toFixed(3)},${(1100 + (i % 2 ? 0.5 : 0)).toFixed(3)})`);
+      return `plan "P" {\n  units mm\n  wall id=shell exterior thickness 200 { (0,0) (10000,0) (10000,10000) (0,10000) close }\n  door id=d_in on shell at 15000 width 900\n  room id=r_a polygon (0,0) (4700,0) ${pts.reverse().join(" ")} (5300,0) (10000,0) (10000,10000) (0,10000) label "Office" uses office\n}\n`;
+    };
+    const saw = notch(150);
+    expect(unassigned(saw)).toEqual([]);
+    expect(enclosure(saw)?.skipped).toEqual([
+      { reason: "enclosure-budget", why: "too many point tests to measure", cap: "point-tests" },
+    ]);
+    // The same notch with a straight edge is measured, and a 599 mm circle stands in it.
+    expect(enclosure(notch(2))?.status).toBe("ran");
+    expect(standing(notch(2), { minStandableMm: 599 })).toHaveLength(1);
+  });
+});
+
+describe("minStandableMm as the caller sets it", () => {
+  it("is printed as set, never rounded", () => {
+    const bay = readFileSync("test/floor-unassigned/bay-bungalow.arch", "utf8");
+    expect(standing(bay, { minStandableMm: 608.5 })[0]!.message).toContain("(it holds a circle 608.5 mm across)");
+  });
+
+  it("must be above zero: 0 or less is refused with E_RULESET_VALUE and no rule runs", () => {
+    const src = plan(`  wall id=shell exterior thickness 200 { (0,0) (8000,0) (8000,8000) (0,8000) close }
+  room id=r_a at (0,0) size 8000x8000 label "Office" uses office`);
+    for (const v of [0, -5]) {
+      const ds = lint(src, { ruleset: { minStandableMm: v } });
+      expect(ds.map((d) => [d.code, d.message])).toEqual([
+        [
+          "E_RULESET_VALUE",
+          "The lint ruleset's `minStandableMm` must be a finite number above 0 and within ±33554432 (the modelling range, in the field's own unit); it is zero or less, so no rule ran",
+        ],
+      ]);
+    }
+    expect(lint(src, { ruleset: { minStandableMm: 0.5 } }).some((d) => d.code === "E_RULESET_VALUE")).toBe(false);
   });
 });

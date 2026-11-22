@@ -10,7 +10,12 @@
  * **The pieces, from the measurement's own boundary.** Every boundary piece `faceCover` counted
  * is walked with the unassigned floor on its `+n` side (`BoundaryPiece.side`), so the pieces
  * chain end to start into closed loops (ends matched through the joinery's {@link PointInterner},
- * the one positional tolerance). Each loop's signed area is the sum of its pieces' closed-form
+ * the one positional tolerance). Where several pieces leave the vertex a piece ends at (two
+ * pieces of floor touching at a corner, a room's corner on the wall), the walk takes the one that
+ * turns furthest to the floor's side ({@link turnOf}, then the tighter bend): the next piece round
+ * the vertex on the floor's side, so each loop bounds one piece of floor and two pieces that only
+ * touch are never walked as one, whatever order the source writes them in or how the plan is
+ * turned or mirrored. Each loop's signed area is the sum of its pieces' closed-form
  * contributions (`BoundaryPiece.signed`, ADR 0027's boundary integral): an outer boundary comes
  * out positive, a hole (a room standing free in the floor) negative. A hole belongs to the
  * smallest outer loop that winds round a point of it, and a piece of floor is one outer loop
@@ -33,7 +38,9 @@
  * after resolution, where the step meter is off; the rule spends `MAX_EVAL_STEPS`, `src/expr.ts`,
  * as `outdoor.ts` does): one unit per piece chained, per loop read for a hole's owner, per pair of
  * curves crossed, and per boundary piece read for each candidate's two tests. Past it the answer is
- * `null` and the rule says so in its coverage report.
+ * `"unafforded"`; pieces that do not chain into closed loops, or a hole no outer loop winds round,
+ * are `"unread"`. The rule judges such a face by its share alone and files the reason in its
+ * coverage report.
  *
  * Pure, synchronous, deterministic: pieces in the measurement's own order, loops in the order
  * their first piece appears, candidates in curve order.
@@ -57,6 +64,9 @@ const CLEAR_TOL_MM = 1e-3;
 
 /** A loop whose area is under this (mm²) is a sliver of the split, not floor: it is dropped. */
 const NULL_LOOP_MM2 = 1;
+
+/** Two turns this close (radians) are one direction; the tighter bend decides between them. */
+const TURN_EPS = 1e-9;
 
 /** One boundary piece, walked with the unassigned floor on its `+n` side. */
 interface DirectedEdge {
@@ -92,6 +102,31 @@ const edgeBox = (e: Edge): GridBox =>
         maxY: e.arc.center.y + e.arc.r,
       };
 
+/** The unit direction of travel along `e` at its point `p` (an end of it). */
+function tangentAt(e: Edge, p: Point): Point {
+  if (e.t === "line") {
+    const dx = e.b.x - e.a.x;
+    const dy = e.b.y - e.a.y;
+    const l = Math.hypot(dx, dy);
+    return l > 0 ? { x: dx / l, y: dy / l } : { x: 0, y: 0 };
+  }
+  const { center, r, sweep } = e.arc;
+  const s = sweep >= 0 ? 1 : -1;
+  return { x: (-s * (p.y - center.y)) / r, y: (s * (p.x - center.x)) / r };
+}
+
+/**
+ * How far a walk arriving along direction `d` turns to leave along `t`, toward the floor's side
+ * (`+n`, n = (−d.y, d.x)) positive: an angle in (−π, π].
+ */
+const turnOf = (d: Point, t: Point): number => Math.atan2(d.x * t.y - d.y * t.x, d.x * t.x + d.y * t.y);
+
+/** How hard `e` bends toward the floor's side as it leaves its start: 0 straight, ±1/r on an arc. */
+const bendOf = (e: Edge): number => (e.t === "line" ? 0 : e.arc.sweep >= 0 ? 1 / e.arc.r : -1 / e.arc.r);
+
+/** Why {@link unassignedPieces} gave no pieces: the work was not admitted, or the pieces did not chain. */
+export type PiecesRefused = "unafforded" | "unread";
+
 function directed(fp: FacePiece): DirectedEdge {
   const { piece, curve } = fp;
   const forward = piece.side === 1;
@@ -115,15 +150,17 @@ function directed(fp: FacePiece): DirectedEdge {
 
 /**
  * The connected pieces of one face's unassigned floor, from the boundary pieces
- * {@link faceCover} counted for it — or `null` when they do not chain into closed loops, a hole
- * has no outer loop round it, or `admit` refuses the work (the rule then judges the face by its
- * cover share alone).
+ * {@link faceCover} counted for it — or why there are none to judge ({@link PiecesRefused}):
+ * `"unafforded"` when `admit` refuses the work, `"unread"` when the pieces do not chain into
+ * closed loops or a hole has no outer loop round it. The rule then judges the face by its cover
+ * share alone.
  */
 export function unassignedPieces(
   pieces: readonly FacePiece[],
   admit: (units: number) => boolean,
-): UnassignedPiece[] | null {
-  if (!admit(pieces.length)) return null;
+): UnassignedPiece[] | PiecesRefused {
+  // Each piece reads every piece leaving the vertex it ends at: charged as the pieces squared.
+  if (!admit(pieces.length * pieces.length)) return "unafforded";
   const edges = pieces.map(directed);
   const intern = new PointInterner();
   const fromKey: string[] = [];
@@ -138,9 +175,26 @@ export function unassignedPieces(
     if (list) list.push(i);
     else leaving.set(k, [i]);
   });
-  // Chain: from each unused piece, follow the first unused piece leaving where it ends, until
-  // the walk is back where it began. A vertex two loops touch at is passed through either way;
-  // each loop's area is the same sum.
+  // Each piece's successor: of the pieces leaving the vertex it ends at, the one that turns
+  // furthest to the floor's side, then the one that bends hardest that way, then the first.
+  const next: number[] = edges.map((e, i) => {
+    const d = tangentAt(e.edge, edgeEnd(e.edge));
+    let best = -1;
+    let bestTurn = 0;
+    let bestBend = 0;
+    for (const j of leaving.get(toKey[i]!) ?? []) {
+      const turn = turnOf(d, tangentAt(edges[j]!.edge, edgeStart(edges[j]!.edge)));
+      const bend = bendOf(edges[j]!.edge);
+      if (best < 0 || turn > bestTurn + TURN_EPS || (Math.abs(turn - bestTurn) <= TURN_EPS && bend > bestBend)) {
+        best = j;
+        bestTurn = turn;
+        bestBend = bend;
+      }
+    }
+    return best;
+  });
+  // Chain: the successors form loops. A walk that cannot go on, or runs into a piece of another
+  // loop, means the pieces do not bound regions cleanly: nothing is read.
   const used = edges.map(() => false);
   const loops: Array<{ edges: number[]; area: number }> = [];
   for (let i = 0; i < edges.length; i++) {
@@ -152,10 +206,10 @@ export function unassignedPieces(
       used[cur] = true;
       loop.push(cur);
       area += edges[cur]!.signed;
-      if (toKey[cur] === fromKey[i]) break;
-      const next = (leaving.get(toKey[cur]!) ?? []).find((j) => !used[j]);
-      if (next === undefined) return null;
-      cur = next;
+      const nx = next[cur]!;
+      if (nx === i) break;
+      if (nx < 0 || used[nx]) return "unread";
+      cur = nx;
     }
     if (Math.abs(area) >= NULL_LOOP_MM2) loops.push({ edges: loop, area });
   }
@@ -163,7 +217,7 @@ export function unassignedPieces(
   const holes = loops.filter((l) => l.area < 0);
   const asEdges = (l: { edges: number[] }): Edge[] => l.edges.map((k) => edges[k]!.edge);
   const outerEdges = outer.map(asEdges);
-  if (!admit(holes.length * outerEdges.reduce((n, l) => n + l.length, 0))) return null;
+  if (!admit(holes.length * outerEdges.reduce((n, l) => n + l.length, 0))) return "unafforded";
   const holesOf: number[][] = outer.map(() => []);
   for (let h = 0; h < holes.length; h++) {
     const probe = edges[holes[h]!.edges[0]!]!.from.piece.mid;
@@ -172,7 +226,7 @@ export function unassignedPieces(
       if (loopWinding(outerEdges[k]!, probe) === 0) return;
       if (best < 0 || o.area < outer[best]!.area) best = k;
     });
-    if (best < 0) return null;
+    if (best < 0) return "unread";
     holesOf[best]!.push(h);
   }
   return outer.map((o, k) => {
