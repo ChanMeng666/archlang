@@ -233,11 +233,16 @@ function law(name: string, src: string, world: World, t: Tally): void {
   // Card SR.15: a wrapped name's `<text>` reads as the name (its text content, what a screen reader,
   // a search or a schedule check reads), and the separators are the only thing between its lines.
   // Read against the wrapped texts each storey's scene draws: the wrap step's and the label fit's.
-  expect(after.scenes.length, name).toBe(after.drawings.length);
+  // A source that does not compile has no scene, and its drawing draws no name.
   for (const [k, svg] of after.drawings.entries()) {
+    const scene = after.scenes[k];
+    if (!scene) {
+      expect(svg, name).not.toContain("<tspan");
+      continue;
+    }
     const drawnWrapped = new Set<string>();
     let blocks = 0;
-    for (const n of after.scenes[k]!.nodes) {
+    for (const n of scene.nodes) {
       if (n.prim.t !== "text" || !n.prim.block) continue;
       drawnWrapped.add(n.prim.value);
       blocks++;
