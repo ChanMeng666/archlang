@@ -10,7 +10,7 @@
  * PR legitimately moves a hashed output (never keep code), the table is re-taken by the generator, the
  * reason recorded below and the moved files listed in that commit's message.
  *
- * Taken: RM9.6 CV08 #1001 round 2 (on 25ce2fa2, main 7f093fc3 merged): W_SEAT_FACING_WALL reports on its defect pair and five audit plans
+ * Taken: RM1.2b item 2 (on origin/main 490f2e36 + this branch): two new taste-corpus files, test/taste-corpus/r20-bath-off-the-stack(.good).arch; no other row moves
  */
 
 /** `[path from the repository root, SHA-256 of the payload, evaluation steps]`, sorted by root. */
@@ -1360,6 +1360,16 @@ export const KEEP_WEAK_BASELINE: readonly (readonly [string, string, number])[] 
     "test/taste-corpus/r18-l-shaped-bedroom.good.arch",
     "b2409d6c492b9aa58f16fb4db62f387252c4d032e48dc55b203796ec95905212",
     231,
+  ],
+  [
+    "test/taste-corpus/r20-bath-off-the-stack.arch",
+    "fd59e19586c0364c3a71866b6144fb186d4f17b7aa360b7a11d5c948c5a1eb8e",
+    1518,
+  ],
+  [
+    "test/taste-corpus/r20-bath-off-the-stack.good.arch",
+    "5b37535607fcae56bc7968b2f7f1f981682202c1deae1bc8c814968bbce2bdc1",
+    1518,
   ],
   [
     "test/taste-corpus/r3-living-behind-corridor.arch",

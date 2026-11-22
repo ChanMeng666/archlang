@@ -160,6 +160,7 @@ describe("the report", () => {
       "R16",
       "R17",
       "R18",
+      "R20",
     ]);
   });
 
@@ -229,8 +230,8 @@ describe("the report", () => {
     const t = tasteWithBudget(read(`${CHAIN}.arch`), {}, 0);
     expect(t.score).toBeNull();
     expect(t.criteria.every((c) => !c.assessable && c.reason === "taste-budget")).toBe(true);
-    expect(t.coverage.skipped.map((s) => s.reason)).toEqual(Array(11).fill("taste-budget"));
-    expect(t.coverage.weight).toEqual({ assessable: 0, total: 11 });
+    expect(t.coverage.skipped.map((s) => s.reason)).toEqual(Array(12).fill("taste-budget"));
+    expect(t.coverage.weight).toEqual({ assessable: 0, total: 12 });
   });
 });
 
@@ -462,6 +463,61 @@ describe("each criterion's acceptance line (design §3)", () => {
     expect(crit(t, "R9").score).toBe(1);
   });
 
+  it("R20: a bath over the cloakroom scores 1, one at the far end scores 0; one storey is not judged", () => {
+    const off = crit(corpus("r20-bath-off-the-stack"), "R20");
+    expect(off.measured).toEqual({ num: 0, den: 2 });
+    expect(off.score).toBe(0);
+    expect(off.advice).toBe("A_WET_UNSTACKED");
+    expect(off.message).toBe(
+      '"Cloakroom" on level 1 stands over or under no bath, WC or utility room on level 2: 0 of 2 wet rooms are stacked.',
+    );
+    expect(off.evidence).toEqual([
+      { ids: ["r_wc"], fact: "no wet room's floor overlaps it on level 2", level: 1 },
+      { ids: ["r_bath"], fact: "no wet room's floor overlaps it on level 1", level: 2 },
+    ]);
+    const on = crit(corpus("r20-bath-off-the-stack.good"), "R20");
+    expect(on.measured).toEqual({ num: 2, den: 2 });
+    expect(on.advice).toBeNull();
+    expect(on.message).toBe("The two wet rooms stand one over the other.");
+    // The two floors share one outline, which the ring-overlap test alone reads as apart.
+    expect(on.evidence[0]).toEqual({
+      ids: ["r_wc", "r_bath"],
+      fact: "its floor overlaps a wet room's on level 2 (above)",
+      level: 1,
+    });
+    // One storey: nothing to stack.
+    const one = taste(roomsOnly(['room id=a at (0,0) size 2000x2000 label "Bath" uses bath']));
+    expect(crit(one, "R20").reason).toBe("too-few-items");
+    expect(one.coverage.skipped).toContainEqual({ criterion: "R20", reason: "too-few-items" });
+    // Several wet rooms on a storey are each judged: the en-suites of hillside-villa stand over
+    // no wet room below, and its utility and powder rooms under none above.
+    const villa = crit(taste(read("examples/hillside-villa.arch"), { world: TASTE_WORLD }), "R20");
+    expect(villa.measured).toEqual({ num: 0, den: 5 });
+    // The townhouse stacks its cloakroom and both bathrooms on one footprint.
+    const town = crit(taste(read("examples/townhouse.arch"), { world: TASTE_WORLD }), "R20");
+    expect(town.measured).toEqual({ num: 3, den: 3 });
+  });
+
+  it("R20 reads the shape, never the box: an L over an L stacks, a room in the L's notch does not", () => {
+    const L = "(0,0) (4000,0) (4000,2000) (2000,2000) (2000,4000) (0,4000)";
+    const plan = (upper: string): string =>
+      [
+        'plan "Stack" {',
+        "  units mm",
+        "  grid 10",
+        `  level 1 "Ground" { room id=w polygon ${L} label "Utility" uses utility }`,
+        `  level 2 "First" { ${upper} }`,
+        "}",
+      ].join("\n");
+    // The same L on both storeys: one outline.
+    expect(crit(taste(plan(`room id=b polygon ${L} label "Bath" uses bath`)), "R20").score).toBe(1);
+    // A bath in the L's notch: inside the L's bounding box, outside its floor.
+    const notch = crit(taste(plan('room id=b at (2500,2500) size 1500x1500 label "Bath" uses bath')), "R20");
+    expect(notch.measured).toEqual({ num: 0, den: 2 });
+    // A bath over one arm of the L.
+    expect(crit(taste(plan('room id=b at (0,2500) size 1500x1500 label "Bath" uses bath')), "R20").score).toBe(1);
+  });
+
   it("an upper storey is skipped for the depth readers, filed with its level", () => {
     const t = taste(read("examples/townhouse.arch"), { world: TASTE_WORLD });
     const upper = t.coverage.skipped.filter((s) => s.reason === "upper-storey");
@@ -503,7 +559,7 @@ describe("arch score --taste (the CLI contract)", () => {
   it("prints a human summary line and exits 0", async () => {
     const r = await run(["score", `${CHAIN}.arch`, "--taste", "generic"]);
     expect(r.status).toBe(0);
-    expect(r.stdout).toBe("taste generic: 0.5 (capped; uncapped 0.6875) · judged 10/11 of the weight\n");
+    expect(r.stdout).toBe("taste generic: 0.5 (capped; uncapped 0.6875) · judged 10/12 of the weight\n");
     expect(r.stderr).toContain("A_INTIMACY_INVERSION");
   }, 30000);
 

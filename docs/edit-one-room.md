@@ -110,3 +110,29 @@ Give the assistant these rules with the edit request:
 For a plan with `level` blocks, a structural grid shared by all storeys is an `axes` block, and a
 stair or lift with the same id on two storeys is one shaft. `keep stacked core on levels 1 2` holds a
 shaft's footprint over itself. See [What is new](whats-new.md#stacked-storeys).
+
+### Keep a wet room over the one below
+
+`archlang score plan.arch --taste generic` reports `A_WET_UNSTACKED` (criterion R20) when a bath,
+WC or utility room stands over or under no wet room on the next storey that has one. It is advice:
+rooms that do not stack are legal, `lint` never reports them, and the plan has no fact for a pipe
+wall. When the stack matters to the design, write it into the plan so that every later edit is
+checked against it. Give the two rooms one id (ids are unique within a storey, so the same id on two
+storeys is allowed) and keep that id stacked at the plan's root:
+
+```arch static
+  keep stacked r_wet on levels 1 2
+  level 1 "Ground floor" {
+    room id=r_wet at (0,7700) size 2200x2300 label "Cloakroom" uses wc
+  }
+  level 2 "First floor" {
+    room id=r_wet at (0,7700) size 2200x2300 label "Bathroom" uses bath
+  }
+```
+
+The keep compares the room's four edges on each storey, so the two rooms must have the same
+rectangle; a polygon room is refused. An edit that moves the bathroom to the other end of the
+landing then reports `W_KEEP_VIOLATED` with the residual in mm ("its top edge is 7700 mm above where
+it is on level 1") and moves nothing. Add `advisory` at the end of the line to have it reported
+without failing `validate --strict`. The taste score never reads the keep: it compares the floors
+themselves.

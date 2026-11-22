@@ -1557,13 +1557,19 @@ ramp anchor.
 | R16 corner doors | circulation | per door into a room under 15 m² (not a hall), whether the nearer jamb is within max(wall thickness, 600 mm) of the room's corner; rectilinear rooms only | 0 → 1 | Alexander 196 [V]; ResPlan jamb-to-corner p50 [prior] |
 | R17 axis economy | geometry | distinct x and y lines of room and wall edges (lines within 100 mm are one) per room that is not circulation; four rooms or more | 2.5 → 1.5 | Brandão 2008 [S] |
 | R18 shape regularity | geometry | per bedroom, bath or kitchen, floor area ÷ the area of its minimum enclosing rectangle (a circle is skipped) | 0.75 → 0.9 | Alexander 191 [V]; ResPlan rectangularity p10 [prior] |
+| R20 wet stacking | zoning | on two or more storeys with a bath, WC or utility room, the share of those rooms whose floor overlaps, in plan, one on the nearest storey above or below that has one (read from the shape, never the box; one storey is not judged) | 0 → 1 | Scottish Government, *Conversion of traditional buildings: guidance*, 3.12.4 [V] |
 
 A criterion that cannot judge (no entrance, nothing to compare, an upper storey, a building that
-reads as non-residential for R6, R11 and R12) says so with
+reads as non-residential for R6, R11 and R12, a plan of one storey for R20) says so with
 `assessable: false` and a `reason`, and is left out of the total, never counted as a pass;
 `coverage.weight` says how much of the profile was judged. A criterion below 1 carries an
 `A_*` advice code. Rooms are named by label in `message`; ids appear only in
 `evidence[].ids`. Scores are computed in integers and printed exactly.
+
+R20 (`A_WET_UNSTACKED`) is advice about plumbing runs, not a defect: wet rooms that do not stack
+are legal, `lint` never reports them, and the language has no fact for a pipe wall or a duct. To
+make a stack a checked statement of the plan, write `keep stacked` on the wet room
+([Edit one room](edit-one-room.md#keep-a-wet-room-over-the-one-below)).
 
 **The validity cap.** While default-profile `lint` reports a warning from a *validity* rule,
 the total is capped at 0.5 (`capped: true`, the value before the cap in `uncapped`), so a plan

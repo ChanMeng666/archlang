@@ -10,10 +10,14 @@
  * here holds the counted work at or under the declared cost on every corpus plan and on a
  * generated probe plan, counted, never timed.
  *
- * Measured on PS5.1b (eleven criteria): the largest call charges {@link MEASURED_MAX} units (it was
- * 1,559 on `examples/terrace-row.arch` with PS5.1a's three). If the corpus grows a
- * plan that charges more, this test names it: re-measure, and raise the budget only with the
- * new measurement recorded here and in `TASTE_BUDGET`'s doc comment.
+ * Measured on PS5.1b (eleven criteria): the largest call charged 6,163 units on
+ * `examples/terrace-row.arch` (it was 1,559 there with PS5.1a's three). Re-measured with R20
+ * (wet-room stacking, product-roadmap RM1.2b item 2): {@link MEASURED_MAX}, now on
+ * `examples/hillside-villa.arch` (5,958 for the eleven, plus R20's 236 on its two storeys and five
+ * wet rooms); `terrace-row` charges 6,164 (R20 costs 1 on a plan of one storey). The budget did not
+ * move: 6,500,000 is 1,049 times the new maximum. If the corpus grows a plan that charges more,
+ * this test names it: re-measure, and raise the budget only with the new measurement recorded here
+ * and in `TASTE_BUDGET`'s doc comment.
  */
 
 import { describe, expect, it } from "vitest";
@@ -22,7 +26,7 @@ import { tasteCharges, tasteWork } from "../src/taste/index.js";
 import { TASTE_SOURCES, TASTE_WORLD } from "./helpers/taste-sources.js";
 
 /** The largest per-call charge over the corpus when the budget was set. */
-const MEASURED_MAX = { charge: 6163, file: "examples/terrace-row.arch" };
+const MEASURED_MAX = { charge: 6194, file: "examples/hillside-villa.arch" };
 
 /** What room `i` of the probe is: a living room, a kitchen or a bedroom, in a fixed rotation. */
 const probeUse = (i: number): string => (i % 4 === 0 ? "living" : i % 4 === 1 ? "kitchen" : "bedroom");
@@ -71,6 +75,28 @@ function capPlan(n: number): string {
   return lines.join("\n");
 }
 
+/**
+ * Two storeys of `n` wet rooms in a row, each storey the same: every other room a rectangle and
+ * the rest written as a four-corner polygon, so R20 reads both of its tests (the rectangle test,
+ * and the ring test with the one-outline fallback).
+ */
+function stackPlan(n: number): string {
+  const storey = (level: number): string[] => {
+    const lines = [`  level ${level} "Storey ${level}" {`];
+    for (let i = 0; i < n; i++) {
+      const x = i * 3000;
+      lines.push(
+        i % 2 === 0
+          ? `    room id=r_${i} at (${x},0) size 3000x3000 label "Bath ${i}" uses bath`
+          : `    room id=r_${i} polygon (${x},0) (${x + 3000},0) (${x + 3000},3000) (${x},3000) label "WC ${i}" uses wc`,
+      );
+    }
+    lines.push("  }");
+    return lines;
+  };
+  return [`plan "Stack" {`, "  units mm", "  grid 100", ...storey(1), ...storey(2), "}"].join("\n");
+}
+
 describe("TASTE_BUDGET", () => {
   it("is at least 1,000 times the largest charge of any corpus plan, and the measurement still holds", () => {
     let max = 0;
@@ -110,8 +136,26 @@ describe("each criterion's declared cost bounds the work its judge counts", () =
   it("on a generated 40-room storey, where every criterion does real work", () => {
     const src = probePlan(40);
     const rows = tasteWork(src);
-    expect(rows.map((r) => r.id)).toEqual(["R3", "R6", "R7", "R9", "R11", "R12", "R14", "R15", "R16", "R17", "R18"]);
+    expect(rows.map((r) => r.id)).toEqual([
+      "R3",
+      "R6",
+      "R7",
+      "R9",
+      "R11",
+      "R12",
+      "R14",
+      "R15",
+      "R16",
+      "R17",
+      "R18",
+      "R20",
+    ]);
     for (const r of rows) {
+      // R20 compares storeys: on one it does nothing and costs 1 (its own probe is below).
+      if (r.id === "R20") {
+        expect([r.work, r.cost]).toEqual([0, 1]);
+        continue;
+      }
       expect(r.work, r.id).toBeGreaterThan(40);
       expect(r.work, `${r.id}: work ${r.work} > cost ${r.cost}`).toBeLessThanOrEqual(r.cost);
     }
@@ -119,6 +163,16 @@ describe("each criterion's declared cost bounds the work its judge counts", () =
     const r7 = taste(src).criteria.find((c) => c.id === "R7")!;
     expect(r7.evidence).toHaveLength(8);
     expect(r7.evidence_more).toBe(32);
+  }, 120_000);
+
+  it("on a generated pair of storeys of 40 wet rooms each, where R20 does real work", () => {
+    const src = stackPlan(40);
+    const r20 = tasteWork(src).find((r) => r.id === "R20")!;
+    expect(r20.work).toBeGreaterThan(40 * 40);
+    expect(r20.work, `R20: work ${r20.work} > cost ${r20.cost}`).toBeLessThanOrEqual(r20.cost);
+    // Every room stands on its twin below: the rectangles by the rectangle test, the polygons by
+    // their one outline.
+    expect(taste(src).criteria.find((c) => c.id === "R20")!.measured).toEqual({ num: 80, den: 80 });
   }, 120_000);
 });
 

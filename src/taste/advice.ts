@@ -127,6 +127,16 @@ export const TASTE_ADVICE: readonly TasteAdviceRow[] = [
     verified: "V",
     asks: "bedrooms, bathrooms and kitchens that fill at least 90 % of their enclosing rectangle",
   },
+  {
+    id: "R20",
+    name: "wet-stacking",
+    subscore: "zoning",
+    code: "A_WET_UNSTACKED",
+    source:
+      "Scottish Government, Conversion of traditional buildings: guidance, 3.12.4 (in multi-storey projects, sanitary facilities stacked one above the other where possible)",
+    verified: "V",
+    asks: "every bath, WC and utility room over or under one on the next storey that has one",
+  },
 ];
 
 /** The row of one criterion; throws on an id with no row (a programming error). */
