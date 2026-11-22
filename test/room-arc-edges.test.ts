@@ -258,12 +258,16 @@ suite("Plan JSON", () => {
     return source!;
   };
 
-  it("carries each arc on the vertex it arrives at, the closing arc on the first, and round-trips", () => {
+  it("lists the written vertices and one `arcs` entry per edge (null where straight), and round-trips", () => {
     const room = planToJson(SEMICIRCLE).json!.rooms[0]!;
     expect(room.polygon).toEqual([
-      { x: 0, y: 0, arc: { radius: 2000, dir: "cw" } },
+      { x: 0, y: 0 },
       { x: 4000, y: 0 },
     ]);
+    // Edge 1 runs from the second vertex back to the first: the closing edge.
+    expect(room.arcs).toEqual([null, { radius: 2000, dir: "cw" }]);
+    // A straight ring carries no `arcs` key, as before.
+    expect("arcs" in planToJson(plan("  room id=t polygon (0,0) (4000,0) (0,3000)")).json!.rooms[0]!).toBe(false);
     expect(roundTrips(SEMICIRCLE)).toContain("polygon (0,0) (4000,0) arc (0,0) radius 2000 cw");
     expect(roundTrips(BOWED)).toContain("polygon (0,0) (4000,0) arc (4000,4000) radius 2000 cw (0,4000)");
   });

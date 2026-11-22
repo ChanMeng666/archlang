@@ -1644,8 +1644,9 @@ plan "Bay room" {
 rectangle and its bay. The floor is drawn with true arcs, the room's `bbox` reaches the bulge,
 and `describe()` reports the written vertices as `floor_polygon` and each curve as
 `floor_arcs` (`from`, `to`, `center`, `r`, `sweep` in radians, `+` clockwise on the sheet), so
-no fact is a chord. Plan JSON carries each arc on the vertex it arrives at (the closing arc on
-the first vertex) and round-trips. `dims auto` ticks the written vertices only and adds an
+no fact is a chord. Plan JSON writes the vertices as `polygon` and the curves as `arcs`, one
+entry per edge (from a vertex to the next, the last back to the first; `null` where straight),
+and round-trips. `dims auto` ticks the written vertices only and adds an
 `R<r>` leader per curve, none for a curve about a wall arc's centre (that wall's leader already
 dimensions it).
 

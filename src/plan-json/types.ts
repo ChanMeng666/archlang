@@ -94,10 +94,15 @@ export interface RoomJson extends InstanceMark {
    * floor when it is not a rectangle. Present on OUTPUT for a `room polygon`, and
    * honoured on INPUT, where it replaces `x`/`y`/`width`/`height` (which stay on output
    * as the polygon's bounding box, so a rect-only reader still sees a truthful extent).
-   * A point's `arc` (card ARC2) curves the edge ARRIVING at it, as on a wall point; on the
-   * FIRST point it curves the closing edge, and a ring with an arc needs only two vertices.
    */
-  polygon?: WallPointJson[];
+  polygon?: PointJson[];
+  /**
+   * A ring's curved edges (card ARC2), one entry per edge of {@link RoomJson.polygon}: entry `k` is
+   * the edge from vertex `k` to vertex `k + 1` (the last, the closing edge back to the first),
+   * `null` where it is straight. Present only on a ring with an arc; a ring with one needs only two
+   * vertices. A reader that ignores it sees the chords. Honoured on input.
+   */
+  arcs?: Array<WallArcJson | null>;
   /** `floor <pattern>` as written (RM3.1): the hatch the room's floor is drawn with. Emitted only
    *  when the source writes one, so every other payload is unchanged; honoured on input. */
   floor?: FloorMaterial;

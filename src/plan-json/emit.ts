@@ -15,6 +15,8 @@ import { roomUses } from "../analyze.js";
 import { DEFAULT_MATERIAL } from "../hatches.js";
 import { roomTypeForUses, usesForRoomType } from "./room-types.js";
 import type {
+  PointJson,
+  WallArcJson,
   WallPointJson,
   InstanceMark,
   RoomJson,
@@ -130,11 +132,12 @@ function emitRows(p: PlanBodyJson, L: string[]): void {
   for (const r of (p.rooms ?? []).filter(own)) {
     // A polygon room round-trips through its RING, never its bounding box — emitting
     // `at`+`size` for it would quietly turn an L-shaped gallery back into a rectangle.
-    const shape = r.polygon?.some((pt) => pt.arc)
-      ? `polygon ${roomRingSource(r.polygon)}`
-      : r.polygon && r.polygon.length >= 3
-        ? `polygon ${r.polygon.map((pt) => `(${num(pt.x)},${num(pt.y)})`).join(" ")}`
-        : `at (${num(r.x)},${num(r.y)}) size ${num(r.width)}x${num(r.height)}`;
+    const shape =
+      r.polygon && r.arcs?.some((a) => a !== null)
+        ? `polygon ${roomRingSource(r.polygon, r.arcs)}`
+        : r.polygon && r.polygon.length >= 3
+          ? `polygon ${r.polygon.map((pt) => `(${num(pt.x)},${num(pt.y)})`).join(" ")}`
+          : `at (${num(r.x)},${num(r.y)}) size ${num(r.width)}x${num(r.height)}`;
     let line = `  room ${idAttr(r.id)}${shape}`;
     if (r.label !== undefined) line += ` label ${q(r.label)}`;
     // After `label`, before `uses`: one of the two places the grammar reads it.
@@ -187,14 +190,20 @@ function wallPoint(pt: WallPointJson): string {
 }
 
 /**
- * An arc-edged room ring as source (card ARC2): each vertex as a wall point, the first bare (its
- * `arc`, the closing edge's, is written last, as `arc (x0,y0) …` back onto the first vertex).
+ * An arc-edged room ring as source (card ARC2): each vertex as a wall point carrying the arc of the
+ * edge arriving at it (`arcs[i − 1]`), the first bare; a curved closing edge (the last `arcs` entry) is
+ * written last, as `arc (x0,y0) …` back onto the first vertex.
  */
-function roomRingSource(ring: readonly WallPointJson[]): string {
-  const [first, ...rest] = ring;
-  const head = `(${num(first!.x)},${num(first!.y)})`;
-  const closing = first!.arc ? [wallPoint(first!)] : [];
-  return [head, ...rest.map(wallPoint), ...closing].join(" ");
+function roomRingSource(ring: readonly PointJson[], arcs: ReadonlyArray<WallArcJson | null>): string {
+  // Vertex `i` is reached by edge `i − 1`; the closing edge (the last) returns to the first vertex.
+  const at = (i: number): WallPointJson => {
+    const pt = ring[i % ring.length]!;
+    const arc = arcs[i - 1];
+    return arc ? { x: pt.x, y: pt.y, arc } : { x: pt.x, y: pt.y };
+  };
+  const out = ring.map((_, i) => wallPoint(at(i)));
+  if (arcs[ring.length - 1]) out.push(wallPoint(at(ring.length)));
+  return out.join(" ");
 }
 
 /**
