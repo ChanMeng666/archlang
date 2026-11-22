@@ -117,6 +117,8 @@ describe("the stage ladder and the per-rule table", () => {
       W_AXES_DIFFER: "brief",
       // RM1.4: what the plan writes and the language reads otherwise; a size the `grid` moved, from rooms.
       W_LENGTH_IN_METRES: "brief",
+      // AF10 step 2 (first slice): a length that is a name times itself, the brief's as the units are.
+      W_AREA_AS_LENGTH: "brief",
       W_SET_VALUE_WORD: "brief",
       // RM6.1: the storey heights, slabs and clear heights are the brief's.
       W_CLEAR_HEIGHT_MISMATCH: "brief",
