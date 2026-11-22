@@ -764,6 +764,8 @@ RM-D65 授权协调者在所有者不在时自行裁定，所有者一句话可�
 | RM-D83 | 协调者能不能自己按 baseline 文件的规则把体积上限往下重取（RM-D75、RM-D78、RM-D79 一直写着"要所有者确认"） | "我同意授权" | **常设授权**：量出削减之后，由协调者（不是执行者自己）按 `playground/e2e/startup-chunks.baseline.json` 里三条路径上限（`compilerPathBudget`、`embedPathBudget`、`firstUsePathBudget`）自己的规则（实测路径 × 1.025，进到千）往下重取，不必再问，数字写进该上限的 `…Why` 字段和 PR。不包括 `viewBudget`（PS-D5 的上限）、`growthBudget`（是增量）和 `gzip` 基线。往上抬、或不按这条规则重取，仍归所有者（`embedPathBudget` 的 RM-D57 例外照旧）。写进 `docs/agents/iron-laws.md` § Owner policies 与 `REVIEW.md`；RM-D75、RM-D78、RM-D79 的那一读法从此不再待确认 |
 | RM-D84 | 1.66.0 之后 `main` 上攒的改动要不要现在发布 | "如果你认为有必要现在就发布新版本，那就发布" | 协调者判断有必要：用 `npx` 的作者和 VS Code、MCP 的用户只有发布后才拿到这些改动，修正（SR.15 折行名的文本、E.18 的引出线、`W_STAIR_NO_LANDING` 的贴边洞口）越晚发越久地留在已发布版本里，等下去也换不来什么。内容以 `CHANGELOG.md` 的 `[Unreleased]` 为准，其中有四条新 W 码（`W_TABLE_NO_SEAT`、`W_SEAT_FACING_WALL`、`W_STAIR_NO_VOID`、`W_AREA_AS_LENGTH`）；按 release-check 第 1 条是次版本，定为 **1.67.0**。只对这一次；再下一次发布要所有者对那一次的决定 |
 
+| RM-D85 | OpenAI 插件目录的"提交审核"含代所有者作的政策声明，1.66.0、1.67.0 都留给了所有者 | "请你从现在开始，自动实施这个步骤，也就是由你全权负责the OpenAI plugin directory发布的全流程"（2026-11-22） | **常设授权**：每次发布由代理走完 OpenAI 目录的全流程（`npm run build:openai-plugin` → "Create draft from ZIP" → 等扫描 → "Submit for review" 并如实勾选政策声明 → 通过后 "Publish"）；某一项声明不能如实勾选时停下来问；登录、2FA、站点权限仍是所有者的。1.67.0 当天按此提交、通过并发布 |
+
 ---
 
 ## 7. 与已有计划的关系
