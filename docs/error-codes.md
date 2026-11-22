@@ -3384,9 +3384,9 @@ furniture bed at (1650,900) size 1500x2000   # fixed: the pinned point moved cle
 
 *warning* — A length is a name times itself: an area, if the name is a length.
 
-**Cause.** A room `size` side, a wall point or thickness (`walls from rooms` too), or a door, window or opening `width` is written as a name times itself (`W*W`), or as a name bound to one (`let A = W*W`, then `size A x 3000`). If the name is a length, its square is an area in square millimetres, and the plan draws it as a length: `let W = 4m` makes `W*W` 16000000 mm, a room 16 km long. No size threshold is read: the square is the whole signal, so it fires however small the value. Any further arithmetic ends it (`A / W` is a length again, `sqrt(W*W + D*D)` a diagonal), and so does a function call (`sq(W)`). Units are never converted. The plan draws the value as written.
+**Cause.** A room `size` side, a wall point or thickness (`walls from rooms` too), or a door, window or opening `width` is written as a name times itself (`W*W`), or as a name bound to one (`let A = W*W`, then `size A x 3000`). If the name is a length, its square is an area in square millimetres, and the plan draws it as a length: `let W = 4m` makes `W*W` 16000000 mm, a room 16 km long. No size threshold is read: the square is the whole signal, so it fires however small the value (but not on 0, which is its element's own error). Any further arithmetic ends it (`A / W` is a length again, `sqrt(W*W + D*D)` a diagonal). A square named by a binding that means something else where the length reads it is not reported: a function's parameter (`let sq(x) = x*x`, then `size sq(W)` or `let S = sq(W)`), or an outer name a component's parameter of the same name shadows. Units are never converted. The plan draws the value as written. Like every warning, it fails `validate --strict`.
 
-**Fix.** Write the length itself (`W`), or, for a room of that area, `size W x W`; the hint names the element.
+**Fix.** Write the length itself, or, for a room of that area, a `size` whose two sides are that length; the hint names the element and the binding.
 
 ```arch static
 let W = 4m

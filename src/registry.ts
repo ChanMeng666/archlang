@@ -178,7 +178,7 @@ export interface ResolveCtx {
   /**
    * The binding a length expression squares (`W*W`, or a name bound to a value `W*W` made), read
    * off the current environment without evaluating anything (`squaredName`, `src/expr.ts`); for
-   * `W_AREA_AS_LENGTH` (AF10). Optional (append-only); absent means never.
+   * `W_AREA_AS_LENGTH` (AF10 step 2, first slice). Optional (append-only); absent means never.
    */
   squaredName?(e: Expr): string | undefined;
 }

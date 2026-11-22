@@ -469,7 +469,7 @@ export const door: ElementDef = {
     const n = node as DoorNode;
     const id = ctx.id;
     const wv = ctx.eval(n.width);
-    noteSquare(ctx, `Door \`${id}\``, "a door's width", n.width, wv, n.span);
+    noteSquare(ctx, `Door "${id}"`, "a door's width", n.width, wv, n.span);
     const width = ctx.snap(wv) || wv;
     if (width <= 0) {
       ctx.diag({

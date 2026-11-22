@@ -76,7 +76,7 @@ export const opening: ElementDef = {
     const n = node as OpeningNode;
     const id = ctx.id;
     const wv = ctx.eval(n.width);
-    noteSquare(ctx, `Opening \`${id}\``, "an opening's width", n.width, wv, n.span);
+    noteSquare(ctx, `Opening "${id}"`, "an opening's width", n.width, wv, n.span);
     const width = ctx.snap(wv) || wv;
     if (width <= 0) {
       ctx.diag({

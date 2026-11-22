@@ -419,7 +419,7 @@ export const windowEl: ElementDef = {
     const n = node as WindowNode;
     const id = ctx.id;
     const wv = ctx.eval(n.width);
-    noteSquare(ctx, `Window \`${id}\``, "a window's width", n.width, wv, n.span);
+    noteSquare(ctx, `Window "${id}"`, "a window's width", n.width, wv, n.span);
     const width = ctx.snap(wv) || wv;
     if (width <= 0) {
       ctx.diag({

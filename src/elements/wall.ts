@@ -197,8 +197,8 @@ export const wall: ElementDef = {
     const id = ctx.id;
     let points = n.points.map((p) => ctx.snapPt(ctx.evalPt(p)));
     n.points.forEach((p, i) => {
-      noteSquare(ctx, `Wall \`${id}\``, "a wall's point", p.x, points[i]!.x, n.span);
-      noteSquare(ctx, `Wall \`${id}\``, "a wall's point", p.y, points[i]!.y, n.span);
+      noteSquare(ctx, `Wall "${id}"`, "a wall's point", p.x, points[i]!.x, n.span);
+      noteSquare(ctx, `Wall "${id}"`, "a wall's point", p.y, points[i]!.y, n.span);
     });
     const tv = ctx.eval(n.thickness);
     const thickness = ctx.snap(tv) || tv;
@@ -210,7 +210,7 @@ export const wall: ElementDef = {
         span: n.span,
       });
     }
-    noteSquare(ctx, `Wall \`${id}\``, "a wall's thickness", n.thickness, tv, n.thicknessSpan ?? n.span);
+    noteSquare(ctx, `Wall "${id}"`, "a wall's thickness", n.thickness, tv, n.thicknessSpan ?? n.span);
     noteThickness(ctx, `Wall "${id}"`, tv, thickness, n.thicknessSpan ?? n.span);
     let material = DEFAULT_MATERIAL as string;
     if (n.material !== undefined) {

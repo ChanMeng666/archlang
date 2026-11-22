@@ -2,7 +2,7 @@
  * Warnings for what the resolver used to accept without a word (product-roadmap RM1.4): a
  * length that reads as metres (`W_LENGTH_IN_METRES`) and a written size or door position that
  * `grid` moved (`W_GRID_SNAPPED`); and a length that is a binding times itself (`W_AREA_AS_LENGTH`,
- * AF10). All are warnings only: the plan compiles and draws exactly as before, and a plan that
+ * AF10 step 2, first slice). All are warnings only: the plan compiles and draws exactly as before, and a plan that
  * triggers none gets no new byte anywhere.
  *
  * Each helper compares numbers the element has already computed and, only when it reports,
@@ -55,11 +55,13 @@ export function noteMetres(
 }
 
 /**
- * `W_AREA_AS_LENGTH` (AF10): the length `e`, drawn as `value`, is a binding times itself (`W*W`,
- * or a name bound to `W*W`), which is an area when the binding is a length. Reads no threshold:
- * the square is the whole signal, whatever its size. `what` names the clause without an id (`a
- * room's size`); `subject` names the element in the hint (``Room `r` ``). `room`: the length is a
- * room side, so the hint also offers the square room of that area. Reports only.
+ * `W_AREA_AS_LENGTH` (AF10 step 2, first slice; ruling RM-D81): the length `e`, drawn as
+ * `value`, is a binding times itself (`W*W`, or a name bound to `W*W`), which is an area when the
+ * binding is a length. Reads no threshold: the square is the whole signal, whatever its size, but
+ * a square of 0 is not reported (it has no size to mislead, and a zero size is its element's own
+ * error). `what` names the clause without an id (`a room's size`); `subject` names the element in
+ * the hint (`Room "r"`, as the sibling helpers do). `room`: the length is a room side, so the hint
+ * also offers the square room of that area. Reports only.
  */
 export function noteSquare(
   ctx: Pick<ResolveCtx, "diag" | "squaredName">,
@@ -70,6 +72,7 @@ export function noteSquare(
   span: Span | undefined,
   room = false,
 ): void {
+  if (value === 0) return;
   const n = ctx.squaredName?.(e);
   if (n === undefined) return;
   const shown = e.t === "ref" ? e.name : `${n}*${n}`;

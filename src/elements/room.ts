@@ -321,8 +321,8 @@ export function floorClause(ctx: ParseCtx, rank: number, node: { floor?: FloorCl
 /**
  * A rectangle room's written `size`, said out loud when it is not what is drawn (RM1.4): sides
  * that read as metres (`size 4x3`, `W_LENGTH_IN_METRES`), else a side `grid` moved
- * (`W_GRID_SNAPPED`); first, a side that is a binding times itself (`W_AREA_AS_LENGTH`, AF10).
- * Reports only; the room keeps the snapped size it always had.
+ * (`W_GRID_SNAPPED`); first, a side that is a binding times itself (`W_AREA_AS_LENGTH`, AF10 step
+ * 2). Reports only; the room keeps the snapped size it always had.
  */
 function noteRoomSize(
   ctx: ResolveCtx,
@@ -332,8 +332,8 @@ function noteRoomSize(
   size: { w: number; h: number },
   span: Span | undefined,
 ): void {
-  noteSquare(ctx, `Room \`${id}\``, "a room's size", exprs.w, written.w, span, true);
-  noteSquare(ctx, `Room \`${id}\``, "a room's size", exprs.h, written.h, span, true);
+  noteSquare(ctx, `Room "${id}"`, "a room's size", exprs.w, written.w, span, true);
+  noteSquare(ctx, `Room "${id}"`, "a room's size", exprs.h, written.h, span, true);
   const metric = roomSizeLooksMetric(written.w, written.h);
   if (metric && noteMetres(ctx, `Room "${id}"`, "size", [written.w, written.h], span)) return;
   noteSnap(ctx, `Room "${id}"`, "size", [written.w, written.h], [size.w, size.h], span);
