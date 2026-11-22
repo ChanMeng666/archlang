@@ -6,7 +6,7 @@
  */
 
 import type { RRoom } from "../ir.js";
-import { rectRing } from "../geometry/polygon.js";
+import { roomCorners } from "../geometry/room-ring.js";
 import { memoRoomNetAreaMm2 } from "../analyze/net-area-memo.js";
 import type { NetAreaBand } from "../analyze/net-area.js";
 import { roomAreaMm2, roomUses, type RoomBox } from "../analyze.js";
@@ -48,7 +48,7 @@ export function roomSummaries(
             floor_circle: { cx: r.circle.c.x, cy: r.circle.c.y, r: r.circle.r },
           }
         : {}),
-      floor_polygon: r.circle ? [] : r.poly ? r.poly.map((p) => ({ x: p.x, y: p.y })) : rectRing(rect),
+      floor_polygon: roomCorners(r).map((p) => ({ x: p.x, y: p.y })),
       adjacent,
       ...instanceOf(r),
     };

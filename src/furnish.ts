@@ -60,6 +60,7 @@ import { defaultFootprint, frontClearanceMm } from "./fixtures-catalog.js";
 import { FURNISH_TABLE, type FurnishItem, familyOf, servedBy } from "./furnish-table.js";
 import { doorLeaves, normal, sectorIntersectsRect, segmentsOfWall, sub, unit, type WallSegment } from "./geometry.js";
 import { distToPolygonEdge, pointInPolygon, polygonsOverlap, rectRing } from "./geometry/polygon.js";
+import { roomRing } from "./geometry/room-ring.js";
 import { type BBox, DOORWAY_WIDTH_MM, doorLandingRect, openingBlock, rectsOverlap } from "./geometry/rect.js";
 import type { RDoor, RFurniture, ROpening, ResolvedLevel, ResolvedPlan, RRoom, RWall, RWindow } from "./ir.js";
 import { lex } from "./lexer.js";
@@ -475,7 +476,7 @@ export function furnishStage(
         );
         continue;
       }
-      if ((room.poly ? roomAreaMm2(room) : room.size.w * room.size.h) / 1e6 > MAX_ROOM_AREA_M2) {
+      if (roomAreaMm2(room) / 1e6 > MAX_ROOM_AREA_M2) {
         note(
           room,
           `${said(room)} is larger than ${MAX_ROOM_AREA_M2} m² — the furnish table describes dwelling rooms, so the room was left as it is`,
@@ -985,7 +986,7 @@ function roomsByFill(ir: ResolvedPlan): { empty: RRoom[]; reported: Reported[]; 
   for (const e of ir.elements) {
     if (e.kind !== "room" || e._unplaced) continue;
     const uses = usesOf(e);
-    const floor = e.poly ?? rectRing({ x: e.at.x, y: e.at.y, w: e.size.w, h: e.size.h });
+    const floor = roomRing(e);
     const declaredHere = (f: RFurniture): boolean => f.room === e.id;
     const held = furniture.filter((f) =>
       f.room === undefined || !rooms.has(f.room)

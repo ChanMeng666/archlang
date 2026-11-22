@@ -44,6 +44,7 @@ import { openRunsOf } from "../analyze.js";
 import { type KindsWith, kindsWith } from "../elements/facets.js";
 import type { Arc } from "../geometry/arc.js";
 import { rectRing } from "../geometry/polygon.js";
+import { roomRing } from "../geometry/room-ring.js";
 import type { ResolvedSheet } from "../sheet.js";
 import type { RoomType } from "./room-types.js";
 import { roomTypeForUses } from "./room-types.js";
@@ -190,9 +191,8 @@ export function resolvedToJson(ir: ResolvedPlan, tol: number = DEFAULT_TOL, carr
       height: r.size.h,
       ...(r.poly ? { polygon: r.poly.map((pt) => ({ x: pt.x, y: pt.y })) } : {}),
       area,
-      floor_polygon: r.poly
-        ? r.poly.map((pt) => ({ x: pt.x, y: pt.y }))
-        : rectPolygon(r.at.x, r.at.y, r.size.w, r.size.h),
+      // The discretised ring (`src/geometry/room-ring.ts`): a circle's 48-gon, as before.
+      floor_polygon: roomRing(r).map((pt) => ({ x: pt.x, y: pt.y })),
       ...mark(r),
     };
   });

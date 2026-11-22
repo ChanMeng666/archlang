@@ -48,7 +48,8 @@ import type { Arc } from "../geometry/arc.js";
 import { type BandWall, type EdgeLoop, PointInterner, loopBBox, loopsContain, wallBand } from "../geometry/band.js";
 import type { GridBox } from "../geometry/grid-index.js";
 import { circleCircle, lineCircleParams, lineLineParams, meetLines } from "../geometry/intersect.js";
-import { polygonArea, polygonInsideTest, rectRing } from "../geometry/polygon.js";
+import { polygonInsideTest } from "../geometry/polygon.js";
+import { roomAreaMm2, roomCurveCount, roomEdges, roomExtent, roomRing } from "../geometry/room-ring.js";
 
 /**
  * The most room-and-band edges one room's measurement may read. Past it the pair loop
@@ -133,20 +134,8 @@ export function netAreaWorkUnits(
   }
   let units = 0;
   for (const r of rooms) {
-    const box: GridBox = r.circle
-      ? {
-          minX: r.circle.c.x - r.circle.r,
-          minY: r.circle.c.y - r.circle.r,
-          maxX: r.circle.c.x + r.circle.r,
-          maxY: r.circle.c.y + r.circle.r,
-        }
-      : r.poly
-        ? lineBox(
-            { x: Math.min(...r.poly.map((p) => p.x)), y: Math.min(...r.poly.map((p) => p.y)) },
-            { x: Math.max(...r.poly.map((p) => p.x)), y: Math.max(...r.poly.map((p) => p.y)) },
-          )
-        : { minX: r.at.x, minY: r.at.y, maxX: r.at.x + r.size.w, maxY: r.at.y + r.size.h };
-    const edges = r.circle ? 1 : r.poly ? r.poly.length : 4;
+    const box = roomExtent(r);
+    const edges = roomCurveCount(r);
     let near = 0;
     for (const b of segBoxes) if (boxesMeet(b, box, 0)) near++;
     units += edges * near;
@@ -387,33 +376,34 @@ export interface RoomRegion {
 
 /** The {@link RoomRegion} of a room. */
 export function roomRegion(r: NetAreaRoom): RoomRegion {
+  // The boundary is the room's EXACT edges (a circle's true arc, never its tessellation; a
+  // zero-length line dropped) and the gross its exact area, both read through the room-ring
+  // seam (`src/geometry/room-ring.ts`).
+  const curves = curvesOfLoop(roomEdges(r).filter((e) => e.t === "arc" || e.a.x !== e.b.x || e.a.y !== e.b.y));
+  const gross = roomAreaMm2(r);
   if (r.circle) {
     const { c, r: rad } = r.circle;
-    const east = { x: c.x + rad, y: c.y };
     return {
-      curves: [arcCurve({ center: c, r: rad, a: east, b: east, sweep: TAU, start: 0 })],
+      curves,
       inside: (p) => Math.hypot(p.x - c.x, p.y - c.y) < rad,
       insideCost: 1,
       box: { minX: c.x - rad, minY: c.y - rad, maxX: c.x + rad, maxY: c.y + rad },
-      gross: Math.PI * rad * rad,
+      gross,
     };
   }
-  const ring: Point[] = r.poly ? [...r.poly] : rectRing({ x: r.at.x, y: r.at.y, w: r.size.w, h: r.size.h });
+  const ring = roomRing(r);
   // The ring binned by y-band once, so each of the many probes reads only its band's edges;
   // exactly `pointInPolygon(p.x, p.y, ring, 0)` on every point (`polygonInsideTest`).
   const test = polygonInsideTest(ring, 0);
   return {
-    curves: ring
-      .map((a, i) => ({ a, b: ring[(i + 1) % ring.length]! }))
-      .filter(({ a, b }) => a.x !== b.x || a.y !== b.y)
-      .map(({ a, b }): Curve => ({ t: "line", a, b, box: lineBox(a, b) })),
+    curves,
     inside: (p) => test.inside(p.x, p.y),
     insideCost: test.maxEdgesPerQuery,
     box: lineBox(
       { x: Math.min(...ring.map((p) => p.x)), y: Math.min(...ring.map((p) => p.y)) },
       { x: Math.max(...ring.map((p) => p.x)), y: Math.max(...ring.map((p) => p.y)) },
     ),
-    gross: r.poly ? polygonArea(r.poly) : r.size.w * r.size.h,
+    gross,
   };
 }
 

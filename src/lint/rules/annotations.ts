@@ -114,7 +114,8 @@
 
 import type { Point } from "../../ast.js";
 import type { Diagnostic } from "../../diagnostics.js";
-import { doorLeaves, rectCorners } from "../../geometry.js";
+import { doorLeaves } from "../../geometry.js";
+import { roomRing } from "../../geometry/room-ring.js";
 import {
   drawnView,
   type RDim,
@@ -373,7 +374,7 @@ export const annotationOverlap: LintRule = {
       boxesMeet(t.box, s.box) && charge(s.ring.length) && clippedArea(s.ring, t.rect) > COLLIDE_MIN * t.area;
     /** `t` stands more than the trigger outside `room`'s floor. */
     const leaves = (t: Text, room: RRoom): boolean => {
-      const ring = room.poly ?? rectCorners(room.at.x, room.at.y, room.size.w, room.size.h);
+      const ring = roomRing(room);
       return t.area - inkOf(t, [ring]) > COLLIDE_MIN * t.area;
     };
 

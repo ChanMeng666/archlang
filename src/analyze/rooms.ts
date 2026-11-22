@@ -13,7 +13,6 @@ import type { BBox } from "../geometry/rect.js";
 import { overlap1d, pointInRect } from "../geometry/rect.js";
 import {
   pointInPolygon,
-  polygonArea,
   pointOnPolygonEdge,
   rectInsidePolygon,
   rectRing,
@@ -49,24 +48,8 @@ export function roomBox(r: { at: Point; size: { w: number; h: number }; poly?: P
 /** The room's floor as a ring: its polygon, or its rectangle's four corners. */
 export const roomRing = (b: RoomBox): Point[] => b.poly ?? rectRing(b);
 
-/**
- * A room's floor area in mm² — the ONE expression every area reader shares
- * (`describe().rooms[].area_m2`, the room schedule, Plan JSON, the too-small lint, the
- * drawn area label). A rectangle keeps the exact historical product; a polygon is
- * measured by the shoelace formula, which is exact (not sampled) for any simple ring; a
- * circle by πR², exact.
- */
-export function roomAreaMm2(r: {
-  size: { w: number; h: number };
-  poly?: Point[];
-  circle?: { c: Point; r: number };
-}): number {
-  // A CIRCLE is measured in closed form (πR²) — never from the 48-gon tessellation it
-  // also carries for the grid layer, which understates the area by 0.29%. See the
-  // exact-vs-chordal note in docs/analysis.md.
-  if (r.circle) return Math.PI * r.circle.r * r.circle.r;
-  return r.poly ? polygonArea(r.poly) : r.size.w * r.size.h;
-}
+/** A room's exact floor area in mm² (`src/geometry/room-ring.ts`, the room-ring seam). */
+export { roomAreaMm2 } from "../geometry/room-ring.js";
 
 /** Is the point inside the room's floor (closed bounds — the boundary counts)? */
 export function pointInRoomBox(p: Point, b: RoomBox): boolean {

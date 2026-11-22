@@ -21,7 +21,8 @@ import { hatchOf, hatchTileMm } from "../hatches.js";
 import type { GridBox } from "../geometry/grid-index.js";
 import { GridIndex } from "../geometry/grid-index.js";
 import { countOverlappingRectPairs, rectsOverlap } from "../geometry/rect.js";
-import { polygonArea, polygonsOverlap, rectRing } from "../geometry/polygon.js";
+import { polygonArea, polygonsOverlap } from "../geometry/polygon.js";
+import { roomRing } from "../geometry/room-ring.js";
 import { roomOverlapNamer } from "../naming.js";
 import { classifyLabelUses } from "../vocabulary.js";
 import type { RWall, RRoom, ResolvedElement, ResolvedPlan } from "./types.js";
@@ -347,7 +348,7 @@ export function checkRoomOverlaps(
     if (!rectsOverlap(b1, b2)) return false;
     // A budget crossed here is reported at this pair, never at whichever room came last.
     stepSite(r2.span, r2._file);
-    return polygonsOverlap(r1.poly ?? rectRing(b1), r2.poly ?? rectRing(b2));
+    return polygonsOverlap(roomRing(r1), roomRing(r2));
   };
   /** The classes overlapping class `c` (itself included when its members overlap one
    *  another), ascending; computed once per class. Both tests are symmetric in their
