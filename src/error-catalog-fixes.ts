@@ -122,6 +122,8 @@ export const CATALOG_FIXES: Readonly<Record<string, string>> = {
   E_ROOMS_OVERLAP: "Move or resize the rooms so they meet edge to edge; the shared edge becomes the partition. Name each room once.",
   E_ROOM_ALIGN: "Use one of the six edges; the diagnostic suggests the nearest one and carries a fix that rewrites just that word.",
   E_ROOM_ALIGN_AXIS: "Use the edge of the correct axis; the diagnostic names its exact counterpart (leading stays leading, trailing stays trailing) and carries a fix that rewrites just that word.",
+  E_ROOM_ARC_RADIUS: "Raise the radius to at least half the chord (the message states the minimum), or move the vertices closer together. `archlang fix` applies the minimum for you.",
+  E_ROOM_ARC_SAG: "Write a curve this large as straight edges, or with a smaller radius.",
   E_ROOM_NOT_RECTANGLE: "Write the coordinate as a number, or read a side the room has. For `walls from rooms`, leave the room out with `{ except <room> }` and draw its walls by hand, or make its edges horizontal and vertical; for a pairwise wall, type its points; for a door or opening, place it `on <wall> at …` or `at (x,y)`.",
   E_ROOM_POLY_DEGENERATE: "Give the room at least three vertices that actually turn a corner.",
   E_ROOM_POLY_SELF_INTERSECT: "Reorder the vertices so the ring is traced once around the room without crossing itself (a bow-tie usually means two vertices are swapped).",

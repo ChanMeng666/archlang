@@ -12,6 +12,7 @@ import * as core from "@chanmeng666/archlang";
 import {
   doorLeaves,
   doorSwing,
+  type EdgeLoop,
   entryEdges,
   type RColumn,
   type RDoor,
@@ -102,7 +103,16 @@ const box = (e: RColumn | RVoid | RStair): Box => ({
 function floorOf(r: RRoom, tol: number): Floor {
   // A circle first: the core also carries it as a fixed 48-gon `poly` for the drawing, and the
   // exact circle is what the chord tolerance discretises.
-  const outer = r.circle ? circleRing(r.circle.c, r.circle.r, tol) : (r.poly ?? rectRing(r.at, r.size));
+  // An arc-edged ring (core card ARC2) the same way: its exact `edges` (a public `RRoom` field),
+  // each arc to the chord tolerance, never the core's fixed-step `poly`. A core without the field
+  // carries no arc ring, so the fallback below is that core's whole answer; the field is read
+  // through a widened type so the package still type-checks against a core older than it (`MIN_CORE`).
+  const edges = (r as RRoom & { edges?: EdgeLoop }).edges;
+  const outer = r.circle
+    ? circleRing(r.circle.c, r.circle.r, tol)
+    : edges
+      ? tessellateLoops([edges], tol)[0]!
+      : (r.poly ?? rectRing(r.at, r.size));
   return {
     id: r.id,
     source: source(r),

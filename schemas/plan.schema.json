@@ -263,8 +263,8 @@
           },
           "polygon": {
             "type": "array",
-            "minItems": 3,
-            "description": "An implicitly-closed simple polygon of >=3 vertices — the room's floor when it is not a rectangle. Replaces x/y/width/height on input; on output those remain as its bounding box.",
+            "minItems": 2,
+            "description": "An implicitly-closed simple polygon of >=3 vertices (>=2 with an `arcs` entry) — the room's floor when it is not a rectangle. Replaces x/y/width/height on input; on output those remain as its bounding box.",
             "items": {
               "type": "object",
               "additionalProperties": false,
@@ -282,6 +282,43 @@
                   "description": "Y coordinate in millimetres (+y DOWN, screen convention)."
                 }
               }
+            }
+          },
+          "arcs": {
+            "type": "array",
+            "description": "The ring's curved edges, one entry per `polygon` vertex: entry k is the edge from vertex k to vertex k+1 (the last, the closing edge back to the first), `arc (x,y) radius R [cw|ccw] [major]` as a wall point's `arc`, or null where the edge is straight. Present only on a ring with an arc; ignoring it leaves the chords.",
+            "items": {
+              "anyOf": [
+                {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "radius"
+                  ],
+                  "description": "A curved edge: `arc (x,y) radius R [cw|ccw] [major]`, from its vertex to the next.",
+                  "properties": {
+                    "radius": {
+                      "type": "number",
+                      "exclusiveMinimum": 0,
+                      "description": "Radius in millimetres."
+                    },
+                    "dir": {
+                      "enum": [
+                        "cw",
+                        "ccw"
+                      ],
+                      "description": "Which way round, as the reader sees it on the sheet. Defaults to `ccw`."
+                    },
+                    "major": {
+                      "type": "boolean",
+                      "description": "Take the long way round. Omitted when false."
+                    }
+                  }
+                },
+                {
+                  "type": "null"
+                }
+              ]
             }
           },
           "area": {

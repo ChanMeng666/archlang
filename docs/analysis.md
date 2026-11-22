@@ -173,11 +173,14 @@ A curve has two truthful descriptions — the circle it is, and a polygon close 
 | Fact | How it is computed |
 | --- | --- |
 | A circular room's `area_m2` (label, `describe()`, `schedule rooms`, Plan JSON) | **Exact** — πR², closed form |
+| A `room polygon` ring with an `arc` edge: its `area_m2`, extent, `floor_arcs` and drawn floor | **Exact** — the vertices' shoelace plus each arc's segment `(R²/2)(θ − sin θ)`; the floor a `path` of true arcs |
+| Such a ring's net area, its label pin, and whether walls back its curve (`W_ROOM_NOT_ENCLOSED`) | **Exact** — the winding of its true edges; an arc edge measured by angle against the concentric arc walls |
+| A curve two such rooms share (`W_BOUNDARY_NO_WALL`) | **Not judged** — as a `room circle`'s curve is not: only the rings' straight edges share a run |
 | Any room's `net_area_m2` crossed by a curved wall band | **Exact** — closed-form arc pieces (ends, centre, swept angle) on the boundary of the covered region; π(R − t/2)² for a circle walled all round by one concentric thickness. Angles are read through `atan2` ([ADR 0027](adr/0027-net-internal-area.md)) |
 | `floor_circle`, `dim diameter`, `dim radius`, the `dims auto` R/φ call-outs | **Exact** — the authored centre and radius |
 | The drawing extent, a wall's outer-face box, a spatial-index cell | **Exact** — the arc's closed-form extremes, so a bulge is never clipped |
 | Which wall hosts an opening, and how far along it sits | **Exact** — distance to the arc, and run length `R·θ` |
-| The occupancy grid, the circulation flood-fill, path widths | **Chordal** — a 48-sided inscribed ring (7.5° per chord) |
+| The occupancy grid, the circulation flood-fill, path widths | **Chordal** — a 48-sided inscribed ring (7.5° per chord; an arc edge of a room ring at the same absolute angles, k · 7.5° about its centre, between its exact ends, so rooms sharing a curve share its vertices) |
 | Room-vs-room overlap, and a fixture's wall collision | **Chordal** — the same ring, through the polygon tests |
 | The drawn poché fill of a curved wall | **Chordal** — the visible faces stay true arcs |
 
@@ -186,7 +189,12 @@ claims floor the circle does not have. At 7.5° a chord's sagitta is about `R/46
 a 9 m radius — which is well inside the tolerances the circulation rules already work at.
 Where the difference would be visible in a *number a reader trusts*, the exact form is used
 instead; that is why the area is never taken from the ring (a 48-gon is 0.29% short, enough
-to move a `toFixed(1)` label).
+to move a `toFixed(1)` label). A room ring's arc is held to a chord at most 100 mm off its
+curve, the slack a room's containment allows (R ≤ 46,705 mm for an arc of 7.5° or more; past
+it, `E_ROOM_ARC_SAG`), so its chordal answers stay inside the tolerances that read them. Two
+rooms either side of one curve cut it at the same canonical vertices; where one ring also has a
+vertex the other lacks (a curve split at an arbitrary point), they can overlap by up to that
+sagitta along it, and the room-overlap check holds such a pair to it.
 
 **One reported fact a curve legitimately lacks.** `adjacent` means "shares a boundary
 **run**", and has always excluded a shared corner. A circle meets a straight wall at a

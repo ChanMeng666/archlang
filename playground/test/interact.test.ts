@@ -142,3 +142,21 @@ describe("isDragNotClick", () => {
     expect(isDragNotClick({ x: 100, y: 100 }, 100, 80)).toBe(true);
   });
 });
+
+describe("pickSmallestContaining on an arc-edged room (describe()'s floor_arcs, card ARC2)", () => {
+  // A crescent between two arcs on one chord: its box centre is off its floor.
+  const src = [
+    'plan "A" {',
+    "  units mm",
+    '  room id=c polygon (0,0) arc (4000,0) radius 2000 cw arc (0,0) radius 2100 ccw label "Moon"',
+    "}",
+  ].join("\n");
+  const rooms = describeArch(src).rooms;
+
+  it("follows the curves, not the box: the box centre picks nothing, the crescent's middle picks it", () => {
+    const b = rooms[0]!.bbox;
+    expect(pickSmallestContaining(rooms, b.x + b.w / 2, b.y + b.h / 2)).toBeNull();
+    // Straight up from the chord's midpoint, between the two arcs (y −1460 and −2000 there).
+    expect(pickSmallestContaining(rooms, 2000, -1700)?.id).toBe("c");
+  });
+});

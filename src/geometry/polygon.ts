@@ -394,6 +394,34 @@ export function polygonSelfIntersects(pts: readonly Point[]): boolean {
   return false;
 }
 
+/** How many points {@link ringWithArcs} samples inside each arc. */
+const SUMMARY_ARC_SAMPLES = 8;
+
+/**
+ * A floor ring from `describe()`'s written vertices (`floor_polygon`) and its curves
+ * (`floor_arcs`, card ARC2): each arc's interior sampled at {@link SUMMARY_ARC_SAMPLES} − 1
+ * evenly spaced points after the vertex it leaves from, so a position read off the shape (a
+ * naming point, a hit test) follows the curve, not its chord. With no arcs, the vertices as given.
+ */
+export function ringWithArcs(
+  vertices: readonly Point[],
+  arcs?: readonly { from: Point; center: Point; r: number; sweep: number }[],
+): readonly Point[] {
+  if (!arcs || arcs.length === 0) return vertices;
+  const out: Point[] = [];
+  for (const v of vertices) {
+    out.push(v);
+    const arc = arcs.find((a) => a.from.x === v.x && a.from.y === v.y);
+    if (!arc) continue;
+    const start = Math.atan2(arc.from.y - arc.center.y, arc.from.x - arc.center.x);
+    for (let i = 1; i < SUMMARY_ARC_SAMPLES; i++) {
+      const th = start + (arc.sweep * i) / SUMMARY_ARC_SAMPLES;
+      out.push({ x: arc.center.x + arc.r * Math.cos(th), y: arc.center.y + arc.r * Math.sin(th) });
+    }
+  }
+  return out;
+}
+
 /** The four corners of a rect as a clockwise ring (the rectangle's polygon form). */
 export function rectRing(r: BBox): Point[] {
   return [
@@ -536,20 +564,38 @@ function containmentReads(a: readonly Point[], b: readonly Point[], wa: Windowed
  * that a box rejects costs nothing and the charge falls with the work. Outside a resolution
  * nothing is counted: a caller there bounds itself with {@link polygonsOverlapCost}.
  */
-export function polygonsOverlap(a: readonly Point[], b: readonly Point[], eps = 1): boolean {
+export function polygonsOverlap(a: readonly Point[], b: readonly Point[], eps = 1, sharedCurves = false): boolean {
   if (ringBoxesMiss(a, b, eps)) return false;
   chargeRingReads(a.length + b.length);
   const [wa, wb] = overlapWindow(a, b, eps);
   chargeRingReads(wa.edges.length * wb.edges.length);
   for (const [a1, a2] of wa.edges) {
     for (const [b1, b2] of wb.edges) {
-      if (segmentsProperlyCross(a1, a2, b1, b2)) return true;
+      if (segmentsProperlyCross(a1, a2, b1, b2) && !(sharedCurves && crossingAtAnEnd(a1, a2, b1, b2, eps))) return true;
     }
   }
   chargeRingReads(containmentReads(a, b, wa, wb));
   for (const p of wa.points) if (strictlyInside(p, b, eps)) return true;
   for (const p of wb.points) if (strictlyInside(p, a, eps)) return true;
   return false;
+}
+
+/**
+ * Does a proper crossing of `a1–a2` and `b1–b2` sit within `eps` of an end of either: one segment's
+ * end lies within `eps` of the other segment? Read by {@link polygonsOverlap} only for rings that
+ * discretise a shared curve (`sharedCurves`, an arc-edged room, card ARC2), whose common vertices
+ * agree to about 1e-12 mm but not always bit for bit (a circle's vertex at 180°, an arc's exact
+ * endpoint), so two chords meeting at such a vertex can read as crossing by an ulp. A crossing that
+ * moves the boundary by no more than `eps` is no overlap by more than `eps`, which is the test's
+ * own contract; a deeper overlap still shows as a vertex or a midpoint strictly inside the other.
+ */
+function crossingAtAnEnd(a1: Point, a2: Point, b1: Point, b2: Point, eps: number): boolean {
+  return (
+    distPointToSegment(a1, b1, b2) <= eps ||
+    distPointToSegment(a2, b1, b2) <= eps ||
+    distPointToSegment(b1, a1, a2) <= eps ||
+    distPointToSegment(b2, a1, a2) <= eps
+  );
 }
 
 /**

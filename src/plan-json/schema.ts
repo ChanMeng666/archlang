@@ -181,10 +181,24 @@ export const PLAN_JSON_SCHEMA = /* @__PURE__ */ pure(() => ({
           height: { type: "number", description: "Room height in millimetres." },
           polygon: {
             type: "array",
-            minItems: 3,
+            minItems: 2,
             description:
-              "An implicitly-closed simple polygon of >=3 vertices — the room's floor when it is not a rectangle. Replaces x/y/width/height on input; on output those remain as its bounding box.",
+              "An implicitly-closed simple polygon of >=3 vertices (>=2 with an `arcs` entry) — the room's floor when it is not a rectangle. Replaces x/y/width/height on input; on output those remain as its bounding box.",
             items: POINT_SCHEMA,
+          },
+          arcs: {
+            type: "array",
+            description:
+              "The ring's curved edges, one entry per `polygon` vertex: entry k is the edge from vertex k to vertex k+1 (the last, the closing edge back to the first), `arc (x,y) radius R [cw|ccw] [major]` as a wall point's `arc`, or null where the edge is straight. Present only on a ring with an arc; ignoring it leaves the chords.",
+            items: {
+              anyOf: [
+                {
+                  ...WALL_POINT_SCHEMA.properties.arc,
+                  description: "A curved edge: `arc (x,y) radius R [cw|ccw] [major]`, from its vertex to the next.",
+                },
+                { type: "null" },
+              ],
+            },
           },
           area: { type: "number", description: "Output-only: floor area in square metres (2 dp)." },
           floor_polygon: {

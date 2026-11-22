@@ -62,12 +62,30 @@ export interface RoomSummary {
    * `area_m2` is the exact πR². Append-only, like the rest of the summary.
    */
   floor_circle?: { cx: number; cy: number; r: number };
+  /**
+   * A `room polygon` ring's CURVED edges (`arc` in the ring), present only when it has one:
+   * each from one vertex of `floor_polygon` to the next (the last back to the first), about
+   * `center` at radius `r`, `sweep` its signed angle in radians (`+` clockwise on the sheet).
+   * `floor_polygon` stays the authored vertices, so no fact here is a chord, and `area_m2`
+   * is exact (each arc's circular segment, in closed form). Append-only.
+   */
+  floor_arcs?: FloorArcSummary[];
   /** Ids of rooms whose edges touch this one (within the adjacency tolerance). */
   adjacent: string[];
   /** The `place`d instance this room was drawn inside; absent at plan level. */
   instance?: string;
   /** The component {@link RoomSummary.instance} was made from. */
   component?: string;
+}
+
+/** One curved edge of a room's floor ring ({@link RoomSummary.floor_arcs}). */
+export interface FloorArcSummary {
+  from: { x: number; y: number };
+  to: { x: number; y: number };
+  center: { x: number; y: number };
+  r: number;
+  /** Signed swept angle in radians: `+` clockwise on the sheet, `−` counter-clockwise. */
+  sweep: number;
 }
 
 export interface DoorSummary {

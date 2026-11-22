@@ -43,6 +43,7 @@ import { DEFAULT_MATERIAL } from "../hatches.js";
 import { openRunsOf } from "../analyze.js";
 import { type KindsWith, kindsWith } from "../elements/facets.js";
 import type { Arc } from "../geometry/arc.js";
+import { edgeStart } from "../geometry/band.js";
 import { rectRing } from "../geometry/polygon.js";
 import { roomRing } from "../geometry/room-ring.js";
 import type { ResolvedSheet } from "../sheet.js";
@@ -189,7 +190,16 @@ export function resolvedToJson(ir: ResolvedPlan, tol: number = DEFAULT_TOL, carr
       y: r.at.y,
       width: r.size.w,
       height: r.size.h,
-      ...(r.poly ? { polygon: r.poly.map((pt) => ({ x: pt.x, y: pt.y })) } : {}),
+      // An arc-edged ring (card ARC2) lists its authored vertices, never its tessellation, each
+      // carrying the edge ARRIVING at it as a wall point does (the first vertex the closing edge's).
+      ...(r.edges
+        ? {
+            polygon: r.edges.map((e) => ({ x: edgeStart(e).x, y: edgeStart(e).y })),
+            arcs: r.edges.map((e) => (e.t === "arc" ? arcJson(e.arc) : null)),
+          }
+        : r.poly
+          ? { polygon: r.poly.map((pt) => ({ x: pt.x, y: pt.y })) }
+          : {}),
       area,
       // The discretised ring (`src/geometry/room-ring.ts`): a circle's 48-gon, as before.
       floor_polygon: roomRing(r).map((pt) => ({ x: pt.x, y: pt.y })),

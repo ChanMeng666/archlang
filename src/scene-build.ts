@@ -47,7 +47,7 @@ import { roomLabelAnchor } from "./elements/room.js";
 import { isUnderlay } from "./fixtures-catalog.js";
 import { type ArrivingRun, isVertical } from "./vertical.js";
 import { clippedArea, rectRing } from "./geometry/polygon.js";
-import { roomRing } from "./geometry/room-ring.js";
+import { roomCorners, roomRing } from "./geometry/room-ring.js";
 import { CHAIN_BASE, CHAIN_STEP, DIM_TEXT_GAP, drawingBounds, renderSizes } from "./sheet.js";
 import { textWidth } from "./text-metrics.js";
 import { type Box, boxesMeet, type TextBox, textBox } from "./text-layout.js";
@@ -284,6 +284,16 @@ function synthCurveDims(ir: ResolvedPlan, dims: RDim[]): void {
   }
   for (const el of ir.elements) {
     if (el.kind !== "room") continue;
+    // An arc-edged ring's curves (card ARC2): one `R<r>` leader per distinct (centre, radius),
+    // deduplicated with the walls' by the same key, so a room drawn on a curved wall's centreline
+    // adds none and one on another radius (a face, a second curve) gets its own.
+    for (const e of (el as RRoom).edges ?? []) {
+      if (e.t !== "arc") continue;
+      const key = `${fmtMm(e.arc.center.x)}|${fmtMm(e.arc.center.y)}|${fmtMm(e.arc.r)}`;
+      if (seen.has(key)) continue;
+      seen.add(key);
+      dims.push(mkDim(e.arc.center, arcPointAt(e.arc, 0.5), 0, radiusText(e.arc.r, mm)));
+    }
     const c = (el as RRoom).circle;
     if (!c || !(c.r > 0)) continue;
     dims.push(mkDim({ x: c.c.x - c.r, y: c.c.y }, { x: c.c.x + c.r, y: c.c.y }, 0, diameterText(c.r, mm)));
@@ -545,11 +555,15 @@ function synthGbChains(ir: ResolvedPlan, sizes: RenderSizes, dims: RDim[]): void
               // A polygon room contributes every vertex coordinate on this axis — the
               // room boundaries it actually has. `cleanTicks` dedupes and clips, so the
               // interior ones simply fall out; only those on the facade survive.
-              r.poly
-                ? r.poly.map((p) => (g.axis === "h" ? p.x : p.y))
-                : g.axis === "h"
-                  ? [r.at.x, r.at.x + r.size.w]
-                  : [r.at.y, r.at.y + r.size.h],
+              // An arc-edged ring (card ARC2) contributes its authored vertices only: a point of
+              // its tessellation is no room boundary.
+              r.edges
+                ? roomCorners(r).map((p) => (g.axis === "h" ? p.x : p.y))
+                : r.poly
+                  ? r.poly.map((p) => (g.axis === "h" ? p.x : p.y))
+                  : g.axis === "h"
+                    ? [r.at.x, r.at.x + r.size.w]
+                    : [r.at.y, r.at.y + r.size.h],
             );
       emitChain(g, cleanTicks(ticks, g.lo, g.hi), slotAt(1), sizes.dimFont, dims);
     }

@@ -28,7 +28,7 @@ import { type LatticePoint, latticeArea2, minAreaRect, minRectCost } from "../ge
 import type { RDoor, ResolvedPlan, RFurniture, RRoom, RWindow } from "../ir.js";
 import { definingItems } from "../lint/defining.js";
 import { capFirst, makeNaming, type NameableRoom, sizeWords } from "../naming.js";
-import { polygonLabelPoint, rectRing } from "../geometry/polygon.js";
+import { polygonLabelPoint, rectRing, ringWithArcs } from "../geometry/polygon.js";
 import { type CompassLetter, FACINGS, oppositeLetter, type SiteFacts } from "../site.js";
 import { fmtRatio, lattice, meanPermyriad, ONE, type Ratio, ramp } from "./arith.js";
 import { adviceOf } from "./advice.js";
@@ -102,7 +102,10 @@ function namesOf(s: TasteStorey, work: Work, multi: boolean): Map<string, string
   const rooms = s.summary.rooms;
   const list: NameableRoom[] = rooms.map((r) => {
     const rect =
-      !r.floor_circle && r.floor_polygon.length === 4 && Math.abs((r.bbox.w * r.bbox.h) / 1_000_000 - r.area_m2) < 0.01;
+      !r.floor_circle &&
+      !r.floor_arcs &&
+      r.floor_polygon.length === 4 &&
+      Math.abs((r.bbox.w * r.bbox.h) / 1_000_000 - r.area_m2) < 0.01;
     return {
       id: r.id,
       ...(r.label !== undefined ? { label: r.label } : {}),
@@ -126,8 +129,11 @@ function summaryPoint(r: {
   bbox: { x: number; y: number; w: number; h: number };
   floor_polygon: { x: number; y: number }[];
   floor_circle?: { cx: number; cy: number };
+  floor_arcs?: { from: { x: number; y: number }; center: { x: number; y: number }; r: number; sweep: number }[];
 }): { x: number; y: number } {
   if (r.floor_circle) return { x: r.floor_circle.cx, y: r.floor_circle.cy };
+  // An arc-edged ring (card ARC2): its label point on the curve-following ring, never a box centre.
+  if (r.floor_arcs) return polygonLabelPoint(ringWithArcs(r.floor_polygon, r.floor_arcs));
   if (r.floor_polygon.length >= 3) return polygonLabelPoint(r.floor_polygon);
   return { x: r.bbox.x + r.bbox.w / 2, y: r.bbox.y + r.bbox.h / 2 };
 }

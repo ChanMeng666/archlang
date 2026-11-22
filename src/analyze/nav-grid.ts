@@ -18,6 +18,7 @@
 
 import type { RRoom, RDoor, ROpening, RFurniture, RVoid, RWall } from "../ir.js";
 import type { Point } from "../ast.js";
+import type { Edge } from "../geometry/band.js";
 import type { RectEdge } from "../fixture-orientation.js";
 import {
   type ArrivingRun,
@@ -1427,6 +1428,17 @@ export function toExtentFrame(
       ...at(r),
       ...(r.poly ? { poly: r.poly.map(p) } : {}),
       ...(r.circle ? { circle: { ...r.circle, c: p(r.circle.c) } } : {}),
+      // An arc-edged ring's exact edges move with its tessellation (card ARC2), as a wall's arcs do.
+      ...(r.edges
+        ? {
+            edges: r.edges.map(
+              (e): Edge =>
+                e.t === "line"
+                  ? { t: "line", a: p(e.a), b: p(e.b) }
+                  : { t: "arc", arc: { ...e.arc, center: p(e.arc.center), a: p(e.arc.a), b: p(e.arc.b) } },
+            ),
+          }
+        : {}),
     })),
     walls: plan.walls.map((w) => ({
       ...w,

@@ -1142,9 +1142,9 @@ nobody has to guess whether it was overlooked. Two v1.28 entries are already gon
 `roof overhang <mm>` mitres a closed wall ring outward in closed form (line–line intersection,
 orientation from the shoelace sign). A curved edge has no such offset in the same arithmetic, so
 `E_ROOF_CURVED` **refuses** rather than approximating, and the author writes `roof polygon …`
-instead. Same shape as the `arc`-inside-a-`room polygon` deferral below, and probably the same
-design pass: an offset ring that carries arcs is an offset ring whose whole consumer set has to
-learn arcs.
+instead. An offset ring that carries arcs is an offset ring whose whole consumer set has to
+learn arcs; the `room polygon` ring learned them through one seam (card ARC2,
+`docs/plans/arc2-room-arcs.md`, `src/geometry/room-ring.ts`), the pattern to follow.
 
 **Gate:** the refusal's own test in `test/roof.test.ts` inverts — an arc-bearing ring must produce
 a drawn eaves line at `R ± overhang` on the curved run, and the exact-coordinate assertions on the
@@ -3491,11 +3491,6 @@ flag, not a step.
 
 ### NS · Not scheduled — recorded so they are not lost — `note`
 
-- **`arc` edge inside a `room polygon` ring.** Was promised in a shipped error message "for v1.25";
-  v1.25 shipped without it and the promise has been retracted to point here. Genuinely large: the
-  ring's whole analysis layer — effective-vertex count, self-intersection, centroid, adjacency,
-  occupancy and nav grids, the `dims auto` vertex chain — is written on literal vertices and must
-  learn arcs. Build it on its own merits, not to honour a version number.
 - **P2-5** measured-vs-drawn edge separation ·
   **P2-6** multi-flight stairs — each needs its own design pass.
 - **Deferred from the axonometric view (P3-3, shipped)**, by name: the roof (there is no pitch

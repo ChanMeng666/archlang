@@ -533,7 +533,7 @@ function resolvePairs(
       const why = !r
         ? "names no room written beside it: a clause names rooms of the plan or component the statement is written in"
         : r.circle || slanted?.has(x.id)
-          ? `is a ${r.circle ? "circle room" : "polygon room with an edge that is neither horizontal nor vertical"}: only rectangular and rectilinear rooms share an edge run`
+          ? `is a ${r.circle ? "circle room" : r.edges ? "polygon room with an arc edge" : "polygon room with an edge that is neither horizontal nor vertical"}: only rectangular and rectilinear rooms share an edge run`
           : excluded.has(x.id)
             ? "is left out by `except`, so no wall is derived round it"
             : undefined;
@@ -598,7 +598,7 @@ function tileRoom(r: RRoom): TileRoom {
   if (r.circle) return { id: r.id, shape: "circle" };
   if (!r.poly) return { id: r.id, rect: { x0: r.at.x, y0: r.at.y, x1: r.at.x + r.size.w, y1: r.at.y + r.size.h } };
   const parts = ringParts(r.poly);
-  return parts ? { id: r.id, parts, ring: r.poly } : { id: r.id, shape: "polygon" };
+  return parts ? { id: r.id, parts, ring: r.poly } : { id: r.id, shape: r.edges ? "arc" : "polygon" };
 }
 
 function coverOfVoid(v: RVoid): TileCover {

@@ -19,6 +19,7 @@ import {
   isWetRoom,
   largestPerimeterGap,
   largestPerimeterGapCircle,
+  largestPerimeterGapEdges,
   largestPerimeterGapRing,
   pointInRoomBox,
   pointOnRoomEdge,
@@ -602,9 +603,11 @@ export const perRoomRules: LintRule = {
         const segs = ctx.openRuns.length > 0 ? [...wallSegs, ...openRunSegs(ctx)] : wallSegs;
         const gap = r.circle
           ? largestPerimeterGapCircle(r.circle.c, r.circle.r, segs, rules.tolMm)
-          : r.poly
-            ? largestPerimeterGapRing(r.poly, ir.walls, rules.tolMm, segs)
-            : largestPerimeterGap(rect, ir.walls, rules.tolMm, segs);
+          : r.edges
+            ? largestPerimeterGapEdges(r.edges, segs, rules.tolMm)
+            : r.poly
+              ? largestPerimeterGapRing(r.poly, ir.walls, rules.tolMm, segs)
+              : largestPerimeterGap(rect, ir.walls, rules.tolMm, segs);
         if (gap > rules.maxUnenclosedMm) {
           out.push(
             cite(rules, "maxUnenclosedMm", {

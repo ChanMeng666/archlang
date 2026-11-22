@@ -533,19 +533,9 @@ suite("guards on a curve (crisp diagnostics, no silent degradation)", () => {
     expect(d.message).toContain("rotate");
   });
 
-  it("declines an `arc` inside a `room polygon` ring, pointing at the tracker and NOT at a release", () => {
+  it("accepts an `arc` inside a `room polygon` ring (card ARC2; its laws: test/room-arc-edges.test.ts)", () => {
     const r = compile('plan "P" { room id=r polygon (0,0) (1000,0) arc (1000,1000) radius 800 }');
-    const msg = r.errors.map((e) => e.message).join("\n");
-    expect(msg).toContain("room polygon");
-    // It must still say WHERE the deferral is tracked and WHAT to do instead — a bare
-    // "not supported" would pass a version-free check while telling the author nothing.
-    expect(msg).toContain("docs/backlog.md");
-    expect(msg).toContain("room circle");
-    expect(msg).toContain("arc (x,y) radius R");
-    // A message that promises a release goes stale the day that release ships without
-    // the feature, telling a user to wait for the version they already run. A
-    // deferral may name a tracker; it may never name a release.
-    expect(msg).not.toMatch(/v\d+\.\d+/);
+    expect(r.errors).toEqual([]);
   });
 
   it("never lets an arc back a fixture edge (a chord can be collinear with a room side)", () => {

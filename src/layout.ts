@@ -147,7 +147,7 @@ function referenceRun(room: RelRoom, ref: RRoom & { poly: Point[] }): EdgeLine |
   const instead = "Place this room with `at (x,y)` instead.";
   if (ref._ringRefused) return `${head} the outline of "${id}" was refused (see its own error). ${instead}`;
   if (ref.circle || !rectilinear(ref.poly))
-    return `${head} "${id}" is ${ref.circle ? "a circle room" : "a polygon room with an edge neither horizontal nor vertical"} — relational placement needs a rectangular or rectilinear reference. ${instead}`;
+    return `${head} "${id}" is ${ref.circle ? "a circle room" : ref.edges ? "a polygon room with an arc edge" : "a polygon room with an edge neither horizontal nor vertical"} — relational placement needs a rectangular or rectilinear reference. ${instead}`;
   const side = SIDE_OF[dir];
   const runs = extremeRuns(ref.poly, side);
   if (runs.length === 1) return runs[0]!;

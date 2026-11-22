@@ -275,12 +275,16 @@ describe("the public type surface is closed", () => {
       expect(seam.get(name), `${name} must be declared in src/${module}`).toBeTruthy();
     }
     // Non-vacuous: `JoinableWall` is reached only through the constraint `W extends
-    // JoinableWall`, `JoinedCut` one hop past the return type, `Arc` only through the `Edge`
-    // alias, `DoorSwingDir` only through `DoorLike`'s fields.
+    // JoinableWall`, `JoinedCut` one hop past the return type, `EdgeLoop` through the
+    // `loops` parameter's array type, `DoorSwingDir` only through `DoorLike`'s fields.
     expect([...(seam.get("joinWallSet")?.keys() ?? [])]).toEqual(
       expect.arrayContaining(["JoinableWall", "JoinedWallSet", "JoinedCut"]),
     );
-    expect(seam.get("loopsToPolygons")?.get("Arc")).toBe("src/geometry/arc.ts");
+    // `EdgeLoop` (and the `Edge`/`Arc` it is made of) is IR vocabulary since a room carries its
+    // exact arc edges (`RRoom.edges`, card ARC2), so the walk records it and stops there; it was
+    // walked through to `Arc` before.
+    expect(seam.get("loopsToPolygons")?.get("EdgeLoop")).toBe("src/geometry/band.ts");
+    expect(irVocabulary.has("EdgeLoop")).toBe(true);
     expect(seam.get("doorSwing")?.get("DoorSwingDir")).toBe("src/grammar/tokens.ts");
     expect(seam.get("resolvePlan")?.has("AnalyzeOptions")).toBe(true);
     expect(seam.get("hatchOf")?.get("HatchSpec")).toBe("src/hatches.ts");

@@ -90,6 +90,10 @@ const roomKey = (r: NetAreaRoom): string =>
     r.size.h,
     r.poly?.map((p) => [p.x, p.y]) ?? null,
     r.circle ? [r.circle.c.x, r.circle.c.y, r.circle.r] : null,
+    // An arc-edged ring's arcs (card ARC2), only when it has them, so no other key changes.
+    ...(r.edges
+      ? [r.edges.map((e) => (e.t === "arc" ? [e.arc.center.x, e.arc.center.y, e.arc.r, e.arc.sweep] : null))]
+      : []),
   ]);
 
 /**

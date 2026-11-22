@@ -786,6 +786,12 @@ const NEGATIVE: Negative[] = [
     src: plan(`  wall id=w1 exterior thickness 200 { (0,0) arc (6000,0) radius 1000 }`),
   },
   {
+    code: "E_ROOM_ARC_RADIUS",
+    channel: "compile",
+    note: "a room ring's arc with R < chord/2 has no circle",
+    src: plan(`  room id=p polygon (0,0) (4000,0) arc (4000,4000) radius 1000 cw (0,4000)`),
+  },
+  {
     code: "E_ROOM_POLY_SELF_INTERSECT",
     channel: "compile",
     note: "a crossing (bow-tie) ring",

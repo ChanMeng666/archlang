@@ -416,10 +416,25 @@ function validateRoom(r: unknown, path: string, val: Validator): void {
   if (r.polygon !== undefined) {
     if (!Array.isArray(r.polygon)) val.err(`${path}/polygon`, "expected an array of points");
     else {
-      if (r.polygon.length < 3) val.err(`${path}/polygon`, "a polygon room needs at least three vertices");
+      // A ring with an `arcs` entry (card ARC2) needs two vertices: one arc and its closing chord.
+      const curved = Array.isArray(r.arcs) && r.arcs.some((x) => x !== null);
+      if (r.polygon.length < (curved ? 2 : 3))
+        val.err(`${path}/polygon`, "a polygon room needs at least three vertices (two with an arc in `arcs`)");
       r.polygon.forEach((pt, i) => void reqPoint(pt, `${path}/polygon/${i}`, val));
     }
+    // One entry per edge, null where straight; on a ring every edge has a vertex to curve from.
+    if (r.arcs !== undefined) {
+      if (!Array.isArray(r.arcs)) val.err(`${path}/arcs`, "expected an array of arcs or nulls");
+      else {
+        if (Array.isArray(r.polygon) && r.arcs.length !== r.polygon.length)
+          val.err(`${path}/arcs`, "expected one entry per polygon vertex (the edge from it to the next)");
+        r.arcs.forEach((x, i) => {
+          if (x !== null) validateWallArc(x, `${path}/arcs/${i}`, false, val);
+        });
+      }
+    }
   } else {
+    if (r.arcs !== undefined) val.err(`${path}/arcs`, "arcs belong to a polygon room");
     for (const key of ["x", "y", "width", "height"]) {
       if (!isNum(r[key])) val.err(`${path}/${key}`, "expected a number");
     }

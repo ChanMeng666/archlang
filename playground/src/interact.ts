@@ -34,6 +34,35 @@ export interface HitShape {
   floor_polygon?: readonly { x: number; y: number }[];
   /** A circular room's exact circle (describe()'s `floor_circle`). */
   floor_circle?: { cx: number; cy: number; r: number };
+  /** A ring's curved edges (describe()'s `floor_arcs`), each from one `floor_polygon` vertex to the next. */
+  floor_arcs?: readonly {
+    from: { x: number; y: number };
+    center: { x: number; y: number };
+    r: number;
+    sweep: number;
+  }[];
+}
+
+/** Points sampled inside each curved edge of a ring, so the hit test follows the curve, not its chord. */
+const ARC_SAMPLES = 8;
+
+/** The room's ring: its `floor_polygon`, each curved edge sampled ({@link ARC_SAMPLES}) after its vertex. */
+function ringOf(s: HitShape): readonly { x: number; y: number }[] | undefined {
+  const ring = s.floor_polygon;
+  const arcs = s.floor_arcs;
+  if (!ring || !arcs || arcs.length === 0) return ring;
+  const out: { x: number; y: number }[] = [];
+  for (const v of ring) {
+    out.push(v);
+    const arc = arcs.find((a) => a.from.x === v.x && a.from.y === v.y);
+    if (!arc) continue;
+    const start = Math.atan2(arc.from.y - arc.center.y, arc.from.x - arc.center.x);
+    for (let i = 1; i < ARC_SAMPLES; i++) {
+      const th = start + (arc.sweep * i) / ARC_SAMPLES;
+      out.push({ x: arc.center.x + arc.r * Math.cos(th), y: arc.center.y + arc.r * Math.sin(th) });
+    }
+  }
+  return out;
 }
 
 /** On-edge slack in plan mm, so a ring vertex computed in floating point still counts as on its edge. */
@@ -69,7 +98,7 @@ function contains(s: HitShape, x: number, y: number): boolean {
   if (x < b.x || x > b.x + b.w || y < b.y || y > b.y + b.h) return false;
   const c = s.floor_circle;
   if (c) return (x - c.cx) ** 2 + (y - c.cy) ** 2 <= c.r ** 2;
-  const ring = s.floor_polygon;
+  const ring = ringOf(s);
   if (ring && ring.length >= 3) return inRing(ring, x, y);
   return true;
 }
@@ -81,7 +110,7 @@ const TIE_EPS = 1e-9;
 function sizeOf(s: HitShape): number {
   const c = s.floor_circle;
   if (c) return Math.PI * c.r * c.r;
-  const ring = s.floor_polygon;
+  const ring = ringOf(s);
   if (ring && ring.length >= 3) {
     let twice = 0;
     for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {

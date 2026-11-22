@@ -6,9 +6,11 @@
  *  `polygon` form carries its own vertex ring and derives `at`/`size` as the
  *  ring's bounding box, so every rect-shaped consumer still sees a sane extent; the
  *  `circle` form adds an exact centre+radius, a tessellated ring for the grid
- *  layer, and that same derived bounding box. */
+ *  layer, and that same derived bounding box. A `polygon` ring with `arc` edges (card ARC2)
+ *  carries its exact edges beside its tessellation, whose vertices it charges to the step meter
+ *  (one step each) before it builds them. */
 
-import type { ExprPoint, FloorClause, Point, RelAlign, RelDir, RoomNode, UseKind } from "../ast.js";
+import type { ExprPoint, FloorClause, Point, RelAlign, RelDir, RoomNode, UseKind, WallArcNode } from "../ast.js";
 import {
   AXIS_ALIGNS,
   REL_ALIGNS,
@@ -25,11 +27,24 @@ import { failExpected, failNear, missingClause, readClauses, type TailClause } f
 import { PLAIN_SHEET_TEXT } from "../sheet-text.js";
 import type { SceneNode } from "../scene.js";
 import type { RelConstraint, RRoom } from "../ir.js";
-import { closest } from "../expr.js";
+import { chargeSteps, closest } from "../expr.js";
 import { fixesFrom, roomAlignAxisFix, roomAlignFix } from "../fix-producers.js";
 import { recordWordSpan, wordSpanOf } from "../id-spans.js";
-import { arcTessellate, fullCircleArc } from "../geometry/arc.js";
-import { roomAreaMm2, roomRing } from "../geometry/room-ring.js";
+import {
+  ARC_STEP_DEG,
+  type Arc,
+  arcExtremes,
+  arcFromChord,
+  arcTessellate,
+  fullCircleArc,
+  minArcRadius,
+  smallestSpanningRadius,
+} from "../geometry/arc.js";
+import { type EdgeLoop, loopBBox } from "../geometry/band.js";
+import { toPathLoop } from "../geometry/joinery.js";
+import { ringArcMaxChordAngle, ringArcVertexCount, ringOfEdges, roomAreaMm2, roomRing } from "../geometry/room-ring.js";
+import { ROOM_CONTAINMENT_SLACK_MM } from "../analyze/rooms.js";
+import { readArcClause } from "./wall.js";
 import {
   effectiveVertices,
   pointInPolygon,
@@ -37,7 +52,7 @@ import {
   polygonLabelPoint,
   polygonSelfIntersects,
 } from "../geometry/polygon.js";
-import { fmtMessage, fmtTenthsOf2dp } from "../num-format.js";
+import { fmt3, fmtMessage, fmtTenthsOf2dp } from "../num-format.js";
 import { noteMetres, noteSnap, noteSquare, roomSizeLooksMetric } from "../ir/silent-accepts.js";
 import { FLOOR_MATERIALS, type FloorMaterial, floorHatch, hatchId, isFloorMaterial } from "../hatches.js";
 import { LABEL_AREA_DROP, LABEL_NAME_RISE } from "../text-layout.js";
@@ -420,26 +435,26 @@ export const room: ElementDef = {
     if (ctx.isKeyword("polygon")) {
       ctx.eatKeyword("polygon");
       const polygon: ExprPoint[] = [];
-      while (ctx.isType("lparen")) polygon.push(ctx.parsePoint());
-      // A curved edge inside a polygon ring is DEFERRED, not silently dropped: the
-      // ring's whole analysis layer (effective-vertex count, self-intersection,
-      // centroid, adjacency) is written on literal vertices, and splicing a
-      // tessellation in would make every one of those answers about a 48-gon. Say so.
-      // The message names where the item is tracked, never a release: a promised
-      // version goes stale the moment it ships without the feature.
-      if (ctx.isKeyword("arc")) {
-        ctx.fail(
-          "An `arc` edge is not supported inside a `room polygon` ring — no release is promised; " +
-            "it is tracked in docs/backlog.md — " +
-            "use `room circle at (cx,cy) radius R` for a round floor, or a curved `wall … { … arc (x,y) radius R … }` " +
-            "with a straight-edged room behind it",
-          ctx.peek(),
-        );
+      // `arc (x,y) radius R [cw|ccw] [major]` (card ARC2): the wall body's own clause, read by
+      // the wall's reader, written on the vertex the curved edge arrives at, so it cannot lead
+      // the ring. `arcs[k]` is the edge from `polygon[k]` to `polygon[k + 1]`, as a wall's.
+      const arcs: Array<WallArcNode | undefined> = [];
+      while (ctx.isType("lparen") || ctx.isKeyword("arc")) {
+        if (ctx.isType("lparen")) {
+          polygon.push(ctx.parsePoint());
+          continue;
+        }
+        const { to, arc } = readArcClause(ctx, polygon.length === 0);
+        arcs[polygon.length - 1] = arc;
+        polygon.push(to);
       }
-      if (polygon.length < 3) {
+      // A ring needs three written vertices, or two joined by an arc (a segment of a circle:
+      // an `arc` always follows a vertex, so a curved ring has two).
+      const curved = arcs.length > 0;
+      if (!curved && polygon.length < 3) {
         ctx.fail(`A polygon room needs at least three vertices but found ${polygon.length}`, kw);
       }
-      const node: RoomNode = { kind: "room", id, polygon, line: kw.line };
+      const node: RoomNode = { kind: "room", id, polygon, ...(curved ? { arcs } : {}), line: kw.line };
       parseTail(ctx, node, kw.start);
       return node;
     }
@@ -632,13 +647,19 @@ export const room: ElementDef = {
   },
 
   bounds(resolved): Point[] {
-    return roomRing(resolved as RRoom);
+    const r = resolved as RRoom;
+    // An arc edge's floor reaches its closed-form extremes, past its chord (card ARC2).
+    if (r.edges) return r.edges.flatMap((e) => (e.t === "line" ? [e.a] : arcExtremes(e.arc)));
+    return roomRing(r);
   },
 
-  /** Its authored label anchor, the one coordinate a room carries outside its floor. */
+  /** Its authored label anchor, the one coordinate a room carries outside its floor, and each
+   *  arc edge's centre and radius, which no drawn point carries. */
   measures(resolved): number[] {
     const r = resolved as RRoom;
-    return r.labelAt ? [r.labelAt.x, r.labelAt.y] : [];
+    const out = r.labelAt ? [r.labelAt.x, r.labelAt.y] : [];
+    for (const e of r.edges ?? []) if (e.t === "arc") out.push(e.arc.center.x, e.arc.center.y, e.arc.r);
+    return out;
   },
 
   /**
@@ -668,12 +689,16 @@ export const room: ElementDef = {
         prim: { t: "circle", center: r.circle.c, r: r.circle.r },
         paint: { fill },
       });
+    } else if (r.edges) {
+      // An arc-edged ring (card ARC2) is drawn as a `path` with TRUE arcs (each cut into minor
+      // pieces, `toPathLoop`), so its curve is never faceted either.
+      nodes.push({ layer: "floor", prim: { t: "path", loops: [toPathLoop(r.edges)] }, paint: { fill } });
     } else {
       const c = roomRing(r);
       nodes.push({ layer: "floor", prim: { t: "polygon", pts: c }, paint: { fill } });
     }
-    // `floor <pattern>`: over the tint, from the room's own ring (a circle's 48-gon, which its
-    // walls cover). A drawing fact: no measure reads it. The paint carries the pattern reference,
+    // `floor <pattern>`: over the tint, from the room's own ring (a circle's 48-gon, an arc
+    // ring's tessellation, which its walls cover). A drawing fact: no measure reads it. The paint carries the pattern reference,
     // as `wall-lowering.ts` and the ground's do.
     if (r.floor) {
       const spec = floorHatch(r.floor);
@@ -751,6 +776,12 @@ export const room: ElementDef = {
     // which flips the winding under a reflection; nothing downstream reads winding
     // (area is taken absolute, containment is a crossing count).
     if (el.poly) out.poly = el.poly.map((p) => t.point(p));
+    // An arc ring's exact edges ride along as a wall's do (`t.arc`, which flips a sweep under a
+    // reflection), so the turned floor is the same curve, never a re-fitted one.
+    if (el.edges)
+      out.edges = el.edges.map((e) =>
+        e.t === "line" ? { t: "line", a: t.point(e.a), b: t.point(e.b) } : { t: "arc", arc: t.arc(e.arc) },
+      );
     // A circle is invariant under an isometry apart from where its centre lands, so
     // the radius carries over untouched and the area stays EXACTLY πR².
     if (el.circle) out.circle = { c: t.point(el.circle.c), r: el.circle.r };
@@ -823,7 +854,11 @@ function resolveCircle(n: RoomNode, id: string, ctx: ResolveCtx): RRoom {
  * a centroid or a containment test worth computing.
  */
 function resolvePolygon(n: RoomNode, id: string, ctx: ResolveCtx): RRoom {
-  const poly = n.polygon!.map((p) => ctx.snapPt(ctx.evalPt(p)));
+  const written = n.polygon!.map((p) => ctx.snapPt(ctx.evalPt(p)));
+  // A ring with an `arc` (card ARC2) carries its exact `edges` beside the tessellation `poly`;
+  // a straight ring is the ring it always was.
+  const curved = n.arcs ? resolveRingArcs(n, id, written, ctx) : undefined;
+  const poly = curved ? curved.poly : written;
   const effective = effectiveVertices(poly);
   const label = n.label !== undefined ? ctx.evalStr(n.label) : undefined;
   let ringRefused = false;
@@ -844,7 +879,8 @@ function resolvePolygon(n: RoomNode, id: string, ctx: ResolveCtx): RRoom {
       span: n.span,
     });
   }
-  const bbox = polygonBounds(poly);
+  // The extent of the EXACT boundary: a bulge reaches past its chord's vertices.
+  const bbox = curved ? edgeLoopBounds(curved.edges) : polygonBounds(poly);
   const labelAt = n.labelAt ? ctx.snapPt(ctx.evalPt(n.labelAt)) : undefined;
   if (labelAt && effective.length >= 3 && !pointInPolygon(labelAt.x, labelAt.y, effective)) {
     ctx.diag(labelOutsideDiag(id, labelAt, n.labelAtSpan ?? n.span));
@@ -855,6 +891,7 @@ function resolvePolygon(n: RoomNode, id: string, ctx: ResolveCtx): RRoom {
     at: { x: bbox.x, y: bbox.y },
     size: { w: bbox.w, h: bbox.h },
     poly,
+    ...(curved ? { edges: curved.edges } : {}),
     ...(ringRefused ? { _ringRefused: true as const } : {}),
     ...(labelAt ? { labelAt } : {}),
     label,
@@ -862,4 +899,143 @@ function resolvePolygon(n: RoomNode, id: string, ctx: ResolveCtx): RRoom {
     ...floorOf(n, ctx),
     span: n.span,
   };
+}
+
+/** The `{x, y, w, h}` box of an exact boundary (`loopBBox`: a bulge's closed-form extremes). */
+function edgeLoopBounds(edges: EdgeLoop): { x: number; y: number; w: number; h: number } {
+  const b = loopBBox(edges);
+  return { x: b.minX, y: b.minY, w: b.maxX - b.minX, h: b.maxY - b.minY };
+}
+
+/**
+ * A `room polygon` ring with `arc` edges (card ARC2, `docs/plans/arc2-room-arcs.md` §4): its exact
+ * boundary `edges` (one per edge, closing edge last) and its discretised ring `poly` (every vertex
+ * plus each arc's canonical interior points, `ringOfEdges` in `src/geometry/room-ring.ts`: at the
+ * absolute angles k·7.5° about its centre, so rooms sharing a curve share its vertices), or
+ * `undefined` when no arc solved.
+ *
+ * A ring is implicitly closed and stores no repeated vertex, so a ring that ENDS with an arc back
+ * onto its first vertex curves its closing edge and drops the repeat; a repeat reached by a
+ * straight edge keeps its old meaning (a duplicate `effectiveVertices` removes). Each clause is
+ * solved as a wall's (`arcFromChord`); a radius below half the chord is `E_ROOM_ARC_RADIUS`, with
+ * the wall's minimum-radius fix, and that edge stays straight. The tessellation is charged to the
+ * step meter before it is built.
+ */
+function resolveRingArcs(
+  n: RoomNode,
+  id: string,
+  written: Point[],
+  ctx: ResolveCtx,
+): { edges: EdgeLoop; poly: Point[] } | undefined {
+  const specs = n.arcs!;
+  const last = written.length - 1;
+  const first = written[0]!;
+  const end = written[last]!;
+  const closes = last >= 2 && specs[last - 1] !== undefined && end.x === first.x && end.y === first.y;
+  const ring = closes ? written.slice(0, last) : written;
+  const m = ring.length;
+  const edges: EdgeLoop = [];
+  let any = false;
+  for (let k = 0; k < m; k++) {
+    const a = ring[k]!;
+    const b = ring[(k + 1) % m]!;
+    const spec = specs[k];
+    const solved = spec ? solveRingArc(spec, a, b, id, n, ctx) : null;
+    const arc = solved && spec && sagWithin(solved, spec, id, n, ctx) ? solved : null;
+    if (arc) any = true;
+    edges.push(arc ? { t: "arc", arc } : { t: "line", a, b });
+  }
+  if (!any) return undefined;
+  // Every vertex the ring will hold, charged before it is allocated (a non-finite arc, which the
+  // number-domain check then drops, holds its start alone).
+  let vertices = 0;
+  for (const e of edges) vertices += e.t === "arc" ? ringArcVertexCount(e.arc) : 1;
+  chargeSteps(vertices);
+  return { edges, poly: ringOfEdges(edges) };
+}
+
+/**
+ * The most a room ring's tessellation chord may stand off its arc (mm): the room containment slack
+ * (`ROOM_CONTAINMENT_SLACK_MM`, `src/analyze/rooms.ts`), the smallest tolerance a reader of the
+ * discretised ring `poly` allows (grids, adjacency, containment, overlap). Within it those readers
+ * are right on the tessellation, as they are on a `room circle`'s 48-gon.
+ *
+ * A chord's sagitta is `r(1 − cos(θ/2))` for the angle θ it spans, at most 7.5° (the canonical
+ * step) or the whole sweep if that is less (`ringArcMaxChordAngle`), so an arc keeps inside 100 mm
+ * up to R = 100 / (1 − cos 3.75°) ≈ 46,705 mm, and an arc under 7.5° further. `MODEL_RANGE_MM` does
+ * not bound it.
+ */
+export const ROOM_ARC_MAX_SAG_MM = ROOM_CONTAINMENT_SLACK_MM;
+
+/** The largest radius whose full-step (7.5°) tessellation stays within {@link ROOM_ARC_MAX_SAG_MM}. */
+export const ROOM_ARC_FULL_STEP_RADIUS_MM = Math.floor(
+  ROOM_ARC_MAX_SAG_MM / (1 - Math.cos((ARC_STEP_DEG / 2) * (Math.PI / 180))),
+);
+
+/**
+ * Whether a solved ring arc's tessellation stays within {@link ROOM_ARC_MAX_SAG_MM} of the curve;
+ * if not, `E_ROOM_ARC_SAG` (the edge then stays straight). A non-finite sag (a radius past the
+ * number range) is left to the number-domain check, which drops the room.
+ */
+function sagWithin(arc: Arc, spec: WallArcNode, id: string, n: RoomNode, ctx: ResolveCtx): boolean {
+  const sag = arc.r * (1 - Math.cos(ringArcMaxChordAngle(arc) / 2));
+  if (!Number.isFinite(sag) || sag <= ROOM_ARC_MAX_SAG_MM) return true;
+  ctx.diag({
+    severity: "error",
+    message: `Room "${id}" has an arc edge of radius ${fmt3(arc.r)} whose drawn ring stands up to ${fmt3(sag)} mm off the curve, more than the ${fmt3(ROOM_ARC_MAX_SAG_MM)} mm a room's containment and adjacency tests allow`,
+    code: "E_ROOM_ARC_SAG",
+    span: spec.span ?? n.span,
+    hints: [
+      `An arc of ${fmt3(ARC_STEP_DEG)}° or more stays within it up to radius ${fmt3(ROOM_ARC_FULL_STEP_RADIUS_MM)}; write a curve this large as straight edges.`,
+    ],
+  });
+  return false;
+}
+
+/**
+ * One ring `arc` clause solved through `arcFromChord` (as a wall's, `resolveArcs` in `./wall.ts`),
+ * or `null` after `E_ROOM_ARC_RADIUS`: no circle of the radius passes through both vertices. The
+ * fix writes the smallest radius that passes the same predicate once printed, re-parsed and
+ * snapped, for the end point as printed, so applying it always clears the error.
+ */
+function solveRingArc(spec: WallArcNode, a: Point, b: Point, id: string, n: RoomNode, ctx: ResolveCtx): Arc | null {
+  const rv = ctx.eval(spec.radius);
+  const r = ctx.snap(rv) || rv;
+  const arc = arcFromChord(a, b, r, spec.dir ?? "ccw", spec.major === true);
+  if (arc) return arc;
+  const half = minArcRadius(a, b);
+  const bFixed = ctx.snapPt({ x: Number(fmt3(b.x)), y: Number(fmt3(b.y)) });
+  const printed = (v: number): number => {
+    const p = Number(fmt3(v));
+    return ctx.snap(p) || p;
+  };
+  const min = half > 0 ? smallestSpanningRadius(a, bFixed, ctx.grid >= 0.001 ? ctx.grid : 0.001, printed) : 0;
+  ctx.diag({
+    severity: "error",
+    message:
+      r > 0
+        ? `Room "${id}" has an arc edge of radius ${fmt3(r)} spanning a ${fmt3(half * 2)} mm chord — no circle of that radius passes through both vertices (the minimum is ${fmt3(min)})`
+        : `Room "${id}" has an arc edge with a non-positive radius`,
+    code: "E_ROOM_ARC_RADIUS",
+    span: spec.span ?? n.span,
+    hints: [`The radius must be at least half the chord: ${fmt3(min)}.`],
+    ...(spec.span && min > 0
+      ? {
+          fixes: [
+            {
+              title: `use the minimum radius ${fmt3(min)}`,
+              applicability: "machine-applicable" as const,
+              fixId: "arc-radius-min",
+              edits: [
+                {
+                  span: spec.span,
+                  newText: `arc (${fmt3(b.x)}, ${fmt3(b.y)}) radius ${fmt3(min)}${spec.dir ? ` ${spec.dir}` : ""}${spec.major ? " major" : ""}`,
+                },
+              ],
+            },
+          ],
+        }
+      : {}),
+  });
+  return null;
 }

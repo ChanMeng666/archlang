@@ -45,7 +45,15 @@
 
 import type { Point } from "../ast.js";
 import type { Arc } from "../geometry/arc.js";
-import { type BandWall, type EdgeLoop, PointInterner, loopBBox, loopsContain, wallBand } from "../geometry/band.js";
+import {
+  type BandWall,
+  type EdgeLoop,
+  PointInterner,
+  loopBBox,
+  loopWinding,
+  loopsContain,
+  wallBand,
+} from "../geometry/band.js";
 import type { GridBox } from "../geometry/grid-index.js";
 import { circleCircle, lineCircleParams, lineLineParams, meetLines } from "../geometry/intersect.js";
 import { polygonInsideTest } from "../geometry/polygon.js";
@@ -70,6 +78,8 @@ export interface NetAreaRoom {
   size: { w: number; h: number };
   poly?: readonly Point[];
   circle?: { c: Point; r: number };
+  /** An arc-edged ring's exact boundary (card ARC2). */
+  edges?: EdgeLoop;
 }
 
 /** The bands of every wall of a storey, built once and shared by every room measured. */
@@ -388,6 +398,18 @@ export function roomRegion(r: NetAreaRoom): RoomRegion {
       inside: (p) => Math.hypot(p.x - c.x, p.y - c.y) < rad,
       insideCost: 1,
       box: { minX: c.x - rad, minY: c.y - rad, maxX: c.x + rad, maxY: c.y + rad },
+      gross,
+    };
+  }
+  // An arc-edged ring (card ARC2): inside by the winding of its exact edges (each arc a true
+  // curve, never its tessellation), boxed by their closed-form extent.
+  if (r.edges) {
+    const edges = r.edges;
+    return {
+      curves,
+      inside: (p) => loopWinding(edges, p) !== 0,
+      insideCost: edges.length,
+      box: roomExtent(r),
       gross,
     };
   }

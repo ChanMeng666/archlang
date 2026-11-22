@@ -24,7 +24,7 @@ import type { Diagnostic } from "./diagnostics.js";
 import { describe } from "./describe.js";
 import type { DescribeOptions, RoomSummary, SceneSummary, WindowSummary } from "./describe.js";
 import type { GrossAreaReason } from "./analyze/gross-area.js";
-import { polygonLabelPoint } from "./geometry/polygon.js";
+import { polygonLabelPoint, ringWithArcs } from "./geometry/polygon.js";
 import { isCirculationRoom, roomsMatchingConcept } from "./intent-concepts.js";
 import { type InfeasibilityProof, intentRequirements, proveInfeasible } from "./intent-feasibility.js";
 import { makeNaming, type NameableRoom, sizeWords } from "./naming.js";
@@ -475,11 +475,26 @@ function ringAreaMm2(ring: readonly { x: number; y: number }[]): number {
   return Math.abs(s) / 2;
 }
 
+/** An arc-edged ring's area in mm² (card ARC2), as `loopArea` (`src/geometry/band.ts`) measures
+ *  it: the vertices' shoelace plus each arc's circular segment `(r²/2)(sweep − sin sweep)`. */
+function arcRingAreaMm2(r: RoomSummary): number {
+  const ring = r.floor_polygon;
+  let s = 0;
+  for (let i = 0; i < ring.length; i++) {
+    const a = ring[i]!;
+    const b = ring[(i + 1) % ring.length]!;
+    s += a.x * b.y - b.x * a.y;
+  }
+  let bulge = 0;
+  for (const a of r.floor_arcs ?? []) bulge += (a.r * a.r * (a.sweep - Math.sin(a.sweep))) / 2;
+  return Math.abs(s / 2 + bulge);
+}
+
 /** A room's exact floor area in mm², unrounded, or `undefined` when it does not round to the
  *  room's printed `area_m2`. */
 function exactRoomMm2(r: RoomSummary): number | undefined {
   const c = r.floor_circle;
-  const mm2 = c ? Math.PI * c.r * c.r : ringAreaMm2(r.floor_polygon);
+  const mm2 = c ? Math.PI * c.r * c.r : r.floor_arcs ? arcRingAreaMm2(r) : ringAreaMm2(r.floor_polygon);
   return r2(Math.round(mm2) / 1_000_000) === r.area_m2 ? mm2 : undefined;
 }
 
@@ -855,7 +870,8 @@ const signedText = (n: number): string => (n > 0 ? `+${fmt2(n)}` : n < 0 ? `−$
  *  four-vertex polygon whose every edge is axis-parallel); `null` for any other floor. Read off
  *  the floor ring itself, never the bbox of a shape that is not one. */
 function rectOfRoom(r: RoomSummary): { w: number; h: number } | null {
-  if (r.floor_circle) return null;
+  // A curved edge (card ARC2) makes no rectangle, whatever its written vertices are.
+  if (r.floor_circle || r.floor_arcs) return null;
   const ring = r.floor_polygon;
   if (ring.length !== 4) return null;
   for (let k = 0; k < 4; k++) {
@@ -899,9 +915,11 @@ function roomNames(rooms: readonly StoreyRoom[]): Map<RoomSummary, string> {
       uses: r.uses,
       point: r.floor_circle
         ? { x: r.floor_circle.cx, y: r.floor_circle.cy }
-        : r.floor_polygon.length >= 3
-          ? polygonLabelPoint(r.floor_polygon)
-          : { x: r.bbox.x + r.bbox.w / 2, y: r.bbox.y + r.bbox.h / 2 },
+        : r.floor_arcs
+          ? polygonLabelPoint(ringWithArcs(r.floor_polygon, r.floor_arcs))
+          : r.floor_polygon.length >= 3
+            ? polygonLabelPoint(r.floor_polygon)
+            : { x: r.bbox.x + r.bbox.w / 2, y: r.bbox.y + r.bbox.h / 2 },
       bounds: { x0: r.bbox.x, y0: r.bbox.y, x1: r.bbox.x + r.bbox.w, y1: r.bbox.y + r.bbox.h },
       size: sizeWords(rectOfRoom(r), r.area_m2 * 1_000_000),
     }));

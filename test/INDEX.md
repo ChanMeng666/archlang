@@ -5,7 +5,7 @@
 Where the tests of a `src` module are, and what each test file is for. Generated; `npm run check:drift`
 fails when it is stale. How to add a test: `docs/testing.md` § 4.
 
-575 test files in `test/`, 304 `src` modules, 113 modules no test imports.
+576 test files in `test/`, 304 `src` modules, 112 modules no test imports.
 
 ## `src` module → tests that import it
 
@@ -24,10 +24,11 @@ Nearest first, then by name; `(+n)` is the rest. Test names are `test/<name>.tes
 - `src/analyze/entrance.ts` (2) — `main-entrance`, `reachability-blind-spots`
 - `src/analyze/grid.ts` (1) — `path-algebra`
 - `src/analyze/gross-area.ts` (2) — `brief-bound-caption`, `brief-bound`
-- `src/analyze/net-area-memo.ts` (1) — `net-area-budget`
+- `src/analyze/net-area-memo.ts` (2) — `net-area-budget`, `room-arc-edges`
 - `src/analyze/net-area.ts` (5) — `describe-quantities`, `net-area-budget`, `net-area-once`, `net-area-oracle-corpus`, `net-area`
 - `src/analyze/occupancy.ts` (2) — `nav-grid-scale`, `polygon-rooms`
 - `src/analyze/quantities.ts` (2) — `describe-quantities`, `net-area-budget`
+- `src/analyze/rooms.ts` (1) — `room-arc-edges`
 - `src/analyze/symmetry.ts` (1) — `rect-ring`
 - `src/analyze/wall-faces.ts` (2) — `lint-space-enclosure`, `wall-status`
 - `src/any-catalog-fix.ts` (1) — `explain`
@@ -84,7 +85,7 @@ Nearest first, then by name; `(+n)` is the rest. Test names are `test/<name>.tes
 - `src/elements/outdoor.ts` (5) — `export-pdf`, `ground-walkability`, `label-placement-oracle`, `label-placement`, `outdoor`
 - `src/elements/reprint.ts` (1) — `reprint-allowance`
 - `src/elements/roof.ts` (3) — `label-placement-oracle`, `roof`, `v129-cross`
-- `src/elements/room.ts` (7) — `export-pdf`, `label-leaders`, `label-placement`, `net-area-stamp`, `rect-label-anchor`, `room-floor`, `room-uses`
+- `src/elements/room.ts` (8) — `export-pdf`, `label-leaders`, `label-placement`, `net-area-stamp`, `rect-label-anchor`, `room-arc-edges`, `room-floor`, `room-uses`
 - `src/elements/section.ts` (1) — `section`
 - `src/elements/vertical-glyphs.ts` (5) — `diagnostics-volume`, `drawing-budget`, `export-dxf-blocks`, `model-range`, `vertical`
 - `src/elements/void.ts` (4) — `shaft-circulation`, `v129-cross`, `void-rail`, `void`
@@ -113,27 +114,27 @@ Nearest first, then by name; `(+n)` is the rest. Test names are `test/<name>.tes
 - `src/geometry/arc-band.ts` (1) — `furniture-lint`
 - `src/geometry/arc.ts` (19) — `arc-openings`, `arc-radius-exact`, `arc-tessellation-error`, `band`, `circle-enclosure`, `curves`, `frame`, `furniture-lint` (+11)
 - `src/geometry/backend.ts` (1) — `joinery-oracle`
-- `src/geometry/band.ts` (15) — `arc-openings`, `band`, `describe-quantities`, `interner-oracle`, `joinery-oracle`, `joinery-split-oracle`, `joinery-split`, `joinery` (+7)
+- `src/geometry/band.ts` (16) — `arc-openings`, `band`, `describe-quantities`, `interner-oracle`, `joinery-oracle`, `joinery-split-oracle`, `joinery-split`, `joinery` (+8)
 - `src/geometry/clipper.ts` (1) — `joinery-oracle`
 - `src/geometry/grid-index.ts` (3) — `grid-index`, `huge-coordinates`, `room-overlap-oracle`
 - `src/geometry/intersect.ts` (5) — `band`, `intersect`, `joinery-oracle`, `joinery-split-oracle`, `joinery-pipeline`
 - `src/geometry/joinery.ts` (4) — `joinery-oracle`, `joinery-split-oracle`, `joinery-split`, `joinery`
 - `src/geometry/min-rect.ts` (1) — `min-rect`
-- `src/geometry/polygon.ts` (21) — `circulation-concave`, `dim-thickness-callout`, `furniture-label-fit`, `label-leaders`, `label-placement-oracle`, `label-placement`, `label-symbol-ink`, `label-wrap` (+13)
+- `src/geometry/polygon.ts` (22) — `circulation-concave`, `dim-thickness-callout`, `furniture-label-fit`, `label-leaders`, `label-placement-oracle`, `label-placement`, `label-symbol-ink`, `label-wrap` (+14)
 - `src/geometry/rect.ts` (10) — `between-face-probes`, `block-stair-winders`, `finish-furnish-laws`, `finish-levels`, `label-placement-oracle`, `label-wrap`, `lint-clearances-kitchen-doors`, `lint-measure` (+2)
-- `src/geometry/room-ring.ts` (1) — `room-ring`
+- `src/geometry/room-ring.ts` (2) — `room-arc-edges`, `room-ring`
 - `src/geometry/union.ts` (3) — `band`, `joinery-oracle`, `union`
 - `src/grammar/tokens.ts` (38) — `arc-openings`, `arch-highlight`, `block-stair-lint`, `clause-order-byte-identity`, `closed-vocabularies`, `corner-window`, `did-you-mean`, `door-enums` (+30)
 - `src/hatches.ts` (8) — `export-pdf`, `floor-materials-byte-identity`, `joinery-split-oracle`, `joinery-split`, `model-range`, `outdoor`, `room-floor`, `sheet-text`
 - `src/impact.ts` (2) — `rectilinear-doors`, `rectilinear-rooms`
-- `src/import.ts` (38) — `af9-byte-identity`, `af9-fixes`, `arc-openings`, `block-stair-byte-identity`, `corner-window-byte-identity`, `dim-swap-reprint`, `dim-thickness-callout`, `drawing-budget` (+30)
+- `src/import.ts` (39) — `af9-byte-identity`, `af9-fixes`, `arc-openings`, `block-stair-byte-identity`, `corner-window-byte-identity`, `dim-swap-reprint`, `dim-thickness-callout`, `drawing-budget` (+31)
 - `src/import/limits.ts` (1) — `openplan3d-malformed`
-- `src/index.ts` (431) — `acc-metadata`, `access-graph`, `access-policy`, `accessible-svg`, `af9-byte-identity`, `af9-fixes`, `agent-gallery`, `alias-match` (+423)
+- `src/index.ts` (432) — `acc-metadata`, `access-graph`, `access-policy`, `accessible-svg`, `af9-byte-identity`, `af9-fixes`, `agent-gallery`, `alias-match` (+424)
 - `src/input-limit.ts` (2) — `import-rooted`, `workspace-seams`
 - `src/intent-concepts.ts` (3) — `vocabulary-es-pt`, `vocabulary-living-dining`, `vocabulary-matcher-oracle`
 - `src/intent-feasibility.ts` (1) — `intent-infeasible`
 - `src/intent.ts` (1) — `site`
-- `src/ir.ts` (187) — `access-policy`, `af9-byte-identity`, `af9-fixes`, `arc-openings`, `arc-radius-exact`, `attach`, `axes`, `between-face-probes` (+179)
+- `src/ir.ts` (188) — `access-policy`, `af9-byte-identity`, `af9-fixes`, `arc-openings`, `arc-radius-exact`, `attach`, `axes`, `between-face-probes` (+180)
 - `src/label-fit.ts` (4) — `label-fit`, `label-leaders`, `label-symbol-ink`, `lint-thickness-unplaced`
 - `src/label-placement.ts` (7) — `label-fit`, `label-leaders`, `label-placement-oracle`, `label-placement`, `label-symbol-ink`, `label-wrap`, `north-arrow`
 - `src/lexer.ts` (14) — `clause-order-byte-identity`, `diagnostics-volume`, `diagnostics`, `error-value-law`, `expr`, `fmt-lossless`, `imperial-input`, `model-range` (+6)
@@ -167,12 +168,12 @@ Nearest first, then by name; `(+n)` is the rest. Test names are `test/<name>.tes
 - `src/opening-junctions.ts` (3) — `af9-byte-identity`, `af9-fixes`, `fixable-codes`
 - `src/opening-relation.ts` (3) — `openings-between`, `rectilinear-doors`, `rectilinear-sides`
 - `src/opening-schedule.ts` (2) — `sheet-annotations`, `window-kinds`
-- `src/parser.ts` (164) — `af9-byte-identity`, `af9-fixes`, `arc-openings`, `arc-radius-exact`, `attach`, `axes`, `block-stair-byte-identity`, `block-stair` (+156)
+- `src/parser.ts` (165) — `af9-byte-identity`, `af9-fixes`, `arc-openings`, `arc-radius-exact`, `attach`, `axes`, `block-stair-byte-identity`, `block-stair` (+157)
 - `src/pipeline.ts` (2) — `label-leaders`, `work-counts`
 - `src/plan-json.ts` (11) — `element-facets`, `format`, `garage`, `plan-json-dropped`, `plan-json-instances`, `polygon-rooms`, `section`, `sheet-annotations` (+3)
 - `src/plan-json/room-types.ts` (1) — `vocabulary-es-pt`
 - `src/plan-json/to-json.ts` (1) — `rect-ring`
-- `src/registry.ts` (55) — `af9-byte-identity`, `af9-fixes`, `annotation-collisions`, `arc-openings`, `block-stair-byte-identity`, `block-stair-winders-walking-arc`, `block-stair`, `corner-window-byte-identity` (+47)
+- `src/registry.ts` (56) — `af9-byte-identity`, `af9-fixes`, `annotation-collisions`, `arc-openings`, `block-stair-byte-identity`, `block-stair-winders-walking-arc`, `block-stair`, `corner-window-byte-identity` (+48)
 - `src/repair.ts` (2) — `finish-furnish-laws`, `finish-never-worse`
 - `src/reroll.ts` (3) — `keep`, `reroll-findrun-oracle`, `reroll`
 - `src/room-datums.ts` (5) — `openings-between`, `room-datums`, `segment-select`, `shared-grid-byte-identity`, `keep`
@@ -203,7 +204,7 @@ Nearest first, then by name; `(+n)` is the rest. Test names are `test/<name>.tes
 - `src/wall-lowering.ts` (2) — `joinery-split`, `open-crossing`
 - `src/wall-ref.ts` (2) — `rectilinear-rooms`, `walls-from-rooms`
 - `src/while-fix.ts` (2) — `fixable-codes`, `while-fix`
-- `src/world.ts` (133) — `af9-byte-identity`, `af9-fixes`, `arc-openings`, `block-stair-byte-identity`, `circulation-unmeasured`, `clause-order-byte-identity`, `corner-window-byte-identity`, `corner-window` (+125)
+- `src/world.ts` (134) — `af9-byte-identity`, `af9-fixes`, `arc-openings`, `block-stair-byte-identity`, `circulation-unmeasured`, `clause-order-byte-identity`, `corner-window-byte-identity`, `corner-window` (+126)
 
 ## Test files
 
@@ -665,6 +666,7 @@ The first sentence of each file's header comment.
 - `test/roof-void-byte-identity.test.ts` — The byte-identity law for `roof` and `void`.
 - `test/roof.test.ts` — `roof` — the eaves projection line.
 - `test/room-adjacency-oracle.test.ts` — `describe`'s room adjacency (`roomAdjacency`, `src/describe.ts`) against the loop it replaced, kept here VERBATIM as the oracle (`docs/backlog.md` M.19).
+- `test/room-arc-edges.test.ts` — `arc` edges inside a `room polygon` ring (card ARC2, `docs/plans/arc2-room-arcs.md` §4).
 - `test/room-datums.test.ts` — The datum table (ADR 0028 §1, card PS3.2 part A): after every room of a resolution group is placed — relational placement included — and before any wall resolves, the group's room edges, centres and grid axes are froz...
 - `test/room-edge-datums.test.ts` — Room-edge datums (ADR 0028 §2, card PS3.2 part B): a rectangular room `r` exposes `r.top`, `r.bottom`, `r.left`, `r.right`, `r.cx`, `r.cy`, read from the group's frozen datum table (`src/room-datums.ts`) by every stat...
 - `test/room-floor.test.ts` — `room … floor <pattern>` (issue #405): a hatch over a room's floor, and a drawing fact alone.
@@ -796,7 +798,6 @@ module); adding a test that imports it removes it from this list.
 - `src/analyze/keep-facts.ts`
 - `src/analyze/nav-grid.ts`
 - `src/analyze/open-shell.ts`
-- `src/analyze/rooms.ts`
 - `src/analyze/syntax.ts`
 - `src/analyze/takeoff.ts`
 - `src/analyze/unassigned-pieces.ts`

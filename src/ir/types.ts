@@ -39,6 +39,7 @@ import type { Diagnostic, Span } from "../diagnostics.js";
 import type { Theme } from "../theme.js";
 import type { WallSegment } from "../geometry.js";
 import type { Arc } from "../geometry/arc.js";
+import type { EdgeLoop } from "../geometry/band.js";
 import type { Side } from "../algebra/d4.js";
 import type { ResolvedSheet } from "../sheet.js";
 import type { FloorMaterial } from "../hatches.js";
@@ -337,6 +338,15 @@ export interface RRoom extends RBase {
    * taken from this in closed form (πR²), never from the tessellation.
    */
   circle?: { c: Point; r: number };
+  /**
+   * The EXACT boundary of a `room polygon` ring with an `arc` edge (card ARC2): one edge per
+   * written edge, in ring order, closing edge last (the `Edge` of `src/geometry/band.ts`). When
+   * present, {@link RRoom.poly} holds the ring's fixed-step tessellation (every vertex plus each
+   * arc's interior points, so every ring consumer works unchanged) and `at`/`size` the bounding
+   * box of these edges, bulges included. Area, extent and a vertex chain shown to a reader are
+   * read from these through the room-ring seam. Absent on every other room.
+   */
+  edges?: EdgeLoop;
   /** Explicit label/area anchor (`label "…" at (x,y)`); absent = the derived centre.
    *  Recorded for EVERY room shape — dropping a rectangle's would silently disable both
    *  the anchor and `W_ROOM_LABEL_OUTSIDE` there. */
