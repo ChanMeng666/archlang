@@ -339,6 +339,12 @@
  * arrow's `<g>`, and where the body hashes the Scene, the added `chrome.north` with it; `describe()`,
  * `lint()`, the diagnostics and the steps did not move. Put `main`'s SVG back (`a9db286e`) and drop
  * `chrome.north`, and this body reproduces every old digest; the new ones are this body on the branch.
+ *
+ * Re-measured for SR.15 (a wrapped room name keeps the spaces its break removed, each run in a
+ * `<tspan font-size="0" xml:space="preserve">` between its lines): the rows of plans that draw a
+ * wrapped name moved, SVG only. Strip those separators from the branch's SVG and this body
+ * reproduces every old digest (`test/byte-identity-baseline.ts`, § SR.15); `describe()`, `lint()`,
+ * the diagnostics and the steps did not move.
  */
 // Re-measured 2026-10-23 (PS3.7): aquarium, corner-cafe, furnished-flat, gallery-l, hillside-villa, materials, museum, themed: chairs turned to the table they sit at, a real
 // defect `W_SEAT_FACING_AWAY` found (ADR 0029 §6); the cause and the proof that nothing else
@@ -356,7 +362,7 @@ export const BASELINE: ReadonlyArray<readonly [string, string]> = [
   ["examples/aquarium.arch", "eee3dc30bd94b5f31c7189f719ff38e09d6f56a3d5484f443432591f8f1e737e"], // re-measured for PS2.4, see header; PS2.10 dims fixed (byte-identity-baseline.ts); PS2.11e, see header
   ["examples/attached.arch", "07995653257dff5785f4fe210e3c4f6f9d6fc35165be2e5ae34df364079029dc"],
   ["examples/bungalow.arch", "0dd331e28b8f4e20c3b359c8e819ed738290295cc83934c1a38808d2fd83dc13"], // PS2.11e, see header; CV13 (was 074d5531): example source edited (chairs added)
-  ["examples/classroom-block.arch", "4d558795c0b345b3a9a1e5454bc476125983a63dee7d3227c0d3afe09b7ed3bd"], // added with the example, re-measured for net area, see header; PS2.11e, see header
+  ["examples/classroom-block.arch", "4d558795c0b345b3a9a1e5454bc476125983a63dee7d3227c0d3afe09b7ed3bd"], // SR.15 (was cca7c3df); added with the example, re-measured for net area, see header; PS2.11e, see header
   ["examples/clinic.arch", "6a8b78ce84d10bea939f48f431d16e127cb95b982f473d33072889e110ff4788"],
   ["examples/corner-cafe.arch", "d669e11a11740a841311fe359a3d5bc650343ba1f16e827bc4d869dc65206bd5"], // added with the example, re-measured for net area, see header; #367, see test/byte-identity-baseline.ts
   ["examples/courtyard-family.arch", "50c9cc316efda2bf16183e877d4be16443df160c9c13fc2a0210d62945c4bd67"], // new example (RM8.5, the courtyard-family showcase)
@@ -371,16 +377,16 @@ export const BASELINE: ReadonlyArray<readonly [string, string]> = [
   ["examples/imports.arch", "3aa7b2d5f953e6df63059c368e391ee3ea58c097cd7dff358197a940f4946252"],
   ["examples/knob-flat.arch", "578ec7551025df65b704f453b7af3493bf4abcfb19737fdece206e4c85fd2586"], // new example (P4, the knobs example), see header
   ["examples/laneway-house.arch", "21f4d5bc82e2e8d46536bd2dc5623b05ea76e937db31c7d4ed482a4c5e3118bc"], // PS2.11e, see header; CV13 (was 958934b4): example source edited (chairs added)
-  ["examples/library.arch", "a004eb834300480a37f5a520671a570fb3e07f7bff061ba7e510e779fa912466"], // PS2.11e, see header
+  ["examples/library.arch", "a004eb834300480a37f5a520671a570fb3e07f7bff061ba7e510e779fa912466"], // SR.15 (was acbc3325); PS2.11e, see header
   ["examples/materials.arch", "b3d629675b1a43d4d1113f10b38e732d0b826fdb2b019fcf14ac4b166abd435d"],
   ["examples/museum-wing.arch", "add9b13a425ec75dd2b88c4eba087465228822c37321b3d1952db6f0795ef6c7"],
   ["examples/museum-wings.arch", "4acccb8ead0234e18186574c23a4c795d32c6a8f819fc67a983cebea337b8b29"], // re-measured, see header; PS2.11e, see header
   ["examples/museum.arch", "bf1d425c9bf21d6ddb3e4757f53a1820f186cca67c3300c0a6ce8eb6b4e73713"], // PS2.11e, see header; PS2.74 source edit, see header
   ["examples/one-room.arch", "8c47e263f778993d69c2f85d07a24b3a62c0b96d9f17ccb5cd9ebf2af6fa0120"],
   ["examples/parametric.arch", "7cceeb1be4622a8b84e1625a124d31f44fdfc15cd5362c4f4f25fa67f5560989"],
-  ["examples/practice-office.arch", "bf127fd8266fe3d85e9f25712ac69c02bd42370c7027cf1a01baeafe1d3aa36c"], // added with the example, re-measured for net area, see header; PS2.11e, see header; PS2.74 source edit, see header
+  ["examples/practice-office.arch", "bf127fd8266fe3d85e9f25712ac69c02bd42370c7027cf1a01baeafe1d3aa36c"], // SR.15 (was f655cd0d); added with the example, re-measured for net area, see header; PS2.11e, see header; PS2.74 source edit, see header
   ["examples/relational.arch", "d99a898c06b322f203c7f9f3d34740be351b523712bb04fe7b0d846e85811084"], // re-measured for PS2.4, see header; PS3.6 source rewrite, see ./byte-identity-baseline.ts; PS2.11e, see header; `centreline_at`, see ./byte-identity-baseline.ts
-  ["examples/remodel.arch", "b7fc3b7f11be692ffdc3125d66d01e9c70cb9ade93ab673f4bb4ddaebd0e085c"], // new example (B3b), see header; `centreline_at`, see ./byte-identity-baseline.ts; CV13 (was f0f4a5aa): example source edited (chairs added)
+  ["examples/remodel.arch", "b7fc3b7f11be692ffdc3125d66d01e9c70cb9ade93ab673f4bb4ddaebd0e085c"], // SR.15 (was 5fd914bb); new example (B3b), see header; `centreline_at`, see ./byte-identity-baseline.ts; CV13 (was f0f4a5aa): example source edited (chairs added)
   ["examples/sheet-notes.arch", "708332c1a3f4cf35989718277b996af6f718d2e5fb8bd3d2912d8f87f7d61a2a"], // re-measured, see header
   ["examples/studio.arch", "b64f7234dddc6527a0176033e82b38b70ad4fe84ca8df22b7a2e3269a1029553"], // PS2.11e, see header
   ["examples/terrace-row.arch", "3e8d6696f955b554411c7379e3a8bc9ce5cbf83a9521930129f18915bca585d0"], // CV08 (was 6667da00): example source edited (sofa turned to face the room)
@@ -394,7 +400,7 @@ export const BASELINE: ReadonlyArray<readonly [string, string]> = [
   ["test/fixtures/axes-grid.arch", "32dad3e21d1e5c40424473fdf05896088a2f848fd7f90d395d6cbd70169a0655"],
   ["test/fixtures/chain30.arch", "ce81264ecdc3a086f99708f90aee5dd929c71b9e8ccaaa54a1da5ce5aa213325"], // new fixture, see header; #367, see test/byte-identity-baseline.ts
   ["test/fixtures/dense-bays.arch", "9f4ad4538851a27b463113cd7e563823d185bc7e18b342fd9eebb45f2887992f"],
-  ["test/fixtures/dense-office.arch", "1601b5f0adb1966b9168bde4aa447f138c431d423cbc6c562a5d002fff62e612"], // AL6: a new row; E.18 (was 46d130d3), see ./byte-identity-baseline.ts
+  ["test/fixtures/dense-office.arch", "1601b5f0adb1966b9168bde4aa447f138c431d423cbc6c562a5d002fff62e612"], // SR.15 (was 344ce7a8); AL6: a new row; E.18 (was 46d130d3), see ./byte-identity-baseline.ts
   ["test/fixtures/diff-a.arch", "33a377ed414748c1262bdfbd057d657f8dda607ff77be9d944d2daa5feb12b2a"], // re-measured, see header
   ["test/fixtures/diff-b.arch", "1d4aaebab314c77742fc16d68c8925aa629ae42e1253a2167e240a2f25849ab1"], // re-measured, see header
   ["test/fixtures/diff-circ-a.arch", "e5bebcb2ebee7d35409f726a36c6da902eb7f414cadc9b93adb6e5d8a014235d"],
@@ -404,7 +410,7 @@ export const BASELINE: ReadonlyArray<readonly [string, string]> = [
   ["test/fixtures/lock-window-moved.arch", "5178ac32070a056b37462b4169b3fbdbbb0ee9a94ca05221cc0c64cedf89dd99"], // new fixture (B1), see header
   ["test/fixtures/off-path-bypass.arch", "3c4ca1f843918cd8d3de1c1cf7efd00dec9a75bfffab468dc05c71ca5cb6361b"], // new fixture, see header; PS2.11e, see header; AF9 (was 81ef92c3): `W_DOORWAY_BLOCKED` on d_d gains a maybe-incorrect move to `at 1570` (its position alone) in lint(); SVG, describe() and the diagnostics are unchanged, and with that fix taken out the old digest returns
   ["test/fixtures/schedule-sheet.arch", "7894657cc6c6afff831d31be9a8658f9761f90c4ddfc4015c9b28571863fc780"], // re-measured, see header; PS2.29: message text only, same code, same span
-  ["test/fixtures/star30.arch", "13122e9c16dd36f442eea47840e1b03dde21108f0a31bcb7048cdd3c12134bf7"], // new fixture, see header; #367, see test/byte-identity-baseline.ts
+  ["test/fixtures/star30.arch", "13122e9c16dd36f442eea47840e1b03dde21108f0a31bcb7048cdd3c12134bf7"], // SR.15 (was 5104211c); new fixture, see header; #367, see test/byte-identity-baseline.ts
   ["test/fixtures/storeys-eaves-overflow.arch", "68492d111abcc4a0219738601073936dbd3aed2f645531ad125cb2bf083949e2"], // new fixture (PS2.77), see header; RM1.3a, see ./byte-identity-baseline.ts; RM1.2a, see header; RM1.2a review, see header; RM9.2, see ./byte-identity-baseline.ts
   // was 05693d9e. D27: this plan's stair stands in no wall, so `bounds()` reaching its break line widens the
   // drawing 156 mm. Only the SVG, the Scene and the overlay moved: with the old ones put back the old digest returns.

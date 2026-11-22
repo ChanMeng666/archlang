@@ -57,6 +57,12 @@
  * arrow's `<g>`, and where the body hashes the Scene, the added `chrome.north` with it; `describe()`,
  * `lint()`, the diagnostics and the steps did not move. Put `main`'s SVG back (`a9db286e`) and drop
  * `chrome.north`, and this body reproduces every old digest; the new ones are this body on the branch.
+ *
+ * Re-measured for SR.15 (a wrapped room name keeps the spaces its break removed, each run in a
+ * `<tspan font-size="0" xml:space="preserve">` between its lines): the rows of plans that draw a
+ * wrapped name moved, SVG only. Strip those separators from the branch's SVG and this body
+ * reproduces every old digest (`test/byte-identity-baseline.ts`, § SR.15); `describe()`, `lint()`,
+ * the diagnostics and the steps did not move.
  */
 
 import { readFileSync } from "node:fs";
@@ -112,7 +118,7 @@ const BASELINE: [string, string][] = [
   ["7cceeb1be4622a8b84e1625a124d31f44fdfc15cd5362c4f4f25fa67f5560989", "examples/parametric.arch"],
   ["bf127fd8266fe3d85e9f25712ac69c02bd42370c7027cf1a01baeafe1d3aa36c", "examples/practice-office.arch"],
   ["d99a898c06b322f203c7f9f3d34740be351b523712bb04fe7b0d846e85811084", "examples/relational.arch"],
-  ["b7fc3b7f11be692ffdc3125d66d01e9c70cb9ade93ab673f4bb4ddaebd0e085c", "examples/remodel.arch"], // CV13 (was f0f4a5aa): example source edited (chairs added)
+  ["b7fc3b7f11be692ffdc3125d66d01e9c70cb9ade93ab673f4bb4ddaebd0e085c", "examples/remodel.arch"], // SR.15 (was 5fd914bb); CV13 (was f0f4a5aa): example source edited (chairs added)
   ["708332c1a3f4cf35989718277b996af6f718d2e5fb8bd3d2912d8f87f7d61a2a", "examples/sheet-notes.arch"],
   ["f71aacc239a5bc518ea19e16c2152c3be59239bf96f73ae5248fa80fa23e3c75", "examples/showcase/garden-courtyard.arch"], // CV13 (was 54adc1b8): example source edited (chairs added)
   ["b64f7234dddc6527a0176033e82b38b70ad4fe84ca8df22b7a2e3269a1029553", "examples/studio.arch"],

@@ -43,6 +43,12 @@
  * arrow's `<g>`, and where the body hashes the Scene, the added `chrome.north` with it; `describe()`,
  * `lint()`, the diagnostics and the steps did not move. Put `main`'s SVG back (`a9db286e`) and drop
  * `chrome.north`, and this body reproduces every old digest; the new ones are this body on the branch.
+ *
+ * Re-measured for SR.15 (a wrapped room name keeps the spaces its break removed, each run in a
+ * `<tspan font-size="0" xml:space="preserve">` between its lines): the rows of plans that draw a
+ * wrapped name moved, SVG only. Strip those separators from the branch's SVG and this body
+ * reproduces every old digest (`test/byte-identity-baseline.ts`, § SR.15); `describe()`, `lint()`,
+ * the diagnostics and the steps did not move.
  */
 
 import { readdirSync, readFileSync, statSync } from "node:fs";
@@ -270,7 +276,7 @@ const BASELINE: [string, string, string][] = [
     "examples/relational.arch",
   ],
   [
-    "b7fc3b7f11be692ffdc3125d66d01e9c70cb9ade93ab673f4bb4ddaebd0e085c", // CV13 (was f0f4a5aa): example source edited (chairs added)
+    "b7fc3b7f11be692ffdc3125d66d01e9c70cb9ade93ab673f4bb4ddaebd0e085c", // SR.15 (was 5fd914bb); CV13 (was f0f4a5aa): example source edited (chairs added)
     // CO.1: the parse holds the `size` clause the example now writes; without them, offsets mapped back, it is the parse pinned here (was 32255022)
     // AF9: the parse holds the `posSpan` and `wallSpan` an opening's lead now records (no semantics); without them it is the parse pinned here (was efcd3520)
     "4a222c2fe62a853f0b4aec7581b543b1cb19c4d0a8d65166ab003f3a60cb6308", // CV13 (was a6ed253f): example source edited (chairs added)

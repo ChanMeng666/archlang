@@ -13,6 +13,12 @@
  * - **The DXF files a demolished wall on `A-WALL-DEMO` and a new one on `A-WALL-NEWW`**, through
  *   `classifyWallSet`, declaring each only when an entity lands on it.
  * - **`examples/remodel.arch` is pinned**: its SVG, DXF, `describe()` and `lint()` by SHA-256.
+ *
+ * Re-measured for SR.15 (a wrapped room name keeps the spaces its break removed, each run in a
+ * `<tspan font-size="0" xml:space="preserve">` between its lines): the rows of plans that draw a
+ * wrapped name moved, SVG only. Strip those separators from the branch's SVG and this body
+ * reproduces every old digest (`test/byte-identity-baseline.ts`, § SR.15); `describe()`, `lint()`,
+ * the diagnostics and the steps did not move.
  */
 
 import { sha256 as sha } from "./helpers/digest.js";
@@ -264,7 +270,7 @@ suite("examples/remodel.arch", () => {
 });
 
 const PINS = {
-  svg: "44f515fcf6c36762788c7d93af460703229bf062eea04e45d925b99c5a27ded7", // CV13 (was 70df86ff): example source edited (chairs added)
+  svg: "44f515fcf6c36762788c7d93af460703229bf062eea04e45d925b99c5a27ded7", // SR.15 (was 65b37f01); CV13 (was 70df86ff): example source edited (chairs added)
   dxf: "8971ef0345e030f323f8c5ccc1c8e65c5278ca885bb0851e2d9b121d37c2239e", // CV13 (was e2aeaa84): example source edited (chairs added)
   dxfFlat: "be2f52f660936088e1a4b2837dab2583d4ff82d592b7c66786976066312efbdb", // CV13 (was 837b1718): example source edited (chairs added)
   describe: "08560cbbd51ca902e1fa7c554b2cd13ea37266fb668c2d61b333575476a48d62", // CV13 (was d266e4f6): example source edited (chairs added)

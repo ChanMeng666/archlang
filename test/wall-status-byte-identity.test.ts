@@ -25,6 +25,12 @@
  * arrow's `<g>`, and where the body hashes the Scene, the added `chrome.north` with it; `describe()`,
  * `lint()`, the diagnostics and the steps did not move. Put `main`'s SVG back (`a9db286e`) and drop
  * `chrome.north`, and this body reproduces every old digest; the new ones are this body on the branch.
+ *
+ * Re-measured for SR.15 (a wrapped room name keeps the spaces its break removed, each run in a
+ * `<tspan font-size="0" xml:space="preserve">` between its lines): the rows of plans that draw a
+ * wrapped name moved, SVG only. Strip those separators from the branch's SVG and this body
+ * reproduces every old digest (`test/byte-identity-baseline.ts`, § SR.15); `describe()`, `lint()`,
+ * the diagnostics and the steps did not move.
  */
 
 import { readFileSync } from "node:fs";
@@ -82,7 +88,7 @@ const BASELINE: [string, string][] = [
   ["test/fixtures/diff-circ-b.arch", "e52a2d0d2299ddaa916dc6e204c21d5296ccc52f4eb7376591c78eef685191de"],
   ["test/fixtures/off-path-bypass.arch", "3c4ca1f843918cd8d3de1c1cf7efd00dec9a75bfffab468dc05c71ca5cb6361b"], // AF9 (was 81ef92c3): `W_DOORWAY_BLOCKED` on d_d gains a maybe-incorrect move to `at 1570` (its position alone) in lint(); SVG, describe() and the diagnostics are unchanged, and with that fix taken out the old digest returns
   ["test/fixtures/schedule-sheet.arch", "7894657cc6c6afff831d31be9a8658f9761f90c4ddfc4015c9b28571863fc780"],
-  ["test/fixtures/star30.arch", "13122e9c16dd36f442eea47840e1b03dde21108f0a31bcb7048cdd3c12134bf7"], // #367, see test/byte-identity-baseline.ts
+  ["test/fixtures/star30.arch", "13122e9c16dd36f442eea47840e1b03dde21108f0a31bcb7048cdd3c12134bf7"], // SR.15 (was 5104211c); #367, see test/byte-identity-baseline.ts
   ["test/fixtures/storeys-eaves-overflow.arch", "68492d111abcc4a0219738601073936dbd3aed2f645531ad125cb2bf083949e2"], // RM1.3a, see ./byte-identity-baseline.ts; RM1.2a, see ./byte-identity-baseline.ts; RM1.2a review, see ./byte-identity-baseline.ts; RM9.2, see ./byte-identity-baseline.ts
   // was 05693d9e. D27: this plan's stair stands in no wall, so `bounds()` reaching its break line widens the
   // drawing 156 mm. Only the SVG, the Scene and the overlay moved: with the old ones put back the old digest returns.

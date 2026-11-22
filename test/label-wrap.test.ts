@@ -230,8 +230,8 @@ function law(name: string, src: string, world: World, t: Tally): void {
   }
   // A plan with no wrapped name draws exactly what it drew before, every storey.
   if (!any) expect(after.drawings, name).toEqual(before.drawings);
-  // Card SR.15: a wrapped name's `<text>` reads as the name (its text content, what a screen reader,
-  // a search or a schedule check reads), and the separators are the only thing between its lines.
+  // Card SR.15: a wrapped name's `<text>` reads as the name (its text content, what a search, a copy
+  // or a schedule check reads), and the separators are the only thing between its lines.
   // Read against the wrapped texts each storey's scene draws: the wrap step's and the label fit's.
   // A source that does not compile has no scene, and its drawing draws no name.
   for (const [k, svg] of after.drawings.entries()) {

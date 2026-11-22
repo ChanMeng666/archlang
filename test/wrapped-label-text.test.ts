@@ -1,6 +1,6 @@
 /**
  * A wrapped room name reads as the name (card SR.15): its `<text>` element's text content — what a
- * screen reader, a search or a schedule check reads from the SVG — is the label, "Entrance Hall",
+ * search, a copy or a schedule check reads from the SVG — is the label, "Entrance Hall",
  * never "EntranceHall". The space a break removed rides between the lines in a `font-size="0"`
  * separator (`src/backends/svg.ts`), so no glyph moves: a visible space at the end of a line, at the
  * start of the next or between the two would widen an anchored text chunk and shift its line by half
@@ -113,7 +113,11 @@ describe("SR.15: a wrapped room name's text is the name", () => {
     const svg = compile(repro(1200), { noCache: true }).svg;
     const stripped = svg.replace(SEPARATOR, "");
     expect(stripped).not.toBe(svg);
-    const [a, b] = await Promise.all([renderPngFromSvg(svg, { scale: 4 }), renderPngFromSvg(stripped, { scale: 4 })]);
-    expect(Buffer.from(a).equals(Buffer.from(b))).toBe(true);
+    // The control: the same space drawn as a glyph at the end of the first line moves that line.
+    const visible = stripped.replace(">Entrance</tspan>", ">Entrance </tspan>");
+    expect(visible).not.toBe(stripped);
+    const [a, b, c] = await Promise.all([svg, stripped, visible].map((s) => renderPngFromSvg(s, { scale: 1 })));
+    expect(Buffer.from(a!).equals(Buffer.from(b!))).toBe(true);
+    expect(Buffer.from(c!).equals(Buffer.from(b!))).toBe(false);
   });
 });
