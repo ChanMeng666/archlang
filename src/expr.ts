@@ -48,7 +48,11 @@ export type Expr =
  * Numbers stay unitless millimetres (no Length/Ratio/Angle — one unit).
  */
 export type Value =
-  | { t: "num"; v: number }
+  /** `sq`/`sqOf`: set only on the value a binding times itself makes (`W*W`, AF10 step 2), on
+   *  the one object that product allocates anyway: the binding's name and the value it read. A
+   *  `let`, a parameter, a reference and a function's return carry the object unchanged; any
+   *  other arithmetic makes a new one without them. Read by {@link squaredName} only. */
+  | { t: "num"; v: number; sq?: string; sqOf?: Value }
   | { t: "bool"; v: boolean }
   | { t: "str"; v: string }
   | { t: "arr"; v: Value[] }
@@ -79,6 +83,34 @@ export function setEnvFallback(env: Env, fallback: EnvFallback): void {
 /** `env`'s binding of `name`, else its fallback's, else undefined. */
 function lookup(env: Env, name: string): Value | undefined {
   return env.get(name) ?? fallbacks.get(env)?.(name);
+}
+
+/**
+ * The binding `e` squares, when the length `e` is one (`W_AREA_AS_LENGTH`, AF10 step 2): `e` is
+ * `X*X` with `X` bound to a number, or a name bound to a value `X*X` made (its `sq`) whose `X` is,
+ * here, still the binding it read (its `sqOf`). So a name the square was made under but that
+ * means something else here, a function's parameter at its call site (`let S = sq(W)`) or an
+ * outer `W` a component's parameter `W` shadows, is never named: the square is not reported.
+ * Reads `env` only, never evaluates, charges nothing: a map read, or a read of a module fallback
+ * the element's own evaluation of `e` already ran (it found `e`'s name there).
+ */
+export function squaredName(e: Expr, env: Env): string | undefined {
+  if (e.t === "bin") {
+    if (e.op !== "*" || e.l.t !== "ref" || e.r.t !== "ref" || e.l.name !== e.r.name) return undefined;
+    const x = lookup(env, e.l.name);
+    return x !== undefined && x.t === "num" && x !== POISON && x !== BUDGET_SUBSTITUTE ? e.l.name : undefined;
+  }
+  if (e.t !== "ref") return undefined;
+  const own = env.get(e.name);
+  const v = own ?? fallbacks.get(env)?.(e.name);
+  if (v === undefined || v.t !== "num" || v.sq === undefined) return undefined;
+  // The squared name is read as the length reads it: the env first, so an own binding (a
+  // parameter, a root `let`) that shadows a module's name is the one compared; the module
+  // fallback only when the square's own name came from it, so the check never runs a module
+  // nobody read. A square made in a body from a module name (`let A = W*W` in an imported
+  // component, `W` the module's) is therefore not reported: the carve-out the catalogue states.
+  const x = env.get(v.sq) ?? (own === undefined ? fallbacks.get(env)?.(v.sq) : undefined);
+  return x !== undefined && x === v.sqOf && x !== BUDGET_SUBSTITUTE ? v.sq : undefined;
 }
 
 /** The source span of an expression, when it carries one (for diagnostics). */
@@ -1154,9 +1186,15 @@ function valueEq(a0: Value, b0: Value): boolean {
 }
 
 /** An arithmetic result as a number Value; a non-finite one is diagnosed at the operation's
- *  span and becomes 0. */
-function finiteNum(v: number, e: Extract<Expr, { t: "bin" }>, onError: (d: Diagnostic) => void): Value {
-  if (Number.isFinite(v)) return { t: "num", v };
+ *  span and becomes 0. `sq`/`sqOf`: the result is the binding `sq`, read as `sqOf`, times itself. */
+function finiteNum(
+  v: number,
+  e: Extract<Expr, { t: "bin" }>,
+  onError: (d: Diagnostic) => void,
+  sq?: string,
+  sqOf?: Value,
+): Value {
+  if (Number.isFinite(v)) return sq === undefined ? { t: "num", v } : { t: "num", v, sq, sqOf: sqOf! };
   nonFinite(onError, e.span, `"${e.op}"`);
   return POISON; // error value: E_NON_FINITE
 }
@@ -1204,7 +1242,12 @@ function evalBin(e: Extract<Expr, { t: "bin" }>, env: Env, onError: (d: Diagnost
     case "-":
       return finiteNum(l - r, e, onError);
     case "*":
-      return finiteNum(l * r, e, onError);
+      // A binding times itself (`W*W`) says so on the value it makes, so a length that reads it
+      // can report the square (`W_AREA_AS_LENGTH`, AF10 step 2): two more fields on the one object the
+      // product allocates in any case, so it costs no step and every step count stays as it was.
+      return e.l.t === "ref" && e.r.t === "ref" && e.l.name === e.r.name
+        ? finiteNum(l * r, e, onError, e.l.name, lv)
+        : finiteNum(l * r, e, onError);
     case "/":
     case "%":
       if (r === 0) {

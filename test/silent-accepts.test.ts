@@ -1,6 +1,6 @@
 /**
- * Silent accepts made audible (product-roadmap RM1.4 and RM1.4b): five warnings, never errors, for
- * what the compiler used to take without a word.
+ * Silent accepts made audible (product-roadmap RM1.4 and RM1.4b, then AF10 step 2): six warnings, never errors,
+ * for what the compiler used to take without a word.
  *
  * | code | trigger | fixture |
  * |---|---|---|
@@ -9,6 +9,7 @@
  * | `W_SET_VALUE_WORD` | a bare `set` word the kind does not read (PS0.16; an error at 2.0, RM-D6) | `test/silent-accepts/set-value-word.arch` |
  * | `W_UNKNOWN_FURNITURE` | an unlabelled furniture word near a catalogued kind (U.3) | `test/silent-accepts/unknown-furniture.arch` |
  * | `W_UNKNOWN_THEME` | `theme <name>` that names no known theme (RM1.4b) | `test/silent-accepts/unknown-theme.arch` |
+ * | `W_AREA_AS_LENGTH` | a room side, wall point or thickness, or opening width that is a name times itself (AF10 step 2, first slice) | `test/silent-accepts/area-as-length.arch` (clean twin `area-as-length.clean.arch`) |
  *
  * The fixtures stand in a folder of their own, outside the corpus directories (`test/helpers/corpus.ts`),
  * so no corpus table gains a plan.
@@ -47,6 +48,11 @@ import { examples, libNames, REPO_ROOT } from "./helpers/corpus.js";
 import { worldFor } from "./helpers/world.js";
 import { runArch } from "./helpers/cli.js";
 import { EXIT } from "../src/cli/io.js";
+import { clearResolveCache, evaluationSteps, resolveAll } from "../src/ir.js";
+import { link } from "../src/import.js";
+import { parse } from "../src/parser.js";
+import { BUILTIN_REGISTRY } from "../src/registry.js";
+import { NULL_WORLD } from "../src/world.js";
 
 const API: CompilerApi = { compile, describe: describePlan, lint };
 const NEW_CODES = [
@@ -55,6 +61,7 @@ const NEW_CODES = [
   "W_SET_VALUE_WORD",
   "W_UNKNOWN_FURNITURE",
   "W_UNKNOWN_THEME",
+  "W_AREA_AS_LENGTH",
 ];
 
 const read = (rel: string): string => readFileSync(join(REPO_ROOT, rel), "utf8");
@@ -64,6 +71,13 @@ const raised = (src: string, opts: Parameters<typeof compile>[1] = {}): string[]
   compile(src, { noCache: true, ...opts })
     .diagnostics.map((d) => d.code ?? "")
     .filter((c) => NEW_CODES.includes(c));
+/** The evaluation steps a source's resolution spends (the meter `E_STEP_LIMIT` reads). */
+const stepsOf = (src: string): number => {
+  clearResolveCache();
+  const { plan: ast } = parse(src, BUILTIN_REGISTRY);
+  if (!ast) return 0;
+  return evaluationSteps(resolveAll(link(ast, NULL_WORLD, BUILTIN_REGISTRY).plan, BUILTIN_REGISTRY, NULL_WORLD));
+};
 const messages = (src: string, code: string): string[] =>
   compile(src, { noCache: true })
     .diagnostics.filter((d) => d.code === code)
@@ -79,6 +93,7 @@ suite("each warning fires on its fixture, through compile() and validate --stric
     ["test/silent-accepts/set-value-word.arch", ["W_SET_VALUE_WORD", "W_SET_VALUE_WORD"]],
     ["test/silent-accepts/unknown-furniture.arch", ["W_UNKNOWN_FURNITURE", "W_UNKNOWN_FURNITURE"]],
     ["test/silent-accepts/unknown-theme.arch", ["W_UNKNOWN_THEME"]],
+    ["test/silent-accepts/area-as-length.arch", ["W_AREA_AS_LENGTH", "W_AREA_AS_LENGTH", "W_AREA_AS_LENGTH"]],
   ];
 
   it.each(FIXTURES)("%s raises its code, and only as a warning", (file, codes) => {
@@ -436,6 +451,145 @@ suite("W_UNKNOWN_THEME (RM1.4b)", () => {
     const own = src.replace("theme Rendered", "theme brand");
     expect(raised(own)).toEqual(["W_UNKNOWN_THEME"]);
     expect(raised(own, { themes: [{ kind: "theme", name: "brand", theme: { bg: "#ffffff" } }] })).toEqual([]);
+  });
+});
+
+suite("W_AREA_AS_LENGTH (AF10 step 2, first slice)", () => {
+  it("names the square, the binding it squares and the length it was read as; the hint names the element", () => {
+    const src = read("test/silent-accepts/area-as-length.arch");
+    const ds = compile(src, { noCache: true }).diagnostics.filter((d) => d.code === "W_AREA_AS_LENGTH");
+    const wall =
+      "`A` is `W` times itself, an area if `W` is a length, but a wall's point reads it as a length of 16000000 mm";
+    expect(ds.map((d) => d.message)).toEqual([
+      wall,
+      wall,
+      "`A` is `W` times itself, an area if `W` is a length, but a room's size reads it as a length of 16000000 mm",
+    ]);
+    const wallHint = 'Wall "shell": write the length itself (`W`). Lengths are millimetres and are never converted.';
+    expect(ds.map((d) => d.hints)).toEqual([
+      [wallHint],
+      [wallHint],
+      [
+        'Room "main": write the length itself (`W`), or, for a room of that area, `size W x W`. Lengths are millimetres and are never converted.',
+      ],
+    ]);
+    // Each points at the name as written, not at the statement.
+    expect(ds.map((d) => src.slice(d.span!.start, d.span!.end))).toEqual(["A", "A", "A"]);
+  });
+
+  it("its clean twin raises none of the new codes and no error", () => {
+    const clean = read("test/silent-accepts/area-as-length.clean.arch");
+    expect(raised(clean)).toEqual([]);
+    expect(compile(clean, { noCache: true }).diagnostics.filter((d) => d.severity === "error")).toEqual([]);
+  });
+
+  it("fires on the square however it reaches the length, and on every length clause it reads", () => {
+    const at = (body: string): string[] =>
+      raised(plan(["  let W = 4m", "  let A = W*W", "  let B = A", body].join("\n")));
+    expect(at("  room at (0,0) size W*W x 3000")).toEqual(["W_AREA_AS_LENGTH"]);
+    expect(at("  room at (0,0) size B x B")).toEqual(["W_AREA_AS_LENGTH", "W_AREA_AS_LENGTH"]);
+    expect(at("  wall exterior thickness A { (0,0) (4000,0) }")).toEqual(["W_AREA_AS_LENGTH"]);
+    expect(at("  walls from rooms exterior A partition 100\n  room at (0,0) size 4000x3000")).toEqual([
+      "W_AREA_AS_LENGTH",
+    ]);
+    const host = "  wall id=w exterior thickness 200 { (0,0) (20000000,0) }";
+    for (const kind of ["door", "window", "opening"]) {
+      const src = plan(["  let W = 4m", host, `  ${kind} at (10000000,0) width W*W wall w`].join("\n"));
+      expect(raised(src), kind).toEqual(["W_AREA_AS_LENGTH"]);
+    }
+    // A parameter bound to a square is a square.
+    expect(at("  component c(s) { room at (0,0) size s x 3000 }\n  c(A)")).toEqual(["W_AREA_AS_LENGTH"]);
+  });
+
+  it("reads no threshold, and is quiet once arithmetic or a call makes a new value", () => {
+    const at = (body: string): string[] =>
+      raised(plan(["  let W = 4m", "  let D = 3m", "  let A = W*W", body].join("\n")));
+    // A small square is still a square: no size is read.
+    expect(raised(plan("  let k = 40\n  room at (0,0) size k*k x 3000"))).toEqual(["W_AREA_AS_LENGTH"]);
+    expect(at("  room at (0,0) size A / W x 3000")).toEqual([]);
+    expect(at("  room at (0,0) size sqrt(W*W + D*D) x 3000")).toEqual([]);
+    expect(at("  room at (0,0) size W*D x 3000")).toEqual([]);
+    expect(at("  room at (0,0) size A + 0 x 3000")).toEqual([]);
+    expect(at("  room at (0,0) size W x W")).toEqual([]);
+    // A square of 0 has no size to mislead, and a zero size is its element's own error.
+    const zero = compile(plan("  let Z = 0\n  room at (0,0) size Z*Z x 3000"), { noCache: true }).diagnostics;
+    expect(zero.map((d) => d.code)).toContain("E_ROOM_SIZE");
+    expect(zero.map((d) => d.code)).not.toContain("W_AREA_AS_LENGTH");
+  });
+
+  it("never names a binding that means something else where the length reads it", () => {
+    const at = (body: string): string[] => raised(plan(["  let W = 4m", "  let sq(x) = x*x", body].join("\n")));
+    // A function's parameter: `x` is unbound (or another value) at the call site, so nothing is named.
+    expect(at("  room at (0,0) size sq(W) x 3000")).toEqual([]);
+    expect(at("  let S = sq(W)\n  room at (0,0) size S x 3000")).toEqual([]);
+    expect(at("  let x = 5000\n  let S = sq(W)\n  room at (0,0) size S x 3000")).toEqual([]);
+    // ...but where the parameter's name IS the binding it squared, the name is true and it is reported.
+    const same = plan("  let x = 4m\n  let sq(x) = x*x\n  let S = sq(x)\n  room at (0,0) size S x 3000");
+    expect(messages(same, "W_AREA_AS_LENGTH")).toEqual([
+      "`S` is `x` times itself, an area if `x` is a length, but a room's size reads it as a length of 16000000 mm",
+    ]);
+    // The hint names `x` too, and its square room parses (`size x x x` is 4000 x 4000).
+    const hints = compile(same, { noCache: true }).diagnostics.filter((d) => d.code === "W_AREA_AS_LENGTH");
+    expect(hints.map((d) => d.hints)).toEqual([
+      [
+        'Room "room_1": write the length itself (`x`), or, for a room of that area, `size x x x`. Lengths are millimetres and are never converted.',
+      ],
+    ]);
+    // A component parameter `W` shadows the outer `W` that `A` squared: not named, not reported.
+    const shadow = "  let A = W*W\n  component c(W) { room at (0,0) size A x 3000 }";
+    expect(at(`${shadow}\n  c(5000)`)).toEqual([]);
+    // Passed the outer `W` itself, the parameter is the same binding, and the name is true.
+    expect(at(`${shadow}\n  c(W)`)).toEqual(["W_AREA_AS_LENGTH"]);
+    // A nested `let` of the name, or a reassignment after the square, makes `W` another value.
+    expect(at("  let A = W*W\n  if true {\n    let W = 3000\n    room at (0,0) size A x W\n  }")).toEqual([]);
+    expect(at("  let A = W*W\n  W = 3m\n  room at (0,0) size A x 3000")).toEqual([]);
+  });
+
+  suite("through an import (the module fallback)", () => {
+    // The fixtures' folder, named by a fixture's path (the opaque-literal guard reads this file).
+    const world = worldFor(dirname(join(REPO_ROOT, "test/silent-accepts/area-as-length.arch")));
+    const viaImport = (body: string): string[] => raised(plan(body), { world });
+    it("a module `let A = W*W` read in a component body, nothing shadowing `W`, is reported (P2c)", () => {
+      expect(viaImport('  import "area-as-length-mod2.arch": e\n  e(0)')).toEqual(["W_AREA_AS_LENGTH"]);
+    });
+    it("a component parameter `W` shadowing the module's `W` is the name compared: quiet (P2a)", () => {
+      expect(viaImport('  import "area-as-length-mod2.arch": c\n  c(3000)')).toEqual([]);
+    });
+    it("a root `let W` shadowing the module's `W` is the name compared: quiet (P2b)", () => {
+      expect(viaImport('  let W = 9000\n  import "area-as-length-mod2.arch": e\n  e(0)')).toEqual([]);
+    });
+    it("`size W*W` in an imported body, `W` the module's, is reported (P1b)", () => {
+      expect(viaImport('  import "area-as-length-mod1.arch": d\n  d(0,0)')).toEqual(["W_AREA_AS_LENGTH"]);
+    });
+    it("carve-out: a body `let A = W*W` from the module's `W` is NOT reported yet (P1a; a fix flips this)", () => {
+      // Reading `W` from the module here would need a non-evaluating peek at the cached module env
+      // (`moduleFallback`, `src/ir/expand.ts`); stated in the catalogue's cause text and CHANGELOG.
+      expect(viaImport('  import "area-as-length-mod1.arch": c\n  c(0,0)')).toEqual([]);
+    });
+  });
+
+  it("an unknown name is its own error, with no square reported beside it", () => {
+    const codes = compile(plan("  room at (0,0) size Q*Q x 3000"), { noCache: true }).diagnostics.map((d) => d.code);
+    expect(codes).not.toContain("W_AREA_AS_LENGTH");
+    expect(codes).toContain("E_UNKNOWN_REF");
+  });
+
+  it("costs no step: a plan that squares a name and raises no warning spends the steps it did before", () => {
+    // Each count is `evaluationSteps` of the plan **measured against `src/` at `490f2e36`** (`main`
+    // before the warning), that tree extracted and handed this same body; the branch measures the same.
+    const STEPS: [plan: string, steps: number][] = [
+      [
+        "  let W = 4000\n  let D = 3000\n  for i in 0..3 {\n    for j in 0..4 {\n      let d = sqrt(W*W + D*D)\n    }\n  }\n  room id=a at (0,0) size W x D",
+        397,
+      ],
+      ["  let W = 4m\n  let sq(x) = x*x\n  let S = sq(W)\n  room id=a at (0,0) size S x 3000", 69],
+      ["  let W = 4m\n  let A = W*W\n  component c(W) {\n    room at (0,0) size A x 3000\n  }\n  c(5000)", 56],
+    ];
+    for (const [body, steps] of STEPS) {
+      const src = `plan "P" {\n  units mm\n${body}\n}\n`;
+      expect(raised(src), body).toEqual([]);
+      expect(stepsOf(src), body).toBe(steps);
+    }
   });
 });
 

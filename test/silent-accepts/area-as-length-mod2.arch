@@ -1,0 +1,13 @@
+# W_AREA_AS_LENGTH through an import (#1006 round 2, probe P2): the module squares its `W` in a
+# module `let`. `c`'s parameter `W` shadows it; `e` reads `A` with the module's `W` in force.
+plan "m2" {
+  units mm
+  let W = 40
+  let A = W*W
+  component c(W) {
+    room at (0, 0) size A x W
+  }
+  component e(x) {
+    room at (x, 0) size A x 3000
+  }
+}

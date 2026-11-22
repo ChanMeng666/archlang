@@ -1,0 +1,13 @@
+# W_AREA_AS_LENGTH through an import (#1006 round 2, probe P1): a module whose components square
+# the module's `W`. `c` squares it in a body `let` (the carve-out: not reported), `d` directly.
+plan "m1" {
+  units mm
+  let W = 4m
+  component c(x, y) {
+    let A = W*W
+    room at (x, y) size A x 3000
+  }
+  component d(x, y) {
+    room at (x, y) size W*W x 3000
+  }
+}

@@ -81,6 +81,9 @@ export const COMPILE_WARNING_STAGES: Readonly<Record<string, AuthoringStage>> = 
   // What the plan writes and the language reads otherwise (RM1.4): a length in metres, a bare word
   // a `set` rule takes as text. The plan's units and its rules are the brief's.
   W_LENGTH_IN_METRES: "brief",
+  // AF10 step 2 (first slice, RM-D81): a length written as a name times itself, read as
+  // millimetres; how the plan writes its numbers is the brief's, as its units are.
+  W_AREA_AS_LENGTH: "brief",
   W_SET_VALUE_WORD: "brief",
   // A storey's written clear height against its height less the slab above (RM6.1): the storey
   // heights are the brief's, as the plan's `height` is.
