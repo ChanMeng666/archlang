@@ -4,6 +4,8 @@ import { decodePlanHash } from "../../src/cli/share-codec.mjs";
 import { makeShareWorker } from "../worker/app.js";
 import type { Env, ShareMeta } from "../worker/types.js";
 import {
+  ARC_RADIUS_ERROR_PLAN,
+  BROKEN_PLAN,
   chooseLink,
   enterEdit,
   gotoEdit,
@@ -28,10 +30,17 @@ import {
  * short link opens in view mode (it names a plain `#z=` link), so the editor is opened to read it.
  */
 
-/** Route `/api/share…` and `/s/…` to the Worker's handler over a fresh store; returns the store. */
-async function serveShortLinks(page: Page): Promise<Map<string, { value: string; metadata: ShareMeta | null }>> {
+/**
+ * Route `/api/share…` and `/s/…` to the Worker's handler over a fresh store; returns the store.
+ * `events`, when given, collects what the handler writes to its page-events dataset (`EVENTS`).
+ */
+async function serveShortLinks(
+  page: Page,
+  events?: Array<{ blobs?: string[] }>,
+): Promise<Map<string, { value: string; metadata: ShareMeta | null }>> {
   const store = new Map<string, { value: string; metadata: ShareMeta | null }>();
   const env: Env = {
+    ...(events ? { EVENTS: { writeDataPoint: (p: { blobs?: string[] }) => void events.push(p) } } : {}),
     ASSETS: { fetch: async () => new Response(null, { status: 404 }) },
     SHARE: {
       getWithMetadata: async <M>(key: string) => ({
@@ -134,6 +143,59 @@ test.describe("short links", () => {
     // The page's URL less the edit-mode flag: a shared link opens the drawing first.
     expect(copied).toBe(await page.evaluate(() => window.location.href.replace(/&edit$/, "")));
     expect(decodePlanHash(new URL(copied).hash.slice("#z=".length))).toBe(SIMPLE_PLAN);
+  });
+
+  // Ruling RM-D87 (card FW5): the offer under the diagnostics drawer sends nothing until its dialog
+  // is confirmed; then it makes a short link as Copy short link does, asking with `contribute: true`,
+  // and the Worker's own handler marks it with the id it minted. The page sends no event for it.
+  test("Send this plan to improve ArchLang: nothing until confirmed, then a short link", async ({ page }) => {
+    const points: Array<{ blobs?: string[] }> = [];
+    const store = await serveShortLinks(page, points);
+    const shares: string[] = [];
+    const events: string[] = [];
+    page.on("request", (r) => {
+      const path = new URL(r.url()).pathname;
+      if (path === "/api/share") shares.push(r.postData() ?? "");
+      if (path === "/api/event") events.push(r.postData() ?? "");
+    });
+    await gotoEdit(page);
+    await setEditorSource(page, ARC_RADIUS_ERROR_PLAN);
+    const offer = page.locator("#errors .contrib-open");
+    await expect(offer).toHaveText("Send this plan to improve ArchLang");
+
+    // Cancel sends nothing.
+    await offer.click();
+    const dialog = page.locator("dialog.contrib-dialog");
+    await expect(dialog).toBeVisible();
+    await expect(dialog).toContainText("full plan text");
+    await expect(dialog).toContainText("anyone with the link can open the plan");
+    await expect(dialog).toContainText("never published");
+    await expect(dialog).toContainText("E_ARC_RADIUS");
+    await dialog.locator(".contrib-cancel").click();
+    await expect(dialog).toHaveCount(0);
+    expect(shares).toEqual([]);
+    expect(store.size).toBe(0);
+
+    // Confirmed: one POST /api/share, the link shown in the dialog.
+    await offer.click();
+    await page.locator("dialog.contrib-dialog .contrib-send").click();
+    const link = page.locator("dialog.contrib-dialog .contrib-link");
+    await expect(link).toHaveValue(/\/s\/[0-9A-Za-z]{8}$/);
+    expect(shares).toHaveLength(1);
+    expect(Object.keys(JSON.parse(shares[0]!)).sort()).toEqual(["contribute", "z"]);
+    expect(store.size).toBe(1);
+    const id = new URL(await link.inputValue()).pathname.slice("/s/".length);
+    expect(points.map((p) => p.blobs!.slice(0, 3))).toEqual([["contribute", id, "E_ARC_RADIUS"]]);
+    expect(events.filter((b) => b.includes("contribute"))).toEqual([]);
+    await page.keyboard.press("Escape");
+    await expect(page.locator("dialog.contrib-dialog")).toHaveCount(0);
+  });
+
+  test("a plan that does not parse is offered no contribution (the store would refuse it)", async ({ page }) => {
+    await gotoEdit(page);
+    await setEditorSource(page, BROKEN_PLAN);
+    await expect(page.locator("#errors .diagrow").first()).toBeVisible();
+    await expect(page.locator("#errors .contrib-open")).toHaveCount(0);
   });
 
   test("embed.html#s=<id> draws the stored plan; an unknown id says so", async ({ page }) => {

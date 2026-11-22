@@ -18,6 +18,11 @@ import { lazyOnce } from "./lazy-once.js";
 import { sparesData } from "./save-data.js";
 import { levelFileName } from "./levels.js";
 import { paperSizeMm, saveBlob, svgToCanvas } from "./raster-export.js";
+// The page's events (ruling RM-D86): a download, a copy and a link made are counted by kind only.
+import { countEvent } from "./telemetry.js";
+import { EXPORT_FORMATS, type ExportFormat } from "../worker/event-core.js";
+
+const isExportFormat = (f: string): f is ExportFormat => (EXPORT_FORMATS as readonly string[]).includes(f);
 
 /**
  * The core code behind Format, Finish, Repair furniture and the DXF and TXT downloads
@@ -215,6 +220,7 @@ export function mountActions(ctx: ActionsCtx): ActionsHandle {
     try {
       await navigator.clipboard.writeText(shareableHref());
       flash("Link copied");
+      countEvent({ e: "share", fmt: "full" });
     } catch {
       flash("Copy failed");
     }
@@ -233,6 +239,7 @@ export function mountActions(ctx: ActionsCtx): ActionsHandle {
     try {
       await navigator.clipboard.writeText(short ?? full);
       flash(short ? "Short link copied" : "Short link unavailable: full link copied");
+      countEvent({ e: "share", fmt: short ? "short" : "full" });
     } catch {
       flash("Copy failed");
     }
@@ -259,6 +266,7 @@ export function mountActions(ctx: ActionsCtx): ActionsHandle {
     try {
       await navigator.clipboard.writeText(svg);
       flash("SVG copied");
+      countEvent({ e: "export", fmt: "svg-copy" });
     } catch {
       flash("Copy failed");
     }
@@ -272,6 +280,7 @@ export function mountActions(ctx: ActionsCtx): ActionsHandle {
       const blob = await new Promise<Blob | null>((res) => canvas.toBlob(res, "image/png"));
       await navigator.clipboard.write([new ClipboardItem({ "image/png": blob! })]);
       flash("PNG copied");
+      countEvent({ e: "export", fmt: "png-copy" });
     } catch {
       flash("Copy failed");
     }
@@ -512,6 +521,7 @@ export function mountActions(ctx: ActionsCtx): ActionsHandle {
     // not be the picture on screen, so that case gets the plain link.
     const imageUrl = example && !getThemeOverride() ? exampleImageUrl(example, getLevel()) : undefined;
     const { embedUrl, iframe, markdown: md } = embedSnippets(base, hash, imageUrl);
+    countEvent({ e: "share", fmt: "embed" });
     const dialog = document.createElement("div");
     dialog.className = "embed-dialog";
     dialog.innerHTML =
@@ -593,6 +603,7 @@ export function mountActions(ctx: ActionsCtx): ActionsHandle {
       working(null);
     }
     if (failed) onExportError("glb", error);
+    else countEvent({ e: "export", fmt: "glb" });
   }
 
   /**
@@ -658,6 +669,7 @@ export function mountActions(ctx: ActionsCtx): ActionsHandle {
         // through `saveBlob` — same rule, one spelling (`levelFileName`).
         pdf.save(levelFileName("floorplan.pdf", level));
       }
+      if (isExportFormat(format)) countEvent({ e: "export", fmt: format });
     } catch (err) {
       onExportError(format, err);
     }

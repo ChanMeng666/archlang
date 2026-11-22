@@ -418,7 +418,7 @@ Totals: 659 exports (230 values, 429 types), 418 flagged (75 values).
 | Export | Kind | In-repo consumers |
 | --- | --- | --- |
 | `CatalogEntry` | type | none |
-| `ERROR_CATALOG` | value | `packages/mcp`, `packages/mcp-worker`, `src/cli`, `test` |
+| `ERROR_CATALOG` | value | `packages/mcp`, `packages/mcp-worker`, `playground`, `src/cli`, `test` |
 | `ERROR_CODES` | value | `src/cli`, `test` |
 | `explain` | value | `src/cli`, `test` |
 

@@ -270,7 +270,13 @@ version-keyed cache with an in-memory stand-in.
   this server registers (a test holds that list to `tools/list`) — and anything else is recorded as
   `(other)`, so no client-chosen string reaches the dataset. A request refused before any work
   (rate limit, size cap) writes one point instead: `["refused", <reason>]`, the reason from a fixed
-  list. The binding is optional; local dev runs without it.
+  list. The binding is optional; local dev runs without it. Amended by card FW1 (ruling RM-D86's
+  programme, `docs/plans/modularity-and-flywheel.md` §7): a `compile`, `describe`, `lint` or
+  `validate` call writes one more point after it ran,
+  `["result", tool, outcome, codes]` (the outcome `ok`, `error` or `refused`), the codes the
+  catalogued ones (`ERROR_CATALOG`) of its result's diagnostics, at most
+  20, sorted, joined with `;`; never a message, span, label or id. Its `blob1` is outside the
+  `tools/call` and `refused` rows the growth job counts.
 - **A `/svg/` URL sends the plan to the server.** A playground link carries the plan after `#`,
   which a browser never sends; an `/svg/` URL carries it in the path, which reaches Cloudflare's
   edge like any URL. The Worker logs nothing, but the difference is real and `read_me` says so.

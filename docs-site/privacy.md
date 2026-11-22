@@ -22,19 +22,51 @@ address, which it uses for the country. Cloudflare processes these reports under
 policy. We see totals per page, referring site, country, browser, operating system and device
 type, and page-speed figures.
 
+The playground also counts a few things it is used for, to learn which errors people and AI agents
+hit. Each count goes to `playground.archlang.uk` and holds only an event from a fixed list: a
+compile (whether it had an error, and the catalogued diagnostic codes it raised, such as
+`E_PARSE` or `W_DOOR_CLEARANCE`), an export (its format: SVG, PNG, PDF, DXF, TXT, GLB, or a copied
+SVG or PNG), opening the 3D view, making a link (short, full or embed), applying a fix (its code),
+with the day. A compile is counted only once you stop typing, and the same result at most once in
+ten seconds. A count carries no plan text, label, room or element id, cookie or account. The
+sender's IP address is used transiently as a rate-limit key and not stored by us. Cloudflare
+Analytics Engine keeps the counts for three months. None of these counts is sent when your browser
+sends Global Privacy Control or Do Not Track, and our server drops any that arrive with either
+signal. An automated browser sends none, and the embedded drawing (`embed.html`, on other people's
+pages) counts nothing. Two things you ask for are counted whatever your browser sends: a short link
+and a contributed plan, below.
+
 The product film on the home page and on `/start` is a picture from this site until you press play.
 Only then does your browser load YouTube's player, from the privacy-enhanced `youtube-nocookie.com`
 address, under YouTube's own privacy policy.
 
 ## Short links
 
-The playground's **Copy short link** is the one thing on these sites that stores a plan. Only when
+The playground's **Copy short link** is the one thing on these sites that stores a plan (a
+contributed plan, below, is stored the same way). Only when
 you choose it, your browser sends the plan to `playground.archlang.uk`, which keeps it under a
 short id made from the plan's own contents, so anyone with the link can open it. We store the plan
 text and its title, with no IP address, account, cookie or expiry date. The sender's IP address is
 used transiently as a rate-limit key and not stored by us. For each short link created or opened we
 count the event, the id and the day in Cloudflare Analytics Engine, which keeps them for three
-months. The full link, **Copy full link**, sends nothing.
+months; a created link is counted so even when your browser sends Global Privacy Control or Do Not
+Track, because that count is part of making the link you asked for. The full link,
+**Copy full link**, keeps the plan in the page: the plan itself is never sent. The playground counts
+that a full link was copied (a `share` count, `full`, as listed above), and nothing more.
+
+## Contributing a plan
+
+When a plan in the playground's editor has an error or a warning, the diagnostics list offers
+**Send this plan to improve ArchLang**. The plan is not sent until you confirm it in the dialog that
+opens, each time. Then your browser sends the full plan text, which is stored as a short link
+exactly as **Copy short link** stores one, so anyone with the link can open it. Our server then
+marks that link as a contribution, with one count holding the link's id, the diagnostic codes it
+reads from the plan it stored, and the day; your browser sends no count of its own for it. We use a
+contributed plan only to improve ArchLang: the language spec, the error messages, the fixes, lint
+and a private test corpus. It is never published, and never given to anyone else to train on.
+Because you ask for it in the dialog, the plan is stored and marked even if your browser sends
+Global Privacy Control or Do Not Track, and the dialog says so. To have a contributed plan deleted,
+ask as for any short link (below, with the link); a plan that does not parse cannot be contributed.
 
 ## The hosted MCP endpoint
 
@@ -60,17 +92,21 @@ edge like any URL.
   is kept in Cloudflare's edge cache with `max-age=31536000`; once the plan is removed, the image is
   no longer served.
 - The aggregate counts in Cloudflare Analytics Engine are the request method, the tool name and, for
-  a refused request, the reason. They hold no plan text and no address. Cloudflare keeps them for
-  three months.
+  a refused request, the reason. For a call of `compile`, `describe`, `lint` or `validate` one more
+  count holds the tool, whether the plan compiled clean, had an error or was refused, and up to
+  twenty of the catalogued diagnostic codes its result raised (such as `E_PARSE`); never a message,
+  a source position, a label or an id. They hold no plan text and no address. Cloudflare keeps them
+  for three months. The playground's counts (above) are kept the same way.
 
 ## Sharing and your choices
 
 We do not sell data, share it with advertisers, or send it to anyone except Cloudflare, which hosts
 the service and processes IP addresses under its own privacy policy. We keep no account or request log; Cloudflare keeps the visit counts described above; the
-one plan text we keep is a plan you made a short link for. To have one removed, open an issue with
+one plan text we keep is a plan you made a short link for or contributed. To have one removed, open an issue with
 the link, or email chanmeng.dev@gmail.com if the plan should not be named in public; once it is
-deleted the short link stops working. To avoid the edge cache, use the playground or the local
-tools, which send nothing.
+deleted the short link stops working. To avoid the edge cache, use the playground, which keeps the
+plan in your browser unless you make a short link or contribute it (it counts only the events
+listed above), or the local tools, which send nothing.
 
 ## The ArchLang plugins
 

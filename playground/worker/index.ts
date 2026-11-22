@@ -9,13 +9,13 @@
  */
 import * as resvg from "@resvg/resvg-wasm";
 import resvgWasm from "@resvg/resvg-wasm/index_bg.wasm";
-import { compile, diagnosticToJson, inputTooLarge, rateLimited } from "archlang";
+import { compile, diagnosticToJson, ERROR_CATALOG, inputTooLarge, rateLimited } from "archlang";
 import roboto from "../../assets/fonts/Roboto-Regular.ttf";
 import { makeShareWorker } from "./app.js";
 import { resvgRasterizer } from "./preview.js";
 
 export default makeShareWorker(
-  { compile, diagnosticToJson, inputTooLarge, rateLimited },
+  { compile, diagnosticToJson, ERROR_CATALOG, inputTooLarge, rateLimited },
   {
     rasterize: resvgRasterizer(resvg, resvgWasm, new Uint8Array(roboto)),
     cache: (globalThis as { caches?: { default?: Cache } }).caches?.default,
