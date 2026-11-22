@@ -2203,6 +2203,70 @@ html:not([data-mode="edit"]) .p3d-stage > .knobs {
   border-color: var(--plum-deep);
 }
 
+/* "Send this plan to improve ArchLang" (contribute.ts): a quiet text button at the drawer's foot,
+   under the rows it is about; its dialog is the embed dialog's sheet, as a native <dialog>. */
+.diag-contribute {
+  flex: none;
+  display: flex;
+  justify-content: flex-end;
+}
+.contrib-open,
+.contrib-cancel {
+  font: inherit;
+  font-size: 12px;
+  padding: 3px 9px;
+  border: 1px solid transparent;
+  border-radius: 2px;
+  background: transparent;
+  color: var(--ink-muted);
+  cursor: pointer;
+}
+.contrib-open:hover,
+.contrib-cancel:hover {
+  color: var(--ink);
+  border-color: var(--src-rule);
+}
+.contrib-dialog {
+  width: min(560px, calc(100vw - 32px));
+  max-height: calc(100dvh - 32px);
+  padding: 0;
+  border: 1px solid var(--hairline);
+  border-radius: 3px;
+  background: var(--paper-panel);
+  color: var(--ink);
+  box-shadow: 0 12px 40px rgb(28 36 48 / 0.28);
+  overflow: auto;
+}
+.contrib-dialog::backdrop {
+  background: color-mix(in srgb, var(--ink) 45%, transparent);
+}
+.contrib-body {
+  padding: 4px 18px 0;
+}
+.contrib-p {
+  margin: 10px 0 0;
+  font-size: 13px;
+  line-height: 1.5;
+}
+.contrib-p code {
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+}
+.contrib-p a {
+  color: var(--redline-ink);
+}
+.contrib-status {
+  margin: 10px 18px 0;
+}
+.contrib-status:empty {
+  display: none;
+}
+.contrib-status .contrib-link {
+  display: block;
+  width: 100%;
+  margin: 6px 0 0;
+}
+
 /* ≤900px (the phone layout, chrome.css): touch-sized preview controls, a diagnostic
    head that wraps its message under the code, 16px side gutters in the panels. */
 @media (max-width: 900px) {
@@ -2344,8 +2408,11 @@ html:not([data-mode="edit"]) .p3d-stage > .knobs {
     min-width: 44px;
     height: 44px;
   }
-  .diag-apply {
+  .diag-apply,
+  .contrib-open,
+  .contrib-dialog button {
     min-height: 44px;
+    min-width: 44px;
     padding: 0 12px;
   }
   .lint-controls select,

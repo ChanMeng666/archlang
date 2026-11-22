@@ -45,6 +45,10 @@ export interface Env {
   RATE_PREVIEW?: RateLimit;
   /** One data point per create and per resolve: event, id, day. */
   SHARE_ANALYTICS?: AnalyticsEngineDataset;
+  /** Per-address limit on `POST /api/event`. */
+  RATE_EVENT?: RateLimit;
+  /** One data point per page event (`archlang_playground`): name, word, codes, day (event-core.ts). */
+  EVENTS?: AnalyticsEngineDataset;
 }
 
 /** What a stored share carries beside its payload (KV metadata, at most 1024 bytes). */

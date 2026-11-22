@@ -116,7 +116,11 @@ to ask for help.
   `resolve-json`, `refused`, the last with a reason in place of the id). It answers "are short
   links opened at all", the plan's first click data. A `HEAD` is not counted (a crawler's probe
   before its GET), and `/s/<id>?<anything>` answers 301 to `/s/<id>`, so a tracker's query is
-  neither a second page nor a second count.
+  neither a second page nor a second count. Amended by rulings RM-D86 and RM-D87 (cards FW4, FW5):
+  the script also answers `POST /api/event`, the page's events from a closed list
+  (`playground/worker/event-core.ts`) into a second dataset, `archlang_playground`, rate-limited by
+  `RATE_EVENT` (2606); and the editor's "Send this plan to improve ArchLang" stores a plan through
+  this same `POST /api/share`, then counts one `contribute` event with the link's id. No new store.
 - **Logs:** Workers Logs on, invocation logs off. The script logs only an internal error's name,
   never a plan, and invocation logs would record each request's metadata.
 - **Caching:** `/api/share/<id>` is `immutable` (the plan behind an id never changes). `/s/<id>`

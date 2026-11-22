@@ -26,6 +26,8 @@ import { createEditor } from "./editor-setup.js";
 import { renderDescribe } from "./describe-panel.js";
 import { renderLint } from "./lint-panel.js";
 import { renderDiagnostics } from "./diagnostics-panel.js";
+import { offerContribution } from "./contribute.js";
+import { countEvent, eventCodes } from "./telemetry.js";
 import { isNarrow, type MobileViewsHandle } from "./mobile-views.js";
 import { renderIntent, STARTER_INTENT } from "./intent-panel.js";
 import { renderSuggest } from "./suggest-panel.js";
@@ -156,6 +158,7 @@ export function mountEditMode(ctx: EditCtx): EditMode {
     }
     loadSource(report.output, false);
     flash(best.title);
+    countEvent({ e: "fix_applied", codes: eventCodes([rows[index]?.code]) });
   }
 
   // Lint-profile switch (B3) — update the caption and re-run the soundness check.
@@ -301,6 +304,14 @@ export function mountEditMode(ctx: EditCtx): EditMode {
     },
     afterCompile(source, diagnostics) {
       lastDiagRows = renderDiagnostics(errorsEl, diagnostics, source);
+      // A plan with an error or a warning here may be sent to improve ArchLang, if the user says so
+      // in the dialog the offer opens (contribute.ts, ruling RM-D87).
+      if (lastDiagRows.length > 0)
+        offerContribution(
+          errorsEl,
+          lastDiagRows.map((d) => d.code),
+          { getSource: currentSource, flash },
+        );
       mobileViews.setProblemCount(lastDiagRows.length);
       // Keep an already-run intent verdict live as the source changes (but don't run it
       // unprompted — an untouched Intent tab stays empty until you ask).

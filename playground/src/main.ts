@@ -121,6 +121,19 @@ const loadActions = (): Promise<Actions> =>
     throw err;
   }));
 
+/**
+ * The page's events (telemetry.ts, ruling RM-D86): its own lazy chunk, loaded by the first event
+ * (a compile, opening the 3D view), never by the view path. It sends nothing under Global Privacy
+ * Control or Do Not Track. A failed load drops that event and is forgotten.
+ */
+type Events = typeof import("./telemetry.js");
+let eventsP: Promise<Events> | undefined;
+function track(send: (events: Events) => void): void {
+  void (eventsP ??= import("./telemetry.js")).then(send, () => {
+    eventsP = undefined;
+  });
+}
+
 const root = document.documentElement;
 const preview = document.getElementById("preview")!;
 const errorsEl = document.getElementById("errors")!;
@@ -221,6 +234,7 @@ for (const tab of tabs) {
     // The phone's switcher presses the view that shows this tab (a `&3d` link, leaving edit mode).
     mobileViews.follow(tab.dataset.tab);
     stageSwitched();
+    if (tab.dataset.tab === "preview3d" && from !== "preview3d") track((t) => t.countEvent({ e: "view_3d" }));
   });
 }
 
@@ -877,6 +891,8 @@ function show(req: CompileRequest, result: CompileResult, knobMoving: boolean, k
   if (takeoff && factsView.classList.contains("active")) void takeoff.then((p) => p?.update(source, activeLevel));
   // The diagnostics drawer, its phone count and a live Intent verdict are edit mode's.
   edit?.afterCompile(source, diagnostics);
+  // Counted once the editor is still (telemetry.ts debounces); a knob mid-drag is not a compile yet.
+  if (!knobMoving) track((t) => t.pageEvents().compiled(ok ? "ok" : "error", diagnostics.map((d) => d.code)));
   clearTimeout(busyTimer);
   if (!ok) {
     const n = errors.length;

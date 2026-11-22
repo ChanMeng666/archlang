@@ -34,6 +34,13 @@ export const SHARE_PER_PERIOD = 30;
 /** The rate period, in seconds: one of the two the binding allows. */
 export const RATE_PERIOD_SECONDS = 60;
 
+/**
+ * The parse-stage and budget refusals that make a payload "not a plan": `POST /api/share` stores no
+ * plan that raises one (worker/app.ts), so the playground offers no contribution of it
+ * (playground/src/contribute.ts).
+ */
+export const NOT_A_PLAN_CODES: readonly string[] = ["E_PARSE", "E_STEP_LIMIT"];
+
 /** A title longer than this is cut, so the KV metadata stays far under its 1024-byte limit. */
 export const TITLE_MAX = 120;
 /** What a plan with no usable name is called on its card. */

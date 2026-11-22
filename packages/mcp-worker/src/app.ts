@@ -16,12 +16,15 @@
  *
  * Nothing logs a body or a source. Each MCP message writes one Analytics Engine data point holding
  * its method and tool name, and each `/check` one holding `check` and its profile name, each from a
- * fixed list; there is no other telemetry and no cookie.
+ * fixed list. A call of a tool whose result carries diagnostics (`RESULT_TOOLS`) writes one more,
+ * after it ran: `result`, the tool, its outcome and the catalogued codes of its diagnostics (card
+ * FW1). There is no other telemetry and no cookie.
  */
 import {
   compile,
   type Diagnostic,
   diagnosticToJson,
+  ERROR_CATALOG,
   inputTooLarge,
   LINT_PROFILE_NAMES,
   lintReport,
@@ -183,6 +186,94 @@ function count(env: Env, messages: unknown[]): void {
     } catch {
       /* telemetry never fails a request */
     }
+  }
+}
+
+// ---------------------------------------------------------------------------
+// telemetry: a diagnosing tool's outcome and codes, from the catalogue, nothing else (card FW1)
+// ---------------------------------------------------------------------------
+
+/**
+ * The tools whose result carries the plan's `diagnostics`: each such call writes one more point,
+ * after the tool has run. `fix`, `finish`, `repair` and `score` return an edited source, a change
+ * log or an intent verdict, not the plan's diagnostics, so they write none.
+ */
+export const RESULT_TOOLS: ReadonlySet<string> = new Set(["compile", "describe", "lint", "validate"]);
+
+/** The most codes one result point holds. */
+export const MAX_RESULT_CODES = 20;
+
+/** How a diagnosing call ended: it ran clean or with warnings, it found an error, or it never ran. */
+export type ResultOutcome = "ok" | "error" | "refused";
+
+/**
+ * The catalogued codes in `diagnostics`: only a string the core's catalogue has (`ERROR_CATALOG`),
+ * each once, sorted, at most {@link MAX_RESULT_CODES}. Anything else in the list is dropped.
+ */
+export function resultCodes(diagnostics: unknown): string[] {
+  if (!Array.isArray(diagnostics)) return [];
+  const kept = new Set<string>();
+  for (const d of diagnostics) {
+    const code = (d as { code?: unknown } | null)?.code;
+    if (typeof code === "string" && Object.hasOwn(ERROR_CATALOG, code)) kept.add(code);
+  }
+  return [...kept].sort().slice(0, MAX_RESULT_CODES);
+}
+
+/**
+ * A JSON-RPC reply to a diagnosing call, read as its outcome and codes: a protocol error, or a
+ * result the SDK marked `isError` (arguments the tool's schema refused), never ran; otherwise the
+ * JSON payload's `ok: false`, or an error-severity diagnostic in it, is an error.
+ */
+export function readResult(reply: unknown): { outcome: ResultOutcome; codes: string[] } {
+  const r = (reply ?? {}) as { error?: unknown; result?: { isError?: unknown; content?: unknown } };
+  if (r.error !== undefined || r.result === undefined) return { outcome: "refused", codes: [] };
+  let payload: { ok?: unknown; diagnostics?: unknown } | undefined;
+  if (Array.isArray(r.result.content)) {
+    const text = r.result.content.find((c) => (c as { type?: unknown })?.type === "text") as
+      | { text?: unknown }
+      | undefined;
+    try {
+      const raw = text?.text;
+      payload = typeof raw === "string" ? JSON.parse(raw) : undefined;
+    } catch {
+      payload = undefined;
+    }
+  }
+  const codes = resultCodes(payload?.diagnostics);
+  if (r.result.isError === true) return { outcome: "refused", codes };
+  const rawDiagnostics: unknown = payload?.diagnostics;
+  const diagnostics: unknown[] = Array.isArray(rawDiagnostics) ? rawDiagnostics : [];
+  const errored =
+    payload?.ok === false || diagnostics.some((d) => (d as { severity?: unknown } | null)?.severity === "error");
+  return { outcome: errored ? "error" : "ok", codes };
+}
+
+/** The diagnosing calls in a body, by their JSON-RPC id (as JSON text), with the tool each names. */
+function diagnosingCalls(messages: unknown[]): Map<string, string> {
+  const calls = new Map<string, string>();
+  for (const m of messages) {
+    const msg = (m ?? {}) as { id?: unknown; method?: unknown; params?: { name?: unknown } };
+    const tool = msg.params?.name;
+    if (msg.method !== "tools/call" || msg.id === undefined || typeof tool !== "string" || !RESULT_TOOLS.has(tool))
+      continue;
+    calls.set(JSON.stringify(msg.id), tool);
+  }
+  return calls;
+}
+
+/** One `result` point per diagnosing call answered in `body`: `[result, tool, outcome, codes]`. */
+function countResults(env: Env, calls: Map<string, string>, body: string): void {
+  try {
+    const parsed: unknown = JSON.parse(body);
+    for (const reply of Array.isArray(parsed) ? parsed : [parsed]) {
+      const tool = calls.get(JSON.stringify((reply as { id?: unknown } | null)?.id));
+      if (tool === undefined) continue;
+      const { outcome, codes } = readResult(reply);
+      env.ANALYTICS?.writeDataPoint({ blobs: ["result", tool, outcome, codes.join(";")], indexes: ["result"] });
+    }
+  } catch {
+    /* telemetry never fails a request */
   }
 }
 
@@ -353,7 +444,9 @@ async function handleMcp(req: Request, env: Env, origin: string, assets: HostedA
     countRefusal(env, "too-large argument");
     return refused;
   }
-  count(env, Array.isArray(parsed) ? parsed : [parsed]);
+  const messages = Array.isArray(parsed) ? parsed : [parsed];
+  count(env, messages);
+  const calls = env.ANALYTICS ? diagnosingCalls(messages) : new Map<string, string>();
 
   const server = createHostedServer(origin, assets);
   const transport = new WebStandardStreamableHTTPServerTransport({
@@ -363,7 +456,14 @@ async function handleMcp(req: Request, env: Env, origin: string, assets: HostedA
   await server.connect(transport);
   try {
     const res = await transport.handleRequest(req, { parsedBody: parsed });
-    return withHeaders(res, { ...CORS, "cache-control": "no-store" });
+    if (calls.size === 0) return withHeaders(res, { ...CORS, "cache-control": "no-store" });
+    // A diagnosing call's reply is read for its outcome and codes; the bytes sent are the same.
+    const text = await res.text();
+    countResults(env, calls, text);
+    return withHeaders(new Response(text, { status: res.status, statusText: res.statusText, headers: res.headers }), {
+      ...CORS,
+      "cache-control": "no-store",
+    });
   } finally {
     void server.close();
   }

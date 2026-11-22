@@ -20,8 +20,12 @@ import {
   KNOWN_TOOLS,
   MAX_ARGUMENT_DEPTH,
   makeWorker,
+  MAX_RESULT_CODES,
   OPENAI_CHALLENGE_PATH,
   oversizeArgument,
+  readResult,
+  RESULT_TOOLS,
+  resultCodes,
   tooDeep,
 } from "../src/app.js";
 import {
@@ -398,8 +402,13 @@ describe("the rate limit: E_RATE_LIMITED as data, before any work", () => {
 describe("telemetry: one data point per MCP message, method and tool name from fixed lists", () => {
   it("records [method, tool] and nothing from the arguments", async () => {
     points.length = 0;
+    await rpc("tools/call", { name: "explain", arguments: { code: "E_ROOM_SIZE" } });
+    expect(points).toEqual([{ blobs: ["tools/call", "explain"], indexes: ["tools/call"] }]);
+    // A diagnosing tool adds its `result` point after it (card FW1, below); the first stays as it was.
+    points.length = 0;
     await rpc("tools/call", { name: "lint", arguments: { source: TINY } });
-    expect(points).toEqual([{ blobs: ["tools/call", "lint"], indexes: ["tools/call"] }]);
+    expect(points[0]).toEqual({ blobs: ["tools/call", "lint"], indexes: ["tools/call"] });
+    expect(points.slice(1).map((p) => p.blobs![0])).toEqual(["result"]);
   });
 
   it("a client-chosen name is bucketed unless it is a real tool or method, however name-shaped", async () => {
@@ -448,6 +457,152 @@ describe("telemetry: one data point per MCP message, method and tool name from f
   it("runs without the bindings (local dev)", async () => {
     const res = await post({ jsonrpc: "2.0", id: 1, method: "tools/list", params: {} }, worker, {});
     expect(res.status).toBe(200);
+  });
+});
+
+describe("telemetry: a diagnosing tool's outcome and catalogued codes (card FW1)", () => {
+  const BROKEN = 'plan "Broken" {\n  room at (0,0) size 4000x3000 label "Room"\n';
+  /** The codes the tool's own diagnostics name: catalogued, deduped, sorted, at most 20. */
+  const expected = (codes: Array<string | undefined>) =>
+    [...new Set(codes.filter((c): c is string => typeof c === "string" && Object.hasOwn(ERROR_CATALOG, c)))]
+      .sort()
+      .slice(0, MAX_RESULT_CODES)
+      .join(";");
+  const resultPoints = () => points.filter((p) => p.blobs?.[0] === "result");
+
+  it("is outside the growth job's filters: blob1 is `result`, never `tools/call` or `refused`", async () => {
+    points.length = 0;
+    await rpc("tools/call", { name: "compile", arguments: { source: TINY } });
+    const [p] = resultPoints();
+    expect(p!.blobs![0]).toBe("result");
+    expect(p!.indexes).toEqual(["result"]);
+    expect(points.filter((q) => q.blobs?.[0] === "tools/call")).toHaveLength(1);
+  });
+
+  it("a compile with an error: outcome `error`, the compile's own codes", async () => {
+    points.length = 0;
+    const result = await rpc("tools/call", { name: "compile", arguments: { source: BROKEN } });
+    const codes = (toolText(result).diagnostics as Array<{ code?: string }>).map((d) => d.code);
+    expect(codes.length).toBeGreaterThan(0);
+    expect(resultPoints()).toEqual([
+      { blobs: ["result", "compile", "error", expected(codes)], indexes: ["result"] },
+    ]);
+    expect(expected(codes)).toBe(expected(compile(BROKEN).diagnostics.map((d) => d.code)));
+  });
+
+  it("each diagnosing tool writes one; every other tool writes none", async () => {
+    for (const tool of ["compile", "describe", "lint", "validate"]) {
+      points.length = 0;
+      await rpc("tools/call", { name: tool, arguments: { source: STUDIO } });
+      const [p, ...more] = resultPoints();
+      expect(more, tool).toEqual([]);
+      expect(p!.blobs!.slice(0, 2), tool).toEqual(["result", tool]);
+      expect(["ok", "error"]).toContain(p!.blobs![2]);
+    }
+    for (const [tool, args] of [
+      ["fix", { source: BROKEN }],
+      ["finish", { source: STUDIO }],
+      ["repair", { source: STUDIO }],
+      ["suggest", { source: STUDIO }],
+      ["explain", { code: "E_PARSE" }],
+    ] as const) {
+      points.length = 0;
+      await rpc("tools/call", { name: tool, arguments: args });
+      expect(resultPoints(), tool).toEqual([]);
+    }
+  });
+
+  it("arguments the schema refuses: outcome `refused`", async () => {
+    points.length = 0;
+    const res = await post({ jsonrpc: "2.0", id: 31, method: "tools/call", params: { name: "lint", arguments: {} } });
+    expect(res.status).toBe(200);
+    expect(resultPoints()).toEqual([{ blobs: ["result", "lint", "refused", ""], indexes: ["result"] }]);
+  });
+
+  it("a batch: one point per diagnosing call, matched by id", async () => {
+    points.length = 0;
+    const res = await post([
+      { jsonrpc: "2.0", id: "a", method: "tools/call", params: { name: "compile", arguments: { source: BROKEN } } },
+      { jsonrpc: "2.0", id: 7, method: "tools/call", params: { name: "explain", arguments: { code: "E_PARSE" } } },
+      { jsonrpc: "2.0", id: 8, method: "tools/call", params: { name: "lint", arguments: { source: TINY } } },
+    ]);
+    expect(res.status).toBe(200);
+    // The replies' order is the transport's; each point is matched to its call by id.
+    expect(
+      resultPoints()
+        .map((p) => p.blobs!.slice(0, 3).join(" "))
+        .sort(),
+    ).toEqual(["result compile error", "result lint ok"]);
+  });
+
+  it("keeps only catalogued codes, once each, sorted, at most 20", () => {
+    expect(resultCodes(undefined)).toEqual([]);
+    expect(resultCodes("E_PARSE")).toEqual([]);
+    const real = Object.keys(ERROR_CATALOG).slice(0, 25);
+    const diagnostics = [
+      { code: "E_NOT_A_CATALOGUE_CODE" },
+      { code: 'plan "Secret" {' },
+      { code: "W_bobs_house" },
+      { code: 42 },
+      null,
+      { message: "no code" },
+      ...[...real].reverse().map((code) => ({ code })),
+      { code: real[0] },
+    ];
+    const kept = resultCodes(diagnostics);
+    expect(kept).toEqual([...real].sort().slice(0, MAX_RESULT_CODES));
+    expect(kept).toHaveLength(MAX_RESULT_CODES);
+    expect(kept).not.toContain("E_NOT_A_CATALOGUE_CODE");
+  });
+
+  it("reads a reply: protocol error and isError are `refused`, ok:false or an error diagnostic is `error`", () => {
+    const text = (payload: unknown) => ({ result: { content: [{ type: "text", text: JSON.stringify(payload) }] } });
+    expect(readResult({ error: { code: -32602 } })).toEqual({ outcome: "refused", codes: [] });
+    expect(readResult({ result: { isError: true, content: [{ type: "text", text: "MCP error" }] } })).toEqual({
+      outcome: "refused",
+      codes: [],
+    });
+    expect(readResult(text({ ok: false, diagnostics: [{ code: "E_PARSE", severity: "error" }] }))).toEqual({
+      outcome: "error",
+      codes: ["E_PARSE"],
+    });
+    expect(readResult(text({ ok: true, diagnostics: [{ code: "E_PARSE", severity: "error" }] })).outcome).toBe("error");
+    expect(readResult(text({ ok: true, diagnostics: [{ code: "W_DOOR_CLEARANCE", severity: "warning" }] }))).toEqual({
+      outcome: "ok",
+      codes: ["W_DOOR_CLEARANCE"],
+    });
+    expect(readResult({ result: { content: [{ type: "text", text: "not json" }] } })).toEqual({ outcome: "ok", codes: [] });
+  });
+
+  it("never alters the reply, and a failing dataset fails nothing", async () => {
+    const call = { jsonrpc: "2.0", id: 40, method: "tools/call", params: { name: "compile", arguments: { source: BROKEN } } };
+    const bare = await post(call, worker, {});
+    const counted = await post(call, worker, env);
+    const throwing = await post(call, worker, {
+      ANALYTICS: {
+        writeDataPoint: () => {
+          throw new Error("dataset down");
+        },
+      },
+    });
+    const body = await bare.text();
+    expect(body.length).toBeGreaterThan(0);
+    for (const res of [counted, throwing]) {
+      expect(res.status).toBe(bare.status);
+      expect(res.headers.get("content-type")).toBe(bare.headers.get("content-type"));
+      expect(await res.text()).toBe(body);
+    }
+  });
+
+  it("holds no plan text, label or id: every blob is a listed word or catalogued codes", async () => {
+    points.length = 0;
+    await rpc("tools/call", { name: "validate", arguments: { source: STUDIO } });
+    for (const p of resultPoints()) {
+      const [, tool, outcome, codes] = p.blobs!;
+      expect(RESULT_TOOLS.has(tool!)).toBe(true);
+      expect(["ok", "error", "refused"]).toContain(outcome);
+      for (const c of codes === "" ? [] : codes!.split(";")) expect(Object.hasOwn(ERROR_CATALOG, c)).toBe(true);
+    }
   });
 });
 

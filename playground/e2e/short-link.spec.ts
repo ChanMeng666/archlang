@@ -4,6 +4,8 @@ import { decodePlanHash } from "../../src/cli/share-codec.mjs";
 import { makeShareWorker } from "../worker/app.js";
 import type { Env, ShareMeta } from "../worker/types.js";
 import {
+  ARC_RADIUS_ERROR_PLAN,
+  BROKEN_PLAN,
   chooseLink,
   enterEdit,
   gotoEdit,
@@ -134,6 +136,70 @@ test.describe("short links", () => {
     // The page's URL less the edit-mode flag: a shared link opens the drawing first.
     expect(copied).toBe(await page.evaluate(() => window.location.href.replace(/&edit$/, "")));
     expect(decodePlanHash(new URL(copied).hash.slice("#z=".length))).toBe(SIMPLE_PLAN);
+  });
+
+  // Ruling RM-D87 (card FW5): the offer under the diagnostics drawer sends nothing until its dialog
+  // is confirmed; then it makes a short link as Copy short link does. Page events (RM-D86) are off
+  // in an automated browser (`navigator.webdriver`), so this page is told it is not one, and the
+  // one `contribute` event is checked too where the engine lets that be said.
+  test("Send this plan to improve ArchLang: nothing until confirmed, then a short link", async ({ page }) => {
+    await page.addInitScript(() => {
+      try {
+        Object.defineProperty(navigator, "webdriver", { get: () => false, configurable: true });
+      } catch {
+        /* the engine keeps it: the event is not checked below */
+      }
+    });
+    const store = await serveShortLinks(page);
+    const events: Array<{ e?: string; id?: string; codes?: string[] }> = [];
+    const shares: string[] = [];
+    page.on("request", (r) => {
+      if (new URL(r.url()).pathname === "/api/share") shares.push(r.method());
+    });
+    await page.route("**/api/event", async (route) => {
+      events.push(JSON.parse(route.request().postData() ?? "null"));
+      await route.fulfill({ status: 204 });
+    });
+    await gotoEdit(page);
+    await setEditorSource(page, ARC_RADIUS_ERROR_PLAN);
+    const offer = page.locator("#errors .contrib-open");
+    await expect(offer).toHaveText("Send this plan to improve ArchLang");
+
+    // Cancel sends nothing.
+    await offer.click();
+    const dialog = page.locator("dialog.contrib-dialog");
+    await expect(dialog).toBeVisible();
+    await expect(dialog).toContainText("full plan text");
+    await expect(dialog).toContainText("anyone with the link can open the plan");
+    await expect(dialog).toContainText("never published");
+    await expect(dialog).toContainText("E_ARC_RADIUS");
+    await dialog.locator(".contrib-cancel").click();
+    await expect(dialog).toHaveCount(0);
+    expect(shares).toEqual([]);
+    expect(store.size).toBe(0);
+
+    // Confirmed: one POST /api/share, the link shown in the dialog.
+    await offer.click();
+    await page.locator("dialog.contrib-dialog .contrib-send").click();
+    const link = page.locator("dialog.contrib-dialog .contrib-link");
+    await expect(link).toHaveValue(/\/s\/[0-9A-Za-z]{8}$/);
+    expect(shares).toEqual(["POST"]);
+    expect(store.size).toBe(1);
+    const id = new URL(await link.inputValue()).pathname.slice("/s/".length);
+    if (await page.evaluate(() => navigator.webdriver === false)) {
+      await expect.poll(() => events.filter((e) => e.e === "contribute")).toEqual([
+        { e: "contribute", id, codes: ["E_ARC_RADIUS"] },
+      ]);
+    }
+    await page.keyboard.press("Escape");
+    await expect(page.locator("dialog.contrib-dialog")).toHaveCount(0);
+  });
+
+  test("a plan that does not parse is offered no contribution (the store would refuse it)", async ({ page }) => {
+    await gotoEdit(page);
+    await setEditorSource(page, BROKEN_PLAN);
+    await expect(page.locator("#errors .diagrow").first()).toBeVisible();
+    await expect(page.locator("#errors .contrib-open")).toHaveCount(0);
   });
 
   test("embed.html#s=<id> draws the stored plan; an unknown id says so", async ({ page }) => {
