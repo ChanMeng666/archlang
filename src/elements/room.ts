@@ -6,7 +6,9 @@
  *  `polygon` form carries its own vertex ring and derives `at`/`size` as the
  *  ring's bounding box, so every rect-shaped consumer still sees a sane extent; the
  *  `circle` form adds an exact centre+radius, a tessellated ring for the grid
- *  layer, and that same derived bounding box. */
+ *  layer, and that same derived bounding box. A `polygon` ring with `arc` edges (card ARC2)
+ *  carries its exact edges beside its tessellation, whose vertices it charges to the step meter
+ *  (one step each) before it builds them. */
 
 import type { ExprPoint, FloorClause, Point, RelAlign, RelDir, RoomNode, UseKind, WallArcNode } from "../ast.js";
 import {

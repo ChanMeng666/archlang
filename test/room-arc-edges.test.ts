@@ -268,8 +268,18 @@ suite("Plan JSON", () => {
     expect(roundTrips(BOWED)).toContain("polygon (0,0) (4000,0) arc (4000,4000) radius 2000 cw (0,4000)");
   });
 
-  it("round-trips the arc living room of the bay bungalow", () => {
-    roundTrips(readFileSync(join(ROOT, "test/floor-unassigned/bay-bungalow-arc-living.arch"), "utf8"));
+  it("round-trips a bay room walled along its curve (the language reference's example)", () => {
+    // Not the whole Bay Bungalow: its `room circle` snug is a known Plan JSON gap (`test/tables/plan-json-gaps.ts`).
+    roundTrips(
+      plan(
+        "  wall id=shell exterior thickness 250 {",
+        "    (0,0) (2400,0) arc (5400,0) radius 1900 cw (5800,0) (5800,6800) (0,6800) close",
+        "  }",
+        '  room id=living polygon (0,0) (2400,0) arc (5400,0) radius 1900 cw (5800,0) (5800,6800) (0,6800) label "Living" uses living',
+        "  door on shell at 12000 width 900",
+        "  window on shell at 4100 width 1600",
+      ),
+    );
   });
 });
 
@@ -301,7 +311,7 @@ suite("refusals", () => {
     expect(ROOM_ARC_FULL_STEP_RADIUS_MM).toBe(46705);
     const big = plan("  room id=t polygon (0,0) arc (100000,0) radius 60000 cw (100000,50000) (0,50000)");
     const d = compile(big).diagnostics.find((x) => x.code === "E_ROOM_ARC_SAG");
-    expect(d?.message).toContain("113.7");
+    expect(d?.message).toContain("stands up to 113.688 mm off the curve");
     expect(d?.hints?.[0]).toContain("46705");
     // A shallow arc of a larger radius steps finer, and stays within it.
     expect(codes(plan("  room id=t polygon (0,0) arc (10000,0) radius 100000 cw (10000,5000) (0,5000)"))).not.toContain(

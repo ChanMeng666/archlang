@@ -90,7 +90,8 @@ export interface TileRoom {
   id: string;
   rect?: TileRect;
   parts?: readonly TileRect[];
-  shape?: "polygon" | "circle";
+  /** Why it has neither: a circle, a polygon with an `arc` edge (card ARC2), or a slanted polygon. */
+  shape?: "polygon" | "circle" | "arc";
   /** A polygon's ring, for the words {@link runPicks} may quote when no rectangle picks a run. */
   ring?: readonly Point[];
 }
@@ -562,7 +563,9 @@ export function sweepRooms(rooms: readonly TileRoom[]): { ok: false; refusals: T
             .map((r) =>
               r.shape === "circle"
                 ? `"${r.id}" is a circle room`
-                : `"${r.id}" is a polygon room with an edge that is neither horizontal nor vertical`,
+                : r.shape === "arc"
+                  ? `"${r.id}" is a polygon room with an arc edge`
+                  : `"${r.id}" is a polygon room with an edge that is neither horizontal nor vertical`,
             )
             .join("; "),
         },
