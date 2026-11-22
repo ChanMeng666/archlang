@@ -4,7 +4,9 @@
  *  - `W_BOUNDARY_NO_WALL` — two rooms meet along an edge with a run longer than a doorway
  *    (`maxBoundaryGapMm`) that no wall, door, cased opening or fixed counter stands on.
  *  - `W_FLOOR_UNASSIGNED` — a closed region of floor the walls enclose (a walled face) that the
- *    rooms cover less than `minFaceCoverRatio` of, by at least `minUnassignedM2`.
+ *    rooms cover less than `minFaceCoverRatio` of, by at least `minUnassignedM2`; or, whatever the
+ *    share, one with a connected piece of empty floor a person could stand in (a circle
+ *    `minStandableMm` across and `minUnassignedM2` of floor in that piece).
  *  - `W_ROOM_OUTSIDE_SHELL` — a room with at least `minOutsideShellM2` of its floor off every
  *    walled face and every wall: outside the building.
  *  - `W_EXTERIOR_RING_OPEN` — exterior walls that should enclose a room and do not, read end by end
@@ -58,7 +60,10 @@ import {
   type ShellEnd,
   WALL_BODY_SLACK_MM,
 } from "../../analyze/open-shell.js";
+import { holdsCircle, type UnassignedPiece, unassignedPieces } from "../../analyze/unassigned-pieces.js";
 import {
+  type FaceCover,
+  type FacePiece,
   type FaceRoom,
   faceCover,
   roomOutside,
@@ -67,6 +72,7 @@ import {
   wallFaces,
 } from "../../analyze/wall-faces.js";
 import type { Diagnostic } from "../../diagnostics.js";
+import { MAX_EVAL_STEPS } from "../../expr.js";
 import { distPointToWallSegment, type WallSegment, wallFaceProbes } from "../../geometry.js";
 import { edgeMid, edgeTangentAt } from "../../geometry/band.js";
 import { type GridBox, overlapIndex } from "../../geometry/grid-index.js";
@@ -642,8 +648,9 @@ function nonRoomCover(ctx: LintContext): FaceRoom[] {
 
 /**
  * `W_FLOOR_UNASSIGNED`: a walled face that rooms (with outdoor surfaces, voids and vertical
- * runs) cover less than `minFaceCoverRatio` of, leaving at least `minUnassignedM2` in no room.
- * A sealed face — no door or cased opening into it and no room on its empty floor — is not
+ * runs) cover less than `minFaceCoverRatio` of, leaving at least `minUnassignedM2` in no room;
+ * or, covered at least that much, one whose empty floor has a piece a person could stand in
+ * ({@link standingRoom}). A sealed face — no door or cased opening into it and no room on its empty floor — is not
  * reported. One warning per face, in the outline's canonical order, on the first room that
  * borders the empty floor (else the first wall round it).
  */
@@ -663,14 +670,32 @@ export const floorUnassigned: LintRule = {
     const found: Array<{ key: [number, number, number]; d: Diagnostic }> = [];
     const extra = nonRoomCover(ctx);
     const cover = [...ctx.rooms, ...extra];
+    // Lint runs after the resolution, where the step meter is off, so the standing-room test
+    // spends the evaluator's budget itself, counted before each step of work (as `outdoor.ts`
+    // does); a face it cannot afford is judged by its cover share alone, and the skip says so.
+    let left = MAX_EVAL_STEPS;
+    let unafforded = false;
+    const admit = (units: number): boolean => {
+      if (units > left) {
+        unafforded = true;
+        return false;
+      }
+      left -= units;
+      return true;
+    };
     for (let fi = 0; fi < wf.faces.length; fi++) {
-      const c = faceCover(wf, fi, cover);
+      const pieces: FacePiece[] = [];
+      const c = faceCover(wf, fi, cover, pieces);
       if (!c) continue;
       const covered = 1 - c.unassigned / c.area;
-      if (covered >= ctx.rules.minFaceCoverRatio - EPS) continue;
       if (c.unassigned / 1_000_000 < ctx.rules.minUnassignedM2 - EPS) continue;
       const bordering = c.bordering.filter((k) => k < ctx.rooms.length).map((k) => ctx.rooms[k]!);
       if (bordering.length === 0 && !faceHasOpening(ctx, wf, fi)) continue;
+      if (covered >= ctx.rules.minFaceCoverRatio - EPS) {
+        const s = standingRoom(ctx, wf, fi, c, pieces, admit);
+        if (s) found.push(s);
+        continue;
+      }
       const walls = wallsRound(ctx, wf, fi);
       const beyond = bordering.length === 0 ? roomsBeyond(ctx, wf, fi) : [];
       const names = (rs: readonly RRoom[]): string => listOf(rs.map((r) => ctx.nameOf(r)));
@@ -714,10 +739,90 @@ export const floorUnassigned: LintRule = {
         },
       });
     }
+    if (unafforded) ctx.skip("enclosure-budget", undefined, "point-tests");
     found.sort((p, q) => p.key[0] - q.key[0] || p.key[1] - q.key[1] || p.key[2] - q.key[2]);
     return found.map((x) => x.d);
   },
 };
+
+/**
+ * `W_FLOOR_UNASSIGNED` for a face the rooms cover at least `minFaceCoverRatio` of: reported
+ * when one connected piece of its empty floor holds a circle `minStandableMm` across and at
+ * least `minUnassignedM2` of floor (`src/analyze/unassigned-pieces.ts`, exact on lines and
+ * arcs). A share is no width: a bay beyond a room's straight edge is a small share of a big
+ * face and still a place to stand, while a strip a room drawn short of its wall leaves is
+ * neither. The largest such piece is the one described; `null` when there is none, or when the
+ * pieces could not be read or afforded.
+ */
+function standingRoom(
+  ctx: LintContext,
+  wf: WallFaces,
+  fi: number,
+  c: FaceCover,
+  pieces: readonly FacePiece[],
+  admit: (units: number) => boolean,
+): { key: [number, number, number]; d: Diagnostic } | null {
+  const all = unassignedPieces(pieces, admit);
+  if (!all) return null;
+  const standable: UnassignedPiece[] = [];
+  for (const p of all) {
+    if (p.area / 1_000_000 < ctx.rules.minUnassignedM2 - EPS) continue;
+    if (holdsCircle(p, ctx.rules.minStandableMm, admit) === true) standable.push(p);
+  }
+  if (standable.length === 0) return null;
+  const piece = standable.reduce((best, p) => (p.area > best.area ? p : best));
+  const rooms = piece.owners.filter((k) => k < ctx.rooms.length).map((k) => ctx.rooms[k]!);
+  const ids = new Set<string>();
+  for (const s of ctx.wallSegs)
+    if (piece.wallMids.some((m) => distPointToWallSegment(m, s) <= s.thickness / 2 + 1)) ids.add(s.wallId);
+  const walls = ctx.ir.walls.filter((w) => ids.has(w.id));
+  const beyond = rooms.length === 0 ? roomsBeyond(ctx, wf, fi) : [];
+  const names = (rs: readonly RRoom[]): string => listOf(rs.map((r) => ctx.nameOf(r)));
+  const along = piece.curvedWall ? "along a curved wall" : "";
+  const where =
+    rooms.length > 0
+      ? ` next to ${names(rooms)}${along ? `, ${along},` : ""}`
+      : beyond.length > 0
+        ? `, behind the walls of ${names(beyond)},`
+        : along
+          ? `, ${along},`
+          : "";
+  const covered = 1 - c.unassigned / c.area;
+  const pct = Math.floor(covered * 1000) / 10;
+  const site = rooms[0] ?? walls[0];
+  const authored = walls.filter((w) => w._idAuthored === true).map((w) => `"${w.id}"`);
+  const idHint = [
+    rooms.length > 0 ? `The rooms are ${rooms.map((r) => `"${r.id}"`).join(", ")}` : "",
+    authored.length > 0 ? `the walls round it are ${authored.join(", ")}` : "",
+  ]
+    .filter(Boolean)
+    .join("; ");
+  const siteKey =
+    rooms.length > 0
+      ? ctx.rooms.indexOf(rooms[0]!)
+      : ctx.rooms.length + (walls[0] ? ctx.ir.walls.indexOf(walls[0]) : ctx.ir.walls.length);
+  const m2 = (a: number): string => fmt2(Math.round(a / 10_000) / 100);
+  const more = standable.length > 1 ? `, the largest of ${standable.length} such pieces` : "";
+  return {
+    key: [siteKey, -Math.round(piece.area), -Math.round(c.area)],
+    // No `rule`, as on the share's report: the warning needs the piece to hold BOTH the circle
+    // (`minStandableMm`) and the floor (`minUnassignedM2`), and either one alone silences it.
+    d: {
+      severity: "warning",
+      code: "W_FLOOR_UNASSIGNED",
+      ...(site ? ctx.at(site) : {}),
+      message: `${m2(piece.area)} m² of walled floor${where} is in no room, in one piece a person could stand in (it holds a circle ${mm(ctx.rules.minStandableMm)} mm across)${more}: the walls there enclose ${m2(c.area)} m² and rooms cover ${fmt2(pct)} % of it. Floor inside the walls that no room claims has no use, no area and no route the plan can check.`,
+      hints: [
+        rooms.length > 0
+          ? `Extend ${listOf(rooms.map((r) => `"${ctx.labelOf(r)}"`))} over it, draw a room on it, or move the walls in to the rooms' edges.`
+          : "Draw a room on it, or move the walls so they enclose only rooms.",
+        "If it is open ground (a courtyard, a light well), draw it as an `outdoor` surface; if it is a shaft, draw its stair or lift.",
+        "Accept it if the floor is a sealed void: then draw it as a `void`, so the plan says so.",
+        ...(idHint ? [`${idHint}.`] : []),
+      ],
+    },
+  };
+}
 
 /**
  * `W_ROOM_OUTSIDE_SHELL`: a room with at least `minOutsideShellM2` of its floor outside the

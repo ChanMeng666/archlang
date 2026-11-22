@@ -181,15 +181,27 @@ export interface LintRuleset {
    * The share of a walled face the rooms must cover before `W_FLOOR_UNASSIGNED` is quiet.
    * Default 0.95, the card's threshold (PS2.4): a plan whose rooms are drawn on the wall
    * centrelines covers its faces completely, so 5 % is room for rooms drawn to a wall's face
-   * or a little short of it, never a strip a person could stand in.
+   * or a little short of it. A share is no width, though: a piece of floor a person could stand
+   * in is reported whatever the share ({@link minStandableMm}).
    */
   minFaceCoverRatio: number;
   /**
    * The least floor (m²) a walled face must leave in no room for `W_FLOOR_UNASSIGNED` to
    * report it, whatever its share. Default 0.5: below it the walls enclose a riser, a duct or
-   * the sliver a room drawn a little short of its wall leaves, not floor anyone forgot.
+   * the sliver a room drawn a little short of its wall leaves, not floor anyone forgot. A
+   * standing-room piece ({@link minStandableMm}) must hold this much on its own.
    */
   minUnassignedM2: number;
+  /**
+   * The diameter (mm) of the circle a connected piece of unassigned floor must hold for
+   * `W_FLOOR_UNASSIGNED` to report its face whatever share of the face the rooms cover: a
+   * place a person could stand (with at least {@link minUnassignedM2} of floor in that one
+   * piece). Default 600, a convention for a standing person's footprint, a circle rather than a
+   * square so that a piece's width does not depend on how the plan is turned. A strip along a
+   * wall narrower than this, a room drawn short of its wall, is never reported by it; a bay
+   * beyond a room's straight edge, an alcove or a corner left empty is.
+   */
+  minStandableMm: number;
   /**
    * The least floor (m²) of a room outside every walled face and wall before
    * `W_ROOM_OUTSIDE_SHELL` reports it. Default 0.1: a 100 mm strip a metre long. A room drawn
@@ -499,6 +511,7 @@ export const DEFAULT_RULESET: LintRuleset = {
   maxBoundaryGapMm: 900,
   minFaceCoverRatio: 0.95,
   minUnassignedM2: 0.5,
+  minStandableMm: 600,
   minOutsideShellM2: 0.1,
   minRoomAreaByUseM2: Object.freeze({
     wc: 1.1,

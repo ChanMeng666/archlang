@@ -427,6 +427,17 @@ export interface BoundaryPiece {
   side: 1 | -1;
   /** The piece's length (mm), closed form: a line by its two ends, an arc by `r · |sweep| · Δt`. */
   length: number;
+  /** Where the piece starts and ends along its curve (parameters, `t0 < t1`). */
+  t0: number;
+  t1: number;
+  /** The piece's two ends, the split points themselves (at `t0` and `t1`). */
+  p0: Point;
+  p1: Point;
+  /**
+   * What the piece adds to the measured area: `½∫(x dy − y dx)` about the measurement's origin,
+   * walked with `S` on its `+n` side. Summed round a closed loop of pieces, the loop's signed area.
+   */
+  signed: number;
 }
 
 /**
@@ -500,7 +511,7 @@ export function regionBoundary(
       if (onPiece) {
         const length =
           c.t === "line" ? Math.hypot(p1.x - p0.x, p1.y - p0.y) : Math.abs(c.arc.r * c.arc.sweep * (t1 - t0));
-        onPiece({ curve: i, mid: m, side: plus ? 1 : -1, length });
+        onPiece({ curve: i, mid: m, side: plus ? 1 : -1, length, t0, t1, p0, p1, signed: plus ? v : -v });
       }
     }
   });

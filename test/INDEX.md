@@ -5,7 +5,7 @@
 Where the tests of a `src` module are, and what each test file is for. Generated; `npm run check:drift`
 fails when it is stale. How to add a test: `docs/testing.md` § 4.
 
-572 test files in `test/`, 302 `src` modules, 112 modules no test imports.
+573 test files in `test/`, 303 `src` modules, 113 modules no test imports.
 
 ## `src` module → tests that import it
 
@@ -127,7 +127,7 @@ Nearest first, then by name; `(+n)` is the rest. Test names are `test/<name>.tes
 - `src/impact.ts` (2) — `rectilinear-doors`, `rectilinear-rooms`
 - `src/import.ts` (37) — `af9-byte-identity`, `af9-fixes`, `block-stair-byte-identity`, `corner-window-byte-identity`, `dim-swap-reprint`, `dim-thickness-callout`, `drawing-budget`, `error-value-law` (+29)
 - `src/import/limits.ts` (1) — `openplan3d-malformed`
-- `src/index.ts` (429) — `acc-metadata`, `access-graph`, `access-policy`, `accessible-svg`, `af9-byte-identity`, `af9-fixes`, `agent-gallery`, `alias-match` (+421)
+- `src/index.ts` (430) — `acc-metadata`, `access-graph`, `access-policy`, `accessible-svg`, `af9-byte-identity`, `af9-fixes`, `agent-gallery`, `alias-match` (+422)
 - `src/input-limit.ts` (2) — `import-rooted`, `workspace-seams`
 - `src/intent-concepts.ts` (3) — `vocabulary-es-pt`, `vocabulary-living-dining`, `vocabulary-matcher-oracle`
 - `src/intent-feasibility.ts` (1) — `intent-infeasible`
@@ -155,7 +155,7 @@ Nearest first, then by name; `(+n)` is the rest. Test names are `test/<name>.tes
 - `src/lint/rules/per-room.ts` (2) — `fixture-classifier-drift`, `lint-fix-texts`
 - `src/lint/rules/room-contents.ts` (2) — `lint-label-piece-missing`, `lint-table-no-seat`
 - `src/lint/rules/stairs.ts` (7) — `block-stair-landing`, `block-stair-lint`, `block-stair-winders-walking-arc`, `lint-stair-no-void`, `lint-stair-riser-too-high`, `lint-stairs`, `repair-no-worse`
-- `src/lint/ruleset.ts` (17) — `block-stair-landing`, `block-stair-lint`, `block-stair-shaft`, `block-stair`, `circle-enclosure`, `lint-clearances-kitchen-doors`, `lint-clearances-wc-window`, `lint-exterior-ring` (+9)
+- `src/lint/ruleset.ts` (18) — `block-stair-landing`, `block-stair-lint`, `block-stair-shaft`, `block-stair`, `circle-enclosure`, `lint-clearances-kitchen-doors`, `lint-clearances-wc-window`, `lint-exterior-ring` (+10)
 - `src/lint/storeys.ts` (49) — `block-stair-landing`, `block-stair-lint`, `block-stair-shaft`, `block-stair`, `lint-index-superset`, `lint-stair-no-void`, `lint-table-no-seat`, `block-stair-frames` (+41)
 - `src/lsp.ts` (2) — `block-stair-lint`, `lsp-codeactions`
 - `src/manifest.ts` (9) — `cli-context`, `cli-manifest`, `cli-storey-names`, `context-starter`, `describe-depends`, `docs-flags`, `llms-full-drift`, `site-doors` (+1)
@@ -529,6 +529,7 @@ The first sentence of each file's header comment.
 - `test/lint-exterior-ring.test.ts` — `W_EXTERIOR_RING_OPEN` (issues #346 and #370): exterior walls that should enclose a room and do not, read end by end (`src/analyze/open-shell.ts`), so a ring closing elsewhere hides nothing.
 - `test/lint-file-provenance.test.ts` — Lint-raised fixes must carry the FILE their spans are measured in.
 - `test/lint-fix-texts.test.ts` — W_ROOM_NO_FIXTURE — the hint's statement compiles, clears it, and raises nothing new; W_FIXTURE_BACK_TO_ROOM — the size's aspect decides the wall; the hint swap…
+- `test/lint-floor-unassigned-standable.test.ts` — W_FLOOR_UNASSIGNED by standing room: a connected piece of empty floor that holds a 600 mm circle and 0.5 m² is reported whatever the face's cover share (ARC3).
 - `test/lint-furniture-on-stair.test.ts` — Issue #364, part 1 (`W_FURNITURE_ON_STAIR`, G9): a piece on a flight's footprint or on a landing the flight owes, and `finish`'s furnish stage keeping off both.
 - `test/lint-furniture-on-void.test.ts` — CR2 group D: `W_FURNITURE_ON_VOID`, a piece standing on a void, a lift shaft or an escalator of its own storey, and `finish` keeping a single-storey plan's pieces off a void (it used to read voids only on a plan of `l...
 - `test/lint-hint-paste.test.ts` — A quoted fixture hint never warns when pasted (plan-soundness PS2.17, PR #216 review rounds 2 and 3).
@@ -795,6 +796,7 @@ module); adding a test that imports it removes it from this list.
 - `src/analyze/rooms.ts`
 - `src/analyze/syntax.ts`
 - `src/analyze/takeoff.ts`
+- `src/analyze/unassigned-pieces.ts`
 - `src/backends/error-svg-public.ts`
 - `src/backends/png-defaults.ts`
 - `src/builtins.ts`
