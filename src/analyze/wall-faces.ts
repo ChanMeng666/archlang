@@ -441,10 +441,28 @@ export interface FaceCover {
 }
 
 /**
- * How much of face `fi` no room covers, and which rooms border what is left — or `null`
- * when the face is not measured (too many curves, or a figure out of range).
+ * One piece of the boundary of a face's unassigned floor, as {@link faceCover} walked it: the
+ * piece, the curve it lies on, and whose edge that curve is (an index into the `rooms` given, or
+ * `-1` for the face's own walls).
  */
-export function faceCover(wf: WallFaces, fi: number, rooms: readonly FaceRoom[]): FaceCover | null {
+export interface FacePiece {
+  piece: BoundaryPiece;
+  curve: Curve;
+  owner: number;
+}
+
+/**
+ * How much of face `fi` no room covers, and which rooms border what is left — or `null`
+ * when the face is not measured (too many curves, or a figure out of range). `pieces`, when
+ * given, receives every piece of the unassigned floor's boundary the measurement counted
+ * (`src/analyze/unassigned-pieces.ts` reads them); the figures are the same either way.
+ */
+export function faceCover(
+  wf: WallFaces,
+  fi: number,
+  rooms: readonly FaceRoom[],
+  pieces?: FacePiece[],
+): FaceCover | null {
   const f = wf.faces[fi]!;
   if (!(f.area > 0)) return null;
   const regions: Array<{ k: number; reg: RoomRegion }> = [];
@@ -469,6 +487,7 @@ export function faceCover(wf: WallFaces, fi: number, rooms: readonly FaceRoom[])
     (piece: BoundaryPiece) => {
       const k = owner[piece.curve]!;
       if (k >= 0) bordering.add(k);
+      pieces?.push({ piece, curve: curves[piece.curve]!, owner: k });
     },
   );
   const eps = 1e-9 * f.area + 1e-3;

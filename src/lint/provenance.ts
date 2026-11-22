@@ -176,6 +176,9 @@ const DEFAULTS: Readonly<Record<string, RuleProvenance>> = /* @__PURE__ */ pure(
   maxBoundaryGapMm: CONVENTION,
   minFaceCoverRatio: CONVENTION,
   minUnassignedM2: CONVENTION,
+  minStandableMm: conv(
+    "A standing person's footprint as a circle 600 mm across; ArchLang's own figure, read from no source.",
+  ),
   minOutsideShellM2: CONVENTION,
   "minRoomAreaByUseM2.wc": gb50096("5.4.2 item 5"),
   "minRoomAreaByUseM2.bath": gb50096("5.4.2 items 2 and 3"),

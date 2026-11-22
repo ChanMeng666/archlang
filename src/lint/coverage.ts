@@ -136,7 +136,11 @@ export type LintSkipReason =
   | "net-area-cap"
   /** A net-area ruleset judged the room on its drawn area: the storey's net-area total was spent on
    *  the rooms before it (`MAX_NET_PLAN_WORK`, `src/analyze/net-area-memo.ts`, U.22). */
-  | "net-area-budget";
+  | "net-area-budget"
+  /** The empty floor of a walled face did not chain into closed regions
+   *  (`src/analyze/unassigned-pieces.ts`), so `W_FLOOR_UNASSIGNED` judged that face by the share
+   *  the rooms cover alone, not by whether a person could stand in a piece of it (ARC3). */
+  | "enclosure-pieces";
 
 /** What each family checks, as the human coverage line names it. */
 export const FAMILY_NOUN: Readonly<Record<LintFamily, string>> = {
@@ -190,6 +194,8 @@ export const SKIP_WHY: Readonly<Record<LintSkipReason, string>> = {
     "some ground surfaces and rooms have too many vertices to compare, so those surfaces are not judged",
   "net-area-cap": "the room's net area could not be measured, so its drawn area was read",
   "net-area-budget": "the storey's net-area work was spent on the rooms before it, so its drawn area was read",
+  "enclosure-pieces":
+    "the empty floor of a walled region could not be split into pieces, so only the share the rooms cover was judged",
 };
 
 /**

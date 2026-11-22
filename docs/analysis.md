@@ -1311,7 +1311,9 @@ rooms share an edge and more than a doorway's width of it (900 mm) has no wall, 
 opening or fixed counter on it; two rooms that are each kitchen, dining or living are an
 open-plan pair and are exempt. `W_FLOOR_UNASSIGNED` fires when a closed region of floor the
 walls enclose is less than 95 % covered by rooms (an `outdoor` surface, a `void` or a stair
-also counts as cover), and names the rooms beside the empty floor. A walled pocket with no
+also counts as cover), or, whatever the share, when one connected piece of the empty floor holds
+a circle 600 mm across and 0.5 m² of floor, so a person could stand in it (a bay beyond a room's
+straight edge, an alcove); it names the rooms beside the empty floor. A walled pocket with no
 door or window into it and no room on it, such as a duct, is not reported. A wall counts as
 the boundary between two rooms when its body stands on their shared edge, not merely near
 it. `W_ROOM_OUTSIDE_SHELL` fires when part of a room lies outside every wall, and only for a

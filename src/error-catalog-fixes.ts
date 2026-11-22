@@ -127,7 +127,7 @@ export const CATALOG_FIXES: Readonly<Record<string, string>> = {
   E_ROOM_POLY_SELF_INTERSECT: "Reorder the vertices so the ring is traced once around the room without crossing itself (a bow-tie usually means two vertices are swapped).",
   E_ROOM_RADIUS: "Give the room a positive radius in millimetres.",
   E_ROOM_SIZE: "Give the room a positive `size W x H`.",
-  E_RULESET_VALUE: "Pass a finite number within the range, or leave the key out to keep its default; `null` turns off a rule whose field allows it.",
+  E_RULESET_VALUE: "Pass a finite number within the range (above 0 for `minStandableMm`), or leave the key out to keep its default; `null` turns off a rule whose field allows it.",
   E_RUN_TOO_LONG: "Check the footprint's long side; a real run is a few metres. Model a long concourse as a `room` with several runs in it.",
   E_SECTION_AXIS: "Give the two ends the same `x` (a vertical cut) or the same `y` (a horizontal one), at the length the cut should run.",
   E_SECTION_DUP: "Rename one of the two marks, or delete the repeated line.",
