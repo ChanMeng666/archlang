@@ -10,7 +10,7 @@
  */
 
 import { sha256 } from "./digest.js";
-import { type LawApi, lawDigest } from "./rectilinear-rooms-law.js";
+import { type LawApi, lawDigest } from "./law-digest.js";
 import type { Scene } from "../../src/scene.js";
 
 /** What the law reads beyond {@link LawApi}, handed in so an older tree can be measured. */

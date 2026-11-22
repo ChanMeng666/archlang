@@ -14,7 +14,7 @@
 import type { ChromeHide, Point, TitleNode } from "./ast.js";
 import type { Bounds } from "./geometry.js";
 import type { BBox } from "./geometry/rect.js";
-import { primBBox } from "./label-placement.js";
+import { curvedOpeningInk, primBBox } from "./label-placement.js";
 import type { SceneNode } from "./scene.js";
 import type { LegendEntry, RoomSchedule, SheetTables } from "./sheet-tables.js";
 import { layoutSheetTables, tableRowsHeight, translateSheetTables } from "./sheet-tables.js";
@@ -570,7 +570,14 @@ export function northArrowBox(input: NorthPlacementInput): { north: NorthArrowBo
   const clearOf = (box: BBox, layers: readonly SceneNode["layer"][] | null): boolean => {
     for (const n of nodes) {
       if (layers && !layers.includes(n.layer)) continue;
-      if (primInkInside(n.prim, box)) return false;
+      // An opening on a curve (`curvedOpeningInk`): its lines tested as strokes, chord by chord, its
+      // cover and sill piece by piece.
+      const curved = curvedOpeningInk(n);
+      const inside = curved
+        ? curved.strokes.some((c) => primInkInside({ t: "line", a: c.a, b: c.b }, box)) ||
+          curved.boxes.some((b) => rectsOverlap(b, box))
+        : primInkInside(n.prim, box);
+      if (inside) return false;
     }
     return true;
   };

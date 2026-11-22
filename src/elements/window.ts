@@ -352,7 +352,8 @@ function arcHost(wn: RWindow): Arc | null {
  * every line along the wall a concentric arc about the wall's centre and every jamb radial, on the
  * cut's own jambs ({@link arcOpeningSpan}). A line `off` across the wall along `n` (the normal
  * `render` reads, toward the centre on a clockwise arc) lies on radius `r − dir·off`, so the two
- * face arcs are the cut's two faces exactly. The sill's horns run along the arc, measured on the
+ * face arcs are the cut's two faces exactly. The sill (a polygon, as on a straight wall) follows
+ * the arc, its horns measured along it on the
  * centreline as the width is.
  */
 function renderOnArc(wn: RWindow, arc: Arc, out: Point | null, n: Point, ctx: RenderCtx): SceneNode[] {
@@ -383,14 +384,33 @@ function renderOnArc(wn: RWindow, arc: Arc, out: Point | null, n: Point, ctx: Re
   if (out) {
     const side = out.x * n.x + out.y * n.y > 0 ? 1 : -1;
     const sill = withHalf(span, Math.min(Math.PI, span.half + (SILL_HORN * t) / arc.r));
+    // A POLYGON, as a straight window's sill is (the 3D package finds a window's drawn sill as the
+    // one unfilled window-layer polygon and reads its outside off it), its two long sides the arcs
+    // sampled alike ({@link sillArc}).
+    const face = sillArc(sill, rOf(side * h));
+    const nose = sillArc(sill, rOf(side * (h + SILL_PROJECTION * t)));
     nodes.push({
       layer: "windows",
-      prim: { t: "path", loops: [spanSectorLoop(sill, rOf(side * h), rOf(side * (h + SILL_PROJECTION * t)))] },
+      prim: { t: "polygon", pts: [face[0]!, ...nose, ...face.slice(1).reverse()] },
       paint: { fill: "none", stroke: theme.wallStroke, width: sizes.thin },
     });
   }
   if (wn.windowKind) nodes.push(...kindMarksOnArc(wn, span, rOf, t, strokes, theme, sizes));
   return nodes;
+}
+
+/** Degrees between a curved sill's corners: a chord of at most 2.5° stands under a millimetre off a
+ *  3 m arc, finer than any pen the sheet draws it with. */
+const SILL_ARC_STEP_DEG = 2.5;
+
+/** A curved sill's side at radius `r` across `span`: its jamb ends, from the jamb angles, and an
+ *  evenly spaced corner every {@link SILL_ARC_STEP_DEG} at most between them (at least eight chords). */
+function sillArc(span: ArcOpeningSpan, r: number): Point[] {
+  const n = Math.max(8, Math.ceil((2 * span.half * 180) / Math.PI / SILL_ARC_STEP_DEG - 1e-9));
+  const out: Point[] = [polarPoint(span.center, span.th0, r)];
+  for (let i = 1; i < n; i++) out.push(polarPoint(span.center, span.th0 + (span.dir * 2 * span.half * i) / n, r));
+  out.push(polarPoint(span.center, span.th1, r));
+  return out;
 }
 
 /** `span` about the same centre angle with half-angle `half`. */

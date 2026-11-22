@@ -72,7 +72,7 @@ import {
 import { connectorConnection, EXTERIOR_NODE } from "./analyze/connectors.js";
 import { DEFAULT_TOL, pointInRoomBox, type RoomBox, roomBox } from "./analyze/rooms.js";
 import { textWidth } from "./text-metrics.js";
-import { primBBox } from "./label-placement.js";
+import { curvedOpeningInk, primBBox } from "./label-placement.js";
 import { ROOF_LAYER } from "./elements/roof.js";
 import { OUTDOOR_LAYERS } from "./elements/outdoor.js";
 import { SILL_PROJECTION } from "./elements/window.js";
@@ -525,6 +525,28 @@ export function openingTagNodes(
     if (n.layer === "annotations") continue;
     if (n.layerName === ROOF_LAYER) continue;
     if (n.layerName !== undefined && OUTDOOR_LAYERS.includes(n.layerName)) continue;
+    // An opening on a curve (`curvedOpeningInk`): its lines are strokes chord by chord, as a
+    // `line` is, its cover and sill boxed piece by piece.
+    const curved = curvedOpeningInk(n);
+    if (curved) {
+      for (const c of curved.strokes) {
+        const l = bandObstacle(c.a, c.b, (n.paint.width ?? 0) / 2);
+        if (l) grid.add(l);
+      }
+      for (const b of curved.boxes) {
+        grid.add({
+          at: { x: b.x, y: b.y },
+          dir: { x: 1, y: 0 },
+          n: { x: 0, y: 1 },
+          lo: 0,
+          hi: b.w,
+          plus: b.h,
+          minus: 0,
+          seen: 0,
+        });
+      }
+      continue;
+    }
     if (n.prim.t === "line") {
       // A line is its stroke, not its box: a dimension or an axis line crosses a whole room.
       const l = bandObstacle(n.prim.a, n.prim.b, (n.paint.width ?? 0) / 2);

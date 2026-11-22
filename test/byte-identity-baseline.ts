@@ -2090,30 +2090,32 @@
  * re-taken by its generator. `describe()`, `lint()`, the diagnostics, the steps and the work counts
  * are in those payloads and did not move.
  *
- * ## ARC-W1: a door, window or opening on an arc is drawn on the curve — SVG only, every such plan
+ * ## ARC-W1: a door, window or opening on an arc is drawn on the curve — opening ink only
  *
  * A window on an `arc` segment was drawn straight along the tangent at its centre; it is now drawn
  * with concentric arcs and radial jambs on the joinery's own cut (`arcOpeningSpan`,
- * `src/geometry/arc.ts`), a hinged or `double` door's leaves hang on the cut's jambs, and a door's or
- * cased opening's (unpainted) cover is the cut's annular sector. `npm run digest:preview` on the branch
- * (main `a0f85ebf`) moved 125 rows in 28 files (27 distinct digests) and `keep`'s weak-law table 9
- * rows, over exactly the plans with an opening on an arc: `examples/` `aquarium`, `hexagon-pavilion`,
- * `hillside-villa`, `library`; the `inline:window-placed-and-curved` row of the window-kinds law; and
- * (K1 only) the four `test/defect-corpus/annotation-collisions/radius-over-*` plans and
- * `test/plans/plan-soundness/repro/gallery-bench-pinch.arch`. The swap-back: the branch's `compile()`
- * with `main`'s drawing put back (every page's SVG and Scene, and the overlay SVG, from `main`'s
- * compiler; `describe()`, `lint()`, the diagnostics and the steps the branch's own) reproduces all 27
- * old digests through the tests' own bodies, and the branch's own drawing does not. A per-payload
- * sweep of the whole corpus (1,117 plans) moved only SVG, DXF and ASCII, on the same 13 plans;
- * `describe()`, `lint()` (default and `accessibility-advisory`), `compile().diagnostics`, `validate
- * --json` and `impact --json` did not move. Each row was then re-pinned to the branch's digest, and
- * the K1 table re-taken by its generator.
+ * `src/geometry/arc.ts`), a hinged or `double` door's leaves are DRAWN hung on the cut's jambs (the
+ * model's swing, `doorSwing`, is unchanged), and a door's or cased opening's (unpainted) cover is the
+ * cut's annular sector. No annotation reads a curve by its centre (`curvedOpeningInk`), so no label,
+ * tag or leader moves. `npm run digest:preview` on the branch (main `a0f85ebf`) moved 125 rows in 28
+ * files (27 distinct digests) and `keep`'s weak-law table 9 rows, over exactly the plans with an
+ * opening on an arc: `examples/` `aquarium`, `hexagon-pavilion`, `hillside-villa`, `library`; the
+ * `inline:window-placed-and-curved` row of the window-kinds law; and (K1 only) the four
+ * `test/defect-corpus/annotation-collisions/radius-over-*` plans and
+ * `test/plans/plan-soundness/repro/gallery-bench-pinch.arch`. The swap-back, element by element: the
+ * branch's own compile, with ONLY `main`'s window, door and opening nodes put back into its Scene (every
+ * other node the branch's own, each equal to `main`'s) and drawn by the branch's own renderer,
+ * reproduces all 27 old digests through the tests' own bodies; the branch's own opening ink does not.
+ * A per-payload sweep of the corpus moved `describe()`, `lint()` (default and
+ * `accessibility-advisory`) and `compile().diagnostics` on no plan but the `E_DOOR_KIND_CURVED`
+ * example fence of `docs/error-codes.md` (its hint reworded), which no digest pins. Each row was then
+ * re-pinned to the branch's digest, and the K1 table re-taken by its generator.
  */
 
 /** SHA-256 over every storey's SVG + `describe()` + `lint()`, measured on `f4548db`. */
 export const BASELINE: [string, string][] = [
   ["accessible", "697c11114da0d8d3b16dda0bac1e2492d550b797add8a3fe8799729a4e0b0a4f"],
-  ["aquarium", "aa9e2bb5e778ae6b271cd0af2f48e1650cc5329ac26b0da712ec5be0814f8cdc"], // re-measured for PS2.4, see header; PS2.10 dims fixed, see header; PS2.11e, see header; ARC-W1, see header
+  ["aquarium", "b5a683e85fdbd772f7e410bca1e925d0599cc5bdec447ee9cbb0209245d1216e"], // re-measured for PS2.4, see header; PS2.10 dims fixed, see header; PS2.11e, see header; ARC-W1, see header
   ["attached", "ab37b9000bd5ca7cf5f6940241f6b6945e338b207756773a2a9712a525100d72"],
   ["bungalow", "4fd27a7c5a0e9471f433b0fde903479a0863ee5fdcd0443906033ebea65a2496"], // PS2.11e, see header; CV13 (was ee5c6944): example source edited (chairs added)
   ["classroom-block", "825ebce1e06d54b6927539f698c96a961bebc8785891ccb99038a83e103c91fd"], // SR.15 (was aabc5d76); added with the example, re-measured for net area, see header; PS2.11e, see header

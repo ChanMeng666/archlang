@@ -105,7 +105,7 @@ const BASELINE: [string, string, string][] = [
     "examples/accessible.arch",
   ],
   [
-    "a5253e454b307c87f22f8e47e6f785db8bb880885b8d47561f2d808d1016e918",
+    "332cc2fa6c186f6570ba939aacd193049d766845710bfe476476e78410f5a0c0",
     // AF9: the parse holds the `posSpan` and `wallSpan` an opening's lead now records (no semantics); without them it is the parse pinned here (was 295d276e)
     "8ed143c564a6a56e077dd4ca1ba3e87bc0e9164525b125e3d0e0950f884db2cd",
     "examples/aquarium.arch",

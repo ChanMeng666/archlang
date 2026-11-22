@@ -154,6 +154,7 @@ import {
   W_DISTANCE,
   WRAP_TRIES,
   wallBands,
+  curvedOpeningInk,
 } from "./label-placement.js";
 import type { RenderSizes, SceneNode, ScenePrim } from "./scene.js";
 import {
@@ -427,6 +428,12 @@ function marksOf(
   }
   for (let i = 0; i < nodes.length; i++) {
     if (measured[i] || underLabels(nodes[i]!)) continue;
+    // An opening on a curve: its lines are strokes (no box), its cover and sill boxed piece by piece.
+    const curved = curvedOpeningInk(nodes[i]!);
+    if (curved) {
+      for (const b of curved.boxes) marks.push(mark("text", b));
+      continue;
+    }
     const b = primBBox(nodes[i]!.prim);
     if (b) marks.push(mark("text", b));
   }

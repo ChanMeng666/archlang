@@ -6,7 +6,10 @@
  * so its jambs stood off the curve by about `hw² / 2R` (170 mm for a 1600 mm window on a 1900 mm
  * bay, more than half the 250 mm wall) and a door's leaf hung off the jamb by the same. Now every
  * line along the wall is a concentric arc, every jamb radial and on the joinery's own cut
- * (`arcOpeningSpan`, the span `openingCut` severs), and a door's leaf is hinged on a jamb of the cut.
+ * (`arcOpeningSpan`, the span `openingCut` severs), and a door's leaf is DRAWN hinged on a jamb of the
+ * cut. Drawing only: the model's swing (`doorSwing`/`doorLeaves`, read by lint, the symmetry facts and
+ * the 3D package) is still the tangent construction, and no annotation reads a curve by its centre
+ * (`curvedOpeningInk`), so no label, tag or leader moves.
  *
  * The straight-host rows are {@link arcOpeningsLawDigest} (`test/helpers/arc-openings-law.ts`),
  * **measured against `src/` at `a0f85ebf`** (`main` before the change), that tree extracted by
@@ -29,7 +32,7 @@ import { link } from "../src/import.js";
 import { parse } from "../src/parser.js";
 import { BUILTIN_REGISTRY } from "../src/registry.js";
 import { NULL_WORLD } from "../src/world.js";
-import { isDoubleDoorPair } from "../src/geometry.js";
+import { segmentDirAt } from "../src/geometry.js";
 import { openingCut, PointInterner } from "../src/geometry/band.js";
 import { type Arc, arcExtremes, arcFromPrimitive } from "../src/geometry/arc.js";
 import { windowEl } from "../src/elements/window.js";
@@ -221,16 +224,34 @@ suite("a window on a curve stands on the arc", () => {
   it("the sill stands on the exterior face, along the arc", () => {
     const { w, arc, nodes } = windowCase(WINDOW_CASES[1]![1]);
     const t = w.host!.thickness;
-    const sill = nodes.find((n) => n.prim.t === "path" && n.paint.stroke !== undefined);
+    // A polygon with no fill, as a straight window's sill is: the 3D package finds the drawn sill so.
+    const sill = nodes.find((n) => n.prim.t === "polygon" && n.paint.fill === "none");
     expect(sill).toBeDefined();
-    // The room is inside the drum, so the sill is outside: from the outer face outward.
-    const radii = arcsOf(sill!).map((a) => a.r);
+    if (sill?.prim.t !== "polygon") return;
+    // The room is inside the drum, so the sill is outside: from the outer face outward, every
+    // corner on one of the two arcs.
+    const radii = sill.prim.pts.map((p) => dist(p, arc.center));
+    expect(sill.prim.pts.length).toBeGreaterThan(4);
     expect(Math.min(...radii)).toBeCloseTo(arc.r + t / 2, 9);
     expect(Math.max(...radii)).toBeCloseTo(arc.r + t / 2 + 0.2 * t, 9);
+    for (const r of radii)
+      expect(Math.min(Math.abs(r - (arc.r + t / 2)), Math.abs(r - (arc.r + 0.7 * t)))).toBeLessThan(1e-6);
+  });
+
+  it("no annotation reads a window's curve by its centre: the room's name stays on its anchor", () => {
+    // The drum's own name sits at its centre; a 7000 mm window bulges round half the drum, and its
+    // lines' arcs are centred on the label. Read as strokes and pieces (`curvedOpeningInk`), they
+    // leave the name where a plan with no window puts it.
+    const at = (src: string) =>
+      compile(src, { noCache: true })
+        .scene!.nodes.filter((n) => n.prim.t === "text")
+        .map((n) => JSON.stringify(n.prim));
+    expect(at(drum("  window id=w on drum at 80% width 7000"))).toEqual(at(drum("")));
+    expect(at(drum("  window id=w sliding on drum at 22% width 1600", " cw"))).toEqual(at(drum("", " cw")));
   });
 });
 
-suite("a door on a curve hangs on the cut's jambs", () => {
+suite("a door on a curve is DRAWN hanging on the cut's jambs; its model swing is unchanged", () => {
   const cutJambs = (src: string, id: string): { door: RDoor; mids: Point[]; arc: Arc } => {
     const els = resolvePlan(src).ir!.elements;
     const door = els.find((e): e is RDoor => e.kind === "door" && e.id === id)!;
@@ -239,29 +260,59 @@ suite("a door on a curve hangs on the cut's jambs", () => {
     const mids = cut.flatMap((e) => (e.t === "line" ? [{ x: (e.a.x + e.b.x) / 2, y: (e.a.y + e.b.y) / 2 }] : []));
     return { door, mids, arc: door.host!.arc! };
   };
-  const SRC = drum(
-    "  door id=d1 on drum at 10% width 1000 swing in\n  door id=d2 on drum at 35% width 900 hinge right swing out\n  door id=d3 double on drum at 70% width 1600",
-  );
+  /** The drawn swings: each `arc` on the doors layer, centred on its hinge, from the leaf's tip to the far jamb. */
+  const drawnSwings = (src: string) =>
+    compile(src, { noCache: true })
+      .scene!.nodes.filter((n) => n.layer === "doors" && n.prim.t === "arc")
+      .map((n) => n.prim as Extract<SceneNode["prim"], { t: "arc" }>);
+  const CASES: ReadonlyArray<readonly [string, string]> = [
+    ["d1", drum("  door id=d1 on drum at 10% width 1000 swing in")],
+    ["d2", drum("  door id=d2 on drum at 35% width 900 hinge right swing out")],
+  ];
 
-  for (const id of ["d1", "d2"]) {
-    it(`hinged ${id}: the hinge is a jamb of the cut, on the centreline R`, () => {
-      const { door, mids, arc } = cutJambs(SRC, id);
-      const [leaf] = doorLeaves(door);
-      expect(Math.abs(dist(leaf!.hinge, arc.center) - arc.r)).toBeLessThan(EPS);
-      expect(Math.abs(dist(leaf!.farJamb, arc.center) - arc.r)).toBeLessThan(EPS);
-      expect(Math.min(...mids.map((m) => dist(m, leaf!.hinge)))).toBeLessThan(EPS);
-      expect(Math.min(...mids.map((m) => dist(m, leaf!.farJamb)))).toBeLessThan(EPS);
+  for (const [id, src] of CASES) {
+    it(`hinged ${id}: the drawn hinge is a jamb of the cut, on the centreline R`, () => {
+      const { mids, arc } = cutJambs(src, id);
+      const [swing] = drawnSwings(src);
+      expect(Math.abs(dist(swing!.center, arc.center) - arc.r)).toBeLessThan(EPS);
+      expect(Math.abs(dist(swing!.end, arc.center) - arc.r)).toBeLessThan(EPS);
+      expect(Math.min(...mids.map((m) => dist(m, swing!.center)))).toBeLessThan(EPS);
+      expect(Math.min(...mids.map((m) => dist(m, swing!.end)))).toBeLessThan(EPS);
       // A leaf is straight: it closes along the chord, so it is as long as the chord.
-      expect(leaf!.radius).toBeCloseTo(dist(leaf!.hinge, leaf!.farJamb), 9);
+      expect(swing!.r).toBeCloseTo(dist(swing!.center, swing!.end), 9);
+    });
+
+    it(`hinged ${id}: the model's swing (lint, symmetry, 3D) is still the tangent construction`, () => {
+      const { door } = cutJambs(src, id);
+      const [leaf] = doorLeaves(door);
+      const d = segmentDirAt(door.host!, door.at);
+      const s = door.hinge === "left" ? -1 : 1;
+      expect(leaf!.hinge).toEqual({
+        x: door.at.x + d.x * s * (door.width / 2),
+        y: door.at.y + d.y * s * (door.width / 2),
+      });
+      expect(leaf!.radius).toBe(door.width);
     });
   }
 
-  it("double: each leaf hinges on its own jamb and the pair closes on one line, as one assembly", () => {
-    const { door, mids } = cutJambs(SRC, "d3");
-    const [a, b] = doorLeaves(door);
-    for (const leaf of [a!, b!]) expect(Math.min(...mids.map((m) => dist(m, leaf.hinge)))).toBeLessThan(EPS);
-    expect(a!.farJamb).toEqual(b!.farJamb);
-    expect(isDoubleDoorPair(a!, b!)).toBe(true);
+  it("double: each drawn leaf hinges on its own jamb and the pair closes on one line", () => {
+    const src = drum("  door id=d3 double on drum at 70% width 1600");
+    const { mids } = cutJambs(src, "d3");
+    const [a, b] = drawnSwings(src);
+    for (const sw of [a!, b!]) expect(Math.min(...mids.map((m) => dist(m, sw.center)))).toBeLessThan(EPS);
+    expect(a!.end).toEqual(b!.end);
+    // The two hinges and the shared far jamb are collinear (the chord between the jambs).
+    const u = { x: a!.end.x - a!.center.x, y: a!.end.y - a!.center.y };
+    const v = { x: b!.center.x - a!.center.x, y: b!.center.y - a!.center.y };
+    expect(Math.abs(u.x * v.y - u.y * v.x) / Math.hypot(u.x, u.y)).toBeLessThan(EPS);
+  });
+
+  it("a door wider than its span can close draws the model's leaf, never a degenerate one", () => {
+    // 3000 mm on a 400 mm drum: the span's half-angle caps at π and the jambs meet.
+    const src = drum("  door id=d on drum at 20% width 3000", "", 250, 400);
+    const swings = drawnSwings(src);
+    expect(swings.length).toBeGreaterThan(0);
+    for (const sw of swings) expect(sw.r).toBeGreaterThan(1);
   });
 
   it("the door's and the cased opening's covers are the cut's sector, concentric", () => {

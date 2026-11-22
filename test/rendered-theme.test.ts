@@ -69,7 +69,7 @@ const worldOf = (dir: string | undefined): World | undefined => (dir ? makeNodeW
 /** Measured at `241fbfc3` (see the header): `[digest, row]`. */
 const BASELINE: [string, string][] = [
   ["7c828f62cd3bd017b8bc90a11e58d40162283aef9b6e25c179aa5abf39c693ea", "examples/accessible.arch"],
-  ["b1c818d2bd800a59fc502d82e7fc8e19074753661661d9eb75d9bf0036ec8efc", "examples/aquarium.arch"],
+  ["80fad61bce567de04ed1de6a1944450c500960ec2d798f433fee34ba2bb17f1e", "examples/aquarium.arch"],
   ["4bca852d43826d6a19bb22d0bcaf20714c7392c7bf63457abc5d064ad14831aa", "examples/attached.arch"],
   ["660fc41f31aecceb73baec824e2525ba48a4f59109bf2b6698be05e6aa237a64", "examples/bungalow.arch"], // CV13 (was bbac7be3): example source edited (chairs added)
   ["c19f4ae4736baad22c126138049bfaf162db2b4f4e19b235eadc1802fed1506d", "examples/classroom-block.arch"],

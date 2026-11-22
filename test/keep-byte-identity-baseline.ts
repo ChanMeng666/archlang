@@ -10,7 +10,7 @@
  * PR legitimately moves a hashed output (never keep code), the table is re-taken by the generator, the
  * reason recorded below and the moved files listed in that commit's message.
  *
- * Taken: card ARC-W1 (fix/arcw1-openings-on-arc on main a0f85ebf): openings on an arc are drawn on the curve; only the SVG of the plans with a door, window or opening on an arc moved (describe/lint/diagnostics/validate/impact and steps unchanged, by a per-payload sweep against main)
+ * Taken: card ARC-W1 round 2 (fix/arcw1-openings-on-arc on main a0f85ebf): openings on an arc are drawn on the curve, drawing only; only opening-layer ink moved (main's opening nodes put back reproduce every digest-law row; describe/lint/diagnostics/validate/impact and steps unchanged by a per-payload sweep against main)
  */
 
 /** `[path from the repository root, SHA-256 of the payload, evaluation steps]`, sorted by root. */
@@ -23,7 +23,7 @@ export const KEEP_WEAK_BASELINE: readonly (readonly [string, string, number])[] 
   ],
   [
     "examples/aquarium.arch",
-    "62a70911a809e142118fe8be2c72cda7c608e726a1bbcaa6673956572cd70a02",
+    "f61210da0e7b5918d1f93095ceea29cb0906228719e9dafc8d411b5ad6272fd0",
     3350,
   ],
   [
@@ -373,22 +373,22 @@ export const KEEP_WEAK_BASELINE: readonly (readonly [string, string, number])[] 
   ],
   [
     "test/defect-corpus/annotation-collisions/radius-over-label.arch",
-    "c522052553aef22aa0bffa453ed44c956b1f733de5804d812d8d8b1b6ece2168",
+    "e7473fc33a84b98bae71b1c8905dca2d0066f728e7590e253674b40ddc54b369",
     68,
   ],
   [
     "test/defect-corpus/annotation-collisions/radius-over-label.clean.arch",
-    "d4d0e47765372d30f490c57bdb4dd25a7097dbaf3f8130f00d3ecaddac9efd3a",
+    "de3bbde37b467a21ea655fcc61c62760943f9ee4f64dfa1e915be7ab57f8f7ad",
     68,
   ],
   [
     "test/defect-corpus/annotation-collisions/radius-over-piece.arch",
-    "954acc87bf824af989eea7c3f676b3115a51ba9151c3f6531f9a273fec8242cb",
+    "927ddb1ec17476f17a2464be8639055ff3f525733e3b6caad31b5c169b15dfc5",
     82,
   ],
   [
     "test/defect-corpus/annotation-collisions/radius-over-piece.clean.arch",
-    "598952a047101ccf4dc9deb93ac8e75438cebb827a48a8b4f1e9e50898b7b8a9",
+    "5a5517d518dc9ba10a2c56288dadb92bbf84681665ffe6fda6ac654ef9e6921e",
     82,
   ],
   [
@@ -1698,7 +1698,7 @@ export const KEEP_WEAK_BASELINE: readonly (readonly [string, string, number])[] 
   ],
   [
     "test/plans/plan-soundness/repro/gallery-bench-pinch.arch",
-    "65dc39ffb68b5f06b437ca387525b8e5a5cec0651c45763a0a7cd371ab825d24",
+    "1d9e140a4cd7f48f73fc734be7101f8d8d803973e52dce6d9d7245e7f4e163c8",
     2039,
   ],
   [

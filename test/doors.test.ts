@@ -600,8 +600,21 @@ suite("doors — the drawing language", () => {
         .split("\n")
         .find((l) => l.includes("door id=d"))!
         .trim();
-      const s = doorSwing(doorsOf(src).find((x) => x.id === "d")!)!;
       const { nodes } = nodesOf(src);
+      // On a straight host the drawn swing IS the model's (`doorSwing`). On an arc host the leaf is
+      // drawn on a jamb of the curved cut while the model keeps the tangent construction (card
+      // ARC-W1, drawing only), so there the slab is held to the swing it is DRAWN with: its `arc`
+      // node, centred on the hinge, from the open leaf's tip to the far jamb.
+      const drawnArc = nodes.find((n) => n.prim.t === "arc")!.prim as {
+        center: { x: number; y: number };
+        r: number;
+        start: { x: number; y: number };
+        end: { x: number; y: number };
+      };
+      const s =
+        src === onArc
+          ? { hinge: drawnArc.center, leafEnd: drawnArc.start, farJamb: drawnArc.end, radius: drawnArc.r }
+          : doorSwing(doorsOf(src).find((x) => x.id === "d")!)!;
       // cover, slab, arc — in that order. On an arc host the cover is the cut's annular sector, a
       // `path` (card ARC-W1); on a straight one its rectangle.
       expect(

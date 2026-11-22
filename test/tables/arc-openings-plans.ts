@@ -9,7 +9,7 @@
  * also has an arc, so the fork is taken per segment and never per wall.
  */
 
-import type { LawRow } from "../helpers/rectilinear-rooms-law.js";
+import type { LawRow } from "../helpers/law-digest.js";
 
 const plan = (...lines: string[]): string => `plan "t" {\n  units mm\n  grid 50\n${lines.join("\n")}\n}\n`;
 
@@ -73,16 +73,16 @@ export const STRAIGHT_ROWS: readonly LawRow[] = [
   },
 ];
 
-/** A drum of two semicircles (centre (3000,3000), centreline radius 3000, 250 thick) with a room
- *  inside, so a window's sill has a side; `body` stands openings on it. */
-export const drum = (body: string, dir: "" | " cw" = ""): string =>
+/** A drum of two semicircles (centre (R,R), centreline radius `R`, default 3000, `t` thick, default
+ *  250) with a room inside, so a window's sill has a side; `body` stands openings on it. */
+export const drum = (body: string, dir: "" | " cw" = "", t = 250, R = 3000): string =>
   plan(
-    `  wall id=drum exterior thickness 250 {
-    (6000,3000)
-    arc (0,3000) radius 3000${dir}
-    arc (6000,3000) radius 3000${dir}
+    `  wall id=drum exterior thickness ${t} {
+    (${2 * R},${R})
+    arc (0,${R}) radius ${R}${dir}
+    arc (${2 * R},${R}) radius ${R}${dir}
   }
-  room id=r circle at (3000,3000) radius 3000 label "Drum" uses living`,
+  room id=r circle at (${R},${R}) radius ${R} label "Drum" uses living`,
     body,
   );
 

@@ -229,7 +229,7 @@ Totals: 425 modules in 34 directories.
 | `axes.ts` | 161 | 4 | **Positioning axes** (定位轴线) — GB/T 50001's structural datum grid. | none |
 | `builtins.ts` | 129 | 3 | Built-in functions: a frozen, pure map injected into the global scope as `builtin` Values. Each is total — bad arity / types emit a diagnostic and return a safe default, never throw — and deterministic (no I/O, no clock). | none |
 | `catalog-fix.ts` | 38 | 6 | The catalogued remediation for a diagnostic code: one row of the catalogue's fix column (`CATALOG_FIXES`, generated from `ERROR_CATALOG`). The error card `compile()` draws (`backends/error-svg.ts`) reads it here. It has a module of its… | none |
-| `chrome-layout.ts` | 626 | 17 | Shared page-chrome layout — the deterministic geometry of the **scale bar** and **title block** in the bottom page margin, and how far the bottom margin must grow to contain them. Both the SVG and PDF backends build their chrome from this… | none |
+| `chrome-layout.ts` | 633 | 17 | Shared page-chrome layout — the deterministic geometry of the **scale bar** and **title block** in the bottom page margin, and how far the bottom margin must grow to contain them. Both the SVG and PDF backends build their chrome from this… | none |
 | `clause-order.ts` | 270 | 20 | Order-free trailing clauses. A statement's optional keyword-led clauses (`size`, `label`, `rotate`, `clear`, … after a `furniture`'s placement) may come in any order, each once. | none |
 | `cli.ts` | 91 | 0 | ArchLang CLI — agent-native. | none |
 | `command-name.ts` | 11 | 5 | The command name every help line, example and doc writes. `package.json` installs two bins, `archlang` and `arch`, for the same `dist/cli.js`; `arch` stays as an alias, but coreutils ships an `arch` on Linux, macOS and Git Bash, so a bare… | none |
@@ -266,7 +266,7 @@ Totals: 425 modules in 34 directories.
 | `furnish-table.ts` | 143 | 4 | The furnish table and the family reading of a held piece, shared by `src/furnish.ts` (the `finish` stage that writes the pieces) and the `W_ROOM_MISSING_DEFINING` lint rule (`src/lint/rules/room-contents.ts`, which reads the piece that… | none |
 | `furnish.ts` | 1677 | 13 | The `furnish` stage of `finish()` — furniture by room use, in rooms that hold none (`docs/adr/0025-furnish-as-explicit-transform.md`). | none |
 | `furniture-relation.ts` | 372 | 8 | Furniture relations (ADR 0029): the closed-form geometry behind `facing <id>`, `against <room>.<edge>` and `clear front\|sides <mm>`. | none |
-| `geometry.ts` | 1000 | 113 | Pure geometry helpers. All coordinates in millimetres. Deterministic. | none |
+| `geometry.ts` | 957 | 113 | Pure geometry helpers. All coordinates in millimetres. Deterministic. | none |
 | `hash.ts` | 14 | 3 | FNV-1a — a tiny, fast, deterministic non-cryptographic string hash, used to key the per-stage memo caches (lex → tokens, parse → ast). The length is appended to make accidental collisions vanishingly unlikely; callers that need certainty… | none |
 | `hatches.ts` | 884 | 32 | Material hatch patterns — a small named hatch *library*. Each material maps to an SVG `<pattern>` builder (for the SVG backend), a natural rotation, and a predefined DXF HATCH pattern name (so the hatch survives to CAD as a real `HATCH`… | none |
 | `id-spans.ts` | 41 | 5 | The byte span of an element statement's `id=<name>` name, and of the one word a did-you-mean fix rewrites (AF2), kept beside the AST. A leaf: the parser records spans here and the resolver reads them, so reading one never loads the parser. | none |
@@ -280,8 +280,8 @@ Totals: 425 modules in 34 directories.
 | `intent.ts` | 1774 | 8 | The intent channel — author-time checking of a brief's INTENT against a plan. | none |
 | `ir.ts` | 2082 | 268 | Intermediate representation + `resolve(ast)`. | charges the step meter |
 | `keep.ts` | 1902 | 11 | `keep`: declared invariants, checked by `compile()` and never solved (ADR 0033; plan-soundness PS4.3, design `archlang-lab/plans/plan-soundness/research/2026-10-26-ps43-keep-design.md`). | charges the step meter |
-| `label-fit.ts` | 1373 | 6 | A room's label that does not fit shrinks: a **post-pass over the lowered Scene**, after `wrapLabels` and `relocateLabels` (`src/label-placement.ts`) have done what they can at the drawing's label size (#367). | none |
-| `label-placement.ts` | 868 | 12 | Obstacle-aware relocation of room labels — a **post-pass over the lowered Scene**. | none |
+| `label-fit.ts` | 1380 | 6 | A room's label that does not fit shrinks: a **post-pass over the lowered Scene**, after `wrapLabels` and `relocateLabels` (`src/label-placement.ts`) have done what they can at the drawing's label size (#367). | none |
+| `label-placement.ts` | 933 | 12 | Obstacle-aware relocation of room labels — a **post-pass over the lowered Scene**. | none |
 | `layout.ts` | 318 | 1 | Relational placement (T6.2) — the optional layout seam. | charges the step meter |
 | `level-mix-fix.ts` | 12 | 2 | `E_LEVEL_MIX`'s catalogued remedy, written once (card 3.19): the catalogue entry's `fix` (`src/error-catalog/vertical.ts`) and the parser's message, which quotes it, both read it here. The parser once quoted it from the generated… | none |
 | `lexer.ts` | 613 | 31 | Hand-written lexer for ArchLang. Zero dependencies; tracks line/col. | none |
@@ -296,7 +296,7 @@ Totals: 425 modules in 34 directories.
 | `num-format.ts` | 279 | 91 | The one deterministic number → string formatter (round to N decimals, strip the `-0`). Previously copy-pasted in scene-build, the SVG/DXF backends, the expression evaluator and the source formatter — same shape, three precisions. Output… | none |
 | `opening-junctions.ts` | 204 | 7 | Where other walls meet a host wall's run: the measure `W_OPENING_AT_JUNCTION` reports with (`src/lint/rules/openings.ts`) and a relational opening is refused by (`E_OPENING_NIB`, ADR 0028 §5), so the warning and the refusal can never… | none |
 | `opening-relation.ts` | 1906 | 12 | Openings by relation (ADR 0028 §5): where a `door\|window\|opening` stands when its position is written against the rooms rather than against a wall. | charges the step meter |
-| `opening-schedule.ts` | 610 | 6 | **`schedule openings`** — the door and window TAGS drawn beside each opening, and the rows of the DOOR & WINDOW SCHEDULE table the sheet carries (`sheet-tables.ts` lays the table out and lowers it; this module derives what it says and… | none |
+| `opening-schedule.ts` | 632 | 6 | **`schedule openings`** — the door and window TAGS drawn beside each opening, and the rows of the DOOR & WINDOW SCHEDULE table the sheet carries (`sheet-tables.ts` lays the table out and lowers it; this module derives what it says and… | none |
 | `parser.ts` | 2571 | 146 | Recursive-descent parser: tokens -> PlanNode. Registry-driven element dispatch. | none |
 | `pipeline.ts` | 219 | 6 | The one `compile()` pipeline: parse → link → resolve → render. | none |
 | `plan-json.ts` | 75 | 16 | Structured JSON I/O for ArchLang plans — the machine-native channel an LLM uses to author and read a floor plan without touching `.arch` syntax. | none |
@@ -423,7 +423,7 @@ Totals: 425 modules in 34 directories.
 | `defs.ts` | 61 | 7 | The built-in element definitions, as a flat array in canonical order. | none |
 | `dim.ts` | 512 | 5 | `dim [faces\|clear] (x,y)->(x,y) [offset N] [text "…"]` — dimension line with ticks + length, or `dim radius <wallId> [segment <n>]` / `dim diameter <roomId>` — a GB/T curve call-out whose geometry and text are DERIVED from the referenced… | none |
 | `door-panels.ts` | 319 | 2 | How each NON-HINGED door kind is drawn in its reveal. | none |
-| `door.ts` | 773 | 2 | `door [id=] [<kind>] at (x,y) width N [wall ref] [hinge <side>] [swing <dir>] [slide <dir>] [open <0..1>] [head <mm>]` — opening + leaf + swing arc, or (for a non-hinged kind) opening + panels/track/cavity. The clauses after the placement… | none |
+| `door.ts` | 818 | 2 | `door [id=] [<kind>] at (x,y) width N [wall ref] [hinge <side>] [swing <dir>] [slide <dir>] [open <0..1>] [head <mm>]` — opening + leaf + swing arc, or (for a non-hinged kind) opening + panels/track/cavity. The clauses after the placement… | none |
 | `elevator.ts` | 76 | 1 | `elevator [id=] at (x,y) size WxH` — a lift shaft, drawn as the car rectangle with the conventional crossed diagonals. | none |
 | `escalator.ts` | 85 | 1 | `escalator [id=] at (x,y) size WxH dir up\|down` — a moving stair, drawn as parallel chevrons along the run plus the UP/DN direction arrow. | none |
 | `facets.ts` | 87 | 10 | Which hand-written kind sets each built-in element kind belongs to, one row per kind. | none |
@@ -450,7 +450,7 @@ Totals: 425 modules in 34 directories.
 | `void.ts` | 440 | 10 | `void [id=] (at (x,y) size WxH \| polygon (x,y) …) [rail <edges>]` — a hole in this storey's floor plate. | charges the step meter |
 | `wall.ts` | 501 | 4 | `wall <category> thickness N { (x,y)… [close] }` — poché fill + crisp faces. | none |
 | `walls-from-rooms.ts` | 712 | 1 | `walls from rooms exterior <t_ext> partition <t_int> [{ except <room> … }]` — derive the whole wall set of a group from its rooms (ADR 0028 §3, plan decision D5). | none |
-| `window.ts` | 779 | 6 | `window [id=] [<kind>] at (x,y) width N [wall ref] [hinge <side>]` — opening + double glazing + exterior sill, plus the kind's mark (see {@link kindMarks}). | charges the step meter |
+| `window.ts` | 799 | 6 | `window [id=] [<kind>] at (x,y) width N [wall ref] [hinge <side>]` — opening + double glazing + exterior sill, plus the kind's mark (see {@link kindMarks}). | charges the step meter |
 
 ## `src/error-catalog/`
 
@@ -485,7 +485,7 @@ Totals: 425 modules in 34 directories.
 | Module | Lines | Importers | Summary | Budget |
 | --- | ---: | ---: | --- | --- |
 | `arc-band.ts` | 199 | 4 | How deep a rectangle reaches into a CURVED wall's solid — the radial analogue of the straight-segment frame in `./rect.ts`. | none |
-| `arc.ts` | 500 | 51 | Circular-arc math for **curved geometry** — arc wall edges and circular rooms. | none |
+| `arc.ts` | 500 | 52 | Circular-arc math for **curved geometry** — arc wall edges and circular rooms. | none |
 | `backend.ts` | 73 | 5 | Optional polygon-geometry backend seam. | none |
 | `band.ts` | 764 | 26 | The **band** of a wall: its two faces, its corners and its caps, as exact edge loops. | none |
 | `clipper.ts` | 177 | 2 | Optional {@link GeometryBackend} adapter over `clipper2-wasm`. | none |
