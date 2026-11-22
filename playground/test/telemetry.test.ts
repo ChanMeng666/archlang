@@ -171,7 +171,8 @@ describe("where the sender loads: never the view path, never the embed", () => {
           }
         }
       }
-      for (const m of text.matchAll(/^\s*import\s+"(\.{1,2}\/[^"]+\.(?:ts|js))"/gm)) stack.push(join(dirname(file), m[1]!));
+      for (const m of text.matchAll(/^\s*import\s+"(\.{1,2}\/[^"]+\.(?:ts|js))"/gm))
+        stack.push(join(dirname(file), m[1]!));
     }
     return seen;
   }

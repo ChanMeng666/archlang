@@ -410,7 +410,8 @@ export function makeShareWorker(core: Core, preview: PreviewDeps = {}) {
       return create(req, env);
     }
     if (pathname === EVENT_PATH) {
-      if (req.method !== "POST") return refuse(405, "method_not_allowed", "POST one event", { headers: { allow: "POST" } });
+      if (req.method !== "POST")
+        return refuse(405, "method_not_allowed", "POST one event", { headers: { allow: "POST" } });
       return event(req, env);
     }
     if (pathname.startsWith("/api/share/")) {

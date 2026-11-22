@@ -129,7 +129,8 @@ const loadActions = (): Promise<Actions> =>
 type Events = typeof import("./telemetry.js");
 let eventsP: Promise<Events> | undefined;
 function track(send: (events: Events) => void): void {
-  void (eventsP ??= import("./telemetry.js")).then(send, () => {
+  eventsP ??= import("./telemetry.js");
+  void eventsP.then(send, () => {
     eventsP = undefined;
   });
 }
@@ -892,7 +893,13 @@ function show(req: CompileRequest, result: CompileResult, knobMoving: boolean, k
   // The diagnostics drawer, its phone count and a live Intent verdict are edit mode's.
   edit?.afterCompile(source, diagnostics);
   // Counted once the editor is still (telemetry.ts debounces); a knob mid-drag is not a compile yet.
-  if (!knobMoving) track((t) => t.pageEvents().compiled(ok ? "ok" : "error", diagnostics.map((d) => d.code)));
+  if (!knobMoving)
+    track((t) =>
+      t.pageEvents().compiled(
+        ok ? "ok" : "error",
+        diagnostics.map((d) => d.code),
+      ),
+    );
   clearTimeout(busyTimer);
   if (!ok) {
     const n = errors.length;

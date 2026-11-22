@@ -124,7 +124,11 @@ describe("POST /api/event: the closed list", () => {
 
   it("drops a string the catalogue does not hold, however code-shaped; dedupes, sorts, caps", async () => {
     const { env, points } = fakeEnv();
-    const res = await send(env, { e: "compile", outcome: "error", codes: ["E_NOT_A_CODE", "W_MY_HOUSE", E, "hello", E] });
+    const res = await send(env, {
+      e: "compile",
+      outcome: "error",
+      codes: ["E_NOT_A_CODE", "W_MY_HOUSE", E, "hello", E],
+    });
     expect(res.status).toBe(204);
     expect(points[0]!.blobs![2]).toBe(E);
     const twenty = CODES.slice(0, MAX_EVENT_CODES).reverse();

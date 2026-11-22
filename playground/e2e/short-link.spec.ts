@@ -187,9 +187,9 @@ test.describe("short links", () => {
     expect(store.size).toBe(1);
     const id = new URL(await link.inputValue()).pathname.slice("/s/".length);
     if (await page.evaluate(() => navigator.webdriver === false)) {
-      await expect.poll(() => events.filter((e) => e.e === "contribute")).toEqual([
-        { e: "contribute", id, codes: ["E_ARC_RADIUS"] },
-      ]);
+      await expect
+        .poll(() => events.filter((e) => e.e === "contribute"))
+        .toEqual([{ e: "contribute", id, codes: ["E_ARC_RADIUS"] }]);
     }
     await page.keyboard.press("Escape");
     await expect(page.locator("dialog.contrib-dialog")).toHaveCount(0);

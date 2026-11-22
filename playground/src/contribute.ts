@@ -114,8 +114,7 @@ function openDialog(codes: string[], ctx: ContributeCtx, opener: HTMLElement): v
       return;
     }
     countEvent({ e: "contribute", id: shortLinkId(url), codes });
-    status.innerHTML =
-      `Sent, thank you. Its short link: <input class="embed-link contrib-link" readonly aria-label="The short link" value="${escapeHtml(url)}" />`;
+    status.innerHTML = `Sent, thank you. Its short link: <input class="embed-link contrib-link" readonly aria-label="The short link" value="${escapeHtml(url)}" />`;
     send.remove();
     cancel.textContent = "Close";
     const link = status.querySelector<HTMLInputElement>(".contrib-link");

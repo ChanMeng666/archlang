@@ -484,9 +484,7 @@ describe("telemetry: a diagnosing tool's outcome and catalogued codes (card FW1)
     const result = await rpc("tools/call", { name: "compile", arguments: { source: BROKEN } });
     const codes = (toolText(result).diagnostics as Array<{ code?: string }>).map((d) => d.code);
     expect(codes.length).toBeGreaterThan(0);
-    expect(resultPoints()).toEqual([
-      { blobs: ["result", "compile", "error", expected(codes)], indexes: ["result"] },
-    ]);
+    expect(resultPoints()).toEqual([{ blobs: ["result", "compile", "error", expected(codes)], indexes: ["result"] }]);
     expect(expected(codes)).toBe(expected(compile(BROKEN).diagnostics.map((d) => d.code)));
   });
 
@@ -571,11 +569,19 @@ describe("telemetry: a diagnosing tool's outcome and catalogued codes (card FW1)
       outcome: "ok",
       codes: ["W_DOOR_CLEARANCE"],
     });
-    expect(readResult({ result: { content: [{ type: "text", text: "not json" }] } })).toEqual({ outcome: "ok", codes: [] });
+    expect(readResult({ result: { content: [{ type: "text", text: "not json" }] } })).toEqual({
+      outcome: "ok",
+      codes: [],
+    });
   });
 
   it("never alters the reply, and a failing dataset fails nothing", async () => {
-    const call = { jsonrpc: "2.0", id: 40, method: "tools/call", params: { name: "compile", arguments: { source: BROKEN } } };
+    const call = {
+      jsonrpc: "2.0",
+      id: 40,
+      method: "tools/call",
+      params: { name: "compile", arguments: { source: BROKEN } },
+    };
     const bare = await post(call, worker, {});
     const counted = await post(call, worker, env);
     const throwing = await post(call, worker, {

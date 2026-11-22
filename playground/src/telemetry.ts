@@ -97,12 +97,13 @@ export function createPageEvents(deps: EventDeps): PageEvents {
 let shared: PageEvents | undefined;
 /** The page's one sender, made on first use. */
 export function pageEvents(): PageEvents {
-  return (shared ??= createPageEvents({
+  shared ??= createPageEvents({
     nav: typeof navigator === "undefined" ? undefined : (navigator as unknown as EventNavigator),
     now: () => Date.now(),
     setTimer: (run, ms) => setTimeout(run, ms),
     clearTimer: (h) => clearTimeout(h as ReturnType<typeof setTimeout>),
-  }));
+  });
+  return shared;
 }
 
 /** Send one event from this page. */

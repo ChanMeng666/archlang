@@ -272,8 +272,9 @@ version-keyed cache with an in-memory stand-in.
   (rate limit, size cap) writes one point instead: `["refused", <reason>]`, the reason from a fixed
   list. The binding is optional; local dev runs without it. Amended by card FW1 (ruling RM-D86's
   programme, `docs/plans/modularity-and-flywheel.md` §7): a `compile`, `describe`, `lint` or
-  `validate` call writes one more point after it ran, `["result", <tool>, ok|error|refused,
-  <codes>]`, the codes the catalogued ones (`ERROR_CATALOG`) of its result's diagnostics, at most
+  `validate` call writes one more point after it ran,
+  `["result", tool, outcome, codes]` (the outcome `ok`, `error` or `refused`), the codes the
+  catalogued ones (`ERROR_CATALOG`) of its result's diagnostics, at most
   20, sorted, joined with `;`; never a message, span, label or id. Its `blob1` is outside the
   `tools/call` and `refused` rows the growth job counts.
 - **A `/svg/` URL sends the plan to the server.** A playground link carries the plan after `#`,
