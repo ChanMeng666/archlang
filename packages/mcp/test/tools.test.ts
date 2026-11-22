@@ -17,7 +17,6 @@ import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import {
-  compile,
   ERROR_CATALOG,
   type FixSuggestion,
   PLAN_JSON_SCHEMA,
@@ -500,12 +499,25 @@ describe("fix tool (bounded fixpoint)", () => {
 
   it("(v) of two alternatives on one diagnostic, applies the one `archlang fix --unsafe` takes (SR.17)", async () => {
     const client = await connect();
-    // Precondition: one diagnostic, two alternatives, and `rankFixes` puts the second first.
-    const diags = compile(NIB_TWO_WAYS, { noCache: true }).diagnostics.filter((d) => d.code === "E_OPENING_NIB");
+    // Precondition, read off the `compile` tool: one diagnostic, two alternatives, and
+    // `rankFixes` puts the second first.
+    type JsonFix = Omit<FixSuggestion, "edits"> & { edits: Array<{ span: [number, number]; newText: string }> };
+    const diags = (
+      (await call(client, "compile", { source: NIB_TWO_WAYS })).diagnostics as Array<{
+        code?: string;
+        fixes?: JsonFix[];
+      }>
+    ).filter((d) => d.code === "E_OPENING_NIB");
     expect(diags).toHaveLength(1);
-    const texts = (fixes: FixSuggestion[]) => fixes.map((f) => f.edits.map((e) => e.newText).join());
-    expect(texts(diags[0]!.fixes ?? [])).toEqual(["at 2050 from start", "at 950 from start"]);
-    expect(texts(rankFixes(diags[0]!.fixes ?? []))).toEqual(["at 950 from start", "at 2050 from start"]);
+    const fixes = (diags[0]!.fixes ?? []).map(
+      (f): FixSuggestion => ({
+        ...f,
+        edits: f.edits.map((e) => ({ span: { start: e.span[0], end: e.span[1] }, newText: e.newText })),
+      }),
+    );
+    const texts = (fs: FixSuggestion[]) => fs.map((f) => f.edits.map((e) => e.newText).join());
+    expect(texts(fixes)).toEqual(["at 2050 from start", "at 950 from start"]);
+    expect(texts(rankFixes(fixes))).toEqual(["at 950 from start", "at 2050 from start"]);
 
     const out = await call(client, "fix", { source: NIB_TWO_WAYS, unsafe: true });
     const dir = mkdtempSync(join(tmpdir(), "mcp-fix-ranked-"));
