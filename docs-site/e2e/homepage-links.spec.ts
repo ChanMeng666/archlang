@@ -237,7 +237,14 @@ test.describe("the feature sheets on /examples", () => {
     0,
   );
 
+  // The /examples page hydrates 35 live compiles (docs-site/examples.md mounts that many <ArchLive>
+  // widgets), so each of the two tests below took 29 to 32 s in CI against Playwright's 30 s
+  // default, whether or not it waits on an image. A fixed budget, not a per-image formula (card
+  // DE.2 cuts the page's cost so the default fits again).
+  const SHEET_TEST_TIMEOUT_MS = 60_000;
+
   test("a sheet shows and opens the SAME plan", async ({ page }) => {
+    test.setTimeout(SHEET_TEST_TIMEOUT_MS);
     await page.goto("/examples");
     const cards = await page.locator(".card").all();
     expect(cards.length, "the sheet gallery must render every SheetGrid card").toBe(CARDS);
@@ -255,17 +262,14 @@ test.describe("the feature sheets on /examples", () => {
   });
 
   test("every sheet drawing renders", async ({ page }) => {
-    // The images are lazy, so each is scrolled into view to start its fetch. Waiting for each one in
-    // turn made the test's time the SUM of the fetches: it crept past Playwright's 30 s default as
-    // the gallery grew (27.9 s passing, 32 s failing on both attempts in CI). Now one poll covers
-    // all of them, the fetches overlap, and the budget is sized to the image count.
-    test.setTimeout(30_000 + 2_000 * (CARDS + LEVEL_ART));
+    test.setTimeout(SHEET_TEST_TIMEOUT_MS);
     await page.goto("/examples");
     const imgs = page.locator(".card__art img");
     // one image per card, plus the extra storeys of each multi-storey card
     await expect(imgs).toHaveCount(CARDS + LEVEL_ART);
-    // Every image must have naturalWidth > 0. Each round scrolls the ones still blank into view (a
-    // lazy image outside the viewport never loads) and counts how many remain.
+    // One poll over every image (not one wait per image: fewer round-trips). Each round scrolls the
+    // images still blank into view (a lazy image outside the viewport never loads) and reports the
+    // list length with the blank count, so a shrinking list cannot pass vacuously.
     await expect
       .poll(
         () =>
@@ -276,11 +280,11 @@ test.describe("the feature sheets on /examples", () => {
               blank++;
               el.scrollIntoView({ block: "center" });
             }
-            return blank;
+            return { total: els.length, blank };
           }),
-        { timeout: 25_000 + 2_000 * (CARDS + LEVEL_ART), message: "sheet images still without a drawing" },
+        { timeout: 45_000, message: "sheet images still without a drawing" },
       )
-      .toBe(0);
+      .toEqual({ total: CARDS + LEVEL_ART, blank: 0 });
   });
 });
 

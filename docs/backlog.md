@@ -313,9 +313,13 @@ After #1002 (3.19) the first use measured 466,680 B against `firstUsePathBudget`
 
 ## Docs-site E2E
 
-### DE.1 · "every sheet drawing renders" timed out at 30 s: done by this PR, waiting to be archived — `note`
+### DE.1 · The two /examples sheet tests ran 29 to 32 s against a 30 s timeout: done by #1011, waiting to be archived — `note`
 
-`docs-site/e2e/homepage-links.spec.ts` › "every sheet drawing renders" scrolled to each sheet image and waited for it in turn, so its time was the sum of the fetches. In CI it ran 27.9 s on a pass (run 44970550484) and 31.7 to 32.3 s on both attempts of runs 44975881007 (`main` fe43738d), 44968866989 and 44962341628, against Playwright's 30 s default. Done by this PR: one `expect.poll` scrolls every still-blank image into view and counts those without a `naturalWidth`, and the test's timeout is sized to `CARDS + LEVEL_ART`. The assertion is as strong as before (the count equals `CARDS + LEVEL_ART`, every image must decode, none is skipped).
+`docs-site/e2e/homepage-links.spec.ts` › "every sheet drawing renders" (and its sibling "a sheet shows and opens the SAME plan", which waits on no image) ran 27.9 s on a pass (run 44970550484) and 29.0 to 32.3 s on the runs that failed (44975881007 on `main` fe43738d, 44968866989, 44962341628), against Playwright's 30 s default. The cost is the `/examples` page itself: `docs-site/examples.md` mounts 35 `<ArchLive>` widgets that each compile at hydration (`ArchLive.vue`), plus Playwright round-trips per action, not the image fetches. Done by #1011: both tests get a fixed, commented 60 s budget, and "every sheet drawing renders" is one `expect.poll` over all images (each round scrolls the blank ones into view; it asserts the list length equals `CARDS + LEVEL_ART` and every image has a `naturalWidth`), where it had one wait per image. The assertion is as strong as before; no image is dropped or skipped.
+
+### DE.2 · Cut the /examples page's cost so its sheet tests fit the default timeout — `todo`
+
+DE.1 only gives the two sheet tests a 60 s budget. The page still hydrates 35 live `<ArchLive>` compiles before a test can act. Lazy-hydrate the widgets (on visible) or give the sheet grid a lighter page, then remove `SHEET_TEST_TIMEOUT_MS` from `docs-site/e2e/homepage-links.spec.ts`. **Gate:** both tests pass at the default 30 s with the same assertions.
 
 ## Found while redrawing the showcase
 
