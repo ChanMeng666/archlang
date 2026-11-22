@@ -24,8 +24,9 @@ intent and its evidence, not every line. Cite file and line for each finding.
 - **A generated file edited by hand**, or a generator template that retypes a fact.
 - **CI or a check got weaker.** A skipped or deleted assertion, a narrowed test glob, a relaxed
   workflow, a lowered budget or cap, a widened `.gitleaksignore`. Blocker unless the owner approved it.
-  Standing exception (owner, 2026-11-22, RM-D83): a playground size budget in
-  `playground/e2e/startup-chunks.baseline.json` re-taken DOWN by that file's own rule after a measured cut.
+  Standing exception (owner, 2026-11-22, RM-D83): the coordinator, not an executor alone, re-taking
+  `compilerPathBudget`, `embedPathBudget` or `firstUsePathBudget` DOWN by their rule in
+  `playground/e2e/startup-chunks.baseline.json` after a measured cut (not `viewBudget`, `growthBudget` or the `gzip` baselines).
 - **A secret, a dark-mode site style, or a changed byte** in `brand/archlang-logo-master.svg`.
 - **A public claim the code does not back** (README, docs, `spec.llm.md`, a package README):
   "first", "only", traction numbers, or 3D wording beyond "3D preview" (`.claude/rules/archlang-3d.md`).

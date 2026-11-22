@@ -160,11 +160,11 @@ listed in the stage report (`docs/plans/plan-soundness/README.md` D18).
   `embedPathBudgetWhy`; the headroom rule alone limits little, so the real controls are that
   precondition and the separate PR. It covers `embedPathBudget` only.
 - **Size budgets re-taken DOWN (owner, 2026-11-22, in words: "我同意授权"; RM-D83, product-roadmap README
-  § 6.36):** after a measured cut, the coordinator lowers any budget in
-  `playground/e2e/startup-chunks.baseline.json` by that file's own rule (measured × 1.025, rounded up to a
-  thousand) without asking, stating the measurement in the PR. A raise of any budget, or a re-take not by
-  that rule, stays the owner's (the embed exception above aside). Budgets on 2026-11-22: compiler path
-  321,000, embed 308,000, first use 423,000 B gzip (RM-D78, RM-D79).
+  § 6.36):** after a measured cut, the coordinator lowers `compilerPathBudget`, `embedPathBudget` or
+  `firstUsePathBudget` in `playground/e2e/startup-chunks.baseline.json` by their own rule (measured path
+  × 1.025, rounded up to a thousand) without asking, with the numbers in the budget's `…Why` field and the
+  PR. It does not cover `viewBudget` (PS-D5's ceiling), `growthBudget` (a delta) or the `gzip` baselines.
+  A raise of any budget, or a re-take not by that rule, stays the owner's (the embed exception above aside).
 - **High-tier merges (owner, 2026-11-09, in words):** the coordinator judges whether a high-tier PR
   (workflows, root config, hooks, owner rules, policy files) can merge and merges it after a
   fresh-context review and green CI, without asking per PR. Still owner-only: the decision to release,
