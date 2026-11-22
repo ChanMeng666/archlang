@@ -2906,6 +2906,10 @@ card's 1200-wide hall beside a 4000-wide room): `label "厨房厨房厨房 Kitch
 name (a test with a CJK first line, through `planFonts`), and every PNG with no wrapped CJK line is
 byte-identical.
 
+## Review residue of the v3 stage-2 session (PRs #999–#1011, 2026-11-21…22 UTC)
+
+SR.21–SR.24 above came from the same session; SR.25 onward were opened by its records PR.
+
 ### SR.25 · R16 now judges a polygon room written with a repeated vertex (#1007 merged-head review) — `todo`
 
 #1007's round-2 fix made the shared `latticeRing` (`src/taste/criteria.ts`) drop a repeated vertex,
