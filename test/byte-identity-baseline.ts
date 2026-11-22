@@ -2069,6 +2069,26 @@
  *   none new.
  *
  * `describe()` and the diagnostics did not move in either.
+ *
+ * ## SR.15: a wrapped room name keeps its space in the SVG text — SVG only, every wrapped plan
+ *
+ * A name drawn on several lines (`block`) now carries the spaces its break removed between its
+ * `<tspan x y>` lines, each run in a `<tspan font-size="0" xml:space="preserve">` (`src/backends/svg.ts`),
+ * so the `<text>` reads "Accessible WC", not "AccessibleWC". Nothing else is drawn differently: the
+ * separator has no advance, so every glyph stands where it stood (Chrome's per-character positions
+ * and a full-page screenshot, and resvg's PNG at two scales, identical with and without the
+ * separators on the wrapped examples). `npm run digest:preview` on the branch moved 201 rows in 27
+ * files (45 distinct digests; `floor-materials` and `slab-clear` read one row several times) and
+ * `keep`'s weak-law table 33 rows, over 14 pinned plans: `examples/` `classroom-block`, `clinic`,
+ * `library`, `practice-office`, `remodel`; `eval/goldens/` `core-and-shell`, `three-bed-2bath`,
+ * `two-bed-hall`; `eval/fidelity-plans/wide-doorways.{faithful,laundered}`;
+ * `test/fixtures/dense-office`, `test/fixtures/star30`; `test/recovery-corpus/clinic`; and the
+ * `floor-words-as-names` literal (plus the K1 table's defect-corpus, audit and taste plans). The
+ * swap-back: the branch with every separator stripped from each text it serialises (main's drawing
+ * back, through the new code) reproduces every old row, K1 included: 0 moved, 0 failed over the same
+ * 51 files and 4,791 tests. Each row was then re-pinned to the branch's digest, and the K1 table
+ * re-taken by its generator. `describe()`, `lint()`, the diagnostics, the steps and the work counts
+ * are in those payloads and did not move.
  */
 
 /** SHA-256 over every storey's SVG + `describe()` + `lint()`, measured on `f4548db`. */
@@ -2077,8 +2097,8 @@ export const BASELINE: [string, string][] = [
   ["aquarium", "8fd4393c94a3058e3a08e4a295e8769391f24588af2c41113401ced57a1fbb42"], // re-measured for PS2.4, see header; PS2.10 dims fixed, see header; PS2.11e, see header
   ["attached", "ab37b9000bd5ca7cf5f6940241f6b6945e338b207756773a2a9712a525100d72"],
   ["bungalow", "4fd27a7c5a0e9471f433b0fde903479a0863ee5fdcd0443906033ebea65a2496"], // PS2.11e, see header; CV13 (was ee5c6944): example source edited (chairs added)
-  ["classroom-block", "aabc5d767173893764c8e180ce787cc40b8e797741441bf8e86dfe4f5dcb7515"], // added with the example, re-measured for net area, see header; PS2.11e, see header
-  ["clinic", "4da5fef938c3bd0b6e05a0bae5986b9db1c1d9034542666dbf69956ecc8fcc23"],
+  ["classroom-block", "825ebce1e06d54b6927539f698c96a961bebc8785891ccb99038a83e103c91fd"], // added with the example, re-measured for net area, see header; PS2.11e, see header
+  ["clinic", "7be33f5b382e3a66a633b99ab9da9c1c3ddc9852f03a528504d9efba3d2a0404"],
   ["corner-cafe", "b95b03d232c72f389f254756113f5a2b3781a6bca9ab78fd4f087b0bf8fd23a3"], // added with the example, re-measured for net area, see header; #367, see test/byte-identity-baseline.ts
   ["courtyard-family", "d51fc40b1eb060f74f8c1eb95c4c859b39e70effc96607e8b42e6ac138bb680e"], // added with the example (RM8.5), see header
   ["courtyard-house", "5bdb37b5e2b37a4f8fd9a9a5c2c9025611c267a5c321b29e094cfea6a79d3ef4"], // re-measured for PS2.4, see header; PS2.11e, see header; CV13 (was b9cd8746): example source edited (chairs added)
@@ -2091,16 +2111,16 @@ export const BASELINE: [string, string][] = [
   ["imports", "1de644a1f7abfb2b5cc67269fac11a191810d959379f7b04e14c259014d1e9f4"],
   ["knob-flat", "a99858f74f98ab0ed82ec056df9b76543ee62e4c6692036f80ff301cf701a5c9"], // added with the example, see header
   ["laneway-house", "eb03b3f22a4c9f1b47482311ad6cf5ebffad12d38003dfa48ba56494366528f3"], // PS2.11e, see header; CV13 (was 8ede769d): example source edited (chairs added)
-  ["library", "0da11bfe9ec07c1ffa8e8c902fceb0e15a20b7cd825df540d9ca5094d16f28eb"], // PS2.11e, see header
+  ["library", "0ec184db1b555418d3c67f0e0683cfb7866f327ccbe2760fa30a0bb8f4319821"], // PS2.11e, see header
   ["materials", "26e7ea4574248ccd8f73e34cf1bfb68501eee154cbacafbfff4b861a68eed0af"],
   ["museum-wing", "9cd492d6f597fc12e2c403466488e66a36b09f035bef9a9eb4bcea1fc164d9ff"],
   ["museum-wings", "951c488f6407e4508660a0d256034f27a0705ae2737f2b61695f4a7668dc4e7b"], // re-measured, see header; PS2.11e, see header
   ["museum", "e62aeec536defd232b4850e2f12b8acc6a37aa4b81830459aa75651560e8e5f2"], // PS2.11e, see header; PS2.74 source edit, see header
   ["one-room", "17b12740d9e290ca59ea17013f89d54c42a3d6907c915db4338416966d988ce0"],
   ["parametric", "71a3a25418add312c9e75fbc196fed30666f88f4c3a6be27d2020949baa76105"],
-  ["practice-office", "c146a7f2adaf3ac63fca3bbcf25ac8612889eb138ff67c92950dc7eb587dac22"], // added with the example, re-measured for net area, see header; PS2.11e, see header; PS2.74 source edit, see header
+  ["practice-office", "2932ece4df520783f39e5f15ebd93b0fa7abd1db188997c0a41c62a3be41c425"], // added with the example, re-measured for net area, see header; PS2.11e, see header; PS2.74 source edit, see header
   ["relational", "e159c8772d98b0f9d3c73e8eb08a16e8e2653bd3b470cb13e561b8b1184dc27b"], // re-measured for PS2.4, see header; PS3.6 source rewrite, see header; PS2.11e, see header; `centreline_at`, see header
-  ["remodel", "f76c772b4a502d7d6aba79cb963a115e842880aaa8839455d077c30f75979133"], // added with the example, see header; `centreline_at`, see header; CV13 (was ac397a1a): example source edited (chairs added)
+  ["remodel", "0347857ec1e59c553316be875cc8ca2e82db702049a3556fe5045ad29bf23bc7"], // added with the example, see header; `centreline_at`, see header; CV13 (was ac397a1a): example source edited (chairs added)
   ["sheet-notes", "3178042f5c9770726dbf700add62817f0522b662585cfc4a971e43d41f853c7a"], // re-measured, see header
   ["studio", "c1b79a49af3ad31cddf82e88632624d46663c804f134b6e172e585cad36ed969"], // PS2.11e, see header
   ["terrace-row", "1a7bbcde47500c0e8abfedf8e22f2305e14c0a5bb2f2c71c88535ebf1f453211"], // re-measured, see header; CV08 (was ec839a41): example source edited (sofa turned to face the room)

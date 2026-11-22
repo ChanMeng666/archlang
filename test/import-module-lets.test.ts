@@ -533,8 +533,8 @@ const BASELINE: [string, string][] = [
   ["examples/aquarium.arch", "eee3dc30bd94b5f31c7189f719ff38e09d6f56a3d5484f443432591f8f1e737e"], // re-measured for PS2.4, see header; PS2.10 dims fixed (byte-identity-baseline.ts); PS2.11e, see header
   ["examples/attached.arch", "07995653257dff5785f4fe210e3c4f6f9d6fc35165be2e5ae34df364079029dc"],
   ["examples/bungalow.arch", "0dd331e28b8f4e20c3b359c8e819ed738290295cc83934c1a38808d2fd83dc13"], // PS2.11e, see header; CV13 (was 074d5531): example source edited (chairs added)
-  ["examples/classroom-block.arch", "cca7c3dfef6593e826303c88878fbfb5537bded8a6bb9323696ae4b446ac046a"], // added with the example, re-measured for net area, see header; PS2.11e, see header
-  ["examples/clinic.arch", "b31aad2c2f0c0d1b7e63498f8844570f16c700846d533288de7e43bf5ad56e63"],
+  ["examples/classroom-block.arch", "4d558795c0b345b3a9a1e5454bc476125983a63dee7d3227c0d3afe09b7ed3bd"], // added with the example, re-measured for net area, see header; PS2.11e, see header
+  ["examples/clinic.arch", "6a8b78ce84d10bea939f48f431d16e127cb95b982f473d33072889e110ff4788"],
   ["examples/corner-cafe.arch", "d669e11a11740a841311fe359a3d5bc650343ba1f16e827bc4d869dc65206bd5"], // added with the example, re-measured for net area, see header; #367, see test/byte-identity-baseline.ts
   ["examples/courtyard-family.arch", "50c9cc316efda2bf16183e877d4be16443df160c9c13fc2a0210d62945c4bd67"], // new example (RM8.5, the courtyard-family showcase)
   ["examples/courtyard-house.arch", "3ce3c72f6915ece00f2eca8d9321651aca7c2644b95cc423f10397395fc9ab12"], // re-measured for PS2.4, see header; PS2.11e, see header; CV13 (was 0f6dddac): example source edited (chairs added)
@@ -554,21 +554,21 @@ const BASELINE: [string, string][] = [
   ["examples/imports.arch", "3aa7b2d5f953e6df63059c368e391ee3ea58c097cd7dff358197a940f4946252"],
   ["examples/knob-flat.arch", "578ec7551025df65b704f453b7af3493bf4abcfb19737fdece206e4c85fd2586"], // new example (P4, the knobs example), see header
   ["examples/laneway-house.arch", "21f4d5bc82e2e8d46536bd2dc5623b05ea76e937db31c7d4ed482a4c5e3118bc"], // PS2.11e, see header; CV13 (was 958934b4): example source edited (chairs added)
-  ["examples/library.arch", "acbc3325a38dea3132c2e6898df4c40ac2df5e85684fab1531409ba397e3b506"], // PS2.11e, see header
+  ["examples/library.arch", "a004eb834300480a37f5a520671a570fb3e07f7bff061ba7e510e779fa912466"], // PS2.11e, see header
   ["examples/materials.arch", "b3d629675b1a43d4d1113f10b38e732d0b826fdb2b019fcf14ac4b166abd435d"],
   ["examples/museum-wing.arch", "add9b13a425ec75dd2b88c4eba087465228822c37321b3d1952db6f0795ef6c7"],
   ["examples/museum-wings.arch", "4acccb8ead0234e18186574c23a4c795d32c6a8f819fc67a983cebea337b8b29"], // PS2.11e, see header
   ["examples/museum.arch", "bf1d425c9bf21d6ddb3e4757f53a1820f186cca67c3300c0a6ce8eb6b4e73713"], // PS2.11e, see header; PS2.74 source edit, see header
   ["examples/one-room.arch", "8c47e263f778993d69c2f85d07a24b3a62c0b96d9f17ccb5cd9ebf2af6fa0120"],
   ["examples/parametric.arch", "7cceeb1be4622a8b84e1625a124d31f44fdfc15cd5362c4f4f25fa67f5560989"],
-  ["examples/practice-office.arch", "f655cd0dfaa4ec152a2effa51cd2a3fb6254d46c8fb7e29529cbd3c7b78491cb"], // added with the example, re-measured for net area, see header; PS2.11e, see header; PS2.74 source edit, see header
+  ["examples/practice-office.arch", "bf127fd8266fe3d85e9f25712ac69c02bd42370c7027cf1a01baeafe1d3aa36c"], // added with the example, re-measured for net area, see header; PS2.11e, see header; PS2.74 source edit, see header
   // Re-measured 2026-10-18 (PS0.7, the label classifier emits living; `describe()` only): the
   // same row, with the same digest body, as `./while-byte-identity-baseline.ts`, whose header has the reasons.
   ["examples/relational.arch", "d99a898c06b322f203c7f9f3d34740be351b523712bb04fe7b0d846e85811084"], // re-measured for PS2.4, see header; PS3.6 source rewrite, see ./byte-identity-baseline.ts; PS2.11e, see header; `centreline_at`, see ./byte-identity-baseline.ts
   // ADDED with the new example (the issued-sheet statements), then re-measured once when the
   // thickness call-out change met it (drawing only): the same row, with the same digest body,
   // as `./while-byte-identity-baseline.ts`, whose header has both.
-  ["examples/remodel.arch", "5fd914bb04d3d2c03d590844eb51dd3039763bab16b26d24e141b2c54b32fcfc"], // new example (B3b), see header; `centreline_at`, see ./byte-identity-baseline.ts; CV13 (was f0f4a5aa): example source edited (chairs added)
+  ["examples/remodel.arch", "b7fc3b7f11be692ffdc3125d66d01e9c70cb9ade93ab673f4bb4ddaebd0e085c"], // new example (B3b), see header; `centreline_at`, see ./byte-identity-baseline.ts; CV13 (was f0f4a5aa): example source edited (chairs added)
   ["examples/sheet-notes.arch", "708332c1a3f4cf35989718277b996af6f718d2e5fb8bd3d2912d8f87f7d61a2a"],
   ["examples/studio.arch", "b64f7234dddc6527a0176033e82b38b70ad4fe84ca8df22b7a2e3269a1029553"], // PS2.11e, see header
   ["examples/terrace-row.arch", "3e8d6696f955b554411c7379e3a8bc9ce5cbf83a9521930129f18915bca585d0"], // CV08 (was 6667da00): example source edited (sofa turned to face the room)
@@ -589,7 +589,7 @@ const BASELINE: [string, string][] = [
   ["test/fixtures/axes-grid.arch", "32dad3e21d1e5c40424473fdf05896088a2f848fd7f90d395d6cbd70169a0655"],
   ["test/fixtures/chain30.arch", "ce81264ecdc3a086f99708f90aee5dd929c71b9e8ccaaa54a1da5ce5aa213325"], // new fixture, see header; #367, see test/byte-identity-baseline.ts
   ["test/fixtures/dense-bays.arch", "9f4ad4538851a27b463113cd7e563823d185bc7e18b342fd9eebb45f2887992f"],
-  ["test/fixtures/dense-office.arch", "344ce7a8de19a7a9aad470e2e253c8751b5bfbefb39443f7f13033ca8ce81367"], // AL6: a new row; E.18 (was 46d130d3), see ./byte-identity-baseline.ts
+  ["test/fixtures/dense-office.arch", "1601b5f0adb1966b9168bde4aa447f138c431d423cbc6c562a5d002fff62e612"], // AL6: a new row; E.18 (was 46d130d3), see ./byte-identity-baseline.ts
   ["test/fixtures/diff-a.arch", "33a377ed414748c1262bdfbd057d657f8dda607ff77be9d944d2daa5feb12b2a"], // re-measured for PS2.4, see header
   ["test/fixtures/diff-b.arch", "1d4aaebab314c77742fc16d68c8925aa629ae42e1253a2167e240a2f25849ab1"],
   ["test/fixtures/diff-circ-a.arch", "e5bebcb2ebee7d35409f726a36c6da902eb7f414cadc9b93adb6e5d8a014235d"],
@@ -599,14 +599,14 @@ const BASELINE: [string, string][] = [
   ["test/fixtures/lock-window-moved.arch", "5178ac32070a056b37462b4169b3fbdbbb0ee9a94ca05221cc0c64cedf89dd99"], // new fixture (B1), see header
   ["test/fixtures/off-path-bypass.arch", "3c4ca1f843918cd8d3de1c1cf7efd00dec9a75bfffab468dc05c71ca5cb6361b"], // new fixture, see header; PS2.11e, see header; AF9 (was 81ef92c3): `W_DOORWAY_BLOCKED` on d_d gains a maybe-incorrect move to `at 1570` (its position alone) in lint(); SVG, describe() and the diagnostics are unchanged, and with that fix taken out the old digest returns
   ["test/fixtures/schedule-sheet.arch", "7894657cc6c6afff831d31be9a8658f9761f90c4ddfc4015c9b28571863fc780"], // re-measured, see header; PS2.29: message text only, same code, same span
-  ["test/fixtures/star30.arch", "5104211cdd3733a56e18d141c68db6a097b679e484b1b18897e7637dd05d0bbb"], // new fixture, see header; #367, see test/byte-identity-baseline.ts
+  ["test/fixtures/star30.arch", "13122e9c16dd36f442eea47840e1b03dde21108f0a31bcb7048cdd3c12134bf7"], // new fixture, see header; #367, see test/byte-identity-baseline.ts
   ["test/fixtures/storeys-eaves-overflow.arch", "68492d111abcc4a0219738601073936dbd3aed2f645531ad125cb2bf083949e2"], // new fixture (PS2.77), see header; RM1.3a, see ./byte-identity-baseline.ts; RM1.2a, see ./byte-identity-baseline.ts; RM1.2a review, see ./byte-identity-baseline.ts; RM9.2, see ./byte-identity-baseline.ts
   // was 05693d9e. D27: this plan's stair stands in no wall, so `bounds()` reaching its break line widens the
   // drawing 156 mm. Only the SVG, the Scene and the overlay moved: with the old ones put back the old digest returns.
   ["test/fixtures/zones-levels.arch", "21c4b504af358718519aea5578a13c3a441ea218c01732f688c8cafff5059d1c"], // re-measured for PS2.4, see header; RM9.2, see ./byte-identity-baseline.ts
   ["test/fixtures/zones-wings.arch", "392675a2abd9bc82b094fc768190979fabf814b22dbb8d4fbaf7de410570c35a"], // re-measured for PS2.4, see header
   ["test/recovery-corpus/attached.arch", "07995653257dff5785f4fe210e3c4f6f9d6fc35165be2e5ae34df364079029dc"],
-  ["test/recovery-corpus/clinic.arch", "46e1dfe14265efde02b662857573cc5c4d32356b9cb0a2789ba9f38665ad1b90"], // PS2.74: the frozen clinic gains W_ACCESSIBLE_WC_SIDE_WALL, see header
+  ["test/recovery-corpus/clinic.arch", "db090e0bc9ada31312a224a034fe152182388a73e8cb130ae06af77aeb865317"], // PS2.74: the frozen clinic gains W_ACCESSIBLE_WC_SIDE_WALL, see header
   ["test/recovery-corpus/materials.arch", "dd0844982019f758378549ad1c9c9b60abab9bb3e3adb85ee57e46874f9db10b"],
   ["test/recovery-corpus/parametric.arch", "98c1ddb6111e8b4bdd7a025e4a2d7e45603e3f686cbc584aa2229891c2410d24"],
   ["test/recovery-corpus/studio.arch", "e547313409b32843df1bc48897017b2d404b2f6a5316d9318b529362f96cb57d"], // PS2.11e, see header
@@ -621,7 +621,7 @@ const BASELINE: [string, string][] = [
   ["eval/goldens/attach-openings.arch", "658dd5a6589283292b8269548c0f38d01e57503ed244e40cd1084add86c290c1"], // PS2.11e, see header
   ["eval/goldens/bungalow.arch", "8c685c18b9651a339158e040310869881ee190ead53c7309913f86e171c09d71"], // RM1.4: snapping is now reported (eval golden, not edited: W_GRID_SNAPPED x2) (was 4271ab6f); RM1.4: the W_GRID_SNAPPED span points at the written value (was a85eb29f); steps 465 -> 593, +128 = two DIAGNOSTIC_STEPS
   ["eval/goldens/compact-studio.arch", "36b588ea8e25c29f6be7523de08b31c41ec63fe4ab8bd1a40a93daca4885f784"], // PS2.11e, see header
-  ["eval/goldens/core-and-shell.arch", "d9b566a05fda65c88b298d1c764dd1ee8e06404e664621c5695302a3809553f9"], // PS2.11e, see header; RM1.4: snapping is now reported (eval golden, not edited: W_GRID_SNAPPED x2) (was b84aa455); RM1.4: the W_GRID_SNAPPED span points at the written value (was e036e8fc); steps 284 -> 412, +128 = two DIAGNOSTIC_STEPS
+  ["eval/goldens/core-and-shell.arch", "5a5529c3d039fec54931cd2ecc3fb43fb5ada73c3d09ab66fda0d8c752a13229"], // PS2.11e, see header; RM1.4: snapping is now reported (eval golden, not edited: W_GRID_SNAPPED x2) (was b84aa455); RM1.4: the W_GRID_SNAPPED span points at the written value (was e036e8fc); steps 284 -> 412, +128 = two DIAGNOSTIC_STEPS
   ["eval/goldens/dims-auto-cottage.arch", "a26077dde45054e1c4e7f97afb2cc5dc002d8d1e3c13f46784411c6a07e20811"], // PS2.11e, see header
   ["eval/goldens/galley-kitchen.arch", "34aeb2569136729162f1a17662cb84f988ce243a208e3cb9c83cdc7ab6989979"], // PS2.11e, see header
   ["eval/goldens/l-shaped-flat.arch", "432dd9f0381d4dae484cb2bbcc1a3985abefc72d41a1944b5e228e0f3229652f"], // #367, see test/byte-identity-baseline.ts
@@ -638,9 +638,9 @@ const BASELINE: [string, string][] = [
   ["eval/goldens/sized-wet-room.arch", "7c6a75b0fdb78471728925e3fb4057fdeee8e1c3ec213cf062b834c644dc7961"], // PS2.11e, see header
   ["eval/goldens/strip-attach-clean.arch", "de82e3e66dcaf656743890891a14e893306fc09e09dad8a72407288388557494"], // re-measured, see header
   ["eval/goldens/strip-corridor.arch", "3f4df475aef8e3fda40bb8371c7550c777eceb2add0639fff5c4a0f8f8a4fee7"],
-  ["eval/goldens/three-bed-2bath.arch", "03d290c7c4f77c2508468701e8ef70f34179bd0d1dd553271b66945a209b404d"], // PS2.11e, see header
+  ["eval/goldens/three-bed-2bath.arch", "cdf50eaee7572f0478d5bea500e2658af69789fe1e166aaf5227b0dee2fa4b84"], // PS2.11e, see header
   ["eval/goldens/two-bath-flat.arch", "f080683ead3f7d3e4b32470f067a39c011ad9195703277374ba198c59f31ae0a"],
-  ["eval/goldens/two-bed-hall.arch", "8dc7c690d9d6fb848e086db8882f2d6c6eb0b4f3f583a192985cc9cf94a2fad2"],
+  ["eval/goldens/two-bed-hall.arch", "fdabacbc52f5cd6f5ae8953ce219271249a6ff78655eb7eed3821a382a5d3588"],
   [
     "eval/fidelity-plans/capped-wet-room.laundered.arch",
     "03b236fb694bde8aada86fb4c4bf9c737431704ace1cfa182b3cc7f85f7822ca", // PS2.29: message text and the new door-id hint of W_SWING_OBSTRUCTED, same codes, same spans
@@ -671,11 +671,11 @@ const BASELINE: [string, string][] = [
   ],
   [
     "eval/fidelity-plans/wide-doorways.faithful.arch",
-    "1293a84e10439aa745aa581f4f6b963be23343541b9b800d53091232dca721af",
+    "df29e492a86000c70a58d78f31b78b3a121c64ac77ad6907e02d5d9cf00033e2",
   ],
   [
     "eval/fidelity-plans/wide-doorways.laundered.arch",
-    "c078a19c5369d0c124f5101388a3ae6db3aa6fa6b5e52aee38c6a935dd19fd50",
+    "5e6c84fbbfd2ab442e3b9cab8adf0ae512e0a4d87258e2f99194e70f381251eb",
   ],
   ["eval/faults/blocked-doorway.arch", "84a24569f8086d67be092825cdadae91c9ba24001902a55318da0cd9cc31458b"], // PS2.11e, see header
   ["eval/faults/combined.arch", "a6b4816b4c253235c5ea01927c60546416b36c07305cd2b9bf39f18519f28176"], // PS2.11e, see header

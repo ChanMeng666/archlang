@@ -934,7 +934,7 @@ exports[`golden SVG snapshots > renders classroom-block.arch deterministically 1
 <text x="11000" y="12315" font-size="250" fill="#7a7a7a" text-anchor="middle" dominant-baseline="central">12.0 m²</text>
 <text x="14750" y="11930" font-size="350" fill="#222222" text-anchor="middle" dominant-baseline="central" font-weight="600">Pupil WCs</text>
 <text x="14750" y="12315" font-size="250" fill="#7a7a7a" text-anchor="middle" dominant-baseline="central">18.0 m²</text>
-<text x="18250" y="10730" font-size="350" fill="#222222" text-anchor="middle" dominant-baseline="central" font-weight="600"><tspan x="18250" y="10520">Accessible</tspan><tspan x="18250" y="10940">WC</tspan></text>
+<text x="18250" y="10730" font-size="350" fill="#222222" text-anchor="middle" dominant-baseline="central" font-weight="600"><tspan x="18250" y="10520">Accessible</tspan><tspan font-size="0" xml:space="preserve"> </tspan><tspan x="18250" y="10940">WC</tspan></text>
 <text x="18250" y="11325" font-size="250" fill="#7a7a7a" text-anchor="middle" dominant-baseline="central">10.0 m²</text>
 <text x="21000" y="11930" font-size="350" fill="#222222" text-anchor="middle" dominant-baseline="central" font-weight="600">Plant Room</text>
 <text x="21000" y="12315" font-size="250" fill="#7a7a7a" text-anchor="middle" dominant-baseline="central">12.0 m²</text>
@@ -1825,7 +1825,7 @@ exports[`golden SVG snapshots > renders clinic.arch deterministically 1`] = `
 <text x="22800" y="2565" font-size="250" fill="#7a7a7a" text-anchor="middle" dominant-baseline="central">27.0 m²</text>
 <text x="21300" y="9080" font-size="350" fill="#222222" text-anchor="middle" dominant-baseline="central" font-weight="600">Staff Room</text>
 <text x="21300" y="9465" font-size="250" fill="#7a7a7a" text-anchor="middle" dominant-baseline="central">13.5 m²</text>
-<text x="24300" y="9080" font-size="350" fill="#222222" text-anchor="middle" dominant-baseline="central" font-weight="600"><tspan x="24300" y="8870">Accessible</tspan><tspan x="24300" y="9290">WC</tspan></text>
+<text x="24300" y="9080" font-size="350" fill="#222222" text-anchor="middle" dominant-baseline="central" font-weight="600"><tspan x="24300" y="8870">Accessible</tspan><tspan font-size="0" xml:space="preserve"> </tspan><tspan x="24300" y="9290">WC</tspan></text>
 <text x="24300" y="9675" font-size="250" fill="#7a7a7a" text-anchor="middle" dominant-baseline="central">13.5 m²</text>
 <text x="10260" y="2180" font-size="350" fill="#222222" text-anchor="middle" dominant-baseline="central" font-weight="600">Consult 1</text>
 <text x="10260" y="2565" font-size="250" fill="#7a7a7a" text-anchor="middle" dominant-baseline="central">16.2 m²</text>
@@ -8404,7 +8404,7 @@ exports[`golden SVG snapshots > renders library.arch deterministically 1`] = `
 <text x="36000" y="30130" font-size="500" fill="#7a7a7a" text-anchor="middle" dominant-baseline="central">30.0 m²</text>
 <text x="42000" y="29360" font-size="700" fill="#222222" text-anchor="middle" dominant-baseline="central" font-weight="600">WC Men</text>
 <text x="42000" y="30130" font-size="500" fill="#7a7a7a" text-anchor="middle" dominant-baseline="central">30.0 m²</text>
-<text x="47500" y="28610" font-size="700" fill="#222222" text-anchor="middle" dominant-baseline="central" font-weight="600"><tspan x="47500" y="28190">Accessible</tspan><tspan x="47500" y="29030">WC</tspan></text>
+<text x="47500" y="28610" font-size="700" fill="#222222" text-anchor="middle" dominant-baseline="central" font-weight="600"><tspan x="47500" y="28190">Accessible</tspan><tspan font-size="0" xml:space="preserve"> </tspan><tspan x="47500" y="29030">WC</tspan></text>
 <text x="47500" y="29800" font-size="500" fill="#7a7a7a" text-anchor="middle" dominant-baseline="central">25.0 m²</text>
 <text x="8500" y="12260" font-size="700" fill="#222222" text-anchor="middle" dominant-baseline="central" font-weight="600">Open Stacks</text>
 <text x="8500" y="13030" font-size="500" fill="#7a7a7a" text-anchor="middle" dominant-baseline="central">246.5 m²</text>
@@ -11502,7 +11502,7 @@ exports[`golden SVG snapshots > renders practice-office.arch deterministically 1
 <text x="2250" y="10465" font-size="250" fill="#7a7a7a" text-anchor="middle" dominant-baseline="central">21.2 m²</text>
 <text x="6180" y="10785" font-size="350" fill="#222222" text-anchor="middle" dominant-baseline="central" font-weight="600">Break Room</text>
 <text x="6180" y="11170" font-size="250" fill="#7a7a7a" text-anchor="middle" dominant-baseline="central">22.6 m²</text>
-<text x="10550" y="10785" font-size="350" fill="#222222" text-anchor="middle" dominant-baseline="central" font-weight="600"><tspan x="10550" y="10575">Accessible</tspan><tspan x="10550" y="10995">WC</tspan></text>
+<text x="10550" y="10785" font-size="350" fill="#222222" text-anchor="middle" dominant-baseline="central" font-weight="600"><tspan x="10550" y="10575">Accessible</tspan><tspan font-size="0" xml:space="preserve"> </tspan><tspan x="10550" y="10995">WC</tspan></text>
 <text x="10550" y="11380" font-size="250" fill="#7a7a7a" text-anchor="middle" dominant-baseline="central">11.8 m²</text>
 <text x="12650" y="10080" font-size="350" fill="#222222" text-anchor="middle" dominant-baseline="central" font-weight="600">Comms</text>
 <text x="12650" y="10465" font-size="250" fill="#7a7a7a" text-anchor="middle" dominant-baseline="central">8.0 m²</text>
@@ -12407,7 +12407,7 @@ exports[`golden SVG snapshots > renders remodel.arch deterministically 1`] = `
 <polygon points="7960,7750 7960,7810 7040,7810 7040,7750" fill="none" stroke="#1b1b1b" stroke-width="18.08"/>
 </g>
 <g id="A-ANNO-TEXT" inkscape:groupmode="layer" inkscape:label="A-ANNO-TEXT">
-<text x="4500" y="3432.2" font-size="339" fill="#222222" text-anchor="middle" dominant-baseline="central" font-weight="600"><tspan x="4500" y="3228.8">Kitchen /</tspan><tspan x="4500" y="3635.6">Living</tspan></text>
+<text x="4500" y="3432.2" font-size="339" fill="#222222" text-anchor="middle" dominant-baseline="central" font-weight="600"><tspan x="4500" y="3228.8">Kitchen /</tspan><tspan font-size="0" xml:space="preserve"> </tspan><tspan x="4500" y="3635.6">Living</tspan></text>
 <text x="4500" y="4008.5" font-size="248.6" fill="#7a7a7a" text-anchor="middle" dominant-baseline="central">45.6 m²</text>
 <text x="7600" y="2732.2" font-size="339" fill="#222222" text-anchor="middle" dominant-baseline="central" font-weight="600">Bedroom</text>
 <text x="7600" y="3105.1" font-size="248.6" fill="#7a7a7a" text-anchor="middle" dominant-baseline="central">12.8 m²</text>

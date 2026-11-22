@@ -264,7 +264,7 @@ suite("examples/remodel.arch", () => {
 });
 
 const PINS = {
-  svg: "65b37f0152268d5e8fe49f14bcd9b8c142f23f94ffa0871d41acedb375810c05", // CV13 (was 70df86ff): example source edited (chairs added)
+  svg: "44f515fcf6c36762788c7d93af460703229bf062eea04e45d925b99c5a27ded7", // CV13 (was 70df86ff): example source edited (chairs added)
   dxf: "8971ef0345e030f323f8c5ccc1c8e65c5278ca885bb0851e2d9b121d37c2239e", // CV13 (was e2aeaa84): example source edited (chairs added)
   dxfFlat: "be2f52f660936088e1a4b2837dab2583d4ff82d592b7c66786976066312efbdb", // CV13 (was 837b1718): example source edited (chairs added)
   describe: "08560cbbd51ca902e1fa7c554b2cd13ea37266fb668c2d61b333575476a48d62", // CV13 (was d266e4f6): example source edited (chairs added)

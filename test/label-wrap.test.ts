@@ -37,7 +37,7 @@ import { compile } from "../src/index.js";
 import type { ResolvedPlan } from "../src/ir.js";
 import { CLEARANCE, type LabelGroup } from "../src/label-placement.js";
 import { extractArchBlocks } from "../src/markdown.js";
-import type { RenderSizes, SceneNode, ScenePrim } from "../src/scene.js";
+import type { RenderSizes, Scene, SceneNode, ScenePrim } from "../src/scene.js";
 import { textExtent, textLines } from "../src/text-layout.js";
 import { toDxf } from "../src/export/dxf.js";
 import { NULL_WORLD, type World } from "../src/world.js";
@@ -76,12 +76,16 @@ vi.mock("../src/label-placement.js", async (importOriginal) => {
 const ROOT = resolvePath(__dirname, "..");
 
 /** Compile with the wrap step on or off; every `toScene` it made, in order. */
-function run(src: string, world: World, off: boolean): { calls: Call[]; drawings: string[] } {
+function run(src: string, world: World, off: boolean): { calls: Call[]; drawings: string[]; scenes: Scene[] } {
   state.off = off;
   state.calls = [];
   try {
     const out = compile(src, { noCache: true, world });
-    return { calls: state.calls, drawings: out.pages ? out.pages.map((p) => p.svg) : [out.svg] };
+    return {
+      calls: state.calls,
+      drawings: out.pages ? out.pages.map((p) => p.svg) : [out.svg],
+      scenes: out.pages ? out.pages.map((p) => p.scene) : out.scene ? [out.scene] : [],
+    };
   } finally {
     state.off = false;
   }
@@ -226,7 +230,74 @@ function law(name: string, src: string, world: World, t: Tally): void {
   }
   // A plan with no wrapped name draws exactly what it drew before, every storey.
   if (!any) expect(after.drawings, name).toEqual(before.drawings);
+  // Card SR.15: a wrapped name's `<text>` reads as the name (its text content, what a screen reader,
+  // a search or a schedule check reads), and the separators are the only thing between its lines.
+  // Read against the wrapped texts each storey's scene draws: the wrap step's and the label fit's.
+  expect(after.scenes.length, name).toBe(after.drawings.length);
+  for (const [k, svg] of after.drawings.entries()) {
+    const drawnWrapped = new Set<string>();
+    let blocks = 0;
+    for (const n of after.scenes[k]!.nodes) {
+      if (n.prim.t !== "text" || !n.prim.block) continue;
+      drawnWrapped.add(n.prim.value);
+      blocks++;
+    }
+    let wrappedTexts = 0;
+    for (const e of elements(svg, "text")) {
+      if (!e.inner.includes("<tspan")) continue;
+      const { lines, separators } = splitTspans(e.inner);
+      expect(lines.length, name).toBeGreaterThan(1);
+      expect(lines.map((l) => l.whole).join(""), name).toBe(stripSeparators(e.inner));
+      for (const s of separators) expect(s.inner, name).toMatch(/^ +$/);
+      const content = textContent(e.inner);
+      expect(content, name).not.toBe(lines.map((l) => l.inner).join(""));
+      expect(drawnWrapped.has(unescapeXml(content)), `${name}: ${content}`).toBe(true);
+      wrappedTexts++;
+    }
+    // Every wrapped text the scene holds is drawn as one: none is drawn without its lines.
+    expect(wrappedTexts, name).toBe(blocks);
+  }
 }
+
+/** The separator a wrapped name carries between its lines (`src/backends/svg.ts`, card SR.15). */
+const SEPARATOR_OPEN = '<tspan font-size="0" xml:space="preserve">';
+
+/** A wrapped `<text>`'s content split into its drawn lines (`<tspan x y>`) and its separators. */
+function splitTspans(inner: string): { lines: Element[]; separators: Element[] } {
+  const all = elements(inner, "tspan");
+  return {
+    lines: all.filter((t) => t.open !== SEPARATOR_OPEN),
+    separators: all.filter((t) => t.open === SEPARATOR_OPEN),
+  };
+}
+
+/** `inner` with every separator removed: the content as the backends drew it before SR.15. */
+function stripSeparators(inner: string): string {
+  let out = inner;
+  for (const s of splitTspans(inner).separators) out = out.replace(s.whole, "");
+  return out;
+}
+
+/** An element's text content: its content with every tag removed (still XML-escaped). */
+function textContent(inner: string): string {
+  let out = "";
+  for (let i = 0; i < inner.length; ) {
+    const lt = inner.indexOf("<", i);
+    if (lt < 0) return out + inner.slice(i);
+    out += inner.slice(i, lt);
+    i = inner.indexOf(">", lt) + 1;
+  }
+  return out;
+}
+
+/** The entities the SVG backend writes, read back. */
+const unescapeXml = (s: string): string =>
+  s
+    .replaceAll("&lt;", "<")
+    .replaceAll("&gt;", ">")
+    .replaceAll("&quot;", '"')
+    .replaceAll("&apos;", "'")
+    .replaceAll("&amp;", "&");
 
 /** A corpus file's name as the moved-drawings list spells it: repo-relative, `/`-separated on
  *  every platform (Windows paths use `\`). */
@@ -423,7 +494,7 @@ function drawnNames(svg: string): { text: string; lines: string[] }[] {
   return elements(svg, "text")
     .filter((e) => attr(e.open, "font-weight") === "600")
     .map((e) => {
-      const tspans = elements(e.inner, "tspan").map((t) => t.inner);
+      const tspans = splitTspans(e.inner).lines.map((t) => t.inner);
       return { text: e.whole, lines: tspans.length > 0 ? tspans : [e.inner] };
     });
 }
@@ -491,10 +562,13 @@ describe("annotate: the name is data, only the drawing wraps", () => {
     expect(texts).toHaveLength(2);
     expect(texts[0]!.whole).toContain('data-arch-label="Bedroom 3"');
     expect(texts[0]!.whole).toContain('aria-hidden="true"');
-    // Its content is exactly two `<tspan x y>` lines, "Bedroom" then "3", and nothing else.
-    const lines = elements(texts[0]!.inner, "tspan");
+    // Its content is exactly two `<tspan x y>` lines, "Bedroom" then "3", with the one space the
+    // break removed between them in a zero-size separator (card SR.15), and nothing else.
+    const { lines, separators } = splitTspans(texts[0]!.inner);
     expect(lines.map((t) => t.inner)).toEqual(["Bedroom", "3"]);
-    expect(lines.map((t) => t.whole).join("")).toBe(texts[0]!.inner);
+    expect(separators.map((t) => t.whole)).toEqual([`${SEPARATOR_OPEN} </tspan>`]);
+    expect(lines.map((t) => t.whole).join(separators[0]!.whole)).toBe(texts[0]!.inner);
+    expect(textContent(texts[0]!.inner)).toBe("Bedroom 3");
     for (const t of lines) {
       const x = attr(t.open, "x");
       const y = attr(t.open, "y");
@@ -509,7 +583,7 @@ describe("the backends agree on a wrapped name", () => {
   const drawn = () => {
     const { scene, svg } = compile(WITNESS(), { noCache: true });
     const name = drawnNames(svg).find((n) => n.text.includes("Bedroom"))!;
-    const tspans = elements(name.text, "tspan").map((t) => {
+    const tspans = splitTspans(name.text).lines.map((t) => {
       const x = attr(t.open, "x")!;
       const y = attr(t.open, "y")!;
       // Exactly `<tspan x y>`: no other attribute rides a line.
