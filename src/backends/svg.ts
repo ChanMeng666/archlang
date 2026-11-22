@@ -32,7 +32,7 @@ const pt = (p: Point): string => `${fmt(p.x)},${fmt(p.y)}`;
  *  error-card backend and `sanitizeTheme` so every escaping site behaves alike. */
 export { xmlText as xml } from "../text-safe.js";
 import { xmlText as xml } from "../text-safe.js";
-import { textLines } from "../text-layout.js";
+import { lineGaps, textLines } from "../text-layout.js";
 import { northBearingDeg } from "../algebra/d4.js";
 
 /**
@@ -186,12 +186,20 @@ function serialize(node: SceneNode, sizes: RenderSizes): string {
         prim.rotate !== undefined ? ` transform="rotate(${fmt(prim.rotate)} ${fmt(prim.at.x)} ${fmt(prim.at.y)})"` : "";
       // A wrapped name stays ONE `<text>` (one node an embedder can find, hide or restyle),
       // its lines as `<tspan>`s at absolute positions from `textLines` — the positions the
-      // PDF and DXF backends draw at too.
-      const body = prim.block
-        ? textLines(prim)
-            .map((l) => `<tspan x="${fmt(l.at.x)}" y="${fmt(l.at.y)}">${xml(l.value)}</tspan>`)
-            .join("")
-        : xml(prim.value);
+      // PDF and DXF backends draw at too. The spaces a break removed ride between the lines in
+      // a `font-size="0"` tspan (card SR.15), so the element's text is the name ("Entrance Hall",
+      // never "EntranceHall") while every glyph stands where it did: a visible space would
+      // widen its line's text chunk and shift the anchored line by half a space.
+      let body = xml(prim.value);
+      if (prim.block) {
+        const gaps = lineGaps(prim.value, prim.block.lines);
+        const gap = (i: number) =>
+          gaps?.[i] ? `<tspan font-size="0" xml:space="preserve">${xml(gaps[i]!)}</tspan>` : "";
+        body = textLines(prim)
+          .map((l, i) => `${gap(i)}<tspan x="${fmt(l.at.x)}" y="${fmt(l.at.y)}">${xml(l.value)}</tspan>`)
+          .join("");
+        body += gap(prim.block.lines.length);
+      }
       return `<text x="${fmt(prim.at.x)}" y="${fmt(prim.at.y)}" font-size="${fmt(prim.size)}" fill="${paint.fill ?? "none"}" text-anchor="${prim.anchor}" dominant-baseline="${prim.baseline}"${weight}${transform}>${body}</text>`;
     }
   }

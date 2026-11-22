@@ -2758,7 +2758,9 @@ head, 1 and 0 reports); the `table` labelled "Island" in `docs/gallery/family-of
 declined by the label rule (#993 red team 1, m6); and the gallery plans are accepted output, not
 edited by hand (#993's residue: 6 reports in 6 plans). The live residue is SR.20.
 
-### SR.15 · A wrapped room label loses its space in the SVG text (downstream report, 2026-11-20) — `todo`
+### SR.15 · A wrapped room label loses its space in the SVG text (downstream report, 2026-11-20): done by #1010, waiting to be archived — `note`
+
+Done by #1010: the spaces a break removed ride between a wrapped name's `<tspan>` lines in a `<tspan font-size="0" xml:space="preserve">` each (`lineGaps`, `src/text-layout.ts`), so the `<text>`'s content is the label (what a search, a copy or a schedule check reads; a drawn name is `aria-hidden` under `accessible`, so this is not a screen-reader fix); a visible space would shift the anchored line by half a space (measured in Chrome and resvg), the zero-size one moves no glyph (PNG and Chrome screenshots identical). The 201 moved digest rows and 33 K1 rows are SVG only: stripping the separators reproduces every old row. Residue: `arch review`'s two `dx` tspans (`src/cli/review.ts`) still read with no space (SR.23); `svgTexts` never reads a wrapped name's first line (SR.24). The card text below is kept for the record.
 
 A downstream application reads "EntranceHall" from a production drawing whose schedule says
 "Entrance Hall". Repro (MCP `compile`, 2026-11-20): a 1200 × 2400 room labelled "Entrance Hall"
@@ -2869,6 +2871,30 @@ test holds them together. The dataset's published files are the owner's (RM-D47)
 move a recorded `fixed_source` needs that ruling first. **Gate:** `recordTrajectory` calls `l1Fixes`
 (or the header names the difference), and a test holds its fix stage equal to `l1Pipeline`'s over the
 dataset's inputs; no published file is replaced without the owner's ruling.
+
+### SR.23 · The `arch review` sheet's code and its note read as one word (#1010 residue) — `todo`
+
+The review sheet (`src/cli/review.ts`) sets a note after a bold run inside the same `<text>` as a
+`<tspan dx="8">`: a mark's code and its "not ringed" reason (`:637`) and the close-ups heading and its
+"+N close-ups not drawn" count (`:658`). The 8-unit `dx` draws the gap, but the text content has no
+space (a code and "(names no drawn element)" read "W_CODE(names no drawn element)"), the defect SR.15 fixed
+for a wrapped room name. The sheet is CLI output, not `compile()`'s, and its SVG is pinned
+(`test/cli-preview-review.test.ts:107`). **Gate:** each such `<text>`'s content holds a space between the
+two runs, and the drawn glyphs do not move (SR.15's zero-size separator, `src/backends/svg.ts`, or a
+measured alternative); the sheet's pin is re-taken with the reason, by swap-back.
+
+### SR.24 · PNG font planning never reads a wrapped name's first line (#1010 red team) — `todo`
+
+`svgTexts` (`src/backends/png.ts:63`) collects what an SVG draws with
+`/<(text|tspan)\b[^>]*>([^<]*)</g`. A wrapped name is `<text …><tspan x y>first</tspan>…`: the
+`<text …>` match takes the `<` of the first `<tspan`, so the scan resumes past it and the first line
+is never read. It predates SR.15. So `planFonts` does not see a CJK first line: if only that line
+needs the CJK face, the PNG does not load it where it is installed and does not report `W_CJK_FONT_MISSING` where it is not. Repro (2026-11-22, the
+card's 1200-wide hall beside a 4000-wide room): `label "厨房厨房厨房 Kitchen"` wraps and `svgTexts` returns
+`[" ", "Kitchen"]` (no `厨房厨房厨房`); at 6000 wide it is one line and returns `["厨房厨房厨房 Kitchen"]`;
+"Entrance Hall" at 1200 returns `[" ", "Hall"]`. **Gate:** `svgTexts` returns every line of a wrapped
+name (a test with a CJK first line, through `planFonts`), and every PNG with no wrapped CJK line is
+byte-identical.
 
 ## Test-programme findings (promo-credit programme, 2026-11-16)
 
