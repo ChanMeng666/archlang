@@ -237,7 +237,14 @@ test.describe("the feature sheets on /examples", () => {
     0,
   );
 
+  // The /examples page hydrates 35 live compiles (docs-site/examples.md mounts that many <ArchLive>
+  // widgets), so each of the two tests below took 29 to 32 s in CI against Playwright's 30 s
+  // default, whether or not it waits on an image. A fixed budget, not a per-image formula (card
+  // DE.2 cuts the page's cost so the default fits again).
+  const SHEET_TEST_TIMEOUT_MS = 60_000;
+
   test("a sheet shows and opens the SAME plan", async ({ page }) => {
+    test.setTimeout(SHEET_TEST_TIMEOUT_MS);
     await page.goto("/examples");
     const cards = await page.locator(".card").all();
     expect(cards.length, "the sheet gallery must render every SheetGrid card").toBe(CARDS);
@@ -255,16 +262,29 @@ test.describe("the feature sheets on /examples", () => {
   });
 
   test("every sheet drawing renders", async ({ page }) => {
+    test.setTimeout(SHEET_TEST_TIMEOUT_MS);
     await page.goto("/examples");
     const imgs = page.locator(".card__art img");
     // one image per card, plus the extra storeys of each multi-storey card
     await expect(imgs).toHaveCount(CARDS + LEVEL_ART);
-    for (const img of await imgs.all()) {
-      await img.scrollIntoViewIfNeeded();
-      await expect
-        .poll(() => img.evaluate((el) => (el as HTMLImageElement).naturalWidth), { timeout: 10_000 })
-        .toBeGreaterThan(0);
-    }
+    // One poll over every image (not one wait per image: fewer round-trips). Each round scrolls the
+    // images still blank into view (a lazy image outside the viewport never loads) and reports the
+    // list length with the blank count, so a shrinking list cannot pass vacuously.
+    await expect
+      .poll(
+        () =>
+          imgs.evaluateAll((els) => {
+            let blank = 0;
+            for (const el of els as HTMLImageElement[]) {
+              if (el.naturalWidth > 0) continue;
+              blank++;
+              el.scrollIntoView({ block: "center" });
+            }
+            return { total: els.length, blank };
+          }),
+        { timeout: 45_000, message: "sheet images still without a drawing" },
+      )
+      .toEqual({ total: CARDS + LEVEL_ART, blank: 0 });
   });
 });
 
