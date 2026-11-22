@@ -280,6 +280,15 @@
       "twin": "../defect-corpus/clearances/seat-facing-away.clean.arch"
     },
     {
+      "id": "clearances/seat-faces-wall",
+      "column": "default",
+      "profile": null,
+      "expect": "W_SEAT_FACING_WALL",
+      "rule": null,
+      "plan": "../defect-corpus/clearances/seat-faces-wall.arch",
+      "twin": "../defect-corpus/clearances/seat-faces-wall.clean.arch"
+    },
+    {
       "id": "stair-safety/shaft-footprint-mismatch",
       "column": "default",
       "profile": null,

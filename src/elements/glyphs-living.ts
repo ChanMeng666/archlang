@@ -536,6 +536,15 @@ function orthoLoop(pts: readonly Point[], radii: readonly number[]): PathLoop {
 }
 
 /**
+ * How deep each run of the L-sofa ({@link drawSofaL}) is drawn, in its back-on-top frame of
+ * width `w` and depth `h`: `min(0.56 h, 0.35 w)`, never negative. Its seat fronts are this far
+ * in from the back edge and from the return's back.
+ */
+export function sofaLRunDepth(w: number, h: number): number {
+  return Math.max(0, Math.min(h * 0.56, w * 0.35));
+}
+
+/**
  * The L-shaped sofa: {@link drawSofa}'s anatomy wrapped round the corner — one run along
  * the back edge, a return down the left, a SQUARE corner seat where they meet, an arm at each
  * free end, a back band along both outer edges, and white seat and back cushions throughout.
@@ -559,7 +568,10 @@ function orthoLoop(pts: readonly Point[], radii: readonly number[]): PathLoop {
  * coffee table tucked into the L raises `W_FURNITURE_OVERLAP` even though nothing touches.
  * Teaching one rule about the L and not the other four would be worse than this — the drawing
  * and the lint would disagree in a way nothing tests — so the honest fix is a shape seam
- * shared by all five, which is not this change.
+ * shared by all five, which is not this change. One rule reads the drawn L, not the box:
+ * `W_SEAT_FACING_WALL` asks where the two seat FRONTS are, the inner edges `D` in from the back
+ * edge and the return's back, and takes `D` from {@link sofaLRunDepth}, the function this
+ * symbol is drawn with, so the drawing and that rule cannot disagree.
  *
  * **It is handed**: the return is on the LEFT. A mirrored `place` draws the mirror image
  * (`glyph-chirality.ts` derives that from the drawing), so a right-hand L is a mirrored one.
@@ -572,7 +584,7 @@ export function drawSofaL(r: Rect, g: GlyphCtx): SceneNode[] {
   const y0 = r.y;
   const x1 = r.x + r.w;
   const y1 = r.y + r.h;
-  const D = Math.max(0, Math.min(r.h * 0.56, r.w * 0.35));
+  const D = sofaLRunDepth(r.w, r.h);
   const rad = D * UPHOLSTERY_RADIUS;
   const gap = D * 0.018;
   const armW = D * 0.18;

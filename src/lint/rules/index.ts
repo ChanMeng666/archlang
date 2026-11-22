@@ -39,7 +39,7 @@ import {
 } from "./furniture.js";
 import { boundaryNoWall, exteriorRingOpen, floorUnassigned, roomOutsideShell, wallEndShort } from "./enclosure.js";
 import { furnitureOnVoid } from "./floor-gaps.js";
-import { furnClearDeclared, seatFacingAway } from "./furniture-relations.js";
+import { furnClearDeclared, seatFacingAway, seatFacingWall } from "./furniture-relations.js";
 import { connectorAmbiguous, openingAtJunction, openingOverlap } from "./openings.js";
 import { perRoomRules } from "./per-room.js";
 import { entranceIntoPrivate, roomViaPrivate, wetRoomDoor } from "./privacy.js";
@@ -221,6 +221,9 @@ export const LINT_RULES: readonly LintRule[] = [
   // A flight from the storey below with no void over it on this storey (product roadmap RM9.6,
   // coverage class CV14). Appended LAST, so no existing diagnostic moves within the array.
   stairNoVoid,
+  // A sofa or armchair whose front is against a wall (product roadmap RM9.6, coverage class CV08).
+  // Appended LAST, so no existing diagnostic moves within the array.
+  seatFacingWall,
 ];
 
 export type { LintContext, LintRule } from "../context.js";

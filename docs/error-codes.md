@@ -5,7 +5,7 @@
 Every diagnostic carries a stable code. Look one up with `arch explain <CODE>`
 (e.g. `arch explain E_ROOM_SIZE`). Errors abort rendering; warnings do not.
 
-**168 errors** · **107 warnings**
+**168 errors** · **108 warnings**
 
 | Code | Severity | Summary |
 | --- | --- | --- |
@@ -260,6 +260,7 @@ Every diagnostic carries a stable code. Look one up with `arch explain <CODE>`
 | [`W_SANITIZED_CONFIG`](#w_sanitized_config) | warning | A disallowed config value was stripped. |
 | [`W_SCALE_OVERFLOW`](#w_scale_overflow) | warning | The drawing does not fit the declared paper at the declared scale. |
 | [`W_SEAT_FACING_AWAY`](#w_seat_facing_away) | warning | A chair at a table faces away from it. |
+| [`W_SEAT_FACING_WALL`](#w_seat_facing_wall) | warning | A sofa or armchair has its front against a wall. |
 | [`W_SET_VALUE_WORD`](#w_set_value_word) | warning | A bare word in `set <kind>(…)` was taken as text and does nothing. |
 | [`W_SHAFT_FOOTPRINT_MISMATCH`](#w_shaft_footprint_mismatch) | warning | A shaft's runs on two neighbouring storeys do not stand over each other. |
 | [`W_STAIR_HEAD_VOID`](#w_stair_head_void) | warning | A void opens on the landing at the head of a flight. |
@@ -4924,6 +4925,26 @@ furniture chair at (175,850) size 450x450   # lint: south of the table, facing s
 ```arch static
 furniture table at (0,0) size 800x800
 furniture chair at (175,850) size 450x450 rotate 180   # fixed: the rotate that turns its front to the table
+```
+
+## W_SEAT_FACING_WALL
+
+*warning* — A sofa or armchair has its front against a wall.
+
+**Cause.** A `sofa`, `sofa_l`, `loveseat` or `armchair` (or an alias) has its drawn front on a wall's face, with no floor between, so nobody can sit on it. The front is read off its turn (at `rotate 0` its back is to the north), and an L-sofa's two fronts are the inner edges of its L. A wall counts when its solid covers half the front or more; a door or cased opening in it is floor. No distance is measured, and a seat with its back to the room is not judged.
+
+**Fix.** Turn the seat so its back is on that wall (the hint gives the `rotate`), or move it into the room. There is no machine fix.
+
+```arch static
+wall id=w partition thickness 100 { (0,0) (3000,0) }
+furniture loveseat at (750,-900) size 1500x850   # lint: its front on the wall
+```
+
+**Fixed.**
+
+```arch static
+wall id=w partition thickness 100 { (0,0) (3000,0) }
+furniture loveseat at (750,-900) size 1500x850 rotate 180   # fixed: its back on the wall
 ```
 
 ## W_SET_VALUE_WORD

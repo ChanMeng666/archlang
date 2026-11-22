@@ -610,7 +610,7 @@ const BASELINE: [string, string][] = [
   ["test/recovery-corpus/materials.arch", "dd0844982019f758378549ad1c9c9b60abab9bb3e3adb85ee57e46874f9db10b"],
   ["test/recovery-corpus/parametric.arch", "98c1ddb6111e8b4bdd7a025e4a2d7e45603e3f686cbc584aa2229891c2410d24"],
   ["test/recovery-corpus/studio.arch", "e547313409b32843df1bc48897017b2d404b2f6a5316d9318b529362f96cb57d"], // PS2.11e, see header
-  ["test/recovery-corpus/terrace-row.arch", "776d912f42b22e335c57392e9edb02c9207b20c53c6c6db0c118484a68cda4d0"],
+  ["test/recovery-corpus/terrace-row.arch", "a6d9d6ac0cc4182c93e076a445d4306639d3388781ed909bf6a4e31cf17022ce"], // RM9.6 CV08 (was 776d912f): lint() gains W_SEAT_FACING_WALL x4 (this copy keeps the sofa the example turned)
   // Re-measured 2026-10-18 (PS0.7): a copy of `examples/themed.arch`, the same cause and value.
   ["test/recovery-corpus/themed.arch", "ad274a10c13b1aa035e3e32fed8b6aecc0b0d6a1b2e5112008a647f5fde638e3"], // PS2.11e, see header
   ["test/recovery-corpus/two-storey.arch", "98124d8dbcfff93e52cdb09176101228132940d19cfe312fec05d70fa19ce36c"], // re-measured for S2 (#362): `W_STAIR_TOO_STEEP`'s hint reworded, nothing else; was 2102a710477b9a23e3eb5a99256840119629b128297515d9603ec459c800ff99; RM1.3a, see ./byte-identity-baseline.ts; RM1.2a review, see ./byte-identity-baseline.ts; RM9.2, see ./byte-identity-baseline.ts; RM9.6 CV14: W_STAIR_NO_VOID reports this plan (was ea270416)

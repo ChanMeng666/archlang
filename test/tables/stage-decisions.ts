@@ -80,6 +80,7 @@ export const DECIDED: Record<AuthoringStage, string[]> = {
     "W_ROOM_NO_CLEAR_PATH",
     "W_ROOM_NO_FIXTURE",
     "W_SEAT_FACING_AWAY",
+    "W_SEAT_FACING_WALL",
     "W_TABLE_NO_SEAT",
     "W_WC_SIDE_CLEARANCE",
   ],

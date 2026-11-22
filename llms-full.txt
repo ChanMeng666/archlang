@@ -874,7 +874,7 @@ from a file or stdin (`-`). This CLI is the primary agent interface; an optional
 
 **`archlang context`** — print the full bundled agent context (spec + workflow + CLI + errors)
   - input: none → output: the full agent context (llms-full.txt), one --section of it, or the one-screen --level starter
-  - flags: `--level <starter|full>` starter = one screen (at most 4000 characters) for a small model: the lead example, the statements a plan needs, the loop and five errors with their fixes; full = the whole 181 KB bundle (default, unchanged) · `--section <spec|workflow|cli|errors>` print only one section of the bundle instead of all 181 KB of it (spec = the language, 30 KB; workflow = the agent loop, 36 KB; cli = every command, 38 KB; errors = the diagnostic catalog, 77 KB) · `--json` structured result on stdout, messages on stderr
+  - flags: `--level <starter|full>` starter = one screen (at most 4000 characters) for a small model: the lead example, the statements a plan needs, the loop and five errors with their fixes; full = the whole 182 KB bundle (default, unchanged) · `--section <spec|workflow|cli|errors>` print only one section of the bundle instead of all 182 KB of it (spec = the language, 30 KB; workflow = the agent loop, 36 KB; cli = every command, 38 KB; errors = the diagnostic catalog, 77 KB) · `--json` structured result on stdout, messages on stderr
   - example: `archlang context` — the cold-start bundle: spec + workflow + CLI reference + every diagnostic
 
 **`archlang new`** (aliases: `init`) — scaffold a starter .arch
@@ -897,7 +897,7 @@ from a file or stdin (`-`). This CLI is the primary agent interface; an optional
 ## 4. Diagnostic catalog
 
 Every diagnostic carries a stable code and a `fix`. Look one up with `archlang explain <CODE>`.
-**168 errors** (abort rendering) · **107 warnings** (advisory; `validate --strict` fails on them too).
+**168 errors** (abort rendering) · **108 warnings** (advisory; `validate --strict` fails on them too).
 
 ### Errors
 
@@ -1155,6 +1155,7 @@ Every diagnostic carries a stable code and a `fix`. Look one up with `archlang e
 - `W_SANITIZED_CONFIG` — A disallowed config value was stripped. **Fix:** Use a plain colour/string value (no `<`, `>`, or `url(data:…)`).
 - `W_SCALE_OVERFLOW` — The drawing does not fit the declared paper at the declared scale. **Fix:** Pick a coarser scale (a larger denominator draws the building smaller), move up a paper size, drop a margin table you can do without, or drop the `scale` line and let the sheet auto-fit choose the finest scale from 1:50 / 1:100 / 1:200 / 1:500.
 - `W_SEAT_FACING_AWAY` — A chair at a table faces away from it. **Fix:** Add `facing <table id>` to the chair (the hint names the nearest table and the turn it derives), or give it the `rotate` that turns its front to the table.
+- `W_SEAT_FACING_WALL` — A sofa or armchair has its front against a wall. **Fix:** Turn the seat so its back is on that wall (the hint gives the `rotate`), or move it into the room. There is no machine fix.
 - `W_SET_VALUE_WORD` — A bare word in `set <kind>(…)` was taken as text and does nothing. **Fix:** Write the value on the element, or a word the key reads.
 - `W_SHAFT_FOOTPRINT_MISMATCH` — A shaft's runs on two neighbouring storeys do not stand over each other. **Fix:** Draw the run with the same `at` and `size` on both storeys (the hint quotes both), or give two unrelated runs different ids. There is no machine-applicable fix: which storey is right is the author's call.
 - `W_STAIR_HEAD_VOID` — A void opens on the landing at the head of a flight. **Fix:** Draw the void over the flight itself, ending at its head (the stairwell, which `W_STAIR_NO_VOID` asks for), or move it past the foot end or shrink it, so the landing beyond the head is floor. There is no machine-applicable fix.

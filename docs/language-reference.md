@@ -4072,6 +4072,17 @@ whole stair without running into a wall, so the stair joins its storeys again; t
 moves, no such move, or a move a later fix undoes is reported instead. Rooms a missing door cuts
 off are `archlang suggest`'s.
 
+**A seat repair moves is not left facing a wall.** When any of repair's moves (a push out of a
+wall, the most common, but also a move back into its room, off another piece, out of a doorway or
+off a stair) leaves a sofa, loveseat or armchair with its drawn front on a wall face, the
+`W_SEAT_FACING_WALL` fault, the seat is also turned half a turn, its footprint unchanged, so its
+back is on that wall: a `rotated` change with the reason "turned so its back is on wall …".
+A seat it moves but cannot turn that way is reported in `unresolved` with the fault and why: an
+L-sofa (its fronts are inside its box, and half a turn moves its open quadrant), a piece repair
+left standing in a wall, a `rotate` written as an expression, a turn stated by `facing`, or a
+seat between two walls (half a turn would put its front on the other). A seat repair does not
+move is never turned: a sofa already facing a wall is `lint`'s report, not repair's.
+
 ### Completing the drawing — `archlang finish`
 
 A sound plan is not yet a complete drawing. Rooms may hold no furniture, and `paper`, `scale`,

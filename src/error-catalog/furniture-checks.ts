@@ -74,6 +74,13 @@ export const FURNITURE_CHECKS_ENTRIES = defineEntries({
     "furniture table at (0,0) size 800x800\nfurniture chair at (175,850) size 450x450   # lint: south of the table, facing south",
     "furniture table at (0,0) size 800x800\nfurniture chair at (175,850) size 450x450 rotate 180   # fixed: the rotate that turns its front to the table",
   ),
+  W_SEAT_FACING_WALL: w(
+    "A sofa or armchair has its front against a wall.",
+    "A `sofa`, `sofa_l`, `loveseat` or `armchair` (or an alias) has its drawn front on a wall's face, with no floor between, so nobody can sit on it. The front is read off its turn (at `rotate 0` its back is to the north), and an L-sofa's two fronts are the inner edges of its L. A wall counts when its solid covers half the front or more; a door or cased opening in it is floor. No distance is measured, and a seat with its back to the room is not judged.",
+    "Turn the seat so its back is on that wall (the hint gives the `rotate`), or move it into the room. There is no machine fix.",
+    "wall id=w partition thickness 100 { (0,0) (3000,0) }\nfurniture loveseat at (750,-900) size 1500x850   # lint: its front on the wall",
+    "wall id=w partition thickness 100 { (0,0) (3000,0) }\nfurniture loveseat at (750,-900) size 1500x850 rotate 180   # fixed: its back on the wall",
+  ),
   W_WC_SIDE_CLEARANCE: w(
     "A WC's centreline is too close to a wall or fixture at its side.",
     "A `wc` (or `toilet`) has its centreline nearer than the ruleset's `wcSideClearanceMm` to a side obstacle: the face of a straight wall, or a fixture or piece of furniture beside the pan (a mirror or wall cabinet above it, a rug under it and a door's swing do not count, and a doorway or cased opening in the wall beside it is a gap, measured to its jamb). Its sides are the two edges beside its back (its `rotate`), measured square to the centreline over the pan's depth, from the drawn footprint to the drawn shape beside it, never from bounding boxes. A WC beside a curved wall is not judged (a `curved-wc-wall` coverage skip). The figure is 400 mm by default (the low end of the 400–500 mm of Approved Document M4(2) Diagram 2.5), 381 mm under `us-residential-advisory` (IRC P2705.1, 15 in), 400 under `uk-residential-advisory` and 450 under `accessibility-advisory` (Approved Document M Vol 1's 450–500 mm for a wheelchair user's WC), as advice, never compliance (ADR 0005). Set `wcSideClearanceMm: null` to turn it off.",

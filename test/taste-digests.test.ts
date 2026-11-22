@@ -250,6 +250,11 @@
  * is unchanged. The `void-at-stair-head` twin now draws its void as the stairwell and reads as on `main`
  * (taste reads no void). With the rule taken out of `LINT_RULES` each moved row reproduces the value it
  * replaces, and the new case's digest equals its twin's. The moved rows carry `RM9.6 CV14` notes.
+ *
+ * RM9.6 CV08 (`W_SEAT_FACING_WALL`, a sofa or armchair whose front is on a wall face) added six rows,
+ * the new `clearances/seat-faces-wall` pair under each of the three profiles, measured with
+ * `tasteDigest`, and moved none: no other source here has a lounge seat whose front is on a wall (the
+ * two shipped examples that had one were turned first, ruling RM-D73). The rows carry `RM9.6 CV08` notes.
  */
 
 import { describe, expect, it } from "vitest";
@@ -677,6 +682,16 @@ const TABLE: ReadonlyArray<[string, string, string]> = [
     "9dcf8ae46167da2150ac92f3734d6fcaff3439db35d2c1ca16877d8b4af83641",
     "generic",
     "test/defect-corpus/clearances/masked-route-patio-door.clean.arch",
+  ],
+  [
+    "2b8b36b4bec29d3395e82a82375831529dcea504fdb0255b34d29f2a58238f0e", // RM9.6 CV08: W_SEAT_FACING_WALL's new defect-corpus file
+    "generic",
+    "test/defect-corpus/clearances/seat-faces-wall.arch",
+  ],
+  [
+    "294d1269d1e3dcdf86c3b75d4f051bec499dac7e7f320f3513632ccc6f14e8c9", // RM9.6 CV08: W_SEAT_FACING_WALL's new defect-corpus file
+    "generic",
+    "test/defect-corpus/clearances/seat-faces-wall.clean.arch",
   ],
   [
     "e76a9838326f4b008588740dad5cdd9a393b911cef45d2f1afd613c7773da0fa",
@@ -1929,6 +1944,16 @@ const TABLE: ReadonlyArray<[string, string, string]> = [
     "test/defect-corpus/clearances/masked-route-patio-door.clean.arch",
   ],
   [
+    "73066b16fb0b548614830b2cd4dfabb5d8c54965b39a941d912312342227dd70", // RM9.6 CV08: W_SEAT_FACING_WALL's new defect-corpus file
+    "cn-residential-advisory",
+    "test/defect-corpus/clearances/seat-faces-wall.arch",
+  ],
+  [
+    "7338c88288f095e244f08049d3faed1aefa681ddfec57439b34654d448915f55", // RM9.6 CV08: W_SEAT_FACING_WALL's new defect-corpus file
+    "cn-residential-advisory",
+    "test/defect-corpus/clearances/seat-faces-wall.clean.arch",
+  ],
+  [
     "d38df6da6e9987a52f8de3addca0ff076cbcc211c05a9a5c4444ddf10af964e1",
     "cn-residential-advisory",
     "test/defect-corpus/clearances/seat-facing-away.arch",
@@ -3177,6 +3202,16 @@ const TABLE: ReadonlyArray<[string, string, string]> = [
     "a13d4e0ff29bd50f67d10255458eabf5081eb8b0b75c92a3ca59cdc03ac5bfdf",
     "us-residential-advisory",
     "test/defect-corpus/clearances/masked-route-patio-door.clean.arch",
+  ],
+  [
+    "d67a62530acddb8c4a413611aaf186ba8d55ce825b82dd3cb0981c58e9a12085", // RM9.6 CV08: W_SEAT_FACING_WALL's new defect-corpus file
+    "us-residential-advisory",
+    "test/defect-corpus/clearances/seat-faces-wall.arch",
+  ],
+  [
+    "f2109510833cc19c8c54e480615119c0be4a333ad65dc5ac1b9c324ae00f87a6", // RM9.6 CV08: W_SEAT_FACING_WALL's new defect-corpus file
+    "us-residential-advisory",
+    "test/defect-corpus/clearances/seat-faces-wall.clean.arch",
   ],
   [
     "1b0297efa6d844480db8727e233f7e2341928171af7cf8b97637aebdbc0a3d4c",
