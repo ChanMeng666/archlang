@@ -57,6 +57,12 @@
  * arrow's `<g>`, and where the body hashes the Scene, the added `chrome.north` with it; `describe()`,
  * `lint()`, the diagnostics and the steps did not move. Put `main`'s SVG back (`a9db286e`) and drop
  * `chrome.north`, and this body reproduces every old digest; the new ones are this body on the branch.
+ *
+ * Re-measured for SR.15 (a wrapped room name keeps the spaces its break removed, each run in a
+ * `<tspan font-size="0" xml:space="preserve">` between its lines): the rows of plans that draw a
+ * wrapped name moved, SVG only. Strip those separators from the branch's SVG and this body
+ * reproduces every old digest (`test/byte-identity-baseline.ts`, § SR.15); `describe()`, `lint()`,
+ * the diagnostics and the steps did not move.
  */
 
 import { readFileSync } from "node:fs";
@@ -86,8 +92,8 @@ const BASELINE: [string, string][] = [
   ["eee3dc30bd94b5f31c7189f719ff38e09d6f56a3d5484f443432591f8f1e737e", "examples/aquarium.arch"],
   ["07995653257dff5785f4fe210e3c4f6f9d6fc35165be2e5ae34df364079029dc", "examples/attached.arch"],
   ["0dd331e28b8f4e20c3b359c8e819ed738290295cc83934c1a38808d2fd83dc13", "examples/bungalow.arch"], // CV13 (was 074d5531): example source edited (chairs added)
-  ["cca7c3dfef6593e826303c88878fbfb5537bded8a6bb9323696ae4b446ac046a", "examples/classroom-block.arch"],
-  ["b31aad2c2f0c0d1b7e63498f8844570f16c700846d533288de7e43bf5ad56e63", "examples/clinic.arch"],
+  ["4d558795c0b345b3a9a1e5454bc476125983a63dee7d3227c0d3afe09b7ed3bd", "examples/classroom-block.arch"],
+  ["6a8b78ce84d10bea939f48f431d16e127cb95b982f473d33072889e110ff4788", "examples/clinic.arch"],
   ["d669e11a11740a841311fe359a3d5bc650343ba1f16e827bc4d869dc65206bd5", "examples/corner-cafe.arch"],
   ["50c9cc316efda2bf16183e877d4be16443df160c9c13fc2a0210d62945c4bd67", "examples/courtyard-family.arch"],
   ["3ce3c72f6915ece00f2eca8d9321651aca7c2644b95cc423f10397395fc9ab12", "examples/courtyard-house.arch"], // CV13 (was 0f6dddac): example source edited (chairs added)
@@ -103,16 +109,16 @@ const BASELINE: [string, string][] = [
   ["f57eaea084d2e6e62b85b8450ef96675e9f1466bea9aff24e2869f2d6f0c9804", "examples/lib/doors.arch"],
   ["57d6c78e2eea8451a9b32a5828f3babb24b0251cc5c3b72675b431be22b3f310", "examples/lib/fixtures.arch"],
   ["adf16d60e17d76d76f092f95fb24dab4b7ba5ebaa977ed32bcc3a8eaddc7e05b", "examples/lib/furniture.arch"],
-  ["acbc3325a38dea3132c2e6898df4c40ac2df5e85684fab1531409ba397e3b506", "examples/library.arch"],
+  ["a004eb834300480a37f5a520671a570fb3e07f7bff061ba7e510e779fa912466", "examples/library.arch"],
   ["b3d629675b1a43d4d1113f10b38e732d0b826fdb2b019fcf14ac4b166abd435d", "examples/materials.arch"],
   ["add9b13a425ec75dd2b88c4eba087465228822c37321b3d1952db6f0795ef6c7", "examples/museum-wing.arch"],
   ["4acccb8ead0234e18186574c23a4c795d32c6a8f819fc67a983cebea337b8b29", "examples/museum-wings.arch"],
   ["bf1d425c9bf21d6ddb3e4757f53a1820f186cca67c3300c0a6ce8eb6b4e73713", "examples/museum.arch"],
   ["8c47e263f778993d69c2f85d07a24b3a62c0b96d9f17ccb5cd9ebf2af6fa0120", "examples/one-room.arch"],
   ["7cceeb1be4622a8b84e1625a124d31f44fdfc15cd5362c4f4f25fa67f5560989", "examples/parametric.arch"],
-  ["f655cd0dfaa4ec152a2effa51cd2a3fb6254d46c8fb7e29529cbd3c7b78491cb", "examples/practice-office.arch"],
+  ["bf127fd8266fe3d85e9f25712ac69c02bd42370c7027cf1a01baeafe1d3aa36c", "examples/practice-office.arch"],
   ["d99a898c06b322f203c7f9f3d34740be351b523712bb04fe7b0d846e85811084", "examples/relational.arch"],
-  ["5fd914bb04d3d2c03d590844eb51dd3039763bab16b26d24e141b2c54b32fcfc", "examples/remodel.arch"], // CV13 (was f0f4a5aa): example source edited (chairs added)
+  ["b7fc3b7f11be692ffdc3125d66d01e9c70cb9ade93ab673f4bb4ddaebd0e085c", "examples/remodel.arch"], // SR.15 (was 5fd914bb); CV13 (was f0f4a5aa): example source edited (chairs added)
   ["708332c1a3f4cf35989718277b996af6f718d2e5fb8bd3d2912d8f87f7d61a2a", "examples/sheet-notes.arch"],
   ["f71aacc239a5bc518ea19e16c2152c3be59239bf96f73ae5248fa80fa23e3c75", "examples/showcase/garden-courtyard.arch"], // CV13 (was 54adc1b8): example source edited (chairs added)
   ["b64f7234dddc6527a0176033e82b38b70ad4fe84ca8df22b7a2e3269a1029553", "examples/studio.arch"],

@@ -43,6 +43,12 @@
  * arrow's `<g>`, and where the body hashes the Scene, the added `chrome.north` with it; `describe()`,
  * `lint()`, the diagnostics and the steps did not move. Put `main`'s SVG back (`a9db286e`) and drop
  * `chrome.north`, and this body reproduces every old digest; the new ones are this body on the branch.
+ *
+ * Re-measured for SR.15 (a wrapped room name keeps the spaces its break removed, each run in a
+ * `<tspan font-size="0" xml:space="preserve">` between its lines): the rows of plans that draw a
+ * wrapped name moved, SVG only. Strip those separators from the branch's SVG and this body
+ * reproduces every old digest (`test/byte-identity-baseline.ts`, § SR.15); `describe()`, `lint()`,
+ * the diagnostics and the steps did not move.
  */
 
 import { readdirSync, readFileSync, statSync } from "node:fs";
@@ -117,13 +123,13 @@ const BASELINE: [string, string, string][] = [
     "examples/bungalow.arch",
   ],
   [
-    "cca7c3dfef6593e826303c88878fbfb5537bded8a6bb9323696ae4b446ac046a",
+    "4d558795c0b345b3a9a1e5454bc476125983a63dee7d3227c0d3afe09b7ed3bd",
     // AF9: the parse holds the `posSpan` and `wallSpan` an opening's lead now records (no semantics); without them it is the parse pinned here (was 3418a51e)
     "bb6dfd67e62f7145186102f4051cd70c98fa1b59d231371aedde152a32ce4967",
     "examples/classroom-block.arch",
   ],
   [
-    "b31aad2c2f0c0d1b7e63498f8844570f16c700846d533288de7e43bf5ad56e63",
+    "6a8b78ce84d10bea939f48f431d16e127cb95b982f473d33072889e110ff4788",
     // AF9: the parse holds the `posSpan` and `wallSpan` an opening's lead now records (no semantics); without them it is the parse pinned here (was c23e64a1)
     "7b3e95106ff67570b2ab399073f9b4857a497b397b93b0dbab769f560b753571",
     "examples/clinic.arch",
@@ -218,7 +224,7 @@ const BASELINE: [string, string, string][] = [
     "examples/lib/furniture.arch",
   ],
   [
-    "acbc3325a38dea3132c2e6898df4c40ac2df5e85684fab1531409ba397e3b506",
+    "a004eb834300480a37f5a520671a570fb3e07f7bff061ba7e510e779fa912466",
     // AF9: the parse holds the `posSpan` and `wallSpan` an opening's lead now records (no semantics); without them it is the parse pinned here (was 2656d94d)
     "6e737b9180bb6c0cc5f9276ca1547e0d0bd6f6f252ac87019b80837cdf41aabb",
     "examples/library.arch",
@@ -258,7 +264,7 @@ const BASELINE: [string, string, string][] = [
     "examples/parametric.arch",
   ],
   [
-    "f655cd0dfaa4ec152a2effa51cd2a3fb6254d46c8fb7e29529cbd3c7b78491cb",
+    "bf127fd8266fe3d85e9f25712ac69c02bd42370c7027cf1a01baeafe1d3aa36c",
     // AF9: the parse holds the `posSpan` and `wallSpan` an opening's lead now records (no semantics); without them it is the parse pinned here (was 7166b9fa)
     "8ab3a59a531a168d1c07389e0ab8ea5a78f9bfeae2e7aa499f4fc53550f2f2a9",
     "examples/practice-office.arch",
@@ -270,7 +276,7 @@ const BASELINE: [string, string, string][] = [
     "examples/relational.arch",
   ],
   [
-    "5fd914bb04d3d2c03d590844eb51dd3039763bab16b26d24e141b2c54b32fcfc", // CV13 (was f0f4a5aa): example source edited (chairs added)
+    "b7fc3b7f11be692ffdc3125d66d01e9c70cb9ade93ab673f4bb4ddaebd0e085c", // SR.15 (was 5fd914bb); CV13 (was f0f4a5aa): example source edited (chairs added)
     // CO.1: the parse holds the `size` clause the example now writes; without them, offsets mapped back, it is the parse pinned here (was 32255022)
     // AF9: the parse holds the `posSpan` and `wallSpan` an opening's lead now records (no semantics); without them it is the parse pinned here (was efcd3520)
     "4a222c2fe62a853f0b4aec7581b543b1cb19c4d0a8d65166ab003f3a60cb6308", // CV13 (was a6ed253f): example source edited (chairs added)

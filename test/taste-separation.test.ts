@@ -33,6 +33,11 @@
  * 0.4606 against the case's 0.7677 — the order of the totals is the cap's, not R7's) and two
  * pairs left the UNJUDGED list (`wc-utility-passage`, `wc-window-crossed-by-partition`: R9 now judges their
  * bath/WC, and both twins out-score their capped cases).
+ *
+ * RM1.2b item 2 (R20, wet-room stacking) added one pair to set C, `r20-bath-off-the-stack`: the case's
+ * first-floor bathroom stands at the far end of the landing from the cloakroom below (R20 0, total
+ * 0.7), the twin's over it (R20 1, total 0.8). No row of set A or B moved: no defect-corpus plan has
+ * wet rooms on two storeys, so R20 judges none of them.
  */
 
 import { describe, expect, it } from "vitest";

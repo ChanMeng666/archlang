@@ -273,7 +273,7 @@ Totals: 425 modules in 34 directories.
 | `identity.ts` | 33 | 3 | Process-local stable identity tokens for cache keying. | none |
 | `impact.ts` | 1405 | 3 | `impact(before, after)` (plan-soundness card PS4.2): change one number, see what follows, what stays put, and what breaks. The executable answer to "what changes, what must not". | none |
 | `import.ts` | 349 | 38 | Module linking — the `import` system. | none |
-| `index.ts` | 761 | 471 | ArchLang — compile declarative floor-plan source to a professional SVG. | none |
+| `index.ts` | 761 | 472 | ArchLang — compile declarative floor-plan source to a professional SVG. | none |
 | `input-limit.ts` | 77 | 5 | A host's refusals, as catalogued diagnostics. | none |
 | `intent-concepts.ts` | 238 | 7 | The intent channel's concept vocabulary — production name resolution for the NL→ArchLang intent contract. | none |
 | `intent-feasibility.ts` | 388 | 3 | Infeasibility of a brief's stated numbers: the arithmetic that makes "this brief is impossible" checkable, before any plan exists. | none |
@@ -309,7 +309,7 @@ Totals: 425 modules in 34 directories.
 | `sanitize.ts` | 61 | 2 | Config sanitization — a denylist for **untrusted** `.arch`-sourced config. | none |
 | `scene-build.ts` | 1807 | 34 | Lowers a resolved plan (IR) to the backend-neutral {@link Scene}. | none |
 | `scene-memo.ts` | 180 | 4 | One Scene per resolved plan and drawing options, shared by `compile()` and `lint()`. | none |
-| `scene.ts` | 513 | 123 | Backend-neutral **Scene IR** — the keystone drawing intermediate. | none |
+| `scene.ts` | 513 | 124 | Backend-neutral **Scene IR** — the keystone drawing intermediate. | none |
 | `segment-select.ts` | 221 | 7 | Segment selectors (plan card PS3.5): `segment north\|south\|east\|west` and `segment containing <room>.<edge>`, written wherever `segment <n>` is. A selector is an ALIAS: it resolves to the one segment index the number would name, and from… | charges the step meter |
 | `share.ts` | 76 | 1 | `@chanmeng666/archlang/share`: the browser-safe half of the playground's `#z=` share link, `#z=<base64url(deflate-raw(utf8))>`, for every consumer with no `zlib` (the playground page and its short-link Worker, the hosted MCP Worker, the… | none |
 | `sheet-tables.ts` | 1346 | 15 | **Sheet tables** — the ROOM SCHEDULE and the derived LEGEND, and beside them the DOOR & WINDOW SCHEDULE (`schedule openings`, rows from `opening-schedule.ts`) and the authored NOTES (`notes "…"`), each drawn only when the plan writes it. | none |
@@ -319,7 +319,7 @@ Totals: 425 modules in 34 directories.
 | `stages.ts` | 373 | 6 | The authoring stages (plan-soundness PS7.1): the order in which a plan's decisions are taken, lowest frequency first, and which findings mean anything at each. | none |
 | `statement-print.ts` | 407 | 12 | Text printers for the LEAF (non-block) statement kinds — the element statements and the `set …` settings line. This is the one place `format.ts`'s pretty-printer, an element's own `resolve()` (a lint fix's replacement text) and Plan… | none |
 | `suggest.ts` | 723 | 2 | `suggestTopology(source)` — topology repair suggestions as DATA, never applied. | none |
-| `text-layout.ts` | 238 | 19 | Line breaking for a drawn name, and where each line of a multi-line text is drawn. | none |
+| `text-layout.ts` | 258 | 20 | Line breaking for a drawn name, and where each line of a multi-line text is drawn. | none |
 | `text-metrics.ts` | 151 | 20 | The closed-form text widths in the tree: {@link textWidth}, the one shared estimate, and {@link inkWidth}, from the advances of the two faces a label is drawn in, for a test a label stands right up against. | none |
 | `text-safe.ts` | 63 | 7 | Output-text safety — the single place a string that came from user source is made safe to embed in a **container format**. | none |
 | `theme.ts` | 489 | 59 | Theme: colours, line-weight, and font for the rendered drawing. | none |
@@ -377,8 +377,8 @@ Totals: 425 modules in 34 directories.
 | `error-svg.ts` | 275 | 4 | Error-card SVG backend — a pure, deterministic serializer of a list of {@link Diagnostic}s into a self-describing "error card" SVG. | none |
 | `font.ts` | 395 | 3 | The fonts every Node-only backend embeds, resolved once. | none |
 | `png-defaults.ts` | 8 | 2 | The page width, in pixels, of a PNG meant to be LOOKED AT (on a screen, or by a model's vision) when the caller names none. The native render is thousands of pixels wide; this keeps the image legible and small. `archlang preview` and the… | none |
-| `png.ts` | 113 | 2 | PNG backend — a **deterministic raster** serializer of the {@link Scene}. | none |
-| `svg.ts` | 445 | 9 | SVG backend — a pure serializer of the {@link Scene}. | none |
+| `png.ts` | 113 | 3 | PNG backend — a **deterministic raster** serializer of the {@link Scene}. | none |
+| `svg.ts` | 453 | 10 | SVG backend — a pure serializer of the {@link Scene}. | none |
 
 ## `src/cli/`
 
@@ -600,10 +600,10 @@ Totals: 425 modules in 34 directories.
 
 | Module | Lines | Importers | Summary | Budget |
 | --- | ---: | ---: | --- | --- |
-| `advice.ts` | 137 | 2 | The taste criteria's advice codes, names and sources (ADR 0032). `A_*` codes are advice, not diagnostics: they never enter `lint()`, `describe()` or `src/error-catalog.ts`, and `arch explain` does not know them yet. Every criterion has… | none |
+| `advice.ts` | 147 | 2 | The taste criteria's advice codes, names and sources (ADR 0032). `A_*` codes are advice, not diagnostics: they never enter `lint()`, `describe()` or `src/error-catalog.ts`, and `arch explain` does not know them yet. Every criterion has… | none |
 | `arith.ts` | 76 | 3 | The taste layer's exact arithmetic (ADR 0032; design §2.3). Every value that reaches a pinned byte is decided in integers: counts are plain integers, lengths are lattice integers (the 0.001 mm lattice, below 2³⁶ within `MODEL_RANGE_MM`)… | none |
-| `criteria.ts` | 1490 | 4 | The eleven taste criteria of PS5.1 (R3, R6, R7, R9, R11, R12, R14, R15, R16, R17, R18), as defined in `archlang-lab/plans/plan-soundness/research/2026-10-24-ps5-taste-design.md` §3. Each reads `describe()` facts (what an agent sees) and… | none |
-| `index.ts` | 315 | 4 | `taste(source, { profile?, world? })` — the taste layer (ADR 0032, plan-soundness PS5.1). | none |
+| `criteria.ts` | 1855 | 4 | The eleven taste criteria of PS5.1 (R3, R6, R7, R9, R11, R12, R14, R15, R16, R17, R18), as defined in `archlang-lab/plans/plan-soundness/research/2026-10-24-ps5-taste-design.md` §3, and R20 (wet-room stacking, product-roadmap RM1.2b item… | none |
+| `index.ts` | 317 | 4 | `taste(source, { profile?, world? })` — the taste layer (ADR 0032, plan-soundness PS5.1). | none |
 | `profiles.ts` | 51 | 1 | The taste profiles (ADR 0032; plan-soundness PS5.2). A profile is an honestly named bundle of taste numbers (ADR 0005: never a standard's name, never a compliance claim); every number cites its source and how it was checked ([V] read in… | none |
 | `report.ts` | 118 | 4 | The shape of `taste()`'s report (ADR 0032; design §2.2). Key order is part of the contract: the report is built in the order these interfaces list their fields, and pinned by `test/taste-digests.test.ts`. | none |
 

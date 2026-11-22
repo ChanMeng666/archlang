@@ -5,7 +5,7 @@
 Where the tests of a `src` module are, and what each test file is for. Generated; `npm run check:drift`
 fails when it is stale. How to add a test: `docs/testing.md` § 4.
 
-571 test files in `test/`, 302 `src` modules, 112 modules no test imports.
+572 test files in `test/`, 302 `src` modules, 112 modules no test imports.
 
 ## `src` module → tests that import it
 
@@ -37,8 +37,8 @@ Nearest first, then by name; `(+n)` is the rest. Test names are `test/<name>.tes
 - `src/backends/ascii.ts` (10) — `axes`, `fence`, `furniture-curves-backends`, `opening`, `outdoor`, `room-floor`, `scene-path-prim`, `schedule` (+2)
 - `src/backends/error-svg.ts` (1) — `error-svg`
 - `src/backends/font.ts` (1) — `export-font-cjk`
-- `src/backends/png.ts` (1) — `export-font-cjk`
-- `src/backends/svg.ts` (5) — `furniture-curves-backends`, `glyph-lib`, `scene-path-prim`, `scene`, `style`
+- `src/backends/png.ts` (2) — `export-font-cjk`, `wrapped-label-text`
+- `src/backends/svg.ts` (6) — `furniture-curves-backends`, `glyph-lib`, `scene-path-prim`, `scene`, `style`, `wrapped-label-text`
 - `src/catalog-fix.ts` (1) — `explain`
 - `src/chrome-layout.ts` (5) — `bbox-derived-position`, `chrome-hidden`, `export-pdf`, `north-arrow`, `sheet`
 - `src/clause-order.ts` (2) — `clause-order-byte-identity`, `door-enums`
@@ -127,7 +127,7 @@ Nearest first, then by name; `(+n)` is the rest. Test names are `test/<name>.tes
 - `src/impact.ts` (2) — `rectilinear-doors`, `rectilinear-rooms`
 - `src/import.ts` (37) — `af9-byte-identity`, `af9-fixes`, `block-stair-byte-identity`, `corner-window-byte-identity`, `dim-swap-reprint`, `dim-thickness-callout`, `drawing-budget`, `error-value-law` (+29)
 - `src/import/limits.ts` (1) — `openplan3d-malformed`
-- `src/index.ts` (428) — `acc-metadata`, `access-graph`, `access-policy`, `accessible-svg`, `af9-byte-identity`, `af9-fixes`, `agent-gallery`, `alias-match` (+420)
+- `src/index.ts` (429) — `acc-metadata`, `access-graph`, `access-policy`, `accessible-svg`, `af9-byte-identity`, `af9-fixes`, `agent-gallery`, `alias-match` (+421)
 - `src/input-limit.ts` (2) — `import-rooted`, `workspace-seams`
 - `src/intent-concepts.ts` (3) — `vocabulary-es-pt`, `vocabulary-living-dining`, `vocabulary-matcher-oracle`
 - `src/intent-feasibility.ts` (1) — `intent-infeasible`
@@ -178,7 +178,7 @@ Nearest first, then by name; `(+n)` is the rest. Test names are `test/<name>.tes
 - `src/room-tiling.ts` (7) — `rectilinear-doors`, `rectilinear-rooms-byte-identity`, `rectilinear-rooms`, `rectilinear-sides`, `wall-between-around`, `walls-from-rooms-clauses`, `walls-from-rooms`
 - `src/scene-build.ts` (27) — `annotation-collisions`, `annotation-small-rooms`, `equivariance-fuzz`, `export-dxf`, `export-font-cjk`, `export-pdf`, `furniture-curves-backends`, `furniture-rotate` (+19)
 - `src/scene-memo.ts` (1) — `scene-memo`
-- `src/scene.ts` (65) — `arc-radius-exact`, `axes`, `band`, `bbox-derived-position`, `block-stair-winders-walking-arc`, `block-stair`, `corner-window`, `dim-stagger` (+57)
+- `src/scene.ts` (66) — `arc-radius-exact`, `axes`, `band`, `bbox-derived-position`, `block-stair-winders-walking-arc`, `block-stair`, `corner-window`, `dim-stagger` (+58)
 - `src/segment-select.ts` (1) — `segment-select`
 - `src/share.ts` (1) — `share-codec`
 - `src/sheet-tables.ts` (5) — `drawing-budget`, `export-pdf`, `sheet-annotations`, `sheet`, `wall-status-drawing`
@@ -190,7 +190,7 @@ Nearest first, then by name; `(+n)` is the rest. Test names are `test/<name>.tes
 - `src/taste/arith.ts` (1) — `taste`
 - `src/taste/criteria.ts` (2) — `taste-separation`, `taste`
 - `src/taste/index.ts` (2) — `taste-budget`, `taste`
-- `src/text-layout.ts` (10) — `escape-fuzz`, `furniture-label-fit`, `label-fit`, `label-leaders`, `label-placement-oracle`, `label-symbol-ink`, `label-wrap`, `lint-thickness-unplaced` (+2)
+- `src/text-layout.ts` (11) — `escape-fuzz`, `furniture-label-fit`, `label-fit`, `label-leaders`, `label-placement-oracle`, `label-symbol-ink`, `label-wrap`, `lint-thickness-unplaced` (+3)
 - `src/text-metrics.ts` (7) — `dim-stagger`, `dim-thickness-callout`, `label-placement`, `north-arrow`, `sheet-text`, `text-layout`, `text-metrics`
 - `src/theme.ts` (22) — `element-facets`, `equivariance-scene`, `export-pdf`, `format`, `furniture-mirror`, `glyph-chirality`, `glyph-dispatch-table`, `glyph-lib` (+14)
 - `src/types.ts` (9) — `datum`, `doors`, `element-cap`, `fixture-orientation`, `furniture-flush`, `furniture-lint`, `garage`, `keep` (+1)
@@ -778,6 +778,7 @@ The first sentence of each file's header comment.
 - `test/work-counts.test.ts` — The work-count golden (engineering-health EH1.6): per plan, the evaluator's steps, the drawing budget's units and the resolved elements, the work counters of one `lint()` run (EH2.10) and of one drawing (EH2.14), as C...
 - `test/workspace-seams.test.ts` — Boundary: a workspace reaches the core (or another workspace) only through a declared package name, except at the seams listed in ALLOW (`workspace-seams.allow.ts`).
 - `test/world.test.ts` — T4.2 — World seam.
+- `test/wrapped-label-text.test.ts` — A wrapped room name reads as the name (card SR.15): its `<text>` element's text content — what a search, a copy or a schedule check reads from the SVG — is the label, "Entrance Hall", never "EntranceHall".
 - `test/zones.test.ts` — zone — byte identity (a zone draws nothing and moves nothing); zone — declared membership and nesting paths; zone — inside `level` blocks; zone — the grouped RO…
 
 ## `src` modules no test imports

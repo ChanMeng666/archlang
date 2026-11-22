@@ -153,6 +153,26 @@ export function textLines(prim: Extract<ScenePrim, { t: "text" }>): TextLine[] {
   return block.lines.map((value, i) => ({ value, at: { x: prim.at.x, y: prim.at.y + (i - mid) * block.pitch } }));
 }
 
+/**
+ * What `value` holds around the drawn `lines` of a wrapped name: `gaps[i]` stands before line `i`
+ * and `gaps[lines.length]` after the last — the spaces a break removed, so the gaps and lines
+ * interleaved are `value` again. `null` when the lines are not `value`'s own text in order (a
+ * hand-built scene). A line starts with no space and a gap is only spaces, so the first match
+ * from the cursor is the line's own place.
+ */
+export function lineGaps(value: string, lines: readonly string[]): string[] | null {
+  const gaps: string[] = [];
+  let at = 0;
+  for (const line of lines) {
+    const i = value.indexOf(line, at);
+    if (i < 0) return null;
+    gaps.push(value.slice(at, i));
+    at = i + line.length;
+  }
+  gaps.push(value.slice(at));
+  return gaps;
+}
+
 /** Unrotated extent of a text primitive: its widest line by its stacked height. */
 export function textExtent(prim: Extract<ScenePrim, { t: "text" }>): { w: number; h: number } {
   const block = prim.block;

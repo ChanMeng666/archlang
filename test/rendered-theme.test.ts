@@ -22,6 +22,12 @@
  * arrow's `<g>`, and where the body hashes the Scene, the added `chrome.north` with it; `describe()`,
  * `lint()`, the diagnostics and the steps did not move. Put `main`'s SVG back (`a9db286e`) and drop
  * `chrome.north`, and this body reproduces every old digest; the new ones are this body on the branch.
+ *
+ * Re-measured for SR.15 (a wrapped room name keeps the spaces its break removed, each run in a
+ * `<tspan font-size="0" xml:space="preserve">` between its lines): the rows of plans that draw a
+ * wrapped name moved, SVG only. Strip those separators from the branch's SVG and this body
+ * reproduces every old digest (`test/byte-identity-baseline.ts`, § SR.15); `describe()`, `lint()`,
+ * the diagnostics and the steps did not move.
  */
 
 import { describe as suite, expect, it } from "vitest";
@@ -66,8 +72,8 @@ const BASELINE: [string, string][] = [
   ["b07e341d6254068303eb803109197a0fa0d800d96ccd19310258e4c77f1937dc", "examples/aquarium.arch"],
   ["4bca852d43826d6a19bb22d0bcaf20714c7392c7bf63457abc5d064ad14831aa", "examples/attached.arch"],
   ["660fc41f31aecceb73baec824e2525ba48a4f59109bf2b6698be05e6aa237a64", "examples/bungalow.arch"], // CV13 (was bbac7be3): example source edited (chairs added)
-  ["031f69f5610bfd3840a5b08529f571165c051f3e1611b44efdc05486a3e51558", "examples/classroom-block.arch"],
-  ["58c5c5740973d6b2cd8f53761cbd25bc22dbf3a37e09fe6db98625ccb69e7e0f", "examples/clinic.arch"],
+  ["c19f4ae4736baad22c126138049bfaf162db2b4f4e19b235eadc1802fed1506d", "examples/classroom-block.arch"],
+  ["4e38607777c51dccb0a7969d96912f9540d9b6d1cb6cb90517ab261206aa727e", "examples/clinic.arch"],
   ["0ff8f3ad3f9c21cd6f3bab8441fc5f8dfaa34b14d2a528682df5c7c793fb8631", "examples/corner-cafe.arch"],
   ["281a83d22645de99fbc5849ba79a0734b5635cbbe301f8b2947d93ad8182d912", "examples/courtyard-family.arch"], // new example (RM8.5, the courtyard-family showcase)
   ["59ba7adeb9de4f1a6745c1ba7ee2ceaa2d252a7825a678406e2ccefd578960bb", "examples/courtyard-house.arch"], // CV13 (was 15c1cd92): example source edited (chairs added)
@@ -80,16 +86,16 @@ const BASELINE: [string, string][] = [
   ["dcc2b4674edc4f74db43a3ad65d1402290786ff9fcf45c21447db95fafae5ac7", "examples/imports.arch"],
   ["54ef5cae9feda0abc8176f144ab34ae2d7977ce0200b7e50fc7c3a44613dfdf0", "examples/knob-flat.arch"], // new example (P4, the knobs example)
   ["c8fc6c4319c3acac47673c9373c563903944b6210fcf5db75ce9bdbdc4ffecf2", "examples/laneway-house.arch"], // CV13 (was 9216c7fc): example source edited (chairs added)
-  ["0f9aca3e79f48da02fec3eb91979f22d2a7a3b32f40a56f58d6ad2d454726d13", "examples/library.arch"],
+  ["80c0d70b40d38c5d7d0ebca72631d77985035faee8be9d58f67ba17fdfb061b5", "examples/library.arch"],
   ["e7c86098ac9d2a454e3f1eafd04e937edb957b4344e7875d9006266c673fbad8", "examples/materials.arch"],
   ["5012abb624b8e5dd911e089260dc277f165b0458c605abc4b9538d3492194d64", "examples/museum-wing.arch"],
   ["82e7a2f40d27d1a28d4a82a0abb5fefd06e463f3feb086b217c4957f30606974", "examples/museum-wings.arch"],
   ["baf86b8433ba15a4c17a01f5fb831096860892664bbce085bae10889b3248013", "examples/museum.arch"],
   ["1a39f73ad013b8ed14d64efd223c537b1ac7c2d3f766098dee2b937a103c0159", "examples/one-room.arch"],
   ["e3bb48ca1983e4b3acdb6afe98021316161ef67305b6e9f836ebc76929d4dfef", "examples/parametric.arch"],
-  ["e6b2b480982c25689ef1ae5faeb2f0ad21a42adc2bb494c8072655638b137fba", "examples/practice-office.arch"],
+  ["b20693583614568b73a8af6ddbb07dbd0ad83c9e9a180904a1aea1918a9303ab", "examples/practice-office.arch"],
   ["e69cb1312c57c389852ff8fb453dd9f39d056d78cdf43f27f1a0299eeea2f801", "examples/relational.arch"],
-  ["50a972fd7f1944f733b943c0c4714ac74da4ab260d2b530b95635cca01c8d423", "examples/remodel.arch"], // CV13 (was a79c8cfd): example source edited (chairs added)
+  ["00f7e303d12f8577fd6339d089005f70925c700b3a59e6ee0a728d7f9cc83af2", "examples/remodel.arch"], // SR.15 (was 50a972fd); CV13 (was a79c8cfd): example source edited (chairs added)
   ["9b7a2d165a06a1771a950cd1115dab082f3ee4463a825b25bb17b409eea3fdf7", "examples/sheet-notes.arch"],
   ["58bfb74a007d93f2eb59f479592e05c047a74d3174facfcc100ac68a4e05d227", "examples/studio.arch"],
   ["7aaf67c64e1cfaa57c27c35208fa0d4ab71ed283e3ecd962d1eefe78165c3541", "examples/terrace-row.arch"], // CV08 (was d311b42f): example source edited (sofa turned to face the room)

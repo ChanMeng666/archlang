@@ -1,0 +1,51 @@
+# criterion: R20
+# twin-of: r20-bath-off-the-stack
+# origin: the same house with the first-floor bathroom moved to the other end of the landing,
+#   over the cloakroom, its fittings turned to face the landing door as the cloakroom's do
+# fact: the bathroom's floor (level 2) stands on the cloakroom's (level 1), the same 2200 x 2300
+#   footprint: 2 of 2 wet rooms stacked, R20 = 1
+plan "R20 bath on the stack" {
+  units mm
+  grid 100
+  height 2700
+  level 1 "Ground floor" {
+    room id=r_hall at (0,0) size 2200x7700 label "Hall" uses hall
+    room id=r_wc at (0,7700) size 2200x2300 label "Cloakroom" uses wc
+    room id=r_living at (2200,0) size 5800x5000 label "Living Room" uses living
+    room id=r_kitchen at (2200,5000) size 5800x5000 label "Kitchen" uses kitchen
+    walls from rooms exterior 200 partition 100
+    door id=d_front on r_hall.top at center width 1000 swing into r_hall
+    door id=d_wc between r_hall and r_wc at center width 800 swing into r_wc
+    door id=d_living between r_hall and r_living at center width 900 swing into r_living
+    door id=d_kitchen between r_hall and r_kitchen at center width 900 swing into r_kitchen
+    window id=w_living on r_living.top at center width 2400
+    window id=w_kitchen on r_kitchen.bottom at center width 2400
+    furniture wc against r_wc.bottom offset 500 size 400x700
+    furniture basin against r_wc.left offset 1200 size 600x500
+    furniture kitchen_sink against r_kitchen.right offset 800 in r_kitchen
+    furniture stove against r_kitchen.right offset 2000 in r_kitchen
+    furniture counter against r_kitchen.right offset 2900 in r_kitchen
+    furniture fridge against r_kitchen.right offset 3700 size 600x700 in r_kitchen
+    furniture sofa in r_living anchor top flush inset 300 size 2000x900 label "Sofa"
+    stair id=stair at (100,3300) size 900x3250 dir up
+  }
+  level 2 "First floor" {
+    room id=r_bath at (0,7700) size 2200x2300 label "Bathroom" uses bath
+    room id=r_landing at (0,0) size 2200x7700 label "Landing" uses circulation
+    room id=r_bed1 at (2200,0) size 5800x5000 label "Bedroom 1" uses bedroom
+    room id=r_bed2 at (2200,5000) size 5800x5000 label "Bedroom 2" uses bedroom
+    walls from rooms exterior 200 partition 100
+    door id=d_bath between r_landing and r_bath at center width 800 swing into r_bath
+    door id=d_bed1 between r_landing and r_bed1 at center width 900 swing into r_bed1
+    door id=d_bed2 between r_landing and r_bed2 at center width 900 swing into r_bed2
+    window id=w_bed1 on r_bed1.top at center width 2400
+    window id=w_bed2 on r_bed2.bottom at center width 2400
+    furniture wc against r_bath.bottom offset 500 size 400x700
+    furniture basin against r_bath.left offset 1200 size 600x500
+    furniture shower in r_bath anchor bottom-right flush size 900x900
+    furniture bed in r_bed1 anchor top-right flush inset 300 size 1500x2000 label "Double"
+    furniture bed in r_bed2 anchor bottom-right flush inset 300 size 1000x2000 label "Single"
+    stair id=stair at (100,3300) size 900x3250 dir down
+    void id=well at (100,3300) size 900x3250
+  }
+}
