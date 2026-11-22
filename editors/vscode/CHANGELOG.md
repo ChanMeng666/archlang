@@ -14,6 +14,20 @@ are documented here. The format is based on
 
 ## [Unreleased]
 
+## [0.56.0] - 2026-11-23
+
+### Changed
+
+- **Rebundled the core at `@chanmeng666/archlang@1.68.0`**: a `room polygon` ring can have curved
+  edges (`arc (x,y) radius <mm> [cw|ccw] [major]` on the vertex the curve arrives at), which the
+  Problems panel showed as a parse error; a radius under half the chord is the new
+  `E_ROOM_ARC_RADIUS`, with a quick-fix to the minimum radius, and an arc too large for the room's
+  tests is `E_ROOM_ARC_SAG`. In the plans an ` ```arch ` fence draws in the Markdown preview, a
+  room's floor follows its arc edges, and a door, window or opening on an arc wall is drawn on the
+  curve. The lint warning `W_FLOOR_UNASSIGNED` now also reports floor a person could stand in that
+  no room covers, in `archlang lint`; the extension, which shows compile diagnostics, does not run
+  the lint.
+
 ## [0.55.0] - 2026-11-22
 
 ### Changed

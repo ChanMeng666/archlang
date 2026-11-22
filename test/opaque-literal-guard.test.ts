@@ -72,6 +72,7 @@ const HAVE_RULES = [
   "test/import-module-lets.test.ts",
   "test/indexnow-script.test.ts",
   "test/open-crossing.test.ts",
+  "test/room-arc-edges.test.ts",
   "test/silent-accepts.test.ts",
   "test/wall-status-byte-identity.test.ts",
   "test/while-byte-identity-baseline.ts",
@@ -129,6 +130,27 @@ describe("every gitleaks-excluded file is guarded for what it may CONTAIN", () =
     expect(opaque.filter((s) => /^[0-9a-f]{64}$/.test(s)).length).toBeGreaterThan(0);
     const unexplained = opaque.filter((s) => !/^[0-9a-f]{64}$/.test(s) && !Object.hasOwn(ERROR_CATALOG, s));
     expect(unexplained, "an opaque string that is neither a digest nor a catalogued code").toEqual([]);
+  });
+
+  it("test/room-arc-edges.test.ts holds only digests, catalogued codes and the intent module's own words", () => {
+    // ARC2's laws: a byte-identity BASELINE keyed by corpus path (a `.` and a `/`, so no candidate)
+    // with measured SHA-256 values, assertions naming diagnostics by code, and one intent check
+    // that names its violation kind and its JSON pointer. A non-digest, non-code string must be
+    // made only of words `src/intent.ts` itself spells (a pointer's numeric index aside).
+    const intent = read("src/intent.ts");
+    const opaque = opaqueLiteralsIn("test/room-arc-edges.test.ts");
+    expect(opaque.filter((s) => /^[0-9a-f]{64}$/.test(s)).length).toBeGreaterThan(0);
+    const intentWords = (s: string) =>
+      s
+        .split("/")
+        .filter(Boolean)
+        .every((w) => /^\d+$/.test(w) || intent.includes(`"${w}"`) || new RegExp(`\\b${w}\\b`).test(intent));
+    const unexplained = opaque.filter(
+      (s) => !/^[0-9a-f]{64}$/.test(s) && !Object.hasOwn(ERROR_CATALOG, s) && !intentWords(s),
+    );
+    expect(unexplained, "an opaque string that is neither a digest, a catalogued code nor intent's own word").toEqual(
+      [],
+    );
   });
 
   it("test/open-crossing.test.ts holds only digests and the names of its long fixture rows", () => {
