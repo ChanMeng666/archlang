@@ -263,7 +263,7 @@ const BASELINE: [string, string][] = [
   ["laneway-house", "5fba9a6cfbff1d0cb7be1439f111ffedd1011c4cecd9716f4624f2f8452bf628"], // PS2.11e, see header; CV13 (was 230ec0c6): example source edited (chairs added)
   ["studio", "7dac86ce77ab71a1d3be8eda909e523aba3655579103db09b061e003ab8287c6"], // PS2.11e, see header
   ["gallery-l", "b523d020cbb5eaacceefae1ef43b427ba21572b918fb3886552b6adaa458a8ec"], // PS2.10 dims fixed (byte-identity-baseline.ts); PS2.11e, see header
-  ["aquarium", "649197e4fc52aded85a167167ac252d4aef1bf9a0ad6ee91371b63cf4521061b"], // re-measured for PS2.4, see header; PS2.10 dims fixed (byte-identity-baseline.ts); PS2.11e, see header
+  ["aquarium", "c943f344ccfef3f0ab217a4c5d946c455f89a6d3d47141a2b23c307b1255ed9d"], // re-measured for PS2.4, see header; PS2.10 dims fixed (byte-identity-baseline.ts); PS2.11e, see header
 ];
 
 /** The SUMMARY half of the same law — see the header. Re-measured for `aquarium` twice, both times because its rooms were wrong (the second: PS2.4). */

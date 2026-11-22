@@ -34,7 +34,8 @@ import { sameSeg } from "../opening-junctions.js";
 import { cornerBlock } from "../opening-relation.js";
 import { COMPASS_DATUM_ALIASES, splitDatum } from "../room-datums.js";
 import { cadTurnOf, weightWidth } from "../scene.js";
-import { arrowHead } from "./glyph-lib.js";
+import { arcPrims, arrowHead, spanSectorLoop } from "./glyph-lib.js";
+import { type Arc, type ArcOpeningSpan, arcOpeningSpan, arcPieceCount, polarPoint, spanArc } from "../geometry/arc.js";
 
 /**
  * How far apart the two glass lines are, as a fraction of the host wall's thickness: 50 mm
@@ -335,6 +336,215 @@ function settleCorner(w: RWindow, own: readonly ResolvedElement[], diag: (d: Dia
   }
 }
 
+/**
+ * The arc a window is drawn along, or null to draw it straight. A window on a curved run is drawn
+ * on the curve whenever the joinery cuts it there (`openingCut`, `src/geometry/band.ts`: the
+ * centreline radius exceeds half the thickness). A window run to a corner keeps the straight
+ * drawing: its mitre is a straight construction.
+ */
+function arcHost(wn: RWindow): Arc | null {
+  const arc = wn.host?.arc;
+  return arc && !wn._corner && arc.r > wn.host!.thickness / 2 ? arc : null;
+}
+
+/**
+ * A window on a curved wall ({@link arcHost}): the drawing `render` makes on a straight one, with
+ * every line along the wall a concentric arc about the wall's centre and every jamb radial, on the
+ * cut's own jambs ({@link arcOpeningSpan}). A line `off` across the wall along `n` (the normal
+ * `render` reads, toward the centre on a clockwise arc) lies on radius `r − dir·off`, so the two
+ * face arcs are the cut's two faces exactly. The sill's horns run along the arc, measured on the
+ * centreline as the width is.
+ */
+function renderOnArc(wn: RWindow, arc: Arc, out: Point | null, n: Point, ctx: RenderCtx): SceneNode[] {
+  const { theme, sizes } = ctx;
+  const t = wn.host!.thickness;
+  const h = t / 2;
+  const he = h + sizes.wallStroke;
+  const span = arcOpeningSpan(arc, wn.at, wn.width);
+  const rOf = (off: number): number => Math.max(0, arc.r - span.dir * off);
+  const strokes = (a: Arc, stroke: string, lineWeight?: "extraThin"): SceneNode[] =>
+    arcPrims(a).map((prim) => ({
+      layer: "windows",
+      prim,
+      paint: { stroke, width: lineWeight ? weightWidth(lineWeight, sizes) : sizes.thin },
+      ...(lineWeight ? { lineWeight } : {}),
+    }));
+  const nodes: SceneNode[] = [
+    {
+      layer: "windows",
+      prim: { t: "path", loops: [spanSectorLoop(span, rOf(he), rOf(-he))] },
+      paint: { fill: theme.opening },
+    },
+  ];
+  for (const off of [h, -h]) nodes.push(...strokes(spanArc(span, rOf(off)), theme.wallStroke));
+  const g = (GLAZING_GAP * t) / 2;
+  for (const off of wn.windowKind === "fixed" ? [0] : [g, -g])
+    nodes.push(...strokes(spanArc(span, rOf(off)), theme.windowPane));
+  if (out) {
+    const side = out.x * n.x + out.y * n.y > 0 ? 1 : -1;
+    const sill = withHalf(span, Math.min(Math.PI, span.half + (SILL_HORN * t) / arc.r));
+    // One `path`: true arcs along the face and the nose (each piece at most 120°), radial ends.
+    nodes.push({
+      layer: "windows",
+      prim: { t: "path", loops: [spanSectorLoop(sill, rOf(side * h), rOf(side * (h + SILL_PROJECTION * t)))] },
+      paint: { fill: "none", stroke: theme.wallStroke, width: sizes.thin },
+    });
+  }
+  if (wn.windowKind) nodes.push(...kindMarksOnArc(wn, span, rOf, t, strokes, theme, sizes));
+  return nodes;
+}
+
+/** `span` about the same centre angle with half-angle `half`. */
+function withHalf(span: ArcOpeningSpan, half: number): ArcOpeningSpan {
+  return { ...span, half, th0: span.thc - span.dir * half, th1: span.thc + span.dir * half };
+}
+
+/** {@link kindMarks} on a curve: the same marks and sizes, stood on the centreline arc. */
+function kindMarksOnArc(
+  wn: RWindow,
+  span: ArcOpeningSpan,
+  rOf: (off: number) => number,
+  t: number,
+  strokes: (a: Arc, stroke: string, lineWeight?: "extraThin") => SceneNode[],
+  theme: Theme,
+  sizes: RenderSizes,
+): SceneNode[] {
+  const kind = wn.windowKind;
+  const { center: c, r, dir, thc } = span;
+  const hw = wn.width / 2;
+  const nodes: SceneNode[] = [];
+  const stroke = (a: Point, b: Point): SceneNode => ({
+    layer: "windows",
+    prim: { t: "line", a, b },
+    paint: { stroke: theme.windowPane, width: weightWidth("extraThin", sizes) },
+    lineWeight: "extraThin",
+  });
+  if (kind === "casement" || kind === "tilt_turn") {
+    const reach = Math.min(HINGE_MARK_REACH * t, hw / 2);
+    const spread = Math.min(HINGE_MARK_SPREAD * t, hw / 2);
+    const foot = Math.min(span.half, (hw - reach) / r);
+    for (const s of wn.hinge ? [wn.hinge === "left" ? -1 : 1] : [-1, 1]) {
+      const jamb = polarPoint(c, s < 0 ? span.th0 : span.th1, r);
+      const th = thc + s * dir * foot;
+      nodes.push(stroke(jamb, polarPoint(c, th, rOf(spread))), stroke(jamb, polarPoint(c, th, rOf(-spread))));
+    }
+  }
+  if (kind === "tilt" || kind === "tilt_turn") {
+    nodes.push({
+      layer: "windows",
+      prim: { t: "circle", center: polarPoint(c, thc, r), r: Math.min(TILT_MARK_RADIUS * t, hw / 4) },
+      paint: { fill: theme.opening, stroke: theme.windowPane, width: sizes.thin },
+    });
+  }
+  if (kind === "sliding") {
+    const reach = Math.min(SLIDE_MARK_REACH * t, SLIDE_MARK_SHARE * hw);
+    const head = Math.min(SLIDE_HEAD_LENGTH * t, reach / 2);
+    const run = withHalf(span, Math.min(span.half, reach / r));
+    nodes.push(...strokes(spanArc(run, r), theme.windowPane, "extraThin"));
+    // Each head points along the run at its tip, outward: the tangent there, signed.
+    for (const [th, s] of [
+      [run.th0, -1],
+      [run.th1, 1],
+    ] as const) {
+      const along = { x: -s * dir * Math.sin(th), y: s * dir * Math.cos(th) };
+      nodes.push({
+        layer: "windows",
+        prim: {
+          t: "polygon",
+          pts: arrowHead(polarPoint(c, th, r), along, head, Math.min(SLIDE_HEAD_SPREAD * t, head)),
+        },
+        paint: { fill: theme.windowPane, stroke: theme.windowPane, width: sizes.thin },
+      });
+    }
+  }
+  return nodes;
+}
+
+/** How many pieces past one each line along a curved window's span is cut into (`arcPieces`). */
+function extraArcPieces(wn: RWindow): number {
+  const arc = arcHost(wn);
+  return arc ? arcPieceCount(2 * arcOpeningSpan(arc, wn.at, wn.width).half) - 1 : 0;
+}
+
+/**
+ * A window's drawing: on a curved host ({@link arcHost}) when `curved`, {@link renderOnArc}'s; else, and
+ * on every straight host, the drawing along the tangent at the window's centre, which is what the
+ * annotation passes read for a window on a curve (`annotationFootprint`, card ARC-W1).
+ */
+function drawWindow(wn: RWindow, ctx: RenderCtx, curved: boolean): SceneNode[] {
+  const seg = wn.host;
+  if (!seg) return [];
+  const { theme, sizes } = ctx;
+  // Tangent at the opening on a curved host: it reads the exterior side; the drawing is `renderOnArc`.
+  const d = segmentDirAt(seg, wn.at);
+  const n = normal(d);
+  const h = seg.thickness / 2;
+  const he = h + sizes.wallStroke;
+  const hw = wn.width / 2;
+  const jA = add(wn.at, mul(d, -hw));
+  const jB = add(wn.at, mul(d, hw));
+  const mitre = cornerMitre(wn, seg, d, n);
+  // On a curve every line along the wall is a concentric arc and every jamb radial; the tangent
+  // drawing below is what the annotation passes read there (`annotationFootprint`).
+  const arc = curved ? arcHost(wn) : null;
+  if (arc) return renderOnArc(wn, arc, exteriorNormal(seg, wn.at, n, ctx.floorAt), n, ctx);
+  // A line `off` across the wall, from jamb to jamb, or to the mitre at a corner.
+  const across = (off: number): [Point, Point] => [
+    mitre && !mitre.atEnd ? mitre.at(off) : add(jA, mul(n, off)),
+    mitre?.atEnd ? mitre.at(off) : add(jB, mul(n, off)),
+  ];
+  // The cover overhangs by a pen. Past the point where the mitre meets the free jamb it would turn
+  // itself inside out, so there it stops, and its jamb and its mitre share that one vertex.
+  const [c0, c1] = across(mitre ? mitre.cap(he) : he);
+  const [c3, c2] = across(mitre ? mitre.cap(-he) : -he);
+  const pts = [c0, ...(mitre?.pinched(he) ? [] : [c1]), ...(mitre?.pinched(-he) ? [] : [c2]), c3];
+  const nodes: SceneNode[] = [];
+  nodes.push({ layer: "windows", prim: { t: "polygon", pts }, paint: { fill: theme.opening } });
+  for (const off of [h, -h]) {
+    const [a, b] = across(off);
+    nodes.push({
+      layer: "windows",
+      prim: { t: "line", a, b },
+      paint: { stroke: theme.wallStroke, width: sizes.thin },
+    });
+  }
+  // Double glazing: two panes centred on the wall, `GLAZING_GAP` of its thickness apart. A
+  // `fixed` window draws one glass line on the centreline instead: no sash, nothing that opens.
+  const g = (GLAZING_GAP * seg.thickness) / 2;
+  for (const off of wn.windowKind === "fixed" ? [0] : [g, -g]) {
+    const [a, b] = across(off);
+    nodes.push({
+      layer: "windows",
+      prim: { t: "line", a, b },
+      paint: { stroke: theme.windowPane, width: sizes.thin },
+    });
+  }
+  // The sill, on the EXTERIOR face only — and only when the plan says which face that is.
+  const out = exteriorNormal(seg, wn.at, n, ctx.floorAt);
+  if (out) {
+    const t = seg.thickness;
+    const a = add(jA, mul(d, -SILL_HORN * t));
+    const b = add(jB, mul(d, SILL_HORN * t));
+    // `depth` off the centreline on the outside: past the jamb by the horn, or on the mitre.
+    const toward = out.x * n.x + out.y * n.y;
+    const atA = (depth: number): Point => (mitre && !mitre.atEnd ? mitre.at(toward * depth) : add(a, mul(out, depth)));
+    const atB = (depth: number): Point => (mitre?.atEnd ? mitre.at(toward * depth) : add(b, mul(out, depth)));
+    nodes.push({
+      layer: "windows",
+      prim: {
+        t: "polygon",
+        pts: [atA(h), atA(h + SILL_PROJECTION * t), atB(h + SILL_PROJECTION * t), atB(h)],
+      },
+      paint: { fill: "none", stroke: theme.wallStroke, width: sizes.thin },
+    });
+  }
+  if (wn.windowKind) {
+    const { at, hw: half, free } = mitre?.clear ?? { at: wn.at, hw, free: undefined };
+    nodes.push(...kindMarks(wn, at, half, free, d, n, seg.thickness, theme, sizes));
+  }
+  return nodes;
+}
+
 export const windowEl: ElementDef = {
   kind: "window",
   keyword: "window",
@@ -527,83 +737,28 @@ export const windowEl: ElementDef = {
     const t = w.host?.thickness ?? 0;
     const across = t / 2 + SILL_PROJECTION * t;
     const along = w.width / 2 + SILL_HORN * Math.max(t, w._corner?.other.thickness ?? 0);
-    const r = along + across;
+    let r = along + across;
+    // On a curve the drawing stands on the centreline arc, which `at` may lie off by the distance
+    // it was hosted from: an arc point `φ` round and `δ` across lies within `r·|φ| + |δ|` of the
+    // centreline point at `at`'s angle, and `r·|φ|` is at most `along`.
+    const arc = arcHost(w);
+    if (arc) r += Math.abs(Math.hypot(w.at.x - arc.center.x, w.at.y - arc.center.y) - arc.r);
     return [w.at.x, w.at.y, w.width, across, along, w.at.x - r, w.at.x + r, w.at.y - r, w.at.y + r];
   },
 
-  /** At most 6 primitives (the drawing budget, `MAX_DRAW_UNITS`): the opening cover, the two wall-face lines, the two glazing lines and the exterior sill. A kind adds at most 5: two chevrons of two lines and a circle ({@link kindMarks}). */
-  drawCost: (resolved) => ((resolved as RWindow).windowKind ? 11 : 6),
+  /** At most 6 primitives (the drawing budget, `MAX_DRAW_UNITS`): the opening cover, the two wall-face lines, the two glazing lines and the exterior sill. A kind adds at most 5: two chevrons of two lines and a circle ({@link kindMarks}). On a curve each line along the wall is one arc per started 120° of its span, so each piece past the first adds one to each of those four lines, and to a sliding mark's run. */
+  drawCost: (resolved) => {
+    const w = resolved as RWindow;
+    return (w.windowKind ? 11 : 6) + extraArcPieces(w) * (w.windowKind === "sliding" ? 5 : 4);
+  },
 
   render(resolved, ctx: RenderCtx): SceneNode[] {
+    return drawWindow(resolved as RWindow, ctx, true);
+  },
+  /** On a curve, the tangent drawing: what the label, tag and north-arrow passes read (card ARC-W1). */
+  annotationFootprint(resolved, ctx: RenderCtx): SceneNode[] | undefined {
     const wn = resolved as RWindow;
-    const seg = wn.host;
-    if (!seg) return [];
-    const { theme, sizes } = ctx;
-    // Tangent at the opening on a curved host (pane along it, jambs radial).
-    const d = segmentDirAt(seg, wn.at);
-    const n = normal(d);
-    const h = seg.thickness / 2;
-    const he = h + sizes.wallStroke;
-    const hw = wn.width / 2;
-    const jA = add(wn.at, mul(d, -hw));
-    const jB = add(wn.at, mul(d, hw));
-    const mitre = cornerMitre(wn, seg, d, n);
-    // A line `off` across the wall, from jamb to jamb, or to the mitre at a corner.
-    const across = (off: number): [Point, Point] => [
-      mitre && !mitre.atEnd ? mitre.at(off) : add(jA, mul(n, off)),
-      mitre?.atEnd ? mitre.at(off) : add(jB, mul(n, off)),
-    ];
-    // The cover overhangs by a pen. Past the point where the mitre meets the free jamb it would turn
-    // itself inside out, so there it stops, and its jamb and its mitre share that one vertex.
-    const [c0, c1] = across(mitre ? mitre.cap(he) : he);
-    const [c3, c2] = across(mitre ? mitre.cap(-he) : -he);
-    const pts = [c0, ...(mitre?.pinched(he) ? [] : [c1]), ...(mitre?.pinched(-he) ? [] : [c2]), c3];
-    const nodes: SceneNode[] = [];
-    nodes.push({ layer: "windows", prim: { t: "polygon", pts }, paint: { fill: theme.opening } });
-    for (const off of [h, -h]) {
-      const [a, b] = across(off);
-      nodes.push({
-        layer: "windows",
-        prim: { t: "line", a, b },
-        paint: { stroke: theme.wallStroke, width: sizes.thin },
-      });
-    }
-    // Double glazing: two panes centred on the wall, `GLAZING_GAP` of its thickness apart. A
-    // `fixed` window draws one glass line on the centreline instead: no sash, nothing that opens.
-    const g = (GLAZING_GAP * seg.thickness) / 2;
-    for (const off of wn.windowKind === "fixed" ? [0] : [g, -g]) {
-      const [a, b] = across(off);
-      nodes.push({
-        layer: "windows",
-        prim: { t: "line", a, b },
-        paint: { stroke: theme.windowPane, width: sizes.thin },
-      });
-    }
-    // The sill, on the EXTERIOR face only — and only when the plan says which face that is.
-    const out = exteriorNormal(seg, wn.at, n, ctx.floorAt);
-    if (out) {
-      const t = seg.thickness;
-      const a = add(jA, mul(d, -SILL_HORN * t));
-      const b = add(jB, mul(d, SILL_HORN * t));
-      // `depth` off the centreline on the outside: past the jamb by the horn, or on the mitre.
-      const toward = out.x * n.x + out.y * n.y;
-      const atA = (depth: number): Point =>
-        mitre && !mitre.atEnd ? mitre.at(toward * depth) : add(a, mul(out, depth));
-      const atB = (depth: number): Point => (mitre?.atEnd ? mitre.at(toward * depth) : add(b, mul(out, depth)));
-      nodes.push({
-        layer: "windows",
-        prim: {
-          t: "polygon",
-          pts: [atA(h), atA(h + SILL_PROJECTION * t), atB(h + SILL_PROJECTION * t), atB(h)],
-        },
-        paint: { fill: "none", stroke: theme.wallStroke, width: sizes.thin },
-      });
-    }
-    if (wn.windowKind) {
-      const { at, hw: half, free } = mitre?.clear ?? { at: wn.at, hw, free: undefined };
-      nodes.push(...kindMarks(wn, at, half, free, d, n, seg.thickness, theme, sizes));
-    }
-    return nodes;
+    return arcHost(wn) ? drawWindow(wn, ctx, false) : undefined;
   },
   /** A block at the window's centre, in the frame of its wall, one for each drawing of it. */
   cadPart(resolved): CadPart | undefined {

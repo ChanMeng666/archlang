@@ -359,6 +359,15 @@ export interface ElementDef {
   /** Emit positioned drawing primitives for this element (the Scene IR). */
   render(resolved: ResolvedElement, ctx: RenderCtx): SceneNode[];
   /**
+   * What the annotation passes read in place of {@link render}'s nodes, when the drawing departs
+   * from the geometry those passes are built on (card ARC-W1: an opening on a curved wall is drawn
+   * on the curve, while the label, tag and north-arrow placement keep reading the tangent drawing
+   * and the model's swing). No more nodes than {@link render} draws for the same element; the
+   * drawing is put back once those passes are done. Optional: without it, or when it returns
+   * `undefined`, the passes read the drawing itself.
+   */
+  annotationFootprint?(resolved: ResolvedElement, ctx: RenderCtx): SceneNode[] | undefined;
+  /**
    * What this element is to a CAD file ({@link Scene.parts}): a block, or a dimension. It only says
    * how the nodes {@link render} drew are grouped, and adds none. Optional: without it, or when it
    * returns `undefined`, the element's nodes are written as flat entities.

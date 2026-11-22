@@ -5,7 +5,7 @@
 Where the tests of a `src` module are, and what each test file is for. Generated; `npm run check:drift`
 fails when it is stale. How to add a test: `docs/testing.md` § 4.
 
-573 test files in `test/`, 303 `src` modules, 113 modules no test imports.
+574 test files in `test/`, 303 `src` modules, 113 modules no test imports.
 
 ## `src` module → tests that import it
 
@@ -31,7 +31,7 @@ Nearest first, then by name; `(+n)` is the rest. Test names are `test/<name>.tes
 - `src/analyze/symmetry.ts` (1) — `rect-ring`
 - `src/analyze/wall-faces.ts` (2) — `lint-space-enclosure`, `wall-status`
 - `src/any-catalog-fix.ts` (1) — `explain`
-- `src/ast.ts` (125) — `arc-radius-exact`, `ast-values-frozen`, `band`, `circulation-concave`, `circulation-translation`, `closed-vocabularies`, `corner-window`, `cursor-exhaustive` (+117)
+- `src/ast.ts` (126) — `arc-openings`, `arc-radius-exact`, `ast-values-frozen`, `band`, `circulation-concave`, `circulation-translation`, `closed-vocabularies`, `corner-window` (+118)
 - `src/attach.ts` (1) — `attach`
 - `src/axes.ts` (1) — `axes`
 - `src/backends/ascii.ts` (10) — `axes`, `fence`, `furniture-curves-backends`, `opening`, `outdoor`, `room-floor`, `scene-path-prim`, `schedule` (+2)
@@ -89,7 +89,7 @@ Nearest first, then by name; `(+n)` is the rest. Test names are `test/<name>.tes
 - `src/elements/vertical-glyphs.ts` (5) — `diagnostics-volume`, `drawing-budget`, `export-dxf-blocks`, `model-range`, `vertical`
 - `src/elements/void.ts` (4) — `shaft-circulation`, `v129-cross`, `void-rail`, `void`
 - `src/elements/wall.ts` (1) — `room-datums`
-- `src/elements/window.ts` (1) — `corner-window`
+- `src/elements/window.ts` (2) — `arc-openings`, `corner-window`
 - `src/error-catalog-fixes-intent.ts` (1) — `explain`
 - `src/error-catalog-fixes.ts` (1) — `explain`
 - `src/error-catalog.ts` (20) — `cli-context`, `context-starter`, `element-cap`, `error-catalog-families`, `fix-coverage`, `garage`, `levels`, `lint-rule-order` (+12)
@@ -109,11 +109,11 @@ Nearest first, then by name; `(+n)` is the rest. Test names are `test/<name>.tes
 - `src/furnish-table.ts` (1) — `lint-label-piece-missing`
 - `src/furnish.ts` (13) — `finish-furnish-bounds`, `finish-furnish-laws`, `finish-levels`, `finish-sheet-degrade`, `fuzz`, `keep`, `lint-furniture-on-stair`, `lint-hint-paste` (+5)
 - `src/furniture-relation.ts` (2) — `furniture-relations`, `rect-ring`
-- `src/geometry.ts` (31) — `band`, `circle-enclosure`, `curves`, `dim-thickness-callout`, `doors`, `double-door-byte-identity`, `equivariance-corpus`, `frame` (+23)
+- `src/geometry.ts` (32) — `arc-openings`, `band`, `circle-enclosure`, `curves`, `dim-thickness-callout`, `doors`, `double-door-byte-identity`, `equivariance-corpus` (+24)
 - `src/geometry/arc-band.ts` (1) — `furniture-lint`
-- `src/geometry/arc.ts` (18) — `arc-radius-exact`, `arc-tessellation-error`, `band`, `circle-enclosure`, `curves`, `frame`, `furniture-lint`, `intersect` (+10)
+- `src/geometry/arc.ts` (19) — `arc-openings`, `arc-radius-exact`, `arc-tessellation-error`, `band`, `circle-enclosure`, `curves`, `frame`, `furniture-lint` (+11)
 - `src/geometry/backend.ts` (1) — `joinery-oracle`
-- `src/geometry/band.ts` (13) — `band`, `describe-quantities`, `interner-oracle`, `joinery-oracle`, `joinery-split-oracle`, `joinery-split`, `joinery`, `open-crossing` (+5)
+- `src/geometry/band.ts` (14) — `arc-openings`, `band`, `describe-quantities`, `interner-oracle`, `joinery-oracle`, `joinery-split-oracle`, `joinery-split`, `joinery` (+6)
 - `src/geometry/clipper.ts` (1) — `joinery-oracle`
 - `src/geometry/grid-index.ts` (3) — `grid-index`, `huge-coordinates`, `room-overlap-oracle`
 - `src/geometry/intersect.ts` (5) — `band`, `intersect`, `joinery-oracle`, `joinery-split-oracle`, `joinery-pipeline`
@@ -122,17 +122,17 @@ Nearest first, then by name; `(+n)` is the rest. Test names are `test/<name>.tes
 - `src/geometry/polygon.ts` (20) — `circulation-concave`, `dim-thickness-callout`, `furniture-label-fit`, `label-leaders`, `label-placement-oracle`, `label-placement`, `label-symbol-ink`, `label-wrap` (+12)
 - `src/geometry/rect.ts` (10) — `between-face-probes`, `block-stair-winders`, `finish-furnish-laws`, `finish-levels`, `label-placement-oracle`, `label-wrap`, `lint-clearances-kitchen-doors`, `lint-measure` (+2)
 - `src/geometry/union.ts` (3) — `band`, `joinery-oracle`, `union`
-- `src/grammar/tokens.ts` (37) — `arch-highlight`, `block-stair-lint`, `clause-order-byte-identity`, `closed-vocabularies`, `corner-window`, `did-you-mean`, `door-enums`, `doors` (+29)
+- `src/grammar/tokens.ts` (38) — `arc-openings`, `arch-highlight`, `block-stair-lint`, `clause-order-byte-identity`, `closed-vocabularies`, `corner-window`, `did-you-mean`, `door-enums` (+30)
 - `src/hatches.ts` (8) — `export-pdf`, `floor-materials-byte-identity`, `joinery-split-oracle`, `joinery-split`, `model-range`, `outdoor`, `room-floor`, `sheet-text`
 - `src/impact.ts` (2) — `rectilinear-doors`, `rectilinear-rooms`
-- `src/import.ts` (37) — `af9-byte-identity`, `af9-fixes`, `block-stair-byte-identity`, `corner-window-byte-identity`, `dim-swap-reprint`, `dim-thickness-callout`, `drawing-budget`, `error-value-law` (+29)
+- `src/import.ts` (38) — `af9-byte-identity`, `af9-fixes`, `arc-openings`, `block-stair-byte-identity`, `corner-window-byte-identity`, `dim-swap-reprint`, `dim-thickness-callout`, `drawing-budget` (+30)
 - `src/import/limits.ts` (1) — `openplan3d-malformed`
-- `src/index.ts` (430) — `acc-metadata`, `access-graph`, `access-policy`, `accessible-svg`, `af9-byte-identity`, `af9-fixes`, `agent-gallery`, `alias-match` (+422)
+- `src/index.ts` (431) — `acc-metadata`, `access-graph`, `access-policy`, `accessible-svg`, `af9-byte-identity`, `af9-fixes`, `agent-gallery`, `alias-match` (+423)
 - `src/input-limit.ts` (2) — `import-rooted`, `workspace-seams`
 - `src/intent-concepts.ts` (3) — `vocabulary-es-pt`, `vocabulary-living-dining`, `vocabulary-matcher-oracle`
 - `src/intent-feasibility.ts` (1) — `intent-infeasible`
 - `src/intent.ts` (1) — `site`
-- `src/ir.ts` (185) — `access-policy`, `af9-byte-identity`, `af9-fixes`, `arc-radius-exact`, `attach`, `axes`, `between-face-probes`, `block-stair-byte-identity` (+177)
+- `src/ir.ts` (186) — `access-policy`, `af9-byte-identity`, `af9-fixes`, `arc-openings`, `arc-radius-exact`, `attach`, `axes`, `between-face-probes` (+178)
 - `src/label-fit.ts` (4) — `label-fit`, `label-leaders`, `label-symbol-ink`, `lint-thickness-unplaced`
 - `src/label-placement.ts` (7) — `label-fit`, `label-leaders`, `label-placement-oracle`, `label-placement`, `label-symbol-ink`, `label-wrap`, `north-arrow`
 - `src/lexer.ts` (14) — `clause-order-byte-identity`, `diagnostics-volume`, `diagnostics`, `error-value-law`, `expr`, `fmt-lossless`, `imperial-input`, `model-range` (+6)
@@ -166,19 +166,19 @@ Nearest first, then by name; `(+n)` is the rest. Test names are `test/<name>.tes
 - `src/opening-junctions.ts` (3) — `af9-byte-identity`, `af9-fixes`, `fixable-codes`
 - `src/opening-relation.ts` (3) — `openings-between`, `rectilinear-doors`, `rectilinear-sides`
 - `src/opening-schedule.ts` (2) — `sheet-annotations`, `window-kinds`
-- `src/parser.ts` (163) — `af9-byte-identity`, `af9-fixes`, `arc-radius-exact`, `attach`, `axes`, `block-stair-byte-identity`, `block-stair`, `chrome-hidden` (+155)
+- `src/parser.ts` (164) — `af9-byte-identity`, `af9-fixes`, `arc-openings`, `arc-radius-exact`, `attach`, `axes`, `block-stair-byte-identity`, `block-stair` (+156)
 - `src/pipeline.ts` (2) — `label-leaders`, `work-counts`
 - `src/plan-json.ts` (11) — `element-facets`, `format`, `garage`, `plan-json-dropped`, `plan-json-instances`, `polygon-rooms`, `section`, `sheet-annotations` (+3)
 - `src/plan-json/room-types.ts` (1) — `vocabulary-es-pt`
 - `src/plan-json/to-json.ts` (1) — `rect-ring`
-- `src/registry.ts` (54) — `af9-byte-identity`, `af9-fixes`, `annotation-collisions`, `block-stair-byte-identity`, `block-stair-winders-walking-arc`, `block-stair`, `corner-window-byte-identity`, `corner-window` (+46)
+- `src/registry.ts` (55) — `af9-byte-identity`, `af9-fixes`, `annotation-collisions`, `arc-openings`, `block-stair-byte-identity`, `block-stair-winders-walking-arc`, `block-stair`, `corner-window-byte-identity` (+47)
 - `src/repair.ts` (2) — `finish-furnish-laws`, `finish-never-worse`
 - `src/reroll.ts` (3) — `keep`, `reroll-findrun-oracle`, `reroll`
 - `src/room-datums.ts` (5) — `openings-between`, `room-datums`, `segment-select`, `shared-grid-byte-identity`, `keep`
 - `src/room-tiling.ts` (7) — `rectilinear-doors`, `rectilinear-rooms-byte-identity`, `rectilinear-rooms`, `rectilinear-sides`, `wall-between-around`, `walls-from-rooms-clauses`, `walls-from-rooms`
 - `src/scene-build.ts` (27) — `annotation-collisions`, `annotation-small-rooms`, `equivariance-fuzz`, `export-dxf`, `export-font-cjk`, `export-pdf`, `furniture-curves-backends`, `furniture-rotate` (+19)
 - `src/scene-memo.ts` (1) — `scene-memo`
-- `src/scene.ts` (66) — `arc-radius-exact`, `axes`, `band`, `bbox-derived-position`, `block-stair-winders-walking-arc`, `block-stair`, `corner-window`, `dim-stagger` (+58)
+- `src/scene.ts` (67) — `arc-openings`, `arc-radius-exact`, `axes`, `band`, `bbox-derived-position`, `block-stair-winders-walking-arc`, `block-stair`, `corner-window` (+59)
 - `src/segment-select.ts` (1) — `segment-select`
 - `src/share.ts` (1) — `share-codec`
 - `src/sheet-tables.ts` (5) — `drawing-budget`, `export-pdf`, `sheet-annotations`, `sheet`, `wall-status-drawing`
@@ -202,7 +202,7 @@ Nearest first, then by name; `(+n)` is the rest. Test names are `test/<name>.tes
 - `src/wall-lowering.ts` (2) — `joinery-split`, `open-crossing`
 - `src/wall-ref.ts` (2) — `rectilinear-rooms`, `walls-from-rooms`
 - `src/while-fix.ts` (2) — `fixable-codes`, `while-fix`
-- `src/world.ts` (131) — `af9-byte-identity`, `af9-fixes`, `block-stair-byte-identity`, `circulation-unmeasured`, `clause-order-byte-identity`, `corner-window-byte-identity`, `corner-window`, `did-you-mean` (+123)
+- `src/world.ts` (132) — `af9-byte-identity`, `af9-fixes`, `arc-openings`, `block-stair-byte-identity`, `circulation-unmeasured`, `clause-order-byte-identity`, `corner-window-byte-identity`, `corner-window` (+124)
 
 ## Test files
 
@@ -225,6 +225,7 @@ The first sentence of each file's header comment.
 - `test/annotation-overprint.test.ts` — Card AL6: `W_ANNOTATION_OVERLAP` says, as data beside the warning, which text is printed over what (`diagnosticOverprint`, `src/lint/overprint-ref.ts`).
 - `test/annotation-small-rooms.test.ts` — #367: a room label in a small room.
 - `test/apt-debs-cache.test.ts` — Every apt install in ci.yml and nightly.yml runs inside an `apt-debs` restore/save pair, and the warm-up workflow installs each set the way its jobs do.
+- `test/arc-openings.test.ts` — Doors, windows and openings on a curved wall are drawn on the curve, and on a straight wall exactly as before (card ARC-W1).
 - `test/arc-radius-exact.test.ts` — arc radius — exact semicircle on a Pythagorean chord; arc radius — the exact tie is built as the exact semicircle, whichever way hypot rounds; arc radius — the…
 - `test/arc-tessellation-error.test.ts` — arc tessellation error statements.
 - `test/arc-window-attribution.test.ts` — PS0.12 — a window on an arc edge is attributed from the shape.

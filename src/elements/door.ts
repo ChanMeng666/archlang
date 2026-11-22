@@ -31,6 +31,8 @@ import {
   openingWidthFix,
 } from "../fix-producers.js";
 import { renderDoorPanels } from "./door-panels.js";
+import { openingCover } from "./glyph-lib.js";
+import { arcOpeningSpan, polarPoint } from "../geometry/arc.js";
 import {
   DOOR_HEAD,
   heightsInOrder,
@@ -259,8 +261,52 @@ export function leafSlabThickness(width: number, leafPen: number): number {
 }
 
 /**
- * The open leaf as a closed slab, built from {@link doorSwing}'s own points so it can never
- * disagree with the sector `W_SWING_OBSTRUCTED`, `repair()` and the symmetry probe read.
+ * The leaves the DRAWING hangs: {@link doorLeaves}, except on a curved host, where each leaf is
+ * drawn on a jamb of the joinery's cut (`arcOpeningSpan`, the span `openingCut` severs the wall
+ * along), on the wall's centreline, and closes along the CHORD to the other jamb (a leaf is
+ * straight, as wide as that chord); a `double` door's two meet at the chord's middle.
+ *
+ * Drawing only. The model's swing (`doorSwing`/`doorLeaves`, which lint, `describe`'s symmetry
+ * facts, `repair` and the 3D package read) stays the tangent construction, so on a curve the drawn
+ * leaf and the measured one differ by the tangent's offset from the arc (about `w²/8R` across);
+ * moving the model is its own card. Where the joinery makes no annular cut (`r ≤ t/2`) or the span
+ * closes on itself (`half = π`, a door as wide as half the circle's run), the model's leaves are drawn.
+ */
+function drawnLeaves(dr: RDoor): DoorSwing[] {
+  const seg = dr.host;
+  const arc = seg?.arc;
+  const hinged = dr.doorKind === undefined || dr.doorKind === "hinged" || dr.doorKind === "double";
+  if (!seg || !arc || !hinged || !(arc.r > seg.thickness / 2)) return doorLeaves(dr);
+  const s = arcOpeningSpan(arc, dr.at, dr.width);
+  if (!(s.half < Math.PI)) return doorLeaves(dr);
+  const a = polarPoint(s.center, s.th0, s.r);
+  const b = polarPoint(s.center, s.th1, s.r);
+  if (dr.doorKind !== "double") return [swingBetween(a, b, dr.hinge, dr.swing)];
+  const mid = { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 };
+  return [swingBetween(a, mid, "left", dr.swing), swingBetween(mid, b, "right", dr.swing)];
+}
+
+/**
+ * One drawn leaf between two jambs: hinged on `from` (`left`, behind on the run) or `to`, closing
+ * along the chord between them, and open a quarter-disc as wide as that chord to the `swing` side
+ * of the chord's direction (the run's direction at the chord's middle) — `swingAlong`'s
+ * construction (`src/geometry.ts`) on given jambs. The two jambs are apart: `half < π`.
+ */
+function swingBetween(from: Point, to: Point, hingeSide: string, swingSide: DoorSwingDir): DoorSwing {
+  const chord = Math.hypot(to.x - from.x, to.y - from.y);
+  const dir = { x: (to.x - from.x) / chord, y: (to.y - from.y) / chord };
+  const hinge = hingeSide === "left" ? from : to;
+  const farJamb = hingeSide === "left" ? to : from;
+  const leafEnd = add(hinge, mul(swingSide === "in" ? normal(dir) : mul(normal(dir), -1), chord));
+  const cross = (leafEnd.x - hinge.x) * (farJamb.y - hinge.y) - (leafEnd.y - hinge.y) * (farJamb.x - hinge.x);
+  return { hinge, farJamb, leafEnd, radius: chord, sweep: cross > 0 ? 1 : 0 };
+}
+
+/**
+ * The open leaf as a closed slab, built from the drawn swing's own points ({@link drawnLeaves}): on a
+ * straight host those are {@link doorSwing}'s, so the slab can never disagree with the sector
+ * `W_SWING_OBSTRUCTED`, `repair()` and the symmetry probe read; on a curved host the drawn leaf hangs
+ * on the cut's jamb, off the model's tangent construction (card ARC-W1, drawing only).
  *
  * `[hinge, leafEnd, tip, heel]`: the first edge IS the swing's open-leaf radius (the line the
  * leaf used to be drawn as), and the thickness `t` is laid off toward the FAR jamb — the
@@ -284,6 +330,85 @@ function leafSlab(s: DoorSwing, t: number): Point[] {
 
 /** Clamp `v` into `[0,1]`. */
 const clamp01 = (v: number): number => Math.min(Math.max(v, 0), 1);
+
+/**
+ * A door's drawing: on a curved host, when `curved`, its cover is the cut's sector (`openingCover`)
+ * and its leaves are drawn on the cut's jambs ({@link drawnLeaves}); else, and on every straight host,
+ * the rectangle and the model's leaves (`doorLeaves`), which is what the annotation passes read for a
+ * door on a curve (`annotationFootprint`, card ARC-W1).
+ */
+function drawDoor(dr: RDoor, ctx: RenderCtx, curved: boolean): SceneNode[] {
+  const seg = dr.host;
+  if (!seg) return [];
+  const { theme, sizes } = ctx;
+  // On a CURVED host the cover is the cut's annular sector (`openingCover`) and each DRAWN
+  // leaf hangs on one of its jambs ({@link drawnLeaves}). The direction is the tangent at the
+  // doorway, which a non-hinged kind's panels read.
+  const d = segmentDirAt(seg, dr.at);
+  const n = normal(d);
+  // The wall solid is ALWAYS severed at a doorway: the joinery pass
+  // (`wall-lowering.ts`) cuts every opening on every host — straight, angled or curved
+  // — so the floor runs continuously through the reveal and only the capped jambs are
+  // drawn. The cover is therefore never painted: `theme.opening` is the page
+  // background, so painting it over a real hole laid a white band across the floor
+  // either side of the door.
+  //
+  // The polygon is still EMITTED, at the wall's own half-extent, because the ASCII and
+  // DXF backends locate the doorway by it on this pass.
+  const h = seg.thickness / 2;
+  const hw = dr.width / 2;
+  const cover: Point[] = [
+    add(add(dr.at, mul(d, -hw)), mul(n, h)),
+    add(add(dr.at, mul(d, hw)), mul(n, h)),
+    add(add(dr.at, mul(d, hw)), mul(n, -h)),
+    add(add(dr.at, mul(d, -hw)), mul(n, -h)),
+  ];
+  const nodes: SceneNode[] = [];
+  nodes.push({
+    layer: "doors",
+    // On a curve, the cut's own annular sector (`openingCover`): its jambs are the leaves' hinges.
+    prim: (curved ? openingCover(seg, dr.at, dr.width) : null) ?? { t: "polygon", pts: cover },
+    paint: { fill: "none" },
+  });
+  // A NON-HINGED kind draws panels/tracks/cavity in the reveal instead of a leaf and
+  // arc, and `doorSwing` returns null for it — so the hinged branch below is the
+  // EXISTING code, unmoved and unrewritten, and a plan that names no kind emits the
+  // same primitives in the same order it always did.
+  if (dr.doorKind !== undefined && dr.doorKind !== "double") {
+    nodes.push(...renderDoorPanels(dr, { theme, sizes, dir: d, thickness: seg.thickness }));
+    return nodes;
+  }
+  // Leaf + minor-arc geometry is shared with the swing-clearance lint rule: one leaf for a
+  // hinged door, two (each half the width, one per jamb) for a `double` one, drawn alike.
+  for (const swing of curved ? drawnLeaves(dr) : doorLeaves(dr)) {
+    // The open leaf is a SLAB (see `leafSlab`), filled with the page colour so the floor
+    // tint does not read through it, and stroked at the leaf pen.
+    const leafPen = sizes.thin * 1.3;
+    nodes.push({
+      layer: "doors",
+      prim: { t: "polygon", pts: leafSlab(swing, leafSlabThickness(swing.radius, leafPen)) },
+      paint: { fill: theme.opening, stroke: theme.doorLeaf, width: leafPen },
+    });
+    // The swing is a SOLID fine line. A dash means above the cut plane or hidden (an
+    // `upper_cabinet`, a `roof`, a garage door's overhead projection), and the path a
+    // leaf sweeps at floor level is neither. The named weight carries the pen ramp to
+    // the SVG serializer, `paint.width` the same number to the PDF one.
+    nodes.push({
+      layer: "doors",
+      prim: {
+        t: "arc",
+        center: swing.hinge,
+        r: swing.radius,
+        start: swing.leafEnd,
+        end: swing.farJamb,
+        sweep: swing.sweep,
+      },
+      paint: { fill: "none", stroke: theme.doorLeaf, width: weightWidth("extraThin", sizes) },
+      lineWeight: "extraThin",
+    });
+  }
+  return nodes;
+}
 
 export const door: ElementDef = {
   kind: "door",
@@ -541,9 +666,9 @@ export const door: ElementDef = {
     // pocket is a straight cavity — none of that survives on a curved reveal. Refuse
     // with a code rather than draw a straight panel across an arc (§10's explicit
     // stage-1 decision: decide, never let it fall out silently). A HINGED leaf does
-    // survive, because its swing is taken from the tangent at the doorway.
-    // A `double` door's two leaves survive as a hinged leaf does: both are taken from the tangent
-    // at the doorway's centre (`doorLeaves`), so it is not refused.
+    // survive: it is straight, drawn hung on a jamb of the cut and closing along the chord to the
+    // other (`drawnLeaves`), and its swing is measured from the tangent at the doorway (`doorSwing`).
+    // A `double` door's two leaves survive as a hinged leaf does (`doorLeaves`), so it is not refused.
     if (doorKind !== undefined && doorKind !== "double" && host?.arc) {
       ctx.diag({
         severity: "error",
@@ -551,7 +676,7 @@ export const door: ElementDef = {
         code: "E_DOOR_KIND_CURVED",
         span: n.span,
         hints: [
-          "Use the default hinged door here (delete the kind word) — its leaf and swing come from the tangent at the doorway.",
+          "Use the default hinged door here (delete the kind word) — its leaf is drawn hung on a jamb of the curved opening, and its swing is measured from the tangent at the doorway.",
           "Or move the door onto one of the wall's straight runs.",
         ],
       });
@@ -670,76 +795,13 @@ export const door: ElementDef = {
   drawCost: () => 5,
 
   render(resolved, ctx: RenderCtx): SceneNode[] {
+    return drawDoor(resolved as RDoor, ctx, true);
+  },
+  /** On a curve, the tangent drawing with the model's leaves: what the label, tag and north-arrow
+   *  passes read (card ARC-W1). */
+  annotationFootprint(resolved, ctx: RenderCtx): SceneNode[] | undefined {
     const dr = resolved as RDoor;
-    const seg = dr.host;
-    if (!seg) return [];
-    const { theme, sizes } = ctx;
-    // On a CURVED host the direction is the TANGENT at the doorway, so the cover spans a
-    // chord of the wall at that point and the jambs run radially — and the leaf and swing
-    // (computed from the same tangent inside `doorSwing`) can never disagree with it.
-    const d = segmentDirAt(seg, dr.at);
-    const n = normal(d);
-    // The wall solid is ALWAYS severed at a doorway: the joinery pass
-    // (`wall-lowering.ts`) cuts every opening on every host — straight, angled or curved
-    // — so the floor runs continuously through the reveal and only the capped jambs are
-    // drawn. The cover is therefore never painted: `theme.opening` is the page
-    // background, so painting it over a real hole laid a white band across the floor
-    // either side of the door.
-    //
-    // The polygon is still EMITTED, at the wall's own half-extent, because the ASCII and
-    // DXF backends locate the doorway by it on this pass.
-    const h = seg.thickness / 2;
-    const hw = dr.width / 2;
-    const cover: Point[] = [
-      add(add(dr.at, mul(d, -hw)), mul(n, h)),
-      add(add(dr.at, mul(d, hw)), mul(n, h)),
-      add(add(dr.at, mul(d, hw)), mul(n, -h)),
-      add(add(dr.at, mul(d, -hw)), mul(n, -h)),
-    ];
-    const nodes: SceneNode[] = [];
-    nodes.push({
-      layer: "doors",
-      prim: { t: "polygon", pts: cover },
-      paint: { fill: "none" },
-    });
-    // A NON-HINGED kind draws panels/tracks/cavity in the reveal instead of a leaf and
-    // arc, and `doorSwing` returns null for it — so the hinged branch below is the
-    // EXISTING code, unmoved and unrewritten, and a plan that names no kind emits the
-    // same primitives in the same order it always did.
-    if (dr.doorKind !== undefined && dr.doorKind !== "double") {
-      nodes.push(...renderDoorPanels(dr, { theme, sizes, dir: d, thickness: seg.thickness }));
-      return nodes;
-    }
-    // Leaf + minor-arc geometry is shared with the swing-clearance lint rule: one leaf for a
-    // hinged door, two (each half the width, one per jamb) for a `double` one, drawn alike.
-    for (const swing of doorLeaves(dr)) {
-      // The open leaf is a SLAB (see `leafSlab`), filled with the page colour so the floor
-      // tint does not read through it, and stroked at the leaf pen.
-      const leafPen = sizes.thin * 1.3;
-      nodes.push({
-        layer: "doors",
-        prim: { t: "polygon", pts: leafSlab(swing, leafSlabThickness(swing.radius, leafPen)) },
-        paint: { fill: theme.opening, stroke: theme.doorLeaf, width: leafPen },
-      });
-      // The swing is a SOLID fine line. A dash means above the cut plane or hidden (an
-      // `upper_cabinet`, a `roof`, a garage door's overhead projection), and the path a
-      // leaf sweeps at floor level is neither. The named weight carries the pen ramp to
-      // the SVG serializer, `paint.width` the same number to the PDF one.
-      nodes.push({
-        layer: "doors",
-        prim: {
-          t: "arc",
-          center: swing.hinge,
-          r: swing.radius,
-          start: swing.leafEnd,
-          end: swing.farJamb,
-          sweep: swing.sweep,
-        },
-        paint: { fill: "none", stroke: theme.doorLeaf, width: weightWidth("extraThin", sizes) },
-        lineWeight: "extraThin",
-      });
-    }
-    return nodes;
+    return dr.host && openingCover(dr.host, dr.at, dr.width) ? drawDoor(dr, ctx, false) : undefined;
   },
   /** A block at the door's centre, in the frame of its wall. Each kind is a door, `glazed_sliding` too. */
   cadPart(resolved): CadPart | undefined {

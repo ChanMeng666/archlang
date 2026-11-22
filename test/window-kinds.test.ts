@@ -479,7 +479,7 @@ suite("what each kind draws", () => {
     expect(Math.max(...ys) - Math.min(...ys)).toBeLessThanOrEqual(2 * 55); // a quarter of the 220 mm panel
   });
 
-  it("marks follow a curved wall's tangent, as the glazing does", () => {
+  it("marks follow a curved wall, as the glazing does", () => {
     const src = plan(`  wall id=w exterior thickness 200 { (0,0) arc (8000,0) radius 6000 }
   window casement on w at 50% width 1200 hinge left
 `);

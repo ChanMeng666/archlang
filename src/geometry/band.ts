@@ -61,7 +61,7 @@
 
 import type { Point } from "../ast.js";
 import type { Arc } from "./arc.js";
-import { arcExtremes, arcOffset, arcPointAt, arcTangentAt, arcTessellate } from "./arc.js";
+import { arcExtremes, arcOffset, arcOpeningSpan, arcPointAt, arcTangentAt, arcTessellate, spanArc } from "./arc.js";
 import type { WallLike } from "../geometry.js";
 import { distPointToWallSegment, segmentsOfWall } from "../geometry.js";
 import type { GridBox } from "./grid-index.js";
@@ -739,33 +739,10 @@ export function openingCut(w: BandWall, op: CutOpening, intern: PointInterner): 
 
   const arc = host.arc;
   if (!(arc.r > h)) return null; // a hole through the centre is not a doorway
-  const dir = arc.sweep >= 0 ? 1 : -1;
-  const thc = Math.atan2(op.at.y - arc.center.y, op.at.x - arc.center.x);
-  const half = Math.min(Math.PI, hw / arc.r);
-  const th0 = thc - dir * half;
-  const th1 = thc + dir * half;
-  const at = (th: number, r: number): Point => ({
-    x: arc.center.x + r * Math.cos(th),
-    y: arc.center.y + r * Math.sin(th),
-  });
-  const outerR = arc.r + h;
-  const innerR = arc.r - h;
-  const outer: Arc = {
-    center: arc.center,
-    r: outerR,
-    a: at(th0, outerR),
-    b: at(th1, outerR),
-    sweep: dir * 2 * half,
-    start: th0,
-  };
-  const inner: Arc = {
-    center: arc.center,
-    r: innerR,
-    a: at(th1, innerR),
-    b: at(th0, innerR),
-    sweep: -dir * 2 * half,
-    start: th1,
-  };
+  // The span every drawing of the opening reads too (`arcOpeningSpan`), so its jambs stand here.
+  const span = arcOpeningSpan(arc, op.at, op.width);
+  const outer: Arc = spanArc(span, arc.r + h);
+  const inner: Arc = spanArc(span, arc.r - h, true);
   return positive(
     internLoop(
       [

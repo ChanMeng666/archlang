@@ -369,7 +369,7 @@ export function arcExtremes(arc: Arc): Point[] {
  * a curved wall face is never faceted.
  */
 export function arcPieces(arc: Arc): Array<{ center: Point; r: number; start: Point; end: Point; sweep: 0 | 1 }> {
-  const n = Math.max(1, Math.ceil(deg(Math.abs(arc.sweep)) / ARC_PIECE_DEG - 1e-9));
+  const n = arcPieceCount(arc.sweep);
   const sweepFlag: 0 | 1 = arc.sweep >= 0 ? 1 : 0;
   const out: Array<{ center: Point; r: number; start: Point; end: Point; sweep: 0 | 1 }> = [];
   for (let i = 0; i < n; i++) {
@@ -382,6 +382,62 @@ export function arcPieces(arc: Arc): Array<{ center: Point; r: number; start: Po
     });
   }
   return out;
+}
+
+/** How many pieces {@link arcPieces} cuts a sweep of `sweep` radians into: one per started 120°. */
+export function arcPieceCount(sweep: number): number {
+  return Math.max(1, Math.ceil(deg(Math.abs(sweep)) / ARC_PIECE_DEG - 1e-9));
+}
+
+/**
+ * The angular span an opening `width` wide, centred at `at`, takes out of a wall that runs along
+ * `arc`: the ONE rule the joinery's cut (`openingCut`, `./band.ts`) and every drawing of a door,
+ * window or opening on a curve read, so the drawn jambs stand exactly on the cut's jambs.
+ *
+ * The opening spans its width by ARC LENGTH on the wall's centreline (`r`), so its half-angle is
+ * `width / 2 / r`, capped at π, about the angle `thc` of `at`. `th0` is the jamb behind on the
+ * run (the one `hinge left` names) and `th1` the one ahead: `dir` is the way the angle grows along
+ * the run, `+1` for a clockwise (`sweep > 0`) arc.
+ */
+export interface ArcOpeningSpan {
+  center: Point;
+  r: number;
+  dir: 1 | -1;
+  thc: number;
+  half: number;
+  th0: number;
+  th1: number;
+}
+
+/** {@link ArcOpeningSpan} of an opening `width` wide at `at` on a wall along `arc`. */
+export function arcOpeningSpan(arc: Arc, at: Point, width: number): ArcOpeningSpan {
+  const dir = arc.sweep >= 0 ? 1 : -1;
+  const thc = Math.atan2(at.y - arc.center.y, at.x - arc.center.x);
+  const half = Math.min(Math.PI, width / 2 / arc.r);
+  return { center: arc.center, r: arc.r, dir, thc, half, th0: thc - dir * half, th1: thc + dir * half };
+}
+
+/** The point at angle `th` (radians, `atan2` sense) and radius `r` about `c`. */
+export function polarPoint(c: Point, th: number, r: number): Point {
+  return { x: c.x + r * Math.cos(th), y: c.y + r * Math.sin(th) };
+}
+
+/**
+ * The concentric arc of radius `r` across an opening's span: from jamb `th0` to jamb `th1` along
+ * the run, or back from `th1` to `th0` when `reversed`. Its ends are the jambs' own points, built
+ * from the jamb angles (never from `start + sweep`), so a face drawn across the span ends exactly
+ * where the cut's face does.
+ */
+export function spanArc(s: ArcOpeningSpan, r: number, reversed = false): Arc {
+  const [from, to] = reversed ? [s.th1, s.th0] : [s.th0, s.th1];
+  return {
+    center: s.center,
+    r,
+    a: polarPoint(s.center, from, r),
+    b: polarPoint(s.center, to, r),
+    sweep: (reversed ? -s.dir : s.dir) * 2 * s.half,
+    start: from,
+  };
 }
 
 /**

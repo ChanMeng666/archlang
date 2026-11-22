@@ -641,7 +641,7 @@ door pocket on w1 at 50% width 900   # fixed: no hinge clause
 
 *error* — A sliding-family or garage door cannot sit on a curved wall.
 
-**Cause.** The panel of a `sliding`, `glazed_sliding`, `barn`, `bifold` or `pocket` door is a straight rectangle running along a straight track, and its pocket/track geometry is straight by construction — none of that survives on a wall whose hosting edge is an `arc`. A hinged leaf does survive (its swing is taken from the tangent at the doorway), and so do a `double` door's two (both from the tangent at the doorway's centre), so only the sliding family and `garage` are refused. Refusing is deliberate: drawing a straight panel across a curved reveal would be a wrong drawing with no diagnostic.
+**Cause.** The panel of a `sliding`, `glazed_sliding`, `barn`, `bifold` or `pocket` door is a straight rectangle running along a straight track, and its pocket/track geometry is straight by construction — none of that survives on a wall whose hosting edge is an `arc`. A hinged leaf does survive (it is drawn hung on a jamb of the curved opening, closing along the chord to the other, and its swing is measured from the tangent at the doorway), and so do a `double` door's two (drawn one on each jamb, measured from the tangent at the doorway's centre), so only the sliding family and `garage` are refused. Refusing is deliberate: drawing a straight panel across a curved reveal would be a wrong drawing with no diagnostic.
 
 **Fix.** Use a `hinged` door on the curve (the default — delete the kind word), or move the door onto one of the wall's straight runs.
 
