@@ -546,7 +546,8 @@ suite("W_AREA_AS_LENGTH (AF10 step 2, first slice)", () => {
   });
 
   suite("through an import (the module fallback)", () => {
-    const world = worldFor(join(REPO_ROOT, "test/silent-accepts"));
+    // The fixtures' folder, named by a fixture's path (the opaque-literal guard reads this file).
+    const world = worldFor(dirname(join(REPO_ROOT, "test/silent-accepts/area-as-length.arch")));
     const viaImport = (body: string): string[] => raised(plan(body), { world });
     it("a module `let A = W*W` read in a component body, nothing shadowing `W`, is reported (P2c)", () => {
       expect(viaImport('  import "area-as-length-mod2.arch": e\n  e(0)')).toEqual(["W_AREA_AS_LENGTH"]);
