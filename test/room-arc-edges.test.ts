@@ -35,7 +35,11 @@ import {
   planToJson,
   resolvePlan,
 } from "../src/index.js";
-import { evaluationSteps, type RRoom } from "../src/ir.js";
+import { evaluationSteps, resolveAll, type RRoom } from "../src/ir.js";
+import { link } from "../src/import.js";
+import { parse } from "../src/parser.js";
+import { BUILTIN_REGISTRY } from "../src/registry.js";
+import { makeVirtualWorld } from "../src/world.js";
 import { roomAreaMm2 } from "../src/geometry/room-ring.js";
 import { polygonArea } from "../src/geometry/polygon.js";
 import { ROOM_ARC_FULL_STEP_RADIUS_MM, ROOM_ARC_MAX_SAG_MM } from "../src/elements/room.js";
@@ -173,7 +177,7 @@ suite("the exact floor", () => {
     expect(polygonArea(r.poly!)).toBeLessThan(exact - 1000);
     // The ring is closed by its arc: two vertices, two edges, no repeated first vertex.
     expect(r.edges!.map((e) => e.t)).toEqual(["line", "arc"]);
-    const s = describePlan(SEMICIRCLE).summary!.rooms[0]!;
+    const s = describePlan(SEMICIRCLE).rooms[0]!;
     expect(s.area_m2).toBe(6.28);
     expect(s.floor_polygon).toEqual([
       { x: 0, y: 0 },
@@ -194,13 +198,18 @@ suite("the exact floor", () => {
     const r = roomOf(BOWED, "b");
     const exact = 16_000_000 + (Math.PI * 2000 * 2000) / 2;
     expect(Math.abs(roomAreaMm2(r) - exact) / exact).toBeLessThan(1e-9);
-    expect(describePlan(BOWED).summary!.rooms[0]!.area_m2).toBe(22.28);
+    expect(describePlan(BOWED).rooms[0]!.area_m2).toBe(22.28);
     expect(compile(BOWED).svg).toMatch(/<path d="M 0,0 L 4000,0 A 2000 2000 0 0 1 [^"]*" fill=/);
     expect(r.size).toEqual({ w: 6000, h: 4000 });
   });
 
   it("charges the tessellation it builds to the step meter", () => {
-    const steps = (src: string): number => evaluationSteps(resolvePlan(src));
+    const steps = (src: string): number => {
+      const world = makeVirtualWorld({});
+      return evaluationSteps(
+        resolveAll(link(parse(src, BUILTIN_REGISTRY).plan!, world, BUILTIN_REGISTRY).plan, BUILTIN_REGISTRY, world),
+      );
+    };
     const straight = plan("  room id=s polygon (0,0) (4000,0) (2000,-2000)");
     expect(Number.isFinite(steps(SEMICIRCLE))).toBe(true);
     expect(steps(SEMICIRCLE)).toBeGreaterThan(steps(straight));
@@ -223,7 +232,7 @@ suite("turned and mirrored (D4)", () => {
       `  place apse() as g at (20000,20000)${xf}`,
     );
   const factsOf = (xf: string) => {
-    const s = describePlan(placed(xf)).summary!.rooms[0]!;
+    const s = describePlan(placed(xf)).rooms[0]!;
     return { area: s.area_m2, arcs: s.floor_arcs!.map((a) => ({ r: a.r, sweep: a.sweep })) };
   };
   const base = factsOf("");
@@ -245,7 +254,7 @@ suite("Plan JSON", () => {
     const { source, diagnostics: back } = planFromJson(json as PlanJson);
     expect(back.filter((d) => d.severity === "error")).toEqual([]);
     expect(compile(source!).svg).toBe(compile(src).svg);
-    expect(JSON.stringify(describePlan(source!).summary!.rooms)).toBe(JSON.stringify(describePlan(src).summary!.rooms));
+    expect(JSON.stringify(describePlan(source!).rooms)).toBe(JSON.stringify(describePlan(src).rooms));
     return source!;
   };
 
@@ -344,15 +353,16 @@ suite("the walls that back an arc edge are read by the arc (W_ROOM_NOT_ENCLOSED,
 
   it("two rooms either side of an R9000 curved partition share no run a straight wall must back", () => {
     const src = plan(
-      "  wall exterior thickness 200 { (0,0) (16000,0) (16000,12000) (0,12000) close }",
+      "  wall id=shell exterior thickness 200 { (0,0) (16000,0) (16000,12000) (0,12000) close }",
       "  wall partition thickness 100 { (0,6000) arc (16000,6000) radius 9000 cw }",
       '  room id=n polygon (0,0) (16000,0) (16000,6000) arc (0,6000) radius 9000 ccw label "Office" uses office',
       '  room id=s polygon (0,6000) arc (16000,6000) radius 9000 cw (16000,12000) (0,12000) label "Bedroom" uses bedroom',
-      "  door on exterior at 2000 width 900",
+      "  door on shell at 2000 width 900",
     );
     expect(lintCodes(src)).not.toContain("W_BOUNDARY_NO_WALL");
-    const describeRooms = describePlan(src).summary!.rooms.map((r) => [r.id, r.area_m2]);
-    expect(describeRooms[0]![1]! + describeRooms[1]![1]!).toBeCloseTo(192, 1);
+    // The two floors tile the 16 × 12 m shell exactly: one curve, two exact areas.
+    const [n, s] = describePlan(src).rooms.map((r) => r.area_m2);
+    expect(n! + s!).toBeCloseTo(192, 1);
   });
 });
 
@@ -365,7 +375,7 @@ suite("the motivating plan: ArchCanvas's Bay Bungalow, its living room written w
       lint(src).filter((d) => d.code === "W_FLOOR_UNASSIGNED" && d.message.includes('"Living"'));
     expect(bayReport(original)).toHaveLength(1);
     expect(bayReport(bay)).toEqual([]);
-    const living = describePlan(bay).summary!.rooms.find((r) => r.id === "r_living")!;
+    const living = describePlan(bay).rooms.find((r) => r.id === "r_living")!;
     // 5800 × 6800 plus the segment (R²/2)(θ − sin θ), θ = 2·asin(1500/1900).
     const theta = 2 * Math.asin(1500 / 1900);
     const exact = 5800 * 6800 + ((1900 * 1900) / 2) * (theta - Math.sin(theta));
