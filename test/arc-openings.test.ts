@@ -8,8 +8,8 @@
  * line along the wall is a concentric arc, every jamb radial and on the joinery's own cut
  * (`arcOpeningSpan`, the span `openingCut` severs), and a door's leaf is DRAWN hinged on a jamb of the
  * cut. Drawing only: the model's swing (`doorSwing`/`doorLeaves`, read by lint, the symmetry facts and
- * the 3D package) is still the tangent construction, and no annotation reads a curve by its centre
- * (`curvedOpeningInk`), so no label, tag or leader moves.
+ * the 3D package) is still the tangent construction, and the annotation passes read main's footprint
+ * of a curved opening (`annotationFootprint`: the tangent drawing), so no label, tag or leader moves.
  *
  * The straight-host rows are {@link arcOpeningsLawDigest} (`test/helpers/arc-openings-law.ts`),
  * **measured against `src/` at `a0f85ebf`** (`main` before the change), that tree extracted by
@@ -221,33 +221,48 @@ suite("a window on a curve stands on the arc", () => {
     expect(windowEl.drawCost!(w)).toBe(10);
   });
 
-  it("the sill stands on the exterior face, along the arc", () => {
+  it("the sill stands on the exterior face, along the arc: one path of true arcs", () => {
     const { w, arc, nodes } = windowCase(WINDOW_CASES[1]![1]);
     const t = w.host!.thickness;
-    // A polygon with no fill, as a straight window's sill is: the 3D package finds the drawn sill so.
-    const sill = nodes.find((n) => n.prim.t === "polygon" && n.paint.fill === "none");
+    const sill = nodes.find((n) => n.prim.t === "path" && n.paint.fill === "none");
     expect(sill).toBeDefined();
-    if (sill?.prim.t !== "polygon") return;
-    // The room is inside the drum, so the sill is outside: from the outer face outward, every
-    // corner on one of the two arcs.
-    const radii = sill.prim.pts.map((p) => dist(p, arc.center));
-    expect(sill.prim.pts.length).toBeGreaterThan(4);
+    // The room is inside the drum, so the sill is outside: from the outer face outward.
+    const radii = arcsOf(sill!).map((a) => a.r);
     expect(Math.min(...radii)).toBeCloseTo(arc.r + t / 2, 9);
     expect(Math.max(...radii)).toBeCloseTo(arc.r + t / 2 + 0.2 * t, 9);
-    for (const r of radii)
-      expect(Math.min(Math.abs(r - (arc.r + t / 2)), Math.abs(r - (arc.r + 0.7 * t)))).toBeLessThan(1e-6);
+  });
+});
+
+suite("the annotation passes read main's footprint of a curved opening (card ARC-W1)", () => {
+  // Each pinned value is `main`'s (`a0f85ebf`), measured with these very plans: the label, tag and
+  // north-arrow passes read the tangent drawing and the model's leaves (`annotationFootprint`), so
+  // what they place does not move when the opening is drawn on the curve. The review of the second
+  // round found these two moved: the tag by 400 mm, the room's name by 270 mm.
+  const texts = (src: string) =>
+    compile(src, { noCache: true })
+      .scene!.nodes.filter((n) => n.prim.t === "text")
+      .slice(0, 3)
+      .map((n) => (n.prim.t === "text" ? [n.prim.value, n.prim.at.x, n.prim.at.y] : []));
+
+  it("a window's opening tag stands where main put it", () => {
+    expect(texts(drum("  schedule openings\n  window id=w on drum at 3% width 800"))).toEqual([
+      ["Drum", 3000, 2962.5],
+      ["28.3 m²", 3000, 3168.75],
+      ["W01", 5210.882504364418, 2587.801566982905],
+    ]);
   });
 
-  it("no annotation reads a window's curve by its centre: the room's name stays on its anchor", () => {
-    // The drum's own name sits at its centre; a 7000 mm window bulges round half the drum, and its
-    // lines' arcs are centred on the label. Read as strokes and pieces (`curvedOpeningInk`), they
-    // leave the name where a plan with no window puts it.
-    const at = (src: string) =>
-      compile(src, { noCache: true })
-        .scene!.nodes.filter((n) => n.prim.t === "text")
-        .map((n) => JSON.stringify(n.prim));
-    expect(at(drum("  window id=w on drum at 80% width 7000"))).toEqual(at(drum("")));
-    expect(at(drum("  window id=w sliding on drum at 22% width 1600", " cw"))).toEqual(at(drum("", " cw")));
+  it("the room's name stands where main put it beside a door on a small drum", () => {
+    expect(texts(drum("  door id=d on drum at 24% width 1100 hinge right swing out", "", 200, 900))).toEqual([
+      ["Drum", 900, 1158],
+      ["2.5 m²", 900, 1224],
+    ]);
+  });
+
+  it("the drawing itself is the curve: the footprint is put back after the passes", () => {
+    const nodes = compile(drum("  window id=w on drum at 3% width 800"), { noCache: true }).scene!.nodes;
+    expect(nodes.some((n) => n.layer === "windows" && n.prim.t === "arc")).toBe(true);
+    expect(nodes.some((n) => n.layer === "floor" && n.prim.t === "polygon" && n.prim.pts.length === 0)).toBe(false);
   });
 });
 

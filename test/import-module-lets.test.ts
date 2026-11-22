@@ -536,7 +536,7 @@ suite("a module `let` that fails reports as it does in the module", () => {
 const BASELINE: [string, string][] = [
   // PS4.4: every row whose plan resolves re-measured once for the new totals key (gross internal area); see test/byte-identity-baseline.ts.
   ["examples/accessible.arch", "5f69fe78d45db6b096e3e7f4c44bfcdb537c4201d06fee8780e813112869f20c"],
-  ["examples/aquarium.arch", "332cc2fa6c186f6570ba939aacd193049d766845710bfe476476e78410f5a0c0"], // re-measured for PS2.4, see header; PS2.10 dims fixed (byte-identity-baseline.ts); PS2.11e, see header
+  ["examples/aquarium.arch", "0d4ae229f5ad16397ba93dc0aa90d6fb0a7eab0cec0253bd43e619c3292e08b2"], // re-measured for PS2.4, see header; PS2.10 dims fixed (byte-identity-baseline.ts); PS2.11e, see header
   ["examples/attached.arch", "07995653257dff5785f4fe210e3c4f6f9d6fc35165be2e5ae34df364079029dc"],
   ["examples/bungalow.arch", "0dd331e28b8f4e20c3b359c8e819ed738290295cc83934c1a38808d2fd83dc13"], // PS2.11e, see header; CV13 (was 074d5531): example source edited (chairs added)
   ["examples/classroom-block.arch", "4d558795c0b345b3a9a1e5454bc476125983a63dee7d3227c0d3afe09b7ed3bd"], // SR.15 (was cca7c3df); added with the example, re-measured for net area, see header; PS2.11e, see header

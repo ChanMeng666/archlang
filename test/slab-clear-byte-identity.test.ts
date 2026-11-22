@@ -123,7 +123,7 @@ const writes = (src: string, form: Form): boolean => {
 /** Measured at `21d3e0f4` (see the header): `[digest, row]`. */
 const BASELINE: [string, string][] = [
   ["e33e9923337208c91bf7093a0fa63040f132db455f3e3e85d584740a18a8f611", "examples/accessible.arch"],
-  ["50b5f89c4a3022a3a9ac6621f19a55098d350aaacd376f6563b1761c933512b3", "examples/aquarium.arch"],
+  ["bd2c1700c1e9cb50319e4a48b4de1f4003feca5e70bcd99635a2f72dbf6ad332", "examples/aquarium.arch"],
   ["90680592ce7aef9b99598ec8e547044bedf53cebf2edbf890d7fac8db64763ef", "examples/attached.arch"],
   ["199a5fd1b547984cb93e2302d7d896516c3ab4ebb5b09266f5d78c1f24480cee", "examples/bungalow.arch"], // CV13 (was 6f42bf9e): example source edited (chairs added)
   ["d49a6cfcf374789298424d6d76f4615d5d1bc2c72367ca8a5dc4444bd7521447", "examples/classroom-block.arch"],

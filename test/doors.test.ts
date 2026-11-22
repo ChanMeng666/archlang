@@ -592,7 +592,8 @@ suite("doors — the drawing language", () => {
       onArc,
     ];
     // A point may sit this far (mm) outside the sector and still count as on it: the slab
-    // is built from `doorSwing`'s own points, so a corner ON a bounding radius is exact in
+    // is built from its drawn swing's own points (`doorSwing`'s on a straight host, the leaf
+    // hung on the cut's jamb on a curved one), so a corner ON a bounding radius is exact in
     // real arithmetic and ~1e-13 mm off it in doubles on a curved host.
     const EPS = 1e-6;
     for (const src of cases) {

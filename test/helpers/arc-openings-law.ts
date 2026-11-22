@@ -6,7 +6,8 @@
  * The payload is the rectilinear-rooms law's ({@link lawDigest}: every page's SVG, `describe()`,
  * `lint()`, `compile().diagnostics`, every page's Scene and the step count) plus what the change
  * touches beyond it: every page's DXF and ASCII (the ASCII backend learned the curved cover), and
- * `describe --facts symmetry`, which reads a door's leaves (`doorSwing`, now curved on an arc).
+ * `describe --facts symmetry`, which reads a door's leaves (`doorSwing`, which the change leaves on the
+ * tangent: only the drawing hangs a leaf on the arc's jamb).
  */
 
 import { sha256 } from "./digest.js";

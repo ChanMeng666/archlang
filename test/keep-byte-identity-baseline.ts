@@ -10,7 +10,7 @@
  * PR legitimately moves a hashed output (never keep code), the table is re-taken by the generator, the
  * reason recorded below and the moved files listed in that commit's message.
  *
- * Taken: card ARC-W1 round 2 (fix/arcw1-openings-on-arc on main a0f85ebf): openings on an arc are drawn on the curve, drawing only; only opening-layer ink moved (main's opening nodes put back reproduce every digest-law row; describe/lint/diagnostics/validate/impact and steps unchanged by a per-payload sweep against main)
+ * Taken: card ARC-W1 round 3 (fix/arcw1-openings-on-arc on main a0f85ebf): openings on an arc are drawn on the curve, drawing only; the annotation passes read main's footprint; only opening-layer ink moved (main's opening nodes put back reproduce every digest-law row; describe/lint/diagnostics/validate/impact and steps unchanged by a per-payload sweep against main)
  */
 
 /** `[path from the repository root, SHA-256 of the payload, evaluation steps]`, sorted by root. */
@@ -23,7 +23,7 @@ export const KEEP_WEAK_BASELINE: readonly (readonly [string, string, number])[] 
   ],
   [
     "examples/aquarium.arch",
-    "f61210da0e7b5918d1f93095ceea29cb0906228719e9dafc8d411b5ad6272fd0",
+    "d61b665da9d216683b5e7918e4126b06e29a5a0fd69ba1f2641eb62f60b6bbc9",
     3350,
   ],
   [
@@ -373,22 +373,22 @@ export const KEEP_WEAK_BASELINE: readonly (readonly [string, string, number])[] 
   ],
   [
     "test/defect-corpus/annotation-collisions/radius-over-label.arch",
-    "e7473fc33a84b98bae71b1c8905dca2d0066f728e7590e253674b40ddc54b369",
+    "c522052553aef22aa0bffa453ed44c956b1f733de5804d812d8d8b1b6ece2168",
     68,
   ],
   [
     "test/defect-corpus/annotation-collisions/radius-over-label.clean.arch",
-    "de3bbde37b467a21ea655fcc61c62760943f9ee4f64dfa1e915be7ab57f8f7ad",
+    "d4d0e47765372d30f490c57bdb4dd25a7097dbaf3f8130f00d3ecaddac9efd3a",
     68,
   ],
   [
     "test/defect-corpus/annotation-collisions/radius-over-piece.arch",
-    "927ddb1ec17476f17a2464be8639055ff3f525733e3b6caad31b5c169b15dfc5",
+    "954acc87bf824af989eea7c3f676b3115a51ba9151c3f6531f9a273fec8242cb",
     82,
   ],
   [
     "test/defect-corpus/annotation-collisions/radius-over-piece.clean.arch",
-    "5a5517d518dc9ba10a2c56288dadb92bbf84681665ffe6fda6ac654ef9e6921e",
+    "598952a047101ccf4dc9deb93ac8e75438cebb827a48a8b4f1e9e50898b7b8a9",
     82,
   ],
   [

@@ -1465,6 +1465,12 @@ function drawStorey(
       });
     }
   }
+  // Card ARC-W1: an opening on a curved wall is DRAWN on the curve, while every annotation pass
+  // below (the opening tags, the label wrap, relocation and fit, the thickness figures'
+  // re-station, the chrome layout and the north arrow) reads the drawing it was built on: the
+  // tangent drawing and the model's door leaves (`ElementDef.annotationFootprint`). Swapped in
+  // here, node for node, and the drawing put back once those passes are done.
+  const drawnBack = swapInFootprints(nodes, drawnElements, registry, ctxFor);
   // TWO hatch lists, deliberately.
   //
   // `wallHatches` is what the wall lowering groups and orders its fills by, and it must
@@ -1730,6 +1736,9 @@ function drawStorey(
     }
   }
 
+  // The annotation passes are done: the drawing goes back where its footprint stood (card ARC-W1).
+  for (const { from, drawn } of drawnBack) nodes.splice(from, drawn.length, ...drawn);
+
   // Opt-in diagnostic overlays (ADR 0008): appended AFTER all nodes and after chrome
   // layout, so the default Scene (no overlays) is byte-identical and the overlay never
   // shifts the page or chrome. Off by default — never on the shipped-SVG path.
@@ -1769,6 +1778,38 @@ function drawStorey(
   DRAWN_AUTO_DIMS.set(scene, { dims: autoDims.map((e) => e.el as RDim), unplaced: unplacedThickness });
   DRAWN_LEADERS.set(scene, leaders);
   return scene;
+}
+
+/** A node every annotation pass reads as nothing: on the `floor` pass (under the labels), with no point. */
+const FOOTPRINT_FILLER: SceneNode = { layer: "floor", prim: { t: "polygon", pts: [] }, paint: {} };
+
+/**
+ * Put each element's annotation footprint (`ElementDef.annotationFootprint`, card ARC-W1) in place of
+ * the nodes it drew, node for node: the footprint's nodes first, each carrying the annotate metadata
+ * of the drawn node it stands in for, then {@link FOOTPRINT_FILLER}s to the drawing's length, so every
+ * index the label groups and element ranges hold stays true. Returns what to put back. An element
+ * with no footprint, or one longer than its drawing, keeps its drawing. Nothing on a straight wall has
+ * a footprint, so such a plan passes through untouched.
+ */
+function swapInFootprints(
+  nodes: SceneNode[],
+  drawn: readonly ElementNodes[],
+  registry: Registry,
+  ctxFor: (kind: string) => RenderCtx,
+): { from: number; drawn: SceneNode[] }[] {
+  const back: { from: number; drawn: SceneNode[] }[] = [];
+  for (const { el, from, to } of drawn) {
+    const foot = registry.byKind.get(el.kind)?.annotationFootprint?.(el, ctxFor(el.kind));
+    if (!foot || foot.length > to - from) continue;
+    const mine = nodes.slice(from, to);
+    for (let i = 0; i < mine.length; i++) {
+      const was = mine[i]!;
+      const { layer: _l, prim: _p, paint: _q, lineWeight: _w, lineType: _t, layerName: _n, ...meta } = was;
+      nodes[from + i] = i < foot.length ? { ...foot[i]!, ...meta } : FOOTPRINT_FILLER;
+    }
+    back.push({ from, drawn: mine });
+  }
+  return back;
 }
 
 /**

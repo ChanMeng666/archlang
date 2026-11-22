@@ -133,7 +133,7 @@ const worldOf = (dir: string | undefined): World | undefined => (dir ? makeNodeW
 /** Measured at `58c1fc81`, the `H10` rows with those charges applied (see the header): `[digest, row]`. */
 const BASELINE: [string, string][] = [
   ["262def0349197a52678b48368bc427c7bd002861a06506cb9353dea8772119fe", "examples/accessible.arch"],
-  ["dd9179e882e79577fb9f582070cb31538e8694f91cd273421db55a7b1778273c", "examples/aquarium.arch"], // H10: +1469 ring scan, +939 overlap
+  ["a914093c7fc17a0d8f1af94d417c8572cbd3eadedae0c2394035fc6f1e76a3f9", "examples/aquarium.arch"], // H10: +1469 ring scan, +939 overlap
   ["44575ad4610b8698bb5193ccfbd2a35fae9638f3eecbcaf9bb65b40041d7545d", "examples/attached.arch"],
   ["3edc381374117c3b4450f0eadc795802f35044d7a024e9ff601e3aa74a859a0b", "examples/bungalow.arch"], // H10: +6 ring scan, +0 overlap; CV13 (was 25a7e576): example source edited (chairs added)
   ["df2be9185a31132e1e403c2573e46b06b28635595814b1a21d88bfe315e57f9b", "examples/classroom-block.arch"],

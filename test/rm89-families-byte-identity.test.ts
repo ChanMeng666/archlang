@@ -121,7 +121,7 @@ const NEW_WORDS: readonly string[] = FIXTURE_CATEGORIES.filter((w) => BATCH.incl
 /** Measured at `70e5b207` (see the header): `[digest, row]`. */
 const BASELINE: [string, string][] = [
   ["1defb1a97f6a98d2aad9f52a1a5dd7e4d40f5f7549f4cf70999b58b9aefd7212", "examples/accessible.arch"],
-  ["fe91cb88207585ca7b5c45e8d151698909f9c172a3b17b5680902a36223c1c14", "examples/aquarium.arch"],
+  ["716e2346ce1b0e0c5ad12dd655af1d4dc245e04a3af7fd85f072f7a6753894d4", "examples/aquarium.arch"],
   ["b65120c0078ef74191d75591963b87f64f2f0c6494282cb2eaecb845c75a9f25", "examples/attached.arch"],
   ["385eb04786c9b1340bc29e7ad5e0708792f0a7b57010d23b4e290fccb4ef62dc", "examples/bungalow.arch"], // CV13 (was 49d92a00): example source edited (chairs added)
   ["7bdbe984d504513537c0bf753f401f4b6addacd38068e9a65452e2bbdeff71d6", "examples/classroom-block.arch"],

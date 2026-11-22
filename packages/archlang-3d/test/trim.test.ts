@@ -5,7 +5,7 @@
  * and in whole micrometres, and the side the 3D calls a window's outside the side the core's own
  * drawing puts the sill on (the rule is written again here, so the two are held together).
  */
-import { compile } from "@chanmeng666/archlang";
+import { compile, resolvePlan } from "@chanmeng666/archlang";
 import { describe, expect, it } from "vitest";
 import { adaptPlan, buildMesh, insideOf, type Mesh3D, type MeshNode, OPENING_DETAIL } from "../src/index.js";
 import { openEdges, signedVolume } from "../src/node.js";
@@ -448,8 +448,27 @@ describe("the trim over the corpus and the stress plans", () => {
       const r = adaptPlan(src, { world: WORLD });
       if (!r.ok) continue;
       const c = compile(src, { world: WORLD });
+      // A window on a curved wall (card ARC-W1) draws its sill along the arc, a `path` off the face:
+      // its side is read radially from the host arc, its centre and radius in µm, by window id.
+      const resolved = resolvePlan(src, { world: WORLD });
+      const irs = resolved.levels.length > 0 ? resolved.levels.map((l) => l.ir) : [resolved.ir];
       r.scene.levels.forEach((lv, i) => {
         const drawn = c.pages?.[i]?.scene ?? c.scene;
+        const arcOf = new Map<string, { cx: number; cy: number; r: number }>();
+        for (const el of irs[i]?.elements ?? []) {
+          const arc = el.kind === "window" ? el.host?.arc : undefined; // a window's host arc, if curved
+          if (arc) arcOf.set(el.id, { cx: arc.center.x * MM, cy: arc.center.y * MM, r: arc.r * MM });
+        }
+        // The corners of every curved sill: a window-layer `path` with no fill, in µm.
+        const curvedSills = (drawn?.nodes ?? []).flatMap((x) =>
+          x.layer === "windows" && x.prim.t === "path" && x.paint.fill === "none"
+            ? [
+                x.prim.loops
+                  .flatMap((lp) => [lp.start, ...lp.edges.map((e) => e.to)])
+                  .map((p) => [p.x * MM, p.y * MM] as const),
+              ]
+            : [],
+        );
         // The core's sill: a window-layer outline with no fill (the cover is filled), its middle off a face.
         const sills = (drawn?.nodes ?? []).flatMap((x) =>
           x.layer === "windows" && x.prim.t === "polygon" && x.paint.fill === "none"
@@ -468,9 +487,28 @@ describe("the trim over the corpus and the stress plans", () => {
           const [j0, j1] = o.jambs;
           const L = Math.hypot(j1[0] - j0[0], j1[1] - j0[1]);
           const [ux, uy] = [(j1[0] - j0[0]) / L, (j1[1] - j0[1]) / L];
-          const near = sills
-            .map(([x, y]) => [(x - j0[0]) * ux + (y - j0[1]) * uy, -(x - j0[0]) * uy + (y - j0[1]) * ux] as const)
-            .filter(([u, v]) => u > 0 && u < L && Math.abs(v) > t / 2 && Math.abs(v) < t);
+          const arc = arcOf.get(o.id);
+          let near: (readonly [number, number])[];
+          if (!arc) {
+            near = sills
+              .map(([x, y]) => [(x - j0[0]) * ux + (y - j0[1]) * uy, -(x - j0[0]) * uy + (y - j0[1]) * ux] as const)
+              .filter(([u, v]) => u > 0 && u < L && Math.abs(v) > t / 2 && Math.abs(v) < t);
+          } else {
+            // On a curve: a sill whose every corner lies within the opening's span round the arc
+            // (its horns included) and whose mean offset from the centreline radius is between t/2
+            // and t; its side is that offset's sign (outward +), turned into the jamb frame's `v`.
+            const ang = (x: number, y: number) => Math.atan2(y - arc.cy, x - arc.cx);
+            const mid = ang(o.centre[0], o.centre[1]);
+            const reach = (o.width / 2 + t) / arc.r;
+            const off = (a: number) => Math.abs(Math.atan2(Math.sin(a - mid), Math.cos(a - mid)));
+            const outward = [Math.cos(mid), Math.sin(mid)] as const;
+            const s = Math.sign(-outward[0] * uy + outward[1] * ux);
+            near = curvedSills
+              .filter((pts) => pts.every(([x, y]) => off(ang(x, y)) <= reach))
+              .map((pts) => pts.reduce((m, [x, y]) => m + Math.hypot(x - arc.cx, y - arc.cy) - arc.r, 0) / pts.length)
+              .filter((d) => Math.abs(d) > t / 2 && Math.abs(d) < t)
+              .map((d) => [0, Math.sign(d) * s] as const);
+          }
           const core = near.length === 1 ? ((near[0] as readonly [number, number])[1] > 0 ? -1 : 1) : null;
           const side = insideOf(o, t, lv);
           expect(near.length, `${n} L${lv.level} ${o.id}: one sill or none`).toBeLessThanOrEqual(1);

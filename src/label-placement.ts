@@ -78,7 +78,7 @@
 import type { Point } from "./ast.js";
 import type { CompileWork } from "./compile-work.js";
 import { segmentRectangle, segmentsOfWall } from "./geometry.js";
-import { arcFromPrimitive, arcPointAt, arcTessellate } from "./geometry/arc.js";
+import { arcTessellate } from "./geometry/arc.js";
 import type { BBox } from "./geometry/rect.js";
 import { overlap1d } from "./geometry/rect.js";
 import { GridIndex } from "./geometry/grid-index.js";
@@ -154,64 +154,6 @@ const W_OBSTACLE = 250;
 const W_PLACED = 10_000;
 /** How far a candidate may be preferred away from the anchor (planscript's `·4`). */
 export const W_DISTANCE = 4;
-
-/** The scene layers an opening draws on. */
-const OPENING_LAYERS: ReadonlySet<SceneNode["layer"]> = new Set(["windows", "doors", "openings"]);
-
-/** Faces sampled this many steps a piece when a curved opening is boxed piece by piece. */
-const CURVED_PIECE_STEPS = 8;
-
-/**
- * How the annotation passes read an opening drawn on a CURVED wall (card ARC-W1), or null for every
- * other node, which they read as they always have. Nothing on a straight wall reaches it: a window
- * there draws `line`s and four-cornered polygons, and no opening draws a `path`.
- *
- * - `strokes`: a window's line along the wall, an `arc` primitive, as the chords of its
- *   tessellation (`arcTessellate`). On a straight wall that line is a `line`, which every pass
- *   reads as the stroke it is (never boxed); {@link primBBox} boxes an arc with its CENTRE, right
- *   for a door's swing (its centre is the drawn hinge) and wrong here (the wall's centre, across
- *   the room).
- * - `boxes`: a curved cover (a `path`: arc edges, a jamb, arc edges back, a jamb) or a curved sill
- *   (a window-layer polygon of more than four corners, its nose and its face tessellated alike),
- *   one box per piece between the two faces, so the boxes hug the band the opening draws and never
- *   reach across the room its bulge would put inside one box.
- */
-export function curvedOpeningInk(n: SceneNode): { strokes: Array<{ a: Point; b: Point }>; boxes: BBox[] } | null {
-  if (!OPENING_LAYERS.has(n.layer)) return null;
-  const prim = n.prim;
-  if (prim.t === "arc" && n.layer === "windows") {
-    const pts = arcTessellate(arcFromPrimitive(prim));
-    return { strokes: pts.slice(1).map((b, i) => ({ a: pts[i]!, b })), boxes: [] };
-  }
-  let one: Point[];
-  let two: Point[];
-  if (prim.t === "path" && prim.loops.length === 1) {
-    const faces: Point[][] = [[]];
-    const lp = prim.loops[0]!;
-    let from = lp.start;
-    for (const e of lp.edges) {
-      if (e.t === "line") faces.push([]);
-      else {
-        const arc = arcFromPrimitive({ center: e.center, r: e.r, start: from, end: e.to, sweep: e.sweep });
-        for (let i = 0; i <= CURVED_PIECE_STEPS; i++)
-          faces[faces.length - 1]!.push(arcPointAt(arc, i / CURVED_PIECE_STEPS));
-      }
-      from = e.to;
-    }
-    if (faces.length !== 3) return null;
-    one = faces[0]!;
-    two = [...faces[1]!].reverse();
-  } else if (prim.t === "polygon" && n.layer === "windows" && prim.pts.length > 4 && prim.pts.length % 2 === 0) {
-    // `[face₀, nose₀ … nose_k, face_k … face₁]` (`renderOnArc`'s sill).
-    const k = (prim.pts.length - 2) / 2;
-    two = prim.pts.slice(1, k + 2);
-    one = [prim.pts[0]!, ...prim.pts.slice(k + 2).reverse()];
-  } else return null;
-  if (one.length < 2 || one.length !== two.length) return null;
-  const boxes: BBox[] = [];
-  for (let i = 0; i + 1 < one.length; i++) boxes.push(bboxOfPoints([one[i]!, one[i + 1]!, two[i + 1]!, two[i]!])!);
-  return { strokes: [], boxes };
-}
 
 /**
  * A labelled area's text as this pass reads it: its box at the wider of the shared estimate and the
@@ -726,13 +668,6 @@ export function relocateLabels(
     if (own.has(i)) continue;
     const n = nodes[i]!;
     if (underLabels(n)) continue;
-    // An opening on a curve: its lines are strokes, as a `line` is (no box), its cover and sill
-    // boxed piece by piece (`curvedOpeningInk`).
-    const curved = curvedOpeningInk(n);
-    if (curved) {
-      for (const b of curved.boxes) obstacleList.push(inflate(b, clear));
-      continue;
-    }
     const b = primBBox(n.prim);
     if (b) obstacleList.push(inflate(b, clear));
   }

@@ -733,8 +733,8 @@
         "height": 1130,
         "level": 1,
         "sheet": true,
-        "sha256": "03591d2ec798537dd10aa95e75eaeff506bb8777a2be6a4dbcd13fca1a3a8fd2",
-        "pixelsSha256": "60023d9d8c3e885c3954a435b2db87ff12c7cb5b2e18b575d6c4df06e1261cc2"
+        "sha256": "ff0c0863ae5e407218504e7e37cf4148826a2accd54214c2fa8ab7cebbdb46dd",
+        "pixelsSha256": "991f41f169234f654d0a4926b1a58d6b5703318c622b84a326c7c4b41f55bc78"
       },
       "files": [
         {
@@ -769,8 +769,8 @@
         },
         {
           "path": "hillside-villa.plan.png",
-          "bytes": 127299,
-          "archlang": "1.64.0",
+          "bytes": 128300,
+          "archlang": "1.67.0",
           "archlang3d": "0.9.0"
         }
       ]

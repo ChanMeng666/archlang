@@ -2096,8 +2096,10 @@
  * with concentric arcs and radial jambs on the joinery's own cut (`arcOpeningSpan`,
  * `src/geometry/arc.ts`), a hinged or `double` door's leaves are DRAWN hung on the cut's jambs (the
  * model's swing, `doorSwing`, is unchanged), and a door's or cased opening's (unpainted) cover is the
- * cut's annular sector. No annotation reads a curve by its centre (`curvedOpeningInk`), so no label,
- * tag or leader moves. `npm run digest:preview` on the branch (main `a0f85ebf`) moved 125 rows in 28
+ * cut's annular sector. The annotation passes read main's footprint of such an opening (the tangent
+ * drawing and the model's leaves, `ElementDef.annotationFootprint`, swapped in for those passes and the
+ * drawing put back after them), so no label, tag or leader moves. `npm run digest:preview` on the
+ * branch (main `a0f85ebf`) moved 125 rows in 28
  * files (27 distinct digests) and `keep`'s weak-law table 9 rows, over exactly the plans with an
  * opening on an arc: `examples/` `aquarium`, `hexagon-pavilion`, `hillside-villa`, `library`; the
  * `inline:window-placed-and-curved` row of the window-kinds law; and (K1 only) the four
@@ -2115,7 +2117,7 @@
 /** SHA-256 over every storey's SVG + `describe()` + `lint()`, measured on `f4548db`. */
 export const BASELINE: [string, string][] = [
   ["accessible", "697c11114da0d8d3b16dda0bac1e2492d550b797add8a3fe8799729a4e0b0a4f"],
-  ["aquarium", "b5a683e85fdbd772f7e410bca1e925d0599cc5bdec447ee9cbb0209245d1216e"], // re-measured for PS2.4, see header; PS2.10 dims fixed, see header; PS2.11e, see header; ARC-W1, see header
+  ["aquarium", "e16a3e6952dbefcd81aae132d9a3885f7c10a018cb71b737804bb2574912c6c6"], // re-measured for PS2.4, see header; PS2.10 dims fixed, see header; PS2.11e, see header; ARC-W1, see header
   ["attached", "ab37b9000bd5ca7cf5f6940241f6b6945e338b207756773a2a9712a525100d72"],
   ["bungalow", "4fd27a7c5a0e9471f433b0fde903479a0863ee5fdcd0443906033ebea65a2496"], // PS2.11e, see header; CV13 (was ee5c6944): example source edited (chairs added)
   ["classroom-block", "825ebce1e06d54b6927539f698c96a961bebc8785891ccb99038a83e103c91fd"], // SR.15 (was aabc5d76); added with the example, re-measured for net area, see header; PS2.11e, see header

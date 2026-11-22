@@ -229,7 +229,7 @@ Totals: 425 modules in 34 directories.
 | `axes.ts` | 161 | 4 | **Positioning axes** (定位轴线) — GB/T 50001's structural datum grid. | none |
 | `builtins.ts` | 129 | 3 | Built-in functions: a frozen, pure map injected into the global scope as `builtin` Values. Each is total — bad arity / types emit a diagnostic and return a safe default, never throw — and deterministic (no I/O, no clock). | none |
 | `catalog-fix.ts` | 38 | 6 | The catalogued remediation for a diagnostic code: one row of the catalogue's fix column (`CATALOG_FIXES`, generated from `ERROR_CATALOG`). The error card `compile()` draws (`backends/error-svg.ts`) reads it here. It has a module of its… | none |
-| `chrome-layout.ts` | 633 | 17 | Shared page-chrome layout — the deterministic geometry of the **scale bar** and **title block** in the bottom page margin, and how far the bottom margin must grow to contain them. Both the SVG and PDF backends build their chrome from this… | none |
+| `chrome-layout.ts` | 626 | 17 | Shared page-chrome layout — the deterministic geometry of the **scale bar** and **title block** in the bottom page margin, and how far the bottom margin must grow to contain them. Both the SVG and PDF backends build their chrome from this… | none |
 | `clause-order.ts` | 270 | 20 | Order-free trailing clauses. A statement's optional keyword-led clauses (`size`, `label`, `rotate`, `clear`, … after a `furniture`'s placement) may come in any order, each once. | none |
 | `cli.ts` | 91 | 0 | ArchLang CLI — agent-native. | none |
 | `command-name.ts` | 11 | 5 | The command name every help line, example and doc writes. `package.json` installs two bins, `archlang` and `arch`, for the same `dist/cli.js`; `arch` stays as an alias, but coreutils ships an `arch` on Linux, macOS and Git Bash, so a bare… | none |
@@ -280,8 +280,8 @@ Totals: 425 modules in 34 directories.
 | `intent.ts` | 1774 | 8 | The intent channel — author-time checking of a brief's INTENT against a plan. | none |
 | `ir.ts` | 2082 | 268 | Intermediate representation + `resolve(ast)`. | charges the step meter |
 | `keep.ts` | 1902 | 11 | `keep`: declared invariants, checked by `compile()` and never solved (ADR 0033; plan-soundness PS4.3, design `archlang-lab/plans/plan-soundness/research/2026-10-26-ps43-keep-design.md`). | charges the step meter |
-| `label-fit.ts` | 1380 | 6 | A room's label that does not fit shrinks: a **post-pass over the lowered Scene**, after `wrapLabels` and `relocateLabels` (`src/label-placement.ts`) have done what they can at the drawing's label size (#367). | none |
-| `label-placement.ts` | 933 | 12 | Obstacle-aware relocation of room labels — a **post-pass over the lowered Scene**. | none |
+| `label-fit.ts` | 1373 | 6 | A room's label that does not fit shrinks: a **post-pass over the lowered Scene**, after `wrapLabels` and `relocateLabels` (`src/label-placement.ts`) have done what they can at the drawing's label size (#367). | none |
+| `label-placement.ts` | 868 | 12 | Obstacle-aware relocation of room labels — a **post-pass over the lowered Scene**. | none |
 | `layout.ts` | 318 | 1 | Relational placement (T6.2) — the optional layout seam. | charges the step meter |
 | `level-mix-fix.ts` | 12 | 2 | `E_LEVEL_MIX`'s catalogued remedy, written once (card 3.19): the catalogue entry's `fix` (`src/error-catalog/vertical.ts`) and the parser's message, which quotes it, both read it here. The parser once quoted it from the generated… | none |
 | `lexer.ts` | 613 | 31 | Hand-written lexer for ArchLang. Zero dependencies; tracks line/col. | none |
@@ -296,18 +296,18 @@ Totals: 425 modules in 34 directories.
 | `num-format.ts` | 279 | 91 | The one deterministic number → string formatter (round to N decimals, strip the `-0`). Previously copy-pasted in scene-build, the SVG/DXF backends, the expression evaluator and the source formatter — same shape, three precisions. Output… | none |
 | `opening-junctions.ts` | 204 | 7 | Where other walls meet a host wall's run: the measure `W_OPENING_AT_JUNCTION` reports with (`src/lint/rules/openings.ts`) and a relational opening is refused by (`E_OPENING_NIB`, ADR 0028 §5), so the warning and the refusal can never… | none |
 | `opening-relation.ts` | 1906 | 12 | Openings by relation (ADR 0028 §5): where a `door\|window\|opening` stands when its position is written against the rooms rather than against a wall. | charges the step meter |
-| `opening-schedule.ts` | 632 | 6 | **`schedule openings`** — the door and window TAGS drawn beside each opening, and the rows of the DOOR & WINDOW SCHEDULE table the sheet carries (`sheet-tables.ts` lays the table out and lowers it; this module derives what it says and… | none |
+| `opening-schedule.ts` | 610 | 6 | **`schedule openings`** — the door and window TAGS drawn beside each opening, and the rows of the DOOR & WINDOW SCHEDULE table the sheet carries (`sheet-tables.ts` lays the table out and lowers it; this module derives what it says and… | none |
 | `parser.ts` | 2571 | 146 | Recursive-descent parser: tokens -> PlanNode. Registry-driven element dispatch. | none |
 | `pipeline.ts` | 219 | 6 | The one `compile()` pipeline: parse → link → resolve → render. | none |
 | `plan-json.ts` | 75 | 16 | Structured JSON I/O for ArchLang plans — the machine-native channel an LLM uses to author and read a floor plan without touching `.arch` syntax. | none |
 | `pure.ts` | 28 | 15 | `pure(() => value)` returns `value`, built once at module load exactly as written. It marks a top-level constant whose initializer has no effect outside the value it builds, but whose shape a bundler cannot prove that of: a spread… | none |
-| `registry.ts` | 583 | 100 | Element registry: the single extension point. Each element type is one module exporting an {@link ElementDef}; parse/resolve/render iterate the registry rather than a hard-coded switch. Adding an element = one new module + one `register`… | none |
+| `registry.ts` | 592 | 100 | Element registry: the single extension point. Each element type is one module exporting an {@link ElementDef}; parse/resolve/render iterate the registry rather than a hard-coded switch. Adding an element = one new module + one `register`… | none |
 | `repair.ts` | 2532 | 6 | `repair(source)` — an explicit, opt-in source-to-source corrector. | none |
 | `reroll.ts` | 714 | 5 | `reroll(source)` — detect a run of ≥3 CONSECUTIVE statements in arithmetic progression and offer a proven-equivalent `for` loop (Szalinski, PLDI 2020, `uwplse/szalinski` `src/solve.rs`, minus the e-graph — fit an AP over sorted… | none |
 | `room-datums.ts` | 420 | 20 | The datum table (ADR 0028 §1): what one resolution group's rooms and grid axes expose as lines, frozen after every room is placed and before any wall resolves. | charges the step meter |
 | `room-tiling.ts` | 1400 | 17 | The derivation behind `walls from rooms` (ADR 0028 §3, plan decision D5): one group's rectangular and rectilinear rooms in, its exterior ring(s) and its partitions out, or a refusal naming the rooms at fault. Pure: no diagnostics, no ids… | charges the step meter |
 | `sanitize.ts` | 61 | 2 | Config sanitization — a denylist for **untrusted** `.arch`-sourced config. | none |
-| `scene-build.ts` | 1807 | 34 | Lowers a resolved plan (IR) to the backend-neutral {@link Scene}. | none |
+| `scene-build.ts` | 1848 | 34 | Lowers a resolved plan (IR) to the backend-neutral {@link Scene}. | none |
 | `scene-memo.ts` | 180 | 4 | One Scene per resolved plan and drawing options, shared by `compile()` and `lint()`. | none |
 | `scene.ts` | 513 | 126 | Backend-neutral **Scene IR** — the keystone drawing intermediate. | none |
 | `segment-select.ts` | 221 | 7 | Segment selectors (plan card PS3.5): `segment north\|south\|east\|west` and `segment containing <room>.<edge>`, written wherever `segment <n>` is. A selector is an ALIAS: it resolves to the one segment index the number would name, and from… | charges the step meter |
@@ -423,7 +423,7 @@ Totals: 425 modules in 34 directories.
 | `defs.ts` | 61 | 7 | The built-in element definitions, as a flat array in canonical order. | none |
 | `dim.ts` | 512 | 5 | `dim [faces\|clear] (x,y)->(x,y) [offset N] [text "…"]` — dimension line with ticks + length, or `dim radius <wallId> [segment <n>]` / `dim diameter <roomId>` — a GB/T curve call-out whose geometry and text are DERIVED from the referenced… | none |
 | `door-panels.ts` | 319 | 2 | How each NON-HINGED door kind is drawn in its reveal. | none |
-| `door.ts` | 818 | 2 | `door [id=] [<kind>] at (x,y) width N [wall ref] [hinge <side>] [swing <dir>] [slide <dir>] [open <0..1>] [head <mm>]` — opening + leaf + swing arc, or (for a non-hinged kind) opening + panels/track/cavity. The clauses after the placement… | none |
+| `door.ts` | 833 | 2 | `door [id=] [<kind>] at (x,y) width N [wall ref] [hinge <side>] [swing <dir>] [slide <dir>] [open <0..1>] [head <mm>]` — opening + leaf + swing arc, or (for a non-hinged kind) opening + panels/track/cavity. The clauses after the placement… | none |
 | `elevator.ts` | 76 | 1 | `elevator [id=] at (x,y) size WxH` — a lift shaft, drawn as the car rectangle with the conventional crossed diagonals. | none |
 | `escalator.ts` | 85 | 1 | `escalator [id=] at (x,y) size WxH dir up\|down` — a moving stair, drawn as parallel chevrons along the run plus the UP/DN direction arrow. | none |
 | `facets.ts` | 87 | 10 | Which hand-written kind sets each built-in element kind belongs to, one row per kind. | none |
@@ -439,7 +439,7 @@ Totals: 425 modules in 34 directories.
 | `glyphs-misc.ts` | 901 | 2 | The remaining plan symbols: the workspace pieces, the two that belong to no room at all (a plant, a parked car), and the one that belongs outdoors (a sun lounger). | none |
 | `glyphs-outdoor.ts` | 1447 | 2 | The OUTDOOR plan symbols: what a site plan draws once the drawing leaves the building — planting, garden furniture, the things parked on a driveway, and the small standing objects (a bin, a mailbox, a charge point) a survey records. | none |
 | `index.ts` | 17 | 1 | Built-in element registry — back-compatible views over the default {@link Registry}. The canonical built-in list now lives in `defs.ts`; the per-call registry machinery (and the public `register*` extension points) live in `registry.ts`.… | none |
-| `opening.ts` | 189 | 2 | `opening [id=] at (x,y) width N [wall ref] [head <mm>]` — a leaf-less cased opening: a gap in the host wall (no door leaf, no glazing) that still connects the two spaces. The clauses after the placement come in any order… | none |
+| `opening.ts` | 202 | 2 | `opening [id=] at (x,y) width N [wall ref] [head <mm>]` — a leaf-less cased opening: a gap in the host wall (no door leaf, no glazing) that still connects the two spaces. The clauses after the placement come in any order… | none |
 | `outdoor.ts` | 728 | 15 | `outdoor [id=] <kind> (at (x,y) size WxH \| polygon (x,y) …) [label "…"] [rail <edges>]` — a ground surface OUTSIDE the building: lawn, planting, paving, deck, gravel, water, driveway, patio, balcony, sand, soil. | none |
 | `reprint.ts` | 94 | 5 | The memo and step charge for a fix that re-prints its whole statement (door, window, opening, and the endpoint-swapped text a `dim` carries for `W_DIM_INSIDE`). | charges the step meter |
 | `roof.ts` | 384 | 6 | `roof overhang <mm> [wall <id>]` — or `roof polygon (x,y) (x,y) (x,y) …` — the eaves projection line. | none |
@@ -450,7 +450,7 @@ Totals: 425 modules in 34 directories.
 | `void.ts` | 440 | 10 | `void [id=] (at (x,y) size WxH \| polygon (x,y) …) [rail <edges>]` — a hole in this storey's floor plate. | charges the step meter |
 | `wall.ts` | 501 | 4 | `wall <category> thickness N { (x,y)… [close] }` — poché fill + crisp faces. | none |
 | `walls-from-rooms.ts` | 712 | 1 | `walls from rooms exterior <t_ext> partition <t_int> [{ except <room> … }]` — derive the whole wall set of a group from its rooms (ADR 0028 §3, plan decision D5). | none |
-| `window.ts` | 799 | 6 | `window [id=] [<kind>] at (x,y) width N [wall ref] [hinge <side>]` — opening + double glazing + exterior sill, plus the kind's mark (see {@link kindMarks}). | charges the step meter |
+| `window.ts` | 793 | 6 | `window [id=] [<kind>] at (x,y) width N [wall ref] [hinge <side>]` — opening + double glazing + exterior sill, plus the kind's mark (see {@link kindMarks}). | charges the step meter |
 
 ## `src/error-catalog/`
 
