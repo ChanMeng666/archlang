@@ -1,0 +1,9 @@
+# W_AREA_AS_LENGTH (AF10, finding 3 of docs/plans/ai-first-language/README.md §6): an area used as a
+# length. `A` is `W` times itself, 16000000 mm, read as the room's width and the shell's two far points.
+plan "Area as length" {
+  units mm
+  let W = 4m
+  let A = W*W
+  wall id=shell exterior thickness 200 { (0,0) (A,0) (A,3000) (0,3000) close }
+  room id=main at (0,0) size A x 3000 label "Living"
+}

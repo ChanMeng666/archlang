@@ -5,7 +5,7 @@
 Every diagnostic carries a stable code. Look one up with `arch explain <CODE>`
 (e.g. `arch explain E_ROOM_SIZE`). Errors abort rendering; warnings do not.
 
-**168 errors** · **108 warnings**
+**168 errors** · **109 warnings**
 
 | Code | Severity | Summary |
 | --- | --- | --- |
@@ -180,6 +180,7 @@ Every diagnostic carries a stable code. Look one up with `arch explain <CODE>`
 | [`W_ACCESSIBLE_WC_SIDE_WALL`](#w_accessible_wc_side_wall) | warning | An accessible WC's pan stands too far from every side wall. |
 | [`W_ALIAS_MATCH`](#w_alias_match) | warning | A room's use was inferred from an indirect alias, not stated. |
 | [`W_ANNOTATION_OVERLAP`](#w_annotation_overlap) | warning | A label or a `dims auto` number is printed over a symbol, a wall, a door swing or another label, or a label runs off its room. |
+| [`W_AREA_AS_LENGTH`](#w_area_as_length) | warning | A length is a name times itself: an area, if the name is a length. |
 | [`W_AXES_DIFFER`](#w_axes_differ) | warning | The plan's one `axes` block comes out as different grids on two storeys. |
 | [`W_BALCONY_NO_DOOR`](#w_balcony_no_door) | warning | A balcony with no way onto it. |
 | [`W_BATH_VIA_BEDROOM`](#w_bath_via_bedroom) | warning | Bathroom is reachable only through a bedroom. |
@@ -3377,6 +3378,27 @@ paper A4 landscape
 scale 1:100
 room id=bed at (0,0) size 3250x3000 label "Bedroom 4" at (1600,450) uses bedroom
 furniture bed at (1650,900) size 1500x2000   # fixed: the pinned point moved clear of the bed
+```
+
+## W_AREA_AS_LENGTH
+
+*warning* — A length is a name times itself: an area, if the name is a length.
+
+**Cause.** A room `size` side, a wall point or thickness (`walls from rooms` too), or a door, window or opening `width` is written as a name times itself (`W*W`), or as a name bound to one (`let A = W*W`, then `size A x 3000`). If the name is a length, its square is an area in square millimetres, and the plan draws it as a length: `let W = 4m` makes `W*W` 16000000 mm, a room 16 km long. No size threshold is read: the square is the whole signal, so it fires however small the value. Any further arithmetic ends it (`A / W` is a length again, `sqrt(W*W + D*D)` a diagonal), and so does a function call (`sq(W)`). Units are never converted. The plan draws the value as written.
+
+**Fix.** Write the length itself (`W`), or, for a room of that area, `size W x W`; the hint names the element.
+
+```arch static
+let W = 4m
+let A = W*W
+room at (0,0) size A x 3000   # warning: `A` is `W` times itself, read as 16000000 mm
+```
+
+**Fixed.**
+
+```arch static
+let W = 4m
+room at (0,0) size W x W   # fixed: a 4 m square room
 ```
 
 ## W_AXES_DIFFER

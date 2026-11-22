@@ -30,7 +30,7 @@ import { exprToSource } from "../expr-source.js";
 import { DEFAULT_MATERIAL } from "../hatches.js";
 import { segmentsOfWall } from "../geometry.js";
 import { fmt3 as numStr } from "../num-format.js";
-import { noteThickness } from "../ir/silent-accepts.js";
+import { noteSquare, noteThickness } from "../ir/silent-accepts.js";
 import { JUNCTION_NIB_DEFAULTS } from "../opening-junctions.js";
 import { attachPosStr } from "../statement-print.js";
 import {
@@ -152,6 +152,7 @@ export const wallsFromRooms: ElementDef = {
         ctx.diag(d);
         thin.push(d);
       }
+      noteSquare(ctx, "`walls from rooms`", `the ${what} thickness of \`walls from rooms\``, e, v, valueSpan ?? span);
       noteThickness(ctx, "`walls from rooms`", v, t, valueSpan ?? span, what);
       return t;
     };

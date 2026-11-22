@@ -39,7 +39,7 @@ import {
   resolveOpeningHeights,
 } from "../datum.js";
 import { idAfterKind, kindClause, missingClause, parseIdWithSpan, readClauses } from "../clause-order.js";
-import { noteSnap } from "../ir/silent-accepts.js";
+import { noteSnap, noteSquare } from "../ir/silent-accepts.js";
 import { fmtMessage } from "../num-format.js";
 import { reprint } from "./reprint.js";
 
@@ -469,6 +469,7 @@ export const door: ElementDef = {
     const n = node as DoorNode;
     const id = ctx.id;
     const wv = ctx.eval(n.width);
+    noteSquare(ctx, `Door \`${id}\``, "a door's width", n.width, wv, n.span);
     const width = ctx.snap(wv) || wv;
     if (width <= 0) {
       ctx.diag({

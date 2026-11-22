@@ -10,6 +10,7 @@ import { add, mul, nearestWallNote, normal, segmentDirAt } from "../geometry.js"
 import { leadOf, parseAttachTarget, resolveOpeningLead, wallClause } from "../attach.js";
 import { fixesFrom, offWallFix, openingWidthFix } from "../fix-producers.js";
 import { reprint } from "./reprint.js";
+import { noteSquare } from "../ir/silent-accepts.js";
 import {
   heightsInOrder,
   hostWallHeight,
@@ -75,6 +76,7 @@ export const opening: ElementDef = {
     const n = node as OpeningNode;
     const id = ctx.id;
     const wv = ctx.eval(n.width);
+    noteSquare(ctx, `Opening \`${id}\``, "an opening's width", n.width, wv, n.span);
     const width = ctx.snap(wv) || wv;
     if (width <= 0) {
       ctx.diag({

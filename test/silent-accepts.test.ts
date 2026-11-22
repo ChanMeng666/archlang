@@ -1,6 +1,6 @@
 /**
- * Silent accepts made audible (product-roadmap RM1.4 and RM1.4b): five warnings, never errors, for
- * what the compiler used to take without a word.
+ * Silent accepts made audible (product-roadmap RM1.4 and RM1.4b, then AF10): six warnings, never errors,
+ * for what the compiler used to take without a word.
  *
  * | code | trigger | fixture |
  * |---|---|---|
@@ -9,6 +9,7 @@
  * | `W_SET_VALUE_WORD` | a bare `set` word the kind does not read (PS0.16; an error at 2.0, RM-D6) | `test/silent-accepts/set-value-word.arch` |
  * | `W_UNKNOWN_FURNITURE` | an unlabelled furniture word near a catalogued kind (U.3) | `test/silent-accepts/unknown-furniture.arch` |
  * | `W_UNKNOWN_THEME` | `theme <name>` that names no known theme (RM1.4b) | `test/silent-accepts/unknown-theme.arch` |
+ * | `W_AREA_AS_LENGTH` | a room side, wall point or thickness, or opening width that is a name times itself (AF10) | `test/silent-accepts/area-as-length.arch` (clean twin `area-as-length.clean.arch`) |
  *
  * The fixtures stand in a folder of their own, outside the corpus directories (`test/helpers/corpus.ts`),
  * so no corpus table gains a plan.
@@ -55,6 +56,7 @@ const NEW_CODES = [
   "W_SET_VALUE_WORD",
   "W_UNKNOWN_FURNITURE",
   "W_UNKNOWN_THEME",
+  "W_AREA_AS_LENGTH",
 ];
 
 const read = (rel: string): string => readFileSync(join(REPO_ROOT, rel), "utf8");
@@ -79,6 +81,7 @@ suite("each warning fires on its fixture, through compile() and validate --stric
     ["test/silent-accepts/set-value-word.arch", ["W_SET_VALUE_WORD", "W_SET_VALUE_WORD"]],
     ["test/silent-accepts/unknown-furniture.arch", ["W_UNKNOWN_FURNITURE", "W_UNKNOWN_FURNITURE"]],
     ["test/silent-accepts/unknown-theme.arch", ["W_UNKNOWN_THEME"]],
+    ["test/silent-accepts/area-as-length.arch", ["W_AREA_AS_LENGTH", "W_AREA_AS_LENGTH", "W_AREA_AS_LENGTH"]],
   ];
 
   it.each(FIXTURES)("%s raises its code, and only as a warning", (file, codes) => {
@@ -436,6 +439,73 @@ suite("W_UNKNOWN_THEME (RM1.4b)", () => {
     const own = src.replace("theme Rendered", "theme brand");
     expect(raised(own)).toEqual(["W_UNKNOWN_THEME"]);
     expect(raised(own, { themes: [{ kind: "theme", name: "brand", theme: { bg: "#ffffff" } }] })).toEqual([]);
+  });
+});
+
+suite("W_AREA_AS_LENGTH (AF10)", () => {
+  it("names the square, the binding it squares and the length it was read as; the hint names the element", () => {
+    const src = read("test/silent-accepts/area-as-length.arch");
+    const ds = compile(src, { noCache: true }).diagnostics.filter((d) => d.code === "W_AREA_AS_LENGTH");
+    const wall =
+      "`A` is `W` times itself, an area if `W` is a length, but a wall's point reads it as a length of 16000000 mm";
+    expect(ds.map((d) => d.message)).toEqual([
+      wall,
+      wall,
+      "`A` is `W` times itself, an area if `W` is a length, but a room's size reads it as a length of 16000000 mm",
+    ]);
+    const wallHint = "Wall `shell`: write the length itself (`W`). Lengths are millimetres and are never converted.";
+    expect(ds.map((d) => d.hints)).toEqual([
+      [wallHint],
+      [wallHint],
+      [
+        "Room `main`: write the length itself (`W`), or, for a room of that area, `size W x W`. Lengths are millimetres and are never converted.",
+      ],
+    ]);
+    // Each points at the name as written, not at the statement.
+    expect(ds.map((d) => src.slice(d.span!.start, d.span!.end))).toEqual(["A", "A", "A"]);
+  });
+
+  it("its clean twin raises none of the new codes and no error", () => {
+    const clean = read("test/silent-accepts/area-as-length.clean.arch");
+    expect(raised(clean)).toEqual([]);
+    expect(compile(clean, { noCache: true }).diagnostics.filter((d) => d.severity === "error")).toEqual([]);
+  });
+
+  it("fires on the square however it reaches the length, and on every length clause it reads", () => {
+    const at = (body: string): string[] =>
+      raised(plan(["  let W = 4m", "  let A = W*W", "  let B = A", body].join("\n")));
+    expect(at("  room at (0,0) size W*W x 3000")).toEqual(["W_AREA_AS_LENGTH"]);
+    expect(at("  room at (0,0) size B x B")).toEqual(["W_AREA_AS_LENGTH", "W_AREA_AS_LENGTH"]);
+    expect(at("  wall exterior thickness A { (0,0) (4000,0) }")).toEqual(["W_AREA_AS_LENGTH"]);
+    expect(at("  walls from rooms exterior A partition 100\n  room at (0,0) size 4000x3000")).toEqual([
+      "W_AREA_AS_LENGTH",
+    ]);
+    const host = "  wall id=w exterior thickness 200 { (0,0) (20000000,0) }";
+    for (const kind of ["door", "window", "opening"]) {
+      const src = plan(["  let W = 4m", host, `  ${kind} at (10000000,0) width W*W wall w`].join("\n"));
+      expect(raised(src), kind).toEqual(["W_AREA_AS_LENGTH"]);
+    }
+    // A parameter bound to a square is a square.
+    expect(at("  component c(s) { room at (0,0) size s x 3000 }\n  c(A)")).toEqual(["W_AREA_AS_LENGTH"]);
+  });
+
+  it("reads no threshold, and is quiet once arithmetic or a call makes a new value", () => {
+    const at = (body: string): string[] =>
+      raised(plan(["  let W = 4m", "  let D = 3m", "  let A = W*W", body].join("\n")));
+    // A small square is still a square: no size is read.
+    expect(raised(plan("  let k = 40\n  room at (0,0) size k*k x 3000"))).toEqual(["W_AREA_AS_LENGTH"]);
+    expect(at("  room at (0,0) size A / W x 3000")).toEqual([]);
+    expect(at("  room at (0,0) size sqrt(W*W + D*D) x 3000")).toEqual([]);
+    expect(at("  room at (0,0) size W*D x 3000")).toEqual([]);
+    expect(at("  room at (0,0) size A + 0 x 3000")).toEqual([]);
+    expect(at("  let sq(x) = x*x\n  room at (0,0) size sq(W) x 3000")).toEqual([]);
+    expect(at("  room at (0,0) size W x W")).toEqual([]);
+  });
+
+  it("an unknown name is its own error, with no square reported beside it", () => {
+    const codes = compile(plan("  room at (0,0) size Q*Q x 3000"), { noCache: true }).diagnostics.map((d) => d.code);
+    expect(codes).not.toContain("W_AREA_AS_LENGTH");
+    expect(codes).toContain("E_UNKNOWN_REF");
   });
 });
 

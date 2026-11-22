@@ -694,7 +694,7 @@ The first sentence of each file's header comment.
 - `test/sheet-text-byte-identity.test.ts` — `sheet text { … }` (issue #403): the byte-identity law.
 - `test/sheet-text.test.ts` — `sheet text { … }` (issue #403): what the block changes, and what it never reaches.
 - `test/sheet.test.ts` — The sheet layer — `paper <size> [orientation]` + the OPERATIVE drawing scale.
-- `test/silent-accepts.test.ts` — Silent accepts made audible (product-roadmap RM1.4 and RM1.4b): five warnings, never errors, for what the compiler used to take without a word.
+- `test/silent-accepts.test.ts` — Silent accepts made audible (product-roadmap RM1.4 and RM1.4b, then AF10): six warnings, never errors, for what the compiler used to take without a word.
 - `test/site-boundary.test.ts` — The `site { … boundary … }` lot line.
 - `test/site-doors.test.ts` — `site-shared/doors.json` is the single source of every door (ChatGPT, claude.ai connector, coding agent, VS Code, playground).
 - `test/site-lockstep.test.ts` — Site lockstep gate — the "change one, change the other" laws for the two sites.

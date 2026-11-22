@@ -81,6 +81,29 @@ function lookup(env: Env, name: string): Value | undefined {
   return env.get(name) ?? fallbacks.get(env)?.(name);
 }
 
+/**
+ * The values a binding times itself made (`W*W`), each with the binding's name (AF10). Keyed by
+ * the result object, which a `let`, a parameter and a reference carry unchanged, so `let A = W*W`
+ * then `size A x 3000` still reads as `W` squared; any further arithmetic makes a new, unmarked
+ * value (`A / W` is a length again). Only a value the evaluator just made is ever a key.
+ */
+const squares = new WeakMap<Value, string>();
+
+/**
+ * The binding `e` squares, when the length `e` is one (`W_AREA_AS_LENGTH`): `e` is `X*X` with `X`
+ * bound to a number, or a name bound to a value `X*X` made. Reads `env` only: never evaluates.
+ */
+export function squaredName(e: Expr, env: Env): string | undefined {
+  if (e.t === "bin") {
+    if (e.op !== "*" || e.l.t !== "ref" || e.r.t !== "ref" || e.l.name !== e.r.name) return undefined;
+    const x = lookup(env, e.l.name);
+    return x !== undefined && x.t === "num" && x !== POISON && x !== BUDGET_SUBSTITUTE ? e.l.name : undefined;
+  }
+  if (e.t !== "ref") return undefined;
+  const v = lookup(env, e.name);
+  return v === undefined ? undefined : squares.get(v);
+}
+
 /** The source span of an expression, when it carries one (for diagnostics). */
 export function exprSpan(e: Expr): Span | undefined {
   return "span" in e ? e.span : undefined;
@@ -1203,8 +1226,16 @@ function evalBin(e: Extract<Expr, { t: "bin" }>, env: Env, onError: (d: Diagnost
       return finiteNum(l + r, e, onError);
     case "-":
       return finiteNum(l - r, e, onError);
-    case "*":
-      return finiteNum(l * r, e, onError);
+    case "*": {
+      const out = finiteNum(l * r, e, onError);
+      // A binding times itself (`W*W`) is remembered by its result, so a length that reads it
+      // can say it is a square (`W_AREA_AS_LENGTH`, AF10). The mark is an allocation: charged first.
+      if (out !== POISON && e.l.t === "ref" && e.r.t === "ref" && e.l.name === e.r.name) {
+        chargeSteps(1);
+        squares.set(out, e.l.name);
+      }
+      return out;
+    }
     case "/":
     case "%":
       if (r === 0) {

@@ -1,8 +1,9 @@
 /**
  * Warnings for what the resolver used to accept without a word (product-roadmap RM1.4): a
  * length that reads as metres (`W_LENGTH_IN_METRES`) and a written size or door position that
- * `grid` moved (`W_GRID_SNAPPED`). Both are warnings only: the plan compiles and draws exactly
- * as before, and a plan that triggers neither gets no new byte anywhere.
+ * `grid` moved (`W_GRID_SNAPPED`); and a length that is a binding times itself (`W_AREA_AS_LENGTH`,
+ * AF10). All are warnings only: the plan compiles and draws exactly as before, and a plan that
+ * triggers none gets no new byte anywhere.
  *
  * Each helper compares numbers the element has already computed and, only when it reports,
  * pushes one diagnostic through `ctx.diag`, which charges the step meter before the push
@@ -12,6 +13,7 @@
  */
 
 import type { Span } from "../diagnostics.js";
+import { type Expr, exprSpan } from "../expr.js";
 import type { ResolveCtx } from "../registry.js";
 import { fmt3, fmtWritten, MODEL_RANGE_MM } from "../num-format.js";
 
@@ -50,6 +52,37 @@ export function noteMetres(
     ...(span ? { span } : {}),
   });
   return true;
+}
+
+/**
+ * `W_AREA_AS_LENGTH` (AF10): the length `e`, drawn as `value`, is a binding times itself (`W*W`,
+ * or a name bound to `W*W`), which is an area when the binding is a length. Reads no threshold:
+ * the square is the whole signal, whatever its size. `what` names the clause without an id (`a
+ * room's size`); `subject` names the element in the hint (``Room `r` ``). `room`: the length is a
+ * room side, so the hint also offers the square room of that area. Reports only.
+ */
+export function noteSquare(
+  ctx: Pick<ResolveCtx, "diag" | "squaredName">,
+  subject: string,
+  what: string,
+  e: Expr,
+  value: number,
+  span: Span | undefined,
+  room = false,
+): void {
+  const n = ctx.squaredName?.(e);
+  if (n === undefined) return;
+  const shown = e.t === "ref" ? e.name : `${n}*${n}`;
+  const drawn = quotable(value) ? ` of ${fmt3(value)} mm` : "";
+  const at = exprSpan(e) ?? span;
+  const square = room ? `, or, for a room of that area, \`size ${n} x ${n}\`` : "";
+  ctx.diag({
+    severity: "warning",
+    code: "W_AREA_AS_LENGTH",
+    message: `\`${shown}\` is \`${n}\` times itself, an area if \`${n}\` is a length, but ${what} reads it as a length${drawn}`,
+    hints: [`${subject}: write the length itself (\`${n}\`)${square}. Lengths are millimetres and are never converted.`],
+    ...(at ? { span: at } : {}),
+  });
 }
 
 /** The written room `size` reads as metres: both sides positive and under {@link METRE_ROOM_SIDE_MM}. */
