@@ -51,7 +51,10 @@ describe("curves: arcs to a chord tolerance", () => {
 describe("curves: a room ring's arc edge (core card ARC2)", () => {
   it("lays the floor finish to the curve, at the chord tolerance, so it covers the bay", () => {
     // ArchCanvas's Bay Bungalow with its living room written along the bay's arc.
-    const src = readFileSync(new URL("../../../test/floor-unassigned/bay-bungalow-arc-living.arch", import.meta.url), "utf8");
+    const src = readFileSync(
+      new URL("../../../test/floor-unassigned/bay-bungalow-arc-living.arch", import.meta.url),
+      "utf8",
+    );
     const r = adaptPlan(src);
     if (!r.ok) throw new Error(r.refusal.message);
     const floor = r.scene.levels[0]!.floors.find((f) => f.id === "r_living")!;

@@ -606,8 +606,8 @@ export const perRoomRules: LintRule = {
           : r.edges
             ? largestPerimeterGapEdges(r.edges, segs, rules.tolMm)
             : r.poly
-            ? largestPerimeterGapRing(r.poly, ir.walls, rules.tolMm, segs)
-            : largestPerimeterGap(rect, ir.walls, rules.tolMm, segs);
+              ? largestPerimeterGapRing(r.poly, ir.walls, rules.tolMm, segs)
+              : largestPerimeterGap(rect, ir.walls, rules.tolMm, segs);
         if (gap > rules.maxUnenclosedMm) {
           out.push(
             cite(rules, "maxUnenclosedMm", {

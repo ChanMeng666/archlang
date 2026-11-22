@@ -94,7 +94,10 @@ const BASELINE: [string, string][] = [
   ["examples/two-storey.arch", "92a71843b7de0b87acb1ef3ea1b859d1c0bedbe4ef35025f3524ecea1d674aa8"],
   ["test/fixtures/axes-grid.arch", "32dad3e21d1e5c40424473fdf05896088a2f848fd7f90d395d6cbd70169a0655"],
   ["test/fixtures/chain30.arch", "ce81264ecdc3a086f99708f90aee5dd929c71b9e8ccaaa54a1da5ce5aa213325"],
-  ["test/fixtures/corner-window/corner-window.arch", "8318594db2db21fc19481f4fde4f25de5b2f964320667d34b22a24b5bbacec24"],
+  [
+    "test/fixtures/corner-window/corner-window.arch",
+    "8318594db2db21fc19481f4fde4f25de5b2f964320667d34b22a24b5bbacec24",
+  ],
   ["test/fixtures/dense-bays.arch", "9f4ad4538851a27b463113cd7e563823d185bc7e18b342fd9eebb45f2887992f"],
   ["test/fixtures/dense-office.arch", "1601b5f0adb1966b9168bde4aa447f138c431d423cbc6c562a5d002fff62e612"],
   ["test/fixtures/diff-a.arch", "33a377ed414748c1262bdfbd057d657f8dda607ff77be9d944d2daa5feb12b2a"],
@@ -116,12 +119,24 @@ const BASELINE: [string, string][] = [
   ["test/fixtures/storeys-eaves-overflow.arch", "68492d111abcc4a0219738601073936dbd3aed2f645531ad125cb2bf083949e2"],
   ["test/fixtures/wall-closure/annex-garage.arch", "0cc9b782b36406444c3f6651ac97bc66d86bb87bbe4fd372c8a1876e062a2820"],
   ["test/fixtures/wall-closure/annex-porch.arch", "4ba3a56b73a0da60bc3e87955cadfe7d0b71e3b993ca6e0b44eb0cb43050f04b"],
-  ["test/fixtures/wall-closure/not-boundary-wall.arch", "96be1fd846216555c750fad4862d1d7e1f1e0f8d40025d6506b5b361f1261739"],
+  [
+    "test/fixtures/wall-closure/not-boundary-wall.arch",
+    "96be1fd846216555c750fad4862d1d7e1f1e0f8d40025d6506b5b361f1261739",
+  ],
   ["test/fixtures/wall-closure/not-fence.arch", "fe296e92b7f72183d7f1c6dc193f662d751e63007251f2f9cf5baab1c3827cd3"],
-  ["test/fixtures/wall-closure/not-free-standing.arch", "37b6b432704b137319a26a764602cedb5d4adcf6bbeb3c10c31b027fecdeae21"],
-  ["test/fixtures/wall-closure/not-garden-wall.arch", "1bc3a6231cec08f47e81e35a5fe9b30e4f1d07cf13259959455d0d05e80f3b3c"],
+  [
+    "test/fixtures/wall-closure/not-free-standing.arch",
+    "37b6b432704b137319a26a764602cedb5d4adcf6bbeb3c10c31b027fecdeae21",
+  ],
+  [
+    "test/fixtures/wall-closure/not-garden-wall.arch",
+    "1bc3a6231cec08f47e81e35a5fe9b30e4f1d07cf13259959455d0d05e80f3b3c",
+  ],
   ["test/fixtures/wall-closure/not-parapet.arch", "859c140ea5d9e715705950259d4fbc2915d9a23a468cbfb70d7063b5b58d6222"],
-  ["test/fixtures/wall-closure/not-roof-terrace.arch", "2c2f8ffee5c7cdd449877bb0b87dc69c6528411e02881c3763035a02302f9a5b"],
+  [
+    "test/fixtures/wall-closure/not-roof-terrace.arch",
+    "2c2f8ffee5c7cdd449877bb0b87dc69c6528411e02881c3763035a02302f9a5b",
+  ],
   ["test/fixtures/wall-closure/open-ring.arch", "ebbd2dcc48dd56a52a05905298af969993da1a272d7ea8ee81322e234f8687c6"],
   ["test/fixtures/window-kinds/window-kinds.arch", "b9512ce7a45888f93485eba1593409e4e9542fc62fae0bf7d4454839fd0f11d6"],
   ["test/fixtures/zones-levels.arch", "21c4b504af358718519aea5578a13c3a441ea218c01732f688c8cafff5059d1c"],
@@ -267,7 +282,9 @@ suite("refusals", () => {
       "E_ROOM_POLY_SELF_INTERSECT",
     );
     // The same arc bulging outward is a simple ring.
-    expect(compile(plan("  room id=t polygon (0,0) (1000,0) arc (1000,3000) radius 1500 cw (0,3000)")).errors).toEqual([]);
+    expect(compile(plan("  room id=t polygon (0,0) (1000,0) arc (1000,3000) radius 1500 cw (0,3000)")).errors).toEqual(
+      [],
+    );
   });
 
   it("E_ROOM_ARC_SAG: a chord more than the containment slack off its curve", () => {
@@ -292,8 +309,12 @@ suite("refusals", () => {
   const BAY = (...rest: string[]) =>
     plan("  room id=b polygon (0,0) (4000,0) arc (4000,3000) radius 2000 cw (0,3000)", ...rest);
   it("refuses like a slanted polygon: datums, relational placement, anchors, walls from rooms", () => {
-    expect(codes(BAY("  wall interior thickness 100 { (b.left, 0) (b.left, 3000) }"))).toContain("E_ROOM_NOT_RECTANGLE");
-    const rel = compile(BAY("  room id=c right-of b size 2000x2000")).diagnostics.find((d) => d.code === "E_PLACE_POLY");
+    expect(codes(BAY("  wall interior thickness 100 { (b.left, 0) (b.left, 3000) }"))).toContain(
+      "E_ROOM_NOT_RECTANGLE",
+    );
+    const rel = compile(BAY("  room id=c right-of b size 2000x2000")).diagnostics.find(
+      (d) => d.code === "E_PLACE_POLY",
+    );
     expect(rel?.message).toContain("a polygon room with an arc edge");
     const anchored = compile(BAY("  furniture sofa in b anchor left size 2000x900")).diagnostics.find(
       (d) => d.code === "E_PLACE_POLY",
@@ -309,8 +330,13 @@ suite("refusals", () => {
 suite("the walls that back an arc edge are read by the arc (W_ROOM_NOT_ENCLOSED, W_BOUNDARY_NO_WALL)", () => {
   it("a bath walled on its R3000 curve is enclosed; open on the curve, it is not", () => {
     const bath = (wall: string) =>
-      plan(wall, '  room id=bath polygon (0,0) arc (6000,0) radius 3000 cw (6000,3000) (0,3000) label "Bath" uses bath');
-    const walled = bath("  wall exterior thickness 200 { (0,0) arc (6000,0) radius 3000 cw (6000,3000) (0,3000) close }");
+      plan(
+        wall,
+        '  room id=bath polygon (0,0) arc (6000,0) radius 3000 cw (6000,3000) (0,3000) label "Bath" uses bath',
+      );
+    const walled = bath(
+      "  wall exterior thickness 200 { (0,0) arc (6000,0) radius 3000 cw (6000,3000) (0,3000) close }",
+    );
     expect(lintCodes(walled)).not.toContain("W_ROOM_NOT_ENCLOSED");
     const open = bath("  wall exterior thickness 200 { (6000,0) (6000,3000) (0,3000) (0,0) }");
     expect(lint(open).find((d) => d.code === "W_ROOM_NOT_ENCLOSED")?.message).toContain("~9425 mm");

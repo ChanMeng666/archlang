@@ -564,10 +564,10 @@ function synthGbChains(ir: ResolvedPlan, sizes: RenderSizes, dims: RDim[]): void
               r.edges
                 ? roomCorners(r).map((p) => (g.axis === "h" ? p.x : p.y))
                 : r.poly
-                ? r.poly.map((p) => (g.axis === "h" ? p.x : p.y))
-                : g.axis === "h"
-                  ? [r.at.x, r.at.x + r.size.w]
-                  : [r.at.y, r.at.y + r.size.h],
+                  ? r.poly.map((p) => (g.axis === "h" ? p.x : p.y))
+                  : g.axis === "h"
+                    ? [r.at.x, r.at.x + r.size.w]
+                    : [r.at.y, r.at.y + r.size.h],
             );
       emitChain(g, cleanTicks(ticks, g.lo, g.hi), slotAt(1), sizes.dimFont, dims);
     }

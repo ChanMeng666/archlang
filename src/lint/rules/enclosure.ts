@@ -482,7 +482,7 @@ function onArcEdge(run: { p: Point; q: Point }, a: RRoom, b: RRoom, tol: number)
   for (const r of [a, b]) {
     for (const e of r.edges ?? []) {
       if (e.t !== "arc" || !arcContainsRay(e.arc, mid)) continue;
-      const sag = e.arc.r * (1 - Math.cos((Math.abs(e.arc.sweep) / arcSteps(e.arc)) / 2));
+      const sag = e.arc.r * (1 - Math.cos(Math.abs(e.arc.sweep) / arcSteps(e.arc) / 2));
       if (distPointToArc(mid, e.arc) <= tol + sag) return true;
     }
   }
@@ -521,7 +521,10 @@ export const boundaryNoWall: LintRule = {
         // A run along an arc edge's tessellation (card ARC2) is a chord, which no wall backs: the
         // curve is a curved boundary, judged as a circle room's is (not at all), and only the
         // ring's straight edges share a run.
-        const runs = a.edges || b.edges ? sharedRuns(ctx, a, b).filter((run) => !onArcEdge(run, a, b, tol)) : sharedRuns(ctx, a, b);
+        const runs =
+          a.edges || b.edges
+            ? sharedRuns(ctx, a, b).filter((run) => !onArcEdge(run, a, b, tol))
+            : sharedRuns(ctx, a, b);
         const stretches = runs.flatMap((run) => openStretches(ctx, run, near!));
         if (stretches.length === 0) continue;
         const worst = stretches.reduce((w, s) => (s.hi - s.lo > w.hi - w.lo ? s : w));
