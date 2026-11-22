@@ -2780,7 +2780,18 @@ test; any moved pin under RM-D69's four conditions as ruled for #977
 check; each touched table carries a header note; SVG, `lint()`, steps and parse stay unmoved; no
 other digest is touched."
 
-### SR.17 · MCP `fix` and L1 take the ranked fix (#992, RM-D70 Q3) — `todo`
+### SR.17 · MCP `fix` and L1 take the ranked fix (#992, RM-D70 Q3): done by #1008, waiting to be archived — `note`
+
+Done by #1008: MCP `fix` (`packages/mcp/src/tools.ts`, which the hosted Worker registers too) and L1
+(`eval/l1.ts`, through a pure `l1Fixes`) take `rankFixes(d.fixes)[0]` per diagnostic, as `arch fix`
+does. A door written 25 mm past a meeting wall gets `E_OPENING_NIB` with `at 2050 from start`, then
+`at 950 from start` (nearer first); `rankFixes` puts `950` first, and MCP `fix` with `unsafe:true`
+now applies `950` with nothing skipped, as `arch fix --unsafe` does (`packages/mcp/test/tools.test.ts`
+(v)); `test/rank-fixes.test.ts` holds L1's pick. `l1Pipeline` is unchanged over `eval/faults`,
+`eval/goldens` and `examples/*.arch` (69 of 69). Residue: `rankFixes`' edit-magnitude term prefers
+the farther of AF9's two moves whenever their digit counts differ (`950`, 575 mm, over the nearer
+`2050`, 525 mm); and `dataset/trajectory.ts` still hands every alternative to `applyFixes`
+(machine-applicable only, so nothing moves today). The card text below is kept for the record.
 
 AF9 is the first producer with several alternatives on one diagnostic. `arch fix` takes the top of
 `rankFixes` (`src/fix-apply.ts`) and the LSP lists the alternatives in its order, but MCP `fix` and L1
