@@ -89,17 +89,21 @@ seventy-odd D reads are right on a tessellation for the same reason the circle's
 
 Routed through it, each with the same expression in the same float order: the area stamp, naming's
 size and bounds, the furnish gate, `roomRegion` and net-area's work units, wall-faces' curve count
-and box, `describe()`'s `floor_polygon`, the drawn floor ring, `bounds()`, and the
+and box, `describe()`'s `floor_polygon` (`roomCorners`), Plan JSON's `floor_polygon` (`roomRing`: a
+circle keeps its 48-gon there), the drawn floor ring, `bounds()`, and the
 `poly ?? rectRing(…)` ring idioms (scene-build's label groups, annotations, fixture-paste, furnish,
 `checkRoomOverlaps`, `arch review`). The `RoomBox` helpers already are a ring seam and stay.
 
 Byte identity, over the corpus (`docs/testing.md` § 5 dirs plus every `arch` fence of `docs/`,
 `README.md`, `spec.llm.md`): compiled SVG (every page), `compile().diagnostics`, DXF, ASCII,
 `describe()`, `lint()` under the default and every `LINT_PROFILE_NAMES` profile, Plan JSON,
-`evaluationSteps`, and the 3D scene, warnings and mesh. One PR: the seam plus about fifteen
-mechanical call-site edits is small enough to review whole, so it is not split. Routing the D reads
-by name (`roomRing(r)` for `r.poly`) is not done: it would move nothing ARC2 needs and would grow the
-diff.
+`evaluationSteps`, and the 3D scene, warnings and mesh: 695 sources, 0 of 10,110 hashes moved, and
+a planted change (a reversed corner chain, a circle's area × 1.001) moved 205, so the sweep can fail.
+`npm run digest:preview` holds every pinned digest. `test/room-ring.test.ts` pins the seam's own
+laws over the examples (the boundary closes, its closed-form area equals `roomAreaMm2` exactly for a
+ring, the extent bounds the ring). One PR: the seam plus about twenty mechanical call-site edits is
+small enough to review whole, so it is not split. Routing the D reads by name (`roomRing(r)` for
+`r.poly`) is not done: it would move nothing ARC2 needs and would grow the diff.
 
 ## 4. The ARC2 card
 
