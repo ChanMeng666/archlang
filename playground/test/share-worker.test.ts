@@ -9,12 +9,13 @@ import { readFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { deflateRawSync } from "node:zlib";
-import { compile, diagnosticToJson, inputTooLarge, rateLimited } from "archlang";
+import { compile, diagnosticToJson, ERROR_CATALOG, inputTooLarge, rateLimited } from "archlang";
 import { describe, expect, it } from "vitest";
 import { SOURCE_CAP_BYTES as SHARED_SOURCE_CAP_BYTES } from "archlang/share";
 import { encodePlanHash } from "../../src/cli/share-codec.mjs";
 import { encodeSrc } from "../src/share.js";
 import { makeShareWorker, PREVIEW_PER_PERIOD } from "../worker/app.js";
+import { EVENT_PER_PERIOD } from "../worker/event-core.js";
 import {
   base62,
   decodePayload,
@@ -41,7 +42,7 @@ const read = (rel: string) => readFileSync(join(ROOT, rel), "utf8");
 const STUDIO = read("examples/studio.arch");
 const ORIGIN = "https://playground.archlang.uk";
 
-const worker = makeShareWorker({ compile, diagnosticToJson, inputTooLarge, rateLimited });
+const worker = makeShareWorker({ compile, diagnosticToJson, ERROR_CATALOG, inputTooLarge, rateLimited });
 
 /** Workers KV over a Map, counting writes. */
 function fakeKv(seed: Record<string, { value: string; metadata: ShareMeta | null }> = {}) {
@@ -472,12 +473,16 @@ describe("the static paths stay the asset layer's", () => {
     expect(Object.fromEntries(limits.map((r) => [r.name, r.simple]))).toEqual({
       RATE_SHARE: { limit: SHARE_PER_PERIOD, period: RATE_PERIOD_SECONDS },
       RATE_PREVIEW: { limit: PREVIEW_PER_PERIOD, period: RATE_PERIOD_SECONDS },
+      RATE_EVENT: { limit: EVENT_PER_PERIOD, period: RATE_PERIOD_SECONDS },
     });
     const mcp = jsonc("packages/mcp-worker/wrangler.jsonc");
     const taken = (mcp.ratelimits as { namespace_id: string }[]).map((r) => r.namespace_id);
     const ours = limits.map((r) => r.namespace_id);
     expect(new Set([...taken, ...ours]).size).toBe(taken.length + ours.length);
-    expect(w.analytics_engine_datasets).toEqual([{ binding: "SHARE_ANALYTICS", dataset: "archlang_share" }]);
+    expect(w.analytics_engine_datasets).toEqual([
+      { binding: "SHARE_ANALYTICS", dataset: "archlang_share" },
+      { binding: "EVENTS", dataset: "archlang_playground" },
+    ]);
     expect(w.observability).toEqual({ enabled: true, logs: { enabled: true, invocation_logs: false } });
     expect(w.workers_dev).toBe(false);
   });

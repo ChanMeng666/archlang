@@ -68,15 +68,23 @@
   "kv_namespaces": [{ "binding": "SHARE", "id": "1a147498742b4bd4b4579175085ef9a0" }],
 
   // Per-address abuse guards, keyed on CF-Connecting-IP (never stored or logged): POST
-  // /api/share, and /s/<id>.png cache misses (a hit renders nothing). Held to SHARE_PER_PERIOD
-  // and PREVIEW_PER_PERIOD by test. Their own namespaces: 2601 and 2602 are the MCP Worker's.
+  // /api/share, /s/<id>.png cache misses (a hit renders nothing) and POST /api/event. Held to
+  // SHARE_PER_PERIOD, PREVIEW_PER_PERIOD and EVENT_PER_PERIOD by test. Their own namespaces:
+  // 2601, 2602 and 2605 are the MCP Worker's.
   "ratelimits": [
     { "name": "RATE_SHARE", "namespace_id": "2603", "simple": { "limit": 30, "period": 60 } },
-    { "name": "RATE_PREVIEW", "namespace_id": "2604", "simple": { "limit": 120, "period": 60 } }
+    { "name": "RATE_PREVIEW", "namespace_id": "2604", "simple": { "limit": 120, "period": 60 } },
+    { "name": "RATE_EVENT", "namespace_id": "2606", "simple": { "limit": 120, "period": 60 } }
   ],
 
-  // One data point per create and per resolve: the event, the id and the UTC day.
-  "analytics_engine_datasets": [{ "binding": "SHARE_ANALYTICS", "dataset": "archlang_share" }],
+  // SHARE_ANALYTICS: one data point per create and per resolve, the event, the id and the UTC day.
+  // EVENTS: one per page event (ruling RM-D86, worker/event-core.ts), the name, one listed word,
+  // the catalogued codes and the UTC day; no plan, label, id (but a contribution's short link),
+  // cookie or address. Analytics Engine creates a dataset on its first write.
+  "analytics_engine_datasets": [
+    { "binding": "SHARE_ANALYTICS", "dataset": "archlang_share" },
+    { "binding": "EVENTS", "dataset": "archlang_playground" }
+  ],
 
   // Workers Logs on, for the script's own errors (it logs an error's name, never a plan).
   // Invocation logs off: they record each request's metadata, and this Worker keeps no address.

@@ -5,10 +5,12 @@
  * (`env.ASSETS`) so a 404 is the asset layer's own. Every other path is served as a static asset
  * without this code running.
  *
- *   POST /api/share        body: a `#z=` payload → `{ id, url }`, the plan stored in KV
+ *   POST /api/share        body: a `#z=` payload → `{ id, url }`, the plan stored in KV; or
+ *                          `{ z, contribute: true }`, the same, plus one `contribute` point
  *   GET  /api/share/<id>   → `{ id, z }` (embed.html's `#s=<id>`)
  *   GET  /s/<id>           → a small HTML page: the card metadata, then on to `/#z=<payload>`
  *   GET  /s/<id>.png       → the 1200×630 card image: the plan as `compile()` draws it
+ *   POST /api/event        body: one page event (event-core.ts) → 204, one Analytics Engine point
  *
  * The core is passed in rather than imported, so the same handler runs bundled by wrangler
  * (`worker/index.ts`), against the core's source under vitest, and against the built core in a
@@ -21,21 +23,35 @@ import {
   ID_MAX,
   ID_MIN,
   isShareId,
+  NOT_A_PLAN_CODES,
   notFoundHtml,
   SHORT_LINK_PAYLOAD_CAP_CHARS,
   planTitle,
   RATE_PERIOD_SECONDS,
+  readShareBody,
   SHARE_PER_PERIOD,
   SOURCE_CAP_BYTES,
   shareKey,
   sharePageHtml,
   sourceHash,
 } from "./share-core.js";
+import {
+  contributionPoint,
+  EVENT_BODY_CAP_BYTES,
+  EVENT_PATH,
+  EVENT_PER_PERIOD,
+  eventCodes,
+  eventPoint,
+  readEvent,
+} from "./event-core.js";
 import { PREVIEW_HEIGHT, PREVIEW_WIDTH, previewSvg, type Rasterize } from "./preview.js";
 import type { Env, ExecutionContext, ShareMeta } from "./types.js";
 
 /** The core functions the handler calls. */
-export type Core = Pick<typeof Archlang, "compile" | "diagnosticToJson" | "inputTooLarge" | "rateLimited">;
+export type Core = Pick<
+  typeof Archlang,
+  "compile" | "diagnosticToJson" | "ERROR_CATALOG" | "inputTooLarge" | "rateLimited"
+>;
 
 /** The stable `error.code` values a JSON refusal carries. */
 export type ShareErrorCode =
@@ -44,6 +60,7 @@ export type ShareErrorCode =
   | "source_too_large"
   | "bad_payload"
   | "not_a_plan"
+  | "bad_event"
   | "rate_limited"
   | "not_found"
   | "method_not_allowed"
@@ -74,7 +91,7 @@ export interface PreviewDeps {
 }
 
 /** The parse-stage and budget refusals that make a payload "not a plan" (see {@link create}). */
-const NOT_A_PLAN = new Set(["E_PARSE", "E_STEP_LIMIT"]);
+const NOT_A_PLAN = new Set(NOT_A_PLAN_CODES);
 
 /** Every response this Worker writes carries these, as `public/_headers`' `/*` rule does for assets. */
 const BASE_HEADERS = {
@@ -137,7 +154,7 @@ export function crossSite(req: Request): boolean {
 }
 
 /** `true` when the limiter (absent in a test or a bare local run) lets this address through. */
-async function allowed(limiter: Env["RATE_SHARE"], req: Request): Promise<boolean> {
+async function allowed(limiter: Env["RATE_SHARE"] | Env["RATE_EVENT"], req: Request): Promise<boolean> {
   if (!limiter) return true;
   try {
     return (await limiter.limit({ key: addressOf(req) })).success;
@@ -149,10 +166,17 @@ async function allowed(limiter: Env["RATE_SHARE"], req: Request): Promise<boolea
 /** The events counted: one data point each, holding the event, the id and the UTC day. */
 export type ShareEvent = "create" | "resolve" | "resolve-json" | "preview" | "refused";
 
+/** Whether a request carries Global Privacy Control (`Sec-GPC: 1`) or Do Not Track (`DNT: 1`). */
+export const asksNotToTrack = (req: Request): boolean =>
+  req.headers.get("sec-gpc")?.trim() === "1" || req.headers.get("dnt")?.trim() === "1";
+
+/** Today, UTC, as the counters' last blob holds it. */
+const utcDay = (): string => new Date().toISOString().slice(0, 10);
+
 function count(env: Env, event: ShareEvent, idOrReason: string): void {
   try {
     env.SHARE_ANALYTICS?.writeDataPoint({
-      blobs: [event, idOrReason, new Date().toISOString().slice(0, 10)],
+      blobs: [event, idOrReason, utcDay()],
       indexes: [event],
     });
   } catch {
@@ -199,6 +223,9 @@ async function lookup(env: Env, id: string): Promise<{ payload: string; meta: Sh
 
 /** Build the handler over a core, and the card renderer when there is one. */
 export function makeShareWorker(core: Core, preview: PreviewDeps = {}) {
+  /** A catalogued code: the core's own catalogue decides, never a pattern alone. */
+  const isCode = (code: string): boolean => Object.hasOwn(core.ERROR_CATALOG, code);
+
   /**
    * `POST /api/share`. The payload must decode, inflate to UTF-8 within the source cap, and be a
    * plan the core reads: `compile()` is the core's public route to its parser, and a plan that
@@ -230,7 +257,12 @@ export function makeShareWorker(core: Core, preview: PreviewDeps = {}) {
       )!;
       return refuse(413, "payload_too_large", d.message, { diagnostic: core.diagnosticToJson("", d) });
     }
-    const payload = body.trim();
+    const ask = readShareBody(body);
+    if (!ask) {
+      count(env, "refused", "payload");
+      return refuse(400, "bad_payload", "the body is not a #z= payload nor { z, contribute: true }");
+    }
+    const { payload, contribute } = ask;
     const source = await decodePayload(payload, SOURCE_CAP_BYTES);
     if (source === "bad_payload") {
       count(env, "refused", "payload");
@@ -268,9 +300,66 @@ export function makeShareWorker(core: Core, preview: PreviewDeps = {}) {
         continue;
       }
       count(env, "create", id);
+      // A contributed plan (ruling RM-D87): marked here, with the id this Worker minted and the
+      // codes of the compile it just ran, never anything the client says. The user asked for it in
+      // the dialog, so it is written whatever privacy signal the request carries.
+      if (contribute) {
+        try {
+          env.EVENTS?.writeDataPoint(
+            contributionPoint(
+              id,
+              eventCodes(
+                result.diagnostics.map((d) => d.code),
+                isCode,
+              ),
+              utcDay(),
+            ),
+          );
+        } catch {
+          /* telemetry never fails a request */
+        }
+      }
       return json(200, { id, url: `${new URL(req.url).origin}/s/${id}` }, { "cache-control": "no-store" });
     }
     return refuse(503, "unavailable", "no free id for this plan");
+  }
+
+  /**
+   * `POST /api/event` (ruling RM-D86, card FW4): one page event, read by `readEvent`
+   * (event-core.ts) and written as one point to `archlang_playground` (`EVENTS`). The address is
+   * the rate limiter's key and nothing else. Every refusal writes nothing: another site's request
+   * (403), an address over its rate (429), a body over {@link EVENT_BODY_CAP_BYTES} (413), and a
+   * body that is not exactly one listed event (400). A request carrying `Sec-GPC: 1` or `DNT: 1`
+   * is answered 204 and writes nothing, whatever it holds: the page sends none then, and this is
+   * the backstop. A missing binding (a test, a bare local run) still answers 204: the page never
+   * waits on, or reads, the answer.
+   */
+  async function event(req: Request, env: Env): Promise<Response> {
+    if (crossSite(req)) return refuse(403, "cross_origin", "events come from the playground itself");
+    if (asksNotToTrack(req)) {
+      await req.body?.cancel().catch(() => {});
+      return new Response(null, { status: 204, headers: { ...BASE_HEADERS, "cache-control": "no-store" } });
+    }
+    if (!(await allowed(env.RATE_EVENT, req))) {
+      const d = core.rateLimited("event", EVENT_PER_PERIOD, RATE_PERIOD_SECONDS);
+      return refuse(429, "rate_limited", d.message, { headers: { "retry-after": String(RATE_PERIOD_SECONDS) } });
+    }
+    const body = await readCapped(req, EVENT_BODY_CAP_BYTES);
+    if (body === null) return refuse(413, "payload_too_large", `an event is at most ${EVENT_BODY_CAP_BYTES} bytes`);
+    let parsed: unknown;
+    try {
+      parsed = JSON.parse(body);
+    } catch {
+      return refuse(400, "bad_event", "not an event: send one JSON object { e, … }");
+    }
+    const ev = readEvent(parsed, isCode);
+    if (!ev) return refuse(400, "bad_event", "not an event this playground counts");
+    try {
+      env.EVENTS?.writeDataPoint(eventPoint(ev, utcDay()));
+    } catch {
+      /* telemetry never fails a request */
+    }
+    return new Response(null, { status: 204, headers: { ...BASE_HEADERS, "cache-control": "no-store" } });
   }
 
   /** `GET /api/share/<id>`: the payload, for `embed.html#s=<id>`. */
@@ -366,6 +455,11 @@ export function makeShareWorker(core: Core, preview: PreviewDeps = {}) {
       if (req.method !== "POST")
         return refuse(405, "method_not_allowed", "POST a #z= payload", { headers: { allow: "POST" } });
       return create(req, env);
+    }
+    if (pathname === EVENT_PATH) {
+      if (req.method !== "POST")
+        return refuse(405, "method_not_allowed", "POST one event", { headers: { allow: "POST" } });
+      return event(req, env);
     }
     if (pathname.startsWith("/api/share/")) {
       if (!read) return refuse(405, "method_not_allowed", "GET only", { headers: { allow: "GET, HEAD" } });
