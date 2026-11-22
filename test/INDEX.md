@@ -127,7 +127,7 @@ Nearest first, then by name; `(+n)` is the rest. Test names are `test/<name>.tes
 - `src/grammar/tokens.ts` (38) — `arc-openings`, `arch-highlight`, `block-stair-lint`, `clause-order-byte-identity`, `closed-vocabularies`, `corner-window`, `did-you-mean`, `door-enums` (+30)
 - `src/hatches.ts` (8) — `export-pdf`, `floor-materials-byte-identity`, `joinery-split-oracle`, `joinery-split`, `model-range`, `outdoor`, `room-floor`, `sheet-text`
 - `src/impact.ts` (2) — `rectilinear-doors`, `rectilinear-rooms`
-- `src/import.ts` (38) — `af9-byte-identity`, `af9-fixes`, `arc-openings`, `block-stair-byte-identity`, `corner-window-byte-identity`, `dim-swap-reprint`, `dim-thickness-callout`, `drawing-budget` (+30)
+- `src/import.ts` (39) — `af9-byte-identity`, `af9-fixes`, `arc-openings`, `block-stair-byte-identity`, `corner-window-byte-identity`, `dim-swap-reprint`, `dim-thickness-callout`, `drawing-budget` (+31)
 - `src/import/limits.ts` (1) — `openplan3d-malformed`
 - `src/index.ts` (432) — `acc-metadata`, `access-graph`, `access-policy`, `accessible-svg`, `af9-byte-identity`, `af9-fixes`, `agent-gallery`, `alias-match` (+424)
 - `src/input-limit.ts` (2) — `import-rooted`, `workspace-seams`
@@ -168,12 +168,12 @@ Nearest first, then by name; `(+n)` is the rest. Test names are `test/<name>.tes
 - `src/opening-junctions.ts` (3) — `af9-byte-identity`, `af9-fixes`, `fixable-codes`
 - `src/opening-relation.ts` (3) — `openings-between`, `rectilinear-doors`, `rectilinear-sides`
 - `src/opening-schedule.ts` (2) — `sheet-annotations`, `window-kinds`
-- `src/parser.ts` (164) — `af9-byte-identity`, `af9-fixes`, `arc-openings`, `arc-radius-exact`, `attach`, `axes`, `block-stair-byte-identity`, `block-stair` (+156)
+- `src/parser.ts` (165) — `af9-byte-identity`, `af9-fixes`, `arc-openings`, `arc-radius-exact`, `attach`, `axes`, `block-stair-byte-identity`, `block-stair` (+157)
 - `src/pipeline.ts` (2) — `label-leaders`, `work-counts`
 - `src/plan-json.ts` (11) — `element-facets`, `format`, `garage`, `plan-json-dropped`, `plan-json-instances`, `polygon-rooms`, `section`, `sheet-annotations` (+3)
 - `src/plan-json/room-types.ts` (1) — `vocabulary-es-pt`
 - `src/plan-json/to-json.ts` (1) — `rect-ring`
-- `src/registry.ts` (55) — `af9-byte-identity`, `af9-fixes`, `annotation-collisions`, `arc-openings`, `block-stair-byte-identity`, `block-stair-winders-walking-arc`, `block-stair`, `corner-window-byte-identity` (+47)
+- `src/registry.ts` (56) — `af9-byte-identity`, `af9-fixes`, `annotation-collisions`, `arc-openings`, `block-stair-byte-identity`, `block-stair-winders-walking-arc`, `block-stair`, `corner-window-byte-identity` (+48)
 - `src/repair.ts` (2) — `finish-furnish-laws`, `finish-never-worse`
 - `src/reroll.ts` (3) — `keep`, `reroll-findrun-oracle`, `reroll`
 - `src/room-datums.ts` (5) — `openings-between`, `room-datums`, `segment-select`, `shared-grid-byte-identity`, `keep`

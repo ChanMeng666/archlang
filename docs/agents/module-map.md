@@ -28,7 +28,7 @@ Totals: 430 modules in 34 directories.
 | `browser.ts` | 33 | 0 | The browser entry for a host page that shows the replay (card A5, the playground's 3D preview tab): build the payload in the page (`replayPayload`) and mount it on a canvas (`mountReplay`). It bundles three.js, so it is a separate entry… | none |
 | `curves.ts` | 45 | 2 | Arc discretisation to a chord tolerance (archlang-3d plan §4.1, `--curve-tol`). The core keeps every arc exact (`Edge` `{ t: "arc", arc }`) and tessellates at a fixed 7.5° step for the drawing; a raised wall is seen up close, so the 3D… | none |
 | `glb.ts` | 10 | 0 | The GLB entry (`./glb`): `writeGlb` and its naming, for a page that writes the GLB bytes without Node (a "Download GLB" button). The bytes are the ones `./node`'s `writeGlb` and `archlang3d build` write for the same Mesh3D: it is the same… | none |
-| `index.ts` | 138 | 33 | @chanmeng666/archlang-3d — reads a resolved ArchLang plan into a plan-aligned Scene3D. ArchLang itself draws plans; this package is a separate downstream consumer (ADR 0030) of the core's public seam (ADR 0031). Browser-safe: the Node… | none |
+| `index.ts` | 138 | 34 | @chanmeng666/archlang-3d — reads a resolved ArchLang plan into a plan-aligned Scene3D. ArchLang itself draws plans; this package is a separate downstream consumer (ADR 0030) of the core's public seam (ADR 0031). Browser-safe: the Node… | none |
 | `materials.ts` | 421 | 12 | Material slots (visual-assets card V1): the ONE palette both the GLB writer (`glb/write.ts`) and the replay viewer (`replay/mount.ts`) read, so a piece's oak or ceramic is the same colour in both. A T0 part names its slot (`Part.mat`… | none |
 | `node.ts` | 46 | 28 | The Node-only entry: a `World` over the file system. Kept out of `src/index.ts` so the browser bundle (adapter + Scene3D) never pulls a `node:*` module (`test/browser-safety.test.ts`). | none |
 | `units.ts` | 16 | 2 | Scene3D lengths are integer micrometres (plan §3.4): a plan coordinate in millimetres is multiplied by 1000 and rounded ONCE, at the adapter's edge, so every later stage works on integers and a last-ulp difference between engines is… | none |
@@ -104,7 +104,7 @@ Totals: 430 modules in 34 directories.
 
 | Module | Lines | Importers | Summary | Budget |
 | --- | ---: | ---: | --- | --- |
-| `build.ts` | 577 | 6 | Resolved storeys → Scene3D v0. A mapping of the core's resolved facts into micrometres and plan-aligned records: no geometry is built here beyond the core's own (wall ownership through `joinWallSet`; arcs tessellated to a chord tolerance… | none |
+| `build.ts` | 580 | 6 | Resolved storeys → Scene3D v0. A mapping of the core's resolved facts into micrometres and plan-aligned records: no geometry is built here beyond the core's own (wall ownership through `joinWallSet`; arcs tessellated to a chord tolerance… | none |
 | `overlap.ts` | 132 | 5 | V-GEO-05 (archlang-3d plan §4.2, §8.1; card A2b): rooms whose floors overlap by more than 1 cm² would draw two coplanar floor finishes that fight in depth. Each such pair is reported (`W3D_FLOOR_OVERLAP`; the core warns `W_ROOM_OVERLAP`… | none |
 | `types.ts` | 245 | 16 | Scene3D v0: a renderer-independent, plan-aligned 2.5D scene read off a resolved plan (archlang-3d plan §3.5, appendix A). Plan axes: x right, y DOWN; z up. Every length is an integer number of micrometres ({@link Um}); handedness is… | none |
 | `validate.ts` | 226 | 2 | The Scene3D v0 validator: zero dependencies, so it runs in the browser bundle. It checks what `scene3d.schema.json` states (shapes, integer micrometres, enums, no unknown keys) and what a JSON Schema cannot (ids unique per collection and… | none |
@@ -275,7 +275,7 @@ Totals: 430 modules in 34 directories.
 | `id-spans.ts` | 41 | 5 | The byte span of an element statement's `id=<name>` name, and of the one word a did-you-mean fix rewrites (AF2), kept beside the AST. A leaf: the parser records spans here and the resolver reads them, so reading one never loads the parser. | none |
 | `identity.ts` | 33 | 3 | Process-local stable identity tokens for cache keying. | none |
 | `impact.ts` | 1405 | 3 | `impact(before, after)` (plan-soundness card PS4.2): change one number, see what follows, what stays put, and what breaks. The executable answer to "what changes, what must not". | none |
-| `import.ts` | 349 | 39 | Module linking — the `import` system. | none |
+| `import.ts` | 349 | 40 | Module linking — the `import` system. | none |
 | `index.ts` | 762 | 475 | ArchLang — compile declarative floor-plan source to a professional SVG. | none |
 | `input-limit.ts` | 77 | 5 | A host's refusals, as catalogued diagnostics. | none |
 | `intent-concepts.ts` | 238 | 7 | The intent channel's concept vocabulary — production name resolution for the NL→ArchLang intent contract. | none |
@@ -300,11 +300,11 @@ Totals: 430 modules in 34 directories.
 | `opening-junctions.ts` | 204 | 7 | Where other walls meet a host wall's run: the measure `W_OPENING_AT_JUNCTION` reports with (`src/lint/rules/openings.ts`) and a relational opening is refused by (`E_OPENING_NIB`, ADR 0028 §5), so the warning and the refusal can never… | none |
 | `opening-relation.ts` | 1906 | 12 | Openings by relation (ADR 0028 §5): where a `door\|window\|opening` stands when its position is written against the rooms rather than against a wall. | charges the step meter |
 | `opening-schedule.ts` | 610 | 6 | **`schedule openings`** — the door and window TAGS drawn beside each opening, and the rows of the DOOR & WINDOW SCHEDULE table the sheet carries (`sheet-tables.ts` lays the table out and lowers it; this module derives what it says and… | none |
-| `parser.ts` | 2571 | 146 | Recursive-descent parser: tokens -> PlanNode. Registry-driven element dispatch. | none |
+| `parser.ts` | 2571 | 147 | Recursive-descent parser: tokens -> PlanNode. Registry-driven element dispatch. | none |
 | `pipeline.ts` | 219 | 6 | The one `compile()` pipeline: parse → link → resolve → render. | none |
 | `plan-json.ts` | 75 | 16 | Structured JSON I/O for ArchLang plans — the machine-native channel an LLM uses to author and read a floor plan without touching `.arch` syntax. | none |
 | `pure.ts` | 28 | 15 | `pure(() => value)` returns `value`, built once at module load exactly as written. It marks a top-level constant whose initializer has no effect outside the value it builds, but whose shape a bundler cannot prove that of: a spread… | none |
-| `registry.ts` | 592 | 100 | Element registry: the single extension point. Each element type is one module exporting an {@link ElementDef}; parse/resolve/render iterate the registry rather than a hard-coded switch. Adding an element = one new module + one `register`… | none |
+| `registry.ts` | 592 | 101 | Element registry: the single extension point. Each element type is one module exporting an {@link ElementDef}; parse/resolve/render iterate the registry rather than a hard-coded switch. Adding an element = one new module + one `register`… | none |
 | `repair.ts` | 2532 | 6 | `repair(source)` — an explicit, opt-in source-to-source corrector. | none |
 | `reroll.ts` | 714 | 5 | `reroll(source)` — detect a run of ≥3 CONSECUTIVE statements in arithmetic progression and offer a proven-equivalent `for` loop (Szalinski, PLDI 2020, `uwplse/szalinski` `src/solve.rs`, minus the e-graph — fit an AP over sorted… | none |
 | `room-datums.ts` | 420 | 20 | The datum table (ADR 0028 §1): what one resolution group's rooms and grid axes expose as lines, frozen after every room is placed and before any wall resolves. | charges the step meter |
@@ -335,7 +335,7 @@ Totals: 430 modules in 34 directories.
 | `wall-relation.ts` | 166 | 1 | The pairwise wall forms (ADR 0028 §4, plan decision D1): an authored wall whose geometry is written against the rooms rather than as points. | charges the step meter |
 | `while-deprecation.ts` | 97 | 1 | W7 — soft-deprecation of `while` and reassignment (`NAME = expr`): the advisory warnings only. The machine-applicable fix lives one layer up, in `src/while-fix.ts` + `src/index.ts` — see that module's header for why (a fix here could only… | none |
 | `while-fix.ts` | 449 | 4 | W7's machine-applicable fix: `let I = A; while I < B { …; I = I + 1 }` rewritten to `for I in A..B { … }`. | none |
-| `world.ts` | 56 | 86 | The `World` seam — the compiler's single window onto its environment. | none |
+| `world.ts` | 56 | 87 | The `World` seam — the compiler's single window onto its environment. | none |
 
 ## `src/algebra/`
 
@@ -557,14 +557,14 @@ Totals: 430 modules in 34 directories.
 | Module | Lines | Importers | Summary | Budget |
 | --- | ---: | ---: | --- | --- |
 | `alias-match.ts` | 93 | 1 | `W_ALIAS_MATCH` — advisory: a room's use was inferred from a non-canonical alias. | none |
-| `annotations.ts` | 937 | 2 | Annotation collisions on the drawn sheet (plan-soundness PS2.12): drafting advisories that read the drawing itself, never the plan's facts, so `describe()`, Plan JSON and the SVG are untouched by them. A third, `W_DIM_THICKNESS_UNPLACED`… | none |
+| `annotations.ts` | 933 | 2 | Annotation collisions on the drawn sheet (plan-soundness PS2.12): drafting advisories that read the drawing itself, never the plan's facts, so `describe()`, Plan JSON and the SVG are untouched by them. A third, `W_DIM_THICKNESS_UNPLACED`… | none |
 | `circulation-facts.ts` | 1097 | 3 | Circulation quality as advisory warnings, built on the circulation nav-grid facts (ADR 0008): a walk that squeezes below a passable width (`W_PATH_TOO_NARROW`), or that wanders far from a straight line (`W_CIRCUITOUS_PATH`). Facts →… | none |
 | `circulation.ts` | 43 | 1 | Circulation: a room whose doorways can't reach a usable patch of clear floor — technically reachable (it has a door) but so packed that you can't step in. A grid flood-fill fact (see analyze/occupancy.ts); only fires when there *is*… | none |
 | `clearances.ts` | 473 | 2 | The clearance family of plan-soundness PS2.11, beyond the seat check: a WC whose centreline stands too near a side obstacle (PS2.11a) and a tall unit standing in front of a window (PS2.11b). Both measure the drawn shapes — a fixture's… | none |
 | `dims.ts` | 613 | 3 | Annotation-quality advisories over the plan's HAND-WRITTEN dimensions: `W_DIM_INSIDE` (a dimension line landing inside the building) and `W_DIM_OVERLAP` (two dimensions drawn on top of each other). Both are advisory with a… | none |
 | `doors.ts` | 976 | 7 | Door rules: obstructed swing arcs, blocked walk-through landings, sub-passable widths, a pocket panel with nowhere to go, and a jamb that leaves too little wall at a corner — in that (pinned) order via `rules/index.ts`. | none |
 | `doorway.ts` | 157 | 1 | The walk-through landing rule, `W_DOORWAY_BLOCKED` (`doorwayBlocked`), and the move it offers as a fix (card AF9, `src/lint/doorway-move.ts`). It stands apart from the other door rules (`./doors.ts`) because those are on `describe()`'s… | none |
-| `enclosure.ts` | 1204 | 4 | Space-enclosure rules (plan-soundness PS2.4): floor the walls and the rooms disagree about. | none |
+| `enclosure.ts` | 1207 | 4 | Space-enclosure rules (plan-soundness PS2.4): floor the walls and the rooms disagree about. | none |
 | `entrance.ts` | 236 | 1 | The building has rooms but no way in. | none |
 | `floor-gaps.ts` | 99 | 2 | Floor a piece cannot stand on: a storey's own `void`s, lift shafts and escalators (CR2 group D). | none |
 | `footprint.ts` | 228 | 1 | `W_FOOTPRINT_TRANSPOSED` (plan-soundness PS2.11c): a piece of a family that comes in one shape, written with its two sides the wrong way round, so its symbol draws turned a quarter and stretched (`sofa_l … size 900x2400` with no `rotate`… | none |
