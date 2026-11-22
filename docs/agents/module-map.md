@@ -362,7 +362,7 @@ Totals: 427 modules in 34 directories.
 | `occupancy.ts` | 238 | 4 | Room circulation as a fact: can a person actually step through a room's door and reach its floor, or do furniture, fixtures and door swings seal it off? | none |
 | `open-shell.ts` | 304 | 2 | **Open shells:** exterior walls that should enclose a room and do not. `W_EXTERIOR_RING_OPEN` reports them, and `describe()` says which rooms the gross internal area leaves out because of them (`totals.gross_internal_area_leaves_out`)… | none |
 | `quantities.ts` | 339 | 5 | `describe --facts quantities` and `arch takeoff`: the geometric quantities of one storey, as an estimator reads them. Geometry only, never a claim: every figure is a length, an area or a count measured from the shapes, and its convention… | none |
-| `rooms.ts` | 187 | 5 | Room geometry leaves of the analysis layer: a room's box and ring, its area, the point-in-room and edge-touch tests, and the room-use predicates. | none |
+| `rooms.ts` | 181 | 5 | Room geometry leaves of the analysis layer: a room's box and ring, its area, the point-in-room and edge-touch tests, and the room-use predicates. | none |
 | `symmetry.ts` | 975 | 3 | The plan's SYMMETRY GROUP and its REPETITION, as facts — `describe(src, { facts: ["symmetry"] })`. Opt-in: nothing here runs unless a caller asks for it. | none |
 | `syntax.ts` | 139 | 2 | SPACE SYNTAX on the access graph — `describe(src, { facts: ["syntax"] })`. Opt-in. | none |
 | `takeoff.ts` | 66 | 2 | The long form of a takeoff: every figure of `describe --facts quantities`, one row each, and the CSV `arch takeoff --format csv` and the Playground's Takeoff tab both write from it. Pure, so the two cannot disagree. | none |

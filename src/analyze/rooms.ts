@@ -11,13 +11,7 @@
 import type { Point, UseKind } from "../ast.js";
 import type { BBox } from "../geometry/rect.js";
 import { overlap1d, pointInRect } from "../geometry/rect.js";
-import {
-  pointInPolygon,
-  pointOnPolygonEdge,
-  rectInsidePolygon,
-  rectRing,
-  ringsAdjacent,
-} from "../geometry/polygon.js";
+import { pointInPolygon, pointOnPolygonEdge, rectInsidePolygon, rectRing, ringsAdjacent } from "../geometry/polygon.js";
 import { classifyLabelUses, namesOpenAir } from "../vocabulary.js";
 
 /** Default mm tolerance for edge-touch / point-on-edge tests (≈ one partition wall). */
