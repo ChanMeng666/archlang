@@ -30,6 +30,7 @@ import {
   PLAN_JSON_SCHEMA,
   planFromJson,
   planToJson,
+  rankFixes,
   renderAscii,
   renderPng,
   repair,
@@ -748,7 +749,7 @@ export function registerTools(server: McpServer, opts: ToolOptions): void {
       title: "Apply machine-applicable diagnostic fixes",
       annotations: TOOL_ANNOTATIONS,
       description:
-        "Apply the machine-applicable fixes attached to a plan's compile diagnostics and return the edited source. It corrects source-level faults (an opening off its wall becomes the attachment form, an out-of-range position is clamped, …); furniture geometry is `repair`'s job. It runs at most 4 passes and rolls back a pass that raises the error count. `unsafe:true` also applies `maybe-incorrect` fixes. Returns { ok, passes, applied, skipped, source }.",
+        "Apply the machine-applicable fixes attached to a plan's compile diagnostics and return the edited source. It corrects source-level faults (an opening off its wall becomes the attachment form, an out-of-range position is clamped, …); furniture geometry is `repair`'s job. It runs at most 4 passes and rolls back a pass that raises the error count. `unsafe:true` also applies `maybe-incorrect` fixes. Of several alternative fixes on one diagnostic it applies the one `archlang fix` takes. Returns { ok, passes, applied, skipped, source }.",
       inputSchema: {
         source: z.string().describe("ArchLang source to fix."),
         unsafe: z
@@ -768,10 +769,12 @@ export function registerTools(server: McpServer, opts: ToolOptions): void {
         const fixes: FixSuggestion[] = [];
         const codeOf = new Map<FixSuggestion, string | undefined>();
         for (const d of diagnostics) {
-          for (const f of d.fixes ?? []) {
-            fixes.push(f);
-            codeOf.set(f, d.code);
-          }
+          // The `fixes` on one diagnostic are mutually-exclusive alternatives: take the top of
+          // `rankFixes`, the one `archlang fix` takes, never every alternative in array order.
+          const [chosen] = rankFixes(d.fixes ?? []);
+          if (!chosen) continue;
+          fixes.push(chosen);
+          codeOf.set(chosen, d.code);
         }
         if (fixes.length === 0) break;
         const report = applyFixes(current, fixes, { maxApplicability });

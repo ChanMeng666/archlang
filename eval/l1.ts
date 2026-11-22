@@ -9,13 +9,13 @@
  * any L2 loop delta).
  *
  * Pure and deterministic: the only imports are the pure core surface (`compile`,
- * `applyFixes`, `repair`). This MIRRORS the CLI's `arch fix` fixpoint (`cmdFix` in
- * src/cli.ts) — machine-applicable fixes only, a bounded number of passes, and a pass
- * that raises the compile error count is rolled back — but stays inside `eval/` rather
- * than reaching into the (unexported) CLI.
+ * `applyFixes`, `rankFixes`, `repair`). This MIRRORS the CLI's `arch fix` fixpoint (`cmdFix` in
+ * src/cli/commands-author.ts) — the top-ranked fix of each diagnostic, machine-applicable fixes
+ * only, a bounded number of passes, and a pass that raises the compile error count is rolled
+ * back — but stays inside `eval/` rather than reaching into the (unexported) CLI.
  */
 
-import { applyFixes, compile, repair } from "../src/index.js";
+import { applyFixes, compile, type Diagnostic, type FixSuggestion, rankFixes, repair } from "../src/index.js";
 
 /** The result of running a source through the L1 deterministic pipeline. */
 export interface L1Result {
@@ -31,11 +31,20 @@ export interface L1Result {
 const MAX_PASSES = 4;
 
 /**
+ * The fixes one L1 pass hands `applyFixes`: per diagnostic, the top of `rankFixes`, as `cmdFix`
+ * takes it. The `fixes` on one diagnostic are mutually-exclusive alternatives, so the rest are
+ * never offered; a diagnostic with no fix offers nothing. Diagnostic order is kept.
+ */
+export function l1Fixes(diagnostics: readonly Diagnostic[]): FixSuggestion[] {
+  return diagnostics.flatMap((d) => rankFixes(d.fixes ?? []).slice(0, 1));
+}
+
+/**
  * Heal `source` with the deterministic tool pipeline: a bounded, self-checking
  * machine-applicable fix fixpoint, then one `repair`.
  *
- * The fix loop mirrors `cmdFix`: each pass collects every `diagnostics[].fixes`,
- * applies the machine-applicable ones via `applyFixes` (its default tier), and commits
+ * The fix loop mirrors `cmdFix`: each pass takes each diagnostic's top-ranked fix
+ * ({@link l1Fixes}), applies the machine-applicable ones via `applyFixes` (its default tier), and commits
  * the pass only if it applied something and did **not** raise the compile error count;
  * otherwise the loop stops (a rolled-back pass is simply not committed). The loop also
  * stops at its fixpoint (a pass that applies nothing) or after {@link MAX_PASSES}. Then
@@ -48,7 +57,7 @@ export function l1Pipeline(source: string): L1Result {
 
   for (let pass = 0; pass < MAX_PASSES; pass++) {
     const { diagnostics } = compile(current);
-    const fixes = diagnostics.flatMap((d) => d.fixes ?? []);
+    const fixes = l1Fixes(diagnostics);
     if (fixes.length === 0) break; // fixpoint: nothing left to fix
 
     const report = applyFixes(current, fixes); // default tier = machine-applicable only

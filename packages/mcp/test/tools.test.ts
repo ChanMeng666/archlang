@@ -16,7 +16,15 @@ import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { ERROR_CATALOG, PLAN_JSON_SCHEMA, PNG_PREVIEW_WIDTH, planToJson } from "@chanmeng666/archlang";
+import {
+  compile,
+  ERROR_CATALOG,
+  type FixSuggestion,
+  PLAN_JSON_SCHEMA,
+  PNG_PREVIEW_WIDTH,
+  planToJson,
+  rankFixes,
+} from "@chanmeng666/archlang";
 import { PNG_MAX_WIDTH, PNG_MIN_WIDTH } from "../src/png.js";
 import { decodePlanHash, PLAYGROUND_ORIGIN, planLinks } from "@chanmeng666/archlang/link";
 import { describe, expect, it } from "vitest";
@@ -408,6 +416,22 @@ const PLACEHOLDER_ONLY = `plan "Ph" {
 `;
 
 /**
+ * A door written 25 mm past a meeting wall (card SR.17): `E_OPENING_NIB` carries two
+ * `maybe-incorrect` moves over one span, nearer first (`at 2050`, 525 mm away, then `at 950`,
+ * 575 mm away), and `rankFixes` orders them the other way (the shorter edit first). So array
+ * order and ranked order disagree on the first alternative, which is what tells the two apart.
+ */
+const NIB_TWO_WAYS = `plan "nib-two-ways" {
+  units mm
+  room id=a at (0,0) size 4000x3000
+  room id=b at (4000,0) size 3000x3000
+  walls from rooms exterior 200 partition 100
+  wall id=t partition thickness 100 { (4000,1500) (7000,1500) }
+  door between a and b at 1525 from start width 800
+}
+`;
+
+/**
  * The ROLLBACK fixture. The wall nearest the off-wall door is explicitly `id=exterior`,
  * which collides with the `exterior` *category* of the second wall — so the off-wall
  * fix's `on exterior at …` rewrite resolves to TWO walls and raises `E_ATTACH_WALL_REF`.
@@ -473,6 +497,38 @@ describe("fix tool (bounded fixpoint)", () => {
     expect(unsafe.source).not.toBe(AMBIGUOUS);
     expect(unsafe.source as string).toContain("on wa at 50%");
   });
+
+  it("(v) of two alternatives on one diagnostic, applies the one `archlang fix --unsafe` takes (SR.17)", async () => {
+    const client = await connect();
+    // Precondition: one diagnostic, two alternatives, and `rankFixes` puts the second first.
+    const diags = compile(NIB_TWO_WAYS, { noCache: true }).diagnostics.filter((d) => d.code === "E_OPENING_NIB");
+    expect(diags).toHaveLength(1);
+    const texts = (fixes: FixSuggestion[]) => fixes.map((f) => f.edits.map((e) => e.newText).join());
+    expect(texts(diags[0]!.fixes ?? [])).toEqual(["at 2050 from start", "at 950 from start"]);
+    expect(texts(rankFixes(diags[0]!.fixes ?? []))).toEqual(["at 950 from start", "at 2050 from start"]);
+
+    const out = await call(client, "fix", { source: NIB_TWO_WAYS, unsafe: true });
+    const dir = mkdtempSync(join(tmpdir(), "mcp-fix-ranked-"));
+    try {
+      const file = join(dir, "plan.arch");
+      writeFileSync(file, NIB_TWO_WAYS, "utf8");
+      const cli = spawnSync(
+        process.execPath,
+        ["--import", "tsx", join(REPO, "src", "cli.ts"), "fix", file, "--unsafe", "--dry-run", "--json"],
+        { cwd: REPO, encoding: "utf8" },
+      );
+      expect(cli.stdout, cli.stderr).not.toBe("");
+      const arch = JSON.parse(cli.stdout) as Record<string, unknown>;
+      // The same fix, the same nothing-skipped, the same edited source.
+      expect(out.applied).toEqual(arch.applied);
+      expect(out.skipped).toEqual(arch.skipped);
+      expect(out.skipped).toEqual([]);
+      expect(out.output_hash).toBe(arch.output_hash);
+      expect(out.source as string).toContain("door between a and b at 950 from start width 800");
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  }, 30000);
 
   it("(iv) rolls back a pass that would RAISE the error count", async () => {
     const client = await connect();
