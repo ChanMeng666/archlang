@@ -120,7 +120,9 @@ to ask for help.
   the script also answers `POST /api/event`, the page's events from a closed list
   (`playground/worker/event-core.ts`) into a second dataset, `archlang_playground`, rate-limited by
   `RATE_EVENT` (2606); and the editor's "Send this plan to improve ArchLang" stores a plan through
-  this same `POST /api/share`, then counts one `contribute` event with the link's id. No new store.
+  this same `POST /api/share` with `{ z, contribute: true }`, and the Worker writes one `contribute`
+  point itself, with the id it minted and the codes of its own compile; the page sends no event for
+  it. No new store.
 - **Logs:** Workers Logs on, invocation logs off. The script logs only an internal error's name,
   never a plan, and invocation logs would record each request's metadata.
 - **Caching:** `/api/share/<id>` is `immutable` (the plan behind an id never changes). `/s/<id>`

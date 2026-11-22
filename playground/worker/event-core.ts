@@ -2,21 +2,23 @@
  * The playground's page events (ruling RM-D86, card FW4): the closed lists the page sends from and
  * the Worker accepts, and the one reader both hold to them. Pure: no DOM, no binding, no clock, so
  * the page (`playground/src/telemetry.ts`) and the Worker (`worker/app.ts`, `POST /api/event`)
- * import the same rules, and `playground/test/event-core.test.ts` pins them.
+ * import the same rules, and `playground/test/event-worker.test.ts` pins them.
  *
  * An event is a name from {@link EVENT_NAMES} and, by name, one word from a fixed list (a compile's
  * outcome, an export's format, a link's kind) and the catalogued diagnostic codes it concerns.
- * Nothing else: no plan text, label, room or element id, no cookie and no account. The one id any
- * event carries is a `contribute`'s short-link id, the link the user has just asked to send
- * (ruling RM-D87, card FW5).
+ * Nothing else: no plan text, label, room or element id, no cookie and no account, and no page
+ * event carries an id of any kind.
+ *
+ * A contributed plan (ruling RM-D87, card FW5) is not a page event: the page cannot send one. The
+ * Worker writes its point itself, in `POST /api/share` with `contribute: true`, with the id it
+ * minted and the codes of the compile it ran ({@link contributionPoint}), into the same dataset.
  */
-import { isShareId } from "archlang/share";
 
 /** Where the page sends an event (`run_worker_first`'s `/api/*` already covers it). */
 export const EVENT_PATH = "/api/event";
 
-/** Every event the Worker counts. Anything else is a 400 and writes nothing. */
-export const EVENT_NAMES = ["compile", "export", "view_3d", "share", "fix_applied", "contribute"] as const;
+/** Every event the page may send. Anything else is a 400 and writes nothing. */
+export const EVENT_NAMES = ["compile", "export", "view_3d", "share", "fix_applied"] as const;
 export type EventName = (typeof EVENT_NAMES)[number];
 
 /** A render's verdict: it drew (`ok`, warnings or not) or it has an error. */
@@ -34,7 +36,7 @@ export type ExportFormat = (typeof EXPORT_FORMATS)[number];
 export const SHARE_KINDS = ["short", "full", "embed"] as const;
 export type ShareKind = (typeof SHARE_KINDS)[number];
 
-/** The most codes one event carries (after dedupe), as the MCP Worker's result point holds them. */
+/** The most codes one point carries (after dedupe), as the MCP Worker's result point holds them. */
 export const MAX_EVENT_CODES = 20;
 
 /** The largest body `POST /api/event` reads; twenty codes and the rest fit in well under it. */
@@ -49,8 +51,7 @@ export type PageEvent =
   | { e: "export"; fmt: ExportFormat }
   | { e: "view_3d" }
   | { e: "share"; fmt: ShareKind }
-  | { e: "fix_applied"; codes: string[] }
-  | { e: "contribute"; id: string; codes: string[] };
+  | { e: "fix_applied"; codes: string[] };
 
 /**
  * The shape of a catalogued code. Only a pre-filter: the Worker keeps a code only when the core's
@@ -59,7 +60,7 @@ export type PageEvent =
 const CODE_SHAPE = /^[EW]_[A-Z0-9_]{1,64}$/;
 
 /**
- * Codes as an event carries them: the strings that are codes (by `isCode`, else by shape), each
+ * Codes as a point carries them: the strings that are codes (by `isCode`, else by shape), each
  * once, sorted, at most {@link MAX_EVENT_CODES}. A diagnostic with no code adds nothing.
  */
 export function eventCodes(
@@ -74,14 +75,13 @@ export function eventCodes(
 const listed = <T extends string>(list: readonly T[], v: unknown): v is T =>
   typeof v === "string" && (list as readonly string[]).includes(v);
 
-/** The keys each event may carry beside `e`; any other key refuses the body. */
+/** The keys each event may carry beside `e`; any other key (an `id` among them) refuses the body. */
 const KEYS: Record<EventName, readonly string[]> = {
   compile: ["outcome", "codes"],
   export: ["fmt"],
   view_3d: [],
   share: ["fmt"],
   fix_applied: ["codes"],
-  contribute: ["id", "codes"],
 };
 
 /**
@@ -112,18 +112,24 @@ export function readEvent(body: unknown, isCode: (code: string) => boolean): Pag
       return listed(SHARE_KINDS, b.fmt) ? { e, fmt: b.fmt } : null;
     case "fix_applied":
       return { e, codes };
-    case "contribute":
-      return typeof b.id === "string" && isShareId(b.id) ? { e, id: b.id, codes } : null;
   }
 }
 
 /**
- * The Analytics Engine point for an event: `blobs` are the name, then the one word it carries
- * (the outcome, the format or link kind, a `contribute`'s short-link id, else ""), its codes
- * joined with ";", and the UTC day; the index is the name.
+ * The Analytics Engine point for a page event: `blobs` are the name, then the one word it carries
+ * (the outcome, the format or link kind, else ""), its codes joined with ";", and the UTC day; the
+ * index is the name.
  */
 export function eventPoint(ev: PageEvent, day: string): { blobs: string[]; indexes: string[] } {
-  const word = "outcome" in ev ? ev.outcome : "fmt" in ev ? ev.fmt : "id" in ev ? ev.id : "";
+  const word = "outcome" in ev ? ev.outcome : "fmt" in ev ? ev.fmt : "";
   const codes = "codes" in ev ? ev.codes.join(";") : "";
   return { blobs: [ev.e, word, codes, day], indexes: [ev.e] };
+}
+
+/**
+ * The point the Worker writes for a contributed plan, beside the short link it stored: the id it
+ * minted and the codes it derived (already {@link eventCodes}), in the page events' layout.
+ */
+export function contributionPoint(id: string, codes: readonly string[], day: string) {
+  return { blobs: ["contribute", id, codes.join(";"), day], indexes: ["contribute"] };
 }

@@ -41,6 +41,27 @@ export const RATE_PERIOD_SECONDS = 60;
  */
 export const NOT_A_PLAN_CODES: readonly string[] = ["E_PARSE", "E_STEP_LIMIT"];
 
+/**
+ * A `POST /api/share` body: the `#z=` payload itself (what Copy short link sends), or, for a
+ * contributed plan (ruling RM-D87), the JSON object `{ "z": <payload>, "contribute": true }`. A
+ * payload is base64url, so it never starts with `{`. Null: a JSON body of any other shape.
+ */
+export function readShareBody(body: string): { payload: string; contribute: boolean } | null {
+  const text = body.trim();
+  if (!text.startsWith("{")) return { payload: text, contribute: false };
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(text);
+  } catch {
+    return null;
+  }
+  if (parsed === null || typeof parsed !== "object" || Array.isArray(parsed)) return null;
+  const { z, contribute, ...rest } = parsed as Record<string, unknown>;
+  if (Object.keys(rest).length > 0 || typeof z !== "string") return null;
+  if (contribute !== undefined && contribute !== true) return null;
+  return { payload: z.trim(), contribute: contribute === true };
+}
+
 /** A title longer than this is cut, so the KV metadata stays far under its 1024-byte limit. */
 export const TITLE_MAX = 120;
 /** What a plan with no usable name is called on its card. */

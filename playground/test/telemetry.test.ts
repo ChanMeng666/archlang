@@ -7,7 +7,6 @@ import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 import {
-  asksNotToTrack,
   COMPILE_IDLE_MS,
   COMPILE_REPEAT_MS,
   createPageEvents,
@@ -67,9 +66,6 @@ describe("the guard: nothing is sent when the browser asks, or cannot beacon", (
     expect(mayCount({ sendBeacon: beacon, webdriver: true })).toBe(false);
     expect(mayCount({ sendBeacon: beacon, globalPrivacyControl: false, doNotTrack: "0" })).toBe(true);
     expect(mayCount({ sendBeacon: beacon, doNotTrack: "unspecified" })).toBe(true);
-    expect(asksNotToTrack({ globalPrivacyControl: true })).toBe(true);
-    expect(asksNotToTrack({ doNotTrack: "1" })).toBe(true);
-    expect(asksNotToTrack({ webdriver: true })).toBe(false);
   });
 
   it("under GPC or DNT neither a count nor a compile is sent, and no timer is even set", () => {
@@ -146,8 +142,28 @@ describe("the compile debounce: once the editor is still, once per outcome and c
 });
 
 describe("where the sender loads: never the view path, never the embed", () => {
-  /** The static import closure of a source module (relative imports, `import … from` and `export … from`). */
-  function staticClosure(entry: string): Set<string> {
+  /** A relative specifier from `file`, as the source file it names (`.ts`, else `.js`), or null. */
+  function resolveSpec(file: string, spec: string): string | null {
+    const bare = spec.replace(/\.js$/, "");
+    for (const ext of [".ts", ".js"]) {
+      const p = join(dirname(file), bare + ext);
+      try {
+        readFileSync(p);
+        return p;
+      } catch {
+        /* try the next extension */
+      }
+    }
+    return null;
+  }
+
+  /**
+   * The import closure of a source module over relative specifiers: `import … from`,
+   * `export … from` and bare `import "…"` (a type-only statement is erased at build and loads
+   * nothing), and with `lazy` every `import("…")` too, the chunks a page may load later. A
+   * `typeof import("…")` type is followed as well under `lazy`, which can only make the walk wider.
+   */
+  function closure(entry: string, lazy: boolean): Set<string> {
     const seen = new Set<string>();
     const stack = [resolve(SRC, entry)];
     while (stack.length > 0) {
@@ -155,41 +171,37 @@ describe("where the sender loads: never the view path, never the embed", () => {
       if (seen.has(file)) continue;
       seen.add(file);
       const text = readFileSync(file, "utf8");
+      const specs: string[] = [];
       for (const m of text.matchAll(/\bfrom\s+"(\.{1,2}\/[^"]+)"/g)) {
         // The statement this `from` ends: a type-only one is erased at build and loads nothing.
         const at = Math.max(text.lastIndexOf("import ", m.index), text.lastIndexOf("export ", m.index));
         if (at < 0 || /^(?:import|export) type /.test(text.slice(at, at + 12))) continue;
-        const spec = m[1]!.replace(/\.js$/, "");
-        for (const ext of [".ts", ".js"]) {
-          const p = join(dirname(file), spec + ext);
-          try {
-            readFileSync(p);
-            stack.push(p);
-            break;
-          } catch {
-            /* try the next extension */
-          }
-        }
+        specs.push(m[1]!);
       }
-      for (const m of text.matchAll(/^\s*import\s+"(\.{1,2}\/[^"]+\.(?:ts|js))"/gm))
-        stack.push(join(dirname(file), m[1]!));
+      for (const m of text.matchAll(/^\s*import\s+"(\.{1,2}\/[^"]+\.(?:ts|js))"/gm)) specs.push(m[1]!);
+      if (lazy) for (const m of text.matchAll(/\bimport\(\s*"(\.{1,2}\/[^"]+)"\s*\)/g)) specs.push(m[1]!);
+      for (const spec of specs) {
+        const p = resolveSpec(file, spec);
+        if (p) stack.push(p);
+      }
     }
     return seen;
   }
   const isSender = (f: string) => /[\\/]telemetry\.ts$/.test(f) || /[\\/]contribute\.ts$/.test(f);
 
   it("main.ts (the view path) reaches it only through import()", () => {
-    const closure = [...staticClosure("main.ts")];
-    expect(closure.length).toBeGreaterThan(5);
-    expect(closure.filter(isSender)).toEqual([]);
-    expect(readFileSync(join(SRC, "main.ts"), "utf8")).toContain('import("./telemetry.js")');
+    const eager = [...closure("main.ts", false)];
+    expect(eager.length).toBeGreaterThan(5);
+    expect(eager.filter(isSender)).toEqual([]);
+    // The lazy walk does reach it: the walker sees import(), so the embed's test below can fail.
+    expect([...closure("main.ts", true)].filter(isSender).length).toBeGreaterThan(0);
   });
 
   it("embed.ts (other people's pages) never reaches it, statically or lazily", () => {
-    const closure = [...staticClosure("embed.ts")];
-    expect(closure.length).toBeGreaterThan(1);
-    expect(closure.filter(isSender)).toEqual([]);
-    for (const f of closure) expect(readFileSync(f, "utf8"), f).not.toMatch(/sendBeacon|\/api\/event/);
+    const reach = [...closure("embed.ts", true)];
+    expect(reach.length).toBeGreaterThan(1);
+    expect(reach.filter(isSender)).toEqual([]);
+    for (const f of reach) expect(readFileSync(f, "utf8"), f).not.toMatch(/sendBeacon|\/api\/event/);
   });
 
   it("only telemetry.ts sends", () => {

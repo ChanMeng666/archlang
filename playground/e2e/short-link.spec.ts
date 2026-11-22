@@ -30,10 +30,17 @@ import {
  * short link opens in view mode (it names a plain `#z=` link), so the editor is opened to read it.
  */
 
-/** Route `/api/share…` and `/s/…` to the Worker's handler over a fresh store; returns the store. */
-async function serveShortLinks(page: Page): Promise<Map<string, { value: string; metadata: ShareMeta | null }>> {
+/**
+ * Route `/api/share…` and `/s/…` to the Worker's handler over a fresh store; returns the store.
+ * `events`, when given, collects what the handler writes to its page-events dataset (`EVENTS`).
+ */
+async function serveShortLinks(
+  page: Page,
+  events?: Array<{ blobs?: string[] }>,
+): Promise<Map<string, { value: string; metadata: ShareMeta | null }>> {
   const store = new Map<string, { value: string; metadata: ShareMeta | null }>();
   const env: Env = {
+    ...(events ? { EVENTS: { writeDataPoint: (p: { blobs?: string[] }) => void events.push(p) } } : {}),
     ASSETS: { fetch: async () => new Response(null, { status: 404 }) },
     SHARE: {
       getWithMetadata: async <M>(key: string) => ({
@@ -139,26 +146,17 @@ test.describe("short links", () => {
   });
 
   // Ruling RM-D87 (card FW5): the offer under the diagnostics drawer sends nothing until its dialog
-  // is confirmed; then it makes a short link as Copy short link does. Page events (RM-D86) are off
-  // in an automated browser (`navigator.webdriver`), so this page is told it is not one, and the
-  // one `contribute` event is checked too where the engine lets that be said.
+  // is confirmed; then it makes a short link as Copy short link does, asking with `contribute: true`,
+  // and the Worker's own handler marks it with the id it minted. The page sends no event for it.
   test("Send this plan to improve ArchLang: nothing until confirmed, then a short link", async ({ page }) => {
-    await page.addInitScript(() => {
-      try {
-        Object.defineProperty(navigator, "webdriver", { get: () => false, configurable: true });
-      } catch {
-        /* the engine keeps it: the event is not checked below */
-      }
-    });
-    const store = await serveShortLinks(page);
-    const events: Array<{ e?: string; id?: string; codes?: string[] }> = [];
+    const points: Array<{ blobs?: string[] }> = [];
+    const store = await serveShortLinks(page, points);
     const shares: string[] = [];
+    const events: string[] = [];
     page.on("request", (r) => {
-      if (new URL(r.url()).pathname === "/api/share") shares.push(r.method());
-    });
-    await page.route("**/api/event", async (route) => {
-      events.push(JSON.parse(route.request().postData() ?? "null"));
-      await route.fulfill({ status: 204 });
+      const path = new URL(r.url()).pathname;
+      if (path === "/api/share") shares.push(r.postData() ?? "");
+      if (path === "/api/event") events.push(r.postData() ?? "");
     });
     await gotoEdit(page);
     await setEditorSource(page, ARC_RADIUS_ERROR_PLAN);
@@ -183,14 +181,12 @@ test.describe("short links", () => {
     await page.locator("dialog.contrib-dialog .contrib-send").click();
     const link = page.locator("dialog.contrib-dialog .contrib-link");
     await expect(link).toHaveValue(/\/s\/[0-9A-Za-z]{8}$/);
-    expect(shares).toEqual(["POST"]);
+    expect(shares).toHaveLength(1);
+    expect(Object.keys(JSON.parse(shares[0]!)).sort()).toEqual(["contribute", "z"]);
     expect(store.size).toBe(1);
     const id = new URL(await link.inputValue()).pathname.slice("/s/".length);
-    if (await page.evaluate(() => navigator.webdriver === false)) {
-      await expect
-        .poll(() => events.filter((e) => e.e === "contribute"))
-        .toEqual([{ e: "contribute", id, codes: ["E_ARC_RADIUS"] }]);
-    }
+    expect(points.map((p) => p.blobs!.slice(0, 3))).toEqual([["contribute", id, "E_ARC_RADIUS"]]);
+    expect(events.filter((b) => b.includes("contribute"))).toEqual([]);
     await page.keyboard.press("Escape");
     await expect(page.locator("dialog.contrib-dialog")).toHaveCount(0);
   });

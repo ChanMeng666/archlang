@@ -47,7 +47,10 @@ export interface Env {
   SHARE_ANALYTICS?: AnalyticsEngineDataset;
   /** Per-address limit on `POST /api/event`. */
   RATE_EVENT?: RateLimit;
-  /** One data point per page event (`archlang_playground`): name, word, codes, day (event-core.ts). */
+  /**
+   * `archlang_playground`: one data point per page event (name, word, codes, day) and one per
+   * contributed plan, written by `POST /api/share` (event-core.ts).
+   */
   EVENTS?: AnalyticsEngineDataset;
 }
 

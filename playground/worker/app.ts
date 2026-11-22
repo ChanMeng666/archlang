@@ -5,7 +5,8 @@
  * (`env.ASSETS`) so a 404 is the asset layer's own. Every other path is served as a static asset
  * without this code running.
  *
- *   POST /api/share        body: a `#z=` payload → `{ id, url }`, the plan stored in KV
+ *   POST /api/share        body: a `#z=` payload → `{ id, url }`, the plan stored in KV; or
+ *                          `{ z, contribute: true }`, the same, plus one `contribute` point
  *   GET  /api/share/<id>   → `{ id, z }` (embed.html's `#s=<id>`)
  *   GET  /s/<id>           → a small HTML page: the card metadata, then on to `/#z=<payload>`
  *   GET  /s/<id>.png       → the 1200×630 card image: the plan as `compile()` draws it
@@ -27,13 +28,22 @@ import {
   SHORT_LINK_PAYLOAD_CAP_CHARS,
   planTitle,
   RATE_PERIOD_SECONDS,
+  readShareBody,
   SHARE_PER_PERIOD,
   SOURCE_CAP_BYTES,
   shareKey,
   sharePageHtml,
   sourceHash,
 } from "./share-core.js";
-import { EVENT_BODY_CAP_BYTES, EVENT_PATH, EVENT_PER_PERIOD, eventPoint, readEvent } from "./event-core.js";
+import {
+  contributionPoint,
+  EVENT_BODY_CAP_BYTES,
+  EVENT_PATH,
+  EVENT_PER_PERIOD,
+  eventCodes,
+  eventPoint,
+  readEvent,
+} from "./event-core.js";
 import { PREVIEW_HEIGHT, PREVIEW_WIDTH, previewSvg, type Rasterize } from "./preview.js";
 import type { Env, ExecutionContext, ShareMeta } from "./types.js";
 
@@ -156,10 +166,17 @@ async function allowed(limiter: Env["RATE_SHARE"] | Env["RATE_EVENT"], req: Requ
 /** The events counted: one data point each, holding the event, the id and the UTC day. */
 export type ShareEvent = "create" | "resolve" | "resolve-json" | "preview" | "refused";
 
+/** Whether a request carries Global Privacy Control (`Sec-GPC: 1`) or Do Not Track (`DNT: 1`). */
+export const asksNotToTrack = (req: Request): boolean =>
+  req.headers.get("sec-gpc")?.trim() === "1" || req.headers.get("dnt")?.trim() === "1";
+
+/** Today, UTC, as the counters' last blob holds it. */
+const utcDay = (): string => new Date().toISOString().slice(0, 10);
+
 function count(env: Env, event: ShareEvent, idOrReason: string): void {
   try {
     env.SHARE_ANALYTICS?.writeDataPoint({
-      blobs: [event, idOrReason, new Date().toISOString().slice(0, 10)],
+      blobs: [event, idOrReason, utcDay()],
       indexes: [event],
     });
   } catch {
@@ -206,6 +223,9 @@ async function lookup(env: Env, id: string): Promise<{ payload: string; meta: Sh
 
 /** Build the handler over a core, and the card renderer when there is one. */
 export function makeShareWorker(core: Core, preview: PreviewDeps = {}) {
+  /** A catalogued code: the core's own catalogue decides, never a pattern alone. */
+  const isCode = (code: string): boolean => Object.hasOwn(core.ERROR_CATALOG, code);
+
   /**
    * `POST /api/share`. The payload must decode, inflate to UTF-8 within the source cap, and be a
    * plan the core reads: `compile()` is the core's public route to its parser, and a plan that
@@ -237,7 +257,12 @@ export function makeShareWorker(core: Core, preview: PreviewDeps = {}) {
       )!;
       return refuse(413, "payload_too_large", d.message, { diagnostic: core.diagnosticToJson("", d) });
     }
-    const payload = body.trim();
+    const ask = readShareBody(body);
+    if (!ask) {
+      count(env, "refused", "payload");
+      return refuse(400, "bad_payload", "the body is not a #z= payload nor { z, contribute: true }");
+    }
+    const { payload, contribute } = ask;
     const source = await decodePayload(payload, SOURCE_CAP_BYTES);
     if (source === "bad_payload") {
       count(env, "refused", "payload");
@@ -275,24 +300,46 @@ export function makeShareWorker(core: Core, preview: PreviewDeps = {}) {
         continue;
       }
       count(env, "create", id);
+      // A contributed plan (ruling RM-D87): marked here, with the id this Worker minted and the
+      // codes of the compile it just ran, never anything the client says. The user asked for it in
+      // the dialog, so it is written whatever privacy signal the request carries.
+      if (contribute) {
+        try {
+          env.EVENTS?.writeDataPoint(
+            contributionPoint(
+              id,
+              eventCodes(
+                result.diagnostics.map((d) => d.code),
+                isCode,
+              ),
+              utcDay(),
+            ),
+          );
+        } catch {
+          /* telemetry never fails a request */
+        }
+      }
       return json(200, { id, url: `${new URL(req.url).origin}/s/${id}` }, { "cache-control": "no-store" });
     }
     return refuse(503, "unavailable", "no free id for this plan");
   }
-
-  /** A catalogued code: the core's own catalogue decides, never a pattern alone. */
-  const isCode = (code: string): boolean => Object.hasOwn(core.ERROR_CATALOG, code);
 
   /**
    * `POST /api/event` (ruling RM-D86, card FW4): one page event, read by `readEvent`
    * (event-core.ts) and written as one point to `archlang_playground` (`EVENTS`). The address is
    * the rate limiter's key and nothing else. Every refusal writes nothing: another site's request
    * (403), an address over its rate (429), a body over {@link EVENT_BODY_CAP_BYTES} (413), and a
-   * body that is not exactly one listed event (400). A missing binding (a test, a bare local run)
-   * still answers 204: the page never waits on, or reads, the answer.
+   * body that is not exactly one listed event (400). A request carrying `Sec-GPC: 1` or `DNT: 1`
+   * is answered 204 and writes nothing, whatever it holds: the page sends none then, and this is
+   * the backstop. A missing binding (a test, a bare local run) still answers 204: the page never
+   * waits on, or reads, the answer.
    */
   async function event(req: Request, env: Env): Promise<Response> {
     if (crossSite(req)) return refuse(403, "cross_origin", "events come from the playground itself");
+    if (asksNotToTrack(req)) {
+      await req.body?.cancel().catch(() => {});
+      return new Response(null, { status: 204, headers: { ...BASE_HEADERS, "cache-control": "no-store" } });
+    }
     if (!(await allowed(env.RATE_EVENT, req))) {
       const d = core.rateLimited("event", EVENT_PER_PERIOD, RATE_PERIOD_SECONDS);
       return refuse(429, "rate_limited", d.message, { headers: { "retry-after": String(RATE_PERIOD_SECONDS) } });
@@ -308,7 +355,7 @@ export function makeShareWorker(core: Core, preview: PreviewDeps = {}) {
     const ev = readEvent(parsed, isCode);
     if (!ev) return refuse(400, "bad_event", "not an event this playground counts");
     try {
-      env.EVENTS?.writeDataPoint(eventPoint(ev, new Date().toISOString().slice(0, 10)));
+      env.EVENTS?.writeDataPoint(eventPoint(ev, utcDay()));
     } catch {
       /* telemetry never fails a request */
     }

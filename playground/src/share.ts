@@ -107,12 +107,15 @@ export const SHORT_LINK_TIMEOUT_MS = 5000;
 /**
  * Ask this site's server for a short link to the plan in `hash` (a `#z=` fragment). Resolves to
  * the `/s/<id>` URL, or null on any failure (no `#z=`, offline, refused, slow, a host with no
- * server such as `vite preview`) so the caller falls back to the full link.
+ * server such as `vite preview`) so the caller falls back to the full link. `contribute`: the
+ * plan is sent to improve ArchLang (ruling RM-D87), so the body is `{ z, contribute: true }` and the
+ * server marks the link it stores as a contribution itself.
  */
 export async function createShortLink(
   hash: string,
   origin: string = location.origin,
   timeoutMs: number = SHORT_LINK_TIMEOUT_MS,
+  contribute = false,
 ): Promise<string | null> {
   const z = hash.match(/^#z=([A-Za-z0-9_-]+)$/);
   if (!z) return null;
@@ -122,7 +125,7 @@ export async function createShortLink(
     const res = await fetch(`${origin}/api/share`, {
       method: "POST",
       headers: { "content-type": "text/plain;charset=utf-8" },
-      body: z[1],
+      body: contribute ? JSON.stringify({ z: z[1], contribute: true }) : z[1],
       signal: abort.signal,
     });
     if (!res.ok) return null;

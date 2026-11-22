@@ -1,8 +1,9 @@
 /**
  * The page's events (ruling RM-D86, card FW4): what the playground counts, sent to its own Worker
  * (`POST /api/event`, worker/event-core.ts) with `navigator.sendBeacon`, and nothing else. An event
- * is a name, one listed word and the catalogued codes it concerns: never the plan, a label, an id
- * (but a contribution's short link, ruling RM-D87), a cookie or an account.
+ * is a name, one listed word and the catalogued codes it concerns: never the plan, a label, an id,
+ * a cookie or an account. A contributed plan (ruling RM-D87) is no event of this page's: the
+ * Worker marks it itself (contribute.ts).
  *
  * Nothing is sent when the browser asks not to be tracked (`navigator.globalPrivacyControl`, or
  * `doNotTrack === "1"`), by an automated browser (`navigator.webdriver`: the e2e suites and the
@@ -39,11 +40,6 @@ export function mayCount(nav: EventNavigator | undefined): boolean {
   if (!nav || typeof nav.sendBeacon !== "function") return false;
   if (nav.globalPrivacyControl === true || nav.doNotTrack === "1") return false;
   return nav.webdriver !== true;
-}
-
-/** Whether the browser sends Global Privacy Control or Do Not Track (the contribution dialog says so). */
-export function asksNotToTrack(nav: EventNavigator | undefined): boolean {
-  return nav?.globalPrivacyControl === true || nav?.doNotTrack === "1";
 }
 
 /** What a sender runs on: the browser's, or a test's fakes. */

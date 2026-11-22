@@ -37,12 +37,12 @@ two entries.
 
 | Route | Answers |
 |-------|---------|
-| `POST /api/share` | body: a `#z=` payload (≤ 64 KiB, inflating to ≤ 64 KiB, a plan the parser accepts) → `{ id, url }`; refusals are JSON with a stable `error.code` |
+| `POST /api/share` | body: a `#z=` payload (≤ 64 KiB, inflating to ≤ 64 KiB, a plan the parser accepts) → `{ id, url }`; refusals are JSON with a stable `error.code`. A contributed plan sends `{ z, contribute: true }` instead, and the Worker writes one `contribute` point to `EVENTS` itself, with the id it minted and the catalogued codes of its own compile (ruling RM-D87) |
 | `GET /api/share/<id>` | `{ id, z }`, `immutable` (what `embed.html#s=<id>` reads) |
 | `GET /s/<id>` | HTML: Open Graph/Twitter card metadata, then `location.replace("/#z=<payload>")`; `max-age=86400`, `noindex` |
 | `GET /s/<id>.png` | the 1200×630 card image (`og:image`): the plan as `compile()` draws it, rasterised by `@resvg/resvg-wasm` with the core's Roboto; edge-cached, `immutable` |
 | `GET /s/<unknown>` | a 404 HTML page linking to the playground |
-| `POST /api/event` | one page event (≤ 1 KiB, a name from the closed list in `playground/worker/event-core.ts`) → 204; anything else 400, another site 403, over the rate 429, each writing nothing (ruling RM-D86) |
+| `POST /api/event` | one page event (≤ 1 KiB, a name from the closed list in `playground/worker/event-core.ts`) → 204; anything else (a `contribute` or an `id` among it) 400, another site 403, over the rate 429, each writing nothing; a request with `Sec-GPC: 1` or `DNT: 1` gets 204 and writes nothing (ruling RM-D86) |
 
 | Binding | What |
 |---------|------|
@@ -52,7 +52,7 @@ two entries.
 | `RATE_PREVIEW` | rate limit, `namespace_id` 2604: 120 card-image cache misses per address per 60 s |
 | `SHARE_ANALYTICS` | Analytics Engine dataset `archlang_share`: one point per create and resolve, `[event, id, day]` |
 | `RATE_EVENT` | rate limit, `namespace_id` 2606: 120 page events per address per 60 s |
-| `EVENTS` | Analytics Engine dataset `archlang_playground`: one point per page event, `[event, outcome or format or link kind or a contribution's short-link id, codes, day]`, index the event; created on the first write |
+| `EVENTS` | Analytics Engine dataset `archlang_playground`: one point per page event, `[event, outcome or format or link kind, codes, day]`, and one per contributed plan, `[contribute, id, codes, day]`, written by `POST /api/share`; index the event; created on the first write |
 
 Workers Logs are on with invocation logs off: the script logs an internal error's name and nothing
 else, and invocation logs would record request metadata. A removal request is answered with
