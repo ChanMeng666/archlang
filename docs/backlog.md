@@ -311,6 +311,43 @@ Done by #1005, with no budget raised. The compile worker's `lint`, which no view
 
 After #1002 (3.19) the first use measured 466,680 B against `firstUsePathBudget` 468,000 (1,320 B left), and three open PRs add to it: #1001 (`W_SEAT_FACING_WALL`, ~+954 B), #1003 (CV14 examples, ~+165 B) and #1004 (`W_STAIR_NO_VOID`, ~+281 B), about 80 B over together. #1002's residue named what is left on the path: the fix column Copy for LLM reads and the worker's `lint`, which only the editor runs. **Gate:** at least ~3,000 B gzip off the first use, the compiler and embed budgets met and not raised, the digest unmoved, the playground's behaviour the same.
 
+## Found while landing 1.68.0 (arc openings, arc rooms, telemetry; 2026-11-23)
+
+### ARC1b · The model swing of a door on an arc still comes from the tangent — `decision`
+
+#1019 draws a hinged or double door on a curved wall with its leaf hung on a jamb of the cut, but the
+model's swing (`doorSwing`/`doorLeaves`, read by lint, `describe --facts symmetry`, `repair()` and the
+3D package) is still the tangent construction, so the drawn leaf stands off the measured one by up to
+62.5 mm on the shipped plans (`aquarium`). Moving the model onto the arc moves `describe --facts
+symmetry`'s `full.exact` (a hinge leaves the half-millimetre lattice), which ADR 0023 decision 7 does
+not permit: it needs the owner's ruling for a second permitted movement before it is built.
+
+### ARC1c · Labels may sit closer to a curved opening's ink than to the footprint they avoid — `todo`
+
+The annotation passes read a curved opening's old tangent footprint (Ruling B in #1019), so no label
+moved; the drawn ink can be up to about `w²/8R` closer (worst measured 291.9 mm, a 1700 mm double door
+on R1300, over 7,168 generated drum plans; 0 on the corpus). Give the annotation passes the true ink
+as an obstacle without moving any label on plans whose openings are straight.
+
+### ARC2b · `W_ROOM_NOT_ENCLOSED` counts an arc wall's chord as cover for a straight room edge — `todo`
+
+Pre-existing, reachable since #1023: the line branch of `largestPerimeterGapEdges` (`src/analyze.ts`)
+treats an arc wall as its chord, so a two-vertex room on `wall { (0,0) arc (4000,0) radius 2500 cw }`
+reads enclosed with its 4 m chord open.
+
+### ARC3b · Net-area measurement mis-measures some rotated rings — `todo`
+
+Found by the #1020 review (pre-existing, same on main): a ring of rooms rotated 17° reports 18.07 m²
+unassigned at 87 % cover where 3.64 m² is true, and at 17 m / 73.3 m offsets the measurement gives no
+answer, so the face is skipped and coverage still says `ran`.
+
+### FW5b · A plan that does not parse cannot be contributed — `decision`
+
+#1021 builds "Send this plan to improve ArchLang" on short links (ruling RM-D87), and `POST /api/share`
+refuses `E_PARSE` / `E_STEP_LIMIT` plans, so the most common failure cannot be sent; the offer is
+hidden for them. Collecting them needs a change to the short-link store's rule (or a separate store):
+the owner's decision.
+
 ## Docs-site E2E
 
 ### DE.1 · The two /examples sheet tests ran 29 to 32 s against a 30 s timeout: done by #1011, waiting to be archived — `note`
