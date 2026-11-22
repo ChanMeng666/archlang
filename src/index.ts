@@ -206,6 +206,7 @@ export type {
   FenceSummary,
   SectionSummary,
   RoomSummary,
+  FloorArcSummary,
   DoorSummary,
   DoorKind,
   WindowKind,

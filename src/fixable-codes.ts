@@ -142,6 +142,12 @@ export const FIX_PRODUCERS: readonly FixProducer[] = [
     codes: { E_ARC_RADIUS: "arc-radius-min" },
   },
   {
+    producer: "src/elements/room.ts#solveRingArc",
+    stage: "compile",
+    applicability: [MA],
+    codes: { E_ROOM_ARC_RADIUS: "arc-radius-min" },
+  },
+  {
     producer: "src/fix-producers.ts#openingMoveFix",
     stage: "compile",
     applicability: [MI],

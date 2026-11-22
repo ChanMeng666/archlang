@@ -1099,7 +1099,7 @@ function placeInRing(
   if (room._ringRefused) return refuse(`the outline of "${room.id}" was refused (see its own error)`);
   if (room.circle || !rectilinear(ring))
     return refuse(
-      `"${room.id}" is ${room.circle ? "a circle room" : "a polygon room with an edge neither horizontal nor vertical"} — anchored placement needs a rectangular or rectilinear room`,
+      `"${room.id}" is ${room.circle ? "a circle room" : room.edges ? "a polygon room with an arc edge" : "a polygon room with an edge neither horizontal nor vertical"} — anchored placement needs a rectangular or rectilinear room`,
     );
   if (place.mode === "centered" || place.anchor === "center")
     return refuse(`the middle of polygon room "${room.id}" may not be floor — anchor it to a side or a corner`);

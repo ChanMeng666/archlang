@@ -416,8 +416,15 @@ function validateRoom(r: unknown, path: string, val: Validator): void {
   if (r.polygon !== undefined) {
     if (!Array.isArray(r.polygon)) val.err(`${path}/polygon`, "expected an array of points");
     else {
-      if (r.polygon.length < 3) val.err(`${path}/polygon`, "a polygon room needs at least three vertices");
-      r.polygon.forEach((pt, i) => void reqPoint(pt, `${path}/polygon/${i}`, val));
+      // A ring with an `arc` (card ARC2) needs two vertices: one arc and its closing chord.
+      const curved = r.polygon.some((pt) => isObj(pt) && pt.arc !== undefined);
+      if (r.polygon.length < (curved ? 2 : 3))
+        val.err(`${path}/polygon`, "a polygon room needs at least three vertices (two when one carries an `arc`)");
+      r.polygon.forEach((pt, i) => {
+        reqPoint(pt, `${path}/polygon/${i}`, val);
+        // On a ring every vertex has an edge arriving at it: the first, the closing edge.
+        if (isObj(pt) && pt.arc !== undefined) validateWallArc(pt.arc, `${path}/polygon/${i}/arc`, false, val);
+      });
     }
   } else {
     for (const key of ["x", "y", "width", "height"]) {

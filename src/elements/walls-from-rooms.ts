@@ -533,7 +533,7 @@ function resolvePairs(
       const why = !r
         ? "names no room written beside it: a clause names rooms of the plan or component the statement is written in"
         : r.circle || slanted?.has(x.id)
-          ? `is a ${r.circle ? "circle room" : "polygon room with an edge that is neither horizontal nor vertical"}: only rectangular and rectilinear rooms share an edge run`
+          ? `is a ${r.circle ? "circle room" : r.edges ? "polygon room with an arc edge" : "polygon room with an edge that is neither horizontal nor vertical"}: only rectangular and rectilinear rooms share an edge run`
           : excluded.has(x.id)
             ? "is left out by `except`, so no wall is derived round it"
             : undefined;

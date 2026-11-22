@@ -11,12 +11,30 @@ import { memoRoomNetAreaMm2 } from "../analyze/net-area-memo.js";
 import type { NetAreaBand } from "../analyze/net-area.js";
 import { roomAreaMm2, roomUses, type RoomBox } from "../analyze.js";
 import { roomTypeForUses } from "../plan-json.js";
-import type { RoomSummary } from "./types.js";
+import type { EdgeLoop } from "../geometry/band.js";
+import type { FloorArcSummary, RoomSummary } from "./types.js";
 import { instanceOf, r2 } from "./shared.js";
 
 /** A room's `net_area_m2` key: the rounded figure, or no key at all when it is omitted. */
 const netField = (mm2: number | undefined): { net_area_m2?: number } =>
   mm2 === undefined ? {} : { net_area_m2: r2(mm2 / 1_000_000) };
+
+/** An arc-edged ring's curved edges as `floor_arcs` (card ARC2), in ring order. */
+function floorArcs(edges: EdgeLoop): FloorArcSummary[] {
+  return edges.flatMap((e) =>
+    e.t === "arc"
+      ? [
+          {
+            from: { x: e.arc.a.x, y: e.arc.a.y },
+            to: { x: e.arc.b.x, y: e.arc.b.y },
+            center: { x: e.arc.center.x, y: e.arc.center.y },
+            r: e.arc.r,
+            sweep: e.arc.sweep,
+          },
+        ]
+      : [],
+  );
+}
 
 /** One summary per room, in element order. `adjacency[i]` is room `i`'s `adjacent` list; `bands` is the storey's wall bands. */
 export function roomSummaries(
@@ -49,6 +67,8 @@ export function roomSummaries(
           }
         : {}),
       floor_polygon: roomCorners(r).map((p) => ({ x: p.x, y: p.y })),
+      // An arc-edged ring's curves (card ARC2), beside its authored vertices: only when present.
+      ...(r.edges ? { floor_arcs: floorArcs(r.edges) } : {}),
       adjacent,
       ...instanceOf(r),
     };

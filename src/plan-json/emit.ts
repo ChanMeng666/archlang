@@ -130,8 +130,9 @@ function emitRows(p: PlanBodyJson, L: string[]): void {
   for (const r of (p.rooms ?? []).filter(own)) {
     // A polygon room round-trips through its RING, never its bounding box — emitting
     // `at`+`size` for it would quietly turn an L-shaped gallery back into a rectangle.
-    const shape =
-      r.polygon && r.polygon.length >= 3
+    const shape = r.polygon?.some((pt) => pt.arc)
+      ? `polygon ${roomRingSource(r.polygon)}`
+      : r.polygon && r.polygon.length >= 3
         ? `polygon ${r.polygon.map((pt) => `(${num(pt.x)},${num(pt.y)})`).join(" ")}`
         : `at (${num(r.x)},${num(r.y)}) size ${num(r.width)}x${num(r.height)}`;
     let line = `  room ${idAttr(r.id)}${shape}`;
@@ -183,6 +184,17 @@ function wallPoint(pt: WallPointJson): string {
   const at = `(${num(pt.x)},${num(pt.y)})`;
   if (!pt.arc) return at;
   return `arc ${at} radius ${num(pt.arc.radius)}${pt.arc.dir ? ` ${pt.arc.dir}` : ""}${pt.arc.major ? " major" : ""}`;
+}
+
+/**
+ * An arc-edged room ring as source (card ARC2): each vertex as a wall point, the first bare (its
+ * `arc`, the closing edge's, is written last, as `arc (x0,y0) …` back onto the first vertex).
+ */
+function roomRingSource(ring: readonly WallPointJson[]): string {
+  const [first, ...rest] = ring;
+  const head = `(${num(first!.x)},${num(first!.y)})`;
+  const closing = first!.arc ? [wallPoint(first!)] : [];
+  return [head, ...rest.map(wallPoint), ...closing].join(" ");
 }
 
 /**

@@ -32,6 +32,7 @@ import {
   VERTEX_EPS,
 } from "./geometry/polygon.js";
 import { arcAngleOffset, fullCircleArc } from "./geometry/arc.js";
+import type { EdgeLoop } from "./geometry/band.js";
 import { bestPaths, type Digraph } from "./algebra/paths.js";
 import { BOOLEAN, MAX_MIN, MIN_PLUS } from "./algebra/semiring.js";
 // Type-only (erased): a value import of `vertical.ts` from here is harmless, but the
@@ -1230,6 +1231,51 @@ export function largestPerimeterGapCircle(c: Point, r: number, segs: readonly Wa
     else covered.push([lo, full], [0, hi - full]);
   }
   return r * (full - mergedLength(covered));
+}
+
+/**
+ * {@link largestPerimeterGapRing} for an arc-edged room ring (card ARC2), on its EXACT `edges`:
+ * a straight edge is measured as the ring path measures it (byte for byte, `edgeWallCover`), and
+ * an arc edge as {@link largestPerimeterGapCircle} measures a circle, by angle against the arc
+ * walls concentric with it (centre and radius within `tol`), never by its tessellation's facets,
+ * which no wall centreline is parallel to. An admitted wall arc covers the angles between its two
+ * endpoints along the room's arc (from the room arc's start, in its direction; either way round,
+ * since a wall may run against the ring), clipped to the room arc's sweep; the edge's gap is
+ * `r × (|sweep| − covered)`. The worst edge is the answer, as on any ring.
+ */
+export function largestPerimeterGapEdges(edges: EdgeLoop, segs: readonly WallSegment[], tol: number): number {
+  let worst = 0;
+  for (const e of edges) {
+    let gap: number;
+    if (e.t === "line") {
+      const len = Math.hypot(e.b.x - e.a.x, e.b.y - e.a.y);
+      if (len === 0) continue;
+      gap = len - mergedLength(edgeWallCover(e.a, e.b, segs, tol));
+    } else {
+      const arc = e.arc;
+      const mag = Math.abs(arc.sweep);
+      const covered: Array<[number, number]> = [];
+      for (const s of segs) {
+        const w = s.arc;
+        if (!w) continue;
+        if (Math.hypot(w.center.x - arc.center.x, w.center.y - arc.center.y) > tol) continue;
+        if (Math.abs(w.r - arc.r) > tol) continue;
+        // Walk the wall arc in the room arc's direction: from `a` when they turn alike, else from `b`.
+        const alike = w.sweep >= 0 === arc.sweep >= 0;
+        const lo = arcAngleOffset(arc, alike ? w.a : w.b);
+        const len = Math.abs(w.sweep);
+        // The interval, and its copy one turn back (a start just short of a full turn is near 0).
+        for (const start of [lo, lo - 2 * Math.PI]) {
+          const a = Math.max(0, start);
+          const b = Math.min(mag, start + len);
+          if (b > a) covered.push([a, b]);
+        }
+      }
+      gap = arc.r * (mag - mergedLength(covered));
+    }
+    if (gap > worst) worst = gap;
+  }
+  return worst;
 }
 
 /**

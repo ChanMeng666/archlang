@@ -125,28 +125,8 @@ export const wall: ElementDef = {
       // to this one. The clause is written on the vertex it arrives at (there is no
       // previous vertex for the first one, so `arc` cannot lead the list).
       if (ctx.isKeyword("arc")) {
-        const arcKw = ctx.next();
-        if (points.length === 0) {
-          ctx.fail("An `arc` edge needs a preceding point to curve away from", arcKw);
-        }
-        const to = ctx.parsePoint();
-        ctx.eatKeyword("radius");
-        const radius = ctx.parseExpr();
-        let dir: ArcDirWord | undefined;
-        let major: boolean | undefined;
-        // `cw|ccw` then `major`, each at most once, in the canonical order the
-        // formatter re-emits.
-        if (ARC_DIRS.some((d) => ctx.isKeyword(d))) dir = ctx.next().value as ArcDirWord;
-        if (ctx.isKeyword("major")) {
-          ctx.next();
-          major = true;
-        }
-        arcs[points.length - 1] = {
-          radius,
-          ...(dir ? { dir } : {}),
-          ...(major ? { major } : {}),
-          span: { start: arcKw.start, end: ctx.peek(-1).end },
-        };
+        const { to, arc } = readArcClause(ctx, points.length === 0);
+        arcs[points.length - 1] = arc;
         points.push(to);
         continue;
       }
@@ -453,6 +433,39 @@ function resolveArcs(n: WallNode, id: string, points: Point[], ctx: ResolveCtx):
     any = true;
   }
   return any ? out : undefined;
+}
+
+/**
+ * One `arc (x,y) radius R [cw|ccw] [major]` clause, from its `arc` word: the vertex it arrives at
+ * and the edge's node. Shared by a wall's body and a `room polygon` ring (card ARC2), so the two
+ * read one grammar; `first` (no vertex before it to curve away from) is the parse error both raise.
+ */
+export function readArcClause(ctx: ParseCtx, first: boolean): { to: ExprPoint; arc: WallArcNode } {
+  const arcKw = ctx.next();
+  if (first) {
+    ctx.fail("An `arc` edge needs a preceding point to curve away from", arcKw);
+  }
+  const to = ctx.parsePoint();
+  ctx.eatKeyword("radius");
+  const radius = ctx.parseExpr();
+  let dir: ArcDirWord | undefined;
+  let major: boolean | undefined;
+  // `cw|ccw` then `major`, each at most once, in the canonical order the
+  // formatter re-emits.
+  if (ARC_DIRS.some((d) => ctx.isKeyword(d))) dir = ctx.next().value as ArcDirWord;
+  if (ctx.isKeyword("major")) {
+    ctx.next();
+    major = true;
+  }
+  return {
+    to,
+    arc: {
+      radius,
+      ...(dir ? { dir } : {}),
+      ...(major ? { major } : {}),
+      span: { start: arcKw.start, end: ctx.peek(-1).end },
+    },
+  };
 }
 
 /**

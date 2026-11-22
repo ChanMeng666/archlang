@@ -148,7 +148,15 @@ import { EM_PER_CHAR, inkWidth, textWidth } from "../../text-metrics.js";
 import { PLAIN_SHEET_TEXT, sheetText } from "../../sheet-text.js";
 import { pointInRoomBox, roomBox } from "../../analyze.js";
 import { GridIndex } from "../../geometry/grid-index.js";
-import { clippedArea, clippedSigned, pointInPolygon } from "../../geometry/polygon.js";
+import {
+  clippedArea,
+  clippedSigned,
+  distPointToSegment,
+  pointInPolygon,
+  VERTEX_EPS,
+} from "../../geometry/polygon.js";
+import { distPointToArc } from "../../geometry/arc.js";
+import { loopWinding } from "../../geometry/band.js";
 import { openingName, wallNamed } from "../element-phrases.js";
 import type { LintContext, LintRule } from "../context.js";
 import { citeOverprint } from "../overprint-ref.js";
@@ -910,9 +918,13 @@ const doorWithId = (d: RDoor): string => (idAuthored(d) ? `the door (\`${d.id}\`
 const pointInRoomFloor = (p: Point, room: RRoom): boolean =>
   room.circle
     ? Math.hypot(p.x - room.circle.c.x, p.y - room.circle.c.y) <= room.circle.r
-    : room.poly
-      ? pointInPolygon(p.x, p.y, room.poly)
-      : pointInRoomBox(p, roomBox(room));
+    : room.edges
+      ? // An arc-edged ring (card ARC2): its exact edges' winding, boundary inside as a ring's.
+        loopWinding(room.edges, p) !== 0 ||
+        room.edges.some((e) => (e.t === "arc" ? distPointToArc(p, e.arc) : distPointToSegment(p, e.a, e.b)) <= VERTEX_EPS)
+      : room.poly
+        ? pointInPolygon(p.x, p.y, room.poly)
+        : pointInRoomBox(p, roomBox(room));
 
 /** "a", "a and b", "a, b and c" — first-hit order, duplicates dropped. */
 function listOf(words: readonly string[]): string {

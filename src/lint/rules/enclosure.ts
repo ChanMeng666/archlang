@@ -74,6 +74,7 @@ import {
 import type { Diagnostic } from "../../diagnostics.js";
 import { MAX_EVAL_STEPS } from "../../expr.js";
 import { distPointToWallSegment, type WallSegment, wallFaceProbes } from "../../geometry.js";
+import { arcContainsRay, arcSteps, distPointToArc } from "../../geometry/arc.js";
 import { edgeMid, edgeTangentAt } from "../../geometry/band.js";
 import { type GridBox, overlapIndex } from "../../geometry/grid-index.js";
 import { collinearOverlapLength, rectRing } from "../../geometry/polygon.js";
@@ -471,6 +472,23 @@ const boxesNear = (a: RoomBox, b: RoomBox, tol: number): boolean =>
  * longest such stretch. An open-plan pair (both kitchen, dining or living) is exempt; a circle
  * room shares no straight run.
  */
+/**
+ * Does a shared run lie along an ARC edge of either room (card ARC2)? Its midpoint is within `tol`
+ * plus the tessellation's sagitta (`r(1 − cos(step/2))`, the most a chord's midpoint is off its
+ * curve) of the arc, inside the arc's sweep.
+ */
+function onArcEdge(run: { p: Point; q: Point }, a: RRoom, b: RRoom, tol: number): boolean {
+  const mid = { x: (run.p.x + run.q.x) / 2, y: (run.p.y + run.q.y) / 2 };
+  for (const r of [a, b]) {
+    for (const e of r.edges ?? []) {
+      if (e.t !== "arc" || !arcContainsRay(e.arc, mid)) continue;
+      const sag = e.arc.r * (1 - Math.cos((Math.abs(e.arc.sweep) / arcSteps(e.arc)) / 2));
+      if (distPointToArc(mid, e.arc) <= tol + sag) return true;
+    }
+  }
+  return false;
+}
+
 export const boundaryNoWall: LintRule = {
   name: "boundary-no-wall",
   family: "enclosure",
@@ -500,7 +518,11 @@ export const boundaryNoWall: LintRule = {
         if (!boxesNear(rects[i]!, rects[j]!, tol)) continue;
         if (isOpenPlan(i) && isOpenPlan(j)) continue;
         near ??= runCandidates(ctx);
-        const stretches = sharedRuns(ctx, a, b).flatMap((run) => openStretches(ctx, run, near!));
+        // A run along an arc edge's tessellation (card ARC2) is a chord, which no wall backs: the
+        // curve is a curved boundary, judged as a circle room's is (not at all), and only the
+        // ring's straight edges share a run.
+        const runs = a.edges || b.edges ? sharedRuns(ctx, a, b).filter((run) => !onArcEdge(run, a, b, tol)) : sharedRuns(ctx, a, b);
+        const stretches = runs.flatMap((run) => openStretches(ctx, run, near!));
         if (stretches.length === 0) continue;
         const worst = stretches.reduce((w, s) => (s.hi - s.lo > w.hi - w.lo ? s : w));
         const gapLen = worst.hi - worst.lo;

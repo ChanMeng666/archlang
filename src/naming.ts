@@ -29,6 +29,7 @@
  */
 
 import type { Point } from "./ast.js";
+import type { EdgeLoop } from "./geometry/band.js";
 import { polygonLabelPoint } from "./geometry/polygon.js";
 import { roomAreaMm2, roomExtent } from "./geometry/room-ring.js";
 import { fmt2 } from "./num-format.js";
@@ -81,6 +82,8 @@ export interface RoomShape {
   size: { w: number; h: number };
   poly?: readonly Point[];
   circle?: { c: Point; r: number };
+  /** An arc-edged ring's exact boundary (card ARC2): its extent and area are read from it. */
+  edges?: EdgeLoop;
 }
 
 /** The label point of a floor ring, a circle's centre, or a rectangle's centre. */

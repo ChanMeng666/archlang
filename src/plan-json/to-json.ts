@@ -43,6 +43,7 @@ import { DEFAULT_MATERIAL } from "../hatches.js";
 import { openRunsOf } from "../analyze.js";
 import { type KindsWith, kindsWith } from "../elements/facets.js";
 import type { Arc } from "../geometry/arc.js";
+import { type EdgeLoop, edgeStart } from "../geometry/band.js";
 import { rectRing } from "../geometry/polygon.js";
 import { roomRing } from "../geometry/room-ring.js";
 import type { ResolvedSheet } from "../sheet.js";
@@ -51,6 +52,7 @@ import { roomTypeForUses } from "./room-types.js";
 import type {
   PointJson,
   WallArcJson,
+  WallPointJson,
   PaperJson,
   InstanceMark,
   RoomJson,
@@ -101,6 +103,19 @@ export function rectPolygon(x: number, y: number, w: number, h: number): PointJs
  */
 function arcJson(a: Arc): WallArcJson {
   return { radius: a.r, dir: a.sweep > 0 ? "cw" : "ccw", ...(Math.abs(a.sweep) > Math.PI ? { major: true } : {}) };
+}
+
+/**
+ * An arc-edged room ring as its `polygon` (card ARC2): one point per edge's start, and on each
+ * point the `arc` of the edge arriving at it. Edge `k` runs from vertex `k` to `k + 1`, so vertex
+ * `i` is reached by edge `i − 1`, and the first vertex by the closing edge.
+ */
+function polygonWithArcs(edges: EdgeLoop): WallPointJson[] {
+  return edges.map((e, i) => {
+    const p = edgeStart(e);
+    const into = edges[(i + edges.length - 1) % edges.length]!;
+    return into.t === "arc" ? { x: p.x, y: p.y, arc: arcJson(into.arc) } : { x: p.x, y: p.y };
+  });
 }
 
 /** The sheet as {@link PaperJson}. */
@@ -189,7 +204,13 @@ export function resolvedToJson(ir: ResolvedPlan, tol: number = DEFAULT_TOL, carr
       y: r.at.y,
       width: r.size.w,
       height: r.size.h,
-      ...(r.poly ? { polygon: r.poly.map((pt) => ({ x: pt.x, y: pt.y })) } : {}),
+      // An arc-edged ring (card ARC2) lists its authored vertices, never its tessellation, each
+      // carrying the edge ARRIVING at it as a wall point does (the first vertex the closing edge's).
+      ...(r.edges
+        ? { polygon: polygonWithArcs(r.edges) }
+        : r.poly
+          ? { polygon: r.poly.map((pt) => ({ x: pt.x, y: pt.y })) }
+          : {}),
       area,
       // The discretised ring (`src/geometry/room-ring.ts`): a circle's 48-gon, as before.
       floor_polygon: roomRing(r).map((pt) => ({ x: pt.x, y: pt.y })),

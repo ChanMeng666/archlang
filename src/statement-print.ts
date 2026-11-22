@@ -206,8 +206,15 @@ export function statementText(s: LeafStatement): Doc {
       return concat([head, " ", body]);
     }
     case "room": {
+      // A ring's `arc` (card ARC2) re-emits on the vertex it arrives at, as a wall's does.
       const shape = s.polygon
-        ? `polygon ${s.polygon.map(ptStr).join(" ")}`
+        ? `polygon ${s.polygon
+            .map((p, i) => {
+              const arc = i > 0 ? s.arcs?.[i - 1] : undefined;
+              if (!arc) return ptStr(p);
+              return `arc ${ptStr(p)} radius ${exprStr(arc.radius)}${arc.dir ? ` ${arc.dir}` : ""}${arc.major ? " major" : ""}`;
+            })
+            .join(" ")}`
         : s.circle
           ? `circle at ${ptStr(s.circle.c)} radius ${exprStr(s.circle.r)}`
           : `${s.at ? `at ${ptStr(s.at)}` : relStr(s.rel!)} size ${sizeStr(s.size!)}`;

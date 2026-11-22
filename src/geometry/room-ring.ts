@@ -19,7 +19,7 @@
 
 import type { Point } from "../ast.js";
 import { fullCircleArc } from "./arc.js";
-import type { EdgeLoop } from "./band.js";
+import { type EdgeLoop, edgeStart, loopArea, loopBBox } from "./band.js";
 import type { GridBox } from "./grid-index.js";
 import { polygonArea, rectRing } from "./polygon.js";
 
@@ -31,6 +31,8 @@ export interface RoomShape {
   poly?: readonly Point[];
   /** A circular floor's exact centre and radius. */
   circle?: { c: Point; r: number };
+  /** An arc-edged ring's exact boundary (card ARC2); `poly` is then its tessellation. */
+  edges?: EdgeLoop;
 }
 
 /**
@@ -50,13 +52,14 @@ export function roomRing(r: RoomShape): readonly Point[] {
  */
 export function roomEdges(r: RoomShape): EdgeLoop {
   if (r.circle) return [{ t: "arc", arc: fullCircleArc(r.circle.c, r.circle.r) }];
+  if (r.edges) return r.edges;
   const ring = roomRing(r);
   return ring.map((a, i) => ({ t: "line", a, b: ring[(i + 1) % ring.length]! }));
 }
 
 /** How many edges {@link roomEdges} returns, without building them: 1, the ring's length, or 4. */
 export function roomCurveCount(r: RoomShape): number {
-  return r.circle ? 1 : r.poly ? r.poly.length : 4;
+  return r.circle ? 1 : r.edges ? r.edges.length : r.poly ? r.poly.length : 4;
 }
 
 /**
@@ -71,6 +74,9 @@ export function roomAreaMm2(r: Omit<RoomShape, "at">): number {
   // also carries for the grid layer, which understates the area by 0.29%. See the
   // exact-vs-chordal note in docs/analysis.md.
   if (r.circle) return Math.PI * r.circle.r * r.circle.r;
+  // An arc-edged ring: the shoelace of its vertices plus each arc's circular segment, in closed
+  // form (`loopArea`, ADR 0027's ½∮(x dy − y dx)), never its tessellation's chordal figure.
+  if (r.edges) return Math.abs(loopArea(r.edges));
   return r.poly ? polygonArea(r.poly) : r.size.w * r.size.h;
 }
 
@@ -80,6 +86,8 @@ export function roomExtent(r: RoomShape): GridBox {
     const { c, r: rad } = r.circle;
     return { minX: c.x - rad, minY: c.y - rad, maxX: c.x + rad, maxY: c.y + rad };
   }
+  // An arc-edged ring reaches each bulge's closed-form extremes (`arcExtremes`), past its chord.
+  if (r.edges) return loopBBox(r.edges);
   if (r.poly) {
     const pts = r.poly;
     return {
@@ -97,5 +105,5 @@ export function roomExtent(r: RoomShape): GridBox {
  * none for a circle (its tessellation is no vertex anyone wrote), else {@link roomRing}.
  */
 export function roomCorners(r: RoomShape): readonly Point[] {
-  return r.circle ? [] : roomRing(r);
+  return r.circle ? [] : r.edges ? r.edges.map(edgeStart) : roomRing(r);
 }

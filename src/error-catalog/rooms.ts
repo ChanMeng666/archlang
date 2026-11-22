@@ -15,6 +15,20 @@ export const ROOMS_ENTRIES = defineEntries({
     "wall exterior thickness 200 { (0,0) arc (10000,0) radius 3000 }   # error: needs R >= 5000",
     "wall exterior thickness 200 { (0,0) arc (10000,0) radius 5000 }   # fixed: R is half the 10000 mm chord",
   ),
+  E_ROOM_ARC_RADIUS: e(
+    "Room ring arc radius too small for its chord.",
+    "An `arc (x,y) radius R` edge in a `room polygon` ring asks for a circle of radius R through the previous vertex and this one, but R is less than half the straight-line distance between them (or is not positive) — no such circle exists. The edge is kept straight, so the room still has a floor.",
+    "Raise the radius to at least half the chord (the message states the minimum), or move the vertices closer together. `archlang fix` applies the minimum for you.",
+    "room polygon (0,0) (4000,0) arc (4000,4000) radius 1000 cw (0,4000)   # error: needs R >= 2000",
+    "room polygon (0,0) (4000,0) arc (4000,4000) radius 2000 cw (0,4000)   # fixed: R is half the 4000 mm chord",
+  ),
+  E_ROOM_ARC_SAG: e(
+    "Room ring arc too large for the room's tests.",
+    "A `room polygon` ring's arc edge is kept exact for its area, extent and drawing, and also as a fixed-step ring (7.5° chords, at least 8 per arc) that the grids, adjacency and containment tests read, as a `room circle`'s 48-gon is. Those tests allow a room 100 mm of slack, so a chord may stand at most 100 mm off its curve: radius 46,705 mm at the full 7.5° step, more for a shallow arc. This arc's chords stand further off, so the room's tests would read a floor that is not the drawn one. The edge is kept straight.",
+    "Write a curve this large as straight edges, or split it into shorter arcs (an arc under 60° takes a finer step).",
+    "room polygon (0,0) arc (100000,0) radius 60000 cw (100000,50000) (0,50000)   # error: its chords stand 114 mm off the curve",
+    "room polygon (0,0) (50000,-26834) (100000,0) (100000,50000) (0,50000)   # fixed: the curve as straight edges",
+  ),
   E_ROOM_RADIUS: e(
     "Circular room needs a positive radius.",
     "A `room circle at (cx,cy) radius R` has R of zero or less, so it encloses no floor — there is no area, no centroid and no containment test to compute.",

@@ -159,7 +159,7 @@ export interface WallArcNode {
   radius: Expr;
   dir?: ArcDirWord;
   major?: boolean;
-  /** Byte span of the `arc …` clause, for `E_ARC_RADIUS`. */
+  /** Byte span of the `arc …` clause, for `E_ARC_RADIUS` (a wall) or `E_ROOM_ARC_RADIUS` (a room ring). */
   span?: Span;
 }
 
@@ -343,6 +343,14 @@ export interface RoomNode extends NodeBase {
    * extent IS its vertex ring), so `size` is absent exactly when this is present.
    */
   polygon?: ExprPoint[];
+  /**
+   * The ring's curved edges (card ARC2), indexed as a wall's: `arcs[k]` is the edge from
+   * `polygon[k]` to `polygon[k + 1]`, written `arc (x,y) radius R [cw|ccw] [major]` on the vertex
+   * it arrives at. A ring that ends `arc (x0,y0) …` back on its first vertex curves its closing
+   * edge (the resolver drops the repeated vertex). Absent on a ring with no `arc`, so every
+   * straight ring parses to the node it always did.
+   */
+  arcs?: Array<WallArcNode | undefined>;
   /**
    * `room circle at (cx,cy) radius R` — a circular floor. Mutually exclusive
    * with `at`/`rel`/`polygon`, and it replaces `size`. Its area is measured in CLOSED

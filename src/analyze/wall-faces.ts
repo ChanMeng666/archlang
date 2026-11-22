@@ -250,7 +250,7 @@ function maxPerCell(boxes: readonly GridBox[], cell: number, limit: number): num
 const piecesBound = (c: number): number => c + 2 * c * Math.max(0, c - 1);
 
 /** The cover elements a face is measured against: anything with a room's shape fields. */
-export type FaceRoom = Pick<RRoom, "id" | "at" | "size" | "poly" | "circle">;
+export type FaceRoom = Pick<RRoom, "id" | "at" | "size" | "poly" | "circle" | "edges">;
 
 /**
  * The walled faces of a storey, or `null` when there is nothing to read (no wall, or no wall

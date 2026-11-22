@@ -63,6 +63,20 @@ const WALL_POINT_SCHEMA = /* @__PURE__ */ pure(() => ({
   },
 }));
 
+/** A room ring vertex (card ARC2): {@link WALL_POINT_SCHEMA}'s `arc`, which on the FIRST vertex
+ *  curves the ring's closing edge. */
+const ROOM_POINT_SCHEMA = /* @__PURE__ */ pure(() => ({
+  ...WALL_POINT_SCHEMA,
+  properties: {
+    ...WALL_POINT_SCHEMA.properties,
+    arc: {
+      ...WALL_POINT_SCHEMA.properties.arc,
+      description:
+        "`arc (x,y) radius R [cw|ccw] [major]`: the edge ARRIVING at this vertex is a circular arc, and x/y are its end, so ignoring this key leaves the chord. On the first vertex it curves the ring's closing edge.",
+    },
+  },
+}));
+
 /** {@link InstanceMark}: the `instance` key every row schema accepts. */
 const INSTANCE_MARKER = {
   type: "string",
@@ -181,10 +195,10 @@ export const PLAN_JSON_SCHEMA = /* @__PURE__ */ pure(() => ({
           height: { type: "number", description: "Room height in millimetres." },
           polygon: {
             type: "array",
-            minItems: 3,
+            minItems: 2,
             description:
-              "An implicitly-closed simple polygon of >=3 vertices — the room's floor when it is not a rectangle. Replaces x/y/width/height on input; on output those remain as its bounding box.",
-            items: POINT_SCHEMA,
+              "An implicitly-closed simple polygon of >=3 vertices (>=2 when a vertex carries an `arc`) — the room's floor when it is not a rectangle. Replaces x/y/width/height on input; on output those remain as its bounding box.",
+            items: ROOM_POINT_SCHEMA,
           },
           area: { type: "number", description: "Output-only: floor area in square metres (2 dp)." },
           floor_polygon: {

@@ -183,6 +183,7 @@ export type { WallStatus } from "./grammar/tokens.js";
 
 export type {
   RoomSummary,
+  FloorArcSummary,
   DoorSummary,
   WindowSummary,
   OpeningSummary,
