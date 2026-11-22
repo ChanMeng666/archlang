@@ -531,6 +531,9 @@ describe("fix tool (bounded fixpoint)", () => {
       );
       expect(cli.stdout, cli.stderr).not.toBe("");
       const arch = JSON.parse(cli.stdout) as Record<string, unknown>;
+      // Both clear the error: the CLI exits 0 and both say `ok`.
+      expect(cli.status, cli.stderr).toBe(0);
+      expect([out.ok, arch.ok]).toEqual([true, true]);
       // The same fix, the same nothing-skipped, the same edited source.
       expect(out.applied).toEqual(arch.applied);
       expect(out.skipped).toEqual(arch.skipped);

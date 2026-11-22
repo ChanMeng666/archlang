@@ -2788,10 +2788,11 @@ does. A door written 25 mm past a meeting wall gets `E_OPENING_NIB` with `at 205
 `at 950 from start` (nearer first); `rankFixes` puts `950` first, and MCP `fix` with `unsafe:true`
 now applies `950` with nothing skipped, as `arch fix --unsafe` does (`packages/mcp/test/tools.test.ts`
 (v)); `test/rank-fixes.test.ts` holds L1's pick. `l1Pipeline` is unchanged over `eval/faults`,
-`eval/goldens` and `examples/*.arch` (69 of 69). Residue: `rankFixes`' edit-magnitude term prefers
-the farther of AF9's two moves whenever their digit counts differ (`950`, 575 mm, over the nearer
-`2050`, 525 mm); and `dataset/trajectory.ts` still hands every alternative to `applyFixes`
-(machine-applicable only, so nothing moves today). The card text below is kept for the record.
+`eval/goldens` and `examples/*.arch` (69 of 69). `E_OPENING_DATUM`'s `from start|end` pair moves too:
+MCP `fix` with `unsafe:true` now writes `end`, as `arch fix --unsafe` does, where it wrote `start`.
+Residue: `rankFixes`' edit-magnitude term picks the fewer-digit one of AF9's two moves, nearer or
+farther (here `950`, 575 mm away, over `2050`, 525 mm away): SR.21. `dataset/trajectory.ts` still hands
+every alternative to `applyFixes`: SR.22. The card text below is kept for the record.
 
 AF9 is the first producer with several alternatives on one diagnostic. `arch fix` takes the top of
 `rankFixes` (`src/fix-apply.ts`) and the LSP lists the alternatives in its order, but MCP `fix` and L1
@@ -2835,6 +2836,39 @@ twins of other codes now carry this warning: `annotation-collisions/radius-over-
 each has a `table` in a living room with no seat, and their `expect: none` concerns their own
 case's code. **Gate:** (1) decided by the eval owner and recorded; (3) seat each twin (or record why
 not) with its pins re-measured under the drawing-change proof; (2) when the number has a source.
+
+### SR.21 · `rankFixes` picks the fewer-byte alternative, not the nearer move (#1008 red team) — `todo`
+
+`rankFixes` (`src/fix-apply.ts`) orders the alternatives on one diagnostic by applicability, then
+edit magnitude (bytes removed plus bytes inserted), then edit start, then array index. AF9's
+alternatives are all `maybe-incorrect` over one span, so the shorter replacement text wins whatever
+it means, and `arch fix --unsafe`, MCP `fix`, L1, the LSP order and the playground's fix button all
+follow it (SR.17). The AF9 producers list moves nearer first (`src/fix-producers.ts`
+`openingMoveFix`). Cases: (1) a door written 25 mm past a meeting wall (rooms `a` 4000 × 3000 and
+`b` 3000 × 3000 side by side, `walls from rooms exterior 200 partition 100`, a partition across `b`
+at y 1500, `door between a and b at 1525 from start width 800`) is moved to `950` (575 mm) over
+`2050` (525 mm). (2) The reviewer's short-bay plan: rooms `a` 4000 × 14000 and `b` 3000 × 14000, the
+same walls, eight partitions across `b` 700 mm apart at y 5000, 5700, … 9900, and `door between a
+and b at 9600 from start width 800`; `E_OPENING_NIB` offers `at 10450 from start` (850 mm away),
+then `at 4450 from start` (5150 mm away), and `at 4450` is taken. (3) `E_OPENING_DATUM`'s fallback
+pair ranks `end` over `start`, and its edge swap ranks `a.top` over `a.bottom`, by word length alone.
+Options: let a producer state its own order (a rank or a cost the producer sets, which `rankFixes`
+reads before magnitude), or rank AF9's moves by distance moved. Either changes what `arch fix --unsafe`
+writes on such plans. **Gate:** the short-bay plan and case (1) get the nearer move from `arch fix
+--unsafe` and MCP `fix`; the start/end and top/bottom order is decided and pinned; `test/rank-fixes.test.ts`
+keeps the existing orders for alternatives no producer ranks.
+
+### SR.22 · `dataset/trajectory.ts` claims L1's fix loop but still takes every alternative (#1008 red team) — `todo`
+
+`recordTrajectory` (`dataset/trajectory.ts`) says its fix loop is "byte-for-byte the `l1Pipeline`
+contract", but it still hands `applyFixes` every fix of every diagnostic (`diagnostics.flatMap((d) =>
+d.fixes ?? [])`), where `l1Pipeline` takes the top of `rankFixes` per diagnostic since SR.17
+(`l1Fixes`, `eval/l1.ts`). The two give the same bytes today, because both apply only
+machine-applicable fixes and no producer gives a diagnostic two machine-applicable alternatives, but no
+test holds them together. The dataset's published files are the owner's (RM-D47): a change that could
+move a recorded `fixed_source` needs that ruling first. **Gate:** `recordTrajectory` calls `l1Fixes`
+(or the header names the difference), and a test holds its fix stage equal to `l1Pipeline`'s over the
+dataset's inputs; no published file is replaced without the owner's ruling.
 
 ## Test-programme findings (promo-credit programme, 2026-11-16)
 
