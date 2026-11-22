@@ -175,6 +175,12 @@ export interface ResolveCtx {
    * `section`'s `look`). Optional (append-only); absent means `up`.
    */
   north?: NorthDir;
+  /**
+   * The binding a length expression squares (`W*W`, or a name bound to a value `W*W` made), read
+   * off the current environment without evaluating anything (`squaredName`, `src/expr.ts`); for
+   * `W_AREA_AS_LENGTH` (AF10 step 2, first slice). Optional (append-only); absent means never.
+   */
+  squaredName?(e: Expr): string | undefined;
 }
 
 /**

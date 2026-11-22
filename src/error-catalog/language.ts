@@ -193,6 +193,13 @@ export const LANGUAGE_ENTRIES = defineEntries({
     "room at (0,0) size 4x3   # warning: read as 4 mm x 3 mm; write `size 4000x3000`",
     "room at (0,0) size 4000x3000   # fixed: in millimetres",
   ),
+  W_AREA_AS_LENGTH: w(
+    "A length is a name times itself: an area, if the name is a length.",
+    "A room `size` side, a wall point or thickness (`walls from rooms` too), or a door, window or opening `width` is written as a name times itself (`W*W`), or as a name bound to one (`let A = W*W`, then `size A x 3000`). If the name is a length, its square is an area in square millimetres, and the plan draws it as a length: `let W = 4m` makes `W*W` 16000000 mm, a room 16 km long. No size threshold is read: the square is the whole signal, so it fires however small the value. A square drawn as 0 is not reported: for a room size, a thickness or a width that is the element's own error, and at a wall point it has no size to mislead. Any further arithmetic ends it (`A / W` is a length again, `sqrt(W*W + D*D)` a diagonal). A square whose name reads another value where the length is read is not reported, so the warning never names the wrong binding: a function's parameter (`let sq(x) = x*x`, then `size sq(W)` or `let S = sq(W)`), a component's parameter, a root `let` or a nested `let` of the same name shadowing it, or a reassignment of the name after the square (`W = 3m`). Inside an imported component, a square its body binds from a name of the component's module (`let A = W*W`, `W` the module's) is not reported either, while `size W*W` written there is. Units are never converted. The plan draws the value as written. Like every warning, it fails `validate --strict`.",
+    "Write the length itself, or, for a room of that area, a `size` whose two sides are that length; the hint names the element and the binding.",
+    "let W = 4m\nlet A = W*W\nroom at (0,0) size A x 3000   # warning: `A` is `W` times itself, read as 16000000 mm",
+    "let W = 4m\nroom at (0,0) size W x W   # fixed: a 4 m square room",
+  ),
   W_GRID_SNAPPED: w(
     "`grid` moved a written size or door position.",
     "`grid <g>` rounds a written value to a multiple of `g` (under `grid 100`, `size 2750x7000` is drawn 2800 deep). Reported for a rectangle room or furniture `size`, a wall thickness (`walls from rooms` too) and a door's `at (x,y)`, with the value as written and as drawn. The snapping is unchanged. Informational: `validate` ranks it last for `next` (tier `info`).",

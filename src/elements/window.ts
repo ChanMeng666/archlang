@@ -19,6 +19,7 @@ import { eatEnumValue, parseAttachTarget, resolveOpeningLead, wallClause } from 
 import { idAfterKind, kindClause, missingClause, parseIdWithSpan, readClauses } from "../clause-order.js";
 import { fixesFrom, offWallFix, openingWidthFix, windowKindClauseFix } from "../fix-producers.js";
 import { reprint } from "./reprint.js";
+import { noteSquare } from "../ir/silent-accepts.js";
 import {
   heightsInOrder,
   type OpeningHeightClauses,
@@ -418,6 +419,7 @@ export const windowEl: ElementDef = {
     const n = node as WindowNode;
     const id = ctx.id;
     const wv = ctx.eval(n.width);
+    noteSquare(ctx, `Window "${id}"`, "a window's width", n.width, wv, n.span);
     const width = ctx.snap(wv) || wv;
     if (width <= 0) {
       ctx.diag({
