@@ -135,7 +135,7 @@ export const TASTE_ADVICE: readonly TasteAdviceRow[] = [
     source:
       "Scottish Government, Conversion of traditional buildings: guidance, 3.12.4 (in multi-storey projects, sanitary facilities stacked one above the other where possible)",
     verified: "V",
-    asks: "every bath, WC and utility room over or under one on the next storey that has one",
+    asks: "every bath and WC over or under one on the next storey that has one",
   },
 ];
 

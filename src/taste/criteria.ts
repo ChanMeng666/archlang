@@ -6,9 +6,7 @@
  * IR: window sizes and heights (R7), room rings at full precision (R6, R9, R16, R17, R18, R20), door
  * positions and hosts (R16), wall centrelines (R17), furniture footprints (R6). None reads an id
  * or a label as meaning (uses come from `describe().rooms[].uses`, which is `roomUses`). Pure,
- * deterministic, integer arithmetic (`./arith.ts`, `../geometry/min-rect.ts`); R20's overlap
- * tests are the two `W_ROOM_OVERLAP` reads (`rectsOverlap`, `polygonsOverlap`) and an outline
- * comparison on the lattice, each a boolean, never a printed number.
+ * deterministic, integer arithmetic (`./arith.ts`, `../geometry/min-rect.ts`).
  *
  * A criterion is a COST and a judge. The cost is an upper bound on the judge's work, in the
  * units the judge counts on its {@link Work} counter (one unit per loop step: a room, a window,
@@ -30,8 +28,7 @@ import { type LatticePoint, latticeArea2, minAreaRect, minRectCost } from "../ge
 import type { RDoor, ResolvedPlan, RFurniture, RRoom, RWindow } from "../ir.js";
 import { definingItems } from "../lint/defining.js";
 import { capFirst, makeNaming, type NameableRoom, sizeWords } from "../naming.js";
-import { polygonLabelPoint, polygonsOverlap, rectRing } from "../geometry/polygon.js";
-import { rectsOverlap } from "../geometry/rect.js";
+import { polygonLabelPoint, rectRing } from "../geometry/polygon.js";
 import { type CompassLetter, FACINGS, oppositeLetter, type SiteFacts } from "../site.js";
 import { fmtRatio, lattice, meanPermyriad, ONE, type Ratio, ramp } from "./arith.js";
 import { adviceOf } from "./advice.js";
@@ -1494,77 +1491,149 @@ const R17: TasteCriterionDef = {
 // R20 · wet-room stacking (zoning)
 // ---------------------------------------------------------------------------
 
-/** The most a {@link polygonsOverlap} call reads on two rings of `a` and `b` vertices: both
- *  boxes (a + b), both windows (a + b), every edge pair (a·b) and each ring's points (a vertex
- *  and an edge midpoint per vertex) against the other ring (2a·b + 2b·a). */
-const overlapReads = (a: number, b: number): number => 2 * (a + b) + 5 * a * b;
+/** R20's rooms: a bath or WC use, the reading of `isWetRoom` (`src/analyze/rooms.ts`); its source
+ *  speaks of sanitary facilities, so a utility room alone is not one. */
+const isSanitary = (uses: readonly string[]): boolean => uses.includes("bath") || uses.includes("wc");
 
-/** The most {@link sameCorners} and the two corner rings it reads cost on rings of `a` and `b`
- *  vertices: each ring on the lattice and its corners (2a + 2b), the search for the first corner
- *  (b) and the two walks round it (2a), so at most 4(a + b). */
-const coincideReads = (a: number, b: number): number => 4 * (a + b);
+/** How far one floor must reach into another, across, before the two overlap: 1 mm on the lattice,
+ *  the margin `W_ROOM_OVERLAP` gives two rooms of one storey (`rectsOverlap`). */
+const R20_OVERLAP = /* @__PURE__ */ lattice(1);
 
-/** What the two ring tests of one pair read at most, {@link overlapReads} + {@link coincideReads}. */
-const ringPairReads = (a: number, b: number): number => overlapReads(a, b) + coincideReads(a, b);
-
-/**
- * Do two corner rings (repeated and collinear vertices dropped, {@link cornersOf}) trace the same
- * outline, from any start and in either direction? Two floors with the same outline overlap
- * wholly, and {@link polygonsOverlap} reads them as not overlapping: every vertex and edge
- * midpoint of each lies on the other's boundary and no edge pair crosses properly, so none of its
- * three cases fires. One unit of work per corner read.
- */
-function sameCorners(a: readonly LatticePoint[], b: readonly LatticePoint[], work: Work): boolean {
-  const n = a.length;
-  if (n !== b.length || n < 3) return false;
-  let at = -1;
-  for (let i = 0; i < n && at < 0; i++) {
-    work.n++;
-    if (b[i]!.x === a[0]!.x && b[i]!.y === a[0]!.y) at = i;
-  }
-  if (at < 0) return false;
-  const walk = (dir: 1 | -1): boolean => {
-    for (let i = 0; i < n; i++) {
-      work.n++;
-      const q = b[(at + dir * i + n) % n]!;
-      if (q.x !== a[i]!.x || q.y !== a[i]!.y) return false;
-    }
-    return true;
-  };
-  return walk(1) || walk(-1);
+/** One wet room as R20 reads it: its floor's box and its convex pieces on the 0.001 mm lattice. */
+interface WetFloor {
+  room: RRoom;
+  x0: bigint;
+  y0: bigint;
+  x1: bigint;
+  y1: bigint;
+  /** `null` for a rectangle, which its box is; else the ring cut into convex pieces, each wound so
+   *  that its inside is to the left (a positive cross product), built on first use. */
+  pieces: LatticePoint[][] | null;
+  ring: LatticePoint[] | null;
 }
 
-/** A room's `at` + `size`: a rectangular room's floor itself, a polygon's or a circle's box. */
-const boxOf = (r: RRoom): { x: number; y: number; w: number; h: number } => ({
-  x: r.at.x,
-  y: r.at.y,
-  w: r.size.w,
-  h: r.size.h,
-});
+/** `(b − a) × (p − a)` on the lattice. */
+const cross3 = (a: LatticePoint, b: LatticePoint, p: LatticePoint): bigint =>
+  (b.x - a.x) * (p.y - a.y) - (b.y - a.y) * (p.x - a.x);
+
+/**
+ * A ring of corners cut into convex pieces, each wound with its inside to the left: the ring itself
+ * when it is convex, else ear-clipped triangles (a vertex is an ear when it turns inward and no
+ * other vertex stands in or on its triangle; a vertex in line with its neighbours is dropped). Exact
+ * on the lattice. A ring of n corners counts at most n³ + n² + 2n units. A ring with no ear (not simple:
+ * the resolver refuses one, `E_ROOM_POLY_SELF_INTERSECT`) gives no pieces, so it stacks on nothing.
+ */
+function convexPieces(ring: readonly LatticePoint[], work: Work): LatticePoint[][] {
+  const n = ring.length;
+  if (n < 3) return [];
+  let area2 = 0n;
+  for (let i = 0; i < n; i++) {
+    work.n++;
+    const a = ring[i]!;
+    const b = ring[(i + 1) % n]!;
+    area2 += a.x * b.y - b.x * a.y;
+  }
+  if (area2 === 0n) return [];
+  const wound = area2 > 0n ? [...ring] : [...ring].reverse();
+  let convex = true;
+  for (let i = 0; i < n && convex; i++) {
+    work.n++;
+    if (cross3(wound[i]!, wound[(i + 1) % n]!, wound[(i + 2) % n]!) < 0n) convex = false;
+  }
+  if (convex) return [wound];
+  const pts = wound;
+  const out: LatticePoint[][] = [];
+  while (pts.length > 3) {
+    let cut = false;
+    const m = pts.length;
+    for (let i = 0; i < m && !cut; i++) {
+      work.n++;
+      const a = pts[(i + m - 1) % m]!;
+      const b = pts[i]!;
+      const c = pts[(i + 1) % m]!;
+      const turn = cross3(a, b, c);
+      if (turn === 0n) {
+        pts.splice(i, 1);
+        cut = true;
+        continue;
+      }
+      if (turn < 0n) continue;
+      let empty = true;
+      for (const p of pts) {
+        work.n++;
+        if (p === a || p === b || p === c) continue;
+        if (cross3(a, b, p) >= 0n && cross3(b, c, p) >= 0n && cross3(c, a, p) >= 0n) {
+          empty = false;
+          break;
+        }
+      }
+      if (!empty) continue;
+      out.push([a, b, c]);
+      pts.splice(i, 1);
+      cut = true;
+    }
+    if (!cut) return [];
+  }
+  if (cross3(pts[0]!, pts[1]!, pts[2]!) > 0n) out.push(pts);
+  return out;
+}
+
+/** Does an edge of convex piece `p` keep every vertex of `q` within {@link R20_OVERLAP} of its
+ *  outside? The inward distance of a vertex is its cross product over the edge's length, compared
+ *  squared, so in integers. One unit per vertex read. */
+function edgeSeparates(p: readonly LatticePoint[], q: readonly LatticePoint[], work: Work): boolean {
+  const s2 = R20_OVERLAP * R20_OVERLAP;
+  for (let i = 0; i < p.length; i++) {
+    const a = p[i]!;
+    const b = p[(i + 1) % p.length]!;
+    const len2 = (b.x - a.x) * (b.x - a.x) + (b.y - a.y) * (b.y - a.y);
+    let all = true;
+    for (const v of q) {
+      work.n++;
+      const c = cross3(a, b, v);
+      if (c > 0n && c * c > s2 * len2) {
+        all = false;
+        break;
+      }
+    }
+    if (all) return true;
+  }
+  return false;
+}
+
+/** The most R20 counts for one wet room's floor of `n` ring vertices: the lattice ring and its
+ *  corners (2n) and, for a polygon or a circle, its convex pieces (n³ + n² + 2n). */
+const floorReads = (n: number, poly: boolean): number => 2 * n + (poly ? n * n * n + n * n + 2 * n : 0);
+
+/** The most R20 counts for one pair of floors of `a` and `b` ring vertices with a polygon or a
+ *  circle among them: every pair of their pieces, both ways (each piece has at most as many
+ *  vertices as its ring, and a ring of n corners at most n − 2 triangles or one piece of n), at
+ *  most 2·9·a·b. */
+const piecePairReads = (a: number, b: number): number => 18 * a * b;
 
 /**
  * R20 · wet-room stacking (the stacking half of the design catalogue's R20, `design-taste.md`
- * §5.2). On a plan of two or more storeys that hold a wet room (a bath, WC or utility use, the
- * reading R6 uses), each wet room is stacked when its floor overlaps, in plan, the floor of a wet
- * room on the nearest storey above or below that holds one. The floors are compared as
- * `W_ROOM_OVERLAP` compares two rooms of one storey (`checkRoomOverlaps`): two rectangles as the
- * rectangles they are ({@link rectsOverlap}: more than 1 mm on both axes), and a polygon or a
- * circle by its own ring ({@link polygonsOverlap}, interiors overlapping by more than 1 mm), its
- * box only as a reject first; never a bounding box as the answer. Floors that only touch along an
- * edge are not stacked. Where the ring test cannot see it, the same outline on the 0.001 mm lattice
- * counts ({@link sameCorners}: one polygon footprint on both storeys). v = stacked / wet rooms;
- * ramp 0 → 1. One storey, or one storey with a wet room, has nothing to compare (`too-few-items`).
- * Several wet rooms on a storey are each judged: an en-suite over the WC below and a family bath
- * over a living room read 1 of 2 on that storey. Not stacking is legal and often right; this is
- * advice, and the language has no fact for a pipe wall or a duct, so a riser beside the rooms is
- * not seen. An author who means the stacking to hold writes `keep stacked <id> on levels <n> <n>`
- * on a rectangular wet room that carries the same id on each storey (`docs/edit-one-room.md`):
- * the keep is checked on every compile, this score only on `score --taste`.
+ * §5.2). On a plan of two or more storeys that hold a bath or a WC, each such room is stacked when
+ * its floor overlaps, in plan, the floor of one on the nearest storey above or below that holds one.
+ * Decided exactly on the 0.001 mm lattice, from the SHAPE (a polygon's ring, a circle's tessellation,
+ * a rectangle's own corners): two floors overlap when their boxes overlap by more than 1 mm across
+ * on both axes (for two rectangles, the floors themselves: `W_ROOM_OVERLAP`'s margin) and, with a
+ * polygon or a circle among them, some convex piece of one and some of the other have no edge, of
+ * either, that keeps the other within 1 mm of its outside (the separating-axis test, in integers).
+ * Floors that touch along an edge, or meet by 1 mm or less, are not stacked; a floor flush with an
+ * arm of an L below is. v = stacked / wet rooms; ramp 0 → 1. One storey, or baths and WCs on one
+ * storey only, has nothing to compare (`too-few-items`). Several on a storey are each judged: an
+ * en-suite over the WC below and a family bath over a living room read 1 of 2 on that storey. A
+ * utility room is not read (the source names sanitary facilities). Not stacking is legal and
+ * often right; this is advice, and the language has no fact for a pipe wall or a duct, so a riser
+ * beside the rooms is not seen. An author who means the stacking to hold writes `keep stacked <id>
+ * on levels <n> <n>` on a rectangular room that carries the same id on each storey
+ * (`docs/edit-one-room.md`): the keep is checked on every compile, this score only on `score --taste`.
  *
  * Work: on two storeys or more, the uses (V) and the element scan (E) of each storey, the sort of
- * the wet storeys (S²), every pair of wet rooms on neighbouring wet storeys (one unit, one more
- * for the box or rectangle test, and for a pair with a polygon or a circle the most both ring tests
- * read, {@link ringPairReads}; a pair whose two rooms are already both stacked is not tested), the
+ * the wet storeys (S²), each wet room's floor ({@link floorReads}, once), every pair of wet rooms on
+ * neighbouring wet storeys (one unit, one for the box test, and with a polygon or a circle among
+ * them {@link piecePairReads}; a pair whose two rooms are already both stacked is not tested), the
  * evidence pass (one unit per wet room) and the names of one storey for the message (V).
  *
  * Source: Scottish Government, *Conversion of traditional buildings: guidance*, 3.12.4 ("In
@@ -1574,18 +1643,19 @@ const boxOf = (r: RRoom): { x: number; y: number; w: number; h: number } => ({
 const R20: TasteCriterionDef = {
   id: "R20",
   weight: 1,
-  // One storey: nothing. Else 3V + E per storey, S² for the sort, and per pair of neighbouring
-  // wet storeys X, Y, in closed form: 2 units per pair, plus ringPairReads for every pair but
-  // the rectangle pairs.
+  // One storey: nothing. Else 3V + E per storey, S² for the sort, each wet room's floor, and per
+  // pair of neighbouring wet storeys X, Y in closed form: 2 units a pair, plus piecePairReads for
+  // every pair but the rectangle pairs.
   cost: (storeys) => {
     if (storeys.length < 2) return 1;
     let n = 1 + storeys.length * storeys.length;
     const wet: Array<{ level: number; rooms: number; rects: number; vertices: number }> = [];
     for (const s of storeys) {
       n += 3 * s.summary.rooms.length + s.ir.elements.length;
-      const ids = new Set(s.summary.rooms.filter((r) => isWetUse(r.uses)).map((r) => r.id));
+      const ids = new Set(s.summary.rooms.filter((r) => isSanitary(r.uses)).map((r) => r.id));
       const rooms = irRoomsOf(s).filter((r) => ids.has(r.id));
       if (rooms.length === 0) continue;
+      for (const r of rooms) n += floorReads(ringSize(r), r.poly !== undefined);
       wet.push({
         level: s.level ?? 0,
         rooms: rooms.length,
@@ -1597,9 +1667,9 @@ const R20: TasteCriterionDef = {
     for (let k = 0; k + 1 < wet.length; k++) {
       const x = wet[k]!;
       const y = wet[k + 1]!;
-      // Σ over every pair of 6(a + b) + 5ab, less the rectangle pairs' 6·8 + 5·16 each.
-      const ring = 6 * (y.rooms * x.vertices + x.rooms * y.vertices) + 5 * x.vertices * y.vertices;
-      n += 2 * x.rooms * y.rooms + ring - x.rects * y.rects * ringPairReads(4, 4);
+      // Σ over every pair of 18ab, less the rectangle pairs' 18·4·4 each.
+      const pieces = piecePairReads(x.vertices, y.vertices) - x.rects * y.rects * piecePairReads(4, 4);
+      n += 2 * x.rooms * y.rooms + pieces;
     }
     return n;
   },
@@ -1608,44 +1678,77 @@ const R20: TasteCriterionDef = {
     // The storeys that hold a wet room, lowest level first (insertion sort: counted, S² at most).
     interface WetStorey {
       s: TasteStorey;
-      rooms: RRoom[];
+      floors: WetFloor[];
     }
     const wet: WetStorey[] = [];
     for (const s of storeys) {
       const uses = usesOf(s, work);
-      const rooms: RRoom[] = [];
+      const floors: WetFloor[] = [];
       for (const r of s.ir.elements) {
         work.n++;
-        if (r.kind === "room" && isWetUse(uses.get(r.id) ?? [])) rooms.push(r);
+        if (r.kind !== "room" || !isSanitary(uses.get(r.id) ?? [])) continue;
+        // The floor on the lattice: a rectangle from its corner and its size, added as integers; a
+        // polygon's or a circle's ring vertex by vertex, its corners kept.
+        let ring: LatticePoint[] | null = null;
+        let x0: bigint;
+        let y0: bigint;
+        let x1: bigint;
+        let y1: bigint;
+        work.n += ringSize(r);
+        if (r.poly) {
+          ring = cornersOf(
+            r.poly.map((p) => ({ x: lattice(p.x), y: lattice(p.y) })),
+            work,
+          );
+          x0 = y0 = x1 = y1 = 0n;
+          for (const [i, p] of ring.entries()) {
+            if (i === 0 || p.x < x0) x0 = p.x;
+            if (i === 0 || p.y < y0) y0 = p.y;
+            if (i === 0 || p.x > x1) x1 = p.x;
+            if (i === 0 || p.y > y1) y1 = p.y;
+          }
+        } else {
+          x0 = lattice(r.at.x);
+          y0 = lattice(r.at.y);
+          x1 = x0 + lattice(r.size.w);
+          y1 = y0 + lattice(r.size.h);
+        }
+        floors.push({ room: r, x0, y0, x1, y1, pieces: null, ring });
       }
-      if (rooms.length === 0) continue;
+      if (floors.length === 0) continue;
       let at = wet.length;
       while (at > 0 && (wet[at - 1]!.s.level ?? 0) > (s.level ?? 0)) {
         work.n++;
         at--;
       }
-      wet.splice(at, 0, { s, rooms });
+      wet.splice(at, 0, { s, floors });
     }
     if (wet.length < 2) return skipped("R20", "too-few-items");
 
-    const corners = new Map<RRoom, LatticePoint[]>();
-    const cornersOfRoom = (r: RRoom): LatticePoint[] => {
-      let c = corners.get(r);
-      if (!c) {
-        c = cornersOf(latticeRing(r, work), work);
-        corners.set(r, c);
+    const piecesOf = (f: WetFloor): LatticePoint[][] => {
+      if (f.pieces === null) {
+        f.pieces = f.ring
+          ? convexPieces(f.ring, work)
+          : [
+              [
+                { x: f.x0, y: f.y0 },
+                { x: f.x1, y: f.y0 },
+                { x: f.x1, y: f.y1 },
+                { x: f.x0, y: f.y1 },
+              ],
+            ];
       }
-      return c;
+      return f.pieces;
     };
-    /** Do the two floors overlap in plan? The box or rectangle test is the pair's second unit. */
-    const floorsOverlap = (a: RRoom, b: RRoom): boolean => {
-      const ba = boxOf(a);
-      const bb = boxOf(b);
-      if (!a.poly && !b.poly) return rectsOverlap(ba, bb);
-      if (!rectsOverlap(ba, bb)) return false;
-      work.n += overlapReads(ringSize(a), ringSize(b));
-      if (polygonsOverlap(a.poly ?? rectRing(ba), b.poly ?? rectRing(bb))) return true;
-      return sameCorners(cornersOfRoom(a), cornersOfRoom(b), work);
+    /** Do the two floors overlap in plan? The box test is the pair's second unit. */
+    const floorsOverlap = (a: WetFloor, b: WetFloor): boolean => {
+      const ox = (a.x1 < b.x1 ? a.x1 : b.x1) - (a.x0 > b.x0 ? a.x0 : b.x0);
+      const oy = (a.y1 < b.y1 ? a.y1 : b.y1) - (a.y0 > b.y0 ? a.y0 : b.y0);
+      if (ox <= R20_OVERLAP || oy <= R20_OVERLAP) return false;
+      if (!a.ring && !b.ring) return true;
+      for (const p of piecesOf(a))
+        for (const q of piecesOf(b)) if (!edgeSeparates(p, q, work) && !edgeSeparates(q, p, work)) return true;
+      return false;
     };
     // What each wet room stands over or under: the first wet room of a neighbouring wet storey
     // whose floor overlaps its own.
@@ -1653,14 +1756,14 @@ const R20: TasteCriterionDef = {
     for (let k = 0; k + 1 < wet.length; k++) {
       const lo = wet[k]!;
       const hi = wet[k + 1]!;
-      for (const a of lo.rooms)
-        for (const b of hi.rooms) {
+      for (const a of lo.floors)
+        for (const b of hi.floors) {
           work.n++;
-          if (partner.has(a) && partner.has(b)) continue;
+          if (partner.has(a.room) && partner.has(b.room)) continue;
           work.n++;
           if (!floorsOverlap(a, b)) continue;
-          if (!partner.has(a)) partner.set(a, { room: b, ...levelOf(hi.s) });
-          if (!partner.has(b)) partner.set(b, { room: a, ...levelOf(lo.s) });
+          if (!partner.has(a.room)) partner.set(a.room, { room: b.room, ...levelOf(hi.s) });
+          if (!partner.has(b.room)) partner.set(b.room, { room: a.room, ...levelOf(lo.s) });
         }
     }
 
@@ -1669,7 +1772,7 @@ const R20: TasteCriterionDef = {
     const evidence = new EvidenceList();
     let first: { w: WetStorey; room: RRoom; k: number } | null = null;
     for (const [k, w] of wet.entries()) {
-      for (const r of w.rooms) {
+      for (const { room: r } of w.floors) {
         work.n++;
         total++;
         const p = partner.get(r);
@@ -1678,10 +1781,10 @@ const R20: TasteCriterionDef = {
           evidence.add(
             w.s,
             [r.id, p.room.id],
-            `its floor overlaps a wet room's on level ${p.level} (${(p.level ?? 0) > (w.s.level ?? 0) ? "above" : "below"})`,
+            `its floor overlaps a bath's or WC's on level ${p.level} (${(p.level ?? 0) > (w.s.level ?? 0) ? "above" : "below"})`,
           );
         } else {
-          evidence.add(w.s, [r.id], `no wet room's floor overlaps it on ${neighbourLevels(wet, k)}`);
+          evidence.add(w.s, [r.id], `no bath's or WC's floor overlaps it on ${neighbourLevels(wet, k)}`);
           first ??= { w, room: r, k };
         }
       }
@@ -1693,13 +1796,13 @@ const R20: TasteCriterionDef = {
       // A labelled room is named by its label alone; an unlabelled one's phrase names its storey.
       const where = room.label !== undefined && w.s.level !== undefined ? ` on level ${w.s.level}` : "";
       message =
-        `${capFirst(namesOf(w.s, work, true).get(room.id)!)}${where} stands over or under no bath, WC or utility room on ` +
-        `${neighbourLevels(wet, k)}: ${stacked} of ${plural(total, "wet room")} ${stacked === 1 ? "is" : "are"} stacked.`;
+        `${capFirst(namesOf(w.s, work, true).get(room.id)!)}${where} stands over or under no bath or WC on ` +
+        `${neighbourLevels(wet, k)}: ${stacked} of ${total} ${total === 1 ? "bath or WC is" : "baths and WCs are"} stacked.`;
     } else
       message =
         total === 2
-          ? "The two wet rooms stand one over the other."
-          : `All ${total} wet rooms stand over or under one on the next storey that has one.`;
+          ? "The two baths or WCs stand one over the other."
+          : `All ${total} baths and WCs stand over or under one on the next storey that has one.`;
     return {
       measured: { num: stacked, den: total },
       p,

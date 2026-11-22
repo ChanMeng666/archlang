@@ -68,9 +68,9 @@ export { TASTE_PROFILES, TASTE_PROFILE_NAMES } from "./profiles.js";
  * and the cost is charged before the judge runs. Set by measurement: the largest charge over the
  * examples, the defect corpus and the taste corpus was 6,163 units with the eleven criteria of
  * PS5.1 (`examples/terrace-row.arch`; it was 1,559 with PS5.1a's three), and the budget,
- * 6,500,000, 1,054 times that (at least 1,000 times, as the step budget was). With R20 it is 6,194
+ * 6,500,000, 1,054 times that (at least 1,000 times, as the step budget was). With R20 it is 6,220
  * (`examples/hillside-villa.arch`; re-measured by `test/taste-budget.test.ts`, which also holds
- * every judge's counted work at or under its cost), 1,049 times under the same budget. A
+ * every judge's counted work at or under its cost), 1,045 times under the same budget. A
  * storey at the 5,000-element cap (`MAX_ELEMENTS`) exceeds it on the all-pairs criteria (R14,
  * R15): they then report `taste-budget` instead of running.
  */

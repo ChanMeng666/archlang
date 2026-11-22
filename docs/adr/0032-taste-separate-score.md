@@ -66,7 +66,9 @@ already separate the corpus's circulation and daylight pairs.
 7. **Bounded by counts.** One `TASTE_BUDGET` per call, charged before each criterion's work at
    its declared cost; a criterion that would exceed it reports `taste-budget`. The budget was set
    by measurement: 6,500,000 units, 1,054 times the largest corpus charge (6,163, `terrace-row`,
-   with the eleven criteria of PS5.1; it was 2,000,000 against 1,559 with PS5.1a's three).
+   with the eleven criteria of PS5.1; it was 2,000,000 against 1,559 with PS5.1a's three). With
+   R20 (wet-room stacking, product-roadmap RM1.2b) the largest charge is 6,220 (`hillside-villa`),
+   1,045 times under the same budget.
    Each cost bounds the work its criterion counts, held by test on the corpus and a probe plan.
 8. **Every threshold cites a source**; a value remembered rather than read ([M]) is verified
    before it ships. Profiles are advisory names (ADR 0005). PS5.1a ships `generic` only.

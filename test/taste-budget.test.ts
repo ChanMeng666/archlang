@@ -13,9 +13,9 @@
  * Measured on PS5.1b (eleven criteria): the largest call charged 6,163 units on
  * `examples/terrace-row.arch` (it was 1,559 there with PS5.1a's three). Re-measured with R20
  * (wet-room stacking, product-roadmap RM1.2b item 2): {@link MEASURED_MAX}, now on
- * `examples/hillside-villa.arch` (5,958 for the eleven, plus R20's 236 on its two storeys and five
- * wet rooms); `terrace-row` charges 6,164 (R20 costs 1 on a plan of one storey). The budget did not
- * move: 6,500,000 is 1,049 times the new maximum. If the corpus grows a plan that charges more,
+ * `examples/hillside-villa.arch` (5,958 for the eleven, plus R20's 262 on its two storeys and four
+ * baths and WCs); `terrace-row` charges 6,164 (R20 costs 1 on a plan of one storey). The budget did not
+ * move: 6,500,000 is 1,045 times the new maximum. If the corpus grows a plan that charges more,
  * this test names it: re-measure, and raise the budget only with the new measurement recorded here
  * and in `TASTE_BUDGET`'s doc comment.
  */
@@ -26,7 +26,7 @@ import { tasteCharges, tasteWork } from "../src/taste/index.js";
 import { TASTE_SOURCES, TASTE_WORLD } from "./helpers/taste-sources.js";
 
 /** The largest per-call charge over the corpus when the budget was set. */
-const MEASURED_MAX = { charge: 6194, file: "examples/hillside-villa.arch" };
+const MEASURED_MAX = { charge: 6220, file: "examples/hillside-villa.arch" };
 
 /** What room `i` of the probe is: a living room, a kitchen or a bedroom, in a fixed rotation. */
 const probeUse = (i: number): string => (i % 4 === 0 ? "living" : i % 4 === 1 ? "kitchen" : "bedroom");

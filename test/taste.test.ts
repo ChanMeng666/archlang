@@ -469,53 +469,81 @@ describe("each criterion's acceptance line (design §3)", () => {
     expect(off.score).toBe(0);
     expect(off.advice).toBe("A_WET_UNSTACKED");
     expect(off.message).toBe(
-      '"Cloakroom" on level 1 stands over or under no bath, WC or utility room on level 2: 0 of 2 wet rooms are stacked.',
+      '"Cloakroom" on level 1 stands over or under no bath or WC on level 2: 0 of 2 baths and WCs are stacked.',
     );
     expect(off.evidence).toEqual([
-      { ids: ["r_wc"], fact: "no wet room's floor overlaps it on level 2", level: 1 },
-      { ids: ["r_bath"], fact: "no wet room's floor overlaps it on level 1", level: 2 },
+      { ids: ["r_wc"], fact: "no bath's or WC's floor overlaps it on level 2", level: 1 },
+      { ids: ["r_bath"], fact: "no bath's or WC's floor overlaps it on level 1", level: 2 },
     ]);
     const on = crit(corpus("r20-bath-off-the-stack.good"), "R20");
     expect(on.measured).toEqual({ num: 2, den: 2 });
     expect(on.advice).toBeNull();
-    expect(on.message).toBe("The two wet rooms stand one over the other.");
-    // The two floors share one outline, which the ring-overlap test alone reads as apart.
+    expect(on.message).toBe("The two baths or WCs stand one over the other.");
     expect(on.evidence[0]).toEqual({
       ids: ["r_wc", "r_bath"],
-      fact: "its floor overlaps a wet room's on level 2 (above)",
+      fact: "its floor overlaps a bath's or WC's on level 2 (above)",
       level: 1,
     });
     // One storey: nothing to stack.
     const one = taste(roomsOnly(['room id=a at (0,0) size 2000x2000 label "Bath" uses bath']));
     expect(crit(one, "R20").reason).toBe("too-few-items");
     expect(one.coverage.skipped).toContainEqual({ criterion: "R20", reason: "too-few-items" });
-    // Several wet rooms on a storey are each judged: the en-suites of hillside-villa stand over
-    // no wet room below, and its utility and powder rooms under none above.
+    // Several baths and WCs on a storey are each judged: hillside-villa's three en-suites stand over
+    // none below, and its powder room under none above. Its utility room is not read.
     const villa = crit(taste(read("examples/hillside-villa.arch"), { world: TASTE_WORLD }), "R20");
-    expect(villa.measured).toEqual({ num: 0, den: 5 });
+    expect(villa.measured).toEqual({ num: 0, den: 4 });
     // The townhouse stacks its cloakroom and both bathrooms on one footprint.
     const town = crit(taste(read("examples/townhouse.arch"), { world: TASTE_WORLD }), "R20");
     expect(town.measured).toEqual({ num: 3, den: 3 });
   });
 
-  it("R20 reads the shape, never the box: an L over an L stacks, a room in the L's notch does not", () => {
+  describe("R20 reads the floors' shapes exactly, on the lattice, never their boxes", () => {
     const L = "(0,0) (4000,0) (4000,2000) (2000,2000) (2000,4000) (0,4000)";
-    const plan = (upper: string): string =>
+    const plan = (lower: string, upper: string, grid = "  grid 10"): string =>
       [
         'plan "Stack" {',
         "  units mm",
-        "  grid 10",
-        `  level 1 "Ground" { room id=w polygon ${L} label "Utility" uses utility }`,
+        ...(grid ? [grid] : []),
+        `  level 1 "Ground" { ${lower} }`,
         `  level 2 "First" { ${upper} }`,
         "}",
       ].join("\n");
-    // The same L on both storeys: one outline.
-    expect(crit(taste(plan(`room id=b polygon ${L} label "Bath" uses bath`)), "R20").score).toBe(1);
-    // A bath in the L's notch: inside the L's bounding box, outside its floor.
-    const notch = crit(taste(plan('room id=b at (2500,2500) size 1500x1500 label "Bath" uses bath')), "R20");
-    expect(notch.measured).toEqual({ num: 0, den: 2 });
-    // A bath over one arm of the L.
-    expect(crit(taste(plan('room id=b at (0,2500) size 1500x1500 label "Bath" uses bath')), "R20").score).toBe(1);
+    const wcL = `room id=w polygon ${L} label "WC" uses wc`;
+    const r20 = (lower: string, upper: string, grid?: string) => crit(taste(plan(lower, upper, grid)), "R20").measured;
+    const both = { num: 2, den: 2 };
+    const neither = { num: 0, den: 2 };
+
+    it("an L over an L, a bath on either arm (flush with the L's walls) or inside one, a triangle in the L", () => {
+      expect(r20(wcL, `room id=b polygon ${L} label "Bath" uses bath`)).toEqual(both);
+      expect(r20(wcL, 'room id=b at (0,0) size 4000x2000 label "Bath" uses bath')).toEqual(both);
+      expect(r20(wcL, 'room id=b at (0,0) size 2000x4000 label "Bath" uses bath')).toEqual(both);
+      expect(r20(wcL, 'room id=b at (0,2500) size 1500x1500 label "Bath" uses bath')).toEqual(both);
+      expect(r20(wcL, 'room id=b polygon (0,0) (2000,0) (0,2000) label "Bath" uses bath')).toEqual(both);
+    });
+
+    it("a bath in the L's notch (inside its box, outside its floor), or only touching, is not stacked", () => {
+      expect(r20(wcL, 'room id=b at (2500,2500) size 1500x1500 label "Bath" uses bath')).toEqual(neither);
+      const wc = 'room id=w at (0,0) size 2000x2000 label "WC" uses wc';
+      expect(r20(wc, 'room id=b at (2000,0) size 2000x2000 label "Bath" uses bath')).toEqual(neither);
+    });
+
+    it("the 1 mm margin is decided in integers: 1 mm across is not stacked, 1.1 mm is", () => {
+      const bath = 'room id=b at (2000,0) size 2000x2000 label "Bath" uses bath';
+      expect(r20('room id=w at (0,0) size 2001x2000 label "WC" uses wc', bath, "")).toEqual(neither);
+      expect(r20('room id=w at (0,0) size 2001.1x2000 label "WC" uses wc', bath, "")).toEqual(both);
+    });
+
+    it("a circle over a square stacks; one beside it does not", () => {
+      const sq = 'room id=w at (0,0) size 4000x4000 label "WC" uses wc';
+      expect(r20(sq, 'room id=b circle at (2000,2000) radius 1500 label "Bath" uses bath')).toEqual(both);
+      expect(r20(sq, 'room id=b circle at (6000,2000) radius 1500 label "Bath" uses bath')).toEqual(neither);
+    });
+
+    it("a utility room is not a sanitary facility: a bath over one is not judged", () => {
+      const util = 'room id=w at (0,0) size 2000x2000 label "Utility" uses utility';
+      const t = taste(plan(util, 'room id=b at (0,0) size 2000x2000 label "Bath" uses bath'));
+      expect(crit(t, "R20").reason).toBe("too-few-items");
+    });
   });
 
   it("an upper storey is skipped for the depth readers, filed with its level", () => {

@@ -494,7 +494,7 @@ Totals: 425 modules in 34 directories.
 | `joinery.ts` | 1251 | 7 | **Wall joinery** — one boundary for a whole set of walls, with no line drawn inside another wall's solid. | none |
 | `min-rect.ts` | 169 | 2 | The exact minimum-area enclosing rectangle of a point set on the 0.001 mm lattice (plan-soundness PS5.1b; design `archlang-lab/plans/plan-soundness/research/2026-10-24-ps5-taste-design.md` §3 R9, R18). | none |
 | `polygon.ts` | 669 | 74 | Simple-polygon math for **polygonal rooms**. | charges the step meter |
-| `rect.ts` | 502 | 43 | Shared axis-aligned rectangle math for the analysis/repair layer. | none |
+| `rect.ts` | 502 | 42 | Shared axis-aligned rectangle math for the analysis/repair layer. | none |
 | `union.ts` | 193 | 3 | Boolean of axis-aligned rectangles (union, and difference of "holes") → boundary loops. | none |
 
 ## `src/grammar/`
@@ -602,7 +602,7 @@ Totals: 425 modules in 34 directories.
 | --- | ---: | ---: | --- | --- |
 | `advice.ts` | 147 | 2 | The taste criteria's advice codes, names and sources (ADR 0032). `A_*` codes are advice, not diagnostics: they never enter `lint()`, `describe()` or `src/error-catalog.ts`, and `arch explain` does not know them yet. Every criterion has… | none |
 | `arith.ts` | 76 | 3 | The taste layer's exact arithmetic (ADR 0032; design §2.3). Every value that reaches a pinned byte is decided in integers: counts are plain integers, lengths are lattice integers (the 0.001 mm lattice, below 2³⁶ within `MODEL_RANGE_MM`)… | none |
-| `criteria.ts` | 1721 | 4 | The eleven taste criteria of PS5.1 (R3, R6, R7, R9, R11, R12, R14, R15, R16, R17, R18), as defined in `archlang-lab/plans/plan-soundness/research/2026-10-24-ps5-taste-design.md` §3, and R20 (wet-room stacking, product-roadmap RM1.2b item… | none |
+| `criteria.ts` | 1824 | 4 | The eleven taste criteria of PS5.1 (R3, R6, R7, R9, R11, R12, R14, R15, R16, R17, R18), as defined in `archlang-lab/plans/plan-soundness/research/2026-10-24-ps5-taste-design.md` §3, and R20 (wet-room stacking, product-roadmap RM1.2b item… | none |
 | `index.ts` | 317 | 4 | `taste(source, { profile?, world? })` — the taste layer (ADR 0032, plan-soundness PS5.1). | none |
 | `profiles.ts` | 51 | 1 | The taste profiles (ADR 0032; plan-soundness PS5.2). A profile is an honestly named bundle of taste numbers (ADR 0005: never a standard's name, never a compliance claim); every number cites its source and how it was checked ([V] read in… | none |
 | `report.ts` | 118 | 4 | The shape of `taste()`'s report (ADR 0032; design §2.2). Key order is part of the contract: the report is built in the order these interfaces list their fields, and pinned by `test/taste-digests.test.ts`. | none |
