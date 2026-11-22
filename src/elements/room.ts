@@ -39,7 +39,7 @@ import {
   polygonSelfIntersects,
 } from "../geometry/polygon.js";
 import { fmtMessage, fmtTenthsOf2dp } from "../num-format.js";
-import { noteMetres, noteSnap, roomSizeLooksMetric } from "../ir/silent-accepts.js";
+import { noteMetres, noteSnap, noteSquare, roomSizeLooksMetric } from "../ir/silent-accepts.js";
 import { FLOOR_MATERIALS, type FloorMaterial, floorHatch, hatchId, isFloorMaterial } from "../hatches.js";
 import { LABEL_AREA_DROP, LABEL_NAME_RISE } from "../text-layout.js";
 import type { Theme } from "../theme.js";
@@ -321,15 +321,19 @@ export function floorClause(ctx: ParseCtx, rank: number, node: { floor?: FloorCl
 /**
  * A rectangle room's written `size`, said out loud when it is not what is drawn (RM1.4): sides
  * that read as metres (`size 4x3`, `W_LENGTH_IN_METRES`), else a side `grid` moved
- * (`W_GRID_SNAPPED`). Reports only; the room keeps the snapped size it always had.
+ * (`W_GRID_SNAPPED`); first, a side that is a binding times itself (`W_AREA_AS_LENGTH`, AF10 step
+ * 2). Reports only; the room keeps the snapped size it always had.
  */
 function noteRoomSize(
   ctx: ResolveCtx,
   id: string,
+  exprs: { w: Expr; h: Expr },
   written: { w: number; h: number },
   size: { w: number; h: number },
   span: Span | undefined,
 ): void {
+  noteSquare(ctx, `Room "${id}"`, "a room's size", exprs.w, written.w, span, true);
+  noteSquare(ctx, `Room "${id}"`, "a room's size", exprs.h, written.h, span, true);
   const metric = roomSizeLooksMetric(written.w, written.h);
   if (metric && noteMetres(ctx, `Room "${id}"`, "size", [written.w, written.h], span)) return;
   noteSnap(ctx, `Room "${id}"`, "size", [written.w, written.h], [size.w, size.h], span);
@@ -524,7 +528,7 @@ export const room: ElementDef = {
           span: n.span,
         });
       }
-      noteRoomSize(ctx, id, written, size, n.sizeSpan ?? n.span);
+      noteRoomSize(ctx, id, n.size!, written, size, n.sizeSpan ?? n.span);
       // An explicit `label … at (x,y)` is recorded here exactly as the `polygon` and
       // `circle` forms record theirs. Parsing the clause and then dropping it would make
       // the anchor silently do nothing and leave `W_ROOM_LABEL_OUTSIDE` unable to fire on
@@ -607,7 +611,7 @@ export const room: ElementDef = {
         span: n.span,
       });
     }
-    noteRoomSize(ctx, id, written, size, n.sizeSpan ?? n.span);
+    noteRoomSize(ctx, id, n.size!, written, size, n.sizeSpan ?? n.span);
     // The anchor is an absolute plan coordinate even here — `label … at` says WHERE the
     // name is drawn, it is not an offset from a room whose corner is not yet known. So it
     // is recorded now and CHECKED later: `placeRelational` calls `rectLabelOutsideDiag`

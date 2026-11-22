@@ -47,6 +47,7 @@ import {
   exprSpan,
   MAX_EVAL_STEPS,
   POISON,
+  squaredName,
   type StepLimitSignal,
   stepSite,
   withDatumReader,
@@ -1154,6 +1155,7 @@ function resolveBody(
           : rooms.some((x) => r.rooms.has(x)),
       )?.cause,
     north: ast.north,
+    squaredName: (e) => squaredName(e, activeEnv),
   };
   /** A wall went for the error value (AF3: an authored wall that read it, or a `walls from
    *  rooms` that read it or derived nothing for a room that did): from then on the wall list is

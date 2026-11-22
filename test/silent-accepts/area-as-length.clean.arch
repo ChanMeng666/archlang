@@ -1,0 +1,10 @@
+# The clean twin of area-as-length.arch: the room is `W` wide. `A` is still `W` times itself, and
+# `A / W` is a length again, so nothing reads the square as a length.
+plan "Area as length, fixed" {
+  units mm
+  let W = 4m
+  let A = W*W
+  let L = A / W
+  wall id=shell exterior thickness 200 { (0,0) (L,0) (L,3000) (0,3000) close }
+  room id=main at (0,0) size W x 3000 label "Living"
+}

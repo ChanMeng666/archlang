@@ -125,14 +125,14 @@ Nearest first, then by name; `(+n)` is the rest. Test names are `test/<name>.tes
 - `src/grammar/tokens.ts` (37) — `arch-highlight`, `block-stair-lint`, `clause-order-byte-identity`, `closed-vocabularies`, `corner-window`, `did-you-mean`, `door-enums`, `doors` (+29)
 - `src/hatches.ts` (8) — `export-pdf`, `floor-materials-byte-identity`, `joinery-split-oracle`, `joinery-split`, `model-range`, `outdoor`, `room-floor`, `sheet-text`
 - `src/impact.ts` (2) — `rectilinear-doors`, `rectilinear-rooms`
-- `src/import.ts` (36) — `af9-byte-identity`, `af9-fixes`, `block-stair-byte-identity`, `corner-window-byte-identity`, `dim-swap-reprint`, `dim-thickness-callout`, `drawing-budget`, `error-value-law` (+28)
+- `src/import.ts` (37) — `af9-byte-identity`, `af9-fixes`, `block-stair-byte-identity`, `corner-window-byte-identity`, `dim-swap-reprint`, `dim-thickness-callout`, `drawing-budget`, `error-value-law` (+29)
 - `src/import/limits.ts` (1) — `openplan3d-malformed`
 - `src/index.ts` (428) — `acc-metadata`, `access-graph`, `access-policy`, `accessible-svg`, `af9-byte-identity`, `af9-fixes`, `agent-gallery`, `alias-match` (+420)
 - `src/input-limit.ts` (2) — `import-rooted`, `workspace-seams`
 - `src/intent-concepts.ts` (3) — `vocabulary-es-pt`, `vocabulary-living-dining`, `vocabulary-matcher-oracle`
 - `src/intent-feasibility.ts` (1) — `intent-infeasible`
 - `src/intent.ts` (1) — `site`
-- `src/ir.ts` (184) — `access-policy`, `af9-byte-identity`, `af9-fixes`, `arc-radius-exact`, `attach`, `axes`, `between-face-probes`, `block-stair-byte-identity` (+176)
+- `src/ir.ts` (185) — `access-policy`, `af9-byte-identity`, `af9-fixes`, `arc-radius-exact`, `attach`, `axes`, `between-face-probes`, `block-stair-byte-identity` (+177)
 - `src/label-fit.ts` (4) — `label-fit`, `label-leaders`, `label-symbol-ink`, `lint-thickness-unplaced`
 - `src/label-placement.ts` (7) — `label-fit`, `label-leaders`, `label-placement-oracle`, `label-placement`, `label-symbol-ink`, `label-wrap`, `north-arrow`
 - `src/lexer.ts` (14) — `clause-order-byte-identity`, `diagnostics-volume`, `diagnostics`, `error-value-law`, `expr`, `fmt-lossless`, `imperial-input`, `model-range` (+6)
@@ -166,12 +166,12 @@ Nearest first, then by name; `(+n)` is the rest. Test names are `test/<name>.tes
 - `src/opening-junctions.ts` (3) — `af9-byte-identity`, `af9-fixes`, `fixable-codes`
 - `src/opening-relation.ts` (3) — `openings-between`, `rectilinear-doors`, `rectilinear-sides`
 - `src/opening-schedule.ts` (2) — `sheet-annotations`, `window-kinds`
-- `src/parser.ts` (162) — `af9-byte-identity`, `af9-fixes`, `arc-radius-exact`, `attach`, `axes`, `block-stair-byte-identity`, `block-stair`, `chrome-hidden` (+154)
+- `src/parser.ts` (163) — `af9-byte-identity`, `af9-fixes`, `arc-radius-exact`, `attach`, `axes`, `block-stair-byte-identity`, `block-stair`, `chrome-hidden` (+155)
 - `src/pipeline.ts` (2) — `label-leaders`, `work-counts`
 - `src/plan-json.ts` (11) — `element-facets`, `format`, `garage`, `plan-json-dropped`, `plan-json-instances`, `polygon-rooms`, `section`, `sheet-annotations` (+3)
 - `src/plan-json/room-types.ts` (1) — `vocabulary-es-pt`
 - `src/plan-json/to-json.ts` (1) — `rect-ring`
-- `src/registry.ts` (53) — `af9-byte-identity`, `af9-fixes`, `annotation-collisions`, `block-stair-byte-identity`, `block-stair-winders-walking-arc`, `block-stair`, `corner-window-byte-identity`, `corner-window` (+45)
+- `src/registry.ts` (54) — `af9-byte-identity`, `af9-fixes`, `annotation-collisions`, `block-stair-byte-identity`, `block-stair-winders-walking-arc`, `block-stair`, `corner-window-byte-identity`, `corner-window` (+46)
 - `src/repair.ts` (2) — `finish-furnish-laws`, `finish-never-worse`
 - `src/reroll.ts` (3) — `keep`, `reroll-findrun-oracle`, `reroll`
 - `src/room-datums.ts` (5) — `openings-between`, `room-datums`, `segment-select`, `shared-grid-byte-identity`, `keep`
@@ -694,7 +694,7 @@ The first sentence of each file's header comment.
 - `test/sheet-text-byte-identity.test.ts` — `sheet text { … }` (issue #403): the byte-identity law.
 - `test/sheet-text.test.ts` — `sheet text { … }` (issue #403): what the block changes, and what it never reaches.
 - `test/sheet.test.ts` — The sheet layer — `paper <size> [orientation]` + the OPERATIVE drawing scale.
-- `test/silent-accepts.test.ts` — Silent accepts made audible (product-roadmap RM1.4 and RM1.4b): five warnings, never errors, for what the compiler used to take without a word.
+- `test/silent-accepts.test.ts` — Silent accepts made audible (product-roadmap RM1.4 and RM1.4b, then AF10 step 2): six warnings, never errors, for what the compiler used to take without a word.
 - `test/site-boundary.test.ts` — The `site { … boundary … }` lot line.
 - `test/site-doors.test.ts` — `site-shared/doors.json` is the single source of every door (ChatGPT, claude.ai connector, coding agent, VS Code, playground).
 - `test/site-lockstep.test.ts` — Site lockstep gate — the "change one, change the other" laws for the two sites.
