@@ -44,7 +44,8 @@ import { arcExtremes, distPointToArc } from "../geometry/arc.js";
 import { type EdgeLoop, edgeMid, loopArea, loopBBox, loopWinding } from "../geometry/band.js";
 import { type GridBox, GridIndex } from "../geometry/grid-index.js";
 import { segmentsOfWall } from "../geometry.js";
-import { distPointToSegment, rectRing } from "../geometry/polygon.js";
+import { distPointToSegment } from "../geometry/polygon.js";
+import { roomCurveCount, roomExtent, roomRing } from "../geometry/room-ring.js";
 import type { RRoom, RWall } from "../ir.js";
 import { joinWallSet } from "../wall-lowering.js";
 import {
@@ -251,25 +252,6 @@ const piecesBound = (c: number): number => c + 2 * c * Math.max(0, c - 1);
 /** The cover elements a face is measured against: anything with a room's shape fields. */
 export type FaceRoom = Pick<RRoom, "id" | "at" | "size" | "poly" | "circle">;
 
-const roomCurveCount = (r: FaceRoom): number => (r.circle ? 1 : r.poly ? r.poly.length : 4);
-
-const roomBoxOf = (r: FaceRoom): GridBox =>
-  r.circle
-    ? {
-        minX: r.circle.c.x - r.circle.r,
-        minY: r.circle.c.y - r.circle.r,
-        maxX: r.circle.c.x + r.circle.r,
-        maxY: r.circle.c.y + r.circle.r,
-      }
-    : r.poly
-      ? {
-          minX: Math.min(...r.poly.map((p) => p.x)),
-          minY: Math.min(...r.poly.map((p) => p.y)),
-          maxX: Math.max(...r.poly.map((p) => p.x)),
-          maxY: Math.max(...r.poly.map((p) => p.y)),
-        }
-      : { minX: r.at.x, minY: r.at.y, maxX: r.at.x + r.size.w, maxY: r.at.y + r.size.h };
-
 /**
  * The walled faces of a storey, or `null` when there is nothing to read (no wall, or no wall
  * body that bands), or a {@link WallFacesRefused} when a count is over its cap. `cover` is what
@@ -378,7 +360,7 @@ export function wallFaces(
   );
   const faceCurves = faceCurveCounts.reduce((a, b) => a + b, 0);
   if (faceCurves > FACE_BUDGET_CAPS.faceCurves) return { refused: "too-many-face-curves", count: faceCurves };
-  const coverBoxes = cover.map(roomBoxOf);
+  const coverBoxes = cover.map(roomExtent);
   let faceRooms = 0;
   // Each measurement probes both sides of every piece it walks (2 × pieces), and each probe
   // costs the loops it can meet (`loopsPerCell`, per point test) plus a walk over the ring
@@ -404,7 +386,7 @@ export function wallFaces(
   if (faceRooms > FACE_BUDGET_CAPS.faceRooms) return { refused: "too-many-face-rooms", count: faceRooms };
   let roomCurves = 0;
   for (const r of rooms) {
-    const b = roomBoxOf(r);
+    const b = roomExtent(r);
     let c = roomCurveCount(r);
     for (const i of loopIndex.queryBox(b)) if (boxesMeet(boxes[i]!, b, 0)) c += outline[i]!.length;
     roomCurves += c;
@@ -530,7 +512,7 @@ export function roomOutside(wf: WallFaces, r: FaceRoom): RoomOutside | null {
   for (const v of [area, inFaces]) if (!Number.isFinite(v) || v < -eps || v > reg.gross + eps) return null;
   let depth = 0;
   if (!r.circle) {
-    const ring = r.poly ?? rectRing({ x: r.at.x, y: r.at.y, w: r.size.w, h: r.size.h });
+    const ring = roomRing(r);
     for (const v of ring) {
       if (!off(v)) continue;
       let d = Number.POSITIVE_INFINITY;

@@ -47,6 +47,7 @@ import { roomLabelAnchor } from "./elements/room.js";
 import { isUnderlay } from "./fixtures-catalog.js";
 import { type ArrivingRun, isVertical } from "./vertical.js";
 import { clippedArea, rectRing } from "./geometry/polygon.js";
+import { roomRing } from "./geometry/room-ring.js";
 import { CHAIN_BASE, CHAIN_STEP, DIM_TEXT_GAP, drawingBounds, renderSizes } from "./sheet.js";
 import { textWidth } from "./text-metrics.js";
 import { type Box, boxesMeet, type TextBox, textBox } from "./text-layout.js";
@@ -1444,7 +1445,7 @@ function drawStorey(
     if (el.kind === "room") {
       const r = el as RRoom;
       labelGroups.push({
-        ring: r.poly ?? rectRing({ x: r.at.x, y: r.at.y, w: r.size.w, h: r.size.h }),
+        ring: roomRing(r),
         anchor: roomLabelAnchor(r),
         fixed: r.labelAt !== undefined,
         wrap: true,

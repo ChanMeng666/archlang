@@ -25,15 +25,14 @@ import { failExpected, failNear, missingClause, readClauses, type TailClause } f
 import { PLAIN_SHEET_TEXT } from "../sheet-text.js";
 import type { SceneNode } from "../scene.js";
 import type { RelConstraint, RRoom } from "../ir.js";
-import { rectCorners } from "../geometry.js";
 import { closest } from "../expr.js";
 import { fixesFrom, roomAlignAxisFix, roomAlignFix } from "../fix-producers.js";
 import { recordWordSpan, wordSpanOf } from "../id-spans.js";
 import { arcTessellate, fullCircleArc } from "../geometry/arc.js";
+import { roomAreaMm2, roomRing } from "../geometry/room-ring.js";
 import {
   effectiveVertices,
   pointInPolygon,
-  polygonArea,
   polygonBounds,
   polygonLabelPoint,
   polygonSelfIntersects,
@@ -633,9 +632,7 @@ export const room: ElementDef = {
   },
 
   bounds(resolved): Point[] {
-    const r = resolved as RRoom;
-    if (r.poly) return r.poly;
-    return rectCorners(r.at.x, r.at.y, r.size.w, r.size.h);
+    return roomRing(resolved as RRoom);
   },
 
   /** Its authored label anchor, the one coordinate a room carries outside its floor. */
@@ -672,7 +669,7 @@ export const room: ElementDef = {
         paint: { fill },
       });
     } else {
-      const c = r.poly ?? rectCorners(r.at.x, r.at.y, r.size.w, r.size.h);
+      const c = roomRing(r);
       nodes.push({ layer: "floor", prim: { t: "polygon", pts: c }, paint: { fill } });
     }
     // `floor <pattern>`: over the tint, from the room's own ring (a circle's 48-gon, which its
@@ -680,7 +677,7 @@ export const room: ElementDef = {
     // as `wall-lowering.ts` and the ground's do.
     if (r.floor) {
       const spec = floorHatch(r.floor);
-      const ring = r.poly ?? rectCorners(r.at.x, r.at.y, r.size.w, r.size.h);
+      const ring = roomRing(r);
       nodes.push({
         layer: "floor",
         prim: { t: "hatch", region: [ring.map((p) => ({ ...p }))], material: spec.material, scale: 1, angle: 0 },
@@ -696,16 +693,14 @@ export const room: ElementDef = {
     const centre = roomLabelAnchor(r);
     const cx = centre.x;
     const cy = centre.y;
-    // Each shape keeps its OWN expression, written out rather than routed through one
-    // helper: the rectangle's `(w/1000)*(h/1000)` and the polygon's shoelace differ from
-    // an `area/1e6` rewrite by an ulp, and an ulp at a `.x5` boundary flips `toFixed(1)`
-    // — so a "tidier" single expression would silently move an existing drawing's bytes.
-    // A circle is πR², exact — never the 48-gon the grid layer uses (0.29% short).
-    const areaM2 = r.circle
-      ? ((Math.PI * r.circle.r * r.circle.r) / 1_000_000).toFixed(1)
-      : r.poly
-        ? (polygonArea(r.poly) / 1_000_000).toFixed(1)
-        : ((r.size.w / 1000) * (r.size.h / 1000)).toFixed(1);
+    // The rectangle keeps its OWN expression, written out rather than routed through one
+    // helper: its `(w/1000)*(h/1000)` differs from an `area/1e6` rewrite by an ulp, and an
+    // ulp at a `.x5` boundary flips `toFixed(1)` — so a "tidier" single expression would
+    // silently move an existing drawing's bytes. A circle is πR², exact — never the 48-gon
+    // the grid layer uses (0.29% short). A circle and a polygon (its shoelace) were always
+    // `area/1e6`, so they read the exact area through the room-ring seam (`roomAreaMm2`).
+    const areaM2 =
+      r.circle || r.poly ? (roomAreaMm2(r) / 1_000_000).toFixed(1) : ((r.size.w / 1000) * (r.size.h / 1000)).toFixed(1);
     // `schedule rooms net`: the schedule's own net figure (two decimals, as it is tabulated),
     // read to one decimal and named, so a reader cannot take it for the centreline area. A room
     // with no net figure keeps the centreline stamp, unsuffixed.

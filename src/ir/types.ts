@@ -325,6 +325,9 @@ export interface RRoom extends RBase {
    * (x,y) …`). Absent for a rectangular room, which is what keeps every existing
    * plan byte-identical: a consumer must read this before assuming `at`/`size` IS the
    * floor. Vertices are grid-snapped, in source order, with no repeated last point.
+   * It is the floor's DISCRETISED ring (a circle's tessellation, below): an area, a
+   * boundary integral, an extent or a vertex chain shown to a reader goes through the
+   * room-ring seam (`src/geometry/room-ring.ts`), never straight to this.
    */
   poly?: Point[];
   /**

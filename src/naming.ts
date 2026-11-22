@@ -29,7 +29,8 @@
  */
 
 import type { Point } from "./ast.js";
-import { polygonArea, polygonLabelPoint } from "./geometry/polygon.js";
+import { polygonLabelPoint } from "./geometry/polygon.js";
+import { roomAreaMm2, roomExtent } from "./geometry/room-ring.js";
 import { fmt2 } from "./num-format.js";
 
 /** The words a use is spoken as. Keyed by `UseKind` (and typed as a string for taste). */
@@ -103,22 +104,11 @@ export function sizeWords(rect: { w: number; h: number } | null, areaMm2: number
 export function nameableOf(r: RoomShape, uses: readonly string[]): NameableRoom {
   let bounds: RoomBounds;
   let size: string;
-  if (r.circle) {
-    bounds = {
-      x0: r.circle.c.x - r.circle.r,
-      y0: r.circle.c.y - r.circle.r,
-      x1: r.circle.c.x + r.circle.r,
-      y1: r.circle.c.y + r.circle.r,
-    };
-    size = sizeWords(null, Math.PI * r.circle.r * r.circle.r);
-  } else if (r.poly && r.poly.length >= 3) {
-    bounds = {
-      x0: Math.min(...r.poly.map((p) => p.x)),
-      y0: Math.min(...r.poly.map((p) => p.y)),
-      x1: Math.max(...r.poly.map((p) => p.x)),
-      y1: Math.max(...r.poly.map((p) => p.y)),
-    };
-    size = sizeWords(null, Math.abs(polygonArea(r.poly)));
+  if (r.circle || (r.poly && r.poly.length >= 3)) {
+    // The floor's exact extent and area, read through the room-ring seam (`geometry/room-ring.ts`).
+    const e = roomExtent(r);
+    bounds = { x0: e.minX, y0: e.minY, x1: e.maxX, y1: e.maxY };
+    size = sizeWords(null, roomAreaMm2(r));
   } else {
     bounds = { x0: r.at.x, y0: r.at.y, x1: r.at.x + r.size.w, y1: r.at.y + r.size.h };
     size = sizeWords(r.size, r.size.w * r.size.h);
