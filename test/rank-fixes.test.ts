@@ -1,7 +1,8 @@
-/** rankFixes; cmdFix pick-one reduction (rankFixes + applyFixes). */
+/** rankFixes; cmdFix pick-one reduction (rankFixes + applyFixes); L1's pick (l1Fixes). */
 
 import { describe, expect, it } from "vitest";
-import { applyFixes, rankFixes } from "../src/index.js";
+import { l1Fixes, l1Pipeline } from "../eval/l1.js";
+import { applyFixes, compile, rankFixes } from "../src/index.js";
 import type { Applicability, Diagnostic, FixEdit, FixSuggestion } from "../src/index.js";
 
 /**
@@ -134,5 +135,70 @@ describe("cmdFix pick-one reduction (rankFixes + applyFixes)", () => {
     // Flat (old) collection vs. the new pick-one collection coincide on a singleton.
     const flat = (diag.fixes ?? []).slice();
     expect(applyFixes(source, collect([diag])).output).toBe(applyFixes(source, flat).output);
+  });
+});
+
+describe("L1's pick (l1Fixes): the fix cmdFix takes, never every alternative (SR.17)", () => {
+  // L1 (`eval/l1.ts`) mirrors cmdFix. It used to hand `applyFixes` every alternative of a
+  // diagnostic in array order; `applyFixes` then applied the earliest-starting one and skipped the
+  // rest, whatever `rankFixes` said. A pure unit test of the choice: `--l1` itself needs `--live`.
+  const source = "door at (2500,9000)";
+  const small = sug("zero the y", [edit(14, 18, "0")]);
+  const big = sug("re-attach", [edit(8, 19, "on w1 at 50%")]);
+  const cmdFixPick = (diags: Diagnostic[]): FixSuggestion[] =>
+    diags.flatMap((d) => rankFixes(d.fixes ?? []).slice(0, 1));
+
+  it("takes the top of rankFixes per diagnostic, not the first in array order", () => {
+    const diags: Diagnostic[] = [{ severity: "warning", message: "off wall", fixes: [big, small] }];
+    expect(l1Fixes(diags)).toEqual([small]);
+    const report = applyFixes(source, l1Fixes(diags));
+    expect(report.output).toBe("door at (2500,0)");
+    expect(report.skipped).toEqual([]);
+    // What the flat pass did: the earlier-starting `big` wins and `small` is skipped.
+    const flat = applyFixes(source, [big, small]);
+    expect(flat.output).toBe("door at on w1 at 50%");
+    expect(flat.skipped.map((s) => s.suggestion.title)).toEqual(["zero the y"]);
+  });
+
+  it("puts a machine-applicable alternative above a smaller maybe-incorrect one", () => {
+    const maybe = sug("maybe", [edit(14, 18, "0")], "maybe-incorrect");
+    expect(l1Fixes([{ severity: "warning", message: "m", fixes: [maybe, big] }])).toEqual([big]);
+  });
+
+  it("equals cmdFix's pick, keeps diagnostic order, and passes over a diagnostic with no fix", () => {
+    const diags: Diagnostic[] = [
+      { severity: "warning", message: "none" },
+      { severity: "warning", message: "empty", fixes: [] },
+      { severity: "warning", message: "two", fixes: [big, small] },
+      { severity: "error", message: "one", fixes: [big] },
+    ];
+    expect(l1Fixes(diags)).toEqual(cmdFixPick(diags));
+    expect(l1Fixes(diags)).toEqual([small, big]);
+    expect(l1Fixes([])).toEqual([]);
+  });
+
+  it("on AF9's two moves (E_OPENING_NIB), picks the one arch fix ranks first, and applies neither", () => {
+    // A door 25 mm past a meeting wall: two moves, the nearer first in the array, the shorter
+    // edit first once ranked (`packages/mcp/test/tools.test.ts` drives the same plan through MCP).
+    const plan = [
+      'plan "nib-two-ways" {',
+      "  units mm",
+      "  room id=a at (0,0) size 4000x3000",
+      "  room id=b at (4000,0) size 3000x3000",
+      "  walls from rooms exterior 200 partition 100",
+      "  wall id=t partition thickness 100 { (4000,1500) (7000,1500) }",
+      "  door between a and b at 1525 from start width 800",
+      "}",
+      "",
+    ].join("\n");
+    const nib = compile(plan, { noCache: true }).diagnostics.filter((d) => d.code === "E_OPENING_NIB");
+    expect(nib.map((d) => (d.fixes ?? []).map((f) => f.edits[0]!.newText))).toEqual([
+      ["at 2050 from start", "at 950 from start"],
+    ]);
+    const picked = l1Fixes(nib);
+    expect(picked.map((f) => f.edits[0]!.newText)).toEqual(["at 950 from start"]);
+    expect(picked).toEqual(cmdFixPick(nib));
+    // AF9's moves are maybe-incorrect and L1 applies machine-applicable fixes only (RM-D70 Q2).
+    expect(l1Pipeline(plan).fixesApplied).toBe(0);
   });
 });
