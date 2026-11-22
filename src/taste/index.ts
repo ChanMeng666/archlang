@@ -63,12 +63,14 @@ export { TASTE_PROFILES, TASTE_PROFILE_NAMES } from "./profiles.js";
  * The counted budget of one `taste()` call, in work units: each criterion declares a cost that
  * bounds the loop steps its judge counts (R3 about rooms + P·B pairs, R7 about elements +
  * windows + rooms, R14 about V·(V + 2E) on the access graph, R9/R18 about Σ V log V over the
- * room rings, R15 about V + E + B², R16 about D·V, R17 about L log L; `src/taste/criteria.ts`),
+ * room rings, R15 about V + E + B², R16 about D·V, R17 about L log L, R20 about V + E per storey
+ * and the wet-room pairs of neighbouring storeys; `src/taste/criteria.ts`),
  * and the cost is charged before the judge runs. Set by measurement: the largest charge over the
- * examples, the defect corpus and the taste corpus is 6,163 units with the eleven criteria of
- * PS5.1 (`examples/terrace-row.arch`; it was 1,559 with PS5.1a's three; re-measured by
- * `test/taste-budget.test.ts`, which also holds every judge's counted work at or under its cost),
- * and the budget, 6,500,000, is 1,054 times that (at least 1,000 times, as the step budget was). A
+ * examples, the defect corpus and the taste corpus was 6,163 units with the eleven criteria of
+ * PS5.1 (`examples/terrace-row.arch`; it was 1,559 with PS5.1a's three), and the budget,
+ * 6,500,000, 1,054 times that (at least 1,000 times, as the step budget was). With R20 it is 6,204
+ * (`examples/hillside-villa.arch`; re-measured by `test/taste-budget.test.ts`, which also holds
+ * every judge's counted work at or under its cost), 1,047 times under the same budget. A
  * storey at the 5,000-element cap (`MAX_ELEMENTS`) exceeds it on the all-pairs criteria (R14,
  * R15): they then report `taste-budget` instead of running.
  */

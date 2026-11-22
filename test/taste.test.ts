@@ -160,6 +160,7 @@ describe("the report", () => {
       "R16",
       "R17",
       "R18",
+      "R20",
     ]);
   });
 
@@ -229,8 +230,8 @@ describe("the report", () => {
     const t = tasteWithBudget(read(`${CHAIN}.arch`), {}, 0);
     expect(t.score).toBeNull();
     expect(t.criteria.every((c) => !c.assessable && c.reason === "taste-budget")).toBe(true);
-    expect(t.coverage.skipped.map((s) => s.reason)).toEqual(Array(11).fill("taste-budget"));
-    expect(t.coverage.weight).toEqual({ assessable: 0, total: 11 });
+    expect(t.coverage.skipped.map((s) => s.reason)).toEqual(Array(12).fill("taste-budget"));
+    expect(t.coverage.weight).toEqual({ assessable: 0, total: 12 });
   });
 });
 
@@ -462,6 +463,121 @@ describe("each criterion's acceptance line (design §3)", () => {
     expect(crit(t, "R9").score).toBe(1);
   });
 
+  it("R20: a bath over the cloakroom scores 1, one at the far end scores 0; one storey is not judged", () => {
+    const off = crit(corpus("r20-bath-off-the-stack"), "R20");
+    expect(off.measured).toEqual({ num: 0, den: 2 });
+    expect(off.score).toBe(0);
+    expect(off.advice).toBe("A_WET_UNSTACKED");
+    expect(off.message).toBe(
+      '"Cloakroom" on level 1 stands over or under no bath or WC on level 2: 0 of 2 baths and WCs are stacked.',
+    );
+    expect(off.evidence).toEqual([
+      { ids: ["r_wc"], fact: "no bath's or WC's floor overlaps it on level 2", level: 1 },
+      { ids: ["r_bath"], fact: "no bath's or WC's floor overlaps it on level 1", level: 2 },
+    ]);
+    const on = crit(corpus("r20-bath-off-the-stack.good"), "R20");
+    expect(on.measured).toEqual({ num: 2, den: 2 });
+    expect(on.advice).toBeNull();
+    expect(on.message).toBe("The two baths or WCs stand one over the other.");
+    expect(on.evidence[0]).toEqual({
+      ids: ["r_wc", "r_bath"],
+      fact: "its floor overlaps a bath's or WC's on level 2 (above)",
+      level: 1,
+    });
+    // One storey: nothing to stack.
+    const one = taste(roomsOnly(['room id=a at (0,0) size 2000x2000 label "Bath" uses bath']));
+    expect(crit(one, "R20").reason).toBe("too-few-items");
+    expect(one.coverage.skipped).toContainEqual({ criterion: "R20", reason: "too-few-items" });
+    // Several baths and WCs on a storey are each judged: hillside-villa's three en-suites stand over
+    // none below, and its powder room under none above. Its utility room is not read.
+    const villa = crit(taste(read("examples/hillside-villa.arch"), { world: TASTE_WORLD }), "R20");
+    expect(villa.measured).toEqual({ num: 0, den: 4 });
+    // The townhouse stacks its cloakroom and both bathrooms on one footprint.
+    const town = crit(taste(read("examples/townhouse.arch"), { world: TASTE_WORLD }), "R20");
+    expect(town.measured).toEqual({ num: 3, den: 3 });
+  });
+
+  describe("R20 reads the floors' shapes exactly, on the lattice, never their boxes", () => {
+    const L = "(0,0) (4000,0) (4000,2000) (2000,2000) (2000,4000) (0,4000)";
+    const plan = (lower: string, upper: string, grid = "  grid 10"): string =>
+      [
+        'plan "Stack" {',
+        "  units mm",
+        ...(grid ? [grid] : []),
+        `  level 1 "Ground" { ${lower} }`,
+        `  level 2 "First" { ${upper} }`,
+        "}",
+      ].join("\n");
+    const wcL = `room id=w polygon ${L} label "WC" uses wc`;
+    const r20 = (lower: string, upper: string, grid?: string) => crit(taste(plan(lower, upper, grid)), "R20").measured;
+    const both = { num: 2, den: 2 };
+    const neither = { num: 0, den: 2 };
+
+    it("an L over an L, a bath on either arm (flush with the L's walls) or inside one, a triangle in the L", () => {
+      expect(r20(wcL, `room id=b polygon ${L} label "Bath" uses bath`)).toEqual(both);
+      expect(r20(wcL, 'room id=b at (0,0) size 4000x2000 label "Bath" uses bath')).toEqual(both);
+      expect(r20(wcL, 'room id=b at (0,0) size 2000x4000 label "Bath" uses bath')).toEqual(both);
+      expect(r20(wcL, 'room id=b at (0,2500) size 1500x1500 label "Bath" uses bath')).toEqual(both);
+      expect(r20(wcL, 'room id=b polygon (0,0) (2000,0) (0,2000) label "Bath" uses bath')).toEqual(both);
+    });
+
+    it("a bath in the L's notch (inside its box, outside its floor), or only touching, is not stacked", () => {
+      expect(r20(wcL, 'room id=b at (2500,2500) size 1500x1500 label "Bath" uses bath')).toEqual(neither);
+      const wc = 'room id=w at (0,0) size 2000x2000 label "WC" uses wc';
+      expect(r20(wc, 'room id=b at (2000,0) size 2000x2000 label "Bath" uses bath')).toEqual(neither);
+    });
+
+    it("the 1 mm margin is decided in integers: 1 mm across is not stacked, 1.1 mm is", () => {
+      const bath = 'room id=b at (2000,0) size 2000x2000 label "Bath" uses bath';
+      expect(r20('room id=w at (0,0) size 2001x2000 label "WC" uses wc', bath, "")).toEqual(neither);
+      expect(r20('room id=w at (0,0) size 2001.1x2000 label "WC" uses wc', bath, "")).toEqual(both);
+    });
+
+    it("a circle over a square stacks; one beside it does not", () => {
+      const sq = 'room id=w at (0,0) size 4000x4000 label "WC" uses wc';
+      expect(r20(sq, 'room id=b circle at (2000,2000) radius 1500 label "Bath" uses bath')).toEqual(both);
+      expect(r20(sq, 'room id=b circle at (6000,2000) radius 1500 label "Bath" uses bath')).toEqual(neither);
+    });
+
+    it("a repeated vertex is one corner: a closed ring, a doubled point, a closed triangle, a jog the grid snaps", () => {
+      // Each reads 2 of 2 under a bath that stands in it (red team of #1007, round 2: both copies of
+      // a repeated vertex were read as a straight run and the corner dropped).
+      const wc = (ring: string) => `room id=w polygon ${ring} label "WC" uses wc`;
+      const bath = (x: number) => `room id=b at (${x},200) size 1500x1500 label "Bath" uses bath`;
+      expect(r20(wc("(0,0) (4000,0) (4000,4000) (0,4000) (0,0)"), bath(200), "")).toEqual(both);
+      expect(r20(wc("(0,0) (4000,0) (4000,0) (4000,4000) (0,4000)"), bath(2400), "")).toEqual(both);
+      expect(r20(wc("(0,0) (4000,0) (0,4000) (0,0)"), bath(200), "")).toEqual(both);
+      expect(r20(wc("(0,0) (4020,0) (4000,0) (4000,4000) (0,4000)"), bath(2400), "  grid 100")).toEqual(both);
+    });
+
+    it("the margin holds on a polygon: 1 mm into the L's arm is not stacked, 1.1 mm is, flush is not", () => {
+      const at = (x: string) => `room id=b at (${x},2000) size 1500x1500 label "Bath" uses bath`;
+      expect(r20(wcL, at("2000"), "")).toEqual(neither);
+      expect(r20(wcL, at("1999"), "")).toEqual(neither);
+      expect(r20(wcL, at("1998.9"), "")).toEqual(both);
+    });
+
+    it("the verdict does not depend on where the L's ring starts or which way it runs", () => {
+      const pts = ["(0,0)", "(4000,0)", "(4000,2000)", "(2000,2000)", "(2000,4000)", "(0,4000)"];
+      for (const xy of ["2000", "1999", "1998.9", "1999.2"]) {
+        const seen = new Set<string>();
+        for (let k = 0; k < pts.length; k++)
+          for (const dir of [1, -1]) {
+            const ring = pts.map((_, i) => pts[(k + dir * i + 2 * pts.length) % pts.length]).join(" ");
+            const bath = `room id=b at (${xy},${xy}) size 1500x1500 label "Bath" uses bath`;
+            seen.add(JSON.stringify(r20(`room id=w polygon ${ring} label "WC" uses wc`, bath, "")));
+          }
+        expect([...seen], `bath at (${xy},${xy})`).toHaveLength(1);
+      }
+    });
+
+    it("a utility room is not a sanitary facility: a bath over one is not judged", () => {
+      const util = 'room id=w at (0,0) size 2000x2000 label "Utility" uses utility';
+      const t = taste(plan(util, 'room id=b at (0,0) size 2000x2000 label "Bath" uses bath'));
+      expect(crit(t, "R20").reason).toBe("too-few-items");
+    });
+  });
+
   it("an upper storey is skipped for the depth readers, filed with its level", () => {
     const t = taste(read("examples/townhouse.arch"), { world: TASTE_WORLD });
     const upper = t.coverage.skipped.filter((s) => s.reason === "upper-storey");
@@ -503,7 +619,7 @@ describe("arch score --taste (the CLI contract)", () => {
   it("prints a human summary line and exits 0", async () => {
     const r = await run(["score", `${CHAIN}.arch`, "--taste", "generic"]);
     expect(r.status).toBe(0);
-    expect(r.stdout).toBe("taste generic: 0.5 (capped; uncapped 0.6875) · judged 10/11 of the weight\n");
+    expect(r.stdout).toBe("taste generic: 0.5 (capped; uncapped 0.6875) · judged 10/12 of the weight\n");
     expect(r.stderr).toContain("A_INTIMACY_INVERSION");
   }, 30000);
 

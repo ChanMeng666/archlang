@@ -148,3 +148,33 @@ describe("with north fixed, every criterion but the compass readers (R12; R3 whe
     expect(movers.length, "no street-chosen plan moves R3 any more: the exemption guards nothing").toBeGreaterThan(0);
   }, 120_000);
 });
+
+/**
+ * R20 (wet-room stacking) on storeys the oracle's frames never reach (it places only single-storey
+ * examples): its overlap verdict is decided on the 0.001 mm lattice, so a plan written off the grid
+ * reads the same moved as at the origin. A WC 2048.3 mm wide under a bath from x = 2047.3 overlaps it
+ * by exactly 1 mm, which is not stacked (the margin is more than 1 mm) at either offset; a float test
+ * of the same floors read 2 of 2 at the origin and 0 of 2 moved 1000 mm (red team of #1007, S1).
+ */
+describe("R20 is invariant under translation, off the grid", () => {
+  /** The WC at `wcX`, `wcW` wide; the bath at `bathX`, as an author would write the decimals. */
+  const plan = (wcX: string, wcW: string, bathX: string): string =>
+    [
+      'plan "Stack" {',
+      "  units mm",
+      `  level 1 "Ground" { room id=w at (${wcX},0) size ${wcW}x2000 label "WC" uses wc }`,
+      `  level 2 "First" { room id=b at (${bathX},0) size 2000x2000 label "Bath" uses bath }`,
+      "}",
+    ].join("\n");
+  const r20 = (src: string) => taste(src).criteria.find((c) => c.id === "R20")!.measured;
+
+  it("an overlap of exactly 1 mm is not stacked, at the origin or moved 1000 mm", () => {
+    expect(r20(plan("0", "2048.3", "2047.3"))).toEqual({ num: 0, den: 2 });
+    expect(r20(plan("1000", "2048.3", "3047.3"))).toEqual({ num: 0, den: 2 });
+  });
+
+  it("an overlap of 1.1 mm is stacked at both", () => {
+    expect(r20(plan("0", "2048.4", "2047.3"))).toEqual({ num: 2, den: 2 });
+    expect(r20(plan("1000", "2048.4", "3047.3"))).toEqual({ num: 2, den: 2 });
+  });
+});
