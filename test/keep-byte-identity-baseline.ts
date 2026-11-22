@@ -10,7 +10,7 @@
  * PR legitimately moves a hashed output (never keep code), the table is re-taken by the generator, the
  * reason recorded below and the moved files listed in that commit's message.
  *
- * Taken: SR.15 on #1010 after merging main 4b161800 (#1007): a wrapped room name keeps the spaces its break removed, in zero-size separator tspans; SVG only, the separators stripped reproduce every old row
+ * Taken: card ARC-W1 (fix/arcw1-openings-on-arc on main a0f85ebf): openings on an arc are drawn on the curve; only the SVG of the plans with a door, window or opening on an arc moved (describe/lint/diagnostics/validate/impact and steps unchanged, by a per-payload sweep against main)
  */
 
 /** `[path from the repository root, SHA-256 of the payload, evaluation steps]`, sorted by root. */
@@ -23,7 +23,7 @@ export const KEEP_WEAK_BASELINE: readonly (readonly [string, string, number])[] 
   ],
   [
     "examples/aquarium.arch",
-    "2c7789148ff61788501cd77b6ed44292aea1f415c66973d99f9b693380af993f",
+    "62a70911a809e142118fe8be2c72cda7c608e726a1bbcaa6673956572cd70a02",
     3350,
   ],
   [
@@ -83,12 +83,12 @@ export const KEEP_WEAK_BASELINE: readonly (readonly [string, string, number])[] 
   ],
   [
     "examples/hexagon-pavilion.arch",
-    "8cf0e3ead96278d67bbbbb7626df0807660f7e97bc75a5300cacbcade5671632",
+    "1112f32ffa1fea48bf928e5ac08f266f37e94df0e41bb33a173df597d7eb966c",
     1009,
   ],
   [
     "examples/hillside-villa.arch",
-    "042e0557e2f5550d8bc7e4dd0607014cd8f48eb38fa0184f8fab195435f2fd98",
+    "5ee571aea2f1d9075d3800aabfabe74d77fd8452dc566ef289f6c926fc7a80ee",
     5336,
   ],
   [
@@ -108,7 +108,7 @@ export const KEEP_WEAK_BASELINE: readonly (readonly [string, string, number])[] 
   ],
   [
     "examples/library.arch",
-    "9656d9a64f70cffb23b1b0fb6b53c2fa02424e7b8c4a4a28d98e62d2508440e8",
+    "c694e2e5573880142823d18fff0c36f864e6dcac9123df913ed6f9e4c6d3a216",
     2687,
   ],
   [
@@ -373,22 +373,22 @@ export const KEEP_WEAK_BASELINE: readonly (readonly [string, string, number])[] 
   ],
   [
     "test/defect-corpus/annotation-collisions/radius-over-label.arch",
-    "1eebc95f98cd79f04987adf628c9ad5e45a5200121b62ac3ed519edf91c56287",
+    "c522052553aef22aa0bffa453ed44c956b1f733de5804d812d8d8b1b6ece2168",
     68,
   ],
   [
     "test/defect-corpus/annotation-collisions/radius-over-label.clean.arch",
-    "96bf5ea1b2cb228e6cca7ad925f30d9538f306d0c1c81480b50db3a6a5287612",
+    "d4d0e47765372d30f490c57bdb4dd25a7097dbaf3f8130f00d3ecaddac9efd3a",
     68,
   ],
   [
     "test/defect-corpus/annotation-collisions/radius-over-piece.arch",
-    "55c04d967f39d6612ef4eea84c9636bec45882b1d1a69b3bb4150a58b40eadff",
+    "954acc87bf824af989eea7c3f676b3115a51ba9151c3f6531f9a273fec8242cb",
     82,
   ],
   [
     "test/defect-corpus/annotation-collisions/radius-over-piece.clean.arch",
-    "4f652d3b8672c4fcea953a2ed588d82f4135f42c254153ecadfa37e01acccc9c",
+    "598952a047101ccf4dc9deb93ac8e75438cebb827a48a8b4f1e9e50898b7b8a9",
     82,
   ],
   [
@@ -1698,7 +1698,7 @@ export const KEEP_WEAK_BASELINE: readonly (readonly [string, string, number])[] 
   ],
   [
     "test/plans/plan-soundness/repro/gallery-bench-pinch.arch",
-    "75d1dc1ba31cf0fb6810fcdcc1989ea0254a709f302bf7cb78204f11a9d7ee7b",
+    "65dc39ffb68b5f06b437ca387525b8e5a5cec0651c45763a0a7cd371ab825d24",
     2039,
   ],
   [

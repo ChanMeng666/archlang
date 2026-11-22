@@ -105,7 +105,7 @@ const BASELINE: [string, string, string][] = [
     "examples/accessible.arch",
   ],
   [
-    "eee3dc30bd94b5f31c7189f719ff38e09d6f56a3d5484f443432591f8f1e737e",
+    "a5253e454b307c87f22f8e47e6f785db8bb880885b8d47561f2d808d1016e918",
     // AF9: the parse holds the `posSpan` and `wallSpan` an opening's lead now records (no semantics); without them it is the parse pinned here (was 295d276e)
     "8ed143c564a6a56e077dd4ca1ba3e87bc0e9164525b125e3d0e0950f884db2cd",
     "examples/aquarium.arch",
@@ -179,13 +179,13 @@ const BASELINE: [string, string, string][] = [
     "examples/garden-loft.arch",
   ],
   [
-    "847694c47f21e1660d3a4bbd70469d8fac354b2d255070478c59fe1aa83a613a", // CV13 (was 3078765c): example source edited (chairs added)
+    "752b391b72fa247a99b979b8e1f4fc6f7a6783316cd29ad0bea4447245b0e311", // CV13 (was 3078765c): example source edited (chairs added)
     // AF9: the parse holds the `posSpan` and `wallSpan` an opening's lead now records (no semantics); without them it is the parse pinned here (was 5358bb59)
     "2e6ebd8c99039f36094d5c28a112766037358ee865e4dcb70cb6bacae10707fd", // CV13 (was 49686f4f): example source edited (chairs added)
     "examples/hexagon-pavilion.arch",
   ],
   [
-    "bde21bc8c7ea02b91b55d17623eac370428f9aef0f2c16f0fb8f7fd00ae369ce", // RM9.2, see ./byte-identity-baseline.ts; CV14: example source edited (stairwell void added) (was 123f2af2)
+    "846971b81c64739f79f3d185160d4323d6db273cc77cafb5a933387c0e9b5f3b", // RM9.2, see ./byte-identity-baseline.ts; CV14: example source edited (stairwell void added) (was 123f2af2)
     // CO.1: the parse holds the 3 `size` clauses the example now writes; without them, offsets mapped back, it is the parse pinned here (was db3a5d1e)
     // AF9: the parse holds the `posSpan` and `wallSpan` an opening's lead now records (no semantics); without them it is the parse pinned here (was 664292dc)
     "4b224a4d653928c62587dc39cf7b7d3f4446fd2fe8139eeb7639f6a488f93a5a", // CV14: example source edited (stairwell void added) (was b122bb73)
@@ -224,7 +224,7 @@ const BASELINE: [string, string, string][] = [
     "examples/lib/furniture.arch",
   ],
   [
-    "a004eb834300480a37f5a520671a570fb3e07f7bff061ba7e510e779fa912466",
+    "aa107b1b311d1545f228eaac173cc95a396a6acd86fdeb6db58de4ba3617f7b7",
     // AF9: the parse holds the `posSpan` and `wallSpan` an opening's lead now records (no semantics); without them it is the parse pinned here (was 2656d94d)
     "6e737b9180bb6c0cc5f9276ca1547e0d0bd6f6f252ac87019b80837cdf41aabb",
     "examples/library.arch",

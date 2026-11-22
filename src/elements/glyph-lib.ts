@@ -61,7 +61,8 @@
 
 import type { Point } from "../ast.js";
 import { rectRing } from "../geometry/polygon.js";
-import type { LineWeight, PathEdge, PathLoop, RenderSizes, SceneNode } from "../scene.js";
+import { type Arc, type ArcOpeningSpan, arcOpeningSpan, arcPieces, spanArc } from "../geometry/arc.js";
+import type { LineWeight, PathEdge, PathLoop, RenderSizes, SceneNode, ScenePrim } from "../scene.js";
 import { weightWidth } from "../scene.js";
 import type { Theme } from "../theme.js";
 import type { FamilyMaterials, FixtureMaterial } from "./fixtures-glyphs.js";
@@ -653,6 +654,51 @@ export function bulgeArc(from: Point, to: Point, sagitta: number): PathEdge[] {
     ];
   }
   return [{ t: "arc", to, center, r: rad, sweep }];
+}
+
+/** `arc` as `path` edges from its start, each at most 120° ({@link arcPieces}); the last ends on `arc.b`. */
+export function arcEdges(arc: Arc): PathEdge[] {
+  return arcPieces(arc).map((p) => ({ t: "arc", to: p.end, center: p.center, r: p.r, sweep: p.sweep }));
+}
+
+/** `arc` as open `arc` primitives, each at most 120° ({@link arcPieces}): one node per piece. */
+export function arcPrims(arc: Arc): Extract<ScenePrim, { t: "arc" }>[] {
+  return arcPieces(arc).map((p) => ({
+    t: "arc",
+    center: p.center,
+    r: p.r,
+    start: p.start,
+    end: p.end,
+    sweep: p.sweep,
+  }));
+}
+
+/**
+ * The annular sector an opening on a curved wall spans ({@link arcOpeningSpan}), between radii
+ * `r0` and `r1` about the wall's centre: along `r0` from jamb to jamb, radially across, back
+ * along `r1`, radially home. The jambs are the span's own (the cut's), so a cover drawn with it
+ * fills the cut exactly. The ASCII backend reads this shape (arc edges, one line, arc edges, one
+ * line) to carve the opening along its centreline.
+ */
+export function spanSectorLoop(span: ArcOpeningSpan, r0: number, r1: number): PathLoop {
+  const out = spanArc(span, r0);
+  const back = spanArc(span, r1, true);
+  return {
+    start: out.a,
+    edges: [...arcEdges(out), { t: "line", to: back.a }, ...arcEdges(back), { t: "line", to: out.a }],
+  };
+}
+
+/**
+ * The cover a door or cased opening emits on a CURVED wall: the cut's own annular sector at the
+ * wall's half-extent ({@link spanSectorLoop}), where a straight wall's is its rectangle. Null on a
+ * straight host, and where the joinery makes no annular cut (`openingCut`, `src/geometry/band.ts`).
+ */
+export function openingCover(seg: { arc?: Arc; thickness: number }, at: Point, width: number): ScenePrim | null {
+  const arc = seg.arc;
+  const h = seg.thickness / 2;
+  if (!arc || !(arc.r > h)) return null;
+  return { t: "path", loops: [spanSectorLoop(arcOpeningSpan(arc, at, width), arc.r + h, arc.r - h)] };
 }
 
 /**

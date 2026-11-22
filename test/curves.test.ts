@@ -358,25 +358,26 @@ suite("`on <wall> at <pos>` walks RUN length, so a curve is not measured by its 
 // The swing tangent
 // ---------------------------------------------------------------------------
 
-suite("a door on a curve swings off the TANGENT at its own position", () => {
+suite("a door on a curve hangs on a jamb of the curved opening, square to the chord between its jambs", () => {
   const src = `plan "P" {
   wall id=w exterior thickness 200 { (0,0) arc (12000,0) radius 6000 }
   door id=d on w at 50% width 1000
 }`;
 
-  it("takes the leaf direction from the tangent, not from the chord", () => {
+  it("hinges on the arc, and opens square to the doorway's own chord, not the wall's", () => {
     const scene = compile(src).scene!;
     // The leaf is a slab: the doors-layer polygon WITH a stroke (the cover has none), whose
     // first edge is the open-leaf radius, hinge → tip — the line the leaf used to be.
     const leaf = scene.nodes.find((n) => n.layer === "doors" && n.prim.t === "polygon" && n.paint.stroke)!;
     const pts = (leaf.prim as { pts: { x: number; y: number }[] }).pts;
     const p = { a: pts[0]!, b: pts[1]! };
-    // The door sits at the arc's south point (6000,6000); the tangent there is horizontal,
-    // so the hinge-to-leaf-tip line (perpendicular to the tangent) must be VERTICAL. On the
-    // chord — which is also horizontal here — the two would coincide, so the test uses the
-    // hinge position instead: it must be offset ALONG the curve, hence off the chord line.
+    // The door sits at the arc's south point (6000,6000), so the chord between its two jambs is
+    // horizontal and the hinge-to-leaf-tip line (square to it) is VERTICAL. The hinge is a jamb
+    // of the cut, ON the wall's centreline arc (radius 6000 about (6000,0)), 500 mm round it:
+    // until card ARC-W1 it stood on the tangent at (5500,6000), 21 mm off the curve.
     expect(Math.abs(p.a.x - p.b.x)).toBeCloseTo(0, 6);
-    expect(p.a.y).toBeCloseTo(6000, 0);
+    expect(Math.hypot(p.a.x - 6000, p.a.y)).toBeCloseTo(6000, 6);
+    expect(p.a.y).toBeCloseTo(6000 * Math.cos(500 / 6000), 6);
   });
 
   it("emits the swing as a real arc primitive", () => {

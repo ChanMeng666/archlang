@@ -431,11 +431,11 @@
 <line x1="6900" y1="10162.5" x2="5100" y2="10162.5" stroke="#3a6ea5" stroke-width="9"/>
 <line x1="6900" y1="10237.5" x2="5100" y2="10237.5" stroke="#3a6ea5" stroke-width="9"/>
 <polygon points="6960,10350 6960,10410 5040,10410 5040,10350" fill="none" stroke="#1b1b1b" stroke-width="9"/>
-<polygon points="3750,10625 2250,10625 2250,10975 3750,10975" fill="#ffffff"/>
-<line x1="3750" y1="10650" x2="2250" y2="10650" stroke="#1b1b1b" stroke-width="9"/>
-<line x1="3750" y1="10950" x2="2250" y2="10950" stroke="#1b1b1b" stroke-width="9"/>
-<line x1="3750" y1="10762.5" x2="2250" y2="10762.5" stroke="#3a6ea5" stroke-width="9"/>
-<line x1="3750" y1="10837.5" x2="2250" y2="10837.5" stroke="#3a6ea5" stroke-width="9"/>
+<path d="M 3668.45,10469.89 A 1825 1825 0 0 1 2331.55,10469.89 L 2203.36,10795.57 A 2175 2175 0 0 0 3796.64,10795.57 L 3668.45,10469.89 Z" fill="#ffffff"/>
+<path d="M 3677.6,10493.15 A 1850 1850 0 0 1 2322.4,10493.15" fill="none" stroke="#1b1b1b" stroke-width="9"/>
+<path d="M 3787.49,10772.31 A 2150 2150 0 0 1 2212.51,10772.31" fill="none" stroke="#1b1b1b" stroke-width="9"/>
+<path d="M 3718.81,10597.84 A 1962.5 1962.5 0 0 1 2281.19,10597.84" fill="none" stroke="#3a6ea5" stroke-width="9"/>
+<path d="M 3746.28,10667.62 A 2037.5 2037.5 0 0 1 2253.72,10667.62" fill="none" stroke="#3a6ea5" stroke-width="9"/>
 </g>
 <g id="A-ANNO-TEXT" inkscape:groupmode="layer" inkscape:label="A-ANNO-TEXT">
 <text x="-2750" y="5545" font-size="175" fill="#222222" text-anchor="middle" dominant-baseline="central" font-weight="600">Garage</text>

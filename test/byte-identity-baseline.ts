@@ -2089,12 +2089,31 @@
  * 51 files and 4,791 tests. Each row was then re-pinned to the branch's digest, and the K1 table
  * re-taken by its generator. `describe()`, `lint()`, the diagnostics, the steps and the work counts
  * are in those payloads and did not move.
+ *
+ * ## ARC-W1: a door, window or opening on an arc is drawn on the curve — SVG only, every such plan
+ *
+ * A window on an `arc` segment was drawn straight along the tangent at its centre; it is now drawn
+ * with concentric arcs and radial jambs on the joinery's own cut (`arcOpeningSpan`,
+ * `src/geometry/arc.ts`), a hinged or `double` door's leaves hang on the cut's jambs, and a door's or
+ * cased opening's (unpainted) cover is the cut's annular sector. `npm run digest:preview` on the branch
+ * (main `a0f85ebf`) moved 125 rows in 28 files (27 distinct digests) and `keep`'s weak-law table 9
+ * rows, over exactly the plans with an opening on an arc: `examples/` `aquarium`, `hexagon-pavilion`,
+ * `hillside-villa`, `library`; the `inline:window-placed-and-curved` row of the window-kinds law; and
+ * (K1 only) the four `test/defect-corpus/annotation-collisions/radius-over-*` plans and
+ * `test/plans/plan-soundness/repro/gallery-bench-pinch.arch`. The swap-back: the branch's `compile()`
+ * with `main`'s drawing put back (every page's SVG and Scene, and the overlay SVG, from `main`'s
+ * compiler; `describe()`, `lint()`, the diagnostics and the steps the branch's own) reproduces all 27
+ * old digests through the tests' own bodies, and the branch's own drawing does not. A per-payload
+ * sweep of the whole corpus (1,117 plans) moved only SVG, DXF and ASCII, on the same 13 plans;
+ * `describe()`, `lint()` (default and `accessibility-advisory`), `compile().diagnostics`, `validate
+ * --json` and `impact --json` did not move. Each row was then re-pinned to the branch's digest, and
+ * the K1 table re-taken by its generator.
  */
 
 /** SHA-256 over every storey's SVG + `describe()` + `lint()`, measured on `f4548db`. */
 export const BASELINE: [string, string][] = [
   ["accessible", "697c11114da0d8d3b16dda0bac1e2492d550b797add8a3fe8799729a4e0b0a4f"],
-  ["aquarium", "8fd4393c94a3058e3a08e4a295e8769391f24588af2c41113401ced57a1fbb42"], // re-measured for PS2.4, see header; PS2.10 dims fixed, see header; PS2.11e, see header
+  ["aquarium", "aa9e2bb5e778ae6b271cd0af2f48e1650cc5329ac26b0da712ec5be0814f8cdc"], // re-measured for PS2.4, see header; PS2.10 dims fixed, see header; PS2.11e, see header; ARC-W1, see header
   ["attached", "ab37b9000bd5ca7cf5f6940241f6b6945e338b207756773a2a9712a525100d72"],
   ["bungalow", "4fd27a7c5a0e9471f433b0fde903479a0863ee5fdcd0443906033ebea65a2496"], // PS2.11e, see header; CV13 (was ee5c6944): example source edited (chairs added)
   ["classroom-block", "825ebce1e06d54b6927539f698c96a961bebc8785891ccb99038a83e103c91fd"], // SR.15 (was aabc5d76); added with the example, re-measured for net area, see header; PS2.11e, see header
@@ -2106,12 +2125,12 @@ export const BASELINE: [string, string][] = [
   ["gallery-l", "7ac8620f4d47923ca075d1e1affb925326e50f520a71bb7b2cb2107375b4816d"], // PS2.10 dim fixed, see header; PS2.11e, see header
   ["garden-house", "dc284c378e90179cbaa1944f71fc242b9871e664401625495b10cc5ba4ee6b60"], // re-measured, see header; RM1.3a, see header; RM9.2, see header; CV14: example source edited (stairwell void added) (was b364b3a1)
   ["garden-loft", "823ca475790e000a0637ea97df36d38831a30171bf85063da60cc13d4f19cc57"], // PS2.11e, see header; CV13 (was 18475d2c): example source edited (chairs added)
-  ["hexagon-pavilion", "de1b01e8330cae5415fbfc9c8d609804880af169d112977d260c6ff979c53ae4"], // CV13 (was c9feff36): example source edited (chairs added)
-  ["hillside-villa", "a9b7d7a3c4db4a4412ea25543a9d5b00885bb0ff4f38198e614da7dd18cd4b2c"], // re-measured, see header; PS2.11e, see header; RM1.3a, see header; RM9.2, see header; CV14: example source edited (stairwell void added) (was 38fbb6c9)
+  ["hexagon-pavilion", "29348219f7714f3551c3bf2ef6ea312983f67a491be0094f96eeb4f4e86303f8"], // CV13 (was c9feff36): example source edited (chairs added); ARC-W1, see header
+  ["hillside-villa", "6fddbc9d17602d515ef764af2e8ef969b76414a9635aa24a3550a456042aac61"], // re-measured, see header; PS2.11e, see header; RM1.3a, see header; RM9.2, see header; CV14: example source edited (stairwell void added) (was 38fbb6c9); ARC-W1, see header
   ["imports", "1de644a1f7abfb2b5cc67269fac11a191810d959379f7b04e14c259014d1e9f4"],
   ["knob-flat", "a99858f74f98ab0ed82ec056df9b76543ee62e4c6692036f80ff301cf701a5c9"], // added with the example, see header
   ["laneway-house", "eb03b3f22a4c9f1b47482311ad6cf5ebffad12d38003dfa48ba56494366528f3"], // PS2.11e, see header; CV13 (was 8ede769d): example source edited (chairs added)
-  ["library", "0ec184db1b555418d3c67f0e0683cfb7866f327ccbe2760fa30a0bb8f4319821"], // SR.15 (was 0da11bfe); PS2.11e, see header
+  ["library", "7e12451dde4154bf15017acca16a20d782dd935f44271bd0f241b6e17db6b3c6"], // SR.15 (was 0da11bfe); PS2.11e, see header; ARC-W1, see header
   ["materials", "26e7ea4574248ccd8f73e34cf1bfb68501eee154cbacafbfff4b861a68eed0af"],
   ["museum-wing", "9cd492d6f597fc12e2c403466488e66a36b09f035bef9a9eb4bcea1fc164d9ff"],
   ["museum-wings", "951c488f6407e4508660a0d256034f27a0705ae2737f2b61695f4a7668dc4e7b"], // re-measured, see header; PS2.11e, see header

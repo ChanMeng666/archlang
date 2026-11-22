@@ -89,7 +89,7 @@ const API: ClauseLawApi = {
 /** `[surface digest, file]`, measured on `main` at `60e2436c` (see the header). */
 const BASELINE: [string, string][] = [
   ["5f69fe78d45db6b096e3e7f4c44bfcdb537c4201d06fee8780e813112869f20c", "examples/accessible.arch"],
-  ["eee3dc30bd94b5f31c7189f719ff38e09d6f56a3d5484f443432591f8f1e737e", "examples/aquarium.arch"],
+  ["a5253e454b307c87f22f8e47e6f785db8bb880885b8d47561f2d808d1016e918", "examples/aquarium.arch"],
   ["07995653257dff5785f4fe210e3c4f6f9d6fc35165be2e5ae34df364079029dc", "examples/attached.arch"],
   ["0dd331e28b8f4e20c3b359c8e819ed738290295cc83934c1a38808d2fd83dc13", "examples/bungalow.arch"], // CV13 (was 074d5531): example source edited (chairs added)
   ["4d558795c0b345b3a9a1e5454bc476125983a63dee7d3227c0d3afe09b7ed3bd", "examples/classroom-block.arch"],
@@ -101,15 +101,15 @@ const BASELINE: [string, string][] = [
   ["f3d86da1d7aed260f386efa6ca98b440c89ee7b2b84b0d0937401c72d7bb113e", "examples/gallery-l.arch"],
   ["5b0ec567a174809bd4d5a7c62907b611741e3537577e9552026d400c28cedcd6", "examples/garden-house.arch"], // RM9.2, see ./byte-identity-baseline.ts; CV14: example source edited (stairwell void added) (was 72528a5f)
   ["2814a29269f878cd596372eafe0fdf8c1d1bc9f0c478b33f1cae2906b6db8d8d", "examples/garden-loft.arch"], // CV13 (was e0ce8a5f): example source edited (chairs added)
-  ["847694c47f21e1660d3a4bbd70469d8fac354b2d255070478c59fe1aa83a613a", "examples/hexagon-pavilion.arch"], // CV13 (was 3078765c): example source edited (chairs added)
-  ["bde21bc8c7ea02b91b55d17623eac370428f9aef0f2c16f0fb8f7fd00ae369ce", "examples/hillside-villa.arch"], // RM9.2, see ./byte-identity-baseline.ts; CV14: example source edited (stairwell void added) (was 123f2af2)
+  ["752b391b72fa247a99b979b8e1f4fc6f7a6783316cd29ad0bea4447245b0e311", "examples/hexagon-pavilion.arch"], // CV13 (was 3078765c): example source edited (chairs added)
+  ["846971b81c64739f79f3d185160d4323d6db273cc77cafb5a933387c0e9b5f3b", "examples/hillside-villa.arch"], // RM9.2, see ./byte-identity-baseline.ts; CV14: example source edited (stairwell void added) (was 123f2af2)
   ["3aa7b2d5f953e6df63059c368e391ee3ea58c097cd7dff358197a940f4946252", "examples/imports.arch"],
   ["578ec7551025df65b704f453b7af3493bf4abcfb19737fdece206e4c85fd2586", "examples/knob-flat.arch"],
   ["21f4d5bc82e2e8d46536bd2dc5623b05ea76e937db31c7d4ed482a4c5e3118bc", "examples/laneway-house.arch"], // CV13 (was 958934b4): example source edited (chairs added)
   ["f57eaea084d2e6e62b85b8450ef96675e9f1466bea9aff24e2869f2d6f0c9804", "examples/lib/doors.arch"],
   ["57d6c78e2eea8451a9b32a5828f3babb24b0251cc5c3b72675b431be22b3f310", "examples/lib/fixtures.arch"],
   ["adf16d60e17d76d76f092f95fb24dab4b7ba5ebaa977ed32bcc3a8eaddc7e05b", "examples/lib/furniture.arch"],
-  ["a004eb834300480a37f5a520671a570fb3e07f7bff061ba7e510e779fa912466", "examples/library.arch"],
+  ["aa107b1b311d1545f228eaac173cc95a396a6acd86fdeb6db58de4ba3617f7b7", "examples/library.arch"],
   ["b3d629675b1a43d4d1113f10b38e732d0b826fdb2b019fcf14ac4b166abd435d", "examples/materials.arch"],
   ["add9b13a425ec75dd2b88c4eba087465228822c37321b3d1952db6f0795ef6c7", "examples/museum-wing.arch"],
   ["4acccb8ead0234e18186574c23a4c795d32c6a8f819fc67a983cebea337b8b29", "examples/museum-wings.arch"],

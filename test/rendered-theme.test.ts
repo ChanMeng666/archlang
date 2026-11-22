@@ -69,7 +69,7 @@ const worldOf = (dir: string | undefined): World | undefined => (dir ? makeNodeW
 /** Measured at `241fbfc3` (see the header): `[digest, row]`. */
 const BASELINE: [string, string][] = [
   ["7c828f62cd3bd017b8bc90a11e58d40162283aef9b6e25c179aa5abf39c693ea", "examples/accessible.arch"],
-  ["b07e341d6254068303eb803109197a0fa0d800d96ccd19310258e4c77f1937dc", "examples/aquarium.arch"],
+  ["b1c818d2bd800a59fc502d82e7fc8e19074753661661d9eb75d9bf0036ec8efc", "examples/aquarium.arch"],
   ["4bca852d43826d6a19bb22d0bcaf20714c7392c7bf63457abc5d064ad14831aa", "examples/attached.arch"],
   ["660fc41f31aecceb73baec824e2525ba48a4f59109bf2b6698be05e6aa237a64", "examples/bungalow.arch"], // CV13 (was bbac7be3): example source edited (chairs added)
   ["c19f4ae4736baad22c126138049bfaf162db2b4f4e19b235eadc1802fed1506d", "examples/classroom-block.arch"],
@@ -81,12 +81,12 @@ const BASELINE: [string, string][] = [
   ["7c2d19e317d8182f97d3a3364aab6c61054dbcf154f356f792e07951fb4cc9e8", "examples/gallery-l.arch"],
   ["5b1833f6a5535ef4092199f884fb0fc5a53dc95cd18943778c7ce58d4c83b234", "examples/garden-house.arch"], // RM1.3a, see ./byte-identity-baseline.ts; RM9.2, see ./byte-identity-baseline.ts; CV14: example source edited (stairwell void added) (was 5e8ad002)
   ["05a0e987ab75be9820173cb2c7703c44da82fe58bfc3fd104a9f17bc59115a24", "examples/garden-loft.arch"], // CV13 (was f878ff2a): example source edited (chairs added)
-  ["286d7778a9d765d08623e89227a9aaf866f19bdc4e75794df14a998364524f44", "examples/hexagon-pavilion.arch"], // CV13 (was 2184afc6): example source edited (chairs added)
-  ["37035f9edcb16f1355ee1e020e8548dd546fa881b0d8f3a6c3f211af9276ddfa", "examples/hillside-villa.arch"], // RM1.3a, see ./byte-identity-baseline.ts; RM9.2, see ./byte-identity-baseline.ts; CV14: example source edited (stairwell void added) (was c4da52d8)
+  ["a6f71310fb8481b85b333f52c30b9d599c71eb6dcb47f755b9f2b223edab24bf", "examples/hexagon-pavilion.arch"], // CV13 (was 2184afc6): example source edited (chairs added)
+  ["a4e589c2d909117187f6853c30f95b2a5a8f34869dc6229f54386faf606ea00b", "examples/hillside-villa.arch"], // RM1.3a, see ./byte-identity-baseline.ts; RM9.2, see ./byte-identity-baseline.ts; CV14: example source edited (stairwell void added) (was c4da52d8)
   ["dcc2b4674edc4f74db43a3ad65d1402290786ff9fcf45c21447db95fafae5ac7", "examples/imports.arch"],
   ["54ef5cae9feda0abc8176f144ab34ae2d7977ce0200b7e50fc7c3a44613dfdf0", "examples/knob-flat.arch"], // new example (P4, the knobs example)
   ["c8fc6c4319c3acac47673c9373c563903944b6210fcf5db75ce9bdbdc4ffecf2", "examples/laneway-house.arch"], // CV13 (was 9216c7fc): example source edited (chairs added)
-  ["80c0d70b40d38c5d7d0ebca72631d77985035faee8be9d58f67ba17fdfb061b5", "examples/library.arch"],
+  ["e2c4c9a07d7b8b0fa4bab156cedaa472c5fcf87c364530df5d4b2309d8062c6a", "examples/library.arch"],
   ["e7c86098ac9d2a454e3f1eafd04e937edb957b4344e7875d9006266c673fbad8", "examples/materials.arch"],
   ["5012abb624b8e5dd911e089260dc277f165b0458c605abc4b9538d3492194d64", "examples/museum-wing.arch"],
   ["82e7a2f40d27d1a28d4a82a0abb5fefd06e463f3feb086b217c4957f30606974", "examples/museum-wings.arch"],

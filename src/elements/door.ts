@@ -31,6 +31,7 @@ import {
   openingWidthFix,
 } from "../fix-producers.js";
 import { renderDoorPanels } from "./door-panels.js";
+import { openingCover } from "./glyph-lib.js";
 import {
   DOOR_HEAD,
   heightsInOrder,
@@ -541,9 +542,9 @@ export const door: ElementDef = {
     // pocket is a straight cavity — none of that survives on a curved reveal. Refuse
     // with a code rather than draw a straight panel across an arc (§10's explicit
     // stage-1 decision: decide, never let it fall out silently). A HINGED leaf does
-    // survive, because its swing is taken from the tangent at the doorway.
-    // A `double` door's two leaves survive as a hinged leaf does: both are taken from the tangent
-    // at the doorway's centre (`doorLeaves`), so it is not refused.
+    // survive: it is straight, hung on a jamb of the cut and closing along the chord to the other.
+    // A `double` door's two leaves survive as a hinged leaf does: each hangs on its own jamb and
+    // the pair closes along that chord (`doorLeaves`), so it is not refused.
     if (doorKind !== undefined && doorKind !== "double" && host?.arc) {
       ctx.diag({
         severity: "error",
@@ -674,9 +675,9 @@ export const door: ElementDef = {
     const seg = dr.host;
     if (!seg) return [];
     const { theme, sizes } = ctx;
-    // On a CURVED host the direction is the TANGENT at the doorway, so the cover spans a
-    // chord of the wall at that point and the jambs run radially — and the leaf and swing
-    // (computed from the same tangent inside `doorSwing`) can never disagree with it.
+    // On a CURVED host the cover is the cut's annular sector (`openingCover`) and each leaf
+    // hangs on one of its jambs (`doorSwing`/`doorLeaves` read the same `arcOpeningSpan`).
+    // The direction is the tangent at the doorway, which a non-hinged kind's panels read.
     const d = segmentDirAt(seg, dr.at);
     const n = normal(d);
     // The wall solid is ALWAYS severed at a doorway: the joinery pass
@@ -699,7 +700,8 @@ export const door: ElementDef = {
     const nodes: SceneNode[] = [];
     nodes.push({
       layer: "doors",
-      prim: { t: "polygon", pts: cover },
+      // On a curve, the cut's own annular sector (`openingCover`): its jambs are the leaves' hinges.
+      prim: openingCover(seg, dr.at, dr.width) ?? { t: "polygon", pts: cover },
       paint: { fill: "none" },
     });
     // A NON-HINGED kind draws panels/tracks/cavity in the reveal instead of a leaf and

@@ -10,6 +10,7 @@ import { add, mul, nearestWallNote, normal, segmentDirAt } from "../geometry.js"
 import { leadOf, parseAttachTarget, resolveOpeningLead, wallClause } from "../attach.js";
 import { fixesFrom, offWallFix, openingWidthFix } from "../fix-producers.js";
 import { reprint } from "./reprint.js";
+import { openingCover } from "./glyph-lib.js";
 import { noteSquare } from "../ir/silent-accepts.js";
 import {
   heightsInOrder,
@@ -144,7 +145,7 @@ export const opening: ElementDef = {
     const op = resolved as ROpening;
     const seg = op.host;
     if (!seg) return [];
-    // Tangent at the passage on a curved host (cover along it, jambs radial).
+    // Tangent at the passage; on a curved host the cover is the cut's sector (`openingCover`).
     const d = segmentDirAt(seg, op.at);
     const n = normal(d);
     const h = seg.thickness / 2;
@@ -169,7 +170,7 @@ export const opening: ElementDef = {
     const nodes: SceneNode[] = [];
     nodes.push({
       layer: "openings",
-      prim: { t: "polygon", pts: cover },
+      prim: openingCover(seg, op.at, op.width) ?? { t: "polygon", pts: cover },
       paint: { fill: "none" },
     });
     // No head/lintel line. A cased opening used to draw one dashed line at each wall
