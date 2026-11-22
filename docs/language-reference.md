@@ -1677,10 +1677,12 @@ plan "Rotunda" {
 **Openings on a curve work.** `on <wall> at <pos>` walks the wall by **run length**, and an
 arc contributes its arc length `R·θ` — not its chord — so `at 50%` lands halfway along the
 wall *as walked*. An absolute `at (x,y)` is attributed to the curve by its distance to the
-arc itself. A door's leaf and swing are taken from the **tangent at the doorway**, so
-`hinge left|right` keeps its usual meaning (relative to the direction of travel along the
-wall, which on an arc is the direction the arc turns); a window's panes run along that
-tangent with its jambs radial.
+arc itself. A door's leaf is drawn hung on a **jamb of the curved opening**, closing along
+the chord to the other jamb (a leaf is straight); its swing, which `lint` checks for
+clearance, is measured from the **tangent at the doorway**. `hinge left|right` keeps its
+usual meaning (relative to the direction of travel along the wall, which on an arc is the
+direction the arc turns). A window is drawn on the curve: its wall faces, panes and sill
+follow the wall about its centre, and its jambs are radial.
 
 **What a curve looks like.** The two visible faces are emitted as **true arcs** — SVG `A`
 commands, native DXF `ARC` entities — so a curve is never drawn faceted at any zoom. Only
@@ -1958,7 +1960,8 @@ fix that deletes the clause. A sliding-family or `garage` door on a wall whose h
 edge is an `arc` is [`E_DOOR_KIND_CURVED`](error-codes.md#e_door_kind_curved) — a straight panel
 on a straight track has no meaning on a curved reveal, and drawing one anyway would
 be a wrong drawing with no diagnostic. A `double` door is accepted there, as a hinged one
-is: both leaves are taken from the tangent at the doorway's centre. The clauses after the placement come in any order ([Clause order](#elements)).
+is: each leaf is drawn on its own jamb, the pair closing along the chord between them, and both
+swings are measured from the tangent at the doorway's centre. The clauses after the placement come in any order ([Clause order](#elements)).
 
 A `pocket` door needs its own width plus end clearance of clear wall past the
 slide-side jamb, or [`W_POCKET_RUN`](error-codes.md#w_pocket_run) — measured, and

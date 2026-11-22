@@ -10,6 +10,7 @@ import { add, mul, nearestWallNote, normal, segmentDirAt } from "../geometry.js"
 import { leadOf, parseAttachTarget, resolveOpeningLead, wallClause } from "../attach.js";
 import { fixesFrom, offWallFix, openingWidthFix } from "../fix-producers.js";
 import { reprint } from "./reprint.js";
+import { openingCover } from "./glyph-lib.js";
 import { noteSquare } from "../ir/silent-accepts.js";
 import {
   heightsInOrder,
@@ -19,6 +20,50 @@ import {
   resolveOpeningHeights,
 } from "../datum.js";
 import { missingClause, readClauses } from "../clause-order.js";
+
+/**
+ * A cased opening's (unpainted) cover: on a curved host, when `curved`, the cut's sector
+ * (`openingCover`); else, and on every straight host, the rectangle along the tangent, which is what
+ * the annotation passes read for an opening on a curve (`annotationFootprint`, card ARC-W1).
+ */
+function drawOpening(op: ROpening, curved: boolean): SceneNode[] {
+  const seg = op.host;
+  if (!seg) return [];
+  // Tangent at the passage; on a curved host the cover is the cut's sector (`openingCover`).
+  const d = segmentDirAt(seg, op.at);
+  const n = normal(d);
+  const h = seg.thickness / 2;
+  const hw = op.width / 2;
+  // The wall solid is ALWAYS severed here: the joinery pass
+  // (`wall-lowering.ts`) cuts every opening on every host — straight, angled or
+  // curved — with the floor running continuously through the gap and the capped jambs
+  // the only lines left. So the cover is never painted: `theme.opening` is the page
+  // background in every theme, and repainting a real hole with it laid a white band
+  // across the floor, overhanging a whole `wallStroke` past each wall face.
+  //
+  // The polygon is still EMITTED, at the wall's own half-extent, because it is how the
+  // ASCII and DXF backends *locate* the passage (they read the polygon on the
+  // `openings` pass). Half-extent, not `h + wallStroke`: a stroke-width overhang was
+  // slack for a cover that had to hide a face line, and there is no face line here.
+  const cover: Point[] = [
+    add(add(op.at, mul(d, -hw)), mul(n, h)),
+    add(add(op.at, mul(d, hw)), mul(n, h)),
+    add(add(op.at, mul(d, hw)), mul(n, -h)),
+    add(add(op.at, mul(d, -hw)), mul(n, -h)),
+  ];
+  const nodes: SceneNode[] = [];
+  nodes.push({
+    layer: "openings",
+    prim: (curved ? openingCover(seg, op.at, op.width) : null) ?? { t: "polygon", pts: cover },
+    paint: { fill: "none" },
+  });
+  // No head/lintel line. A cased opening used to draw one dashed line at each wall
+  // face, a convention borrowed from a drawing where the wall was NOT severed. With a
+  // real hole in the poché those two lines re-bridge the gap the joinery just opened,
+  // which is the opposite of what the passage means — so they are gone, with no
+  // opt-in.
+  return nodes;
+}
 
 export const opening: ElementDef = {
   kind: "opening",
@@ -141,43 +186,12 @@ export const opening: ElementDef = {
   drawCost: () => 1,
 
   render(resolved): SceneNode[] {
+    return drawOpening(resolved as ROpening, true);
+  },
+  /** On a curve, the tangent rectangle: what the label, tag and north-arrow passes read (card ARC-W1). */
+  annotationFootprint(resolved): SceneNode[] | undefined {
     const op = resolved as ROpening;
-    const seg = op.host;
-    if (!seg) return [];
-    // Tangent at the passage on a curved host (cover along it, jambs radial).
-    const d = segmentDirAt(seg, op.at);
-    const n = normal(d);
-    const h = seg.thickness / 2;
-    const hw = op.width / 2;
-    // The wall solid is ALWAYS severed here: the joinery pass
-    // (`wall-lowering.ts`) cuts every opening on every host — straight, angled or
-    // curved — with the floor running continuously through the gap and the capped jambs
-    // the only lines left. So the cover is never painted: `theme.opening` is the page
-    // background in every theme, and repainting a real hole with it laid a white band
-    // across the floor, overhanging a whole `wallStroke` past each wall face.
-    //
-    // The polygon is still EMITTED, at the wall's own half-extent, because it is how the
-    // ASCII and DXF backends *locate* the passage (they read the polygon on the
-    // `openings` pass). Half-extent, not `h + wallStroke`: a stroke-width overhang was
-    // slack for a cover that had to hide a face line, and there is no face line here.
-    const cover: Point[] = [
-      add(add(op.at, mul(d, -hw)), mul(n, h)),
-      add(add(op.at, mul(d, hw)), mul(n, h)),
-      add(add(op.at, mul(d, hw)), mul(n, -h)),
-      add(add(op.at, mul(d, -hw)), mul(n, -h)),
-    ];
-    const nodes: SceneNode[] = [];
-    nodes.push({
-      layer: "openings",
-      prim: { t: "polygon", pts: cover },
-      paint: { fill: "none" },
-    });
-    // No head/lintel line. A cased opening used to draw one dashed line at each wall
-    // face, a convention borrowed from a drawing where the wall was NOT severed. With a
-    // real hole in the poché those two lines re-bridge the gap the joinery just opened,
-    // which is the opposite of what the passage means — so they are gone, with no
-    // opt-in.
-    return nodes;
+    return op.host && openingCover(op.host, op.at, op.width) ? drawOpening(op, false) : undefined;
   },
   /** The frame's action on a cased opening (`frame.ts`'s `transformElement` calls this). */
   transform(resolved, t: TransformCtx): ROpening {

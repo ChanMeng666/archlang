@@ -5027,12 +5027,12 @@ exports[`golden SVG snapshots > renders hexagon-pavilion.arch deterministically 
 <line x1="7800" y1="12955" x2="9200" y2="12955" stroke="#555555" stroke-width="17.77"/>
 <polygon points="7800,12925 8570,12925 8570,12985 7800,12985" fill="#ffffff" stroke="#555555" stroke-width="31.98"/>
 <polygon points="8115,13015 8885,13015 8885,13075 8115,13075" fill="#ffffff" stroke="#555555" stroke-width="31.98"/>
-<polygon points="11969.52,5806.5 11269.91,4593.84 10230.48,5193.5 10930.09,6406.16" fill="none"/>
-<polygon points="9200,3400 7800,3400 7800,4600 9200,4600" fill="none"/>
-<polygon points="5730.09,4593.84 5030.48,5806.5 6069.91,6406.16 6769.52,5193.5" fill="none"/>
-<polygon points="5030.48,8193.5 5730.09,9406.16 6769.52,8806.5 6069.91,7593.84" fill="none"/>
-<polygon points="7800,10600 9200,10600 9200,9400 7800,9400" fill="none"/>
-<polygon points="11269.91,9406.16 11969.52,8193.5 10930.09,7593.84 10230.48,8806.5" fill="none"/>
+<path d="M 11949.73,5970.76 A 3600 3600 0 0 0 11117.8,4528.74 L 10245.2,5352.49 A 2400 2400 0 0 1 10799.82,6313.84 L 11949.73,5970.76 Z" fill="none"/>
+<path d="M 9332.4,3497.56 A 3600 3600 0 0 0 7667.6,3497.56 L 7945.07,4665.04 A 2400 2400 0 0 1 9054.93,4665.04 L 9332.4,3497.56 Z" fill="none"/>
+<path d="M 5882.2,4528.74 A 3600 3600 0 0 0 5050.27,5970.76 L 6200.18,6313.84 A 2400 2400 0 0 1 6754.8,5352.49 L 5882.2,4528.74 Z" fill="none"/>
+<path d="M 5050.27,8029.24 A 3600 3600 0 0 0 5882.2,9471.26 L 6754.8,8647.51 A 2400 2400 0 0 1 6200.18,7686.16 L 5050.27,8029.24 Z" fill="none"/>
+<path d="M 7667.6,10502.44 A 3600 3600 0 0 0 9332.4,10502.44 L 9054.93,9334.96 A 2400 2400 0 0 1 7945.07,9334.96 L 7667.6,10502.44 Z" fill="none"/>
+<path d="M 11117.8,9471.26 A 3600 3600 0 0 0 11949.73,8029.24 L 10799.82,7686.16 A 2400 2400 0 0 1 10245.2,8647.51 L 11117.8,9471.26 Z" fill="none"/>
 </g>
 <g id="A-GLAZ" inkscape:groupmode="layer" inkscape:label="A-GLAZ">
 <polygon points="14624.44,4844.17 13184.44,2924.17 12875.56,3155.83 14315.56,5075.83" fill="#ffffff"/>
@@ -5560,11 +5560,11 @@ exports[`golden SVG snapshots > renders hillside-villa.arch as one page per leve
 <line x1="6900" y1="10162.5" x2="5100" y2="10162.5" stroke="#3a6ea5" stroke-width="9"/>
 <line x1="6900" y1="10237.5" x2="5100" y2="10237.5" stroke="#3a6ea5" stroke-width="9"/>
 <polygon points="6960,10350 6960,10410 5040,10410 5040,10350" fill="none" stroke="#1b1b1b" stroke-width="9"/>
-<polygon points="3750,10625 2250,10625 2250,10975 3750,10975" fill="#ffffff"/>
-<line x1="3750" y1="10650" x2="2250" y2="10650" stroke="#1b1b1b" stroke-width="9"/>
-<line x1="3750" y1="10950" x2="2250" y2="10950" stroke="#1b1b1b" stroke-width="9"/>
-<line x1="3750" y1="10762.5" x2="2250" y2="10762.5" stroke="#3a6ea5" stroke-width="9"/>
-<line x1="3750" y1="10837.5" x2="2250" y2="10837.5" stroke="#3a6ea5" stroke-width="9"/>
+<path d="M 3668.45,10469.89 A 1825 1825 0 0 1 2331.55,10469.89 L 2203.36,10795.57 A 2175 2175 0 0 0 3796.64,10795.57 L 3668.45,10469.89 Z" fill="#ffffff"/>
+<path d="M 3677.6,10493.15 A 1850 1850 0 0 1 2322.4,10493.15" fill="none" stroke="#1b1b1b" stroke-width="9"/>
+<path d="M 3787.49,10772.31 A 2150 2150 0 0 1 2212.51,10772.31" fill="none" stroke="#1b1b1b" stroke-width="9"/>
+<path d="M 3718.81,10597.84 A 1962.5 1962.5 0 0 1 2281.19,10597.84" fill="none" stroke="#3a6ea5" stroke-width="9"/>
+<path d="M 3746.28,10667.62 A 2037.5 2037.5 0 0 1 2253.72,10667.62" fill="none" stroke="#3a6ea5" stroke-width="9"/>
 </g>
 <g id="A-ANNO-TEXT" inkscape:groupmode="layer" inkscape:label="A-ANNO-TEXT">
 <text x="-2750" y="5545" font-size="175" fill="#222222" text-anchor="middle" dominant-baseline="central" font-weight="600">Garage</text>
@@ -8273,11 +8273,11 @@ exports[`golden SVG snapshots > renders library.arch deterministically 1`] = `
 <polygon points="45500,27100 46500,27100 46500,26900 45500,26900" fill="none"/>
 <polygon points="45500,27000 45500,28000 45560,27998.2 45560,27000" fill="#ffffff" stroke="#555555" stroke-width="46.8"/>
 <path d="M 45500,28000 A 1000 1000 0 0 0 46500,27000" fill="none" stroke="#555555" stroke-width="26"/>
+<path d="M 23490.13,23958.03 A 8100 8100 0 0 0 26509.87,23958.03 L 26472.59,23761.54 A 7900 7900 0 0 1 23527.41,23761.54 L 23490.13,23958.03 Z" fill="none"/>
 <polygon points="23500,24100 26500,24100 26500,23900 23500,23900" fill="none"/>
-<polygon points="23500,24100 26500,24100 26500,23900 23500,23900" fill="none"/>
-<polygon points="26500,7900 23500,7900 23500,8100 26500,8100" fill="none"/>
+<path d="M 26509.87,8041.97 A 8100 8100 0 0 0 23490.13,8041.97 L 23527.41,8238.46 A 7900 7900 0 0 1 26472.59,8238.46 L 26509.87,8041.97 Z" fill="none"/>
 <polygon points="23500,8100 26500,8100 26500,7900 23500,7900" fill="none"/>
-<polygon points="16900,14800 16900,17200 17100,17200 17100,14800" fill="none"/>
+<path d="M 16990.95,14789.55 A 8100 8100 0 0 0 16990.95,17210.45 L 17188.71,17180.56 A 7900 7900 0 0 1 17188.71,14819.44 L 16990.95,14789.55 Z" fill="none"/>
 <polygon points="16900,14800 16900,17200 17100,17200 17100,14800" fill="none"/>
 <polygon points="16900,26500 16900,29500 17100,29500 17100,26500" fill="none"/>
 <polygon points="32900,24200 32900,26800 33100,26800 33100,24200" fill="none"/>

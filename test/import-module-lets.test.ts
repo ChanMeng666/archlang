@@ -536,7 +536,7 @@ suite("a module `let` that fails reports as it does in the module", () => {
 const BASELINE: [string, string][] = [
   // PS4.4: every row whose plan resolves re-measured once for the new totals key (gross internal area); see test/byte-identity-baseline.ts.
   ["examples/accessible.arch", "5f69fe78d45db6b096e3e7f4c44bfcdb537c4201d06fee8780e813112869f20c"],
-  ["examples/aquarium.arch", "eee3dc30bd94b5f31c7189f719ff38e09d6f56a3d5484f443432591f8f1e737e"], // re-measured for PS2.4, see header; PS2.10 dims fixed (byte-identity-baseline.ts); PS2.11e, see header
+  ["examples/aquarium.arch", "0d4ae229f5ad16397ba93dc0aa90d6fb0a7eab0cec0253bd43e619c3292e08b2"], // re-measured for PS2.4, see header; PS2.10 dims fixed (byte-identity-baseline.ts); PS2.11e, see header
   ["examples/attached.arch", "07995653257dff5785f4fe210e3c4f6f9d6fc35165be2e5ae34df364079029dc"],
   ["examples/bungalow.arch", "0dd331e28b8f4e20c3b359c8e819ed738290295cc83934c1a38808d2fd83dc13"], // PS2.11e, see header; CV13 (was 074d5531): example source edited (chairs added)
   ["examples/classroom-block.arch", "4d558795c0b345b3a9a1e5454bc476125983a63dee7d3227c0d3afe09b7ed3bd"], // SR.15 (was cca7c3df); added with the example, re-measured for net area, see header; PS2.11e, see header
@@ -552,15 +552,15 @@ const BASELINE: [string, string][] = [
   // same digest body, as `./while-byte-identity-baseline.ts`, whose header has the reasons.
   ["examples/garden-house.arch", "5b0ec567a174809bd4d5a7c62907b611741e3537577e9552026d400c28cedcd6"], // RM1.3a, see ./byte-identity-baseline.ts; RM9.2, see ./byte-identity-baseline.ts; CV14: example source edited (stairwell void added) (was 72528a5f)
   ["examples/garden-loft.arch", "2814a29269f878cd596372eafe0fdf8c1d1bc9f0c478b33f1cae2906b6db8d8d"], // PS2.11e, see header; CV13 (was e0ce8a5f): example source edited (chairs added)
-  ["examples/hexagon-pavilion.arch", "847694c47f21e1660d3a4bbd70469d8fac354b2d255070478c59fe1aa83a613a"], // CV13 (was 3078765c): example source edited (chairs added)
+  ["examples/hexagon-pavilion.arch", "752b391b72fa247a99b979b8e1f4fc6f7a6783316cd29ad0bea4447245b0e311"], // CV13 (was 3078765c): example source edited (chairs added)
   // Re-measured for the facade-probe fix (level 2's `dims auto` chains only), and again because
   // the EXAMPLE changed (backlog D.2, its piano turned and moved): the same row, with the same
   // digest body, as `./while-byte-identity-baseline.ts`, whose header has the reasons.
-  ["examples/hillside-villa.arch", "bde21bc8c7ea02b91b55d17623eac370428f9aef0f2c16f0fb8f7fd00ae369ce"], // re-measured, see header; PS2.11e, see header; RM1.3a, see ./byte-identity-baseline.ts; RM9.2, see ./byte-identity-baseline.ts; CV14: example source edited (stairwell void added) (was 123f2af2)
+  ["examples/hillside-villa.arch", "846971b81c64739f79f3d185160d4323d6db273cc77cafb5a933387c0e9b5f3b"], // re-measured, see header; PS2.11e, see header; RM1.3a, see ./byte-identity-baseline.ts; RM9.2, see ./byte-identity-baseline.ts; CV14: example source edited (stairwell void added) (was 123f2af2)
   ["examples/imports.arch", "3aa7b2d5f953e6df63059c368e391ee3ea58c097cd7dff358197a940f4946252"],
   ["examples/knob-flat.arch", "578ec7551025df65b704f453b7af3493bf4abcfb19737fdece206e4c85fd2586"], // new example (P4, the knobs example), see header
   ["examples/laneway-house.arch", "21f4d5bc82e2e8d46536bd2dc5623b05ea76e937db31c7d4ed482a4c5e3118bc"], // PS2.11e, see header; CV13 (was 958934b4): example source edited (chairs added)
-  ["examples/library.arch", "a004eb834300480a37f5a520671a570fb3e07f7bff061ba7e510e779fa912466"], // SR.15 (was acbc3325); PS2.11e, see header
+  ["examples/library.arch", "aa107b1b311d1545f228eaac173cc95a396a6acd86fdeb6db58de4ba3617f7b7"], // SR.15 (was acbc3325); PS2.11e, see header
   ["examples/materials.arch", "b3d629675b1a43d4d1113f10b38e732d0b826fdb2b019fcf14ac4b166abd435d"],
   ["examples/museum-wing.arch", "add9b13a425ec75dd2b88c4eba087465228822c37321b3d1952db6f0795ef6c7"],
   ["examples/museum-wings.arch", "4acccb8ead0234e18186574c23a4c795d32c6a8f819fc67a983cebea337b8b29"], // PS2.11e, see header

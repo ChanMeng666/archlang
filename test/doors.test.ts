@@ -319,17 +319,17 @@ suite("doors — a non-hinged kind on a curved host is refused, not approximated
       const got = compile(curved(`door id=d ${k} on w at 50% width 900`), { noCache: true }).diagnostics.some(
         (d) => d.code === "E_DOOR_KIND_CURVED",
       );
-      // A `double` door's two leaves come from the tangent at the doorway's centre, as a hinged
-      // leaf does (PS2.11e), so only the sliding family and `garage` are refused.
+      // A `double` door's two leaves hang on the curved opening's jambs, as a hinged leaf does
+      // (PS2.11e, ARC-W1), so only the sliding family and `garage` are refused.
       expect(got, k).toBe(k !== "hinged" && k !== "double");
     }
   });
 
-  it("a hinged door on the same curve still works — its leaf comes from the tangent", () => {
+  it("a hinged door on the same curve still works — its leaf hangs on a jamb of the curved opening", () => {
     expect(compile(curved("door id=d on w at 50% width 900"), { noCache: true }).errors).toEqual([]);
   });
 
-  it("a double door on the same curve works too — both leaves from the tangent at its centre", () => {
+  it("a double door on the same curve works too — each leaf on its own jamb of the curved opening", () => {
     expect(compile(curved("door id=d double on w at 50% width 1800"), { noCache: true }).errors).toEqual([]);
   });
 });
@@ -574,8 +574,8 @@ suite("doors — the drawing language", () => {
     Math.hypot(pts[3]!.x - pts[0]!.x, pts[3]!.y - pts[0]!.y);
 
   it("draws the open leaf as a slab lying INSIDE the swing's own sector, on every hand and face", () => {
-    // An ARC host is the weakest case: the leaf and its thickness are laid off the tangent
-    // at the doorway, so the heel and tip carry rounding the straight cases do not.
+    // An ARC host is the weakest case: the leaf hangs on a jamb of the curved opening and its
+    // thickness is laid off the chord, so the heel and tip carry rounding the straight cases do not.
     const onArc = [
       'plan "Arc" {',
       "  units mm",
@@ -592,7 +592,8 @@ suite("doors — the drawing language", () => {
       onArc,
     ];
     // A point may sit this far (mm) outside the sector and still count as on it: the slab
-    // is built from `doorSwing`'s own points, so a corner ON a bounding radius is exact in
+    // is built from its drawn swing's own points (`doorSwing`'s on a straight host, the leaf
+    // hung on the cut's jamb on a curved one), so a corner ON a bounding radius is exact in
     // real arithmetic and ~1e-13 mm off it in doubles on a curved host.
     const EPS = 1e-6;
     for (const src of cases) {
@@ -600,13 +601,27 @@ suite("doors — the drawing language", () => {
         .split("\n")
         .find((l) => l.includes("door id=d"))!
         .trim();
-      const s = doorSwing(doorsOf(src).find((x) => x.id === "d")!)!;
       const { nodes } = nodesOf(src);
-      // cover, slab, arc — in that order.
+      // On a straight host the drawn swing IS the model's (`doorSwing`). On an arc host the leaf is
+      // drawn on a jamb of the curved cut while the model keeps the tangent construction (card
+      // ARC-W1, drawing only), so there the slab is held to the swing it is DRAWN with: its `arc`
+      // node, centred on the hinge, from the open leaf's tip to the far jamb.
+      const drawnArc = nodes.find((n) => n.prim.t === "arc")!.prim as {
+        center: { x: number; y: number };
+        r: number;
+        start: { x: number; y: number };
+        end: { x: number; y: number };
+      };
+      const s =
+        src === onArc
+          ? { hinge: drawnArc.center, leafEnd: drawnArc.start, farJamb: drawnArc.end, radius: drawnArc.r }
+          : doorSwing(doorsOf(src).find((x) => x.id === "d")!)!;
+      // cover, slab, arc — in that order. On an arc host the cover is the cut's annular sector, a
+      // `path` (card ARC-W1); on a straight one its rectangle.
       expect(
         nodes.map((n) => n.prim.t),
         c,
-      ).toEqual(["polygon", "polygon", "arc"]);
+      ).toEqual([src === onArc ? "path" : "polygon", "polygon", "arc"]);
       const pts = slabOf(nodes);
       // Its first edge IS the swing's open-leaf radius (the line the leaf used to be).
       expect(pts[0], c).toEqual(s.hinge);

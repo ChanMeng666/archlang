@@ -33,8 +33,8 @@
  */
 
 import type { Point } from "../ast.js";
-import type { Scene, SceneNode, ScenePrim } from "../scene.js";
-import { arcFromPrimitive, arcTessellate } from "../geometry/arc.js";
+import type { PathLoop, Scene, SceneNode, ScenePrim } from "../scene.js";
+import { arcFromPrimitive, arcPointAt, arcTessellate } from "../geometry/arc.js";
 import { plainText } from "../text-safe.js";
 import { OUTDOOR_LAYERS } from "../elements/outdoor.js";
 
@@ -69,6 +69,31 @@ function firstAlnum(s: string): string {
 }
 
 const midpoint = (a: Point, b: Point): Point => ({ x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 });
+
+/**
+ * The centreline of an opening's cover on a curved wall, as short chords: the cover is an annular
+ * sector (`spanSectorLoop`, `src/elements/glyph-lib.ts`), arc edges along one face, one radial
+ * jamb, arc edges back along the other face, the other jamb. Each face is sampled at the same
+ * eight steps a piece, so the midpoints pair up radially. Any other loop gives nothing to carve.
+ */
+function sectorCentreline(loop: PathLoop | undefined): Array<[Point, Point]> {
+  if (!loop) return [];
+  const faces: Point[][] = [[]];
+  let from = loop.start;
+  for (const e of loop.edges) {
+    if (e.t === "line") faces.push([]);
+    else {
+      const arc = arcFromPrimitive({ center: e.center, r: e.r, start: from, end: e.to, sweep: e.sweep });
+      for (let i = 0; i <= 8; i++) faces[faces.length - 1]!.push(arcPointAt(arc, i / 8));
+    }
+    from = e.to;
+  }
+  const [out, back] = faces;
+  if (faces.length !== 3 || out!.length === 0 || out!.length !== back!.length) return [];
+  back!.reverse();
+  const mids = out!.map((p, i) => midpoint(p, back![i]!));
+  return mids.slice(1).map((p, i) => [mids[i]!, p]);
+}
 
 /** All defining points of a primitive (for bounding-box accumulation). */
 function pointsOf(prim: ScenePrim): Point[] {
@@ -262,7 +287,15 @@ export function renderAscii(scene: Scene, opts: AsciiOptions = {}): string {
     // sliding/barn/bifold/pocket/garage panel, a garage door's overhead projection, a
     // window sill), and its axis is not the doorway: read as one, a leaf standing open in
     // the room or a projection parked across a garage carved a row of `·` through the floor.
-    if (ch === null || node.prim.t !== "polygon" || node.paint.stroke !== undefined) continue;
+    if (ch === null || node.paint.stroke !== undefined) continue;
+    // On a curved wall the cover is an annular sector (`spanSectorLoop`): carve along its centreline.
+    if (node.prim.t === "path") {
+      for (const [a, c] of sectorCentreline(node.prim.loops[0])) {
+        line(colOf(a.x), rowOf(a.y), colOf(c.x), rowOf(c.y), (cc, rr) => plotOver(cc, rr, ch));
+      }
+      continue;
+    }
+    if (node.prim.t !== "polygon") continue;
     const p = node.prim.pts;
     if (p.length < 4) continue;
     const a = midpoint(p[0]!, p[3]!); // jamb A (mid of the two "start" corners)

@@ -10,41 +10,17 @@
  * moves where `E_STEP_LIMIT` lands.
  */
 
-import { sha256 } from "./digest.js";
 import { readdirSync, readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { allStoreysDiagnosticsPayload, type CompilerApi } from "./byte-identity-payload.js";
 import { WALLS_FROM_ROOMS_PLANS } from "../tables/walls-from-rooms-plans.js";
-import type { World } from "../../src/world.js";
 
 export const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..", "..");
 
-/** The compiler surface the law reads, handed in so an older tree can be measured. */
-export interface LawApi extends CompilerApi {
-  /** The steps a source's whole resolution spends, every storey. */
-  stepsOf(src: string, world: World | undefined): number;
-}
-
-/** SHA-256 over the whole-surface payload, every page's Scene and the step count. */
-export function lawDigest(api: LawApi, src: string, world: World | undefined): string {
-  const opts = world ? { world } : {};
-  const out = api.compile(src, { noCache: true, ...opts });
-  const scenes = out.pages ? out.pages.map((p) => p.scene) : [out.scene];
-  const payload = [
-    allStoreysDiagnosticsPayload(api, src, opts),
-    JSON.stringify(scenes),
-    String(api.stepsOf(src, world)),
-  ].join(" ");
-  return sha256(payload);
-}
-
-/** A plan the law pins: `dir` is what an `import` of its is read against. */
-export interface LawRow {
-  name: string;
-  src: string;
-  dir?: string;
-}
+// The law's body and its row type live in `./law-digest.ts`, which lists no directory, so a law that
+// pins only its own plans can share the body without reading the corpus (`scripts/gate-select.mjs`).
+export { type LawApi, lawDigest, type LawRow } from "./law-digest.js";
+import type { LawRow } from "./law-digest.js";
 
 const arch = (root: string, dir: string): LawRow[] =>
   readdirSync(join(root, dir))

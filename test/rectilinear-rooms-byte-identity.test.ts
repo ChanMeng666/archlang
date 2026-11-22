@@ -133,7 +133,7 @@ const worldOf = (dir: string | undefined): World | undefined => (dir ? makeNodeW
 /** Measured at `58c1fc81`, the `H10` rows with those charges applied (see the header): `[digest, row]`. */
 const BASELINE: [string, string][] = [
   ["262def0349197a52678b48368bc427c7bd002861a06506cb9353dea8772119fe", "examples/accessible.arch"],
-  ["e4938abfa6b11c115e1fe889bf39f50aec8c0976c163627cc1806ee91ae00504", "examples/aquarium.arch"], // H10: +1469 ring scan, +939 overlap
+  ["a914093c7fc17a0d8f1af94d417c8572cbd3eadedae0c2394035fc6f1e76a3f9", "examples/aquarium.arch"], // H10: +1469 ring scan, +939 overlap
   ["44575ad4610b8698bb5193ccfbd2a35fae9638f3eecbcaf9bb65b40041d7545d", "examples/attached.arch"],
   ["3edc381374117c3b4450f0eadc795802f35044d7a024e9ff601e3aa74a859a0b", "examples/bungalow.arch"], // H10: +6 ring scan, +0 overlap; CV13 (was 25a7e576): example source edited (chairs added)
   ["df2be9185a31132e1e403c2573e46b06b28635595814b1a21d88bfe315e57f9b", "examples/classroom-block.arch"],
@@ -144,12 +144,12 @@ const BASELINE: [string, string][] = [
   ["20483588dff5ba2e3ccfd05f2f7e5208036426fd579d0c06bea6151ff7fd6b67", "examples/gallery-l.arch"], // H10: +21 ring scan, +8 overlap
   ["e212099ac26697634957d830e00abfe9739770c3c626b2598358e8b812ca9b3c", "examples/garden-house.arch"], // H10: +36 ring scan, +0 overlap; RM1.3a, see ./byte-identity-baseline.ts; CO.1: the example writes its 2 snapped `against` sizes out (+26 bytes), so only spans and the steps of the written clauses (+8) moved; see the header (was 89ea3236); RM9.2, see ./byte-identity-baseline.ts; CV14: example source edited (stairwell void added) (was 681b232e)
   ["08e9c543870e2a9ec78b9ebd114ea62b54cc80c5da00f36dc3f58eb7feac2f6f", "examples/garden-loft.arch"], // CV13 (was 401f1c0c): example source edited (chairs added)
-  ["ac5d3e4bdaa910b98009f1d18cd47c16a3d9ac8f8152e02aee0bf781abb35150", "examples/hexagon-pavilion.arch"], // H10: +36 ring scan, +92 overlap; CV13 (was d9a3b8c6): example source edited (chairs added)
-  ["4280675259c408be2ddd927972990181315d90dac5a3b9944e205e911e744a5c", "examples/hillside-villa.arch"], // H10: +32 ring scan, +0 overlap; RM1.3a, see ./byte-identity-baseline.ts; CO.1: the example writes its 3 snapped `against` sizes out (+40 bytes), so only spans and the steps of the written clauses (+12) moved; see the header (was c0385530); RM9.2, see ./byte-identity-baseline.ts; CV14: example source edited (stairwell void added) (was 5522225a)
+  ["d0acf3effc3e8d115cdcb790de3a695d254140bac3bd4e7abe277c0a4e3e5778", "examples/hexagon-pavilion.arch"], // H10: +36 ring scan, +92 overlap; CV13 (was d9a3b8c6): example source edited (chairs added)
+  ["7dce772ed9db08585ef98ef6cb98bc902279a63906a3863686f9df50b01baf5c", "examples/hillside-villa.arch"], // H10: +32 ring scan, +0 overlap; RM1.3a, see ./byte-identity-baseline.ts; CO.1: the example writes its 3 snapped `against` sizes out (+40 bytes), so only spans and the steps of the written clauses (+12) moved; see the header (was c0385530); RM9.2, see ./byte-identity-baseline.ts; CV14: example source edited (stairwell void added) (was 5522225a)
   ["7d331b6506b22f2f3b347f7cd69066691419d8ce179543e995880159f3fd9781", "examples/imports.arch"],
   ["26816d797d510816465174bbf098dea5d5cc5be66d04a41ab3d7e7c7a4c6eb51", "examples/knob-flat.arch"], // new example (P4, the knobs example)
   ["238a72ee476b3578337e26c79820fae897ef7dc625fb5eb90f22735de5b1bb9a", "examples/laneway-house.arch"], // CV13 (was fee16d24): example source edited (chairs added)
-  ["a7430bccd5fe5bede7d12024081ce8428d9398ac269d4b99998ca163d9d8cc80", "examples/library.arch"],
+  ["23ba3a2773ff2a5302cb8d8989d8b1c424e076c7c1a4567c00bcaf85d5ed1ef4", "examples/library.arch"],
   ["f44cf859229b71e72bbbdeb81012ff8ef9345d3cf43a80d3efb3a7e4f2968f3c", "examples/materials.arch"],
   ["e949de01e019689e380fadbf6801c76b79b1f184a8e327f3dd9f67ba5179280c", "examples/museum-wing.arch"],
   ["a4976a4998a0879673f204c5b2380da1d6d076b541c71d5e0aec2ee0704807a0", "examples/museum-wings.arch"],

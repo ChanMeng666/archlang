@@ -83,7 +83,7 @@ const BASELINE: [string, string][] = [
   ["examples/clinic.arch", "6a8b78ce84d10bea939f48f431d16e127cb95b982f473d33072889e110ff4788"],
   ["examples/corner-cafe.arch", "d669e11a11740a841311fe359a3d5bc650343ba1f16e827bc4d869dc65206bd5"], // #367, see test/byte-identity-baseline.ts
   ["examples/courtyard-family.arch", "50c9cc316efda2bf16183e877d4be16443df160c9c13fc2a0210d62945c4bd67"], // new example (RM8.5, the courtyard-family showcase)
-  ["examples/hexagon-pavilion.arch", "847694c47f21e1660d3a4bbd70469d8fac354b2d255070478c59fe1aa83a613a"], // CV13 (was 3078765c): example source edited (chairs added)
+  ["examples/hexagon-pavilion.arch", "752b391b72fa247a99b979b8e1f4fc6f7a6783316cd29ad0bea4447245b0e311"], // CV13 (was 3078765c): example source edited (chairs added)
   ["examples/imports.arch", "a0341285f4e3699b738aa1916bba278eed61e347df4d3a2de139b9f0185d9678"],
   ["examples/knob-flat.arch", "578ec7551025df65b704f453b7af3493bf4abcfb19737fdece206e4c85fd2586"], // new example (P4, the knobs example), see header
   ["examples/materials.arch", "b3d629675b1a43d4d1113f10b38e732d0b826fdb2b019fcf14ac4b166abd435d"],
@@ -207,7 +207,7 @@ const MAIN_SOURCES: [path: string, payload: string, source: string, undo: [branc
   ],
   [
     "examples/hillside-villa.arch",
-    "8c7c81af5502498ca1e7555deb6101212399dabd757070e9051f7a885f5e610e", // RM1.3a, see ./byte-identity-baseline.ts; RM9.2, see ./byte-identity-baseline.ts; CV14: example source edited (stairwell void added) (was 9e118d9f)
+    "67918842118a54759867c0ba0570acf63bc81315dfd773275f854d1fe9b4b474", // RM1.3a, see ./byte-identity-baseline.ts; RM9.2, see ./byte-identity-baseline.ts; CV14: example source edited (stairwell void added) (was 9e118d9f)
     "9e212d075b7d8e9375e09477d79926f9552ae0f19631ee7b4c0e8f4b8590f7a9", // source: RM1.4 writes the 17 snapped values and its comment of one (same length; was 8aff5c59); CO.1 writes its snapped `against` sizes out, here and in the undo block: less those clauses the rebuilt source is main's, and the payload is unchanged (was 743e5cde); CV14: example source edited (stairwell void added) (was 44fdb87e)
     [
       [
