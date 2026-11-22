@@ -31,20 +31,18 @@ import { chargeSteps, closest } from "../expr.js";
 import { fixesFrom, roomAlignAxisFix, roomAlignFix } from "../fix-producers.js";
 import { recordWordSpan, wordSpanOf } from "../id-spans.js";
 import {
-  ARC_MIN_STEPS,
   ARC_STEP_DEG,
   type Arc,
   arcExtremes,
   arcFromChord,
-  arcSteps,
   arcTessellate,
   fullCircleArc,
   minArcRadius,
   smallestSpanningRadius,
 } from "../geometry/arc.js";
-import { type EdgeLoop, loopBBox, tessellateLoop } from "../geometry/band.js";
+import { type EdgeLoop, loopBBox } from "../geometry/band.js";
 import { toPathLoop } from "../geometry/joinery.js";
-import { roomAreaMm2, roomRing } from "../geometry/room-ring.js";
+import { ringArcMaxChordAngle, ringArcVertexCount, ringOfEdges, roomAreaMm2, roomRing } from "../geometry/room-ring.js";
 import { ROOM_CONTAINMENT_SLACK_MM } from "../analyze/rooms.js";
 import { readArcClause } from "./wall.js";
 import {
@@ -912,7 +910,9 @@ function edgeLoopBounds(edges: EdgeLoop): { x: number; y: number; w: number; h: 
 /**
  * A `room polygon` ring with `arc` edges (card ARC2, `docs/plans/arc2-room-arcs.md` §4): its exact
  * boundary `edges` (one per edge, closing edge last) and its discretised ring `poly` (every vertex
- * plus each arc's fixed-step interior points, `tessellateLoop`), or `undefined` when no arc solved.
+ * plus each arc's canonical interior points, `ringOfEdges` in `src/geometry/room-ring.ts`: at the
+ * absolute angles k·7.5° about its centre, so rooms sharing a curve share its vertices), or
+ * `undefined` when no arc solved.
  *
  * A ring is implicitly closed and stores no repeated vertex, so a ring that ENDS with an arc back
  * onto its first vertex curves its closing edge and drops the repeat; a repeat reached by a
@@ -946,15 +946,12 @@ function resolveRingArcs(
     edges.push(arc ? { t: "arc", arc } : { t: "line", a, b });
   }
   if (!any) return undefined;
-  // Every vertex the tessellation will hold, charged before it is allocated (a non-finite arc,
-  // which the number-domain check then drops, is charged its minimum).
+  // Every vertex the ring will hold, charged before it is allocated (a non-finite arc, which the
+  // number-domain check then drops, holds its start alone).
   let vertices = 0;
-  for (const e of edges) {
-    const steps = e.t === "arc" ? arcSteps(e.arc) : 1;
-    vertices += Number.isFinite(steps) ? steps : ARC_MIN_STEPS;
-  }
+  for (const e of edges) vertices += e.t === "arc" ? ringArcVertexCount(e.arc) : 1;
   chargeSteps(vertices);
-  return { edges, poly: tessellateLoop(edges) };
+  return { edges, poly: ringOfEdges(edges) };
 }
 
 /**
@@ -963,9 +960,10 @@ function resolveRingArcs(
  * discretised ring `poly` allows (grids, adjacency, containment, overlap). Within it those readers
  * are right on the tessellation, as they are on a `room circle`'s 48-gon.
  *
- * The chord's sagitta is `r(1 − cos(step/2))`, with `step = |sweep| / arcSteps` ≤ 7.5°, so a full
- * 7.5° step keeps inside 100 mm up to R = 100 / (1 − cos 3.75°) ≈ 46,705 mm, and a shallower arc
- * (fewer than 8 full steps, `ARC_MIN_STEPS`) much further. `MODEL_RANGE_MM` does not bound it.
+ * A chord's sagitta is `r(1 − cos(θ/2))` for the angle θ it spans, at most 7.5° (the canonical
+ * step) or the whole sweep if that is less (`ringArcMaxChordAngle`), so an arc keeps inside 100 mm
+ * up to R = 100 / (1 − cos 3.75°) ≈ 46,705 mm, and an arc under 7.5° further. `MODEL_RANGE_MM` does
+ * not bound it.
  */
 export const ROOM_ARC_MAX_SAG_MM = ROOM_CONTAINMENT_SLACK_MM;
 
@@ -980,7 +978,7 @@ export const ROOM_ARC_FULL_STEP_RADIUS_MM = Math.floor(
  * number range) is left to the number-domain check, which drops the room.
  */
 function sagWithin(arc: Arc, spec: WallArcNode, id: string, n: RoomNode, ctx: ResolveCtx): boolean {
-  const sag = arc.r * (1 - Math.cos(Math.abs(arc.sweep) / arcSteps(arc) / 2));
+  const sag = arc.r * (1 - Math.cos(ringArcMaxChordAngle(arc) / 2));
   if (!Number.isFinite(sag) || sag <= ROOM_ARC_MAX_SAG_MM) return true;
   ctx.diag({
     severity: "error",
@@ -988,7 +986,7 @@ function sagWithin(arc: Arc, spec: WallArcNode, id: string, n: RoomNode, ctx: Re
     code: "E_ROOM_ARC_SAG",
     span: spec.span ?? n.span,
     hints: [
-      `An arc stepped at the full ${fmt3(ARC_STEP_DEG)}° stays within it up to radius ${fmt3(ROOM_ARC_FULL_STEP_RADIUS_MM)}; write a curve this large as straight edges, or split it into shorter arcs.`,
+      `An arc of ${fmt3(ARC_STEP_DEG)}° or more stays within it up to radius ${fmt3(ROOM_ARC_FULL_STEP_RADIUS_MM)}; write a curve this large as straight edges.`,
     ],
   });
   return false;

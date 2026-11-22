@@ -18,7 +18,16 @@ export { areaText, factsLine, sourceLines } from "./facts-line.js";
 /** The subset of a describe() room the tooltip and the card read. */
 export type FactsRoom = Pick<
   RoomSummary,
-  "id" | "label" | "uses" | "area_m2" | "net_area_m2" | "bbox" | "floor_polygon" | "floor_circle" | "adjacent"
+  | "id"
+  | "label"
+  | "uses"
+  | "area_m2"
+  | "net_area_m2"
+  | "bbox"
+  | "floor_polygon"
+  | "floor_circle"
+  | "floor_arcs"
+  | "adjacent"
 >;
 
 /** The room's name: its label, else its id. */

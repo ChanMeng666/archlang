@@ -24,9 +24,9 @@ export const ROOMS_ENTRIES = defineEntries({
   ),
   E_ROOM_ARC_SAG: e(
     "Room ring arc too large for the room's tests.",
-    "A `room polygon` ring's arc edge is kept exact for its area, extent and drawing, and also as a fixed-step ring (7.5° chords, at least 8 per arc) that the grids, adjacency and containment tests read, as a `room circle`'s 48-gon is. Those tests allow a room 100 mm of slack, so a chord may stand at most 100 mm off its curve: radius 46,705 mm at the full 7.5° step, more for a shallow arc. This arc's chords stand further off, so the room's tests would read a floor that is not the drawn one. The edge is kept straight.",
-    "Write a curve this large as straight edges, or split it into shorter arcs (an arc under 60° takes a finer step).",
-    "room polygon (0,0) arc (100000,0) radius 60000 cw (100000,50000) (0,50000)   # error: its chords stand 114 mm off the curve",
+    "A `room polygon` ring's arc edge is kept exact for its area, extent and drawing, and also as a ring of chords at most 7.5° apart (the absolute angles of a `room circle`'s 48-gon) that the grids, adjacency and containment tests read. Those tests allow a room 100 mm of slack, so a chord may stand at most 100 mm off its curve: radius 46,705 mm for an arc of 7.5° or more. This arc's chords stand further off, so the room's tests would read a floor that is not the drawn one. The edge is kept straight.",
+    "Write a curve this large as straight edges, or with a smaller radius.",
+    "room polygon (0,0) arc (100000,0) radius 60000 cw (100000,50000) (0,50000)   # error: its chords stand 128 mm off the curve",
     "room polygon (0,0) (50000,-26834) (100000,0) (100000,50000) (0,50000)   # fixed: the curve as straight edges",
   ),
   E_ROOM_RADIUS: e(

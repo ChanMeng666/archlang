@@ -24,7 +24,7 @@ import type { Diagnostic } from "./diagnostics.js";
 import { describe } from "./describe.js";
 import type { DescribeOptions, RoomSummary, SceneSummary, WindowSummary } from "./describe.js";
 import type { GrossAreaReason } from "./analyze/gross-area.js";
-import { polygonLabelPoint } from "./geometry/polygon.js";
+import { polygonLabelPoint, ringWithArcs } from "./geometry/polygon.js";
 import { isCirculationRoom, roomsMatchingConcept } from "./intent-concepts.js";
 import { type InfeasibilityProof, intentRequirements, proveInfeasible } from "./intent-feasibility.js";
 import { makeNaming, type NameableRoom, sizeWords } from "./naming.js";
@@ -870,7 +870,8 @@ const signedText = (n: number): string => (n > 0 ? `+${fmt2(n)}` : n < 0 ? `−$
  *  four-vertex polygon whose every edge is axis-parallel); `null` for any other floor. Read off
  *  the floor ring itself, never the bbox of a shape that is not one. */
 function rectOfRoom(r: RoomSummary): { w: number; h: number } | null {
-  if (r.floor_circle) return null;
+  // A curved edge (card ARC2) makes no rectangle, whatever its written vertices are.
+  if (r.floor_circle || r.floor_arcs) return null;
   const ring = r.floor_polygon;
   if (ring.length !== 4) return null;
   for (let k = 0; k < 4; k++) {
@@ -914,9 +915,11 @@ function roomNames(rooms: readonly StoreyRoom[]): Map<RoomSummary, string> {
       uses: r.uses,
       point: r.floor_circle
         ? { x: r.floor_circle.cx, y: r.floor_circle.cy }
-        : r.floor_polygon.length >= 3
-          ? polygonLabelPoint(r.floor_polygon)
-          : { x: r.bbox.x + r.bbox.w / 2, y: r.bbox.y + r.bbox.h / 2 },
+        : r.floor_arcs
+          ? polygonLabelPoint(ringWithArcs(r.floor_polygon, r.floor_arcs))
+          : r.floor_polygon.length >= 3
+            ? polygonLabelPoint(r.floor_polygon)
+            : { x: r.bbox.x + r.bbox.w / 2, y: r.bbox.y + r.bbox.h / 2 },
       bounds: { x0: r.bbox.x, y0: r.bbox.y, x1: r.bbox.x + r.bbox.w, y1: r.bbox.y + r.bbox.h },
       size: sizeWords(rectOfRoom(r), r.area_m2 * 1_000_000),
     }));

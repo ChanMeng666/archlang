@@ -1646,17 +1646,18 @@ and `describe()` reports the written vertices as `floor_polygon` and each curve 
 `floor_arcs` (`from`, `to`, `center`, `r`, `sweep` in radians, `+` clockwise on the sheet), so
 no fact is a chord. Plan JSON writes the vertices as `polygon` and the curves as `arcs`, one
 entry per edge (from a vertex to the next, the last back to the first; `null` where straight),
-and round-trips. `dims auto` ticks the written vertices only and adds an
-`R<r>` leader per curve, none for a curve about a wall arc's centre (that wall's leader already
-dimensions it).
+and round-trips. `dims auto` ticks the written vertices only and adds one `R<r>` leader per
+distinct centre and radius, shared with the walls' (a room drawn on a curved wall's centreline
+adds none; one on another radius gets its own).
 
 **What reads the ring as a fine polygon.** Grids, adjacency, containment and overlap read the
-arc as chords at the 7.5° step (at least 8 per arc), as they read a `room circle`'s 48-gon; the
-net area, the label pin and the two enclosure rules (`W_ROOM_NOT_ENCLOSED`,
-`W_BOUNDARY_NO_WALL`) read the true curve. Those chords stand at most 100 mm off the curve, the
-slack a room's containment allows: R ≤ 46,705 mm at the full step (100 / (1 − cos 3.75°)), more
-for an arc under 60°, which steps finer. An arc past it is
-[`E_ROOM_ARC_SAG`](error-codes.md): write the curve as straight edges, or as shorter arcs.
+arc as chords at the absolute angles k · 7.5° about its centre (the angles of a `room circle`'s
+48-gon), between its exact ends, so two rooms either side of one curve share its vertices. The
+net area, the label pin and `W_ROOM_NOT_ENCLOSED` read the true curve. `W_BOUNDARY_NO_WALL` does
+not judge a curve two rooms share, as it does not judge a `room circle`'s: only their straight
+edges share a run. The chords stand at most 100 mm off the curve, the slack a room's containment
+allows: R ≤ 46,705 mm (100 / (1 − cos 3.75°)) for an arc of 7.5° or more. An arc past it is
+[`E_ROOM_ARC_SAG`](error-codes.md): write the curve as straight edges, or with a smaller radius.
 
 **Refusals.** A radius under half the chord is [`E_ROOM_ARC_RADIUS`](error-codes.md), with the
 wall's machine-applicable fix to the minimum; the edge stays straight. An arc that bulges across

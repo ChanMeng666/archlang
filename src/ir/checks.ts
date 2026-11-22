@@ -22,7 +22,7 @@ import type { GridBox } from "../geometry/grid-index.js";
 import { GridIndex } from "../geometry/grid-index.js";
 import { countOverlappingRectPairs, rectsOverlap } from "../geometry/rect.js";
 import { polygonArea, polygonsOverlap } from "../geometry/polygon.js";
-import { roomRing } from "../geometry/room-ring.js";
+import { roomRing, roomRingSag } from "../geometry/room-ring.js";
 import { roomOverlapNamer } from "../naming.js";
 import { classifyLabelUses } from "../vocabulary.js";
 import type { RWall, RRoom, ResolvedElement, ResolvedPlan } from "./types.js";
@@ -348,7 +348,12 @@ export function checkRoomOverlaps(
     if (!rectsOverlap(b1, b2)) return false;
     // A budget crossed here is reported at this pair, never at whichever room came last.
     stepSite(r2.span, r2._file);
-    return polygonsOverlap(roomRing(r1), roomRing(r2));
+    if (!(r1.edges || r2.edges)) return polygonsOverlap(roomRing(r1), roomRing(r2));
+    // An arc-edged room (card ARC2) is a discretised ring within its chords' sagitta of the curve
+    // (`roomRingSag`, at most `ROOM_ARC_MAX_SAG_MM`): two rooms sharing a curve, each cutting it at
+    // its own vertices, overlap by up to that much along it, and their common vertices agree to
+    // ~1e-12 mm, not always bit for bit. So the pair is held to that sagitta (1 mm at the least).
+    return polygonsOverlap(roomRing(r1), roomRing(r2), Math.max(1, roomRingSag(r1), roomRingSag(r2)), true);
   };
   /** The classes overlapping class `c` (itself included when its members overlap one
    *  another), ascending; computed once per class. Both tests are symmetric in their

@@ -34,6 +34,8 @@ import {
   planFromJson,
   planToJson,
   resolvePlan,
+  toDxf,
+  validateIntent,
 } from "../src/index.js";
 import { evaluationSteps, resolveAll, type RRoom } from "../src/ir.js";
 import { link } from "../src/import.js";
@@ -41,13 +43,22 @@ import { parse } from "../src/parser.js";
 import { BUILTIN_REGISTRY } from "../src/registry.js";
 import { makeVirtualWorld } from "../src/world.js";
 import { roomAreaMm2 } from "../src/geometry/room-ring.js";
-import { polygonArea } from "../src/geometry/polygon.js";
+import { polygonArea, polygonLabelPoint, ringWithArcs } from "../src/geometry/polygon.js";
+import { loopWinding } from "../src/geometry/band.js";
+import { clearNetAreaMemo, memoRoomNetAreaMm2, withNetAreaBudget } from "../src/analyze/net-area-memo.js";
 import { ROOM_ARC_FULL_STEP_RADIUS_MM, ROOM_ARC_MAX_SAG_MM } from "../src/elements/room.js";
 import { ROOM_CONTAINMENT_SLACK_MM } from "../src/analyze/rooms.js";
-import { type CompilerApi, allStoreysDigestWithDiagnostics } from "./helpers/byte-identity-digest.js";
+import { type CompilerApi, allStoreysDigestWithDiagnostics, sha256 } from "./helpers/byte-identity-digest.js";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
 const API: CompilerApi = { compile, describe: describePlan, lint };
+
+/**
+ * SHA-256 of `test/floor-unassigned/bay-bungalow-arc-living.arch`'s Plan JSON and DXF, an arc room
+ * through both, measured when the canonical ring landed (review round 1). A move is a finding.
+ */
+const PLAN_JSON_PIN = "7a05624e92320b464b920a978238a134fb25098a6b86029e2e62a672664e5b33";
+const DXF_PIN = "53e9ee032abda5c0a4a8fe716d98dbaf3897ab8a86e117ef3714db0f8b946e90";
 
 /** An `arc` clause inside a `room … polygon` statement (one line, as every corpus room is written). */
 const ARC_IN_RING = /\broom\b[^\n]*\bpolygon\b[^\n]*\barc\s*\(/;
@@ -232,19 +243,190 @@ suite("turned and mirrored (D4)", () => {
       `  place apse() as g at (20000,20000)${xf}`,
     );
   const factsOf = (xf: string) => {
-    const s = describePlan(placed(xf)).rooms[0]!;
-    return { area: s.area_m2, arcs: s.floor_arcs!.map((a) => ({ r: a.r, sweep: a.sweep })) };
+    const src = placed(xf);
+    const s = describePlan(src).rooms[0]!;
+    return {
+      area: s.area_m2,
+      net: s.net_area_m2,
+      arcs: s.floor_arcs!.map((a) => ({ r: a.r, sweep: a.sweep })),
+      diagnostics: compile(src).diagnostics.map((d) => d.code),
+      lint: lintCodes(src),
+    };
   };
   const base = factsOf("");
   for (const rot of [0, 90, 180, 270])
     for (const mirror of ["", " mirror x"]) {
-      it(`rotate ${rot}${mirror}: the same area, the same arc, its sweep flipped by a mirror only`, () => {
+      it(`rotate ${rot}${mirror}: the same area, arc, diagnostics and lint, its sweep flipped by a mirror only`, () => {
         const f = factsOf(`${rot ? ` rotate ${rot}` : ""}${mirror}`);
         expect(f.area).toBe(base.area);
+        expect(f.net).toBe(base.net);
         expect(f.arcs.map((a) => a.r)).toEqual(base.arcs.map((a) => a.r));
         expect(f.arcs.map((a) => a.sweep)).toEqual(base.arcs.map((a) => (mirror ? -a.sweep : a.sweep)));
+        expect(f.diagnostics).toEqual(base.diagnostics);
+        expect(f.lint).toEqual(base.lint);
       });
     }
+});
+
+/** Two rooms either side of an R9000 curved partition (the plan the W_BOUNDARY_NO_WALL case reads). */
+const PARTITION_BODY = (indent: string): string[] =>
+  [
+    "wall id=shell exterior thickness 200 { (0,0) (16000,0) (16000,12000) (0,12000) close }",
+    "wall partition thickness 100 { (0,6000) arc (16000,6000) radius 9000 cw }",
+    'room id=n polygon (0,0) (16000,0) (16000,6000) arc (0,6000) radius 9000 ccw label "Office" uses office',
+    'room id=s polygon (0,6000) arc (16000,6000) radius 9000 cw (16000,12000) (0,12000) label "Bedroom" uses bedroom',
+    "door on shell at 2000 width 900",
+  ].map((l) => indent + l);
+
+const adjacency = (src: string): Array<[string, string[]]> =>
+  describePlan(src).rooms.map((r) => [r.id, [...r.adjacent].sort()]);
+
+suite("rooms that share a curve share its vertices: no overlap, and adjacent (canonical ring)", () => {
+  it("the R9000 partition's two rings hold the same vertices along it, bit for bit", () => {
+    const src = plan(...PARTITION_BODY("  "));
+    const n = roomOf(src, "n").poly!;
+    const s = roomOf(src, "s").poly!;
+    const key = (p: { x: number; y: number }): string => `${p.x}|${p.y}`;
+    const shared = n.filter((p) => s.some((q) => key(q) === key(p)));
+    // Both arc ends and every interior vertex (at k · 7.5° about the centre).
+    expect(shared.length).toBe(roomOf(src, "n").poly!.length - 2);
+    expect(compile(src).diagnostics).toEqual([]);
+  });
+
+  for (const at of ["(0,0)", "(20000,20000)", "(12345,6789)", "(-7000,300)"])
+    for (const rot of ["", " rotate 90", " rotate 180", " rotate 270"])
+      for (const mirror of ["", " mirror x"]) {
+        it(`placed at ${at}${rot}${mirror}: no diagnostic, and the two rooms adjacent`, () => {
+          const src = plan(
+            "  component u() {",
+            ...PARTITION_BODY("    "),
+            "  }",
+            `  place u() as g at ${at}${rot}${mirror}`,
+          );
+          expect(compile(src).diagnostics).toEqual([]);
+          expect(adjacency(src)).toEqual([
+            ["g.n", ["g.s"]],
+            ["g.s", ["g.n"]],
+          ]);
+        });
+      }
+
+  it("one room against two on the other side of an R10000 curve, split on it at the apex", () => {
+    const src = plan(
+      "  wall id=shell exterior thickness 200 { (0,0) (16000,0) (16000,12000) (0,12000) close }",
+      "  wall id=p partition thickness 100 { (0,6000) arc (16000,6000) radius 10000 cw }",
+      "  wall id=q partition thickness 100 { (8000,0) (8000,2000) }",
+      '  room id=nw polygon (0,0) (8000,0) (8000,2000) arc (0,6000) radius 10000 ccw label "Office" uses office',
+      '  room id=ne polygon (8000,0) (16000,0) (16000,6000) arc (8000,2000) radius 10000 ccw label "Study" uses office',
+      '  room id=s polygon (0,6000) arc (16000,6000) radius 10000 cw (16000,12000) (0,12000) label "Bedroom" uses bedroom',
+      "  door on shell at 2000 width 900",
+    );
+    expect(codes(src)).not.toContain("W_ROOM_OVERLAP");
+    expect(adjacency(src)).toEqual([
+      ["nw", ["ne", "s"]],
+      ["ne", ["nw", "s"]],
+      ["s", ["ne", "nw"]],
+    ]);
+  });
+
+  it("a curve one room splits in two arcs and the other writes as one is no overlap", () => {
+    const src = plan(
+      "  wall id=shell exterior thickness 200 { (0,0) (16000,0) (16000,12000) (0,12000) close }",
+      "  wall id=p partition thickness 100 { (0,6000) arc (16000,6000) radius 10000 cw }",
+      '  room id=n polygon (0,0) (16000,0) (16000,6000) arc (0,6000) radius 10000 ccw label "Office" uses office',
+      '  room id=s polygon (0,6000) arc (2000,4000) radius 10000 cw arc (16000,6000) radius 10000 cw (16000,12000) (0,12000) label "Bedroom" uses bedroom',
+      "  door on shell at 2000 width 900",
+    );
+    expect(codes(src)).not.toContain("W_ROOM_OVERLAP");
+    expect(adjacency(src)).toEqual([
+      ["n", ["s"]],
+      ["s", ["n"]],
+    ]);
+  });
+
+  it("a half-annulus sharing its inner arc with a `room circle`, and dims auto's two radii", () => {
+    const src = plan(
+      "  dims auto",
+      "  wall exterior thickness 200 { (2000,5000) arc (8000,5000) radius 3000 cw arc (2000,5000) radius 3000 cw }",
+      '  room id=drum circle at (5000,5000) radius 3000 label "Drum" uses living',
+      '  room id=amb polygon (0,5000) arc (10000,5000) radius 5000 cw (8000,5000) arc (2000,5000) radius 3000 ccw label "Ambulatory" uses hall',
+    );
+    expect(compile(src).diagnostics).toEqual([]);
+    expect(adjacency(src)).toEqual([
+      ["drum", ["amb"]],
+      ["amb", ["drum"]],
+    ]);
+    // One leader per (centre, radius): the wall's R3000 (the room's inner arc shares it), the room's R5000.
+    const svg = compile(src).svg;
+    expect(svg.match(/>R3000</g)).toHaveLength(1);
+    expect(svg.match(/>R5000</g)).toHaveLength(1);
+  });
+});
+
+suite("readers of the summary follow the curve", () => {
+  /** A crescent: two arcs between two vertices, its box centre off its floor. */
+  const CRESCENT = plan('  room id=c polygon (0,0) arc (4000,0) radius 2000 cw arc (0,0) radius 2100 ccw label "Moon"');
+
+  it("the naming point of a two-vertex crescent is on its floor, never its box centre", () => {
+    const s = describePlan(CRESCENT).rooms[0]!;
+    const edges = roomOf(CRESCENT, "c").edges!;
+    const pt = polygonLabelPoint(ringWithArcs(s.floor_polygon, s.floor_arcs));
+    expect(loopWinding(edges, pt)).not.toBe(0);
+    expect(loopWinding(edges, { x: s.bbox.x + s.bbox.w / 2, y: s.bbox.y + s.bbox.h / 2 })).toBe(0);
+  });
+
+  it("an intent's roomDimensions refuses an arc-edged room: no single width or depth", () => {
+    const bath = plan(
+      '  room id=bath polygon (0,0) arc (6000,0) radius 3000 cw (6000,3000) (0,3000) label "Bath" uses bath',
+    );
+    const r = validateIntent(bath, { roomDimensions: [{ room: "Bath", depthMm: { max: 3500, source: "x" } }] });
+    expect(r.ok).toBe(false);
+    expect(r.measures!.map((m) => [m.path, m.reason, m.pass])).toEqual([
+      ["/roomDimensions/0/depthMm", "room-not-rectangular", false],
+    ]);
+  });
+});
+
+suite("bounded and pinned", () => {
+  it("a bulge's centre past the modelling range is E_OUT_OF_RANGE, even with its vertices in range", () => {
+    const d = compile(
+      plan("  room id=f polygon (0,0) (1000,0) arc (1000,1000) radius 40000000 cw (0,1000)"),
+    ).diagnostics;
+    expect(d.map((x) => x.code)).toEqual(["E_OUT_OF_RANGE"]);
+  });
+
+  it("a label pinned in the bulge is on the floor; past the curve it is outside", () => {
+    const at = (p: string) =>
+      codes(plan(`  room id=b polygon (0,0) (4000,0) arc (4000,4000) radius 2000 cw (0,4000) label "Bow" at ${p}`));
+    expect(at("(5500,2000)")).toEqual([]);
+    expect(at("(6100,2000)")).toEqual(["W_ROOM_LABEL_OUTSIDE"]);
+  });
+
+  it("the net-area memo tells an arc ring from its own tessellation (the key holds the arcs)", () => {
+    const bay = roomOf(BOWED, "b");
+    clearNetAreaMemo();
+    const [exact, chordal] = withNetAreaBudget(() => [
+      memoRoomNetAreaMm2(bay, []),
+      memoRoomNetAreaMm2({ ...bay, edges: undefined }, []),
+    ]);
+    expect(exact).toBe(roomAreaMm2(bay));
+    expect(chordal).toBe(polygonArea(bay.poly!));
+    expect(chordal).not.toBe(exact);
+  });
+
+  it("translating the plan moves no describe() fact but its coordinates (the nav grid's frame)", () => {
+    const facts = (at: string) => {
+      const d = describePlan(plan("  component u() {", ...PARTITION_BODY("    "), "  }", `  place u() as g at ${at}`));
+      return { rooms: d.rooms.map((r) => [r.area_m2, r.net_area_m2, r.adjacent]), circulation: d.circulation };
+    };
+    expect(facts("(123450,67890)")).toEqual(facts("(0,0)"));
+  });
+
+  it("pins the Bay Bungalow's Plan JSON and DXF (an arc room through both)", () => {
+    const fx = readFileSync(join(ROOT, "test/floor-unassigned/bay-bungalow-arc-living.arch"), "utf8");
+    expect(sha256(JSON.stringify(planToJson(fx).json))).toBe(PLAN_JSON_PIN);
+    expect(sha256(toDxf(compile(fx).scene!))).toBe(DXF_PIN);
+  });
 });
 
 suite("Plan JSON", () => {
@@ -315,10 +497,11 @@ suite("refusals", () => {
     expect(ROOM_ARC_FULL_STEP_RADIUS_MM).toBe(46705);
     const big = plan("  room id=t polygon (0,0) arc (100000,0) radius 60000 cw (100000,50000) (0,50000)");
     const d = compile(big).diagnostics.find((x) => x.code === "E_ROOM_ARC_SAG");
-    expect(d?.message).toContain("stands up to 113.688 mm off the curve");
+    // 60000 · (1 − cos 3.75°): its chords are 7.5° apart.
+    expect(d?.message).toContain("stands up to 128.465 mm off the curve");
     expect(d?.hints?.[0]).toContain("46705");
-    // A shallow arc of a larger radius steps finer, and stays within it.
-    expect(codes(plan("  room id=t polygon (0,0) arc (10000,0) radius 100000 cw (10000,5000) (0,5000)"))).not.toContain(
+    // An arc under 7.5° is one chord, standing r(1 − cos(θ/2)) off: 31 mm at R100000 on a 5000 mm chord.
+    expect(codes(plan("  room id=t polygon (0,0) arc (5000,0) radius 100000 cw (5000,5000) (0,5000)"))).not.toContain(
       "E_ROOM_ARC_SAG",
     );
   });

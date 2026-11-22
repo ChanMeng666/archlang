@@ -18,7 +18,7 @@
  */
 
 import type { Point } from "../ast.js";
-import { fullCircleArc } from "./arc.js";
+import { type Arc, fullCircleArc } from "./arc.js";
 import { type EdgeLoop, edgeStart, loopArea, loopBBox } from "./band.js";
 import type { GridBox } from "./grid-index.js";
 import { polygonArea, rectRing } from "./polygon.js";
@@ -109,4 +109,91 @@ export function roomExtent(r: RoomShape): GridBox {
  */
 export function roomCorners(r: RoomShape): readonly Point[] {
   return r.circle ? [] : r.edges ? r.edges.map(edgeStart) : roomRing(r);
+}
+
+/*
+ * The discretised ring of an arc-edged room (card ARC2): CANONICAL, so two rooms that share a curve
+ * share its vertices bit for bit, whichever way each ring runs along it and wherever each ring's
+ * arc starts or ends on it.
+ *
+ * An arc's interior vertices stand at the ABSOLUTE angles `k · 7.5°` about its centre (the angles a
+ * `room circle`'s 48-gon stands at, computed by the same expression, so a ring sharing a circle
+ * room's curve shares its vertices too), strictly inside the sweep, between the arc's two exact
+ * endpoints; the centre is read on a 2^-20 mm lattice, so the same circle solved from two different
+ * chords (whose centres differ in the last bits) gives the same points. Quarter turns and mirrors
+ * map the angle set to itself. No chord spans more than 7.5°.
+ */
+
+/** The canonical angle step: a `room circle`'s 48-gon step (`ARC_STEP_DEG`, `./arc.ts`). */
+const RING_ARC_DIVISIONS = 48;
+/** The lattice a ring arc's centre is read on for its vertices (2^-20 mm, about 1e-6 mm). */
+const RING_ARC_CENTRE_QUANTUM = 2 ** -20;
+/** How close (radians) a canonical angle may come to an endpoint before the endpoint stands for it. */
+const RING_ARC_ANGLE_EPS = 1e-9;
+
+/** The canonical indices `k` strictly inside the arc's sweep, in its direction of travel: `[first, count, dir]`. */
+function ringArcIndices(arc: Arc): [number, number, 1 | -1] {
+  const step = (2 * Math.PI) / RING_ARC_DIVISIONS;
+  const u0 = arc.start / step;
+  const span = Math.abs(arc.sweep) / step;
+  const e = RING_ARC_ANGLE_EPS / step;
+  if (!Number.isFinite(u0) || !Number.isFinite(span)) return [0, 0, 1];
+  if (arc.sweep >= 0) {
+    const lo = Math.floor(u0 + e) + 1;
+    const hi = Math.ceil(u0 + span - e) - 1;
+    return [lo, Math.max(0, hi - lo + 1), 1];
+  }
+  const hi = Math.ceil(u0 - e) - 1;
+  const lo = Math.floor(u0 - span + e) + 1;
+  return [hi, Math.max(0, hi - lo + 1), -1];
+}
+
+/** How many vertices {@link ringArcPoints} returns for `arc`: its start and its canonical interior points. */
+export function ringArcVertexCount(arc: Arc): number {
+  return 1 + ringArcIndices(arc)[1];
+}
+
+/** An arc's points for a room ring: its exact start, then its canonical interior points, in its direction. */
+export function ringArcPoints(arc: Arc): Point[] {
+  const [first, count, dir] = ringArcIndices(arc);
+  const q = RING_ARC_CENTRE_QUANTUM;
+  const cx = Math.round(arc.center.x / q) * q;
+  const cy = Math.round(arc.center.y / q) * q;
+  const n = RING_ARC_DIVISIONS;
+  const out: Point[] = [arc.a];
+  for (let i = 0; i < count; i++) {
+    const k = first + dir * i;
+    // The circle's own expression (`arcPointAt` of `fullCircleArc`: start 0, sweep 2π, t = k/48).
+    const th = 2 * Math.PI * ((((k % n) + n) % n) / n);
+    out.push({ x: cx + arc.r * Math.cos(th), y: cy + arc.r * Math.sin(th) });
+  }
+  return out;
+}
+
+/** The discretised ring of an arc-edged boundary: each edge's start, each arc's canonical interior points. */
+export function ringOfEdges(edges: EdgeLoop): Point[] {
+  const out: Point[] = [];
+  for (const e of edges) {
+    if (e.t === "line") out.push(e.a);
+    else out.push(...ringArcPoints(e.arc));
+  }
+  return out;
+}
+
+/** The widest angle (radians) one chord of {@link ringArcPoints} spans: 7.5°, or the whole sweep if less. */
+export function ringArcMaxChordAngle(arc: Arc): number {
+  return Math.min(Math.abs(arc.sweep), (2 * Math.PI) / RING_ARC_DIVISIONS);
+}
+
+/**
+ * The most a room's discretised ring stands off its exact boundary (mm): the largest sagitta
+ * `r(1 − cos(θ/2))` of its arcs' chords, 0 for a straight ring. Two rooms that share a curve each
+ * cut it at their own vertices, so their rings can overlap by up to this much along it and no more.
+ */
+export function roomRingSag(r: RoomShape): number {
+  let sag = 0;
+  for (const e of r.edges ?? []) {
+    if (e.t === "arc") sag = Math.max(sag, e.arc.r * (1 - Math.cos(ringArcMaxChordAngle(e.arc) / 2)));
+  }
+  return sag;
 }

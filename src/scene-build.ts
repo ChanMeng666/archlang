@@ -273,13 +273,9 @@ export function autoDimCount(ir: ResolvedPlan): number {
 function synthCurveDims(ir: ResolvedPlan, dims: RDim[]): void {
   const { mm } = sheetText(ir.sheetText?.entries);
   const seen = new Set<string>();
-  // The centres the walls' leaders already dimension: a room's arc about one of them is the
-  // same curve's face (a room drawn to a curved wall's inner face), so it adds no leader.
-  const wallCentres = new Set<string>();
   for (const w of ir.walls) {
     for (const s of segmentsOfWall(w)) {
       if (!s.arc) continue;
-      wallCentres.add(`${fmtMm(s.arc.center.x)}|${fmtMm(s.arc.center.y)}`);
       const key = `${fmtMm(s.arc.center.x)}|${fmtMm(s.arc.center.y)}|${fmtMm(s.arc.r)}`;
       if (seen.has(key)) continue;
       seen.add(key);
@@ -288,11 +284,11 @@ function synthCurveDims(ir: ResolvedPlan, dims: RDim[]): void {
   }
   for (const el of ir.elements) {
     if (el.kind !== "room") continue;
-    // An arc-edged ring's curves (card ARC2): one `R<r>` leader per distinct curve, none for
-    // a curve about a wall arc's centre (that wall's leader already dimensions it).
+    // An arc-edged ring's curves (card ARC2): one `R<r>` leader per distinct (centre, radius),
+    // deduplicated with the walls' by the same key, so a room drawn on a curved wall's centreline
+    // adds none and one on another radius (a face, a second curve) gets its own.
     for (const e of (el as RRoom).edges ?? []) {
       if (e.t !== "arc") continue;
-      if (wallCentres.has(`${fmtMm(e.arc.center.x)}|${fmtMm(e.arc.center.y)}`)) continue;
       const key = `${fmtMm(e.arc.center.x)}|${fmtMm(e.arc.center.y)}|${fmtMm(e.arc.r)}`;
       if (seen.has(key)) continue;
       seen.add(key);
