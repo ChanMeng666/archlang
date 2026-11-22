@@ -255,16 +255,32 @@ test.describe("the feature sheets on /examples", () => {
   });
 
   test("every sheet drawing renders", async ({ page }) => {
+    // The images are lazy, so each is scrolled into view to start its fetch. Waiting for each one in
+    // turn made the test's time the SUM of the fetches: it crept past Playwright's 30 s default as
+    // the gallery grew (27.9 s passing, 32 s failing on both attempts in CI). Now one poll covers
+    // all of them, the fetches overlap, and the budget is sized to the image count.
+    test.setTimeout(30_000 + 2_000 * (CARDS + LEVEL_ART));
     await page.goto("/examples");
     const imgs = page.locator(".card__art img");
     // one image per card, plus the extra storeys of each multi-storey card
     await expect(imgs).toHaveCount(CARDS + LEVEL_ART);
-    for (const img of await imgs.all()) {
-      await img.scrollIntoViewIfNeeded();
-      await expect
-        .poll(() => img.evaluate((el) => (el as HTMLImageElement).naturalWidth), { timeout: 10_000 })
-        .toBeGreaterThan(0);
-    }
+    // Every image must have naturalWidth > 0. Each round scrolls the ones still blank into view (a
+    // lazy image outside the viewport never loads) and counts how many remain.
+    await expect
+      .poll(
+        () =>
+          imgs.evaluateAll((els) => {
+            let blank = 0;
+            for (const el of els as HTMLImageElement[]) {
+              if (el.naturalWidth > 0) continue;
+              blank++;
+              el.scrollIntoView({ block: "center" });
+            }
+            return blank;
+          }),
+        { timeout: 25_000 + 2_000 * (CARDS + LEVEL_ART), message: "sheet images still without a drawing" },
+      )
+      .toBe(0);
   });
 });
 

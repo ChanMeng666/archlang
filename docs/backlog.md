@@ -311,6 +311,12 @@ Done by #1005, with no budget raised. The compile worker's `lint`, which no view
 
 After #1002 (3.19) the first use measured 466,680 B against `firstUsePathBudget` 468,000 (1,320 B left), and three open PRs add to it: #1001 (`W_SEAT_FACING_WALL`, ~+954 B), #1003 (CV14 examples, ~+165 B) and #1004 (`W_STAIR_NO_VOID`, ~+281 B), about 80 B over together. #1002's residue named what is left on the path: the fix column Copy for LLM reads and the worker's `lint`, which only the editor runs. **Gate:** at least ~3,000 B gzip off the first use, the compiler and embed budgets met and not raised, the digest unmoved, the playground's behaviour the same.
 
+## Docs-site E2E
+
+### DE.1 · "every sheet drawing renders" timed out at 30 s: done by this PR, waiting to be archived — `note`
+
+`docs-site/e2e/homepage-links.spec.ts` › "every sheet drawing renders" scrolled to each sheet image and waited for it in turn, so its time was the sum of the fetches. In CI it ran 27.9 s on a pass (run 44970550484) and 31.7 to 32.3 s on both attempts of runs 44975881007 (`main` fe43738d), 44968866989 and 44962341628, against Playwright's 30 s default. Done by this PR: one `expect.poll` scrolls every still-blank image into view and counts those without a `naturalWidth`, and the test's timeout is sized to `CARDS + LEVEL_ART`. The assertion is as strong as before (the count equals `CARDS + LEVEL_ART`, every image must decode, none is skipped).
+
 ## Found while redrawing the showcase
 
 Five things the twelve new examples ran into. None is a regression and none blocked an example from
