@@ -511,12 +511,23 @@ const ringSize = (r: RRoom): number => r.poly?.length ?? 4;
 /**
  * A room's floor ring on the 0.001 mm lattice, from the SHAPE: the polygon a polygonal or
  * circular room carries, else the rectangle the room IS (`at`/`size` of a rectangular room is
- * its floor, not a box around one). One unit of work per vertex.
+ * its floor, not a box around one). A vertex equal on the lattice to the one before it is dropped,
+ * and so is a last vertex equal to the first (an explicitly closed ring, a doubled point, a jog the
+ * grid snapped onto its neighbour), as `effectiveVertices` drops them: {@link cornersOf} would read
+ * both copies of a repeated vertex as a straight run and drop the corner. One unit of work per
+ * vertex read.
  */
 function latticeRing(r: RRoom, work: Work): LatticePoint[] {
   const pts = r.poly ?? rectRing({ x: r.at.x, y: r.at.y, w: r.size.w, h: r.size.h });
-  work.n += pts.length;
-  return pts.map((p) => ({ x: lattice(p.x), y: lattice(p.y) }));
+  const out: LatticePoint[] = [];
+  for (const p of pts) {
+    work.n++;
+    const q = { x: lattice(p.x), y: lattice(p.y) };
+    const last = out[out.length - 1];
+    if (last === undefined || last.x !== q.x || last.y !== q.y) out.push(q);
+  }
+  while (out.length > 1 && out[0]!.x === out[out.length - 1]!.x && out[0]!.y === out[out.length - 1]!.y) out.pop();
+  return out;
 }
 
 /** The ring with repeated and collinear vertices dropped, so every vertex left is a corner. */
@@ -1506,10 +1517,14 @@ interface WetFloor {
   y0: bigint;
   x1: bigint;
   y1: bigint;
-  /** `null` for a rectangle, which its box is; else the ring cut into convex pieces, each wound so
-   *  that its inside is to the left (a positive cross product), built on first use. */
+  /** The floor cut into convex pieces, each wound so that its inside is to the left (a positive
+   *  cross product): a rectangle's one piece is its box, a circle's its 48-gon, a polygon's its ring
+   *  if convex, else its ear-clipped triangles. `null` until a pair first needs them. */
   pieces: LatticePoint[][] | null;
+  /** The corner ring of a polygon or a circle, `null` for a rectangle. */
   ring: LatticePoint[] | null;
+  /** A circle: its 48-gon is one convex piece, never ear-clipped. */
+  circle: boolean;
 }
 
 /** `(b − a) × (p − a)` on the lattice. */
@@ -1518,12 +1533,14 @@ const cross3 = (a: LatticePoint, b: LatticePoint, p: LatticePoint): bigint =>
 
 /**
  * A ring of corners cut into convex pieces, each wound with its inside to the left: the ring itself
- * when it is convex, else ear-clipped triangles (a vertex is an ear when it turns inward and no
- * other vertex stands in or on its triangle; a vertex in line with its neighbours is dropped). Exact
- * on the lattice. A ring of n corners counts at most n³ + n² + 2n units. A ring with no ear (not simple:
+ * when it is convex (or `convex` says so: a circle's 48-gon), else ear-clipped triangles (a vertex
+ * is an ear when it turns inward and no other vertex stands in or on its triangle; a vertex in line
+ * with its neighbours is dropped). The ring is first turned to start at its least vertex (by x,
+ * then y), so the cut does not depend on where the author started it. Exact on the lattice. A ring
+ * of n corners counts at most n³ + n² + 3n units, a convex one 2n. A ring with no ear (not simple:
  * the resolver refuses one, `E_ROOM_POLY_SELF_INTERSECT`) gives no pieces, so it stacks on nothing.
  */
-function convexPieces(ring: readonly LatticePoint[], work: Work): LatticePoint[][] {
+function convexPieces(ring: readonly LatticePoint[], work: Work, convexKnown = false): LatticePoint[][] {
   const n = ring.length;
   if (n < 3) return [];
   let area2 = 0n;
@@ -1534,7 +1551,16 @@ function convexPieces(ring: readonly LatticePoint[], work: Work): LatticePoint[]
     area2 += a.x * b.y - b.x * a.y;
   }
   if (area2 === 0n) return [];
-  const wound = area2 > 0n ? [...ring] : [...ring].reverse();
+  const turned = area2 > 0n ? [...ring] : [...ring].reverse();
+  if (convexKnown) return [turned];
+  let least = 0;
+  for (let i = 1; i < n; i++) {
+    work.n++;
+    const p = turned[i]!;
+    const q = turned[least]!;
+    if (p.x < q.x || (p.x === q.x && p.y < q.y)) least = i;
+  }
+  const wound = [...turned.slice(least), ...turned.slice(0, least)];
   let convex = true;
   for (let i = 0; i < n && convex; i++) {
     work.n++;
@@ -1601,9 +1627,11 @@ function edgeSeparates(p: readonly LatticePoint[], q: readonly LatticePoint[], w
   return false;
 }
 
-/** The most R20 counts for one wet room's floor of `n` ring vertices: the lattice ring and its
- *  corners (2n) and, for a polygon or a circle, its convex pieces (n³ + n² + 2n). */
-const floorReads = (n: number, poly: boolean): number => 2 * n + (poly ? n * n * n + n * n + 2 * n : 0);
+/** The most R20 counts for one wet room's floor of `n` ring vertices: a rectangle's corner and
+ *  size (n); a circle's lattice ring, its corners and its one piece (3n); a polygon's lattice
+ *  ring and corners (2n) and its convex pieces (n³ + n² + 3n). */
+const floorReads = (n: number, kind: "rect" | "circle" | "polygon"): number =>
+  kind === "rect" ? n : kind === "circle" ? 3 * n : n * n * n + n * n + 5 * n;
 
 /** The most R20 counts for one pair of floors of `a` and `b` ring vertices with a polygon or a
  *  circle among them: every pair of their pieces, both ways (each piece has at most as many
@@ -1620,8 +1648,14 @@ const piecePairReads = (a: number, b: number): number => 18 * a * b;
  * on both axes (for two rectangles, the floors themselves: `W_ROOM_OVERLAP`'s margin) and, with a
  * polygon or a circle among them, some convex piece of one and some of the other have no edge, of
  * either, that keeps the other within 1 mm of its outside (the separating-axis test, in integers).
- * Floors that touch along an edge, or meet by 1 mm or less, are not stacked; a floor flush with an
- * arm of an L below is. v = stacked / wet rooms; ramp 0 → 1. One storey, or baths and WCs on one
+ * So floors that touch, or do not meet, are never stacked; two rectangles are stacked exactly when
+ * they overlap by more than 1 mm across on both axes; and a floor that reaches more than 1 mm
+ * across into a polygon's floor is stacked (a bath flush with an arm of an L below, or 1.1 mm into
+ * one), one that reaches 1 mm or less is not. The one band where the verdict can go either way is
+ * an overlap of 1 mm or less across, measured at an inside corner of a polygon, where an ear-clip
+ * diagonal meets the overlap: there the reading depends on how the ring is cut, which a mirror or
+ * a turn of the plan changes (where the author started the ring does not: it is cut from its least
+ * vertex). v = stacked / wet rooms; ramp 0 → 1. One storey, or baths and WCs on one
  * storey only, has nothing to compare (`too-few-items`). Several on a storey are each judged: an
  * en-suite over the WC below and a family bath over a living room read 1 of 2 on that storey. A
  * utility room is not read (the source names sanitary facilities). Not stacking is legal and
@@ -1655,7 +1689,7 @@ const R20: TasteCriterionDef = {
       const ids = new Set(s.summary.rooms.filter((r) => isSanitary(r.uses)).map((r) => r.id));
       const rooms = irRoomsOf(s).filter((r) => ids.has(r.id));
       if (rooms.length === 0) continue;
-      for (const r of rooms) n += floorReads(ringSize(r), r.poly !== undefined);
+      for (const r of rooms) n += floorReads(ringSize(r), r.circle ? "circle" : r.poly ? "polygon" : "rect");
       wet.push({
         level: s.level ?? 0,
         rooms: rooms.length,
@@ -1694,12 +1728,8 @@ const R20: TasteCriterionDef = {
         let y0: bigint;
         let x1: bigint;
         let y1: bigint;
-        work.n += ringSize(r);
         if (r.poly) {
-          ring = cornersOf(
-            r.poly.map((p) => ({ x: lattice(p.x), y: lattice(p.y) })),
-            work,
-          );
+          ring = cornersOf(latticeRing(r, work), work);
           x0 = y0 = x1 = y1 = 0n;
           for (const [i, p] of ring.entries()) {
             if (i === 0 || p.x < x0) x0 = p.x;
@@ -1708,12 +1738,13 @@ const R20: TasteCriterionDef = {
             if (i === 0 || p.y > y1) y1 = p.y;
           }
         } else {
+          work.n += ringSize(r);
           x0 = lattice(r.at.x);
           y0 = lattice(r.at.y);
           x1 = x0 + lattice(r.size.w);
           y1 = y0 + lattice(r.size.h);
         }
-        floors.push({ room: r, x0, y0, x1, y1, pieces: null, ring });
+        floors.push({ room: r, x0, y0, x1, y1, pieces: null, ring, circle: r.circle !== undefined });
       }
       if (floors.length === 0) continue;
       let at = wet.length;
@@ -1728,7 +1759,7 @@ const R20: TasteCriterionDef = {
     const piecesOf = (f: WetFloor): LatticePoint[][] => {
       if (f.pieces === null) {
         f.pieces = f.ring
-          ? convexPieces(f.ring, work)
+          ? convexPieces(f.ring, work, f.circle)
           : [
               [
                 { x: f.x0, y: f.y0 },

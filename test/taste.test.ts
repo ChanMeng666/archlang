@@ -539,6 +539,38 @@ describe("each criterion's acceptance line (design §3)", () => {
       expect(r20(sq, 'room id=b circle at (6000,2000) radius 1500 label "Bath" uses bath')).toEqual(neither);
     });
 
+    it("a repeated vertex is one corner: a closed ring, a doubled point, a closed triangle, a jog the grid snaps", () => {
+      // Each reads 2 of 2 under a bath that stands in it (red team of #1007, round 2: both copies of
+      // a repeated vertex were read as a straight run and the corner dropped).
+      const wc = (ring: string) => `room id=w polygon ${ring} label "WC" uses wc`;
+      const bath = (x: number) => `room id=b at (${x},200) size 1500x1500 label "Bath" uses bath`;
+      expect(r20(wc("(0,0) (4000,0) (4000,4000) (0,4000) (0,0)"), bath(200), "")).toEqual(both);
+      expect(r20(wc("(0,0) (4000,0) (4000,0) (4000,4000) (0,4000)"), bath(2400), "")).toEqual(both);
+      expect(r20(wc("(0,0) (4000,0) (0,4000) (0,0)"), bath(200), "")).toEqual(both);
+      expect(r20(wc("(0,0) (4020,0) (4000,0) (4000,4000) (0,4000)"), bath(2400), "  grid 100")).toEqual(both);
+    });
+
+    it("the margin holds on a polygon: 1 mm into the L's arm is not stacked, 1.1 mm is, flush is not", () => {
+      const at = (x: string) => `room id=b at (${x},2000) size 1500x1500 label "Bath" uses bath`;
+      expect(r20(wcL, at("2000"), "")).toEqual(neither);
+      expect(r20(wcL, at("1999"), "")).toEqual(neither);
+      expect(r20(wcL, at("1998.9"), "")).toEqual(both);
+    });
+
+    it("the verdict does not depend on where the L's ring starts or which way it runs", () => {
+      const pts = ["(0,0)", "(4000,0)", "(4000,2000)", "(2000,2000)", "(2000,4000)", "(0,4000)"];
+      for (const xy of ["2000", "1999", "1998.9", "1999.2"]) {
+        const seen = new Set<string>();
+        for (let k = 0; k < pts.length; k++)
+          for (const dir of [1, -1]) {
+            const ring = pts.map((_, i) => pts[(k + dir * i + 2 * pts.length) % pts.length]).join(" ");
+            const bath = `room id=b at (${xy},${xy}) size 1500x1500 label "Bath" uses bath`;
+            seen.add(JSON.stringify(r20(`room id=w polygon ${ring} label "WC" uses wc`, bath, "")));
+          }
+        expect([...seen], `bath at (${xy},${xy})`).toHaveLength(1);
+      }
+    });
+
     it("a utility room is not a sanitary facility: a bath over one is not judged", () => {
       const util = 'room id=w at (0,0) size 2000x2000 label "Utility" uses utility';
       const t = taste(plan(util, 'room id=b at (0,0) size 2000x2000 label "Bath" uses bath'));
