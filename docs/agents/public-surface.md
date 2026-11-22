@@ -376,9 +376,9 @@ Totals: 659 exports (230 values, 429 types), 418 flagged (75 values).
 | Export | Kind | In-repo consumers |
 | --- | --- | --- |
 | `Applicability` | type | `packages/mcp`, `test` |
-| `Diagnostic` | type | `packages/archlang-3d`, `packages/mcp`, `packages/mcp-worker`, `playground`, `scripts`, `src/cli`, `test` |
+| `Diagnostic` | type | `eval`, `packages/archlang-3d`, `packages/mcp`, `packages/mcp-worker`, `playground`, `scripts`, `src/cli`, `test` |
 | `FixEdit` | type | `test` |
-| `FixSuggestion` | type | `packages/mcp`, `src/cli`, `test` |
+| `FixSuggestion` | type | `eval`, `packages/mcp`, `src/cli`, `test` |
 | `RelatedSpan` | type | none |
 | `Severity` | type | none |
 | `Span` | type | `editors`, `test` |
@@ -456,7 +456,7 @@ Totals: 659 exports (230 values, 429 types), 418 flagged (75 values).
 | `ApplyFixesOptions` | type | none |
 | `ApplyReport` | type | none |
 | `applyFixes` | value | `dataset`, `eval`, `packages/mcp`, `playground`, `src/cli`, `test` |
-| `rankFixes` | value | `playground`, `src/cli`, `test` |
+| `rankFixes` | value | `eval`, `packages/mcp`, `playground`, `src/cli`, `test` |
 
 ## `src/fixture-orientation.ts`
 

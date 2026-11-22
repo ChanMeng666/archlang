@@ -138,7 +138,7 @@ Totals: 425 modules in 34 directories.
 | --- | ---: | ---: | --- | --- |
 | `png.ts` | 78 | 5 | What `compile` says about `format:"png"`, written once. | none |
 | `server.ts` | 145 | 7 | ArchLang MCP server — a thin stdio Model Context Protocol shim over the `@chanmeng666/archlang` LIBRARY (never a subprocess of the CLI). Every tool wraps one pure, exported function; the core stays zero-dependency — the MCP SDK lives ONLY… | none |
-| `tools.ts` | 877 | 9 | The ArchLang MCP TOOL SET, transport-agnostic: every tool and resource the server offers, registered on any `McpServer` the caller built. It reads nothing from disk and starts no transport, so the stdio server (`server.ts`, the npm bin)… | none |
+| `tools.ts` | 880 | 9 | The ArchLang MCP TOOL SET, transport-agnostic: every tool and resource the server offers, registered on any `McpServer` the caller built. It reads nothing from disk and starts no transport, so the stdio server (`server.ts`, the npm bin)… | none |
 
 ## `packages/web-component/src/`
 

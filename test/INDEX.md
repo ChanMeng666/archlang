@@ -635,7 +635,7 @@ The first sentence of each file's header comment.
 - `test/print-roundtrip.test.ts` — The central law motivating this task: **a printer is a section of the parser**.
 - `test/public-surface.test.ts` — the public type surface is closed; resolvePlan from the package root keeps linked content.
 - `test/pure-guard.test.ts` — `pure()` (src/pure.ts): every call is marked, takes an arrow, and the arrow has no outside effect (card RM0.7e).
-- `test/rank-fixes.test.ts` — rankFixes; cmdFix pick-one reduction (rankFixes + applyFixes).
+- `test/rank-fixes.test.ts` — rankFixes; cmdFix pick-one reduction (rankFixes + applyFixes); L1's pick (l1Fixes).
 - `test/reachability-blind-spots.test.ts` — RM1.3a — where a person ARRIVES on a storey: a stair-reached upper storey's rooms are reachable (PS0.3), an upper storey's balcony door is no way in (PS0.3), and a balcony door is no arrival for a room a door from the...
 - `test/readme-3d.test.ts` — The 3D preview on the READMEs (public-surfaces card X7): the PS-D12 line and the limits line are carried verbatim, the page they point at is linked, every poster image is a shipped asset the manifest lists, each 3D li...
 - `test/readme-permalink.test.ts` — Drift guard for the playground permalinks in the hand-written docs.
