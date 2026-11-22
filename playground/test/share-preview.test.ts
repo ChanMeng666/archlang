@@ -8,7 +8,7 @@ import { createRequire } from "node:module";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import * as resvg from "@resvg/resvg-wasm";
-import { compile, diagnosticToJson, inputTooLarge, rateLimited } from "archlang";
+import { compile, diagnosticToJson, ERROR_CATALOG, inputTooLarge, rateLimited } from "archlang";
 import { describe, expect, it } from "vitest";
 import { encodePlanHash } from "../../src/cli/share-codec.mjs";
 import { FALLBACK_IMAGE, makeShareWorker, type PreviewDeps } from "../worker/app.js";
@@ -21,7 +21,7 @@ import { supportsDeflateRaw } from "./helpers.js";
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..", "..");
 const read = (rel: string) => readFileSync(join(ROOT, rel), "utf8");
 const ORIGIN = "https://playground.archlang.uk";
-const CORE = { compile, diagnosticToJson, inputTooLarge, rateLimited };
+const CORE = { compile, diagnosticToJson, ERROR_CATALOG, inputTooLarge, rateLimited };
 
 const require = createRequire(import.meta.url);
 const WASM = readFileSync(require.resolve("@resvg/resvg-wasm/index_bg.wasm"));

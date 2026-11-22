@@ -27,9 +27,11 @@ The alternative (keep `poly` as the authored vertices and add per-edge `arcs` as
 put a tessellation call in front of every one of the ~70 ring readers. Rejected.
 
 So the seam is small: a handful of functions every consumer whose answer would be WRONG on the
-discretisation reads instead of `poly`, and one place (`src/geometry/room-ring.ts`) where ARC2 adds
-its `edges` branch. A consumer that reads `poly` as the discretised ring is already on the seam's
-contract and is not edited (§2, class D).
+discretisation reads instead of `poly`, and one module (`src/geometry/room-ring.ts`) where ARC2 adds
+its `edges` branches. A consumer that reads `poly` as the discretised ring is already on the seam's
+contract and is not edited (§2, class D). The seam is not yet the only place ARC2 edits: it has no
+exact containment and no "boundary backed by walls" reading, and two vertex-chain readers are not
+routed through it; §2 marks each such site **ARC2 work** and §4 lists them.
 
 ## 2. Inventory
 
@@ -37,7 +39,8 @@ Found by renaming `RRoom.poly`/`RRoom.circle` and reading `tsc`'s errors, plus t
 that read the same fields (`NetAreaRoom`, `FaceRoom`, naming's `RoomShape`, `RoomBox`) and the 3D
 package. Classes: **A** exact area, **B** exact boundary (curves, extent, edge count), **C** the
 authored vertex chain, **R** the drawn ring and extent, **D** the discretised ring (no change),
-**K** a kind test ("not a rectangle", "a circle"), **X** outside the core's IR.
+**W** the boundary measured against the walls that back it, **I** containment, **K** a kind test
+("not a rectangle", "a circle"), **X** outside the core's IR.
 
 | Site (7077fec1) | Reads | Class | In ARC2 |
 |---|---|---|---|
@@ -53,8 +56,8 @@ authored vertex chain, **R** the drawn ring and extent, **D** the discretised ri
 | `analyze/wall-faces.ts:532` depth over the ring's vertices | ring | D | the tessellation's vertices (each lies on the arc) |
 | `naming.ts:106-119` room bounds | box | B | exact extent |
 | `describe/rooms.ts:51` `floor_polygon` | vertex chain | C | the authored vertices; the arcs as a new `floor_arcs` field (append-only), so no fact is a chord |
-| `plan-json/to-json.ts:191-195` `polygon`, `floor_polygon` | ring | C | authored vertices plus `arcs` per edge (`arcJson`, as a wall's), `planFromJson`/`emitArch` re-emit `arc (x,y) radius R …`; a circle keeps its 48-gon and its gap row |
-| `scene-build.ts:547` `dims auto` boundary ticks | vertices | C | the authored vertices only (a chord point is no room boundary) |
+| `plan-json/to-json.ts:191-195` `polygon`, `floor_polygon` (the seam PR routes `floor_polygon` through `roomRing`, which is still the ring, not the corners: **ARC2 work**) | ring | C | authored vertices plus `arcs` per edge (`arcJson`, as a wall's), `planFromJson`/`emitArch` re-emit `arc (x,y) radius R …`; a circle keeps its 48-gon and its gap row |
+| `scene-build.ts:547` `dims auto` boundary ticks (not routed by the seam PR; still reads `r.poly`: **ARC2 work**) | vertices | C | the authored vertices only (a chord point is no room boundary) |
 | `scene-build.ts:272` `synthCurveDims` | arcs | C | one `R<r>` leader per arc edge, deduplicated with the walls' by (centre, r) |
 | `elements/room.ts:637` `bounds()` | drawn extent | R | the ring plus `arcExtremes` of each arc (the drawing budget and `MODEL_RANGE_MM` must cover the true curve) |
 | `elements/room.ts:668-686` floor fill, `floor` hatch | drawn ring | R | the fill as a `path` prim (`PathEdge` arcs, `src/scene.ts:174`), so the edge is never faceted; the hatch region keeps the tessellation (its walls cover the sag) |
@@ -62,16 +65,20 @@ authored vertex chain, **R** the drawn ring and extent, **D** the discretised ri
 | `elements/room.ts:809-862` `resolvePolygon` checks | vertices | D | `effectiveVertices`, `polygonSelfIntersects` and the label-inside test on the tessellation (an arc whose chords cross a neighbour edge is a crossing ring) |
 | `elements/room.ts:182` `roomLabelAnchor` | ring | D | `polygonLabelPoint` of the tessellation (shape-derived, never a box) |
 | `scene-build.ts:1447`, `lint/rules/annotations.ts:376`, `lint/fixture-paste.ts:201`, `furnish.ts:988`, `ir/checks.ts:350`, `cli/review.ts:186` (`r.poly ?? rectRing(…)`) | ring | D | the tessellation |
-| `analyze/rooms.ts` `RoomBox` and its helpers (`roomRing`, `pointInRoomBox`, `rectInRoomBox`, `roomsAdjacent`, `pointOnRoomEdge`, `roomsAtPoint`, `doorConnections`), used at ~70 sites in `analyze*`, `describe*`, `lint/*`, `repair.ts`, `scene-build.ts`, `facade.ts`, `opening-schedule.ts`, `site.ts`, `suggest.ts`, `view/extrude.ts` | ring | D | the tessellation: within the sag (R·(1 − cos 3.75°), 4 mm at R1900) of the curve, far inside every tolerance they use (`DEFAULT_TOL` 200, a door's `t/2 + t`, the 100 mm containment slack) |
-| `analyze/occupancy.ts:140,189`, `analyze/nav-grid.ts:226,447,655,1210,1428,1702`, `describe/adjacency.ts:47,82,104`, `analyze/symmetry.ts:474`, `room-tiling.ts:1108-1182`, `opening-relation.ts:178-200`, `elements/door.ts:110,180`, `elements/furniture.ts:812`, `keep.ts:532`, `lint/rules/furniture.ts:244`, `lint/rules/per-room.ts:607`, `repair.ts:865,1453,2089`, `suggest.ts:163,199`, `vertical.ts:299`, `taste/criteria.ts:511-1747` | ring | D | the tessellation (grids, flood-fills, adjacency, containment, taste's lattice ring) |
+| `analyze/rooms.ts` `RoomBox` and its helpers (`roomRing`, `pointInRoomBox`, `rectInRoomBox`, `roomsAdjacent`, `pointOnRoomEdge`, `roomsAtPoint`, `doorConnections`), used at ~70 sites in `analyze*`, `describe*`, `lint/*`, `repair.ts`, `scene-build.ts`, `facade.ts`, `opening-schedule.ts`, `site.ts`, `suggest.ts`, `view/extrude.ts` | ring | D | the tessellation, within its sag of the curve: R·(1 − cos 3.75°) ≈ R/467 at the 7.5° step (4 mm at R1900, 19 mm at R9000). That is inside their tolerances only up to a radius: the 100 mm containment slack (`ROOM_CONTAINMENT_SLACK_MM`) at R > ~47 m, `DEFAULT_TOL` 200 at R > ~93 m. `MODEL_RANGE_MM` (33,554,432 mm) does not bound it (at that radius the sag is ~72 m), so ARC2 must either refuse a room arc past a radius it states (a sag inside the smallest tolerance a D reader uses) or give those readers an exact branch (**ARC2 work**) |
+| `analyze/occupancy.ts:140,189`, `analyze/nav-grid.ts:226,447,655,1210,1428,1702`, `describe/adjacency.ts:47,82,104`, `analyze/symmetry.ts:474`, `room-tiling.ts:1108-1182`, `opening-relation.ts:178-200`, `elements/door.ts:110,180`, `elements/furniture.ts:812`, `keep.ts:532`, `lint/rules/furniture.ts:244`, `repair.ts:865,1453,2089`, `suggest.ts:163,199`, `vertical.ts:299`, `taste/criteria.ts:511-1747` | ring | D | the tessellation (grids, flood-fills, adjacency, containment, taste's lattice ring) |
 | `layout.ts:149,248`, `elements/furniture.ts:909,1100,1335`, `elements/walls-from-rooms.ts:204,520,598`, `room-datums.ts:94`, `keep.ts:732,870,1542,1759`, `lint/defining.ts:306`, `lint/rules/per-room.ts:267,287,645,701,729`, `analyze/contacts.ts:77`, `elements/room.ts:224`, `opening-relation.ts:178`, `site.ts:182`, `suggest.ts:420`, `lint/fixture-paste.ts:152`, `repair.ts:1963` | `poly` present, `rectilinear(poly)` | K | refused or declined as a polygon room already is (`rectilinear` of a tessellation is false). ARC2 words the three refusals that say "an edge neither horizontal nor vertical" (`layout.ts:150`, `furniture.ts:1102`, `walls-from-rooms.ts:536`) as "an arc edge" |
-| `analyze/symmetry.ts:469`, `taste/criteria.ts:798,867,1262,1437`, `lint/rules/enclosure.ts:496`, `lint/rules/annotations.ts:910`, `repair.ts:1453,1506,2148`, `lint/rules/per-room.ts:603`, `elements/dim.ts:465`, `plan-json/to-json.ts:528`, `describe/rooms.ts:46`, `scene-build.ts:286`, `cli/review.ts:250` | `circle` | K | an arc polygon is not a circle: it takes the polygon branch (D) |
+| `lint/rules/per-room.ts:603-607` `W_ROOM_NOT_ENCLOSED` (`largestPerimeterGapRing` on `r.poly`) | ring vs walls | W | WRONG on a tessellation, **ARC2 work**: the ring path matches wall centrelines parallel to each facet, and an arc wall enters it only by its chord (`src/analyze.ts`, the note on `largestPerimeterGapCircle`), so a fully walled arc edge reads open by one facet, 2R·sin 3.75° ≈ 0.131 R: past `maxUnenclosedMm` 300 at R > ~2,294 mm, so an arc-edged bath or WC warns falsely. Needs an exact branch: each arc edge measured by angle against concentric arc walls, as `largestPerimeterGapCircle` does for a circle |
+| `lint/rules/enclosure.ts:496-499` `W_BOUNDARY_NO_WALL` (only `circle` rooms skipped; `runCandidates` keeps `wallSegs.filter((s) => !s.arc)`) | shared runs vs walls | W | WRONG on a tessellation, **ARC2 work**: two arc rooms either side of a curved partition share chord runs that no straight wall backs, so the rule fires once a chord passes `maxBoundaryGapMm` 900, R > ~6.9 m. Needs an exact branch (an arc run backed by a concentric arc wall), or the seam's own "boundary backed by walls" reading shared with the row above |
+| `analyze/net-area.ts:378-405` `roomRegion`'s `inside` and `box`; `lint/rules/annotations.ts:910` `pointInRoomFloor` (its own circle branch) | containment | I | the seam has no exact containment yet: both build it locally (a circle by `hypot`, a ring by `polygonInsideTest`/`pointInPolygon` on the tessellation). **ARC2 work**: `loopWinding` on `edges` (net-area's boundary integral must classify a piece by the same boundary its curves are), and the pin test on the true curve, as the circle's |
+| `analyze/symmetry.ts:469`, `taste/criteria.ts:798,867,1262,1437`, `repair.ts:1453,1506,2148`, `elements/dim.ts:465`, `plan-json/to-json.ts:528`, `describe/rooms.ts:46`, `scene-build.ts:286`, `cli/review.ts:250` | `circle` | K | an arc polygon is not a circle: it takes the polygon branch (D) |
 | `packages/archlang-3d/src/scene3d/build.ts:105` floor | ring | X | `tessellateLoops([r.edges], tol)` (`src/curves.ts`, the chord tolerance) when `edges` is present; the core's `edges` is a public `RRoom` field (ADR 0031) |
 | `analyze/nav-grid.ts:1428` translation probe | shape fields | X | translate `edges` too |
 | playground | none | — | reads only `compile()`/Plan JSON output |
 
-What the inventory shows: the reads that an arc moves are A, B, C and R, about twenty sites; the
-seventy-odd D reads are right on a tessellation for the same reason the circle's are.
+What the inventory shows: the reads that an arc moves are A, B, C, R, W and I, about twenty-five
+sites; the seventy-odd D reads are right on a tessellation for the same reason the circle's are, up
+to the radius bound in the `RoomBox` row.
 
 ## 3. The seam (this PR)
 
@@ -86,6 +93,14 @@ seventy-odd D reads are right on a tessellation for the same reason the circle's
 | `roomExtent(r)` | the exact `GridBox`: c ± R, the ring's min/max, at/size | min/max over vertices and `arcExtremes` |
 | `roomCurveCount(r)` | 1, the ring's length, 4 | `r.edges.length` |
 | `roomCorners(r)` | the authored vertex chain: `[]` for a circle, the ring otherwise | the edges' start points |
+
+What the seam does not hold yet, so ARC2 edits beyond these six branches: exact containment
+(`roomRegion`'s `inside`/`box` and `pointInRoomFloor` build their own), a "boundary backed by walls"
+reading (`W_ROOM_NOT_ENCLOSED`, `W_BOUNDARY_NO_WALL`), and the two vertex-chain readers not routed
+here (`dims auto`'s ticks, Plan JSON's `floor_polygon`). `roomRing` here takes a room's own shape
+fields; `analyze/rooms.ts` exports another `roomRing` that takes a `RoomBox` and returns the same
+ring for the same room (both JSDocs say so). A rename was not done: ARC2 is being built on top of
+this branch against the seam's names, and a rename under it would break its new call sites at merge.
 
 Routed through it, each with the same expression in the same float order: the area stamp, naming's
 size and bounds, the furnish gate, `roomRegion` and net-area's work units, wall-faces' curve count
@@ -134,7 +149,24 @@ primitive); `transform` through `t.arc`; `describe()` `floor_polygon` = authored
 `R<r>` leader per arc edge deduplicated with the walls'; net-area and wall-faces exact through the
 seam; the net-area memo key; the nav-grid translation probe; the 3D floor through `tessellateLoops`
 at the chord tolerance (`packages/archlang-3d`, a `MIN_CORE` bump if it reads `edges`); the three
-refusal messages that say "an edge neither horizontal nor vertical".
+refusal messages that say "an edge neither horizontal nor vertical". And, beyond the seam's
+branches (§2 rows marked **ARC2 work**):
+
+- **`W_ROOM_NOT_ENCLOSED`** (`src/lint/rules/per-room.ts:603-607`): an exact branch for an arc edge,
+  measured by angle against concentric arc walls as `largestPerimeterGapCircle` (`src/analyze.ts`)
+  measures a circle, or a seam function "the boundary backed by walls" both rules read. On the
+  tessellation a fully walled arc edge reads open by 2R·sin 3.75° and warns falsely past R ≈ 2,294 mm.
+- **`W_BOUNDARY_NO_WALL`** (`src/lint/rules/enclosure.ts:496-499`, `runCandidates`' straight-only
+  `wallSegs`): an exact branch for an arc run between two rooms, backed by a concentric arc wall;
+  on chord runs it fires past R ≈ 6.9 m. Test: two arc rooms either side of a curved partition, and
+  a walled arc-edged WC at R 3,000, raise neither rule.
+- **Exact containment**: `roomRegion`'s `inside` by `loopWinding` on `edges`, its `box` from
+  `roomExtent`; `pointInRoomFloor` on the true curve.
+- **The radius bound** for the D readers (§2, the `RoomBox` row): state the largest room-arc radius
+  whose sag stays inside the smallest tolerance a D reader uses, and refuse past it with a catalogued
+  code, or give those readers exact branches.
+- **`dims auto`** (`src/scene-build.ts:547`) ticks from `roomCorners`, and **Plan JSON**'s
+  `floor_polygon` (`src/plan-json/to-json.ts:192`) from the authored vertices with `arcs`.
 
 **Laws and tests.** A byte-identity law: every plan without an arc edge in a room ring is unchanged
 in SVG, `describe()`, `lint()`, diagnostics, Plan JSON, DXF and steps (SHA-256, the test's own

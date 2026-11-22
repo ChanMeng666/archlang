@@ -19,7 +19,7 @@ module's remaining facts are in its own header.
 invariants; this file holds every module. The exports of `src/index.ts` are in the sibling
 [`public-surface.md`](public-surface.md).
 
-Totals: 427 modules in 34 directories.
+Totals: 430 modules in 34 directories.
 
 ## `packages/archlang-3d/src/`
 
@@ -119,7 +119,7 @@ Totals: 427 modules in 34 directories.
 
 | Module | Lines | Importers | Summary | Budget |
 | --- | ---: | ---: | --- | --- |
-| `app.ts` | 645 | 3 | The hosted ArchLang MCP Worker's request handler (docs/adr/0026-hosted-mcp-worker.md); `worker.ts` is the entry that hands it the assets bundled at build time. | none |
+| `app.ts` | 745 | 3 | The hosted ArchLang MCP Worker's request handler (docs/adr/0026-hosted-mcp-worker.md); `worker.ts` is the entry that hands it the assets bundled at build time. | none |
 | `limits.ts` | 51 | 6 | The hosted server's caps — byte counts and request counts, checked BEFORE any compile work, never a clock (docs/adr/0026-hosted-mcp-worker.md). | none |
 | `server.ts` | 115 | 4 | The hosted server's `McpServer`: the stdio server's tool set and resources (one registry, `packages/mcp/src/tools.ts`), plus what only a hosted, HTTP-reachable server has — the `read_me` tool, the MCP App viewer that `compile` links to… | none |
 | `worker.ts` | 15 | 0 | The Worker entry: the request handler (`app.ts`) over the assets the build inlined — the five `archlang://` resources and the viewer page — because a Worker has no filesystem to read them from at run time (scripts/build.mjs). | none |
@@ -151,21 +151,22 @@ Totals: 427 modules in 34 directories.
 
 | Module | Lines | Importers | Summary | Budget |
 | --- | ---: | ---: | --- | --- |
-| `actions.ts` | 725 | 1 | The header/panel action buttons: Format, Finish and Saved (the More menu), Repair furniture, the Share menu (Copy link, short or full; Embed; Export: Copy SVG / PNG and the downloads, SVG · PNG · PDF · DXF · TXT · GLB, ruling PG-D5), Copy… | none |
+| `actions.ts` | 737 | 1 | The header/panel action buttons: Format, Finish and Saved (the More menu), Repair furniture, the Share menu (Copy link, short or full; Embed; Export: Copy SVG / PNG and the downloads, SVG · PNG · PDF · DXF · TXT · GLB, ruling PG-D5), Copy… | none |
 | `arch-completion.ts` | 63 | 2 | CodeMirror 6 autocompletion for ArchLang, backed by the core's pure `completion()` language service (the same engine the LSP/editor use). | none |
 | `checks-overlay.ts` | 68 | 2 | The Checks overlay's string work, pure (unit-tested in Node): lifting the review rings out of the sheet `arch preview --review` draws, and laying them over the drawing on screen. | none |
 | `checks-panel.ts` | 211 | 1 | Checks (public-surfaces P6): the Checks layer toggle on the drawing's toolbar (beside Paths, ruling PG-D3) draws, over the drawing, the review rings `arch preview --review` draws, from the same function (src/cli/review.ts, built as… | none |
 | `compile-worker.ts` | 405 | 2 | The playground's compile job, and the Web Worker it runs in (card MP6, ruling MP-D6: typing never freezes the page). A playground file, not core: `compile()`, `describe()` and `lint()` are the core's, called exactly as the page called… | none |
 | `compiler.ts` | 23 | 7 | The compiler functions the view path calls (main.ts, and the compile job it runs in a worker, compile-worker.ts), behind the one dynamic import that keeps the core out of the startup chunk. Named, not `import("archlang")`: a dynamic… | none |
+| `contribute.ts` | 123 | 1 | "Send this plan to improve ArchLang" (ruling RM-D87, card FW5): an offer under the diagnostics drawer, shown while the plan has an error or a warning there, that sends the plan only after a dialog has said what is sent and why, and the… | none |
 | `describe-panel.ts` | 69 | 1 | Describe, the Facts tab's first section: a compact access-graph diagram from `describe().access` with the raw describe JSON tucked into a <details>. Zero-dep — pure DOM/CSS strings, no graph library. | none |
 | `diagnostics-panel.ts` | 73 | 1 | Render the compiler diagnostics into the `#errors` panel as clickable rows: the catalogued remedy (`fix`) shows inline under each row so the fix is visible without a click; clicking a row jumps the editor caret to the diagnostic's source… | none |
-| `edit-mode.ts` | 310 | 1 | Edit mode: the CodeMirror editor and the panels that read the source — diagnostics, Describe, Lint (with Repair and Suggest), Intent. Loaded on the first entry into edit mode (the Source button, `&edit` in the hash, or a More (⋯) item… | none |
+| `edit-mode.ts` | 321 | 1 | Edit mode: the CodeMirror editor and the panels that read the source — diagnostics, Describe, Lint (with Repair and Suggest), Intent. Loaded on the first entry into edit mode (the Source button, `&edit` in the hash, or a More (⋯) item… | none |
 | `editor-setup.ts` | 124 | 1 | CodeMirror 6 editor construction for the playground: the ArchLang language support, compiler-backed autocompletion and linting, history, and the doc-change listener that drives the live recompile. Pure builder — no app state. | none |
 | `embed-params.ts` | 121 | 2 | The chrome-less embed page's pure decisions, split out of `embed.ts` so they can be unit-tested in Node. | none |
 | `embed-snippets.ts` | 46 | 3 | The snippets the Embed dialog offers, built from the playground's base URL and a `#z=` share hash. Pure so it can be unit-tested; the dialog lives in actions.ts. | none |
 | `embed.ts` | 131 | 0 | Chrome-less embed page. Renders an ArchLang plan from the URL hash — the same `#z=` share codec the main playground writes — so a floor plan can be dropped into any blog / Confluence / GitHub-Pages via a single <iframe>. Client-side only… | none |
 | `error-card.ts` | 9 | 1 | The error card the embed shows for a plan that is broken on first load (embed.ts), behind one dynamic import, so the embed path does not carry the card's renderer and the catalogue's fix column it prints (card 3.19, `embedPathBudget` in… | none |
-| `escape.ts` | 7 | 10 | Minimal HTML-escaping for the innerHTML the playground panels build by hand. | none |
+| `escape.ts` | 7 | 11 | Minimal HTML-escaping for the innerHTML the playground panels build by hand. | none |
 | `examples.ts` | 393 | 4 | Playground example plans. | none |
 | `facts-strip.ts` | 27 | 1 | The facts line under the drawing: one plain sentence of how much source drew how much plan, "57 lines of ArchLang → 3 rooms · 45.05 m² (net)", computed from the source and describe()'s totals of the storey on screen (room-facts.ts… | none |
 | `gallery.ts` | 288 | 1 | The plan gallery (ruling PG-D2): the header's one way to choose a plan. A disclosure (`<details id="gallery">`) whose summary names the plan on screen (`▦ Furnished Flat ▾`) and whose panel is a grid of thumbnail cards, grouped as… | none |
@@ -181,7 +182,7 @@ Totals: 427 modules in 34 directories.
 | `lint-core.ts` | 31 | 2 | `lint`, which no view-mode render runs (card 3.19b; edit mode, the Checks overlay, a press of Format, Finish or Repair and the DXF and TXT downloads load its chunk): the door edit mode imports statically, and the module the compile job… | none |
 | `lint-panel.ts` | 70 | 1 | The Lint section of the Checks tab — architectural soundness warnings (habitability rules) for the current plan, under the chosen advisory profile. The repair-button visibility (keyed off the same diagnostics) is wired in actions.ts. | none |
 | `llm-prompt.ts` | 144 | 3 | Assemble a single paste-ready prompt for an AI assistant from the current plan: an intro line, the source in an ```arch fence, the compact `describe()` facts (rooms/areas/adjacency + an access summary), the diagnostics with line/col/fix… | none |
-| `main.ts` | 1424 | 0 | The playground's startup module: the view path. It shows the drawing (the one built into the page first, then the compiled one), pans and zooms it, reports its facts, switches storeys and plans (the plan gallery in the header) and runs… | none |
+| `main.ts` | 1447 | 0 | The playground's startup module: the view path. It shows the drawing (the one built into the page first, then the compiled one), pans and zooms it, reports its facts, switches storeys and plans (the plan gallery in the header) and runs… | none |
 | `make-own.ts` | 299 | 2 | The Make-your-own sheet: every way to get a plan of your own, at equal weight, in the order `site-shared/doors.json` gives the playground (`order.playground`). Every URL, command and the agent prompt are read from that file, the one… | none |
 | `mobile-views.ts` | 67 | 2 | The phone-width view switcher of edit mode (Code · Plan · 3D · Facts · Checks). Below the 900px breakpoint the workspace shows one view at a time, and this switcher is its ONE control: the output tab row is hidden there, so each function… | none |
 | `nudge.ts` | 80 | 2 | The one quiet pointer at Make your own: a small toast, after a visitor has shown interest (the third plan switch, or the first knob let go), never a modal and never focused. It is shown at most once: the first showing is remembered in… | none |
@@ -196,7 +197,7 @@ Totals: 427 modules in 34 directories.
 | `room-index.ts` | 89 | 1 | The rooms from the keyboard (card PG.1): a "Rooms" control in the drawing's bottom-right corner that lists the storey's rooms, each a button that opens the room's facts card (room-card.ts), the same card a click on the room opens. The… | none |
 | `samples.ts` | 117 | 6 | Playground-only sample plans: plans the gallery offers that are NOT shipped examples. | none |
 | `save-data.ts` | 10 | 3 | Whether the browser asks to spare data (Save-Data, or a 2g connection): the playground then fetches nothing ahead of a use (ruling MP-D4). The one copy of the rule: main.ts's idle import and the header actions' warm-up (actions.ts, card… | none |
-| `share.ts` | 249 | 20 | URL-hash share codec — the single source of truth for round-tripping a plan's source through the address bar with no backend. Shared by the main playground (`main.js`) and the chrome-less embed page (`embed.js`) so a `#z=` link works… | none |
+| `share.ts` | 252 | 21 | URL-hash share codec — the single source of truth for round-tripping a plan's source through the address bar with no backend. Shared by the main playground (`main.js`) and the chrome-less embed page (`embed.js`) so a `#z=` link works… | none |
 | `shared-notice.ts` | 96 | 3 | The shared-plan notice — the one piece of UI that exists because a `#z=` link is THIRD-PARTY CONTENT. | none |
 | `shell.ts` | 199 | 1 | The header's own behaviour: the Source toggle, the two menus, Share and More (⋯), and the Make-your-own dialog. Part of the startup chunk, so it holds no compiler, no editor and no doors (the sheet's body is make-own.ts, loaded on its… | none |
 | `snapshots.ts` | 150 | 2 | Saved snapshots — a lightweight, vanilla "history" for the playground. | none |
@@ -204,18 +205,20 @@ Totals: 427 modules in 34 directories.
 | `suggest-panel.ts` | 42 | 1 | The Suggest panel (ADR 0005 — "facts, not an invisible architect"). | none |
 | `svg-sanitize.ts` | 142 | 2 | The one way a compiled SVG string becomes a DOM node in a browser surface. The compiler emits only `circle defs desc g line path pattern polygon rect svg text title tspan`, all in the SVG namespace, so none of what is removed here is ever… | none |
 | `takeoff-panel.ts` | 201 | 2 | Takeoff, the Facts tab's second section: `describe --facts quantities` in the browser. It runs the SAME core calls as `arch takeoff` (`describe` with the `quantities` fact, `describeLevel` for the storey on screen, `takeoffCsv` for the… | none |
+| `telemetry.ts` | 106 | 4 | The page's events (ruling RM-D86, card FW4): what the playground counts, sent to its own Worker (`POST /api/event`, worker/event-core.ts) with `navigator.sendBeacon`, and nothing else. An event is a name, one listed word and the… | none |
 | `viewer.ts` | 40 | 4 | Shared SVG-into-stage helper for the pan/zoom preview. Injects an SVG string into `stage`, gives it a definite pixel size from its `viewBox` (so the stage has real dimensions to fit), and hands the size to the pan/zoom controller. Used by… | none |
 
 ## `playground/worker/`
 
 | Module | Lines | Importers | Summary | Budget |
 | --- | ---: | ---: | --- | --- |
-| `app.ts` | 405 | 4 | The playground Worker's request handler (ADR 0034). It runs ONLY for the paths `assets.run_worker_first` lists in `playground/wrangler.jsonc` (`/s/*`, `/api/*`), plus any request the asset layer finds no file for, which it hands straight… | none |
+| `app.ts` | 499 | 5 | The playground Worker's request handler (ADR 0034). It runs ONLY for the paths `assets.run_worker_first` lists in `playground/wrangler.jsonc` (`/s/*`, `/api/*`), plus any request the asset layer finds no file for, which it hands straight… | none |
+| `event-core.ts` | 135 | 7 | The playground's page events (ruling RM-D86, card FW4): the closed lists the page sends from and the Worker accepts, and the one reader both hold to them. Pure: no DOM, no binding, no clock, so the page (`playground/src/telemetry.ts`) and… | none |
 | `index.ts` | 23 | 0 | The playground Worker's entry (`main` in `playground/wrangler.jsonc`, ADR 0034): the share handler over the built core. wrangler bundles this file, aliasing `archlang` to `../dist/index.js` exactly as the Vite build does, so the Worker… | none |
 | `optional-stub.ts` | 5 | 0 | Stands in for the core's optional Node-only dependencies (`@resvg/resvg-js`, `pdfkit`, `clipper2-wasm`, the CJK font package) in the Worker bundle: wrangler.jsonc aliases each to this module. The core reaches them only through lazy… | none |
 | `preview.ts` | 113 | 3 | The 1200×630 card image `/s/<id>.png` answers (ADR 0034): the plan's own drawing, as `compile()` draws it, fitted inside a margin on white, over one caption line with the plan's title. X and LinkedIn show no SVG `og:image`, so it is a… | none |
-| `share-core.ts` | 196 | 4 | The pure half of short links (ADR 0034): the caps, the payload codec checks, the content address and the two HTML pages. Nothing here touches a binding or the core, so every rule is unit-tested on its own… | none |
-| `types.ts` | 58 | 4 | The Cloudflare runtime surfaces the playground Worker uses, declared here as plain types so the Worker needs no `@cloudflare/workers-types` dependency (the hosted MCP Worker does the same, `packages/mcp-worker/src/env.d.ts`). Exported… | none |
+| `share-core.ts` | 224 | 6 | The pure half of short links (ADR 0034): the caps, the payload codec checks, the content address and the two HTML pages. Nothing here touches a binding or the core, so every rule is unit-tested on its own… | none |
+| `types.ts` | 65 | 5 | The Cloudflare runtime surfaces the playground Worker uses, declared here as plain types so the Worker needs no `@cloudflare/workers-types` dependency (the hosted MCP Worker does the same, `packages/mcp-worker/src/env.d.ts`). Exported… | none |
 
 ## `src/`
 
@@ -362,7 +365,7 @@ Totals: 427 modules in 34 directories.
 | `occupancy.ts` | 238 | 4 | Room circulation as a fact: can a person actually step through a room's door and reach its floor, or do furniture, fixtures and door swings seal it off? | none |
 | `open-shell.ts` | 304 | 2 | **Open shells:** exterior walls that should enclose a room and do not. `W_EXTERIOR_RING_OPEN` reports them, and `describe()` says which rooms the gross internal area leaves out because of them (`totals.gross_internal_area_leaves_out`)… | none |
 | `quantities.ts` | 339 | 5 | `describe --facts quantities` and `arch takeoff`: the geometric quantities of one storey, as an estimator reads them. Geometry only, never a claim: every figure is a length, an area or a count measured from the shapes, and its convention… | none |
-| `rooms.ts` | 181 | 5 | Room geometry leaves of the analysis layer: a room's box and ring, its area, the point-in-room and edge-touch tests, and the room-use predicates. | none |
+| `rooms.ts` | 187 | 5 | Room geometry leaves of the analysis layer: a room's box and ring, its area, the point-in-room and edge-touch tests, and the room-use predicates. | none |
 | `symmetry.ts` | 975 | 3 | The plan's SYMMETRY GROUP and its REPETITION, as facts — `describe(src, { facts: ["symmetry"] })`. Opt-in: nothing here runs unless a caller asks for it. | none |
 | `syntax.ts` | 139 | 2 | SPACE SYNTAX on the access graph — `describe(src, { facts: ["syntax"] })`. Opt-in. | none |
 | `takeoff.ts` | 66 | 2 | The long form of a takeoff: every figure of `describe --facts quantities`, one row each, and the CSV `arch takeoff --format csv` and the Playground's Takeoff tab both write from it. Pure, so the two cannot disagree. | none |
@@ -398,7 +401,7 @@ Totals: 427 modules in 34 directories.
 | `review.ts` | 726 | 5 | `arch preview --review` (plan-soundness PS5.4): the review sheet. One picture a reviewer (or an agent's vision) reads in a single look: the plan as `preview` draws it, the access graph laid over it, every element a warning names ringed… | none |
 | `run.ts` | 172 | 4 | The CLI as a function: argument parse + dispatch over a {@link CliIo}, returning the exit code (or {@link RESIDENT}) instead of ending the process. `src/cli.ts` runs it on the real process and exits through `exitFlushed`… | none |
 | `serialize.ts` | 535 | 9 | The render/serialize core shared by the file-producing commands (compile/preview/batch/md): compile a source to bytes, the format seam that turns a built {@link Scene} into the requested output, and the optional-dependency auto-install… | none |
-| `share-codec.mjs` | 45 | 13 | The Node side of the playground's `#z=` share link: `#z=<base64url(deflate-raw(utf8))>`, the scheme `playground/src/share.ts` reads (the browser copy, which has `CompressionStream` and no `zlib`). | none |
+| `share-codec.mjs` | 45 | 14 | The Node side of the playground's `#z=` share link: `#z=<base64url(deflate-raw(utf8))>`, the scheme `playground/src/share.ts` reads (the browser copy, which has `CompressionStream` and no `zlib`). | none |
 | `share-codec.web.mjs` | 130 | 4 | The Web-standard decoder of the playground's `#z=` share payload, beside the Node one in `share-codec.mjs`: `#z=<base64url(deflate-raw(utf8))>`, read with `DecompressionStream` and `atob` instead of `zlib` and `Buffer`, so a runtime with… | none |
 | `source-hash.ts` | 182 | 3 | The write-back revision guard, `--expected-hash <sha256>` (card CR5). | none |
 | `summary.ts` | 63 | 3 | The one-line summary `lint` and `validate` open with (plan-soundness PS7.6): the count and the codes, first in the text report and first key of the JSON, so a reader who cuts the output short (`head -c`, a 200-byte tool preview) still… | none |
@@ -496,7 +499,7 @@ Totals: 427 modules in 34 directories.
 | `min-rect.ts` | 169 | 2 | The exact minimum-area enclosing rectangle of a point set on the 0.001 mm lattice (plan-soundness PS5.1b; design `archlang-lab/plans/plan-soundness/research/2026-10-24-ps5-taste-design.md` §3 R9, R18). | none |
 | `polygon.ts` | 669 | 76 | Simple-polygon math for **polygonal rooms**. | charges the step meter |
 | `rect.ts` | 502 | 42 | Shared axis-aligned rectangle math for the analysis/repair layer. | none |
-| `room-ring.ts` | 101 | 14 | The room-ring seam: what a room's FLOOR is, read through one place (card ARC2-seam, `docs/plans/arc2-room-arcs.md`). | none |
+| `room-ring.ts` | 104 | 14 | The room-ring seam: what a room's FLOOR is, read through one place (card ARC2-seam, `docs/plans/arc2-room-arcs.md`). | none |
 | `union.ts` | 193 | 3 | Boolean of axis-aligned rectangles (union, and difference of "holes") → boundary loops. | none |
 
 ## `src/grammar/`

@@ -721,9 +721,9 @@ export const room: ElementDef = {
     // The rectangle keeps its OWN expression, written out rather than routed through one
     // helper: its `(w/1000)*(h/1000)` differs from an `area/1e6` rewrite by an ulp, and an
     // ulp at a `.x5` boundary flips `toFixed(1)` — so a "tidier" single expression would
-    // silently move an existing drawing's bytes. A circle (πR², exact — never the 48-gon the
-    // grid layer uses, 0.29% short) and a polygon (its shoelace) were always `area/1e6`, so
-    // they read the exact area through the room-ring seam (`roomAreaMm2`).
+    // silently move an existing drawing's bytes. A circle is πR², exact — never the 48-gon
+    // the grid layer uses (0.29% short). A circle and a polygon (its shoelace) were always
+    // `area/1e6`, so they read the exact area through the room-ring seam (`roomAreaMm2`).
     const areaM2 =
       r.circle || r.poly ? (roomAreaMm2(r) / 1_000_000).toFixed(1) : ((r.size.w / 1000) * (r.size.h / 1000)).toFixed(1);
     // `schedule rooms net`: the schedule's own net figure (two decimals, as it is tabulated),

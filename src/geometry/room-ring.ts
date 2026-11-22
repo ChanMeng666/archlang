@@ -37,7 +37,10 @@ export interface RoomShape {
 
 /**
  * The floor's discretised ring: its `poly` (the same array, not a copy), or its rectangle's four
- * corners (`rectRing` order).
+ * corners (`rectRing` order). Takes a room's own shape fields (`at`/`size`/`poly`). Not the
+ * analysis layer's `roomRing` (`src/analyze/rooms.ts`, re-exported by `analyze.ts`), which takes
+ * a `RoomBox` (`x`/`y`/`w`/`h` plus `poly`) and returns the same ring for the same room; import
+ * this one from `geometry/room-ring.js` when holding a room, that one when holding a box.
  */
 export function roomRing(r: RoomShape & { poly?: Point[] }): Point[];
 export function roomRing(r: RoomShape): readonly Point[];

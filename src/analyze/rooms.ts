@@ -39,7 +39,13 @@ export function roomBox(r: { at: Point; size: { w: number; h: number }; poly?: P
   return box;
 }
 
-/** The room's floor as a ring: its polygon, or its rectangle's four corners. */
+/**
+ * The room's floor as a ring: its polygon, or its rectangle's four corners. Takes a
+ * {@link RoomBox} (`x`/`y`/`w`/`h` plus `poly`). The room-ring seam's `roomRing`
+ * (`src/geometry/room-ring.ts`) is the same ring read off a room's own shape fields
+ * (`at`/`size`/`poly`); the two names are distinct exports of distinct modules, and
+ * agree on every room (`roomBox(r)` carries the same `poly` and the same box).
+ */
 export const roomRing = (b: RoomBox): Point[] => b.poly ?? rectRing(b);
 
 /** A room's exact floor area in mm² (`src/geometry/room-ring.ts`, the room-ring seam). */
