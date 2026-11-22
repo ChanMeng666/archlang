@@ -14,6 +14,19 @@ are documented here. The format is based on
 
 ## [Unreleased]
 
+## [0.55.0] - 2026-11-22
+
+### Changed
+
+- **Rebundled the core at `@chanmeng666/archlang@1.67.0`**: the Problems panel can show the new
+  compile warning `W_AREA_AS_LENGTH`, a length written as a name times itself (`size A x 3000`
+  with `let A = W*W`). In the plans an ` ```arch ` fence draws in the Markdown preview, a room
+  name wrapped onto two lines keeps its space in the SVG: its text content is the name
+  ("Entrance Hall", not "EntranceHall"; no glyph moves), and some room labels led off their floor end their leader on
+  another point. The new lint warnings `W_SEAT_FACING_WALL`, `W_STAIR_NO_VOID` and
+  `W_TABLE_NO_SEAT` are in `archlang lint`; the extension, which shows compile diagnostics, does
+  not run the lint.
+
 ## [0.54.0] - 2026-11-21
 
 ### Changed
