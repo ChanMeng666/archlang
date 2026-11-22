@@ -61,7 +61,10 @@ const PINS: ReadonlyArray<readonly [string, string]> = [
   ["2fddce09f68aca8ac04d8e97f73375dc2c4a8c17b9331e185e63128e007700ab", "inline:every-window-kind-straight"],
   ["62951efadb983934a2dcca18390aa119c56977ed604e89e34cb7bb6aafa487d0", "inline:oblique-wall"],
   ["76a967c9f265f11aea7dabd0a4cdcc06e5d4e4e3688ed024f9728eadea6779d9", "inline:corner-window"],
-  ["3129dce9a6eae9c9ce01cb54991ae48b181373c631b787f13177cbe1f6b2e491", "inline:straight-runs-of-a-curved-wall"],
+  // Re-taken by card ARC3 (#1020): this plan's living room is a rectangle on the chord of the shell's
+  // `arc … radius 1900 cw`, so the 1.13 m² bay is standable floor in no room and `lint()` now carries one
+  // W_FLOOR_UNASSIGNED for it. Its SVG, describe(), diagnostics and scene are unchanged; was 3129dce9….
+  ["3aa65a73fbc0d6a50c0130c52910b337ee4b606cf10c84e9792728745723005b", "inline:straight-runs-of-a-curved-wall"],
 ];
 
 type Hosted = RDoor | RWindow | ROpening;
