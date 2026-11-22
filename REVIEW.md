@@ -26,7 +26,8 @@ intent and its evidence, not every line. Cite file and line for each finding.
   workflow, a lowered budget or cap, a widened `.gitleaksignore`. Blocker unless the owner approved it.
   Standing exception (owner, 2026-11-22, RM-D83): the coordinator, not an executor alone, re-taking
   `compilerPathBudget`, `embedPathBudget` or `firstUsePathBudget` DOWN by their rule in
-  `playground/e2e/startup-chunks.baseline.json` after a measured cut (not `viewBudget`, `growthBudget` or the `gzip` baselines).
+  `playground/e2e/startup-chunks.baseline.json` after a measured cut, with the numbers in that budget's `…Why` field (not `viewBudget`,
+  `growthBudget` or the `gzip` baselines).
 - **A secret, a dark-mode site style, or a changed byte** in `brand/archlang-logo-master.svg`.
 - **A public claim the code does not back** (README, docs, `spec.llm.md`, a package README):
   "first", "only", traction numbers, or 3D wording beyond "3D preview" (`.claude/rules/archlang-3d.md`).
