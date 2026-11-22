@@ -80,7 +80,9 @@ export function noteSquare(
     severity: "warning",
     code: "W_AREA_AS_LENGTH",
     message: `\`${shown}\` is \`${n}\` times itself, an area if \`${n}\` is a length, but ${what} reads it as a length${drawn}`,
-    hints: [`${subject}: write the length itself (\`${n}\`)${square}. Lengths are millimetres and are never converted.`],
+    hints: [
+      `${subject}: write the length itself (\`${n}\`)${square}. Lengths are millimetres and are never converted.`,
+    ],
     ...(at ? { span: at } : {}),
   });
 }

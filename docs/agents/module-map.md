@@ -522,7 +522,7 @@ Totals: 425 modules in 34 directories.
 | `groups.ts` | 452 | 1 | Resolution groups and the per-element bookkeeping around them: the expanded stream partitioned by `place` frame (one group per instance, the root last), an instance's view of its descendants, the pre-charge for wall-deriving statements… | none |
 | `sheet.ts` | 248 | 2 | The sheet, decided in `resolve()`: the two extents a fit is measured on, the storey as drawn ({@link drawnView}), the `paper` + scale resolved into a {@link ResolvedSheet}, and its reports (`W_SCALE_OVERFLOW`, `W_DRAWING_OVERFLOW`, and… | none |
 | `side-tables.ts` | 154 | 2 | What one resolution keeps beside its {@link ResolvedPlan}, never on it: the frozen datum tables, the `place`d instances' bodies, the evaluation steps spent and the keep state. Each is a `WeakMap` keyed by the IR object, so no… | none |
-| `silent-accepts.ts` | 147 | 7 | Warnings for what the resolver used to accept without a word (product-roadmap RM1.4): a length that reads as metres (`W_LENGTH_IN_METRES`) and a written size or door position that `grid` moved (`W_GRID_SNAPPED`); and a length that is a… | none |
+| `silent-accepts.ts` | 149 | 7 | Warnings for what the resolver used to accept without a word (product-roadmap RM1.4): a length that reads as metres (`W_LENGTH_IN_METRES`) and a written size or door position that `grid` moved (`W_GRID_SNAPPED`); and a length that is a… | none |
 | `types.ts` | 1101 | 6 | The resolved IR's types: every `R*` element interface, {@link ResolvedElement}, {@link ResolvedPlan}, and what a resolution returns ({@link ResolvedLevel}, {@link PlanResolution}). | none |
 
 ## `src/lint/`
