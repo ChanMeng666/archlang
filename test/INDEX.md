@@ -24,7 +24,7 @@ Nearest first, then by name; `(+n)` is the rest. Test names are `test/<name>.tes
 - `src/analyze/entrance.ts` (2) — `main-entrance`, `reachability-blind-spots`
 - `src/analyze/grid.ts` (1) — `path-algebra`
 - `src/analyze/gross-area.ts` (2) — `brief-bound-caption`, `brief-bound`
-- `src/analyze/net-area-memo.ts` (1) — `net-area-budget`
+- `src/analyze/net-area-memo.ts` (2) — `net-area-budget`, `room-arc-edges`
 - `src/analyze/net-area.ts` (5) — `describe-quantities`, `net-area-budget`, `net-area-once`, `net-area-oracle-corpus`, `net-area`
 - `src/analyze/occupancy.ts` (2) — `nav-grid-scale`, `polygon-rooms`
 - `src/analyze/quantities.ts` (2) — `describe-quantities`, `net-area-budget`
@@ -114,7 +114,7 @@ Nearest first, then by name; `(+n)` is the rest. Test names are `test/<name>.tes
 - `src/geometry/arc-band.ts` (1) — `furniture-lint`
 - `src/geometry/arc.ts` (19) — `arc-openings`, `arc-radius-exact`, `arc-tessellation-error`, `band`, `circle-enclosure`, `curves`, `frame`, `furniture-lint` (+11)
 - `src/geometry/backend.ts` (1) — `joinery-oracle`
-- `src/geometry/band.ts` (15) — `arc-openings`, `band`, `describe-quantities`, `interner-oracle`, `joinery-oracle`, `joinery-split-oracle`, `joinery-split`, `joinery` (+7)
+- `src/geometry/band.ts` (16) — `arc-openings`, `band`, `describe-quantities`, `interner-oracle`, `joinery-oracle`, `joinery-split-oracle`, `joinery-split`, `joinery` (+8)
 - `src/geometry/clipper.ts` (1) — `joinery-oracle`
 - `src/geometry/grid-index.ts` (3) — `grid-index`, `huge-coordinates`, `room-overlap-oracle`
 - `src/geometry/intersect.ts` (5) — `band`, `intersect`, `joinery-oracle`, `joinery-split-oracle`, `joinery-pipeline`

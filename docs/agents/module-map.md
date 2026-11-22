@@ -173,7 +173,7 @@ Totals: 430 modules in 34 directories.
 | `glb-export.ts` | 35 | 3 | Share → Export → GLB (public-surfaces card X5; in the Share menu since card PG4): its own chunk, loaded on the first click (actions.ts imports it dynamically, beside plan3d.ts), so glTF-Transform never reaches the startup chunks or the 3D… | none |
 | `glb-note.ts` | 19 | 1 | The words beside Share → Export → GLB (ruling PG-D5; card X5's note): what the browser writes, and that it does not check it, as the CLI does. Apart from glb-export.ts and preview3d.ts so the startup chunk can put the note in the menu… | none |
 | `intent-panel.ts` | 111 | 1 | Intent, the Checks tab's last section — the v1.14 intent channel, in the browser. | none |
-| `interact.ts` | 218 | 2 | Preview interactions on top of the SVG: - hover a room → tooltip with its name, area and size (C2, room-facts.ts `roomTip`), hit-tested against describe()'s room shapes (`floor_circle`, `floor_polygon`); - click a room → its facts card… | none |
+| `interact.ts` | 247 | 2 | Preview interactions on top of the SVG: - hover a room → tooltip with its name, area and size (C2, room-facts.ts `roomTip`), hit-tested against describe()'s room shapes (`floor_circle`, `floor_polygon`); - click a room → its facts card… | none |
 | `knobs-panel.ts` | 255 | 2 | The Knobs panel: one slider per knob of the plan on screen (knobs.ts), in the drawing's lower-left corner (a bottom sheet on a phone). A native `<details>`, so it folds with a click or the keyboard; each slider is a native `<input… | none |
 | `knobs.ts` | 130 | 3 | Knobs (card P4, PS-D4): a slider for each plain number a plan names at its top level. | none |
 | `lazy-once.ts` | 16 | 2 | A lazy load that runs once and is shared: every call before it settles gets the same promise, and every call after it resolves gets the same value. A rejected load is forgotten, so the next call tries again, which retries the chunk on the… | none |
@@ -193,7 +193,7 @@ Totals: 430 modules in 34 directories.
 | `preview3d.ts` | 821 | 1 | The "3D preview" output tab (card A5). Loaded on first open only (`main.ts` imports this module dynamically), so three.js and the separate archlang-3d package never reach the startup chunks. | none |
 | `raster-export.ts` | 92 | 2 | Client-side rasterization + download helpers shared by the preview (copy PNG) and the multi-format download (PNG/PDF). The core's PNG/PDF backends are Node-only, so the playground rasterizes the SVG through a <canvas> instead. | none |
 | `room-card.ts` | 144 | 1 | The room's facts card: a click on a room in the drawing opens it in the drawing's top-left corner, with the room's area, size, use, neighbours and openings, all describe()'s (room-facts.ts). In edit mode it also offers "Jump to source"… | none |
-| `room-facts.ts` | 123 | 5 | The words the drawing's facts are said in: the facts line under it, the hover tooltip and the room's facts card. Pure (no DOM): every figure is describe()'s, read off the summary, never measured here and never typed. An area says which… | none |
+| `room-facts.ts` | 132 | 5 | The words the drawing's facts are said in: the facts line under it, the hover tooltip and the room's facts card. Pure (no DOM): every figure is describe()'s, read off the summary, never measured here and never typed. An area says which… | none |
 | `room-index.ts` | 89 | 1 | The rooms from the keyboard (card PG.1): a "Rooms" control in the drawing's bottom-right corner that lists the storey's rooms, each a button that opens the room's facts card (room-card.ts), the same card a click on the room opens. The… | none |
 | `samples.ts` | 117 | 6 | Playground-only sample plans: plans the gallery offers that are NOT shipped examples. | none |
 | `save-data.ts` | 10 | 3 | Whether the browser asks to spare data (Save-Data, or a 2g connection): the playground then fetches nothing ahead of a use (ruling MP-D4). The one copy of the rule: main.ts's idle import and the header actions' warm-up (actions.ts, card… | none |
@@ -280,7 +280,7 @@ Totals: 430 modules in 34 directories.
 | `input-limit.ts` | 77 | 5 | A host's refusals, as catalogued diagnostics. | none |
 | `intent-concepts.ts` | 238 | 7 | The intent channel's concept vocabulary — production name resolution for the NL→ArchLang intent contract. | none |
 | `intent-feasibility.ts` | 388 | 3 | Infeasibility of a brief's stated numbers: the arithmetic that makes "this brief is impossible" checkable, before any plan exists. | none |
-| `intent.ts` | 1789 | 8 | The intent channel — author-time checking of a brief's INTENT against a plan. | none |
+| `intent.ts` | 1792 | 8 | The intent channel — author-time checking of a brief's INTENT against a plan. | none |
 | `ir.ts` | 2082 | 270 | Intermediate representation + `resolve(ast)`. | charges the step meter |
 | `keep.ts` | 1902 | 11 | `keep`: declared invariants, checked by `compile()` and never solved (ADR 0033; plan-soundness PS4.3, design `archlang-lab/plans/plan-soundness/research/2026-10-26-ps43-keep-design.md`). | charges the step meter |
 | `label-fit.ts` | 1373 | 6 | A room's label that does not fit shrinks: a **post-pass over the lowered Scene**, after `wrapLabels` and `relocateLabels` (`src/label-placement.ts`) have done what they can at the drawing's label size (#367). | none |
@@ -310,7 +310,7 @@ Totals: 430 modules in 34 directories.
 | `room-datums.ts` | 420 | 20 | The datum table (ADR 0028 §1): what one resolution group's rooms and grid axes expose as lines, frozen after every room is placed and before any wall resolves. | charges the step meter |
 | `room-tiling.ts` | 1403 | 17 | The derivation behind `walls from rooms` (ADR 0028 §3, plan decision D5): one group's rectangular and rectilinear rooms in, its exterior ring(s) and its partitions out, or a refusal naming the rooms at fault. Pure: no diagnostics, no ids… | charges the step meter |
 | `sanitize.ts` | 61 | 2 | Config sanitization — a denylist for **untrusted** `.arch`-sourced config. | none |
-| `scene-build.ts` | 1867 | 34 | Lowers a resolved plan (IR) to the backend-neutral {@link Scene}. | none |
+| `scene-build.ts` | 1863 | 34 | Lowers a resolved plan (IR) to the backend-neutral {@link Scene}. | none |
 | `scene-memo.ts` | 180 | 4 | One Scene per resolved plan and drawing options, shared by `compile()` and `lint()`. | none |
 | `scene.ts` | 513 | 126 | Backend-neutral **Scene IR** — the keystone drawing intermediate. | none |
 | `segment-select.ts` | 221 | 7 | Segment selectors (plan card PS3.5): `segment north\|south\|east\|west` and `segment containing <room>.<edge>`, written wherever `segment <n>` is. A selector is an ALIAS: it resolves to the one segment index the number would name, and from… | charges the step meter |
@@ -360,7 +360,7 @@ Totals: 430 modules in 34 directories.
 | `gross-area.ts` | 252 | 7 | **Gross internal area** (GIA) — the floor enclosed by the exterior walls' inner faces (`describe().totals.gross_internal_area_m2`, plan-soundness PS4.4). | none |
 | `keep-facts.ts` | 715 | 2 | `describe --facts depends` for keeps (ADR 0033; plan-soundness PS4.3b, design §5, R5, R16): `depends.keeps[]`, one row per accepted keep, read from the declarations alone. | none |
 | `nav-grid.ts` | 1967 | 5 | The whole-plan navigation grid circulation walks on, and the walking primitives its two readers (the facts in `circulation.ts`, the overlay in `circulation-overlay.ts`) share, moved verbatim from `src/analyze/circulation.ts`: the cell… | none |
-| `net-area-memo.ts` | 291 | 9 | Net internal area, computed once per storey and once per room (ADR 0027's figures, unchanged), and held to a total per storey read (U.22). | none |
+| `net-area-memo.ts` | 291 | 10 | Net internal area, computed once per storey and once per room (ADR 0027's figures, unchanged), and held to a total per storey read (U.22). | none |
 | `net-area.ts` | 611 | 12 | **Net internal area** — the part of a room's floor that no wall stands on (`describe().rooms[].net_area_m2`; the rule and why: `docs/adr/0027-net-internal-area.md`). | none |
 | `occupancy.ts` | 238 | 4 | Room circulation as a fact: can a person actually step through a room's door and reach its floor, or do furniture, fixtures and door swings seal it off? | none |
 | `open-shell.ts` | 304 | 2 | **Open shells:** exterior walls that should enclose a room and do not. `W_EXTERIOR_RING_OPEN` reports them, and `describe()` says which rooms the gross internal area leaves out because of them (`totals.gross_internal_area_leaves_out`)… | none |
@@ -447,7 +447,7 @@ Totals: 430 modules in 34 directories.
 | `outdoor.ts` | 728 | 15 | `outdoor [id=] <kind> (at (x,y) size WxH \| polygon (x,y) …) [label "…"] [rail <edges>]` — a ground surface OUTSIDE the building: lawn, planting, paving, deck, gravel, water, driveway, patio, balcony, sand, soil. | none |
 | `reprint.ts` | 94 | 5 | The memo and step charge for a fix that re-prints its whole statement (door, window, opening, and the endpoint-swapped text a `dim` carries for `W_DIM_INSIDE`). | charges the step meter |
 | `roof.ts` | 384 | 6 | `roof overhang <mm> [wall <id>]` — or `roof polygon (x,y) (x,y) (x,y) …` — the eaves projection line. | none |
-| `room.ts` | 1043 | 14 | `room [id=] (at (x,y) \| DIR ref [align E] [gap n]) size WxH [label "…"]` or `room [id=] polygon (x,y) (x,y) (x,y) … [label "…" [at (x,y)]]` or `room [id=] circle at (cx,cy) radius R [label "…"]` — floor fill + label + computed area. The… | charges the step meter |
+| `room.ts` | 1041 | 14 | `room [id=] (at (x,y) \| DIR ref [align E] [gap n]) size WxH [label "…"]` or `room [id=] polygon (x,y) (x,y) (x,y) … [label "…" [at (x,y)]]` or `room [id=] circle at (cx,cy) radius R [label "…"]` — floor fill + label + computed area. The… | charges the step meter |
 | `section.ts` | 264 | 2 | `section <id\|int> (x,y)->(x,y) look <compass>` — a section mark on the plan (RM6.1, design `docs/plans/product-roadmap/design/slab-and-section.md` §2): where a section cuts the building and which way it looks, drawn as GB/T 50001 and ISO… | none |
 | `stair.ts` | 490 | 2 | `stair [id=] at (x,y) size WxH dir up\|down [width <mm>]` — a straight flight of stairs drawn as the conventional plan symbol. Or the block form (issue #362), `stair [id=] dir up\|down width <mm> { flight … landing … flight … }`: one stair… | charges the step meter |
 | `vertical-glyphs.ts` | 507 | 10 | Plan symbols for the vertical-circulation elements (`stair`, `elevator`, `escalator`). | none |
@@ -491,15 +491,15 @@ Totals: 430 modules in 34 directories.
 | `arc-band.ts` | 199 | 4 | How deep a rectangle reaches into a CURVED wall's solid — the radial analogue of the straight-segment frame in `./rect.ts`. | none |
 | `arc.ts` | 500 | 56 | Circular-arc math for **curved geometry** — arc wall edges and circular rooms. | none |
 | `backend.ts` | 73 | 5 | Optional polygon-geometry backend seam. | none |
-| `band.ts` | 764 | 37 | The **band** of a wall: its two faces, its corners and its caps, as exact edge loops. | none |
+| `band.ts` | 764 | 38 | The **band** of a wall: its two faces, its corners and its caps, as exact edge loops. | none |
 | `clipper.ts` | 177 | 2 | Optional {@link GeometryBackend} adapter over `clipper2-wasm`. | none |
 | `grid-index.ts` | 247 | 20 | Uniform-grid bucket spatial index over axis-aligned boxes. | none |
 | `intersect.ts` | 341 | 9 | Closed-form intersection and ray-crossing primitives for **wall joinery**. | none |
 | `joinery.ts` | 1251 | 8 | **Wall joinery** — one boundary for a whole set of walls, with no line drawn inside another wall's solid. | none |
 | `min-rect.ts` | 169 | 2 | The exact minimum-area enclosing rectangle of a point set on the 0.001 mm lattice (plan-soundness PS5.1b; design `archlang-lab/plans/plan-soundness/research/2026-10-24-ps5-taste-design.md` §3 R9, R18). | none |
-| `polygon.ts` | 669 | 77 | Simple-polygon math for **polygonal rooms**. | charges the step meter |
+| `polygon.ts` | 715 | 77 | Simple-polygon math for **polygonal rooms**. | charges the step meter |
 | `rect.ts` | 502 | 42 | Shared axis-aligned rectangle math for the analysis/repair layer. | none |
-| `room-ring.ts` | 112 | 15 | The room-ring seam: what a room's FLOOR is, read through one place (card ARC2-seam, `docs/plans/arc2-room-arcs.md`). | none |
+| `room-ring.ts` | 199 | 15 | The room-ring seam: what a room's FLOOR is, read through one place (card ARC2-seam, `docs/plans/arc2-room-arcs.md`). | none |
 | `union.ts` | 193 | 3 | Boolean of axis-aligned rectangles (union, and difference of "holes") → boundary loops. | none |
 
 ## `src/grammar/`
@@ -522,7 +522,7 @@ Totals: 430 modules in 34 directories.
 
 | Module | Lines | Importers | Summary | Budget |
 | --- | ---: | ---: | --- | --- |
-| `checks.ts` | 481 | 1 | The resolver's cross-element checks, run once every coordinate is final: the number domain (`E_NON_FINITE`, `E_OUT_OF_RANGE`; the element is dropped), the drawn sizes a plan's settings scale (a hatch tile, the heaviest pen), the empty… | none |
+| `checks.ts` | 486 | 1 | The resolver's cross-element checks, run once every coordinate is final: the number domain (`E_NON_FINITE`, `E_OUT_OF_RANGE`; the element is dropped), the drawn sizes a plan's settings scale (a hatch tile, the heaviest pen), the empty… | none |
 | `expand.ts` | 928 | 2 | Expansion, the first stage of `resolve()`: a plan body (`let`, assignment, `set`, `for`/`if`/ `while`, component calls, `place`d instances, `strip`, `zone`, `keep`) flattened into the element stream ({@link Entry}) the resolver works on… | charges the step meter |
 | `groups.ts` | 452 | 1 | Resolution groups and the per-element bookkeeping around them: the expanded stream partitioned by `place` frame (one group per instance, the root last), an instance's view of its descendants, the pre-charge for wall-deriving statements… | none |
 | `sheet.ts` | 248 | 2 | The sheet, decided in `resolve()`: the two extents a fit is measured on, the storey as drawn ({@link drawnView}), the `paper` + scale resolved into a {@link ResolvedSheet}, and its reports (`W_SCALE_OVERFLOW`, `W_DRAWING_OVERFLOW`, and… | none |
@@ -607,7 +607,7 @@ Totals: 430 modules in 34 directories.
 | --- | ---: | ---: | --- | --- |
 | `advice.ts` | 147 | 2 | The taste criteria's advice codes, names and sources (ADR 0032). `A_*` codes are advice, not diagnostics: they never enter `lint()`, `describe()` or `src/error-catalog.ts`, and `arch explain` does not know them yet. Every criterion has… | none |
 | `arith.ts` | 76 | 3 | The taste layer's exact arithmetic (ADR 0032; design §2.3). Every value that reaches a pinned byte is decided in integers: counts are plain integers, lengths are lattice integers (the 0.001 mm lattice, below 2³⁶ within `MODEL_RANGE_MM`)… | none |
-| `criteria.ts` | 1855 | 4 | The eleven taste criteria of PS5.1 (R3, R6, R7, R9, R11, R12, R14, R15, R16, R17, R18), as defined in `archlang-lab/plans/plan-soundness/research/2026-10-24-ps5-taste-design.md` §3, and R20 (wet-room stacking, product-roadmap RM1.2b item… | none |
+| `criteria.ts` | 1861 | 4 | The eleven taste criteria of PS5.1 (R3, R6, R7, R9, R11, R12, R14, R15, R16, R17, R18), as defined in `archlang-lab/plans/plan-soundness/research/2026-10-24-ps5-taste-design.md` §3, and R20 (wet-room stacking, product-roadmap RM1.2b item… | none |
 | `index.ts` | 317 | 4 | `taste(source, { profile?, world? })` — the taste layer (ADR 0032, plan-soundness PS5.1). | none |
 | `profiles.ts` | 51 | 1 | The taste profiles (ADR 0032; plan-soundness PS5.2). A profile is an honestly named bundle of taste numbers (ADR 0005: never a standard's name, never a compliance claim); every number cites its source and how it was checked ([V] read in… | none |
 | `report.ts` | 118 | 4 | The shape of `taste()`'s report (ADR 0032; design §2.2). Key order is part of the contract: the report is built in the order these interfaces list their fields, and pinned by `test/taste-digests.test.ts`. | none |
