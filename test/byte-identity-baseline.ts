@@ -2120,7 +2120,7 @@ export const BASELINE: [string, string][] = [
   ["parametric", "71a3a25418add312c9e75fbc196fed30666f88f4c3a6be27d2020949baa76105"],
   ["practice-office", "2932ece4df520783f39e5f15ebd93b0fa7abd1db188997c0a41c62a3be41c425"], // added with the example, re-measured for net area, see header; PS2.11e, see header; PS2.74 source edit, see header
   ["relational", "e159c8772d98b0f9d3c73e8eb08a16e8e2653bd3b470cb13e561b8b1184dc27b"], // re-measured for PS2.4, see header; PS3.6 source rewrite, see header; PS2.11e, see header; `centreline_at`, see header
-  ["remodel", "0347857ec1e59c553316be875cc8ca2e82db702049a3556fe5045ad29bf23bc7"], // added with the example, see header; `centreline_at`, see header; CV13 (was ac397a1a): example source edited (chairs added)
+  ["remodel", "0347857ec1e59c553316be875cc8ca2e82db702049a3556fe5045ad29bf23bc7"], // SR.15 (was f76c772b); added with the example, see header; `centreline_at`, see header; CV13 (was ac397a1a): example source edited (chairs added)
   ["sheet-notes", "3178042f5c9770726dbf700add62817f0522b662585cfc4a971e43d41f853c7a"], // re-measured, see header
   ["studio", "c1b79a49af3ad31cddf82e88632624d46663c804f134b6e172e585cad36ed969"], // PS2.11e, see header
   ["terrace-row", "1a7bbcde47500c0e8abfedf8e22f2305e14c0a5bb2f2c71c88535ebf1f453211"], // re-measured, see header; CV08 (was ec839a41): example source edited (sofa turned to face the room)
