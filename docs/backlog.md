@@ -2872,6 +2872,30 @@ move a recorded `fixed_source` needs that ruling first. **Gate:** `recordTraject
 (or the header names the difference), and a test holds its fix stage equal to `l1Pipeline`'s over the
 dataset's inputs; no published file is replaced without the owner's ruling.
 
+### SR.23 · The `arch review` sheet's code and its note read as one word (#1010 residue) — `todo`
+
+The review sheet (`src/cli/review.ts`) sets a note after a bold run inside the same `<text>` as a
+`<tspan dx="8">`: a mark's code and its "not ringed" reason (`:637`) and the close-ups heading and its
+"+N close-ups not drawn" count (`:658`). The 8-unit `dx` draws the gap, but the text content has no
+space (a code and "(names no drawn element)" read "W_CODE(names no drawn element)"), the defect SR.15 fixed
+for a wrapped room name. The sheet is CLI output, not `compile()`'s, and its SVG is pinned
+(`test/cli-preview-review.test.ts:107`). **Gate:** each such `<text>`'s content holds a space between the
+two runs, and the drawn glyphs do not move (SR.15's zero-size separator, `src/backends/svg.ts`, or a
+measured alternative); the sheet's pin is re-taken with the reason, by swap-back.
+
+### SR.24 · PNG font planning never reads a wrapped name's first line (#1010 red team) — `todo`
+
+`svgTexts` (`src/backends/png.ts:63`) collects what an SVG draws with
+`/<(text|tspan)\b[^>]*>([^<]*)</g`. A wrapped name is `<text …><tspan x y>first</tspan>…`: the
+`<text …>` match takes the `<` of the first `<tspan`, so the scan resumes past it and the first line
+is never read. It predates SR.15. So `planFonts` does not see a CJK first line: if only that line
+needs the CJK face, the PNG does not load it where it is installed and does not report `W_CJK_FONT_MISSING` where it is not. Repro (2026-11-22, the
+card's 1200-wide hall beside a 4000-wide room): `label "厨房厨房厨房 Kitchen"` wraps and `svgTexts` returns
+`[" ", "Kitchen"]` (no `厨房厨房厨房`); at 6000 wide it is one line and returns `["厨房厨房厨房 Kitchen"]`;
+"Entrance Hall" at 1200 returns `[" ", "Hall"]`. **Gate:** `svgTexts` returns every line of a wrapped
+name (a test with a CJK first line, through `planFonts`), and every PNG with no wrapped CJK line is
+byte-identical.
+
 ## Test-programme findings (promo-credit programme, 2026-11-16)
 
 From `docs/plans/product-roadmap/2026-11-test-findings.md` (§ 3, § 4, § 5). RR.8 (2), the
