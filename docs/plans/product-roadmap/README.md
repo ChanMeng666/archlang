@@ -785,6 +785,16 @@ RM-D65 授权协调者在所有者不在时自行裁定，所有者一句话可�
 | RM-D89 | ARC1（#1019）按 Ruling A 只改了画法：弧墙上的门扇画在切口的门框上，而模型的开启扇（`doorSwing`/`doorLeaves`，lint、`describe --facts symmetry`、`repair()`、3D 包都读它）仍是门洞处切线的构造，画出的门扇与测量的开启扇在已发布的平面上差到 62.5 mm（门轴）/ 65.1 mm（扇尖，`aquarium` 8 m 鼓墙上的双开门）。要不要改模型（ARC1b） | **改模型，画法与模型合成一个构造。** 弧墙上 `doorSwing`/`doorLeaves` 把每扇门挂在切口的门框上（`arcCutJambs`，`src/geometry.ts`，与画法同一组点），删掉 `door.ts` 里只给画法用的副本；`describe` 的对称事实里弧墙上窗和洞口的门框（`symmetry.ts` 的 `jambs()`）同样移到切口上；3D 包读 `doorSwing` 取门框，所以弧墙上的门、窗、洞口在 3D 里也随之移到切口上（只有门的网格动，窗和洞口的饰件网格不动）。字节恒等：弧墙上没有门、窗、洞口的平面，SVG、`describe()`（全部 facts）、`lint()`（全部 profile）、`compile().diagnostics`、Plan JSON、DXF、ASCII、步数和 3D 输出一律不动；有的平面，`describe()`/`lint()`/对称事实/3D 可以动，每一个在 PR 里列出并写明理由；对称事实里的数可以动，因为它们由修正后的坐标量出：`centre`，以及点合理地离开半毫米格点时的精确标记（`full.exact`）；对称群、对称轴（反射线）、元素列表和每件的 `hand` 不许动（评审第一轮后细化：鼓墙上镜像的一对门窗，`centre` 回到鼓墙的真圆心）。标签按 #1019 的 Ruling B 不动：注记各遍仍读冻结的切线足迹（`annotationFootprint`、`tangentDoorLeaves`），由 ARC1c 统一。记入 ADR 0023 的修订"a model correction is not a redraw" | 画出来的就该是被测量的；两套构造并存会让 lint 的净空判断和读者看到的门扇对不上。限定"只动所纠正的平面、群、轴、元素和 hand 不动"，让这次修正可以逐平面核对，也不给以后的画法改动开口子 |
 | RM-D90 | ArchCanvas PR #405 能不能合并（所有者同一天交出） | **合并。** /privacy 的措辞获批：只记录检查项的名称，不记录细节。合并前按 archcanvas `docs/OPERATIONS.md` 推送生产库 schema：预览恰好是两条 `ADD COLUMN`，备份运行 45081386581 为绿，在一个事务里执行并设 `lock_timeout` 5s，执行后核验，再预览为 "No changes detected"。以 da913b01 合并，并在线上核验 | 生产库改动按运维手册一步一步走、每步留证据，才能在无人值守时动生产库；隐私页只写检查项名称，与只收名称不收内容的口径一致 |
 
+
+### 6.39 所有者裁定：发布 1.68.1、ArchCanvas 升级 1.68.1 的付费定价跑（RM-D91、RM-D92，2026-11-23，UTC）
+
+| 编号 | 问题 | 所有者原话 | 决定 |
+|---|---|---|---|
+| RM-D91 | ARC1b（#1027）合并后要不要现在发布 | "现在就发布，请你自动实施发布操作" | 发布 1.68.1（补丁：无新语法、码或公开字段），代理走完发布链（#1028，tag `v1.68.1` 在 `5359a332`）；OpenAI 目录的提交与发布由所有者手动完成 |
+| RM-D92 | ArchCanvas 从 1.64 升到 1.68.1 要先付费定价（ArchCanvas AGENTS.md：每次升级编译器都要所有者先看到花费） | 选择"Yes, cap $5"（同意上限 5 美元，结果不退步就合并） | 26 条 brief 两臂（1.64 对 1.68.1）实花 $3.638；终检 26/26 对 26/26，首稿无阻断 15→20/26，轮数 39→34，花费 0.93×，结论 BUMP（`archcanvas-lab/specs/2026-11-23-core-1681-pricing-run-result.md`）；ArchCanvas #406 合并为 `7cf12c75` 并上线，首页 bay-bungalow 的起居室已是弧边。多层扩展（约 $6.90）不在批准范围内，未跑 |
+
+未决：`dims auto overall` 在弧边房间上的修正（#1029，合并 `5e014d46`）尚未发布；ArchCanvas 首页总尺寸在它发布并被采用前读 12858.81。是否发布 1.68.2 由所有者定（两次询问未获回答）。
+
 ---
 
 ## 7. 与已有计划的关系

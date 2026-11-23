@@ -149,3 +149,19 @@ concept 表的改动要动 `SYNONYMS_VERSION`，这个版本号只能由所有�
 3. MX1、MX2 排在 1.68.0 之后；MX3 在条件触发时做。
 
 仍由所有者定的：`CHANGELOG.md` 是否截断。
+
+**状态（2026-11-23）**：
+
+| 卡 | 状态 |
+|---|---|
+| ARC1 弧墙上的门窗按曲线画 | 1.68.0（#1019） |
+| ARC3 站得下人的空地报 `W_FLOOR_UNASSIGNED` | 1.68.0（#1020） |
+| ARC2 接缝 / `room polygon` 里的 `arc` 边 | 1.68.0（#1022、#1023） |
+| FW1 / FW4 / FW5 遥测 | 1.68.0（#1021），线上已验证 |
+| FW2 ArchCanvas `generation_attempts` 的 `first_pass_codes` / `final_codes` | ArchCanvas #405，生产库已按 OPERATIONS.md 加列（RM-D90），已上线 |
+| FW3 每周码表 | archcanvas-growth #100（`data/web-traffic.csv` 的 `mcp_codes`、`playground_events`），已回填 2026-11-16 那周 |
+| ARC1b 模型里的门扇挂在弧上 | 1.68.1（#1027，RM-D89；ADR 0023 修正案“模型更正不是重画”） |
+| ArchCanvas 用上 1.68.1（首页 bay-bungalow 起居室改成弧边、重拍图） | ArchCanvas #406 合并（`7cf12c75`），已上线；付费定价跑 $3.638，结论 BUMP（RM-D92） |
+| ARC2c 弧边房间不再让 `dims auto overall` 出现小数总尺寸；楼层词不再重复 | #1029 合并（`5e014d46`），**未发布**；首页总尺寸在 1.68.2 发布并被 ArchCanvas 采用前读 12858.81 |
+| MX1、MX2 | 未开始；MX3 等条件 |
+| 残留 | `docs/backlog.md`：ARC1c、ARC1d、ARC2b、ARC3b、FW5b |
