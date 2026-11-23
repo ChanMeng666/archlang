@@ -89,7 +89,7 @@ import {
 import { openingClauseOf, wallRef } from "../../wall-ref.js";
 import { rectToArc } from "../clearance-measure.js";
 import { judgesAsDwelling, type LintContext, type LintRule } from "../context.js";
-import { openingName, wallPhrase } from "../element-phrases.js";
+import { openingName, wallPhrase, withStorey } from "../element-phrases.js";
 import { deficitMm, mm } from "../measure.js";
 import { cite } from "../rule-ref.js";
 import { MODEL_RANGE_MM } from "../../num-format.js";
@@ -286,10 +286,7 @@ function stairName(v: RStair, ctx: LintContext): string {
   const room = roomId === null ? undefined : ctx.rooms.find((r) => r.id === roomId);
   const f = boardedFlight(v);
   const where = room ? `in ${ctx.nameOf(room)}` : ctx.placeAt({ x: f.at.x + f.size.w / 2, y: f.at.y + f.size.h / 2 });
-  const lv = (ctx.building.storeyCount ?? 1) > 1 && ctx.ir.level !== undefined ? ` on level ${ctx.ir.level}` : "";
-  // An unlabelled room's phrase already ends with its storey (`src/naming.ts`, "the hall on
-  // level 1"); a label or a place on the plan does not, so only those gain it here.
-  return `the stair ${where}${where.endsWith(lv) ? "" : lv}`;
+  return `the stair ${withStorey(where, ctx)}`;
 }
 
 /** How a HINT names a door or opening an author can edit: its id when written (`` `d1` ``), the

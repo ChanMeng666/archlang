@@ -16,6 +16,16 @@ import { mm } from "./measure.js";
 /** A door, window or cased opening. */
 export type Hosted = RDoor | RWindow | ROpening;
 
+/**
+ * `where` (`in "Landing"`, `in the hall on level 2`, `in the middle of the plan`) with its storey on
+ * a plan of several: ` on level 2` after a label or a place on the plan, never after an unlabelled
+ * room's phrase, which already ends with it (`src/naming.ts`, "the hall on level 2").
+ */
+export function withStorey(where: string, ctx: LintContext): string {
+  const lv = (ctx.building.storeyCount ?? 1) > 1 && ctx.ir.level !== undefined ? ` on level ${ctx.ir.level}` : "";
+  return where.endsWith(lv) ? where : `${where}${lv}`;
+}
+
 /** ` at x 4000` / ` at y 3000` for a straight axis-aligned segment, else nothing. */
 export function axisLine(s: WallSegment): string {
   if (s.arc) return " (curved)";
