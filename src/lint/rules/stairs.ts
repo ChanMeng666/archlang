@@ -287,7 +287,9 @@ function stairName(v: RStair, ctx: LintContext): string {
   const f = boardedFlight(v);
   const where = room ? `in ${ctx.nameOf(room)}` : ctx.placeAt({ x: f.at.x + f.size.w / 2, y: f.at.y + f.size.h / 2 });
   const lv = (ctx.building.storeyCount ?? 1) > 1 && ctx.ir.level !== undefined ? ` on level ${ctx.ir.level}` : "";
-  return `the stair ${where}${lv}`;
+  // An unlabelled room's phrase already ends with its storey (`src/naming.ts`, "the hall on
+  // level 1"); a label or a place on the plan does not, so only those gain it here.
+  return `the stair ${where}${where.endsWith(lv) ? "" : lv}`;
 }
 
 /** How a HINT names a door or opening an author can edit: its id when written (`` `d1` ``), the

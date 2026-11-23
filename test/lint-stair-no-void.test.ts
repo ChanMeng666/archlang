@@ -133,6 +133,28 @@ suite("W_STAIR_NO_VOID", () => {
     expect(of(plan(level(1, "Hall", DOOR, DOWN), level(2, "Landing", DOWN)))).toEqual([]);
   });
 
+  it("names the storey once, whether the stair's room is labelled, unlabelled or absent", () => {
+    // An unlabelled room's phrase already carries its storey ("the corridor on level 2"), so the
+    // stair's own storey phrase is not added to it a second time; a label or a place gains it once.
+    const upper = (room: string): string =>
+      plan(
+        level(1, "Hall", DOOR, UP),
+        ['  level 2 "L2" {', shell("Landing", "circulation hall").split("\n")[0]!, room, DOWN, "  }"].join("\n"),
+      );
+    const head = (room: string): string => of(upper(room)).map((d) => d.message.split(":")[0])[0]!;
+    const lead = "No void opens across the head of the flight that climbs from level 1 to the stair in";
+    expect(head('    room id=hall at (0,0) size 6000x5000 label "Landing" uses circulation hall')).toBe(
+      `${lead} "Landing" on level 2`,
+    );
+    expect(head("    room id=hall at (0,0) size 6000x5000 uses circulation hall")).toBe(
+      `${lead} the corridor on level 2`,
+    );
+    // A stair in no room (inside the shell, so still floor) is placed on the storey, and its storey named once.
+    expect(head("    room id=hall at (2000,0) size 4000x5000 uses circulation hall")).toBe(
+      `${lead} the middle of the plan on level 2`,
+    );
+  });
+
   it("reads every storey a run continues through, on the flight that arrives there", () => {
     // townhouse's shape: one footprint on three storeys, rising from the first and the second.
     const three = (two: string[], top: string[]) =>

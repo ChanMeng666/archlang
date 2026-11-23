@@ -10,7 +10,7 @@
  * PR legitimately moves a hashed output (never keep code), the table is re-taken by the generator, the
  * reason recorded below and the moved files listed in that commit's message.
  *
- * Taken: card ARC-W1 round 3 (fix/arcw1-openings-on-arc on main a0f85ebf): openings on an arc are drawn on the curve, drawing only; the annotation passes read main's footprint; only opening-layer ink moved (main's opening nodes put back reproduce every digest-law row; describe/lint/diagnostics/validate/impact and steps unchanged by a per-payload sweep against main)
+ * Taken: ARC2c on origin/main 5359a332: the first-contact 5-townhouse's stair messages name the storey once (its lint moves: W_STAIR_NO_VOID; W_STAIR_SIDE_ENTRY under the accessibility profile is not hashed here)
  */
 
 /** `[path from the repository root, SHA-256 of the payload, evaluation steps]`, sorted by root. */
@@ -1653,7 +1653,7 @@ export const KEEP_WEAK_BASELINE: readonly (readonly [string, string, number])[] 
   ],
   [
     "test/plans/plan-soundness/audits/first-contact-plans/2026-10-27-rerun-arm2/5-townhouse.arch",
-    "f883eb18b05c9f620afd81f37f47fa8806cf9dadd19bbda81706f94a06e692e8",
+    "3bd83c9e6f28a21aa63b5cb059d554ccb14053c25b8d9520126e709691d29d24",
     5252,
   ],
   [

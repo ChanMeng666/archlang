@@ -274,7 +274,7 @@ const BASELINE: [string, string][] = [
   ["803382568b44d2abe330873b5b788636b5dae38beea8416ea9da39a9fb3a12ab", "inline:stair-words-as-names"],
   ["f1497554533ffa39becdfaf8494d14a9d2aa84d8eee0455a4eaf4feffa213aba", "inline:stair-square-and-narrow"],
   ["0ba9460627a738d65c7d5235e533ad8410bf7a548bfedc69dca44f987793ee91", "inline:stair-placed"],
-  ["68d65af3a0d0c6cbaf11c3b72f80cdc31fbb381fa5fa0a4e628196a0fa9ee288", "inline:stair-arrival"], // RM1.3a, see ./byte-identity-baseline.ts; RM1.2a, see ./byte-identity-baseline.ts; RM1.2a review, see ./byte-identity-baseline.ts; RM1.3b overlay, see ./byte-identity-baseline.ts; RM9.2, see ./byte-identity-baseline.ts; RM9.6 CV14: W_STAIR_NO_VOID reports this plan (was 802586e9)
+  ["0bb5e184479ce8d3c1ed547081de20a2deebc8d30eb3c256d450097dc14a7136", "inline:stair-arrival"], // RM1.3a, see ./byte-identity-baseline.ts; RM1.2a, see ./byte-identity-baseline.ts; RM1.2a review, see ./byte-identity-baseline.ts; RM1.3b overlay, see ./byte-identity-baseline.ts; RM9.2, see ./byte-identity-baseline.ts; RM9.6 CV14: W_STAIR_NO_VOID reports this plan (was 802586e9); ARC2c: its stair messages name the storey once (was 68d65af3)
   ["e6eed958e1d4cea68f7981fce9964af4b5a26fa3d09ad3eafebb0992ce5cb727", "inline:stair-refusals"],
   ["1e9d114fa6522be3335f490693d677a052fc7363fd0bbc2b07b2f0849fe16494", "inline:stair-parse-refusals"], // AF4 (was 57879436): its `E_PARSE` now says what the parser expected at the token it stopped at (`expected`); SVG, lint() and every other key are unchanged, and deleting that key gives 57879436
   ["b26bc512b18857358f1d63dd780c04f84af6923145c4407d45d541b087fff4a4", "inline:sheet-word-as-names"], // AF7 (RM-D69): only added related notes (was 4ee5b0cc, AF7_MAIN)
