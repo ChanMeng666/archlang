@@ -110,13 +110,19 @@ describe("--doors plan on the corpus", () => {
     const through = corpus.flatMap(({ n, plan }) =>
       plan.assumptions.filter((a) => a.rule === "door-leaf-through-wall").map((a) => `${n} ${a.id}`),
     );
-    // The one plan in the corpus that does it: its door's leaf swings into its own curved host.
-    expect(through).toEqual(["s5-door-on-arc d1"]);
+    // Two plans in the corpus do it. s5's door swings its leaf into its own curved host. aquarium's
+    // `d_rot_n` sits on the rotunda's north point, where the straight partition along y = 6000 runs
+    // tangent to the curve: the doorway's annular cut leaves that partition's body standing between
+    // the cut's outer arc and the partition's north face, a sliver about 21 mm deep at the leaf's
+    // mid-thickness line (y 5900 to 5920.8 at x 30580), and the leaf swung north crosses it. It always
+    // did; the samples, 60 mm apart along the 1200 mm leaf, stepped over it until core card ARC1b
+    // hung the leaf on the cut's jamb, 22.5 mm south of the tangent's, and one sample landed in it.
+    expect(through).toEqual(["aquarium.arch d_rot_n", "s5-door-on-arc d1"]);
     // The node says so too: a GLB carries node extras, not the ledger.
     const flagged = corpus.flatMap(({ n, plan }) =>
       plan.nodes.filter((x) => x.extras.through_wall === true).map((x) => `${n} ${x.key}`),
     );
-    expect(flagged).toEqual(["s5-door-on-arc L1/door:d1"]);
+    expect(flagged).toEqual(["aquarium.arch L1/door:d_rot_n", "s5-door-on-arc L1/door:d1"]);
     for (const { closed } of corpus)
       expect(closed.assumptions.some((a) => a.rule === "door-leaf-through-wall")).toBe(false);
   });
