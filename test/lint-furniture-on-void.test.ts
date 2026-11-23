@@ -91,6 +91,33 @@ suite("W_FURNITURE_ON_VOID", () => {
     );
   });
 
+  it("names the storey once, whether the void's room is labelled, unlabelled or absent", () => {
+    // An unlabelled room's phrase already ends with its storey ("the hall on level 2"), so the
+    // rule's own storey phrase is not added a second time; a label or a place gains it once.
+    const upper = (room: string): string =>
+      plan(
+        `  level 1 {`,
+        `    room id=g at (0,0) size 6000x5000 label "Hall"`,
+        `  }`,
+        `  level 2 {`,
+        `    ${room}`,
+        `    void id=v at (0,0) size 3000x2500`,
+        `    furniture id=t table at (500,500) size 1200x800`,
+        `  }`,
+      );
+    const where = (room: string): string => of(upper(room))[0]!.message.split(":")[0]!;
+    expect(where(`room id=u at (0,0) size 6000x5000 label "Landing"`)).toBe(
+      'Furniture "table" stands on a void in "Landing" on level 2',
+    );
+    expect(where(`room id=u at (0,0) size 6000x5000 uses circulation hall`)).toBe(
+      'Furniture "table" stands on a void in the corridor on level 2',
+    );
+    // The void's centre in no room: placed on the storey, its storey named once.
+    expect(where(`room id=u at (3000,0) size 3000x5000 uses circulation hall`)).toBe(
+      'Furniture "table" stands on a void in the middle of the plan on level 2',
+    );
+  });
+
   /** A stairwell drawn the usual way: the flight coming down on level 2, and a void on its rectangle. */
   const WELL = (piece: string, opts: { stair?: boolean; hole?: string } = {}): string =>
     LEVELS(

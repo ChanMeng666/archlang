@@ -56,9 +56,12 @@ const API: CompilerApi = { compile, describe: describePlan, lint };
 /**
  * SHA-256 of `test/floor-unassigned/bay-bungalow-arc-living.arch`'s Plan JSON and DXF, an arc room
  * through both, measured when the canonical ring landed (review round 1). A move is a finding.
+ * The DXF was re-taken once, when the overall chain stopped ending at the living room's arc apex:
+ * its vertical overall DIMENSION reads 12250 (outer face -125 to 12125) where it read 12858.81,
+ * and nothing else in the file moved.
  */
 const PLAN_JSON_PIN = "7a05624e92320b464b920a978238a134fb25098a6b86029e2e62a672664e5b33";
-const DXF_PIN = "53e9ee032abda5c0a4a8fe716d98dbaf3897ab8a86e117ef3714db0f8b946e90";
+const DXF_PIN = "074645f2324bb6f44bfbee26fda7ac6bacff86f80d7363a6c1a4d51f5af0d00c";
 
 /** An `arc` clause inside a `room … polygon` statement (one line, as every corpus room is written). */
 const ARC_IN_RING = /\broom\b[^\n]*\bpolygon\b[^\n]*\barc\s*\(/;

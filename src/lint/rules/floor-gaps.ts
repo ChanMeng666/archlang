@@ -20,6 +20,7 @@ import type { ResolvedElement, RVoid } from "../../ir.js";
 import { isVertical, piecesOf, type RVertical } from "../../vertical.js";
 import type { LintContext, LintRule } from "../context.js";
 import { voidPieces } from "../../elements/void.js";
+import { withStorey } from "../element-phrases.js";
 import { mm } from "../measure.js";
 
 /** One rectangle of floor no piece stands on, and the element it belongs to. */
@@ -66,7 +67,6 @@ export const furnitureOnVoid: LintRule = {
     if (ctx.furniture.length === 0) return [];
     const gaps = floorGapsOf(ctx.ir.elements);
     if (gaps.length === 0) return [];
-    const lv = (ctx.building.storeyCount ?? 1) > 1 && ctx.ir.level !== undefined ? ` on level ${ctx.ir.level}` : "";
     const out: Diagnostic[] = [];
     for (const piece of ctx.furniture) {
       const foot = rectOf(piece);
@@ -80,7 +80,7 @@ export const furnitureOnVoid: LintRule = {
           const b = ctx.roomRects.get(x.id);
           return b !== undefined && pointInRoomBox(centre, b);
         });
-        const where = `${room ? `in ${ctx.nameOf(room)}` : ctx.placeAt(centre)}${lv}`;
+        const where = withStorey(room ? `in ${ctx.nameOf(room)}` : ctx.placeAt(centre), ctx);
         const what = WHAT[g.of.kind];
         const { ox, oy } = rectOverlapAmounts(foot, r);
         out.push({
