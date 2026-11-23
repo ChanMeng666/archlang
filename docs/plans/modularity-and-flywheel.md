@@ -162,6 +162,6 @@ concept 表的改动要动 `SYNONYMS_VERSION`，这个版本号只能由所有�
 | FW3 每周码表 | archcanvas-growth #100（`data/web-traffic.csv` 的 `mcp_codes`、`playground_events`），已回填 2026-11-16 那周 |
 | ARC1b 模型里的门扇挂在弧上 | 1.68.1（#1027，RM-D89；ADR 0023 修正案“模型更正不是重画”） |
 | ArchCanvas 用上 1.68.1（首页 bay-bungalow 起居室改成弧边、重拍图） | ArchCanvas #406 合并（`7cf12c75`），已上线；付费定价跑 $3.638，结论 BUMP（RM-D92） |
-| ARC2c 弧边房间不再让 `dims auto overall` 出现小数总尺寸；楼层词不再重复 | #1029 合并（`5e014d46`），**未发布**；首页总尺寸在 1.68.2 发布并被 ArchCanvas 采用前读 12858.81 |
+| ARC2c 弧边房间不再让 `dims auto overall` 出现小数总尺寸；楼层词不再重复 | 1.68.2（#1029）；ArchCanvas #411 采用，首页总尺寸读 12250 |
 | MX1、MX2 | 未开始；MX3 等条件 |
 | 残留 | `docs/backlog.md`：ARC1c、ARC1d、ARC2b、ARC3b、FW5b |
