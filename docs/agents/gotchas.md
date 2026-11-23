@@ -11,6 +11,12 @@ coordinator's own notes (merging, registries, browser and social automation, the
 
 ## Core
 
+- **A model correction is not a redraw (ADR 0023 amendment, 2026-11-23).** A fix to MODEL geometry (e.g. ARC1b, a door's
+  swing on an `arc` host) may move `describe()`, `lint()`, `repair()`, 3D and the symmetry fact's numbers (centre, exactness)
+  on exactly the plans it corrects, each listed in its PR; never the symmetry group, axes, element list or any `hand`, and
+  every other plan stays byte-identical. A REDRAW still moves nothing but SVG (decision 7). Annotation passes keep the
+  frozen tangent footprint of a curved opening (`tangentDoorLeaves`, `annotationFootprint`) until card ARC1c, so a
+  model change there must not reach `label-fit`, `restationThickness` or the opening tags.
 - **A correct count can be the wrong charge.** Steps are calibrated to the evaluator, about 7 M a second
   (`src/expr.ts`). The first `polygonsOverlap` charge counted operations exactly and refused 100 round
   rooms after 0.19 s of real work, because a `room circle` is a 48-gon. Scale a charge to the budget's
