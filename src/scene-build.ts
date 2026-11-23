@@ -1483,7 +1483,8 @@ function drawStorey(
   // Card ARC-W1: an opening on a curved wall is DRAWN on the curve, while every annotation pass
   // below (the opening tags, the label wrap, relocation and fit, the thickness figures'
   // re-station, the chrome layout and the north arrow) reads the drawing it was built on: the
-  // tangent drawing and the model's door leaves (`ElementDef.annotationFootprint`). Swapped in
+  // tangent drawing and the door leaves swung along the tangent (`ElementDef.annotationFootprint`,
+  // `tangentDoorLeaves`; frozen until card ARC1c, though the model hangs a leaf on the cut). Swapped in
   // here, node for node, and the drawing put back once those passes are done.
   const drawnBack = swapInFootprints(nodes, drawnElements, registry, ctxFor);
   // TWO hatch lists, deliberately.

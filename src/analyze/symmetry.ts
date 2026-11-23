@@ -85,7 +85,7 @@ import { rectRing } from "../geometry/polygon.js";
 import type { RDoor, RFurniture, ROpening, RRoom, RWall, RWindow, ResolvedPlan } from "../ir.js";
 import { D4_ELEMENTS, type D4, det, toMatrix, toSpelling, backVectorOfDeg, SIDE_NORMAL } from "../algebra/d4.js";
 import { fmt4 } from "../num-format.js";
-import { doorSwing, normal, segmentDirAt, segmentsOfWall } from "../geometry.js";
+import { arcCutJambs, doorSwing, normal, segmentDirAt, segmentsOfWall } from "../geometry.js";
 import { pointInRoomBox, roomBox, roomUses } from "../analyze.js";
 import { fixtureSpec } from "../fixtures-catalog.js";
 import { fixtureGlyph } from "../elements/fixtures-glyphs.js";
@@ -506,9 +506,12 @@ function reduceRing(pts: readonly IP[]): IP[] {
 
 const tidy = (r: Rec<IP>): Rec<IP> => (r.form === "ring" ? { ...r, pts: reduceRing(r.pts) } : r);
 
-/** The two jambs of an opening of `width` centred on `at` along its host, or `[at]`. */
-function jambs(at: Point, width: number, host: RDoor["host"]): Point[] {
+/** The two jambs of an opening of `width` centred on `at` along its host, or `[at]`: on a curved
+ *  host the cut's (`arcCutJambs`, where the drawing puts them and a door's leaves hang, card ARC1b). */
+function jambs(at: Point, width: number, host: RDoor["host"], straight = false): Point[] {
   if (!host) return [at];
+  const cut = straight ? null : arcCutJambs(host, at, width);
+  if (cut) return cut;
   const d = segmentDirAt(host, at);
   const hw = width / 2;
   return [
@@ -552,8 +555,11 @@ function doorRec(d: RDoor): Rec<Point> {
   const n = normal(dir);
   const hw = d.width / 2;
   const s = d.slide === "right" ? 1 : -1;
-  const p = { x: d.at.x + dir.x * hw * s, y: d.at.y + dir.y * hw * s };
-  const o = { x: d.at.x - dir.x * hw * s, y: d.at.y - dir.y * hw * s };
+  // On a curved host (a `double` door; every other non-hinged kind is refused there) the jambs are
+  // the cut's, where its leaves hang (`arcCutJambs`, card ARC1b): `p` ahead on the run when `s = 1`.
+  const cut = arcCutJambs(d.host, d.at, d.width);
+  const p = cut ? cut[s > 0 ? 1 : 0] : { x: d.at.x + dir.x * hw * s, y: d.at.y + dir.y * hw * s };
+  const o = cut ? cut[s > 0 ? 0 : 1] : { x: d.at.x - dir.x * hw * s, y: d.at.y - dir.y * hw * s };
   const face = d.swing === "in" ? n : { x: -n.x, y: -n.y };
   const off = (from: Point, v: Point): Point => ({ x: from.x + v.x * d.width, y: from.y + v.y * d.width });
   switch (kind) {
@@ -581,7 +587,9 @@ function doorRec(d: RDoor): Rec<Point> {
  */
 function windowRec(w: RWindow): Rec<Point> {
   const label = `window ${w.windowKind ? `${w.windowKind} ` : ""}w=${fmt4(w.width)}`;
-  const pts = jambs(w.at, w.width, w.host);
+  // A window run to a corner keeps its straight drawing on a curve (`window.ts`'s `arcHost`), so
+  // its jambs stay the tangent's.
+  const pts = jambs(w.at, w.width, w.host, w._corner !== undefined);
   if (w.hinge === undefined) return { form: "set", label, pts };
   return { form: "seq", label, pts: w.hinge === "left" ? pts : [...pts].reverse() };
 }

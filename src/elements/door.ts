@@ -16,7 +16,18 @@ import type { RDoor, RRoom } from "../ir.js";
 import type { Value } from "../expr.js";
 import type { DoorSwing, WallSegment } from "../geometry.js";
 import { cadTurnOf, weightWidth } from "../scene.js";
-import { add, doorLeaves, mul, nearestWallNote, normal, segmentDirAt, sub, unit, wallFaceProbes } from "../geometry.js";
+import {
+  add,
+  doorLeaves,
+  mul,
+  nearestWallNote,
+  normal,
+  segmentDirAt,
+  sub,
+  tangentDoorLeaves,
+  unit,
+  wallFaceProbes,
+} from "../geometry.js";
 import { pointInPolygon, pointOnPolygonEdge } from "../geometry/polygon.js";
 import type { DoorClauseName, DoorKind, DoorSwingDir } from "../grammar/tokens.js";
 import type { DoorSwingBuilding } from "../grammar/tokens.js";
@@ -32,7 +43,6 @@ import {
 } from "../fix-producers.js";
 import { renderDoorPanels } from "./door-panels.js";
 import { openingCover } from "./glyph-lib.js";
-import { arcOpeningSpan, polarPoint } from "../geometry/arc.js";
 import {
   DOOR_HEAD,
   heightsInOrder,
@@ -261,52 +271,9 @@ export function leafSlabThickness(width: number, leafPen: number): number {
 }
 
 /**
- * The leaves the DRAWING hangs: {@link doorLeaves}, except on a curved host, where each leaf is
- * drawn on a jamb of the joinery's cut (`arcOpeningSpan`, the span `openingCut` severs the wall
- * along), on the wall's centreline, and closes along the CHORD to the other jamb (a leaf is
- * straight, as wide as that chord); a `double` door's two meet at the chord's middle.
- *
- * Drawing only. The model's swing (`doorSwing`/`doorLeaves`, which lint, `describe`'s symmetry
- * facts, `repair` and the 3D package read) stays the tangent construction, so on a curve the drawn
- * leaf and the measured one differ by the tangent's offset from the arc (about `w²/8R` across);
- * moving the model is its own card. Where the joinery makes no annular cut (`r ≤ t/2`) or the span
- * closes on itself (`half = π`, a door as wide as half the circle's run), the model's leaves are drawn.
- */
-function drawnLeaves(dr: RDoor): DoorSwing[] {
-  const seg = dr.host;
-  const arc = seg?.arc;
-  const hinged = dr.doorKind === undefined || dr.doorKind === "hinged" || dr.doorKind === "double";
-  if (!seg || !arc || !hinged || !(arc.r > seg.thickness / 2)) return doorLeaves(dr);
-  const s = arcOpeningSpan(arc, dr.at, dr.width);
-  if (!(s.half < Math.PI)) return doorLeaves(dr);
-  const a = polarPoint(s.center, s.th0, s.r);
-  const b = polarPoint(s.center, s.th1, s.r);
-  if (dr.doorKind !== "double") return [swingBetween(a, b, dr.hinge, dr.swing)];
-  const mid = { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 };
-  return [swingBetween(a, mid, "left", dr.swing), swingBetween(mid, b, "right", dr.swing)];
-}
-
-/**
- * One drawn leaf between two jambs: hinged on `from` (`left`, behind on the run) or `to`, closing
- * along the chord between them, and open a quarter-disc as wide as that chord to the `swing` side
- * of the chord's direction (the run's direction at the chord's middle) — `swingAlong`'s
- * construction (`src/geometry.ts`) on given jambs. The two jambs are apart: `half < π`.
- */
-function swingBetween(from: Point, to: Point, hingeSide: string, swingSide: DoorSwingDir): DoorSwing {
-  const chord = Math.hypot(to.x - from.x, to.y - from.y);
-  const dir = { x: (to.x - from.x) / chord, y: (to.y - from.y) / chord };
-  const hinge = hingeSide === "left" ? from : to;
-  const farJamb = hingeSide === "left" ? to : from;
-  const leafEnd = add(hinge, mul(swingSide === "in" ? normal(dir) : mul(normal(dir), -1), chord));
-  const cross = (leafEnd.x - hinge.x) * (farJamb.y - hinge.y) - (leafEnd.y - hinge.y) * (farJamb.x - hinge.x);
-  return { hinge, farJamb, leafEnd, radius: chord, sweep: cross > 0 ? 1 : 0 };
-}
-
-/**
- * The open leaf as a closed slab, built from the drawn swing's own points ({@link drawnLeaves}): on a
- * straight host those are {@link doorSwing}'s, so the slab can never disagree with the sector
- * `W_SWING_OBSTRUCTED`, `repair()` and the symmetry probe read; on a curved host the drawn leaf hangs
- * on the cut's jamb, off the model's tangent construction (card ARC-W1, drawing only).
+ * The open leaf as a closed slab, built from the swing's own points ({@link doorSwing}'s, on a
+ * curved host hung on a jamb of the cut), so the slab can never disagree with the sector
+ * `W_SWING_OBSTRUCTED`, `repair()` and the symmetry probe read.
  *
  * `[hinge, leafEnd, tip, heel]`: the first edge IS the swing's open-leaf radius (the line the
  * leaf used to be drawn as), and the thickness `t` is laid off toward the FAR jamb — the
@@ -332,18 +299,18 @@ function leafSlab(s: DoorSwing, t: number): Point[] {
 const clamp01 = (v: number): number => Math.min(Math.max(v, 0), 1);
 
 /**
- * A door's drawing: on a curved host, when `curved`, its cover is the cut's sector (`openingCover`)
- * and its leaves are drawn on the cut's jambs ({@link drawnLeaves}); else, and on every straight host,
- * the rectangle and the model's leaves (`doorLeaves`), which is what the annotation passes read for a
- * door on a curve (`annotationFootprint`, card ARC-W1).
+ * A door's drawing: its leaves are the model's (`doorLeaves`, on a curved host hung on the cut's
+ * jambs) and, on a curved host, its cover is the cut's sector (`openingCover`). When not `curved`,
+ * the rectangle and the leaves swung along the tangent (`tangentDoorLeaves`): what the annotation
+ * passes read for a door on a curve (`annotationFootprint`, card ARC-W1), frozen there (card ARC1c).
  */
 function drawDoor(dr: RDoor, ctx: RenderCtx, curved: boolean): SceneNode[] {
   const seg = dr.host;
   if (!seg) return [];
   const { theme, sizes } = ctx;
-  // On a CURVED host the cover is the cut's annular sector (`openingCover`) and each DRAWN
-  // leaf hangs on one of its jambs ({@link drawnLeaves}). The direction is the tangent at the
-  // doorway, which a non-hinged kind's panels read.
+  // On a CURVED host the cover is the cut's annular sector (`openingCover`) and each leaf
+  // hangs on one of its jambs (`doorLeaves`). The direction is the tangent at the doorway,
+  // which a non-hinged kind's panels read.
   const d = segmentDirAt(seg, dr.at);
   const n = normal(d);
   // The wall solid is ALWAYS severed at a doorway: the joinery pass
@@ -380,7 +347,7 @@ function drawDoor(dr: RDoor, ctx: RenderCtx, curved: boolean): SceneNode[] {
   }
   // Leaf + minor-arc geometry is shared with the swing-clearance lint rule: one leaf for a
   // hinged door, two (each half the width, one per jamb) for a `double` one, drawn alike.
-  for (const swing of curved ? drawnLeaves(dr) : doorLeaves(dr)) {
+  for (const swing of curved ? doorLeaves(dr) : tangentDoorLeaves(dr)) {
     // The open leaf is a SLAB (see `leafSlab`), filled with the page colour so the floor
     // tint does not read through it, and stroked at the leaf pen.
     const leafPen = sizes.thin * 1.3;
@@ -666,8 +633,8 @@ export const door: ElementDef = {
     // pocket is a straight cavity — none of that survives on a curved reveal. Refuse
     // with a code rather than draw a straight panel across an arc (§10's explicit
     // stage-1 decision: decide, never let it fall out silently). A HINGED leaf does
-    // survive: it is straight, drawn hung on a jamb of the cut and closing along the chord to the
-    // other (`drawnLeaves`), and its swing is measured from the tangent at the doorway (`doorSwing`).
+    // survive: it is straight, hung on a jamb of the cut and closing along the chord to the other,
+    // and its swing is measured where it is drawn (`doorSwing`, card ARC1b).
     // A `double` door's two leaves survive as a hinged leaf does (`doorLeaves`), so it is not refused.
     if (doorKind !== undefined && doorKind !== "double" && host?.arc) {
       ctx.diag({
@@ -676,7 +643,7 @@ export const door: ElementDef = {
         code: "E_DOOR_KIND_CURVED",
         span: n.span,
         hints: [
-          "Use the default hinged door here (delete the kind word) — its leaf is drawn hung on a jamb of the curved opening, and its swing is measured from the tangent at the doorway.",
+          "Use the default hinged door here (delete the kind word) — its leaf hangs on a jamb of the curved opening, and its swing is measured where it is drawn.",
           "Or move the door onto one of the wall's straight runs.",
         ],
       });
@@ -797,8 +764,8 @@ export const door: ElementDef = {
   render(resolved, ctx: RenderCtx): SceneNode[] {
     return drawDoor(resolved as RDoor, ctx, true);
   },
-  /** On a curve, the tangent drawing with the model's leaves: what the label, tag and north-arrow
-   *  passes read (card ARC-W1). */
+  /** On a curve, the tangent drawing with the leaves swung along the tangent (`tangentDoorLeaves`):
+   *  what the label, tag and north-arrow passes read (card ARC-W1), frozen there until card ARC1c. */
   annotationFootprint(resolved, ctx: RenderCtx): SceneNode[] | undefined {
     const dr = resolved as RDoor;
     return dr.host && openingCover(dr.host, dr.at, dr.width) ? drawDoor(dr, ctx, false) : undefined;

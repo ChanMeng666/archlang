@@ -68,7 +68,7 @@ Totals: 430 modules in 34 directories.
 | `build.ts` | 1236 | 4 | Scene3D → Mesh3D (archlang-3d M1a, card A2). Every solid is a closed prism over a Scene3D polygon (`extrude.ts`); no boolean is computed here, because the core's joinery already gave each wall its owned pieces with the openings removed… | none |
 | `c16.ts` | 25 | 2 | The 16-gon's exact table, shared by the T0 generators (`t0.ts`: round sections) and the contact shadows' corner fans (`replay/shadows.ts`, card RM8.8). Pure, browser-safe, no import. | none |
 | `extrude.ts` | 364 | 7 | Prisms: a plan polygon (with holes) between two heights → one closed triangle shell, in the exporters' axes (X = plan x, Y = up, Z = plan y), integer micrometres. Caps are triangulated with earcut (ISC), which adds no vertex, so the caps… | none |
-| `openings.ts` | 917 | 2 | The trim of a doorway and a window (product-roadmap card RM8.6; design `docs/plans/product-roadmap/design/visual-language.md` §2.1, §2.2), as parts of the opening's node, every size a clamped share of the host wall's thickness `t`… | none |
+| `openings.ts` | 922 | 2 | The trim of a doorway and a window (product-roadmap card RM8.6; design `docs/plans/product-roadmap/design/visual-language.md` §2.1, §2.2), as parts of the opening's node, every size a clamped share of the host wall's thickness `t`… | none |
 | `outdoor.ts` | 182 | 2 | The site in 3D (product-roadmap card RM8.3, backlog VA.2): each `outdoor` surface a thin slab and each `fence` a low-poly solid per style, built from the Scene3D's `outdoor` and `fences` (the core's `ROutdoor` and `RFence`, read as they… | none |
 | `slab.ts` | 195 | 2 | The storey slab's plan region (archlang-3d plan §4.2; card A2b): the rooms ∪ the wall outline, before the voids are cut. The wall outline (its outer rings, holes dropped) already covers every room the walls enclose; what a room adds is… | none |
 | `stair.ts` | 589 | 2 | A stair as stepped solids (card X3, `stairSolid`) and in its parts (card RM8.6, `stairDetail`: what the mesh builds), from the Scene3D's flights and landings, which are the core's own (`scene3d/build.ts`): nothing here re-derives a stair… | none |
@@ -104,7 +104,7 @@ Totals: 430 modules in 34 directories.
 
 | Module | Lines | Importers | Summary | Budget |
 | --- | ---: | ---: | --- | --- |
-| `build.ts` | 580 | 6 | Resolved storeys → Scene3D v0. A mapping of the core's resolved facts into micrometres and plan-aligned records: no geometry is built here beyond the core's own (wall ownership through `joinWallSet`; arcs tessellated to a chord tolerance… | none |
+| `build.ts` | 581 | 6 | Resolved storeys → Scene3D v0. A mapping of the core's resolved facts into micrometres and plan-aligned records: no geometry is built here beyond the core's own (wall ownership through `joinWallSet`; arcs tessellated to a chord tolerance… | none |
 | `overlap.ts` | 132 | 5 | V-GEO-05 (archlang-3d plan §4.2, §8.1; card A2b): rooms whose floors overlap by more than 1 cm² would draw two coplanar floor finishes that fight in depth. Each such pair is reported (`W3D_FLOOR_OVERLAP`; the core warns `W_ROOM_OVERLAP`… | none |
 | `types.ts` | 245 | 16 | Scene3D v0: a renderer-independent, plan-aligned 2.5D scene read off a resolved plan (archlang-3d plan §3.5, appendix A). Plan axes: x right, y DOWN; z up. Every length is an integer number of micrometres ({@link Um}); handedness is… | none |
 | `validate.ts` | 226 | 2 | The Scene3D v0 validator: zero dependencies, so it runs in the browser bundle. It checks what `scene3d.schema.json` states (shapes, integer micrometres, enums, no unknown keys) and what a JSON Schema cannot (ids unique per collection and… | none |
@@ -269,7 +269,7 @@ Totals: 430 modules in 34 directories.
 | `furnish-table.ts` | 143 | 4 | The furnish table and the family reading of a held piece, shared by `src/furnish.ts` (the `finish` stage that writes the pieces) and the `W_ROOM_MISSING_DEFINING` lint rule (`src/lint/rules/room-contents.ts`, which reads the piece that… | none |
 | `furnish.ts` | 1678 | 13 | The `furnish` stage of `finish()` — furniture by room use, in rooms that hold none (`docs/adr/0025-furnish-as-explicit-transform.md`). | none |
 | `furniture-relation.ts` | 372 | 8 | Furniture relations (ADR 0029): the closed-form geometry behind `facing <id>`, `against <room>.<edge>` and `clear front\|sides <mm>`. | none |
-| `geometry.ts` | 957 | 112 | Pure geometry helpers. All coordinates in millimetres. Deterministic. | none |
+| `geometry.ts` | 1024 | 112 | Pure geometry helpers. All coordinates in millimetres. Deterministic. | none |
 | `hash.ts` | 14 | 3 | FNV-1a — a tiny, fast, deterministic non-cryptographic string hash, used to key the per-stage memo caches (lex → tokens, parse → ast). The length is appended to make accidental collisions vanishingly unlikely; callers that need certainty… | none |
 | `hatches.ts` | 884 | 32 | Material hatch patterns — a small named hatch *library*. Each material maps to an SVG `<pattern>` builder (for the SVG backend), a natural rotation, and a predefined DXF HATCH pattern name (so the hatch survives to CAD as a real `HATCH`… | none |
 | `id-spans.ts` | 41 | 5 | The byte span of an element statement's `id=<name>` name, and of the one word a did-you-mean fix rewrites (AF2), kept beside the AST. A leaf: the parser records spans here and the resolver reads them, so reading one never loads the parser. | none |
@@ -283,7 +283,7 @@ Totals: 430 modules in 34 directories.
 | `intent.ts` | 1792 | 8 | The intent channel — author-time checking of a brief's INTENT against a plan. | none |
 | `ir.ts` | 2082 | 270 | Intermediate representation + `resolve(ast)`. | charges the step meter |
 | `keep.ts` | 1902 | 11 | `keep`: declared invariants, checked by `compile()` and never solved (ADR 0033; plan-soundness PS4.3, design `archlang-lab/plans/plan-soundness/research/2026-10-26-ps43-keep-design.md`). | charges the step meter |
-| `label-fit.ts` | 1373 | 6 | A room's label that does not fit shrinks: a **post-pass over the lowered Scene**, after `wrapLabels` and `relocateLabels` (`src/label-placement.ts`) have done what they can at the drawing's label size (#367). | none |
+| `label-fit.ts` | 1374 | 6 | A room's label that does not fit shrinks: a **post-pass over the lowered Scene**, after `wrapLabels` and `relocateLabels` (`src/label-placement.ts`) have done what they can at the drawing's label size (#367). | none |
 | `label-placement.ts` | 868 | 12 | Obstacle-aware relocation of room labels — a **post-pass over the lowered Scene**. | none |
 | `layout.ts` | 318 | 1 | Relational placement (T6.2) — the optional layout seam. | charges the step meter |
 | `level-mix-fix.ts` | 12 | 2 | `E_LEVEL_MIX`'s catalogued remedy, written once (card 3.19): the catalogue entry's `fix` (`src/error-catalog/vertical.ts`) and the parser's message, which quotes it, both read it here. The parser once quoted it from the generated… | none |
@@ -310,7 +310,7 @@ Totals: 430 modules in 34 directories.
 | `room-datums.ts` | 420 | 20 | The datum table (ADR 0028 §1): what one resolution group's rooms and grid axes expose as lines, frozen after every room is placed and before any wall resolves. | charges the step meter |
 | `room-tiling.ts` | 1403 | 17 | The derivation behind `walls from rooms` (ADR 0028 §3, plan decision D5): one group's rectangular and rectilinear rooms in, its exterior ring(s) and its partitions out, or a refusal naming the rooms at fault. Pure: no diagnostics, no ids… | charges the step meter |
 | `sanitize.ts` | 61 | 2 | Config sanitization — a denylist for **untrusted** `.arch`-sourced config. | none |
-| `scene-build.ts` | 1863 | 34 | Lowers a resolved plan (IR) to the backend-neutral {@link Scene}. | none |
+| `scene-build.ts` | 1864 | 34 | Lowers a resolved plan (IR) to the backend-neutral {@link Scene}. | none |
 | `scene-memo.ts` | 180 | 4 | One Scene per resolved plan and drawing options, shared by `compile()` and `lint()`. | none |
 | `scene.ts` | 513 | 126 | Backend-neutral **Scene IR** — the keystone drawing intermediate. | none |
 | `segment-select.ts` | 221 | 7 | Segment selectors (plan card PS3.5): `segment north\|south\|east\|west` and `segment containing <room>.<edge>`, written wherever `segment <n>` is. A selector is an ALIAS: it resolves to the one segment index the number would name, and from… | charges the step meter |
@@ -366,7 +366,7 @@ Totals: 430 modules in 34 directories.
 | `open-shell.ts` | 304 | 2 | **Open shells:** exterior walls that should enclose a room and do not. `W_EXTERIOR_RING_OPEN` reports them, and `describe()` says which rooms the gross internal area leaves out because of them (`totals.gross_internal_area_leaves_out`)… | none |
 | `quantities.ts` | 339 | 5 | `describe --facts quantities` and `arch takeoff`: the geometric quantities of one storey, as an estimator reads them. Geometry only, never a claim: every figure is a length, an area or a count measured from the shapes, and its convention… | none |
 | `rooms.ts` | 187 | 7 | Room geometry leaves of the analysis layer: a room's box and ring, its area, the point-in-room and edge-touch tests, and the room-use predicates. | none |
-| `symmetry.ts` | 975 | 3 | The plan's SYMMETRY GROUP and its REPETITION, as facts — `describe(src, { facts: ["symmetry"] })`. Opt-in: nothing here runs unless a caller asks for it. | none |
+| `symmetry.ts` | 983 | 3 | The plan's SYMMETRY GROUP and its REPETITION, as facts — `describe(src, { facts: ["symmetry"] })`. Opt-in: nothing here runs unless a caller asks for it. | none |
 | `syntax.ts` | 139 | 2 | SPACE SYNTAX on the access graph — `describe(src, { facts: ["syntax"] })`. Opt-in. | none |
 | `takeoff.ts` | 66 | 2 | The long form of a takeoff: every figure of `describe --facts quantities`, one row each, and the CSV `arch takeoff --format csv` and the Playground's Takeoff tab both write from it. Pure, so the two cannot disagree. | none |
 | `unassigned-pieces.ts` | 342 | 1 | **The pieces of a walled face's unassigned floor**, and whether a person could stand in one (`W_FLOOR_UNASSIGNED`, `src/lint/rules/enclosure.ts`). | none |
@@ -427,7 +427,7 @@ Totals: 430 modules in 34 directories.
 | `defs.ts` | 61 | 7 | The built-in element definitions, as a flat array in canonical order. | none |
 | `dim.ts` | 512 | 5 | `dim [faces\|clear] (x,y)->(x,y) [offset N] [text "…"]` — dimension line with ticks + length, or `dim radius <wallId> [segment <n>]` / `dim diameter <roomId>` — a GB/T curve call-out whose geometry and text are DERIVED from the referenced… | none |
 | `door-panels.ts` | 319 | 2 | How each NON-HINGED door kind is drawn in its reveal. | none |
-| `door.ts` | 833 | 2 | `door [id=] [<kind>] at (x,y) width N [wall ref] [hinge <side>] [swing <dir>] [slide <dir>] [open <0..1>] [head <mm>]` — opening + leaf + swing arc, or (for a non-hinged kind) opening + panels/track/cavity. The clauses after the placement… | none |
+| `door.ts` | 800 | 2 | `door [id=] [<kind>] at (x,y) width N [wall ref] [hinge <side>] [swing <dir>] [slide <dir>] [open <0..1>] [head <mm>]` — opening + leaf + swing arc, or (for a non-hinged kind) opening + panels/track/cavity. The clauses after the placement… | none |
 | `elevator.ts` | 76 | 1 | `elevator [id=] at (x,y) size WxH` — a lift shaft, drawn as the car rectangle with the conventional crossed diagonals. | none |
 | `escalator.ts` | 85 | 1 | `escalator [id=] at (x,y) size WxH dir up\|down` — a moving stair, drawn as parallel chevrons along the run plus the UP/DN direction arrow. | none |
 | `facets.ts` | 87 | 10 | Which hand-written kind sets each built-in element kind belongs to, one row per kind. | none |
@@ -489,7 +489,7 @@ Totals: 430 modules in 34 directories.
 | Module | Lines | Importers | Summary | Budget |
 | --- | ---: | ---: | --- | --- |
 | `arc-band.ts` | 199 | 4 | How deep a rectangle reaches into a CURVED wall's solid — the radial analogue of the straight-segment frame in `./rect.ts`. | none |
-| `arc.ts` | 500 | 56 | Circular-arc math for **curved geometry** — arc wall edges and circular rooms. | none |
+| `arc.ts` | 500 | 55 | Circular-arc math for **curved geometry** — arc wall edges and circular rooms. | none |
 | `backend.ts` | 73 | 5 | Optional polygon-geometry backend seam. | none |
 | `band.ts` | 764 | 38 | The **band** of a wall: its two faces, its corners and its caps, as exact edge loops. | none |
 | `clipper.ts` | 177 | 2 | Optional {@link GeometryBackend} adapter over `clipper2-wasm`. | none |

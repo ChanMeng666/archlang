@@ -452,9 +452,10 @@ function demolishedOf(ir: ResolvedPlan, standing: readonly Wall[], ledger: Assum
 }
 
 /**
- * An opening's two jambs on its host's centreline: the core's own chord through the doorway (its
- * tangent there on a curved host), read through `doorSwing` with a probe door of the opening's width,
- * so the 3D package never re-derives a wall direction.
+ * An opening's two jambs on its host's centreline: the core's own chord through the doorway (on a
+ * curved host the two ends of the joinery's cut, where the core draws the jambs and hangs a door's
+ * leaves: core card ARC1b), read through `doorSwing` with a probe door of the opening's width, so the
+ * 3D package never re-derives a wall direction.
  */
 function jambsOf(at: Point, width: number, host: RDoor["host"]): [Pt, Pt] {
   const s = host ? doorSwing({ at, width, hinge: "left", swing: "in", host }) : null;

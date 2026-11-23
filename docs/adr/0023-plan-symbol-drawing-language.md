@@ -155,3 +155,14 @@ first draft tints measured 1.66 to 1.87:1 and do not pass, so a lighter set is c
 holds the floor. Why the rejection above does not apply: a tint appears only where the author named
 the floor, so it implies no material the source never named; and the contrast floor answers "it
 competes with the ground textures". The design is `docs/plans/product-roadmap/design/visual-language.md` § 3.3.
+
+## Amendment (2026-11-23): a model correction is not a redraw
+
+**Delegated ruling RM-D89 (2026-11-23).** The owner delegated card ARC1b ("我授权你帮我做出最佳决策，然后实施");
+the owner can overturn it in one sentence. Decision 7 governs a DRAWING change. A correction to MODEL
+geometry (ARC1b: a door on a curved wall is measured where it is drawn, its leaves hung on the cut's
+jambs, `doorSwing`/`doorLeaves` in `src/geometry.ts`) is not a redraw, and it may move `describe()`,
+`lint()` and the symmetry facts on exactly the plans it corrects, each listed and justified in its PR.
+On those plans the symmetry group and every piece's `hand` stay unchanged; only an exactness flag may
+flip, where a point legitimately leaves the half-millimetre lattice (a jamb at `cos`/`sin` of the cut's
+angle). Every other plan stays byte-identical in every output.
