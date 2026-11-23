@@ -313,9 +313,9 @@ After #1002 (3.19) the first use measured 466,680 B against `firstUsePathBudget`
 
 ## Found while landing 1.68.0 (arc openings, arc rooms, telemetry; 2026-11-23)
 
-### ARC1b · The model swing of a door on an arc still comes from the tangent: done by #PRNUM, waiting to be archived — `note`
+### ARC1b · The model swing of a door on an arc still comes from the tangent: done by #1027, waiting to be archived — `note`
 
-Done by #PRNUM under the owner-delegated ruling RM-D89 (ADR 0023's amendment "a model correction is not a redraw"). `doorSwing`/`doorLeaves` hang each leaf on a jamb of the cut (`arcCutJambs`, `src/geometry.ts`), the drawing's own construction, so the drawn leaf is the measured one; the symmetry facts read a window's and a cased opening's jambs on the cut too, and the 3D package's jambs follow. Over the corpus only the 15 plans with an opening on an arc move (the symmetry fact on 6: `full.exact` true to false, group and `hand` unchanged; the 3D scene on all 15, its mesh on the 8 with a door there), plus the `E_DOOR_KIND_CURVED` example for its reworded hint; SVG and every other output are byte-identical on every plan, and no label moves (ARC1c). The card text below is kept for the record.
+Done by #1027 under the owner-delegated ruling RM-D89 (ADR 0023's amendment "a model correction is not a redraw"). `doorSwing`/`doorLeaves` hang each leaf on a jamb of the cut (`arcCutJambs`, `src/geometry.ts`), the drawing's own construction, so the drawn leaf is the measured one; the symmetry facts read a window's and a cased opening's jambs on the cut too, and the 3D package's jambs follow. Over the corpus only the 15 plans with an opening on an arc move (the symmetry fact on 6: `full.exact` true to false, group and `hand` unchanged; the 3D scene on all 15, its mesh on the 8 with a door there), plus the `E_DOOR_KIND_CURVED` example for its reworded hint; SVG and every other output are byte-identical on every plan, and no label moves (ARC1c). The card text below is kept for the record.
 
 #1019 draws a hinged or double door on a curved wall with its leaf hung on a jamb of the cut, but the
 model's swing (`doorSwing`/`doorLeaves`, read by lint, `describe --facts symmetry`, `repair()` and the
