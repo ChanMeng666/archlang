@@ -256,7 +256,7 @@ Totals: 430 modules in 34 directories.
 | `error-catalog.ts` | 125 | 29 | The ArchLang diagnostic catalog: every `E_*` / `W_*` code with its cause, fix, and a tiny example. One source for `arch explain <CODE>` and the generated `docs/error-codes.md` (see `scripts/gen-error-codes.ts`). The codes themselves are… | none |
 | `expr-source.ts` | 114 | 7 | `exprToSource(e)` — render an {@link Expr} back to canonical ArchLang source text (single-line, precedence-correct parenthesisation). | none |
 | `expr.ts` | 1378 | 71 | Arithmetic expressions: a small Pratt parser + a pure evaluator. | charges the step meter |
-| `facade.ts` | 509 | 3 | The facade model behind `dims auto`: which wall line each of the four sides reads, the per-axis outline a witness line terminates on, and — the one question both the renderer and `lint()` ask — which openings a side's openings chain… | none |
+| `facade.ts` | 537 | 3 | The facade model behind `dims auto`: which wall line each of the four sides reads, the per-axis outline a witness line terminates on, and — the one question both the renderer and `lint()` ask — which openings a side's openings chain… | none |
 | `finish.ts` | 1043 | 9 | `finish()` — make a plan a complete DRAWING: the furniture its empty rooms imply (the `furnish` stage, `src/furnish.ts`, `docs/adr/0025-furnish-as-explicit-transform.md`), then the sheet statements its author left out (the `sheet` stage… | none |
 | `first-use-path.ts` | 22 | 0 | A build entry, not a package export (card EB.2), the second of the playground's four (the first is `src/compile-path.ts`, the third `src/actions-path.ts`, the fourth `src/lint-path.ts`): the core values a first use on the playground loads… | none |
 | `fix-apply.ts` | 251 | 5 | Deterministic, pure application of {@link FixSuggestion}s to source text. | none |
@@ -541,7 +541,7 @@ Totals: 430 modules in 34 directories.
 | `coverage.ts` | 372 | 11 | The lint coverage report (plan-soundness PS2.13): which rule families ran on a plan, which were skipped and why, and which rooms no use-reading rule could judge. | none |
 | `defining.ts` | 496 | 6 | The pieces that define a room of each use, read from `FURNISH_TABLE` (the table `finish` furnishes from), and the checked statements that place them. Shared by `W_ROOM_MISSING_DEFINING` (which reports a furnished room lacking one) and… | none |
 | `doorway-move.ts` | 139 | 1 | The move `W_DOORWAY_BLOCKED` offers as a fix (card AF9): the door or cased opening moved along its own wall until its landing misses every piece. Lint-only, so it stays off the compiler path (the rules import it; no compile module does). | none |
-| `element-phrases.ts` | 96 | 8 | How a lint MESSAGE names a wall or a door, window or opening (PS2.29: a message never quotes an id). A wall is named by its kind and the line it runs on ("the exterior wall at y 0"), a connector by the rooms it joins ("the door between… | none |
+| `element-phrases.ts` | 106 | 9 | How a lint MESSAGE names a wall or a door, window or opening (PS2.29: a message never quotes an id). A wall is named by its kind and the line it runs on ("the exterior wall at y 0"), a connector by the rooms it joins ("the door between… | none |
 | `fixture-paste.ts` | 255 | 5 | A pasteable fixture statement for an empty wet room or kitchen (`W_ROOM_NO_FIXTURE`'s hint), placed from the room's own shape and CHECKED before it is quoted. | none |
 | `measure.ts` | 95 | 21 | The measured half of an advisory placement warning: **required, available, shortfall**. | none |
 | `overprint-ref.ts` | 42 | 5 | Which text a `W_ANNOTATION_OVERLAP` warning reports, and what it is printed over (card AL6), kept BESIDE the diagnostic in a `WeakMap`, never on it, as the ruleset reference is (`rule-ref.ts`, RM1.6b): `lint()` returns the same objects… | none |
@@ -578,7 +578,7 @@ Totals: 430 modules in 34 directories.
 | `reachability.ts` | 126 | 1 | Room-graph reachability: builds the room-connectivity graph from doors/openings (rooms + the literal "exterior") once, then — per room, in source order — emits W_BATH_VIA_BEDROOM and W_ROOM_UNREACHABLE, preserving the historical… | none |
 | `room-contents.ts` | 772 | 3 | Room-contents advisories (plan-soundness PS2.8, PS2.9): a habitable room with no window, and a furnished room missing the piece that defines it; and (product roadmap RM1.2c) a room whose label names a catalogued piece it does not hold.… | none |
 | `site.ts` | 115 | 1 | `W_ROOM_NOT_EQUATOR_FACING` — the site layer's one advisory rule. | none |
-| `stairs.ts` | 1683 | 11 | Stair safety (plan-soundness PS2.11e, the stair bullets, and PS2.34): a door swinging over a flight or its landing, a flight with no landing at its foot or head, a doorway onto a flight's side, a void where a flight arrives, a flight too… | none |
+| `stairs.ts` | 1680 | 11 | Stair safety (plan-soundness PS2.11e, the stair bullets, and PS2.34): a door swinging over a flight or its landing, a flight with no landing at its foot or head, a doorway onto a flight's side, a void where a flight arrives, a flight too… | none |
 | `vertical.ts` | 207 | 2 | `W_STAIR_UNMATCHED` — a run of vertical circulation that connects nothing. | none |
 
 ## `src/overlays/`
