@@ -8,7 +8,7 @@ The core peer range stays `^1.61.0` (`MIN_CORE`): nothing below reads a core exp
 
 ### Changed
 
-- With a core that measures a door on a curved wall where it draws it (core card ARC1b), an
+- With a core that measures a door on a curved wall where it draws it (core 1.68.1, card ARC1b), an
   opening on an `arc` wall takes its jambs, and a door its leaves, from the two ends of the
   joinery's cut, through `doorSwing`/`doorLeaves` as before. The plan pose and the GLB build the
   leaf where the plan draws it. Which face a window's sill goes on (`insideOf`) is now probed from
