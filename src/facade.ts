@@ -192,19 +192,15 @@ export const TICK_TOL = 0.5;
  *  coordinate space room boundaries live in), else the wall centerlines. Null when
  *  there is nothing to measure.
  *
- *  An arc-edged room (card ARC2) is measured by its authored CORNERS, never its bulge:
- *  its `at`/`size` reach each arc's extremes, and an extent edge there would stand where
- *  no straight wall face is, so the side's probe would fail and the overall chain would
- *  run from that room line to the opposite OUTER face. A curve is never a chain's
- *  end, whether a wall or a room draws it, and whether or not a wall backs the room's arc:
- *  each curve is dimensioned by its own `R` leader (`synthCurveDims`). A plan whose rooms
- *  are all straight-edged (and a `room circle`, which keeps its box) is measured as before. */
+ *  An arc-edged room (card ARC2) is measured side by side ({@link arcRoomSides}). */
 export function measureExtent(ir: ResolvedPlan): Bounds | null {
   const b = emptyBounds();
   const rooms = ir.elements.filter((el): el is RRoom => el.kind === "room");
   for (const r of rooms) {
     if (r.edges) {
-      for (const p of roomCorners(r)) extendBounds(b, p.x, p.y);
+      const s = arcRoomSides(r, r.edges);
+      extendBounds(b, s.minX, s.minY);
+      extendBounds(b, s.maxX, s.maxY);
       continue;
     }
     extendBounds(b, r.at.x, r.at.y);
@@ -221,6 +217,38 @@ export function measureExtent(ir: ResolvedPlan): Bounds | null {
     }
   }
   return Number.isFinite(b.minX) ? b : null;
+}
+
+/**
+ * Where an arc-edged room (card ARC2c) bounds the measured extent, one side at a time.
+ *
+ * A side takes the room's written-vertex extreme only when a straight edge of the room, of
+ * non-zero length, lies along it: that extreme is where a straight wall face can stand, so the
+ * side's probe finds the outer face and a bulge past it (a bay) never ends the chain as a room
+ * line. Every other side takes the room's true extent, bulge included (its `at`/`size`, the box
+ * every plan measured before): there the curve IS the building's edge (an apse, a stadium's ends,
+ * a half disc), and a vertex there would understate it. An axis whose written vertices are
+ * collinear on it (a half disc on its diameter, a lens) has no corner box and takes the true
+ * extent on both sides.
+ */
+function arcRoomSides(r: RRoom, edges: NonNullable<RRoom["edges"]>): Bounds {
+  const s: Bounds = { minX: r.at.x, minY: r.at.y, maxX: r.at.x + r.size.w, maxY: r.at.y + r.size.h };
+  const c = emptyBounds();
+  for (const p of roomCorners(r)) extendBounds(c, p.x, p.y);
+  // A straight edge along the line `axis = v`, running some length across the other axis.
+  const straightOn = (axis: "x" | "y", v: number): boolean => {
+    const across = axis === "x" ? "y" : "x";
+    return edges.some((e) => e.t === "line" && e.a[axis] === v && e.b[axis] === v && e.a[across] !== e.b[across]);
+  };
+  if (c.minX < c.maxX) {
+    if (straightOn("x", c.minX)) s.minX = c.minX;
+    if (straightOn("x", c.maxX)) s.maxX = c.maxX;
+  }
+  if (c.minY < c.maxY) {
+    if (straightOn("y", c.minY)) s.minY = c.minY;
+    if (straightOn("y", c.maxY)) s.maxY = c.maxY;
+  }
+  return s;
 }
 
 /**

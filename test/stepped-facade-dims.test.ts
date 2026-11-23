@@ -226,9 +226,10 @@ const figures = (src: string): string[] =>
     .sort();
 const floorUnassigned = (name: string): string => readFileSync(join(__dirname, "floor-unassigned", name), "utf8");
 
-suite("dims auto overall beside an arc-edged room: a curve never ends a chain", () => {
-  // A room's arc bulge is a room line, not an outer face: the overall chain stays on the straight
-  // facades' outer faces, whether a wall stands on the arc or not, and the arc gets its R leader.
+suite("dims auto overall beside an arc-edged room: a bulge past a straight facade never ends a chain", () => {
+  // A bulge past a side the room's straight edges run along is a room line, not an outer face: the
+  // overall chain stays on that facade's outer face, whether a wall stands on the arc or not, and
+  // the arc gets its R leader. A side no straight edge runs along is bounded by the curve itself.
   const ROOM =
     '  room id=r polygon (0,0) (2000,0) arc (4000,0) radius 1500 cw (6000,0) (6000,4000) (0,4000) label "Living"';
   const SHELL_ON_ARC =
@@ -273,4 +274,79 @@ suite("dims auto overall beside an arc-edged room: a curve never ends a chain", 
         });
       }
   }
+
+  // A side no straight edge of the room runs along (an apse's round end, a stadium's two, a half
+  // disc's or a lens's curved sides) is bounded by the room's true extent, bulge included, as every
+  // plan measured it before: there the curve is the building's edge, and a written vertex would
+  // understate it. These figures are 1.68.1's; only the bay family above moved.
+  const APSE = "(0,0) (6000,0) arc (6000,4000) radius 2000 cw (0,4000)";
+  const APSE_SHELL = `  wall id=shell exterior thickness 200 { ${APSE} close }`;
+  const APSE_ROOM = `  room id=r polygon ${APSE} uses living`;
+  const STADIUM = "(0,0) (4000,0) arc (4000,2000) radius 1000 cw (0,2000) arc (0,0) radius 1000 cw";
+  const all = (...body: string[]): string => ['plan "A" {', "  units mm", "  dims auto all", ...body, "}"].join("\n");
+
+  it("an apse: its round end is the curve's extent, with a wall on the ring and without", () => {
+    // The straight west, north and south facades end the chains at their outer faces (-100, -100,
+    // 4100); the round east end at the room's apex, x 8000.
+    expect(figures(overall(APSE_SHELL, APSE_ROOM))).toEqual(["h8100", "hR2000", "v4200"]);
+    expect(figures(overall(APSE_ROOM))).toEqual(["h8000", "hR2000", "v4000"]);
+  });
+
+  it("an apse with openings: the openings chain's end span reaches the apex too", () => {
+    const src = all(
+      APSE_SHELL,
+      APSE_ROOM,
+      "  window id=w1 on shell at 5200 width 1200",
+      "  window id=w2 on shell at 3000 width 1200",
+      "  door id=d1 on shell at 8000 width 900",
+    );
+    expect(figures(src)).toEqual([
+      "h1000",
+      "h1200",
+      "h1200",
+      "h2200",
+      "h2500",
+      "h6000",
+      "h6000",
+      "h8100",
+      "h8100",
+      "hR2000",
+      "v200",
+      "v4000",
+      "v4200",
+    ]);
+  });
+
+  it("a stadium: both round ends are the curves' extent", () => {
+    const shell = `  wall id=shell exterior thickness 200 { ${STADIUM} close }`;
+    const room = `  room id=r polygon ${STADIUM} uses living`;
+    expect(figures(overall(shell, room))).toEqual(["h6000", "hR1000", "hR1000", "v2200"]);
+    expect(figures(overall(room))).toEqual(["h6000", "hR1000", "hR1000", "v2000"]);
+  });
+
+  it("a half disc, on two vertices or three collinear ones, and a lens: a degenerate axis reads the curve", () => {
+    // Written vertices all on y 0 leave no corner box across y: the chain reads the bulge, never 0.
+    const half = "(0,0) (4000,0) arc (0,0) radius 2000 cw";
+    const half3 = "(0,0) (2000,0) (4000,0) arc (0,0) radius 2000 cw";
+    const lens = "(0,0) arc (4000,0) radius 2000 cw arc (0,0) radius 2000 cw";
+    expect(figures(overall(`  room id=r polygon ${half} uses living`))).toEqual(["h4000", "v2000", "vR2000"]);
+    expect(figures(overall(`  room id=r polygon ${half3} uses living`))).toEqual(["h4000", "v2000", "vR2000"]);
+    expect(figures(overall(`  room id=r polygon ${lens} uses living`))).toEqual(["h4000", "v4000", "vR2000"]);
+    // With a 200 mm shell on the ring, the vertical reads the bulge to the straight face (2100), never 200.
+    const walled = all(
+      `  room id=r polygon ${half3} uses living`,
+      "  wall id=shell exterior thickness 200 { (0,0) (4000,0) arc (0,0) radius 2000 cw }",
+    );
+    expect(figures(walled)).toEqual(["h2000", "h2000", "h4000", "v200", "v2100", "vR2000"]);
+  });
+
+  const placedApse = (xf: string): string =>
+    overall("  component c() {", `  ${APSE_SHELL}`, `  ${APSE_ROOM}`, "  }", `  place c() as g at (20000,20000)${xf}`);
+  for (const rot of [0, 90, 180, 270])
+    for (const mirror of ["", " mirror x"]) {
+      it(`an apse, rotate ${rot}${mirror}: the same overall figures (D4), read across by a quarter turn`, () => {
+        const want = ["h8100", "hR2000", "v4200"].map((f) => (rot % 180 === 0 ? f : swap(f))).sort();
+        expect(figures(placedApse(`${rot ? ` rotate ${rot}` : ""}${mirror}`))).toEqual(want);
+      });
+    }
 });
