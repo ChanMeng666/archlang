@@ -19,7 +19,7 @@ are documented here. The format is based on
 ### Changed
 
 - **Rebundled the core at `@chanmeng666/archlang@1.68.2`** (no change to the language): `dims auto`
-  on a plan whose arc-edged room bulges past a side that none of its straight edges runs along (a
+  on a plan whose arc-edged room bulges past a side that one of its straight edges runs along (a
   bay) ends that side's chains at the room's written vertices, so on such a plan an ` ```arch `
   fence's drawing in the Markdown preview shows the overall to the facade's outer face; every other
   plan draws as before. A lint message on a multi-storey plan no longer names its storey twice; the
