@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+## [0.9.2] - 2026-11-23
+
+The core peer range stays `^1.61.0` (`MIN_CORE`): nothing below reads a core export that 1.61.0 lacks.
+
 ### Changed
 
 - With a core that measures a door on a curved wall where it draws it (core card ARC1b), an

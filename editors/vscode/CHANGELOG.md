@@ -14,6 +14,16 @@ are documented here. The format is based on
 
 ## [Unreleased]
 
+## [0.56.1] - 2026-11-23
+
+### Changed
+
+- **Rebundled the core at `@chanmeng666/archlang@1.68.1`** (no change to the language): a door on
+  an arc wall is measured where it is drawn, so on such a plan a lint swing warning can appear or
+  go away in `archlang lint`; the extension, which shows compile diagnostics, does not run the
+  lint. The `E_DOOR_KIND_CURVED` hint now says the swing is measured where it is drawn. The plans
+  an ` ```arch ` fence draws in the Markdown preview do not change.
+
 ## [0.56.0] - 2026-11-23
 
 ### Changed
