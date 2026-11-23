@@ -240,8 +240,9 @@ suite("dims auto overall beside an arc-edged room: a curve never ends a chain", 
   it("prints the Bay Bungalow's overall figures exactly as the plan with a rectangular living room", () => {
     const arc = floorUnassigned("bay-bungalow-arc-living.arch");
     const rect = floorUnassigned("bay-bungalow.arch");
-    // Outer face -125 to outer face 12125, never the room's arc apex (y -733.81) to 12125.
-    expect(figures(arc)).toEqual(["h12650", "v12250", "vR1900"]);
+    // Outer face -125 to outer face 12125, never the room's arc apex (y -733.81) to 12125; the
+    // bay's R leader and the round snug's diameter beside them.
+    expect(figures(arc)).toEqual(["h12650", "hφ2400", "v12250", "vR1900"]);
     expect(allChains(arc)).toEqual(allChains(rect));
   });
 
