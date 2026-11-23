@@ -2,6 +2,16 @@
 
 ## [Unreleased]
 
+### Changed
+
+- With a core that measures a door on a curved wall where it draws it (core card ARC1b), an
+  opening on an `arc` wall takes its jambs, and a door its leaves, from the two ends of the
+  joinery's cut, through `doorSwing`/`doorLeaves` as before. The plan pose and the GLB build the
+  leaf where the plan draws it. Which face a window's sill goes on (`insideOf`) is now probed from
+  the opening's centre whenever the jambs' chord stands 1 mm or more off it, as the core's own
+  face probe does. Otherwise the chord's sagitta could pass a wall thickness and find floor on
+  both faces (a 1700 mm window on R1300). Every opening on a straight wall builds as before.
+
 ## [0.9.1] - 2026-11-23
 
 The core peer range stays `^1.61.0` (`MIN_CORE`): nothing below reads a core export that 1.61.0 lacks.
