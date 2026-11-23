@@ -441,7 +441,7 @@ because a linear dimension chain cannot describe an arc,
 GB/T 50104 does: an `R` leader per distinct arc and a `φ` call-out across the circular room,
 while the three exterior chains stay on the straight facades. Both rotunda doors sit **on**
 the curve — `on rotunda at 25%` walks the wall by run length, so an arc contributes its arc
-length rather than its chord — and their leaves swing off the tangent at the doorway.
+length rather than its chord — and each leaf hangs on a jamb of the curved opening.
 
 <ArchLive :src="EXAMPLES['aquarium']" page="aquarium" :rows="30" />
 

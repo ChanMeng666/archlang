@@ -290,8 +290,9 @@ function tangentDoubleLeaves(seg: NonNullable<DoorLike["host"]>, d: DoorLike): D
 /**
  * The leaves the ANNOTATION passes read, frozen at the tangent construction: on a straight host
  * exactly {@link doorLeaves}'s, on a curved one the leaves swung along the tangent at the doorway.
- * Read only by the label marks (`label-fit.ts`) and a door's `annotationFootprint`, so the door's
- * correction onto the cut's jambs (card ARC1b) moves no label, tag, leader or north arrow
+ * Read only by the annotation passes' obstacles: the label marks (`label-fit.ts`), the thickness
+ * figures' re-station (`scene-build.ts`) and a door's `annotationFootprint`, so the door's
+ * correction onto the cut's jambs (card ARC1b) moves no label, tag, leader, thickness figure or north arrow
  * (Ruling B of #1019); card ARC1c moves them together and deletes this. Not public.
  */
 export function tangentDoorLeaves(d: DoorLike): DoorSwing[] {

@@ -30,7 +30,7 @@ import type { RenderCtx, Registry, Runtime } from "./registry.js";
 import { BUILTIN_RUNTIME } from "./registry.js";
 import type { RenderSizes, Scene, SceneNode, ScenePart, SceneSheet } from "./scene.js";
 import type { Bounds, Vec, WallSegment } from "./geometry.js";
-import { add, doorLeaves, mul, normal, segmentsOfWall, sub, unit } from "./geometry.js";
+import { add, mul, normal, segmentsOfWall, sub, tangentDoorLeaves, unit } from "./geometry.js";
 import { arcPointAt, diameterText, radiusText } from "./geometry/arc.js";
 import type { Point } from "./ast.js";
 import { facetsOf } from "./elements/facets.js";
@@ -1031,7 +1031,9 @@ function restationThickness(
       }
       for (const el of ir.elements) {
         if (el.kind !== "door") continue;
-        for (const leaf of doorLeaves(el as RDoor)) {
+        // The tangent leaves on a curve, as every annotation pass reads them (`tangentDoorLeaves`,
+        // Ruling B of #1019; card ARC1c), so no thickness figure moves with card ARC1b.
+        for (const leaf of tangentDoorLeaves(el as RDoor)) {
           const ring = sectorOf(leaf);
           all.push({ box: extentOfRing(ring), ring });
         }

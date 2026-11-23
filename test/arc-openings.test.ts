@@ -45,6 +45,7 @@ import type { SceneNode } from "../src/scene.js";
 import { type ArcOpeningsLawApi, arcOpeningsLawDigest } from "./helpers/arc-openings-law.js";
 import { BAY, drum, STRAIGHT_ROWS } from "./tables/arc-openings-plans.js";
 import { worldFor } from "./helpers/world.js";
+import { sha256 } from "./helpers/digest.js";
 
 const API: ArcOpeningsLawApi = {
   compile,
@@ -369,12 +370,12 @@ suite("a door on a curve hangs on the cut's jambs, drawn and measured alike (car
   });
 });
 
-suite("the symmetry fact on the plans ARC1b corrects: the groups hold, only exactness may flip", () => {
+suite("the symmetry fact on the plans ARC1b corrects: the groups hold, exactness may flip", () => {
   // Every group below is `main`'s (96623350, before card ARC1b), measured with these very plans, and so
   // is each `exact` noted `true` there: a tangent jamb `at ± d·w/2` at a curve's axis-aligned station
   // is on the half-millimetre lattice, a jamb of the cut (`cos`/`sin` of the span's ends) is not, so the
-  // layer is now compared at `fmt4` precision (ruling RM-D89, ADR 0023's amendment). The group and every
-  // `hand` must not move.
+  // layer is now compared at `fmt4` precision (ruling RM-D89, ADR 0023's amendment). Numbers may move (the
+  // centre, below); the group, axis, elements and every `hand` must not.
   const groups = (src: string, dir?: string) => {
     const s = describe(src, { ...(dir ? { world: worldFor(dir) } : {}), facts: ["symmetry"] }).symmetry!;
     return {
@@ -414,4 +415,90 @@ suite("the symmetry fact on the plans ARC1b corrects: the groups hold, only exac
       expect(groups(drum(body))).toEqual({ groups: ["D2", "D4", full], exact: false });
     });
   }
+});
+
+suite("ARC1b moves a symmetry fact's numbers, never its group, axis or elements (ruling RM-D89)", () => {
+  // Mirrored pairs on a drum (review round 1 of #1027). Every `group`, `axis` and `elements` below is
+  // `main`'s (96623350), and so is `wasCentre`; `centre` is the value now. The centre is measured off
+  // the layer's points (the box midpoint the verified elements share), and on main a tangent jamb or
+  // a leaf hung off it stood outside the drum and pulled it off the drum's true centre (1300, 1300).
+  const pavilion = (R: number, t: number, body: string): string =>
+    `plan "g" {\n  units mm\n  grid 50\n  wall id=drum exterior thickness ${t} {\n    (${2 * R},${R})\n    arc (0,${R}) radius ${R}\n    arc (${2 * R},${R}) radius ${R}\n  }\n  room id=r circle at (${R},${R}) radius ${R} label "Pavilion" uses living\n${body}\n}`;
+  const ROT = [{ rotate: 0 }, { rotate: 180, mirror: "x" }];
+  const MIR = [{ rotate: 0 }, { rotate: 0, mirror: "x" }];
+  const CASES: ReadonlyArray<{
+    R: number;
+    body: string;
+    group: string;
+    axis: string;
+    elements: unknown[];
+    wasCentre: { x: number; y: number };
+    centre: { x: number; y: number };
+  }> = [
+    {
+      R: 1300,
+      body: "  door id=d1 on drum at 5% width 800 hinge left swing out\n  door id=d2 on drum at 95% width 800 hinge right swing out",
+      group: "D1",
+      axis: "y",
+      elements: ROT,
+      wasCentre: { x: 1335.9551, y: 1300 },
+      centre: { x: 1300, y: 1300 },
+    },
+    {
+      R: 1300,
+      body: "  door id=d1 on drum at 20% width 800 hinge left swing in\n  door id=d2 on drum at 30% width 800 hinge right swing in",
+      group: "D1",
+      axis: "x",
+      elements: MIR,
+      wasCentre: { x: 1300, y: 1004.9855 },
+      centre: { x: 1300, y: 1045.0104 },
+    },
+    {
+      R: 1300,
+      body: "  window id=w1 casement on drum at 20% width 800 hinge left\n  window id=w2 casement on drum at 30% width 800 hinge right",
+      group: "D1",
+      axis: "x",
+      elements: MIR,
+      wasCentre: { x: 1300, y: 1264.0449 },
+      centre: { x: 1300, y: 1300 },
+    },
+    {
+      R: 3000,
+      body: "  door id=d1 on drum at 5% width 1700 hinge left swing out\n  door id=d2 on drum at 95% width 1700 hinge right swing out",
+      group: "D1",
+      axis: "y",
+      elements: ROT,
+      wasCentre: { x: 3059.3968, y: 3000 },
+      centre: { x: 3000, y: 3000 },
+    },
+  ];
+  for (const c of CASES) {
+    it(`${c.body.trim().split("\n")[0]} on R${c.R}: centre (${c.wasCentre.x}, ${c.wasCentre.y}) → (${c.centre.x}, ${c.centre.y})`, () => {
+      const full = describe(pavilion(c.R, 200, c.body), { facts: ["symmetry"] }).symmetry!.layers.full!;
+      expect(full).toEqual({ group: c.group, axis: c.axis, centre: c.centre, elements: c.elements, exact: false });
+    });
+  }
+});
+
+suite("Ruling B: the thickness figures read the tangent leaves too (review round 1 of #1027)", () => {
+  // A room overrunning a shell with a bay, `dims auto all`, a door on the bay. The thickness figure
+  // "250" is re-stationed off every door's swing; read off the cut's leaves it moved from x 1283.85
+  // to 1291.25 (13 of 4,032 such variants moved, by up to 40 mm). The digest is this plan's SVG on
+  // `main` (96623350).
+  const CE1 = `plan "ce" {
+  units mm
+  grid 50
+  paper A3 landscape
+  scale 1:100
+  dims auto all
+  wall id=c exterior thickness 250 { (0,0) (6000,0) arc (6000,6000) radius 3000 ccw (0,6000) (0,0) close }
+  room id=r at (0,0) size 6000x6000 label "Hall" at (3000,300) uses living
+  door id=d1 on c at 9200 width 1200 swing in
+}
+`;
+  it("its SVG is main's, byte for byte", () => {
+    expect(sha256(compile(CE1, { noCache: true }).svg)).toBe(
+      "94d5368dd0a6c1f917b2a9fea11cbfa1036b1d28782aedc2d56dcf46c8ddf647",
+    );
+  });
 });

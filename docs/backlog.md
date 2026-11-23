@@ -315,7 +315,7 @@ After #1002 (3.19) the first use measured 466,680 B against `firstUsePathBudget`
 
 ### ARC1b · The model swing of a door on an arc still comes from the tangent: done by #1027, waiting to be archived — `note`
 
-Done by #1027 under the owner-delegated ruling RM-D89 (ADR 0023's amendment "a model correction is not a redraw"). `doorSwing`/`doorLeaves` hang each leaf on a jamb of the cut (`arcCutJambs`, `src/geometry.ts`), the drawing's own construction, so the drawn leaf is the measured one; the symmetry facts read a window's and a cased opening's jambs on the cut too, and the 3D package's jambs follow. Over the corpus only the 15 plans with an opening on an arc move (the symmetry fact on 6: `full.exact` true to false, group and `hand` unchanged; the 3D scene on all 15, its mesh on the 8 with a door there), plus the `E_DOOR_KIND_CURVED` example for its reworded hint; SVG and every other output are byte-identical on every plan, and no label moves (ARC1c). The card text below is kept for the record.
+Done by #1027 under the owner-delegated ruling RM-D89 (ADR 0023's amendment "a model correction is not a redraw"). `doorSwing`/`doorLeaves` hang each leaf on a jamb of the cut (`arcCutJambs`, `src/geometry.ts`), the drawing's own construction, so the drawn leaf is the measured one; the symmetry facts read a window's and a cased opening's jambs on the cut too, and the 3D package's jambs follow. Over the corpus only the 15 plans with an opening on an arc move (the symmetry fact on 6: `full.exact` true to false, group, axis, elements and `hand` unchanged; on other plans with an opening on a curve its `centre` can move too, ruling RM-D89 as refined in review; the 3D scene on all 15, its mesh on the 8 with a door there), plus the `E_DOOR_KIND_CURVED` example for its reworded hint; SVG and every other output are byte-identical on every plan, and no label moves (ARC1c). The card text below is kept for the record.
 
 #1019 draws a hinged or double door on a curved wall with its leaf hung on a jamb of the cut, but the
 model's swing (`doorSwing`/`doorLeaves`, read by lint, `describe --facts symmetry`, `repair()` and the
@@ -331,6 +331,16 @@ moved; the drawn ink can be up to about `w²/8R` closer (worst measured 291.9 mm
 on R1300, over 7,168 generated drum plans; on the corpus no label or text newly touches opening ink,
 the closest at 145.5 mm). Give the annotation passes the true ink
 as an obstacle without moving any label on plans whose openings are straight.
+
+### ARC1d · The 3D leaf-through-wall check samples 19 points and misses a thin sliver — `todo`
+
+Found by the #1027 review. `leafThroughWall` (`packages/archlang-3d/src/mesh/build.ts`) tests 19
+points of an open leaf's mid-thickness line, a twentieth of the leaf apart, so a wall thinner than
+that along the leaf is missed: `aquarium`'s `d_rot_n` always crossed the ~21 mm sliver of the straight
+partition tangent to its rotunda, and was ledgered only once ARC1b moved the leaf 22.5 mm and one
+sample landed about 2.5 mm inside the sliver's edge (a brittle pin in `test/doors-plan.test.ts`). Replace
+the sampling with an exact segment-against-polygon test, in its own PR, with the corpus' ledger rows
+listed.
 
 ### ARC2b · `W_ROOM_NOT_ENCLOSED` counts an arc wall's chord as cover for a straight room edge — `todo`
 

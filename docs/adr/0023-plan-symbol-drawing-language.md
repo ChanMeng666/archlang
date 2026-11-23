@@ -163,6 +163,8 @@ the owner can overturn it in one sentence. Decision 7 governs a DRAWING change. 
 geometry (ARC1b: a door on a curved wall is measured where it is drawn, its leaves hung on the cut's
 jambs, `doorSwing`/`doorLeaves` in `src/geometry.ts`) is not a redraw, and it may move `describe()`,
 `lint()` and the symmetry facts on exactly the plans it corrects, each listed and justified in its PR.
-On those plans the symmetry group and every piece's `hand` stay unchanged; only an exactness flag may
-flip, where a point legitimately leaves the half-millimetre lattice (a jamb at `cos`/`sin` of the cut's
-angle). Every other plan stays byte-identical in every output.
+On those plans the symmetry fact's NUMBERS may move, because they are measured from the corrected
+coordinates: its `centre`, and an exactness flag where a point legitimately leaves the half-millimetre
+lattice (a jamb at `cos`/`sin` of the cut's angle). Its group, its axes (the reflection lines), its
+element list and every piece's `hand` must not change. Every other plan stays byte-identical in every
+output.

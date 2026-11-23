@@ -826,10 +826,11 @@ function levelNodes(
       const fd = FRAME_DEPTH_MM * MM;
       const sector = cutSector(o.cut, o.jambs, o.centre);
       if (sector) {
-        // A curved host (red-team round 1): the jambs lie on the tangent at the opening's centre, so
-        // a chord pane clipped to the cut ends short of the radial jamb faces and its jamb members
-        // all but vanish. The pane and the frame follow the arc from jamb face to jamb face instead,
-        // centred on the host's centreline; a jamb member spans the frame's width along the arc.
+        // A curved host (red-team round 1): the jambs are the cut's two ends on the centreline (core
+        // card ARC1b; before it the tangent's at the opening's centre), so a chord pane between them,
+        // clipped to the cut, would stand off the arc and its jamb members all but vanish. The pane
+        // and the frame follow the arc from jamb face to jamb face instead, centred on the host's
+        // centreline; a jamb member spans the frame's width along the arc.
         const band = (depth: number, f0?: number, f1?: number): Polygon =>
           sectorBand(sector, -depth / 2, depth / 2, f0, f1);
         const f = Math.min(0.5, fw / (sector.r * Math.abs(sector.sweep)));
