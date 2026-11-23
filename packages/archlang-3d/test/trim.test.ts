@@ -519,3 +519,51 @@ describe("the trim over the corpus and the stress plans", () => {
     expect(windows).toBeGreaterThan(250);
   }, 120_000);
 });
+
+describe("a window on a curve whose chord stands off it by more than the wall (core card ARC1b)", () => {
+  // A 1700 mm window at the top of an R1300 drum in a 200 mm wall. On the cut's jambs (ARC1b) the
+  // chord between them stands 268 mm inside the window's centre, more than the wall's thickness, so
+  // a probe one thickness off each face of that chord's middle lands on the inner side both times.
+  // `insideOf` probes from the window's centre, as the core's face probe does. Reverted to the
+  // chord's middle it answers "both" for the inner floor and null for the outer one.
+  const R = 1300;
+  const t = 200;
+  const shell = `wall id=drum exterior thickness ${t} { (${2 * R},${R}) arc (0,${R}) radius ${R} arc (${2 * R},${R}) radius ${R} }
+    window id=w on drum at 25% width 1700`;
+  const at = (resolvePlan(plan(shell)).ir!.elements.find((e) => e.id === "w") as { at: { x: number; y: number } }).at;
+  const inner = `room id=r circle at (${R},${R}) radius ${R} uses living`;
+  // A floor beyond the window's outer face only (the window sits at the drum's top or bottom).
+  const outer =
+    at.y < R
+      ? `room id=o at (${R - 800},${at.y - t / 2 - 1200}) size 1600x1200 uses living`
+      : `room id=o at (${R - 800},${at.y + t / 2}) size 1600x1200 uses living`;
+  const probe = (rooms: string) => {
+    const r = adaptPlan(plan(`${shell} ${rooms}`), { world: WORLD });
+    if (!r.ok) throw new Error(`refused: ${r.refusal.code}`);
+    const lv = r.scene.levels[0]!;
+    const o = lv.openings.find((x) => x.id === "w")!;
+    const [j0, j1] = o.jambs;
+    // The frame's `+v` (the chord's left normal) against the way to the drum's centre.
+    const toward = -(j1[1] - j0[1]) * (R * MM - o.centre[0]) + (j1[0] - j0[0]) * (R * MM - o.centre[1]) > 0 ? 1 : -1;
+    const mid = [(j0[0] + j1[0]) / 2, (j0[1] + j1[1]) / 2] as const;
+    return { side: insideOf(o, t * MM, lv), toward, sagitta: Math.hypot(mid[0] - o.centre[0], mid[1] - o.centre[1]) };
+  };
+
+  it("premise: the chord stands off the window's centre by more than the wall's thickness", () => {
+    expect(probe(inner).sagitta).toBeGreaterThan(t * MM);
+  });
+
+  it("a floor inside the curve only: the inner face", () => {
+    const p = probe(inner);
+    expect(p.side).toBe(p.toward);
+  });
+
+  it("a floor outside the curve only: the outer face", () => {
+    const p = probe(outer);
+    expect(p.side).toBe(-p.toward);
+  });
+
+  it("a floor on both faces: an interior window", () => {
+    expect(probe(`${inner} ${outer}`).side).toBe("both");
+  });
+});

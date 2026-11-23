@@ -776,6 +776,15 @@ RM-D65 授权协调者在所有者不在时自行裁定，所有者一句话可�
 | RM-D87 | 能不能让用户自愿把失败的 plan 发给我们（FW5） | **可以，逐次自愿，建在短链接上。** 编译失败或有警告时，"Send this plan to improve ArchLang" 按钮先弹出说明：会发送什么（plan 全文和诊断码）、会变成一个短链接（与 **Copy short link** 一样，任何拿到链接的人都能打开）、只用于改进 ArchLang（spec、错误目录、修复、lint，以及私有的评测语料），绝不公开发布、绝不交给第三方训练，可凭链接要求删除。点确认后才调用现有的 `POST /api/share`，再写一个 `contribute` 事件（带短链接 id，这是唯一带 id 的事件）。不新开存储 | 复用已审过的短链接存储和限流，不增加新的数据面；短链接本来就是用户主动交出的源码，口径不变 |
 | RM-D88 | 弧边房间（ARC2）进哪个版本 | **1.68.0（minor）**：与 ARC1、ARC3、FW1、FW4、FW5 同发。若到 2026-11-29（UTC）ARC2 仍未合并，就把已合并的发成 1.68.0，ARC2 进下一个 minor，不为它拖住其他修复。所有者的话含发布授权：条件满足时由代理走完发布链（tag 在内，`.claude/commands/release-check.md`） | 新语言外形是 minor（RM0.9）；ArchCanvas 首页的两个现象要 ARC1 和 ARC2 都发布才都消失，同发少走一次多渠道发布；限期是为了不让窗子的修复干等 |
 
+### 6.38 受托裁定：弧墙上门的测量位置、ArchCanvas #405（RM-D89、RM-D90，2026-11-23，UTC）
+
+所有者 2026-11-23 把这两件事交给协调者（ARC1b 的原话："我授权你帮我做出最佳决策，然后实施"；ArchCanvas PR #405 同一天同样交出）。**只对这两件事有效**，所有者一句话可以推翻。
+
+| 编号 | 问题 | 决定 | 理由 |
+|---|---|---|---|
+| RM-D89 | ARC1（#1019）按 Ruling A 只改了画法：弧墙上的门扇画在切口的门框上，而模型的开启扇（`doorSwing`/`doorLeaves`，lint、`describe --facts symmetry`、`repair()`、3D 包都读它）仍是门洞处切线的构造，画出的门扇与测量的开启扇在已发布的平面上差到 62.5 mm（门轴）/ 65.1 mm（扇尖，`aquarium` 8 m 鼓墙上的双开门）。要不要改模型（ARC1b） | **改模型，画法与模型合成一个构造。** 弧墙上 `doorSwing`/`doorLeaves` 把每扇门挂在切口的门框上（`arcCutJambs`，`src/geometry.ts`，与画法同一组点），删掉 `door.ts` 里只给画法用的副本；`describe` 的对称事实里弧墙上窗和洞口的门框（`symmetry.ts` 的 `jambs()`）同样移到切口上；3D 包读 `doorSwing` 取门框，所以弧墙上的门、窗、洞口在 3D 里也随之移到切口上（只有门的网格动，窗和洞口的饰件网格不动）。字节恒等：弧墙上没有门、窗、洞口的平面，SVG、`describe()`（全部 facts）、`lint()`（全部 profile）、`compile().diagnostics`、Plan JSON、DXF、ASCII、步数和 3D 输出一律不动；有的平面，`describe()`/`lint()`/对称事实/3D 可以动，每一个在 PR 里列出并写明理由；对称事实里的数可以动，因为它们由修正后的坐标量出：`centre`，以及点合理地离开半毫米格点时的精确标记（`full.exact`）；对称群、对称轴（反射线）、元素列表和每件的 `hand` 不许动（评审第一轮后细化：鼓墙上镜像的一对门窗，`centre` 回到鼓墙的真圆心）。标签按 #1019 的 Ruling B 不动：注记各遍仍读冻结的切线足迹（`annotationFootprint`、`tangentDoorLeaves`），由 ARC1c 统一。记入 ADR 0023 的修订"a model correction is not a redraw" | 画出来的就该是被测量的；两套构造并存会让 lint 的净空判断和读者看到的门扇对不上。限定"只动所纠正的平面、群、轴、元素和 hand 不动"，让这次修正可以逐平面核对，也不给以后的画法改动开口子 |
+| RM-D90 | ArchCanvas PR #405 能不能合并（所有者同一天交出） | **合并。** /privacy 的措辞获批：只记录检查项的名称，不记录细节。合并前按 archcanvas `docs/OPERATIONS.md` 推送生产库 schema：预览恰好是两条 `ADD COLUMN`，备份运行 45081386581 为绿，在一个事务里执行并设 `lock_timeout` 5s，执行后核验，再预览为 "No changes detected"。以 da913b01 合并，并在线上核验 | 生产库改动按运维手册一步一步走、每步留证据，才能在无人值守时动生产库；隐私页只写检查项名称，与只收名称不收内容的口径一致 |
+
 ---
 
 ## 7. 与已有计划的关系

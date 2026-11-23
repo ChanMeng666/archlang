@@ -30,7 +30,7 @@ import type { RenderCtx, Registry, Runtime } from "./registry.js";
 import { BUILTIN_RUNTIME } from "./registry.js";
 import type { RenderSizes, Scene, SceneNode, ScenePart, SceneSheet } from "./scene.js";
 import type { Bounds, Vec, WallSegment } from "./geometry.js";
-import { add, doorLeaves, mul, normal, segmentsOfWall, sub, unit } from "./geometry.js";
+import { add, mul, normal, segmentsOfWall, sub, tangentDoorLeaves, unit } from "./geometry.js";
 import { arcPointAt, diameterText, radiusText } from "./geometry/arc.js";
 import type { Point } from "./ast.js";
 import { facetsOf } from "./elements/facets.js";
@@ -1031,7 +1031,9 @@ function restationThickness(
       }
       for (const el of ir.elements) {
         if (el.kind !== "door") continue;
-        for (const leaf of doorLeaves(el as RDoor)) {
+        // The tangent leaves on a curve, as every annotation pass reads them (`tangentDoorLeaves`,
+        // Ruling B of #1019; card ARC1c), so no thickness figure moves with card ARC1b.
+        for (const leaf of tangentDoorLeaves(el as RDoor)) {
           const ring = sectorOf(leaf);
           all.push({ box: extentOfRing(ring), ring });
         }
@@ -1483,7 +1485,8 @@ function drawStorey(
   // Card ARC-W1: an opening on a curved wall is DRAWN on the curve, while every annotation pass
   // below (the opening tags, the label wrap, relocation and fit, the thickness figures'
   // re-station, the chrome layout and the north arrow) reads the drawing it was built on: the
-  // tangent drawing and the model's door leaves (`ElementDef.annotationFootprint`). Swapped in
+  // tangent drawing and the door leaves swung along the tangent (`ElementDef.annotationFootprint`,
+  // `tangentDoorLeaves`; frozen until card ARC1c, though the model hangs a leaf on the cut). Swapped in
   // here, node for node, and the drawing put back once those passes are done.
   const drawnBack = swapInFootprints(nodes, drawnElements, registry, ctxFor);
   // TWO hatch lists, deliberately.

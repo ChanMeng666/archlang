@@ -602,20 +602,25 @@ suite("doors — the drawing language", () => {
         .find((l) => l.includes("door id=d"))!
         .trim();
       const { nodes } = nodesOf(src);
-      // On a straight host the drawn swing IS the model's (`doorSwing`). On an arc host the leaf is
-      // drawn on a jamb of the curved cut while the model keeps the tangent construction (card
-      // ARC-W1, drawing only), so there the slab is held to the swing it is DRAWN with: its `arc`
-      // node, centred on the hinge, from the open leaf's tip to the far jamb.
+      // The drawn swing IS the model's (`doorSwing`) on every host: on an arc one the leaf hangs on
+      // a jamb of the curved cut in both (card ARC1b). The slab is held to the swing it is DRAWN
+      // with, its `arc` node (centred on the hinge, from the open leaf's tip to the far jamb), and
+      // that to the model's.
       const drawnArc = nodes.find((n) => n.prim.t === "arc")!.prim as {
         center: { x: number; y: number };
         r: number;
         start: { x: number; y: number };
         end: { x: number; y: number };
       };
-      const s =
-        src === onArc
-          ? { hinge: drawnArc.center, leafEnd: drawnArc.start, farJamb: drawnArc.end, radius: drawnArc.r }
-          : doorSwing(doorsOf(src).find((x) => x.id === "d")!)!;
+      const s = doorSwing(doorsOf(src).find((x) => x.id === "d")!)!;
+      expect({ hinge: drawnArc.center, leafEnd: drawnArc.start, farJamb: drawnArc.end, radius: drawnArc.r }, c).toEqual(
+        {
+          hinge: s.hinge,
+          leafEnd: s.leafEnd,
+          farJamb: s.farJamb,
+          radius: s.radius,
+        },
+      );
       // cover, slab, arc — in that order. On an arc host the cover is the cut's annular sector, a
       // `path` (card ARC-W1); on a straight one its rectangle.
       expect(

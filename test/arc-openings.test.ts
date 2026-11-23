@@ -7,9 +7,10 @@
  * bay, more than half the 250 mm wall) and a door's leaf hung off the jamb by the same. Now every
  * line along the wall is a concentric arc, every jamb radial and on the joinery's own cut
  * (`arcOpeningSpan`, the span `openingCut` severs), and a door's leaf is DRAWN hinged on a jamb of the
- * cut. Drawing only: the model's swing (`doorSwing`/`doorLeaves`, read by lint, the symmetry facts and
- * the 3D package) is still the tangent construction, and the annotation passes read main's footprint
- * of a curved opening (`annotationFootprint`: the tangent drawing), so no label, tag or leader moves.
+ * cut. Card ARC1b moved the model onto the same jambs: the swing lint, the symmetry facts, `repair()`
+ * and the 3D package read (`doorSwing`/`doorLeaves`) IS the drawn leaf. The annotation passes still
+ * read main's footprint of a curved opening (`annotationFootprint`: the tangent drawing, and
+ * `tangentDoorLeaves` for the label marks), so no label, tag or leader moves (card ARC1c).
  *
  * The straight-host rows are {@link arcOpeningsLawDigest} (`test/helpers/arc-openings-law.ts`),
  * **measured against `src/` at `a0f85ebf`** (`main` before the change), that tree extracted by
@@ -17,8 +18,10 @@
  * planted change to a straight window's glazing gap moved all four, so the law can fail.
  */
 
+import { readFileSync } from "node:fs";
+import { dirname } from "node:path";
 import { describe as suite, expect, it } from "vitest";
-import { compile, describe, doorLeaves, lint, renderAscii, resolvePlan, toDxf } from "../src/index.js";
+import { compile, describe, doorLeaves, doorSwing, lint, renderAscii, resolvePlan, toDxf } from "../src/index.js";
 import {
   clearResolveCache,
   evaluationSteps,
@@ -41,6 +44,8 @@ import type { Point } from "../src/ast.js";
 import type { SceneNode } from "../src/scene.js";
 import { type ArcOpeningsLawApi, arcOpeningsLawDigest } from "./helpers/arc-openings-law.js";
 import { BAY, drum, STRAIGHT_ROWS } from "./tables/arc-openings-plans.js";
+import { worldFor } from "./helpers/world.js";
+import { sha256 } from "./helpers/digest.js";
 
 const API: ArcOpeningsLawApi = {
   compile,
@@ -238,7 +243,7 @@ suite("a window on a curve stands on the arc", () => {
 
 suite("the annotation passes read main's footprint of a curved opening (card ARC-W1)", () => {
   // Each pinned value is `main`'s (`a0f85ebf`), measured with these very plans: the label, tag and
-  // north-arrow passes read the tangent drawing and the model's leaves (`annotationFootprint`), so
+  // north-arrow passes read the tangent drawing and the tangent leaves (`annotationFootprint`, `tangentDoorLeaves`), so
   // what they place does not move when the opening is drawn on the curve. The review of the second
   // round found these two moved: the tag by 400 mm, the room's name by 270 mm.
   const texts = (src: string) =>
@@ -269,7 +274,7 @@ suite("the annotation passes read main's footprint of a curved opening (card ARC
   });
 });
 
-suite("a door on a curve is DRAWN hanging on the cut's jambs; its model swing is unchanged", () => {
+suite("a door on a curve hangs on the cut's jambs, drawn and measured alike (cards ARC-W1, ARC1b)", () => {
   const cutJambs = (src: string, id: string): { door: RDoor; mids: Point[]; arc: Arc } => {
     const els = resolvePlan(src).ir!.elements;
     const door = els.find((e): e is RDoor => e.kind === "door" && e.id === id)!;
@@ -300,16 +305,25 @@ suite("a door on a curve is DRAWN hanging on the cut's jambs; its model swing is
       expect(swing!.r).toBeCloseTo(dist(swing!.center, swing!.end), 9);
     });
 
-    it(`hinged ${id}: the model's swing (lint, symmetry, 3D) is still the tangent construction`, () => {
-      const { door } = cutJambs(src, id);
+    it(`hinged ${id}: the model's swing (lint, symmetry, repair, 3D) IS the drawn one (card ARC1b)`, () => {
+      // Until ARC1b the model kept the tangent construction: its hinge stood `w/2` along the tangent
+      // at the doorway, off the drawn leaf by about `w²/8R` across. Now the two are one construction.
+      const { door, mids } = cutJambs(src, id);
       const [leaf] = doorLeaves(door);
+      const [swing] = drawnSwings(src);
+      expect(leaf!.hinge).toEqual(swing!.center);
+      expect(leaf!.farJamb).toEqual(swing!.end);
+      expect(leaf!.leafEnd).toEqual(swing!.start);
+      expect(leaf!.radius).toBe(swing!.r);
+      expect(leaf!.sweep).toBe(swing!.sweep);
+      expect(doorSwing(door)).toEqual(leaf);
+      // The hinge is a jamb of the cut, not the tangent's point `w/2` from the doorway.
+      expect(Math.min(...mids.map((m) => dist(m, leaf!.hinge)))).toBeLessThan(EPS);
       const d = segmentDirAt(door.host!, door.at);
       const s = door.hinge === "left" ? -1 : 1;
-      expect(leaf!.hinge).toEqual({
-        x: door.at.x + d.x * s * (door.width / 2),
-        y: door.at.y + d.y * s * (door.width / 2),
-      });
-      expect(leaf!.radius).toBe(door.width);
+      const tangentHinge = { x: door.at.x + d.x * s * (door.width / 2), y: door.at.y + d.y * s * (door.width / 2) };
+      expect(dist(leaf!.hinge, tangentHinge)).toBeGreaterThan(1);
+      expect(leaf!.radius).toBeLessThan(door.width);
     });
   }
 
@@ -319,6 +333,11 @@ suite("a door on a curve is DRAWN hanging on the cut's jambs; its model swing is
     const [a, b] = drawnSwings(src);
     for (const sw of [a!, b!]) expect(Math.min(...mids.map((m) => dist(m, sw.center)))).toBeLessThan(EPS);
     expect(a!.end).toEqual(b!.end);
+    // Measured as drawn (card ARC1b): the model's two leaves are the drawn two.
+    const leaves = doorLeaves(cutJambs(src, "d3").door);
+    expect(leaves.map((l) => [l.hinge, l.farJamb, l.leafEnd, l.radius, l.sweep])).toEqual(
+      [a!, b!].map((s) => [s.center, s.end, s.start, s.r, s.sweep]),
+    );
     // The two hinges and the shared far jamb are collinear (the chord between the jambs).
     const u = { x: a!.end.x - a!.center.x, y: a!.end.y - a!.center.y };
     const v = { x: b!.center.x - a!.center.x, y: b!.center.y - a!.center.y };
@@ -348,5 +367,138 @@ suite("a door on a curve is DRAWN hanging on the cut's jambs; its model swing is
       expect(radii[radii.length - 1]).toBeCloseTo(3000 + 125, 9);
       for (const a of arcsOf(c)) expect(dist(a.center, { x: 3000, y: 3000 })).toBeLessThan(1e-6);
     }
+  });
+});
+
+suite("the symmetry fact on the plans ARC1b corrects: the groups hold, exactness may flip", () => {
+  // Every group below is `main`'s (96623350, before card ARC1b), measured with these very plans, and so
+  // is each `exact` noted `true` there: a tangent jamb `at ± d·w/2` at a curve's axis-aligned station
+  // is on the half-millimetre lattice, a jamb of the cut (`cos`/`sin` of the span's ends) is not, so the
+  // layer is now compared at `fmt4` precision (ruling RM-D89, ADR 0023's amendment). Numbers may move (the
+  // centre, below); the group, axis, elements and every `hand` must not.
+  const groups = (src: string, dir?: string) => {
+    const s = describe(src, { ...(dir ? { world: worldFor(dir) } : {}), facts: ["symmetry"] }).symmetry!;
+    return {
+      groups: [s.layers.shell!.group, s.layers.rooms!.group, s.layers.full!.group],
+      exact: s.layers.full!.exact,
+    };
+  };
+  const PLANS: ReadonlyArray<readonly [string, string, string, string]> = [
+    // `full.exact` was true on main for all six.
+    ["examples/hillside-villa.arch", "C1", "C1", "C1"],
+    ["examples/library.arch", "C1", "C1", "C1"],
+    ["test/defect-corpus/annotation-collisions/radius-over-label.arch", "D2", "D4", "C1"],
+    ["test/defect-corpus/annotation-collisions/radius-over-label.clean.arch", "D2", "D4", "C1"],
+    ["test/defect-corpus/annotation-collisions/radius-over-piece.arch", "D2", "D4", "C1"],
+    ["test/defect-corpus/annotation-collisions/radius-over-piece.clean.arch", "D2", "D4", "C1"],
+  ];
+  for (const [path, shell, rooms, full] of PLANS) {
+    it(path, () => {
+      expect(groups(readFileSync(path, "utf8"), dirname(path))).toEqual({ groups: [shell, rooms, full], exact: false });
+    });
+  }
+
+  // Mirrored pairs on the drum, so the full layer has an axis to keep: `[body, full group, main's exact]`.
+  const PAIRS: ReadonlyArray<readonly [string, string, boolean]> = [
+    ["  window id=w1 on drum at 12.5% width 1600\n  window id=w2 on drum at 37.5% width 1600", "D1", false],
+    ["  opening id=o1 on drum at 10% width 1200\n  opening id=o2 on drum at 40% width 1200", "D1", false],
+    ["  door id=d1 double on drum at 0% width 1600\n  door id=d2 double on drum at 50% width 1600", "D2", true],
+    [
+      "  door id=d1 on drum at 12.5% width 900 hinge left swing in\n  door id=d2 on drum at 37.5% width 900 hinge right swing in",
+      "D1",
+      false,
+    ],
+    ["  window id=w1 on drum at 25% width 1600", "D1", true],
+  ];
+  for (const [body, full, wasExact] of PAIRS) {
+    it(`a mirrored pair keeps its axis: ${body.trim().split("\n")[0]} (main's exact: ${wasExact})`, () => {
+      expect(groups(drum(body))).toEqual({ groups: ["D2", "D4", full], exact: false });
+    });
+  }
+});
+
+suite("ARC1b moves a symmetry fact's numbers, never its group, axis or elements (ruling RM-D89)", () => {
+  // Mirrored pairs on a drum (review round 1 of #1027). Every `group`, `axis` and `elements` below is
+  // `main`'s (96623350), and so is `wasCentre`; `centre` is the value now. The centre is measured off
+  // the layer's points (the box midpoint the verified elements share), and on main a tangent jamb or
+  // a leaf hung off it stood outside the drum and pulled it off the drum's true centre (1300, 1300).
+  const pavilion = (R: number, t: number, body: string): string =>
+    `plan "g" {\n  units mm\n  grid 50\n  wall id=drum exterior thickness ${t} {\n    (${2 * R},${R})\n    arc (0,${R}) radius ${R}\n    arc (${2 * R},${R}) radius ${R}\n  }\n  room id=r circle at (${R},${R}) radius ${R} label "Pavilion" uses living\n${body}\n}`;
+  const ROT = [{ rotate: 0 }, { rotate: 180, mirror: "x" }];
+  const MIR = [{ rotate: 0 }, { rotate: 0, mirror: "x" }];
+  const CASES: ReadonlyArray<{
+    R: number;
+    body: string;
+    group: string;
+    axis: string;
+    elements: unknown[];
+    wasCentre: { x: number; y: number };
+    centre: { x: number; y: number };
+  }> = [
+    {
+      R: 1300,
+      body: "  door id=d1 on drum at 5% width 800 hinge left swing out\n  door id=d2 on drum at 95% width 800 hinge right swing out",
+      group: "D1",
+      axis: "y",
+      elements: ROT,
+      wasCentre: { x: 1335.9551, y: 1300 },
+      centre: { x: 1300, y: 1300 },
+    },
+    {
+      R: 1300,
+      body: "  door id=d1 on drum at 20% width 800 hinge left swing in\n  door id=d2 on drum at 30% width 800 hinge right swing in",
+      group: "D1",
+      axis: "x",
+      elements: MIR,
+      wasCentre: { x: 1300, y: 1004.9855 },
+      centre: { x: 1300, y: 1045.0104 },
+    },
+    {
+      R: 1300,
+      body: "  window id=w1 casement on drum at 20% width 800 hinge left\n  window id=w2 casement on drum at 30% width 800 hinge right",
+      group: "D1",
+      axis: "x",
+      elements: MIR,
+      wasCentre: { x: 1300, y: 1264.0449 },
+      centre: { x: 1300, y: 1300 },
+    },
+    {
+      R: 3000,
+      body: "  door id=d1 on drum at 5% width 1700 hinge left swing out\n  door id=d2 on drum at 95% width 1700 hinge right swing out",
+      group: "D1",
+      axis: "y",
+      elements: ROT,
+      wasCentre: { x: 3059.3968, y: 3000 },
+      centre: { x: 3000, y: 3000 },
+    },
+  ];
+  for (const c of CASES) {
+    it(`${c.body.trim().split("\n")[0]} on R${c.R}: centre (${c.wasCentre.x}, ${c.wasCentre.y}) → (${c.centre.x}, ${c.centre.y})`, () => {
+      const full = describe(pavilion(c.R, 200, c.body), { facts: ["symmetry"] }).symmetry!.layers.full!;
+      expect(full).toEqual({ group: c.group, axis: c.axis, centre: c.centre, elements: c.elements, exact: false });
+    });
+  }
+});
+
+suite("Ruling B: the thickness figures read the tangent leaves too (review round 1 of #1027)", () => {
+  // A room overrunning a shell with a bay, `dims auto all`, a door on the bay. The thickness figure
+  // "250" is re-stationed off every door's swing; read off the cut's leaves it moved from x 1283.85
+  // to 1291.25 (13 of 4,032 such variants moved, by up to 40 mm). The digest is this plan's SVG on
+  // `main` (96623350).
+  const CE1 = `plan "ce" {
+  units mm
+  grid 50
+  paper A3 landscape
+  scale 1:100
+  dims auto all
+  wall id=c exterior thickness 250 { (0,0) (6000,0) arc (6000,6000) radius 3000 ccw (0,6000) (0,0) close }
+  room id=r at (0,0) size 6000x6000 label "Hall" at (3000,300) uses living
+  door id=d1 on c at 9200 width 1200 swing in
+}
+`;
+  it("its SVG is main's, byte for byte", () => {
+    expect(sha256(compile(CE1, { noCache: true }).svg)).toBe(
+      "94d5368dd0a6c1f917b2a9fea11cbfa1036b1d28782aedc2d56dcf46c8ddf647",
+    );
   });
 });

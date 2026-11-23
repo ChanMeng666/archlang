@@ -127,7 +127,7 @@
  */
 
 import type { Point } from "./ast.js";
-import { doorLeaves, type DoorSwing } from "./geometry.js";
+import { type DoorSwing, tangentDoorLeaves } from "./geometry.js";
 import { GridIndex, type GridBox } from "./geometry/grid-index.js";
 import {
   clippedArea,
@@ -402,7 +402,8 @@ function marksOf(
   const marks = wallBands(plan, 0).map((b) => mark("wall", b));
   for (const el of plan.elements) {
     if (el.kind !== "door") continue;
-    for (const leaf of doorLeaves(el as RDoor)) {
+    // Frozen at the tangent leaves on a curve (`tangentDoorLeaves`, card ARC1c), so no label moves.
+    for (const leaf of tangentDoorLeaves(el as RDoor)) {
       const ring = sectorOf(leaf);
       marks.push(mark("swing", extentOf([ring]), [ring]));
     }

@@ -2,7 +2,8 @@
  * Pure geometry helpers. All coordinates in millimetres. Deterministic.
  *
  * `doorLeaves` gives each leaf's sector (a `double` door's two) and is shared by `door.render()`
- * and every swing measure; `doorSwing` is the hinged leaf and returns null for a `double`.
+ * and every swing measure; `doorSwing` is the hinged leaf and returns null for a `double`. On a
+ * curved host both hang each leaf on a jamb of the cut (`arcCutJambs`).
  * `sectorsObstruct` is the exact two-sector test (separating axes, no sampling).
  */
 
@@ -15,9 +16,11 @@ import {
   arcExtremes,
   arcLength,
   arcOffset,
+  arcOpeningSpan,
   arcPointAt,
   arcTangentAt,
   distPointToArc,
+  polarPoint,
 } from "./geometry/arc.js";
 import type { GridBox } from "./geometry/grid-index.js";
 import { GridIndex } from "./geometry/grid-index.js";
@@ -162,15 +165,21 @@ export interface DoorLike {
 
 /**
  * Hinge, far jamb, open-leaf tip and minor-arc orientation of a door's swing.
- * Computed **once** from the host wall direction so the renderer (leaf line + arc
- * primitive, every backend) and the linter (swing-clearance checks) agree on the
- * exact quarter-disc the leaf sweeps. Returns `null` for an unhosted door.
+ * Computed **once** from the host wall so the renderer (leaf slab + arc primitive, every
+ * backend) and every measure (the swing-clearance lint rules, `repair()`, `describe`'s
+ * symmetry facts, the 3D package) agree on the exact quarter-disc the leaf sweeps. Returns
+ * `null` for an unhosted door.
  *
- * On a CURVED host the direction is the tangent **at the door's own position** (see
- * {@link segmentDirAt}), so the leaf is a chord of the wall at the doorway and the
- * quarter-disc swings off the true face. `hinge left|right` keeps its meaning — it is
- * relative to the direction of travel along the wall, which on an arc is the direction
- * the arc turns (`ccw` by default), not the chord.
+ * On a CURVED host the leaf hangs on a jamb of the joinery's cut ({@link arcCutJambs}, the
+ * span `openingCut` severs the wall along), on the wall's centreline, and closes along the
+ * CHORD to the other jamb: a leaf is straight, as wide as that chord, and opens a
+ * quarter-disc that wide to the `swing` side of the chord's direction (the tangent at the
+ * doorway's direction, the chord being symmetric about it). So the leaf is measured where it
+ * is drawn (card ARC1b). `hinge left|right` keeps its meaning — it is relative to the
+ * direction of travel along the wall, which on an arc is the direction the arc turns (`ccw`
+ * by default). Where the joinery makes no annular cut (`r ≤ t/2`) or the span closes on
+ * itself (a door as wide as half the circle's run), the leaf is swung along the tangent at
+ * the doorway, as on a straight run along the run's direction.
  *
  * Returns `null` for every NON-HINGED kind: a `double` door's two leaves are
  * {@link doorLeaves}'s, and a bypass, barn, bifold or pocket leaf sweeps no quarter-disc, so there is no hinge, no leaf radius and no arc to
@@ -186,7 +195,24 @@ export function doorSwing(d: DoorLike): DoorSwing | null {
   const seg = d.host;
   if (!seg) return null;
   if (d.doorKind !== undefined && d.doorKind !== "hinged") return null;
+  const cut = arcCutJambs(seg, d.at, d.width);
+  if (cut) return swingBetween(cut[0], cut[1], d.hinge, d.swing);
   return swingAlong(segmentDirAt(seg, d.at), d.at, d.width, d.hinge, d.swing);
+}
+
+/**
+ * The two jambs of an opening `width` wide centred at `at` on a CURVED host, on the wall's
+ * centreline: the ends of the span the joinery's cut severs the wall along (`arcOpeningSpan`;
+ * `openingCut`, `src/geometry/band.ts`), the jamb behind on the run first. `null` on a straight
+ * host, where the joinery makes no annular cut (`r ≤ t/2`), and where the span closes on itself
+ * (`half = π`), so the two jambs would not be apart.
+ */
+export function arcCutJambs(seg: { thickness: number; arc?: Arc }, at: Point, width: number): [Point, Point] | null {
+  const arc = seg.arc;
+  if (!arc || !(arc.r > seg.thickness / 2)) return null;
+  const s = arcOpeningSpan(arc, at, width);
+  if (!(s.half < Math.PI)) return null;
+  return [polarPoint(s.center, s.th0, s.r), polarPoint(s.center, s.th1, s.r)];
 }
 
 /** One leaf's swing in a doorway centred at `at`, `width` wide, its wall running along unit `dir`
@@ -210,29 +236,71 @@ function swingAlong(dir: Vec, at: Point, width: number, hingeSide: DoorHinge, sw
 }
 
 /**
+ * One leaf between two jambs: hinged on `from` (`left`, behind on the run) or `to`, closing
+ * along the chord between them, and open a quarter-disc as wide as that chord to the `swing` side
+ * of the chord's direction (the run's direction at the chord's middle) — {@link swingAlong}'s
+ * construction on given jambs. The two jambs are apart ({@link arcCutJambs}).
+ */
+function swingBetween(from: Point, to: Point, hingeSide: DoorHinge, swingSide: DoorSwingDir): DoorSwing {
+  const chord = Math.hypot(to.x - from.x, to.y - from.y);
+  const dir = { x: (to.x - from.x) / chord, y: (to.y - from.y) / chord };
+  const hinge = hingeSide === "left" ? from : to;
+  const farJamb = hingeSide === "left" ? to : from;
+  const leafEnd = add(hinge, mul(swingSide === "in" ? normal(dir) : mul(normal(dir), -1), chord));
+  const cross = (leafEnd.x - hinge.x) * (farJamb.y - hinge.y) - (leafEnd.y - hinge.y) * (farJamb.x - hinge.x);
+  return { hinge, farJamb, leafEnd, radius: chord, sweep: cross > 0 ? 1 : 0 };
+}
+
+/**
  * Every leaf a door sweeps, as {@link doorSwing} draws one: a hinged door's one leaf; a `double`
  * door's two (plan-soundness PS2.11e), each half the width, hung on its own jamb and closing onto
  * the other at the doorway's centre, both to the `swing` side — exactly the pair
- * {@link isDoubleDoorPair} reads as one assembly. `[]` for an unhosted door and for every kind
- * that sweeps no quarter-disc. The drawing and every swing measure (the swing and door–door
- * lint rules, the clear zones, `repair`, `finish`) read the leaves through this, so a `double`
- * door is measured leaf by leaf, as drawn. Public from the package root (ADR 0031).
+ * {@link isDoubleDoorPair} reads as one assembly. On a curved host the two hang on the cut's
+ * jambs ({@link arcCutJambs}) and meet at the chord's middle. `[]` for an unhosted door and for
+ * every kind that sweeps no quarter-disc. The drawing and every swing measure (the swing and
+ * door–door lint rules, the clear zones, `repair`, `finish`, the symmetry facts, the 3D package)
+ * read the leaves through this, so a `double` door is measured leaf by leaf, as drawn. Public
+ * from the package root (ADR 0031).
  */
 export function doorLeaves(d: DoorLike): DoorSwing[] {
   if (d.doorKind === "double") {
     const seg = d.host;
     if (!seg) return [];
-    // Both leaves along the one direction at the doorway's centre (its tangent on a curve), so
-    // the pair closes on one straight line through the centre, as a hinged leaf does on its chord.
-    const dir = segmentDirAt(seg, d.at);
-    const q = d.width / 4;
-    return [
-      swingAlong(dir, add(d.at, mul(dir, -q)), d.width / 2, "left", d.swing),
-      swingAlong(dir, add(d.at, mul(dir, q)), d.width / 2, "right", d.swing),
-    ];
+    const cut = arcCutJambs(seg, d.at, d.width);
+    if (!cut) return tangentDoubleLeaves(seg, d);
+    const [a, b] = cut;
+    const mid = { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 };
+    return [swingBetween(a, mid, "left", d.swing), swingBetween(mid, b, "right", d.swing)];
   }
   const s = doorSwing(d);
   return s ? [s] : [];
+}
+
+/** A `double` door's two leaves along the one direction at the doorway's centre (its tangent on a
+ *  curve), so the pair closes on one straight line through the centre, as a hinged leaf does. */
+function tangentDoubleLeaves(seg: NonNullable<DoorLike["host"]>, d: DoorLike): DoorSwing[] {
+  const dir = segmentDirAt(seg, d.at);
+  const q = d.width / 4;
+  return [
+    swingAlong(dir, add(d.at, mul(dir, -q)), d.width / 2, "left", d.swing),
+    swingAlong(dir, add(d.at, mul(dir, q)), d.width / 2, "right", d.swing),
+  ];
+}
+
+/**
+ * The leaves the ANNOTATION passes read, frozen at the tangent construction: on a straight host
+ * exactly {@link doorLeaves}'s, on a curved one the leaves swung along the tangent at the doorway.
+ * Read only by the annotation passes' obstacles: the label marks (`label-fit.ts`), the thickness
+ * figures' re-station (`scene-build.ts`) and a door's `annotationFootprint`, so the door's
+ * correction onto the cut's jambs (card ARC1b) moves no label, tag, leader, thickness figure or north arrow
+ * (Ruling B of #1019); card ARC1c moves them together and deletes this. Not public.
+ */
+export function tangentDoorLeaves(d: DoorLike): DoorSwing[] {
+  const seg = d.host;
+  if (!seg) return [];
+  if (d.doorKind === "double") return tangentDoubleLeaves(seg, d);
+  if (d.doorKind !== undefined && d.doorKind !== "hinged") return [];
+  return [swingAlong(segmentDirAt(seg, d.at), d.at, d.width, d.hinge, d.swing)];
 }
 
 /** Bounding box of a sized element, mm. */

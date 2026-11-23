@@ -147,8 +147,13 @@ export function insideOf(o: Opening, t: number, level: Level): 1 | -1 | "both" |
   if (!f) return null;
   const mid = f.w / 2;
   const d = Math.max(t, 1);
-  const plus = floorAt(level, f.at(mid, d));
-  const minus = floorAt(level, f.at(mid, -d));
+  // On a curved host the jambs are the cut's two ends (core card ARC1b), and their chord stands off
+  // the opening's centre by its sagitta, which can pass a wall thickness (a 1700 mm window on R1300):
+  // probe from the centre itself, as the core does. Elsewhere the centre is the chord's middle.
+  const [uc, vc] = toFrame(o, o.centre);
+  const [u, v] = Math.abs(vc) < MM ? [mid, 0] : [uc, vc];
+  const plus = floorAt(level, f.at(u, v + d));
+  const minus = floorAt(level, f.at(u, v - d));
   return plus && minus ? "both" : plus ? 1 : minus ? -1 : null;
 }
 

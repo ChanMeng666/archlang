@@ -486,7 +486,7 @@ Totals: 660 exports (230 values, 430 types), 419 flagged (75 values).
 | `DoorLike` | type | none |
 | `DoorSwing` | type | none |
 | `doorLeaves` | value | `packages/archlang-3d`, `test` |
-| `doorSwing` | value | `packages/archlang-3d` |
+| `doorSwing` | value | `packages/archlang-3d`, `test` |
 
 ## `src/geometry/arc.ts`
 
