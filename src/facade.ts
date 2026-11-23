@@ -20,6 +20,7 @@ import {
   wallFaceProbes,
 } from "./geometry.js";
 import { pointInRoomBox, roomBox } from "./analyze.js";
+import { roomCorners } from "./geometry/room-ring.js";
 import type { Point } from "./ast.js";
 import { SIDE_NORMAL } from "./algebra/d4.js";
 
@@ -189,11 +190,23 @@ export const TICK_TOL = 0.5;
 
 /** The measurement coordinate space: room rectangles when there are rooms (the
  *  coordinate space room boundaries live in), else the wall centerlines. Null when
- *  there is nothing to measure. */
+ *  there is nothing to measure.
+ *
+ *  An arc-edged room (card ARC2) is measured by its authored CORNERS, never its bulge:
+ *  its `at`/`size` reach each arc's extremes, and an extent edge there would stand where
+ *  no straight wall face is, so the side's probe would fail and the overall chain would
+ *  run from that room line to the opposite OUTER face. A curve is never a chain's
+ *  end, whether a wall or a room draws it, and whether or not a wall backs the room's arc:
+ *  each curve is dimensioned by its own `R` leader (`synthCurveDims`). A plan whose rooms
+ *  are all straight-edged (and a `room circle`, which keeps its box) is measured as before. */
 export function measureExtent(ir: ResolvedPlan): Bounds | null {
   const b = emptyBounds();
   const rooms = ir.elements.filter((el): el is RRoom => el.kind === "room");
   for (const r of rooms) {
+    if (r.edges) {
+      for (const p of roomCorners(r)) extendBounds(b, p.x, p.y);
+      continue;
+    }
     extendBounds(b, r.at.x, r.at.y);
     extendBounds(b, r.at.x + r.size.w, r.at.y + r.size.h);
   }

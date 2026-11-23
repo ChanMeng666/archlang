@@ -1648,7 +1648,10 @@ no fact is a chord. Plan JSON writes the vertices as `polygon` and the curves as
 entry per edge (from a vertex to the next, the last back to the first; `null` where straight),
 and round-trips. `dims auto` ticks the written vertices only and adds one `R<r>` leader per
 distinct centre and radius, shared with the walls' (a room drawn on a curved wall's centreline
-adds none; one on another radius gets its own).
+adds none; one on another radius gets its own). The overall chain measures the room by its
+written vertices, never its bulge, as it treats a curved wall: it runs outer face to outer face
+of the straight facades whether or not a wall stands on the arc, and the curve is dimensioned
+by its `R` leader alone.
 
 **What reads the ring as a fine polygon.** Grids, adjacency, containment and overlap read the
 arc as chords at the absolute angles k · 7.5° about its centre (the angles of a `room circle`'s

@@ -256,7 +256,7 @@ Totals: 430 modules in 34 directories.
 | `error-catalog.ts` | 125 | 29 | The ArchLang diagnostic catalog: every `E_*` / `W_*` code with its cause, fix, and a tiny example. One source for `arch explain <CODE>` and the generated `docs/error-codes.md` (see `scripts/gen-error-codes.ts`). The codes themselves are… | none |
 | `expr-source.ts` | 114 | 7 | `exprToSource(e)` — render an {@link Expr} back to canonical ArchLang source text (single-line, precedence-correct parenthesisation). | none |
 | `expr.ts` | 1378 | 71 | Arithmetic expressions: a small Pratt parser + a pure evaluator. | charges the step meter |
-| `facade.ts` | 496 | 3 | The facade model behind `dims auto`: which wall line each of the four sides reads, the per-axis outline a witness line terminates on, and — the one question both the renderer and `lint()` ask — which openings a side's openings chain… | none |
+| `facade.ts` | 509 | 3 | The facade model behind `dims auto`: which wall line each of the four sides reads, the per-axis outline a witness line terminates on, and — the one question both the renderer and `lint()` ask — which openings a side's openings chain… | none |
 | `finish.ts` | 1043 | 9 | `finish()` — make a plan a complete DRAWING: the furniture its empty rooms imply (the `furnish` stage, `src/furnish.ts`, `docs/adr/0025-furnish-as-explicit-transform.md`), then the sheet statements its author left out (the `sheet` stage… | none |
 | `first-use-path.ts` | 22 | 0 | A build entry, not a package export (card EB.2), the second of the playground's four (the first is `src/compile-path.ts`, the third `src/actions-path.ts`, the fourth `src/lint-path.ts`): the core values a first use on the playground loads… | none |
 | `fix-apply.ts` | 251 | 5 | Deterministic, pure application of {@link FixSuggestion}s to source text. | none |
@@ -499,7 +499,7 @@ Totals: 430 modules in 34 directories.
 | `min-rect.ts` | 169 | 2 | The exact minimum-area enclosing rectangle of a point set on the 0.001 mm lattice (plan-soundness PS5.1b; design `archlang-lab/plans/plan-soundness/research/2026-10-24-ps5-taste-design.md` §3 R9, R18). | none |
 | `polygon.ts` | 715 | 77 | Simple-polygon math for **polygonal rooms**. | charges the step meter |
 | `rect.ts` | 502 | 42 | Shared axis-aligned rectangle math for the analysis/repair layer. | none |
-| `room-ring.ts` | 199 | 15 | The room-ring seam: what a room's FLOOR is, read through one place (card ARC2-seam, `docs/plans/arc2-room-arcs.md`). | none |
+| `room-ring.ts` | 199 | 16 | The room-ring seam: what a room's FLOOR is, read through one place (card ARC2-seam, `docs/plans/arc2-room-arcs.md`). | none |
 | `union.ts` | 193 | 3 | Boolean of axis-aligned rectangles (union, and difference of "holes") → boundary loops. | none |
 
 ## `src/grammar/`
@@ -578,7 +578,7 @@ Totals: 430 modules in 34 directories.
 | `reachability.ts` | 126 | 1 | Room-graph reachability: builds the room-connectivity graph from doors/openings (rooms + the literal "exterior") once, then — per room, in source order — emits W_BATH_VIA_BEDROOM and W_ROOM_UNREACHABLE, preserving the historical… | none |
 | `room-contents.ts` | 772 | 3 | Room-contents advisories (plan-soundness PS2.8, PS2.9): a habitable room with no window, and a furnished room missing the piece that defines it; and (product roadmap RM1.2c) a room whose label names a catalogued piece it does not hold.… | none |
 | `site.ts` | 115 | 1 | `W_ROOM_NOT_EQUATOR_FACING` — the site layer's one advisory rule. | none |
-| `stairs.ts` | 1681 | 11 | Stair safety (plan-soundness PS2.11e, the stair bullets, and PS2.34): a door swinging over a flight or its landing, a flight with no landing at its foot or head, a doorway onto a flight's side, a void where a flight arrives, a flight too… | none |
+| `stairs.ts` | 1683 | 11 | Stair safety (plan-soundness PS2.11e, the stair bullets, and PS2.34): a door swinging over a flight or its landing, a flight with no landing at its foot or head, a doorway onto a flight's side, a void where a flight arrives, a flight too… | none |
 | `vertical.ts` | 207 | 2 | `W_STAIR_UNMATCHED` — a run of vertical circulation that connects nothing. | none |
 
 ## `src/overlays/`
