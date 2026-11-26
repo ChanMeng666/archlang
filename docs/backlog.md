@@ -1862,7 +1862,7 @@ The state of each listing is the table in `docs/seo.md` § 8. These are what is 
 Readings of the agent-reach E1/E2 metrics must discount the 2026-10-14 burst traffic (the owner's
 own ~1,500 hosted-MCP requests; `docs/seo.md` section 8).
 
-### O.1 · awesome-mcp-servers #14383 waits on its maintainer (BLOCKED on a third party) — `todo`
+### O.1 · awesome-mcp-servers #14383 waits on its maintainer: merged 2026-11-17, waiting to be archived — `note`
 
 The merge condition, a Glama quality score of any grade, is met: on 2026-10-25 Glama's Dockerfile
 settings were set to install `@chanmeng666/archlang-mcp` and run `archlang-mcp` behind `mcp-proxy`
