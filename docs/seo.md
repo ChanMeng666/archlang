@@ -201,7 +201,9 @@ account, awaiting maintainers (except where marked):
 
 | List | Pull request |
 |---|---|
-| punkpeye/awesome-mcp-servers | [#14383](https://github.com/punkpeye/awesome-mcp-servers/pull/14383) — waits on the Glama badge (below) |
+| punkpeye/awesome-mcp-servers | [#14383](https://github.com/punkpeye/awesome-mcp-servers/pull/14383) — merged 2026-11-17 |
+| punkpeye/awesome-remote-mcp-servers | [#4579](https://github.com/punkpeye/awesome-remote-mcp-servers/pull/4579) — opened 2026-11-13 (hosted `https://mcp.archlang.uk/mcp`, Art & Design); rebased 2026-11-17, conflict-free on 2026-11-27. The list prioritises entries whose site or README links back to the Glama connector, so archlang.uk/mcp links to the connector page since 2026-11-27 (a plain link counts; no badge image, so the page makes no third-party request) |
+| Appnova-EU-OU/awesome-remote-mcp-servers | [#1726](https://github.com/Appnova-EU-OU/awesome-remote-mcp-servers/pull/1726) — opened 2026-11-23 by `freemcp-bot`, not by us: an automatic freemcp.space directory entry copied from an awesome list (filed under `cloud-infra`). Left alone; claiming it is the owner's GitHub sign-in on a third-party site, optional |
 | osama-ata/Awesome-AECO | [#13](https://github.com/osama-ata/Awesome-AECO/pull/13) — merged 2026-10-03 |
 | Daviidro/awesome-aec-mcp | [#1](https://github.com/Daviidro/awesome-aec-mcp/pull/1) |
 | steven2358/awesome-generative-ai | [#1375](https://github.com/steven2358/awesome-generative-ai/pull/1375) |
@@ -215,7 +217,7 @@ conflicts; the re-added lines no longer claim DXF/PDF from the MCP server), left
 on #1375, #192 and aec-mcp #1, and opened the two new entries above, every text disclosing the
 maintainer's account and the AI draft. `mlightcad/awesome-cad` was skipped (no merge since
 2026-06-05); `punkpeye/awesome-remote-mcp-servers` waited for the registry `remotes`, which
-published with 0.2.41 on 2026-11-11, and no entry is filed there yet (checked 2026-11-11); `VoltAgent/awesome-openclaw-skills` #610 is recorded under ClawHub below.
+published with 0.2.41 on 2026-11-11 (the entry is #4579 above); `VoltAgent/awesome-openclaw-skills` #610 is recorded under ClawHub below.
 
 **One exception on record, 2026-11-03.** A SERP study run from the owner's `serpdata-api-test`
 repository (`reports/arch-projects-analysis.md`, with an errata block at its head) led an agent,

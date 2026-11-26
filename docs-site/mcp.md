@@ -18,6 +18,9 @@ compile it, describe it, lint it and fix it. There are two ways to connect, the 
 | [`@chanmeng666/archlang-mcp`](https://www.npmjs.com/package/@chanmeng666/archlang-mcp) | A local stdio server, run with `npx`. Listed on the official MCP registry as `io.github.ChanMeng666/archlang-mcp`. |
 | `https://mcp.archlang.uk/mcp` | A hosted Streamable HTTP server. No sign-in and no install; plan sources up to a size cap, rate-limited per address, no PNG output. |
 
+Glama lists the hosted server as a connector, with its quality score:
+[ArchLang MCP connector on Glama](https://glama.ai/mcp/connectors/io.github.ChanMeng666/archlang-mcp).
+
 If the agent can run shell commands, the [CLI](/agents) does the same work and costs nothing in
 the context window until it is called; an MCP server's tool list sits in the context all the time.
 The MCP server is for hosts without a shell, and for people who prefer to install a server.
