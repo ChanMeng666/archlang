@@ -16,6 +16,7 @@
  * `data-close`. A select, the a11y switch and Saved (whose popover anchors to its button) keep More
  * open. This module is the one place that closes them.
  */
+import { animateMenu, closeMenu } from "./menu-motion.js";
 import { failedToLoad } from "./notice-core.js";
 
 export interface ShellCtx {
@@ -65,7 +66,7 @@ export function mountShell(ctx: ShellCtx): Shell {
     for (const menu of menus) {
       if (!menu.open) continue;
       const inside = menu.contains(document.activeElement);
-      menu.open = false;
+      closeMenu(menu);
       if (inside) menu.querySelector("summary")?.focus();
     }
   });
@@ -80,13 +81,18 @@ export function mountShell(ctx: ShellCtx): Shell {
       const inside = path.some(
         (n) => n === menu || (menu === more && n instanceof Element && n.classList.contains("snap-pop")),
       );
-      if (!inside) menu.open = false;
+      if (!inside) closeMenu(menu);
     }
   });
-  // One menu open at a time: opening one closes the other.
+  // One menu open at a time: opening one closes the other. Each closes the way it opened
+  // (menu-motion.ts), and a press on its trigger mid-close reverses it.
   for (const menu of menus) {
+    const closeOthers = () => {
+      for (const other of menus) if (other !== menu) closeMenu(other);
+    };
+    animateMenu(menu, closeOthers);
     menu.addEventListener("toggle", () => {
-      if (menu.open) for (const other of menus) if (other !== menu) other.open = false;
+      if (menu.open) closeOthers();
     });
     // Tab out of a menu and it closes, as the gallery does (card PG5b ⑧). The focus going into
     // More's Saved popover (outside More, but More's) keeps it open; focus going nowhere (a click
@@ -95,7 +101,7 @@ export function mountShell(ctx: ShellCtx): Shell {
       const to = e.relatedTarget as Element | null;
       if (!menu.open || !to || menu.contains(to)) return;
       if (menu === more && to.closest(".snap-pop")) return;
-      menu.open = false;
+      closeMenu(menu);
     });
   }
   // An item that edits the source (Format, Finish) runs through the editor, so its edit is
@@ -118,7 +124,7 @@ export function mountShell(ctx: ShellCtx): Shell {
   for (const menu of menus) {
     menu.addEventListener("click", (e) => {
       // After the item's own handler, so the menu closes on what was chosen.
-      if ((e.target as Element | null)?.closest("[data-close]")) setTimeout(() => (menu.open = false), 0);
+      if ((e.target as Element | null)?.closest("[data-close]")) setTimeout(() => closeMenu(menu), 0);
     });
   }
 

@@ -19,7 +19,7 @@ module's remaining facts are in its own header.
 invariants; this file holds every module. The exports of `src/index.ts` are in the sibling
 [`public-surface.md`](public-surface.md).
 
-Totals: 431 modules in 34 directories.
+Totals: 432 modules in 34 directories.
 
 ## `packages/archlang-3d/src/`
 
@@ -151,7 +151,7 @@ Totals: 431 modules in 34 directories.
 
 | Module | Lines | Importers | Summary | Budget |
 | --- | ---: | ---: | --- | --- |
-| `actions.ts` | 814 | 1 | The header/panel action buttons: Format, Finish and Saved (the More menu), Repair furniture, the Share menu (Copy link, short or full; Embed; Export: Copy SVG / PNG and the downloads, SVG · PNG · PDF · DXF · TXT · GLB, ruling PG-D5), Copy… | none |
+| `actions.ts` | 815 | 1 | The header/panel action buttons: Format, Finish and Saved (the More menu), Repair furniture, the Share menu (Copy link, short or full; Embed; Export: Copy SVG / PNG and the downloads, SVG · PNG · PDF · DXF · TXT · GLB, ruling PG-D5), Copy… | none |
 | `arch-completion.ts` | 63 | 2 | CodeMirror 6 autocompletion for ArchLang, backed by the core's pure `completion()` language service (the same engine the LSP/editor use). | none |
 | `checks-overlay.ts` | 68 | 2 | The Checks overlay's string work, pure (unit-tested in Node): lifting the review rings out of the sheet `arch preview --review` draws, and laying them over the drawing on screen. | none |
 | `checks-panel.ts` | 220 | 1 | Checks (public-surfaces P6): the Checks layer toggle on the drawing's toolbar (beside Paths, ruling PG-D3) draws, over the drawing, the review rings `arch preview --review` draws, from the same function (src/cli/review.ts, built as… | none |
@@ -169,7 +169,7 @@ Totals: 431 modules in 34 directories.
 | `escape.ts` | 7 | 11 | Minimal HTML-escaping for the innerHTML the playground panels build by hand. | none |
 | `examples.ts` | 393 | 4 | Playground example plans. | none |
 | `facts-strip.ts` | 27 | 1 | The facts line under the drawing: one plain sentence of how much source drew how much plan, "57 lines of ArchLang → 3 rooms · 45.05 m² (net)", computed from the source and describe()'s totals of the storey on screen (room-facts.ts… | none |
-| `gallery.ts` | 291 | 1 | The plan gallery (ruling PG-D2): the header's one way to choose a plan. A disclosure (`<details id="gallery">`) whose summary names the plan on screen (`▦ Furnished Flat ▾`) and whose panel is a grid of thumbnail cards, grouped as… | none |
+| `gallery.ts` | 296 | 1 | The plan gallery (ruling PG-D2): the header's one way to choose a plan. A disclosure (`<details id="gallery">`) whose summary names the plan on screen (`▦ Furnished Flat ▾`) and whose panel is a grid of thumbnail cards, grouped as… | none |
 | `glb-export.ts` | 35 | 3 | Share → Export → GLB (public-surfaces card X5; in the Share menu since card PG4): its own chunk, loaded on the first click (actions.ts imports it dynamically, beside plan3d.ts), so glTF-Transform never reaches the startup chunks or the 3D… | none |
 | `glb-note.ts` | 19 | 1 | The words beside Share → Export → GLB (ruling PG-D5; card X5's note): what the browser writes, and that it does not check it, as the CLI does. Apart from glb-export.ts and preview3d.ts so the startup chunk can put the note in the menu… | none |
 | `intent-panel.ts` | 131 | 2 | Intent, the Checks tab's last section — the v1.14 intent channel, in the browser. | none |
@@ -184,6 +184,7 @@ Totals: 431 modules in 34 directories.
 | `llm-prompt.ts` | 144 | 3 | Assemble a single paste-ready prompt for an AI assistant from the current plan: an intro line, the source in an ```arch fence, the compact `describe()` facts (rooms/areas/adjacency + an access summary), the diagnostics with line/col/fix… | none |
 | `main.ts` | 1600 | 0 | The playground's startup module: the view path. It shows the drawing (the one built into the page first, then the compiled one), pans and zooms it, reports its facts, switches storeys and plans (the plan gallery in the header) and runs… | none |
 | `make-own.ts` | 304 | 2 | The Make-your-own sheet: every way to get a plan of your own, at equal weight, in the order `site-shared/doors.json` gives the playground (`order.playground`). Every URL, command and the agent prompt are read from that file, the one… | none |
+| `menu-motion.ts` | 77 | 3 | The header's <details> menus (Share, More, the plan gallery) close the way they open: their panel fades and slides back at --dur-fast-out on --ease-in (`.is-closing`, chrome.css) and the menu is shut (`open` removed, its panel `display… | none |
 | `mobile-views.ts` | 67 | 2 | The phone-width view switcher of edit mode (Code · Plan · 3D · Facts · Checks). Below the 900px breakpoint the workspace shows one view at a time, and this switcher is its ONE control: the output tab row is hidden there, so each function… | none |
 | `notice-core.ts` | 71 | 5 | The stage notice's two pure rules (main.ts `flash`): how long a message stays, and the "undo" suffix an action that rewrites the source says, and the sentence-and-button a view that did not load shows. Part of the startup chunk. | none |
 | `nudge.ts` | 62 | 2 | The one quiet pointer at Make your own: the stage notice (main.ts `flash`) with a "Make your own" action, after a visitor has shown interest (the third plan switch, or the first knob let go), never a modal and never focused. It is the… | none |
@@ -200,7 +201,7 @@ Totals: 431 modules in 34 directories.
 | `save-data.ts` | 10 | 3 | Whether the browser asks to spare data (Save-Data, or a 2g connection): the playground then fetches nothing ahead of a use (ruling MP-D4). The one copy of the rule: main.ts's idle import and the header actions' warm-up (actions.ts, card… | none |
 | `share.ts` | 252 | 21 | URL-hash share codec — the single source of truth for round-tripping a plan's source through the address bar with no backend. Shared by the main playground (`main.js`) and the chrome-less embed page (`embed.js`) so a `#z=` link works… | none |
 | `shared-notice.ts` | 114 | 3 | The shared-plan notice — the one piece of UI that exists because a `#z=` link is THIRD-PARTY CONTENT. | none |
-| `shell.ts` | 200 | 1 | The header's own behaviour: the Source toggle, the two menus, Share and More (⋯), and the Make-your-own dialog. Part of the startup chunk, so it holds no compiler, no editor and no doors (the sheet's body is make-own.ts, loaded on its… | none |
+| `shell.ts` | 206 | 1 | The header's own behaviour: the Source toggle, the two menus, Share and More (⋯), and the Make-your-own dialog. Part of the startup chunk, so it holds no compiler, no editor and no doors (the sheet's body is make-own.ts, loaded on its… | none |
 | `snapshots.ts` | 174 | 2 | Saved snapshots — a lightweight, vanilla "history" for the playground. | none |
 | `storage.ts` | 51 | 8 | Thin, defensive localStorage helpers. Every access is wrapped: private-mode, disabled storage, or quota errors degrade to a no-op / fallback rather than breaking the editor. Keys are namespaced under `archlang.pg.*`. | none |
 | `suggest-panel.ts` | 42 | 1 | The Suggest panel (ADR 0005 — "facts, not an invisible architect"). | none |

@@ -16,6 +16,7 @@
  * click outside or a Tab out of it closes it. Its thumbnails are `loading="lazy"` inside a closed
  * `<details>`, which renders nothing, so none is fetched before the first open.
  */
+import { animateMenu, closeMenu, isClosing } from "./menu-motion.js";
 import { cardText, splitLabel } from "./plan-label.js";
 
 export interface Gallery {
@@ -85,10 +86,14 @@ export function mountGallery(root: HTMLDetailsElement, onPick: (label: string) =
   }
 
   function close(refocus = false) {
-    if (!root.open) return;
-    root.open = false;
+    if (!root.open || isClosing(root)) return;
+    // It closes the way it opened (menu-motion.ts); it is closed to assistive tech at once.
+    trigger.setAttribute("aria-expanded", "false");
+    closeMenu(root);
     if (refocus) trigger.focus();
   }
+  // A press on the trigger mid-close reverses it: open again, as far as anyone can tell.
+  animateMenu(root, () => trigger.setAttribute("aria-expanded", "true"));
 
   // The phone sheet's Close (U30): the focus goes back to the trigger.
   root.querySelector("#galleryClose")?.addEventListener("click", () => close(true));
