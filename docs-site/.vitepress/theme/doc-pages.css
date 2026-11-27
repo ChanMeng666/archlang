@@ -347,6 +347,17 @@
   overflow-x: auto;
 }
 
+/* A display:table box cannot scroll, so on a narrow screen a wide schedule pushed the whole page
+   sideways (214 px at 320 px wide: WCAG SC 1.4.10 Reflow). There the table becomes its own
+   scrolling box again, as VitePress has it; it keeps its tabindex="0" so a keyboard can scroll it. */
+@media (max-width: 767.98px) {
+  .vp-doc table {
+    display: block;
+    width: auto;
+    max-width: 100%;
+  }
+}
+
 .vp-doc th {
   font-family: var(--font-display);
   font-variation-settings: "wdth" 85;

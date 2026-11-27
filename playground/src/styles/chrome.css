@@ -1357,6 +1357,15 @@ html:not([data-mode="edit"]) .pane:has(#storeys:not([hidden])) .room-card {
   }
 }
 
+/* Short AND narrow (≤ 380 × < 500): the one row above needs ~345 px and the screen has 320, which
+   is also a 1280 px desktop at 400% zoom. One row would clip Make your own off the edge and scroll
+   the page sideways (WCAG SC 1.4.10 Reflow), so here the controls may wrap to a second row. */
+@media (max-width: 380px) and (max-height: 499.98px) {
+  header {
+    flex-wrap: wrap;
+  }
+}
+
 /* a11y toggle — opt into the SVG <title>/<desc> metadata (compile's `accessible`).
    Sits beside the render theme, since it changes the drawn and exported bytes. */
 .tb-check {

@@ -821,11 +821,20 @@ export default defineConfig({
   // native binaries.
   vite: {
     resolve: {
-      alias: {
+      alias: [
         // The share-link subpath first: an alias also matches `archlang/…`.
-        "archlang/share": fileURLToPath(new URL("../../dist/share.js", import.meta.url)),
-        archlang: fileURLToPath(new URL("../../dist/index.js", import.meta.url)),
-      },
+        { find: "archlang/share", replacement: fileURLToPath(new URL("../../dist/share.js", import.meta.url)) },
+        { find: "archlang", replacement: fileURLToPath(new URL("../../dist/index.js", import.meta.url)) },
+        // Two default-theme components replaced for accessibility (each file's header says why).
+        {
+          find: /^.*\/VPSidebarItem\.vue$/,
+          replacement: fileURLToPath(new URL("./theme/components/VPSidebarItem.vue", import.meta.url)),
+        },
+        {
+          find: /^.*\/VPNavBarSearchButton\.vue$/,
+          replacement: fileURLToPath(new URL("./theme/components/VPNavBarSearchButton.vue", import.meta.url)),
+        },
+      ],
     },
     server: { fs: { allow: [resolve(fileURLToPath(new URL("../..", import.meta.url)))] } },
     optimizeDeps: { exclude: ["@resvg/resvg-js", "pdfkit", "clipper2-wasm", "archlang"] },
