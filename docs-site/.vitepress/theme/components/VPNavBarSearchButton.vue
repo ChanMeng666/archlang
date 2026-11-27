@@ -6,6 +6,7 @@
      button ("Ctrl K", or "⌘ K" on a Mac), so the accessible name did not contain the visible text
      (WCAG SC 2.5.3 Label in Name; axe label-content-name-mismatch on every page). The name now
      comes from the button's own text, and the shortcut is also stated in aria-keyshortcuts.
+     (Upstream's `.dark` variables block is dropped: this site is light-only, ADR 0014.)
   2. Below 768px the "Search" text is visually hidden rather than display:none, so the
      icon-only button keeps a name on a phone.
 
@@ -28,7 +29,7 @@ const translate = createSearchTranslate(defaultTranslations)
 </script>
 
 <template>
-  <button type="button" class="DocSearch DocSearch-Button" aria-keyshortcuts="Control+K Meta+K">
+  <button type="button" class="DocSearch DocSearch-Button" aria-keyshortcuts="Control+K Meta+K /">
     <span class="DocSearch-Button-Container">
       <span class="vp-icon DocSearch-Search-Icon" aria-hidden="true"></span>
       <span class="DocSearch-Button-Placeholder">{{ translate('button.buttonText') }}</span>
@@ -55,14 +56,6 @@ const translate = createSearchTranslate(defaultTranslations)
   --docsearch-footer-background: var(--vp-c-bg);
 }
 
-.dark [class*='DocSearch'] {
-  --docsearch-modal-shadow: none;
-  --docsearch-footer-shadow: none;
-  --docsearch-logo-color: var(--vp-c-text-2);
-  --docsearch-hit-background: var(--vp-c-default-soft);
-  --docsearch-hit-color: var(--vp-c-text-2);
-  --docsearch-hit-shadow: none;
-}
 
 .DocSearch-Button {
   display: flex;

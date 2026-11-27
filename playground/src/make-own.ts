@@ -133,7 +133,9 @@ function doorHtml(key: string): string {
         key,
         doors.agent.label,
         `<span>Paste this into it; it writes the plan and checks it.</span>` +
-          `<pre class="mo-prompt" id="moPrompt">${escapeHtml(AGENT_PROMPT)}</pre>` +
+          // It scrolls (max-height 11em), so it takes focus and a name: a keyboard can scroll it
+          // (WCAG SC 2.1.1; axe scrollable-region-focusable).
+          `<pre class="mo-prompt" id="moPrompt" tabindex="0" role="region" aria-label="The prompt">${escapeHtml(AGENT_PROMPT)}</pre>` +
           `<div class="mo-actions"><button type="button" class="mo-copybtn" data-copy="prompt">Copy prompt</button>` +
           `<button type="button" class="mo-copybtn" id="moStartHere" aria-describedby="moStartNote">Start from this plan</button></div>` +
           `<p class="mo-note" id="moStartNote">Start from this plan stores this plan on archlang.uk's server for a short link, adds the link to the prompt and copies it.</p>` +

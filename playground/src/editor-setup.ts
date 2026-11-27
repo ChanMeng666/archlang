@@ -67,6 +67,9 @@ export function createEditor({ parent, doc, onDocChanged, diagnosticsOf }: Edito
               color: "var(--src-fg)",
             },
             ".cm-cursor, .cm-dropCursor": { borderLeftColor: "var(--src-fg)" },
+            // The editor's focus ring, in the header controls' style: CodeMirror's default is a
+            // 1 px dotted line that is hard to see beside the hairline rules (WCAG SC 2.4.7).
+            "&.cm-focused": { outline: "2px solid var(--plum-deep)", outlineOffset: "-2px" },
             "&.cm-focused .cm-selectionBackground, .cm-selectionBackground, .cm-content ::selection": {
               backgroundColor: "rgba(128, 82, 255, 0.28)",
             },

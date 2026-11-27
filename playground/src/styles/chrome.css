@@ -1309,7 +1309,8 @@ html:not([data-mode="edit"]) .pane:has(#storeys:not([hidden])) .room-card {
 /* A phone on its side (under 500 px tall): ONE header row, so the stage keeps the height
    (ruling MP-D1). The row break goes, the gallery's trigger takes what the controls leave (its
    plan name ellipsised), and the brand is the mark alone: the stamp's text, like the wordmark's,
-   stays the h1's, read but not drawn. 4 + 44 + 4 + 1 px = 53 px. */
+   stays the h1's, read but not drawn. 4 + 44 + 4 + 1 px = 53 px. One exception, below: at
+   ≤ 380 px wide the controls do not fit one row, so they may wrap. */
 @media (max-width: 900px) and (max-height: 499.98px) {
   header {
     flex-wrap: nowrap;
@@ -1554,6 +1555,10 @@ html:not([data-mode="edit"]) .pane:has(#storeys:not([hidden])) .room-card {
   align-self: stretch;
   max-height: 11em;
   overflow-y: auto;
+}
+.mo-prompt:focus-visible {
+  outline: 2px solid var(--plum-deep);
+  outline-offset: 1px;
 }
 .mo-actions {
   display: flex;
