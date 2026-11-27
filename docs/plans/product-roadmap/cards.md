@@ -1033,7 +1033,26 @@ RM-D23 已获所有者批准（2026-11-11）。backlog VA.5："Revisit only with
 - 不改的：占地贴合、四分之一转、整数 µm、每个壳体封闭（V-GEO-02）。对称跟核心走（`T0_HANDED`、`handedAt`），只由一个细节决定方向的家族不画那个细节。高度不改。
 - 账本：沿用现在的做法（`t0-kit.ts` 里 `T0Family` 的注释）。高度、挂高、材质与 `defaults` 进账本，部件尺寸不进账本。新增的 `defaults` 项照这个规则进账本。
 - 钉子：laneway 的 Mesh3D 与 GLB SHA-256 按 V-D5 带理由移动，提交与测试注释都写理由。关键帧按 CI 打印的哈希重钉（`.claude/rules/archlang-3d.md` § Traps）。资产用 `npm run gen:3d-assets -- --videos` 重生成。
-- 代价，用确定的计数，不计时：现有的 `3D package frame-budget pass` 只比较同一棵树上阴影开与关，没有拿分支和 `main` 比（`packages/archlang-3d/e2e/frame-budget.e2e.ts` 头注释），所以不拿它作门。RM8.11 加一条纯单测（它自己的证明里也列了这一条）：数出 laneway 与 two-storey 的 Mesh3D 三角形总数，上限是一个固定的数，三张卡合起来用，不随每张卡的 `main` 重算。2026-11-27 的读数是 laneway 7,992、two-storey 7,668，上限取 1.25 倍，即 9,990 与 9,585。这两张图里没有 `desk`、`bench`、`armchair`、`loveseat`、`sofa_l`、`bathtub`、`dishwasher`，所以同一条单测另外为每个改到的家族在其目录占地上数一件的三角形数，上限取 2026-11-27 读数的 2 倍。每张卡在 PR 里列出前后对比和 laneway 的 GLB 文件大小。
+- 代价，用确定的计数，不计时：现有的 `3D package frame-budget pass` 只比较同一棵树上阴影开与关，没有拿分支和 `main` 比（`packages/archlang-3d/e2e/frame-budget.e2e.ts` 头注释），所以不拿它作门。RM8.11 加一条纯单测（它自己的证明里也列了这一条）：数出 laneway 与 two-storey 的 Mesh3D 三角形总数，上限是一个固定的数，三张卡合起来用，不随每张卡的 `main` 重算。2026-11-27 的读数是 laneway 7,992、two-storey 7,668，上限取 1.25 倍，即 9,990 与 9,585。这两张图里没有 `desk`、`bench`、`armchair`、`loveseat`、`sofa_l`、`bathtub`、`dishwasher`，所以同一条单测另外为每个改到的家族数一件的三角形数，上限取 RM8.11 合并时读数的 2 倍。尺寸固定写在测试里。有目录占地的用目录占地；`sofa`、`armchair`、`chair`、`table`、`desk`、`bench` 没有目录占地（`src/fixtures-catalog.ts` 里这几行没有 `footprint`），用下面的尺寸。部分读数已在 2026-11-27 量过（#1035 的评审）：
+
+| 家族 | 尺寸（宽 × 深，mm） | 2026-11-27 的三角形数 |
+|---|---|---|
+| `bed` | 1500 × 2000（目录） | 640 |
+| `wardrobe` | 1800 × 600（目录） | 344 |
+| `loveseat` | 1500 × 850（目录） | 472 |
+| `sofa_l` | 2600 × 1600（目录） | 820 |
+| `wc` | 400 × 700（目录） | 588 |
+| `bathtub` | 1700 × 700（目录） | 536 |
+| `dishwasher` | 600 × 600（目录） | 184 |
+| `sofa` | 2000 × 900 | RM8.11 量 |
+| `armchair` | 900 × 850 | RM8.11 量 |
+| `chair` | 450 × 500 | RM8.11 量 |
+| `table` | 1600 × 900 | RM8.11 量 |
+| `desk` | 1400 × 700 | RM8.11 量 |
+| `bench` | 1200 × 400 | RM8.11 量 |
+| 其余改到的家族 | 目录占地 | RM8.11 量 |
+
+卡改回 `todo` 时，若 laneway 或 two-storey 的源文件在此之后改过，先在 RM8.11 里重读这两个总数，再按 1.25 倍定上限，并在 PR 里写明。每张卡在 PR 里列出前后对比和 laneway 的 GLB 文件大小。
 - PR 里放同一视角的前后关键帧对照图。
 
 ### RM8.11 · T0 部件工具：放样的补全与超椭圆截面（借鉴 sand3d 的思路） — `parked` · 2 日（主会话估） · opus · 依赖无
@@ -1045,7 +1064,7 @@ RM-D23 已获所有者批准（2026-11-11）。backlog VA.5："Revisit only with
 2. `radius` 不随圈缩放，原样传给每一圈。
 3. 最底一圈总是重复表里第一行的比例。所以两行的表不是一个从底到顶的直线收分（凉亭顶靠"底部一行比例为 1"绕开）。
 4. `profile` 不能放样（`partShell` 遇到 `profile` 加 `loft` 会抛错）。没有超椭圆截面。
-5. 放样只做竖直、不带孔的部件：横向部件（`axis`）或带孔的部件加 `loft` 都会抛错（`partShell` 开头两行）。坐垫、靠垫、被子今天都是横向部件。
+5. 放样只做竖直、不带孔的部件：横向部件（`axis`）或带孔的部件加 `loft` 都会抛错（`partShell` 开头两行）。坐垫、靠垫、被子今天大多是横向部件（例外：`sofa_l` 转角处的座垫是竖直的）。
 
 做：
 - 放样表的每行可分别给宽、深的比例，并给宽、深两个方向的偏移。旧的两元组写法照旧有效，结果逐字节不变。偏移后的每一圈必须仍在部件的盒子之内：占地裁剪只认盒子（`t0LocalParts`），越出就抛错。
@@ -1070,7 +1089,7 @@ RM-D23 已获所有者批准（2026-11-11）。backlog VA.5："Revisit only with
 
 做（具体尺寸在 PR 里定）：
 - 共用的 `upholstered`（`t0-kit.ts`），用的家族有 `sofa`、`armchair`、`loveseat`，三个一起改：座垫改为超椭圆截面，读作鼓起；扶手改为超椭圆截面；木腿收分。靠垫已有后仰的轮廓（`profile: BACK_CUSHION`），保留不改。
-- `sofa_l`（`t0-living.ts`）的部件是自己建的，不走 `upholstered`。它的座垫（沿 `x` 和沿 `z` 两个方向的都算）同样改为超椭圆截面，免得它和 `sofa` 摆在一起时一个平、一个鼓；靠垫同样保留 `BACK_CUSHION`。
+- `sofa_l`（`t0-living.ts`）的部件是自己建的，不走 `upholstered`。它两段上的横向座垫（沿 `x` 和沿 `z` 的）同样改为超椭圆截面；转角处的座垫是竖直、不带孔的部件，用放样做隆起，高度与鼓起程度和两侧一致。这样它和 `sofa` 摆在一起时不会一个平、一个鼓。靠垫同样保留 `BACK_CUSHION`。
 - `bed`：床垫用放样做顶面隆起；被子与枕头改为超椭圆截面。
 - `chair`：腿收分；椅垫用放样做隆起。
 - `table`（`dining_table` 是它的别名）：腿收分；桌面边缘一道倒角，用两圈放样。
@@ -1088,14 +1107,13 @@ RM-D23 已获所有者批准（2026-11-11）。backlog VA.5："Revisit only with
 
 今天已有、本卡不做的：`cabinet()`（`t0-kit.ts`）的柜门缝 4 mm 和退进的踢脚已有。洗手盆的柜门缝与台面圆角已有。冰箱两扇门的 12 mm 缝和圆把手已有，所以冰箱不在本卡里。
 
-做：
-放样只做竖直、不带孔的部件（RM8.11），所以带孔的台面、浴缸壁、托盘不做放样：要倒角的，把不带孔的一条拆成单独的部件再放样；只要平面圆角的，用截面形状（`radius` 或超椭圆）。
+放样只做竖直、不带孔的部件（RM8.11），所以带孔的台面、浴缸壁、托盘不做放样：要倒角的，把不带孔的一条拆成单独的部件再放样；只要平面圆角的，用截面形状（`radius` 或超椭圆）。孔碰到外轮廓时，`prism` 建不出来，`partShell` 会退回不带孔的实体，只记一个丢掉的孔数（`extrude.ts` 的 `holesApart`、`t0.ts` 的 `partShell`），所以每个夹具都断言丢掉的孔数为 0。
 
 做：
 - `wc`：碗身（竖直的 `round` 部件，0…300 mm）由圆柱改为收分放样，上大下小；水箱改为超椭圆截面。
 - `basin`：看得见的是台面上的盆口（台面部件的 `hole`）。盆口与下面的盆体一起改为同一个超椭圆，盆体在每个方向都比盆口大 10 mm（今天的差值），从上面看不露出柜体。
 - `bathtub`：外壁的两个部件改为超椭圆截面（平面形状，可以带孔）。上沿不做圆角：它带着浴缸的孔，放样做不了。
-- 共用的 `cabinet()`，用的家族有 `counter`、`kitchen_sink`、`stove` 和 `dishwasher`，四个一起改：台面前沿拆出一条不带孔的部件，用两圈放样做倒角。台面其余部分（`kitchen_sink` 的水槽孔在这里）不变。
+- 共用的 `cabinet()`，用的家族有 `counter`、`kitchen_sink`、`stove` 和 `dishwasher`，四个一起改：台面前沿拆出一条不带孔的部件，用两圈放样做倒角。这一条的深度小于 60 mm：`kitchen_sink` 只保证水槽孔前面留 60 mm 的石材（`t0.ts` 的 `kitchen_sink`）。台面其余部分（水槽孔在这里）不变。拆开后台面成了两个同材质的网格，查看器按网格描边（`mount.ts` 的 `EdgesGeometry(geo, 30)`），可能在接缝处出一条线；PR 的前后对照图要看这一处。
 - `shower`：托盘外沿在平面上改为圆角（`radius`），托盘的孔不变。
 
 证明：上面的共用门槛；每个改到的家族一个最小夹具，断言的是性质（如碗身顶圈大于底圈、盆体在每个方向都比盆口大）。PR 列出改到的家族名单（含 `dishwasher`）。
@@ -1104,7 +1122,11 @@ RM-D23 已获所有者批准（2026-11-11）。backlog VA.5："Revisit only with
 
 ### RM8.14 · 材质与明暗（RM-D94） — `parked` · 3 日（主会话估） · opus · 依赖 RM8.13
 
-今天：查看器的实体网格用 `MeshLambertMaterial` 加 `flatShading: true`（`src/replay/mount.ts`），所以圆的、放样的部件看起来是一圈棱面。接触阴影层是 `MeshBasicMaterial`。灯是三盏：半球光、主光、补光（`mount.ts` 里模块私有的 `LIGHT`），加 `NeutralToneMapping`。颜色都在 `materials.ts` 里：`PALETTE`（材质槽）、`KIND_PALETTE`（墙、楼板等种类）、`FINISH_PALETTE`（楼面饰面）、`SITE_PALETTE`（室外地面）、`FENCE_PALETTE`、`GROUND_PLANE`、`WALL_CAP_SRGB`，GLB 还读 `GROUND_SPLITS`。GLB 与查看器读的是同一组表。暗主题有两部分：种类的暗色是 `mount.ts` 里写死的字面量；材质槽、饰面与室外的暗色由 `materials.ts` 的 `slotColour`、`finishColour`、`siteColour` 从亮色按比例混出来。GLB 今天只写 `POSITION`（`glb/write.ts`）。
+今天：查看器的实体网格用 `MeshLambertMaterial` 加 `flatShading: true`（`src/replay/mount.ts`），所以圆的、放样的部件看起来是一圈棱面。接触阴影层是 `MeshBasicMaterial`。灯是三盏：半球光、主光、补光（`mount.ts` 里模块私有的 `LIGHT`），加 `NeutralToneMapping`。颜色的来源：
+- `materials.ts` 的表：`PALETTE`（材质槽）、`KIND_PALETTE`（墙、楼板等种类）、`FINISH_PALETTE`（楼面饰面）、`SITE_PALETTE`、`FENCE_PALETTE`、`GROUND_SPLITS`（六种室外地面），GLB 与查看器都读。另有只给查看器的 `GROUND_PLANE`（背景地面）与 `WALL_CAP_SRGB`（墙顶；GLB 不画墙顶）。
+- 草坪、铺地、水面、露台、阳台等其余室外地面：取核心 `DEFAULT_THEME` 的色调，按 `GROUND_WASH`（`materials.ts`，一个记账的默认值）淡化（`mesh/outdoor.ts` 的 `groundColour`、`outdoorColour`）。`test/finish.test.ts` 钉住 `FINISH_PALETTE.paving` 必须等于 `groundColour("paving")`，所以这两个只能一起动。不碰 `src/`，所以这些地面能动的只有 `GROUND_WASH` 和新增的 `GROUND_SPLITS` 行。
+- 查看器自己的字面量：`mount.ts` 里两种主题的背景色与描边色，以及暗主题的墙顶色。
+- 暗主题：种类的暗色是 `mount.ts` 里写死的字面量；材质槽、饰面与室外的暗色由 `materials.ts` 的 `slotColour`、`finishColour`、`siteColour` 从亮色按比例混出来；`GROUND_PLANE.dark` 是字面量。GLB 今天只写 `POSITION`（`glb/write.ts`）。
 
 做：
 - 平滑法线：圆的、放样的、超椭圆的部件按折痕角算法线，平面仍然平直。
