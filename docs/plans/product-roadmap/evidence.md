@@ -416,7 +416,7 @@ growth 路径缩写（相对 `D:\github_repository\archcanvas-growth`；§A 与 
 | RM8.11 | `packages/archlang-3d/src/mesh/t0.ts`（`partShell` 拒绝带 `profile` 的放样；`loftShell` 每圈一个比例、`radius` 不缩放、底圈重复首行）；`t0-kit.ts`（`Part.loft`、`DomeTable`、`dome()`）；`t0-outdoor.ts`（`GAZEBO_ROOF`）；`c16.ts`；sand3d `programs/tufted_chair.py`（`section`、`upholstered_seat` 的 `crown`，Apache-2.0，2026-11-27 读） |
 | RM8.12 | `examples/**/*.arch` 的 `furniture` 行计数（含 `id=` 在前的写法，2026-11-27）；`t0-kit.ts` 的 `upholstered`（调用者 `t0.ts` 的 `sofa`、`t0-living.ts` 的 `armchair`、`loveseat`）；`t0-living.ts`（`sofa_l`、`chair`、`desk`、`bench`、`nightstand`）；`t0.ts`（`bed`、`table`、`wardrobe`） |
 | RM8.13 | 同上的计数；`t0-kit.ts` 的 `cabinet()`（调用者 `counter`、`kitchen_sink`、`stove`、`t0-utility.ts` 的 `dishwasher`）；`t0.ts`（`wc`、`basin`、`fridge`、`shower`）；`t0-utility.ts`（`bathtub`） |
-| RM8.14 | `packages/archlang-3d/src/replay/mount.ts`（`LIGHT`、`flatShading`、`MeshLambertMaterial`、`NeutralToneMapping`、暗主题的派生）；`src/materials.ts`（`PALETTE`、`KIND_PALETTE`、`FINISH_PALETTE`）；`src/glb/write.ts`（只写 `POSITION`）；`test/pins.ts`（GLB 钉子不分环境）；`e2e/frame-budget.e2e.ts`（只比阴影开关） |
+| RM8.14 | `packages/archlang-3d/src/replay/mount.ts`（`LIGHT`、`flatShading`、`MeshLambertMaterial`、`NeutralToneMapping`、种类的暗色字面量）；`src/materials.ts`（`PALETTE`、`KIND_PALETTE`、`FINISH_PALETTE`、`SITE_PALETTE`、`FENCE_PALETTE`、`GROUND_PLANE`、`WALL_CAP_SRGB`；暗色混色 `slotColour`、`finishColour`、`siteColour`）；`src/glb/write.ts`（只写 `POSITION`；读 `FENCE_PALETTE`、`GROUND_SPLITS`）；`src/check/verify.ts`（`openEdges` 按顶点编号判断封闭，V-GLTF-01 零错误零警告）；`test/pins.ts`（GLB 钉子不分环境）；`e2e/frame-budget.e2e.ts`（只比阴影开关） |
 | `visual-language.md` | 上面各行；`../visual-assets/README.md` V-D1…V-D7 |
 | RM5.2 去掉 `--theme` | `docs/backlog.md` VA.4；本计划 `cards.md` RM5.2 |
 

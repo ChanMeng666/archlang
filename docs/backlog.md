@@ -1962,7 +1962,8 @@ users on ClawHub, then the entry is filed.
 ### VA.1 · The bean bag reads stepped in 3D: done by #729 (RM8.6, lofted parts), waiting to be archived — `note`
 
 The bean bag and the tree crowns are lofted rings (`Part.loft`, `dome()` in `t0-kit.ts`). The furniture
-detail that follows is carded as RM8.11–RM8.14 (`docs/plans/product-roadmap/cards.md`, track 8 stage G).
+detail that follows is carded as RM8.11–RM8.14 (`docs/plans/product-roadmap/cards.md`, track 8 stage G),
+parked until the owner says start (RM-D94).
 
 ### VA.2 · A balcony's railing is not built in 3D — `todo`
 
