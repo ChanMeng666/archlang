@@ -827,6 +827,19 @@ export default defineConfig({
         archlang: fileURLToPath(new URL("../../dist/index.js", import.meta.url)),
       },
     },
+    // Two default-theme components replaced for accessibility (each file's header says why). The
+    // route VitePress documents for overriding an internal component, done as a resolveId hook
+    // rather than a regex alias so the alias block above stays the plain object the seam test reads.
+    plugins: [
+      {
+        name: "archlang-theme-overrides",
+        enforce: "pre",
+        resolveId(id: string) {
+          const m = /\/(VPSidebarItem|VPNavBarSearchButton)\.vue$/.exec(id);
+          return m ? fileURLToPath(new URL(`./theme/components/${m[1]}.vue`, import.meta.url)) : null;
+        },
+      },
+    ],
     server: { fs: { allow: [resolve(fileURLToPath(new URL("../..", import.meta.url)))] } },
     optimizeDeps: { exclude: ["@resvg/resvg-js", "pdfkit", "clipper2-wasm", "archlang"] },
     build: { rollupOptions: { external: [/^node:/, "@resvg/resvg-js", "pdfkit", "clipper2-wasm"] } },
