@@ -1978,7 +1978,7 @@ ever pick a finish before building anything.
 
 ### VA.5 · Shadows in the replay: done by #737 (RM8.8, baked contact shadows), waiting to be archived — `note`
 
-Real-time shadow maps stay out (RM-D21, RM-D23); the frame-time budget is `e2e/frame-budget.e2e.ts`.
+Real-time shadow maps stay out (RM-D21, RM-D23); the frame-time budget is `packages/archlang-3d/e2e/frame-budget.e2e.ts`.
 
 ## Playground residue (public-surfaces cards P2 and P3, 2026-11-06)
 
