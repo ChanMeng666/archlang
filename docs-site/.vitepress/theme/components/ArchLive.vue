@@ -89,27 +89,31 @@ const good = computed(() =>
     ? null
     : { svg: result.value.svg, facts: factsOf(compiled.value), rendered: rendered.value },
 );
-// Kept with the colour scheme it was drawn in: a drawing of the other scheme is never shown in its
-// place (the rendered SVG inlined would redefine `id="poche"` and restyle every other widget).
-const lastGood = shallowRef<{ svg: string; facts: string | null; rendered: boolean } | null>(null);
+// One last good drawing per colour scheme. A drawing of the other scheme is never INLINED in its
+// place (the rendered SVG would redefine `id="poche"` and restyle every other widget); when the
+// scheme on screen has none (Rendered on → a typo → Rendered off), the other scheme's is shown as
+// an <img>, its own document, dimmed with the error line, so the widget keeps its height.
+type Good = { svg: string; facts: string | null; rendered: boolean };
+const lastGood = shallowRef<{ plain?: Good; rendered?: Good }>({});
 watch(
   good,
   (g) => {
-    if (g) lastGood.value = g;
+    if (g) lastGood.value = { ...lastGood.value, [g.rendered ? "rendered" : "plain"]: g };
   },
   { immediate: true },
 );
-const shownGood = computed(
-  () => good.value ?? (lastGood.value?.rendered === rendered.value ? lastGood.value : null),
+const shownGood = computed(() => good.value ?? lastGood.value[rendered.value ? "rendered" : "plain"] ?? null);
+const otherGood = computed(() =>
+  shownGood.value ? null : (lastGood.value[rendered.value ? "plain" : "rendered"] ?? null),
 );
+const svgDataUri = (markup: string) => `data:image/svg+xml;charset=utf-8,${encodeURIComponent(markup)}`;
+const otherSrc = computed(() => (otherGood.value ? svgDataUri(otherGood.value.svg) : ""));
 const stale = computed(() => !good.value);
 const svg = computed(() => shownGood.value?.svg ?? "");
 // The rendered drawing is shown as an <img> over a data URI: every plan's SVG defines `id="poche"`
 // and the rendered one defines it differently, so inlined beside default widgets the first
 // definition in the page would win and restyle the walls. An <img> is its own document.
-const renderedSrc = computed(() =>
-  rendered.value && svg.value ? `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg.value)}` : "",
-);
+const renderedSrc = computed(() => (rendered.value && svg.value ? svgDataUri(svg.value) : ""));
 /** The first error, as the CLI prints it: `E_CODE message line:col`. */
 const errorMsg = computed(() => {
   const e = result.value.errors[0];
@@ -118,7 +122,7 @@ const errorMsg = computed(() => {
   const at = e.line !== undefined ? ` ${e.line}:${e.col ?? 1}` : "";
   return `${code ? `${code} ` : ""}${e.message}${at}`;
 });
-const facts = computed(() => shownGood.value?.facts ?? null);
+const facts = computed(() => (shownGood.value ?? otherGood.value)?.facts ?? null);
 
 // ── The colour layer ─────────────────────────────────────────────────────────
 // The <pre> under the textarea. The trailing newline keeps its last line box in step
@@ -232,6 +236,9 @@ onBeforeUnmount(() => clearTimeout(hrefTimer));
       </div>
       <!-- eslint-disable-next-line vue/no-v-html -->
       <div v-else-if="svg" class="archlive-svg" :class="{ 'is-stale': stale }" v-html="svg"></div>
+      <div v-else-if="otherSrc" class="archlive-svg is-stale">
+        <img :src="otherSrc" :alt="`Floor plan${facts ? ` (${facts})` : ''}, the last drawing that compiled`" />
+      </div>
       <div v-else class="archlive-svg is-stale"></div>
       <!-- The first error, while there is one: one line whose height is always kept, so the widget
            never changes height while the reader types. -->

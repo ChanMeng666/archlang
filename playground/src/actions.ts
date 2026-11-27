@@ -12,6 +12,7 @@ import { embedSnippets, exampleImageUrl } from "./embed-snippets.js";
 import { exampleNameFor } from "./examples.js";
 import { buildChatPrompt, buildLlmPrompt, CHAT_HOSTS, type ChatHost, chatHostUrl, isChatHost } from "./llm-prompt.js";
 import { createShortLink, encodeSrc, set3dFlag, shareableHref, updateHash } from "./share.js";
+import { closeMenu as closeMenuAnimated } from "./menu-motion.js";
 import { COPY_FAILED, type FlashOpts, undoable } from "./notice-core.js";
 import { mountSnapshots } from "./snapshots.js";
 import { KEYS, readStr, writeStr } from "./storage.js";
@@ -50,7 +51,7 @@ const declined = (result: FinishResult): FinishResult["unresolved"] =>
 
 /** Close a header disclosure (a no-op when it is absent). */
 function closeMenu(menu: HTMLDetailsElement | null): void {
-  if (menu) menu.open = false;
+  if (menu) closeMenuAnimated(menu);
 }
 
 interface ActionsCtx {

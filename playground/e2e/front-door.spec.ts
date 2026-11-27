@@ -272,12 +272,50 @@ test.describe("the header's menus (card PG5b)", () => {
         expect(await isOpen(page, first), `${first} opens`).toBe(true);
         await page.locator(`${next} > summary`).click();
         expect(await isOpen(page, next), `${next} opens`).toBe(true);
+        // The others close the way they opened (menu-motion.ts): shut once their exit is over.
         for (const other of MENUS)
-          if (other !== next) expect(await isOpen(page, other), `${other} closed by opening ${next}`).toBe(false);
+          if (other !== next)
+            await expect.poll(() => isOpen(page, other), `${other} closed by opening ${next}`).toBe(false);
         // Shut it again for the next pair.
         await page.keyboard.press("Escape");
         await expect.poll(() => isOpen(page, next)).toBe(false);
       }
+    }
+  });
+
+  test("close the way they open, and a press mid-close reverses it", async ({ page }) => {
+    await page.goto("/");
+    await waitForPlan(page);
+    for (const id of MENUS) {
+      const menu = page.locator(id);
+      await page.locator(`${id} > summary`).click();
+      expect(await isOpen(page, id)).toBe(true);
+      // Escape: the panel leaves (`.is-closing`, still drawn) before the menu shuts.
+      const during = await page.evaluate((sel) => {
+        (document.activeElement ?? document.body).dispatchEvent(
+          new KeyboardEvent("keydown", { key: "Escape", bubbles: true }),
+        );
+        const d = document.querySelector(sel) as HTMLDetailsElement;
+        const panel = d.querySelector(".tools-panel, .gal-panel")!;
+        return { open: d.open, closing: d.classList.contains("is-closing"), drawn: panel.getClientRects().length > 0 };
+      }, id);
+      expect(during, `${id} mid-close`).toEqual({ open: true, closing: true, drawn: true });
+      await expect.poll(() => isOpen(page, id), `${id} shuts once its exit is over`).toBe(false);
+      await expect(menu).not.toHaveClass(/is-closing/);
+
+      // Reopened mid-close: it stays open and runs back, rather than shutting and opening again.
+      await page.locator(`${id} > summary`).click();
+      await page.evaluate((sel) => {
+        (document.activeElement ?? document.body).dispatchEvent(
+          new KeyboardEvent("keydown", { key: "Escape", bubbles: true }),
+        );
+        (document.querySelector(`${sel} > summary`) as HTMLElement).click();
+      }, id);
+      await page.waitForTimeout(400);
+      expect(await isOpen(page, id), `${id} reopened mid-close`).toBe(true);
+      await expect(menu).not.toHaveClass(/is-closing/);
+      await page.keyboard.press("Escape");
+      await expect.poll(() => isOpen(page, id)).toBe(false);
     }
   });
 

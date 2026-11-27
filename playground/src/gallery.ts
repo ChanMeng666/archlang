@@ -16,6 +16,7 @@
  * click outside or a Tab out of it closes it. Its thumbnails are `loading="lazy"` inside a closed
  * `<details>`, which renders nothing, so none is fetched before the first open.
  */
+import { animateMenu, closeMenu, isClosing } from "./menu-motion.js";
 import { cardText, splitLabel } from "./plan-label.js";
 
 export interface Gallery {
@@ -85,21 +86,28 @@ export function mountGallery(root: HTMLDetailsElement, onPick: (label: string) =
   }
 
   function close(refocus = false) {
-    if (!root.open) return;
-    root.open = false;
+    if (!root.open || isClosing(root)) return;
+    // It closes the way it opened (menu-motion.ts); it is closed to assistive tech at once.
+    trigger.setAttribute("aria-expanded", "false");
+    closeMenu(root);
     if (refocus) trigger.focus();
   }
+  /** What an open does: a fresh filter and the focus on the current card. */
+  function opened() {
+    trigger.setAttribute("aria-expanded", "true");
+    filter.value = "";
+    applyFilter();
+    focusCard(rove());
+  }
+  // A press on the trigger mid-close reverses it, and sends `toggle`: the listener below runs `opened`.
+  animateMenu(root);
 
   // The phone sheet's Close (U30): the focus goes back to the trigger.
   root.querySelector("#galleryClose")?.addEventListener("click", () => close(true));
 
   root.addEventListener("toggle", () => {
-    trigger.setAttribute("aria-expanded", String(root.open));
-    if (root.open) {
-      filter.value = "";
-      applyFilter();
-      focusCard(rove());
-    }
+    if (root.open) opened();
+    else trigger.setAttribute("aria-expanded", "false");
   });
 
   // A plain click on a card opens the plan here; any other click is the link's.
