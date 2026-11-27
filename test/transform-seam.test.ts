@@ -36,7 +36,12 @@ function treePlugin(withTransform: boolean): ElementDef {
     },
     idPrefix: () => "tree",
     resolve(node: any, ctx: ResolveCtx) {
-      return { kind: "tree", id: ctx.id, at: ctx.snapPt(ctx.evalPt(node.at)), r: ctx.snap(ctx.evaluate(node.r)) } as any;
+      return {
+        kind: "tree",
+        id: ctx.id,
+        at: ctx.snapPt(ctx.evalPt(node.at)),
+        r: ctx.snap(ctx.evaluate(node.r)),
+      } as any;
     },
     bounds(resolved: any) {
       const { at, r } = resolved;
