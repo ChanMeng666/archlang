@@ -321,18 +321,21 @@ client bundle reaches the core (the canvas pages) returns 500 with
 `dist/chunk-*.js`: `new URL("../../assets/fonts/" + file, import.meta.url)`. `next build` (webpack) is unaffected,
 so production is fine; the cost is that a consumer cannot run its canvas pages in local development at all.
 
-**Hypothesis (check first):** `bundledFontPath()` in `src/backends/font.ts` splits the second candidate as
-`"../.." + "/assets/fonts/" + file` precisely so browser bundlers' `new URL(…, import.meta.url)` asset plugins
-do not pick it up, but the core's own build constant-folds the two literals into `"../../assets/fonts/"`, and
-Turbopack (unlike Vite/Rollup) treats a literal prefix + variable as a resolvable pattern. The first candidate
-(`"./assets/" + file`) may be at risk the same way.
+Also observed: the core's own build constant-folds the split literal that `bundledFontPath()` in
+`src/backends/font.ts` writes as `"../.." + "/assets/fonts/" + file` (split precisely so browser bundlers' asset
+plugins do not pick it up) back into `"../../assets/fonts/"` in `dist/`.
+
+**Hypothesis (check first):** Turbopack, unlike Vite/Rollup, treats a literal prefix + variable inside
+`new URL(…, import.meta.url)` as a pattern to resolve, so the folded second candidate fails. The first candidate
+(`"./assets/" + file`) probably resolves, because `dist/assets/Roboto-Regular.ttf` exists, which may mean the font
+is silently copied into the client bundle rather than an error.
 
 **Done when:** a fixture consumer built with Next.js `next dev --turbopack` (and the existing webpack and Vite
-consumers) imports the core in a client component without a resolve error, and the font is still found under
+consumers) imports the core in a client component without a resolve error and without the font in its client output (and the playground, the Vite case, still builds; a webpack consumer fixture is to be added), and the font is still found under
 Node from both `dist/assets` and the repo source. Candidate shapes: the relative paths kept in a runtime array
 (`new URL(REL[i] + file, base)`), or `import.meta.url` read into a variable first so no `new URL(…, import.meta.url)`
 form is statically visible; prove the folded output with a test on the built `dist/`, not on `src/`.
-**Consumer:** ArchCanvas only consumes the fixed version (its `docs/TODO.md` points here).
+**Consumer:** ArchCanvas consumes the fixed version; no workaround there.
 
 ## Found while landing 1.68.0 (arc openings, arc rooms, telemetry; 2026-11-23)
 
