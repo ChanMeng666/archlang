@@ -1512,6 +1512,18 @@ EV.5 的门照旧：先有设计稿或 ADR，代码在后。PR 里如实写 L1 �
 
 包括 `W_KEEP_VIOLATED` 的 "A keep moves nothing."、`W_ANNOTATION_OVERLAP` 里的 `dims auto all`、`describe()` 写进 `<desc>` 的原始 id、尺寸文字的 `aria-label`（opt-in 输出）。消息规则照 §0：lint 的 `message` 不含 id。按 RM-D56 的方法证明。不许：改诊断码。
 
+### RM9.16 · 检查召回率要有独立的标注（N1、N3；RM-D95） — `todo` · 1 日 · opus · 依赖 RM1.1b 的那次运行
+
+RM1.1a 的"N 个缺陷"是由同时在写规则的执行者数出来的，召回率的分母因此是自评的。RM1.1b 跑完之后，另找一个与规则编写无关的标注者（所有者本人，或一个没见过规则卡与 RM9.0 分类的新上下文实例）独立数一遍缺陷，至少覆盖一个子样本（六份 brief 里的三份）；报告两份缺陷清单的一致数与不一致项，按清单的并集重算 k/N，两个数都写进 `handoff.md` 的测量表。不许：让标注者看到 lint 的输出再数；把不一致项按规则作者的意见裁掉而不写明。
+
+### RM9.17 · `spec.llm.md` 作为上下文的审计（N8；RM-D95） — `todo` · 1 日 · opus · 依赖无（只出文档）
+
+`spec.llm.md` 有尺寸上限（`test/llm-spec-drift.test.ts`），下游代理把它整份注入提示词，每一节都在占模型的注意力。逐节判定：必须常驻（每次写 `.arch` 都要用的语法与规则）、可以改为按需读取（例如 `archlang://capabilities` 资源、MCP 的 `validate` 返回的 `next`、AF18 做完之后的 `context --for`），还是可以删。只出一份设计稿（`design/` 下），写清每节的判定与理由、移走后释放的余量；改 spec 的字节另开卡，并照下游的规矩先定价。不许：本卡里改 `spec.llm.md` 或生成器。
+
+### RM9.18 · MCP 工具描述与错误按工具设计清单过一遍（N8；RM-D95） — `todo` · 每个工具 0.5 日 · sonnet · 依赖无（与 AF25 同一处，先后都可）
+
+对 `registerTools`（`packages/mcp/src/tools.ts`）里的每个工具核对：描述是否写明用途、何时用它而不是相邻的工具（例如 `validate` 对 `lint`、`describe` 对 `compile`）、输入输出格式、一个例子；错误结果能否区分"参数错"、"源码有诊断"、"超时或内部失败"和"结果为空"，并说明可否重试。改动只是描述文字与错误结果的结构时，照 `.claude/rules/mcp.md` 的加法约定（模式只增不删）。不许：为此改工具名或删参数。
+
 ---
 
 ## 等待触发（不排期）
