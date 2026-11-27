@@ -92,19 +92,22 @@ export function mountGallery(root: HTMLDetailsElement, onPick: (label: string) =
     closeMenu(root);
     if (refocus) trigger.focus();
   }
-  // A press on the trigger mid-close reverses it: open again, as far as anyone can tell.
-  animateMenu(root, () => trigger.setAttribute("aria-expanded", "true"));
+  /** What an open does: a fresh filter and the focus on the current card. */
+  function opened() {
+    trigger.setAttribute("aria-expanded", "true");
+    filter.value = "";
+    applyFilter();
+    focusCard(rove());
+  }
+  // A press on the trigger mid-close reverses it: open again, as an open would be.
+  animateMenu(root, opened);
 
   // The phone sheet's Close (U30): the focus goes back to the trigger.
   root.querySelector("#galleryClose")?.addEventListener("click", () => close(true));
 
   root.addEventListener("toggle", () => {
-    trigger.setAttribute("aria-expanded", String(root.open));
-    if (root.open) {
-      filter.value = "";
-      applyFilter();
-      focusCard(rove());
-    }
+    if (root.open) opened();
+    else trigger.setAttribute("aria-expanded", "false");
   });
 
   // A plain click on a card opens the plan here; any other click is the link's.

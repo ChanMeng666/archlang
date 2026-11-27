@@ -57,6 +57,12 @@ export function reopenMenu(menu: HTMLDetailsElement): boolean {
   return true;
 }
 
+/** Shut `menu` at once (a dialog is opening over it), dropping any close under way with it. */
+export function shutMenu(menu: HTMLDetailsElement): void {
+  reopenMenu(menu);
+  menu.open = false;
+}
+
 /**
  * Route the trigger's own toggle through {@link closeMenu}: a press on an open menu's <summary>
  * closes it the way it opened, and a press mid-close reverses it (`onReopen` is told, so a sibling

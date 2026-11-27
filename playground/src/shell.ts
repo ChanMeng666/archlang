@@ -16,7 +16,7 @@
  * `data-close`. A select, the a11y switch and Saved (whose popover anchors to its button) keep More
  * open. This module is the one place that closes them.
  */
-import { animateMenu, closeMenu } from "./menu-motion.js";
+import { animateMenu, closeMenu, shutMenu } from "./menu-motion.js";
 import { failedToLoad } from "./notice-core.js";
 
 export interface ShellCtx {
@@ -134,7 +134,7 @@ export function mountShell(ctx: ShellCtx): Shell {
   let sheet: Promise<import("./make-own.js").Sheet | undefined> | undefined;
   const opened: (() => void)[] = [];
   async function openMakeOwn() {
-    for (const menu of menus) menu.open = false;
+    for (const menu of menus) shutMenu(menu);
     sheet ??= import("./make-own.js").then(
       (m) => {
         const s = m.mountSheet(body, { getSource: ctx.getSource });
