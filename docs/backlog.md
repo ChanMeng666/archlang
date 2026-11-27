@@ -311,6 +311,29 @@ Done by #1005, with no budget raised. The compile worker's `lint`, which no view
 
 After #1002 (3.19) the first use measured 466,680 B against `firstUsePathBudget` 468,000 (1,320 B left), and three open PRs add to it: #1001 (`W_SEAT_FACING_WALL`, ~+954 B), #1003 (CV14 examples, ~+165 B) and #1004 (`W_STAIR_NO_VOID`, ~+281 B), about 80 B over together. #1002's residue named what is left on the path: the fix column Copy for LLM reads and the worker's `lint`, which only the editor runs. **Gate:** at least ~3,000 B gzip off the first use, the compiler and embed budgets met and not raised, the digest unmoved, the playground's behaviour the same.
 
+## Found by a consumer's bundler (2026-11-28)
+
+### BND.1 · The bundled font lookup breaks a consumer's Turbopack dev server — `todo`
+
+**Observed (ArchCanvas, core 1.68.2, Next.js 15.5 `next dev --turbopack`, 2026-11-27):** every page whose
+client bundle reaches the core (the canvas pages) returns 500 with
+`Module not found: Can't resolve '../../assets/fonts/Roboto-Regular.ttf'`, pointing at the published
+`dist/chunk-*.js`: `new URL("../../assets/fonts/" + file, import.meta.url)`. `next build` (webpack) is unaffected,
+so production is fine; the cost is that a consumer cannot run its canvas pages in local development at all.
+
+**Hypothesis (check first):** `bundledFontPath()` in `src/backends/font.ts` splits the second candidate as
+`"../.." + "/assets/fonts/" + file` precisely so browser bundlers' `new URL(…, import.meta.url)` asset plugins
+do not pick it up, but the core's own build constant-folds the two literals into `"../../assets/fonts/"`, and
+Turbopack (unlike Vite/Rollup) treats a literal prefix + variable as a resolvable pattern. The first candidate
+(`"./assets/" + file`) may be at risk the same way.
+
+**Done when:** a fixture consumer built with Next.js `next dev --turbopack` (and the existing webpack and Vite
+consumers) imports the core in a client component without a resolve error, and the font is still found under
+Node from both `dist/assets` and the repo source. Candidate shapes: the relative paths kept in a runtime array
+(`new URL(REL[i] + file, base)`), or `import.meta.url` read into a variable first so no `new URL(…, import.meta.url)`
+form is statically visible; prove the folded output with a test on the built `dist/`, not on `src/`.
+**Consumer:** ArchCanvas only consumes the fixed version (its `docs/TODO.md` points here).
+
 ## Found while landing 1.68.0 (arc openings, arc rooms, telemetry; 2026-11-23)
 
 ### ARC1b · The model swing of a door on an arc still comes from the tangent: done by #1027, waiting to be archived — `note`
