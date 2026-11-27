@@ -5,7 +5,7 @@
  * vitest `include` is `playground/test/ ** /*.test.ts`, which matches neither this
  * file nor the `*.spec.ts` siblings — the two suites never collide.
  */
-import { type Download, expect, type Page } from "@playwright/test";
+import { type Download, expect, type Locator, type Page } from "@playwright/test";
 import { encodeSrc } from "../src/share.js";
 
 /** A minimal, lint-clean plan: one room, one door, one window. */
@@ -124,10 +124,19 @@ export async function enterEdit(page: Page): Promise<void> {
   await expect(page.locator(".cm-content")).toBeVisible();
 }
 
+/**
+ * Whether a header menu is open and staying open: a menu on its way out (`.is-closing`,
+ * menu-motion.ts) still has `open` for its exit, but is closed to the visitor, and a press on its
+ * trigger reverses it.
+ */
+const isShownMenu = (menu: Locator): Promise<boolean> =>
+  menu.evaluate((d) => (d as HTMLDetailsElement).open && !d.classList.contains("is-closing"));
+
 /** Open a header menu (a no-op when it is open), and wait for its panel. */
 async function openMenu(page: Page, id: "share" | "more"): Promise<void> {
   const menu = page.locator(`#${id}`);
-  if ((await menu.getAttribute("open")) === null) await menu.locator("summary").click();
+  if (!(await isShownMenu(menu))) await menu.locator("summary").click();
+  await expect(menu).not.toHaveClass(/is-closing/);
   await expect(menu.locator(".tools-panel")).toBeVisible();
 }
 
@@ -171,7 +180,8 @@ export const currentPlanCard = (page: Page) => page.locator('#gallery .gal-card[
 
 /** Open the plan gallery (a no-op when it is open). */
 export async function openGallery(page: Page): Promise<void> {
-  if ((await gallery(page).getAttribute("open")) === null) await galleryTrigger(page).click();
+  if (!(await isShownMenu(gallery(page)))) await galleryTrigger(page).click();
+  await expect(gallery(page)).not.toHaveClass(/is-closing/);
   await expect(page.locator("#galleryPanel")).toBeVisible();
 }
 

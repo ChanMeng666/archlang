@@ -99,8 +99,8 @@ export function mountGallery(root: HTMLDetailsElement, onPick: (label: string) =
     applyFilter();
     focusCard(rove());
   }
-  // A press on the trigger mid-close reverses it: open again, as an open would be.
-  animateMenu(root, opened);
+  // A press on the trigger mid-close reverses it, and sends `toggle`: the listener below runs `opened`.
+  animateMenu(root);
 
   // The phone sheet's Close (U30): the focus goes back to the trigger.
   root.querySelector("#galleryClose")?.addEventListener("click", () => close(true));

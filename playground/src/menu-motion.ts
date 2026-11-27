@@ -65,14 +65,15 @@ export function shutMenu(menu: HTMLDetailsElement): void {
 
 /**
  * Route the trigger's own toggle through {@link closeMenu}: a press on an open menu's <summary>
- * closes it the way it opened, and a press mid-close reverses it (`onReopen` is told, so a sibling
- * menu can be closed, as a real open would). Opening is the browser's own.
+ * closes it the way it opened, and a press mid-close reverses it. A reverse is an open to everyone
+ * listening: a `toggle` event is sent (the menu is `open`), so what an open does runs again (a
+ * sibling closes, the gallery resets its filter, the app comes up). Opening is the browser's own.
  */
-export function animateMenu(menu: HTMLDetailsElement, onReopen?: () => void): void {
+export function animateMenu(menu: HTMLDetailsElement): void {
   menu.querySelector(":scope > summary")?.addEventListener("click", (e) => {
     if (reopenMenu(menu)) {
       e.preventDefault();
-      onReopen?.();
+      menu.dispatchEvent(new Event("toggle"));
       return;
     }
     if (menu.open) {

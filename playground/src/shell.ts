@@ -90,7 +90,7 @@ export function mountShell(ctx: ShellCtx): Shell {
     const closeOthers = () => {
       for (const other of menus) if (other !== menu) closeMenu(other);
     };
-    animateMenu(menu, closeOthers);
+    animateMenu(menu);
     menu.addEventListener("toggle", () => {
       if (menu.open) closeOthers();
     });
