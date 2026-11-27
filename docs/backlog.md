@@ -3039,10 +3039,29 @@ Each item is small; split one off when it is picked up.
 6. #1010: the K1 re-pin's moved files are listed in the merge commit `1f2cbbf2`, not in the
    re-pin commit.
 
+### SR.30 · `evaluatorOf` residue (#1045 round-2 red team) — `todo`
+
+#1045 added `ResolveCtx.evaluate`, kept `eval` as a deprecated alias, and routes every built-in
+through `evaluateIn` (`src/evaluator.ts`), which honours a wrapper that replaces either member.
+Round 2 left three minor items (verdict "merge"):
+1. Both members carry the compiler's mark but are different functions (a wrapper hands a built-in
+   another resolve's compiler evaluator as the old member): `src/evaluator.ts:54` picks `evaluate`,
+   so head draws 300 where `main` before #1045 drew 600. Narrow the header (lines 14–16) and the
+   CHANGELOG's "honoured as before" to the cases actually covered, and pin this case with a test.
+2. Mixed old- and new-style wrappers: an old-style doubling wrapper around a layer that sets
+   `evaluate: e => ctx.evaluate(e)` draws plain. `evaluateIn` is not exported, so a third-party
+   element reading `ctx.evaluate` cannot apply the rule. `docs/language-reference.md` (the
+   `ctx.evaluate` paragraph) should tell wrappers to replace both members; decide whether to export
+   `evaluateIn` (public surface, ADR 0018).
+3. `src/evaluator.ts:58`'s comment: with neither member present the error is now "Cannot read
+   properties of undefined (reading 'call')", not "is not a function"; reword or throw a clear error.
+Not verified in review: the tsup-built `dist/index.d.ts` text, and hot-path cost of `evaluateIn`
+(one call per expression; read the bench before and after).
 ## Test-programme findings (promo-credit programme, 2026-11-16)
 
 From `docs/plans/product-roadmap/2026-11-test-findings.md` (§ 3, § 4, § 5). RR.8 (2), the
 `W_DOORWAY_BLOCKED` strictness, is that plan's first direction and is not repeated here.
+
 
 ### EV.2 · A live run keeps no plan source per brief: done by #897, waiting to be archived — `note`
 
