@@ -1959,11 +1959,10 @@ users on ClawHub, then the entry is filed.
 
 **Proposed gate.** Before the publish step, in the same job: run the web component's tests, and check the packed file list (`npm pack --dry-run --json -w packages/web-component`) against the files the package is meant to ship (`dist/`, the README, the LICENSE), failing the job on either. **Tier: high**, because it edits a workflow (`scripts/risk-tier.mjs`), so it needs the fresh-context review that tier asks for. **Size:** S.
 
-### VA.1 · The bean bag reads stepped in 3D — `todo`
+### VA.1 · The bean bag reads stepped in 3D: done by #729 (RM8.6, lofted parts), waiting to be archived — `note`
 
-`bean_bag` is built from stacked rounded tiers, so its silhouette steps. A smoother profiled section
-(`profile` in `src/mesh/t0.ts`) would read softer. **Gate:** `t0.test.ts` green; laneway pins unmoved.
-**Carded as RM8.6** (`docs/plans/product-roadmap/cards.md`, stage D, not started on 2026-11-11).
+The bean bag and the tree crowns are lofted rings (`Part.loft`, `dome()` in `t0-kit.ts`). The furniture
+detail that follows is carded as RM8.11–RM8.14 (`docs/plans/product-roadmap/cards.md`, track 8 stage G).
 
 ### VA.2 · A balcony's railing is not built in 3D — `todo`
 
@@ -1977,12 +1976,9 @@ ever pick a finish before building anything.
 
 - VA.4 · `--theme` on the CLI — done by #695 → archived (lab)
 
-### VA.5 · Shadows in the replay (measure first) — `todo`
+### VA.5 · Shadows in the replay: done by #737 (RM8.8, baked contact shadows), waiting to be archived — `note`
 
-Shadow maps cost +55% SwiftShader frame time when measured (V9) and were left out. Revisit only with
-a cheaper technique (baked contact shadows) and a frame-time budget.
-**Carded as RM8.8** (`docs/plans/product-roadmap/cards.md`, stage E; RM-D23 allows baked contact
-shadows, approved by the owner 2026-11-11).
+Real-time shadow maps stay out (RM-D21, RM-D23); the frame-time budget is `e2e/frame-budget.e2e.ts`.
 
 ## Playground residue (public-surfaces cards P2 and P3, 2026-11-06)
 
