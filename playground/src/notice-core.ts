@@ -41,8 +41,20 @@ export function undoChord(platform: string): string {
   return /Mac|iPhone|iPad|iPod/i.test(platform) ? "⌘Z" : "Ctrl+Z";
 }
 
-/** A message for an action that rewrote the source: what it did, and how to take it back. */
-export const withUndo = (msg: string, platform: string): string => `${msg} · ${undoChord(platform)} undoes`;
+/**
+ * A message for an action that rewrote the source: what it did, and how to take it back. A
+ * touch-only device has no keyboard to press a chord on, so there it says only what it did.
+ */
+export const withUndo = (msg: string, platform: string, touchOnly = false): string =>
+  touchOnly ? msg : `${msg} · ${undoChord(platform)} undoes`;
+
+/** The device has no hover and a coarse pointer: a phone or a tablet, with no keyboard to assume. */
+export const isTouchOnly = (): boolean =>
+  typeof matchMedia === "function" && matchMedia("(hover: none) and (pointer: coarse)").matches;
+
+/** `withUndo` for this browser. */
+export const undoable = (msg: string): string =>
+  withUndo(msg, typeof navigator === "undefined" ? "" : navigator.platform, isTouchOnly());
 
 /** A view that did not load (U29): the sentence, and a button that runs the open again. */
 export function failedToLoad(el: HTMLElement, sentence: string, retry: () => void): void {

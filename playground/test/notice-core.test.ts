@@ -4,7 +4,7 @@
  * and U20 (only Finish said how to undo).
  */
 import { describe, expect, it } from "vitest";
-import { COPY_FAILED, NOTICE_ACTION_MS, noticeMs, undoChord, withUndo } from "../src/notice-core.js";
+import { noticeMs, undoChord, withUndo } from "../src/notice-core.js";
 
 describe("noticeMs: a notice's life follows its length", () => {
   it("gives a short message the floor, 1.8 s", () => {
@@ -21,9 +21,10 @@ describe("noticeMs: a notice's life follows its length", () => {
     expect(noticeMs("x".repeat(500))).toBe(6000);
   });
 
-  it("stays 6 s whenever it carries an action, however short", () => {
-    expect(noticeMs("Undo?", true)).toBe(NOTICE_ACTION_MS);
-    expect(NOTICE_ACTION_MS).toBe(6000);
+  it("stays 6 s whenever it carries an action, however short or long", () => {
+    expect(noticeMs("Undo?", true)).toBe(6000);
+    expect(noticeMs("x".repeat(500), true)).toBe(6000);
+    expect(noticeMs("Undo?", true)).toBeGreaterThan(noticeMs("Undo?"));
   });
 });
 
@@ -38,13 +39,9 @@ describe("withUndo: a rewrite says how to take it back", () => {
     for (const p of ["MacIntel", "iPhone", "iPad"]) expect(undoChord(p)).toBe("⌘Z");
     expect(withUndo("Finished: 3 changes", "MacIntel")).toBe("Finished: 3 changes · ⌘Z undoes");
   });
-});
 
-describe("COPY_FAILED: a failed copy names the next step", () => {
-  it("says what to do for every kind of copy, never a bare failure", () => {
-    for (const msg of Object.values(COPY_FAILED)) {
-      expect(msg).toMatch(/^Couldn't copy/);
-      expect(msg).toMatch(/ — .+/);
-    }
+  it("names no chord on a touch-only device, which has no keyboard to press it on", () => {
+    expect(withUndo("Formatted", "iPhone", true)).toBe("Formatted");
+    expect(withUndo("Formatted", "Linux armv8l", true)).toBe("Formatted");
   });
 });

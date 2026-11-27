@@ -85,9 +85,13 @@ function factsOf(src: string): string | null {
   }
 }
 const good = computed(() =>
-  result.value.errors.length ? null : { svg: result.value.svg, facts: factsOf(compiled.value) },
+  result.value.errors.length
+    ? null
+    : { svg: result.value.svg, facts: factsOf(compiled.value), rendered: rendered.value },
 );
-const lastGood = shallowRef<{ svg: string; facts: string | null } | null>(null);
+// Kept with the colour scheme it was drawn in: a drawing of the other scheme is never shown in its
+// place (the rendered SVG inlined would redefine `id="poche"` and restyle every other widget).
+const lastGood = shallowRef<{ svg: string; facts: string | null; rendered: boolean } | null>(null);
 watch(
   good,
   (g) => {
@@ -95,7 +99,9 @@ watch(
   },
   { immediate: true },
 );
-const shownGood = computed(() => good.value ?? lastGood.value);
+const shownGood = computed(
+  () => good.value ?? (lastGood.value?.rendered === rendered.value ? lastGood.value : null),
+);
 const stale = computed(() => !good.value);
 const svg = computed(() => shownGood.value?.svg ?? "");
 // The rendered drawing is shown as an <img> over a data URI: every plan's SVG defines `id="poche"`
@@ -241,8 +247,9 @@ onBeforeUnmount(() => clearTimeout(hrefTimer));
         <span class="archlive-facts">{{ facts ?? "—" }}</span>
         <span class="archlive-actions">
           <a v-if="staticPage" class="archlive-page" :href="staticPage">Plan and source →</a>
+          <!-- `plan-open`: a control, not a prose link, so doc-pages.css's prose-link rules leave it be. -->
           <a
-            class="archlive-open"
+            class="archlive-open plan-open"
             :href="openHref"
             target="_blank"
             rel="noopener"
@@ -492,8 +499,17 @@ onBeforeUnmount(() => clearTimeout(hrefTimer));
   letter-spacing: 0.04em;
   color: var(--ink-muted);
 }
-/* `.vp-doc a:hover` (0,2,1) outranks this rule's two classes: the colour is re-asserted here. */
+/* `.vp-doc a` / `.vp-doc a:hover` (0,1,1 / 0,2,1) set VitePress's link weight, colour and
+   underline: the control's own are restated here, at (0,2,0) + the state. */
+.archlive .archlive-open,
+.archlive .archlive-open:visited {
+  font-weight: 600;
+  color: var(--redline-ink);
+  text-decoration: none;
+}
 .archlive .archlive-open:hover {
+  font-weight: 600;
+  text-decoration: none;
   color: var(--redline-ink);
   background: color-mix(in srgb, var(--redline) 12%, transparent);
 }

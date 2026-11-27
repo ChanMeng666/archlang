@@ -32,7 +32,7 @@ import { countEvent, eventCodes } from "./telemetry.js";
 import { isNarrow, type MobileViewsHandle } from "./mobile-views.js";
 import { briefFromPlan, renderIntent, STARTER_INTENT } from "./intent-panel.js";
 import { renderSuggest } from "./suggest-panel.js";
-import { withUndo } from "./notice-core.js";
+import { undoable } from "./notice-core.js";
 import { KEYS, readStr, writeStr } from "./storage.js";
 
 export interface EditCtx {
@@ -186,7 +186,7 @@ export function mountEditMode(ctx: EditCtx): EditMode {
       return;
     }
     loadSource(report.output, false);
-    flash(withUndo(best.title, navigator.platform));
+    flash(undoable(best.title));
     countEvent({ e: "fix_applied", codes: eventCodes([rows[index]?.code]) });
   }
 
@@ -234,7 +234,7 @@ export function mountEditMode(ctx: EditCtx): EditMode {
     loadSource(next, false);
     // The suggestions are the plan's, so they are drawn again for the plan the insert made.
     if (suggestPanel) renderSuggest(suggestPanel, suggestTopology(next));
-    flash(withUndo("Statement inserted", navigator.platform));
+    flash(undoable("Statement inserted"));
   });
 
   // ---- Intent (the brief as a contract) ----

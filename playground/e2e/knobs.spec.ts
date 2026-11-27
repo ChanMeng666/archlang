@@ -115,6 +115,25 @@ test.describe("knobs", () => {
     await expect.poll(() => hashSource(page)).toBe(src.replace("let DEPTH = 5400", "let DEPTH = 5450"));
   });
 
+  test("Reset puts every knob back to the value the plan arrived with, in one compile (audit U23)", async ({
+    page,
+  }) => {
+    const src = example("knob-flat");
+    await page.goto(`/${await shareHash(src)}`);
+    await waitForPlan(page);
+    const reset = panel(page).locator(".knobs-reset");
+    // Nothing to put back on arrival.
+    await expect(reset).toBeHidden();
+    await knob(page, "DEPTH").focus();
+    await page.keyboard.press("ArrowRight");
+    await expect(knob(page, "DEPTH")).toHaveValue("5450");
+    await expect(reset).toBeVisible();
+    await reset.click();
+    await expect(knob(page, "DEPTH")).toHaveValue("5400");
+    await expect.poll(() => hashSource(page)).toBe(src);
+    await expect(reset).toBeHidden();
+  });
+
   test("a value that does not compile snaps back and keeps the last good drawing", async ({ page }) => {
     // parametric indexes `names[i]` for i < COUNT, and names has three entries: COUNT = 4 fails.
     const src = example("parametric");

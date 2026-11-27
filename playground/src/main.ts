@@ -450,6 +450,9 @@ function endFlash() {
   flashTimer = undefined;
   flashOn = false;
   flashAction = undefined;
+  // A hidden notice is under no pointer and holds no focus: the next flash runs its full life.
+  noticeHovered = false;
+  noticeFocused = false;
   sayStatus(flashResting);
 }
 function armFlash() {
@@ -549,6 +552,7 @@ function leaveStrip(remove: () => void) {
   const was = previewCtl.rectBefore();
   remove();
   previewCtl.refitFrom(was);
+  paintStatus(); // the stage's top moved up: a notice on screen follows (`--stage-top`)
 }
 
 /** Settles once boot has chosen the plan this visit opens (`doc`). */
@@ -1273,6 +1277,8 @@ function pickExample(label: string) {
       loadSource(source, true);
       if (prev === source || prev.trim() === "") return;
       if (exampleLabelFor(prev) ?? samples.sampleLabelFor(prev)) return;
+      // The nudge (shown once ever, on this very switch) keeps the notice: it is not replaced.
+      if (flashOn && nudgeAction !== undefined && flashAction === nudgeAction) return;
       const name = document.getElementById("planName")?.textContent ?? label;
       flash(`Opened ${name}`, {
         action: {

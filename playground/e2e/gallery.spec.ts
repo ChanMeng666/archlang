@@ -520,3 +520,31 @@ test.describe("plan gallery without JavaScript", () => {
     await expect(page.locator("h1")).toHaveCount(1);
   });
 });
+
+/**
+ * Audit U3: picking a plan over the visitor's own (an edit, a shared plan, a draft) says so with an
+ * Undo, which puts that plan back under the name it had; an example replaced word for word says
+ * nothing.
+ */
+test.describe("a pick over the visitor's own plan can be undone", () => {
+  test("Opened X + Undo restores the edited plan", async ({ page }) => {
+    await gotoEdit(page);
+    await setEditorSource(page, SIMPLE_PLAN);
+    await expectPlanNamed(page, { neutral: "Edited plan" });
+    await pickPlan(page, "Two-bed flat");
+    await expect(page.locator("#statusText")).toHaveText("Opened Two-bed flat");
+    const undo = page.locator("#statusAction");
+    await expect(undo).toHaveText("Undo");
+    await undo.click();
+    await expect(page.locator(".cm-content")).toContainText('label "Main"');
+    await expectPlanNamed(page, { neutral: "Edited plan" });
+  });
+
+  test("an example replaced word for word says nothing", async ({ page }) => {
+    await page.goto("/");
+    await waitForPlan(page);
+    await pickPlan(page, "Two-bed flat");
+    await page.waitForTimeout(500);
+    await expect(page.locator("#statusText")).not.toHaveText(/^Opened /);
+  });
+});

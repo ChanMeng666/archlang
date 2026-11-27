@@ -12,7 +12,7 @@ import { embedSnippets, exampleImageUrl } from "./embed-snippets.js";
 import { exampleNameFor } from "./examples.js";
 import { buildChatPrompt, buildLlmPrompt, CHAT_HOSTS, type ChatHost, chatHostUrl, isChatHost } from "./llm-prompt.js";
 import { createShortLink, encodeSrc, set3dFlag, shareableHref, updateHash } from "./share.js";
-import { COPY_FAILED, type FlashOpts, withUndo } from "./notice-core.js";
+import { COPY_FAILED, type FlashOpts, undoable } from "./notice-core.js";
 import { mountSnapshots } from "./snapshots.js";
 import { KEYS, readStr, writeStr } from "./storage.js";
 import { lazyOnce } from "./lazy-once.js";
@@ -166,7 +166,7 @@ export function mountActions(ctx: ActionsCtx): ActionsHandle {
         return;
       }
       loadSource(out, false);
-      flash(withUndo("Formatted", navigator.platform));
+      flash(undoable("Formatted"));
     }),
   );
 
@@ -196,7 +196,7 @@ export function mountActions(ctx: ActionsCtx): ActionsHandle {
       result.changed
         ? m > 0
           ? `Finished: ${added}, ${m} unresolved (see Checks)`
-          : withUndo(`Finished: ${added}`, navigator.platform)
+          : undoable(`Finished: ${added}`)
         : m > 0
           ? `Finish added nothing: ${m} unresolved (see Checks)`
           : "Nothing to finish",
@@ -535,7 +535,7 @@ export function mountActions(ctx: ActionsCtx): ActionsHandle {
     repairPanel.querySelector(".repair-apply")?.addEventListener("click", () => {
       loadSource(result.source, false);
       repairPanel.hidden = true;
-      flash(withUndo("Repaired", navigator.platform));
+      flash(undoable("Repaired"));
     });
   }
 

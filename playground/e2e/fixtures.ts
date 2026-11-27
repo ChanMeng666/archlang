@@ -256,9 +256,13 @@ interface StatusLogWindow extends Window {
   __archlangStatusObserver?: MutationObserver;
 }
 
-/** The undo chord the app's messages name on this browser (notice-core.ts `undoChord`). */
-export const undoChord = (page: Page): Promise<string> =>
-  page.evaluate(() => (/Mac|iPhone|iPad|iPod/i.test(navigator.platform) ? "⌘Z" : "Ctrl+Z"));
+/** `msg` as the app says it after a rewrite on this browser (notice-core.ts `undoable`): with the undo
+ *  chord, except on a touch-only device, which has no keyboard to press it on. */
+export const undone = (page: Page, msg: string): Promise<string> =>
+  page.evaluate((m) => {
+    if (matchMedia("(hover: none) and (pointer: coarse)").matches) return m;
+    return `${m} · ${/Mac|iPhone|iPad|iPod/i.test(navigator.platform) ? "⌘Z" : "Ctrl+Z"} undoes`;
+  }, msg);
 
 /** A cursor over everything the app has painted into `#statusText` since installation. */
 export interface StatusWatch {

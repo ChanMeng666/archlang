@@ -14,7 +14,7 @@ import {
   shareHash,
   SIMPLE_PLAN,
   waitForPlan,
-  undoChord,
+  undone,
   watchStatus,
 } from "./fixtures.js";
 
@@ -68,7 +68,7 @@ test.describe("header actions", () => {
 
     await openMore(page);
     await page.locator("#formatSrc").click();
-    await status.expectFlash(`Formatted · ${await undoChord(page)} undoes`);
+    await status.expectFlash(await undone(page, "Formatted"));
     // Canonical style is two-space body indentation under `plan { … }`.
     await expect(page.locator(".cm-content")).toContainText("units mm");
     const text = await page.locator(".cm-content").innerText();
@@ -97,7 +97,7 @@ test.describe("header actions", () => {
     // legend and a title block, nothing left unresolved.
     await openMore(page);
     await page.getByRole("button", { name: "Finish", exact: true }).click();
-    await status.expectFlash(`Finished: 6 changes · ${await undoChord(page)} undoes`);
+    await status.expectFlash(await undone(page, "Finished: 6 changes"));
     const editor = page.locator(".cm-content");
     await expect(editor).toContainText("dims auto all");
     await expect(editor).toContainText('title { project "E2E" }');
@@ -139,7 +139,7 @@ test.describe("header actions", () => {
     // "unresolved" in the flash, and the Checks tab stays closed.
     await openMore(page);
     await page.getByRole("button", { name: "Finish", exact: true }).click();
-    await status.expectFlash(`Finished: 6 changes · ${await undoChord(page)} undoes`);
+    await status.expectFlash(await undone(page, "Finished: 6 changes"));
     await expect(page.locator("#tab-checks")).toHaveAttribute("aria-selected", "false");
 
     await page.locator("#tab-checks").click();
@@ -174,7 +174,7 @@ test.describe("header actions", () => {
     const status = await watchStatus(page);
     await openMore(page);
     await page.getByRole("button", { name: "Finish", exact: true }).click();
-    await status.expectFlash(`Finished: 6 changes · ${await undoChord(page)} undoes`);
+    await status.expectFlash(await undone(page, "Finished: 6 changes"));
     await expect(page.locator("html")).toHaveAttribute("data-mode", "edit");
     const editor = page.locator(".cm-content");
     await expect(editor).toContainText("dims auto all");
@@ -248,7 +248,7 @@ test.describe("header actions", () => {
     await expect(panel.locator(".repair-un code", { hasText: "paper" })).toBeVisible();
 
     await panel.getByRole("button", { name: "Reissue sheet" }).click();
-    await status.expectFlash(`Finished: 1 change · ${await undoChord(page)} undoes`);
+    await status.expectFlash(await undone(page, "Finished: 1 change"));
     await expect(page.locator(".cm-content")).toContainText("paper A1 landscape");
     await expect(panel).toContainText("replaced");
     await expect(panel.getByRole("button", { name: "Reissue sheet" })).toHaveCount(0);

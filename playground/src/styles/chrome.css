@@ -148,9 +148,13 @@ header {
   outline: 2px solid var(--plum-deep);
   outline-offset: 1px;
 }
-.hd-btn:active,
-.tools-panel button:active {
-  scale: var(--press-scale);
+/* The press scale is a mouse's: a tapped control keeps :active in touch browsers, and would
+   stay shrunk under the finger. Touch gets the colour tint. */
+@media (pointer: fine) {
+  .hd-btn:active,
+  .tools-panel button:active {
+    scale: var(--press-scale);
+  }
 }
 .tools-panel button:disabled {
   cursor: progress;
@@ -683,8 +687,12 @@ html:not([data-mode="edit"]) .pane:has(#storeys:not([hidden])) .room-card {
 .stage-status-act:hover {
   background: color-mix(in srgb, currentColor 10%, transparent);
 }
-.stage-status-act:active {
-  scale: var(--press-scale);
+/* The press scale is a mouse's: a tapped control keeps :active in touch browsers, and would
+   stay shrunk under the finger. Touch gets the colour tint. */
+@media (pointer: fine) {
+  .stage-status-act:active {
+    scale: var(--press-scale);
+  }
 }
 .stage-status-act:focus-visible {
   outline: 2px solid var(--redline-ink);
@@ -774,7 +782,7 @@ html:not([data-mode="edit"]) .pane:has(#storeys:not([hidden])) .room-card {
     min-height: 44px;
   }
   main:has(#storeys:not([hidden])) .stage-status {
-    top: 130px;
+    top: calc(var(--stage-top, 0px) + 130px);
   }
   html[data-mode="edit"] .stage-status {
     top: calc(var(--stage-top, 0px) + 10px);

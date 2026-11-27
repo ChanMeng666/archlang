@@ -2307,6 +2307,7 @@ html:not([data-mode="edit"]) .p3d-stage > .knobs {
   /* No text under 12 px on a phone (ruling MP-D2): the panels' micro-labels and small mono. */
   .tv-h,
   .room-tip,
+  .pz-toolbar button[data-pz="fit"],
   .pz-toolbar button[data-layer="checks"],
   .pz-toolbar button[data-pz="paths"],
   .shared-notice-dismiss,
@@ -2383,6 +2384,7 @@ html:not([data-mode="edit"]) .p3d-stage > .knobs {
 
 /* The narrowest phones: the two layer labels a little tighter, so the toolbar stays one row. */
 @media (max-width: 380px) {
+  .pz-toolbar button[data-pz="fit"],
   .pz-toolbar button[data-layer="checks"],
   .pz-toolbar button[data-pz="paths"] {
     padding: 0 4px;
@@ -2498,17 +2500,21 @@ html:not([data-mode="edit"]) .p3d-stage > .knobs {
     scale var(--dur-press) var(--ease-out),
     opacity var(--dur-fast) var(--ease-out);
 }
-:is(
-  .mo-copybtn,
-  .mo-go,
-  .repair-btn,
-  .repair-apply,
-  .diag-apply,
-  .embed-copy,
-  .p3d-btn,
-  .contrib-dialog button
-):active:not(:disabled) {
-  scale: var(--press-scale);
+/* The press scale is a mouse's: a tapped control keeps :active in touch browsers, and would
+   stay shrunk under the finger. Touch gets the colour tint. */
+@media (pointer: fine) {
+  :is(
+    .mo-copybtn,
+    .mo-go,
+    .repair-btn,
+    .repair-apply,
+    .diag-apply,
+    .embed-copy,
+    .p3d-btn,
+    .contrib-dialog button
+  ):active:not(:disabled) {
+    scale: var(--press-scale);
+  }
 }
 :is(
   .pz-toolbar button,
@@ -2779,8 +2785,12 @@ html[data-stale] .pz-stage > svg {
 .load-retry:hover {
   background: color-mix(in srgb, var(--ink) 6%, var(--paper-panel));
 }
-.load-retry:active {
-  scale: var(--press-scale);
+/* The press scale is a mouse's: a tapped control keeps :active in touch browsers, and would
+   stay shrunk under the finger. Touch gets the colour tint. */
+@media (pointer: fine) {
+  .load-retry:active {
+    scale: var(--press-scale);
+  }
 }
 .load-retry:focus-visible {
   outline: 2px solid var(--redline-ink);

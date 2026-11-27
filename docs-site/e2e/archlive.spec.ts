@@ -68,7 +68,7 @@ test.describe("the widget hydrates into a live compiler", { tag: "@prod" }, () =
     // just the renderer. (This line is also where a `describe()` signature change would
     // surface first; it silently degrades to "—" on a throw.)
     await expect(page.locator(".archlive-facts").first()).not.toHaveText("—");
-    await expect(page.locator(".archlive-facts").first()).toContainText("rooms");
+    await expect(page.locator(".archlive-facts").first()).toContainText(/^\d+ rooms? · /);
   });
 });
 
@@ -273,6 +273,22 @@ test.describe("the rendered colour scheme is a per-widget checkbox", () => {
     await box.uncheck();
     await expect(stage.locator("img")).toHaveCount(0);
     expect(await archLiveSvg(page, 0), "unticked, the drawing is the default one again").toBe(before);
+  });
+
+  test("a typo under the rendered scheme never inlines the rendered drawing once unticked", async ({ page }) => {
+    // The last good drawing is kept per scheme: the rendered SVG, inlined, would redefine
+    // `id="poche"` and restyle every other widget on the page.
+    await page.goto(EXPLICIT_PAGE);
+    const widget = page.locator(".archlive").first();
+    await expect(widget.locator(".archlive-svg svg")).toBeVisible();
+    await widget.locator(".archlive-theme input").check();
+    await expect(widget.locator(".archlive-svg img")).toBeVisible();
+    await setArchLiveSource(page, 0, 'plan "E2E" {\n  units mm\n  romo at (0,0) size 4000x3000\n}');
+    await expect(widget.locator(".archlive-error.is-shown")).not.toHaveText("");
+    await widget.locator(".archlive-theme input").uncheck();
+    // Broken, default scheme, no default drawing kept: nothing inlined rather than the wrong one.
+    await expect(widget.locator(".archlive-svg svg")).toHaveCount(0);
+    await expect(widget.locator(".archlive-svg img")).toHaveCount(0);
   });
 
   test("the checkbox has its own row: the bar stays one short row at phone width", async ({ page }) => {

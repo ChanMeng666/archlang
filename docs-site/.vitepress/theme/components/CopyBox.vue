@@ -29,7 +29,9 @@ async function copy() {
       sel.removeAllRanges();
       sel.addRange(range);
     }
-    chord.value = /Mac|iPhone|iPad|iPod/i.test(navigator.platform) ? "⌘C" : "Ctrl+C";
+    // A touch-only device has no keyboard to press a chord on: it is told the text is selected.
+    const touchOnly = matchMedia("(hover: none) and (pointer: coarse)").matches;
+    chord.value = touchOnly ? "" : /Mac|iPhone|iPad|iPod/i.test(navigator.platform) ? "⌘C" : "Ctrl+C";
     settle("failed", 4000);
   }
 }
@@ -49,9 +51,9 @@ async function copy() {
       <span class="copybox__labels" aria-hidden="true">
         <span class="copybox__idle">Copy</span><span class="copybox__done">Copied</span>
       </span>
-      <span v-if="state === 'failed'" class="copybox__fail">Press {{ chord }}</span>
+      <span v-if="state === 'failed'" class="copybox__fail">{{ chord ? `Press ${chord}` : "Text selected" }}</span>
       <span class="vh-copy" aria-live="polite">{{
-        state === "done" ? "Copied" : state === "failed" ? `Couldn't copy: the text is selected, press ${chord}` : ""
+        state === "done" ? "Copied" : state === "failed" ? `Couldn't copy: the text is selected${chord ? `, press ${chord}` : ""}` : ""
       }}</span>
     </button>
   </div>
