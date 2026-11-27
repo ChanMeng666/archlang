@@ -23,8 +23,8 @@ import { SYNONYMS_VERSION, isKnownConcept, roomsMatching } from "../eval/synonym
  *
  * Every golden in the corpus must compile and match its semantic expectations. This
  * is the CI-safe half of the NL→ArchLang eval: if a language change breaks a plan a
- * model already wrote, this fails — no API key needed. The live eval (`npm run eval
- * -- --live`) produces the headline authorability number for the README.
+ * model already wrote, this fails — no API key needed. The live run,
+ * `npm run eval -- --live`, produces the headline authorability number for the README.
  */
 
 /**

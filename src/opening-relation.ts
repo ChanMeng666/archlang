@@ -104,7 +104,7 @@ export interface RelationCtx {
   sameFile?(file: string | undefined): boolean;
   /** {@link import("./registry.js").ResolveCtx.refusedDerivation}; absent: no root is named. */
   refusedDerivation?(rooms: readonly string[], overlap?: boolean): Cause | undefined;
-  eval(e: Expr): number;
+  evaluate(e: Expr): number;
   datums?: DatumAccess;
 }
 
@@ -771,7 +771,7 @@ function positionOnRun(
       ctx.diag(cornerDiag(`${what} is placed \`at corner\`, and only a window turns a corner`, posSpan));
       return undefined;
     case "from": {
-      const v = ctx.eval(pos.value);
+      const v = ctx.evaluate(pos.value);
       const axes = axisLabelsRead(pos.value);
       if (axes.length > 0) {
         // Only the declared labels: an undeclared one is the evaluator's E_UNKNOWN_REF already.

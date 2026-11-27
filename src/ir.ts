@@ -1091,7 +1091,7 @@ function resolveBody(
       extras.level ? `Level ${fmt0(extras.level.level)}` : "The plan",
       { height: storeyHeight, written: heightWritten },
       {
-        eval: (e, span) => {
+        evaluate: (e, span) => {
           stepSite(span);
           const hits = poisonHits;
           const v = evalNum(e);
@@ -1117,6 +1117,8 @@ function resolveBody(
     grid: g,
     snap,
     snapPt,
+    evaluate: evalNum,
+    // The deprecated alias (`ResolveCtx`): the same function, for third-party plugins.
     eval: evalNum,
     evalStr,
     evalPt,

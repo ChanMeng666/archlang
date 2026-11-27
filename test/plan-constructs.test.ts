@@ -17,6 +17,7 @@ import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { compile } from "../src/index.js";
+import { importSource } from "./helpers/tmp.js";
 // @ts-expect-error plain .mjs module without declarations
 import { headingIds as sharedHeadingIds } from "../docs-site/link-rewrite.mjs";
 
@@ -37,9 +38,10 @@ const astOf = (name: string) => compile(readFileSync(join("examples", `${name}.a
 
 /**
  * VitePress's own heading slug function, out of its built node bundle: the three character classes
- * and the `slugify` arrow, evaluated together. Null when VitePress is not installed.
+ * and the `slugify` arrow, loaded together as one real ES module (`importSource`; the bundle itself
+ * is not imported, it would load all of VitePress). Null when VitePress is not installed.
  */
-function vitepressSlugify(): ((s: string) => string) | null {
+async function vitepressSlugify(): Promise<((s: string) => string) | null> {
   const dir = join("node_modules", "vitepress", "dist", "node");
   if (!existsSync(dir)) return null;
   for (const f of readdirSync(dir).filter((x) => x.endsWith(".js"))) {
@@ -51,7 +53,8 @@ function vitepressSlugify(): ((s: string) => string) | null {
     if (lines.some((l) => l === null)) continue;
     // Plain, one-line definitions only: anything else means the bundle changed shape.
     for (const l of lines) expect(l, `${f}: ${l}`).toMatch(/^const \w+ = .+;$/);
-    return new Function(`${lines.join("\n")}\nreturn slugify;`)() as (s: string) => string;
+    const mod = await importSource<{ slugify: (s: string) => string }>(`${lines.join("\n")}\nexport { slugify };\n`);
+    return mod.slugify;
   }
   throw new Error(
     `no file under ${dir} defines VitePress's heading slugify (\`const rSpecial = …\`, \`const slugify = …\`); ` +
@@ -68,8 +71,10 @@ function headingIds(md: string, slugify: (s: string) => string): Set<string> {
   return new Set((sharedHeadingIds(md, slugify) as Array<{ vp: string }>).map((h) => h.vp));
 }
 
+const SLUGIFY = await vitepressSlugify();
+
 describe("every construct anchor is a heading of the language reference", () => {
-  const slugify = vitepressSlugify();
+  const slugify = SLUGIFY;
   const required = !!process.env.CI;
 
   it("VitePress's slug function is available (skips only on an un-installed checkout; fails under CI)", (ctx) => {

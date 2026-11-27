@@ -560,7 +560,7 @@ export const door: ElementDef = {
   resolve(node, ctx: ResolveCtx): RDoor {
     const n = node as DoorNode;
     const id = ctx.id;
-    const wv = ctx.eval(n.width);
+    const wv = ctx.evaluate(n.width);
     noteSquare(ctx, `Door "${id}"`, "a door's width", n.width, wv, n.span);
     const width = ctx.snap(wv) || wv;
     if (width <= 0) {
@@ -651,7 +651,7 @@ export const door: ElementDef = {
     // `open` is a DRAWING fact and nothing else reads it, so an impossible value is
     // reported (with the clamped value as a fix) rather than silently clamped — the
     // shipped `E_ARC_RADIUS` pattern.
-    const openRaw = n.open !== undefined ? ctx.eval(n.open) : undefined;
+    const openRaw = n.open !== undefined ? ctx.evaluate(n.open) : undefined;
     if (openRaw !== undefined && !(openRaw >= 0 && openRaw <= 1)) {
       const clamped = Number.isNaN(openRaw) ? 0 : clamp01(openRaw);
       ctx.diag({

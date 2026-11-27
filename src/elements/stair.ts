@@ -278,10 +278,10 @@ function resolveBlock(n: StairNode, ctx: ResolveCtx): RStair {
     });
     return { kind: "stair", id, at: { x: 0, y: 0 }, size: { w: 0, h: 0 }, dir: n.dir, width: 0, span: n.span };
   }
-  const width = n.width === undefined ? 0 : ctx.snap(ctx.eval(n.width));
+  const width = n.width === undefined ? 0 : ctx.snap(ctx.evaluate(n.width));
   const rects: BBox[] = pieces.map((p): BBox => {
     const at = ctx.snapPt(ctx.evalPt(p.at));
-    return { x: at.x, y: at.y, w: ctx.snap(ctx.eval(p.size.w)), h: ctx.snap(ctx.eval(p.size.h)) };
+    return { x: at.x, y: at.y, w: ctx.snap(ctx.evaluate(p.size.w)), h: ctx.snap(ctx.evaluate(p.size.h)) };
   });
   const box = unionOf(rects);
   const stop = (d: Diagnostic): RStair => {
@@ -335,7 +335,7 @@ function resolveBlock(n: StairNode, ctx: ResolveCtx): RStair {
     const landing: RStairPiece = { at: { x: r.x, y: r.y }, size: { w: r.w, h: r.h } };
     const w = pieces[j]!.winders;
     if (w !== undefined) {
-      const count = ctx.eval(w);
+      const count = ctx.evaluate(w);
       const why = winderRefusal(id, (j + 1) / 2, count, r, rects[j - 1]!, rects[j + 1]!, width);
       if (why) return stop({ severity: "error", message: why, code: "E_STAIR_PIECES", span: pieces[j]!.span });
       landing.winders = count;
@@ -399,7 +399,7 @@ export const stair: ElementDef = {
     if (n.pieces !== undefined) return resolveBlock(n, ctx);
     const id = ctx.id;
     const at = ctx.snapPt(ctx.evalPt(n.at!));
-    const size = { w: ctx.snap(ctx.eval(n.size!.w)), h: ctx.snap(ctx.eval(n.size!.h)) };
+    const size = { w: ctx.snap(ctx.evaluate(n.size!.w)), h: ctx.snap(ctx.evaluate(n.size!.h)) };
     if (size.w <= 0 || size.h <= 0) {
       ctx.diag({
         severity: "error",
@@ -412,7 +412,7 @@ export const stair: ElementDef = {
     const cross = flightAxis(size) === "y" ? size.w : size.h;
     let width = cross;
     if (n.width !== undefined) {
-      width = ctx.snap(ctx.eval(n.width));
+      width = ctx.snap(ctx.evaluate(n.width));
       if (width <= 0 || width > cross) {
         ctx.diag({
           severity: "error",

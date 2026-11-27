@@ -9,28 +9,31 @@
  * welds the committed artifact to `renderHighlighter()`; this welds `renderHighlighter()`
  * to `KEYWORDS`, and pins the behaviour its two call sites depend on.
  *
- * NB it evaluates the GENERATOR's output rather than importing the generated `.js`. A
+ * NB it loads the GENERATOR's output rather than importing the generated `.js`. A
  * static import would drag a `docs-site` module into the ROOT tsconfig program — where
  * `allowJs` is off — and fail `typecheck:all` with a TS2307 (`exclude` cannot
- * hold a file out of a program it was imported into). `test/share-codec.test.ts` uses the
- * same `new Function` idiom on `ArchLive.vue`'s inline codec for the same reason.
+ * hold a file out of a program it was imported into). So the output is written to a scratch
+ * file and imported as a real ES module (`importSource`, `test/helpers/tmp.ts`), which also
+ * keeps the repository free of runtime-built functions (`test/no-dynamic-code.test.ts`).
+ * `test/share-codec.test.ts` loads `ArchLive.vue`'s inline codec the same way for the same reason.
  */
 
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { renderHighlighter } from "../scripts/gen-grammars.js";
 import { KEYWORDS } from "../src/grammar/tokens.js";
+import { importSource } from "./helpers/tmp.js";
 
 const ARTIFACT = "docs-site/.vitepress/theme/arch-highlight.js";
 const STYLE_CSS = "docs-site/.vitepress/theme/style.css";
 
 const GENERATED = renderHighlighter();
 
-/** The generated module, evaluated. It imports nothing, so stripping `export` is enough. */
-const mod = new Function(`${GENERATED.replace(/^export /gm, "")}\nreturn { highlightArch, TOKEN_CLASSES };`)() as {
+/** The generated module, loaded as written: it imports nothing, so it loads on its own. */
+const mod = await importSource<{
   highlightArch: (s: string) => string;
   TOKEN_CLASSES: string[];
-};
+}>(GENERATED);
 
 /** The `new Set([...])` literal the generator wrote for a category, as a string list. */
 function emittedSet(name: string): string[] {

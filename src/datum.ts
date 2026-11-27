@@ -266,14 +266,14 @@ export function resolveOpeningHeights(
 
   let sill = defaults.sill;
   if (clauses.sill !== undefined) {
-    const v = ctx.eval(clauses.sill);
+    const v = ctx.evaluate(clauses.sill);
     if (isPlacedHeight(v)) sill = v;
     else ctx.diag(heightRangeDiagnostic(subject, "sill", v, clauses.sillSpan ?? stmtSpan));
   }
 
   let head = defaults.head;
   if (clauses.head !== undefined) {
-    const v = ctx.eval(clauses.head);
+    const v = ctx.evaluate(clauses.head);
     if (isDrawableHeight(v)) head = v;
     else ctx.diag(heightRangeDiagnostic(subject, "head", v, clauses.headSpan ?? stmtSpan));
   }
@@ -397,12 +397,12 @@ export function resolveCeiling(
   plan: PlanNode,
   subject: string,
   storey: { height: number; written: boolean },
-  ev: { eval(e: Expr, span: Span | undefined): number; diag(d: Diagnostic): void },
+  ev: { evaluate(e: Expr, span: Span | undefined): number; diag(d: Diagnostic): void },
 ): CeilingFacts {
   // Only a storey of a multi-storey plan knows whether its own `level` header wrote the height.
   const own = (clause: "slab" | "clear", e: Expr | undefined, span: Span | undefined): number | undefined => {
     if (e === undefined) return undefined;
-    const v = ev.eval(e, span);
+    const v = ev.evaluate(e, span);
     if (isDrawableHeight(v)) return v;
     ev.diag(heightRangeDiagnostic(subject, clause, v, span));
     return undefined;

@@ -338,7 +338,7 @@ export const voidEl: ElementDef = {
     }
 
     const at = ctx.snapPt(ctx.evalPt(n.at!));
-    const size = { w: ctx.snap(ctx.eval(n.size!.w)), h: ctx.snap(ctx.eval(n.size!.h)) };
+    const size = { w: ctx.snap(ctx.evaluate(n.size!.w)), h: ctx.snap(ctx.evaluate(n.size!.h)) };
     if (size.w <= 0 || size.h <= 0) {
       ctx.diag({
         severity: "error",

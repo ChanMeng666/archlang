@@ -532,7 +532,7 @@ export const room: ElementDef = {
     if (n.at) {
       // —— Absolute / "manual" path — no constraint, never moved by the solver. ——
       const at = ctx.snapPt(ctx.evalPt(n.at));
-      const written = { w: ctx.eval(n.size!.w), h: ctx.eval(n.size!.h) };
+      const written = { w: ctx.evaluate(n.size!.w), h: ctx.evaluate(n.size!.h) };
       const size = { w: ctx.snap(written.w), h: ctx.snap(written.h) };
       if (size.w <= 0 || size.h <= 0) {
         ctx.diag({
@@ -614,8 +614,8 @@ export const room: ElementDef = {
         ...fixesFrom(roomAlignAxisFix(rel.alignSpan, counterpart)),
       });
     }
-    const gap = rel.gap !== undefined ? ctx.eval(rel.gap) : 0;
-    const written = { w: ctx.eval(n.size!.w), h: ctx.eval(n.size!.h) };
+    const gap = rel.gap !== undefined ? ctx.evaluate(rel.gap) : 0;
+    const written = { w: ctx.evaluate(n.size!.w), h: ctx.evaluate(n.size!.h) };
     const size = { w: ctx.snap(written.w), h: ctx.snap(written.h) };
     if (size.w <= 0 || size.h <= 0) {
       ctx.diag({
@@ -811,7 +811,7 @@ export const room: ElementDef = {
  */
 function resolveCircle(n: RoomNode, id: string, ctx: ResolveCtx): RRoom {
   const c = ctx.snapPt(ctx.evalPt(n.circle!.c));
-  const rv = ctx.eval(n.circle!.r);
+  const rv = ctx.evaluate(n.circle!.r);
   const r = ctx.snap(rv) || rv;
   const label = n.label !== undefined ? ctx.evalStr(n.label) : undefined;
   if (!(r > 0)) {
@@ -999,7 +999,7 @@ function sagWithin(arc: Arc, spec: WallArcNode, id: string, n: RoomNode, ctx: Re
  * snapped, for the end point as printed, so applying it always clears the error.
  */
 function solveRingArc(spec: WallArcNode, a: Point, b: Point, id: string, n: RoomNode, ctx: ResolveCtx): Arc | null {
-  const rv = ctx.eval(spec.radius);
+  const rv = ctx.evaluate(spec.radius);
   const r = ctx.snap(rv) || rv;
   const arc = arcFromChord(a, b, r, spec.dir ?? "ccw", spec.major === true);
   if (arc) return arc;

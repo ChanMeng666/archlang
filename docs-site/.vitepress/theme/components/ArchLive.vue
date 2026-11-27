@@ -149,7 +149,7 @@ function syncScroll(): void {
 // its implementation's (the share subpath holds no encoder; playground/src/share.ts keeps its own).
 //
 // TWO CONSTRAINTS ON EDITS HERE. (1) test/share-codec.test.ts extracts this body by
-// its `async function playgroundUrl` anchor and runs it through `new Function` (with `source`,
+// its `async function playgroundUrl` anchor and loads it as a scratch ES module (with `source`,
 // `toBase64Url` and `PLAYGROUND_EDIT_FLAG` handed in), so it must stay PLAIN JS — no `as`, no
 // `!`, no type annotations inside, and no other free name. (2) the docs E2E
 // (`docs-site/e2e/archlive.spec.ts`) decodes the button's real href through

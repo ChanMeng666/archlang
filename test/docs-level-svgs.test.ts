@@ -23,12 +23,16 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { levelTarget } from "../src/cli/io.js";
+import { importSource } from "./helpers/tmp.js";
 
 const SYNC = "docs-site/sync-docs.mjs";
 const syncSrc = readFileSync(SYNC, "utf8");
 
-/** Pull sync-docs' `levelSvgName` arrow out of its source and evaluate it as plain JS. */
-function extractLevelSvgName(): (name: string, level: number) => string {
+/**
+ * Pull sync-docs' `levelSvgName` arrow out of its source and load it as plain JS, as a real ES
+ * module (`importSource`): importing sync-docs itself would run the whole docs sync.
+ */
+async function extractLevelSvgName(): Promise<(name: string, level: number) => string> {
   const m = /^const levelSvgName = (\(name, level\) => .+);$/m.exec(syncSrc);
   expect(
     m,
@@ -37,12 +41,14 @@ function extractLevelSvgName(): (name: string, level: number) => string {
       `thing holding the copy to the original — restore the shape, or update this extractor in the ` +
       `same commit.`,
   ).toBeTruthy();
-  // eslint-disable-next-line @typescript-eslint/no-implied-eval, no-new-func
-  return new Function(`return ${m![1]!};`)() as (name: string, level: number) => string;
+  const mod = await importSource<{ default: (name: string, level: number) => string }>(`export default ${m![1]!};\n`);
+  return mod.default;
 }
 
+const LEVEL_SVG_NAME = await extractLevelSvgName();
+
 describe("the docs gallery's per-storey SVG names are the CLI's", () => {
-  const levelSvgName = extractLevelSvgName();
+  const levelSvgName = LEVEL_SVG_NAME;
 
   it("is not vacuous — the extracted function actually produces a name", () => {
     expect(levelSvgName("townhouse", 1)).toBe("townhouse.L1.svg");

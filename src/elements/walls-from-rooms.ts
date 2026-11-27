@@ -140,7 +140,7 @@ export const wallsFromRooms: ElementDef = {
       valueSpan: Span | undefined,
       span = n.span,
     ): number => {
-      const v = ctx.eval(e);
+      const v = ctx.evaluate(e);
       const t = ctx.snap(v) || v;
       if (!(t > 0)) {
         const d: Diagnostic = {
@@ -558,7 +558,7 @@ function resolvePairs(
     }
     seen.add(key);
     if (c.kind === "thickness") {
-      const v = ctx.eval(c.thickness);
+      const v = ctx.evaluate(c.thickness);
       const t = ctx.snap(v) || v;
       if (!(t > 0)) {
         ok = false;
@@ -573,7 +573,7 @@ function resolvePairs(
     } else {
       let width: number | undefined;
       if (c.width) {
-        const v = ctx.eval(c.width);
+        const v = ctx.evaluate(c.width);
         width = ctx.snap(v) || v;
         if (!(width > 0)) {
           ok = false;

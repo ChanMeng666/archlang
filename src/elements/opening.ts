@@ -120,7 +120,7 @@ export const opening: ElementDef = {
   resolve(node, ctx: ResolveCtx): ROpening {
     const n = node as OpeningNode;
     const id = ctx.id;
-    const wv = ctx.eval(n.width);
+    const wv = ctx.evaluate(n.width);
     noteSquare(ctx, `Opening "${id}"`, "an opening's width", n.width, wv, n.span);
     const width = ctx.snap(wv) || wv;
     if (width <= 0) {

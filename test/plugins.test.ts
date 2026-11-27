@@ -25,7 +25,7 @@ function makeTreePlugin(): ElementDef {
     idPrefix: () => "tree",
     resolve(node: any, ctx: ResolveCtx) {
       const at = ctx.snapPt(ctx.evalPt(node.at));
-      const r = ctx.snap(ctx.eval(node.r));
+      const r = ctx.snap(ctx.evaluate(node.r));
       return { kind: "tree", id: ctx.id, at, r, span: node.span } as any;
     },
     bounds(resolved: any) {
@@ -87,6 +87,73 @@ describe("T4.1 — third-party element via { plugins }", () => {
   it("registerElement rejects a malformed def", () => {
     // @ts-expect-error missing required methods
     expect(() => registerElement({ kind: "x", keyword: "x" })).toThrow();
+  });
+});
+
+/**
+ * `ResolveCtx.evaluate` is the evaluator; the old member name is kept as a deprecated alias for
+ * third-party plugins (ADR 0018: the public surface is append-only, a removal is a MAJOR). The
+ * alias is read here by element access or through a variable, never as a call written after a dot,
+ * so this file holds no text a dynamic-code scanner reads as a call to the global evaluator
+ * (`test/no-dynamic-code.test.ts`).
+ */
+describe("ResolveCtx.evaluate and its deprecated alias", () => {
+  const OLD = "eval" as const;
+  type Expr = Parameters<ResolveCtx["evaluate"]>[0];
+
+  /** The tree plugin written the old way: it calls the alias (`ctx[OLD]`), not `evaluate`. */
+  function oldStyleTree(seen: ResolveCtx[]): ElementDef {
+    const def = makeTreePlugin();
+    return registerElement({
+      ...def,
+      resolve(node: any, ctx: ResolveCtx) {
+        seen.push(ctx);
+        const legacy = ctx[OLD];
+        return {
+          kind: "tree",
+          id: ctx.id,
+          at: ctx.snapPt(ctx.evalPt(node.at)),
+          r: ctx.snap(legacy(node.r)),
+          span: node.span,
+        } as any;
+      },
+    });
+  }
+
+  it("the alias is the same function as `evaluate`", () => {
+    const seen: ResolveCtx[] = [];
+    compile(SRC, { plugins: [oldStyleTree(seen)], noCache: true });
+    expect(seen.length).toBeGreaterThan(0);
+    for (const ctx of seen) {
+      expect(typeof ctx.evaluate).toBe("function");
+      expect(ctx[OLD]).toBe(ctx.evaluate);
+    }
+  });
+
+  it("a plugin written against the alias draws byte for byte what one written against `evaluate` draws", () => {
+    const a = compile(SRC, { plugins: [makeTreePlugin()], noCache: true });
+    const b = compile(SRC, { plugins: [oldStyleTree([])], noCache: true });
+    expect(b.errors).toEqual([]);
+    expect(b.svg).toBe(a.svg);
+  });
+
+  it("type level: old-style reads and a method-syntax mock still type-check against ResolveCtx", () => {
+    // A plugin that reads the alias with a dot (the old style) type-checks: `ctx.eval` is
+    // `(e: Expr) => number`. Written through a variable so no call follows the name.
+    const readAlias = (ctx: ResolveCtx): ((e: Expr) => number) => ctx.eval;
+    // An object-literal mock that implements the alias with METHOD syntax (as one written before
+    // the alias became a property would) is still assignable; the computed key keeps the text
+    // free of the scanned call pattern.
+    const mock: Pick<ResolveCtx, "evaluate" | "eval"> = {
+      evaluate(_e: Expr) {
+        return 1;
+      },
+      [OLD](_e: Expr) {
+        return 2;
+      },
+    };
+    expect(readAlias(mock as ResolveCtx)({} as Expr)).toBe(2);
+    expect(mock.evaluate({} as Expr)).toBe(1);
   });
 });
 

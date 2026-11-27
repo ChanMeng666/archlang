@@ -5,7 +5,7 @@
 Where the tests of a `src` module are, and what each test file is for. Generated; `npm run check:drift`
 fails when it is stale. How to add a test: `docs/testing.md` § 4.
 
-577 test files in `test/`, 304 `src` modules, 112 modules no test imports.
+578 test files in `test/`, 304 `src` modules, 112 modules no test imports.
 
 ## `src` module → tests that import it
 
@@ -590,6 +590,7 @@ The first sentence of each file's header comment.
 - `test/no-clock-assertions.test.ts` — Counts, not clocks (AGENTS.md: "budgets are counts, never time").
 - `test/no-control-bytes.test.ts` — No tracked Markdown file contains a stray control byte.
 - `test/no-duplicate-helpers.test.ts` — No new local copy of a helper `test/helpers/` already provides.
+- `test/no-dynamic-code.test.ts` — No tracked code file holds text a dynamic-code scanner reads as `eval` or the Function constructor.
 - `test/no-import-side-effects.test.ts` — importing a src module has no side effect beyond the known ones.
 - `test/no-replace-chain-escapers.test.ts` — Guard: no `String.replace` escaper chains in tooling or source (CodeQL js/incomplete-sanitization).
 - `test/no-value-cycles.test.ts` — No runtime import cycles in `src/`.
