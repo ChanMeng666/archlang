@@ -1962,7 +1962,8 @@ users on ClawHub, then the entry is filed.
 ### VA.1 · The bean bag reads stepped in 3D: done by #729 (RM8.6, lofted parts), waiting to be archived — `note`
 
 The bean bag and the tree crowns are lofted rings (`Part.loft`, `dome()` in `t0-kit.ts`). The furniture
-detail that follows is carded as RM8.11–RM8.14 (`docs/plans/product-roadmap/cards.md`, track 8 stage G).
+detail that follows is carded as RM8.11–RM8.14 (`docs/plans/product-roadmap/cards.md`, track 8 stage G),
+parked until the owner says start (RM-D94).
 
 ### VA.2 · A balcony's railing is not built in 3D — `todo`
 
@@ -1978,7 +1979,7 @@ ever pick a finish before building anything.
 
 ### VA.5 · Shadows in the replay: done by #737 (RM8.8, baked contact shadows), waiting to be archived — `note`
 
-Real-time shadow maps stay out (RM-D21, RM-D23); the frame-time budget is `e2e/frame-budget.e2e.ts`.
+Real-time shadow maps stay out (RM-D21, RM-D23); the frame-time budget is `packages/archlang-3d/e2e/frame-budget.e2e.ts`.
 
 ## Playground residue (public-surfaces cards P2 and P3, 2026-11-06)
 
