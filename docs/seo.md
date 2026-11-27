@@ -125,6 +125,21 @@ recorded here or anywhere else in this public repository** — ask the owner rat
   **HTTP 202**, for 34 URLs on the docs host and 29 on the playground. Bing's IndexNow panel stays
   empty until a ping arrives: the key is validated at ping time against the hosted file, never
   registered in advance through the dashboard.
+- **Snapshot, 2026-11-27** (read by hand, read-only; last 28 days, 2026-10-30..11-26). `archlang.uk`:
+  72 clicks, 1,370 impressions, average position 6.2 (8 clicks and 372 impressions at the 11-06
+  snapshot); top queries `archlang` (16 clicks, 301 impressions), `arch lang` (5, 33), `floorplan code`
+  (1, 84); top pages `/` (37, 465), `/floor-plans-as-code` (9, 179), `/javascript` (5, 80); first
+  countries by clicks the UK, Canada, the US. 102 indexed, 51 not: Crawled, not indexed 25; Not found
+  (404) 7; noindex 6, intended; redirects 5; Discovered, not indexed 7; other 4xx 1
+  (`mcp.archlang.uk/mcp`, expected). The 404 validation started 2026-11-17 **failed on 2026-11-24 on
+  one URL**, `https://playground.archlang.uk/s/` (the share-link prefix with no id; a 404 there is the
+  Worker's normal answer and is kept, §11). Its other six URLs are pending: the 2026-11-17 redirects, last crawled
+  before them, all answering 301 live. The GitHub repository's first referrer is now Google (165
+  unique visitors in 14 days). The full SERP and AI Overview study of the same day (212 Google
+  requests, the GEO panel typed into Google, repeat samples) is in the private growth repository
+  (`research/2026-11-27-serp-study/`, with its data); its finding for this file: the brand AI Overview
+  names ArchLang correctly in every US sample, while the head category terms (`floor plans as code`,
+  `floor plan DSL`, `floor plan MCP server`) are not on the US first page.
 - **Snapshot, 2026-11-09** (read by hand): `archlang.uk` 84 indexed, 46 not. 404: four ADR links
   (`/dataset/CARD`, `/dataset/README`, `/eval/README`, `/brand/README`), fixed by rewriting
   repo-relative links in the site copies. Redirects: http/www variants and a stale `/adr`. Noindex:
@@ -225,8 +240,11 @@ on a broad "implement the recommendations" instruction and without reading this 
 disclosed reply on [mermaid-js/mermaid#6134](https://github.com/mermaid-js/mermaid/issues/6134#issuecomment-6596671947)
 (the floorplan-syntax request, Google's first result for "mermaid for floor plans") and to open a
 duplicate awesome-mcp-servers PR (#18435, closed in favour of #14383). The owner kept the reply; it
-is logged with its approval gap in the growth repository's `data/community-replies.json`. Read
-this section before any off-site step. The open wave of authority, agent-discovery and
+is logged with its approval gap in the owner's private interaction ledger (`chanmeng-social-ledger`,
+mounted in the growth repository; until 2026-11-17 the growth repository's `data/community-replies.json`).
+Read this section before any off-site step. The SERP studies themselves (2026-11-03, 2026-11-27) and
+their data now live in the private growth repository's `research/` folder and
+`data/serp-rankings-history.csv`; `serpdata-api-test` keeps only the probe tooling. The open wave of authority, agent-discovery and
 measurement work is planned in [`plans/geo-seo/README.md`](plans/geo-seo/README.md).
 
 **Registries and directories are a different class from posts**: a listing is how an agent finds
@@ -332,3 +350,10 @@ project to somebody who does not already know it exists. That is the number to m
 - **Hash permalinks are not indexable and never will be.** A `#z=` fragment never reaches the
   server, so all the shared plan links collapse onto one URL. The static example pages exist
   precisely to give each plan an address a crawler can fetch.
+- **No redirect for the bare short-link prefix `playground.archlang.uk/s/`** (decided 2026-11-27).
+  It names no plan, so 404 is the true answer, and a 404 on a URL that never had content costs the
+  rest of the site nothing in Google. `/s/*` belongs to the playground Worker (ADR 0034: the script
+  runs first for exactly those prefixes), so a redirect would be handler code and tests for no
+  reader's benefit, and sending a missing short link to the home page is the soft-404 pattern Google
+  asks sites to avoid. Search Console will keep listing it under "Not found (404)"; that row is
+  expected and needs no validation. A real dead inbound link still gets a `_redirects` rule (§2).
