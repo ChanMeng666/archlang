@@ -140,6 +140,20 @@ recorded here or anywhere else in this public repository** — ask the owner rat
   (`research/2026-11-27-serp-study/`, with its data); its finding for this file: the brand AI Overview
   names ArchLang correctly in every US sample, while the head category terms (`floor plans as code`,
   `floor plan DSL`, `floor plan MCP server`) are not on the US first page.
+- **Bing and Brave, 2026-11-27** (read by hand, read-only). Bing Webmaster Tools' **AI Performance**
+  report (preview since 2026-02; citations in Microsoft Copilot, Bing's AI summaries and partners,
+  clicks not shown), last three months: `archlang.uk` **67 citations**, all from 2026-11-15 on (days
+  of 20 and 22), pages `/` 52, `/gallery` 13, `/floor-plans-as-code` 2, one grounding query shown
+  (`archlang`, 8, citation share 22.22%); `archcanvas.uk` 21 citations, all on `/features`, grounding
+  query `architecture canvas`. Bing web search over the same months: `archlang.uk` 6 clicks, 94
+  impressions; `archcanvas.uk` 5 and 48. The domain property covers the playground (no property of
+  its own). Bing's **Recommendations** for `archlang.uk`: one low item, an `<img>` without alt on `/`,
+  which is the header logo whose empty `alt` is deliberate (the site title beside it is the text), so
+  it stays. The same head terms Google US does not rank (above) do rank on the engines behind the
+  assistants: Brave puts archlang.uk **#1** for `floor plans as code`, **#2** for `floor plan DSL` and
+  **#4** for `floor plan MCP server`, Bing **#5** for the last (`/mcp`); for `archcanvas`, Brave #3 and
+  Bing #2, against none of 12 Google samples. Brave had only five archcanvas.uk pages, with a stale
+  snippet, so the pages it lacked were submitted (§ 8).
 - **Snapshot, 2026-11-09** (read by hand): `archlang.uk` 84 indexed, 46 not. 404: four ADR links
   (`/dataset/CARD`, `/dataset/README`, `/eval/README`, `/brand/README`), fixed by rewriting
   repo-relative links in the site copies. Redirects: http/www variants and a stale `/adr`. Noindex:
@@ -285,7 +299,7 @@ is live):
 | dev.to (two articles) | published 2026-11-07 by an agent at the owner's instruction in chat (an owner-directed exception to the "owner posts" rule; recorded in the growth repository's `data/social-posts.json`): "Floor plans that compile" and "Reproducible is not correct", every quoted output re-run on 1.57.0 | the growth repository's `marketing/content/posts/` drafts |
 | YouTube (the narrated demo) | the 4:46 narrated demo `youtu.be/HVRRvgif8cQ` (1.36.0-era) was made public on 2026-11-07 at the owner's word, with a last description line linking archlang.uk and the playground; a current film would supersede it | the owner's channel |
 | Install deep links (`/mcp`, README) | the Cursor stdio link was verified on 2026-11-06 (it wrote the `archlang` entry into `~/.cursor/mcp.json`); the VS Code links decode to the documented configs but are unverified in VS Code, which this machine does not have | `docs-site/mcp.md`, `README.md` |
-| Brave Search (feeds Claude web search, Le Chat and Leo) | nine URLs submitted through `search.brave.com/submit-url` on 2026-11-06 (home, `/mcp`, the five topic pages, `/3d`, the playground and its `/examples/`), each confirmed; Brave already returned archlang.uk pages for a `site:` query | no channel beyond the form; re-submit new pages by hand |
+| Brave Search (feeds Claude web search, Le Chat and Leo) | nine URLs submitted through `search.brave.com/submit-url` on 2026-11-06 (home, `/mcp`, the five topic pages, `/3d`, the playground and its `/examples/`), each confirmed; Brave already returned archlang.uk pages for a `site:` query. On 2026-11-27, eleven more, each answered "Success" (the form's human check passed with no interaction): `/text-to-dxf-floor-plan`, `/check-a-floor-plan`, `/from-an-image`, `/floor-plan-tools-for-ai-agents`, `/floor-plan-with-a-coding-agent`, and archcanvas.uk `/`, `/features`, `/ai-floor-plan-generator-dxf`, `/free-ai-floor-plan-generator`, `/text-to-floor-plan`, `/showcase` | no IndexNow at Brave: re-submit each new page by hand. Brave answers scripted queries with 429; read it one page load at a time |
 
 **There is no separate Claude connectors directory**: claude.ai takes a custom connector URL per user
 (`https://mcp.archlang.uk/mcp`); the Claude plugin directory above is the only claude.ai listing.
