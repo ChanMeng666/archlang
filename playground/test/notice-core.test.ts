@@ -8,7 +8,7 @@ import { COPY_FAILED, NOTICE_ACTION_MS, noticeMs, undoChord, withUndo } from "..
 
 describe("noticeMs: a notice's life follows its length", () => {
   it("gives a short message the floor, 1.8 s", () => {
-    expect(noticeMs("Link copied")).toBe(1800);
+    expect(noticeMs("Copied")).toBe(1800); // 1500 + 45 × 6 = 1770, under the floor
   });
 
   it("grows 45 ms a character above it", () => {
