@@ -74,8 +74,15 @@ export function shouldShowSharedNotice(sharedSrc: string | null, sources: Iterab
  * Build the notice element: a `role="status"` strip with the sentence and a dismiss
  * button that removes it. No persistence, no timers, no focus stealing — a status
  * region is announced without moving the caret out of the editor.
+ *
+ * Dismissed, it fades out (`.shared-notice-gone`, panels.css) and is then removed; `onLeave` is
+ * handed that removal, so the page can glide the drawing into the room the strip leaves.
  */
-export function createSharedNotice(sentence: string = SHARED_PLAN_NOTICE, doc: Document = document): HTMLElement {
+export function createSharedNotice(
+  sentence: string = SHARED_PLAN_NOTICE,
+  doc: Document = document,
+  onLeave: (remove: () => void) => void = (remove) => remove(),
+): HTMLElement {
   const el = doc.createElement("div");
   el.className = "shared-notice";
   el.setAttribute("role", "status");
@@ -89,7 +96,18 @@ export function createSharedNotice(sentence: string = SHARED_PLAN_NOTICE, doc: D
   dismiss.className = "shared-notice-dismiss";
   dismiss.textContent = "Dismiss";
   dismiss.setAttribute("aria-label", "Dismiss the shared-plan notice");
-  dismiss.addEventListener("click", () => el.remove());
+  dismiss.addEventListener("click", () => {
+    el.classList.add("shared-notice-gone");
+    // Removed once faded (--dur-press); a browser that runs no transition gets the timer.
+    let done = false;
+    const remove = () => {
+      if (done) return;
+      done = true;
+      onLeave(() => el.remove());
+    };
+    el.addEventListener("transitionend", remove, { once: true });
+    setTimeout(remove, 120);
+  });
 
   el.append(text, dismiss);
   return el;

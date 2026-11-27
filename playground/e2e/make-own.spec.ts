@@ -248,19 +248,24 @@ test.describe("make your own", () => {
     await expect(sheet(page).getByRole("button", { name: "Close" })).toBeInViewport();
   });
 
+  // The nudge is the stage notice (`#status`) with a "Make your own" action (audit U18): it sits
+  // where every message does, and is read out by the notice's live mirror, `#statusLive`.
+  const NUDGE = "Want a plan of your own?";
+  const nudgeShown = (page: Page) => page.locator("#status.show").filter({ hasText: NUDGE });
+
   test("one quiet nudge after the third plan switch, never again once shown", async ({ page }) => {
     await page.goto("/");
     await waitForPlan(page);
-    const nudge = page.locator(".nudge");
+    const nudge = nudgeShown(page);
     for (const [i, label] of ["Two-bed flat", "Laneway House", "Two-bed flat"].entries()) {
       await expect(nudge, `before switch ${i + 1}`).toHaveCount(0);
       await pickPlan(page, label);
     }
     await expect(nudge).toBeVisible();
-    await expect(nudge).toHaveAttribute("role", "status");
+    await expect(page.locator("#statusLive")).toHaveText(NUDGE);
     // Quiet: no modal, and the focus is where the visitor left it.
     await expect(sheet(page)).toBeHidden();
-    await expect(nudge.locator(":focus")).toHaveCount(0);
+    await expect(page.locator("#status :focus")).toHaveCount(0);
     await nudge.getByRole("button", { name: "Make your own" }).click();
     await expect(sheet(page)).toBeVisible();
     await expect(nudge).toHaveCount(0);
@@ -270,17 +275,18 @@ test.describe("make your own", () => {
     await waitForPlan(page);
     for (const label of ["Two-bed flat", "Laneway House", "Two-bed flat", "Laneway House"]) await pickPlan(page, label);
     await page.waitForTimeout(300);
-    await expect(nudge).toHaveCount(0);
+    await expect(page.locator("#statusText")).not.toHaveText(NUDGE);
   });
 
   test("the first knob let go earns the nudge too", async ({ page }) => {
     await page.goto(`/${await shareHash(example("knob-flat"))}`);
     await waitForPlan(page);
-    await expect(page.locator(".nudge")).toHaveCount(0);
+    const nudge = nudgeShown(page);
+    await expect(nudge).toHaveCount(0);
     await page.locator('details.knobs input[type="range"][data-knob="DEPTH"]').focus();
     await page.keyboard.press("ArrowRight");
-    await expect(page.locator(".nudge")).toBeVisible();
-    await page.locator(".nudge").getByRole("button", { name: "Dismiss" }).click();
-    await expect(page.locator(".nudge")).toHaveCount(0);
+    await expect(nudge).toBeVisible();
+    await nudge.getByRole("button", { name: "Dismiss this message" }).click();
+    await expect(nudge).toHaveCount(0);
   });
 });

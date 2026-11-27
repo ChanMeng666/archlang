@@ -86,8 +86,8 @@ test.describe("boot", { tag: "@prod" }, () => {
     await expect(page.locator("#status")).not.toHaveClass(/err/);
     await expect(page.locator("#status")).not.toHaveClass(/\bshow\b/);
     await expect(page.locator("#statusText")).toHaveText(/^(ready|\d+ warnings?)$/);
-    const box = (await page.locator("#status").boundingBox())!;
-    expect(box.width * box.height, "the status is visually hidden").toBeLessThanOrEqual(1);
+    // Hidden, not removed: invisible (visibility: hidden, so no box to see or to reach).
+    await expect(page.locator("#status"), "the status is visually hidden").toBeHidden();
     await expect(page.locator("#sourceToggle")).not.toHaveAttribute("data-status");
     // The facts line is describe()'s totals, so a non-zero room count and an area with its
     // convention prove the analysis layer ran in the browser too, not just the renderer.
@@ -128,7 +128,10 @@ test.describe("boot", { tag: "@prod" }, () => {
     await expect(page.locator("html[data-booting]")).toHaveCount(0);
     await expect(page.locator("#status")).toHaveClass(/\berr\b/);
     await expect(page.locator("#status")).toBeVisible();
-    await expect(page.locator("#statusText")).toHaveText(/^\d+ errors? — open Source to see them$/);
+    await expect(page.locator("#statusText")).toHaveText(/^\d+ errors?$/);
+    // View mode: the notice goes to the errors (audit U2), rather than saying where they are.
+    await expect(page.locator("#statusAction")).toHaveText("Show in source");
+    await expect(page.locator("#statusAction")).toBeVisible();
     await expect(page.locator("#sourceToggle")).toHaveAttribute("data-status", "err");
   });
 

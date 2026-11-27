@@ -93,7 +93,7 @@ const ext = (href: string, text: string, attrs = "") =>
 const copyRow = (key: string, text: string, caption?: string) =>
   `<div class="mo-copy">${caption ? `<p class="mo-cap">${escapeHtml(caption)}</p>` : ""}` +
   `<div class="mo-copyrow"><code>${escapeHtml(text)}</code>` +
-  `<button type="button" class="mo-copybtn" data-copy="${escapeHtml(key)}">Copy</button></div></div>`;
+  `<button type="button" class="mo-copybtn copy-swap" data-copy="${escapeHtml(key)}">${swapLabel("Copy")}</button></div></div>`;
 
 const door = (key: string, title: string, body: string) =>
   `<li class="mo-door" data-door="${key}"><h3>${escapeHtml(title)}</h3>${body}</li>`;
@@ -136,7 +136,7 @@ function doorHtml(key: string): string {
           // It scrolls (max-height 11em), so it takes focus and a name: a keyboard can scroll it
           // (WCAG SC 2.1.1; axe scrollable-region-focusable).
           `<pre class="mo-prompt" id="moPrompt" tabindex="0" role="region" aria-label="The prompt">${escapeHtml(AGENT_PROMPT)}</pre>` +
-          `<div class="mo-actions"><button type="button" class="mo-copybtn" data-copy="prompt">Copy prompt</button>` +
+          `<div class="mo-actions"><button type="button" class="mo-copybtn copy-swap" data-copy="prompt">${swapLabel("Copy prompt")}</button>` +
           `<button type="button" class="mo-copybtn" id="moStartHere" aria-describedby="moStartNote">Start from this plan</button></div>` +
           `<p class="mo-note" id="moStartNote">Start from this plan stores this plan on archlang.uk's server for a short link, adds the link to the prompt and copies it.</p>` +
           `<p class="mo-cap">Set it up once:</p>` +
@@ -192,6 +192,10 @@ export interface Sheet {
   reset(): void;
 }
 
+/** A copy button's two labels in one grid cell: "Copied" takes the idle label's place, never its width. */
+const swapLabel = (idle: string): string =>
+  `<span class="copy-idle">${escapeHtml(idle)}</span><span class="copy-done">Copied</span>`;
+
 /** Render the sheet into `body` and wire its copy buttons, its tabs and "Start from this plan". */
 export function mountSheet(body: HTMLElement, ctx: SheetCtx): Sheet {
   body.innerHTML = sheetHtml();
@@ -213,11 +217,10 @@ export function mountSheet(body: HTMLElement, ctx: SheetCtx): Sheet {
     try {
       await navigator.clipboard.writeText(text);
       say(done);
-      const label = btn.textContent;
-      btn.textContent = "Copied";
-      setTimeout(() => {
-        if (btn.textContent === "Copied") btn.textContent = label;
-      }, 1500);
+      // The two labels share one grid cell (`.copy-swap`), so the button keeps its width.
+      btn.classList.add("is-done");
+      clearTimeout(Number(btn.dataset.reset));
+      btn.dataset.reset = String(setTimeout(() => btn.classList.remove("is-done"), 1500));
     } catch {
       say("Copy failed: select the text and copy it");
     }

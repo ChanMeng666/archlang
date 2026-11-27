@@ -222,7 +222,7 @@ test.describe("phone layout", () => {
   test("controls are touch-sized: 44 × 44 at least", async ({ page }) => {
     const CONTROLS = [
       "header button, header select, header summary, .mview, .stage-switch button, .lv-btn, .pz-toolbar button",
-      "#preview3d button, .knobs-head, #statusDismiss, .checks button",
+      "#preview3d button, .knobs-head, #statusDismiss, #statusAction, .checks button",
       ".tools-panel button, .tools-panel select, .tools-panel .tb-check, .tools-panel a",
       ":is(#factsView, #checksView) :is(button, select, summary, input:not([type=checkbox]))",
       "#errors button",
@@ -320,7 +320,7 @@ test.describe("phone layout", () => {
     await expect(page.locator(".problems-empty")).toBeVisible();
     await expect(page.locator("#mviewCount")).toBeEmpty();
     // …and the Checks view shows the Checks tab's content: the review findings and Lint's clean verdict.
-    await expect(page.locator("#checksView .checks-head")).toHaveText("Checks (default checks): nothing to ring");
+    await expect(page.locator("#checksView .checks-head")).toHaveText("Checks · default rules: nothing found");
     await expect(page.locator("#lintOutput .ok")).toBeVisible();
     // Back on Plan: the drawing, not the Checks tab.
     await page.locator(".mview[data-mview=plan]").tap();
@@ -586,7 +586,9 @@ test.describe("phone header and stage toolbar (card PG4)", () => {
     expect(m.header, "the header does not overflow").toBeLessThanOrEqual(0);
     expect(oneRow(m.controls), "Source, Share, ⋯ and Make your own on one row").toBe(true);
     for (const c of m.controls) expect(c.right, "inside the screen").toBeLessThanOrEqual(390);
-    expect(m.tools.length, "− + ⤢ ⛶ | Checks Paths").toBe(7);
+    // − + Fit ⛶ | Checks Paths; ⛶ only where fullscreen can work (not iPhone Safari).
+    const full = await page.evaluate(() => document.fullscreenEnabled);
+    expect(m.tools.length, "− + Fit ⛶ | Checks Paths").toBe(full ? 7 : 6);
     expect(oneRow(m.tools), "the stage toolbar is one row").toBe(true);
     expect(m.h1.right).toBeLessThanOrEqual(390);
     // The h1 keeps its whole text; only its drawing shrinks.

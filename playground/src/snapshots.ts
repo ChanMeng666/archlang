@@ -5,6 +5,10 @@
  * stash a working plan, keep editing, and restore it later. Pure DOM; no
  * framework. The live-editing autosave (last source) is handled separately in
  * main.js — this module is only the explicit, named saves.
+ *
+ * Nothing here asks a question: a save is named for the plan and the time (`snapshotName`), and a
+ * delete or a restore says so in the stage notice with an Undo (`notify`), rather than a prompt
+ * before it.
  */
 import { KEYS, readJSON, writeJSON } from "./storage.js";
 
@@ -23,6 +27,16 @@ interface SnapshotsOpts {
   getSource: () => string;
   /** load content into the editor + render */
   setSource: (src: string) => void;
+  /** The plan's name as the gallery trigger shows it ("" when it has none). */
+  getName?: () => string;
+  /** Say what was done, with a way back (the stage notice). */
+  notify?: (msg: string, undo: () => void) => void;
+}
+
+/** A snapshot's name: the plan's (or "Plan") and the local time it was saved, `Laneway House · 14:32`. */
+export function snapshotName(plan: string, at: Date): string {
+  const hm = `${String(at.getHours()).padStart(2, "0")}:${String(at.getMinutes()).padStart(2, "0")}`;
+  return `${plan.trim() || "Plan"} · ${hm}`;
 }
 
 const ENTITIES: Record<string, string> = { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" };
@@ -46,7 +60,7 @@ export interface SnapshotsHandle {
   close(): void;
 }
 
-export function mountSnapshots({ button, getSource, setSource }: SnapshotsOpts): SnapshotsHandle {
+export function mountSnapshots({ button, getSource, setSource, getName, notify }: SnapshotsOpts): SnapshotsHandle {
   let snaps: Snapshot[] = readJSON<Snapshot[]>(KEYS.snapshots, []);
   if (!Array.isArray(snaps)) snaps = [];
 
@@ -60,9 +74,8 @@ export function mountSnapshots({ button, getSource, setSource }: SnapshotsOpts):
   function save() {
     const src = getSource();
     if (!src.trim()) return;
-    const suggested = `plan ${snaps.length + 1}`;
-    const name = (window.prompt("Name this snapshot:", suggested) || suggested).trim();
-    snaps.unshift({ name, src, ts: Date.now() });
+    const ts = Date.now();
+    snaps.unshift({ name: snapshotName(getName?.() ?? "", new Date(ts)), src, ts });
     if (snaps.length > MAX_SNAPSHOTS) snaps.length = MAX_SNAPSHOTS;
     persist();
     renderList();
@@ -70,14 +83,25 @@ export function mountSnapshots({ button, getSource, setSource }: SnapshotsOpts):
 
   function restore(i: number) {
     const s = snaps[i];
-    if (s) setSource(s.src);
     close();
+    if (!s) return;
+    const before = getSource();
+    setSource(s.src);
+    if (before !== s.src) notify?.(`Restored “${s.name}”`, () => setSource(before));
   }
 
   function remove(i: number) {
-    snaps.splice(i, 1);
+    const [gone] = snaps.splice(i, 1);
     persist();
     renderList();
+    if (!gone) return;
+    notify?.(`Deleted “${gone.name}”`, () => {
+      // Back where it was (the list may have changed meanwhile: at most at its end).
+      snaps.splice(Math.min(i, snaps.length), 0, gone);
+      if (snaps.length > MAX_SNAPSHOTS) snaps.length = MAX_SNAPSHOTS;
+      persist();
+      if (!pop.hidden) renderList();
+    });
   }
 
   function renderList() {
@@ -87,10 +111,10 @@ export function mountSnapshots({ button, getSource, setSource }: SnapshotsOpts):
             (s, i) =>
               `<li class="snap-row"><button class="snap-restore" data-i="${i}" type="button" title="Restore"><span class="snap-name">${esc(
                 s.name,
-              )}</span><span class="snap-time">${esc(relTime(s.ts))}</span></button><button class="snap-del" data-i="${i}" type="button" title="Delete" aria-label="Delete snapshot">✕</button></li>`,
+              )}</span><span class="snap-time">${esc(relTime(s.ts))}</span></button><button class="snap-del" data-i="${i}" type="button" aria-label="Delete “${esc(s.name)}”">Delete</button></li>`,
           )
           .join("")
-      : `<li class="snap-empty">No saved snapshots yet.</li>`;
+      : `<li class="snap-empty">No saved plans yet. Save current keeps this plan in this browser only.</li>`;
     pop.innerHTML =
       `<div class="snap-head"><strong>Saved snapshots</strong><button class="snap-save" type="button">+ Save current</button></div>` +
       `<ul class="snap-list">${rows}</ul>`;

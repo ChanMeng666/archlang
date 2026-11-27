@@ -126,8 +126,11 @@ header {
   /* one text line each — no button ever wraps or stacks its label */
   white-space: nowrap;
   transition:
-    background 0.15s,
-    border-color 0.15s;
+    background-color var(--dur-press) var(--ease-out),
+    border-color var(--dur-press) var(--ease-out),
+    color var(--dur-press) var(--ease-out),
+    scale var(--dur-press) var(--ease-out),
+    opacity var(--dur-fast) var(--ease-out);
 }
 .tools-panel select option {
   color: var(--src-fg);
@@ -147,7 +150,7 @@ header {
 }
 .hd-btn:active,
 .tools-panel button:active {
-  transform: translateY(1px);
+  scale: var(--press-scale);
 }
 .tools-panel button:disabled {
   cursor: progress;
@@ -246,6 +249,13 @@ header {
   line-height: 1.45;
   color: var(--src-muted);
   white-space: normal;
+}
+/* a control's visible name above it (the theme select) */
+.tools-label {
+  margin: 0;
+  font-family: var(--font-body);
+  font-size: 12px;
+  color: var(--src-muted);
 }
 .tools-group a {
   font-family: var(--font-body);
@@ -486,8 +496,11 @@ html[data-mode="edit"] .lv-group {
   position: absolute;
   top: 0;
   bottom: 0;
-  left: 4px;
-  width: 2px;
+  left: 3.5px;
+  /* drawn 3 px wide always, narrowed to 2 px by `scale` at rest, so a hover widens it without the
+     half-pixel jump a changed width and left made */
+  width: 3px;
+  scale: 0.67 1;
   background:
     repeating-linear-gradient(to bottom, var(--redline) 0, var(--redline) 5px, transparent 5px, transparent 24px),
     linear-gradient(to bottom, var(--src-rule), var(--hairline));
@@ -495,13 +508,13 @@ html[data-mode="edit"] .lv-group {
      bloom reads as dirt rather than as light. */
   box-shadow: -1px 0 0 0 var(--plum);
   transition:
-    width 0.15s,
-    box-shadow 0.15s;
+    scale var(--dur-press) var(--ease-out),
+    box-shadow var(--dur-press) var(--ease-out);
 }
 .divider:hover::after,
+.divider:focus-visible::after,
 .divider.dragging::after {
-  width: 3px;
-  left: 3.5px;
+  scale: 1 1;
   box-shadow: -2px 0 0 0 var(--plum);
 }
 .divider:focus-visible {
@@ -597,13 +610,17 @@ html:not([data-mode="edit"]) .pane:has(#storeys:not([hidden])) .room-card {
 }
 
 /* The status (ruling PG-D3): a notice at the top centre of the stage, only while the plan is
-   compiling or broken, or for a moment after an action (main.ts adds `.show`). Otherwise it is
-   visually hidden, never removed: `#statusText` stays a live region for assistive tech. Broken is
-   redline, like the drawing's errors; compiling and a message are ink. */
+   compiling or broken, or for a while after an action (main.ts adds `.show`). A child of <main>, so
+   it is drawn in every view: placed over the stage's pane, under its output tabs (`--stage-top`,
+   main.ts) and, in edit mode on a desktop, over the output pane (`--split`, actions.ts's divider).
+   Hidden, it is invisible and out of reach, never removed; the live region is `#statusLive`.
+   Broken is redline, like the drawing's errors; compiling and a message are ink. It comes in from
+   4 px above at --dur-fast and goes at --dur-fast-out; under reduced motion both land at once. */
 .stage-status {
   position: absolute;
+  z-index: 9;
   /* under the toolbar's line, centred, clear of the switch and the storeys on the left */
-  top: 50px;
+  top: calc(var(--stage-top, 0px) + 50px);
   left: 50%;
   transform: translateX(-50%);
   display: inline-flex;
@@ -620,23 +637,61 @@ html:not([data-mode="edit"]) .pane:has(#storeys:not([hidden])) .room-card {
   color: var(--ink);
   font-size: 12.5px;
   line-height: 1.35;
+  transition:
+    opacity var(--dur-fast) var(--ease-out),
+    translate var(--dur-fast) var(--ease-out),
+    visibility 0s,
+    color var(--dur-fast) var(--ease-out),
+    border-color var(--dur-fast) var(--ease-out);
 }
 .stage-status.err {
   border-color: var(--redline);
   color: var(--redline-ink);
 }
 .stage-status:not(.show) {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  min-height: 0;
-  padding: 0;
-  margin: -1px;
-  overflow: hidden;
-  clip: rect(0 0 0 0);
-  white-space: nowrap;
-  border: 0;
-  box-shadow: none;
+  opacity: 0;
+  visibility: hidden;
+  translate: 0 -4px;
+  pointer-events: none;
+  transition:
+    opacity var(--dur-fast-out) var(--ease-in),
+    translate var(--dur-fast-out) var(--ease-in),
+    visibility 0s linear var(--dur-fast-out);
+}
+@media (min-width: 900.02px) {
+  html[data-mode="edit"] .stage-status {
+    left: calc(var(--split, 50%) + (100% - var(--split, 50%)) / 2);
+    max-width: min(460px, calc(100% - var(--split, 50%) - 300px));
+  }
+}
+/* The notice's one action (Show in source, Undo, Copy, Make your own): a text button in its colour. */
+.stage-status-act {
+  flex: none;
+  min-height: 26px;
+  padding: 2px 8px;
+  border: 1px solid currentColor;
+  border-radius: 2px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    background-color var(--dur-press) var(--ease-out),
+    scale var(--dur-press) var(--ease-out);
+}
+.stage-status-act:hover {
+  background: color-mix(in srgb, currentColor 10%, transparent);
+}
+.stage-status-act:active {
+  scale: var(--press-scale);
+}
+.stage-status-act:focus-visible {
+  outline: 2px solid var(--redline-ink);
+  outline-offset: 1px;
+}
+.stage-status-act[hidden] {
+  display: none;
 }
 .stage-status-x {
   flex: none;
@@ -662,10 +717,10 @@ html:not([data-mode="edit"]) .pane:has(#storeys:not([hidden])) .room-card {
 }
 /* Source's dot: the plan is compiling (ink) or broken (redline). Source is where the diagnostics
    are, so the dot says where to look; the live region says what it is. */
-#sourceToggle[data-status] {
+#sourceToggle {
   position: relative;
 }
-#sourceToggle[data-status]::after {
+#sourceToggle::after {
   content: "";
   position: absolute;
   top: 3px;
@@ -674,6 +729,17 @@ html:not([data-mode="edit"]) .pane:has(#storeys:not([hidden])) .room-card {
   height: 7px;
   border-radius: 50%;
   background: var(--ink-muted);
+  opacity: 0;
+  scale: 0.6;
+  transition:
+    opacity var(--dur-fast) var(--ease-out),
+    scale var(--dur-fast) var(--ease-out),
+    background-color var(--dur-fast) var(--ease-out);
+  pointer-events: none;
+}
+#sourceToggle[data-status]::after {
+  opacity: 1;
+  scale: 1;
 }
 #sourceToggle[data-status="err"]::after {
   background: var(--redline);
@@ -702,16 +768,19 @@ html:not([data-mode="edit"]) .pane:has(#storeys:not([hidden])) .room-card {
   }
   /* Under the taller switch (and the storeys). */
   .stage-status {
-    top: 70px;
+    top: calc(var(--stage-top, 0px) + 70px);
   }
-  .pane:has(#storeys:not([hidden])) .stage-status {
+  .stage-status-act {
+    min-height: 44px;
+  }
+  main:has(#storeys:not([hidden])) .stage-status {
     top: 130px;
   }
   html[data-mode="edit"] .stage-status {
-    top: 10px;
+    top: calc(var(--stage-top, 0px) + 10px);
   }
-  html[data-mode="edit"] .pane:has(#storeys:not([hidden])) .stage-status {
-    top: 70px;
+  html[data-mode="edit"] main:has(#storeys:not([hidden])) .stage-status {
+    top: calc(var(--stage-top, 0px) + 70px);
   }
   .stage-status-x {
     width: 44px;
@@ -817,17 +886,6 @@ html:not([data-mode="edit"]) .pane:has(#storeys:not([hidden])) .room-card {
 .gal:not([open]) .gal-panel {
   display: none;
 }
-@media (prefers-reduced-motion: no-preference) {
-  .gal[open] .gal-panel {
-    animation: gal-in 0.14s ease-out;
-  }
-}
-@keyframes gal-in {
-  from {
-    opacity: 0;
-    transform: translateY(-4px);
-  }
-}
 .gal-filter {
   font-family: var(--font-body);
   font-size: 13px;
@@ -898,10 +956,24 @@ html:not([data-mode="edit"]) .pane:has(#storeys:not([hidden])) .room-card {
   object-fit: contain;
   margin-bottom: 3px;
 }
-/* A sample has no thumbnail (no static page draws one): an empty box of the same size. */
-.gal-thumb-none {
-  background: repeating-linear-gradient(135deg, transparent 0 6px, var(--hairline) 6px 7px);
-  border-radius: 2px;
+/* A sample has no thumbnail (no static page draws one): a text card, name and tag (gallery.ts). */
+.gal-card.gal-card-text {
+  justify-content: center;
+  min-height: 44px;
+  height: auto;
+}
+/* The filter and, on a phone sheet, its Close (U30). */
+.gal-top {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+.gal-top .gal-filter {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.gal-close {
+  display: none;
 }
 .gal-name {
   font-size: 12.5px;
@@ -1111,6 +1183,30 @@ html:not([data-mode="edit"]) .pane:has(#storeys:not([hidden])) .room-card {
   }
   .gal-filter {
     width: 100%;
+  }
+  /* the first row stays in view as the sheet scrolls, with a visible way to close it */
+  .gal-top {
+    position: sticky;
+    top: -14px;
+    z-index: 1;
+    margin: -14px -16px 0;
+    padding: 14px 16px 8px;
+    background: var(--src-surface);
+  }
+  .gal-close {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex: none;
+    min-height: 44px;
+    min-width: 44px;
+    padding: 0 12px;
+    border: 1px solid var(--src-rule);
+    border-radius: 3px;
+    background: var(--src-surface);
+    color: var(--src-fg);
+    font: inherit;
+    cursor: pointer;
   }
   .gal-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -1633,48 +1729,4 @@ html:not([data-mode="edit"]) .pane:has(#storeys:not([hidden])) .room-card {
   margin: 8px 0 0;
   font-size: 0.85rem;
   color: var(--ink-muted);
-}
-
-/* ── The nudge: one quiet pointer at Make your own (nudge.ts), never a modal ── */
-.nudge {
-  position: fixed;
-  right: 16px;
-  bottom: 16px;
-  z-index: 40;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  max-width: calc(100vw - 32px);
-  padding: 8px 8px 8px 14px;
-  border: 1px solid var(--hairline);
-  border-radius: 3px;
-  background: var(--paper-panel);
-  color: var(--ink);
-  font-size: 0.9rem;
-  box-shadow: 0 6px 20px rgb(28 36 48 / 0.18);
-}
-.nudge-go,
-.nudge-x {
-  min-height: 30px;
-  border-radius: 3px;
-  font: inherit;
-  cursor: pointer;
-}
-.nudge-go {
-  padding: 4px 10px;
-  border: 1px solid var(--redline-ink);
-  background: transparent;
-  color: var(--redline-ink);
-  font-weight: 600;
-}
-.nudge-x {
-  min-width: 30px;
-  border: 0;
-  background: transparent;
-  color: var(--ink-muted);
-  font-size: 16px;
-}
-.nudge :is(button):focus-visible {
-  outline: 2px solid var(--redline-ink);
-  outline-offset: 2px;
 }

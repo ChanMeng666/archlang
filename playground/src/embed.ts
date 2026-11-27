@@ -82,9 +82,9 @@ function render(source: string, refit: boolean): void {
 
 toolbar?.addEventListener("click", (e) => {
   const action = (e.target as Element | null)?.closest<HTMLElement>("button")?.dataset.pz;
-  if (action === "in") pz.zoomIn();
-  else if (action === "out") pz.zoomOut();
-  else if (action === "fit") pz.fit();
+  if (action === "in") pz.glideIn();
+  else if (action === "out") pz.glideOut();
+  else if (action === "fit") pz.glideFit();
 });
 
 async function init() {

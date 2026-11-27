@@ -53,8 +53,8 @@ test.describe("one view switch (PG-D3)", () => {
     // No status row: nothing says "ready" on screen, and the old dot is gone.
     await expect(page.locator(".dot")).toHaveCount(0);
     await expect(page.locator("#status")).not.toHaveClass(/\bshow\b/);
-    const box = (await page.locator("#status").boundingBox())!;
-    expect(box.width * box.height, "the status is visually hidden").toBeLessThanOrEqual(1);
+    // Hidden, not removed: invisible (visibility: hidden, so no box to see or to reach).
+    await expect(page.locator("#status"), "the status is visually hidden").toBeHidden();
     // …but still a live region for assistive tech: `#statusLive`, the notice's mirror under <body>
     // (card PG5b ②; layout.spec checks it is drawn in every layout), and only one.
     await expect(page.locator("#statusLive")).toHaveAttribute("role", "status");
@@ -130,14 +130,34 @@ test.describe("one view switch (PG-D3)", () => {
     expect(await panel.locator("a").evaluateAll((as) => as.map((a) => a.textContent?.trim()))).toEqual([
       "Agents ↗",
       "Docs ↗",
-      "Guide",
-      "Language reference",
-      "One-page spec",
+      "Guide ↗",
+      "Language reference ↗",
+      "One-page spec ↗",
       expect.stringMatching(/^\d+ example plans$/),
-      "npm",
-      "GitHub",
+      "npm ↗",
+      "GitHub ↗",
       "ArchCanvas ↗",
     ]);
+    // One behaviour per mark (audit U14): every link off the playground opens a new tab and says
+    // so with ↗; the playground's own /examples/ stays in this tab, unmarked.
+    for (const a of await panel.locator("a").all()) {
+      const [href, text, target] = [
+        await a.getAttribute("href"),
+        await a.textContent(),
+        await a.getAttribute("target"),
+      ];
+      const away = /^https?:/.test(href ?? "");
+      expect(target, `${text}: target`).toBe(away ? "_blank" : null);
+      expect(text?.trim().endsWith("↗"), `${text}: the ↗ mark`).toBe(away);
+    }
+    // The View and Edit groups explain themselves (audit U13): the select is labelled, and the
+    // checkbox and the two edit actions carry a note.
+    await expect(panel.getByLabel("Theme")).toHaveAttribute("id", "theme");
+    await expect(panel.getByLabel("Accessible SVG")).toHaveAccessibleDescription(
+      "Adds a title and description to the SVG, in exports too.",
+    );
+    await expect(panel.locator("#formatSrc")).toHaveAccessibleDescription("Tidies the source's layout.");
+    await expect(panel.locator("#finishSrc")).toHaveAccessibleDescription(/^Adds what a finished sheet needs/);
     // No export, link, embed or AI action in it: those are Share's and Make your own's.
     await expect(
       panel.locator("[data-download], #copyLink, #copyShortLink, #embed, #copyLlm, [data-chat-host]"),
@@ -333,15 +353,19 @@ test.describe("one view switch (PG-D3)", () => {
     const status = page.locator("#status");
     await expect(status).toHaveClass(/\berr\b/);
     await expect(status).toBeVisible();
-    // The message itself is `#statusText`'s; `#status` also holds the dismiss button and whitespace.
-    await expect(page.locator("#statusText")).toHaveText(/^\d+ errors? — open Source to see them$/);
-    // On the stage, not in the header.
-    expect(await status.evaluate((s) => !!s.closest(".pane") && !s.closest("header"))).toBe(true);
+    // The message itself is `#statusText`'s; `#status` also holds its action, the dismiss button and
+    // whitespace. In view mode the action goes to the errors (audit U2).
+    await expect(page.locator("#statusText")).toHaveText(/^\d+ errors?$/);
+    await expect(page.locator("#statusAction")).toHaveText("Show in source");
+    // Over the stage, not in the header: a child of <main> (audit U5), inside the stage's box.
+    expect(await status.evaluate((s) => s.parentElement?.tagName === "MAIN" && !s.closest("header"))).toBe(true);
+    const [n, stage] = [(await status.boundingBox())!, (await page.locator(".pz-viewport").boundingBox())!];
+    expect(n.x >= stage.x && n.x + n.width <= stage.x + stage.width && n.y >= stage.y, "over the stage").toBe(true);
     await expect(page.locator("#sourceToggle")).toHaveAttribute("data-status", "err");
     // Dismissible: the notice goes, the dot (where to look) stays.
     await page.getByRole("button", { name: "Dismiss this message" }).click();
     await expect(status).not.toHaveClass(/\bshow\b/);
-    await expect(page.locator("#statusText")).toHaveText(/^\d+ errors? — open Source to see them$/);
+    await expect(page.locator("#statusText")).toHaveText(/^\d+ errors?$/);
     await expect(page.locator("#sourceToggle")).toHaveAttribute("data-status", "err");
 
     // Fixed in the editor: the notice and the dot are gone, and nothing replaces them.
@@ -356,6 +380,19 @@ test.describe("one view switch (PG-D3)", () => {
     await expect(status).toHaveClass(/\bshow\b/);
     await expect(status).toBeVisible();
     await expect(page.locator("#statusText")).toHaveText(/^\d+ errors?$/);
+    // In edit mode the drawer is beside it: no action.
+    await expect(page.locator("#statusAction")).toBeHidden();
+  });
+
+  test("a broken plan's Show in source opens the editor with the caret on its first error", async ({ page }) => {
+    await page.goto(`/${await shareHash(BROKEN_PLAN)}`);
+    await expect(page.locator("html[data-booting]")).toHaveCount(0);
+    await page.locator("#statusAction").click();
+    await expect(page.locator("html")).toHaveAttribute("data-mode", "edit");
+    await expect(page.locator(".cm-content")).toBeFocused();
+    // BROKEN_PLAN's one error is its misspelt `romo` statement; `.cm-activeLine` tracks the caret.
+    await expect(page.locator(".cm-activeLine")).toContainText("romo");
+    await expect(page.locator("#statusAction")).toBeHidden();
   });
 });
 
@@ -393,7 +430,7 @@ test.describe("output tabs", () => {
     await gotoEdit(page, await shareHash(SIMPLE_PLAN));
     await page.locator("#tab-checks").click();
     const checks = page.locator("#checksView");
-    await expect(checks.locator(".checks-head")).toHaveText(/^Checks \(default checks\)/);
+    await expect(checks.locator(".checks-head")).toHaveText(/^Checks · default rules/);
     await expect(checks.getByRole("heading", { level: 3 })).toHaveText(["Lint", "Intent"]);
     for (const id of ["#lintProfile", "#lintOutput", "#intentSrc", "#intentRun"])
       await expect(checks.locator(id)).toBeVisible();
@@ -710,8 +747,12 @@ test.describe("preview interactions", () => {
 
 test.describe("saved snapshots", () => {
   test("saves the current source under a name and restores it later", async ({ page }) => {
-    // `window.prompt` names the snapshot.
-    page.on("dialog", (d) => void d.accept("E2E snapshot"));
+    // Nothing asks for a name (audit U6): the plan's name and the time name the snapshot.
+    let dialogs = 0;
+    page.on("dialog", (d) => {
+      dialogs++;
+      void d.dismiss();
+    });
 
     await gotoEdit(page);
     await setEditorSource(page, SIMPLE_PLAN);
@@ -729,7 +770,8 @@ test.describe("saved snapshots", () => {
     // A click inside the popover is a click inside More: both stay open.
     await pop.locator(".snap-save").click();
     await expect(pop.locator(".snap-row")).toHaveCount(1);
-    await expect(pop.locator(".snap-name")).toHaveText("E2E snapshot");
+    await expect(pop.locator(".snap-name")).toHaveText(/^Edited plan · \d\d:\d\d$/);
+    expect(dialogs, "no prompt").toBe(0);
     await expect(pop).toBeVisible();
     expect(await toolsOpen()).toBe(true);
 
@@ -756,6 +798,36 @@ test.describe("saved snapshots", () => {
     await expect(page.locator(".cm-content")).toContainText('label "Main"');
     await expect(page.locator(".cm-content")).not.toContainText("Elsewhere");
     await expect(pop).toBeHidden(); // restoring closes the popover
+    // …and says so, with a way back.
+    await expect(page.locator("#statusText")).toHaveText(/^Restored “Edited plan · \d\d:\d\d”$/);
+    await expect(page.locator("#statusAction")).toHaveText("Undo");
+  });
+
+  test("Saved opens in view mode, and a delete says so with an Undo", async ({ page }) => {
+    await page.goto("/");
+    await waitForPlan(page);
+    await openMore(page);
+    await page.locator("#saved").click();
+    const pop = page.locator(".snap-pop");
+    await expect(pop).toBeVisible();
+    // The list opens where it is: no editor for it (audit U6).
+    await expect(page.locator("html")).toHaveAttribute("data-mode", "view");
+    await expect(pop.locator(".snap-empty")).toHaveText(
+      "No saved plans yet. Save current keeps this plan in this browser only.",
+    );
+    await pop.locator(".snap-save").click();
+    await expect(pop.locator(".snap-row")).toHaveCount(1);
+    // The delete is a word, not the cross every Close wears.
+    const del = pop.locator(".snap-del");
+    await expect(del).toHaveText("Delete");
+    await del.click();
+    await expect(pop.locator(".snap-row")).toHaveCount(0);
+    await expect(page.locator("#statusText")).toHaveText(/^Deleted “Laneway House · \d\d:\d\d”$/);
+    await page.keyboard.press("Escape"); // the menu shuts, the notice stays
+    await page.locator("#statusAction").click();
+    await openMore(page);
+    await page.locator("#saved").click();
+    await expect(pop.locator(".snap-row")).toHaveCount(1);
   });
 });
 

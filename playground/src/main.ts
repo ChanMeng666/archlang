@@ -53,6 +53,7 @@ import {
 import { createSharedNotice, shouldShowSharedNotice } from "./shared-notice.js";
 import { mountGallery } from "./gallery.js";
 import { mountNudge } from "./nudge.js";
+import { failedToLoad, type FlashOpts, type NoticeAction, noticeMs } from "./notice-core.js";
 import { mountShell } from "./shell.js";
 import { fillGlbNote } from "./glb-note.js";
 import { sparesData } from "./save-data.js";
@@ -152,6 +153,9 @@ const pzToolbar = document.querySelector<HTMLElement>(".pz-toolbar")!;
 const storeysEl = document.getElementById("storeys");
 const sourceBtn = document.getElementById("sourceToggle")!;
 const statusDismiss = document.getElementById("statusDismiss") as HTMLButtonElement;
+const statusAction = document.getElementById("statusAction") as HTMLButtonElement;
+const stageRow = document.getElementById("stageSwitchRow")!;
+const mainEl = document.querySelector("main")!;
 // On a phone the switcher is edit mode's one view control (card PG5b ①): Plan, 3D, Facts and
 // Checks open their tab (Checks under the diagnostics); Code is the editor, over whatever tab.
 const mobileViews = mountMobileViews(
@@ -300,9 +304,12 @@ function markPlan(label: string | null, neutral = "Edited plan") {
 function syncPlanMark(source: string): Promise<void> {
   return loadExamples().then(({ exampleLabelFor, samples }) => {
     if (currentSource() !== source) return; // a later change syncs again
-    markPlan(exampleLabelFor(source) ?? samples.sampleLabelFor(source) ?? null);
+    const neutral = undoneTo?.source === source ? undoneTo.neutral : undefined;
+    markPlan(exampleLabelFor(source) ?? samples.sampleLabelFor(source) ?? null, neutral);
   });
 }
+/** A plan put back by Undo (U3), and the name the trigger gave it before it was replaced. */
+let undoneTo: { source: string; neutral: string } | undefined;
 
 // The shareable-permalink codec (`#z=` compressed / legacy `#src=`) lives in
 // `share.js` so the embed page reuses the exact same scheme.
@@ -337,6 +344,8 @@ let selectedLevel: number | null = null;
  * when the document is replaced.
  */
 let lastPicked: number | null = null;
+/** The plan and storey the stage last drew (none yet: the drawing is the one built into the page). */
+let shownOnStage: { source: string; level: number | null } | undefined;
 /** The level whose facts the panels are currently reporting (`null` = whole plan). */
 let activeLevel: number | null = null;
 /** The storey pages of the last good compile (the switcher's buttons). */
@@ -349,11 +358,13 @@ const cleanSvg = () => lastSvg.replace(/ data-span="\d+:\d+"/g, "");
 // ---- the status (ruling PG-D3) ----
 // `#status` is a notice on the stage and `#statusText` its text. It is shown only while the plan is
 // compiling (once that has taken long enough to notice: `BUSY_AFTER_MS`), while it is broken (until
-// dismissed), and for a moment after an action (`flash`). The live region is `#statusLive`, a
-// visually hidden mirror that is a child of <body>, so it is never inside a `display: none` box: the
-// stage's pane is not drawn in the phone's Code view, and the errors typed there are still heard
-// (card PG5b ②). The Source button wears a dot in the same two states: Source is where the
-// diagnostics are.
+// dismissed), and for a while after an action (`flash`). It is a child of <main>, so it is drawn in
+// every view, the phone's Code view included (over the output pane in edit mode on a desktop,
+// `--split`, and under the output tabs, `--stage-top`). The live region is `#statusLive`, a visually
+// hidden mirror that is a child of <body>, so it is never inside a `display: none` box (card PG5b ②).
+// The notice may carry one action (`#statusAction`): a broken plan's "Show in source" in view mode,
+// or a flash's (Undo, Copy, Make your own). The Source button wears a dot while compiling or broken:
+// Source is where the diagnostics are.
 /** Write the status text: the notice's, and its live mirror's (only on a change, so it speaks once). */
 function sayStatus(text: string | null) {
   statusText.textContent = text;
@@ -361,60 +372,134 @@ function sayStatus(text: string | null) {
 }
 type StatusState = "ok" | "busy" | "err";
 let statusState: StatusState = "ok";
+/** The resting error is the plan's own (it has a place in the source to show). */
+let statusFromSource = false;
 /** The notice of the current state was dismissed (until the state changes). */
 let statusDismissed = false;
 /** A first compile this long in coming says so; a quicker one never flashes a notice. */
 const BUSY_AFTER_MS = 400;
 
 /** Set the resting status: its state and its text (a flash on screen keeps it until it ends). */
-function setStatus(state: StatusState, text: string) {
+function setStatus(state: StatusState, text: string, fromSource = false) {
   if (state !== statusState) statusDismissed = false;
   statusState = state;
+  statusFromSource = state === "err" && fromSource;
   statusEl.classList.toggle("err", state === "err");
   statusEl.classList.toggle("busy", state === "busy");
-  if (flashTimer !== undefined) flashResting = text;
+  if (flashOn) flashResting = text;
   else sayStatus(text);
   paintStatus();
 }
+/** The resting error's action: in view mode the diagnostics are out of sight, so go to them. */
+const SHOW_IN_SOURCE: NoticeAction = { label: "Show in source", run: () => void showInSource() };
+/** The action on screen now: the flash's, else the resting error's (view mode only). */
+function currentAction(): NoticeAction | undefined {
+  if (flashOn) return flashAction;
+  return statusFromSource && !editing ? SHOW_IN_SOURCE : undefined;
+}
 /** Show the notice exactly when there is something to say, and the Source button's dot with it. */
 function paintStatus() {
-  const shown = flashTimer !== undefined || (statusState !== "ok" && !statusDismissed);
+  const shown = flashOn || (statusState !== "ok" && !statusDismissed);
+  if (shown) {
+    // Under the output tabs in edit mode (the stage's overlay row starts there), at the top in view mode.
+    const top = stageRow.offsetParent ? stageRow.offsetTop : 0;
+    mainEl.style.setProperty("--stage-top", `${top}px`);
+  }
   statusEl.classList.toggle("show", shown);
   statusDismiss.hidden = !shown;
+  const act = shown ? currentAction() : undefined;
+  statusAction.hidden = !act;
+  if (act) statusAction.textContent = act.label;
   if (statusState === "ok") delete sourceBtn.dataset.status;
   else sourceBtn.dataset.status = statusState;
 }
 statusDismiss.addEventListener("click", () => {
-  if (flashTimer !== undefined) {
-    clearTimeout(flashTimer);
-    flashTimer = undefined;
-    sayStatus(flashResting);
-  }
+  if (flashOn) endFlash();
   statusDismissed = true;
   paintStatus();
 });
+statusAction.addEventListener("click", () => {
+  const act = currentAction();
+  if (!act) return;
+  if (flashOn) endFlash();
+  else statusDismissed = true;
+  paintStatus();
+  act.run();
+});
 
-/** Briefly show a message in the status text, then restore it. */
-// A transient status message that restores the resting status after 1200 ms.
+// A transient message (`flash`) that restores the resting status when it ends. Its life follows its
+// length (`noticeMs`), 6 s with an action, and it waits while the pointer or the focus is on it.
 // Two subtleties, both of which were real bugs:
-//   1. The restore timer MUST be cancelled when a second flash lands inside the
-//      window. Without that, the first flash's timer fires mid-second-flash and
-//      wipes it — so pressing two buttons in quick succession showed the second
-//      message for a fraction of its intended life.
-//   2. `prev` is only captured when no flash is already pending. Capturing it on
-//      every call meant a second flash recorded the FIRST FLASH'S TEXT as the
-//      resting status and restored to that, leaving a stale message on screen.
+//   1. The restore timer MUST be cancelled when a second flash lands inside the window. Without
+//      that, the first flash's timer fires mid-second-flash and wipes it.
+//   2. The resting text is only captured when no flash is already on screen. Capturing it on every
+//      call meant a second flash recorded the FIRST FLASH'S TEXT as the resting status and restored
+//      to that, leaving a stale message on screen.
+let flashOn = false;
 let flashTimer: ReturnType<typeof setTimeout> | undefined;
 let flashResting: string | null = null;
-function flash(msg: string) {
-  if (flashTimer !== undefined) clearTimeout(flashTimer);
-  else flashResting = statusText.textContent;
-  sayStatus(msg);
+let flashAction: NoticeAction | undefined;
+/** What is left of the flash's life, and when its timer last started. */
+let flashLeft = 0;
+let flashSince = 0;
+/** The pointer is over the notice, or the focus inside it: the flash waits. */
+let noticeHovered = false;
+let noticeFocused = false;
+function endFlash() {
+  clearTimeout(flashTimer);
+  flashTimer = undefined;
+  flashOn = false;
+  flashAction = undefined;
+  sayStatus(flashResting);
+}
+function armFlash() {
+  clearTimeout(flashTimer);
+  flashTimer = undefined;
+  if (!flashOn || noticeHovered || noticeFocused) return;
+  flashSince = performance.now();
   flashTimer = setTimeout(() => {
-    flashTimer = undefined;
-    sayStatus(flashResting);
+    endFlash();
     paintStatus();
-  }, 1200);
+  }, flashLeft);
+}
+function holdFlash() {
+  if (flashTimer === undefined) return;
+  clearTimeout(flashTimer);
+  flashTimer = undefined;
+  flashLeft = Math.max(0, flashLeft - (performance.now() - flashSince));
+}
+/** Let the flash go on once neither the pointer nor the focus is on it, with a second at least to go. */
+function releaseFlash() {
+  if (noticeHovered || noticeFocused || !flashOn) return;
+  flashLeft = Math.max(flashLeft, 1000);
+  armFlash();
+}
+statusEl.addEventListener("pointerenter", () => {
+  noticeHovered = true;
+  holdFlash();
+});
+statusEl.addEventListener("pointerleave", () => {
+  noticeHovered = false;
+  releaseFlash();
+});
+statusEl.addEventListener("focusin", () => {
+  noticeFocused = true;
+  holdFlash();
+});
+statusEl.addEventListener("focusout", (e) => {
+  if (statusEl.contains(e.relatedTarget as Node | null)) return;
+  noticeFocused = false;
+  releaseFlash();
+});
+/** Show a message on the stage for a while (`noticeMs`), optionally with one action, then restore the status. */
+function flash(msg: string, opts: FlashOpts = {}) {
+  if (!flashOn) flashResting = statusText.textContent;
+  holdFlash();
+  flashOn = true;
+  flashAction = opts.action;
+  sayStatus(msg);
+  flashLeft = opts.ms ?? noticeMs(msg, !!opts.action);
+  armFlash();
   paintStatus();
 }
 
@@ -446,12 +531,24 @@ function jumpToOffset(offset: number) {
 
 /** Set the mode: the page layout (`html[data-mode]`), the Source toggle and the hash flag. */
 function setMode(on: boolean) {
+  // The stage changes size: the drawing glides from where it was to its new fit (M13), rather
+  // than jumping there when the resize observer re-fits it.
+  const was = on !== editing ? previewCtl.rectBefore() : null;
   editing = on;
   root.dataset.mode = on ? "edit" : "view";
   shell.setMode(on);
   placeChecks();
+  paintStatus(); // a broken plan's "Show in source" is view mode's
+  previewCtl.refitFrom(was);
   const hash = setEditFlag(location.hash, on);
   if (hash !== location.hash) window.history.replaceState(null, "", `${location.pathname}${location.search}${hash}`);
+}
+
+/** The shared-plan strip goes: the stage grows, and the drawing glides into its new fit (M10/M13). */
+function leaveStrip(remove: () => void) {
+  const was = previewCtl.rectBefore();
+  remove();
+  previewCtl.refitFrom(was);
 }
 
 /** Settles once boot has chosen the plan this visit opens (`doc`). */
@@ -499,8 +596,16 @@ function leaveEdit() {
   setMode(false);
   // Facts and Checks are edit mode's tabs: leave on the drawing (or on the 3D preview, if on screen).
   mobileViews.show(activeTab() === "preview3d" ? "3d" : "plan");
-  // A broken plan's status names where its errors are, which differs by mode.
-  if (statusEl.classList.contains("err")) void render(currentSource());
+}
+
+/** Where the first error of the plan on screen starts (a byte offset), for "Show in source". */
+let firstErrorAt: number | undefined;
+/** A broken plan's notice in view mode: open the source with the caret on its first error; on a
+ *  phone, the Checks view, where the diagnostics are. */
+async function showInSource() {
+  const e = await enterEdit();
+  if (isNarrow()) mobileViews.show("checks");
+  if (e && firstErrorAt !== undefined) e.jumpToOffset(firstErrorAt);
 }
 
 const shell = mountShell({
@@ -519,8 +624,22 @@ fillGlbNote(document.getElementById("glbNote")!);
 shell.setMode(editing);
 // The one quiet pointer at Make your own (nudge.ts), after the third plan switch or the first knob
 // let go; it stands down once the sheet has been opened.
-const nudge = mountNudge(() => void shell.openMakeOwn());
-shell.onMakeOwnOpen(() => nudge.sheetOpened());
+// It is the stage notice, with a "Make your own" action; opening the sheet another way takes it down.
+let nudgeAction: NoticeAction | undefined;
+const nudge = mountNudge(
+  () => void shell.openMakeOwn(),
+  (msg, action, ms) => {
+    nudgeAction = action;
+    flash(msg, { action, ms });
+  },
+);
+shell.onMakeOwnOpen(() => {
+  nudge.sheetOpened();
+  if (flashOn && nudgeAction && flashAction === nudgeAction) {
+    endFlash();
+    paintStatus();
+  }
+});
 
 const previewCtl = createPreview({
   viewport: pzViewport,
@@ -903,11 +1022,17 @@ function show(req: CompileRequest, result: CompileResult, knobMoving: boolean, k
   clearTimeout(busyTimer);
   if (!ok) {
     const n = errors.length;
-    // In view mode the diagnostics are out of sight: say where they are.
-    setStatus("err", `${n} error${n > 1 ? "s" : ""}${editing ? "" : " — open Source to see them"}`);
+    // In view mode the diagnostics are out of sight: the notice's "Show in source" goes to them.
+    firstErrorAt = diagnostics.find((d) => d.severity === "error")?.span?.start;
+    setStatus("err", `${n} error${n > 1 ? "s" : ""}`, true);
     knobsPanel.refresh(); // a document that does not compile has no knobs to move
+    // The drawing on screen is the last good plan's: it dims (`data-stale`, after a moment, so a
+    // half-typed statement does not flicker it), and so does a Checks list of it.
+    root.dataset.stale = "";
+    checks?.broken();
     return false; // keep last good preview
   }
+  delete root.dataset.stale;
   // A plan that compiles is fine: the notice goes, and the live region keeps the verdict.
   setStatus("ok", okStatus(diagnostics.filter((d) => d.severity === "warning").length));
   // The export SVG (lastSvg) is always overlay-free; the "Paths" toggle's drawing is a second
@@ -932,7 +1057,12 @@ function show(req: CompileRequest, result: CompileResult, knobMoving: boolean, k
       if (checksOn) displaySvg = ringed;
     }
   }
-  previewCtl.show(displaySvg, refit);
+  // Another plan, or another storey, fades in (M14/M15); the first drawing of the visit (it takes over
+  // the one built into the page) and every recompile of the plan on screen never do.
+  const fade =
+    shownOnStage !== undefined && (refit ? source !== shownOnStage.source : activeLevel !== shownOnStage.level);
+  previewCtl.show(displaySvg, refit, fade);
+  shownOnStage = { source, level: activeLevel };
   if (checksOn) checks?.shown();
   lastSvg = pageSvg;
   lastGood = { req, level: activeLevel };
@@ -1028,9 +1158,9 @@ const drawnFor = (source: string) => (lastDrawn?.source === source ? lastDrawn.d
 document.getElementById("tab-preview3d")?.addEventListener("click", () => {
   preview3d ??= import("./preview3d.js").then(
     (m) => m.mountPreview3d(preview3dEl),
-    (err: unknown) => {
+    () => {
       preview3d = undefined; // a failed chunk load is retried on the next open
-      preview3dEl.textContent = `The 3D preview did not load: ${(err as { message?: string })?.message ?? err}`;
+      failedToLoad(preview3dEl, "The 3D preview didn't load.", () => document.getElementById("tab-preview3d")?.click());
       return undefined;
     },
   );
@@ -1049,9 +1179,9 @@ let takeoff: Promise<import("./takeoff-panel.js").TakeoffPanel | undefined> | un
 document.getElementById("tab-facts")?.addEventListener("click", () => {
   takeoff ??= import("./takeoff-panel.js").then(
     (m) => m.mountTakeoff(takeoffEl, { flash }),
-    (err: unknown) => {
+    () => {
       takeoff = undefined; // a failed chunk load is retried on the next open
-      takeoffEl.textContent = `The takeoff did not load: ${(err as { message?: string })?.message ?? err}`;
+      failedToLoad(takeoffEl, "The takeoff didn't load.", () => document.getElementById("tab-facts")?.click());
       return undefined;
     },
   );
@@ -1111,7 +1241,7 @@ function working(msg: string | null) {
   if (msg !== null) {
     beforeWork ??= {
       state: statusState,
-      text: flashTimer !== undefined ? (flashResting ?? "") : (statusText.textContent ?? ""),
+      text: flashOn ? (flashResting ?? "") : (statusText.textContent ?? ""),
     };
     setStatus("busy", msg);
     return;
@@ -1126,17 +1256,34 @@ function working(msg: string | null) {
  * an example picked before the app is up is loaded once it is.
  */
 function pickExample(label: string) {
+  // The plan being replaced, and its name on the trigger: kept for Undo when it is the visitor's
+  // own (an edit, a shared plan, a draft), never an example word for word (U3).
+  const beforeName = document.getElementById("planName")?.textContent ?? "Edited plan";
   markPlan(label);
   // The plan is on its way from now (`data-rendering`), though it compiles once the app is up.
   picking++;
   paintRendering();
   void up()
     .then(async () => {
-      const { EXAMPLES, samples } = await loadExamples();
+      const { EXAMPLES, samples, exampleLabelFor } = await loadExamples();
       const source = EXAMPLES[label] ?? samples.sampleSource(label);
       if (source === undefined) return;
+      const prev = currentSource();
       markPlan(label);
       loadSource(source, true);
+      if (prev === source || prev.trim() === "") return;
+      if (exampleLabelFor(prev) ?? samples.sampleLabelFor(prev)) return;
+      const name = document.getElementById("planName")?.textContent ?? label;
+      flash(`Opened ${name}`, {
+        action: {
+          label: "Undo",
+          run: () => {
+            undoneTo = { source: prev, neutral: beforeName };
+            markPlan(null, beforeName);
+            loadSource(prev, true);
+          },
+        },
+      });
     })
     .finally(() => {
       picking--;
@@ -1293,7 +1440,7 @@ async function start({ sharedSrc, tooLarge, savedSrc, built }: Choice): Promise<
   fillGallery(examples);
   // A link inflating past the cap was refused unread: say so above the stage (it is not a shared plan).
   if (tooLarge && !document.querySelector(".shared-notice")) {
-    stageSwitchRow.before(createSharedNotice(LINK_TOO_LARGE_NOTICE));
+    stageSwitchRow.before(createSharedNotice(LINK_TOO_LARGE_NOTICE, document, leaveStrip));
   }
   if (built) {
     // The page's own plan, which the gallery already names; unless a plan was picked meanwhile
@@ -1320,7 +1467,7 @@ async function start({ sharedSrc, tooLarge, savedSrc, built }: Choice): Promise<
       !document.querySelector(".shared-notice") &&
       shouldShowSharedNotice(sharedSrc, [...Object.values(EXAMPLES), ...examples.samples.SAMPLES.map((s) => s.source)])
     ) {
-      stageSwitchRow.before(createSharedNotice());
+      stageSwitchRow.before(createSharedNotice(undefined, document, leaveStrip));
     }
     doc = initialDoc;
     docChosen();

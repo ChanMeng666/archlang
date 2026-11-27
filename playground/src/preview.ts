@@ -13,8 +13,9 @@ import { showSvgInStage, sizeFromViewBox } from "./viewer.js";
 import type { RoomSummary, SceneSummary } from "archlang";
 
 export interface Preview {
-  /** Inject a compiled SVG; `refit` re-centres, else preserves the current view. */
-  show(svg: string, refit: boolean): void;
+  /** Inject a compiled SVG; `refit` re-centres, else preserves the current view. `fade` (default:
+   *  `refit`) fades the drawing in: another plan, or another storey. */
+  show(svg: string, refit: boolean, fade?: boolean): void;
   /**
    * Take over the drawing built into the page (`svg[data-prerendered]`, scripts/gen-static.mjs):
    * size it from its viewBox and fit it, so it pans and zooms before the compiler has loaded, and
@@ -24,6 +25,10 @@ export interface Preview {
   adopt(): boolean;
   /** Re-centre/scale the current plan to the viewport. */
   fit(): void;
+  /** Before the stage changes size: where the drawing is on screen (null under reduced motion). */
+  rectBefore(): DOMRect | null;
+  /** After it did: glide the drawing from there to its new fit (pan-zoom `refitFrom`). */
+  refitFrom(was: DOMRect | null): void;
   /** Whether the "Paths" circulation overlay toggle is on (drives the preview compile). */
   pathsEnabled(): boolean;
 }
@@ -55,17 +60,30 @@ export function createPreview(opts: PreviewOpts): Preview {
   let pathsOn = false;
 
   function toggleFullscreen() {
-    if (document.fullscreenElement) document.exitFullscreen();
-    else viewport.requestFullscreen?.();
+    if (document.fullscreenElement) void document.exitFullscreen();
+    else void viewport.requestFullscreen?.();
+  }
+  // Fullscreen shows only where it can work (not iPhone Safari), and says when it is on.
+  const fullBtn = toolbar.querySelector<HTMLButtonElement>('[data-pz="full"]');
+  if (fullBtn) {
+    if (!document.fullscreenEnabled) fullBtn.hidden = true;
+    document.addEventListener("fullscreenchange", () => {
+      const on = document.fullscreenElement === viewport;
+      fullBtn.classList.toggle("active", on);
+      fullBtn.setAttribute("aria-pressed", String(on));
+      const name = on ? "Exit fullscreen" : "Fullscreen";
+      fullBtn.setAttribute("aria-label", name);
+      fullBtn.title = name;
+    });
   }
 
   // Floating preview toolbar — pan/zoom + the Paths overlay toggle.
   toolbar.addEventListener("click", (e) => {
     const btn = (e.target as Element | null)?.closest<HTMLElement>("button");
     const action = btn?.dataset.pz;
-    if (action === "in") pz.zoomIn();
-    else if (action === "out") pz.zoomOut();
-    else if (action === "fit") pz.fit();
+    if (action === "in") pz.glideIn();
+    else if (action === "out") pz.glideOut();
+    else if (action === "fit") pz.glideFit();
     else if (action === "full") toggleFullscreen();
     else if (action === "paths") {
       pathsOn = !pathsOn;
@@ -83,13 +101,21 @@ export function createPreview(opts: PreviewOpts): Preview {
   mountRoomIndex({ viewport, getRooms, openCard: (room) => card.show(room, true) });
 
   return {
-    show(svg, refit) {
+    show(svg, refit, fade = refit) {
       showSvgInStage(stage, pz, svg, refit);
+      // Another plan (or storey) fades in where it lands; a recompile of this one never does.
+      if (fade) {
+        const el = stage.querySelector("svg");
+        el?.classList.add("pg-fade-in");
+        el?.addEventListener("animationend", () => el.classList.remove("pg-fade-in"), { once: true });
+      }
       // A new plan (re-fitted) closes the card; a recompile of this one re-reads it.
       if (refit) card.close();
       else card.refresh();
     },
     fit: () => pz.fit(),
+    rectBefore: () => pz.rectBefore(),
+    refitFrom: (was) => pz.refitFrom(was),
     pathsEnabled: () => pathsOn,
     adopt() {
       const el = stage.querySelector("svg[data-prerendered]");

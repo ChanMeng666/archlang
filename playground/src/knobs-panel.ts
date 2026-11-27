@@ -71,7 +71,14 @@ export function mountKnobsPanel({ viewport, getSource, tryRender, commit, flash 
   note.hidden = true;
   const list = document.createElement("div");
   list.className = "knobs-list";
-  panel.append(summary, note, list);
+  // Reset (U23): back to the values the plan arrived with, in one compile (one undo step in edit
+  // mode). Shown only while a knob is off its arrival value.
+  const reset = document.createElement("button");
+  reset.type = "button";
+  reset.className = "knobs-reset";
+  reset.textContent = "Reset";
+  reset.hidden = true;
+  panel.append(summary, reset, note, list);
   viewport.appendChild(panel);
 
   /** The source the knobs below were read from (the last one that compiled). */
@@ -83,6 +90,8 @@ export function mountKnobsPanel({ viewport, getSource, tryRender, commit, flash 
   let docAtBase = "";
   /** The source this panel last wrote, so compiling it again does not reset the ranges. */
   let own: string | null = null;
+  /** The source the plan arrived with (from anywhere but this panel): what Reset goes back to. */
+  let arrival = "";
   let knobs: Knob[] = [];
   const rows = new Map<string, { input: HTMLInputElement; out: HTMLOutputElement }>();
   let timer: ReturnType<typeof setTimeout> | undefined;
@@ -164,7 +173,28 @@ export function mountKnobsPanel({ viewport, getSource, tryRender, commit, flash 
     note.hidden = usable;
     panel.classList.toggle("knobs-stale", !usable);
     for (const { input } of rows.values()) input.disabled = !usable;
+    reset.hidden = !usable || knobs.length === 0 || base === arrival;
   }
+
+  reset.addEventListener("click", () => {
+    if (!current() || base === arrival) return;
+    clearTimeout(timer);
+    const mine = ++ticket;
+    const target = arrival;
+    own = target;
+    pending = true;
+    void tryRender(target).then((ok) => {
+      if (mine !== ticket) return;
+      pending = false;
+      if (!ok) {
+        refresh();
+        return;
+      }
+      keep(target, true);
+      for (const k of knobs) show(k.name, k.value);
+      refresh();
+    });
+  });
 
   function apply(name: string, value: number, final: boolean) {
     const k = knobs.find((x) => x.name === name);
@@ -238,6 +268,7 @@ export function mountKnobsPanel({ viewport, getSource, tryRender, commit, flash 
       if (!mine) {
         own = null;
         docAtBase = source;
+        arrival = source;
       }
       const same = mine && next.length === knobs.length && next.every((k, i) => k.name === knobs[i]!.name);
       if (same) {

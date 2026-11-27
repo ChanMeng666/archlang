@@ -1,9 +1,10 @@
 /**
- * The one quiet pointer at Make your own: a small toast, after a visitor has shown interest (the
- * third plan switch, or the first knob let go), never a modal and never focused. It is shown at
- * most once: the first showing is remembered in localStorage (behind storage.ts's try/catch, so
- * a browser with no storage gets at most one per page load), and a visitor who has already
- * opened the sheet is not pointed at it. It hides itself after a while, or on its ×.
+ * The one quiet pointer at Make your own: the stage notice (main.ts `flash`) with a "Make your own"
+ * action, after a visitor has shown interest (the third plan switch, or the first knob let go), never
+ * a modal and never focused. It is the notice every other message uses, so it sits where they do
+ * and waits while the pointer or the focus is on it. It is shown at most once: the first showing is
+ * remembered in localStorage (behind storage.ts's try/catch, so a browser with no storage gets at
+ * most one per page load), and a visitor who has already opened the sheet is not pointed at it.
  *
  * Part of the startup chunk: no compiler, no doors. The decision is {@link shouldNudge}, pure.
  */
@@ -11,7 +12,7 @@ import { KEYS, readStr, writeStr } from "./storage.js";
 
 /** How many plan switches earn the nudge. */
 export const NUDGE_AFTER_SWITCHES = 3;
-/** How long the toast stays before it hides itself. */
+/** How long the notice stays (while the pointer and the focus are elsewhere). */
 export const NUDGE_MS = 10_000;
 
 export interface NudgeState {
@@ -28,39 +29,21 @@ export const shouldNudge = (s: NudgeState): boolean =>
 export interface Nudge {
   planSwitched(): void;
   knobReleased(): void;
-  /** The sheet was opened: no nudge is needed any more, and a showing one goes. */
+  /** The sheet was opened: no nudge is needed any more. */
   sheetOpened(): void;
 }
 
-export function mountNudge(open: () => void): Nudge {
-  const state: NudgeState = { switches: 0, knobReleased: false, spent: readStr(KEYS.nudged) !== null };
-  let toast: HTMLElement | undefined;
-  let timer: ReturnType<typeof setTimeout> | undefined;
+/** Shows the notice: its text, its one action, and how long it stays. */
+export type NudgeNotice = (msg: string, action: { label: string; run(): void }, ms: number) => void;
 
-  const hide = () => {
-    clearTimeout(timer);
-    toast?.remove();
-    toast = undefined;
-  };
+export function mountNudge(open: () => void, notice: NudgeNotice): Nudge {
+  const state: NudgeState = { switches: 0, knobReleased: false, spent: readStr(KEYS.nudged) !== null };
 
   function maybeShow() {
     if (!shouldNudge(state)) return;
     state.spent = true;
     writeStr(KEYS.nudged, "1");
-    toast = document.createElement("div");
-    toast.className = "nudge";
-    toast.setAttribute("role", "status");
-    toast.innerHTML =
-      `<span>Want a plan of your own?</span>` +
-      `<button type="button" class="nudge-go">Make your own</button>` +
-      `<button type="button" class="nudge-x" aria-label="Dismiss">×</button>`;
-    toast.querySelector(".nudge-go")!.addEventListener("click", () => {
-      hide();
-      open();
-    });
-    toast.querySelector(".nudge-x")!.addEventListener("click", hide);
-    document.body.append(toast);
-    timer = setTimeout(hide, NUDGE_MS);
+    notice("Want a plan of your own?", { label: "Make your own", run: open }, NUDGE_MS);
   }
 
   return {
@@ -74,7 +57,6 @@ export function mountNudge(open: () => void): Nudge {
     },
     sheetOpened() {
       state.spent = true;
-      hide();
     },
   };
 }

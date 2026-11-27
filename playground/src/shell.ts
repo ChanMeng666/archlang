@@ -16,6 +16,7 @@
  * `data-close`. A select, the a11y switch and Saved (whose popover anchors to its button) keep More
  * open. This module is the one place that closes them.
  */
+import { failedToLoad } from "./notice-core.js";
 
 export interface ShellCtx {
   isEditing(): boolean;
@@ -97,7 +98,7 @@ export function mountShell(ctx: ShellCtx): Shell {
       menu.open = false;
     });
   }
-  // An item that edits the source (Format, Finish, Saved) runs through the editor, so its edit is
+  // An item that edits the source (Format, Finish) runs through the editor, so its edit is
   // one undo step and the autosave and the hash follow the editor. Until the editor is mounted the
   // click is held (capture phase: before the item's own handler), the editor is opened, and the
   // same click is replayed on the item once it is.
@@ -134,9 +135,9 @@ export function mountShell(ctx: ShellCtx): Shell {
         ctx.wireChatLinks([...body.querySelectorAll<HTMLAnchorElement>("a[data-chat-host]")]);
         return s;
       },
-      (err: unknown) => {
+      () => {
         sheet = undefined; // a failed chunk load is retried on the next open
-        body.textContent = `This did not load: ${(err as { message?: string })?.message ?? err}`;
+        failedToLoad(body, "This didn't load.", () => void openMakeOwn());
         return undefined;
       },
     );
