@@ -424,16 +424,18 @@ onBeforeUnmount(() => clearTimeout(hrefTimer));
   opacity: 0.45;
   transition: opacity var(--dur-base) var(--ease-out) 600ms;
 }
-/* The first error's line: always one line tall (empty while the plan compiles). */
+/* The first error's line: always exactly one line tall, empty or not (a min-height let the text's
+   line box add a pixel), so the widget never changes height while the reader types. */
 .archlive-error {
+  box-sizing: border-box;
   margin: 0;
-  min-height: calc(1.5em + 10px);
+  height: 29px;
   padding: 5px 12px;
   border-top: 1px solid var(--hairline);
   background: var(--paper-panel);
   font-family: var(--font-mono);
   font-size: 11.5px;
-  line-height: 1.5;
+  line-height: 18px;
   color: var(--redline-ink);
   white-space: nowrap;
   overflow: hidden;
