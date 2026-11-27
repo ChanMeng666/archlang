@@ -248,6 +248,40 @@ maintainer's account and the AI draft. `mlightcad/awesome-cad` was skipped (no m
 2026-06-05); `punkpeye/awesome-remote-mcp-servers` waited for the registry `remotes`, which
 published with 0.2.41 on 2026-11-11 (the entry is #4579 above); `VoltAgent/awesome-openclaw-skills` #610 is recorded under ClawHub below.
 
+**Backlink round, 2026-11-28** (after Bing Webmaster Tools said archcanvas.uk "lacks inbound links
+from high-quality domains"). The owner approved the batch and every exact text in chat; an agent
+opened these from the owner's account, each body disclosing the maintainer and the AI draft. The
+same day the GitHub repository description lost its "Every star you give…" prefix, which
+directories had been copying as the product description. The record of truth (targets, the six
+emails, replies) is the private growth repository's `research/outreach-state.json` and the ledger
+campaign `bing-inbound-links-2026-11-27`. Each fork is deleted once its PR is merged or closed.
+State read 2026-11-28:
+
+| List | Pull request |
+|---|---|
+| hashgraph-online/awesome-codex-plugins | [#810](https://github.com/hashgraph-online/awesome-codex-plugins/pull/810) — blocked by the HOL catalog scan at 71/100 (listing needs at least 75). Cause: the scanner's "no eval" check is the regex `\beval\s*\(` over every `.js`/`.ts` file, and it matched the plugin API's `ctx.eval(...)` and four test loaders using `new Function`. Fixed by #1045 (`ResolveCtx.evaluate`; `"eval"` kept as a deprecated alias; guard `test/no-dynamic-code.test.ts`); `main` scores 77 with `plugin-scanner` 3.0.123 locally. Their `sweep-open-prs.yml` re-scans open PRs daily at 03:17 UTC; explained in a comment. Left as is by design: `LICENSE.txt` (the Claude plugin directory needs it), `deploy.yml`'s `workflow_run` checkout (main pushes only) |
+| davila7/claude-code-templates | [#1739](https://github.com/davila7/claude-code-templates/pull/1739) — merged 2026-11-27 (`cli-tool/components/mcps/devtools/archlang.json`, hosted MCP); fork deleted |
+| ChessMax/awesome-programming-languages | [#560](https://github.com/ChessMax/awesome-programming-languages/pull/560) |
+| TensorBlock/awesome-mcp-servers | [#7128](https://github.com/TensorBlock/awesome-mcp-servers/pull/7128) |
+| toolsdk-ai/toolsdk-mcp-registry | [#1650](https://github.com/toolsdk-ai/toolsdk-mcp-registry/pull/1650) |
+| Piebald-AI/awesome-gemini-cli-extensions | [#173](https://github.com/Piebald-AI/awesome-gemini-cli-extensions/pull/173) |
+| Piebald-AI/awesome-gemini-cli | [#422](https://github.com/Piebald-AI/awesome-gemini-cli/pull/422) |
+| karanb192/awesome-claude-skills | [#821](https://github.com/karanb192/awesome-claude-skills/pull/821) |
+| sylviangth/awesome-remote-mcp-servers | [#457](https://github.com/sylviangth/awesome-remote-mcp-servers/pull/457) |
+| davepoon/buildwithclaude | [#871](https://github.com/davepoon/buildwithclaude/pull/871) |
+| etewiah/awesome-real-estate | [#147](https://github.com/etewiah/awesome-real-estate/pull/147) |
+| QuantumNovice/awesome-civil-engineering | [#68](https://github.com/QuantumNovice/awesome-civil-engineering/pull/68) |
+
+A catalog that scores a repository with a source scanner (HOL above) reads every code file, tests
+included, so a dynamic-code pattern anywhere fails the whole listing; the
+guard test keeps both patterns out of the repository.
+
+**First independent write-up.** MeltFlex tested ArchLang's skill in Claude Code against other
+floor-plan skills and ranked it first ("Claude Floor Plan Skill: Which One Draws a Real, Measured
+Plan", meltflexai.com, updated 2026-11-15; organic, found 2026-11-28). Its findings and the cards
+they produced are in [`plans/product-roadmap/2026-11-meltflex-review.md`](plans/product-roadmap/2026-11-meltflex-review.md)
+(RM9.19–RM9.27). The owner shared it on LinkedIn and X on 2026-11-28.
+
 **One exception on record, 2026-11-03.** A SERP study run from the owner's `serpdata-api-test`
 repository (`reports/arch-projects-analysis.md`, with an errata block at its head) led an agent,
 on a broad "implement the recommendations" instruction and without reading this file, to post a
@@ -300,6 +334,8 @@ is live):
 | YouTube (the narrated demo) | the 4:46 narrated demo `youtu.be/HVRRvgif8cQ` (1.36.0-era) was made public on 2026-11-07 at the owner's word, with a last description line linking archlang.uk and the playground; a current film would supersede it | the owner's channel |
 | Install deep links (`/mcp`, README) | the Cursor stdio link was verified on 2026-11-06 (it wrote the `archlang` entry into `~/.cursor/mcp.json`); the VS Code links decode to the documented configs but are unverified in VS Code, which this machine does not have | `docs-site/mcp.md`, `README.md` |
 | Brave Search (feeds Claude web search, Le Chat and Leo) | nine URLs submitted through `search.brave.com/submit-url` on 2026-11-06 (home, `/mcp`, the five topic pages, `/3d`, the playground and its `/examples/`), each confirmed; Brave already returned archlang.uk pages for a `site:` query. On 2026-11-27, eleven more, each answered "Success" (the form's human check passed with no interaction): `/text-to-dxf-floor-plan`, `/check-a-floor-plan`, `/from-an-image`, `/floor-plan-tools-for-ai-agents`, `/floor-plan-with-a-coding-agent`, and archcanvas.uk `/`, `/features`, `/ai-floor-plan-generator-dxf`, `/free-ai-floor-plan-generator`, `/text-to-floor-plan`, `/showcase` | no IndexNow at Brave: re-submit each new page by hand. Brave answers scripted queries with 429; read it one page load at a time |
+| [MCP.Directory](https://www.mcp.directory) | submitted 2026-11-28 through its form (it imports from the GitHub repository; "review within 24 hours"); not yet confirmed live | — |
+| MCP Market | skipped 2026-11-28: listing is now paid only | — |
 
 **There is no separate Claude connectors directory**: claude.ai takes a custom connector URL per user
 (`https://mcp.archlang.uk/mcp`); the Claude plugin directory above is the only claude.ai listing.
@@ -315,7 +351,9 @@ owner can, by hand.
 
 **Wikidata is on HOLD.** Items were drafted for both projects and deliberately not submitted:
 notability needs an independent source, and an item created without one is deleted rather than
-ignored. Hold until somebody unconnected has written about the project.
+ignored. Hold until somebody unconnected has written about the project. The MeltFlex test above
+(2026-11-15) is the first such source for ArchLang; whether it is enough to lift the hold is the
+owner's decision, not yet taken.
 
 ## 9. Measurement: the frozen prompt panel
 
