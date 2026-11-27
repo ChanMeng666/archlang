@@ -53,6 +53,7 @@ import {
   withDatumReader,
   withStepMeter,
 } from "./expr.js";
+import { markNativeEvaluator } from "./evaluator.js";
 import type { ResolveCtx, Registry } from "./registry.js";
 import { BUILTIN_REGISTRY } from "./registry.js";
 import type { World } from "./world.js";
@@ -1033,12 +1034,14 @@ function resolveBody(
     const e = room ? entryOf.get(room) : undefined;
     if (e) ownerOf.set(d, e);
   };
-  const evalNum = (e: Expr): number => {
+  // Marked as the compiler's own evaluator, so a plugin that wraps a built-in and replaces one of
+  // `ResolveCtx`'s two evaluator members is honoured (`evaluatorOf`, `src/evaluator.ts`).
+  const evalNum = markNativeEvaluator((e: Expr): number => {
     const v = evalExpr(e, activeEnv, evalDiag);
     // error value: E_TYPE, E_NON_FINITE, passed on
     if (isBad(v) || v.t !== "num" || !Number.isFinite(v.v)) poisonHits++;
     return asNum(v, evalDiag, exprSpan(e));
-  };
+  });
   const evalStr = (e: Expr): string => {
     const v = evalExpr(e, activeEnv, evalDiag);
     if (isBad(v)) poisonHits++; // error value: passed on
@@ -1091,7 +1094,7 @@ function resolveBody(
       extras.level ? `Level ${fmt0(extras.level.level)}` : "The plan",
       { height: storeyHeight, written: heightWritten },
       {
-        eval: (e, span) => {
+        evaluate: (e, span) => {
           stepSite(span);
           const hits = poisonHits;
           const v = evalNum(e);
@@ -1117,6 +1120,8 @@ function resolveBody(
     grid: g,
     snap,
     snapPt,
+    evaluate: evalNum,
+    // The deprecated alias (`ResolveCtx`): the same function, for third-party plugins.
     eval: evalNum,
     evalStr,
     evalPt,

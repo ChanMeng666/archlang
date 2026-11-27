@@ -63,6 +63,7 @@
 
 import type { ExprPoint, OutdoorKind, OutdoorNode, Point, RailEdge, RailSide } from "../ast.js";
 import { OUTDOOR_KINDS, RAIL_EDGES, RAIL_SIDES } from "../ast.js";
+import { evaluateIn } from "../evaluator.js";
 import type { ElementDef, ParseCtx, RenderCtx, ResolveCtx, TransformCtx } from "../registry.js";
 import { failExpected, idAfterKind, missingClause, parseIdWithSpan, readClauses } from "../clause-order.js";
 import { PLAIN_SHEET_TEXT } from "../sheet-text.js";
@@ -472,7 +473,7 @@ export const outdoor: ElementDef = {
     }
 
     const at = ctx.snapPt(ctx.evalPt(n.at!));
-    const size = { w: ctx.snap(ctx.eval(n.size!.w)), h: ctx.snap(ctx.eval(n.size!.h)) };
+    const size = { w: ctx.snap(evaluateIn(ctx, n.size!.w)), h: ctx.snap(evaluateIn(ctx, n.size!.h)) };
     if (size.w <= 0 || size.h <= 0) {
       ctx.diag({
         severity: "error",

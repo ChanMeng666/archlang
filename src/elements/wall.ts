@@ -4,6 +4,7 @@ import type { ArcDirWord, ExprPoint, Point, WallArcNode, WallNode, WallRelationN
 import type { Span } from "../diagnostics.js";
 import { heightRangeDiagnostic, isDrawableHeight } from "../datum.js";
 import { ARC_DIRS } from "../ast.js";
+import { evaluateIn } from "../evaluator.js";
 import type { ElementDef, ParseCtx, RenderCtx, ResolveCtx, TransformCtx } from "../registry.js";
 import { failExpected, failNear, idAfterKind, parseIdWithSpan } from "../clause-order.js";
 import type { SceneNode } from "../scene.js";
@@ -180,7 +181,7 @@ export const wall: ElementDef = {
       noteSquare(ctx, `Wall "${id}"`, "a wall's point", p.x, points[i]!.x, n.span);
       noteSquare(ctx, `Wall "${id}"`, "a wall's point", p.y, points[i]!.y, n.span);
     });
-    const tv = ctx.eval(n.thickness);
+    const tv = evaluateIn(ctx, n.thickness);
     const thickness = ctx.snap(tv) || tv;
     if (thickness <= 0) {
       ctx.diag({
@@ -203,7 +204,7 @@ export const wall: ElementDef = {
           span: n.span,
         });
     }
-    let hatchScale = n.materialScale !== undefined ? ctx.eval(n.materialScale) : 1;
+    let hatchScale = n.materialScale !== undefined ? evaluateIn(ctx, n.materialScale) : 1;
     if (!(hatchScale > 0)) {
       if (n.materialScale !== undefined)
         ctx.diag({
@@ -218,7 +219,7 @@ export const wall: ElementDef = {
     // size, so that check runs after resolve (`checkDrawnSizes`, `src/ir/checks.ts`); this is where
     // it points when the scale was an expression with a span of its own.
     const hatchScaleSpan = n.materialScale ? exprSpan(n.materialScale) : undefined;
-    let hatchAngle = n.materialAngle !== undefined ? ctx.eval(n.materialAngle) : 0;
+    let hatchAngle = n.materialAngle !== undefined ? evaluateIn(ctx, n.materialAngle) : 0;
     if (Math.abs(hatchAngle) > MAX_ANGLE_DEG) {
       ctx.diag(
         outOfRangeDiagnostic(
@@ -231,7 +232,7 @@ export const wall: ElementDef = {
     // The vertical datum: the authored clause, else the storey's height. NOT
     // grid-snapped — `grid` snaps plan coordinates so rooms line up with each other, and a
     // height shares no axis with them.
-    const height = n.height !== undefined ? ctx.eval(n.height) : ctx.storeyHeight;
+    const height = n.height !== undefined ? evaluateIn(ctx, n.height) : ctx.storeyHeight;
     if (n.height !== undefined && !isDrawableHeight(height)) {
       ctx.diag(heightRangeDiagnostic(`Wall "${id}"`, "height", height, n.heightSpan ?? n.span));
     }
@@ -382,7 +383,7 @@ function resolveArcs(n: WallNode, id: string, points: Point[], ctx: ResolveCtx):
     const a = points[k];
     const b = points[k + 1];
     if (!a || !b) continue;
-    const rv = ctx.eval(spec.radius);
+    const rv = evaluateIn(ctx, spec.radius);
     const r = ctx.snap(rv) || rv;
     const arc = arcFromChord(a, b, r, spec.dir ?? "ccw", spec.major === true);
     if (!arc) {

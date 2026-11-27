@@ -17,6 +17,7 @@ import type {
 } from "../ast.js";
 import { CLEAR_ZONES, FURNITURE_ANCHORS } from "../ast.js";
 import type { Diagnostic, Span } from "../diagnostics.js";
+import { evaluateIn } from "../evaluator.js";
 import type { ElementDef, ParseCtx, RenderCtx, ResolveCtx, TransformCtx } from "../registry.js";
 import type { CadPart, CadTurn, RenderSizes, SceneNode, ScenePrim } from "../scene.js";
 import { inkExtent, textExtent } from "../text-layout.js";
@@ -354,9 +355,9 @@ export const furniture: ElementDef = {
     /** That catalogued footprint as written in the catalogue, before the grid snapped it. */
     let footprint: { along: number; depth: number } | null = null;
     if (n.size) {
-      const ww = ctx.eval(n.size.w);
+      const ww = evaluateIn(ctx, n.size.w);
       dw = ctx.snap(ww);
-      const wh = ctx.eval(n.size.h);
+      const wh = evaluateIn(ctx, n.size.h);
       dh = ctx.snap(wh);
       noteSnap(ctx, `Furniture "${id}"`, "size", [ww, wh], [dw, dh], n.sizeValueSpan ?? n.span);
     } else {
@@ -386,7 +387,7 @@ export const furniture: ElementDef = {
     }
     let rotate: number | undefined;
     if (n.rotate !== undefined) {
-      rotate = mod360(ctx.eval(n.rotate)); // normalize to [0,360)
+      rotate = mod360(evaluateIn(ctx, n.rotate)); // normalize to [0,360)
       if (rotate !== 0 && rotate !== 90 && rotate !== 180 && rotate !== 270) {
         ctx.diag({
           severity: "error",
@@ -462,7 +463,7 @@ export const furniture: ElementDef = {
           span: n.span,
         });
       }
-      const offset = n.againstEdge.offset !== undefined ? ctx.eval(n.againstEdge.offset) : undefined;
+      const offset = n.againstEdge.offset !== undefined ? evaluateIn(ctx, n.againstEdge.offset) : undefined;
       authored = { mode: "against-edge", edge: n.againstEdge.edge, ...(offset !== undefined ? { offset } : {}) };
       const placed = placeAgainstEdge(id, n.againstEdge, offset, dw, dh, n.room, ctx);
       at = placed ? placed.at : { x: 0, y: 0 };
@@ -487,8 +488,8 @@ export const furniture: ElementDef = {
       authored = {
         mode: "against",
         wall: n.against.wall,
-        ...(n.against.segment !== undefined ? { segment: Math.floor(ctx.eval(n.against.segment)) } : {}),
-        ...(n.against.offset !== undefined ? { offset: ctx.eval(n.against.offset) } : {}),
+        ...(n.against.segment !== undefined ? { segment: Math.floor(evaluateIn(ctx, n.against.segment)) } : {}),
+        ...(n.against.offset !== undefined ? { offset: evaluateIn(ctx, n.against.offset) } : {}),
         ...(n.against.side !== undefined ? { side: n.against.side } : {}),
       };
       // NOT grid-snapped — see the note on the `place` branch below.
@@ -516,7 +517,7 @@ export const furniture: ElementDef = {
           : {
               mode: "anchor",
               anchor: n.place.anchor,
-              ...(n.place.inset !== undefined ? { inset: ctx.eval(n.place.inset) } : {}),
+              ...(n.place.inset !== undefined ? { inset: evaluateIn(ctx, n.place.inset) } : {}),
             };
       // Room-relative: closed-form corner/edge/centre placement inside the room box.
       // The anchor also names which room edge the piece backs onto, so for a fixture
@@ -762,7 +763,7 @@ function placeAgainst(
     const k = selectSegment(ag.segmentSelect, wall, ag.wall, ctx);
     if (k === null) return null;
     segIdx = picked.segment = k;
-  } else if (ag.segment !== undefined) segIdx = Math.floor(ctx.eval(ag.segment));
+  } else if (ag.segment !== undefined) segIdx = Math.floor(evaluateIn(ctx, ag.segment));
   else if (segs.length === 1) segIdx = 0;
   else return err(`wall "${ag.wall}" has ${segs.length} segments — add \`segment <n>\``);
   if (segIdx < 0 || segIdx >= segs.length) return err(`segment ${segIdx} is out of range (0..${segs.length - 1})`);
@@ -781,7 +782,7 @@ function placeAgainst(
   if (!horiz && !vert)
     return err(`segment ${segIdx} of wall "${ag.wall}" is not axis-aligned (placement supports quarter-turns only)`);
   const segLen = length(sub(seg.b, seg.a));
-  const off = ag.offset !== undefined ? ctx.eval(ag.offset) : segLen / 2;
+  const off = ag.offset !== undefined ? evaluateIn(ctx, ag.offset) : segLen / 2;
   if (off < 0 || off > segLen)
     return err(`offset ${fmtMessage(off)} is outside the segment run (0..${fmtMessage(segLen)})`);
   const nL = normal(d); // left normal of a→b (into the room for `side left`)
@@ -917,7 +918,7 @@ function placeInRoom(
     flushWithoutEdge(id, place, ctx, span);
     return { at: { x: cx - w / 2, y: cy - h / 2 }, ...(turnable ? { size: { w, h } } : {}) };
   }
-  const inset = place.inset !== undefined ? ctx.eval(place.inset) : 0;
+  const inset = place.inset !== undefined ? evaluateIn(ctx, place.inset) : 0;
   const a = place.anchor;
   const roomRect = { x: x0, y: y0, w: room.size.w, h: room.size.h };
   // `flush` re-bases the anchored edge(s) from the room rectangle (wall centerlines)
@@ -1106,7 +1107,7 @@ function placeInRing(
   const a = place.anchor;
   const runs = anchorRuns(ring, a);
   if (typeof runs === "string") return refuse(`on polygon room "${room.id}", ${runs}`);
-  const inset = place.inset !== undefined ? ctx.eval(place.inset) : 0;
+  const inset = place.inset !== undefined ? evaluateIn(ctx, place.inset) : 0;
   const walls = standingWalls(ctx);
   const edges = ANCHOR_BACK_EDGES[a];
   let points = 0;
@@ -1144,7 +1145,7 @@ function resolveClear(id: string, c: FurnitureClear, ctx: ResolveCtx): { front?:
   const out: { front?: number; sides?: number } = {};
   const take = (zone: "front" | "sides", e: FurnitureClear["front"], span: Span | undefined): void => {
     if (e === undefined) return;
-    const v = ctx.eval(e);
+    const v = evaluateIn(ctx, e);
     if (!Number.isFinite(v) || v <= 0 || v > MODEL_RANGE_MM) {
       refuse(`\`clear ${zone}\` needs a positive depth in mm, at most ${MODEL_RANGE_MM}`, span);
       return;

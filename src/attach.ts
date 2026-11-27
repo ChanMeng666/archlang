@@ -19,6 +19,7 @@ import type { AttachFrom, AttachPos, ExprPoint, OpeningAttach, OpeningBetween, P
 import type { Diagnostic, FixSuggestion, Span } from "./diagnostics.js";
 import type { Expr, ParseExprOpts } from "./expr.js";
 import { chargeSteps } from "./expr.js";
+import { evaluateIn } from "./evaluator.js";
 import type { ParseCtx, ResolveCtx } from "./registry.js";
 import type { TailClause } from "./clause-order.js";
 import { failExpected } from "./clause-order.js";
@@ -301,7 +302,7 @@ function wallsNamed<W extends WallLike & { status?: string }>(walls: readonly W[
  * the backstop for every other route to a non-finite number.)
  *
  * `evalNum` evaluates the position expression against the caller's binding environment
- * (`ResolveCtx.eval`), so `let`/`for` bindings are in scope exactly as they are for a
+ * (`ResolveCtx.evaluate`), so `let`/`for` bindings are in scope exactly as they are for a
  * `width` or an `at (x,y)`. Its diagnostics (`E_UNKNOWN_REF`, `E_TYPE`, `E_DIV_ZERO`, …)
  * are catalogued by the evaluator itself.
  *
@@ -490,7 +491,7 @@ export function resolveOpeningLead(
     ...(ctx.rootDiag ? { rootDiag: ctx.rootDiag } : {}),
     sameFile: ctx.sameFile,
     ...(ctx.refusedDerivation ? { refusedDerivation: ctx.refusedDerivation } : {}),
-    eval: (e) => ctx.eval(e),
+    evaluate: (e) => evaluateIn(ctx, e),
     ...(ctx.datums ? { datums: ctx.datums } : {}),
   };
   const none = { at: { x: 0, y: 0 }, host: null };
@@ -516,6 +517,15 @@ export function resolveOpeningLead(
     ctx.diag(cornerOnWall(attach.wall, what, attach.span));
     return none;
   }
-  const a = resolveAttachment(attach, ctx.walls, ctx.snapPt, ctx.diag, what, (e) => ctx.eval(e), rel, ctx.unplacedWall);
+  const a = resolveAttachment(
+    attach,
+    ctx.walls,
+    ctx.snapPt,
+    ctx.diag,
+    what,
+    (e) => evaluateIn(ctx, e),
+    rel,
+    ctx.unplacedWall,
+  );
   return a ?? none;
 }

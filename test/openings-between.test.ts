@@ -468,7 +468,7 @@ suite("bounded: the run scan is charged to the step meter before it runs", () =>
             walls: [...ir.walls, ...stubs],
             snapPt: (p) => p,
             diag: () => {},
-            eval: () => 0,
+            evaluate: () => 0,
             datums: { table, read: () => 0 },
           },
           'Door "d"',

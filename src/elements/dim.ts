@@ -6,6 +6,7 @@ import type { DimNode, DimRef, ExprPoint, Point, SegmentSelect } from "../ast.js
 import { DIM_REFS } from "../ast.js";
 import type { Expr } from "../expr.js";
 import { standingWalls } from "../expr.js";
+import { evaluateIn } from "../evaluator.js";
 import type { ElementDef, ParseCtx, RenderCtx, ResolveCtx, TransformCtx } from "../registry.js";
 import type { CadPart, SceneNode } from "../scene.js";
 import { DIM_TICK } from "../scene.js";
@@ -277,7 +278,7 @@ export const dim: ElementDef = {
           id: ctx.id,
           from,
           to,
-          offset: ctx.eval(n.offset) + 0,
+          offset: evaluateIn(ctx, n.offset) + 0,
           text: n.text !== undefined ? ctx.evalStr(n.text) : undefined,
           span: n.span,
         };
@@ -315,7 +316,7 @@ export const dim: ElementDef = {
       from,
       to,
       // `+ 0` folds an evaluated `-0` (`offset -0`, `0 * -1`) to `0`, and is exact otherwise.
-      offset: ctx.eval(n.offset) + 0,
+      offset: evaluateIn(ctx, n.offset) + 0,
       // An explicit `text "…"` still wins over the derived `R…`/`φ…`.
       text: n.text !== undefined ? ctx.evalStr(n.text) : derivedText,
       span: n.span,
@@ -499,7 +500,7 @@ function measureCurve(n: DimNode, ctx: ResolveCtx): { from: Point; to: Point; te
   if (arcSegs.length === 0) return err("names a wall with no `arc` edge to measure");
   let seg = arcSegs[0]!;
   if (c.segment !== undefined) {
-    const idx = Math.floor(ctx.eval(c.segment));
+    const idx = Math.floor(evaluateIn(ctx, c.segment));
     const found = segs[idx];
     if (!found) return err(`segment ${idx} is out of range (0..${segs.length - 1})`);
     if (!found.arc) return err(`segment ${idx} is straight, not an arc`);

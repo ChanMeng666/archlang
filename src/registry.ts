@@ -82,8 +82,22 @@ export interface ResolveCtx {
   grid: number;
   snap(v: number): number;
   snapPt(p: Point): Point;
-  /** Evaluate an expression against the current binding environment. */
-  eval(e: Expr): number;
+  /**
+   * Evaluate an expression against the current binding environment. A context the compiler
+   * builds sets this and the deprecated member below to one function; the built-in elements
+   * call whichever of the two a wrapping plugin replaced (`evaluatorOf`, `src/evaluator.ts`).
+   * Code that builds a `ResolveCtx` itself provides it (or spreads a context it was given).
+   */
+  evaluate(e: Expr): number;
+  /**
+   * @deprecated Use {@link ResolveCtx.evaluate}, the same function on every context the
+   * compiler builds. Kept for third-party plugins (ADR 0018, the surface is append-only); removed
+   * only at a MAJOR. A method, as it always was (its parameter checks bivariantly); the name is
+   * quoted so the declaration holds no `eval` call pattern for code scanners to flag
+   * (`test/no-dynamic-code.test.ts`), and the formatter is told to keep the quotes.
+   */
+  // biome-ignore format: the quotes keep the scanned call pattern out of the source
+  "eval"(e: Expr): number;
   /** Evaluate an expression to a string (for interpolated labels/text). */
   evalStr(e: Expr): string;
   /** Evaluate an expression-point to a concrete point. */

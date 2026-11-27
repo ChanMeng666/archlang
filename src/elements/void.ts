@@ -64,6 +64,7 @@
 
 import type { ExprPoint, Point, RailEdge, RailSide, VoidNode } from "../ast.js";
 import { RAIL_EDGES, RAIL_SIDES } from "../ast.js";
+import { evaluateIn } from "../evaluator.js";
 import type { ElementDef, ParseCtx, RenderCtx, ResolveCtx, TransformCtx } from "../registry.js";
 import type { SceneNode } from "../scene.js";
 import { weightWidth } from "../scene.js";
@@ -338,7 +339,7 @@ export const voidEl: ElementDef = {
     }
 
     const at = ctx.snapPt(ctx.evalPt(n.at!));
-    const size = { w: ctx.snap(ctx.eval(n.size!.w)), h: ctx.snap(ctx.eval(n.size!.h)) };
+    const size = { w: ctx.snap(evaluateIn(ctx, n.size!.w)), h: ctx.snap(evaluateIn(ctx, n.size!.h)) };
     if (size.w <= 0 || size.h <= 0) {
       ctx.diag({
         severity: "error",

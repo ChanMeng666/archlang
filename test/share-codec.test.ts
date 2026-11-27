@@ -39,6 +39,7 @@
  */
 
 import { exampleNames } from "./helpers/corpus.js";
+import { importSource } from "./helpers/tmp.js";
 import { spawnSync } from "node:child_process";
 import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -141,8 +142,9 @@ function genPermalink(source: string, file = "fixture.arch"): { url: string; sta
 /**
  * The docs widget's inline codec, lifted out of the .vue and run for real.
  *
- * The body is extracted by content anchor (`async function playgroundUrl`) and evaluated
- * with `source` injected as the ref it closes over, and `toBase64Url`/`PLAYGROUND_EDIT_FLAG`
+ * The body is extracted by content anchor (`async function playgroundUrl`), written to a scratch
+ * module (the `.vue` itself cannot be imported here) and run with `source` injected as the ref it
+ * closes over, and `toBase64Url`/`PLAYGROUND_EDIT_FLAG`
  * as the share subpath's own exports (what the component imports), so this is a BEHAVIOURAL
  * comparison: any edit that changes what the button links to goes red, while reformatting it
  * does not.
@@ -164,12 +166,12 @@ function archLiveCodec(): (src: string) => Promise<string> {
   expect(vue, `${ARCHLIVE} no longer imports the share subpath the body calls into.`).toContain(
     'import { PLAYGROUND_EDIT_FLAG, toBase64Url } from "archlang/share";',
   );
-  const run = new Function("source", "toBase64Url", "PLAYGROUND_EDIT_FLAG", `return (async () => {${body}})();`) as (
-    s: { value: string },
-    b64: typeof toBase64Url,
-    flag: typeof PLAYGROUND_EDIT_FLAG,
-  ) => Promise<string>;
-  return (src: string) => run({ value: src }, toBase64Url, PLAYGROUND_EDIT_FLAG);
+  // Loaded as a real ES module (`importSource`): the body becomes an async function of the three
+  // free names it closes over, so nothing builds a function from a string at runtime.
+  const loaded = importSource<{
+    default: (s: { value: string }, b64: typeof toBase64Url, flag: typeof PLAYGROUND_EDIT_FLAG) => Promise<string>;
+  }>(`export default async function run(source, toBase64Url, PLAYGROUND_EDIT_FLAG) {${body}\n}\n`);
+  return async (src: string) => (await loaded).default({ value: src }, toBase64Url, PLAYGROUND_EDIT_FLAG);
 }
 
 describe("the #z= share scheme is pinned (playground/src/share.ts is canonical)", () => {

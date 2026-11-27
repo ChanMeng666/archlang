@@ -3,6 +3,7 @@
  *  after the placement come in any order (`src/clause-order.ts`). */
 
 import type { Point, OpeningNode } from "../ast.js";
+import { evaluateIn } from "../evaluator.js";
 import type { ElementDef, ParseCtx, ResolveCtx, TransformCtx } from "../registry.js";
 import type { SceneNode } from "../scene.js";
 import type { ROpening } from "../ir.js";
@@ -120,7 +121,7 @@ export const opening: ElementDef = {
   resolve(node, ctx: ResolveCtx): ROpening {
     const n = node as OpeningNode;
     const id = ctx.id;
-    const wv = ctx.eval(n.width);
+    const wv = evaluateIn(ctx, n.width);
     noteSquare(ctx, `Opening "${id}"`, "an opening's width", n.width, wv, n.span);
     const width = ctx.snap(wv) || wv;
     if (width <= 0) {

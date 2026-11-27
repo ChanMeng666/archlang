@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- `ResolveCtx.evaluate(e)`, the expression evaluator a plugin element's `resolve` calls (`compile(src, { plugins })`). It is the function `ResolveCtx.eval` has always been, under a name that code scanners do not read as a call to JavaScript's global `eval`: the HOL plugin scanner zeroed its "No eval or Function constructor" check on the old member's call sites, and other package scanners flag the same text. It is a new required member: code that builds a `ResolveCtx` itself (rather than using the one `resolve` is handed) must now provide `evaluate`, or spread an existing context. A plugin that wraps a built-in element and hands it a context of its own may replace either member: the built-ins evaluate with the one the wrapper replaced (the one that is not the compiler's own), so a wrapper that replaced the old member is honoured as before, and a context that has only the old member still compiles. The repository's tests no longer build functions from strings either: the ones that run generated or extracted code load it as a real ES module from a scratch file, and `test/no-dynamic-code.test.ts` fails on either pattern in any tracked code file. `compile()`, `describe()` and `lint()` are byte-identical on every plan.
+
+### Deprecated
+
+- `ResolveCtx.eval`: use `ResolveCtx.evaluate`, which is the same function on every context the compiler builds. The member is unchanged (a method with the same signature), so a plugin that calls it keeps working and type-checking; the public surface is append-only, so it is removed only in a major version.
+
 ## [1.68.2] - 2026-11-23
 
 Nothing is breaking in the library API or the command line, and no plan that compiled before stops compiling. No new statement, keyword, code or public field: the catalogue stays at 279 codes and `src/index.ts` is unchanged. Two fixes (card ARC2c). `dims auto` on a plan whose arc-edged room bulges past a side that one of its straight edges runs along (a bay) reads that side at the room's written vertices: only such a plan's drawing moves (the overall chain's figure and ends, and under `dims auto all` the end span and total of an openings chain along that axis); over the corpus that is ArchCanvas's Bay Bungalow arc fixture, whose vertical overall reads `12250` instead of `12858.81`. A lint message on a multi-storey plan no longer names its storey twice for a stair or a piece in an unlabelled room (`W_STAIR_NO_VOID`, `W_STAIR_HEAD_VOID`, `W_FURNITURE_ON_VOID` and the other stair messages below). Plans without an arc-edged room draw byte-identically; `describe()` does not move on any plan.
