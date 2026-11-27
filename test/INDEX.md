@@ -5,7 +5,7 @@
 Where the tests of a `src` module are, and what each test file is for. Generated; `npm run check:drift`
 fails when it is stale. How to add a test: `docs/testing.md` § 4.
 
-576 test files in `test/`, 304 `src` modules, 112 modules no test imports.
+577 test files in `test/`, 304 `src` modules, 112 modules no test imports.
 
 ## `src` module → tests that import it
 
@@ -129,7 +129,7 @@ Nearest first, then by name; `(+n)` is the rest. Test names are `test/<name>.tes
 - `src/impact.ts` (2) — `rectilinear-doors`, `rectilinear-rooms`
 - `src/import.ts` (39) — `af9-byte-identity`, `af9-fixes`, `arc-openings`, `block-stair-byte-identity`, `corner-window-byte-identity`, `dim-swap-reprint`, `dim-thickness-callout`, `drawing-budget` (+31)
 - `src/import/limits.ts` (1) — `openplan3d-malformed`
-- `src/index.ts` (432) — `acc-metadata`, `access-graph`, `access-policy`, `accessible-svg`, `af9-byte-identity`, `af9-fixes`, `agent-gallery`, `alias-match` (+424)
+- `src/index.ts` (433) — `acc-metadata`, `access-graph`, `access-policy`, `accessible-svg`, `af9-byte-identity`, `af9-fixes`, `agent-gallery`, `alias-match` (+425)
 - `src/input-limit.ts` (2) — `import-rooted`, `workspace-seams`
 - `src/intent-concepts.ts` (3) — `vocabulary-es-pt`, `vocabulary-living-dining`, `vocabulary-matcher-oracle`
 - `src/intent-feasibility.ts` (1) — `intent-infeasible`
@@ -345,6 +345,7 @@ The first sentence of each file's header comment.
 - `test/dims-ground.test.ts` — `dims auto` chains clear the ground attached to the facade they measure.
 - `test/docs-3d.test.ts` — The docs site's 3D preview (public-surfaces card X6): the home band, the gallery cards' 2D/3D swap and the `/3d` page.
 - `test/docs-examples-figures.test.ts` — The Examples-page gate — every claim on `/examples` that a machine can answer is re-derived from the plan the section is about.
+- `test/docs-facts-text.test.ts` — The docs site states a plan's area by the playground's rule (audit U24): net, labelled, when describe() has it, else centreline, labelled; and its counts agree with their nouns.
 - `test/docs-fences.test.ts` — The live-fence gate — every ```arch block the docs site turns into a running compiler must actually compile.
 - `test/docs-flags.test.ts` — Docs↔manifest flag gate: every `arch <cmd> … --flag` written in a hand-maintained doc must be a flag that command actually DECLARES in `src/manifest.ts`.
 - `test/docs-headers-drift.test.ts` — The `.md` Content-Type rules in `docs-site/public/_headers` are GENERATED from the PAGES + SITE_PAGES tables (`npm run gen:docs-headers`).
