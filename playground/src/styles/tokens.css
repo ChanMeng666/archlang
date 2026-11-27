@@ -56,6 +56,39 @@
   --font-display: "Archivo Variable", Archivo, "Arial Narrow", sans-serif;
   --font-body: "Public Sans Variable", "Public Sans", -apple-system, "Segoe UI", Roboto, Helvetica, sans-serif;
   --font-mono: "IBM Plex Mono", ui-monospace, "SF Mono", "Cascadia Code", Consolas, monospace;
+
+  /* MOTION — one language for both sites and ArchCanvas (same names, same values).
+     Enter: --ease-out at --dur-*. Exit: --ease-in at the matching --dur-*-out.
+     A to B: --ease-in-out. Press: boxed buttons scale; chips, tabs and rows tint.
+     Reduced motion zeroes every duration (the rule after this block). */
+  --ease-out: cubic-bezier(0.32, 0.72, 0, 1);
+  --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+  --ease-in: cubic-bezier(0.4, 0, 1, 1);
+  --dur-press: 90ms;
+  --dur-fast: 150ms;
+  --dur-base: 240ms;
+  --dur-slow: 380ms;
+  --dur-fast-out: 100ms;
+  --dur-base-out: 170ms;
+  --dur-slow-out: 260ms;
+  --press-scale: 0.97;
+  --press-scale-sm: 0.92;
+  --press-scale-lg: 0.985;
+}
+
+/* Reduced motion: every duration is 0ms, so a transition lands at once (outside the
+   shared block because the lockstep test allows no nested rule in it; same text in
+   both sites). */
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --dur-press: 0ms;
+    --dur-fast: 0ms;
+    --dur-base: 0ms;
+    --dur-slow: 0ms;
+    --dur-fast-out: 0ms;
+    --dur-base-out: 0ms;
+    --dur-slow-out: 0ms;
+  }
 }
 
 /* ── playground-only legacy aliases (transitional; W3/W4 will burn them down) ──
