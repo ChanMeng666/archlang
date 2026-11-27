@@ -4682,7 +4682,11 @@ worked example.
 `ctx.evalStr(e)` a string template; `ctx.snap` and `ctx.snapPt` put the result
 on the plan's grid. The member `ctx.eval` is the same function under its old
 name, deprecated and kept for plugins written against it: the public surface is
-append-only, so it goes only in a major version. New code calls `evaluate`.
+append-only, so it goes only in a major version. New code calls `evaluate`. A
+plugin that builds a `ResolveCtx` itself must provide `evaluate` too, or spread
+the context it was handed. One that wraps a built-in and hands it a context
+with one of the two replaced is honoured: the built-in evaluates with the
+replaced one.
 
 **`transform` — carrying an element through `place`.** A component instance
 resolves in its own frame, and each element then maps itself into plan

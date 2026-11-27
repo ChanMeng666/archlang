@@ -8,6 +8,7 @@
  */
 
 import type { ElevatorNode, Point } from "../ast.js";
+import { evaluateIn } from "../evaluator.js";
 import type { ElementDef, ParseCtx, RenderCtx, ResolveCtx, TransformCtx } from "../registry.js";
 import type { SceneNode } from "../scene.js";
 import type { RElevator } from "../ir.js";
@@ -42,7 +43,7 @@ export const elevator: ElementDef = {
     const n = node as ElevatorNode;
     const id = ctx.id;
     const at = ctx.snapPt(ctx.evalPt(n.at));
-    const size = { w: ctx.snap(ctx.evaluate(n.size.w)), h: ctx.snap(ctx.evaluate(n.size.h)) };
+    const size = { w: ctx.snap(evaluateIn(ctx, n.size.w)), h: ctx.snap(evaluateIn(ctx, n.size.h)) };
     if (size.w <= 0 || size.h <= 0) {
       ctx.diag({
         severity: "error",

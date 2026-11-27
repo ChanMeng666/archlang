@@ -22,6 +22,7 @@ import {
 } from "../ast.js";
 import type { Diagnostic, Span } from "../diagnostics.js";
 import type { Expr } from "../expr.js";
+import { evaluateIn } from "../evaluator.js";
 import type { ElementDef, ParseCtx, RenderCtx, ResolveCtx, TransformCtx } from "../registry.js";
 import { failExpected, failNear, missingClause, readClauses, type TailClause } from "../clause-order.js";
 import { PLAIN_SHEET_TEXT } from "../sheet-text.js";
@@ -532,7 +533,7 @@ export const room: ElementDef = {
     if (n.at) {
       // —— Absolute / "manual" path — no constraint, never moved by the solver. ——
       const at = ctx.snapPt(ctx.evalPt(n.at));
-      const written = { w: ctx.evaluate(n.size!.w), h: ctx.evaluate(n.size!.h) };
+      const written = { w: evaluateIn(ctx, n.size!.w), h: evaluateIn(ctx, n.size!.h) };
       const size = { w: ctx.snap(written.w), h: ctx.snap(written.h) };
       if (size.w <= 0 || size.h <= 0) {
         ctx.diag({
@@ -614,8 +615,8 @@ export const room: ElementDef = {
         ...fixesFrom(roomAlignAxisFix(rel.alignSpan, counterpart)),
       });
     }
-    const gap = rel.gap !== undefined ? ctx.evaluate(rel.gap) : 0;
-    const written = { w: ctx.evaluate(n.size!.w), h: ctx.evaluate(n.size!.h) };
+    const gap = rel.gap !== undefined ? evaluateIn(ctx, rel.gap) : 0;
+    const written = { w: evaluateIn(ctx, n.size!.w), h: evaluateIn(ctx, n.size!.h) };
     const size = { w: ctx.snap(written.w), h: ctx.snap(written.h) };
     if (size.w <= 0 || size.h <= 0) {
       ctx.diag({
@@ -811,7 +812,7 @@ export const room: ElementDef = {
  */
 function resolveCircle(n: RoomNode, id: string, ctx: ResolveCtx): RRoom {
   const c = ctx.snapPt(ctx.evalPt(n.circle!.c));
-  const rv = ctx.evaluate(n.circle!.r);
+  const rv = evaluateIn(ctx, n.circle!.r);
   const r = ctx.snap(rv) || rv;
   const label = n.label !== undefined ? ctx.evalStr(n.label) : undefined;
   if (!(r > 0)) {
@@ -999,7 +1000,7 @@ function sagWithin(arc: Arc, spec: WallArcNode, id: string, n: RoomNode, ctx: Re
  * snapped, for the end point as printed, so applying it always clears the error.
  */
 function solveRingArc(spec: WallArcNode, a: Point, b: Point, id: string, n: RoomNode, ctx: ResolveCtx): Arc | null {
-  const rv = ctx.evaluate(spec.radius);
+  const rv = evaluateIn(ctx, spec.radius);
   const r = ctx.snap(rv) || rv;
   const arc = arcFromChord(a, b, r, spec.dir ?? "ccw", spec.major === true);
   if (arc) return arc;

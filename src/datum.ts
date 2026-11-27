@@ -53,6 +53,7 @@ import type { Expr } from "./expr.js";
 import type { WallSegment } from "./geometry.js";
 import type { RWall } from "./ir.js";
 import { fmt3, fmtMessage } from "./num-format.js";
+import { evaluateIn } from "./evaluator.js";
 import type { ParseCtx, ResolveCtx } from "./registry.js";
 import type { TailClause } from "./clause-order.js";
 
@@ -266,14 +267,14 @@ export function resolveOpeningHeights(
 
   let sill = defaults.sill;
   if (clauses.sill !== undefined) {
-    const v = ctx.evaluate(clauses.sill);
+    const v = evaluateIn(ctx, clauses.sill);
     if (isPlacedHeight(v)) sill = v;
     else ctx.diag(heightRangeDiagnostic(subject, "sill", v, clauses.sillSpan ?? stmtSpan));
   }
 
   let head = defaults.head;
   if (clauses.head !== undefined) {
-    const v = ctx.evaluate(clauses.head);
+    const v = evaluateIn(ctx, clauses.head);
     if (isDrawableHeight(v)) head = v;
     else ctx.diag(heightRangeDiagnostic(subject, "head", v, clauses.headSpan ?? stmtSpan));
   }

@@ -5,7 +5,7 @@
 Where the tests of a `src` module are, and what each test file is for. Generated; `npm run check:drift`
 fails when it is stale. How to add a test: `docs/testing.md` § 4.
 
-578 test files in `test/`, 304 `src` modules, 112 modules no test imports.
+578 test files in `test/`, 305 `src` modules, 112 modules no test imports.
 
 ## `src` module → tests that import it
 
@@ -67,7 +67,7 @@ Nearest first, then by name; `(+n)` is the rest. Test names are `test/<name>.tes
 - `src/diff.ts` (3) — `diff-fabric`, `diff-laws`, `diff`
 - `src/doc.ts` (2) — `fix-printer`, `format`
 - `src/draw-budget.ts` (5) — `drawing-budget`, `sheet-annotations`, `walls-from-rooms-clauses`, `window-kinds`, `work-counts`
-- `src/elements/defs.ts` (6) — `element-facets`, `element-keyword-drift`, `levels`, `plan-json-dropped`, `silent-accepts`, `transform-seam`
+- `src/elements/defs.ts` (7) — `element-facets`, `element-keyword-drift`, `levels`, `plan-json-dropped`, `plugins`, `silent-accepts`, `transform-seam`
 - `src/elements/dim.ts` (2) — `annotation-collisions`, `lint-thickness-unplaced`
 - `src/elements/door.ts` (1) — `window-kinds`
 - `src/elements/facets.ts` (1) — `element-facets`
@@ -94,6 +94,7 @@ Nearest first, then by name; `(+n)` is the rest. Test names are `test/<name>.tes
 - `src/error-catalog-fixes-intent.ts` (1) — `explain`
 - `src/error-catalog-fixes.ts` (1) — `explain`
 - `src/error-catalog.ts` (20) — `cli-context`, `context-starter`, `element-cap`, `error-catalog-families`, `fix-coverage`, `garage`, `levels`, `lint-rule-order` (+12)
+- `src/evaluator.ts` (1) — `plugins`
 - `src/export/dxf.ts` (11) — `curves`, `export-dxf`, `furniture-curves-backends`, `furniture-label-fit`, `label-fit`, `label-wrap`, `opening`, `room-floor` (+3)
 - `src/export/pdf.ts` (8) — `export-font-cjk`, `export-pdf`, `furniture-curves-backends`, `label-wrap`, `roof`, `scene-path-prim`, `sheet`, `v129-cross`
 - `src/expr-source.ts` (1) — `emit-opening-oracle`
@@ -590,7 +591,7 @@ The first sentence of each file's header comment.
 - `test/no-clock-assertions.test.ts` — Counts, not clocks (AGENTS.md: "budgets are counts, never time").
 - `test/no-control-bytes.test.ts` — No tracked Markdown file contains a stray control byte.
 - `test/no-duplicate-helpers.test.ts` — No new local copy of a helper `test/helpers/` already provides.
-- `test/no-dynamic-code.test.ts` — No tracked code file holds text a dynamic-code scanner reads as `eval` or the Function constructor.
+- `test/no-dynamic-code.test.ts` — No tracked code file holds the two literal patterns a dynamic-code scanner reads as `eval` or the Function constructor.
 - `test/no-import-side-effects.test.ts` — importing a src module has no side effect beyond the known ones.
 - `test/no-replace-chain-escapers.test.ts` — Guard: no `String.replace` escaper chains in tooling or source (CodeQL js/incomplete-sanitization).
 - `test/no-value-cycles.test.ts` — No runtime import cycles in `src/`.

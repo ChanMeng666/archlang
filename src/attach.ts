@@ -19,6 +19,7 @@ import type { AttachFrom, AttachPos, ExprPoint, OpeningAttach, OpeningBetween, P
 import type { Diagnostic, FixSuggestion, Span } from "./diagnostics.js";
 import type { Expr, ParseExprOpts } from "./expr.js";
 import { chargeSteps } from "./expr.js";
+import { evaluateIn } from "./evaluator.js";
 import type { ParseCtx, ResolveCtx } from "./registry.js";
 import type { TailClause } from "./clause-order.js";
 import { failExpected } from "./clause-order.js";
@@ -490,7 +491,7 @@ export function resolveOpeningLead(
     ...(ctx.rootDiag ? { rootDiag: ctx.rootDiag } : {}),
     sameFile: ctx.sameFile,
     ...(ctx.refusedDerivation ? { refusedDerivation: ctx.refusedDerivation } : {}),
-    evaluate: (e) => ctx.evaluate(e),
+    evaluate: (e) => evaluateIn(ctx, e),
     ...(ctx.datums ? { datums: ctx.datums } : {}),
   };
   const none = { at: { x: 0, y: 0 }, host: null };
@@ -522,7 +523,7 @@ export function resolveOpeningLead(
     ctx.snapPt,
     ctx.diag,
     what,
-    (e) => ctx.evaluate(e),
+    (e) => evaluateIn(ctx, e),
     rel,
     ctx.unplacedWall,
   );

@@ -23,6 +23,7 @@
 import type { Point, WallsFromRoomsNode, WallsPairClause, WallsPairRoom } from "../ast.js";
 import type { Diagnostic, Span } from "../diagnostics.js";
 import type { Expr } from "../expr.js";
+import { evaluateIn } from "../evaluator.js";
 import type { ElementDef, ParseCtx, ResolveCtx, TransformCtx } from "../registry.js";
 import type { DerivedWallRow, ROpening, ROutdoor, RRoom, RVoid, RWall, RWallsFromRooms } from "../ir.js";
 import { parseAttachPos } from "../attach.js";
@@ -140,7 +141,7 @@ export const wallsFromRooms: ElementDef = {
       valueSpan: Span | undefined,
       span = n.span,
     ): number => {
-      const v = ctx.evaluate(e);
+      const v = evaluateIn(ctx, e);
       const t = ctx.snap(v) || v;
       if (!(t > 0)) {
         const d: Diagnostic = {
@@ -558,7 +559,7 @@ function resolvePairs(
     }
     seen.add(key);
     if (c.kind === "thickness") {
-      const v = ctx.evaluate(c.thickness);
+      const v = evaluateIn(ctx, c.thickness);
       const t = ctx.snap(v) || v;
       if (!(t > 0)) {
         ok = false;
@@ -573,7 +574,7 @@ function resolvePairs(
     } else {
       let width: number | undefined;
       if (c.width) {
-        const v = ctx.evaluate(c.width);
+        const v = evaluateIn(ctx, c.width);
         width = ctx.snap(v) || v;
         if (!(width > 0)) {
           ok = false;

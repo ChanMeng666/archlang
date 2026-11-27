@@ -1,4 +1,4 @@
-/** No tracked code file holds text a dynamic-code scanner reads as `eval` or the Function constructor. */
+/** No tracked code file holds the two literal patterns a dynamic-code scanner reads as `eval` or the Function constructor. */
 
 import { execFileSync } from "node:child_process";
 import { readFileSync } from "node:fs";
@@ -6,14 +6,19 @@ import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 
 /**
- * ArchLang builds no code at runtime, and its source should not look as if it did. Plugin-directory
- * and package scanners match TEXT, not calls: the HOL `plugin-scanner` (the gate of the
- * awesome-codex-plugins list) zeroes its "No eval or Function constructor" check on one match of
- * either pattern below in any code file of the whole repository, and other package scanners flag the
- * same token. The matches it found were never dynamic code: the expression evaluator's member was
- * named `eval` (now `ResolveCtx.evaluate`, the old name kept as a deprecated alias declared as a
- * property), and tests loaded generated or extracted code through the Function constructor (now a
- * real ES module through `importSource`, `test/helpers/tmp.ts`).
+ * What this checks is TEXT: no tracked code file contains either of two literal patterns
+ * ({@link PATTERNS}), the word `eval` followed by an opening parenthesis and the Function
+ * constructor written after `new` with its parenthesis. It does not prove that no
+ * code is built at runtime (an indirect form written differently, such as the comma-operator call
+ * in `scripts/engine-digests.ts`, a script that is never shipped, is not either pattern). It
+ * exists because plugin-directory and package scanners match that text: the HOL `plugin-scanner`
+ * (the gate of the awesome-codex-plugins list) zeroes its "No eval or Function constructor" check
+ * on one match of either pattern in any code file of the whole repository, and other package
+ * scanners flag the same token. The matches it found were not dynamic code: the expression
+ * evaluator's member was named `eval` (now `ResolveCtx.evaluate`, the old member kept as a
+ * deprecated method whose quoted name is not the pattern, `src/evaluator.ts`), and tests loaded
+ * generated or extracted code through the Function constructor (now a real ES module through
+ * `importSource`, `test/helpers/tmp.ts`).
  *
  * The file set is the scanner's: tracked files (`git ls-files`, so an untracked scratch file is not
  * read) with its code extensions, outside its excluded directories (any path segment). Patterns,

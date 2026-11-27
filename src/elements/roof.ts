@@ -42,6 +42,7 @@
 
 import { wallPhraseOf } from "../wall-ref.js";
 import type { ExprPoint, Point, RoofNode } from "../ast.js";
+import { evaluateIn } from "../evaluator.js";
 import type { ElementDef, ParseCtx, RenderCtx, ResolveCtx, TransformCtx } from "../registry.js";
 import type { SceneNode } from "../scene.js";
 import { weightWidth } from "../scene.js";
@@ -288,7 +289,7 @@ export const roof: ElementDef = {
     // `overhang` is a number the AUTHOR writes, so it snaps to the grid like every other
     // authored length. The RING it produces is resolver-derived and is deliberately NOT
     // snapped — the same rule that keeps `flush` from fighting `grid`.
-    const overhang = ctx.snap(ctx.evaluate(n.overhang!));
+    const overhang = ctx.snap(evaluateIn(ctx, n.overhang!));
     if (overhang <= 0) {
       ctx.diag({
         severity: "error",
