@@ -201,7 +201,9 @@ const allReachable = facts.access.rooms.every((r) => r.reachable);
   text-transform: uppercase;
   color: var(--ink-muted);
   text-decoration: none;
-  transition: color 0.2s, background 0.2s;
+  transition:
+    color var(--dur-press) var(--ease-out),
+    background-color var(--dur-press) var(--ease-out);
 }
 .facts__open-file {
   font-family: var(--font-mono);

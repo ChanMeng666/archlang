@@ -6,13 +6,14 @@
 // CodeMirror. The source pane is TWO layers in register: a coloured <pre> underneath and
 // a transparent-text <textarea> on top, sharing every metric that can move a glyph. That
 // is what makes the code readable AND editable without shipping an editor.
-import { ref, computed, onMounted, useSlots } from "vue";
+import { ref, computed, onMounted, onBeforeUnmount, shallowRef, useSlots, watch } from "vue";
 import { compile, describe, THEMES } from "archlang";
 import { PLAYGROUND_EDIT_FLAG, toBase64Url } from "archlang/share";
 // The tokenizer is GENERATED from src/grammar/tokens.ts by scripts/gen-grammars.ts, from
 // the same tables as the VS Code grammar and the playground's CodeMirror mode — so this
 // widget can never colour a keyword the parser doesn't have, or miss one it does.
 import { highlightArch } from "../arch-highlight.js";
+import { factsText } from "../facts-text.js";
 
 // `src` — plain-text source (explicit `<ArchLive src="…"/>` usage).
 // `b64` — base64(UTF-8) source, injected by the ```arch fence rule in
@@ -36,6 +37,19 @@ function decodeB64(b64: string): string {
 }
 
 const source = ref((props.b64 ? decodeB64(props.b64) : (props.src ?? "")).trim());
+// What the drawing is compiled from: the source, 150 ms after the last keystroke (U11), so typing
+// is the textarea's and the highlighter's alone and a compile never sits under a key. Its first
+// value is the source itself, so the server's render is unchanged.
+const compiled = ref(source.value);
+const COMPILE_AFTER_MS = 150;
+let compileTimer: ReturnType<typeof setTimeout> | undefined;
+watch(source, (next) => {
+  clearTimeout(compileTimer);
+  compileTimer = setTimeout(() => {
+    compiled.value = next;
+  }, COMPILE_AFTER_MS);
+});
+onBeforeUnmount(() => clearTimeout(compileTimer));
 
 // When the fence rule injects a `#fallback` slot (the Shiki-highlighted <pre>),
 // show it during SSR and initial hydration, then swap to the live editor once
@@ -54,28 +68,51 @@ onMounted(() => {
 // Off by default, and then the options are exactly what they were.
 const rendered = ref(false);
 const result = computed(() =>
-  compile(source.value, rendered.value ? { noCache: true, theme: THEMES.rendered } : { noCache: true }),
+  compile(compiled.value, rendered.value ? { noCache: true, theme: THEMES.rendered } : { noCache: true }),
 );
-const svg = computed(() => (result.value.errors.length ? "" : result.value.svg));
+// The last drawing that compiled, and its facts (U10): a typing error keeps it on screen, dimmed
+// (`is-stale`), and says what is wrong in the strip under it, as the playground and the embed do,
+// so the widget never changes height under the reader.
+function factsOf(src: string): string | null {
+  try {
+    // No `noCache`: `describe()` takes `DescribeOptions` (plugins/world/tolerance) and
+    // has no result cache to bypass — it re-derives from `parse()`, whose memo is keyed
+    // on the source text. The option was an ignored excess property (caught by vue-tsc).
+    const t = describe(src).totals;
+    return t ? factsText(t) : null;
+  } catch {
+    return null;
+  }
+}
+const good = computed(() =>
+  result.value.errors.length ? null : { svg: result.value.svg, facts: factsOf(compiled.value) },
+);
+const lastGood = shallowRef<{ svg: string; facts: string | null } | null>(null);
+watch(
+  good,
+  (g) => {
+    if (g) lastGood.value = g;
+  },
+  { immediate: true },
+);
+const shownGood = computed(() => good.value ?? lastGood.value);
+const stale = computed(() => !good.value);
+const svg = computed(() => shownGood.value?.svg ?? "");
 // The rendered drawing is shown as an <img> over a data URI: every plan's SVG defines `id="poche"`
 // and the rendered one defines it differently, so inlined beside default widgets the first
 // definition in the page would win and restyle the walls. An <img> is its own document.
 const renderedSrc = computed(() =>
   rendered.value && svg.value ? `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg.value)}` : "",
 );
-const errorMsg = computed(() => result.value.errors[0]?.message ?? "");
-const facts = computed(() => {
-  if (result.value.errors.length) return null;
-  try {
-    // No `noCache`: `describe()` takes `DescribeOptions` (plugins/world/tolerance) and
-    // has no result cache to bypass — it re-derives from `parse()`, whose memo is keyed
-    // on the source text. The option was an ignored excess property (caught by vue-tsc).
-    const t = describe(source.value).totals;
-    return t ? `${t.rooms} rooms · ${t.doors} doors · ${t.windows} windows · ${t.floor_area_m2} m²` : null;
-  } catch {
-    return null;
-  }
+/** The first error, as the CLI prints it: `E_CODE message line:col`. */
+const errorMsg = computed(() => {
+  const e = result.value.errors[0];
+  if (!e) return "";
+  const code = result.value.diagnostics.find((d) => d.severity === "error")?.code;
+  const at = e.line !== undefined ? ` ${e.line}:${e.col ?? 1}` : "";
+  return `${code ? `${code} ` : ""}${e.message}${at}`;
 });
+const facts = computed(() => shownGood.value?.facts ?? null);
 
 // ── The colour layer ─────────────────────────────────────────────────────────
 // The <pre> under the textarea. The trailing newline keeps its last line box in step
@@ -129,9 +166,29 @@ async function playgroundUrl(): Promise<string> {
   return `${base}#src=${toBase64Url(utf8)}&${PLAYGROUND_EDIT_FLAG}`;
 }
 
-async function openInPlayground() {
-  window.open(await playgroundUrl(), "_blank", "noopener");
+// "Open in Playground" is a real link (U26): it opens in a new tab with no await between the press
+// and the tab (Safari refuses a window opened after one), and it can be middle-clicked or copied.
+// Its href is always the plan on screen: the synchronous `#src=` form at once, then the shorter
+// `#z=` form 200 ms after the last edit, and again on pointerenter and focus.
+function srcUrl(): string {
+  return `https://playground.archlang.uk/#src=${toBase64Url(new TextEncoder().encode(source.value))}&${PLAYGROUND_EDIT_FLAG}`;
 }
+const openHref = ref(srcUrl());
+let hrefTimer: ReturnType<typeof setTimeout> | undefined;
+let hrefTicket = 0;
+async function refreshHref(): Promise<void> {
+  const mine = ++hrefTicket;
+  const url = await playgroundUrl();
+  if (mine === hrefTicket) openHref.value = url;
+}
+watch(source, () => {
+  hrefTicket++; // a slower encode of the text before must not land over this one
+  openHref.value = srcUrl();
+  clearTimeout(hrefTimer);
+  hrefTimer = setTimeout(() => void refreshHref(), 200);
+});
+onMounted(() => void refreshHref());
+onBeforeUnmount(() => clearTimeout(hrefTimer));
 </script>
 
 <template>
@@ -161,15 +218,18 @@ async function openInPlayground() {
     </div>
     <div class="archlive-preview">
       <!-- eslint-disable-next-line vue/no-v-html -->
-      <div v-if="renderedSrc" class="archlive-svg">
+      <div v-if="renderedSrc" class="archlive-svg" :class="{ 'is-stale': stale }">
         <img
           :src="renderedSrc"
           :alt="`Floor plan${facts ? ` (${facts})` : ''}, drawn in the rendered colour scheme`"
         />
       </div>
       <!-- eslint-disable-next-line vue/no-v-html -->
-      <div v-else-if="svg" class="archlive-svg" v-html="svg"></div>
-      <div v-else class="archlive-error">{{ errorMsg }}</div>
+      <div v-else-if="svg" class="archlive-svg" :class="{ 'is-stale': stale }" v-html="svg"></div>
+      <div v-else class="archlive-svg is-stale"></div>
+      <!-- The first error, while there is one: one line whose height is always kept, so the widget
+           never changes height while the reader types. -->
+      <p class="archlive-error" :class="{ 'is-shown': stale }" role="status">{{ stale ? errorMsg : "" }}</p>
       <!-- Its own row, apart from .archlive-bar, so the bar's layout is what it always was. The row
            is always rendered (the widget itself only appears on mount), so nothing shifts. -->
       <div class="archlive-themerow">
@@ -180,10 +240,16 @@ async function openInPlayground() {
       <div class="archlive-bar">
         <span class="archlive-facts">{{ facts ?? "—" }}</span>
         <span class="archlive-actions">
-          <a v-if="staticPage" class="archlive-page" :href="staticPage">Static page ↗</a>
-          <button type="button" class="archlive-open" @click="openInPlayground">
-            Open in Playground ↗
-          </button>
+          <a v-if="staticPage" class="archlive-page" :href="staticPage">Plan and source →</a>
+          <a
+            class="archlive-open"
+            :href="openHref"
+            target="_blank"
+            rel="noopener"
+            @pointerenter="refreshHref"
+            @focus="refreshHref"
+            >Open in Playground ↗</a
+          >
         </span>
       </div>
     </div>
@@ -347,16 +413,31 @@ async function openInPlayground() {
   color: var(--ink-muted);
   cursor: pointer;
 }
+/* The last good drawing while the source does not compile: dimmed (M17), after a moment so a
+   half-typed statement does not flicker it, whole again at once. */
+.archlive-svg :deep(svg),
+.archlive-svg > img {
+  transition: opacity var(--dur-fast-out) var(--ease-in);
+}
+.archlive-svg.is-stale :deep(svg),
+.archlive-svg.is-stale > img {
+  opacity: 0.45;
+  transition: opacity var(--dur-base) var(--ease-out) 600ms;
+}
+/* The first error's line: always one line tall (empty while the plan compiles). */
 .archlive-error {
-  flex: 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 20px;
+  margin: 0;
+  min-height: calc(1.5em + 10px);
+  padding: 5px 12px;
+  border-top: 1px solid var(--hairline);
+  background: var(--paper-panel);
   font-family: var(--font-mono);
-  font-size: 12.5px;
+  font-size: 11.5px;
+  line-height: 1.5;
   color: var(--redline-ink);
-  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 /* ── micro title block ─────────────────────────────────────────────────── */
@@ -388,7 +469,13 @@ async function openInPlayground() {
   background: transparent;
   cursor: pointer;
   white-space: nowrap;
-  transition: background-color 0.2s;
+  text-decoration: none;
+  transition:
+    background-color var(--dur-press) var(--ease-out),
+    scale var(--dur-press) var(--ease-out);
+}
+.archlive-open:active {
+  scale: var(--press-scale);
 }
 .archlive-actions {
   display: inline-flex;
@@ -403,15 +490,16 @@ async function openInPlayground() {
   letter-spacing: 0.04em;
   color: var(--ink-muted);
 }
-.archlive-open:hover { background: color-mix(in srgb, var(--redline) 12%, transparent); }
+/* `.vp-doc a:hover` (0,2,1) outranks this rule's two classes: the colour is re-asserted here. */
+.archlive .archlive-open:hover {
+  color: var(--redline-ink);
+  background: color-mix(in srgb, var(--redline) 12%, transparent);
+}
 .archlive-open:focus-visible { outline: 2px solid var(--redline); outline-offset: 2px; }
 
 @media (max-width: 720px) {
   /* seam goes horizontal when stacked */
   .archlive { grid-template-columns: 1fr; }
   .archlive-editor { border-right: 0; border-bottom: 2px solid var(--plum); }
-}
-@media (prefers-reduced-motion: reduce) {
-  .archlive-open { transition: none; }
 }
 </style>

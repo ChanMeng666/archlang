@@ -173,7 +173,7 @@ onBeforeUnmount(() => observer?.disconnect());
       <p class="same-source__limits">{{ PREVIEW.limits }}</p>
       <p class="same-source__links">
         <a class="same-source__open plan-open" :href="PLAN.link3d" target="_blank" rel="noopener"
-          >Try it in the playground →</a
+          >Open in Playground (3D) ↗</a
         >
         ·
         <a href="/3d">What the 3D preview shows →</a>
@@ -252,7 +252,7 @@ onBeforeUnmount(() => observer?.disconnect());
 .same-source__fig--3d:not([data-state="poster"]):not([data-state="failed"]) .same-source__poster {
   opacity: 0;
   pointer-events: none;
-  transition: opacity 0.3s;
+  transition: opacity var(--dur-base) var(--ease-out);
 }
 .same-source__toggle {
   position: absolute;

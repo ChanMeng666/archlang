@@ -145,7 +145,7 @@ test.describe("every home-page drawing opens its own plan in the playground", ()
       }
       await expect(link).toHaveCount(1);
       await expect(link).toHaveAttribute("href", examplePageUrl(name));
-      await expect(link).toHaveText("Plan and source");
+      await expect(link).toHaveText("Plan and source →");
     }
     // Every static-page link on the home page is a card's, and names a published page.
     for (const href of await page
@@ -353,7 +353,8 @@ test.describe("the 3D band", () => {
     await expect(band.locator(".same-source__lede")).toHaveText(lines.rest);
     await expect(band.locator(".same-source__limits")).toHaveText(lines.limits);
     await expect(band.locator("a[href='/3d']")).toHaveText("What the 3D preview shows →");
-    await expect(band.locator(".same-source__open")).toHaveText("Try it in the playground →");
+    // One name per destination (U25): ↗ is a new tab, as on every other link to the playground.
+    await expect(band.locator(".same-source__open")).toHaveText("Open in Playground (3D) ↗");
 
     const video = band.locator("video");
     await expect(video).toHaveAttribute("preload", "none");

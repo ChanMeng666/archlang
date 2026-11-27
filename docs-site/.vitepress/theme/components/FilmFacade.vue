@@ -14,6 +14,8 @@ const FILM_TITLE = "ArchLang, from plan to 3D — a floor plan that checks itsel
 const watch = `https://youtu.be/${FILM_ID}`;
 const embed = `https://www.youtube-nocookie.com/embed/${FILM_ID}?autoplay=1&rel=0`;
 const playing = ref(false);
+/** The player has drawn its first page: it fades in over the poster (M37), never an empty frame. */
+const loaded = ref(false);
 
 defineProps<{ poster: string }>();
 </script>
@@ -21,13 +23,17 @@ defineProps<{ poster: string }>();
 <template>
   <figure class="film">
     <div class="film__frame">
+      <!-- The poster stays under the player while YouTube loads it. -->
+      <img class="film__poster" :src="poster" alt="" loading="lazy" decoding="async" />
       <iframe
         v-if="playing"
+        :class="{ 'is-loaded': loaded }"
         :src="embed"
         :title="FILM_TITLE"
         allow="autoplay; encrypted-media; picture-in-picture; fullscreen"
         allowfullscreen
         referrerpolicy="strict-origin-when-cross-origin"
+        @load="loaded = true"
       ></iframe>
       <a
         v-else
@@ -38,7 +44,6 @@ defineProps<{ poster: string }>();
         :aria-label="`Play the film: ${FILM_TITLE} (YouTube)`"
         @click.prevent="playing = true"
       >
-        <img :src="poster" alt="" loading="lazy" decoding="async" />
         <span class="film__play" aria-hidden="true">▶</span>
       </a>
     </div>
@@ -75,7 +80,7 @@ defineProps<{ poster: string }>();
   align-items: center;
   justify-content: center;
 }
-.film__facade img {
+.film__poster {
   position: absolute;
   inset: 8%;
   width: 84%;
@@ -83,8 +88,16 @@ defineProps<{ poster: string }>();
   object-fit: contain;
   opacity: 0.55;
 }
+.film__frame iframe {
+  opacity: 0;
+  transition: opacity var(--dur-base) var(--ease-out);
+}
+.film__frame iframe.is-loaded {
+  opacity: 1;
+}
 .film__play {
   position: relative;
+  transition: background-color var(--dur-press) var(--ease-out);
   display: grid;
   place-items: center;
   width: 72px;

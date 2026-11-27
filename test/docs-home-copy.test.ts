@@ -304,3 +304,18 @@ describe("the copy keeps the guardrails", () => {
     expect(table).toContain("What it isn't");
   });
 });
+
+// Audit U24 (owner question 1, decided by the lead): the hero's title strip and the home gallery
+// print the plan's area by the playground's rule, net and labelled (docs-site/.vitepress/theme/
+// facts-text.ts), as the live example and the playground do, not a bare centreline figure.
+describe("the docs home states the same area", () => {
+  it("the hero's title strip and the home gallery use the shared words, never a bare centreline figure", () => {
+    for (const f of ["docs-site/.vitepress/theme/CompileSeam.vue", "docs-site/.vitepress/theme/HomeGallery.vue"]) {
+      const src = read(f);
+      expect(src, f).toMatch(/areaText\([^)]*net_floor_area_m2[^)]*floor_area_m2\)/);
+      expect(src, f).not.toMatch(/floor_area_m2 \}\}\s*m²/);
+    }
+    // The gallery's figures carry the net area (sync-docs.mjs writes home-data.js).
+    expect(read("docs-site/sync-docs.mjs")).toMatch(/net_floor_area_m2: t\.net_floor_area_m2/);
+  });
+});

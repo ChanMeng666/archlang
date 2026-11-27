@@ -163,7 +163,7 @@ function onCaretClick() {
   left: -17px;
   width: 2px;
   border-radius: 2px;
-  transition: background-color 0.25s;
+  transition: background-color var(--dur-press) var(--ease-out);
 }
 
 .VPSidebarItem.level-2.is-active > .item > .indicator,
@@ -184,7 +184,7 @@ function onCaretClick() {
   padding: 4px 0;
   line-height: 24px;
   font-size: 14px;
-  transition: color 0.25s;
+  transition: color var(--dur-press) var(--ease-out);
 }
 
 .VPSidebarItem.level-0 .text {
@@ -243,7 +243,7 @@ function onCaretClick() {
   height: 32px;
   color: var(--vp-c-text-3);
   cursor: pointer;
-  transition: color 0.25s;
+  transition: color var(--dur-press) var(--ease-out);
   flex-shrink: 0;
 }
 
@@ -259,7 +259,7 @@ function onCaretClick() {
   font-size: 18px;
   /*rtl:ignore*/
   transform: rotate(90deg);
-  transition: transform 0.25s;
+  transition: transform var(--dur-fast) var(--ease-out);
 }
 
 .VPSidebarItem.collapsed .caret-icon {
