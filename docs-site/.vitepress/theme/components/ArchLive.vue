@@ -506,6 +506,11 @@ onBeforeUnmount(() => clearTimeout(hrefTimer));
   font-weight: 600;
   color: var(--redline-ink);
   text-decoration: none;
+  /* restated here too: `.vp-doc a`'s own transition (0,1,1) would otherwise make the tint and the
+     press snap */
+  transition:
+    background-color var(--dur-press) var(--ease-out),
+    scale var(--dur-press) var(--ease-out);
 }
 .archlive .archlive-open:hover {
   font-weight: 600;
