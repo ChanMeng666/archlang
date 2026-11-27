@@ -17,7 +17,8 @@ import "./home.css";
 import "./doc-pages.css";
 import Layout from "./Layout.vue";
 import AgentPlan from "./components/AgentPlan.vue";
-import ArchLive from "./components/ArchLive.vue";
+import { defineAsyncComponent, hydrateOnVisible } from "vue";
+import ArchLiveWidget from "./components/ArchLive.vue";
 import SheetGrid from "./SheetGrid.vue";
 import FactsSection from "./FactsSection.vue";
 import WhyCards from "./WhyCards.vue";
@@ -28,6 +29,15 @@ import TopicsRow from "./TopicsRow.vue";
 import SameSource from "./SameSource.vue";
 import ThreeDPlans from "./ThreeDPlans.vue";
 import PreviewLine from "./PreviewLine.vue";
+
+// A live example hydrates (and so compiles in the reader's browser) only once it is within 600 px
+// of the viewport (U11): /examples holds 35 of them, which hydrated as one long task at load. The
+// server's HTML (the compiled drawing, or a fence's highlighted source) is on screen until then, at
+// its own height, so nothing shifts. A page reached by a client-side navigation mounts them as before.
+const ArchLive = defineAsyncComponent({
+  loader: () => Promise.resolve(ArchLiveWidget),
+  hydrate: hydrateOnVisible({ rootMargin: "600px" }),
+});
 
 export default {
   extends: DefaultTheme,

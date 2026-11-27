@@ -12,6 +12,7 @@ import { embedSnippets, exampleImageUrl } from "./embed-snippets.js";
 import { exampleNameFor } from "./examples.js";
 import { buildChatPrompt, buildLlmPrompt, CHAT_HOSTS, type ChatHost, chatHostUrl, isChatHost } from "./llm-prompt.js";
 import { createShortLink, encodeSrc, set3dFlag, shareableHref, updateHash } from "./share.js";
+import { COPY_FAILED, type FlashOpts, undoable } from "./notice-core.js";
 import { mountSnapshots } from "./snapshots.js";
 import { KEYS, readStr, writeStr } from "./storage.js";
 import { lazyOnce } from "./lazy-once.js";
@@ -55,7 +56,7 @@ function closeMenu(menu: HTMLDetailsElement | null): void {
 interface ActionsCtx {
   getSource: () => string;
   loadSource: (src: string, refit?: boolean) => void;
-  flash: (msg: string) => void;
+  flash: (msg: string, opts?: FlashOpts) => void;
   /** The export-clean SVG (annotations stripped); empty when nothing is rendered. */
   getCleanSvg: () => string;
   getScene: () => Scene | null | undefined;
@@ -165,7 +166,7 @@ export function mountActions(ctx: ActionsCtx): ActionsHandle {
         return;
       }
       loadSource(out, false);
-      flash("Formatted");
+      flash(undoable("Formatted"));
     }),
   );
 
@@ -195,7 +196,7 @@ export function mountActions(ctx: ActionsCtx): ActionsHandle {
       result.changed
         ? m > 0
           ? `Finished: ${added}, ${m} unresolved (see Checks)`
-          : `Finished: ${added} (Ctrl+Z undoes)`
+          : undoable(`Finished: ${added}`)
         : m > 0
           ? `Finish added nothing: ${m} unresolved (see Checks)`
           : "Nothing to finish",
@@ -222,7 +223,7 @@ export function mountActions(ctx: ActionsCtx): ActionsHandle {
       flash("Link copied");
       countEvent({ e: "share", fmt: "full" });
     } catch {
-      flash("Copy failed");
+      flash(COPY_FAILED.link);
     }
   });
 
@@ -235,13 +236,36 @@ export function mountActions(ctx: ActionsCtx): ActionsHandle {
     closeMenu(els.shareMenu);
     await updateHash(getSource(), isEditing, is3d);
     const full = shareableHref();
-    const short = await createShortLink(set3dFlag(new URL(full).hash, false));
+    // The server call can take a few seconds (share.ts's timeout): say so while it runs.
+    working("Making a short link…");
+    let short: string | null;
     try {
-      await navigator.clipboard.writeText(short ?? full);
-      flash(short ? "Short link copied" : "Short link unavailable: full link copied");
+      short = await createShortLink(set3dFlag(new URL(full).hash, false));
+    } finally {
+      working(null);
+    }
+    const link = short ?? full;
+    const done = short ? "Short link copied" : "Short link unavailable: full link copied";
+    try {
+      await navigator.clipboard.writeText(link);
+      flash(done);
       countEvent({ e: "share", fmt: short ? "short" : "full" });
     } catch {
-      flash("Copy failed");
+      // The write came after an await, which a browser may refuse (Safari): the link is not lost.
+      // The notice offers it again, and a fresh press has the activation the first one spent.
+      flash(short ? "Short link ready" : "Link ready", {
+        action: {
+          label: "Copy",
+          run: () =>
+            void navigator.clipboard.writeText(link).then(
+              () => {
+                flash(done);
+                countEvent({ e: "share", fmt: short ? "short" : "full" });
+              },
+              () => flash(COPY_FAILED.link),
+            ),
+        },
+      });
     }
   });
 
@@ -254,7 +278,7 @@ export function mountActions(ctx: ActionsCtx): ActionsHandle {
       await navigator.clipboard.writeText(llmPrompt());
       flash("LLM prompt copied");
     } catch {
-      flash("Copy failed");
+      flash(COPY_FAILED.prompt);
     }
   }
 
@@ -268,7 +292,7 @@ export function mountActions(ctx: ActionsCtx): ActionsHandle {
       flash("SVG copied");
       countEvent({ e: "export", fmt: "svg-copy" });
     } catch {
-      flash("Copy failed");
+      flash(COPY_FAILED.drawing);
     }
   });
   els.copyPngBtn?.addEventListener("click", async () => {
@@ -282,7 +306,7 @@ export function mountActions(ctx: ActionsCtx): ActionsHandle {
       flash("PNG copied");
       countEvent({ e: "export", fmt: "png-copy" });
     } catch {
-      flash("Copy failed");
+      flash(COPY_FAILED.drawing);
     }
   });
 
@@ -345,7 +369,7 @@ export function mountActions(ctx: ActionsCtx): ActionsHandle {
     try {
       await navigator.clipboard.writeText(llmPrompt());
     } catch {
-      flash("Copy failed");
+      flash(COPY_FAILED.prompt);
       return;
     }
     const tab = window.open(base, "_blank");
@@ -380,14 +404,21 @@ export function mountActions(ctx: ActionsCtx): ActionsHandle {
       if (!fresh) e.preventDefault();
       navigator.clipboard.writeText(llmPrompt()).then(
         () => flash(`Full prompt copied, paste it into ${CHAT_HOSTS[host].name}`),
-        () => flash("Copy failed"),
+        () => flash(COPY_FAILED.prompt),
       );
     });
   }
   for (const link of els.chatLinks) wireChatLink(link);
 
   // Saved snapshots (history) — named stashes in localStorage.
-  const snapshots = mountSnapshots({ button: els.savedBtn, getSource, setSource: (src) => loadSource(src, true) });
+  const snapshots = mountSnapshots({
+    button: els.savedBtn,
+    getSource,
+    setSource: (src) => loadSource(src, true),
+    // Named for the plan the gallery's trigger names, and the time (snapshots.ts `snapshotName`).
+    getName: () => document.getElementById("planName")?.textContent ?? "",
+    notify: (msg, undo) => flash(msg, { action: { label: "Undo", run: undo } }),
+  });
   // The popover belongs to the menu its button sits in: it closes when that menu does.
   const savedMenu = els.savedBtn.closest("details");
   savedMenu?.addEventListener("toggle", () => {
@@ -504,7 +535,7 @@ export function mountActions(ctx: ActionsCtx): ActionsHandle {
     repairPanel.querySelector(".repair-apply")?.addEventListener("click", () => {
       loadSource(result.source, false);
       repairPanel.hidden = true;
-      flash("Repaired");
+      flash(undoable("Repaired"));
     });
   }
 
@@ -522,11 +553,14 @@ export function mountActions(ctx: ActionsCtx): ActionsHandle {
     const imageUrl = example && !getThemeOverride() ? exampleImageUrl(example, getLevel()) : undefined;
     const { embedUrl, iframe, markdown: md } = embedSnippets(base, hash, imageUrl);
     countEvent({ e: "share", fmt: "embed" });
-    const dialog = document.createElement("div");
+    // A native <dialog> opened with showModal(), as Contribute's and Make your own's are: Escape, the
+    // backdrop and × close it, the page behind is inert, and the focus goes back to Share.
+    const dialog = document.createElement("dialog");
     dialog.className = "embed-dialog";
+    dialog.setAttribute("aria-labelledby", "embedTitle");
     dialog.innerHTML =
       `<div class="embed-box">` +
-      `<div class="embed-head"><strong>Embed this plan</strong><button class="embed-close" type="button" aria-label="Close">×</button></div>` +
+      `<div class="embed-head"><strong id="embedTitle">Embed this plan</strong><button class="embed-close" type="button" aria-label="Close">×</button></div>` +
       `<label for="embedCode">iframe (HTML)</label><textarea id="embedCode" class="embed-code" readonly rows="3">${escapeHtml(iframe)}</textarea>` +
       `<label for="embedMd">${
         imageUrl
@@ -537,27 +571,45 @@ export function mountActions(ctx: ActionsCtx): ActionsHandle {
       }</label>` +
       `<input id="embedMd" class="embed-link embed-md" readonly value="${escapeHtml(md)}" />` +
       `<label for="embedLink">Live editable link</label><input id="embedLink" class="embed-link embed-live" readonly value="${escapeHtml(embedUrl)}&editable=1" />` +
-      `<div class="embed-actions"><button class="embed-copy" data-snippet="iframe" type="button">Copy iframe</button>` +
-      `<button class="embed-copy" data-snippet="md" type="button">Copy Markdown</button>` +
+      `<div class="embed-actions">${copyLabel("iframe", "Copy iframe")}${copyLabel("md", "Copy Markdown")}` +
       `<a class="embed-open" href="${embedUrl}&editable=1" target="_blank" rel="noopener">Open embed ↗</a></div>` +
       `</div>`;
+    // One at a time: a dialog still fading out from the last press goes now.
+    for (const old of document.querySelectorAll("dialog.embed-dialog")) old.remove();
     document.body.appendChild(dialog);
-    const close = () => dialog.remove();
+    const returnTo = els.shareMenu?.querySelector<HTMLElement>("summary") ?? null;
+    dialog.addEventListener("close", () => {
+      returnTo?.focus();
+      // Removed once its exit (panels.css, --dur-base-out) is over.
+      setTimeout(() => dialog.remove(), 300);
+    });
     dialog.addEventListener("click", (e) => {
       const target = e.target as Element | null;
-      if (target === dialog || target?.closest(".embed-close")) close();
+      if (target === dialog || target?.closest(".embed-close")) dialog.close();
     });
-    for (const btn of dialog.querySelectorAll<HTMLElement>(".embed-copy")) {
+    for (const btn of dialog.querySelectorAll<HTMLButtonElement>(".embed-copy")) {
+      let reset: ReturnType<typeof setTimeout> | undefined;
       btn.addEventListener("click", async () => {
         try {
           await navigator.clipboard.writeText(btn.dataset.snippet === "md" ? md : iframe);
-          flash(btn.dataset.snippet === "md" ? "Markdown copied" : "Embed snippet copied");
-          close();
+          // The dialog stays open, so the other snippet is one press away; the button says so.
+          btn.classList.add("is-done");
+          clearTimeout(reset);
+          reset = setTimeout(() => btn.classList.remove("is-done"), 1500);
         } catch {
-          flash("Copy failed");
+          flash(COPY_FAILED.snippet);
         }
       });
     }
+    dialog.showModal();
+  }
+
+  /** A copy button whose two labels share one grid cell, so "Copied" never changes its width. */
+  function copyLabel(snippet: string, label: string): string {
+    return (
+      `<button class="embed-copy copy-swap" data-snippet="${snippet}" type="button">` +
+      `<span class="copy-idle">${label}</span><span class="copy-done">Copied</span></button>`
+    );
   }
 
   /**
@@ -695,22 +747,47 @@ export function mountActions(ctx: ActionsCtx): ActionsHandle {
   };
 }
 
-/** Draggable split divider over the pane seam (desktop two-column layout). */
+/** Draggable split divider over the pane seam (desktop two-column layout). It takes the focus too:
+ *  ← → move it 2 % (Shift: 10 %), Home / End to its limits, Enter or a double-click back to half. */
 function mountDivider(): void {
   const main = document.querySelector<HTMLElement>("main")!;
   const divider = document.createElement("div");
   divider.className = "divider";
   divider.setAttribute("role", "separator");
   divider.setAttribute("aria-label", "Resize panes");
+  divider.setAttribute("aria-orientation", "vertical");
+  divider.setAttribute("aria-valuemin", "20");
+  divider.setAttribute("aria-valuemax", "80");
+  divider.tabIndex = 0;
   main.appendChild(divider);
 
   const applyRatio = (r: number) => {
     main.style.gridTemplateColumns = `${r}fr ${1 - r}fr`;
+    // The status notice centres itself over the output pane from this (chrome.css).
+    main.style.setProperty("--split", `${r * 100}%`);
     divider.style.left = `${r * 100}%`;
+    divider.setAttribute("aria-valuenow", String(Math.round(r * 100)));
   };
   let ratio = parseFloat(readStr(KEYS.split) ?? "");
   if (!(ratio > 0.1 && ratio < 0.9)) ratio = 0.5;
   applyRatio(ratio);
+  const setRatio = (r: number) => {
+    ratio = Math.min(0.8, Math.max(0.2, r));
+    applyRatio(ratio);
+    writeStr(KEYS.split, String(ratio));
+  };
+
+  divider.addEventListener("keydown", (e) => {
+    const step = e.shiftKey ? 0.1 : 0.02;
+    if (e.key === "ArrowLeft") setRatio(ratio - step);
+    else if (e.key === "ArrowRight") setRatio(ratio + step);
+    else if (e.key === "Home") setRatio(0.2);
+    else if (e.key === "End") setRatio(0.8);
+    else if (e.key === "Enter") setRatio(0.5);
+    else return;
+    e.preventDefault();
+  });
+  divider.addEventListener("dblclick", () => setRatio(0.5));
 
   divider.addEventListener("pointerdown", (e) => {
     if (window.innerWidth <= 900) return; // one-view phone layout — divider is inert

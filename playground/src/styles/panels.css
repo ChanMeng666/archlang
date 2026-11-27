@@ -32,7 +32,7 @@
    motion, and this rule is guarded too). */
 @media (prefers-reduced-motion: no-preference) {
   .pg-fade-in {
-    animation: pg-fade-in 180ms ease-out;
+    animation: pg-fade-in var(--dur-fast) var(--ease-out);
   }
 }
 @keyframes pg-fade-in {
@@ -183,12 +183,15 @@
 }
 .pz-toolbar button[data-pz="out"],
 .pz-toolbar button[data-pz="in"],
-.pz-toolbar button[data-pz="fit"],
 .pz-toolbar button[data-pz="full"] {
   font-family: var(--font-mono);
 }
-/* The drawing's two layers, Checks (the review rings) and Paths: caps micro-labels, the pressed
-   one in the toolbar's active dress. */
+.pz-toolbar button[hidden] {
+  display: none;
+}
+/* The drawing's two layers, Checks (the review rings) and Paths, and Fit (a word, so it never reads
+   as the fullscreen glyph beside it): caps micro-labels, a pressed layer in the toolbar's active dress. */
+.pz-toolbar button[data-pz="fit"],
 .pz-toolbar button[data-layer="checks"],
 .pz-toolbar button[data-pz="paths"] {
   font-family: var(--font-display);
@@ -198,13 +201,11 @@
   text-transform: uppercase;
   letter-spacing: 0.08em;
 }
-.pz-toolbar button.active {
-  background: var(--redline);
-  color: #fff;
-}
+/* Pressed is ink, as every other pressed chip on the stage is; redline stays for errors (U15). */
+.pz-toolbar button.active,
 .pz-toolbar button.active:hover {
-  background: var(--redline);
-  color: #fff;
+  background: var(--ink);
+  color: var(--paper);
 }
 .pz-sep {
   width: 1px;
@@ -1038,7 +1039,6 @@
 .diag-toggle {
   font-size: 10px;
   color: var(--ink-muted);
-  transition: transform 0.15s;
   flex: none;
 }
 .diagrow.open .diag-toggle {
@@ -1198,28 +1198,25 @@
   color: var(--ok);
 }
 
-/* embed snippet dialog — paper sheet modal */
+/* embed snippet dialog — paper sheet modal: a native <dialog> (actions.ts), dressed as Contribute's */
 .embed-dialog {
-  position: fixed;
-  inset: 0;
-  z-index: 60;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: color-mix(in srgb, var(--ink) 45%, transparent);
-  padding: 16px;
-}
-.embed-box {
-  width: min(560px, 100%);
-  background: var(--paper-panel);
+  width: min(560px, calc(100vw - 32px));
+  max-height: calc(100dvh - 32px);
+  padding: 0;
   border: 1px solid var(--hairline);
   border-radius: 3px;
+  background: var(--paper-panel);
+  color: var(--ink);
   box-shadow: 0 12px 40px rgb(28 36 48 / 0.28);
-  padding: 0;
+  overflow: auto;
+}
+.embed-dialog::backdrop {
+  background: color-mix(in srgb, var(--ink) 45%, transparent);
+}
+.embed-box {
   display: flex;
   flex-direction: column;
   gap: 0;
-  overflow: hidden;
 }
 /* title strip — micro-label header with a hairline bottom rule */
 .embed-head {
@@ -1375,7 +1372,7 @@
 .snap-row {
   display: flex;
   align-items: stretch;
-  gap: 4px;
+  gap: 8px;
 }
 .snap-restore {
   flex: 1;
@@ -1408,8 +1405,9 @@
 }
 .snap-del {
   font: inherit;
-  font-size: 12px;
-  width: 28px;
+  /* the word, not a cross (× is Close everywhere else) */
+  font-size: 11px;
+  padding: 0 6px;
   border: 1px solid transparent;
   border-radius: 2px;
   background: transparent;
@@ -1567,7 +1565,6 @@
   position: absolute;
   z-index: 4;
   opacity: 0.62;
-  transition: opacity 0.18s ease;
 }
 .p3d-stage:hover .p3d-float,
 .p3d-float:focus-within,
@@ -1816,7 +1813,6 @@
   font-size: 13px;
   text-align: center;
   pointer-events: none;
-  transition: opacity 0.4s ease;
 }
 .p3d-coach svg {
   fill: none;
@@ -1909,12 +1905,6 @@
 [hidden].p3d-btn,
 [hidden].p3d-lost {
   display: none;
-}
-@media (prefers-reduced-motion: reduce) {
-  .p3d-float,
-  .p3d-coach {
-    transition: none;
-  }
 }
 /* The knobs over the 3D preview (card X5) sit in its top-left corner (under the Plan | 3D switch
    in view mode); on a phone they stay the sheet across the foot, folded to its heading, and the
@@ -2317,6 +2307,7 @@ html:not([data-mode="edit"]) .p3d-stage > .knobs {
   /* No text under 12 px on a phone (ruling MP-D2): the panels' micro-labels and small mono. */
   .tv-h,
   .room-tip,
+  .pz-toolbar button[data-pz="fit"],
   .pz-toolbar button[data-layer="checks"],
   .pz-toolbar button[data-pz="paths"],
   .shared-notice-dismiss,
@@ -2393,6 +2384,7 @@ html:not([data-mode="edit"]) .p3d-stage > .knobs {
 
 /* The narrowest phones: the two layer labels a little tighter, so the toolbar stays one row. */
 @media (max-width: 380px) {
+  .pz-toolbar button[data-pz="fit"],
   .pz-toolbar button[data-layer="checks"],
   .pz-toolbar button[data-pz="paths"] {
     padding: 0 4px;
@@ -2417,6 +2409,7 @@ html:not([data-mode="edit"]) .p3d-stage > .knobs {
   }
   .lint-controls select,
   .repair-btn,
+  .intent-from-plan,
   .sug-insert,
   .checks-list button,
   .describe-json summary,
@@ -2444,5 +2437,410 @@ html:not([data-mode="edit"]) .p3d-stage > .knobs {
   .knobs-head {
     padding-top: 13px;
     padding-bottom: 13px;
+  }
+}
+
+/* ══ Motion: the shared language (tokens.css), one rule per kind of change ═══════════════════════
+   Enter at --dur-* on --ease-out; exit at the matching --dur-*-out on --ease-in; A to B on
+   --ease-in-out. Transform and opacity only, and colour on controls. Reversible changes are CSS
+   transitions. Wheel, drag, pinch, knob and divider drags and typing recompiles never animate.
+   Under reduced motion every duration is 0ms (tokens.css), so each change lands at once and no
+   offset is ever seen. */
+
+/* M1, M3: a control's hover and pressed colours fade in at --dur-press. */
+:is(
+  .pz-toolbar button,
+  .lv-btn,
+  .stage-switch button,
+  .tab,
+  .mview,
+  .gal-card,
+  .checks-list button,
+  .diag-head,
+  .stage-status-x,
+  .snap-restore,
+  .snap-del,
+  .snap-save,
+  .embed-close,
+  .embed-open,
+  .mo-close,
+  .mo-tabs [role="tab"],
+  .shared-notice-dismiss,
+  .p3d-info-btn
+) {
+  transition:
+    background-color var(--dur-press) var(--ease-out),
+    border-color var(--dur-press) var(--ease-out),
+    color var(--dur-press) var(--ease-out);
+}
+/* the tab underline's colour at --dur-fast */
+:is(.tab, .mview) {
+  transition:
+    background-color var(--dur-press) var(--ease-out),
+    border-color var(--dur-fast) var(--ease-out),
+    color var(--dur-press) var(--ease-out);
+}
+/* M2: boxed buttons press with a scale; chips, tabs, rows and cards with a tint (a scale there reads
+   as the control coming apart). */
+:is(
+  .mo-copybtn,
+  .mo-go,
+  .repair-btn,
+  .repair-apply,
+  .diag-apply,
+  .embed-copy,
+  .p3d-btn,
+  .contrib-dialog button,
+  .stage-status-act
+) {
+  transition:
+    background-color var(--dur-press) var(--ease-out),
+    border-color var(--dur-press) var(--ease-out),
+    color var(--dur-press) var(--ease-out),
+    scale var(--dur-press) var(--ease-out),
+    opacity var(--dur-fast) var(--ease-out);
+}
+/* The press scale is a mouse's: a tapped control keeps :active in touch browsers, and would
+   stay shrunk under the finger. Touch gets the colour tint. */
+@media (pointer: fine) {
+  :is(
+    .mo-copybtn,
+    .mo-go,
+    .repair-btn,
+    .repair-apply,
+    .diag-apply,
+    .embed-copy,
+    .p3d-btn,
+    .contrib-dialog button
+  ):active:not(:disabled) {
+    scale: var(--press-scale);
+  }
+}
+:is(
+  .pz-toolbar button,
+  .lv-btn,
+  .stage-switch button,
+  .tab,
+  .mview,
+  .checks-list button,
+  .diag-head,
+  .snap-restore
+):active:not(.active, [aria-pressed="true"], [aria-selected="true"]) {
+  background-color: color-mix(in srgb, var(--ink) 10%, transparent);
+}
+.gal-card:active {
+  background-color: color-mix(in srgb, var(--ink) 6%, var(--paper-panel));
+}
+
+/* M4: a menu or a popover comes in from its trigger's side; it closes at once, on purpose. */
+:is(.tools[open] .tools-panel, .gal[open] .gal-panel, .snap-pop, .room-card, .checks:not(.checks-docked), .p3d-info) {
+  transition:
+    opacity var(--dur-fast) var(--ease-out),
+    translate var(--dur-fast) var(--ease-out);
+}
+@starting-style {
+  :is(.tools[open] .tools-panel, .gal[open] .gal-panel, .snap-pop, .room-card, .checks:not(.checks-docked)) {
+    opacity: 0;
+    translate: 0 -4px;
+  }
+  /* the 3D preview's ⓘ card opens upward, from its button below it */
+  .p3d-info {
+    opacity: 0;
+    translate: 0 4px;
+  }
+}
+/* M5: on a phone the gallery is a sheet from the bottom edge: it rises 24 px (not its height). */
+@media (max-width: 900px) {
+  .gal[open] .gal-panel {
+    transition:
+      opacity var(--dur-base) var(--ease-out),
+      translate var(--dur-base) var(--ease-out);
+  }
+  @starting-style {
+    .gal[open] .gal-panel {
+      opacity: 0;
+      translate: 0 24px;
+    }
+  }
+}
+
+/* M6: a dialog (Make your own, Contribute, Embed) and its backdrop come in together and go a
+   little quicker; `display` and `overlay` are held for the exit, so it is seen. */
+:is(.mo, .contrib-dialog, .embed-dialog) {
+  opacity: 0;
+  translate: 0 8px;
+  transition:
+    opacity var(--dur-base-out) var(--ease-in),
+    translate var(--dur-base-out) var(--ease-in),
+    overlay var(--dur-base-out) allow-discrete,
+    display var(--dur-base-out) allow-discrete;
+}
+:is(.mo, .contrib-dialog, .embed-dialog)[open] {
+  opacity: 1;
+  translate: 0 0;
+  transition:
+    opacity var(--dur-base) var(--ease-out),
+    translate var(--dur-base) var(--ease-out),
+    overlay var(--dur-base) allow-discrete,
+    display var(--dur-base) allow-discrete;
+}
+@starting-style {
+  :is(.mo, .contrib-dialog, .embed-dialog)[open] {
+    opacity: 0;
+    translate: 0 8px;
+  }
+}
+:is(.mo, .contrib-dialog, .embed-dialog)::backdrop {
+  opacity: 0;
+  transition:
+    opacity var(--dur-base-out) var(--ease-in),
+    overlay var(--dur-base-out) allow-discrete,
+    display var(--dur-base-out) allow-discrete;
+}
+:is(.mo, .contrib-dialog, .embed-dialog)[open]::backdrop {
+  opacity: 1;
+  transition:
+    opacity var(--dur-base) var(--ease-out),
+    overlay var(--dur-base) allow-discrete,
+    display var(--dur-base) allow-discrete;
+}
+@starting-style {
+  :is(.mo, .contrib-dialog, .embed-dialog)[open]::backdrop {
+    opacity: 0;
+  }
+}
+
+/* M10: the shared-plan strip fades before it goes (shared-notice.ts removes it after). */
+.shared-notice {
+  transition: opacity var(--dur-press) var(--ease-in);
+}
+.shared-notice-gone {
+  opacity: 0;
+}
+
+/* M12, M13: the buttons' zoom glides at --dur-fast, Fit and a re-fit after the stage changed size
+   at --dur-base (pan-zoom.ts adds the class; never under reduced motion). */
+.pz-stage.pz-glide-fast {
+  transition: transform var(--dur-fast) var(--ease-out);
+}
+.pz-stage.pz-glide-base {
+  transition: transform var(--dur-base) var(--ease-in-out);
+}
+/* M13: Source brings the editor in from the left, at the seam; it leaves at once. */
+@media (min-width: 900.02px) {
+  html[data-mode="edit"] main > .pane:first-child {
+    transition:
+      opacity var(--dur-base) var(--ease-out),
+      translate var(--dur-base) var(--ease-out);
+  }
+  @starting-style {
+    html[data-mode="edit"] main > .pane:first-child {
+      opacity: 0;
+      translate: -12px 0;
+    }
+  }
+}
+
+/* M17 (U19): the source does not compile, so the drawing on screen is the last good plan's: it
+   dims after 600 ms (so a half-typed statement does not flicker it) and is whole again at once. */
+.pz-stage > svg {
+  transition: opacity var(--dur-fast-out) var(--ease-in);
+}
+html[data-stale] .pz-stage > svg {
+  opacity: 0.55;
+  transition: opacity var(--dur-base) var(--ease-out) 600ms;
+}
+
+/* M20: a diagnostic row's detail fades in as its caret turns. */
+.diag-toggle {
+  transition: transform var(--dur-fast) var(--ease-out);
+}
+.diag-detail {
+  transition: opacity var(--dur-fast) var(--ease-out);
+}
+@starting-style {
+  .diagrow.open .diag-detail {
+    opacity: 0;
+  }
+}
+
+/* M26: the 3D preview's floating controls dim and wake; its coach mark comes in and fades out. */
+.p3d-float {
+  transition: opacity var(--dur-fast) var(--ease-out);
+}
+.p3d-coach {
+  transition: opacity var(--dur-base) var(--ease-out);
+}
+@starting-style {
+  .p3d-coach {
+    opacity: 0;
+  }
+}
+.p3d-coach.p3d-coach-gone {
+  transition: opacity var(--dur-slow-out) var(--ease-in);
+}
+
+/* M25: a copy button's two labels share one grid cell, so "Copied" never changes its width; they
+   cross-fade. The hidden one is out of the accessible name too (visibility). */
+.copy-swap {
+  display: inline-grid;
+}
+.copy-swap > span {
+  grid-area: 1 / 1;
+  transition:
+    opacity var(--dur-fast) var(--ease-out),
+    visibility 0s linear 0s;
+}
+.copy-swap > .copy-done,
+.copy-swap.is-done > .copy-idle {
+  opacity: 0;
+  visibility: hidden;
+  transition:
+    opacity var(--dur-fast-out) var(--ease-in),
+    visibility 0s linear var(--dur-fast-out);
+}
+.copy-swap.is-done > .copy-done {
+  opacity: 1;
+  visibility: visible;
+}
+
+/* Intent's "Use this plan's facts": a text button beside Check (U9). */
+.intent-from-plan {
+  font: inherit;
+  font-size: 12px;
+  padding: 4px 2px;
+  border: 0;
+  background: transparent;
+  color: var(--ink-muted);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  cursor: pointer;
+  transition: color var(--dur-press) var(--ease-out);
+}
+.intent-from-plan:hover {
+  color: var(--ink);
+}
+.intent-from-plan:focus-visible {
+  outline: 2px solid var(--redline-ink);
+  outline-offset: 2px;
+}
+
+/* The knobs' Reset (U23): a text button at the heading's right end, while a knob is off its arrival
+   value. */
+.knobs-reset {
+  position: absolute;
+  top: 4px;
+  right: 6px;
+  font: inherit;
+  font-size: 11px;
+  padding: 2px 6px;
+  border: 0;
+  border-radius: 2px;
+  background: transparent;
+  color: var(--ink-muted);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  cursor: pointer;
+  transition: color var(--dur-press) var(--ease-out);
+}
+.knobs-reset:hover {
+  color: var(--ink);
+}
+.knobs-reset:focus-visible {
+  outline: 2px solid var(--redline-ink);
+  outline-offset: 1px;
+}
+.knobs-reset[hidden],
+.knobs:not([open]) > .knobs-reset {
+  display: none;
+}
+@media (max-width: 900px), (pointer: coarse) {
+  .knobs-reset {
+    top: 0;
+    min-height: 44px;
+    min-width: 44px;
+  }
+}
+
+/* A view that did not load (U29): its sentence and a Try again button. */
+.load-failed {
+  margin: 16px;
+  color: var(--ink);
+  font-size: 13px;
+}
+.load-retry {
+  margin-left: 6px;
+  min-height: 30px;
+  padding: 2px 10px;
+  border: 1px solid var(--src-rule);
+  border-radius: 2px;
+  background: var(--paper-panel);
+  color: var(--ink);
+  font: inherit;
+  cursor: pointer;
+  transition:
+    background-color var(--dur-press) var(--ease-out),
+    scale var(--dur-press) var(--ease-out);
+}
+.load-retry:hover {
+  background: color-mix(in srgb, var(--ink) 6%, var(--paper-panel));
+}
+/* The press scale is a mouse's: a tapped control keeps :active in touch browsers, and would
+   stay shrunk under the finger. Touch gets the colour tint. */
+@media (pointer: fine) {
+  .load-retry:active {
+    scale: var(--press-scale);
+  }
+}
+.load-retry:focus-visible {
+  outline: 2px solid var(--redline-ink);
+  outline-offset: 1px;
+}
+@media (max-width: 900px), (pointer: coarse) {
+  .load-retry {
+    min-height: 44px;
+  }
+}
+
+/* Touch press feedback: a finger gets no press scale (see the pointer: fine rules), so the boxed
+   buttons tint while pressed, at --dur-press: an inset shadow of their own text colour
+   (currentColor: no fixed hex) over whatever ground they have, solid or not. */
+@media (pointer: coarse) {
+  :is(
+    .hd-btn,
+    .tools-panel button,
+    .mo-copybtn,
+    .mo-go,
+    .repair-btn,
+    .repair-apply,
+    .diag-apply,
+    .embed-copy,
+    .p3d-btn,
+    .contrib-dialog button,
+    .stage-status-act,
+    .load-retry
+  ) {
+    transition:
+      background-color var(--dur-press) var(--ease-out),
+      border-color var(--dur-press) var(--ease-out),
+      color var(--dur-press) var(--ease-out),
+      box-shadow var(--dur-press) var(--ease-out),
+      opacity var(--dur-fast) var(--ease-out);
+  }
+  :is(
+    .hd-btn,
+    .tools-panel button,
+    .mo-copybtn,
+    .mo-go,
+    .repair-btn,
+    .repair-apply,
+    .diag-apply,
+    .embed-copy,
+    .p3d-btn,
+    .contrib-dialog button,
+    .stage-status-act,
+    .load-retry
+  ):active:not(:disabled) {
+    box-shadow: inset 0 0 0 100vmax color-mix(in srgb, currentColor 14%, transparent);
   }
 }

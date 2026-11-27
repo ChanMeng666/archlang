@@ -107,8 +107,8 @@ test.describe("checks", () => {
     await expect(checksBtn(page)).toHaveAttribute("aria-pressed", "false");
     await expect(overlay(page)).toHaveCount(0);
     await turnOn(page);
-    // The default plan is clean: nothing to ring, and the rules read are named.
-    await expect(page.locator(".checks-head")).toHaveText("Checks (default checks): nothing to ring");
+    // The default plan is clean: nothing found, and the rules read are named.
+    await expect(page.locator(".checks-head")).toHaveText("Checks · default rules: nothing found");
     await page.reload();
     await waitForPlan(page);
     await expect(checksBtn(page)).toHaveAttribute("aria-pressed", "false");
@@ -186,7 +186,7 @@ test.describe("checks", () => {
     await page.goto(`/${await shareHash(CHECKS_FIXED)}`);
     await waitForPlan(page);
     await turnOn(page);
-    await expect(page.locator(".checks-head")).toHaveText("Checks (default checks): nothing to ring");
+    await expect(page.locator(".checks-head")).toHaveText("Checks · default rules: nothing found");
     await expect(page.locator(".pz-stage svg g.pg-checks-rings > *")).toHaveCount(0);
   });
 

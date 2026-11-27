@@ -17,6 +17,7 @@ import {
   validateIntent,
   type DescribeOptions,
   type IntentCheckResult,
+  type SceneSummary,
 } from "archlang";
 
 /**
@@ -35,6 +36,25 @@ export const STARTER_INTENT = `{
   "totalAreaM2": { "min": 44, "max": 54, "source": "around 49 m² total" },
   "reachable": true
 }`;
+
+/**
+ * A starter brief cut from the plan on screen (U9), so an untouched Intent section judges the plan
+ * against its own facts rather than another plan's: its rooms (every storey's), its floor area within
+ * ±10 % (centreline, every storey: the figure the total-area assertion reads), and every room
+ * reachable. Pretty-printed, as the hand-written starter is.
+ */
+export function briefFromPlan(summary: SceneSummary): string {
+  const levels = (summary as { levels?: { totals: { rooms: number } }[] }).levels;
+  const rooms = levels?.length ? levels.reduce((n, l) => n + l.totals.rooms, 0) : summary.totals.rooms;
+  const t = summary.totals as { floor_area_m2: number; floor_area_all_levels_m2?: number };
+  const area = t.floor_area_all_levels_m2 ?? t.floor_area_m2;
+  const band = {
+    min: Math.floor(area * 0.9),
+    max: Math.ceil(area * 1.1),
+    source: `around ${Math.round(area)} m² total`,
+  };
+  return JSON.stringify({ rooms, totalAreaM2: band, reachable: true }, null, 2);
+}
 
 const pct = (n: number, d: number): number => (d === 0 ? 0 : Math.round((n / d) * 100));
 

@@ -10,6 +10,7 @@
  */
 import {
   applyFixes,
+  describe,
   LINT_PROFILE_NAMES,
   rankFixes,
   suggestTopology,
@@ -21,7 +22,7 @@ import {
 // the editor's requests: the page fetches it with edit mode, before the editor's first request.
 import { lint, LINT_URL } from "./lint-core.js";
 import { isolateHistory } from "@codemirror/commands";
-import type { EditorView } from "@codemirror/view";
+import { EditorView } from "@codemirror/view";
 import { createEditor } from "./editor-setup.js";
 import { renderDescribe } from "./describe-panel.js";
 import { renderLint } from "./lint-panel.js";
@@ -29,8 +30,9 @@ import { renderDiagnostics } from "./diagnostics-panel.js";
 import { offerContribution } from "./contribute.js";
 import { countEvent, eventCodes } from "./telemetry.js";
 import { isNarrow, type MobileViewsHandle } from "./mobile-views.js";
-import { renderIntent, STARTER_INTENT } from "./intent-panel.js";
+import { briefFromPlan, renderIntent, STARTER_INTENT } from "./intent-panel.js";
 import { renderSuggest } from "./suggest-panel.js";
+import { undoable } from "./notice-core.js";
 import { KEYS, readStr, writeStr } from "./storage.js";
 
 export interface EditCtx {
@@ -115,6 +117,28 @@ export function mountEditMode(ctx: EditCtx): EditMode {
   }
   syncLintCaption();
 
+  /** A problem must outlive this, with no change to the document, before the drawer opens for it. */
+  const DRAWER_AFTER_MS = 700;
+  let drawerTimer: ReturnType<typeof setTimeout> | undefined;
+  /** Draw the drawer for `source`; if it opened, closed or changed height under a focused editor,
+   *  keep the caret's line in view (the editor's visible bottom just moved). */
+  function paintDrawer(source: string, diagnostics: Diagnostic[]) {
+    const before = errorsEl.offsetHeight;
+    lastDiagRows = renderDiagnostics(errorsEl, diagnostics, source);
+    // A plan with an error or a warning here may be sent to improve ArchLang, if the user says so
+    // in the dialog the offer opens (contribute.ts, ruling RM-D87).
+    if (lastDiagRows.length > 0)
+      offerContribution(
+        errorsEl,
+        lastDiagRows.map((d) => d.code),
+        { getSource: currentSource, flash },
+      );
+    if (errorsEl.offsetHeight !== before && view.hasFocus)
+      view.dispatch({
+        effects: EditorView.scrollIntoView(view.state.selection.main.head, { y: "nearest", yMargin: 24 }),
+      });
+  }
+
   /** Diagnostics in panel display order — `data-i` on a row indexes into this. */
   let lastDiagRows: Diagnostic[] = [];
   /** Same, for the Lint section's rows (some lint rules carry their own applicable fix). */
@@ -127,10 +151,15 @@ export function mountEditMode(ctx: EditCtx): EditMode {
     syncLintCaption();
   }
 
+  /** When the document last changed (the drawer waits for the typing to stop, `afterCompile`). */
+  let changedAt = 0;
   const view: EditorView = createEditor({
     parent: document.getElementById("editor")!,
     doc: ctx.doc,
-    onDocChanged: ctx.onDocChanged,
+    onDocChanged: (text) => {
+      changedAt = performance.now();
+      ctx.onDocChanged(text);
+    },
     diagnosticsOf: ctx.gutterFor,
   });
   const currentSource = () => view.state.doc.toString();
@@ -157,7 +186,7 @@ export function mountEditMode(ctx: EditCtx): EditMode {
       return;
     }
     loadSource(report.output, false);
-    flash(best.title);
+    flash(undoable(best.title));
     countEvent({ e: "fix_applied", codes: eventCodes([rows[index]?.code]) });
   }
 
@@ -196,20 +225,46 @@ export function mountEditMode(ctx: EditCtx): EditMode {
     const now = suggestTopology(src).find((s) => s.level === level && s.candidates.some((c) => c.insertText === stmt));
     const close = now?.insertAt ?? (level === undefined && now ? src.lastIndexOf("}") : -1);
     if (!now || close < 0 || src[close] !== "}") {
-      flash("The plan changed: press Suggest again");
+      // The suggestions on screen are of an older plan: draw this plan's, then say so.
+      if (suggestPanel) renderSuggest(suggestPanel, suggestTopology(src));
+      flash("The plan changed — suggestions updated");
       return;
     }
     const next = `${src.slice(0, close)}  ${stmt}\n${src.slice(close)}`;
     loadSource(next, false);
     // The suggestions are the plan's, so they are drawn again for the plan the insert made.
     if (suggestPanel) renderSuggest(suggestPanel, suggestTopology(next));
-    flash("Statement inserted");
+    flash(undoable("Statement inserted"));
   });
 
   // ---- Intent (the brief as a contract) ----
-  intentSrc.value = STARTER_INTENT;
+  // The starter brief is the plan on screen's own facts (U9) until the visitor types in it; a plan
+  // replaced (the gallery, a snapshot) brings its own. "Use this plan's facts" does the same on demand.
+  let intentTouched = false;
+  const briefFor = (src: string): string => {
+    try {
+      return briefFromPlan(describe(src));
+    } catch {
+      return STARTER_INTENT;
+    }
+  };
+  intentSrc.value = briefFor(ctx.doc);
+  intentSrc.addEventListener("input", () => {
+    intentTouched = true;
+  });
   const runIntent = () => renderIntent(intentOutput, currentSource(), intentSrc.value);
   intentRunBtn.addEventListener("click", runIntent);
+  document.getElementById("intentFromPlan")?.addEventListener("click", () => {
+    intentSrc.value = briefFor(currentSource());
+    intentTouched = false;
+    runIntent();
+  });
+  /** A plan replaced: an untouched brief follows it. */
+  const followPlan = (src: string) => {
+    if (intentTouched) return;
+    intentSrc.value = briefFor(src);
+    if (intentOutput.innerHTML) renderIntent(intentOutput, src, intentSrc.value);
+  };
   // Check once when the Checks tab is first opened, so the Intent section is never empty.
   document.getElementById("tab-checks")?.addEventListener("click", () => {
     if (!intentOutput.innerHTML) runIntent();
@@ -249,6 +304,7 @@ export function mountEditMode(ctx: EditCtx): EditMode {
         changes: { from: 0, to: view.state.doc.length, insert: src },
         annotations: isolateHistory.of("full"),
       });
+      followPlan(src);
     },
     setDoc(src) {
       // Only the characters that differ change, so the caret, the scroll and the folds keep
@@ -303,16 +359,19 @@ export function mountEditMode(ctx: EditCtx): EditMode {
       lastLintRows = renderLint(lintOutput, shown, ok, activeLevel, lintDiags.length);
     },
     afterCompile(source, diagnostics) {
-      lastDiagRows = renderDiagnostics(errorsEl, diagnostics, source);
-      // A plan with an error or a warning here may be sent to improve ArchLang, if the user says so
-      // in the dialog the offer opens (contribute.ts, ruling RM-D87).
-      if (lastDiagRows.length > 0)
-        offerContribution(
-          errorsEl,
-          lastDiagRows.map((d) => d.code),
-          { getSource: currentSource, flash },
-        );
-      mobileViews.setProblemCount(lastDiagRows.length);
+      // The drawer (U1): a half-typed statement must not open it under the caret. It opens once
+      // the problems have outlived DRAWER_AFTER_MS with no change to the document; it closes at
+      // once, and an open drawer follows each compile at once. The gutter's squiggles, the Source
+      // dot and the phone's Checks count say so at once either way.
+      clearTimeout(drawerTimer);
+      const count = diagnostics.filter((d) => d.severity === "error" || d.severity === "warning").length;
+      mobileViews.setProblemCount(count);
+      const wait = DRAWER_AFTER_MS - (performance.now() - changedAt);
+      if (count === 0 || errorsEl.classList.contains("show") || wait <= 0) paintDrawer(source, diagnostics);
+      else
+        drawerTimer = setTimeout(() => {
+          if (currentSource() === source) paintDrawer(source, diagnostics);
+        }, wait);
       // Keep an already-run intent verdict live as the source changes (but don't run it
       // unprompted — an untouched Intent tab stays empty until you ask).
       if (intentOutput.innerHTML) renderIntent(intentOutput, source, intentSrc.value);

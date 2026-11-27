@@ -187,13 +187,13 @@
   font-weight: 550;
   text-decoration: none;
   transition:
-    transform 0.12s,
-    background 0.2s,
-    border-color 0.2s,
-    color 0.2s;
+    scale var(--dur-press) var(--ease-out),
+    background-color var(--dur-press) var(--ease-out),
+    border-color var(--dur-press) var(--ease-out),
+    color var(--dur-press) var(--ease-out);
 }
 .vp-doc .agents__btn:active {
-  transform: translateY(1px);
+  scale: var(--press-scale);
 }
 .vp-doc .agents__btn--solid {
   /* white-on-redline-ink = 6.5:1. (These used to be fixed hexes because the band

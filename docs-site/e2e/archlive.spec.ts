@@ -68,7 +68,7 @@ test.describe("the widget hydrates into a live compiler", { tag: "@prod" }, () =
     // just the renderer. (This line is also where a `describe()` signature change would
     // surface first; it silently degrades to "—" on a throw.)
     await expect(page.locator(".archlive-facts").first()).not.toHaveText("—");
-    await expect(page.locator(".archlive-facts").first()).toContainText("rooms");
+    await expect(page.locator(".archlive-facts").first()).toContainText(/^\d+ rooms? · /);
   });
 });
 
@@ -88,45 +88,44 @@ test.describe("editing recompiles", () => {
     expect(problems.pageErrors, "the widget must not throw while recompiling").toEqual([]);
   });
 
-  test("a source with an error shows the message instead of a stale drawing", async ({ page }) => {
+  test("a source with an error keeps the last drawing, marked stale, and says what is wrong", async ({ page }) => {
     await page.goto(EXPLICIT_PAGE);
     await expect(page.locator(".archlive-svg svg").first()).toBeVisible();
+    const widget = page.locator(".archlive").first();
+    const height = (await widget.boundingBox())!.height;
     await setArchLiveSource(page, 0, 'plan "E2E" {\n  units mm\n  romo at (0,0) size 4000x3000\n}');
-    // `svg` is "" whenever there are errors, so the error pane takes over — a reader never
-    // sees a drawing that does not match the source in front of them.
-    await expect(page.locator(".archlive-error").first()).toBeVisible();
-    await expect(page.locator(".archlive-svg svg")).toHaveCount(0);
+    // The drawing stays, but it is marked as the last one that compiled (dimmed, audit U10), so a
+    // reader never takes it for the source in front of them: the error's line says why, with its
+    // code and place, as the CLI prints it.
+    const error = widget.locator(".archlive-error.is-shown");
+    await expect(error).toHaveText(/^E_[A-Z_]+ .+ \d+:\d+$/);
+    await expect(widget.locator(".archlive-svg.is-stale svg")).toHaveCount(1);
+    // …and the widget does not change height under the reader.
+    expect((await widget.boundingBox())!.height).toBe(height);
+    // Fixed again: whole, and the line empty.
+    await setArchLiveSource(page, 0, labelledPlan("Fixed"));
+    await expect(widget.locator(".archlive-svg.is-stale")).toHaveCount(0);
+    await expect(widget.locator(".archlive-error")).toHaveText("");
   });
 });
 
 test.describe("Open in Playground mints a decodable link", () => {
   test("the #z= payload round-trips back to exactly what is on screen", async ({ page }) => {
-    // `openInPlayground` calls `window.open(url, "_blank", "noopener")`. Record the call
-    // rather than letting a real tab navigate to the live playground: this asserts the
-    // wiring AND the payload with no network dependency.
-    await page.addInitScript(() => {
-      (window as unknown as { __opened: unknown[] }).__opened = [];
-      window.open = (...args: unknown[]) => {
-        (window as unknown as { __opened: unknown[] }).__opened.push(args);
-        return null;
-      };
-    });
+    // "Open in Playground" is a real link (audit U26): a new tab with no await before it opens,
+    // and an href that is always the plan on screen. Its href is read, not followed, so this
+    // asserts the wiring AND the payload with no network dependency.
     await page.goto(EXPLICIT_PAGE);
     await expect(page.locator(".archlive-svg svg").first()).toBeVisible();
 
     // Use a source of our own so the assertion is on an exact, known string.
     const source = labelledPlan("Round Trip");
     await setArchLiveSource(page, 0, source);
-    await page.locator(".archlive-open").first().click();
-
-    const opened = (await page.evaluate(() => (window as unknown as { __opened: unknown[] }).__opened)) as Array<
-      [string, string, string]
-    >;
-    expect(opened, "the button must call window.open exactly once").toHaveLength(1);
-    const [url, target, features] = opened[0]!;
-    expect(target).toBe("_blank");
-    expect(features).toBe("noopener");
-    expect(url.startsWith("https://playground.archlang.uk/#z=")).toBe(true);
+    const open = page.locator(".archlive-open").first();
+    await expect(open).toHaveAttribute("target", "_blank");
+    await expect(open).toHaveAttribute("rel", "noopener");
+    // At once the synchronous `#src=` form, then (200 ms after the edit) the shorter `#z=` one.
+    await expect(open).toHaveAttribute("href", /^https:\/\/playground\.archlang\.uk\/#z=/);
+    const url = (await open.getAttribute("href"))!;
 
     // THE POINT OF THIS SPEC: the playground's own decoder gets the source back, byte for
     // byte. A scheme drift in the component's inline copy (gzip for deflate-raw, standard
@@ -138,26 +137,20 @@ test.describe("Open in Playground mints a decodable link", () => {
   });
 
   test("the link survives a real example, not just a toy plan", async ({ page }) => {
-    await page.addInitScript(() => {
-      (window as unknown as { __opened: unknown[] }).__opened = [];
-      window.open = (...args: unknown[]) => {
-        (window as unknown as { __opened: unknown[] }).__opened.push(args);
-        return null;
-      };
-    });
     await page.goto(EXPLICIT_PAGE);
     await expect(page.locator(".archlive-svg svg").first()).toBeVisible();
 
     const source = readFileSync(join(ROOT, "examples", "studio.arch"), "utf8");
     await setArchLiveSource(page, 0, source);
     await expect(page.locator(".archlive-svg svg").first()).toBeVisible();
-    await page.locator(".archlive-open").first().click();
-
-    const opened = (await page.evaluate(() => (window as unknown as { __opened: unknown[] }).__opened)) as Array<
-      [string]
-    >;
-    const url = opened[0]![0];
-    expect(await srcFromHash(url.slice(url.indexOf("#")))).toBe(source);
+    const open = page.locator(".archlive-open").first();
+    // The `#z=` form once it is there; either form must carry the plan back exactly.
+    await expect
+      .poll(async () => {
+        const url = (await open.getAttribute("href")) ?? "";
+        return srcFromHash(url.slice(url.indexOf("#")));
+      })
+      .toBe(source);
   });
 });
 
@@ -280,6 +273,22 @@ test.describe("the rendered colour scheme is a per-widget checkbox", () => {
     await box.uncheck();
     await expect(stage.locator("img")).toHaveCount(0);
     expect(await archLiveSvg(page, 0), "unticked, the drawing is the default one again").toBe(before);
+  });
+
+  test("a typo under the rendered scheme never inlines the rendered drawing once unticked", async ({ page }) => {
+    // The last good drawing is kept per scheme: the rendered SVG, inlined, would redefine
+    // `id="poche"` and restyle every other widget on the page.
+    await page.goto(EXPLICIT_PAGE);
+    const widget = page.locator(".archlive").first();
+    await expect(widget.locator(".archlive-svg svg")).toBeVisible();
+    await widget.locator(".archlive-theme input").check();
+    await expect(widget.locator(".archlive-svg img")).toBeVisible();
+    await setArchLiveSource(page, 0, 'plan "E2E" {\n  units mm\n  romo at (0,0) size 4000x3000\n}');
+    await expect(widget.locator(".archlive-error.is-shown")).not.toHaveText("");
+    await widget.locator(".archlive-theme input").uncheck();
+    // Broken, default scheme, no default drawing kept: nothing inlined rather than the wrong one.
+    await expect(widget.locator(".archlive-svg svg")).toHaveCount(0);
+    await expect(widget.locator(".archlive-svg img")).toHaveCount(0);
   });
 
   test("the checkbox has its own row: the bar stays one short row at phone width", async ({ page }) => {

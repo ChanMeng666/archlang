@@ -171,7 +171,7 @@ const ECOSYSTEM = [
   display: inline-flex;
   align-items: center;
   gap: 7px;
-  transition: color 0.2s;
+  transition: color var(--dur-press) var(--ease-out);
 }
 .cell__credit:hover {
   color: var(--redline-ink);
@@ -189,7 +189,7 @@ const ECOSYSTEM = [
   font-size: 13px;
   color: var(--ink-muted);
   text-decoration: none;
-  transition: color 0.2s;
+  transition: color var(--dur-press) var(--ease-out);
 }
 .cell__links a:hover {
   color: var(--redline-ink);

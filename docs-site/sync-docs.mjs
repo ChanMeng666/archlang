@@ -659,7 +659,8 @@ if (homeFailures.length > 0) {
 const exampleFacts = {};
 for (const name of examples) {
   const t = describe(sources[name]).totals;
-  exampleFacts[name] = { rooms: t.rooms, floor_area_m2: t.floor_area_m2 };
+  // Net when describe() has it (the playground's rule, playground/src/facts-line.js `areaText`).
+  exampleFacts[name] = { rooms: t.rooms, floor_area_m2: t.floor_area_m2, net_floor_area_m2: t.net_floor_area_m2 };
 }
 writeFileSync(
   join(here, ".vitepress", "theme", "home-data.js"),

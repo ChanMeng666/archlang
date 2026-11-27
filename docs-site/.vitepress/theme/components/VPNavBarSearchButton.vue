@@ -66,7 +66,7 @@ const translate = createSearchTranslate(defaultTranslations)
   width: 48px;
   height: 55px;
   background: transparent;
-  transition: border-color 0.25s;
+  transition: border-color var(--dur-press) var(--ease-out);
 }
 
 .DocSearch-Button:hover {
@@ -115,7 +115,7 @@ const translate = createSearchTranslate(defaultTranslations)
   height: 16px;
   color: var(--vp-c-text-1);
   fill: currentColor;
-  transition: color 0.5s;
+  transition: color var(--dur-press) var(--ease-out);
 }
 
 .DocSearch-Button:hover .DocSearch-Search-Icon {
@@ -147,7 +147,7 @@ const translate = createSearchTranslate(defaultTranslations)
   font-size: 13px;
   font-weight: 500;
   color: var(--vp-c-text-2);
-  transition: color 0.5s;
+  transition: color var(--dur-press) var(--ease-out);
 }
 
 .DocSearch-Button:hover .DocSearch-Button-Placeholder {
@@ -195,7 +195,9 @@ const translate = createSearchTranslate(defaultTranslations)
   font-family: var(--vp-font-family-base);
   font-size: 12px;
   font-weight: 500;
-  transition: color 0.5s, border-color 0.5s;
+  transition:
+    color var(--dur-press) var(--ease-out),
+    border-color var(--dur-press) var(--ease-out);
 }
 
 .DocSearch-Button .DocSearch-Button-Key + .DocSearch-Button-Key {

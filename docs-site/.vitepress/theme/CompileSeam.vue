@@ -13,6 +13,7 @@
 import { ref, shallowRef, computed, onMounted, onBeforeUnmount, watch } from "vue";
 import { compile, describe } from "archlang";
 import { EXAMPLE_COUNT, HOME } from "./home-data.js";
+import { areaText, count } from "./facts-text.js";
 import { highlightArch } from "./arch-highlight.js";
 import { stripHeaderComments } from "./strip-header-comments.js";
 // Every door comes from the one doors file every public surface reads (test/site-doors.test.ts).
@@ -111,11 +112,24 @@ function tick(now: number) {
   rafId = requestAnimationFrame(tick);
 }
 
-function finish() {
+/** The run is over: the final source and drawing. A natural end scrolls the code back to its top
+ *  smoothly (M31); a Stop, and reduced motion, put it there at once. */
+function finish(smooth = true) {
+  cancelAnimationFrame(rafId);
+  clearTimeout(briefTimer);
   typed.value = raw;
   displaySvg.value = finalSvg;
   phase.value = "settled";
-  if (preEl.value) preEl.value.scrollTop = 0;
+  const el = preEl.value;
+  if (!el) return;
+  const still = !smooth || window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  el.scrollTo({ top: 0, behavior: still ? "instant" : "smooth" });
+}
+
+/** The control under the sheet: Stop while the run plays (WCAG 2.2.2, U17), Replay once settled. */
+function toggleRun() {
+  if (phase.value === "settled") play();
+  else finish(false);
 }
 
 function play() {
@@ -146,6 +160,7 @@ watch(
 
 let observer: IntersectionObserver | null = null;
 const rootEl = ref<HTMLElement | null>(null);
+const storyEl = ref<HTMLElement | null>(null);
 
 onMounted(() => {
   mounted.value = true;
@@ -154,9 +169,12 @@ onMounted(() => {
     (entries) => {
       for (const e of entries) if (e.isIntersecting && !hasRun) play();
     },
-    { threshold: 0.35 },
+    { threshold: 0.5 },
   );
-  if (rootEl.value) observer.observe(rootEl.value);
+  // The sheet column, not the whole hero: on a phone the hero is taller than the screen, and the
+  // run starts only once the sheet it draws on is half in view (U17).
+  const target = storyEl.value ?? rootEl.value;
+  if (target) observer.observe(target);
 });
 
 onBeforeUnmount(() => {
@@ -213,7 +231,7 @@ onBeforeUnmount(() => {
 
       <!-- SHEET WORLD: brief → source → plan -->
       <div class="pane pane--sheet">
-        <div class="story">
+        <div ref="storyEl" class="story">
           <figure v-if="PAIR.brief" class="chat">
             <figcaption class="chat__who">The brief, as given to {{ PAIR.model }}</figcaption>
             <blockquote class="chat__bubble">{{ PAIR.brief }}</blockquote>
@@ -232,16 +250,16 @@ onBeforeUnmount(() => {
 
           <div class="sheet">
             <div class="sheet__title">
-              <span>{{ heroFacts.plan }}</span><span>{{ heroFacts.totals.rooms }} rooms</span
-              ><span>{{ heroFacts.totals.floor_area_m2 }} m²</span>
+              <span>{{ heroFacts.plan }}</span><span>{{ count(heroFacts.totals.rooms, "room") }}</span
+              ><span>{{ areaText(heroFacts.totals.net_floor_area_m2, heroFacts.totals.floor_area_m2) }}</span>
             </div>
             <div class="sheet__body" :style="{ aspectRatio: paperAspect }">
               <!-- eslint-disable-next-line vue/no-v-html -->
               <div class="sheet__svg" v-html="displaySvg"></div>
             </div>
             <div class="sheet__foot">
-              <button v-if="mounted" type="button" class="sheet__ctl" :disabled="phase !== 'settled'" @click="play">
-                ↻ Replay
+              <button v-if="mounted" type="button" class="sheet__ctl" @click="toggleRun">
+                {{ phase === "settled" ? "↻ Replay" : "■ Stop" }}
               </button>
               <a
                 class="sheet__ctl sheet__ctl--open plan-open"
@@ -363,7 +381,7 @@ onBeforeUnmount(() => {
   color: var(--src-muted);
 }
 .primary--chatgpt {
-  transition: border-color 0.2s;
+  transition: border-color var(--dur-press) var(--ease-out);
 }
 .primary--chatgpt:hover {
   border-color: var(--redline);
@@ -463,7 +481,7 @@ onBeforeUnmount(() => {
   color: var(--ink);
 }
 .seam-hero[data-phase="brief"] .chat__bubble {
-  animation: bubble-in 0.35s ease-out both;
+  animation: bubble-in var(--dur-base) var(--ease-out) both;
 }
 @keyframes bubble-in {
   from {
@@ -502,6 +520,7 @@ onBeforeUnmount(() => {
 .code-chrome__status {
   flex: none;
   color: var(--plum-deep);
+  transition: color var(--dur-fast) var(--ease-out);
 }
 .code-stage[data-phase="settled"] .code-chrome__status {
   color: var(--src-muted);
@@ -616,7 +635,10 @@ onBeforeUnmount(() => {
   color: var(--ink-muted);
   text-align: center;
   text-decoration: none;
-  transition: color 0.2s, background 0.2s;
+  transition:
+    color var(--dur-press) var(--ease-out),
+    background-color var(--dur-press) var(--ease-out),
+    scale var(--dur-press) var(--ease-out);
 }
 .sheet__ctl + .sheet__ctl {
   border-left: 1px solid var(--hairline);
@@ -682,9 +704,6 @@ onBeforeUnmount(() => {
   .sheet__ctl,
   .primary--chatgpt {
     transition: none;
-  }
-  .code-pre {
-    scroll-behavior: auto;
   }
 }
 </style>

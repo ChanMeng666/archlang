@@ -303,12 +303,10 @@ const BANDS: ReadonlyArray<{ rows: Sheet[]; row: string; art: string }> = [
   border: 1px solid var(--hairline);
   border-radius: 2px;
   overflow: hidden;
-  transition: border-color 0.2s, box-shadow 0.2s, transform 0.2s;
+  transition: border-color var(--dur-press) var(--ease-out);
 }
 .card:hover {
   border-color: color-mix(in srgb, var(--redline) 45%, var(--hairline));
-  box-shadow: 0 16px 34px -26px rgb(28 36 48 / 45%);
-  transform: translateY(-2px);
 }
 
 /* The art box is the card's whole reason to exist, and it used to be 150px tall for
@@ -450,7 +448,9 @@ const BANDS: ReadonlyArray<{ rows: Sheet[]; row: string; art: string }> = [
   text-transform: uppercase;
   color: var(--ink-muted);
   text-decoration: none;
-  transition: color 0.2s, background 0.2s;
+  transition:
+    color var(--dur-press) var(--ease-out),
+    background-color var(--dur-press) var(--ease-out);
 }
 /* The source file, spelled as a file: mono, mixed case, no tracking — the one
    place on the card that names the thing the drawing was compiled from. */

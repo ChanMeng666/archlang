@@ -5,6 +5,7 @@ import {
   fitTransform,
   MAX_SCALE,
   MIN_SCALE,
+  transformForRect,
   type ViewTransform,
   zoomAtTransform,
 } from "../src/pan-zoom.js";
@@ -140,5 +141,21 @@ describe("zoomAtTransform", () => {
     const input: ViewTransform = { scale: 1.5, tx: -40, ty: 90 };
     zoomAtTransform(input, 4, 10, 10);
     expect(input).toEqual({ scale: 1.5, tx: -40, ty: 90 });
+  });
+});
+
+describe("transformForRect: a glide after the stage changed size starts where the drawing was", () => {
+  it("draws the content on the rect it had, in the viewport's new box", () => {
+    // A 400-wide drawing was at (130, 90) on screen, 200 wide; the viewport now starts at (100, 50).
+    const t = transformForRect({ left: 130, top: 90, width: 200 }, 100, 50, 400)!;
+    expect(t).toEqual({ scale: 0.5, tx: 30, ty: 40 });
+    // Its top-left corner lands back on the screen point it left.
+    const p = project(t, 0, 0);
+    expect([p.x + 100, p.y + 50]).toEqual([130, 90]);
+  });
+
+  it("has no start for a drawing that was not drawn", () => {
+    expect(transformForRect({ left: 0, top: 0, width: 0 }, 0, 0, 400)).toBeNull();
+    expect(transformForRect({ left: 0, top: 0, width: 200 }, 0, 0, 0)).toBeNull();
   });
 });

@@ -99,13 +99,16 @@ test.describe("mode", () => {
     // No drawing to wait for (the plan does not compile): wait for the app instead.
     await expect(page.locator("html[data-booting]")).toHaveCount(0);
     await expect(page.locator("#status")).toHaveClass(/err/);
-    await expect(page.locator("#statusText")).toHaveText(/^\d+ errors? — open Source to see them$/);
+    await expect(page.locator("#statusText")).toHaveText(/^\d+ errors?$/);
+    await expect(page.locator("#statusAction")).toHaveText("Show in source");
     await enterEdit(page);
     await expect(page.locator("#statusText")).toHaveText(/^\d+ errors?$/);
+    await expect(page.locator("#statusAction")).toBeHidden();
     await expect(page.locator("#errors .diagrow").first()).toBeVisible();
-    // And back: the hint returns with view mode.
+    // And back: the action returns with view mode.
     await page.locator("#sourceToggle").click();
-    await expect(page.locator("#statusText")).toHaveText(/^\d+ errors? — open Source to see them$/);
+    await expect(page.locator("#statusAction")).toHaveText("Show in source");
+    await expect(page.locator("#statusAction")).toBeVisible();
   });
 
   test("a shared #z= link opens its plan in view mode", async ({ page }) => {

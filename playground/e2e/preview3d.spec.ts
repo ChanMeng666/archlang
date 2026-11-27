@@ -1568,7 +1568,7 @@ test.describe("3D draws only when someone can see it (card MP3)", () => {
     await expect(page.locator("#makeOwnDialog")).toBeHidden();
     expect(await framesIn(page, 1000), "frames again once the dialog is shut").toBeGreaterThan(0);
 
-    // Share → Embed: a full-screen sheet over the page (not a <dialog>): not one frame under it.
+    // Share → Embed: a modal <dialog> over the page: not one frame under it.
     await page.locator("#share > summary").click();
     await expect(page.locator("#embed")).toBeEnabled();
     await page.locator("#embed").click();

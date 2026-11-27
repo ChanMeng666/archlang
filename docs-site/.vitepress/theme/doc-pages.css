@@ -86,7 +86,7 @@
 /* Heading anchor `#` — quiet ink-muted, redline on hover. */
 .vp-doc .header-anchor {
   color: var(--ink-muted);
-  transition: color 0.2s;
+  transition: color var(--dur-press) var(--ease-out);
 }
 .vp-doc .header-anchor:hover,
 .vp-doc h1:hover .header-anchor,
@@ -144,7 +144,7 @@
   font-weight: 400;
   letter-spacing: -0.01em;
   color: var(--ink-muted);
-  transition: color 0.2s;
+  transition: color var(--dur-press) var(--ease-out);
 }
 
 .VPSidebarItem.level-1.is-link > .item > .link:hover .text,
@@ -386,7 +386,7 @@
 /* Kill the default zebra striping — schedules read on ruled rows, not fills. */
 .vp-doc tr {
   background: transparent;
-  transition: background-color 0.15s;
+  transition: background-color var(--dur-press) var(--ease-out);
 }
 .vp-doc tbody tr:nth-child(2n) {
   background: transparent;
@@ -416,7 +416,7 @@
   color: var(--redline-ink);
   text-decoration: none;
   text-underline-offset: 3px;
-  transition: text-decoration-color 0.2s;
+  transition: text-decoration-color var(--dur-press) var(--ease-out);
 }
 .vp-doc a:not(.agents__btn):not(.plan-open):hover {
   text-decoration: underline;
@@ -448,7 +448,7 @@
   font-family: var(--font-mono);
   font-size: 12.5px;
   color: var(--ink-muted);
-  transition: color 0.2s;
+  transition: color var(--dur-press) var(--ease-out);
 }
 .VPDocAside .outline-link:hover,
 .VPDocAside .outline-link.active {
@@ -578,8 +578,8 @@
   border-radius: 3px;
   background: transparent;
   transition:
-    border-color 0.2s,
-    background-color 0.2s;
+    border-color var(--dur-press) var(--ease-out),
+    background-color var(--dur-press) var(--ease-out);
 }
 .VPDocFooter .pager-link:hover {
   border-color: var(--redline);

@@ -338,13 +338,13 @@ export function mountPreview3d(host: HTMLElement): Preview3d {
     coachTimer = 0;
     if (coach.hidden || coach.classList.contains("p3d-coach-gone")) return;
     coach.classList.add("p3d-coach-gone");
-    // Gone from the layer once faded (at once under reduced motion, where nothing transitions).
-    setTimeout(
-      () => {
-        coach.hidden = true;
-      },
-      reducedMotion() ? 0 : 400,
-    );
+    // Gone from the layer once faded (panels.css, --dur-slow-out): on its `transitionend`, with a
+    // timer for a browser that runs none (under reduced motion the fade is 0 ms and fires no event).
+    const gone = (): void => {
+      coach.hidden = true;
+    };
+    coach.addEventListener("transitionend", gone, { once: true });
+    setTimeout(gone, reducedMotion() ? 0 : 400);
   };
   const showCoach = (): void => {
     if (stored("localStorage", COACH_KEY) || !coach.hidden) return;
@@ -504,11 +504,11 @@ export function mountPreview3d(host: HTMLElement): Preview3d {
     }).observe(canvas);
   }
 
-  // Who can see the stage (ruling MP-D3). Covered: the Make your own dialog, the Embed sheet (a
-  // full-screen `div.embed-dialog` that actions.ts adds to <body> and removes), or a header menu
+  // Who can see the stage (ruling MP-D3). Covered: a dialog (Make your own, Contribute, the Embed
+  // dialog that actions.ts adds to <body> and removes once closed), or a header menu
   // (the gallery, Share, ⋯) open over it. Off screen: under half the canvas in the window (a hidden
   // tab's canvas is not in it at all). Hidden: the page is.
-  const COVERS = "dialog[open], body > .embed-dialog, header details[open]";
+  const COVERS = "dialog[open], header details[open]";
   const covered = (): void => see("covered", document.querySelector(COVERS) !== null);
   if (typeof MutationObserver === "function") {
     new MutationObserver(covered).observe(document.body, {
@@ -516,7 +516,7 @@ export function mountPreview3d(host: HTMLElement): Preview3d {
       attributes: true,
       attributeFilter: ["open"],
     });
-    // The Embed sheet comes and goes as a child of <body> (no subtree: the editor's edits are not watched).
+    // The Embed dialog comes and goes as a child of <body> (no subtree: the editor's edits are not watched).
     new MutationObserver(covered).observe(document.body, { childList: true });
   }
   covered();

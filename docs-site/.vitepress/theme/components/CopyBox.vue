@@ -5,23 +5,56 @@ import { ref } from "vue";
 
 const props = defineProps<{ text: string; label: string; clip?: boolean }>();
 
-const copied = ref(false);
+/** idle → done ("Copied", 1.5 s); a refused clipboard → failed: the text is selected and the button
+ *  names the keys that copy it (4 s), so a failed copy still says what to do next (U8). */
+const state = ref<"idle" | "done" | "failed">("idle");
+const textEl = ref<HTMLElement | null>(null);
+const chord = ref("Ctrl+C");
+let timer: ReturnType<typeof setTimeout> | undefined;
+function settle(next: "done" | "failed", ms: number) {
+  state.value = next;
+  clearTimeout(timer);
+  timer = setTimeout(() => (state.value = "idle"), ms);
+}
 async function copy() {
   try {
     await navigator.clipboard.writeText(props.text);
-    copied.value = true;
-    setTimeout(() => (copied.value = false), 1500);
+    settle("done", 1500);
   } catch {
-    /* clipboard unavailable: the text is still selectable */
+    const el = textEl.value;
+    const sel = window.getSelection();
+    if (el && sel) {
+      const range = document.createRange();
+      range.selectNodeContents(el);
+      sel.removeAllRanges();
+      sel.addRange(range);
+    }
+    // A touch-only device has no keyboard to press a chord on: it is told the text is selected.
+    const touchOnly = matchMedia("(hover: none) and (pointer: coarse)").matches;
+    chord.value = touchOnly ? "" : /Mac|iPhone|iPad|iPod/i.test(navigator.platform) ? "⌘C" : "Ctrl+C";
+    settle("failed", 4000);
   }
 }
 </script>
 
 <template>
   <div class="copybox" :class="{ 'copybox--clip': clip }">
-    <pre class="copybox__text"><code>{{ text }}</code></pre>
-    <button type="button" class="copybox__btn" :aria-label="`Copy ${label}`" @click="copy">
-      <span aria-live="polite">{{ copied ? "Copied" : "Copy" }}</span>
+    <pre class="copybox__text"><code ref="textEl">{{ text }}</code></pre>
+    <button
+      type="button"
+      class="copybox__btn"
+      :class="{ 'is-done': state === 'done', 'is-failed': state === 'failed' }"
+      :aria-label="`Copy ${label}`"
+      @click="copy"
+    >
+      <!-- "Copy" and "Copied" share one grid cell, so the button keeps its width (M25). -->
+      <span class="copybox__labels" aria-hidden="true">
+        <span class="copybox__idle">Copy</span><span class="copybox__done">Copied</span>
+      </span>
+      <span v-if="state === 'failed'" class="copybox__fail">{{ chord ? `Press ${chord}` : "Text selected" }}</span>
+      <span class="vh-copy" aria-live="polite">{{
+        state === "done" ? "Copied" : state === "failed" ? `Couldn't copy: the text is selected${chord ? `, press ${chord}` : ""}` : ""
+      }}</span>
     </button>
   </div>
 </template>
@@ -77,9 +110,44 @@ async function copy() {
   color: var(--src-fg);
   cursor: pointer;
 }
+.copybox__btn {
+  transition:
+    border-color var(--dur-press) var(--ease-out),
+    color var(--dur-press) var(--ease-out),
+    scale var(--dur-press) var(--ease-out);
+}
+.copybox__btn:active {
+  scale: var(--press-scale);
+}
 .copybox__btn:hover {
   border-color: var(--plum);
   color: var(--plum-deep);
+}
+.copybox__labels {
+  display: inline-grid;
+}
+.copybox__labels > span {
+  grid-area: 1 / 1;
+  transition: opacity var(--dur-fast) var(--ease-out);
+}
+.copybox__done,
+.is-done .copybox__idle {
+  opacity: 0;
+  transition: opacity var(--dur-fast-out) var(--ease-in);
+}
+.is-done .copybox__done {
+  opacity: 1;
+}
+.is-failed .copybox__labels {
+  display: none;
+}
+.vh-copy {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
 }
 .copybox__btn:focus-visible {
   outline: 2px solid var(--plum);

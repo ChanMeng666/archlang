@@ -156,7 +156,11 @@
           <span class="gal-caret" aria-hidden="true">▾</span>
         </summary>
         <div class="gal-panel" id="galleryPanel" role="group" aria-label="Example plans">
-          <input type="search" id="galleryFilter" class="gal-filter" placeholder="Filter plans by name" aria-label="Filter plans by name" autocomplete="off" spellcheck="false" />
+          <!-- On a phone the gallery is a sheet: its first row stays put and carries a visible Close. -->
+          <div class="gal-top">
+            <input type="search" id="galleryFilter" class="gal-filter" placeholder="Filter plans by name" aria-label="Filter plans by name" autocomplete="off" spellcheck="false" />
+            <button type="button" class="gal-close" id="galleryClose">Close</button>
+          </div>
           <div class="gal-groups" id="galleryGroups"><!--prerender:gallery--></div>
           <p class="gal-empty" id="galleryEmpty" role="status"></p>
           <a class="gal-all" href="/examples/">All plans →</a>
@@ -206,12 +210,15 @@
       <details class="tools" id="more">
         <summary class="hd-btn" aria-label="More" title="More"><span aria-hidden="true">⋯</span></summary>
         <div class="tools-panel">
-          <!-- Edit: these change the source, so they open the editor first. -->
+          <!-- Edit: Format and Finish change the source, so they open the editor first (`data-edit`);
+               Saved opens its list where it is, and a restore works with or without the editor. -->
           <div class="tools-group" role="group" aria-labelledby="moreEdit">
             <p class="tools-h" id="moreEdit">Edit</p>
-            <button id="formatSrc" type="button" data-edit data-close disabled title="Reformat the source to canonical style">Format</button>
-            <button id="finishSrc" type="button" data-edit data-close disabled title="Add what a finished sheet needs (paper, scale, dimensions, title, schedule, legend, furniture); Ctrl+Z undoes it">Finish</button>
-            <button id="saved" type="button" data-edit aria-haspopup="true" disabled>Saved ▾</button>
+            <button id="formatSrc" type="button" data-edit data-close disabled aria-describedby="formatNote">Format</button>
+            <p id="formatNote" class="tools-note">Tidies the source's layout.</p>
+            <button id="finishSrc" type="button" data-edit data-close disabled aria-describedby="finishNote">Finish</button>
+            <p id="finishNote" class="tools-note">Adds what a finished sheet needs: paper, scale, dimensions, title block, schedule, legend, furniture.</p>
+            <button id="saved" type="button" aria-haspopup="true" disabled>Saved ▾</button>
           </div>
           <div class="tools-group" role="group" aria-labelledby="moreView">
             <p class="tools-h" id="moreView">View</p>
@@ -221,7 +228,8 @@
             <!-- `autocomplete="off"` on both: a browser restoring a form control on reload could
                  otherwise draw the plan differently from the drawing built into the page, which
                  main.ts would then take for this visit's (card MP5). The theme comes from storage. -->
-            <select id="theme" aria-label="Render theme" autocomplete="off">
+            <label class="tools-label" for="theme">Theme</label>
+            <select id="theme" autocomplete="off">
               <option value="">Default</option>
               <option value="blueprint">Blueprint</option>
               <option value="dark">Dark</option>
@@ -229,21 +237,22 @@
               <option value="presentation">Presentation</option>
               <option value="rendered">Rendered</option>
             </select>
-            <label class="tb-check" title="Emit SVG <title>/<desc>/role accessibility metadata (accTitle/accDescr, else the describe() caption)">
-              <input type="checkbox" id="accessible" autocomplete="off" />
-              a11y
+            <label class="tb-check">
+              <input type="checkbox" id="accessible" autocomplete="off" aria-describedby="accessibleNote" />
+              Accessible SVG
             </label>
+            <p id="accessibleNote" class="tools-note">Adds a title and description to the SVG, in exports too.</p>
           </div>
           <nav class="tools-group tools-links" aria-label="Related sites">
             <p class="tools-h">Links</p>
             <a href="https://archlang.uk/agents" target="_blank" rel="noopener" title="Use ArchLang from an agent: CLI, MCP server, skill, llms.txt">Agents ↗</a>
             <a href="https://archlang.uk" target="_blank" rel="noopener">Docs ↗</a>
-            <a href="https://archlang.uk/guide">Guide</a>
-            <a href="https://archlang.uk/reference">Language reference</a>
-            <a href="https://archlang.uk/spec">One-page spec</a>
+            <a href="https://archlang.uk/guide" target="_blank" rel="noopener">Guide ↗</a>
+            <a href="https://archlang.uk/reference" target="_blank" rel="noopener">Language reference ↗</a>
+            <a href="https://archlang.uk/spec" target="_blank" rel="noopener">One-page spec ↗</a>
             <a href="/examples/"><!--prerender:count--> example plans</a>
-            <a href="https://www.npmjs.com/package/@chanmeng666/archlang">npm</a>
-            <a href="https://github.com/ChanMeng666/archlang" target="_blank" rel="noopener">GitHub</a>
+            <a href="https://www.npmjs.com/package/@chanmeng666/archlang" target="_blank" rel="noopener">npm ↗</a>
+            <a href="https://github.com/ChanMeng666/archlang" target="_blank" rel="noopener">GitHub ↗</a>
             <a href="https://archcanvas.uk" target="_blank" rel="noopener">ArchCanvas ↗</a>
           </nav>
         </div>
@@ -303,10 +312,8 @@
                one home of the storey on screen, which drives the drawing, the 3D preview, the facts
                and every export. Toggle buttons in a `role="group"`, not tabs. Empty and hidden
                until a plan with `level` blocks is compiled.
-             - The status (`#status`): a notice, top centre, only while the plan is compiling (and
-               slow enough to notice) or broken, or for a moment after an action; dismissible. When
-               the plan is fine nothing shows. Its live region is `#statusLive`, a mirror under
-               <body> (below `main`), never inside a box that is not drawn.
+             The status notice (`#status`) is not in this row but a child of <main> (below), so it
+             is drawn in every view, the phone's Code view included; it is placed over this pane.
              Hidden until main.ts wires it: with no script there is nothing to switch to. -->
         <div class="stage-switch-row" id="stageSwitchRow" hidden>
           <div class="stage-switch" role="group" aria-label="View">
@@ -314,10 +321,6 @@
             <button type="button" id="view3d" aria-pressed="false" title="Show the 3D preview, from the same source">3D</button>
           </div>
           <span class="lv-group" id="storeys" role="group" aria-label="Storey" hidden></span>
-          <div class="stage-status" id="status">
-            <span id="statusText"></span>
-            <button type="button" class="stage-status-x" id="statusDismiss" aria-label="Dismiss this message" hidden>×</button>
-          </div>
         </div>
         <div id="preview" class="tabview active" role="tabpanel" aria-labelledby="tab-preview">
           <div class="pz-viewport">
@@ -325,8 +328,8 @@
             <div class="pz-toolbar">
               <button data-pz="out" type="button" title="Zoom out" aria-label="Zoom out">−</button>
               <button data-pz="in" type="button" title="Zoom in" aria-label="Zoom in">+</button>
-              <button data-pz="fit" type="button" title="Fit to view" aria-label="Fit to view">⤢</button>
-              <button data-pz="full" type="button" title="Fullscreen" aria-label="Fullscreen">⛶</button>
+              <button data-pz="fit" type="button" title="Fit to view" aria-label="Fit to view">Fit</button>
+              <button data-pz="full" type="button" title="Fullscreen" aria-label="Fullscreen" aria-pressed="false">⛶</button>
               <span class="pz-sep"></span>
               <!-- Checks (card P6; on the stage since PG-D3): a layer of the drawing, like Paths. It
                    rings what compile and lint warn about, as `arch preview --review` does. The rings
@@ -355,7 +358,7 @@
              profile, Repair, Suggest and the Finish results, and the intent check, as sections of
              one panel. -->
         <div id="checksView" class="tabview tv-sections" role="tabpanel" aria-labelledby="tab-checks">
-          <!-- The review findings: checks-panel.ts's own section ("Checks (default checks): …"),
+          <!-- The review findings: checks-panel.ts's own section ("Checks · default rules: …"),
                put here by main.ts on the tab's first open. -->
           <div class="tv-section" id="checksHost"></div>
           <section class="tv-section" id="lint" aria-labelledby="lintHead">
@@ -376,7 +379,8 @@
             <h3 class="tv-h" id="intentHead">Intent</h3>
             <div class="lint-controls">
               <label for="intentSrc">Brief (intent JSON)</label>
-              <button id="intentRun" class="repair-btn">Check ▸</button>
+              <button id="intentRun" class="repair-btn" type="button">Check</button>
+              <button id="intentFromPlan" class="intent-from-plan" type="button">Use this plan's facts</button>
               <p class="lint-caption">
                 Write the brief down as data, then gate the plan on it — the same contract
                 <code>arch validate --intent</code> and <code>arch score --brief</code> use.
@@ -401,6 +405,16 @@
           <div id="facts" class="facts" role="group" aria-label="Plan facts"><!--prerender:facts--></div>
           <p class="lede" id="lede"><!--doors:canonical-line--></p>
         </div>      </section>
+      <!-- The status (`#status`, main.ts): a notice, top centre of the stage, only while the plan is
+           compiling (and slow enough to notice) or broken, or for a while after an action; it may
+           carry one action (`#statusAction`) and is dismissible. When the plan is fine nothing shows.
+           A child of <main>, not of the stage's pane, so the phone's Code view (where that pane is
+           not drawn) shows it too. Its live region is `#statusLive`, a mirror under <body>. -->
+      <div class="stage-status" id="status">
+        <span id="statusText"></span>
+        <button type="button" class="stage-status-act" id="statusAction" hidden></button>
+        <button type="button" class="stage-status-x" id="statusDismiss" aria-label="Dismiss this message" hidden>×</button>
+      </div>
     </main>
     <!-- The status's live region (main.ts `sayStatus`): the stage notice's text, mirrored here,
          visually hidden. A child of <body>, so no layout ever puts it in a `display: none` box (the

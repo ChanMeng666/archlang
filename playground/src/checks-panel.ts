@@ -30,6 +30,8 @@ export interface ChecksPanel {
   shown(): void;
   /** The drawing is moving (a knob being dragged): the list waits for it to settle. */
   pending(): void;
+  /** The source does not compile: the list is of the last good plan (dimmed), or, if it never had one, says why it is empty. */
+  broken(): void;
   /** Show or hide the list (the toggle). */
   setVisible(on: boolean): void;
   /** Put the list in `host` (edit mode's Checks tab), or back over the drawing (`null`). */
@@ -51,7 +53,10 @@ interface ChecksOpts {
 }
 
 /** What the panel's heading names as the rules it reads. */
-export const CHECKS_RULES = "default checks";
+export const CHECKS_RULES = "default rules";
+
+/** What the list says for a source that does not compile. */
+const NOT_CHECKED = "The plan does not compile, so it is not checked.";
 
 /** One finding as the list shows it. */
 interface Finding {
@@ -115,16 +120,16 @@ export function mountChecks({
   function noteProfile() {
     const p = lintProfile();
     profileNote.hidden = p === "";
-    profileNote.textContent = p === "" ? "" : `Lint uses the "${p}" profile; Checks reads the default checks.`;
+    profileNote.textContent = p === "" ? "" : `Lint uses the "${p}" profile; Checks reads the default rules.`;
   }
 
   function renderList(note?: string) {
     const count = findings.length;
     head.textContent = note
-      ? `Checks (${CHECKS_RULES})`
+      ? `Checks · ${CHECKS_RULES}`
       : count === 0
-        ? `Checks (${CHECKS_RULES}): nothing to ring`
-        : `Checks (${CHECKS_RULES}): ${count} finding${count === 1 ? "" : "s"}`;
+        ? `Checks · ${CHECKS_RULES}: nothing found`
+        : `Checks · ${CHECKS_RULES}: ${count} finding${count === 1 ? "" : "s"}`;
     noteProfile();
     list.innerHTML = note
       ? `<li class="checks-note">${escapeHtml(note)}</li>`
@@ -179,7 +184,7 @@ export function mountChecks({
       if ("kind" in r) {
         findings = [];
         rings = null;
-        renderList(r.kind === "errors" ? "The plan does not compile, so it is not checked." : "No such storey.");
+        renderList(r.kind === "errors" ? NOT_CHECKED : "No such storey.");
         return svg;
       }
       findings = r.sheet.marks.map((m, i) => ({
@@ -198,6 +203,10 @@ export function mountChecks({
     shown: highlight,
     pending() {
       panel.classList.add("checks-pending");
+    },
+    broken() {
+      panel.classList.add("checks-pending");
+      if (key === "") renderList(NOT_CHECKED);
     },
     setVisible(on) {
       panel.hidden = !on;

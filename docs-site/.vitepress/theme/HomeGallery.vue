@@ -17,6 +17,7 @@ import { reactive } from "vue";
 import { EXAMPLE_PAGES } from "./example-pages-data.js";
 import { EXAMPLE_LINKS } from "./examples-data.js";
 import { EXAMPLE_FACTS } from "./home-data.js";
+import { areaText, count } from "./facts-text.js";
 import { ASSETS_3D, PREVIEW } from "./three-d-data.js";
 
 type ExampleName = keyof typeof EXAMPLE_LINKS;
@@ -67,7 +68,7 @@ const PLANS: ReadonlyArray<{ example: ExampleName; caption: string }> = [
                   />
                 </picture>
               </span>
-              <span class="home-gallery__cta">Open in playground&nbsp;↗</span>
+              <span class="home-gallery__cta">Open in Playground&nbsp;↗</span>
             </a>
             <button
               v-if="POSTERS.get(p.example)"
@@ -82,12 +83,12 @@ const PLANS: ReadonlyArray<{ example: ExampleName; caption: string }> = [
           </div>
           <p class="home-gallery__cap">{{ p.caption }}</p>
           <p class="home-gallery__facts">
-            {{ p.example }}.arch · {{ EXAMPLE_FACTS[p.example].rooms }} rooms ·
-            {{ EXAMPLE_FACTS[p.example].floor_area_m2 }} m²
+            {{ p.example }}.arch · {{ count(EXAMPLE_FACTS[p.example].rooms, "room") }} ·
+            {{ areaText(EXAMPLE_FACTS[p.example].net_floor_area_m2, EXAMPLE_FACTS[p.example].floor_area_m2) }}
           </p>
           <p v-if="PAGES.get(p.example)" class="home-gallery__page">
             <a class="example-page" :href="PAGES.get(p.example)" :aria-label="`Plan and source: ${p.example}.arch`"
-              >Plan and source</a
+              >Plan and source →</a
             >
           </p>
         </li>
@@ -149,7 +150,7 @@ const PLANS: ReadonlyArray<{ example: ExampleName; caption: string }> = [
   border-radius: 2px;
   background: var(--paper-panel);
   text-decoration: none;
-  transition: border-color 0.2s;
+  transition: border-color var(--dur-press) var(--ease-out);
 }
 .home-gallery__open:hover {
   border-color: color-mix(in srgb, var(--redline) 45%, var(--hairline));
@@ -186,12 +187,13 @@ const PLANS: ReadonlyArray<{ example: ExampleName; caption: string }> = [
 .home-gallery__3d {
   background: var(--paper-panel);
   opacity: 0;
-  transition: opacity 0.2s;
+  transition: opacity var(--dur-fast-out) var(--ease-in);
 }
 .home-gallery__open:hover .home-gallery__3d,
 .home-gallery__open:focus-visible .home-gallery__3d,
 .home-gallery__card[data-show="3d"] .home-gallery__3d {
   opacity: 1;
+  transition: opacity var(--dur-fast) var(--ease-out);
 }
 .home-gallery__badge {
   position: absolute;

@@ -90,6 +90,9 @@ export function mountGallery(root: HTMLDetailsElement, onPick: (label: string) =
     if (refocus) trigger.focus();
   }
 
+  // The phone sheet's Close (U30): the focus goes back to the trigger.
+  root.querySelector("#galleryClose")?.addEventListener("click", () => close(true));
+
   root.addEventListener("toggle", () => {
     trigger.setAttribute("aria-expanded", String(root.open));
     if (root.open) {
@@ -209,13 +212,13 @@ export function mountGallery(root: HTMLDetailsElement, onPick: (label: string) =
     // The name is the label exactly; from the text, the flex-item spans would read "Studio ( 1BR )".
     el.setAttribute("aria-label", label);
     el.tabIndex = -1;
-    const thumb = document.createElement("span");
-    thumb.className = "gal-thumb gal-thumb-none";
-    thumb.setAttribute("aria-hidden", "true");
+    // A sample has no drawing to show (no static page draws one): a text card, never an empty box
+    // that reads as a picture that failed to load (U28).
+    el.classList.add("gal-card-text");
     const n = document.createElement("span");
     n.className = "gal-name";
     n.textContent = name;
-    el.append(thumb, n);
+    el.append(n);
     if (tag) {
       // The tag reads as part of the label, "Clinic (place ×6)": hidden " (" and ")" around it.
       const t = document.createElement("span");

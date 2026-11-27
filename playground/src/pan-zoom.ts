@@ -61,6 +61,21 @@ export function zoomAtTransform(view: ViewTransform, nextScale: number, px: numb
   return { scale, tx: px - cx * scale, ty: py - cy * scale };
 }
 
+/**
+ * The transform that draws `contentW`-wide content on the screen rect `was` (its left, top and
+ * width), for a viewport whose screen origin is `(vx, vy)`: where the drawing WAS, in the viewport's
+ * new box. The FLIP start of a glide after the stage changed size (pan-zoom `refitFrom`).
+ */
+export function transformForRect(
+  was: { left: number; top: number; width: number },
+  vx: number,
+  vy: number,
+  contentW: number,
+): ViewTransform | null {
+  if (!contentW || !(was.width > 0)) return null;
+  return { scale: clampScale(was.width / contentW), tx: was.left - vx, ty: was.top - vy };
+}
+
 /** The pan/zoom controller returned by {@link createPanZoom}. */
 export interface PanZoom {
   fit(): void;
@@ -68,6 +83,15 @@ export interface PanZoom {
   setContent(w: number, h: number, refit: boolean): void;
   zoomIn(): void;
   zoomOut(): void;
+  /** The buttons' zoom and fit: the same moves, glided (`.pz-glide-*`, panels.css). */
+  glideIn(): void;
+  glideOut(): void;
+  glideFit(): void;
+  /** The stage is about to change size (Source, the shared strip): where the drawing is now. */
+  rectBefore(): DOMRect | null;
+  /** After it did: start the drawing where it was (`rectBefore`) and glide it to its fitted place
+   *  (or, once the visitor has panned or zoomed, keep it where it was on screen). */
+  refitFrom(was: DOMRect | null): void;
 }
 
 /**
@@ -85,6 +109,41 @@ export function createPanZoom(viewport: HTMLElement, stage: HTMLElement): PanZoo
   const apply = () => {
     stage.style.transform = `translate(${tx}px, ${ty}px) scale(${scale})`;
   };
+
+  // ---- glides (the buttons, a stage that changed size) ----
+  // A glide is a CSS transition on the stage's transform (`.pz-glide-fast` / `.pz-glide-base`).
+  // The hand always wins: a wheel or a press mid-glide reads where the drawing is on screen into
+  // the view state and drops the class, so the pan or zoom goes on from there. Wheel, drag and
+  // pinch themselves never glide. No glide under reduced motion.
+  const GLIDES = ["pz-glide-fast", "pz-glide-base"];
+  const reduced = () =>
+    typeof matchMedia === "function" && matchMedia("(prefers-reduced-motion: reduce)").matches === true;
+  let gliding = false;
+  const glide = (cls: string) => {
+    if (reduced()) return;
+    stage.classList.remove(...GLIDES);
+    stage.classList.add(cls);
+    gliding = true;
+  };
+  const settle = () => {
+    if (!gliding) return;
+    gliding = false;
+    if (typeof getComputedStyle === "function" && typeof DOMMatrix === "function") {
+      const m = new DOMMatrix(getComputedStyle(stage).transform);
+      if (m.a > 0) {
+        scale = m.a;
+        tx = m.e;
+        ty = m.f;
+      }
+    }
+    stage.classList.remove(...GLIDES);
+    apply();
+  };
+  stage.addEventListener?.("transitionend", (e) => {
+    if (e.target !== stage || e.propertyName !== "transform") return;
+    gliding = false;
+    stage.classList.remove(...GLIDES);
+  });
 
   const fit = () => {
     const next = fitTransform(viewport.clientWidth, viewport.clientHeight, contentW, contentH);
@@ -117,6 +176,7 @@ export function createPanZoom(viewport: HTMLElement, stage: HTMLElement): PanZoo
       // The knobs and Checks panels scroll their own lists; the drawing does not zoom under them.
       if ((e.target as Element | null)?.closest(".knobs, .checks")) return;
       e.preventDefault();
+      settle();
       const rect = viewport.getBoundingClientRect();
       const factor = Math.exp(-e.deltaY * 0.0015);
       zoomAt(scale * factor, e.clientX - rect.left, e.clientY - rect.top);
@@ -131,6 +191,7 @@ export function createPanZoom(viewport: HTMLElement, stage: HTMLElement): PanZoo
   const onDown = (e: PointerEvent) => {
     // Ignore clicks that originate on the floating toolbar buttons.
     if ((e.target as Element | null)?.closest(".pz-toolbar, .room-card, .room-index, .knobs, .checks")) return;
+    settle();
     viewport.setPointerCapture(e.pointerId);
     pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
     viewport.classList.add("pz-grabbing");
@@ -185,8 +246,16 @@ export function createPanZoom(viewport: HTMLElement, stage: HTMLElement): PanZoo
   const setContent = (w: number, h: number, refit: boolean) => {
     contentW = w || 1;
     contentH = h || 1;
-    if (refit) fit();
-    else apply();
+    if (refit) {
+      // A new plan lands in its place at once: settle any glide first (no move from the old one).
+      settle();
+      fit();
+    } else apply();
+  };
+
+  const svgRect = (): DOMRect | null => {
+    const r = stage.querySelector?.("svg")?.getBoundingClientRect();
+    return r && r.width > 0 ? r : null;
   };
 
   return {
@@ -195,5 +264,34 @@ export function createPanZoom(viewport: HTMLElement, stage: HTMLElement): PanZoo
     setContent,
     zoomIn: () => zoomCenter(1.25),
     zoomOut: () => zoomCenter(0.8),
+    glideIn: () => {
+      glide("pz-glide-fast");
+      zoomCenter(1.25);
+    },
+    glideOut: () => {
+      glide("pz-glide-fast");
+      zoomCenter(0.8);
+    },
+    glideFit: () => {
+      glide("pz-glide-base");
+      fit();
+    },
+    rectBefore: () => (reduced() ? null : svgRect()),
+    refitFrom(was) {
+      if (!was || !viewport.clientWidth || !viewport.clientHeight) return;
+      settle();
+      const vr = viewport.getBoundingClientRect();
+      const start = transformForRect(was, vr.left, vr.top, contentW);
+      if (!start) return;
+      const keep = userAdjusted;
+      scale = start.scale;
+      tx = start.tx;
+      ty = start.ty;
+      apply(); // where it was, with no transition
+      if (keep) return; // a panned or zoomed view stays where the visitor put it on screen
+      void stage.offsetWidth; // the start is drawn before the glide begins
+      glide("pz-glide-base");
+      fit();
+    },
   };
 }

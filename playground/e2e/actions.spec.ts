@@ -14,6 +14,7 @@ import {
   shareHash,
   SIMPLE_PLAN,
   waitForPlan,
+  undone,
   watchStatus,
 } from "./fixtures.js";
 
@@ -67,7 +68,7 @@ test.describe("header actions", () => {
 
     await openMore(page);
     await page.locator("#formatSrc").click();
-    await status.expectFlash("Formatted");
+    await status.expectFlash(await undone(page, "Formatted"));
     // Canonical style is two-space body indentation under `plan { … }`.
     await expect(page.locator(".cm-content")).toContainText("units mm");
     const text = await page.locator(".cm-content").innerText();
@@ -96,7 +97,7 @@ test.describe("header actions", () => {
     // legend and a title block, nothing left unresolved.
     await openMore(page);
     await page.getByRole("button", { name: "Finish", exact: true }).click();
-    await status.expectFlash("Finished: 6 changes (Ctrl+Z undoes)");
+    await status.expectFlash(await undone(page, "Finished: 6 changes"));
     const editor = page.locator(".cm-content");
     await expect(editor).toContainText("dims auto all");
     await expect(editor).toContainText('title { project "E2E" }');
@@ -138,7 +139,7 @@ test.describe("header actions", () => {
     // "unresolved" in the flash, and the Checks tab stays closed.
     await openMore(page);
     await page.getByRole("button", { name: "Finish", exact: true }).click();
-    await status.expectFlash("Finished: 6 changes (Ctrl+Z undoes)");
+    await status.expectFlash(await undone(page, "Finished: 6 changes"));
     await expect(page.locator("#tab-checks")).toHaveAttribute("aria-selected", "false");
 
     await page.locator("#tab-checks").click();
@@ -173,7 +174,7 @@ test.describe("header actions", () => {
     const status = await watchStatus(page);
     await openMore(page);
     await page.getByRole("button", { name: "Finish", exact: true }).click();
-    await status.expectFlash("Finished: 6 changes (Ctrl+Z undoes)");
+    await status.expectFlash(await undone(page, "Finished: 6 changes"));
     await expect(page.locator("html")).toHaveAttribute("data-mode", "edit");
     const editor = page.locator(".cm-content");
     await expect(editor).toContainText("dims auto all");
@@ -247,7 +248,7 @@ test.describe("header actions", () => {
     await expect(panel.locator(".repair-un code", { hasText: "paper" })).toBeVisible();
 
     await panel.getByRole("button", { name: "Reissue sheet" }).click();
-    await status.expectFlash("Finished: 1 change (Ctrl+Z undoes)");
+    await status.expectFlash(await undone(page, "Finished: 1 change"));
     await expect(page.locator(".cm-content")).toContainText("paper A1 landscape");
     await expect(panel).toContainText("replaced");
     await expect(panel.getByRole("button", { name: "Reissue sheet" })).toHaveCount(0);
@@ -472,11 +473,26 @@ test.describe("header actions", () => {
     await expect(dialog.locator(".embed-code")).toHaveValue(/embed\.html#(z|src)=/);
     await expect(dialog.locator(".embed-live")).toHaveValue(/editable=1$/);
 
-    await dialog.locator(".embed-copy[data-snippet='iframe']").click();
+    // A native modal dialog (audit U12): the page behind is inert, and the focus is inside it.
+    expect(await dialog.evaluate((d) => d instanceof HTMLDialogElement && d.matches(":modal"))).toBe(true);
+    await expect(dialog.locator(":focus")).toHaveCount(1);
+
+    const copyIframe = dialog.locator(".embed-copy[data-snippet='iframe']");
+    const width = (await copyIframe.boundingBox())!.width;
+    await copyIframe.click();
     const copied = await page.evaluate(() => navigator.clipboard.readText());
     expect(copied).toContain("<iframe");
     expect(copied).toContain("embed.html#");
-    await expect(dialog).toHaveCount(0); // copying closes it
+    // Copying keeps the dialog open (the Markdown is one press away) and the button says so, at the
+    // same width; then it says what it does again.
+    await expect(dialog).toBeVisible();
+    await expect(copyIframe).toHaveAccessibleName("Copied");
+    expect((await copyIframe.boundingBox())!.width).toBe(width);
+    await expect(copyIframe).toHaveAccessibleName("Copy iframe");
+    // Escape closes it, and the focus goes back to Share.
+    await page.keyboard.press("Escape");
+    await expect(dialog).toHaveCount(0);
+    await expect(page.locator("#share > summary")).toBeFocused();
   });
 
   test("Embed's Markdown for an edited plan is a link to the share URL, never an image of embed.html", async ({
@@ -491,7 +507,9 @@ test.describe("header actions", () => {
     const dialog = page.locator(".embed-dialog");
     await expect(dialog.getByLabel(/Markdown link/)).toHaveValue(/^\[[^\]]+\]\(http[^)]*#(z|src)=[^)]+\)$/);
     await dialog.getByRole("button", { name: "Copy Markdown" }).click();
-    await status.expectFlash("Markdown copied");
+    await expect(dialog.locator(".embed-copy[data-snippet='md']")).toHaveAccessibleName("Copied");
+    await page.keyboard.press("Escape");
+    await expect(dialog).toHaveCount(0);
 
     const md = await page.evaluate(() => navigator.clipboard.readText());
     // An `embed.html` URL is an HTML page: as `![](…)` it renders as a broken image.
@@ -888,11 +906,14 @@ test.describe("Share → Export copies, and the stage toolbar", () => {
     expect(await toolbar.locator("button").evaluateAll((bs) => bs.map((b) => b.textContent?.trim()))).toEqual([
       "−",
       "+",
-      "⤢",
+      "Fit",
       "⛶",
       "Checks",
       "Paths",
     ]);
+    // Fit is a word, named as before; Fullscreen says whether it is on.
+    await expect(toolbar.locator("[data-pz='fit']")).toHaveAccessibleName("Fit to view");
+    await expect(toolbar.locator("[data-pz='full']")).toHaveAttribute("aria-pressed", "false");
     await expect(toolbar.getByRole("button", { name: /SVG|PNG/ })).toHaveCount(0);
     await expect(page.locator("[data-pz='copysvg'], [data-pz='copypng']")).toHaveCount(0);
   });

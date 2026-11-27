@@ -48,7 +48,7 @@ test.describe("the /3d page", () => {
       const glb = item.getByRole("link", { name: /^Download GLB \(\d+ kB\)$/ });
       await expect(glb).toHaveAttribute("href", a.glb.href);
       await expect(glb).toHaveAttribute("download", `${a.name}.glb`);
-      const open = item.getByRole("link", { name: "Open in the playground (3D)" });
+      const open = item.getByRole("link", { name: "Open in Playground (3D) ↗" });
       const href = (await open.getAttribute("href")) ?? "";
       expect(href.startsWith("https://playground.archlang.uk/#z=")).toBe(true);
       expect(href.endsWith(`&${VIEW3D_PARAM}`)).toBe(true);
@@ -59,7 +59,7 @@ test.describe("the /3d page", () => {
       if (PUBLISHED.has(a.name)) {
         await expect(pageLink).toHaveCount(1);
         await expect(pageLink).toHaveAttribute("href", examplePageUrl(a.name));
-        await expect(pageLink).toHaveText("Example page");
+        await expect(pageLink).toHaveText("Plan and source →");
       } else await expect(pageLink, `${a.name} has no static page, so no link`).toHaveCount(0);
     }
     expect(

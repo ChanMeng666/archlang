@@ -101,10 +101,10 @@ function press(e: MouseEvent, name: string): void {
           ><a class="plans3d__mp4" :href="a.video.mp4" @click="press($event, a.name)">Play the replay (MP4)</a> ·
         </template>
         <a :href="a.glb.href" :download="`${a.name}.glb`">Download GLB ({{ a.glbSize }})</a> ·
-        <a :href="a.link3d" target="_blank" rel="noopener">Open in the playground (3D)</a> ·
+        <a :href="a.link3d" target="_blank" rel="noopener">Open in Playground (3D) ↗</a> ·
         <a :href="`/examples/${a.name}.arch`">Plan source</a>
         <template v-if="PAGES.get(a.name)">
-          · <a class="example-page" :href="PAGES.get(a.name)" :aria-label="`Example page: ${a.name}.arch`">Example page</a></template
+          · <a class="example-page" :href="PAGES.get(a.name)" :aria-label="`Plan and source: ${a.name}.arch`">Plan and source →</a></template
         >
       </p>
     </li>

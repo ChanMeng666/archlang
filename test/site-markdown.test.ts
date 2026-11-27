@@ -154,7 +154,7 @@ suite("siteMarkdown over every SITE_PAGES row", () => {
     expect(band).toContain(`(${a.poster.png})`);
     expect(a.video, "the home band's plan has a replay").not.toBeNull();
     expect(band).toContain(`(${a.video!.mp4})`);
-    const link = /\[Try it in the playground →\]\((https:\/\/playground\.archlang\.uk\/#z=([A-Za-z0-9_-]+)&3d)\)/.exec(
+    const link = /\[Open in Playground \(3D\) ↗\]\((https:\/\/playground\.archlang\.uk\/#z=([A-Za-z0-9_-]+)&3d)\)/.exec(
       band,
     );
     expect(link, "the band's playground link, with &3d").toBeTruthy();
@@ -185,9 +185,7 @@ suite("siteMarkdown over every SITE_PAGES row", () => {
         expect(section, `${a.name}: no replay link`).not.toContain("Play the replay");
       }
       expect(glbLinks, `${a.name}: a [Download GLB (N kB)] link to its GLB`).toContain(a.glb.href);
-      expect(md).toMatch(
-        /\[Open in the playground \(3D\)\]\(https:\/\/playground\.archlang\.uk\/#z=[A-Za-z0-9_-]+&3d\)/,
-      );
+      expect(md).toMatch(/\[Open in Playground \(3D\) ↗\]\(https:\/\/playground\.archlang\.uk\/#z=[A-Za-z0-9_-]+&3d\)/);
     }
   });
 
