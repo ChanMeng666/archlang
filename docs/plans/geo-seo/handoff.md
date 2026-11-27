@@ -46,4 +46,8 @@ the VS Code install link if a VS Code machine is at hand.
 - GEO panel: first weekday of each month; next 2026-12-01. Runner: an agent in the owner's Chrome,
   signed-out where the engine allows, rows appended to `archcanvas-growth/data/geo-citations.csv`.
 - Search Console AI-impressions export: monthly by hand, three times, then decide on automation.
+- Bing and Brave columns (from 2026-11-27): with each panel run, read Bing Webmaster Tools' AI
+  Performance (citations, cited pages, grounding queries) and Recommendations for both sites, and the
+  panel's head terms on Brave and Bing; Google-only readings missed that these engines already rank
+  ArchLang (`docs/seo.md` § 6). Any new public page is submitted to Brave by hand the day it ships.
 - Awesome-list and registry state: re-read before every `docs/seo.md` § 8 edit; the site is the truth.
