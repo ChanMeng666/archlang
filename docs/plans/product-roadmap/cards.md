@@ -1482,7 +1482,7 @@ EV.5 的门照旧：先有设计稿或 ADR，代码在后。PR 里如实写 L1 �
 
 ### RM9.8 · 英尺英寸作为真正的单位（N9；并入 RM3.4；下游请求 5） — `todo`（RM-D64 的 blocked 已由 RM-D65 解除） · 4 日 · opus · 依赖 PS7.9 已做、spec 余量 · `[语法]`
 
-`units ft-in`（或 RM3.4 原定的形式）：内部用 1/16 in 的整数表示，相加精确，尺寸以英尺英寸显示，面积用 sq ft。公制平面字节不动。做完时 RM3.4 在同一 PR 里裁掉。不许：把英尺换算成毫米再舍入后存储（这正是今天的缺陷）。
+`units ft-in`（或 RM3.4 原定的形式）：内部用 1/16 in 的整数表示，相加精确，尺寸以英尺英寸显示，面积用 sq ft。公制平面字节不动。做完时 RM3.4 在同一 PR 里裁掉。**证据更新（2026-11-28）：** 第三方实测（[`2026-11-meltflex-review.md`](2026-11-meltflex-review.md) §2.3 第 3 条）把"公制优先，美国用户的平方英尺来自换算"列为局限之一。不许：把英尺换算成毫米再舍入后存储（这正是今天的缺陷）。
 
 ### RM9.9 · 场地包络，advisory（N7） — `todo`（RM-D64 的 blocked 已由 RM-D65 解除） · 3 日 · opus · 依赖 PS4.9 的卡位 · `[语法]`
 
@@ -1523,6 +1523,46 @@ RM1.1a 的"N 个缺陷"是由同时在写规则的执行者数出来的，召回
 ### RM9.18 · MCP 工具描述与错误按工具设计清单过一遍（N8；RM-D95） — `todo` · 每个工具 0.5 日 · sonnet · 依赖无（与 AF25 同一处，先后都可）
 
 对 `registerTools`（`packages/mcp/src/tools.ts`）里的每个工具核对：描述是否写明用途、何时用它而不是相邻的工具（例如 `validate` 对 `lint`、`describe` 对 `compile`）、输入输出格式、一个例子；错误结果能否区分"参数错"、"源码有诊断"、"超时或内部失败"和"结果为空"，并说明可否重试。改动只是描述文字与错误结果的结构时，照 `.claude/rules/mcp.md` 的加法约定（模式只增不删）。不许：为此改工具名或删参数。
+
+### 第三方实测（MeltFlex，2026-11-15）带出的卡（2026-11-28 加；证据、核对与读法见 [`2026-11-meltflex-review.md`](2026-11-meltflex-review.md)）
+
+对方在 Claude Code 里用 1.62.0 的五个技能端到端跑了一个两室一卫约 80 m² 的 brief：技能被自动选中，验证器抓到门扇碰浴缸（差 25 mm）并被修正，尺寸链闭合；同一 brief 的图像模型方案数字全部不闭合。批评集中在"有效不等于好"：入户直通起居、两卧等大、起居呈带状、没有壁柜与洗衣；另有公制优先、3D 交给了别家、Codex 贵且要开网络、单一维护者宜固定版本。下列卡都是 `todo`，排期由所有者定（审阅稿 §5 有建议的先后）。
+
+### RM9.19 · brief-to-plan 与 edit-plan 技能在循环干净后跑一次 taste 评审（N3、N8） — `todo` · 0.5 日 · sonnet · 依赖无
+
+`skills/archlang/SKILL.md` 已写"循环干净后跑一次 `archlang score plan.arch --taste generic --json` 与 `archlang preview plan.arch --review -o review.png`，报告分数与 `A_*` 建议，不据此迭代"，但 `skills/archlang-brief-to-plan/SKILL.md` 只有 `preview -o plan.png`，`skills/archlang-edit-plan/SKILL.md` 也要核对。对方的带状起居（10 m × 3.6 m ≈ 2.78:1）按 R9 `A_ROOM_ELONGATED` 的 2:1 门槛会报，但流程没跑到。内容：两个技能在 strict 检查干净之后加这一步，最终报告列出 taste 分数、每条 `A_*` 建议与 review 图，并把"建议不是错误、不据此迭代、由用户决定"写清楚；措辞与 `skills/archlang/SKILL.md` 的那一段一致（读它，不重写）。核对技能文件是否被 `gen:agent-manifests` 复制到 `plugins/`，是则跑生成器。证明：技能相关的现有测试（`npm run check:quick` 选到的）全绿；PR 正文贴一份离线夹具（审阅稿 §6 的同类 brief）按新步骤跑出的 `score --taste` JSON 片段。不许：把 taste 变成门禁或迭代目标；在技能里承诺任何规范合规。
+
+### RM9.20 · 新 taste 准则：入户直通公共房间，没有入口过渡（N3；RM1.2b 同一族） — `todo` · 1.5 日 · opus · 依赖 RM1.6a（出处成为数据，已 `done`）
+
+对方第一条批评：入户门直接开进起居室，没有门厅、挂衣处。现有检查都不覆盖：`A_INTIMACY_INVERSION`（R3）查的是公共房间比卧室更深，`W_ENTRANCE_INTO_PRIVATE` 查的是开进私密房间。内容：在 `src/taste/` 加一条 advisory 准则（新的 `A_*` 码与 R 编号，按现有行的格式写 `source`、`verified`、`asks`），判定"住宅的主入口门直接开进 living/dining/kitchen，且门内侧一定深度内没有可读作 entry/foyer/hall 的房间或区域"。入口读法用 `src/analyze/rooms.ts` 已有的 entry/foyer 分类与入口门的选择（`preview --review` 已显示主入口或并列），不另造。出处只取读过的原文（例如 Alexander, A Pattern Language 112 "entrance transition" 或 130 "entrance room"；读不到原文则 `verified` 照实写），阈值（深度）要有出处或写明是 ArchLang 自定并说明理由。只对 `uses` 为住宅的图生效；brief/intent 明说"开门见厅"时不报（读 intent 的方式按现有准则）。证明：§0 规则卡门禁；正反夹具各至少两个（有门厅、门开进走廊、门直开起居、开放式小公寓）；语料上 SVG、`describe()`、`lint()` 字节不变（taste 是 `score` 的输出，不进 `lint`）。不许：做成 W 或进 `lint()`；写"不符合某规范"；按国家猜门厅的默认尺寸。
+
+### RM9.21 · 新 taste 准则：卧室面积没有层级（N3） — `todo` · 1 日 · opus · 依赖无
+
+对方第二条批评：两间卧室同为轴线 17.6 m²，对次卧太大。内容：一条 advisory `A_*`：住宅里有两间以上卧室、且主卧（或面积最大的卧室）与其余卧室的净面积差在某个比例之内时提示"卧室大小没有分出主次"。比例与"次卧常见面积"要有可读的一手出处（对方引用的 100–144 sq ft 来自他们自己的指南，不能直接用；去找原始来源，读不到就只做"等大"判定、不给推荐面积）。intent 或 brief 明说卧室等大（合租、双主卧）时不报。证明：同 RM9.20 的门禁与字节不变；夹具：等大两卧、主次分明、三卧其中两间等大、intent 声明等大。不许：给出"应缩小到多少"的数值建议；改 `repair` 或 `finish` 去动面积。
+
+### RM9.22 · brief-to-plan 的缺项清单：住宅常规项（N3） — `todo` · 1 日 · sonnet · 依赖无
+
+对方第四条批评：没有壁柜、没有洗衣，brief 没要技能就没画，"设计师会问"。这是代理层的事，不进语言。内容：在 `skills/archlang-brief-to-plan/SKILL.md` 的"列出 brief 的每一条要求"之后加一步：对住宅 brief，核对一份短清单（入口与挂衣、卧室衣柜、洗衣、储藏、卫生间数量）里 brief 没有提到的项，在写 `.arch` 之前列出来，并对每一项写明采用的假设（画或不画、为什么）或向用户提问；交互不可用时按假设画并在最终报告里列出。清单与"不悄悄改数字"那条规矩并排，口径一致。证明：技能测试全绿；PR 正文附一次离线演练（同类夹具）的报告片段。不许：在技能里写死各国尺寸；把清单变成编译器的诊断。
+
+### RM9.23 · 图纸表现审计：`finish` 与默认图纸 vs 图像方案的元素（只出设计稿） — `todo` · 1 日 · opus · 依赖无
+
+对方说图像方案"看起来更专业"（家具符号、填充、指北针），读者不核对数字时更有说服力。内容：在 `design/` 下出一份审计：(1) `brief-to-plan` 技能描述说"finishes it as a sheet"，核对它是否总跑 `archlang finish`、跑了之后图纸多了什么；(2) 逐项列出默认图纸已有与没有的表现元素（指北针、比例尺、墙体填充/剖切填充、家具符号、房间名与面积、图框），对照 `docs/agents/iron-laws.md` 的绘图律（绘图改动不移动 `describe()`/`lint()`，字形不得新增手性）判定哪些可以作为默认、哪些只能作为选项；(3) 给出候选改动的清单与各自的字节影响预估。证明：设计稿本身；不改任何源码字节。不许：本卡里改绘图；为了"好看"画出没有依据的东西（虚构家具、虚构门）。
+
+### RM9.24 · 3D 预览的入口写进技能结尾（N4） — `todo` · 0.5 日 · sonnet · 依赖无
+
+对方把 ArchLang 的 PNG 交给 MeltFlex 去做 3D，没有发现 ArchLang 自己有 3D 预览（`packages/archlang-3d` 的 GLB、Scene3D JSON、离线 HTML；playground 的 Plan | 3D 切换与 Download GLB）。内容：`archlang-brief-to-plan` 与 `archlang-export` 技能的最终报告加一行 3D 入口：有 MCP 时用 `link` 工具给 playground 链接并说明可切到 3D；只有 CLI 时给出 `archlang-3d` 的命令（先读 `packages/archlang-3d` 的 README，照它写）。措辞用"3D preview"，按 `.claude/rules/archlang-3d.md` 的口径（预览，不是设计或施工文件）。证明：技能测试全绿；在 `.claude/rules/archlang-3d.md` 与 MCP 测试约束下核对文字。不许：改 MCP 工具描述去承诺 3D（测试禁止）；让核心依赖 `archlang-3d`。
+
+### RM9.25 · Codex 路径：断网可用与上下文成本（N8；与 RM9.17 同一处）（只出设计稿） — `todo` · 1 日 · opus · 依赖无
+
+对方同一 brief 在 Codex 里约 $2.07（Claude Code $0.73），且要先打开网络权限，因为技能经 `npx` 调 CLI。内容：在 `design/` 下出一份调查：(1) Codex 沙箱默认断网时技能的哪一步失败、失败时的报错是否告诉代理怎么办；(2) 断网可用的选项（插件里随带固定版本的 CLI、全局安装的说明、只读 `spec.llm.md` 的降级路径），各自的体积、更新与 provenance 代价（核心零运行时依赖）；(3) 上下文成本：两次运行的差别里哪些可能来自 spec 与技能的长度，与 RM9.17 的逐节判定对齐；只用离线手段（字节数、token 估算），不跑付费评测。证明：设计稿。不许：跑 `eval:live` 等付费评测（所有者专属）；本卡改技能或插件。
+
+### RM9.26 · 信任信号：provenance 与固定版本写明（对方的局限第 6 条） — `todo` · 0.5 日 · sonnet · 依赖无
+
+npm 已发布 SLSA provenance（`npm view @chanmeng666/archlang@<version> dist.attestations` 有 `https://slsa.dev/provenance/v1`，发布是无令牌 OIDC），README 第 104 行只写了单一维护者那一句。内容：README（与 `skills/*/SKILL.md` 的 `compatibility` 行，按需要）加一两句：发布带 provenance、怎样核对（`npm audit signatures` 或上面的命令）、在技能与 CI 里固定版本的写法（`npx -y @chanmeng666/archlang@<version>`）。版本号不写进文档（AGENTS.md：版本来自 npm/tag），用占位。证明：README 的现有测试与漂移检查全绿；命令在本机跑一次贴出输出。不许：写具体版本号；声称"已审计""安全"之类没有出处的话。
+
+### RM9.27 · 公开页面引用这篇第三方实测（措辞律之内） — `todo` · 0.5 日 · sonnet · 依赖所有者看过措辞
+
+这是至今第一篇与维护者无关的第三方实测，结论是 ArchLang 画出的平面数字闭合而图像方案不闭合。内容：在 README 或文档首页的合适位置加一行引用与链接，照 `docs/seo.md` §4 的措辞律：写"一篇独立的测试（MeltFlex，2026-11）在同一个 brief 上运行了…"，注明对方销售 3D 工具、与本项目无关；不转述对方的星数与费用；不用"best""first""only"。证明：`test/docs-page-meta.test.ts` 等公开文字守卫全绿；`docs:build`。不许：转载原文段落；把对方的时间与费用写成我们的基准；暗示认证或背书。
 
 ---
 
