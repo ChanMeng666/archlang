@@ -825,6 +825,13 @@ RM-D65 授权协调者在所有者不在时自行裁定，所有者一句话可�
 |---|---|---|---|
 | RM-D96 | 用真实专业平面图检验 ArchLang、并把真实建筑转成 `.arch` 语料，要不要开卡 | 先问"拿真实的专业平面图让 ArchLang 复刻，看能做到哪一步……这样的构想和计划合理吗"，协调者调研并跑了一次 HABS 探针之后，所有者说"请你帮我做出最佳决策"，并要求把调研结论与建议完整、准确地记到相关文档（2026-11-28，原话为中文） | 开五张卡，`cards.md` 第 11 轨：RM9.28（HABS 公有领域住宅测绘图覆盖率基准，20 张）、RM9.29（开放数据集转换器，先做 Modified Swiss Dwellings，先核许可，依赖 RM9.28）、RM9.30（现状记录读法，只出设计稿，守 ADR 0004/0005）、RM9.31（疑似误报先最小复现）、RM9.32（缺口清单分诊）。状态 `todo`，排期按 `v3.md` §3。不用 Reddit 等许可不明的来源。依据：探针中 11 个房间净面积偏差都在 3.1 % 以内，但 `E_OPENING_NIB` 拒绝了 8 扇真实存在的贴角门、留下 13 条警告（[`2026-11-habs-probe.md`](2026-11-habs-probe.md)）。所有者可一句话推翻。**推翻条件：** RM9.28 显示典型住宅图纸大部分做不到，则 RM9.29 等待；数据集许可不允许再发布衍生作品，则 RM9.29 关闭。同日在增长仓库另有两项受托裁定（访谈改为异步取证、ArchCanvas 押信任与交付层），记录在该仓库 `strategy/decisions/2026-11-28-async-evidence-trust-layer-and-coverage-benchmark.md`，这里不写它的数字 |
 
+### 6.43 受托裁定：Wikidata 继续搁置；HOL 不认领（RM-D97、RM-D98，2026-11-28）
+
+| 编号 | 问题 | 所有者原话 | 决定 |
+|---|---|---|---|
+| RM-D97 | MeltFlex 的实测文章（2026-11-15）够不够解除 Wikidata 搁置 | 协调者把这条列为"所有者决定"之后，所有者说"请你帮我做出最佳决策，然后记录下来"（2026-11-28，原话为中文） | **继续搁置，ArchLang 与 ArchCanvas 都不建条目。** Wikidata 收录标准第 2 条要求条目能用"serious and publicly available references"描述，最终由社区决定；增长仓库 `marketing/launches/runbook-2026-09.md` §F 把解锁条件定为一份"严肃、独立"的描述（行业或技术刊物、论文、书，或与项目无关者的实质报道），并说明删除讨论比没有条目更糟。MeltFlex 文章做了实测，作者写明与维护者"no relationship"，但它是 MeltFlex s. r. o. 的公司内容营销博客：MeltFlex 卖 AI 家装工具，自家技能在同一篇里排名，文中自述"MeltFlex AI, its skills, MCP server and API are ours"。它算独立，不算严肃刊物；而且 2026-11-28 我们已给 MeltFlex 发邮件（E1），此后它的报道不再是未经联系的。**解锁条件（不变，写得更准）：** 出现一份有编辑部的行业或技术刊物（例如 Hackaday、Console.dev、AEC Magazine 的正文报道），或一篇引用 ArchLang 的论文；届时 MeltFlex 作辅助引用。解锁后只先建 ArchLang，由所有者本人在自己的账号里建，按 runbook §F 先在用户页公开利益关系。GEO 能见度不构成建条目的理由。所有者可一句话推翻 |
+| RM-D98 | 是否认领 HOL（hol.org）上的 ArchLang 条目 | 同上 | **不认领。** awesome-codex-plugins #810 下 HOL 机器人自己写明认领"None of them affects this review"，所以它不影响 #810 收录。认领要用所有者的 GitHub OAuth 授权 `read:user` 和 `user:email`，把所有者邮箱交给一家卖付费认证（HOL Blue/Gold）的公司；换来的只是认证徽章、仪表盘里替 README 加徽章的 PR，以及"故事"发布，对 ArchLang 的收录、排名和引用都没有作用（机器人自述付费不改变 trust score 或排名）。README 不加第三方徽章。机器人的认领提醒照常忽略。**重新考虑的条件：** HOL 上的条目信息出错且只有认领者能改；或某个目录把认领设为收录前提 |
+
 ---
 
 ## 7. 与已有计划的关系
