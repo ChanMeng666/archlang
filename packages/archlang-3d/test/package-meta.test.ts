@@ -82,14 +82,47 @@ describe("package metadata", () => {
   });
 
   // Card CG19: only the browser paths (`view`'s key frames and video, `doctor`) load playwright-core
-  // (14 MB), so a consumer never installs it unasked: an optional peer, its floor the exact version
-  // the repository tests with (a devDependency, which the key-frame baseline's Chromium follows).
-  it("playwright-core is an optional peer, not a dependency", () => {
+  // (14 MB), so a consumer never installs it unasked: an optional peer, with a floor that the
+  // Playwright API the package calls (launch, newPage, goto, evaluate, locator, screenshot) has long
+  // met. The repository tests with an exact devDependency (the key-frame baseline's Chromium
+  // follows it), which must satisfy the peer range.
+  it("playwright-core is an optional peer, not a dependency, and the tested pin satisfies it", () => {
     expect(pkg.dependencies["playwright-core"]).toBeUndefined();
     expect(pkg.peerDependenciesMeta).toEqual({ "playwright-core": { optional: true } });
-    const tested = pkg.devDependencies["playwright-core"];
+    const tuple = (v: string): number[] => v.split(".").map(Number);
+    const floor = /^>=(\d+\.\d+\.\d+)$/.exec(pkg.peerDependencies["playwright-core"] ?? "")?.[1];
+    expect(floor, "the peer range is a plain >= floor").toBeDefined();
+    const tested = pkg.devDependencies["playwright-core"] ?? "";
     expect(tested).toMatch(/^\d+\.\d+\.\d+$/);
-    expect(pkg.peerDependencies["playwright-core"]).toBe(`^${tested}`);
+    const [a, b] = [tuple(tested), tuple(floor ?? "")];
+    const cmp = a.map((x, i) => x - (b[i] ?? 0)).find((d) => d !== 0) ?? 0;
+    expect(cmp, `the tested ${tested} is below the peer floor ${floor}`).toBeGreaterThanOrEqual(0);
+  });
+
+  // One door to playwright-core: every runtime import goes through `src/replay/chromium.ts`, whose
+  // missing-package message the CLI relies on. A type-only import is erased and loads nothing.
+  it("only src/replay/chromium.ts imports playwright-core at run time", () => {
+    const files: URL[] = [];
+    const walk = (at: URL): void => {
+      for (const entry of readdirSync(at, { withFileTypes: true })) {
+        if (entry.isDirectory()) walk(new URL(`${entry.name}/`, at));
+        else if (/\.m?ts$/.test(entry.name)) files.push(new URL(entry.name, at));
+      }
+    };
+    const src = new URL("../src/", import.meta.url);
+    walk(src);
+    const importers = files
+      .filter((f) => {
+        const text = readFileSync(f, "utf8");
+        // Biome's layout: double quotes, one space; a dynamic, a static value or a bare import.
+        return (
+          text.includes('import("playwright-core")') ||
+          /^import (?!type )[^;]*from "playwright-core"/m.test(text) ||
+          /^import "playwright-core"/m.test(text)
+        );
+      })
+      .map((f) => f.href.slice(src.href.length));
+    expect(importers).toEqual(["replay/chromium.ts"]);
   });
 
   // Hoisting from the root manifest once hid an undeclared `pngjs` in the asset generator,

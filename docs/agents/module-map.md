@@ -52,8 +52,8 @@ Totals: 434 modules in 34 directories.
 | --- | ---: | ---: | --- | --- |
 | `commands.ts` | 395 | 4 | `archlang3d build \| check \| manifest \| schema \| doctor` (card A4; archlang-3d plan §7). Flags are parsed from `manifest.ts`'s table, so a flag works exactly when the manifest lists it. Exit codes as the core's (ADR 0015, plan §7.3): 0 ok… | none |
 | `main.ts` | 13 | 0 | `archlang3d`'s entry: runs `run.ts`'s command and sets the exit code (usage and codes there). | none |
-| `manifest.ts` | 167 | 3 | `archlang3d manifest --json` (archlang-3d plan §7.4): the CLI as data, the same shape as the core's `archlang manifest --json` (`name, invoke, version, description, exitCodes, globalFlags, commands[{name, summary, flags, input, output… | none |
-| `run.ts` | 262 | 6 | `archlang3d` (cards A3, A4; archlang-3d plan §7): `build`, `check`, `manifest`, `schema` and `doctor` live in `commands.ts` (their flags in `manifest.ts`); `view` is here: | none |
+| `manifest.ts` | 171 | 3 | `archlang3d manifest --json` (archlang-3d plan §7.4): the CLI as data, the same shape as the core's `archlang manifest --json` (`name, invoke, version, description, exitCodes, globalFlags, commands[{name, summary, flags, input, output… | none |
+| `run.ts` | 262 | 7 | `archlang3d` (cards A3, A4; archlang-3d plan §7): `build`, `check`, `manifest`, `schema` and `doctor` live in `commands.ts` (their flags in `manifest.ts`); `view` is here: | none |
 
 ## `packages/archlang-3d/src/glb/`
 
@@ -85,7 +85,7 @@ Totals: 434 modules in 34 directories.
 | Module | Lines | Importers | Summary | Budget |
 | --- | ---: | ---: | --- | --- |
 | `camera.ts` | 394 | 6 | The replay's end camera as plain maths (card A3, look notes round 1): the viewer and the tests read the same functions, so "the end frame fills the canvas" is a property a test can check without a browser. Millimetres, the exporters' axes… | none |
-| `chromium.ts` | 36 | 5 | Playwright's Chromium, loaded on demand. `playwright-core` is an optional peer, not a dependency: a consumer that never renders a frame (a GLB, a scene, the replay HTML) never installs it. Only the paths that start a browser (`view`'s key… | none |
+| `chromium.ts` | 36 | 7 | Playwright's Chromium, loaded on demand. `playwright-core` is an optional peer, not a dependency: a consumer that never renders a frame (a GLB, a scene, the replay HTML) never installs it. Only the paths that start a browser (`view`'s key… | none |
 | `facts.ts` | 57 | 3 | The metrics strip's numbers (card G4), read from the core's public `describe()` and `lint()` for the same source the replay was built from: nothing is measured here and nothing is guessed. The strip itself (`strip.ts`) is browser-safe and… | none |
 | `html.ts` | 157 | 4 | The single-file replay HTML (card A3): the viewer and the pinned three.js as one inline script (`viewer-bundle.ts`; browser target, nothing loaded from a network), the mesh, the event table and the core's own SVG as an inline JSON… | none |
 | `mount.ts` | 1074 | 6 | The replay's renderer (card A3), browser-only: `mountReplay(canvas, payload)` draws the frame at replay time `t` into `canvas`, synchronously, and hashes the composed frame (plan §6.5). Two hosts use it: the single-file replay HTML… | none |
