@@ -1725,7 +1725,7 @@ commit. **Gate:** after a release that moves the MCP package, a follow-up PR the
 (`docs/seo.md` § 8) is deferred; its draft is in the session archive. **Gate:** the skill shows
 users on ClawHub, then the entry is filed.
 
-## Visual-assets residue (from `docs/plans/visual-assets/handoff.md`, 2026-11-04)
+## Visual-assets residue (from `archlang-lab/plans/visual-assets/handoff.md`, 2026-11-04)
 
 ### O.19 · `release.yml`'s `publish-arch-plan` publishes without testing what it packs — `todo`
 

@@ -5,7 +5,7 @@ against `main@58efd8bf` after 75 programme PRs, one read-only agent per audit, n
 grep, AST scripts, the archive's probes and the nightly's artifacts (run 42603828253). The seven delta reports are
 archived beside the originals (`closing-2026-11-10/delta-0N.md`, with the artifacts of runs 42603828253 and 42719118317;
 the latter, on the post-programme main, measured lines 97.82 %, branches 93.91 %, and the same two `fuzz-deep` failures). This page keeps the numbers an agent needs and
-the residue, which `cards.md` § Wave 4 turns into cards.
+the residue, which `archlang-lab/plans/engineering-health/cards.md` § Wave 4 turns into cards.
 
 ## 1. Findings, by status
 

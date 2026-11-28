@@ -30,12 +30,12 @@ read: the nightly dispatched 2026-11-10 (run 42719118317): `fuzz-deep` (expected
 **Next cards:** none. The programme is closed; `closing-audit.md` § 1's open list is the only residue, and it is
 carded only when a signal in README § 5 asks for it.
 
-**Process notes from this day:** executors must NOT edit `cards.md` (adjacent card headings conflict
+**Process notes from this day:** executors must NOT edit `cards.md` (now `archlang-lab/plans/engineering-health/cards.md`) (adjacent card headings conflict
 on every merge; the coordinator records status in a records PR); every pure-move PR repoints the
 source-text guards; a medium PR gets one fresh-context review and one fix round, a second round only
 for a new mechanism (the #594 fast path); CI reds found during a round are folded into it.
 
-**How to continue:** take the first `todo` card of the lowest open wave in `cards.md`, honour
+**How to continue:** take the first `todo` card of the lowest open wave in `archlang-lab/plans/engineering-health/cards.md`, honour
 `depends`, dispatch one executor into a worktree from `main` with the card text plus the finding's
 section from the audit report (`claude-kept/2026-11-09-archlang-health-audit/`), at most two
 executors at once (EH-D1). Merge by tier (`scripts/risk-tier.mjs`): low on green CI pinned to the

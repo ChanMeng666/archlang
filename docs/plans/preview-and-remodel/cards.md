@@ -26,7 +26,7 @@ suggested executor; the main session may override. Every card lists what it must
 
 Baseline facts for every A-card: `archlang-lab/plans/archlang-3d/development-plan.md` §3 (architecture), §4
 (algorithms), §6.1/§6.5 (viewer, time seam), §7 (CLI), §8 (checks), §9.8/§9.10 (day list, week-one
-kit); `amendment-v0.7.md` (the recut). The viewer subset of three.js 0.186.1 is 140 kB gzip (MIT).
+kit); `archlang-lab/plans/archlang-3d/amendment-v0.7.md` (the recut). The viewer subset of three.js 0.186.1 is 140 kB gzip (MIT).
 
 ### A0 · Core exports C1/C2 and ADR 0031 — `done` · PR #319 · merge `6e510aff` · record: `research/2026-10-28-as-built.md` § A0
 

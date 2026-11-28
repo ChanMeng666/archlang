@@ -123,7 +123,7 @@ concept 表的改动要动 `SYNONYMS_VERSION`，这个版本号只能由所有�
 
 **不做"尽可能全面地记录每个交互"**，理由：
 - 两个站的隐私页（`docs-site/privacy.md`、ArchCanvas `/privacy`）都承诺不收内容、IP 和标识。全面记录会推翻这些公开承诺。所有者在新西兰，适用 NZ Privacy Act 2020，访客里约四分之三来自美国，还有欧盟访客（GDPR）。
-- 所有者 2026-11-07 的裁定是 playground 页面代码里不加埋点（`playground-minimal/README.md`）。要改，需要所有者的原话。
+- 所有者 2026-11-07 的裁定是 playground 页面代码里不加埋点（`archlang-lab/plans/playground-minimal/README.md`）。要改，需要所有者的原话。
 - 全量记录是噪音，飞轮要的是能改变决定的信号。
 
 **飞轮的定义**：模型写 `.arch` → 编译器回诊断 → 按诊断码聚合 → 改 spec、错误目录、自动修复和 lint → 首遍通过率上升 → 更多人和 agent 用。ArchCanvas 的 `generation_attempts` 已按模型记首遍有效率和 token，但只记诊断的**个数**，不记**是哪些码**。缺的就是这一环。

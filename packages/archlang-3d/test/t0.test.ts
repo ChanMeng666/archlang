@@ -506,7 +506,7 @@ describe("V5, V6: the catalogue's names", () => {
     for (const names of Object.values(T0_FAMILIES)) for (const n of names) expect(words.has(n), n).toBe(true);
   });
 
-  // The cards' lists (docs/plans/visual-assets/cards.md): no grey box for a family of these batches.
+  // The cards' lists (archlang-lab/plans/visual-assets/cards.md): no grey box for a family of these batches.
   const BATCHES: Record<string, string[]> = {
     V3: [
       "bed",

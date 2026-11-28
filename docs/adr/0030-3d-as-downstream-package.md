@@ -2,7 +2,7 @@
 
 - **Status:** Accepted 2026-10-28 with the PR that creates `packages/archlang-3d` (preview-and-remodel
   card A1). Drafted as `archlang-lab/plans/archlang-3d/adr-draft-0030-3d-as-downstream-package.md` (v0.6,
-  2026-10-24) and amended by `docs/plans/archlang-3d/amendment-v0.7.md` (2026-10-28: the M1 recut and
+  2026-10-24) and amended by `archlang-lab/plans/archlang-3d/amendment-v0.7.md` (2026-10-28: the M1 recut and
   the exposure tiers, which rewrite Decision 1 and reopen Q1's "private until the release milestone").
 - **Date:** 2026-10
 - **Owner decisions recorded:** Q1–Q22 of the archlang-3d plan (2026-10-23 and 2026-10-24) and the
