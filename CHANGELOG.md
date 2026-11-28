@@ -9,7 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
-- `W_STAIR_NO_LANDING` reads `outdoor` ground as floor: an exterior stair whose foot lands on paving, or whose head lands on a balcony, no longer reports "there is no floor". Every surface but `water` counts, and where surfaces overlap the one drawn last decides, as for what a door opens onto. Found by the 2026-11 HABS probe (RM9.31). `compile()` and `describe()` are byte-identical on every plan, and `lint()` is byte-identical on every shipped example.
+- `W_STAIR_NO_LANDING` reads `outdoor` ground as floor: an exterior stair whose foot lands on paving, or whose head lands on a balcony, no longer reports "there is no floor". Every surface but `water` counts, and where surfaces overlap the one drawn last decides, as for what a door opens onto. Ground has no walls, so it counts only as deep as it covers the middle half of the flight's width, measured on its shape: a 600 mm strip under a 1000 mm landing reports "the floor ends 600 mm past the bottom step". On a plan whose stair lands on such ground, the rules that share the landing see it too: `W_FURNITURE_ON_STAIR` reports furniture standing on it, `W_SWING_OVER_STAIR` a door leaf sweeping it, `finish` keeps furniture off it and `repair` moves furniture off it, and `describe(src, { facts: ["clearances"] })` gives that landing its measured `clear_mm` (with `by: null` when the ground covers it) instead of `0` with `by: { kind: "no-floor" }`. Found by the 2026-11 HABS probe (RM9.31). `compile()` is byte-identical on every plan; `describe()`, `lint()` and `finish()` are byte-identical on every shipped example.
 
 ## [1.69.0] - 2026-11-28
 

@@ -6,9 +6,9 @@
  */
 
 import { describe as suite, expect, it } from "vitest";
-import { type Diagnostic, lint, lintCoverage } from "../src/index.js";
+import { type Diagnostic, describe as describePlan, lint, lintCoverage } from "../src/index.js";
 import { DEFAULT_RULESET, LINT_PROFILES } from "../src/lint.js";
-import { MAX_STAIR_WORK, minimumRun } from "../src/lint/rules/stairs.js";
+import { groundWork, MAX_STAIR_WORK, minimumRun } from "../src/lint/rules/stairs.js";
 import { resolveRuleset } from "../src/lint/ruleset.js";
 
 const of = (src: string, code: string, profile?: string): Diagnostic[] =>
@@ -228,30 +228,95 @@ suite("W_STAIR_NO_LANDING", () => {
 
   // RM9.31 (the 2026-11 HABS probe): an exterior stair steps off onto the ground or a balcony, which
   // are `outdoor` surfaces, not rooms. Walkable ground is floor, as the access graph reads it
-  // (`groundWalkable`: every kind but `water`), and the topmost surface at the probe decides.
-  const outside = (ground: string) =>
-    `plan "P" {\n  units mm\n  room id=r at (0,0) size 3000x3000 label "Hall" uses hall\n  stair id=st at (3500,0) size 1000x2400 dir up\n${ground}}`;
+  // (`groundWalkable`: every kind but `water`; the topmost surface decides), but only as deep as it
+  // covers the middle half of the flight's width, read on its shape: it has no walls to stop it.
+  // The flight below is 1000 wide, centred on x 4000, so the band is x 3750–4250 from y 2400.
+  const outside = (ground: string, extra = "") =>
+    `plan "P" {\n  units mm\n  room id=r at (0,0) size 3000x3000 label "Hall" uses hall\n  stair id=st at (3500,0) size 1000x2400 dir up\n${ground}${extra}}`;
   const NO_FLOOR =
     "The stair in the middle of the plan has no landing at its foot: there is no floor, where a landing as long as the flight is wide needs 1000 mm (1000 mm short).";
+  const ends = (mm: number) =>
+    `The stair in the middle of the plan has no landing at its foot: the floor ends ${mm} mm past the bottom step, where a landing as long as the flight is wide needs 1000 mm (${1000 - mm} mm short).`;
+  const landing = (src: string) => describePlan(src, { facts: ["clearances"] }).clearances!.stairs![0]!.landings[0];
 
   it("walkable outdoor ground beyond the foot is floor; water is not, and the topmost surface decides", () => {
     const paving = "  outdoor paving at (3300,2400) size 1400x1500\n";
     const water = "  outdoor water at (3300,2400) size 1400x1500\n";
     const deck = "  outdoor deck at (3300,2400) size 1400x1500\n";
     expect(of(outside(paving), "W_STAIR_NO_LANDING")).toEqual([]);
+    expect(landing(outside(paving))).toEqual({
+      end: "foot",
+      need_mm: 1000,
+      clear_mm: 1000,
+      by: null,
+    });
     expect(of(outside("  outdoor lawn at (3300,2400) size 1400x1500\n"), "W_STAIR_NO_LANDING")).toEqual([]);
     expect(of(outside(water), "W_STAIR_NO_LANDING").map((d) => d.message)).toEqual([NO_FLOOR]);
     // A deck drawn over the water after it is a bridge; water drawn over the deck is a pond.
     expect(of(outside(water + deck), "W_STAIR_NO_LANDING")).toEqual([]);
     expect(of(outside(deck + water), "W_STAIR_NO_LANDING").map((d) => d.message)).toEqual([NO_FLOOR]);
-    // Read where a room is read, halfway to the depth: a strip 300 mm deep does not reach it.
+    // Two surfaces meeting on a seam are one floor.
+    const seam = "  outdoor paving at (3300,2400) size 1400x500\n  outdoor deck at (3300,2900) size 1400x1000\n";
+    expect(of(outside(seam), "W_STAIR_NO_LANDING")).toEqual([]);
+  });
+
+  it("ground counts only as deep and as wide as it covers the band, and the depth it reports is true", () => {
+    const strip = (deep: number) => outside(`  outdoor paving at (3300,2400) size 1400x${deep}\n`);
+    expect(of(strip(600), "W_STAIR_NO_LANDING").map((d) => d.message)).toEqual([ends(600)]);
+    expect(landing(strip(600))).toEqual({
+      end: "foot",
+      need_mm: 1000,
+      clear_mm: 600,
+      by: { kind: "no-floor" },
+    });
+    // Shallower than half the landing: the centreline point a room is read at is off it too.
+    expect(of(strip(300), "W_STAIR_NO_LANDING").map((d) => d.message)).toEqual([ends(300)]);
+    // Water drawn over the paving 600 mm out cuts it there.
     expect(
-      of(outside("  outdoor paving at (3300,2400) size 1400x300\n"), "W_STAIR_NO_LANDING").map((d) => d.message),
-    ).toEqual([NO_FLOOR]);
+      of(
+        outside("  outdoor paving at (3300,2400) size 1400x1500\n  outdoor water at (3300,3000) size 1400x300\n"),
+        "W_STAIR_NO_LANDING",
+      ).map((d) => d.message),
+    ).toEqual([ends(600)]);
+    // A 100 mm path down the flight's centreline, a 20 × 20 tile on the point a room is read at, and
+    // paving that begins 400 mm past the step: none is a floor at the step.
+    for (const ground of [
+      "  outdoor paving at (3950,2400) size 100x1500\n",
+      "  outdoor paving at (3990,2890) size 20x20\n",
+      "  outdoor paving at (3300,2800) size 1400x1500\n",
+    ]) {
+      expect(of(outside(ground), "W_STAIR_NO_LANDING").map((d) => d.message)).toEqual([NO_FLOOR]);
+      expect(landing(outside(ground))).toEqual({
+        end: "foot",
+        need_mm: 1000,
+        clear_mm: 0,
+        by: { kind: "no-floor" },
+      });
+    }
+  });
+
+  it("an L-shaped terrace whose box holds the landing but whose shape does not is no floor there", () => {
+    // Its leg runs beside the band (x 3300–3600) and its foot past the landing (y 3600–4000).
+    const ell = "  outdoor paving polygon (3300,2400) (3600,2400) (3600,3600) (4800,3600) (4800,4000) (3300,4000)\n";
+    expect(of(outside(ell), "W_STAIR_NO_LANDING").map((d) => d.message)).toEqual([NO_FLOOR]);
+  });
+
+  it("the landing on the ground is the stair's floor to the rules that share it: furniture on it", () => {
+    // `W_FURNITURE_ON_STAIR` reads the landing `W_STAIR_NO_LANDING` measured: with no floor it was
+    // 0 mm deep and nothing stood on it; on paving it is the 1000 mm the flight asks.
+    const planter = "  furniture planter at (3800,2500) size 400x400\n";
+    expect(of(outside("", planter), "W_FURNITURE_ON_STAIR")).toEqual([]);
+    expect(
+      of(outside("  outdoor paving at (3300,2400) size 1400x1500\n", planter), "W_FURNITURE_ON_STAIR").map(
+        (d) => d.message,
+      ),
+    ).toEqual([
+      'Furniture "planter" stands on the landing at the foot of the stair in the middle of the plan: a landing as long as the flight is wide, 1000 mm, stays clear of furniture.',
+    ]);
   });
 
   it("an exterior stair from paving up to a balcony has its landings on both", () => {
-    const xst = (ground: string, balcony: string) => `plan "P" {
+    const xst = (ground: string, balcony: string, swing = "") => `plan "P" {
   units mm
   level 1 "Ground" {
     room id=liv at (0,0) size 5000x4000 label "Living" uses living
@@ -262,7 +327,7 @@ ${ground}    stair id=xst at (5500,1000) size 1000x2800 dir up
   level 2 "Upper" {
     room id=bed at (0,0) size 5000x4000 label "Bedroom" uses bedroom
     walls from rooms exterior 200 partition 100
-    door on bed.right at 600 from start width 800
+    door on bed.right at 600 from start width 800${swing}
 ${balcony}    stair id=xst at (5500,1000) size 1000x2800 dir down
   }
 }`;
@@ -273,6 +338,13 @@ ${balcony}    stair id=xst at (5500,1000) size 1000x2800 dir down
       "The stair in the middle of the plan on level 1 has no landing at its foot: there is no floor, where a landing as long as the flight is wide needs 1000 mm (1000 mm short).",
       "The stair in the middle of the plan on level 2 has no landing at its head: there is no floor, where a landing as long as the flight is wide needs 1000 mm (1000 mm short).",
     ]);
+    // The head landing on the balcony is the stair's floor to `W_SWING_OVER_STAIR` too: the bedroom
+    // door opening out sweeps it. With no balcony there was no landing for it to sweep.
+    expect(of(xst(paving, balcony, " swing out"), "W_SWING_OVER_STAIR").map((d) => d.message)).toEqual([
+      'The exterior door into "Bedroom" swings over the stair in the middle of the plan on level 2: its open leaf sweeps the landing at the head of the flight, the 1000 mm a person steps off onto.',
+    ]);
+    expect(of(xst(paving, "", " swing out"), "W_SWING_OVER_STAIR")).toEqual([]);
+    expect(of(xst(paving, balcony), "W_SWING_OVER_STAIR")).toEqual([]);
   });
 });
 
@@ -329,8 +401,15 @@ suite("W_STAIR_HEAD_VOID", () => {
 
 suite("W_STAIR_TOO_STEEP", () => {
   it("the least run: the fewest risers, one going fewer", () => {
-    expect(minimumRun(3000, DEFAULT_RULESET)).toMatchObject({ risers: 14, going: 220, run: 2860 });
-    expect(minimumRun(2640, DEFAULT_RULESET)).toMatchObject({ risers: 12, run: 2420 }); // 12 × 220 = 2640 exactly
+    expect(minimumRun(3000, DEFAULT_RULESET)).toMatchObject({
+      risers: 14,
+      going: 220,
+      run: 2860,
+    });
+    expect(minimumRun(2640, DEFAULT_RULESET)).toMatchObject({
+      risers: 12,
+      run: 2420,
+    }); // 12 × 220 = 2640 exactly
     expect(minimumRun(2700, resolveRuleset(LINT_PROFILES["cn-residential-advisory"]))).toMatchObject({
       risers: 14,
       run: 2860,
@@ -342,7 +421,10 @@ suite("W_STAIR_TOO_STEEP", () => {
       risers: 14,
       run: 3302,
     });
-    expect(minimumRun(150, DEFAULT_RULESET)).toMatchObject({ risers: 1, run: 0 });
+    expect(minimumRun(150, DEFAULT_RULESET)).toMatchObject({
+      risers: 1,
+      run: 0,
+    });
   });
 
   it("judged against an authored height, on the storey the flight climbs from", () => {
@@ -370,7 +452,11 @@ suite("W_STAIR_TOO_STEEP", () => {
     expect(of(src, "W_STAIR_TOO_STEEP")).toEqual([]);
     const stairs = lintCoverage(src)!.families.find((f) => f.family === "stairs")!;
     expect(stairs.skipped).toEqual([
-      { reason: "no-storey-height", why: "the plan states no storey height", levels: [1] },
+      {
+        reason: "no-storey-height",
+        why: "the plan states no storey height",
+        levels: [1],
+      },
     ]);
   });
 });
@@ -564,5 +650,32 @@ suite("the counted work", () => {
   it("is a count, charged before the work", () => {
     expect(Number.isInteger(MAX_STAIR_WORK)).toBe(true);
     expect(MAX_STAIR_WORK).toBeGreaterThan(200_000);
+  });
+
+  it("charges every landing one read of each outdoor surface, near it or not (RM9.31)", { timeout: 60_000 }, () => {
+    // A thousand straight stairs on one floor, each owing its foot: n × (wall pieces + 1 room +
+    // outdoor surfaces + 1). With 1997 wall pieces, one surface brings each landing to exactly the
+    // 2000 its share of the budget is; a second is one over. The surfaces lie far from every landing,
+    // so measuring the ground by them costs nothing more (`groundWork(0)`).
+    const n = 1000;
+    expect(MAX_STAIR_WORK / n).toBe(2000);
+    expect(groundWork(0)).toBe(0);
+    const place = (i: number): [number, number] => [500 + (i % 40) * 3000, 500 + Math.floor(i / 40) * 3000];
+    const stairs = Array.from({ length: n }, (_, i) => {
+      const [x, y] = place(i);
+      return `  stair id=s${i} at (${x},${y}) size 1000x3000 dir up`;
+    }).join("\n");
+    const points = Array.from({ length: 1998 }, (_, i) => `(${i * 50},${-1000 - (i % 2) * 100})`);
+    const refused = (surfaces: number): boolean => {
+      const ground = Array.from(
+        { length: surfaces },
+        (_, i) => `  outdoor paving at (${i * 2000},90000) size 1000x1000`,
+      ).join("\n");
+      const src = `plan "P" {\n  units mm\n  room id=r at (0,0) size 120000x80000\n  wall id=w exterior thickness 10 { ${points.join(" ")} }\n${stairs}\n${ground}\n}\n`;
+      const family = lintCoverage(src)!.families.find((f) => f.family === "stairs")!;
+      return (family.skipped ?? []).some((s) => s.reason === "stair-budget");
+    };
+    expect(refused(1)).toBe(false);
+    expect(refused(2)).toBe(true);
   });
 });

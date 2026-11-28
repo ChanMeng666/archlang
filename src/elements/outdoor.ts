@@ -16,7 +16,10 @@
  *    area is reported separately, in `describe().outdoor[]` and `totals.outdoor_area_m2`,
  *    and never mixed in.
  *  - **Not a wall or an obstacle.** It obstructs nothing. It contributes nothing to the
- *    nav grid, to the circulation flood fill, or to any clearance rule. What it does decide
+ *    nav grid or to the circulation flood fill. It is floor to one clearance measure: a stair
+ *    landing off every room stands on walkable ground as deep as that ground covers it
+ *    (`groundDepth`, `src/lint/rules/stairs.ts`, read by `W_STAIR_NO_LANDING` and the rules and
+ *    passes that share its landing facts). What it also decides
  *    is whether a door to the outside leads anywhere (backlog 4.5): the kind says whether
  *    the ground can be walked on (`groundWalkable`, every kind but `water`), and a door whose
  *    outside lies on water with no walkable surface drawn over it (a `deck` bridge, paving
@@ -130,8 +133,9 @@ export function outdoorRing(o: ROutdoor): Point[] {
  *
  * One table, so nothing anywhere else switches on a kind. `material: null` means "no
  * hatch" — `balcony` only. `walkable: false` is `water` alone (backlog 4.5): a lawn, a planting
- * bed, gravel and every paved or decked surface can be stepped on. It is read by the access
- * graph only, for what a door opens onto ({@link groundWalkable}); it draws nothing.
+ * bed, gravel and every paved or decked surface can be stepped on. It is read ({@link groundWalkable})
+ * by the access graph, for what a door opens onto, and by the stair landing measure, for the floor a
+ * landing off every room stands on; it draws nothing.
  */
 interface GroundSpec {
   material: string | null;

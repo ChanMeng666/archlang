@@ -161,12 +161,19 @@
 | 5 | `north <角度>` 可用而 spec 只列四个方向；旋转后剖切符号报 `E_SECTION_LOOK` | `north 236`，一条水平剖切 `look north`、一条竖向剖切 `look west` | 两条都报 `E_SECTION_LOOK`，消息写明这张图允许的两个词（"east or west"、"south or north"）；照消息改词后编译通过 | **行为按设计；`spec.llm.md` 漏写** | `parseNorth`（`src/parser.ts`）接受角度；`docs/language-reference.md` 写明 `north …\|<deg>`，角度在罗盘事实里就近取正方向；`E_SECTION_LOOK` 目录说明：罗盘词跟着 `north` 转。只有 `spec.llm.md` 第 54 行的注释只列了 `up\|down\|left\|right` |
 | 6 | `E_OPENING_NIB` 拒绝贴角的真实门（探针里 8 次） | 两间房，`door between a and b at 590 from start width 900`，门边离外墙内皮 40 mm | 拒绝，提示给出最近的合法位置（`at 650 from start`）；同一扇门写成 `door at (3000,590) … wall p` 只报 `W_OPENING_AT_JUNCTION` | **按设计，不在本卡改** | 目录说明 `E_OPENING_NIB`；ADR 0004、ADR 0005、ADR 0028 §5：派生位置要么合法、要么拒绝，绝不滑动；`compile()` 不读 lint profile。记录语境下是否降级归 RM9.30 |
 
-**第 3 条的修法。** 楼梯平台的"楼面"探针点（平台深度的一半处、梯段中线上）落在房间里，或落在可行走的 `outdoor` 地面上，都算楼面；几块地面重叠时以最后画的那块为准（与门通向的地面判断 `unwalkableGroundAt` 同一读法），按形状判断，不用外接框。室外地面也计入楼梯规则的计数预算（每个平台多读一遍室外地面，先计后做）。目录说明补了一句同样的话。
+**第 3 条的修法。** 房间仍按原来的读法：平台深度一半处、梯段中线上的那一点落在房间里就算楼面，房间的结果一字不变。这一点不在任何房间里时，改量可行走的 `outdoor` 地面盖住平台带的深度（`groundDepth`，`src/lint/rules/stairs.ts`）：平台带取梯段宽度的中间一半，与读墙用的同一条带；地面没有墙，所以它自己的范围就是量法。按形状量，不用外接框，而且是精确的：一条横穿平台带的线是否全被地面盖住，只会在环的顶点、边与带侧边的交点、两条边的交点这些深度上改变，所以每两个这样的深度之间取一条线就能判定整段。几块地面重叠时以最后画的那块为准（与门通向的地面判断 `unwalkableGroundAt` 同一读法）；除 `water` 外都能踩。盖到哪里为止，就报到哪里：600 mm 深的铺地条报 "the floor ends 600 mm past the bottom step"，`describe --facts clearances` 的 `clear_mm` 也是 600。这些计算先计入楼梯规则的计数预算再做：每个平台读一遍每块室外地面，外加平台带附近地面的边数 n 对应的上限 `groundWork(n)`（附近没有地面时为 0）。目录说明同步写明。
+
+**连带的变化（同一套平台数据，按目录说明本来就该如此）。** `W_FURNITURE_ON_STAIR`、`W_SWING_OVER_STAIR`、`finish` 的摆家具（`src/furnish.ts` 读 `stairZones`）和 `repair`（读 `onStairZones`）都读 `W_STAIR_NO_LANDING` 量出的平台。从前落在地面上的平台深 0 mm，上面什么都不算；现在它有量出的深度。所以在楼梯落在可行走地面上的平面里：放在平台上的家具报 `W_FURNITURE_ON_STAIR`，向外开、扫过平台的门报 `W_SWING_OVER_STAIR`，`finish` 不会把家具放上去，`repair` 会把家具挪开，`describe --facts clearances` 里该平台从 `clear_mm 0, by no-floor` 变成量出的深度（盖满时 `by: null`）。语料里没有这样的平面，所以这些都没有移动（见下）。
 
 **证明。**
 
-- 先红后绿：`test/lint-stairs.test.ts` 新增两条（铺地、草地、水、水上的木平台、水压在木平台上、只有 300 mm 深的铺地条；以及从铺地上到阳台的室外楼梯）。修之前，在 `main` 的构建上，铺地底部和阳台顶部都报 "there is no floor"。
-- 语料：在 `examples/`、`test/`、`eval/`、`docs-site/public/`、`skills/` 下全部 508 份 `.arch` 上，比较修改前后 `compile()` 结果、`describe()`、`finish()` 的 SHA-256 与 `lint()` 的每一行：0 份移动。为了证明这个比较能失败，先在 "there is no floor" 后面插了一个标记，比较结果移动了 1 份（`test/fixtures/zones-levels.arch` 的两条，它没有室外地面）。测试文件里内联平面的摘要用 `npm run digest:preview` 核对（结果见 PR）。
+- 先红后绿：`test/lint-stairs.test.ts` 新增几条。
+  - 地面种类：铺地、草地、水、水上的木平台、水压在木平台上，以及两块地面在一条接缝上相接。
+  - 只量到地面盖住的深度：600 mm 与 300 mm 深的铺地条，连同 `clear_mm`；铺地上 600 mm 处压着一块水面；100 mm 宽的小路；平台中点上一块 20 × 20 的地砖；从台阶外 400 mm 才开始的铺地；一个外接框盖住平台、形状却没盖住的 L 形阶地。
+  - 共用平台的两条规则：铺地平台上的家具报 `W_FURNITURE_ON_STAIR`；从铺地上到阳台的室外楼梯两端都有平台，而卧室门向外开时扫过阳台上的顶部平台，报 `W_SWING_OVER_STAIR`。
+  - 预算：一千个楼梯正好用满预算时，多一块室外地面就被拒；去掉 `ground.length` 这一项，这条测试就会失败（试过）。
+  - 修之前，在 `main` 的构建上，铺地底部和阳台顶部都报 "there is no floor"。
+- 语料：在 `examples/`、`test/`、`eval/`、`docs-site/public/`、`skills/` 下全部 508 份 `.arch` 上，比较修改前后 `compile()` 结果、`describe()`、`finish()` 的 SHA-256 与 `lint()` 的每一行，0 份移动（第一轮与修正轮各量一次）。为了证明这个比较能失败，先在 "there is no floor" 后面插了一个标记，比较结果移动了 1 份（`test/fixtures/zones-levels.arch` 的两条，它没有室外地面）。测试文件里内联平面的摘要用 `npm run digest:preview` 核对（结果见 PR）。
 - 探针原图：一层室外楼梯底部那条不再报；二层顶部那条仍报，因为探针画的阳台在楼梯旁边，不在顶部前方，按画出的几何是真报。
 
 **留下的事。**
@@ -174,3 +181,4 @@
 - `spec.llm.md` 第 54 行补上 `|<deg>`：只需 6 个字符（现在 29,909 个 UTF-16 单位，上限低于 30,000），但 spec 一改就连带 `llms-full.txt` 与技能包，也让 ArchCanvas 跟进新版时不能再省掉付费定价跑（RM-D99 的记录正是以 spec 未变为由省掉的）。所以不在本卡单独改，放到下一次本来就要改 spec 的 PR（例如 RM9.32 核对 spec 与行为时）一起做。
 - 第 4 条：两条会分开出现，所以不该删掉任何一条；如果要处理"计数虚高"，可以在 `W_PATH_TOO_NARROW` 的消息里注明同一扇门已有 `W_DOOR_CLEARANCE`。这会移动语料里两条同时出现处的 `lint()`，要单独开卡。
 - 第 1、2、6 条在"记录一栋已建成的房子"时是否降为报告，归 RM9.30。
+- 第 3 条的修法不看地面种类和楼层的关系：二层的 `outdoor lawn` 也算楼面（屋顶花园可以，草地悬在半空不行），种植床 `planting` 也算能踩。要分清，得让地面种类知道自己在哪一层，或给楼梯平台单独一张可踩表；要单独开卡。
