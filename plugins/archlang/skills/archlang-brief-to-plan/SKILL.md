@@ -75,9 +75,9 @@ This skill is a workflow, not a language reference. The language is whatever `ar
 - Every lint warning still present, with the reason it stays.
 - A 3D preview, offered: `archlang link plan.arch` (or the MCP `link` tool) gives a playground URL
   where the user switches the drawing to **3D** and can press Share → Download GLB. With Node 20+,
-  `npx -y @chanmeng666/archlang-3d view plan.arch --replay -o plan.html` writes it offline, from the
-  separate archlang-3d package; give the command, do not run it. It previews the plan; it is not a
-  design or construction file.
+  `npx -y @chanmeng666/archlang-3d view plan.arch --replay -o plan.html` writes it as one HTML file
+  that opens offline, from the separate archlang-3d package; give the command, do not run it unless
+  the user asks. It previews the plan; it is not a design or construction file.
 
 ## When something goes wrong
 

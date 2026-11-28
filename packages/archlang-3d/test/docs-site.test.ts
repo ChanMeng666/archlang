@@ -112,28 +112,48 @@ describe("the /3d page's commands are the package's", () => {
  * The task skills that end with the 3D preview's entry point (`archlang-brief-to-plan`,
  * `archlang-export`) give the user an `npx -y @chanmeng666/archlang-3d <cmd>` line. The root's
  * `test/task-skills.test.ts` checks only the core's commands, so this holds each such line to
- * `COMMANDS` the way the `/3d` page is held above, and the words to "preview" (PS-D11).
+ * `COMMANDS` the way the `/3d` page is held above, and the words to "preview" (PS-D11). The skills
+ * are hard-wrapped: a bullet's continuation lines are indented, and are joined to it before
+ * anything is matched, so a command wrapped across two lines is still read as one command.
  */
 describe.each(["archlang-brief-to-plan", "archlang-export"])("skills/%s/SKILL.md's 3D preview line", (name) => {
   const flags = new Map(
     COMMANDS.map((c) => [c.name, new Set(["--help", "-h", ...c.flags.flatMap((f) => [f.flag, f.alias ?? f.flag])])]),
   );
-  const skill = read(`skills/${name}/SKILL.md`);
-  const usages = [...skill.matchAll(/npx -y @chanmeng666\/archlang-3d\s+([a-z][a-z-]*)((?:\s+[^\n`|]*)?)/g)];
+  /** Each command's required flags, as the table marks them (`(required` in the flag's description). */
+  const required = new Map(COMMANDS.map((c) => [c.name, c.flags.filter((f) => /\(required\b/.test(f.description))]));
+  const skill = read(`skills/${name}/SKILL.md`).replace(/\n[ \t]+/g, " ");
+  const bullet = skill.split("\n").find((l) => l.startsWith("- A 3D preview")) ?? "";
+  const usages = [...skill.matchAll(/npx -y @chanmeng666\/archlang-3d\s+([a-z][a-z-]*)((?:[ \t]+[^\n`|]*)?)/g)];
 
-  it("names an archlang3d command, with only the flags it declares", () => {
+  it("has one 3D preview bullet, and every archlang-3d command is in it", () => {
+    expect(bullet).not.toBe("");
     expect(usages.length).toBeGreaterThan(0);
+    for (const u of usages) expect(bullet).toContain(u[0]);
+  });
+
+  it("names an archlang3d command, with only the flags it declares and every flag it requires", () => {
+    // The table marks view's required flags (`run.ts` refuses a view without them), so the
+    // derivation is not vacuous.
+    expect(required.get("view")!.length).toBeGreaterThan(0);
     for (const [, cmd, rest] of usages) {
       const declared = flags.get(cmd!);
       expect(declared, `\`${cmd}\` is not an archlang3d command`).toBeTruthy();
-      for (const f of (rest ?? "").match(/(?<![\w-])--?[a-zA-Z][\w-]*/g) ?? []) {
+      const given = (rest ?? "").match(/(?<![\w-])--?[a-zA-Z][\w-]*/g) ?? [];
+      for (const f of given) {
         expect(declared!.has(f), `\`archlang3d ${cmd} … ${f}\` is not a flag of \`${cmd}\``).toBe(true);
+      }
+      for (const f of required.get(cmd!) ?? []) {
+        const has = given.includes(f.flag) || (f.alias !== undefined && given.includes(f.alias));
+        expect(has, `\`archlang3d ${cmd}\` needs ${f.flag}`).toBe(true);
       }
     }
   });
 
-  it("calls it a 3D preview, never a prompting npx or an unscoped bin", () => {
-    expect(skill).toContain("3D preview");
+  it("calls it a 3D preview, never a prompting npx, an unscoped bin, a model or a render", () => {
+    expect(bullet).toContain("3D preview");
+    expect(bullet).toContain("not a design or construction file");
+    expect(bullet).not.toMatch(/3D (model|render)/i);
     expect(skill).not.toMatch(/npx (?!-y )\S*archlang/);
     expect(skill).not.toMatch(/npx -y archlang3d/);
     expect(skill).not.toMatch(/\b(3D CAD|BIM|walkthroughs?|photo-?real\w*)\b/i);
