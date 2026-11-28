@@ -5,7 +5,7 @@
 Every diagnostic carries a stable code. Look one up with `arch explain <CODE>`
 (e.g. `arch explain E_ROOM_SIZE`). Errors abort rendering; warnings do not.
 
-**170 errors** · **109 warnings**
+**170 errors** · **110 warnings**
 
 | Code | Severity | Summary |
 | --- | --- | --- |
@@ -193,6 +193,7 @@ Every diagnostic carries a stable code. Look one up with `arch explain <CODE>`
 | [`W_CJK_FONT_MISSING`](#w_cjk_font_missing) | warning | PDF/PNG text has CJK characters, but the optional CJK font package is not installed. |
 | [`W_CLEAR_HEIGHT_MISMATCH`](#w_clear_height_mismatch) | warning | A storey's written clear height disagrees with the one its heights give. |
 | [`W_CONNECTOR_AMBIGUOUS`](#w_connector_ambiguous) | warning | A door or cased opening does not join two rooms cleanly. |
+| [`W_CORRIDOR_DRAWN_INSIDE`](#w_corridor_drawn_inside) | warning | The only way in reads as the balcony: a corridor, hall or entry with no door out opens only into the dwelling. |
 | [`W_DIAGNOSTIC_LIMIT`](#w_diagnostic_limit) | warning | More than 500 diagnostics, all warnings; further diagnostics were not collected. |
 | [`W_DIM_INSIDE`](#w_dim_inside) | warning | A hand-written dimension line lands inside the building. |
 | [`W_DIM_NO_WALL`](#w_dim_no_wall) | warning | A `dim faces`/`dim clear` endpoint has no wall to measure to. |
@@ -3630,6 +3631,43 @@ room at (0,0) size 4000x5000
 room at (4000,0) size 4000x5000
 door on shell at 2000 width 900   # fixed: its inner side is in one room
 door at (4000,2500) width 800 wall partition
+```
+
+## W_CORRIDOR_DRAWN_INSIDE
+
+*warning* — The only way in reads as the balcony: a corridor, hall or entry with no door out opens only into the dwelling.
+
+**Cause.** Every door to the outside on this storey opens onto an `outdoor balcony`, and a room whose every use is entry, hall or circulation (a hall bath, a hall WC or a store beside the hall is not one), that holds no stair, lift or escalator and has no door to the outside, opens only into one other room, by a door with a hinged leaf. Most often it is the building's common corridor or landing drawn as a room inside the dwelling's exterior walls, and that door is the front door; or it is the dwelling's own entrance and its door to the outside is not drawn. Either way the front door reads as an inside door, `describe().access.entrances` lists only the balcony door, the floor area counts the corridor, and the rules that start from the entrance cannot judge the plan (the lint coverage report says `balcony-only-entrance`). Not checked: a storey a stair or lift arrives on, and a landing that holds a stair, lift or escalator (its way in is from another storey, drawn or not); a room with a door to the outside or with connectors into two rooms. Where two such rooms open only into each other, the door is reported once. A plan that reads as non-residential (a café, restaurant or clinic label; or, with no bedroom or living room, a room whose use is `office` or a shop, lobby, reception, waiting or meeting label) is not checked, and the lint coverage report says so (`non-dwelling`); the `residential-basic` profile checks every plan. No number is read: which doors lead outside and which room holds the front door are facts of the door graph.
+
+**Fix.** If the corridor is the building's, draw it outside the dwelling's exterior walls (for example as an `outdoor paving` surface labelled "Corridor") and hang the front door on the exterior wall that faces it, so it is a door from outside. If the room belongs to the dwelling, draw its door to the outside: that door is the way in. The hints lead with the corridor reading for a `circulation` room and with the front door for an entry or hall. Accept it when the plan is a fragment of a larger dwelling whose way in is not drawn. There is no machine fix: which side of a wall the dwelling is on is the author's decision (ADR 0005).
+
+```arch static
+plan "Corridor drawn inside" {
+  units mm
+  wall exterior thickness 200 { (0,0) (6000,0) (6000,6000) (0,6000) close }
+  wall partition thickness 100 { (0,4500) (6000,4500) }
+  room at (0,0) size 6000x4500 label "Living" uses living
+  room at (0,4500) size 6000x1500 label "Corridor" uses circulation
+  outdoor balcony at (1000,-1600) size 3000x1500
+  door sliding at (2500,0) width 1800 wall exterior
+  window at (5000,0) width 1000 wall exterior
+  door at (3000,4500) width 1000 wall partition   # lint: the front door opens off a corridor inside the walls
+}
+```
+
+**Fixed.**
+
+```arch static
+plan "Corridor outside the flat" {
+  units mm
+  wall exterior thickness 200 { (0,0) (6000,0) (6000,4500) (0,4500) close }
+  room at (0,0) size 6000x4500 label "Living" uses living
+  outdoor balcony at (1000,-1600) size 3000x1500
+  outdoor paving at (0,4600) size 6000x1500 label "Corridor"
+  door sliding at (2500,0) width 1800 wall exterior
+  window at (5000,0) width 1000 wall exterior
+  door at (3000,4500) width 1000 wall exterior   # fixed: the front door is a door from outside
+}
 ```
 
 ## W_DIAGNOSTIC_LIMIT

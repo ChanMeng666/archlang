@@ -33,6 +33,7 @@ export const DECIDED: Record<AuthoringStage, string[]> = {
     "W_BEDROOM_NO_WINDOW",
     "W_CIRCUITOUS_PATH",
     "W_CONNECTOR_AMBIGUOUS",
+    "W_CORRIDOR_DRAWN_INSIDE",
     "W_DOOR_CLEARANCE",
     "W_DOOR_NEAR_CORNER",
     "W_ENTRANCE_INTO_PRIVATE",

@@ -251,6 +251,13 @@
  * (taste reads no void). With the rule taken out of `LINT_RULES` each moved row reproduces the value it
  * replaces, and the new case's digest equals its twin's. The moved rows carried `RM9.6 CV14` notes until RM1.2b.
  *
+ * RM9.6 CV16 (`W_CORRIDOR_DRAWN_INSIDE`, the building's corridor drawn inside the dwelling) added six
+ * rows, the new `circulation-privacy/corridor-drawn-inside` pair under each of the three profiles,
+ * measured with `tasteDigest`, and moved none: no other source here draws a storey whose only doors out
+ * open onto a balcony. The case carries the warning in `validity` and is capped at 0.5 (uncapped 1
+ * under generic and us, 0.968 under cn: R3's depths have no entrance to start from); the twin is not
+ * capped (0.875 under generic and us, 0.8441 under cn).
+ *
  * RM9.6 CV08 (`W_SEAT_FACING_WALL`, a sofa or armchair whose front is on a wall face) added six rows,
  * the new `clearances/seat-faces-wall` pair under each of the three profiles, measured with
  * `tasteDigest`, and moved none: no other source here has a lounge seat whose front is on a wall (the
@@ -441,6 +448,16 @@ const TABLE: ReadonlyArray<[string, string, string]> = [
     "461f687a4bea1a2b2002e8720d621c02bb873ecc786dabd75c77a63b71dffdcb",
     "generic",
     "test/defect-corpus/circulation-privacy/bedroom-via-bedroom.clean.arch",
+  ],
+  [
+    "c7969ff4ace8e853218033b16ce0cd60e6349f21f418890f4880c4ab8ac523a2",
+    "generic",
+    "test/defect-corpus/circulation-privacy/corridor-drawn-inside.arch",
+  ],
+  [
+    "040dabca7536d0286e187a46e234e2bbe3886be0bc7ca194582f509ad1b6588f",
+    "generic",
+    "test/defect-corpus/circulation-privacy/corridor-drawn-inside.clean.arch",
   ],
   [
     "3d3b48328000fdb3e87c4774e5fc9cf3f752fe2d34c7d88d6d060bbdaa66a90b",
@@ -1713,6 +1730,16 @@ const TABLE: ReadonlyArray<[string, string, string]> = [
     "test/defect-corpus/circulation-privacy/bedroom-via-bedroom.clean.arch",
   ],
   [
+    "297d2a3d69d0214fafd0ecc27e21a1426019fa5f387674b80381ef8f89403ce5",
+    "cn-residential-advisory",
+    "test/defect-corpus/circulation-privacy/corridor-drawn-inside.arch",
+  ],
+  [
+    "6b302cea8dc873c38b259e2d10f2042a89afebecce4b832c71e9d02b09dade35",
+    "cn-residential-advisory",
+    "test/defect-corpus/circulation-privacy/corridor-drawn-inside.clean.arch",
+  ],
+  [
     "32d41f928ee25e98da2ca03dfcaf583043ae4ad8d8d9b52d776202f60b19e293",
     "cn-residential-advisory",
     "test/defect-corpus/circulation-privacy/door-onto-roof.arch",
@@ -2981,6 +3008,16 @@ const TABLE: ReadonlyArray<[string, string, string]> = [
     "c8cde020dfb679e5e1af83e28bb61a4ba8ba7f08ed11b8fd7696cd1326740d5a",
     "us-residential-advisory",
     "test/defect-corpus/circulation-privacy/bedroom-via-bedroom.clean.arch",
+  ],
+  [
+    "a5c0ec9da09dbda6537f434db930e54fbd3a7f1c25f4a9f230b6ab660e161ad2",
+    "us-residential-advisory",
+    "test/defect-corpus/circulation-privacy/corridor-drawn-inside.arch",
+  ],
+  [
+    "5cc3275a507d347ad6bf0e7d4bbddf9140382892e804d5c43e3af88c368e1046",
+    "us-residential-advisory",
+    "test/defect-corpus/circulation-privacy/corridor-drawn-inside.clean.arch",
   ],
   [
     "e16ae97d5bf22564ebacfe8005ed8268a76b6af6746828fe3567e2cc80eb4367",
