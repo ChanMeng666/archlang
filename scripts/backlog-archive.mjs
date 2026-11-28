@@ -17,16 +17,20 @@
  * Where another tracked file (docs/, src/, test/, .claude/, CHANGELOG.md, or what stays of the
  * backlog) cites an archived id, the entry leaves a one-line tombstone
  * `- <id> · <title> — <status> → archived (lab)`; otherwise it is deleted. A `## ` section whose
- * entries were all archived is dropped unless one of them keeps a tombstone. Re-running on a clean
- * backlog changes nothing.
+ * entries were all archived is dropped unless one of them keeps a tombstone (`docs/backlog-index.md`
+ * is not a citation: it is generated from the backlog, and a real run regenerates it). Re-running on
+ * a clean backlog changes nothing.
  */
 import { execFileSync } from "node:child_process";
 import { appendFileSync, existsSync, readFileSync, writeFileSync } from "node:fs";
+import { createRequire } from "node:module";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const BACKLOG = join(ROOT, "docs", "backlog.md");
+/** Generated from the backlog, so it cites every id: not a citation, and regenerated after a run. */
+const INDEX = "docs/backlog-index.md";
 
 /** Headings that carry no `<id> · ` today: the id they get. */
 const NOTE_IDS = new Map([
@@ -47,6 +51,10 @@ const DECISION =
 /** `{ id, title, status, qualifier, archive, original }` for one `### ` line, or throws. */
 export function parseHeading(line) {
   const text = line.replace(/^###\s+/, "");
+  // Already normalised to a kept status the split does not know (`note`, `decision`): read it as is,
+  // or the title would keep the tail and the normalised heading would repeat it.
+  const kept = /^(\S+) · (.*)\s—\s`(note|decision)`$/s.exec(text);
+  if (kept) return { id: kept[1], title: kept[2], status: kept[3], qualifier: "", archive: false, original: "" };
   let cut = -1;
   for (const m of text.matchAll(SPLIT)) cut = m.index;
   let head = text;
@@ -200,7 +208,9 @@ function otherTrackedLines() {
     maxBuffer: 1 << 28,
   })
     .split("\n")
-    .filter((f) => f && f !== "docs/backlog.md" && /\.(md|ts|mjs|js|json|arch|txt|yml|yaml|sh)$/.test(f));
+    .filter(
+      (f) => f && f !== "docs/backlog.md" && f !== INDEX && /\.(md|ts|mjs|js|json|arch|txt|yml|yaml|sh)$/.test(f),
+    );
   const texts = [];
   for (const f of files) if (existsSync(join(ROOT, f))) texts.push(readFileSync(join(ROOT, f), "utf8"));
   return texts.join("\n").split("\n");
@@ -235,6 +245,9 @@ function main() {
       );
   }
   writeFileSync(BACKLOG, text);
+  // The index lists exactly the kept entries: regenerate it (`npm run gen:backlog-index`).
+  const tsx = createRequire(import.meta.url).resolve("tsx/cli");
+  execFileSync(process.execPath, [tsx, join("scripts", "gen-backlog-index.ts")], { cwd: ROOT, stdio: "inherit" });
 }
 
 if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) main();

@@ -135,4 +135,18 @@ describe("scripts/backlog-archive.mjs", () => {
   it("reads a todo that needs a decision as `decision`", () => {
     expect(archiveBacklog(src, []).text).toContain("### O.1 · Waits on the owner (needs a decision) — `decision`");
   });
+
+  it("leaves an already-normalised kept heading as it was (no repeated status word)", () => {
+    const kept = [
+      "### K.1 · A note: done elsewhere — `note`",
+      "### K.2 · Waits on the owner — `decision`",
+      "### K.3 · Open work — `todo`",
+      "### K.4 · Declared work — `declared`",
+    ];
+    const text = archiveBacklog(
+      ["# Backlog", "", "## Kept", "", ...kept.flatMap((h) => [h, "", "body", ""])].join("\n"),
+      [],
+    ).text;
+    expect(text.split("\n").filter((l) => l.startsWith("### "))).toEqual(kept);
+  });
 });
