@@ -218,11 +218,7 @@ than implying exposure. And a shim bump drags the pack-time resource law with it
 land in `packages/mcp/package.json` **and both** of `server.json`'s version fields, or the release
 workflow `npm view`-skips it and nothing reaches either registry.
 
-### 3.2 · One playground origin constant: done by #841, waiting to be archived — `note`
-
-Re-export `PLAYGROUND_ORIGIN` (`src/cli/share-codec.mjs`) from `scripts/gen-permalink.mjs` and use it
-for the hard-coded copies at `docs-site/sync-docs.mjs:25` and `playground/scripts/gen-static.mjs:73`,
-after C6 merges (it edits those build scripts).
+- 3.2 · One playground origin constant — done by #841 → archived (lab)
 
 ### 3.3 · Adopt the two biome 2.6 rules switched off by the upgrade — `todo`
 
@@ -278,38 +274,9 @@ Non-blockers from the second review of #968:
 3. PR CI never runs `test/index-values.test.ts` on Windows. Standalone on a Windows laptop, its program build took 9.8 s over 912 files against its 60 s timeout; `types: []` cuts that to 4–6 s with the same result.
 4. The new top-level `Object.freeze` calls carry no `@__PURE__` mark (`src/pure.ts`), like 27 other freezes in `src`. No measured effect.
 
-### 3.18 · The playground's first-use bundle has about 1.9 KB of headroom left: done by #976, waiting to be archived — `note`
-
-Done by #976, with no budget raised: Format, Finish, Repair furniture and the DXF/TXT downloads load their core code on a press (`playground/src/press-core.ts`, build entry `src/actions-path.ts`), and a `first-use` chunk group keeps the worker's `lint` on the first use's path. `npm run size:embed` on `main` 5f3606f5 → #976's head merged with it: first use 484,715 → 456,244 B (−28,471), compiler path 325,093 → 324,065 B, embed 311,313 → 310,260 B. The target was 3 KB, so this is well past it. `firstUsePathBudget` was re-taken DOWN in the same PR by the file's own rule (measured × 1.025, rounded up to a thousand): 486,000 → 468,000 B (11,756 B headroom), so a press-core or glTF-Transform leak now trips it. For the compiler and embed paths the rule gives the budgets as they stand (333,000 and 319,000 B), so those are unchanged. `docs/agents/iron-laws.md` still quotes an older `embedPathBudget`; editing that line is the owner's call (NR.9 (3)). The card text below is kept for the record.
-
-After AL3b (#969) the first-use path (`firstUsePathBudget`, `playground/e2e/startup-chunks.baseline.json`) measures 484,137 B gzip against 486,000 B. The next few KB of compiler growth trip `Playground E2E chromium`. Two ways out: move code a first use need not load out of the compiler chunk or the lazy core chunk (as EB.2 did, #947), or re-take the budget by the file's own rule (measured × 1.025, rounded up to a thousand). A re-take raises a ceiling, a relaxed check that needs the owner's word for that PR (`REVIEW.md`; the owner approved the compiler-path and embed raises on #969, 2026-11-19, not this one). Measure with `npm run size:embed` (`scripts/embed-path-size.mjs`) on `main` and the branch; `docs/agents/iron-laws.md` still quotes `embedPathBudget` as 310,000 B (319,000 since #969), and editing that line is the owner's call (NR.9 (3)).
-
-### 3.19 · The compiler path has about 0.7 KB of headroom left: done by #1002, waiting to be archived — `note`
-
-Done by #1002: the compiler chunk no longer carries `compile()`'s `onError: "svg"` error card and the catalogue's fix column it prints. `src/compile-path.ts` serves `compileWithoutErrorCard` (`src/compile-memo.ts`), and `compile()` draws the card through `src/compile-uncached.ts`, which nothing on the compile path imports. The parser's `E_LEVEL_MIX` message reads `LEVEL_MIX_FIX` (`src/level-mix-fix.ts`), not the generated column. The playground's door serves that function as its `compile`, and the embed draws the card on a broken plan with `renderErrorSvg`, loaded through `playground/src/error-card.ts`. `npm run size:embed` on `main` 44c16e12 → #1002: compiler path 332,355 → 312,481 B (−19,874), embed path 318,546 → 299,840 B (−18,706), first use 467,832 → 466,680 B (−1,152; the fix column now rides `first-use` for Copy for LLM's `diagnosticToJson`). The corpus digest of SVG, `describe()`, `lint()`, diagnostics and the error card is unchanged, and `digest:preview` moved 0 rows. By the file's rule (ruling RM-D78) the PR re-takes `compilerPathBudget` down to 321,000 B and `embedPathBudget` to 308,000 B; `firstUsePathBudget` stays at 468,000 B, which the rule would raise. A broken embed now loads about 126 KB gzip to draw its card (#1002's residue). The card text below is kept for the record.
-
-AF9 phase A's PR (#992, merged 2026-11-20; `npm run size:embed`, base `c749ac4e` → head `1babd94d`)
-measured the compiler path 330,147 → 332,209 B gzip against `compilerPathBudget` 333,000. After
-#993 (`W_TABLE_NO_SEAT`, merge `f48633ff`, 2026-11-21 UTC) it is 332,303 B against 333,000 (697 B
-left), the embed path 318,494 B against 319,000 (506 B) and the first use 467,775 B against
-468,000 (225 B). AF4 (#987), RM9.10 (#990), AF7 (#977) and AF9 took most of the earlier headroom. The
-next compiler-path card would trip `Playground E2E`. This is the next card
-(`docs/plans/product-roadmap/handoff.md` §2, RM-D74), before any further compiler-path card: move
-code a first compile does not need out of the compiler chunk (as EB.2, #947, and 3.18, #976, did),
-measured with `npm run size:embed` on `main` and the branch, with a corpus digest of SVG,
-`describe()`, `lint()` and diagnostics proving no change of behaviour. Raising a budget stays the
-owner's call for that PR (`REVIEW.md`), with one exception: RM-D57's by-rule re-take of
-`embedPathBudget` (`docs/agents/iron-laws.md`, owner-ratified 2026-11-17) merges on the
-coordinator's judgement after a fresh-context review, as its own re-take PR, for a card that needs
-the bytes and has shown no cheaper cut, by the file's × 1.025 rule. It covers `embedPathBudget`
-only, not `compilerPathBudget`. **Gate:** at least ~3,000 B gzip off the compiler path and the embed path, no
-budget raised, the digest unmoved.
-
-### 3.19b · The first use has about 1.3 KB of headroom left after 3.19: done by #1005, waiting to be archived — `note`
-
-Done by #1005, with no budget raised. The compile worker's `lint`, which no view-mode render runs, left the `first-use` chunk for a `lint` chunk of its own (build entry `src/lint-path.ts`, door `playground/src/lint-core.ts`, the `lint` group in `playground/vite.config.js`). Edit mode imports it statically. The worker imports it by that chunk's own URL (`LINT_URL`) with the editor's first request, because a literal `import()` would be wrapped in Vite's preload helper, which reads `document`. It reads `lint` from `globalThis` under `LINT_KEY`, which the door sets, because the bundler shortens the chunk's export names. `npm run size:embed` on `main` 56dff28d → #1005: first use 466,851 → 411,888 B (−54,963), compiler path 312,495 → 312,477 B, embed path 299,850 → 299,826 B. The corpus digest of SVG, `describe()`, `lint()`, diagnostics and the error card is unchanged. `firstUsePathBudget` is re-taken DOWN by the file's rule (ruling RM-D79), 468,000 → 423,000 B (11,112 B headroom), so a lint leak back onto the path trips it. Residue: three things now fetch the lint chunk (55,390 B) that a first use had loaded before. One is the Checks overlay (`checks-panel.ts`, whose review sheet runs `lint`). The others are a first press of Format, Finish, Repair furniture or a DXF/TXT download, with `press-core`, since `finish` and `repair` read `lint`. Copy for LLM's fix column (in `first-use`, ~19 KB) is still on the path. The card text below is kept for the record.
-
-After #1002 (3.19) the first use measured 466,680 B against `firstUsePathBudget` 468,000 (1,320 B left), and three open PRs add to it: #1001 (`W_SEAT_FACING_WALL`, ~+954 B), #1003 (CV14 examples, ~+165 B) and #1004 (`W_STAIR_NO_VOID`, ~+281 B), about 80 B over together. #1002's residue named what is left on the path: the fix column Copy for LLM reads and the worker's `lint`, which only the editor runs. **Gate:** at least ~3,000 B gzip off the first use, the compiler and embed budgets met and not raised, the digest unmoved, the playground's behaviour the same.
+- 3.18 · The playground's first-use bundle has about 1.9 KB of headroom left — done by #976 → archived (lab)
+- 3.19 · The compiler path has about 0.7 KB of headroom left — done by #1002 → archived (lab)
+- 3.19b · The first use has about 1.3 KB of headroom left after 3.19 — done by #1005 → archived (lab)
 
 ## Found by a consumer's bundler (2026-11-28)
 
@@ -339,16 +306,7 @@ form is statically visible; prove the folded output with a test on the built `di
 
 ## Found while landing 1.68.0 (arc openings, arc rooms, telemetry; 2026-11-23)
 
-### ARC1b · The model swing of a door on an arc still comes from the tangent: done by #1027, waiting to be archived — `note`
-
-Done by #1027 under the owner-delegated ruling RM-D89 (ADR 0023's amendment "a model correction is not a redraw"). `doorSwing`/`doorLeaves` hang each leaf on a jamb of the cut (`arcCutJambs`, `src/geometry.ts`), the drawing's own construction, so the drawn leaf is the measured one; the symmetry facts read a window's and a cased opening's jambs on the cut too, and the 3D package's jambs follow. Over the corpus only the 15 plans with an opening on an arc move (the symmetry fact on 6: `full.exact` true to false, group, axis, elements and `hand` unchanged; on other plans with an opening on a curve its `centre` can move too, ruling RM-D89 as refined in review; the 3D scene on all 15, its mesh on the 8 with a door there), plus the `E_DOOR_KIND_CURVED` example for its reworded hint; SVG and every other output are byte-identical on every plan, and no label moves (ARC1c). The card text below is kept for the record.
-
-#1019 draws a hinged or double door on a curved wall with its leaf hung on a jamb of the cut, but the
-model's swing (`doorSwing`/`doorLeaves`, read by lint, `describe --facts symmetry`, `repair()` and the
-3D package) is still the tangent construction, so the drawn leaf stands off the measured one by up to
-62.5 mm at the hinge (65.1 mm at the tip) on the shipped plans (`aquarium`). Moving the model onto the
-arc moves `describe --facts symmetry`'s `full.exact` (measured in #1019's first round: true to false on
-the four `radius-over-*` defect-corpus plans), which ADR 0023 decision 7 does not permit: it needs the owner's ruling for a second permitted movement before it is built.
+- ARC1b · The model swing of a door on an arc still comes from the tangent — done by #1027 → archived (lab)
 
 ### ARC1c · Labels may sit closer to a curved opening's ink than to the footprint they avoid — `todo`
 
@@ -389,9 +347,7 @@ the owner's decision.
 
 ## Docs-site E2E
 
-### DE.1 · The two /examples sheet tests ran 29 to 32 s against a 30 s timeout: done by #1011, waiting to be archived — `note`
-
-`docs-site/e2e/homepage-links.spec.ts` › "every sheet drawing renders" (and its sibling "a sheet shows and opens the SAME plan", which waits on no image) ran 27.9 s on a pass (run 44970550484) and 29.0 to 32.3 s on the runs that failed (44975881007 on `main` fe43738d, 44968866989, 44962341628), against Playwright's 30 s default. The cost is the `/examples` page itself: `docs-site/examples.md` mounts 35 `<ArchLive>` widgets that each compile at hydration (`ArchLive.vue`), plus Playwright round-trips per action, not the image fetches. Done by #1011: both tests get a fixed, commented 60 s budget, and "every sheet drawing renders" is one `expect.poll` over all images (each round scrolls the blank ones into view; it asserts the list length equals `CARDS + LEVEL_ART` and every image has a `naturalWidth`), where it had one wait per image. The assertion is as strong as before; no image is dropped or skipped.
+- DE.1 · The two /examples sheet tests ran 29 to 32 s against a 30 s timeout — done by #1011 → archived (lab)
 
 ### DE.2 · Cut the /examples page's cost so its sheet tests fit the default timeout — `todo`
 
@@ -547,33 +503,7 @@ other diagonal. Not a defect; the pin moves only if the tick convention does.
 - E.16 · `nested-ref` — a reference into a nested instance fails once its plan is placed — closed by W8 → archived (lab)
 - E.17 · `facade-probe-order` — placing a storey moved its `dims auto` chains — closed → archived (lab)
 
-### E.18 · `annotation-overlap-translation` — `W_ANNOTATION_OVERLAP` changes under a pure translation: done by #999, waiting to be archived — `note`
-
-Done by #999. The cause was not the label passes' positions but the leader step's dot (`src/label-fit.ts`).
-The dot must stand wholly on its floor and meet no wall's or text's box and no symbol's shape (a
-symbol's box only gates the shape test), and that was read as `rectAreaOutside(dot, floor) > 0`,
-`overlapArea(dot, box) > 0` and `clippedArea(shape, dot) > 0` in absolute floats. A dot wholly on its
-floor reads 1e-10 to 1e-9 mm² off it, at different lattice places for different coordinates, and a
-dot can meet a wall band's box or a symbol's shape by rounding alone. So P₀ ended the line on another
-dot, whose line was blocked. All three readings now run in the dot's own frame against `DOT_SLACK`
-(1e-9 of the dot's box). The result is translation-invariant over the fuzz's range: tested at offsets
-up to ±20 m and at 10⁶ mm, under every turn and flip (`test/equivariance-fuzz.test.ts` § pinned fuzz
-counterexamples: this plan, a 1324.3 mm-deep strip whose dot met a wall band's box, and the same
-strip with a wc whose shape met the dot). Further out, E.19. The CI seed passes all 60 runs (main
-fails at run 59). Over the corpus only `test/fixtures/dense-office.arch`'s SVG moves (14 rows re-pinned
-with a swap-back); `describe()` and `lint()` do not move. The store's line there now runs about 339 mm
-through its cabinet symbol: E.20. The card text below is kept for the record.
-
-Found by `test/equivariance-fuzz.test.ts` on `main`'s push run for `91ed1210` (Node 20, shard 3/5;
-seed 533254921, the path in the run log): a three-room strip (`cols [2900,4500,2000]`, rows
-`[2000]`, a centred 900×600 `wc` in the first room and a second `wc` at its corner turned 90°, a
-relational annex `right-of`) raises `W_ANNOTATION_OVERLAP` ("The name "Living" is printed over the
-wc") on P₀ and not when the same plan is placed 20 m out (`g = t`). Published 1.65.0 does the same,
-so it predates the AF and RM9 cards; no pinned class accounts for it, so the fuzz reports it `NEW`
-whenever its random seed reaches such a plan (the next push run, `594c1a93`, was green). Likely the
-label passes compare absolute float positions (as circulation did before E.11's extent-frame snap).
-Gate: the counterexample's P₀ and gP lint the same; the fuzz has no `NEW` on that seed. Do not pin
-it as a known class to green the suite; fix the comparison.
+- E.18 · `annotation-overlap-translation` — `W_ANNOTATION_OVERLAP` changes under a pure translation — done by #999 → archived (lab)
 
 ### E.19 · `annotation-overlap-far-translation` — `W_ANNOTATION_OVERLAP` changes under a translation of 1.5 × 10⁶ mm or more — `todo`
 
@@ -717,10 +647,7 @@ connection and decompress nothing, and the sites run on workerd, not Node. At 2.
 
 ## Found while landing the issued-sheet statements (`notes`, `schedule openings`)
 
-### N.2 · `E_LEVEL_MIX`'s remedy does not name `notes` among the plan-level settings: done by #839, waiting to be archived — `note`
-
-The remedy text in `src/error-catalog.ts` lists the statements that stay outside `level` blocks
-and predates `notes`. Cosmetic: `notes` inside a level is `E_PARSE`, as `legend` is.
+- N.2 · `E_LEVEL_MIX`'s remedy does not name `notes` among the plan-level settings — done by #839 → archived (lab)
 
 ### N.3 · A tag with every candidate place taken keeps its first place — `todo`
 
@@ -731,18 +658,7 @@ on a room name the label pass did not move. Each is pinned in `test/opening-tags
 (the list may only shrink). Better needs more candidate places or a leader line. Tags also
 number per storey (`W01` on each level); a set-unique numbering is an owner call.
 
-### N.4 · `fmt` round-trips `project`/`drawn_by`/`date` wrongly for a control character: done by #872, waiting to be archived — `note`
-
-`src/format.ts` quotes those three title fields with `JSON.stringify`, which writes a tab as
-`\t`; the lexer reads back only `\"`, `\\` and `\n`, so `title { project "A<TAB>B" }` formats to
-`project "A\tB"` and re-parses as `"AtB"` (likewise CR, U+0001, a lone surrogate). Older than
-the sheet statements, and left so `fmt` output on existing files does not move in that change;
-`number`/`revision`/`notes` already use `escapeStr`. Fix: the same escaper for the three.
-
-### N.5 · `E_DRAWING_LIMIT` catalogue names the NOTES cap: done by #840, waiting to be archived — `note`
-
-`src/error-catalog.ts` describes only the primitive budget; the NOTES cap (over 200 wrapped
-lines, `src/draw-budget.ts`) raises the same code with its own message. One sentence (with N.2).
+- N.4 · `fmt` round-trips `project`/`drawn_by`/`date` wrongly for a control character — done by #872 → archived (lab)
 
 ### N.6 · Wide glyphs overrun the NOTES column — `todo`
 
@@ -964,25 +880,7 @@ timeout on the heavy cases, never a raised global `testTimeout`). Observed durin
 programme's gate runs; not reproduced on purpose here.
 
 - M.7 · `diffPlans` follow-ups — closed → archived (lab)
-
-### M.8 · The source formatter is lossy past three decimals, and silent when it refuses: done by #946, waiting to be archived — `note`
-
-**Carded as** AF6 (`docs/plans/product-roadmap/cards.md` track 10, 2026-11-18).
-
-`format()` prints every literal through `fmt3`, so precision beyond 0.001 mm is dropped and a
-`.0005` rounds by the binary value. Re-run: `room id=a at (0.0004,1.0005) …` formats to
-`at (0, 1.001)`. Separately, `arch fmt` on a file with parse errors (including the newly
-diagnosed trailing content) prints it unchanged and exits 0, so nothing tells the user it
-refused: re-run on a stray-`}` file. Consider a note on stderr or a non-zero exit.
-
-Closure note (#946, card AF6, decided under the RM-D65 delegation). `format()` prints each literal
-through `fmtLiteral` (`src/num-format.ts`): `fmtSource` where that reads back as the same double, else
-the shortest decimal that does, so every value with three decimals or fewer keeps its bytes (`fmt`
-over every tracked `.arch` is byte-identical) and `at (0.0004,1.0005)` stays as written. `arch fmt` on
-a plan that does not parse exits 2 with one line on stderr; `--json` adds `parsed: false` and the
-parse `diagnostics`, with `ok: false`. Residue, not fixed: `repair` (through `formatPlan`) and every
-fix producer still re-print an untouched literal of more than three decimals at 0.001 in the statement
-they rewrite, and the playground's Format button still says "Already formatted" on a plan it refused.
+- M.8 · The source formatter is lossy past three decimals, and silent when it refuses — done by #946 → archived (lab)
 
 ### M.9 · Grid snap rounds half up, so a mirror image snaps differently — `todo`
 
@@ -992,12 +890,7 @@ therefore snaps to a different shape. The same rule makes `fmt2(−x) ≠ −fmt
 `0.13`, `fmt2(−0.125)` is `−0.12` (re-run through `src/num-format.ts`). Changing either moves
 output; it needs a decision and a sweep.
 
-### M.11 · LSP rename misses an assignment target: done by #887, waiting to be archived — `note`
-
-`rename` (`src/lsp.ts`) collects references from expressions and instance names, not the name
-on the left of `NAME = expr`. Re-run: renaming `x` to `y` in `let x = 1`, `x = x + 1`,
-`room at (x,0) …` gives `let y = 1`, `x = y + 1`, `room at (y,0) …`. Low priority:
-reassignment is deprecated and removed at 2.0 (6.7).
+- M.11 · LSP rename misses an assignment target — done by #887 → archived (lab)
 
 ### M.12 · `detourRatio` divides a 4-connected walk by a straight line (observation, no decision) — `todo`
 
@@ -1102,14 +995,7 @@ those words (and an accent fold to `synonymMatchesLabel`) changes the eval's tab
 change and its body lists the words; the false friends found there (a pt-PT "Quarto de banho
 principal" read as a master bedroom, "Suíte" as the commercial `suite`) need guarding first.
 
-### M.21 · `format()` writes the plan name with `JSON.stringify`, which the lexer cannot read back: done by #872, waiting to be archived — `note`
-
-The lexer knows only the escapes `\n`, `\"` and `\\` (`src/lexer.ts`, the string-literal
-branch), but `src/format.ts` prints the plan name, level names, zone labels, import specs and
-title fields through `JSON.stringify`, which also emits `\t`, `\r`, `\uXXXX` and the like.
-Re-run: `plan "A<TAB>B"` through `arch fmt` prints `"A\tB"`, which reads back as `AtB`
-(`arch describe --json` `plan`). `arch finish` already uses the language's own escaper;
-`format()` should too.
+- M.21 · `format()` writes the plan name with `JSON.stringify`, which the lexer cannot read back — done by #872 → archived (lab)
 
 ### M.22 · `finish` furnish stage: what it leaves alone (limits, not defects) — `todo`
 
@@ -1487,37 +1373,7 @@ the front door as `entranceId` for every room under `arch describe --json`; the 
 and `lint()` rows over the examples are byte-identical unless an example has such a door (list
 any that move, with the reason). **Size:** S.
 
-### U.2 · Metres compile silently: done by #704, waiting to be archived — `note`
-
-**Observed (audit finding 11, Appendix B).** `size 4x3` and `thickness 0.2` (metres written
-where millimetres are the unit) compile `ok:true` with no diagnostic. Only lint reaches the
-mistake, as "only 0 m²" and "0.9 mm wide". The spec states the unit as rule 1, and the audit
-rated this "Partially" fixable in one shot.
-
-**Hypothesis.** Nothing in the parse or evaluate stage sees a length below a plausible floor
-for its role, since `MODEL_RANGE_MM` (`src/num-format.ts`) bounds only the top of the range.
-The wall check at `src/elements/wall.ts:152` refuses only a non-positive thickness. Whether to
-add a warning at that point or a lint hint that names the unit is open; a warning on a legal
-tiny value (a hairline, a model in another scale) may be noise.
-
-**Gate:** a catalogued code with a `fix` that names millimetres, fired on the audit's two
-inputs and on no example (`arch lint --json` over `examples/`); the error-catalog example test
-and `gen:errors` stay green. **Size:** S.
-**Done by PR #704** (RM1.4), for the audit's two inputs only. `W_LENGTH_IN_METRES`
-(`src/ir/silent-accepts.ts`) covers three places: a rectangle room's `size` with both sides under
-100 mm, a wall `thickness` under 10 mm, and the two thicknesses of `walls from rooms`. Its
-catalogue `fix` reads "Write the length in millimetres; the hint gives the clause times 1000."
-Every other length still compiles silently; that remainder is U.2a. Re-checked for AF0 with
-`arch compile --json` on the audit's two inputs (`test/silent-accepts/length-in-metres.arch`):
-`ok: true` and two warnings, `Wall "shell" thickness 0.2 is read as 0.2 mm: lengths are
-millimetres` (its hint: write `thickness 200`) and `Room "main" size 4 x 3 is read as 4 mm x 3 mm:
-lengths are millimetres` (its hint: write `size 4000x3000`). `test/silent-accepts.test.ts` pins
-both and the quiet thresholds. Its byte-identity law over `examples/` checks the "no example"
-clause through `compile().diagnostics`, not through `arch lint --json` as the gate wrote: the code
-is raised by the compile channel, which `lint()` does not report. A length that is too LARGE (a
-size built from a product of two lengths, `ai-first-language` README §6 finding 3) is a dimension
-check, not this entry. The entry is closed and waits to be archived to `archlang-lab` with
-`scripts/backlog-archive.mjs`.
+- U.2 · Metres compile silently — done by #704 → archived (lab)
 
 ### U.2a · Metres still compile silently outside a room size and a wall thickness — `todo`
 
@@ -1535,20 +1391,7 @@ then raises `W_LENGTH_IN_METRES` with a clause-times-1000 hint, pinned in
 `test/silent-accepts.test.ts`, and that file's byte-identity law over `examples/` stays green.
 **Size:** S.
 
-### U.3 · A misspelt furniture category passes `validate --strict`: done by #848, waiting to be archived — `note`
-
-**Observed (audit finding 11, Appendix B).** `furniture grand_pianno` passes `validate --strict`
-with no signal at all, although an unknown material or theme key gets `W_UNKNOWN_MATERIAL`,
-`W_UNKNOWN_STYLE_KEY` or `W_UNKNOWN_THEME_KEY` (`src/error-catalog.ts:835-850`).
-
-**Hypothesis.** Furniture is deliberately open: a category outside `FIXTURE_FAMILIES` falls
-back to a labelled rectangle (`src/elements/furniture.ts:347-348`), so a new name is legal and
-a typo is indistinguishable from one. A warning would need a nearest-name test against the
-catalogue (a fix of "did you mean `grand_piano`") and must stay quiet for a real custom name
-with a `label`. Decide that line before coding.
-
-**Gate:** `furniture grand_pianno` raises a catalogued warning with a nearest-category `fix`
-under `arch validate --strict --json`; no example gains a diagnostic. **Size:** S.
+- U.3 · A misspelt furniture category passes `validate --strict` — done by #848 → archived (lab)
 
 ### U.4 · A furniture `label` on a drawn symbol vanishes without a word — `todo`
 
@@ -1599,17 +1442,7 @@ is a second symptom: it says nothing the parse error did not.
 `arch compile - --json`; the cascade `W_EMPTY_PLAN` is suppressed when a parse error already
 explains it, or the entry says why not. **Size:** S.
 
-### U.6 · `uses balcony` does not point to `outdoor balcony`: done by #850, waiting to be archived — `note`
-
-**Observed (audit finding 12, Appendix B).** `room … uses balcony` returns an `E_PARSE` that
-lists the valid uses and gives no hint toward `outdoor balcony`.
-
-**Hypothesis.** The "Expected one or more room uses" message is built from `USE_KINDS` alone
-(`src/elements/room.ts:140-143`). A small map of near-miss words (`balcony`, `terrace`,
-`garden`) to the element that draws them would let the message name it.
-
-**Gate:** `uses balcony` yields a message that contains `outdoor balcony`, pinned by test;
-`arch compile --json` over the examples unchanged. **Size:** S.
+- U.6 · `uses balcony` does not point to `outdoor balcony` — done by #850 → archived (lab)
 
 ### U.7 · Two bedrooms are both typed `MasterRoom` in Plan JSON — `todo`
 
@@ -1732,21 +1565,7 @@ written by hand. The corpus holds mostly dwellings and museums; card D6 adds non
 **Gate:** `arch new --list --json` lists names; `arch new --from <example>` writes a file that
 compiles clean. **Size:** S.
 
-### U.17 · No report says how many diagnostics carry a machine fix: done by #898, waiting to be archived — `note`
-
-**Observed (engineering gap audit, row 24).** Every code in `ERROR_CATALOG` (`src/error-catalog.ts`) carries a
-catalogue `fix` text; only a minority produce a span edit (a grep estimate, not a measurement). The catalogue
-is the source of the code count, so no number is written here.
-No test prints the coverage, so the gap is not a number.
-
-**Hypothesis.** A test or script that walks the catalogue and the fix producers can print the
-count. The estimate is the first thing to replace.
-
-**Gate:** the script prints "N of M codes have a span edit" and a test fails if the count
-drops. **Size:** S.
-
-Residue: `scripts/fix-coverage.ts` counts raise sites that can attach a span edit; it does not
-prove each fix is reachable on some input.
+- U.17 · No report says how many diagnostics carry a machine fix — done by #898 → archived (lab)
 
 ### U.18 · The playground PDF is raster — `todo`
 
@@ -1777,47 +1596,7 @@ it; that is a 2.0 decision for the owner.
 **Gate:** on a Linux host whose npm prefix is `/usr`, `npm i -g` of the packed tarball succeeds
 and `archlang --version` prints the version. **Size:** S.
 
-### U.20 · The MCP `describe` tool's description names both areas: done by #815, waiting to be archived — `note`
-
-**Observed (card D1, out of its scope).** `describe()` now reports `rooms[].net_area_m2` and
-`totals.net_floor_area_m2` beside the centreline `area_m2`
-(`docs/adr/0027-net-internal-area.md`). The `describe` tool's description in
-`packages/mcp/src/tools.ts` still lists rooms by "area" alone, so an agent reading the tool list
-is not told which figure is the floor no wall stands on, or that it can be absent.
-
-**Hypothesis.** One clause in the description: `area_m2` on wall centrelines, `net_area_m2`
-the floor no wall stands on (absent when it cannot be computed exactly). Any `packages/mcp` change, prose included, publishes only with a version bump
-in `packages/mcp/package.json` and both `server.json` `version` fields.
-
-**Gate:** the tool description names both fields; the MCP lockstep and tool-text tests pass; the
-version is bumped in all three places. **Size:** S.
-**Done by #815, without the bump.** A hand bump on `main` pins the plugin
-(`plugins/archlang/.claude-plugin/plugin.json`, via `gen:plugin`) to a shim version npm does not have
-until a release publishes it, so plugin installs would fail to start the server in between. The
-bump is the release's: `npm run release:pin` raises the shim version whenever the core range moves,
-which every core release does, so the description reaches the stdio shim at the next release (the
-hosted server has it on deploy).
-
-### U.22 · `describe()` net-area budget: done by #742 and #771, waiting to be archived — `note`
-
-**Observed (card D1 review).** The net-area measurement pairs a room's edges with the wall-band
-curves near it, capped per room at `MAX_NET_CURVES` (`src/analyze/net-area.ts`), but nothing caps
-rooms times that: 200 overlapping rooms each meeting 1,920 curves take about 4.2 s in
-`describe()`, linear in rooms up to `MAX_ELEMENTS`. `compile()` charges the term to the drawing
-budget only under `schedule rooms`; `describe()` has never had a budget (adjacency is already
-quadratic in rooms). The hosted Worker's CPU cap bounds it in practice.
-
-**Hypothesis.** Give `describe()` a work meter of its own, or charge the net-area pairs to a
-per-plan total and omit `net_area_m2` past it, as a single room already omits past its cap.
-
-**Gate:** the adversarial plan above returns within the budget, with net areas omitted rather
-than late; the corpus `describe()` output does not move. **Size:** M.
-**Done by PR #742** (PS0.15 / RM1.3b: one net-area meter per storey read, `MAX_NET_PLAN_WORK`,
-`src/analyze/net-area-memo.ts`) and **PR #771** (RM1.3d: the takeoff's wall faces charged to the same
-meter). The card's own adversary (200 overlapping rooms, each meeting 1,932 curves) is pinned in
-`test/net-area-budget.test.ts`: `describe()` measures three rooms, closes the meter and omits the rest;
-the corpus maxima are pinned there far inside the total. What the meter does not bound is open as
-U.23. The entry is closed and waits to be archived to `archlang-lab` with `scripts/backlog-archive.mjs`.
+- U.22 · `describe()` net-area budget — done by #742 and #771 → archived (lab)
 
 ### U.23 · The net-area meter is per storey read, so many storeys still make `describe()` slow — `todo`
 
@@ -1853,32 +1632,7 @@ and were not re-run when filing.
 
 - H.1 · Lint messages still quote element ids (issue #187) — closed by PS2.22 and PS2.29 (PR #269); test/lint-messages-id-free.test.ts holds it; RM0.1, 2026-11-11 → archived (lab)
 
-### H.2 · `finish()` advisory-code `accept` option (issue #189): superseded by #245, waiting to be archived — `note`
-
-**Observed.** `finish()`'s never-worse law (`codesOf`, `src/finish.ts`) refuses any statement
-that adds a diagnostic code, so where `dims auto all` raises `W_OPENING_NOT_DIMENSIONED` the sheet
-stage degrades it to `dims auto overall`. ArchCanvas treats that code as advisory. Over 416 of
-its recorded plans, 410 match `finish({ only: "sheet" })` on every sheet statement; the other 6
-differ only in `dims auto all` (its own chooser) versus `dims auto overall` (upstream), each on a
-courtyard or recessed face whose opening no facade chain passes. This is the one thing keeping
-ArchCanvas on its own sheet chooser.
-
-**Hypothesis.** An explicit allow-list, `FinishOptions.accept: [codes]`: an accepted code leaves
-the before/after comparison under every profile, errors are never acceptable, and each statement
-kept only because of `accept` gets a `FinishNote` naming the code. It defaults to empty. The
-alternative, a lint profile with per-code severity, is larger and changes what `lint()` reports.
-
-**Gate:** with `accept` omitted every `finish` law test and the corpus output are unchanged; a plan
-whose `dims auto all` raises only `W_OPENING_NOT_DIMENSIONED` keeps `dims auto all` under
-`accept: ["W_OPENING_NOT_DIMENSIONED"]` with a note naming the code; fixpoint holds with `accept` as
-part of the input; an unknown or error code is a usage error. **Size:** S.
-**Closed (2026-11-16).** PR #245 (PS2.12) took the drafting-layer codes, `W_OPENING_NOT_DIMENSIONED`
-included, out of the never-worse comparison (`NOT_GATED_DRAFTING`, `src/furnish.ts`; ADR 0024's
-amendment of 2026-10-24), so the sheet stage keeps `dims auto all` without any option
-(`test/finish-sheet-degrade.test.ts`). Issue #189 was closed as completed on 2026-10-26. An `accept`
-option for non-drafting codes would loosen the never-worse law, and needs a named caller and an owner decision.
-The Gate's "note naming the code" was not built: `finish` reports nothing for a kept drafting code
-(`unresolved` stays empty), and only a lint of the finished source shows it, as ADR 0024 says.
+- H.2 · `finish()` advisory-code `accept` option (issue #189) — closed: superseded by #245 → archived (lab)
 
 ## Registry listings (opened 2026-10-10)
 
@@ -1888,13 +1642,7 @@ The state of each listing is the table in `docs/seo.md` § 8. These are what is 
 Readings of the agent-reach E1/E2 metrics must discount the 2026-10-14 burst traffic (the owner's
 own ~1,500 hosted-MCP requests; `docs/seo.md` section 8).
 
-### O.1 · awesome-mcp-servers #14383 waits on its maintainer: merged 2026-11-17, waiting to be archived — `note`
-
-The merge condition, a Glama quality score of any grade, is met: on 2026-10-25 Glama's Dockerfile
-settings were set to install `@chanmeng666/archlang-mcp` and run `archlang-mcp` behind `mcp-proxy`
-(its auto-generated build had run the CLI, not the MCP server), release 0.1.0 built and was rated A.
-The score badge is on the entry in #14383 and the maintainer was told there. On 2026-11-06 #14383
-was rebased and is conflict-free. Left: the merge.
+- O.1 · awesome-mcp-servers #14383 waits on its maintainer — closed: merged upstream 2026-11-17 → archived (lab)
 
 ### O.3 · Whether the Claude plugin directory publishes later versions after approval is unobserved — `todo`
 
@@ -1985,11 +1733,7 @@ users on ClawHub, then the entry is filed.
 
 **Proposed gate.** Before the publish step, in the same job: run the web component's tests, and check the packed file list (`npm pack --dry-run --json -w packages/web-component`) against the files the package is meant to ship (`dist/`, the README, the LICENSE), failing the job on either. **Tier: high**, because it edits a workflow (`scripts/risk-tier.mjs`), so it needs the fresh-context review that tier asks for. **Size:** S.
 
-### VA.1 · The bean bag reads stepped in 3D: done by #729 (RM8.6, lofted parts), waiting to be archived — `note`
-
-The bean bag and the tree crowns are lofted rings (`Part.loft`, `dome()` in `t0-kit.ts`). The furniture
-detail that follows is carded as RM8.11–RM8.14 (`docs/plans/product-roadmap/cards.md`, track 8 stage G),
-parked until the owner says start (RM-D94).
+- VA.1 · The bean bag reads stepped in 3D — done by #729 (RM8.6, lofted parts) → archived (lab)
 
 ### VA.2 · A balcony's railing is not built in 3D — `todo`
 
@@ -2002,31 +1746,12 @@ Product-roadmap RM8.3 (PR #701) builds the rest of this item: each of the nine `
 ever pick a finish before building anything.
 
 - VA.4 · `--theme` on the CLI — done by #695 → archived (lab)
-
-### VA.5 · Shadows in the replay: done by #737 (RM8.8, baked contact shadows), waiting to be archived — `note`
-
-Real-time shadow maps stay out (RM-D21, RM-D23); the frame-time budget is `packages/archlang-3d/e2e/frame-budget.e2e.ts`.
+- VA.5 · Shadows in the replay — done by #737 (RM8.8, baked contact shadows) → archived (lab)
 
 ## Playground residue (public-surfaces cards P2 and P3, 2026-11-06)
 
-### PG.1 · A room cannot be reached from the keyboard: done by #824, waiting to be archived — `note`
-
-The hover tooltip and the room's facts card (`playground/src/interact.ts`, `room-card.ts`) open
-from the pointer only: no room in the drawing takes the focus, so a keyboard or screen-reader user
-cannot open a room's card at all. Once open, the card is reachable and Escape closes it. One way:
-a focusable list of the rooms (the facts line, or a "Rooms" control) that opens the same card.
-**Gate:** an e2e case opens a room's card from the keyboard alone; the card keeps its focus rules.
-
-### PG.2 · The card and the tooltip pick a room by its shape: done by #822, waiting to be archived — `note`
-
-`pickSmallestContaining` (`playground/src/interact.ts`) hit-tests describe()'s `bbox`, so on an L,
-a trapezoid or a circle a point inside the box but outside the room picks that room (or a smaller
-box around it), and its card opens. AGENTS.md: a derived position comes from the shape, never its
-bounding box. The shape is in the summary (`floor_polygon`, `floor_circle`): test it, boundary
-inclusive, and keep the smallest-room tie rule (`playground/test/interact.test.ts`). **Gate:**
-unit cases on `hexagon-pavilion` (trapezoids, the rotunda) and `gallery-l`; the rectangle cases
-unchanged.
-
+- PG.1 · A room cannot be reached from the keyboard — done by #824 → archived (lab)
+- PG.2 · The card and the tooltip pick a room by its shape — done by #822 → archived (lab)
 - PG.3 · The facts line moves the drawing on the first compile — closed by MP5 (#565, the line is
   served) and PG-D6 (the stage's foot keeps its row); pinned by `boot.spec`'s first-compile stage-box case
 
@@ -2035,32 +1760,8 @@ unchanged.
 Left by the reviews of those PRs (review-cost cap). WS.1 and WS.2 fail only on input the docs do
 not yet hold; WS.3 and WS.4 are true of the live site today.
 
-### WS.1 · Four copies of the fence rule, none quite CommonMark: done by #825, waiting to be archived — `note`
-
-`fenceStep` (`docs-site/link-rewrite.mjs`), the link scan in `test/docs-site-links.test.ts`,
-`fences()` in `test/docs-fences.test.ts` (the live-fence gate) and `headingIds` in
-`test/plan-constructs.test.ts` each implement the fence rule, and they differ: the first three
-accept any leading whitespace (`^\s*`), so a line indented 4+ spaces (indented code) opens a
-fence; none rejects a backtick in a backtick opener's info string, which CommonMark does. One way:
-one exported rule (`^ {0,3}`, the info-string check) that the rewriter and all three tests import.
-**Gate:** unit cases for an indented ```` ``` ```` and for ```` ``` a`b ````; the rewritten output of every
-docs page unchanged; `docs-fences` still finds the same live fences.
-
-### WS.2 · The rewriter's heading ids skip neither HTML comments nor `{#id}`: done by #825, waiting to be archived — `note`
-
-`headingIds` in `docs-site/link-rewrite.mjs` treats a `#` line inside `<!-- … -->` as a heading
-and slugs `## Title {#custom-id}` from its whole text, while the test's copy
-(`test/plan-constructs.test.ts`) does both the way VitePress 1.6.4 does. So the rewriter registers
-a phantom id (`title-custom-id`) that a GitHub-spelled link is then "confirmed" against, and
-`test/docs-site-links.test.ts` reports a correct `#custom-id` link as having no heading (a false
-red). The rewriter's heading pattern also allows no leading spaces where the test's allows
-`^ {0,3}`. Port the test's rules (and share them, with WS.1). An attribute block holding more than
-an id (`{#a .b}`) and an explicit id that repeats an earlier slug are the corner cases to pin.
-**Gate:** unit cases for each; rewritten output over the docs unchanged.
-
-**Done by #825.** The shared heading text keeps a code span verbatim (`` `<arch-plan>` ``), as
-VitePress does; `test/docs-site-links.test.ts` checks every published page's heading ids against
-VitePress's own markdown parser.
+- WS.1 · Four copies of the fence rule, none quite CommonMark — done by #825 → archived (lab)
+- WS.2 · The rewriter's heading ids skip neither HTML comments nor `{#id}` — done by #825 → archived (lab)
 
 ### WS.3 · Example-page `lastmod` misses some of what the page shows — `todo`
 
@@ -2071,36 +1772,9 @@ the page embeds) also change the page and are not listed. Adding `src/` would mo
 the compiler belongs (the package version may be the better signal). **Gate:** the
 `test/playground-examples-rows.test.ts` pin lists the new inputs.
 
-### WS.4 · "What this plan uses" has no row for `keep`, `import` or `style`: done by #868, waiting to be archived — `note`
-
-`playground/scripts/plan-constructs.mjs` detects constructs from `compile().ast`. No example page
-uses `keep` or `import` yet, so a detector could not be checked against a real page, and
-`docs/language-reference.md` has no heading for `style` to link to. Add each row when an example
-uses it (and, for `style`, when the reference gains its section). **Gate:**
-`test/plan-constructs.test.ts`'s anchor check covers the new rows.
-
-**Done by #868** for `style`: the reference gained "Per-element styles — `style`" and the row
-fires on `materials`. `keep` and `import` still have no row because no `EXAMPLE_ROWS` plan writes
-them, and the test's every-row-fires guard rejects a detector no page checks; add each with the
-first example page that uses it.
-
-### WS.5 · `style wall { fill }` and `{ hatch }` are accepted and draw nothing: done by #896, waiting to be archived — `note`
-
-The parser takes both keys with no diagnostic and stores `pocheBase` / `pocheHatch` in
-`plan.styles.wall`, but `src/backends/svg.ts` builds every hatch pattern from the scene theme
-(`THEME.pocheBase`, `THEME.pocheHatch`), never the per-kind styled theme (#868 review: on walls
-with default, concrete and brick poché, `theme { pocheBase }` moved 3 fills and `style wall { fill }`
-none). The comment at `src/theme.ts` that `style wall { hatch … }` moves that ink is false as
-measured. Either draw them (a drawing change on plans that write them only) or warn
-`W_UNKNOWN_STYLE_KEY`. **Gate:** a test that each accepted `style` key moves its own kind's ink and
-nothing else; the reference's `style` section updated.
-
-### WS.6 · The reference's `style` section is a hand-written copy of `STYLE_KEYS`: done by #888, waiting to be archived — `note`
-
-#868 wrote "Per-element styles — `style`" in `docs/language-reference.md` by hand; its first draft
-already disagreed with `spec.llm.md` on the styleless kinds (`opening`, `walls`). **Gate:** a test that
-every kind/attribute pair the section names resolves through `resolveStyleKey` and that the kinds it
-says take no `style` equal `KEYWORDS.element` minus the styled kinds.
+- WS.4 · "What this plan uses" has no row for `keep`, `import` or `style` — done by #868 → archived (lab)
+- WS.5 · `style wall { fill }` and `{ hatch }` are accepted and draw nothing — done by #896 → archived (lab)
+- WS.6 · The reference's `style` section is a hand-written copy of `STYLE_KEYS` — done by #888 → archived (lab)
 
 ### WS.7 · "What this plan uses" rows for `keep` and `import` — `deferred`
 
@@ -2109,63 +1783,14 @@ rejects an unchecked detector. **Trigger:** the first example page whose plan wr
 `test/plan-constructs.test.ts` lists the row on that page.
 ## Stairs in the 3D preview (public-surfaces card X3, 2026-11-06)
 
-### ST.1 · Drawn treads against storey height: done by RM1.2a (#736), waiting to be archived — `note`
-
-The plan draws each flight with `treadCount(run)` treads (`src/elements/vertical-glyphs.ts`, a
-nominal 280 mm going, whatever the storey height), and the 3D preview climbs the storey on one
-riser per drawn tread plus one per flight (`docs/plans/public-surfaces/3d.md` §3, a ruling: the 3D
-keeps the plan's treads). So the drawing itself implies a riser height, and several examples imply
-245–273 mm (two-storey 2700 / 11, townhouse and garden-house 3000 / 12, hillside-villa 3000 / 11),
-above the 220 mm `stairMaxRiseMm` that `W_STAIR_TOO_STEEP` assumes. That rule checks a flight's
-run against the shortest run that climbs the storey, and only where the plan authors a height; it
-never compares the treads drawn with the storey height, so none of these plans warns (measured with
-`arch lint --json`: no `W_STAIR_*` on any of the four; only two-storey authors a height, and its
-2900 mm run passes the 2640 mm its 2700 mm storey needs at 220 mm). A lint (or a `describe()` fact first) would report the
-riser the drawing implies, where the plan authors a height. **Gate:** the implied riser for each
-example, hand-derived in the test; a plan with no `height` unchanged; the byte-identity law over
-the corpus for `describe()` if a fact is added, and the lint's own corpus findings listed in the PR.
-**Done by RM1.2a (PR #736, merge `80c1669e`).** `W_STAIR_RISER_TOO_HIGH` (`stairDrawnMaxRiseMm`, 220 mm)
-reports the riser the drawn treads imply where the plan writes a `height`, and
-`test/lint-stair-riser-too-high.test.ts` hand-derives it per example. The three examples with no `height`
-are RM1.2h. #736 also redrew two-storey (3250 mm flight) and turning-stair, so the riser figures
-above are as filed, not as on `main`.
-
-### ST.2 · Winder walking line drawn as the credited arc: done by #821, waiting to be archived — `note`
-
-PR #533 (winders on a quarter-turn landing, preview-and-remodel D46) credits a winder landing with
-`min(n, floor(arc / going))` goings, where `arc` is the quarter arc of radius `width / 2` round the
-inner corner (about 0.785 × width). The glyph (`src/elements/vertical-glyphs.ts`) still draws the
-walking line across that landing as one straight chord (about 0.707 × width), so the drawing and
-the lint read two different lengths. Lint never reads the drawing, so this is a drawing change:
-draw the arc. It moves the SVG of plans that write `winders` only; `describe()` and `lint()` do
-not move (the `block-stair-winders-byte-identity` law pins every plan without the clause). The
-contributor offered to do it. **Gate:** the winders law green; the digest of every winders fixture
-listed before and after in the PR; a plan without `winders` byte-identical.
-**Done by #821.** The arc is drawn as a `<path>`. It is also a room-label obstacle where the chord
-was not (`src/label-placement.ts` boxes an arc), so a label near a winder landing's inner corner can
-place differently, and the drafting-layer `W_ANNOTATION_OVERLAP` with it. No shipped example writes
-`winders`.
-
+- ST.1 · Drawn treads against storey height — done by RM1.2a (#736) → archived (lab)
+- ST.2 · Winder walking line drawn as the credited arc — done by #821 → archived (lab)
 - ST.3 · `archlang-3d` builds a winder landing as a level landing — done by RM1.2g (#751) → archived (lab)
 
 ## 3D asset and surface residue (public-surfaces 3D cards X4b, X6, V2, 2026-11-06)
 
-### 3D.1 · The asset check decodes the committed plan PNG: done by #826, waiting to be archived — `note`
-
-`checkAssets` (`packages/archlang-3d/scripts/gen-3d-assets.ts`) compares a committed
-`<name>.plan.png` only by SHA-256 against the manifest, then re-rasterises the source to the
-recorded pixel hash; it never decodes the committed file. A PNG swapped together with its manifest
-`sha256` passes. **Gate:** `pixelsHash(readFileSync(file))` must equal `plan.pixelsSha256`; a
-planted swap fails `--check`.
-
-### 3D.2 · No size budget for plan and poster PNGs: done by #828, waiting to be archived — `note`
-
-The budget table caps WebP, MP4 and GLB only; `.plan.png` (92–245 KB today) and `.poster.png` have
-none, so an A1 sheet could grow unchecked. **Gate:** a budget (for example 300 KB) enforced by the
-generator and `--check`.
-
-**Done by #828.** Caps: `BUDGET.planPng` 300 KB, `BUDGET.posterPng` 500 KB (poster PNGs were
-150–362 KB).
+- 3D.1 · The asset check decodes the committed plan PNG — done by #826 → archived (lab)
+- 3D.2 · No size budget for plan and poster PNGs — done by #828 → archived (lab)
 
 ### 3D.4 · Pitched roofs in the 3D preview (design first) — `todo`
 
@@ -2184,36 +1809,7 @@ serve the MP4s from a host that answers 206, or keep the fallback as the design.
 Left by the review of that PR (review-cost cap). CO.1 is a hole that predates it; CO.2 records three
 behaviours it documents rather than changes.
 
-### CO.1 · Under `grid`, an `against` piece with no `size` snaps its footprint silently: done by #941, waiting to be archived — `note`
-
-`furniture.resolve()` snaps a catalogued footprint with `ctx.snap` under every placement, but only
-`at` and `in` report it: `against wall` and `against <room>.<edge>` raise neither `W_GRID_SNAPPED`
-nor, when a side snaps to 0 (a `mirror`'s 50 mm depth on `grid 200`), `E_FURN_SIZE`. This was true
-on `main` before CO-2, which left it alone because the fix moves corpus rows: noting the snap for
-`against` too moved 31 of the 528 `.arch` surface digests (examples, first-contact plans,
-`test/walls-from-rooms/two-bed.arch`), each by a new warning. One way: route `against` through the
-same `noteDefaultSize` (`src/elements/furniture.ts`), and re-measure each moved row with its reason.
-**Gate:** the example law of `test/footprint-any-placement.test.ts` and every other pinned row
-re-measured with the moved fields named; a `grid` row for `against` in that test's `FORMS`.
-
-**Ruled 2026-11-17 (RM-D56, product-roadmap README § 6.25): do it, under four conditions.** (1) Re-measure
-a moved row only after proof: its SVG and `lint()` are unchanged, and `describe().diagnostics` and
-`compile().diagnostics` differ only by the added `W_GRID_SNAPPED` entries; removing exactly those from
-both, with that suite's own digest body, reproduces the old digest. Reasons go in each baseline header.
-After (3), the 7 example rows in `test/footprint-any-placement.test.ts`'s BASELINE must reproduce their
-existing pins unchanged (that header's "never a re-pin" stays true); (1) applies to the ~24 rows in other
-suites. (2) Under `against`, a side snapped to 0 raises
-`W_GRID_SNAPPED` naming that side, not `E_FURN_SIZE`, so a plan that compiles today still compiles: do not
-route `against` through `noteDefaultSize` as is (it raises `E_FURN_SIZE`). The reference states the
-difference from `at`/`in` and from a written `against` size (already `E_FURN_SIZE` when it zeroes), and the
-twin-law header of `test/footprint-any-placement.test.ts` gains that exception; the new `FORMS` row
-includes a zero side (`mirror` on `grid 200`). (3) The 7 affected examples (`garden-house`,
-`hillside-villa`, `museum`, `remodel`, `two-bed`, `courtyard-family`, `showcase/garden-courtyard`) are
-rewritten with explicit on-grid sizes so they stay warning-free (the #704 ruling), drawing bytes
-unchanged. (4) `finish`'s furnish stage writes sizeless `against` pieces under a grid, which would now
-gain warnings and be refused by its never-worse gate: if any pinned `finish` output would move, stop and
-report, do not re-pin. Unpinned too: a gridded plan with an off-grid catalogued piece (1 of 413 in the
-corpus, `test/main-entrance-fixtures/n7-back-hall.arch`) loses that piece from `finish`; name it in the PR.
+- CO.1 · Under `grid`, an `against` piece with no `size` snaps its footprint silently — done by #941 → archived (lab)
 
 ### CO.2 · Three documented limits of a defaulted footprint — `declared`
 
@@ -2227,37 +1823,13 @@ footprint laid along an edge, not the catalogue's along × depth. (1) and (2) ar
 
 ## Live-eval baseline gap (RM-D51, 2026-11-16)
 
-### EV.1 · Diagnose the gpt-5.5 intent gap against the July baseline: done by #837, waiting to be archived — `note`
-
-At `2a210589` (after CO-1 and CO-2) gpt-5.5 scored valid 22/22/18 and intent 10/9/7 of 26 over
-three runs (`eval/live-runs/2026-11-authorability-remeasure.md`), against the July baseline's valid
-23 and intent 14 (one run, `eval/live-baseline.json`). RM-D51 keeps the July baseline. This card is
-the offline diagnosis only, with no API spend: download the per-brief tables of the gpt-5.5 run
-artifacts (`gh run download <id>` for runs 43727485853, 43727489713, 43727493307) and set them
-against July's per-brief record. The only July per-brief table in the repo is
-`eval/g1/baseline-run-29150982395.md`, the 2026-07-11 run (valid 25, intent 13); the artifacts of
-the 2026-07-12 run behind the current baseline (valid 23, intent 14) are gone, so a per-brief
-comparison with that run is not possible and the card says so.
-**Re-baselining `eval/live-baseline.json` is not part of this card:** it needs an owner decision.
-One option the owner may choose is the median of 3 runs; any new run is paid, owner-only
-`eval:live`.
-**Gate:** a per-brief table of which briefs lost intent and why, stated as observed (prompt change,
-judge, model drift), with no claim beyond the data and none about loop gain.
-Done by #837: the record is `eval/live-runs/2026-11-ev1-intent-gap.md`.
+- EV.1 · Diagnose the gpt-5.5 intent gap against the July baseline — done by #837 → archived (lab)
 
 ## Review residue of the promo-credit backlog run (PRs #837–#904, 2026-11-16/17)
 
 Left by the reviews of those PRs (RR.1–RR.8 from #837–#850, RR.9–RR.18 from #855–#872, RR.19–RR.24 from #879–#904) (review-cost cap: two rounds, residue becomes cards).
 
-### RR.1 · A door fix re-prints its statement with no step charge: done by #855, waiting to be archived — `note`
-
-`emitOpening` (`src/fix-producers.ts`) deep-clones the door node and prints the whole statement for
-every diagnostic that offers a door fix, with no `chargeSteps`. A looped door whose statement holds
-a long dead expression branch took 59 s to compile on `main` (#848 review round 2), and no
-`E_STEP_LIMIT` fired. #848 closed the same hole for `W_UNKNOWN_FURNITURE` by building the fix once
-per parse node per `ResolveCtx` and charging its source length first (`categoryFix`,
-`src/elements/furniture.ts`). **Gate:** the door path does the same; a test that a looped door
-shares one fix object across its iterations.
+- RR.1 · A door fix re-prints its statement with no step charge — done by #855 → archived (lab)
 
 ### RR.2 · A re-printing fix drops interior comments and rounds long decimals — `todo`
 
@@ -2268,44 +1840,11 @@ One way: edit only the kind word's span, derived at resolve time from the node's
 source tokens, without adding a parse-node field (that moved five parse digests in #848 round 1).
 **Gate:** a multi-line statement with comments keeps them after `archlang fix --unsafe`.
 
-### RR.3 · `E_LEVEL_MIX` lists the plan-level settings by hand: done by #857, waiting to be archived — `note`
-
-After N.2 (#839) the remedy names `notes`, but a plan also allows `style`, `keep` and the
-plan-level `section` mark beside a `level` (`src/parser.ts`, `src/ast.ts`), and it says "Only
-settings (…)". Comments in `src/ast.ts` (near the level kind list) and `src/import.ts` carry the
-same stale list. **Gate:** the remedy's list derives from the parser's allowed set, and a test fails
-when a new plan-level form is not named.
-
-### RR.4 · `E_DRAWING_LIMIT`'s remedy does not cover the notes cap: done by #859, waiting to be archived — `note`
-
-N.5 (#840) names the NOTES cap under Cause, but Fix still says only "Draw fewer or shorter runs,
-shrink the loop, or split the building". **Gate:** the remedy names shortening `notes`; the
-catalogue outputs regenerated.
-
-### RR.5 · The `uses` outdoor hint: `terrace` and a later word: done by #861, waiting to be archived — `note`
-
-U.6 (#850) maps `terrace` to `patio`, but the language reference draws a terrace as `outdoor
-balcony … label "Terrace"`; `yard → paving` has no source in the repo. The hint fires only when the
-first word after `uses` is unknown, so `uses living balcony` and `uses Balcony` get none.
-**Gate:** the mapping agrees with `docs/language-reference.md`, and a test covers a later word.
-
-### RR.6 · Site-only link guard gaps: done by #863, waiting to be archived — `note`
-
-After #838, `test/docs-site-links.test.ts` still skips same-page `#fragment` links on site-only
-pages, does not check a fragment on a route with no markdown source (`/adr#x`), and does not read
-raw `href=` or frontmatter links. Its header still describes only canonical copies, and a comment
-calls `levels-a-multi-storey-building-v1-21` GitHub's spelling. Absolute site URLs in READMEs are
-outside it: `packages/mcp/README.md` links
-`/reference#keyboard-and-screen-reader-operability-annotate--accessible`, which is dead on the site.
-**Gate:** that README link fixed, and a guard for absolute `archlang.uk` fragments in READMEs.
-
-### RR.7 · EV.1 record wording: done by #864, waiting to be archived — `note`
-
-In `eval/live-runs/2026-11-ev1-intent-gap.md`: "What does differ is the overall rate" compares 13/26
-with 26/78 across the prompt drift the record says it does not compare (state the counts, claim no
-significance); "so more furniture is now drawn" compares with the pre-CO-2 November runs, not July;
-"carry no per-brief signal" should read "show no per-brief signal"; the `doors.ts` citation is
-line 56, not 55. **Gate:** those four sentences corrected; no number changes.
+- RR.3 · `E_LEVEL_MIX` lists the plan-level settings by hand — done by #857 → archived (lab)
+- RR.4 · `E_DRAWING_LIMIT`'s remedy does not cover the notes cap — done by #859 → archived (lab)
+- RR.5 · The `uses` outdoor hint: `terrace` and a later word — done by #861 → archived (lab)
+- RR.6 · Site-only link guard gaps — done by #863 → archived (lab)
+- RR.7 · EV.1 record wording — done by #864 → archived (lab)
 
 ### RR.8 · Four small follow-ups — `todo`
 
@@ -2317,137 +1856,23 @@ for furniture that only grazes a door's swing (EV.1: all 19 physical-lint intent
 links are unchecked; README scanning skips dot directories and walks the filesystem, not the tracked
 tree; absolute `archlang.uk` fragments outside READMEs (`docs/overview.md`, `llms-install.md`) and
 fragment-less dead routes are unchecked; a bare URL followed by punctuation, or an id rendered by a
-component the page does not name, is wrongly refused; a malformed `%` escape throws. Each becomes
+component the page does not name, is wrongly refused; a malformed `%` escape throws. (6) RR.11's
+residue (#890): "§ import in `docs/language-reference.md` still lists a module's ignored settings by
+hand (no `height`, `site`, `notes`, `style`, `sheet text`), unguarded." (7) RR.12's residue (#892):
+"only the NOTES clause is pinned, by a test (a dependency-free leaf constant imported by both sides
+was not tried); the primitive-budget message paraphrases the remedy and stays unpinned." Each becomes
 its own card once looked at.
 
-### RR.9 · A door's free first fix build recurs per storey: done by #939, waiting to be archived — `note`
-
-Left by RR.1 (#855 review round 2). `src/elements/door.ts` builds each fix (and the hinge-flipped
-text) once per door node and key, but the first build per `ResolveCtx` is uncharged, and there is
-one ctx per storey (two under `paper`). A component's door node is shared by every storey that
-places it, so a component holding one long door statement, placed by a few hundred one-line
-`level` statements, gets storeys × (4 fix kinds + flip) uncharged reprints of that statement:
-quadratic in source bytes (probe: 36 KB, 18 s, 3.9 % of the step budget, no `E_STEP_LIMIT`; 36 s
-with `paper`). Main does the same work uncharged, so #855 is not a regression. Suggested fix:
-a fixed byte allowance per build, `1 + span` charged past it, for fixes and flip text alike;
-corpus door statements are short, so no pinned payload should move. **Gate:** that input returns
-`E_STEP_LIMIT` or compiles within budget in linear time; a test pins the free/charged boundary
-(a component's second storey is charged); no pinned digest, work count or datum law moves.
-
-Done (#939) in `src/elements/reprint.ts`, so doors, windows, openings and dims (whose swap text
-#936 routed there) share it: a statement longer than `REPRINT_FREE_BYTES` (256) pays `1 + span` on
-every build, on every storey; a shorter one keeps the free first build per ctx. The probe (a 30 KB
-door, 300 levels) took 13.8 s, 27 s with `paper`; it now stops at `E_STEP_LIMIT` in 1.6 s.
-
-### RR.10 · Window and opening fixes re-print their statement with no step charge: done by #880, waiting to be archived — `note`
-
-RR.1 (#855) charged the door path; the review noted that window and opening fixes re-print their
-statement the same way, uncharged, so a looped window or opening has the hole RR.1 closed for doors.
-**Gate:** the shape of `test/doors.test.ts`'s `E_STEP_LIMIT` test, for a window and an opening;
-no pinned step payload, work count or datum law moves (see RR.9 for the per-storey allowance).
-
-Residue: windows and openings now share the door's first-build rule (`src/elements/reprint.ts`),
-so RR.9's per-storey free build covers all three; RR.9 should fix it there.
-
-### RR.11 · `E_LEVEL_MIX` follow-ups after RR.3: done by #890, waiting to be archived — `note`
-
-From #857's review. The parser's own `E_LEVEL_MIX` message (`src/parser.ts`, around the level-mix
-check) still omits `keep` and `section`; changing it moves `compile().diagnostics`, so it needs its
-own byte-identity note. `docs/language-reference.md` (§ Levels) lists the plan-level settings by
-hand without `height`, `site`, `notes` or `sheet text`. **Gate:** both read from the same list RR.3
-derives, and a test fails when a plan-level form is added without them. #857's review also noted
-guard gaps it did not itemise; re-read that guard when this is taken.
-
-Residue: § import in `docs/language-reference.md` still lists a module's ignored settings by hand
-(no `height`, `site`, `notes`, `style`, `sheet text`), unguarded.
-
-### RR.12 · `E_DRAWING_LIMIT`'s remedy retypes its message clause: done by #892, waiting to be archived — `note`
-
-From #859's review (RR.4): the remedy repeats a clause of the message by hand, so a later wording
-change to one leaves the other stale. **Gate:** the remedy reads the clause from where the message
-builds it, or a test pins that they agree.
-
-Residue: only the NOTES clause is pinned, by a test (a dependency-free leaf constant imported by both
-sides was not tried); the primitive-budget message paraphrases the remedy and stays unpinned.
-
-### RR.13 · `uses` outdoor-hint follow-ups after RR.5: done by #881, waiting to be archived — `note`
-
-From #861's reviews. (1) `usesOutdoorHint` (`src/parser.ts`) runs `this.toks.indexOf(t)` before it
-knows the word is an outdoor word, so a file of many unknown statements formats its errors in
-quadratic time (1.4 MB: 1.5 s before #861, 10.4 s after); the comma hint (#395) has the same
-shape. Start the walk at `this.pos - 1` and test the word first, for both.
-(2) The walk-back is token-adjacent, so an outdoor word on its own line after a room's `uses` list
-is hinted "after `uses`"; require the same line, or give a neutral hint. (3) The strip's
-`Expected "room"` text is retyped beside `eatKeyword`'s. (4) No test covers the identifier-type
-guard on the strip path (`uses living "balcony"` in a strip). (5) The `terrace → balcony`,
-`garden → lawn` mapping test is not tied to the language reference's outdoor examples. **Gate:** for
-(1), both hints linear in tokens, pinned by a token-visit count, not time; a test per other item.
-
-### RR.14 · Live-delta prompt-hash follow-ups after EV.3: done by #885, waiting to be archived — `note`
-
-From #865's round-2 review. (1) `renderDelta` without hashes gained a trailing blank line, and the
-"unchanged" test only checks a substring. (2) A corpus-only mismatch still says "Baseline prompt ≠
-this run's prompt"; say "corpus change" when the prompt hash matched. (3) An unparsable
-`eval/live-baseline.json` is reported as missing. (4) `promptHashes()` re-reads the files after the
-paid calls; compute the hashes once, before the first call, from the strings actually sent (this
-also fixes the CRLF wording); read and validate the baseline before the spend too, since a `null`
-hash in it throws in `renderDelta` after the paid calls. (5) Three places
-still say the delta section appears only with a baseline (`eval/README.md`, the `eval/run.ts`
-header, `LIVE_HEADER`). (6) A vacuous `not.toContain` in the prompt-mismatch test. **Gate:** offline
-tests only; no paid run.
-
-Residue: none. The item (6) assertion tightens an existing check, so it passes before and after the fix.
-
-### RR.15 · The EV.1 record predates RM-D52: done by #879, waiting to be archived — `note`
-
-From #864's review: `eval/live-runs/2026-11-ev1-intent-gap.md` still says re-baselining needs an owner
-decision and that RM-D51 keeps the July record; RM-D52 (#854) re-baselined. Add a dated pointer line,
-as `2026-11-authorability-remeasure.md` has; change no number.
-
-### RR.16 · Text-guard selection follow-ups after AG.1: done by #895, waiting to be archived — `note`
-
-From #867's reviews. (1) `docs-flags` imports `src/manifest.ts`, which wakes it only through the
-capped import list, so a flag rename with its regenerated docs can cut it. (2) The `skills/*/SKILL.md`
-branch of the derivation is unpinned (no set-equality test, no non-literal skill). (3) No test
-asserts that an ordinary `src/` change wakes none of the guards (mutants `startsWith("src/")` pass).
-(4) A lone change to `src/elements/*.ts`, `src/lint/element-phrases.ts`, `src/lint/ruleset.ts` or
-`src/diagnostics.ts` does not wake `lint-fix-texts`, though they compose fix text. (5)
-`opaque-literal-guard` does not wake on `docs-site/public/<key>.txt` or on the error catalogue.
-(6) A deleted or renamed page wakes nothing. (An `examples/` change crowding by-name guards out of
-the 20-file cap is AG.2 (1).) **Gate:** one `test/gate-select.test.ts` case per item, each failing
-on today's selection.
-
-Closure note (#895). Items (2) and (3) were missing pins, not wrong selection, so their cases pass on
-main's selection and fail on the mutants named above. Item (4) is read from the changed module's own
-source (`composesFixText`: a `message:`/`fix:`/`hint:`/`hints:` property outside a comment line, or a first doc
-comment mentioning "message" or "hint", in a module inside that test's transitive import closure), not a
-list of paths.
-
-Residue moved to AG.2.
-
-### RR.17 · `fmt` follow-ups after M.21: done by #884, waiting to be archived — `note`
-
-From #872's round-2 review. (1) Strings printed through `statementText` (room `label`, `text`, list
-strings) are not pinned for a blank before a line break. (2) `src/doc.ts` strips trailing blanks
-with `/[ \t]+$/` per line, quadratic in a blank run that does not end the line (60k spaces: about 3 s
-after #872, 8.5 s before), and the playground runs it on user text; scan from the right. (3) `fmt` is not a fixed
-point for a comment on a CR CR LF line: the lexer drops one trailing CR, so pass 1 prints `# note\r`
-and pass 2 `# note`. **Gate:** the corpus `format` output stays byte-identical.
-
-Closure note (#884). On CR CR LF input the lexer now drops every trailing CR from a comment, so the
-while-to-for fix's `newText` and `repair().source` carry such a comment without the extra CRs: benign,
-and the result is a `fmt` fixed point where main's was not. Residue, not fixed: a comment ending CR,
-blank, LF (`# note\r \n`) is still not a fixed point, since pass 1 keeps the `\r` and strips the blank.
-
-### RR.18 · A per-upload owner instruction is not in the eval-dataset rule: decided by RM-D55, waiting to be archived — `note`
-
-`.claude/rules/eval-dataset.md` makes HF uploads owner-only and has no carve-out for an explicit
-per-upload instruction from the owner, which is how the card upload of 2026-11-16 (HF `90914659`) was
-done (`docs/plans/product-roadmap/handoff.md`). Whether to add that carve-out is the owner's call;
-until then the rule stands as written.
-
-**Decided** by RM-D55 (owner, 2026-11-16; product-roadmap README §6.24): uploads to the dataset repo
-are the agent's, standing; replacing a published data file still needs an owner ruling first.
+- RR.9 · A door's free first fix build recurs per storey — done by #939 → archived (lab)
+- RR.10 · Window and opening fixes re-print their statement with no step charge — done by #880 → archived (lab)
+- RR.11 · `E_LEVEL_MIX` follow-ups after RR.3 — done by #890 → archived (lab)
+- RR.12 · `E_DRAWING_LIMIT`'s remedy retypes its message clause — done by #892 → archived (lab)
+- RR.13 · `uses` outdoor-hint follow-ups after RR.5 — done by #881 → archived (lab)
+- RR.14 · Live-delta prompt-hash follow-ups after EV.3 — done by #885 → archived (lab)
+- RR.15 · The EV.1 record predates RM-D52 — done by #879 → archived (lab)
+- RR.16 · Text-guard selection follow-ups after AG.1 — done by #895 → archived (lab)
+- RR.17 · `fmt` follow-ups after M.21 — done by #884 → archived (lab)
+- RR.18 · A per-upload owner instruction is not in the eval-dataset rule — decided by RM-D55 → archived (lab)
 
 ### RR.19 · `uses` hint follow-ups after RR.13 — `todo`
 
@@ -2500,18 +1925,7 @@ are sent". Normalise once and send the normalised string, or reword the comment.
 any spend" is pinned only by a source-text order check (`test/eval-stats.test.ts`); a run of `main()`
 with a bad baseline would pin the exit code. **Gate:** offline tests only; no paid run.
 
-### RR.24 · Two statement reprints outside `reprint` (observation): done by #936, waiting to be archived — `note`
-
-From #880's review (RR.10). `furnitureCategoryFix` (`src/fix-producers.ts`, through `categoryFix` in
-`src/elements/furniture.ts`, which charges every build) and the dim swap (`src/elements/dim.ts`)
-re-print a whole statement without going through `src/elements/reprint.ts`. Card it as a defect only
-if a looped or component-placed case reproduces an uncharged reprint; otherwise close it as checked.
-
-Checked (#936). The furniture fix is charged on every build: a component placed by 200 levels used
-4,840,000 steps, near `E_STEP_LIMIT`. The dim swap reproduced: it is printed for every dim and every
-loop iteration, uncharged (5,000 iterations of a 96 KB statement: 8.6 s, 1.8 GB, 2.4 % of the step
-budget). It now goes through `reprint` with a constant key, once per node per storey (156 ms, the
-same steps, no pinned payload moved). Its per-storey build is RR.9's shape (1,000 levels × 96 KB: 2.1 s).
+- RR.24 · Two statement reprints outside `reprint` (observation) — done by #936 → archived (lab)
 
 ### RR.25 · Re-print work under the 256-byte allowance is still uncharged — `todo`
 
@@ -2525,29 +1939,8 @@ it fires, or charge it at a per-byte rate past a much smaller allowance. **Gate:
 `E_STEP_LIMIT` or finishes within budget in a time proportional to its steps; no pinned payload
 moves (the longest corpus statement is 96 bytes).
 
-### EB.1 · The embed-path size check is a Playwright-only number: done by #937, waiting to be archived — `note`
-
-The playground's embed path is a hard gzip ceiling (`embedPathBudget`,
-`playground/e2e/startup-chunks.baseline.json`; RM-D57 keeps it at 351,000 B), measured only by
-`playground/e2e/preview3d.spec.ts` in CI. P7's executors each rebuilt a scratch script to replicate
-that walk from `embed.html` with `gzipSync` before pushing a compiler change (#881 was 21 B over,
-#890 about 120 B over). One way: a repo script that builds the playground as CI does and prints the
-embed path's per-chunk and total gzip bytes against the budget, which the spec and the script share.
-**Gate:** the script's total equals the spec's on the same build; `docs/agents/commands.md` names it;
-compiler-path PR briefs say to run it.
-
-### EB.2 · Headroom on the playground's shared compiler chunk: done by #947, waiting to be archived — `note`
-
-Both hard gzip ceilings over the playground's compiler chunk were nearly full on `main` aaae8d4c
-(`playground/e2e/startup-chunks.baseline.json`): the embed path 350,995 B of 351,000 B and the
-compiler path 364,738 B of 365,000 B, so every card that added compiler-chunk code failed CI. The
-chunk carried `lint()` and most of its rules, which no compile, no embed and no view-mode render
-runs. **Gate:** at least ~3,000 B gzip cut from the compiler chunk on both paths with no change of
-behaviour (a corpus digest of SVG, `describe()`, `lint()` and diagnostics, before and after), the
-budgets never raised (the cut came to ~49.5 KB on the embed and compiler paths and ~12.5 KB on the
-first use's, so all three were re-taken down by their own rule, measured × 1.025 rounded up to the
-thousand, to keep a glTF-Transform-sized leak tripping them: the coordinator's ruling and review),
-and `growthBudget` still met.
+- EB.1 · The embed-path size check is a Playwright-only number — done by #937 → archived (lab)
+- EB.2 · Headroom on the playground's shared compiler chunk — done by #947 → archived (lab)
 
 ## Review residue of the v3 night (PRs #936–#953, 2026-11-18)
 
@@ -2617,29 +2010,14 @@ down. (2) `growthBudget` (ceiling 458,980 B over a 438,980 B baseline) guards no
 path, 315,282 B, is ~124 KB under the baseline): re-baseline it by its rule or retire it. (3) `docs/agents/iron-laws.md`'s RM-D57 line could point at
 `npm run size:embed` (#937 review). **Gate:** (1) and (2) fixed in the baseline file; (3) the owner's call.
 
-### NR.10 · Moving the `E_INTENT_*` rows out of the compiler chunk's fix table (#948): done by #976, waiting to be archived — `note`
-
-Done by #976: the 13 rows are generated into `src/error-catalog-fixes-intent.ts`. `compile()`'s error card reads the compile table only, and `diagnosticToJson` and the public `renderErrorSvg` read both (`src/any-catalog-fix.ts`). The `test/explain.test.ts` pin now proves the two tables are disjoint and together every catalogue code. The compiler chunk is 1,052 B smaller. The first use gained nothing from it: `diagnosticToJson` is on that path and carries the rows there.
-
-Twelve today (thirteen once #948 lands), they are never compile diagnostics; dropping them from `src/error-catalog-fixes.ts`'s compile-path copy
-saves about 633 B gzip. Needs the `test/explain.test.ts` pin (its keys equal every catalogue code) reworked.
-Only worth doing when headroom is short again.
+- NR.10 · Moving the `E_INTENT_*` rows out of the compiler chunk's fix table (#948) — done by #976 → archived (lab)
 
 ### NR.11 · Test narrative that will rot (#936) — `todo`
 
 `test/dim-swap-reprint.test.ts`'s header quotes wall-clock and RSS figures, and `src/elements/dim.ts` cites
 `(backlog RR.24)`, which will be archived. Replace with what the test pins. **Gate:** no figure or backlog id left in either.
 
-### NR.12 · The primary checkout's dependencies lag `main` (night of 2026-11-18): done by #955, waiting to be archived — `note`
-
-Worktrees junction `node_modules` to the primary checkout, whose copy had `@modelcontextprotocol/ext-apps`
-1.7.5 (main pins 2.1.0), so the mcp-worker typecheck failed locally. Separately, the root `vite` is 6 by main's
-own override (`package.json`) while the playground needs 8, so `npm run size:embed` fails in a worktree unless
-`playground/node_modules` is junctioned too. Both were proven by CI only. One way: `npm ci` in the primary when
-no peer session uses it, and a line in `docs/agents/orchestration.md` about the `playground/node_modules`
-junction. **Gate:** a fresh worktree runs `check:quick` and `size:embed` with the documented junctions.
-
-Done: `npm ci` ran in the primary during the 1.64.0 release (ext-apps 2.1.0, playground vite 8.3.5); `orchestration.md` and `gotchas.md` name the `playground/node_modules` junction (#955). Gate evidence: three fresh worktrees (EB.2 #947, RM9.3 #948, AF3 #951) ran `check:quick` and `size:embed` with those junctions on 2026-11-18.
+- NR.12 · The primary checkout's dependencies lag `main` (night of 2026-11-18) — done by #955 → archived (lab)
 
 ### NR.13 · RM9.2 leftovers (#950) — `todo`
 
@@ -2829,29 +2207,8 @@ not probed further (round-2 red team). (5) #992's body lists "N2 (red team, roun
 but does not state what N2 is; read it from the round-1 review before carding it. **Gate:** (1),
 (3), (4) each with a test; (5) its content recorded here or carded.
 
-### SR.14 · RM9.6 CV13 split by RM-D73: done by #996 and #993, waiting to be archived — `note`
-
-`W_TABLE_NO_SEAT` fired on nine shipped examples; adding their chairs moved pinned rows and assets.
-#996 measured 349 moved digest rows in 31 files (swap-back: 349 of 349 give `main`'s value), plus
-snapshots, PNGs and 3D pins. Done in two PRs, each after two red-team rounds: (1) #996, the
-examples-only drawing-change PR (merge `e4d36045`, 2026-11-21 UTC); (2) #993, the rule (merge
-`f48633ff`), whose rows are only the rule's. CV08 and CV14 follow the same split. Of the residue
-first listed here: the held-out pair exists (private `archlang-lab` `3ef34b4`; re-linted on #993's
-head, 1 and 0 reports); the `table` labelled "Island" in `docs/gallery/family-of-four` is now
-declined by the label rule (#993 red team 1, m6); and the gallery plans are accepted output, not
-edited by hand (#993's residue: 6 reports in 6 plans). The live residue is SR.20.
-
-### SR.15 · A wrapped room label loses its space in the SVG text (downstream report, 2026-11-20): done by #1010, waiting to be archived — `note`
-
-Done by #1010: the spaces a break removed ride between a wrapped name's `<tspan>` lines in a `<tspan font-size="0" xml:space="preserve">` each (`lineGaps`, `src/text-layout.ts`), so the `<text>`'s content is the label (what a search, a copy or a schedule check reads; a drawn name is `aria-hidden` under `accessible`, so this is not a screen-reader fix); a visible space would shift the anchored line by half a space (measured in Chrome and resvg), the zero-size one moves no glyph (PNG and Chrome screenshots identical). The 201 moved digest rows and 33 K1 rows are SVG only: stripping the separators reproduces every old row. Residue: `arch review`'s two `dx` tspans (`src/cli/review.ts`) still read with no space (SR.23); `svgTexts` never reads a wrapped name's first line (SR.24). The card text below is kept for the record.
-
-A downstream application reads "EntranceHall" from a production drawing whose schedule says
-"Entrance Hall". Repro (MCP `compile`, 2026-11-20): a 1200 × 2400 room labelled "Entrance Hall"
-next to a 4000 × 2400 one draws `<text …><tspan …>Entrance</tspan><tspan …>Hall</tspan></text>`, so
-the element's text content is "EntranceHall"; at 1800 wide the label stays on one line. A reader of
-the SVG text (a screen reader, search, the downstream schedule check) gets one word. **Gate:** a
-wrapped label's text content equals the label; a drawing change, so byte identity per RM-D56 over
-every plan with a wrapped label.
+- SR.14 · RM9.6 CV13 split by RM-D73 — done by #996 and #993 → archived (lab)
+- SR.15 · A wrapped room label loses its space in the SVG text (downstream report, 2026-11-20) — done by #1010 → archived (lab)
 
 ### SR.16 · AF7 leftovers (#977) — `todo`
 
@@ -2865,27 +2222,7 @@ test; any moved pin under RM-D69's four conditions as ruled for #977
 check; each touched table carries a header note; SVG, `lint()`, steps and parse stay unmoved; no
 other digest is touched."
 
-### SR.17 · MCP `fix` and L1 take the ranked fix (#992, RM-D70 Q3): done by #1008, waiting to be archived — `note`
-
-Done by #1008: MCP `fix` (`packages/mcp/src/tools.ts`, which the hosted Worker registers too) and L1
-(`eval/l1.ts`, through a pure `l1Fixes`) take `rankFixes(d.fixes)[0]` per diagnostic, as `arch fix`
-does. A door written 25 mm past a meeting wall gets `E_OPENING_NIB` with `at 2050 from start`, then
-`at 950 from start` (nearer first); `rankFixes` puts `950` first, and MCP `fix` with `unsafe:true`
-now applies `950` with nothing skipped, as `arch fix --unsafe` does (`packages/mcp/test/tools.test.ts`
-(v)); `test/rank-fixes.test.ts` holds L1's pick. `l1Pipeline` is unchanged over `eval/faults`,
-`eval/goldens` and `examples/*.arch` (69 of 69). `E_OPENING_DATUM`'s `from start|end` pair moves too:
-MCP `fix` with `unsafe:true` now writes `end`, as `arch fix --unsafe` does, where it wrote `start`.
-Residue: `rankFixes`' edit-magnitude term picks the fewer-digit one of AF9's two moves, nearer or
-farther (here `950`, 575 mm away, over `2050`, 525 mm away): SR.21. `dataset/trajectory.ts` still hands
-every alternative to `applyFixes`: SR.22. The card text below is kept for the record.
-
-AF9 is the first producer with several alternatives on one diagnostic. `arch fix` takes the top of
-`rankFixes` (`src/fix-apply.ts`) and the LSP lists the alternatives in its order, but MCP `fix` and L1
-apply them in array order without it (`packages/mcp/src/tools.ts`, `eval/l1.ts`;
-`docs/plans/ai-first-language/af9-design.md` F3 and §12 Q3): with `unsafe:true`, MCP `fix` applies
-the first alternative and reports the next as skipped. **Gate:** both call `rankFixes`; a test that a
-diagnostic with two alternatives gets the same fix from `arch fix --unsafe` and MCP `fix`, and a unit
-test of L1's choice (no live run: `--l1` needs `--live`, paid and owner-only).
+- SR.17 · MCP `fix` and L1 take the ranked fix (#992, RM-D70 Q3) — done by #1008 → archived (lab)
 
 ### SR.18 · `W_TABLE_NO_SEAT` reads a `table` whose label names a non-dining piece outside its closed list (RM9.6 follow-up) — `todo`
 
@@ -3062,52 +2399,8 @@ Not verified in review: the tsup-built `dist/index.d.ts` text, and hot-path cost
 From `docs/plans/product-roadmap/2026-11-test-findings.md` (§ 3, § 4, § 5). RR.8 (2), the
 `W_DOORWAY_BLOCKED` strictness, is that plan's first direction and is not repeated here.
 
-
-### EV.2 · A live run keeps no plan source per brief: done by #897, waiting to be archived — `note`
-
-EV.1 could not tell whether a lost brief-run came from the model, a stricter rule or new compiler
-geometry, because neither the July nor the November artifacts hold the authored `.arch` source of
-each brief. One way: `eval/run.ts` writes each brief's extracted source into the run's artifact
-(the workflow's upload, never the repo). A workflow artifact on this public repo is downloadable, so
-whether plan sources may be published there was ruled by RM-D53 (2026-11-16, delegated): yes, the
-extracted `.arch` source only, in the existing `eval-results-live` artifact at GitHub's default
-retention, accepted as a limit; raw replies stay unpublished, so when `extractArch` finds no complete
-fence and would fall back to the whole reply, only a "not extracted" marker is stored; a local run
-writes to a git-ignored directory. **Gate:** an offline test
-that a live-shaped run writes one source per scored brief and only a marker for an unfenced or
-truncated reply, a check that the local directory is git-ignored, cases for the fence shapes `extractArch`'s regex mishandles (a typed block, prose, then an `arch` block; an
-untyped first block of prose; an inline triple backtick; a four-backtick fence; probed in #858's
-review). The property to hold, as a hypothesis to check: the stored text is the body of a block
-whose opening fence is the reply's first line-start fence with an empty or `arch` info string,
-else a marker; and
-`eval/README.md` names the file.
-
-Residue (2026-11-17): the hypothesis held with one tightening, a marker also when that block is not
-the text `extractArch` scored; `extractArch` itself still mishandles a typed first block and a
-four-backtick fence, left alone because `dataset/model-authoring/rows.ts` pins parity with it and a
-fix would move live scoring, so it needs its own card (EV.7).
-
-### EV.7 · `extractArch` scores the wrong text for a typed first block or a four-backtick fence: done by #940, waiting to be archived — `note`
-
-`extractArch` (`eval/run.ts`) skips a typed first block (` ```json `) and opens at its closing fence,
-so for a typed block, prose, then an `arch` block it scores the text between the blocks (possibly
-empty); for a four-backtick fence holding a ` ``` ` line it stops at that line. EV.2 stores only a
-marker for both, so no source is lost, but the scored text is wrong. One way: score the body of the
-reply's first line-start fence with an empty or `arch` info string (`firstArchFence`). A fix moves
-live scoring against `eval/live-baseline.json`, and `dataset/model-authoring/rows.ts` pins parity
-with `extractArch`. **Gate:** both shapes scored as that block, with tests; the `rows.ts` parity
-test kept green; the change to live scoring named against the baseline before it lands.
-
-Residue (2026-11-18): one reader, `dataset/model-authoring/reply.ts`, shared by `eval/run.ts` and
-`rows.ts`: the first complete top-level `arch`/untyped fence, else the old regex's block, else the
-whole reply. `eval/README.md` names the reply shapes that now score differently and that
-`eval/live-baseline.json` was measured under the old regex (not re-measured). One shape scores worse
-than the old regex: an `arch` block inside a wrapper fence (` ```markdown ` or four-backtick
-wrapper, a typed opener never closed, a closer glued to the last line) followed by another fenced
-block, usually untyped, now scores text from after the plan where the old regex scored the plan; it
-needs a wrapper the model was not asked for, the four shapes are pinned as they score now, and EV.10
-resolves it. Over the 1,370 `model-authoring` replies none scores differently, so no published row
-moves. The published card's wording is EV.9.
+- EV.2 · A live run keeps no plan source per brief — done by #897 → archived (lab)
+- EV.7 · `extractArch` scores the wrong text for a typed first block or a four-backtick fence — done by #940 → archived (lab)
 
 ### EV.9 · The dataset card states the pre-EV.7 extraction rule — `todo`
 
@@ -3135,75 +2428,12 @@ skipped. A change moves live scoring, so name it against `eval/live-baseline.jso
 parity samples keep their outputs (or each moved one is named); the 1,370 `model-authoring` replies
 still score byte-identically.
 
-### EV.3 · The baseline does not record the prompt it was measured under: done by #865, waiting to be archived — `note`
-
-`eval/live-baseline.json` carries `judge` but no hash of `spec.llm.md` or `eval/corpus.json`, so
-146 of 241 prompt lines changed after July with nothing flagging the baseline as stale. One way:
-record both SHA-256s in the baseline, and have `renderDelta` (`eval/run.ts`) say so plainly when a
-run's hashes differ, as it already does for a judge change. **Gate:** a unit test of `renderDelta`
-for a matching and a differing prompt hash.
-
-### EV.4 · `offset` and `hinged` written as statements get no hint: done by #866, waiting to be archived — `note`
-
-After CO-1 and CO-2 the remaining order notes in the live runs are `Unknown statement "offset"`
-(Haiku 5.5 and gpt-5.5) and `Unknown statement "hinged"` (Haiku 5.5)
-(`eval/live-runs/2026-11-authorability-remeasure.md`). One way: a targeted parse hint naming the
-clause the model meant, as U.6 did for `uses balcony`; whether either becomes syntax waits for
-the data after the hint. **Gate:** each word gets a hint naming the real form, a test per word, and
-no corpus output moves (message only).
-
-### EV.8 · A door or window kind word after `width` is still a parse error: done by #943, waiting to be archived — `note`
-
-EV.4's data, from a downstream product: in ArchCanvas's paid 1.62 run, 2 of the 3 first drafts
-that failed to compile (of 26; its clean first drafts fell from 85 % to 62 %) failed with
-`E_PARSE: Unknown statement "sliding"` / `"hinged"`, a door kind word written after `width` or at
-the end (the drafts were not saved; `door … at 50% width 1000 sliding` and `… swing in hinged` are
-the reconstructed family). It now carries a prompt override and a tripwire that goes red when
-upstream accepts the form. Probed at 1.63.0: `door id=d on w at 50% width 900
-sliding`, `… swing in hinged` and `window … width 900 casement` still fail exactly as on 1.62.0
-(CO-1 made the clauses order-free, not the kind word). One way: accept the kind word as one more
-order-free clause of `door` and `window` (once, `E_DUP_CLAUSE` on a second kind or a kind before
-`on`), with the spec line and the GBNF saying so. **Gate:** CO-1's law (every example's parse, SVG,
-`describe()`, `lint()` and diagnostics byte-identical), a test per kind word in each position, and
-the `hinged` hint (EV.4) kept for a kind written as its own statement.
-
-### EV.5 · A refused opening offers no move (design first): done by #992 (AF9 phase A), waiting to be archived — `note`
-
-**Carded as** AF9 (`docs/plans/product-roadmap/cards.md` track 10, 2026-11-18).
-**Design:** `docs/plans/ai-first-language/af9-design.md` (2026-11-20) meets the gate below. Its
-questions are ruled (RM-D70, revised; its §12): maybe-incorrect moves and placeholder skeletons
-only, with no machine-applicable fix, so L1 cannot move.
-
-Six of EV.1's seven compile-error losses are opening-placement refusals (`refused, not moved`, a
-window on a partition edge, a parallel edge with no offset; ADR 0028 § 5). They return no fix. L1 (`eval/l1.ts`) applies only the machine-applicable tier, so
-a `maybe-incorrect` fix would help an author but move no L1 number; only a provably correct move
-(ADR 0011's bar) could be machine-applicable. Design first, within ADR 0005 and ADR 0028 § 5:
-which refusals have one nearest legal place, and whether a move may cross a room boundary.
-**Gate:** a design note in the card or an ADR before code.
-
-### EV.6 · The published dataset card quotes the superseded baseline: done by #856, the HF re-upload of 2026-11-16 and #858, waiting to be archived — `note`
-
-`dataset/CARD.md` § Baseline context quotes the 2026-07-12 baseline (L0 23/26 · 14/26 · 3/26; L1
-18/26 · 7/26). RM-D52 re-baselined to 22 / 9 / 1 on 2026-11-16 under a changed prompt. The card is
-also on HF, so changing it means a card re-upload, which is owner-only (RM-D47). One way: date
-the July numbers as the baseline at generation time and name the current one beside it, with no
-comparison. RM-D54 (2026-11-16, delegated) ruled the change; the repo card was changed by
-#856. **Gate:** the card-only re-upload, by the owner or on the owner's explicit instruction for that
-upload; card bytes on HF equal the repo's; `dataset/README.md`'s "the HF card quoted it" line
-updated after.
-
-Done: the owner said "同意上传卡片，请你自动帮我实施" (2026-11-16); `dataset/CARD.md` from main (SHA-256
-`2ed46aad…9cc4`) was uploaded as `README.md`, HF commit `90914659`, and the downloaded file's SHA-256
-equals main's.
-
-### AG.1 · `check:quick` misses the text guards an executor most often trips: done by #867, waiting to be archived — `note`
-
-In the P5 run, executors reported a green local gate on PRs that CI then failed on
-`test/opaque-literal-guard.test.ts`, `test/docs-flags.test.ts` and `test/lint-fix-texts.test.ts`
-(#848): `check:quick` runs the nearest tests, and those guards are not near the catalogue and docs
-files they read. One way: when a change touches `src/error-catalog/`, `docs/*.md` or a
-gitleaks-excluded test, `scripts/check-quick.mjs` also runs those three files. **Gate:** a
-`gate-select` test that such a change selects them; `scripts/check-quick.mjs` is high tier.
+- EV.3 · The baseline does not record the prompt it was measured under — done by #865 → archived (lab)
+- EV.4 · `offset` and `hinged` written as statements get no hint — done by #866 → archived (lab)
+- EV.8 · A door or window kind word after `width` is still a parse error — done by #943 → archived (lab)
+- EV.5 · A refused opening offers no move (design first) — done by #992 (AF9 phase A) → archived (lab)
+- EV.6 · The published dataset card quotes the superseded baseline — done by #856, the HF re-upload of 2026-11-16 and #858 → archived (lab)
+- AG.1 · `check:quick` misses the text guards an executor most often trips — done by #867 → archived (lab)
 
 ### AG.2 · `check:quick` residue from AG.1's review — `todo`
 
@@ -3402,42 +2632,7 @@ two and worth doing regardless.
 **Do not** narrow this to "re-run it by hand" — that is the workaround, and it has now been needed
 twice in five releases.
 
-### 4.10 · A 5 s test budget on a heavy optional import: done by #829, waiting to be archived — `note`
-
-Found 2026-09-04 while gating item 4.9, and worth filing because `AGENTS.md` currently records that
-the suite has **no known flake**.
-
-`test/roof.test.ts` → "PDF export draws it" opens with `await import("pdfkit")`, a heavy optional
-dependency, under vitest's default **5000 ms** per-test budget. Measured on this machine:
-
-| condition | duration | verdict |
-|---|---|---|
-| file run alone, machine idle | **674 ms** | passes, 7.4x margin |
-| inside a full-suite run under heavy parallel load | **5821 ms** | **fails: `Test timed out in 5000ms`** |
-
-So the margin is real but it is a margin on an **import**, not on the assertion — the same run had
-`test/zones.test.ts` take 105 s. It reproduced twice under load and passed 32/32 three times when run
-alone, including on `main`, so it is not a defect in `roof` and was not introduced by 4.9, which does
-not touch that file.
-
-**The trap this entry exists to mark.** The failure text says `Test timed out in 5000ms`, which is
-exactly the diagnosis item G.9 records being WRONG about twice — there, the text said
-`expected at least 1 JSON envelope(s) on stdout, saw 0`, which is not a timeout at all, and two agents
-theorised about load from the *shape* of the symptom without reading it. Here the text really is a
-timeout and the margin was measured, so the reading holds. **Read the assertion, then measure the
-margin; do not pattern-match either way.**
-
-Options, in the order they are worth trying: give this one case an explicit timeout that reflects what
-it does (a dynamic import of an optional native-ish package is not a 5 ms unit test); or hoist the
-capability probe so the import is paid once per file rather than inside the timed case; or leave it and
-say plainly in `AGENTS.md` that the suite has one load-sensitive case, since a number nobody can
-reproduce on a quiet machine is worse than a documented one. **Do not raise the global
-`testTimeout`** — that hides every future instance of the same shape.
-
-**Done by #829.** Both first options together: `test/roof.test.ts` probes `pdfkit` once at module
-scope (`HAS_PDFKIT`, paid at collection), and "PDF export draws it" carries its own
-`PDF_CASE_TIMEOUT_MS` budget; the global `testTimeout` is unchanged. M.6 (visual, sheet) is the same
-shape and stays open.
+- 4.10 · A 5 s test budget on a heavy optional import — done by #829 → archived (lab)
 
 ### 4.1 · Joinery pass performance — `todo`
 

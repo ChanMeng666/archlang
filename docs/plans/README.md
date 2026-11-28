@@ -37,7 +37,7 @@ Moved verbatim to the private sibling repository `archlang-lab` (clone it next t
 
 | What | Now at | Why it left |
 |---|---|---|
-| Closed backlog entries (45, 2026-11-09) | `archlang-lab/backlog-archive.md` | `docs/backlog.md` keeps open work only; `scripts/backlog-archive.mjs` does the move; a closed id that a tracked file still cites keeps a one-line tombstone |
+| Closed backlog entries (118) | `archlang-lab/backlog-archive.md` | `docs/backlog.md` keeps open work only; `scripts/backlog-archive.mjs` does the move; a closed id that a tracked file still cites keeps a one-line tombstone |
 | The 3D programme plan (`development-plan.md`) | `archlang-lab/plans/archlang-3d/development-plan.md` | 287 KB, superseded by the delivered package and `preview-and-remodel/` |
 | ADR 0030 draft | `archlang-lab/plans/archlang-3d/adr-draft-0030-3d-as-downstream-package.md` | superseded by the accepted `docs/adr/0030` |
 | ADR 0031 draft | `archlang-lab/plans/archlang-3d/adr-draft-0031-core-exports-for-downstream-3d.md` | superseded by the accepted `docs/adr/0031` |

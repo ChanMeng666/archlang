@@ -65,7 +65,9 @@
 
 不许：合并主版本升级（#603 留给 RM5.4）；直接推 `origin/ChanMeng666-patch-1` 或把它当 PR 合并（cherry-pick 到新分支）；新资源 URL 打不开时落地 patch-1；为了让 #676 绿而重新钉帧哈希或 GLB digest（字节移动要逐项解释）；删 `feat/remove-view`。
 
-### RM0.6 · 工具：`scripts/backlog-archive.mjs` 的两处缺陷（2026-11-11 加，出自 RM0.1 余项的真实运行） — `todo` · 未估 · sonnet · 依赖无（线下）
+### RM0.6 · 工具：`scripts/backlog-archive.mjs` 的两处缺陷（2026-11-11 加，出自 RM0.1 余项的真实运行） — `done` · #1055 · sonnet · 依赖无（线下）
+
+**状态（#1055）：`done`。** (1) 已规范为 `note`/`decision` 的标题原样读入，不再重复状态词（`test/backlog-index.test.ts` 钉四种保留标题）；(2) 真实运行之后脚本自己重生成 `docs/backlog-index.md`，且生成的索引不再算作引用。同一 PR 还修了：条目之后的墓碑/结案行（`- <id> · …`）归节所有、不再随前一条目被归档；区间引用（`NR.1–NR.16`）算作引用。**下面是原卡文（历史）。**
 
 内容：(1) 一次真实运行把 11 个 KEEP 标题上的状态词写了两遍；(2) 它不重生成 `docs/backlog-index.md`，归档之后要手跑 `npm run gen:backlog-index`。修脚本使两件都对，并补一个测试。
 
@@ -784,7 +786,7 @@ RM1.1a 只跑了第 1 臂（冻结提示，六份 brief）。内容：第二臂�
 ### RM0.10 · 小件：工具与 schema 的余项（2026-11-15 加，出自 #750、#758、#753 的报告） — `todo` · 未估 · sonnet · 依赖无（线下）
 
 1. `OpenPlan3D` 的 id 映射。
-2. `scripts/backlog-archive.mjs` 改写了 10 个标题（缺陷；与 RM0.6 同源，先读那张卡）。
+2. ~~`scripts/backlog-archive.mjs` 改写了 10 个标题（缺陷；与 RM0.6 同源，先读那张卡）。~~ 已由 #1055 随 RM0.6 修好（已规范的 `note`/`decision` 标题原样保留）。
 3. lint-rules schema 的 `v1` 声明。
 4. `Scene3D` 占位 `$id` 与镜像副本。
 证明：每条一条测试或生成器的漂移检查。不许：手改生成物。

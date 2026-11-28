@@ -9,8 +9,10 @@ import { parseEntries, renderIndex, STATUSES } from "../scripts/gen-backlog-inde
 
 // A plain `.mjs` module (no declaration file): loaded by a computed specifier, as test/docs-3d.test.ts does.
 const ARCHIVE = "../scripts/backlog-archive.mjs";
-const { parseHeading, archiveBacklog } = (await import(/* @vite-ignore */ ARCHIVE)) as {
+const { parseHeading, archiveBacklog, citingFiles, cited } = (await import(/* @vite-ignore */ ARCHIVE)) as {
   parseHeading: (line: string) => { archive: boolean; status: string };
+  citingFiles: (files: string[]) => string[];
+  cited: (id: string, lines: string[]) => boolean;
   archiveBacklog: (
     src: string,
     otherLines: string[],
@@ -134,5 +136,67 @@ describe("scripts/backlog-archive.mjs", () => {
 
   it("reads a todo that needs a decision as `decision`", () => {
     expect(archiveBacklog(src, []).text).toContain("### O.1 · Waits on the owner (needs a decision) — `decision`");
+  });
+
+  it("leaves an already-normalised kept heading as it was (no repeated status word)", () => {
+    const kept = [
+      "### K.1 · A note: done elsewhere — `note`",
+      "### K.2 · Waits on the owner — `decision`",
+      "### K.3 · Open work — `todo`",
+      "### K.4 · Declared work — `declared`",
+    ];
+    const text = archiveBacklog(
+      ["# Backlog", "", "## Kept", "", ...kept.flatMap((h) => [h, "", "body", ""])].join("\n"),
+      [],
+    ).text;
+    expect(text.split("\n").filter((l) => l.startsWith("### "))).toEqual(kept);
+  });
+
+  it("keeps a tombstone or closure line that follows an archived entry in the backlog", () => {
+    const tomb = "- T.2 · Archived before — done by #2 → archived (lab)";
+    const closure = ["- T.3 · Closed in place — closed by #3 (the line is", "  wrapped)"];
+    const doc = [
+      "# Backlog",
+      "",
+      "## S",
+      "",
+      "### T.1 · Done now — `done` by #1",
+      "",
+      "body",
+      "",
+      tomb,
+      "",
+      "### T.4 · Done too — `done` by #4",
+      "",
+      "body",
+      "",
+      ...closure,
+      "",
+      "### T.5 · Open — `todo`",
+      "",
+      "body",
+      "",
+    ].join("\n");
+    const r = archiveBacklog(doc, ["see T.1"]);
+    expect(r.archived).toBe(2);
+    expect(r.tombstoned).toEqual(["T.1"]);
+    expect(r.text).toContain(`- T.1 · Done now — done by #1 → archived (lab)\n${tomb}\n`);
+    expect(r.text).toContain(`${closure.join("\n")}\n\n### T.5 · Open — \`todo\``);
+    expect(r.arch.join("\n")).not.toContain("T.2 ·");
+    expect(r.arch.join("\n")).not.toContain("T.3 ·");
+    // A second run moves nothing.
+    expect(archiveBacklog(r.text, ["see T.1"]).text).toBe(r.text);
+  });
+
+  it("reads an id inside a cited range as cited", () => {
+    expect(cited("NR.12", ["review residue is backlog NR.1–NR.16"])).toBe(true);
+    expect(cited("NR.12", ["NR.10–14"])).toBe(true);
+    expect(cited("NR.12", ["NR.1–NR.9, NR.11, NR.13–NR.15"])).toBe(false);
+  });
+
+  it("does not read the generated index as a citation", () => {
+    expect(
+      citingFiles(["docs/backlog.md", "docs/backlog-index.md", "docs/plans/x.md", "src/a.ts", "a.png", ""]),
+    ).toEqual(["docs/plans/x.md", "src/a.ts"]);
   });
 });
