@@ -5,7 +5,7 @@
 Where the tests of a `src` module are, and what each test file is for. Generated; `npm run check:drift`
 fails when it is stale. How to add a test: `docs/testing.md` § 4.
 
-578 test files in `test/`, 305 `src` modules, 112 modules no test imports.
+579 test files in `test/`, 305 `src` modules, 112 modules no test imports.
 
 ## `src` module → tests that import it
 
@@ -743,6 +743,7 @@ The first sentence of each file's header comment.
 - `test/text-metrics.test.ts` — `inkWidth` (`src/text-metrics.ts`) against the two faces it says it reads.
 - `test/theme-cascade.test.ts` — T4.4 — named theme bases; T4.4 — per-element style overrides; T4.4 — opt-in poché derivation (`theme from`); T4.4 — registered themes.
 - `test/theme.test.ts` — theme directive; CompileOptions.theme.
+- `test/tmp-helper.test.ts` — `test/helpers/tmp.ts` hands out temp directories in their long, canonical form, so a module `importSource` writes there loads under Vite on Windows.
 - `test/tools-mask-to-plan.test.ts` — The mask-to-plan recipe (card G3, `docs/import.md`), held without Python: the committed outputs of `tools/mask-to-plan/` on its worked example.
 - `test/tools-plan-to-geojson.test.ts` — The converter recipe (`tools/plan-to-geojson/`, language reference § Convert Plan JSON to another format): the committed example is what the two commands write, the output keeps the rules of RFC 7946, and the script's...
 - `test/transform-seam.test.ts` — ElementDef.transform — the seam.
