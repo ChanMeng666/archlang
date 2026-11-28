@@ -18,7 +18,7 @@ This skill is a workflow, not a language reference. Run `archlang spec` for the 
 
 - Run the `archlang` CLI commands below and no other program.
 - Change the one `.arch` file the user asked you to edit (`plan.arch` below). If the user has not
-  named it, ask. Besides it, write only the drawing the CLI renders and the `.bak` copy that
+  named it, ask. Besides it, write only the drawings the CLI renders and the `.bak` copy that
   `--backup` keeps.
 - The user's explicit instructions take priority over these steps.
 
@@ -56,6 +56,23 @@ This skill is a workflow, not a language reference. Run `archlang spec` for the 
 9. **Refresh the sheet if the drawing grew.** `archlang finish plan.arch --dry-run --json` shows what
    is missing. If it reports that the drawing no longer fits the authored `paper` or `scale`,
    `archlang finish plan.arch --reissue` may replace those two statements and nothing else.
+10. **Review once, at the end.** Run `archlang score plan.arch --taste generic --json` and
+    `archlang preview plan.arch --review`, which writes `plan.review.png` (one storey per sheet: add
+    `--level <n>` for each upper storey). Run them when
+    `archlang validate plan.arch --strict --json` exits `0`, or you can name each remaining warning
+    as deliberate. If strict is not clean only because of warnings the plan carried before your
+    edit, still run them once: the score is then capped at 0.5 (`capped` is `true`). Do not fix
+    warnings the request did not cause to make it clean. The score is a sourced 0–1 taste score
+    (privacy gradient, daylight, proportion, corner doors, …) whose `criteria[].advice` `A_*` codes
+    name what to improve; `coverage.weight` says how much of it could be judged, and `score` is
+    `null` when nothing could. It never gates, and a score capped at 0.5 means a validity lint
+    warning still stands. The review image rings and numbers every warned element; on a lint-clean
+    plan it still shows the access graph (which rooms each door joins, which rooms the entrance
+    reaches) and which door is the main entrance or that the choice is a tie: check that the edit
+    did not change them unless the request asked for it. If it did, that is a fault in the edit, not
+    taste: go back to step 5, fix it, and run this step again. Taste advice is not an error, and it
+    may predate your edit: do not iterate on it and do not make edits the user did not ask for to
+    raise the score. Report it; the user decides.
 
 ## When another agent may edit the same file
 
@@ -76,11 +93,17 @@ clash; it is not a lock.
 - The statements you changed, as a short diff.
 - Before and after for the facts the request is about (for example the room's area).
 - Any new warning, and whether the request causes it.
+- The taste score from step 10 with the weight it judged (`coverage.weight`, as "judged 11/12 of
+  the weight") and, if it is capped, the warnings that cap it; or that nothing could be judged
+  (`score` is `null`). Each `A_*` advice code with its criterion's `message`, and `plan.review.png`.
+  Say that the advice is not an error, that it may predate your edit, that you made no edit for it,
+  and that acting on it is the user's choice.
 
 ## When something goes wrong
 
 - Exit code `2` is a fault in the source: read the diagnostic, do not retry unchanged. `3` is a
   wrong flag: run `archlang <cmd> --help`.
-- `archlang explain <CODE> --json` explains a diagnostic code.
+- `archlang explain <CODE> --json` explains a diagnostic code. It does not know the `A_*` advice
+  codes (it exits `3`): a taste criterion's `message` and `source` are its explanation.
 - If the request needs a new door or window and you are unsure where it can go,
   `archlang suggest plan.arch --json` returns candidates with the reason for each.

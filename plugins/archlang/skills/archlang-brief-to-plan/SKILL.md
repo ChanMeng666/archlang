@@ -49,10 +49,26 @@ This skill is a workflow, not a language reference. The language is whatever `ar
 8. **Gate and show.** `archlang validate plan.arch --strict --json` must exit `0`, or you must be able
    to name each remaining warning as deliberate. Then `archlang preview plan.arch -o plan.png` to show
    the user.
+9. **Review once, after the loop is clean.** Run `archlang score plan.arch --taste generic --json`
+   and `archlang preview plan.arch --review`, which writes `plan.review.png` (one storey per sheet:
+   add `--level <n>` for each upper storey). The score is a sourced 0–1 taste score (privacy
+   gradient, daylight, proportion, corner doors, …) whose `criteria[].advice` `A_*` codes name what
+   to improve; `coverage.weight` says how much of it could be judged, and `score` is `null` when
+   nothing could. It never gates, and a score capped at 0.5 means a validity lint warning still
+   stands. The review image rings and numbers every warned element; on a lint-clean plan it still
+   shows the access graph (which rooms each door joins, which rooms the entrance reaches) and which
+   door is the main entrance or that the choice is a tie: check those against your list from
+   step 2. If they contradict the brief, that is a fault in the plan, not taste: go back to step 5,
+   fix it, and run this step again. Taste advice is not an error: do not iterate on it and do not
+   change the plan to raise the score. Report it; the user decides.
 
 ## Report to the user
 
 - The file you wrote and the drawing you rendered.
+- The taste score from step 9 with the weight it judged (`coverage.weight`, as "judged 11/12 of
+  the weight") and whether it is capped, or that nothing could be judged (`score` is `null`); each
+  `A_*` advice code with its criterion's `message`; and `plan.review.png`. Say that the advice is
+  not an error, that you did not change the plan for it, and that acting on it is the user's choice.
 - Every requirement of the brief the plan does not meet, or "none".
 - Which area you quote: `net_area_m2` is the floor no wall stands on, `area_m2` the larger
   centreline figure. If a room has no `net_area_m2`, say its net area could not be computed.
@@ -62,7 +78,8 @@ This skill is a workflow, not a language reference. The language is whatever `ar
 
 - Exit code `2` is a fault in the source. Read the diagnostic and fix it; do not run the same
   command again unchanged. `3` is a wrong flag: run `archlang <cmd> --help`.
-- For an unfamiliar code, run `archlang explain <CODE> --json`.
+- For an unfamiliar code, run `archlang explain <CODE> --json`. It does not know the `A_*` advice
+  codes (it exits `3`): a taste criterion's `message` and `source` are its explanation.
 - To gate on the brief as data instead of by eye, write it as an intent file and run
   `archlang validate plan.arch --intent intent.json --feedback --json`. The archlang-review-plan
   skill covers this.
