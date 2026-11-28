@@ -448,7 +448,7 @@ Totals: 434 modules in 34 directories.
 | `glyphs-outdoor.ts` | 1447 | 2 | The OUTDOOR plan symbols: what a site plan draws once the drawing leaves the building — planting, garden furniture, the things parked on a driveway, and the small standing objects (a bin, a mailbox, a charge point) a survey records. | none |
 | `index.ts` | 17 | 1 | Built-in element registry — back-compatible views over the default {@link Registry}. The canonical built-in list now lives in `defs.ts`; the per-call registry machinery (and the public `register*` extension points) live in `registry.ts`.… | none |
 | `opening.ts` | 203 | 2 | `opening [id=] at (x,y) width N [wall ref] [head <mm>]` — a leaf-less cased opening: a gap in the host wall (no door leaf, no glazing) that still connects the two spaces. The clauses after the placement come in any order… | none |
-| `outdoor.ts` | 729 | 16 | `outdoor [id=] <kind> (at (x,y) size WxH \| polygon (x,y) …) [label "…"] [rail <edges>]` — a ground surface OUTSIDE the building: lawn, planting, paving, deck, gravel, water, driveway, patio, balcony, sand, soil. | none |
+| `outdoor.ts` | 733 | 16 | `outdoor [id=] <kind> (at (x,y) size WxH \| polygon (x,y) …) [label "…"] [rail <edges>]` — a ground surface OUTSIDE the building: lawn, planting, paving, deck, gravel, water, driveway, patio, balcony, sand, soil. | none |
 | `reprint.ts` | 94 | 5 | The memo and step charge for a fix that re-prints its whole statement (door, window, opening, and the endpoint-swapped text a `dim` carries for `W_DIM_INSIDE`). | charges the step meter |
 | `roof.ts` | 385 | 6 | `roof overhang <mm> [wall <id>]` — or `roof polygon (x,y) (x,y) (x,y) …` — the eaves projection line. | none |
 | `room.ts` | 1042 | 14 | `room [id=] (at (x,y) \| DIR ref [align E] [gap n]) size WxH [label "…"]` or `room [id=] polygon (x,y) (x,y) (x,y) … [label "…" [at (x,y)]]` or `room [id=] circle at (cx,cy) radius R [label "…"]` — floor fill + label + computed area. The… | charges the step meter |
@@ -582,7 +582,7 @@ Totals: 434 modules in 34 directories.
 | `reachability.ts` | 126 | 1 | Room-graph reachability: builds the room-connectivity graph from doors/openings (rooms + the literal "exterior") once, then — per room, in source order — emits W_BATH_VIA_BEDROOM and W_ROOM_UNREACHABLE, preserving the historical… | none |
 | `room-contents.ts` | 772 | 3 | Room-contents advisories (plan-soundness PS2.8, PS2.9): a habitable room with no window, and a furnished room missing the piece that defines it; and (product roadmap RM1.2c) a room whose label names a catalogued piece it does not hold.… | none |
 | `site.ts` | 115 | 1 | `W_ROOM_NOT_EQUATOR_FACING` — the site layer's one advisory rule. | none |
-| `stairs.ts` | 1703 | 11 | Stair safety (plan-soundness PS2.11e, the stair bullets, and PS2.34): a door swinging over a flight or its landing, a flight with no landing at its foot or head, a doorway onto a flight's side, a void where a flight arrives, a flight too… | none |
+| `stairs.ts` | 1833 | 11 | Stair safety (plan-soundness PS2.11e, the stair bullets, and PS2.34): a door swinging over a flight or its landing, a flight with no landing at its foot or head, a doorway onto a flight's side, a void where a flight arrives, a flight too… | none |
 | `vertical.ts` | 207 | 2 | `W_STAIR_UNMATCHED` — a run of vertical circulation that connects nothing. | none |
 
 ## `src/overlays/`
