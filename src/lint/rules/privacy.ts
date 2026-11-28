@@ -46,7 +46,7 @@ import {
   storeyWalkDigraph,
   wetRoomsOnlyViaBedroom,
 } from "../../analyze.js";
-import { entranceInputs, entranceWays, isEntryRoom } from "../../analyze/entrance.js";
+import { entranceInputs, entranceWays, hinged } from "../../analyze/entrance.js";
 import type { Digraph } from "../../algebra/paths.js";
 import type { Diagnostic } from "../../diagnostics.js";
 import { canonicalFixture } from "../../elements/fixtures-glyphs.js";
@@ -979,18 +979,50 @@ export const entranceIntoPrivate: LintRule = {
   },
 };
 
-/** A door with a hinged leaf: the default kind, `hinged` written out, or a `double` door's pair
- *  (the reading the main-entrance chooser gives a front door, `src/analyze/entrance.ts`). */
-const hingedLeaf = (d: RDoor): boolean =>
-  d.doorKind === undefined || d.doorKind === "hinged" || d.doorKind === "double";
+/**
+ * Is a room with these uses only a way through: classified, and every use an entry, hall or
+ * circulation one ({@link CIRCULATION_USES})? A room with any other use beside it ("Hall Bath",
+ * "Hall WC", "Entry Closet", "Hall Cupboard", "Dining Hall") is a room of the dwelling, never the
+ * building's corridor.
+ */
+function circulationOnly(uses: ReadonlySet<UseKind>): boolean {
+  if (uses.size === 0) return false;
+  for (const u of uses) if (!CIRCULATION_USES.has(u)) return false;
+  return true;
+}
 
 /**
- * The corridors {@link corridorDrawnInside} reports, each with its door into the dwelling and the
- * room that door opens into: on a storey no shaft arrives on, where every door to the outside
- * opens onto an `outdoor balcony` ({@link entranceWays}' `balcony`, the one probe behind it), an
- * entrance space ({@link isEntryRoom}: an entry, hall or circulation use and no service use) that
- * has no door to the outside, whose every connector joins it to the same one room, at least one
- * of them a door with a hinged leaf. Empty otherwise.
+ * Does the room hold a stair, lift or escalator of this storey: the centre of its footprint, or a
+ * corner 1 mm inside it, on the room's floor ({@link pointInRoomBox}, shape-aware)? Such a room is
+ * a landing, the storey's way in from another storey, whether or not the other storey is drawn.
+ */
+function holdsVertical(ctx: LintContext, box: RoomBox): boolean {
+  for (const v of ctx.verticals) {
+    const r = rectOf(v);
+    const points: Point[] = [
+      { x: r.x + r.w / 2, y: r.y + r.h / 2 },
+      { x: r.x + 1, y: r.y + 1 },
+      { x: r.x + r.w - 1, y: r.y + 1 },
+      { x: r.x + r.w - 1, y: r.y + r.h - 1 },
+      { x: r.x + 1, y: r.y + r.h - 1 },
+    ];
+    if (points.some((p) => pointInRoomBox(p, box))) return true;
+  }
+  return false;
+}
+
+/**
+ * The rooms {@link corridorDrawnInside} reports, each with its door into the dwelling and the room
+ * that door opens into: on a storey no shaft arrives on, where every door to the outside opens onto
+ * an `outdoor balcony` ({@link entranceWays}' `balcony`, the one probe behind it), a room whose every
+ * use is entry, hall or circulation ({@link circulationOnly}), that holds no stair, lift or escalator
+ * ({@link holdsVertical}), has no door to the outside, and whose every connector joins it to the same
+ * one room, at least one of them a door with a hinged leaf ({@link hinged}, the leaf the
+ * main-entrance chooser's street step asks of a front door; its entry-room step takes any leaf, but
+ * a slider or a cased opening off a corridor is a shop front or a passage as often as a front door).
+ * One per door: where two such rooms open only into each other, a `circulation` one is named, else
+ * the first in source order.
+ * Empty otherwise.
  */
 function corridorsDrawnInside(ctx: LintContext): Array<{ corridor: RRoom; door: RDoor; into: RRoom }> {
   if (ctx.building.arrivalRooms.length > 0) return [];
@@ -1008,8 +1040,14 @@ function corridorsDrawnInside(ctx: LintContext): Array<{ corridor: RRoom; door: 
       else edgesOf.set(id, [e]);
     }
   const out: Array<{ corridor: RRoom; door: RDoor; into: RRoom }> = [];
-  for (const c of ctx.rooms) {
-    if (!isEntryRoom(c)) continue;
+  const reported = new Set<string>();
+  // A `circulation` room first, then source order: where a corridor and a hall open only into each
+  // other, the corridor is the one named.
+  const order = [...ctx.rooms].sort(
+    (a, b) => Number(roomUses(b).has("circulation")) - Number(roomUses(a).has("circulation")),
+  );
+  for (const c of order) {
+    if (!circulationOnly(roomUses(c))) continue;
     const own = edgesOf.get(c.id) ?? [];
     // A connector the probe could not place, or one to the outside: not this case.
     if (own.length === 0 || own.some((e) => e.ambiguous || e.exterior || e.between.includes(EXTERIOR_NODE))) continue;
@@ -1017,25 +1055,34 @@ function corridorsDrawnInside(ctx: LintContext): Array<{ corridor: RRoom; door: 
     if (others.size !== 1) continue;
     const into = byId.get([...others][0]!);
     if (!into || into.id === c.id) continue;
-    const door = own.map((e) => (e.kind === "door" ? doors.get(e.doorId) : undefined)).find((d) => d && hingedLeaf(d));
-    if (door) out.push({ corridor: c, door, into });
+    const door = own.map((e) => (e.kind === "door" ? doors.get(e.doorId) : undefined)).find((d) => d && hinged(d));
+    if (!door || reported.has(door.id) || holdsVertical(ctx, ctx.roomRects.get(c.id)!)) continue;
+    reported.add(door.id);
+    out.push({ corridor: c, door, into });
   }
   return out;
 }
 
 /**
  * `W_CORRIDOR_DRAWN_INSIDE` (product roadmap RM9.6, coverage class CV16; plan-soundness PS2.42):
- * the building's common corridor drawn as a room inside the dwelling's exterior walls, so the
- * front door reads as an inside door and the only way in reads as the balcony. Reported when
- * every door to the outside on the storey opens onto an `outdoor balcony`, no shaft arrives on
- * it, and an entry, hall or circulation room with no door to the outside opens only into one
- * other room, by a door with a hinged leaf: the front door. One warning per such room, at that
+ * the only way in reads as the balcony because a corridor, hall or entry with no door to the
+ * outside opens only into the dwelling. Most often the building's common corridor is drawn as a
+ * room inside the dwelling's exterior walls, so the front door reads as an inside door; or the
+ * room is the dwelling's own entrance and its door to the outside is not drawn. Reported when every
+ * door to the outside on the storey opens onto an `outdoor balcony`, no shaft arrives on it, and a
+ * room that is only entry, hall or circulation, holds no stair, lift or escalator and has no door to
+ * the outside opens only into one other room, by a door with a hinged leaf. One warning per such
  * door.
  *
- * It does not re-read the corridor as the way in (PS2.14's dwelling context): the plan says what
- * it draws, and its floor area still counts the corridor. A plan that reads as non-residential
- * ({@link judgesAsDwelling}, PS2.18) is declared as `non-dwelling`, not judged. No new number:
- * which doors lead outside and which room holds them are topological facts.
+ * It does not re-read the room as the way in (PS2.14's dwelling context): the plan says what it
+ * draws, and its floor area still counts the corridor. A plan that reads as non-residential
+ * ({@link judgesAsDwelling}, PS2.18) is not judged and is declared as `non-dwelling`, as
+ * `W_ENTRANCE_INTO_PRIVATE` declares it. No new number: which doors lead outside and which room
+ * holds them are topological facts.
+ *
+ * The hints lead with the likelier reading of the room's own uses: a `circulation` room with the
+ * building's corridor drawn outside the walls, an `entry` or `hall` with no `circulation` use with
+ * its door to the outside.
  */
 export const corridorDrawnInside: LintRule = {
   name: "corridor-drawn-inside",
@@ -1045,29 +1092,31 @@ export const corridorDrawnInside: LintRule = {
   codes: ["W_CORRIDOR_DRAWN_INSIDE"],
   check(ctx: LintContext): Diagnostic[] {
     const out: Diagnostic[] = [];
-    const found = corridorsDrawnInside(ctx);
-    if (found.length === 0) return out;
     // PS2.18: a dwelling's front door off a common corridor; a café or clinic is declared, not judged.
     if (!judgesAsDwelling(ctx)) {
       ctx.skip("non-dwelling");
       return out;
     }
-    for (const { corridor, door, into } of found) {
+    for (const { corridor, door, into } of corridorsDrawnInside(ctx)) {
+      const outside =
+        `If ${hq(ctx, corridor)} (${corridor.id}) is the building's common corridor, draw it outside the ` +
+        `dwelling's exterior walls (for example as an \`outdoor paving\` surface labelled "Corridor") and ` +
+        `hang ${door.id} on the exterior wall of ${hq(ctx, into)} (${into.id}) that faces it, as a door from outside.`;
+      const front =
+        `If ${hq(ctx, corridor)} (${corridor.id}) belongs to the dwelling, draw its door to the outside: that ` +
+        "door is then the way in.";
+      const entrance = !roomUses(corridor).has("circulation");
       out.push({
         severity: "warning",
         code: "W_CORRIDOR_DRAWN_INSIDE",
         ...ctx.at(door),
         message:
           `Every door to the outside opens onto a balcony, and ${quoted(ctx, corridor)} has no door to the ` +
-          `outside: it opens only into ${quoted(ctx, into)}, by a hinged door that reads as the front door. The ` +
-          "building's corridor looks drawn inside the dwelling's exterior walls, so the front door reads as an " +
-          "inside door and the only way in reads as the balcony.",
+          `outside: it opens only into ${quoted(ctx, into)}, by a hinged door. So the only way in reads as the ` +
+          "balcony: either the building's corridor is drawn inside the dwelling's exterior walls and that door " +
+          "is the front door, or this room's own door to the outside is not drawn.",
         hints: [
-          `If ${hq(ctx, corridor)} (${corridor.id}) is the building's common corridor, draw it outside the ` +
-            `dwelling's exterior walls (for example as an \`outdoor paving\` surface labelled "Corridor") and ` +
-            `hang ${door.id} on the exterior wall of ${hq(ctx, into)} (${into.id}) that faces it, as a door from outside.`,
-          `If ${hq(ctx, corridor)} (${corridor.id}) belongs to the dwelling, draw its door to the outside: that ` +
-            "door is then the way in.",
+          ...(entrance ? [front, outside] : [outside, front]),
           "Accept if the plan is a fragment of a larger dwelling whose way in is not drawn. The warning is advisory.",
         ],
       });

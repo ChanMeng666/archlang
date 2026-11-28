@@ -1,8 +1,9 @@
 /**
  * Product roadmap RM9.6, coverage class CV16 (plan-soundness PS2.42): `W_CORRIDOR_DRAWN_INSIDE`,
- * the building's common corridor drawn as a room inside the dwelling's exterior walls. Every door
- * to the outside opens onto an `outdoor balcony`, and an entry, hall or circulation room with no
- * door to the outside opens only into one other room, by a hinged door: the front door.
+ * the building's common corridor drawn as a room inside the dwelling's exterior walls (or the
+ * dwelling's own entrance with its door out not drawn). Every door to the outside opens onto an
+ * `outdoor balcony`, and a room that is only entry, hall or circulation, holds no stair or lift and
+ * has no door to the outside opens only into one other room, by a hinged door.
  *
  * Each finding is shown beside the same plan with its cause removed, so a test cannot pass because
  * the rule never ran.
@@ -29,7 +30,7 @@ const edit = (from: string, to: string): string => {
   return CASE.replace(from, to);
 };
 const MESSAGE =
-  'Every door to the outside opens onto a balcony, and "Corridor" has no door to the outside: it opens only into "Hall", by a hinged door that reads as the front door. The building\'s corridor looks drawn inside the dwelling\'s exterior walls, so the front door reads as an inside door and the only way in reads as the balcony.';
+  'Every door to the outside opens onto a balcony, and "Corridor" has no door to the outside: it opens only into "Hall", by a hinged door. So the only way in reads as the balcony: either the building\'s corridor is drawn inside the dwelling\'s exterior walls and that door is the front door, or this room\'s own door to the outside is not drawn.';
 
 const AUDITS = "test/plans/plan-soundness/audits/first-contact-plans";
 
@@ -142,6 +143,130 @@ suite("W_CORRIDOR_DRAWN_INSIDE", () => {
     expect(of(src)).toEqual([]);
     // The same two storeys with no stair between them: the upper flat is judged, and reported.
     expect(of(src.replace(/^ {4}stair id=st .*\n/gm, ""))).toHaveLength(1);
+  });
+
+  /** A flat of the review's probes (round 1 of #1069): a balcony slider in the living room. */
+  const flat = (...lines: string[]): string =>
+    [
+      'plan "Probe" {',
+      "  units mm",
+      "  grid 100",
+      ...lines,
+      '  outdoor balcony at (800,-1600) size 3400x1500 label "Balcony"',
+      "  door id=d_balc sliding on r_living.top at 1600 from start width 1800",
+      "  window on r_living.left at center width 1500",
+      "}",
+      "",
+    ].join("\n");
+
+  it("leads with the front-door hint when the room is the dwelling's entry or hall, not a corridor", () => {
+    // Round 1 (p03b): a studio whose entry has no front door drawn. It reports, as either reading.
+    const src = flat(
+      '  room id=r_living at (0,0) size 5000x4500 label "Living" uses living',
+      '  room id=r_entry right-of r_living size 1600x4500 label "Entry" uses entry',
+      "  walls from rooms exterior 200 partition 100",
+      "  door id=d_liv between r_entry and r_living at center width 900 swing into r_living",
+    );
+    const ds = of(src);
+    expect(ds).toHaveLength(1);
+    expect(ds[0]!.hints![0]).toBe(
+      'If "Entry" (r_entry) belongs to the dwelling, draw its door to the outside: that door is then the way in.',
+    );
+    expect(ds[0]!.hints![1]).toMatch(/^If "Entry" \(r_entry\) is the building's common corridor/);
+    // The public case's corridor is `uses circulation`: the corridor hint leads.
+    expect(of(CASE)[0]!.hints![0]).toMatch(/^If "Corridor" \(r_corr\) is the building's common corridor/);
+  });
+
+  it("needs a room that is only a way through: a hall bath, a hall WC or a store beside the hall is not one", () => {
+    // Round 1 (p28): a flat whose front door is not drawn; "Hall Bath" reads `hall` and `bath`.
+    const p28 = flat(
+      '  room id=r_living at (0,0) size 5000x4500 label "Living" uses living',
+      '  room id=r_hall right-of r_living size 1600x4500 label "Hall" uses hall',
+      '  room id=r_bath right-of r_hall align top size 3400x2000 label "Hall Bath"',
+      '  room id=r_bed below r_bath align left size 3400x2500 label "Bedroom" uses bedroom',
+      "  walls from rooms exterior 200 partition 100",
+      "  door id=d_liv between r_hall and r_living at center width 900 swing into r_living",
+      "  door id=d_bath between r_hall and r_bath at center width 800 swing into r_bath",
+      "  door id=d_bed between r_hall and r_bed at center width 900 swing into r_bed",
+      "  furniture toilet at (8600,200) size 400x700",
+      "  furniture basin at (7000,200) size 500x400",
+    );
+    expect(lintCoverage(p28)!.families.find((f) => f.family === "privacy")!.status).toBe("partial");
+    expect(of(p28)).toEqual([]);
+    // Round 1 (p29): the same flat off an access gallery drawn as a balcony, its front door onto it.
+    const p29 = p28.replace(
+      "  door id=d_liv ",
+      '  outdoor balcony at (0,4600) size 10000x1500 label "Access gallery"\n' +
+        "  door id=d_front on r_hall.bottom at center width 1000 swing inward\n  door id=d_liv ",
+    );
+    expect(describe(p29).access?.entrances).toContain("d_front");
+    expect(of(p29)).toEqual([]);
+    // The hall bath read as a hall alone would report: the uses are what clears it.
+    expect(of(p28.replace('label "Hall Bath"', 'label "Hall Bath" uses hall'))).toHaveLength(1);
+    for (const uses of ["hall bath", "hall wc", "hall storage", "entry dining", "circulation bedroom"])
+      expect(of(edit('label "Corridor" uses circulation', `label "Corridor" uses ${uses}`)), uses).toEqual([]);
+  });
+
+  it("is silent on a landing that holds a stair, drawn alone or under a storey that holds the defect", () => {
+    // Round 1 (p04b): a maisonette's upper floor drawn alone, its landing holding the stair down.
+    const p04b = flat(
+      '  room id=r_living at (0,0) size 5000x4500 label "Living" uses living',
+      '  room id=r_land right-of r_living size 2200x4500 label "Landing" uses hall',
+      '  room id=r_bed below r_living align left size 5000x3500 label "Bedroom" uses bedroom',
+      "  walls from rooms exterior 200 partition 100",
+      "  stair id=st at (5600,500) size 1000x3000 dir down",
+      "  door id=d_liv between r_land and r_living at center width 900 swing into r_living",
+      "  door id=d_bed between r_living and r_bed at center width 900 swing into r_bed",
+    );
+    expect(of(p04b)).toEqual([]);
+    expect(of(p04b.replace(/^ {2}stair id=st .*\n/m, ""))).toHaveLength(1);
+    // Round 1 (p04d): a duplex whose lower storey has the defect; only the lower storey reports.
+    const body = CASE.slice(CASE.indexOf("{\n") + 2, CASE.lastIndexOf("}")).replace(
+      /^ {2}units mm\n {2}grid 100\n/,
+      "",
+    );
+    const p04d =
+      'plan "Duplex off a corridor" {\n  units mm\n  grid 100\n  level 1 "Lower" {\n' +
+      body +
+      "    stair id=st at (5300,500) size 1000x3000 dir up\n  }\n" +
+      '  level 2 "Upper" {\n' +
+      '    room id=u_bed at (0,0) size 5000x4500 label "Main bedroom" uses bedroom\n' +
+      '    room id=u_land right-of u_bed size 1600x4500 label "Landing" uses hall\n' +
+      "    walls from rooms exterior 200 partition 100\n" +
+      '    outdoor balcony at (800,-1600) size 3400x1500 label "Upper balcony"\n' +
+      "    stair id=st at (5300,500) size 1000x3000 dir down\n" +
+      "    door id=u_d between u_land and u_bed at center width 900 swing into u_bed\n" +
+      "    door id=u_balc sliding on u_bed.top at 1600 from start width 1800\n" +
+      "    window on u_bed.left at center width 1500\n  }\n}\n";
+    expect(compile(p04d).diagnostics.filter((d) => d.severity === "error")).toEqual([]);
+    const ds = of(p04d);
+    expect(ds).toHaveLength(1);
+    expect(p04d.slice(ds[0]!.span!.start, ds[0]!.span!.end)).toBe(FRONT.trim());
+  });
+
+  it("reports a door once when the two rooms it joins each open only into the other", () => {
+    // Round 1 (p25): the hall has no other door, so the corridor and the hall both qualify.
+    const src = edit("  door id=d_bed between r_hall and r_bed at center width 900 swing into r_bed\n", "").replace(
+      "{ open between r_living and r_hall }",
+      "",
+    );
+    expect(src).not.toContain("open between");
+    const ds = of(src);
+    expect(ds).toHaveLength(1);
+    expect(ds[0]!.message).toBe(MESSAGE);
+  });
+
+  it("files `non-dwelling` on every non-residential plan, so a plan without the pattern keeps privacy skipped", () => {
+    for (const name of ["corner-cafe.arch", "library.arch", "museum.arch", "transit-hall.arch"]) {
+      const privacy = lintCoverage(EXAMPLE_FILES[name]!, { world: EXAMPLES_WORLD })!.families.find(
+        (f) => f.family === "privacy",
+      )!;
+      expect(privacy.status, name).toBe("skipped");
+      expect(
+        privacy.skipped?.map((s) => s.reason),
+        name,
+      ).toContain("non-dwelling");
+    }
   });
 
   it("reports nothing over the shipped examples, under the default ruleset and every profile", () => {

@@ -156,7 +156,8 @@ function doorFacing(d: RDoor, roomRects: ReadonlyMap<string, RoomBox>, turns: 0 
 const DIAGONAL_TOL = 1e-6;
 
 /** A door with a hinged leaf: the default kind, `hinged` written out, or a `double` door's pair. */
-const hinged = (d: RDoor): boolean => d.doorKind === undefined || d.doorKind === "hinged" || d.doorKind === "double";
+export const hinged = (d: RDoor): boolean =>
+  d.doorKind === undefined || d.doorKind === "hinged" || d.doorKind === "double";
 
 /** Uses that make a room an entrance space: a hall, an entry or circulation. */
 const ENTRY_USES: ReadonlySet<UseKind> = new Set<UseKind>(["entry", "hall", "circulation"]);
@@ -177,7 +178,7 @@ const SERVICE_USES: ReadonlySet<UseKind> = new Set<UseKind>(["utility", "storage
 
 /** Does the room read as an entrance space ({@link roomUses}): an entry, hall or circulation
  *  use, and no service use beside it? */
-export function isEntryRoom(r: RRoom | undefined): boolean {
+function isEntryRoom(r: RRoom | undefined): boolean {
   if (!r) return false;
   const uses = [...roomUses(r)];
   return uses.some((u) => ENTRY_USES.has(u)) && !uses.some((u) => SERVICE_USES.has(u));

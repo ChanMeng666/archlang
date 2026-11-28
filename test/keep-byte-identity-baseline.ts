@@ -10,7 +10,7 @@
  * PR legitimately moves a hashed output (never keep code), the table is re-taken by the generator, the
  * reason recorded below and the moved files listed in that commit's message.
  *
- * Taken: RM9.6 CV16 (W_CORRIDOR_DRAWN_INSIDE) on feat/rm9.6-cv16-entrance-context: the new circulation-privacy/corridor-drawn-inside pair; lint() of the three first-contact apartments whose corridor is drawn inside gains the warning
+ * Taken: RM9.6 CV16 (W_CORRIDOR_DRAWN_INSIDE) on feat/rm9.6-cv16-entrance-context, review round 1: the new circulation-privacy/corridor-drawn-inside pair; lint() of the three first-contact apartments whose corridor is drawn inside gains the warning
  */
 
 /** `[path from the repository root, SHA-256 of the payload, evaluation steps]`, sorted by root. */
@@ -453,7 +453,7 @@ export const KEEP_WEAK_BASELINE: readonly (readonly [string, string, number])[] 
   ],
   [
     "test/defect-corpus/circulation-privacy/corridor-drawn-inside.arch",
-    "bd94df2e007c4fc50fed35417d5b68d49d5a090fe98180f21ca2826051e06708",
+    "fd83074ab3396cbf6c75424b323cc9de040fe04270127fe93ce07a9fb78cc087",
     646,
   ],
   [
@@ -1463,7 +1463,7 @@ export const KEEP_WEAK_BASELINE: readonly (readonly [string, string, number])[] 
   ],
   [
     "test/plans/plan-soundness/audits/first-contact-plans/2026-10-25-rerun/1-apartment.arch",
-    "38b3f5061a0d42e047c7010b2b5cfddd3a821db69adde533ae849e9560125102",
+    "0b2ce9d593997648edae18e046b494e6e39923cdb29a9c92af5964d1e2783867",
     2261,
   ],
   [
@@ -1553,7 +1553,7 @@ export const KEEP_WEAK_BASELINE: readonly (readonly [string, string, number])[] 
   ],
   [
     "test/plans/plan-soundness/audits/first-contact-plans/2026-10-26-rerun-row6/1-apartment.arch",
-    "a8a2d244740f18dd80bdce2e09976b30c64f64e26b4f116d76a1a254753676d3",
+    "15f8b30eea69546459db93bbb7ec7192f6def91468084daac38ad7cd9902b5a0",
     1717,
   ],
   [
@@ -1643,7 +1643,7 @@ export const KEEP_WEAK_BASELINE: readonly (readonly [string, string, number])[] 
   ],
   [
     "test/plans/plan-soundness/audits/first-contact-plans/2026-10-27-rerun-arm2/1-apartment.arch",
-    "644bc10ecbf175fdc62df6b8d3c9bbd77ea10fda8c9ef83e24b8cf7dbe6f5e47",
+    "e700dfe05cdf46b8569dbd0e9c99f72aa2ec6214e3e64a0a286d7942c73bf85f",
     2148,
   ],
   [

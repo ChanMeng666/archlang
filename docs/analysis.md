@@ -1314,10 +1314,10 @@ outside opens into a bedroom, bathroom or WC. All three read `uses` (authored, o
 vocabulary) and skip a room with no classified use. Their hints offer only doors on edges two
 rooms really share, measured, and never suggest shrinking or deleting a room.
 `W_CORRIDOR_DRAWN_INSIDE` fires when every door to the outside opens onto an `outdoor balcony`
-and an entry, hall or circulation room with no door to the outside opens only into one other
-room, by a hinged door: the building's corridor is drawn inside the dwelling, so its front door
-reads as an inside door and the only way in reads as the balcony. It reports; it does not read
-the corridor as the way in.
+and a room that is only entry, hall or circulation, holds no stair or lift and has no door to the
+outside opens only into one other room, by a hinged door: the building's corridor is drawn inside
+the dwelling (or the dwelling's entrance lacks its door out), so the front door reads as an inside
+door and the only way in reads as the balcony. It reports; it does not read the room as the way in.
 
 The enclosure rules compare the rooms with the walls. `W_BOUNDARY_NO_WALL` fires when two
 rooms share an edge and more than a doorway's width of it (900 mm) has no wall, door, cased

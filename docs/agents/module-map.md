@@ -359,7 +359,7 @@ Totals: 434 modules in 34 directories.
 | `contacts.ts` | 259 | 4 | Contact facts (plan-soundness card PS4.5): which room edges an element written at fixed coordinates lies ON, so `arch impact` can say it stayed while that edge moved. | none |
 | `depends.ts` | 362 | 5 | `describe --facts depends` (plan-soundness card PS4.1): per element, what it is derived from. Opt-in; a summary that does not ask for it is unchanged by a byte. | none |
 | `dwelling.ts` | 52 | 6 | Does the plan read as a dwelling? (plan-soundness PS2.18.) | none |
-| `entrance.ts` | 381 | 11 | A storey's ways in from outside, and its MAIN entrance (plan-soundness PS0.10). | none |
+| `entrance.ts` | 382 | 11 | A storey's ways in from outside, and its MAIN entrance (plan-soundness PS0.10). | none |
 | `grid.ts` | 27 | 3 | The 4-neighbourhood of a row-major cell grid, shared by the nav grid (`circulation.ts`) and the occupancy grid (`occupancy.ts`). | none |
 | `gross-area.ts` | 252 | 7 | **Gross internal area** (GIA) — the floor enclosed by the exterior walls' inner faces (`describe().totals.gross_internal_area_m2`, plan-soundness PS4.4). | none |
 | `keep-facts.ts` | 715 | 2 | `describe --facts depends` for keeps (ADR 0033; plan-soundness PS4.3b, design §5, R5, R16): `depends.keeps[]`, one row per accepted keep, read from the declarations alone. | none |
@@ -578,7 +578,7 @@ Totals: 434 modules in 34 directories.
 | `openings.ts` | 950 | 3 | Opening rules: an opening and the walls around it (plan-soundness PS2.1–PS2.3). | none |
 | `outdoor.ts` | 284 | 1 | Ground-surface soundness — two advisory rules over `outdoor`. | none |
 | `per-room.ts` | 796 | 4 | The per-room checks, run as one order-preserving composite: for each room (in source order) TOO_SMALL → DISCONNECTED → NO_WINDOW → NOT_ENCLOSED → NO_FIXTURE → GARAGE_TOO_NARROW → ROOM_TOO_NARROW → GARAGE_TOO_NARROW's depth finding… | none |
-| `privacy.ts` | 1077 | 1 | Circulation and privacy: four advisory rules that read the access graph (`describe().access`, the same `"probe"` graph `reachability.ts` walks). | none |
+| `privacy.ts` | 1126 | 1 | Circulation and privacy: four advisory rules that read the access graph (`describe().access`, the same `"probe"` graph `reachability.ts` walks). | none |
 | `reachability.ts` | 126 | 1 | Room-graph reachability: builds the room-connectivity graph from doors/openings (rooms + the literal "exterior") once, then — per room, in source order — emits W_BATH_VIA_BEDROOM and W_ROOM_UNREACHABLE, preserving the historical… | none |
 | `room-contents.ts` | 772 | 3 | Room-contents advisories (plan-soundness PS2.8, PS2.9): a habitable room with no window, and a furnished room missing the piece that defines it; and (product roadmap RM1.2c) a room whose label names a catalogued piece it does not hold.… | none |
 | `site.ts` | 115 | 1 | `W_ROOM_NOT_EQUATOR_FACING` — the site layer's one advisory rule. | none |
