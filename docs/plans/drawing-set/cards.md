@@ -1,5 +1,7 @@
 # 方案图纸集卡片
 
+> **已移走：** `research/`（五份报告）与 `spike/`（Band Envelope 探针）在私有兄弟仓库 `archlang-lab/plans/drawing-set/`；下文的 `research/…`、`spike/…` 都指那里。
+
 规则同 `../preview-and-remodel/cards.md`：选依赖已完成、波次已开放的第一张 `todo` 卡。状态词：`todo`、`doing`、`done`（裁成 id、标题、状态、PR、commit，实施记录原样移到 `research/` 的日期文件）、`parked`。规模是 AI 协作日，±50%，是估算不是测量。“模型”是建议执行者，主会话可改。每张卡都写明不许做什么。
 
 卡内 `file:line` 指 `main@18127701`，动手前重新确认。

@@ -21,7 +21,7 @@
 | V8 的字节恒等律：`FAMILIES_BEFORE = 83`，近义词 `NEAR_WORDS` 7 个；前提用例扫描 `examples/**`、`docs/`（跳过 `docs/plans/`）等目录里的 `furniture <新词>`；行只读顶层 `examples/*.arch` | `test/helpers/new-families-law.ts:36`、`:44`、`:99`–`:105`；`test/new-families-byte-identity.test.ts:122`–`:166` |
 | 3D 的挂墙物：按下沿挂（`T0_MOUNT_MM`：吊柜 1400、抽油烟机 1600、镜子 1100、小便斗 350、毛巾架 200、白板 900），或按上沿挂（`T0_HUNG_FROM_TOP`：电视） | `packages/archlang-3d/src/mesh/t0.ts:126`、`:133`；`t0-utility.ts:164`、`:218`、`:299`、`:397`；`t0-living.ts:733`；`t0-office.ts:270` |
 | `profile` 是"框内分数坐标的多边形截面，沿一个轴拉伸"，不是回转体；树冠与懒人沙发今天是叠起来的圆角层（`dome` 按 `CROWN`、`MOUND`、`HEMI` 表） | `packages/archlang-3d/src/mesh/t0.ts:412`–`:430`（`sectionRing`）；`t0-kit.ts:260`–`:296`；`t0-outdoor.ts:53`、`:296`；`t0-living.ts:840` |
-| 查看器：三盏灯、平面着色、无阴影；阴影图实测多约 55% 帧时间，超过 V9 卡约 30% 的预算 | `packages/archlang-3d/src/replay/mount.ts:189`–`:193`；`docs/plans/visual-assets/cards.md` V9；`docs/backlog.md` VA.5 |
+| 查看器：三盏灯、平面着色、无阴影；阴影图实测多约 55% 帧时间，超过 V9 卡约 30% 的预算 | `packages/archlang-3d/src/replay/mount.ts:189`–`:193`；`archlang-lab/plans/visual-assets/cards.md` V9；`docs/backlog.md` VA.5 |
 | GLB 只写 `POSITION` 与索引 | `packages/archlang-3d/src/glb/write.ts:179` |
 | 地面平面只在查看器里，但每份 Mesh3D 的账本都写一行 `ground-plane-viewer-only` | `packages/archlang-3d/src/materials.ts:224`；`src/mesh/build.ts:978`–`:990` |
 | `PREVIEW_LIMITS` 已被 RM8.3 改写，现文是 "3D preview: walls, openings, floors, stairs, furniture, outdoor surfaces and fences in flat colours; the ground is a backdrop the viewer draws, not part of the building and not in the file; no pitched roofs or balcony railings yet, and no sections, elevations or BIM." | `packages/archlang-3d/src/replay/payload.ts:88` |

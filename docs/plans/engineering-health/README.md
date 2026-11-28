@@ -64,7 +64,7 @@ number quoted here.
 ## 3. Order of work
 
 Waves run in order; cards inside a wave are independent unless `depends` says otherwise. Each card
-is one worktree, one PR. Cards and their acceptance checks: `cards.md`. Resume point: `handoff.md`.
+is one worktree, one PR. Cards and their acceptance checks: `archlang-lab/plans/engineering-health/cards.md`. Resume point: `handoff.md`.
 Waves 0–4 closed 2026-11-10 (86 programme PRs, #582 to the records PR after #674); the re-measurement of § 1 is `closing-audit.md`; its open list is the only residue.
 
 | Wave | Goal | Cards | Window |

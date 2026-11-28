@@ -4,7 +4,7 @@ Multi-session plans. Each folder is self-contained: a `README.md` with the decis
 work, evidence, and (where the programme is running) a `handoff.md` that is the resume point. A plan
 small enough for one page is a single file here.
 
-**One queue (RM-D15):** scheduling and the resume point for all development are only in `product-roadmap/` (its `README.md` § 3 and `handoff.md`); the other plans keep their decisions, evidence and cards, and the table says whether each is open, shelved or closed. Closed programme research lives in the private sibling repository `archlang-lab`.
+**One queue (RM-D15):** scheduling and the resume point for all development are only in `product-roadmap/` (its `v3.md` § 3 and `handoff.md`); the other plans keep their decisions, evidence and cards, and the table says whether each is open, shelved or closed. Closed programme research lives in the private sibling repository `archlang-lab`.
 
 | Entry | What | Status |
 |---|---|---|
@@ -22,11 +22,8 @@ small enough for one page is a single file here.
 | `ci-throughput.md` | Options to shorten the PR cycle | closed: A–D and G live, E and F declined |
 | `ci-throughput-research.md` | Research follow-up to `ci-throughput.md`: survey, measurements, roadmap | decided: its open TR cards (to TR15) are in `product-roadmap/cards.md` track 9 |
 | `public-surfaces/` | The playground, docs home and README rework so a visitor tries it in a minute | closed: done |
-| `visual-assets/` | Richer 3D furniture, the `rendered` 2D theme, new families | closed: done, VA.1, VA.2, VA.4 and VA.5 are carried by `product-roadmap/` track 8, VA.3 is the owner's decision |
-| `playground-minimal/` | A minimal playground: one entry per function, a Plan \| 3D switch | closed: done |
-| `playground-mobile-perf/` | A playground that fits a phone and stops wasting CPU, battery and bytes | closed: done except MP7, which is deferred |
 | `engineering-health/` | Guards for every "change one, break another" class and pure-move splits | closed: only the open list in `closing-audit.md` remains |
-| `archlang-3d/` | The M1 recut (`amendment-v0.7.md`) | archived: the 3D plan and ADR drafts live in the lab |
+| `archlang-3d/` | A pointer to the archived 3D programme | archived: the 3D plan and ADR drafts live in the lab |
 
 The backlog (`docs/backlog.md`) points here for programme work; `docs/adr/` holds the decisions that
 outlive a programme.
@@ -41,3 +38,10 @@ Moved verbatim to the private sibling repository `archlang-lab` (clone it next t
 | The 3D programme plan (`development-plan.md`) | `archlang-lab/plans/archlang-3d/development-plan.md` | 287 KB, superseded by the delivered package and `preview-and-remodel/` |
 | ADR 0030 draft | `archlang-lab/plans/archlang-3d/adr-draft-0030-3d-as-downstream-package.md` | superseded by the accepted `docs/adr/0030` |
 | ADR 0031 draft | `archlang-lab/plans/archlang-3d/adr-draft-0031-core-exports-for-downstream-3d.md` | superseded by the accepted `docs/adr/0031` |
+| `visual-assets/` (richer 3D furniture, the `rendered` theme, new families) | `archlang-lab/plans/visual-assets/` | closed: done, VA.1, VA.2, VA.4 and VA.5 are carried by `product-roadmap/` track 8, VA.3 is the owner's decision |
+| `playground-minimal/` (one entry per function, a Plan \| 3D switch) | `archlang-lab/plans/playground-minimal/` | closed: done |
+| `playground-mobile-perf/` (a playground that fits a phone) | `archlang-lab/plans/playground-mobile-perf/` | closed: done except MP7, which is deferred |
+| `engineering-health/cards.md`, `public-surfaces/{cards,handoff}.md`, `plan-soundness/handoff.md` | the same names under `archlang-lab/plans/` | closed programmes' cards and resume points |
+| `drawing-set/research/`, `drawing-set/spike/` | `archlang-lab/plans/drawing-set/` | research and spike of a shelved programme |
+| `archlang-3d/amendment-v0.7.md` (the M1 recut) | `archlang-lab/plans/archlang-3d/amendment-v0.7.md` | superseded by the delivered package |
+| `product-roadmap/`: `evidence.md`, `handoff.md` §1.1–§1.2c, §11, §12, the `done` cards, `README.md` §3 (schedule v2) | `archlang-lab/plans/product-roadmap/` (`evidence.md`, `handoff-history.md`, `cards-done.md`, `schedule-v2.md`) | history; a done card a tracked file cites keeps a one-line tombstone in `cards.md` |

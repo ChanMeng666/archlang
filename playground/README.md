@@ -80,7 +80,7 @@ consumes the built core (`../dist/index.js`). Deployed at
   **Code / Plan / 3D / Facts / Checks** at a time under a sticky switcher, its one view control
   there (Checks: the diagnostics over the Checks tab's content), with 44 px touch targets and no
   sideways scroll.
-- **Phones and performance (`docs/plans/playground-mobile-perf/`, MP1–MP6, MP8, MP9):**
+- **Phones and performance (`archlang-lab/plans/playground-mobile-perf/`, MP1–MP6, MP8, MP9):**
   - A phone page is one screen tall (`100svh`). The header is at most two rows (one on a phone on
     its side). Text is at least 12 px, and inputs are 16 px so iOS does not zoom.
   - A plain visit compiles nothing at boot. The default plan's drawing, its facts line and its data

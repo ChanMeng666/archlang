@@ -44,7 +44,7 @@ Eleven dated reports were written 2026-10-27/28 (held by the owner outside this 
 - **The archlang-3d plan (v0.6) stands on architecture and conflicts only on exposure.** Its viewer
   (§6.1), time seam (`__seek(t)`, §6.5), opening geometry (§4.1/§4.3) and pixel-baseline rule (Q21)
   already cover a replay; it is silent on the build-sequence animation, in-browser video, and a
-  playground toggle; and Q5/Q1 forbid showing anything before M6. Recut: `../archlang-3d/amendment-v0.7.md`.
+  playground toggle; and Q5/Q1 forbid showing anything before M6. Recut: `archlang-lab/plans/archlang-3d/amendment-v0.7.md`.
 - **Today's `main` is 350 commits past that plan's baseline.** Root exports 462 → 549; the C1 closure
   still holds (14 types, 26 names) but the new `double` door kind returns `null` from `doorSwing()`;
   its leaves come only from `doorLeaves()` (`src/geometry.ts:211`, unexported). C1 gains it (27 names).
@@ -105,7 +105,7 @@ Each entry has a reverse-if. "Stands unless the owner objects."
 | # | Decision | Reverse if |
 |---|---|---|
 | D1 | 3D stays downstream in `packages/archlang-3d` (ADR 0021/0030); this programme owns the *recut* of its M1 and the exposure gates; M2–M6 stay with the archlang-3d plan | the core ever needs 3D data the package cannot get through additive exports |
-| D2 | M1 is recut into M1a (geometry + replay viewer + CLI video) → M1b (GLB + gates) → M1c (playground toggle) → M1d (optional browser MP4); viewer first, GLB second (`../archlang-3d/amendment-v0.7.md`) | more than two `Scene3D`/`Mesh3D` schema changes after M1b force viewer rework (then GLB-first was cheaper) |
+| D2 | M1 is recut into M1a (geometry + replay viewer + CLI video) → M1b (GLB + gates) → M1c (playground toggle) → M1d (optional browser MP4); viewer first, GLB second (`archlang-lab/plans/archlang-3d/amendment-v0.7.md`) | more than two `Scene3D`/`Mesh3D` schema changes after M1b force viewer rework (then GLB-first was cheaper) |
 | D3 | Replay order = authoring stages `brief → rooms → walls → openings → fixtures → drafting`, then *rise*. Inside `brief`: levels, `axes`, `grid`, `north`. Inside `rooms`: room outlines faint, then `void`/`stair`/`outdoor` footprints. Inside `walls`: `column` → walls with `category exterior` → the rest → `fence`; `roof` hidden by default. Inside `openings`: doors then windows then plain openings. Inside `fixtures`: catalogued fixtures (wet-room and kitchen families) then loose furniture. `drafting`: cross-fade to the core SVG (fill, dims, labels, sheet). Source order within a group. No core change: `ELEMENT_KIND_STAGES` already maps every kind (`column → walls`); `axes`/`grid`/`north` are plan-level and belong to `brief` | a user study or the owner's eye finds stage order less legible than paint order; or a `.arch` corpus plan has no rooms (then walls open the replay) |
 | D4 | `RENDER_PASSES` (paint order) is unchanged by this programme. Drafting order lives in the replay and in authoring guidance (`validate --stage`, `spec.llm.md`) | never for the replay's sake; only a drawing-quality reason under ADR 0032 may move paint order, with every golden re-pinned on purpose |
 | D5 | Exposure tiers (growth record `strategy/decisions/2026-10-28-3d-preview-exposure-and-positioning-row-8.md`): Tier 0 nothing; Tier A after A3 acceptance = owner's personal X posts + playground toggle labelled *"Preview — from the separate archlang-3d package. ArchLang itself draws plans."*; Tier B after a positive N10 read, A4 green and a founder-made 0.x publish = ArchCanvas + positioning row 8 rewrite; Tier C at M6 = docs and landing pages. Show HN 2026-12-01 stays 2D. Superseded for ArchLang surfaces by PS-D11 (owner, 2026-11-06; docs/plans/public-surfaces/3d.md). Product word: *3D preview* | the N10 read is negative (built in); support questions read the preview as a product promise |
@@ -201,7 +201,7 @@ not depend on this programme until its 3D tab (Tier B).
 
 ## 7. Related documents
 
-`../archlang-3d/` (the 3D plan, v0.6, and `amendment-v0.7.md`) · `../plan-soundness/` (the format
+`archlang-lab/plans/archlang-3d/` (the 3D plan, v0.6, and `amendment-v0.7.md`) · `../plan-soundness/` (the format
 this follows; its stages and `keep`/`impact` are reused) · `docs/adr/0021`, `0028`, `0032`, `0033` ·
 `docs/backlog.md` U.13, U.14, P2-4, P3-2, V.5 · growth repository
 `research/2026-10-25-x-cad-and-solvaix-research/` and `strategy/decisions/2026-10-28-…` · ArchCanvas
