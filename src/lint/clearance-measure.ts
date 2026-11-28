@@ -30,7 +30,7 @@ import { pointInRoomBox } from "../analyze.js";
 import type { RFurniture, RRoom, RWindow } from "../ir.js";
 import type { LintContext } from "./context.js";
 import { WALL_COLLISION_SLACK_MM } from "./measure.js";
-import { rectRing } from "../geometry/polygon.js";
+import { rectRing, VERTEX_EPS } from "../geometry/polygon.js";
 
 /** Is this category a WC (the `wc` family: `wc`, `toilet`)? */
 export const isWc = (category: string): boolean => canonicalFixture(category) === "wc";
@@ -486,4 +486,71 @@ export function hobSideGap(
       best = { piece, gap: m.measured };
   }
   return best;
+}
+
+/** Is this category a landing worktop beside a hob (the `counter` family: `counter`, `worktop`)? A
+ *  sink, a fridge, a bar counter or an island is not one (`W_HOB_NO_LANDING`). */
+export const isLandingCounter = (category: string): boolean => canonicalFixture(category) === "counter";
+
+/** One side of a cooking surface as {@link hobLandings} measured it. */
+export interface HobLandingSide {
+  /** The worktop that side lands on: the run of counters abutting the hob's side face with no
+   *  gap, each abutting the one before, measured from the face along the side's normal (0 when
+   *  no counter abuts it). */
+  landing: number;
+  /** The nearest straight wall body inside the side's strip (doorways and openings cut out),
+   *  measured from the hob's side face, or `null` when none stands within the strip's depth. */
+  wall: number | null;
+}
+
+/** How far apart two faces may be and still abut (mm): the vertex tolerance, so float noise in a
+ *  resolved position never opens a gap, and a real gap of any drawn size does. */
+const ABUT_EPS_MM = VERTEX_EPS;
+
+/**
+ * The two side landings of cooking surface `f` (`W_HOB_NO_LANDING`, product roadmap RM9.6, coverage
+ * class CV11). A side is the strip beside one of the two edges next to the hob's back (its
+ * `rotate`, as {@link hobSideGap} reads it), over the hob's depth. A counter lands that side when
+ * its footprint overlaps the strip's lateral span with positive length and its near face is at
+ * the landing reached so far (the hob's face, first) or nearer: the run is the union of such
+ * footprints from the face outward, and the first gap ends it. A footprint is a quarter-turned
+ * rectangle, so its rectangle is its shape. The wall is read `depth` deep (the longer landing
+ * figure), against the straight wall bodies with their doorways and openings cut out
+ * ({@link cutSegments}). Sorting the spans is the only work beyond one pass over `counters` per
+ * side; no other piece is read.
+ */
+export function hobLandings(
+  src: HobWorldSource,
+  f: RFurniture,
+  counters: readonly RFurniture[],
+  depth: number,
+): [HobLandingSide, HobLandingSide] {
+  const rect = { x: f.at.x, y: f.at.y, w: f.size.w, h: f.size.h };
+  const walls: ClearWorld = { furniture: [], segments: cutSegments(src), swings: [] };
+  const one = (s: Strip): HobLandingSide => {
+    const alongX = s.u.x !== 0;
+    const sign = alongX ? s.u.x : s.u.y;
+    const spans: Array<[number, number]> = [];
+    for (const c of counters) {
+      if (c === f) continue;
+      const l0 = alongX ? c.at.y : c.at.x;
+      const l1 = l0 + (alongX ? c.size.h : c.size.w);
+      if (Math.min(l1, s.hi) - Math.max(l0, s.lo) <= 0) continue;
+      const n0 = alongX ? c.at.x : c.at.y;
+      const n1 = n0 + (alongX ? c.size.w : c.size.h);
+      const s0 = (n0 - s.face) * sign;
+      const s1 = (n1 - s.face) * sign;
+      spans.push(s0 <= s1 ? [s0, s1] : [s1, s0]);
+    }
+    spans.sort((p, q) => p[0] - q[0] || p[1] - q[1]);
+    let landing = 0;
+    for (const [s0, s1] of spans) {
+      if (s0 > landing + ABUT_EPS_MM) break;
+      if (s1 > landing) landing = s1;
+    }
+    const m = measureStrip(s, walls, f);
+    return { landing, wall: m.by === null ? null : m.measured };
+  };
+  const [a, b] = clearStrips(rect, f.rotate, "sides", depth);
+  return [one(a!), one(b!)];
 }

@@ -14,6 +14,7 @@ import {
   accessibleWcSideWall,
   furnitureOverWindow,
   hobFridgeGap,
+  hobNoLanding,
   hobUnderWindow,
   wcSideClearance,
 } from "./clearances.js";
@@ -224,6 +225,9 @@ export const LINT_RULES: readonly LintRule[] = [
   // A sofa or armchair whose front is against a wall (product roadmap RM9.6, coverage class CV08).
   // Appended LAST, so no existing diagnostic moves within the array.
   seatFacingWall,
+  // A hob without the worktop NKBA guideline 17 asks either side of it (product roadmap RM9.6,
+  // coverage class CV11). Appended LAST, so no existing diagnostic moves within the array.
+  hobNoLanding,
 ];
 
 export type { LintContext, LintRule } from "../context.js";

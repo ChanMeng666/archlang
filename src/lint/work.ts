@@ -48,9 +48,23 @@ export interface LintWork {
    * its elements, which no counter charges.
    */
   seatWallTests: number;
+  /**
+   * `W_HOB_NO_LANDING` (product roadmap RM9.6, coverage class CV11): per cooking surface it
+   * judges, one test per counter on each of its two sides. A hob `W_HOB_FRIDGE_GAP` reports is
+   * not judged, and charges nothing.
+   */
+  hobLandingTests: number;
 }
 
 /** A fresh set of counters, all 0. */
 export function newLintWork(): LintWork {
-  return { leafDoorPairs: 0, boundaryRunTests: 0, navCells: 0, tableSeatTests: 0, stairVoidTests: 0, seatWallTests: 0 };
+  return {
+    leafDoorPairs: 0,
+    boundaryRunTests: 0,
+    navCells: 0,
+    tableSeatTests: 0,
+    stairVoidTests: 0,
+    seatWallTests: 0,
+    hobLandingTests: 0,
+  };
 }

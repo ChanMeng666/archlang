@@ -398,8 +398,23 @@ export interface LintRuleset {
    * checklist [V]). A tall unit inside the lesser figure, 12 in (305 mm), fails it whichever side
    * it stands on. The figure is the cited one: a lint threshold is a length in mm, and no grid
    * module enters it.
+   *
+   * `W_HOB_NO_LANDING` (product roadmap RM9.6, coverage class CV11) reads it too, as the least
+   * worktop the hob's shorter side lands on; {@link hobLandingLongMm} is the other side's.
    */
   hobLandingMm: number | null;
+  /**
+   * The least worktop (mm) the LONGER side of a cooking surface lands on (`W_HOB_NO_LANDING`,
+   * product roadmap RM9.6, coverage class CV11): the run of counters abutting the hob's side face
+   * with no gap, measured from that face. The shorter side's figure is {@link hobLandingMm}.
+   * `null` drops the longer side's half of the check (the shorter side's is dropped by
+   * `hobLandingMm: null`; both null turn the rule off).
+   *
+   * **Default 381:** the same sentence of the NKBA Kitchen Planning Guidelines with Access
+   * Standards, guideline 17, as {@link hobLandingMm}: "a minimum of 12" of landing area on one
+   * side of a cooking surface and 15" on the other side" [V]; 15 in is 381 mm.
+   */
+  hobLandingLongMm: number | null;
   /**
    * The widest single hinged leaf (mm) before `W_LEAF_TOO_WIDE` warns (plan-soundness PS2.11e).
    * A `door` with no kind, or `hinged`, is one leaf its full `width` wide. `null` turns the rule
@@ -539,6 +554,7 @@ export const DEFAULT_RULESET: LintRuleset = {
   stairMaxPitchRatio: null,
   stairDrawnMaxRiseMm: 220,
   hobLandingMm: 305,
+  hobLandingLongMm: 381,
   maxHingedLeafMm: 1219,
   garageDepthMm: 5000,
   exitApproachMm: 914,
@@ -785,6 +801,7 @@ const NULLABLE: { readonly [K in NullableKey]: true } = {
   stairMaxPitchRatio: true,
   stairDrawnMaxRiseMm: true,
   hobLandingMm: true,
+  hobLandingLongMm: true,
   maxHingedLeafMm: true,
   garageDepthMm: true,
   exitApproachMm: true,

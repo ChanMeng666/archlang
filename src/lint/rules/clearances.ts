@@ -16,10 +16,13 @@ import { capFirst } from "../../naming.js";
 import { wallRef } from "../../wall-ref.js";
 import {
   curvedNear,
+  type HobLandingSide,
+  hobLandings,
   hobSideGap,
   hobWindowCover,
   isCookingSurface,
   isFloorLength,
+  isLandingCounter,
   isLowUnit,
   isShort,
   isWc,
@@ -457,6 +460,109 @@ export const hobFridgeGap: LintRule = {
           message: `${subject(f, f.label ?? f.category, ctx)} stands ${d.available} mm from the ${byName} beside it; a cooking surface needs ${d.required} mm of worktop on each side before a tall unit (${d.short} mm short).`,
           hints: [
             `${capFirst(pieceRef(f, ctx))} is ${d.available} mm from ${pieceRef(by, ctx)} (the ruleset's \`hobLandingMm\` is ${d.required} mm): move one of them ${d.short} mm further along the run and put a worktop in the gap, or stand the ${byName} at the far end of the run.`,
+          ],
+        }),
+      );
+    }
+    return out;
+  },
+};
+
+/**
+ * A cooking surface without the worktop a cook lands a pan on, either side of it (product roadmap
+ * RM9.6, coverage class CV11). Source: the NKBA Kitchen Planning Guidelines with Access Standards,
+ * guideline 17 (cook surface landing area): "a minimum of 12" of landing area on one side of a
+ * cooking surface and 15" on the other side" [V]: {@link LintRuleset.hobLandingMm} (305 mm) on
+ * one side and {@link LintRuleset.hobLandingLongMm} (381 mm) on the other. Each side's landing is
+ * the run of counters (`counter`, `worktop`) abutting the hob's side face with no gap, each
+ * abutting the one before ({@link hobLandings}); a sink, a fridge, a bar counter, an island or
+ * bare floor lands nothing. The hob warns when the shorter of its two landings is under the first
+ * figure or the longer under the second.
+ *
+ * Split with its neighbours, so one fact is reported once:
+ *  - a hob `W_HOB_FRIDGE_GAP` reports (a tall unit inside the lesser landing on a side) is not
+ *    judged here: that rule names the tall unit to move, and once it moves this rule judges the
+ *    worktop;
+ *  - a hob whose side walls alone leave no room for the pair (a straight wall body inside the
+ *    lesser figure on a side, or inside the greater on both) is the hob's position at the end of
+ *    a run, not a missing worktop, and is not judged here (card PS2.59 measures that case first).
+ *
+ * Every plan is read, as for {@link hobFridgeGap}. One warning per hob; no fix (where the
+ * worktop goes, or whether the hob moves, is the author's). Its work is charged to
+ * `ctx.work.hobLandingTests` before it runs: per hob judged, one test per counter on each side.
+ */
+export const hobNoLanding: LintRule = {
+  name: "hob-no-landing",
+  family: "furniture",
+  layer: "validity",
+  stage: "fixtures",
+  codes: ["W_HOB_NO_LANDING"],
+  check(ctx: LintContext): Diagnostic[] {
+    const lesser = ctx.rules.hobLandingMm;
+    const greater = ctx.rules.hobLandingLongMm;
+    if (lesser === null && greater === null) return [];
+    const hobs = ctx.furniture.filter((f) => isCookingSurface(f.category));
+    if (hobs.length === 0) return [];
+    const tall = lesser === null ? [] : ctx.furniture.filter((f) => isTallUnit(f.category));
+    const counters = ctx.furniture.filter((f) => isLandingCounter(f.category));
+    const one = lesser ?? 0;
+    const other = greater ?? 0;
+    const out: Diagnostic[] = [];
+    for (const f of hobs) {
+      if (lesser !== null && tall.length > 0 && hobSideGap(ctx, f, tall, lesser) !== null) continue;
+      ctx.work.hobLandingTests += 2 * counters.length;
+      const [a, b] = hobLandings(ctx, f, counters, Math.max(one, other));
+      const room = (s: HobLandingSide, need: number): boolean => s.wall === null || s.wall >= need;
+      // The two ways to give the pair: a's side the lesser figure and b's the greater, or the
+      // other way round. Walls alone ruling out both is the end-of-run case (PS2.59).
+      const ways = [
+        { lo: a, hi: b },
+        { lo: b, hi: a },
+      ].filter((w) => room(w.lo, one) && room(w.hi, other));
+      if (ways.length === 0) continue;
+      const [lo, hi] = a.landing <= b.landing ? [a, b] : [b, a];
+      if (lo.landing >= one && hi.landing >= other) continue;
+      // The hint's way: the one that adds the least worktop; on a tie, the shorter side takes the
+      // lesser figure. Its text names each side by the worktop it has, never by a direction, so
+      // it does not depend on which side a turn of the frame lists first.
+      const cost = (w: { lo: HobLandingSide; hi: HobLandingSide }): number =>
+        Math.max(0, one - w.lo.landing) + Math.max(0, other - w.hi.landing);
+      const way = ways.reduce((p, q) => (cost(q) < cost(p) || (cost(q) === cost(p) && q.lo === lo) ? q : p));
+      const has = (s: HobLandingSide): string => deficitMm(0, s.landing).available;
+      const bare = has(a) === "0" && has(b) === "0";
+      const adds = [
+        { side: way.lo, need: one, where: "one side" },
+        { side: way.hi, need: other, where: "the other" },
+      ].flatMap(({ side, need, where }) => {
+        const d = deficitMm(need, side.landing);
+        if (d.short === "0") return [];
+        if (bare) return [`${d.short} mm of counter against ${where}`];
+        return [
+          d.available === "0"
+            ? `${d.short} mm of counter against the side with none`
+            : `${d.short} mm more counter on the side with ${d.available} mm`,
+        ];
+      });
+      const lesserMm = lesser === null ? "" : deficitMm(lesser, 0).required;
+      const greaterMm = greater === null ? "" : deficitMm(greater, 0).required;
+      const needs =
+        lesser === null
+          ? `${greaterMm} mm of counter abutting one side`
+          : greater === null
+            ? `${lesserMm} mm of counter abutting each side`
+            : `${lesserMm} mm of counter abutting one side and ${greaterMm} mm the other`;
+      const figures = [
+        ...(lesser === null ? [] : [`\`hobLandingMm\` is ${lesserMm} mm`]),
+        ...(greater === null ? [] : [`\`hobLandingLongMm\` ${greaterMm} mm`]),
+      ].join(" and ");
+      out.push(
+        cite(ctx.rules, lesser !== null && lo.landing < lesser ? "hobLandingMm" : "hobLandingLongMm", {
+          severity: "warning",
+          code: "W_HOB_NO_LANDING",
+          ...ctx.at(f),
+          message: `${subject(f, f.label ?? f.category, ctx)} has ${has(lo)} mm of worktop on one side and ${has(hi)} mm on the other; a cooking surface needs ${needs} to land a pan on.`,
+          hints: [
+            `${capFirst(pieceRef(f, ctx))} lands on ${has(lo)} mm and ${has(hi)} mm of worktop (the ruleset's ${figures}, NKBA guideline 17): stand ${adds.join(" and ")}, each run abutting the hob with no gap. A sink, a fridge or bare floor is not a landing.`,
           ],
         }),
       );

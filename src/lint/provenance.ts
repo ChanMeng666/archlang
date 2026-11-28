@@ -215,6 +215,13 @@ const DEFAULTS: Readonly<Record<string, RuleProvenance>> = /* @__PURE__ */ pure(
     verification: "V",
     note: "12 in (305 mm), the lesser of its two landing figures; read in NKBA's own PDF (kb.nkba.org, uploaded 2022-05), which names no edition",
   },
+  hobLandingLongMm: {
+    document: "NKBA Kitchen Planning Guidelines with Access Standards",
+    clause: "guideline 17",
+    edition: null,
+    verification: "V",
+    note: '15 in (381 mm), the greater of its two landing figures, from the same sentence as hobLandingMm\'s: "a minimum of 12" of landing area on one side of a cooking surface and 15" on the other side"; read in NKBA\'s own PDF (kb.nkba.org, uploaded 2022-05), which names no edition',
+  },
   maxHingedLeafMm: {
     document: "International Building Code",
     clause: "1010.1.1",
