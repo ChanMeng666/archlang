@@ -73,6 +73,11 @@ This skill is a workflow, not a language reference. The language is whatever `ar
 - Which area you quote: `net_area_m2` is the floor no wall stands on, `area_m2` the larger
   centreline figure. If a room has no `net_area_m2`, say its net area could not be computed.
 - Every lint warning still present, with the reason it stays.
+- A 3D preview, offered: `archlang link plan.arch` (or the MCP `link` tool) gives a playground URL
+  where the user switches the drawing to **3D** and can press Share → Download GLB. With Node 20+,
+  `npx -y @chanmeng666/archlang-3d view plan.arch --replay -o plan.html` writes it offline, from the
+  separate archlang-3d package; give the command, do not run it. It previews the plan; it is not a
+  design or construction file.
 
 ## When something goes wrong
 

@@ -107,3 +107,35 @@ describe("the /3d page's commands are the package's", () => {
     expect(page).not.toMatch(/(?<![\w./@-])arch\s+[a-z]/);
   });
 });
+
+/**
+ * The task skills that end with the 3D preview's entry point (`archlang-brief-to-plan`,
+ * `archlang-export`) give the user an `npx -y @chanmeng666/archlang-3d <cmd>` line. The root's
+ * `test/task-skills.test.ts` checks only the core's commands, so this holds each such line to
+ * `COMMANDS` the way the `/3d` page is held above, and the words to "preview" (PS-D11).
+ */
+describe.each(["archlang-brief-to-plan", "archlang-export"])("skills/%s/SKILL.md's 3D preview line", (name) => {
+  const flags = new Map(
+    COMMANDS.map((c) => [c.name, new Set(["--help", "-h", ...c.flags.flatMap((f) => [f.flag, f.alias ?? f.flag])])]),
+  );
+  const skill = read(`skills/${name}/SKILL.md`);
+  const usages = [...skill.matchAll(/npx -y @chanmeng666\/archlang-3d\s+([a-z][a-z-]*)((?:\s+[^\n`|]*)?)/g)];
+
+  it("names an archlang3d command, with only the flags it declares", () => {
+    expect(usages.length).toBeGreaterThan(0);
+    for (const [, cmd, rest] of usages) {
+      const declared = flags.get(cmd!);
+      expect(declared, `\`${cmd}\` is not an archlang3d command`).toBeTruthy();
+      for (const f of (rest ?? "").match(/(?<![\w-])--?[a-zA-Z][\w-]*/g) ?? []) {
+        expect(declared!.has(f), `\`archlang3d ${cmd} … ${f}\` is not a flag of \`${cmd}\``).toBe(true);
+      }
+    }
+  });
+
+  it("calls it a 3D preview, never a prompting npx or an unscoped bin", () => {
+    expect(skill).toContain("3D preview");
+    expect(skill).not.toMatch(/npx (?!-y )\S*archlang/);
+    expect(skill).not.toMatch(/npx -y archlang3d/);
+    expect(skill).not.toMatch(/\b(3D CAD|BIM|walkthroughs?|photo-?real\w*)\b/i);
+  });
+});

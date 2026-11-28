@@ -48,6 +48,11 @@ flag; `archlang spec` describes the `paper` and `scale` statements.
 - Each file written, with its format.
 - The paper size and scale of the sheet, and whether you or `finish` chose them.
 - Any storey or input that failed, with its diagnostic.
+- A 3D preview, offered: the `link` tool's `playground` URL (or `archlang link plan.arch`) opens the
+  plan, where the user switches the drawing to **3D** and Share → Download GLB writes a GLB. With
+  Node 20+, `npx -y @chanmeng666/archlang-3d build plan.arch -o plan.glb` writes and checks the GLB,
+  from the separate archlang-3d package, not the core. It previews the plan; it is not a design or
+  construction file.
 
 ## When the CLI cannot run
 
