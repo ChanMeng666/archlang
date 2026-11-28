@@ -10,7 +10,7 @@
  * PR legitimately moves a hashed output (never keep code), the table is re-taken by the generator, the
  * reason recorded below and the moved files listed in that commit's message.
  *
- * Taken: ARC2c on origin/main 5359a332: the first-contact 5-townhouse's stair messages name the storey once (its lint moves: W_STAIR_NO_VOID; W_STAIR_SIDE_ENTRY under the accessibility profile is not hashed here)
+ * Taken: RM9.6 CV16 (W_CORRIDOR_DRAWN_INSIDE) on feat/rm9.6-cv16-entrance-context: the new circulation-privacy/corridor-drawn-inside pair; lint() of the three first-contact apartments whose corridor is drawn inside gains the warning
  */
 
 /** `[path from the repository root, SHA-256 of the payload, evaluation steps]`, sorted by root. */
@@ -450,6 +450,16 @@ export const KEEP_WEAK_BASELINE: readonly (readonly [string, string, number])[] 
     "test/defect-corpus/circulation-privacy/bedroom-via-bedroom.clean.arch",
     "90ee8540836915f0d7f88c0238457d9b8acb1c5c30723ac3bc75c5c0d029a10c",
     204,
+  ],
+  [
+    "test/defect-corpus/circulation-privacy/corridor-drawn-inside.arch",
+    "bd94df2e007c4fc50fed35417d5b68d49d5a090fe98180f21ca2826051e06708",
+    646,
+  ],
+  [
+    "test/defect-corpus/circulation-privacy/corridor-drawn-inside.clean.arch",
+    "8c803d4eb5f698a0d28a7f1fcb8ed913ed27e91fd916b5f436dcd5e8f40de4dc",
+    497,
   ],
   [
     "test/defect-corpus/circulation-privacy/door-onto-roof.arch",
@@ -1453,7 +1463,7 @@ export const KEEP_WEAK_BASELINE: readonly (readonly [string, string, number])[] 
   ],
   [
     "test/plans/plan-soundness/audits/first-contact-plans/2026-10-25-rerun/1-apartment.arch",
-    "b70f60a65f77e0c28a52ee3d51c04540b52dfcd43924cae41aa2fc5ce4e177df",
+    "38b3f5061a0d42e047c7010b2b5cfddd3a821db69adde533ae849e9560125102",
     2261,
   ],
   [
@@ -1543,7 +1553,7 @@ export const KEEP_WEAK_BASELINE: readonly (readonly [string, string, number])[] 
   ],
   [
     "test/plans/plan-soundness/audits/first-contact-plans/2026-10-26-rerun-row6/1-apartment.arch",
-    "66068f4ed377d0189e2f3777724f4cc49dea47f30fb282be109d43c8bd9a52f3",
+    "a8a2d244740f18dd80bdce2e09976b30c64f64e26b4f116d76a1a254753676d3",
     1717,
   ],
   [
@@ -1633,7 +1643,7 @@ export const KEEP_WEAK_BASELINE: readonly (readonly [string, string, number])[] 
   ],
   [
     "test/plans/plan-soundness/audits/first-contact-plans/2026-10-27-rerun-arm2/1-apartment.arch",
-    "a102b9364c93d7aff76b898152af86827193432627909af6664d9411505c474d",
+    "644bc10ecbf175fdc62df6b8d3c9bbd77ea10fda8c9ef83e24b8cf7dbe6f5e47",
     2148,
   ],
   [
