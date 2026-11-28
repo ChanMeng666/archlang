@@ -102,3 +102,5 @@ https://github.com/user-attachments/assets/879a4b71-415e-4848-a4af-db9c879d6a71
 <sub>[Release notes](https://github.com/ChanMeng666/archlang/blob/main/CHANGELOG.md) (installed: `node_modules/@chanmeng666/archlang/CHANGELOG.md`) · [Contributing](CONTRIBUTING.md) · [MIT](LICENSE)</sub>
 
 <sub>ArchCanvas is a hosted app built on ArchLang. Maintained by [Chan Meng](https://github.com/ChanMeng666), a single maintainer; written with AI coding agents and checked in CI. [Governance](GOVERNANCE.md).</sub>
+
+<sub>The npm package is published from [`release.yml`](.github/workflows/release.yml) by tokenless OIDC, with npm provenance: an SLSA v1 attestation that names the tag and commit it was built from. Check it with `npm audit signatures` in a project that installs it, or `npm view @chanmeng666/archlang@<version> dist.attestations`; pin a version in a skill or CI with `npx -y @chanmeng666/archlang@<version> <cmd>`.</sub>
