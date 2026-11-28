@@ -18,7 +18,7 @@ This skill is a workflow, not a language reference. Run `archlang spec` for the 
 
 - Run the `archlang` CLI commands below and no other program.
 - Change the one `.arch` file the user asked you to edit (`plan.arch` below). If the user has not
-  named it, ask. Besides it, write only the drawing the CLI renders and the `.bak` copy that
+  named it, ask. Besides it, write only the drawings the CLI renders and the `.bak` copy that
   `--backup` keeps.
 - The user's explicit instructions take priority over these steps.
 
@@ -56,6 +56,16 @@ This skill is a workflow, not a language reference. Run `archlang spec` for the 
 9. **Refresh the sheet if the drawing grew.** `archlang finish plan.arch --dry-run --json` shows what
    is missing. If it reports that the drawing no longer fits the authored `paper` or `scale`,
    `archlang finish plan.arch --reissue` may replace those two statements and nothing else.
+10. **Review once, after the loop is clean.** When `archlang validate plan.arch --strict --json`
+    exits `0`, or you can name each remaining warning as deliberate, run
+    `archlang score plan.arch --taste generic --json` and
+    `archlang preview plan.arch --review -o review.png`, once each. The score is a sourced 0–1 taste
+    score (privacy gradient, daylight, proportion, corner doors, …) whose `criteria[].advice` `A_*`
+    codes name what to improve. It never gates, and a score capped at 0.5 means a validity lint
+    warning still stands. The review image rings and numbers every warned element; on a lint-clean
+    plan it still shows the access graph and which door is the main entrance: check those against
+    the request. Advice is not an error: do not iterate on it and do not make edits the user did not
+    ask for to raise the score. Report it; the user decides.
 
 ## When another agent may edit the same file
 
@@ -76,6 +86,9 @@ clash; it is not a lock.
 - The statements you changed, as a short diff.
 - Before and after for the facts the request is about (for example the room's area).
 - Any new warning, and whether the request causes it.
+- The taste score from step 10, each `A_*` advice code with its criterion's `message`, and
+  `review.png`. Say that the advice is not an error, that you made no edit for it, and that acting
+  on it is the user's choice.
 
 ## When something goes wrong
 

@@ -49,10 +49,22 @@ This skill is a workflow, not a language reference. The language is whatever `ar
 8. **Gate and show.** `archlang validate plan.arch --strict --json` must exit `0`, or you must be able
    to name each remaining warning as deliberate. Then `archlang preview plan.arch -o plan.png` to show
    the user.
+9. **Review once, after the loop is clean.** Run `archlang score plan.arch --taste generic --json`
+   and `archlang preview plan.arch --review -o review.png`, once each. The score is a sourced 0–1
+   taste score (privacy gradient, daylight, proportion, corner doors, …) whose `criteria[].advice`
+   `A_*` codes name what to improve. It never gates, and a score capped at 0.5 means a validity lint
+   warning still stands. The review image rings and numbers every warned element; on a lint-clean
+   plan it still shows the access graph (which rooms each door joins, which rooms the entrance
+   reaches) and which door is the main entrance or that the choice is a tie: check those against
+   your list from step 2. Advice is not an error: do not iterate on it and do not change the plan to
+   raise the score. Report it; the user decides.
 
 ## Report to the user
 
 - The file you wrote and the drawing you rendered.
+- The taste score from step 9, each `A_*` advice code with its criterion's `message`, and
+  `review.png`. Say that the advice is not an error, that you did not change the plan for it, and
+  that acting on it is the user's choice.
 - Every requirement of the brief the plan does not meet, or "none".
 - Which area you quote: `net_area_m2` is the floor no wall stands on, `area_m2` the larger
   centreline figure. If a room has no `net_area_m2`, say its net area could not be computed.
