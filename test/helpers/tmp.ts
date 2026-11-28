@@ -6,14 +6,18 @@
  * {@link importSource} loads JavaScript source text as a real ES module through one.
  */
 
-import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { mkdtempSync, realpathSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { pathToFileURL } from "node:url";
 
-/** A fresh empty directory under the OS temp dir whose name starts with `prefix`. */
+/**
+ * A fresh empty directory under the OS temp dir whose name starts with `prefix`, as its canonical
+ * path: `realpathSync.native` expands a Windows 8.3 short segment (a runner's `C:\Users\RUNNER~1`),
+ * whose `~` `pathToFileURL` encodes as `%7E`, a URL Vite cannot load (`test/tmp-helper.test.ts`).
+ */
 export function mkTmp(prefix = "arch-test-"): string {
-  return mkdtempSync(join(tmpdir(), prefix));
+  return realpathSync.native(mkdtempSync(join(tmpdir(), prefix)));
 }
 
 /** Run `fn` with a fresh scratch directory and remove it afterwards, even when `fn` throws. */
