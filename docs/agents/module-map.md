@@ -280,7 +280,7 @@ Totals: 434 modules in 34 directories.
 | `identity.ts` | 33 | 3 | Process-local stable identity tokens for cache keying. | none |
 | `impact.ts` | 1405 | 3 | `impact(before, after)` (plan-soundness card PS4.2): change one number, see what follows, what stays put, and what breaks. The executable answer to "what changes, what must not". | none |
 | `import.ts` | 349 | 40 | Module linking — the `import` system. | none |
-| `index.ts` | 762 | 476 | ArchLang — compile declarative floor-plan source to a professional SVG. | none |
+| `index.ts` | 762 | 477 | ArchLang — compile declarative floor-plan source to a professional SVG. | none |
 | `input-limit.ts` | 77 | 5 | A host's refusals, as catalogued diagnostics. | none |
 | `intent-concepts.ts` | 238 | 7 | The intent channel's concept vocabulary — production name resolution for the NL→ArchLang intent contract. | none |
 | `intent-feasibility.ts` | 388 | 3 | Infeasibility of a brief's stated numbers: the arithmetic that makes "this brief is impossible" checkable, before any plan exists. | none |
@@ -552,7 +552,7 @@ Totals: 434 modules in 34 directories.
 | `provenance.ts` | 491 | 7 | Where each lint ruleset number comes from, as data: a table parallel to {@link DEFAULT_RULESET} and {@link LINT_PROFILES}, keyed by profile and ruleset key, with the document, clause, edition and verification grade of every number.… | none |
 | `report.ts` | 108 | 2 | The `arch lint --json` document as a pure function (card CR10): what the CLI's `lint` reports for one source, built here once so the hosted `POST /check` (`packages/mcp-worker`) returns the same document for the same input. `cmdLint`… | none |
 | `rule-ref.ts` | 84 | 14 | Which ruleset number a lint diagnostic was raised against (card RM1.6b), kept BESIDE the diagnostic in a `WeakMap`, never on it: `lint()` returns the same objects, with the same keys, and `JSON.stringify(lint(src))` is unchanged. A rule… | none |
-| `ruleset.ts` | 905 | 27 | The lint ruleset: tunable thresholds, named advisory profiles, and the options type. Split from `lint.ts` so individual rule modules (`./rules/*.ts`) can import the types without a cycle through the `lint()` entry point; `lint.ts`… | none |
+| `ruleset.ts` | 905 | 28 | The lint ruleset: tunable thresholds, named advisory profiles, and the options type. Split from `lint.ts` so individual rule modules (`./rules/*.ts`) can import the types without a cycle through the `lint()` entry point; `lint.ts`… | none |
 | `storeys.ts` | 120 | 14 | The storeys `lint()` reads and the building fact each is read with: the per-storey {@link BuildingContext} of a multi-storey plan ({@link buildingContexts}) and the plan's dwelling reading (PS2.18). Stated once here so every reader of a… | none |
 | `work.ts` | 56 | 3 | Work counters for one `lint()` run: how many geometric tests the costliest rules made, as COUNTS (engineering-health EH2.10). They are an out-parameter on the per-run {@link import("./context.js").LintContext}, never module state, so… | none |
 
