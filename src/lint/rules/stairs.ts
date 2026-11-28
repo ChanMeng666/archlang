@@ -55,9 +55,10 @@
  */
 
 import type { Point } from "../../ast.js";
-import { onFootprint, pointInRoomBox } from "../../analyze.js";
+import { onFootprint, outdoorsOf, pointInRoomBox } from "../../analyze.js";
 import { det, oppositeSide, type Side } from "../../algebra/d4.js";
 import type { Diagnostic } from "../../diagnostics.js";
+import { groundWalkable, outdoorRing } from "../../elements/outdoor.js";
 import { TREAD_GOING_MM, treadCount } from "../../elements/vertical-glyphs.js";
 import { cutPlaneLayer } from "../../fixtures-catalog.js";
 import {
@@ -70,9 +71,9 @@ import {
   unit,
   type WallSegment,
 } from "../../geometry.js";
-import { VERTEX_EPS, rectRing } from "../../geometry/polygon.js";
+import { VERTEX_EPS, pointInPolygon, rectRing } from "../../geometry/polygon.js";
 import { type BBox, rectOverlapAmounts, rectsOverlap } from "../../geometry/rect.js";
-import type { RDoor, ROpening, RStair, RStairPiece, RVoid } from "../../ir.js";
+import type { RDoor, ROpening, ROutdoor, RStair, RStairPiece, RVoid } from "../../ir.js";
 import {
   boardedFlight,
   flightEnd,
@@ -363,11 +364,14 @@ export function storeyStairs(ctx: LintContext): StoreyStairs | null {
     const landings = owed.map((o) => o.landings);
     const turns = stairs.map((v) => turnLegs(v, ctx));
     const nLandings = landings.reduce((a, l) => a + l.length, 0) + turns.reduce((a, t) => a + 2 * t.length, 0);
-    // Charged before any of it runs: every landing reads every wall piece, void and room once, each
-    // leg of a landing between the flights the same, and a block stair's every landing its own other
-    // pieces, so a straight stair's sum does not move.
+    // The storey's outdoor surfaces, which a landing's floor may stand on (RM9.31).
+    const ground = outdoorsOf(ctx.ir);
+    // Charged before any of it runs: every landing reads every wall piece, void, room and outdoor
+    // surface once, each leg of a landing between the flights the same, and a block stair's every
+    // landing its own other pieces, so a straight stair's sum does not move.
     const cost =
-      nLandings * (ctx.wallSegs.length + ctx.openings.length + ctx.voids.length + ctx.rooms.length + 1) +
+      nLandings *
+        (ctx.wallSegs.length + ctx.openings.length + ctx.voids.length + ctx.rooms.length + ground.length + 1) +
       stairs.reduce((a, v, i) => a + landings[i]!.reduce((n, l) => n + ownPieces(v, l).length, 0), 0);
     if (cost <= MAX_STAIR_WORK) {
       const bodies = wallBodies(ctx);
@@ -381,7 +385,7 @@ export function storeyStairs(ctx: LintContext): StoreyStairs | null {
         const clear = Math.min(need, runs);
         if (curved(beyond(l.rect, l.edge, clear, l.width))) return "curved";
         const reaching = bodies.filter((b) => (heights.get(b.seg.wallId) ?? Number.POSITIVE_INFINITY) > level);
-        const wall = landingBlock(l, clear, ctx, reaching, []);
+        const wall = landingBlock(l, clear, ctx, reaching, [], ground);
         if (wall !== null) return wall;
         return clear + VERTEX_EPS < need ? { depth: clear, what: { landingEnds: true } } : null;
       };
@@ -392,7 +396,7 @@ export function storeyStairs(ctx: LintContext): StoreyStairs | null {
           const needs = ls.map((l) => landingDepth(l.width, ctx));
           const blocks = ls.map((l, j): StairFacts["blocks"][number] => {
             if (curved(beyond(l.rect, l.edge, needs[j]!, l.width))) return "curved";
-            return landingBlock(l, needs[j]!, ctx, bodies, ownPieces(v, l));
+            return landingBlock(l, needs[j]!, ctx, bodies, ownPieces(v, l), ground);
           });
           const well = ls.some((l) => l.end === "head");
           // One row per landing, for its shorter leg: a landing short both ways is one defect.
@@ -695,8 +699,10 @@ function wallBodies(ctx: LintContext): WallBody[] {
  * (cased openings cut out), another of the stair's own `pieces` or, at a foot, `void`, met across
  * the MIDDLE HALF of the flight's width (so a flank wall drawn to the flight's edge, or 50 mm into
  * it, is not read as standing across it), and the floor itself: the point halfway to that depth
- * must lie in a room. `null` when the full depth is clear. A `turn` stands at height, on nothing of
- * this storey, so only walls are read of it: a void under it is no matter, and it needs no room.
+ * must lie in a room or on walkable `ground` ({@link onWalkableGround}: an exterior stair steps off
+ * onto paving or a balcony, RM9.31). `null` when the full depth is clear. A `turn` stands at height,
+ * on nothing of this storey, so only walls are read of it: a void under it is no matter, and it
+ * needs no room.
  */
 function landingBlock(
   l: Landing,
@@ -704,6 +710,7 @@ function landingBlock(
   ctx: LintContext,
   bodies: readonly WallBody[],
   pieces: readonly BBox[],
+  ground: readonly ROutdoor[],
 ): LandingBlock | null {
   const r = l.rect;
   const probe = beyond(r, l.edge, need, l.width / 2);
@@ -724,18 +731,34 @@ function landingBlock(
   if (l.end === "foot")
     for (const vd of ctx.voids)
       consider(rectRing({ x: vd.at.x, y: vd.at.y, w: vd.size.w, h: vd.size.h }), { void: vd });
-  // The floor: halfway to the measured depth, on the flight's centreline, must be in a room.
+  // The floor: halfway to the measured depth, on the flight's centreline, must be in a room or on
+  // walkable outdoor ground.
   const blocked = best as LandingBlock | null;
   const clear = blocked === null ? need : blocked.depth;
   if (l.end !== "turn" && clear > 0 && ctx.rooms.length > 0) {
     const p = outFrom(r, l.edge, clear / 2);
-    const onFloor = ctx.rooms.some((room) => {
-      const box = ctx.roomRects.get(room.id);
-      return box !== undefined && pointInRoomBox(p, box);
-    });
+    const onFloor =
+      ctx.rooms.some((room) => {
+        const box = ctx.roomRects.get(room.id);
+        return box !== undefined && pointInRoomBox(p, box);
+      }) || onWalkableGround(p, ground);
     if (!onFloor) return { depth: 0, what: { noFloor: true } };
   }
   return blocked;
+}
+
+/**
+ * Is `p` on ground a person can step onto: the TOPMOST `outdoor` surface holding it (the last of
+ * `ground`, in element order, which is draw order) is walkable ({@link groundWalkable}: every kind
+ * but `water`), as `unwalkableGroundAt` (`analyze.ts`) reads what a door opens onto. Read on the surface's
+ * shape (`outdoorRing`), never its box.
+ */
+function onWalkableGround(p: Point, ground: readonly ROutdoor[]): boolean {
+  for (let i = ground.length - 1; i >= 0; i--) {
+    const o = ground[i]!;
+    if (pointInPolygon(p.x, p.y, outdoorRing(o))) return groundWalkable(o.surface);
+  }
+  return false;
 }
 
 export const stairNoLanding: LintRule = {

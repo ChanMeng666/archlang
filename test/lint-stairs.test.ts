@@ -225,6 +225,55 @@ suite("W_STAIR_NO_LANDING", () => {
       "The stair in the middle of the plan has no landing at its foot: there is no floor, where a landing as long as the flight is wide needs 1000 mm (1000 mm short).",
     ]);
   });
+
+  // RM9.31 (the 2026-11 HABS probe): an exterior stair steps off onto the ground or a balcony, which
+  // are `outdoor` surfaces, not rooms. Walkable ground is floor, as the access graph reads it
+  // (`groundWalkable`: every kind but `water`), and the topmost surface at the probe decides.
+  const outside = (ground: string) =>
+    `plan "P" {\n  units mm\n  room id=r at (0,0) size 3000x3000 label "Hall" uses hall\n  stair id=st at (3500,0) size 1000x2400 dir up\n${ground}}`;
+  const NO_FLOOR =
+    "The stair in the middle of the plan has no landing at its foot: there is no floor, where a landing as long as the flight is wide needs 1000 mm (1000 mm short).";
+
+  it("walkable outdoor ground beyond the foot is floor; water is not, and the topmost surface decides", () => {
+    const paving = "  outdoor paving at (3300,2400) size 1400x1500\n";
+    const water = "  outdoor water at (3300,2400) size 1400x1500\n";
+    const deck = "  outdoor deck at (3300,2400) size 1400x1500\n";
+    expect(of(outside(paving), "W_STAIR_NO_LANDING")).toEqual([]);
+    expect(of(outside("  outdoor lawn at (3300,2400) size 1400x1500\n"), "W_STAIR_NO_LANDING")).toEqual([]);
+    expect(of(outside(water), "W_STAIR_NO_LANDING").map((d) => d.message)).toEqual([NO_FLOOR]);
+    // A deck drawn over the water after it is a bridge; water drawn over the deck is a pond.
+    expect(of(outside(water + deck), "W_STAIR_NO_LANDING")).toEqual([]);
+    expect(of(outside(deck + water), "W_STAIR_NO_LANDING").map((d) => d.message)).toEqual([NO_FLOOR]);
+    // Read where a room is read, halfway to the depth: a strip 300 mm deep does not reach it.
+    expect(
+      of(outside("  outdoor paving at (3300,2400) size 1400x300\n"), "W_STAIR_NO_LANDING").map((d) => d.message),
+    ).toEqual([NO_FLOOR]);
+  });
+
+  it("an exterior stair from paving up to a balcony has its landings on both", () => {
+    const xst = (ground: string, balcony: string) => `plan "P" {
+  units mm
+  level 1 "Ground" {
+    room id=liv at (0,0) size 5000x4000 label "Living" uses living
+    walls from rooms exterior 200 partition 100
+    door on liv.left at center width 900
+${ground}    stair id=xst at (5500,1000) size 1000x2800 dir up
+  }
+  level 2 "Upper" {
+    room id=bed at (0,0) size 5000x4000 label "Bedroom" uses bedroom
+    walls from rooms exterior 200 partition 100
+    door on bed.right at 600 from start width 800
+${balcony}    stair id=xst at (5500,1000) size 1000x2800 dir down
+  }
+}`;
+    const paving = "    outdoor paving at (5300,-1500) size 1400x6900\n";
+    const balcony = "    outdoor balcony at (5100,-1500) size 1600x2500\n";
+    expect(of(xst(paving, balcony), "W_STAIR_NO_LANDING")).toEqual([]);
+    expect(of(xst("", ""), "W_STAIR_NO_LANDING").map((d) => d.message)).toEqual([
+      "The stair in the middle of the plan on level 1 has no landing at its foot: there is no floor, where a landing as long as the flight is wide needs 1000 mm (1000 mm short).",
+      "The stair in the middle of the plan on level 2 has no landing at its head: there is no floor, where a landing as long as the flight is wide needs 1000 mm (1000 mm short).",
+    ]);
+  });
 });
 
 suite("W_STAIR_SIDE_ENTRY", () => {
