@@ -12,6 +12,7 @@ import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 import { zipFiles } from "../packages/mcp/scripts/build-mcpb.js";
 import {
+  archlang3dVersion,
   buildOpenaiZip,
   checkOpenaiZip,
   coreVersion,
@@ -89,6 +90,30 @@ describe("OpenAI plugin ZIP", () => {
     expect(pinSkill("`npx -y @chanmeng666/archlang spec`", "9.9.9")).toBe("`npx -y @chanmeng666/archlang@9.9.9 spec`");
   });
 
+  it("every skill's 3D preview command pins @chanmeng666/archlang-3d to the 3D package's version", () => {
+    const v3d = readJson("packages/archlang-3d/package.json").version as string;
+    expect(archlang3dVersion()).toBe(v3d);
+    const unpinned3d = /(npx -y|npm i -g) @chanmeng666\/archlang-3d(?![\w@-])/;
+    const skillNames = [...entries.keys()].filter((n) => n.startsWith("skills/"));
+    const with3d = skillNames.filter((n) => read(n).toString("utf8").includes("npx -y @chanmeng666/archlang-3d "));
+    // brief-to-plan and export end with the 3D preview line; a skill that drops it fails here, not silently
+    expect(with3d.length).toBeGreaterThan(0);
+    for (const n of skillNames) {
+      const skill = entries.get(n)!.toString("utf8");
+      expect(skill, n).not.toMatch(unpinned3d);
+      if (with3d.includes(n)) expect(skill, n).toContain(`npx -y @chanmeng666/archlang-3d@${v3d} `);
+      expect(read(n).toString("utf8"), n).not.toContain(`@chanmeng666/archlang-3d@${v3d}`);
+    }
+    // the core pin leaves the 3D package's name alone, and the 3D pin the core's
+    expect(
+      pinSkill(
+        "`npx -y @chanmeng666/archlang-3d build p.arch` and `npx -y @chanmeng666/archlang spec`",
+        "9.9.9",
+        "0.0.1",
+      ),
+    ).toBe("`npx -y @chanmeng666/archlang-3d@0.0.1 build p.arch` and `npx -y @chanmeng666/archlang@9.9.9 spec`");
+  });
+
   it("passes the builder's own check, which fails on a tampered archive", () => {
     expect(() => checkOpenaiZip(entries)).not.toThrow();
     const files = openaiPluginFiles();
@@ -116,6 +141,16 @@ describe("OpenAI plugin ZIP", () => {
     expect(() =>
       checkOpenaiZip(tamper((fs) => fs.map((x) => (x.name === skill ? { ...x, data: read(skill) } : x)))),
     ).toThrow(/pinned CLI/);
+    // a skill whose core CLI is pinned but whose 3D preview command is not
+    const skill3d = [...entries.keys()].find(
+      (n) => n.startsWith("skills/") && read(n).toString("utf8").includes("@chanmeng666/archlang-3d "),
+    )!;
+    expect(skill3d).toBeDefined();
+    const unpin3d = (b: Buffer) =>
+      Buffer.from(b.toString("utf8").replace(/@chanmeng666\/archlang-3d@[^\s`]+/g, "@chanmeng666/archlang-3d"));
+    expect(() =>
+      checkOpenaiZip(tamper((fs) => fs.map((x) => (x.name === skill3d ? { ...x, data: unpin3d(x.data) } : x)))),
+    ).toThrow(/pinned CLI|unpinned/);
   });
 
   it("a named plugin version moves the listing and leaves the CLI pin on the core", () => {

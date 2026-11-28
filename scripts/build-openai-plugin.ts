@@ -16,7 +16,8 @@
  *     submission requires and every update must change; the repository's manifest names no version.
  *   - each skill's install commands name the core's version, because the directory's scan flags an
  *     unpinned package as a mutable source, and a reviewed skill should run the CLI it was written
- *     for; the repository's skills name no version.
+ *     for; the repository's skills name no version. A skill's `@chanmeng666/archlang-3d` command
+ *     (the 3D preview line) is pinned the same way, to `packages/archlang-3d/package.json`'s version.
  * Its `mcp.json` is the folder's own, the hosted server (Streamable HTTP, no sign-in), because a
  * public submission takes a remote HTTPS server and excludes a local one; the builder still checks it.
  * `.claude-plugin/` is another host's folder, and `README.md`, `LICENSE.txt` and `SECURITY.md` are not part of the
@@ -77,11 +78,22 @@ function withVersion(manifestText: string, version: string): string {
 }
 
 /** A command that installs or runs the core CLI, with no version named. */
-const UNPINNED_CLI = /\b(npx -y|npm i -g) @chanmeng666\/archlang(?![\w@-])/g;
+export const UNPINNED_CLI = /\b(npx -y|npm i -g) @chanmeng666\/archlang(?![\w@-])/g;
+/** A command that installs or runs the separate 3D package's CLI, with no version named. */
+export const UNPINNED_3D = /\b(npx -y|npm i -g) @chanmeng666\/archlang-3d(?![\w@-])/g;
 
-/** A skill as the ZIP carries it: its CLI install commands pinned to `version`. */
-export function pinSkill(skill: string, version: string): string {
-  return skill.replace(UNPINNED_CLI, `$1 @chanmeng666/archlang@${version}`);
+/** The 3D package's version, from its own `package.json` (the skills' 3D preview line runs it). */
+export const archlang3dVersion = (): string =>
+  (JSON.parse(readFileSync(join(ROOT, "packages/archlang-3d/package.json"), "utf8")) as { version: string }).version;
+
+/**
+ * A skill as the ZIP carries it: its core CLI install commands pinned to `version`, and its 3D
+ * package commands to `version3d` (the package's own version, released by the same `v*` tag).
+ */
+export function pinSkill(skill: string, version: string, version3d = archlang3dVersion()): string {
+  return skill
+    .replace(UNPINNED_CLI, `$1 @chanmeng666/archlang@${version}`)
+    .replace(UNPINNED_3D, `$1 @chanmeng666/archlang-3d@${version3d}`);
 }
 
 /** Refuse a plugin folder that is not what the generators write (run `npm run gen:all`). */
@@ -189,6 +201,8 @@ export function checkOpenaiZip(
     if (skill !== pinSkill(bytes(f).toString("utf8"), cliVersion))
       fail(`${f} differs from its source skills/ file by more than the pinned CLI version`);
     if (!skill.includes(`@chanmeng666/archlang@${cliVersion}`)) fail(`${f} names no pinned CLI`);
+    if (new RegExp(UNPINNED_CLI.source).test(skill) || new RegExp(UNPINNED_3D.source).test(skill))
+      fail(`${f} still runs an unpinned package`);
   }
 }
 
