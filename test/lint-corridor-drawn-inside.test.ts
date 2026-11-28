@@ -40,7 +40,7 @@ suite("W_CORRIDOR_DRAWN_INSIDE", () => {
     const d = ds[0]!;
     expect(d.severity).toBe("warning");
     expect(d.message).toBe(MESSAGE);
-    expect(CASE.slice(d.span![0], d.span![1])).toBe(FRONT.trim());
+    expect(CASE.slice(d.span!.start, d.span!.end)).toBe(FRONT.trim());
     expect(d.hints).toEqual([
       'If "Corridor" (r_corr) is the building\'s common corridor, draw it outside the dwelling\'s exterior walls (for example as an `outdoor paving` surface labelled "Corridor") and hang d_front on the exterior wall of "Hall" (r_hall) that faces it, as a door from outside.',
       'If "Corridor" (r_corr) belongs to the dwelling, draw its door to the outside: that door is then the way in.',
