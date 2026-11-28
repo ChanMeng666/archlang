@@ -78,7 +78,11 @@ The docs site (`docs-site/`, outside the module map's globs) has a home built fr
 `SameSource.vue`, `WhyCards.vue`, `HowSteps.vue`, `DoorsCard.vue`, `HomeGallery.vue` and
 `IsIsntTable.vue`; `/start` and `/3d` are pages.
 `eval/` authorability harness, `dataset/` HF dataset generator, `scripts/` generators + smoke,
-`bench/` timings. `packages/archlang-3d` is separate and reads a resolved plan through the core's
+`bench/` timings. Plan corpora: `examples/` is the shipped, user-facing example set (npm tarball,
+playground gallery, digest tables; `.claude/rules/examples.md`); `docs/gallery/` holds only the
+agent gallery's brief → plan pairs (`test/agent-gallery.test.ts` forbids any other file);
+`test/plans/` and `test/fixtures/` are test-only; the famous-plan gallery is the separate
+`archlang-showcase` repository. `packages/archlang-3d` is separate and reads a resolved plan through the core's
 public seam (ADRs 0030/0031; `.claude/rules/archlang-3d.md`). `site-shared/doors.json` holds every
 way in, written into marked "Try it" blocks by `scripts/gen-doors.ts` (`gen:doors`). The playground
 Worker (`playground/worker/`, ADR 0034) runs only for `/s/*` and `/api/*`; a plain playground visit
