@@ -55,6 +55,15 @@
       "twin": "../defect-corpus/openings-ignore-walls/door-on-exterior-tee.clean.arch"
     },
     {
+      "id": "circulation-privacy/corridor-drawn-inside",
+      "column": "default",
+      "profile": null,
+      "expect": "W_CORRIDOR_DRAWN_INSIDE",
+      "rule": null,
+      "plan": "../defect-corpus/circulation-privacy/corridor-drawn-inside.arch",
+      "twin": "../defect-corpus/circulation-privacy/corridor-drawn-inside.clean.arch"
+    },
+    {
       "id": "annotation-collisions/dim-text-lies",
       "column": "default",
       "profile": null,

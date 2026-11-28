@@ -177,7 +177,7 @@ const SERVICE_USES: ReadonlySet<UseKind> = new Set<UseKind>(["utility", "storage
 
 /** Does the room read as an entrance space ({@link roomUses}): an entry, hall or circulation
  *  use, and no service use beside it? */
-function isEntryRoom(r: RRoom | undefined): boolean {
+export function isEntryRoom(r: RRoom | undefined): boolean {
   if (!r) return false;
   const uses = [...roomUses(r)];
   return uses.some((u) => ENTRY_USES.has(u)) && !uses.some((u) => SERVICE_USES.has(u));

@@ -1288,7 +1288,7 @@ What it cannot tell you:
 | Stairs | `W_STAIR_TOO_STEEP`, `W_STAIR_RISER_TOO_HIGH`, `W_STAIR_NO_LANDING`, `W_STAIR_NO_VOID`, `W_SWING_OVER_STAIR` |
 | Furniture / fixtures | `W_FIXTURE_FLOATING`, `W_FIXTURE_BACK_TO_ROOM`, `W_FIXTURE_WRONG_ROOM`, `W_FURNITURE_OVERLAP`, `W_FURN_CLEARANCE`, `W_WC_SIDE_CLEARANCE`, `W_ACCESSIBLE_WC_SIDE_WALL`, `W_FURNITURE_OVER_WINDOW`, `W_HOB_UNDER_WINDOW`, `W_HOB_FRIDGE_GAP`, `W_FOOTPRINT_TRANSPOSED`, `W_BED_UNDERSIZED`, `W_FURNITURE_ON_STAIR`, `W_FURNITURE_ON_VOID`, `W_SEAT_FACING_WALL` |
 | Circulation quality | `W_ROOM_NO_CLEAR_PATH`, `W_PATH_TOO_NARROW`, `W_CIRCUITOUS_PATH` |
-| Circulation and privacy | `W_ROOM_VIA_PRIVATE`, `W_WET_ROOM_DOOR`, `W_ENTRANCE_INTO_PRIVATE` |
+| Circulation and privacy | `W_ROOM_VIA_PRIVATE`, `W_WET_ROOM_DOOR`, `W_ENTRANCE_INTO_PRIVATE`, `W_CORRIDOR_DRAWN_INSIDE` |
 | Enclosure | `W_BOUNDARY_NO_WALL`, `W_FLOOR_UNASSIGNED`, `W_ROOM_OUTSIDE_SHELL` |
 | Annotation | `W_DIM_INSIDE`, `W_DIM_OVERLAP`, `W_DIM_TEXT_MISMATCH`, `W_OPENING_NOT_DIMENSIONED`, `W_DIM_THICKNESS_UNPLACED` |
 
@@ -1313,6 +1313,11 @@ doors that make it a passage), and `W_ENTRANCE_INTO_PRIVATE` fires when every do
 outside opens into a bedroom, bathroom or WC. All three read `uses` (authored, or from the label
 vocabulary) and skip a room with no classified use. Their hints offer only doors on edges two
 rooms really share, measured, and never suggest shrinking or deleting a room.
+`W_CORRIDOR_DRAWN_INSIDE` fires when every door to the outside opens onto an `outdoor balcony`
+and an entry, hall or circulation room with no door to the outside opens only into one other
+room, by a hinged door: the building's corridor is drawn inside the dwelling, so its front door
+reads as an inside door and the only way in reads as the balcony. It reports; it does not read
+the corridor as the way in.
 
 The enclosure rules compare the rooms with the walls. `W_BOUNDARY_NO_WALL` fires when two
 rooms share an edge and more than a doorway's width of it (900 mm) has no wall, door, cased

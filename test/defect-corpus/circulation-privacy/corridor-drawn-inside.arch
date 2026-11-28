@@ -1,0 +1,20 @@
+# class: circulation-privacy
+# origin: product-roadmap RM9.6 coverage class CV16 (plan-soundness PS2.42): the first-contact re-runs of 2026-10-25 (RA1) and 2026-10-26 (QA1) modelled the building's common corridor as a room of the flat
+# expect: W_CORRIDOR_DRAWN_INSIDE
+# status: done
+# fact: the one door to the outside, d_balc, opens onto the balcony; r_corr (uses circulation) is inside the exterior ring, has no door to the outside and opens only into r_hall, by the hinged d_front
+plan "Corridor drawn inside the flat" {
+  units mm
+  grid 100
+  room id=r_living at (0,0) size 5000x4500 label "Living" uses living
+  room id=r_hall right-of r_living size 1600x4500 label "Hall" uses hall
+  room id=r_bed right-of r_hall size 3400x4500 label "Bedroom" uses bedroom
+  room id=r_corr below r_living align left size 10000x1400 label "Corridor" uses circulation
+  walls from rooms exterior 200 partition 100 { open between r_living and r_hall }
+  outdoor balcony at (800,-1600) size 3400x1500 label "Balcony"
+  door id=d_front between r_corr and r_hall at center width 1000 swing into r_hall
+  door id=d_bed between r_hall and r_bed at center width 900 swing into r_bed
+  door id=d_balc sliding on r_living.top at 1600 from start width 1800
+  window on r_living.left at center width 1500
+  window on r_bed.top at center width 1500
+}

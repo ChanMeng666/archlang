@@ -488,6 +488,9 @@ export const RULE_CLASS: Readonly<Record<string, RuleClass>> = {
   // RM9.6 (CV08): a lounge seat's drawn fronts against the storey's straight wall segments, all turned or
   // mirrored together with the seat's own turn and mirror; no compass, no sheet.
   "seat-facing-wall": "invariant",
+  // RM9.6 (CV16): which doors lead outside, onto which balcony, and which room each connector joins,
+  // read off the door graph and the shapes turned or mirrored together; no compass, no sheet.
+  "corridor-drawn-inside": "invariant",
 };
 
 /**

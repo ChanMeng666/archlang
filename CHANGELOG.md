@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Lint warns `W_CORRIDOR_DRAWN_INSIDE` when the building's common corridor is drawn as a room inside the dwelling's exterior walls (card RM9.6, coverage class CV16; plan-soundness PS2.42): every door to the outside on the storey opens onto an `outdoor balcony`, no stair or lift arrives on it, and an entry, hall or circulation room with no door to the outside opens only into one other room, by a door with a hinged leaf. That door is the front door, and it reads as an inside door: `describe().access.entrances` lists only the balcony door, the floor area counts the corridor, and the privacy rules cannot judge the plan (the lint coverage report says `balcony-only-entrance`). The warning is at that door; its hints say to draw the corridor outside the walls (for example as `outdoor paving`) with the front door on the exterior wall, or, if the corridor is the dwelling's own, to draw its door to the outside. It reports and does not re-read the corridor as the way in, so `describe()` and every other rule are unchanged. A plan that reads as non-residential is declared (`non-dwelling`), not judged. It is a validity-layer warning: it fails `validate --strict` and `lint --strict` where it appears, and caps a `taste()` score at 0.5. Over `examples/**` it reports nothing.
+
 ### Changed
 
 - The `archlang-brief-to-plan` and `archlang-edit-plan` skills end with one taste review once the plan is clean, as the umbrella `archlang` skill already did: `archlang score plan.arch --taste generic --json` and `archlang preview plan.arch --review` (`plan.review.png`), run once each. The final report lists the score with the weight it judged, each `A_*` advice code and the review sheet, and says the advice is not an error: the agent does not iterate on it, and the user decides. In `archlang-edit-plan` the review also runs on a plan whose strict check fails only on warnings it carried before the edit, and the agent does not fix those just to make the check clean. Both skills note that `archlang explain` does not know `A_*` codes.

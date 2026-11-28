@@ -1,0 +1,20 @@
+# class: circulation-privacy
+# twin-of: corridor-drawn-inside
+# origin: product-roadmap RM9.6 coverage class CV16 with the corridor moved out of the exterior ring
+# expect: none
+# fact: the corridor is an outdoor paving surface below the exterior wall; d_front hangs on r_hall's exterior wall, so it is a door from the ground and access.entrances lists it beside d_balc
+plan "Corridor outside the flat" {
+  units mm
+  grid 100
+  room id=r_living at (0,0) size 5000x4500 label "Living" uses living
+  room id=r_hall right-of r_living size 1600x4500 label "Hall" uses hall
+  room id=r_bed right-of r_hall size 3400x4500 label "Bedroom" uses bedroom
+  walls from rooms exterior 200 partition 100 { open between r_living and r_hall }
+  outdoor balcony at (800,-1600) size 3400x1500 label "Balcony"
+  outdoor paving at (0,4600) size 10000x1400 label "Corridor"
+  door id=d_front on r_hall.bottom at center width 1000 swing inward
+  door id=d_bed between r_hall and r_bed at center width 900 swing into r_bed
+  door id=d_balc sliding on r_living.top at 1600 from start width 1800
+  window on r_living.left at center width 1500
+  window on r_bed.top at center width 1500
+}

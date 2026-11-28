@@ -77,6 +77,7 @@ Two classes from `evidence.md` §3 have no cases, because no core lint rule can 
 | `W_ROOM_VIA_PRIVATE` | PS2.5 |
 | `W_WET_ROOM_DOOR` | PS2.6 |
 | `W_ENTRANCE_INTO_PRIVATE` | PS2.7 |
+| `W_CORRIDOR_DRAWN_INSIDE` | product-roadmap RM9.6 (coverage class CV16; PS2.42) |
 | `W_HABITABLE_NO_WINDOW` | PS2.8 |
 | `W_ROOM_MISSING_DEFINING` | PS2.9 |
 | `W_LABEL_PIECE_MISSING` | product-roadmap RM1.2c (rulings RM-D35, RM-D35a) |
