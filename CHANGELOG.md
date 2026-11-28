@@ -9,7 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-- The `archlang-brief-to-plan` and `archlang-edit-plan` skills end with one taste review once the plan is clean, as the umbrella `archlang` skill already did: `archlang score plan.arch --taste generic --json` and `archlang preview plan.arch --review -o review.png`, run once each. The final report lists the score, each `A_*` advice code and the review image, and says the advice is not an error: the agent does not iterate on it, and the user decides.
+- The `archlang-brief-to-plan` and `archlang-edit-plan` skills end with one taste review once the plan is clean, as the umbrella `archlang` skill already did: `archlang score plan.arch --taste generic --json` and `archlang preview plan.arch --review` (`plan.review.png`), run once each. The final report lists the score with the weight it judged, each `A_*` advice code and the review sheet, and says the advice is not an error: the agent does not iterate on it, and the user decides. In `archlang-edit-plan` the review also runs on a plan whose strict check fails only on warnings it carried before the edit, and the agent does not fix those just to make the check clean. Both skills note that `archlang explain` does not know `A_*` codes.
 
 ## [1.69.0] - 2026-11-28
 
