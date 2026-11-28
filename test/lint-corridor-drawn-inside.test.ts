@@ -82,16 +82,23 @@ suite("W_CORRIDOR_DRAWN_INSIDE", () => {
   });
 
   it("is silent when the corridor opens into two rooms: it is a passage of the dwelling", () => {
-    const src = edit(FRONT, `${FRONT}  door id=d_corr2 between r_corr and r_bed at center width 900 swing into r_bed\n`);
-    expect(describe(src).access?.edges.filter((e) => e.between.includes("r_corr")).map((e) => e.doorId)).toEqual([
-      "d_front",
-      "d_corr2",
-    ]);
+    const src = edit(
+      FRONT,
+      `${FRONT}  door id=d_corr2 between r_corr and r_bed at center width 900 swing into r_bed\n`,
+    );
+    expect(
+      describe(src)
+        .access?.edges.filter((e) => e.between.includes("r_corr"))
+        .map((e) => e.doorId),
+    ).toEqual(["d_front", "d_corr2"]);
     expect(of(src)).toEqual([]);
   });
 
   it("needs a hinged door: a sliding door or a cased opening into the dwelling is not a front door", () => {
-    const sliding = edit(FRONT, FRONT.replace("door id=d_front", "door id=d_front sliding").replace(" swing into r_hall", ""));
+    const sliding = edit(
+      FRONT,
+      FRONT.replace("door id=d_front", "door id=d_front sliding").replace(" swing into r_hall", ""),
+    );
     const opening = edit(FRONT, "  opening id=o_front between r_corr and r_hall at center width 1000\n");
     for (const src of [sliding, opening]) {
       // The variant compiles and its connector still joins the corridor to the hall.
@@ -134,8 +141,7 @@ suite("W_CORRIDOR_DRAWN_INSIDE", () => {
     expect(resolvePlan(src).levels.map((l) => l.ir.elements.length > 0)).toEqual([true, true]);
     expect(of(src)).toEqual([]);
     // The same two storeys with no stair between them: the upper flat is judged, and reported.
-    expect(of(src.replace(/^ {4}stair id=st .*
-/gm, ""))).toHaveLength(1);
+    expect(of(src.replace(/^ {4}stair id=st .*\n/gm, ""))).toHaveLength(1);
   });
 
   it("reports nothing over the shipped examples, under the default ruleset and every profile", () => {
