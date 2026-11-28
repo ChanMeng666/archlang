@@ -351,6 +351,27 @@ export interface LintRuleset {
    */
   wcAccessibleSideWallMaxMm: number | null;
   /**
+   * How deep (mm) the WC access zone runs in front of a pan, from the front of its drawn footprint
+   * (`W_WC_FRONT_CLEARANCE`, product roadmap RM9.6, coverage class CV10): another fixture or piece
+   * of furniture standing in it, at the cut plane, in the WC's own room and nearer than any wall,
+   * is reported. A basin and a shower are not judged: the source lets a basin encroach on the zone
+   * and a level-access shower be stood in. `null` turns the rule off.
+   *
+   * **Default 1100, in every profile:** Approved Document M Vol 1 (2015) M4(2) Diagram 2.5, key
+   * "a. WC access zone", 1100 mm deep in front of the pan, "all dimensions are minimum except where
+   * noted" (read in the gov.uk PDF, printed page 20 [V]); the figure {@link wcSideClearanceMm}
+   * already cites.
+   */
+  wcFrontZoneDepthMm: number | null;
+  /**
+   * How far (mm) the zone of {@link wcFrontZoneDepthMm} reaches to each side of the pan's
+   * centreline. **Default 350, in every profile:** the same Diagram 2.5 draws the zone 350 mm to
+   * the wall side of the centreline and 1000 mm to the open side [V]; a plan does not say which
+   * side a pan's open side is, so the rule reads the 350 mm both hands share and leaves the open
+   * side's further 650 mm unjudged.
+   */
+  wcFrontZoneHalfWidthMm: number;
+  /**
    * The highest riser (mm) `W_STAIR_TOO_STEEP` lets a straight flight climb its storey with
    * (plan-soundness PS2.11e). With {@link stairMinGoingMm} and {@link stairMaxPitchRatio} it
    * fixes the shortest run that climbs a storey: the fewest risers no higher than this, each
@@ -534,6 +555,8 @@ export const DEFAULT_RULESET: LintRuleset = {
   roomAreaMeasure: "drawn",
   wcSideClearanceMm: 400,
   wcAccessibleSideWallMaxMm: 500,
+  wcFrontZoneDepthMm: 1100,
+  wcFrontZoneHalfWidthMm: 350,
   stairMaxRiseMm: 220,
   stairMinGoingMm: 220,
   stairMaxPitchRatio: null,
@@ -782,6 +805,7 @@ const NULLABLE: { readonly [K in NullableKey]: true } = {
   minEntryPassageWidthMm: true,
   wcSideClearanceMm: true,
   wcAccessibleSideWallMaxMm: true,
+  wcFrontZoneDepthMm: true,
   stairMaxPitchRatio: true,
   stairDrawnMaxRiseMm: true,
   hobLandingMm: true,
@@ -798,7 +822,7 @@ const NULLABLE: { readonly [K in NullableKey]: true } = {
  * The numeric ruleset fields that must also be above zero: a size a rule measures a shape against,
  * where zero or less is no size at all (`minStandableMm`: a circle of no diameter fits anywhere).
  */
-const POSITIVE: ReadonlySet<string> = new Set(["minStandableMm"]);
+const POSITIVE: ReadonlySet<string> = new Set(["minStandableMm", "wcFrontZoneHalfWidthMm"]);
 
 /** Whether each per-use table's entries accept `null` (an exempt use), checked by `tsc` against
  *  the table's entry type, as {@link NULLABLE} is. */

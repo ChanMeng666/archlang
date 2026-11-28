@@ -15,6 +15,7 @@ import {
   furnitureOverWindow,
   hobFridgeGap,
   hobUnderWindow,
+  wcFrontClearance,
   wcSideClearance,
 } from "./clearances.js";
 import {
@@ -224,6 +225,9 @@ export const LINT_RULES: readonly LintRule[] = [
   // A sofa or armchair whose front is against a wall (product roadmap RM9.6, coverage class CV08).
   // Appended LAST, so no existing diagnostic moves within the array.
   seatFacingWall,
+  // Another piece in the access zone in front of a WC (product roadmap RM9.6, coverage class CV10).
+  // Appended LAST, so no existing diagnostic moves within the array.
+  wcFrontClearance,
 ];
 
 export type { LintContext, LintRule } from "../context.js";

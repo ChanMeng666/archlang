@@ -109,6 +109,9 @@ export type LintSkipReason =
   /** A curved wall stands near a WC's side, which `W_WC_SIDE_CLEARANCE` does not measure
    *  (PS2.11a): that WC is not judged. */
   | "curved-wc-wall"
+  /** A curved wall reaches into the zone in front of a WC, which `W_WC_FRONT_CLEARANCE` does not
+   *  measure (RM9.6, CV10): that WC is not judged. */
+  | "curved-wc-front"
   /** The plan authors no height anywhere (`describe().heights` is absent), so a flight's run is
    *  not judged against a storey height the author never stated (`W_STAIR_TOO_STEEP`, PS2.11e). */
   | "no-storey-height"
@@ -185,6 +188,7 @@ export const SKIP_WHY: Readonly<Record<LintSkipReason, string>> = {
   "no-bed": "the bedroom holds no bed to tell a single from a double",
   "curved-window-host": "a window stands on a curved wall, which the rule does not measure",
   "curved-wc-wall": "a curved wall stands beside a WC, which the rule does not measure",
+  "curved-wc-front": "a curved wall stands in front of a WC, which the rule does not measure",
   "no-storey-height": "the plan states no storey height",
   "curved-landing-wall": "a curved wall stands near a stair's landing, which the rule does not measure",
   "stair-budget": "too many stairs, doors and walls on the storey to measure",

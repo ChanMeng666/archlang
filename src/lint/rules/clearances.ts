@@ -28,6 +28,8 @@ import {
   roomOf,
   type WcSide,
   type WcSides,
+  wcFrontIntruder,
+  wcFrontZone,
   wcWorld,
   type WindowBand,
   windowBands,
@@ -471,3 +473,69 @@ function pieceRef(f: RFurniture, ctx: LintContext): string {
   const room = roomOf(f, ctx);
   return `the ${f.label ?? f.category}${room ? ` in "${ctx.labelOf(room)}"` : ""}`;
 }
+
+/**
+ * Another fixture or piece of furniture standing in front of a WC (product roadmap RM9.6, coverage
+ * class CV10): inside the access zone {@link LintRuleset.wcFrontZoneDepthMm} (1100 mm) deep from the
+ * front of the pan's drawn footprint, {@link LintRuleset.wcFrontZoneHalfWidthMm} (350 mm) to each
+ * side of its centreline (Approved Document M Vol 1 (2015) M4(2) Diagram 2.5, "a. WC access zone"
+ * [V]; the open side's further 650 mm is not judged, since a plan does not say which side is
+ * open). The pan's front is the edge opposite its back (its `rotate`); the zone is measured from
+ * the drawn footprints, never a bounding box, by the strip measure `clear front` uses (ADR 0029
+ * §4): a piece counts when its footprint and the zone share positive area.
+ *
+ * Only pieces at the cut plane in the WC's own room count (an overhead mirror, a rug, a piece in
+ * the next room seen through a doorway do not), and only nearer the pan than the nearest straight
+ * wall body in the zone (its doorways cut out, as `W_WC_SIDE_CLEARANCE` reads them): a small WC
+ * whose far wall stands inside the zone is not this rule's finding. Basins and showers are never
+ * judged (`allowedInWcZone`, `../clearance-measure.ts`). A curved wall reaching into the zone declines the pan
+ * (`curved-wc-front`). One warning per WC, naming the nearest piece; hint only, no fix (moving
+ * either piece is the author's call).
+ */
+export const wcFrontClearance: LintRule = {
+  name: "wc-front-clearance",
+  family: "furniture",
+  layer: "validity",
+  stage: "fixtures",
+  codes: ["W_WC_FRONT_CLEARANCE"],
+  check(ctx: LintContext): Diagnostic[] {
+    const depth = ctx.rules.wcFrontZoneDepthMm;
+    if (depth === null) return [];
+    const wcs = ctx.furniture.filter((f) => isWc(f.category));
+    if (wcs.length === 0) return [];
+    const half = ctx.rules.wcFrontZoneHalfWidthMm;
+    const walls = wcWorld([], ctx);
+    const out: Diagnostic[] = [];
+    for (const f of wcs) {
+      const room = roomOf(f, ctx);
+      if (room === null) continue;
+      const zone = wcFrontZone(rectOf(f), f.rotate, depth, half);
+      if (curvedNear(ctx.wallSegs, [zone])) {
+        ctx.skip("curved-wc-front");
+        continue;
+      }
+      const near = wcFrontIntruder(
+        zone,
+        ctx.furniture.filter((p) => roomOf(p, ctx) === room),
+        walls,
+        f,
+      );
+      if (near === null) continue;
+      const p = near.piece;
+      const what = p.label ?? p.category;
+      const at = Math.floor(near.at);
+      out.push(
+        cite(ctx.rules, "wcFrontZoneDepthMm", {
+          severity: "warning",
+          code: "W_WC_FRONT_CLEARANCE",
+          ...ctx.at(f),
+          message: `${subject(f, wcName(f), ctx)} has the ${what} ${at === 0 ? "against its front" : `${mm(at)} mm in front of it`}; a WC needs a clear zone ${mm(depth)} mm deep in front of the pan, ${mm(half)} mm to each side of its centreline.`,
+          hints: [
+            `Move "${p.id}" out of the zone in front of "${f.id}" (the ruleset's \`wcFrontZoneDepthMm\` is ${mm(depth)} mm from the front of the pan, \`wcFrontZoneHalfWidthMm\` ${mm(half)} mm to each side of its centreline), or move or turn "${f.id}" so its front faces open floor.`,
+          ],
+        }),
+      );
+    }
+    return out;
+  },
+};

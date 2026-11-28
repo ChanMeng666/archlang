@@ -204,6 +204,11 @@ const DEFAULTS: Readonly<Record<string, RuleProvenance>> = /* @__PURE__ */ pure(
     note: "the high end of its 400-500 mm; the 2010 ADA Standards 604.2 give 16-18 in (406-457 mm), second-hand: a lower maximum",
     also: [adm("M4(3) Diagrams 3.11 and 3.16", "2015, 2016 corrections")],
   },
+  wcFrontZoneDepthMm: { ...adm("M4(2) Diagram 2.5"), note: 'key "a. WC access zone", 1100 mm deep in front of the pan' },
+  wcFrontZoneHalfWidthMm: {
+    ...adm("M4(2) Diagram 2.5"),
+    note: "the zone's 350 mm to the wall side of the centreline, read to both sides; its 1000 mm open side is not judged",
+  },
   stairMaxRiseMm: adk("Table 1.1, private stair"),
   stairMinGoingMm: adk("Table 1.1, private stair"),
   stairMaxPitchRatio: conv("no pitch cap by default; a profile sets one"),

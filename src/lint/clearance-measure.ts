@@ -21,6 +21,7 @@ import {
   clearStrips,
   clipToRect,
   measureStrip,
+  polygonStandoff,
   type Strip,
 } from "../furniture-relation.js";
 import type { WallSegment } from "../geometry.js";
@@ -271,6 +272,49 @@ export function measureWcSides(
 
 /** A side that is short: something stands in it nearer than the figure. */
 export const isShort = (s: WcSide, depth: number): boolean => s.m.by !== null && s.m.measured < depth;
+
+/**
+ * The pieces a WC's access zone leaves in it: a basin (Approved Document M Vol 1 M4(2) Diagram 2.5
+ * places one beside or opposite the pan and lets it encroach on the zone, its keys b to f; a bare
+ * `sink` serves as one) and a shower (a level-access shower is floor that is stood on, and the
+ * diagram's turning circle "may overlap with shower"). By family, aliases included.
+ */
+const WC_ZONE_ALLOWED: ReadonlySet<string> = new Set(["basin", "shower"]);
+export const allowedInWcZone = (category: string): boolean =>
+  category === "sink" || WC_ZONE_ALLOWED.has(canonicalFixture(category) ?? category);
+
+/**
+ * The access zone in front of a pan `rect` at quarter-turn `turn`: `depth` deep from the front of
+ * its footprint (the edge opposite its back), `half` to each side of its centreline.
+ */
+export function wcFrontZone(rect: BBox, turn: number | undefined, depth: number, half: number): Strip {
+  const front = clearStrips(rect, turn, "front", depth)[0]!;
+  const mid = (front.lo + front.hi) / 2;
+  return { ...front, lo: mid - half, hi: mid + half };
+}
+
+/**
+ * The nearest piece of `pieces` standing in a WC's front `zone`: at the cut plane, not one
+ * {@link allowedInWcZone} leaves there, its footprint sharing positive area with the zone, and
+ * nearer the pan than the nearest straight wall body in the zone (`walls`, {@link wcWorld}'s
+ * segments). `null` when none does.
+ */
+export function wcFrontIntruder(
+  zone: Strip,
+  pieces: readonly RFurniture[],
+  walls: ClearWorld,
+  self: RFurniture,
+): { at: number; piece: RFurniture } | null {
+  const wall = measureStrip(zone, { ...walls, furniture: [], swings: [] }, self);
+  let near: { at: number; piece: RFurniture } | null = null;
+  for (const p of pieces) {
+    if (p === self || cutPlaneLayer(p.category) !== "body" || allowedInWcZone(p.category)) continue;
+    const at = polygonStandoff(zone, rectRing({ x: p.at.x, y: p.at.y, w: p.size.w, h: p.size.h }));
+    if (at === null || at >= wall.measured) continue;
+    if (near === null || at < near.at) near = { at, piece: p };
+  }
+  return near;
+}
 
 /** A window's band in its own frame: the centre of its span, the host's unit direction `d`
  *  and its normal `n`. */
