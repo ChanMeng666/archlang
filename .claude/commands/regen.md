@@ -1,5 +1,6 @@
 ---
 description: Regenerate all generated artifacts and show what changed
+disable-model-invocation: true
 ---
 
 # Regenerate generated artifacts

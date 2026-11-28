@@ -1,5 +1,6 @@
 ---
 description: Pre-release checklist (run before pushing a v* tag)
+disable-model-invocation: true
 ---
 
 # Release check
