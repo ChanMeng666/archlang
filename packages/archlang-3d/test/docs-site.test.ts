@@ -139,7 +139,7 @@ describe.each(["archlang-brief-to-plan", "archlang-export"])("skills/%s/SKILL.md
     for (const [, cmd, rest] of usages) {
       const declared = flags.get(cmd!);
       expect(declared, `\`${cmd}\` is not an archlang3d command`).toBeTruthy();
-      const given = (rest ?? "").match(/(?<![\w-])--?[a-zA-Z][\w-]*/g) ?? [];
+      const given: string[] = (rest ?? "").match(/(?<![\w-])--?[a-zA-Z][\w-]*/g) ?? [];
       for (const f of given) {
         expect(declared!.has(f), `\`archlang3d ${cmd} … ${f}\` is not a flag of \`${cmd}\``).toBe(true);
       }
