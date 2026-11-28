@@ -90,7 +90,14 @@ export function normaliseHeading(h) {
   return `### ${h.id} · ${title} — \`${h.status}\``;
 }
 
-/** Split into preamble + sections; a section is `{ title, head, preface[], entries[] }`. */
+/** A tombstone or closure line: `- <id> · <title> — …`, a list item whose first token is an id. */
+const LIST_ENTRY = /^- \S+ · /;
+
+/**
+ * Split into preamble + sections; a section is `{ title, head, preface[], entries[] }`. A list line
+ * after an entry (a tombstone or a closure line) is the section's, not that entry's body: it becomes a
+ * `line` entry, kept verbatim with what follows it up to the next heading.
+ */
 export function parseBacklog(src) {
   const out = { preamble: [], sections: [] };
   let sec = null;
@@ -103,6 +110,9 @@ export function parseBacklog(src) {
     } else if (/^### /.test(line)) {
       if (!sec) throw new Error("an entry before the first section");
       ent = { heading: line, body: [] };
+      sec.entries.push(ent);
+    } else if (ent && !ent.line && LIST_ENTRY.test(line)) {
+      ent = { heading: line, body: [], line: true };
       sec.entries.push(ent);
     } else if (ent) ent.body.push(line);
     else if (sec) sec.preface.push(line);
@@ -119,12 +129,21 @@ function idsOf(id) {
   return ids;
 }
 
-/** Does any line cite `id`? Numeric ids (6.8) also need the line to talk about the backlog. */
-function cited(id, lines) {
-  const esc = id.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-  const re = new RegExp(`(?<![\\w.])${esc}(?![\\w]|\\.\\d)`);
+/**
+ * Does any line cite `id`, by name or inside a range (`NR.1–NR.16`, `NR.1–16`)? Numeric ids (6.8)
+ * also need the line to talk about the backlog.
+ */
+export function cited(id, lines) {
+  const escape = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const re = new RegExp(`(?<![\\w.])${escape(id)}(?![\\w]|\\.\\d)`);
+  const pn = /^(.+)\.(\d+)$/.exec(id);
+  const range = pn
+    ? new RegExp(`(?<![\\w.])${escape(pn[1])}\\.(\\d+)\\s*[–-]\\s*(?:${escape(pn[1])}\\.)?(\\d+)(?![\\w]|\\.\\d)`, "g")
+    : null;
+  const n = pn ? Number(pn[2]) : 0;
+  const inRange = (l) => range !== null && [...l.matchAll(range)].some((m) => Number(m[1]) <= n && n <= Number(m[2]));
   const numeric = /^\d/.test(id);
-  return lines.some((l) => re.test(l) && (!numeric || /backlog|entry|item|§/i.test(l)));
+  return lines.some((l) => (re.test(l) || inRange(l)) && (!numeric || /backlog|entry|item|§/i.test(l)));
 }
 
 /**
@@ -136,6 +155,10 @@ export function archiveBacklog(src, otherLines) {
   const mapping = new Map();
   for (const sec of doc.sections) {
     for (const e of sec.entries) {
+      if (e.line) {
+        e.h = { archive: false };
+        continue;
+      }
       e.h = parseHeading(e.heading);
       if (sec.title.startsWith(RENAME_SECTION.prefix)) e.h.id = e.h.id.replace(RENAME_SECTION.from, RENAME_SECTION.to);
       if (!e.h.archive) {
@@ -173,12 +196,20 @@ export function archiveBacklog(src, otherLines) {
       if (pending.length) out.push(...pending, "");
       pending = [];
     };
+    // After a list line (with only its continuation lines), a new tombstone joins that list.
+    let afterList = false;
     for (const e of sec.entries) {
-      if (e.tomb) {
+      if (e.line) {
+        out.push(...pending, e.heading, ...e.body);
+        pending = [];
+        afterList = e.body.every((l) => l === "" || /^\s/.test(l));
+      } else if (e.tomb) {
+        if (afterList && !pending.length) while (out.at(-1) === "") out.pop();
         tombstoned.push(e.h.id);
         pending.push(`- ${e.h.id} · ${e.h.title} — ${e.h.original} → archived (lab)`);
       } else if (!e.h.archive) {
         flush();
+        afterList = false;
         out.push(normaliseHeading(e.h), ...e.body);
       }
     }
@@ -201,16 +232,21 @@ export function archiveBacklog(src, otherLines) {
   return { text, arch, archived, tombstoned, mapping };
 }
 
+/** The tracked files whose text may cite a backlog id: not the backlog, not its generated index. */
+export function citingFiles(files) {
+  return files.filter(
+    (f) => f && f !== "docs/backlog.md" && f !== INDEX && /\.(md|ts|mjs|js|json|arch|txt|yml|yaml|sh)$/.test(f),
+  );
+}
+
 function otherTrackedLines() {
-  const files = execFileSync("git", ["ls-files", "docs", "src", "test", ".claude", "CHANGELOG.md"], {
-    cwd: ROOT,
-    encoding: "utf8",
-    maxBuffer: 1 << 28,
-  })
-    .split("\n")
-    .filter(
-      (f) => f && f !== "docs/backlog.md" && f !== INDEX && /\.(md|ts|mjs|js|json|arch|txt|yml|yaml|sh)$/.test(f),
-    );
+  const files = citingFiles(
+    execFileSync("git", ["ls-files", "docs", "src", "test", ".claude", "CHANGELOG.md"], {
+      cwd: ROOT,
+      encoding: "utf8",
+      maxBuffer: 1 << 28,
+    }).split("\n"),
+  );
   const texts = [];
   for (const f of files) if (existsSync(join(ROOT, f))) texts.push(readFileSync(join(ROOT, f), "utf8"));
   return texts.join("\n").split("\n");
