@@ -30,7 +30,7 @@
 
 **2026-11-28：真实专业平面图探针带出的五张卡（RM9.28–RM9.32，`todo`，未排期；RM-D96）。** 一个代理只用公开 spec，把公有领域的 HABS 测绘图（Breuer Exhibition House）写到 11 个房间面积偏差都在 3.1 % 以内；但 `E_OPENING_NIB` 拒绝了 8 扇真实存在的贴角门，严格校验留下 13 条警告。证据与读法在 [`2026-11-habs-probe.md`](2026-11-habs-probe.md)，卡在 `cards.md` 第 11 轨末尾。建议先做 RM9.31、RM9.32 两张小卡。同日同一份成长仓裁定（`archcanvas-growth/strategy/decisions/2026-11-28-async-evidence-trust-layer-and-coverage-benchmark.md`）的另两问落在 ArchCanvas：访谈不再推迟，改为首张设计后的一个站内问题（“你打算拿这张图做什么？”，卡在 archcanvas `docs/TODO.md` § Demand evidence，未实现）加一封须所有者定稿才发的邮件，2026-12-21 复盘；ArchCanvas 的长期价值押在信任与交付层，两项竞争时交付质量（英尺英寸、施工方能用的 DXF/PDF、对得上的面积合计）排在生成之前。对本仓这只是 RM9.8（英尺英寸）的又一个信号，不改排期，排期仍由所有者定。同日的用户声音调研（`archcanvas-growth/research/2026-11-28-voc-pass/`）显示：交付之痛真实但窄，集中在自建房人群；接收方要的是建筑法规细节而不是更好看的图；导出丢失墙厚/比例、面积口径不明是反复出现的抱怨。随后的委托裁定（`archcanvas-growth/strategy/decisions/2026-11-28-three-handover-follow-ups.md`）决定请一位绘图员付费评审一份 ArchCanvas 导出的 DXF/PDF（DXF 出自本仓，评审指出的图面缺陷将作为导出卡候选记在这里），但所有者同日暂缓了这一步（“先不做”）；同一裁定下 ArchCanvas 的面积合计行现在总写明测量口径（archcanvas #438，已上线）。
 
-下面 2026-11-15 的车道表只作历史参考；与 v3 冲突的地方，以 v3 为准。所有者要决定的六件事见 `v3.md` §6。
+§2 的 2026-11-15 车道表（历史参考，v3 之前）已移到 `archlang-lab/plans/product-roadmap/handoff-history.md`。
 
 **2026-11-18 夜间一场（RM-D65 开工后，协调者记录，按 `gh` 读）：** 合并到 `main` 的有：
 - v2 的尾巴：RR.24（#936，列车 #938）、EB.1（#937，`npm run size:embed`）、RR.9（#939）、EV.7（#940）、CO.1（#941）；
@@ -110,14 +110,6 @@ AF9 阶段 A 的最终模糊测试（#992）：188 个修复，0 个硬性失败
 | U.2 不升 E | 不变，但理由是原则 2（2.0 再升 E），与 Show HN 无关 |
 
 不受影响：`main` 一直保持绿；所有者亲自发 Show HN 这件事本身；RM1.1b 现在量（1.62.0 已发布）。
-
-排期以 `README.md` §3 为准；下面是 2026-11-15 约 00:30Z 从实际位置（`main` 在 `bbdc374b`）出发的顺序，每条车道从第 1 项做起，前一项合并后再开下一项。**按 RM-D27，顺序就是全部的门：** 一项的真实依赖满足了就开工，不等阶段日期或冻结期。一次一个重命令对整台机器生效，本地只跑 `check:quick`（文档加 `docs:build`），重的门禁交给 CI。已做完、不再列出的：第四场的全部合并（§1.1 第四张表）；核心车道的 CR11a → RM1.6b → CR10 → RM3.1 前半，视觉车道的 RM8.9 → RM8.10；小卡 RM1.2c、RM1.2g、RM1.1a、RM8.7b、RM0.7e、RM0.7f、RM1.3d、RM8.8b（#772）。1.61.0 已发布（§1.2）。
-
-**核心车道：** RM3.1 后半（`place` 往返及其余），然后按 `README.md` §3 的顺序。RM1.1b 现在量（1.62.0 已发布，§6）。本场新开的余项卡（`cards.md`，线下）：RM1.3e、RM1.3f、RM8.8c、RM8.8d、RM8.5f、RM8.10b、RM0.7g、RM8.7c、RM1.2i、RM1.1c、CR10b、RM3.1c、RM0.10；RM1.3e 的 (b)(c) 先要一次设计裁定。
-
-**视觉车道：** 首批家族与 RM8.10 做完。空档里做：RM8.1c、RM8.3b、RM8.1e、RM8.8b 的余项（RM8.8c、RM8.8d）。**2026-11-27 加（RM-D94，`README.md` §6.40）：** 阶段 G 依次是 RM8.11 → RM8.12 → RM8.13 → RM8.14（家具细部与明暗，`cards.md`），四张卡都是 `parked`。所有者说先落档、暂不实施；所有者说开工时改回 `todo`。
-
-**线下，有余量才做：** RM0.7b、RM0.7c、RM1.2d–RM1.2f、RM1.2h、RM1.4c、RM5.1b、RM0.6、RM7.4、RM1.6c、RM6.1b–RM6.1d、RM8.6c，以及上面的余项卡。CHANGELOG 1.60.0 的 `A-ANNO` 措辞更正已在 1.61.0 的发布说明里做了。
 
 **playground 体积上限（2026-11-22 UTC，`playground/e2e/startup-chunks.baseline.json`）：** `compilerPathBudget` 321,000 B gzip，`embedPathBudget` 308,000，`firstUsePathBudget` 423,000（#1002、#1005 按规则往下重取，RM-D78、RM-D79）。
 最近一次实测在 #1006 的第一轮头（`bbcdef32`，以 `490f2e36` 为底）：编译器路径 313,631、embed 300,980、首次使用 413,224；之后合并的 #1010 在三条路径上各加约 140 B。`lint()` 本身在 `lint` chunk 里，不占首次使用；但规则与编译共用的代码（例如楼梯几何）仍在编译器 chunk，#1004 就让首次使用加了 643 B。
@@ -214,7 +206,7 @@ RM5.4（#603）已由 #781 做完（RM-D43）。
 
 ## 6. 首次接触复测的测量表（RM1.1a、RM1.1b）
 
-固定句（RM-D3）："六份 brief 写成的平面里有 N 个缺陷，最终 lint 报出 k 个。"不提模型名，不叫 benchmark。`archlang-lab/plans/plan-soundness/handoff.md` §4 只留一行指针指向本表；该表里 2026-10-27 及更早的行原样保留。
+固定句（RM-D3）："六份 brief 写成的平面里有 N 个缺陷，最终 lint 报出 k 个。"不提模型名，不叫 benchmark。`../plan-soundness/handoff.md` §4 只留一行指针指向本表；该表里 2026-10-27 及更早的行原样保留。
 
 RM1.1a 的兜底：1.59.0 到 2026-11-23 还没打 tag，就量当时 `main` 的提交，"量的版本"一栏写完整 SHA，"说明"一栏写第一个包含它的版本（CR10 的发布说明引这两样）。
 

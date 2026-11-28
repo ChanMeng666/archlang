@@ -202,7 +202,7 @@ curtain on w_living track ceiling stack 200 state closed
 
 ## 4. 剖面图的铺垫（对话第 5 问）
 
-### 4.1 已有方案：Band Envelope（`archlang-lab/plans/drawing-set/research/2026-11-02-section-elevation.md`）
+### 4.1 已有方案：Band Envelope（`../drawing-set/research/2026-11-02-section-elevation.md`）
 
 - 实测 36 个示例、4807 个实体，**全部是"平面多边形 × [z₀, z₁]"**。
 - 算法分三步：把所有 z₀/z₁ 排序、去重，切成高度带（同一带内场景不随 z 变化）；每带只剩一个 2D"沿视线找最近线段"的问题；相邻格子的标签不同就出线（剖到的、投影的、共面消失）。

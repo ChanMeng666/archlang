@@ -1,6 +1,6 @@
 # Plan-soundness cards
 
-> **Moved:** this programme's `research/`, `audits/`, `evidence.md` and `handoff.md` now live in the private sibling
+> **Moved:** this programme's `research/`, `audits/` and `evidence.md` now live in the private sibling
 > repository, at `archlang-lab/plans/plan-soundness/`. The `.arch` plans of `audits/first-contact-plans/`
 > and `repro/` (with its README) are test fixtures in this repository, at `test/plans/plan-soundness/`.
 

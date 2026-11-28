@@ -219,7 +219,7 @@ RM-D15（所有者 2026-11-11 批准）之后，下面各条成立。其他计�
 - **drawing-set**：搁置。门不变（D3）。DS11 是否并入 RM6.1，由 `slab-and-section.md` 定。
 - **plan-soundness**：作为计划搁置；卡留作规则池，按首次接触复测的证据取用；PS7.9 在本计划排期；§7 第 7 行与 PS6.1 仍 parked。
 - **preview-and-remodel**：搁置，门不变（wave 4、6 等 N10，不早于 11-27 读）。J16–J18 的残留已拆进 RM1.5a、RM4.2 和 RM3.1 的范围表。
-- **public-surfaces、playground-minimal、playground-mobile-perf、visual-assets、ci-throughput**：按 RM-D15 关闭。**engineering-health、archlang-3d**：已关闭或已归档（`docs/plans/README.md`），不在 RM-D15 的名单里；3D 能力的节奏交给 `packages/archlang-3d` 的维护。残留：VA.1–VA.5、PG.1–PG.3 在 `docs/backlog.md`（CI throughput 的待裁行已由 RM-D37 裁定并移除，§6.9）（VA.1、VA.2、VA.4、VA.5 自 2026-11-11 由第 8 轨的卡承接，见下）；MP7 仍记在 `../playground-mobile-perf/README.md` §5（deferred）；engineering-health 的在 `../engineering-health/closing-audit.md` §1。
+- **public-surfaces、playground-minimal、playground-mobile-perf、visual-assets、ci-throughput**：按 RM-D15 关闭。**engineering-health、archlang-3d**：已关闭或已归档（`docs/plans/README.md`），不在 RM-D15 的名单里；3D 能力的节奏交给 `packages/archlang-3d` 的维护。残留：VA.1–VA.5、PG.1–PG.3 在 `docs/backlog.md`（CI throughput 的待裁行已由 RM-D37 裁定并移除，§6.9）（VA.1、VA.2、VA.4、VA.5 自 2026-11-11 由第 8 轨的卡承接，见下）；MP7 仍记在 `archlang-lab/plans/playground-mobile-perf/README.md` §5（deferred）；engineering-health 的在 `../engineering-health/closing-audit.md` §1。
 - **ai-first-language（2026-11-18）**：调研记录，不是第二个队列。卡在 `cards.md` 第 10 轨，裁定 RM-D60…D64（§6.27）。它带走 backlog 的 EV.5（并入 AF9）、M.8（并入 AF6）和 M.15 的第一条（并入 AF1）；打包卡做完时，原卡在同一 PR 裁掉。
 - **geo-seo**：运营节奏，不是开发队列；下次面板 2026-12-01 与 Show HN 同日，建议挪到 12-02。
 - **第 8 轨（2026-11-11）与其他卡、backlog 的关系：**

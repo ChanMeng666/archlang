@@ -10,7 +10,8 @@ This is **not eval data**. Nothing here feeds `eval/` or `dataset/`, and the hol
 `.claude/rules/eval-dataset.md` do not apply to it. Every plan was written for this folder from the
 coordinates in `archlang-lab/plans/plan-soundness/audits/`, `evidence.md` and `repro/`, and from measurement
 with the CLI. No source from outside this repository is copied in. The `repro/` files that were reduced
-here stay where they are.
+here stay where they are. A header that cites "product-roadmap evidence.md" means
+`archlang-lab/plans/product-roadmap/evidence.md`, where that file now lives.
 
 ## Layout and header
 

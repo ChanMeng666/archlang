@@ -30,7 +30,7 @@ outlive a programme.
 
 ## Archived
 
-Moved verbatim to the private sibling repository `archlang-lab` (clone it next to this one); nothing here reads them.
+Moved verbatim to the private sibling repository `archlang-lab` (clone it next to this one); nothing here reads them. The rulings and card ids of the programmes that moved whole are listed in [`archived-rulings.md`](archived-rulings.md).
 
 | What | Now at | Why it left |
 |---|---|---|
@@ -41,7 +41,6 @@ Moved verbatim to the private sibling repository `archlang-lab` (clone it next t
 | `visual-assets/` (richer 3D furniture, the `rendered` theme, new families) | `archlang-lab/plans/visual-assets/` | closed: done, VA.1, VA.2, VA.4 and VA.5 are carried by `product-roadmap/` track 8, VA.3 is the owner's decision |
 | `playground-minimal/` (one entry per function, a Plan \| 3D switch) | `archlang-lab/plans/playground-minimal/` | closed: done |
 | `playground-mobile-perf/` (a playground that fits a phone) | `archlang-lab/plans/playground-mobile-perf/` | closed: done except MP7, which is deferred |
-| `engineering-health/cards.md`, `public-surfaces/{cards,handoff}.md`, `plan-soundness/handoff.md` | the same names under `archlang-lab/plans/` | closed programmes' cards and resume points |
-| `drawing-set/research/`, `drawing-set/spike/` | `archlang-lab/plans/drawing-set/` | research and spike of a shelved programme |
+| `engineering-health/cards.md`, `public-surfaces/{cards,handoff}.md` | the same names under `archlang-lab/plans/` | cards and resume points of closed programmes |
 | `archlang-3d/amendment-v0.7.md` (the M1 recut) | `archlang-lab/plans/archlang-3d/amendment-v0.7.md` | superseded by the delivered package |
-| `product-roadmap/`: `evidence.md`, `handoff.md` §1.1–§1.2c, §11, §12, the `done` cards, `README.md` §3 (schedule v2) | `archlang-lab/plans/product-roadmap/` (`evidence.md`, `handoff-history.md`, `cards-done.md`, `schedule-v2.md`) | history; a done card a tracked file cites keeps a one-line tombstone in `cards.md` |
+| `product-roadmap/`: `evidence.md`, `handoff.md` §1.1–§1.2c, §11, §12 and §2's 2026-11-15 lane table, the `done` cards, `README.md` §3 (schedule v2) | `archlang-lab/plans/product-roadmap/` (`evidence.md`, `handoff-history.md`, `cards-done.md`, `schedule-v2.md`) | history; a done card a tracked file cites keeps a one-line tombstone in `cards.md` |
