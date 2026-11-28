@@ -2786,8 +2786,11 @@ Both halves matter, and both are invisible from the syntax:
   out right: that kind derives which side its panel parks on by probing which face has
   *floor*, and the face outside a garage door is usually an `outdoor driveway` — which is
   ground, so the answer is still the garage.
-- **Not an obstacle.** It contributes nothing to the navigation grid and nothing to any
-  clearance rule. You can walk on a lawn — and on the water, which is a deliberate v1
+- **Not an obstacle.** It contributes nothing to the navigation grid, and to only one
+  clearance measure: a stair landing that stands on no room's floor stands on walkable
+  ground, as deep as that ground covers the middle half of the flight's width
+  (`W_STAIR_NO_LANDING`; every kind but `water`, the surface drawn last deciding where they
+  overlap). You can walk on a lawn — and on the water, which is a deliberate v1
   simplification rather than an oversight: a pond with a bridge over it would need the
   same answer, so the whole question is deferred by name in `docs/backlog.md` (§4.5).
 

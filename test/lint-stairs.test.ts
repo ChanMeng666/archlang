@@ -244,12 +244,7 @@ suite("W_STAIR_NO_LANDING", () => {
     const water = "  outdoor water at (3300,2400) size 1400x1500\n";
     const deck = "  outdoor deck at (3300,2400) size 1400x1500\n";
     expect(of(outside(paving), "W_STAIR_NO_LANDING")).toEqual([]);
-    expect(landing(outside(paving))).toEqual({
-      end: "foot",
-      need_mm: 1000,
-      clear_mm: 1000,
-      by: null,
-    });
+    expect(landing(outside(paving))).toEqual({ end: "foot", need_mm: 1000, clear_mm: 1000, by: null });
     expect(of(outside("  outdoor lawn at (3300,2400) size 1400x1500\n"), "W_STAIR_NO_LANDING")).toEqual([]);
     expect(of(outside(water), "W_STAIR_NO_LANDING").map((d) => d.message)).toEqual([NO_FLOOR]);
     // A deck drawn over the water after it is a bridge; water drawn over the deck is a pond.
@@ -263,12 +258,7 @@ suite("W_STAIR_NO_LANDING", () => {
   it("ground counts only as deep and as wide as it covers the band, and the depth it reports is true", () => {
     const strip = (deep: number) => outside(`  outdoor paving at (3300,2400) size 1400x${deep}\n`);
     expect(of(strip(600), "W_STAIR_NO_LANDING").map((d) => d.message)).toEqual([ends(600)]);
-    expect(landing(strip(600))).toEqual({
-      end: "foot",
-      need_mm: 1000,
-      clear_mm: 600,
-      by: { kind: "no-floor" },
-    });
+    expect(landing(strip(600))).toEqual({ end: "foot", need_mm: 1000, clear_mm: 600, by: { kind: "no-floor" } });
     // Shallower than half the landing: the centreline point a room is read at is off it too.
     expect(of(strip(300), "W_STAIR_NO_LANDING").map((d) => d.message)).toEqual([ends(300)]);
     // Water drawn over the paving 600 mm out cuts it there.
@@ -286,12 +276,7 @@ suite("W_STAIR_NO_LANDING", () => {
       "  outdoor paving at (3300,2800) size 1400x1500\n",
     ]) {
       expect(of(outside(ground), "W_STAIR_NO_LANDING").map((d) => d.message)).toEqual([NO_FLOOR]);
-      expect(landing(outside(ground))).toEqual({
-        end: "foot",
-        need_mm: 1000,
-        clear_mm: 0,
-        by: { kind: "no-floor" },
-      });
+      expect(landing(outside(ground))).toEqual({ end: "foot", need_mm: 1000, clear_mm: 0, by: { kind: "no-floor" } });
     }
   });
 
@@ -299,6 +284,33 @@ suite("W_STAIR_NO_LANDING", () => {
     // Its leg runs beside the band (x 3300–3600) and its foot past the landing (y 3600–4000).
     const ell = "  outdoor paving polygon (3300,2400) (3600,2400) (3600,3600) (4800,3600) (4800,4000) (3300,4000)\n";
     expect(of(outside(ell), "W_STAIR_NO_LANDING").map((d) => d.message)).toEqual([NO_FLOOR]);
+  });
+
+  it("slanted edges end the floor where they cross the band, exactly (the 2026-11-29 review's probes)", () => {
+    const depth = (ground: string) => of(outside(ground), "W_STAIR_NO_LANDING").map((d) => d.message);
+    // A triangle narrowing to its apex 1000 mm out: 250 mm either side of x 4000 holds to 1000 × (1 − 250/700).
+    expect(depth("  outdoor paving polygon (3300,2400) (4700,2400) (4000,3400)\n")).toEqual([ends(642)]);
+    // A trapezoid whose far edge runs from y 3000 at x 4700 to y 3350 at x 3300 crosses the band's
+    // right side (x 4250) at y 3112.5.
+    expect(depth("  outdoor paving polygon (3300,2400) (4700,2400) (4700,3000) (3300,3350)\n")).toEqual([ends(712)]);
+    // Two slanted surfaces whose edges cross: the gap between them opens on the centreline 500 mm out.
+    expect(
+      depth(
+        "  outdoor paving polygon (3300,2400) (4500,2400) (3500,3400) (3300,3400)\n  outdoor deck polygon (4700,2400) (3500,2400) (4500,3400) (4700,3400)\n",
+      ),
+    ).toEqual([ends(500)]);
+    // Water drawn over the paving as a wedge whose apex stands 700 mm out on the centreline.
+    expect(
+      depth(
+        "  outdoor paving at (3300,2400) size 1400x1500\n  outdoor water polygon (4000,3100) (4700,3500) (3300,3500)\n",
+      ),
+    ).toEqual([ends(700)]);
+    // The hint for ground that stops short says to extend it, not to move a wall.
+    expect(
+      of(outside("  outdoor paving polygon (3300,2400) (4700,2400) (4000,3400)\n"), "W_STAIR_NO_LANDING")[0]!.hints,
+    ).toEqual([
+      "Extend the ground beyond the foot of `st`, or move the stair, so 1000 mm of it, 1000 mm wide, stands clear beyond its foot; a flight is stepped off straight ahead, not into a wall or a turn.",
+    ]);
   });
 
   it("the landing on the ground is the stair's floor to the rules that share it: furniture on it", () => {
@@ -401,15 +413,8 @@ suite("W_STAIR_HEAD_VOID", () => {
 
 suite("W_STAIR_TOO_STEEP", () => {
   it("the least run: the fewest risers, one going fewer", () => {
-    expect(minimumRun(3000, DEFAULT_RULESET)).toMatchObject({
-      risers: 14,
-      going: 220,
-      run: 2860,
-    });
-    expect(minimumRun(2640, DEFAULT_RULESET)).toMatchObject({
-      risers: 12,
-      run: 2420,
-    }); // 12 × 220 = 2640 exactly
+    expect(minimumRun(3000, DEFAULT_RULESET)).toMatchObject({ risers: 14, going: 220, run: 2860 });
+    expect(minimumRun(2640, DEFAULT_RULESET)).toMatchObject({ risers: 12, run: 2420 }); // 12 × 220 = 2640 exactly
     expect(minimumRun(2700, resolveRuleset(LINT_PROFILES["cn-residential-advisory"]))).toMatchObject({
       risers: 14,
       run: 2860,
@@ -421,10 +426,7 @@ suite("W_STAIR_TOO_STEEP", () => {
       risers: 14,
       run: 3302,
     });
-    expect(minimumRun(150, DEFAULT_RULESET)).toMatchObject({
-      risers: 1,
-      run: 0,
-    });
+    expect(minimumRun(150, DEFAULT_RULESET)).toMatchObject({ risers: 1, run: 0 });
   });
 
   it("judged against an authored height, on the storey the flight climbs from", () => {
@@ -452,11 +454,7 @@ suite("W_STAIR_TOO_STEEP", () => {
     expect(of(src, "W_STAIR_TOO_STEEP")).toEqual([]);
     const stairs = lintCoverage(src)!.families.find((f) => f.family === "stairs")!;
     expect(stairs.skipped).toEqual([
-      {
-        reason: "no-storey-height",
-        why: "the plan states no storey height",
-        levels: [1],
-      },
+      { reason: "no-storey-height", why: "the plan states no storey height", levels: [1] },
     ]);
   });
 });
@@ -655,27 +653,70 @@ suite("the counted work", () => {
   it("charges every landing one read of each outdoor surface, near it or not (RM9.31)", { timeout: 60_000 }, () => {
     // A thousand straight stairs on one floor, each owing its foot: n × (wall pieces + 1 room +
     // outdoor surfaces + 1). With 1997 wall pieces, one surface brings each landing to exactly the
-    // 2000 its share of the budget is; a second is one over. The surfaces lie far from every landing,
-    // so measuring the ground by them costs nothing more (`groundWork(0)`).
-    const n = 1000;
-    expect(MAX_STAIR_WORK / n).toBe(2000);
-    expect(groundWork(0)).toBe(0);
-    const place = (i: number): [number, number] => [500 + (i % 40) * 3000, 500 + Math.floor(i / 40) * 3000];
-    const stairs = Array.from({ length: n }, (_, i) => {
-      const [x, y] = place(i);
-      return `  stair id=s${i} at (${x},${y}) size 1000x3000 dir up`;
-    }).join("\n");
-    const points = Array.from({ length: 1998 }, (_, i) => `(${i * 50},${-1000 - (i % 2) * 100})`);
-    const refused = (surfaces: number): boolean => {
-      const ground = Array.from(
-        { length: surfaces },
-        (_, i) => `  outdoor paving at (${i * 2000},90000) size 1000x1000`,
-      ).join("\n");
-      const src = `plan "P" {\n  units mm\n  room id=r at (0,0) size 120000x80000\n  wall id=w exterior thickness 10 { ${points.join(" ")} }\n${stairs}\n${ground}\n}\n`;
-      const family = lintCoverage(src)!.families.find((f) => f.family === "stairs")!;
-      return (family.skipped ?? []).some((s) => s.reason === "stair-budget");
-    };
-    expect(refused(1)).toBe(false);
-    expect(refused(2)).toBe(true);
+    // 2000 its share of the budget is; a second is one over. Every landing stands in the room, so none
+    // measures the ground and nothing more is charged.
+    expect(MAX_STAIR_WORK / 1000).toBe(2000);
+    expect(refusedAtBudget(1)).toBe(false);
+    expect(refusedAtBudget(2)).toBe(true);
+  });
+
+  it("charges measuring the ground before it runs, and only to a landing that reads it", { timeout: 60_000 }, () => {
+    // The same storey exactly at the budget, one stair moved off the room so its foot stands on the
+    // paving: measuring that ground is work the budget no longer has. The ground covers the landing,
+    // so the plan is only refused if the measure is charged.
+    const onPaving = "  stair id=s0 at (100,87000) size 1000x3000 dir up";
+    expect(refusedAtBudget(1, onPaving)).toBe(true);
+    // With one wall piece fewer a thousand units are left: the 4 ring edges read and `groundWork` for
+    // the two edges that cross the band's depths (none reaching into it, one ring) fit.
+    expect(4 + groundWork(0, 2, 1)).toBe(22);
+    expect(refusedAtBudget(1, onPaving, 1997)).toBe(false);
+    // 999 stairs leave 2000 units. A sawtooth edge across the landing costs 13 ring edges to read, and
+    // `groundWork` for the edges reaching into the band far more: the storey is declined, which it
+    // would not be if that measure were not charged.
+    const saw = Array.from({ length: 11 }, (_, i) => `(${1000 - i * 100},${90600 + (i % 2) * 100})`).join(" ");
+    const sawtooth = `  outdoor paving polygon (0,90000) (1000,90000) ${saw}`;
+    expect(refusedAtBudget(1, onPaving, 1998, { count: 999 })).toBe(false);
+    expect(refusedAtBudget(1, onPaving, 1998, { count: 999, first: sawtooth })).toBe(true);
+  });
+
+  it("an interior stair is judged whatever ground lies round the building (the 2026-11-29 review's 37-gon lawn)", () => {
+    // A lawn with 37 edges round an 8 m hall: its ground is never read for a landing in the hall, so
+    // none of it is charged, and the partition 400 mm past the foot is reported.
+    const ring = Array.from({ length: 37 }, (_, i) => {
+      const a = (2 * Math.PI * i) / 37;
+      return `(${Math.round(4000 + 20000 * Math.cos(a))},${Math.round(4000 + 20000 * Math.sin(a))})`;
+    }).join(" ");
+    const src = `plan "P" {\n  units mm\n  outdoor lawn polygon ${ring}\n  room id=r at (0,0) size 8000x8000 label "Hall" uses hall\n  walls from rooms exterior 200 partition 100\n  wall id=p partition thickness 100 { (0,3350) (8000,3350) }\n  stair id=s0 at (500,500) size 1000x2400 dir up\n}`;
+    const family = lintCoverage(src)!.families.find((f) => f.family === "stairs")!;
+    expect((family.skipped ?? []).map((s) => s.reason)).not.toContain("stair-budget");
+    expect(of(src, "W_STAIR_NO_LANDING").map((d) => d.message)).toEqual([
+      'The stair in "Hall" has no landing at its foot: the partition wall at y 3350 stands 400 mm past the bottom step, where a landing as long as the flight is wide needs 1000 mm (600 mm short).',
+    ]);
   });
 });
+
+/**
+ * Is the stair work of a storey declined: a thousand straight stairs in one room, each owing its foot,
+ * a zigzag wall of `points - 1` pieces (1997 by default) and `surfaces` outdoor paving squares far
+ * below the room, so each landing costs those pieces + 1 room + `surfaces` + 1. `replace` stands in
+ * for stair `s0`.
+ */
+function refusedAtBudget(
+  surfaces: number,
+  replace?: string,
+  points = 1998,
+  { count = 1000, first }: { count?: number; first?: string } = {},
+): boolean {
+  const place = (i: number): [number, number] => [500 + (i % 40) * 3000, 500 + Math.floor(i / 40) * 3000];
+  const stairs = Array.from({ length: count }, (_, i) => {
+    const [x, y] = place(i);
+    return i === 0 && replace !== undefined ? replace : `  stair id=s${i} at (${x},${y}) size 1000x3000 dir up`;
+  }).join("\n");
+  const zigzag = Array.from({ length: points }, (_, i) => `(${i * 50},${-1000 - (i % 2) * 100})`);
+  const ground = Array.from({ length: surfaces }, (_, i) =>
+    i === 0 && first !== undefined ? first : `  outdoor paving at (${i * 2000},90000) size 1000x1000`,
+  ).join("\n");
+  const src = `plan "P" {\n  units mm\n  room id=r at (0,0) size 120000x80000\n  wall id=w exterior thickness 10 { ${zigzag.join(" ")} }\n${stairs}\n${ground}\n}\n`;
+  const family = lintCoverage(src)!.families.find((f) => f.family === "stairs")!;
+  return (family.skipped ?? []).some((s) => s.reason === "stair-budget");
+}

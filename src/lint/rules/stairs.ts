@@ -107,8 +107,8 @@ export const NON_DWELLING_LANDING_MM = 1200;
 /**
  * The most counted work the stair rules spend on one storey before they decline it (`stair-budget`
  * coverage skip), charged BEFORE the work: one unit per (landing, wall piece / opening / void / room /
- * outdoor surface) the landing measure reads, {@link groundWork} for the outdoor ground by each end
- * of a flight, and one per (door, stair) and per (door or opening, stair) pair the swing and
+ * outdoor surface) the landing measure reads, one per ring edge near a landing off every room and
+ * {@link groundWork} for measuring the ground it stands on, and one per (door, stair) and per (door or opening, stair) pair the swing and
  * side-entry rules compare. A count, never a time. The busiest shipped plan spends a few hundred;
  * three hundred stairs, doors and walls on one storey about two hundred thousand.
  */
@@ -320,10 +320,16 @@ interface WallBody {
 
 /** What first stands in a landing, and how far past the step. `ownPiece`: another piece of the
  *  same block stair, which the walking grid keeps off as it keeps off any other run. `landingEnds`:
- *  a landing between the flights simply stops there. */
+ *  a landing between the flights simply stops there. `noFloor` with `ground`: outdoor ground stands near
+ *  but covers the landing only `depth` deep (RM9.31). */
 export interface LandingBlock {
   depth: number;
-  what: { wall: WallSegment } | { void: RVoid } | { noFloor: true } | { ownPiece: true } | { landingEnds: true };
+  what:
+    | { wall: WallSegment }
+    | { void: RVoid }
+    | { noFloor: true; ground?: true }
+    | { ownPiece: true }
+    | { landingEnds: true };
 }
 
 /** One stair's facts, measured once per storey for every rule. */
@@ -347,6 +353,23 @@ export interface StoreyStairs {
   stairs: StairFacts[];
   /** Work left for the pairwise rules, a count. */
   left: number;
+}
+
+/** The stair work left while the landings are measured: {@link groundDepth} takes its share from it
+ *  before it runs, and `over` records that a landing found too little left. */
+interface GroundMeter {
+  left: number;
+  over: boolean;
+}
+
+/** Take `n` units from `m` before the work they pay for, or record that the budget is spent. */
+function spend(m: GroundMeter, n: number): boolean {
+  if (m.over || n > m.left) {
+    m.over = true;
+    return false;
+  }
+  m.left -= n;
+  return true;
 }
 
 const FACTS = new WeakMap<LintContext, StoreyStairs | null>();
@@ -374,24 +397,11 @@ export function storeyStairs(ctx: LintContext): StoreyStairs | null {
       nLandings *
         (ctx.wallSegs.length + ctx.openings.length + ctx.voids.length + ctx.rooms.length + ground.length + 1) +
       stairs.reduce((a, v, i) => a + landings[i]!.reduce((n, l) => n + ownPieces(v, l).length, 0), 0);
-    // Then, within that (one read of every surface per landing), what measuring the ground by each
-    // end of a flight may cost ({@link groundWork}), charged before it is measured. A turn reads no floor.
-    const groundCost =
-      base <= MAX_STAIR_WORK && ground.length > 0
-        ? landings.reduce(
-            (a, ls) =>
-              a +
-              ls.reduce(
-                (n, l) =>
-                  n +
-                  groundWork(groundNear(l, landingDepth(l.width, ctx), ground).reduce((e, o) => e + ringEdges(o), 0)),
-                0,
-              ),
-            0,
-          )
-        : 0;
-    const cost = base + groundCost;
-    if (cost <= MAX_STAIR_WORK) {
+    if (base <= MAX_STAIR_WORK) {
+      // What is left after it. Measuring the ground ({@link groundDepth}) is charged here, landing by
+      // landing, before it runs, and only by a landing that reads it (off every room): past the
+      // budget, the storey is declined as a whole.
+      const meter: GroundMeter = { left: MAX_STAIR_WORK - base, over: false };
       const bodies = wallBodies(ctx);
       const arcs = ctx.wallSegs.filter((s) => s.arc !== undefined);
       const curved = (zone: BBox): boolean => arcs.some((s) => rectToArc(zone, s.arc!) < s.thickness / 2);
@@ -403,18 +413,18 @@ export function storeyStairs(ctx: LintContext): StoreyStairs | null {
         const clear = Math.min(need, runs);
         if (curved(beyond(l.rect, l.edge, clear, l.width))) return "curved";
         const reaching = bodies.filter((b) => (heights.get(b.seg.wallId) ?? Number.POSITIVE_INFINITY) > level);
-        const wall = landingBlock(l, clear, ctx, reaching, [], ground);
+        const wall = landingBlock(l, clear, ctx, reaching, [], ground, meter);
         if (wall !== null) return wall;
         return clear + VERTEX_EPS < need ? { depth: clear, what: { landingEnds: true } } : null;
       };
-      result = {
-        left: MAX_STAIR_WORK - cost,
+      const measured: StoreyStairs = {
+        left: 0,
         stairs: stairs.map((v, i) => {
           const ls = [...landings[i]!];
           const needs = ls.map((l) => landingDepth(l.width, ctx));
           const blocks = ls.map((l, j): StairFacts["blocks"][number] => {
             if (curved(beyond(l.rect, l.edge, needs[j]!, l.width))) return "curved";
-            return landingBlock(l, needs[j]!, ctx, bodies, ownPieces(v, l), ground);
+            return landingBlock(l, needs[j]!, ctx, bodies, ownPieces(v, l), ground, meter);
           });
           const well = ls.some((l) => l.end === "head");
           // One row per landing, for its shorter leg: a landing short both ways is one defect.
@@ -429,6 +439,8 @@ export function storeyStairs(ctx: LintContext): StoreyStairs | null {
           return { v, landings: ls, well, headUnread: owed[i]!.headUnread, needs, blocks };
         }),
       };
+      measured.left = meter.left;
+      if (!meter.over) result = measured;
     }
   }
   FACTS.set(ctx, result);
@@ -717,10 +729,11 @@ function wallBodies(ctx: LintContext): WallBody[] {
  * (cased openings cut out), another of the stair's own `pieces` or, at a foot, `void`, met across
  * the MIDDLE HALF of the flight's width (so a flank wall drawn to the flight's edge, or 50 mm into
  * it, is not read as standing across it), and the floor itself: the point halfway to that depth
- * must lie in a room or on walkable `ground` ({@link onWalkableGround}: an exterior stair steps off
- * onto paving or a balcony, RM9.31). `null` when the full depth is clear. A `turn` stands at height,
- * on nothing of this storey, so only walls are read of it: a void under it is no matter, and it
- * needs no room.
+ * must lie in a room, or, off every room, walkable `ground` must cover the landing that deep
+ * ({@link groundDepth}: an exterior stair steps off onto paving or a balcony, RM9.31; its work is
+ * taken from `meter` first). `null` when the full depth is clear. A `turn` stands at height, on
+ * nothing of this storey, so only walls are read of it: a void under it is no matter, and it needs no
+ * room.
  */
 function landingBlock(
   l: Landing,
@@ -729,6 +742,7 @@ function landingBlock(
   bodies: readonly WallBody[],
   pieces: readonly BBox[],
   ground: readonly ROutdoor[],
+  meter: GroundMeter,
 ): LandingBlock | null {
   const r = l.rect;
   const probe = beyond(r, l.edge, need, l.width / 2);
@@ -761,8 +775,10 @@ function landingBlock(
       return box !== undefined && pointInRoomBox(p, box);
     });
     if (!inRoom) {
-      const g = groundDepth(l, clear, ground);
-      if (g + VERTEX_EPS < clear) return { depth: g, what: { noFloor: true } };
+      const g = groundDepth(l, clear, ground, meter);
+      // Past the budget the storey is declined as a whole (`storeyStairs`), so what is returned is not read.
+      if (g === "none") return { depth: 0, what: { noFloor: true } };
+      if (g !== null && g + VERTEX_EPS < clear) return { depth: g, what: { noFloor: true, ground: true } };
     }
   }
   return blocked;
@@ -793,14 +809,20 @@ function groundNear(l: Landing, depth: number, ground: readonly ROutdoor[]): ROu
 const ringEdges = (o: ROutdoor): number => o.poly?.length ?? 4;
 
 /**
- * The counted work {@link groundDepth} may spend on a landing whose band meets surfaces with `n`
- * ring edges in all, an upper bound: at most `n² + 3n + 2` depths where the cover can change (two
- * band ends, a vertex and two side crossings per edge, a crossing per pair of edges, which also
- * bounds the pairs intersected), and on the line between each two, every edge read once and each of
- * at most `n / 2` spans painted over at most `n + 1` runs. Zero when no surface is near, so a
- * landing with no ground by it spends nothing more.
+ * The counted work {@link groundDepth} may spend measuring a landing, an upper bound, given `band`
+ * edges that reach into the band, `lines` edges that cross some line across it (`band` among them)
+ * and `rings` surfaces with such an edge: at most `band² + 4·band + 2` depths where the cover can
+ * change (the band's two ends, both ends and both side crossings of each band edge, a crossing per
+ * pair of them, which also bounds the pairs intersected), and on the line between each two, every
+ * crossing edge read once and its crossings sorted (one unit per crossing per binary digit of their
+ * count), and each of at most `band + rings` spans painted over at most `2·(band + rings) + 1` runs.
  */
-export const groundWork = (n: number): number => (n === 0 ? 0 : (n * n + 3 * n + 2) * (n * n + n + 1));
+export const groundWork = (band: number, lines: number, rings: number): number => {
+  const spans = band + rings;
+  let digits = 0;
+  for (let n = lines; n > 0; n = Math.floor(n / 2)) digits++;
+  return (band * band + 4 * band + 2) * (lines * (1 + digits) + spans * (2 * spans + 1));
+};
 
 /**
  * How deep walkable outdoor ground covers landing `l`'s band past its step, up to `depth`: the
@@ -809,38 +831,63 @@ export const groundWork = (n: number): number => (n === 0 ? 0 : (n * n + 3 * n +
  * order) is walkable ({@link groundWalkable}: every kind but `water`), as `unwalkableGroundAt`
  * (`analyze.ts`) reads what a door opens onto. Measured on the surfaces' shapes (`outdoorRing`),
  * never their boxes, and exactly: the cover of a line across the band can only change at a depth
- * where a ring's vertex stands, an edge crosses the band's side, or two edges cross, so one line
- * between each two such depths decides its slab. Returns the depth of the first slab not covered
- * (a gap no wider than {@link VERTEX_EPS} is a seam, not a gap), or `depth` when every one is.
+ * where an edge reaching into the band ends, crosses the band's side, or crosses another such edge,
+ * so one line between each two such depths decides its slab. Only an edge whose depths meet the
+ * band's is read on a line (the others cross none of them), and only one that also reaches across
+ * into it moves the cover. Returns the depth of the first slab not covered (a gap no wider than
+ * {@link VERTEX_EPS} is a seam, not a gap), `depth` when every one is, `"none"` when no surface is
+ * near the band, or `null` when `meter` has too
+ * little left: first for reading the nearby rings, then for {@link groundWork}, each taken before
+ * that work runs.
  */
-function groundDepth(l: Landing, depth: number, ground: readonly ROutdoor[]): number {
+function groundDepth(
+  l: Landing,
+  depth: number,
+  ground: readonly ROutdoor[],
+  meter: GroundMeter,
+): number | "none" | null {
   const near = groundNear(l, depth, ground);
-  if (near.length === 0) return 0;
+  if (near.length === 0) return "none";
+  if (
+    !spend(
+      meter,
+      near.reduce((n, o) => n + ringEdges(o), 0),
+    )
+  )
+    return null;
   const { lo, hi } = bandAcross(l, depth);
   const across = l.edge === "top" || l.edge === "bottom";
-  const rings = near.map((o) => ({
-    walk: groundWalkable(o.surface),
-    pts: outdoorRing(o).map((p): BandPt => ({ u: pastEdge(l.rect, l.edge, p), v: across ? p.x : p.y })),
-  }));
+  const at = (p: Point): BandPt => ({ u: pastEdge(l.rect, l.edge, p), v: across ? p.x : p.y });
+  /** A ring's edges that cross some line across the band, and which of them reach into it. */
+  const rings: Array<{ walk: boolean; lines: Array<{ a: BandPt; b: BandPt; band: boolean }> }> = [];
+  near.forEach((o) => {
+    const pts = outdoorRing(o).map(at);
+    const lines: Array<{ a: BandPt; b: BandPt; band: boolean }> = [];
+    pts.forEach((a, i) => {
+      const b = pts[(i + 1) % pts.length]!;
+      if (Math.min(a.u, b.u) >= depth || Math.max(a.u, b.u) <= 0) return;
+      lines.push({ a, b, band: Math.min(a.v, b.v) < hi && Math.max(a.v, b.v) > lo });
+    });
+    if (lines.length > 0) rings.push({ walk: groundWalkable(o.surface), lines });
+  });
+  const bandEdges = rings.flatMap((ring, k) => ring.lines.filter((e) => e.band).map((e) => ({ ring: k, ...e })));
+  const lineCount = rings.reduce((n, ring) => n + ring.lines.length, 0);
+  if (!spend(meter, groundWork(bandEdges.length, lineCount, rings.length))) return null;
   const cuts: number[] = [0, depth];
   const inside = (u: number): boolean => u > 0 && u < depth;
-  const edges: Array<{ ring: number; a: BandPt; b: BandPt }> = [];
-  rings.forEach((ring, k) => {
-    ring.pts.forEach((a, i) => {
-      const b = ring.pts[(i + 1) % ring.pts.length]!;
-      edges.push({ ring: k, a, b });
-      if (inside(a.u)) cuts.push(a.u);
-      for (const side of [lo, hi])
-        if ((a.v - side) * (b.v - side) < 0) {
-          const u = a.u + ((side - a.v) * (b.u - a.u)) / (b.v - a.v);
-          if (inside(u)) cuts.push(u);
-        }
-    });
-  });
-  for (let i = 0; i < edges.length; i++)
-    for (let j = i + 1; j < edges.length; j++) {
-      const e = edges[i]!;
-      const f = edges[j]!;
+  for (const { a, b } of bandEdges) {
+    if (inside(a.u)) cuts.push(a.u);
+    if (inside(b.u)) cuts.push(b.u);
+    for (const side of [lo, hi])
+      if ((a.v - side) * (b.v - side) < 0) {
+        const u = a.u + ((side - a.v) * (b.u - a.u)) / (b.v - a.v);
+        if (inside(u)) cuts.push(u);
+      }
+  }
+  for (let i = 0; i < bandEdges.length; i++)
+    for (let j = i + 1; j < bandEdges.length; j++) {
+      const e = bandEdges[i]!;
+      const f = bandEdges[j]!;
       if (e.ring === f.ring) continue;
       const den = (e.b.u - e.a.u) * (f.b.v - f.a.v) - (e.b.v - e.a.v) * (f.b.u - f.a.u);
       if (den === 0) continue;
@@ -857,10 +904,8 @@ function groundDepth(l: Landing, depth: number, ground: readonly ROutdoor[]): nu
     let runs: Array<{ from: number; to: number; walk: boolean }> = [{ from: lo, to: hi, walk: false }];
     for (const ring of rings) {
       const xs: number[] = [];
-      ring.pts.forEach((a, i) => {
-        const b = ring.pts[(i + 1) % ring.pts.length]!;
+      for (const { a, b } of ring.lines)
         if (a.u <= u !== b.u <= u) xs.push(a.v + ((u - a.u) * (b.v - a.v)) / (b.u - a.u));
-      });
       xs.sort((a, b) => a - b);
       for (let i = 0; i + 1 < xs.length; i += 2) {
         const from = Math.max(lo, xs[i]!);
@@ -956,7 +1001,9 @@ export const stairNoLanding: LintRule = {
           ...ctx.at(v),
           message: `${capitalise(stairName(v, ctx))} has no landing at its ${l.end}: ${what}, where a landing as long as the flight is wide needs ${m.required} mm (${m.short} mm short).`,
           hints: [
-            `Move or shorten \`${v.id}\`${blocker} so ${m.required} mm of floor, ${mm(l.width)} mm wide, stands clear beyond its ${l.end}; a flight is stepped off straight ahead, not into a wall or a turn.`,
+            "noFloor" in b.what && b.what.ground
+              ? `Extend the ground beyond the ${l.end} of \`${v.id}\`, or move the stair, so ${m.required} mm of it, ${mm(l.width)} mm wide, stands clear beyond its ${l.end}; a flight is stepped off straight ahead, not into a wall or a turn.`
+              : `Move or shorten \`${v.id}\`${blocker} so ${m.required} mm of floor, ${mm(l.width)} mm wide, stands clear beyond its ${l.end}; a flight is stepped off straight ahead, not into a wall or a turn.`,
           ],
         });
       });
