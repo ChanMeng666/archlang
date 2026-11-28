@@ -14,14 +14,19 @@ const policy = readPolicy();
 const installed = installedRuntime();
 
 describe("licence gate (Q20)", () => {
-  it("walks the real runtime tree, the package's own dependencies included", () => {
+  it("walks the real runtime tree, the package's own dependencies and optional peers included", () => {
     const names = installed.map((p) => p.name);
-    const own = Object.keys(
-      (JSON.parse(readFileSync(new URL("../package.json", import.meta.url), "utf8")) as { dependencies: object })
-        .dependencies,
+    const manifest = JSON.parse(readFileSync(new URL("../package.json", import.meta.url), "utf8")) as {
+      dependencies: object;
+      peerDependenciesMeta: Record<string, { optional?: boolean }>;
+    };
+    const optionalPeers = Object.keys(manifest.peerDependenciesMeta).filter(
+      (n) => manifest.peerDependenciesMeta[n]?.optional === true,
     );
-    for (const n of own) expect(names).toContain(n);
+    expect(optionalPeers).toEqual(["playwright-core"]); // installed here as a devDependency
+    for (const n of [...Object.keys(manifest.dependencies), ...optionalPeers]) expect(names).toContain(n);
     expect(names).toContain("property-graph"); // a transitive one
+    expect(names).not.toContain("@chanmeng666/archlang"); // the required peer: the core itself
   });
 
   it("every installed runtime package passes: allow-listed at its version and licence, not denied", () => {
@@ -56,7 +61,7 @@ describe("licence gate (Q20)", () => {
     expect(policy.deny.map((d) => `${d.name}@${d.major}`)).toContain("straight-skeleton@3");
   });
 
-  it("walks peers too: a dependency's required peer is gated, a missing optional peer skipped, the root's peer not walked", () => {
+  it("walks peers too: a dependency's required peer is gated, a missing optional peer skipped, the root's required peer not walked, its optional peers walked", () => {
     const root = mkdtempSync(join(tmpdir(), "archlang3d-licences-"));
     const pkg = (dir: string, m: object) => {
       mkdirSync(dir, { recursive: true });
@@ -64,8 +69,14 @@ describe("licence gate (Q20)", () => {
     };
     try {
       const nm = join(root, "node_modules");
-      pkg(root, { name: "root", dependencies: { a: "1" }, peerDependencies: { core: "1" } });
+      pkg(root, {
+        name: "root",
+        dependencies: { a: "1" },
+        peerDependencies: { core: "1", e: "1", f: "1" },
+        peerDependenciesMeta: { e: { optional: true }, f: { optional: true } },
+      });
       pkg(join(nm, "core"), { name: "core" });
+      pkg(join(nm, "e"), { name: "e" });
       pkg(join(nm, "a"), {
         name: "a",
         peerDependencies: { b: "1", c: "1", d: "1" },
@@ -75,8 +86,8 @@ describe("licence gate (Q20)", () => {
       pkg(join(nm, "d"), { name: "d" });
       const names = installedRuntime(root).map((p) => p.name);
       // b (required peer) and d (optional peer, installed) are walked; c (optional, absent) is skipped;
-      // the root's own peer (the core) is not.
-      expect(names).toEqual(["a", "b", "d"]);
+      // the root's required peer (the core) is not; its optional peer e (installed) is, f (absent) is skipped.
+      expect(names).toEqual(["a", "b", "d", "e"]);
       const b = installedRuntime(root).find((p) => p.name === "b");
       expect(b && verdict(b, policy)).toMatch(/not on the allow list/);
       rmSync(join(nm, "b"), { recursive: true });

@@ -11,6 +11,7 @@ import { fileURLToPath } from "node:url";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { main } from "../src/cli/run.js";
 import { adaptPlan } from "../src/index.js";
+import { PLAYWRIGHT_MISSING } from "../src/replay/chromium.js";
 import { renderReplay } from "../src/replay/video.js";
 
 vi.mock("../src/replay/video.js", async (actual) => {
@@ -67,6 +68,21 @@ describe("archlang3d view with no browser", () => {
     expect(r.code).toBe(1);
     expect(r.err).toContain("rendering failed");
     expect(existsSync(mp4)).toBe(false);
+  });
+
+  // Card CG19: playwright-core is an optional peer, so a consumer may not have it at all. That is
+  // no browser too: the HTML is written, exit 0, and the message says how to install it.
+  it("treats a missing playwright-core as no browser, and says how to install it", async () => {
+    vi.mocked(renderReplay).mockRejectedValue(new Error(PLAYWRIGHT_MISSING));
+    const html = join(dir, "plan.html");
+    const r = await cli(["view", PLAN, "--replay", "-o", html, "--json"]);
+    expect(r.code).toBe(0);
+    expect(existsSync(html)).toBe(true);
+    expect(r.err).toContain(`key frames were not measured: ${PLAYWRIGHT_MISSING}`);
+    expect(JSON.parse(r.out)).toMatchObject({ ok: true, html, rendered: false });
+    const v = await cli(["view", PLAN, "--replay", "-o", html, "--video", join(dir, "plan.mp4")]);
+    expect(v.code).toBe(1);
+    expect(v.err).toContain(PLAYWRIGHT_MISSING);
   });
 
   it("does not excuse a replay that breaks with a browser present", async () => {

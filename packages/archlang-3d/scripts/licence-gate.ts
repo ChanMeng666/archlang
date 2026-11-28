@@ -8,7 +8,9 @@
  * package's directory upward) and read from the INSTALLED package.json, never from the lockfile or
  * a registry. An optional dependency or optional peer (`peerDependenciesMeta[x].optional`) that is
  * not installed (another platform's binary, an unused integration) is skipped; a required one that
- * is missing throws. The package's own peer is the ArchLang core itself and is not walked.
+ * is missing throws. The package's own required peer is the ArchLang core itself and is not walked;
+ * its own optional peers (`playwright-core`, which only the browser paths load) are walked like an
+ * optional dependency: gated where installed, as in this repository, skipped where not.
  */
 import { existsSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
@@ -79,11 +81,15 @@ export function installedRuntime(root: string = PKG): Installed[] {
   const out = new Map<string, Installed>();
   const visit = (dir: string, via: string[]): void => {
     const m = manifest(dir);
-    // The root's own peer is the core it reads (ArchLang itself), not a third party.
-    const peers = via.length > 0 ? (m.peerDependencies ?? {}) : {};
+    // The root's required peer is the core it reads (ArchLang itself), not a third party; the root's
+    // optional peers are third parties the package loads, so they are gated.
+    const isOptionalPeer = (n: string): boolean => m.peerDependenciesMeta?.[n]?.optional === true;
+    const allPeers = m.peerDependencies ?? {};
+    const peers =
+      via.length > 0 ? allPeers : Object.fromEntries(Object.entries(allPeers).filter(([n]) => isOptionalPeer(n)));
     const optional = new Set([
       ...Object.keys(m.optionalDependencies ?? {}),
-      ...Object.keys(peers).filter((n) => m.peerDependenciesMeta?.[n]?.optional === true),
+      ...Object.keys(peers).filter(isOptionalPeer),
     ]);
     for (const name of Object.keys({ ...m.dependencies, ...m.optionalDependencies, ...peers }).sort()) {
       const d = find(name, dir);
@@ -135,8 +141,9 @@ export function notices(policy: Policy = readPolicy(), root: string = PKG): stri
     "THIRD-PARTY SOFTWARE NOTICES — @chanmeng666/archlang-3d",
     "",
     "Generated from licences.json by `npm -w packages/archlang-3d run notices`; do not edit by hand.",
-    "The packages below are the package's runtime dependencies, transitively, each source-checked",
-    "(plan §8.5 L1, Q20). Each licence text is copied from the installed package.",
+    "The packages below are the package's runtime dependencies and optional peers (playwright-core,",
+    "installed by the user for a browser), transitively, each source-checked (plan §8.5 L1, Q20).",
+    "Each licence text is copied from the installed package.",
   ];
   for (const a of policy.allow) {
     parts.push("", "=".repeat(78), `${a.name} ${a.version} — ${a.license}`, a.source, "", a.checked);

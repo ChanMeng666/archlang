@@ -1,8 +1,9 @@
 THIRD-PARTY SOFTWARE NOTICES — @chanmeng666/archlang-3d
 
 Generated from licences.json by `npm -w packages/archlang-3d run notices`; do not edit by hand.
-The packages below are the package's runtime dependencies, transitively, each source-checked
-(plan §8.5 L1, Q20). Each licence text is copied from the installed package.
+The packages below are the package's runtime dependencies and optional peers (playwright-core,
+installed by the user for a browser), transitively, each source-checked (plan §8.5 L1, Q20).
+Each licence text is copied from the installed package.
 
 ==============================================================================
 @gltf-transform/core 4.5.1 — MIT

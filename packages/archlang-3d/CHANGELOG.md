@@ -2,6 +2,17 @@
 
 ## [Unreleased]
 
+### Changed
+
+- `playwright-core` is now an optional peer dependency (`^1.64.1`), no longer a dependency (card
+  CG19): installing the package no longer installs it (14 MB), since only the browser paths load
+  it: `view`'s key frames and `--video`, and `doctor`'s Chromium probe. To render, install it
+  yourself: `npm i -D playwright-core && npx playwright-core install chromium`. Without it,
+  `view --replay` still writes the HTML and exits 0, saying the key frames were not measured
+  because "playwright-core is not installed", with those two commands; `--video` fails with the
+  same message, and `doctor` reports it on its `chromium` line. The GLB, the scene, the replay HTML
+  and every library entry are unchanged.
+
 ## [0.9.2] - 2026-11-23
 
 The core peer range stays `^1.61.0` (`MIN_CORE`): nothing below reads a core export that 1.61.0 lacks.

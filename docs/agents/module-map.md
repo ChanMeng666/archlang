@@ -19,7 +19,7 @@ module's remaining facts are in its own header.
 invariants; this file holds every module. The exports of `src/index.ts` are in the sibling
 [`public-surface.md`](public-surface.md).
 
-Totals: 433 modules in 34 directories.
+Totals: 434 modules in 34 directories.
 
 ## `packages/archlang-3d/src/`
 
@@ -50,10 +50,10 @@ Totals: 433 modules in 34 directories.
 
 | Module | Lines | Importers | Summary | Budget |
 | --- | ---: | ---: | --- | --- |
-| `commands.ts` | 393 | 4 | `archlang3d build \| check \| manifest \| schema \| doctor` (card A4; archlang-3d plan §7). Flags are parsed from `manifest.ts`'s table, so a flag works exactly when the manifest lists it. Exit codes as the core's (ADR 0015, plan §7.3): 0 ok… | none |
+| `commands.ts` | 395 | 4 | `archlang3d build \| check \| manifest \| schema \| doctor` (card A4; archlang-3d plan §7). Flags are parsed from `manifest.ts`'s table, so a flag works exactly when the manifest lists it. Exit codes as the core's (ADR 0015, plan §7.3): 0 ok… | none |
 | `main.ts` | 13 | 0 | `archlang3d`'s entry: runs `run.ts`'s command and sets the exit code (usage and codes there). | none |
 | `manifest.ts` | 167 | 3 | `archlang3d manifest --json` (archlang-3d plan §7.4): the CLI as data, the same shape as the core's `archlang manifest --json` (`name, invoke, version, description, exitCodes, globalFlags, commands[{name, summary, flags, input, output… | none |
-| `run.ts` | 260 | 6 | `archlang3d` (cards A3, A4; archlang-3d plan §7): `build`, `check`, `manifest`, `schema` and `doctor` live in `commands.ts` (their flags in `manifest.ts`); `view` is here: | none |
+| `run.ts` | 262 | 6 | `archlang3d` (cards A3, A4; archlang-3d plan §7): `build`, `check`, `manifest`, `schema` and `doctor` live in `commands.ts` (their flags in `manifest.ts`); `view` is here: | none |
 
 ## `packages/archlang-3d/src/glb/`
 
@@ -85,6 +85,7 @@ Totals: 433 modules in 34 directories.
 | Module | Lines | Importers | Summary | Budget |
 | --- | ---: | ---: | --- | --- |
 | `camera.ts` | 394 | 6 | The replay's end camera as plain maths (card A3, look notes round 1): the viewer and the tests read the same functions, so "the end frame fills the canvas" is a property a test can check without a browser. Millimetres, the exporters' axes… | none |
+| `chromium.ts` | 36 | 5 | Playwright's Chromium, loaded on demand. `playwright-core` is an optional peer, not a dependency: a consumer that never renders a frame (a GLB, a scene, the replay HTML) never installs it. Only the paths that start a browser (`view`'s key… | none |
 | `facts.ts` | 57 | 3 | The metrics strip's numbers (card G4), read from the core's public `describe()` and `lint()` for the same source the replay was built from: nothing is measured here and nothing is guessed. The strip itself (`strip.ts`) is browser-safe and… | none |
 | `html.ts` | 157 | 4 | The single-file replay HTML (card A3): the viewer and the pinned three.js as one inline script (`viewer-bundle.ts`; browser target, nothing loaded from a network), the mesh, the event table and the core's own SVG as an inline JSON… | none |
 | `mount.ts` | 1074 | 6 | The replay's renderer (card A3), browser-only: `mountReplay(canvas, payload)` draws the frame at replay time `t` into `canvas`, synchronously, and hashes the composed frame (plan §6.5). Two hosts use it: the single-file replay HTML… | none |
@@ -94,7 +95,7 @@ Totals: 433 modules in 34 directories.
 | `strip.ts` | 73 | 8 | The replay's metrics strip (card G4): a line of plain facts under the picture, each shown when the replay reaches the stage that draws it. Browser-safe and free of the core: the facts come in as numbers (`facts.ts` reads them from the… | none |
 | `swiftshader.ts` | 7 | 5 | The flags that make Chromium render WebGL in software, the same on every machine (plan §6.5). | none |
 | `timeline.ts` | 451 | 11 | The replay as a pure function of time (card A3; archlang-3d plan §6.5; decision D3). The plan draws itself in its authoring order, then rises: | none |
-| `video.ts` | 342 | 8 | The replay as a video (card A3; plan §6.5, pulled forward from M3): headless Chromium through Playwright on SwiftShader (software GL, no GPU), one `__seek(t)` and one screenshot per frame, piped to ffmpeg as H.264. The MP4's bytes are not… | none |
+| `video.ts` | 344 | 8 | The replay as a video (card A3; plan §6.5, pulled forward from M3): headless Chromium through Playwright on SwiftShader (software GL, no GPU), one `__seek(t)` and one screenshot per frame, piped to ffmpeg as H.264. The MP4's bytes are not… | none |
 | `view-dom.ts` | 168 | 4 | The free camera's buttons (card CR4), browser-only DOM shared by both hosts of the replay: the single-file replay HTML (`viewer.ts`) and the playground's 3D preview tab. The presets and Reset (`ViewControl`), the storeys shown, and a line… | none |
 | `viewer-bundle.ts` | 21 | 4 | The viewer and the parts of three.js it uses as one minified browser script. Run by `tsup.config.ts` for `dist/viewer.iife.js`, and from the source tree by `html.ts` (this repository's tests and `npm run archlang3d`); never by an… | none |
 | `viewer.ts` | 77 | 2 | The replay viewer's browser code (card A3), bundled with three.js into the single HTML file `replay.ts` writes. It reads the payload the file carries and mounts it (`mountReplay`): `window.__seek(t)` renders the frame at `t` synchronously… | none |

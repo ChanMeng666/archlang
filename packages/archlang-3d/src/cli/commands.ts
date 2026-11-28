@@ -19,6 +19,7 @@ import { writeGlb } from "../glb/write.js";
 import { buildMesh, DOOR_POSES, type DoorPose } from "../mesh/build.js";
 import type { Mesh3D } from "../mesh/types.js";
 import { makeNodeWorld } from "../node.js";
+import { loadChromium, PLAYWRIGHT_MISSING } from "../replay/chromium.js";
 import { SWIFTSHADER_ARGS } from "../replay/video.js";
 import { ARCHLANG_3D_VERSION } from "../scene3d/build.js";
 import type { Scene3D } from "../scene3d/types.js";
@@ -344,8 +345,9 @@ async function cmdDoctor(p: Parsed): Promise<number> {
   }
   if (major >= 20) {
     // playwright-core exits the process on import under Node < 20; only here, and only then, is it loaded.
+    // It is an optional peer: a missing one is reported with how to install it, like a missing browser.
     try {
-      const { chromium } = await import("playwright-core");
+      const chromium = await loadChromium();
       const browser = await chromium.launch({ args: SWIFTSHADER_ARGS });
       const version = browser.version();
       await browser.close();
@@ -363,7 +365,7 @@ async function cmdDoctor(p: Parsed): Promise<number> {
         ok: false,
         required: false,
         for: "view (replay key frames, video)",
-        detail: `${first} (install: npx playwright-core install chromium)`,
+        detail: first === PLAYWRIGHT_MISSING ? first : `${first} (install: npx playwright-core install chromium)`,
       });
     }
   } else {

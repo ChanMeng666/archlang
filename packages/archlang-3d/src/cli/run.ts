@@ -26,6 +26,7 @@ import { replayFacts } from "../replay/facts.js";
 import { replayHtml } from "../replay/html.js";
 import type { ReplayFacts } from "../replay/strip.js";
 import { type ReplayView, storeysOf, timeline, viewLabel, viewMesh } from "../replay/timeline.js";
+import { PLAYWRIGHT_MISSING } from "../replay/chromium.js";
 import { type KeyFrame, renderReplay, type VideoReport } from "../replay/video.js";
 import { doorPose, HANDLERS, parseFlags, Usage } from "./commands.js";
 
@@ -214,7 +215,8 @@ async function view(args: Args): Promise<number> {
     }
   } catch (e) {
     const why = (e as Error).message;
-    if (args.video || !why.includes("browserType.launch")) {
+    // No browser to start: none installed (`browserType.launch`), or no playwright-core (an optional peer).
+    if (args.video || !(why.includes("browserType.launch") || why === PLAYWRIGHT_MISSING)) {
       say(`archlang3d: rendering failed (Chromium through Playwright, ffmpeg): ${why}`);
       return 1;
     }

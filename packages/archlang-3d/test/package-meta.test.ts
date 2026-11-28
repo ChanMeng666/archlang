@@ -26,6 +26,7 @@ const pkg = JSON.parse(readFileSync(new URL("../package.json", import.meta.url),
   scripts: Record<string, string>;
   publishConfig: Record<string, unknown>;
   peerDependencies: Record<string, string>;
+  peerDependenciesMeta: Record<string, { optional?: boolean }>;
   dependencies: Record<string, string>;
   devDependencies: Record<string, string>;
 };
@@ -78,6 +79,17 @@ describe("package metadata", () => {
     expect(pkg.dependencies.earcut).toBeDefined();
     const loose = Object.entries(pkg.dependencies).filter(([, v]) => !/^\d+\.\d+\.\d+(-[\w.]+)?$/.test(v));
     expect(loose).toEqual([]);
+  });
+
+  // Card CG19: only the browser paths (`view`'s key frames and video, `doctor`) load playwright-core
+  // (14 MB), so a consumer never installs it unasked: an optional peer, its floor the exact version
+  // the repository tests with (a devDependency, which the key-frame baseline's Chromium follows).
+  it("playwright-core is an optional peer, not a dependency", () => {
+    expect(pkg.dependencies["playwright-core"]).toBeUndefined();
+    expect(pkg.peerDependenciesMeta).toEqual({ "playwright-core": { optional: true } });
+    const tested = pkg.devDependencies["playwright-core"];
+    expect(tested).toMatch(/^\d+\.\d+\.\d+$/);
+    expect(pkg.peerDependencies["playwright-core"]).toBe(`^${tested}`);
   });
 
   // Hoisting from the root manifest once hid an undeclared `pngjs` in the asset generator,
