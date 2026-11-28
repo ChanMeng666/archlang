@@ -70,7 +70,7 @@
     "@vscode/vsce": "^3.2.1",
     "esbuild": "^0.28.2",
     "markdown-it": "^14.2.0",
-    "typescript": "^5.7.2",
+    "typescript": "^7.0.2",
     "vscode-languageclient": "^9.0.1",
     "vscode-languageserver": "^9.0.1",
     "vscode-languageserver-protocol": "^3.17.5",
