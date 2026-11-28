@@ -134,11 +134,11 @@ function idsOf(id) {
  * also need the line to talk about the backlog.
  */
 export function cited(id, lines) {
-  const escape = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-  const re = new RegExp(`(?<![\\w.])${escape(id)}(?![\\w]|\\.\\d)`);
+  const esc = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const re = new RegExp(`(?<![\\w.])${esc(id)}(?![\\w]|\\.\\d)`);
   const pn = /^(.+)\.(\d+)$/.exec(id);
   const range = pn
-    ? new RegExp(`(?<![\\w.])${escape(pn[1])}\\.(\\d+)\\s*[–-]\\s*(?:${escape(pn[1])}\\.)?(\\d+)(?![\\w]|\\.\\d)`, "g")
+    ? new RegExp(`(?<![\\w.])${esc(pn[1])}\\.(\\d+)\\s*[–-]\\s*(?:${esc(pn[1])}\\.)?(\\d+)(?![\\w]|\\.\\d)`, "g")
     : null;
   const n = pn ? Number(pn[2]) : 0;
   const inRange = (l) => range !== null && [...l.matchAll(range)].some((m) => Number(m[1]) <= n && n <= Number(m[2]));
