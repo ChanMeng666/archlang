@@ -880,7 +880,6 @@ timeout on the heavy cases, never a raised global `testTimeout`). Observed durin
 programme's gate runs; not reproduced on purpose here.
 
 - M.7 · `diffPlans` follow-ups — closed → archived (lab)
-
 - M.8 · The source formatter is lossy past three decimals, and silent when it refuses — done by #946 → archived (lab)
 
 ### M.9 · Grid snap rounds half up, so a mirror image snaps differently — `todo`
@@ -1633,32 +1632,7 @@ and were not re-run when filing.
 
 - H.1 · Lint messages still quote element ids (issue #187) — closed by PS2.22 and PS2.29 (PR #269); test/lint-messages-id-free.test.ts holds it; RM0.1, 2026-11-11 → archived (lab)
 
-### H.2 · `finish()` advisory-code `accept` option (issue #189): superseded by #245, waiting to be archived — `note`
-
-**Observed.** `finish()`'s never-worse law (`codesOf`, `src/finish.ts`) refuses any statement
-that adds a diagnostic code, so where `dims auto all` raises `W_OPENING_NOT_DIMENSIONED` the sheet
-stage degrades it to `dims auto overall`. ArchCanvas treats that code as advisory. Over 416 of
-its recorded plans, 410 match `finish({ only: "sheet" })` on every sheet statement; the other 6
-differ only in `dims auto all` (its own chooser) versus `dims auto overall` (upstream), each on a
-courtyard or recessed face whose opening no facade chain passes. This is the one thing keeping
-ArchCanvas on its own sheet chooser.
-
-**Hypothesis.** An explicit allow-list, `FinishOptions.accept: [codes]`: an accepted code leaves
-the before/after comparison under every profile, errors are never acceptable, and each statement
-kept only because of `accept` gets a `FinishNote` naming the code. It defaults to empty. The
-alternative, a lint profile with per-code severity, is larger and changes what `lint()` reports.
-
-**Gate:** with `accept` omitted every `finish` law test and the corpus output are unchanged; a plan
-whose `dims auto all` raises only `W_OPENING_NOT_DIMENSIONED` keeps `dims auto all` under
-`accept: ["W_OPENING_NOT_DIMENSIONED"]` with a note naming the code; fixpoint holds with `accept` as
-part of the input; an unknown or error code is a usage error. **Size:** S.
-**Closed (2026-11-16).** PR #245 (PS2.12) took the drafting-layer codes, `W_OPENING_NOT_DIMENSIONED`
-included, out of the never-worse comparison (`NOT_GATED_DRAFTING`, `src/furnish.ts`; ADR 0024's
-amendment of 2026-10-24), so the sheet stage keeps `dims auto all` without any option
-(`test/finish-sheet-degrade.test.ts`). Issue #189 was closed as completed on 2026-10-26. An `accept`
-option for non-drafting codes would loosen the never-worse law, and needs a named caller and an owner decision.
-The Gate's "note naming the code" was not built: `finish` reports nothing for a kept drafting code
-(`unresolved` stays empty), and only a lint of the finished source shows it, as ADR 0024 says.
+- H.2 · `finish()` advisory-code `accept` option (issue #189) — closed: superseded by #245 → archived (lab)
 
 ## Registry listings (opened 2026-10-10)
 
@@ -1668,13 +1642,7 @@ The state of each listing is the table in `docs/seo.md` § 8. These are what is 
 Readings of the agent-reach E1/E2 metrics must discount the 2026-10-14 burst traffic (the owner's
 own ~1,500 hosted-MCP requests; `docs/seo.md` section 8).
 
-### O.1 · awesome-mcp-servers #14383 waits on its maintainer: merged 2026-11-17, waiting to be archived — `note`
-
-The merge condition, a Glama quality score of any grade, is met: on 2026-10-25 Glama's Dockerfile
-settings were set to install `@chanmeng666/archlang-mcp` and run `archlang-mcp` behind `mcp-proxy`
-(its auto-generated build had run the CLI, not the MCP server), release 0.1.0 built and was rated A.
-The score badge is on the entry in #14383 and the maintainer was told there. On 2026-11-06 #14383
-was rebased and is conflict-free. Left: the merge.
+- O.1 · awesome-mcp-servers #14383 waits on its maintainer — closed: merged upstream 2026-11-17 → archived (lab)
 
 ### O.3 · Whether the Claude plugin directory publishes later versions after approval is unobserved — `todo`
 
@@ -1778,13 +1746,14 @@ Product-roadmap RM8.3 (PR #701) builds the rest of this item: each of the nine `
 ever pick a finish before building anything.
 
 - VA.4 · `--theme` on the CLI — done by #695 → archived (lab)
-
 - VA.5 · Shadows in the replay — done by #737 (RM8.8, baked contact shadows) → archived (lab)
 
 ## Playground residue (public-surfaces cards P2 and P3, 2026-11-06)
 
 - PG.1 · A room cannot be reached from the keyboard — done by #824 → archived (lab)
 - PG.2 · The card and the tooltip pick a room by its shape — done by #822 → archived (lab)
+- PG.3 · The facts line moves the drawing on the first compile — closed by MP5 (#565, the line is
+  served) and PG-D6 (the stage's foot keeps its row); pinned by `boot.spec`'s first-compile stage-box case
 
 ## Website residue (Search Console fixes #640, #643, #655, 2026-11-10)
 
@@ -1816,6 +1785,7 @@ rejects an unchecked detector. **Trigger:** the first example page whose plan wr
 
 - ST.1 · Drawn treads against storey height — done by RM1.2a (#736) → archived (lab)
 - ST.2 · Winder walking line drawn as the credited arc — done by #821 → archived (lab)
+- ST.3 · `archlang-3d` builds a winder landing as a level landing — done by RM1.2g (#751) → archived (lab)
 
 ## 3D asset and surface residue (public-surfaces 3D cards X4b, X6, V2, 2026-11-06)
 
@@ -1886,7 +1856,11 @@ for furniture that only grazes a door's swing (EV.1: all 19 physical-lint intent
 links are unchecked; README scanning skips dot directories and walks the filesystem, not the tracked
 tree; absolute `archlang.uk` fragments outside READMEs (`docs/overview.md`, `llms-install.md`) and
 fragment-less dead routes are unchecked; a bare URL followed by punctuation, or an id rendered by a
-component the page does not name, is wrongly refused; a malformed `%` escape throws. Each becomes
+component the page does not name, is wrongly refused; a malformed `%` escape throws. (6) RR.11's
+residue (#890): "§ import in `docs/language-reference.md` still lists a module's ignored settings by
+hand (no `height`, `site`, `notes`, `style`, `sheet text`), unguarded." (7) RR.12's residue (#892):
+"only the NOTES clause is pinned, by a test (a dependency-free leaf constant imported by both sides
+was not tried); the primitive-budget message paraphrases the remedy and stays unpinned." Each becomes
 its own card once looked at.
 
 - RR.9 · A door's free first fix build recurs per storey — done by #939 → archived (lab)
@@ -1898,16 +1872,7 @@ its own card once looked at.
 - RR.15 · The EV.1 record predates RM-D52 — done by #879 → archived (lab)
 - RR.16 · Text-guard selection follow-ups after AG.1 — done by #895 → archived (lab)
 - RR.17 · `fmt` follow-ups after M.21 — done by #884 → archived (lab)
-
-### RR.18 · A per-upload owner instruction is not in the eval-dataset rule: decided by RM-D55, waiting to be archived — `note`
-
-`.claude/rules/eval-dataset.md` makes HF uploads owner-only and has no carve-out for an explicit
-per-upload instruction from the owner, which is how the card upload of 2026-11-16 (HF `90914659`) was
-done (`docs/plans/product-roadmap/handoff.md`). Whether to add that carve-out is the owner's call;
-until then the rule stands as written.
-
-**Decided** by RM-D55 (owner, 2026-11-16; product-roadmap README §6.24): uploads to the dataset repo
-are the agent's, standing; replacing a published data file still needs an owner ruling first.
+- RR.18 · A per-upload owner instruction is not in the eval-dataset rule — decided by RM-D55 → archived (lab)
 
 ### RR.19 · `uses` hint follow-ups after RR.13 — `todo`
 
@@ -2051,6 +2016,8 @@ path, 315,282 B, is ~124 KB under the baseline): re-baseline it by its rule or r
 
 `test/dim-swap-reprint.test.ts`'s header quotes wall-clock and RSS figures, and `src/elements/dim.ts` cites
 `(backlog RR.24)`, which will be archived. Replace with what the test pins. **Gate:** no figure or backlog id left in either.
+
+- NR.12 · The primary checkout's dependencies lag `main` (night of 2026-11-18) — done by #955 → archived (lab)
 
 ### NR.13 · RM9.2 leftovers (#950) — `todo`
 
