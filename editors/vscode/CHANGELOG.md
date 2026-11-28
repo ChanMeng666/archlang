@@ -14,6 +14,14 @@ are documented here. The format is based on
 
 ## [Unreleased]
 
+## [0.56.3] - 2026-11-28
+
+### Changed
+
+- **Rebundled the core at `@chanmeng666/archlang@1.69.0`** (no change to the language): the core adds
+  `ResolveCtx.evaluate` for plugin elements and deprecates `ResolveCtx.eval`; the extension builds no
+  plugin context, and every plan compiles byte-identically, so nothing it shows changes.
+
 ## [0.56.2] - 2026-11-23
 
 ### Changed

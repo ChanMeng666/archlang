@@ -3,7 +3,7 @@
   "name": "io.github.ChanMeng666/archlang-mcp",
   "title": "ArchLang",
   "description": "Floor plans as code: compile, lint and repair ArchLang (.arch) floor plans to SVG, DXF and PDF.",
-  "version": "0.2.53",
+  "version": "0.2.54",
   "repository": {
     "url": "https://github.com/ChanMeng666/archlang",
     "source": "github",
@@ -27,7 +27,7 @@
       "registryType": "npm",
       "registryBaseUrl": "https://registry.npmjs.org",
       "identifier": "@chanmeng666/archlang-mcp",
-      "version": "0.2.53",
+      "version": "0.2.54",
       "runtimeHint": "npx",
       "transport": {
         "type": "stdio"
