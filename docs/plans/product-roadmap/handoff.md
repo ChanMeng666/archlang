@@ -30,6 +30,8 @@
 
 **2026-11-28：真实专业平面图探针带出的五张卡（RM9.28–RM9.32，`todo`，未排期；RM-D96）。** 一个代理只用公开 spec，把公有领域的 HABS 测绘图（Breuer Exhibition House）写到 11 个房间面积偏差都在 3.1 % 以内；但 `E_OPENING_NIB` 拒绝了 8 扇真实存在的贴角门，严格校验留下 13 条警告。证据与读法在 [`2026-11-habs-probe.md`](2026-11-habs-probe.md)，卡在 `cards.md` 第 11 轨末尾。建议先做 RM9.31、RM9.32 两张小卡。同日同一份成长仓裁定（`archcanvas-growth/strategy/decisions/2026-11-28-async-evidence-trust-layer-and-coverage-benchmark.md`）的另两问落在 ArchCanvas：访谈不再推迟，改为首张设计后的一个站内问题（“你打算拿这张图做什么？”，卡在 archcanvas `docs/TODO.md` § Demand evidence，未实现）加一封须所有者定稿才发的邮件，2026-12-21 复盘；ArchCanvas 的长期价值押在信任与交付层，两项竞争时交付质量（英尺英寸、施工方能用的 DXF/PDF、对得上的面积合计）排在生成之前。对本仓这只是 RM9.8（英尺英寸）的又一个信号，不改排期，排期仍由所有者定。同日的用户声音调研（`archcanvas-growth/research/2026-11-28-voc-pass/`）显示：交付之痛真实但窄，集中在自建房人群；接收方要的是建筑法规细节而不是更好看的图；导出丢失墙厚/比例、面积口径不明是反复出现的抱怨。随后的委托裁定（`archcanvas-growth/strategy/decisions/2026-11-28-three-handover-follow-ups.md`）决定请一位绘图员付费评审一份 ArchCanvas 导出的 DXF/PDF（DXF 出自本仓，评审指出的图面缺陷将作为导出卡候选记在这里），但所有者同日暂缓了这一步（“先不做”）；同一裁定下 ArchCanvas 的面积合计行现在总写明测量口径（archcanvas #438，已上线）。
 
+**2026-11-28 一场：** 上下文治理一轮（计划在 `archlang-lab/plans/context-governance/README.md`，§8 是实施记录；archlang #1054–#1058）；#1061/#1062（Windows 临时路径的 8.3 短名让 Vite 读不了模块，main 的 Windows 腿因此红了一段，见 SR.31）；1.69.0 发布（RM-D99，`rulings.md` §6.44）。
+
 §2 的 2026-11-15 车道表（历史参考，v3 之前）已移到 `archlang-lab/plans/product-roadmap/handoff-history.md`。
 
 **2026-11-18 夜间一场（RM-D65 开工后，协调者记录，按 `gh` 读）：** 合并到 `main` 的有：
@@ -89,7 +91,8 @@ AF9 阶段 A 的最终模糊测试（#992）：188 个修复，0 个硬性失败
 - 约 2026-11-26 读 TR14 的一周读数（#982 在 2026-11-19T19:40Z 合并）：缓存总量低于 8 GB，`apt-debs-*` 四组都还在，才改 `done`。
 - 仍开着、没开工的卡：TR13、TR15、backlog 3.17、SR.1–SR.13、SR.16、SR.18–SR.20、NR.1–NR.9、NR.11、NR.13–NR.15、AL3c/e/f（AL3d/g/l 先要协调者的裁定）。
 - 标签拥挤的视觉车道接着是 AL2a → AL2c（`../label-crowding/README.md` §4）。
-- 发布：1.67.0 已发布（RM-D84，§3 的日历行），各渠道含 OpenAI 目录都已上线；1.67.0 之后的下一次发布要所有者对那一次的决定。
+- 发布：1.69.0 已发布（RM-D99，`rulings.md` §6.44；渠道与 OpenAI 目录为何没更新见那里）；1.69.0 之后的下一次发布要所有者对那一次的决定。
+- 每次合并之前先看 `main` 最新一次 push 的运行：普通 PR 不跑 Windows、Node 18、Node 20，这几条腿只在 push 上才跑（#1045 之后 Windows 腿红了而没人看见）。
 
 **1.64.0（RM-D66，`README.md` §6.29）：** 所有者 2026-11-18 同意发布，版本号受托定为 1.64.0（次版本，带 Breaking）；切点在 `b36f6995`（RM9.2 合并之后），AF3 不进本版。之前写下的发布说明保留在下面，作为历史记录。
 

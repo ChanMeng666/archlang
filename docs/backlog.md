@@ -2394,6 +2394,17 @@ Round 2 left three minor items (verdict "merge"):
    properties of undefined (reading 'call')", not "is not a function"; reword or throw a clear error.
 Not verified in review: the tsup-built `dist/index.d.ts` text, and hot-path cost of `evaluateIn`
 (one call per expression; read the bench before and after).
+### SR.31 · Temp-path URLs on Windows: vite-node never percent-decodes — `todo`
+
+#1061 fixed only the `~` case: `test/helpers/tmp.ts` now resolves the temp dir with
+`realpathSync.native`. `importSource` still passes `pathToFileURL(file).href`, and vite-node 2.1.9
+strips `file:` without decoding (`node_modules/vite-node/dist/utils.mjs:22`), so a temp path with a
+space or a non-ASCII character (`%20`) would fail the same way.
+1. Fix direction: pass Vite a decoded path or the `/@fs/` form, or decode in the helper.
+2. `test/tmp-helper.test.ts` case 2 can skip silently when `cmd.exe` fails (status null);
+   `docs/testing.md:123` wants a visible skip that fails under CI.
+3. The `~`-segment assertion is redundant and breaks on a real long name that contains `~`.
+
 ## Test-programme findings (promo-credit programme, 2026-11-16)
 
 From `docs/plans/product-roadmap/2026-11-test-findings.md` (§ 3, § 4, § 5). RR.8 (2), the

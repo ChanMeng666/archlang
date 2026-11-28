@@ -464,4 +464,10 @@ RM-D65 授权协调者在所有者不在时自行裁定，所有者一句话可�
 | RM-D97 | MeltFlex 的实测文章（2026-11-15）够不够解除 Wikidata 搁置 | 协调者把这条列为"所有者决定"之后，所有者说"请你帮我做出最佳决策，然后记录下来"（2026-11-28，原话为中文） | **继续搁置，ArchLang 与 ArchCanvas 都不建条目。** Wikidata 收录标准第 2 条要求条目能用"serious and publicly available references"描述，最终由社区决定；增长仓库 `marketing/launches/runbook-2026-09.md` §F 把解锁条件定为一份"严肃、独立"的描述（行业或技术刊物、论文、书，或与项目无关者的实质报道），并说明删除讨论比没有条目更糟。MeltFlex 文章做了实测，作者写明与维护者"no relationship"，但它是 MeltFlex s. r. o. 的公司内容营销博客：MeltFlex 卖 AI 家装工具，自家技能在同一篇里排名，文中自述"MeltFlex AI, its skills, MCP server and API are ours"。它算独立，不算严肃刊物；而且 2026-11-28 我们已给 MeltFlex 发邮件（E1），此后它的报道不再是未经联系的。**解锁条件（不变，写得更准）：** 出现一份有编辑部的行业或技术刊物（例如 Hackaday、Console.dev、AEC Magazine 的正文报道），或一篇引用 ArchLang 的论文；届时 MeltFlex 作辅助引用。解锁后只先建 ArchLang，由所有者本人在自己的账号里建，按 runbook §F 先在用户页公开利益关系。GEO 能见度不构成建条目的理由。所有者可一句话推翻 |
 | RM-D98 | 是否认领 HOL（hol.org）上的 ArchLang 条目 | 同上 | **不认领。** awesome-codex-plugins #810 下 HOL 机器人自己写明认领"None of them affects this review"，所以它不影响 #810 收录。认领要用所有者的 GitHub OAuth 授权 `read:user` 和 `user:email`，把所有者邮箱交给一家卖付费认证（HOL Blue/Gold）的公司；换来的只是认证徽章、仪表盘里替 README 加徽章的 PR，以及"故事"发布，对 ArchLang 的收录、排名和引用都没有作用（机器人自述付费不改变 trust score 或排名）。README 不加第三方徽章。机器人的认领提醒照常忽略。**重新考虑的条件：** HOL 上的条目信息出错且只有认领者能改；或某个目录把认领设为收录前提 |
 
+### 6.44 所有者裁定：发布 1.69.0（RM-D99，2026-11-28）
+
+| 编号 | 问题 | 所有者原话 | 决定 |
+|---|---|---|---|
+| RM-D99 | 要不要现在发布，让 archlang-3d 可选的 playwright-core peer（#1058）到达用户 | "playwright-core 那项改动要发版才对用户生效：我同意发版。" | 发布 1.69.0（次版本：#1045 加了公开的 `ResolveCtx.evaluate`，并弃用 `ResolveCtx.eval`）、archlang-3d 0.10.0（0.x 里的 Breaking 按 0.5.0 的先例走次版本）、archlang-mcp 0.2.54、VS Code 0.56.3。发布 PR #1060（合并 `878dc85f`）；tag `v1.69.0` 在 main 对 `878dc85f` 的 push CI 每一条腿（含 Node 18、Node 20、Windows）都绿之后才推。在此之前 main 的 Windows 腿自 #1045 起一直红（8.3 短临时路径 `RUNNER~1` 被编码成 `%7E`），由 #1061 修复，经列车 #1062（`6cae4fee`）合入。渠道：npm core 1.69.0、3d 0.10.0、mcp 0.2.54（OIDC）；MCP 注册表 0.2.54；MCPB 已附；VS Code Marketplace 0.56.3（Chrome 上传）；Open VSX 0.56.3；ClawHub 1.69.0 已提交（扫描待出）；Docker 目录 PR #6704，钉在 `878dc85f`。OpenAI 目录没有更新：按 release-check，skills 与 `spec.llm.md` 自 1.68.2 起没变。`spec.llm.md`、`llms-full.txt`、`skills/` 与 1.68.2 字节相同，所以 ArchCanvas 跟进不需要付费定价跑。之后的发布要所有者对那一次的决定 |
+
 ---
