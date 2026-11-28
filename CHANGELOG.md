@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.69.0] - 2026-11-28
+
+Nothing is breaking in the command line, and no plan that compiled before stops compiling. No new statement, keyword or code: the catalogue stays at 279 codes and `src/index.ts` is unchanged. **New API:** `ResolveCtx.evaluate`, the plugin context's expression evaluator under a name code scanners do not flag; `ResolveCtx.eval` is deprecated and kept. Code that builds a `ResolveCtx` itself, rather than using the one `resolve` is handed, must now provide `evaluate` (below). `compile()`, `describe()` and `lint()` are byte-identical on every plan. `@chanmeng666/archlang-3d` 0.10.0 ships alongside: `playwright-core` is now an optional peer, so a plain install no longer brings a browser driver.
+
 ### Added
 
 - `ResolveCtx.evaluate(e)`, the expression evaluator a plugin element's `resolve` calls (`compile(src, { plugins })`). It is the function `ResolveCtx.eval` has always been, under a name that code scanners do not read as a call to JavaScript's global `eval`: the HOL plugin scanner zeroed its "No eval or Function constructor" check on the old member's call sites, and other package scanners flag the same text. It is a new required member: code that builds a `ResolveCtx` itself (rather than using the one `resolve` is handed) must now provide `evaluate`, or spread an existing context. A plugin that wraps a built-in element and hands it a context of its own may replace either member: the built-ins evaluate with the one the wrapper replaced (the one that is not the compiler's own), so a wrapper that replaced the old member is honoured as before, and a context that has only the old member still compiles. The repository's tests no longer build functions from strings either: the ones that run generated or extracted code load it as a real ES module from a scratch file, and `test/no-dynamic-code.test.ts` fails on either pattern in any tracked code file. `compile()`, `describe()` and `lint()` are byte-identical on every plan.
@@ -14,6 +18,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Deprecated
 
 - `ResolveCtx.eval`: use `ResolveCtx.evaluate`, which is the same function on every context the compiler builds. The member is unchanged (a method with the same signature), so a plugin that calls it keeps working and type-checking; the public surface is append-only, so it is removed only in a major version.
+
+### Changed
+
+- The docs site (archlang.uk) and the playground (playground.archlang.uk), already deployed from `main`; no npm package carries them. Both sites share one set of motion tokens (enter, exit and press timings, all zero under reduced motion), and the playground's Share, More and gallery menus close the way they open. The playground shows one notice at a time (with "Show in source" on a broken plan's notice), offers Undo after a gallery pick replaces the visitor's own plan and after a saved plan is deleted or restored, opens Embed as a modal dialog, seeds Intent's starter brief with the plan on screen's own facts, and names the next step when a copy fails. The docs site's live examples keep their last good drawing, dimmed, with a one-line error under it, so a typo no longer changes the widget's height, and "Open in Playground" is a real link. Accessibility fixes from an audit: the sidebar's group headings are buttons only where the group collapses (Enter and Space, `aria-expanded`), the search button's accessible name includes its visible shortcut, wide reference tables scroll inside their own box below 768 px instead of scrolling the page, and the playground header's controls may wrap on a screen at most 380 px wide and under 500 px tall, where "Make your own" was clipped.
+
+### Shipped alongside
+
+- **`@chanmeng666/archlang-3d` 0.10.0** (`packages/archlang-3d/CHANGELOG.md`): `playwright-core` is an optional peer dependency (`>=1.40.0`), no longer a dependency (breaking for this 0.x package, hence the minor). Without it, `renderReplay` rejects and `archlang3d view --video` exits 1 with the install command, `archlang3d view --replay` still writes the HTML without measured key frames, and `archlang3d doctor` names it. Its core peer range stays `^1.61.0`.
+- **`@chanmeng666/archlang-mcp` 0.2.54**, re-pinned to `^1.69.0`. Its baked spec, `llms-full.txt`, GBNF, schemas and capabilities resource are unchanged, and so are the tools, their descriptions and their count.
+- **VS Code extension 0.56.3** (`editors/vscode/CHANGELOG.md`): rebundles this core.
+- `@chanmeng666/arch-plan` is unchanged at 0.1.2 (the `<arch-plan>` element served from archlang.uk loads this core) and `@chanmeng666/archlang-font-cjk` at 1.0.0.
 
 ## [1.68.2] - 2026-11-23
 

@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+## [0.10.0] - 2026-11-28
+
+The core peer range stays `^1.61.0` (`MIN_CORE`): nothing below reads a core export that 1.61.0 lacks.
+
 ### Breaking
 
 - `playwright-core` is now an optional peer dependency (`>=1.40.0`), no longer a dependency (card
