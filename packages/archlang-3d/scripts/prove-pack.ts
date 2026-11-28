@@ -10,13 +10,16 @@
  * with no `skipLibCheck`, and `.`, `./glb` and `./node` also without the DOM lib; laneway-house's GLB,
  * from `./node` and from `./glb`, hashes to the repository's pin; the CLI builds a GLB that passes its
  * checks and names this version; the replay HTML loads nothing from a network and carries the pinned
- * three.js with its notice. Exit 1 on the first failure; the last line of stdout is the JSON summary.
+ * three.js with its notice; `playwright-core`, an optional peer, is not installed, and `view` without
+ * it still writes the replay and says how to install it. Exit 1 on the first failure; the last line
+ * of stdout is the JSON summary.
  */
 import { execFileSync, spawnSync } from "node:child_process";
-import { mkdirSync, readdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
 import { dirname, join, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { build } from "esbuild";
+import { PLAYWRIGHT_MISSING } from "../src/replay/chromium.js";
 import { LANEWAY_GLB_SHA256, PIN_GENERATOR } from "../test/pins.js";
 
 const PKG = resolve(dirname(fileURLToPath(import.meta.url)), "..");
@@ -77,6 +80,9 @@ const version = (p: string): string =>
 const coreVersion = version(CORE);
 if (version(NAME) !== manifest.version) fail(`installed ${version(NAME)}, the manifest says ${manifest.version}`);
 if (version("three") !== manifest.dependencies.three) fail(`three ${version("three")} is not the pin`);
+// Card CG19: playwright-core (14 MB) is an optional peer, so a plain install leaves it out.
+if (existsSync(join(dir, "node_modules", "playwright-core")))
+  fail("the tarball install brought playwright-core, an optional peer");
 
 // Every entry, under plain Node, by its package name.
 writeFileSync(
@@ -207,8 +213,21 @@ const schema = cli("schema", "scene3d");
 if (schema !== readFileSync(join(PKG, "src/scene3d/scene3d.schema.json"), "utf8"))
   fail("schema differs from the source");
 
-// The replay: one file, three.js inline, nothing fetched.
-cli("view", example, "--replay", "-o", "plan.html");
+// The replay: one file, three.js inline, nothing fetched. With no playwright-core the HTML is still
+// written and the exit is 0, and stderr says how to install it (card CG19).
+const view = spawnSync(
+  process.execPath,
+  [join(installed, "dist/cli.js"), "view", example, "--replay", "-o", "plan.html"],
+  {
+    cwd: dir,
+    encoding: "utf8",
+  },
+);
+if (view.status !== 0) fail(`archlang3d view exited ${view.status}:\n${view.stdout}${view.stderr}`);
+if (!view.stderr.includes(PLAYWRIGHT_MISSING))
+  fail(
+    `archlang3d view did not say "${PLAYWRIGHT_MISSING}" (is --dir inside a tree whose node_modules holds playwright-core?):\n${view.stderr}`,
+  );
 const html = readFileSync(join(dir, "plan.html"), "utf8");
 if (/<script[^>]+\bsrc=|<link\b|\bimportScripts\(|<iframe\b/i.test(html))
   fail("the replay HTML loads an external resource");

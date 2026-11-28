@@ -82,7 +82,11 @@ export const COMMANDS: readonly Command[] = [
     flags: [
       { flag: "--replay", description: "the replay view (required; the only view so far)" },
       { flag: "--out", alias: "-o", arg: "<out.html>", description: "the HTML file to write (required)" },
-      { flag: "--video", arg: "<out.mp4>", description: "also render an MP4 (needs Chromium and ffmpeg)" },
+      {
+        flag: "--video",
+        arg: "<out.mp4>",
+        description: "also render an MP4 (needs playwright-core, its Chromium and ffmpeg)",
+      },
       { flag: "--seconds", arg: "<n>", description: "replay length (default 15)" },
       { flag: "--fps", arg: "<n>", description: "video frame rate (default 30)" },
       { flag: "--size", arg: "<W>x<H>", description: "canvas size (default 1920x1080)" },
@@ -151,7 +155,7 @@ export function buildManifest() {
       "archlang-3d: 3D preview of an ArchLang plan, a separate package that reads the same .arch source. Builds a checked GLB and a replay from a .arch plan. ArchLang itself draws plans.",
     exitCodes: {
       "0": "ok",
-      "1": "internal / IO / environment error (a missing Chromium or ffmpeg with view --video, a file that cannot be written)",
+      "1": "internal / IO / environment error (a missing playwright-core, Chromium or ffmpeg with view --video, a file that cannot be written)",
       "2": "the plan is refused, a check failed, or build --strict met a warning (E3D_STRICT); nothing is written (deterministic: fix it, don't blindly retry)",
       "3": "bad usage",
     },

@@ -2,6 +2,21 @@
 
 ## [Unreleased]
 
+### Breaking
+
+- `playwright-core` is now an optional peer dependency (`>=1.40.0`), no longer a dependency (card
+  CG19), so installing the package no longer installs it (14 MB). On a plain install, without it:
+  `renderReplay` from `@chanmeng666/archlang-3d/node` rejects with "playwright-core is not
+  installed: npm i -D playwright-core && npx playwright-core install chromium"; `archlang3d view
+  --video` exits 1 with that message; `archlang3d view --replay` still writes the HTML and exits 0,
+  saying its key frames were not measured, and `--json` reports `rendered: false`; `archlang3d
+  doctor` gives the message on its `chromium` line. To render key frames or a video, install it
+  beside the package:
+
+  ```sh
+  npm i -D playwright-core && npx playwright-core install chromium
+  ```
+
 ## [0.9.2] - 2026-11-23
 
 The core peer range stays `^1.61.0` (`MIN_CORE`): nothing below reads a core export that 1.61.0 lacks.

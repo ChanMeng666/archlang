@@ -13,6 +13,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { pathToFileURL } from "node:url";
 import type { Browser } from "playwright-core";
+import { loadChromium } from "./chromium.js";
 import { SWIFTSHADER_ARGS } from "./swiftshader.js";
 import { keyFrames, type ReplayEvent } from "./timeline.js";
 
@@ -114,8 +115,9 @@ export async function renderReplay(o: VideoOptions): Promise<VideoReport> {
     const file = join(dir, "replay.html");
     writeFileSync(file, seekOnly(withSupersample(o.html, o.supersample)));
     // Loaded only here: playwright-core exits the process on import under Node < 20, and the light
-    // tests (which run on CI's Node 18 leg) import this module's neighbours, never a browser.
-    const { chromium } = await import("playwright-core");
+    // tests (which run on CI's Node 18 leg) import this module's neighbours, never a browser. It is
+    // an optional peer: missing, this throws `PLAYWRIGHT_MISSING` (`./chromium.ts`).
+    const chromium = await loadChromium();
     browser = await chromium.launch({ args: SWIFTSHADER_ARGS });
     const page = await browser.newPage({
       viewport: { width: o.width + 40, height: o.height + 120 },
@@ -273,7 +275,7 @@ export async function renderStill(o: StillOptions): Promise<Still> {
   try {
     const file = join(dir, "replay.html");
     writeFileSync(file, seekOnly(withSupersample(o.html, o.supersample)));
-    const { chromium } = await import("playwright-core");
+    const chromium = await loadChromium();
     browser = await chromium.launch({ args: SWIFTSHADER_ARGS });
     const bytesOf = (url: string, type: string): Uint8Array => {
       const head = `data:${type};base64,`;

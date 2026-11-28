@@ -41,9 +41,11 @@ The view turns freely: drag to rotate, scroll or pinch to zoom, right-drag or tw
 and the buttons give Iso, Top, the views from north, east, south and west, and Reset (and, with several storeys, hide the
 storeys above one). Moving the view pauses the playback.
 
-To make a video as well, add a browser and `ffmpeg` on your `PATH`:
+To make a video as well, add Playwright's browser and `ffmpeg` on your `PATH`. `playwright-core` is
+an optional peer dependency, not installed with this package:
 
 ```sh
+npm i -D playwright-core
 npx playwright-core install chromium
 npx archlang3d view plan.arch --replay -o plan.html --video plan.mp4
 ```
