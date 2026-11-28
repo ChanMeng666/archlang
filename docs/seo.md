@@ -239,7 +239,7 @@ account, awaiting maintainers (except where marked):
 | semlinker/awesome-typescript | [#192](https://github.com/semlinker/awesome-typescript/pull/192) |
 | BehiSecc/awesome-claude-skills | [#1212](https://github.com/BehiSecc/awesome-claude-skills/pull/1212) — opened 2026-11-06 |
 | THUCBIMS/Awesome-AIGC4AEC | [#21](https://github.com/THUCBIMS/Awesome-AIGC4AEC/pull/21) — opened 2026-11-06; a papers list, so ArchLang is offered as a project and may be declined |
-| hashgraph-online/awesome-ai-plugins | [#1209](https://github.com/hashgraph-online/awesome-ai-plugins/pull/1209) — merged 2026-11-07 (opened at the owner's word on their outreach issue [archlang#554](https://github.com/ChanMeng666/archlang/issues/554); Agent Skills section; their source scan passed at 80 after #558); listed in the [HOL Registry](https://hol.org/registry/plugins); the fork is deleted. HOL Guard ownership verification (owner's GitHub OAuth, `read:user` + `user:email`) is optional and not done; its bot sends reminders until then |
+| hashgraph-online/awesome-ai-plugins | [#1209](https://github.com/hashgraph-online/awesome-ai-plugins/pull/1209) — merged 2026-11-07 (opened at the owner's word on their outreach issue [archlang#554](https://github.com/ChanMeng666/archlang/issues/554); Agent Skills section; their source scan passed at 80 after #558); listed in the [HOL Registry](https://hol.org/registry/plugins); the fork is deleted. HOL Guard ownership verification (owner's GitHub OAuth, `read:user` + `user:email`) is optional and declined (RM-D98, 2026-11-28: it does not affect any listing, hands the owner's email to HOL, and buys only a badge); ignore the bot's reminders |
 
 On 2026-11-06, with the owner's approval in chat, an agent rebased #14383 and #1375 (both had
 conflicts; the re-added lines no longer claim DXF/PDF from the MCP server), left one short comment
@@ -351,9 +351,14 @@ owner can, by hand.
 
 **Wikidata is on HOLD.** Items were drafted for both projects and deliberately not submitted:
 notability needs an independent source, and an item created without one is deleted rather than
-ignored. Hold until somebody unconnected has written about the project. The MeltFlex test above
-(2026-11-15) is the first such source for ArchLang; whether it is enough to lift the hold is the
-owner's decision, not yet taken.
+ignored. **Kept on hold on 2026-11-28 (RM-D97, delegated by the owner;
+[`plans/product-roadmap/README.md`](plans/product-roadmap/README.md) § 6.43).** The MeltFlex test
+above is independent but is not a serious reference: it is a competing vendor's content-marketing
+blog that ranks its own product in the same article, and the owner has since emailed MeltFlex.
+The hold lifts on one write-up in an edited trade or technical publication (Hackaday, Console.dev,
+AEC Magazine editorial and the like) or a paper that cites ArchLang, with MeltFlex as a supporting
+reference. Then ArchLang only, created by the owner by hand with the connection disclosed (growth
+`marketing/launches/runbook-2026-09.md` § F).
 
 ## 9. Measurement: the frozen prompt panel
 
